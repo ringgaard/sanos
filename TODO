@@ -430,3 +430,7 @@ CHANGES
   starts the kernel. The kernel boots the system using the boot image (/dev/initrd) 
   as root file system. The rest of the CD is mouted on /usr to allow access to the 
   entire CD. The boot ISO image can be created using the mkisofs tool.
+
+- Boot from network using PXE implemented.
+
+- Escape character changed from '\' to '%' in .ini files.

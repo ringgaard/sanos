@@ -60,56 +60,26 @@ static char *trimstr(char *s, char *end)
   t = str = (char *) malloc(end - s + 1);
   while (s < end)
   {
-    if (*s == '\\')
+    if (*s == '%')
     {
       s++;
-      if (s == end) break;
-
-      if (*s == 't')
+      ch = 0;
+      for (i = 0; i < 2; i++)
       {
-	*t++ = '\t';
+        if (s == end) break;
+
+	if (*s >= '0' && *s <= '9')
+	  ch = (ch << 4) + *s - '0';
+	else if (*s >= 'A' && *s <= 'F')
+	  ch = (ch << 4) + *s + 10 - 'A';
+	else if (*s >= 'a' && *s <= 'f')
+	  ch = (ch << 4) + *s + 10 - 'a';
+	else
+          break;
+
 	s++;
       }
-      else if (*s == 'r')
-      {
-	*t++ = '\r';
-	s++;
-      }
-      else if (*s == 'n')
-      {
-	*t++ = '\n';
-	s++;
-      }
-      else if (*s == 'f')
-      {
-	*t++ = '\f';
-	s++;
-      }
-      else if (*s == 'x')
-      {
-	s++;
-
-	ch = 0;
-	for (i = 0; i < 2; i++)
-	{
-          if (s == end) break;
-
-	  if (*s >= '0' && *s <= '9')
-	    ch = (ch << 4) + *s - '0';
-	  else if (*s >= 'A' && *s <= 'F')
-	    ch = (ch << 4) + *s + 10 - 'A';
-	  else if (*s >= 'a' && *s <= 'f')
-	    ch = (ch << 4) + *s + 10 - 'a';
-	  else
-            break;
-
-	  s++;
-	}
-
-	*t++ = ch;
-      }
-      else
-	*t++ = *s++;
+      *t++ = ch;
     }
     else
       *t++ = *s++;
