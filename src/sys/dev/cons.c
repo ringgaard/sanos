@@ -19,8 +19,52 @@ static unsigned int syslog_start;
 static unsigned int syslog_end;
 static unsigned int syslog_size;
 
+void sound(unsigned short freq) 
+{
+  unsigned short freqdiv;
+  unsigned char b;
+
+  freqdiv = 1193180 / freq;
+
+  // Counter 2 select, binary 16-bit counter, first bits 0-7
+  _outp(0x43, 0xB6); 
+         
+  // First bits 0-7
+  _outp(0x42, (unsigned char) freqdiv);
+  
+  // Then bits 8-15
+  _outp(0x42, (unsigned char) (freqdiv >> 8)); 
+
+  // Only output if bits are not correctly set
+  b = _inp(0x61);
+  if (b != (b | 3)) _outp(0x61, b | 3);
+}
+
+void nosound() 
+{
+  unsigned char b;
+
+   // KB controller port B
+  b = _inp(0x61);
+
+  // Disable speaker + clock 2 gate
+  b &= 0xFC;
+
+  // Output
+  _outp(0x61, b);
+}
+ 
+void beep() 
+{
+  sound(1000);
+  sleep(250);
+  nosound();
+}
+
 static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size)
 {
+  int freq;
+
   switch (cmd)
   {
     case IOCTL_GETDEVSIZE:
@@ -47,6 +91,26 @@ static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size)
     case IOCTL_KPRINT_ENABLED:
       if (!args || size != 4) return -EINVAL;
       kprint_enabled = *(int *) args;
+      return 0;
+
+    case IOCTL_BEEP:
+      beep();
+      return 0;
+
+    case IOCTL_SOUND:
+      if (!args || size != 4) return -EINVAL;
+      freq = *(int *) args;
+      if (freq < 0 || freq > 0xFFFF) return -EINVAL;
+
+      if (freq == 0)
+	nosound();
+      else
+        sound((unsigned short) freq);
+
+      return 0;
+
+    case IOCTL_REBOOT:
+      stop(1);
       return 0;
   }
   

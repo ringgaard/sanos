@@ -30,7 +30,7 @@
 unsigned char led_status = 0;
 unsigned char control_keys = 0;
 unsigned int last_key = -1;
-int ctrl_alt_del_enabled = 0;
+int ctrl_alt_del_enabled = 1;
 int keymap = 0;
 
 struct dpc kbddpc;

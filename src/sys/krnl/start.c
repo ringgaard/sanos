@@ -47,6 +47,25 @@ void exit(int status)
   halt();
 }
 
+void stop(int restart)
+{
+  kprintf("syncing filesystems...\n");
+  unmount_all();
+
+  if (restart)
+  {
+    kprintf("rebooting\n");
+    reboot();
+  }
+  else
+  {
+    kprintf("system stopped\n");
+    sleep(100);
+    cli();
+    halt();
+  }
+}
+
 static int load_kernel_config()
 {
   struct file *f;
@@ -276,9 +295,14 @@ void main(void *arg)
   kprintf("mount: root on device %s\n", bootdev);
 
   // Mount root and device file systems
-  mount("dfs", "/", bootdev, "");
-  mount("devfs", "/dev", NULL, NULL);
-  mount("procfs", "/proc", NULL, NULL);
+  rc = mount("dfs", "/", bootdev, "");
+  if (rc < 0) panic("error mounting root filesystem");
+
+  rc = mount("devfs", "/dev", NULL, NULL);
+  if (rc < 0) panic("error mounting dev filesystem");
+
+  rc = mount("procfs", "/proc", NULL, NULL);
+  if (rc < 0) panic("error mounting proc filesystem");
 
   // Load kernel configuration
   rc = load_kernel_config();

@@ -43,6 +43,13 @@
 #define CMD_VERSION 0x10        // FDC version
 
 //
+// FDC versions
+//
+
+#define FDC_NEC765     0x80      // Standard uPD765A controller
+#define FDC_82077      0x90      // Extended uPD765B controller
+
+//
 // Transfer mode
 //
 
@@ -82,6 +89,7 @@
 
 struct fdgeometry
 {
+  char *name;
   unsigned char heads;         // Heads per drive (1.44M)
   unsigned char tracks;        // Number of tracks
   unsigned char spt;           // Sectors per track
@@ -115,6 +123,9 @@ struct fdc
   struct event motor_change;           // Motor status change event
   struct dpc dpc;                      // DPC for fd interrupt
   unsigned char dor;                   // DOR register with motor status
+
+  int type;                            // FDC controller type
+  char *name;                          // FDC controller name
   
   unsigned char bufp;                  // DMA buffer page
   unsigned char bufl;                  // DMA buffer address low
@@ -138,8 +149,9 @@ struct fd
   unsigned char st0;
 };
 
-struct fdgeometry geom144 = {2, 80, 18, 0x1B}; // Drive geometry for 3 1/2" 1.44M drive
+struct fdgeometry geom144 = {"3 1/2\" 1.44M", 2, 80, 18, 0x1B};
 
+int fd_init;
 struct thread *fdmotor_task;
 struct fdc fdc;
 struct fd fddrives[NUMDRIVES];
@@ -153,7 +165,7 @@ static int fd_command(unsigned char cmd)
   int msr;
   int tmo;
 
-  for (tmo = 0;tmo < 128; tmo++) 
+  for (tmo = 0;tmo < 10000; tmo++) 
   {
     msr = _inp(FDC_MSR);
     if ((msr & 0xc0) == 0x80)
@@ -165,7 +177,7 @@ static int fd_command(unsigned char cmd)
     yield(); // delay
   }
 
-  kprintf("fd: command timeout\n");
+  if (!fd_init) kprintf("fd: command timeout\n");
   return -ETIMEOUT;
 }
 
@@ -178,14 +190,15 @@ static int fd_data()
   int msr;
   int tmo;
 
-  for (tmo = 0;tmo < 128; tmo++) 
+  for (tmo = 0;tmo < 10000; tmo++) 
   {
     msr = _inp(FDC_MSR);
-    if ((msr & 0xd0) == 0xd0) return _inp(FDC_DATA);
+    if ((msr & 0xd0) == 0xd0) return _inp(FDC_DATA) & 0xFF;
     yield(); // delay
   }
 
   // Read timeout
+  if (!fd_init) kprintf("fd: data timeout\n");
   return -ETIMEOUT;
 }
 
@@ -584,14 +597,12 @@ static void init_drive(char *devname, struct fd *fd, struct fdc *fdc, int drive,
   fd_command(CMD_SPECIFY);
   fd_command(0xdf);  // SRT = 3ms, HUT = 240ms 
   fd_command(0x02);  // HLT = 16ms, ND = 0
-
   
   dev_make(devname, &floppy_driver, NULL, fd);
 
   //fd_recalibrate(fd);
 
-  kprintf("%s: %u blks (%d KB) THS=%u/%u/%u\n", devname, 
-    fd->geom->tracks * fd->geom->heads * fd->geom->spt, 
+  kprintf("%s: %s, %d KB, THS=%u/%u/%u\n", devname, fd->geom->name,
     fd->geom->tracks * fd->geom->heads * fd->geom->spt * SECTORSIZE / K,
     fd->geom->tracks, fd->geom->heads, fd->geom->spt);
 }
@@ -599,12 +610,47 @@ static void init_drive(char *devname, struct fd *fd, struct fdc *fdc, int drive,
 void init_fd()
 {
   int i;
-  int numfd;
+  unsigned char fdtypes;
+  int first_floppy;
+  int second_floppy;
+  int version;
+  char *name;
 
-  numfd = (syspage->biosdata[0x10] >> 6) + 1;
+  fdtypes = read_cmos_reg(0x10);
+  first_floppy = (fdtypes >> 4) & 0x0F;
+  second_floppy = fdtypes & 0x0F;
+  if (!first_floppy && !second_floppy) return;
+
+  fd_init = 1;
+  if (fd_command(CMD_VERSION) < 0) return;
+  version = fd_data();
+  if (version < 0) return;
+  fd_init = 0;
+
+  switch (version)
+  {
+    case FDC_NEC765:
+      name = "NEC765 compatible";
+      break;
+
+    case FDC_82077:
+      name = "82077 compatible";
+      break;
+
+    case 0x81:
+      name = "Type 0x81";
+      break;
+
+    default:
+      kprintf("fd: unknown fdc type 0x%02x\n", version);
+      return;
+  }
 
   memset(&fdc, 0, sizeof(struct fdc));
   memset(&fddrives, 0, sizeof(struct fd) * NUMDRIVES);
+
+  fdc.type = version;
+  fdc.name = name;
 
   init_dpc(&fdc.dpc);
   init_mutex(&fdc.lock, 0);
@@ -622,10 +668,11 @@ void init_fd()
   set_interrupt_handler(INTR_FD, fd_handler, &fdc);
   enable_irq(IRQ_FD); 
 
-  if (numfd >= 1) init_drive("fd0", &fddrives[0], &fdc, 0, &geom144);
-  if (numfd >= 2) init_drive("fd1", &fddrives[1], &fdc, 1, &geom144);
-  if (numfd >= 3) init_drive("fd2", &fddrives[2], &fdc, 2, &geom144);
-  if (numfd >= 4) init_drive("fd3", &fddrives[3], &fdc, 3, &geom144);
+  kprintf("fdc: %s\n", fdc.name);
+
+  //FIXME: support other geometries: 0=unknown, 1=360K 5 1/4", 2=1.2M 5 1/4", 3=720K 3 1/2", 4=1.44M 3 1/2"
+  if (first_floppy == 0x4) init_drive("fd0", &fddrives[0], &fdc, 0, &geom144);
+  if (second_floppy == 0x4) init_drive("fd1", &fddrives[1], &fdc, 1, &geom144);
 
   fdmotor_task = create_kernel_thread(fd_motor_task, NULL, PRIORITY_NORMAL, "fdmotor");
 }

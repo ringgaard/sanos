@@ -76,6 +76,7 @@ extern struct peb *peb;
 
 void panic(char *msg);
 void exit();
+void stop(int restart);
 
 // cons.c
 

@@ -32,12 +32,18 @@ struct disk_partition
 
 struct master_boot_record 
 {
+  char bootstrap[446];
+  struct disk_partition parttab[4];
+  unsigned short signature;
+};
+
+struct boot_sector
+{
   char prolog[4];
   char label[8];
   unsigned short ldrsize;
   unsigned long ldrstart;
-  char bootstrap[428];
-  struct disk_partition parts[4];
+  char bootstrap[492];
   unsigned short signature;
 };
 

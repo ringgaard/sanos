@@ -1,13 +1,13 @@
 //
-// keyboard.h
+// kbd.h
 //
 // Copyright (c) 2001 Michael Ringgaard. All rights reserved.
 //
 // Keyboard driver
 //
 
-#ifndef KEYBOARD_H
-#define KEYBOARD_H
+#ifndef KBD_H
+#define KBD_H
 
 extern int ctrl_alt_del_enabled;
 extern int keymap;

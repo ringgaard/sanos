@@ -318,6 +318,9 @@ struct serial_status
 #define IOCTL_CTRLALTDEL_ENABLED 1025
 #define IOCTL_SET_KEYMAP         1026
 #define IOCTL_KPRINT_ENABLED     1027
+#define IOCTL_BEEP               1028
+#define IOCTL_SOUND              1029
+#define IOCTL_REBOOT             1030
 
 //
 // Critical sections

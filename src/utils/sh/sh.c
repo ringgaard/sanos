@@ -1047,6 +1047,21 @@ static void set_kprint(int enabled)
   ioctl(stdout, IOCTL_KPRINT_ENABLED, &enabled, 4);
 }
 
+static void beep()
+{
+  ioctl(1, IOCTL_BEEP, NULL, 0);
+}
+
+static void sound(int freq)
+{
+  ioctl(1, IOCTL_SOUND, &freq, 4);
+}
+
+static void reboot()
+{
+  ioctl(1, IOCTL_REBOOT, NULL, 0);
+}
+
 void shell()
 {
   char cmd[256];
@@ -1120,6 +1135,12 @@ void shell()
 	http(argc, argv);
       else if (strcmp(argv[0], "download") == 0)
 	download(argc, argv);
+      else if (strcmp(argv[0], "reboot") == 0)
+	reboot();
+      else if (strcmp(argv[0], "beep") == 0)
+	beep();
+      else if (strcmp(argv[0], "sound") == 0)
+	sound(atoi(argv[1]));
       else if (strcmp(argv[0], "test") == 0)
 	test(argc, argv);
       else

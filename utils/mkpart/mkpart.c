@@ -1,3 +1,11 @@
+//
+// mkpart.c
+//
+// Copyright (c) 2001 Michael Ringgaard. All rights reserved.
+//
+// Partition table utility
+//
+
 #include <windows.h>
 #include <stdio.h>
 

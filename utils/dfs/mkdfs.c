@@ -40,7 +40,8 @@ int doformat = 0;
 int quick = 0;
 char *source = NULL;
 char *target = "";
-int partstart = 0;
+int part = -1;
+int part_start = 0;
 
 int get_tick_count()
 {
@@ -59,7 +60,7 @@ int dev_read(devno_t devno, void *buffer, size_t count, blkno_t blkno)
 
   //printf("read block %d, %d bytes\n", blkno, count);
 
-  if (SetFilePointer((HANDLE) devno, blkno * SECTORSIZE, NULL, FILE_BEGIN) == -1) panic("unable to set file pointer");
+  if (SetFilePointer((HANDLE) devno, (blkno + part_start) * SECTORSIZE, NULL, FILE_BEGIN) == -1) panic("unable to set file pointer");
   if (!ReadFile((HANDLE) devno, buffer, count, &bytes, NULL)) panic("error reading from device");
   return count;
 }
@@ -70,7 +71,7 @@ int dev_write(devno_t devno, void *buffer, size_t count, blkno_t blkno)
 
   //printf("write block %d, %d bytes\n", blkno, count);
 
-  if (SetFilePointer((HANDLE) devno, blkno * SECTORSIZE, NULL, FILE_BEGIN) == -1) panic("unable to set file pointer");
+  if (SetFilePointer((HANDLE) devno, (blkno + part_start) * SECTORSIZE, NULL, FILE_BEGIN) == -1) panic("unable to set file pointer");
   if (!WriteFile((HANDLE) devno, buffer, count, &bytes, NULL)) panic("error writing to device");
   return count;
 }
@@ -128,6 +129,21 @@ void read_boot_sector(char *name)
   ReadFile(hfile, bootsect, SECTORSIZE, &bytes, NULL);
 
   CloseHandle(hfile);
+}
+
+void read_mbr(HANDLE hdev)
+{
+  struct master_boot_record mbr;
+  DWORD bytes;
+
+  if (SetFilePointer(hdev, 0, NULL, FILE_BEGIN) == -1) panic("unable to set file pointer");
+  if (!ReadFile(hdev, &mbr, sizeof mbr, &bytes, NULL)) panic("error reading mbr from device");
+  if (mbr.signature != MBR_SIGNATURE) panic("invalid master boot record");
+
+  part_start = mbr.parttab[part].relsect;
+  devsize = mbr.parttab[part].numsect;
+
+  printf("using partition %d, offset %d, %dK\n", part, part_start, devsize / 2);
 }
 
 void install_loader()
@@ -524,7 +540,7 @@ void usage()
   fprintf(stderr, "  -l <loader image>\n");
   fprintf(stderr, "  -s (shell)\n");
   fprintf(stderr, "  -w (wipe out device, i.e. zero all sectors first)\n");
-  fprintf(stderr, "  -p <partition start>\n");
+  fprintf(stderr, "  -p <partition>\n");
   fprintf(stderr, "  -q (quick format device)\n");
   fprintf(stderr, "  -B <block size> (default 4096)\n");
   fprintf(stderr, "  -I <inode ratio> (default 1 inode per 4K)\n");
@@ -555,7 +571,7 @@ int main(int argc, char **argv)
 	break;
 
       case 'p':
-	partstart = atoi(optarg);
+	part = atoi(optarg);
 	break;
 
       case 'i':
@@ -627,6 +643,12 @@ int main(int argc, char **argv)
     panic("unable to open device");
   }
 
+  // Read master boot record
+  if (part != -1)
+  {
+    read_mbr(hdev);
+  }
+
   // Clear device
   if (dowipe) 
   {
@@ -637,11 +659,11 @@ int main(int argc, char **argv)
   // Write boot sector
   if (bootfile) 
   {
-    struct master_boot_record *mbr = (struct master_boot_record *) bootsect;
+    struct boot_sector *bsect = (struct boot_sector *) bootsect;
 
     printf("Writing boot sector %s\n", bootfile);
     read_boot_sector(bootfile);
-    mbr->ldrstart += partstart;
+    bsect->ldrstart += part_start;
     dev_write((devno_t) hdev, bootsect, SECTORSIZE, 0);
   }
 
