@@ -7,6 +7,7 @@
 //
 
 #include <os/krnl.h>
+#include <os/version.h>
 
 #define KERNEL_CONFIG  "/etc/krnl.ini"
 

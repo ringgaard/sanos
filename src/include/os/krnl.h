@@ -20,7 +20,6 @@
 #include <inifile.h>
 #include <moddb.h>
 
-#include <os/version.h>
 #include <os/tss.h>
 #include <os/seg.h>
 #include <os/fpu.h>
