@@ -95,6 +95,31 @@
 					Outputs="..\bin\cdboot"/>
 			</FileConfiguration>
 		</File>
+		<File
+			RelativePath="..\src\sys\boot\netboot.asm">
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Assemble netboot.asm"
+					CommandLine="if not exist ..\dbg\obj\boot mkdir ..\dbg\obj\boot
+..\tools\nasmw.exe -f bin ..\src\sys\boot\netboot.asm -o ..\dbg\bin\netboot  -l ..\dbg\obj\boot\netboot.lst
+"
+					AdditionalDependencies="..\src\sys\boot\netboot.asm;"
+					Outputs="..\dbg\bin\netboot"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Assemble netboot.asm"
+					CommandLine="if not exist ..\obj\boot mkdir ..\obj\boot
+..\tools\nasmw.exe -f bin ..\src\sys\boot\netboot.asm -o ..\bin\netboot  -l ..\obj\boot\netboot.lst
+"
+					AdditionalDependencies="..\src\sys\boot\netboot.asm;"
+					Outputs="..\bin\netboot"/>
+			</FileConfiguration>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
