@@ -64,6 +64,8 @@ struct vad
 };
 
 struct vad vads[MAX_VADS];
+PTOP_LEVEL_EXCEPTION_FILTER topexcptfilter = NULL;
+void (*old_globalhandler)(int signum, struct siginfo *info);
 
 void convert_from_win32_context(struct context *ctxt, CONTEXT *ctx)
 {
@@ -132,6 +134,76 @@ void convert_to_win32_context(struct context *ctxt, CONTEXT *ctx)
   ctx->SegEs = ctxt->es;
   ctx->SegFs = 0;
   ctx->SegGs = 0;
+}
+
+void win32_globalhandler(int signum, struct siginfo *info)
+{
+  CONTEXT ctxt;
+  EXCEPTION_RECORD xcptrec;
+  EXCEPTION_POINTERS ep;
+  //LONG action;
+
+  syslog(LOG_DEBUG, "kernel32: caught signal %d\n", signum);
+
+  ep.ContextRecord = &ctxt;
+  ep.ExceptionRecord = &xcptrec;
+
+  convert_to_win32_context(&info->ctxt, &ctxt);
+  
+  switch (info->ctxt.traptype)
+  {
+    case INTR_DIV:
+      xcptrec.ExceptionCode = EXCEPTION_INT_DIVIDE_BY_ZERO;
+      break;
+
+    case INTR_OVFL:
+      xcptrec.ExceptionCode = EXCEPTION_INT_OVERFLOW;
+      break;
+
+    case INTR_BOUND:
+      xcptrec.ExceptionCode = EXCEPTION_ARRAY_BOUNDS_EXCEEDED;
+      break;
+
+    case INTR_INSTR:
+      xcptrec.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION;
+      break;
+
+    case INTR_STACK:
+      xcptrec.ExceptionCode = EXCEPTION_STACK_OVERFLOW;
+      break;
+
+    case INTR_PGFLT:
+      xcptrec.ExceptionCode = EXCEPTION_ACCESS_VIOLATION;
+      xcptrec.NumberParameters = 2;
+      xcptrec.ExceptionInformation[0] = (void *) ((info->ctxt.errcode & 2) ? 1 : 0);
+      xcptrec.ExceptionInformation[1] = info->addr;
+      break;
+
+    case INTR_ALIGN:
+      xcptrec.ExceptionCode = EXCEPTION_DATATYPE_MISALIGNMENT;
+      break;
+
+    default:
+      // Unknown exception, dispatch signal to native handler
+      old_globalhandler(signum, info);
+  }
+
+  xcptrec.ExceptionAddress = (void *) info->ctxt.eip;
+
+  // TODO: run through exception EXCEPTION_REGISTRATION chain in tib()->except
+  // and try each handler. Each handler can return:
+  //
+  // ExceptionContinueExecution
+  // ExceptionContinueSearch,
+  //
+
+  //action = topexcptfilter(&ep);
+  //if (action == EXCEPTION_EXECUTE_HANDLER) syslog(LOG_WARNING, "kernel32: unable to execute exception handler");
+  //if (action == EXCEPTION_CONTINUE_SEARCH) syslog(LOG_WARNING, "kernel32: unable to execute exception continue search");
+
+  convert_from_win32_context(&info->ctxt, &ctxt);
+
+  old_globalhandler(signum, info);
 }
 
 BOOL WINAPI CloseHandle
@@ -1432,7 +1504,7 @@ BOOL WINAPI SetFileAttributesA
 )
 {
   TRACE("SetFileAttributesA");
-  syslog(LOG_DEBUG, "warning: SetFileAttributesA(%s,%08x) not implemented, ignored\n", lpFileName, dwFileAttributes);
+  if (dwFileAttributes != 0) syslog(LOG_DEBUG, "warning: SetFileAttributesA(%s,%08x) not implemented, ignored\n", lpFileName, dwFileAttributes);
   return TRUE;
 }
 
@@ -1563,9 +1635,12 @@ LPTOP_LEVEL_EXCEPTION_FILTER WINAPI SetUnhandledExceptionFilter
   LPTOP_LEVEL_EXCEPTION_FILTER lpTopLevelExceptionFilter 
 )
 {
+  LPTOP_LEVEL_EXCEPTION_FILTER oldfilter = topexcptfilter;
+
   TRACE("SetUnhandledExceptionFilter");
-  syslog(LOG_DEBUG, "warning: SetUnhandledExceptionFilter not implemented, ignored\n");
-  return NULL;
+  
+  topexcptfilter = lpTopLevelExceptionFilter;
+  return oldfilter;
 }
 
 VOID WINAPI Sleep
@@ -1802,5 +1877,9 @@ int WINAPI WideCharToMultiByte
 
 int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
 {
+  // Register global WIN32 handler for all signals
+  old_globalhandler = peb->globalhandler;
+  peb->globalhandler = win32_globalhandler;
+
   return TRUE;
 }

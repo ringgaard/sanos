@@ -71,6 +71,7 @@ typedef unsigned char BYTE;
 typedef unsigned short WORD;
 typedef unsigned long DWORD;
 typedef unsigned int UINT;
+typedef unsigned long ULONG;
 typedef int INT;
 typedef long LONG;
 typedef unsigned __int64 LONGLONG;
@@ -109,7 +110,6 @@ typedef void *LPPROCESS_INFORMATION;
 typedef void *LPTIME_ZONE_INFORMATION;
 typedef void *PINPUT_RECORD;
 typedef void *PHANDLER_ROUTINE;
-typedef void *LPTOP_LEVEL_EXCEPTION_FILTER;
 typedef void *LPWSAOVERLAPPED;
 typedef void *LPWSAOVERLAPPED_COMPLETION_ROUTINE;
 typedef void *PSID;
@@ -204,6 +204,77 @@ typedef struct _CONTEXT
 
 typedef CONTEXT *PCONTEXT;
 typedef CONTEXT *LPCONTEXT;
+
+#define EXCEPTION_DATATYPE_MISALIGNMENT     0x80000002
+#define EXCEPTION_ACCESS_VIOLATION          0xC0000005
+#define EXCEPTION_ILLEGAL_INSTRUCTION       0xC000001D
+#define EXCEPTION_ARRAY_BOUNDS_EXCEEDED     0xC000008C
+#define EXCEPTION_INT_DIVIDE_BY_ZERO        0xC0000094
+#define EXCEPTION_INT_OVERFLOW              0xC0000095
+#define EXCEPTION_STACK_OVERFLOW            0xC00000FD
+
+#define EXCEPTION_EXECUTE_HANDLER           1
+#define EXCEPTION_CONTINUE_SEARCH           0
+#define EXCEPTION_CONTINUE_EXECUTION        -1
+
+#define EXCEPTION_NONCONTINUABLE     0x1    // Noncontinuable exception
+#define EXCEPTION_MAXIMUM_PARAMETERS 15     // maximum number of exception parameters
+
+typedef struct _EXCEPTION_RECORD 
+{
+  DWORD ExceptionCode;
+  DWORD ExceptionFlags;
+  struct _EXCEPTION_RECORD *ExceptionRecord;
+  PVOID ExceptionAddress;
+  DWORD NumberParameters;
+  ULONG *ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
+} EXCEPTION_RECORD;
+
+typedef EXCEPTION_RECORD *PEXCEPTION_RECORD;
+
+typedef struct _EXCEPTION_POINTERS
+{
+  PEXCEPTION_RECORD ExceptionRecord;
+  PCONTEXT ContextRecord;
+} EXCEPTION_POINTERS, *PEXCEPTION_POINTERS;
+
+typedef LONG (__stdcall *PTOP_LEVEL_EXCEPTION_FILTER)(struct _EXCEPTION_POINTERS *ExceptionInfo);
+typedef PTOP_LEVEL_EXCEPTION_FILTER LPTOP_LEVEL_EXCEPTION_FILTER;
+
+typedef enum _EXCEPTION_DISPOSITION 
+{
+  ExceptionContinueExecution,
+  ExceptionContinueSearch,
+  ExceptionNestedException,
+  ExceptionCollidedUnwind
+} EXCEPTION_DISPOSITION;
+
+EXCEPTION_DISPOSITION __cdecl _except_handler
+(
+  struct _EXCEPTION_RECORD *ExceptionRecord,
+  void *EstablisherFrame,
+  struct _CONTEXT *ContextRecord,
+  void *DispatcherContext
+);
+
+typedef struct _SCOPETABLE
+{
+  DWORD previousTryLevel;
+  DWORD lpfnFilter;
+  DWORD lpfnHandler;
+} SCOPETABLE, *PSCOPETABLE;
+
+typedef struct _EXCEPTION_REGISTRATION PEXCEPTION_REGISTRATION;
+
+struct _EXCEPTION_REGISTRATION
+{
+  struct _EXCEPTION_REGISTRATION *prev;
+  void (*handler)(PEXCEPTION_RECORD, PEXCEPTION_REGISTRATION, PCONTEXT, PEXCEPTION_RECORD);
+  struct _SCOPETABLE *scopetable;
+  int trylevel;
+  int _ebp;
+  PEXCEPTION_POINTERS xpointers;
+};
 
 typedef union _LARGE_INTEGER 
 { 
