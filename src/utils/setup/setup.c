@@ -443,7 +443,7 @@ int copy_dir(char *srcdir, char *dstdir)
   struct copyitem *next;
   int dir;
   struct dirent dirp;
-  struct stat buf;
+  struct stat64 buf;
   char srcfn[MAXPATH];
   char dstfn[MAXPATH];
   int rc;
@@ -467,7 +467,7 @@ int copy_dir(char *srcdir, char *dstdir)
       rc = stat(srcfn, &buf);
       if (rc < 0) return rc;
 
-      if ((buf.mode & S_IFMT) == S_IFDIR)
+      if ((buf.st_mode & S_IFMT) == S_IFDIR)
       {
         printf("Creating directory %s\n", dstfn);
 	rc = mkdir(dstfn);
@@ -507,7 +507,7 @@ int docopy(struct section *sect)
   struct property *prop;
   char *srcfn;
   char *dstfn;
-  struct stat buf;
+  struct stat64 buf;
   int rc;
 
   prop = sect->properties;
@@ -521,7 +521,7 @@ int docopy(struct section *sect)
     rc = stat(srcfn, &buf);
     if (rc < 0) return rc;
 
-    if ((buf.mode & S_IFMT) == S_IFDIR)
+    if ((buf.st_mode & S_IFMT) == S_IFDIR)
     {
       printf("Creating directory %s\n", dstfn);
       rc = mkdir(dstfn);

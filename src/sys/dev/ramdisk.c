@@ -91,7 +91,7 @@ int __declspec(dllexport) ramdisk(struct unit *unit, char *opts)
   struct ramdisk *rd;
   char devname[DEVNAMELEN];
   int size;
-  devno_t devno;
+  dev_t devno;
 
   get_option(opts, "devname", devname, DEVNAMELEN, "ramdisk#");
   size = get_num_option(opts, "size", 1440) * K;

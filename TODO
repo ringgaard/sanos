@@ -3,14 +3,16 @@ TODO for sanos
 
 - Implement more complete ANSI C runtime library
     x Modify signal() and raise to conform to ANSI standard (remove siginfo parameter)
-    x Modify io.h to call os routines (stat() and _S_IFDIR and _S_IFREG flags)
+    x Modify io.h to call os routines (stat() and S_IFDIR and S_IFREG flags)
     x Implement remaining time.h routines
     - Add new stdio.h implementation with buffering and new output() routine
     - Add support for O_TEXT and O_BINARY flags in read() and write()
-    - Rename stat fields to standard names (st_*)
+    x Rename stat fields to standard names (st_*)
     x Implement pmode for creat()
     x Implement sharing flags and sopen()
- 
+    - Support for stat64(), fstat64(), tell64(), lseek64() and chsize64()
+    x Change pos in struct file to off64_t
+
     x use tib for all static buffers to provide reentrant library
     x implement _r methods for reentrant version that does not use static buffers
 
@@ -36,7 +38,7 @@ TODO for sanos
 
 - What happens if a file is closed while being in read() or write() on another thread?
 
-- What happens if a tcp pcb is freed in tcp_input() while sending segments on another soket in tcp_output()?
+- What happens if a tcp pcb is freed in tcp_input() while sending segments on another socket in tcp_output()?
 
 - Scheduler enhancements
     - Change from 8 to 32 priority levels
@@ -274,3 +276,8 @@ CHANGES
 
 - File sharing, permission mode and additional open flags (O_TEMPORARY, O_SHORT_LIVED, O_DIRECT,
   O_SEQUENTIAL, O_RANDOM) implemented for smbfs.
+
+- tell() did not correctly return the file position. It just flushed the file. This problem
+  has been fixed.
+
+- vfs and smbfs now supports large files (>2GB)

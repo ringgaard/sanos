@@ -102,7 +102,7 @@
 
 // start.c
 
-krnlapi extern devno_t bootdev;
+krnlapi extern dev_t bootdev;
 krnlapi extern struct section *krnlcfg;
 krnlapi extern struct peb *peb;
 
@@ -126,7 +126,7 @@ int pipe(struct file **readpipe, struct file **writepipe);
 
 // cons.c
 
-extern devno_t consdev;
+extern dev_t consdev;
 
 krnlapi void kprintf(const char *fmt, ...);
 

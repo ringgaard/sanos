@@ -545,16 +545,16 @@ void install_drivers()
   install_legacy_drivers();
 }
 
-struct dev *device(devno_t devno)
+struct dev *device(dev_t devno)
 {
   if (devno < 0 || devno >= num_devs) return NULL;
   return devtab[devno];
 }
 
-devno_t dev_make(char *name, struct driver *driver, struct unit *unit, void *privdata)
+dev_t dev_make(char *name, struct driver *driver, struct unit *unit, void *privdata)
 {
   struct dev *dev;
-  devno_t devno;
+  dev_t devno;
   char *p;
   unsigned int n, m;
   int exists;
@@ -603,9 +603,9 @@ devno_t dev_make(char *name, struct driver *driver, struct unit *unit, void *pri
   return devno;
 }
 
-devno_t dev_open(char *name)
+dev_t dev_open(char *name)
 {
-  devno_t devno;
+  dev_t devno;
 
   for (devno = 0; devno < num_devs; devno++)
   {
@@ -619,7 +619,7 @@ devno_t dev_open(char *name)
   return NODEV;
 }
 
-int dev_close(devno_t devno)
+int dev_close(dev_t devno)
 {
   if (devno < 0 || devno >= num_devs) return -ENODEV;
   if (devtab[devno]->refcnt == 0) return -EPERM;
@@ -627,7 +627,7 @@ int dev_close(devno_t devno)
   return 0;
 }
 
-int dev_ioctl(devno_t devno, int cmd, void *args, size_t size)
+int dev_ioctl(dev_t devno, int cmd, void *args, size_t size)
 {
   struct dev *dev;
 
@@ -638,7 +638,7 @@ int dev_ioctl(devno_t devno, int cmd, void *args, size_t size)
   return dev->driver->ioctl(dev, cmd, args, size);
 }
 
-int dev_read(devno_t devno, void *buffer, size_t count, blkno_t blkno)
+int dev_read(dev_t devno, void *buffer, size_t count, blkno_t blkno)
 {
   struct dev *dev;
 
@@ -649,7 +649,7 @@ int dev_read(devno_t devno, void *buffer, size_t count, blkno_t blkno)
   return dev->driver->read(dev, buffer, count, blkno);
 }
 
-int dev_write(devno_t devno, void *buffer, size_t count, blkno_t blkno)
+int dev_write(dev_t devno, void *buffer, size_t count, blkno_t blkno)
 {
   struct dev *dev;
 
@@ -660,7 +660,7 @@ int dev_write(devno_t devno, void *buffer, size_t count, blkno_t blkno)
   return dev->driver->write(dev, buffer, count, blkno);
 }
 
-int dev_attach(devno_t devno, struct netif *netif, int (*receive)(struct netif *netif, struct pbuf *p))
+int dev_attach(dev_t devno, struct netif *netif, int (*receive)(struct netif *netif, struct pbuf *p))
 {
   struct dev *dev;
 
@@ -673,7 +673,7 @@ int dev_attach(devno_t devno, struct netif *netif, int (*receive)(struct netif *
   return dev->driver->attach(dev, &netif->hwaddr);
 }
 
-int dev_detach(devno_t devno)
+int dev_detach(dev_t devno)
 {
   struct dev *dev;
   int rc;
@@ -692,7 +692,7 @@ int dev_detach(devno_t devno)
   return rc;
 }
 
-int dev_transmit(devno_t devno, struct pbuf *p)
+int dev_transmit(dev_t devno, struct pbuf *p)
 {
   struct dev *dev;
 
@@ -703,7 +703,7 @@ int dev_transmit(devno_t devno, struct pbuf *p)
   return dev->driver->transmit(dev, p);
 }
 
-int dev_receive(devno_t devno, struct pbuf *p)
+int dev_receive(dev_t devno, struct pbuf *p)
 {
   struct dev *dev;
 
@@ -789,7 +789,7 @@ static int units_proc(struct proc_file *pf, void *arg)
 
 static int devices_proc(struct proc_file *pf, void *arg)
 {
-  devno_t devno;
+  dev_t devno;
   struct dev *dev;
 
   pprintf(pf, "devno name     driver           type   unit\n");

@@ -52,9 +52,9 @@ typedef long time_t;
 typedef unsigned int ino_t;
 #endif
 
-#ifndef _DEVNO_T_DEFINED
-#define _DEVNO_T_DEFINED
-typedef unsigned int devno_t;
+#ifndef _DEV_T_DEFINED
+#define _DEV_T_DEFINED
+typedef unsigned int dev_t;
 #endif
 
 #ifndef _HANDLE_T_DEFINED
@@ -65,24 +65,19 @@ typedef int handle_t;
 #ifndef _STAT_DEFINED
 #define _STAT_DEFINED
 
-struct stat
+struct stat64
 {
-  int mode;
-  ino_t ino;
-  int nlink;
-  devno_t devno;
-  time_t atime;
-  time_t mtime;
-  time_t ctime;
-  union
-  {
-    struct
-    {
-      unsigned long size_low;
-      unsigned long size_high;
-    } quad;
-    unsigned __int64 size;
-  };
+  dev_t st_dev;
+  ino_t st_ino;
+  unsigned short st_mode;
+  short st_nlink;
+  short st_uid;
+  short st_gid;
+  dev_t st_rdev;
+  off64_t st_size;
+  time_t st_atime;
+  time_t st_mtime;
+  time_t st_ctime;
 };
 
 #endif
@@ -108,7 +103,7 @@ struct stat
 #define S_ISBLK(m)	(((m) & S_IFMT) == S_IFBLK)
 #define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
 
-osapi int fstat(handle_t f, struct stat *buffer);
-osapi int stat(const char *name, struct stat *buffer);
+osapi int fstat(handle_t f, struct stat64 *buffer);
+osapi int stat(const char *name, struct stat64 *buffer);
 
 #endif

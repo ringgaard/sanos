@@ -885,7 +885,7 @@ struct ndis_adapter
   struct unit *unit;
   struct ndis_driver *driver;
   ndis_handle_t context;
-  devno_t devno;
+  dev_t devno;
   int adapterno;
 };
 

@@ -51,7 +51,7 @@ struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr,
 {
   struct netif *netif;
   struct dhcp_state *state;
-  devno_t devno;
+  dev_t devno;
 
   // Open device
   devno = dev_open(devname);
@@ -91,7 +91,7 @@ struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr,
 
 int register_ether_netifs()
 {
-  devno_t devno;
+  dev_t devno;
   struct dev *dev;
   int rc;
   struct ip_addr noaddr;
@@ -230,7 +230,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
     q = arp_query(netif, &netif->hwaddr, queryaddr);
     if (q != NULL) 
     {
-      err = dev_transmit((devno_t) netif->state, q);
+      err = dev_transmit((dev_t) netif->state, q);
       if (err < 0)
       {
         kprintf("ether: error %d sending arp packet\n", err);
@@ -278,7 +278,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   }
   else
   {
-    err = dev_transmit((devno_t) netif->state, p);
+    err = dev_transmit((dev_t) netif->state, p);
     if (err < 0)
     {
       kprintf("ether: error %d sending packet\n", err);
@@ -361,7 +361,7 @@ void ether_dispatcher(void *arg)
 	  p = arp_arp_input(netif, &netif->hwaddr, p);
 	  if (p != NULL) 
 	  {
-            if (dev_transmit((devno_t) netif->state, p) < 0) pbuf_free(p);
+            if (dev_transmit((dev_t) netif->state, p) < 0) pbuf_free(p);
 	  }
 	  break;
 

@@ -368,6 +368,12 @@
 typedef __int64 smb_size;
 typedef __int64 smb_time;
 
+struct smb_pos
+{
+  unsigned long low_part;
+  unsigned long high_part;
+};
+
 //
 // SMB ANDX structure
 //
@@ -918,7 +924,7 @@ struct smb_share;
 struct smb_dentry
 {
   char path[MAXPATH];
-  struct stat statbuf;
+  struct stat64 statbuf;
 };
 
 //
@@ -929,7 +935,7 @@ struct smb_file
 {
   unsigned short fid;
   unsigned long attrs;
-  struct stat statbuf;
+  struct stat64 statbuf;
 };
 
 //
@@ -996,7 +1002,7 @@ int smb_errno(struct smb *smb);
 
 // smbcache.c
 
-void smb_add_to_cache(struct smb_share *share, char *path, char *filename, struct stat *statbuf);
+void smb_add_to_cache(struct smb_share *share, char *path, char *filename, struct stat64 *statbuf);
 struct smb_dentry *smb_find_in_cache(struct smb_share *share, char *path);
 void smb_clear_cache(struct smb_share *share);
 

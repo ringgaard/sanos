@@ -225,7 +225,7 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
       }
       ethhdr->type = htons(ETHTYPE_IP);
 
-      err = dev_transmit((devno_t) entry->netif->state, p);
+      err = dev_transmit((dev_t) entry->netif->state, p);
       if (err < 0)
       {
 	kprintf("arp: error %d in delayed transmit\n", err);

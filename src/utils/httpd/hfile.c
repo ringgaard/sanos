@@ -78,7 +78,7 @@ int ls(struct httpd_connection *conn)
   int dir;
   int rc;
   int urllen;
-  struct stat statbuf;
+  struct stat64 statbuf;
   struct dirent dirp;
   char path[MAXPATH];
   char buf[32];
@@ -113,39 +113,39 @@ int ls(struct httpd_connection *conn)
     rc = stat(path, &statbuf);
     if (rc < 0) return rc;
 
-    tm = gmtime(&statbuf.mtime);
+    tm = gmtime(&statbuf.st_mtime);
     if (!tm) return -EINVAL;
 
-    if ((statbuf.mode & S_IFMT) == S_IFDIR) 
+    if ((statbuf.st_mode & S_IFMT) == S_IFDIR) 
       httpd_send(conn->rsp, "<IMG SRC=\"/icons/folder.gif\"> ", -1);
     else
       httpd_send(conn->rsp, "<IMG SRC=\"/icons/file.gif\"> ", -1);
 
     httpd_send(conn->rsp, "<A HREF=\"", -1);
     httpd_send(conn->rsp, dirp.name, dirp.namelen);
-    if ((statbuf.mode & S_IFMT) == S_IFDIR) httpd_send(conn->rsp, "/", -1);
+    if ((statbuf.st_mode & S_IFMT) == S_IFDIR) httpd_send(conn->rsp, "/", -1);
     httpd_send(conn->rsp, "\">", -1);
 
     httpd_send(conn->rsp, dirp.name, dirp.namelen);
-    if ((statbuf.mode & S_IFMT) == S_IFDIR) httpd_send(conn->rsp, "/", -1);
+    if ((statbuf.st_mode & S_IFMT) == S_IFDIR) httpd_send(conn->rsp, "/", -1);
     httpd_send(conn->rsp, "</A>", -1);
-    if ((statbuf.mode & S_IFMT) != S_IFDIR) httpd_send(conn->rsp, " ", -1);
+    if ((statbuf.st_mode & S_IFMT) != S_IFDIR) httpd_send(conn->rsp, " ", -1);
 
     if (dirp.namelen < 32) httpd_send(conn->rsp, "                                        ", 32 - dirp.namelen);
 
     strftime(buf, 32, "%d-%b-%Y %H:%M:%S", tm);
     httpd_send(conn->rsp, buf, -1);
 
-    if ((statbuf.mode & S_IFMT) != S_IFDIR)
+    if ((statbuf.st_mode & S_IFMT) != S_IFDIR)
     {
-      if (statbuf.quad.size_high == 0 && statbuf.quad.size_low < 1*K)
-	sprintf(buf, "%8d B", statbuf.quad.size_low);
-      else if (statbuf.quad.size_high == 0 && statbuf.quad.size_low < 1*M)
-	sprintf(buf, "%8d KB", statbuf.quad.size_low / K);
-      else if (statbuf.quad.size_high == 0)
-	sprintf(buf, "%8d MB", statbuf.quad.size_low / M);
+      if (statbuf.st_size < 1*K)
+	sprintf(buf, "%8d B", (int) statbuf.st_size);
+      else if (statbuf.st_size < 1*M)
+	sprintf(buf, "%8d KB", (int) (statbuf.st_size / K));
+      else if (statbuf.st_size < 1073741824i64)
+	sprintf(buf, "%8d MB", (int) (statbuf.st_size / M));
       else
-	sprintf(buf, "%8d GB", (statbuf.quad.size_high << 2) | (statbuf.quad.size_low >> 30));
+	sprintf(buf, "%8d GB", (int) (statbuf.st_size / 1073741824i64));
 
       httpd_send(conn->rsp, buf, -1);
     }
@@ -167,7 +167,7 @@ int httpd_file_handler(struct httpd_connection *conn)
 {
   int rc;
   int fd;
-  struct stat statbuf;
+  struct stat64 statbuf;
   char *filename;
   char buf[MAXPATH];
 
@@ -180,7 +180,7 @@ int httpd_file_handler(struct httpd_connection *conn)
   rc = stat(filename, &statbuf);
   if (rc < 0) return httpd_return_file_error(conn, rc);
 
-  if ((statbuf.mode & S_IFMT) == S_IFDIR)
+  if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
   {
     int urllen = strlen(conn->req->decoded_url);
 
@@ -214,16 +214,16 @@ int httpd_file_handler(struct httpd_connection *conn)
       }
       else
       {
-	if ((statbuf.mode & S_IFMT) == S_IFDIR) return 500;
+	if ((statbuf.st_mode & S_IFMT) == S_IFDIR) return 500;
 	filename = buf;
       }
     }
   }
 
-  if ((statbuf.mode & S_IFMT) == S_IFREG)
+  if ((statbuf.st_mode & S_IFMT) == S_IFREG)
   {
-    conn->rsp->content_length = statbuf.quad.size_low;
-    conn->rsp->last_modified = statbuf.mtime;
+    conn->rsp->content_length = (int) statbuf.st_size;
+    conn->rsp->last_modified = statbuf.st_mtime;
     conn->rsp->content_type = httpd_get_mimetype(conn->server, get_extension(filename));
 
     if (conn->rsp->last_modified <= conn->req->if_modified_since)

@@ -104,7 +104,7 @@ typedef struct bufferdesc
 
 struct sis900_private 
 {
-  devno_t devno;                        // Device number
+  dev_t devno;                          // Device number
   struct dev *dev;                      // Device block
 
   unsigned long iobase;		        // Configured I/O base

@@ -92,7 +92,7 @@ struct file
   struct fs *fs;
   int flags;
   int mode;
-  loff_t pos;
+  off64_t pos;
   void *data;
   char *path;
 };
@@ -118,15 +118,15 @@ struct fsops
   int (*write)(struct file *filp, void *data, size_t size);
   int (*ioctl)(struct file *filp, int cmd, void *data, size_t size);
 
-  loff_t (*tell)(struct file *filp);
-  loff_t (*lseek)(struct file *filp, loff_t offset, int origin);
-  int (*chsize)(struct file *filp, loff_t size);
+  off64_t (*tell)(struct file *filp);
+  off64_t (*lseek)(struct file *filp, off64_t offset, int origin);
+  int (*chsize)(struct file *filp, off64_t size);
 
   int (*futime)(struct file *filp, struct utimbuf *times);
   int (*utime)(struct fs *fs, char *name, struct utimbuf *times);
 
-  int (*fstat)(struct file *filp, struct stat *buffer);
-  int (*stat)(struct fs *fs, char *name, struct stat *buffer);
+  int (*fstat)(struct file *filp, struct stat64 *buffer);
+  int (*stat)(struct fs *fs, char *name, struct stat64 *buffer);
 
   int (*mkdir)(struct fs *fs, char *name);
   int (*rmdir)(struct fs *fs, char *name);
@@ -171,15 +171,15 @@ krnlapi int ioctl(struct file *filp, int cmd, void *data, size_t size);
 krnlapi int readv(struct file *filp, struct iovec *iov, int count);
 krnlapi int writev(struct file *filp, struct iovec *iov, int count);
 
-krnlapi loff_t tell(struct file *filp);
-krnlapi loff_t lseek(struct file *filp, loff_t offset, int origin);
-krnlapi int chsize(struct file *filp, loff_t size);
+krnlapi off64_t tell(struct file *filp);
+krnlapi off64_t lseek(struct file *filp, off64_t offset, int origin);
+krnlapi int chsize(struct file *filp, off64_t size);
 
 krnlapi int futime(struct file *filp, struct utimbuf *times);
 krnlapi int utime(char *name, struct utimbuf *times);
 
-krnlapi int fstat(struct file *filp, struct stat *buffer);
-krnlapi int stat(char *name, struct stat *buffer);
+krnlapi int fstat(struct file *filp, struct stat64 *buffer);
+krnlapi int stat(char *name, struct stat64 *buffer);
 
 krnlapi int chdir(char *name);
 krnlapi int mkdir(char *name);

@@ -292,7 +292,7 @@ struct nic
   unsigned int cur_rx, dirty_rx;           // The next free ring entry
   long last_rx_time;                       // Last Rx, in ticks, to handle Rx hang
 
-  devno_t devno;                           // Device number
+  dev_t devno;                             // Device number
   struct dev *dev;                         // Device block
   unsigned short iobase;		   // Configured I/O base
   unsigned short irq;		           // Configured IRQ

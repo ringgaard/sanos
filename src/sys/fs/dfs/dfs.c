@@ -100,7 +100,7 @@ int dfs_utime(struct fs *fs, char *name, struct utimbuf *times)
   return 0;
 }
 
-int dfs_stat(struct fs *fs, char *name, struct stat *buffer)
+int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
 {
   ino_t ino;
   struct inode *inode;
@@ -116,21 +116,21 @@ int dfs_stat(struct fs *fs, char *name, struct stat *buffer)
 
   if (buffer)
   {
+    memset(buffer, 0, sizeof(struct stat64));
+
     if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY) 
-      buffer->mode = S_IFDIR | S_IREAD | S_IEXEC;
+      buffer->st_mode = S_IFDIR | S_IREAD;
     else
-      buffer->mode = S_IFREG | S_IREAD | S_IWRITE | S_IEXEC;
+      buffer->st_mode = S_IFREG | S_IREAD | S_IWRITE | S_IEXEC;
 
-    buffer->ino = ino;
-    buffer->nlink = inode->desc->linkcount;
-    buffer->devno = NODEV;
+    buffer->st_ino = ino;
+    buffer->st_nlink = inode->desc->linkcount;
+    buffer->st_dev = NODEV;
 
-    buffer->atime = time(NULL);
-    buffer->mtime = inode->desc->mtime;
-    buffer->ctime = inode->desc->ctime;
-  
-    buffer->quad.size_low = inode->desc->size;
-    buffer->quad.size_high = 0;
+    buffer->st_atime = time(NULL);
+    buffer->st_mtime = inode->desc->mtime;
+    buffer->st_ctime = inode->desc->ctime;
+    buffer->st_size = inode->desc->size;
   }
 
   release_inode(inode);

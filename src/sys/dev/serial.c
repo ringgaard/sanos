@@ -661,7 +661,7 @@ struct driver serial_driver =
 static void init_serial_port(char *devname, int iobase, int irq, struct unit *unit)
 {
   struct serial_port *sp;
-  devno_t devno;
+  dev_t devno;
 
   sp = (struct serial_port *) kmalloc(sizeof(struct serial_port));
   memset(sp, 0, sizeof(struct serial_port));

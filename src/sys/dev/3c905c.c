@@ -106,7 +106,7 @@ struct nic
   struct sem tx_sem;                    // Semaphore for tx ring
   int tx_size;                          // Number of active entries in transmit list
 
-  devno_t devno;                        // Device number
+  dev_t devno;                          // Device number
   unsigned long deviceid;               // PCI device id
 
   unsigned short iobase;		// Configured I/O base

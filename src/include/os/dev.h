@@ -223,19 +223,19 @@ krnlapi struct unit *lookup_unit_by_class(struct unit *start, unsigned long clas
 
 krnlapi struct board *lookup_board(struct board *board_tbl, struct unit *unit);
 
-krnlapi struct dev *device(devno_t devno);
+krnlapi struct dev *device(dev_t devno);
 
-krnlapi devno_t dev_make(char *name, struct driver *driver, struct unit *unit, void *privdata);
-krnlapi devno_t dev_open(char *name);
-krnlapi int dev_close(devno_t devno);
+krnlapi dev_t dev_make(char *name, struct driver *driver, struct unit *unit, void *privdata);
+krnlapi dev_t dev_open(char *name);
+krnlapi int dev_close(dev_t devno);
 
-krnlapi int dev_ioctl(devno_t devno, int cmd, void *args, size_t size);
-krnlapi int dev_read(devno_t devno, void *buffer, size_t count, blkno_t blkno);
-krnlapi int dev_write(devno_t devno, void *buffer, size_t count, blkno_t blkno);
+krnlapi int dev_ioctl(dev_t devno, int cmd, void *args, size_t size);
+krnlapi int dev_read(dev_t devno, void *buffer, size_t count, blkno_t blkno);
+krnlapi int dev_write(dev_t devno, void *buffer, size_t count, blkno_t blkno);
 
-krnlapi int dev_attach(devno_t devno, struct netif *netif, int (*receive)(struct netif *netif, struct pbuf *p));
-krnlapi int dev_detach(devno_t devno);
-krnlapi int dev_transmit(devno_t devno, struct pbuf *p);
-krnlapi int dev_receive(devno_t devno, struct pbuf *p);
+krnlapi int dev_attach(dev_t dev, struct netif *netif, int (*receive)(struct netif *netif, struct pbuf *p));
+krnlapi int dev_detach(dev_t devno);
+krnlapi int dev_transmit(dev_t devno, struct pbuf *p);
+krnlapi int dev_receive(dev_t devno, struct pbuf *p);
 
 #endif

@@ -241,7 +241,7 @@ unsigned long param[4][4] =
 
 struct nic 
 {
-  devno_t devno;                        // Device number
+  dev_t devno;                          // Device number
   struct dev *dev;                      // Device block
 
   unsigned short iobase;		// Configured I/O base

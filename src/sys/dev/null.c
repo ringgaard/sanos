@@ -33,7 +33,7 @@
 
 #include <os/krnl.h>
 
-devno_t nulldev = NODEV;
+dev_t nulldev = NODEV;
 
 static int null_ioctl(struct dev *dev, int cmd, void *args, size_t size)
 {

@@ -109,14 +109,19 @@ typedef void *hmodule_t;
 typedef unsigned int ino_t;
 #endif
 
-#ifndef _DEVNO_T_DEFINED
-#define _DEVNO_T_DEFINED
-typedef unsigned int devno_t;
+#ifndef _DEV_T_DEFINED
+#define _DEV_T_DEFINED
+typedef unsigned int dev_t;
 #endif
 
 #ifndef _LOFF_T_DEFINED
 #define _LOFF_T_DEFINED
-typedef unsigned int loff_t;
+typedef long loff_t;
+#endif
+
+#ifndef _OFF64_T_DEFINED
+#define _OFF64_T_DEFINED
+typedef __int64 off64_t;
 #endif
 
 #ifndef _BLKNO_T_DEFINED
@@ -357,7 +362,7 @@ struct section;
 #define EMFILE          24               // Too many files open
 //#define ENOTTY          25               // Inappropriate ioctl for device
 #define ETXTBSY         26               // Unknown error
-//#define EFBIG           27               // File too large
+#define EFBIG           27               // File too large
 #define ENOSPC          28               // No space left on device
 #define ESPIPE          29               // Illegal seek
 #define EROFS           30               // Read-only file system
@@ -528,24 +533,19 @@ typedef struct critsect *critsect_t;
 #ifndef _STAT_DEFINED
 #define _STAT_DEFINED
 
-struct stat
+struct stat64
 {
-  int mode;
-  ino_t ino;
-  int nlink;
-  devno_t devno;
-  time_t atime;
-  time_t mtime;
-  time_t ctime;
-  union
-  {
-    struct
-    {
-      unsigned long size_low;
-      unsigned long size_high;
-    } quad;
-    unsigned __int64 size;
-  };
+  dev_t st_dev;
+  ino_t st_ino;
+  unsigned short st_mode;
+  short st_nlink;
+  short st_uid;
+  short st_gid;
+  dev_t st_rdev;
+  off64_t st_size;
+  time_t st_atime;
+  time_t st_mtime;
+  time_t st_ctime;
 };
 
 #endif
@@ -1023,8 +1023,8 @@ osapi int read(handle_t f, void *data, size_t size);
 osapi int write(handle_t f, const void *data, size_t size);
 osapi int ioctl(handle_t f, int cmd, const void *data, size_t size);
 
-osapi int readv(handle_t f , const struct iovec *iov, int count);
-osapi int writev(handle_t f , const struct iovec *iov, int count);
+osapi int readv(handle_t f, const struct iovec *iov, int count);
+osapi int writev(handle_t f, const struct iovec *iov, int count);
 
 osapi loff_t tell(handle_t f);
 osapi loff_t lseek(handle_t f, loff_t offset, int origin);
@@ -1033,8 +1033,8 @@ osapi int chsize(handle_t f, loff_t size);
 osapi int futime(handle_t f, struct utimbuf *times);
 osapi int utime(const char *name, struct utimbuf *times);
 
-osapi int fstat(handle_t f, struct stat *buffer);
-osapi int stat(const char *name, struct stat *buffer);
+osapi int fstat(handle_t f, struct stat64 *buffer);
+osapi int stat(const char *name, struct stat64 *buffer);
 osapi int access(const char *name, int mode);
 
 osapi int chdir(const char *name);

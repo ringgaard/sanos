@@ -88,7 +88,7 @@ static int parse_options(char *opts, struct fsoptions *fsopts)
 static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
 {
   struct filsys *fs;
-  devno_t devno;
+  dev_t devno;
   unsigned int sectcount;
   unsigned int blocks;
   unsigned int first_block;
@@ -334,7 +334,7 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
 static struct filsys *open_filesystem(char *devname, struct fsoptions *fsopts)
 {
   struct filsys *fs;
-  devno_t devno;
+  dev_t devno;
   struct groupdesc *gd;
   unsigned int i;
   unsigned int cache_buffers;

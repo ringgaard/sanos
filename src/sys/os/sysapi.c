@@ -168,12 +168,12 @@ int ioctl(handle_t f, int cmd, const void *data, size_t size)
   return syscall(SYSCALL_IOCTL, &f);
 }
 
-int readv(handle_t f , const struct iovec *iov, int count)
+int readv(handle_t f, const struct iovec *iov, int count)
 {
   return syscall(SYSCALL_READV, &f);
 }
 
-int writev(handle_t f , const struct iovec *iov, int count)
+int writev(handle_t f, const struct iovec *iov, int count)
 {
   return syscall(SYSCALL_WRITEV, &f);
 }
@@ -203,12 +203,12 @@ int utime(const char *name, struct utimbuf *times)
   return syscall(SYSCALL_UTIME, (void *) &name);
 }
 
-int fstat(handle_t f, struct stat *buffer)
+int fstat(handle_t f, struct stat64 *buffer)
 {
   return syscall(SYSCALL_FSTAT, &f);
 }
 
-int stat(const char *name, struct stat *buffer)
+int stat(const char *name, struct stat64 *buffer)
 {
   return syscall(SYSCALL_STAT, (void *) &name);
 }

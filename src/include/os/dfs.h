@@ -46,6 +46,7 @@
 #define DFS_INODE_KRNL             1
 
 #define DFS_MAXFNAME               255
+#define DFS_MAXFILESIZE            0x7FFFFFFF
 
 #define NOINODE                    (-1)
 #define NOBLOCK                    (-1)
@@ -128,7 +129,7 @@ struct inode
 
 struct filsys
 {
-  devno_t devno;
+  dev_t devno;
 
   unsigned int blocksize;
   unsigned int groupdesc_blocks;
@@ -154,7 +155,7 @@ int dfs_rename(struct fs *fs, char *oldname, char *newname);
 int dfs_link(struct fs *fs, char *oldname, char *newname);
 int dfs_unlink(struct fs *fs, char *name);
 int dfs_utime(struct fs *fs, char *name, struct utimbuf *times);
-int dfs_stat(struct fs *fs, char *name, struct stat *buffer);
+int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer);
 
 // super.c
 struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts);
@@ -201,10 +202,10 @@ int dfs_flush(struct file *filp);
 int dfs_read(struct file *filp, void *data, size_t size);
 int dfs_write(struct file *filp, void *data, size_t size);
 int dfs_ioctl(struct file *filp, int cmd, void *data, size_t size);
-loff_t dfs_tell(struct file *filp);
-loff_t dfs_lseek(struct file *filp, loff_t offset, int origin);
-int dfs_chsize(struct file *filp, loff_t size);
+off64_t dfs_tell(struct file *filp);
+off64_t dfs_lseek(struct file *filp, off64_t offset, int origin);
+int dfs_chsize(struct file *filp, off64_t size);
 int dfs_futime(struct file *filp, struct utimbuf *times);
-int dfs_fstat(struct file *filp, struct stat *buffer);
+int dfs_fstat(struct file *filp, struct stat64 *buffer);
 
 #endif

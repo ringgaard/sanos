@@ -250,7 +250,7 @@ struct recv_ring_desc
 
 struct ne
 {
-  devno_t devno;                        // Device number
+  dev_t devno;                          // Device number
   struct eth_addr hwaddr;               // MAC address
 
   unsigned short iobase;		// Configured I/O base

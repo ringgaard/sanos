@@ -115,7 +115,7 @@ static void dhcp_check(struct dhcp_state *state)
   if (p != NULL)
   {
     kprintf("dhcp_check: sending ARP request len %u\n", p->tot_len);
-    result = dev_transmit((devno_t) state->netif->state, p);
+    result = dev_transmit((dev_t) state->netif->state, p);
     pbuf_free(p);
     //return result;
   }

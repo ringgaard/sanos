@@ -38,8 +38,8 @@ int pipefs_close(struct file *filp);
 int pipefs_flush(struct file *filp);
 int pipefs_read(struct file *filp, void *data, size_t size);
 int pipefs_write(struct file *filp, void *data, size_t size);
-loff_t pipefs_lseek(struct file *filp, loff_t offset, int origin);
-int pipefs_fstat(struct file *filp, struct stat *buffer);
+off64_t pipefs_lseek(struct file *filp, off64_t offset, int origin);
+int pipefs_fstat(struct file *filp, struct stat64 *buffer);
 
 struct fsops pipefsops =
 {
@@ -308,12 +308,12 @@ int pipefs_write(struct file *filp, void *data, size_t size)
   return size;
 }
 
-loff_t pipefs_lseek(struct file *filp, loff_t offset, int origin)
+off64_t pipefs_lseek(struct file *filp, off64_t offset, int origin)
 {
   return -ESPIPE;
 }
 
-int pipefs_fstat(struct file *filp, struct stat *buffer)
+int pipefs_fstat(struct file *filp, struct stat64 *buffer)
 {
   // TODO: implement timestamps on create, read and write
   return -ENOSYS;

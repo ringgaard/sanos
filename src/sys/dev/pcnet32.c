@@ -205,7 +205,7 @@ struct pcnet32
   struct pbuf *tx_buffer[TX_RING_SIZE];
 
   unsigned long phys_addr;              // Physical address of this structure
-  devno_t devno;                        // Device number
+  dev_t devno;                          // Device number
 
   unsigned short iobase;		// Configured I/O base
   unsigned short irq;		        // Configured IRQ

@@ -58,9 +58,9 @@ typedef long clock_t;
 typedef unsigned int ino_t;
 #endif
 
-#ifndef _DEVNO_T_DEFINED
-#define _DEVNO_T_DEFINED
-typedef unsigned int devno_t;
+#ifndef _DEV_T_DEFINED
+#define _DEV_T_DEFINED
+typedef unsigned int dev_t;
 #endif
 
 #ifndef _BLKNO_T_DEFINED
@@ -70,7 +70,12 @@ typedef unsigned int blkno_t;
 
 #ifndef _LOFF_T_DEFINED
 #define _LOFF_T_DEFINED
-typedef unsigned int loff_t;
+typedef long loff_t;
+#endif
+
+#ifndef _OFF64_T_DEFINED
+#define _OFF64_T_DEFINED
+typedef __int64 off64_t;
 #endif
 
 #ifndef _HANDLE_T_DEFINED

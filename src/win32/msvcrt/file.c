@@ -182,7 +182,7 @@ int _setmode(int handle, int mode)
 int _stat(const char *path, struct _stat *buffer)
 {
   int rc;
-  struct stat fs;
+  struct stat64 fs;
 
   TRACE("_stat");
   //syslog(LOG_DEBUG, "stat on %s\n", path);
@@ -197,15 +197,11 @@ int _stat(const char *path, struct _stat *buffer)
   if (buffer)
   {
     memset(buffer, 0, sizeof(struct _stat));
-    buffer->st_atime = fs.atime;
-    buffer->st_ctime = fs.ctime;
-    buffer->st_mtime = fs.mtime;
-    buffer->st_size = fs.quad.size_low;
-    buffer->st_mode = S_IREAD | S_IWRITE | S_IEXEC;
-    if ((fs.mode & S_IFMT) == S_IFDIR)
-      buffer->st_mode |= S_IFDIR;
-    else
-      buffer->st_mode |= S_IFREG;
+    buffer->st_atime = fs.st_atime;
+    buffer->st_ctime = fs.st_ctime;
+    buffer->st_mtime = fs.st_mtime;
+    buffer->st_size = (int) fs.st_size;
+    buffer->st_mode = fs.st_mode;
   }
 
   //syslog(LOG_DEBUG, "%s: mode=%d size=%d\n", path, buffer->st_mode, buffer->st_size);
@@ -215,7 +211,7 @@ int _stat(const char *path, struct _stat *buffer)
 __int64 _stati64(const char *path, struct _stati64 *buffer)
 {
   int rc;
-  struct stat fs;
+  struct stat64 fs;
 
   TRACE("_stati64");
   //syslog(LOG_DEBUG, "stat on %s\n", path);
@@ -230,15 +226,11 @@ __int64 _stati64(const char *path, struct _stati64 *buffer)
   if (buffer)
   {
     memset(buffer, 0, sizeof(struct _stati64));
-    buffer->st_atime = fs.atime;
-    buffer->st_ctime = fs.ctime;
-    buffer->st_mtime = fs.mtime;
-    buffer->st_size = fs.size;
-    buffer->st_mode = S_IREAD | S_IWRITE | S_IEXEC;
-    if ((fs.mode & S_IFMT) == S_IFDIR)
-      buffer->st_mode |= S_IFDIR;
-    else
-      buffer->st_mode |= S_IFREG;
+    buffer->st_atime = fs.st_atime;
+    buffer->st_ctime = fs.st_ctime;
+    buffer->st_mtime = fs.st_mtime;
+    buffer->st_size = fs.st_size;
+    buffer->st_mode = fs.st_mode;
   }
 
   //syslog(LOG_DEBUG, "%s: mode=%d size=%d\n", path, buffer->st_mode, buffer->st_size);
@@ -248,7 +240,7 @@ __int64 _stati64(const char *path, struct _stati64 *buffer)
 int _fstat(int handle, struct _stat *buffer)
 {
   int rc;
-  struct stat fs;
+  struct stat64 fs;
 
   TRACE("_fstat");
   rc = fstat(handle, &fs);
@@ -261,15 +253,11 @@ int _fstat(int handle, struct _stat *buffer)
   if (buffer)
   {
     memset(buffer, 0, sizeof(struct _stat));
-    buffer->st_atime = fs.atime;
-    buffer->st_ctime = fs.ctime;
-    buffer->st_mtime = fs.mtime;
-    buffer->st_size = fs.quad.size_low;
-    buffer->st_mode = S_IREAD | S_IWRITE | S_IEXEC;
-    if ((fs.mode & S_IFMT) == S_IFDIR)
-      buffer->st_mode |= S_IFDIR;
-    else
-      buffer->st_mode |= S_IFREG;
+    buffer->st_atime = fs.st_atime;
+    buffer->st_ctime = fs.st_ctime;
+    buffer->st_mtime = fs.st_mtime;
+    buffer->st_size = (int) fs.st_size;
+    buffer->st_mode = fs.st_mode;
   }
 
   return 0;
@@ -278,7 +266,7 @@ int _fstat(int handle, struct _stat *buffer)
 __int64 _fstati64(int handle, struct _stati64 *buffer)
 {
   int rc;
-  struct stat fs;
+  struct stat64 fs;
 
   TRACE("_fstati64");
   rc = fstat(handle, &fs);
@@ -291,15 +279,11 @@ __int64 _fstati64(int handle, struct _stati64 *buffer)
   if (buffer)
   {
     memset(buffer, 0, sizeof(struct _stati64));
-    buffer->st_atime = fs.atime;
-    buffer->st_ctime = fs.ctime;
-    buffer->st_mtime = fs.mtime;
-    buffer->st_size = fs.size;
-    buffer->st_mode = S_IREAD | S_IWRITE | S_IEXEC;
-    if ((fs.mode & S_IFMT) == S_IFDIR)
-      buffer->st_mode |= S_IFDIR;
-    else
-      buffer->st_mode |= S_IFREG;
+    buffer->st_atime = fs.st_atime;
+    buffer->st_ctime = fs.st_ctime;
+    buffer->st_mtime = fs.st_mtime;
+    buffer->st_size = fs.st_size;
+    buffer->st_mode = fs.st_mode;
   }
 
   return 0;

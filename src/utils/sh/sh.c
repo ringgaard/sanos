@@ -112,7 +112,7 @@ static void list_dir(int argc, char **argv)
   int i;
   int dir;
   struct dirent dirp;
-  struct stat buf;
+  struct stat64 buf;
   struct tm tm;
   char path[MAXPATH];
   char *arg;
@@ -149,7 +149,7 @@ static void list_dir(int argc, char **argv)
     strcat(path, "/");
     strcat(path, dirp.name);
 
-    if (stat(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat));
+    if (stat(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat64));
 
     if (verbose == 2)
     {
@@ -159,7 +159,7 @@ static void list_dir(int argc, char **argv)
 	//printf("\n");
       }
 
-      if ((buf.mode & S_IFMT) == S_IFDIR) strcat(dirp.name, "/");
+      if ((buf.st_mode & S_IFMT) == S_IFDIR) strcat(dirp.name, "/");
       printf("%-20s", dirp.name);
       col++;
     }
@@ -169,37 +169,37 @@ static void list_dir(int argc, char **argv)
       strcat(path, "/");
       strcat(path, dirp.name);
 
-      if (stat(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat));
+      if (stat(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat64));
 
       if (verbose)
       {
-	printf("%8d %4d %1d %2d ", buf.quad.size_low, buf.ino, buf.nlink, buf.devno);
+	printf("%8d %4d %1d %2d ", (int) buf.st_size, buf.st_ino, buf.st_nlink, buf.st_dev);
 
-	_gmtime(&buf.ctime, &tm);
+	_gmtime(&buf.st_ctime, &tm);
 	printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
       }
       else
       {
-	if ((buf.mode & S_IFMT) == S_IFDIR)
+	if ((buf.st_mode & S_IFMT) == S_IFDIR)
 	  printf("         ");
 	else
 	{
-	  if (buf.quad.size_high == 0 && buf.quad.size_low < 1*K)
-	    printf("%6dB  ", buf.quad.size_low);
-	  else if (buf.quad.size_high == 0 && buf.quad.size_low < 1*M)
-	    printf("%6dKB ", buf.quad.size_low / K);
-	  else if (buf.quad.size_high == 0)
-	    printf("%6dMB ", buf.quad.size_low / M);
+	  if (buf.st_size < 1*K)
+	    printf("%6dB  ", (int) buf.st_size);
+	  else if (buf.st_size < 1*M)
+	    printf("%6dKB ", (int) (buf.st_size / K));
+	  else if (buf.st_size < 1073741824i64)
+	    printf("%6dMB ", (int) (buf.st_size / M));
 	  else
-	    printf("%6dGB ", (buf.quad.size_high << 2) | (buf.quad.size_low >> 30));
+	    printf("%6dGB ", (int) (buf.st_size / 1073741824i64));
 	}
       }
 
-      _gmtime(&buf.mtime, &tm);
+      _gmtime(&buf.st_mtime, &tm);
       printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
       printf("%s", dirp.name);
-      if ((buf.mode & S_IFMT) == S_IFDIR) printf("/", dirp.name);
+      if ((buf.st_mode & S_IFMT) == S_IFDIR) printf("/", dirp.name);
 
       printf("\n");
     }

@@ -340,22 +340,25 @@ BOOL WINAPI FileTimeToSystemTime
   return TRUE;
 }
 
-static void fill_find_data(LPWIN32_FIND_DATA fd, char *filename, struct stat *statbuf)
+static void fill_find_data(LPWIN32_FIND_DATA fd, char *filename, struct stat64 *statbuf)
 {
+  FILETIME *ft;
+
   memset(fd, 0, sizeof(WIN32_FIND_DATA));
   strcpy(fd->cFileName, filename);
 
-  if ((statbuf->mode & S_IFMT) == S_IFDIR) 
+  if ((statbuf->st_mode & S_IFMT) == S_IFDIR) 
     fd->dwFileAttributes |= FILE_ATTRIBUTE_DIRECTORY;
   else
     fd->dwFileAttributes |= FILE_ATTRIBUTE_NORMAL;
 
-  fd->nFileSizeLow = statbuf->quad.size_low;
-  fd->nFileSizeHigh = statbuf->quad.size_high;
+  ft = (FILETIME *) &statbuf->st_size;
+  fd->nFileSizeLow = ft->dwLowDateTime;
+  fd->nFileSizeHigh = ft->dwHighDateTime;
 
-  *(unsigned __int64 *) &(fd->ftCreationTime) = (unsigned __int64) statbuf->ctime * SECTIMESCALE + EPOC;
-  *(unsigned __int64 *) &(fd->ftLastAccessTime) = (unsigned __int64) statbuf->mtime * SECTIMESCALE + EPOC;
-  *(unsigned __int64 *) &(fd->ftLastWriteTime) = (unsigned __int64) statbuf->mtime * SECTIMESCALE + EPOC;
+  *(unsigned __int64 *) &(fd->ftCreationTime) = (unsigned __int64) statbuf->st_ctime * SECTIMESCALE + EPOC;
+  *(unsigned __int64 *) &(fd->ftLastAccessTime) = (unsigned __int64) statbuf->st_mtime * SECTIMESCALE + EPOC;
+  *(unsigned __int64 *) &(fd->ftLastWriteTime) = (unsigned __int64) statbuf->st_mtime * SECTIMESCALE + EPOC;
 }
 
 static int like(char *str, char *mask)
@@ -419,7 +422,7 @@ HANDLE WINAPI FindFirstFileA
 {
   struct winfinddata *finddata;
   struct dirent dirent;
-  struct stat statbuf;
+  struct stat64 statbuf;
   char *p;
   char *base;
   char fn[MAXPATH];
@@ -532,7 +535,7 @@ BOOL WINAPI FindNextFileA
 {
   struct winfinddata *finddata;
   struct dirent dirent;
-  struct stat statbuf;
+  struct stat64 statbuf;
   char fn[MAXPATH];
 
   TRACE("FindNextFileA");
@@ -712,13 +715,13 @@ DWORD WINAPI GetFileAttributesA
   LPCTSTR lpFileName
 )
 {
-  struct stat fs;
+  struct stat64 fs;
 
   TRACE("GetFileAttributesA");
   if (stat((char *) lpFileName, &fs) < 0) return -1;
 
   // TODO: set other attributes for files (hidden, system, readonly etc.)
-  if ((fs.mode & S_IFMT) == S_IFDIR) 
+  if ((fs.st_mode & S_IFMT) == S_IFDIR) 
     return 0x00000010;
   else
     return 0x00000080;

@@ -289,24 +289,24 @@ int smb_open(struct file *filp, char *name)
   file->attrs = (unsigned short) smb->params.rsp.create.ext_file_attributes;
 
   if (file->attrs & SMB_FILE_ATTR_DIRECTORY) 
-    file->statbuf.mode = S_IFDIR;
+    file->statbuf.st_mode = S_IFDIR;
   else
-    file->statbuf.mode = S_IFREG;
+    file->statbuf.st_mode = S_IFREG;
 
   if (file->attrs & SMB_FILE_ATTR_READONLY)
-    file->statbuf.mode |= S_IREAD | S_IEXEC;
+    file->statbuf.st_mode |= S_IREAD | S_IEXEC;
   else
-    file->statbuf.mode |= S_IREAD | S_IWRITE | S_IEXEC;
+    file->statbuf.st_mode |= S_IREAD | S_IWRITE | S_IEXEC;
 
-  file->statbuf.devno = NODEV;
-  file->statbuf.nlink = 1;
-  file->statbuf.ctime = ft2time(smb->params.rsp.create.creation_time);
-  file->statbuf.mtime = ft2time(smb->params.rsp.create.last_write_time);
-  file->statbuf.atime = ft2time(smb->params.rsp.create.last_access_time);
-  file->statbuf.size = smb->params.rsp.create.end_of_file;
+  file->statbuf.st_dev = NODEV;
+  file->statbuf.st_nlink = 1;
+  file->statbuf.st_ctime = ft2time(smb->params.rsp.create.creation_time);
+  file->statbuf.st_mtime = ft2time(smb->params.rsp.create.last_write_time);
+  file->statbuf.st_atime = ft2time(smb->params.rsp.create.last_access_time);
+  file->statbuf.st_size = smb->params.rsp.create.end_of_file;
 
-  if (filp->flags & O_APPEND) 
-    filp->pos = file->statbuf.quad.size_low;
+  if (filp->flags & O_APPEND)
+    filp->pos = file->statbuf.st_size;
   else
     filp->pos = 0;
 
@@ -374,7 +374,7 @@ int smb_flush(struct file *filp)
   return 0;
 }
 
-static int smb_read_raw(struct smb_share *share, struct smb_file *file, void *data, size_t size, loff_t pos)
+static int smb_read_raw(struct smb_share *share, struct smb_file *file, void *data, size_t size, unsigned long pos)
 {
   struct smb *smb;
   unsigned char hdr[4];
@@ -401,7 +401,7 @@ static int smb_read_raw(struct smb_share *share, struct smb_file *file, void *da
   return rc;
 }
 
-static int smb_read_normal(struct smb_share *share, struct smb_file *file, void *data, size_t size, loff_t pos)
+static int smb_read_normal(struct smb_share *share, struct smb_file *file, void *data, size_t size, off64_t pos)
 {
   struct smb *smb;
   int len;
@@ -411,9 +411,9 @@ static int smb_read_normal(struct smb_share *share, struct smb_file *file, void 
   smb = smb_init(share, 0);
   smb->params.req.read.andx.cmd = 0xFF;
   smb->params.req.read.fid = file->fid;
-  smb->params.req.read.offset = pos;
+  smb->params.req.read.offset = ((struct smb_pos *) &pos)->low_part;
   smb->params.req.read.max_count = size;
-  smb->params.req.read.offset_high = 0;
+  smb->params.req.read.offset_high = ((struct smb_pos *) &pos)->high_part;
 
   rc = smb_request(share, smb, SMB_COM_READ_ANDX, 12, NULL, 0, 0);
   if (rc < 0) return rc;
@@ -439,7 +439,7 @@ int smb_read(struct file *filp, void *data, size_t size)
   left = size;
   p = (char *) data;
 
-  if (filp->pos < file->statbuf.quad.size_low)
+  if (filp->pos < file->statbuf.st_size && filp->pos < 0x80000000)
   {
     // Read data using raw mode
     while (1)
@@ -447,7 +447,7 @@ int smb_read(struct file *filp, void *data, size_t size)
       count = left;
       if (count > SMB_RAW_CHUNKSIZE) count = SMB_RAW_CHUNKSIZE;
 
-      rc = smb_read_raw(share, file, p, count, filp->pos);
+      rc = smb_read_raw(share, file, p, count, (unsigned long) filp->pos);
       if (rc < 0) return rc;
       if (rc == 0) break;
 
@@ -460,7 +460,7 @@ int smb_read(struct file *filp, void *data, size_t size)
   }
 
   // Read rest using normal mode
-  while (filp->pos < file->statbuf.quad.size_low && left > 0)
+  while (filp->pos < file->statbuf.st_size && left > 0)
   {
     count = left;
     if (count > SMB_NORMAL_CHUNKSIZE) count = SMB_NORMAL_CHUNKSIZE;
@@ -477,7 +477,7 @@ int smb_read(struct file *filp, void *data, size_t size)
   return size - left;
 }
 
-static int smb_write_normal(struct smb_share *share, struct smb_file *file, void *data, size_t size, loff_t pos)
+static int smb_write_normal(struct smb_share *share, struct smb_file *file, void *data, size_t size, off64_t pos)
 {
   struct smb *smb;
   int rc;
@@ -486,10 +486,10 @@ static int smb_write_normal(struct smb_share *share, struct smb_file *file, void
   smb = smb_init(share, 0);
   smb->params.req.write.andx.cmd = 0xFF;
   smb->params.req.write.fid = file->fid;
-  smb->params.req.write.offset = pos;
+  smb->params.req.write.offset = ((struct smb_pos *) &pos)->low_part;
   smb->params.req.write.data_length = size;
   smb->params.req.write.data_offset = SMB_HEADER_LEN + 14 * 2;
-  smb->params.req.write.offset_high = 0;
+  smb->params.req.write.offset_high = ((struct smb_pos *) &pos)->high_part;
 
   rc = smb_request(share, smb, SMB_COM_WRITE_ANDX, 14, data, size, 0);
   if (rc < 0) return rc;
@@ -509,6 +509,8 @@ int smb_write(struct file *filp, void *data, size_t size)
   if (filp->flags & F_DIR) return -EBADF;
   if (size == 0) return 0;
 
+  if (filp->flags & O_APPEND) filp->pos = file->statbuf.st_size;
+
   left = size;
   p = (char *) data;
 
@@ -525,7 +527,7 @@ int smb_write(struct file *filp, void *data, size_t size)
     left -= rc;
     p += rc;
 
-    if (filp->pos > file->statbuf.quad.size_low) file->statbuf.quad.size_low = filp->pos;
+    if (filp->pos > file->statbuf.st_size) file->statbuf.st_size = filp->pos;
   }
 
   return size;
@@ -536,14 +538,14 @@ int smb_ioctl(struct file *filp, int cmd, void *data, size_t size)
   return -ENOSYS;
 }
 
-loff_t smb_tell(struct file *filp)
+off64_t smb_tell(struct file *filp)
 {
   if (filp->flags & F_DIR) return -EBADF;
 
   return filp->pos;
 }
 
-loff_t smb_lseek(struct file *filp, loff_t offset, int origin)
+off64_t smb_lseek(struct file *filp, off64_t offset, int origin)
 {
   struct smb_file *file = (struct smb_file *) filp->data;
 
@@ -552,7 +554,7 @@ loff_t smb_lseek(struct file *filp, loff_t offset, int origin)
   switch (origin)
   {
     case SEEK_END:
-      offset += file->statbuf.quad.size_low;
+      offset += file->statbuf.st_size;
       break;
 
     case SEEK_CUR:
@@ -565,7 +567,7 @@ loff_t smb_lseek(struct file *filp, loff_t offset, int origin)
   return offset;
 }
 
-int smb_chsize(struct file *filp, loff_t size)
+int smb_chsize(struct file *filp, off64_t size)
 {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb_file *file = (struct smb_file *) filp->data;
@@ -586,6 +588,7 @@ int smb_chsize(struct file *filp, loff_t size)
   if (rc < 0) return rc;
 
   if (filp->pos > size) filp->pos = size;
+
   return 0;
 }
 
@@ -603,19 +606,19 @@ int smb_futime(struct file *filp, struct utimbuf *times)
   req.fid = file->fid;
   req.infolevel = 0x101;
 
-  info.creation_time = time2ft(times->ctime == -1 ? file->statbuf.ctime : times->ctime);
-  info.last_access_time = time2ft(times->atime == -1 ? file->statbuf.atime : times->atime);
-  info.last_write_time = time2ft(times->mtime == -1 ? file->statbuf.mtime : times->mtime);
-  info.change_time = time2ft(times->mtime == -1 ? file->statbuf.mtime : times->mtime);
+  info.creation_time = time2ft(times->ctime == -1 ? file->statbuf.st_ctime : times->ctime);
+  info.last_access_time = time2ft(times->atime == -1 ? file->statbuf.st_atime : times->atime);
+  info.last_write_time = time2ft(times->mtime == -1 ? file->statbuf.st_mtime : times->mtime);
+  info.change_time = time2ft(times->mtime == -1 ? file->statbuf.st_mtime : times->mtime);
   info.attributes = file->attrs;
 
   rsplen = sizeof(rsp);
   rc = smb_trans(share, TRANS2_SET_FILE_INFORMATION, &req, sizeof(req), &info, sizeof(info), &rsp, &rsplen, NULL, NULL);
   if (rc < 0) return rc;
 
-  if (times->ctime != -1) file->statbuf.ctime = times->ctime;
-  if (times->mtime != -1) file->statbuf.mtime = times->mtime;
-  if (times->atime != -1) file->statbuf.atime = times->atime;
+  if (times->ctime != -1) file->statbuf.st_ctime = times->ctime;
+  if (times->mtime != -1) file->statbuf.st_mtime = times->mtime;
+  if (times->atime != -1) file->statbuf.st_atime = times->atime;
 
   return 0;
 }
@@ -637,18 +640,18 @@ int smb_utime(struct fs *fs, char *name, struct utimbuf *times)
   return rc;
 }
 
-int smb_fstat(struct file *filp, struct stat *buffer)
+int smb_fstat(struct file *filp, struct stat64 *buffer)
 {
   struct smb_file *file = (struct smb_file *) filp->data;
 
   if (filp->flags & F_DIR) return -EBADF;
 
-  if (buffer) memcpy(buffer, &file->statbuf, sizeof(struct stat));
+  if (buffer) memcpy(buffer, &file->statbuf, sizeof(struct stat64));
 
-  return file->statbuf.quad.size_low;
+  return (int) file->statbuf.st_size;
 }
 
-int smb_stat(struct fs *fs, char *name, struct stat *buffer)
+int smb_stat(struct fs *fs, char *name, struct stat64 *buffer)
 {
   struct smb_share *share = (struct smb_share *) fs->data;
   struct smb_pathinfo_request req;
@@ -668,12 +671,12 @@ int smb_stat(struct fs *fs, char *name, struct stat *buffer)
   {
     if (buffer)
     {
-      memset(buffer, 0, sizeof(struct stat));
-      buffer->atime = time(0);
-      buffer->ctime = share->mounttime;
-      buffer->mtime = share->mounttime;
-      buffer->mode = S_IFDIR | S_IREAD | S_IEXEC;
-      buffer->nlink = 1;
+      memset(buffer, 0, sizeof(struct stat64));
+      buffer->st_atime = time(0);
+      buffer->st_ctime = share->mounttime;
+      buffer->st_mtime = share->mounttime;
+      buffer->st_mode = S_IFDIR | S_IREAD;
+      buffer->st_nlink = 1;
       return 0;
     }
   }
@@ -682,8 +685,8 @@ int smb_stat(struct fs *fs, char *name, struct stat *buffer)
   dentry = smb_find_in_cache(share, name);
   if (dentry != NULL)
   {
-    if (buffer) memcpy(buffer, &dentry->statbuf, sizeof(struct stat));
-    return dentry->statbuf.quad.size_low;
+    if (buffer) memcpy(buffer, &dentry->statbuf, sizeof(struct stat64));
+    return (int) dentry->statbuf.st_size;
   }
 
   // Query server for file information
@@ -710,23 +713,22 @@ int smb_stat(struct fs *fs, char *name, struct stat *buffer)
 
   if (buffer)
   {
+    memset(buffer, 0, sizeof(struct stat64));
+
     if (rspb.attributes & SMB_FILE_ATTR_DIRECTORY) 
-      buffer->mode = S_IFDIR;
+      buffer->st_mode = S_IFDIR | S_IREAD;
+    else if (rspb.attributes & SMB_FILE_ATTR_READONLY)
+      buffer->st_mode = S_IFREG | S_IREAD | S_IEXEC;
     else
-      buffer->mode = S_IFREG;
+      buffer->st_mode = S_IFREG | S_IREAD | S_IWRITE | S_IEXEC;
 
-    if (rspb.attributes & SMB_FILE_ATTR_READONLY) 
-      buffer->mode |= S_IREAD | S_IEXEC;
-    else
-      buffer->mode |= S_IREAD | S_IWRITE | S_IEXEC;
-
-    buffer->ino = 0;
-    buffer->nlink = rsps.number_of_links;
-    buffer->devno = NODEV;
-    buffer->atime = ft2time(rspb.last_access_time);
-    buffer->mtime = ft2time(rspb.last_write_time);
-    buffer->ctime = ft2time(rspb.creation_time);
-    buffer->size = rsps.end_of_file;
+    buffer->st_ino = 0;
+    buffer->st_nlink = (short) rsps.number_of_links;
+    buffer->st_dev = NODEV;
+    buffer->st_atime = ft2time(rspb.last_access_time);
+    buffer->st_mtime = ft2time(rspb.last_write_time);
+    buffer->st_ctime = ft2time(rspb.creation_time);
+    buffer->st_size = rsps.end_of_file;
   }
 
   return (int) rsps.end_of_file;
@@ -885,7 +887,7 @@ int smb_readdir(struct file *filp, struct dirent *dirp, int count)
 {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb_directory *dir = (struct smb_directory *) filp->data;
-  struct stat statbuf;
+  struct stat64 statbuf;
 
   if (count != 1) return -1;
 
@@ -925,16 +927,20 @@ again:
     goto again;
   }
 
-  memset(&statbuf, 0, sizeof(struct stat));
-  statbuf.nlink = 1;
-  statbuf.ctime = ft2time(dir->fi->creation_time);
-  statbuf.mtime = ft2time(dir->fi->last_write_time);
-  statbuf.atime = ft2time(dir->fi->last_access_time);
-  statbuf.size = dir->fi->end_of_file;
+  memset(&statbuf, 0, sizeof(struct stat64));
+
   if (dir->fi->ext_file_attributes & SMB_FILE_ATTR_DIRECTORY) 
-    statbuf.mode = S_IFDIR;
+    statbuf.st_mode = S_IFDIR | S_IREAD;
+  else if (dir->fi->ext_file_attributes & SMB_FILE_ATTR_READONLY)
+    statbuf.st_mode = S_IFREG | S_IREAD | S_IEXEC;
   else
-    statbuf.mode = S_IFREG;
+    statbuf.st_mode = S_IFREG | S_IREAD | S_IWRITE | S_IEXEC;
+
+  statbuf.st_nlink = 1;
+  statbuf.st_ctime = ft2time(dir->fi->creation_time);
+  statbuf.st_mtime = ft2time(dir->fi->last_write_time);
+  statbuf.st_atime = ft2time(dir->fi->last_access_time);
+  statbuf.st_size = dir->fi->end_of_file;
 
   smb_add_to_cache(share, dir->path, dir->fi->filename, &statbuf);
 

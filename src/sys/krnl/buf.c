@@ -479,7 +479,7 @@ static void lazywriter_task(void *arg)
 // init_buffer_pool
 //
 
-struct bufpool *init_buffer_pool(devno_t devno, int poolsize, int bufsize, void (*sync)(void *arg), void *syncarg)
+struct bufpool *init_buffer_pool(dev_t devno, int poolsize, int bufsize, void (*sync)(void *arg), void *syncarg)
 {
   struct bufpool *pool;
   struct buf *buf;

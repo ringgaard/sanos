@@ -437,8 +437,8 @@ int dfs_readdir(struct file *filp, struct dirent *dirp, int count)
   if (filp->pos == inode->desc->size) return 0;
   if (filp->pos > inode->desc->size) return 0;
 
-  iblock = filp->pos / inode->fs->blocksize;
-  start = filp->pos % inode->fs->blocksize;
+  iblock = (unsigned int) filp->pos / inode->fs->blocksize;
+  start = (unsigned int) filp->pos % inode->fs->blocksize;
 
   blk = get_inode_block(inode, iblock);
   if (blk == NOBLOCK) return -EIO;

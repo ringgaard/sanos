@@ -303,7 +303,7 @@ struct hdc
 
 struct partition
 {
-  devno_t dev;
+  dev_t dev;
   unsigned int start;
   unsigned int len;
   unsigned short bootid;
@@ -320,7 +320,7 @@ struct hd
   int lba;                              // Use LBA mode
   int multsect;                         // Sectors per interrupt
   int udmamode;                         // UltraDMA mode
-  devno_t devno;                        // Device number
+  dev_t devno;                          // Device number
 
   // Geometry
   unsigned int blks;		        // Number of blocks on drive
@@ -1159,7 +1159,7 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase)
 static int create_partitions(struct hd *hd)
 {
   struct master_boot_record mbr;
-  devno_t devno;
+  dev_t devno;
   int rc;
   int i;
   char devname[DEVNAMELEN];

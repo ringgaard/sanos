@@ -34,7 +34,7 @@
 #include <os/krnl.h>
 #include "smb.h"
 
-void smb_add_to_cache(struct smb_share *share, char *path, char *filename, struct stat *statbuf)
+void smb_add_to_cache(struct smb_share *share, char *path, char *filename, struct stat64 *statbuf)
 {
   int idx = share->next_cacheidx;
 
@@ -42,7 +42,7 @@ void smb_add_to_cache(struct smb_share *share, char *path, char *filename, struc
   strcat(share->dircache[idx].path, "\\");
   strcat(share->dircache[idx].path, filename);
 
-  memcpy(&share->dircache[idx].statbuf, statbuf, sizeof(struct stat));
+  memcpy(&share->dircache[idx].statbuf, statbuf, sizeof(struct stat64));
 
   if (++share->next_cacheidx == SMB_DENTRY_CACHESIZE) share->next_cacheidx = 0;
 }

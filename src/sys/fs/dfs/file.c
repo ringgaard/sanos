@@ -342,13 +342,13 @@ int dfs_read(struct file *filp, void *data, size_t size)
   p = (char *) data;
   while (filp->pos < inode->desc->size && size > 0)
   {
-    iblock = filp->pos / inode->fs->blocksize;
-    start = filp->pos % inode->fs->blocksize;
+    iblock = (unsigned int) filp->pos / inode->fs->blocksize;
+    start = (unsigned int) filp->pos % inode->fs->blocksize;
 
     count = inode->fs->blocksize - start;
     if (count > size) count = size;
 
-    left = inode->desc->size - filp->pos;
+    left = inode->desc->size - (size_t) filp->pos;
     if (count > left) count = left;
     if (count <= 0) break;
 
@@ -391,6 +391,9 @@ int dfs_write(struct file *filp, void *data, size_t size)
 
   inode = (struct inode *) filp->data;
 
+  if (filp->flags & O_APPEND) filp->pos = inode->desc->size;
+  if (filp->pos + size > DFS_MAXFILESIZE) return -EFBIG;
+
   if (filp->pos > inode->desc->size)
   {
     rc = dfs_chsize(filp, filp->pos);
@@ -401,8 +404,8 @@ int dfs_write(struct file *filp, void *data, size_t size)
   p = (char *) data;
   while (size > 0)
   {
-    iblock = filp->pos / inode->fs->blocksize;
-    start = filp->pos % inode->fs->blocksize;
+    iblock = (unsigned int) filp->pos / inode->fs->blocksize;
+    start = (unsigned int) filp->pos % inode->fs->blocksize;
 
     count = inode->fs->blocksize - start;
     if (count > size) count = size;
@@ -448,7 +451,7 @@ int dfs_write(struct file *filp, void *data, size_t size)
 
     if (filp->pos > inode->desc->size)
     {
-      inode->desc->size = filp->pos;
+      inode->desc->size = (loff_t) filp->pos;
       mark_inode_dirty(inode);
     }
   }
@@ -461,12 +464,12 @@ int dfs_ioctl(struct file *filp, int cmd, void *data, size_t size)
   return -ENOSYS;
 }
 
-loff_t dfs_tell(struct file *filp)
+off64_t dfs_tell(struct file *filp)
 {
   return filp->pos;
 }
 
-loff_t dfs_lseek(struct file *filp, loff_t offset, int origin)
+off64_t dfs_lseek(struct file *filp, off64_t offset, int origin)
 {
   struct inode *inode;
 
@@ -488,7 +491,7 @@ loff_t dfs_lseek(struct file *filp, loff_t offset, int origin)
   return offset;
 }
 
-int dfs_chsize(struct file *filp, loff_t size)
+int dfs_chsize(struct file *filp, off64_t size)
 {
   struct inode *inode;
   int rc;
@@ -496,12 +499,14 @@ int dfs_chsize(struct file *filp, loff_t size)
   blkno_t blk;
   struct buf *buf;
 
+  if (size > DFS_MAXFILESIZE) return -EFBIG;
+
   inode = (struct inode *) filp->data;
 
   if (size < 0) return -EINVAL;
   if (size == inode->desc->size) return 0;
 
-  blocks = (size + inode->fs->blocksize - 1) / inode->fs->blocksize;
+  blocks = ((size_t) size + inode->fs->blocksize - 1) / inode->fs->blocksize;
 
   if (size > inode->desc->size)
   {
@@ -521,12 +526,12 @@ int dfs_chsize(struct file *filp, loff_t size)
   }
   else
   {
-    blocks = (size + inode->fs->blocksize - 1) / inode->fs->blocksize;
+    blocks = ((size_t) size + inode->fs->blocksize - 1) / inode->fs->blocksize;
     rc = truncate_inode(inode, blocks);
     if (rc < 0) return rc;
   }
 
-  inode->desc->size = size;
+  inode->desc->size = (loff_t) size;
   mark_inode_dirty(inode);
 
   filp->flags |= F_MODIFIED;
@@ -546,7 +551,7 @@ int dfs_futime(struct file *filp, struct utimbuf *times)
   return 0;
 }
 
-int dfs_fstat(struct file *filp, struct stat *buffer)
+int dfs_fstat(struct file *filp, struct stat64 *buffer)
 {
   struct inode *inode;
   size_t size;
@@ -556,20 +561,20 @@ int dfs_fstat(struct file *filp, struct stat *buffer)
   
   if (buffer)
   {
-    if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY) 
-      buffer->mode = S_IFDIR | S_IREAD | S_IEXEC;
-    else
-      buffer->mode = S_IFREG | S_IREAD | S_IWRITE | S_IEXEC;
+    memset(buffer, 0, sizeof(struct stat64));
 
-    buffer->ino = inode->ino;
-    buffer->nlink = inode->desc->linkcount;
-    buffer->devno = NODEV;
-    buffer->atime = time(NULL);
-    buffer->mtime = inode->desc->mtime;
-    buffer->ctime = inode->desc->ctime;
-  
-    buffer->quad.size_low = inode->desc->size;
-    buffer->quad.size_high = 0;
+    if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY) 
+      buffer->st_mode = S_IFDIR | S_IREAD;
+    else
+      buffer->st_mode = S_IFREG | S_IREAD | S_IWRITE | S_IEXEC;
+
+    buffer->st_ino = inode->ino;
+    buffer->st_nlink = inode->desc->linkcount;
+    buffer->st_dev = NODEV;
+    buffer->st_atime = time(NULL);
+    buffer->st_mtime = inode->desc->mtime;
+    buffer->st_ctime = inode->desc->ctime;
+    buffer->st_size = inode->desc->size;
   }
 
   return size;

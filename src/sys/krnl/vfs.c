@@ -614,9 +614,9 @@ int writev(struct file *filp, struct iovec *iov, int count)
   return -ENOSYS;
 }
 
-loff_t tell(struct file *filp)
+off64_t tell(struct file *filp)
 {
-  int rc;
+  off64_t rc;
 
   if (!filp) return -EINVAL;
  
@@ -627,9 +627,9 @@ loff_t tell(struct file *filp)
   return rc;
 }
 
-loff_t lseek(struct file *filp, loff_t offset, int origin)
+off64_t lseek(struct file *filp, off64_t offset, int origin)
 {
-  int rc;
+  off64_t rc;
 
   if (!filp) return -EINVAL;
 
@@ -640,7 +640,7 @@ loff_t lseek(struct file *filp, loff_t offset, int origin)
   return rc;
 }
 
-int chsize(struct file *filp, loff_t size)
+int chsize(struct file *filp, off64_t size)
 {
   int rc;
 
@@ -697,7 +697,7 @@ int utime(char *name, struct utimbuf *times)
   return rc;
 }
 
-int fstat(struct file *filp, struct stat *buffer)
+int fstat(struct file *filp, struct stat64 *buffer)
 {
   int rc;
 
@@ -710,7 +710,7 @@ int fstat(struct file *filp, struct stat *buffer)
   return rc;
 }
 
-int stat(char *name, struct stat *buffer)
+int stat(char *name, struct stat64 *buffer)
 {
   struct fs *fs;
   char *rest;
@@ -743,7 +743,7 @@ int chdir(char *name)
   int rc;
   char path[MAXPATH];
   char newdir[MAXPATH];
-  struct stat buffer;
+  struct stat64 buffer;
 
   rc = canonicalize(name, path);
   if (rc < 0) return rc;
@@ -765,7 +765,7 @@ int chdir(char *name)
     fs->locks--;
 
     if (rc < 0) return rc;
-    if ((buffer.mode & S_IFMT) != S_IFDIR) return -ENOTDIR;
+    if ((buffer.st_mode & S_IFMT) != S_IFDIR) return -ENOTDIR;
   }
 
   strcpy(curdir, newdir);

@@ -551,7 +551,7 @@ static int sys_tell(char *params)
 {
   struct file *f;
   handle_t h;
-  loff_t retval;
+  off64_t rc;
 
   if (lock_buffer(params, 4) < 0) return -EFAULT;
 
@@ -563,12 +563,12 @@ static int sys_tell(char *params)
     return -EBADF;
   }
 
-  retval = flush(f);
+  rc = tell(f);
 
   orel(f);
   unlock_buffer(params, 4);
 
-  return (int) retval;
+  return (int) rc;
 }
 
 static int sys_lseek(char *params)
@@ -577,7 +577,7 @@ static int sys_lseek(char *params)
   handle_t h;
   loff_t offset;
   int origin;
-  loff_t retval;
+  off64_t rc;
 
   if (lock_buffer(params, 12) < 0) return -EFAULT;
 
@@ -592,12 +592,12 @@ static int sys_lseek(char *params)
     return -EBADF;
   }
 
-  retval = lseek(f, offset, origin);
+  rc = lseek(f, offset, origin);
 
   orel(f);
   unlock_buffer(params, 12);
 
-  return (int) retval;
+  return (int) rc;
 }
 
 static int sys_chsize(char *params)
@@ -699,13 +699,13 @@ static int sys_fstat(char *params)
 {
   struct file *f;
   handle_t h;
-  struct stat *buffer;
+  struct stat64 *buffer;
   int rc;
 
   if (lock_buffer(params, 8) < 0) return -EFAULT;
 
   h = *(handle_t *) params;
-  buffer = *(struct stat **) (params + 4);
+  buffer = *(struct stat64 **) (params + 4);
 
   f = (struct file *) olock(h, OBJECT_FILE);
   if (!f) 
@@ -714,7 +714,7 @@ static int sys_fstat(char *params)
     return -EBADF;
   }
 
-  if (lock_buffer(buffer, sizeof(struct stat)) < 0)
+  if (lock_buffer(buffer, sizeof(struct stat64)) < 0)
   {
     orel(f);
     unlock_buffer(params, 8);
@@ -723,7 +723,7 @@ static int sys_fstat(char *params)
 
   rc = fstat(f, buffer);
 
-  unlock_buffer(buffer, sizeof(struct stat));
+  unlock_buffer(buffer, sizeof(struct stat64));
   orel(f);
   unlock_buffer(params, 8);
 
@@ -733,13 +733,13 @@ static int sys_fstat(char *params)
 static int sys_stat(char *params)
 {
   char *name;
-  struct stat *buffer;
+  struct stat64 *buffer;
   int rc;
 
   if (lock_buffer(params, 8) < 0) return -EFAULT;
 
   name = *(char **) params;
-  buffer = *(struct stat **) (params + 4);
+  buffer = *(struct stat64 **) (params + 4);
 
   if (lock_string(name) < 0) 
   {
@@ -747,7 +747,7 @@ static int sys_stat(char *params)
     return -EFAULT;
   }
 
-  if (lock_buffer(buffer, sizeof(struct stat)) < 0)
+  if (lock_buffer(buffer, sizeof(struct stat64)) < 0)
   {
     unlock_string(name);
     unlock_buffer(params, 8);
@@ -756,7 +756,7 @@ static int sys_stat(char *params)
 
   rc = stat(name, buffer);
 
-  unlock_buffer(buffer, sizeof(struct stat));
+  unlock_buffer(buffer, sizeof(struct stat64));
   unlock_string(name);
   unlock_buffer(params, 8);
 

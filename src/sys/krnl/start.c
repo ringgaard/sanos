@@ -159,14 +159,14 @@ static int load_kernel_config()
   struct file *f;
   int size;
   int rc;
-  struct stat buffer;
+  struct stat64 buffer;
   char *props;
 
   rc = open(KERNEL_CONFIG, 0, 0, &f);
   if (rc < 0) return rc;
 
   fstat(f, &buffer);
-  size = buffer.quad.size_low;
+  size = (int) buffer.st_size;
 
   props = (char *) kmalloc(size + 1);
   if (!props) 

@@ -76,7 +76,7 @@ struct buf
 
 struct bufpool
 {
-  devno_t devno;
+  dev_t devno;
   int poolsize;
   int bufsize;
   int blks_per_buffer;
@@ -114,7 +114,7 @@ struct bufpool
   struct buf *hashtable[BUFPOOL_HASHSIZE];
 };
 
-krnlapi struct bufpool *init_buffer_pool(devno_t devno, int poolsize, int bufsize, void (*sync)(void *arg), void *syncarg);
+krnlapi struct bufpool *init_buffer_pool(dev_t devno, int poolsize, int bufsize, void (*sync)(void *arg), void *syncarg);
 krnlapi void free_buffer_pool(struct bufpool *pool);
 krnlapi struct buf *get_buffer(struct bufpool *pool, blkno_t blkno);
 krnlapi struct buf *alloc_buffer(struct bufpool *pool, blkno_t blkno);

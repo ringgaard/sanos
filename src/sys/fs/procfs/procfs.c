@@ -42,11 +42,11 @@ int procfs_close(struct file *filp);
 
 int procfs_read(struct file *filp, void *data, size_t size);
 
-loff_t procfs_tell(struct file *filp);
-loff_t procfs_lseek(struct file *filp, loff_t offset, int origin);
+off64_t procfs_tell(struct file *filp);
+off64_t procfs_lseek(struct file *filp, off64_t offset, int origin);
 
-int procfs_fstat(struct file *filp, struct stat *buffer);
-int procfs_stat(struct fs *fs, char *name, struct stat *buffer);
+int procfs_fstat(struct file *filp, struct stat64 *buffer);
+int procfs_stat(struct fs *fs, char *name, struct stat64 *buffer);
 
 int procfs_opendir(struct file *filp, char *name);
 int procfs_readdir(struct file *filp, struct dirent *dirp, int count);
@@ -269,7 +269,7 @@ int procfs_read(struct file *filp, void *data, size_t size)
 
   if (blk)
   {
-    offset = filp->pos - start;
+    offset = (int) filp->pos - start;
 
     if (offset < 0 || offset >= PROC_BLKSIZE)
     {
@@ -305,12 +305,12 @@ int procfs_read(struct file *filp, void *data, size_t size)
   return size - left;
 }
 
-loff_t procfs_tell(struct file *filp)
+off64_t procfs_tell(struct file *filp)
 {
   return filp->pos;
 }
 
-loff_t procfs_lseek(struct file *filp, loff_t offset, int origin)
+off64_t procfs_lseek(struct file *filp, off64_t offset, int origin)
 {
   struct proc_file *pf = filp->data;
 
@@ -332,7 +332,7 @@ loff_t procfs_lseek(struct file *filp, loff_t offset, int origin)
   return offset;
 }
 
-int procfs_fstat(struct file *filp, struct stat *buffer)
+int procfs_fstat(struct file *filp, struct stat64 *buffer)
 {
   struct proc_file *pf = filp->data;
 
@@ -340,12 +340,13 @@ int procfs_fstat(struct file *filp, struct stat *buffer)
   {
     if (buffer)
     {
-      buffer->mode = S_IFDIR | S_IREAD | S_IEXEC;
-      buffer->ino = PROC_ROOT_INODE;
-      buffer->nlink = 1;
-      buffer->devno = NODEV;
-      buffer->atime = buffer->mtime = buffer->ctime = get_time();
-      buffer->size = 0;
+      memset(buffer, 0, sizeof(struct stat64));
+      buffer->st_mode = S_IFDIR | S_IREAD | S_IEXEC;
+      buffer->st_ino = PROC_ROOT_INODE;
+      buffer->st_nlink = 1;
+      buffer->st_dev = NODEV;
+      buffer->st_atime = buffer->st_mtime = buffer->st_ctime = get_time();
+      buffer->st_size = 0;
     }
 
     return 0;
@@ -353,21 +354,21 @@ int procfs_fstat(struct file *filp, struct stat *buffer)
 
   if (buffer)
   {
-    buffer->mode = 0;
-    buffer->mode |= S_IFCHR | S_IREAD;
+    memset(buffer, 0, sizeof(struct stat64));
+    buffer->st_mode = S_IFCHR | S_IREAD;
 
-    buffer->ino = pf->inode->ino;
-    buffer->nlink = 1;
-    buffer->devno = NODEV;
+    buffer->st_ino = pf->inode->ino;
+    buffer->st_nlink = 1;
+    buffer->st_dev = NODEV;
 
-    buffer->atime = buffer->mtime = buffer->ctime = get_time();
-    buffer->size = pf->size;
+    buffer->st_atime = buffer->st_mtime = buffer->st_ctime = get_time();
+    buffer->st_size = pf->size;
   }
 
   return pf->size;
 }
 
-int procfs_stat(struct fs *fs, char *name, struct stat *buffer)
+int procfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
 {
   struct proc_inode *inode;
 
@@ -377,12 +378,13 @@ int procfs_stat(struct fs *fs, char *name, struct stat *buffer)
   {
     if (buffer)
     {
-      buffer->mode = S_IFDIR | S_IREAD | S_IEXEC;
-      buffer->ino = PROC_ROOT_INODE;
-      buffer->nlink = 1;
-      buffer->devno = NODEV;
-      buffer->atime = buffer->mtime = buffer->ctime = get_time();
-      buffer->size = 0;
+      memset(buffer, 0, sizeof(struct stat64));
+      buffer->st_mode = S_IFDIR | S_IREAD | S_IEXEC;
+      buffer->st_ino = PROC_ROOT_INODE;
+      buffer->st_nlink = 1;
+      buffer->st_dev = NODEV;
+      buffer->st_atime = buffer->st_mtime = buffer->st_ctime = get_time();
+      buffer->st_size = 0;
     }
 
     return 0;
@@ -393,14 +395,15 @@ int procfs_stat(struct fs *fs, char *name, struct stat *buffer)
 
   if (buffer)
   {
-    buffer->mode = S_IFCHR | S_IREAD;
+    memset(buffer, 0, sizeof(struct stat64));
+    buffer->st_mode = S_IFCHR | S_IREAD;
 
-    buffer->ino = inode->ino;
-    buffer->nlink = 1;
-    buffer->devno = NODEV;
+    buffer->st_ino = inode->ino;
+    buffer->st_nlink = 1;
+    buffer->st_dev = NODEV;
 
-    buffer->atime = buffer->mtime = buffer->ctime = get_time();
-    buffer->size = inode->size;
+    buffer->st_atime = buffer->st_mtime = buffer->st_ctime = get_time();
+    buffer->st_size = inode->size;
   }
 
   return inode->size;

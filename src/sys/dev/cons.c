@@ -35,7 +35,7 @@
 
 #define SYSLOG_SIZE (64 * K)
 
-devno_t consdev = NODEV;
+dev_t consdev = NODEV;
 static int cursoff = 0;
 static int kprint_enabled = 1;
 static unsigned int kbd_timeout = INFINITE;

@@ -348,7 +348,7 @@ struct section *read_properties(char *filename)
 {
   int f;
   int size;
-  struct stat buffer;
+  struct stat64 buffer;
   char *props;
   struct section *sect;
 
@@ -356,7 +356,7 @@ struct section *read_properties(char *filename)
   if (f < 0) return NULL;
 
   fstat(f, &buffer);
-  size = buffer.quad.size_low;
+  size = (int) buffer.st_size;
 
   props = (char *) malloc(size + 1);
   if (!props)
