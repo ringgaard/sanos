@@ -133,7 +133,7 @@ static void *load_image(char *filename)
   }
 
   // Read headers
-  if (read(f, buffer, PAGESIZE) < 0)
+  if (read(f, buffer, PAGESIZE) != PAGESIZE)
   {
     close(f);
     free(buffer);
@@ -143,7 +143,12 @@ static void *load_image(char *filename)
   imghdr = (struct image_header *) (buffer + doshdr->e_lfanew);
 
   // Check PE file signature
-  if (imghdr->signature != IMAGE_PE_SIGNATURE) panic("invalid PE signature");
+  if (imghdr->signature != IMAGE_PE_SIGNATURE) 
+  {
+    close(f);
+    free(buffer);
+    return NULL;
+  }
 
   // Check alignment
   if (imghdr->optional.file_alignment != PAGESIZE || imghdr->optional.section_alignment != PAGESIZE) panic("image not page aligned");

@@ -357,7 +357,7 @@ __inline void execute_command(struct nic *nic, int cmd, int param)
 
 void execute_command_wait(struct nic *nic, int cmd, int param)
 {
-  int i = 4000;
+  int i = 4000000;
   execute_command(nic, cmd, param);
   while (--i > 0)
     if (!(_inpw(nic->iobase + STATUS) & INTSTATUS_CMD_IN_PROGRESS))
@@ -536,7 +536,7 @@ int nic_transmit(struct dev *dev, struct pbuf *p)
   int i;
   struct tx_desc *entry;
 
-  kprintf("nic: transmit packet, %d bytes, %d fragments\n", p->tot_len, pbuf_clen(p));
+  //kprintf("nic: transmit packet, %d bytes, %d fragments\n", p->tot_len, pbuf_clen(p));
 
   // Wait for free entry in transmit ring
   if (wait_for_object(&nic->tx_sem, TX_TIMEOUT) < 0)
@@ -564,9 +564,13 @@ int nic_transmit(struct dev *dev, struct pbuf *p)
       entry->sglist[i].length = q->len;
   }
 
-  entry->header = FSH_ROUND_UP_DEFEAT | FSH_DOWN_INDICATE;
+  entry->header = FSH_ROUND_UP_DEFEAT | FSH_DOWN_INDICATE | FSH_ADD_IP_CHECKSUM | FSH_ADD_TCP_CHECKSUM | FSH_ADD_UDP_CHECKSUM;
   entry->phys_next = 0;
   entry->pkt = p;
+
+  // Move to next entry in tx_ring
+  nic->next_tx = entry->next;
+  nic->tx_size++;
 
   // Update download list
   execute_command_wait(nic, CMD_DOWN_STALL, 0);
@@ -576,11 +580,6 @@ int nic_transmit(struct dev *dev, struct pbuf *p)
   else
     entry->prev->phys_next = entry->phys_addr;
   execute_command(nic, CMD_DOWN_UNSTALL, 0);
-
-  // Move to next entry in tx_ring
-  nic->next_tx = entry->next;
-  nic->tx_size++;
-
   return 0;
 }
 
@@ -593,6 +592,10 @@ int nic_attach(struct dev *dev, struct eth_addr *hwaddr)
 {
   struct nic *nic = dev->privdata;
   *hwaddr = nic->hwaddr;
+
+  dev->netif->flags |= NETIF_IP_TX_CHECKSUM_OFFLOAD | NETIF_IP_RX_CHECKSUM_OFFLOAD;
+  dev->netif->flags |= NETIF_UDP_RX_CHECKSUM_OFFLOAD | NETIF_UDP_TX_CHECKSUM_OFFLOAD;
+  dev->netif->flags |= NETIF_TCP_RX_CHECKSUM_OFFLOAD | NETIF_TCP_TX_CHECKSUM_OFFLOAD;
 
   return 0;
 }
@@ -612,6 +615,8 @@ void nic_up_complete(struct nic *nic)
   {
     length = nic->curr_rx->status & 0x1FFF;
 
+    //kprintf("nic: packet received, %d bytes\n", length);
+
     // Check for errors
     if (status & UP_PACKET_STATUS_ERROR)
     {
@@ -621,7 +626,38 @@ void nic_up_complete(struct nic *nic)
       continue;
     }
 
-    kprintf("nic: packet received, %d bytes\n", length);
+    // Check for IP checksum error
+    if ((nic->curr_rx->status & UP_PACKET_STATUS_IP_CHECKSUM_CHECKED) &&
+        (nic->curr_rx->status & UP_PACKET_STATUS_IP_CHECKSUM_ERROR))
+    {
+      kprintf("nic: ip checksum error\n");
+      stats.ip.chkerr++;
+      nic->curr_rx->status = 0;
+      nic->curr_rx = nic->curr_rx->next;
+      continue;
+    }
+
+    // Check for UDP checksum error
+    if ((nic->curr_rx->status & UP_PACKET_STATUS_UDP_CHECKSUM_CHECKED) &&
+        (nic->curr_rx->status & UP_PACKET_STATUS_UDP_CHECKSUM_ERROR))
+    {
+      kprintf("nic: udp checksum error\n");
+      stats.udp.chkerr++;
+      nic->curr_rx->status = 0;
+      nic->curr_rx = nic->curr_rx->next;
+      continue;
+    }
+
+    // Check for TCP checksum error
+    if ((nic->curr_rx->status & UP_PACKET_STATUS_TCP_CHECKSUM_CHECKED) &&
+        (nic->curr_rx->status & UP_PACKET_STATUS_TCP_CHECKSUM_ERROR))
+    {
+      kprintf("nic: tcp checksum error\n");
+      stats.tcp.chkerr++;
+      nic->curr_rx->status = 0;
+      nic->curr_rx = nic->curr_rx->next;
+      continue;
+    }
 
     if (length < RX_COPYBREAK)
     {
@@ -690,7 +726,7 @@ void nic_down_complete(struct nic *nic)
     nic->curr_tx = nic->curr_tx->next;
   }
 
-  kprintf("nic: release %d tx entries\n", freed);
+  //kprintf("nic: release %d tx entries\n", freed);
 
   release_sem(&nic->tx_sem, freed);
 }
@@ -862,7 +898,8 @@ int __declspec(dllexport) install(struct unit *unit)
   enable_irq(nic->irq);
 
   // Reset NIC
-  execute_command_wait(nic, CMD_RX_RESET, 0);
+  // Don't reset the PHY - that upsets autonegotiation during DHCP operations
+  execute_command_wait(nic, CMD_RX_RESET, 0x04);
   execute_command_wait(nic, CMD_TX_RESET, 0);
 
   // Read the EEPROM

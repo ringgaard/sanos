@@ -35,9 +35,9 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
   iphdr = p->payload;
   tcphdr = (struct tcp_hdr *)((char *) p->payload + IPH_HL(iphdr) * 4);
 
-  kprintf("tcp_input: size %d seqno %lu ackno %lu flags: ", p->tot_len, htonl(tcphdr->seqno), htonl(tcphdr->ackno));
-  tcp_debug_print_flags(TCPH_FLAGS(tcphdr));
-  kprintf("\n");
+  //kprintf("tcp_input: size %d seqno %lu ackno %lu flags: ", p->tot_len, htonl(tcphdr->seqno), htonl(tcphdr->ackno));
+  //tcp_debug_print_flags(TCPH_FLAGS(tcphdr));
+  //kprintf("\n");
 
   //kprintf("receiving TCP segment:\n");
   //tcp_debug_print(tcphdr);

@@ -224,10 +224,6 @@ void init_net()
   IP4_ADDR(&netmask, 0, 0, 0, 0);
   IP4_ADDR(&gw, 0, 0, 0, 0);
 
-  //IP4_ADDR(&ipaddr, 192, 168, 123, 200);
-  //IP4_ADDR(&netmask, 255, 255, 255, 0);
-  //IP4_ADDR(&gw, 192, 168, 123, 1);
-
   nic = ether_netif_add("eth0", "nic0", &ipaddr, &netmask, &gw);
   if (nic == NULL) return;
 
@@ -235,20 +231,9 @@ void init_net()
 
   if (peb->primary_dns.s_addr != INADDR_ANY)
   {
-    kprintf("dns: primary ");
-    ip_addr_debug_print((struct ip_addr *) &peb->primary_dns);
-
-    if (peb->secondary_dns.s_addr != INADDR_ANY)
-    {
-      kprintf("secondary ");
-      ip_addr_debug_print((struct ip_addr *) &peb->secondary_dns);
-    }
-
-    if (*peb->default_domain)
-    {
-      kprintf(" domain %s", peb->default_domain);
-    }
-
+    kprintf("dns: primary %a", &peb->primary_dns);
+    if (peb->secondary_dns.s_addr != INADDR_ANY) kprintf(" secondary %a", &peb->secondary_dns);
+    if (*peb->default_domain) kprintf(" domain %s", peb->default_domain);
     kprintf("\n");
   }
 }

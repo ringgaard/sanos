@@ -332,13 +332,18 @@ HANDLE WINAPI FindFirstFileA
 
   TRACE("FindFirstFileA");
   //syslog(LOG_DEBUG | LOG_AUX, "FindFirstFile %s\n", lpFileName);
+
   p = (char *) lpFileName;
   while (*p != 0 && *p != '*' && *p != '?') p++;
   
   if (*p)
   {
     finddata = (struct winfinddata *) malloc(sizeof(struct winfinddata));
-    if (!finddata) return INVALID_HANDLE_VALUE;
+    if (!finddata) 
+    {
+      errno = -ENOMEM;
+      return INVALID_HANDLE_VALUE;
+    }
 
     strcpy(finddata->dir, lpFileName);
     base = NULL;
@@ -350,6 +355,7 @@ HANDLE WINAPI FindFirstFileA
     }
     if (!base)
     {
+      errno = -ENOTDIR;
       free(finddata);
       return INVALID_HANDLE_VALUE;
     }
@@ -364,6 +370,7 @@ HANDLE WINAPI FindFirstFileA
     finddata->fhandle = opendir(finddata->dir);
     if (finddata->fhandle < 0)
     {
+      errno = -ENOTDIR;
       free(finddata);
       return INVALID_HANDLE_VALUE;
     }
@@ -379,6 +386,7 @@ HANDLE WINAPI FindFirstFileA
 
         if (stat(fn, &statbuf) < 0) 
 	{
+	  errno = -ENOENT;
           free(finddata);
 	  return INVALID_HANDLE_VALUE;
 	}
@@ -388,12 +396,24 @@ HANDLE WINAPI FindFirstFileA
       }
     }
 
+    // Add dummy entry
     free(finddata);
-    return INVALID_HANDLE_VALUE;
+    if (stat(finddata->dir, &statbuf) < 0) 
+    {
+      errno = -ENOENT;
+      return INVALID_HANDLE_VALUE;
+    }
+
+    fill_find_data(lpFindFileData, ".", &statbuf);
+    return NOFINDHANDLE;
   }
   else
   {
-    if (stat((char *) lpFileName, &statbuf) < 0) return INVALID_HANDLE_VALUE;
+    if (stat((char *) lpFileName, &statbuf) < 0) 
+    {
+      errno = -ENOENT;
+      return INVALID_HANDLE_VALUE;
+    }
 
     p = (char *) lpFileName;
     base = p;
@@ -421,8 +441,12 @@ BOOL WINAPI FindNextFileA
   char fn[MAXPATH];
 
   TRACE("FindNextFileA");
+
   if (hFindFile == NOFINDHANDLE)
+  {
+    errno = -ESRCH;
     return FALSE;
+  }
   else
   {
     finddata = (struct winfinddata *) hFindFile;
@@ -436,13 +460,18 @@ BOOL WINAPI FindNextFileA
 	strcpy(fn + strlen(fn), "\\");
 	strcpy(fn + strlen(fn), dirent.name);
 
-        if (stat(fn, &statbuf) < 0) return FALSE;
+        if (stat(fn, &statbuf) < 0) 
+	{
+	  errno = -ENOENT;
+	  return FALSE;
+	}
 
         fill_find_data(lpFindFileData, dirent.name, &statbuf);
 	return TRUE;
       }
     }
 
+    errno = -ESRCH;
     return FALSE;
   }
 }
@@ -570,6 +599,9 @@ DWORD WINAPI GetLastError(VOID)
 {
   TRACE("GetLastError");
   // TODO: implement better error reporting, for now just return E_FAIL
+  if (errno == 0) return 0;
+  if (errno == -ENOENT) return ERROR_FILE_NOT_FOUND;
+  if (errno == -ESRCH) return ERROR_NO_MORE_FILES;
   return 0x80000008L;
 }
 

@@ -49,32 +49,63 @@ static void free_stream(FILE *stream)
 
 int _open(const char *filename, int oflag)
 {
+  int rc;
+
   TRACE("_open");
   //syslog(LOG_DEBUG, "_open(%s,%p)\n", filename, oflag);
-  return open(filename, oflag);
+  rc = open(filename, oflag);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 int _close(int handle)
 {
+  int rc;
+
   TRACE("_close");
-  return close(handle);
+  rc = close(handle);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 int _read(int handle, void *buffer, unsigned int count)
 {
+  int rc;
+
   TRACE("_read");
-  return read(handle, buffer, count);
+  rc = read(handle, buffer, count);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 int _write(int handle, const void *buffer, unsigned int count)
 {
-  unsigned int rc;
+  int rc;
 
   TRACE("_write");
-  //syslog(LOG_DEBUG, "_write %d bytes to %p\n", count, handle);
   
   rc = write(handle, buffer, count);
-  if (rc != count) panic("error writing to file");
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
   return rc;
 }
 
@@ -127,7 +158,11 @@ __int64 _stati64(const char *path, struct _stati64 *buffer)
   //syslog(LOG_DEBUG, "stat on %s\n", path);
 
   rc = stat(path, &fs);
-  if (rc < 0) return -1;
+  if (rc < 0) 
+  {
+    errno = rc;
+    return -1;
+  }
 
   if (buffer)
   {
@@ -154,7 +189,11 @@ __int64 _fstati64(int handle, struct _stati64 *buffer)
 
   TRACE("_fstati64");
   rc = fstat(handle, &fs);
-  if (rc < 0) return -1;
+  if (rc < 0) 
+  {
+    errno = rc;
+    return -1;
+  }
 
   if (buffer)
   {
@@ -175,14 +214,32 @@ __int64 _fstati64(int handle, struct _stati64 *buffer)
 
 __int64 _lseeki64(int handle, __int64 offset, int origin)
 {
+  int rc;
+
   TRACE("_lseeki64");
-  return lseek(handle, (int) offset, origin);
+  rc = lseek(handle, (int) offset, origin);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 int _open_osfhandle(long osfhandle, int flags)
 {
+  int rc;
+
   TRACE("_open_osfhandle");
-  return dup(osfhandle);
+  rc = dup(osfhandle);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 long _get_osfhandle(int filehandle)
@@ -215,9 +272,17 @@ char *_fullpath(char *abspath, const char *relpath, size_t maxlen)
 
 int _rename(const char *oldname, const char *newname)
 {
+  int rc;
+
   TRACE("_rename");
-  if (rename(oldname, newname) < 0) return -1;
-  return 0;
+  rc = rename(oldname, newname);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 int _access(const char *path, int mode)
@@ -226,17 +291,30 @@ int _access(const char *path, int mode)
   int rc;
 
   TRACE("_access");
-  //syslog(LOG_DEBUG, "access check on %s\n", path);
 
   rc = stat(path, &fs);
-  if (rc < 0) return -1;
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
   return 0;
 }
 
 int _mkdir(const char *dirname)
 {
+  int rc;
+
   TRACE("_mkdir");
-  return mkdir(dirname);
+  rc = mkdir(dirname);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 FILE *fopen(const char *filename, const char *mode)
@@ -273,7 +351,11 @@ FILE *fopen(const char *filename, const char *mode)
   }
 
   handle = open(filename, oflag);
-  if (handle < 0) return NULL;
+  if (handle < 0) 
+  {
+    errno = handle;
+    return NULL;
+  }
 
   stream = alloc_stream();
   if (stream == NULL) panic("too many files open");
@@ -284,28 +366,45 @@ FILE *fopen(const char *filename, const char *mode)
 
 int fclose(FILE *stream)
 {
+  int rc;
+
   TRACE("fclose");
-  close(stream->file);
+  rc = close(stream->file);
   free_stream(stream);
-  return 0;
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 int fflush(FILE *stream)
 {
+  int rc;
+
   TRACE("fflush");
-  //syslog(LOG_DEBUG, "fflush(%d)\n", stream->file);
-  if (flush(stream->file) < 0) return -1;
-  return 0;
+  rc = flush(stream->file);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 int getc(FILE *stream)
 {
   char ch;
+  int rc;
 
   TRACE("getc");
-  //syslog(LOG_DEBUG, "getc on %p\n", stream - _iob);
-  if (read(stream->file, &ch, 1) < 0) return EOF;
-  return 0;
+
+  rc = read(stream->file, &ch, 1);
+  if (rc <= 0) return EOF;
+  return ch;
 }
 
 int fputc(int c, FILE *stream)
@@ -315,7 +414,7 @@ int fputc(int c, FILE *stream)
   TRACE("fputc");
   ch = c;
   if (write(stream->file, &ch, 1) < 0) return -1;
-  return 0;
+  return c;
 }
 
 char *fgets(char *string, int n, FILE *stream)
@@ -345,9 +444,6 @@ int vfprintf(FILE *stream, const char *fmt, va_list args)
 
   TRACEX("vfprintf");
   n = vsprintf(buffer, fmt, args);
-  
-  //syslog(LOG_DEBUG, "vfprintf called (fileno = %d) (%s)\n", stream - _iob, buffer);
-
   return write(stream->file, buffer, n);
 }
 

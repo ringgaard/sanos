@@ -31,7 +31,7 @@ void *load_image_file(char *filename, int userspace)
   struct image_header *imghdr;
   int i;
 
-  kprintf("ldr: loading module %s\n", filename);
+  //kprintf("ldr: loading module %s\n", filename);
 
   // Allocate header buffer
   buffer = kmalloc(PAGESIZE);

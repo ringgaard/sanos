@@ -13,6 +13,9 @@
 
 #define CONST const
 
+#define ERROR_FILE_NOT_FOUND             2L
+#define ERROR_NO_MORE_FILES              18L
+
 #define MAX_PATH             260
 #define INVALID_HANDLE_VALUE ((HANDLE) -1)
 

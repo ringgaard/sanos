@@ -19,7 +19,8 @@
 
 #define is_digit(c) ((c) >= '0' && (c) <= '9')
 
-static const char *digits="0123456789abcdefghijklmnopqrstuvwxyz";
+static char *digits="0123456789abcdefghijklmnopqrstuvwxyz";
+static char *upper_digits="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 static size_t strnlen(const char *s, size_t count)
 {
@@ -38,9 +39,10 @@ static int skip_atoi(const char **s)
 static char *number(char *str, long num, int base, int size, int precision, int type)
 {
   char c, sign, tmp[66];
+  char *dig = digits;
   int i;
 
-  if (type & LARGE)  digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  if (type & LARGE)  dig = upper_digits;
   if (type & LEFT) type &= ~ZEROPAD;
   if (base < 2 || base > 36) return 0;
   
@@ -82,7 +84,7 @@ static char *number(char *str, long num, int base, int size, int precision, int 
   {
     while (num != 0)
     {
-      tmp[i++] = digits[((unsigned long) num) % (unsigned) base];
+      tmp[i++] = dig[((unsigned long) num) % (unsigned) base];
       num = ((unsigned long) num) / (unsigned) base;
     }
   }
@@ -114,14 +116,16 @@ static char *number(char *str, long num, int base, int size, int precision, int 
 static char *eaddr(char *str, unsigned char *addr, int size, int precision, int type)
 {
   char tmp[24];
+  char *dig = digits;
   int i, len;
 
+  if (type & LARGE)  dig = upper_digits;
   len = 0;
   for (i = 0; i < 6; i++)
   {
     if (i != 0) tmp[len++] = ':';
-    tmp[len++] = digits[addr[i] >> 4];
-    tmp[len++] = digits[addr[i] & 0x0F];
+    tmp[len++] = dig[addr[i] >> 4];
+    tmp[len++] = dig[addr[i] & 0x0F];
   }
 
   if (!(type & LEFT)) while (len < size--) *str++ = ' ';
@@ -284,6 +288,9 @@ repeat:
 	  *ip = (str - buf);
 	}
 	continue;
+
+      case 'A':
+	flags |= LARGE;
 
       case 'a':
 	if (qualifier == 'l')

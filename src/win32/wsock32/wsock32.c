@@ -47,14 +47,33 @@ sockapi int __stdcall WSAStartup(WORD wVersionRequested, LPWSADATA lpWSAData)
 
 sockapi int __stdcall winsock_recv(SOCKET s,char *buf, int len, int flags)
 {
+  int rc;
+
   TRACE("recv");
-  return recv(s, buf, len, flags);
+  rc = recv(s, buf, len, flags);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 sockapi int __stdcall winsock_send(SOCKET s, const char *buf, int len, int flags)
 {
+  int rc;
+
   TRACE("send");
-  return send(s, buf, len, flags);
+  rc = send(s, buf, len, flags);
+
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 sockapi int __stdcall winsock_listen(SOCKET s, int backlog)
@@ -65,8 +84,8 @@ sockapi int __stdcall winsock_listen(SOCKET s, int backlog)
   rc = listen(s, backlog);
   if (rc < 0)
   {
-    syslog(LOG_DEBUG, "error %d in listen\n", rc);
-    dbgbreak();
+    errno = rc;
+    return -1;
   }
 
   return rc;
@@ -80,8 +99,8 @@ sockapi int __stdcall winsock_bind(SOCKET s, const struct sockaddr *name, int na
   rc = bind(s, name, namelen);
   if (rc < 0)
   {
-    syslog(LOG_DEBUG, "error %d in bind\n", rc);
-    dbgbreak();
+    errno = rc;
+    return -1;
   }
 
   return rc;
@@ -89,20 +108,48 @@ sockapi int __stdcall winsock_bind(SOCKET s, const struct sockaddr *name, int na
 
 sockapi SOCKET __stdcall winsock_accept(SOCKET s, struct sockaddr *addr, int *addrlen)
 {
+  int rc;
+
   TRACE("accept");
-  return accept(s, addr, addrlen);
+  rc = accept(s, addr, addrlen);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 sockapi int __stdcall winsock_recvfrom(SOCKET s, char *buf, int len, int flags, struct sockaddr *from, int *fromlen)
 {
+  int rc;
+
   TRACE("recvfrom");
-  return recvfrom(s, buf, len, flags, from, fromlen);
+  
+  rc = recvfrom(s, buf, len, flags, from, fromlen);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 sockapi int __stdcall winsock_sendto(SOCKET s, const char *buf, int len, int flags, const struct sockaddr *to, int tolen)
 {
+  int rc;
+
   TRACE("sendto");
-  return sendto(s, buf, len, flags, to, tolen);
+  rc = sendto(s, buf, len, flags, to, tolen);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 sockapi int __stdcall winsock_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timeval *timeout)
@@ -127,26 +174,62 @@ sockapi int __stdcall winsock_select(int nfds, fd_set *readfds, fd_set *writefds
 
 sockapi int __stdcall winsock_connect(SOCKET s, const struct sockaddr *name, int namelen)
 {
+  int rc;
+
   TRACE("connect");
-  return connect(s, name, namelen);
+  rc = connect(s, name, namelen);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 sockapi int __stdcall winsock_closesocket(SOCKET s)
 {
+  int rc;
+
   TRACE("closesocket");
-  return close(s);
+  rc = close(s);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 sockapi int __stdcall winsock_shutdown(SOCKET s, int how)
 {
+  int rc;
+
   TRACE("shutdown");
-  return shutdown(s, how);
+  rc = shutdown(s, how);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 sockapi int __stdcall winsock_gethostname(char *name, int namelen)
 {
+  int rc;
+
   TRACE("gethostname");
-  return gethostname(name, namelen);
+  rc = gethostname(name, namelen);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 sockapi struct hostent * __stdcall winsock_gethostbyaddr(const char *addr, int len, int type)
@@ -187,14 +270,32 @@ sockapi unsigned long __stdcall winsock_ntohl(unsigned long netlong)
 
 sockapi int __stdcall winsock_getsockopt(SOCKET s, int level, int optname, char *optval, int *optlen)
 {
+  int rc;
+
   TRACE("getsockopt");
-  return getsockopt(s, level, optname, optval, optlen);
+  rc = getsockopt(s, level, optname, optval, optlen);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 sockapi int winsock_setsockopt(SOCKET s, int level, int optname, const char *optval, int optlen)
 {
+  int rc;
+
   TRACE("setsockopt");
-  return setsockopt(s, level, optname, optval, optlen);
+  rc = setsockopt(s, level, optname, optval, optlen);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 sockapi struct protoent * __stdcall winsock_getprotobyname(const char *name)
@@ -205,14 +306,32 @@ sockapi struct protoent * __stdcall winsock_getprotobyname(const char *name)
 
 sockapi int __stdcall winsock_getsockname(SOCKET s, struct sockaddr *name, int *namelen)
 {
+  int rc;
+
   TRACE("getsockname");
-  return getsockname(s, name, namelen);
+  rc = getsockname(s, name, namelen);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 sockapi SOCKET __stdcall winsock_socket(int af, int type, int protocol)
 {
+  int rc;
+
   TRACE("socket");
-  return socket(af, type, protocol);
+  rc = socket(af, type, protocol);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 sockapi int __stdcall winsock_ioctlsocket(SOCKET s, long cmd, unsigned long *argp)
