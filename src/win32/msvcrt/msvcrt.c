@@ -14,6 +14,8 @@
 crtapi int _adjust_fdiv = 0;
 crtapi int __mb_cur_max = 1;
 
+static long holdrand = 1L;
+
 int _fltused = 0x9875;
 
 void _initterm(_PVFV *begin, _PVFV *end)
@@ -60,6 +62,18 @@ int _vsnprintf(char *buffer, size_t size, const char *fmt, va_list args)
   return vsprintf(buffer, fmt, args);
 }
 
+int _snprintf(char *buffer, size_t size, const char *fmt, ...)
+{
+  va_list args;
+  int n;
+
+  TRACE("_snprintf");
+  va_start(args, fmt);
+  n = _vsnprintf(buffer, size, fmt, args);
+  va_end(args);
+  return n;
+}
+
 int sscanf(const char *buffer, const char *fmt, ...)
 {
   TRACE("sscanf");
@@ -84,12 +98,6 @@ int *_errno()
 {
   TRACE("_errno");
   return &(gettib()->errnum);
-}
-
-char *strerror(int errnum)
-{
-  TRACE("strerror");
-  return "general error";
 }
 
 unsigned long _beginthreadex(void *security, unsigned stack_size, unsigned (__stdcall *start_address)(void * ), void *arglist, unsigned initflag, unsigned *thrdaddr)
@@ -149,6 +157,11 @@ void _assert(void *expr, void *filename, unsigned lineno)
   abort();
 }
 
+int _getpid()
+{
+  return gettib()->pid;
+}
+
 char *_strdup(const char *s)
 {
   char *t;
@@ -159,6 +172,16 @@ char *_strdup(const char *s)
   t = (char *) malloc(len + 1);
   memcpy(t, s, len + 1);
   return t;
+}
+
+void srand(unsigned int seed)
+{
+  holdrand = (long) seed;
+}
+
+int rand()
+{
+  return (((holdrand = holdrand * 214013L + 2531011L) >> 16) & 0x7fff);
 }
 
 void init_fileio();

@@ -85,13 +85,13 @@ static void list_dir(int argc, char **argv)
 
   verbose = 0;
   if (argc == 1)
-    dirname = "/";
+    dirname = ".";
   else if (argc == 2)
   {
     if (strcmp(argv[1], "-l") == 0)
     {
       verbose = 1;
-      dirname = "/";
+      dirname = ".";
     }
     else
       dirname = argv[1];
@@ -184,6 +184,18 @@ static void move_file(char *oldname, char *newname)
   if (rc < 0)
   {
     printf("%s: %s\n", oldname, strerror(rc));
+    return;
+  }
+}
+
+static void change_dir(char *filename)
+{
+  int rc;
+
+  rc = chdir(filename); 
+  if (rc < 0)
+  {
+    printf("%s: %s\n", filename, strerror(rc));
     return;
   }
 }
@@ -1184,7 +1196,7 @@ void shell()
 
   while (1)
   {
-    printf("$ ");
+    printf("%s$ ", getcwd(cmd, 256));
     if (gets(cmd) == NULL) break;
 
     argc = parse_args(cmd, NULL);
@@ -1205,6 +1217,8 @@ void shell()
 	remove_file(argv[1]);
       else if (strcmp(argv[0], "mv") == 0 || strcmp(argv[0], "move") == 0)
 	move_file(argv[1], argv[2]);
+      else if (strcmp(argv[0], "chdir") == 0 || strcmp(argv[0], "cd") == 0)
+	change_dir(argv[1]);
       else if (strcmp(argv[0], "mkdir") == 0 || strcmp(argv[0], "md") == 0)
 	make_dir(argv[1]);
       else if (strcmp(argv[0], "rmdir") == 0 || strcmp(argv[0], "rd") == 0)

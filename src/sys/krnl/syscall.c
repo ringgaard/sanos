@@ -2342,6 +2342,29 @@ static int sys_writev(char *params)
   return rc;
 }
 
+static int sys_chdir(char *params)
+{
+  char *name;
+  int rc;
+
+  if (lock_buffer(params, 4) < 0) return -EFAULT;
+
+  name = *(char **) params;
+
+  if (lock_string(name) < 0) 
+  {
+    unlock_buffer(params, 4);
+    return -EFAULT;
+  }
+
+  rc = chdir(name);
+
+  unlock_string(name);
+  unlock_buffer(params, 4);
+
+  return rc;
+}
+
 struct syscall_entry syscalltab[] =
 {
   {"null","", sys_null},
@@ -2396,9 +2419,9 @@ struct syscall_entry syscalltab[] =
   {"ioctl", "%d,%d,%p,%d", sys_ioctl},
   {"getfsstat", "%p,%d", sys_getfsstat},
   {"fstatfs", "%d,%p", sys_fstatfs},
-  {"statfs", "%s,%p", sys_statfs},
+  {"statfs", "'%s',%p", sys_statfs},
   {"futime", "%d,%p", sys_futime},
-  {"utime", "%s,%p", sys_utime},
+  {"utime", "'%s',%p", sys_utime},
   {"settimeofday", "%p", sys_settimeofday},
   {"accept", "%d,%p,%p", sys_accept},
   {"bind", "%d,%p,%d", sys_bind},
@@ -2417,7 +2440,8 @@ struct syscall_entry syscalltab[] =
   {"waitall", "%p,%d,%d", sys_waitall},
   {"waitany", "%p,%d,%d", sys_waitany},
   {"readv", "%d,%p,%d", sys_readv},
-  {"writev", "%d,%p,%d", sys_writev}
+  {"writev", "%d,%p,%d", sys_writev},
+  {"chdir", "'%s'", sys_chdir}
 };
 
 int syscall(int syscallno, char *params)

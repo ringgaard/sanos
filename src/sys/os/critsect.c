@@ -56,7 +56,7 @@ void enter(critsect_t cs)
   }
   else 
   {    
-    if (atomic_add(&cs->count, 1) > 0)  wait(cs->event, INFINITE);
+    if (atomic_add(&cs->count, 1) > 0) wait(cs->event, INFINITE);
     cs->owner = tid;
   }
 }

@@ -10,24 +10,41 @@
 
 struct filesystem *fslist = NULL;
 struct fs *mountlist = NULL;
+char curdir[MAXPATH];
 
 int canonicalize(char *path, char *buffer)
 {
   char *p;
+  char *end;
   int len;
 
-  // Check for maximum filename length
+  // Check arguments
   if (!path) return -EINVAL;
-  if (strlen(path) >= MAXPATH) return -ENAMETOOLONG;
 
-  // Remove drive letter and initial path separator from filename (e.g. c:\)
+  // Remove drive letter from filename (e.g. c:)
   if (path[0] != 0 && path[1] == ':') path += 2;
-  
+
+  // Initialize buffer
   p = buffer;
+  end = buffer + MAXPATH;
+
+  // Add current directory to filename if relative path
+  if (*path != PS1 && *path != PS2)
+  {
+    // Do not add current directory if it is root directory
+    len = strlen(curdir);
+    if (len > 1)
+    {
+      memcpy(p, curdir, len);
+      p += len;
+    }
+  }
+
   while (*path)
   {
     // Parse path separator
     if (*path == PS1 || *path == PS2) path++;
+    if (p == end) return -ENAMETOOLONG;
     *p++ = PS1;
 
     // Parse next name part in path
@@ -37,6 +54,7 @@ int canonicalize(char *path, char *buffer)
       // We do not allow control characters in filenames
       if (*path > 0 && *path < ' ') return -EINVAL;
       
+      if (p == end) return -ENAMETOOLONG;
       *p++ = *path++;
       len++;
     }
@@ -58,6 +76,7 @@ int canonicalize(char *path, char *buffer)
   if (p == buffer) *p++ = PS1;
 
   // Terminate string
+  if (p == end) return -ENAMETOOLONG;
   *p = 0;
 
   return p - buffer;
@@ -157,6 +176,11 @@ static int files_proc(struct proc_file *pf, void *arg)
 
 int init_vfs()
 {
+  curdir[0] = PS1;
+  curdir[1] = 0;
+  if (!peb) panic("peb not initialized in vfs");
+  strcpy(peb->curdir, curdir);
+
   register_proc_inode("files", files_proc, NULL);
   return 0;
 }
@@ -668,6 +692,44 @@ int stat(char *name, struct stat *buffer)
   unlock_fs(fs, FSOP_STAT);
   fs->locks--;
   return rc;
+}
+
+int chdir(char *name)
+{
+  struct fs *fs;
+  char *rest;
+  int rc;
+  char path[MAXPATH];
+  char newdir[MAXPATH];
+  struct stat buffer;
+
+  rc = canonicalize(name, path);
+  if (rc < 0) return rc;
+  strcpy(newdir, path);
+
+  fs = fslookup(path, &rest);
+  if (!fs) return -ENOENT;
+  
+  if (fs->ops->stat)
+  {
+    fs->locks++;
+    if (lock_fs(fs, FSOP_STAT) < 0) 
+    {
+      fs->locks--;
+      return -ETIMEOUT;
+    }
+    rc = fs->ops->stat(fs, rest, &buffer);
+    unlock_fs(fs, FSOP_STAT);
+    fs->locks--;
+
+    if (rc < 0) return rc;
+    if (!(buffer.mode & FS_DIRECTORY)) return -ENOTDIR;
+  }
+
+  strcpy(curdir, newdir);
+  if (peb) strcpy(peb->curdir, newdir);
+
+  return 0;
 }
 
 int mkdir(char *name)

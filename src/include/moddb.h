@@ -19,6 +19,13 @@
 #define MODULE_PROTECTED        0x0020
 #define MODULE_INITIALIZED      0x0040
 
+struct modalias
+{
+  char *name;
+  char *alias;
+  struct modalias *next;
+};
+
 struct moddb
 {
   int flags;
@@ -33,6 +40,7 @@ struct moddb
   struct module *execmod;
   char **modpaths;
   int nmodpaths;
+  struct modalias *aliases;
 };
 
 struct module
@@ -55,6 +63,6 @@ void *get_entrypoint(hmodule_t hmod);
 hmodule_t load_module(struct moddb *db, char *name);
 int unload_module(struct moddb *db, hmodule_t hmod);
 
-void init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *libpath, int flags);
+int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *libpath, struct section *aliassect, int flags);
 
 #endif

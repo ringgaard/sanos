@@ -402,3 +402,8 @@ int socket(int domain, int type, int protocol)
 {
   return syscall(SYSCALL_SOCKET, &domain);
 }
+
+int chdir(const char *name)
+{
+  return syscall(SYSCALL_CHDIR, (void *) &name);
+}

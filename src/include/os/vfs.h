@@ -114,6 +114,8 @@ struct fsops
 
 #ifdef KERNEL
 
+char curdir[MAXPATH];
+
 int init_vfs();
 int fnmatch(char *fn1, int len1, char *fn2, int len2);
 krnlapi struct filesystem *register_filesystem(char *name, struct fsops *ops);
@@ -149,6 +151,7 @@ krnlapi int utime(char *name, struct utimbuf *times);
 krnlapi int fstat(struct file *filp, struct stat *buffer);
 krnlapi int stat(char *name, struct stat *buffer);
 
+krnlapi int chdir(char *name);
 krnlapi int mkdir(char *name);
 krnlapi int rmdir(char *name);
 

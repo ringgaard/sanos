@@ -108,20 +108,113 @@ struct mallinfo mallinfo()
   return m;
 }
 
-char *canonicalize(const char *filename, char *buffer, int size)
+int canonicalize(const char *filename, char *buffer, int size)
 {
-  char *basename = (char *) filename;
-  char *p = (char *) filename;
+  char *p;
+  char *end;
+  int len;
 
-  while (*p)
+  // Check for maximum filename length
+  if (!filename)  return -EINVAL;
+
+  // Remove drive letter from filename (e.g. c:)
+  if (filename[0] != 0 && filename[1] == ':') filename += 2;
+
+  // Initialize buffer
+  p = buffer;
+  end = buffer + size;
+
+  // Add current directory to filename if relative path
+  if (*filename != PS1 && *filename != PS2)
   {
-    *buffer = *p;
-    if (*buffer == PS1 || *buffer == PS2) basename = buffer + 1;
-    buffer++;
-    p++;
+    // Do not add current directory if it is root directory
+    len = strlen(peb->curdir);
+    if (len > 1)
+    {
+      memcpy(p, peb->curdir, len);
+      p += len;
+    }
   }
-  *buffer = 0;
-  return basename;
+
+  while (*filename)
+  {
+    // Parse path separator
+    if (*filename == PS1 || *filename == PS2) filename++;
+    if (p == end) return -ENAMETOOLONG;
+    *p++ = PS1;
+
+    // Parse next name part in path
+    len = 0;
+    while (*filename && *filename != PS1 && *filename != PS2)
+    {
+      // We do not allow control characters in filenames
+      if (*filename > 0 && *filename < ' ') return -EINVAL;
+      if (p == end) return -ENAMETOOLONG;
+      *p++ = *filename++;
+      len++;
+    }
+
+    // Handle empty name parts and '.' and '..'
+    if (len == 0)
+      p--;
+    if (len == 1 && filename[-1] == '.')
+      p -= 2;
+    else if (len == 2 && filename[-1] == '.' && filename[-2] == '.')
+    {
+      p -= 4;
+      if (p < buffer) return -EINVAL;
+      while (*p != PS1) p--;
+    }
+  }
+
+  // Convert empty filename to /
+  if (p == buffer) *p++ = PS1;
+
+  // Terminate string
+  if (p == end) return -ENAMETOOLONG;
+  *p = 0;
+
+  return p - buffer;
+}
+
+char *getcwd(char *buf, size_t size)
+{
+  size_t len;
+
+  len = strlen(peb->curdir);
+
+  if (buf)
+  {
+    if (len >= size)
+    {
+      errno = -ERANGE;
+      return NULL;
+    }
+  }
+  else
+  {
+    if (size == 0)
+      buf = malloc(len + 1);
+    else
+    {
+      if (len >= size)
+      {
+	errno = -ERANGE;
+	return NULL;
+      }
+
+      buf = malloc(size);
+    }
+
+    if (!buf) 
+    {
+      errno = -ENOMEM;
+      return NULL;
+    }
+  }
+
+  memcpy(buf, peb->curdir, len + 1);
+  return buf;
 }
 
 static void *load_image(char *filename)
@@ -385,7 +478,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   usermods.protect_region = protect_region;
   usermods.log = logldr;
 
-  init_module_database(&usermods, "os.dll", hmod, get_property(config, "os", "libpath", "/os"), 0);
+  init_module_database(&usermods, "os.dll", hmod, get_property(config, "os", "libpath", "/os"), find_section(config, "modaliases"), 0);
 
   // Mount devices
   init_mount();

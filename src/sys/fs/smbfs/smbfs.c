@@ -589,7 +589,7 @@ int smb_stat(struct fs *fs, char *name, struct stat *buffer)
       buffer->atime = time(0);
       buffer->ctime = share->mounttime;
       buffer->mtime = share->mounttime;
-      buffer->mode = FS_DIRECTORY;;
+      buffer->mode = FS_DIRECTORY;
       buffer->nlink = 1;
       return 0;
     }

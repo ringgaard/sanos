@@ -14,6 +14,7 @@ EXPORTS
   vsprintf
   strchr
   strncmp
+  _stricmp=stricmp
   strncpy
   strrchr
   strstr
@@ -38,3 +39,5 @@ EXPORTS
   iscntrl
   toupper
   tolower
+  strerror
+  _sys_nerr=sys_nerr

@@ -47,6 +47,13 @@ static void free_stream(FILE *stream)
   stream->flag = 0;
 }
 
+int _pipe(int *phandles, unsigned int psize, int textmode)
+{
+  TRACE("pipe");
+  errno = -ENOSYS;
+  return -1;
+}
+
 int _open(const char *filename, int oflag)
 {
   int rc;
@@ -69,6 +76,21 @@ int _close(int handle)
 
   TRACE("_close");
   rc = close(handle);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
+}
+
+int _commit(int handle)
+{
+  int rc;
+
+  TRACE("_commit");
+  rc = flush(handle);
   if (rc < 0)
   {
     errno = rc;
@@ -182,6 +204,36 @@ __int64 _stati64(const char *path, struct _stati64 *buffer)
   return 0;
 }
 
+int _fstat(int handle, struct _stat *buffer)
+{
+  int rc;
+  struct stat fs;
+
+  TRACE("_fstat");
+  rc = fstat(handle, &fs);
+  if (rc < 0) 
+  {
+    errno = rc;
+    return -1;
+  }
+
+  if (buffer)
+  {
+    memset(buffer, 0, sizeof(struct _stat));
+    buffer->st_atime = fs.atime;
+    buffer->st_ctime = fs.ctime;
+    buffer->st_mtime = fs.mtime;
+    buffer->st_size = fs.quad.size_low;
+    buffer->st_mode = S_IREAD | S_IWRITE | S_IEXEC;
+    if (fs.mode & FS_DIRECTORY)
+      buffer->st_mode |= S_IFDIR;
+    else
+      buffer->st_mode |= S_IFREG;
+  }
+
+  return 0;
+}
+
 __int64 _fstati64(int handle, struct _stati64 *buffer)
 {
   int rc;
@@ -258,16 +310,62 @@ int _getdrive()
 char *_getdcwd(int drive, char *buffer, int maxlen)
 {
   TRACE("_getdcwd");
-  strcpy(buffer, "c:\\");
-  return buffer;
+  return getcwd(buffer, maxlen);
 }
 
 char *_fullpath(char *abspath, const char *relpath, size_t maxlen)
 {
+  int rc;
+
   TRACE("_fullpath");
-  canonicalize(relpath, abspath, maxlen);
-  //syslog(LOG_DEBUG, "fullpath: abspath: %s relpath: %s\n", abspath, relpath);
+
+  if (maxlen < 3) 
+  {
+    errno = -ERANGE;
+    return NULL;
+  }
+
+  abspath[0] = 'C';
+  abspath[1] = ':';
+
+  rc = canonicalize(relpath, abspath + 2, maxlen - 2);
+  if (rc < 0)
+  {
+    errno = rc;
+    return NULL;
+  }
+
   return abspath;
+}
+
+int _unlink(const char *filename)
+{
+  int rc;
+
+  TRACE("_unlink");
+  rc = unlink(filename);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
+}
+
+int remove(const char *path)
+{
+  int rc;
+
+  TRACE("_remove");
+  rc = unlink(path);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 int _rename(const char *oldname, const char *newname)
@@ -287,12 +385,28 @@ int _rename(const char *oldname, const char *newname)
 
 int _access(const char *path, int mode)
 {
-  struct stat fs;
   int rc;
 
   TRACE("_access");
 
-  rc = stat(path, &fs);
+  rc = stat(path, NULL);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return 0;
+}
+
+int _chmod(const char *filename, int pmode)
+{
+  int rc;
+
+  TRACE("_chmod");
+
+  // Just check that file exists
+  rc = stat(filename, NULL);
   if (rc < 0)
   {
     errno = rc;
@@ -315,6 +429,33 @@ int _mkdir(const char *dirname)
   }
 
   return rc;
+}
+
+int _chdir(const char *dirname)
+{
+  TRACE("_chdir");
+
+  return chdir(dirname);
+}
+
+char *_getcwd(char *buffer, int maxlen)
+{
+  TRACE("_getcwd");
+
+  return getcwd(buffer, maxlen);
+}
+
+FILE *_fdopen(int handle, const char *mode)
+{
+  FILE *stream; 
+
+  TRACE("fdopen");
+
+  stream = alloc_stream();
+  if (stream == NULL) panic("too many files open");
+
+  stream->file = handle;
+  return stream;
 }
 
 FILE *fopen(const char *filename, const char *mode)
@@ -364,6 +505,49 @@ FILE *fopen(const char *filename, const char *mode)
   return stream;
 }
 
+FILE *freopen(const char *path, const char *mode, FILE *stream)
+{
+  int oflag;
+  handle_t handle;
+
+  TRACE("freopen");
+
+  switch (mode[0])
+  {
+    case 'r':
+      oflag = O_RDONLY;
+      break;
+
+    case 'w':
+      oflag = O_WRONLY | O_CREAT | O_TRUNC;
+      break;
+
+    case 'a':
+      oflag = O_WRONLY | O_CREAT | O_APPEND;
+      break;
+  
+    default:
+      return NULL;
+  }
+
+  if (mode[1] == '+')
+  {
+    oflag |= O_RDWR;
+    oflag &= ~(O_RDONLY | O_WRONLY);
+  }
+
+  handle = open(path, oflag);
+  if (handle < 0) 
+  {
+    errno = handle;
+    return NULL;
+  }
+
+  close(stream->file);
+  stream->file = handle;
+  return stream;
+}
+
 int fclose(FILE *stream)
 {
   int rc;
@@ -395,6 +579,95 @@ int fflush(FILE *stream)
   return rc;
 }
 
+size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
+{
+  int rc;
+  int count;
+
+  TRACE("fread");
+
+  if ((count = size * num) == 0) return 0;
+
+  rc = read(stream->file, buffer, size * num);
+  if (rc < 0)
+  {
+    errno = rc;
+    return 0;
+  }
+
+  return rc / size;
+}
+
+size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
+{
+  int rc;
+  int count;
+
+  TRACE("fwrite");
+
+  if ((count = size * num) == 0) return 0;
+
+  rc = write(stream->file, buffer, size * num);
+  if (rc < 0)
+  {
+    errno = rc;
+    return 0;
+  }
+
+  return rc / size;
+}
+
+int fputs(const char *string, FILE *stream)
+{
+  int len;
+  int rc;
+
+  TRACE("fputs");
+
+  len = strlen(string);
+  rc = write(stream->file, string, len);
+
+  return rc == len ? 0 : EOF;
+}
+
+int fseek(FILE *stream, long offset, int whence)
+{
+  int rc;
+
+  TRACE("fseek");
+
+  rc = lseek(stream->file, offset, whence);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return 0;
+}
+
+int fgetpos(FILE *stream, fpos_t *pos)
+{
+  int rc;
+
+  TRACE("fgetpos");
+
+  rc = tell(stream->file);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  *pos = rc;
+  return 0;
+}
+
+void clearerr(FILE *stream)
+{
+  TRACE("clearerr");
+}
+
 int getc(FILE *stream)
 {
   char ch;
@@ -404,6 +677,19 @@ int getc(FILE *stream)
 
   rc = read(stream->file, &ch, 1);
   if (rc <= 0) return EOF;
+  return ch;
+}
+
+int fgetc(FILE *stream)
+{
+  unsigned char ch;
+  int rc;
+
+  TRACE("fgetc");
+
+  rc = read(stream->file, &ch, 1);
+  if (rc <= 0) return EOF;
+
   return ch;
 }
 

@@ -463,6 +463,7 @@ struct peb
 {
   struct moddb *usermods;
   int fast_syscalls_supported;
+  char curdir[MAXPATH];
 
   char hostname[256];
   struct in_addr ipaddr;
@@ -595,6 +596,9 @@ osapi int utime(const char *name, struct utimbuf *times);
 osapi int fstat(handle_t f, struct stat *buffer);
 osapi int stat(const char *name, struct stat *buffer);
 
+osapi int chdir(const char *name);
+osapi char *getcwd(char *buf, size_t size);
+
 osapi int mkdir(const char *name);
 osapi int rmdir(const char *name);
 
@@ -647,7 +651,7 @@ osapi clock_t clock();
 
 osapi void panic(const char *msg);
 osapi void syslog(int priority, const char *fmt,...);
-osapi char *canonicalize(const char *filename, char *buffer, int size);
+osapi int canonicalize(const char *filename, char *buffer, int size);
 
 osapi void mkcs(critsect_t cs);
 osapi void csfree(critsect_t cs);

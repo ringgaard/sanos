@@ -83,7 +83,8 @@
 #define SYSCALL_WAITANY      71
 #define SYSCALL_READV        72
 #define SYSCALL_WRITEV       73
+#define SYSCALL_CHDIR        74
 
-#define SYSCALL_MAX          73
+#define SYSCALL_MAX          74
 
 #endif

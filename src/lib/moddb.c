@@ -31,10 +31,10 @@ static void logmsg(struct moddb *db, const char *fmt, ...)
   }
 }
 
-static char *get_basename(const char *filename, char *buffer, int size)
+static char *get_basename(char *filename, char *buffer, int size)
 {
-  char *basename = (char *) filename;
-  char *p = (char *) filename;
+  char *basename = filename;
+  char *p = filename;
 
   while (*p)
   {
@@ -44,6 +44,7 @@ static char *get_basename(const char *filename, char *buffer, int size)
     p++;
   }
   *buffer = 0;
+
   return basename;
 }
 
@@ -107,6 +108,7 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path)
   char *basename;
   char *dot;
   int len;
+  struct modalias *ma;
 
   for (i = 0; i < db->nmodpaths; i++)
   {
@@ -143,6 +145,19 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path)
     }
 
     *p = 0;
+
+    // Check for alias
+    ma = db->aliases;
+    while (ma)
+    {
+      if (strcmp(basename, ma->name) == 0)
+      {
+	strcpy(basename, ma->alias);
+	break;
+      }
+
+      ma = ma->next;
+    }
 
     // Return path if file exists
     if (stat(path, NULL) > 0) return basename;
@@ -205,6 +220,7 @@ static struct module *get_module(struct moddb *db, char *name)
   char *p;
   char *s;
   struct module *m;
+  struct modalias *ma;
 
   // Get canonical module name
   basename = name;
@@ -239,6 +255,14 @@ static struct module *get_module(struct moddb *db, char *name)
   }
 
   *p = 0;
+
+  // Check for alias
+  ma = db->aliases;
+  while (ma)
+  {
+    if (strcmp(buffer, ma->name) == 0) return get_module(db, ma->alias);
+    ma = ma->next;
+  }
 
   // Try to find module in module list
   m = db->modules;
@@ -322,7 +346,7 @@ static struct module *resolve_imports(struct module *mod)
       name = get_module_name(mod->db, name, path);
       if (!name)
       {
-	logmsg(mod->db, "module %s not found", name);
+	logmsg(mod->db, "module %s not found", RVA(mod->hmod, imp->name));
         return NULL;
       }
 
@@ -396,7 +420,7 @@ static int bind_imports(struct module *mod)
 	*thunks = (unsigned long) get_proc_by_ordinal(expmod->hmod, ordinal);
 	if (*thunks == 0) 
         {
-	  logmsg(mod->db, "unable to resolve %s:#%d in %s", name, ordinal, mod->name);
+	  logmsg(mod->db, "unable to resolve %s:#%d in %s", expmod->name, ordinal, mod->name);
 	  errs++;
         }
       }
@@ -407,7 +431,7 @@ static int bind_imports(struct module *mod)
 	*thunks = (unsigned long) get_proc_by_name(expmod->hmod, ibn->hint, ibn->name);
 	if (*thunks == 0)
         {
-	  logmsg(mod->db, "unable to resolve %s:%s in %s", name, ibn->name, mod->name);
+	  logmsg(mod->db, "unable to resolve %s:%s in %s", expmod->name, ibn->name, mod->name);
 	  errs++;
         }
       }
@@ -753,12 +777,15 @@ int unload_module(struct moddb *db, hmodule_t hmod)
   return remove_module(mod);
 }
 
-void init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *libpath, int flags)
+int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *libpath, struct section *aliassect, int flags)
 {
   char buffer[MAXPATH];
+  struct property *prop;
 
+  // Set flags
   db->flags = flags;
 
+  // Set library paths
   if (libpath)
   {
     int n;
@@ -800,8 +827,33 @@ void init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *li
     db->nmodpaths = 0;
   }
 
+  // Setup module aliases
+  db->aliases = NULL;
+  if (aliassect)
+  {
+    prop = aliassect->properties;
+    while (prop)
+    {
+      struct modalias *ma;
+
+      ma = (struct modalias *) malloc(sizeof(struct modalias));
+      if (!ma) return -ENOMEM;
+
+      ma->name = strdup(prop->name);
+      ma->alias = strdup(prop->value);
+      ma->next = db->aliases;
+
+      db->aliases = ma;
+
+      prop = prop->next;
+    }
+  }
+
+  // Setup module database with initial module
   if (!find_in_modpaths(db, name, buffer)) panic("initial module missing");
   db->modules = (struct module *) malloc(sizeof(struct module));
+  if (!db->modules) return -ENOMEM;
+
   db->modules->hmod = hmod;
   db->modules->db = db;
   db->modules->name = strdup(name);
@@ -811,6 +863,8 @@ void init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *li
   db->modules->refcnt = 1;
   db->modules->flags =  MODULE_LOADED | MODULE_IMPORTS_REFED | MODULE_RESOLVED | MODULE_RELOCATED | MODULE_BOUND | MODULE_PROTECTED | MODULE_INITIALIZED;
 
-
+  // Protect initial module
   if (db->protect_region) protect_module(db->modules);
+
+  return 0;
 }

@@ -23,6 +23,7 @@
 #define S_IEXEC        0000100         // execute/search permission, owner
 
 typedef unsigned int size_t;
+typedef long fpos_t;
 
 struct _stat
 {
@@ -113,13 +114,16 @@ crtapi void _free(void *mem);
 crtapi void *_calloc(size_t num, size_t size);
 crtapi void *_realloc(void *mem, size_t size);
 
+crtapi int _pipe(int *phandles, unsigned int psize, int textmode);
 crtapi int _open(const char *filename, int oflag);
 crtapi int _close(int handle);
+crtapi int _commit(int handle);
 crtapi int _read(int handle, void *buffer, unsigned int count);
 crtapi int _write(int handle, const void *buffer, unsigned int count);
 crtapi int _setmode(int handle, int mode);
 crtapi int _stat(const char *path, struct _stat *buffer);
 crtapi __int64 _stati64(const char *path, struct _stati64 *buffer);
+crtapi int _fstat(int handle, struct _stat *buffer);
 crtapi __int64 _fstati64(int handle, struct _stati64 *buffer);
 crtapi int _open_osfhandle(long osfhandle, int flags);
 crtapi long _get_osfhandle(int filehandle);
@@ -128,15 +132,29 @@ crtapi __int64 _lseeki64(int handle, __int64 offset, int origin);
 crtapi int _getdrive();
 crtapi char *_getdcwd(int drive, char *buffer, int maxlen);
 crtapi char *_fullpath(char *abspath, const char *relpath, size_t maxlen);
+crtapi int _unlink(const char *filename);
+crtapi int remove(const char *path);
 crtapi int _rename(const char *oldname, const char *newname);
 crtapi int _access(const char *path, int mode);
+crtapi int _chmod(const char *filename, int pmode);
 crtapi int _mkdir(const char *dirname);
+crtapi int _chdir(const char *dirname);
+crtapi char *_getcwd(char *buffer, int maxlen);
 
+crtapi FILE *_fdopen(int handle, const char *mode);
 crtapi FILE *fopen(const char *filename, const char *mode);
+crtapi FILE *freopen(const char *path, const char *mode, FILE *stream);
 crtapi int fclose(FILE *stream);
 crtapi int fflush(FILE *stream);
+crtapi size_t fread(void *buffer, size_t size, size_t num, FILE *stream);
+crtapi size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream);
+crtapi int fputs(const char *string, FILE *stream);
+crtapi int fseek(FILE *stream, long offset, int whence);
+crtapi int fgetpos(FILE *stream, fpos_t *pos);
+crtapi void clearerr(FILE *stream);
 crtapi int getc(FILE *stream);
 crtapi int fputc(int c, FILE *stream);
+crtapi int fgetc(FILE *stream);
 crtapi char *fgets(char *string, int n, FILE *stream);
 crtapi int fprintf(FILE *stream, const char *fmt, ...);
 crtapi int vfprintf(FILE *stream, const char *fmt, va_list args);
@@ -150,6 +168,7 @@ crtapi int sprintf(char *buf, const char *fmt, ...);
 crtapi int printf(const char *fmt, ...);
 crtapi int vsprintf(char *buffer, const char *fmt, va_list args);
 crtapi int _vsnprintf(char *buffer, size_t size, const char *fmt, va_list args);
+crtapi int _snprintf(char *buffer, size_t size, const char *fmt, ...);
 crtapi int sscanf(const char *buffer, const char *fmt, ...);
 
 crtapi char *getenv(const char *option);
@@ -167,14 +186,17 @@ crtapi void abort();
 crtapi void _exit(int status);
 crtapi void _purecall();
 crtapi void _assert(void *expr, void *filename, unsigned lineno);
+crtapi int _getpid();
 crtapi int raise(int sig);
 crtapi void (*signal(int sig, void (*func)(int)))(int);
 crtapi void _except_handler3();
+crtapi void srand(unsigned int seed);
+crtapi int rand();
+
 
 crtapi time_t _time(time_t *timer);
 
 crtapi int *_errno();
-crtapi char *strerror(int errnum);
 
 crtapi int _setjmp3(void *env);
 crtapi void longjmp(void *env, int value);
