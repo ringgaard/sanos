@@ -368,11 +368,11 @@ static void err_tcp(void *arg, err_t err)
   struct sockreq *req = s->waithead;
   struct sockreq *next;
 
+  s->tcp.pcb = NULL;
   while (req)
   {
     next = req->next;
     release_socket_request(req, err);
-    req->socket->tcp.pcb = NULL;
     req = next;
   }
 
@@ -598,12 +598,7 @@ static int tcpsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
       if (s->tcp.recvhead != NULL) return 0;
 
       rc = submit_socket_request(s, &req, SOCKREQ_WAITRECV, NULL, timeout);
-      if (rc < 0) 
-      {
-        kprintf("tcpsock_ioctl: error %d\n", rc);
-	return rc;
-      }
-
+      if (rc < 0) return rc;
       break;
 
     case FIONREAD:
@@ -656,7 +651,7 @@ static int tcpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   struct sockreq req;
 
   if (s->state != SOCKSTATE_CONNECTED && s->state != SOCKSTATE_CLOSING) return -ENOTCONN;
-  if (!s->tcp.pcb) return -ENOTCONN;
+  if (!s->tcp.pcb) return -ERST;
 
   if (s->tcp.pcb && msg->name)
   {
@@ -688,11 +683,7 @@ static int tcpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   if (s->flags & SOCK_NBIO) return -EAGAIN;
 
   rc = submit_socket_request(s, &req, SOCKREQ_RECV, msg, INFINITE);
-  if (rc < 0) 
-  {
-    kprintf("tcpsock_recv: error %d\n", rc);
-    return rc;
-  }
+  if (rc < 0) return rc;
 
   return rc; 
 }
@@ -705,7 +696,7 @@ static int tcpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   int bytes;
 
   if (s->state != SOCKSTATE_CONNECTED) return -ENOTCONN;
-  if (!s->tcp.pcb) return -ENOTCONN;
+  if (!s->tcp.pcb) return -ERST;
 
   size = get_iovec_size(msg->iov, msg->iovlen);
   if (size == 0) return 0;

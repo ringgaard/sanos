@@ -193,6 +193,7 @@ void detach_ioobject(struct ioobject *iob)
 void set_io_event(struct ioobject *iob, int events)
 {
   struct iomux *iomux = iob->iomux;
+
   //
   // If the following is true we must move the object to the ready queue and signal it:
   //  1) object is attached to an iomux

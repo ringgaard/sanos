@@ -89,7 +89,7 @@ struct httpd_server
   int num_workers;
   int iomux;
   struct httpd_context *contexts;
-  struct httpd_requests *requests;
+  struct httpd_request *requests;
 };
 
 // HTTP context
@@ -109,6 +109,7 @@ struct httpd_request
 {
   struct httpd_server *server;
   struct httpd_context *context;
+  struct httpd_request *next;
   int sock;
   httpd_sockaddr client_addr;
   

@@ -38,6 +38,8 @@
 
 #include <httpd.h>
 
+struct critsect srvlock;
+
 char *getstrconfig(struct section *cfg, char *name, char *defval)
 {
   char *val;
@@ -93,12 +95,50 @@ struct httpd_context *httpd_add_context(struct httpd_server *server, struct sect
 
 void httpd_accept(struct httpd_server *server)
 {
+  int sock;
+  httpd_sockaddr addr;
+  struct httpd_request *req;
+  int addrlen;
+
   printf("httpd_accept\n");
+
+  addrlen = sizeof(addr);
+  sock = accept(server->sock, &addr.sa, &addrlen);
+  if (sock < 0) return;
+    
+  printf("%a port %d connected\n", &addr.sa_in.sin_addr.s_addr, ntohs(addr.sa_in.sin_port));
+
+  req = (struct httpd_request *) malloc(sizeof(struct httpd_request));
+  if (!req) return;
+  memset(req, 0, sizeof(struct httpd_request));
+
+  req->server = server;
+  memcpy(&req->client_addr, &addr, sizeof(httpd_sockaddr));
+  req->sock = sock;
+  
+  enter(&srvlock);
+  req->next = server->requests;
+  server->requests = req;
+  leave(&srvlock);
+
+  dispatch(server->iomux, req->sock, IOEVT_READ | IOEVT_CLOSE | IOEVT_ERROR, (int) req);
 }
 
-void httpd_io(struct httpd_request *req)
+int httpd_io(struct httpd_request *req)
 {
-  printf("httpd_io\n");
+  int rc;
+  char buf[256];
+
+  rc = recv(req->sock, buf, 256, 0);
+  printf("httpd_io %d bytes\n", rc);
+  if (rc <= 0) return rc;
+
+  write(1, buf, rc);
+
+  rc = dispatch(req->server->iomux, req->sock, IOEVT_READ | IOEVT_CLOSE | IOEVT_ERROR, (int) req);
+  if (rc < 0) return rc;
+
+  return 1;
 }
 
 void __stdcall httpd_worker(void *arg)
@@ -110,13 +150,25 @@ void __stdcall httpd_worker(void *arg)
   while (1)
   {
     rc = wait(server->iomux, INFINITE);
+    //printf("iomux: wait returned %d\n", rc);
     if (rc < 0) break;
 
     req = (struct httpd_request *) rc;
-    if (req == NULL) 
+    if (req == NULL)
+    {
       httpd_accept(server);
+      dispatch(server->iomux, server->sock, IOEVT_ACCEPT, 0);
+    }
     else
-      httpd_io(req);
+    {
+      rc = httpd_io(req);
+      if (rc <= 0)
+      {
+	printf("httpd: error %d in i/o\n", rc);
+	// close connection
+	close(req->sock);
+      }
+    }
   }
 }
 
@@ -125,17 +177,17 @@ int httpd_start(struct httpd_server *server)
   int sock;
   int rc;
   int i;
-  struct sockaddr_in sin;
+  httpd_sockaddr addr;
   int hthread;
 
   sock = socket(AF_INET, SOCK_STREAM, 0);
   if (sock < 0) return sock;
 
-  sin.sin_family = AF_INET;
-  sin.sin_port = htons(server->port);
-  sin.sin_addr.s_addr = htonl(INADDR_ANY);
+  addr.sa_in.sin_family = AF_INET;
+  addr.sa_in.sin_port = htons(server->port);
+  addr.sa_in.sin_addr.s_addr = htonl(INADDR_ANY);
 
-  rc = bind(sock, (struct sockaddr *) &sin, sizeof(struct sockaddr_in));
+  rc = bind(sock, &addr.sa, sizeof(addr));
   if (rc < 0)
   {
     close(sock);
@@ -149,9 +201,11 @@ int httpd_start(struct httpd_server *server)
     return rc;
   }
 
+  ioctl(sock, FIONBIO, NULL, 0);
+
   server->sock = sock;
   server->iomux = mkiomux(0);
-  dispatch(server->iomux, sock, IOEVT_ACCEPT, 0);
+  dispatch(server->iomux, server->sock, IOEVT_ACCEPT, 0);
 
   for (i = 0; i < server->num_workers; i++)
   {
@@ -166,9 +220,13 @@ int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
 {
   struct httpd_server *server;
 
-  server = httpd_initialize(NULL);
-  httpd_add_context(server, NULL, NULL);
-  httpd_start(server);
+  if (reason == DLL_PROCESS_ATTACH)
+  {
+    mkcs(&srvlock);
+    server = httpd_initialize(NULL);
+    httpd_add_context(server, NULL, NULL);
+    httpd_start(server);
+  }
 
   return TRUE;
 }
