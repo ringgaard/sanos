@@ -90,8 +90,12 @@
 			ATLMinimizesCRunTimeLibraryUsage="FALSE">
 			<Tool
 				Name="VCCLCompilerTool"
+				Optimization="2"
+				GlobalOptimizations="TRUE"
 				InlineFunctionExpansion="1"
 				EnableIntrinsicFunctions="TRUE"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="TRUE"
 				AdditionalIncludeDirectories="..\src\include"
 				PreprocessorDefinitions="MSVCRT_LIB;NO_CTYPE_MACROS"
 				IgnoreStandardIncludePath="TRUE"
