@@ -128,6 +128,7 @@
 
 //
 // SMB TRANS2 sub commands
+//
 
 #define TRANS2_OPEN2			0x00	// Create file with extended attributes
 #define TRANS2_FIND_FIRST2		0x01	// Begin search for files
@@ -361,7 +362,6 @@
 #define ERRFCBunavail		35
 #define ERRsharebufexc		36      // Share buffer exceeded
 #define ERRdiskfull		39
-
 
 #pragma pack(push)
 #pragma pack(1)

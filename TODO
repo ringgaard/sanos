@@ -606,3 +606,5 @@ CHANGES
 - flush() renamed to fsync() and added to unistd.h
 
 - Added strtok_r()
+
+- Fixed bug in password encoding for smbfs

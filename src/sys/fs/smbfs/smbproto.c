@@ -312,10 +312,10 @@ int smb_connect_tree(struct smb_share *share)
   // Connect to share
   smb = smb_init(share, 1);
   smb->params.req.connect.andx.cmd = 0xFF;
-  smb->params.req.connect.password_length = strlen(share->server->password) + 1;
+  smb->params.req.connect.password_length = strlen(share->server->password);
 
   p = buf;
-  p = addstrz(p, share->server->password);
+  p = addstr(p, share->server->password);
   p = addstrz(p, share->sharename);
   p = addstrz(p, SMB_SERVICE_DISK);
 
@@ -383,12 +383,12 @@ int smb_connect(struct smb_share *share)
   smb->params.req.setup.andx.cmd = 0xFF;
   smb->params.req.setup.max_buffer_size = (unsigned short) SMB_MAX_BUFFER;
   smb->params.req.setup.max_mpx_count = max_mpx_count;
-  smb->params.req.setup.ansi_password_length = strlen(server->password) + 1;
+  smb->params.req.setup.ansi_password_length = strlen(server->password);
   smb->params.req.setup.unicode_password_length = 0;
   smb->params.req.setup.capabilities = SMB_CAP_NT_SMBS;
 
   p = buf;
-  p = addstrz(p, server->password);
+  p = addstr(p, server->password);
   p = addstrz(p, server->username);
   p = addstrz(p, server->domain);
   p = addstrz(p, SMB_CLIENT_OS);
