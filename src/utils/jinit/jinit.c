@@ -37,6 +37,7 @@
 #include <inifile.h>
 #include <stdlib.h>
 
+char *cfgname;
 JavaVM *vm = NULL;
 JNIEnv *env = NULL;
 
@@ -126,9 +127,10 @@ void init_jvm_args()
   int len;
   int first;
 
-  cpsect = find_section(config, "java.classpaths");
-  optsect = find_section(config, "java.options");
-  propsect = find_section(config, "java.properties");
+  cpsect = find_section(config, get_property(config, cfgname, "classpaths", "java.classpaths"));
+  optsect = find_section(config, get_property(config, cfgname, "options", "java.options"));
+  propsect = find_section(config, get_property(config, cfgname, "properties", "java.properties"));
+
   nopts = get_section_size(optsect) + get_section_size(propsect) + (cpsect ? 1 : 0);
 
   options = (JavaVMOption *) malloc(nopts * sizeof(JavaVMOption));
@@ -247,7 +249,7 @@ int init_jvm()
   // Load VM
   if (hjvm == NULL)
   {
-    char *jvmname = get_property(config, "java", "jvm", "jvm.dll");
+    char *jvmname = get_property(config, cfgname, "jvm", "jvm.dll");
 
     hjvm = load(jvmname);
     if (hjvm == NULL) 
@@ -303,28 +305,18 @@ int __stdcall main(hmodule_t hmod, char *cmdline, int reserved)
   jmethodID mainid;
   jobjectArray mainargs;
 
+  // Determine configuration
+  cfgname = cmdline;
+  if (!cfgname || !*cfgname) cfgname = "java";
+
   // Initialize Java VM
+  syslog(LOG_DEBUG, "Initializing JVM\n");
   if (init_jvm() != 0) return 1;
+  syslog(LOG_DEBUG, "JVM initialized\n");
 
   // Get main class and arguments
-  if (cmdline && *cmdline)
-  {
-    mainclsname = cmdline;
-    while (*cmdline && *cmdline != ' ') cmdline++;
-    if (*cmdline)
-    {
-      *cmdline++ = 0;
-      while (*cmdline == ' ') cmdline++;
-      mainclsargs = cmdline;
-    }
-    else
-      mainclsargs = "";
-  }
-  else
-  {
-    mainclsname = get_property(config, "java", "mainclass", "sanos.os.Shell");
-    mainclsargs = get_property(config, "java", "mainargs", "");
-  }
+  mainclsname = get_property(config, cfgname, "mainclass", "sanos.os.Shell");
+  mainclsargs = get_property(config, cfgname, "mainargs", "");
 
   // Load main class
   //syslog(LOG_DEBUG, "load main class %s\n", mainclsname);
