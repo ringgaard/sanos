@@ -1,11 +1,6 @@
 TODO for sanos
 --------------
 
-- Add tags to page frame database to identify memory usage
-    - Replace flags and type with char *tag.
-
-- Remove safety pool code in pframe.c
-
 - Implement refcnt on objects
     - close objects when handle count reaches zero (close_object).
     - free objects when handle count and refcnt reaches zero (free_object).
@@ -53,8 +48,6 @@ TODO for sanos
 IDEAS for new features
 ----------------------
 
-- Rename /os to /bin
-
 - Simple httpd server in C for static contents (and isapi interface)
 
 - Use type object in struct object
@@ -94,3 +87,11 @@ CHANGES
 - Support for .exe applications in msvcrt.dll
 
 - Script action moved to script section in setup.exe
+
+- Remove safety pool code in pframe.c
+
+- Add tags to page frame database to identify memory usage
+    - Add /proc/memusage
+
+- Rename /os to /bin
+

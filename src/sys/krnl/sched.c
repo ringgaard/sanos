@@ -252,7 +252,7 @@ void threadstart(void *arg)
 static struct thread *create_thread(threadproc_t startaddr, void *arg, int priority)
 {
   // Allocate a new aligned thread control block
-  struct thread *t = (struct thread *) alloc_pages_align(PAGES_PER_TCB, PAGES_PER_TCB);
+  struct thread *t = (struct thread *) alloc_pages_align(PAGES_PER_TCB, PAGES_PER_TCB, 'TCB');
   if (!t) return NULL;
   memset(t, 0, PAGES_PER_TCB * PAGESIZE);
   init_thread(t, priority);
@@ -324,7 +324,7 @@ int init_user_thread(struct thread *t, void *entrypoint)
   struct tib *tib;
 
   // Allocate and initialize thread information block for thread
-  tib = mmap(NULL, sizeof(struct tib), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+  tib = mmap(NULL, sizeof(struct tib), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'TIB');
   if (!tib) return -ENOMEM;
 
   t->entrypoint = entrypoint;
@@ -343,7 +343,7 @@ int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned 
   char *stack;
   struct tib *tib;
 
-  stack = mmap(NULL, stack_reserve, MEM_RESERVE, PAGE_READWRITE);
+  stack = mmap(NULL, stack_reserve, MEM_RESERVE, PAGE_READWRITE, 'STK');
   if (!stack) return -ENOMEM;
 
   tib = t->tib;
@@ -351,8 +351,8 @@ int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned 
   tib->stacktop = stack + stack_reserve;
   tib->stacklimit = stack + (stack_reserve - stack_commit);
 
-  if (!mmap(tib->stacklimit, stack_commit, MEM_COMMIT, PAGE_READWRITE)) return -ENOMEM;
-  if (!mmap(tib->stackbase, stack_reserve - stack_commit, MEM_COMMIT, PAGE_READWRITE | PAGE_GUARD)) return -ENOMEM;
+  if (!mmap(tib->stacklimit, stack_commit, MEM_COMMIT, PAGE_READWRITE, 'STK')) return -ENOMEM;
+  if (!mmap(tib->stackbase, stack_reserve - stack_commit, MEM_COMMIT, PAGE_READWRITE | PAGE_GUARD, 'STK')) return -ENOMEM;
 
   return 0;
 }
@@ -676,8 +676,9 @@ static int threads_proc(struct proc_file *pf, void *arg)
   static char *waitreasonname[] = {"wait", "fileio", "taskq", "sockio", "sleep"};
   struct thread *t = threadlist;
   char *state;
+  unsigned long stksiz;
 
-  pprintf(pf, "tid tcb      hndl state  prio s #h   user kernel ctxtsw forced name\n");
+  pprintf(pf, "tid tcb      hndl state  prio s #h   user kernel ctxtsw stksiz name\n");
   pprintf(pf, "--- -------- ---- ------ ---- - -- ------ ------ ------ ------ --------------\n");
   while (1)
   {
@@ -686,10 +687,16 @@ static int threads_proc(struct proc_file *pf, void *arg)
     else
       state = threadstatename[t->state];
 
-    pprintf(pf,"%3d %p %4d %-6s %3d  %1d %2d%7d%7d%7d%7d %s\n",
+    if (t->tib)
+      stksiz = (char *) (t->tib->stacktop) - (char *) (t->tib->stacklimit);
+    else
+      stksiz = 0;
+
+    pprintf(pf,"%3d %p %4d %-6s %3d  %1d %2d%7d%7d%7d%6dK %s\n",
             t->id, t, t->hndl, state, t->priority, 
 	    t->suspend_count, t->object.handle_count, 
-	    t->utime, t->stime, t->context_switches, t->preempts, 
+	    t->utime, t->stime, t->context_switches,
+	    stksiz / K,
 	    t->name ? t->name : "");
 
     t = t->next;

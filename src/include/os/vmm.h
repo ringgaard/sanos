@@ -38,9 +38,9 @@ extern struct rmap *vmap;
 
 void init_vmm();
 
-krnlapi void *mmap(void *addr, unsigned long size, int type, int protect);
+krnlapi void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long tag);
 krnlapi int munmap(void *addr, unsigned long size, int type);
-krnlapi void *mremap(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect);
+krnlapi void *mremap(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect, unsigned long tag);
 krnlapi int mprotect(void *addr, unsigned long size, int protect);
 krnlapi int mlock(void *addr, unsigned long size);
 krnlapi int munlock(void *addr, unsigned long size);

@@ -44,6 +44,9 @@ struct bucket
 
 extern struct bucket buckets[PAGESHIFT];
 
+krnlapi void *kmalloc_tag(int size, unsigned long tag);
+krnlapi void *krealloc_tag(void *addr, int newsize, unsigned long tag);
+
 krnlapi void *kmalloc(int size);
 krnlapi void *krealloc(void *addr, int newsize);
 krnlapi void kfree(void *addr);

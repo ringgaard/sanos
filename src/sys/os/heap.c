@@ -739,7 +739,7 @@ static void *sysalloc(size_t nb, struct heap *av)
 
     size = (nb + sizeof(size_t) + ALIGNMASK + PAGESIZE - 1) & ~(PAGESIZE - 1);
 
-    mem = (char *) mmap(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    mem = (char *) mmap(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'MALL');
     if (mem != NULL)
     {
       p = (mchunkptr) mem;
@@ -759,7 +759,7 @@ static void *sysalloc(size_t nb, struct heap *av)
   // Allocate memory from the system
   if (region == NULL)
   {
-    region = (char *) mmap(NULL, REGION_SIZE, MEM_RESERVE, 0);
+    region = (char *) mmap(NULL, REGION_SIZE, MEM_RESERVE, 0, 'MALL');
     if (!region) panic("unable to reserve heap region");
     syslog(LOG_HEAP | LOG_DEBUG, "Reserve heap %p\n", region);
     wilderness = region;
@@ -774,7 +774,7 @@ static void *sysalloc(size_t nb, struct heap *av)
   syslog(LOG_HEAP | LOG_DEBUG, "Expand heap: request = %d, remaining = %d, expansion = %d\n", nb, size, expand);
   if (wilderness + expand > heapend) panic("out of memory");
 
-  if (mmap(wilderness, expand, MEM_COMMIT, PAGE_READWRITE) == 0) panic("unable to expand heap");
+  if (mmap(wilderness, expand, MEM_COMMIT, PAGE_READWRITE, 'MALL') == 0) panic("unable to expand heap");
   wilderness += expand;
 
   if (size == 0)

@@ -714,7 +714,7 @@ unsigned long inet_addr(const char *cp)
     // Collect number up to ``.''.
     // Values are specified as for C: 0x=hex, 0=octal, isdigit=decimal.
 
-    if (c < '0' || c >= '9') 
+    if (c < '0' || c > '9') 
     {
       errno = -EINVAL;
       return INADDR_NONE;

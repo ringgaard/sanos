@@ -55,7 +55,7 @@ void init_vmm()
   rmap_free(vmap, BTOP(VMEM_START), BTOP(OSBASE - VMEM_START));
 }
 
-void *mmap(void *addr, unsigned long size, int type, int protect)
+void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long tag)
 {
   int pages = PAGES(size);
   int i;
@@ -65,6 +65,7 @@ void *mmap(void *addr, unsigned long size, int type, int protect)
   if (size == 0) return NULL;
   addr = (void *) PAGEADDR(addr);
   if (!addr && (type & MEM_COMMIT) != 0) type |= MEM_RESERVE;
+  if (!tag) tag = 'MMAP';
 
   if (type & MEM_RESERVE)
   {
@@ -129,7 +130,7 @@ void *mmap(void *addr, unsigned long size, int type, int protect)
 	}
 	else
 	{
-	  pfn = alloc_pageframe(PFT_USED);
+	  pfn = alloc_pageframe(tag);
 	  if (pfn == 0xFFFFFFFF) return NULL;
 
 	  map_page(vaddr, pfn, flags | PT_PRESENT);
@@ -179,7 +180,7 @@ int munmap(void *addr, unsigned long size, int type)
   return 0;
 }
 
-void *mremap(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect)
+void *mremap(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect, unsigned long tag)
 {
   return NULL;
 }
@@ -245,11 +246,18 @@ int guard_page_handler(void *addr)
 {
   unsigned long flags;
   unsigned long pfn;
+  struct thread *t = self();
 
   flags = get_page_flags(addr);
-  pfn = alloc_pageframe(PFT_USED);
+  pfn = alloc_pageframe('STK');
   map_page(addr, pfn, (flags & ~PT_GUARD) | PT_PRESENT);
   memset(addr, 0, PAGESIZE);
+
+  if (t->tib && addr >= t->tib->stackbase && addr < t->tib->stacktop)
+  {
+    t->tib->stacklimit = (void *) PAGEADDR(addr);
+  }
+
   return 0;
 }
 

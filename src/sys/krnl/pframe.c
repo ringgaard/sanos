@@ -33,7 +33,7 @@
 
 #include <os/krnl.h>
 
-#define SAFETYPOOL 1024
+#define MAX_MEMTAGS           128
 
 unsigned long freemem;        // Number of pages free memory
 unsigned long totalmem;       // Total number of pages of memory (bad pages excluded)
@@ -41,35 +41,20 @@ unsigned long maxmem;         // First unavailable memory page
 struct pageframe *pfdb;       // Page frame database      
 struct pageframe *freelist;   // List of free pages
 
-int memory_low;
-
 void panic(char *msg);
 
-unsigned long alloc_pageframe(int type)
+unsigned long alloc_pageframe(unsigned long tag)
 {
   struct pageframe *pf;
 
-  if (memory_low)
-  {
-    if (freemem == 0) panic("out of memory");
-  }
-  else
-  {
-    if (freemem <= SAFETYPOOL)
-    {
-      kprintf("pframe: memory low, releasing safety pool\n");
-      memory_low = 1;
-      return 0xFFFFFFFF;
-    }
-  }
+  if (freemem == 0) panic("out of memory");
 
   pf = freelist;
   freelist = pf->next;
   freemem--;
 
-  pf->type = type;
-  pf->flags = 0;
-  pf->next = 0;
+  pf->tag = tag;
+  pf->next = NULL;
 
   return pf - pfdb;
 }
@@ -79,10 +64,66 @@ void free_pageframe(unsigned long pfn)
   struct pageframe *pf;
 
   pf = pfdb + pfn;
-  pf->type = PFT_FREE;
+  pf->tag = 'FREE';
   pf->next = freelist;
   freelist = pf;
   freemem++;
+}
+
+void set_pageframe_tag(void *addr, unsigned int len, unsigned long tag)
+{
+  char *vaddr = (char *) addr;
+  char *vend = vaddr + len;
+
+  while (vaddr < vend)
+  {
+    unsigned long pfn = (unsigned long) virt2phys(vaddr) >> PAGESHIFT;
+    pfdb[pfn].tag = tag;
+    vaddr += PAGESIZE;
+  }
+}
+
+int memusage_proc(struct proc_file *pf, void *arg)
+{
+  unsigned int num_memtypes = 0;
+  struct { unsigned long tag; int pages; } memtype[MAX_MEMTAGS];
+  unsigned long tag;
+  unsigned int n;
+  unsigned int m;
+
+  for (n = 0; n < maxmem; n++)
+  {
+    tag = pfdb[n].tag;
+
+    m = 0;
+    while (m < num_memtypes && tag != memtype[m].tag) m++;
+
+    if (m < num_memtypes)
+      memtype[m].pages++;
+    else if (m < MAX_MEMTAGS)
+    {
+      memtype[m].tag = tag;
+      memtype[m].pages = 1;
+      num_memtypes++;
+    }
+  }
+
+  for (n = 0; n < num_memtypes; n++)
+  {
+    char tagname[5];
+    char *p = tagname;
+
+    tag = memtype[n].tag;
+    if (tag & 0xFF000000) *p++ = (char) ((tag >> 24) & 0xFF);
+    if (tag & 0x00FF0000) *p++ = (char) ((tag >> 16) & 0xFF);
+    if (tag & 0x0000FF00) *p++ = (char) ((tag >> 8) & 0xFF);
+    if (tag & 0x000000FF) *p++ = (char) (tag & 0xFF);
+    *p++ = 0;
+
+    pprintf(pf, "%-4s    %8d KB\n", tagname, memtype[n].pages * (PAGESIZE / K));
+  }
+
+  return 0;
 }
 
 int memstat_proc(struct proc_file *pf, void *arg)
@@ -99,7 +140,6 @@ int physmem_proc(struct proc_file *pf, void *arg)
 {
   unsigned int n;
 
-  pprintf(pf, ".=free *=user page X=locked user page, #=kernel page -=reserved page\n");
   for (n = 0; n < maxmem; n++)
   {
     if (n % 64 == 0)
@@ -108,31 +148,14 @@ int physmem_proc(struct proc_file *pf, void *arg)
       pprintf(pf, "%08X ", PTOB(n));
     }
 
-    switch (pfdb[n].type)
-    {
-      case PFT_FREE:
-	pprintf(pf, ".");
-	break;
-
-      case PFT_USED:
-	pprintf(pf, pfdb[n].locks ? "X" : "*");
-	break;
-
-      case PFT_SYS:
-	if (pfdb[n].size == 0 || pfdb[n].size >= PAGESHIFT)
-	  pprintf(pf, "#");
-	else
-	  pprintf(pf, "%c", '0' + (PAGESHIFT - pfdb[n].size));
-	break;
-
-      case PFT_BAD:
-	pprintf(pf, "-");
-	break;
-
-      default:
-	pprintf(pf, "?");
-    }
+    if (pfdb[n].tag == 'FREE')
+      pprintf(pf, ".");
+    else if (pfdb[n].tag == 0)
+      pprintf(pf, "?");
+    else
+      pprintf(pf, "X");
   }
+
   pprintf(pf, "\n");
   return 0;
 }
@@ -174,20 +197,25 @@ void init_pfdb()
   pfdb = (struct pageframe *) PFDBBASE;
   memset(pfdb, 0, pfdbpages * PAGESIZE);
 
-  // Add interval [0:640K] as FREE pages
-  for (i = 0; i < 640 * K / PAGESIZE; i++) pfdb[i].type = PFT_FREE;
+  // Add interval [0:640K] as free pages
+  for (i = 0; i < 640 * K / PAGESIZE; i++) pfdb[i].tag = 'FREE';
 
-  // Add interval [640K:1MB] as BAD pages
-  for (i = 640 * K / PAGESIZE; i < syspage->bootparams.heapstart / PAGESIZE; i++) pfdb[i].type = PFT_BAD;
+  // Add interval [640K:1MB] as reserved pages
+  for (i = 640 * K / PAGESIZE; i < syspage->bootparams.heapstart / PAGESIZE; i++) pfdb[i].tag = 'RESV';
 
-  // Add interval [BOOTHEAPBASE:heap] to pfdb as SYS pages
-  for (i = syspage->bootparams.heapstart / PAGESIZE; i < heap / PAGESIZE; i++) pfdb[i].type = PFT_SYS;
+  // Add interval [BOOTHEAPBASE:heap] to pfdb as page table pages
+  for (i = syspage->bootparams.heapstart / PAGESIZE; i < heap / PAGESIZE; i++) pfdb[i].tag = 'PTAB';
 
-  // Add interval [heap:maxmem] as FREE pages
-  for (i = heap / PAGESIZE; i < totalmem; i++) pfdb[i].type = PFT_FREE;
+  // Add interval [heap:maxmem] as free pages
+  for (i = heap / PAGESIZE; i < maxmem; i++) pfdb[i].tag = 'FREE';
 
   // Reserve DMA buffers at 0x10000 (used by floppy driver)
-  for (i = DMA_BUFFER_START / PAGESIZE; i < DMA_BUFFER_START / PAGESIZE + DMA_BUFFER_PAGES; i++) pfdb[i].type = PFT_BAD;
+  for (i = DMA_BUFFER_START / PAGESIZE; i < DMA_BUFFER_START / PAGESIZE + DMA_BUFFER_PAGES; i++) pfdb[i].tag = 'DMA';
+
+  // Fixup tags for pfdb and syspage and intial tcb
+  set_pageframe_tag(pfdb, pfdbpages * PAGESIZE, 'PFDB');
+  set_pageframe_tag(syspage, PAGESIZE, 'SYS');
+  set_pageframe_tag(self(), TCBSIZE, 'TCB');
 
   // Insert all free pages into free list
   pf = pfdb + maxmem;
@@ -195,7 +223,7 @@ void init_pfdb()
   {
     pf--;
 
-    if (pf->type == PFT_FREE)
+    if (pf->tag == 'FREE')
     {
       pf->next = freelist;
       freelist = pf;
@@ -204,4 +232,3 @@ void init_pfdb()
   } 
   while (pf > pfdb);
 }
-

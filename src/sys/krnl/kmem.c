@@ -42,16 +42,17 @@
 struct rmap *osvmap = (struct rmap *) OSVMAP_ADDRESS;
 struct rmap *kmodmap = (struct rmap *) KMODMAP_ADDRESS;
 
-void *alloc_pages(int pages)
+void *alloc_pages(int pages, unsigned long tag)
 {
   char *vaddr;
   int i;
   unsigned long pfn;
 
+  if (tag == 0) tag = 'KMEM';
   vaddr = (char *) PTOB(rmap_alloc(osvmap, pages));
   for (i = 0; i < pages; i++)
   {
-    pfn = alloc_pageframe(PFT_SYS);
+    pfn = alloc_pageframe(tag);
     map_page(vaddr + PTOB(i), pfn, PT_WRITABLE | PT_PRESENT);
   }
 
@@ -59,16 +60,17 @@ void *alloc_pages(int pages)
   return vaddr;
 }
 
-void *alloc_pages_align(int pages, int align)
+void *alloc_pages_align(int pages, int align, unsigned long tag)
 {
   char *vaddr;
   int i;
   unsigned long pfn;
 
+  if (tag == 0) tag = 'KMEM';
   vaddr = (char *) PTOB(rmap_alloc_align(osvmap, pages, align));
   for (i = 0; i < pages; i++)
   {
-    pfn = alloc_pageframe(PFT_SYS);
+    pfn = alloc_pageframe(tag);
     map_page(vaddr + PTOB(i), pfn, PT_WRITABLE | PT_PRESENT);
   }
 
@@ -126,7 +128,7 @@ void *alloc_module_mem(int pages)
   vaddr = (char *) PTOB(rmap_alloc(kmodmap, pages));
   for (i = 0; i < pages; i++)
   {
-    pfn = alloc_pageframe(PFT_SYS);
+    pfn = alloc_pageframe('KMOD');
     map_page(vaddr + PTOB(i), pfn, PT_WRITABLE | PT_PRESENT);
     memset(vaddr + PTOB(i), 0, PAGESIZE);
   }
@@ -159,7 +161,7 @@ void init_kmem()
   struct image_header *imghdr;
 
   // Allocate page frame for kernel heap resource map and map into syspages
-  pfn = alloc_pageframe(PFT_SYS);
+  pfn = alloc_pageframe('SYS');
   map_page(osvmap, pfn, PT_WRITABLE | PT_PRESENT);
 
   // Initialize resource map for kernel heap
@@ -169,7 +171,7 @@ void init_kmem()
   rmap_free(osvmap, BTOP(KHEAPBASE), BTOP(KHEAPSIZE));
 
   // Allocate page frame for kernel module map and map into syspages
-  pfn = alloc_pageframe(PFT_SYS);
+  pfn = alloc_pageframe('SYS');
   map_page(kmodmap, pfn, PT_WRITABLE | PT_PRESENT);
 
   // Initialize resource map for kernel module area
@@ -193,7 +195,7 @@ int list_memmap(struct proc_file *pf, struct rmap *rmap, unsigned int startpos)
   pprintf(pf, "-------- -------- --------- --------- --------- ---------\n");
 
   rlim = &rmap[rmap->offset];
-  
+
   for (r = &rmap[1]; r <= rlim; r++) 
   {
     unsigned int size = r->offset - pos;

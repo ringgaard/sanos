@@ -90,11 +90,11 @@ void *load_image_file(char *filename, int userspace)
   if (userspace)
   {
     // User module
-    imgbase = (char *) mmap((void *) (imghdr->optional.image_base), imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    imgbase = (char *) mmap((void *) (imghdr->optional.image_base), imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UMOD');
     if (imgbase == NULL)
     {
       // Try to load image at any available address 
-      imgbase = (char *) mmap(NULL, imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+      imgbase = (char *) mmap(NULL, imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UMOD');
     }
   }
   else
@@ -259,4 +259,6 @@ void init_kernel_modules()
 
   register_proc_inode("kmods", kmods_proc, NULL);
   register_proc_inode("umods", umods_proc, NULL);
+
+  set_pageframe_tag(kmods.execmod->hmod, get_image_header(kmods.execmod->hmod)->optional.size_of_image, 'KMOD');
 }

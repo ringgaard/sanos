@@ -946,18 +946,20 @@ static int sys_mmap(char *params)
   unsigned long size;
   int type;
   int protect;
+  unsigned long tag;
   void *retval;
 
-  if (lock_buffer(params, 16) < 0) return -EFAULT;
+  if (lock_buffer(params, 20) < 0) return -EFAULT;
 
   addr = *(void **) params;
   size = *(unsigned long *) (params + 4);
   type = *(int *) (params + 8);
   protect = *(int *) (params + 12);
+  tag = *(unsigned long *) (params + 16);
 
-  retval = mmap(addr, size, type, protect);
+  retval = mmap(addr, size, type, protect, tag);
 
-  unlock_buffer(params, 16);
+  unlock_buffer(params, 20);
 
   return (int) retval;
 }
@@ -989,19 +991,21 @@ static int sys_mremap(char *params)
   unsigned long newsize;
   int type;
   int protect;
+  unsigned long tag;
   void *retval;
 
-  if (lock_buffer(params, 20) < 0) return -EFAULT;
+  if (lock_buffer(params, 24) < 0) return -EFAULT;
 
   addr = *(void **) params;
   oldsize = *(unsigned long *) (params + 4);
   newsize = *(unsigned long *) (params + 8);
   type = *(int *) (params + 12);
   protect = *(int *) (params + 16);
+  tag = *(unsigned long *) (params + 20);
 
-  retval = mremap(addr, oldsize, newsize, type, protect);
+  retval = mremap(addr, oldsize, newsize, type, protect, tag);
 
-  unlock_buffer(params, 20);
+  unlock_buffer(params, 24);
 
   return (int) retval;
 }

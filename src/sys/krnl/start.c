@@ -213,6 +213,7 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
   flushtlb();
 
   // Register memory management procs
+  register_proc_inode("memusage", memusage_proc, NULL);
   register_proc_inode("memstat", memstat_proc, NULL);
   register_proc_inode("physmem", physmem_proc, NULL);
   register_proc_inode("pdir", pdir_proc, NULL);
@@ -293,7 +294,7 @@ void main(void *arg)
   int rc;
 
   // Allocate and initialize PEB
-  peb = mmap((void *) PEB_ADDRESS, PAGESIZE, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+  peb = mmap((void *) PEB_ADDRESS, PAGESIZE, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'PEB');
   if (!peb) panic("unable to allocate PEB");
   memset(peb, 0, PAGESIZE);
   peb->fast_syscalls_supported = (cpu.features & CPU_FEATURE_SEP) != 0;

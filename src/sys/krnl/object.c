@@ -903,7 +903,7 @@ handle_t halloc(struct object *o)
     unsigned long pfn;
 
     if (htabsize == HTABSIZE / sizeof(struct object *)) return -ENFILE;
-    pfn = alloc_pageframe(PFT_SYS);
+    pfn = alloc_pageframe('HTAB');
     map_page(htab + htabsize, pfn, PT_WRITABLE | PT_PRESENT);
 
     for (h = htabsize + HANDLES_PER_PAGE - 1; h >= htabsize; h--)

@@ -37,15 +37,9 @@
 #define DMA_BUFFER_START 0x10000
 #define DMA_BUFFER_PAGES 16
 
-#define PFT_FREE 0
-#define PFT_USED 1
-#define PFT_SYS  2
-#define PFT_BAD  3
-
 struct pageframe
 {
-  unsigned short flags;
-  unsigned short type;
+  unsigned long tag;
   union
   {
     unsigned long locks;        // Number of locks
@@ -60,9 +54,11 @@ extern unsigned long freemem;
 extern unsigned long totalmem;
 extern unsigned long maxmem;
 
-krnlapi unsigned long alloc_pageframe(int type);
+krnlapi unsigned long alloc_pageframe(unsigned long tag);
 krnlapi void free_pageframe(unsigned long pfn);
+krnlapi void set_pageframe_tag(void *addr, unsigned int len, unsigned long tag);
 
+int memusage_proc(struct proc_file *pf, void *arg);
 int memstat_proc(struct proc_file *pf, void *arg);
 int physmem_proc(struct proc_file *pf, void *arg);
 

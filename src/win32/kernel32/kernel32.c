@@ -1533,7 +1533,7 @@ LPVOID WINAPI VirtualAlloc
   int n;
 
   TRACE("VirtualAlloc");
-  addr = mmap(lpAddress, dwSize, flAllocationType | MEM_ALIGN64K, flProtect);
+  addr = mmap(lpAddress, dwSize, flAllocationType | MEM_ALIGN64K, flProtect, 'VALO');
   
   //syslog(LOG_DEBUG, "VirtualAlloc %p %dKB (%p,%p) -> %p\n", lpAddress, dwSize / K, flAllocationType, flProtect, addr);
 

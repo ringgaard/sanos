@@ -714,9 +714,9 @@ osapi int unlink(const char *name);
 osapi handle_t opendir(const char *name);
 osapi int readdir(handle_t f, struct dirent *dirp, int count);
 
-osapi void *mmap(void *addr, unsigned long size, int type, int protect);
+osapi void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long tag);
 osapi int munmap(void *addr, unsigned long size, int type);
-osapi void *mremap(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect);
+osapi void *mremap(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect, unsigned long tag);
 osapi int mprotect(void *addr, unsigned long size, int protect);
 osapi int mlock(void *addr, unsigned long size);
 osapi int munlock(void *addr, unsigned long size);

@@ -433,7 +433,7 @@ static void test_alloc(int size)
   void *addr;
 
   kprintf("allocating %d KB\n", size / K);
-  addr = mmap(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+  addr = mmap(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 0);
   kprintf("allocated at %p\n", addr);
 }
 
@@ -506,49 +506,6 @@ static void kmem_list()
 static void mmem_list()
 {
   list_memmapx(kmodmap, BTOP(OSBASE));
-}
-
-static void pmem_list()
-{
-  unsigned int n;
-  int lines = 0;
-
-  kprintf(".=free *=user page X=locked user page, #=kernel page -=reserved page\n");
-  for (n = 0; n < maxmem; n++)
-  {
-    if (n % 64 == 0)
-    {
-      if (n > 0) kprintf("\n");
-      if (++lines % 24 == 0) pause();
-      kprintf("%08X ", PTOB(n));
-    }
-
-    switch (pfdb[n].type)
-    {
-      case PFT_FREE:
-	kprintf(".");
-	break;
-
-      case PFT_USED:
-	kprintf(pfdb[n].locks ? "X" : "*");
-	break;
-
-      case PFT_SYS:
-	if (pfdb[n].size == 0 || pfdb[n].size >= PAGESHIFT)
-	  kprintf("#");
-	else
-	  kprintf("%c", '0' + (PAGESHIFT - pfdb[n].size));
-	break;
-
-      case PFT_BAD:
-	kprintf("-");
-	break;
-
-      default:
-	kprintf("?");
-    }
-  }
-  kprintf("\n");
 }
 
 static void dump_pdir()
@@ -930,8 +887,6 @@ void shell()
       kmem_list();
     else if (strcmp(cmd, "mmem") == 0)
       mmem_list();
-    else if (strcmp(cmd, "pmem") == 0)
-      pmem_list();
     else if (strcmp(cmd, "pdir") == 0)
       dump_pdir();
     else if (strcmp(cmd, "bufpools") == 0)

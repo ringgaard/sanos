@@ -248,7 +248,7 @@ int readdir(handle_t f, struct dirent *dirp, int count)
   return syscall(SYSCALL_READDIR, &f);
 }
 
-void *mmap(void *addr, unsigned long size, int type, int protect)
+void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long tag)
 {
   return (void *) syscall(SYSCALL_MMAP, &addr);
 }
@@ -258,7 +258,7 @@ int munmap(void *addr, unsigned long size, int type)
   return syscall(SYSCALL_MUNMAP, &addr);
 }
 
-void *mremap(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect)
+void *mremap(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect, unsigned long tag)
 {
   return (void *) syscall(SYSCALL_MREMAP, &addr);
 }

@@ -105,7 +105,7 @@ unsigned char log2[2048] =
 
 struct bucket buckets[PAGESHIFT];
 
-void *kmalloc(int size)
+void *kmalloc_tag(int size, unsigned long tag)
 {
   struct bucket *b;
   int bucket;
@@ -115,7 +115,7 @@ void *kmalloc(int size)
   if (size > PAGESIZE / 2)
   {
     // Allocate pages
-    addr = alloc_pages(PAGES(size));
+    addr = alloc_pages(PAGES(size), tag ? tag : 'ALOC');
 
     // Set size in pfn entry
     pfdb[BTOP(virt2phys(addr))].size = PAGES(size) + PAGESHIFT;
@@ -134,7 +134,7 @@ void *kmalloc(int size)
     int i;
 
     // Allocate new page
-    addr = alloc_pages(1);
+    addr = alloc_pages(1, 'HEAP');
 
     // Set bucket number in pfn entry
     pfdb[BTOP(virt2phys(addr))].size = bucket;
@@ -161,9 +161,9 @@ void *kmalloc(int size)
   return addr;
 }
 
-void *krealloc(void *addr, int newsize)
+void *krealloc_tag(void *addr, int newsize, unsigned long tag)
 {
-  panic("krealloc not implemented");
+  panic("krealloc_tag not implemented");
   return NULL;
 }
 
@@ -274,9 +274,19 @@ void dump_malloc()
   kprintf("Kernel Heap Summary: %dKB allocated %dKB available\n", heapsize / K, heapavail / K);
 }
 
+void *kmalloc(int size)
+{
+  return kmalloc_tag(size, 0);
+}
+
+void *krealloc(void *addr, int newsize)
+{
+  return krealloc_tag(addr, newsize, 0);
+}
+
 void *malloc(size_t size)
 {
-  return kmalloc(size);
+  return kmalloc_tag(size, 0);
 }
 
 void free(void *addr)
