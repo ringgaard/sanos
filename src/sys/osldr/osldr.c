@@ -197,13 +197,13 @@ void __stdcall start(void *hmod, int bootdrv, int reserved2)
   mem_end = memsize();
   kprintf("Memory size is %d MB\n", mem_end / M);
 
-  // Page alocation starts at 1MB
+  // Page allocation starts at 1MB
   heap = (char *) HEAP_START;
 
   // Allocate page for page directory
   pdir = (pte_t *) alloc_heap(1);
 
-  // Make recursive entry for access to pagetables
+  // Make recursive entry for access to page tables
   pdir[PDEIDX(PTBASE)] = (unsigned long) pdir | PT_PRESENT | PT_WRITABLE;
 
   // Allocate system page
