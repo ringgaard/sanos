@@ -122,6 +122,28 @@ void logmsg(const char *fmt, ...)
 }
 
 //
+// recv_fully
+//
+
+int recv_fully(SOCKET s, char *buf, int size, int flags)
+{
+  int bytes;
+  int left;
+
+  left = size;
+  while (left > 0)
+  {
+    bytes = recv(s, buf, left, flags);
+    if (bytes <= 0) return bytes;
+
+    buf += bytes;
+    left -= bytes;
+  }
+
+  return size;
+}
+
+//
 // dump_data
 //
 
@@ -391,7 +413,7 @@ int handshake()
   unsigned long buf[64];
 
   // Receive DRPC hello request
-  bytes = recv(debugger, (char *) buf, 256, 0);
+  bytes = recv_fully(debugger, (char *) buf, 256, 0);
   if (bytes == 0 || bytes < 0) return -1;
 
   if (buf[0] != DRPC_SIGNATURE)
@@ -438,14 +460,12 @@ void handle_session()
   while (1)
   {
     // Receive header from debugger
-    bytes = recv(debugger, (char *) &pkt, sizeof(struct drpc_packet), 0);
+    bytes = recv_fully(debugger, (char *) &pkt, sizeof(struct drpc_packet), 0);
     if (bytes == 0 || bytes < 0)
     {
       closesocket(debugger);
       break;
     }
-    if (bytes != sizeof(struct drpc_packet)) panic("packet truncated");
-    printf("bytes=%d\n", bytes);
       
     // Allocate data
     if (pkt.reqlen > 0 && pkt.reqlen > buflen) 
@@ -461,7 +481,7 @@ void handle_session()
     }
 
     // Receive request data
-    if (pkt.reqlen > 0) recv(debugger, buf, pkt.reqlen, 0);
+    if (pkt.reqlen > 0) recv_fully(debugger, buf, pkt.reqlen, 0);
 
     // Handle command
     handle_command(&pkt, buf);
