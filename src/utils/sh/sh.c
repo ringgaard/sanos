@@ -573,7 +573,7 @@ static void launch_program(char *args)
   while (*args != 0 && *args != ' ') args++;
   while (*args == ' ') args++;
 
-  beginthread(spawn_program, 0, args, 0, NULL);
+  beginthread(spawn_program, 0, strdup(args), 0, NULL);
 }
 
 static void load_module(int argc, char **argv)

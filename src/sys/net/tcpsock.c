@@ -676,16 +676,13 @@ static int tcpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
 
   size = get_iovec_size(msg->iov, msg->iovlen);
   if (size == 0) return 0;
-  if ((s->flags & SOCK_NBIO) && size > tcp_sndbuf(s->tcp.pcb)) return -EAGAIN;
 
   rc = fill_sndbuf(s, msg->iov, msg->iovlen);
   if (rc < 0) return rc;
   bytes = rc;
 
-  if (bytes < size)
+  if (bytes < size && (s->flags & SOCK_NBIO) == 0)
   {
-    if (s->flags & SOCK_NBIO) return -EBUF;
-
     rc = submit_socket_request(s, &req, SOCKREQ_SEND, msg, INFINITE);
     if (rc < 0) return rc;
 

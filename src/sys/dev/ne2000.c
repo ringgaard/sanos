@@ -376,7 +376,7 @@ void ne_receive(struct ne *ne)
       rc = dev_receive(ne->devno, p); 
       if (rc < 0)
       {
-	kprintf("ne2000: error %d processing packet\n", rc);
+	//kprintf("ne2000: error %d processing packet\n", rc);
 	pbuf_free(p);
       }
     }

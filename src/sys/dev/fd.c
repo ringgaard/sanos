@@ -306,7 +306,12 @@ static void fd_motor_on(struct fd *fd)
     fd->fdc->dor |= 0x10 << fd->drive;
     _outp(FDC_DOR, fd->fdc->dor);
     fd->motor_status = FD_MOTOR_ON;
-    sleep(FD_MOTOR_SPINUP_TIME);
+    //FIXME: Kernel hangs on this sleep, for now we just avoid this by busy looping
+    //sleep(FD_MOTOR_SPINUP_TIME);
+    {
+      unsigned int tmo = ticks + 1*HZ;
+      while (time_before(ticks, tmo)) yield();
+    }
     //kprintf("fd: motor spinned up\n");
   }
   else

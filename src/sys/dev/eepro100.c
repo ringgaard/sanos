@@ -356,7 +356,6 @@ struct nic
   int mc_setup_frm_len;                    // The length of an allocated...
   struct descriptor *mc_setup_frm;         // ... multicast setup frame
   int mc_setup_busy;                       // Avoid double-use of setup frame
-  int in_interrupt;                        // Word-aligned dev->interrupt
   char rx_mode;                            // Current PROMISC/ALLMULTI setting
   int tx_full;                             // The Tx queue is full
   int full_duplex;                         // Full-duplex operation requested
@@ -547,113 +546,292 @@ static void do_slow_command(struct dev *dev, int cmd)
   kprintf("%s: Command %4.4x was not accepted after %d polls!  Current status %8.8x\n", dev->name, cmd, wait, inpd(sp->iobase + SCBStatus));
 }
 
-#ifdef xxx
+static int speedo_set_rx_mode(struct dev *dev);
+static void speedo_resume(struct dev *dev);
+static void speedo_timer(void *arg);
+static void speedo_interrupt(struct dev *dev);
+static void speedo_tx_timeout(struct dev *dev);
 
-// The interrupt handler does all of the Rx thread work and cleans up
-// after the Tx thread.
-
-static void speedo_interrupt(int irq, void *dev_instance, struct pt_regs *regs)
+static void speedo_show_state(struct dev *dev)
 {
-  struct net_device *dev = (struct net_device *) dev_instance;
-  struct nic *sp;
-  long ioaddr, boguscnt = max_interrupt_work;
-  unsigned short status;
+  struct nic *sp = (struct nic *) dev->privdata;
+  long ioaddr = sp->iobase;
+  int phy_num = sp->phy[0] & 0x1f;
+  int i;
 
-  sp = (struct nic *) dev->privdata;
-  ioaddr = sp->iobase;
-
-  while (1)
+  // Print a few items for debugging
+  kprintf("%s: Tx ring dump,  Tx queue %d / %d:\n", dev->name, sp->cur_tx, sp->dirty_tx);
+  for (i = 0; i < TX_RING_SIZE; i++)
   {
-    status = inpw(ioaddr + SCBStatus);
-
-    if ((status & IntrAllNormal) == 0  ||  status == 0xffff) break;
-
-    // Acknowledge all of the current interrupt sources ASAP
-    outw(ioaddr + SCBStatus, status & IntrAllNormal);
-
-    kprintf("%s: interrupt  status=%#4.4x\n", dev->name, status);
-
-    if (status & (IntrRxDone|IntrRxSuspend))
-    {
-      speedo_rx(dev);
-    }
-
-    // The command unit did something, scavenge finished Tx entries
-    if (status & (IntrCmdDone | IntrCmdIdle | IntrDrvrIntr)) 
-    {
-      unsigned int dirty_tx;
-
-      dirty_tx = sp->dirty_tx;
-      while (sp->cur_tx - dirty_tx > 0) 
-      {
-        int entry = dirty_tx % TX_RING_SIZE;
-        int status = le32_to_cpu(sp->tx_ring[entry].status);
-
-	kprintf("%s: scavenge candidate %d status %4.4x\n", dev->name, entry, status);
-
-	if ((status & StatusComplete) == 0) 
-	{
-          // Special case error check: look for descriptor that the chip skipped(?)
-          if (sp->cur_tx - dirty_tx > 2  && (sp->tx_ring[(dirty_tx+1) % TX_RING_SIZE].status & cpu_to_le32(StatusComplete))) 
-	  {
-            kprintf("%s: Command unit failed to mark command %8.8x as complete at %d\n", dev->name, status, dirty_tx);
-          } 
-	  else
-	    // It still hasn't been processed
-            break;      
-        }
-
-        if ((status & TxUnderrun) && (sp->tx_threshold < 0x01e08000)) 
-	{
-          sp->tx_threshold += 0x00040000;
-          kprintf("%s: Tx threshold increased, %#8.8x\n", dev->name, sp->tx_threshold);
-        }
-
-        // Free the original skb
-        if (sp->tx_skbuff[entry]) 
-	{
-	  // Count only user packets
-          sp->stats.tx_packets++; 
-          sp->stats.tx_bytes += sp->tx_skbuff[entry]->len;
-          dev_free_skb_irq(sp->tx_skbuff[entry]);
-          sp->tx_skbuff[entry] = 0;
-        } 
-	else if ((status & 0x70000) == CmdNOp)
-          sp->mc_setup_busy = 0;
-        
-	dirty_tx++;
-      }
-
-      sp->dirty_tx = dirty_tx;
-      if (sp->tx_full &&  sp->cur_tx - dirty_tx < TX_QUEUE_UNFULL) 
-      {
-        // The ring is no longer full, clear tbusy
-        sp->tx_full = 0;
-        netif_resume_tx_queue(dev);
-      }
-    }
-
-    if (status & IntrRxSuspend)
-    {
-      speedo_intr_error(dev, status);
-    }
-
-    if (--boguscnt < 0) 
-    {
-      kprintf("%s: Too much work at interrupt, status=0x%4.4x\n", dev->name, status);
-
-      // Clear all interrupt sources.
-      outpd(ioaddr + SCBStatus, 0xfc00);
-      break;
-    }
+    kprintf("%s: %c%c%d %8.8x\n", dev->name,
+          i == sp->dirty_tx % TX_RING_SIZE ? '*' : ' ',
+          i == sp->cur_tx % TX_RING_SIZE ? '=' : ' ',
+          i, sp->tx_ring[i].status);
   }
 
-  kprintf("%s: exiting interrupt, status=%#4.4x\n", dev->name, inpw(ioaddr + SCBStatus));
+  kprintf("%s: Rx ring dump (next to receive into %d)\n", dev->name, sp->cur_rx);
 
-  clear_bit(0, (void*)&sp->in_interrupt);
+  for (i = 0; i < RX_RING_SIZE; i++)
+  {
+    kprintf("  Rx ring entry %d  %8.8x\n",  i, sp->rx_ringp[i]->status);
+  }
 
-  return;
+  for (i = 0; i < 16; i++) 
+  {
+    if (i == 6) i = 21;
+    kprintf("  PHY index %d register %d is %4.4x.\n", phy_num, i, mdio_read(ioaddr, phy_num, i));
+  }
 }
+
+// Initialize the Rx and Tx rings
+
+static void speedo_init_rx_ring(struct dev *dev)
+{
+  struct nic *sp = (struct nic *) dev->privdata;
+  struct RxFD *rxf, *last_rxf = NULL;
+  int i;
+
+  init_sem(&sp->tx_sem, TX_QUEUE_LIMIT);
+
+  sp->cur_rx = 0;
+
+  for (i = 0; i < RX_RING_SIZE; i++) 
+  {
+    struct pbuf *p;
+
+    p = pbuf_alloc(PBUF_RAW, PKT_BUF_SZ + sizeof(struct RxFD), PBUF_RW);
+    sp->rx_pbuf[i] = p;
+    if (p == NULL) break;      // OK. Just initially short of Rx bufs
+    rxf = (struct RxFD *) p->payload;
+    sp->rx_ringp[i] = rxf;
+    pbuf_header(p, - (int) sizeof(struct RxFD));
+    if (last_rxf) last_rxf->link = virt2phys(rxf);
+    last_rxf = rxf;
+    rxf->status = 0x00000001;  // '1' is flag value only
+    rxf->link = 0;            // None yet
+    rxf->rx_buf_addr = 0xffffffff;
+    rxf->count = PKT_BUF_SZ << 16;
+  }
+  sp->dirty_rx = (unsigned int)(i - RX_RING_SIZE);
+
+  // Mark the last entry as end-of-list.
+  last_rxf->status = 0xC0000002; // '2' is flag value only
+  sp->last_rxf = last_rxf;
+}
+
+static int speedo_open(struct dev *dev)
+{
+  struct nic *sp = (struct nic *) dev->privdata;
+  long ioaddr = sp->iobase;
+
+  //kprintf("%s: speedo_open() irq %d.\n", dev->name, sp->irq);
+
+  // Set up the Tx queue early
+  sp->cur_tx = 0;
+  sp->dirty_tx = 0;
+  sp->last_cmd = 0;
+  sp->tx_full = 0;
+  sp->polling = 0;
+
+  if ((sp->phy[0] & 0x8000) == 0)
+  {
+    sp->advertising = mdio_read(ioaddr, sp->phy[0] & 0x1f, 4);
+  }
+
+  // With some transceivers we must retrigger negotiation to reset
+  // power-up errors
+  if ((sp->flags & ResetMII) && (sp->phy[0] & 0x8000) == 0) 
+  {
+    int phy_addr = sp->phy[0] & 0x1f ;
+    
+    // Use 0x3300 for restarting NWay, other values to force xcvr:
+    //   0x0000 10-HD
+    //   0x0100 10-FD
+    //   0x2000 100-HD
+    //   0x2100 100-FD
+   
+    mdio_write(ioaddr, phy_addr, 0, 0x3300);
+  }
+
+  // We can safely take handler calls during init
+  // Doing this after speedo_init_rx_ring() results in a memory leak
+  enable_irq(sp->irq);
+
+  // Initialize Rx and Tx rings
+  speedo_init_rx_ring(dev);
+
+  // Fire up the hardware
+  speedo_resume(dev);
+
+  // Setup the chip and configure the multicast list
+  sp->mc_setup_frm = NULL;
+  sp->mc_setup_frm_len = 0;
+  sp->mc_setup_busy = 0;
+  sp->rx_mode = -1;     // Invalid -> always reset the mode.
+  sp->flow_ctrl = sp->partner = 0;
+  speedo_set_rx_mode(dev);
+
+  //kprintf("%s: Done speedo_open(), status %8.8x\n", dev->name, inpw(ioaddr + SCBStatus));
+
+  // Set the timer.  The timer serves a dual purpose:
+  // 1) to monitor the media interface (e.g. link beat) and perhaps switch
+  //    to an alternate media type
+  // 2) to monitor Rx activity, and restart the Rx process if the receiver
+  //    hangs.
+
+  init_timer(&sp->timer, speedo_timer, dev);
+  mod_timer(&sp->timer, ticks + 3*HZ);
+
+  // No need to wait for the command unit to accept here.
+  if ((sp->phy[0] & 0x8000) == 0) mdio_read(ioaddr, sp->phy[0] & 0x1f, 0);
+
+  return 0;
+}
+
+static int speedo_close(struct dev *dev)
+{
+  struct nic *sp = (struct nic *) dev->privdata;
+  long ioaddr = sp->iobase;
+  int i;
+
+  kprintf("%s: Shutting down ethercard, status was %4.4x. Allocation failures: %d\n",  dev->name, inpw(ioaddr + SCBStatus), sp->alloc_failures);
+
+  // Shut off the media monitoring timer
+  del_timer(&sp->timer);
+
+  // Shutting down the chip nicely fails to disable flow control. So..
+  outpd(ioaddr + SCBPort, PortPartialReset);
+
+  disable_irq(sp->irq);
+
+  // Free all the pbufs in the Rx and Tx queues
+  for (i = 0; i < RX_RING_SIZE; i++) 
+  {
+    struct pbuf *p = sp->rx_pbuf[i];
+    sp->rx_pbuf[i] = NULL;
+    if (p) pbuf_free(p);
+  }
+
+  for (i = 0; i < TX_RING_SIZE; i++) 
+  {
+    struct pbuf *p = sp->tx_pbuf[i];
+    sp->tx_pbuf[i] = NULL;
+    if (p) pbuf_free(p);
+  }
+
+  if (sp->mc_setup_frm) 
+  {
+    kfree(sp->mc_setup_frm);
+    sp->mc_setup_frm_len = 0;
+  }
+
+  // Print a few items for debugging
+  speedo_show_state(dev);
+
+  return 0;
+}
+
+// Start the chip hardware after a full reset
+
+static void speedo_resume(struct dev *dev)
+{
+  struct nic *sp = (struct nic *) dev->privdata;
+  long ioaddr = sp->iobase;
+
+  outpw(ioaddr + SCBCmd, SCBMaskAll);
+
+  // Start with a Tx threshold of 256 (0x..20.... 8 byte units)
+  sp->tx_threshold = 0x01208000;
+
+  // Set the segment registers to '0'
+  wait_for_cmd_done(ioaddr + SCBCmd);
+  if (inp(ioaddr + SCBCmd)) 
+  {
+    outpd(ioaddr + SCBPort, PortPartialReset);
+    udelay(10);
+  }
+  outpd(ioaddr + SCBPointer, 0);
+  inpd(ioaddr + SCBPointer);       // Flush to PCI
+  udelay(10); // Bogus, but it avoids the bug
+
+  // Note: these next two operations can take a while
+  do_slow_command(dev, RxAddrLoad);
+  do_slow_command(dev, CUCmdBase);
+
+  // Load the statistics block and rx ring addresses
+  outpd(ioaddr + SCBPointer, virt2phys(&sp->lstats));
+  inpd(ioaddr + SCBPointer);       // Flush to PCI
+  outp(ioaddr + SCBCmd, CUStatsAddr);
+  sp->lstats.done_marker = 0;
+  wait_for_cmd_done(ioaddr + SCBCmd);
+
+  outpd(ioaddr + SCBPointer, virt2phys(sp->rx_ringp[sp->cur_rx % RX_RING_SIZE]));
+  inpd(ioaddr + SCBPointer);       // Flush to PCI
+
+  // Note: RxStart should complete instantly.
+  do_slow_command(dev, RxStart);
+  do_slow_command(dev, CUDumpStats);
+
+  // Fill the first command with our physical address
+  {
+    int entry = sp->cur_tx++ % TX_RING_SIZE;
+    struct descriptor *cur_cmd = (struct descriptor *) &sp->tx_ring[entry];
+
+    // Avoid a bug(?!) here by marking the command already completed
+    cur_cmd->cmd_status = (CmdSuspend | CmdIASetup) | 0xa000;
+    cur_cmd->link = virt2phys(&sp->tx_ring[sp->cur_tx % TX_RING_SIZE]);
+    memcpy(cur_cmd->params, sp->hwaddr.addr, 6);
+    if (sp->last_cmd) clear_suspend(sp->last_cmd);
+    sp->last_cmd = cur_cmd;
+  }
+
+  // Start the chip's Tx process and unmask interrupts
+  outpd(ioaddr + SCBPointer, virt2phys(&sp->tx_ring[sp->dirty_tx % TX_RING_SIZE]));
+  outpw(ioaddr + SCBCmd, CUStart);
+}
+
+//
+// The Speedo-3 has an especially awkward and unusable method of getting
+// statistics out of the chip.  It takes an unpredictable length of time
+// for the dump-stats command to complete.  To avoid a busy-wait loop we
+// update the stats with the previous dump results, and then trigger a
+// new dump.
+//
+// These problems are mitigated by the current /proc implementation, which
+// calls this routine first to judge the output length, and then to emit the
+// output.
+//
+// Oh, and incoming frames are dropped while executing dump-stats!
+//
+
+static struct stats_nic *speedo_get_stats(struct dev *dev)
+{
+  struct nic *sp = (struct nic *) dev->privdata;
+  long ioaddr = sp->iobase;
+
+  // Update only if the previous dump finished.
+  if (sp->lstats.done_marker == 0xA007) 
+  {
+    sp->stats.tx_aborted_errors += sp->lstats.tx_coll16_errs;
+    sp->stats.tx_window_errors += sp->lstats.tx_late_colls;
+    sp->stats.tx_fifo_errors += sp->lstats.tx_underruns;
+    sp->stats.tx_fifo_errors += sp->lstats.tx_lost_carrier;
+    //sp->stats.tx_deferred += sp->lstats.tx_deferred;
+    sp->stats.collisions += sp->lstats.tx_total_colls;
+    sp->stats.rx_crc_errors += sp->lstats.rx_crc_errs;
+    sp->stats.rx_frame_errors += sp->lstats.rx_align_errs;
+    sp->stats.rx_over_errors += sp->lstats.rx_resource_errs;
+    sp->stats.rx_fifo_errors += sp->lstats.rx_overrun_errs;
+    sp->stats.rx_length_errors += sp->lstats.rx_runt_errs;
+    sp->lstats.done_marker = 0x0000;
+
+    wait_for_cmd_done(ioaddr + SCBCmd);
+    outp(ioaddr + SCBCmd, CUDumpStats);
+  }
+
+  return &sp->stats;
+}
+
 
 // Set or clear the multicast filter for this adaptor.
 // This is very ugly with Intel chips -- we usually have to execute an
@@ -664,6 +842,13 @@ static void speedo_interrupt(int irq, void *dev_instance, struct pt_regs *regs)
 // loaded the link -- we convert the current command block, normally a Tx
 // command, into a no-op and link it to the new command.
 
+static int speedo_set_rx_mode(struct dev *dev)
+{
+  // TODO: Implement multicast filtering
+  return 0;
+}
+
+#ifdef xxx
 static void set_rx_mode(struct net_device *dev)
 {
   struct nic *sp = (struct nic *) dev->privdata;
@@ -851,297 +1036,6 @@ static void set_rx_mode(struct net_device *dev)
 
 #endif
 
-static int speedo_set_rx_mode(struct dev *dev);
-static void speedo_resume(struct dev *dev);
-static void speedo_timer(void *arg);
-static void speedo_interrupt(struct dev *dev);
-static void speedo_tx_timeout(struct dev *dev);
-
-static void speedo_show_state(struct dev *dev)
-{
-  struct nic *sp = (struct nic *) dev->privdata;
-  long ioaddr = sp->iobase;
-  int phy_num = sp->phy[0] & 0x1f;
-  int i;
-
-  // Print a few items for debugging
-  kprintf("%s: Tx ring dump,  Tx queue %d / %d:\n", dev->name, sp->cur_tx, sp->dirty_tx);
-  for (i = 0; i < TX_RING_SIZE; i++)
-  {
-    kprintf("%s: %c%c%d %8.8x\n", dev->name,
-          i == sp->dirty_tx % TX_RING_SIZE ? '*' : ' ',
-          i == sp->cur_tx % TX_RING_SIZE ? '=' : ' ',
-          i, sp->tx_ring[i].status);
-  }
-
-  kprintf("%s: Rx ring dump (next to receive into %d)\n", dev->name, sp->cur_rx);
-
-  for (i = 0; i < RX_RING_SIZE; i++)
-  {
-    kprintf("  Rx ring entry %d  %8.8x\n",  i, sp->rx_ringp[i]->status);
-  }
-
-  for (i = 0; i < 16; i++) 
-  {
-    if (i == 6) i = 21;
-    kprintf("  PHY index %d register %d is %4.4x.\n", phy_num, i, mdio_read(ioaddr, phy_num, i));
-  }
-}
-
-// Initialize the Rx and Tx rings
-
-static void speedo_init_rx_ring(struct dev *dev)
-{
-  struct nic *sp = (struct nic *) dev->privdata;
-  struct RxFD *rxf, *last_rxf = NULL;
-  int i;
-
-  init_sem(&sp->tx_sem, TX_QUEUE_LIMIT);
-
-  sp->cur_rx = 0;
-
-  for (i = 0; i < RX_RING_SIZE; i++) 
-  {
-    struct pbuf *p;
-
-    p = pbuf_alloc(PBUF_RAW, PKT_BUF_SZ + sizeof(struct RxFD), PBUF_RW);
-    sp->rx_pbuf[i] = p;
-    if (p == NULL) break;      // OK. Just initially short of Rx bufs
-    rxf = (struct RxFD *) p->payload;
-    sp->rx_ringp[i] = rxf;
-    pbuf_header(p, - (int) sizeof(struct RxFD));
-    if (last_rxf) last_rxf->link = virt2phys(rxf);
-    last_rxf = rxf;
-    rxf->status = 0x00000001;  // '1' is flag value only
-    rxf->link = 0;            // None yet
-    rxf->rx_buf_addr = 0xffffffff;
-    rxf->count = PKT_BUF_SZ << 16;
-  }
-  sp->dirty_rx = (unsigned int)(i - RX_RING_SIZE);
-
-  // Mark the last entry as end-of-list.
-  last_rxf->status = 0xC0000002; // '2' is flag value only
-  sp->last_rxf = last_rxf;
-}
-
-static int speedo_open(struct dev *dev)
-{
-  struct nic *sp = (struct nic *) dev->privdata;
-  long ioaddr = sp->iobase;
-
-  kprintf("%s: speedo_open() irq %d.\n", dev->name, sp->irq);
-
-  // Set up the Tx queue early
-  sp->cur_tx = 0;
-  sp->dirty_tx = 0;
-  sp->last_cmd = 0;
-  sp->tx_full = 0;
-  sp->polling = sp->in_interrupt = 0;
-
-  if ((sp->phy[0] & 0x8000) == 0)
-  {
-    sp->advertising = mdio_read(ioaddr, sp->phy[0] & 0x1f, 4);
-  }
-
-  // With some transceivers we must retrigger negotiation to reset
-  // power-up errors
-  if ((sp->flags & ResetMII) && (sp->phy[0] & 0x8000) == 0) 
-  {
-    int phy_addr = sp->phy[0] & 0x1f ;
-    
-    // Use 0x3300 for restarting NWay, other values to force xcvr:
-    //   0x0000 10-HD
-    //   0x0100 10-FD
-    //   0x2000 100-HD
-    //   0x2100 100-FD
-   
-    mdio_write(ioaddr, phy_addr, 0, 0x3300);
-  }
-
-  // We can safely take handler calls during init
-  // Doing this after speedo_init_rx_ring() results in a memory leak
-  enable_irq(sp->irq);
-
-  // Initialize Rx and Tx rings
-  speedo_init_rx_ring(dev);
-
-  // Fire up the hardware
-  speedo_resume(dev);
-
-  // Setup the chip and configure the multicast list
-  sp->mc_setup_frm = NULL;
-  sp->mc_setup_frm_len = 0;
-  sp->mc_setup_busy = 0;
-  sp->rx_mode = -1;     // Invalid -> always reset the mode.
-  sp->flow_ctrl = sp->partner = 0;
-  speedo_set_rx_mode(dev);
-
-  kprintf("%s: Done speedo_open(), status %8.8x\n", dev->name, inpw(ioaddr + SCBStatus));
-
-  // Set the timer.  The timer serves a dual purpose:
-  // 1) to monitor the media interface (e.g. link beat) and perhaps switch
-  //    to an alternate media type
-  // 2) to monitor Rx activity, and restart the Rx process if the receiver
-  //    hangs.
-
-  init_timer(&sp->timer, speedo_timer, dev);
-  mod_timer(&sp->timer, ticks + 3*HZ);
-
-  // No need to wait for the command unit to accept here.
-  if ((sp->phy[0] & 0x8000) == 0) mdio_read(ioaddr, sp->phy[0] & 0x1f, 0);
-
-  return 0;
-}
-
-static int speedo_close(struct dev *dev)
-{
-  struct nic *sp = (struct nic *) dev->privdata;
-  long ioaddr = sp->iobase;
-  int i;
-
-  kprintf("%s: Shutting down ethercard, status was %4.4x. Allocation failures: %d\n",  dev->name, inpw(ioaddr + SCBStatus), sp->alloc_failures);
-
-  // Shut off the media monitoring timer
-  del_timer(&sp->timer);
-
-  // Shutting down the chip nicely fails to disable flow control. So..
-  outpd(ioaddr + SCBPort, PortPartialReset);
-
-  disable_irq(sp->irq);
-
-  // Free all the pbufs in the Rx and Tx queues
-  for (i = 0; i < RX_RING_SIZE; i++) 
-  {
-    struct pbuf *p = sp->rx_pbuf[i];
-    sp->rx_pbuf[i] = NULL;
-    if (p) pbuf_free(p);
-  }
-
-  for (i = 0; i < TX_RING_SIZE; i++) 
-  {
-    struct pbuf *p = sp->tx_pbuf[i];
-    sp->tx_pbuf[i] = NULL;
-    if (p) pbuf_free(p);
-  }
-
-  if (sp->mc_setup_frm) 
-  {
-    kfree(sp->mc_setup_frm);
-    sp->mc_setup_frm_len = 0;
-  }
-
-  // Print a few items for debugging
-  speedo_show_state(dev);
-
-  return 0;
-}
-
-// Start the chip hardware after a full reset
-
-static void speedo_resume(struct dev *dev)
-{
-  struct nic *sp = (struct nic *) dev->privdata;
-  long ioaddr = sp->iobase;
-
-  outpw(ioaddr + SCBCmd, SCBMaskAll);
-
-  // Start with a Tx threshold of 256 (0x..20.... 8 byte units)
-  sp->tx_threshold = 0x01208000;
-
-  // Set the segment registers to '0'
-  wait_for_cmd_done(ioaddr + SCBCmd);
-  if (inp(ioaddr + SCBCmd)) 
-  {
-    outpd(ioaddr + SCBPort, PortPartialReset);
-    udelay(10);
-  }
-  outpd(ioaddr + SCBPointer, 0);
-  inpd(ioaddr + SCBPointer);       // Flush to PCI
-  udelay(10); // Bogus, but it avoids the bug
-
-  // Note: these next two operations can take a while
-  do_slow_command(dev, RxAddrLoad);
-  do_slow_command(dev, CUCmdBase);
-
-  // Load the statistics block and rx ring addresses
-  outpd(ioaddr + SCBPointer, virt2phys(&sp->lstats));
-  inpd(ioaddr + SCBPointer);       // Flush to PCI
-  outp(ioaddr + SCBCmd, CUStatsAddr);
-  sp->lstats.done_marker = 0;
-  wait_for_cmd_done(ioaddr + SCBCmd);
-
-  outpd(ioaddr + SCBPointer, virt2phys(sp->rx_ringp[sp->cur_rx % RX_RING_SIZE]));
-  inpd(ioaddr + SCBPointer);       // Flush to PCI
-
-  // Note: RxStart should complete instantly.
-  do_slow_command(dev, RxStart);
-  do_slow_command(dev, CUDumpStats);
-
-  // Fill the first command with our physical address
-  {
-    int entry = sp->cur_tx++ % TX_RING_SIZE;
-    struct descriptor *cur_cmd = (struct descriptor *) &sp->tx_ring[entry];
-
-    // Avoid a bug(?!) here by marking the command already completed
-    cur_cmd->cmd_status = (CmdSuspend | CmdIASetup) | 0xa000;
-    cur_cmd->link = virt2phys(&sp->tx_ring[sp->cur_tx % TX_RING_SIZE]);
-    memcpy(cur_cmd->params, sp->hwaddr.addr, 6);
-    if (sp->last_cmd) clear_suspend(sp->last_cmd);
-    sp->last_cmd = cur_cmd;
-  }
-
-  // Start the chip's Tx process and unmask interrupts
-  outpd(ioaddr + SCBPointer, virt2phys(&sp->tx_ring[sp->dirty_tx % TX_RING_SIZE]));
-  outpw(ioaddr + SCBCmd, CUStart);
-}
-
-//
-// The Speedo-3 has an especially awkward and unusable method of getting
-// statistics out of the chip.  It takes an unpredictable length of time
-// for the dump-stats command to complete.  To avoid a busy-wait loop we
-// update the stats with the previous dump results, and then trigger a
-// new dump.
-//
-// These problems are mitigated by the current /proc implementation, which
-// calls this routine first to judge the output length, and then to emit the
-// output.
-//
-// Oh, and incoming frames are dropped while executing dump-stats!
-//
-
-static struct stats_nic *speedo_get_stats(struct dev *dev)
-{
-  struct nic *sp = (struct nic *) dev->privdata;
-  long ioaddr = sp->iobase;
-
-  // Update only if the previous dump finished.
-  if (sp->lstats.done_marker == 0xA007) 
-  {
-    sp->stats.tx_aborted_errors += sp->lstats.tx_coll16_errs;
-    sp->stats.tx_window_errors += sp->lstats.tx_late_colls;
-    sp->stats.tx_fifo_errors += sp->lstats.tx_underruns;
-    sp->stats.tx_fifo_errors += sp->lstats.tx_lost_carrier;
-    //sp->stats.tx_deferred += sp->lstats.tx_deferred;
-    sp->stats.collisions += sp->lstats.tx_total_colls;
-    sp->stats.rx_crc_errors += sp->lstats.rx_crc_errs;
-    sp->stats.rx_frame_errors += sp->lstats.rx_align_errs;
-    sp->stats.rx_over_errors += sp->lstats.rx_resource_errs;
-    sp->stats.rx_fifo_errors += sp->lstats.rx_overrun_errs;
-    sp->stats.rx_length_errors += sp->lstats.rx_runt_errs;
-    sp->lstats.done_marker = 0x0000;
-
-    wait_for_cmd_done(ioaddr + SCBCmd);
-    outp(ioaddr + SCBCmd, CUDumpStats);
-  }
-
-  return &sp->stats;
-}
-
-static int speedo_set_rx_mode(struct dev *dev)
-{
-  return 0;
-}
-
 // Media monitoring and control
 
 static void speedo_timer(void *arg)
@@ -1153,7 +1047,7 @@ static void speedo_timer(void *arg)
   int status = inpw(ioaddr + SCBStatus);
   unsigned int expires;
 
-  kprintf("%s: Interface monitor tick, chip status %4.4x\n", dev->name, status);
+  //kprintf("%s: Interface monitor tick, chip status %4.4x\n", dev->name, status);
 
   // Normally we check every two seconds.
   expires = ticks + 2*HZ;
@@ -1316,8 +1210,6 @@ static void speedo_intr_error(struct dev *dev, int intr_status)
   }
 }
 
-#if xxx
-
 static int speedo_rx(struct dev *dev)
 {
   struct nic *sp = (struct nic *) dev->privdata;
@@ -1325,7 +1217,7 @@ static int speedo_rx(struct dev *dev)
   int status;
   int rx_work_limit = sp->dirty_rx + RX_RING_SIZE - sp->cur_rx;
 
-  kprintf("%s: In speedo_rx()\n", dev->name);
+  //kprintf("%s: In speedo_rx()\n", dev->name);
 
   // If we own the next entry, it's a new packet. Send it up.
   while (sp->rx_ringp[entry] != NULL &&  (status = sp->rx_ringp[entry]->status) & RxComplete)
@@ -1335,7 +1227,7 @@ static int speedo_rx(struct dev *dev)
 
     if (--rx_work_limit < 0) break;
 
-    kprintf("%s: speedo_rx() status %8.8x len %d\n", dev->name, status, pkt_len);
+    //kprintf("%s: speedo_rx() status %8.8x len %d\n", dev->name, status, pkt_len);
 
     if ((status & (RxErrTooBig | RxOK | 0x0f90)) != RxOK)
     {
@@ -1363,63 +1255,63 @@ static int speedo_rx(struct dev *dev)
       } 
       else 
       {
-        void *temp;
-        // Pass up the already-filled skbuff.
-        skb = sp->rx_skbuff[entry];
-        if (skb == NULL) 
+        // Pass up the already-filled pbuf
+        p = sp->rx_pbuf[entry];
+        if (p == NULL) 
 	{
           kprintf("%s: Inconsistent Rx descriptor chain\n", dev->name);
           break;
         }
 
-        sp->rx_skbuff[entry] = NULL;
-        temp = skb_put(skb, pkt_len);
-
+        sp->rx_pbuf[entry] = NULL;
         sp->rx_ringp[entry] = NULL;
-      }
-      skb->protocol = eth_type_trans(skb, dev);
 
-      netif_rx(skb);
+	pbuf_realloc(p, pkt_len);
+      }
+
+      // Send packet to upper layer
+      if (dev_receive(sp->devno, p) < 0) pbuf_free(p);
+
       sp->stats.rx_packets++;
       sp->stats.rx_bytes += pkt_len;
     }
+
     entry = (++sp->cur_rx) % RX_RING_SIZE;
   }
 
-  // Refill the Rx ring buffers.
+  // Refill the Rx ring buffers
   for (; sp->cur_rx - sp->dirty_rx > 0; sp->dirty_rx++) 
   {
     struct RxFD *rxf;
     entry = sp->dirty_rx % RX_RING_SIZE;
     
-    if (sp->rx_skbuff[entry] == NULL) 
+    if (sp->rx_pbuf[entry] == NULL) 
     {
-      struct sk_buff *skb;
+      struct pbuf *p;
 
-      // Get a fresh skbuff to replace the consumed one.
-      skb = dev_alloc_skb(PKT_BUF_SZ + sizeof(struct RxFD));
-      sp->rx_skbuff[entry] = skb;
-      if (skb == NULL) 
+      // Get a fresh pbuf to replace the consumed one
+      p = pbuf_alloc(PBUF_RAW, PKT_BUF_SZ + sizeof(struct RxFD), PBUF_RW);
+      sp->rx_pbuf[entry] = p;
+      if (p == NULL) 
       {
         sp->rx_ringp[entry] = NULL;
         sp->alloc_failures++;
         break;      // Better luck next time! 
       }
-      rxf = sp->rx_ringp[entry] = (struct RxFD *) skb->tail;
-      skb->dev = dev;
-      skb_reserve(skb, sizeof(struct RxFD));
-      rxf->rx_buf_addr = virt_to_le32desc(skb->tail);
+      rxf = sp->rx_ringp[entry] = (struct RxFD *) p->payload;
+      pbuf_header(p, - (int) sizeof(struct RxFD));
+      rxf->rx_buf_addr = virt2phys(p->payload);
     } 
     else 
     {
       rxf = sp->rx_ringp[entry];
     }
 
-    rxf->status = cpu_to_le32(0xC0000001);  // '1' for driver use only
+    rxf->status = 0xC0000001;  // '1' for driver use only
     rxf->link = 0;      // None yet
-    rxf->count = cpu_to_le32(PKT_BUF_SZ << 16);
-    sp->last_rxf->link = virt_to_le32desc(rxf);
-    sp->last_rxf->status &= cpu_to_le32(~0xC0000000);
+    rxf->count = PKT_BUF_SZ << 16;
+    sp->last_rxf->link = virt2phys(rxf);
+    sp->last_rxf->status &= ~0xC0000000;
     sp->last_rxf = rxf;
   }
 
@@ -1427,10 +1319,102 @@ static int speedo_rx(struct dev *dev)
   return 0;
 }
 
-#endif
+// The interrupt handler does all of the Rx thread work and cleans up
+// after the Tx thread.
 
 static void speedo_interrupt(struct dev *dev)
 {
+  struct nic *sp = (struct nic *) dev->privdata;
+  long ioaddr = sp->iobase;
+  long boguscnt = max_interrupt_work;
+  unsigned short status;
+
+  while (1)
+  {
+    status = inpw(ioaddr + SCBStatus);
+
+    if ((status & IntrAllNormal) == 0  ||  status == 0xffff) break;
+
+    // Acknowledge all of the current interrupt sources ASAP
+    outpw(ioaddr + SCBStatus, status & IntrAllNormal);
+
+    //kprintf("%s: interrupt status=%#4.4x\n", dev->name, status);
+
+    if (status & (IntrRxDone | IntrRxSuspend))
+    {
+      speedo_rx(dev);
+    }
+
+    // The command unit did something, scavenge finished Tx entries
+    if (status & (IntrCmdDone | IntrCmdIdle | IntrDrvrIntr)) 
+    {
+      unsigned int dirty_tx;
+      int entries_freed = 0;
+
+      dirty_tx = sp->dirty_tx;
+      while (sp->cur_tx - dirty_tx > 0) 
+      {
+        int entry = dirty_tx % TX_RING_SIZE;
+        int status = sp->tx_ring[entry].status;
+
+	//kprintf("%s: scavenge candidate %d status %4.4x\n", dev->name, entry, status);
+
+	if ((status & StatusComplete) == 0) 
+	{
+          // Special case error check: look for descriptor that the chip skipped(?)
+          if (sp->cur_tx - dirty_tx > 2  && (sp->tx_ring[(dirty_tx+1) % TX_RING_SIZE].status & StatusComplete)) 
+	  {
+            kprintf("%s: Command unit failed to mark command %8.8x as complete at %d\n", dev->name, status, dirty_tx);
+          } 
+	  else
+	    // It still hasn't been processed
+            break;
+        }
+
+        if ((status & TxUnderrun) && (sp->tx_threshold < 0x01e08000)) 
+	{
+          sp->tx_threshold += 0x00040000;
+          kprintf("%s: Tx threshold increased, %#8.8x\n", dev->name, sp->tx_threshold);
+        }
+
+        // Free the original pbuf
+        if (sp->tx_pbuf[entry]) 
+	{
+	  // Count only user packets
+          sp->stats.tx_packets++; 
+          sp->stats.tx_bytes += sp->tx_pbuf[entry]->len;
+          pbuf_free(sp->tx_pbuf[entry]);
+          sp->tx_pbuf[entry] = NULL;
+        } 
+	else if ((status & 0x70000) == CmdNOp)
+          sp->mc_setup_busy = 0;
+        
+	dirty_tx++;
+	entries_freed++;
+      }
+
+      sp->dirty_tx = dirty_tx;
+      release_sem(&sp->tx_sem, entries_freed);
+    }
+
+    if (status & IntrRxSuspend)
+    {
+      speedo_intr_error(dev, status);
+    }
+
+    if (--boguscnt < 0) 
+    {
+      kprintf("%s: Too much work at interrupt, status=0x%4.4x\n", dev->name, status);
+
+      // Clear all interrupt sources.
+      outpd(ioaddr + SCBStatus, 0xfc00);
+      break;
+    }
+  }
+
+  //kprintf("%s: exiting interrupt, status=%#4.4x\n", dev->name, inpw(ioaddr + SCBStatus));
+
+  return;
 }
 
 static void speedo_dpc(void *arg)
@@ -1516,7 +1500,7 @@ static int speedo_attach(struct dev *dev, struct eth_addr *hwaddr)
   struct nic *np = dev->privdata;
   *hwaddr = np->hwaddr;
 
-  return -ENOSYS;
+  return 0;
 }
 
 static int speedo_detach(struct dev *dev)
@@ -1648,7 +1632,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
 
   kprintf("%s: %s%s iobase 0x%x irq %d hwaddr %la\n", dev->name, eeprom[3] & 0x0100 ? "OEM " : "", unit->productname, ioaddr, irq, &sp->hwaddr);
 
-  return 0;
+  return speedo_open(dev);
 }
 
 int __stdcall start(hmodule_t hmod, int reason, void *reserved2)

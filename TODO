@@ -5,11 +5,9 @@ TODO for sanos
 
 - Implement refcnt on objects
     - close objects when handle count reaches zero (close_object).
-    - free objects when handle count and refcnt reaches zero (free_object).
+    - free objects when handle count and refcnt reaches zero (destroy_object).
 
 - Implement ICMP messages host unreachable, net unreachable and port unreachable
-
-- Add PCI subsystem identifier to driver binding code
 
 - Finish implementation of NDIS subsystem
 
@@ -36,6 +34,9 @@ TODO for sanos
 - Revalidate partition drivers after fdisk
 
 - Handle reopening of files in smbfs after reconnect
+
+- Implement exceptions with signal() and raise()
+
  
 IDEAS for new features
 ----------------------
@@ -121,3 +122,7 @@ CHANGES
   allocating linear physical memory blocks
   
 - RTL8139 network driver implemented (rtl8139.sys)
+
+- Added PCI subsystem identifier to driver binding code
+
+- Implemented Intel EtherExpress Pro100 NIC network driver (eepro100.sys)
