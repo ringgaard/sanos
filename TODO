@@ -1,8 +1,6 @@
 TODO for sanos
 --------------
 
-x Implement /proc/uptime to display time since bootup.
-
 - Implement refcnt on objects
     - close objects when handle count reaches zero (close_object).
     - free objects when handle count and refcnt reaches zero (free_object).
@@ -33,10 +31,22 @@ x Implement /proc/uptime to display time since bootup.
 
 - Multicast filtering support in network drivers
 
+- Add sendmsg() and recvmsg() syscalls
+
+- Implement iomux kernel syncronization object
+    - Add struct ioobject to object.h
+    - Add struct iomux to object.h
+    - Add OBJECT_IOMUX to object.h and extend all switch(object->type)
+    - Replace struct object with struct ioobject in socket.h
+    - Add dispatch(iomux,h,mask,context) syscall
+    - Add synchronization on iomuxes...
+
 IDEAS for new features
 ----------------------
 
-- Implement iowait kernel syncronization object
+- Rename /os to /bin
+
+- Use type object in struct object
 
 - Add support for select()
 
@@ -59,3 +69,9 @@ IDEAS for new features
 - FATFS support
 
 - Memory paging support
+
+
+CHANGES
+-------
+
+- Implement /proc/uptime to display time since bootup.
