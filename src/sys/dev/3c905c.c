@@ -1883,7 +1883,7 @@ int __declspec(dllexport) install(struct unit *unit)
 
     default:
       unit->vendorname = "3Com";
-      unit->productname = "3Com EtherLink 3c90xC";
+      unit->productname = "3Com EtherLink 3C90xC";
   }
 
   // Allocate device structure

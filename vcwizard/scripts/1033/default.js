@@ -77,6 +77,7 @@ function AddConfig(proj, strProjectName)
     var sdkpath = wizard.FindSymbol('SANOS_SDKPATH');
     var isdll = !wizard.FindSymbol('APP_TYPE_USEREXE');
     var isdrv = wizard.FindSymbol('APP_TYPE_KRNLDRV');
+    var iskrnl = wizard.FindSymbol('APP_TYPE_KRNLDRV') || wizard.FindSymbol('APP_TYPE_KRNLMOD');
     var useclib = wizard.FindSymbol('USE_CLIB');
     
     //proj.Object.RemoveConfiguration(proj.Object.Configurations('Release'));
@@ -95,9 +96,14 @@ function AddConfig(proj, strProjectName)
     CLTool.Optimization = 0;
     CLTool.AdditionalIncludeDirectories = sdkpath + '\\src\\include';
     if (isdll)
-      CLTool.PreprocessorDefinitions = prjname.toUpperCase() + '_LIB;DEBUG';
+    {
+      if (iskrnl)
+        CLTool.PreprocessorDefinitions = prjname.toUpperCase() + '_LIB;KERNEL;DEBUG;SANOS';
+      else
+        CLTool.PreprocessorDefinitions = prjname.toUpperCase() + '_LIB;DEBUG;SANOS';
+    }
     else
-      CLTool.PreprocessorDefinitions = prjname.toUpperCase() + ';DEBUG';
+      CLTool.PreprocessorDefinitions = prjname.toUpperCase() + ';DEBUG;SANOS';
     CLTool.IgnoreStandardIncludePath = true;
     CLTool.ExceptionHandling = false;
     CLTool.RuntimeLibrary = 0;
@@ -113,6 +119,8 @@ function AddConfig(proj, strProjectName)
     LinkTool.AdditionalOptions = '/MACHINE:I386 /FIXED:NO';
     if (useclib)
       LinkTool.AdditionalDependencies = 'os.lib libc.lib $(NOINHERIT)';
+    else if (iskrnl)
+      LinkTool.AdditionalDependencies = 'krnl.lib $(NOINHERIT)';
     else
       LinkTool.AdditionalDependencies = 'os.lib $(NOINHERIT)';
     if (isdrv) LinkTool.OutputFile = '$(OutDir)/$(ProjectName).sys';
@@ -148,9 +156,14 @@ function AddConfig(proj, strProjectName)
     //CLTool.OptimizeForProcessor = 2;
     CLTool.AdditionalIncludeDirectories = sdkpath + '\\src\\include';
     if (isdll)
-      CLTool.PreprocessorDefinitions = prjname.toUpperCase() + '_LIB';
+    {
+      if (iskrnl)
+        CLTool.PreprocessorDefinitions = prjname.toUpperCase() + '_LIB;KERNEL;SANOS';
+      else
+        CLTool.PreprocessorDefinitions = prjname.toUpperCase() + '_LIB;SANOS';
+    }
     else
-      CLTool.PreprocessorDefinitions = prjname.toUpperCase();
+      CLTool.PreprocessorDefinitions = prjname.toUpperCase() + ';SANOS';
     CLTool.IgnoreStandardIncludePath = true;
     CLTool.StringPooling = true;
     CLTool.ExceptionHandling = false;
@@ -168,6 +181,8 @@ function AddConfig(proj, strProjectName)
     LinkTool.AdditionalOptions = '/MACHINE:I386 /FIXED:NO';
     if (useclib)
       LinkTool.AdditionalDependencies = 'os.lib libc.lib $(NOINHERIT)';
+    else if (iskrnl)
+      LinkTool.AdditionalDependencies = 'krnl.lib $(NOINHERIT)';
     else
       LinkTool.AdditionalDependencies = 'os.lib $(NOINHERIT)';
     if (isdrv) LinkTool.OutputFile = '$(OutDir)/$(ProjectName).sys';

@@ -1,14 +1,11 @@
+[!if APP_TYPE_USEREXE || APP_TYPE_USERDLL]
 #include <os.h>
+[!endif]
+[!if APP_TYPE_KRNLDRV || APP_TYPE_KRNLMOD]
+#include <os/krnl.h>
+[!endif]
 [!if USE_CLIB]
 #include <stdio.h>
-[!endif]
-
-[!if APP_TYPE_USERDLL]
-
-int __stdcall DllMain(hmodule_t hmod, int reason, void *reserved)
-{
-  return 1;
-}
 [!endif]
 
 [!if APP_TYPE_KRNLDRV]
@@ -17,6 +14,9 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
 {
   return 0;
 }
+[!endif]
+
+[!if APP_TYPE_KRNLMOD || APP_TYPE_KRNLDRV]
 
 int __stdcall start(hmodule_t hmod, int reason, void *reserved)
 {
@@ -24,9 +24,9 @@ int __stdcall start(hmodule_t hmod, int reason, void *reserved)
 }
 [!endif]
 
-[!if APP_TYPE_KRNLMOD]
+[!if APP_TYPE_USERDLL]
 
-int __stdcall start(hmodule_t hmod, int reason, void *reserved)
+int __stdcall DllMain(hmodule_t hmod, int reason, void *reserved)
 {
   return 1;
 }
