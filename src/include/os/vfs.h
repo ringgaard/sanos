@@ -38,6 +38,7 @@
 
 #define F_MODIFIED              0x1000  // File has been modified since it was opened
 #define F_DIR                   0x2000  // File is a directory
+#define F_CLOSED                0x4000  // File is closed
 
 #define FSOP_FORMAT     0x00000001
 #define FSOP_MOUNT      0x00000002

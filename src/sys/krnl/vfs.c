@@ -538,7 +538,9 @@ int close(struct file *filp)
   if (rc == 0) filp->fs->locks--;
   
   kfree(filp->path);
-  kfree(filp);
+  filp->path = NULL;
+  filp->flags |= F_CLOSED;
+
   return rc;
 }
 

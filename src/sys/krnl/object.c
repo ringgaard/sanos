@@ -555,11 +555,9 @@ int destroy_object(struct object *o)
     case OBJECT_MUTEX:
     case OBJECT_SEMAPHORE:
     case OBJECT_IOMUX:
-      kfree(o);
-      return 0;
-    
     case OBJECT_FILE:
     case OBJECT_SOCKET:
+      kfree(o);
       return 0;
   }
 
