@@ -571,7 +571,6 @@ int __declspec(dllexport) install(struct unit *unit)
 {
   struct pcnet32 *pcnet32;
   int version;
-  char *chipname;
   int i;
   char str[20];
   unsigned short val;
@@ -632,41 +631,49 @@ int __declspec(dllexport) install(struct unit *unit)
   switch (version)
   {
     case 0x2420:
-      chipname = "PCI 79C970";
+      unit->vendorname = "AMD";
+      unit->productname = "AMD PCI 79C970";
       break;
 
     case 0x2430:
-      chipname = "PCI 79C970";
+      unit->vendorname = "AMD";
+      unit->productname = "AMD PCI 79C970";
       break;
 
     case 0x2621:
-      chipname = "PCI II 79C970A";
+      unit->vendorname = "AMD";
+      unit->productname = "AMD PCI II 79C970A";
       //fdx = 1;
       break;
 
     case 0x2623:
-      chipname = "FAST 79C971";
+      unit->vendorname = "AMD";
+      unit->productname = "AMD FAST 79C971";
       //fdx = 1; mii = 1; fset = 1;
       //ltint = 1;
       break;
 
     case 0x2624:
-      chipname = "FAST+ 79C972";
+      unit->vendorname = "AMD";
+      unit->productname = "AMD FAST+ 79C972";
       //fdx = 1; mii = 1; fset = 1;
       break;
 
     case 0x2625:
-      chipname = "FAST III 79C973";
+      unit->vendorname = "AMD";
+      unit->productname = "AMD FAST III 79C973";
       //fdx = 1; mii = 1;
       break;
 
     case 0x2626:
-      chipname = "Home 79C978";
+      unit->vendorname = "AMD";
+      unit->productname = "AMD Home 79C978";
       //fdx = 1;
       break;
 
     case 0x2627:
-      chipname = "FAST III 79C975";
+      unit->vendorname = "AMD";
+      unit->productname = "AMD FAST III 79C975";
       //fdx = 1; mii = 1;
       break;
 
@@ -756,7 +763,7 @@ int __declspec(dllexport) install(struct unit *unit)
 
   pcnet32->devno = dev_make("nic#", &pcnet32_driver, unit, pcnet32);
 
-  kprintf("%s: AMD %s iobase 0x%x irq %d hwaddr %s\n", device(pcnet32->devno)->name, chipname, pcnet32->iobase, pcnet32->irq, ether2str(&pcnet32->hwaddr, str));
+  kprintf("%s: AMD %s iobase 0x%x irq %d hwaddr %s\n", device(pcnet32->devno)->name, unit->productname, pcnet32->iobase, pcnet32->irq, ether2str(&pcnet32->hwaddr, str));
 
   return 0;
 }

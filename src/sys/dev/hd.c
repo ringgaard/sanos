@@ -108,6 +108,8 @@
 #define HDTIMEOUT_DRDY		5000
 #define HDTIMEOUT_DRQ		5000
 #define HDTIMEOUT_CMD		1000
+#define HDTIMEOUT_BUSY		60000
+#define HDTIMEOUT_XFER		10000
 
 //
 // Buffer type
@@ -134,9 +136,6 @@
 #define BM_COMMAND_REG    0            // Offset to command reg
 #define BM_STATUS_REG     2            // Offset to status reg
 #define BM_PRD_ADDR       4            // Offset to PRD addr reg
-
-//#define BM_PRD_ADDR_LOW   4            // Offset to PRD addr reg low 16 bits
-//#define BM_PRD_ADDR_HIGH  6            // Offset to PRD addr reg high 16 bits
 
 //
 // Bus master command register flags
@@ -568,7 +567,7 @@ static int hd_read_intr(struct dev *dev, void *buffer, size_t count, blkno_t blk
   hd = (struct hd *) dev->privdata;
   hdc = hd->hdc;
   sectsleft = count / SECTORSIZE;
-  wait_for_object(&hdc->lock, INFINITE);
+  if (wait_for_object(&hdc->lock, HDTIMEOUT_BUSY) < 0) return -EBUSY;
 
   while (sectsleft > 0)
   {
@@ -599,7 +598,12 @@ static int hd_read_intr(struct dev *dev, void *buffer, size_t count, blkno_t blk
     _outp(hdc->iobase + HDC_COMMAND, hd->multsect > 1 ? HDCMD_MULTREAD : HDCMD_READ);
 
     // Wait until data read
-    wait_for_object(&hdc->ready, INFINITE);
+    if (wait_for_object(&hdc->ready, HDTIMEOUT_XFER) < 0)
+    {
+      kprintf("hd_read: timeout waiting for interrupt\n");
+      hdc->result = -EIO;
+      break;
+    }
     if (hdc->result < 0) break;
 
     // Advance to next
@@ -632,7 +636,7 @@ static int hd_write_intr(struct dev *dev, void *buffer, size_t count, blkno_t bl
   hd = (struct hd *) dev->privdata;
   hdc = hd->hdc;
   sectsleft = count / SECTORSIZE;
-  wait_for_object(&hdc->lock, INFINITE);
+  if (wait_for_object(&hdc->lock, HDTIMEOUT_BUSY) < 0) return -EBUSY;
 
   while (sectsleft > 0)
   {
@@ -687,8 +691,12 @@ static int hd_write_intr(struct dev *dev, void *buffer, size_t count, blkno_t bl
 
 //kprintf("wait\n");
     // Wait until data written
-    wait_for_object(&hdc->ready, INFINITE);
-    hdc->dir = HD_XFER_IDLE;
+    if (wait_for_object(&hdc->ready, HDTIMEOUT_XFER) < 0)
+    {
+      kprintf("hd_write: timeout waiting for interrupt\n");
+      hdc->result = -EIO;
+      break;
+    }
     if (hdc->result < 0) break;
 
 //kprintf("ready\n");
@@ -724,7 +732,7 @@ static int hd_read_dma(struct dev *dev, void *buffer, size_t count, blkno_t blkn
   hd = (struct hd *) dev->privdata;
   hdc = hd->hdc;
   sectsleft = count / SECTORSIZE;
-  wait_for_object(&hdc->lock, INFINITE);
+  if (wait_for_object(&hdc->lock, HDTIMEOUT_BUSY) < 0) return -EBUSY;
 
   //kprintf("hdread block %d size %d buffer %p\n", blkno, count, buffer);
 
@@ -765,7 +773,12 @@ static int hd_read_dma(struct dev *dev, void *buffer, size_t count, blkno_t blkn
     _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_WRITE | BM_CR_MASK_START);
 
     // Wait for interrupt
-    wait_for_object(&hdc->ready, INFINITE);
+    if (wait_for_object(&hdc->ready, HDTIMEOUT_XFER) < 0)
+    {
+      kprintf("hd: timeout waiting for read to complete\n");
+      result = -EIO;
+      break;
+    }
 
     // Stop DMA channel and check DMA status
     _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_WRITE | BM_CR_MASK_STOP);
@@ -819,7 +832,7 @@ static int hd_write_dma(struct dev *dev, void *buffer, size_t count, blkno_t blk
   hd = (struct hd *) dev->privdata;
   hdc = hd->hdc;
   sectsleft = count / SECTORSIZE;
-  wait_for_object(&hdc->lock, INFINITE);
+  if (wait_for_object(&hdc->lock, HDTIMEOUT_BUSY) < 0) return -EBUSY;
 
   //kprintf("hdwrite block %d size %d buffer %p\n", blkno, count, buffer);
 
@@ -860,7 +873,12 @@ static int hd_write_dma(struct dev *dev, void *buffer, size_t count, blkno_t blk
     _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_READ | BM_CR_MASK_START);
 
     // Wait for interrupt
-    wait_for_object(&hdc->ready, INFINITE);
+    if (wait_for_object(&hdc->ready, HDTIMEOUT_XFER) < 0)
+    {
+      kprintf("hd: timeout waiting for write to complete\n");
+      result = -EIO;
+      break;
+    }
 
     // Stop DMA channel and check DMA status
     _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_READ | BM_CR_MASK_STOP);

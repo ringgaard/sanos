@@ -48,7 +48,7 @@ static int bufpools_proc(struct proc_file *pf, void *arg)
   pool = bufpools;
   while (pool)
   {
-    pprintf(pf, "%-8s %7d %5dK", device(pool->devno)->name, pool->poolsize, pool->poolsize * pool->bufsize / K);
+    pprintf(pf, "%-8s %7d %5dK", device(pool->devno)->name, pool->bufsize, pool->poolsize * pool->bufsize / K);
     for (i = 0; i < BUF_STATES; i++) pprintf(pf, "%6d", pool->bufcount[i]);
     pprintf(pf, "\n");
     pool = pool->next;

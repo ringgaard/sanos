@@ -841,6 +841,18 @@ __inline __int64 __declspec(naked) rdtsc()
   __asm { ret }
 }
 
+static void sleeptest(int times, int time)
+{
+  unsigned int t;
+  int n;
+
+  t = clocks;
+  for (n = 0; n < times; n++) usleep(time);
+  t = clocks - t;
+
+  kprintf("%d ms for %dx%d us\n", t, times, time);
+}
+
 static void test(char *arg)
 {
   __int64 tsc;
@@ -945,6 +957,8 @@ void shell()
       dbg_break();
     else if (strcmp(cmd, "disktest") == 0)
       disktest(arg, atoi(arg2));
+    else if (strcmp(cmd, "usleep") == 0)
+      sleeptest(atoi(arg), atoi(arg2));
     else if (*cmd)
       kprintf("%s: unknown command\n", cmd);
   }

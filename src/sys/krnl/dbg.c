@@ -17,6 +17,7 @@ int debugging = 0;
 int debugger_active = 0;
 static char dbgdata[MAX_DBG_PACKETLEN];
 struct dbg_evt_trap last_trap;
+static char *krnlname = "krnl.dll";
 
 void init_debug_port()
 {
@@ -124,8 +125,16 @@ static void dbg_connect(struct dbg_hdr *hdr, union dbg_body *body)
   {
     body->conn.version = DRPC_VERSION;
     body->conn.trap = last_trap;
-    body->conn.mod.hmod = kmods.execmod->hmod;
-    body->conn.mod.name = &kmods.execmod->name;
+    if (kmods.modules)
+    {
+      body->conn.mod.hmod = kmods.execmod->hmod;
+      body->conn.mod.name = &kmods.execmod->name;
+    }
+    else
+    {
+      body->conn.mod.hmod = (hmodule_t) OSBASE;
+      body->conn.mod.name = &krnlname;
+    }
     body->conn.thr.tid = t->id;
     body->conn.thr.tib = t->tib;
     body->conn.thr.startaddr = t->entrypoint;
@@ -300,8 +309,6 @@ static void dbg_get_selector(struct dbg_hdr *hdr, union dbg_body *body)
 
 static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
 {
-  static char *krnl = "krnl.dll";
-
   struct peb *peb = (struct peb *) PEB_ADDRESS;
   struct module *mod;
   int n = 0;
@@ -339,7 +346,7 @@ static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
   if (n == 0) 
   {
     body->mod.mods[n].hmod = (hmodule_t) OSBASE;
-    body->mod.mods[n].name = &krnl;
+    body->mod.mods[n].name = &krnlname;
     n++;
   }
 
@@ -402,6 +409,7 @@ static void dbg_main()
 
       case DBGCMD_CONTINUE:
         dbg_send_packet(DBGCMD_CONTINUE | DBGCMD_REPLY, hdr.id, NULL, 0);
+        debugger_active = 0;
 	return;
 
       case DBGCMD_READ_MEMORY:
@@ -463,7 +471,7 @@ void dbg_enter(struct context *ctxt, void *addr)
 {
   if (!debugging)
   {
-    kprintf("trap %d thread %d, addr %p\n", ctxt->traptype, self()->id, addr);
+    kprintf("dbg: trap %d thread %d, addr %p\n", ctxt->traptype, self()->id, addr);
     dumpregs(ctxt);
   }
 
@@ -477,6 +485,14 @@ void dbg_enter(struct context *ctxt, void *addr)
 
   if (debugging)
   {
+    if (debugger_active)
+    {
+      kprintf("dbg: trap %d thread %d, addr %p while debugger active, system halted.\n", ctxt->traptype, self()->id, addr);
+      dumpregs(ctxt);
+      cli();
+      halt();
+    }
+
     dbg_send_packet(DBGEVT_TRAP, 0, &last_trap, sizeof(struct dbg_evt_trap));
   }
 
@@ -489,7 +505,7 @@ void dbg_notify_create_thread(struct thread *t, void *startaddr)
 {
   struct dbg_evt_create_thread create;
 
-  if (debugging)
+  if (debugging && !debugger_active)
   {
     create.tid = t->id;
     create.tib = t->tib;
@@ -504,7 +520,7 @@ void dbg_notify_exit_thread(struct thread *t)
 {
   struct dbg_evt_exit_thread exit;
 
-  if (debugging)
+  if (debugging && !debugger_active)
   {
     exit.tid = t->id;
     exit.exitcode = t->exitcode;
@@ -518,7 +534,7 @@ void dbg_notify_load_module(hmodule_t hmod, char **name)
 {
   struct dbg_evt_load_module load;
 
-  if (debugging)
+  if (debugging && !debugger_active)
   {
     load.hmod = hmod;
     load.name = name;
@@ -532,7 +548,7 @@ void dbg_notify_unload_module(hmodule_t hmod)
 {
   struct dbg_evt_unload_module unload;
 
-  if (debugging)
+  if (debugging && !debugger_active)
   {
     unload.hmod = hmod;
 

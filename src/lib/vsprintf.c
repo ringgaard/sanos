@@ -146,10 +146,20 @@ static char *iaddr(char *str, unsigned char *addr, int size, int precision, int 
       tmp[len++] = digits[0];
     else
     {
-      if (n >= 100) tmp[len++] = digits[n / 100];
-      n = n % 100;
-      if (n >= 10) tmp[len++] = digits[n / 10];
-      tmp[len++] = digits[n % 10];
+      if (n >= 100) 
+      {
+	tmp[len++] = digits[n / 100];
+        n = n % 100;
+	tmp[len++] = digits[n / 10];
+	n = n % 10;
+      }
+      else if (n >= 10) 
+      {
+	tmp[len++] = digits[n / 10];
+	n = n % 10;
+      }
+
+      tmp[len++] = digits[n];
     }
   }
 

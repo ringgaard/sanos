@@ -128,14 +128,14 @@ __inline long __declspec(naked) rdtscl()
 
 static void tsc_delay(unsigned long cycles)
 {
-  long start, now;
-    
-  start = rdtscl();
+  long end, now;
+
+  end = rdtscl() + cycles;
   do 
   {
     __asm { nop };
     now = rdtscl();
-  } while ((start + cycles) - now < 0);
+  } while (end - now > 0);
 }
 
 static void timed_delay(unsigned long loops)
@@ -260,9 +260,9 @@ void init_pit()
 void usleep(unsigned long us)
 {
   if (cpu.features & CPU_FEATURE_TSC)
-    tsc_delay(us * cycles_per_tick / (1000000 / TIMER_FREQ));
+    tsc_delay(us * (cycles_per_tick / (1000000 / TIMER_FREQ)));
   else
-    timed_delay(us * loops_per_tick / (1000000 / TIMER_FREQ));
+    timed_delay(us * (loops_per_tick / (1000000 / TIMER_FREQ)));
 }
 
 time_t get_time()

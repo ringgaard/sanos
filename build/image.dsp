@@ -81,7 +81,7 @@ InputPath=.\mkbootdisk.cmd
 
 !ELSEIF  "$(CFG)" == "image - Win32 SanOSDebug"
 
-USERDEP__MKBOO="$(IntDir)\boot"	"$(IntDir)\osldr.dll"	"$(IntDir)\krnl.dll"	"$(IntDir)\pcnet32.sys"	"$(IntDir)\ne2000.sys"	"$(IntDir)\os.dll"	"$(IntDir)\sh.exe"	"$(IntDir)\fdisk.exe"	"$(IntDir)\setup.exe"	"$(IntDir)\msvcrt.dll"	"$(IntDir)\kernel32.dll"	"$(IntDir)\user32.dll"	"$(IntDir)\advapi32.dll"	"$(IntDir)\winmm.dll"	"$(IntDir)\wsock32.dll"	"$(IntDir)\jinit.exe"	"krnl.ini"	"os.ini"	"setup.ini"	
+USERDEP__MKBOO="$(IntDir)\boot"	"$(IntDir)\osldr.dll"	"$(IntDir)\krnl.dll"	"$(IntDir)\3c905c.sys"	"$(IntDir)\pcnet32.sys"	"$(IntDir)\ne2000.sys"	"$(IntDir)\os.dll"	"$(IntDir)\sh.exe"	"$(IntDir)\fdisk.exe"	"$(IntDir)\setup.exe"	"$(IntDir)\msvcrt.dll"	"$(IntDir)\kernel32.dll"	"$(IntDir)\user32.dll"	"$(IntDir)\advapi32.dll"	"$(IntDir)\winmm.dll"	"$(IntDir)\wsock32.dll"	"$(IntDir)\jinit.exe"	"krnl.ini"	"os.ini"	"setup.ini"	
 # Begin Custom Build - Create boot disk
 IntDir=.\..\dbg\bin
 InputPath=.\mkbootdisk.cmd

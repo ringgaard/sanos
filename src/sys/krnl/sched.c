@@ -564,17 +564,17 @@ void idle_task()
 {
   while (1) 
   {
-    idle = 1;
-    halt();
-    idle = 0;
+    //idle = 1;
+    //halt();
+    //idle = 0;
 
     if (resched)
     {
       mark_thread_ready(self());
       dispatch();
     }
-    else
-      dispatch_dpc_queue();
+
+    dispatch_dpc_queue();
   }
 }
 
