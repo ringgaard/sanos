@@ -50,7 +50,7 @@ void map_page(void *vaddr, unsigned long pfn, unsigned long flags)
 void unmap_page(void *vaddr)
 {
   ptab[PTABIDX(vaddr)] = 0;
-  invlpage(vaddr);
+  flushtlb(); //invlpage(vaddr);
 }
 
 void *virt2phys(void *vaddr)
