@@ -310,9 +310,7 @@ int __stdcall main(hmodule_t hmod, char *cmdline, int reserved)
   if (!cfgname || !*cfgname) cfgname = "java";
 
   // Initialize Java VM
-  syslog(LOG_DEBUG, "Initializing JVM\n");
   if (init_jvm() != 0) return 1;
-  syslog(LOG_DEBUG, "JVM initialized\n");
 
   // Get main class and arguments
   mainclsname = get_property(config, cfgname, "mainclass", "sanos.os.Shell");
