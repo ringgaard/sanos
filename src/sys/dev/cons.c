@@ -37,7 +37,7 @@
 
 dev_t consdev = NODEV;
 static int cursoff = 0;
-static int kprint_enabled = 1;
+int kprint_enabled = 1;
 static unsigned int kbd_timeout = INFINITE;
 static char syslog[SYSLOG_SIZE];
 static unsigned int syslog_start;

@@ -253,12 +253,12 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
 
   // Initialize video 
   init_video();
-  clear_screen();
-  kprintf("OSLDR\n\n");
+  //clear_screen();
+  //kprintf("OSLDR\n\n");
 
   // Determine size of RAM
   mem_end = memsize();
-  kprintf("%d MB RAM\n", mem_end / M);
+  //kprintf("%d MB RAM\n", mem_end / M);
 
   // Page allocation starts at 1MB
   heap = (char *) HEAP_START;

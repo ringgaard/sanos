@@ -90,8 +90,8 @@ start:
 	mov	[bootimg], ebx
 
 	; Display boot message
-	mov	si, osldrmsg
-	call	print
+	;mov	si, osldrmsg
+	;call	print
 
 	; Try to get system memory map from BIOS
 	call	getmemmap
@@ -383,8 +383,8 @@ memrecs	     times (MAXMEMRECS * MEMRECSIZ) db 0
 ; Strings
 ;
 
-osldrmsg:
-	db	'Real mode OS loader entered', 13, 10, 0
+;osldrmsg:
+;	db	'Real mode OS loader entered', 13, 10, 0
 
 textend:
 

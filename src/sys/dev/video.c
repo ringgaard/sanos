@@ -56,10 +56,10 @@ void init_video()
 
   // Get cursor position
   _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_MSB);
-  cursor_pos = _inp(VIDEO_PORT_DATA);
+  cursor_pos = _inp(VIDEO_PORT_DATA) & 0xFF;
   cursor_pos <<= 8;
   _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_LSB);
-  cursor_pos += _inp(VIDEO_PORT_DATA);
+  cursor_pos += _inp(VIDEO_PORT_DATA) & 0xFF;
   cursor_pos <<= 1;
 }
 
@@ -68,7 +68,7 @@ void show_cursor()
   // Set new cursor position
   unsigned int pos = cursor_pos >> 1;
   _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_LSB);
-  _outp(VIDEO_PORT_DATA, pos & 0x0ff);
+  _outp(VIDEO_PORT_DATA, pos & 0xFF);
   _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_MSB);
   _outp(VIDEO_PORT_DATA, pos >> 8);
 }

@@ -116,10 +116,10 @@ loadnext1:
 	cmp	ax, [ldrsize]
 	jnz	loadnext
 
-	mov	al, 10
-	call	printchar
-	mov	al, 13
-	call	printchar
+	;mov	al, 10
+	;call	printchar
+	;mov	al, 13
+	;call	printchar
 
 	; Call real mode entry point in os loader
 	mov	ax, OSLDRSEG

@@ -237,10 +237,15 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
 {
   // Copy kernel options
   strcpy(krnlopts, opts);
+  if (get_option(opts, "silent", NULL, 0, NULL) != NULL) 
+  {
+    extern int kprint_enabled; // from cons.c
+    kprint_enabled = 0;
+  }
 
   // Initialize screen
   init_video();
-  clear_screen();
+  //clear_screen();
 
   // Display banner
 #ifdef DEBUG
@@ -300,11 +305,10 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
     struct apmparams *apm = &syspage->bootparams.apm;
 
     kprintf("apm: BIOS version %d.%d Flags 0x%02x\n", ((apm->version >> 8) & 0xff), (apm->version & 0xff), apm->flags);
-    kprintf("apm: cseg32 0x%04x %d bytes\n", apm->cseg32, apm->cseg32len);
-    kprintf("apm: cseg16 0x%04x %d bytes\n", apm->cseg16, apm->cseg16len);
-    kprintf("apm: dseg 0x%04x %d bytes\n", apm->dseg, apm->dseglen);
-    kprintf("apm: entry 0x%04x\n", apm->entry);
-    kprintf("sizeof(syspage)=%d\n", sizeof(struct syspage));
+    //kprintf("apm: cseg32 0x%04x %d bytes\n", apm->cseg32, apm->cseg32len);
+    //kprintf("apm: cseg16 0x%04x %d bytes\n", apm->cseg16, apm->cseg16len);
+    //kprintf("apm: dseg 0x%04x %d bytes\n", apm->dseg, apm->dseglen);
+    //kprintf("apm: entry 0x%04x\n", apm->entry);
   }
 
   // Enable interrupts and calibrate delay

@@ -628,7 +628,7 @@ void init_net()
       unsigned long mask = ((struct sockaddr_in *) &ifcfg.netmask)->sin_addr.s_addr;
       unsigned long bcast = ((struct sockaddr_in *) &ifcfg.broadcast)->sin_addr.s_addr;
 
-      syslog(LOG_INFO, "%s: addr %a mask %a gw %a bcast %a\n", ifcfg.name, &addr, &mask, &gw, &bcast);
+      //syslog(LOG_INFO, "%s: addr %a mask %a gw %a bcast %a\n", ifcfg.name, &addr, &mask, &gw, &bcast);
 
       if (first) peb->ipaddr.s_addr = addr;
     }

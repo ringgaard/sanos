@@ -56,24 +56,26 @@ unsigned int cursor_pos;
 
 void init_video()
 {
-  // set video base address
+  // Set video base address
   vidmem = (unsigned char *) VIDEO_BASE;
 
-  // get cursor position
+  // Get cursor position
   _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_MSB);
-  cursor_pos = _inp(VIDEO_PORT_DATA);
+  cursor_pos = _inp(VIDEO_PORT_DATA) & 0xFF;
   cursor_pos <<= 8;
   _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_LSB);
-  cursor_pos += _inp(VIDEO_PORT_DATA);
+  cursor_pos += _inp(VIDEO_PORT_DATA) & 0xFF;
   cursor_pos <<= 1;
+
+  if (cursor_pos > SCREENSIZE) cursor_pos = SCREENSIZE - LINESIZE;
 }
 
 static void move_cursor()
 {
-  // set new cursor position
+  // Set new cursor position
   unsigned int pos = cursor_pos >> 1;
   _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_LSB);
-  _outp(VIDEO_PORT_DATA, pos & 0x0ff);
+  _outp(VIDEO_PORT_DATA, pos & 0xFF);
   _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_MSB);
   _outp(VIDEO_PORT_DATA, pos >> 8);
 }
@@ -83,10 +85,10 @@ static void scroll_up()
   int i;
   unsigned short *p;
 
-  // scroll screen up
+  // Scroll screen up
   memcpy(vidmem, vidmem + LINESIZE, SCREENSIZE - LINESIZE);
 
-  // clear bottom row
+  // Clear bottom row
   p = (unsigned short *) (vidmem + SCREENSIZE - LINESIZE);
   for (i = 0; i < COLS; i++) *p++ = 0x0720;
 }
@@ -100,11 +102,11 @@ static void print_buffer(const char *str, int len)
   {
     switch (ch)
     {
-      case '\n': // newline
+      case '\n': // Newline
 	cursor_pos = (cursor_pos / LINESIZE + 1) * LINESIZE;
 	break;
 
-      case '\r': // carriage return
+      case '\r': // Carriage return
 	cursor_pos = (cursor_pos / LINESIZE) * LINESIZE;
 	break;
 
@@ -112,18 +114,18 @@ static void print_buffer(const char *str, int len)
 	cursor_pos = (cursor_pos / (TABSTOP * CELLSIZE) + 1) * (TABSTOP * CELLSIZE);
 	break;
        
-      case 8: // backspace
+      case 8: // Backspace
 	if (cursor_pos > 0) cursor_pos -= CELLSIZE;
 	vidmem[cursor_pos] = 0x20;
 	break;
 
-      default: // normal character
+      default: // Normal character
 	vidmem[cursor_pos++] = ch;
 	vidmem[cursor_pos++] = 0x07;
 	break;
     }
 
-    // scroll if position is off-screen
+    // Scroll if position is off-screen
     if (cursor_pos >= SCREENSIZE)
     {
       scroll_up();
@@ -156,11 +158,11 @@ void clear_screen()
   int i;
   unsigned short *p;
 
-  // fill screen with background color
+  // Fill screen with background color
   p = (unsigned short *) vidmem;
   for (i = 0; i < COLS * LINES; i++) *p++ = 0x0720;
 
-  // set cursor to upper-left corner of the screen
+  // Set cursor to upper-left corner of the screen
   cursor_pos = 0;
   move_cursor();
 }

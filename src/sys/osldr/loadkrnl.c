@@ -80,7 +80,7 @@ void load_kernel(int bootdrv)
   char *label;
   struct boot_sector *bootsect;
 
-  kprintf("Loading kernel");
+  //kprintf("Loading kernel");
 
   // Determine active boot partition if booting from harddisk
   if (bootdrv & 0x80 && (bootdrv & 0xF0) != 0xF0)
