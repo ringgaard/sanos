@@ -121,7 +121,7 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
   src = NTOHS(udphdr->src);
   dest = NTOHS(udphdr->dest);
 
-  // Demultiplex packet. First, go for a perfect match. */
+  // Demultiplex packet. First, go for a perfect match
   for (pcb = udp_pcbs; pcb != NULL; pcb = pcb->next) 
   {
     if (pcb->remote_port == src &&

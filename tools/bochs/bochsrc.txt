@@ -286,7 +286,7 @@ private_colormap: enabled=0
 # magic_break
 #ne2k: ioaddr=0x280, irq=9, mac=b0:c4:20:00:00:00, ethmod=fbsd, ethdev=xl0
 
-#ne2k: ioaddr=0x280, irq=9, mac=00:00:b4:a6:df:2e, ethmod=win32, ethdev=\Device\Packet_{05FE6A94-8974-4D0A-9779-28E4EE9DD22B}
+ne2k: ioaddr=0x280, irq=9, mac=00:00:b4:a6:df:2e, ethmod=win32, ethdev=\Device\NPF_{B966E4AC-A8D3-4117-9FCC-A3921AD95A50}
 
 #load32bitOSImage: os=nullkernel, path=../kernel.img, iolog=../vga_io.log
 #load32bitOSImage: os=linux, path=../linux.img, iolog=../vga_io.log, initrd=../initrd.img

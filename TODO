@@ -36,8 +36,6 @@ IDEAS for new features
 - String substitution in inf files
     - Replace all %key% with value in [strings] section
 
-- Add support for select()
-
 - sysctl() functionality
 
 - DNS resolver cache
