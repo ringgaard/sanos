@@ -206,7 +206,7 @@ static void dbg_suspend_thread(struct dbg_hdr *hdr, union dbg_body *body)
     t = get_thread(tid);
     if (t == NULL)
       body->thr.threadids[n] = -ENOENT;
-    else
+    else if (t != self())
       body->thr.threadids[n] = suspend_thread(t);
 
     //kprintf("%d(%d) ", tid, body->thr.threadids[n]);
@@ -229,7 +229,7 @@ static void dbg_resume_thread(struct dbg_hdr *hdr, union dbg_body *body)
     t = get_thread(tid);
     if (t == NULL)
       body->thr.threadids[n] = -ENOENT;
-    else
+    else if (t != self())
       body->thr.threadids[n] = resume_thread(t);
 
     //kprintf("%d(%d) ", tid, body->thr.threadids[n]);

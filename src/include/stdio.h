@@ -110,6 +110,8 @@ typedef struct _iobuf FILE;
 #define _IOSTR          0x0040
 #define _IORW           0x0080
 
+#define _IOCRLF         0x8000
+
 int filbuf(FILE *stream);
 int flsbuf(int, FILE *stream);
 

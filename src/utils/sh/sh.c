@@ -1613,10 +1613,10 @@ void redirect(handle_t h, int termtype)
   crtbase->iob[0].cnt = BUFSIZ;
 
   crtbase->iob[1].file = job->out;
-  crtbase->iob[1].flag = _IOWR | _IONBF;
+  crtbase->iob[1].flag = _IOWR | _IONBF | _IOCRLF;
 
   crtbase->iob[2].file = job->err;
-  crtbase->iob[2].flag = _IOWR | _IONBF;
+  crtbase->iob[2].flag = _IOWR | _IONBF | _IOCRLF;
 }
 
 void __stdcall ttyd(void *arg)

@@ -41,102 +41,9 @@
 
 int output(FILE *stream, const char *format, va_list args);
 
-#if 0
-int vfprintf(handle_t f, const char *fmt, va_list args)
-{
-  char buffer[1024];
-  char *p;
-  char *q;
-  int n;
-
-  n = vsprintf(buffer, fmt, args);
-
-  p = buffer;
-  while (*p)
-  {
-    q = p;
-    while (*q && *q != '\n') q++;
-
-    if (p != q) write(f, p, q - p);
-    if (*q == '\n') 
-    {
-      write(f, "\r\n", 2);
-      q++;
-    }
-    p = q;
-  }
-
-  return n;
-}
-
-int fprintf(handle_t f, const char *fmt,...)
-{
-  va_list args;
-  int n;
-
-  va_start(args, fmt);
-  n = vfprintf(f, fmt, args);
-  va_end(args);
-
-  return n;
-}
-
-int vprintf(const char *fmt, va_list args)
-{
-  return vfprintf(stdout, fmt, args);
-}
-
-int printf(const char *fmt,...)
-{
-  va_list args;
-  int n;
-
-  va_start(args, fmt);
-  n = vprintf(fmt, args);
-  va_end(args);
-
-  return n;
-}
-
-char *gets(char *buf)
-{
-  char *p = buf;
-  char ch;
-  int rc;
-
-  while (1)
-  {
-    rc = read(stdin, &ch, 1);
-    if (rc == -ETIMEOUT) continue;
-    if (rc <= 0) return NULL;
-
-    if (ch == 8)
-    {
-      if (p > buf)
-      {
-	write(stdout, "\b \b", 3);
-	p--;
-      }
-    }
-    else if (ch == '\r' || ch =='\n' || (unsigned char) ch >= ' ')
-    {
-      write(stdout, &ch, 1);
-      if (ch == '\r') write(stdout, "\n", 1);
-      //if (ch == '\n') break;
-      //if (ch != '\r') *p++ = ch;
-      if (ch == '\n' || ch == '\r') break;
-      *p++ = ch;
-    }
-  }
-
-  *p = 0;
-  return buf;
-}
-
-#endif
-
 #define bigbuf(s) ((s)->flag & (_IOOWNBUF | _IOEXTBUF | _IOTMPBUF))
 #define anybuf(s) ((s)->flag & (_IOOWNBUF | _IOEXTBUF | _IOTMPBUF | _IONBF))
+#define inuse(s)  ((s)->flag & (_IORD |_IOWR |_IORW))
 
 void init_stdio()
 {
@@ -146,13 +53,13 @@ void init_stdio()
   crtbase->iob[0].file = job->in;
   crtbase->iob[0].base = crtbase->iob[0].ptr = crtbase->stdinbuf;
   crtbase->iob[0].flag = _IORD | _IOEXTBUF;
-  crtbase->iob[0].cnt = BUFSIZ;
+  crtbase->iob[0].bufsiz = BUFSIZ;
 
   crtbase->iob[1].file = job->out;
-  crtbase->iob[1].flag = _IOWR | _IONBF;
+  crtbase->iob[1].flag = _IOWR | _IONBF | _IOCRLF;
 
   crtbase->iob[2].file = job->err;
-  crtbase->iob[2].flag = _IOWR | _IONBF;
+  crtbase->iob[2].flag = _IOWR | _IONBF | _IOCRLF;
 }
 
 static void getbuf(FILE *stream)
@@ -575,6 +482,7 @@ int fputs(const char *string, FILE *stream)
   return written == len ? 0 : EOF;
 }
 
+#if 0
 char *gets(char *buf)
 {
   int ch;
@@ -592,6 +500,44 @@ char *gets(char *buf)
   }
 
   *ptr = '\0';
+  return buf;
+}
+#endif
+
+char *gets(char *buf)
+{
+  char *p = buf;
+  int ch;
+
+  while (1)
+  {
+    ch = getchar();
+    if (ch == EOF)
+    {
+      if (errno == ETIMEDOUT) continue;
+      return NULL;
+    }
+
+    if (ch == 8)
+    {
+      if (p > buf)
+      {
+	putchar('\b');
+	putchar(' ');
+	putchar('\b');
+	p--;
+      }
+    }
+    else if (ch == '\r' || ch =='\n' || ch >= ' ')
+    {
+      putchar(ch);
+      if (ch == '\r') putchar('\n');
+      if (ch == '\n' || ch == '\r') break;
+      *p++ = ch;
+    }
+  }
+
+  *p = 0;
   return buf;
 }
 
