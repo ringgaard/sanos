@@ -70,7 +70,7 @@ struct netif *ip_route(struct ip_addr *dest)
 // appropriate interface.
 //
 
-static void ip_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
+static err_t ip_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
 {
   struct netif *netif;
   
@@ -78,14 +78,14 @@ static void ip_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
   {
 
     kprintf("ip_forward: no forwarding route for 0x%lx found\n", iphdr->dest.addr);
-    return;
+    return -EROUTE;
   }
 
   // Don't forward packets onto the same network interface on which they arrived
   if (netif == inp) 
   {
     kprintf("ip_forward: not forward packets back on incoming interface.\n");
-    return;
+    return -EROUTE;
   }
   
   // Decrement TTL and send ICMP if ttl == 0
@@ -94,7 +94,8 @@ static void ip_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
   {
     // Don't send ICMP messages in response to ICMP messages
     if (IPH_PROTO(iphdr) != IP_PROTO_ICMP) icmp_time_exceeded(p, ICMP_TE_TTL);
-    return;       
+    pbuf_free(p);
+    return 0;
   }
   
   // Incremental update of the IP checksum
@@ -103,12 +104,12 @@ static void ip_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
   else
     IPH_CHKSUM_SET(iphdr, (unsigned short) (IPH_CHKSUM(iphdr) + htons(0x100)));
 
-  kprintf("ip_forward: forwarding packet to 0x%lx\n", iphdr->dest.addr);
+  kprintf("ip_forward: forwarding packet to %a\n", &iphdr->dest);
 
   stats.ip.fw++;
   stats.ip.xmit++;
 
-  netif->output(netif, p, (struct ip_addr *)&(iphdr->dest));
+  return netif->output(netif, p, &iphdr->dest);
 }
 
 //
@@ -137,10 +138,9 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
   if (IPH_V(iphdr) != 4) 
   {
     kprintf("IP packet dropped due to bad version number %d\n", IPH_V(iphdr));
-    pbuf_free(p);
     stats.ip.err++;
     stats.ip.drop++;
-    return 0;
+    return -EPROTO;
   }
   
   // Check header length
@@ -149,10 +149,9 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
   {
     kprintf("IP packet dropped due to too short packet %d\n", p->len);
 
-    pbuf_free(p);
     stats.ip.lenerr++;
     stats.ip.drop++;
-    return 0;
+    return -EPROTO;
   }
 
   // Verify checksum
@@ -161,10 +160,9 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
     if (inet_chksum(iphdr, hl * 4) != 0)
     {
       kprintf("IP packet dropped due to failing checksum 0x%x\n", inet_chksum(iphdr, hl * 4));
-      pbuf_free(p);
       stats.ip.chkerr++;
       stats.ip.drop++;
-      return 0;
+      return -ECHKSUM;
     }
   }
   
@@ -196,59 +194,59 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
   if (netif == NULL) 
   {
     // Packet not for us, route or discard
-    if (!ip_addr_isbroadcast(&(iphdr->dest), &(inp->netmask))) ip_forward(p, iphdr, inp);
-    pbuf_free(p);
+    if (!ip_addr_isbroadcast(&iphdr->dest, &inp->netmask))
+    {
+      if (ip_forward(p, iphdr, inp) < 0) pbuf_free(p);
+    }
+    else
+      pbuf_free(p);
+
     return 0;
   }
 
   if ((IPH_OFFSET(iphdr) & htons(IP_OFFMASK | IP_MF)) != 0) 
   {
     kprintf("IP packet dropped since it was fragmented (0x%x).\n", ntohs(IPH_OFFSET(iphdr)));
-    pbuf_free(p);
     stats.ip.opterr++;
     stats.ip.drop++;
-    return 0;
+    return -EPROTO;
   }
   
   if (hl * 4 > IP_HLEN) 
   {
     kprintf("IP packet dropped since there were IP options.\n");
-    pbuf_free(p);    
     stats.ip.opterr++;
     stats.ip.drop++;
-    return 0;
+    return -EPROTO;
   }
   
   // Send to upper layers
   switch (IPH_PROTO(iphdr)) 
   {
     case IP_PROTO_UDP:
-      udp_input(p, inp);
-      break;
+      return udp_input(p, inp);
 
     case IP_PROTO_TCP:
+      //return tcp_input(p, inp);
       tcp_input(p, inp);
-      break;
+      return 0;
 
     case IP_PROTO_ICMP:
-      icmp_input(p, inp);
-      break;
+      return icmp_input(p, inp);
   
     default:
       // Send ICMP destination protocol unreachable unless is was a broadcast
-      if(!ip_addr_isbroadcast(&(iphdr->dest), &(inp->netmask)) && !ip_addr_ismulticast(&(iphdr->dest))) 
+      if(!ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) && !ip_addr_ismulticast(&iphdr->dest))
       {
 	p->payload = iphdr;
 	icmp_dest_unreach(p, ICMP_DUR_PROTO);
       }
-      pbuf_free(p);
 
       kprintf("Unsupported transport protocol %d\n", IPH_PROTO(iphdr));
       stats.ip.proterr++;
       stats.ip.drop++;
+      return -EPROTO;
   }
-
-  return 0;
 }
 
 //
@@ -270,7 +268,6 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
     {
       kprintf("ip_output: not enough room for IP header in pbuf\n");
       stats.ip.err++;
-      pbuf_free(p);
       return -EBUF;
     }
 
@@ -279,7 +276,7 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
     IPH_TTL_SET(iphdr, ttl);
     IPH_PROTO_SET(iphdr, proto);
     
-    ip_addr_set(&(iphdr->dest), dest);
+    ip_addr_set(&iphdr->dest, dest);
     ip_id++;
 
     IPH_VHLTOS_SET(iphdr, 4, IP_HLEN / 4, 0);
@@ -288,9 +285,9 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
     IPH_ID_SET(iphdr, htons(ip_id));
 
     if (ip_addr_isany(src))
-      ip_addr_set(&(iphdr->src), &(netif->ip_addr));
+      ip_addr_set(&iphdr->src, &netif->ip_addr);
     else
-      ip_addr_set(&(iphdr->src), src);
+      ip_addr_set(&iphdr->src, src);
 
     IPH_CHKSUM_SET(iphdr, 0);
 
@@ -302,13 +299,13 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
   else
   {
     iphdr = p->payload;
-    dest = &(iphdr->dest);
+    dest = &iphdr->dest;
   }
 
   stats.ip.xmit++;
 
-  kprintf("sending IP datagram:\n");
-  ip_debug_print(p);
+  //kprintf("sending IP datagram:\n");
+  //ip_debug_print(p);
 
   return netif->output(netif, p, dest);
 }
@@ -326,10 +323,9 @@ err_t ip_output(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, int t
   
   if ((netif = ip_route(dest)) == NULL) 
   {
-    kprintf("ip_output: No route to 0x%lx\n", dest->addr);
+    kprintf("ip_output: No route to %a\n", &dest);
 
     stats.ip.rterr++;
-    pbuf_free(p);
     return -EROUTE;
   }
 

@@ -37,7 +37,7 @@ struct udp_pcb
   int flags;
   int chksum_len;
   
-  void (*recv)(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, unsigned short port);
+  err_t (*recv)(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, unsigned short port);
   void *recv_arg;  
 };
 
@@ -47,7 +47,7 @@ struct udp_pcb *udp_new();
 void udp_remove (struct udp_pcb *pcb);
 err_t udp_bind(struct udp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port);
 err_t udp_connect(struct udp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port);
-void udp_recv(struct udp_pcb *pcb, void (*recv)(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct ip_addr *addr, unsigned short port), void *recv_arg);
+void udp_recv(struct udp_pcb *pcb, err_t (*recv)(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct ip_addr *addr, unsigned short port), void *recv_arg);
 err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif);
 
 #define udp_flags(pcb) ((pcb)->flags)
@@ -55,7 +55,7 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif);
 
 // Lower layer interface to UDP
 
-void udp_input(struct pbuf *p, struct netif *inp);
+err_t udp_input(struct pbuf *p, struct netif *inp);
 void udp_init();
 
 #endif

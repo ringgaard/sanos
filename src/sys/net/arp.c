@@ -343,7 +343,6 @@ int arp_queue(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   if (!entry)
   {
     stats.link.drop++;
-    pbuf_free(p);
     return -ENOMEM;
   }
 
@@ -355,12 +354,11 @@ int arp_queue(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   }
 
   // Fill xmit queue entry
-  pbuf_ref(p);
   entry->netif = netif;
   entry->p = p;
   ip_addr_set(&entry->ipaddr, ipaddr);
   entry->expires = ticks + MAX_XMIT_DELAY / MSECS_PER_TICK;
   
-  //kprintf("arp: packet queued, %d bytes\n", p->tot_len);
+  kprintf("arp: packet queued, %d bytes\n", p->tot_len);
   return 0;
 }

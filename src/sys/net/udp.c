@@ -39,7 +39,7 @@ again:
   return port;
 }
 
-void udp_input(struct pbuf *p, struct netif *inp)
+err_t udp_input(struct pbuf *p, struct netif *inp)
 {
   struct udp_hdr *udphdr;  
   struct udp_pcb *pcb;
@@ -103,22 +103,20 @@ void udp_input(struct pbuf *p, struct netif *inp)
 	  kprintf("udp_input: UDP Lite datagram discarded due to failing checksum\n");
 	  stats.udp.chkerr++;
 	  stats.udp.drop++;
-	  pbuf_free(p);
-	  return;
+	  return -ECHKSUM;
 	}
       } 
       else 
       {
 	if (udphdr->chksum != 0) 
 	{
-	  if (inet_chksum_pseudo(p, (struct ip_addr *) &(iphdr->src), (struct ip_addr *) &(iphdr->dest), IP_PROTO_UDP, p->tot_len) != 0) 
+	  if (inet_chksum_pseudo(p, &iphdr->src, &iphdr->dest, IP_PROTO_UDP, p->tot_len) != 0) 
 	  {
 	    kprintf("udp_input: UDP datagram discarded due to failing checksum\n");
 
 	    stats.udp.chkerr++;
 	    stats.udp.drop++;
-	    pbuf_free(p);
-	    return;
+	    return -ECHKSUM;
 	  }
 	}
       }
@@ -126,15 +124,14 @@ void udp_input(struct pbuf *p, struct netif *inp)
       pbuf_header(p, -UDP_HLEN);
     }
 
-    pcb->recv(pcb->recv_arg, pcb, p, &(iphdr->src), src);
+    return pcb->recv(pcb->recv_arg, pcb, p, &iphdr->src, src);
   }
   else 
   {
     // No match was found, send ICMP destination port unreachable unless
     // destination address was broadcast/multicast.
     
-    if (!ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) &&
-	!ip_addr_ismulticast(&iphdr->dest)) 
+    if (!ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) && !ip_addr_ismulticast(&iphdr->dest))
     {	
       // Deconvert from host to network byte order
       udphdr->src = htons(udphdr->src);
@@ -148,7 +145,7 @@ void udp_input(struct pbuf *p, struct netif *inp)
     ++stats.udp.proterr;
     ++stats.udp.drop;
 
-    pbuf_free(p);
+    return -EDESTUNREACH;
   }
 }
 
@@ -157,14 +154,12 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
   struct udp_hdr *udphdr;
   struct ip_addr *src_ip;
   err_t err;
-  struct pbuf *q;
   
   if (pbuf_header(p, UDP_HLEN)) 
   {
-    q = pbuf_alloc(PBUF_IP, UDP_HLEN, PBUF_RW);
-    if(q == NULL) return -ENOMEM;
-    pbuf_chain(q, p);
-    p = q;
+    kprintf("udp_send: not enough room for UDP header in pbuf\n");
+    stats.udp.err++;
+    return -EBUF;
   }
 
   udphdr = p->payload;
@@ -174,18 +169,18 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
 
   if (netif == NULL)
   {
-    if ((netif = ip_route(&(pcb->remote_ip))) == NULL)
+    if ((netif = ip_route(&pcb->remote_ip)) == NULL)
     {
-      kprintf("udp_send: No route to 0x%lx\n", pcb->remote_ip.addr);
+      kprintf("udp_send: No route to %a\n", &pcb->remote_ip);
       stats.udp.rterr++;
       return -EROUTE;
     }
   }
 
   if (ip_addr_isany(&pcb->local_ip)) 
-    src_ip = &(netif->ip_addr);
+    src_ip = &netif->ip_addr;
   else 
-    src_ip = &(pcb->local_ip);
+    src_ip = &pcb->local_ip;
   
   //kprintf("udp_send: sending datagram of length %d\n", p->tot_len);
   
@@ -196,7 +191,7 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
     // Calculate checksum
     if ((netif->flags & NETIF_UDP_TX_CHECKSUM_OFFLOAD) == 0)
     {
-      udphdr->chksum = inet_chksum_pseudo(p, src_ip, &(pcb->remote_ip), IP_PROTO_UDP, pcb->chksum_len);
+      udphdr->chksum = inet_chksum_pseudo(p, src_ip, &pcb->remote_ip, IP_PROTO_UDP, pcb->chksum_len);
       if (udphdr->chksum == 0x0000) udphdr->chksum = 0xFFFF;
     }
     err = ip_output_if(p, src_ip, &pcb->remote_ip, UDP_TTL, IP_PROTO_UDPLITE, netif);
@@ -272,7 +267,7 @@ err_t udp_connect(struct udp_pcb *pcb, struct ip_addr *ipaddr, unsigned short po
   return 0;
 }
 
-void udp_recv(struct udp_pcb *pcb, void (* recv)(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct ip_addr *addr, unsigned short port), void *recv_arg)
+void udp_recv(struct udp_pcb *pcb, err_t (*recv)(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct ip_addr *addr, unsigned short port), void *recv_arg)
 {
   pcb->recv = recv;
   pcb->recv_arg = recv_arg;

@@ -48,13 +48,7 @@ struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr,
     if (state) wait_for_object(&state->binding_complete, 10000);
   }
 
-  kprintf("%s: device %s addr ", name, devname);
-  ip_addr_debug_print(&netif->ip_addr);
-  kprintf(" mask ");
-  ip_addr_debug_print(&netif->netmask);
-  kprintf(" gw ");
-  ip_addr_debug_print(&netif->gw);
-  kprintf("\n");
+  kprintf("%s: device %s addr %a mask %a gw %a\n", name, devname, &netif->ip_addr, &netif->netmask, &netif->gw);
 
   return netif;
 }
@@ -89,21 +83,11 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   err_t err;
   int i;
 
-  // Make room for Ethernet header
-  if (pbuf_header(p, ETHER_HLEN) != 0)
+  if (pbuf_header(p, ETHER_HLEN))
   {
-    // The pbuf_header() call shouldn't fail, but we allocate an extra pbuf just in case
-    q = pbuf_alloc(PBUF_LINK, ETHER_HLEN, PBUF_RW);
-    if (q == NULL) 
-    {
-      stats.link.drop++;
-      stats.link.memerr++;
-
-      return -ENOMEM;
-    }
-
-    pbuf_chain(q, p);
-    p = q;
+    kprintf("ether_output: not enough room for Ethernet header in pbuf\n");
+    stats.link.err++;
+    return -EBUF;
   }
 
   // Construct Ethernet header. Start with looking up deciding which
@@ -148,25 +132,23 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
     if (q != NULL) 
     {
       err = dev_transmit((devno_t) netif->state, q);
-      pbuf_free(q);
       if (err < 0)
       {
+        pbuf_free(q);
         stats.link.drop++;
-	pbuf_free(p);
 	return err;
       }
     }
 
     // Queue packet for transmission, when the ARP reply returns
-    if (arp_queue(netif, p, queryaddr) < 0)
+    err = arp_queue(netif, p, queryaddr);
+    if (err < 0)
     {
       stats.link.drop++;
       stats.link.memerr++;
-      return -ENOMEM;
+      return err;
     }
 
-    kprintf("ether: queue %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
-    sleep(5000);
     return 0;
   }
 
@@ -179,10 +161,13 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   }
   ethhdr->type = htons(ETHTYPE_IP);
   
-  stats.link.xmit++;
-
   kprintf("ether: xmit %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
-  return dev_transmit((devno_t) netif->state, p);
+
+  stats.link.xmit++;
+  err = dev_transmit((devno_t) netif->state, p);
+  if (err < 0) return err;
+
+  return 0;
 }
 
 //
@@ -206,7 +191,6 @@ err_t ether_input(struct netif *netif, struct pbuf *p)
   {
     kprintf("drop (queue full)\n");
     kfree(msg);
-    pbuf_free(p);
     stats.link.memerr++;
     stats.link.drop++;
     return -EBUF;
@@ -243,28 +227,21 @@ void ether_dispatcher(void *arg)
       stats.link.recv++;
       ethhdr = p->payload;
 
-#if 0
-      {
-        char s[20];
-        char d[20];
-        kprintf("ether: recv src=%s dst=%s type=%04X len=%d\n", ether2str(&ethhdr->src, s), ether2str(&ethhdr->dest, d), htons(ethhdr->type), p->tot_len);
-      }
-#endif
+      kprintf("ether: recv src=%la dst=%la type=%04X len=%d\n", &ethhdr->src, &ethhdr->dest, htons(ethhdr->type), p->tot_len);
       
       switch (htons(ethhdr->type))
       {
 	case ETHTYPE_IP:
 	  arp_ip_input(netif, p);
 	  pbuf_header(p, -ETHER_HLEN);
-	  netif->input(p, netif);
+	  if (netif->input(p, netif) < 0) pbuf_free(p);
 	  break;
 
 	case ETHTYPE_ARP:
 	  p = arp_arp_input(netif, &netif->hwaddr, p);
 	  if (p != NULL) 
 	  {
-            dev_transmit((devno_t) netif->state, p);
-	    pbuf_free(p);
+            if (dev_transmit((devno_t) netif->state, p) < 0) pbuf_free(p);
 	  }
 	  break;
 

@@ -10,6 +10,8 @@
 
 #define offsetof(s,m)   (size_t)&(((s *)0)->m)
 
+#define WMWARE
+
 // PCI IDs
 
 #define PCI_DEVICE_PCNET32	0x2000
@@ -86,11 +88,16 @@
 #define TMD_BPE                 0x0080
 #define TMD_RES                 0x007F
 
+// Receive Descriptor (RMD) Status
+
+#define RMD_OWN                 0x8000
+
+
 // Size of Tx and Rx rings
 
 #ifndef PCNET32_LOG_TX_BUFFERS
-#define PCNET32_LOG_TX_BUFFERS 4
-#define PCNET32_LOG_RX_BUFFERS 5
+#define PCNET32_LOG_TX_BUFFERS  4
+#define PCNET32_LOG_RX_BUFFERS  5
 #endif
 
 #define TX_RING_SIZE		(1 << (PCNET32_LOG_TX_BUFFERS))
@@ -101,6 +108,8 @@
 #define RX_RING_MOD_MASK	(RX_RING_SIZE - 1)
 #define RX_RING_LEN_BITS	((PCNET32_LOG_RX_BUFFERS) << 4)
 
+#define ETHER_FRAME_LEN         1544
+#define TX_TIMEOUT              5000
 
 #pragma pack(push)
 #pragma pack(1)
@@ -159,8 +168,8 @@ struct pcnet32
   struct pcnet32_rx_head rx_ring[RX_RING_SIZE];
   struct pcnet32_tx_head tx_ring[TX_RING_SIZE];
   struct pcnet32_init_block init_block;
-  void *rx_buffer[RX_RING_SIZE];
-  void *tx_buffer[TX_RING_SIZE];
+  struct pbuf *rx_buffer[RX_RING_SIZE];
+  struct pbuf *tx_buffer[TX_RING_SIZE];
 
   unsigned long phys_addr;              // Physical address of this structure
   devno_t devno;                        // Device number
@@ -169,7 +178,11 @@ struct pcnet32
   unsigned short irq;		        // Configured IRQ
   unsigned short membase;               // Configured memory base
 
-  unsigned long next_rx;                // Next free receive ring entry
+  unsigned long next_rx;                // Next entry to receive
+
+  struct sem sem_tx;
+  unsigned long size_tx;                // Number of outstanding transmit ring entries
+  unsigned long curr_tx;                // First outstanding transmit ring entry
   unsigned long next_tx;                // Next transmit ring entry
 
   struct dpc dpc;                       // DPC for driver
@@ -326,71 +339,58 @@ static struct pcnet32_access pcnet32_dwio =
 int pcnet32_transmit(struct dev *dev, struct pbuf *p)
 {
   struct pcnet32 *pcnet32 = dev->privdata;
-  unsigned char *data;
   int len;
   int left;
   struct pbuf *q;
   int entry = pcnet32->next_tx;
-  unsigned short status = 0x8300;
+  unsigned short status;
 
-  left = p->tot_len;
-  //kprintf("pcnet32_transmit: transmit packet len=%d\n", p->tot_len);
-  p->ref++;
+  //kprintf("pcnet32: transmit packet len=%d\n", p->tot_len);
 
-  len = p->tot_len;
-  status = TMD_OWN | TMD_STP | TMD_ENP;
-  if (p->next)
+  if (!p || p->len == 0) return -EINVAL;
+
+#ifdef WMWARE
+  if (wait_for_object(&pcnet32->sem_tx, TX_TIMEOUT) < 0)
   {
-    char *t;
-    data = kmalloc(len);
-    t = data;
-    for (q = p; q != NULL; q = q->next) 
+    kprintf("pcnet32: transmit timeout, drop packet\n");
+    stats.link.drop++;
+    return -ETIMEOUT;
+  }
+
+  p = pbuf_linearize(PBUF_RAW, p);
+#else
+  // Wait for free entries in transmit ring
+  for (q = p; q != NULL; q = q->next)
+  {
+    if (q->len > 0)
     {
-      if (q->len > 0)
+      if (wait_for_object(&pcnet32->sem_tx, TX_TIMEOUT) < 0)
       {
-	memcpy(t, q->payload, q->len);
-	t += q->len;
+	kprintf("pcnet32: transmit timeout, drop packet\n");
+	stats.link.drop++;
+	return -ETIMEOUT;
       }
     }
   }
-  else
-  {
-    data = p->payload;
-    pcnet32->tx_buffer[entry] = p;
-  }
+#endif
 
-  //kprintf("pcnet32_transmit: sending %d (entry = %d)\n", len, entry);
-  pcnet32->tx_buffer[entry] = q;
-  pcnet32->tx_ring[entry].buffer = virt2phys(data);
-  pcnet32->tx_ring[entry].length = -len;
-  pcnet32->tx_ring[entry].misc = 0x00000000;
-  pcnet32->tx_ring[entry].status = status;
-
-  // Move to next entry
-  entry = (++entry) & TX_RING_MOD_MASK;
-  pcnet32->next_tx = entry;
-
-  // Trigger an immediate send poll
-  pcnet32->write_csr(pcnet32->iobase, CSR, CSR_IENA | CSR_TDMD);
-
-#if 0 // VMware requires TMD_STP and TMD_ENP to be set for each ring buffer transmitted
-  // set Start of Packet (STP) in first buffer
+  // Set Start of Packet (STP) in first buffer
   status = TMD_OWN | TMD_STP;
 
-  // place each part of the packet in the transmit ring
+  // Place each part of the packet in the transmit ring
+  left = p->tot_len;
   for (q = p; q != NULL; q = q->next) 
   {
     len = q->len;
     left -= len;
     if (len > 0)
     {
-
       //kprintf("pcnet32_transmit: sending %d (entry = %d)\n", len, entry);
-      // set End of Packet if this is the last part
+
+      // Set End of Packet if this is the last part
       if (left == 0) status |= TMD_ENP;
-      data = q->payload;
-      pcnet32->tx_buffer[entry] = q;
-      pcnet32->tx_ring[entry].buffer = virt2phys(data);
+      pcnet32->tx_buffer[entry] = p == q ? p : NULL;
+      pcnet32->tx_ring[entry].buffer = virt2phys(q->payload);
       pcnet32->tx_ring[entry].length = -len;
       pcnet32->tx_ring[entry].misc = 0x00000000;
       pcnet32->tx_ring[entry].status = status;
@@ -398,19 +398,15 @@ int pcnet32_transmit(struct dev *dev, struct pbuf *p)
       // Move to next entry
       entry = (++entry) & TX_RING_MOD_MASK;
       pcnet32->next_tx = entry;
+      pcnet32->size_tx++;
 
-      // this is not first buffer so Start of Packet (STP) is not set
+      // This is not first buffer so Start of Packet (STP) is not set
       status = TMD_OWN;
-    }
-    else
-    {
-      kprintf("pcnet32_transmit: enpty pbuf\n");
     }
 
     // Trigger an immediate send poll
     pcnet32->write_csr(pcnet32->iobase, CSR, CSR_IENA | CSR_TDMD);
   }
-#endif
 
   return 0;
 }
@@ -418,56 +414,84 @@ int pcnet32_transmit(struct dev *dev, struct pbuf *p)
 void pcnet32_receive(struct pcnet32 *pcnet32)
 {
   int entry = pcnet32->next_rx;
-  struct pbuf *p, *q;
+  struct pbuf *p;
 
   //kprintf("pcnet32: receive entry %d, 0x%04X\n", entry, pcnet32->rx_ring[entry].status);
-  while (!(pcnet32->rx_ring[entry].status & 0x8000))
+
+  while (!(pcnet32->rx_ring[entry].status & RMD_OWN))
   {
     int status = pcnet32->rx_ring[entry].status >> 8;
+
     //kprintf("receive entry %d, %d\n", entry, status);
+
     if (status != 0x03)
     {
       // Error
+      kprintf("pcnet32: rx error\n");
+      stats.link.err++;
     }
     else
     {
-      char *packet_ptr;
-      short pkt_len = (short) (pcnet32->rx_ring[entry].msg_length & 0xfff)-4;
+      short len = (short) (pcnet32->rx_ring[entry].msg_length & 0xfff) - 4;
       //kprintf("length %d\n", pkt_len);
+      
+      // Get packet
+      p = pcnet32->rx_buffer[entry];
 
-      // Allocate packet buffer
-      p = pbuf_alloc(PBUF_LINK, pkt_len, PBUF_RW);
-
-      // Get packet from nic and send to upper layer
-      if (p != NULL)
+      // Allocate new packet for reveice ring
+      pcnet32->rx_buffer[entry] = pbuf_alloc(PBUF_RAW, ETHER_FRAME_LEN, PBUF_RW);
+      if (pcnet32->rx_buffer[entry])
       {
-	packet_ptr = (char *) pcnet32->rx_buffer[entry];
-	for (q = p; q != NULL; q = q->next) 
-	{
-	  //ne_get_packet(packet_ptr, q->payload, (unsigned short) q->len);
-	  memcpy(q->payload, packet_ptr, q->len);
-	  packet_ptr += q->len;
-	}
-
-	dev_receive(pcnet32->devno, p);
+	// Give ownership back to card
+	pcnet32->rx_ring[entry].buffer = virt2phys(pcnet32->rx_buffer[entry]->payload);
+	pcnet32->rx_ring[entry].length = -ETHER_FRAME_LEN; // Note 1
+	pcnet32->rx_ring[entry].status |= RMD_OWN;
       }
       else
       {
-	// Drop packet
-	//kprintf("drop\n");
+	kprintf("pcnet32: unable to allocate packet for receive ring\n");
 	stats.link.memerr++;
-	stats.link.drop++;
       }
 
-      // give ownership back to card
-      pcnet32->rx_ring[entry].length = -1544; // Note 1
-      pcnet32->rx_ring[entry].status |= 0x8000;
+      if (p)
+      {
+	// Resize packet buffer
+	pbuf_realloc(p, len);
 
-      // Mode to next entry
+        // Send packet to upper layer
+	if (dev_receive(pcnet32->devno, p) < 0) pbuf_free(p);
+      }
+
+      // Move to next entry
       entry = (++entry) & RX_RING_MOD_MASK;
       pcnet32->next_rx = entry;
     }
   }
+}
+
+void pcnet32_transmitted(struct pcnet32 *pcnet32)
+{
+  int entry = pcnet32->curr_tx;
+  int freed = 0;
+
+  while (pcnet32->size_tx > 0 && (pcnet32->rx_ring[entry].status & TMD_OWN) != 0)
+  {
+    if (pcnet32->tx_buffer[entry])
+    {
+      pbuf_free(pcnet32->tx_buffer[entry]);
+      pcnet32->tx_buffer[entry] = NULL;
+    }
+    freed++;
+
+    // Move to next entry
+    entry = (++entry) & TX_RING_MOD_MASK;
+    pcnet32->curr_tx = entry;
+    pcnet32->size_tx--;
+  }
+
+  //kprintf("pcnet32: release %d tx entries\n", freed);
+
+  release_sem(&pcnet32->sem_tx, freed);
 }
 
 void pcnet32_dpc(void *arg)
@@ -483,7 +507,7 @@ void pcnet32_dpc(void *arg)
     //dump_csr(csr);
 
     if (csr & CSR_RINT) pcnet32_receive(pcnet32);
-    //if (csr & CSR_TINT) kprintf("pcnet32: packet transmitted\n");
+    if (csr & CSR_TINT) pcnet32_transmitted(pcnet32);
   }
 
   //dump_csr(csr);
@@ -665,10 +689,10 @@ int __declspec(dllexport) install(struct unit *unit)
   // Allocate receive ring
   for (i = 0; i < RX_RING_SIZE; i++)
   {
-    pcnet32->rx_buffer[i] = kmalloc(1544);
-    pcnet32->rx_ring[i].buffer = virt2phys(pcnet32->rx_buffer[i]);
-    pcnet32->rx_ring[i].length = (short) -1544;
-    pcnet32->rx_ring[i].status = 0x8000;
+    pcnet32->rx_buffer[i] = pbuf_alloc(PBUF_RAW, ETHER_FRAME_LEN, PBUF_RW);
+    pcnet32->rx_ring[i].buffer = virt2phys(pcnet32->rx_buffer[i]->payload);
+    pcnet32->rx_ring[i].length = (short) -ETHER_FRAME_LEN;
+    pcnet32->rx_ring[i].status = RMD_OWN;
   }
   pcnet32->next_rx = 0;
 
@@ -679,6 +703,9 @@ int __declspec(dllexport) install(struct unit *unit)
     pcnet32->tx_ring[i].buffer = NULL;
     pcnet32->tx_ring[i].status = 0;
   }
+  init_sem(&pcnet32->sem_tx, TX_RING_SIZE);
+  pcnet32->size_tx = 0;
+  pcnet32->curr_tx = 0;
   pcnet32->next_tx = 0;
 
   // Reset pcnet32

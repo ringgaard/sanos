@@ -11,6 +11,7 @@
 
 #define PBUF_TRANSPORT_HLEN 20
 #define PBUF_IP_HLEN        20
+#define PBUF_LINK_HLEN      14
 
 #define PBUF_TRANSPORT      0
 #define PBUF_IP             1
@@ -50,6 +51,8 @@ krnlapi void pbuf_ref(struct pbuf *p);
 krnlapi int pbuf_free(struct pbuf *p);
 krnlapi void pbuf_chain(struct pbuf *h, struct pbuf *t);
 krnlapi struct pbuf *pbuf_dechain(struct pbuf *p);
-krnlapi struct pbuf *pbuf_dup(struct pbuf *p);
+krnlapi struct pbuf *pbuf_dup(int layer, struct pbuf *p);
+krnlapi struct pbuf *pbuf_linearize(int layer, struct pbuf *p);
+krnlapi struct pbuf *pbuf_cow(int layer, struct pbuf *p);
 
 #endif

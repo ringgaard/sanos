@@ -12,5 +12,5 @@ struct stats_all stats;
 
 void stats_init()
 {
-  memset(&stats, 0, sizeof(struct stats_all));
+  //memset(&stats, 0, sizeof(struct stats_all));
 }

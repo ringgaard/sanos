@@ -195,6 +195,9 @@ struct section;
 #define EHOSTUNREACH    53               // Host unreachable
 #define ENETUNREACH     54               // Network unrechable
 #define EHOST           55               // Host not found
+#define EPROTO          56               // Protocol error
+#define ECHKSUM         57               // Checksum error
+#define EDESTUNREACH    58               // Destination unreachable
 
 //
 // File system
@@ -207,8 +210,8 @@ struct section;
 #define MAXPATH                 256     // Maximum filename length (including trailing zero)
 #define MFSNAMELEN              16      // Length of fs type name
 
-#define PS1                     '\\'    // Primary path separator
-#define PS2                     '/'     // Alternate path separator
+#define PS1                     '/'     // Primary path separator
+#define PS2                     '\\'    // Alternate path separator
 
 struct stat
 {

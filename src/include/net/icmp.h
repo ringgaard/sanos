@@ -31,7 +31,7 @@
 #define ICMP_TE_TTL     0  // Time to live exceeded in transit
 #define ICMP_TE_FRAG    1  // Fragment reassembly time exceeded
 
-void icmp_input(struct pbuf *p, struct netif *inp);
+err_t icmp_input(struct pbuf *p, struct netif *inp);
 
 void icmp_dest_unreach(struct pbuf *p, int t);
 void icmp_time_exceeded(struct pbuf *p, int t);

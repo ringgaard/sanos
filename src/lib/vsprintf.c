@@ -19,6 +19,8 @@
 
 #define is_digit(c) ((c) >= '0' && (c) <= '9')
 
+static const char *digits="0123456789abcdefghijklmnopqrstuvwxyz";
+
 static size_t strnlen(const char *s, size_t count)
 {
   const char *sc;
@@ -35,7 +37,6 @@ static int skip_atoi(const char **s)
 
 static char *number(char *str, long num, int base, int size, int precision, int type)
 {
-  const char *digits="0123456789abcdefghijklmnopqrstuvwxyz";
   char c, sign, tmp[66];
   int i;
 
@@ -88,7 +89,7 @@ static char *number(char *str, long num, int base, int size, int precision, int 
 
   if (i > precision) precision = i;
   size -= precision;
-  if (!(type & (ZEROPAD+LEFT))) while(size-- > 0) *str++ = ' ';
+  if (!(type & (ZEROPAD + LEFT))) while(size-- > 0) *str++ = ' ';
   if (sign) *str++ = sign;
   
   if (type & SPECIAL)
@@ -106,6 +107,55 @@ static char *number(char *str, long num, int base, int size, int precision, int 
   while (i < precision--) *str++ = '0';
   while (i-- > 0) *str++ = tmp[i];
   while (size-- > 0) *str++ = ' ';
+
+  return str;
+}
+
+static char *eaddr(char *str, unsigned char *addr, int size, int precision, int type)
+{
+  char tmp[24];
+  int i, len;
+
+  len = 0;
+  for (i = 0; i < 6; i++)
+  {
+    if (i != 0) tmp[len++] = ':';
+    tmp[len++] = digits[addr[i] >> 4];
+    tmp[len++] = digits[addr[i] & 0x0F];
+  }
+
+  if (!(type & LEFT)) while (len < size--) *str++ = ' ';
+  for (i = 0; i < len; ++i) *str++ = tmp[i];
+  while (len < size--) *str++ = ' ';
+
+  return str;
+}
+
+static char *iaddr(char *str, unsigned char *addr, int size, int precision, int type)
+{
+  char tmp[24];
+  int i, n, len;
+
+  len = 0;
+  for (i = 0; i < 4; i++)
+  {
+    if (i != 0) tmp[len++] = '.';
+    n = addr[i];
+    
+    if (n == 0)
+      tmp[len++] = digits[0];
+    else
+    {
+      if (n >= 100) tmp[len++] = digits[n / 100];
+      n = n % 100;
+      if (n >= 10) tmp[len++] = digits[n / 10];
+      tmp[len++] = digits[n % 10];
+    }
+  }
+
+  if (!(type & LEFT)) while (len < size--) *str++ = ' ';
+  for (i = 0; i < len; ++i) *str++ = tmp[i];
+  while (len < size--) *str++ = ' ';
 
   return str;
 }
@@ -215,14 +265,21 @@ repeat:
       case 'n':
 	if (qualifier == 'l')
 	{
-	  long * ip = va_arg(args, long *);
+	  long *ip = va_arg(args, long *);
 	  *ip = (str - buf);
 	}
 	else
 	{
-	  int * ip = va_arg(args, int *);
+	  int *ip = va_arg(args, int *);
 	  *ip = (str - buf);
 	}
+	continue;
+
+      case 'a':
+	if (qualifier == 'l')
+	  str = eaddr(str, va_arg(args, unsigned char *), field_width, precision, flags);
+	else
+	  str = iaddr(str, va_arg(args, unsigned char *), field_width, precision, flags);
 	continue;
 
       // Integer number formats - set up the flags and "break"

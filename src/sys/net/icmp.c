@@ -11,7 +11,7 @@
 
 #include <net/net.h>
 
-void icmp_input(struct pbuf *p, struct netif *inp)
+err_t icmp_input(struct pbuf *p, struct netif *inp)
 {
   unsigned char type;
   struct icmp_echo_hdr *iecho;
@@ -33,34 +33,30 @@ void icmp_input(struct pbuf *p, struct netif *inp)
       if (ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) || ip_addr_ismulticast(&iphdr->dest))
       {
 	stats.icmp.err++;
-	pbuf_free(p);
-	return;
+	return -EPROTO;
       }
     
       if (!ip_ownaddr(&iphdr->dest))
       {
 	stats.icmp.err++;
-	pbuf_free(p);
-	return;
+	return -EPROTO;
       }
 
-      kprintf("icmp_input: ping src %08X dest %08X\n", iphdr->src.addr, iphdr->dest.addr);
+      kprintf("icmp_input: ping src %a dest %a\n", &iphdr->src, &iphdr->dest);
 
       if (p->tot_len < sizeof(struct icmp_echo_hdr)) 
       {
 	kprintf("icmp_input: bad ICMP echo received\n");
-	pbuf_free(p);
 	stats.icmp.lenerr++;
-	return;      
+	return -EPROTO;
       }
 
       iecho = p->payload;
       if (inet_chksum_pbuf(p) != 0) 
       {
 	kprintf("icmp_input: checksum failed for received ICMP echo\n");
-	pbuf_free(p);
 	stats.icmp.chkerr++;
-	return;
+	return -ECHKSUM;
       }
 
       tmpaddr.addr = iphdr->src.addr;
@@ -77,16 +73,17 @@ void icmp_input(struct pbuf *p, struct netif *inp)
       stats.icmp.xmit++;
       
       pbuf_header(p, hlen);
-      ip_output_if(p, &(iphdr->src), IP_HDRINCL, IPH_TTL(iphdr), IP_PROTO_ICMP, inp);
-      break; 
+      return ip_output_if(p, &iphdr->src, IP_HDRINCL, IPH_TTL(iphdr), IP_PROTO_ICMP, inp);
 
     default:
       kprintf("icmp_input: ICMP type not supported.\n");
       stats.icmp.proterr++;
       stats.icmp.drop++;
+      return -EPROTO;
   }
 
   pbuf_free(p);
+  return 0;
 }
 
 void icmp_dest_unreach(struct pbuf *p, int t)
@@ -97,6 +94,7 @@ void icmp_dest_unreach(struct pbuf *p, int t)
   
   // ICMP header + IP header + 8 bytes of data
   q = pbuf_alloc(PBUF_TRANSPORT, 8 + IP_HLEN + 8, PBUF_RW);
+  if (!q) return;
 
   iphdr = p->payload;
   
@@ -111,8 +109,7 @@ void icmp_dest_unreach(struct pbuf *p, int t)
   idur->chksum = inet_chksum(idur, q->len);
   stats.icmp.xmit++;
 
-  ip_output(q, NULL, &(iphdr->src), ICMP_TTL, IP_PROTO_ICMP);
-  pbuf_free(q);
+  if (ip_output(q, NULL, &iphdr->src, ICMP_TTL, IP_PROTO_ICMP) < 0) pbuf_free(q);
 }
 
 void icmp_time_exceeded(struct pbuf *p, int t)
@@ -122,6 +119,7 @@ void icmp_time_exceeded(struct pbuf *p, int t)
   struct icmp_te_hdr *tehdr;
 
   q = pbuf_alloc(PBUF_TRANSPORT, 8 + IP_HLEN + 8, PBUF_RW);
+  if (!q) return;
 
   iphdr = p->payload;
   tehdr = q->payload;
@@ -136,6 +134,5 @@ void icmp_time_exceeded(struct pbuf *p, int t)
   tehdr->chksum = inet_chksum(tehdr, q->len);
   stats.icmp.xmit++;
 
-  ip_output(q, NULL, &(iphdr->src), ICMP_TTL, IP_PROTO_ICMP);
-  pbuf_free(q);
+  if (ip_output(q, NULL, &(iphdr->src), ICMP_TTL, IP_PROTO_ICMP) < 0) pbuf_free(q);
 }

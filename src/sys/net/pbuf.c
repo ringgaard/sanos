@@ -150,11 +150,11 @@ struct pbuf *pbuf_alloc(int layer, int size, int flag)
 
     case PBUF_IP:
       offset += PBUF_IP_HLEN;
-      offset += PBUF_LINK_HLEN;
       // FALLTHROUGH
 
     case PBUF_LINK:
-      break;
+      offset += PBUF_LINK_HLEN;
+      // FALLTHROUGH
 
     case PBUF_RAW:
       break;
@@ -413,8 +413,6 @@ int pbuf_free(struct pbuf *p)
   // Decrement reference count
   p->ref--;
 
-return 0; //TEST
-
   // If reference count is zero, actually deallocate pbuf
   if (p->ref == 0) 
   {
@@ -524,29 +522,68 @@ struct pbuf *pbuf_dechain(struct pbuf *p)
 // pbuf_dup
 //
 // Makes a duplicate of the pbuf. The new buffer is created as one
-// buffer.
+// linear buffer.
 //
 
-struct pbuf *pbuf_dup(struct pbuf *p)
+struct pbuf *pbuf_dup(int layer, struct pbuf *p)
 {
   struct pbuf *q;
   char *ptr;
   int size;
 
-  // TODO: allocate header space
-
   // Allocate new pbuf
   size = p->tot_len;
-  q = pbuf_alloc(PBUF_RAW, PBUF_RW, size);
+  q = pbuf_alloc(layer, PBUF_RW, size);
   if (q == NULL) return NULL;
 
   // Copy buffer contents
   ptr = q->payload;
-  for (; p->next != NULL; p = p->next)
+  while (p)
   {
     memcpy(ptr, p->payload, p->len);
     ptr += p->len;
+    p = p->next;
   }
 
+  return q;
+}
+
+//
+// pbuf_dup
+//
+// Makes sure that the packet buffer consists of one buffer. If the
+// pbuf consists of multiple buffers a new duplicate buffer is allocated 
+// p is freed.
+//
+
+struct pbuf *pbuf_linearize(int layer, struct pbuf *p)
+{
+  struct pbuf *q;
+
+  if (!p->next) return p;
+
+  q = pbuf_dup(layer, p);
+  if (!q) return NULL;
+  pbuf_free(p);
+  
+  return q;
+}
+
+//
+// pbuf_cow
+//
+// Creates a new private copy of pbuf. If there is only one ref on
+// the pbuf the pbuf is returned as is. Otherwise a new pbuf is
+// allocated and the old pbuf is dereferenced.
+
+struct pbuf *pbuf_cow(int layer, struct pbuf *p)
+{
+  struct pbuf *q;
+
+  if (p->ref == 1) return p;
+  q = pbuf_dup(layer, p);
+  if (!q) return NULL;
+  pbuf_free(p);
+  
   return q;
 }

@@ -33,6 +33,5 @@
 #define MEM_ALIGNMENT           4
 #define PBUF_POOL_SIZE          128
 #define PBUF_POOL_BUFSIZE       128
-#define PBUF_LINK_HLEN          14
 
 #endif

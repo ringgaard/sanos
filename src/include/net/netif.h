@@ -22,7 +22,7 @@ struct netif
 {
   struct netif *next;
   struct ip_addr ip_addr;
-  struct ip_addr netmask;  // netmask in network byte order
+  struct ip_addr netmask;
   struct ip_addr gw;
   struct eth_addr hwaddr;
   int mtu;

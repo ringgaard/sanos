@@ -34,7 +34,7 @@ static void dhcp_set_state(struct dhcp_state *state, unsigned char new_state);
 // Receive, unfold, process and free incoming messages
 //
 
-static void dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, unsigned short port);
+static err_t dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, unsigned short port);
 static err_t dhcp_unfold_reply(struct dhcp_state *state);
 static unsigned char *dhcp_get_option_ptr(struct dhcp_state *state, unsigned char option_type);
 static unsigned char dhcp_get_option_byte(unsigned char *ptr);
@@ -154,7 +154,7 @@ static err_t dhcp_select(struct dhcp_state *state)
 
     udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
     udp_connect(state->pcb, IP_ADDR_BROADCAST, DHCP_SERVER_PORT);
-    udp_send(state->pcb, state->p_out, state->netif);
+    if (udp_send(state->pcb, state->p_out, state->netif) >= 0) state->p_out = NULL;
 
     // reconnect to any (or to server here?!)
     udp_connect(state->pcb, IP_ADDR_ANY, DHCP_SERVER_PORT);
@@ -497,7 +497,8 @@ err_t dhcp_inform(struct netif *netif)
 
   udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
   udp_connect(state->pcb, IP_ADDR_BROADCAST, DHCP_SERVER_PORT);
-  udp_send(state->pcb, state->p_out, state->netif);
+
+  if (udp_send(state->pcb, state->p_out, state->netif) >= 0) state->p_out = NULL;
   udp_connect(state->pcb, IP_ADDR_ANY, DHCP_SERVER_PORT);
   dhcp_delete_request(state);
 
@@ -560,7 +561,7 @@ static err_t dhcp_decline(struct dhcp_state *state)
 
     udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
     udp_connect(state->pcb, &state->server_ip_addr, DHCP_SERVER_PORT);
-    udp_send(state->pcb, state->p_out, state->netif);
+    if (udp_send(state->pcb, state->p_out, state->netif) >= 0) state->p_out = NULL;
     dhcp_delete_request(state);
   }
 
@@ -614,7 +615,7 @@ static err_t dhcp_discover(struct dhcp_state *state)
     udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
     udp_connect(state->pcb, IP_ADDR_BROADCAST, DHCP_SERVER_PORT);
 
-    udp_send(state->pcb, state->p_out, state->netif);
+    if (udp_send(state->pcb, state->p_out, state->netif) >= 0) state->p_out = NULL;
     udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
     udp_connect(state->pcb, IP_ADDR_ANY, DHCP_SERVER_PORT);
 
@@ -748,7 +749,7 @@ err_t dhcp_renew(struct dhcp_state *state)
 
     udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
     udp_connect(state->pcb, &state->server_ip_addr, DHCP_SERVER_PORT);
-    udp_send(state->pcb, state->p_out, state->netif);
+    if (udp_send(state->pcb, state->p_out, state->netif) >= 0) state->p_out = NULL;
     dhcp_delete_request(state);
   }
   state->tries++;
@@ -792,7 +793,7 @@ static err_t dhcp_rebind(struct dhcp_state *state)
 
     udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
     udp_connect(state->pcb, IP_ADDR_BROADCAST, DHCP_SERVER_PORT);
-    udp_send(state->pcb, state->p_out, state->netif);
+    if (udp_send(state->pcb, state->p_out, state->netif) >= 0) state->p_out = NULL;
     udp_connect(state->pcb, IP_ADDR_ANY, DHCP_SERVER_PORT);
     dhcp_delete_request(state);
   }
@@ -827,7 +828,7 @@ static err_t dhcp_release(struct dhcp_state *state)
 
     udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
     udp_connect(state->pcb, &state->server_ip_addr, DHCP_SERVER_PORT);
-    udp_send(state->pcb, state->p_out, state->netif);
+    if (udp_send(state->pcb, state->p_out, state->netif) >= 0) state->p_out = NULL;
     dhcp_delete_request(state);
   }
 
@@ -1005,7 +1006,7 @@ static void dhcp_free_reply(struct dhcp_state *state)
 // dhcp_recv
 //
 
-static void dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, unsigned short port)
+static err_t dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, unsigned short port)
 {
   struct dhcp_state *state = (struct dhcp_state *) arg;
   struct dhcp_msg *reply_msg = (struct dhcp_msg *) p->payload;
@@ -1013,10 +1014,6 @@ static void dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
   state->p = p;
   if (reply_msg->op == DHCP_BOOTREPLY)
   {
-    //kprintf("state->netif->hwaddr = %02x:%02x:%02x:%02x:%02x:%02x\n",
-    //  state->netif->hwaddr.addr[0], state->netif->hwaddr.addr[1], state->netif->hwaddr.addr[2],
-    //  state->netif->hwaddr.addr[3], state->netif->hwaddr.addr[4], state->netif->hwaddr.addr[5]);
-    
     if (memcmp(&state->netif->hwaddr, reply_msg->chaddr, ETHER_ADDR_LEN) == 0) 
     {
       if (ntohl(reply_msg->xid) == state->xid)
@@ -1071,6 +1068,7 @@ static void dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
   }
 
   pbuf_free(p);
+  return 0;
 }
 
 //

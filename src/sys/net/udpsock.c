@@ -8,7 +8,7 @@
 
 #include <net/net.h>
 
-static void recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, unsigned short port)
+static err_t recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, unsigned short port)
 {
   struct socket *s = arg;
   struct sockreq *req = s->waithead;
@@ -32,16 +32,27 @@ static void recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
 
     release_socket_request(req, len);
   }
-  else if (s->udp.recvtail)
+  else 
   {
-    pbuf_chain(s->udp.recvtail, p);
-    s->udp.recvtail = p;
+    if (p->next) 
+    {
+      kprintf("recv_udp: fragmented pbuf not supported\n");
+      return -EINVAL;
+    }
+
+    if (s->udp.recvtail)
+    {
+      pbuf_chain(s->udp.recvtail, p);
+      s->udp.recvtail = p;
+    }
+    else
+    {
+      s->udp.recvhead = p;
+      s->udp.recvtail = p;
+    }
   }
-  else
-  {
-    s->udp.recvhead = p;
-    s->udp.recvtail = p;
-  }
+
+  return 0;
 }
 
 static int udpsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen, struct socket **retval)
@@ -191,10 +202,11 @@ static int udpsock_recvfrom(struct socket *s, void *data, int size, unsigned int
     msg = p->payload;
     len = p->len;
 
-    pbuf_header(p, UDP_HLEN);
     udphdr = p->payload;
+    pbuf_header(p, UDP_HLEN);
 
-    pbuf_header(p, IP_HLEN);
+    //FIXME: this does not work if there are options in the ip header
+    pbuf_header(p, IP_HLEN); 
     iphdr = p->payload;
 
     if (len > size) len = size;
@@ -256,9 +268,7 @@ kprintf("udp: send error %d\n", rc);
     pbuf_free(p);
     return rc;
   }
-  
-  pbuf_free(p);
-  
+
   return size;
 }
 
