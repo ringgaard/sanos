@@ -1,0 +1,113 @@
+//
+// pframe.c
+//
+// Copyright (c) 2001 Michael Ringgaard. All rights reserved
+//
+// Page frame database routines
+//
+
+#include <os/krnl.h>
+
+unsigned long freemem;        // Number of pages free memory
+unsigned long totalmem;       // Total number of pages of memory (bad pages excluded)
+unsigned long maxmem;         // First unavailable memory page
+struct pageframe *pfdb;       // Page frame database      
+struct pageframe *freelist;   // List of free pages
+
+void panic(char *msg);
+
+unsigned long alloc_pageframe(int type)
+{
+  struct pageframe *pf;
+
+  if (freemem == 0) panic("out of memory");
+  pf = freelist;
+  freelist = pf->next;
+  freemem--;
+
+  pf->type = type;
+  pf->flags = 0;
+  pf->next = 0;
+
+  return pf - pfdb;
+}
+
+void free_pageframe(unsigned long pfn)
+{
+  struct pageframe *pf;
+
+  pf = pfdb + pfn;
+  pf->type = PFT_FREE;
+  pf->next = freelist;
+  freelist = pf;
+  freemem++;
+}
+
+void init_pfdb()
+{
+  unsigned long heap;
+  unsigned long pfdbpages;
+  unsigned long i;
+  unsigned long memend;
+  pte_t *pt;
+  struct pageframe *pf;
+
+  // Calculates number of pages needed for page frame database
+  memend = syspage->bootparams.memend;
+  heap = syspage->bootparams.heapend;
+  pfdbpages = PAGES((memend / PAGESIZE) * sizeof(struct pageframe));
+  if ((pfdbpages + 2) * PAGESIZE + heap >= memend) panic("not enough memory for page table database");
+
+  // Intialize page tables for mapping the page frame database into kernel space
+  pdir[PDEIDX(PFDBBASE)] = heap | PT_PRESENT | PT_WRITABLE;
+  pdir[PDEIDX(PFDBBASE) + 1] = (heap + PAGESIZE) | PT_PRESENT | PT_WRITABLE;
+  pt = (pte_t *) heap;
+  heap += 2 * PAGESIZE;
+  memset(pt, 0, 2 * PAGESIZE);
+
+  // Allocate and map pages for page frame database
+  for (i = 0; i < pfdbpages; i++)
+  {
+    pt[i] = heap | PT_PRESENT | PT_WRITABLE;
+    heap += PAGESIZE;
+  }
+
+  // Initialize page frame database
+  maxmem = syspage->bootparams.memend / PAGESIZE;
+  totalmem = maxmem - (1024 - 640) * K / PAGESIZE - DMA_BUFFER_PAGES;
+  freemem = 0;
+
+  pfdb = (struct pageframe *) PFDBBASE;
+  memset(pfdb, 0, pfdbpages * PAGESIZE);
+
+  // Add interval [0:640K] as FREE pages
+  for (i = 0; i < 640 * K / PAGESIZE; i++) pfdb[i].type = PFT_FREE;
+
+  // Add interval [640K:1MB] as BAD pages
+  for (i = 640 * K / PAGESIZE; i < syspage->bootparams.heapstart / PAGESIZE; i++) pfdb[i].type = PFT_BAD;
+
+  // Add interval [BOOTHEAPBASE:heap] to pfdb as SYS pages
+  for (i = syspage->bootparams.heapstart / PAGESIZE; i < heap / PAGESIZE; i++) pfdb[i].type = PFT_SYS;
+
+  // Add interval [heap:maxmem] as FREE pages
+  for (i = heap / PAGESIZE; i < totalmem; i++) pfdb[i].type = PFT_FREE;
+
+  // Reserve DMA buffers at 0x10000 (used by floppy driver)
+  for (i = DMA_BUFFER_START / PAGESIZE; i < DMA_BUFFER_START / PAGESIZE + DMA_BUFFER_PAGES; i++) pfdb[i].type = PFT_BAD;
+
+  // Insert all free pages into free list
+  pf = pfdb + maxmem;
+  do
+  {
+    pf--;
+
+    if (pf->type == PFT_FREE)
+    {
+      pf->next = freelist;
+      freelist = pf;
+      freemem++;
+    }
+  } 
+  while (pf > pfdb);
+}
+

@@ -1,0 +1,12 @@
+LIBRARY MSVCRT
+DESCRIPTION 'MSVCRT'
+
+EXPORTS
+  ??2@YAPAXI@Z
+  ??3@YAXPAX@Z
+  malloc=_malloc
+  free=_free
+  calloc=_calloc
+  realloc=_realloc
+  rename=_rename
+

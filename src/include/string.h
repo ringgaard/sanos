@@ -1,0 +1,29 @@
+//
+// string.h
+//
+// Copyright (c) 2001 Michael Ringgaard. All rights reserved.
+//
+// String routines
+//
+
+#ifndef STRING_H
+#define STRING_H
+
+char *strncpy(char *dest, const char *source, size_t count);
+char *strdup(char *s);
+int stricmp(const char *s1, const char *s2);
+int vsprintf(char *buf, const char *fmt, va_list args);
+int sprintf(char *buf, const char *fmt, ...);
+
+// Intrinsic functions
+
+void *memcpy(void *, const void *, size_t);
+int memcmp(const void *, const void *, size_t);
+void *memset(void *, int, size_t);
+
+char *strcpy(char *, const char *);
+char *strcat(char *, const char *);
+int strcmp(const char *, const char *);
+size_t strlen(const char *);
+
+#endif

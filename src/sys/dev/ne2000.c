@@ -1,0 +1,673 @@
+//
+// ne2000.c
+//
+// Copyright (c) 2001 Michael Ringgaard. All rights reserved.
+//
+// NE2000 network card driver
+//
+
+#include <os/krnl.h>
+
+//
+// Page 0 register offsets
+//
+
+#define NE_P0_CR	0x00	       // Command Register
+
+#define NE_P0_CLDA0	0x01	       // Current Local DMA Addr low (read)
+#define NE_P0_PSTART	0x01	       // Page Start register (write)
+
+#define NE_P0_CLDA1	0x02	       // Current Local DMA Addr high (read)
+#define NE_P0_PSTOP	0x02	       // Page Stop register (write)
+
+#define NE_P0_BNRY	0x03	       // Boundary Pointer
+
+#define NE_P0_TSR	0x04	       // Transmit Status Register (read)
+#define NE_P0_TPSR	0x04	       // Transmit Page Start (write)
+
+#define NE_P0_NCR	0x05	       // Number of Collisions Reg (read)
+#define NE_P0_TBCR0	0x05	       // Transmit Byte count, low (write)
+
+#define NE_P0_FIFO	0x06	       // FIFO register (read)
+#define NE_P0_TBCR1	0x06	       // Transmit Byte count, high (write)
+
+#define NE_P0_ISR	0x07	       // Interrupt Status Register
+
+#define NE_P0_CRDA0	0x08	       // Current Remote DMA Addr low (read)
+#define NE_P0_RSAR0	0x08	       // Remote Start Address low (write)
+
+#define NE_P0_CRDA1	0x09	       // Current Remote DMA Addr high (read)
+#define NE_P0_RSAR1	0x09	       // Remote Start Address high (write)
+
+#define NE_P0_RBCR0	0x0A	       // Remote Byte Count low (write)
+
+#define NE_P0_RBCR1	0x0B	       // Remote Byte Count high (write)
+
+#define NE_P0_RSR	0x0C	       // Receive Status (read)
+#define NE_P0_RCR	0x0C	       // Receive Configuration Reg (write)
+
+#define NE_P0_CNTR0	0x0D	       // frame alignment error counter (read)
+#define NE_P0_TCR	0x0D	       // Transmit Configuration Reg (write)
+
+#define NE_P0_CNTR1	0x0E	       // CRC error counter (read)
+#define NE_P0_DCR	0x0E	       // Data Configuration Reg (write)
+
+#define NE_P0_CNTR2	0x0F	       // missed packet counter (read)
+#define NE_P0_IMR	0x0F	       // Interrupt Mask Register (write)
+
+//
+// Page 1 register offsets
+//
+
+#define NE_P1_CR	0x00	       // Command Register
+#define NE_P1_PAR0	0x01	       // Physical Address Register 0
+#define NE_P1_PAR1	0x02	       // Physical Address Register 1
+#define NE_P1_PAR2	0x03	       // Physical Address Register 2
+#define NE_P1_PAR3	0x04	       // Physical Address Register 3
+#define NE_P1_PAR4	0x05	       // Physical Address Register 4
+#define NE_P1_PAR5	0x06	       // Physical Address Register 5
+#define NE_P1_CURR	0x07	       // Current RX ring-buffer page
+#define NE_P1_MAR0	0x08	       // Multicast Address Register 0
+#define NE_P1_MAR1	0x09	       // Multicast Address Register 1
+#define NE_P1_MAR2	0x0A	       // Multicast Address Register 2
+#define NE_P1_MAR3	0x0B	       // Multicast Address Register 3
+#define NE_P1_MAR4	0x0C	       // Multicast Address Register 4
+#define NE_P1_MAR5	0x0D	       // Multicast Address Register 5
+#define NE_P1_MAR6	0x0E	       // Multicast Address Register 6
+#define NE_P1_MAR7	0x0F	       // Multicast Address Register 7
+
+//
+// Page 2 register offsets
+//
+
+#define NE_P2_CR	0x00	       // Command Register
+#define NE_P2_PSTART	0x01	       // Page Start (read)
+#define NE_P2_CLDA0	0x01	       // Current Local DMA Addr 0 (write)
+#define NE_P2_PSTOP	0x02	       // Page Stop (read)
+#define NE_P2_CLDA1	0x02	       // Current Local DMA Addr 1 (write)
+#define NE_P2_RNPP	0x03	       // Remote Next Packet Pointer
+#define NE_P2_TPSR	0x04	       // Transmit Page Start (read)
+#define NE_P2_LNPP	0x05	       // Local Next Packet Pointer
+#define NE_P2_ACU	0x06	       // Address Counter Upper
+#define NE_P2_ACL	0x07	       // Address Counter Lower
+#define NE_P2_RCR	0x0C	       // Receive Configuration Register (read)
+#define NE_P2_TCR	0x0D	       // Transmit Configuration Register (read)
+#define NE_P2_DCR	0x0E	       // Data Configuration Register (read)
+#define NE_P2_IMR	0x0F	       // Interrupt Mask Register (read)
+
+//
+// Command Register (CR)
+//
+
+#define NE_CR_STP	0x01           // Stop
+#define NE_CR_STA	0x02           // Start
+#define NE_CR_TXP	0x04           // Transmit Packet
+#define NE_CR_RD0	0x08           // Remote DMA Command 0
+#define NE_CR_RD1	0x10           // Remote DMA Command 1
+#define NE_CR_RD2	0x20           // Remote DMA Command 2
+#define NE_CR_PS0	0x40           // Page Select 0
+#define NE_CR_PS1	0x80           // Page Select 1
+
+#define NE_CR_PAGE_0	0x00           // Select Page 0
+#define NE_CR_PAGE_1	0x40           // Select Page 1
+#define NE_CR_PAGE_2	0x80           // Select Page 2
+
+//
+// Interrupt Status Register (ISR)
+//
+
+#define NE_ISR_PRX	0x01           // Packet Received
+#define NE_ISR_PTX	0x02           // Packet Transmitted
+#define NE_ISR_RXE	0x04           // Receive Error
+#define NE_ISR_TXE	0x08           // Transmission Error
+#define NE_ISR_OVW	0x10           // Overwrite
+#define NE_ISR_CNT	0x20           // Counter Overflow
+#define NE_ISR_RDC	0x40           // Remote Data Complete
+#define NE_ISR_RST	0x80           // Reset status
+
+//
+// Interrupt Mask Register (IMR)
+
+#define NE_IMR_PRXE	0x01           // Packet Received Interrupt Enable
+#define NE_IMR_PTXE	0x02           // Packet Transmit Interrupt Enable
+#define NE_IMR_RXEE 	0x04           // Receive Error Interrupt Enable
+#define NE_IMR_TXEE	0x08           // Transmit Error Interrupt Enable
+#define NE_IMR_OVWE	0x10           // Overwrite Error Interrupt Enable
+#define NE_IMR_CNTE	0x20           // Counter Overflow Interrupt Enable
+#define NE_IMR_RDCE	0x40           // Remote DMA Complete Interrupt Enable
+
+//
+// Data Configuration Register (DCR)
+
+#define NE_DCR_WTS	0x01           // Word Transfer Select
+#define NE_DCR_BOS	0x02           // Byte Order Select
+#define NE_DCR_LAS	0x04           // Long Address Select
+#define NE_DCR_LS	0x08           // Loopback Select
+#define NE_DCR_AR	0x10           // Auto-initialize Remote
+#define NE_DCR_FT0	0x20           // FIFO Threshold Select 0
+#define NE_DCR_FT1	0x40           // FIFO Threshold Select 1
+
+//
+// Transmit Configuration Register (TCR)
+
+#define NE_TCR_CRC	0x01           // Inhibit CRC
+#define NE_TCR_LB0	0x02           // Loopback Control 0
+#define NE_TCR_LB1	0x04           // Loopback Control 1
+#define NE_TCR_ATD	0x08           // Auto Transmit Disable
+#define NE_TCR_OFST	0x10           // Collision Offset Enable
+
+//
+// Transmit Status Register (TSR)
+
+#define NE_TSR_PTX	0x01           // Packet Transmitted
+#define NE_TSR_COL	0x04           // Transmit Collided
+#define NE_TSR_ABT	0x08           // Transmit Aborted
+#define NE_TSR_CRS	0x10           // Carrier Sense Lost
+#define NE_TSR_FU	0x20           // FIFO Underrun
+#define NE_TSR_CDH	0x40           // CD Heartbeat
+#define NE_TSR_OWC	0x80           // Out of Window Collision
+
+//
+// Receiver Configuration Register (RCR)
+//
+
+#define NE_RCR_SEP	0x01           // Save Errored Packets
+#define NE_RCR_AR	0x02           // Accept Runt packet
+#define NE_RCR_AB	0x04           // Accept Broadcast
+#define NE_RCR_AM	0x08           // Accept Multicast
+#define NE_RCR_PRO	0x10           // Promiscuous Physical
+#define NE_RCR_MON	0x20           // Monitor Mode
+
+//
+// Receiver Status Register (RSR)
+
+
+#define NE_RSR_PRX	0x01           // Packet Received Intact
+#define NE_RSR_CRC	0x02           // CRC Error
+#define NE_RSR_FAE	0x04           // Frame Alignment Error
+#define NE_RSR_FO	0x08           // FIFO Overrun
+#define NE_RSR_MPA	0x10           // Missed Packet
+#define NE_RSR_PHY	0x20           // Physical Address
+#define NE_RSR_DIS	0x40           // Receiver Disabled
+#define NE_RSR_DFR	0x80           // Deferring
+
+//
+// Novell NE2000
+//
+
+#define NE_NOVELL_NIC_OFFSET	0x00
+#define NE_NOVELL_ASIC_OFFSET	0x10
+
+#define NE_NOVELL_DATA		0x00
+#define NE_NOVELL_RESET		0x0F
+
+#define NE_PAGE_SIZE		256    // Size of RAM pages in bytes
+#define NE_TXBUF_SIZE		6      // Size of TX buffer in pages
+#define NE_TX_BUFERS            2      // Number of transmit buffers
+
+//
+// Receive ring descriptor
+//
+
+struct recv_ring_desc 
+{
+  unsigned char rsr;		       // Receiver status
+  unsigned char next_pkt;              // Pointer to next packet
+  unsigned short count;		       // Bytes in packet (length + 4)
+};
+
+//
+// NE2000 NIC status
+//
+
+struct ne
+{
+  struct netif *netif;                  // Network interface
+
+  unsigned short iobase;		// Configured I/O base
+  unsigned short irq;		        // Configured IRQ
+  unsigned short membase;               // Configured memory base
+  unsigned short memsize;               // Configured memory size
+
+  unsigned short asic_addr;		// ASIC I/O bus address
+  unsigned short nic_addr;		// NIC (DP8390) I/O bus address
+
+  struct dpc dpc;                       // DPC for driver
+  int dpc_pending;                      // DPC is queued, but not processed
+
+  unsigned short rx_ring_start;         // Start address of receive ring
+  unsigned short rx_ring_end;           // End address of receive ring
+
+  unsigned char rx_page_start;          // Start of receive ring
+  unsigned char rx_page_stop;           // End of receive ring
+  unsigned char next_pkt;               // Next unread received packet
+
+  struct event rdc;	                // Remote DMA completed event
+  struct event ptx;                     // packet transmitted event
+
+#if 0
+  unsigned short mem_start;		// NIC memory start address
+  unsigned short mem_end;		// NIC memory end address
+  unsigned short mem_size;		// Total NIC memory size
+  unsigned short mem_ring;		// Start of RX ring-buffer
+
+  unsigned char mem_shared;		// NIC memory shared with host
+  unsigned char tx_busy;		// Transmitter busy
+  unsigned char txb_cnt;		// Number of TX buffers
+  unsigned char txb_inuse;		// Number of TX buffers in-use
+
+  unsigned char txb_new;		// Ptr to where new buffer is added
+  unsigned char txb_next_tx;		// Ptr to next buffer ready for TX
+  unsigned short txb_len[8];		// Buffered TX buffer lengths
+  unsigned char tx_page_start;	        // First page of TX buffer area
+  unsigned char rec_page_start;	        // First page of RX ring-buffer
+  unsigned char rec_page_stop;	        // Last page of RX ring-buffer
+  unsigned char next_packet;		// Ptr to next unread RX packet
+#endif
+};
+
+struct ne ne;
+
+static void insw(int port, void *buf, int count)
+{
+  __asm
+  {
+    mov edx, port
+    mov edi, buf
+    mov ecx, count
+    rep insw
+  }
+}
+
+static void outsw(int port, void *buf, int count)
+{
+  __asm
+  {
+    mov edx, port
+    mov esi, buf
+    mov ecx, count
+    rep outsw
+  }
+}
+
+static void ne_readmem(unsigned short src, void *dst, unsigned short len)
+{
+  // Word align length
+  //if (len & 1) len++;
+
+  // Abort any remote DMA already in progress
+  _outp(ne.nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
+
+  // Setup DMA byte count
+  _outp(ne.nic_addr + NE_P0_RBCR0, len);
+  _outp(ne.nic_addr + NE_P0_RBCR1, len >> 8);
+
+  // Setup NIC memory source address
+  _outp(ne.nic_addr + NE_P0_RSAR0, src);
+  _outp(ne.nic_addr + NE_P0_RSAR1, src >> 8);
+
+  // Select remote DMA read
+  _outp(ne.nic_addr + NE_P0_CR, NE_CR_RD0 | NE_CR_STA);
+
+  // Read NIC memory
+  insw(ne.asic_addr + NE_NOVELL_DATA, dst, len >> 1);
+}
+
+static int ne_probe()
+{
+  unsigned char byte;
+
+  // Reset
+  byte = _inp(ne.asic_addr + NE_NOVELL_RESET);
+  _outp(ne.asic_addr + NE_NOVELL_RESET, byte);
+  _outp(ne.nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STP);
+
+  //sleep(5000);
+
+  // Test for a generic DP8390 NIC
+  byte = _inp(ne.nic_addr + NE_P0_CR);
+  byte &= NE_CR_RD2 | NE_CR_TXP | NE_CR_STA | NE_CR_STP;
+  if (byte != (NE_CR_RD2 | NE_CR_STP)) return 0;
+
+  byte = _inp(ne.nic_addr + NE_P0_ISR);
+  byte &= NE_ISR_RST;
+  if (byte != NE_ISR_RST) return 0;
+
+  return 1;
+}
+
+void ne_get_packet(unsigned short src, char *dst, unsigned short len)
+{
+  if (src + len > ne.rx_ring_end)
+  {
+    unsigned short split = ne.rx_ring_end - src;
+
+    ne_readmem(src, dst, split);
+    len -= split;
+    src = ne.rx_ring_start;
+    dst += split;
+  }
+
+  ne_readmem(src, dst, len);
+}
+
+void ne_receive()
+{
+  struct recv_ring_desc packet_hdr;
+  unsigned short packet_ptr;
+  unsigned short len;
+  unsigned char bndry;
+  struct pbuf *p, *q;
+
+  // Set page 1 registers
+  _outp(ne.nic_addr + NE_P0_CR, NE_CR_PAGE_1 | NE_CR_RD2 | NE_CR_STA);
+
+  while (ne.next_pkt != _inp(ne.nic_addr + NE_P1_CURR)) 
+  {
+    // Get pointer to buffer header structure
+    packet_ptr = ne.next_pkt * NE_PAGE_SIZE;
+
+    // Read receive ring descriptor
+    ne_readmem(packet_ptr, &packet_hdr, sizeof(struct recv_ring_desc));
+
+    // Allocate packet buffer
+    len = packet_hdr.count - sizeof(struct recv_ring_desc);
+    p = pbuf_alloc(PBUF_LINK, len, PBUF_POOL);
+
+    // Get packet from nic and send to upper layer
+    if (p != NULL)
+    {
+      packet_ptr += sizeof(struct recv_ring_desc);
+      for (q = p; q != NULL; q = q->next) 
+      {
+	ne_get_packet(packet_ptr, q->payload, (unsigned short) q->len);
+	packet_ptr += q->len;
+      }
+
+      ne.netif->ethinput(p, ne.netif);
+    }
+    else
+    {
+      // Drop packet
+      kprintf("drop\n");
+      stats.link.memerr++;
+      stats.link.drop++;
+    }
+
+    // Update next packet pointer
+    ne.next_pkt = packet_hdr.next_pkt;
+
+    // Set page 0 registers
+    _outp(ne.nic_addr + NE_P0_CR, NE_CR_PAGE_0 | NE_CR_RD2 | NE_CR_STA);
+
+    // Update boundry pointer
+    bndry = ne.next_pkt - 1;
+    if (bndry < ne.rx_page_start) bndry = ne.rx_page_stop - 1;
+    _outp(ne.nic_addr + NE_P0_BNRY, bndry);
+
+    //kprintf("start: %02x stop: %02x next: %02x bndry: %02x\n", ne.rx_page_start, ne.rx_page_stop, ne.next_pkt, bndry);
+    //if (bndry == 0xff && ne.next_pkt == 0) sleep(30000);
+
+    // Set page 1 registers
+    _outp(ne.nic_addr + NE_P0_CR, NE_CR_PAGE_1 | NE_CR_RD2 | NE_CR_STA);
+  }
+}
+
+void ne_dpc(void *arg)
+{
+  struct ne *ne = (struct ne *) arg;
+  unsigned char isr;
+
+  // Mark DPC as ready
+  ne->dpc_pending = 0;
+
+  // Select page 0
+  _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
+
+  // Loop until there are no pending interrupts
+  while ((isr = _inp(ne->nic_addr + NE_P0_ISR)) != 0) 
+  {
+    // Reset bits for interrupts being acknowledged
+    _outp(ne->nic_addr + NE_P0_ISR, isr);
+
+    // Packet received
+    if (isr & NE_ISR_PRX) ne_receive();
+
+    // Packet transamitted
+    if (isr & NE_ISR_PTX) 
+    {
+      //kprintf("ne2000: packet transmitted\n");
+      set_event(&ne->ptx);
+    }
+
+    // Remote DMA complete
+    if (isr & NE_ISR_RDC) 
+    {
+      //kprintf("ne2000: remote DMA complete\n");
+      set_event(&ne->rdc);
+    }
+
+    // Select page 0
+    _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
+  }
+
+  eoi(ne->irq);
+}
+
+void ne_handler(struct context *ctxt, void *arg)
+{
+  struct ne *ne = (struct ne *) arg;
+
+  // Queue DPC to service interrupt
+  if (!ne->dpc_pending)
+  {
+    ne->dpc_pending = 1;
+    queue_irq_dpc(&ne->dpc, ne_dpc, ne);
+  }
+  else
+    kprintf("ne2000: intr lost\n");
+}
+
+void dump_memory(unsigned char *p, int len);
+
+err_t ne_transmit(struct netif *netif, struct pbuf *p)
+{
+  unsigned short dma_len;
+  unsigned short dst;
+  unsigned char *data;
+  int len;
+  int wrap;
+  unsigned char save_byte[2];
+  struct pbuf *q;
+
+kprintf("ne_transmit: transmit packet len=%d\n", p->tot_len);
+//dump_memory((unsigned char *) p->payload, p->len);
+
+  // We need to transfer a whole number of words
+  dma_len = p->tot_len;
+  if (dma_len & 1) dma_len++;
+
+  // Clear packet transmitted and dma complete event
+  reset_event(&ne.ptx);
+  reset_event(&ne.rdc);
+
+  // Set page 0 registers
+  _outp(ne.nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
+
+  // Reset remote DMA complete flag
+  _outp(ne.nic_addr + NE_P0_ISR, NE_ISR_RDC);
+
+  // Set up DMA byte count
+  _outp(ne.nic_addr + NE_P0_RBCR0, dma_len);
+  _outp(ne.nic_addr + NE_P0_RBCR1, dma_len >> 8);
+
+  // Set up destination address in NIC memory
+  dst = ne.rx_page_stop; // for now we only use one tx buffer
+  _outp(ne.nic_addr + NE_P0_RSAR0, (dst * NE_PAGE_SIZE));
+  _outp(ne.nic_addr + NE_P0_RSAR1, (dst * NE_PAGE_SIZE) >> 8);
+
+  // Set remote DMA write
+  _outp(ne.nic_addr + NE_P0_CR, NE_CR_RD1 | NE_CR_STA);
+
+  wrap = 0;
+  for (q = p; q != NULL; q = q->next) 
+  {
+    len = q->len;
+    if (len > 0)
+    {
+      data = q->payload;
+
+      // Finish the last word
+      if (wrap) 
+      {
+	save_byte[1] = *data;
+	_outpw((unsigned short) (ne.asic_addr + NE_NOVELL_DATA), *(unsigned short *) save_byte);
+	data++;
+	len--;
+	wrap = 0;
+      }
+
+      // Output contiguous words
+      if (len > 1) 
+      {
+	outsw(ne.asic_addr + NE_NOVELL_DATA, data, len >> 1);
+	data += len & ~1;
+	len &= 1;
+      }
+
+      // Save last byte if necessary
+      if (len == 1) 
+      {
+	save_byte[0] = *data;
+	wrap = 1;
+      }
+    }
+  }
+
+  // Output last byte
+  if (wrap) 
+  {
+    _outpw((unsigned short) (ne.asic_addr + NE_NOVELL_DATA), *(unsigned short *) save_byte);
+  }
+
+  // Wait for remote DMA complete
+  wait_for_object(&ne.rdc, INFINITE);
+
+  // Set TX buffer start page
+  _outp(ne.nic_addr + NE_P0_TPSR, dst);
+
+  // Set TX length (packets smaller than 64 bytes must be padded)
+  if (p->tot_len > 64)
+  {
+    _outp(ne.nic_addr + NE_P0_TBCR0, p->tot_len);
+    _outp(ne.nic_addr + NE_P0_TBCR1, p->tot_len >> 8);
+  }
+  else
+  {
+    _outp(ne.nic_addr + NE_P0_TBCR0, 64);
+    _outp(ne.nic_addr + NE_P0_TBCR1, 0);
+  }
+
+  // Set page 0 registers, transmit packet, and start
+  _outp(ne.nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_TXP | NE_CR_STA);
+
+  // Wait for packet transmitted
+  wait_for_object(&ne.ptx, INFINITE);
+
+//kprintf("ne_transmit: packet transmitted\n");
+  return 0;
+}
+
+int init_ne2000(struct netif *netif)
+{
+  unsigned char romdata[16];
+  int i;
+  char str[20];
+
+  // Setup NIC configuration
+  ne.iobase = 0x280;
+  ne.irq = 9;
+  ne.membase = 16 * K;
+  ne.memsize = 16 * K;
+
+  ne.nic_addr = ne.iobase + NE_NOVELL_NIC_OFFSET;
+  ne.asic_addr = ne.iobase + NE_NOVELL_ASIC_OFFSET;
+
+  ne.rx_page_start = ne.membase / NE_PAGE_SIZE;
+  ne.rx_page_stop = ne.rx_page_start + (ne.memsize / NE_PAGE_SIZE) - NE_TXBUF_SIZE * NE_TX_BUFERS;
+  ne.next_pkt = ne.rx_page_start + 1;
+
+  ne.rx_ring_start = ne.rx_page_start * NE_PAGE_SIZE;
+  ne.rx_ring_end = ne.rx_page_stop * NE_PAGE_SIZE;
+
+  // Probe for NE2000 card
+  if (!ne_probe()) return 0;
+
+  // Initialize network interface
+  init_event(&ne.ptx, 0, 0);
+  init_event(&ne.rdc, 0, 0);
+  ne.netif = netif;
+  ne.netif->state = &ne;
+  ne.netif->ethoutput = ne_transmit;
+
+  // Install interrupt handler
+  ne.dpc_pending = 0;
+  set_interrupt_handler(IRQ2INTR(ne.irq), ne_handler, &ne);
+  enable_irq(ne.irq);
+
+  // Set page 0 registers, abort remote DMA, stop NIC
+  _outp(ne.nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STP);
+
+  // Set FIFO threshold to 8, no auto-init remote DMA, byte order=80x86, word-wide DMA transfers
+  _outp(ne.nic_addr + NE_P0_DCR, NE_DCR_FT1 | NE_DCR_WTS | NE_DCR_LS);
+
+  // Get Ethernet MAC address
+  ne_readmem(0, romdata, 16);
+  for (i = 0; i < ETHER_ADDR_LEN; i++) ne.netif->hwaddr.addr[i] = romdata[i * 2];
+
+  // Set page 0 registers, abort remote DMA, stop NIC
+  _outp(ne.nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STP);
+
+  // Clear remote byte count registers
+  _outp(ne.nic_addr + NE_P0_RBCR0, 0);
+  _outp(ne.nic_addr + NE_P0_RBCR1, 0);
+
+  // Initialize receiver (ring-buffer) page stop and boundry
+  _outp(ne.nic_addr + NE_P0_PSTART, ne.rx_page_start);
+  _outp(ne.nic_addr + NE_P0_PSTOP, ne.rx_page_stop);
+  _outp(ne.nic_addr + NE_P0_BNRY, ne.rx_page_start);
+
+  // Enable the following interrupts: receive/transmit complete, receive/transmit error, 
+  // receiver overwrite and remote dma complete.
+  _outp(ne.nic_addr + NE_P0_IMR, NE_IMR_PRXE | NE_IMR_PTXE | NE_IMR_RXEE | NE_IMR_TXEE | NE_IMR_OVWE | NE_IMR_RDCE);
+
+  // Set page 1 registers
+  _outp(ne.nic_addr + NE_P0_CR, NE_CR_PAGE_1 | NE_CR_RD2 | NE_CR_STP);
+
+  // Copy out our station address
+  for (i = 0; i < ETHER_ADDR_LEN; i++) _outp(ne.nic_addr + NE_P1_PAR0 + i, ne.netif->hwaddr.addr[i]);
+
+  // Set current page pointer 
+  _outp(ne.nic_addr + NE_P1_CURR, ne.next_pkt);
+
+  // Initialize multicast address hashing registers to not accept multicasts
+  for (i = 0; i < 8; i++) _outp(ne.nic_addr + NE_P1_MAR0 + i, 0);
+
+  // Set page 0 registers
+  _outp(ne.nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STP);
+
+  // Accept broadcast packets
+  _outp(ne.nic_addr + NE_P0_RCR, NE_RCR_AB);
+
+  // Take NIC out of loopback
+  _outp(ne.nic_addr + NE_P0_TCR, 0);
+
+  // Clear any pending interrupts
+  _outp(ne.nic_addr + NE_P0_ISR, 0xFF);
+
+  // Start NIC
+  _outp(ne.nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
+
+  kprintf("ne2000: iobase 0x%x irq %d hwaddr %s\n", ne.iobase, ne.irq, ether2str(&ne.netif->hwaddr, str));
+  return 1;
+}

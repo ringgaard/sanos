@@ -1,0 +1,10 @@
+LIBRARY ADVAPI32
+DESCRIPTION 'ADVAPI32'
+
+EXPORTS
+  GetUserNameA
+  RegCloseKey
+  RegEnumKeyExA
+  RegOpenKeyExA
+  RegQueryInfoKeyA
+  RegQueryValueExA

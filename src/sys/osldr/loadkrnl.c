@@ -1,0 +1,182 @@
+//
+// loadkrnl.c
+//
+// Copyright (c) 2001 Michael Ringgaard. All rights reserved.
+//
+// Kernel loader
+//
+
+#include <os/krnl.h>
+
+extern unsigned long krnlentry;
+extern int bootpart;
+
+int boot_read(void *buffer, size_t count, blkno_t blkno);
+char *alloc_heap(int numpages);
+
+char bsect[SECTORSIZE];
+char ssect[SECTORSIZE];
+char gsect[SECTORSIZE];
+char isect[SECTORSIZE];
+blkno_t blockdir[1024];
+
+void load_kernel(int bootdrv)
+{
+  struct master_boot_record *mbr;
+  struct superblock *sb;
+  struct groupdesc *group;
+  struct inodedesc *inode;
+  int blocksize;
+  int blks_per_sect;
+  int kernelsize;
+  int kernelpages;
+  char *kerneladdr;
+  struct dos_header *doshdr;
+  struct image_header *imghdr;
+  char *addr;
+  blkno_t blkno;
+  int i;
+  int j;
+  pte_t *pt;
+  int imgpages;
+  int start;
+  char *label;
+  struct boot_sector *bootsect;
+
+  // Determine active boot partition if booting from harddisk
+  if (bootdrv & 0x80)
+  {
+    mbr = (struct master_boot_record *) bsect;
+    if (boot_read(mbr, SECTORSIZE, 0) != SECTORSIZE)
+    {
+      panic("unable to master boot record");
+    }
+
+    if (mbr->signature != MBR_SIGNATURE) panic("invalid boot signature");
+
+    bootsect = (struct boot_sector *) bsect;
+    label = bootsect->label;
+    if (label[0] == 'S' && label[1] == 'A' && label[2] == 'N' && label[3] == 'O' && label[4] == 'S')
+    {
+      // Disk does not have a partition table
+      start = 0;
+      bootpart = -1;
+    }
+    else
+    {
+      // Find active partition
+      bootpart = -1;
+      for (i = 0; i < 4; i++)
+      {
+	if (mbr->parttab[i].bootid == 0x80)
+	{
+	  bootpart = i;
+	  start = mbr->parttab[i].relsect;
+	}
+      }
+
+      if (bootpart == -1) panic("no bootable partition on boot drive");
+    }
+  }
+  else
+  {
+    start = 0;
+    bootpart = 0;
+  }
+
+  // Read super block from boot device
+  sb = (struct superblock *) ssect;
+  if (boot_read(sb, SECTORSIZE, 1 + start) != SECTORSIZE) 
+  {
+    panic("unable to read super block from boot device");
+  }
+
+  // Check signature and version
+  if (sb->signature != DFS_SIGNATURE) panic("invalid DFS signature");
+  if (sb->version != DFS_VERSION) panic("invalid DFS version");
+  blocksize = 1 << sb->log_block_size;
+  blks_per_sect =  blocksize / SECTORSIZE;
+
+  // Read first group descriptor
+  group = (struct groupdesc *) gsect;
+  if (boot_read(group, SECTORSIZE, sb->groupdesc_table_block * blks_per_sect + start) != SECTORSIZE) 
+  { 
+    panic("unable to read group descriptor from boot device");
+  }
+
+  // Read inode for kernel
+  inode = (struct inodedesc *) isect;
+  if (boot_read(isect, SECTORSIZE, group->inode_table_block * blks_per_sect + start) != SECTORSIZE) 
+  {
+    panic("unable to read kernel inode from boot device");
+  }
+  inode += DFS_INODE_KRNL;
+
+  // Calculate kernel size
+  kernelsize = inode->size;
+  kernelpages = PAGES(kernelsize);
+  kprintf("Kernel size %d KB\n", kernelsize / K);
+
+  // Allocate page table for kernel
+  if (kernelpages > PTES_PER_PAGE) panic("kernel too big");
+  pt = (pte_t *) alloc_heap(1);
+  pdir[PDEIDX(OSBASE)] = (unsigned long) pt | PT_PRESENT | PT_WRITABLE;
+
+  // Allocate pages for kernel
+  kerneladdr = alloc_heap(kernelpages);
+
+  // Read kernel from boot device
+  if (inode->depth == 0)
+  {
+    addr = kerneladdr;
+    for (i = 0; i < (int) inode->blocks; i++)
+    {
+      if (boot_read(addr, blocksize, inode->blockdir[i] * blks_per_sect + start) != blocksize)
+      {
+        panic("error reading kernel from boot device");
+      }
+      addr += blocksize;
+    }
+  }
+  else if (inode->depth == 1)
+  {
+    addr = kerneladdr;
+    blkno = 0;
+    for (i = 0; i < DFS_TOPBLOCKDIR_SIZE; i++)
+    {
+      if (boot_read(blockdir, blocksize, inode->blockdir[i] * blks_per_sect + start) != blocksize)
+      {
+        panic("error reading kernel inode dir from boot device");
+      }
+
+      for (j = 0; j < (int) (blocksize / sizeof(blkno_t)); j++)
+      {
+        if (boot_read(addr, blocksize, blockdir[j] * blks_per_sect + start) != blocksize)
+        {
+          panic("error reading kernel inode dir from boot device");
+        }
+        
+        addr += blocksize;
+
+        blkno++;
+        if (blkno == inode->blocks) break;
+      }
+
+      if (blkno == inode->blocks) break;
+    }
+  }
+  else
+    panic("unsupported inode depth");
+
+  // Determine entry point for kernel
+  doshdr = (struct dos_header *) kerneladdr;
+  imghdr = (struct image_header *) (kerneladdr + doshdr->e_lfanew);
+  krnlentry = imghdr->optional.address_of_entry_point + OSBASE;
+
+  // Allocate pages for .data section
+  imgpages = PAGES(imghdr->optional.size_of_image);
+  alloc_heap(imgpages - kernelpages);
+
+  // Map kernel into vitual address space
+  for (i = 0; i < imgpages; i++) pt[i] = (unsigned long) (kerneladdr + i * PAGESIZE) | PT_PRESENT | PT_WRITABLE;
+}

@@ -1,0 +1,164 @@
+Microsoft Developer Studio Workspace File, Format Version 6.00
+# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
+
+###############################################################################
+
+Project: "advapi32"=.\advapi32.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "jexec"=.\jexec.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name advapi32
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name kernel32
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name msvcrt
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name os
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name osexec
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name test
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name user32
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name winmm
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name wsock32
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "kernel32"=.\kernel32.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "msvcrt"=.\msvcrt.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "os"=.\os.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "osexec"=.\osexec.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "test"=.\test.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "user32"=.\user32.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "winmm"=.\winmm.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "wsock32"=.\wsock32.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Global:
+
+Package=<5>
+{{{
+}}}
+
+Package=<3>
+{{{
+}}}
+
+###############################################################################
+
