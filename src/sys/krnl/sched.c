@@ -35,10 +35,14 @@
 
 #define DEFAULT_STACK_SIZE (1 * M)
 
+int testidlecount = 0; // TEST
+int stucked = 0;
+
 int preempt = 0;
 int in_dpc = 0;
 unsigned long dpc_time = 0;
 unsigned long dpc_total = 0;
+unsigned long dpc_lost = 0;
 
 struct thread *idle_thread;
 struct thread *ready_queue_head[THREAD_PRIORITY_LEVELS];
@@ -54,7 +58,7 @@ __declspec(naked) void switch_context(struct thread *t)
 {
   __asm
   {
-    // Save register on current kernel stack
+    // Save registers on current kernel stack
     push    ebp
     push    ebx
     push    edi
@@ -73,7 +77,7 @@ __declspec(naked) void switch_context(struct thread *t)
     mov	    ebp, TSS_ESP0
     mov	    [ebp], eax
 
-    // Restore register from new kernel stack
+    // Restore registers from new kernel stack
     pop	    esi
     pop	    edi
     pop	    ebx
@@ -543,7 +547,24 @@ void init_dpc(struct dpc *dpc)
 
 void queue_irq_dpc(struct dpc *dpc, dpcproc_t proc, void *arg)
 {
-  if (dpc->flags & DPC_QUEUED) return;
+  if (dpc->flags & DPC_QUEUED) 
+  {
+    if (dpc_queue_head == NULL)
+    {
+      extern int debug_nointr;
+
+      debug_nointr = 1;
+      panic("bad dpc queue");
+    }
+
+    if (stucked) 
+    {
+      //kprintf("dpc flags %d next %p head %p tail %p\n", dpc->flags, dpc->next, dpc_queue_head, dpc_queue_tail);
+      kprintf("?");
+    }
+    dpc_lost++;
+    return;
+  }
 
   dpc->proc = proc;
   dpc->arg = arg;
@@ -551,7 +572,8 @@ void queue_irq_dpc(struct dpc *dpc, dpcproc_t proc, void *arg)
   if (dpc_queue_tail) dpc_queue_tail->next = dpc;
   dpc_queue_tail = dpc;
   if (!dpc_queue_head) dpc_queue_head = dpc;
-  dpc->flags |= DPC_QUEUED;
+  set_bit(&dpc->flags, DPC_QUEUED_BIT);
+  if (stucked) kprintf(">");
 }
 
 void queue_dpc(struct dpc *dpc, dpcproc_t proc, void *arg)
@@ -567,7 +589,9 @@ void dispatch_dpc_queue()
   dpcproc_t proc;
   void *arg;
 
+  if (stucked) kprintf("#");
   if (in_dpc) panic("sched: nested execution of dpc queue");
+  in_dpc = 1;
 
   while (1)
   {
@@ -582,24 +606,25 @@ void dispatch_dpc_queue()
     else
       dpc = NULL;
     sti();
-    if (!dpc) return;
+    if (!dpc) break;
 
     // Execute DPC
-    dpc->flags &= ~DPC_QUEUED;
+    clear_bit(&dpc->flags, DPC_QUEUED_BIT);
     if ((dpc->flags & DPC_EXECUTING) == 0)
     {
-      dpc->flags |= DPC_EXECUTING;
+      set_bit(&dpc->flags, DPC_EXECUTING_BIT);
       proc = dpc->proc;
       arg = dpc->arg;
-      
-      in_dpc = 1;
-      proc(arg);
-      in_dpc = 0;
-      dpc_total++;
+      testidlecount = 0;
 
-      dpc->flags &= ~DPC_EXECUTING;
+      proc(arg);
+
+      dpc_total++;
+      clear_bit(&dpc->flags, DPC_EXECUTING_BIT);
     }
   }
+
+  in_dpc = 0;
 }
 
 void dispatch()
@@ -664,6 +689,31 @@ void idle_task()
     mark_thread_ready(self());
     dispatch();
 
+    if ((eflags() & EFLAG_IF) == 0) panic("sched: interrupts disabled in idle loop");
+
+    {
+      extern struct dpc timerdpc;
+      extern int debug_nointr;
+
+      if ((timerdpc.flags & 1) != 0 && dpc_queue_head == NULL)
+      {
+	debug_nointr = 1;
+	panic("dpc queue corrupted");
+      }
+    }
+
+    if (++testidlecount > 1000000) 
+    {
+      stucked = 1;
+      kprintf("sched: kernel stucked\n");
+      if (dpc_queue_head)
+	kprintf("dpc_queue_head %p next %p flags %d\n", dpc_queue_head, dpc_queue_head->next, dpc_queue_head->flags);
+      else
+	kprintf("dpc queue empty\n");
+
+      testidlecount = 0;
+    }
+
     //check_dpc_queue();
     //sti();
     //halt();
@@ -710,6 +760,7 @@ static int dpcs_proc(struct proc_file *pf, void *arg)
 {
   pprintf(pf, "dpc time  : %8d\n", dpc_time);
   pprintf(pf, "total dpcs: %8d\n", dpc_total);
+  pprintf(pf, "lost dpcs: %8d\n", dpc_lost);
   return 0;
 }
 

@@ -49,8 +49,11 @@ typedef void (*taskproc_t)(void *arg);
 #define TCBMASK           (~(TCBSIZE - 1))
 #define TCBESP            (TCBSIZE - 4)
 
-#define DPC_QUEUED        1
-#define DPC_EXECUTING     2
+#define DPC_QUEUED_BIT        0
+#define DPC_EXECUTING_BIT     1
+
+#define DPC_QUEUED            (1 << DPC_QUEUED_BIT)
+#define DPC_EXECUTING         (1 << DPC_EXECUTING_BIT)
 
 #define TASK_QUEUE_ACTIVE              1
 #define TASK_QUEUE_ACTIVE_TASK_INVALID 2

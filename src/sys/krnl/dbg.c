@@ -40,6 +40,8 @@
 
 int debugging = 0;
 int debugger_active = 0;
+int debug_nointr = 0;
+
 static char dbgdata[MAX_DBG_PACKETLEN];
 struct dbg_evt_trap last_trap;
 static char *krnlname = "krnl.dll";
@@ -64,7 +66,10 @@ static void dbg_send(void *buffer, int count)
 
   while (count-- > 0)
   {
-    while ((_inp(DEBUGPORT + 5) & 0x20) == 0) check_dpc_queue();
+    while ((_inp(DEBUGPORT + 5) & 0x20) == 0) 
+    {
+      if (!debug_nointr) check_dpc_queue();
+    }
     _outp(DEBUGPORT, *p++);
   }
 }
@@ -75,7 +80,10 @@ static void dbg_recv(void *buffer, int count)
 
   while (count-- > 0)
   {
-    while ((_inp(DEBUGPORT + 5) & 0x01) == 0) check_dpc_queue();
+    while ((_inp(DEBUGPORT + 5) & 0x01) == 0) 
+    {
+      if (!debug_nointr) check_dpc_queue();
+    }
     *p++ = _inp(DEBUGPORT) & 0xFF;
   }
 }
@@ -506,7 +514,7 @@ void dbg_enter(struct context *ctxt, void *addr)
   last_trap.eip = ctxt->eip;
   last_trap.addr = addr;
 
-  sti();
+  if (!debug_nointr) sti();
 
   if (debugging)
   {

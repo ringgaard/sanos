@@ -67,15 +67,11 @@
 //
 // End of interrupt commands
 //
+
 #define PIC_EOI_BASE		0x60
 
-#define PIC_EOI_TMR		0x60
-#define PIC_EOI_KBD		0x61
 #define PIC_EOI_CAS		0x62
-#define PIC_EOI_SERALT	        0x63
-#define PIC_EOI_SERPRI	        0x64
 #define PIC_EOI_FD		0x66
-#define PIC_EOI_HD		0x66
 
 void init_pic();
 

@@ -159,6 +159,16 @@ void __inline cli() { __asm cli };
 void __inline sti() { __asm sti };
 void __inline halt() { __asm hlt };
 
+__inline __declspec(naked) unsigned long eflags()
+{
+  __asm
+  {
+    pushfd
+    pop eax
+    ret
+  }
+}
+
 #endif
 
 #endif

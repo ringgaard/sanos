@@ -53,7 +53,7 @@ struct timer_vec_root
   struct timer_link vec[TVR_SIZE];
 };
 
-static unsigned int timer_ticks;
+static unsigned int timer_ticks = 0;
 
 static struct timer_vec tv5;
 static struct timer_vec tv4;
