@@ -37,283 +37,34 @@
 #include <inifile.h>
 #include <ctype.h>
 #include <time.h>
+#include <os/version.h>
 
 #include <httpd.h>
 
-#define HTTPD_BUFFER_INITIAL_SIZE 4096
+#define HTTPD_SOFTWARE (OSNAME "/" OSVERSION)
 
 struct critsect srvlock;
 
-char *getstrconfig(struct section *cfg, char *name, char *defval)
+char *statustitle(int status)
 {
-  char *val;
-
-  if (!cfg) return defval;
-  val = find_property(cfg, name);
-  if (!val) return defval;
-  return val;
-}
-
-int getnumconfig(struct section *cfg, char *name, int defval)
-{
-  char *val;
-
-  if (!cfg) return defval;
-  val = find_property(cfg, name);
-  if (!val) return defval;
-  return atoi(val);
-}
-
-int allocate_buffer(struct httpd_buffer *buf, int size)
-{
-  if (size == 0)
+  switch (status)
   {
-    buf->floor = buf->ceil = NULL;
-    buf->start = buf->end = NULL;
-  }
-  else
-  {
-    buf->floor = (char *) malloc(size);
-    if (!buf->floor) return -ENOMEM;
-    buf->ceil = buf->floor + size;
-    buf->start = buf->end = buf->floor;
+    case 200: return "OK";
+    case 204: return "No Content";
+    case 302: return "Moved";
+    case 304: return "Not Modified";
+    case 400: return "Bad Request";
+    case 401: return "Not Authorized";
+    case 403: return "Forbidden";
+    case 404: return "Not Found";
+    case 405: return "Method Not Allowed";
+    case 500: return "Internal Server Error";
+    case 501: return "Not Implemented";
+    case 503: return "Service Unavailable";
+    case 505: return "HTTP Version Not Supported";
   }
 
-  return 0;
-}
-
-void free_buffer(struct httpd_buffer *buf)
-{
-  if (buf->floor) free(buf->floor);
-  buf->floor = buf->ceil = buf->start = buf->end = NULL;
-}
-
-int expand_buffer(struct httpd_buffer *buf, int minfree)
-{
-  char *p;
-  int size;
-  int minsize;
-
-  if (buf->ceil - buf->end >= minfree) return 0;
-  
-  size = buf->ceil - buf->floor;
-  minsize = buf->end + minfree - buf->floor;
-  while (size < minsize)
-  {
-    if (size == 0)
-      size = HTTPD_BUFFER_INITIAL_SIZE;
-    else
-      size *= 2;
-  }
-
-  p = (char *) realloc(buf->floor, size);
-  if (!p) return -ENOMEM;
-
-  buf->start += p - buf->floor;
-  buf->end += p - buf->floor;
-  buf->floor = p;
-  buf->ceil = p + size;
-
-  return 0;
-}
-
-char *bufgets(struct httpd_buffer *buf)
-{
-  char *start;
-  char *s;
-
-  s = start = buf->start;
-  while (s < buf->end)
-  {
-    switch (*s)
-    {
-      case '\n':
-	if (s[1] != ' ' && s[1] != '\t')
-	{
-	  if (s > start && s[-1] == ' ')
-	    s[-1] = 0;
-	  else
-	    s[0] = 0;
-
-	  buf->start = s + 1;
-	  return start;
-	}
-	else
-	  *s++ = ' ';
-
-	break;
-
-      case '\r':
-      case '\t':
-	*s++ = ' ';
-	break;
-
-      default:
-	s++;
-    }
-  }
-
-  return NULL;
-}
-
-int hexdigit(int x)
-{
-  return (x <= '9') ? x - '0' : (x & 7) + 9;
-}
-
-int decode_url(char *from, char *to)
-{
-  char c, x1, x2;
-
-  while ((c = *from++) != 0) 
-  {
-    if (c == '%') 
-    {
-      x1 = *from++;
-      if (!isxdigit(x1)) return -EINVAL;
-      x2 = *from++;
-      if (!isxdigit(x2)) return -EINVAL;
-      *to++ = (hexdigit(x1) << 4) + hexdigit(x2);
-    } 
-    else
-      *to++ = c;
-  }
-
-  *to = 0;
-  return 0;
-}
-
-time_t timerfc(char *s)
-{
-  struct tm tm;
-  char month[3];
-  char c;
-  unsigned n;
-  char flag;
-  char state;
-  char isctime;
-  enum { D_START, D_END, D_MON, D_DAY, D_YEAR, D_HOUR, D_MIN, D_SEC };
-
-  tm.tm_sec = 60;
-  tm.tm_min = 60;
-  tm.tm_hour = 24;
-  tm.tm_mday = 32;
-  tm.tm_year = 1969;
-  isctime = 0;
-  month[0] = 0;
-  state = D_START;
-  n = 0;
-  flag = 1;
-  while (*s && state != D_END)
-  {
-    c = *s++;
-    switch (state) 
-    {
-      case D_START:
-	if (c == ' ') 
-	{
-	  state = D_MON;
-	  isctime = 1;
-	} 
-	else if (c == ',') 
-	  state = D_DAY;
-	break;
-
-      case D_MON:
-	if (isalpha(c)) 
-	{
-	  if (n < 3) month[n++] = c;
-	} 
-	else 
-	{
-	  if (n < 3) return -1;
-	  n = 0;
-	  state = isctime ? D_DAY : D_YEAR;
-	}
-	break;
-
-      case D_DAY:
-	if (c == ' ' && flag)
-	{
-	}
-	else if (isdigit(c)) 
-	{
-	  flag = 0;
-	  n = 10 * n + (c - '0');
-	} 
-	else 
-	{
-	  tm.tm_mday = n;
-	  n = 0;
-	  state = isctime ? D_HOUR : D_MON;
-	}
-	break;
-
-      case D_YEAR:
-	if (isdigit(c))
-	  n = 10 * n + (c - '0');
-	else 
-	{
-	  tm.tm_year = n;
-   	  n = 0;
-  	  state = isctime ? D_END : D_HOUR;
-	}
-	break;
-
-      case D_HOUR:
-	if (isdigit(c))
-  	  n = 10 * n + (c - '0');
-	else 
-	{
-	  tm.tm_hour = n;
-	  n = 0;
-	  state = D_MIN;
-	}
-	break;
-
-      case D_MIN:
-	if (isdigit(c))
-  	  n = 10 * n + (c - '0');
-	else 
-	{
-	  tm.tm_min = n;
-	  n = 0;
-	  state = D_SEC;
-	}
-	break;
-
-      case D_SEC:
-	if (isdigit(c))
-  	  n = 10 * n + (c - '0');
-	else
-	{
-	  tm.tm_sec = n;
-	  n = 0;
-	  state = isctime ? D_YEAR : D_END;
-	}
-	break;
-    }
-  }
-
-  switch (month[0]) 
-  {
-    case 'A': tm.tm_mon = (month[1] == 'p') ? 4 : 8; break;
-    case 'D': tm.tm_mon = 12; break;
-    case 'F': tm.tm_mon = 2; break;
-    case 'J': tm.tm_mon = (month[1] == 'a') ? 1 : ((month[2] == 'l') ? 7 : 6); break;
-    case 'M': tm.tm_mon = (month[2] == 'r') ? 3 : 5; break;
-    case 'N': tm.tm_mon = 11; break;
-    case 'O': tm.tm_mon = 10; break;
-    case 'S': tm.tm_mon = 9; break;
-    default: return -1;
-  }
-  if (tm.tm_year <= 100) tm.tm_year += (tm.tm_year < 70) ? 2000 : 1900;
-
-  tm.tm_year -= 1900;
-  tm.tm_mon--;
-  tm.tm_mday--;
-
-  return mktime(&tm);
+  return "Internal Error";
 }
 
 struct httpd_server *httpd_initialize(struct section *cfg)
@@ -326,7 +77,13 @@ struct httpd_server *httpd_initialize(struct section *cfg)
 
   server->cfg = cfg;
   server->port = getnumconfig(cfg, "port", 80);
+
   server->num_workers = getnumconfig(cfg, "workerthreads", 1);
+  server->min_hdrbufsiz = getnumconfig(cfg, "minhdrsize", 1*K);
+  server->max_hdrbufsiz = getnumconfig(cfg, "maxhdrsize", 16*K);
+  server->reqbufsiz = getnumconfig(cfg, "requestbuffer", 4*K);
+  server->rspbufsiz = getnumconfig(cfg, "responsebuffer", 4*K);
+  server->backlog = getnumconfig(cfg, "backlog", 5);
 
   return server;
 }
@@ -391,8 +148,42 @@ void httpd_close_connection(struct httpd_connection *conn)
 
   close(conn->sock);
   free_buffer(&conn->reqhdr);
+  free_buffer(&conn->reqbody);
+  free_buffer(&conn->rsphdr);
+  free_buffer(&conn->rspbody);
   free(conn);
   // TODO: remove connection from server
+}
+
+int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *headers)
+{
+  int rc;
+  char buf[2048];
+  char datebuf[32];
+
+  sprintf(buf, "HTTP/%s %d %s\r\nServer: %s\r\nDate: %s\r\n", 
+    rsp->conn->req->http11 ? "1.1" : "1.0",
+    state, title, HTTPD_SOFTWARE,
+    rfctime(time(0), datebuf));
+
+  rc = bufcat(&rsp->conn->rsphdr, buf);
+  if (rc < 0) return rc;
+
+  if (headers)
+  {
+    rc = bufcat(&rsp->conn->rsphdr, headers);
+    if (rc < 0) return rc;
+  }
+
+  rc = bufcat(&rsp->conn->rsphdr, "\r\n");
+  if (rc < 0) return rc;
+
+  return 0;
+}
+
+int httpd_send_error(struct httpd_response *rsp, int state, char *title)
+{
+  return httpd_send_header(rsp, state, title ? title : statustitle(state), NULL);
 }
 
 int httpd_check_header(struct httpd_connection *conn)
@@ -575,7 +366,6 @@ int httpd_parse_request(struct httpd_request *req)
   char *l;
   int rc;
   
-  printf("httpd_parse_request\n");
   buf = &req->conn->reqhdr;
   buf->start = buf->floor;
 
@@ -631,14 +421,14 @@ int httpd_parse_request(struct httpd_request *req)
   while ((l = bufgets(buf)))
   {
     if (!*l) continue;
-
-    printf("hdr: [%s]\n", s);
    
     s = strchr(l, ':');
     if (!s) continue;
     *s++ = 0;
     while (*s == ' ') s++;
     if (!*s) continue;
+
+    printf("hdr: [%s]=[%s]\n", l, s);
 
     if (stricmp(l, "Referer") == 0)
       req->referer = s;
@@ -665,11 +455,47 @@ int httpd_parse_request(struct httpd_request *req)
     {
       req->headers[req->nheaders].name = l;
       req->headers[req->nheaders].value = s;
-      req->nheaders;
+      req->nheaders++;
     }
   }
 
   return 0;
+}
+
+int httpd_find_context(struct httpd_request *req)
+{
+  int n;
+  char *s;
+  struct httpd_context *context = req->conn->server->contexts;
+  char *pathinfo = req->pathinfo;
+
+
+  while (context)
+  {
+    n = strlen(context->alias);
+    s = pathinfo + n;
+    if (strncmp(context->alias, pathinfo, n) == 0 && (*s == '/' || *s == 0))
+    {
+      if (*s)
+      {
+	*s++ = 0;
+	req->pathinfo = s;
+	req->contextpath = pathinfo;
+      }
+      else
+      {
+	req->contextpath = pathinfo;
+	req->pathinfo = "";
+      }
+
+      req->context = context;
+      return 0;
+    }
+
+    context = context->next;
+  }
+
+  return -ENOENT;
 }
 
 int httpd_process(struct httpd_connection *conn)
@@ -683,46 +509,74 @@ int httpd_process(struct httpd_connection *conn)
 
   req.conn = conn;
   rsp.conn = conn;
+  conn->req = &req;
+  conn->rsp = &rsp;
 
   rc = httpd_parse_request(&req);
-  if (rc < 0) return rc;
+  if (rc < 0) goto exit;
 
-  return 0;
+  rc = httpd_find_context(&req);
+  if (rc < 0)
+  {
+    httpd_send_error(&rsp, 404, "Not Found");
+  }
+  else
+  {
+  }
+
+  rc = 0;
+
+exit:
+  if (req.decoded_url) free(req.decoded_url);
+  conn->req = NULL;
+  conn->rsp = NULL;
+
+  return rc;
 }
 
 int httpd_io(struct httpd_connection *conn)
 {
   int rc;
 
-  if (conn->state == HTTP_STATE_IDLE)
+  switch (conn->state)
   {
-    rc = allocate_buffer(&conn->reqhdr, HTTPD_BUFFER_INITIAL_SIZE);
-    if (rc < 0) return rc;
-    conn->state = HTTP_STATE_HEADER;
-    conn->hdrstate = HDR_STATE_FIRSTWORD;
-  }
-
-  if (conn->state == HTTP_STATE_HEADER)
-  {
-    rc = recv(conn->sock, conn->reqhdr.end, conn->reqhdr.ceil - conn->reqhdr.end, 0);
-    printf("httpd_io %d bytes\n", rc);
-    if (rc <= 0) return rc;
-
-    write(1, conn->reqhdr.end, rc);
-    conn->reqhdr.end += rc;
-
-    rc = httpd_check_header(conn);
-    printf("httpd_check_header returned %d\n", rc);
-    if (rc < 0) return rc;
-    if (rc > 0)
-    {
-      rc = httpd_process(conn);
+    case HTTP_STATE_IDLE:
+      rc = allocate_buffer(&conn->reqhdr, conn->server->min_hdrbufsiz);
       if (rc < 0) return rc;
-    }
-  }
+      conn->state = HTTP_STATE_HEADER;
+      conn->hdrstate = HDR_STATE_FIRSTWORD;
+      // Fall through
 
-  rc = dispatch(conn->server->iomux, conn->sock, IOEVT_READ | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
-  if (rc < 0) return rc;
+    case HTTP_STATE_HEADER:
+      if (buffer_allocated(&conn->reqhdr) >= conn->server->max_hdrbufsiz) return -EBUF;
+      rc = expand_buffer(&conn->reqhdr, 1);
+      if (rc < 0) return rc;
+
+      rc = recv(conn->sock, conn->reqhdr.end, buffer_left(&conn->reqhdr), 0);
+      printf("httpd_io %d bytes\n", rc);
+      if (rc <= 0) return rc;
+
+      conn->reqhdr.end += rc;
+
+      rc = httpd_check_header(conn);
+      printf("httpd_check_header returned %d\n", rc);
+      if (rc < 0) return rc;
+      if (rc > 0)
+      {
+        rc = httpd_process(conn);
+        if (rc < 0) return rc;
+      }
+      else
+      {
+        rc = dispatch(conn->server->iomux, conn->sock, IOEVT_READ | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
+        if (rc < 0) return rc;
+      }
+
+      return 1;
+
+    default:
+      return -EINVAL;
+  }
 
   return 1;
 }
@@ -779,7 +633,7 @@ int httpd_start(struct httpd_server *server)
     return rc;
   }
 
-  rc = listen(sock, 5);
+  rc = listen(sock, server->backlog);
   if (rc < 0)
   {
     close(sock);

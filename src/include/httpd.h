@@ -106,10 +106,17 @@ struct httpd_server
   struct section *cfg;
   int port;
   int sock;
-  int num_workers;
   int iomux;
   struct httpd_context *contexts;
   struct httpd_connection *connections;
+
+  int num_workers;
+  int min_hdrbufsiz;
+  int max_hdrbufsiz;
+  int reqbufsiz;
+  int rspbufsiz;
+  int backlog;
+
 };
 
 // HTTP context
@@ -128,6 +135,7 @@ struct httpd_context
 struct httpd_request
 {
   struct httpd_connection *conn;
+  struct httpd_context *context;
 
   int http11;
   char *encoded_url;
@@ -139,7 +147,7 @@ struct httpd_request
   char *query;
   char *protocol;
 
-  char *realpath;
+  char *path_translated;
 
   char *referer;
   char *useragent;
@@ -168,10 +176,12 @@ struct httpd_response
 struct httpd_connection
 {
   struct httpd_server *server;
-  struct httpd_context *context;
   struct httpd_connection *next;
   int sock;
   httpd_sockaddr client_addr;
+
+  struct httpd_request *req;
+  struct httpd_response *rsp;
 
   struct httpd_buffer reqhdr;
   struct httpd_buffer reqbody;
@@ -185,5 +195,37 @@ httpdapi struct httpd_server *httpd_initialize(struct section *cfg);
 httpdapi int httpd_terminate(struct httpd_server *server);
 httpdapi struct httpd_context *httpd_add_context(struct httpd_server *server, struct section *cfg, httpd_handler handler); 
 httpdapi int httpd_start(struct httpd_server *server);
+
+httpdapi int httpd_recv(struct httpd_response *req, char *data, int len);
+
+httpdapi int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *headers);
+httpdapi int httpd_send_error(struct httpd_response *rsp, int state, char *title);
+httpdapi int httpd_send(struct httpd_response *rsp, char *data, int len);
+httpdapi int httpd_send_file(struct httpd_response *rsp, int fd);
+
+#ifdef HTTPD_LIB
+
+// hutils.c
+
+char *getstrconfig(struct section *cfg, char *name, char *defval);
+int getnumconfig(struct section *cfg, char *name, int defval);
+int decode_url(char *from, char *to);
+time_t timerfc(char *s);
+char *rfctime(time_t t, char *buf);
+
+// hbuf.c
+
+int buffer_size(struct httpd_buffer *buf);
+int buffer_allocated(struct httpd_buffer *buf);
+int buffer_left(struct httpd_buffer *buf);
+int allocate_buffer(struct httpd_buffer *buf, int size);
+void free_buffer(struct httpd_buffer *buf);
+void clear_buffer(struct httpd_buffer *buf);
+int expand_buffer(struct httpd_buffer *buf, int minfree);
+char *bufgets(struct httpd_buffer *buf);
+int bufncat(struct httpd_buffer *buf, char *data, int len);
+int bufcat(struct httpd_buffer *buf, char *data);
+
+#endif
 
 #endif

@@ -162,7 +162,13 @@
 			</File>
 		</Filter>
 		<File
+			RelativePath="..\src\utils\httpd\hbuf.c">
+		</File>
+		<File
 			RelativePath="..\src\utils\httpd\httpd.c">
+		</File>
+		<File
+			RelativePath="..\src\utils\httpd\hutils.c">
 		</File>
 	</Files>
 	<Globals>

@@ -151,7 +151,7 @@ static int daynumber(char *datestr)
 
 int buildno()
 {
-  return daynumber(__DATE__) - daynumber(LAST_RELEASE_DATE) + 1;
+  return daynumber(__DATE__) - daynumber(RELEASE_DATE) + 1;
 }
 
 static int load_kernel_config()
