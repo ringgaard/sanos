@@ -205,7 +205,7 @@ err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
   if (!ip_addr_isany(ipaddr)) pcb->local_ip = *ipaddr;
   pcb->local_port = port;
   
-  kprintf("tcp_bind: bind to port %d\n", port);
+  //kprintf("tcp_bind: bind to port %d\n", port);
   return 0;
 }
 

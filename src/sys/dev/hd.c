@@ -61,8 +61,11 @@
 #define HDCMD_DIAG		0x90
 #define HDCMD_READ		0x20
 #define HDCMD_WRITE		0x30
-#define HDCMD_READ_DMA          0xC8
-#define HDCMD_WRITE_DMA         0xCA
+#define HDCMD_MULTREAD		0xC4
+#define HDCMD_MULTWRITE		0xC5
+#define HDCMD_SETMULT		0xC6
+#define HDCMD_READDMA           0xC8
+#define HDCMD_WRITEDMA          0xCA
 
 //
 // Controller status
@@ -175,7 +178,8 @@ struct hdparam
   unsigned short necc;		       // ECC bytes appended
   char rev[8];		               // Firmware revision
   char model[40];		       // Model name
-  unsigned short nsecperint;	       // Sectors per interrupt
+  unsigned char nsecperint;	       // Sectors per interrupt
+  unsigned char resv0;                 // Reserved
   unsigned short usedmovsd;	       // Can use double word read/write?
   unsigned short caps;                 // Capabilities
   unsigned short resv1;                // Reserved
@@ -289,6 +293,7 @@ struct hd
   int use32bits;                        // Use 32 bit transfers
   int sectbufs;                         // Number of sector buffers
   int lba;                              // Use LBA mode
+  int multsect;                         // Sectors per interrupt
   int udmamode;                         // UltraDMA mode
 
   // Geometry
@@ -468,15 +473,15 @@ static int hd_identify(struct hd *hd)
   // Read parameter data
   insw(hd->hdc->iobase + HDC_DATA, &(hd->param), SECTORSIZE / 2);
 
-  // Read status
-  hd->hdc->status = _inp(hd->hdc->iobase + HDC_STATUS);
-
   // Fill in drive parameters
   hd->cyls = hd->param.cylinders;
   hd->heads = hd->param.heads;
   hd->sectors = hd->param.sectors;
   hd->use32bits = hd->param.usedmovsd != 0;
   hd->sectbufs = hd->param.buffersize;
+  hd->multsect = hd->param.nsecperint;
+  if (hd->multsect == 0) hd->multsect = 1;
+
   hd_fixstring(hd->param.model, sizeof(hd->param.model));
   hd_fixstring(hd->param.rev, sizeof(hd->param.rev));
   hd_fixstring(hd->param.serial, sizeof(hd->param.serial));
@@ -496,6 +501,25 @@ static int hd_identify(struct hd *hd)
     if (hd->blks == 0 || hd->blks == 0xFFFFFFFF) return -EIO;
   }
   hd->size = hd->blks / (M / SECTORSIZE);
+
+  return 0;
+}
+
+static int hd_cmd(struct hd *hd, unsigned int cmd, unsigned int nsects)
+{
+  // Ignore interrupt for setmult command
+  hd->hdc->dir = HD_XFER_IGNORE;
+
+  // Issue setmult command
+  _outp(hd->hdc->iobase + HDC_SECTORCNT, nsects);
+  _outp(hd->hdc->iobase + HDC_DRVHD, hd->drvsel);
+  _outp(hd->hdc->iobase + HDC_COMMAND, cmd);
+
+  // Wait for data ready
+  if (wait_for_object(&hd->hdc->ready, HDTIMEOUT_CMD) < 0) return -ETIMEOUT;
+
+  // Check status
+  if (hd->hdc->result < 0) return -EIO;
 
   return 0;
 }
@@ -573,7 +597,7 @@ static int hd_read_intr(struct dev *dev, void *buffer, size_t count, blkno_t blk
     reset_event(&hdc->ready);
 
     hd_setup_transfer(hd, blkno, nsects);
-    _outp(hdc->iobase + HDC_COMMAND, HDCMD_READ);
+    _outp(hdc->iobase + HDC_COMMAND, hd->multsect ? HDCMD_MULTREAD : HDCMD_READ);
 
     // Wait until data read
     wait_for_object(&hdc->ready, INFINITE);
@@ -598,6 +622,7 @@ static int hd_write_intr(struct dev *dev, void *buffer, size_t count, blkno_t bl
   struct hdc *hdc;
   int sectsleft;
   int nsects;
+  int n;
   int result;
   char *bufp;
 
@@ -624,7 +649,6 @@ static int hd_write_intr(struct dev *dev, void *buffer, size_t count, blkno_t bl
     }
 
     // Calculate maximum number of sectors we can transfer
-//hd->sectbufs = 1;
     if (sectsleft > 256)
       nsects = 256;
     else
@@ -640,7 +664,7 @@ static int hd_write_intr(struct dev *dev, void *buffer, size_t count, blkno_t bl
     reset_event(&hdc->ready);
 
     hd_setup_transfer(hd, blkno, nsects);
-    _outp(hdc->iobase + HDC_COMMAND, HDCMD_WRITE);
+    _outp(hdc->iobase + HDC_COMMAND, hd->multsect ? HDCMD_MULTWRITE : HDCMD_WRITE);
 
     // Wait for data ready
     if (!(_inp(hdc->iobase + HDC_ALT_STATUS) & HDCS_DRQ))
@@ -654,12 +678,19 @@ static int hd_write_intr(struct dev *dev, void *buffer, size_t count, blkno_t bl
       }
     }
     
-    // Write first sector
-    pio_write_sect(hd, hdc->bufp);
+    // Write first sector(s)
+    n = hd->multsect;
+    if (n > nsects) n = nsects;
+    while (n-- > 0)
+    {
+      pio_write_sect(hd, hdc->bufp);
+      hdc->bufp += SECTORSIZE;
+    }
 
 //kprintf("wait\n");
     // Wait until data written
     wait_for_object(&hdc->ready, INFINITE);
+    hdc->dir = HD_XFER_IDLE;
     if (hdc->result < 0) break;
 
 //kprintf("ready\n");
@@ -731,7 +762,7 @@ static int hd_read_dma(struct dev *dev, void *buffer, size_t count, blkno_t blkn
     _outp(hdc->bmregbase + BM_STATUS_REG, _inp(hdc->bmregbase + BM_STATUS_REG) | BM_SR_MASK_INT | BM_SR_MASK_ERR);
 
     // Start read
-    _outp(hdc->iobase + HDC_COMMAND, HDCMD_READ_DMA);
+    _outp(hdc->iobase + HDC_COMMAND, HDCMD_READDMA);
     _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_WRITE | BM_CR_MASK_START);
 
     // Wait for interrupt
@@ -826,7 +857,7 @@ static int hd_write_dma(struct dev *dev, void *buffer, size_t count, blkno_t blk
     _outp(hdc->bmregbase + BM_STATUS_REG, _inp(hdc->bmregbase + BM_STATUS_REG) | BM_SR_MASK_INT | BM_SR_MASK_ERR);
     
     // Start write
-    _outp(hdc->iobase + HDC_COMMAND, HDCMD_WRITE_DMA);
+    _outp(hdc->iobase + HDC_COMMAND, HDCMD_WRITEDMA);
     _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_READ | BM_CR_MASK_START);
 
     // Wait for interrupt
@@ -852,7 +883,6 @@ static int hd_write_dma(struct dev *dev, void *buffer, size_t count, blkno_t blk
       hd_error("hdwrite", error);
 
       kprintf("hd: write error (0x%02x)\n", hdc->status);
-      dbg_break();
       result = -EIO;
       break;
     }
@@ -872,13 +902,21 @@ static int hd_write_dma(struct dev *dev, void *buffer, size_t count, blkno_t blk
 void hd_dpc(void *arg)
 {
   struct hdc *hdc = (struct hdc *) arg;
+  int nsects;
+  int n;
 
   //kprintf("[hddpc]");
   switch (hdc->dir)
   {
     case HD_XFER_READ:
       // Read sector data
-      pio_read_sect(hdc->active, hdc->bufp);
+      nsects = hdc->active->multsect;
+      if (nsects > hdc->nsects) nsects = hdc->nsects;
+      for (n = 0; n < nsects; n++)
+      {
+        pio_read_sect(hdc->active, hdc->bufp);
+        hdc->bufp += SECTORSIZE;
+      }
 
       // Check status
       hdc->status = _inp(hdc->iobase + HDC_STATUS);
@@ -895,8 +933,7 @@ void hd_dpc(void *arg)
       }
 
       // Signal event if we have read all sectors
-      hdc->bufp += SECTORSIZE;
-      hdc->nsects--;
+      hdc->nsects -= nsects;
       if (hdc->nsects == 0) set_event(&hdc->ready);
       
       break;
@@ -916,11 +953,22 @@ void hd_dpc(void *arg)
 	set_event(&hdc->ready);
       }
 
-      // Transfer next sector or signal end of transfer
-      hdc->bufp += SECTORSIZE;
-      hdc->nsects--;
-      if (hdc->nsects > 0) 
-	pio_write_sect(hdc->active, hdc->bufp);
+      // Transfer next sector(s) or signal end of transfer
+      nsects = hdc->active->multsect;
+      if (nsects > hdc->nsects) nsects = hdc->nsects;
+      hdc->nsects -= nsects;
+
+      if (hdc->nsects > 0)
+      {
+	nsects = hdc->active->multsect;
+        if (nsects > hdc->nsects) nsects = hdc->nsects;
+
+	for (n = 0; n < nsects; n++)
+	{
+  	  pio_write_sect(hdc->active, hdc->bufp);
+	  hdc->bufp += SECTORSIZE;
+	}
+      }
       else
 	set_event(&hdc->ready);
 
@@ -949,7 +997,7 @@ void hdc_handler(struct context *ctxt, void *arg)
 {
   struct hdc *hdc = (struct hdc *) arg;
 
-  //kprintf("[hdintr]");
+  if (hdc->xfer_dpc.flags & DPC_QUEUED) kprintf("hd: intr lost\n");
   queue_irq_dpc(&hdc->xfer_dpc, hd_dpc, hdc);
   eoi(hdc->irq);
 }
@@ -1071,6 +1119,7 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
   struct master_boot_record mbr;
   devno_t devno;
   devno_t partdevno;
+  int rc;
 
   memset(hd, 0, sizeof(struct hd));
   hd->hdc = hdc;
@@ -1103,18 +1152,29 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
   else
     hd->udmamode = -1;
 
+  // Set multi-sector mode if drive supports it
+  if (hd->multsect > 1)
+  {
+    rc = hd_cmd(hd, HDCMD_SETMULT, hd->multsect);
+    if (rc < 0)
+    {
+      kprintf("hd: unable to set multi sector mode\n");
+      hd->multsect = 1;
+    }
+  }
+
   // Make new device
   if (hd->udmamode != -1)
     devno = dev_make(devname, &harddisk_dma_driver, NULL, hd);
   else
     devno = dev_make(devname, &harddisk_intr_driver, NULL, hd);
 
-
   kprintf("%s: %s (%d MB)", devname, hd->param.model, hd->size);
   if (hd->lba) kprintf(", LBA");
   if (hd->udmamode != -1) kprintf(", UDMA%d", udma_speed[hd->udmamode]);
   if (hd->param.csfo & 2) kprintf(", read ahead");
   if (hd->param.csfo & 1) kprintf(", write cache");
+  if (hd->udmamode == -1 && hd->multsect > 1) kprintf(", %d sects/intr", hd->multsect);
   kprintf("\n");
 
   // Create partitions

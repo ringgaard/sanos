@@ -9,6 +9,19 @@
 #ifndef RESOLV_H
 #define RESOLV_H
 
+#define NS_PACKETSZ	512		// Maximum packet size
+#define NS_MAXCDNAME	255	        // Maximum compressed domain name
+#define NS_MAXDNAME	1025	  	// Maximum domain name
+#define NS_CMPRSFLGS	0xc0	        // Flag bits indicating name compression
+#define NS_HFIXEDSZ	12		// #/bytes of fixed data in header
+#define NS_QFIXEDSZ	4		// #/bytes of fixed data in query
+#define NS_RRFIXEDSZ	10	        // #/bytes of fixed data in r record
+#define NS_DEFAULTPORT	53	        // For both TCP and UDP
+
+#define MAXHOSTNAMELEN  256
+
+#define QUERYBUF_SIZE   1024            // Size of query buffer
+
 //
 // DNS opcodes
 //

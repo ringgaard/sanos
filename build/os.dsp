@@ -108,6 +108,10 @@ SOURCE=..\src\sys\os\heap.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\sys\os\netdb.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\sys\os\os.c
 # End Source File
 # Begin Source File

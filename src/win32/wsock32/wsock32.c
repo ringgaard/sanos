@@ -121,8 +121,7 @@ sockapi int __stdcall winsock_shutdown(SOCKET s, int how)
 sockapi int __stdcall winsock_gethostname(char *name, int namelen)
 {
   TRACE("gethostname");
-  strncpy(name, get_property(config, "os", "hostname", "localhost"), namelen);
-  return 0;
+  return gethostname(name, namelen);
 }
 
 sockapi struct hostent * __stdcall winsock_gethostbyaddr(const char *addr, int len, int type)
@@ -176,8 +175,7 @@ sockapi int winsock_setsockopt(SOCKET s, int level, int optname, const char *opt
 sockapi struct protoent * __stdcall winsock_getprotobyname(const char *name)
 {
   TRACE("getprotobyname");
-  panic("winsock getprotoby name not implemented");
-  return 0;
+  return getprotobyname(name);
 }
 
 sockapi int __stdcall winsock_getsockname(SOCKET s, struct sockaddr *name, int *namelen)

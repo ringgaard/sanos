@@ -463,6 +463,32 @@ static void unmount_device(int argc, char **argv)
   }
 }
 
+static void format_device(int argc, char **argv)
+{
+  char *devname;
+  char *type = "dfs";
+  char *opts = NULL;
+  int rc;
+
+  if (argc < 2)
+  {
+    printf("usage: format <device> [<type> [<options>]]\n");
+    return;
+  }
+
+  devname = argv[1];
+  if (argc > 2) type = argv[2];
+  if (argc > 3) opts = argv[3];
+
+  rc = format(devname, type, opts); 
+  printf("\n");
+  if (rc < 0)
+  {
+    printf("format: error %d formatting %s\n", rc, devname);
+    return;
+  }
+}
+
 static void disk_usage(int argc, char **argv)
 {
   int count;
@@ -486,14 +512,14 @@ static void disk_usage(int argc, char **argv)
     return;
   }
 
-  printf("type  mounted on    mounted from    cache    total     used    avail files\n");
-  printf("----  ------------- -------------- ------ -------- -------- -------- -----\n");
+  printf("type   mounted on    mounted from    cache    total     used    avail files\n");
+  printf("------ ------------- -------------- ------ -------- -------- -------- -----\n");
 
   for (n = 0; n < count; n++)
   {
     b = buf + n;
 
-    printf("%-6s%-14s%-14s", b->fstype, b->mntonname, b->mntfromname);
+    printf("%-7s%-14s%-14s", b->fstype, b->mntonname, b->mntfromname);
     if (b->blocks != -1)
     {
       printf("%6dK", b->cachesize / K);
@@ -652,21 +678,27 @@ static void http(int argc, char **argv)
 
 static void test(int argc, char **argv)
 {
-  int bufs = 10;
-  int buflen = 512;
-  char *buf;
-  int n;
+  struct servent *sp;
+  char **alias;
 
-  if (argc >= 2) bufs = atoi(argv[1]);
-  if (argc >= 3) buflen = atoi(argv[2]);
+  sp = getservbyname("echo", "tcp");
+  while (sp->s_name != NULL)
+  {
+    printf("%s %d/%s", sp->s_name, sp->s_port, sp->s_proto);
 
-  buf = malloc(buflen);
-  for (n = 0; n < buflen; n++) buf[n] = (n % 10) + '0';
-  for (n = 0; n < bufs; n++) write(stdout, buf, buflen);
-  free(buf);
+    alias = sp->s_aliases;
+    while (*alias)
+    {
+      printf(" %s", *alias);
+      alias++;
+    }
+    printf("\n");
+
+    sp++;
+  }
 }
 
-static void test1(int argc, char **argv)
+static void disktest(int argc, char **argv)
 {
   int dev;
   int n;
@@ -825,6 +857,8 @@ void shell()
 	remove_dir(argv[1]);
       else if (strcmp(argv[0], "mount") == 0)
 	mount_device(argc, argv);
+      else if (strcmp(argv[0], "format") == 0)
+	format_device(argc, argv);
       else if (strcmp(argv[0], "unmount") == 0)
 	unmount_device(argc, argv);
       else if (strcmp(argv[0], "du") == 0)
@@ -837,6 +871,8 @@ void shell()
 	display_file(argv[1]);
       else if (strcmp(argv[0], "write") == 0)
 	test_write_file(argv[1], atoi(argv[2]) * K);
+      else if (strcmp(argv[0], "disktest") == 0)
+	disktest(argc, argv);
       else if (strcmp(argv[0], "cls") == 0)
 	printf("\f");
       else if (strcmp(argv[0], "log") == 0)

@@ -372,11 +372,19 @@ struct hostent
   char **h_addr_list;  // List of addresses
 };
 
-struct protoent 
+struct protoent
 {
   char *p_name;
   char **p_aliases;
   short p_proto;
+};
+
+struct servent 
+{
+  char *s_name;
+  char **s_aliases;
+  short s_port;
+  char *s_proto;
 };
 
 #define SOCK_STREAM      1
@@ -628,10 +636,17 @@ osapi int res_querydomain(const char *name, const char *domain, int cls, int typ
 osapi int res_mkquery(int op, const char *dname, int cls, int type, char *data, int datalen, unsigned char *newrr, char *buf, int buflen);
 osapi int dn_comp(const char *src, unsigned char *dst, int dstsiz, unsigned char **dnptrs, unsigned char **lastdnptr);
 osapi int dn_expand(const unsigned char *msg, const unsigned char *eom, const unsigned char *src,  char *dst, int dstsiz);
+
 osapi struct hostent *gethostbyname(const char *name);
 osapi struct hostent *gethostbyaddr(const char *addr, int len, int type);
 osapi char *inet_ntoa(struct in_addr in);
 osapi unsigned long inet_addr(const char *cp);
+
+osapi int gethostname(char *name, int namelen);
+osapi struct protoent *getprotobyname(const char *name);
+osapi struct protoent *getprotobynumber(int proto);
+osapi struct servent *getservbyname(const char *name, const char *proto);
+osapi struct servent *getservbyport(int port, const char *proto);
 
 osapi extern struct section *config;
 osapi extern struct peb *peb;
