@@ -32,20 +32,143 @@
 // 
 
 #include <os.h>
+#include <stdio.h>
+#include <string.h>
+#include <inifile.h>
+
 #include <httpd.h>
 
-struct httpd_server *httpd_initialize(int port)
+char *getstrconfig(struct section *cfg, char *name, char *defval)
 {
-  return NULL;
+  char *val;
+
+  if (!cfg) return defval;
+  val = find_property(cfg, name);
+  if (!val) return defval;
+  return val;
 }
 
-httpdapi int httpd_start(struct httpd_server *hs)
+int getnumconfig(struct section *cfg, char *name, int defval)
 {
-  return -ENOSYS;
+  char *val;
+
+  if (!cfg) return defval;
+  val = find_property(cfg, name);
+  if (!val) return defval;
+  return atoi(val);
+}
+
+struct httpd_server *httpd_initialize(struct section *cfg)
+{
+  struct httpd_server *server;
+
+  server = (struct httpd_server *) malloc(sizeof(struct httpd_server));
+  if (!server) return NULL;
+  memset(server, 0, sizeof(struct httpd_server));
+
+  server->cfg = cfg;
+  server->port = getnumconfig(cfg, "port", 80);
+  server->num_workers = getnumconfig(cfg, "workerthreads", 1);
+
+  return server;
+}
+
+struct httpd_context *httpd_add_context(struct httpd_server *server, struct section *cfg, httpd_handler handler)
+{
+  struct httpd_context *context;
+
+  context = (struct httpd_context *) malloc(sizeof(struct httpd_context));
+  if (!context) return NULL;
+  memset(context, 0, sizeof(struct httpd_context));
+
+  context->server = server;
+  context->cfg = cfg;
+  context->alias = getstrconfig(cfg, "alias", "/");
+  context->handler = handler;
+  context->next = server->contexts;
+  server->contexts = context;
+
+  return context;
+}
+
+void httpd_accept(struct httpd_server *server)
+{
+  printf("httpd_accept\n");
+}
+
+void httpd_io(struct httpd_request *req)
+{
+  printf("httpd_io\n");
+}
+
+void __stdcall httpd_worker(void *arg)
+{
+  struct httpd_server *server = (struct httpd_server *) arg;
+  struct httpd_request *req;
+  int rc;
+
+  while (1)
+  {
+    rc = wait(server->iomux, INFINITE);
+    if (rc < 0) break;
+
+    req = (struct httpd_request *) rc;
+    if (req == NULL) 
+      httpd_accept(server);
+    else
+      httpd_io(req);
+  }
+}
+
+int httpd_start(struct httpd_server *server)
+{
+  int sock;
+  int rc;
+  int i;
+  struct sockaddr_in sin;
+  int hthread;
+
+  sock = socket(AF_INET, SOCK_STREAM, 0);
+  if (sock < 0) return sock;
+
+  sin.sin_family = AF_INET;
+  sin.sin_port = htons(server->port);
+  sin.sin_addr.s_addr = htonl(INADDR_ANY);
+
+  rc = bind(sock, (struct sockaddr *) &sin, sizeof(struct sockaddr_in));
+  if (rc < 0)
+  {
+    close(sock);
+    return rc;
+  }
+
+  rc = listen(sock, 5);
+  if (rc < 0)
+  {
+    close(sock);
+    return rc;
+  }
+
+  server->sock = sock;
+  server->iomux = mkiomux(0);
+  dispatch(server->iomux, sock, IOEVT_ACCEPT, 0);
+
+  for (i = 0; i < server->num_workers; i++)
+  {
+    hthread = beginthread(httpd_worker, 0, server, 0, NULL);
+    close(hthread);
+  }
+
+  return 0;
 }
 
 int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
 {
-  //syslog(LOG_DEBUG, "httpd loaded\n");
+  struct httpd_server *server;
+
+  server = httpd_initialize(NULL);
+  httpd_add_context(server, NULL, NULL);
+  httpd_start(server);
+
   return TRUE;
 }
