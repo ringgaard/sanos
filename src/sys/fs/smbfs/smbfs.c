@@ -23,8 +23,8 @@
 
 struct smb_dentry
 {
-  char filename[MAXPATH];
-  struct stat stat;
+  char path[MAXPATH];
+  struct stat statbuf;
 };
 
 //
@@ -50,6 +50,7 @@ struct smb_directory
   int eos;
   int entries_left;
   struct smb_file_directory_info *fi;
+  char path[MAXPATH];
   char buffer[SMB_DIRBUF_SIZE];
 };
 
@@ -160,6 +161,46 @@ static char *addstrz(char *p, char *s)
 static time_t ft2time(smb_time filetime)
 {
   return (time_t) ((filetime - EPOC) / SECTIMESCALE);
+}
+
+static void add_to_cache(struct smb_session *sess, char *path, char *filename, struct stat *statbuf)
+{
+  int idx = sess->next_cacheidx;
+
+  if (*path)
+  {
+    strcpy(sess->dircache[idx].path, path);
+    strcat(sess->dircache[idx].path, "\\");
+    strcat(sess->dircache[idx].path, filename);
+  }
+  else
+    strcpy(sess->dircache[idx].path, filename);
+
+  memcpy(&sess->dircache[idx].statbuf, statbuf, sizeof(struct stat));
+
+  if (++sess->next_cacheidx == SMB_DENTRY_CACHESIZE) sess->next_cacheidx = 0;
+}
+
+static struct smb_dentry *find_in_cache(struct smb_session *sess, char *path)
+{
+  int idx;
+
+  for (idx = 0; idx < SMB_DENTRY_CACHESIZE; idx++)
+  {
+    if (sess->dircache[idx].path[0] && strcmp(sess->dircache[idx].path, path) == 0)
+    {
+      return &sess->dircache[idx];
+    }
+  }
+  
+  return NULL;
+}
+
+static void clear_cache(struct smb_session *sess)
+{
+  int idx;
+
+  for (idx = 0; idx < SMB_DENTRY_CACHESIZE; idx++) sess->dircache[idx].path[0] = 0;
 }
 
 int smb_errno(struct smb *smb)
@@ -465,6 +506,7 @@ int smb_mount(struct fs *fs, char *opts)
   char *p;
 
   // Get options
+  if (!fs->mntfrom) return -EINVAL;
   ipaddr.addr = get_num_option(opts, "addr", IP_ADDR_ANY);
   if (ipaddr.addr == IP_ADDR_ANY) return -EINVAL;
   get_option(opts, "user", username, sizeof(username), "");
@@ -527,6 +569,12 @@ int smb_mount(struct fs *fs, char *opts)
   smb->params.req.setup.unicode_password_length = 0;
   smb->params.req.setup.capabilities = SMB_CAP_NT_SMBS;
 
+  if (strlen(password) + 1 + 
+      strlen(username) + 1 + 
+      strlen(domain) + 1 +
+      strlen(SMB_CLIENT_OS) + 1 +
+      strlen(SMB_CLIENT_LANMAN) + 1 > sizeof(buf)) return -EBUF;
+
   p = buf;
   p = addstrz(p, password);
   p = addstrz(p, username);
@@ -546,6 +594,11 @@ int smb_mount(struct fs *fs, char *opts)
   memset(smb, 0, sizeof(struct smb));
   smb->params.req.connect.andx.cmd = 0xFF;
   smb->params.req.connect.password_length = strlen(password) + 1;
+
+  if (strlen(password) + 1 + 
+      strlen(fs->mntfrom) + 1 + 
+      strlen(domain) + 1 +
+      strlen(SMB_SERVICE_DISK) + 1 > sizeof(buf)) return -EBUF;
 
   p = buf;
   p = addstrz(p, password);
@@ -633,6 +686,7 @@ int smb_open(struct file *filp, char *name)
 
 int smb_close(struct file *filp)
 {
+  //if (filp->flags & F_DIR) return smb_closedir(filp);
   return -ENOSYS;
 }
 
@@ -718,10 +772,50 @@ int smb_unlink(struct fs *fs, char *name)
 
 int smb_opendir(struct file *filp, char *name)
 {
-  return -ENOSYS;
+  struct smb_session *sess = (struct smb_session *) filp->fs->data;
+  struct smb_findfirst_request req;
+  struct smb_findfirst_response rsp;
+  struct smb_directory *dir;
+  int rsplen;
+  int buflen;
+  int rc;
+
+  rc = convert_filename(name);
+  if (rc < 0) return rc;
+
+  dir = (struct smb_directory *) kmalloc(sizeof(struct smb_sirectory));
+  if (!dir) return -ENOMEM;
+
+  memset(&req, 0, sizeof(req));
+  req.search_attributes = SMB_FILE_ATTR_SYSTEM | SMB_FILE_ATTR_HIDDEN | SMB_FILE_ATTR_DIRECTORY;
+  req.flags = SMB_CLOSE_IF_END;
+  req.infolevel = 0x101;
+  req.search_count = 512;
+  strcpy(req.filename, name);
+  if (*name) strcat(req.filename, "\\*");
+
+  rsplen = sizeof(rsp);
+  buflen = SMB_DIRBUF_SIZE;
+  rc = smb_trans(sess, TRANS2_FIND_FIRST2, &req, 12 + strlen(req.filename) + 1, NULL, 0, &rsp, &rsplen, dir->buffer, &buflen);
+  if (rc < 0) 
+  {
+    kfree(dir);
+    return rc;
+  }
+
+  dir->sid = rsp.sid;
+  dir->eos = rsp.end_of_search;
+  dir->entries_left = rsp.search_count;
+  dir->fi = (struct smb_file_directory_info *) dir->buffer;
+  strcpy(dir->path, name);
+
+  filp->data = dir;
+  return 0;
 }
 
 int smb_readdir(struct file *filp, struct dirent *dirp, int count)
 {
+  if (count != 1) return -1;
+
   return -ENOSYS;
 }

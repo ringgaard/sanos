@@ -408,7 +408,7 @@ int dfs_readdir(struct file *filp, struct dirent *dirp, int count)
   struct dentry *de;
 
   inode = (struct inode *) filp->data;
-  if (count != 1) return -1;
+  if (count != 1) return -EINVAL;
   if (filp->pos == inode->desc->size) return 0;
   if (filp->pos > inode->desc->size) return 0;
 
