@@ -117,6 +117,11 @@ void *load_image_file(char *filename, int userspace)
   return imgbase;
 }
 
+static void logldr(char *msg)
+{
+  kprintf("ldr: %s\n", msg);
+}
+
 void *resolve(hmodule_t hmod, char *procname)
 {
   void *addr;
@@ -214,6 +219,7 @@ void init_kernel_modules()
   kmods.load_image = load_image;
   kmods.unload_image = unload_image;
   kmods.protect_region = NULL;
+  kmods.log = logldr;
   kmods.notify_load = dbg_notify_load_module;
   kmods.notify_unload = dbg_notify_unload_module;
 

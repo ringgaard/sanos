@@ -209,6 +209,11 @@ static int protect_region(void *mem, size_t size, int protect)
   return mprotect(mem, size, protect);
 }
 
+static void logldr(char *msg)
+{
+  syslog(LOG_MODULE | LOG_DEBUG, "mod: %s\n", msg);
+}
+
 void *resolve(hmodule_t hmod, const char *procname)
 {
   void *addr;
@@ -364,6 +369,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   usermods.load_image = load_image;
   usermods.unload_image = unload_image;
   usermods.protect_region = protect_region;
+  usermods.log = logldr;
 
   init_module_database(&usermods, "os.dll", hmod, get_property(config, "os", "libpath", "/os"), 0);
 

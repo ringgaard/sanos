@@ -17,7 +17,7 @@
 #include <os/krnl.h>
 #endif
 
-static void log(struct moddb *db, const char *fmt, ...)
+static void logmsg(struct moddb *db, const char *fmt, ...)
 {
   va_list args;
   char buffer[1024];
@@ -322,14 +322,14 @@ static struct module *resolve_imports(struct module *mod)
       name = get_module_name(mod->db, name, path);
       if (!name)
       {
-	log(mod->db, "module %s not found", name);
+	logmsg(mod->db, "module %s not found", name);
         return NULL;
       }
 
       imgbase = mod->db->load_image(path);
       if (imgbase == NULL) 
       {
-	log(mod->db, "unable to load module %s", path);
+	logmsg(mod->db, "unable to load module %s", path);
         return NULL;
       }
 
@@ -354,9 +354,155 @@ static struct module *resolve_imports(struct module *mod)
   return modlist;
 }
 
+static int bind_imports(struct module *mod)
+{
+  struct image_import_descriptor *imp;
+
+  // Find import directory in image
+  imp = (struct image_import_descriptor *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_IMPORT);
+  if (!imp) return -ENOEXEC;
+  
+  // Update Import Address Table (IAT)
+  while (imp->characteristics != 0)
+  {
+    unsigned long *thunks;
+    struct image_import_by_name *ibn;
+    char *name;
+    struct module *expmod;
+
+    name = RVA(mod->hmod, imp->name);
+    expmod = get_module(mod->db, name);
+    
+    if (!expmod) 
+    {
+      logmsg(mod->db, "module %s no longer loaded", name);
+      return -ENOEXEC;
+    }
+    
+    if (imp->forwarder_chain != 0) 
+    {
+      logmsg(mod->db, "import forwarder chains not supported (%s)", name);
+      return -ENOSYS;
+    }
+
+    thunks = (unsigned long *) RVA(mod->hmod, imp->first_thunk);
+    while (*thunks)
+    {
+      if (*thunks & IMAGE_ORDINAL_FLAG)
+      {
+	// Import by ordinal
+        unsigned long ordinal = *thunks & ~IMAGE_ORDINAL_FLAG;
+	*thunks = (unsigned long) get_proc_by_ordinal(expmod->hmod, ordinal);
+	if (*thunks == 0) 
+        {
+          logmsg(mod->db, "unable to resolve %s.#%d in %s", name, ordinal, mod->name);
+          return -ENOEXEC;
+        }
+      }
+      else
+      {
+	// Import by name (and hint)
+	ibn = (struct image_import_by_name *) RVA(mod->hmod, *thunks);
+	*thunks = (unsigned long) get_proc_by_name(expmod->hmod, ibn->hint, ibn->name);
+	if (*thunks == 0)
+        {
+	  logmsg(mod->db, "unable to resolve %s.%s in %s\n", name, ibn->name, mod->name);
+          return -ENOEXEC;
+        }
+      }
+
+      thunks++;
+    }
+
+    imp++;
+  }
+
+  mod->flags |= MODULE_BOUND;
+
+  return 0;
+}
+
+static int relocate_module(struct module *mod)
+{
+  int offset;
+  char *pagestart;
+  unsigned short *fixup;
+  int i;
+  struct image_base_relocation *reloc;
+  int nrelocs;
+
+  offset = (int) mod->hmod - get_image_header(mod->hmod)->optional.image_base;
+  if (offset == 0) return 0;
+
+  reloc = (struct image_base_relocation *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_BASERELOC);
+  if (!reloc) return 0;
+  if (get_image_header(mod->hmod)->header.characteristics & IMAGE_FILE_RELOCS_STRIPPED) 
+  {
+    logmsg(mod->db, "relation info missing for %s", mod->name);
+    return -ENOEXEC;
+  }
+
+  while (reloc->virtual_address != 0)
+  {
+    pagestart = RVA(mod->hmod, reloc->virtual_address);
+    nrelocs = (reloc->size_of_block - sizeof(struct image_base_relocation)) / 2;
+    fixup = (unsigned short *) (reloc + 1);
+    for (i = 0; i < nrelocs; i++, fixup++)
+    {
+      int type = *fixup >> 12;
+      int pos = *fixup & 0xfff;
+
+      if (type == IMAGE_REL_BASED_HIGHLOW)
+	*(unsigned long *) (pagestart + pos) += offset;
+      else if (type != IMAGE_REL_BASED_ABSOLUTE)
+      {
+	logmsg(mod->db, "unsupported relocation type %d in %s", type, mod->name);
+	return -ENOEXEC;
+      }
+    }
+
+    reloc = (struct image_base_relocation *) fixup;
+  }
+
+  mod->flags |= MODULE_RELOCATED;
+  return 0;
+}
+
+static int protect_module(struct module *mod)
+{
+  struct image_header *imghdr = get_image_header(mod->hmod);
+  int i;
+
+  if (!mod->db->protect_region) return 0;
+
+  // Set page protect for each section
+  for (i = 0; i < imghdr->header.number_of_sections; i++)
+  {
+    int protect;
+    unsigned long scn = imghdr->sections[i].characteristics & (IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE);
+
+    if (scn == (IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ)) 
+      protect = PAGE_EXECUTE_READ;
+    else if (scn == (IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE)) 
+      protect = PAGE_READWRITE;
+    else if (scn == IMAGE_SCN_MEM_READ)
+      protect = PAGE_READONLY;
+    else
+      protect = PAGE_EXECUTE_READWRITE;
+
+    mod->db->protect_region(RVA(mod->hmod, imghdr->sections[i].virtual_address), imghdr->sections[i].size_of_raw_data, protect);
+  }
+
+  mod->flags |= MODULE_PROTECTED;
+  return 0;
+}
+
 static void update_refcount(struct module *mod)
 {
   struct image_import_descriptor *imp;
+
+  // If imports already ref counted just skip
+  if (mod->flags & MODULE_IMPORTS_REFED) return;
 
   // Find import directory in image
   imp = (struct image_import_descriptor *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_IMPORT);
@@ -376,131 +522,77 @@ static void update_refcount(struct module *mod)
   mod->flags |= MODULE_IMPORTS_REFED;
 }
 
-static int bind_imports(struct moddb *db, struct module *mod)
+static int remove_module(struct module *mod)
 {
+  struct image_header *imghdr;
   struct image_import_descriptor *imp;
 
-  // Find import directory in image
-  imp = (struct image_import_descriptor *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_IMPORT);
-  if (!imp) return;
-  
-  // Update Import Address Table (IAT)
-  while (imp->characteristics != 0)
+  if (mod->flags & MODULE_INITIALIZED)
   {
-    unsigned long *thunks;
-    struct image_import_by_name *ibn;
-    char *name;
-    struct module *expmod;
-
-    name = RVA(mod->hmod, imp->name);
-    expmod = get_module(db, name);
-    
-    if (!expmod) 
+    // Notify DLL
+    imghdr = get_image_header(mod->hmod);
+    if (imghdr->header.characteristics & IMAGE_FILE_DLL)
     {
-      log(db, "module %s no longer loaded", name);
-      return -ENOEXEC;
+      ((int (__stdcall *)(hmodule_t, int, void *)) get_entrypoint(mod->hmod))(mod->hmod, DLL_PROCESS_DETACH, NULL);
     }
-    
-    if (imp->forwarder_chain != 0) 
-    {
-      log(db, "import forwarder chains not supported (%s)", name);
-      return -ENOSYS;
-    }
-
-    thunks = (unsigned long *) RVA(mod->hmod, imp->first_thunk);
-    while (*thunks)
-    {
-      if (*thunks & IMAGE_ORDINAL_FLAG)
-      {
-	// Import by ordinal
-        unsigned long ordinal = *thunks & ~IMAGE_ORDINAL_FLAG;
-	*thunks = (unsigned long) get_proc_by_ordinal(expmod->hmod, ordinal);
-	if (*thunks == 0) 
-        {
-          log(db, "unable to resolve %s.#%d in %s", name, ordinal, mod->name);
-          return -ENOEXEC;
-        }
-      }
-      else
-      {
-	// Import by name (and hint)
-	ibn = (struct image_import_by_name *) RVA(mod->hmod, *thunks);
-	*thunks = (unsigned long) get_proc_by_name(expmod->hmod, ibn->hint, ibn->name);
-	if (*thunks == 0)
-        {
-	  log(db, "unable to resolve %s.%s in %s\n", name, ibn->name, mod->name);
-          return -ENOEXEC;
-        }
-      }
-
-      thunks++;
-    }
-
-    imp++;
+    mod->flags &= ~MODULE_INITIALIZED;
   }
 
-  mod->flags |= MODULE_BOUND;
+  if (mod->flags & MODULE_IMPORTS_REFED)
+  {
+    // Decrement reference count on all dependent modules 
+    imp = (struct image_import_descriptor *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_IMPORT);
+    if (imp)
+    {
+      while (imp->characteristics != 0)
+      {
+	char *name = RVA(mod->hmod, imp->name);
+	struct module *depmod = get_module(mod->db, name);
+
+	if (depmod && --depmod->refcnt == 0) remove_module(depmod); 
+	imp++;
+      }
+    }
+
+    mod->flags &= ~MODULE_IMPORTS_REFED;
+  }
+
+  // Release memory for module
+  if (mod->flags & MODULE_LOADED)
+  {
+    mod->db->unload_image(mod->hmod, imghdr->optional.size_of_image);
+    mod->flags &= ~MODULE_IMPORTS_REFED;
+  }
+
+  // Notify
+  if (mod->db->notify_unload) mod->db->notify_unload(mod->hmod);
+
+  // Remove module from module list
+  remove(mod);
+  free(mod->name);
+  free(mod->path);
+  free(mod);
 
   return 0;
 }
 
-static void relocate_module(hmodule_t hmod)
+static void free_unused_modules(struct moddb *db)
 {
-  int offset;
-  char *pagestart;
-  unsigned short *fixup;
-  int i;
-  struct image_base_relocation *reloc;
-  int nrelocs;
-
-  offset = (int) hmod - get_image_header(hmod)->optional.image_base;
-  if (offset == 0) return;
-
-  reloc = (struct image_base_relocation *) get_image_directory(hmod, IMAGE_DIRECTORY_ENTRY_BASERELOC);
-  if (!reloc) return;
-  if (get_image_header(hmod)->header.characteristics & IMAGE_FILE_RELOCS_STRIPPED) panic("relocation info missing");
-
-  while (reloc->virtual_address != 0)
+  struct module *mod;
+  
+  mod = db->modules;
+  while (1)
   {
-    pagestart = RVA(hmod, reloc->virtual_address);
-    nrelocs = (reloc->size_of_block - sizeof(struct image_base_relocation)) / 2;
-    fixup = (unsigned short *) (reloc + 1);
-    for (i = 0; i < nrelocs; i++, fixup++)
+    if (mod->refcnt == 0)
     {
-      int type = *fixup >> 12;
-      int pos = *fixup & 0xfff;
-
-      if (type == IMAGE_REL_BASED_HIGHLOW)
-	*(unsigned long *) (pagestart + pos) += offset;
-      else if (type != IMAGE_REL_BASED_ABSOLUTE)
-	panic("unsupported relocation type");
+      remove_module(mod);
+      mod = db->modules;
     }
-
-    reloc = (struct image_base_relocation *) fixup;
-  }
-}
-
-static void protect_module(struct moddb *db, hmodule_t hmod)
-{
-  struct image_header *imghdr = get_image_header(hmod);
-  int i;
-
-  // Set page protect for each section
-  for (i = 0; i < imghdr->header.number_of_sections; i++)
-  {
-    int protect;
-    unsigned long scn = imghdr->sections[i].characteristics & (IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE);
-
-    if (scn == (IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ)) 
-      protect = PAGE_EXECUTE_READ;
-    else if (scn == (IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE)) 
-      protect = PAGE_READWRITE;
-    else if (scn == IMAGE_SCN_MEM_READ)
-      protect = PAGE_READONLY;
     else
-      protect = PAGE_EXECUTE_READWRITE;
-
-    db->protect_region(RVA(hmod, imghdr->sections[i].virtual_address), imghdr->sections[i].size_of_raw_data, protect);
+    {
+      mod = mod->next;
+      if (mod == db->modules) break;
+    }
   }
 }
 
@@ -541,6 +633,7 @@ hmodule_t load_module(struct moddb *db, char *name)
   struct module *mod;
   struct module *modlist;
   struct module *m;
+  int rc;
 
   // Return existing handle if module already loaded
   mod = get_module(db, name);
@@ -572,24 +665,53 @@ hmodule_t load_module(struct moddb *db, char *name)
   modlist = resolve_imports(mod);
   if (modlist == NULL)
   {
-    unload_unused_modules(moddb);
+    free_unused_modules(db);
     return NULL;
   }
 
-  // Relocate, bind imports and initialize DLL's
+  // Relocate, bind imports and protect new modules
   m = modlist;
   while (1)
   {
-    relocate_module(m->hmod);
-    bind_imports(db, m);
-    if (db->protect_region) protect_module(db, m->hmod);
+    rc = relocate_module(m);
+    if (rc < 0)
+    {
+      free_unused_modules(db);
+      return NULL;
+    }
 
+    rc = bind_imports(m);
+    if (rc < 0)
+    {
+      free_unused_modules(db);
+      return NULL;
+    }
+
+    rc = protect_module(m);
+    if (rc < 0)
+    {
+      free_unused_modules(db);
+      return NULL;
+    }
+
+    if (m == mod) break;
+    m = m->next;
+  }
+
+  // Initialize and notify new modules
+  m = modlist;
+  while (1)
+  {
     if (get_image_header(m->hmod)->header.characteristics & IMAGE_FILE_DLL)
     {
       int ok;
       
       ok = ((int (__stdcall *)(hmodule_t, int, void *)) get_entrypoint(m->hmod))(m->hmod, DLL_PROCESS_ATTACH, NULL);
-      if (!ok) return NULL;
+      if (!ok)
+      {
+	free_unused_modules(db);
+	return NULL;
+      }
     }
     else if (db->execmod == NULL)
       db->execmod = m;
@@ -601,14 +723,21 @@ hmodule_t load_module(struct moddb *db, char *name)
     m = m->next;
   }
 
+  // Update ref counts on depend module
+  m = modlist;
+  while (1)
+  {
+    update_refcount(m);
+    if (m == mod) break;
+    m = m->next;
+  }
+
   return mod->hmod;
 }
 
 int unload_module(struct moddb *db, hmodule_t hmod)
 {
   struct module *mod;
-  struct image_header *imghdr;
-  struct image_import_descriptor *imp;
 
   // Find module
   mod = hmod ? get_module_for_handle(db, hmod) : db->execmod;
@@ -617,45 +746,8 @@ int unload_module(struct moddb *db, hmodule_t hmod)
   // Decrement reference count, return if not zero
   if (--mod->refcnt > 0) return 0;
 
-  // Notify DLL
-  imghdr = get_image_header(hmod);
-  if (imghdr->header.characteristics & IMAGE_FILE_DLL)
-  {
-    ((int (__stdcall *)(hmodule_t, int, void *)) get_entrypoint(mod->hmod))(mod->hmod, DLL_PROCESS_DETACH, NULL);
-  }
-  if (mod->refcnt > 0) return 0;
-
-  // Decrement reference count on all dependent modules 
-  imp = (struct image_import_descriptor *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_IMPORT);
-  if (imp)
-  {
-    while (imp->characteristics != 0)
-    {
-      char *name = RVA(mod->hmod, imp->name);
-      struct module *depmod = get_module(db, name);
-
-      if (depmod)
-      {
-	int rc = unload_module(db, depmod->hmod);
-	if (rc < 0) return rc;
-      }
-
-      imp++;
-    }
-  }
-
-  // Release memory for module
-  db->unload_image(mod->hmod, imghdr->optional.size_of_image);
-
-  // Remove module from module list
-  remove(mod);
-  free(mod->name);
-  free(mod);
-
-  // Notify
-  if (db->notify_unload) db->notify_unload(hmod);
-
-  return 0;
+  // Remove module
+  return remove_module(mod);
 }
 
 void init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *libpath, int flags)
@@ -717,5 +809,5 @@ void init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *li
   db->modules->flags =  MODULE_LOADED | MODULE_IMPORTS_REFED | MODULE_RESOLVED | MODULE_RELOCATED | MODULE_BOUND | MODULE_PROTECTED | MODULE_INITIALIZED;
 
 
-  if (db->protect_region) protect_module(db, db->modules->hmod);
+  if (db->protect_region) protect_module(db->modules);
 }
