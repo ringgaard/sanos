@@ -34,7 +34,127 @@
 #include <os.h>
 #include <stdlib.h>
 
+typedef void (__cdecl *proc_t)(void);
+typedef int (__cdecl *func_t)(void);
+
+proc_t *atexit_begin = NULL;
+proc_t *atexit_end = NULL;
+proc_t *atexit_last = NULL;
+
+//
+// Pointers to initialization/termination functions
+//
+// NOTE: THE USE OF THE POINTERS DECLARED BELOW DEPENDS ON THE PROPERTIES
+// OF C COMMUNAL VARIABLES. SPECIFICALLY, THEY ARE NON-NULL IFF THERE EXISTS
+// A DEFINITION ELSEWHERE INITIALIZING THEM TO NON-NULL VALUES.
+//
+
+// C initializers
+
+#pragma data_seg(".CRT$XIA")
+func_t __xi_a[] = { NULL };
+
+#pragma data_seg(".CRT$XIZ")
+func_t __xi_z[] = { NULL };
+
+// C++ initializers
+
+#pragma data_seg(".CRT$XCA")
+proc_t __xc_a[] = { NULL };
+
+#pragma data_seg(".CRT$XCZ")
+proc_t __xc_z[] = { NULL };
+
+// C pre-terminators
+
+#pragma data_seg(".CRT$XPA")
+proc_t __xp_a[] = { NULL };
+
+#pragma data_seg(".CRT$XPZ")
+proc_t __xp_z[] = { NULL };
+
+// C terminators
+
+#pragma data_seg(".CRT$XTA")
+proc_t __xt_a[] = { NULL };
+
+#pragma data_seg(".CRT$XTZ")
+proc_t __xt_z[] = { NULL };
+
+#pragma data_seg()  // reset
+
+#pragma comment(linker, "/merge:.CRT=.data")
+
 int main(int argc, char *argv[]);
+
+int atexit(proc_t exitfunc)
+{
+  if (atexit_end == atexit_last)
+  {
+    int size = atexit_end - atexit_begin;
+    int newsize = size + 32;
+    atexit_begin = (proc_t *) realloc(atexit_begin, newsize * sizeof(proc_t));
+    if (atexit_begin == NULL) return -ENOMEM;
+    atexit_end = atexit_begin + size;
+    atexit_last = atexit_begin + newsize;
+  }
+
+  *atexit_end++ = exitfunc;
+  return 0;
+}
+
+static void initterm(proc_t *begin, proc_t *end)
+{
+  while (begin < end)
+  {
+    if (*begin != NULL) (**begin)();
+    ++begin;
+  }
+}
+
+static int inittermi(func_t *begin, func_t *end)
+{
+  int rc = 0;
+
+  while (begin < end && rc == 0)
+  {
+    if (*begin != NULL) rc = (**begin)();
+    ++begin;
+  }
+
+  return rc;
+}
+
+static int initcrt()
+{
+  int rc;
+
+  // Execute C initializers
+  rc = inittermi(__xi_a, __xi_z);
+  if (rc != 0) return rc;
+
+  // Execute C++ initializers
+  initterm(__xc_a, __xc_z);
+
+  return 0;
+}
+
+static void termcrt()
+{
+  // Execute atexit handlers
+  if (atexit_begin)
+  {
+    while (--atexit_end >= atexit_begin) if (*atexit_end != NULL) (**atexit_end)();
+    free(atexit_begin);
+    atexit_begin = atexit_end = atexit_last = NULL;
+  }
+
+  // Execute C pre-terminators
+  initterm(__xp_a, __xp_z);
+
+  // Execute C terminators
+  initterm(__xt_a, __xt_z);
+}
 
 int mainCRTStartup(hmodule_t hmod, char *cmdline, void *env)
 {
@@ -46,7 +166,9 @@ int mainCRTStartup(hmodule_t hmod, char *cmdline, void *env)
   argv = (char **) malloc(argc * sizeof(char *));
   parse_args(cmdline, argv);
 
-  rc = main(argc, argv);
+  rc = initcrt();
+  if (rc == 0) rc = main(argc, argv);
+  termcrt();
 
   free_args(argc, argv);
 

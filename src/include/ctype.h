@@ -70,6 +70,7 @@ int isalnum(int c);
 int isprint(int c);
 int isgraph(int c);
 int iscntrl(int c);
+int isleadbyte(int c);
 
 int toupper(int c);
 int tolower(int c);
@@ -87,6 +88,7 @@ int tolower(int c);
 #define isprint(c)     (_pctype[c] & (_BLANK | _PUNCT | _UPPER | _LOWER | _DIGIT))
 #define isgraph(c)     (_pctype[c] & (_PUNCT | _UPPER | _LOWER | _DIGIT))
 #define iscntrl(c)     (_pctype[c] & _CONTROL)
+#define isleadbyte(c)  (_pctype[(unsigned char)(c)] & _LEADBYTE)
 
 #define tolower(c)     ((c) - 'A' + 'a')
 #define toupper(c)     ((c) - 'a' + 'A')

@@ -106,11 +106,6 @@ int abs(int number)
   return number >= 0 ? number : -number;
 }
 
-int atexit(void(*func)(void))
-{
-  return -1; // TODO: implement exit handling
-}
-
 div_t div(int numer, int denom)
 {
   div_t result;

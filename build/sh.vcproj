@@ -116,7 +116,7 @@
 				GenerateMapFile="TRUE"
 				MapFileName=".\..\obj\sh/sh.map"
 				SubSystem="1"
-				EntryPointSymbol="main"/>
+				EntryPointSymbol=""/>
 			<Tool
 				Name="VCMIDLTool"
 				TypeLibraryName=".\..\bin/sh.tlb"/>

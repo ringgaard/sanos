@@ -233,6 +233,11 @@ int iscntrl(int c)
   return _pctype[c] & _CONTROL;
 }
 
+int isleadbyte(int c)
+{
+  return _pctype[c] & _LEADBYTE;
+}
+
 int toupper(int c)
 {
   if (_pctype[c] & _LOWER)
