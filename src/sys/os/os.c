@@ -147,7 +147,7 @@ int canonicalize(const char *filename, char *buffer, int size)
   int len;
 
   // Check for maximum filename length
-  if (!filename)  return -EINVAL;
+  if (!filename) return -EINVAL;
 
   // Remove drive letter from filename (e.g. c:)
   if (filename[0] != 0 && filename[1] == ':') filename += 2;

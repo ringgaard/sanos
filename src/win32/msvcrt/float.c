@@ -33,6 +33,64 @@
 
 #include "msvcrt.h"
 
+#define HI(x) (*(1 + (int *) &x))
+#define LO(x) (*(int *) &x)
+
+#if 1
+
+#define ANSI_FTOL 0
+
+__declspec(naked) void _ftol() 
+{
+  __asm    
+  {
+#if ANSI_FTOL
+    fnstcw   word ptr [esp-2]
+    mov      ax, word ptr [esp-2]
+    or       ax, 0C00h
+    mov      word ptr [esp-4], ax
+    fldcw    word ptr [esp-4]
+    fistp    qword ptr [esp-12]
+    fldcw    word ptr [esp-2]
+    mov      eax, dword ptr [esp-12]
+    mov      edx, dword ptr [esp-8]
+#else
+    fistp    dword ptr [esp-12]
+    mov	     eax, dword ptr [esp-12]
+    mov	     ecx, dword ptr [esp-8]
+#endif
+    ret
+  }
+}
+
+int _isnan(double x)
+{
+  int hx, lx;
+
+  hx = (HI(x) & 0x7fffffff);
+  lx = LO(x);
+  hx |= (unsigned) (lx | (-lx)) >> 31;
+  hx = 0x7ff00000 - hx;
+  return ((unsigned) (hx)) >> 31;
+}
+
+double _copysign(double x, double y)
+{
+  HI(x) = (HI(x) & 0x7fffffff) | (HI(y) & 0x80000000);
+  return x;
+}
+
+void _finite()
+{
+  panic("_finite not implemented");
+}
+
+void floor()
+{
+  panic("floor not implemented");
+}
+#else
+
 __declspec(naked) void _ftol()
 {
   __asm 
@@ -232,6 +290,7 @@ _floor:
     ret
   }
 }
+#endif
 
 void _CIfmod()
 {

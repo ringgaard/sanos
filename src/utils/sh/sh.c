@@ -397,6 +397,60 @@ static void test_write_file(char *filename, int size)
   close(file);
 }
 
+struct critsect testcs;
+int count;
+int runs;
+long holdrand = 1L;
+
+static int rand()
+{
+  return (((holdrand = holdrand * 214013L + 2531011L) >> 16) & 0x7fff);
+}
+
+static void __stdcall csthreadproc(void *arg)
+{
+  int n;
+
+  while (1)
+  {
+    enter(&testcs);
+
+    runs++;
+
+    n = count;
+
+    if (n != 0) printf("ERROR: count is %d\n", n);
+
+    count++;
+    if (rand() < 100) sleep(rand() / 1000);
+    count--;
+
+    leave(&testcs);
+    //sleep(rand() / 10000);
+  }
+}
+
+static void cstest()
+{
+  int n;
+
+  mkcs(&testcs);
+
+  runs = 0;
+  for (n = 0; n < 10; n++)
+  {
+    beginthread(csthreadproc, 0, NULL, 0, NULL);
+  }
+
+  while (1)
+  {
+    sleep(1000);
+    printf("%d runs\r", runs);
+  }
+
+  csfree(&testcs);
+}
+
 static void set_loglevel(char *arg, int level)
 {
   int ll = 0;
@@ -1302,6 +1356,8 @@ void shell()
 	test(argc, argv);
       else if (strcmp(argv[0], "kbd") == 0)
 	kbdtest();
+      else if (strcmp(argv[0], "cstest") == 0)
+	cstest();
       else
 	start_program(argc, argv);
 

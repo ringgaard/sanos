@@ -201,7 +201,8 @@ crtapi int sscanf(const char *buffer, const char *fmt, ...);
 crtapi char *getenv(const char *option);
 
 crtapi void _ftol();
-crtapi void _isnan();
+//crtapi void _isnan();
+crtapi int _isnan(double x);
 crtapi double _copysign(double a, double b);
 crtapi void _finite();
 crtapi void floor();

@@ -38,7 +38,7 @@ typedef void (*threadproc_t)(void *arg);
 typedef void (*dpcproc_t)(void *arg);
 typedef void (*taskproc_t)(void *arg);
 
-#define NOPREEMPTION
+//#define NOPREEMPTION
 
 #define DEFAULT_QUANTUM          12
 #define THREAD_PRIORITY_LEVELS   8
