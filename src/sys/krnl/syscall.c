@@ -8,7 +8,7 @@
 
 #include <os/krnl.h>
 
-//#define SYSCALL_PROFILE
+#define SYSCALL_PROFILE
 //#define SYSCALL_LOGENTER
 //#define SYSCALL_LOGEXIT
 //#define SYSCALL_LOGERRORS

@@ -380,7 +380,7 @@ int pbuf_header(struct pbuf *p, int header_size)
   if ((char *) p->payload < (char *) p + sizeof(struct pbuf))
   {
     p->payload = payload;
-    return -1;
+    return -EBUF;
   }
   p->len += header_size;
   p->tot_len += header_size;
