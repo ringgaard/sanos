@@ -513,7 +513,7 @@ static int tcpsock_getsockname(struct socket *s, struct sockaddr *name, int *nam
 
   if (!namelen) return -EINVAL;
   if (*namelen < sizeof(struct sockaddr_in)) return -EINVAL;
-  if (s->state != SOCKSTATE_CONNECTED) return -ECONN;
+  if (s->state != SOCKSTATE_CONNECTED && s->state != SOCKSTATE_BOUND) return -ECONN;
   if (!s->tcp.pcb) return -ECONN;
 
   sin = (struct sockaddr_in *) name;
