@@ -156,7 +156,7 @@ static void sis900_init_tx_ring(struct dev *dev);
 static void sis900_init_rx_ring(struct dev *dev);
 static void sis630_set_eq(struct dev *dev);
 static void sis900_reset(struct dev *dev);
-static int set_rx_mode(struct dev *dev);
+static int sis900_set_rx_mode(struct dev *dev);
 static int sis900_rx(struct dev *dev);
 static void sis900_finish_xmit(struct dev *dev);
 static void sis900_read_mode(struct dev *dev, int *speed, int *duplex);
@@ -717,7 +717,7 @@ static int sis900_open(struct dev *dev)
   sis900_init_tx_ring(dev);
   sis900_init_rx_ring(dev);
 
-  set_rx_mode(dev);
+  sis900_set_rx_mode(dev);
 
   // Workaround for EDB
   sis900_set_mode(ioaddr, HW_SPEED_10_MBPS, FDX_CAPABLE_HALF_SELECTED);
@@ -1588,14 +1588,14 @@ static unsigned short sis900_compute_hashtable_index(unsigned char *addr, unsign
 }
 
 //
-// set_rx_mode - Set SiS900 receive mode 
+// sis900_set_rx_mode - Set SiS900 receive mode 
 //
 // Set SiS900 receive mode for promiscuous, multicast, or broadcast mode.
 // And set the appropriate multicast filter.
 // Multicast hash table changes from 128 to 256 bits for 635M/B & 900B0.
 //
 
-static int set_rx_mode(struct dev *dev)
+static int sis900_set_rx_mode(struct dev *dev)
 {
   struct sis900_private *sp = dev->privdata;
   long ioaddr = sp->iobase;
@@ -1711,11 +1711,6 @@ static int sis900_handler(struct context *ctxt, void *arg)
   return 0;
 }
 
-static int sis900_set_rx_mode(struct dev *dev)
-{
-  return -ENOSYS;
-}
-
 static int sis900_ioctl(struct dev *dev, int cmd, void *args, size_t size)
 {
   return -ENOSYS;
@@ -1725,7 +1720,7 @@ static int sis900_attach(struct dev *dev, struct eth_addr *hwaddr)
 {
   struct sis900_private *sp = dev->privdata;
   *hwaddr = sp->hwaddr;
-  set_rx_mode(dev);
+  sis900_set_rx_mode(dev);
 
   return 0;
 }
@@ -1769,10 +1764,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   ioaddr = get_unit_iobase(unit);
   irq = get_unit_irq(unit);
 
-  kprintf("sis900: %s revision %d at %#lx, IRQ %d\n", board->productname, unit->revision, ioaddr, irq);
-
   // Enable device and bus mastering
-  //pci_set_power_state(unit, 0);
   pci_enable_busmastering(unit);
 
   // Allocate private memory
@@ -1825,7 +1817,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   if (sis900_mii_probe(dev) == 0) return -ENODEV;
 
   // print some information about our NIC
-  kprintf("%s: %s at %#lx, IRQ %d, %la\n", dev->name, board->productname, ioaddr, irq, &sp->hwaddr);
+  kprintf("%s: %s iobase %#lx irq %d hwaddr %la\n", dev->name, board->productname, ioaddr, irq, &sp->hwaddr);
 
   return sis900_open(dev);
 }

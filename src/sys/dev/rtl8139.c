@@ -33,6 +33,7 @@
 // 
 
 #include <os/krnl.h>
+#include <bitops.h>
 
 #define ETH_ZLEN  60 // Min. octets in frame sans FCS
 
@@ -305,8 +306,8 @@ static void rtl_hw_start(struct dev *dev);
 static void rtl8139_timer(void *arg);
 
 static struct stats_nic *rtl8139_get_stats(struct dev *dev);
-static void set_rx_mode(struct dev *dev);
 static int rtl8139_transmit(struct dev *dev, struct pbuf *p);
+static int rtl8139_set_rx_mode(struct dev *dev);
 
 static void rtl8139_timer(void *arg);
 static void rtl8139_tx_timeout(struct dev *dev);
@@ -512,18 +513,20 @@ static struct stats_nic *rtl8139_get_stats(struct dev *dev)
 
 // Set or clear the multicast filter
 
-static void set_rx_mode(struct dev *dev)
+static int rtl8139_set_rx_mode(struct dev *dev)
 {
   struct nic *tp = (struct nic *) dev->privdata;
   long ioaddr = tp->iobase;
   unsigned long mc_filter[2];    // Multicast hash filter
   int rx_mode;
 
-#if 0
-   // TODO: handle promiscuous mode and multicast lists
-  kprintf("%s: set_rx_mode(%4.4x) done -- Rx config %8.8x\n", dev->name, dev->flags, (int)inpd(ioaddr + RxConfig));
-
-  if (dev->flags & IFF_PROMISC)
+  if (!dev->netif)
+  {
+    // Network interface not attached yet -- accept all multicasts
+    rx_mode = AcceptBroadcast | AcceptMulticast | AcceptMyPhys;
+    mc_filter[1] = mc_filter[0] = 0xffffffff;
+  }
+  else if (dev->netif->flags & NETIF_PROMISC)
   {
     // Unconditionally log net taps
     kprintf("%s: Promiscuous mode enabled\n", dev->name);
@@ -531,7 +534,7 @@ static void set_rx_mode(struct dev *dev)
     rx_mode = AcceptBroadcast | AcceptMulticast | AcceptMyPhys | AcceptAllPhys;
     mc_filter[1] = mc_filter[0] = 0xffffffff;
   } 
-  else if ((dev->mc_count > tp->multicast_filter_limit) || (dev->flags & IFF_ALLMULTI)) 
+  else if ((dev->netif->mccount > tp->multicast_filter_limit) || (dev->netif->flags & NETIF_ALLMULTI)) 
   {
     // Too many to filter perfectly -- accept all multicasts
     rx_mode = AcceptBroadcast | AcceptMulticast | AcceptMyPhys;
@@ -539,20 +542,16 @@ static void set_rx_mode(struct dev *dev)
   } 
   else 
   {
-    struct dev_mc_list *mclist;
+    struct mclist *mclist;
     int i;
 
     rx_mode = AcceptBroadcast | AcceptMulticast | AcceptMyPhys;
     mc_filter[1] = mc_filter[0] = 0;
-    for (i = 0, mclist = dev->mc_list; mclist && i < dev->mc_count; i++, mclist = mclist->next)
+    for (i = 0, mclist = dev->netif->mclist; mclist && i < dev->netif->mccount; i++, mclist = mclist->next)
     {
-      set_bit(ether_crc(ETH_ALEN, mclist->dmi_addr) >> 26, mc_filter);
+      set_bit(mc_filter, ether_crc(6, (unsigned char *) &mclist->hwaddr) >> 26);
     }
   }
-#else
-  rx_mode = AcceptBroadcast | AcceptMulticast | AcceptMyPhys;
-  mc_filter[1] = mc_filter[0] = 0xffffffff;
-#endif
 
   // We can safely update without stopping the chip
   outpd(ioaddr + RxConfig, tp->rx_config | rx_mode);
@@ -560,6 +559,8 @@ static void set_rx_mode(struct dev *dev)
   tp->mc_filter[1] = mc_filter[1];
   outpd(ioaddr + MAR0 + 0, mc_filter[0]);
   outpd(ioaddr + MAR0 + 4, mc_filter[1]);
+
+  return 0;
 }
 
 // Initialize the Rx and Tx rings
@@ -640,7 +641,7 @@ static void rtl_hw_start(struct dev *dev)
 
   // Start the chip's Tx and Rx process
   outpd(ioaddr + RxMissed, 0);
-  set_rx_mode(dev);
+  rtl8139_set_rx_mode(dev);
   outp(ioaddr + ChipCmd, CmdRxEnb | CmdTxEnb);
   
   // Enable all known interrupts by setting the interrupt mask
@@ -835,7 +836,7 @@ static int rtl8139_rx(struct dev *dev)
       outp(ioaddr + ChipCmd, CmdTxEnb);
       
       // Reset the multicast list
-      set_rx_mode(dev);
+      rtl8139_set_rx_mode(dev);
       outp(ioaddr + ChipCmd, CmdRxEnb | CmdTxEnb);
     } 
     else 
@@ -976,7 +977,7 @@ static void rtl_error(struct dev *dev, int status, int link_changed)
     {
       // If this does not work, we will do rtl_hw_start
       outp(ioaddr + ChipCmd, CmdTxEnb);
-      set_rx_mode(dev); // Reset the multicast list
+      rtl8139_set_rx_mode(dev); // Reset the multicast list
       outp(ioaddr + ChipCmd, CmdRxEnb | CmdTxEnb);
 
       tp->stats.rx_errors++;
@@ -1279,7 +1280,8 @@ struct driver rtl8139_driver =
   NULL,
   rtl8139_attach,
   rtl8139_detach,
-  rtl8139_transmit
+  rtl8139_transmit,
+  rtl8139_set_rx_mode
 };
 
 int __declspec(dllexport) install(struct unit *unit, char *opts)
