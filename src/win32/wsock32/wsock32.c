@@ -73,30 +73,27 @@ typedef struct _INTERFACE_INFO
 {
   unsigned long iiFlags;               // Type and status of the interface
   struct sockaddr iiAddress;           // Interface address
+  char filler1[8];
   struct sockaddr iiBroadcastAddress;  // Broadcast address
+  char filler2[8];
   struct sockaddr iiNetmask;           // Network mask
+  char filler3[8];
 } INTERFACE_INFO;
-
-#ifdef DEBUG
-char *strcpy(char *dst, const char *src)
-{
-  char *cp = dst;
-  while (*cp++ = *src++);
-  return dst;
-}
-#endif
 
 sockapi int __stdcall WSAStartup(WORD wVersionRequested, LPWSADATA lpWSAData)
 {
   TRACE("WSAStartup");
 
-  lpWSAData->wVersion = 0x0101;
-  lpWSAData->wHighVersion = 0x0101;
-  strcpy(lpWSAData->szDescription, "Sanos Winsock 1.1");
-  strcpy(lpWSAData->szSystemStatus, "Running");
-  lpWSAData->iMaxSockets = 0xFFFF;
-  lpWSAData->iMaxUdpDg = 1500 - 40 - 8;
-  lpWSAData->lpVendorInfo = NULL;
+  if (lpWSAData)
+  {
+    lpWSAData->wVersion = 0x0101;
+    lpWSAData->wHighVersion = 0x0101;
+    strcpy(lpWSAData->szDescription, "Sanos Winsock 1.1");
+    strcpy(lpWSAData->szSystemStatus, "Running");
+    lpWSAData->iMaxSockets = 0xFFFF;
+    lpWSAData->iMaxUdpDg = 1500 - 40 - 8;
+    lpWSAData->lpVendorInfo = NULL;
+  }
 
   return 0;
 }
@@ -228,9 +225,19 @@ sockapi int __stdcall winsock_select(int nfds, fd_set *readfds, fd_set *writefds
 
   return 1;
 #endif
+  int rc;
+
   TRACE("select");
 
-  return select(nfds, readfds, writefds, exceptfds, timeout);
+  rc = select(nfds, readfds, writefds, exceptfds, timeout);
+  if (rc < 0)
+  {
+    if (rc == -ETIMEOUT) return 0;
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 sockapi int __stdcall winsock_connect(SOCKET s, const struct sockaddr *name, int namelen)
@@ -349,6 +356,12 @@ sockapi int __stdcall winsock_setsockopt(SOCKET s, int level, int optname, const
   int rc;
 
   TRACE("setsockopt");
+
+  if (level == SOL_SOCKET && optname == SO_REUSEADDR)
+  {
+    syslog(LOG_DEBUG, "setsockopt: SO_REUSEADDR ignored\n");
+    return 0;
+  }
 
   rc = setsockopt(s, level, optname, optval, optlen);
   if (rc < 0)
@@ -559,6 +572,8 @@ sockapi int __stdcall WSAIoctl
     }
 
     numifs = rc / sizeof(struct ifcfg);
+    memset(ifinfo, 0, numifs * sizeof(INTERFACE_INFO));
+
     for (i = 0; i < numifs; i++)
     {
       ifinfo[i].iiFlags = IFF_BROADCAST;
@@ -567,13 +582,6 @@ sockapi int __stdcall WSAIoctl
       memcpy(&ifinfo[i].iiAddress, &iflist[i].addr, sizeof(struct sockaddr));
       memcpy(&ifinfo[i].iiNetmask, &iflist[i].netmask, sizeof(struct sockaddr));
       memcpy(&ifinfo[i].iiBroadcastAddress, &iflist[i].broadcast, sizeof(struct sockaddr));
-
-      syslog(LOG_DEBUG, "%s: addr %a gw %a mask %a bcast %a\n", 
-        iflist[i].name,
-	&((struct sockaddr_in *) &iflist[i].addr)->sin_addr, 
-	&((struct sockaddr_in *) &iflist[i].gw)->sin_addr, 
-	&((struct sockaddr_in *) &iflist[i].netmask)->sin_addr, 
-	&((struct sockaddr_in *) &iflist[i].broadcast)->sin_addr);
     }
 
     if (lpcbBytesReturned) *lpcbBytesReturned = numifs * sizeof(INTERFACE_INFO);

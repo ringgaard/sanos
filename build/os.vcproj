@@ -250,6 +250,9 @@
 				RelativePath="..\src\lib\string.c">
 			</File>
 			<File
+				RelativePath="..\src\lib\strtol.c">
+			</File>
+			<File
 				RelativePath="..\src\lib\syserr.c">
 			</File>
 			<File

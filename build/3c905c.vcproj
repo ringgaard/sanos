@@ -151,9 +151,6 @@
 			Name="lib"
 			Filter="">
 			<File
-				RelativePath="..\src\lib\ctype.c">
-			</File>
-			<File
 				RelativePath="..\src\sys\krnl\iop.c">
 			</File>
 			<File

@@ -26,7 +26,21 @@ EXPORTS
   getsockname = winsock_getsockname         @6
   socket = winsock_socket                   @23
   ;WSASendDisconnect                        @73
+  
+  ; The following ordinals are inconsistent between
+  ; wsock32.dll  and ws2_32.dll:
+  ;
+  ;      wsock32.dll     ws2_32.dll
+  ;
+  ;  @10 inet_addr       ioctlsocket
+  ;  @11 inet_ntoa       inet_addr
+  ;  @12 ioctlsocket     inet_ntoa
+  ;
+  ; For now we just define both @10 and @12 as ioctlsocket
+  ;
+  ioctlsocket2 = winsock_ioctlsocket        @10
   ioctlsocket = winsock_ioctlsocket         @12
+  
   __WSAFDIsSet                              @151
   WSAGetLastError                           @111
   WSACleanup	                            @116

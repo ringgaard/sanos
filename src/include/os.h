@@ -562,6 +562,7 @@ struct servent
 
 #define SOL_SOCKET      0xffff
 
+#define SO_REUSEADDR    0x0004
 #define SO_BROADCAST    0x0020
 #define SO_SNDTIMEO     0x1005
 #define SO_RCVTIMEO     0x1006

@@ -157,6 +157,13 @@
 				RelativePath="..\src\include\win32.h">
 			</File>
 		</Filter>
+		<Filter
+			Name="lib"
+			Filter="">
+			<File
+				RelativePath="..\src\lib\string.c">
+			</File>
+		</Filter>
 		<File
 			RelativePath="..\src\win32\wsock32\wsock32.c">
 		</File>

@@ -34,7 +34,6 @@
 #include <types.h>
 #include <stdarg.h>
 #include <string.h>
-#include <ctype.h>
 
 char *strncpy(char *dest, const char *source, size_t count)
 {
@@ -254,43 +253,13 @@ void *memmove(void *dst, const void *src, size_t count)
 
 void *memchr(const void *buf, int ch, size_t count)
 {
-  while (count && (*(unsigned char *)buf != (unsigned char)ch)) 
+  while (count && (*(unsigned char *) buf != (unsigned char) ch)) 
   {
     buf = (unsigned char *) buf + 1;
     count--;
   }
 
   return (count ? (void *) buf : NULL);
-}
-
-long atol(const char *nptr)
-{
-  int c;
-  long total;
-  int sign;
-
-  while (isspace((int)(unsigned char) *nptr)) ++nptr;
-
-  c = (int)(unsigned char) *nptr++;
-  sign = c;
-  if (c == '-' || c == '+') c = (int)(unsigned char) *nptr++;
-
-  total = 0;
-  while (isdigit(c)) 
-  {
-    total = 10 * total + (c - '0');
-    c = (int)(unsigned char) *nptr++;
-  }
-
-  if (sign == '-')
-    return -total;
-  else
-    return total;
-}
-
-int atoi(const char *nptr)
-{
-  return (int) atol(nptr);
 }
 
 /////////////////////////////////////////////////////////////////////

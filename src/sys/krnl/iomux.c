@@ -39,7 +39,7 @@ static void release_waiting_threads(struct iomux *iomux)
   struct waitblock *wb_next;
   struct ioobject *iob;
 
-  // Dispatch all ready I/O object to all ready waiting threads
+  // Dispatch all ready I/O objects to all ready waiting threads
   wb = iomux->object.waitlist_head;
   iob = iomux->ready_head;
   while (iob && wb)
@@ -54,7 +54,7 @@ static void release_waiting_threads(struct iomux *iomux)
       // Remove object from iomux
       detach_ioobject(iob);
 
-      // Mark the as ready to run
+      // Mark thread ready
       release_thread(wb->thread);
 
       iob = iomux->ready_head;
@@ -88,7 +88,7 @@ int close_iomux(struct iomux *iomux)
     iob = next;
   }
 
-  // Remove all object from waiting queue
+  // Remove all objects from waiting queue
   iob = iomux->waiting_head;
   while (iob)
   {
@@ -241,7 +241,7 @@ int dequeue_event_from_iomux(struct iomux *iomux)
 {
   struct ioobject *iob;
 
-  // Get first ready object, return error of not objects are ready
+  // Get first ready object, return error if no objects are ready
   iob = iomux->ready_head;
   if (!iob) return -ENOENT;
 

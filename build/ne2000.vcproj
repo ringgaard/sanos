@@ -162,6 +162,9 @@
 			<File
 				RelativePath="..\src\lib\string.c">
 			</File>
+			<File
+				RelativePath="..\src\lib\strtol.c">
+			</File>
 		</Filter>
 		<File
 			RelativePath="..\src\sys\dev\ne2000.c">
