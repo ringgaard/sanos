@@ -86,6 +86,7 @@
 #define HDCMD_DIAG		0x90
 #define HDCMD_READ		0x20
 #define HDCMD_WRITE		0x30
+#define HDCMD_PIDENTIFY         0xA1
 #define HDCMD_MULTREAD		0xC4
 #define HDCMD_MULTWRITE		0xC5
 #define HDCMD_SETMULT		0xC6
@@ -135,6 +136,14 @@
 #define HDTIMEOUT_CMD		1000
 #define HDTIMEOUT_BUSY		60000
 #define HDTIMEOUT_XFER		10000
+
+//
+// Drive interface types
+//
+
+#define HDIF_NONE               0
+#define HDIF_ATA                1
+#define HDIF_ATAPI              2
 
 //
 // Buffer type
@@ -317,7 +326,8 @@ struct hd
   int drvsel;                           // Drive select on controller
   int use32bits;                        // Use 32 bit transfers
   int sectbufs;                         // Number of sector buffers
-  int lba;                              // Use LBA mode
+  int lba;                              // LBA mode
+  int iftype;                           // IDE interface type (ATA/ATAPI)
   int multsect;                         // Sectors per interrupt
   int udmamode;                         // UltraDMA mode
   dev_t devno;                          // Device number
@@ -487,8 +497,9 @@ static int hd_identify(struct hd *hd)
   hd->hdc->dir = HD_XFER_IGNORE;
 
   // Issue read drive parameters command
+  _outp(hd->hdc->iobase + HDC_FEATURE, 0);
   _outp(hd->hdc->iobase + HDC_DRVHD, hd->drvsel);
-  _outp(hd->hdc->iobase + HDC_COMMAND, HDCMD_IDENTIFY);
+  _outp(hd->hdc->iobase + HDC_COMMAND, hd->iftype == HDIF_ATAPI ? HDCMD_PIDENTIFY : HDCMD_IDENTIFY);
 
   // Wait for data ready
   if (wait_for_object(&hd->hdc->ready, HDTIMEOUT_CMD) < 0) return -ETIMEOUT;
@@ -508,6 +519,8 @@ static int hd_identify(struct hd *hd)
   hd_fixstring(hd->param.model, sizeof(hd->param.model));
   hd_fixstring(hd->param.rev, sizeof(hd->param.rev));
   hd_fixstring(hd->param.serial, sizeof(hd->param.serial));
+
+  kprintf("hd: type=%d\n", (hd->param.config >> 8) & 0x1f);
 
   // Determine LBA or CHS mode
   if (hd->param.totalsec0 == 0 && hd->param.totalsec1 == 0)
@@ -1123,13 +1136,11 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase)
   init_mutex(&hdc->lock, 0);
   init_event(&hdc->ready, 0, 0);
 
-#if 0 
   // Reset controller
-  _outp(hdc->iobase + HDC_CONTROL, HDDC_SRST | HDDC_NIEN);
-  sleep(10);
-  _outp(hdc->iobase + HDC_CONTROL, HDDC_NIEN);
-  sleep(10);
-#endif
+  _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_SRST | HDDC_NIEN);
+  udelay(10);
+  _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_NIEN);
+  udelay(10);
 
   // Enable interrupts
   register_interrupt(&hdc->intr, IRQ2INTR(irq), hdc_handler, hdc);
@@ -1209,11 +1220,35 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel)
   static int udma_speed[] = {16, 25, 33, 44, 66, 100};
 
   int rc;
+  unsigned char sc, sn, cl, ch, st;
 
+  // Initialize drive block
   memset(hd, 0, sizeof(struct hd));
   hd->hdc = hdc;
   hd->drvsel = drvsel;
 
+  // Check interface type
+  _outp(hd->hdc->iobase + HDC_DRVHD, hd->drvsel);
+  udelay(10);
+
+  sc = _inp(hdc->iobase + HDC_SECTORCNT);
+  sn = _inp(hdc->iobase + HDC_SECTOR);
+  if (sc == 0x01 && sn == 0x01)
+  {
+    cl = _inp(hdc->iobase + HDC_TRACKLSB);
+    ch = _inp(hdc->iobase + HDC_TRACKMSB);
+    st = _inp(hdc->iobase + HDC_STATUS);
+
+    if (cl == 0x14 && ch == 0xeb)
+      hd->iftype = HDIF_ATAPI;
+    else if (cl == 0x00 && ch == 0x00 && st != 0x00)
+      hd->iftype = HDIF_ATA;
+  }
+  
+  // If no interface present, abort now
+  if (hd->iftype == HDIF_NONE) return;
+
+  // Get info block from device
   if (hd_identify(hd) < 0)
   {
     kprintf("hd: device %s not responding, ignored.\n", devname);
@@ -1277,6 +1312,7 @@ void init_hd()
   int rc;
 
   numhd = syspage->biosdata[0x75];
+  //numhd = 4;
 
   ide = lookup_unit_by_class(NULL, PCI_CLASS_STORAGE_IDE, PCI_SUBCLASS_MASK);
   if (ide)
