@@ -143,12 +143,15 @@ char curdir[MAXPATH];
 
 int init_vfs();
 int fnmatch(char *fn1, int len1, char *fn2, int len2);
+
 krnlapi struct filesystem *register_filesystem(char *name, struct fsops *ops);
 krnlapi struct fs *fslookup(char *name, char **rest);
+krnlapi struct file *newfile(struct fs *fs, char *path, int mode);
 
 krnlapi int format(char *devname, char *type, char *opts);
-krnlapi int mount(char *type, char *mntto, char *mntfrom, char *opts);
+krnlapi int mount(char *type, char *mntto, char *mntfrom, char *opts, struct fs **newfs);
 krnlapi int umount(char *path);
+
 int umount_all();
 
 krnlapi int getfsstat(struct statfs *buf, size_t size);

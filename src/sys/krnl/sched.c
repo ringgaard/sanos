@@ -687,7 +687,7 @@ void idle_task()
 static int threads_proc(struct proc_file *pf, void *arg)
 {
   static char *threadstatename[] = {"init", "ready", "run", "wait", "term"};
-  static char *waitreasonname[] = {"wait", "fileio", "taskq", "sockio", "sleep"};
+  static char *waitreasonname[] = {"wait", "fileio", "taskq", "sockio", "sleep", "pipe"};
   struct thread *t = threadlist;
   char *state;
   unsigned long stksiz;

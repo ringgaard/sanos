@@ -369,6 +369,13 @@
 					RelativePath="..\src\sys\fs\smbfs\smbutil.c">
 				</File>
 			</Filter>
+			<Filter
+				Name="pipefs"
+				Filter="">
+				<File
+					RelativePath="..\src\sys\fs\pipefs\pipefs.c">
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="include"

@@ -115,6 +115,11 @@ void init_syscall();
 
 void init_smbfs();
 
+// pipefs.c
+
+void init_pipefs();
+int pipe(struct file **readpipe, struct file **writepipe);
+
 // cons.c
 
 extern devno_t consdev;

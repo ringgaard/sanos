@@ -137,19 +137,22 @@ struct fs *fslookup(char *name, char **rest)
   while (fs)
   {
     q = fs->mntto;
-    if (*q == PS1 || *q == PS2) q++;
-
-    if (!*q)
+    if (*q)
     {
-      if (rest) *rest = p;
-      return fs;
-    }
+      if (*q == PS1 || *q == PS2) q++;
 
-    m = strlen(q);
-    if (n >= m && fnmatch(p, m, q, m) && (p[m] == 0 || p[m] == PS1 || p[m] == PS2))
-    {
-      if (rest) *rest = p + m;
-      return fs;
+      if (!*q)
+      {
+	if (rest) *rest = p;
+	return fs;
+      }
+
+      m = strlen(q);
+      if (n >= m && fnmatch(p, m, q, m) && (p[m] == 0 || p[m] == PS1 || p[m] == PS2))
+      {
+	if (rest) *rest = p + m;
+	return fs;
+      }
     }
 
     fs = fs->next;
@@ -193,7 +196,7 @@ static int files_proc(struct proc_file *pf, void *arg)
     if (o->type != OBJECT_FILE) continue;
 
     filp = (struct file *) o;
-    pprintf(pf, "%6d %8X %10d %s\n", h, filp->flags, filp->pos, filp->path);
+    pprintf(pf, "%6d %8X %10d %s\n", h, filp->flags, filp->pos, filp->path ? filp->path : "<no name>");
   }
 
   return 0;
@@ -225,6 +228,23 @@ struct filesystem *register_filesystem(char *name, struct fsops *ops)
   return fsys;
 }
 
+struct file *newfile(struct fs *fs, char *path, int mode)
+{
+  struct file *filp;
+
+  filp = (struct file *) kmalloc(sizeof(struct file));
+  if (!filp) return NULL;
+  init_object(&filp->object, OBJECT_FILE);
+  
+  filp->fs = fs;
+  filp->flags = mode;
+  filp->pos = 0;
+  filp->data = NULL;
+  filp->path = strdup(path);
+
+  return filp;
+}
+
 int format(char *devname, char *type, char *opts)
 {
   struct filesystem *fsys;
@@ -248,7 +268,7 @@ int format(char *devname, char *type, char *opts)
   return rc;
 }
 
-int mount(char *type, char *mntto, char *mntfrom, char *opts)
+int mount(char *type, char *mntto, char *mntfrom, char *opts, struct fs **newfs)
 {
   struct filesystem *fsys;
   struct fs *fs;
@@ -317,6 +337,7 @@ int mount(char *type, char *mntto, char *mntfrom, char *opts)
     mountlist = fs;
   }
 
+  if (newfs) *newfs = fs;
   return 0;
 }
 
@@ -468,15 +489,8 @@ int open(char *name, int mode, struct file **retval)
   fs = fslookup(path, &rest);
   if (!fs) return -ENOENT;
 
-  filp = (struct file *) kmalloc(sizeof(struct file));
+  filp = newfile(fs, path, mode);
   if (!filp) return -ENOMEM;
-  init_object(&filp->object, OBJECT_FILE);
-  
-  filp->fs = fs;
-  filp->flags = mode;
-  filp->pos = 0;
-  filp->data = NULL;
-  filp->path = strdup(path);
 
   if (fs->ops->open)
   {

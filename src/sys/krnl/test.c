@@ -343,7 +343,7 @@ static void dump_mbr(char *devname)
 
 static void mount_device(char *devname, char *path)
 {
-  if (mount("dfs", path, devname, NULL) < 0)
+  if (mount("dfs", path, devname, NULL, NULL) < 0)
   {
     kprintf("%s: unable to mount device to %s\n", devname, path);
     return;

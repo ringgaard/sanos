@@ -203,10 +203,10 @@ struct section;
 #define ETXTBSY         26               // Unknown error
 //#define EFBIG           27               // File too large
 #define ENOSPC          28               // No space left on device
-//#define ESPIPE          29               // Illegal seek
+#define ESPIPE          29               // Illegal seek
 #define EROFS           30               // Read-only file system
 //#define EMLINK          31               // Too many links
-//#define EPIPE           32               // Broken pipe
+#define EPIPE           32               // Broken pipe
 //#define EDOM            33               // Numerical arg out of domain
 #define ERANGE          34               // Result too large
 #define EUCLEAN           35               // Structure needs cleaning
@@ -808,6 +808,8 @@ osapi int unlink(const char *name);
 
 osapi handle_t opendir(const char *name);
 osapi int readdir(handle_t f, struct dirent *dirp, int count);
+
+osapi int pipe(handle_t fildes[2]);
 
 osapi void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long tag);
 osapi int munmap(void *addr, unsigned long size, int type);

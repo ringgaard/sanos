@@ -218,7 +218,7 @@ static int sys_mount(char *params)
     return -EFAULT;
   }
 
-  rc = mount(type, mntto, mntfrom, opts);
+  rc = mount(type, mntto, mntfrom, opts, NULL);
 
   unlock_string(opts);
   unlock_string(mntfrom);
@@ -2635,6 +2635,47 @@ static int sys_select(char *params)
   return rc;
 }
 
+static int sys_pipe(char *params)
+{
+  handle_t *fildes;
+  int rc;
+  struct file *readpipe;
+  struct file *writepipe;
+
+  if (lock_buffer(params, 4) < 0) return -EFAULT;
+
+  fildes = *(handle_t **) params;
+
+  if (lock_buffer(fildes, sizeof(handle_t) * 2) < 0)
+  {
+    unlock_buffer(params, 4);
+    return -EFAULT;
+  }
+
+  rc = pipe(&readpipe, &writepipe);
+
+  if (rc == 0)
+  {
+    fildes[0] = halloc(&readpipe->object);
+    fildes[1] = halloc(&writepipe->object);
+
+    if (fildes[0] < 0 || fildes[1] < 0)
+    {
+      if (fildes[0] >= 0) hfree(fildes[0]);
+      if (fildes[1] >= 0) hfree(fildes[1]);
+
+      close(readpipe);
+      close(writepipe);
+      rc = -ENFILE;
+    }
+  }
+  
+  unlock_buffer(fildes, sizeof(handle_t) * 2);
+  unlock_buffer(params, 4);
+
+  return rc;
+}
+
 struct syscall_entry syscalltab[] =
 {
   {"null","", sys_null},
@@ -2717,6 +2758,7 @@ struct syscall_entry syscalltab[] =
   {"recvmsg", "%d,%p,%d", sys_recvmsg},
   {"sendmsg", "%d,%p,%d", sys_sendmsg},
   {"select", "%d,%p,%p,%p,%p", sys_select},
+  {"pipe", "%p", sys_pipe},
 };
 
 int syscall(int syscallno, char *params)

@@ -457,3 +457,9 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const
 {
   return syscall(SYSCALL_SELECT, (void *) &nfds);
 }
+
+int pipe(handle_t fildes[2])
+{
+  return syscall(SYSCALL_PIPE, (void *) &fildes);
+}
+

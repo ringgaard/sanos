@@ -114,7 +114,8 @@
 #define SYSCALL_RECVMSG      77
 #define SYSCALL_SENDMSG      78
 #define SYSCALL_SELECT       79
+#define SYSCALL_PIPE         80
 
-#define SYSCALL_MAX          79
+#define SYSCALL_MAX          80
 
 #endif

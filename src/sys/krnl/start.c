@@ -293,6 +293,7 @@ void main(void *arg)
   init_dfs();
   init_devfs();
   init_procfs();
+  init_pipefs();
   init_smbfs();
  
   // Open boot device
@@ -308,14 +309,14 @@ void main(void *arg)
 
   kprintf("mount: root on device %s\n", bootdev);
 
-  // Mount root and device file systems
-  rc = mount("dfs", "/", bootdev, "");
+  // Mount file systems
+  rc = mount("dfs", "/", bootdev, "", NULL);
   if (rc < 0) panic("error mounting root filesystem");
 
-  rc = mount("devfs", "/dev", NULL, NULL);
+  rc = mount("devfs", "/dev", NULL, NULL, NULL);
   if (rc < 0) panic("error mounting dev filesystem");
 
-  rc = mount("procfs", "/proc", NULL, NULL);
+  rc = mount("procfs", "/proc", NULL, NULL, NULL);
   if (rc < 0) panic("error mounting proc filesystem");
 
   // Load kernel configuration
