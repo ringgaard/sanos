@@ -17,9 +17,17 @@ typedef void *hmodule_t;
 #include <intr.h>
 #include <dbg.h>
 
-#define DRPC_SIGNATURE  0x43505244
-#define DRPC_STARTMARK  0x00286308
-#define DRPC_REPLY      0x00010000
+//
+// DRPC definitions
+//
+
+#define DRPC_SIGNATURE            0x43505244
+#define DRPC_STARTMARK            0x00286308
+#define DRPC_REPLY                0x00010000
+
+//
+// DRPC commands
+//
 
 #define DRPC_DEBUG_BREAK          0x0002C028
 #define DRPC_GET_SYSTEM_VERSION   0x0004C004
@@ -41,33 +49,9 @@ typedef void *hmodule_t;
 #define DRPC_GET_DEBUG_EVENT      0x0004C029
 #define DRPC_CONTINUE_DEBUG_EVENT 0x0004C02A
 
-#define DEBUGGER_PORT 24502
-#define DEBUGGEE_PORT "COM1"
-
-SOCKET listener;
-
-FILE *logfile;
-
-static char *dbgevtnames[] = 
-{
-  "0", 
-  "Exception", 
-  "CreateThread", 
-  "CreateProcess", 
-  "ExitThread", 
-  "ExitProcess", 
-  "LoadModule", 
-  "UnloadModule",
-  "OutputDebugString",
-  "RIP"
-};
-
-struct session
-{
-  SOCKET debugger;
-  HANDLE debuggee;
-  unsigned long startmark;
-};
+//
+// DRPC packet format
+//
 
 struct drpc_packet
 {
@@ -81,30 +65,51 @@ struct drpc_packet
   unsigned long reserved2;    // Always zero
 };
 
-struct drpc_processor_identification
-{
-  unsigned long family;
-  unsigned long model;
-  unsigned long stepping;
-  unsigned long vendor[16];
-};
+//
+// Debug gateway configiration
+//
 
-struct drpc_system_version
-{
-  unsigned long unknown1;    // 0x14c
-  unsigned long processors;  // 1
-  unsigned long platformid;  // 2
-  unsigned long build;       // 0xA28
-  unsigned long spnum;       // 0
-  char spname[0x104];
-  char buildname[0x110];
-};
+#define DEBUGGER_PORT      24502
+#define DEBUGGEE_PORT      "COM1"
+#define MAX_DBG_CHUNKSIZE  4096
+
+#define GLOBAL_PROCID      1
+
+#define MAX_DBG_PACKETLEN  (MAX_DBG_CHUNKSIZE + sizeof(union dbg_body))
+
+//
+// Global variables
+//
+
+SOCKET listener;
+SOCKET debugger;
+HANDLE debugee = INVALID_HANDLE_VALUE;
+
+FILE *logfile = NULL;
+
+unsigned long startmark;
+unsigned char next_reqid = 1;
+
+struct dbg_hdr hdr;
+char dbg_data[MAX_DBG_PACKETLEN];
+union dbg_body *body;
+
+struct dbg_event *event_head = NULL;
+struct dbg_event *event_tail = NULL;
+
+//
+// panic
+//
 
 void panic(char *msg)
 {
   printf("panic: %s\n", msg);
   exit(1);
 }
+
+//
+// logmsg
+//
 
 void logmsg(const char *fmt, ...)
 {
@@ -115,6 +120,10 @@ void logmsg(const char *fmt, ...)
   vprintf(fmt, args);
   va_end(args);
 }
+
+//
+// dump_data
+//
 
 void dump_data(FILE *f, unsigned char *buf, int bytes, int wordsize, unsigned char *cmpbuf)
 {
@@ -178,389 +187,44 @@ void dump_data(FILE *f, unsigned char *buf, int bytes, int wordsize, unsigned ch
   }
 }
 
-int handshake(struct session *sess)
+//
+// dbg_close_connection
+//
+
+void dbg_close_connection()
 {
-  int bytes;
-  unsigned long buf[128];
-
-  // Receive DRPC hello request
-  bytes = recv(sess->debugger, (char *) buf, 512, 0);
-  if (bytes == 0 || bytes < 0) return -1;
-
-  if (buf[0] != DRPC_SIGNATURE)
+  if (debugee != INVALID_HANDLE_VALUE)
   {
-    logmsg("unexpected signature %08X\n");
-    return -1;
-  }
-
-  logmsg("debugger ");
-  dump_data(stdout, (unsigned char *) buf, bytes, 4, NULL);
-  dump_data(logfile, (unsigned char *) buf, bytes, 4, NULL);
-
-  // Send DRPC hello response
-  sess->startmark = DRPC_STARTMARK;
-  memset(buf, 0, 128);
-  buf[0] = DRPC_SIGNATURE;
-  buf[1] = 2;
-  buf[6] = sess->startmark;
-
-  send(sess->debugger, (char *) buf, 128, 0);
-  
-  return 0;
-}
-
-#if 0
-void decode_debug_event(char *cmd, struct drpc_packet *rsp, char *buf)
-{
-  DEBUG_EVENT *evt;
-
-  evt = (DEBUG_EVENT *) buf;
-  logmsg("Response %s: event=%s pid=%d tid=%d\n", cmd, dbgevtnames[evt->dwDebugEventCode], evt->dwProcessId, evt->dwThreadId);
-  switch (evt->dwDebugEventCode)
-  {
-    case EXCEPTION_DEBUG_EVENT:
-      logmsg("  Exception Code: %08X\n", evt->u.Exception.ExceptionRecord.ExceptionCode);
-      logmsg("  Exception Address: %08X\n", evt->u.Exception.ExceptionRecord.ExceptionAddress);
-      logmsg("  Num Parameters: %08X\n", evt->u.Exception.ExceptionRecord.NumberParameters);
-      logmsg("  Exception Record: %08X\n", evt->u.Exception.ExceptionRecord.ExceptionRecord);
-      break;
-
-    case CREATE_THREAD_DEBUG_EVENT:
-      logmsg("  Thread Handle: %08X (%d)\n", evt->u.CreateThread.hThread, evt->u.CreateThread.hThread);
-      logmsg("  Thread Local Base: %08X\n", evt->u.CreateThread.lpThreadLocalBase);
-      logmsg("  Start Address: %08X\n", evt->u.CreateThread.lpStartAddress);
-      break;
-
-    case CREATE_PROCESS_DEBUG_EVENT:
-      logmsg("  File Handle: %08X\n", evt->u.CreateProcessInfo.hFile);
-      logmsg("  Process Handle: %08X (%d)\n", evt->u.CreateProcessInfo.hProcess, evt->u.CreateProcessInfo.hProcess);
-      logmsg("  Thread Handle: %08X (%d)\n", evt->u.CreateProcessInfo.hThread, evt->u.CreateProcessInfo.hThread);
-      logmsg("  Base of Image: %08X\n", evt->u.CreateProcessInfo.lpBaseOfImage);
-      logmsg("  Debug Info File Offset: %08X\n", evt->u.CreateProcessInfo.dwDebugInfoFileOffset);
-      logmsg("  Debug Info Size: %08X\n", evt->u.CreateProcessInfo.nDebugInfoSize);
-      logmsg("  Thread Local Base: %08X\n", evt->u.CreateProcessInfo.lpThreadLocalBase);
-      logmsg("  Start Address: %08X\n", evt->u.CreateProcessInfo.lpStartAddress);
-      logmsg("  Image Name: %08X\n", evt->u.CreateProcessInfo.lpImageName);
-      logmsg("  Unicode: %08X\n", evt->u.CreateProcessInfo.fUnicode);
-      break;
-
-    case EXIT_THREAD_DEBUG_EVENT:
-      logmsg("  Exit Code: %08X\n", evt->u.ExitThread.dwExitCode);
-      break;
-
-    case EXIT_PROCESS_DEBUG_EVENT:
-      logmsg("  Exit Code: %08X\n", evt->u.ExitProcess.dwExitCode);
-      break;
-
-    case LOAD_DLL_DEBUG_EVENT:
-      logmsg("  File Handle: %08X\n", evt->u.LoadDll.hFile);
-      logmsg("  Base of DLL: %08X\n", evt->u.LoadDll.lpBaseOfDll);
-      logmsg("  Debug Info File Offset: %08X\n", evt->u.LoadDll.dwDebugInfoFileOffset);
-      logmsg("  Debug Info Size: %08X\n", evt->u.LoadDll.nDebugInfoSize);
-      logmsg("  Image Name: %08X\n", evt->u.LoadDll.lpImageName);
-      logmsg("  Unicode: %08X\n", evt->u.LoadDll.fUnicode);
-      break;
-
-    case UNLOAD_DLL_DEBUG_EVENT:
-      logmsg("  Base of DLL: %08X\n", evt->u.UnloadDll.lpBaseOfDll);
-      break;
-
-    case OUTPUT_DEBUG_STRING_EVENT:
-      logmsg("  String Data: %08X\n", evt->u.DebugString.lpDebugStringData);
-      logmsg("  Unicode: %08X\n", evt->u.DebugString.fUnicode);
-      logmsg("  String Data Length: %08X\n", evt->u.DebugString.nDebugStringLength);
-      break;
-
-    case RIP_EVENT:
-      // fall through
-
-    default:
-      logmsg("data:    ");
-      dump_data(stdout, buf, rsp->rsplen > 256 ? 256 : rsp->rsplen, 4, NULL);
-      dump_data(logfile, buf, rsp->rsplen, 4, NULL);
+    CloseHandle(debugee);
+    debugee = INVALID_HANDLE_VALUE;
   }
 }
 
-void decode_request(struct drpc_packet *req, char *buf)
-{
-  unsigned long pid;
-  unsigned long tid;
-  unsigned long addr;
-  unsigned long len;
-  unsigned long sel;
-  unsigned long flags;
-  unsigned long n;
-  CONTEXT *ctxt;
+//
+// get_process_list
+//
 
-  switch (req->cmd)
-  {
-    case DRPC_GET_SYSTEM_VERSION:
-      logmsg("COMMAND GetSystemVersion: spnamelen=%d, buildnamelen=%d\n", *(unsigned long *) (buf + 0), *(unsigned long *) (buf + 8));
-      break;
-
-    case DRPC_DEBUG_BREAK:
-      tid = *(unsigned long *) (buf + 0);
-      logmsg("COMMAND DebugBreak hthread=%08X\n", tid);
-      break;
-
-    case DRPC_GET_HOST_INFO:
-      logmsg("COMMAND GetHostInfo: hostlen=%d, transportlen=%d\n", *(unsigned long *) (buf + 0), *(unsigned long *) (buf + 8));
-      break;
-
-    case DRPC_GET_CPU_INFO:
-      logmsg("COMMAND GetCpuInfo: maxlen=%d\n", *(unsigned long *) buf);
-      break;
-
-    case DRPC_GET_PROCESS_LIST:
-      logmsg("COMMAND GetProcessList: maxpids=%d\n", *(unsigned long *) buf);
-      break;
-
-    case DRPC_GET_PROCESS_NAME:
-      pid = *(unsigned long *) buf;
-      logmsg("COMMAND GetProcessName pid=%d:\n", pid);
-      break;
-
-    case DRPC_DEBUG_PROCESS:
-      pid = *(unsigned long *) buf;
-      logmsg("COMMAND DebugProcess pid=%d (%08X):\n", pid, pid);
-      break;
-
-    case DRPC_OPEN_PROCESS:
-      pid = *(unsigned long *) buf;
-      flags = *(unsigned long *) (buf + 8);
-      logmsg("COMMAND OpenProcess pid=%d (%08X) flags=%08X:\n", pid, pid, flags);
-      break;
-
-    case DRPC_CREATE_PROCESS:
-      pid = *(unsigned long *) buf;
-      logmsg("COMMAND CreateProcess: cmd=%S flags=%08X:\n", buf, *(unsigned long *)(buf + req->reqlen - 4));
-      break;
-
-    case DRPC_READ_PROCESS_MEMORY:
-      pid = *(unsigned long *) (buf + 0);
-      addr = *(unsigned long *) (buf + 8);
-      len = *(unsigned long *) (buf + 16);
-      logmsg("COMMAND ReadProcessMemory hproc=%08X addr=%08x len=%d:\n", pid, addr, len);
-      break;
-
-    case DRPC_WRITE_PROCESS_MEMORY:
-      pid = *(unsigned long *) (buf + 0);
-      addr = *(unsigned long *) (buf + 8);
-      len = *(unsigned long *) (buf + 16);
-      logmsg("COMMAND WriteProcessMemory hproc=%08X addr=%08x len=%d:\n", pid, addr, len);
-      break;
-
-    case DRPC_SUSPEND_THREAD:
-      len = *(unsigned long *) (buf + 0);
-      logmsg("COMMAND SuspendThread: hthread=");
-      for (n = 0; n < len; n++)
-      {
-	tid = *(unsigned long *) (buf + 8 + n * 8);
-	logmsg(" %08X", tid);
-      }
-      logmsg("\n");
-      break;
-
-    case DRPC_RESUME_THREAD:
-      len = *(unsigned long *) (buf + 0);
-      logmsg("COMMAND ResumeThread: hthread=");
-      for (n = 0; n < len; n++)
-      {
-	tid = *(unsigned long *) (buf + 8 + n * 8);
-	logmsg(" %08X", tid);
-      }
-      logmsg("\n");
-      break;
-
-    case DRPC_GET_THREAD_CONTEXT:
-      tid = *(unsigned long *) (buf + 0);
-      flags = *(unsigned long *) (buf + 8);
-      len = *(unsigned long *) (buf + 16);
-      logmsg("COMMAND GetThreadContext hthread=%08X context=%08x len=%d:\n", tid, flags, len);
-      break;
-
-    case DRPC_SET_THREAD_CONTEXT:
-      tid = *(unsigned long *) (buf + 0); 
-      len = *(unsigned long *) (buf + 8);
-      ctxt = (CONTEXT *) (buf + 12);
-      logmsg("COMMAND SetThreadContext hthread=%08X eax=%08x len=%d:\n", tid, ctxt->Eax, len);
-      break;
-
-    case DRPC_GET_PEB_ADDRESS:
-      pid = *(unsigned long *) (buf + 0);
-      logmsg("COMMAND GetPebAddress hproc=%08X:\n", pid);
-      break;
-
-    case DRPC_GET_THREAD_SELECTOR:
-      tid = *(unsigned long *) (buf + 0);
-      sel = *(unsigned long *) (buf + 8);
-      len = *(unsigned long *) (buf + 12);
-      logmsg("COMMAND GetThreadSelector hthread=%08X selector=%08x len=%08x:\n", tid, sel, len);
-      break;
-
-    case DRPC_GET_DEBUG_EVENT:
-      logmsg("COMMAND GetDebugEvent %08X %08X:\n", *(unsigned long *) buf, *(unsigned long *) (buf + 4));
-      break;
-
-    case DRPC_CONTINUE_DEBUG_EVENT:
-      flags = *(unsigned long *) buf;
-      if (flags == 0x00010001)
-        logmsg("COMMAND ContinueDebugEvent: DBG_EXCEPTION_HANDLED\n");
-      else if (flags == 0x00010002)
-        logmsg("COMMAND ContinueDebugEvent: DBG_CONTINUE\n");
-      else
-        logmsg("COMMAND ContinueDebugEvent: %08X\n", flags);
-      break;
-
-    default:
-      logmsg("COMMAND %08X (reqlen=%d, rsplen=%d):\n", req->cmd, req->reqlen, req->rsplen);
-      if (req->reqlen > 0)
-      {
-	logmsg("reqdata: ");
-	dump_data(stdout, buf, req->reqlen > 256 ? 256 : req->reqlen, 4, NULL);
-	dump_data(logfile, buf, req->reqlen, 4, NULL);
-      }
-  }
-}
-
-void decode_response(struct drpc_packet *rsp, char *buf)
-{
-  int i;
-  int n;
-  int len;
-  unsigned long sesid;
-  struct drpc_processor_identification *cpuinfo;
-  struct drpc_system_version *vers;
-  CONTEXT *ctxt;
-
-  if (rsp->result != 0) logmsg("Debuggee returned error %08X\n", rsp->result);
-
-  switch (rsp->cmd & ~DRPC_REPLY)
-  {
-    case DRPC_GET_SYSTEM_VERSION:
-      vers = (struct drpc_system_version *) buf;
-
-#if 0
-      memset(vers, 0, sizeof(struct drpc_system_version));
-      vers->unknown1 = 0x14c;
-      vers->processors = 1;
-      vers->platformid = 2;
-      vers->build = 2000;
-      vers->spnum = 1;
-      strcpy(vers->spname, "SanOS");
-      strcpy(vers->buildname, "Version 0.0.4 (Build 15 Mar 2002)");
-#endif	
-      logmsg("RESPONSE GetSystemVersion: unknown1=%d, processors=%d platformid=%d version=%d sp=%d spname='%s' buildname='%s'\n",
-	     vers->unknown1, vers->processors, vers->platformid, vers->build, vers->spnum, vers->spname, vers->buildname);
-      break;
-    
-    case DRPC_GET_HOST_INFO:
-      logmsg("RESPONSE GetHostInfo: computer=%s, transport=%s\n", buf, buf + 16);
-      break;
-
-    case DRPC_GET_CPU_INFO:
-      cpuinfo = (struct drpc_processor_identification *) buf;
-      len = *(unsigned long *) (buf + 32);
-      logmsg("RESPONSE GetCpuInfo: family=%d model=%d stepping=%d vendor=%s len=%d\n", cpuinfo->family, cpuinfo->model, cpuinfo->stepping, cpuinfo->vendor, len);
-      break;
-
-    case DRPC_GET_PROCESS_LIST:
-      logmsg("RESPONSE GetProcessList:");
-      n = *(int *) (buf + rsp->rsplen - 4);
-      for (i = 0; i < n; i++) logmsg(" %4d", *(unsigned long *) (buf + i * 4));
-      logmsg("\n");
-      break;
-
-    case DRPC_GET_PROCESS_NAME:
-      logmsg("RESPONSE GetProcessName: procname=%S\n", buf);
-      break;
-
-    case DRPC_DEBUG_PROCESS:
-      sesid = *(unsigned long *) (buf + 0);
-      logmsg("RESPONSE DebugProcess: sesid=%d (%08x) param=%d\n", sesid, sesid, *(unsigned long *) (buf + 8));
-      break;
-
-    case DRPC_READ_PROCESS_MEMORY:
-      logmsg("RESPONSE ReadProcessMemory\n");
-      //logmsg("data:    ");
-      //dump_data(logfile, buf, rsp->rsplen, 4, NULL );
-      //dump_data(stdout, buf, rsp->rsplen > 256 ? 256 : rsp->rsplen, 4, NULL);
-      break;
-
-    case DRPC_WRITE_PROCESS_MEMORY:
-      len = *(unsigned long *) (buf);
-      logmsg("RESPONSE WriteProcessMemory: %d bytes written\n", len);
-      break;
-
-    case DRPC_SUSPEND_THREAD:
-      logmsg("RESPONSE SuspendThread: suspendcount=");
-      for (n = 0; n < (int) rsp->rsplen; n += 4) logmsg("%d ", *(unsigned long *) (buf + n));
-      logmsg("\n");
-      break;
-
-    case DRPC_RESUME_THREAD:
-      logmsg("RESPONSE ResumeThread: suspendcount=");
-      for (n = 0; n < (int) rsp->rsplen; n += 4) logmsg("%d ", *(unsigned long *) (buf + n));
-      logmsg("\n");
-      break;
-
-    case DRPC_GET_THREAD_CONTEXT:
-      ctxt = (CONTEXT *) buf;
-      logmsg("Response GetThreadContext\n");
-      logmsg("  SegGs: %08X SegFs: %08X SegEs: %08X SegDs: %08X\n", ctxt->SegGs, ctxt->SegFs, ctxt->SegEs, ctxt->SegDs);
-      logmsg("  Eax: %08X Ebx: %08X Ecx: %08X Edx: %08X\n", ctxt->Eax, ctxt->Ebx, ctxt->Ecx, ctxt->Edx);
-      logmsg("  Edi: %08X Esi: %08X Ebp: %08X Eip: %08X\n", ctxt->Edi, ctxt->Esi, ctxt->Ebp, ctxt->Eip);
-      logmsg("  Esp: %08X SegSs: %08X SegCs: %08X EFlags: %08X\n", ctxt->Esp, ctxt->SegSs, ctxt->SegCs, ctxt->EFlags);
-      break;
-
-    case DRPC_SET_THREAD_CONTEXT:
-      len = *(unsigned long *) (buf + 0);
-      logmsg("Response SetThreadContext: len=%d\n", len);
-      break;
-
-    case DRPC_GET_PEB_ADDRESS:
-      logmsg("Response GetPebAddress: PEB %08x\n", *(unsigned long *) (buf + 0));
-      break;
-
-    case DRPC_GET_THREAD_SELECTOR:
-      logmsg("Response GetSelector: LDT %08x %08x\n", *(unsigned long *) (buf + 0), *(unsigned long *) (buf + 4));
-      break;
-
-    case DRPC_GET_DEBUG_EVENT:
-      if (rsp->result == 0) decode_debug_event("GetDebugEvent", rsp, buf);
-      break;
-
-    case DRPC_CONTINUE_DEBUG_EVENT:
-      if (rsp->result == 0 && rsp->rsplen > 0) decode_debug_event("GetDebugEvent", rsp, buf);
-      break;
-
-    //case 0x0004C004:
-    //  memset(buf, 0, rsp->rsplen);
-
-    default:
-      if (rsp->rsplen > 0)
-      {
-	logmsg("rspdata: ");
-	dump_data(stdout, buf, rsp->rsplen > 256 ? 256 : rsp->rsplen, 4, NULL /*prevrsp*/);
-	dump_data(logfile, buf, rsp->rsplen, 4, NULL /*prevrsp*/);
-      }
-  }
-}
-#endif
-
-void get_process_list(struct session *sess, struct drpc_packet *pkt, char *buf)
+void get_process_list(struct drpc_packet *pkt, char *buf)
 {
   // Only one process
-  *(int *) (buf + 0) = 1;
+  *(int *) (buf + 0) = GLOBAL_PROCID;
   *(int *) (buf + pkt->rsplen - 4) = 1; 
 }
 
-void get_process_name(struct session *sess, struct drpc_packet *pkt, char *buf)
+//
+// get_process_name
+//
+
+void get_process_name(struct drpc_packet *pkt, char *buf)
 {
   wcscpy((wchar_t *) buf, L"SanOS Kernel");
 }
 
-void handle_command(struct session *sess, struct drpc_packet *pkt, char *buf)
+//
+// handle_command
+//
+
+void handle_command(struct drpc_packet *pkt, char *buf)
 {
   unsigned long pid;
   unsigned long tid;
@@ -572,7 +236,7 @@ void handle_command(struct session *sess, struct drpc_packet *pkt, char *buf)
   CONTEXT *ctxt;
 
   // Validate request
-  if (pkt->startmark != sess->startmark) logmsg("WARNING: unexpected startmark %08X\n", pkt->startmark);
+  if (pkt->startmark != startmark) logmsg("WARNING: unexpected startmark %08X\n", pkt->startmark);
   if (pkt->reserved1 != 0) logmsg("WARNING: reserved1 is %08X\n", pkt->reserved1);
   if (pkt->reserved2 != 0) logmsg("WARNING: reserved2 is %08X\n", pkt->reserved2);
   if (pkt->result != 0) logmsg("WARNING: result is %08X\n", pkt->result);
@@ -599,13 +263,13 @@ void handle_command(struct session *sess, struct drpc_packet *pkt, char *buf)
 
     case DRPC_GET_PROCESS_LIST:
       logmsg("COMMAND GetProcessList: maxpids=%d\n", *(unsigned long *) buf);
-      get_process_list(sess, pkt, buf);
+      get_process_list(pkt, buf);
       break;
 
     case DRPC_GET_PROCESS_NAME:
       pid = *(unsigned long *) buf;
       logmsg("COMMAND GetProcessName pid=%d:\n", pid);
-      get_process_name(sess, pkt, buf);
+      get_process_name(pkt, buf);
       break;
 
     case DRPC_DEBUG_PROCESS:
@@ -702,21 +366,59 @@ void handle_command(struct session *sess, struct drpc_packet *pkt, char *buf)
 
     default:
       logmsg("COMMAND %08X (reqlen=%d, rsplen=%d):\n", pkt->cmd, pkt->reqlen, pkt->rsplen);
+#if 0
       if (pkt->reqlen > 0)
       {
 	logmsg("reqdata: ");
 	dump_data(stdout, buf, pkt->reqlen > 256 ? 256 : pkt->reqlen, 4, NULL);
 	dump_data(logfile, buf, pkt->reqlen, 4, NULL);
       }
+#endif
+
   }
 
   pkt->cmd |= 0x00010000;
   logmsg("\n");
 }
 
-void handle_session(void *arg)
+//
+// handshake
+//
+
+int handshake()
 {
-  struct session *sess = (struct session *) arg;
+  int bytes;
+  unsigned long buf[64];
+
+  // Receive DRPC hello request
+  bytes = recv(debugger, (char *) buf, 256, 0);
+  if (bytes == 0 || bytes < 0) return -1;
+
+  if (buf[0] != DRPC_SIGNATURE)
+  {
+    logmsg("unexpected signature %08X\n");
+    return -1;
+  }
+
+  // Send DRPC hello response
+  startmark = DRPC_STARTMARK;
+  memset(buf, 0, 128);
+  buf[0] = DRPC_SIGNATURE;
+  buf[1] = 2;
+  buf[6] = startmark;
+  buf[10] = 1;
+
+  send(debugger, (char *) buf, 128, 0);
+  
+  return 0;
+}
+
+//
+// handle_session
+//
+
+void handle_session()
+{
   struct drpc_packet pkt;
   int bytes;
   char *buf = NULL;
@@ -724,27 +426,26 @@ void handle_session(void *arg)
   char fn[256];
 
   printf("----------------------------------------------------------------------------------------------\n");
-
   sprintf(fn, "dbgspy%8d.log", GetTickCount());
-  logfile = fopen(fn, "w");
+  //logfile = fopen(fn, "w");
 
-  if (handshake(sess) < 0)
+  if (handshake() < 0)
   {
-    CloseHandle(sess->debuggee);
-    closesocket(sess->debugger);
+    closesocket(debugger);
     return;
   }
 
   while (1)
   {
     // Receive header from debugger
-    bytes = recv(sess->debugger, (char *) &pkt, sizeof(struct drpc_packet), 0);
+    bytes = recv(debugger, (char *) &pkt, sizeof(struct drpc_packet), 0);
     if (bytes == 0 || bytes < 0)
     {
-      CloseHandle(sess->debuggee);
-      closesocket(sess->debugger);
+      closesocket(debugger);
       break;
     }
+    if (bytes != sizeof(struct drpc_packet)) panic("packet truncated");
+    printf("bytes=%d\n", bytes);
       
     // Allocate data
     if (pkt.reqlen > 0 && pkt.reqlen > buflen) 
@@ -760,46 +461,28 @@ void handle_session(void *arg)
     }
 
     // Receive request data
-    if (pkt.reqlen > 0) recv(sess->debugger, buf, pkt.reqlen, 0);
+    if (pkt.reqlen > 0) recv(debugger, buf, pkt.reqlen, 0);
 
     // Handle command
-    handle_command(sess, &pkt, buf);
+    handle_command(&pkt, buf);
 
     // Send response to debugger
-    send(sess->debugger, (char *) &pkt, sizeof(struct drpc_packet), 0);
-    if (pkt.rsplen > 0) send(sess->debugger, buf, pkt.rsplen, 0);
+    send(debugger, (char *) &pkt, sizeof(struct drpc_packet), 0);
+    if (pkt.rsplen > 0) send(debugger, buf, pkt.rsplen, 0);
   }
 
   printf("terminating session\n");
-  fclose(logfile);
+  if (logfile) fclose(logfile);
   logfile = NULL;
+  if (buf) free(buf);
 }
 
-void handle_connection(SOCKET s)
-{
-  struct session *sess;
-
-  printf("starting new session\n");
-  sess = (struct session *) malloc(sizeof(struct session));
-  sess->debugger = s;
-
-  _beginthread(handle_session, 0, sess);
-}
-
-BOOL WINAPI break_handler(DWORD ctrl_type)
-{
-  if (ctrl_type == CTRL_BREAK_EVENT || ctrl_type ==  CTRL_C_EVENT)
-  {
-    closesocket(listener);
-    return TRUE;
-  }
-  else
-    return FALSE;
-}
+//
+// main
+//
 
 void main()
 { 
-  SOCKET s;
   WSADATA wsadata;
   SOCKADDR_IN sin;
   int rc;
@@ -822,13 +505,15 @@ void main()
   // Listen for incoming connections on the socket
   if (listen(listener, 5) == SOCKET_ERROR) panic("error in listen");
 
+  printf("waiting for debugger...\n");
+
   // Wait and accept new connection from client
   while (1)
   {
-    s = accept(listener, NULL, NULL);
-    if (s == INVALID_SOCKET) panic("error in accept");
+    debugger = accept(listener, NULL, NULL);
+    if (debugger == INVALID_SOCKET) panic("error in accept");
 
-    handle_connection(s);
+    handle_session();
   }
 
   closesocket(listener);

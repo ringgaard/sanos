@@ -817,6 +817,8 @@ void shell()
       test(arg);
     else if (strcmp(cmd, "load") == 0)
       load_mod(arg);
+    else if (strcmp(cmd, "break") == 0)
+      dbg_break();
     else if (*cmd)
       kprintf("%s: unknown command\n", cmd);
   }

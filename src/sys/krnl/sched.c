@@ -358,13 +358,13 @@ void queue_dpc(struct dpc *dpc, dpcproc_t proc, void *arg)
 {
   if (dpc->active) return;
 
-  __asm { cli };
+  cli();
   dpc->proc = proc;
   dpc->arg = arg;
   dpc->next = dpc_queue;
   dpc->active = 1;
   dpc_queue = dpc;
-  __asm { sti };
+  sti();
   resched = 1;
 }
 
@@ -387,10 +387,10 @@ void dispatch_dpc_queue()
   dpcproc_t proc;
 
   // Get list of queued deferred procedure calls
-  __asm { cli };
+  cli();
   queue = dpc_queue;
   dpc_queue = NULL;
-  __asm { sti };
+  sti();
 
   // Execute each DPC
   while (queue)
@@ -477,7 +477,7 @@ void idle_task()
   while (1) 
   {
     idle = 1;
-    __asm { hlt };
+    halt();
     idle = 0;
 
     if (dead_tcb_queue) collect_dead_tcbs();

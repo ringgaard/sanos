@@ -257,7 +257,7 @@ static void blk2ths(struct fd *fd, blkno_t blkno, unsigned char *track, unsigned
 static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkno_t blkno)
 {
   struct fdresult result;
-  int retries = 3;
+  int retries = 5;
   unsigned char track, head, sector;
   unsigned int remaining;
 
@@ -342,10 +342,15 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
     result.sector = fd_result();
     result.size = fd_result();
 
-    if ((result.st0 & 0xc0) == 0x40 && (result.st1 & 0x04) == 0x04) 
+    if ((result.st0 & 0xc0) == 0) 
     {
-      // Abnormal command termination because the specified sector
-      // could not be found.  Recalibrate before retrying.
+      // Successful transfer
+      if (mode == FD_MODE_READ) memcpy(buffer, fd->fdc->dmabuf, count);
+      return count;
+    }
+    else // if ((result.st0 & 0xc0) == 0x40 && (result.st1 & 0x04) == 0x04) 
+    {
+      // Recalibrate before retrying.
       reset_event(&fd->fdc->intr);
       fd_command(CMD_RECAL);
 
@@ -355,13 +360,9 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
       fd_command(CMD_SENSEI);
       result.st0 = fd_result();
       result.track = fd_result();
+
+      fd->curtrack = 0xFF;
     } 
-    else if ((result.st0 & 0xc0) == 0) 
-    {
-      // Successful transfer
-      if (mode == FD_MODE_READ) memcpy(buffer, fd->fdc->dmabuf, count);
-      return count;
-    }
 
     retries--;
   }

@@ -31,8 +31,8 @@ void main(void *arg);
 void panic(char *msg)
 {
   kprintf("panic: %s\n", msg);
-  __asm { cli };
-  __asm { hlt };
+  if (debugging) dbg_output(msg);
+  dbg_break();
 }
 
 void exit(int status)
@@ -45,8 +45,8 @@ void exit(int status)
   unmount_all();
   kprintf("system stopped\n");
   sleep(100);
-  __asm { cli };
-  __asm { hlt };
+  cli();
+  halt();
 }
 
 static int load_kernel_config()
@@ -273,6 +273,8 @@ void main(void *arg)
 
   // Install device drivers
   install_drivers();
+
+  //dbg_break();
 
   // Initialize network
   init_net();

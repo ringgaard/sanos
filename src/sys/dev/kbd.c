@@ -158,8 +158,8 @@ void reboot()
 {
   while (_inp(KB_STATUS) & KB_BUSY);
   _outp(KB_COMMAND, 0xFE);
-  __asm { cli };
-  __asm { hlt };
+  cli();
+  halt();
 }		
 
 //

@@ -57,7 +57,12 @@ struct dbg_hdr
 struct dbg_connect
 {
   int version;
-  tid_t curthread;
+  
+  tid_t tid;
+  unsigned long traptype;
+  unsigned long errcode;
+  unsigned long eip;
+  void *addr;
 };
 
 struct dbg_memory
@@ -88,11 +93,12 @@ struct dbg_selector
 struct dbg_module
 {
   int count;
-  hmodule_t hmods[0];
+  struct { hmodule_t hmod; char *name; } mods[0];
 };
 
 struct dbg_evt_trap
 {
+  tid_t tid;
   unsigned long traptype;
   unsigned long errcode;
   unsigned long eip;
@@ -130,6 +136,8 @@ struct dbg_evt_output
 
 union dbg_body
 {
+  char *string;
+  unsigned char data[0];
   struct dbg_connect conn;
   struct dbg_memory mem;
   struct dbg_thread thr;
@@ -137,7 +145,7 @@ union dbg_body
   struct dbg_selector sel;
   struct dbg_module mod;
 
-  struct dbg_evt_trap;
+  struct dbg_evt_trap trap;
   struct dbg_evt_create_thread create;
   struct dbg_evt_exit_thread exit;
   struct dbg_evt_load_module load;
@@ -145,9 +153,20 @@ union dbg_body
   struct dbg_evt_output output;
 };
 
+struct dbg_event
+{
+  struct dbg_event *next;
+  tid_t tid;
+  union dbg_body evt;
+};
+
 #ifdef KERNEL
 
+extern int debugging;
+
 void dumpregs(struct context *ctxt);
+
+void __inline dbg_break() { __asm int 3 };
 
 void dbg_enter(struct context *ctxt, void *addr);
 

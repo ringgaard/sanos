@@ -14,16 +14,18 @@
 #define MAX_DBG_PACKETLEN (MAX_DBG_CHUNKSIZE + sizeof(union dbg_body))
 
 int debugging = 0;
+int debugger_active = 0;
 static char dbgdata[MAX_DBG_PACKETLEN];
+struct dbg_evt_trap last_trap;
 
 void init_debug_port()
 {
   // Turn off interrupts
   _outp(DEBUGPORT + 1, 0);
   
-  // Set 9600 baud, 8 bits, no parity, one stopbit
+  // Set 115200 baud, 8 bits, no parity, one stopbit
   _outp(DEBUGPORT + 3, 0x80);
-  _outp(DEBUGPORT + 0, 0x0C); // 0x0C = 9600, 0x01 = 115200
+  _outp(DEBUGPORT + 0, 0x01); // 0x0C = 9600, 0x01 = 115200
   _outp(DEBUGPORT + 1, 0x00);
   _outp(DEBUGPORT + 3, 0x03);
   _outp(DEBUGPORT + 2, 0xC7);
@@ -38,6 +40,7 @@ static void dbg_send(void *buffer, int count)
   {
     while ((_inp(DEBUGPORT + 5) & 0x20) == 0);
     _outp(DEBUGPORT, *p++);
+    //kprintf("dbg_send: %02X\n", p[-1]);
   }
 }
 
@@ -49,6 +52,7 @@ static void dbg_recv(void *buffer, int count)
   {
     while ((_inp(DEBUGPORT + 5) & 0x01) == 0);
     *p++ = _inp(DEBUGPORT) & 0xFF;
+    //kprintf("dbg_recv: %02X\n", p[-1]);
   }
 }
 
@@ -101,7 +105,7 @@ static int dbg_recv_packet(struct dbg_hdr *hdr, void *data)
   dbg_recv(data, hdr->len);
 
   checksum = 0;
-  p = (unsigned char *) &hdr;
+  p = (unsigned char *) hdr;
   for (n = 0; n < sizeof(struct dbg_hdr); n++) checksum += *p++;
   p = (unsigned char *) data;
   for (n = 0; n < hdr->len; n++) checksum += *p++;
@@ -117,7 +121,11 @@ static void dbg_connect(struct dbg_hdr *hdr, union dbg_body *body)
   else
   {
     body->conn.version = DRPC_VERSION;
-    body->conn.curthread = current_thread()->id;
+    body->conn.tid = last_trap.tid;
+    body->conn.traptype = last_trap.traptype;
+    body->conn.errcode = last_trap.errcode;
+    body->conn.eip = last_trap.eip;
+    body->conn.addr = last_trap.addr;
     dbg_send_packet(hdr->cmd + DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_connect));
   }
 }
@@ -242,27 +250,38 @@ static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
   {
     while (1)
     {
-      body->mod.hmods[n++] = mod->hmod;
+      body->mod.mods[n].hmod = mod->hmod;
+      body->mod.mods[n].name = mod->name;
+      n++;
+
       mod = mod->next;
       if (mod == kmods.modules) break;
     }
   }
 
-  if (peb && peb->usermods)
+  if (page_mapped(peb) && peb->usermods)
   {
     mod = peb->usermods->modules;
     while (1)
     {
-      body->mod.hmods[n++] = mod->hmod;
+      body->mod.mods[n].hmod = mod->hmod;
+      body->mod.mods[n].name = mod->name;
+      n++;
+
       mod = mod->next;
       if (mod == peb->usermods->modules) break;
     }
   }
 
-  if (n == 0) body->mod.hmods[n++] = (hmodule_t) OSBASE;
+  if (n == 0) 
+  {
+    body->mod.mods[n].hmod = (hmodule_t) OSBASE;
+    body->mod.mods[n].name = "krnl.dll";
+    n++;
+  }
 
   body->mod.count = n;
-  dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_module) + n * sizeof(hmodule_t));
+  dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_module) + n * 8);
 }
 
 static void dbg_get_threads(struct dbg_hdr *hdr, union dbg_body *body)
@@ -301,6 +320,8 @@ static void dbg_main()
       kprintf("dbg: error %d receiving debugger command\n", rc);
       continue;
     }
+
+    kprintf("dbg: command %d %d len=%d\n", hdr.id, hdr.cmd, hdr.len);
 
     switch (hdr.cmd)
     {
@@ -366,8 +387,6 @@ void shell();
 
 void dbg_enter(struct context *ctxt, void *addr)
 {
-  struct dbg_evt_trap trap;
-
   kprintf("trap %d (%p)\n", ctxt->traptype, addr);
   kprintf("enter kernel debugger\n");
   current_thread()->ctxt = ctxt;
@@ -376,14 +395,17 @@ void dbg_enter(struct context *ctxt, void *addr)
   //if (ctxt->traptype != 3) panic("system halted");
   //shell();
 
+  last_trap.tid = current_thread()->id;
+  last_trap.traptype = ctxt->traptype;
+  last_trap.errcode = ctxt->errcode;
+  last_trap.eip = ctxt->eip;
+  last_trap.addr = addr;
+
+  sti();
+
   if (debugging)
   {
-    trap.traptype = ctxt->traptype;
-    trap.errcode = ctxt->errcode;
-    trap.eip = ctxt->eip;
-    trap.addr = addr;
-
-    dbg_send_packet(DBGEVT_TRAP, 0, &trap, sizeof(struct dbg_evt_trap));
+    dbg_send_packet(DBGEVT_TRAP, 0, &last_trap, sizeof(struct dbg_evt_trap));
   }
 
   dbg_main();
@@ -453,7 +475,7 @@ void dbg_output(char *msg)
 {
   struct dbg_evt_output output;
 
-  if (debugging)
+  if (debugging && !debugger_active)
   {
     output.msgptr = msg;
     output.msglen = strlen(msg) + 1;

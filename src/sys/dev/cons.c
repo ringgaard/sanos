@@ -103,8 +103,11 @@ void kprintf(const char *fmt,...)
   vsprintf(buffer, fmt, args);
   va_end(args);
   
+  //if (debugging) dbg_output(buffer);
+
   if (consdev == NODEV)
     print_string(buffer);
   else
     dev_write(consdev, buffer, strlen(buffer), 0);
+
 }

@@ -371,19 +371,19 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       return 0;
 
     case IOCTL_SERIAL_FLUSH_TX_BUFFER:
-      __asm { cli };
+      cli();
       fifo_clear(&sp->txq);
       set_sem(&sp->tx_sem, QUEUE_SIZE);
       sp->tx_queue_rel = 0;
-      __asm { sti };
+      sti();
       return 0;
 
     case IOCTL_SERIAL_FLUSH_RX_BUFFER:
-      __asm { cli };
+      cli();
       fifo_clear(&sp->rxq);
       set_sem(&sp->rx_sem, 0);
       sp->rx_queue_rel = 0;
-      __asm { sti };
+      sti();
       return 0;
   }
   
@@ -456,16 +456,16 @@ static void drain_tx_queue(struct serial_port *sp)
     if (!(lsr & LSR_TXRDY)) break;
 
     // Is tx queue empty
-    __asm { cli };
+    cli();
     if (fifo_empty(&sp->txq))
     {
-      __asm { sti };
+      sti();
       break;
     }
 
     // Get next byte from queue
     b = fifo_get(&sp->txq);
-    __asm { sti };
+    sti();
 
 //kprintf("serial: xmit %02X (drain)\n", b);
     _outp(sp->iobase + UART_TX, b);
@@ -489,7 +489,7 @@ static void serial_dpc(void *arg)
 
   // Release transmitter and receiver queue resources and
   // signal line or modem status change
-  __asm { cli };
+  cli();
   tqr = sp->tx_queue_rel;
   sp->tx_queue_rel = 0;
   rqr = sp->rx_queue_rel;
@@ -498,7 +498,7 @@ static void serial_dpc(void *arg)
   sp->mlsc = 0;
   rls = sp->rls;
   sp->rls = 0;
-  __asm { sti };
+  sti();
 
   if (tqr > 0) release_sem(&sp->tx_sem, tqr);
   if (rqr > 0) release_sem(&sp->rx_sem, rqr);

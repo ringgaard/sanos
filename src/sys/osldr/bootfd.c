@@ -382,7 +382,7 @@ static void init_boot_intrs()
   __asm { lidt bootidtsel }
 
   // Enable interrupts
-  __asm { sti };
+  sti();
 }
 
 //
@@ -424,5 +424,5 @@ void uninit_bootfd()
   _outp(FDC_DOR, fdc.dor);
 
   // Disable interrupts
-  __asm { cli };
+  cli();
 }
