@@ -224,6 +224,7 @@ void main(void *arg)
   init_keyboard();
   init_cons();
   init_serial();
+  init_cmos();
   //init_ramdisk("ramdisk0", 2 * M);
 
   // Initialize network

@@ -106,7 +106,7 @@ static void thread_sync_test()
   create_task(printtask, "**", PRIORITY_NORMAL);
 }
 
-void dump_memory(unsigned char *p, int len)
+void dump_memory(unsigned long addr, unsigned char *p, int len)
 {
   int i;
   char *end;
@@ -117,11 +117,12 @@ void dump_memory(unsigned char *p, int len)
   line = 0;
   while (p < end)
   {
-    kprintf("%08X ", p);
+    kprintf("%08X ", addr);
     for (i = 0; i < 16; i++) kprintf("%02X ", p[i]);
     for (i = 0; i < 16; i++) kprintf("%c", p[i] < 0x20 ? '.' : p[i]);
     kprintf("\n");
     p += 16;
+    addr += 16;
     if (++line == 24)
     {
       dev_read(consdev, &dummy, 1, 0);
@@ -150,7 +151,7 @@ static void dump_disk(char *devname, blkno_t blkno)
 
   kprintf("block %d:\n", blkno);
   dev_read(dev, buffer, 512, blkno);
-  dump_memory(buffer, 512);
+  dump_memory(0, buffer, 512);
   dev_close(dev);
 }
 
@@ -679,6 +680,14 @@ static void thread_list()
   }
 }
 
+static void cmos_dump()
+{
+  int i;
+
+  for (i = 0; i < 128; i++) buffer[i] = read_cmos_reg(i);
+  dump_memory(0, buffer, 128);
+}
+
 static void test(char *arg)
 {
   devno_t dev;
@@ -740,7 +749,7 @@ void shell()
     else if (strcmp(cmd, "mem") == 0)
       mem_usage();
     else if (strcmp(cmd, "d") == 0)
-      dump_memory((unsigned char *) atoi(arg), atoi(arg2));
+      dump_memory(atoi(arg), (unsigned char *) atoi(arg), atoi(arg2));
     else if (strcmp(cmd, "dd") == 0)
       dump_disk(arg, atoi(arg2));
     else if (strcmp(cmd, "date") == 0)
@@ -775,6 +784,8 @@ void shell()
       fs_list();
     else if (strcmp(cmd, "threads") == 0)
       thread_list();
+    else if (strcmp(cmd, "cmos") == 0)
+      cmos_dump();
     else if (strcmp(cmd, "test") == 0)
       test(arg);
     else if (*cmd)

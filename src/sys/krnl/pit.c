@@ -81,7 +81,7 @@ void timer_handler(struct context *ctxt, void *arg)
   eoi(IRQ_TMR);
 }
 
-static int read_cmos_reg(int reg)
+unsigned char read_cmos_reg(int reg)
 {
   unsigned char val;
 
@@ -89,6 +89,12 @@ static int read_cmos_reg(int reg)
   val = _inp(0x71) & 0xFF;
 
   return val;
+}
+
+void write_cmos_reg(int reg, unsigned char val)
+{
+  _outp(0x70, reg);
+  _outp(0x71, val);
 }
 
 static int read_bcd_cmos_reg(int reg)
@@ -101,12 +107,12 @@ static int read_bcd_cmos_reg(int reg)
 
 static void get_cmos_time(struct tm *tm)
 {
-  tm->tm_year = read_bcd_cmos_reg(9) + 100;
-  tm->tm_mon = read_bcd_cmos_reg(8) - 1;
-  tm->tm_mday = read_bcd_cmos_reg(7);
-  tm->tm_hour = read_bcd_cmos_reg(4);
-  tm->tm_min = read_bcd_cmos_reg(2);
-  tm->tm_sec = read_bcd_cmos_reg(0);
+  tm->tm_year = read_bcd_cmos_reg(0x09) + (read_bcd_cmos_reg(0x32) * 100) - 1900;
+  tm->tm_mon = read_bcd_cmos_reg(0x08) - 1;
+  tm->tm_mday = read_bcd_cmos_reg(0x07);
+  tm->tm_hour = read_bcd_cmos_reg(0x04);
+  tm->tm_min = read_bcd_cmos_reg(0x02);
+  tm->tm_sec = read_bcd_cmos_reg(0x00);
 
   tm->tm_wday = 0;
   tm->tm_yday = 0;

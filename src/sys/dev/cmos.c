@@ -1,73 +1,61 @@
 //
-// ramdisk.c
+// cmod.c
 //
 // Copyright (c) 2001 Michael Ringgaard. All rights reserved.
 //
-// RAM disk driver
+// CMOS VMRAM driver
 //
 
 #include <os/krnl.h>
 
-#define SECTORSIZE              512
+#define CMOS_REGISTERS 128
 
-struct ramdisk
+static int cmos_ioctl(struct dev *dev, int cmd, void *args, size_t size)
 {
-  unsigned int blks;
-  char *data;
-};
-
-static int ramdisk_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
-  struct ramdisk *rd = (struct ramdisk *) dev->privdata;
-
   switch (cmd)
   {
     case IOCTL_GETDEVSIZE:
-      return rd->blks;
+      return CMOS_REGISTERS;
 
     case IOCTL_GETBLKSIZE:
-      return SECTORSIZE;
+      return 1;
   }
 
   return -ENOSYS;
 }
 
-static int ramdisk_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int cmos_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
 {
-  struct ramdisk *rd = (struct ramdisk *) dev->privdata;
+  unsigned int n;
 
   if (count == 0) return 0;
-  if (blkno + count / SECTORSIZE > rd->blks) return -EFAULT;
-  memcpy(buffer, rd->data + blkno * SECTORSIZE, count);
+  if (blkno + count > CMOS_REGISTERS) return -EFAULT;
+
+  for (n = 0; n < count; n++) ((unsigned char *) buffer)[n] = read_cmos_reg(n + blkno);
   return count;
 }
 
-static int ramdisk_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int cmos_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
 {
-  struct ramdisk *rd = (struct ramdisk *) dev->privdata;
+  unsigned int n;
 
   if (count == 0) return 0;
-  if (blkno + count / SECTORSIZE > rd->blks) return -EFAULT;
-  memcpy(rd->data + blkno * SECTORSIZE, buffer, count);
+  if (blkno + count > CMOS_REGISTERS) return -EFAULT;
+
+  for (n = 0; n < count; n++) write_cmos_reg(n + blkno, ((unsigned char *) buffer)[n]);
   return count;
 }
 
-struct driver ramdisk_driver =
+struct driver cmos_driver =
 {
-  "ramdisk",
+  "cmos",
   DEV_TYPE_BLOCK,
-  ramdisk_ioctl,
-  ramdisk_read,
-  ramdisk_write
+  cmos_ioctl,
+  cmos_read,
+  cmos_write
 };
 
-void init_ramdisk(char *devname, int size)
+void init_cmos()
 {
-  struct ramdisk *rd;
-
-  rd = kmalloc(sizeof(struct ramdisk));
-  rd->blks = size / SECTORSIZE;
-  rd->data = kmalloc(size);
-  dev_make(devname, &ramdisk_driver, rd);
-  kprintf("%s: ramdisk (%d MB)\n", devname, size / M);
+  dev_make("cmos", &cmos_driver, NULL);
 }

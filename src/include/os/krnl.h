@@ -78,6 +78,10 @@ extern devno_t consdev;
 void init_cons();
 void kprintf(const char *fmt, ...);
 
+// cmos.c
+
+void init_cmos();
+
 // null.c
 
 extern devno_t nulldev;
