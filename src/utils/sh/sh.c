@@ -158,7 +158,7 @@ static void list_dir(int argc, char **argv)
 	//printf("\n");
       }
 
-      if (buf.mode & FS_DIRECTORY) strcat(dirp.name, "/");
+      if ((buf.mode & S_IFMT) == S_IFDIR) strcat(dirp.name, "/");
       printf("%-20s", dirp.name);
       col++;
     }
@@ -179,7 +179,7 @@ static void list_dir(int argc, char **argv)
       }
       else
       {
-	if (buf.mode & FS_DIRECTORY)
+	if ((buf.mode & S_IFMT) == S_IFDIR)
 	  printf("         ");
 	else
 	{
@@ -198,7 +198,7 @@ static void list_dir(int argc, char **argv)
       printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
       printf("%s", dirp.name);
-      if (buf.mode & FS_DIRECTORY) printf("/", dirp.name);
+      if ((buf.mode & S_IFMT) == S_IFDIR) printf("/", dirp.name);
 
       printf("\n");
     }

@@ -93,6 +93,7 @@ struct stat
 #define S_IFIFO         0x1000         // Pipe
 #define S_IFCHR         0x2000         // Character device
 #define S_IFDIR         0x4000         // Directory
+#define S_IFBLK         0x6000         // Block device
 #define S_IFREG         0x8000         // Regular file
 
 #define S_IREAD         0x0100         // Read permission

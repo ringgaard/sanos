@@ -116,27 +116,27 @@ int ls(struct httpd_connection *conn)
     tm = gmtime(&statbuf.mtime);
     if (!tm) return -EINVAL;
 
-    if (statbuf.mode & FS_DIRECTORY) 
+    if ((statbuf.mode & S_IFMT) == S_IFDIR) 
       httpd_send(conn->rsp, "<IMG SRC=\"/icons/folder.gif\"> ", -1);
     else
       httpd_send(conn->rsp, "<IMG SRC=\"/icons/file.gif\"> ", -1);
 
     httpd_send(conn->rsp, "<A HREF=\"", -1);
     httpd_send(conn->rsp, dirp.name, dirp.namelen);
-    if (statbuf.mode & FS_DIRECTORY) httpd_send(conn->rsp, "/", -1);
+    if ((statbuf.mode & S_IFMT) == S_IFDIR) httpd_send(conn->rsp, "/", -1);
     httpd_send(conn->rsp, "\">", -1);
 
     httpd_send(conn->rsp, dirp.name, dirp.namelen);
-    if (statbuf.mode & FS_DIRECTORY) httpd_send(conn->rsp, "/", -1);
+    if ((statbuf.mode & S_IFMT) == S_IFDIR) httpd_send(conn->rsp, "/", -1);
     httpd_send(conn->rsp, "</A>", -1);
-    if ((statbuf.mode & FS_DIRECTORY) == 0) httpd_send(conn->rsp, " ", -1);
+    if ((statbuf.mode & S_IFMT) != S_IFDIR) httpd_send(conn->rsp, " ", -1);
 
     if (dirp.namelen < 32) httpd_send(conn->rsp, "                                        ", 32 - dirp.namelen);
 
     strftime(buf, 32, "%d-%b-%Y %H:%M:%S", tm);
     httpd_send(conn->rsp, buf, -1);
 
-    if ((statbuf.mode & FS_DIRECTORY) == 0)
+    if ((statbuf.mode & S_IFMT) != S_IFDIR)
     {
       if (statbuf.quad.size_high == 0 && statbuf.quad.size_low < 1*K)
 	sprintf(buf, "%8d B", statbuf.quad.size_low);
@@ -180,7 +180,7 @@ int httpd_file_handler(struct httpd_connection *conn)
   rc = stat(filename, &statbuf);
   if (rc < 0) return httpd_return_file_error(conn, rc);
 
-  if (statbuf.mode & FS_DIRECTORY)
+  if ((statbuf.mode & S_IFMT) == S_IFDIR)
   {
     int urllen = strlen(conn->req->decoded_url);
 
@@ -214,13 +214,13 @@ int httpd_file_handler(struct httpd_connection *conn)
       }
       else
       {
-	if (statbuf.mode & FS_DIRECTORY) return 500;
+	if ((statbuf.mode & S_IFMT) == S_IFDIR) return 500;
 	filename = buf;
       }
     }
   }
 
-  if ((statbuf.mode & FS_BLKDEV) == 0)
+  if ((statbuf.mode & S_IFMT) == S_IFREG)
   {
     conn->rsp->content_length = statbuf.quad.size_low;
     conn->rsp->last_modified = statbuf.mtime;

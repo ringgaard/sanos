@@ -345,7 +345,7 @@ static void fill_find_data(LPWIN32_FIND_DATA fd, char *filename, struct stat *st
   memset(fd, 0, sizeof(WIN32_FIND_DATA));
   strcpy(fd->cFileName, filename);
 
-  if (statbuf->mode & FS_DIRECTORY) 
+  if ((statbuf->mode & S_IFMT) == S_IFDIR) 
     fd->dwFileAttributes |= FILE_ATTRIBUTE_DIRECTORY;
   else
     fd->dwFileAttributes |= FILE_ATTRIBUTE_NORMAL;
@@ -718,7 +718,7 @@ DWORD WINAPI GetFileAttributesA
   if (stat((char *) lpFileName, &fs) < 0) return -1;
 
   // TODO: set other attributes for files (hidden, system, readonly etc.)
-  if (fs.mode & FS_DIRECTORY) 
+  if ((fs.mode & S_IFMT) == S_IFDIR) 
     return 0x00000010;
   else
     return 0x00000080;

@@ -202,7 +202,7 @@ int _stat(const char *path, struct _stat *buffer)
     buffer->st_mtime = fs.mtime;
     buffer->st_size = fs.quad.size_low;
     buffer->st_mode = S_IREAD | S_IWRITE | S_IEXEC;
-    if (fs.mode & FS_DIRECTORY)
+    if ((fs.mode & S_IFMT) == S_IFDIR)
       buffer->st_mode |= S_IFDIR;
     else
       buffer->st_mode |= S_IFREG;
@@ -235,7 +235,7 @@ __int64 _stati64(const char *path, struct _stati64 *buffer)
     buffer->st_mtime = fs.mtime;
     buffer->st_size = fs.size;
     buffer->st_mode = S_IREAD | S_IWRITE | S_IEXEC;
-    if (fs.mode & FS_DIRECTORY)
+    if ((fs.mode & S_IFMT) == S_IFDIR)
       buffer->st_mode |= S_IFDIR;
     else
       buffer->st_mode |= S_IFREG;
@@ -266,7 +266,7 @@ int _fstat(int handle, struct _stat *buffer)
     buffer->st_mtime = fs.mtime;
     buffer->st_size = fs.quad.size_low;
     buffer->st_mode = S_IREAD | S_IWRITE | S_IEXEC;
-    if (fs.mode & FS_DIRECTORY)
+    if ((fs.mode & S_IFMT) == S_IFDIR)
       buffer->st_mode |= S_IFDIR;
     else
       buffer->st_mode |= S_IFREG;
@@ -296,7 +296,7 @@ __int64 _fstati64(int handle, struct _stati64 *buffer)
     buffer->st_mtime = fs.mtime;
     buffer->st_size = fs.size;
     buffer->st_mode = S_IREAD | S_IWRITE | S_IEXEC;
-    if (fs.mode & FS_DIRECTORY)
+    if ((fs.mode & S_IFMT) == S_IFDIR)
       buffer->st_mode |= S_IFDIR;
     else
       buffer->st_mode |= S_IFREG;

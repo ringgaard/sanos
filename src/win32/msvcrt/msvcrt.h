@@ -37,6 +37,9 @@
 #include <os.h>
 #include <stdarg.h>
 
+#if 0
+// These are now defined in os.h
+
 // File attributes
 
 #define S_IFMT         0170000         // file type mask
@@ -47,6 +50,7 @@
 #define S_IREAD        0000400         // read permission, owner
 #define S_IWRITE       0000200         // write permission, owner
 #define S_IEXEC        0000100         // execute/search permission, owner
+#endif
 
 // Application types
 

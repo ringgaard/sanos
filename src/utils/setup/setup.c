@@ -467,7 +467,7 @@ int copy_dir(char *srcdir, char *dstdir)
       rc = stat(srcfn, &buf);
       if (rc < 0) return rc;
 
-      if (buf.mode & FS_DIRECTORY)
+      if ((buf.mode & S_IFMT) == S_IFDIR)
       {
         printf("Creating directory %s\n", dstfn);
 	rc = mkdir(dstfn);
@@ -521,7 +521,7 @@ int docopy(struct section *sect)
     rc = stat(srcfn, &buf);
     if (rc < 0) return rc;
 
-    if (buf.mode & FS_DIRECTORY)
+    if ((buf.mode & S_IFMT) == S_IFDIR)
     {
       printf("Creating directory %s\n", dstfn);
       rc = mkdir(dstfn);

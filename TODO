@@ -3,13 +3,16 @@ TODO for sanos
 
 - Implement more complete ANSI C runtime library
     x Modify signal() and raise to conform to ANSI standard (remove siginfo parameter)
-    - Modify io.h to call os routines (stat() and _S_IFDIR and _S_IFREG flags)
+    x Modify io.h to call os routines (stat() and _S_IFDIR and _S_IFREG flags)
     x Implement remaining time.h routines
     - Add new stdio.h implementation with buffering and new output() routine
     - Add support for O_TEXT and O_BINARY flags in read() and write()
+    - Rename stat fields to standard names (st_*)
+    - Implement pmode for creat()
+    - Implement sharing flags and sopen()
  
-    - use tib for all static buffers to provide reentrant library
-    - implement _r methods for reentrant version that does not use static buffers
+    x use tib for all static buffers to provide reentrant library
+    x implement _r methods for reentrant version that does not use static buffers
 
 - Keyboard locks up when pressing CAPSLOCK
 

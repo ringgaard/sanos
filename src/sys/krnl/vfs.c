@@ -764,7 +764,7 @@ int chdir(char *name)
     fs->locks--;
 
     if (rc < 0) return rc;
-    if (!(buffer.mode & FS_DIRECTORY)) return -ENOTDIR;
+    if ((buffer.mode & S_IFMT) != S_IFDIR) return -ENOTDIR;
   }
 
   strcpy(curdir, newdir);

@@ -497,9 +497,20 @@ typedef struct critsect *critsect_t;
 // File system
 //
 
-#define FS_DIRECTORY            1       // File is a directory
-#define FS_BLKDEV               2       // File is a block device
-#define FS_STREAMDEV            4       // File is a stream device
+#ifndef S_IFMT
+
+#define S_IFMT          0xF000         // File type mask
+#define S_IFIFO         0x1000         // Pipe
+#define S_IFCHR         0x2000         // Character device
+#define S_IFDIR         0x4000         // Directory
+#define S_IFBLK         0x6000         // Block device
+#define S_IFREG         0x8000         // Regular file
+
+#define S_IREAD         0x0100         // Read permission
+#define S_IWRITE        0x0080         // Write permission
+#define S_IEXEC         0x0040         // Execute/search permission
+
+#endif
 
 #define MAXPATH                 256     // Maximum filename length (including trailing zero)
 #define MFSNAMELEN              16      // Length of fs type name

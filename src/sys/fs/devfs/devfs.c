@@ -206,8 +206,10 @@ int devfs_fstat(struct file *filp, struct stat *buffer)
   if (buffer)
   {
     buffer->mode = 0;
-    if (dev->driver->type == DEV_TYPE_BLOCK) buffer->mode |= FS_BLKDEV;
-    if (dev->driver->type == DEV_TYPE_STREAM) buffer->mode |= FS_STREAMDEV;
+    if (dev->driver->type == DEV_TYPE_BLOCK) buffer->mode |= S_IFBLK;
+    if (dev->driver->type == DEV_TYPE_STREAM) buffer->mode |= S_IFCHR;
+
+    buffer->mode |= S_IREAD | S_IWRITE | S_IEXEC;
 
     buffer->ino = 0;
     buffer->nlink = 1;
@@ -235,7 +237,9 @@ int devfs_stat(struct fs *fs, char *name, struct stat *buffer)
 
   if (!*name)
   {
-    buffer->mode = FS_DIRECTORY;
+    buffer->mode = S_IFDIR;
+
+    buffer->mode |= S_IREAD | S_IWRITE | S_IEXEC;
 
     buffer->ino = 0;
     buffer->nlink = 1;
@@ -262,9 +266,10 @@ int devfs_stat(struct fs *fs, char *name, struct stat *buffer)
 
   if (buffer)
   {
-    buffer->mode = 0;
-    if (dev->driver->type == DEV_TYPE_BLOCK) buffer->mode |= FS_BLKDEV;
-    if (dev->driver->type == DEV_TYPE_STREAM) buffer->mode |= FS_STREAMDEV;
+    if (dev->driver->type == DEV_TYPE_BLOCK) 
+      buffer->mode = S_IFBLK | S_IREAD | S_IEXEC;
+    else if (dev->driver->type == DEV_TYPE_STREAM) 
+      buffer->mode = S_IFCHR | S_IREAD | S_IWRITE | S_IEXEC;
 
     buffer->ino = 0;
     buffer->nlink = 1;

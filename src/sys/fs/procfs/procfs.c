@@ -340,7 +340,7 @@ int procfs_fstat(struct file *filp, struct stat *buffer)
   {
     if (buffer)
     {
-      buffer->mode = FS_DIRECTORY;
+      buffer->mode = S_IFDIR | S_IREAD | S_IEXEC;
       buffer->ino = PROC_ROOT_INODE;
       buffer->nlink = 1;
       buffer->devno = NODEV;
@@ -354,7 +354,7 @@ int procfs_fstat(struct file *filp, struct stat *buffer)
   if (buffer)
   {
     buffer->mode = 0;
-    buffer->mode |= FS_BLKDEV;
+    buffer->mode |= S_IFCHR | S_IREAD;
 
     buffer->ino = pf->inode->ino;
     buffer->nlink = 1;
@@ -377,7 +377,7 @@ int procfs_stat(struct fs *fs, char *name, struct stat *buffer)
   {
     if (buffer)
     {
-      buffer->mode = FS_DIRECTORY;
+      buffer->mode = S_IFDIR | S_IREAD | S_IEXEC;
       buffer->ino = PROC_ROOT_INODE;
       buffer->nlink = 1;
       buffer->devno = NODEV;
@@ -393,8 +393,7 @@ int procfs_stat(struct fs *fs, char *name, struct stat *buffer)
 
   if (buffer)
   {
-    buffer->mode = 0;
-    buffer->mode |= FS_BLKDEV;
+    buffer->mode = S_IFCHR | S_IREAD;
 
     buffer->ino = inode->ino;
     buffer->nlink = 1;

@@ -239,7 +239,17 @@ int smb_open(struct file *filp, char *name)
 
   file->fid = smb->params.rsp.create.fid;
   file->attrs = (unsigned short) smb->params.rsp.create.ext_file_attributes;
-  if (file->attrs & SMB_FILE_ATTR_DIRECTORY) file->statbuf.mode |= FS_DIRECTORY;
+
+  if (file->attrs & SMB_FILE_ATTR_DIRECTORY) 
+    file->statbuf.mode = S_IFDIR;
+  else
+    file->statbuf.mode = S_IFREG;
+
+  if (file->attrs & SMB_FILE_ATTR_READONLY)
+    file->statbuf.mode |= S_IREAD | S_IEXEC;
+  else
+    file->statbuf.mode |= S_IREAD | S_IWRITE | S_IEXEC;
+
   file->statbuf.devno = NODEV;
   file->statbuf.nlink = 1;
   file->statbuf.ctime = ft2time(smb->params.rsp.create.creation_time);
@@ -614,7 +624,7 @@ int smb_stat(struct fs *fs, char *name, struct stat *buffer)
       buffer->atime = time(0);
       buffer->ctime = share->mounttime;
       buffer->mtime = share->mounttime;
-      buffer->mode = FS_DIRECTORY;
+      buffer->mode = S_IFDIR | S_IREAD | S_IEXEC;
       buffer->nlink = 1;
       return 0;
     }
@@ -652,7 +662,16 @@ int smb_stat(struct fs *fs, char *name, struct stat *buffer)
 
   if (buffer)
   {
-    buffer->mode = 0;
+    if (rspb.attributes & SMB_FILE_ATTR_DIRECTORY) 
+      buffer->mode = S_IFDIR;
+    else
+      buffer->mode = S_IFREG;
+
+    if (rspb.attributes & SMB_FILE_ATTR_READONLY) 
+      buffer->mode |= S_IREAD | S_IEXEC;
+    else
+      buffer->mode |= S_IREAD | S_IWRITE | S_IEXEC;
+
     buffer->ino = 0;
     buffer->nlink = rsps.number_of_links;
     buffer->devno = NODEV;
@@ -660,7 +679,6 @@ int smb_stat(struct fs *fs, char *name, struct stat *buffer)
     buffer->mtime = ft2time(rspb.last_write_time);
     buffer->ctime = ft2time(rspb.creation_time);
     buffer->size = rsps.end_of_file;
-    if (rspb.attributes & SMB_FILE_ATTR_DIRECTORY) buffer->mode |= FS_DIRECTORY;
   }
 
   return (int) rsps.end_of_file;
@@ -865,7 +883,10 @@ again:
   statbuf.mtime = ft2time(dir->fi->last_write_time);
   statbuf.atime = ft2time(dir->fi->last_access_time);
   statbuf.size = dir->fi->end_of_file;
-  if (dir->fi->ext_file_attributes & SMB_FILE_ATTR_DIRECTORY) statbuf.mode |= FS_DIRECTORY;
+  if (dir->fi->ext_file_attributes & SMB_FILE_ATTR_DIRECTORY) 
+    statbuf.mode = S_IFDIR;
+  else
+    statbuf.mode = S_IFREG;
 
   smb_add_to_cache(share, dir->path, dir->fi->filename, &statbuf);
 

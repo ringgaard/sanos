@@ -556,8 +556,10 @@ int dfs_fstat(struct file *filp, struct stat *buffer)
   
   if (buffer)
   {
-    buffer->mode = 0;
-    if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY) buffer->mode |= FS_DIRECTORY;
+    if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY) 
+      buffer->mode = S_IFDIR | S_IREAD | S_IEXEC;
+    else
+      buffer->mode = S_IFREG | S_IREAD | S_IWRITE | S_IEXEC;
 
     buffer->ino = inode->ino;
     buffer->nlink = inode->desc->linkcount;
