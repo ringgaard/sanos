@@ -587,4 +587,11 @@ CHANGES
 - load() renamed to dlopen(), unload() renamed to dlclose(), resolve() renamed to dlsym() for
   POSIX compliance. The dlfcn.h header file added.
 
-- Added sched.c, sched.h, semaphore.c, semaphore.h, pthread.h
+- Added CREATE_POSIX flag for beginthread()
+
+- Thread are now being signaled on termination.
+
+- getthreadblock() system call implemented.
+
+- Added sched.c, sched.h, semaphore.c, semaphore.h, pthread.h, pthread.c,
+  mutex.c, condvar.c, barrier.c, rwlock.c, spinlock.c

@@ -1334,9 +1334,28 @@ static int sys_ereset(char *params)
   return 0;
 }
 
-static int sys_self(char *params)
+static int sys_getthreadblock(char *params)
 {
-  return self()->hndl;
+  handle_t h;
+  struct thread *t;
+  struct tib *tib;
+
+  if (lock_buffer(params, 4) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  t = (struct thread *) olock(h, OBJECT_THREAD);
+  if (!t) 
+  {
+    unlock_buffer(params, 4);
+    return -EBADF;
+  }
+
+  tib = t->tib;
+
+  orel(t);
+  unlock_buffer(params, 4);
+
+  return (int) tib;
 }
 
 static int sys_exitos(char *params)
@@ -3047,7 +3066,7 @@ struct syscall_entry syscalltab[] =
   {"epulse", "%d", sys_epulse},
   {"eset", "%d", sys_eset},
   {"ereset", "%d", sys_ereset},
-  {"self", "", sys_self},
+  {"getthreadblock", "%d", sys_getthreadblock},
   {"exitos", "%d", sys_exitos},
   {"dup", "%d", sys_dup},
   {"mkthread", "%p,%d,%p", sys_mkthread},

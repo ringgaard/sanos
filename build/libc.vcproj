@@ -222,9 +222,6 @@
 				RelativePath="..\src\include\time.h">
 			</File>
 			<File
-				RelativePath="..\src\include\uio.h">
-			</File>
-			<File
 				RelativePath="..\src\include\unistd.h">
 			</File>
 			<Filter
@@ -241,6 +238,9 @@
 				</File>
 				<File
 					RelativePath="..\src\include\sys\types.h">
+				</File>
+				<File
+					RelativePath="..\src\include\sys\uio.h">
 				</File>
 				<File
 					RelativePath="..\src\include\sys\utime.h">
@@ -796,6 +796,24 @@
 		<Filter
 			Name="pthread"
 			Filter="">
+			<File
+				RelativePath="..\src\lib\pthread\barrier.c">
+			</File>
+			<File
+				RelativePath="..\src\lib\pthread\condvar.c">
+			</File>
+			<File
+				RelativePath="..\src\lib\pthread\mutex.c">
+			</File>
+			<File
+				RelativePath="..\src\lib\pthread\pthread.c">
+			</File>
+			<File
+				RelativePath="..\src\lib\pthread\rwlock.c">
+			</File>
+			<File
+				RelativePath="..\src\lib\pthread\spinlock.c">
+			</File>
 		</Filter>
 		<File
 			RelativePath="..\src\lib\assert.c">

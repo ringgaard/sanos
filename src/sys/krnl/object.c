@@ -560,6 +560,34 @@ void init_thread(struct thread *t, int priority)
 }
 
 //
+// exit_thread
+//
+// Called when a thread exits
+//
+
+void exit_thread(struct thread *t)
+{
+  struct waitblock *wb;
+  struct waitblock *wb_next;
+
+  // Set signaled state
+  t->object.signaled = 1;
+
+  // Release all waiting threads
+  wb = t->object.waitlist_head;
+  while (wb)
+  {
+    wb_next = wb->next_wait;
+    if (thread_ready_to_run(wb->thread)) 
+    {
+      wb->thread->waitkey = t->exitcode;
+      release_thread(wb->thread);
+    }
+    wb = wb_next;
+  }
+}
+
+//
 // init_event
 //
 // Initialize event object

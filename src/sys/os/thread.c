@@ -82,11 +82,18 @@ void __stdcall threadstart(struct tib *tib)
   }
 
   // Call thread routine
-  ((void (__stdcall *)(void *)) (tib->startaddr))(tib->startarg);
-  endthread(0);
+  if (tib->flags & CREATE_POSIX)
+  {
+    endthread((int) ((void *(*)(void *)) (tib->startaddr))(tib->startarg));
+  }
+  else
+  {
+    ((void (__stdcall *)(void *)) (tib->startaddr))(tib->startarg);
+    endthread(0);
+  }
 }
 
-handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, void *arg, int flags, struct tib **ptib)
+handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize, void *arg, int flags, struct tib **ptib)
 {
   struct tib *tib;
   struct job *job;
@@ -97,6 +104,7 @@ handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, vo
 
   tib->startaddr = (void *) startaddr;
   tib->startarg = arg;
+  tib->flags = flags;
 
   if (flags & CREATE_NEW_JOB)
   {
@@ -145,8 +153,16 @@ handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, vo
 
 handle_t self()
 {
-  //return syscall(SYSCALL_SELF, NULL);
   return gettib()->hndl;
+}
+
+struct tib *getthreadblock(handle_t thread)
+{
+  int rc;
+
+  rc = syscall(SYSCALL_GETTHREADBLOCK, &thread);
+  if (rc < 0) return NULL;
+  return (struct tib *) rc;
 }
 
 int suspend(handle_t thread)

@@ -91,6 +91,17 @@ __inline int atomic_exchange(int *dest, int value)
   }
 }
 
+__inline int atomic_compare_and_exchange(int *dest, int exchange, int comperand) 
+{
+  __asm 
+  {
+    mov edx, dest
+    mov ecx, exchange
+    mov eax, comperand
+    /*lock*/ cmpxchg dword ptr [edx], ecx
+  }
+}
+
 #pragma warning(default: 4035)
 
 #ifdef  __cplusplus

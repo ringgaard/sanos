@@ -207,6 +207,7 @@ int thread_ready_to_run(struct thread *t);
 void release_thread(struct thread *t);
 
 void init_thread(struct thread *t, int priority);
+void exit_thread(struct thread *t);
 
 krnlapi void init_event(struct event *e, int manual_reset, int initial_state);
 krnlapi void pulse_event(struct event *e);

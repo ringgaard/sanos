@@ -34,7 +34,7 @@
 #include <os.h>
 #include <bitops.h>
 
-char tlsbitmap[MAX_TLS / 8];
+unsigned char tlsbitmap[MAX_TLS / 8];
 
 tls_t tlsalloc()
 {

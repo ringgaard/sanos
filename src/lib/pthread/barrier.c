@@ -1,7 +1,7 @@
 //
-// sched.h
+// barrier.c
 //
-// POSIX scheduling library
+// POSIX barriers
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -31,45 +31,41 @@
 // SUCH DAMAGE.
 // 
 
-#if _MSC_VER > 1000
-#pragma once
-#endif
+#include <os.h>
+#include <pthread.h>
 
-#ifndef SCHED_H
-#define SCHED_H
-
-#ifndef _PID_T_DEFINED
-#define _PID_T_DEFINED
-typedef unsigned long pid_t;
-#endif
-
-#define SCHED_OTHER 0
-#define SCHED_FIFO  1
-#define SCHED_RR    2
-
-#define SCHED_MIN   SCHED_OTHER
-#define SCHED_MAX   SCHED_RR
-
-#ifndef _SCHED_PARAM_DEFINED
-#define _SCHED_PARAM_DEFINED
-struct sched_param 
+int pthread_barrierattr_init(pthread_barrierattr_t *attr)
 {
-  int sched_priority;
-};
-#endif
-
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
-int sched_yield(void);
-int sched_get_priority_min(int policy);
-int sched_get_priority_max(int policy);
-int sched_setscheduler(pid_t pid, int policy);
-int sched_getscheduler(pid_t pid);
-
-#ifdef  __cplusplus
+  return 0;
 }
-#endif
 
-#endif
+int pthread_barrierattr_destroy(pthread_barrierattr_t *attr)
+{
+  return 0;
+}
+
+int pthread_barrierattr_getpshared(const pthread_barrierattr_t *attr, int *pshared)
+{
+  return 0;
+}
+
+
+int pthread_barrierattr_setpshared(pthread_barrierattr_t *attr, int pshared)
+{
+  return 0;
+}
+
+int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t *attr, unsigned int count)
+{
+  return 0;
+}
+
+int pthread_barrier_destroy(pthread_barrier_t *barrier)
+{
+  return 0;
+}
+
+int pthread_barrier_wait(pthread_barrier_t *barrier)
+{
+  return 0;
+}

@@ -231,6 +231,7 @@ struct section;
 #define CREATE_SUSPENDED        0x04
 #define CREATE_NEW_JOB          0x10
 #define CREATE_DETACHED         0x20
+#define CREATE_POSIX            0x40
 
 // Spawn flags
 
@@ -1094,6 +1095,7 @@ struct tib
   int errnum;                      // Per thread last error
   void *startaddr;                 // Start address for thread
   void *startarg;                  // Argument to thread start routine
+  int flags;                       // Thread creation flags
 
   handle_t hndl;                   // Handle for thread
   struct job *job;                 // Job object for thread
@@ -1112,7 +1114,7 @@ struct tib
   char ascbuf[ASCBUFSIZE];         // For asctime()
   char tmpnambuf[MAXPATH];         // For tmpnam()
 
-  char reserved1[1516];
+  char reserved1[1512];
 
   void *tls[MAX_TLS];              // Thread local storage
   char reserved2[240];
@@ -1282,9 +1284,10 @@ osapi handle_t self();
 osapi void exitos(int status);
 osapi void dbgbreak();
 
-osapi handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, void *arg, int flags, struct tib **ptib);
+osapi handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize, void *arg, int flags, struct tib **ptib);
 osapi int suspend(handle_t thread);
 osapi int resume(handle_t thread);
+osapi struct tib *getthreadblock(handle_t thread);
 osapi void endthread(int retval);
 osapi tid_t gettid();
 osapi int setcontext(handle_t thread, void *context);

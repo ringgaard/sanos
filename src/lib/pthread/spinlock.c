@@ -1,7 +1,7 @@
 //
-// sched.h
+// spinlock.c
 //
-// POSIX scheduling library
+// POSIX spin locks
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -31,45 +31,76 @@
 // SUCH DAMAGE.
 // 
 
-#if _MSC_VER > 1000
-#pragma once
-#endif
+#include <os.h>
+#include <pthread.h>
+#include <atomic.h>
 
-#ifndef SCHED_H
-#define SCHED_H
-
-#ifndef _PID_T_DEFINED
-#define _PID_T_DEFINED
-typedef unsigned long pid_t;
-#endif
-
-#define SCHED_OTHER 0
-#define SCHED_FIFO  1
-#define SCHED_RR    2
-
-#define SCHED_MIN   SCHED_OTHER
-#define SCHED_MAX   SCHED_RR
-
-#ifndef _SCHED_PARAM_DEFINED
-#define _SCHED_PARAM_DEFINED
-struct sched_param 
+int pthread_spin_init(pthread_spinlock_t *lock, int pshared)
 {
-  int sched_priority;
-};
-#endif
+  if (!lock) return EINVAL;
+  
+  if (0 /* number of cpus > 1 */)
+  {
+    lock->interlock = SPINLOCK_UNLOCKED;
+  }
+  else
+  {
+    lock->interlock = SPINLOCK_USEMUTEX;
+    pthread_mutex_init(&lock->mutex, NULL);
+  }
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
-int sched_yield(void);
-int sched_get_priority_min(int policy);
-int sched_get_priority_max(int policy);
-int sched_setscheduler(pid_t pid, int policy);
-int sched_getscheduler(pid_t pid);
-
-#ifdef  __cplusplus
+  return 0;
 }
-#endif
 
-#endif
+int pthread_spin_destroy(pthread_spinlock_t *lock)
+{
+  if (!lock) return EINVAL;
+  if (lock->interlock == SPINLOCK_USEMUTEX) pthread_mutex_destroy(&lock->mutex);
+  return 0;
+}
+
+int pthread_spin_lock(pthread_spinlock_t *lock)
+{
+  while (atomic_compare_and_exchange(&lock->interlock, SPINLOCK_LOCKED, SPINLOCK_UNLOCKED) == SPINLOCK_LOCKED);
+
+  if (lock->interlock == SPINLOCK_LOCKED)
+    return 0;
+  else if (lock->interlock == SPINLOCK_USEMUTEX)
+    return pthread_mutex_lock(&lock->mutex);
+
+  return EINVAL;
+}
+
+int pthread_spin_trylock(pthread_spinlock_t *lock)
+{
+  switch (atomic_compare_and_exchange(&lock->interlock, SPINLOCK_LOCKED, SPINLOCK_UNLOCKED))
+  {
+    case SPINLOCK_UNLOCKED:
+      return 0;
+
+    case SPINLOCK_LOCKED:
+      return EBUSY;
+
+    case SPINLOCK_USEMUTEX:
+      return pthread_mutex_trylock(&lock->mutex);
+  }
+
+  return EINVAL;
+}
+
+int pthread_spin_unlock(pthread_spinlock_t *lock)
+{
+  switch (atomic_compare_and_exchange(&lock->interlock, SPINLOCK_UNLOCKED, SPINLOCK_LOCKED))
+  {
+    case SPINLOCK_LOCKED:
+      return 0;
+
+    case SPINLOCK_UNLOCKED:
+      return EPERM;
+
+    case SPINLOCK_USEMUTEX:
+      return pthread_mutex_unlock(&lock->mutex);
+  }
+
+  return EINVAL;
+}

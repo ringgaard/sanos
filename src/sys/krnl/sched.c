@@ -561,6 +561,7 @@ void terminate_thread(int exitcode)
   struct thread *t = self();
   t->state = THREAD_STATE_TERMINATED;
   t->exitcode = exitcode;
+  exit_thread(t);
   hfree(t->hndl);
   dispatch();
 }

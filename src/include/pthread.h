@@ -3,29 +3,33 @@
 //
 // POSIX threads library
 //
-// Copyright (C) 2004 Michael Ringgaard
-// Copyright (C) 1998 John E. Bossom
-// Copyright (C) 1999,2003 Pthreads-win32 contributors
+// Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
-// The current list of contributors can be seen at the
-// following World Wide Web location:
-// http://sources.redhat.com/pthreads-win32/contributors.html
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License along with this library in the file COPYING.LIB;
-// if not, write to the Free Software Foundation, Inc.,
-// 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+// 
+// 1. Redistributions of source code must retain the above copyright 
+//    notice, this list of conditions and the following disclaimer.  
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.  
+// 3. Neither the name of the project nor the names of its contributors
+//    may be used to endorse or promote products derived from this software
+//    without specific prior written permission. 
+// 
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+// OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+// OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+// SUCH DAMAGE.
+// 
 
 #if _MSC_VER > 1000
 #pragma once
@@ -53,6 +57,11 @@ typedef unsigned long tid_t;
 typedef unsigned long tls_t;
 #endif
 
+#ifndef _HANDLE_T_DEFINED
+#define _HANDLE_T_DEFINED
+typedef int handle_t;
+#endif
+
 #ifndef _TIMESPEC_DEFINED
 #define _TIMESPEC_DEFINED
 struct timespec 
@@ -62,26 +71,22 @@ struct timespec
 };
 #endif
 
+#ifndef _SCHED_PARAM_DEFINED
+#define _SCHED_PARAM_DEFINED
+struct sched_param 
+{
+  int sched_priority;
+};
+#endif
+
 //
-// POSIX Options
+// POSIX options
 //
 
-#ifndef _POSIX_THREADS
 #define _POSIX_THREADS
-#endif
-
-#ifndef _POSIX_READER_WRITER_LOCKS
 #define _POSIX_READER_WRITER_LOCKS
-#endif
-
-#ifndef _POSIX_SPIN_LOCKS
 #define _POSIX_SPIN_LOCKS
-#endif
-
-#ifndef _POSIX_BARRIERS
 #define _POSIX_BARRIERS
-#endif
-
 #define _POSIX_THREAD_SAFE_FUNCTIONS
 #define _POSIX_THREAD_ATTR_STACKSIZE
 #define _POSIX_THREAD_PRIORITY_SCHEDULING
@@ -101,65 +106,50 @@ struct timespec
 
 typedef tid_t pthread_t;
 typedef tls_t pthread_key_t;
-typedef struct pthread_once pthread_once_t;
-
-typedef struct pthread_attr *pthread_attr_t;
-typedef struct pthread_mutex *pthread_mutex_t;
-typedef struct pthread_mutexattr *pthread_mutexattr_t;
-typedef struct pthread_cond *pthread_cond_t;
-typedef struct pthread_condattr *pthread_condattr_t;
-typedef struct pthread_rwlock *pthread_rwlock_t;
-typedef struct pthread_rwlockattr *pthread_rwlockattr_t;
-typedef struct pthread_spinlock *pthread_spinlock_t;
-typedef struct pthread_barrier *pthread_barrier_t;
-typedef struct pthread_barrierattr *pthread_barrierattr_t;
 
 //
-// POSIX Threads
+// POSIX thread attribute values
 //
 
-enum 
+#define PTHREAD_CREATE_JOINABLE       0
+#define PTHREAD_CREATE_DETACHED       1
+
+#define PTHREAD_INHERIT_SCHED         0
+#define PTHREAD_EXPLICIT_SCHED        1
+
+#define PTHREAD_SCOPE_PROCESS         0
+#define PTHREAD_SCOPE_SYSTEM          1
+
+#define PTHREAD_CANCEL_ENABLE         0
+#define PTHREAD_CANCEL_DISABLE        1
+
+#define PTHREAD_CANCEL_ASYNCHRONOUS   0
+#define PTHREAD_CANCEL_DEFERRED       1
+
+#define PTHREAD_PROCESS_PRIVATE       0
+#define PTHREAD_PROCESS_SHARED        1
+
+#define PTHREAD_BARRIER_SERIAL_THREAD (-1)
+
+//
+// Threads
+//
+
+struct pthread_attr
 {
-  // pthread_attr_{get,set}detachstate
-  PTHREAD_CREATE_JOINABLE       = 0,  // Default
-  PTHREAD_CREATE_DETACHED       = 1,
-
-  // pthread_attr_{get,set}inheritsched
-  PTHREAD_INHERIT_SCHED         = 0,
-  PTHREAD_EXPLICIT_SCHED        = 1,  // Default
-
-  // pthread_{get,set}scope
-  PTHREAD_SCOPE_PROCESS         = 0,
-  PTHREAD_SCOPE_SYSTEM          = 1,  // Default
-
-  // pthread_setcancelstate paramters
-  PTHREAD_CANCEL_ENABLE         = 0,  // Default
-  PTHREAD_CANCEL_DISABLE        = 1,
-
-  // pthread_setcanceltype parameters
-  PTHREAD_CANCEL_ASYNCHRONOUS   = 0,
-  PTHREAD_CANCEL_DEFERRED       = 1,  // Default
-
-  // pthread_mutexattr_{get,set}pshared
-  // pthread_condattr_{get,set}pshared
-  PTHREAD_PROCESS_PRIVATE       = 0,
-  PTHREAD_PROCESS_SHARED        = 1,
-
-  // pthread_barrier_wait
-  PTHREAD_BARRIER_SERIAL_THREAD = -1
+  void *stackaddr;
+  size_t stacksize;
+  int detachstate;
+  struct sched_param param;
+  int inheritsched;
+  int contentionscope;
 };
 
-//
-// Cancelation
-//
-
-#define PTHREAD_CANCELED       ((void *) -1)
+typedef struct pthread_attr pthread_attr_t;
 
 //
 // Once key
 //
-
-#define PTHREAD_ONCE_INIT       {0, -1}
 
 struct pthread_once
 {
@@ -168,26 +158,130 @@ struct pthread_once
                             // to zero executes the user function
 };
 
-//
-// Object initialisers
-//
+typedef struct pthread_once pthread_once_t;
 
-#define PTHREAD_MUTEX_INITIALIZER ((pthread_mutex_t) -1)
-#define PTHREAD_COND_INITIALIZER ((pthread_cond_t) -1)
-#define PTHREAD_RWLOCK_INITIALIZER ((pthread_rwlock_t) -1)
-#define PTHREAD_SPINLOCK_INITIALIZER ((pthread_spinlock_t) -1)
+#define PTHREAD_ONCE_INIT       {0, -1}
 
 //
-// Mutex types
+// Mutex
 //
 
-enum
+#define PTHREAD_MUTEX_NORMAL     0
+#define PTHREAD_MUTEX_RECURSIVE  1
+#define PTHREAD_MUTEX_ERRORCHECK 2
+#define PTHREAD_MUTEX_DEFAULT    PTHREAD_MUTEX_NORMAL
+
+struct pthread_mutexattr
 {
-  PTHREAD_MUTEX_NORMAL     = 0,
-  PTHREAD_MUTEX_RECURSIVE  = 1,
-  PTHREAD_MUTEX_ERRORCHECK = 2,
-  PTHREAD_MUTEX_DEFAULT    = 3
+  int pshared;
+  int kind;
 };
+
+typedef struct pthread_mutexattr pthread_mutexattr_t;
+
+struct pthread_mutex
+{
+  long lock;                // Exclusive access to mutex state:
+                            //  0: unlocked/free
+                            //  1: locked - no other waiters
+                            // -1: locked - with possible other waiters
+
+  long recursion;           // Number of unlocks a thread needs to perform
+                            // before the lock is released (recursive mutexes only)
+  int kind;                 // Mutex type
+  pthread_t owner;          // Thread owning the mutex
+  handle_t event;           // Mutex release notification to waiting threads
+};
+
+typedef struct pthread_mutex pthread_mutex_t;
+
+#define PTHREAD_MUTEX_INITIALIZER {0, 0, -1, -1, -1}
+
+//
+// Condition variables
+//
+
+struct pthread_condattr
+{
+  int pshared;
+};
+
+typedef struct pthread_condattr pthread_condattr_t;
+
+struct pthread_cond
+{
+  int waiting;
+  handle_t semaphore;
+};
+
+typedef struct pthread_cond pthread_cond_t;
+
+#define PTHREAD_COND_INITIALIZER ((pthread_cond_t) -1)
+
+//
+// Barriers
+//
+
+struct pthread_barrierattr
+{
+  int pshared;
+};
+
+typedef struct pthread_barrierattr pthread_barrierattr_t;
+
+struct pthread_barrier
+{
+  unsigned int curr_height;
+  unsigned int init_height;
+  int step;
+  handle_t breeched[2];
+};
+
+typedef struct pthread_barrier pthread_barrier_t;
+
+//
+// Read-write locks
+//
+
+struct pthread_rwlockattr
+{
+  int pshared;
+};
+
+typedef struct pthread_rwlockattr pthread_rwlockattr_t;
+
+struct pthread_rwlock
+{
+  pthread_mutex_t mutex;
+  handle_t shared_waiters;
+  handle_t exclusive_waiters;
+  int num_shared_waiters;
+  int num_exclusive_waiters;
+  int num_active;
+  pthread_t owner;
+};
+
+typedef struct pthread_rwlock pthread_rwlock_t;
+
+#define PTHREAD_RWLOCK_INITIALIZER {PTHREAD_MUTEX_INITIALIZER, 0, 0, 0, 0, 0, 0}
+
+//
+// Spinlocks
+//
+
+#define SPINLOCK_UNLOCKED    1
+#define SPINLOCK_LOCKED      2
+#define SPINLOCK_USEMUTEX    3
+
+struct pthread_spinlock
+{
+  int interlock;
+  pthread_mutex_t mutex;
+};
+
+typedef struct pthread_spinlock pthread_spinlock_t;
+
+#define PTHREAD_SPINLOCK_INITIALIZER {0, 0};
 
 //
 // POSIX thread routines
@@ -198,32 +292,32 @@ extern "C" {
 #endif
 
 //
-// Attribute functions
+// Thread attribute functions
 //
 
 int pthread_attr_init(pthread_attr_t *attr);
 int pthread_attr_destroy(pthread_attr_t *attr);
 int pthread_attr_getdetachstate(const pthread_attr_t *attr, int *detachstate);
-int pthread_attr_getstackaddr(const pthread_attr_t *attr, void **stackaddr);
-int pthread_attr_getstacksize(const pthread_attr_t *attr, size_t *stacksize);
 int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachstate);
+int pthread_attr_getstackaddr(const pthread_attr_t *attr, void **stackaddr);
 int pthread_attr_setstackaddr(pthread_attr_t *attr, void *stackaddr);
+int pthread_attr_getstacksize(const pthread_attr_t *attr, size_t *stacksize);
 int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stacksize);
 int pthread_attr_getschedparam(const pthread_attr_t *attr, struct sched_param *param);
 int pthread_attr_setschedparam(pthread_attr_t *attr, const struct sched_param *param);
-int pthread_attr_setschedpolicy(pthread_attr_t *attr, int policy);
 int pthread_attr_getschedpolicy(pthread_attr_t *attr, int *policy);
-int pthread_attr_setinheritsched(pthread_attr_t *attr, int inheritsched);
+int pthread_attr_setschedpolicy(pthread_attr_t *attr, int policy);
 int pthread_attr_getinheritsched(pthread_attr_t *attr, int *inheritsched);
-int pthread_attr_setscope(pthread_attr_t *attr, int contentionscope);
+int pthread_attr_setinheritsched(pthread_attr_t *attr, int inheritsched);
 int pthread_attr_getscope(const pthread_attr_t *attr, int *contentionscope);
+int pthread_attr_setscope(pthread_attr_t *attr, int contentionscope);
 
 //
 // Thread functions
 //
 
-int pthread_create(pthread_t *tid, const pthread_attr_t *attr, void *(*start)(void *), void *arg);
-int pthread_detach(pthread_t tid);
+int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)(void *), void *arg);
+int pthread_detach(pthread_t thread);
 int pthread_equal(pthread_t t1, pthread_t t2);
 void pthread_exit(void *value_ptr);
 int pthread_join(pthread_t thread, void **value_ptr);
@@ -235,7 +329,7 @@ void pthread_testcancel(void);
 int pthread_once(pthread_once_t *once_control, void (*init_routine)(void));
 
 //
-// Scheduling
+// Scheduling functions
 //
 
 int pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *param);
@@ -260,8 +354,8 @@ int pthread_mutexattr_init(pthread_mutexattr_t *attr);
 int pthread_mutexattr_destroy(pthread_mutexattr_t *attr);
 int pthread_mutexattr_getpshared(const pthread_mutexattr_t *attr, int *pshared);
 int pthread_mutexattr_setpshared(pthread_mutexattr_t *attr, int pshared);
-int pthread_mutexattr_settype(pthread_mutexattr_t *attr, int kind);
 int pthread_mutexattr_gettype(pthread_mutexattr_t *attr, int *kind);
+int pthread_mutexattr_settype(pthread_mutexattr_t *attr, int kind);
 
 //
 // Mutex functions
@@ -343,6 +437,12 @@ int pthread_spin_destroy(pthread_spinlock_t *lock);
 int pthread_spin_lock(pthread_spinlock_t *lock);
 int pthread_spin_trylock(pthread_spinlock_t *lock);
 int pthread_spin_unlock(pthread_spinlock_t *lock);
+
+//
+// Helper functions
+//
+
+long __abstime2timeout(const struct timespec *abstime);
 
 #ifdef  __cplusplus
 }
