@@ -8,16 +8,43 @@
 
 #include <net/net.h>
 
+static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err);
+static err_t sent_tcp(void *arg, struct tcp_pcb *pcb, unsigned short len);
+static void err_tcp(void *arg, err_t err);
+
+static struct socket *accept_connection(struct tcp_pcb *pcb)
+{
+  struct socket *s;
+
+  if (socket(AF_INET, SOCK_STREAM, IPPROTO_TCP, &s) < 0) return NULL;
+
+  s->state = SOCKSTATE_CONNECTED;
+  s->tcp.pcb = pcb;
+  tcp_arg(pcb, s);
+  tcp_recv(pcb, recv_tcp);
+  tcp_sent(pcb, sent_tcp);
+  tcp_err(pcb, err_tcp);
+
+  return s;
+}
+
 static err_t accept_tcp(void *arg, struct tcp_pcb *newpcb, err_t err)
 {
   struct socket *s = arg;
+  struct socket *newsock;
   struct sockreq *req = s->waithead;
 
   while (req)
   {
     if (req->type == SOCKREQ_ACCEPT)
     {
-      req->pcb = newpcb;
+      if (err < 0)
+      {
+	release_socket_request(req, err);
+	return 0;
+      }
+
+      req->newsock = accept_connection(newpcb);
       release_socket_request(req, err);
       return 0;
     }
@@ -28,7 +55,10 @@ static err_t accept_tcp(void *arg, struct tcp_pcb *newpcb, err_t err)
   if (s->tcp.numpending < s->tcp.backlog)
   {
     if (err < 0) return err;
-    s->tcp.pending[s->tcp.numpending++] = newpcb;
+    newsock = accept_connection(newpcb);
+    if (newsock < 0) return -ENOMEM;
+
+    s->tcp.pending[s->tcp.numpending++] = newsock;
     return 0;
   }
 
@@ -45,7 +75,6 @@ static err_t connected_tcp(void *arg, struct tcp_pcb *pcb, err_t err)
     if (req->type == SOCKREQ_CONNECT)
     {
       s->state = SOCKSTATE_CONNECTED;
-      req->pcb = pcb;
       release_socket_request(req, err);
       return 0;
     }
@@ -231,34 +260,21 @@ static int tcpsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen,
   {
     rc = submit_socket_request(s, &req, SOCKREQ_ACCEPT, NULL, 0, INFINITE);
     if (rc < 0) return rc;
-    pcb = req.pcb;
+    newsock = req.newsock;
   }
   else
   {
-    pcb = s->tcp.pending[0];
+    newsock = s->tcp.pending[0];
     if (--s->tcp.numpending > 0) 
     {
-      memmove(s->tcp.pending, s->tcp.pending + 1, s->tcp.numpending * sizeof(struct tcp_pcb *));
+      memmove(s->tcp.pending, s->tcp.pending + 1, s->tcp.numpending * sizeof(struct socket *));
     }
   }
 
-  rc = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP, &newsock);
-  if (rc < 0)
-  {
-    tcp_abort(pcb);
-    return -ENOMEM;
-    
-  }
-
-  newsock->state = SOCKSTATE_CONNECTED;
-  newsock->tcp.pcb = pcb;
-  tcp_arg(pcb, newsock);
-  tcp_recv(pcb, recv_tcp);
-  tcp_sent(pcb, sent_tcp);
-  tcp_err(pcb, err_tcp);
-
   if (addr) 
   {
+    pcb = newsock->tcp.pcb;
+
     sin = (struct sockaddr_in *) addr;
     sin->sin_len = sizeof(struct sockaddr_in);
     sin->sin_family = AF_INET;
@@ -323,7 +339,7 @@ static int tcpsock_close(struct socket *s)
     if (s->tcp.pcb->state == LISTEN)
     {
       tcp_close(s->tcp.pcb);
-      for (n = 0; n < s->tcp.numpending; n++) tcp_abort(s->tcp.pending[n]); 
+      for (n = 0; n < s->tcp.numpending; n++) tcpsock_close(s->tcp.pending[n]); 
       kfree(s->tcp.pending);
     }
     else
@@ -444,7 +460,7 @@ static int tcpsock_listen(struct socket *s, int backlog)
   if (s->state != SOCKSTATE_BOUND) return -EINVAL;
 
   s->tcp.backlog = backlog;
-  s->tcp.pending = kmalloc(sizeof(struct tcp_pcb *) * backlog);
+  s->tcp.pending = kmalloc(sizeof(struct socket *) * backlog);
   if (!s->tcp.pending) return -ENOMEM;
 
   s->tcp.pcb = tcp_listen(s->tcp.pcb);

@@ -6,7 +6,7 @@
 // Windows Socket Library
 //
 
-#define TRACEAPI
+//#define TRACEAPI
 
 #include <os.h>
 #include <win32.h>
@@ -218,7 +218,7 @@ sockapi SOCKET __stdcall winsock_socket(int af, int type, int protocol)
 sockapi int __stdcall winsock_ioctlsocket(SOCKET s, long cmd, unsigned long *argp)
 {
   TRACE("ioctlsocket");
-  panic("winsock ioctlsocket not implemented");
+  syslog(LOG_DEBUG, "warning: winsock ioctlsocket not implemented\n");
   //return ioctl(s, cmd, argp, 0);
   return 0;
 }

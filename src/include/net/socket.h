@@ -71,7 +71,7 @@ struct tcpsocket
 
   int backlog;
   int numpending;
-  struct tcp_pcb **pending;
+  struct socket **pending;
 
   struct pbuf *recvhead;
   struct pbuf *recvtail;
@@ -113,7 +113,7 @@ struct sockreq
   char *data;
   int len;
   struct sockaddr_in addr;
-  struct tcp_pcb *pcb;
+  struct socket *newsock;
 };
 
 err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, char *data, int len, unsigned int timeout);
