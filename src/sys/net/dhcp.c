@@ -9,7 +9,8 @@
 #include <net/net.h>
 
 static unsigned long xid = 0;
-static struct dhcp_state *client_list = NULL;
+static struct dhcp_state *dhcp_client_list = NULL;
+int dhcp_arp_check = 0;
 
 //
 // DHCP client state machine functions
@@ -105,18 +106,14 @@ static void dhcp_check(struct dhcp_state *state)
 
 static void dhcp_handle_offer(struct dhcp_state *state)
 {
-  unsigned char *option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_SERVER_ID);
+  unsigned char *option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_DHCP_SERVER_IDENTIFIER);
   if (option_ptr != NULL)
   {
     state->server_ip_addr.addr = htonl(dhcp_get_option_long(&option_ptr[2]));
-    kprintf("dhcp_handle_offer(): server 0x%08lx\n", state->server_ip_addr.addr);
+    //kprintf("dhcp_handle_offer(): server 0x%08lx\n", state->server_ip_addr.addr);
     ip_addr_set(&state->offered_ip_addr, (struct ip_addr *) &state->msg_in->yiaddr);
-    kprintf("dhcp_handle_offer(): offer for 0x%08lx\n", state->offered_ip_addr.addr);
+    //kprintf("dhcp_handle_offer(): offer for 0x%08lx\n", state->offered_ip_addr.addr);
     dhcp_select(state);
-  }
-  else
-  {
-    //dhcp_start(restart);
   }
 }
 
@@ -136,16 +133,16 @@ static err_t dhcp_select(struct dhcp_state *state)
   result = dhcp_create_request(state);
   if (result == 0)
   {
-    dhcp_option(state, DHCP_OPTION_MESSAGE_TYPE, DHCP_OPTION_MESSAGE_TYPE_LEN);
+    dhcp_option(state, DHCP_OPTION_DHCP_MESSAGE_TYPE, 1);
     dhcp_option_byte(state, DHCP_REQUEST);
 
-    dhcp_option(state, DHCP_OPTION_MAX_MSG_SIZE, DHCP_OPTION_MAX_MSG_SIZE_LEN);
+    dhcp_option(state, DHCP_OPTION_DHCP_MAX_MESSAGE_SIZE, 2);
     dhcp_option_short(state, 576);
 
-    dhcp_option(state, DHCP_OPTION_REQUESTED_IP, 4);
+    dhcp_option(state, DHCP_OPTION_DHCP_REQUESTED_ADDRESS, 4);
     dhcp_option_long(state, ntohl(state->offered_ip_addr.addr));
 
-    dhcp_option(state, DHCP_OPTION_SERVER_ID, 4);
+    dhcp_option(state, DHCP_OPTION_DHCP_SERVER_IDENTIFIER, 4);
     dhcp_option_long(state, ntohl(state->server_ip_addr.addr));
 
     dhcp_option_trailer(state);
@@ -176,23 +173,30 @@ static err_t dhcp_select(struct dhcp_state *state)
 
 void dhcp_slowtmr()
 {
-  struct dhcp_state *state = client_list;
+  struct dhcp_state *state = dhcp_client_list;
 
   while (state != NULL)
   {
-    if (state->t2_timeout && --state->t2_timeout == 0)
+    if (state->t2_timeout)
     {
-      kprintf("dhcp_slowtmr(): t2 timeout\n");
+      if (--state->t2_timeout == 0)
+      {
+	kprintf("dhcp_slowtmr(): t2 timeout\n");
       
-      // This clients' rebind timeout triggered
-      dhcp_t2_timeout(state);
+	// This clients' rebind timeout triggered
+	dhcp_t2_timeout(state);
+      }
     }
-    else if (state->t1_timeout && --state->t1_timeout == 0)
-    {
-      kprintf("dhcp_slowtmr(): t1 timeout\n");
 
-      // This clients' renewal timeout triggered
-      dhcp_t1_timeout(state);
+    if (state->t1_timeout)
+    {
+      if (--state->t1_timeout == 0)
+      {
+	kprintf("dhcp_slowtmr(): t1 timeout\n");
+
+	// This clients' renewal timeout triggered
+	dhcp_t1_timeout(state);
+      }
     }
 
     state = state->next;
@@ -205,16 +209,21 @@ void dhcp_slowtmr()
 
 void dhcp_fasttmr()
 {
-  struct dhcp_state *state = client_list;
+  struct dhcp_state *state = dhcp_client_list;
 
   while (state != NULL)
   {
-    if (state->request_timeout && --state->request_timeout == 0)
+    if (state->request_timeout)
     {
-      kprintf("dhcp_fasttmr(): request timeout\n");
+      //kprintf("dhcp: countdown %d %d\n", state->request_timeout, get_tick_count());
 
-      // This clients' request timeout triggered
-      dhcp_timeout(state);
+      if (--state->request_timeout == 0)
+      {
+	kprintf("dhcp_fasttmr(): request timeout\n");
+
+	// This clients' request timeout triggered
+	dhcp_timeout(state);
+      }
     }
 
     state = state->next;
@@ -321,8 +330,10 @@ static void dhcp_handle_ack(struct dhcp_state *state)
   state->offered_sn_mask.addr = 0;
   state->offered_gw_addr.addr = 0;
   state->offered_bc_addr.addr = 0;
+  state->offered_dns1_addr.addr = 0;
+  state->offered_dns2_addr.addr = 0;
 
-  option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_LEASE_TIME);
+  option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_DHCP_LEASE_TIME);
   if (option_ptr != NULL)
   {
     state->offered_t0_lease = dhcp_get_option_long(option_ptr + 2);
@@ -330,13 +341,13 @@ static void dhcp_handle_ack(struct dhcp_state *state)
     state->offered_t2_rebind = state->offered_t0_lease;
   }
 
-  option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_T1);
+  option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_DHCP_RENEWAL_TIME);
   if (option_ptr != NULL)
   {
     state->offered_t1_renew = dhcp_get_option_long(option_ptr + 2);
   }
 
-  option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_T2);
+  option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_DHCP_REBINDING_TIME);
   if (option_ptr != NULL)
   {
     state->offered_t2_rebind = dhcp_get_option_long(option_ptr + 2);
@@ -347,22 +358,28 @@ static void dhcp_handle_ack(struct dhcp_state *state)
   option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_SUBNET_MASK);
   if (option_ptr != NULL)
   {
-    state->offered_sn_mask.addr = htonl(dhcp_get_option_long(&option_ptr[2]));
+    state->offered_sn_mask.addr = htonl(dhcp_get_option_long(option_ptr + 2));
   }
 
-  option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_ROUTER);
+  option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_ROUTERS);
   if (option_ptr != NULL)
   {
-    state->offered_gw_addr.addr = htonl(dhcp_get_option_long(&option_ptr[2]));
+    state->offered_gw_addr.addr = htonl(dhcp_get_option_long(option_ptr + 2));
   }
 
-  option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_BROADCAST);
+  option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_BROADCAST_ADDRESS);
   if (option_ptr != NULL)
   {
-    state->offered_bc_addr.addr = htonl(dhcp_get_option_long(&option_ptr[2]));
+    state->offered_bc_addr.addr = htonl(dhcp_get_option_long(option_ptr + 2));
+  }
+
+  option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_DOMAIN_NAME_SERVERS);
+  if (option_ptr != NULL)
+  {
+    if (option_ptr[1] >= 4) state->offered_dns1_addr.addr = htonl(dhcp_get_option_long(option_ptr + 2));
+    if (option_ptr[1] >= 8) state->offered_dns2_addr.addr = htonl(dhcp_get_option_long(option_ptr + 6));
   }
 }
-
 
 //
 // dhcp_init
@@ -408,11 +425,13 @@ struct dhcp_state *dhcp_start(struct netif *netif)
 
   state->netif = netif;
   state->next = NULL;
-  if (!client_list)
-    client_list = state;
+  init_event(&state->binding_complete, 0, 0);
+
+  if (!dhcp_client_list)
+    dhcp_client_list = state;
   else
   {
-    list_state = client_list;
+    list_state = dhcp_client_list;
     while (list_state->next != NULL) list_state = list_state->next;
     list_state->next = state;
   }
@@ -448,10 +467,10 @@ err_t dhcp_inform(struct netif *netif)
   result = dhcp_create_request(state);
   if (!result) return -ENOMEM;
 
-  dhcp_option(state, DHCP_OPTION_MESSAGE_TYPE, DHCP_OPTION_MESSAGE_TYPE_LEN);
+  dhcp_option(state, DHCP_OPTION_DHCP_MESSAGE_TYPE, 1);
   dhcp_option_byte(state, DHCP_INFORM);
 
-  dhcp_option(state, DHCP_OPTION_MAX_MSG_SIZE, DHCP_OPTION_MAX_MSG_SIZE_LEN);
+  dhcp_option(state, DHCP_OPTION_DHCP_MAX_MESSAGE_SIZE, 2);
   dhcp_option_short(state, 576);
 
   dhcp_option_trailer(state);
@@ -476,7 +495,7 @@ err_t dhcp_inform(struct netif *netif)
 
 void dhcp_arp_reply(struct ip_addr *addr)
 {
-  struct dhcp_state *state = client_list;
+  struct dhcp_state *state = dhcp_client_list;
 
   while (state != NULL)
   {
@@ -511,10 +530,10 @@ static err_t dhcp_decline(struct dhcp_state *state)
   result = dhcp_create_request(state);
   if (result == 0)
   {
-    dhcp_option(state, DHCP_OPTION_MESSAGE_TYPE, DHCP_OPTION_MESSAGE_TYPE_LEN);
+    dhcp_option(state, DHCP_OPTION_DHCP_MESSAGE_TYPE, 1);
     dhcp_option_byte(state, DHCP_DECLINE);
 
-    dhcp_option(state, DHCP_OPTION_MAX_MSG_SIZE, DHCP_OPTION_MAX_MSG_SIZE_LEN);
+    dhcp_option(state, DHCP_OPTION_DHCP_MAX_MESSAGE_SIZE, 2);
     dhcp_option_short(state, 576);
 
     dhcp_option_trailer(state);
@@ -548,23 +567,23 @@ static err_t dhcp_discover(struct dhcp_state *state)
   err_t result;
   int msecs;
 
-
   ip_addr_set(&state->offered_ip_addr, IP_ADDR_ANY);
 
   // Create and initialize the DHCP message header
   result = dhcp_create_request(state);
   if (result == 0)
   {
-    dhcp_option(state, DHCP_OPTION_MESSAGE_TYPE, DHCP_OPTION_MESSAGE_TYPE_LEN);
+    dhcp_option(state, DHCP_OPTION_DHCP_MESSAGE_TYPE, 1);
     dhcp_option_byte(state, DHCP_DISCOVER);
 
-    dhcp_option(state, DHCP_OPTION_MAX_MSG_SIZE, DHCP_OPTION_MAX_MSG_SIZE_LEN);
+    dhcp_option(state, DHCP_OPTION_DHCP_MAX_MESSAGE_SIZE, 2);
     dhcp_option_short(state, 576);
 
-    dhcp_option(state, DHCP_OPTION_PARAMETER_REQUEST_LIST, 3);
+    dhcp_option(state, DHCP_OPTION_DHCP_PARAMETER_REQUEST_LIST, 4);
     dhcp_option_byte(state, DHCP_OPTION_SUBNET_MASK);
-    dhcp_option_byte(state, DHCP_OPTION_ROUTER);
-    dhcp_option_byte(state, DHCP_OPTION_BROADCAST);
+    dhcp_option_byte(state, DHCP_OPTION_ROUTERS);
+    dhcp_option_byte(state, DHCP_OPTION_BROADCAST_ADDRESS);
+    dhcp_option_byte(state, DHCP_OPTION_DOMAIN_NAME_SERVERS);
 
     dhcp_option_trailer(state);
 
@@ -633,6 +652,7 @@ static void dhcp_bind(struct dhcp_state *state)
   if (gw_addr.addr == 0)
   {
     // Gateway address not given
+    gw_addr.addr = state->offered_ip_addr.addr;
     gw_addr.addr &= sn_mask.addr;
     gw_addr.addr |= 0x01000000;
   }
@@ -640,19 +660,26 @@ static void dhcp_bind(struct dhcp_state *state)
   netif_set_ipaddr(state->netif, &state->offered_ip_addr);
   netif_set_netmask(state->netif, &sn_mask);
   netif_set_gw(state->netif, &gw_addr);
-  
-  kprintf("dhcp_bind(): IP: 0x%08lx ", state->offered_ip_addr.addr);
-  ip_addr_debug_print(&state->offered_ip_addr);
-  kprintf("\n");
 
-  kprintf("dhcp_bind(): GW: 0x%08lx ", gw_addr.addr);
-  ip_addr_debug_print(&gw_addr);
-  kprintf("\n");
+  //kprintf("dhcp_bind(): IP: 0x%08lx ", state->offered_ip_addr.addr);
+  //ip_addr_debug_print(&state->offered_ip_addr);
+  //kprintf("\n");
 
-  kprintf("dhcp_bind(): SN: 0x%08lx ", sn_mask.addr);
-  ip_addr_debug_print(&sn_mask);
-  kprintf("\n");
+  //kprintf("dhcp_bind(): GW: 0x%08lx ", gw_addr.addr);
+  //ip_addr_debug_print(&gw_addr);
+  //kprintf("\n");
 
+  //kprintf("dhcp_bind(): SN: 0x%08lx ", sn_mask.addr);
+  //ip_addr_debug_print(&sn_mask);
+  //kprintf("\n");
+
+  //kprintf("dhcp_bind(): DNS: ");
+  //ip_addr_debug_print(&state->offered_dns1_addr);
+  //kprintf(" ");
+  //ip_addr_debug_print(&state->offered_dns2_addr);
+  //kprintf("\n");
+
+  set_event(&state->binding_complete);
   dhcp_set_state(state, DHCP_BOUND);
 }
 
@@ -670,16 +697,16 @@ err_t dhcp_renew(struct dhcp_state *state)
   if (result == 0)
   {
 
-    dhcp_option(state, DHCP_OPTION_MESSAGE_TYPE, DHCP_OPTION_MESSAGE_TYPE_LEN);
+    dhcp_option(state, DHCP_OPTION_DHCP_MESSAGE_TYPE, 1);
     dhcp_option_byte(state, DHCP_REQUEST);
 
-    dhcp_option(state, DHCP_OPTION_MAX_MSG_SIZE, DHCP_OPTION_MAX_MSG_SIZE_LEN);
+    dhcp_option(state, DHCP_OPTION_DHCP_MAX_MESSAGE_SIZE, 2);
     dhcp_option_short(state, 576);
 
-    dhcp_option(state, DHCP_OPTION_REQUESTED_IP, 4);
+    dhcp_option(state, DHCP_OPTION_DHCP_REQUESTED_ADDRESS, 4);
     dhcp_option_long(state, ntohl(state->offered_ip_addr.addr));
 
-    dhcp_option(state, DHCP_OPTION_SERVER_ID, 4);
+    dhcp_option(state, DHCP_OPTION_DHCP_SERVER_IDENTIFIER, 4);
     dhcp_option_long(state, ntohl(state->server_ip_addr.addr));
 
     dhcp_option_trailer(state);
@@ -714,16 +741,16 @@ static err_t dhcp_rebind(struct dhcp_state *state)
   if (result == 0)
   {
 
-    dhcp_option(state, DHCP_OPTION_MESSAGE_TYPE, DHCP_OPTION_MESSAGE_TYPE_LEN);
+    dhcp_option(state, DHCP_OPTION_DHCP_MESSAGE_TYPE, 1);
     dhcp_option_byte(state, DHCP_REQUEST);
 
-    dhcp_option(state, DHCP_OPTION_MAX_MSG_SIZE, DHCP_OPTION_MAX_MSG_SIZE_LEN);
+    dhcp_option(state, DHCP_OPTION_DHCP_MAX_MESSAGE_SIZE, 2);
     dhcp_option_short(state, 576);
 
-    dhcp_option(state, DHCP_OPTION_REQUESTED_IP, 4);
+    dhcp_option(state, DHCP_OPTION_DHCP_REQUESTED_ADDRESS, 4);
     dhcp_option_long(state, ntohl(state->offered_ip_addr.addr));
 
-    dhcp_option(state, DHCP_OPTION_SERVER_ID, 4);
+    dhcp_option(state, DHCP_OPTION_DHCP_SERVER_IDENTIFIER, 4);
     dhcp_option_long(state, ntohl(state->server_ip_addr.addr));
 
     dhcp_option_trailer(state);
@@ -758,7 +785,7 @@ static err_t dhcp_release(struct dhcp_state *state)
   result = dhcp_create_request(state);
   if (result == 0)
   {
-    dhcp_option(state, DHCP_OPTION_MESSAGE_TYPE, DHCP_OPTION_MESSAGE_TYPE_LEN);
+    dhcp_option(state, DHCP_OPTION_DHCP_MESSAGE_TYPE, 1);
     dhcp_option_byte(state, DHCP_RELEASE);
 
     dhcp_option_trailer(state);
@@ -798,11 +825,11 @@ void dhcp_stop(struct dhcp_state *state)
     udp_remove(state->pcb);
     kfree(state);
 
-    if (client_list == state)
-      client_list = state->next;
+    if (dhcp_client_list == state)
+      dhcp_client_list = state->next;
     else
     {
-      list_state = client_list;
+      list_state = dhcp_client_list;
       while ((list_state != NULL) && (list_state->next != state)) list_state = list_state->next;
       if (list_state) list_state->next = state->next;
     }
@@ -950,17 +977,12 @@ static void dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
   struct dhcp_state *state = (struct dhcp_state *) arg;
   struct dhcp_msg *reply_msg = (struct dhcp_msg *) p->payload;
 
-  //dbg_break();
-
   state->p = p;
   if (reply_msg->op == DHCP_BOOTREPLY)
   {
-    kprintf("state->netif->hwaddr = %02x:%02x:%02x:%02x:%02x:%02x\n",
-      state->netif->hwaddr.addr[0], state->netif->hwaddr.addr[1], state->netif->hwaddr.addr[2],
-      state->netif->hwaddr.addr[3], state->netif->hwaddr.addr[4], state->netif->hwaddr.addr[5]);
-
-    // TODO: Add multi netif support, lookup the targetted
-    // interface here.
+    //kprintf("state->netif->hwaddr = %02x:%02x:%02x:%02x:%02x:%02x\n",
+    //  state->netif->hwaddr.addr[0], state->netif->hwaddr.addr[1], state->netif->hwaddr.addr[2],
+    //  state->netif->hwaddr.addr[3], state->netif->hwaddr.addr[4], state->netif->hwaddr.addr[5]);
     
     if (memcmp(&state->netif->hwaddr, reply_msg->chaddr, ETHER_ADDR_LEN) == 0) 
     {
@@ -969,9 +991,10 @@ static void dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
         unsigned char *options_ptr;
 
         state->request_timeout = 0;
+
         if (dhcp_unfold_reply(state) == 0)
         {
-          options_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_MESSAGE_TYPE);
+          options_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_DHCP_MESSAGE_TYPE);
           if (options_ptr != NULL)
           {
             unsigned char msg_type = dhcp_get_option_byte(options_ptr + 2);
@@ -982,15 +1005,16 @@ static void dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
               dhcp_handle_ack(state);
               if (state->state == DHCP_REQUESTING)
               {
-                //dhcp_check(state);
-		dhcp_bind(state);
+		if (dhcp_arp_check)
+                  dhcp_check(state);
+		else
+		  dhcp_bind(state);
               }
               else if (state->state == DHCP_REBOOTING || state->state == DHCP_REBINDING || state->state == DHCP_RENEWING)
               {
                 dhcp_bind(state);
               }
             }
-
             else if ((msg_type == DHCP_NAK) &&
               (state->state == DHCP_REBOOTING || state->state == DHCP_REQUESTING || 
               state->state == DHCP_REBINDING || state->state == DHCP_RENEWING))
@@ -1039,8 +1063,6 @@ static err_t dhcp_create_request(struct dhcp_state *state)
   for (i = 0; i < ETHER_ADDR_LEN; i++) state->msg_out->chaddr[i] = state->netif->hwaddr.addr[i];
   state->msg_out->cookie = htonl(0x63825363);
   state->options_out_len = 0;
-
-  //for (i = 0; i < DHCP_OPTIONS_LEN; i++) state->msg_out->options[i] = i;
 
   return 0;
 }
@@ -1095,7 +1117,7 @@ static unsigned char *dhcp_get_option_ptr(struct dhcp_state *state, unsigned cha
     while ((offset < state->options_in_len) && (options[offset] != DHCP_OPTION_END))
     {
       // Are the sname and/or file field overloaded with options?
-      if (options[offset] == DHCP_OPTION_OVERLOAD)
+      if (options[offset] == DHCP_OPTION_DHCP_OPTION_OVERLOAD)
       {
         // Skip option type and length
         offset += 2;
@@ -1103,8 +1125,11 @@ static unsigned char *dhcp_get_option_ptr(struct dhcp_state *state, unsigned cha
       }
       else if (options[offset] == option_type)
         return &options[offset];
+      else if (options[offset] == DHCP_OPTION_PAD)
+	offset++;
       else
       {
+        //kprintf("opt(%d,%d)", options[offset], options[offset + 1]);
         offset++;
         offset += 1 + options[offset];
       }
@@ -1136,8 +1161,11 @@ static unsigned char *dhcp_get_option_ptr(struct dhcp_state *state, unsigned cha
       {
         if (options[offset] == option_type) 
 	  return &options[offset];
+        else if (options[offset] == DHCP_OPTION_PAD)
+	  offset++;
         else
         {
+         //kprintf("opt(%d,%d)", options[offset], options[offset + 1]);
           offset++;
           offset += 1 + options[offset];
         }
@@ -1196,7 +1224,7 @@ static unsigned long dhcp_get_option_long(unsigned char *ptr)
 
 struct dhcp_state *dhcp_find_client(struct netif *netif)
 {
-  struct dhcp_state *state = client_list;
+  struct dhcp_state *state = dhcp_client_list;
 
   while (state)
   {

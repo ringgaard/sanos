@@ -21,7 +21,27 @@ void ip_init()
 }
 
 //
-// ip_route:
+// ip_ownaddr
+//
+// Returns 1 if the IP address is the IP address of one of
+// the configured interfaces.
+//
+
+int ip_ownaddr(struct ip_addr *addr)
+{
+  struct netif *netif;
+  
+  for (netif = netif_list; netif != NULL; netif = netif->next)
+  {
+    if (!ip_addr_isany(addr) && ip_addr_cmp(addr, &(netif->ip_addr))) 
+      return 1;
+  }
+
+  return 0;
+}
+
+//
+// ip_route
 //
 // Finds the appropriate network interface for a given IP address. It
 // searches the list of network interfaces linearly. A match is found

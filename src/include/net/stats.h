@@ -35,6 +35,8 @@ struct stats_pbuf
 
   unsigned long alloc_locked;
   unsigned long refresh_locked;
+
+  unsigned long rwbufs;
 };
 
 struct stats_all

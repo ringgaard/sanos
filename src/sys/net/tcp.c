@@ -493,17 +493,17 @@ void tcp_tmr()
   unsigned long ticks = get_tick_count();
 
   if (!tcp_initialized) return;
-  if (time_after_eq(tcp_timer_expire, ticks))
+  if (time_before_eq(tcp_timer_expire, ticks))
   {
     tcp_timer_expire = ticks + 100;
 
     tcp_ticks++;
     tcp_fasttmr();
-    dhcp_fasttmr();
 
     if (tcp_ticks % 5 == 0) 
     {
       tcp_slowtmr();
+      dhcp_fasttmr();
       if (tcp_ticks % 100 == 0) 
       {
 	arp_tmr();

@@ -30,14 +30,21 @@ void icmp_input(struct pbuf *p, struct netif *inp)
   switch (type) 
   {
     case ICMP_ECHO:
-      if (ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) || ip_addr_ismulticast(&iphdr->dest)) 
+      if (ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) || ip_addr_ismulticast(&iphdr->dest))
       {
 	stats.icmp.err++;
 	pbuf_free(p);
 	return;
       }
     
-      kprintf("icmp_input: ping\n");
+      if (!ip_ownaddr(&iphdr->dest))
+      {
+	stats.icmp.err++;
+	pbuf_free(p);
+	return;
+      }
+
+      //kprintf("icmp_input: ping src %08X dest %08X\n", iphdr->src.addr, iphdr->dest.addr);
 
       if (p->tot_len < sizeof(struct icmp_echo_hdr)) 
       {
@@ -47,7 +54,7 @@ void icmp_input(struct pbuf *p, struct netif *inp)
 	return;      
       }
 
-      iecho = p->payload;    
+      iecho = p->payload;
       if (inet_chksum_pbuf(p) != 0) 
       {
 	kprintf("icmp_input: checksum failed for received ICMP echo\n");

@@ -483,7 +483,7 @@ void pcnet32_dpc(void *arg)
     //dump_csr(csr);
 
     if (csr & CSR_RINT) pcnet32_receive(pcnet32);
-    if (csr & CSR_TINT) kprintf("Transmit\n");
+    if (csr & CSR_TINT) kprintf("pcnet32: packet transmitted\n");
   }
 
   //dump_csr(csr);

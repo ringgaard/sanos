@@ -24,6 +24,7 @@ struct ether_msg
 struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr, struct ip_addr *netmask, struct ip_addr *gw)
 {
   struct netif *netif;
+  struct dhcp_state *state;
   devno_t devno;
 
   // Open device
@@ -40,12 +41,19 @@ struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr,
 
   dev_attach(devno, netif, ether_input);
 
+  // Obtain network parameters using DHCP
+  if (ip_addr_isany(ipaddr))
+  {
+    state = dhcp_start(netif);
+    if (state) wait_for_object(&state->binding_complete, 10000);
+  }
+
   kprintf("%s: device %s addr ", name, devname);
-  ip_addr_debug_print(ipaddr);
+  ip_addr_debug_print(&netif->ip_addr);
   kprintf(" mask ");
-  ip_addr_debug_print(netmask);
+  ip_addr_debug_print(&netif->netmask);
   kprintf(" gw ");
-  ip_addr_debug_print(gw);
+  ip_addr_debug_print(&netif->gw);
   kprintf("\n");
   
   return netif;
@@ -82,10 +90,10 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   int i;
 
   // Make room for Ethernet header
-  if (pbuf_header(p, 14) != 0)
+  if (pbuf_header(p, ETHER_HLEN) != 0)
   {
     // The pbuf_header() call shouldn't fail, but we allocate an extra pbuf just in case
-    q = pbuf_alloc(PBUF_LINK, 14, PBUF_RW);
+    q = pbuf_alloc(PBUF_LINK, ETHER_HLEN, PBUF_RW);
     if (q == NULL) 
     {
       stats.link.drop++;
@@ -220,18 +228,17 @@ void ether_dispatcher(void *arg)
       stats.link.recv++;
       ethhdr = p->payload;
 
-      {
-	char s[20];
-	char d[20];
-
-	kprintf("packet: src=%s dst=%s type=%04X len=%d\n", ether2str(&ethhdr->src, s), ether2str(&ethhdr->dest, d), htons(ethhdr->type), p->tot_len);
-      }
+      //{
+      //char s[20];
+      //char d[20];
+      //kprintf("packet: src=%s dst=%s type=%04X len=%d\n", ether2str(&ethhdr->src, s), ether2str(&ethhdr->dest, d), htons(ethhdr->type), p->tot_len);
+      //}
     
       switch (htons(ethhdr->type))
       {
 	case ETHTYPE_IP:
 	  arp_ip_input(netif, p);
-	  pbuf_header(p, -14);
+	  pbuf_header(p, -ETHER_HLEN);
 	  netif->input(p, netif);
 	  break;
 

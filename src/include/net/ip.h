@@ -10,6 +10,7 @@
 #define IP_H
 
 void ip_init();
+int ip_ownaddr(struct ip_addr *addr);
 struct netif *ip_route(struct ip_addr *dest);
 err_t ip_input(struct pbuf *p, struct netif *inp);
 err_t ip_output(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, int ttl, int proto);

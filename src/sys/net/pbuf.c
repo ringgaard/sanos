@@ -8,11 +8,6 @@
 
 #include <net/net.h>
 
-#if 0
-static u8_t pbuf_pool_memory[(PBUF_POOL_SIZE * (PBUF_POOL_BUFSIZE + sizeof(struct pbuf))) / sizeof(u8_t)];
-static sys_sem_t pbuf_pool_free_sem;
-#endif
-
 static struct pbuf *pbuf_pool = NULL;
 static struct pbuf *pbuf_pool_alloc_cache = NULL;
 static struct pbuf *pbuf_pool_free_cache = NULL;
@@ -69,7 +64,7 @@ static struct pbuf *pbuf_pool_alloc()
   if (pbuf_pool_alloc_cache) 
   {
     p = pbuf_pool_alloc_cache;
-    if(p) pbuf_pool_alloc_cache = p->next; 
+    if (p) pbuf_pool_alloc_cache = p->next; 
   } 
   else 
   {
@@ -226,6 +221,7 @@ struct pbuf *pbuf_alloc(int layer, int size, int flag)
       p->len = p->tot_len = size;
       p->next = NULL;
       p->flags = PBUF_FLAG_RW;
+      stats.pbuf.rwbufs++;
       break;
 
     case PBUF_RO:
@@ -243,6 +239,7 @@ struct pbuf *pbuf_alloc(int layer, int size, int flag)
       panic("pbuf_alloc: erroneous flag");
   }
 
+  //kprintf("pbuf: %d bufs\n", stats.pbuf.rwbufs);
   p->ref = 1;
   return p;
 }
@@ -306,8 +303,6 @@ void pbuf_realloc(struct pbuf *p, int size)
   int rsize;
 
   if (p->tot_len <= size) return;
-  
-  kprintf("pbuf_realloc: alloc %d bytes\n", size);
 
   switch (p->flags) 
   {
@@ -368,13 +363,7 @@ void pbuf_realloc(struct pbuf *p, int size)
       // And deallocate any left over pbufs
       r = q->next;
       q->next = NULL;
-      q = r;
-      while (q != NULL) 
-      {
-	r = q->next;
-	pbuf_free(q);
-	q = r;
-      }
+      pbuf_free(r);
       break;
   }
 
@@ -452,13 +441,16 @@ int pbuf_free(struct pbuf *p)
       else 
       {
 	q = p->next;
+        stats.pbuf.rwbufs--;
 	kfree(p);
       }
+
       p = q;
       count++;
     }
   }
 
+  //kprintf("pbuf: %d bufs\n", stats.pbuf.rwbufs);
   pbuf_refresh();
   return count;
 }

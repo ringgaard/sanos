@@ -68,6 +68,8 @@ void udp_input(struct pbuf *p, struct netif *inp)
   {
     if ((inp->flags & NETIF_UDP_RX_CHECKSUM_OFFLOAD) == 0)
     {
+      pbuf_header(p, UDP_HLEN);
+      
       if (IPH_PROTO(iphdr) == IP_PROTO_UDPLITE) 
       {
 	// Do the UDP Lite checksum
@@ -82,7 +84,7 @@ void udp_input(struct pbuf *p, struct netif *inp)
       } 
       else 
       {
-	if (0) //TEST if (udphdr->chksum != 0) 
+	if (udphdr->chksum != 0) 
 	{
 	  if (inet_chksum_pseudo(p, (struct ip_addr *) &(iphdr->src), (struct ip_addr *) &(iphdr->dest), IP_PROTO_UDP, p->tot_len) != 0) 
 	  {
@@ -95,38 +97,32 @@ void udp_input(struct pbuf *p, struct netif *inp)
 	  }
 	}
       }
+
+      pbuf_header(p, -UDP_HLEN);
     }
 
-    //dbg_break();
-    if (pcb != NULL) 
-    {
-      pcb->recv(pcb->recv_arg, pcb, p, &(iphdr->src), src);
-    }
-    else 
-    {
-      // No match was found, send ICMP destination port unreachable unless
-      // destination address was broadcast/multicast.
-      
-      if (!ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) &&
-	  !ip_addr_ismulticast(&iphdr->dest)) 
-      {	
-	// Deconvert from host to network byte order
-	udphdr->src = htons(udphdr->src);
-	udphdr->dest = htons(udphdr->dest); 
-	
-	// Adjust pbuf pointer */
-	p->payload = iphdr;
-	icmp_dest_unreach(p, ICMP_DUR_PORT);
-      }
-
-      ++stats.udp.proterr;
-      ++stats.udp.drop;
-
-      pbuf_free(p);
-    }
-  } 
+    pcb->recv(pcb->recv_arg, pcb, p, &(iphdr->src), src);
+  }
   else 
   {
+    // No match was found, send ICMP destination port unreachable unless
+    // destination address was broadcast/multicast.
+    
+    if (!ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) &&
+	!ip_addr_ismulticast(&iphdr->dest)) 
+    {	
+      // Deconvert from host to network byte order
+      udphdr->src = htons(udphdr->src);
+      udphdr->dest = htons(udphdr->dest); 
+      
+      // Adjust pbuf pointer */
+      p->payload = iphdr;
+      icmp_dest_unreach(p, ICMP_DUR_PORT);
+    }
+
+    ++stats.udp.proterr;
+    ++stats.udp.drop;
+
     pbuf_free(p);
   }
 }
