@@ -24,8 +24,6 @@ TODO for sanos
 IDEAS for new features
 ----------------------
 
-- Simple httpd server in C for static contents (and isapi interface)
-
 - Implement SOCK_RAW socket type
 
 - Use type object in struct object
@@ -161,3 +159,10 @@ CHANGES
 - PE resource api
 
 - Threads are now resceduled after setprio() to immediately reflect the new thread priority
+
+- New sis900 network driver
+
+- ls reported wrong size for files larger than 1GB. This problem has been fixed.
+
+- NIC support for multicast filtering. Implemented in sis900 and rtl8139. 
+  Not yet implemented in network stack.

@@ -138,7 +138,7 @@ int ls(struct httpd_connection *conn)
       else if (statbuf.quad.size_high == 0)
 	sprintf(buf, "%8d MB", statbuf.quad.size_low / M);
       else
-	sprintf(buf, "%8d GB", (statbuf.quad.size_high << 12) | (statbuf.quad.size_low >> 20));
+	sprintf(buf, "%8d GB", (statbuf.quad.size_high << 2) | (statbuf.quad.size_low >> 30));
 
       httpd_send(conn->rsp, buf, -1);
     }

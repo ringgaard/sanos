@@ -177,9 +177,9 @@ static void list_dir(int argc, char **argv)
 	  printf("         ");
 	else
 	{
-	  if (buf.quad.size_high == 0 && buf.quad.size_low < 4*K)
+	  if (buf.quad.size_high == 0 && buf.quad.size_low < 1*K)
 	    printf("%6d B ", buf.quad.size_low);
-	  else if (buf.quad.size_high == 0 && buf.quad.size_low < 4*M)
+	  else if (buf.quad.size_high == 0 && buf.quad.size_low < 1*M)
 	    printf("%6dKB ", buf.quad.size_low / K);
 	  else if (buf.quad.size_high == 0)
 	    printf("%6dMB ", buf.quad.size_low / M);
@@ -1081,6 +1081,22 @@ static void heap_stat()
   printf("Total allocated space .................... : %12d\n", m.uordblks);
   printf("Total free space ......................... : %12d\n", m.fordblks);
   printf("Top-most, releasable space ............... : %12d\n", m.keepcost);
+}
+
+static void httpinit()
+{
+#if 0
+  struct httpd_server *server;
+
+  server = httpd_initialize(find_section(config, "httpd"));
+
+  httpd_add_file_context(server, "/", "/usr/www", find_section(config, "webroot"));
+  httpd_add_file_context(server, "/files", "/", find_section(config, "webfs"));
+
+  httpd_add_resource_context(server, "/icons", hmod, NULL);
+
+  httpd_start(server);
+#endif
 }
 
 static void test1(int argc, char **argv)

@@ -124,6 +124,7 @@ struct sis900_private
 
   unsigned char autong_complete;        // Auto-negotiate complete 
   unsigned char carrier_ok;
+  struct event link_up;
 
   struct sem tx_sem;                    // Semaphore for Tx ring not full
   unsigned int cur_rx, dirty_rx;        // Producer/comsumer pointers for Tx/Rx ring
@@ -765,7 +766,7 @@ static void sis900_init_rxfilter(struct dev *dev)
     outpd(ioaddr + rfcr, (i << RFADDR_shift));
     outpd(ioaddr + rfdr, w);
 
-    kprintf("%s: Receive Filter Address[%d]=%x\n", dev->name, i, inpd(ioaddr + rfdr));
+    //kprintf("%s: Receive Filter Address[%d]=%x\n", dev->name, i, inpd(ioaddr + rfdr));
   }
 
   // Enable packet filitering
@@ -798,7 +799,7 @@ static void sis900_init_tx_ring(struct dev *dev)
 
   // Load Transmit Descriptor Register
   outpd(ioaddr + txdp, sp->tx_ring_dma);
-  kprintf("%s: TX descriptor register loaded with: %8.8x\n", dev->name, inpd(ioaddr + txdp));
+  //kprintf("%s: TX descriptor register loaded with: %8.8x\n", dev->name, inpd(ioaddr + txdp));
 }
 
 //
@@ -849,7 +850,7 @@ static void sis900_init_rx_ring(struct dev *dev)
 
   // Load Receive Descriptor Register
   outpd(ioaddr + rxdp, sp->rx_ring_dma);
-  kprintf("%s: RX descriptor register loaded with: %8.8x\n", dev->name, inpd(ioaddr + rxdp));
+  //kprintf("%s: RX descriptor register loaded with: %8.8x\n", dev->name, inpd(ioaddr + rxdp));
 }
 
 //
@@ -978,6 +979,7 @@ static void sis900_timer(void *arg)
   {
     // Link OFF -> ON
 look_for_link:
+
     // Search for new PHY
     status = sis900_default_phy(dev);
     mii_phy = sp->mii;
@@ -1040,7 +1042,6 @@ static void sis900_check_mode(struct dev *dev, struct mii_phy *mii_phy)
     duplex = FDX_CAPABLE_HALF_SELECTED;
     sis900_set_mode(ioaddr, speed, duplex);
     sp->autong_complete = 1;
-    kprintf("sis900_check_mode: autong_complete=%d\n", sp->autong_complete);
   }
 }
 
@@ -1111,7 +1112,6 @@ static void sis900_auto_negotiate(struct dev *dev, int phy_addr)
   {
     kprintf("%s: Media Link Off\n", dev->name);
     sp->autong_complete = 1;
-    kprintf("sis900_auto_negotiate: autong_complete=%d\n", sp->autong_complete);
     sp->carrier_ok = 0;
     return;
   }
@@ -1119,7 +1119,6 @@ static void sis900_auto_negotiate(struct dev *dev, int phy_addr)
   // (Re)start AutoNegotiate
   mdio_write(dev, phy_addr, MII_CONTROL, MII_CNTL_AUTO | MII_CNTL_RST_AUTO);
   sp->autong_complete = 0;
-  kprintf("sis900_auto_negotiate: autong_complete=%d\n", sp->autong_complete);
 }
 
 //
@@ -1155,7 +1154,6 @@ static void sis900_read_mode(struct dev *dev, int *speed, int *duplex)
   if (status & (MII_NWAY_TX_FDX | MII_NWAY_T_FDX)) *duplex = FDX_CAPABLE_FULL_SELECTED;
   
   sp->autong_complete = 1;
-  kprintf("sis900_read_mode: autong_complete=%d\n", sp->autong_complete);
 
   // Workaround for Realtek RTL8201 PHY issue
   if ((phy->phy_id0 == 0x0000) && ((phy->phy_id1 & 0xFFF0) == 0x8200))
@@ -1165,6 +1163,9 @@ static void sis900_read_mode(struct dev *dev, int *speed, int *duplex)
   }
 
   kprintf("%s: Media Link On %s %s-duplex \n", dev->name, *speed == HW_SPEED_100_MBPS ? "100mbps" : "10mbps", *duplex == FDX_CAPABLE_FULL_SELECTED ? "full" : "half");
+
+  // Signal autonegotiate complete and link up
+  set_event(&sp->link_up);
 }
 
 //
@@ -1272,7 +1273,7 @@ static int sis900_transmit(struct dev *dev, struct pbuf *p)
   //  //netif_stop_queue(net_dev);
   //}
 
-  kprintf("%s: Queued Tx packet at %p size %d to slot %d.\n",  dev->name, p->payload, p->tot_len, entry);
+  //kprintf("%s: Queued Tx packet at %p size %d to slot %d.\n",  dev->name, p->payload, p->tot_len, entry);
 
   return 0;
 }
@@ -1317,7 +1318,7 @@ static void sis900_dpc(void *arg)
     }
   }
 
-  kprintf("%s: exiting interrupt, interrupt status = 0x%08x.\n", dev->name, inpd(ioaddr + isr));
+  //kprintf("%s: exiting interrupt, interrupt status = 0x%08x.\n", dev->name, inpd(ioaddr + isr));
   
   eoi(sp->irq);
 }
@@ -1338,7 +1339,7 @@ static int sis900_rx(struct dev *dev)
   unsigned int entry = sp->cur_rx % NUM_RX_DESC;
   unsigned long rx_status = sp->rx_ring[entry].cmdsts;
 
-  kprintf("sis900_rx: cur_rx:%4.4d, dirty_rx:%4.4d status:0x%08x\n", sp->cur_rx, sp->dirty_rx, rx_status);
+  //kprintf("sis900_rx: cur_rx:%4.4d, dirty_rx:%4.4d status:0x%08x\n", sp->cur_rx, sp->dirty_rx, rx_status);
 
   while (rx_status & OWN) 
   {
@@ -1516,7 +1517,7 @@ static void sis900_finish_xmit(struct dev *dev)
   //  netif_wake_queue (net_dev);
   //}
 
-  kprintf("%s: sis900_finish_xmit released %d packets from tx ring\n", dev->name, freed);
+  //kprintf("%s: sis900_finish_xmit released %d packets from tx ring\n", dev->name, freed);
 
   release_sem(&sp->tx_sem, freed);
 }
@@ -1554,6 +1555,7 @@ static int sis900_close(struct dev *dev)
       sp->rx_pbuf[i] = 0;
     }
   }
+
   for (i = 0; i < NUM_TX_DESC; i++) 
   {
     p = sp->tx_pbuf[i];
@@ -1705,7 +1707,7 @@ static int sis900_handler(struct context *ctxt, void *arg)
   struct sis900_private *sp = dev->privdata;
 
   // Queue DPC to service interrupt
-  kprintf("%s: interrupt\n", dev->name);
+  //kprintf("%s: interrupt\n", dev->name);
   queue_irq_dpc(&sp->dpc, sis900_dpc, dev);
 
   return 0;
@@ -1809,17 +1811,25 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   enable_irq(irq);
 
   init_sem(&sp->tx_sem, NUM_TX_DESC);
+  init_event(&sp->link_up, 1, 0);
 
   // 630ET : set the mii access mode as software-mode
   if (unit->revision == SIS630ET_900_REV) outpd(ioaddr + cr, ACCESSMODE | inpd(ioaddr + cr));
 
-  // probe for mii transceiver
+  // Probe for mii transceiver
   if (sis900_mii_probe(dev) == 0) return -ENODEV;
 
-  // print some information about our NIC
+  // Print some information about our NIC
   kprintf("%s: %s iobase %#lx irq %d hwaddr %la\n", dev->name, board->productname, ioaddr, irq, &sp->hwaddr);
 
-  return sis900_open(dev);
+  // Initialize NIC
+  rc = sis900_open(dev);
+  if (rc < 0) return rc;
+
+  // Wait for link up and autonegotiation complete
+  wait_for_object(&sp->link_up, 5000);
+
+  return 0;
 }
 
 int __stdcall start(hmodule_t hmod, int reason, void *reserved2)

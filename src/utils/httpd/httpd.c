@@ -1307,19 +1307,5 @@ int httpd_start(struct httpd_server *server)
 
 int __stdcall DllMain(hmodule_t hmod, int reason, void *reserved)
 {
-  struct httpd_server *server;
-
-  if (reason == DLL_PROCESS_ATTACH)
-  {
-    server = httpd_initialize(find_section(config, "httpd"));
-
-    httpd_add_file_context(server, "/", "/usr/www", find_section(config, "webroot"));
-    httpd_add_file_context(server, "/files", "/", find_section(config, "webfs"));
-
-    httpd_add_resource_context(server, "/icons", hmod, NULL);
-
-    httpd_start(server);
-  }
-
   return TRUE;
 }

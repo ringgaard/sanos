@@ -293,7 +293,6 @@ int pci_set_power_state(struct unit *unit, int new_state)
   old_state = pwr_command & PCI_PM_CTRL_STATE_MASK;
   if (old_state == new_state) return old_state;
 
-  kprintf("pci: %s goes from D%d to D%d\n", get_unit_name(unit), old_state, new_state);
   if (old_state == 3) 
   {
     pci_command = pci_read_config_word(unit, PCI_CONFIG_CMD);
