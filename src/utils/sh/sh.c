@@ -1403,7 +1403,7 @@ static void test(int argc, char **argv)
   //printf("sin*sin+cos*cos=%g\n", sin(x) * sin(x) + cos(x) * cos(x));
 
   time_t doomsday = INT_MAX;
-  time_t genesis = INT_MIN;
+  time_t genesis = 0;
 
   printf("Doomsday %s", asctime(gmtime(&doomsday)));
   printf("Genesis %s", asctime(gmtime(&genesis)));
