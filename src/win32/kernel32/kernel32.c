@@ -99,11 +99,6 @@ void convert_from_win32_context(struct context *ctxt, CONTEXT *ctx)
   {
     // fpu state missing
   }
- 
-  if (ctx->ContextFlags & CONTEXT_FLOATING_POINT)
-  {
-    // fpu state missing
-  }
 
   if (ctx->ContextFlags & CONTEXT_DEBUG_REGISTERS)
   {
