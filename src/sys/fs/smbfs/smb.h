@@ -9,6 +9,18 @@
 #ifndef SMB_H
 #define SMB_H
 
+#define ROUNDUP(x) (((x) + 3) & ~3)
+
+#define SMB_NAMELEN             256
+#define SMB_DENTRY_CACHESIZE    16
+#define SMB_DIRBUF_SIZE         4096
+
+#define SMB_RAW_CHUNKSIZE       (32 * K)
+#define SMB_NORMAL_CHUNKSIZE    (4 * K)
+
+#define EPOC                    116444736000000000     // 00:00:00 GMT on January 1, 1970
+#define SECTIMESCALE            10000000               // 1 sec resolution
+
 #define SMB_HEADER_LEN 35
 #define SMB_MAX_BUFFER 4356
 #define SMB_BLK_SIZE   4096
@@ -870,6 +882,124 @@ struct smb_file_directory_info
   unsigned long filename_length;	// Length of filename in bytes
   char filename[0];			// Name of the file
 };
+
+struct smb_share;
+
+//
+// SMB directory entry
+//
+
+struct smb_dentry
+{
+  char path[MAXPATH];
+  struct stat statbuf;
+};
+
+//
+// SMB file
+//
+
+struct smb_file
+{
+  unsigned short fid;
+  unsigned long attrs;
+  struct stat statbuf;
+};
+
+//
+// SMF directory
+//
+
+struct smb_directory
+{
+  unsigned short sid;
+  int eos;
+  int entries_left;
+  struct smb_file_directory_info *fi;
+  char path[MAXPATH];
+  char buffer[SMB_DIRBUF_SIZE];
+};
+
+//
+// SMB server
+//
+
+struct smb_server
+{
+  struct ip_addr ipaddr;
+  struct socket *sock;
+  char username[SMB_NAMELEN];
+  char password[SMB_NAMELEN];
+  char domain[SMB_NAMELEN];
+  unsigned short uid;
+  int refcnt;
+  struct smb_server *next;
+  struct mutex lock;
+  struct smb_share *shares;
+  int tzofs;
+  unsigned long server_caps;
+  unsigned long max_buffer_size;
+  char buffer[SMB_MAX_BUFFER + 4];
+  char auxbuf[SMB_MAX_BUFFER + 4];
+};
+
+//
+// SMB share
+//
+
+struct smb_share
+{
+  struct smb_server *server;
+  struct smb_share *next;
+  unsigned short tid;
+  char sharename[SMB_NAMELEN];
+  time_t mounttime;
+  int next_cacheidx;
+  struct smb_dentry dircache[SMB_DENTRY_CACHESIZE];
+};
+
+// smbutil.c
+
+int recv_fully(struct socket *s, char *buf, int size, int flags);
+char *addstr(char *p, char *s);
+char *addstrz(char *p, char *s);
+time_t ft2time(smb_time filetime);
+smb_time time2ft(time_t time);
+int smb_convert_filename(char *name);
+int smb_errno(struct smb *smb);
+
+// smbcache.c
+
+void smb_add_to_cache(struct smb_share *share, char *path, char *filename, struct stat *statbuf);
+struct smb_dentry *smb_find_in_cache(struct smb_share *share, char *path);
+void smb_clear_cache(struct smb_share *share);
+
+// smbproto.c
+
+struct smb *smb_init(struct smb_share *share, int aux);
+
+int smb_send(struct smb_share *share, struct smb *smb, unsigned char cmd, int params, char *data, int datasize);
+int smb_recv(struct smb_share *share, struct smb *smb);
+int smb_request(struct smb_share *share, struct smb *smb, unsigned char cmd, int params, char *data, int datasize, int retry);
+
+int smb_trans(struct smb_share *share,
+	      unsigned short cmd, 
+	      void *reqparams, int reqparamlen,
+	      void *reqdata, int reqdatalen,
+	      void *rspparams, int *rspparamlen,
+	      void *rspdata, int *rspdatalen);
+
+int smb_connect_tree(struct smb_share *share, int retry);
+int smb_disconnect_tree(struct smb_share *share);
+
+int smb_connect(struct smb_share *share);
+int smb_disconnect(struct smb_share *share);
+
+int smb_get_connection(struct smb_share *share, struct ip_addr *ipaddr, char *domain, char *username, char *password);
+int smb_release_connection(struct smb_share *share);
+
+int smb_check_connection(struct smb_share *share);
+int smb_reconnect(struct smb_share *share);
 
 #pragma pack(pop)
 

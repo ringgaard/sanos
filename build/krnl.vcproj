@@ -342,7 +342,16 @@
 					RelativePath="..\src\sys\fs\smbfs\smb.h">
 				</File>
 				<File
+					RelativePath="..\src\sys\fs\smbfs\smbcache.c">
+				</File>
+				<File
 					RelativePath="..\src\sys\fs\smbfs\smbfs.c">
+				</File>
+				<File
+					RelativePath="..\src\sys\fs\smbfs\smbproto.c">
+				</File>
+				<File
+					RelativePath="..\src\sys\fs\smbfs\smbutil.c">
 				</File>
 			</Filter>
 		</Filter>
