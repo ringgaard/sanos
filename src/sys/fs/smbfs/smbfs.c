@@ -242,9 +242,10 @@ int smb_open(struct file *filp, char *name)
   }
 
   // Determine file attributes
-  attrs = SMB_FILE_ATTR_NORMAL;
-
-  if ((filp->flags & O_CREAT) != 0 && (filp->mode & S_IWRITE) == 0) attrs = SMB_FILE_ATTR_READONLY;
+  if ((filp->flags & O_CREAT) != 0 && (filp->mode & S_IWRITE) == 0) 
+    attrs = SMB_FILE_ATTR_READONLY;
+  else
+    attrs = SMB_FILE_ATTR_NORMAL;
 
   if (filp->flags & O_TEMPORARY)
   {
@@ -272,7 +273,7 @@ int smb_open(struct file *filp, char *name)
   smb->params.req.create.andx.cmd = 0xFF;
   smb->params.req.create.name_length = strlen(name) + 1;
   smb->params.req.create.desired_access = access;
-  smb->params.req.create.ext_file_attributes = SMB_FILE_ATTR_NORMAL;
+  smb->params.req.create.ext_file_attributes = attrs;
   smb->params.req.create.share_access = sharing;
   smb->params.req.create.create_disposition = mode;
   smb->params.req.create.impersonation_level = 0x02;
