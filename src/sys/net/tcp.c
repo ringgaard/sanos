@@ -175,9 +175,7 @@ err_t tcp_close(struct tcp_pcb *pcb)
 // tcp_abort
 //
 // Aborts a connection by sending a RST to the remote host and deletes
-// the local protocol control block. This is done when a connection is
-// killed because of shortage of memory.
-//
+// the local protocol control block. 
 //
 
 void tcp_abort(struct tcp_pcb *pcb)
@@ -199,7 +197,7 @@ void tcp_abort(struct tcp_pcb *pcb)
   } 
   else if (pcb->state == LISTEN) 
   {
-    tcp_pcb_remove((struct tcp_pcb **)&tcp_listen_pcbs, pcb);
+    tcp_pcb_remove((struct tcp_pcb **) &tcp_listen_pcbs, pcb);
     kfree(pcb);
   } 
   else 
@@ -220,7 +218,6 @@ void tcp_abort(struct tcp_pcb *pcb)
     tcp_rst(seqno, ackno, &local_ip, &remote_ip, local_port, remote_port);
   }
 }
-
 
 //
 // tcp_bind
