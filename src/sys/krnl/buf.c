@@ -83,6 +83,30 @@ static int bufpools_proc(struct proc_file *pf, void *arg)
 }
 
 //
+// bufstats_proc
+//
+
+static int bufstats_proc(struct proc_file *pf, void *arg)
+{
+  struct bufpool *pool;
+  int i;
+
+  pprintf(pf, "device   bufsize   size  free clean dirty  read write  lock   upd  invl   err\n");
+  pprintf(pf, "-------- ------- ------ ----- ----- ----- ----- ----- ----- ----- ----- -----\n");
+
+  pool = bufpools;
+  while (pool)
+  {
+    pprintf(pf, "%-8s %7d %5dK", device(pool->devno)->name, pool->bufsize, pool->poolsize * pool->bufsize / K);
+    for (i = 0; i < BUF_STATES; i++) pprintf(pf, "%6d", pool->bufcount[i]);
+    pprintf(pf, "\n");
+    pool = pool->next;
+  }
+
+  return 0;
+}
+
+//
 // bufhash
 //
 
@@ -272,6 +296,7 @@ static int read_buffer(struct bufpool *pool, struct buf *buf)
     release_buffer_waiters(buf, 0);
   }
 
+  pool->blocks_read++;
   return rc;
 }
 
@@ -298,6 +323,7 @@ static int write_buffer(struct bufpool *pool, struct buf *buf, int flush)
     change_state(pool, buf, BUF_STATE_WRITING);
     if (!flush) pool->ioactive = 1;
     rc = dev_write(pool->devno, buf->data, pool->bufsize, buf->blkno * pool->blks_per_buffer);
+    pool->blocks_written;
   }
   else
     rc = pool->bufsize;
@@ -395,7 +421,7 @@ static void check_sync()
 
   for (pool = bufpools; pool; pool = pool->next)
   {
-    if (now >= pool->last_sync + SYNC_INTERVAL)
+    if (now - pool->last_sync >=  SYNC_INTERVAL)
     {
       //dump_pool_stat(pool);
       flush_buffers(pool, 0);
@@ -431,7 +457,7 @@ static void lazywriter_task(void *arg)
 	  check_sync();
 	}
 
-	// Flush all dirty buffers buffers
+	// Flush all dirty buffers
         //dump_pool_stat(pool);
 	if (flush_buffers(pool, 1) < 0) set_event(&dirty_buffers);
       }
@@ -522,6 +548,7 @@ struct bufpool *init_buffer_pool(devno_t devno, int poolsize, int bufsize, void 
     lazywriter_started = 1;
 
     register_proc_inode("bufpools", bufpools_proc, NULL);
+    register_proc_inode("bufstats", bufstats_proc, NULL);
   }
 
   return pool;
@@ -566,7 +593,10 @@ struct buf *get_buffer(struct bufpool *pool, blkno_t blkno)
       return NULL;
     }
     else
+    {
+      pool->cache_hits++;
       return buf;
+    }
   }
 
   // Buffer not cached, get new buffer from buffer pool
@@ -588,6 +618,7 @@ struct buf *get_buffer(struct bufpool *pool, blkno_t blkno)
     return NULL;
   }
 
+  pool->cache_misses++;
   return buf;
 }
 
@@ -610,6 +641,7 @@ struct buf *alloc_buffer(struct bufpool *pool, blkno_t blkno)
     }
     else
     {
+      pool->blocks_allocated++;
       memset(buf->data, 0, pool->bufsize);
       return buf;
     }
@@ -630,6 +662,7 @@ struct buf *alloc_buffer(struct bufpool *pool, blkno_t blkno)
   change_state(pool, buf, BUF_STATE_LOCKED);
   buf->locks++;
 
+  pool->blocks_allocated++;
   return buf;
 }
 
@@ -689,6 +722,7 @@ void release_buffer(struct bufpool *pool, struct buf *buf)
       pool->dirty.tail = buf;
       if (!pool->dirty.head) pool->dirty.head = buf;
       set_event(&dirty_buffers);
+      pool->blocks_updated++;
       break;
 
     case BUF_STATE_INVALID:
@@ -699,6 +733,7 @@ void release_buffer(struct bufpool *pool, struct buf *buf)
       buf->chain.next = pool->freelist;
       buf->chain.prev = NULL;
       pool->freelist = buf;
+      pool->blocks_freed++;
       break;
 
     case BUF_STATE_FREE:
@@ -759,6 +794,8 @@ int flush_buffers(struct bufpool *pool, int interruptable)
     rc = write_buffer(pool, buf, 1);
     if (rc < 0) return rc;
 
+    pool->blocks_flushed;
+
     // Move buffer to clean list if it is not locked
     if (buf->locks == 0)
     {
@@ -818,6 +855,9 @@ int sync_buffers(struct bufpool *pool, int interruptable)
       //kprintf("sync block %d\n", buf->blkno);
       rc = dev_write(pool->devno, buf->data, pool->bufsize, buf->blkno * pool->blks_per_buffer);
       if (rc < 0) return rc;
+      
+      pool->blocks_written;
+      pool->blocks_synched;
 
       // Change state from updated to locked
       change_state(pool, buf, BUF_STATE_LOCKED);

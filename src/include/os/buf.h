@@ -87,6 +87,18 @@ struct bufpool
   time_t last_sync;
   int nosync;
 
+  int blocks_read;
+  int cache_hits;
+  int cache_misses;
+
+  int blocks_allocated;
+  int blocks_freed;
+
+  int blocks_updated;
+  int blocks_written;
+  int blocks_flushed;
+  int blocks_synched;
+
   struct bufpool *next;
   struct bufpool *prev;
 
