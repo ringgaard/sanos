@@ -2374,6 +2374,78 @@ static int sys_chdir(char *params)
   return rc;
 }
 
+static int sys_mkiomux(char *params)
+{
+  int flags;
+  struct iomux *iomux;
+  handle_t h;
+
+  lock_buffer(params, 4);
+
+  flags = *(int *) params;
+
+  iomux = (struct iomux *) kmalloc(sizeof(struct iomux));
+  if (!iomux) 
+  {
+    unlock_buffer(params, 4);
+    return -ENOMEM;
+  }
+
+  init_iomux(iomux, flags);
+
+  h = halloc(&iomux->object);
+  if (h < 0)
+  {
+    close_object(&iomux->object);
+    unlock_buffer(params, 4);
+    return h;
+  }
+
+  unlock_buffer(params, 4);
+
+  return h;
+}
+
+static int sys_dispatch(char *params)
+{
+  handle_t ioh;
+  handle_t h;
+  struct iomux *iomux;
+  struct object *o;
+  int events;
+  int context;
+  int rc;
+
+  if (lock_buffer(params, 16) < 0) return -EFAULT;
+
+  ioh = *(handle_t *) params;
+  h = *(handle_t *) (params + 4);
+  events = *(int *) (params + 8);
+  context = *(int *) (params + 12);
+
+  iomux = (struct iomux *) olock(ioh, OBJECT_IOMUX);
+  if (!iomux)
+  {
+    unlock_buffer(params, 16);
+    return -EBADF;
+  }
+
+  o = (struct object *) olock(h, OBJECT_ANY);
+  if (!o) 
+  {
+    orel(iomux);
+    unlock_buffer(params, 16);
+    return -EBADF;
+  }
+
+  rc = iodispatch(iomux, o, events, context);
+
+  orel(o);
+  orel(iomux);
+  unlock_buffer(params, 16);
+  return rc;
+}
+
 struct syscall_entry syscalltab[] =
 {
   {"null","", sys_null},
@@ -2450,7 +2522,9 @@ struct syscall_entry syscalltab[] =
   {"waitany", "%p,%d,%d", sys_waitany},
   {"readv", "%d,%p,%d", sys_readv},
   {"writev", "%d,%p,%d", sys_writev},
-  {"chdir", "'%s'", sys_chdir}
+  {"chdir", "'%s'", sys_chdir},
+  {"mkiomux", "%d", sys_mkiomux},
+  {"dispatch", "%d,%d,%d,%d", sys_dispatch},
 };
 
 int syscall(int syscallno, char *params)

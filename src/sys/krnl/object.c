@@ -81,6 +81,7 @@ static void remove_from_waitlist(struct waitblock *wb)
 //
 // Test if thread is ready to run, i.e. all waitall objects on the
 // waiting list are signaled or one waitany object is signaled.
+// This routine also sets the waitkey for the thread from the waitblock.
 //
 
 static int thread_ready_to_run(struct thread *t)
@@ -138,10 +139,10 @@ static void release_thread(struct thread *t)
 //
 // enter_object
 //
-// Called when a object wait on a signaled object.
+// Called when an object waits on a signaled object.
 //
 
-void enter_object(struct object *obj)
+int enter_object(struct object *obj)
 {
   switch (obj->type)
   {
@@ -173,7 +174,17 @@ void enter_object(struct object *obj)
     case OBJECT_FILE:
       // Do nothing
       break;
+
+    case OBJECT_SOCKET:
+      // Do nothing
+      break;
+
+    case OBJECT_IOMUX:
+      //TODO: remove first waiter from iomux and return context for io object 
+      break;
   }
+
+  return 0;
 }
 
 //
@@ -201,76 +212,69 @@ void clear_thread_waitlist(struct thread *t)
 int wait_for_object(object_t hobj, unsigned int timeout)
 {
   struct object *obj = (struct object *) hobj;
+  struct thread *t = self();
+  struct waitblock wb;
 
   // If object is signaled we does not have to wait
-  if (obj->signaled)
-  {
-    enter_object(obj);
-  }
-  else if (obj->type == OBJECT_MUTEX && ((struct mutex *) obj)->owner == self())
+  if (obj->signaled) return enter_object(obj);
+
+  if (obj->type == OBJECT_MUTEX && ((struct mutex *) obj)->owner == self())
   {
     // Mutex is already owned by current thread, increase recursion count
     ((struct mutex *) obj)->recursion++;
+    return 0;
   }
-  else if (timeout == 0)
-    return -ETIMEOUT;
+
+  if (timeout == 0) return -ETIMEOUT;
+
+  // Insert thread in waitlist for object
+  t->waitlist = &wb;
+  wb.thread = t;
+  wb.object = obj;
+  wb.waittype = WAIT_ANY;
+  wb.waitkey = 0;
+  wb.next = NULL;
+
+  insert_in_waitlist(obj, &wb);
+
+  if (timeout == INFINITE)
+  {
+    // Wait for object to become signaled
+    enter_wait(THREAD_WAIT_OBJECT);
+
+    // Clear waitlist and return waitkey
+    t->waitlist = NULL;
+    return t->waitkey;
+  }
   else
   {
-    struct waitblock wb;
-    struct thread *t = self();
+    struct waitable_timer timer;
+    struct waitblock wbtmo;
 
-    // Insert thread in waitlist for object
-    t->waitlist = &wb;
-    wb.thread = t;
-    wb.object = obj;
-    wb.waittype = WAIT_ALL;
-    wb.waitkey = 0;
-    wb.next = NULL;
+    // Initialize timer
+    if (timeout < MSECS_PER_TICK) panic("timeout too small");
+    init_waitable_timer(&timer, ticks + timeout / MSECS_PER_TICK);
+    wb.next = &wbtmo;
+    wbtmo.thread = t;
+    wbtmo.object = &timer.object;
+    wbtmo.waittype = WAIT_ANY;
+    wbtmo.waitkey = -ETIMEOUT;
+    wbtmo.next = NULL;
 
-    insert_in_waitlist(obj, &wb);
+    insert_in_waitlist(&timer.object, &wbtmo);
 
-    if (timeout == INFINITE)
-    {
-      // Wait for object to become signaled
-      enter_wait(THREAD_WAIT_OBJECT);
+    // Wait for object to become signaled or time out
+    enter_wait(THREAD_WAIT_OBJECT);
 
-      // Clear waitlist and return waitkey
-      t->waitlist = NULL;
-      return t->waitkey;
-    }
-    else
-    {
-      struct waitable_timer timer;
-      struct waitblock wbtmo;
+    // Stop timer
+    cancel_waitable_timer(&timer);
 
-      // Initialize timer
-      if (timeout < MSECS_PER_TICK) panic("timeout too small");
-      init_waitable_timer(&timer, ticks + timeout / MSECS_PER_TICK);
-      wb.waittype = WAIT_ANY;
-      wb.next = &wbtmo;
-      wbtmo.thread = t;
-      wbtmo.object = &timer.object;
-      wbtmo.waittype = WAIT_ANY;
-      wbtmo.waitkey = -ETIMEOUT;
-      wbtmo.next = NULL;
+    // Clear wait list
+    clear_thread_waitlist(t);
 
-      insert_in_waitlist(&timer.object, &wbtmo);
-
-      // Wait for object to become signaled or time out
-      enter_wait(THREAD_WAIT_OBJECT);
-
-      // Stop timer
-      cancel_waitable_timer(&timer);
-
-      // Clear wait list
-      clear_thread_waitlist(t);
-
-      // Return wait key
-      return t->waitkey;
-    }
+    // Return wait key
+    return t->waitkey;
   }
-
-  return 0;
 }
 
 //
@@ -321,19 +325,21 @@ int wait_for_all_objects(struct object **objs, int count, unsigned int timeout)
   // If all object are signaled enter all objects and return
   if (all)
   {
+    int rc;
+
+    rc = 0;
     for (n = 0; n < count; n++)
     {
       if (objs[n]->signaled)
-	enter_object(objs[n]);
+	rc |= enter_object(objs[n]);
       else if (objs[n]->type == OBJECT_MUTEX && ((struct mutex *) objs[n])->owner == self())
       {
 	// Mutex is already owned by current thread, increase recursion count
 	((struct mutex *) objs[n])->recursion++;
-	return n;
       }
     }
 
-    return 0;
+    return rc;
   }
 
   // Return immediately if timeout is zero
@@ -412,8 +418,8 @@ int wait_for_any_object(struct object **objs, int count, unsigned int timeout)
   {
     if (objs[n]->signaled)
     {
-      enter_object(objs[n]);
-      return n;
+      int rc = enter_object(objs[n]);
+      return rc ? rc : n;
     }
     else if (objs[n]->type == OBJECT_MUTEX && ((struct mutex *) objs[n])->owner == self())
     {
@@ -483,6 +489,7 @@ void init_object(struct object *o, int type)
   o->type = type;
   o->signaled = 0;
   o->handle_count = 0;
+  o->lock_count = 0;
   o->waitlist_head = NULL;
   o->waitlist_tail = NULL;
 }
@@ -490,34 +497,34 @@ void init_object(struct object *o, int type)
 //
 // close_object
 //
-// Close object
+// Close object after all handles has been released
 //
 
 int close_object(struct object *o)
 {
-  // TODO: release all waitblocks waiting on object
-  if (o->waitlist_head) panic("object closed with active waitblocks");
+  // Release all waitblocks waiting on object
+  while (o->waitlist_head)
+  {
+    o->waitlist_head->thread->waitkey = -EINTR;
+    release_thread(o->waitlist_head->thread);
+  }
 
   switch (o->type)
   {
     case OBJECT_THREAD:
-      return destroy_thread((struct thread *) o);
+      return 0;
 
     case OBJECT_EVENT:
-      kfree(o);
       return 0;
 
     case OBJECT_TIMER:
       cancel_waitable_timer((struct waitable_timer *) o);
-      kfree(o);
       return 0;
 
     case OBJECT_MUTEX:
-      kfree(o);
       return 0;
 
     case OBJECT_SEMAPHORE:
-      kfree(o);
       return 0;
     
     case OBJECT_FILE:
@@ -525,6 +532,40 @@ int close_object(struct object *o)
 
     case OBJECT_SOCKET:
       return closesocket((struct socket *) o);
+
+    case OBJECT_IOMUX:
+      //TODO: remove iomux from all attached objects
+      return 0;
+  }
+
+  return -EBADF;
+}
+
+//
+// destroy_object
+//
+// Destroy object after all handles has been closed and
+// all locks has been released
+//
+
+int destroy_object(struct object *o)
+{
+  switch (o->type)
+  {
+    case OBJECT_THREAD:
+      return destroy_thread((struct thread *) o);
+
+    case OBJECT_EVENT:
+    case OBJECT_TIMER:
+    case OBJECT_MUTEX:
+    case OBJECT_SEMAPHORE:
+    case OBJECT_IOMUX:
+      kfree(o);
+      return 0;
+    
+    case OBJECT_FILE:
+    case OBJECT_SOCKET:
+      return 0;
   }
 
   return -EBADF;
@@ -888,6 +929,31 @@ void cancel_waitable_timer(struct waitable_timer *t)
 }
 
 //
+// init_iomux
+//
+// Initialize iomux
+//
+
+void init_iomux(struct iomux *iomux, int flags)
+{
+  init_object(&iomux->object, OBJECT_IOMUX);
+  iomux->flags = flags;
+  iomux->ready_head = iomux->ready_tail = NULL;
+  iomux->waiting_head = iomux->waiting_tail = NULL;
+}
+
+//
+// iodispatch
+//
+// Add object to iomux for i/o dispatching
+//
+
+int iodispatch(struct iomux *iomux, object_t hobj, int event, int context)
+{
+  return -ENOSYS;
+}
+
+//
 // halloc
 //
 // Allocate handle
@@ -940,15 +1006,15 @@ int hfree(handle_t h)
   if (o == (struct object *) NOHANDLE) return -EBADF;
   if (o < (struct object *) OSBASE) return -EBADF;
 
-  o = htab[h];
-  if (--o->handle_count == 0) 
-    rc = close_object(o);
-  else
-    rc = 0;
+  if (--o->handle_count > 0) return 0;
+  
+  rc = close_object(o);
 
   htab[h] = (struct object *) hfreelist;
   hfreelist = h;
-  
+
+  if (o->lock_count == 0) destroy_object(o);
+
   return rc;
 }
 
@@ -968,22 +1034,24 @@ struct object *olock(handle_t h, int type)
   if (o == (struct object *) NOHANDLE) return NULL;
   if (o < (struct object *) OSBASE) return NULL;
   if (o->type != type && type != OBJECT_ANY) return NULL;
-  o->handle_count++;
+  o->lock_count++;
   return o;
 }
 
 //
 // orel
 //
-// Release object
+// Release lock on object
 //
 
 int orel(object_t hobj)
 {
   struct object *o = (struct object *) hobj;
 
-  if (--o->handle_count == 0) return close_object(o);
-  return 0;
+  if (--o->lock_count == 0 && o->handle_count == 0) 
+    return destroy_object(o);
+  else
+    return 0;
 }
 
 //
@@ -994,17 +1062,17 @@ int orel(object_t hobj)
 
 static int handles_proc(struct proc_file *pf, void *arg)
 {
-  static char *objtype[] = {"TASK", "EVNT", "TIMR", "MUTX", "SEMA", "FILE", "SOCK"};
+  static char *objtype[] = {"THREAD", "EVENT", "TIMER", "MUTEX", "SEM", "FILE", "SOCKET", "IOMUX"};
 
   int h;
   int i;
   struct object *o;
-  int objcount[7];
+  int objcount[8];
 
-  for (i = 0; i < 7; i++) objcount[i] = 0;
+  for (i = 0; i < 8; i++) objcount[i] = 0;
 
-  pprintf(pf, "handle addr     s type count\n");
-  pprintf(pf, "------ -------- - ---- -----\n");
+  pprintf(pf, "handle addr     s type   count locks\n");
+  pprintf(pf, "------ -------- - ------ ----- -----\n");
   for (h = 0; h < htabsize; h++)
   {
     o = htab[h];
@@ -1012,12 +1080,12 @@ static int handles_proc(struct proc_file *pf, void *arg)
     if (o < (struct object *) OSBASE) continue;
     if (o == (struct object *) NOHANDLE) continue;
     
-    pprintf(pf, "%6d %8X %d %4s %5d\n", h, o, o->signaled, objtype[o->type], o->handle_count);
+    pprintf(pf, "%6d %8X %d %-6s %5d %5d\n", h, o, o->signaled, objtype[o->type], o->handle_count, o->lock_count);
     if (o->handle_count != 0) objcount[o->type] += FRAQ / o->handle_count;
   }
 
   pprintf(pf, "\n");
-  for (i = 0; i < 7; i++) pprintf(pf, "%s:%d ", objtype[i], objcount[i] / FRAQ);
+  for (i = 0; i < 8; i++) pprintf(pf, "%s:%d ", objtype[i], objcount[i] / FRAQ);
   pprintf(pf, "\n");
 
   return 0;

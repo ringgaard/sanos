@@ -48,6 +48,7 @@
 #define OBJECT_SEMAPHORE  4
 #define OBJECT_FILE       5
 #define OBJECT_SOCKET     6
+#define OBJECT_IOMUX      7
 
 #define THREAD_STATE_INITIALIZED 0
 #define THREAD_STATE_READY       1
@@ -74,7 +75,8 @@ struct object
   unsigned short type;
   short signaled;
 
-  int handle_count;
+  unsigned short handle_count;
+  unsigned short lock_count;
 
   struct waitblock *waitlist_head;
   struct waitblock *waitlist_tail;
@@ -92,6 +94,34 @@ struct waitblock
 
   struct waitblock *next_wait;
   struct waitblock *prev_wait;
+};
+
+struct iomux;
+
+struct ioobject
+{
+  struct object object;
+
+  struct iomux *iomux;
+  int context;
+
+  struct ioobject *next;
+  struct ioobject *prev;
+
+  unsigned short events_signaled;
+  unsigned short events_monitored;
+};
+
+struct iomux
+{
+  struct object object;
+  int flags;
+
+  struct ioobject *ready_head;
+  struct ioobject *ready_tail;
+
+  struct ioobject *waiting_head;
+  struct ioobject *waiting_tail;
 };
 
 struct event
@@ -180,6 +210,9 @@ krnlapi void release_mutex(struct mutex *m);
 krnlapi void init_waitable_timer(struct waitable_timer *t, unsigned int expires);
 krnlapi void modify_waitable_timer(struct waitable_timer *t, unsigned int expires);
 krnlapi void cancel_waitable_timer(struct waitable_timer *t);
+
+krnlapi void init_iomux(struct iomux *iomux, int flags);
+krnlapi int iodispatch(struct iomux *iomux, object_t hobj, int event, int context);
 
 krnlapi int wait_for_object(object_t hobj, unsigned int timeout);
 krnlapi int wait_for_all_objects(struct object **objs, int count, unsigned int timeout);

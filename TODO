@@ -3,10 +3,6 @@ TODO for sanos
 
 - Return error in tcp_rexmit_seg() to signal error in retransmit (reset rtime)
 
-- Implement refcnt on objects
-    - close objects when handle count reaches zero (close_object).
-    - free objects when handle count and refcnt reaches zero (destroy_object).
-
 - Implement ICMP messages host unreachable, net unreachable and port unreachable
 
 - Finish implementation of NDIS subsystem
@@ -126,3 +122,7 @@ CHANGES
 - Added PCI subsystem identifier to driver binding code
 
 - Implemented Intel EtherExpress Pro100 NIC network driver (eepro100.sys)
+
+- Implemented lock count on objects
+    - close object when handle count reaches zero.
+    - destroy object when handle count and refcnt reaches zero.

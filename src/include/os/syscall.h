@@ -109,7 +109,9 @@
 #define SYSCALL_READV        72
 #define SYSCALL_WRITEV       73
 #define SYSCALL_CHDIR        74
+#define SYSCALL_MKIOMUX      75
+#define SYSCALL_DISPATCH     76
 
-#define SYSCALL_MAX          74
+#define SYSCALL_MAX          76
 
 #endif

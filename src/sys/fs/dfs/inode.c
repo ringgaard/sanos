@@ -140,6 +140,7 @@ blkno_t set_inode_block(struct inode *inode, unsigned int iblock, blkno_t block)
 	if (dirblock == NOBLOCK) return NOBLOCK;
         ((blkno_t *) buf->data)[offsets[d]] = dirblock;
         mark_buffer_updated(inode->fs->cache, buf);
+        release_buffer(inode->fs->cache, buf);
 
 	buf = alloc_buffer(inode->fs->cache, dirblock);
 	if (!buf) return NOBLOCK;

@@ -432,3 +432,13 @@ int chdir(const char *name)
 {
   return syscall(SYSCALL_CHDIR, (void *) &name);
 }
+
+handle_t mkiomux(int flags)
+{
+  return syscall(SYSCALL_MKIOMUX, (void *) &flags);
+}
+
+int dispatch(handle_t iomux, handle_t h, int events, int context)
+{
+  return syscall(SYSCALL_DISPATCH, (void *) &iomux);
+}

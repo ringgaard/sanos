@@ -806,6 +806,9 @@ osapi int ereset(handle_t h);
 osapi handle_t mksem(int initial_count);
 osapi int semrel(handle_t h, int count);
 
+osapi handle_t mkiomux(int flags);
+osapi int dispatch(handle_t iomux, handle_t h, int events, int context);
+
 osapi handle_t self();
 osapi void exit(int status);
 osapi void dbgbreak();
