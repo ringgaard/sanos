@@ -200,7 +200,7 @@ static int sys_mount(char *params)
   return rc;
 }
 
-static int sys_unmount(char *params)
+static int sys_umount(char *params)
 {
   char *path;
   int rc;
@@ -215,7 +215,7 @@ static int sys_unmount(char *params)
     return -EFAULT;
   }
 
-  rc = unmount(path);
+  rc = umount(path);
 
   unlock_string(path);
   unlock_buffer(params, 4);
@@ -2342,7 +2342,7 @@ struct syscall_entry syscalltab[] =
   {"null","", sys_null},
   {"format", "'%s','%s','%s'", sys_format},
   {"mount", "'%s','%s','%s','%s'", sys_mount},
-  {"unmount", "'%s'", sys_unmount},
+  {"umount", "'%s'", sys_umount},
   {"open", "'%s',%x", sys_open},
   {"close", "%d", sys_close},
   {"flush", "%d", sys_flush},

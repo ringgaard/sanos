@@ -40,7 +40,7 @@ void exit(int status)
   shell();
 
   kprintf("syncing filesystems...\n");
-  unmount_all();
+  umount_all();
   kprintf("system stopped\n");
   sleep(100);
   cli();
@@ -50,7 +50,7 @@ void exit(int status)
 void stop(int restart)
 {
   kprintf("syncing filesystems...\n");
-  unmount_all();
+  umount_all();
 
   if (restart)
   {

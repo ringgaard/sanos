@@ -12,7 +12,7 @@
 #define SYSCALL_NULL         0
 #define SYSCALL_FORMAT       1
 #define SYSCALL_MOUNT        2
-#define SYSCALL_UNMOUNT      3
+#define SYSCALL_UMOUNT       3
 #define SYSCALL_OPEN         4
 #define SYSCALL_CLOSE        5
 #define SYSCALL_FLUSH        6

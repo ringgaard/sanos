@@ -724,6 +724,25 @@ struct smb_fileinfo_request
   unsigned short infolevel;             // Information level
 };
 
+struct smb_pathinfo_request
+{
+  unsigned short infolevel;             // Information level
+  unsigned long reserved;
+  char filename[MAXPATH];
+};
+
+struct smb_set_fileinfo_request
+{
+  unsigned short fid;		        // File ID
+  unsigned short infolevel;             // Information level
+  unsigned short reserved;
+};
+
+struct smb_set_fileinfo_response
+{
+  unsigned short reserved;
+};
+
 struct smb_fsinfo_request
 {
   unsigned short infolevel;             // Information level
@@ -759,7 +778,6 @@ struct smb_file_basic_info
   smb_time last_write_time;		// Time of last write to the file
   smb_time change_time;			// Time when file was last changed
   unsigned long attributes;		// File Attributes
-  unsigned long pad;
 };
 
 struct smb_file_standard_info
@@ -786,6 +804,11 @@ struct smb_file_all_info
   char filename[256];			// Name of the file
 };
 
+struct smb_file_end_of_file_info
+{
+  smb_size end_of_file;			// Offset to the first free byte in the file
+};
+
 struct smb_findfirst_request
 {
   unsigned short search_attributes;     // Search attributes	
@@ -798,7 +821,7 @@ struct smb_findfirst_request
 					//   Bit 4 - find with backup intent
   unsigned short infolevel;		// Information level
   unsigned long search_storage_type;	
-  char filename[256];			// Pattern for the search
+  char filename[MAXPATH];		// Pattern for the search
 };
 
 struct smb_findfirst_response

@@ -549,7 +549,7 @@ osapi int syscall(int syscallno, void *params);
 
 osapi int format(const char *devname, const char *type, const char *opts);
 osapi int mount(const char *type, const char *mntto, const char *mntfrom, const char *opts);
-osapi int unmount(const char *path);
+osapi int umount(const char *path);
 
 osapi int getfsstat(struct statfs *buf, size_t size);
 osapi int fstatfs(handle_t f, struct statfs *buf);

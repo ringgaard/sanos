@@ -328,7 +328,7 @@ static void mount_device(char *devname, char *path)
 static void reboot_system()
 {
   kprintf("Unmounting filesystems...\n");
-  unmount_all();
+  umount_all();
   kprintf("Rebooting...\n");
   reboot();
 }

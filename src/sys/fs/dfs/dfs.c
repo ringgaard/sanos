@@ -15,7 +15,7 @@ struct fsops dfsops =
 
   dfs_format,
   dfs_mount,
-  dfs_unmount,
+  dfs_umount,
 
   dfs_statfs,
 

@@ -14,7 +14,7 @@
 
 #define FSOP_FORMAT     0x00000001
 #define FSOP_MOUNT      0x00000002
-#define FSOP_UNMOUNT    0x00000004
+#define FSOP_UMOUNT     0x00000004
 #define FSOP_STATFS     0x00000008
 #define FSOP_OPEN       0x00000010
 #define FSOP_CLOSE      0x00000020
@@ -73,7 +73,7 @@ struct fsops
 
   int (*format)(char *devname, char *opts);
   int (*mount)(struct fs *fs, char *opts);
-  int (*unmount)(struct fs *fs);
+  int (*umount)(struct fs *fs);
 
   int (*statfs)(struct fs *fs, struct statfs *buf);
 
@@ -114,8 +114,8 @@ krnlapi struct fs *fslookup(char *name, char **rest);
 
 krnlapi int format(char *devname, char *type, char *opts);
 krnlapi int mount(char *type, char *mntto, char *mntfrom, char *opts);
-krnlapi int unmount(char *path);
-int unmount_all();
+krnlapi int umount(char *path);
+int umount_all();
 
 krnlapi int getfsstat(struct statfs *buf, size_t size);
 krnlapi int fstatfs(struct file *filp, struct statfs *buf);

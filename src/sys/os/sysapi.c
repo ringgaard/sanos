@@ -93,9 +93,9 @@ int mount(const char *type, const char *mntto, const char *mntfrom, const char *
     return _mount(type, mntto, mntfrom, opts);
 }
 
-int unmount(const char *path)
+int umount(const char *path)
 {
-  return syscall(SYSCALL_UNMOUNT, (void *) &path);
+  return syscall(SYSCALL_UMOUNT, (void *) &path);
 }
 
 int getfsstat(struct statfs *buf, size_t size)

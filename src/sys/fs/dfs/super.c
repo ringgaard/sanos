@@ -456,7 +456,7 @@ int dfs_mount(struct fs *fs, char *opts)
   return 0;
 }
 
-int dfs_unmount(struct fs *fs)
+int dfs_umount(struct fs *fs)
 {
   close_filesystem((struct filsys *) fs->data);
   return 0;

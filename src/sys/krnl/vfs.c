@@ -238,7 +238,7 @@ int mount(char *type, char *mntto, char *mntfrom, char *opts)
   return 0;
 }
 
-int unmount(char *path)
+int umount(char *path)
 {
   struct fs *fs;
   int rc;
@@ -259,9 +259,9 @@ int unmount(char *path)
   if (fs->locks > 0) return -EBUSY;
 
   // Unmount filesystem from device
-  if (fs->ops->unmount)
+  if (fs->ops->umount)
   {
-    rc = fs->ops->unmount(fs);
+    rc = fs->ops->umount(fs);
     if (rc != 0) return rc;
   }
 
@@ -274,7 +274,7 @@ int unmount(char *path)
   return 0;
 }
 
-int unmount_all()
+int umount_all()
 {
   struct fs *fs;
   struct fs *nextfs;
@@ -282,7 +282,7 @@ int unmount_all()
   fs = mountlist;
   while (fs)
   {
-    if (fs->ops->unmount) fs->ops->unmount(fs);
+    if (fs->ops->umount) fs->ops->umount(fs);
     nextfs = fs->next;
     kfree(fs);
     fs = nextfs;

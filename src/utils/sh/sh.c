@@ -477,20 +477,20 @@ static void mount_device(int argc, char **argv)
   }
 }
 
-static void unmount_device(int argc, char **argv)
+static void umount_device(int argc, char **argv)
 {
   char *path;
   int rc;
 
   if (argc < 2)
   {
-    printf("usage: unmount <path>\n");
+    printf("usage: umount <path>\n");
     return;
   }
 
   path = argv[1];
 
-  rc = unmount(path);
+  rc = umount(path);
   if (rc < 0)
   {
     printf("%s: %s\n", path, strerror(rc));
@@ -573,7 +573,7 @@ static void disk_usage(int argc, char **argv)
       else
         printf("%8dK", b->bfree * (b->bsize / 512) / 2);
 
-      printf(" %d/%d", b->files - b->ffree, b->files);
+      if (b->files != -1 && b->ffree != -1) printf(" %d/%d", b->files - b->ffree, b->files);
     }
 
     printf("\n");
@@ -1138,8 +1138,8 @@ void shell()
 	mount_device(argc, argv);
       else if (strcmp(argv[0], "format") == 0)
 	format_device(argc, argv);
-      else if (strcmp(argv[0], "unmount") == 0)
-	unmount_device(argc, argv);
+      else if (strcmp(argv[0], "umount") == 0)
+	umount_device(argc, argv);
       else if (strcmp(argv[0], "du") == 0)
 	disk_usage(argc, argv);
       else if (strcmp(argv[0], "date") == 0)

@@ -424,7 +424,7 @@ int __stdcall main(hmodule_t hmod, char *cmdline, void *env)
   }
 
   // Unmount target
-  rc = unmount("/target");
+  rc = umount("/target");
   if (rc < 0)
   {
     printf("Error %d unmounting target\n", rc);
