@@ -33,6 +33,8 @@
 
 #include <os.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <ctype.h>
 #include <sys/types.h>
@@ -85,7 +87,6 @@ int input(FILE *stream, const unsigned char *format, va_list arglist)
   void *pointer;                      // Points to user data receptacle
   void *start;                        // Indicate non-empty string
 
-  wchar_t wctemp;
   unsigned char *scanptr;             // For building "table" data
   int ch;
 
@@ -98,16 +99,14 @@ int input(FILE *stream, const unsigned char *format, va_list arglist)
   int widthset;                       // User has specified width
 
   char done_flag;                     // General purpose loop monitor
-  char longone;                       // 0 = SHORT, 1 = LONG, 2 = L_DOUBLE
+  char longone;                       // 0 = short, 1 = long, 2 = long double
   int integer64;                      // 1 for 64-bit integer, 0 otherwise
-  signed char widechar;               // -1 = char, 0 = ????, 1 = wchar_t
   char reject;                        // %[^ABC] instead of %[ABC]
   char negative;                      // Flag for '-' detected
   char suppress;                      // Don't assign anything
   char match;                         // Flag: !0 if any fields matched
   va_list arglistsave;                // Save arglist value
 
-  char fl_wchar_arg;                  // Flags wide char/string argument
   unsigned char rngch;                // Used while scanning range
   unsigned char last;                 // Also for %[a-z]
   unsigned char prevchar;             // For %[a-z]
@@ -138,8 +137,7 @@ int input(FILE *stream, const unsigned char *format, va_list arglist)
       number = 0;
       prevchar = 0;
       width = widthset = started = 0;
-      fl_wchar_arg = done_flag = suppress = negative = reject = 0;
-      widechar = 0;
+      done_flag = suppress = negative = reject = 0;
       longone = 1;
       integer64 = 0;
 
@@ -162,7 +160,6 @@ int input(FILE *stream, const unsigned char *format, va_list arglist)
 
             case 'h':
 	      --longone;
-	      --widechar;
 	      break;
 
             case 'I':
@@ -176,16 +173,9 @@ int input(FILE *stream, const unsigned char *format, va_list arglist)
 	      goto default_label;
 
             case 'L':
-              ++longone;
-              break;
-
             case 'l':
               ++longone;
-              // FALLTHROUGH
-
-            case 'w':
-	      ++widechar;
-	      break;
+              break;
 
             case '*':
 	      ++suppress;
@@ -202,19 +192,10 @@ default_label:
       if (!suppress) 
       {
 	arglistsave = arglist;
-	pointer = va_arg(arglist,void *);
+	pointer = va_arg(arglist, void *);
       }
 
       done_flag = 0;
-
-      if (!widechar) 
-      {
-	// Use case if not explicitly specified
-        if ((*format == 'S') || (*format == 'C'))
-          ++widechar;
-        else
-          --widechar;
-      }
 
       // Switch to lowercase to allow %E,%G, and to keep the switch table small
       comchr = *format | ('a' - 'A');
@@ -237,19 +218,16 @@ default_label:
 	      ++widthset;
 	      ++width;
 	    }
-	    if (widechar > 0) fl_wchar_arg++;
 	    scanptr = cbrackset;
 	    --reject;
 	    goto scanit2;
 
           case 's':
-            if (widechar > 0) fl_wchar_arg++;
             scanptr = sbrackset;
             --reject;
             goto scanit2;
 
           case LEFT_BRACKET:
-            if (widechar > 0) fl_wchar_arg++;
             scanptr = (char *)(++format);
 
             if (*scanptr == '^') 
@@ -326,20 +304,8 @@ scanit2:
 	      {
                 if (!suppress) 
 		{
-                  if (fl_wchar_arg) 
-		  {
-		    char temp[2];
-		    temp[0] = (char) ch;
-		    if (isleadbyte(ch)) temp[1] = (char) GETCH();
-		    wctemp = temp[0]; //TODO: should be: mbtowc(&wctemp, temp, MB_CUR_MAX);
-		    *(wchar_t *) pointer = wctemp;
-		    pointer = (wchar_t *) pointer + 1;
-                  } 
-		  else
-                  {
-                    *(char *) pointer = (char) ch;
-                    pointer = (char *) pointer + 1;
-                  }
+                  *(char *) pointer = (char) ch;
+                  pointer = (char *) pointer + 1;
                 }
                 else 
 		{
@@ -366,10 +332,7 @@ scanit2:
 		if (comchr != 'c') 
 		{
 		  // Null-terminate strings
-		  if (fl_wchar_arg)
-		    *(wchar_t *) pointer = L'\0';
-		  else
-		    *(char *) pointer = '\0';
+		  *(char *) pointer = '\0';
 		}
               }
             }
@@ -640,9 +603,17 @@ f_incwidth2:
 	    {
               if (!suppress) 
 	      {
+		double d;
+
                 ++count;
                 *scanptr = '\0';
-                //TODO: _fassign(longone - 1, pointer, fltbuf);
+
+		d = strtod(fltbuf, NULL);
+
+		if (longone)
+		  *(double *) pointer = d;
+		else
+		  *(float *) pointer = (float) d;
               }
 	    }
             else
@@ -683,19 +654,6 @@ f_incwidth2:
       {
         UNGETCH(ch);
         goto error_return;
-      }
-
-      if (isleadbyte(ch))
-      {
-        int ch2;
-        if ((int) *format++ != (ch2 = GETCH()))
-        {
-          UNGETCH(ch2);
-          UNGETCH(ch);
-          goto error_return;
-        }
-
-        --charcount; // Only count as one character read
       }
     }
 
