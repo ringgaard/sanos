@@ -187,6 +187,10 @@ SOURCE=..\src\sys\krnl\test.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\sys\krnl\timer.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\sys\krnl\trap.c
 # End Source File
 # Begin Source File
@@ -427,6 +431,10 @@ SOURCE=..\src\include\os\syscall.h
 # Begin Source File
 
 SOURCE=..\src\include\os\syspage.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\timer.h
 # End Source File
 # Begin Source File
 
