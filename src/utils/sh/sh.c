@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <os/version.h>
 
 unsigned char buffer[4096];
 
@@ -199,6 +200,29 @@ static void remove_dir(char *filename)
   }
 }
 
+static void display_buffer(int f, char *buffer, int size)
+{
+  char *p;
+  char *q;
+  char *end;
+
+  p = buffer;
+  end = buffer + size;
+  while (p < end)
+  {
+    q = p;
+    while (q < end && *q != '\n') q++;
+
+    if (p != q) write(f, p, q - p);
+    if (q < end) 
+    {
+      write(f, "\r\n", 2);
+      q++;
+    }
+    p = q;
+  }
+}
+
 static void display_file(char *filename)
 {
   int count;
@@ -222,14 +246,19 @@ static void display_file(char *filename)
     {
       if (line == 24)
       {
-	write(stdout, start, end - start);
+	display_buffer(stdout, start, end - start);
 	while (read(stdin, &ch, 1) <= 0);
+	if (ch == 'x')
+	{
+	  close(file);
+	  return;
+	}
 	start = end;
         line = 0;
       }
       if (*end++ == '\n') line++;
     }
-    write(stdout, start, end - start);
+    display_buffer(stdout, start, end - start);
   }
 
   close(file);
@@ -534,17 +563,30 @@ static void http(int argc, char **argv)
 {
   char *server;
   char *path;
+  char *filename;
+
   struct hostent *hp;
   struct sockaddr_in sin;
   int s;
   int rc;
   int n;
-  char buf[256];
+  //int f;
+  int total;
 
   server = "192.168.12.1";
   path = "/";
+  filename = "http.txt";
+
   if (argc >= 2) server = argv[1];
   if (argc >= 3) path = argv[2];
+  if (argc >= 4) filename = argv[2];
+
+  //f = open(filename, O_CREAT);
+  //if (f < 0)
+  //{
+  //  printf("%s: error %d creating file\n", filename, f);
+  //  return;
+  //}
 
   hp = gethostbyname(server);
   if (!hp)
@@ -572,12 +614,13 @@ static void http(int argc, char **argv)
   if (rc  < 0)
   {
     printf("connect: error %d\n", rc);
+    return;
   }
 
   printf("connected\n");
 
-  sprintf(buf, "GET %s HTTP/1.1\r\n\r\n", path);
-  rc = send(s, buf, strlen(buf), 0);
+  sprintf(buffer, "GET %s HTTP/1.0\r\n\r\n", path);
+  rc = send(s, buffer, strlen(buffer), 0);
   if (rc < 0)
   {
     printf("send: error %d\n", rc);
@@ -585,20 +628,26 @@ static void http(int argc, char **argv)
   }
 
   printf("receive data\n");
-
-  while ((n = recv(s, buf, 128, 0)) > 0)
+  memset(buffer, 0, sizeof buffer);
+  total = 0;
+  while ((n = recv(s, buffer, 4096, 0)) > 0)
   {
-    printf("reveived %d bytes\n", n);
+    total += n;
+    //write(f, buf, n);
+    //write(stdout, buffer, n);
+    //printf("[%d]", n);
   }
+  //printf("\n");
 
   if (rc < 0)
   {
     printf("recv: error %d\n", n);
   }
-  sleep(10000);
+  printf("received %d bytes\n", total);
 
   printf("closing\n");
   close(s);
+  //close(f);
 }
 
 static void test(int argc, char **argv)
@@ -720,6 +769,11 @@ static void nop()
   printf("syscall(0,0) with sysenter: min/avg/max %d/%d/%d cycles\n", min, sum / 1000, max);
 }
 
+static void set_kprint(int enabled)
+{
+  ioctl(stdout, IOCTL_KPRINT_ENABLED, &enabled, 4);
+}
+
 void shell()
 {
   char cmd[256];
@@ -771,6 +825,8 @@ void shell()
 	printf("\f");
       else if (strcmp(argv[0], "log") == 0)
 	set_loglevel(argv[1], atoi(argv[2]));
+      else if (strcmp(argv[0], "kp") == 0)
+	set_kprint(atoi(argv[1]));
       else if (strcmp(argv[0], "start") == 0)
 	start_program(argc, argv);
       else if (strcmp(argv[0], "break") == 0)
@@ -816,9 +872,78 @@ void __stdcall shelltask(void *arg)
   close(f);
 }
 
+void __stdcall telnet_task(void *arg)
+{
+  int s = (int) arg;
+
+  gettib()->in = s;
+  gettib()->out = s;
+  gettib()->err = s;
+
+#ifdef DEBUG
+  printf("%s version %s (Debug Build %s %s)\n", OSNAME, OSVERSION, __DATE__, __TIME__);
+#else
+  printf("%s version %s (Build %s %s)\n", OSNAME, OSVERSION, __DATE__, __TIME__);
+#endif
+  printf("%s\n\n", COPYRIGHT);
+
+  shell();
+
+  close(s);
+}
+
+void __stdcall telnetd(void *arg)
+{
+  int s;
+  int client;
+  int rc;
+  struct sockaddr_in sin;
+  int hthread;
+
+  s = socket(AF_INET, SOCK_STREAM, 0);
+  if (s < 0)
+  {
+    printf("telnetd: error %d in socket\n", s);
+    return;
+  }
+
+  sin.sin_len = sizeof(struct sockaddr_in);
+  sin.sin_family = AF_INET;
+  sin.sin_addr.s_addr = INADDR_ANY;
+  sin.sin_port = htons(23);
+  rc = bind(s, (struct sockaddr *) &sin, sizeof sin);
+  if (rc < 0)
+  {
+    printf("telnetd: error %d in bind\n", rc);
+    return;
+  }
+
+  rc = listen(s, 5);
+  if (rc < 0)
+  {
+    printf("telnetd: error %d in listen\n", rc);
+    return;
+  }
+
+  while (1)
+  {
+    client = accept(s, NULL, NULL);
+    if (client < 0)
+    {
+      printf("telnetd: error %d in accept\n", client);
+      return;
+    }
+
+    printf("client connected\n");
+    hthread = beginthread(telnet_task, 0, (void *) client, 0, NULL);
+    close(hthread);
+  }
+}
+
 int __stdcall main(hmodule_t hmod, char *cmdline, void *env)
 {
   //beginthread(shelltask, 0, "/dev/com1", 0, NULL);
+  beginthread(telnetd, 0, NULL, 0, NULL);
   shell();
   return 0;
 }

@@ -79,7 +79,7 @@ static void arp_tmr(void *arg)
     if (!ip_addr_isany(&arp_table[i].ipaddr) && ctime - arp_table[i].ctime >= ARP_MAXAGE) 
     {
       kprintf("arp_timer: expired entry %d\n", i);
-      ip_addr_set(&(arp_table[i].ipaddr), IP_ADDR_ANY);
+      ip_addr_set(&arp_table[i].ipaddr, IP_ADDR_ANY);
     }
   }
   
@@ -102,7 +102,7 @@ void arp_init()
 {
   int i;
   
-  for (i = 0; i < ARP_TABLE_SIZE; ++i) ip_addr_set(&(arp_table[i].ipaddr), IP_ADDR_ANY);
+  for (i = 0; i < ARP_TABLE_SIZE; ++i) ip_addr_set(&arp_table[i].ipaddr, IP_ADDR_ANY);
   memset(xmit_queue_table, 0, sizeof(xmit_queue_table));
   init_timer(&arp_timer, arp_tmr, NULL);
   mod_timer(&arp_timer, ticks + ARP_TIMER_INTERVAL / MSECS_PER_TICK);
@@ -112,6 +112,7 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
 {
   int i, j, k;
   int maxtime;
+  int err;
   
   //kprintf("add arp for %d.%d.%d.%d\n", ((unsigned char *) ipaddr)[0], ((unsigned char *) ipaddr)[1], ((unsigned char *) ipaddr)[2], ((unsigned char *) ipaddr)[3]);
 
@@ -184,8 +185,12 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
 
       stats.link.xmit++;
 
-      kprintf("arp: delayed transmit %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
-      dev_transmit((devno_t) entry->netif->state, p);
+      err = dev_transmit((devno_t) entry->netif->state, p);
+      if (err < 0)
+      {
+	kprintf("arp: error %d in delayed transmit\n", err);
+	pbuf_free(p);
+      }
     }
   }
 }
@@ -198,9 +203,9 @@ void arp_ip_input(struct netif *netif, struct pbuf *p)
   
   // Only insert/update an entry if the source IP address of the
   // incoming IP packet comes from a host on the local network.
-  if (!ip_addr_maskcmp(&(hdr->ip.src), &(netif->ip_addr), &(netif->netmask))) return;
+  if (!ip_addr_maskcmp(&hdr->ip.src, &netif->ip_addr, &netif->netmask)) return;
 
-  add_arp_entry(&(hdr->ip.src), &(hdr->eth.src));
+  add_arp_entry(&hdr->ip.src, &hdr->eth.src);
 }
 
 struct pbuf *arp_arp_input(struct netif *netif, struct eth_addr *ethaddr, struct pbuf *p)
@@ -220,12 +225,12 @@ struct pbuf *arp_arp_input(struct netif *netif, struct eth_addr *ethaddr, struct
   {
     case ARP_REQUEST:
       // ARP request. If it asked for our address, we send out a reply
-      if (ip_addr_cmp(&(hdr->dipaddr), &(netif->ip_addr))) 
+      if (ip_addr_cmp(&hdr->dipaddr, &netif->ip_addr)) 
       {
 	hdr->opcode = htons(ARP_REPLY);
 
-	ip_addr_set(&(hdr->dipaddr), &(hdr->sipaddr));
-	ip_addr_set(&(hdr->sipaddr), &(netif->ip_addr));
+	ip_addr_set(&hdr->dipaddr, &hdr->sipaddr);
+	ip_addr_set(&hdr->sipaddr, &netif->ip_addr);
 
 	for (i = 0; i < 6; i++)
 	{
@@ -248,9 +253,9 @@ struct pbuf *arp_arp_input(struct netif *netif, struct eth_addr *ethaddr, struct
 
     case ARP_REPLY:    
       // ARP reply. We insert or update the ARP table.
-      if (ip_addr_cmp(&(hdr->dipaddr), &(netif->ip_addr))) 
+      if (ip_addr_cmp(&hdr->dipaddr, &netif->ip_addr)) 
       {
-	add_arp_entry(&(hdr->sipaddr), &(hdr->shwaddr));
+	add_arp_entry(&hdr->sipaddr, &hdr->shwaddr);
 	dhcp_arp_reply(&hdr->sipaddr);
       }
       break;
@@ -292,8 +297,8 @@ struct pbuf *arp_query(struct netif *netif, struct eth_addr *ethaddr, struct ip_
     hdr->shwaddr.addr[i] = ethaddr->addr[i];
   }
   
-  ip_addr_set(&(hdr->dipaddr), ipaddr);
-  ip_addr_set(&(hdr->sipaddr), &(netif->ip_addr));
+  ip_addr_set(&hdr->dipaddr, ipaddr);
+  ip_addr_set(&hdr->sipaddr, &netif->ip_addr);
 
   hdr->hwtype = htons(HWTYPE_ETHERNET);
   ARPH_HWLEN_SET(hdr, 6);
@@ -359,6 +364,5 @@ int arp_queue(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   ip_addr_set(&entry->ipaddr, ipaddr);
   entry->expires = ticks + MAX_XMIT_DELAY / MSECS_PER_TICK;
   
-  kprintf("arp: packet queued, %d bytes\n", p->tot_len);
   return 0;
 }

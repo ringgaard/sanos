@@ -25,7 +25,6 @@ struct udp_hdr
 #pragma pack(pop)
 
 #define UDP_FLAGS_NOCHKSUM 0x01
-#define UDP_FLAGS_UDPLITE  0x02
 
 struct udp_pcb 
 {

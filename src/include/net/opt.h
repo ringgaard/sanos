@@ -17,18 +17,22 @@
 #define ARP_TABLE_SIZE          32
 #define ARP_XMIT_QUEUE_SIZE     4
 
-#define MTU                     1500
+#define MTU                     1500             // Maximum transfer unit
 
-#define ICMP_TTL                255
-#define UDP_TTL                 255
-#define TCP_TTL                 255
-#define TCP_MSS                 128   // A *very* conservative default
-#define TCP_WND                 2048
-#define TCP_MAXRTX              12
-#define TCP_SYNMAXRTX           6
+#define ICMP_TTL                255              // ICMP time to live
+#define UDP_TTL                 255              // UDP time to live
+#define TCP_TTL                 255              // TCP time to live
 
-#define TCP_SND_BUF             128
-#define TCP_SND_QUEUELEN        (2 * TCP_SND_BUF / TCP_MSS)
+#define TCP_MSS                 (MTU - 40)       // Maximum segment size
+#define TCP_WND                 (6 * TCP_MSS)    // TCP window size
+#define TCP_MAXRTX              12               // Maximum number of retransmissions
+#define TCP_SYNMAXRTX           6                // Maximum number of SYN retransmissions 
+#define TCP_MSL                 60000            // The maximum segment lifetime in milliseconds
+
+#define TCP_SND_BUF             TCP_WND          // TCP send buffer size
+
+//#define TCP_SND_QUEUELEN        (2 * TCP_SND_BUF / TCP_MSS)
+#define TCP_SND_QUEUELEN        1024
 
 #define MEM_ALIGNMENT           4
 #define PBUF_POOL_SIZE          128

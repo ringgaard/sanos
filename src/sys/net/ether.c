@@ -83,6 +83,8 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   err_t err;
   int i;
 
+  kprintf("ether: xmit %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
+
   if (pbuf_header(p, ETHER_HLEN))
   {
     kprintf("ether_output: not enough room for Ethernet header in pbuf\n");
@@ -96,7 +98,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   // ARP table.
 
   queryaddr = ipaddr;
-  if (ip_addr_isany(ipaddr) || ip_addr_isbroadcast(ipaddr, &(netif->netmask))) 
+  if (ip_addr_isany(ipaddr) || ip_addr_isbroadcast(ipaddr, &netif->netmask)) 
     dest = (struct eth_addr *) &ethbroadcast;
   else if (ip_addr_ismulticast(ipaddr)) 
   {
@@ -111,7 +113,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   } 
   else 
   {
-    if (ip_addr_maskcmp(ipaddr, &(netif->ip_addr), &(netif->netmask)))
+    if (ip_addr_maskcmp(ipaddr, &netif->ip_addr, &netif->netmask))
     {
       // Use destination IP address if the destination is on the same subnet as we are.
       queryaddr = ipaddr;
@@ -134,6 +136,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
       err = dev_transmit((devno_t) netif->state, q);
       if (err < 0)
       {
+        kprintf("ether: error %d sending arp packet\n", err);
         pbuf_free(q);
         stats.link.drop++;
 	return err;
@@ -144,6 +147,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
     err = arp_queue(netif, p, queryaddr);
     if (err < 0)
     {
+      kprintf("ether: error %d queueing packet\n", err);
       stats.link.drop++;
       stats.link.memerr++;
       return err;
@@ -161,11 +165,13 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   }
   ethhdr->type = htons(ETHTYPE_IP);
   
-  kprintf("ether: xmit %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
-
   stats.link.xmit++;
   err = dev_transmit((devno_t) netif->state, p);
-  if (err < 0) return err;
+  if (err < 0) 
+  {
+    kprintf("ether: error %d sending packet\n", err);
+    return err;
+  }
 
   return 0;
 }
@@ -227,7 +233,7 @@ void ether_dispatcher(void *arg)
       stats.link.recv++;
       ethhdr = p->payload;
 
-      kprintf("ether: recv src=%la dst=%la type=%04X len=%d\n", &ethhdr->src, &ethhdr->dest, htons(ethhdr->type), p->tot_len);
+      if (!eth_addr_isbroadcast(&ethhdr->dest)) kprintf("ether: recv src=%la dst=%la type=%04X len=%d\n", &ethhdr->src, &ethhdr->dest, htons(ethhdr->type), p->tot_len);
       
       switch (htons(ethhdr->type))
       {
@@ -264,5 +270,5 @@ void ether_init()
   struct thread *ethertask;
 
   ether_queue = alloc_queue(256);
-  ethertask = create_kernel_thread(ether_dispatcher, NULL, PRIORITY_NORMAL);
+  ethertask = create_kernel_thread(ether_dispatcher, NULL, PRIORITY_NORMAL, "ethertask");
 }

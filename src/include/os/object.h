@@ -99,6 +99,7 @@ struct thread
   int suspend_count;
   void *entrypoint;
   int exitcode;
+  char *name;
 
   struct thread *next;
   struct thread *prev;

@@ -30,6 +30,13 @@ struct eth_hdr
 
 #pragma pack(pop)
 
+__inline int eth_addr_isbroadcast(struct eth_addr *addr)
+{
+  int n;
+  for (n = 0; n < ETHER_ADDR_LEN; n++) if (addr->addr[n] != 0xFF) return 0;
+  return 1;
+}
+
 krnlapi char *ether2str(struct eth_addr *hwaddr, char *s);
 krnlapi struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr, struct ip_addr *netmask, struct ip_addr *gw);
 krnlapi err_t ether_input(struct netif *netif, struct pbuf *p);

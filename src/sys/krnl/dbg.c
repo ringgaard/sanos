@@ -382,6 +382,8 @@ static void dbg_main()
     debugging = 1;
   }
 
+  debugger_active = 1;
+
   while (1)
   {
     rc = dbg_recv_packet(&hdr, dbgdata);
@@ -443,6 +445,8 @@ static void dbg_main()
 	dbg_send_error(DBGERR_INVALIDCMD, hdr.id);
     }
   }
+
+  debugger_active = 0;
 }
 
 void dumpregs(struct context *ctxt)

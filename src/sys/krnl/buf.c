@@ -469,7 +469,7 @@ struct bufpool *init_buffer_pool(devno_t devno, int poolsize, int bufsize, void 
   if (!lazywriter_started)
   {
     init_event(&dirty_buffers, 0, 0);
-    lazywriter_thread = create_kernel_thread(lazywriter_task, NULL, PRIORITY_BELOW_NORMAL);
+    lazywriter_thread = create_kernel_thread(lazywriter_task, NULL, PRIORITY_BELOW_NORMAL, "lazywriter");
     lazywriter_started = 1;
   }
 

@@ -33,7 +33,7 @@ int ip_ownaddr(struct ip_addr *addr)
   
   for (netif = netif_list; netif != NULL; netif = netif->next)
   {
-    if (!ip_addr_isany(addr) && ip_addr_cmp(addr, &(netif->ip_addr))) 
+    if (!ip_addr_isany(addr) && ip_addr_cmp(addr, &netif->ip_addr)) 
       return 1;
   }
 
@@ -55,7 +55,7 @@ struct netif *ip_route(struct ip_addr *dest)
   
   for (netif = netif_list; netif != NULL; netif = netif->next)
   {
-    if (ip_addr_maskcmp(dest, &(netif->ip_addr), &(netif->netmask))) 
+    if (ip_addr_maskcmp(dest, &netif->ip_addr, &netif->netmask)) 
       return netif;
   }
 
@@ -74,7 +74,7 @@ static err_t ip_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
 {
   struct netif *netif;
   
-  if ((netif = ip_route((struct ip_addr *) &(iphdr->dest))) == NULL) 
+  if ((netif = ip_route(&iphdr->dest)) == NULL) 
   {
 
     kprintf("ip_forward: no forwarding route for 0x%lx found\n", iphdr->dest.addr);
@@ -131,6 +131,7 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
 
   stats.ip.recv++;
   
+  //kprintf("receiving IP datagram:\n");
   //ip_debug_print(p);
 
   // Identify the IP header
@@ -172,11 +173,11 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
   // Is this packet for us?
   for (netif = netif_list; netif != NULL; netif = netif->next) 
   {
-    if (ip_addr_isany(&(netif->ip_addr)) ||
-        ip_addr_cmp(&(iphdr->dest), &(netif->ip_addr)) ||
-       (ip_addr_isbroadcast(&(iphdr->dest), &(netif->netmask)) &&
-	ip_addr_maskcmp(&(iphdr->dest), &(netif->ip_addr), &(netif->netmask))) ||
-        ip_addr_cmp(&(iphdr->dest), IP_ADDR_BROADCAST)) 
+    if (ip_addr_isany(&netif->ip_addr) ||
+        ip_addr_cmp(&iphdr->dest, &netif->ip_addr) ||
+       (ip_addr_isbroadcast(&iphdr->dest, &netif->netmask) &&
+	ip_addr_maskcmp(&iphdr->dest, &netif->ip_addr, &netif->netmask)) ||
+        ip_addr_cmp(&iphdr->dest, IP_ADDR_BROADCAST)) 
           break;
   }
 
@@ -227,9 +228,7 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
       return udp_input(p, inp);
 
     case IP_PROTO_TCP:
-      //return tcp_input(p, inp);
-      tcp_input(p, inp);
-      return 0;
+      return tcp_input(p, inp);
 
     case IP_PROTO_ICMP:
       return icmp_input(p, inp);

@@ -9,10 +9,6 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
-#define IOCTL_SET_KEYTIMEOUT     1024
-#define IOCTL_CTRLALTDEL_ENABLED 1025
-#define IOCTL_SET_KEYMAP         1026
-
 extern int ctrl_alt_del_enabled;
 extern int keymap;
 

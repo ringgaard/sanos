@@ -13,9 +13,11 @@
 #include <net/net.h>
 
 unsigned long tcp_ticks;
-unsigned long tcp_timer_expire;
 struct timer tcpslow_timer;
 struct timer tcpfast_timer;
+struct task tcp_slow_task;
+struct task tcp_fast_task;
+
 unsigned char tcp_backoff[13] = {1, 2, 4, 8, 16, 32, 64, 64, 64, 64, 64, 64, 64};
 
 // TCP PCB lists
@@ -65,7 +67,7 @@ err_t tcp_close(struct tcp_pcb *pcb)
 
     case CLOSE_WAIT:
       err = tcp_send_ctrl(pcb, TCP_FIN);
-      if(err == 0) pcb->state = LAST_ACK;
+      if (err == 0) pcb->state = LAST_ACK;
       break;
 
     default:
@@ -114,8 +116,8 @@ void tcp_abort(struct tcp_pcb *pcb)
   {
     seqno = pcb->snd_nxt;
     ackno = pcb->rcv_nxt;
-    ip_addr_set(&local_ip, &(pcb->local_ip));
-    ip_addr_set(&remote_ip, &(pcb->remote_ip));
+    ip_addr_set(&local_ip, &pcb->local_ip);
+    ip_addr_set(&remote_ip, &pcb->remote_ip);
     local_port = pcb->local_port;
     remote_port = pcb->remote_port;
     errf = pcb->errf;
@@ -148,9 +150,9 @@ err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
   {
     if (cpcb->local_port == port)
     {
-      if (ip_addr_isany(&(cpcb->local_ip)) ||
+      if (ip_addr_isany(&cpcb->local_ip) ||
 	  ip_addr_isany(ipaddr) ||
-	  ip_addr_cmp(&(cpcb->local_ip), ipaddr)) 
+	  ip_addr_cmp(&cpcb->local_ip, ipaddr)) 
       {
 	return -EUSED;
       }
@@ -161,9 +163,9 @@ err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
   {
     if (cpcb->local_port == port)
     {
-      if (ip_addr_isany(&(cpcb->local_ip)) ||
+      if (ip_addr_isany(&cpcb->local_ip) ||
 	  ip_addr_isany(ipaddr) ||
-	  ip_addr_cmp(&(cpcb->local_ip), ipaddr))
+	  ip_addr_cmp(&cpcb->local_ip, ipaddr))
       {
 	return -EUSED;
       }
@@ -176,7 +178,6 @@ err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
   kprintf("tcp_bind: bind to port %d\n", port);
   return 0;
 }
-
 
 //
 // tcp_listen
@@ -213,7 +214,7 @@ void tcp_recved(struct tcp_pcb *pcb, unsigned short len)
   if (pcb->rcv_wnd > TCP_WND) pcb->rcv_wnd = TCP_WND;
   if (!(pcb->flags & TF_ACK_DELAY) ||!(pcb->flags & TF_ACK_NOW)) tcp_ack(pcb);
 
-  kprintf("tcp_recved: recveived %d bytes, wnd %u (%u).\n", len, pcb->rcv_wnd, TCP_WND - pcb->rcv_wnd);
+  //kprintf("tcp_recved: received %d bytes, wnd %u (%u).\n", len, pcb->rcv_wnd, TCP_WND - pcb->rcv_wnd);
 }
 
 //
@@ -315,6 +316,7 @@ void tcp_slowtmr(void *arg)
   int pcb_remove;      // flag if a PCB should be removed
 
   tcp_ticks++;
+  //kprintf("tcp_slowtmr: ticks %d\n", tcp_ticks);
 
   // Steps through all of the active PCBs.
   prev = NULL;
@@ -334,7 +336,7 @@ void tcp_slowtmr(void *arg)
       
       if (seg != NULL && pcb->rtime >= pcb->rto) 
       {
-        kprintf("tcp_timer_coarse: rtime %ld pcb->rto %d\n", tcp_ticks - pcb->rtime, pcb->rto);
+        kprintf("tcp_slowtmr: rtime %ld pcb->rto %d\n", tcp_ticks - pcb->rtime, pcb->rto);
 
 	// Double retransmission time-out unless we are trying to
         // connect to somebody (i.e., we are in SYN_SENT)
@@ -361,7 +363,7 @@ void tcp_slowtmr(void *arg)
         // Reduce congestion window and ssthresh
         eff_wnd = MIN(pcb->cwnd, pcb->snd_wnd);
         pcb->ssthresh = eff_wnd >> 1;
-        if(pcb->ssthresh < pcb->mss) pcb->ssthresh = pcb->mss * 2;
+        if (pcb->ssthresh < pcb->mss) pcb->ssthresh = pcb->mss * 2;
         pcb->cwnd = pcb->mss;
 
         kprintf("tcp_rexmit_seg: cwnd %u ssthresh %u\n", pcb->cwnd, pcb->ssthresh);
@@ -389,7 +391,6 @@ void tcp_slowtmr(void *arg)
     {
       if ((unsigned long)(tcp_ticks - pcb->tmr) > TCP_SYN_RCVD_TIMEOUT / TCP_SLOW_INTERVAL) pcb_remove++;
     }
-
 
     // If the PCB should be removed, do it
     if (pcb_remove) 
@@ -458,7 +459,16 @@ void tcp_slowtmr(void *arg)
       pcb = pcb->next;
     }
   }
+}
 
+//
+//
+// tcp_slow_handler
+//
+
+void tcp_slow_handler(void *arg)
+{
+  queue_task(&sys_task_queue, &tcp_slow_task, tcp_slowtmr, NULL);
   mod_timer(&tcpslow_timer, ticks + TCP_SLOW_INTERVAL / MSECS_PER_TICK);
 }
 
@@ -478,12 +488,21 @@ void tcp_fasttmr(void *arg)
   {
     if (pcb->flags & TF_ACK_DELAY) 
     {
-      kprintf("tcp_timer_fine: delayed ACK\n");
+      //kprintf("tcp_fasttmr: delayed ACK\n");
       tcp_ack_now(pcb);
       pcb->flags &= ~(TF_ACK_DELAY | TF_ACK_NOW);
     }
   }
+}
 
+//
+//
+// tcp_fast_handler
+//
+
+void tcp_fast_handler(void *arg)
+{
+  queue_task(&sys_task_queue, &tcp_fast_task, tcp_fasttmr, NULL);
   mod_timer(&tcpfast_timer, ticks + TCP_FAST_INTERVAL / MSECS_PER_TICK);
 }
 
@@ -499,13 +518,11 @@ int tcp_segs_free(struct tcp_seg *seg)
   int count = 0;
   struct tcp_seg *next;
 
-again:
-  if (seg != NULL) 
+  while (seg != NULL) 
   {
     next = seg->next;
     count += tcp_seg_free(seg);
     seg = next;
-    goto again;
   }
 
   return count;
@@ -603,9 +620,11 @@ void tcp_init()
 {
   // Initialize timer
   tcp_ticks = 0;
-  init_timer(&tcpslow_timer, tcp_slowtmr, NULL);
-  init_timer(&tcpfast_timer, tcp_fasttmr, NULL);
-  //TEST mod_timer(&tcpslow_timer, ticks + TCP_SLOW_INTERVAL / MSECS_PER_TICK);
+  init_task(&tcp_slow_task);
+  init_task(&tcp_fast_task);
+  init_timer(&tcpslow_timer, tcp_slow_handler, NULL);
+  init_timer(&tcpfast_timer, tcp_fast_handler, NULL);
+  mod_timer(&tcpslow_timer, ticks + TCP_SLOW_INTERVAL / MSECS_PER_TICK);
   mod_timer(&tcpfast_timer, ticks + TCP_FAST_INTERVAL / MSECS_PER_TICK);
 }
 
@@ -701,7 +720,6 @@ void tcp_pcb_purge(struct tcp_pcb *pcb)
   }
 }
 
-
 //
 // tcp_pcb_remove
 //
@@ -733,9 +751,8 @@ void tcp_pcb_remove(struct tcp_pcb **pcblist, struct tcp_pcb *pcb)
 unsigned long tcp_next_iss()
 {
   static unsigned long iss = 6510;
-  
+
   iss += tcp_ticks;
-kprintf("iss = %d\n", iss);
   return iss;
 }
 
@@ -761,11 +778,6 @@ void tcp_debug_print(struct tcp_hdr *tcphdr)
   kprintf("+-------------------------------+\n");
   kprintf("|    0x%04x     |     %5d     | (chksum, urgp)\n", ntohs(tcphdr->chksum), ntohs(tcphdr->urgp));
   kprintf("+-------------------------------+\n");
-
-  //{
-  //  unsigned char ch;
-  //  dev_read(consdev, &ch, 1, 0);
-  //}
 }
 
 void tcp_debug_print_state(enum tcp_state s)

@@ -65,9 +65,9 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
     if (pcb->remote_port == src &&
         pcb->local_port == dest &&
         (ip_addr_isany(&pcb->remote_ip) || 
-	 ip_addr_cmp(&(pcb->remote_ip), &(iphdr->src))) &&
+	 ip_addr_cmp(&pcb->remote_ip, &iphdr->src)) &&
         (ip_addr_isany(&pcb->local_ip) ||
- 	 ip_addr_cmp(&(pcb->local_ip), &(iphdr->dest)))) 
+ 	 ip_addr_cmp(&pcb->local_ip, &iphdr->dest))) 
     {
       break;
     }
@@ -79,9 +79,9 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
     {
       if (pcb->local_port == dest &&
 	  (ip_addr_isany(&pcb->remote_ip) ||
-	   ip_addr_cmp(&(pcb->remote_ip), &(iphdr->src))) &&
+	   ip_addr_cmp(&pcb->remote_ip, &iphdr->src)) &&
 	  (ip_addr_isany(&pcb->local_ip) ||
-	   ip_addr_cmp(&(pcb->local_ip), &(iphdr->dest)))) 
+	   ip_addr_cmp(&pcb->local_ip, &iphdr->dest))) 
       {
 	break;
       }      
@@ -95,29 +95,15 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
     {
       pbuf_header(p, UDP_HLEN);
       
-      if (IPH_PROTO(iphdr) == IP_PROTO_UDPLITE) 
+      if (udphdr->chksum != 0) 
       {
-	// Do the UDP Lite checksum
-	if (inet_chksum_pseudo(p, (struct ip_addr *) &(iphdr->src), (struct ip_addr *) &(iphdr->dest), IP_PROTO_UDPLITE, ntohs(udphdr->len)) != 0) 
+	if (inet_chksum_pseudo(p, &iphdr->src, &iphdr->dest, IP_PROTO_UDP, p->tot_len) != 0) 
 	{
-	  kprintf("udp_input: UDP Lite datagram discarded due to failing checksum\n");
+	  kprintf("udp_input: UDP datagram discarded due to failing checksum\n");
+
 	  stats.udp.chkerr++;
 	  stats.udp.drop++;
 	  return -ECHKSUM;
-	}
-      } 
-      else 
-      {
-	if (udphdr->chksum != 0) 
-	{
-	  if (inet_chksum_pseudo(p, &iphdr->src, &iphdr->dest, IP_PROTO_UDP, p->tot_len) != 0) 
-	  {
-	    kprintf("udp_input: UDP datagram discarded due to failing checksum\n");
-
-	    stats.udp.chkerr++;
-	    stats.udp.drop++;
-	    return -ECHKSUM;
-	  }
 	}
       }
 
@@ -184,35 +170,20 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
   
   //kprintf("udp_send: sending datagram of length %d\n", p->tot_len);
   
-  if (pcb->flags & UDP_FLAGS_UDPLITE) 
+  udphdr->len = htons((unsigned short) p->tot_len);
+  
+  // Calculate checksum
+  if ((netif->flags & NETIF_UDP_TX_CHECKSUM_OFFLOAD) == 0)
   {
-    udphdr->len = htons((unsigned short) pcb->chksum_len);
-    
-    // Calculate checksum
-    if ((netif->flags & NETIF_UDP_TX_CHECKSUM_OFFLOAD) == 0)
+    if ((pcb->flags & UDP_FLAGS_NOCHKSUM) == 0) 
     {
-      udphdr->chksum = inet_chksum_pseudo(p, src_ip, &pcb->remote_ip, IP_PROTO_UDP, pcb->chksum_len);
+      udphdr->chksum = inet_chksum_pseudo(p, src_ip, &pcb->remote_ip, IP_PROTO_UDP, p->tot_len);
       if (udphdr->chksum == 0x0000) udphdr->chksum = 0xFFFF;
     }
-    err = ip_output_if(p, src_ip, &pcb->remote_ip, UDP_TTL, IP_PROTO_UDPLITE, netif);
-  } 
-  else 
-  {
-    udphdr->len = htons((unsigned short) p->tot_len);
-    
-    // Calculate checksum
-    if ((netif->flags & NETIF_UDP_TX_CHECKSUM_OFFLOAD) == 0)
-    {
-      if ((pcb->flags & UDP_FLAGS_NOCHKSUM) == 0) 
-      {
-	udphdr->chksum = inet_chksum_pseudo(p, src_ip, &pcb->remote_ip, IP_PROTO_UDP, p->tot_len);
-	if (udphdr->chksum == 0x0000) udphdr->chksum = 0xFFFF;
-      }
-    }
-
-    //udp_debug_print(udphdr);
-    err = ip_output_if(p, src_ip, &pcb->remote_ip, UDP_TTL, IP_PROTO_UDP, netif);
   }
+
+  //udp_debug_print(udphdr);
+  err = ip_output_if(p, src_ip, &pcb->remote_ip, UDP_TTL, IP_PROTO_UDP, netif);
   
   stats.udp.xmit++;
 

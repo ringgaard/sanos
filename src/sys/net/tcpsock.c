@@ -64,6 +64,8 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 
   if (p)
   {
+    kprintf("recv_tcp: %d bytes\n", p->tot_len);
+
     if (s->tcp.recvtail)
     {
       pbuf_chain(s->tcp.recvtail, p);
@@ -74,9 +76,11 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
       s->tcp.recvhead = p;
       s->tcp.recvtail = p;
     }
-  }  
+  }
+  else
+    s->state = SOCKSTATE_CLOSING;
 
-  if (!s->tcp.recvhead)
+  if (s->state == SOCKSTATE_CLOSING && s->tcp.recvhead == NULL)
   {
     req = s->waithead;
     while (req)
@@ -112,7 +116,7 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 
     tcp_recved(pcb, (unsigned short) bytes);
 
-    if (req->len == 0) release_socket_request(req, req->err);
+    release_socket_request(req, req->err);
 
     pbuf_header(p, -bytes);
     if (p->len == 0)
@@ -188,7 +192,6 @@ static err_t alloc_pcb(struct socket *s)
   tcp_arg(s->tcp.pcb, s);
   tcp_recv(s->tcp.pcb, recv_tcp);
   tcp_sent(s->tcp.pcb, sent_tcp);
-  tcp_poll(s->tcp.pcb, poll_tcp, 4);
   tcp_err(s->tcp.pcb, err_tcp);
 
   return 0;
@@ -203,8 +206,6 @@ static int tcpsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen,
   struct sockaddr_in *sin;
 
   if (s->state != SOCKSTATE_LISTENING) return -EINVAL;
-
-  tcp_debug_print_pcbs();
 
   if (s->tcp.numpending == 0)
   {
@@ -232,6 +233,9 @@ static int tcpsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen,
   newsock->state = SOCKSTATE_CONNECTED;
   newsock->tcp.pcb = pcb;
   tcp_arg(pcb, newsock);
+  tcp_recv(pcb, recv_tcp);
+  tcp_sent(pcb, sent_tcp);
+  tcp_err(pcb, err_tcp);
 
   if (addr) 
   {
@@ -352,7 +356,7 @@ static int tcpsock_getpeername(struct socket *s, struct sockaddr *name, int *nam
 
   if (!namelen) return -EINVAL;
   if (*namelen < sizeof(struct sockaddr_in)) return -EINVAL;
-  if (s->state != SOCKSTATE_CONNECTED) return -EINVAL;
+  if (s->state != SOCKSTATE_CONNECTED) return -ECONN;
 
   sin = (struct sockaddr_in *) name;
   sin->sin_len = sizeof(struct sockaddr_in);
@@ -370,7 +374,7 @@ static int tcpsock_getsockname(struct socket *s, struct sockaddr *name, int *nam
 
   if (!namelen) return -EINVAL;
   if (*namelen < sizeof(struct sockaddr_in)) return -EINVAL;
-  if (s->state != SOCKSTATE_CONNECTED) return -EINVAL;
+  if (s->state != SOCKSTATE_CONNECTED) return -ECONN;
 
   sin = (struct sockaddr_in *) name;
   sin->sin_len = sizeof(struct sockaddr_in);
@@ -423,8 +427,9 @@ static int tcpsock_recv(struct socket *s, void *data, int size, unsigned int fla
   struct sockreq req;
 
   if (!data) return -EFAULT;
-  if (s->state != SOCKSTATE_CONNECTED) return -EINVAL;
-  if (!size) return 0;
+  if (s->state != SOCKSTATE_CONNECTED && s->state != SOCKSTATE_CLOSING) return -ECONN;
+  if (size < 0) return -EINVAL;
+  if (size == 0) return 0;
 
   bufp = (char *) data;
   left = size;
@@ -436,6 +441,7 @@ static int tcpsock_recv(struct socket *s, void *data, int size, unsigned int fla
     {
       memcpy(bufp, p->payload, left);
       pbuf_header(p, -left);
+      tcp_recved(s->tcp.pcb, (unsigned short) size);
       return size;
     }
     else
@@ -452,12 +458,18 @@ static int tcpsock_recv(struct socket *s, void *data, int size, unsigned int fla
   }
 
   len = size - left;
-  if (len > 0) return len;
+  if (len > 0) 
+  {
+    tcp_recved(s->tcp.pcb, (unsigned short) len);
+    return len;
+  }
 
-  rc = submit_socket_request(s, &req, SOCKREQ_RECV, bufp, left, INFINITE);
+  if (s->state == SOCKSTATE_CLOSING) return 0;
+
+  rc = submit_socket_request(s, &req, SOCKREQ_RECV, bufp, size, INFINITE);
   if (rc < 0) return rc;
 
-  return len + rc; 
+  return rc; 
 }
 
 static int tcpsock_recvfrom(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen)
@@ -488,8 +500,9 @@ static int tcpsock_send(struct socket *s, void *data, int size, unsigned int fla
   struct sockreq req;
 
   if (!data) return -EFAULT;
-  if (s->state != SOCKSTATE_CONNECTED) return -EINVAL;
-  if (!size) return 0;
+  if (s->state != SOCKSTATE_CONNECTED) return -ECONN;
+  if (size < 0) return -EINVAL;
+  if (size == 0) return 0;
 
   len = tcp_sndbuf(s->tcp.pcb);
   if (size <= len)

@@ -137,7 +137,7 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
   calibrate_delay();
 
   // Start main task and dispatch to idle task
-  mainthread = create_kernel_thread(main, 0, PRIORITY_NORMAL);
+  mainthread = create_kernel_thread(main, 0, PRIORITY_NORMAL, "init");
   
   idle_task();
 }

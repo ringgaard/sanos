@@ -15,7 +15,11 @@ typedef void *FILE;
 #define stdout (gettib()->out)
 #define stderr (gettib()->err)
 
-void printf(const char *fmt,...);
+int vfprintf(handle_t f, const char *fmt, va_list args);
+int fprintf(handle_t f, const char *fmt,...);
+int vprintf(const char *fmt, va_list args);
+int printf(const char *fmt,...);
+
 char *gets(char *buf);
 
 #endif

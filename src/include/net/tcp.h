@@ -17,7 +17,7 @@ void tcp_init();              // Must be called first to initialize TCP
 void tcp_slowtmr(void *arg);  // Must be called every 500 ms.
 void tcp_fasttmr(void *arg);  // Must be called every 100 ms.
 
-void tcp_input(struct pbuf *p, struct netif *inp); // Called by IP to deliver TCP segment to TCP
+err_t tcp_input(struct pbuf *p, struct netif *inp); // Called by IP to deliver TCP segment to TCP
 
 // Application layer interface to TCP
 
@@ -62,8 +62,6 @@ err_t tcp_output(struct tcp_pcb *pcb);
 #define TCP_SYN_RCVD_TIMEOUT 20000  // milliseconds
 
 #define TCP_OOSEQ_TIMEOUT        6  // x RTO
-
-#define TCP_MSL              60000  // The maximum segment lifetime in microseconds
 
 #pragma pack(push)
 #pragma pack(1)
@@ -171,7 +169,7 @@ struct tcp_pcb
   unsigned short snd_buf; // Avaliable buffer space for sending
   unsigned short snd_queuelen;
 
-  // Function to be called when more send buffer space is avaliable
+  // Function to be called when more send buffer space is available
   err_t (*sent)(void *arg, struct tcp_pcb *pcb, unsigned short space);
   unsigned short acked;
   
@@ -216,7 +214,7 @@ struct tcp_pcb_listen
 
 struct tcp_seg 
 {
-  struct tcp_seg *next;    // Used when putting segements on a queue
+  struct tcp_seg *next;    // Used when putting segments on a queue
   struct pbuf *p;          // Buffer containing data + TCP header
   void *dataptr;           // Pointer to the TCP data in the pbuf
   int len;                 // TCP length of this segment

@@ -311,6 +311,15 @@ struct serial_status
 };
 
 //
+// Console I/O
+//
+
+#define IOCTL_SET_KEYTIMEOUT     1024
+#define IOCTL_CTRLALTDEL_ENABLED 1025
+#define IOCTL_SET_KEYMAP         1026
+#define IOCTL_KPRINT_ENABLED     1027
+
+//
 // Critical sections
 //
 

@@ -24,9 +24,9 @@ struct netif *netif_add(char *name, struct ip_addr *ipaddr, struct ip_addr *netm
   netif->flags = 0;
   netif->mtu = MTU;
 
-  ip_addr_set(&(netif->ip_addr), ipaddr);
-  ip_addr_set(&(netif->netmask), netmask);
-  ip_addr_set(&(netif->gw), gw);
+  ip_addr_set(&netif->ip_addr, ipaddr);
+  ip_addr_set(&netif->netmask, netmask);
+  ip_addr_set(&netif->gw, gw);
 
   netif->next = netif_list;
   netif_list = netif;
@@ -50,17 +50,17 @@ struct netif *netif_find(char *name)
 
 void netif_set_ipaddr(struct netif *netif, struct ip_addr *ipaddr)
 {
-  ip_addr_set(&(netif->ip_addr), ipaddr);
+  ip_addr_set(&netif->ip_addr, ipaddr);
 }
 
 void netif_set_gw(struct netif *netif, struct ip_addr *gw)
 {
-  ip_addr_set(&(netif->gw), gw);
+  ip_addr_set(&netif->gw, gw);
 }
 
 void netif_set_netmask(struct netif *netif, struct ip_addr *netmask)
 {
-  ip_addr_set(&(netif->netmask), netmask);
+  ip_addr_set(&netif->netmask, netmask);
 }
 
 void netif_set_default(struct netif *netif)

@@ -11,16 +11,14 @@
 #include <stdio.h>
 #include <string.h>
 
-void printf(const char *fmt,...)
+int vfprintf(handle_t f, const char *fmt, va_list args)
 {
-  va_list args;
   char buffer[1024];
   char *p;
   char *q;
+  int n;
 
-  va_start(args, fmt);
-  vsprintf(buffer, fmt, args);
-  va_end(args);
+  n = vsprintf(buffer, fmt, args);
 
   p = buffer;
   while (*p)
@@ -28,14 +26,45 @@ void printf(const char *fmt,...)
     q = p;
     while (*q && *q != '\n') q++;
 
-    if (p != q) write(stdout, p, q - p);
+    if (p != q) write(f, p, q - p);
     if (*q == '\n') 
     {
-      write(stdout, "\r\n", 2);
+      write(f, "\r\n", 2);
       q++;
     }
     p = q;
   }
+
+  return n;
+}
+
+int fprintf(handle_t f, const char *fmt,...)
+{
+  va_list args;
+  int n;
+
+  va_start(args, fmt);
+  n = vfprintf(f, fmt, args);
+  va_end(args);
+
+  return n;
+}
+
+int vprintf(const char *fmt, va_list args)
+{
+  return vfprintf(stdout, fmt, args);
+}
+
+int printf(const char *fmt,...)
+{
+  va_list args;
+  int n;
+
+  va_start(args, fmt);
+  n = vprintf(fmt, args);
+  va_end(args);
+
+  return n;
 }
 
 char *gets(char *buf)
@@ -51,7 +80,7 @@ char *gets(char *buf)
       {
 	if (p > buf)
 	{
-	  write(stdout, &ch, 1);
+	  write(stdout, "\b \b", 3);
 	  p--;
 	}
       }

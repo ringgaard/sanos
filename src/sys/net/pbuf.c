@@ -515,6 +515,7 @@ struct pbuf *pbuf_dechain(struct pbuf *p)
   if (q) q->tot_len = p->tot_len - p->len;
   p->tot_len = p->len;
   p->next = NULL;
+
   return q;
 }
 
@@ -533,7 +534,7 @@ struct pbuf *pbuf_dup(int layer, struct pbuf *p)
 
   // Allocate new pbuf
   size = p->tot_len;
-  q = pbuf_alloc(layer, PBUF_RW, size);
+  q = pbuf_alloc(layer, size, PBUF_RW);
   if (q == NULL) return NULL;
 
   // Copy buffer contents
@@ -549,7 +550,7 @@ struct pbuf *pbuf_dup(int layer, struct pbuf *p)
 }
 
 //
-// pbuf_dup
+// pbuf_linearize
 //
 // Makes sure that the packet buffer consists of one buffer. If the
 // pbuf consists of multiple buffers a new duplicate buffer is allocated 

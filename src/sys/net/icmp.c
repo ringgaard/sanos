@@ -134,5 +134,5 @@ void icmp_time_exceeded(struct pbuf *p, int t)
   tehdr->chksum = inet_chksum(tehdr, q->len);
   stats.icmp.xmit++;
 
-  if (ip_output(q, NULL, &(iphdr->src), ICMP_TTL, IP_PROTO_ICMP) < 0) pbuf_free(q);
+  if (ip_output(q, NULL, &iphdr->src, ICMP_TTL, IP_PROTO_ICMP) < 0) pbuf_free(q);
 }

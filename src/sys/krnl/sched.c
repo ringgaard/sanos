@@ -12,7 +12,6 @@
 
 int resched = 0;
 int idle = 0;
-int dispatching_dpcs = 0;
 
 struct thread *idle_thread;
 struct thread *ready_queue_head[THREAD_PRIORITY_LEVELS];
@@ -20,7 +19,8 @@ struct thread *ready_queue_tail[THREAD_PRIORITY_LEVELS];
 
 struct thread *threadlist;
 struct dpc *dpc_queue;
-struct thread *dead_tcb_queue;
+
+struct task_queue sys_task_queue;
 
 __declspec(naked) void context_switch(struct thread *t)
 {
@@ -159,7 +159,7 @@ void threadstart(void *arg)
   }
 }
 
-static struct thread *create_task(taskproc_t task, void *arg, int priority)
+static struct thread *create_thread(threadproc_t startaddr, void *arg, int priority)
 {
   // Allocate a new aligned thread control block
   struct thread *t = (struct thread *) alloc_pages_align(PAGES_PER_TCB, PAGES_PER_TCB);
@@ -168,7 +168,7 @@ static struct thread *create_task(taskproc_t task, void *arg, int priority)
   init_thread(t, priority);
 
   // Initialize the thread kernel stack to start executing the task function
-  init_thread_stack(t, (void *) task, arg);
+  init_thread_stack(t, (void *) startaddr, arg);
 
   // Add thread to thread list
   insert_before(threadlist, t);
@@ -176,19 +176,20 @@ static struct thread *create_task(taskproc_t task, void *arg, int priority)
   return t;
 }
 
-struct thread *create_kernel_thread(taskproc_t task, void *arg, int priority)
+struct thread *create_kernel_thread(threadproc_t startaddr, void *arg, int priority, char *name)
 {
   struct thread *t;
 
   // Create new thread object
-  t = create_task(task, arg, priority);
+  t = create_thread(startaddr, arg, priority);
   if (!t) return NULL;
+  t->name = name;
 
   // Mark thread as ready to run
   mark_thread_ready(t);
 
   // Notify debugger
-  dbg_notify_create_thread(t, task);
+  dbg_notify_create_thread(t, startaddr);
 
   return t;
 }
@@ -205,8 +206,9 @@ int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread 
     stacksize = PAGES(stacksize) * PAGESIZE;
 
   // Create and initialize new TCB and suspend thread
-  t = create_task(threadstart, NULL, PRIORITY_NORMAL);
+  t = create_thread(threadstart, NULL, PRIORITY_NORMAL);
   if (!t) return -ENOMEM;
+  t->name = "user";
   t->suspend_count++;
 
   // Create and initialize new TIB
@@ -265,8 +267,15 @@ int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned 
   return 0;
 }
 
+static void destroy_tcb(void *arg)
+{
+  free_pages(arg, PAGES_PER_TCB);
+}
+
 int destroy_thread(struct thread *t)
 {
+  struct task *task;
+
   // Deallocate user context
   if (t->tib)
   {
@@ -285,9 +294,10 @@ int destroy_thread(struct thread *t)
   // Notify debugger
   dbg_notify_exit_thread(t);
 
-  // Insert the TCB in the dead tcb queue to be destroyed later by the idle thread
-  t->next_ready = dead_tcb_queue;
-  dead_tcb_queue = t;
+  // Add task to delete the TCB
+  task = (struct task *) (t + 1);
+  init_task(task);
+  queue_task(&sys_task_queue, task, destroy_tcb, t);
 
   return 0;
 }
@@ -337,68 +347,150 @@ void terminate_thread(int exitcode)
   dispatch();
 }
 
+static void task_queue_task(void *tqarg)
+{
+  struct task_queue *tq = tqarg;
+  struct task *task;
+  taskproc_t proc;
+  void *arg;
+
+  while (1)
+  {
+    // Wait until tasks arrive on the task queue
+    while (tq->head == NULL)
+    {
+      tq->thread->state = THREAD_STATE_WAITING;
+      dispatch();
+    }
+
+    // Get next task from task queue
+    task = tq->head;
+    tq->head = task->next;
+    if (tq->tail == task) tq->tail = NULL;
+    tq->size--;
+
+    // Execute task
+    task->flags &= ~TASK_QUEUED;
+    if ((task->flags & TASK_EXECUTING) == 0)
+    {
+      task->flags |= TASK_EXECUTING;
+      proc = task->proc;
+      arg = task->arg;
+      tq->flags |= TASK_QUEUE_ACTIVE;
+  
+      proc(arg);
+
+      tq->flags &= ~TASK_QUEUE_ACTIVE;
+      task->flags &= ~TASK_EXECUTING;
+    }
+  }
+}
+
+int init_task_queue(struct task_queue *tq, int priority, int maxsize, char *name)
+{
+  memset(tq, 0, sizeof(struct task_queue));
+  tq->maxsize = maxsize;
+  tq->thread = create_kernel_thread(task_queue_task, tq, priority, name);
+
+  return 0;
+}
+
+void init_task(struct task *task)
+{
+  task->proc = NULL;
+  task->arg = NULL;
+  task->next = NULL;
+  task->flags = 0;
+}
+
+int queue_task(struct task_queue *tq, struct task *task, taskproc_t proc, void *arg)
+{
+  if (!tq) tq = &sys_task_queue;
+  if (task->flags & TASK_QUEUED) return -EBUSY;
+  if (tq->maxsize != INFINITE && tq->size >= tq->maxsize) return -EAGAIN;
+
+  task->proc = proc;
+  task->arg = arg;
+  task->next = NULL;
+  task->flags |= DPC_QUEUED;
+
+  if (tq->tail)
+  {
+    tq->tail->next = task;
+    tq->tail = task;
+  }
+  else
+    tq->head = tq->tail = task;
+
+  tq->size++;
+
+  if ((tq->flags & TASK_QUEUE_ACTIVE) == 0 && tq->thread->state == THREAD_STATE_WAITING)
+  {
+    mark_thread_ready(tq->thread);
+  }
+
+  return 0;
+}
+
 void init_dpc(struct dpc *dpc)
 {
   dpc->proc = NULL;
   dpc->arg = NULL;
   dpc->next = NULL;
-  dpc->active = 0;
-}
-
-void queue_dpc(struct dpc *dpc, dpcproc_t proc, void *arg)
-{
-  if (dpc->active) return;
-
-  cli();
-  dpc->proc = proc;
-  dpc->arg = arg;
-  dpc->next = dpc_queue;
-  dpc->active = 1;
-  dpc_queue = dpc;
-  sti();
-  resched = 1;
+  dpc->flags = 0;
 }
 
 void queue_irq_dpc(struct dpc *dpc, dpcproc_t proc, void *arg)
 {
-  if (dpc->active) return;
+  if (dpc->flags & DPC_QUEUED) return;
 
   dpc->proc = proc;
   dpc->arg = arg;
   dpc->next = dpc_queue;
   dpc_queue = dpc;
-  dpc->active = 1;
-  resched = 1;
+  dpc->flags |= DPC_QUEUED;
+}
+
+void queue_dpc(struct dpc *dpc, dpcproc_t proc, void *arg)
+{
+  cli();
+  queue_irq_dpc(dpc, proc, arg);
+  sti();
 }
 
 void dispatch_dpc_queue()
 {
-  struct dpc *queue;
-  struct dpc *next;
+  struct dpc *dpc;
   dpcproc_t proc;
+  void *arg;
 
-  // Do not recurse dispatching of dpcs
-  if (dispatching_dpcs) return;
-
-  // Get list of queued deferred procedure calls
-  cli();
-  queue = dpc_queue;
-  dpc_queue = NULL;
-  sti();
-
-  // Execute each DPC
-  dispatching_dpcs = 1;
-  while (queue)
+  while (1)
   {
-    next = queue->next;
-    proc = queue->proc;
+    // Get next deferred procedure call
+    cli();
+    if (dpc_queue)
+    {
+      dpc = dpc_queue;
+      dpc_queue = dpc->next;
+    }
+    else
+      dpc = NULL;
+    sti();
+    if (!dpc) return;
 
-    queue->active = 0;
-    
-    proc(queue->arg);
-    queue = next;
+    // Execute DPC
+    dpc->flags &= ~DPC_QUEUED;
+    if ((dpc->flags & DPC_EXECUTING) == 0)
+    {
+      dpc->flags |= DPC_EXECUTING;
+      proc = dpc->proc;
+      arg = dpc->arg;
+  
+      proc(arg);
+
+      dpc->flags &= ~DPC_EXECUTING;
+    }
   }
-  dispatching_dpcs = 0;
 }
 
 void dispatch()
@@ -456,18 +548,6 @@ void yield()
   dispatch();
 }
 
-static void collect_dead_tcbs()
-{
-  struct thread *t;
-
-  while (dead_tcb_queue)
-  {
-    t = dead_tcb_queue;
-    dead_tcb_queue = t->next_ready;
-    free_pages(t, PAGES_PER_TCB);
-  }
-}
-
 void idle_task()
 {
   while (1) 
@@ -476,13 +556,13 @@ void idle_task()
     halt();
     idle = 0;
 
-    if (dead_tcb_queue) collect_dead_tcbs();
-
     if (resched)
     {
       mark_thread_ready(current_thread());
       dispatch();
     }
+    else
+      dispatch_dpc_queue();
   }
 }
 
@@ -491,7 +571,6 @@ void init_sched()
   // Initialize scheduler
   resched = 0;
   dpc_queue = NULL;
-  dead_tcb_queue = 0;
   memset(ready_queue_head, 0, sizeof(ready_queue_head));
   memset(ready_queue_tail, 0, sizeof(ready_queue_tail));
 
@@ -506,4 +585,8 @@ void init_sched()
   idle_thread->state = THREAD_STATE_RUNNING;
   idle_thread->next = idle_thread;
   idle_thread->prev = idle_thread;
+  idle_thread->name = "idle";
+
+  // Initialize system task queue
+  init_task_queue(&sys_task_queue, PRIORITY_SYSTEM, INFINITE, "systask");
 }

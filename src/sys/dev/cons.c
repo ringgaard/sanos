@@ -10,8 +10,11 @@
 
 #define SYSLOG_SIZE (16 * K)
 
+//#define MONPORT   0x2F8 // COM2
+
 devno_t consdev = NODEV;
 static int cursoff = 0;
+static int kprint_enabled = 1;
 static unsigned int kbd_timeout = INFINITE;
 static char syslog[SYSLOG_SIZE];
 static unsigned int syslog_start;
@@ -41,6 +44,11 @@ static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size)
     case IOCTL_SET_KEYMAP:
       if (!args || size != 4) return -EINVAL;
       keymap = *(int *) args;
+      return 0;
+
+    case IOCTL_KPRINT_ENABLED:
+      if (!args || size != 4) return -EINVAL;
+      kprint_enabled = *(int *) args;
       return 0;
   }
   
@@ -104,6 +112,13 @@ static void add_to_syslog(char *buf, int size)
 	syslog_start++;
 	if (syslog_start == SYSLOG_SIZE) syslog_start = 0;
       }
+
+      if (syslog_size > 0)
+      {
+	syslog_size--;
+	syslog_start++;
+	if (syslog_start == SYSLOG_SIZE) syslog_start = 0;
+      }
     }
 
     syslog[syslog_end++] = *buf++;
@@ -121,15 +136,29 @@ void kprintf(const char *fmt,...)
   va_start(args, fmt);
   len = vsprintf(buffer, fmt, args);
   va_end(args);
+    
+  add_to_syslog(buffer, len);
   
   //if (debugging) dbg_output(buffer);
-  
-  add_to_syslog(buffer, len);
 
-  if (consdev == NODEV)
-    print_string(buffer);
-  else
-    dev_write(consdev, buffer, len, 0);
+  if (kprint_enabled)
+  {
+    if (consdev == NODEV)
+      print_string(buffer);
+    else
+    {
+#ifdef MONPORT
+      unsigned char *p = (unsigned char *) buffer;
+      while (len-- > 0)
+      {
+	while ((_inp(MONPORT + 5) & 0x20) == 0);
+	_outp(MONPORT, *p++);
+      }
+#else
+      dev_write(consdev, buffer, len, 0);
+#endif
+    }
+  }
 }
 
 static int syslog_ioctl(struct dev *dev, int cmd, void *args, size_t size)
@@ -152,9 +181,9 @@ static int syslog_read(struct dev *dev, void *buffer, size_t count, blkno_t blkn
   unsigned int idx;
   unsigned int n;
 
-  if (count == 0) return 0;
   if (blkno > syslog_size) return -EFAULT;
   if (blkno + count > syslog_size) count = syslog_size - blkno;
+  if (count == 0) return 0;
   
   ptr = (char *) buffer;
   idx = (syslog_start + blkno) % SYSLOG_SIZE;
@@ -188,5 +217,19 @@ int __declspec(dllexport) install_console()
   dev_make("console", &console_driver, NULL, NULL);
   dev_make("syslog", &syslog_driver, NULL, NULL);
   consdev = dev_open("console");
+
+#ifdef MONPORT
+  // Turn off interrupts
+  _outp(MONPORT + 1, 0);
+  
+  // Set 115200 baud, 8 bits, no parity, one stopbit
+  _outp(MONPORT + 3, 0x80);
+  _outp(MONPORT + 0, 0x01); // 0x0C = 9600, 0x01 = 115200
+  _outp(MONPORT + 1, 0x00);
+  _outp(MONPORT + 3, 0x03);
+  _outp(MONPORT + 2, 0xC7);
+  _outp(MONPORT + 4, 0x0B);
+#endif
+
   return 0;
 }

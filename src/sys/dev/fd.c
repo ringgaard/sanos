@@ -543,5 +543,5 @@ void init_fd()
   if (numfd >= 3) init_drive("fd2", &fddrives[2], &fdc, 2, &geom144);
   if (numfd >= 4) init_drive("fd3", &fddrives[3], &fdc, 3, &geom144);
 
-  fdmotor_task = create_kernel_thread(fd_motor_task, NULL, PRIORITY_NORMAL);
+  fdmotor_task = create_kernel_thread(fd_motor_task, NULL, PRIORITY_NORMAL, "fdmotor");
 }

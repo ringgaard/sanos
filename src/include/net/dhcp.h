@@ -18,14 +18,6 @@
 #define DHCP_OPTIONS_LEN        512
 #define DHCP_MIN_OPTIONS_LEN    68
 
-// Period (in seconds) of the application calling dhcp_tmrslow()
-
-#define DHCP_SLOW_TIMER_SECS 60 
-
-// Period (in milliseconds) of the application calling dhcp_tmrfast()
-
-#define DHCP_FAST_TIMER_MSECS 500 
-
 //
 // DHCP message
 //
@@ -50,7 +42,7 @@ struct dhcp_msg
   char sname[DHCP_SNAME_LEN];		  // Server name
   char file[DHCP_FILE_LEN];		  // Boot filename
   unsigned long cookie;                   // DHCP option cookie
-  unsigned char options[0];   		  // 212: Optional parameters (actual length dependent on MTU).
+  unsigned char options[0];   		  // Optional parameters (actual length dependent on MTU).
 };
 
 #pragma pack(pop)
@@ -77,9 +69,14 @@ struct dhcp_state
   struct dhcp_msg *msg_out;		  // Outgoing msg
   int options_out_len;			  // Outgoing msg options length
 
-  int request_timeout;			  // #ticks with period DHCP_FAST_TIMER_SECS for request timeout
-  int t1_timeout;			  // #ticks with period DHCP_SLOW_TIMER_SECS for renewal time
-  int t2_timeout;			  // #ticks with period DHCP_SLOW_TIMER_SECS for rebind time
+  struct timer request_timeout_timer;	  // Timer for request timeouts
+  struct task request_timeout_task;	  // Task for handling request timeouts
+
+  struct timer t1_timeout_timer;	  // Timer for renewal timeouts
+  struct task t1_timeout_task;		  // Task for handling renewals
+  
+  struct timer t2_timeout_timer;	  // Timer for rebind timeouts
+  struct task t2_timeout_task;		  // Task for handling rebinds
 
   struct ip_addr server_ip_addr;	  // DHCP server address that offered this lease 
   struct ip_addr offered_ip_addr;
@@ -228,46 +225,6 @@ void dhcp_arp_reply(struct ip_addr *addr);
 #define DHCP_OPTION_FQDN			81
 #define DHCP_OPTION_DHCP_AGENT_OPTIONS		82
 #define DHCP_OPTION_END				255
-
-#if 0
-//
-// BOOTP options
-//
-
-#define DHCP_OPTION_PAD			    0
-#define DHCP_OPTION_SUBNET_MASK		    1 // RFC 2132 3.3
-#define DHCP_OPTION_ROUTER		    3 
-#define DHCP_OPTION_DOMAIN_NAME_SERVERS     6
-#define DHCP_OPTION_HOSTNAME		    12
-#define DHCP_OPTION_IP_TTL		    23
-#define DHCP_OPTION_MTU			    26
-#define DHCP_OPTION_BROADCAST		    28
-#define DHCP_OPTION_TCP_TTL		    37
-#define DHCP_OPTION_END			    255
-
-//
-// DHCP options
-//
-
-#define DHCP_OPTION_REQUESTED_IP	    50 // RFC 2132 9.1, requested IP address
-#define DHCP_OPTION_LEASE_TIME		    51 // RFC 2132 9.2, time in seconds, in 4 bytes 
-#define DHCP_OPTION_OVERLOAD		    52 // RFC2132 9.3, use file and/or sname field for options
-
-#define DHCP_OPTION_MESSAGE_TYPE	    53 // RFC 2132 9.6, important for DHCP
-#define DHCP_OPTION_MESSAGE_TYPE_LEN 1
-
-#define DHCP_OPTION_SERVER_ID		    54 // RFC 2131 9.7, server IP address
-#define DHCP_OPTION_PARAMETER_REQUEST_LIST  55 // RFC 2131 9.8, requested option types
-
-#define DHCP_OPTION_MAX_MSG_SIZE	    57 // RFC 2131 9.10, message size accepted >= 576
-#define DHCP_OPTION_MAX_MSG_SIZE_LEN 2
-
-#define DHCP_OPTION_T1			    58 // T1 renewal time
-#define DHCP_OPTION_T2			    59 // T2 rebinding time
-#define DHCP_OPTION_CLIENT_ID		    61
-#define DHCP_OPTION_TFTP_SERVERNAME	    66
-#define DHCP_OPTION_BOOTFILE		    67
-#endif
 
 //
 // Possible combinations of overloading the file and sname fields with options
