@@ -270,7 +270,7 @@ struct section;
 #define ENODATA         85               // Valid name, no data record of requested type
 
 //
-// Misc. error
+// Misc. error codes
 //
 
 #define EPROTO          86               // Protocol error
@@ -288,6 +288,54 @@ struct section;
 #define ECONN           ENOTCONN
 #define ERST            ECONNRESET
 #define EABORT          ECONNABORTED
+
+//
+// Signals
+//
+
+#define NSIG 32
+
+#define SIGILL          4               // Illegal instruction
+#define SIGFPE          8               // Floating point exception
+#define SIGSEGV         11              // Segment violation
+
+struct context
+{
+  unsigned long es, ds;
+  unsigned long edi, esi, ebp, ebx, edx, ecx, eax;
+  unsigned long traptype;
+  unsigned long errcode;
+
+  unsigned long eip, ecs;
+  unsigned long eflags;
+  unsigned long esp, ess;
+};
+
+struct siginfo
+{
+  struct context ctxt;
+  void *addr;
+};
+
+typedef int (*sighandler_t)(int signum, struct siginfo *info);
+
+#define SIG_DFL ((sighandler_t) 0)      // Default signal action
+#define SIG_IGN ((sighandler_t) 1)      // Ignore signal
+#define SIG_ERR ((sighandler_t) -1)     // Signal error value
+
+//
+// Critical sections
+//
+
+struct critsect
+{
+  long count;
+  long recursion;
+  tid_t owner;
+  handle_t event;
+};
+
+typedef struct critsect *critsect_t;
 
 //
 // File system
@@ -417,20 +465,6 @@ struct serial_status
 #define IOCTL_BEEP               1028
 #define IOCTL_SOUND              1029
 #define IOCTL_REBOOT             1030
-
-//
-// Critical sections
-//
-
-struct critsect
-{
-  long count;
-  long recursion;
-  tid_t owner;
-  handle_t event;
-};
-
-typedef struct critsect *critsect_t;
 
 //
 // I/O control codes
@@ -674,6 +708,8 @@ struct peb
   char default_domain[256];
   struct in_addr ntp_server1;
   struct in_addr ntp_server2;
+
+  sighandler_t globalhandler;
 };
 
 //
@@ -851,6 +887,9 @@ osapi int getprio(handle_t thread);
 osapi int setprio(handle_t thread, int priority);
 osapi void sleep(int millisecs);
 osapi struct tib *gettib();
+
+osapi sighandler_t signal(int signum, sighandler_t handler);
+osapi void raise(int signum, struct siginfo *info);
 
 osapi time_t time(time_t *timeptr);
 osapi int gettimeofday(struct timeval *tv);

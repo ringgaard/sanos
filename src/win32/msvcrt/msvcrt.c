@@ -356,14 +356,14 @@ int _purecall()
   return 0;
 }
 
-int raise(int sig)
+int crt_raise(int sig)
 {
   TRACE("raise");
   panic("raise not implemented");
   return 0;
 }
 
-void (*signal(int sig, void (*func)(int)))(int)
+void (*crt_signal(int sig, void (*func)(int)))(int)
 {
   TRACE("signal");
   syslog(LOG_DEBUG, "warning: signal not implemented, ignored\n");

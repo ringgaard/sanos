@@ -81,8 +81,8 @@
 
 #define INTR_TMR		IRQ2INTR(IRQ_TMR)
 #define INTR_KBD		IRQ2INTR(IRQ_KBD)
-#define INTR_SERALT		IRQ2INTR(IRQ_SERALT)
-#define INTR_SERPRI		IRQ2INTR(IRQ_SERPRI)
+#define INTR_SERALT	        IRQ2INTR(IRQ_SERALT)
+#define INTR_SERPRI	        IRQ2INTR(IRQ_SERPRI)
 #define INTR_FD			IRQ2INTR(IRQ_FD)
 #define INTR_PARA		IRQ2INTR(IRQ_PARA)
 #define INTR_RTC		IRQ2INTR(IRQ_RTC)
@@ -95,23 +95,12 @@
 //
 
 #define INTR_SYSCALL            48
+#define INTR_SIGEXIT            49
 #define INTR_SYSENTER           0xFFFF
 
 //
-// Trap contexts
+// Syscall context
 //
-
-struct context
-{
-  unsigned long es, ds;
-  unsigned long edi, esi, ebp, ebx, edx, ecx, eax;
-  unsigned long traptype;
-  unsigned long errcode;
-
-  unsigned long eip, ecs;
-  unsigned long eflags;
-  unsigned long esp, ess;
-};
 
 struct syscall_context
 {

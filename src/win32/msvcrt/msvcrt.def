@@ -59,3 +59,5 @@ EXPORTS
   __initenv
   _setjmp3=setjmp
   longjmp
+  signal=crt_signal
+  raise=crt_raise
