@@ -1,6 +1,8 @@
 TODO for sanos
 --------------
 
+- Return error in tcp_rexmit_seg() to signal error in retransmit (reset rtime)
+
 - Implement refcnt on objects
     - close objects when handle count reaches zero (close_object).
     - free objects when handle count and refcnt reaches zero (free_object).
@@ -12,8 +14,6 @@ TODO for sanos
     - Allow static configuration of ip address and dns servers
     - Add disabled netif for all packet devices on startup
     - Add ioctl() support for changing netif parameters
-
-- Make ne2000 driver work with WAFER.
 
 - Add PCI subsystem identifier to driver binding code
 
@@ -56,6 +56,8 @@ IDEAS for new features
     - Replace all %key% with value in [strings] section
 
 - Add support for select()
+
+- sysctl() functionality
 
 - DNS resolver cache
 
@@ -110,3 +112,7 @@ CHANGES
 - Implemented main entry in libc with parseargs
 
 - Fixed bug in TCP retransmission
+
+- Make ne2000 driver work with WAFER.
+
+- Return info on WSAStartup

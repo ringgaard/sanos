@@ -43,7 +43,7 @@ static int netif_proc(struct proc_file *pf, void *arg)
   
   for (netif = netif_list; netif != NULL; netif = netif->next) 
   {
-    pprintf(pf, "%s: device %s addr %a mask %a gw %a\n", netif->name, device((devno_t) netif->state)->name, &netif->ipaddr, &netif->netmask, &netif->gw);
+    pprintf(pf, "%s: addr %a mask %a gw %a\n", netif->name, &netif->ipaddr, &netif->netmask, &netif->gw);
   }
 
   return 0;
@@ -65,7 +65,6 @@ struct netif *netif_add(char *name, struct ip_addr *ipaddr, struct ip_addr *netm
   netif->input = ip_input;
   netif->output = NULL;
   netif->flags = 0;
-  netif->mtu = MTU;
 
   ip_addr_set(&netif->ipaddr, ipaddr);
   ip_addr_set(&netif->netmask, netmask);
@@ -110,4 +109,124 @@ void netif_set_netmask(struct netif *netif, struct ip_addr *netmask)
 void netif_set_default(struct netif *netif)
 {
   netif_default = netif;
+}
+
+int netif_ioctl_list(void *data, size_t size)
+{
+  int numifs;
+  struct netif *netif;
+  struct ifcfg *ifcfg;
+  struct sockaddr_in *sin;
+
+  if (!data) return -EFAULT;
+
+  // Find number of network interfaces
+  numifs = 0;
+  netif = netif_list;
+  while (netif)
+  {
+    numifs++;
+    netif = netif->next;
+  }
+
+  // Fill interface info into buffer
+  if (size >= (size_t) (numifs * sizeof(struct ifcfg)))
+  {
+    netif = netif_list;
+    ifcfg = (struct ifcfg *) data;
+    while (netif)
+    {
+      memset(ifcfg, 0, sizeof(struct ifcfg));
+
+      strcpy(ifcfg->name, netif->name);
+
+      sin = (struct sockaddr_in *) &ifcfg->addr;
+      sin->sin_len = sizeof(struct sockaddr_in);
+      sin->sin_family = AF_INET;
+      sin->sin_addr.s_addr = netif->ipaddr.addr;
+
+      sin = (struct sockaddr_in *) &ifcfg->gw;
+      sin->sin_len = sizeof(struct sockaddr_in);
+      sin->sin_family = AF_INET;
+      sin->sin_addr.s_addr = netif->gw.addr;
+
+      sin = (struct sockaddr_in *) &ifcfg->netmask;
+      sin->sin_len = sizeof(struct sockaddr_in);
+      sin->sin_family = AF_INET;
+      sin->sin_addr.s_addr = netif->netmask.addr;
+
+      memcpy(ifcfg->hwaddr, &netif->hwaddr, sizeof(struct eth_addr));
+
+      if (netif->flags & NETIF_UP) ifcfg->flags |= IFCFG_UP;
+      if (netif->flags & NETIF_DHCP) ifcfg->flags |= IFCFG_DHCP;
+      if (netif == netif_default) ifcfg->flags |= IFCFG_DEFAULT;
+
+      netif = netif->next;
+      ifcfg++;
+    }
+  }
+
+  return numifs * sizeof(struct ifcfg);
+}
+
+int netif_ioctl_cfg(void *data, size_t size)
+{
+  struct netif *netif;
+  struct ifcfg *ifcfg;
+  struct dhcp_state *state;
+
+  if (!data) return -EFAULT;
+  if (size != sizeof(struct ifcfg)) return -EINVAL;
+  ifcfg = (struct ifcfg *) data;
+
+  netif = netif_find(ifcfg->name);
+  if (!netif) return -ENOENT;
+
+  // Check for interface down
+  if ((ifcfg->flags & IFCFG_UP) == 0 && (netif->flags & NETIF_UP) == 1)
+  {
+    // Release DHCP lease
+    dhcp_stop(netif);
+    netif->flags &= ~NETIF_UP;
+  }
+
+  // Update network interface configuration
+  if (ifcfg->flags & IFCFG_DHCP)
+    netif->flags |= NETIF_DHCP;
+  else
+    netif->flags &= ~NETIF_DHCP;
+
+  netif->ipaddr.addr = ((struct sockaddr_in *) &ifcfg->addr)->sin_addr.s_addr;
+  netif->netmask.addr = ((struct sockaddr_in *) &ifcfg->netmask)->sin_addr.s_addr;
+  netif->gw.addr = ((struct sockaddr_in *) &ifcfg->gw)->sin_addr.s_addr;
+
+  if (ifcfg->flags & IFCFG_DEFAULT)
+    netif_default = netif;
+  else if (netif == netif_default)
+    netif_default = NULL;
+
+  // Copy hwaddr into ifcfg as info
+  memcpy(ifcfg->hwaddr, &netif->hwaddr, sizeof(struct eth_addr));
+
+  // Check for interface up
+  if ((ifcfg->flags & IFCFG_UP) == 1 && (netif->flags & NETIF_UP) == 0)
+  {
+    netif->flags |= NETIF_UP;
+
+    if (netif->flags & NETIF_DHCP)
+    {
+      // Obtain network parameters using DHCP
+      state = dhcp_start(netif);
+      if (state) 
+      {
+	if (wait_for_object(&state->binding_complete, 30000)  < 0) return -ETIMEDOUT;
+
+	((struct sockaddr_in *) &ifcfg->addr)->sin_addr.s_addr = netif->ipaddr.addr;
+	((struct sockaddr_in *) &ifcfg->netmask)->sin_addr.s_addr = netif->netmask.addr;
+	((struct sockaddr_in *) &ifcfg->gw)->sin_addr.s_addr = netif->gw.addr;
+      }
+    }
+  }
+
+  return 0;
 }

@@ -1500,14 +1500,17 @@ void __stdcall telnetd(void *arg)
 
   while (1)
   {
-    client = accept(s, NULL, NULL);
+    struct sockaddr_in sin;
+
+    client = accept(s, (struct sockaddr *) &sin, NULL);
     if (client < 0)
     {
       printf("telnetd: error %d in accept\n", client);
       return;
     }
 
-    printf("client connected\n");
+    syslog(LOG_INFO, "telnetd: client connected from %a\n", &sin.sin_addr);
+
     hthread = beginthread(telnet_task, 0, (void *) client, 0, NULL);
     close(hthread);
   }

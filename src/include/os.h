@@ -278,7 +278,9 @@ struct section;
 #define EBADSLT         88               // Invalid slot
 #define EREMOTEIO       89               // Remote I/O error
 
-
+//
+// Error code aliases
+//
 
 #define	ETIMEOUT	ETIMEDOUT
 #define EBUF            ENOBUFS
@@ -448,15 +450,19 @@ typedef struct critsect *critsect_t;
 #define _IO(x, y)       (IOC_VOID | ((x) << 8) | (y))
 #define _IOR(x, y, t)   (IOC_OUT | (((long) sizeof(t) & IOCPARM_MASK) << 16) | ((x) << 8) | (y))
 #define _IOW(x, y, t)   (IOC_IN |(((long) sizeof(t) & IOCPARM_MASK) << 16) | ((x) << 8)| (y))
+#define _IOWR(x, y, t)  (IOC_INOUT |(((long) sizeof(t) & IOCPARM_MASK) << 16) | ((x) << 8)| (y))
 
 //
 // Sockets
 //
 
-#define FIONREAD      _IOR('f', 127, unsigned long) // Get # bytes to read
-#define FIONBIO       _IOW('f', 126, unsigned long) // Set/clear non-blocking i/o
+#define FIONREAD      _IOR('f', 127, unsigned long)    // Get # bytes to read
+#define FIONBIO       _IOW('f', 126, unsigned long)    // Set/clear non-blocking i/o
 
 #define SIOWAITRECV   _IOW('s', 120, unsigned long)
+
+#define SIOIFLIST     _IOWR('i', 20, void *)           // Get netif list
+#define SIOIFCFG      _IOWR('i', 21, void *)           // Configure netif
 
 struct in_addr 
 {
@@ -482,6 +488,22 @@ struct sockaddr
   unsigned char sa_len;
   unsigned char sa_family;
   char sa_data[14];
+};
+
+#define IFCFG_UP         1
+#define IFCFG_DHCP       2
+#define IFCFG_DEFAULT    4
+
+#define NET_NAME_MAX 16
+
+struct ifcfg
+{
+  char name[NET_NAME_MAX];
+  int flags;
+  char hwaddr[12];
+  struct sockaddr addr;
+  struct sockaddr gw;
+  struct sockaddr netmask;
 };
 
 struct hostent 

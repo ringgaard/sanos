@@ -246,10 +246,6 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
 
 void init_net()
 {
-  struct ip_addr ipaddr;
-  struct ip_addr netmask;
-  struct ip_addr gw;
-
   stats_init();
   netif_init();
   ether_init();
@@ -260,23 +256,9 @@ void init_net()
   dhcp_init();
   tcp_init();
   socket_init();
+  loopif_init();
 
-  IP4_ADDR(&ipaddr, 0, 0, 0, 0);
-  IP4_ADDR(&netmask, 255, 255, 255, 255);
-  IP4_ADDR(&gw, 0, 0, 0, 0);
-
-  nic = ether_netif_add("eth0", "nic0", &ipaddr, &netmask, &gw);
-  if (nic == NULL) return;
-
-  netif_set_default(nic);
-  peb->ipaddr.s_addr = nic->ipaddr.addr;
-  if (peb->primary_dns.s_addr != INADDR_ANY)
-  {
-    kprintf("dns: primary %a", &peb->primary_dns);
-    if (peb->secondary_dns.s_addr != INADDR_ANY) kprintf(" secondary %a", &peb->secondary_dns);
-    if (*peb->default_domain) kprintf(" domain %s", peb->default_domain);
-    kprintf("\n");
-  }
+  register_ether_netifs();
 }
 
 void main(void *arg)

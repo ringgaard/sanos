@@ -55,6 +55,6 @@
 
 // loopif.c
 
-void loopif_init(struct netif *netif);
+void loopif_init();
 
 #endif

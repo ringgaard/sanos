@@ -64,7 +64,15 @@ typedef struct WSAData
 sockapi int __stdcall WSAStartup(WORD wVersionRequested, LPWSADATA lpWSAData)
 {
   TRACE("WSAStartup");
-  // TODO: fill lpWSAData with data
+
+  lpWSAData->wVersion = 0x0101;
+  lpWSAData->wHighVersion = 0x0101;
+  strcpy(lpWSAData->szDescription, "Sanos Winsock 1.1");
+  strcpy(lpWSAData->szSystemStatus, "Running");
+  lpWSAData->iMaxSockets = 0xFFFF;
+  lpWSAData->iMaxUdpDg = 1500 - 40 - 8;
+  lpWSAData->lpVendorInfo = NULL;
+
   return 0;
 }
 

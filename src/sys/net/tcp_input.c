@@ -73,6 +73,7 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
     return 0;
   }
 
+#ifdef CHECK_TCP_CHECKSUM
   if ((inp->flags & NETIF_TCP_RX_CHECKSUM_OFFLOAD) == 0)
   {
     // Verify TCP checksum
@@ -86,6 +87,7 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
       return -ECHKSUM;
     }
   }
+#endif
 
   // Move the payload pointer in the pbuf so that it points to the TCP data instead of the IP header
   offset = TCPH_OFFSET(tcphdr) >> 4;

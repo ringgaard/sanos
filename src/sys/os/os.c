@@ -35,6 +35,7 @@
 #include <string.h>
 #include <inifile.h>
 #include <moddb.h>
+#include <stdlib.h>
 
 #include <os/seg.h>
 #include <os/tss.h>
@@ -429,6 +430,81 @@ void dbgbreak()
   __asm { int 3 };
 }
 
+void init_net()
+{
+  struct section *sect;
+  struct property *prop;
+  struct ifcfg ifcfg;
+  struct sockaddr_in *sin;
+  char str[256];
+  int first;
+  int rc;
+  int sock;
+
+  sock = socket(AF_INET, SOCK_DGRAM, 0);
+  if (sock < 0) return;
+
+  sect = find_section(config, "netif");
+  if (!sect) return;
+
+  first = 1;
+  prop = sect->properties;
+  while (prop)
+  {
+    memset(&ifcfg, 0, sizeof(ifcfg));
+
+    strcpy(ifcfg.name, prop->name);
+
+    if (get_option(prop->value, "ip", str, sizeof str, NULL))
+    {
+      sin = (struct sockaddr_in *) &ifcfg.addr;
+      sin->sin_len = sizeof(struct sockaddr_in);
+      sin->sin_family = AF_INET;
+      sin->sin_addr.s_addr = inet_addr(str);
+    }
+    else
+      ifcfg.flags |= IFCFG_DHCP;
+
+    if (get_option(prop->value, "gw", str, sizeof str, NULL))
+    {
+      sin = (struct sockaddr_in *) &ifcfg.gw;
+      sin->sin_len = sizeof(struct sockaddr_in);
+      sin->sin_family = AF_INET;
+      sin->sin_addr.s_addr = inet_addr(str);
+    }
+
+    if (get_option(prop->value, "mask", str, sizeof str, NULL))
+    {
+      sin = (struct sockaddr_in *) &ifcfg.netmask;
+      sin->sin_len = sizeof(struct sockaddr_in);
+      sin->sin_family = AF_INET;
+      sin->sin_addr.s_addr = inet_addr(str);
+    }
+
+    ifcfg.flags |= IFCFG_UP;
+    if (first) ifcfg.flags |= IFCFG_DEFAULT;
+
+    rc = ioctl(sock, SIOIFCFG, &ifcfg, sizeof(struct ifcfg));
+    if (rc < 0)
+      syslog(LOG_ERR, "%s: unable to configure net interface, %s\n", ifcfg.name, strerror(rc));
+    else
+    {
+      unsigned long addr = ((struct sockaddr_in *) &ifcfg.addr)->sin_addr.s_addr;
+      unsigned long gw = ((struct sockaddr_in *) &ifcfg.gw)->sin_addr.s_addr;
+      unsigned long mask = ((struct sockaddr_in *) &ifcfg.netmask)->sin_addr.s_addr;
+
+      syslog(LOG_INFO, "%s: addr %a mask %a gw %a\n", ifcfg.name, &addr, &mask, &gw, ifcfg.hwaddr);
+
+      if (first) peb->ipaddr.s_addr = addr;
+    }
+
+    prop = prop->next;
+    first = 0;
+  }
+
+  close(sock);
+}
+
 void init_mount()
 {
   struct section *sect;
@@ -512,6 +588,9 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
     logfile = open(logfn, O_CREAT);
     if (logfile > 0) lseek(logfile, 0, SEEK_END);
   }
+
+  // Initialize network interfaces
+  init_net();
 
   // Initialize resolver
   res_init();

@@ -38,7 +38,7 @@
 
 unsigned short inet_chksum(void *data, int len);
 unsigned short inet_chksum_pbuf(struct pbuf *p);
-unsigned short inet_chksum_pseudo(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, unsigned char proto, int proto_len);
+unsigned short inet_chksum_pseudo(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, unsigned char proto, unsigned short proto_len);
 
 #if BYTE_ORDER == BIG_ENDIAN
 

@@ -82,10 +82,19 @@ struct netif *ip_route(struct ip_addr *dest)
   for (netif = netif_list; netif != NULL; netif = netif->next)
   {
     if (ip_addr_maskcmp(dest, &netif->ipaddr, &netif->netmask)) 
+    {
+      //kprintf("ip: route packet to %a to interface %s\n", dest, netif->name);
       return netif;
+    }
   }
 
-  return netif_default;
+  if (netif_default)
+  {
+    //kprintf("ip: route packet to %a to default interface %s\n", dest, netif_default->name);
+    return netif_default;
+  }
+
+  return NULL;
 }
 
 //
@@ -189,6 +198,7 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
     return -EPROTO;
   }
 
+#ifdef CHECK_IP_CHECKSUM
   // Verify checksum
   if ((inp->flags & NETIF_IP_RX_CHECKSUM_OFFLOAD) == 0)
   {
@@ -200,7 +210,8 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
       return -ECHKSUM;
     }
   }
-  
+#endif
+
   // Trim pbuf. This should have been done at the netif layer, but we'll do it anyway just to be sure that its done
   pbuf_realloc(p, ntohs(IPH_LEN(iphdr)));
 

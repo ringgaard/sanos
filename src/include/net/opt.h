@@ -67,4 +67,8 @@
 #define PBUF_POOL_SIZE          128
 #define PBUF_POOL_BUFSIZE       128
 
+#define CHECK_IP_CHECKSUM
+#define CHECK_TCP_CHECKSUM
+#define CHECK_UDP_CHECKSUM
+
 #endif

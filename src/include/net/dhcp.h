@@ -125,7 +125,7 @@ struct dhcp_state
 
 void dhcp_init();
 struct dhcp_state *dhcp_start(struct netif *netif);
-void dhcp_stop(struct dhcp_state *state);
+void dhcp_stop(struct netif *netif);
 err_t dhcp_renew(struct dhcp_state *state);
 err_t dhcp_inform(struct netif *netif);
 

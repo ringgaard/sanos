@@ -40,24 +40,32 @@ static err_t loopif_output(struct netif *netif, struct pbuf *p, struct ip_addr *
   char *ptr;
 
   r = pbuf_alloc(PBUF_RAW, p->tot_len, PBUF_RW);
-  if (r != NULL) 
-  {
-    ptr = r->payload;
-    
-    for (q = p; q != NULL; q = q->next) 
-    {
-      memcpy(ptr, q->payload, q->len);
-      ptr += q->len;
-    }
+  if (!r) return -ENOMEM;
 
-    netif->input(r, netif);
-    return 0;
+  ptr = r->payload;
+    
+  for (q = p; q != NULL; q = q->next) 
+  {
+    memcpy(ptr, q->payload, q->len);
+    ptr += q->len;
   }
-  return -ENOMEM;
+
+  return netif->input(r, netif);
 }
 
-void loopif_init(struct netif *netif)
+void loopif_init()
 {
-  strcpy(netif->name, "lo");
+  struct ip_addr loip;
+  struct ip_addr logw;
+  struct ip_addr lomask;
+  struct netif *netif;
+
+  loip.addr = htonl(INADDR_LOOPBACK);
+  lomask.addr = htonl(INADDR_NONE);
+  logw.addr = htonl(INADDR_ANY);
+
+  netif = netif_add("lo", &loip, &lomask, &logw);
+  if (!netif) return;
+
   netif->output = loopif_output;
 }

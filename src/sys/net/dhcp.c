@@ -656,27 +656,6 @@ static void dhcp_bind(struct dhcp_state *state)
   netif_set_netmask(state->netif, &sn_mask);
   netif_set_gw(state->netif, &gw_addr);
 
-  //kprintf("dhcp_bind: IP: 0x%08lx ", state->offered_ip_addr.addr);
-  //ip_addr_debug_print(&state->offered_ip_addr);
-  //kprintf("\n");
-
-  //kprintf("dhcp_bind: GW: 0x%08lx ", gw_addr.addr);
-  //ip_addr_debug_print(&gw_addr);
-  //kprintf("\n");
-
-  //kprintf("dhcp_bind: SN: 0x%08lx ", sn_mask.addr);
-  //ip_addr_debug_print(&sn_mask);
-  //kprintf("\n");
-
-  //kprintf("dhcp_bind: DNS: ");
-  //ip_addr_debug_print(&state->offered_dns1_addr);
-  //kprintf(" ");
-  //ip_addr_debug_print(&state->offered_dns2_addr);
-  //kprintf("\n");
-
-  //kprintf("domain: %s\n", state->offered_domain_name);
-  //kprintf("timeout: t1 %dm, t2 %dm, lease %ds, renew %ds, rebind %ds\n", state->t1_timeout, state->t2_timeout, state->offered_t0_lease, state->offered_t1_renew, state->offered_t2_rebind);
-  
   //dhcp_dump_options(state);
 
   if (peb)
@@ -824,12 +803,20 @@ static err_t dhcp_release(struct dhcp_state *state)
 // dhcp_stop
 //
 
-void dhcp_stop(struct dhcp_state *state)
+void dhcp_stop(struct netif *netif)
 {
+  struct dhcp_state *state;
   struct dhcp_state *list_state;
 
+  state = dhcp_find_client(netif);
   if (state)
   {
+    if (state->state == DHCP_BOUND) dhcp_release(state);
+
+    del_timer(&state->request_timeout_timer);
+    del_timer(&state->t1_timeout_timer);
+    del_timer(&state->t2_timeout_timer);
+
     udp_remove(state->pcb);
     kfree(state);
 

@@ -231,6 +231,7 @@
 #define NE_TX_BUFERS            2      // Number of transmit buffers
 
 #define NE_TIMEOUT              10000
+#define NE_TXTIMEOUT            30000
 
 //
 // Receive ring descriptor
@@ -271,13 +272,14 @@ struct ne
   unsigned char next_pkt;               // Next unread received packet
 
   struct event rdc;	                // Remote DMA completed event
-  struct event ptx;                     // packet transmitted event
+  struct event ptx;                     // Packet transmitted event
+  struct mutex txlock;	                // Transmit lock
 };
 
 static void ne_readmem(struct ne *ne, unsigned short src, void *dst, unsigned short len)
 {
   // Word align length
-  //if (len & 1) len++;
+  if (len & 1) len++;
 
   // Abort any remote DMA already in progress
   _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
@@ -306,7 +308,8 @@ static int ne_probe(struct ne *ne)
   _outp(ne->asic_addr + NE_NOVELL_RESET, byte);
   _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STP);
 
-  sleep(5000);
+  //sleep(5000);
+  sleep(100);
 
   // Test for a generic DP8390 NIC
   byte = _inp(ne->nic_addr + NE_P0_CR);
@@ -342,6 +345,7 @@ void ne_receive(struct ne *ne)
   unsigned short len;
   unsigned char bndry;
   struct pbuf *p, *q;
+  int rc;
 
   // Set page 1 registers
   _outp(ne->nic_addr + NE_P0_CR, NE_CR_PAGE_1 | NE_CR_RD2 | NE_CR_STA);
@@ -356,7 +360,7 @@ void ne_receive(struct ne *ne)
 
     // Allocate packet buffer
     len = packet_hdr.count - sizeof(struct recv_ring_desc);
-    p = pbuf_alloc(PBUF_LINK, len, PBUF_POOL);
+    p = pbuf_alloc(PBUF_RAW, len, PBUF_RW);
 
     // Get packet from nic and send to upper layer
     if (p != NULL)
@@ -368,7 +372,13 @@ void ne_receive(struct ne *ne)
 	packet_ptr += q->len;
       }
 
-      dev_receive(ne->devno, p);
+      //kprintf("ne2000: received packet, %d bytes\n", len);
+      rc = dev_receive(ne->devno, p); 
+      if (rc < 0)
+      {
+	kprintf("ne2000: error %d processing packet\n", rc);
+	pbuf_free(p);
+      }
     }
     else
     {
@@ -389,8 +399,7 @@ void ne_receive(struct ne *ne)
     if (bndry < ne->rx_page_start) bndry = ne->rx_page_stop - 1;
     _outp(ne->nic_addr + NE_P0_BNRY, bndry);
 
-    kprintf("start: %02x stop: %02x next: %02x bndry: %02x\n", ne->rx_page_start, ne->rx_page_stop, ne->next_pkt, bndry);
-    //if (bndry == 0xff && ne->next_pkt == 0) sleep(30000);
+    //kprintf("start: %02x stop: %02x next: %02x bndry: %02x\n", ne->rx_page_start, ne->rx_page_stop, ne->next_pkt, bndry);
 
     // Set page 1 registers
     _outp(ne->nic_addr + NE_P0_CR, NE_CR_PAGE_1 | NE_CR_RD2 | NE_CR_STA);
@@ -402,7 +411,7 @@ void ne_dpc(void *arg)
   struct ne *ne = arg;
   unsigned char isr;
 
-  kprintf("ne2000: dpc\n");
+  //kprintf("ne2000: dpc\n");
 
   // Select page 0
   _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
@@ -414,19 +423,23 @@ void ne_dpc(void *arg)
     _outp(ne->nic_addr + NE_P0_ISR, isr);
 
     // Packet received
-    if (isr & NE_ISR_PRX) ne_receive(ne);
+    if (isr & NE_ISR_PRX) 
+    {
+      //kprintf("ne2000: new packet arrived\n");
+      ne_receive(ne);
+    }
 
     // Packet transamitted
     if (isr & NE_ISR_PTX) 
     {
-      kprintf("ne2000: packet transmitted\n");
+      //kprintf("ne2000: packet transmitted\n");
       set_event(&ne->ptx);
     }
 
     // Remote DMA complete
     if (isr & NE_ISR_RDC) 
     {
-      kprintf("ne2000: remote DMA complete\n");
+      //kprintf("ne2000: remote DMA complete\n");
       set_event(&ne->rdc);
     }
 
@@ -442,7 +455,6 @@ int ne_handler(struct context *ctxt, void *arg)
   struct ne *ne = (struct ne *) arg;
 
   // Queue DPC to service interrupt
-  kprintf("ne2000: intr\n");
   queue_irq_dpc(&ne->dpc, ne_dpc, ne);
 
   return 0;
@@ -459,7 +471,14 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   unsigned char save_byte[2];
   struct pbuf *q;
 
-  kprintf("ne_transmit: transmit packet len=%d\n", p->tot_len);
+  //kprintf("ne_transmit: transmit packet len=%d\n", p->tot_len);
+
+  // Get transmit lock
+  if (wait_for_object(&ne->txlock, NE_TXTIMEOUT) < 0)
+  {
+    kprintf("ne2000: timeout waiting for tx lock\n");
+    return -ETIMEOUT;
+  }
 
   // We need to transfer a whole number of words
   dma_len = p->tot_len;
@@ -532,6 +551,7 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   if (wait_for_object(&ne->rdc, NE_TIMEOUT) < 0)
   {
     kprintf("ne2000: timeout waiting for remote dma to complete\n");
+    release_mutex(&ne->txlock);
     return -EIO;
   }
 
@@ -557,10 +577,13 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   if (wait_for_object(&ne->ptx, NE_TIMEOUT) < 0)
   {
     kprintf("ne2000: timeout waiting for packet transmit\n");
+    release_mutex(&ne->txlock);
     return -EIO;
   }
 
-  kprintf("ne_transmit: packet transmitted\n");
+  //kprintf("ne_transmit: packet transmitted\n");
+  pbuf_free(p);
+  release_mutex(&ne->txlock);
   return 0;
 }
 
@@ -600,7 +623,6 @@ int ne_setup(unsigned short iobase, int irq, unsigned short membase, unsigned sh
   unsigned char romdata[16];
   int i;
   char str[20];
-  devno_t devno;
 
   // Allocate device structure
   ne = (struct ne *) kmalloc(sizeof(struct ne));
@@ -629,6 +651,7 @@ int ne_setup(unsigned short iobase, int irq, unsigned short membase, unsigned sh
   // Initialize network interface
   init_event(&ne->ptx, 0, 0);
   init_event(&ne->rdc, 0, 0);
+  init_mutex(&ne->txlock, 0);
 
   // Install interrupt handler
   init_dpc(&ne->dpc);
@@ -689,9 +712,9 @@ int ne_setup(unsigned short iobase, int irq, unsigned short membase, unsigned sh
   _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
 
   // Create packet device
-  devno = dev_make("nic#", &ne_driver, unit, ne);
+  ne->devno = dev_make("eth#", &ne_driver, unit, ne);
 
-  kprintf("%s: NE2000 iobase 0x%x irq %d hwaddr %s\n", device(devno)->name, ne->iobase, ne->irq, ether2str(&ne->hwaddr, str));
+  kprintf("%s: NE2000 iobase 0x%x irq %d hwaddr %s\n", device(ne->devno)->name, ne->iobase, ne->irq, ether2str(&ne->hwaddr, str));
   return 0;
 }
 

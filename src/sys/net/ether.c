@@ -86,6 +86,40 @@ struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr,
 }
 
 //
+// register_ether_netifs()
+//
+
+int register_ether_netifs()
+{
+  devno_t devno;
+  struct dev *dev;
+  int rc;
+  struct ip_addr noaddr;
+  struct netif *netif;
+
+  noaddr.addr = IP_ADDR_ANY;
+
+  for (devno = 0; devno < num_devs; devno++)
+  {
+    dev = device(devno);
+    if (!dev) continue;
+    if (!dev->driver) continue;
+    if (dev->driver->type != DEV_TYPE_PACKET) continue;
+
+    netif = netif_add(dev->name, &noaddr, &noaddr, &noaddr);
+    if (!netif) return -ENOMEM;
+
+    netif->output = ether_output;
+    netif->state = (void *) devno;
+
+    rc = dev_attach(devno, netif, ether_input);
+    if (rc < 0) kprintf("ether: unable to attach to device %s (error %d)\n", dev->name, rc);
+  }
+
+  return 0;
+}
+
+//
 // ether2str
 //
 // This function converts an ethernet address to string format.
@@ -116,6 +150,8 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   int i;
 
   //kprintf("ether: xmit %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
+
+  if ((netif->flags & NETIF_UP) == 0) return -ENETDOWN;
 
   if (pbuf_header(p, ETHER_HLEN))
   {
@@ -217,6 +253,8 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
 err_t ether_input(struct netif *netif, struct pbuf *p)
 {
   struct ether_msg *msg;
+
+  if ((netif->flags & NETIF_UP) == 0) return -ENETDOWN;
 
   msg = (struct ether_msg *) kmalloc(sizeof(struct ether_msg));
   if (!msg) return -ENOMEM;

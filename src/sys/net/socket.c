@@ -138,7 +138,12 @@ int getsockopt(struct socket *s, int level, int optname, char *optval, int *optl
 
 int ioctlsocket(struct socket *s, int cmd, void *data, size_t size)
 {
-  return sockops[s->type]->ioctl(s, cmd, data, size);
+  if (cmd == SIOIFLIST)
+    return netif_ioctl_list(data, size);
+  else if (cmd == SIOIFCFG)
+    return netif_ioctl_cfg(data, size);
+  else
+    return sockops[s->type]->ioctl(s, cmd, data, size);
 }
 
 int listen(struct socket *s, int backlog)

@@ -789,7 +789,7 @@ int __declspec(dllexport) install(struct unit *unit)
   //       dev->name, i, (u32) (lp->dma_addr + offsetof(struct pcnet32_private, init_block)),
   //       lp->a.read_csr (ioaddr, 0));
 
-  pcnet32->devno = dev_make("nic#", &pcnet32_driver, unit, pcnet32);
+  pcnet32->devno = dev_make("eth#", &pcnet32_driver, unit, pcnet32);
 
   kprintf("%s: %s iobase 0x%x irq %d hwaddr %s\n", device(pcnet32->devno)->name, unit->productname, pcnet32->iobase, pcnet32->irq, ether2str(&pcnet32->hwaddr, str));
 

@@ -95,12 +95,28 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
   stats.udp.recv++;
   
   iphdr = p->payload;
+  pbuf_header(p, -(IPH_HL(iphdr) * 4));
+  udphdr = p->payload;
 
-  pbuf_header(p, -(UDP_HLEN + IPH_HL(iphdr) * 4));
-
-  udphdr = (struct udp_hdr *)((char *) p->payload - UDP_HLEN);
-  
   //udp_debug_print(udphdr);
+
+#ifdef CHECK_UDP_CHECKSUM
+  // Check checksum
+  if ((inp->flags & NETIF_UDP_RX_CHECKSUM_OFFLOAD) == 0)
+  {
+    if (udphdr->chksum != 0) 
+    {
+      if (inet_chksum_pseudo(p, &iphdr->src, &iphdr->dest, IP_PROTO_UDP, p->tot_len) != 0) 
+      {
+	kprintf("udp_input: UDP datagram discarded due to failing checksum\n");
+
+	stats.udp.chkerr++;
+	stats.udp.drop++;
+	return -ECHKSUM;
+      }
+    }
+  }
+#endif
 
   src = NTOHS(udphdr->src);
   dest = NTOHS(udphdr->dest);
@@ -134,41 +150,13 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
     }
   }
 
-  // Check checksum if this is a match or if it was directed at us
-  if (pcb != NULL) 
-  {
-    if ((inp->flags & NETIF_UDP_RX_CHECKSUM_OFFLOAD) == 0)
-    {
-      pbuf_header(p, UDP_HLEN);
-      
-      if (udphdr->chksum != 0) 
-      {
-	if (inet_chksum_pseudo(p, &iphdr->src, &iphdr->dest, IP_PROTO_UDP, p->tot_len) != 0) 
-	{
-	  kprintf("udp_input: UDP datagram discarded due to failing checksum\n");
-
-	  stats.udp.chkerr++;
-	  stats.udp.drop++;
-	  return -ECHKSUM;
-	}
-      }
-
-      pbuf_header(p, -UDP_HLEN);
-    }
-
-    return pcb->recv(pcb->recv_arg, pcb, p, &iphdr->src, src);
-  }
-  else 
+  if (pcb == NULL) 
   {
     // No match was found, send ICMP destination port unreachable unless
     // destination address was broadcast/multicast.
     
     if (!ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) && !ip_addr_ismulticast(&iphdr->dest))
     {	
-      // Deconvert from host to network byte order
-      udphdr->src = htons(udphdr->src);
-      udphdr->dest = htons(udphdr->dest); 
-      
       // Adjust pbuf pointer */
       p->payload = iphdr;
       icmp_dest_unreach(p, ICMP_DUR_PORT);
@@ -179,6 +167,9 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
 
     return -EHOSTUNREACH;
   }
+
+  pbuf_header(p, -UDP_HLEN);
+  return pcb->recv(pcb->recv_arg, pcb, p, &iphdr->src, src);
 }
 
 err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)

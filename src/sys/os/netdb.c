@@ -573,10 +573,12 @@ struct hostent *gethostbyname(const char *name)
   tib->host.h_addrtype = AF_INET;
   tib->host.h_length = sizeof(struct in_addr);
 
-  // Return host ip address for localhost
+  // Return 127.0.0.1 for localhost
   if (strcmp(name, "localhost") == 0)
   {
-    memcpy(tib->host_addr, &tib->peb->ipaddr, sizeof(struct in_addr));
+    struct in_addr loaddr;
+    loaddr.s_addr = htonl(INADDR_LOOPBACK);
+    memcpy(tib->host_addr, &loaddr, sizeof(struct in_addr));
     strcpy(tib->hostbuf, "localhost");
     tib->host.h_name = tib->hostbuf;
     tib->host.h_aliases = tib->host_aliases;

@@ -35,14 +35,15 @@
 #ifndef NETIF_H
 #define NETIF_H
 
-#define NET_NAME_MAX 16
+#define NETIF_UP                      0x00000001
+#define NETIF_DHCP                    0x00000002
 
-#define NETIF_IP_TX_CHECKSUM_OFFLOAD  0x0001
-#define NETIF_IP_RX_CHECKSUM_OFFLOAD  0x0002
-#define NETIF_UDP_RX_CHECKSUM_OFFLOAD 0x0004
-#define NETIF_UDP_TX_CHECKSUM_OFFLOAD 0x0008
-#define NETIF_TCP_RX_CHECKSUM_OFFLOAD 0x0010
-#define NETIF_TCP_TX_CHECKSUM_OFFLOAD 0x0020
+#define NETIF_IP_TX_CHECKSUM_OFFLOAD  0x00010000
+#define NETIF_IP_RX_CHECKSUM_OFFLOAD  0x00020000
+#define NETIF_UDP_RX_CHECKSUM_OFFLOAD 0x00040000
+#define NETIF_UDP_TX_CHECKSUM_OFFLOAD 0x00080000
+#define NETIF_TCP_RX_CHECKSUM_OFFLOAD 0x00100000
+#define NETIF_TCP_TX_CHECKSUM_OFFLOAD 0x00200000
 
 struct netif 
 {
@@ -51,7 +52,6 @@ struct netif
   struct ip_addr netmask;
   struct ip_addr gw;
   struct eth_addr hwaddr;
-  int mtu;
   int flags;
   char name[NET_NAME_MAX];
 
@@ -76,5 +76,8 @@ void netif_set_default(struct netif *netif);
 void netif_set_ipaddr(struct netif *netif, struct ip_addr *ipaddr);
 void netif_set_netmask(struct netif *netif, struct ip_addr *netmast);
 void netif_set_gw(struct netif *netif, struct ip_addr *gw);
+
+int netif_ioctl_list(void *data, size_t size);
+int netif_ioctl_cfg(void *data, size_t size);
 
 #endif

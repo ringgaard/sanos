@@ -1896,7 +1896,7 @@ int __declspec(dllexport) install(struct unit *unit)
   nic->irq = (unsigned short) get_unit_irq(unit);
   nic->deviceid = PCI_DEVICE_ID(unit->unitcode);
   nic->connector = CONNECTOR_UNKNOWN;
-  nic->devno = dev_make("nic#", &nic_driver, unit, nic);
+  nic->devno = dev_make("eth#", &nic_driver, unit, nic);
 
   // Enable bus mastering
   pci_enable_busmastering(unit);

@@ -501,6 +501,10 @@ void tcp_rexmit_seg(struct tcp_pcb *pcb, struct tcp_seg *seg)
 
   kprintf("tcp_rexmit_seg: sending %ld:%ld\n", ntohl(seg->tcphdr->seqno), ntohl(seg->tcphdr->seqno) + TCP_TCPLEN(seg));
   
+  // Count the number of retransmissions
+  pcb->nrtx++;
+
+  // Calculate effective window size
   wnd = MIN(pcb->snd_wnd, pcb->cwnd);
   if (ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len > wnd)
   {
@@ -516,9 +520,6 @@ void tcp_rexmit_seg(struct tcp_pcb *pcb, struct tcp_seg *seg)
     kprintf("tcp_rexmit_segment: packet not retransmitted, still in tx queue\n");
     return;
   }
-
-  // Count the number of retransmissions
-  pcb->nrtx++;
 
   // Find route for segment
   if ((netif = ip_route(&pcb->remote_ip)) == NULL) 
