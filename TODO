@@ -1,6 +1,8 @@
 TODO for sanos
 --------------
 
+- Implement /proc/uptime to display time since bootup.
+
 - Implement refcnt on objects
     - close objects when handle count reaches zero.
     - free objects when handle count and refcnt reaches zero.
@@ -12,6 +14,10 @@ TODO for sanos
     - Add error strings to strerror()
     - Update error codes in network code
     - Map winsock errors in wsock32.c
+
+- Move netif binding to os.c
+    - Read netif parameters from [netif] in os.ini
+    - Allow static configuration of ip address and dns servers
 
 - Make ne2000 driver work with WAFER.
 
@@ -25,8 +31,14 @@ TODO for sanos
 
 - Use bitmap for port number handling
 
+- Multicast filtering support in network drivers
+
 IDEAS for new features
 ----------------------
+
+- DNS resolver cache
+
+- Dynamic DNS registration
 
 - Test sanos with Tomcat 4
 
