@@ -1,7 +1,7 @@
 //
 // hd.c
 //
-// Harddisk driver
+// IDE driver
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -33,7 +33,9 @@
 
 #include <os/krnl.h>
 
+//#define COMPATMODE
 #define SECTORSIZE              512
+#define CDSECTORSIZE            2048
 
 #define HD_CONTROLLERS		2
 #define HD_DRIVES		4
@@ -70,13 +72,6 @@
 #define HDC_CONTROL		0x0206
 
 //
-// Controller commands
-//
-
-#define HDCTL_RST		0x04   // Controller reset
-#define HDCTL_4BITHD		0x08   // Use 4 bits for head id
-
-//
 // Drive commands
 //
 
@@ -86,6 +81,7 @@
 #define HDCMD_DIAG		0x90
 #define HDCMD_READ		0x20
 #define HDCMD_WRITE		0x30
+#define HDCMD_PACKET            0xA0
 #define HDCMD_PIDENTIFY         0xA1
 #define HDCMD_MULTREAD		0xC4
 #define HDCMD_MULTWRITE		0xC5
@@ -144,6 +140,24 @@
 #define HDIF_NONE               0
 #define HDIF_ATA                1
 #define HDIF_ATAPI              2
+
+//
+// IDE media types
+//
+
+#define IDE_FLOPPY              0x00
+#define IDE_TAPE                0x01
+#define IDE_CDROM               0x05
+#define IDE_OPTICAL             0x07
+#define IDE_SCSI                0x21
+#define IDE_DISK                0x20
+
+//
+// ATAPI commands
+//
+
+#define ATAPI_CMD_READCAPICITY  0x25
+#define ATAPI_CMD_READ10        0x28
 
 //
 // Buffer type
@@ -328,6 +342,7 @@ struct hd
   int sectbufs;                         // Number of sector buffers
   int lba;                              // LBA mode
   int iftype;                           // IDE interface type (ATA/ATAPI)
+  int media;                            // Device media type (hd, cdrom, ...)
   int multsect;                         // Sectors per interrupt
   int udmamode;                         // UltraDMA mode
   dev_t devno;                          // Device number
@@ -439,24 +454,24 @@ static void hd_setup_transfer(struct hd *hd, blkno_t blkno, int nsects)
   _outp(hd->hdc->iobase + HDC_DRVHD, (unsigned char) (head & 0xFF | hd->drvsel));
 }
 
-static void pio_read_sect(struct hd *hd, char *buffer)
+static void pio_read_buffer(struct hd *hd, char *buffer, int size)
 {
   struct hdc *hdc = hd->hdc;
 
   if (hd->use32bits)
-    insd(hdc->iobase + HDC_DATA, buffer, SECTORSIZE / 4);
+    insd(hdc->iobase + HDC_DATA, buffer, size / 4);
   else
-    insw(hdc->iobase + HDC_DATA, buffer, SECTORSIZE / 2);
+    insw(hdc->iobase + HDC_DATA, buffer, size / 2);
 }
 
-static void pio_write_sect(struct hd *hd, char *buffer)
+static void pio_write_buffer(struct hd *hd, char *buffer, int size)
 {
   struct hdc *hdc = hd->hdc;
 
   if (hd->use32bits)
-    outsd(hdc->iobase + HDC_DATA, buffer, SECTORSIZE / 4);
+    outsd(hdc->iobase + HDC_DATA, buffer, size / 4);
   else
-    outsw(hdc->iobase + HDC_DATA, buffer, SECTORSIZE / 2);
+    outsw(hdc->iobase + HDC_DATA, buffer, size / 2);
 }
 
 static void setup_dma_transfer(struct hdc *hdc, char *buffer, int count)
@@ -497,7 +512,9 @@ static int hd_identify(struct hd *hd)
   hd->hdc->dir = HD_XFER_IGNORE;
 
   // Issue read drive parameters command
-  //_outp(hd->hdc->iobase + HDC_FEATURE, 0);
+#ifndef COMPATMODE
+  _outp(hd->hdc->iobase + HDC_FEATURE, 0);
+#endif
   _outp(hd->hdc->iobase + HDC_DRVHD, hd->drvsel);
   _outp(hd->hdc->iobase + HDC_COMMAND, hd->iftype == HDIF_ATAPI ? HDCMD_PIDENTIFY : HDCMD_IDENTIFY);
 
@@ -520,10 +537,17 @@ static int hd_identify(struct hd *hd)
   hd_fixstring(hd->param.rev, sizeof(hd->param.rev));
   hd_fixstring(hd->param.serial, sizeof(hd->param.serial));
 
-  //kprintf("hd: type=%d\n", (hd->param.config >> 8) & 0x1f);
+  if (hd->iftype == HDIF_ATA)
+    hd->media = IDE_DISK;
+  else
+    hd->media = (hd->param.config >> 8) & 0x1f;
 
   // Determine LBA or CHS mode
+#ifdef COMPATMODE
   if (hd->param.totalsec0 == 0 && hd->param.totalsec1 == 0)
+#else
+  if ((hd->param.caps & 0x0200) == 0)
+#endif
   {
     hd->lba = 0;
     hd->blks = hd->cyls * hd->heads * hd->sectors;
@@ -534,7 +558,7 @@ static int hd_identify(struct hd *hd)
   {
     hd->lba = 1;
     hd->blks = (hd->param.totalsec1 << 16) | hd->param.totalsec0;
-    if (hd->blks == 0 || hd->blks == 0xFFFFFFFF) return -EIO;
+    if (hd->media == IDE_DISK && (hd->blks == 0 || hd->blks == 0xFFFFFFFF)) return -EIO;
   }
   hd->size = hd->blks / (M / SECTORSIZE);
 
@@ -543,10 +567,10 @@ static int hd_identify(struct hd *hd)
 
 static int hd_cmd(struct hd *hd, unsigned int cmd, unsigned int nsects)
 {
-  // Ignore interrupt for setmult command
+  // Ignore interrupt for command
   hd->hdc->dir = HD_XFER_IGNORE;
 
-  // Issue setmult command
+  // Issue command
   _outp(hd->hdc->iobase + HDC_SECTORCNT, nsects);
   _outp(hd->hdc->iobase + HDC_DRVHD, hd->drvsel);
   _outp(hd->hdc->iobase + HDC_COMMAND, cmd);
@@ -558,6 +582,107 @@ static int hd_cmd(struct hd *hd, unsigned int cmd, unsigned int nsects)
   if (hd->hdc->result < 0) return -EIO;
 
   return 0;
+}
+
+static int atapi_packet_read(struct hd *hd, unsigned char *pkt, int pktlen, void *buffer, size_t bufsize)
+{
+  struct hdc *hdc;
+  int result;
+  char *bufp;
+  int bufleft;
+  unsigned short bytes;
+  
+  bufp = (char *) buffer;
+  bufleft = bufsize;
+  hdc = hd->hdc;
+  hdc->dir = HD_XFER_IGNORE;
+  hdc->active = hd;
+  reset_event(&hdc->ready);
+
+  // Setup registers
+  _outp(hdc->iobase + HDC_SECTORCNT, 0);
+  _outp(hdc->iobase + HDC_SECTOR, 0);
+  _outp(hdc->iobase + HDC_TRACKLSB, (unsigned char) (bufsize & 0xFF));
+  _outp(hdc->iobase + HDC_TRACKMSB, (unsigned char) (bufsize >> 8));
+  _outp(hdc->iobase + HDC_DRVHD, (unsigned char) hd->drvsel);
+  
+  // Send packet command
+  _outp(hdc->iobase + HDC_COMMAND, HDCMD_PACKET);
+
+  // Wait for drive ready to receive packet
+  result = hd_wait(hdc, HDCS_DRDY, HDTIMEOUT_DRDY);
+  if (result != 0) 
+  {
+    kprintf("atapi_packet_read: busy waiting for packet ready (0x%02x)\n", result);
+    return -EIO;
+  }
+
+  // Command packet transfer
+  pio_write_buffer(hd, pkt, pktlen);
+
+  // Data transfer
+  while (1)
+  {
+    // Wait until data ready
+    //kprintf("wait for data\n");
+    if (wait_for_object(&hdc->ready, HDTIMEOUT_XFER) < 0)
+    {
+      kprintf("hd_read: timeout waiting for interrupt\n");
+      hdc->result = -EIO;
+      break;
+    }
+    //kprintf("data ready result=%d\n", hdc->result);
+    if (hdc->result < 0) break;
+    reset_event(&hdc->ready);
+
+    // Exit the read data loop if the device indicates this is the end of the command
+    //kprintf("stat 0x%02x\n", hdc->status);
+    if ((hdc->status & (HDCS_BSY | HDCS_DRQ)) == 0) break;
+
+    // Get the byte count
+    bytes = (_inp(hdc->iobase + HDC_TRACKMSB) << 8) | _inp(hdc->iobase + HDC_TRACKLSB);
+    //kprintf("%d bytes\n", bytes);
+    if (bytes == 0) break;
+    if (bytes > bufleft)
+    {
+      kprintf("%s: buffer overrun\n", device(hd->devno)->name);
+      hdc->result = -EBUF;
+      break;
+    }
+
+    // Read the bytes
+    pio_read_buffer(hd, bufp, bytes);
+    bufp += bytes;
+    bufleft -= bytes;
+  }
+
+  // Cleanup
+  hdc->dir = HD_XFER_IDLE;
+  hdc->active = NULL;
+  result = hdc->result;
+  //release_mutex(&hdc->lock);
+  return result == 0 ? bufsize - bufleft : result;
+}
+
+static int atapi_read_capacity(struct hd *hd)
+{
+  unsigned char pkt[12];
+  unsigned long buf[2];
+  unsigned long blks;
+  unsigned long blksize;
+  int rc;
+
+  memset(pkt, 0, 12);
+  pkt[0] = ATAPI_CMD_READCAPICITY;
+
+  rc = atapi_packet_read(hd, pkt, 12, buf, sizeof buf);
+  if (rc < 0) return rc;
+  if (rc != sizeof buf) return -EBUF;
+
+  blks = ntohl(buf[0]);
+  blksize = ntohl(buf[1]);
+  if (blksize != CDSECTORSIZE) kprintf("%s: unexpected block size (%d)\n", device(hd->devno)->name, blksize);
+  return blks;
 }
 
 static int hd_ioctl(struct dev *dev, int cmd, void *args, size_t size)
@@ -591,7 +716,7 @@ static int hd_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int hd_read_intr(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int hd_read_pio(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
 {
   struct hd *hd;
   struct hdc *hdc;
@@ -659,7 +784,7 @@ static int hd_read_intr(struct dev *dev, void *buffer, size_t count, blkno_t blk
   return result == 0 ? count : result;
 }
 
-static int hd_write_intr(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int hd_write_pio(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
 {
   struct hd *hd;
   struct hdc *hdc;
@@ -725,7 +850,7 @@ static int hd_write_intr(struct dev *dev, void *buffer, size_t count, blkno_t bl
     if (n > nsects) n = nsects;
     while (n-- > 0)
     {
-      pio_write_sect(hd, hdc->bufp);
+      pio_write_buffer(hd, hdc->bufp, SECTORSIZE);
       hdc->bufp += SECTORSIZE;
     }
 
@@ -756,7 +881,7 @@ static int hd_write_intr(struct dev *dev, void *buffer, size_t count, blkno_t bl
   return result == 0 ? count : result;
 }
 
-static int hd_read_dma(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int hd_read_udma(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
 {
   struct hd *hd;
   struct hdc *hdc;
@@ -856,7 +981,7 @@ static int hd_read_dma(struct dev *dev, void *buffer, size_t count, blkno_t blkn
   return result == 0 ? count : result;
 }
 
-static int hd_write_dma(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int hd_write_udma(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
 {
   struct hd *hd;
   struct hdc *hdc;
@@ -956,6 +1081,54 @@ static int hd_write_dma(struct dev *dev, void *buffer, size_t count, blkno_t blk
   return result == 0 ? count : result;
 }
 
+static int cd_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+{
+  struct hd *hd = (struct hd *) dev->privdata;
+  unsigned char pkt[12];
+  unsigned int blks;
+
+  blks = count / CDSECTORSIZE;
+  if (blks > 0xFFFF) return -EINVAL;
+
+  memset(pkt, 0, 12);
+  pkt[0] = ATAPI_CMD_READ10;
+  pkt[2] = blkno >> 24;
+  pkt[3] = (blkno >> 16) & 0xFF;
+  pkt[4] = (blkno >> 8) & 0xFF;
+  pkt[5] = blkno & 0xFF;
+  pkt[7] = (blks >> 8) & 0xFF;
+  pkt[8] = blks & 0xFF;
+
+  return atapi_packet_read(hd, pkt, 12, buffer, count);
+}
+
+static int cd_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+{
+  return -ENODEV;
+}
+
+static int cd_ioctl(struct dev *dev, int cmd, void *args, size_t size)
+{
+  struct hd *hd = (struct hd *) dev->privdata;
+
+  switch (cmd)
+  {
+    case IOCTL_GETDEVSIZE:
+      if (hd->blks <= 0) hd->blks = atapi_read_capacity(hd);
+      return hd->blks;
+
+    case IOCTL_GETBLKSIZE:
+      return CDSECTORSIZE;
+
+    case IOCTL_REVALIDATE:
+      hd->blks = atapi_read_capacity(hd);
+      if (hd->blks < 0) return hd->blks;
+      return 0;
+  }
+
+  return -ENOSYS;
+}
+
 void hd_dpc(void *arg)
 {
   struct hdc *hdc = (struct hdc *) arg;
@@ -971,7 +1144,7 @@ void hd_dpc(void *arg)
       if (nsects > hdc->nsects) nsects = hdc->nsects;
       for (n = 0; n < nsects; n++)
       {
-        pio_read_sect(hdc->active, hdc->bufp);
+        pio_read_buffer(hdc->active, hdc->bufp, SECTORSIZE);
         hdc->bufp += SECTORSIZE;
       }
 
@@ -1022,7 +1195,7 @@ void hd_dpc(void *arg)
 
 	for (n = 0; n < nsects; n++)
 	{
-  	  pio_write_sect(hdc->active, hdc->bufp);
+  	  pio_write_buffer(hdc->active, hdc->bufp, SECTORSIZE);
 	  hdc->bufp += SECTORSIZE;
 	}
       }
@@ -1090,22 +1263,31 @@ static int part_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno
   return dev_write(part->dev, buffer, count, blkno + part->start);
 }
 
-struct driver harddisk_dma_driver =
+struct driver harddisk_udma_driver =
 {
-  "idedisk/dma",
+  "idedisk/udma",
   DEV_TYPE_BLOCK,
   hd_ioctl,
-  hd_read_dma,
-  hd_write_dma
+  hd_read_udma,
+  hd_write_udma
 };
 
-struct driver harddisk_intr_driver =
+struct driver harddisk_pio_driver =
 {
-  "idedisk",
+  "idedisk/pio",
   DEV_TYPE_BLOCK,
   hd_ioctl,
-  hd_read_intr,
-  hd_write_intr
+  hd_read_pio,
+  hd_write_pio
+};
+
+struct driver cdrom_pio_driver =
+{
+  "idecd/pio",
+  DEV_TYPE_BLOCK,
+  cd_ioctl,
+  cd_read,
+  cd_write
 };
 
 struct driver partition_driver =
@@ -1136,7 +1318,7 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase)
   init_mutex(&hdc->lock, 0);
   init_event(&hdc->ready, 0, 0);
 
-#if 0
+#ifndef COMPATMODE
   // Reset controller
   _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_SRST | HDDC_NIEN);
   udelay(10);
@@ -1222,14 +1404,16 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel)
   static int udma_speed[] = {16, 25, 33, 44, 66, 100};
 
   int rc;
-  //unsigned char sc, sn, cl, ch, st;
+#ifndef  COMPATMODE
+  unsigned char sc, sn, cl, ch, st;
+#endif
 
   // Initialize drive block
   memset(hd, 0, sizeof(struct hd));
   hd->hdc = hdc;
   hd->drvsel = drvsel;
 
-#if 0
+#ifndef  COMPATMODE
   // Check interface type
   _outp(hd->hdc->iobase + HDC_DRVHD, hd->drvsel);
   udelay(10);
@@ -1250,8 +1434,10 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel)
   
   // If no interface present, abort now
   if (hd->iftype == HDIF_NONE) return;
+
 #else
   hd->iftype = HDIF_ATA;
+  hd->media = IDE_DISK;
 #endif
 
   // Get info block from device
@@ -1268,9 +1454,9 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel)
   {
     if ((hd->param.dmaultra >> 13) & 1)
       hd->udmamode = 5; // UDMA 100
-    else if ((hd->param.dmaultra>> 12) & 1)
+    else if ((hd->param.dmaultra >> 12) & 1)
       hd->udmamode = 4; // UDMA 66
-    else if ((hd->param.dmaultra>> 11) & 1)
+    else if ((hd->param.dmaultra >> 11) & 1)
       hd->udmamode = 3; // UDMA 44
     else if ((hd->param.dmaultra >> 10) & 1)
       hd->udmamode = 2; // UDMA 33
@@ -1294,12 +1480,20 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel)
   }
 
   // Make new device
-  if (hd->udmamode != -1)
-    hd->devno = dev_make(devname, &harddisk_dma_driver, NULL, hd);
-  else
-    hd->devno = dev_make(devname, &harddisk_intr_driver, NULL, hd);
+  if (hd->media == IDE_DISK)
+  {
+    if (hd->udmamode != -1)
+      hd->devno = dev_make(devname, &harddisk_udma_driver, NULL, hd);
+    else
+      hd->devno = dev_make(devname, &harddisk_pio_driver, NULL, hd);
+  }
+  else if (hd->media == IDE_CDROM)
+  {
+    hd->devno = dev_make("cd#", &cdrom_pio_driver, NULL, hd);
+  }
 
-  kprintf("%s: %s (%d MB)", devname, hd->param.model, hd->size);
+  kprintf("%s: %s", device(hd->devno)->name, hd->param.model);
+  if (hd->size > 0) kprintf(" (%d MB)", hd->size);
   if (hd->lba) kprintf(", LBA");
   if (hd->udmamode != -1) kprintf(", UDMA%d", udma_speed[hd->udmamode]);
   if (hd->param.csfo & 2) kprintf(", read ahead");
@@ -1307,7 +1501,7 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel)
   if (hd->udmamode == -1 && hd->multsect > 1) kprintf(", %d sects/intr", hd->multsect);
   kprintf("\n");
 
-  create_partitions(hd);
+  if (hd->media == IDE_DISK) create_partitions(hd);
 }
 
 void init_hd()
@@ -1317,8 +1511,11 @@ void init_hd()
   struct unit *ide;
   int rc;
 
+#ifdef COMPATMODE
   numhd = syspage->biosdata[0x75];
-  //numhd = 4;
+#else
+  numhd = 4;
+#endif
 
   ide = lookup_unit_by_class(NULL, PCI_CLASS_STORAGE_IDE, PCI_SUBCLASS_MASK);
   if (ide)

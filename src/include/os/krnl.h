@@ -125,6 +125,10 @@ void init_smbfs();
 void init_pipefs();
 int pipe(struct file **readpipe, struct file **writepipe);
 
+// cdfs.c
+
+void init_cdfs();
+
 // cons.c
 
 extern dev_t consdev;

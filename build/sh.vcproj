@@ -160,7 +160,7 @@
 				Name="SanOS|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
-					AssemblerOutput="0"/>
+					AssemblerOutput="4"/>
 			</FileConfiguration>
 		</File>
 	</Files>

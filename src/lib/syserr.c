@@ -50,7 +50,7 @@ char *sys_errlist[] =
   /* 12 ENOMEM          */  "Not enough space",
   /* 13 EACCES          */  "Permission denied",
   /* 14 EFAULT          */  "Bad address",
-  /* 15 ENOTBLK         */  "Unknown error",
+  /* 15 ENOTBLK         */  "Not a block device",
   /* 16 EBUSY           */  "Resource device",
   /* 17 EEXIST          */  "File exists",
   /* 18 EXDEV           */  "Improper link",

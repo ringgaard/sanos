@@ -917,6 +917,8 @@ struct smb_file_directory_info
 
 struct smb_share;
 
+#pragma pack(pop)
+
 //
 // SMB directory entry
 //
@@ -939,7 +941,7 @@ struct smb_file
 };
 
 //
-// SMF directory
+// SMB directory
 //
 
 struct smb_directory
@@ -1032,7 +1034,5 @@ int smb_release_connection(struct smb_share *share);
 
 int smb_check_connection(struct smb_share *share);
 int smb_reconnect(struct smb_share *share);
-
-#pragma pack(pop)
 
 #endif

@@ -427,6 +427,16 @@
 					RelativePath="..\src\sys\fs\pipefs\pipefs.c">
 				</File>
 			</Filter>
+			<Filter
+				Name="cdfs"
+				Filter="">
+				<File
+					RelativePath="..\src\sys\fs\cdfs\cdfs.c">
+				</File>
+				<File
+					RelativePath="..\src\sys\fs\cdfs\iso9660.h">
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="include"

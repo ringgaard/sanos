@@ -357,6 +357,7 @@ void main(void *arg)
   init_procfs();
   init_pipefs();
   init_smbfs();
+  init_cdfs();
  
   // Open boot device
   if (syspage->bootparams.bootdrv & 0x80)

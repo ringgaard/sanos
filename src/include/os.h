@@ -368,7 +368,7 @@ struct section;
 #define ENOMEM          12               // Cannot allocate memory
 #define EACCES          13               // Access denied
 #define EFAULT          14               // Bad address
-//#define ENOTBLK           15               // Unknown error
+#define ENOTBLK         15               // Not a block device
 #define EBUSY           16               // Device busy
 #define EEXIST          17               // File exist
 #define EXDEV           18               // Cross-device link
