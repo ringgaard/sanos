@@ -138,3 +138,5 @@ CHANGES
 
 - Keyboard interrupt handling has been made more robust (failed on xpc).
 
+
+*** version 1.2.4 released ***
