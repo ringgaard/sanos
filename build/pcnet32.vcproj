@@ -55,7 +55,7 @@
 				MapFileName=".\..\obj\pcnet32/pcnet32.map"
 				EntryPointSymbol="start"
 				BaseAddress=""
-				ImportLibrary=".\..\bin/pcnet32.lib"/>
+				ImportLibrary=".\..\lib/pcnet32.lib"/>
 			<Tool
 				Name="VCMIDLTool"
 				PreprocessorDefinitions="NDEBUG"
@@ -92,6 +92,7 @@
 				PreprocessorDefinitions="PCNET32_LIB;KERNEL;DEBUG"
 				IgnoreStandardIncludePath="TRUE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="os/krnl.h"
 				PrecompiledHeaderFile=".\..\dbg\obj\pcnet32/pcnet32.pch"

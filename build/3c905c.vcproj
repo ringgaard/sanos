@@ -26,6 +26,7 @@
 				PreprocessorDefinitions="3C905C_LIB;KERNEL;DEBUG"
 				IgnoreStandardIncludePath="TRUE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="os/krnl.h"
 				PrecompiledHeaderFile=".\..\dbg\obj\3c905c/3c905c.pch"

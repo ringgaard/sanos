@@ -92,6 +92,7 @@
 				IgnoreStandardIncludePath="TRUE"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="krnl.h"

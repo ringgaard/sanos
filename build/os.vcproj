@@ -91,6 +91,7 @@
 				PreprocessorDefinitions="OS_LIB;DEBUG"
 				IgnoreStandardIncludePath="TRUE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="os.h"
 				PrecompiledHeaderFile=".\..\dbg\obj\os/os.pch"
@@ -234,10 +235,16 @@
 				RelativePath="..\src\lib\moddb.c">
 			</File>
 			<File
+				RelativePath="..\src\lib\stdio.c">
+			</File>
+			<File
 				RelativePath="..\src\lib\stdlib.c">
 			</File>
 			<File
 				RelativePath="..\src\lib\string.c">
+			</File>
+			<File
+				RelativePath="..\src\lib\syserr.c">
 			</File>
 			<File
 				RelativePath="..\src\lib\vsprintf.c">

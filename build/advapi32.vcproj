@@ -92,6 +92,7 @@
 				PreprocessorDefinitions="ADVAPI32_LIB;DEBUG"
 				IgnoreStandardIncludePath="TRUE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="os.h"
 				PrecompiledHeaderFile=".\..\dbg\obj\advapi32/advapi32.pch"

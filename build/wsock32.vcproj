@@ -92,6 +92,7 @@
 				PreprocessorDefinitions="WSOCK32_LIB;DEBUG"
 				IgnoreStandardIncludePath="TRUE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="os.h"
 				PrecompiledHeaderFile=".\..\dbg\obj\wsock32/wsock32.pch"
