@@ -932,6 +932,24 @@ static void download(int argc, char **argv)
   free(files);
 }
 
+static void heap_stat()
+{
+  struct mallinfo m;
+
+  m = mallinfo();
+
+  printf("Non-mmapped space allocated from system .. : %12d\n", m.arena);
+  printf("Number of free chunks .................... : %12d\n", m.ordblks);
+  printf("Number of fastbin blocks ................. : %12d\n", m.smblks);
+  printf("Number of mmapped regions ................ : %12d\n", m.hblks);
+  printf("Space in mmapped regions ................. : %12d\n", m.hblkhd);
+  printf("Maximum total allocated space ............ : %12d\n", m.usmblks);
+  printf("Space available in freed fastbin blocks .. : %12d\n", m.fsmblks);
+  printf("Total allocated space .................... : %12d\n", m.uordblks);
+  printf("Total free space ......................... : %12d\n", m.fordblks);
+  printf("Top-most, releasable space ............... : %12d\n", m.keepcost);
+}
+
 static void test1(int argc, char **argv)
 {
   struct servent *sp;
@@ -1213,6 +1231,8 @@ void shell()
 	printf("\f");
       else if (strcmp(argv[0], "log") == 0)
 	set_loglevel(argv[1], atoi(argv[2]));
+      else if (strcmp(argv[0], "heapstat") == 0)
+	heap_stat();
       else if (strcmp(argv[0], "kp") == 0)
 	set_kprint(atoi(argv[1]));
       else if (strcmp(argv[0], "start") == 0)

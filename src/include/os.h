@@ -541,6 +541,24 @@ struct tib
 #define fdout (gettib()->out)
 #define fderr (gettib()->err)
 
+//
+// SVID2/XPG mallinfo structure
+//
+
+struct mallinfo
+{
+  int arena;    // Non-mmapped space allocated from system
+  int ordblks;  // Number of free chunks
+  int smblks;   // Number of fastbin blocks
+  int hblks;    // Number of mmapped regions
+  int hblkhd;   // Space in mmapped regions
+  int usmblks;  // Maximum total allocated space
+  int fsmblks;  // Space available in freed fastbin blocks
+  int uordblks; // Total allocated space
+  int fordblks; // Total free space
+  int keepcost; // Top-most, releasable (via malloc_trim) space
+};
+
 // OS API functions
 
 #ifndef KERNEL
@@ -640,6 +658,7 @@ osapi void *malloc(size_t size);
 osapi void *realloc(void *mem, size_t size);
 osapi void *calloc(size_t num, size_t size);
 osapi void free(void *p);
+osapi struct mallinfo mallinfo();
 
 osapi void *resolve(hmodule_t hmod, const char *procname);
 osapi hmodule_t getmodule(char *name);

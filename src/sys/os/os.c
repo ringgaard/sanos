@@ -97,6 +97,17 @@ void free(void *p)
   leave(&heap_lock);
 }
 
+struct mallinfo mallinfo()
+{
+  struct mallinfo m;
+
+  enter(&heap_lock);
+  m = heap_mallinfo();
+  leave(&heap_lock);
+
+  return m;
+}
+
 char *canonicalize(const char *filename, char *buffer, int size)
 {
   char *basename = (char *) filename;

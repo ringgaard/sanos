@@ -46,7 +46,7 @@ struct chunk
   struct chunk *bk;
 };
 
-typedef struct chunk* mchunkptr;
+typedef struct chunk *mchunkptr;
 
 //
 //  Chunk details
@@ -502,22 +502,29 @@ typedef struct chunk *mfastbinptr;
 
 struct heap
 {
-  size_t       max_fast;            // The maximum chunk size to be eligible for fastbin (low 2 bits used as flags)
-  mfastbinptr  fastbins[NFASTBINS]; // Fastbins
-  mchunkptr    top;                 // Base of the topmost chunk -- not otherwise kept in a bin
-  mchunkptr    last_remainder;      // The remainder from the most recent split of a small request
-  mchunkptr    bins[NBINS * 2];     // Normal bins packed as described above
+  size_t max_fast;                  // The maximum chunk size to be eligible for fastbin (low 2 bits used as flags)
+  mfastbinptr fastbins[NFASTBINS];  // Fastbins
+  mchunkptr top;                    // Base of the topmost chunk -- not otherwise kept in a bin
+  mchunkptr last_remainder;         // The remainder from the most recent split of a small request
+  mchunkptr bins[NBINS * 2];        // Normal bins packed as described above
   unsigned int binmap[BINMAPSIZE];  // Bitmap of bins
 
   // Tunable parameters
-  unsigned long    trim_threshold;
-  size_t           top_pad;
-  size_t           mmap_threshold;
+  unsigned long trim_threshold;
+  size_t top_pad;
+  size_t mmap_threshold;
 
   // Memory map support
-  int              n_mmaps;
-  int              n_mmaps_max;
-  int              max_n_mmaps;
+  int n_mmaps;
+  int n_mmaps_max;
+  int max_n_mmaps;
+
+  // Statistics
+  size_t mmapped_mem;
+  size_t sbrked_mem;
+  size_t max_sbrked_mem;
+  size_t max_mmapped_mem;
+  size_t max_total_mem;
 };
 
 // 
@@ -714,6 +721,12 @@ static void *sysalloc(size_t nb, struct heap *av)
       set_head(p, size | IS_MMAPPED);
       syslog(LOG_DEBUG | LOG_HEAP, "Big allocation %dK\n", size / 1024);
 
+      // Update statistics
+      av->n_mmaps++;
+      av->mmapped_mem += size;
+      if (av->mmapped_mem > av->max_mmapped_mem) av->max_mmapped_mem = av->mmapped_mem;
+      if (av->sbrked_mem + av->mmapped_mem > av->max_total_mem) av->max_total_mem = av->sbrked_mem + av->mmapped_mem;
+
       return chunk2mem(p);
     }
   }
@@ -749,6 +762,11 @@ static void *sysalloc(size_t nb, struct heap *av)
     newsize = size + expand;
 
   set_head(av->top, newsize | PREV_INUSE);
+
+  // Update statistics
+  av->sbrked_mem += expand;
+  if (av->sbrked_mem > av->max_sbrked_mem) av->max_sbrked_mem = av->sbrked_mem;
+  if (av->sbrked_mem + av->mmapped_mem > av->max_total_mem) av->max_total_mem = av->sbrked_mem + av->mmapped_mem;
 
   syslog(LOG_HEAP | LOG_DEBUG, "Expand heap to %d KB (%d)\n", (wilderness - region) / 1024, expand);
 
@@ -1154,7 +1172,6 @@ void heap_free(void *mem)
 
     if (size <= av->max_fast) 
     {
-
       set_fastchunks(av);
       fb = &(av->fastbins[fastbin_index(size)]);
       p->fd = *fb;
@@ -1232,7 +1249,6 @@ void heap_free(void *mem)
           systrim(av->top_pad, av);
 	}
       }
-
     }
 
     // If the chunk was allocated via mmap, release via munmap()
@@ -1245,7 +1261,10 @@ void heap_free(void *mem)
     {
       int ret;
       size_t offset = p->prev_size;
+
       av->n_mmaps--;
+      av->mmapped_mem -= (size + offset);
+
       syslog(LOG_DEBUG | LOG_HEAP, "Free big chunk %dK (%d)\n", size / 1024, offset);
       ret = munmap(p - offset, size + offset, MEM_RELEASE);
       // munmap returns non-zero on failure
@@ -1438,4 +1457,67 @@ void *heap_calloc(size_t n_elements, size_t elem_size)
   }
 
   return mem;
+}
+
+//
+// heap_mallinfo
+//
+
+struct mallinfo heap_mallinfo()
+{
+  struct heap *av = get_malloc_state();
+  struct mallinfo mi;
+  int i;
+  mbinptr b;
+  mchunkptr p;
+  size_t avail;
+  size_t fastavail;
+  int nblocks;
+  int nfastblocks;
+
+  // Ensure initialization
+  if (av->top == 0)  heap_consolidate(av);
+
+  // Account for top
+  avail = chunksize(av->top);
+  nblocks = 1;  // top always exists
+
+  // Traverse fastbins
+  nfastblocks = 0;
+  fastavail = 0;
+
+  for (i = 0; i < NFASTBINS; i++) 
+  {
+    for (p = av->fastbins[i]; p != 0; p = p->fd) 
+    {
+      nfastblocks++;
+      fastavail += chunksize(p);
+    }
+  }
+
+  avail += fastavail;
+
+  // Traverse regular bins
+  for (i = 1; i < NBINS; i++)
+  {
+    b = bin_at(av, i);
+    for (p = last(b); p != b; p = p->bk) 
+    {
+      nblocks++;
+      avail += chunksize(p);
+    }
+  }
+
+  mi.smblks = nfastblocks;
+  mi.ordblks = nblocks;
+  mi.fordblks = avail;
+  mi.uordblks = av->sbrked_mem - avail;
+  mi.arena = av->sbrked_mem;
+  mi.hblks = av->n_mmaps;
+  mi.hblkhd = av->mmapped_mem;
+  mi.fsmblks = fastavail;
+  mi.keepcost = chunksize(av->top);
+  mi.usmblks = av->max_total_mem;
+
+  return mi;
 }
