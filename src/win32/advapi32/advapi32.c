@@ -53,7 +53,7 @@ LONG WINAPI RegCloseKey
 )
 {
   TRACE("RegCloseKey");
-  panic("RegCloseKey not implemented");
+  syslog(LOG_DEBUG, "warning: RegCloseKey not implemented, ignored\n");
   return -1;
 }
 
@@ -234,6 +234,38 @@ BOOL WINAPI CryptGenRandom
   TRACE("CryptGenRandom");
   panic("CryptGenRandom not implemented");
   return TRUE;
+}
+
+BOOL WINAPI StartServiceCtrlDispatcherA
+(
+  CONST LPSERVICE_TABLE_ENTRY lpServiceTable
+)
+{
+  TRACE("StartServiceCtrlDispatcherA");
+  panic("StartServiceCtrlDispatcherA not implemented");
+  return TRUE;
+}
+
+BOOL WINAPI SetServiceStatus
+(
+  SERVICE_STATUS_HANDLE hServiceStatus,
+  LPSERVICE_STATUS lpServiceStatus
+)
+{
+  TRACE("SetServiceStatus");
+  panic("SetServiceStatus not implemented");
+  return TRUE;
+}
+
+SERVICE_STATUS_HANDLE RegisterServiceCtrlHandlerA
+(
+  LPCTSTR lpServiceName,
+  LPHANDLER_FUNCTION lpHandlerProc
+)
+{
+  TRACE("RegisterServiceCtrlHandlerA");
+  panic("RegisterServiceCtrlHandlerA not implemented");
+  return 0;
 }
 
 int __stdcall DllMain(handle_t hmod, int reason, void *reserved)

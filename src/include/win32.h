@@ -113,8 +113,13 @@ typedef void *LPTOP_LEVEL_EXCEPTION_FILTER;
 typedef void *LPWSAOVERLAPPED;
 typedef void *LPWSAOVERLAPPED_COMPLETION_ROUTINE;
 typedef void *PSID;
-
+typedef void *LPSERVICE_TABLE_ENTRY;
+typedef void *LPSERVICE_STATUS;
 typedef void *HCRYPTPROV;
+
+typedef int SERVICE_STATUS_HANDLE;
+
+typedef VOID (__stdcall *LPHANDLER_FUNCTION)(DWORD fdwControl);
 
 #define EVENTLOG_SUCCESS                0x0000
 #define EVENTLOG_ERROR_TYPE             0x0001

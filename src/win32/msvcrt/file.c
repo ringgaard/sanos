@@ -319,6 +319,13 @@ int _open_osfhandle(long osfhandle, int flags)
   return rc;
 }
 
+int _dup2(int handle1, int handle2)
+{
+  syslog(LOG_WARNING, "dup2(%d,%d) not implemented\n", handle1, handle2);
+  errno = -EMFILE;
+  return -1;
+}
+
 long _get_osfhandle(int filehandle)
 {
   TRACE("_get_osfhandle");

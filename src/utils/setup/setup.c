@@ -39,6 +39,7 @@
 
 #include <os/mbr.h>
 #include <os/dfs.h>
+#include <os/version.h>
 
 #define SECTORSIZE 512
 
@@ -514,7 +515,7 @@ int docopy(struct section *sect)
     dstfn = prop->name;
     srcfn = prop->value;
 
-    printf("Copying %s to %s\n", srcfn, dstfn);
+    printf("Installing %s\n", dstfn);
     
     rc = stat(srcfn, &buf);
     if (rc < 0) return rc;
@@ -631,8 +632,8 @@ int main(int argc, char *argv[])
     return 2;
   }
 
-  prodname = get_property(inst, "setup", "product", "sanos");
-  prodvers = get_property(inst, "setup", "version", "1.0");
+  prodname = get_property(inst, "setup", "product", OSNAME);
+  prodvers = get_property(inst, "setup", "version", OSVERSION);
   scriptname = get_property(inst, "setup", "actions", "actions");
 
   printf("Installing %s version %s\n", prodname, prodvers);

@@ -56,3 +56,4 @@ EXPORTS
   towlower
   towupper
   _purecall
+  __initenv

@@ -197,6 +197,7 @@ crtapi void *_calloc(size_t num, size_t size);
 crtapi void *_realloc(void *mem, size_t size);
 
 crtapi int _pipe(int *phandles, unsigned int psize, int textmode);
+crtapi int _dup2(int handle1, int handle2);
 crtapi int _open(const char *filename, int oflag);
 crtapi int _close(int handle);
 crtapi int _commit(int handle);
