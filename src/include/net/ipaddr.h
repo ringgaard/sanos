@@ -35,8 +35,7 @@
 #ifndef IPADDR_H
 #define IPADDR_H
 
-#define IP_ADDR_ANY 0
-
+#define IP_ADDR_ANY       0
 #define IP_ADDR_BROADCAST (&ip_addr_broadcast)
 
 struct ip_addr 
@@ -44,6 +43,7 @@ struct ip_addr
   unsigned long addr;
 };
 
+extern struct ip_addr ip_addr_any;
 extern struct ip_addr ip_addr_broadcast;
 
 #define IP4_ADDR(ipaddr, a,b,c,d) (ipaddr)->addr = htonl(((unsigned long)(a & 0xFF) << 24) | ((unsigned long)(b & 0xFF) << 16) | ((unsigned long)(c & 0xFF) << 8) | (unsigned long)(d & 0xFF))

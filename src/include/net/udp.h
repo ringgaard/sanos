@@ -52,6 +52,7 @@ struct udp_hdr
 
 #define UDP_FLAGS_NOCHKSUM  0x01
 #define UDP_FLAGS_BROADCAST 0x02
+#define UDP_FLAGS_CONNECTED 0x04
 
 struct udp_pcb 
 {

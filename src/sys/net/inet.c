@@ -57,6 +57,9 @@ static unsigned long chksum(void *dataptr, int len)
     acc += htons((unsigned short)((*(unsigned char *) dataptr) & 0xFF) << 8);
   }
 
+  acc = (acc >> 16) + (acc & 0xFFFF);
+  if ((acc & 0xFFFF0000) != 0) acc = (acc >> 16) + (acc & 0xFFFF);
+
   return acc;
 }
 

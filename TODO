@@ -393,4 +393,18 @@ CHANGES
   This problem has been fixed by also sending an acknowledge for TCP segments that fall 
   outside the current window.
 
-- In tcp_abort() the unsent and unacked segments are now freed.
+- Changes from lwIP 0.6.4 added to networking code:
+  - Check for short packets in icmp.
+  - ICMP transmit buffer changed to PBUF_IP.
+  - ip_id in ip_output_if() changed to static.
+  - Checksum folded into 16-bit in chksum().
+  - The TCP retransmission time-out backoff corrected. 
+  - Segments in ooseq, unacked and unsent are now removed on abort.
+  - Check for pcb already in listen mode in tcp_listen().
+  - TCP retransmission of unacknowled segments moved to tcp_rexmit().
+  - The snd_wl1 was not initialized on SYN|ACK.
+  - If accept fails in SYN_RECVD, EABORT is retuned to prevent further processing of pcb.
+  - Segments on unacked now removed before segments on the unsent list
+  - Now also sending an acknowledge for TCP segments that fall outside the current window.
+  - Only direct UDP packets which does not match perfectly to unconnected pcbs.
+  - Check for short packets in udp.

@@ -176,7 +176,8 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
 {
   struct ip_hdr *iphdr;
   struct netif *netif;
-  unsigned char hl;
+  int hl;
+  int iphdrlen;
 
   stats.ip.recv++;
   
@@ -195,7 +196,8 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
   
   // Check header length
   hl = IPH_HL(iphdr);
-  if (hl * 4 > p->len) 
+  iphdrlen = hl * 4;
+  if (iphdrlen > p->len) 
   {
     kprintf("IP packet dropped due to too short packet %d\n", p->len);
 
@@ -208,9 +210,9 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
   // Verify checksum
   if ((inp->flags & NETIF_IP_RX_CHECKSUM_OFFLOAD) == 0)
   {
-    if (inet_chksum(iphdr, hl * 4) != 0)
+    if (inet_chksum(iphdr, iphdrlen) != 0)
     {
-      kprintf("IP packet dropped due to failing checksum 0x%x\n", inet_chksum(iphdr, hl * 4));
+      kprintf("IP packet dropped due to failing checksum 0x%x\n", inet_chksum(iphdr, iphdrlen));
       stats.ip.chkerr++;
       stats.ip.drop++;
       return -ECHKSUM;
@@ -264,7 +266,7 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
     return -EPROTO;
   }
   
-  if (hl * 4 > IP_HLEN) 
+  if (iphdrlen > IP_HLEN) 
   {
     kprintf("IP packet dropped since there were IP options.\n");
     stats.ip.opterr++;
@@ -329,7 +331,7 @@ err_t ip_input_dur(int code, struct pbuf *p)
 err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, int ttl, int proto, struct netif *netif)
 {
   struct ip_hdr *iphdr;
-  unsigned short ip_id = 0;
+  static unsigned short ip_id = 0;
   
   if (dest != IP_HDRINCL)
   {
@@ -347,12 +349,12 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
     IPH_PROTO_SET(iphdr, proto);
     
     ip_addr_set(&iphdr->dest, dest);
-    ip_id++;
 
     IPH_VHLTOS_SET(iphdr, 4, IP_HLEN / 4, 0);
     IPH_LEN_SET(iphdr, htons((unsigned short) p->tot_len));
     IPH_OFFSET_SET(iphdr, htons(IP_DF));
     IPH_ID_SET(iphdr, htons(ip_id));
+    ip_id++;
 
     if (ip_addr_isany(src))
       ip_addr_set(&iphdr->src, &netif->ipaddr);

@@ -64,7 +64,14 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
   //kprintf("receiving TCP segment:\n");
   //tcp_debug_print(tcphdr);
 
-  pbuf_header(p, -(IPH_HL(iphdr) * 4));
+  // Remove header from payload
+  if (pbuf_header(p, -(IPH_HL(iphdr) * 4)) < 0 || p->tot_len < sizeof(struct tcp_hdr))
+  {
+    kprintf("tcp_input: short packet (%u bytes) discarded\n", p->tot_len);
+    stats.tcp.lenerr++;
+    stats.tcp.drop++;
+    return -EPROTO;
+  }
 
   // Don't even process incoming broadcasts/multicasts
   if (ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) || ip_addr_ismulticast(&iphdr->dest)) 
@@ -89,7 +96,8 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
   }
 #endif
 
-  // Move the payload pointer in the pbuf so that it points to the TCP data instead of the IP header
+  // Move the payload pointer in the pbuf so that it points to 
+  // the TCP data instead of the TCP header
   offset = TCPH_OFFSET(tcphdr) >> 4;
   if (pbuf_header(p, -(offset * 4)) < 0) return -EINVAL;
 
@@ -100,9 +108,9 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
   tcphdr->ackno = ntohl(tcphdr->ackno);
   tcphdr->wnd = ntohs(tcphdr->wnd);
   
-  kprintf("tcp_input: size %d seqno %lu ackno %lu wnd %d flags: ", p->tot_len, tcphdr->seqno, tcphdr->ackno, tcphdr->wnd);
-  tcp_debug_print_flags(TCPH_FLAGS(tcphdr));
-  kprintf("\n");
+  //kprintf("tcp_input: size %d seqno %lu ackno %lu wnd %d flags: ", p->tot_len, tcphdr->seqno, tcphdr->ackno, tcphdr->wnd);
+  //tcp_debug_print_flags(TCPH_FLAGS(tcphdr));
+  //kprintf("\n");
 
   // Demultiplex an incoming segment. First, we check if it is destined for an active connection
   prev = NULL;  
@@ -312,17 +320,11 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
     {
       if (pcb->state == SYN_SENT) 
       {
-	if (ackno == pcb->snd_nxt) 
-	{
-	  acceptable = 1;
-	}
+	if (ackno == pcb->snd_nxt) acceptable = 1;
       } 
       else 
       {
-	if (TCP_SEQ_GEQ(seqno, pcb->rcv_nxt) && TCP_SEQ_LEQ(seqno, pcb->rcv_nxt + pcb->rcv_wnd)) 
-	{
-	  acceptable = 1;
-	}
+	if (TCP_SEQ_GEQ(seqno, pcb->rcv_nxt) && TCP_SEQ_LEQ(seqno, pcb->rcv_nxt + pcb->rcv_wnd)) acceptable = 1;
       }
     }
 
@@ -331,11 +333,13 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       //kprintf("tcp_process: Connection RESET\n");
       pcb->flags |= TF_RESET;
       pcb->flags &= ~TF_ACK_DELAY;
+      return -ERST;
     } 
-    //else 
-    //  kprintf("tcp_process: unacceptable reset seqno %lu rcv_nxt %lu\n", seqno, pcb->rcv_nxt);
-
-    return -ERST;
+    else
+    {
+      //kprintf("tcp_process: unacceptable reset seqno %lu rcv_nxt %lu\n", seqno, pcb->rcv_nxt);
+      return 0;
+    }
   }
 
   // Update the PCB timer unless we are in the LISTEN state
@@ -409,7 +413,7 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       {
 	pcb->rcv_nxt = seqno + 1;
 	pcb->lastack = ackno;
-	pcb->snd_wnd = tcphdr->wnd;
+	pcb->snd_wnd = pcb->snd_wl1 = tcphdr->wnd;
 	pcb->state = ESTABLISHED;
 	pcb->cwnd = pcb->mss;
 	pcb->snd_queuelen--;
@@ -440,11 +444,11 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	  // Call the accept function
 	  if (pcb->accept != NULL) 
 	  {
-	    if (pcb->accept(pcb->callback_arg, pcb, 0) != 0) 
+	    if (pcb->accept(pcb->callback_arg, pcb, 0) < 0) 
 	    {
 	      // If the accept function returns with an error, we abort the connection
 	      tcp_abort(pcb);
-	      break;
+	      return -EABORT;
 	    }
 	  } 
 	  else 
@@ -455,7 +459,7 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	    // peer (which might never happen). Therefore, we abort the
 	    // connection before it is too late
 	    tcp_abort(pcb);
-	    break;
+	    return -EABORT;
 	  }
 
 	  // If there was any data contained within this ACK,
@@ -487,7 +491,6 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	  tcp_pcb_purge(pcb);
 	  TCP_RMV(&tcp_active_pcbs, pcb);
 	  pcb->state = TIME_WAIT;
-	  //pcb = memp_realloc(MEMP_TCP_PCB, MEMP_TCP_PCB_TW, pcb);
 	  TCP_REG(&tcp_tw_pcbs, pcb);
 	} 
 	else 
@@ -510,7 +513,6 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	pcb->flags |= TF_ACK_NOW;
 	tcp_pcb_purge(pcb);
 	TCP_RMV(&tcp_active_pcbs, pcb);
-	//pcb = memp_realloc(MEMP_TCP_PCB, MEMP_TCP_PCB_TW, pcb);
 	pcb->state = TIME_WAIT;
 	TCP_REG(&tcp_tw_pcbs, pcb);
       }
@@ -524,7 +526,6 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	pcb->flags |= TF_ACK_NOW;
 	tcp_pcb_purge(pcb);
 	TCP_RMV(&tcp_active_pcbs, pcb);
-	//pcb = memp_realloc(MEMP_TCP_PCB, MEMP_TCP_PCB_TW, pcb);
 	pcb->state = TIME_WAIT;
 	TCP_REG(&tcp_tw_pcbs, pcb);
       }
@@ -541,14 +542,8 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       break;
 
     case TIME_WAIT:
-      if (TCP_SEQ_GT(seqno + TCP_TCPLEN(seg), pcb->rcv_nxt))
-      {
-	pcb->rcv_nxt = seqno + TCP_TCPLEN(seg);
-      }
-      if (TCP_TCPLEN(seg) > 0) 
-      {
-	pcb->flags |= TF_ACK_NOW;
-      }
+      if (TCP_SEQ_GT(seqno + TCP_TCPLEN(seg), pcb->rcv_nxt)) pcb->rcv_nxt = seqno + TCP_TCPLEN(seg);
+      if (TCP_TCPLEN(seg) > 0) pcb->flags |= TF_ACK_NOW;
       break;
   }
   
@@ -573,6 +568,7 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
   struct tcp_seg *next, *prev, *cseg;
   struct pbuf *p;
   unsigned long ackno, seqno;
+  unsigned long right_wnd_edge;
   int off;
   int m;
 
@@ -581,6 +577,8 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
 
   if (TCPH_FLAGS(seg->tcphdr) & TCP_ACK) 
   {
+    right_wnd_edge = pcb->snd_wnd + pcb->snd_wl1;
+
     // Update window
     if (TCP_SEQ_LT(pcb->snd_wl1, seqno) ||
         (pcb->snd_wl1 == seqno && TCP_SEQ_LT(pcb->snd_wl2, ackno)) ||
@@ -595,25 +593,30 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
 
     if (pcb->lastack == ackno) 
     {
-      pcb->dupacks++;
-      if (pcb->dupacks >= 3 && pcb->unacked != NULL && pcb->state == ESTABLISHED) 
-      {
-        if (!(pcb->flags & TF_INFR)) 
-	{
-          // This is fast retransmit. Retransmit the first unacked segment          
-	  //kprintf("tcp_receive: dupacks %d (%lu), fast retransmit %lu\n", pcb->dupacks, pcb->lastack, ntohl(pcb->unacked->tcphdr->seqno));
-          tcp_rexmit_seg(pcb, pcb->unacked);
+      pcb->acked = 0;
 
-          // Set ssthresh to MAX(FlightSize / 2, 2 * SMSS)
-          pcb->ssthresh = UMAX((unsigned long) (pcb->snd_max - pcb->lastack) / 2, (unsigned long) (2 * pcb->mss));
-          pcb->cwnd = pcb->ssthresh + 3 * pcb->mss;
-          pcb->flags |= TF_INFR;
-        } 
-	else 
-	{         
-	  // Inflate the congestion window, but not if it means that the value overflows
-	  if (pcb->cwnd + pcb->mss > pcb->cwnd) pcb->cwnd += pcb->mss;
-        }
+      if (pcb->snd_wl1 + pcb->snd_wnd == right_wnd_edge)
+      {
+        pcb->dupacks++;
+	if (pcb->dupacks >= 3 && pcb->unacked != NULL && pcb->state == ESTABLISHED) 
+	{
+	  if (!(pcb->flags & TF_INFR)) 
+	  {
+	    // This is fast retransmit. Retransmit the first unacked segment          
+	    //kprintf("tcp_receive: dupacks %d (%lu), fast retransmit %lu\n", pcb->dupacks, pcb->lastack, ntohl(pcb->unacked->tcphdr->seqno));
+	    tcp_rexmit(pcb);
+
+	    // Set ssthresh to MAX(FlightSize / 2, 2 * SMSS)
+	    pcb->ssthresh = UMAX((unsigned long) (pcb->snd_max - pcb->lastack) / 2, (unsigned long) (2 * pcb->mss));
+	    pcb->cwnd = pcb->ssthresh + 3 * pcb->mss;
+	    pcb->flags |= TF_INFR;
+	  } 
+	  else 
+	  {         
+	    // Inflate the congestion window, but not if it means that the value overflows
+	    if ((unsigned short) (pcb->cwnd + pcb->mss) > pcb->cwnd) pcb->cwnd += pcb->mss;
+	  }
+	}
       }
     } 
     else if (TCP_SEQ_LT(pcb->lastack, ackno) && TCP_SEQ_LEQ(ackno, pcb->snd_max)) 
@@ -648,18 +651,13 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
       {
         if (pcb->cwnd < pcb->ssthresh) 
 	{
-	  if (pcb->cwnd + pcb->mss > pcb->cwnd) 
-	  {
-	    pcb->cwnd += pcb->mss;
-	  }
+	  if ((unsigned short) (pcb->cwnd + pcb->mss) > pcb->cwnd) pcb->cwnd += pcb->mss;
           //kprintf("tcp_receive: slow start cwnd %u\n", pcb->cwnd);
         }
 	else
 	{
-	  if (pcb->cwnd + pcb->mss * pcb->mss / pcb->cwnd > pcb->cwnd) 
-	  {
-	    pcb->cwnd += pcb->mss * pcb->mss / pcb->cwnd;
-	  }
+	  unsigned short new_cwnd = (unsigned short) (pcb->cwnd + pcb->mss * pcb->mss / pcb->cwnd);
+	  if (new_cwnd > pcb->cwnd) pcb->cwnd = new_cwnd;
           //kprintf("tcp_receive: congestion avoidance cwnd %u\n", pcb->cwnd);
         }
       }
@@ -669,30 +667,6 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
       //       pcb->unacked != NULL ? ntohl(pcb->unacked->tcphdr->seqno): 0,
       //       pcb->unacked != NULL ? ntohl(pcb->unacked->tcphdr->seqno) + TCP_TCPLEN(pcb->unacked): 0);
 
-      // We go through the unsent list to see if any of the segments
-      // on the list are acknowledged by the ACK. This may seem
-      // strange since an "unsent" segment shouldn't be acked. The
-      // rationale is that we put all outstanding segments on the
-      // unsent list after a retransmission, so these segments may
-      // in fact be sent once
-      while (pcb->unsent != NULL && TCP_SEQ_LEQ(ntohl(pcb->unsent->tcphdr->seqno) + TCP_TCPLEN(pcb->unsent), ackno)) 
-      {
-	//kprintf("tcp_receive: removing %lu:%lu from pcb->unsent\n",
-	//	   ntohl(pcb->unsent->tcphdr->seqno),
-	//	   ntohl(pcb->unsent->tcphdr->seqno) +
-	//	   TCP_TCPLEN(pcb->unsent));
-
-	next = pcb->unsent;
-	pcb->unsent = pcb->unsent->next;
-	pcb->snd_queuelen -= pbuf_clen(next->p);
-	tcp_seg_free(next);
-	
-        if (pcb->unsent != NULL) 
-	{
-          pcb->snd_nxt = htonl(pcb->unsent->tcphdr->seqno);
-        }
-      }
-      
       // Remove segment from the unacknowledged list if the incoming ACK acknowlegdes them
       while (pcb->unacked != NULL && TCP_SEQ_LEQ(ntohl(pcb->unacked->tcphdr->seqno) + TCP_TCPLEN(pcb->unacked), ackno)) 
       {
@@ -708,6 +682,27 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
       }
 
       pcb->polltmr = 0;
+
+      // We go through the unsent list to see if any of the segments
+      // on the list are acknowledged by the ACK. This may seem
+      // strange since an "unsent" segment shouldn't be acked. The
+      // rationale is that we put all outstanding segments on the
+      // unsent list after a retransmission, so these segments may
+      // in fact have been sent once
+      while (pcb->unsent != NULL && TCP_SEQ_LEQ(ntohl(pcb->unsent->tcphdr->seqno) + TCP_TCPLEN(pcb->unsent), ackno)) 
+      {
+	//kprintf("tcp_receive: removing %lu:%lu from pcb->unsent\n",
+	//	   ntohl(pcb->unsent->tcphdr->seqno),
+	//	   ntohl(pcb->unsent->tcphdr->seqno) +
+	//	   TCP_TCPLEN(pcb->unsent));
+
+	next = pcb->unsent;
+	pcb->unsent = pcb->unsent->next;
+	pcb->snd_queuelen -= pbuf_clen(next->p);
+	tcp_seg_free(next);
+	
+        if (pcb->unsent != NULL) pcb->snd_nxt = htonl(pcb->unsent->tcphdr->seqno);
+      }
     }
     // End of ACK for new data processing
     
@@ -772,7 +767,7 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
 
     if (TCP_SEQ_LT(seqno, pcb->rcv_nxt))
     {
-      if (TCP_SEQ_LT(pcb->rcv_nxt, seqno + seg->len)) // TODO: should seg->len be TCP_TCPLEN(seg)
+      if (TCP_SEQ_LT(pcb->rcv_nxt, seqno + TCP_TCPLEN(seg)))
       {
 	// Trimming the first edge is done by pushing the payload
 	// pointer in the pbuf downwards. This is somewhat tricky since
@@ -819,7 +814,8 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
         // The whole segment is < rcv_nxt
         // Must be a duplicate of a packet that has already been correctly handled
 	// or a keep-alive packet
-        kprintf("tcp_receive: duplicate seqno %lu\n", seqno);
+        
+	//kprintf("tcp_receive: duplicate seqno %lu\n", seqno);
 	pcb->flags |= TF_ACK_NOW;
       }
     }

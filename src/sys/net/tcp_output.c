@@ -392,17 +392,11 @@ static err_t tcp_send_ack(struct tcp_pcb *pcb)
     return -EROUTE;
   }
 
-  p = pbuf_alloc(PBUF_TRANSPORT, 0, PBUF_RW);
+  p = pbuf_alloc(PBUF_IP, TCP_HLEN, PBUF_RW);
   if (!p) 
   {
     stats.tcp.memerr++;
     return -ENOMEM; 
-  }
-  if (pbuf_header(p, TCP_HLEN) < 0) 
-  {      
-    stats.tcp.err++;
-    pbuf_free(p);
-    return -ENOMEM;
   }
   
   tcphdr = p->payload;
@@ -421,7 +415,7 @@ static err_t tcp_send_ack(struct tcp_pcb *pcb)
     tcphdr->chksum = inet_chksum_pseudo(p, &pcb->local_ip, &pcb->remote_ip, IP_PROTO_TCP, p->tot_len);
   }
 
-  kprintf("tcp_send_ack: seqno %lu ackno %lu wnd %d\n", htonl(tcphdr->seqno), htonl(tcphdr->ackno), ntohs(tcphdr->wnd));
+  //kprintf("tcp_send_ack: seqno %lu ackno %lu wnd %d\n", htonl(tcphdr->seqno), htonl(tcphdr->ackno), ntohs(tcphdr->wnd));
 
   stats.tcp.xmit++;
 
@@ -454,6 +448,15 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
   else 
     seg->tcphdr->wnd = htons(pcb->rcv_wnd);
 
+  // If the buffer is still waiting to be sent, we do not retransmit it.
+  // The packet buffer reference counter is used to determine if the
+  // packet is still on the transmission queue.
+  if (seg->p->ref > 1) 
+  {
+    kprintf("tcp_output_segment: packet not retransmitted, still in tx queue\n");
+    return;
+  }
+
   // Find route for segment
   netif = ip_route(&pcb->remote_ip);
   if (netif == NULL) 
@@ -470,7 +473,7 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
   }
 
   pcb->rtime = 0;
-  
+
   if (pcb->rttest == 0)
   {
     pcb->rttest = tcp_ticks;
@@ -479,9 +482,9 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
 
   pbuf_header(seg->p, (char *) seg->p->payload - (char *) seg->tcphdr);
 
-  kprintf("tcp_output_segment: seqno %lu ackno %lu len %d wnd %d ", htonl(seg->tcphdr->seqno), htonl(seg->tcphdr->ackno), seg->len, ntohs(seg->tcphdr->wnd));
-  tcp_debug_print_flags(TCPH_FLAGS(seg->tcphdr));
-  kprintf("\n");
+  //kprintf("tcp_output_segment: seqno %lu ackno %lu len %d wnd %d ", htonl(seg->tcphdr->seqno), htonl(seg->tcphdr->ackno), seg->len, ntohs(seg->tcphdr->wnd));
+  //tcp_debug_print_flags(TCPH_FLAGS(seg->tcphdr));
+  //kprintf("\n");
 
   seg->tcphdr->chksum = 0;
   if ((netif->flags & NETIF_TCP_TX_CHECKSUM_OFFLOAD) == 0)
@@ -497,75 +500,28 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
   if (ip_output_if(seg->p, &pcb->local_ip, &pcb->remote_ip, TCP_TTL, IP_PROTO_TCP, netif) < 0) pbuf_free(seg->p);
 }
 
-void tcp_rexmit_seg(struct tcp_pcb *pcb, struct tcp_seg *seg)
+void tcp_rexmit(struct tcp_pcb *pcb)
 {
-  unsigned long wnd;
-  struct netif *netif;
-  int offset;
+  struct tcp_seg *seg;
 
-  kprintf("tcp_rexmit_seg: sending %ld:%ld\n", ntohl(seg->tcphdr->seqno), ntohl(seg->tcphdr->seqno) + TCP_TCPLEN(seg));
-  
-  // Count the number of retransmissions
+  if (pcb->unacked == NULL) return;
+
+  // Move all unacked segments to the unsent queue
+  for (seg = pcb->unacked; seg->next != NULL; seg = seg->next);
+
+  seg->next = pcb->unsent;
+  pcb->unsent = pcb->unacked;
+  pcb->unacked = NULL;
+
+  pcb->snd_nxt = ntohl(pcb->unsent->tcphdr->seqno);
+
   pcb->nrtx++;
 
-  // Calculate effective window size
-  wnd = MIN(pcb->snd_wnd, pcb->cwnd);
-  if (ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len > wnd)
-  {
-    kprintf("tcp_rexmit_seg: no room in window %lu to send %lu (ack %lu)\n", wnd, ntohl(seg->tcphdr->seqno), pcb->lastack);
-    return;
-  }
-
-  // If the buffer is still waiting to be sent, we do not retransmit it.
-  // The packet buffer reference counter is used to determine if the
-  // packet is still on the transmission queue.
-  if (seg->p->ref > 1) 
-  {
-    kprintf("tcp_rexmit_segment: packet not retransmitted, still in tx queue\n");
-    return;
-  }
-
-  // Find route for segment
-  if ((netif = ip_route(&pcb->remote_ip)) == NULL) 
-  {
-    kprintf("tcp_rexmit_segment: No route to %a\n", &pcb->remote_ip);
-    stats.tcp.rterr++;
-    return;
-  }
-
-  // The payload pointer of the packet buffer might have been changed by
-  // the lower protocol layers, and we need to adjust the payload pointer
-  // and length before resubmitting the packet. It is assummed that the
-  // first buffer contains all the headers.
-
-  offset = (char *) seg->p->payload - (char *) seg->tcphdr;
-  pbuf_header(seg->p, offset);
-
-  // Update ack and receive window
-  seg->tcphdr->ackno = htonl(pcb->rcv_nxt);
-  seg->tcphdr->wnd = htons(pcb->rcv_wnd);
-
-  // Recalculate checksum
-  seg->tcphdr->chksum = 0;
-  if ((netif->flags & NETIF_TCP_TX_CHECKSUM_OFFLOAD) == 0)
-  {
-    seg->tcphdr->chksum = inet_chksum_pseudo(seg->p, &pcb->local_ip, &pcb->remote_ip, IP_PROTO_TCP, seg->p->tot_len);
-  }
-
-  //kprintf("resending TCP segment:\n");
-  //tcp_debug_print(seg->tcphdr);
-
-  pbuf_ref(seg->p);
-  //if (ip_output_if(seg->p, NULL, IP_HDRINCL, TCP_TTL, IP_PROTO_TCP, netif) < 0) pbuf_free(seg->p);
-  if (ip_output_if(seg->p, &pcb->local_ip, &pcb->remote_ip, TCP_TTL, IP_PROTO_TCP, netif) < 0) pbuf_free(seg->p);
-
-  stats.tcp.xmit++;
-  stats.tcp.rexmit++;
-
-  pcb->rtime = 0;
-  
   // Don't take any rtt measurements after retransmitting
   pcb->rttest = 0;
+
+  // Do the actual retransmission
+  tcp_output(pcb);
 }
 
 void tcp_rst(unsigned long seqno, unsigned long ackno, struct ip_addr *local_ip, struct ip_addr *remote_ip, unsigned short local_port, unsigned short remote_port)
@@ -581,20 +537,12 @@ void tcp_rst(unsigned long seqno, unsigned long ackno, struct ip_addr *local_ip,
     return;
   }
 
-  p = pbuf_alloc(PBUF_TRANSPORT, 0, PBUF_RW);
+  p = pbuf_alloc(PBUF_IP, TCP_HLEN, PBUF_RW);
   if (p == NULL) 
   {
     // Reclaim memory here
     kprintf("tcp_rst: could not allocate memory for pbuf\n");
     stats.tcp.memerr++;
-    return;
-  }
-
-  if (pbuf_header(p, TCP_HLEN) < 0) 
-  {
-    kprintf("tcp_send_data: no room for TCP header in pbuf.\n");
-    stats.tcp.err++;
-    pbuf_free(p);
     return;
   }
 

@@ -51,11 +51,17 @@ err_t icmp_input(struct pbuf *p, struct netif *inp)
 
   iphdr = p->payload;
   hlen = IPH_HL(iphdr) * 4;
-  pbuf_header(p, -hlen);
+  
+  if (pbuf_header(p, -hlen) < 0 || p->tot_len < sizeof(unsigned short) * 2)
+  {
+    kprintf("icmp_input: short ICMP (%u bytes) received\n", p->tot_len);
+    stats.icmp.lenerr++;
+    return -EPROTO;
+  }
 
   type = *((unsigned char *) p->payload);
 
-  kprintf("icmp: recv type %d\n", type);
+  //kprintf("icmp: recv type %d\n", type);
 
   switch (type) 
   {
@@ -136,7 +142,7 @@ void icmp_dest_unreach(struct pbuf *p, int t)
   struct icmp_dur_hdr *idur;
   
   // ICMP header + IP header + 8 bytes of data
-  q = pbuf_alloc(PBUF_TRANSPORT, 8 + IP_HLEN + 8, PBUF_RW);
+  q = pbuf_alloc(PBUF_IP, 8 + IP_HLEN + 8, PBUF_RW);
   if (!q) return;
 
   iphdr = p->payload;
@@ -161,7 +167,7 @@ void icmp_time_exceeded(struct pbuf *p, int t)
   struct ip_hdr *iphdr;
   struct icmp_te_hdr *tehdr;
 
-  q = pbuf_alloc(PBUF_TRANSPORT, 8 + IP_HLEN + 8, PBUF_RW);
+  q = pbuf_alloc(PBUF_IP, 8 + IP_HLEN + 8, PBUF_RW);
   if (!q) return;
 
   iphdr = p->payload;

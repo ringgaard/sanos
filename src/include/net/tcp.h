@@ -278,8 +278,7 @@ struct tcp_seg *tcp_seg_copy(struct tcp_seg *seg);
 err_t tcp_send_ctrl(struct tcp_pcb *pcb, int flags);
 err_t tcp_enqueue(struct tcp_pcb *pcb, void *data, int len, int flags, unsigned char *optdata, int optlen);
 
-void tcp_rexmit_seg(struct tcp_pcb *pcb, struct tcp_seg *seg);
-
+void tcp_rexmit(struct tcp_pcb *pcb);
 void tcp_rst(unsigned long seqno, unsigned long ackno, struct ip_addr *local_ip, struct ip_addr *remote_ip, unsigned short local_port, unsigned short remote_port);
 
 unsigned long tcp_next_iss();

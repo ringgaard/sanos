@@ -47,7 +47,7 @@ struct timer tcpfast_timer;
 struct task tcp_slow_task;
 struct task tcp_fast_task;
 
-unsigned char tcp_backoff[13] = {1, 2, 4, 8, 16, 32, 64, 64, 64, 64, 64, 64, 64};
+unsigned char tcp_backoff[13] = {1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 7};
 
 // TCP PCB lists
 
@@ -195,12 +195,7 @@ void tcp_abort(struct tcp_pcb *pcb)
   {
     tcp_pcb_remove(&tcp_tw_pcbs, pcb);
     kfree(pcb);
-  } 
-  else if (pcb->state == LISTEN) 
-  {
-    tcp_pcb_remove((struct tcp_pcb **) &tcp_listen_pcbs, pcb);
-    kfree(pcb);
-  } 
+  }
   else 
   {
     seqno = pcb->snd_nxt;
@@ -215,6 +210,7 @@ void tcp_abort(struct tcp_pcb *pcb)
     tcp_pcb_remove(&tcp_active_pcbs, pcb);
     if (pcb->unacked) tcp_segs_free(pcb->unacked);
     if (pcb->unsent) tcp_segs_free(pcb->unsent);
+    if (pcb->ooseq) tcp_segs_free(pcb->ooseq);
     kfree(pcb);
 
     if (errf != NULL) errf(errf_arg, -EABORT);
@@ -289,12 +285,8 @@ err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
 
 struct tcp_pcb *tcp_listen(struct tcp_pcb *pcb)
 {
+  if (pcb->state == LISTEN) return pcb;
   pcb->state = LISTEN;
-
-  //FIXME: we do not reallocate listen sockets, remove struct tcp_pcb_listen
-  //pcb = memp_realloc(MEMP_TCP_PCB, MEMP_TCP_PCB_LISTEN, pcb);
-  //if (pcb == NULL) return NULL;
-
   TCP_REG((struct tcp_pcb **) &tcp_listen_pcbs, pcb);
   return pcb;
 }
@@ -377,7 +369,6 @@ err_t tcp_connect(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short po
 void tcp_slowtmr(void *arg)
 {
   struct tcp_pcb *pcb, *pcb2, *prev;
-  struct tcp_seg *seg, *useg;
   unsigned long eff_wnd;
   int pcb_remove;      // flag if a PCB should be removed
 
@@ -398,9 +389,7 @@ void tcp_slowtmr(void *arg)
     else 
     {
       pcb->rtime++;
-      seg = pcb->unacked;
-      
-      if (seg != NULL && pcb->rtime >= pcb->rto) 
+      if (pcb->unacked != NULL && pcb->rtime >= pcb->rto) 
       {
         kprintf("tcp_slowtmr: rtime %ld pcb->rto %d\n", tcp_ticks - pcb->rtime, pcb->rto);
 
@@ -411,22 +400,10 @@ void tcp_slowtmr(void *arg)
 	  pcb->rto = ((pcb->sa >> 3) + pcb->sv) << tcp_backoff[pcb->nrtx];
 	}
 
-        // Move all other unacked segments to the unsent queue
-        if (seg->next != NULL) 
-	{
-          for (useg = seg->next; useg->next != NULL; useg = useg->next);
-          
-	  // useg now points to the last segment on the unacked queue
-          useg->next = pcb->unsent;
-          pcb->unsent = seg->next;
-          seg->next = NULL;
-          pcb->snd_nxt = ntohl(pcb->unsent->tcphdr->seqno);
-        }
+	// Retransmit unacknowled segments
+	tcp_rexmit(pcb);
 
-	// Do the actual retransmission
-        tcp_rexmit_seg(pcb, seg);
-
-        // Reduce congestion window and ssthresh
+	// Reduce congestion window and ssthresh
         eff_wnd = MIN(pcb->cwnd, pcb->snd_wnd);
         pcb->ssthresh = eff_wnd >> 1;
         if (pcb->ssthresh < (unsigned long) pcb->mss) pcb->ssthresh = pcb->mss * 2;
@@ -549,7 +526,7 @@ void tcp_fasttmr(void *arg)
 {
   struct tcp_pcb *pcb;
 
-  // Send delayed ACKs  
+  // Send delayed ACKs
   for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next)
   {
     if (pcb->flags & TF_ACK_DELAY) 
@@ -802,8 +779,7 @@ void tcp_pcb_purge(struct tcp_pcb *pcb)
     tcp_segs_free(pcb->unsent);
     tcp_segs_free(pcb->ooseq);
     tcp_segs_free(pcb->unacked);
-    pcb->unacked = pcb->unsent =
-    pcb->ooseq = NULL;
+    pcb->unacked = pcb->unsent = pcb->ooseq = NULL;
   }
 }
 

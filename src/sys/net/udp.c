@@ -95,7 +95,13 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
   stats.udp.recv++;
   
   iphdr = p->payload;
-  pbuf_header(p, -(IPH_HL(iphdr) * 4));
+  if (pbuf_header(p, -(IPH_HL(iphdr) * 4)) < 0 || p->tot_len < sizeof(udp_hdr)) 
+  {
+    kprintf("udp_input: short packet (%u bytes) discarded\n", p->tot_len);
+    stats.udp.lenerr++;
+    stats.udp.drop++;
+    return -EPROTO;
+  }
   udphdr = p->payload;
 
   //udp_debug_print(udphdr);
@@ -124,12 +130,9 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
   // Demultiplex packet. First, go for a perfect match
   for (pcb = udp_pcbs; pcb != NULL; pcb = pcb->next) 
   {
-    if (pcb->remote_port == src &&
-        pcb->local_port == dest &&
-        (ip_addr_isany(&pcb->remote_ip) || 
-	 ip_addr_cmp(&pcb->remote_ip, &iphdr->src)) &&
-        (ip_addr_isany(&pcb->local_ip) ||
- 	 ip_addr_cmp(&pcb->local_ip, &iphdr->dest))) 
+    if (pcb->remote_port == src && pcb->local_port == dest &&
+        (ip_addr_isany(&pcb->remote_ip) || ip_addr_cmp(&pcb->remote_ip, &iphdr->src)) &&
+        (ip_addr_isany(&pcb->local_ip) || ip_addr_cmp(&pcb->local_ip, &iphdr->dest))) 
     {
       break;
     }
@@ -137,13 +140,13 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
 
   if (pcb == NULL) 
   {
+    // No fully matching pcb found, look for an unconnected pcb
     for (pcb = udp_pcbs; pcb != NULL; pcb = pcb->next) 
     {
-      if (pcb->local_port == dest &&
-	  (ip_addr_isany(&pcb->remote_ip) ||
-	   ip_addr_cmp(&pcb->remote_ip, &iphdr->src)) &&
-	  (ip_addr_isany(&pcb->local_ip) ||
-	   ip_addr_cmp(&pcb->local_ip, &iphdr->dest))) 
+      if (!(pcb->flags & UDP_FLAGS_CONNECTED) &&
+	  pcb->local_port == dest &&
+	  (ip_addr_isany(&pcb->remote_ip) || ip_addr_cmp(&pcb->remote_ip, &iphdr->src)) &&
+	  (ip_addr_isany(&pcb->local_ip) || ip_addr_cmp(&pcb->local_ip, &iphdr->dest))) 
       {
 	break;
       }      
@@ -180,7 +183,7 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
 
   if (ip_addr_isany(&pcb->remote_ip)) return -EDESTADDRREQ;
 
-  if (pbuf_header(p, UDP_HLEN)) 
+  if (pbuf_header(p, UDP_HLEN) < 0)
   {
     kprintf("udp_send: not enough room for UDP header in pbuf\n");
     stats.udp.err++;
@@ -265,6 +268,7 @@ err_t udp_connect(struct udp_pcb *pcb, struct ip_addr *ipaddr, unsigned short po
   
   ip_addr_set(&pcb->remote_ip, ipaddr);
   pcb->remote_port = port;
+  pcb->flags |= UDP_FLAGS_CONNECTED;
   if (pcb->local_port == 0) pcb->local_port = udp_new_port();
 
   // Insert UDP PCB into the list of active UDP PCBs
