@@ -95,7 +95,7 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
   stats.udp.recv++;
   
   iphdr = p->payload;
-  if (pbuf_header(p, -(IPH_HL(iphdr) * 4)) < 0 || p->tot_len < sizeof(udp_hdr)) 
+  if (pbuf_header(p, -(IPH_HL(iphdr) * 4)) < 0 || p->tot_len < sizeof(struct udp_hdr)) 
   {
     kprintf("udp_input: short packet (%u bytes) discarded\n", p->tot_len);
     stats.udp.lenerr++;

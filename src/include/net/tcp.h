@@ -196,9 +196,9 @@ struct tcp_pcb
   unsigned long snd_nxt;  // Next seqno to be sent
   unsigned long snd_max;  // Highest seqno sent
   unsigned long snd_wnd;  // Sender window
-  unsigned long snd_wl1; 
-  unsigned long snd_wl2;
-  unsigned long snd_lbb;
+  unsigned long snd_wl1;  // Sequence number of last window update
+  unsigned long snd_wl2;  // Acknowlegement number of last window update
+  unsigned long snd_lbb;  // Sequence number of next byte to be buffered
 
   unsigned short snd_buf; // Avaliable buffer space for sending
   unsigned short snd_queuelen;

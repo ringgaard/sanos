@@ -402,7 +402,7 @@ CHANGES
   - Segments in ooseq, unacked and unsent are now removed on abort.
   - Check for pcb already in listen mode in tcp_listen().
   - TCP retransmission of unacknowled segments moved to tcp_rexmit().
-  - The snd_wl1 was not initialized on SYN|ACK.
+  - The snd_wl1 was not initialized correctly.
   - If accept fails in SYN_RECVD, EABORT is retuned to prevent further processing of pcb.
   - Segments on unacked now removed before segments on the unsent list
   - Now also sending an acknowledge for TCP segments that fall outside the current window.

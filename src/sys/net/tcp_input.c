@@ -385,7 +385,7 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	npcb->rcv_nxt = seqno + 1;
 	npcb->snd_wnd = tcphdr->wnd;
 	npcb->ssthresh = npcb->snd_wnd;
-	npcb->snd_wl1 = tcphdr->seqno;
+	npcb->snd_wl1 = tcphdr->seqno - 1;
 	npcb->accept = pcb->accept;
 	npcb->callback_arg = pcb->callback_arg;
 
@@ -413,7 +413,8 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       {
 	pcb->rcv_nxt = seqno + 1;
 	pcb->lastack = ackno;
-	pcb->snd_wnd = pcb->snd_wl1 = tcphdr->wnd;
+	pcb->snd_wnd = tcphdr->wnd;
+	pcb->snd_wl1 = seqno - 1;
 	pcb->state = ESTABLISHED;
 	pcb->cwnd = pcb->mss;
 	pcb->snd_queuelen--;
