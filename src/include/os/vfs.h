@@ -140,7 +140,7 @@ struct fsops
 
 #ifdef KERNEL
 
-char curdir[MAXPATH];
+extern char curdir[MAXPATH];
 
 int init_vfs();
 int fnmatch(char *fn1, int len1, char *fn2, int len2);

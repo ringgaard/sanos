@@ -207,6 +207,9 @@
 			</Filter>
 		</Filter>
 		<File
+			RelativePath="..\src\lib\assert.c">
+		</File>
+		<File
 			RelativePath="..\src\lib\bitops.c">
 		</File>
 		<File
