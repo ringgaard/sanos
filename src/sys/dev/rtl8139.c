@@ -111,8 +111,8 @@ struct board_info
 
 static struct board_info board_tbl[] = 
 {
-  {"RealTek", "RealTek RTL8139+", PCI_UNITCODE(0x10ec, 0x8139), 0xffffffff, 0,0, 0x20, 0xff, RTL8139D_CAPS},
-  {"RealTek", "RealTek RTL8139C Fast Ethernet", PCI_UNITCODE(0x10ec, 0x8139), 0xffffffff, 0,0, 0x10, 0xff, RTL8139_CAPS},
+  {"RealTek", "RealTek RTL8139+", PCI_UNITCODE(0x10ec, 0x8139), 0xffffffff, 0, 0, 0x20, 0xff, RTL8139D_CAPS},
+  {"RealTek", "RealTek RTL8139C Fast Ethernet", PCI_UNITCODE(0x10ec, 0x8139), 0xffffffff, 0, 0, 0x10, 0xff, RTL8139_CAPS},
   {"RealTek", "RealTek RTL8129 Fast Ethernet", PCI_UNITCODE(0x10ec, 0x8129), 0xffffffff, 0, 0, 0, 0, RTL8129_CAPS},
   {"RealTek", "RealTek RTL8139 Fast Ethernet", PCI_UNITCODE(0x10ec, 0x8139), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
   {"RealTek", "RealTek RTL8139B PCI",  PCI_UNITCODE(0x10ec, 0x8138), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},

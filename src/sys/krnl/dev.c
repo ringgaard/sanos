@@ -718,6 +718,11 @@ static int units_proc(struct proc_file *pf, void *arg)
     
     pprintf(pf, "%s unit %d.%d class %08X code %08X %s:\n", busnames[bustype], busno, unit->unitno,unit->classcode, unit->unitcode, get_unit_name(unit));
 
+    if (unit->subunitcode != 0 || unit ->revision != 0)
+    {
+      pprintf(pf, "  subunitcode: %08X revision %d\n", unit->subunitcode, unit->revision);
+    }
+
     res = unit->resources;
     while (res)
     {
