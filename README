@@ -54,6 +54,7 @@ Supported hardware
     - 3Com 3C905
     - Intel EtherExpress Pro/100 (i82557/558/559 based boards)
     - RealTek 8139 and compatible
+    - SiS 900 and compatible
     - AMD PCNET32 and compatible
     - Novell NE2000 (DP8390) and compatible
 
