@@ -1013,7 +1013,8 @@ static void speedo_timer(void *arg)
         kprintf("%s: IRQ %d is still blocked!\n", dev->name, sp->irq);
         sp->last_reset = ticks;
       }
-    } else if (ticks - sp->last_reset > 10*HZ)
+    } 
+    else if (ticks - sp->last_reset > 10*HZ)
       sp->polling = 0;
     
     expires = ticks + 2;
@@ -1312,7 +1313,7 @@ static void speedo_interrupt(struct dev *dev)
 	if ((status & StatusComplete) == 0) 
 	{
           // Special case error check: look for descriptor that the chip skipped(?)
-          if (sp->cur_tx - dirty_tx > 2  && (sp->tx_ring[(dirty_tx+1) % TX_RING_SIZE].status & StatusComplete)) 
+          if (sp->cur_tx - dirty_tx > 2  && (sp->tx_ring[(dirty_tx + 1) % TX_RING_SIZE].status & StatusComplete)) 
 	  {
             kprintf("%s: Command unit failed to mark command %8.8x as complete at %d\n", dev->name, status, dirty_tx);
           } 
@@ -1363,8 +1364,6 @@ static void speedo_interrupt(struct dev *dev)
   }
 
   //kprintf("%s: exiting interrupt, status=%#4.4x\n", dev->name, inpw(ioaddr + SCBStatus));
-
-  return;
 }
 
 static void speedo_dpc(void *arg)
