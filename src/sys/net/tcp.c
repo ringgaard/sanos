@@ -485,6 +485,7 @@ void tcp_fasttmr()
 // tcp_tmr
 //
 // Is called by timer DPC every 10 ms
+// FIXME: move network timer processing to other module
 //
 
 void tcp_tmr()
@@ -498,11 +499,16 @@ void tcp_tmr()
 
     tcp_ticks++;
     tcp_fasttmr();
+    dhcp_fasttmr();
 
     if (tcp_ticks % 5 == 0) 
     {
       tcp_slowtmr();
-      if (tcp_ticks % 100 == 0) arp_tmr();
+      if (tcp_ticks % 100 == 0) 
+      {
+	arp_tmr();
+	if (tcp_ticks % 600 == 0) dhcp_slowtmr();
+      }
     }
   }
 }

@@ -82,7 +82,7 @@ void udp_input(struct pbuf *p, struct netif *inp)
       } 
       else 
       {
-	if (udphdr->chksum != 0) 
+	if (0) //TEST if (udphdr->chksum != 0) 
 	{
 	  if (inet_chksum_pseudo(p, (struct ip_addr *) &(iphdr->src), (struct ip_addr *) &(iphdr->dest), IP_PROTO_UDP, p->tot_len) != 0) 
 	  {
@@ -97,7 +97,7 @@ void udp_input(struct pbuf *p, struct netif *inp)
       }
     }
 
-    pbuf_header(p, -UDP_HLEN);    
+    //dbg_break();
     if (pcb != NULL) 
     {
       pcb->recv(pcb->recv_arg, pcb, p, &(iphdr->src), src);

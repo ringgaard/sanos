@@ -8,6 +8,8 @@
 
 #include <net/net.h>
 
+void ip_debug_print(struct pbuf *p);
+
 //
 // ip_init
 //
@@ -256,11 +258,12 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
     IPH_PROTO_SET(iphdr, proto);
     
     ip_addr_set(&(iphdr->dest), dest);
+    ip_id++;
 
     IPH_VHLTOS_SET(iphdr, 4, IP_HLEN / 4, 0);
     IPH_LEN_SET(iphdr, htons(p->tot_len));
     IPH_OFFSET_SET(iphdr, htons(IP_DF));
-    IPH_ID_SET(iphdr, htons(++ip_id));
+    IPH_ID_SET(iphdr, htons(ip_id));
 
     if (ip_addr_isany(src))
       ip_addr_set(&(iphdr->src), &(netif->ip_addr));

@@ -194,7 +194,7 @@ struct pbuf *arp_arp_input(struct netif *netif, struct eth_addr *ethaddr, struct
       if (ip_addr_cmp(&(hdr->dipaddr), &(netif->ip_addr))) 
       {
 	add_arp_entry(&(hdr->sipaddr), &(hdr->shwaddr));
-	//dhcp_arp_reply(&hdr->sipaddr);
+	dhcp_arp_reply(&hdr->sipaddr);
       }
       break;
 

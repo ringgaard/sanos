@@ -457,13 +457,14 @@ void shell();
 
 void dbg_enter(struct context *ctxt, void *addr)
 {
-  //if (ctxt->traptype != 3) panic("system halted");
-  //shell();
+  struct context *prevctxt;
+
+  prevctxt = current_thread()->ctxt;
+  current_thread()->ctxt = ctxt;
 
   if (!debugging)
   {
     kprintf("trap %d thread %d, addr %p\n", ctxt->traptype, current_thread()->id, addr);
-    current_thread()->ctxt = ctxt;
     dumpregs(ctxt);
   }
 
@@ -482,10 +483,8 @@ void dbg_enter(struct context *ctxt, void *addr)
 
   dbg_main();
 
-  if (current_thread()->suspend_count > 0)
-    dispatch();
-  else
-    current_thread()->ctxt = NULL;
+  if (current_thread()->suspend_count > 0) dispatch();
+  current_thread()->ctxt = prevctxt;
 }
 
 void dbg_notify_create_thread(struct thread *t, void *startaddr)

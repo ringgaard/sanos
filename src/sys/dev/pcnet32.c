@@ -436,7 +436,7 @@ void pcnet32_receive(struct pcnet32 *pcnet32)
       //kprintf("length %d\n", pkt_len);
 
       // Allocate packet buffer
-      p = pbuf_alloc(PBUF_LINK, pkt_len, PBUF_POOL);
+      p = pbuf_alloc(PBUF_LINK, pkt_len, PBUF_RW);
 
       // Get packet from nic and send to upper layer
       if (p != NULL)

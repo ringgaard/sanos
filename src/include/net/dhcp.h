@@ -12,169 +12,187 @@
 #define DHCP_CLIENT_PORT        68	
 #define DHCP_SERVER_PORT        67
 
+#define DHCP_CHADDR_LEN         16
 #define DHCP_SNAME_LEN		64
 #define DHCP_FILE_LEN		128
+#define DHCP_OPTIONS_LEN        512
+#define DHCP_MIN_OPTIONS_LEN    68
 
-#if 0
+// Period (in seconds) of the application calling dhcp_tmrslow()
 
-#define DHCP_UDP_OVERHEAD	(ETHER_HLEN + IP_HLEN + UDP_HLEN)
-#define DHCP_FIXED_NON_UDP	236
-#define DHCP_FIXED_LEN		(DHCP_FIXED_NON_UDP + DHCP_UDP_OVERHEAD)
-#define DHCP_MTU_MAX		1500
-#define DHCP_OPT_LEN		(DHCP_MTU_MAX - DHCP_FIXED_LEN)
+#define DHCP_SLOW_TIMER_SECS 60 
 
-#define BOOTP_MIN_LEN		300
-#define DHCP_MIN_LEN            548
+// Period (in milliseconds) of the application calling dhcp_tmrfast()
 
-#endif
+#define DHCP_FAST_TIMER_MSECS 500 
 
 //
-// DHCP header
+// DHCP message
 //
 
-struct dhcp_hdr 
+struct dhcp_msg
 {
-  unsigned char op;		// 0: Message opcode/type
-  unsigned char htype;		// 1: Hardware addr type (net/if_types.h)
-  unsigned char hlen;		// 2: Hardware addr length
-  unsigned char hops;		// 3: Number of relay agent hops from client
-  unsigned long xid;		// 4: Transaction ID
-  unsigned short secs;		// 8: Seconds since client started looking
-  unsigned short flags;		// 10: Flag bits
-  struct in_addr ciaddr;	// 12: Client IP address (if already in use)
-  struct in_addr yiaddr;	// 16: Client IP address
-  struct in_addr siaddr;	// 18: IP address of next server to talk to
-  struct in_addr giaddr;	// 20: DHCP relay agent IP address
-  unsigned char chaddr[16];	// 24: Client hardware address
-  char sname[DHCP_SNAME_LEN];	// 40: Server name
-  char file[DHCP_FILE_LEN];	// 104: Boot filename
-  unsigned char options[0];   	// 212: Optional parameters (actual length dependent on MTU).
+  unsigned char op;			  // Message opcode/type
+  unsigned char htype;			  // Hardware addr type (net/if_types.h)
+  unsigned char hlen;			  // Hardware addr length
+  unsigned char hops;			  // Number of relay agent hops from client
+  unsigned long xid;			  // Transaction ID
+  unsigned short secs;			  // Seconds since client started looking
+  unsigned short flags;			  // Flag bits
+  struct in_addr ciaddr;		  // Client IP address (if already in use)
+  struct in_addr yiaddr;		  // Client IP address
+  struct in_addr siaddr;		  // IP address of next server to talk to
+  struct in_addr giaddr;		  // DHCP relay agent IP address
+  unsigned char chaddr[DHCP_CHADDR_LEN];  // Client hardware address
+  char sname[DHCP_SNAME_LEN];		  // Server name
+  char file[DHCP_FILE_LEN];		  // Boot filename
+  unsigned long cookie;                   // DHCP option cookie
+  unsigned char options[0];   		  // 212: Optional parameters (actual length dependent on MTU).
 };
 
 //
-// DHCP packet
+// DHCP per interface state
 //
 
-struct dhcp_packet
+struct dhcp_state
 {
-  struct netif *netif;
-  struct pbuf *p;
-  struct dhcp_hdr *hdr;
-  int opt_len;
+  struct dhcp_state *next;		  // For linked list purposes
+  int state;				  // Current DHCP state (of DHCP state machine)
+  int tries;				  // Retries of current request
+  unsigned long xid;			  // Id of last sent request
+  struct netif *netif;			  // Interface to be configured
+  struct udp_pcb *pcb;			  // Our connection
+
+  struct pbuf *p;			  // First pbuf of incoming msg
+  struct dhcp_msg *msg_in;		  // Incoming msg
+  struct dhcp_msg *options_in;		  // Incoming msg options
+  int options_in_len;			  // Ingoing msg options length
+
+  struct pbuf *p_out;			  // pbuf of outcoming msg
+  struct dhcp_msg *msg_out;		  // Outgoing msg
+  int options_out_len;			  // Outgoing msg options length
+
+  int request_timeout;			  // #ticks with period DHCP_FAST_TIMER_SECS for request timeout
+  int t1_timeout;			  // #ticks with period DHCP_SLOW_TIMER_SECS for renewal time
+  int t2_timeout;			  // #ticks with period DHCP_SLOW_TIMER_SECS for rebind time
+
+  struct ip_addr server_ip_addr;	  // DHCP server address that offered this lease 
+  struct ip_addr offered_ip_addr;
+  struct ip_addr offered_sn_mask;
+  struct ip_addr offered_gw_addr;
+  struct ip_addr offered_bc_addr;
+
+  unsigned long offered_t0_lease;	  // Lease period (in seconds)
+  unsigned long offered_t1_renew;	  // Recommended renew time (usually 50% of lease period)
+  unsigned long offered_t2_rebind;	  // Recommended rebind time (usually 66% of lease period)
 };
 
+void dhcp_init();
+struct dhcp_state *dhcp_start(struct netif *netif);
+void dhcp_stop(struct dhcp_state *state);
+err_t dhcp_renew(struct dhcp_state *state);
+err_t dhcp_inform(struct netif *netif);
+
+void dhcp_arp_reply(struct ip_addr *addr);
+
+void dhcp_slowtmr();
+void dhcp_fasttmr();
+ 
+#define DHCP_COOKIE_OFS (DHCP_MSG_OFS + DHCP_MSG_LEN)
+#define DHCP_OPTIONS_OFS (DHCP_MSG_OFS + DHCP_MSG_LEN + 4)
+
+//
+// DHCP client states
+//
+
+#define DHCP_REQUESTING   1
+#define DHCP_INIT         2
+#define DHCP_REBOOTING    3
+#define DHCP_REBINDING    4
+#define DHCP_RENEWING     5
+#define DHCP_SELECTING    6
+#define DHCP_INFORMING    7
+#define DHCP_CHECKING     8
+#define DHCP_PERMANENT    9
+#define DHCP_BOUND        10
+#define DHCP_BACKING_OFF  11
+#define DHCP_OFF          12
+ 
 //
 // BOOTP (RFC951) message types
 //
 
-#define	BOOTREQUEST	1
-#define BOOTREPLY	2
-
-//
-// Possible values for flags field...
-//
-
-#define BOOTP_BROADCAST 32768
-
-//
-// Possible values for hardware type (htype) field...
-//
-
-#define HTYPE_ETHER	1               // Ethernet 10Mbps
-#define HTYPE_IEEE802	6               // IEEE 802.2 Token Ring
-#define HTYPE_FDDI	8		// FDDI
-
-//
-// Magic cookie validating dhcp options field (and bootp vendor extensions field).
-//
-
-#define DHCP_OPTIONS_COOKIE	"\143\202\123\143"
-
-//
-// DHCP Option codes
-//
-
-#define DHO_PAD				0
-#define DHO_SUBNET_MASK			1
-#define DHO_TIME_OFFSET			2
-#define DHO_ROUTERS			3
-#define DHO_TIME_SERVERS		4
-#define DHO_NAME_SERVERS		5
-#define DHO_DOMAIN_NAME_SERVERS		6
-#define DHO_LOG_SERVERS			7
-#define DHO_COOKIE_SERVERS		8
-#define DHO_LPR_SERVERS			9
-#define DHO_IMPRESS_SERVERS		10
-#define DHO_RESOURCE_LOCATION_SERVERS	11
-#define DHO_HOST_NAME			12
-#define DHO_BOOT_SIZE			13
-#define DHO_MERIT_DUMP			14
-#define DHO_DOMAIN_NAME			15
-#define DHO_SWAP_SERVER			16
-#define DHO_ROOT_PATH			17
-#define DHO_EXTENSIONS_PATH		18
-#define DHO_IP_FORWARDING		19
-#define DHO_NON_LOCAL_SOURCE_ROUTING	20
-#define DHO_POLICY_FILTER		21
-#define DHO_MAX_DGRAM_REASSEMBLY	22
-#define DHO_DEFAULT_IP_TTL		23
-#define DHO_PATH_MTU_AGING_TIMEOUT	24
-#define DHO_PATH_MTU_PLATEAU_TABLE	25
-#define DHO_INTERFACE_MTU		26
-#define DHO_ALL_SUBNETS_LOCAL		27
-#define DHO_BROADCAST_ADDRESS		28
-#define DHO_PERFORM_MASK_DISCOVERY	29
-#define DHO_MASK_SUPPLIER		30
-#define DHO_ROUTER_DISCOVERY		31
-#define DHO_ROUTER_SOLICITATION_ADDRESS	32
-#define DHO_STATIC_ROUTES		33
-#define DHO_TRAILER_ENCAPSULATION	34
-#define DHO_ARP_CACHE_TIMEOUT		35
-#define DHO_IEEE802_3_ENCAPSULATION	36
-#define DHO_DEFAULT_TCP_TTL		37
-#define DHO_TCP_KEEPALIVE_INTERVAL	38
-#define DHO_TCP_KEEPALIVE_GARBAGE	39
-#define DHO_NIS_DOMAIN			40
-#define DHO_NIS_SERVERS			41
-#define DHO_NTP_SERVERS			42
-#define DHO_VENDOR_ENCAPSULATED_OPTIONS	43
-#define DHO_NETBIOS_NAME_SERVERS	44
-#define DHO_NETBIOS_DD_SERVER		45
-#define DHO_NETBIOS_NODE_TYPE		46
-#define DHO_NETBIOS_SCOPE		47
-#define DHO_FONT_SERVERS		48
-#define DHO_X_DISPLAY_MANAGER		49
-#define DHO_DHCP_REQUESTED_ADDRESS	50
-#define DHO_DHCP_LEASE_TIME		51
-#define DHO_DHCP_OPTION_OVERLOAD	52
-#define DHO_DHCP_MESSAGE_TYPE		53
-#define DHO_DHCP_SERVER_IDENTIFIER	54
-#define DHO_DHCP_PARAMETER_REQUEST_LIST	55
-#define DHO_DHCP_MESSAGE		56
-#define DHO_DHCP_MAX_MESSAGE_SIZE	57
-#define DHO_DHCP_RENEWAL_TIME		58
-#define DHO_DHCP_REBINDING_TIME		59
-#define DHO_VENDOR_CLASS_IDENTIFIER	60
-#define DHO_DHCP_CLIENT_IDENTIFIER	61
-#define DHO_NWIP_DOMAIN_NAME		62
-#define DHO_NWIP_SUBOPTIONS		63
-#define DHO_USER_CLASS			77
-#define DHO_FQDN			81
-#define DHO_DHCP_AGENT_OPTIONS		82
-
-#define DHO_END				255
+#define DHCP_BOOTREQUEST  1
+#define DHCP_BOOTREPLY    2
 
 //
 // DHCP message types
 //
 
-#define DHCPDISCOVER	1
-#define DHCPOFFER	2
-#define DHCPREQUEST	3
-#define DHCPDECLINE	4
-#define DHCPACK		5
-#define DHCPNAK		6
-#define DHCPRELEASE	7
-#define DHCPINFORM	8
+#define DHCP_DISCOVER     1
+#define DHCP_OFFER        2
+#define DHCP_REQUEST      3
+#define DHCP_DECLINE      4
+#define DHCP_ACK          5
+#define DHCP_NAK          6
+#define DHCP_RELEASE      7
+#define DHCP_INFORM       8
+
+//
+// Possible values for hardware type (htype) field
+//
+
+#define DHCP_HTYPE_ETHER	1               // Ethernet 10Mbps
+#define DHCP_HTYPE_IEEE802	6               // IEEE 802.2 Token Ring
+#define DHCP_HTYPE_FDDI		8		// FDDI
+
+#define DHCP_BROADCAST_FLAG 15
+#define DHCP_BROADCAST_MASK (1 << DHCP_FLAG_BROADCAST)
+
+//
+// BOOTP options
+//
+
+#define DHCP_OPTION_PAD			    0
+#define DHCP_OPTION_SUBNET_MASK		    1 // RFC 2132 3.3
+#define DHCP_OPTION_ROUTER		    3 
+#define DHCP_OPTION_HOSTNAME		    12
+#define DHCP_OPTION_IP_TTL		    23
+#define DHCP_OPTION_MTU			    26
+#define DHCP_OPTION_BROADCAST		    28
+#define DHCP_OPTION_TCP_TTL		    37
+#define DHCP_OPTION_END			    255
+
+//
+// DHCP options
+//
+
+#define DHCP_OPTION_REQUESTED_IP	    50 // RFC 2132 9.1, requested IP address
+#define DHCP_OPTION_LEASE_TIME		    51 // RFC 2132 9.2, time in seconds, in 4 bytes 
+#define DHCP_OPTION_OVERLOAD		    52 // RFC2132 9.3, use file and/or sname field for options
+
+#define DHCP_OPTION_MESSAGE_TYPE	    53 // RFC 2132 9.6, important for DHCP
+#define DHCP_OPTION_MESSAGE_TYPE_LEN 1
+
+#define DHCP_OPTION_SERVER_ID		    54 // RFC 2131 9.7, server IP address
+#define DHCP_OPTION_PARAMETER_REQUEST_LIST  55 // RFC 2131 9.8, requested option types
+
+#define DHCP_OPTION_MAX_MSG_SIZE	    57 // RFC 2131 9.10, message size accepted >= 576
+#define DHCP_OPTION_MAX_MSG_SIZE_LEN 2
+
+#define DHCP_OPTION_T1			    58 // T1 renewal time
+#define DHCP_OPTION_T2			    59 // T2 rebinding time
+#define DHCP_OPTION_CLIENT_ID		    61
+#define DHCP_OPTION_TFTP_SERVERNAME	    66
+#define DHCP_OPTION_BOOTFILE		    67
+
+//
+// Possible combinations of overloading the file and sname fields with options
+//
+
+#define DHCP_OVERLOAD_NONE	  0
+#define DHCP_OVERLOAD_FILE	  1
+#define DHCP_OVERLOAD_SNAME	  2
+#define DHCP_OVERLOAD_SNAME_FILE  3
 
 #endif
