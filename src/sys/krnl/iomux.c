@@ -227,7 +227,7 @@ void set_io_event(struct ioobject *iob, int events)
   }
   else
   {
-    // Just update the signaled event for object
+    // Just update the signaled event(s) for object
     iob->events_signaled |= events;
   }
 }

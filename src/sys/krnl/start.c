@@ -421,9 +421,9 @@ void main(void *arg)
   open("/dev/console", O_RDONLY, S_IREAD, &stdin);
   open("/dev/console", O_WRONLY, S_IWRITE, &stdout);
   open("/dev/console", O_WRONLY, S_IWRITE, &stderr);
-  if (halloc(&stdin->object) != 0) panic("unexpected stdin handle");
-  if (halloc(&stdout->object) != 1) panic("unexpected stdout handle");
-  if (halloc(&stderr->object) != 2) panic("unexpected stderr handle");
+  if (halloc(&stdin->iob.object) != 0) panic("unexpected stdin handle");
+  if (halloc(&stdout->iob.object) != 1) panic("unexpected stdout handle");
+  if (halloc(&stderr->iob.object) != 2) panic("unexpected stderr handle");
 
   // Load os.dll in user address space
   imgbase = load_image_file("/bin/os.dll", 1);

@@ -439,3 +439,9 @@ CHANGES
   fixed. The status register is now read before the next sector is read in the dpc
   handler. This reenables interrupts from the IDE controller before the last byte of
   the current sector is read.
+
+- UDMA mode disabled for VMware disk drives.
+
+- File objects are now I/O objects. This is the first step in enabling selectable
+  file handles, i.e. allow for using select() on file handles. While this is not very
+  useful for regular files it is interesting for devices and pipes.

@@ -160,7 +160,7 @@ int pipe(struct file **readpipe, struct file **writepipe)
 
 int pipefs_mount(struct fs *fs, char *opts)
 {
-  // Oly allow one instance of pipefs
+  // Only allow one instance of pipefs
   if (pipefs) return -EPERM;
   return 0;
 }

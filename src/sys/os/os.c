@@ -104,7 +104,7 @@ int *_fmode()
 
 handle_t creat(const char *name, int mode)
 {
-  return open(name, O_CREAT | O_TRUNC, mode);
+  return open(name, O_CREAT | O_TRUNC | O_WRONLY, mode);
 }
 
 handle_t sopen(const char *name, int flags, int shflags, ...)

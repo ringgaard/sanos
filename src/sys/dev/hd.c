@@ -1525,12 +1525,11 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
   }
 
   // Determine UDMA mode
-  kprintf("hd: model %s\n", hd->param.model);
   if (!hdc->bmregbase)
     hd->udmamode = -1;
   else if (memcmp(hd->param.model, "VMware", 6) == 0)
   {
-    // UDMA mode does not seem to work with VMware emulation, disable it
+    // UltraDMA does not seem to work with VMware emulator, disable it
     hd->udmamode = -1;
   }
   else if ((hd->param.valid & 4) &&  (hd->param.dmaultra & (hd->param.dmaultra >> 8) & 0x3F))

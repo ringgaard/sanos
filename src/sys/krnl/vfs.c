@@ -246,7 +246,7 @@ struct file *newfile(struct fs *fs, char *path, int flags, int mode)
 
   filp = (struct file *) kmalloc(sizeof(struct file));
   if (!filp) return NULL;
-  init_object(&filp->object, OBJECT_FILE);
+  init_ioobject(&filp->iob, OBJECT_FILE);
   
   if ((flags & (O_TEXT | O_BINARY)) == 0) flags |= fmodeval;
 
@@ -1134,7 +1134,7 @@ int opendir(char *name, struct file **retval)
 
   filp = (struct file *) kmalloc(sizeof(struct file));
   if (!filp) return -ENOMEM;
-  init_object(&filp->object, OBJECT_FILE);
+  init_ioobject(&filp->iob, OBJECT_FILE);
   
   filp->fs = fs;
   filp->flags = O_RDONLY | F_DIR;

@@ -370,7 +370,7 @@ static int sys_open(char *params)
   rc = open(name, flags, mode, &f);
   if (rc == 0)
   {
-    rc = halloc(&f->object);
+    rc = halloc(&f->iob.object);
     if (rc < 0) close(f);
   }
 
@@ -942,7 +942,7 @@ static int sys_opendir(char *params)
   rc = opendir(name, &f);
   if (rc == 0)
   {
-    rc = halloc(&f->object);
+    rc = halloc(&f->iob.object);
     if (rc < 0) close(f);
   }
 
@@ -2725,8 +2725,8 @@ static int sys_pipe(char *params)
 
   if (rc == 0)
   {
-    fildes[0] = halloc(&readpipe->object);
-    fildes[1] = halloc(&writepipe->object);
+    fildes[0] = halloc(&readpipe->iob.object);
+    fildes[1] = halloc(&writepipe->iob.object);
 
     if (fildes[0] < 0 || fildes[1] < 0)
     {

@@ -68,7 +68,7 @@
 #define THREAD_FPU_USED          1
 #define THREAD_FPU_ENABLED       2
 
-#define ISIOOBJECT(o) ((o)->object.type == OBJECT_SOCKET)
+#define ISIOOBJECT(o) ((o)->object.type == OBJECT_SOCKET || (o)->object.type == OBJECT_FILE)
 
 struct thread;
 struct waitblock;

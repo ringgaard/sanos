@@ -89,7 +89,7 @@ struct fs
 
 struct file
 {
-  struct object object;
+  struct ioobject iob;
 
   struct fs *fs;
   int flags;
