@@ -1,10 +1,10 @@
 Sanos Operating System Kernel
 -----------------------------
 
-Sanos is a OS kernel for use in PC based server appliances. The kernel
+Sanos is an OS kernel for use in PC based server appliances. The kernel
 was developed as part of an experiment on investigating the feasibility
-of running java server applications without a traditional operating but
-only using a simple kernel.
+of running java server applications without a traditional operating 
+system but only using a simple kernel.
 
 Sanos is open source under a BSD style license. Please see the COPYING
 file for details. Sanos can be downloaded from www.jbox.dk.
@@ -41,6 +41,8 @@ Contributions to sanos
 ----------------------
 
 The sanos kernel was written by Michael Ringgaard <mri@jbox.dk>
+
+The PCNET32 driver was written by Søren Gjesse.
 
 The heap allocator is a port of dlmalloc by Doug Lea <dl@cs.oswego.edu>
 
