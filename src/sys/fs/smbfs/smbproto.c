@@ -418,6 +418,8 @@ int smb_get_connection(struct smb_share *share, struct ip_addr *ipaddr, char *do
 
       return 0;
     }
+
+    server = server->next;
   }
 
   // Allocate new server block

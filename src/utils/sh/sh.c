@@ -932,7 +932,7 @@ static void download(int argc, char **argv)
   free(files);
 }
 
-static void test(int argc, char **argv)
+static void test1(int argc, char **argv)
 {
   struct servent *sp;
   char **alias;
@@ -952,6 +952,42 @@ static void test(int argc, char **argv)
 
     sp++;
   }
+}
+
+static void test(int argc, char **argv)
+{
+  char *server;
+  int port;
+  struct hostent *hp;
+  struct sockaddr_in sin;
+  int sock;
+  int rc;
+
+  server = "20.45.152.54";
+  port = 999;
+
+  if (argc >= 2) server = argv[1];
+  if (argc >= 3) port = atoi(argv[2]);
+
+  hp = gethostbyname(server);
+  if (!hp) return;
+
+  sock = socket(AF_INET, SOCK_STREAM, 0);
+  if (sock < 0) return;
+
+  memset(&sin, 0, sizeof(sin));
+  sin.sin_family = AF_INET;
+  memcpy(&sin.sin_addr, hp->h_addr_list[0], hp->h_length);
+  sin.sin_port = htons(port);
+
+  rc = connect(sock, (struct sockaddr *) &sin, sizeof(sin));
+  if (rc  < 0)
+  {
+    syslog(LOG_ERR, "error %d in connect: %s\n", rc, strerror(rc));
+    close(sock);
+  }
+
+  close(sock);
 }
 
 static void disktest(int argc, char **argv)

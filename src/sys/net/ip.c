@@ -73,18 +73,26 @@ struct netif *ip_route(struct ip_addr *dest)
 static err_t ip_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
 {
   struct netif *netif;
-  
+
+  // Don't route broadcasts
+  if (ip_addr_isbroadcast(&iphdr->dest, &inp->netmask)) 
+  {
+    pbuf_free(p);
+    return 0;
+  }
+
+  // Find route for packet
   if ((netif = ip_route(&iphdr->dest)) == NULL) 
   {
 
-    kprintf("ip_forward: no forwarding route for 0x%lx found\n", iphdr->dest.addr);
+    kprintf("ip_forward: no forwarding route for %a found\n", &iphdr->dest);
     return -EROUTE;
   }
 
   // Don't forward packets onto the same network interface on which they arrived
   if (netif == inp) 
   {
-    kprintf("ip_forward: not forward packets back on incoming interface.\n");
+    //kprintf("ip_forward: not forward packets back on incoming interface. (%a->%a)\n", &iphdr->src, &iphdr->dest);
     return -EROUTE;
   }
   

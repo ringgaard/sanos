@@ -14,8 +14,10 @@
 err_t icmp_input(struct pbuf *p, struct netif *inp)
 {
   unsigned char type;
+  unsigned char code;
   struct icmp_echo_hdr *iecho;
   struct ip_hdr *iphdr;
+  struct ip_hdr *orig_iphdr;
   struct ip_addr tmpaddr;
   int hlen;
   
@@ -76,6 +78,12 @@ err_t icmp_input(struct pbuf *p, struct netif *inp)
       
       pbuf_header(p, hlen);
       return ip_output_if(p, &iphdr->src, IP_HDRINCL, IPH_TTL(iphdr), IP_PROTO_ICMP, inp);
+
+    case ICMP_DUR:
+      code =  *((unsigned char *) p->payload + 1);
+      orig_iphdr = (struct ip_hdr *) ((char *) p->payload + 8);
+      kprintf("icmp: destination unreachable src=%a dest=%a (code %d)\n", &orig_iphdr->src, &orig_iphdr->dest, code);
+      return -EPROTO;
 
     default:
       kprintf("icmp_input: ICMP type not supported.\n");
