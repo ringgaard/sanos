@@ -25,7 +25,7 @@ struct section *config;
 struct moddb usermods;
 struct peb *peb;
 
-unsigned long loglevel = LOG_DEBUG | LOG_APITRACE | LOG_AUX;
+unsigned long loglevel = LOG_DEBUG | LOG_APITRACE | LOG_AUX | LOG_HEAP;
 int logfile = -1;
 
 void panic(const char *msg)
