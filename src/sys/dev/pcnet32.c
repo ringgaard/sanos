@@ -1,16 +1,16 @@
 //
 // pcnet32.c
 //
-// Copyright (c) 2001 Søren Thygensen Gjesse. All rights reserved.
+// Copyright (c) 2002 Søren Thygesen Gjesse. All rights reserved.
 //
-// PCNet32 network card driver
+// PCnet32 network driver
 //
 
 #include <os/krnl.h>
 
 #define offsetof(s,m)   (size_t)&(((s *)0)->m)
 
-// XXX  Need to get a few more of these in
+// PCI IDs
 
 #define PCI_DEVICE_PCNET32	0x2000
 #define PCI_VENDOR_AMD		0x1022
@@ -34,6 +34,8 @@
 #define INIT_BLOCK_ADDRESS_HIGH 2
 #define INTERRUPT_MASK          3
 #define FEATURE_CONTROL         4
+#define CHIP_ID_LOWER           88
+#define CHIP_ID_UPPER           89
 
 // Controller Status Register (CSR0) Bits
 
@@ -68,6 +70,21 @@
 #define MISCCFG_XMAUSEL         0x0001
 #define MISCCFG_                0x0000
 #define MISCCFG_                0x0000
+
+// Transmit Descriptor (TMD) Status
+
+#define TMD_OWN                 0x8000
+#define TMD_ERR                 0x4000
+#define TMD_ADD_FCS             0x2000  // ADD_FCS and NO_FCS is controlled through the same bit
+#define TMD_NO_FCS              0x2000
+#define TMD_MORE                0x1000  // MORE and LTINT is controlled through the same bit
+#define TMD_LTINT               0x1000
+#define TMD_ONE                 0x0800
+#define TMD_DEF                 0x0400
+#define TMD_STP                 0x0200
+#define TMD_ENP                 0x0100
+#define TMD_BPE                 0x0080
+#define TMD_RES                 0x007F
 
 // Size of Tx and Rx rings
 
@@ -147,7 +164,6 @@ struct pcnet32
 
   unsigned long phys_addr;              // Physical address of this structure
   devno_t devno;                        // Device number
-  struct pcnet32_access *func;
 
   unsigned short iobase;		// Configured I/O base
   unsigned short irq;		        // Configured IRQ
@@ -314,20 +330,67 @@ int pcnet32_transmit(struct dev *dev, struct pbuf *p)
   struct pcnet32 *pcnet32 = dev->privdata;
   unsigned char *data;
   int len;
+  int left;
   struct pbuf *q;
   int entry = pcnet32->next_tx;
   unsigned short status = 0x8300;
 
+  left = p->tot_len;
   //kprintf("pcnet32_transmit: transmit packet len=%d\n", p->tot_len);
   p->ref++;
+
+  len = p->tot_len;
+  status = TMD_OWN | TMD_STP | TMD_ENP;
+  if (p->next)
+  {
+    char *t;
+    data = kmalloc(len);
+    t = data;
+    for (q = p; q != NULL; q = q->next) 
+    {
+      if (q->len > 0)
+      {
+	memcpy(t, q->payload, q->len);
+	t += q->len;
+      }
+    }
+  }
+  else
+  {
+    data = p->payload;
+    pcnet32->tx_buffer[entry] = p;
+  }
+
+  //kprintf("pcnet32_transmit: sending %d (entry = %d)\n", len, entry);
+  pcnet32->tx_buffer[entry] = q;
+  pcnet32->tx_ring[entry].buffer = virt2phys(data);
+  pcnet32->tx_ring[entry].length = -len;
+  pcnet32->tx_ring[entry].misc = 0x00000000;
+  pcnet32->tx_ring[entry].status = status;
+
+  // Move to next entry
+  entry = (++entry) & TX_RING_MOD_MASK;
+  pcnet32->next_tx = entry;
+
+  // Trigger an immediate send poll
+  pcnet32->write_csr(pcnet32->iobase, CSR, CSR_IENA | CSR_TDMD);
+
+#if 0 // VMware requires TMD_STP and TMD_ENP to be set for each ring buffer transmitted
+  // set Start of Packet (STP) in first buffer
+  status = TMD_OWN | TMD_STP;
+
+  // place each part of the packet in the transmit ring
   for (q = p; q != NULL; q = q->next) 
   {
     len = q->len;
+    left -= len;
     if (len > 0)
     {
-      //kprintf("pcnet32_transmit: sending %d (entry = %d)\n", len, entry);
-      data = q->payload;
 
+      //kprintf("pcnet32_transmit: sending %d (entry = %d)\n", len, entry);
+      // set End of Packet if this is the last part
+      if (left == 0) status |= TMD_ENP;
+      data = q->payload;
       pcnet32->tx_buffer[entry] = q;
       pcnet32->tx_ring[entry].buffer = virt2phys(data);
       pcnet32->tx_ring[entry].length = -len;
@@ -337,15 +400,19 @@ int pcnet32_transmit(struct dev *dev, struct pbuf *p)
       // Move to next entry
       entry = (++entry) & TX_RING_MOD_MASK;
       pcnet32->next_tx = entry;
+
+      // this is not first buffer so Start of Packet (STP) is not set
+      status = TMD_OWN;
     }
     else
     {
-      kprintf("pcnet32_transmit: empty pbuf\n");
+      kprintf("pcnet32_transmit: enpty pbuf\n");
     }
 
     // Trigger an immediate send poll
     pcnet32->write_csr(pcnet32->iobase, CSR, CSR_IENA | CSR_TDMD);
   }
+#endif
 
   return 0;
 }
@@ -355,7 +422,7 @@ void pcnet32_receive(struct pcnet32 *pcnet32)
   int entry = pcnet32->next_rx;
   struct pbuf *p, *q;
 
-  kprintf("pcnet32: receive entry %d, 0x%04X\n", entry, pcnet32->rx_ring[entry].status);
+  //kprintf("pcnet32: receive entry %d, 0x%04X\n", entry, pcnet32->rx_ring[entry].status);
   while (!(pcnet32->rx_ring[entry].status & 0x8000))
   {
     int status = pcnet32->rx_ring[entry].status >> 8;
@@ -415,16 +482,16 @@ void pcnet32_dpc(void *arg)
   {
     // Acknowledge all of the current interrupt sources
     pcnet32->write_csr(iobase, CSR, (unsigned short) (csr & ~(CSR_IENA | CSR_TDMD | CSR_STOP | CSR_STRT | CSR_INIT)));
-    dump_csr(csr);
+    //dump_csr(csr);
 
     if (csr & CSR_RINT) pcnet32_receive(pcnet32);
-    if (csr & CSR_TINT) kprintf("Transmit\n");
+    //if (csr & CSR_TINT) kprintf("Transmit\n");
   }
 
   //dump_csr(csr);
 
-  //kprintf("pcnet32: intr (csr0 = %08x)\n", pcnet32->func->read_csr(pcnet32->iobase, 0));
-  //dump_csr(pcnet32->func->read_csr(pcnet32->iobase, 0));
+  //kprintf("pcnet32: intr (csr0 = %08x)\n", pcnet32->read_csr(pcnet32->iobase, 0));
+  //dump_csr(pcnet32->read_csr(pcnet32->iobase, 0));
 
   
   pcnet32->write_csr(iobase, CSR, CSR_BABL | CSR_CERR | CSR_MISS | CSR_MERR | CSR_IDON | CSR_IENA);
@@ -436,8 +503,6 @@ void pcnet32_handler(struct context *ctxt, void *arg)
 {
   struct pcnet32 *pcnet32 = (struct pcnet32 *) arg;
 
-  kprintf("pcnet32: intr %p\n", pcnet32);
-  
   // Queue DPC to service interrupt
   queue_irq_dpc(&pcnet32->dpc, pcnet32_dpc, pcnet32);
 }
@@ -477,7 +542,6 @@ int __declspec(dllexport) install(struct device *dv)
   struct pcnet32 *pcnet32;
   int version;
   char *chipname;
-  struct pcnet32_access *func;
   int i;
   char str[20];
   unsigned short val;
@@ -491,7 +555,7 @@ int __declspec(dllexport) install(struct device *dv)
   pcnet32 = (struct pcnet32 *) kmalloc(sizeof(struct pcnet32));
   if (!pcnet32) return -ENOMEM;
   memset(pcnet32, 0, sizeof(struct pcnet32));
-  pcnet32->phys_addr = (unsigned long) virt2phys(&pcnet32);
+  pcnet32->phys_addr = (unsigned long) virt2phys(pcnet32);
 
   // Setup NIC configuration
   pcnet32->iobase = (unsigned short) dv->pci->iobase;
@@ -507,32 +571,34 @@ int __declspec(dllexport) install(struct device *dv)
   pcnet32_dwio_reset(pcnet32->iobase);
   pcnet32_wio_reset(pcnet32->iobase);
 
+  // Setup access functions
   if (pcnet32_wio_read_csr(pcnet32->iobase, 0) == 4 && pcnet32_wio_check(pcnet32->iobase))
   {
-    func = &pcnet32_wio;
-    pcnet32->func = &pcnet32_wio;
+    pcnet32->read_csr = pcnet32_wio.read_csr;
+    pcnet32->write_csr = pcnet32_wio.write_csr;
+    pcnet32->read_bcr = pcnet32_wio.read_bcr;
+    pcnet32->write_bcr = pcnet32_wio.write_bcr;
+    pcnet32->read_rap = pcnet32_wio.read_rap;
+    pcnet32->write_rap = pcnet32_wio.write_rap;
+    pcnet32->reset = pcnet32_wio.reset;
   }
   else
   {
     if (pcnet32_dwio_read_csr(pcnet32->iobase, 0) == 4 && pcnet32_dwio_check(pcnet32->iobase))
     {
-      func = &pcnet32_dwio;
-      pcnet32->func = &pcnet32_dwio;
+      pcnet32->read_csr = pcnet32_dwio.read_csr;
+      pcnet32->write_csr = pcnet32_dwio.write_csr;
+      pcnet32->read_bcr = pcnet32_dwio.read_bcr;
+      pcnet32->write_bcr = pcnet32_dwio.write_bcr;
+      pcnet32->read_rap = pcnet32_dwio.read_rap;
+      pcnet32->write_rap = pcnet32_dwio.write_rap;
+      pcnet32->reset = pcnet32_dwio.reset;
     }
     else
       return -EIO;
   }
 
-  // Setup access functions
-  pcnet32->read_csr = func->read_csr;
-  pcnet32->write_csr = func->write_csr;
-  pcnet32->read_bcr = func->read_bcr;
-  pcnet32->write_bcr = func->write_bcr;
-  pcnet32->read_rap = func->read_rap;
-  pcnet32->write_rap = func->write_rap;
-  pcnet32->reset = func->reset;
-
-  version = pcnet32->func->read_csr(pcnet32->iobase, 88) | (pcnet32_wio_read_csr(pcnet32->iobase, 89) << 16);
+  version = pcnet32->read_csr(pcnet32->iobase, CHIP_ID_LOWER) | (pcnet32_wio_read_csr(pcnet32->iobase, CHIP_ID_UPPER) << 16);
   //kprintf("PCnet chip version is %#x.\n", version);
   if ((version & 0xfff) != 0x003) return 0;
   version = (version >> 12) & 0xffff;
@@ -621,42 +687,38 @@ int __declspec(dllexport) install(struct device *dv)
   pcnet32->next_tx = 0;
 
   // Reset pcnet32
-  pcnet32->func->reset(pcnet32->iobase);
+  pcnet32->reset(pcnet32->iobase);
   
   /// Switch pcnet32 to 32bit mode
-  pcnet32->func->write_bcr(pcnet32->iobase, 20, 2);
+  pcnet32->write_bcr(pcnet32->iobase, 20, 2);
 
   // Set autoselect bit
-  //val = pcnet32->func->read_bcr(pcnet32->iobase, MISCCFG) & ~MISCCFG_ASEL;
+  //val = pcnet32->read_bcr(pcnet32->iobase, MISCCFG) & ~MISCCFG_ASEL;
   //val |= MISCCFG_ASEL;
-  //pcnet32->func->write_bcr(pcnet32->iobase, MISCCFG, val);
+  //pcnet32->write_bcr(pcnet32->iobase, MISCCFG, val);
 
   // Set full duplex
-  val = pcnet32->func->read_bcr(pcnet32->iobase, 9) & ~3;
+  val = pcnet32->read_bcr(pcnet32->iobase, 9) & ~3;
   val |= 1;
-  pcnet32->func->write_bcr(pcnet32->iobase, 9, val);
+  pcnet32->write_bcr(pcnet32->iobase, 9, val);
 
   init_block = pcnet32->phys_addr + offsetof(struct pcnet32, init_block);
   //kprintf("init_block %08X\n", init_block);
   //kprintf("rx_ring %08X\n", pcnet32->init_block.rx_ring);
   //kprintf("tx_ring %08X\n", pcnet32->init_block.tx_ring);
-  pcnet32->func->write_csr(pcnet32->iobase, 1, (unsigned short) (init_block & 0xffff));
-  pcnet32->func->write_csr(pcnet32->iobase, 2, (unsigned short) (init_block >> 16));
+  pcnet32->write_csr(pcnet32->iobase, 1, (unsigned short) (init_block & 0xffff));
+  pcnet32->write_csr(pcnet32->iobase, 2, (unsigned short) (init_block >> 16));
 
-  pcnet32->func->write_csr(pcnet32->iobase, 4, 0x0915);
-  pcnet32->func->write_csr(pcnet32->iobase, 0, CSR_INIT);
+  pcnet32->write_csr(pcnet32->iobase, 4, 0x0915);
+  pcnet32->write_csr(pcnet32->iobase, 0, CSR_INIT);
 
   i = 0;
   while (i++ < 100)
   {
-    if (pcnet32->func->read_csr(pcnet32->iobase, 0) & CSR_IDON) break;
+    if (pcnet32->read_csr(pcnet32->iobase, 0) & CSR_IDON) break;
   }
 
-  // 
-  // We used to clear the InitDone bit, 0x0100, here but Mark Stockton
-  // reports that doing so triggers a bug in the '974.
-  //
-  pcnet32->func->write_csr(pcnet32->iobase, 0, CSR_IENA | CSR_STRT);
+  pcnet32->write_csr(pcnet32->iobase, 0, CSR_IENA | CSR_STRT); // note 2
 
   //printk(KERN_DEBUG "%s: pcnet32 open after %d ticks, init block %#x csr0 %4.4x.\n",
   //       dev->name, i, (u32) (lp->dma_addr + offsetof(struct pcnet32_private, init_block)),
@@ -679,4 +741,11 @@ int __stdcall start(hmodule_t hmod, int reason, void *reserved2)
 //
 // The docs say that the buffer length isn't touched, but Andrew Boyd
 // of QNX reports that some revs of the 79C965 clear it.
+//
+
+// Note 2
+
+// 
+// We used to clear the InitDone bit, 0x0100, here but Mark Stockton
+// reports that doing so triggers a bug in the '974.
 //
