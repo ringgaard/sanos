@@ -229,23 +229,19 @@ int munlock(void *addr, unsigned long size)
 int guard_page_handler(void *addr)
 {
   unsigned long pfn;
-  void *stackguard;
-  void *newguard;
   struct thread *t = self();
 
   if (!t->tib) return -EFAULT;
   
-  stackguard = (char *) t->tib->stacklimit - PAGESIZE;
-  if (addr < stackguard || addr >= t->tib->stacklimit) return -EFAULT;
+  if (addr < t->tib->stacklimit || addr >= t->tib->stacktop) return -EFAULT;
   if (t->tib->stacklimit <= t->tib->stackbase) return -EFAULT;
-  t->tib->stacklimit = stackguard;
-  if (t->tib->stacklimit <= t->tib->stackbase) return 0;
 
-  newguard = (char *) stackguard - PAGESIZE;
   pfn = alloc_pageframe('STK');
   if (pfn == 0xFFFFFFFF) return -ENOMEM;
-  map_page(newguard, pfn, PT_GUARD | PT_WRITABLE | PT_PRESENT);
-  memset(newguard, 0, PAGESIZE);
+
+  t->tib->stacklimit = (char *) t->tib->stacklimit - PAGESIZE;
+  map_page(t->tib->stacklimit, pfn, PT_GUARD | PT_WRITABLE | PT_PRESENT);
+  memset(t->tib->stacklimit, 0, PAGESIZE);
 
   return 0;
 }

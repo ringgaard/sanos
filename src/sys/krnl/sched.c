@@ -34,7 +34,7 @@
 #include <os/krnl.h>
 
 #define DEFAULT_STACK_SIZE           (1 * M)
-#define DEFAULT_INITIAL_STACK_COMMIT (64 * K)
+#define DEFAULT_INITIAL_STACK_COMMIT (8 * K)
 
 int preempt = 0;
 int in_dpc = 0;
@@ -444,10 +444,7 @@ int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned 
   tib->stacklimit = stack + (stack_reserve - stack_commit);
 
   if (!mmap(tib->stacklimit, stack_commit, MEM_COMMIT, PAGE_READWRITE, 'STK')) return -ENOMEM;
-  if (tib->stacklimit > tib->stackbase)
-  {
-    if (!mmap((char *) tib->stacklimit - PAGESIZE, PAGESIZE, MEM_COMMIT, PAGE_READWRITE | PAGE_GUARD, 'STK')) return -ENOMEM;
-  }
+  if (mprotect(tib->stacklimit, PAGESIZE, PAGE_READWRITE | PAGE_GUARD) < 0) return -ENOMEM;
 
   return 0;
 }

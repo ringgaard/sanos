@@ -2502,13 +2502,13 @@ DWORD WINAPI VirtualQuery
 
   // Used in win32\hpi\src\threads_md.c to check for stack guard pages
   // In JVM 1.4 also used for checking stack size in hotspot\src\os\win32\vm\os_win32.cpp
-  if (lpAddress >= tib->stackbase && lpAddress < tib->stacktop)
+  if (lpAddress >= tib->stacklimit && lpAddress < tib->stacktop)
   {
     // Handle stack case
     //syslog(LOG_DEBUG, "VirtualQuery %p (in stack %p %p %p)\n", lpAddress, tib->stackbase, tib->stacklimit, tib->stacktop);
-    lpBuffer->BaseAddress = tib->stackbase;
-    lpBuffer->RegionSize = (char *) tib->stacktop - (char *) tib->stackbase;
-    lpBuffer->AllocationBase = tib->stacklimit;
+    lpBuffer->BaseAddress = tib->stacklimit;
+    lpBuffer->RegionSize = (char *) tib->stacktop - (char *) tib->stacklimit;
+    lpBuffer->AllocationBase = tib->stackbase;
     lpBuffer->Protect = PAGE_READWRITE;
   }
   else
