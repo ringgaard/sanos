@@ -1,0 +1,56 @@
+;
+; File list for sanos boot floppy
+;
+
+; Directories
+
+/bin
+/dev
+/proc
+/etc
+/setup
+/mnt
+/usr
+
+; System files
+
+/bin/os.dll       \bin\os.dll
+/bin/sh.exe       \bin\sh.exe
+/bin/httpd.dll    \bin\httpd.dll
+/bin/setup.exe    \bin\setup.exe
+/bin/fdisk.exe    \bin\fdisk.exe
+
+; Drivers
+
+/bin/pcnet32.sys  \bin\pcnet32.sys
+/bin/ne2000.sys   \bin\ne2000.sys
+/bin/3c905c.sys   \bin\3c905c.sys
+/bin/rtl8139.sys  \bin\rtl8139.sys
+/bin/eepro100.sys \bin\eepro100.sys
+/bin/sis900.sys   \bin\sis900.sys
+
+; Win32 wrapper DLLs
+
+/bin/msvcrt.dll   \bin\msvcrt.dll
+/bin/kernel32.dll \bin\kernel32.dll
+/bin/user32.dll   \bin\user32.dll
+/bin/advapi32.dll \bin\advapi32.dll
+/bin/winmm.dll    \bin\winmm.dll
+/bin/wsock32.dll  \bin\wsock32.dll
+
+; Java launcher
+
+/bin/jinit.exe    \bin\jinit.exe
+
+; Configuration files
+
+/etc/krnl.ini     build\krnl.ini
+/etc/os.ini       build\os.ini
+
+; Setup files for hard disk install
+
+/setup/boot       \bin\boot
+/setup/osldr.dll  \bin\osldr.dll
+/setup/krnl.ini   build\krnl.ini
+/setup/os.ini     build\os.ini
+/setup/setup.ini  build\setup.ini

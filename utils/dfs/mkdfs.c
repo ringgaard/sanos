@@ -30,6 +30,7 @@ char *devname = "dfs.img";
 char *bootfile = NULL;
 char *ldrfile = NULL;
 char *krnlfile = NULL;
+char *filelist = NULL;
 int devsize = 40842 * 2;
 int blocksize = 4096;
 int inoderatio = 4096;
@@ -308,6 +309,61 @@ void transfer_files(char *dstdir, char *srcdir)
   FindClose(hfind);
 }
 
+void process_filelist(char *filelist)
+{
+  FILE *f;
+  char line[1024];
+  char *p;
+  char *src;
+  char *dst;
+  char fnbuf[256];
+
+  f = fopen(filelist, "r");
+  if (!f)
+  {
+    perror(filelist);
+    return;
+  }
+
+  while (fgets(line, sizeof line, f))
+  {
+    p = line;
+    while (*p && isspace(*p)) p++;
+    if (!*p || *p == ';') continue;
+
+    dst = p;
+    src = NULL;
+
+    while (*p && !isspace(*p)) p++;
+    if (*p)
+    {
+      *p++ = 0;
+      while (*p && isspace(*p)) p++;
+      src = p;
+      while (*p && !isspace(*p)) p++;
+      *p = 0;
+    }
+
+    if (!src || !*src)
+    {
+      make_directory(dst);
+    }
+    else
+    {
+      if (source && *src == '\\')
+      {
+	strcpy(fnbuf, source);
+	strcat(fnbuf, src);
+	transfer_file(dst, fnbuf);
+      }
+      else
+	transfer_file(dst, src);
+    }
+  }
+
+  fclose(f);
+}
+
 void list_file(char *filename)
 {
   size_t count;
@@ -579,6 +635,7 @@ void usage()
   fprintf(stderr, "  -P <partition start sector>\n");
   fprintf(stderr, "  -q (quick format device)\n");
   fprintf(stderr, "  -B <block size> (default 4096)\n");
+  fprintf(stderr, "  -F <file list file>\n");
   fprintf(stderr, "  -I <inode ratio> (default 1 inode per 4K)\n");
   fprintf(stderr, "  -S <source directory or file>\n");
   fprintf(stderr, "  -T <target directory or file>\n");
@@ -590,7 +647,7 @@ int main(int argc, char **argv)
   int c;
 
   // Parse command line options
-  while ((c = getopt(argc, argv, "d:b:c:ifk:l:swp:qB:I:P:S:T:?")) != EOF)
+  while ((c = getopt(argc, argv, "d:b:c:ifk:l:swp:qB:F:I:P:S:T:?")) != EOF)
   {
     switch (c)
     {
@@ -640,6 +697,10 @@ int main(int argc, char **argv)
 
       case 'B':
 	blocksize = atoi(optarg);
+	break;
+
+      case 'F':
+	filelist = optarg;
 	break;
 
       case 'I':
@@ -737,7 +798,12 @@ int main(int argc, char **argv)
   }
 
   // Copy files to device
-  if (source)
+  if (filelist)
+  {
+    printf("Transfering files from %s to device\n", filelist);
+    process_filelist(filelist);
+  }
+  else if (source)
   {
     printf("Transfering files\n");
     if (source[strlen(source) - 1] == '\\')

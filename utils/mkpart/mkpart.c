@@ -6,6 +6,7 @@
 // Partition table utility
 //
 
+#define _WIN32_WINNT 0x500
 #include <windows.h>
 #include <stdio.h>
 
@@ -74,6 +75,8 @@ unsigned char bootrecord[512] =
 };
 
 char bootsect[512];
+__int64 devsize;
+char partimages[4][256];
 
 int read_boot_sector(HANDLE hdev)
 {
@@ -105,12 +108,14 @@ int generate_partition_info(char *fn)
   f = fopen(fn, "w");
   if (!f) return -1;
 
+  fprintf(f, "%I64d\n", devsize);
+
   mbr = (struct master_boot_record *) bootsect;
   for (i = 0; i < 4; i++)
   {
     p = &mbr->parttab[i];
 
-    fprintf(f, "%d %d (%d/%d/%d) (%d/%d/%d) %lu %lu\n", 
+    fprintf(f, "%d %d (%d/%d/%d) (%d/%d/%d) %lu %lu -\n", 
       p->bootid, p->systid,
       p->begcyl + ((p->begsect >> 6) << 8), p->beghead, p->begsect & 0x3F,
       p->endcyl + ((p->endsect >> 6) << 8), p->endhead, p->endsect & 0x3F, 
@@ -134,16 +139,18 @@ int set_partition_info(char *fn)
   f = fopen(fn, "r");
   if (!f) return -1;
 
+  fscanf(f, "%I64d\n", &devsize);
+
   mbr = (struct master_boot_record *) bootsect;
   for (i = 0; i < 4; i++)
   {
     p = &mbr->parttab[i];
 
-    fscanf(f, "%d %d (%d/%d/%d) (%d/%d/%d) %lu %lu\n",
+    fscanf(f, "%d %d (%d/%d/%d) (%d/%d/%d) %lu %lu %s\n",
       &bootid, &systid,
       &begcyl, &beghead, &begsect,
       &endcyl, &endhead, &endsect,
-      &p->relsect, &p->numsect);
+      &p->relsect, &p->numsect, partimages[i]);
 
     p->bootid = bootid;
     p->systid = systid;
@@ -165,6 +172,77 @@ int set_partition_info(char *fn)
 
   fclose(f);
   return 0;
+}
+
+__int64 get_device_size(HANDLE hdev)
+{
+  GET_LENGTH_INFORMATION li;
+  DWORD len;
+
+  if (!DeviceIoControl(hdev, IOCTL_DISK_GET_LENGTH_INFO, NULL, 0, &li, sizeof(li), &len, NULL)) return -1;
+  return li.Length.QuadPart;
+}
+
+void write_image(HANDLE hdev, unsigned int startsect, unsigned int numsect, char *filename)
+{
+  HANDLE himg;
+  LARGE_INTEGER filesize;
+  LARGE_INTEGER partstart;
+  char buf[512];
+  unsigned int sectno;
+  unsigned long bytes;
+
+  himg = CreateFile(filename, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+  if (himg == INVALID_HANDLE_VALUE)
+  {
+    printf("mkpart: unable to open partition file %s\n", filename);
+    return;
+  }
+
+  GetFileSizeEx(himg, &filesize);
+  if (filesize.QuadPart / 512 != numsect)
+  {
+    printf("mkpart: partition image is %ul sector, %ul expected\n", (unsigned int) (filesize.QuadPart / 512), numsect);
+    return;
+  }
+
+  partstart.QuadPart = startsect * 512;
+  if (!SetFilePointerEx(hdev, partstart, NULL, FILE_BEGIN))
+  {
+    printf("mkpart: error %d position file pointer for device\n", GetLastError());
+    return;
+  }
+
+  for (sectno = 0; sectno < numsect; sectno++)
+  {
+    if (!ReadFile(himg, buf, 512, &bytes, NULL))
+    {
+      printf("mkpart: error %d reading from partition file\n");
+      return;
+    }
+
+    if (!WriteFile(himg, buf, 512, &bytes, NULL))
+    {
+      printf("mkpart: error %d writing to volume\n");
+      return;
+    }
+  }
+
+  CloseHandle(himg);
+}
+
+void write_images(HANDLE hdev)
+{
+  int i;
+  struct master_boot_record *mbr;
+
+  mbr = (struct master_boot_record *) bootsect;
+  for (i = 0; i < 4; i++)
+    if (strcmp(partimages[i], "-") != 0)
+    {
+      printf("writing partition image %s to partition %d\n", partimages[i], i);
+      write_image(hdev, mbr->parttab[i].relsect, mbr->parttab[i].numsect, partimages[i]);
+    }
 }
 
 int main(int argc, char **argv)
@@ -198,13 +276,20 @@ int main(int argc, char **argv)
   hdev = CreateFile(devname, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_WRITE_THROUGH | FILE_FLAG_NO_BUFFERING, NULL);
   if (hdev == INVALID_HANDLE_VALUE) 
   {
-    printf("Error %d opening device %s\n", GetLastError(), devname);
+    printf("mkpart: error %d opening device %s\n", GetLastError(), devname);
     return 3;
   }
 
   // Read partition info
   if (readmode)
   {
+    devsize = get_device_size(hdev);
+    if (devsize < 0) 
+    {
+      printf("mkpart: error %d obtaining device size for %s\n", GetLastError(), devname);
+      return 3;
+    }
+
     if (read_boot_sector(hdev) < 0)
     {
       printf("mkpart: error reading master boot record\n");
@@ -219,6 +304,13 @@ int main(int argc, char **argv)
   }
   else
   {
+    __int64 real_devsize = get_device_size(hdev);
+    if (devsize < 0) 
+    {
+      printf("mkpart: error %d obtaining device size for %s\n", GetLastError(), devname);
+      return 3;
+    }
+
     memcpy(bootsect, bootrecord, 512);
 
     if (set_partition_info(partinf) < 0)
@@ -226,6 +318,14 @@ int main(int argc, char **argv)
       printf("mkpart: error reading partition info from %s\n", partinf);
       return 3;
     }
+
+    if (devsize != real_devsize)
+    {
+      printf("mkpart: volume size is %I64d bytes, %I64d bytes expected \n", real_devsize, devsize);
+      return 3;
+    }
+
+    write_images(hdev);
 
     if (write_boot_sector(hdev) < 0)
     {
