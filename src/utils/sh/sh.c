@@ -1424,6 +1424,7 @@ struct command cmdtab[] =
   {"exit",     NULL,         "Exit shell"},
   {"grabcon",  cmd_grabcon,  "Grab the main console file descriptors"},
   {"ifconfig", cmd_ifconfig, "Display network interface configuration"},
+  {"ipconfig", cmd_ifconfig, "Display network interface configuration"},
   {"heapstat", cmd_heapstat, "Display heap statistics"},
   {"help",     cmd_help,     "This help"},
   {"httpget",  cmd_httpget,  "Retrieve file via http"},

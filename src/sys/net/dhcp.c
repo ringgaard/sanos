@@ -119,6 +119,7 @@ static int dhcpstat_proc(struct proc_file *pf, void *arg)
     pprintf(pf, "  Lease Period ........... : %d seconds (%d left)\n", state->offered_t0_lease, state->offered_t0_lease - lease_age);
     pprintf(pf, "  Renew Period ........... : %d seconds (%d left)\n", state->offered_t1_renew, state->offered_t1_renew - lease_age);
     pprintf(pf, "  Rebind Period .......... : %d seconds (%d left)\n", state->offered_t2_rebind, state->offered_t2_rebind - lease_age);
+    pprintf(pf, "  Lease Age .............. : %d seconds\n", lease_age);
 
     if (state->next) pprintf(pf, "\n");
     state = state->next;

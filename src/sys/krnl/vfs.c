@@ -579,9 +579,9 @@ int setmode(struct file *filp, int mode)
 {
   int oldmode;
 
-  if (mode != O_TEXT && mode != O_BINARY) return -EINVAL;
-  oldmode = filp->mode & (O_TEXT | O_BINARY);
-  filp->mode = (filp->mode & ~(O_TEXT | O_BINARY)) | mode;
+  if (mode & ~(O_TEXT | O_BINARY | O_APPEND | O_NOINHERIT)) return -EINVAL;
+  oldmode = filp->mode & (O_TEXT | O_BINARY | O_APPEND | O_NOINHERIT);
+  filp->mode = (filp->mode & ~(O_TEXT | O_BINARY | O_APPEND | O_NOINHERIT)) | mode;
   return oldmode;
 }
 

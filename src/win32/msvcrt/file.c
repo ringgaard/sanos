@@ -33,10 +33,13 @@
 
 #include "msvcrt.h"
 
-#define _NSTREAM_ 128
+#define _STDINBUFSIZ_ 256
+#define _NSTREAM_     128
 
 struct _iobuf _iob[_NSTREAM_];
-
+char stdinbuf[_STDINBUFSIZ_];
+int stdinbufpos = 0;
+int stdinbuflen = 0;
 struct critsect iob_lock;
 
 #define stdin  (&_iob[0])
@@ -44,6 +47,7 @@ struct critsect iob_lock;
 #define stderr (&_iob[2])
 
 int vsprintf(char *buf, const char *fmt, va_list args);
+int readline(int f, char *buf, int size);
 
 static FILE *alloc_stream()
 {
@@ -130,10 +134,46 @@ int _read(int handle, void *buffer, unsigned int count)
   int rc;
 
   TRACE("_read");
-  rc = read(handle, buffer, count);
-  if (rc < 0) return -1;
 
-  return rc;
+  if (handle == 0) 
+  {
+    char *buf;
+    int pos;
+
+    // Handle console input using readline
+    if (stdinbufpos == stdinbuflen)
+    {
+      int len;
+
+      len = readline(handle, stdinbuf, sizeof(stdinbuf) - 3);
+      if (len < 0) 
+      {
+	errno = len;
+	return -1;
+      }
+
+      stdinbuf[len++] = '\r';
+      stdinbuf[len++] = '\n';
+      stdinbuf[len] = 0;
+
+      stdinbuflen = len;
+      stdinbufpos = 0;
+    }
+
+    buf = buffer;
+    pos = 0;
+    while (pos < (int) count && stdinbufpos < stdinbuflen) 
+    {
+      buf[pos++] = stdinbuf[stdinbufpos++];
+    }
+    return pos;
+  }
+  else
+  {
+    rc = read(handle, buffer, count);
+    if (rc < 0) return -1;
+    return rc;
+  }
 }
 
 int _write(int handle, const void *buffer, unsigned int count)
@@ -280,10 +320,13 @@ int _open_osfhandle(long osfhandle, int flags)
   int rc;
 
   TRACE("_open_osfhandle");
-  rc = dup(osfhandle);
+
+  // Handles are the same as operating system handles
+  // Just return the original handle after changing the mode
+  rc = setmode(osfhandle, flags);
   if (rc < 0) return -1;
 
-  return rc;
+  return osfhandle;
 }
 
 int _dup2(int handle1, int handle2)

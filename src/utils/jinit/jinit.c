@@ -37,6 +37,7 @@
 #include <inifile.h>
 #include <stdlib.h>
 
+struct section *cfg;
 char *cfgname;
 JavaVM *vm = NULL;
 JNIEnv *env = NULL;
@@ -127,9 +128,9 @@ void init_jvm_args()
   int len;
   int first;
 
-  cpsect = find_section(osconfig, get_property(osconfig, cfgname, "classpaths", "java.classpaths"));
-  optsect = find_section(osconfig, get_property(osconfig, cfgname, "options", "java.options"));
-  propsect = find_section(osconfig, get_property(osconfig, cfgname, "properties", "java.properties"));
+  cpsect = find_section(cfg, get_property(cfg, cfgname, "classpaths", "java.classpaths"));
+  optsect = find_section(cfg, get_property(cfg, cfgname, "options", "java.options"));
+  propsect = find_section(cfg, get_property(cfg, cfgname, "properties", "java.properties"));
 
   nopts = get_section_size(optsect) + get_section_size(propsect) + (cpsect ? 1 : 0);
 
@@ -249,7 +250,7 @@ int init_jvm()
   // Load VM
   if (hjvm == NULL)
   {
-    char *jvmname = get_property(osconfig, cfgname, "jvm", "jvm.dll");
+    char *jvmname = get_property(cfg, cfgname, "jvm", "jvm.dll");
 
     hjvm = load(jvmname);
     if (hjvm == NULL) 
@@ -351,17 +352,29 @@ int main(int argc, char *argv[])
   char *mainclsargs;
 
   // Determine configuration
-  if (argc == 2)
+  if (argc > 1)
     cfgname = argv[1];
   else
     cfgname = "java";
+
+  if (argc > 2)
+  {
+    cfg = read_properties(argv[2]);
+    if (cfg == NULL)
+    {
+      syslog(LOG_ERR, "Unable to read JVM configuration from %s\n", argv[2]);
+      return 1;
+    }
+  }
+  else
+    cfg = osconfig;
 
   // Initialize Java VM
   if (init_jvm() != 0) return 1;
 
   // Get main class and arguments
-  mainclsname = get_property(osconfig, cfgname, "mainclass", "sanos.os.Shell");
-  mainclsargs = get_property(osconfig, cfgname, "mainargs", "");
+  mainclsname = get_property(cfg, cfgname, "mainclass", "sanos.os.Shell");
+  mainclsargs = get_property(cfg, cfgname, "mainargs", "");
 
   // Call main method
   execute_main_method(mainclsname, mainclsargs);

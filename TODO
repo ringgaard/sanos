@@ -497,3 +497,15 @@ CHANGES
 - Support for JDK 1.4.2
 
 - Changed stack guard page support to comply with win32
+
+- jinit can now load configuration from alternative ini file
+
+- ifconfig command implemented in shell
+
+- /proc/dhcpstat implemented.
+
+- Bug in GetFileTimes() fixed.
+
+- _open_osfhandle() in msvcrt leaked file handles. This has been fixed.
+
+- Console input implemented using readline() in msvcrt.

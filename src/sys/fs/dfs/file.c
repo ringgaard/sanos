@@ -44,12 +44,6 @@ static int open_existing(struct filsys *fs, char *name, int len, struct inode **
   inode = get_inode(fs, ino);
   if (!inode) return -EIO;
 
-  if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY)
-  {
-    release_inode(inode);
-    return -EISDIR;
-  }
-
   *retval = inode;
   return 0;
 }
@@ -93,13 +87,6 @@ static int open_always(struct filsys *fs, char *name, int len, struct inode **re
     {
       release_inode(dir);
       return -EIO;
-    }
-
-    if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY)
-    {
-      release_inode(dir);
-      release_inode(inode);
-      return -EISDIR;
     }
   }
 
@@ -396,6 +383,7 @@ int dfs_write(struct file *filp, void *data, size_t size)
 
   if (filp->flags & O_APPEND) filp->pos = inode->desc->size;
   if (filp->pos + size > DFS_MAXFILESIZE) return -EFBIG;
+  if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY) return -EISDIR;
 
   if (filp->pos > inode->desc->size)
   {
@@ -505,6 +493,7 @@ int dfs_chsize(struct file *filp, off64_t size)
   if (size > DFS_MAXFILESIZE) return -EFBIG;
 
   inode = (struct inode *) filp->data;
+  if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY) return -EISDIR;
 
   if (size < 0) return -EINVAL;
   if (size == inode->desc->size) return 0;

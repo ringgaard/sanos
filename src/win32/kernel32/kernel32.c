@@ -830,7 +830,7 @@ static void fill_find_data(LPWIN32_FIND_DATA fd, char *filename, struct stat64 *
   fd->nFileSizeHigh = ft->dwHighDateTime;
 
   *(unsigned __int64 *) &(fd->ftCreationTime) = (unsigned __int64) statbuf->st_ctime * SECTIMESCALE + EPOC;
-  *(unsigned __int64 *) &(fd->ftLastAccessTime) = (unsigned __int64) statbuf->st_mtime * SECTIMESCALE + EPOC;
+  *(unsigned __int64 *) &(fd->ftLastAccessTime) = (unsigned __int64) statbuf->st_atime * SECTIMESCALE + EPOC;
   *(unsigned __int64 *) &(fd->ftLastWriteTime) = (unsigned __int64) statbuf->st_mtime * SECTIMESCALE + EPOC;
 }
 
@@ -1276,25 +1276,25 @@ BOOL WINAPI GetFileTime
   LPFILETIME lpLastWriteTime
 )
 {
-  struct utimbuf times;
+  struct stat64 statbuf;
 
   TRACE("GetFileTime");
 
-  if (futime((handle_t) hFile, &times) < 0) return FALSE;
+  if (fstat64((handle_t) hFile, &statbuf) < 0) return FALSE;
 
   if (lpCreationTime)
   {
-    *(unsigned __int64 *) lpCreationTime = (unsigned __int64) times.ctime * SECTIMESCALE + EPOC;
+    *(unsigned __int64 *) lpCreationTime = (unsigned __int64) statbuf.st_ctime * SECTIMESCALE + EPOC;
   }
 
   if (lpLastAccessTime)
   {
-    *(unsigned __int64 *) lpLastAccessTime = (unsigned __int64) times.atime * SECTIMESCALE + EPOC;
+    *(unsigned __int64 *) lpLastAccessTime = (unsigned __int64) statbuf.st_atime * SECTIMESCALE + EPOC;
   }
 
   if (lpLastWriteTime)
   {
-    *(unsigned __int64 *) lpLastWriteTime = (unsigned __int64) times.mtime * SECTIMESCALE + EPOC;
+    *(unsigned __int64 *) lpLastWriteTime = (unsigned __int64) statbuf.st_mtime * SECTIMESCALE + EPOC;
   }
 
   return TRUE;
@@ -1389,9 +1389,19 @@ BOOL WINAPI GetNumberOfConsoleInputEvents
   LPDWORD lpcNumberOfEvents
 )
 {
+  int rc;
+
   TRACE("GetNumberOfConsoleInputEvents");
-  panic("GetNumberOfConsoleInputEvents not implemented");
-  return FALSE;
+
+  // TODO: Here we assume that the handle refers to /dev/console
+  rc = ioctl(fdin, IOCTL_KBHIT, NULL, 0);
+  if (rc < 0) return FALSE;
+  if (rc > 0)
+    *lpcNumberOfEvents = 1;
+  else
+    *lpcNumberOfEvents = 0;
+
+  return TRUE;
 }
 
 BOOL WINAPI GetOverlappedResult
@@ -1442,8 +1452,15 @@ HANDLE WINAPI GetStdHandle
 )
 {
   TRACE("GetStdHandle");
-  panic("GetStdHandle not implemented");
-  return 0;
+
+  switch (nStdHandle)
+  {
+    case STD_INPUT_HANDLE:  return (HANDLE) fdin;
+    case STD_OUTPUT_HANDLE: return (HANDLE) fdout;
+    case STD_ERROR_HANDLE:  return (HANDLE) fderr;
+  }
+
+  return INVALID_HANDLE_VALUE;
 }
 
 UINT WINAPI GetSystemDirectoryA
@@ -1907,9 +1924,29 @@ BOOL WINAPI PeekConsoleInputA
   LPDWORD lpNumberOfEventsRead
 )
 {
+  int rc;
+
   TRACE("PeekConsoleInputA");
-  panic("PeekConsoleInputA not implemented");
-  return FALSE;
+
+  // TODO: Here we assume that the handle refers to /dev/console
+  // Just return a bogus key event record if keyboard buffer is not empty
+  rc = ioctl(fdin, IOCTL_KBHIT, NULL, 0);
+  if (rc < 0) return FALSE;
+  if (rc > 0)
+  {
+    KEY_EVENT_RECORD *rec = (KEY_EVENT_RECORD *) lpBuffer;
+    rec->bKeyDown = TRUE;
+    rec->wRepeatCount = 1;
+    rec->wVirtualKeyCode = 0;
+    rec->wVirtualScanCode = 0;
+    rec->uChar.AsciiChar = ' ';
+    rec->dwControlKeyState = 0;
+    *lpNumberOfEventsRead = 1;
+  }
+  else
+    *lpNumberOfEventsRead = 0;
+
+  return TRUE;
 }
 
 BOOL WINAPI PeekNamedPipe
@@ -1932,7 +1969,7 @@ BOOL WINAPI QueryPerformanceCounter
   LARGE_INTEGER *lpPerformanceCount
 )
 {
-  TRACE("QueryPerformanceCounter");
+  TRACEX("QueryPerformanceCounter");
   lpPerformanceCount->HighPart = 0;
   lpPerformanceCount->LowPart = clock();
 

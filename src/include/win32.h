@@ -431,4 +431,22 @@ typedef struct WIN32_FIND_DATAW
 #define FILE_FLAG_DELETE_ON_CLOSE        0x04000000
 #define FILE_FLAG_OVERLAPPED             0x40000000
 
+#define STD_INPUT_HANDLE                 ((DWORD)-10)
+#define STD_OUTPUT_HANDLE                ((DWORD)-11)
+#define STD_ERROR_HANDLE                 ((DWORD)-12)
+
+typedef struct _KEY_EVENT_RECORD 
+{
+  BOOL bKeyDown; 
+  WORD wRepeatCount; 
+  WORD wVirtualKeyCode; 
+  WORD wVirtualScanCode; 
+  union 
+  { 
+    WCHAR UnicodeChar; 
+    CHAR  AsciiChar; 
+  } uChar; 
+  DWORD dwControlKeyState; 
+} KEY_EVENT_RECORD; 
+
 #endif
