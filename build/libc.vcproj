@@ -180,7 +180,16 @@
 				RelativePath="..\src\include\process.h">
 			</File>
 			<File
+				RelativePath="..\src\include\pthread.h">
+			</File>
+			<File
 				RelativePath="..\src\include\rmap.h">
+			</File>
+			<File
+				RelativePath="..\src\include\sched.h">
+			</File>
+			<File
+				RelativePath="..\src\include\semaphore.h">
 			</File>
 			<File
 				RelativePath="..\src\include\setjmp.h">
@@ -784,6 +793,10 @@
 				</FileConfiguration>
 			</File>
 		</Filter>
+		<Filter
+			Name="pthread"
+			Filter="">
+		</Filter>
 		<File
 			RelativePath="..\src\lib\assert.c">
 		</File>
@@ -987,6 +1000,12 @@
 		</File>
 		<File
 			RelativePath="..\src\lib\rtttl.c">
+		</File>
+		<File
+			RelativePath="..\src\lib\sched.c">
+		</File>
+		<File
+			RelativePath="..\src\lib\semaphore.c">
 		</File>
 		<File
 			RelativePath="..\src\lib\setjmp.c">

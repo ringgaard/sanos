@@ -586,3 +586,5 @@ CHANGES
 
 - load() renamed to dlopen(), unload() renamed to dlclose(), resolve() renamed to dlsym() for
   POSIX compliance. The dlfcn.h header file added.
+
+- Added sched.c, sched.h, semaphore.c, semaphore.h, pthread.h
