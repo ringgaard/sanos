@@ -192,6 +192,50 @@ static int pnp_bios_get_dev_node(unsigned char *nodenum, char boot, struct pnp_b
   return status;
 }
 
+//
+// Call PnP BIOS with function 0x40, "get isa pnp configuration structure"
+//
+
+static int pnp_bios_isapnp_config(struct pnp_isa_config_struc *data)
+{
+  int status;
+
+  seginit(&syspage->gdt[GDT_AUX1], (unsigned long) data, sizeof(struct pnp_isa_config_struc), D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
+
+  status = pnp_bios_call(PNP_GET_PNP_ISA_CONFIG_STRUC, 0, SEL_AUX1, SEL_PNPDATA, 0, 0, 0, 0);
+  return status;
+}
+
+//
+// Call PnP BIOS with function 0x41, "get ESCD info"
+//
+
+static int pnp_bios_escd_info(struct escd_info_struc *data)
+{
+  int status;
+
+  seginit(&syspage->gdt[GDT_AUX1], (unsigned long) data, sizeof(struct escd_info_struc), D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
+
+  status = pnp_bios_call(PNP_GET_ESCD_INFO, 0, SEL_AUX1, 2, SEL_AUX1, 4, SEL_AUX1, SEL_PNPDATA);
+  return status;
+}
+
+//
+// Call PnP BIOS function 0x42, "read ESCD"
+// nvram_base is determined by calling escd_info
+//
+
+static int pnp_bios_read_escd(void *data, void *nvram_base)
+{
+  int status;
+
+  seginit(&syspage->gdt[GDT_AUX1], (unsigned long) data, 64 * K, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
+  seginit(&syspage->gdt[GDT_AUX2], (unsigned long) nvram_base, 64 * K, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
+
+  status = pnp_bios_call(PNP_READ_ESCD, 0, SEL_AUX1, SEL_AUX2, SEL_PNPDATA, 0, 0, 0);
+  return status;
+}
+
 static void pnpid32_to_pnpid(unsigned long id, char *str)
 {
   const char *hex = "0123456789ABCDEF";
@@ -333,7 +377,7 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct unit *
   }
 }
 
-static void build_devlist(struct bus *bus)
+static void build_sys_devlist(struct bus *bus)
 {
   struct pnp_dev_node_info info;
   int status;
@@ -381,6 +425,36 @@ static void build_devlist(struct bus *bus)
   kfree(node);
 }
 
+static int build_isa_devlist()
+{
+  int rc;
+  struct pnp_isa_config_struc isacfg;
+  struct escd_info_struc escdinfo;
+  unsigned char *escd;
+  void *nvbase;
+
+  extern void dump_memory(unsigned long addr, unsigned char *p, int len);
+
+  rc = pnp_bios_isapnp_config(&isacfg);
+  kprintf("pnp_bios_isapnp_config returned %d: revision=%d, #csn=%d, dataport=0x%x\n", rc, isacfg.revision, isacfg.no_csns, isacfg.isa_rd_data_port);
+
+  rc = pnp_bios_escd_info(&escdinfo);
+  kprintf("pnp_bios_escd_info returned %d: minwrite=%d, size=%d, nvbase=0x%x\n", rc, escdinfo.min_escd_write_size, escdinfo.escd_size, escdinfo.nv_storage_base);
+
+  escd = kmalloc(escdinfo.escd_size);
+  nvbase = iomap(escdinfo.nv_storage_base, 64 * K);
+
+  rc = pnp_bios_read_escd(escd, nvbase);
+  kprintf("pnp_bios_read_escd returned %d: nvbase mapped to %p\n", rc, nvbase);
+
+  //dump_memory(escdinfo.nv_storage_base, escd, escdinfo.escd_size);
+
+  iounmap(nvbase, 64 * K);
+  kfree(escd);
+
+  return 0;
+}
+
 int enum_isapnp(struct bus *bus)
 {
   int ofs;
@@ -420,7 +494,8 @@ int enum_isapnp(struct bus *bus)
     pnp_thunk_entrypoint.segment = SEL_PNPTHUNK;
     pnp_thunk_entrypoint.offset = 0;
 
-    build_devlist(bus);
+    build_sys_devlist(bus);
+    build_isa_devlist();
 
     seginit(&syspage->gdt[GDT_PNPTEXT], 0, 0, 0, 0);
     seginit(&syspage->gdt[GDT_PNPDATA], 0, 0, 0, 0);

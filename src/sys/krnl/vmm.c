@@ -35,7 +35,7 @@ void *mmap(void *addr, unsigned long size, int type, int protect)
   int pages = PAGES(size);
   int i;
 
-//kprintf("mmap(%p,%d,%x,%x)\n", addr, size, type, protect);
+  //kprintf("mmap(%p,%d,%x,%x)\n", addr, size, type, protect);
 
   if (size == 0) return NULL;
   addr = (void *) PAGEADDR(addr);
@@ -45,14 +45,20 @@ void *mmap(void *addr, unsigned long size, int type, int protect)
   {
     if (addr == NULL)
     {
-      //addr = (void *) PTOB(rmap_alloc(vmap, pages));
-      addr = (void *) PTOB(rmap_alloc_align(vmap, pages, 64 * K / PAGESIZE));
+      
+      if (pages < 64 * K / PAGESIZE)
+        addr = (void *) PTOB(rmap_alloc(vmap, pages));
+      else
+        addr = (void *) PTOB(rmap_alloc_align(vmap, pages, 64 * K / PAGESIZE));
+
       if (addr == NULL) return NULL;
     }
     else
     {
       if (rmap_reserve(vmap, BTOP(addr), pages)) return NULL;
     }
+
+    //kprintf("vmem reserve (%p,%d,%x,%x)\n", addr, size, type, protect);
   }
   else
   {

@@ -30,6 +30,8 @@ void *alloc_pages(int pages)
     map_page(vaddr + PTOB(i), pfn, PT_WRITABLE | PT_PRESENT);
   }
 
+  //kprintf("alloc kmem %dK @ %p\n", pages * PAGESIZE / K, vaddr);
+
   return vaddr;
 }
 
@@ -46,6 +48,8 @@ void *alloc_pages_align(int pages, int align)
     map_page(vaddr + PTOB(i), pfn, PT_WRITABLE | PT_PRESENT);
   }
 
+  //kprintf("alloc kmem %dK @ %p (align %dK)\n", pages * PAGESIZE / K, vaddr, align * PAGESIZE / K);
+
   return vaddr;
 }
 
@@ -53,6 +57,8 @@ void free_pages(void *addr, int pages)
 {
   int i;
   unsigned long pfn;
+
+  //kprintf("free kmem %dK @ %p\n", pages * PAGESIZE / K, addr);
 
   for (i = 0; i < pages; i++)
   {
@@ -102,6 +108,8 @@ void *alloc_module_mem(int pages)
     memset(vaddr + PTOB(i), 0, PAGESIZE);
   }
 
+  //kprintf("alloc mod mem %dK @ %p\n", pages * PAGESIZE / K, vaddr);
+
   return vaddr;
 }
 
@@ -109,6 +117,8 @@ void free_module_mem(void *addr, int pages)
 {
   int i;
   unsigned long pfn;
+
+  //kprintf("free mod mem %dK @ %p\n", pages * PAGESIZE / K, addr);
 
   for (i = 0; i < pages; i++)
   {
@@ -155,21 +165,23 @@ int list_memmap(struct proc_file *pf, struct rmap *rmap, unsigned int startpos)
   unsigned int pos = startpos;
   unsigned int total = 0;
 
-  pprintf(pf, "Memory map:\n");
+  pprintf(pf, "   start      end      size       gap\n");
+  pprintf(pf, "-------- -------- --------- ---------\n");
 
   rlim = &rmap[rmap->offset];
+  
   for (r = &rmap[1]; r <= rlim; r++) 
   {
     unsigned int size = r->offset - pos;
 
     if (size > 0)
     {
-      pprintf(pf, "[%08X..%08X] %6d KB\n", pos * PAGESIZE, r->offset * PAGESIZE - 1, size * PAGESIZE / K);
+      pprintf(pf, "%08X %08X %8dK %8dK\n", pos * PAGESIZE, r->offset * PAGESIZE - 1, size * PAGESIZE / K, r->size * PAGESIZE / K);
       total += size;
     }
     pos = r->offset + r->size;
   }
-  pprintf(pf, "Total: %d KB\n", total * PAGESIZE / K);
+  pprintf(pf, "Total: %dK\n", total * PAGESIZE / K);
   return 0;
 }
 

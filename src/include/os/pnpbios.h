@@ -90,6 +90,21 @@ struct pnp_bios_node
   unsigned char data[0];
 };
 
+struct pnp_isa_config_struc 
+{
+  unsigned char revision;
+  unsigned char no_csns;
+  unsigned short isa_rd_data_port;
+  unsigned short reserved;
+};
+
+struct escd_info_struc 
+{
+  unsigned short min_escd_write_size;
+  unsigned short escd_size;
+  unsigned long nv_storage_base;
+};
+
 #pragma pack(pop)
 
 int enum_isapnp(struct bus *bus);
