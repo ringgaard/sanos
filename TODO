@@ -5,7 +5,7 @@ TODO for sanos
     x Modify signal() and raise() to conform to ANSI standard (remove siginfo parameter)
     x Modify io.h to call os routines (stat() and S_IFDIR and S_IFREG flags)
     x Implement remaining time.h routines
-    - Add new stdio.h implementation with buffering and new output() and input() routines
+    x Add new stdio.h implementation with buffering and new output() and input() routines
     x Add support for O_TEXT and O_BINARY flags in read() and write()
     x Rename stat fields to standard names (st_*)
     x Implement pmode for creat()
@@ -305,7 +305,7 @@ CHANGES
 
 - setcontext() implemented.
 
-- Added more complete ANSI Standard C Library
+- Added more complete ANSI Standard C Library. 
 
 - The thread ready queues could become corrupted if a thread that was already ready was marked
   ready again. This could lead to kernel traps in the object manager because of faulty dispatching
@@ -318,4 +318,3 @@ CHANGES
 - /dev/random and /dev/urandom devices added
 
 - BSD random number functions added to lib
-
