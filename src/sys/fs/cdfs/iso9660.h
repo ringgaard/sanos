@@ -43,6 +43,9 @@
 #define ISO_STANDARD_ID     "CD001"
 #define ISO_ECMA_ID         "CDW01"
 
+#pragma pack(push)
+#pragma pack(1)
+
 struct iso_volume_descriptor 
 {
   unsigned char type                    [ISODCL(1, 1)]; // 711
@@ -125,12 +128,14 @@ struct iso_extended_attributes
 
 struct iso_pathtable_record
 {
-  unsigned char length			[ISODCL( 1,  1)]; // 711
-  unsigned char ext_attr_length		[ISODCL( 2,  2)]; // 711
-  unsigned char extent			[ISODCL( 3,  6)]; // 731/732
-  unsigned char parent  		[ISODCL( 7,  8)]; // 721/722
-  unsigned char name			[0];
+  unsigned char length;
+  unsigned char ext_attr_length;
+  unsigned long extent;
+  unsigned short parent;
+  char name[0];
 };
+
+#pragma pack(pop)
 
 __inline int isonum_711(unsigned char *p)
 {

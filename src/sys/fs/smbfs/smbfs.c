@@ -889,7 +889,7 @@ int smb_readdir(struct file *filp, struct dirent *dirp, int count)
   struct smb_directory *dir = (struct smb_directory *) filp->data;
   struct stat64 statbuf;
 
-  if (count != 1) return -1;
+  if (count != 1) return -EINVAL;
 
 again:
   if (dir->entries_left == 0)
