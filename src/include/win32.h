@@ -74,7 +74,7 @@ typedef unsigned int UINT;
 typedef unsigned long ULONG;
 typedef int INT;
 typedef long LONG;
-typedef unsigned __int64 LONGLONG;
+typedef __int64 LONGLONG;
 
 typedef int BOOL;
 typedef unsigned int SIZE_T;

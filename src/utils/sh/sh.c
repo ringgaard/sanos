@@ -1097,6 +1097,22 @@ int cmd_sound(int argc, char *argv[])
   return ioctl(1, IOCTL_SOUND, &freq, 4);
 }
 
+int cmd_test(int argc, char *argv[])
+{
+  int fd;
+  int rc;
+
+  fd = open("/etc/os.ini", O_RDWR);
+  lseek(fd, 100, SEEK_SET);
+  printf("chsize\n");
+  rc = chsize(fd, tell(fd));
+  printf("chsize returned %d\n", rc);
+  write(fd, "end.", 4);
+  close(fd);
+
+  return 0;
+}
+
 int cmd_umount(int argc, char *argv[])
 {
   char *path;
@@ -1271,6 +1287,7 @@ struct command cmdtab[] =
   {"rd",       cmd_rmdir,    "Remove directory"},
   {"rmdir",    cmd_rmdir,    "Remove directory"},
   {"sound",    cmd_sound,    "Play sound in speaker"},
+  {"test",     cmd_test,     "Dummy command for misc. tests"},
   {"type",     cmd_cat,      "Display file"},
   {"umount",   cmd_umount,   "Unmount file system"},
   {"write",    cmd_write,    "Write zero filled file to disk"},

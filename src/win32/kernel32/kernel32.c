@@ -1737,9 +1737,37 @@ DWORD WINAPI SetFilePointer
   DWORD dwMoveMethod
 )
 {
+  int rc;
   TRACE("SetFilePointer");
-  panic("SetFilePointer not implemented");
-  return 0;
+  
+  if (lpDistanceToMoveHigh)
+  {
+    LARGE_INTEGER offset;
+    LARGE_INTEGER retval;
+
+    offset.LowPart = lDistanceToMove;
+    offset.HighPart = *lpDistanceToMoveHigh;
+
+    retval.QuadPart = lseek64((handle_t) hFile, offset.QuadPart, dwMoveMethod);
+    if (retval.QuadPart < 0)
+    {
+      errno = (int) -retval.QuadPart;
+      rc = -1;
+    }
+    else
+    {
+      errno = 0;
+      *lpDistanceToMoveHigh = retval.HighPart;
+      rc = retval.LowPart;
+    }
+  }
+  else
+  {
+    rc = lseek((handle_t) hFile, lDistanceToMove, dwMoveMethod);
+    if (rc < 0) rc = -1;
+  }
+
+  return rc;
 }
 
 BOOL WINAPI SetFileTime
