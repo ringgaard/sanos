@@ -61,7 +61,7 @@ struct hash *hash_alloc(int hashsize)
   int i = 3, hashlim = 8;
 
   // Adjust hash size to the next power of 2
-  while(hashsize > hashlim) 
+  while (hashsize > hashlim) 
   {
     i++;
     hashlim <<= 1;
