@@ -17,27 +17,34 @@
 // Debugger commands
 //
 
-#define DBGCMD_CONNECT            0
-#define DBGCMD_CONTINUE           1
-#define DBGCMD_READ_MEMORY        2
-#define DBGCMD_WRITE_MEMORY       3
-#define DBGCMD_SUSPEND_THREAD     4
-#define DBGCMD_RESUME_THREAD      5
-#define DBGCMD_GET_THREAD_CONTEXT 6
-#define DBGCMD_SET_THREAD_CONTEXT 7
-#define DBGCMD_GET_SELECTOR       8
-#define DBGCMD_GET_MODULES        9
-#define DBGCMD_GET_THREADS        10
+#define DBGCMD_CONNECT            0x00
+#define DBGCMD_CONTINUE           0x01
+#define DBGCMD_READ_MEMORY        0x02
+#define DBGCMD_WRITE_MEMORY       0x03
+#define DBGCMD_SUSPEND_THREAD     0x04
+#define DBGCMD_RESUME_THREAD      0x05
+#define DBGCMD_GET_THREAD_CONTEXT 0x06
+#define DBGCMD_SET_THREAD_CONTEXT 0x07
+#define DBGCMD_GET_SELECTOR       0x08
+#define DBGCMD_GET_MODULES        0x09
+#define DBGCMD_GET_THREADS        0x0A
 
-#define DBGCMD_EVENT_XXX          32
+#define DBGEVT_TRAP               0x20
+#define DBGEVT_CREATE_THREAD      0x21
+#define DBGEVT_EXIT_THREAD        0x22
+#define DBGEVT_LOAD_MODULE        0x23
+#define DBGEVT_UNLOAD_MODULE      0x24
+#define DBGEVT_OUTPUT             0x25
 
+#define DBGCMD_REPLY              0x40
 
-#define DBGCMD_REPLY              64
-
-#define DBGERR_VERSION            128
-#define DBGERR_INVALIDCMD         129
-#define DBGERR_INVALIDADDR        130
-#define DBGERR_TOOBIG             130
+#define DBGERR_VERSION            0x80
+#define DBGERR_INVALIDCMD         0x81
+#define DBGERR_INVALIDADDR        0x82
+#define DBGERR_TOOBIG             0x83
+#define DBGERR_INVALIDTHREAD      0x84
+#define DBGERR_INVALIDSEL         0x85
+#define DBGERR_NOCONTEXT          0x86
 
 struct dbg_hdr
 {
@@ -50,34 +57,97 @@ struct dbg_hdr
 
 struct dbg_version
 {
-  int vesion;
+  int version;
 };
 
-struct dbg_readmem
-{
-  void *addr;
-  unsigned long size;
-};
-
-struct dbg_writemem
+struct dbg_memory
 {
   void *addr;
   unsigned long size;
   unsigned char data[0];
 };
 
+struct dbg_thread
+{
+  int count;
+  tid_t threadids[0];
+};
+
+struct dbg_context
+{
+  tid_t tid;
+  struct context ctxt;
+};
+
+struct dbg_selector
+{
+  int sel;
+  struct segment seg;
+};
+
+struct dbg_module
+{
+  int count;
+  hmodule_t hmods[0];
+};
+
+struct dbg_evt_trap
+{
+  unsigned long traptype;
+  unsigned long errcode;
+  unsigned long eip;
+  void *addr;
+};
+
+struct dbg_evt_create_thread
+{
+  tid_t tid;
+  void *tib;
+  void *startaddr;
+};
+
+struct dbg_evt_exit_thread
+{
+  tid_t tid;
+  int exitcode;
+};
+
+struct dbg_evt_load_module
+{
+  hmodule_t hmod;
+};
+
+struct dbg_evt_unload_module
+{
+  hmodule_t hmod;
+};
+
+struct dbg_evt_output
+{
+  char *msgptr;
+  int msglen;
+};
+
 union dbg_body
 {
-  unsigned char *data;
-  char *string;
-  struct dbg_version version;
-  struct dbg_readmem readmem;
-  struct dbg_writemem writemem;
+  struct dbg_version ver;
+  struct dbg_memory mem;
+  struct dbg_thread thr;
+  struct dbg_context ctx;
+  struct dbg_selector sel;
+  struct dbg_module mod;
+
+  struct dbg_evt_trap;
+  struct dbg_evt_create_thread create;
+  struct dbg_evt_exit_thread exit;
+  struct dbg_evt_load_module load;
+  struct dbg_evt_unload_module unload;
+  struct dbg_evt_output output;
 };
 
 #define MAX_DBG_PACKETLEN (MAX_DBG_CHUNKSIZE + sizeof(union dbg_body))
 
-static int debugging = 0;
+int debugging = 0;
 static char dbgdata[MAX_DBG_PACKETLEN];
 
 void init_debug_port()
@@ -116,7 +186,7 @@ static void dbg_recv(void *buffer, int count)
   }
 }
 
-static void dbg_send_packet(unsigned char cmd, unsigned char id, void *data, unsigned int len)
+static void dbg_send_packet(int cmd, unsigned char id, void *data, unsigned int len)
 {
   unsigned int n;
   struct dbg_hdr hdr;
@@ -124,7 +194,7 @@ static void dbg_send_packet(unsigned char cmd, unsigned char id, void *data, uns
   unsigned char *p;
 
   hdr.signature = DBG_SIGNATURE;
-  hdr.cmd = cmd;
+  hdr.cmd = (unsigned char) cmd;
   hdr.len = len;
   hdr.id = id;
   hdr.checksum = 0;
@@ -176,56 +246,173 @@ static int dbg_recv_packet(struct dbg_hdr *hdr, void *data)
 
 static void dbg_connect(struct dbg_hdr *hdr, union dbg_body *body)
 {
-  if (body->version.vesion != DRPC_VERSION)
+  if (body->ver.version != DRPC_VERSION)
     dbg_send_error(DBGERR_VERSION, hdr->id);
   else
   {
-    body->version.vesion = DRPC_VERSION;
-    dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_version));
+    body->ver.version = DRPC_VERSION;
+    dbg_send_packet(hdr->cmd + DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_version));
   }
 }
 
 static void dbg_read_memory(struct dbg_hdr *hdr, union dbg_body *body)
 {
-  if (!mem_mapped(body->readmem.addr, body->readmem.size))
+  if (!mem_mapped(body->mem.addr, body->mem.size))
     dbg_send_error(DBGERR_INVALIDADDR, hdr->id);
   else
-    dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body->readmem.addr, body->readmem.size);
+    dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body->mem.addr, body->mem.size);
 }
 
 static void dbg_write_memory(struct dbg_hdr *hdr, union dbg_body *body)
 {
+  if (!mem_mapped(body->mem.addr, body->mem.size))
+    dbg_send_error(DBGERR_INVALIDADDR, hdr->id);
+  else
+  {
+    memcpy(body->mem.addr, body->mem.data, body->mem.size);
+    dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, NULL, 0);
+  }
 }
 
 static void dbg_suspend_thread(struct dbg_hdr *hdr, union dbg_body *body)
 {
+  int n;
+  struct thread *t;
+
+  for (n = 0; n < body->thr.count; n++)
+  {
+    t = get_thread(body->thr.threadids[n]);
+    if (t == NULL)
+      body->thr.threadids[n] = -ENOENT;
+    else
+      body->thr.threadids[n] = suspend_thread(t);
+  }
+
+  dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, hdr->len);
 }
 
 static void dbg_resume_thread(struct dbg_hdr *hdr, union dbg_body *body)
 {
+  int n;
+  struct thread *t;
+
+  for (n = 0; n < body->thr.count; n++)
+  {
+    t = get_thread(body->thr.threadids[n]);
+    if (t == NULL)
+      body->thr.threadids[n] = -ENOENT;
+    else
+      body->thr.threadids[n] = resume_thread(t);
+  }
+
+  dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, hdr->len);
 }
 
 static void dbg_get_thread_context(struct dbg_hdr *hdr, union dbg_body *body)
 {
+  struct thread *t;
+
+  t = get_thread(body->ctx.tid);
+  if (!t) 
+  {
+    dbg_send_error(DBGERR_INVALIDTHREAD, hdr->id);
+    return;
+  }
+
+  if (!t->ctxt)
+  {
+    dbg_send_error(DBGERR_NOCONTEXT, hdr->id);
+    return;
+  }
+
+  memcpy(&body->ctx.ctxt, t->ctxt, sizeof(struct context));
+  dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_context));
 }
 
 static void dbg_set_thread_context(struct dbg_hdr *hdr, union dbg_body *body)
 {
+  struct thread *t;
+
+  t = get_thread(body->ctx.tid);
+  if (!t) 
+  {
+    dbg_send_error(DBGERR_INVALIDTHREAD, hdr->id);
+    return;
+  }
+
+  if (!t->ctxt)
+  {
+    dbg_send_error(DBGERR_NOCONTEXT, hdr->id);
+    return;
+  }
+
+  memcpy(t->ctxt, &body->ctx.ctxt, sizeof(struct context));
+  dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, NULL, 0);
 }
 
 static void dbg_get_selector(struct dbg_hdr *hdr, union dbg_body *body)
 {
+  int gdtidx = body->sel.sel >> 3;
+
+  if (gdtidx < 0 || gdtidx >= MAXGDT) 
+  {
+    dbg_send_error(DBGERR_INVALIDSEL, hdr->id);
+    return;
+  }
+
+  memcpy(&body->sel.seg, &syspage->gdt[gdtidx], sizeof(struct segment));
+  dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_selector));
 }
 
 static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
 {
+  struct peb *peb = (struct peb *) PEB_ADDRESS;
+  struct module *mod;
+  int n = 0;
+  
+  mod = kmods.modules;
+  if (kmods.modules)
+  {
+    while (1)
+    {
+      body->mod.hmods[n++] = mod->hmod;
+      mod = mod->next;
+      if (mod == kmods.modules) break;
+    }
+  }
+
+  if (peb && peb->usermods)
+  {
+    mod = peb->usermods->modules;
+    while (1)
+    {
+      body->mod.hmods[n++] = mod->hmod;
+      mod = mod->next;
+      if (mod == peb->usermods->modules) break;
+    }
+  }
+
+  if (n == 0) body->mod.hmods[n++] = (hmodule_t) OSBASE;
+
+  body->mod.count = n;
+  dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_module) + n * sizeof(hmodule_t));
 }
 
 static void dbg_get_threads(struct dbg_hdr *hdr, union dbg_body *body)
 {
+  int n = 0;
+  struct thread *t = threadlist;
+  while (1)
+  {
+    body->thr.threadids[n++] = t->id;
+    t = t->next;
+    if (t == threadlist) break;
+  }
+  body->thr.count = n;
+  dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_thread) + n * sizeof(tid_t));
 }
 
-static void handle_drpc()
+static void dbg_main()
 {
   struct dbg_hdr hdr;
   union dbg_body *body = (union dbg_body *) dbgdata;
@@ -312,13 +499,27 @@ void shell();
 
 void dbg_enter(struct context *ctxt, void *addr)
 {
+  struct dbg_evt_trap trap;
+
   kprintf("trap %d (%p)\n", ctxt->traptype, addr);
   kprintf("enter kernel debugger\n");
   current_thread()->ctxt = ctxt;
   dumpregs(ctxt);
 
   //if (ctxt->traptype != 3) panic("system halted");
-  shell();
+  //shell();
+
+  if (debugging)
+  {
+    trap.traptype = ctxt->traptype;
+    trap.errcode = ctxt->errcode;
+    trap.eip = ctxt->eip;
+    trap.addr = addr;
+
+    dbg_send_packet(DBGEVT_TRAP, 0, &trap, sizeof(struct dbg_evt_trap));
+  }
+
+  dbg_main();
 
   if (current_thread()->suspend_count > 0)
     dispatch();
@@ -328,20 +529,69 @@ void dbg_enter(struct context *ctxt, void *addr)
 
 void dbg_notify_create_thread(struct thread *t, void *startaddr)
 {
+  struct dbg_evt_create_thread create;
+
+  if (debugging)
+  {
+    create.tid = t->id;
+    create.tib = t->tib;
+    create.startaddr = startaddr;
+
+    dbg_send_packet(DBGEVT_CREATE_THREAD, 0, &create, sizeof(struct dbg_evt_create_thread));
+    dbg_main();
+  }
 }
 
 void dbg_notify_exit_thread(struct thread *t)
 {
+  struct dbg_evt_exit_thread exit;
+
+  if (debugging)
+  {
+    exit.tid = t->id;
+    exit.exitcode = t->exitcode;
+
+    dbg_send_packet(DBGEVT_EXIT_THREAD, 0, &exit, sizeof(struct dbg_evt_exit_thread));
+    dbg_main();
+  }
 }
 
 void dbg_notify_load_module(hmodule_t hmod)
 {
+  struct dbg_evt_load_module load;
+
+  if (debugging)
+  {
+    load.hmod = hmod;
+
+    dbg_send_packet(DBGEVT_LOAD_MODULE, 0, &load, sizeof(struct dbg_evt_load_module));
+    dbg_main();
+  }
 }
 
 void dbg_notify_unload_module(hmodule_t hmod)
 {
+  struct dbg_evt_unload_module unload;
+
+  if (debugging)
+  {
+    unload.hmod = hmod;
+
+    dbg_send_packet(DBGEVT_UNLOAD_MODULE, 0, &unload, sizeof(struct dbg_evt_unload_module));
+    dbg_main();
+  }
 }
 
 void dbg_output(char *msg)
 {
+  struct dbg_evt_output output;
+
+  if (debugging)
+  {
+    output.msgptr = msg;
+    output.msglen = strlen(msg) + 1;
+
+    dbg_send_packet(DBGEVT_OUTPUT, 0, &output, sizeof(struct dbg_evt_output));
+    dbg_main();
+  }
 }

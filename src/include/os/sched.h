@@ -52,6 +52,8 @@ int init_user_thread(struct thread *t, void *entrypoint);
 int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned long stack_commit);
 int destroy_thread(struct thread *t);
 
+struct thread *get_thread(tid_t tid);
+
 int suspend_thread(struct thread *t);
 int resume_thread(struct thread *t);
 void terminate_thread(int exitcode);

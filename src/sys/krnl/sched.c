@@ -300,6 +300,18 @@ int destroy_thread(struct thread *t)
   return 0;
 }
 
+struct thread *get_thread(tid_t tid)
+{
+  struct thread *t = threadlist;
+
+  while (1)
+  {
+    if (t->id == tid) return t;
+    t = t->next;
+    if (t == threadlist) return NULL;
+  }
+}
+
 int suspend_thread(struct thread *t)
 {
   int prevcount = t->suspend_count;

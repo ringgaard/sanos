@@ -54,22 +54,22 @@
 
 struct segment
 {
-  unsigned short limit_low;      // limit 0..15
-  unsigned short base_low;       // base  0..15
-  unsigned char base_med;        // base  16..23
-  unsigned char access;          // access byte
-  unsigned char limit_high:4;    // limit 16..19
-  unsigned char granularity:4;   // granularity
-  unsigned char base_high;       // base 24..31
+  unsigned short limit_low;      // Limit 0..15
+  unsigned short base_low;       // Base  0..15
+  unsigned char base_med;        // Base  16..23
+  unsigned char access;          // Access byte
+  unsigned char limit_high:4;    // Limit 16..19
+  unsigned char granularity:4;   // Granularity
+  unsigned char base_high;       // Base 24..31
 };
 
 struct gate
 {
-  unsigned short offset_low;   // offset 0..15
-  unsigned short selector;     // selector
+  unsigned short offset_low;   // Offset 0..15
+  unsigned short selector;     // Selector
   unsigned char notused;
-  unsigned char access;        // access flags
-  unsigned short offset_high;  // offset 16..31
+  unsigned char access;        // Access flags
+  unsigned short offset_high;  // Offset 16..31
 };
 
 union dte
