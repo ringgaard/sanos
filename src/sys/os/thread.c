@@ -256,6 +256,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
 
   if (mode & P_NOWAIT)
   {
+    if (tibptr) *tibptr = tib;
     resume(hthread);
     return hthread;
   }

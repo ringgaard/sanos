@@ -87,6 +87,9 @@ proc_t __xt_z[] = { NULL };
 
 #pragma comment(linker, "/merge:.CRT=.data")
 
+int argc;
+char **argv;
+
 int main(int argc, char *argv[]);
 
 int atexit(proc_t exitfunc)
@@ -159,12 +162,13 @@ static void termcrt()
 
   // Execute C terminators
   initterm(__xt_a, __xt_z);
+
+  // Deallocate arguments
+  free_args(argc, argv);
 }
 
 int mainCRTStartup(hmodule_t hmod, char *cmdline, void *env)
 {
-  int argc;
-  char **argv;
   int rc;
 
   argc = parse_args(cmdline, NULL);
@@ -172,10 +176,11 @@ int mainCRTStartup(hmodule_t hmod, char *cmdline, void *env)
   parse_args(cmdline, argv);
 
   rc = initcrt();
-  if (rc == 0) rc = main(argc, argv);
-  termcrt();
-
-  free_args(argc, argv);
+  if (rc == 0) 
+  {
+    gettib()->job->atexit = termcrt;
+    rc = main(argc, argv);
+  }
 
   return rc;
 }

@@ -1768,7 +1768,6 @@ int main(int argc, char *argv[])
 {
   if (sizeof(struct tib) != PAGESIZE) printf("warning: tib is %d bytes (%d expected)\n", sizeof(struct tib), PAGESIZE);
 
-  //beginthread(ttyd, 0, "/dev/com4", CREATE_NEW_JOB | CREATE_DETACHED, NULL);
   if (peb->ipaddr.s_addr != INADDR_ANY) beginthread(telnetd, 0, NULL, 0, NULL);
 
   shell();
