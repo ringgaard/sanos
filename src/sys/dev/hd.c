@@ -33,6 +33,8 @@
 
 #include <os/krnl.h>
 
+#define NOIDERESET
+
 #define SECTORSIZE              512
 #define CDSECTORSIZE            2048
 
@@ -1424,6 +1426,12 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase, int *m
   init_mutex(&hdc->lock, 0);
   init_event(&hdc->ready, 0, 0);
 
+#ifdef NOIDERESET
+  // Assume both devices connected to force selection by BIOS settings
+  *masterif = HDIF_ATA;
+  *slaveif = HDIF_ATA;
+#else
+  // Assume no devices connected to controller
   *masterif = HDIF_NONE;
   *slaveif = HDIF_NONE;
 
@@ -1441,17 +1449,37 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase, int *m
   idedelay();
 
   // Wait for reset to finish on all present devices
-  if (*masterif != HDIF_NONE) wait_reset_done(hdc, HD0_DRVSEL);
-  if (*slaveif != HDIF_NONE) wait_reset_done(hdc, HD1_DRVSEL);
+  if (*masterif != HDIF_NONE) 
+  {
+    int rc = wait_reset_done(hdc, HD0_DRVSEL);
+    if (rc < 0)
+    {
+      kprintf("hd: error %d waiting for reset to complete on master device\n");
+      *masterif = HDIF_NONE;
+    }
+  }
+
+  if (*slaveif != HDIF_NONE) 
+  {
+    int rc = wait_reset_done(hdc, HD1_DRVSEL);
+    if (rc < 0)
+    {
+      kprintf("hd: error %d waiting for reset to complete on slave device\n");
+      *slaveif = HDIF_NONE;
+    }
+  }
 
   // Determine interface types
   if (*masterif != HDIF_NONE) *masterif = get_interface_type(hdc, HD0_DRVSEL);
   if (*slaveif != HDIF_NONE) *slaveif = get_interface_type(hdc, HD1_DRVSEL);
+#endif
 
   // Enable interrupts
   register_interrupt(&hdc->intr, IRQ2INTR(irq), hdc_handler, hdc);
   enable_irq(irq);
+
   _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15);
+  idedelay();
 
   return 0;
 }
@@ -1557,8 +1585,12 @@ void init_hd()
   int masterif;
   int slaveif;
 
-  //numhd = syspage->biosdata[0x75];
   numhd = 4;
+
+#ifdef NOIDERESET
+  numhd = syspage->biosdata[0x75];
+  kprintf("hd: %d IDE devices reported by BIOS\n", numhd);
+#endif
 
   ide = lookup_unit_by_class(NULL, PCI_CLASS_STORAGE_IDE, PCI_SUBCLASS_MASK);
   if (ide)
