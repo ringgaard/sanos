@@ -56,7 +56,7 @@ int ldr_size;
 char ssect[SECTORSIZE];
 char bsect[SECTORSIZE];
 char msect[SECTORSIZE];
-char block[4096];
+char block[64 * 1024];
 char str[128];
 
 //
@@ -309,7 +309,7 @@ int dokernel(struct section *sect)
   left = size;
   while (left > 0)
   {
-    bytes = read(fin, block, 4096);
+    bytes = read(fin, block, sizeof block);
     if (!bytes) return -EIO;
     if (bytes < 0) return bytes;
 
@@ -411,7 +411,7 @@ int copy_file(char *srcfn, char *dstfn)
   fout = open(dstfn,  O_CREAT | O_EXCL | O_BINARY, S_IREAD | S_IWRITE);
   if (fout < 0) return fout;
 
-  while ((bytes = read(fin , block, 4096)) > 0)
+  while ((bytes = read(fin , block, sizeof block)) > 0)
   {
     rc = write(fout, block, bytes);
     if (rc < 0) return rc;
