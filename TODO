@@ -521,3 +521,4 @@ CHANGES
 
 - mkmutex() and mutexrel() implemented
 
+- pread() and pwrite() implemented

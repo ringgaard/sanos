@@ -604,13 +604,15 @@ int read_translated(struct file *filp, void *data, size_t size)
     filp->chbuf = LF;
     if (size == 1) return 1;
 
-    rc = filp->fs->ops->read(filp, buf + 1, size - 1);
+    rc = filp->fs->ops->read(filp, buf + 1, size - 1, filp->pos);
+    if (rc > 0) filp->pos += rc;
     if (rc < 0) return rc;
     bytes = rc + 1;
   }
   else
   {
-    rc = filp->fs->ops->read(filp, buf, size);
+    rc = filp->fs->ops->read(filp, buf, size, filp->pos);
+    if (rc > 0) filp->pos += rc;
     if (rc < 0) return rc;
     bytes = rc;
   }
@@ -640,7 +642,8 @@ int read_translated(struct file *filp, void *data, size_t size)
 	// We must peek ahead to see if next char is an LF.
 	p++;
 
-	rc = filp->fs->ops->read(filp, &peekch, 1);
+	rc = filp->fs->ops->read(filp, &peekch, 1, filp->pos);
+        if (rc > 0) filp->pos += rc;
 	if (rc <= 0) 
 	{
 	  // Couldn't read ahead, store CR
@@ -679,7 +682,26 @@ int read(struct file *filp, void *data, size_t size)
   if (filp->flags & O_TEXT)
     rc = read_translated(filp, data, size);
   else
-    rc = filp->fs->ops->read(filp, data, size);
+  {
+    rc = filp->fs->ops->read(filp, data, size, filp->pos);
+    if (rc > 0) filp->pos += rc;
+  }
+  unlock_fs(filp->fs, FSOP_READ);
+  return rc;
+}
+
+int pread(struct file *filp, void *data, size_t size, off64_t offset)
+{
+  int rc;
+
+  if (!filp) return -EINVAL;
+  if (!data && size > 0 || offset < 0) return -EINVAL;
+  if (filp->flags & O_WRONLY) return -EACCES;
+  if (filp->flags & O_TEXT) return -ENXIO;
+  
+  if (!filp->fs->ops->read) return -ENOSYS;
+  if (lock_fs(filp->fs, FSOP_READ) < 0) return -ETIMEOUT;
+  rc = filp->fs->ops->read(filp, data, size, offset);
   unlock_fs(filp->fs, FSOP_READ);
   return rc;
 }
@@ -714,7 +736,8 @@ static int write_translated(struct file *filp, void *data, size_t size)
     }
 
     // Write the buffer and update total
-    rc = filp->fs->ops->write(filp, lfbuf, q - lfbuf);
+    rc = filp->fs->ops->write(filp, lfbuf, q - lfbuf, filp->pos);
+    if (rc > 0) filp->pos += rc;
     if (rc < 0) return rc;
     bytes += rc;
     if (rc < q - lfbuf) break;
@@ -736,7 +759,26 @@ int write(struct file *filp, void *data, size_t size)
   if (filp->flags & O_TEXT)
     rc = write_translated(filp, data, size);
   else
-    rc = filp->fs->ops->write(filp, data, size);
+  {
+    rc = filp->fs->ops->write(filp, data, size, filp->pos);
+    if (rc > 0) filp->pos += rc;
+  }
+  unlock_fs(filp->fs, FSOP_WRITE);
+  return rc;
+}
+
+int pwrite(struct file *filp, void *data, size_t size, off64_t offset)
+{
+  int rc;
+
+  if (!filp) return -EINVAL;
+  if (!data && size > 0 || offset < 0) return -EINVAL;
+  if (filp->flags & O_RDONLY) return -EACCES;
+  if (filp->flags & O_TEXT) return -ENXIO;
+
+  if (!filp->fs->ops->write) return -ENOSYS;
+  if (lock_fs(filp->fs, FSOP_WRITE) < 0) return -ETIMEOUT;
+  rc = filp->fs->ops->write(filp, data, size, offset);
   unlock_fs(filp->fs, FSOP_WRITE);
   return rc;
 }

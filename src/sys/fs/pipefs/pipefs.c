@@ -36,8 +36,8 @@
 int pipefs_mount(struct fs *fs, char *opts);
 int pipefs_close(struct file *filp);
 int pipefs_flush(struct file *filp);
-int pipefs_read(struct file *filp, void *data, size_t size);
-int pipefs_write(struct file *filp, void *data, size_t size);
+int pipefs_read(struct file *filp, void *data, size_t size, off64_t pos);
+int pipefs_write(struct file *filp, void *data, size_t size, off64_t pos);
 int pipefs_ioctl(struct file *filp, int cmd, void *data, size_t size);
 off64_t pipefs_lseek(struct file *filp, off64_t offset, int origin);
 int pipefs_fstat(struct file *filp, struct stat64 *buffer);
@@ -202,7 +202,7 @@ int pipefs_flush(struct file *filp)
   return 0;
 }
 
-int pipefs_read(struct file *filp, void *data, size_t size)
+int pipefs_read(struct file *filp, void *data, size_t size, off64_t pos)
 {
   struct pipe *pipe = (struct pipe *) filp->data;
   char *p;
@@ -273,7 +273,7 @@ int pipefs_read(struct file *filp, void *data, size_t size)
   return count;
 }
 
-int pipefs_write(struct file *filp, void *data, size_t size)
+int pipefs_write(struct file *filp, void *data, size_t size, off64_t pos)
 {
   struct pipe *pipe = (struct pipe *) filp->data;
   char *p;

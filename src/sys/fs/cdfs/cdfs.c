@@ -489,7 +489,7 @@ int cdfs_flush(struct file *filp)
   return 0;
 }
 
-int cdfs_read(struct file *filp, void *data, size_t size)
+int cdfs_read(struct file *filp, void *data, size_t size, off64_t pos)
 {
   struct cdfs_file *cdfile = (struct cdfs_file *) filp->data;
   struct cdfs *cdfs = (struct cdfs *) filp->fs->data;
@@ -504,15 +504,15 @@ int cdfs_read(struct file *filp, void *data, size_t size)
 
   read = 0;
   p = (char *) data;
-  while (filp->pos < cdfile->size && size > 0)
+  while (pos < cdfile->size && size > 0)
   {
-    iblock = (int) filp->pos / CDFS_BLOCKSIZE;
-    start = (int) filp->pos % CDFS_BLOCKSIZE;
+    iblock = (int) pos / CDFS_BLOCKSIZE;
+    start = (int) pos % CDFS_BLOCKSIZE;
 
     count = CDFS_BLOCKSIZE - start;
     if (count > size) count = size;
 
-    left = cdfile->size - (int) filp->pos;
+    left = cdfile->size - (int) pos;
     if (count > left) count = left;
     if (count <= 0) break;
 
@@ -531,7 +531,7 @@ int cdfs_read(struct file *filp, void *data, size_t size)
       release_buffer(cdfs->cache, buf);
     }
 
-    filp->pos += count;
+    pos += count;
     p += count;
     read += count;
     size -= count;

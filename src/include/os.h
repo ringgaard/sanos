@@ -552,7 +552,7 @@ typedef struct critsect *critsect_t;
 #define PS2                     '/'     // Alternate path separator
 
 #define SH_FLAGS(flags)                 (((flags) >> 16) & 0x0F)
-#define FILE_FLAGS(flags, shflags)      ((flags) | ((shflags) << 16))
+#define FILE_FLAGS(flags, shflags)      (((flags) & 0xFFFF) | (((shflags) & 0x0F) << 16))
 
 #ifndef _STAT_DEFINED
 #define _STAT_DEFINED
@@ -966,7 +966,7 @@ struct peb
 #define TERM_CONSOLE   1
 #define TERM_VT100     2
 
-#define CRTBASESIZE    (5 * 8 + 512)
+#define CRTBASESIZE    (8 + 3 * 32 + 512)
 
 struct job
 {
@@ -1146,6 +1146,8 @@ osapi handle_t dup2(handle_t h1, handle_t h2);
 
 osapi int read(handle_t f, void *data, size_t size);
 osapi int write(handle_t f, const void *data, size_t size);
+osapi int pread(handle_t f, void *data, size_t size, off64_t offset);
+osapi int pwrite(handle_t f, const void *data, size_t size, off64_t offset);
 osapi int ioctl(handle_t f, int cmd, const void *data, size_t size);
 
 osapi int readv(handle_t f, const struct iovec *iov, int count);

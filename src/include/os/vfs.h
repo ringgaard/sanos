@@ -117,8 +117,8 @@ struct fsops
   int (*close)(struct file *filp);
   int (*flush)(struct file *filp);
 
-  int (*read)(struct file *filp, void *data, size_t size);
-  int (*write)(struct file *filp, void *data, size_t size);
+  int (*read)(struct file *filp, void *data, size_t size, off64_t pos);
+  int (*write)(struct file *filp, void *data, size_t size, off64_t pos);
   int (*ioctl)(struct file *filp, int cmd, void *data, size_t size);
 
   off64_t (*tell)(struct file *filp);
@@ -173,6 +173,8 @@ krnlapi int setmode(struct file *filp, int mode);
 
 krnlapi int read(struct file *filp, void *data, size_t size);
 krnlapi int write(struct file *filp, void *data, size_t size);
+krnlapi int pread(struct file *filp, void *data, size_t size, off64_t offset);
+krnlapi int pwrite(struct file *filp, void *data, size_t size, off64_t offset);
 krnlapi int ioctl(struct file *filp, int cmd, void *data, size_t size);
 
 krnlapi int readv(struct file *filp, struct iovec *iov, int count);

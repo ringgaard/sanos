@@ -40,7 +40,7 @@ ino_t next_procino = PROC_ROOT_INODE + 1;
 int procfs_open(struct file *filp, char *name);
 int procfs_close(struct file *filp);
 
-int procfs_read(struct file *filp, void *data, size_t size);
+int procfs_read(struct file *filp, void *data, size_t size, off64_t pos);
 
 off64_t procfs_tell(struct file *filp);
 off64_t procfs_lseek(struct file *filp, off64_t offset, int origin);
@@ -250,7 +250,7 @@ int procfs_close(struct file *filp)
   return 0;
 }
 
-int procfs_read(struct file *filp, void *data, size_t size)
+int procfs_read(struct file *filp, void *data, size_t size, off64_t pos)
 {
   struct proc_file *pf = filp->data;
   struct proc_blk *blk;
@@ -264,7 +264,7 @@ int procfs_read(struct file *filp, void *data, size_t size)
   if (!size) return 0;
 
   blk = pf->blkhead;
-  while (blk && start + blk->size <= filp->pos)
+  while (blk && start + blk->size <= pos)
   {
     start += blk->size;
     blk = blk->next;
@@ -272,7 +272,7 @@ int procfs_read(struct file *filp, void *data, size_t size)
 
   if (blk)
   {
-    offset = (int) filp->pos - start;
+    offset = (int) pos - start;
 
     if (offset < 0 || offset >= PROC_BLKSIZE)
     {
@@ -304,7 +304,6 @@ int procfs_read(struct file *filp, void *data, size_t size)
     blk = blk->next;
   }
 
-  filp->pos += size - left;
   return size - left;
 }
 

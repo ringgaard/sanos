@@ -315,7 +315,7 @@ int dfs_flush(struct file *filp)
   return 0;
 }
 
-int dfs_read(struct file *filp, void *data, size_t size)
+int dfs_read(struct file *filp, void *data, size_t size, off64_t pos)
 {
   struct inode *inode;
   size_t read;
@@ -330,15 +330,15 @@ int dfs_read(struct file *filp, void *data, size_t size)
   inode = (struct inode *) filp->data;
   read = 0;
   p = (char *) data;
-  while (filp->pos < inode->desc->size && size > 0)
+  while (pos < inode->desc->size && size > 0)
   {
-    iblock = (unsigned int) filp->pos / inode->fs->blocksize;
-    start = (unsigned int) filp->pos % inode->fs->blocksize;
+    iblock = (unsigned int) pos / inode->fs->blocksize;
+    start = (unsigned int) pos % inode->fs->blocksize;
 
     count = inode->fs->blocksize - start;
     if (count > size) count = size;
 
-    left = inode->desc->size - (size_t) filp->pos;
+    left = inode->desc->size - (size_t) pos;
     if (count > left) count = left;
     if (count <= 0) break;
 
@@ -358,7 +358,7 @@ int dfs_read(struct file *filp, void *data, size_t size)
       release_buffer(inode->fs->cache, buf);
     }
 
-    filp->pos += count;
+    pos += count;
     p += count;
     read += count;
     size -= count;
@@ -367,7 +367,7 @@ int dfs_read(struct file *filp, void *data, size_t size)
   return read;
 }
 
-int dfs_write(struct file *filp, void *data, size_t size)
+int dfs_write(struct file *filp, void *data, size_t size, off64_t pos)
 {
   struct inode *inode;
   size_t written;
@@ -381,13 +381,13 @@ int dfs_write(struct file *filp, void *data, size_t size)
 
   inode = (struct inode *) filp->data;
 
-  if (filp->flags & O_APPEND) filp->pos = inode->desc->size;
-  if (filp->pos + size > DFS_MAXFILESIZE) return -EFBIG;
+  if (filp->flags & O_APPEND) pos = inode->desc->size;
+  if (pos + size > DFS_MAXFILESIZE) return -EFBIG;
   if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY) return -EISDIR;
 
-  if (filp->pos > inode->desc->size)
+  if (pos > inode->desc->size)
   {
-    rc = dfs_chsize(filp, filp->pos);
+    rc = dfs_chsize(filp, pos);
     if (rc < 0) return rc;
   }
 
@@ -395,8 +395,8 @@ int dfs_write(struct file *filp, void *data, size_t size)
   p = (char *) data;
   while (size > 0)
   {
-    iblock = (unsigned int) filp->pos / inode->fs->blocksize;
-    start = (unsigned int) filp->pos % inode->fs->blocksize;
+    iblock = (unsigned int) pos / inode->fs->blocksize;
+    start = (unsigned int) pos % inode->fs->blocksize;
 
     count = inode->fs->blocksize - start;
     if (count > size) count = size;
@@ -435,14 +435,14 @@ int dfs_write(struct file *filp, void *data, size_t size)
     }
 
     filp->flags |= F_MODIFIED;
-    filp->pos += count;
+    pos += count;
     p += count;
     written += count;
     size -= count;
 
-    if (filp->pos > inode->desc->size)
+    if (pos > inode->desc->size)
     {
-      inode->desc->size = (loff_t) filp->pos;
+      inode->desc->size = (loff_t) pos;
       mark_inode_dirty(inode);
     }
   }

@@ -96,7 +96,7 @@ typedef struct _iobuf FILE;
 
 #define stdin   __getstdhndl(0)
 #define stdout  __getstdhndl(1)
-#define stderr  __getstdhndl(3)
+#define stderr  __getstdhndl(2)
 
 //#define stdin   (&((FILE *) (gettib()->job->crtbase))[0])
 //#define stdout  (&((FILE *) (gettib()->job->crtbase))[1])

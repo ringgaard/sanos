@@ -41,8 +41,8 @@ int devfs_open(struct file *filp, char *name);
 int devfs_close(struct file *filp);
 int devfs_flush(struct file *filp);
 
-int devfs_read(struct file *filp, void *data, size_t size);
-int devfs_write(struct file *filp, void *data, size_t size);
+int devfs_read(struct file *filp, void *data, size_t size, off64_t pos);
+int devfs_write(struct file *filp, void *data, size_t size, off64_t pos);
 int devfs_ioctl(struct file *filp, int cmd, void *data, size_t size);
 
 off64_t devfs_tell(struct file *filp);
@@ -158,7 +158,7 @@ int devfs_flush(struct file *filp)
   return 0;
 }
 
-int devfs_read(struct file *filp, void *data, size_t size)
+int devfs_read(struct file *filp, void *data, size_t size, off64_t pos)
 {
   struct devfile *df = (struct devfile *) filp->data;
   int read;
@@ -167,12 +167,11 @@ int devfs_read(struct file *filp, void *data, size_t size)
   if (df == DEVROOT) return -EBADF;
   if (filp->flags & O_NONBLOCK) flags |= DEVFLAG_NBIO;
   
-  read = dev_read(df->devno, data, size, (blkno_t) (filp->pos / df->blksize), flags);
-  if (read > 0) filp->pos += read;
+  read = dev_read(df->devno, data, size, (blkno_t) (pos / df->blksize), flags);
   return read;
 }
 
-int devfs_write(struct file *filp, void *data, size_t size)
+int devfs_write(struct file *filp, void *data, size_t size, off64_t pos)
 {
   struct devfile *df = (struct devfile *) filp->data;
   int written;
@@ -181,8 +180,7 @@ int devfs_write(struct file *filp, void *data, size_t size)
   if (df == DEVROOT) return -EBADF;
   if (filp->flags & O_NONBLOCK) flags |= DEVFLAG_NBIO;
   
-  written = dev_write(df->devno, data, size, (blkno_t) (filp->pos / df->blksize), flags);
-  if (written > 0) filp->pos += written;
+  written = dev_write(df->devno, data, size, (blkno_t) (pos / df->blksize), flags);
   return written;
 }
 

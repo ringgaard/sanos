@@ -165,6 +165,16 @@ int write(handle_t f, const void *data, size_t size)
   return syscall(SYSCALL_WRITE, &f);
 }
 
+int pread(handle_t f, void *data, size_t size, off64_t offset)
+{
+  return syscall(SYSCALL_PREAD, &f);
+}
+
+int pwrite(handle_t f, const void *data, size_t size, off64_t offset)
+{
+  return syscall(SYSCALL_PWRITE, &f);
+}
+
 int ioctl(handle_t f, int cmd, const void *data, size_t size)
 {
   return syscall(SYSCALL_IOCTL, &f);

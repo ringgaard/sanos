@@ -961,9 +961,8 @@ static int gentmpfn(char *path, char *prefix, int unique, char *tempfn)
   if (unique == 0) unique = clock();
   
   sprintf(tempfn, format, path, PS1, prefix, unique);
-  while ((rc = access(tempfn, 0)) < 0)
+  while ((rc = access(tempfn, 0)) != -ENOENT)
   {
-    if (rc != -EEXIST) return rc;
     unique++;
     sprintf(tempfn, format, path, PS1, prefix, unique);
   }

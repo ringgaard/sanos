@@ -122,7 +122,9 @@
 #define SYSCALL_SYSINFO      85
 #define SYSCALL_MKMUTEX      86
 #define SYSCALL_MUTEXREL     87
+#define SYSCALL_PREAD        88
+#define SYSCALL_PWRITE       89
 
-#define SYSCALL_MAX          87
+#define SYSCALL_MAX          89
 
 #endif

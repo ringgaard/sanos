@@ -425,7 +425,7 @@ static int smb_read_normal(struct smb_share *share, struct smb_file *file, void 
   return len;
 }
 
-int smb_read(struct file *filp, void *data, size_t size)
+int smb_read(struct file *filp, void *data, size_t size, off64_t pos)
 {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb_file *file = (struct smb_file *) filp->data;
@@ -440,7 +440,7 @@ int smb_read(struct file *filp, void *data, size_t size)
   left = size;
   p = (char *) data;
 
-  if (filp->pos < file->statbuf.st_size && filp->pos < 0x80000000)
+  if (filp->pos < file->statbuf.st_size && pos < 0x80000000)
   {
     // Read data using raw mode
     while (1)
@@ -448,11 +448,11 @@ int smb_read(struct file *filp, void *data, size_t size)
       count = left;
       if (count > SMB_RAW_CHUNKSIZE) count = SMB_RAW_CHUNKSIZE;
 
-      rc = smb_read_raw(share, file, p, count, (unsigned long) filp->pos);
+      rc = smb_read_raw(share, file, p, count, (unsigned long) pos);
       if (rc < 0) return rc;
       if (rc == 0) break;
 
-      filp->pos += rc;
+      pos += rc;
       left -= rc;
       p += rc;
 
@@ -461,16 +461,16 @@ int smb_read(struct file *filp, void *data, size_t size)
   }
 
   // Read rest using normal mode
-  while (filp->pos < file->statbuf.st_size && left > 0)
+  while (pos < file->statbuf.st_size && left > 0)
   {
     count = left;
     if (count > SMB_NORMAL_CHUNKSIZE) count = SMB_NORMAL_CHUNKSIZE;
 
-    rc = smb_read_normal(share, file, p, count, filp->pos);
+    rc = smb_read_normal(share, file, p, count, pos);
     if (rc < 0) return rc;
     if (rc == 0) return size - left;
 
-    filp->pos += rc;
+    pos += rc;
     left -= rc;
     p += rc;
   }
@@ -498,7 +498,7 @@ static int smb_write_normal(struct smb_share *share, struct smb_file *file, void
   return smb->params.rsp.write.count;
 }
 
-int smb_write(struct file *filp, void *data, size_t size)
+int smb_write(struct file *filp, void *data, size_t size, off64_t pos)
 {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb_file *file = (struct smb_file *) filp->data;
@@ -510,7 +510,7 @@ int smb_write(struct file *filp, void *data, size_t size)
   if (filp->flags & F_DIR) return -EBADF;
   if (size == 0) return 0;
 
-  if (filp->flags & O_APPEND) filp->pos = file->statbuf.st_size;
+  if (filp->flags & O_APPEND) pos = file->statbuf.st_size;
 
   left = size;
   p = (char *) data;
@@ -520,15 +520,15 @@ int smb_write(struct file *filp, void *data, size_t size)
     count = left;
     if (count > SMB_NORMAL_CHUNKSIZE) count = SMB_NORMAL_CHUNKSIZE;
 
-    rc = smb_write_normal(share, file, p, count, filp->pos);
+    rc = smb_write_normal(share, file, p, count, pos);
     if (rc < 0) return rc;
 
-    filp->pos += rc;
+    pos += rc;
     filp->flags |= F_MODIFIED;
     left -= rc;
     p += rc;
 
-    if (filp->pos > file->statbuf.st_size) file->statbuf.st_size = filp->pos;
+    if (pos > file->statbuf.st_size) file->statbuf.st_size = pos;
   }
 
   return size;

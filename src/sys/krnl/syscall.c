@@ -2933,6 +2933,84 @@ static int sys_mutexrel(char *params)
   return rc;
 }
 
+static int sys_pread(char *params)
+{
+  handle_t h;
+  struct object *o;
+  int rc;
+  void *data;
+  int size;
+  off64_t offset;
+
+  if (lock_buffer(params, 20) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  data = *(void **) (params + 4);
+  size = *(int *) (params + 8);
+  offset = *(off64_t *) (params + 12);
+
+  o = olock(h, OBJECT_FILE);
+  if (!o) 
+  {
+    unlock_buffer(params, 20);
+    return -EBADF;
+  }
+  
+  if (lock_buffer(data, size) < 0)
+  {
+    orel(o);
+    unlock_buffer(params, 20);
+    return -EFAULT;
+  }
+
+  rc = pread((struct file *) o, data, size, offset);
+
+  orel(o);
+  unlock_buffer(data, size);
+  unlock_buffer(params, 20);
+
+  return rc;
+}
+
+static int sys_pwrite(char *params)
+{
+  handle_t h;
+  struct object *o;
+  int rc;
+  void *data;
+  int size;
+  off64_t offset;
+
+  if (lock_buffer(params, 20) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  data = *(void **) (params + 4);
+  size = *(int *) (params + 8);
+  offset = *(off64_t *) (params + 12);
+
+  o = olock(h, OBJECT_FILE);
+  if (!o) 
+  {
+    unlock_buffer(params, 12);
+    return -EBADF;
+  }
+
+  if (lock_buffer(data, size) < 0)
+  {
+    orel(o);
+    unlock_buffer(params, 20);
+    return -EFAULT;
+  }
+  
+  rc = pwrite((struct file *) o, data, size, offset);
+  
+  orel(o);
+  unlock_buffer(data, size);
+  unlock_buffer(params, 12);
+
+  return rc;
+}
+
 struct syscall_entry syscalltab[] =
 {
   {"null","", sys_null},
@@ -3023,6 +3101,8 @@ struct syscall_entry syscalltab[] =
   {"sysinfo", "%d,%p,%d", sys_sysinfo},
   {"mkmutex", "%d", sys_mkmutex},
   {"mutexrel", "%p", sys_mutexrel},
+  {"pread", "%d,%p,%d,%d-%d", sys_pread},
+  {"pwrite", "%d,%p,%d,%d-%d", sys_pwrite},
 };
 
 int syscall(int syscallno, char *params)
