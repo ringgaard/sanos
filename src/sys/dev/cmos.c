@@ -3,7 +3,7 @@
 //
 // Copyright (c) 2001 Michael Ringgaard. All rights reserved.
 //
-// CMOS VMRAM driver
+// CMOS NVRAM driver
 //
 
 #include <os/krnl.h>
