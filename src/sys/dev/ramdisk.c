@@ -57,7 +57,7 @@ static int ramdisk_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int ramdisk_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int ramdisk_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   struct ramdisk *rd = (struct ramdisk *) dev->privdata;
 
@@ -67,7 +67,7 @@ static int ramdisk_read(struct dev *dev, void *buffer, size_t count, blkno_t blk
   return count;
 }
 
-static int ramdisk_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int ramdisk_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   struct ramdisk *rd = (struct ramdisk *) dev->privdata;
 

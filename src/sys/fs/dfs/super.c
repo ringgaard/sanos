@@ -68,7 +68,7 @@ static void dfs_sync(void *arg)
   // Write super block
   if (fs->super_dirty) 
   {
-    dev_write(fs->devno, fs->super, SECTORSIZE, 1);
+    dev_write(fs->devno, fs->super, SECTORSIZE, 1, 0);
     fs->super_dirty = 0;
   }
 }
@@ -200,9 +200,9 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
       prev_percent = percent;
       
       if (i + blocks_per_io > fs->super->block_count)
-        rc = dev_write(fs->devno, buffer, (fs->super->block_count - i) * fs->blocksize, i);
+        rc = dev_write(fs->devno, buffer, (fs->super->block_count - i) * fs->blocksize, i, 0);
       else
-        rc = dev_write(fs->devno, buffer, FORMAT_BLOCKSIZE, i);
+        rc = dev_write(fs->devno, buffer, FORMAT_BLOCKSIZE, i, 0);
 
       if (rc < 0)
       {
@@ -294,11 +294,11 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
     {
       gd = fs->groups[i].desc;
 
-      dev_write(fs->devno, buffer, fs->blocksize, gd->block_bitmap_block);
-      dev_write(fs->devno, buffer, fs->blocksize, gd->inode_bitmap_block);
+      dev_write(fs->devno, buffer, fs->blocksize, gd->block_bitmap_block, 0);
+      dev_write(fs->devno, buffer, fs->blocksize, gd->inode_bitmap_block, 0);
       for (j = 0; j < fs->inode_blocks_per_group; j++)
       {
-        dev_write(fs->devno, buffer, fs->blocksize, gd->inode_table_block + j);
+        dev_write(fs->devno, buffer, fs->blocksize, gd->inode_table_block + j, 0);
       }
     }
 
@@ -351,7 +351,7 @@ static struct filsys *open_filesystem(char *devname, struct fsoptions *fsopts)
   // Allocate and read super block
   fs->super = (struct superblock *) kmalloc(SECTORSIZE);
   memset(fs->super, 0, SECTORSIZE);
-  if (dev_read(devno, fs->super, SECTORSIZE, 1) != SECTORSIZE) 
+  if (dev_read(devno, fs->super, SECTORSIZE, 1, 0) != SECTORSIZE) 
   {
     kprintf("dfs: unable to read superblock on device %s\n", device(devno)->name);
     free(fs->super);
@@ -436,7 +436,7 @@ static void close_filesystem(struct filsys *fs)
   free_buffer_pool(fs->cache);
 
   // Write super block
-  if (fs->super_dirty) dev_write(fs->devno, fs->super, SECTORSIZE, 1);
+  if (fs->super_dirty) dev_write(fs->devno, fs->super, SECTORSIZE, 1, 0);
   kfree(fs->super);
 
   // Close device

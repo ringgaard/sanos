@@ -49,12 +49,12 @@ static int null_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -1;
 }
 
-static int null_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int null_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   return 0;
 }
 
-static int null_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int null_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   return count;
 }

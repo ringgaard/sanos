@@ -49,7 +49,7 @@ static int nvram_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int nvram_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int nvram_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   unsigned int n;
 
@@ -60,7 +60,7 @@ static int nvram_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno
   return count;
 }
 
-static int nvram_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int nvram_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   unsigned int n;
 

@@ -531,7 +531,7 @@ static int fd_ioctl(struct dev *dev, int cmd, void *args, size_t size)
 // fd_read
 //
 
-static int fd_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int fd_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   struct fd *fd = (struct fd *) dev->privdata;
   int left;
@@ -570,7 +570,7 @@ static int fd_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
 // fd_write
 //
 
-static int fd_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int fd_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   struct fd *fd = (struct fd *) dev->privdata;
   int left;

@@ -718,7 +718,7 @@ static int random_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int random_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int random_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   int n;
   
@@ -738,12 +738,12 @@ static int random_read(struct dev *dev, void *buffer, size_t count, blkno_t blkn
   return extract_entropy(sec_random_state, buffer, n, EXTRACT_ENTROPY_USER | EXTRACT_ENTROPY_SECONDARY);
 }
 
-static int urandom_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int urandom_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   return extract_entropy(sec_random_state, buffer, count, EXTRACT_ENTROPY_USER | EXTRACT_ENTROPY_SECONDARY);
 }
 
-static int random_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int random_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   int words;
 

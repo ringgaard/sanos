@@ -521,7 +521,7 @@ int cdfs_read(struct file *filp, void *data, size_t size)
     if (filp->flags & O_DIRECT)
     {
       if (start != 0 || count != CDFS_BLOCKSIZE) return read;
-      if (dev_read(cdfs->devno, p, count, blk) != (int) count) return read;
+      if (dev_read(cdfs->devno, p, count, blk, 0) != (int) count) return read;
     }
     else
     {

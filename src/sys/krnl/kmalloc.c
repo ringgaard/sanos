@@ -226,7 +226,7 @@ int kheapstat_proc(struct proc_file *pf, void *arg)
     }
   }
 
-  pprintf(pf, "Kernel Heap Summary: %dKB allocated %dKB available\n", heapsize / K, heapavail / K);
+  pprintf(pf, "Kernel Heap Summary: %dKB allocated %dKB unused\n", heapsize / K, heapavail / K);
   return 0;
 }
 
@@ -241,40 +241,6 @@ void init_malloc()
     b = &buckets[i];
     b->size = (1 << i);
   }
-}
-
-void dump_malloc()
-{
-  int i;
-  int elems;
-  struct bucket *b;
-  void *addr;
-  unsigned long heapsize = 0;
-  unsigned long heapavail = 0;
-
-  for (i = 0; i < PAGESHIFT; i++)
-  {
-    b = &buckets[i];
-
-    if (b->pages > 0)
-    {
-      elems = 0;
-      addr = b->mem;
-      while (addr)
-      {
-        addr = *(void **) addr;
-	elems++;
-      }
-
-      heapsize += b->pages * PAGESIZE;
-      heapavail += b->size * elems;
-
-      kprintf("  bucket %d (%d bytes): %d pages, %d allocated, %d free\n", 
-	      i, b->size, b->pages, (b->pages * PAGESIZE / b->size) - elems, elems);
-    }
-  }
-
-  kprintf("Kernel Heap Summary: %dKB allocated %dKB available\n", heapsize / K, heapavail / K);
 }
 
 void *kmalloc(int size)

@@ -38,6 +38,7 @@ int pipefs_close(struct file *filp);
 int pipefs_flush(struct file *filp);
 int pipefs_read(struct file *filp, void *data, size_t size);
 int pipefs_write(struct file *filp, void *data, size_t size);
+int pipefs_ioctl(struct file *filp, int cmd, void *data, size_t size);
 off64_t pipefs_lseek(struct file *filp, off64_t offset, int origin);
 int pipefs_fstat(struct file *filp, struct stat64 *buffer);
 
@@ -60,7 +61,7 @@ struct fsops pipefsops =
 
   pipefs_read,
   pipefs_write,
-  NULL,
+  pipefs_ioctl,
 
   NULL,
   pipefs_lseek,
@@ -95,6 +96,7 @@ struct pipereq
 
 struct pipe
 {
+  struct file *filp;
   struct pipe *peer;
   struct pipereq *waithead;
   struct pipereq *waittail;
@@ -145,10 +147,12 @@ int pipe(struct file **readpipe, struct file **writepipe)
   }
 
   rd->data = rdp;
+  rdp->filp = rd;
   rdp->peer = wrp;
   rdp->waithead = rdp->waittail = NULL;
 
   wr->data = wrp;
+  wrp->filp = wr;
   wrp->peer = rdp;
   wrp->waithead = wrp->waittail = NULL;
 
@@ -169,14 +173,21 @@ int pipefs_close(struct file *filp)
 {
   struct pipe *pipe = (struct pipe *) filp->data;
 
+  set_io_event(&filp->iob, IOEVT_CLOSE);
   release_all_waiters(pipe, -EINTR);
+
   if (pipe->peer)
   {
     if (filp->flags & O_WRONLY)
+    {
+      set_io_event(&pipe->peer->filp->iob, IOEVT_READ);
       release_all_waiters(pipe->peer, 0);
+    }
     else
+    {
+      set_io_event(&pipe->peer->filp->iob, IOEVT_WRITE);
       release_all_waiters(pipe->peer, -EPIPE);
-
+    }
     pipe->peer->peer = NULL;
     pipe->peer = NULL;
   }
@@ -228,9 +239,17 @@ int pipefs_read(struct file *filp, void *data, size_t size)
     }
   }
 
+  if (pipe->peer->waithead == NULL)
+  {
+    clear_io_event(&filp->iob, IOEVT_READ);
+    set_io_event(&pipe->peer->filp->iob, IOEVT_WRITE);
+  }
+
   if (count == 0)
   {
     struct pipereq req;
+
+    if (filp->mode & O_NONBLOCK) return -EAGAIN;
 
     req.pipe = pipe;
     req.thread = self();
@@ -283,9 +302,17 @@ int pipefs_write(struct file *filp, void *data, size_t size)
     mark_thread_ready(req->thread, 1, 2);
   }
 
+  if (pipe->peer->waithead == NULL)
+  {
+    clear_io_event(&filp->iob, IOEVT_WRITE);
+    set_io_event(&pipe->peer->filp->iob, IOEVT_READ);
+  }
+
   if (left > 0)
   {
     struct pipereq req;
+
+    if (filp->mode & O_NONBLOCK) return size - left;
 
     req.pipe = pipe;
     req.thread = self();
@@ -306,6 +333,12 @@ int pipefs_write(struct file *filp, void *data, size_t size)
   }
 
   return size;
+}
+
+int pipefs_ioctl(struct file *filp, int cmd, void *data, size_t size)
+{
+  if (cmd == FIONBIO) return 0;
+  return -ENOSYS;
 }
 
 off64_t pipefs_lseek(struct file *filp, off64_t offset, int origin)

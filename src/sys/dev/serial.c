@@ -419,7 +419,7 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int serial_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int serial_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   struct serial_port *sp = (struct serial_port *) dev->privdata;
   unsigned int n;
@@ -445,7 +445,7 @@ static int serial_read(struct dev *dev, void *buffer, size_t count, blkno_t blkn
   return n;
 }
 
-static int serial_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int serial_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   struct serial_port *sp = (struct serial_port *) dev->privdata;
   unsigned int n;

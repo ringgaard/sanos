@@ -290,7 +290,7 @@ static int read_buffer(struct bufpool *pool, struct buf *buf)
   // Read block from device into buffer
   change_state(pool, buf, BUF_STATE_READING);
   pool->ioactive = 1;
-  rc = dev_read(pool->devno, buf->data, pool->bufsize, buf->blkno * pool->blks_per_buffer);
+  rc = dev_read(pool->devno, buf->data, pool->bufsize, buf->blkno * pool->blks_per_buffer, 0);
   if (rc != pool->bufsize)
   {
     // Set buffer in error state and release all waiters
@@ -331,7 +331,7 @@ static int write_buffer(struct bufpool *pool, struct buf *buf, int flush)
     // Write block to device from buffer
     change_state(pool, buf, BUF_STATE_WRITING);
     if (!flush) pool->ioactive = 1;
-    rc = dev_write(pool->devno, buf->data, pool->bufsize, buf->blkno * pool->blks_per_buffer);
+    rc = dev_write(pool->devno, buf->data, pool->bufsize, buf->blkno * pool->blks_per_buffer, 0);
     pool->blocks_written++;
   }
   else
@@ -862,7 +862,7 @@ int sync_buffers(struct bufpool *pool, int interruptable)
       
       // Flush buffer to device
       //kprintf("sync block %d\n", buf->blkno);
-      rc = dev_write(pool->devno, buf->data, pool->bufsize, buf->blkno * pool->blks_per_buffer);
+      rc = dev_write(pool->devno, buf->data, pool->bufsize, buf->blkno * pool->blks_per_buffer, 0);
       if (rc < 0) return rc;
       
       pool->blocks_written++;

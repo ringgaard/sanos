@@ -60,7 +60,7 @@ static char *trimstr(char *s, char *end)
   t = str = (char *) malloc(end - s + 1);
   while (s < end)
   {
-    if (*s == '%')
+    if (*s == '^')
     {
       s++;
       ch = 0;

@@ -706,7 +706,7 @@ static int hd_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int hd_read_pio(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int hd_read_pio(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   struct hd *hd;
   struct hdc *hdc;
@@ -778,7 +778,7 @@ static int hd_read_pio(struct dev *dev, void *buffer, size_t count, blkno_t blkn
   return result == 0 ? count : result;
 }
 
-static int hd_write_pio(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int hd_write_pio(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   struct hd *hd;
   struct hdc *hdc;
@@ -875,7 +875,7 @@ static int hd_write_pio(struct dev *dev, void *buffer, size_t count, blkno_t blk
   return result == 0 ? count : result;
 }
 
-static int hd_read_udma(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int hd_read_udma(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   struct hd *hd;
   struct hdc *hdc;
@@ -975,7 +975,7 @@ static int hd_read_udma(struct dev *dev, void *buffer, size_t count, blkno_t blk
   return result == 0 ? count : result;
 }
 
-static int hd_write_udma(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int hd_write_udma(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   struct hd *hd;
   struct hdc *hdc;
@@ -1075,7 +1075,7 @@ static int hd_write_udma(struct dev *dev, void *buffer, size_t count, blkno_t bl
   return result == 0 ? count : result;
 }
 
-static int cd_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int cd_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   struct hd *hd = (struct hd *) dev->privdata;
   unsigned char pkt[12];
@@ -1096,7 +1096,7 @@ static int cd_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
   return atapi_packet_read(hd, pkt, 12, buffer, count);
 }
 
-static int cd_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int cd_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   return -ENODEV;
 }
@@ -1247,18 +1247,18 @@ static int part_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int part_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int part_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   struct partition *part = (struct partition *) dev->privdata;
   if (blkno + count / SECTORSIZE > part->len) return -EFAULT;
-  return dev_read(part->dev, buffer, count, blkno + part->start);
+  return dev_read(part->dev, buffer, count, blkno + part->start, 0);
 }
 
-static int part_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int part_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   struct partition *part = (struct partition *) dev->privdata;
   if (blkno + count / SECTORSIZE > part->len) return -EFAULT;
-  return dev_write(part->dev, buffer, count, blkno + part->start);
+  return dev_write(part->dev, buffer, count, blkno + part->start, 0);
 }
 
 struct driver harddisk_udma_driver =
@@ -1306,7 +1306,7 @@ static int create_partitions(struct hd *hd)
   char devname[DEVNAMELEN];
 
   // Read partition table
-  rc = dev_read(hd->devno, &mbr, SECTORSIZE, 0);
+  rc = dev_read(hd->devno, &mbr, SECTORSIZE, 0, 0);
   if (rc < 0)
   {
     kprintf("%s: error %d reading partition table\n", device(hd->devno)->name, rc);

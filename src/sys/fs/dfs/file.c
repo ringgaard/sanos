@@ -360,7 +360,7 @@ int dfs_read(struct file *filp, void *data, size_t size)
     if (filp->flags & O_DIRECT)
     {
       if (start != 0 || count != inode->fs->blocksize) return read;
-      if (dev_read(inode->fs->devno, p, count, blk) != (int) count) return read;
+      if (dev_read(inode->fs->devno, p, count, blk, 0) != (int) count) return read;
     }
     else
     {
@@ -428,7 +428,7 @@ int dfs_write(struct file *filp, void *data, size_t size)
     if (filp->flags & O_DIRECT)
     {
       if (start != 0 || count != inode->fs->blocksize) return written;
-      if (dev_write(inode->fs->devno, p, count, blk) != (int) count) return written;
+      if (dev_write(inode->fs->devno, p, count, blk, 0) != (int) count) return written;
     }
     else
     {

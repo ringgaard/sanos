@@ -145,7 +145,7 @@ static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int console_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int console_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   char *p = (char *) buffer;
   int ch;
@@ -168,7 +168,7 @@ static int console_read(struct dev *dev, void *buffer, size_t count, blkno_t blk
   return count; 
 }
 
-static int console_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int console_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   if (!cursoff)
   {
@@ -237,7 +237,7 @@ void kprintf(const char *fmt,...)
       print_string(buffer);
     else
     {
-      dev_write(consdev, buffer, len, 0);
+      dev_write(consdev, buffer, len, 0, 0);
     }
   }
 }
@@ -256,7 +256,7 @@ static int syslog_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int syslog_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int syslog_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   char *ptr;
   unsigned int idx;
@@ -278,7 +278,7 @@ static int syslog_read(struct dev *dev, void *buffer, size_t count, blkno_t blkn
   return count;
 }
 
-static int syslog_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int syslog_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   add_to_syslog(buffer, count);
   return count;

@@ -34,6 +34,8 @@
 #ifndef DEV_H
 #define DEV_H
 
+struct devfile;
+
 struct dev;
 struct bus;
 struct unit;
@@ -46,6 +48,8 @@ struct unit;
 #define DEV_TYPE_STREAM		1
 #define DEV_TYPE_BLOCK		2
 #define DEV_TYPE_PACKET		3
+
+#define DEVFLAG_NBIO            1
 
 #define IOCTL_GETBLKSIZE        1
 #define IOCTL_GETDEVSIZE        2
@@ -143,8 +147,8 @@ struct driver
   int type;
 
   int (*ioctl)(struct dev *dev, int cmd, void *args, size_t size);
-  int (*read)(struct dev *dev, void *buffer, size_t count, blkno_t blkno);
-  int (*write)(struct dev *dev, void *buffer, size_t count, blkno_t blkno);
+  int (*read)(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags);
+  int (*write)(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags);
 
   int (*attach)(struct dev *dev, struct eth_addr *hwaddr);
   int (*detach)(struct dev *dev);
@@ -163,6 +167,7 @@ struct dev
   struct unit *unit;
   void *privdata;
   int refcnt;
+  struct devfile *files;
 
   struct netif *netif;
   int (*receive)(struct netif *netif, struct pbuf *p);
@@ -230,12 +235,15 @@ krnlapi dev_t dev_open(char *name);
 krnlapi int dev_close(dev_t devno);
 
 krnlapi int dev_ioctl(dev_t devno, int cmd, void *args, size_t size);
-krnlapi int dev_read(dev_t devno, void *buffer, size_t count, blkno_t blkno);
-krnlapi int dev_write(dev_t devno, void *buffer, size_t count, blkno_t blkno);
+krnlapi int dev_read(dev_t devno, void *buffer, size_t count, blkno_t blkno, int flags);
+krnlapi int dev_write(dev_t devno, void *buffer, size_t count, blkno_t blkno, int flags);
 
 krnlapi int dev_attach(dev_t dev, struct netif *netif, int (*receive)(struct netif *netif, struct pbuf *p));
 krnlapi int dev_detach(dev_t devno);
 krnlapi int dev_transmit(dev_t devno, struct pbuf *p);
 krnlapi int dev_receive(dev_t devno, struct pbuf *p);
+
+krnlapi int dev_setevt(dev_t devno, int events);
+krnlapi int dev_clrevt(dev_t devno, int events);
 
 #endif

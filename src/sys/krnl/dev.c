@@ -638,7 +638,7 @@ int dev_ioctl(dev_t devno, int cmd, void *args, size_t size)
   return dev->driver->ioctl(dev, cmd, args, size);
 }
 
-int dev_read(dev_t devno, void *buffer, size_t count, blkno_t blkno)
+int dev_read(dev_t devno, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   struct dev *dev;
 
@@ -646,10 +646,10 @@ int dev_read(dev_t devno, void *buffer, size_t count, blkno_t blkno)
   dev = devtab[devno];
   if (!dev->driver->read) return -ENOSYS;
 
-  return dev->driver->read(dev, buffer, count, blkno);
+  return dev->driver->read(dev, buffer, count, blkno, flags);
 }
 
-int dev_write(dev_t devno, void *buffer, size_t count, blkno_t blkno)
+int dev_write(dev_t devno, void *buffer, size_t count, blkno_t blkno, int flags)
 {
   struct dev *dev;
 
@@ -657,7 +657,7 @@ int dev_write(dev_t devno, void *buffer, size_t count, blkno_t blkno)
   dev = devtab[devno];
   if (!dev->driver->read) return -ENOSYS;
 
-  return dev->driver->write(dev, buffer, count, blkno);
+  return dev->driver->write(dev, buffer, count, blkno, flags);
 }
 
 int dev_attach(dev_t devno, struct netif *netif, int (*receive)(struct netif *netif, struct pbuf *p))
@@ -712,6 +712,26 @@ int dev_receive(dev_t devno, struct pbuf *p)
   if (!dev->receive) return -ENOSYS;
 
   return dev->receive(dev->netif, p);
+}
+
+int dev_setevt(dev_t devno, int events)
+{
+  struct dev *dev;
+
+  if (devno < 0 || devno >= num_devs) return -ENODEV;
+  dev = devtab[devno];
+  devfs_setevt(dev, events);
+  return 0;
+}
+
+int dev_clrevt(dev_t devno, int events)
+{
+  struct dev *dev;
+
+  if (devno < 0 || devno >= num_devs) return -ENODEV;
+  dev = devtab[devno];
+  devfs_clrevt(dev, events);
+  return 0;
 }
 
 static int units_proc(struct proc_file *pf, void *arg)

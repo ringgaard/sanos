@@ -107,18 +107,47 @@ void init_devfs()
 int devfs_open(struct file *filp, char *name)
 {
   dev_t devno;
+  struct devfile *df;
 
   if (*name == PS1 || *name == PS2) name++;
   devno = dev_open(name);
   if (devno == NODEV) return -ENOENT;
 
-  filp->data = (void *) devno;
+  df = (struct devfile *) kmalloc(sizeof(struct devfile));
+  if (!df)
+  {
+    dev_close(devno);
+    return -EMFILE;
+  }
+
+  df->filp = filp;
+  df->devno = devno;
+  df->devsize = dev_ioctl(devno, IOCTL_GETDEVSIZE, NULL, 0);
+  df->blksize = dev_ioctl(devno, IOCTL_GETBLKSIZE, NULL, 0);
+  if (df->blksize <= 0) df->blksize = 1;
+
+  df->next = NULL;
+  df->prev = device(devno)->files;
+  device(devno)->files = df;
+
+  filp->data = df;
   return 0;
 }
 
 int devfs_close(struct file *filp)
 {
-  dev_close((dev_t) filp->data);
+  struct devfile *df = (struct devfile *) filp->data;
+
+  if (filp->data == (void *) NODEV) return 0;
+
+  if (df->next) df->next->prev = df->prev;
+  if (df->prev) df->prev->next = df->next;
+  if (device(df->devno)->files == df) device(df->devno)->files = df->next;
+
+  dev_close(df->devno);
+
+  kfree(df);
+
   return 0;
 }
 
@@ -129,35 +158,40 @@ int devfs_flush(struct file *filp)
 
 int devfs_read(struct file *filp, void *data, size_t size)
 {
+  struct devfile *df = (struct devfile *) filp->data;
   int read;
-  int blksize;
+  int flags = 0;
 
-  blksize = dev_ioctl((dev_t) filp->data, IOCTL_GETBLKSIZE, NULL, 0);
-  if (blksize <= 0) blksize = 1;
-
-  read = dev_read((dev_t) filp->data, data, size, (blkno_t) (filp->pos / blksize));
+  if (df == (void *) NODEV) return -EBADF;
+  if (filp->flags & O_NONBLOCK) flags |= DEVFLAG_NBIO;
+  
+  read = dev_read(df->devno, data, size, (blkno_t) (filp->pos / df->blksize), flags);
   if (read > 0) filp->pos += read;
   return read;
 }
 
 int devfs_write(struct file *filp, void *data, size_t size)
 {
+  struct devfile *df = (struct devfile *) filp->data;
   int written;
-  int blksize;
+  int flags = 0;
 
-  blksize = dev_ioctl((dev_t) filp->data, IOCTL_GETBLKSIZE, NULL, 0);
-  if (blksize <= 0) blksize = 1;
-
-  written = dev_write((dev_t) filp->data, data, size, (blkno_t) (filp->pos / blksize));
+  if (df == (void *) NODEV) return -EBADF;
+  if (filp->flags & O_NONBLOCK) flags |= DEVFLAG_NBIO;
+  
+  written = dev_write(df->devno, data, size, (blkno_t) (filp->pos / df->blksize), flags);
   if (written > 0) filp->pos += written;
   return written;
 }
 
 int devfs_ioctl(struct file *filp, int cmd, void *data, size_t size)
 {
+  struct devfile *df = (struct devfile *) filp->data;
   int rc;
 
-  rc = dev_ioctl((dev_t) filp->data, cmd, data, size);
+  if (df == (void *) NODEV) return -EBADF;
+
+  rc = dev_ioctl(df->devno, cmd, data, size);
   return rc;
 }
 
@@ -168,13 +202,11 @@ off64_t devfs_tell(struct file *filp)
 
 off64_t devfs_lseek(struct file *filp, off64_t offset, int origin)
 {
-  __int64 devsize;
-  int blksize;
+  struct devfile *df = (struct devfile *) filp->data;
   off64_t size;
 
-  devsize = dev_ioctl((dev_t) filp->data, IOCTL_GETDEVSIZE, NULL, 0);
-  blksize = dev_ioctl((dev_t) filp->data, IOCTL_GETBLKSIZE, NULL, 0);
-  size = devsize * blksize;
+  if (df == (void *) NODEV) return -EBADF;
+  size = df->devsize * df->blksize;
 
   switch (origin)
   {
@@ -194,19 +226,15 @@ off64_t devfs_lseek(struct file *filp, off64_t offset, int origin)
 
 int devfs_fstat(struct file *filp, struct stat64 *buffer)
 {
-  dev_t devno;
-  int devsize;
-  int blksize;
+  struct devfile *df = (struct devfile *) filp->data;
   __int64 size;
   struct dev *dev;
 
-  devno = (dev_t) filp->data;
-  dev = device(devno);
-  if (!dev) return -ENOENT;
+  if (df == (void *) NODEV) return -EBADF;
 
-  devsize = dev_ioctl(devno, IOCTL_GETDEVSIZE, NULL, 0);
-  blksize = dev_ioctl(devno, IOCTL_GETBLKSIZE, NULL, 0);
-  size = (__int64) devsize * (__int64) blksize;
+  dev = device(df->devno);
+  if (!dev) return -ENOENT;
+  size = (__int64) df->devsize * (__int64) df->blksize;
 
   if (buffer)
   {
@@ -218,7 +246,7 @@ int devfs_fstat(struct file *filp, struct stat64 *buffer)
     else
       buffer->st_mode = S_IREAD | S_IWRITE;
 
-    buffer->st_ino = devno;
+    buffer->st_ino = df->devno;
     buffer->st_nlink = 1;
     buffer->st_dev = NODEV;
 
@@ -307,6 +335,7 @@ int devfs_readdir(struct file *filp, struct dirent *dirp, int count)
   dev_t devno;
   struct dev *dev;
 
+  if (filp->data != (void *) NODEV) return -EBADF;
   if (filp->pos == num_devs) return 0;
   if (filp->pos < 0 || filp->pos > num_devs) return -EINVAL;
 
@@ -321,4 +350,26 @@ int devfs_readdir(struct file *filp, struct dirent *dirp, int count)
 
   filp->pos++;
   return 1;
+}
+
+void devfs_setevt(struct dev *dev, int events)
+{
+  struct devfile *df = dev->files;
+
+  while (df)
+  {
+    set_io_event(&df->filp->iob, events);
+    df = df->next;
+  }
+}
+
+void devfs_clrevt(struct dev *dev, int events)
+{
+  struct devfile *df = dev->files;
+
+  while (df)
+  {
+    clear_io_event(&df->filp->iob, events);
+    df = df->next;
+  }
 }

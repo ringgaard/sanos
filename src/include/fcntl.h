@@ -66,6 +66,7 @@ typedef int handle_t;
 #define O_DIRECT                0x0800  // Do not use cache for reads and writes
 
 #define O_SHORT_LIVED           0x1000  // Temporary storage file, try not to flush
+#define O_NONBLOCK              0x2000  // Open in non-blocking mode
 #define O_TEXT                  0x4000  // File mode is text (translated)
 #define O_BINARY                0x8000  // File mode is binary (untranslated)
 

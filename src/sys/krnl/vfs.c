@@ -748,6 +748,15 @@ int ioctl(struct file *filp, int cmd, void *data, size_t size)
   if (!filp) return -EINVAL;
   if (!data && size > 0) return -EINVAL;
 
+  if (cmd == FIONBIO)
+  {
+    if (size != sizeof(int)) return -EINVAL;
+    if (*(int *) data)
+      filp->flags |= O_NONBLOCK;
+    else
+      filp->flags &= ~O_NONBLOCK;
+  }
+
   if (!filp->fs->ops->ioctl) return -ENOSYS;
   if (lock_fs(filp->fs, FSOP_IOCTL) < 0) return -ETIMEOUT;
   rc = filp->fs->ops->ioctl(filp, cmd, data, size);
