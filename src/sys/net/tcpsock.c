@@ -12,6 +12,79 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 static err_t sent_tcp(void *arg, struct tcp_pcb *pcb, unsigned short len);
 static void err_tcp(void *arg, err_t err);
 
+static int fill_sndbuf(struct socket *s, struct iovec *iov, int iovlen)
+{
+  int left;
+  int bytes;
+  int len;
+  int rc;
+
+  left = tcp_sndbuf(s->tcp.pcb);
+  bytes = 0;
+  while (left > 0 && iovlen > 0)
+  {
+    if (iov->iov_len > 0)
+    {
+      len = iov->iov_len;
+      if (len > left) len = left;
+
+      rc = tcp_write(s->tcp.pcb, iov->iov_base, (unsigned short) len);
+      if (rc < 0) return rc;
+
+      (char *) iov->iov_base += len;
+      iov->iov_len -= len;
+
+      left -= len;
+      bytes += len;
+    }
+
+    iov++;
+    iovlen--;
+  }
+
+  return bytes;
+}
+
+static int fetch_rcvbuf(struct socket *s, struct iovec *iov, int iovlen)
+{
+  int left;
+  int recved;
+  int rc;
+  struct pbuf *p;
+  
+  left = get_iovec_size(iov, iovlen);
+  recved = 0;
+  while (s->tcp.recvhead && left > 0)
+  {
+    p = s->tcp.recvhead;
+
+    if (left < p->len)
+    {
+      rc = write_iovec(iov, iovlen, p->payload, left);
+      if (rc < 0) return rc;
+
+      recved += rc;
+      left -= rc;
+
+      pbuf_header(p, -rc);
+    }
+    else
+    {
+      rc = write_iovec(iov, iovlen, p->payload, p->len);
+      if (rc < 0) return rc;
+
+      recved += rc;
+      left -= rc;
+
+      s->tcp.recvhead = pbuf_dechain(p);
+      if (!s->tcp.recvhead) s->tcp.recvtail = NULL;
+      pbuf_free(p);
+    }
+  }
+
+  return recved;
+}
+
 static struct socket *accept_connection(struct tcp_pcb *pcb)
 {
   struct socket *s;
@@ -125,8 +198,7 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 
   while (1)
   {
-    p = s->tcp.recvhead;
-    if (!p) break;
+    if (!s->tcp.recvhead) break;
 
     req = s->waithead;
     waitrecv = 0;
@@ -154,28 +226,17 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
       break;
     }
 
-    bytes = req->len;
-    if (bytes > p->len) bytes = p->len;
-
-    memcpy(req->data, p->payload, bytes);
-    req->data += bytes;
-    req->len -= bytes;
-    req->err += bytes;
-
-    bytesrecv += bytes;
-
-    release_socket_request(req, req->err);
-
-    pbuf_header(p, -bytes);
-    if (p->len == 0)
+    bytes = fetch_rcvbuf(s, req->msg->iov, req->msg->iovlen);
+    if (bytes > 0)
     {
-      s->tcp.recvhead = pbuf_dechain(p);
-      if (!s->tcp.recvhead) s->tcp.recvtail = NULL;
-      pbuf_free(p);
+      bytesrecv += bytes;
+      req->rc += bytes;
+      release_socket_request(req, req->rc);
     }
   }
 
   if (bytesrecv) tcp_recved(pcb, bytesrecv);
+
   return 0;
 }
 
@@ -190,7 +251,6 @@ static err_t sent_tcp(void *arg, struct tcp_pcb *pcb, unsigned short len)
   struct socket *s = arg;
   struct sockreq *req;
   int rc;
-  int bytes;
 
   while (1)
   {
@@ -205,21 +265,16 @@ static err_t sent_tcp(void *arg, struct tcp_pcb *pcb, unsigned short len)
 
     if (!req) return 0;
 
-    bytes = req->len;
-    if (bytes > tcp_sndbuf(pcb)) bytes = tcp_sndbuf(pcb);
-
-    rc = tcp_write(pcb, req->data, (unsigned short) bytes);
+    rc = fill_sndbuf(s, req->msg->iov, req->msg->iovlen);
     if (rc < 0)
     {
       release_socket_request(req, rc);
       return rc;
     }
 
-    req->data += bytes;
-    req->len -= bytes;
-    req->err += bytes;
+    req->rc += rc;
 
-    if (req->len == 0) release_socket_request(req, req->err);
+    if (get_iovec_size(req->msg->iov, req->msg->iovlen) == 0) release_socket_request(req, req->rc);
   }
 }
 
@@ -263,7 +318,7 @@ static int tcpsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen,
 
   if (s->tcp.numpending == 0)
   {
-    rc = submit_socket_request(s, &req, SOCKREQ_ACCEPT, NULL, 0, INFINITE);
+    rc = submit_socket_request(s, &req, SOCKREQ_ACCEPT, NULL, INFINITE);
     if (rc < 0) return rc;
     newsock = req.newsock;
   }
@@ -385,7 +440,7 @@ static int tcpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
 
   s->state = SOCKSTATE_CONNECTING;
   
-  rc = submit_socket_request(s, &req, SOCKREQ_CONNECT, NULL, 0, INFINITE);
+  rc = submit_socket_request(s, &req, SOCKREQ_CONNECT, NULL, INFINITE);
   if (rc < 0) return rc;
 
   return 0;
@@ -449,7 +504,7 @@ static int tcpsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
       if (!s->tcp.pcb) return -ECONN;
       if (s->tcp.recvhead != NULL) return 0;
 
-      rc = submit_socket_request(s, &req, SOCKREQ_WAITRECV, NULL, 0, timeout);
+      rc = submit_socket_request(s, &req, SOCKREQ_WAITRECV, NULL, timeout);
       if (rc < 0) 
       {
         kprintf("tcpsock_ioctl: error %d\n", rc);
@@ -486,57 +541,42 @@ static int tcpsock_listen(struct socket *s, int backlog)
   return 0;
 }
 
-static int tcpsock_recv(struct socket *s, void *data, int size, unsigned int flags)
+static int tcpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
 {
   int rc;
-  char *bufp;
-  int left;
-  int len;
-  struct pbuf *p;
+  int size;
+  struct sockaddr_in *sin;
   struct sockreq req;
 
-  if (!data) return -EFAULT;
   if (s->state != SOCKSTATE_CONNECTED && s->state != SOCKSTATE_CLOSING) return -ECONN;
   if (!s->tcp.pcb) return -ECONN;
+
+  if (s->tcp.pcb && msg->name)
+  {
+    if (msg->namelen < sizeof(struct sockaddr_in)) return -EFAULT;
+    sin = (struct sockaddr_in *) msg->name;
+    sin->sin_len = sizeof(struct sockaddr_in);
+    sin->sin_family = AF_INET;
+    sin->sin_port = htons(s->tcp.pcb->remote_port);
+    sin->sin_addr.s_addr = s->tcp.pcb->remote_ip.addr;
+  }
+  msg->namelen = sizeof(struct sockaddr_in);
+
+  size = get_iovec_size(msg->iov, msg->iovlen);
   if (size < 0) return -EINVAL;
   if (size == 0) return 0;
 
-  bufp = (char *) data;
-  left = size;
-  while (s->tcp.recvhead && left > 0)
+  rc = fetch_rcvbuf(s, msg->iov, msg->iovlen);
+  if (rc < 0) return rc;
+  if (rc > 0)
   {
-    p = s->tcp.recvhead;
-
-    if (left < p->len)
-    {
-      memcpy(bufp, p->payload, left);
-      pbuf_header(p, -left);
-      tcp_recved(s->tcp.pcb, size);
-      return size;
-    }
-    else
-    {
-      memcpy(bufp, p->payload, p->len);
-      bufp += p->len;
-      left -= p->len;
-      
-      s->tcp.recvhead = pbuf_dechain(p);
-      if (!s->tcp.recvhead) s->tcp.recvtail = NULL;
-
-      pbuf_free(p);
-    }
+    tcp_recved(s->tcp.pcb, rc);
+    return rc;
   }
-
-  len = size - left;
-  if (len > 0) 
-  {
-    tcp_recved(s->tcp.pcb, len);
-    return len;
-  }
-
+ 
   if (s->state == SOCKSTATE_CLOSING) return 0;
 
-  rc = submit_socket_request(s, &req, SOCKREQ_RECV, bufp, size, INFINITE);
+  rc = submit_socket_request(s, &req, SOCKREQ_RECV, msg, INFINITE);
   if (rc < 0) 
   {
     kprintf("tcpsock_recv: error %d\n", rc);
@@ -546,66 +586,32 @@ static int tcpsock_recv(struct socket *s, void *data, int size, unsigned int fla
   return rc; 
 }
 
-static int tcpsock_recvfrom(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen)
+static int tcpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
 {
   int rc;
-  struct sockaddr_in *sin;
-
-  rc = tcpsock_recv(s, data, size, flags);
-  if (rc < 0) return rc;
-
-  if (s->tcp.pcb && from) 
-  {
-    sin = (struct sockaddr_in *) from;
-    sin->sin_len = sizeof(struct sockaddr_in);
-    sin->sin_family = AF_INET;
-    sin->sin_port = htons(s->tcp.pcb->remote_port);
-    sin->sin_addr.s_addr = s->tcp.pcb->remote_ip.addr;
-  }
-  if (fromlen) *fromlen = sizeof(struct sockaddr_in);
-  
-  return rc;
-}
-
-static int tcpsock_send(struct socket *s, void *data, int size, unsigned int flags)
-{
-  int rc;
-  int len;
+  int size;
   struct sockreq req;
+  int bytes;
 
-  if (!data) return -EFAULT;
   if (s->state != SOCKSTATE_CONNECTED) return -ECONN;
   if (!s->tcp.pcb) return -ECONN;
-  if (size < 0) return -EINVAL;
+
+  size = get_iovec_size(msg->iov, msg->iovlen);
   if (size == 0) return 0;
 
-  len = tcp_sndbuf(s->tcp.pcb);
-  if (size <= len)
-  {
-    rc = tcp_write(s->tcp.pcb, data, (unsigned short) size);
-    if (rc < 0) return rc;
-    return size;
-  }
-  else
-  {
-    if (len > 0)
-    {
-      rc = tcp_write(s->tcp.pcb, data, (unsigned short) len);
-      if (rc < 0) return rc;
-    }
+  rc = fill_sndbuf(s, msg->iov, msg->iovlen);
+  if (rc < 0) return rc;
+  bytes = rc;
 
-    rc = submit_socket_request(s, &req, SOCKREQ_SEND, ((char *) data) + len, size - len, INFINITE);
+  if (bytes < size)
+  {
+    rc = submit_socket_request(s, &req, SOCKREQ_SEND, msg, INFINITE);
     if (rc < 0) return rc;
 
-    return rc + len;
+    bytes += rc;
   }
 
-  return 0;
-}
-
-static int tcpsock_sendto(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *to, int tolen)
-{
-  return tcpsock_send(s, data, size, flags);
+  return bytes;
 }
 
 static int tcpsock_setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen)
@@ -634,10 +640,8 @@ struct sockops tcpops =
   tcpsock_getsockopt,
   tcpsock_ioctl,
   tcpsock_listen,
-  tcpsock_recv,
-  tcpsock_recvfrom,
-  tcpsock_send,
-  tcpsock_sendto,
+  tcpsock_recvmsg,
+  tcpsock_sendmsg,
   tcpsock_setsockopt,
   tcpsock_shutdown,
   tcpsock_socket,

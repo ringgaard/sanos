@@ -54,6 +54,7 @@
 #include <os/video.h>
 #include <os/kbd.h>
 
+#include <os/iovec.h>
 #include <os/vfs.h>
 #include <os/dfs.h>
 #include <os/devfs.h>

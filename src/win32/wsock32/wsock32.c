@@ -155,11 +155,11 @@ sockapi int __stdcall winsock_select(int nfds, fd_set *readfds, fd_set *writefds
 
   TRACE("select");
 
-  if (!readfds || readfds->fd_count != 1 || !timeout || writefds || exceptfds) panic("winsock select not implemented");
+  if (!readfds || readfds->count != 1 || !timeout || writefds || exceptfds) panic("winsock select not implemented");
 
   millisecs = timeout->tv_sec * 1000 + timeout->tv_usec / 1000;
 
-  rc = ioctl(readfds->fd_array[0], IOCTL_SOCKWAIT_RECV, &millisecs, 4);
+  rc = ioctl(readfds->fd[0], IOCTL_SOCKWAIT_RECV, &millisecs, 4);
 
   if (rc == -ETIMEOUT) return 0;
   if (rc == -EABORT) return -2;

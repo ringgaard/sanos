@@ -254,10 +254,4 @@ typedef struct WIN32_FIND_DATA
   CHAR cAlternateFileName[14];
 } WIN32_FIND_DATA, *PWIN32_FIND_DATA, *LPWIN32_FIND_DATA;
 
-typedef struct fd_set 
-{
-  unsigned int fd_count;
-  handle_t fd_array[FD_SETSIZE];
-} fd_set;
-
 #endif

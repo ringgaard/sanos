@@ -168,6 +168,9 @@
 				RelativePath="..\src\sys\krnl\iop.c">
 			</File>
 			<File
+				RelativePath="..\src\sys\krnl\iovec.c">
+			</File>
+			<File
 				RelativePath="..\src\sys\krnl\kmalloc.c">
 			</File>
 			<File
@@ -411,6 +414,9 @@
 				</File>
 				<File
 					RelativePath="..\src\include\os\fpu.h">
+				</File>
+				<File
+					RelativePath="..\src\include\os\iovec.h">
 				</File>
 				<File
 					RelativePath="..\src\include\os\kbd.h">

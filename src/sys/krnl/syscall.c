@@ -66,33 +66,12 @@ static __inline void unlock_string(char *s)
 static __inline int lock_iovec(struct iovec *iov, int count)
 {
 #ifdef SYSCALL_CHECKBUFFER
-  int n;
+  int rc;
 
-  if (iov)
-  {
-    if (count < 0) return -EINVAL;
-    if (KERNELSPACE(iov)) return -EFAULT;
-    if (!mem_mapped(iov, count * sizeof(struct iovec))) return -EFAULT;
-    for (n = 0; n < count; n++)
-    {
-      if (iov[n].iov_len < 0) return -EINVAL;
-      if (iov[n].iov_base)
-      {
-	if (KERNELSPACE(iov[n].iov_base)) return -EFAULT;
-	if (!mem_mapped(iov[n].iov_base, iov[n].iov_len)) return -EFAULT;
-      }
-      else
-      {
-	if (iov[n].iov_len != 0) return -EFAULT;
-      }
-    }
-  }
-  else
-  {
-    if (count != 0) return -EFAULT;
-  }
-
+  rc = check_iovec(iov, count);
+  if (rc < 0) return rc;
 #endif
+
   return 0;
 }
 

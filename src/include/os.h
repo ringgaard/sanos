@@ -453,6 +453,58 @@ __inline unsigned long ntohl(unsigned long n)
   return ((n & 0xFF) << 24) | ((n & 0xFF00) << 8) | ((n & 0xFF0000) >> 8) | ((n & 0xFF000000) >> 24);
 }
 
+#ifndef FD_SETSIZE
+#define FD_SETSIZE 64
+#endif
+
+typedef struct fd_set 
+{
+  unsigned int count;
+  int fd[FD_SETSIZE];
+} fd_set;
+
+#define FD_ZERO(set) _fd_zero(set)
+#define FD_ISSET(fd, set) fd_isset(fd, set)
+#define FD_SET(fd, set) _fd_set(fd, set)
+#define FD_CLR(fd, set) _fd_clr(fd, set)
+
+__inline void _fd_zero(fd_set *set)
+{
+  set->count = 0;
+}
+
+__inline int _fd_isset(int fd, fd_set *set)
+{
+  unsigned int i;
+
+  for (i = 0; i < set->count; i++) if (set->fd[i] == fd) return 1;
+  return 0;
+}
+
+__inline void _fd_set(int fd, fd_set *set)
+{
+  if (set->count < FD_SETSIZE) set->fd[set->count++] = fd;
+}
+
+__inline void _fd_clr(int fd, fd_set *set)
+{
+  unsigned int i;
+
+  for (i = 0; i < set->count ; i++) 
+  {
+    if (set->fd[i] == fd) 
+    {
+      while (i < set->count - 1)
+      {
+	set->fd[i] = set->fd[i + 1];
+	i++;
+      }
+      set->count--;
+      break;
+    }
+  }
+}
+
 //
 // Process Environment Block
 //

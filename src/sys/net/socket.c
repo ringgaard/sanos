@@ -19,9 +19,9 @@ void socket_init()
   sockops[SOCKTYPE_UDP] = &udpops;
 }
 
-void release_socket_request(struct sockreq *req, int err)
+void release_socket_request(struct sockreq *req, int rc)
 {
-  req->err = err;
+  req->rc = rc;
 
   if (req->next) req->next->prev = req->prev;
   if (req->prev) req->prev->next = req->next;
@@ -39,19 +39,18 @@ static void socket_timeout(void *arg)
   struct sockreq *req = arg;
 
   if (req->thread->state == THREAD_STATE_READY) return;
-  release_socket_request(req, req->err > 0 ? req->err : -ETIMEOUT);
+  release_socket_request(req, req->rc > 0 ? req->rc : -ETIMEOUT);
 }
 
-err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, char *data, int len, unsigned int timeout)
+err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, struct msghdr *msg, unsigned int timeout)
 {
   struct timer timer;
 
   req->socket = s;
   req->thread = self();
   req->type = type;
-  req->data = data;
-  req->len = len;
-  req->err = 0;
+  req->msg = msg;
+  req->rc = 0;
 
   req->next = NULL;
   req->prev = s->waittail;
@@ -70,7 +69,7 @@ err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, cha
 
   if (timeout != INFINITE) del_timer(&timer);
 
-  return req->err;
+  return req->rc;
 }
 
 int accept(struct socket *s, struct sockaddr *addr, int *addrlen, struct socket **retval)
@@ -124,34 +123,121 @@ int listen(struct socket *s, int backlog)
 
 int recv(struct socket *s, void *data, int size, unsigned int flags)
 {
-  return sockops[s->type]->recv(s, data, size, flags);
+  struct msghdr msg;
+  struct iovec iov;
+  int rc;
+
+  if (!data) return -EFAULT;
+  if (size < 0) return -EINVAL;
+
+  msg.name = NULL;
+  msg.namelen = 0;
+  msg.iov = &iov;
+  msg.iovlen = 1;
+  iov.iov_base = data;
+  iov.iov_len = size;
+
+  rc = sockops[s->type]->recvmsg(s, &msg, flags);
+
+  return rc;
 }
 
 int recvv(struct socket *s, struct iovec *iov, int count)
 {
-  // TODO: implement recvv
-  return -ENOSYS;
+  struct msghdr msg;
+  int rc;
+
+  msg.name = NULL;
+  msg.namelen = 0;
+  msg.iov = dup_iovec(iov, count);
+  msg.iovlen = count;
+  if (!msg.iov) return -ENOMEM;
+
+  rc = sockops[s->type]->recvmsg(s, &msg, 0);
+  kfree(msg.iov);
+
+  return rc;
 }
 
 int recvfrom(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen)
 {
-  return sockops[s->type]->recvfrom(s, data, size, flags, from, fromlen);
+  struct msghdr msg;
+  struct iovec iov;
+  int rc;
+
+  if (!data) return -EFAULT;
+  if (size < 0) return -EINVAL;
+
+  msg.name = from;
+  msg.namelen = fromlen ? *fromlen : 0;
+  msg.iov = &iov;
+  msg.iovlen = 1;
+  iov.iov_base = data;
+  iov.iov_len = size;
+
+  rc = sockops[s->type]->recvmsg(s, &msg, flags);
+  if (fromlen) *fromlen = msg.namelen;
+
+  return rc;
 }
 
 int send(struct socket *s, void *data, int size, unsigned int flags)
 {
-  return sockops[s->type]->send(s, data, size, flags);
+  struct msghdr msg;
+  struct iovec iov;
+  int rc;
+
+  if (!data) return -EFAULT;
+  if (size < 0) return -EINVAL;
+
+  msg.name = NULL;
+  msg.namelen = 0;
+  msg.iov = &iov;
+  msg.iovlen = 1;
+  iov.iov_base = data;
+  iov.iov_len = size;
+
+  rc = sockops[s->type]->sendmsg(s, &msg, flags);
+
+  return rc;
 }
 
 int sendto(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *to, int tolen)
 {
-  return sockops[s->type]->sendto(s, data, size, flags, to, tolen);
+  struct msghdr msg;
+  struct iovec iov;
+  int rc;
+
+  if (!data) return -EFAULT;
+  if (size < 0) return -EINVAL;
+
+  msg.name = to;
+  msg.namelen = tolen;
+  msg.iov = &iov;
+  msg.iovlen = 1;
+  iov.iov_base = data;
+  iov.iov_len = size;
+
+  rc = sockops[s->type]->sendmsg(s, &msg, flags);
+
+  return rc;
 }
 
 int sendv(struct socket *s, struct iovec *iov, int count)
 {
-  // TODO: implement sendv
-  return -ENOSYS;
+  struct msghdr msg;
+  int rc;
+
+  msg.name = NULL;
+  msg.namelen = 0;
+  msg.iov = dup_iovec(iov, count);
+  msg.iovlen = count;
+  if (!msg.iov) return -ENOMEM;
+
+  rc = sockops[s->type]->sendmsg(s, &msg, 0);
+  kfree(msg.iov);
+
+  return rc;
 }
 
 int setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen)

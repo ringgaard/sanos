@@ -12,25 +12,28 @@ static err_t recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
 {
   struct socket *s = arg;
   struct sockreq *req = s->waithead;
-  int len;
+  struct sockaddr_in *sin;
   int rc;
 
   if (req)
   {
-    if (p->len > req->len)
+    rc = write_iovec(req->msg->iov, req->msg->iovlen, p->payload, p->len);
+    if (rc < p->len) rc = -EMSGSIZE;
+
+    if (req->msg->name)
     {
-      rc = -EMSGSIZE;
-      len = req->len;
+      if (req->msg->namelen < sizeof(struct sockaddr_in))
+	rc = -EFAULT;
+      else
+      {
+	sin = (struct sockaddr_in *) req->msg->name;
+	sin->sin_len = sizeof(struct sockaddr_in);
+	sin->sin_family = AF_INET;
+	sin->sin_port = htons(port);
+	sin->sin_addr.s_addr = addr->addr;
+      }
     }
-    else
-      rc = len = p->len;
-
-    memcpy(req->data, p->payload, len);
-
-    req->addr.sin_len = sizeof(struct sockaddr_in);
-    req->addr.sin_family = AF_INET;
-    req->addr.sin_port = htons(port);
-    req->addr.sin_addr.s_addr = addr->addr;
+    req->msg->namelen = sizeof(struct sockaddr_in);
 
     pbuf_free(p);
 
@@ -189,13 +192,14 @@ static int udpsock_listen(struct socket *s, int backlog)
   return -EINVAL;
 }
 
-static int udpsock_recvfrom(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen)
+static int udpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
 {
   struct pbuf *p;
   struct udp_hdr *udphdr;
   struct ip_hdr *iphdr;
-  void *msg;
+  void *buf;
   int len;
+  int rc;
   struct sockaddr_in *sin;
   struct sockreq req;
 
@@ -205,7 +209,7 @@ static int udpsock_recvfrom(struct socket *s, void *data, int size, unsigned int
     s->udp.recvhead = pbuf_dechain(p);
     if (!s->udp.recvhead) s->udp.recvtail = NULL; 
 
-    msg = p->payload;
+    buf = p->payload;
     len = p->len;
 
     udphdr = p->payload;
@@ -215,57 +219,50 @@ static int udpsock_recvfrom(struct socket *s, void *data, int size, unsigned int
     pbuf_header(p, IP_HLEN); 
     iphdr = p->payload;
 
-    if (len > size) len = size;
-    memcpy(data, msg, len);
+    rc = write_iovec(msg->iov, msg->iovlen, buf, len);
+    if (rc < len) rc = -EMSGSIZE;
 
-    if (from)
+    if (msg->name)
     {
-      sin = (struct sockaddr_in *) from;
+      if (msg->namelen < sizeof(struct sockaddr_in)) return -EFAULT;
+      sin = (struct sockaddr_in *) msg->name;
       sin->sin_len = sizeof(struct sockaddr_in);
       sin->sin_family = AF_INET;
       sin->sin_port = htons(udphdr->src);
       sin->sin_addr.s_addr = iphdr->src.addr;
     }
-    if (fromlen) *fromlen = sizeof(struct sockaddr_in);
+    msg->namelen = sizeof(struct sockaddr_in);
 
     pbuf_free(p);
-
-    return len;
   }
   else
-  {
-    len = submit_socket_request(s, &req, SOCKREQ_RECV, data, size, s->udp.rcvtimeo);
+    rc = submit_socket_request(s, &req, SOCKREQ_RECV, msg, s->udp.rcvtimeo);
 
-    if (len >= 0)
-    {
-      if (from) memcpy(from, &req.addr, sizeof(struct sockaddr_in));
-      if (fromlen) *fromlen = sizeof(struct sockaddr_in);
-    }
-
-    return len;
-  }
-
-  return 0;
+  return rc;
 }
 
-static int udpsock_recv(struct socket *s, void *data, int size, unsigned int flags)
-{
-  return udpsock_recvfrom(s, data, size, flags, NULL, NULL);
-}
-
-static int udpsock_send(struct socket *s, void *data, int size, unsigned int flags)
+static int udpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
 {
   struct pbuf *p;
+  int size;
   int rc;
 
-  if (!data) return -EFAULT;
+  size = get_iovec_size(msg->iov, msg->iovlen);
+  if (size == 0) return 0;
+
+  if (msg->name)
+  {
+    rc = udpsock_connect(s, msg->name, msg->namelen);
+    if (rc < 0) return rc;
+  }
+
   if (s->state != SOCKSTATE_CONNECTED) return -EINVAL;
-  if (!size) return 0;
 
   p = pbuf_alloc(PBUF_TRANSPORT, size, PBUF_RW);
   if (!p) return -ENOMEM;
 
-  memcpy(p->payload, data, size);
+  rc = read_iovec(msg->iov, msg->iovlen, p->payload, size);
+  if (rc < 0) return rc;
   
   rc = udp_send(s->udp.pcb, p, NULL);
   if (rc < 0)
@@ -275,19 +272,6 @@ static int udpsock_send(struct socket *s, void *data, int size, unsigned int fla
   }
 
   return size;
-}
-
-static int udpsock_sendto(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *to, int tolen)
-{
-  int rc;
-
-  rc = udpsock_connect(s, to, tolen);
-  if (rc < 0) return rc;
-
-  rc = udpsock_send(s, data, size, flags);
-  if (rc < 0) return rc;
-
-  return 0;
 }
 
 static int udpsock_setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen)
@@ -339,10 +323,8 @@ struct sockops udpops =
   udpsock_getsockopt,
   udpsock_ioctl,
   udpsock_listen,
-  udpsock_recv,
-  udpsock_recvfrom,
-  udpsock_send,
-  udpsock_sendto,
+  udpsock_recvmsg,
+  udpsock_sendmsg,
   udpsock_setsockopt,
   udpsock_shutdown,
   udpsock_socket,
