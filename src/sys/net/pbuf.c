@@ -214,7 +214,7 @@ struct pbuf *pbuf_alloc(int layer, int size, int flag)
       // Allocate the tail of the pbuf chain
       r = p;
       rsize = size - p->len;
-      while(rsize > 0) 
+      while (rsize > 0) 
       {
 	q = pbuf_pool_alloc();
 	if (q == NULL) 

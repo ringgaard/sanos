@@ -327,7 +327,7 @@ static const unsigned short mask_bits[] =
 };
 
 #define NEXTBYTE()  getbyte()
-#define NEEDBITS(n) {while(k < (n)) {b |= ((unsigned long) NEXTBYTE()) << k; k += 8;}}
+#define NEEDBITS(n) {while (k < (n)) {b |= ((unsigned long) NEXTBYTE()) << k; k += 8;}}
 #define DUMPBITS(n) {b >>= (n); k-= (n);}
 
 //

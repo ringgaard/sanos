@@ -203,7 +203,7 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
 
   // Now, i is the ARP table entry which we will fill with the new information.
   ip_addr_set(&arp_table[i].ipaddr, ipaddr);
-  for(k = 0; k < 6; k++) arp_table[i].ethaddr.addr[k] = ethaddr->addr[k];
+  for (k = 0; k < 6; k++) arp_table[i].ethaddr.addr[k] = ethaddr->addr[k];
   arp_table[i].ctime = arp_ctime;
 
   // Check for delayed transmissions

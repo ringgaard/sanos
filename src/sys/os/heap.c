@@ -922,7 +922,7 @@ void *heap_alloc(size_t bytes)
   // do so and retry. This happens at most once, and only when we would
   // otherwise need to expand memory to service a "small" request.
     
-  for(;;) 
+  for (;;) 
   {    
     while ((victim = unsorted_chunks(av)->bk) != unsorted_chunks(av)) 
     {

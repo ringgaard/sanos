@@ -131,7 +131,7 @@ unsigned short inet_chksum_pbuf(struct pbuf *p)
   for (q = p; q != NULL; q = q->next) 
   {
     acc += chksum(q->payload, q->len);
-    while(acc >> 16) acc = (acc & 0xFFFF) + (acc >> 16);
+    while (acc >> 16) acc = (acc & 0xFFFF) + (acc >> 16);
 
     if (q->len % 2 != 0) 
     {

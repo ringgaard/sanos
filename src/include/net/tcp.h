@@ -312,7 +312,7 @@ extern struct tcp_pcb *tcp_tmp_pcb;             // Only used for temporary stora
 #define TCP_REG(pcbs, npcb) do { \
                             npcb->next = *pcbs; \
                             *pcbs = npcb; \
-                            } while(0)
+                            } while (0)
 
 #define TCP_RMV(pcbs, npcb) do { \
                             if (*pcbs == npcb) { \
@@ -324,7 +324,7 @@ extern struct tcp_pcb *tcp_tmp_pcb;             // Only used for temporary stora
                                } \
                             } \
                             npcb->next = NULL; \
-                            } while(0)
+                            } while (0)
 
 #endif
 

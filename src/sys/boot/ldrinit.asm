@@ -59,7 +59,7 @@ STACKTOP    equ	0x9F800
 textstart:
 
 header_start:
-	db	0x4d,0x5a	    ; EXE file signature
+	db	0x4d, 0x5a	    ; EXE file signature
 	dw	textsize % 512
 	dw	(textsize + 511) / 512
 	dw	0		    ; Relocation information: none
@@ -73,7 +73,7 @@ header_start:
         dw	0		    ; Initial CS (before fixup)
 	dw	header_end	    ; File offset to relocation table: none
 	dw	krnlopts	    ; Overlay number (offset for kernel options)
-	align	64,db 0
+	align	64, db 0
 header_end:
 
 ;
@@ -84,14 +84,15 @@ start:
 	; Setup initial environment
 	mov	ax, cs
 	mov	ds, ax
+	mov	es, ax
 
 	; Save boot drive and boot image
 	mov	[bootdrv], dl
 	mov	[bootimg], ebx
 
 	; Display boot message
-	;mov	si, osldrmsg
-	;call	print
+	mov	si, osldrmsg
+	call	print
 
 	; Try to get system memory map from BIOS
 	call	getmemmap
@@ -198,7 +199,7 @@ empty8042:
 	jnz	empty8042	; yes - loop
 	ret
 
-	; delay is needed after doing i/o
+	; Delay is needed after doing i/o
 delay:
 	dw	0x00eb, 0x00eb
 	ret
@@ -383,8 +384,8 @@ memrecs	     times (MAXMEMRECS * MEMRECSIZ) db 0
 ; Strings
 ;
 
-;osldrmsg:
-;	db	'Real mode OS loader entered', 13, 10, 0
+osldrmsg:
+	db	'Real mode OS loader entered', 13, 10, 0
 
 textend:
 

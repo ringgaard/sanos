@@ -470,7 +470,7 @@ wchar_t *wcscpy(wchar_t *dst, const wchar_t *src)
 wchar_t *wcscat(wchar_t *dst, const wchar_t *src)
 {
   wchar_t *cp = dst;
-  while(*cp) cp++;
+  while (*cp) cp++;
   while (*cp++ = *src++);
   return dst;
 }

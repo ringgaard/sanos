@@ -282,7 +282,7 @@ char *strlwr(char *s)
 {
   char *p = s;
 
-  while(*p)
+  while (*p)
   {
     *p = (char) tolower(*p);
     p++;
@@ -295,7 +295,7 @@ char *strupr(char *s)
 {
   char *p = s;
 
-  while(*p)
+  while (*p)
   {
     *p = (char) toupper(*p);
     p++;
@@ -504,7 +504,7 @@ int strcmp(const char *s1, const char *s2)
 char *strcat(char *dst, const char *src)
 {
   char *cp = dst;
-  while(*cp) cp++;
+  while (*cp) cp++;
   while (*cp++ = *src++);
   return dst;
 }

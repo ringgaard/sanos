@@ -121,7 +121,7 @@ static char *number(char *str, long num, int base, int size, int precision, int 
 
   if (i > precision) precision = i;
   size -= precision;
-  if (!(type & (ZEROPAD | LEFT))) while(size-- > 0) *str++ = ' ';
+  if (!(type & (ZEROPAD | LEFT))) while (size-- > 0) *str++ = ' ';
   if (sign) *str++ = sign;
   
   if (type & SPECIAL)
@@ -405,7 +405,7 @@ static char *flt(char *str, double num, int size, int precision, char fmt, int f
 
   // Output number with alignment and padding
   size -= n;
-  if (!(flags & (ZEROPAD | LEFT))) while(size-- > 0) *str++ = ' ';
+  if (!(flags & (ZEROPAD | LEFT))) while (size-- > 0) *str++ = ' ';
   if (sign) *str++ = sign;
   if (!(flags & LEFT)) while (size-- > 0) *str++ = c;
   for (i = 0; i < n; i++) *str++ = tmp[i];
