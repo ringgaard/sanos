@@ -45,7 +45,7 @@ char *sys_errlist[] =
   /* 32 EPIPE           */  "Broken pipe",
   /* 33 EDOM            */  "Domain error",
   /* 34 ERANGE          */  "Result too large",
-  /* 35 EUCLEAN         */  "Unknown error",
+  /* 35 EUCLEAN         */  "Structure needs cleaning",
   /* 36 EDEADLK         */  "Resource deadlock avoided",
   /* 37 UNKNOWN         */  "Unknown error",
   /* 38 ENAMETOOLONG    */  "Filename too long",
@@ -70,6 +70,8 @@ char *sys_errlist[] =
   /* 56 EPROTO          */  "Protocol error",
   /* 57 ECHKSUM         */  "Checksum error",
   /* 58 EDESTUNREACH    */  "Destination unreachable",
+  /* 59 EBADSLT         */  "Invalid slot",
+  /* 60 EREMOTEIO       */  "Remote I/O error",
 };
 
 int sys_nerr = sizeof(sys_errlist) / sizeof(sys_errlist[0]);

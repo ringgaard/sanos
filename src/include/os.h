@@ -152,8 +152,8 @@ struct section;
 #define ESRCH           3                // No such process
 #define EINTR           4                // Interrupted system call
 #define EIO             5                // Input/output error
-//#define ENXIO           6                // Device not configured
-//#define E2BIG           7                // Argument list too long
+#define ENXIO           6                // Device not configured
+#define E2BIG           7                // Argument list too long
 #define ENOEXEC         8                // Exec format error
 #define EBADF           9                // Bad file number
 //#define ECHILD          10               // No spawned processes
@@ -170,20 +170,20 @@ struct section;
 #define EISDIR          21               // Is a directory
 #define EINVAL          22               // Invalid argument
 #define ENFILE          23               // Too many open files in system
-//#define EMFILE          24               // Too many files open
+#define EMFILE          24               // Too many files open
 //#define ENOTTY          25               // Inappropriate ioctl for device
-//#define ETXTBSY         26               // Unknown error
+#define ETXTBSY         26               // Unknown error
 //#define EFBIG           27               // File too large
 #define ENOSPC          28               // No space left on device
 //#define ESPIPE          29               // Illegal seek
-//#define EROFS           30               // Read-only file system
+#define EROFS           30               // Read-only file system
 //#define EMLINK          31               // Too many links
 //#define EPIPE           32               // Broken pipe
 //#define EDOM            33               // Numerical arg out of domain
 #define ERANGE          34               // Result too large
-//#define EUCLEAN           35               // Unknown error
-//#define EDEADLK         36               // Resource deadlock avoided
-//#define EUNKNOWN         37               // Unknown error
+#define EUCLEAN           35               // Structure needs cleaning
+#define EDEADLK         36               // Resource deadlock avoided
+#define EUNKNOWN        37               // Unknown error
 #define ENAMETOOLONG    38               // File name too long
 //#define ENOLCK          39               // No locks available
 #define ENOSYS          40               // Function not implemented
@@ -206,6 +206,8 @@ struct section;
 #define EPROTO          56               // Protocol error
 #define ECHKSUM         57               // Checksum error
 #define EDESTUNREACH    58               // Destination unreachable
+#define EBADSLT         59               // Invalid slot
+#define EREMOTEIO       60               // Remote I/O error
 
 //
 // File system

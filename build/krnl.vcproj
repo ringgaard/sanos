@@ -339,6 +339,9 @@
 				Name="smbfs"
 				Filter="">
 				<File
+					RelativePath="..\src\sys\fs\smbfs\smb.h">
+				</File>
+				<File
 					RelativePath="..\src\sys\fs\smbfs\smbfs.c">
 				</File>
 			</Filter>
