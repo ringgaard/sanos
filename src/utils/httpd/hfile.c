@@ -90,7 +90,12 @@ int ls(struct httpd_connection *conn)
   httpd_send(conn->rsp, "<HTML><HEAD><TITLE>Index of ", -1);
   httpd_send(conn->rsp, conn->req->decoded_url, urllen);
   httpd_send(conn->rsp, "</TITLE></HEAD>\r\n<BODY>\r\n<H1>Index of ", -1);
-  httpd_send(conn->rsp, conn->req->decoded_url, urllen);
+  
+  if (urllen == 0)
+    httpd_send(conn->rsp, "/", -1);
+  else
+    httpd_send(conn->rsp, conn->req->decoded_url, urllen);
+
   httpd_send(conn->rsp, "</H1><PRE>\r\n", -1);
   httpd_send(conn->rsp, "   Name                              Last Modified           Size\r\n", -1);
   httpd_send(conn->rsp, "<HR>\r\n", -1);
@@ -132,7 +137,7 @@ int ls(struct httpd_connection *conn)
     if ((statbuf.mode & FS_DIRECTORY) == 0)
     {
       if (statbuf.quad.size_high == 0 && statbuf.quad.size_low < 1*K)
-	sprintf(buf, "%8d", statbuf.quad.size_low);
+	sprintf(buf, "%8d B", statbuf.quad.size_low);
       else if (statbuf.quad.size_high == 0 && statbuf.quad.size_low < 1*M)
 	sprintf(buf, "%8d KB", statbuf.quad.size_low / K);
       else if (statbuf.quad.size_high == 0)

@@ -181,7 +181,7 @@ static void list_dir(int argc, char **argv)
 	else
 	{
 	  if (buf.quad.size_high == 0 && buf.quad.size_low < 1*K)
-	    printf("%6d B ", buf.quad.size_low);
+	    printf("%6dB  ", buf.quad.size_low);
 	  else if (buf.quad.size_high == 0 && buf.quad.size_low < 1*M)
 	    printf("%6dKB ", buf.quad.size_low / K);
 	  else if (buf.quad.size_high == 0)
@@ -1119,7 +1119,7 @@ static void httpinit()
 
   server = _httpd_initialize(find_section(config, "httpd"));
 
-  _httpd_add_file_context(server, "/", "/", find_section(config, "webfs"));
+  _httpd_add_file_context(server, "/", "/", NULL);
   _httpd_add_resource_context(server, "/icons", hmod, NULL);
 
   _httpd_start(server);
