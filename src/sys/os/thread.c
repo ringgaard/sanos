@@ -75,6 +75,11 @@ int getcontext(handle_t thread, void *context)
   return syscall(SYSCALL_GETCONTEXT, &thread);
 }
 
+int setcontext(handle_t thread, void *context)
+{
+  return syscall(SYSCALL_SETCONTEXT, &thread);
+}
+
 int getprio(handle_t thread)
 {
   return syscall(SYSCALL_GETPRIO, &thread);

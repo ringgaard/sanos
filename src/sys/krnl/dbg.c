@@ -114,7 +114,7 @@ static int dbg_recv_packet(struct dbg_hdr *hdr, void *data)
 
 static void dbg_connect(struct dbg_hdr *hdr, union dbg_body *body)
 {
-  struct thread *t = current_thread();
+  struct thread *t = self();
 
   //kprintf("dbg: connect, version=%d\n", body->conn.version);
 
@@ -461,18 +461,13 @@ void shell();
 
 void dbg_enter(struct context *ctxt, void *addr)
 {
-  struct context *prevctxt;
-
-  prevctxt = current_thread()->ctxt;
-  current_thread()->ctxt = ctxt;
-
   if (!debugging)
   {
-    kprintf("trap %d thread %d, addr %p\n", ctxt->traptype, current_thread()->id, addr);
+    kprintf("trap %d thread %d, addr %p\n", ctxt->traptype, self()->id, addr);
     dumpregs(ctxt);
   }
 
-  last_trap.tid = current_thread()->id;
+  last_trap.tid = self()->id;
   last_trap.traptype = ctxt->traptype;
   last_trap.errcode = ctxt->errcode;
   last_trap.eip = ctxt->eip;
@@ -487,8 +482,7 @@ void dbg_enter(struct context *ctxt, void *addr)
 
   dbg_main();
 
-  if (current_thread()->suspend_count > 0) dispatch();
-  current_thread()->ctxt = prevctxt;
+  if (self()->suspend_count > 0) dispatch();
 }
 
 void dbg_notify_create_thread(struct thread *t, void *startaddr)

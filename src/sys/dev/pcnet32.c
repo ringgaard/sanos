@@ -8,8 +8,6 @@
 
 #include <os/krnl.h>
 
-#define offsetof(s,m)   (size_t)&(((s *)0)->m)
-
 #define WMWARE
 
 // PCI IDs

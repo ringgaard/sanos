@@ -13,7 +13,9 @@
 
 #define IRQ2INTR(irq) (IRQBASE + (irq))
 
+//
 // PC ISA interrupt requests
+//
 
 #define IRQ_TMR			0
 #define IRQ_KBD			1
@@ -26,7 +28,9 @@
 #define IRQ_MATHCOPRERR		13
 #define IRQ_HD			14
 
+//
 // x86 exceptions (0-31)
+//
 
 #define INTR_DIV		0
 #define INTR_DEBUG		1
@@ -46,7 +50,9 @@
 #define INTR_RESVD1		15
 #define INTR_NPX		16
 
+//
 // PC ISA interrupts (32-47)
+//
 
 #define INTR_TMR		IRQ2INTR(IRQ_TMR)
 #define INTR_KBD		IRQ2INTR(IRQ_KBD)
@@ -59,11 +65,16 @@
 #define INTR_FPUERR	        IRQ2INTR(IRQ_FPUERR)
 #define INTR_HD			IRQ2INTR(IRQ_HD)
 
+//
 // System call interrupt
+//
 
 #define INTR_SYSCALL            48
+#define INTR_SYSENTER           0xFFFF
 
-// Trap context
+//
+// Trap contexts
+//
 
 struct context
 {
@@ -77,6 +88,29 @@ struct context
   unsigned long esp, ess;
 };
 
+struct syscall_context
+{
+  int syscallno;
+  char *params;
+  unsigned long es, ds;
+  unsigned long traptype;
+  union
+  {
+    struct
+    {
+      unsigned long eip, ecs;
+      unsigned long eflags;
+      unsigned long esp, ess;
+    } softint;
+    struct
+    {
+      unsigned long esp;
+      unsigned long eip;
+    } sysentry;
+  };
+};
+
+
 typedef void (*intrproc_t)(struct context *ctxt, void *arg);
 
 struct interrupt_handler
@@ -89,6 +123,9 @@ struct interrupt_handler
 
 void init_trap();
 krnlapi void set_interrupt_handler(int intrno, intrproc_t f, void *arg);
+
+int get_context(struct thread *t, struct context *ctxt);
+int set_context(struct thread *t, struct context *ctxt);
 
 void __inline cli() { __asm cli };
 void __inline sti() { __asm sti };

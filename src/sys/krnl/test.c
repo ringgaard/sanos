@@ -691,12 +691,12 @@ static void thread_list()
   static char *threadstatename[] = {"init", "ready", "run", "wait", "term"};
   struct thread *t = threadlist;
 
-  kprintf("tid tcb      self state prio tib      suspend entry    handles name\n");
+  kprintf("tid tcb      hndl state prio tib      suspend entry    handles name\n");
   kprintf("--- -------- ---- ----- ---- -------- ------- -------- ------- ----------------\n");
   while (1)
   {
     kprintf("%3d %p %4d %-5s %3d  %p  %4d   %p   %2d    %s\n",
-            t->id, t, t->self, threadstatename[t->state], t->priority, t->tib, 
+            t->id, t, t->hndl, threadstatename[t->state], t->priority, t->tib, 
 	    t->suspend_count, t->entrypoint, t->object.handle_count, t->name ? t->name : "");
 
     t = t->next;

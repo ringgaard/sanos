@@ -83,12 +83,13 @@ static void __inline change_state(struct bufpool *pool, struct buf *buf, int new
 
 static int wait_for_buffer(struct buf *buf)
 {
-  struct thread *self = current_thread();
-  self->next_waiter = buf->waiters;
-  buf->waiters = self;
-  self->state = THREAD_STATE_WAITING;
+  struct thread *t = self();
+
+  t->next_waiter = buf->waiters;
+  buf->waiters = t;
+  t->state = THREAD_STATE_WAITING;
   dispatch();
-  return self->waitkey;
+  return t->waitkey;
 }
 
 //

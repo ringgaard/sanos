@@ -47,7 +47,7 @@ err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, cha
   struct timer timer;
 
   req->socket = s;
-  req->thread = current_thread();
+  req->thread = self();
   req->type = type;
   req->data = data;
   req->len = len;

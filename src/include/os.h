@@ -559,6 +559,8 @@ osapi int mlock(void *addr, unsigned long size);
 osapi int munlock(void *addr, unsigned long size);
 
 osapi int wait(handle_t h, int timeout);
+osapi int waitall(handle_t *h, int count, int timeout);
+osapi int waitany(handle_t *h, int count, int timeout);
 
 osapi handle_t mkevent(int manual_reset, int initial_state);
 osapi int epulse(handle_t h);
@@ -577,6 +579,7 @@ osapi int suspend(handle_t thread);
 osapi int resume(handle_t thread);
 osapi void endthread(int retval);
 osapi tid_t gettid();
+osapi int setcontext(handle_t thread, void *context);
 osapi int getcontext(handle_t thread, void *context);
 osapi int getprio(handle_t thread);
 osapi int setprio(handle_t thread, int priority);

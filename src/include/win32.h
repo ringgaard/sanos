@@ -77,12 +77,77 @@ typedef void *PINPUT_RECORD;
 typedef void *PHANDLER_ROUTINE;
 typedef void *LPTOP_LEVEL_EXCEPTION_FILTER;
 
-typedef struct CONTEXT 
-{ 
-  DWORD dummy;
-} CONTEXT, *PCONTEXT, *LPCONTEXT; 
+#define CONTEXT_i386    0x00010000
+#define CONTEXT_i486    0x00010000
 
-typedef union _LARGE_INTEGER { 
+#define CONTEXT_CONTROL         (CONTEXT_i386 | 0x00000001L)
+#define CONTEXT_INTEGER         (CONTEXT_i386 | 0x00000002L)
+#define CONTEXT_SEGMENTS        (CONTEXT_i386 | 0x00000004L)
+#define CONTEXT_FLOATING_POINT  (CONTEXT_i386 | 0x00000008L)
+#define CONTEXT_DEBUG_REGISTERS (CONTEXT_i386 | 0x00000010L)
+#define CONTEXT_EXTENDED_REGISTERS  (CONTEXT_i386 | 0x00000020L)
+
+#define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS)
+
+#define MAXIMUM_SUPPORTED_EXTENSION     512
+
+#define SIZE_OF_80387_REGISTERS      80
+
+typedef struct _FLOATING_SAVE_AREA 
+{
+  DWORD   ControlWord;
+  DWORD   StatusWord;
+  DWORD   TagWord;
+  DWORD   ErrorOffset;
+  DWORD   ErrorSelector;
+  DWORD   DataOffset;
+  DWORD   DataSelector;
+  BYTE    RegisterArea[SIZE_OF_80387_REGISTERS];
+  DWORD   Cr0NpxState;
+} FLOATING_SAVE_AREA;
+
+typedef FLOATING_SAVE_AREA *PFLOATING_SAVE_AREA;
+
+typedef struct _CONTEXT 
+{
+  DWORD ContextFlags;
+
+  DWORD   Dr0;
+  DWORD   Dr1;
+  DWORD   Dr2;
+  DWORD   Dr3;
+  DWORD   Dr6;
+  DWORD   Dr7;
+
+  FLOATING_SAVE_AREA FloatSave;
+
+  DWORD   SegGs;
+  DWORD   SegFs;
+  DWORD   SegEs;
+  DWORD   SegDs;
+
+  DWORD   Edi;
+  DWORD   Esi;
+  DWORD   Ebx;
+  DWORD   Edx;
+  DWORD   Ecx;
+  DWORD   Eax;
+
+  DWORD   Ebp;
+  DWORD   Eip;
+  DWORD   SegCs;
+  DWORD   EFlags;
+  DWORD   Esp;
+  DWORD   SegSs;
+
+  BYTE    ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
+} CONTEXT;
+
+typedef CONTEXT *PCONTEXT;
+typedef CONTEXT *LPCONTEXT;
+
+typedef union _LARGE_INTEGER 
+{ 
   struct 
   {
     DWORD LowPart; 
@@ -99,14 +164,14 @@ typedef struct _FILETIME
 
 typedef struct _SYSTEMTIME 
 { 
-    WORD wYear; 
-    WORD wMonth; 
-    WORD wDayOfWeek; 
-    WORD wDay; 
-    WORD wHour; 
-    WORD wMinute; 
-    WORD wSecond; 
-    WORD wMilliseconds; 
+  WORD wYear; 
+  WORD wMonth; 
+  WORD wDayOfWeek; 
+  WORD wDay; 
+  WORD wHour; 
+  WORD wMinute; 
+  WORD wSecond; 
+  WORD wMilliseconds; 
 } SYSTEMTIME, *PSYSTEMTIME, *LPSYSTEMTIME;
 
 typedef struct _SYSTEM_INFO 

@@ -128,7 +128,7 @@ int wait_for_object(object_t hobj, unsigned int timeout)
       case OBJECT_MUTEX:
 	// Set state to nonsignaled and set current thread as owner
 	obj->signaled = 0;
-	((struct mutex *) obj)->owner = current_thread();
+	((struct mutex *) obj)->owner = self();
 	((struct mutex *) obj)->recursion = 1;
 	break;
 
@@ -142,7 +142,7 @@ int wait_for_object(object_t hobj, unsigned int timeout)
 	break;
     }
   }
-  else if (obj->type == OBJECT_MUTEX && ((struct mutex *) obj)->owner == current_thread())
+  else if (obj->type == OBJECT_MUTEX && ((struct mutex *) obj)->owner == self())
   {
     // Mutex is already owned by current thread, increase recursion count
     ((struct mutex *) obj)->recursion++;
@@ -151,7 +151,7 @@ int wait_for_object(object_t hobj, unsigned int timeout)
     return -ETIMEOUT;
   else
   {
-    struct thread *t = current_thread();
+    struct thread *t = self();
 
     // Mark thread as waiting
     t->state = THREAD_STATE_WAITING;
@@ -204,6 +204,24 @@ int wait_for_object(object_t hobj, unsigned int timeout)
   }
 
   return 0;
+}
+
+//
+// Wait for all objects to become signaled
+//
+
+int wait_for_all_objects(struct object **objs, int count, unsigned int timeout)
+{
+  return -ENOSYS;
+}
+
+//
+// Wait for some object to become signaled
+//
+
+int wait_for_any_object(struct object **objs, int count, unsigned int timeout)
+{
+  return -ENOSYS;
 }
 
 //
@@ -475,7 +493,7 @@ void init_mutex(struct mutex *m, int owned)
   init_object(&m->object, OBJECT_MUTEX);
   if (owned)
   {
-    m->owner = current_thread();
+    m->owner = self();
     m->object.signaled = 0;
     m->recursion = 1;
   }
@@ -496,7 +514,7 @@ void release_mutex(struct mutex *m)
   struct waitblock *wb;
 
   // Check that caller is the owner
-  if (m->owner != current_thread()) return;
+  if (m->owner != self()) return;
 
   // Check for recursion
   if (--m->recursion > 0) return;

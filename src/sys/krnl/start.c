@@ -333,10 +333,10 @@ void main(void *arg)
   entrypoint = get_entrypoint(imgbase);
 
   // Initialize initial user thread
-  t = current_thread();
+  t = self();
   if (init_user_thread(t, entrypoint) < 0) panic("unable to initialize initial user thread");
   if (allocate_user_stack(t, stack_reserve, stack_commit) < 0) panic("unable to allocate stack for initial user thread");
-  t->self = halloc(&t->object);
+  t->hndl = halloc(&t->object);
   mark_thread_running();
 
   kprintf("mem: %dMB total, %dKB used, %dKB free, %dKB reserved\n", 

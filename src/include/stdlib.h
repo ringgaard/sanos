@@ -9,6 +9,8 @@
 #ifndef STDLIB_H
 #define STDLIB_H
 
+#define offsetof(s, m) ((size_t)&(((s *) 0)->m))
+
 int parse_args(char *args, char **argv);
 void free_args(int argc, char **argv);
 

@@ -11,6 +11,8 @@
 #define INTRS MAXIDT
 
 //
+// trap
+//
 // Common entry point for all interrupt service routines
 //
 
@@ -49,6 +51,8 @@ static void __declspec(naked) isr()
 }
 
 //
+// syscall
+//
 // Kernel entry point for int 48 syscall
 //
 
@@ -74,6 +78,8 @@ static void __declspec(naked) systrap(void)
 }
 
 //
+// sysentry
+//
 // Kernel entry point for sysenter syscall
 //
 
@@ -86,7 +92,9 @@ static void __declspec(naked) sysentry(void)
 
     push    ecx
     push    ebp
-    
+
+    push    INTR_SYSENTER
+
     push    ds
     push    es
 
@@ -102,6 +110,8 @@ static void __declspec(naked) sysentry(void)
 
     pop	    es
     pop	    ds
+
+    add     esp, 4
 
     pop     ecx
     pop     edx
@@ -143,6 +153,8 @@ struct syspage *syspage = (struct syspage *) SYSPAGE_ADDRESS;
 struct interrupt_handler intrhndlr[INTRS];
 
 //
+// init_idt_gate
+//
 // Initialize one idt entry
 //
 
@@ -154,6 +166,8 @@ static void init_idt_gate(int intrno, void *handler)
   syspage->idt[intrno].offset_high = (unsigned short) (((unsigned long) handler) >> 16);
 }
 
+//
+// init_trap_gate
 //
 // Initialize one trap entry
 //
@@ -167,6 +181,8 @@ static void init_trap_gate(int intrno, void *handler)
 }
 
 //
+// default_interrupt_handler
+//
 // Default interrupt handler
 //
 
@@ -175,6 +191,8 @@ void default_interrupt_handler(struct context *ctxt, void *arg)
   dbg_enter(ctxt, NULL);
 }
 
+//
+// pagefault_handler
 //
 // Page fault handler
 //
@@ -198,6 +216,8 @@ void pagefault_handler(struct context *ctxt, void *arg)
 }
 
 //
+// usermode
+//
 // Tests if context is a user mode context
 //
 
@@ -206,6 +226,8 @@ __inline static int usermode(struct context *ctxt)
   return (ctxt->eip < OSBASE);
 }
 
+//
+// wrmsr
 //
 // Write MSR
 //
@@ -221,6 +243,8 @@ void wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh)
   }
 }
 
+//
+// init_trap
 //
 // Initialize traps and interrupts
 //
@@ -315,13 +339,22 @@ void init_trap()
 }
 
 //
+// trap
+//
 // Trap dispatcher
 //
 
 static void __cdecl trap(unsigned long args)
 {
   struct context *ctxt = (struct context *) &args;
+  struct thread *t = self();
   struct interrupt_handler *h;
+  struct context *prevctxt;
+
+  // Save context
+  prevctxt = t->ctxt;
+  t->ctxt = ctxt;
+  if (usermode(ctxt)) t->uctxt = (char *) ctxt + offsetof(struct context, traptype);
 
   // Call interrupt handler
   h = &intrhndlr[ctxt->traptype];
@@ -329,8 +362,14 @@ static void __cdecl trap(unsigned long args)
 
   // If we interrupted a user mode context, dispatch DPC's now
   if (usermode(ctxt)) dispatch_dpc_queue();
+
+  // Restore context
+  t->ctxt = prevctxt;
+  if (usermode(ctxt)) t->uctxt = NULL;
 }
 
+//
+// set_interrupt_handler
 //
 // Set interrupt handler for interrupt
 //
@@ -339,4 +378,67 @@ void set_interrupt_handler(int intrno, intrproc_t f, void *arg)
 {
   intrhndlr[intrno].handler = f;
   intrhndlr[intrno].arg = arg;
+}
+
+//
+// get_context
+//
+// Retrieves the processor context for a thread
+//
+
+int get_context(struct thread *t, struct context *ctxt)
+{
+  unsigned long *uctxt = (unsigned long *) t->uctxt;
+
+  if (!ctxt) return -EINVAL;
+  if (uctxt == NULL) return -EPERM;
+
+  if (*uctxt == INTR_SYSCALL)
+  {
+    struct syscall_context *sysctxt = (struct syscall_context *) ((char *) uctxt - offsetof(struct syscall_context, traptype));
+
+    memset(ctxt, 0, sizeof(struct context));
+    ctxt->eip = sysctxt->softint.eip;
+    ctxt->ecs = sysctxt->softint.ecs;
+    ctxt->eflags = sysctxt->softint.eflags;
+    ctxt->esp = sysctxt->softint.esp;
+    ctxt->ess = sysctxt->softint.ess;
+
+    ctxt->ds = sysctxt->ds;
+    ctxt->es = sysctxt->es;
+    ctxt->ebp = ctxt->esp;
+    ctxt->traptype = INTR_SYSCALL;
+  }
+  else if (*uctxt == INTR_SYSENTER)
+  {
+    struct syscall_context *sysctxt = (struct syscall_context *) ((char *) uctxt - offsetof(struct syscall_context, traptype));
+
+    memset(ctxt, 0, sizeof(struct context));
+    ctxt->eip = sysctxt->sysentry.eip;
+    ctxt->esp = sysctxt->sysentry.esp;
+    ctxt->ds = sysctxt->ds;
+    ctxt->es = sysctxt->es;
+    ctxt->ebp = ctxt->esp;
+
+    ctxt->traptype = INTR_SYSENTER;
+    ctxt->ecs = SEL_UTEXT + SEL_RPL3;
+    ctxt->ess = SEL_UDATA + SEL_RPL3;
+  }
+  else
+  {
+    memcpy(ctxt, (char *) uctxt - offsetof(struct context, traptype), sizeof(struct context));
+  }
+
+  return 0;
+}
+
+//
+// set_context
+//
+// Sets the processor context for a thread
+//
+
+int set_context(struct thread *t, struct context *ctxt)
+{
+  return -ENOSYS;
 }

@@ -9,6 +9,8 @@
 #ifndef THREAD_H
 #define THREAD_H
 
+#define MAX_WAIT_OBJECTS  16
+
 #define WAIT_ALL 0
 #define WAIT_ANY 1
 
@@ -94,7 +96,7 @@ struct thread
   int flags;
   int priority;
   tid_t id;
-  handle_t self;
+  handle_t hndl;
   struct tib *tib;
   int suspend_count;
   void *entrypoint;
@@ -116,6 +118,7 @@ struct thread
 
   struct fpu *fpustate;
   struct context *ctxt;
+  void *uctxt;
 };
 
 extern struct object **htab;
@@ -145,6 +148,8 @@ krnlapi void modify_waitable_timer(struct waitable_timer *t, unsigned int expire
 krnlapi void cancel_waitable_timer(struct waitable_timer *t);
 
 krnlapi int wait_for_object(object_t hobj, unsigned int timeout);
+krnlapi int wait_for_all_objects(struct object **objs, int count, unsigned int timeout);
+krnlapi int wait_for_any_object(struct object **objs, int count, unsigned int timeout);
 krnlapi void sleep(unsigned int millisecs);
 
 krnlapi handle_t halloc(struct object *o);

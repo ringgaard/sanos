@@ -1041,6 +1041,88 @@ static int sys_wait(char *params)
   return rc;
 }
 
+static int sys_waitall(char *params)
+{
+  handle_t *h;
+  int count;
+  unsigned int timeout;
+  struct object *o[MAX_WAIT_OBJECTS];
+  int rc;
+  int n;
+
+  if (lock_buffer(params, 12) < 0) return -EFAULT;
+
+  h = *(handle_t **) params;
+  count = *(int *) (params + 4);
+  timeout = *(unsigned int *) (params + 8);
+
+  if (count < 0 || count > MAX_WAIT_OBJECTS) return -EINVAL;
+
+  if (lock_buffer(h, count * sizeof(handle_t *)) < 0)
+  {
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+
+  for (n = 0; n < count; n++)
+  {
+    o[n] = olock(h[n], OBJECT_ANY);
+    if (!o[n])
+    {
+      while (--n >= 0) orel(o[n]);
+      unlock_buffer(params, 12);
+      return -EBADF;
+    }
+  }
+
+  rc = wait_for_all_objects(o, count, timeout);
+
+  for (n = 0; n < count; n++) orel(o[n]);
+  unlock_buffer(params, 12);
+  return rc;
+}
+
+static int sys_waitany(char *params)
+{
+  handle_t *h;
+  int count;
+  unsigned int timeout;
+  struct object *o[MAX_WAIT_OBJECTS];
+  int rc;
+  int n;
+
+  if (lock_buffer(params, 12) < 0) return -EFAULT;
+
+  h = *(handle_t **) params;
+  count = *(int *) (params + 4);
+  timeout = *(unsigned int *) (params + 8);
+
+  if (count < 0 || count > MAX_WAIT_OBJECTS) return -EINVAL;
+
+  if (lock_buffer(h, count * sizeof(handle_t *)) < 0)
+  {
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+
+  for (n = 0; n < count; n++)
+  {
+    o[n] = olock(h[n], OBJECT_ANY);
+    if (!o[n])
+    {
+      while (--n >= 0) orel(o[n]);
+      unlock_buffer(params, 12);
+      return -EBADF;
+    }
+  }
+
+  rc = wait_for_any_object(o, count, timeout);
+
+  for (n = 0; n < count; n++) orel(o[n]);
+  unlock_buffer(params, 12);
+  return rc;
+}
+
 static int sys_mkevent(char *params)
 {
   int manual_reset;
@@ -1146,7 +1228,7 @@ static int sys_ereset(char *params)
 
 static int sys_self(char *params)
 {
-  return current_thread()->self;
+  return self()->hndl;
 }
 
 static int sys_exit(char *params)
@@ -1284,16 +1366,17 @@ static int sys_endthread(char *params)
   return 0;
 }
 
-static int sys_getcontext(char *params)
+static int sys_setcontext(char *params)
 {
   handle_t h;
   struct thread *t;
-  void *context;
+  struct context *context;
+  int rc;
 
   if (lock_buffer(params, 8) < 0) return -EFAULT;
 
   h = *(handle_t *) params;
-  context = *(void **) (params + 4);
+  context = *(struct context **) (params + 4);
 
   t = (struct thread *) olock(h, OBJECT_THREAD);
   if (!t) 
@@ -1302,11 +1385,55 @@ static int sys_getcontext(char *params)
     return -EBADF;
   }
 
-  kprintf("warning: getcontext not implemented\n");
+  if (lock_buffer(context, sizeof(struct context)) < 0)
+  {
+    orel(t);
+    unlock_buffer(params, 8);
+    return -EFAULT;
+  }
 
+  rc = set_context(t, context);
+
+  unlock_buffer(context, sizeof(struct context));
   orel(t);
   unlock_buffer(params, 8);
-  return -ENOSYS;
+
+  return rc;
+}
+
+static int sys_getcontext(char *params)
+{
+  handle_t h;
+  struct thread *t;
+  struct context *context;
+  int rc;
+
+  if (lock_buffer(params, 8) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  context = *(struct context **) (params + 4);
+
+  t = (struct thread *) olock(h, OBJECT_THREAD);
+  if (!t) 
+  {
+    unlock_buffer(params, 8);
+    return -EBADF;
+  }
+
+  if (lock_buffer(context, sizeof(struct context)) < 0)
+  {
+    orel(t);
+    unlock_buffer(params, 8);
+    return -EFAULT;
+  }
+
+  rc = get_context(t, context);
+
+  unlock_buffer(context, sizeof(struct context));
+  orel(t);
+  unlock_buffer(params, 8);
+
+  return rc;
 }
 
 static int sys_getprio(char *params)
@@ -2111,6 +2238,7 @@ struct syscall_entry syscalltab[] =
   {"suspend", "%d", sys_suspend},
   {"resume", "%d", sys_resume},
   {"endthread", "%d", sys_endthread},
+  {"setcontext", "%d,%p", sys_setcontext},
   {"getcontext", "%d,%p", sys_getcontext},
   {"getprio", "%d", sys_getprio},
   {"setprio", "%d,%d", sys_setprio},
@@ -2140,12 +2268,17 @@ struct syscall_entry syscalltab[] =
   {"sendto", "%d,%p,%d,%d,%p,%d", sys_sendto},
   {"setsockopt", "%d,%d,%d,%p,%d", sys_setsockopt},
   {"shutdown", "%d,%d", sys_shutdown},
-  {"socket", "%d,%d,%d", sys_socket}
+  {"socket", "%d,%d,%d", sys_socket},
+  {"waitall", "%p,%d,%d", sys_waitall},
+  {"waitany", "%p,%d,%d", sys_waitany}
 };
 
 int syscall(int syscallno, char *params)
 {
   int rc;
+  struct syscall_context *sysctxt = (struct syscall_context *) &syscallno;
+
+  self()->uctxt = (char *) sysctxt + offsetof(struct syscall_context, traptype);
 
 #if 0
   {
@@ -2169,6 +2302,8 @@ int syscall(int syscallno, char *params)
 #endif
 
   dispatch_dpc_queue();
+
+  self()->uctxt = NULL;
 
   return rc;
 }

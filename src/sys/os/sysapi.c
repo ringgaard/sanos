@@ -210,6 +210,16 @@ int wait(handle_t h, int timeout)
   return syscall(SYSCALL_WAIT, &h);
 }
 
+int waitall(handle_t *h, int count, int timeout)
+{
+  return syscall(SYSCALL_WAITALL, &h);
+}
+
+int waitany(handle_t *h, int count, int timeout)
+{
+  return syscall(SYSCALL_WAITANY, &h);
+}
+
 handle_t mkevent(int manual_reset, int initial_state)
 {
   return syscall(SYSCALL_MKEVENT, &manual_reset);

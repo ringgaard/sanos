@@ -27,7 +27,6 @@ typedef void (*taskproc_t)(void *arg);
 #define TASK_QUEUE_ACTIVE              1
 #define TASK_QUEUE_ACTIVE_TASK_INVALID 2
 
-
 #define TASK_QUEUED       1
 #define TASK_EXECUTING    2
 
@@ -78,7 +77,7 @@ extern struct thread *idlethread;
 extern struct thread *threadlist;
 extern struct task_queue sys_task_queue;
 
-__inline __declspec(naked) struct thread *current_thread()
+__inline __declspec(naked) struct thread *self()
 {
   __asm
   {

@@ -105,12 +105,12 @@ void mark_thread_ready(struct thread *t)
 
 void mark_thread_running()
 {
-  struct thread *self = current_thread();
-  struct tib *tib = self->tib;
+  struct tib *tib;
   struct segment *seg;
 
   // Set thread state to running
-  self->state = THREAD_STATE_RUNNING;
+  tib = self()->tib;
+  self()->state = THREAD_STATE_RUNNING;
 
   // Set FS register to point to current TIB
   seg = &syspage->gdt[GDT_TIB];
@@ -128,7 +128,7 @@ void mark_thread_running()
 
 void threadstart(void *arg)
 {
-  struct thread *t = current_thread();
+  struct thread *t = self();
   unsigned long *stacktop;
   void *entrypoint;
 
@@ -220,7 +220,7 @@ int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread 
   if (rc < 0) return rc;
 
   // Allocate self handle
-  t->self = halloc(&t->object);
+  t->hndl = halloc(&t->object);
 
   // Notify debugger
   dbg_notify_create_thread(t, entrypoint);
@@ -353,10 +353,10 @@ int resume_thread(struct thread *t)
 
 void terminate_thread(int exitcode)
 {
-  struct thread *t = current_thread();
+  struct thread *t = self();
   t->state = THREAD_STATE_TERMINATED;
   t->exitcode = exitcode;
-  hfree(t->self);
+  hfree(t->hndl);
   dispatch();
 }
 
@@ -510,7 +510,6 @@ void dispatch()
 {
   int prio;
   struct thread *t;
-  struct thread *self = current_thread();
 
   // Clear rescheduling flag
   resched = 0;
@@ -536,12 +535,12 @@ void dispatch()
   }
 
   // If current thread has been selected to run again then just return
-  if (t == self) return;
+  if (t == self()) return;
 
   // Save fpu state if fpu has been used
-  if (self->flags & THREAD_FPU_ENABLED)
+  if (self()->flags & THREAD_FPU_ENABLED)
   {
-    fpu_disable(self->fpustate);
+    fpu_disable(self()->fpustate);
     t->flags &= ~THREAD_FPU_ENABLED;
   }
 
@@ -555,7 +554,7 @@ void dispatch()
 void yield()
 {
   // Mark thread as ready to run
-  mark_thread_ready(current_thread());
+  mark_thread_ready(self());
 
   // Dispatch next thread
   dispatch();
@@ -571,7 +570,7 @@ void idle_task()
 
     if (resched)
     {
-      mark_thread_ready(current_thread());
+      mark_thread_ready(self());
       dispatch();
     }
     else
@@ -584,12 +583,12 @@ static int threads_proc(struct proc_file *pf, void *arg)
   static char *threadstatename[] = {"init", "ready", "run", "wait", "term"};
   struct thread *t = threadlist;
 
-  pprintf(pf, "tid tcb      self state prio tib      suspend entry    handles name\n");
+  pprintf(pf, "tid tcb      hndl state prio tib      suspend entry    handles name\n");
   pprintf(pf, "--- -------- ---- ----- ---- -------- ------- -------- ------- ----------------\n");
   while (1)
   {
     pprintf(pf,"%3d %p %4d %-5s %3d  %p  %4d   %p   %2d    %s\n",
-            t->id, t, t->self, threadstatename[t->state], t->priority, t->tib, 
+            t->id, t, t->hndl, threadstatename[t->state], t->priority, t->tib, 
 	    t->suspend_count, t->entrypoint, t->object.handle_count, t->name ? t->name : "");
 
     t = t->next;
@@ -608,7 +607,7 @@ void init_sched()
   memset(ready_queue_tail, 0, sizeof(ready_queue_tail));
 
   // The initial kernel thread will later become the idle thread
-  idle_thread = current_thread();
+  idle_thread = self();
   threadlist = idle_thread;
 
   // The idle thread is always ready to run

@@ -62,7 +62,7 @@ void fpu_disable(struct fpu *state)
 
 void fpu_trap_handler(struct context *ctxt, void *arg)
 {
-  struct thread *t = current_thread();
+  struct thread *t = self();
 
   if (t->flags & THREAD_FPU_USED)
   {
