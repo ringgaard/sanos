@@ -8,8 +8,6 @@
 
 #include <os/krnl.h>
 
-#define VFS_TIMEOUT 60000
-
 struct filesystem *fslist = NULL;
 struct fs *mountlist = NULL;
 
@@ -119,13 +117,19 @@ struct fs *fslookup(char *name, char **rest)
 int __inline lock_fs(struct fs *fs, int fsop)
 {
   if (fs->ops->reentrant & fsop) return 0;
-  return wait_for_object(&fs->exclusive, VFS_TIMEOUT);
+  if (fs->ops->lockfs)
+    return fs->ops->lockfs(fs);
+  else
+    return wait_for_object(&fs->exclusive, VFS_LOCK_TIMEOUT);
 }
 
 void __inline unlock_fs(struct fs *fs, int fsop)
 {
   if (fs->ops->reentrant & fsop) return;
-  release_mutex(&fs->exclusive);
+  if (fs->ops->unlockfs)
+    fs->ops->unlockfs(fs);
+  else
+    release_mutex(&fs->exclusive);
 }
 
 struct filesystem *register_filesystem(char *name, struct fsops *ops)

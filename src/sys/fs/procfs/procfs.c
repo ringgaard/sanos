@@ -32,6 +32,9 @@ struct fsops procfsops =
 
   NULL,
   NULL,
+
+  NULL,
+  NULL,
   NULL,
 
   NULL,

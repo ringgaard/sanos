@@ -103,7 +103,7 @@ static void arp_tmr(void *arg)
     struct xmit_queue_entry *entry = xmit_queue_table + i;
     if (entry->p && time_before(entry->expires, ticks))
     {
-      kprintf("arp: xmit queue entry %d expired\n", i);
+      //kprintf("arp: xmit queue entry %d expired\n", i);
       pbuf_free(entry->p);
       entry->p = NULL;
       stats.link.drop++;

@@ -56,6 +56,17 @@ struct smb_directory
 };
 
 //
+// SMB server
+//
+
+struct smb_server
+{
+  struct socket *s;
+  unsigned short uid;
+  int refcnt;
+};
+
+//
 // SMB session
 //
 
@@ -74,6 +85,8 @@ struct smb_session
   char buffer[SMB_MAX_BUFFER + 4];
 };
 
+int smb_lockfs(struct fs *fs);
+void smb_unlockfs(struct fs *fs);
 int smb_format(char *devname, char *opts);
 int smb_mount(struct fs *fs, char *opts);
 int smb_umount(struct fs *fs);
@@ -105,6 +118,9 @@ struct fsops smbfsops =
   FSOP_FLUSH | FSOP_READ | FSOP_WRITE | FSOP_IOCTL | FSOP_TELL | FSOP_LSEEK | 
   FSOP_CHSIZE | FSOP_FUTIME | FSOP_UTIME | FSOP_FSTAT | FSOP_STAT | FSOP_MKDIR |
   FSOP_RMDIR | FSOP_RENAME | FSOP_LINK | FSOP_UNLINK | FSOP_OPENDIR | FSOP_READDIR,
+
+  smb_lockfs,
+  smb_unlockfs,
 
   smb_format,
   smb_mount,
@@ -498,6 +514,17 @@ int smb_trans(struct smb_session *sess,
   return 0;
 }
 
+int smb_lockfs(struct fs *fs)
+{
+  return wait_for_object(&fs->exclusive, VFS_LOCK_TIMEOUT);
+}
+
+void smb_unlockfs(struct fs *fs)
+{
+  release_mutex(&fs->exclusive);
+}
+
+
 int smb_format(char *devname, char *opts)
 {
   return -ENOSYS;
@@ -757,7 +784,6 @@ int smb_open(struct file *filp, char *name)
   memset(file, 0, sizeof(struct smb_file));
 
   // Open/create file
-  kprintf("smb: open %s access=0x%x mode=%d\n", name, access, mode);
   memset(smb, 0, sizeof(struct smb));
   smb->params.req.create.andx.cmd = 0xFF;
   smb->params.req.create.name_length = strlen(name) + 1;
@@ -907,6 +933,7 @@ static int smb_read_normal(struct smb_session *sess, struct smb_file *file, void
   smb->params.req.read.fid = file->fid;
   smb->params.req.read.offset = pos;
   smb->params.req.read.max_count = size;
+  smb->params.req.read.offset_high = 0;
 
   rc = send_smb(sess, smb, SMB_COM_READ_ANDX, 12, NULL, 0);
   if (rc < 0) return rc;
@@ -979,10 +1006,10 @@ static int smb_write_normal(struct smb_session *sess, struct smb_file *file, voi
   memset(smb, 0, sizeof(struct smb));
   smb->params.req.write.andx.cmd = 0xFF;
   smb->params.req.write.fid = file->fid;
-  smb->params.req.write.offset = pos & 0xFFFF;
+  smb->params.req.write.offset = pos;
   smb->params.req.write.data_length = size;
   smb->params.req.write.data_offset = SMB_HEADER_LEN + 14 * 2;
-  smb->params.req.write.offset_high = pos >> 16;
+  smb->params.req.write.offset_high = 0;
 
   rc = send_smb(sess, smb, SMB_COM_WRITE_ANDX, 14, data, size);
   if (rc < 0) return rc;

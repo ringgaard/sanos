@@ -13,6 +13,9 @@ struct fsops dfsops =
   FSOP_READ | FSOP_WRITE | FSOP_IOCTL | FSOP_TELL | FSOP_LSEEK | FSOP_CHSIZE | 
   FSOP_FUTIME | FSOP_FSTAT,
 
+  NULL,
+  NULL,
+
   dfs_format,
   dfs_mount,
   dfs_umount,

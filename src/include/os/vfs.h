@@ -9,6 +9,8 @@
 #ifndef VFS_H
 #define VFS_H
 
+#define VFS_LOCK_TIMEOUT       60000    // Timeout for file system locks
+
 #define F_MODIFIED              0x1000  // File has been modified since it was opened
 #define F_DIR                   0x2000  // File is a directory
 
@@ -70,6 +72,9 @@ struct file
 struct fsops
 {
   unsigned long reentrant;
+
+  int (*lockfs)(struct fs *fs);
+  void (*unlockfs)(struct fs *fs);
 
   int (*format)(char *devname, char *opts);
   int (*mount)(struct fs *fs, char *opts);

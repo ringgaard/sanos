@@ -34,6 +34,9 @@ struct fsops devfsops =
 
   NULL,
   NULL,
+
+  NULL,
+  NULL,
   NULL,
 
   NULL,
