@@ -77,3 +77,8 @@ CHANGES
 -------
 
 - Implement /proc/uptime to display time since bootup.
+
+- Add readline() with command line editing
+    - Add command history
+    - Add filename completion
+ 

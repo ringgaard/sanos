@@ -121,7 +121,6 @@ void print_buffer(const char *str, int len)
        
       case 8: // Backspace
 	if (cursor_pos > 0) cursor_pos -= CELLSIZE;
-	vidmem[cursor_pos] = 0x20;
 	break;
 
       case 12: // Formfeed

@@ -758,7 +758,7 @@ static void lookup(char *name)
   }
 }
 
-static int readline(int f, char *buf)
+static int read_line(int f, char *buf)
 {
   char c;
   int rc;
@@ -821,7 +821,7 @@ static int httpget(char *server, char *path, char *filename)
     return rc;
   }
 
-  while ((rc = readline(s, buf)) > 0)
+  while ((rc = read_line(s, buf)) > 0)
   {
     //printf("hdr %s\n", buf);
   }
@@ -901,7 +901,7 @@ static char *httpgetbuf(char *server, char *path)
   }
 
   len = 0;
-  while ((rc = readline(s, buf)) > 0)
+  while ((rc = read_line(s, buf)) > 0)
   {
     p = strchr(buf, ':');
     if (p)
@@ -1299,11 +1299,13 @@ void shell()
   char cmd[256];
   int argc;
   char **argv;
+  int readline(int f, char *buf, int size);
 
   while (1)
   {
     printf("%s$ ", getcwd(cmd, 256));
-    if (gets(cmd) == NULL) break;
+    //if (gets(cmd) == NULL) break;
+    if (readline(fdin, cmd, 256) < 0) break;
 
     argc = parse_args(cmd, NULL);
     if (argc)
