@@ -597,7 +597,7 @@ typedef struct fd_set
 } fd_set;
 
 #define FD_ZERO(set) _fd_zero(set)
-#define FD_ISSET(fd, set) fd_isset(fd, set)
+#define FD_ISSET(fd, set) _fd_isset(fd, set)
 #define FD_SET(fd, set) _fd_set(fd, set)
 #define FD_CLR(fd, set) _fd_clr(fd, set)
 
@@ -895,6 +895,7 @@ osapi int sendmsg(int s, struct msghdr *hdr, unsigned int flags);
 osapi int setsockopt(int s, int level, int optname, const char *optval, int optlen);
 osapi int shutdown(int s, int how);
 osapi int socket(int domain, int type, int protocol);
+osapi int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timeval *timeout);
 
 osapi int res_send(const char *buf, int buflen, char *answer, int anslen);
 osapi int res_query(const char *dname, int cls, int type, unsigned char *answer, int anslen);

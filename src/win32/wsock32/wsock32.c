@@ -194,6 +194,7 @@ sockapi int __stdcall winsock_sendto(SOCKET s, const char *buf, int len, int fla
 
 sockapi int __stdcall winsock_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timeval *timeout)
 {
+#if 0
   unsigned int millisecs;
   int rc;
 
@@ -210,6 +211,10 @@ sockapi int __stdcall winsock_select(int nfds, fd_set *readfds, fd_set *writefds
   if (rc < 0) return -1;
 
   return 1;
+#endif
+  TRACE("select");
+
+  return select(nfds, readfds, writefds, exceptfds, timeout);
 }
 
 sockapi int __stdcall winsock_connect(SOCKET s, const struct sockaddr *name, int namelen)
@@ -395,9 +400,7 @@ sockapi int __stdcall winsock_ioctlsocket(SOCKET s, long cmd, unsigned long *arg
 sockapi int __stdcall  __WSAFDIsSet(SOCKET s, fd_set *fd)
 {
   TRACE("__WSAFDIsSet");
-  panic("winsock __WSAFDIsSet not implemented");
-  //return sockcalls->__WSAFDIsSet(s, fd);
-  return 0;
+  return FD_ISSET(s, fd);
 }
 
 sockapi int __stdcall WSAGetLastError()

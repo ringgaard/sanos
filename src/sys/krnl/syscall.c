@@ -105,6 +105,25 @@ static __inline void unlock_iovec(struct iovec *iov, int count)
 {
 }
 
+static __inline int lock_fdset(fd_set *fds)
+{
+#ifdef SYSCALL_CHECKBUFFER
+  if (fds)
+  {
+    if (!mem_mapped(fds, sizeof(int))) return -EFAULT;
+    if ((void *) fds >= (void *) OSBASE) return -EFAULT;
+    if ((char *) fds + (fds->count + 1) * sizeof(int) >= (char *) OSBASE) return -EFAULT;
+    if (!mem_mapped(fds, (fds->count + 1) * sizeof(int))) return -EFAULT;
+  }
+#endif
+
+  return 0;
+}
+
+static __inline void unlock_fdset(fd_set *fds)
+{
+}
+
 static int sys_null(char *params)
 {
   return 0;
@@ -2558,6 +2577,64 @@ static int sys_sendmsg(char *params)
   return rc;
 }
 
+static int sys_select(char *params)
+{
+  int nfds;
+  fd_set *readfds;
+  fd_set *writefds;
+  fd_set *exceptfds;
+  struct timeval *timeout;
+  int rc;
+
+  if (lock_buffer(params, 20) < 0) return -EFAULT;
+
+  nfds = *(int *) params;
+  readfds = *(fd_set **) (params + 4);
+  writefds = *(fd_set **) (params + 8);
+  exceptfds = *(fd_set **) (params + 12);
+  timeout = *(struct timeval **) (params + 16);
+
+  if (lock_fdset(readfds) < 0)
+  {
+    unlock_buffer(params, 20);
+    return -EFAULT;
+  }
+
+  if (lock_fdset(writefds) < 0)
+  {
+    unlock_fdset(readfds);
+    unlock_buffer(params, 20);
+    return -EFAULT;
+  }
+
+  if (lock_fdset(exceptfds) < 0)
+  {
+    unlock_fdset(writefds);
+    unlock_fdset(readfds);
+    unlock_buffer(params, 20);
+    return -EFAULT;
+  }
+
+  if (lock_buffer(timeout, sizeof(struct timeval)) < 0)
+  {
+    unlock_fdset(exceptfds);
+    unlock_fdset(writefds);
+    unlock_fdset(readfds);
+    unlock_buffer(params, 20);
+    return -EFAULT;
+  }
+
+  rc = select(nfds, readfds, writefds, exceptfds, timeout);
+
+  unlock_buffer(timeout, sizeof(struct timeval));
+  unlock_fdset(exceptfds);
+  unlock_fdset(writefds);
+  unlock_fdset(readfds);
+  unlock_buffer(params, 20);
+
+  return rc;
+}
+
 struct syscall_entry syscalltab[] =
 {
   {"null","", sys_null},
@@ -2639,6 +2716,7 @@ struct syscall_entry syscalltab[] =
   {"dispatch", "%d,%d,%d,%d", sys_dispatch},
   {"recvmsg", "%d,%p,%d", sys_recvmsg},
   {"sendmsg", "%d,%p,%d", sys_sendmsg},
+  {"select", "%d,%p,%p,%p,%p", sys_select},
 };
 
 int syscall(int syscallno, char *params)

@@ -452,3 +452,8 @@ int sendmsg(int s, struct msghdr *hdr, unsigned int flags)
 {
   return syscall(SYSCALL_SENDMSG, (void *) &s);
 }
+
+int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timeval *timeout)
+{
+  return syscall(SYSCALL_SELECT, (void *) &nfds);
+}
