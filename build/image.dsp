@@ -17,8 +17,7 @@ CFG=image - Win32 Debug
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "image - Win32 Release" (based on "Win32 (x86) Generic Project")
-!MESSAGE "image - Win32 Debug" (based on "Win32 (x86) Generic Project")
+!MESSAGE "image - Win32 SanOS" (based on "Win32 (x86) Generic Project")
 !MESSAGE 
 
 # Begin Project
@@ -26,21 +25,6 @@ CFG=image - Win32 Debug
 # PROP Scc_ProjName "image"
 # PROP Scc_LocalPath "."
 MTL=midl.exe
-
-!IF  "$(CFG)" == "image - Win32 Release"
-
-# PROP BASE Use_MFC 0
-# PROP BASE Use_Debug_Libraries 0
-# PROP BASE Output_Dir "Release"
-# PROP BASE Intermediate_Dir "Release"
-# PROP BASE Target_Dir ""
-# PROP Use_MFC 0
-# PROP Use_Debug_Libraries 0
-# PROP Output_Dir "Release"
-# PROP Intermediate_Dir "Release"
-# PROP Target_Dir ""
-
-!ELSEIF  "$(CFG)" == "image - Win32 Debug"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 1
@@ -58,11 +42,8 @@ PostBuild_Desc=Creating boot disk
 PostBuild_Cmds=mkbootdisk
 # End Special Build Tool
 
-!ENDIF 
-
 # Begin Target
 
-# Name "image - Win32 Release"
-# Name "image - Win32 Debug"
+# Name "image - Win32 SanOS"
 # End Target
 # End Project
