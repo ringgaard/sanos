@@ -22,9 +22,6 @@ struct netif
 
   err_t (*input)(struct pbuf *p, struct netif *inp);
   err_t (*output)(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr);
-
-  err_t (*ethinput)(struct pbuf *p, struct netif *inp);
-  err_t (*ethoutput)(struct netif *netif, struct pbuf *p);
   
   void *state;
 };

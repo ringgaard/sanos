@@ -15,7 +15,7 @@ struct pnp_dev;
 
 #define NODEV (-1)
 
-#define DEVNAMELEN              16
+#define DEVNAMELEN              32
 #define MAX_DEVICES             64
 #define MAX_RESOURCES           32
 #define MAX_DEVS                64
@@ -59,7 +59,8 @@ struct driver
   int (*ioctl)(struct dev *dev, int cmd, void *args, size_t size);
   int (*read)(struct dev *dev, void *buffer, size_t count, blkno_t blkno);
   int (*write)(struct dev *dev, void *buffer, size_t count, blkno_t blkno);
-  int (*attach)(struct dev *dev, struct netif *netif);
+
+  int (*attach)(struct dev *dev, struct eth_addr *hwaddr);
   int (*detach)(struct dev *dev);
   int (*transmit)(struct dev *dev, struct pbuf *p);
 };
@@ -69,9 +70,11 @@ struct dev
   char name[DEVNAMELEN];
   struct driver *driver;
   struct device *device;
-  struct netif *netif;
   void *privdata;
   int refcnt;
+
+  struct netif *netif;
+  int (*receive)(struct netif *netif, struct pbuf *p);
 };
 
 struct device
@@ -116,17 +119,24 @@ extern unsigned int num_devs;
 extern struct device *devicetab[];
 extern int num_devices;
 
-void bind_devices();
+void install_drivers();
 
 krnlapi struct device *register_device(int type, unsigned long classcode, unsigned long devicecode);
 krnlapi int add_resource(struct device *dv, int type, int flags, unsigned long start, unsigned long len);
 
 krnlapi struct dev *device(devno_t devno);
-krnlapi devno_t dev_make(char *name, struct driver *driver, struct device *device, void *privdata);
+
+krnlapi devno_t dev_make(char *name, struct driver *driver, struct device *dv, void *privdata);
 krnlapi devno_t dev_open(char *name);
 krnlapi int dev_close(devno_t devno);
+
 krnlapi int dev_ioctl(devno_t devno, int cmd, void *args, size_t size);
 krnlapi int dev_read(devno_t devno, void *buffer, size_t count, blkno_t blkno);
 krnlapi int dev_write(devno_t devno, void *buffer, size_t count, blkno_t blkno);
+
+krnlapi int dev_attach(devno_t devno, struct netif *netif, int (*receive)(struct netif *netif, struct pbuf *p));
+krnlapi int dev_detach(devno_t devno);
+krnlapi int dev_transmit(devno_t devno, struct pbuf *p);
+krnlapi int dev_receive(devno_t devno, struct pbuf *p);
 
 #endif

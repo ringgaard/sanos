@@ -135,6 +135,58 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
   idle_task();
 }
 
+void init_mount()
+{
+  struct section *sect;
+  struct property *prop;
+  char devname[256];
+  char *type;
+  char *opts;
+  int rc;
+  devno_t devno;
+
+  sect = find_section(krnlcfg, "mount");
+  if (!sect) return;
+
+  prop = sect->properties;
+  while (prop)
+  {
+    strcpy(devname, prop->value ? prop->value : "");
+    type = strchr(devname, ',');
+    if (type)
+    {
+      *type++ = 0;
+      while (*type == ' ') type++;
+      opts = strchr(type, ',');
+      if (opts)
+      {
+	*opts++ = 0;
+	while (*opts == ' ') opts++;
+      }
+      else
+	opts = NULL;
+    }
+    else
+    {
+      type = "dfs";
+      opts = NULL;
+    }
+
+    //kprintf("mount %s on %s type %s opts %s\n", devname, prop->name, type, opts);
+
+    devno = dev_open(devname);
+    if (devno != NODEV)
+    {
+      rc = mount(type, prop->name, devno, opts);
+      if (rc < 0) kprintf("%s: error %d mounting device %s\n", prop->name, rc, devname);
+    }
+    else
+      kprintf("%s: device %s not found\n", prop->name, devname);
+
+    prop = prop->next;
+  }
+}
+
 void init_net()
 {
   struct ip_addr ipaddr;
@@ -208,7 +260,7 @@ void main(void *arg)
   bootdev = dev_open(bootdevname);
   if (bootdev == NODEV) panic("unable to find boot device");
 
-  // Mount file systems
+  // Mount root and device file systems
   mount("dfs", "/", bootdev, "");
   mount("devfs", "/dev", NODEV, NULL);
 
@@ -219,19 +271,14 @@ void main(void *arg)
   // Initialize module loader
   init_kernel_modules();
 
-  // Bind devices
-  bind_devices();
-
-  // Initialize devices
-  init_null();
-  init_keyboard();
-  init_cons();
-  init_serial();
-  init_cmos();
-  //init_ramdisk("ramdisk0", 2 * M);
+  // Install device drivers
+  install_drivers();
 
   // Initialize network
   init_net();
+
+  // Mount devices
+  init_mount();
 
   // Allocate handles for stdin, stdout and stderr
   open("/dev/console", O_RDONLY, &stdin);

@@ -6,11 +6,9 @@
 // String routines
 //
 
-#include <os.h>
-
-#ifdef KERNEL
-#include <os/krnl.h>
-#endif
+#include <types.h>
+#include <stdarg.h>
+#include <string.h>
 
 char *strncpy(char *dest, const char *source, size_t count)
 {
@@ -21,16 +19,17 @@ char *strncpy(char *dest, const char *source, size_t count)
   return start;
 }
 
-char *strdup(char *s)
+int strncmp(const char *s1, const char *s2, size_t count)
 {
-  char *t;
-  int len;
+  if (!count) return 0;
 
-  if (!s) return NULL;
-  len = strlen(s);
-  t = (char *) malloc(len + 1);
-  memcpy(t, s, len + 1);
-  return t;
+  while (--count && *s1 && *s1 == *s2)
+  {
+    s1++;
+    s2++;
+  }
+
+  return *(unsigned char *) s1 - *(unsigned char *) s2;
 }
 
 int stricmp(const char *s1, const char *s2)
@@ -48,7 +47,7 @@ int stricmp(const char *s1, const char *s2)
   return (int) (f - l);
 }
 
-char * strchr(const char *s, int ch)
+char *strchr(const char *s, int ch)
 {
   while (*s && *s != (char) ch) s++;
   if (*s == (char) ch) return (char *) s;
@@ -90,6 +89,24 @@ void *memmove(void *dst, const void *src, size_t count)
   }
 
   return ret;
+}
+
+int atoi(const char *s)
+{
+  int n;
+  int sign;
+
+  if (!s) return -1;
+  while (*s == ' ') s++;
+
+  sign = *s;
+  if (*s == '-' || *s == '+') s++;
+
+  n = 0;
+  if (*s < '0' || *s > '9') return -1;
+  while (*s >= '0' && *s <= '9') n = 10 * n + (*s++ - '0');
+
+  return sign == '-' ? -n : n;
 }
 
 /////////////////////////////////////////////////////////////////////

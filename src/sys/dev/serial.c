@@ -616,12 +616,14 @@ struct driver serial_driver =
   serial_write
 };
 
-static void init_serial_port(char *devname, int iobase, int irq)
+static void init_serial_port(char *devname, int iobase, int irq, struct device *dv)
 {
   struct serial_port *sp;
+  devno_t devno;
 
   sp = (struct serial_port *) kmalloc(sizeof(struct serial_port));
   memset(sp, 0, sizeof(struct serial_port));
+
   sp->iobase = iobase;
   sp->irq = irq;
 
@@ -657,22 +659,32 @@ static void init_serial_port(char *devname, int iobase, int irq)
   }
 
   // Turn on DTR, RTS and OUT2
-  sp->mcr = MCR_DTR | MCR_RTS | MCR_IENABLE;
-  _outp(sp->iobase + UART_MCR, sp->mcr);
+  sp->mcr = MCR_DTR | MCR_RTS | MCR_IENABLE;  _outp(sp->iobase + UART_MCR, sp->mcr);
 
   // Create device
-  dev_make(devname, &serial_driver, NULL, sp);
+  devno = dev_make(devname, &serial_driver, dv, sp);
 
   // Enable interrupts
   set_interrupt_handler(IRQ2INTR(sp->irq), serial_handler, sp);
   enable_irq(sp->irq);
   _outp((unsigned short) (sp->iobase + UART_IER), IER_ERXRDY | IER_ETXRDY | IER_ERLS | IER_EMSC);
 
-  kprintf("%s: iobase=%x irq=%d type=%s\n", devname, sp->iobase, sp->irq, uart_name[sp->type]);
+  kprintf("%s: iobase=%x irq=%d type=%s\n", device(devno)->name, sp->iobase, sp->irq, uart_name[sp->type]);
 }
 
 int __declspec(dllexport) install_serial(struct device *dv)
 {
+  int n;
+  int iobase = -1;
+  int irq = -1;
+
+  for (n = 0; n < dv->numres; n++)
+  {
+    if (dv->res[n].type == RESOURCE_IO) iobase = dv->res[n].start;
+    if (dv->res[n].type == RESOURCE_IRQ) irq = dv->res[n].start;
+  }
+
+  if (iobase > 0 && irq > 0) init_serial_port("com#", iobase, irq, dv);
   return 0;
 }
 
@@ -681,18 +693,22 @@ void init_serial()
   int port;
   int iobase;
 
-  for (port = 0; port < 4; port++)
+  // Fallback to BIOS settings if PnP BIOS not present
+  if (!pnp_bios_present())
   {
-    iobase = syspage->biosdata[port * 2] + (syspage->biosdata[port * 2 + 1] << 8);
-
-    if (iobase != 0)
+    for (port = 0; port < 4; port++)
     {
-      switch (port)
+      iobase = syspage->biosdata[port * 2] + (syspage->biosdata[port * 2 + 1] << 8);
+
+      if (iobase != 0)
       {
-        case 0: init_serial_port("com1", iobase, 4); break;
-        case 1: init_serial_port("com2", iobase, 3); break;
-        case 2: init_serial_port("com3", iobase, 11); break;
-        case 3: init_serial_port("com4", iobase, 10); break;
+	switch (port)
+	{
+	  case 0: init_serial_port("com1", iobase, 4, NULL); break;
+	  case 1: init_serial_port("com2", iobase, 3, NULL); break;
+	  case 2: init_serial_port("com3", iobase, 11, NULL); break;
+	  case 3: init_serial_port("com4", iobase, 10, NULL); break;
+	}
       }
     }
   }

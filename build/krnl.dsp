@@ -166,6 +166,10 @@ SOURCE=..\src\lib\moddb.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\lib\opts.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\lib\rmap.c
 # End Source File
 # Begin Source File
@@ -207,10 +211,6 @@ SOURCE=..\src\sys\dev\hd.c
 # Begin Source File
 
 SOURCE=..\src\sys\dev\kbd.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\sys\dev\ne2000.c
 # End Source File
 # Begin Source File
 

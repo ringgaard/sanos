@@ -441,3 +441,8 @@ int pnpbios_init()
   for (i = 0; i < 256; i++) unmap_page((void *) PTOB(i));
   return 0;
 }
+
+int pnp_bios_present()
+{
+  return pnpbios.signature == PNP_SIGNATURE;
+}

@@ -98,4 +98,6 @@ struct pnp_dev
   unsigned char type_code[3];
 };
 
+krnlapi int pnp_bios_present();
+
 #endif

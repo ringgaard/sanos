@@ -61,13 +61,21 @@ struct driver ramdisk_driver =
   ramdisk_write
 };
 
-void init_ramdisk(char *devname, int size)
+int __declspec(dllexport) install_ramdisk(char *opts)
 {
   struct ramdisk *rd;
+  char devname[DEVNAMELEN];
+  int size;
+  devno_t devno;
+
+  get_option(opts, "devname", devname, DEVNAMELEN, "ramdisk#");
+  size = get_num_option(opts, "size", 1440) * K;
 
   rd = kmalloc(sizeof(struct ramdisk));
   rd->blks = size / SECTORSIZE;
   rd->data = kmalloc(size);
-  dev_make(devname, &ramdisk_driver, NULL, rd);
-  kprintf("%s: ramdisk (%d MB)\n", devname, size / M);
+  devno = dev_make(devname, &ramdisk_driver, NULL, rd);
+  
+  kprintf("%s: ramdisk (%d KB)\n", device(devno)->name, size / K);
+  return 0;
 }

@@ -201,7 +201,7 @@ struct section *parse_properties(char *props)
     while (*p == ' ' || *p == '\t') p++;
     
     // Skip comments
-    if (*p == '#' || *p == '!' || *p == ';')
+    if (*p == '#' || *p == ';')
     {
       while (*p && *p != '\r' && *p != '\n') p++;
       if (*p == '\r') p++;
@@ -247,7 +247,7 @@ struct section *parse_properties(char *props)
       split = NULL;
       while (*end && *end != '\r' && *end != '\n') 
       {
-	if (*end == '=') split = end;
+	if (!split && (*end == '=' || *end == ':')) split = end;
 	end++;
       }
 

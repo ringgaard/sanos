@@ -7,6 +7,7 @@
 //
 
 #include <os.h>
+#include <string.h>
 
 #ifdef KERNEL
 #include <os/krnl.h>
@@ -48,22 +49,16 @@ __declspec(naked) void _allmul()
   }
 }
 
-int atoi(const char *s)
+char *strdup(char *s)
 {
-  int n;
-  int sign;
+  char *t;
+  int len;
 
-  if (!s) return -1;
-  while (*s == ' ') s++;
-
-  sign = *s;
-  if (*s == '-' || *s == '+') s++;
-
-  n = 0;
-  if (*s < '0' || *s > '9') return -1;
-  while (*s >= '0' && *s <= '9') n = 10 * n + (*s++ - '0');
-
-  return sign == '-' ? -n : n;
+  if (!s) return NULL;
+  len = strlen(s);
+  t = (char *) malloc(len + 1);
+  memcpy(t, s, len + 1);
+  return t;
 }
 
 int parse_args(char *args, char **argv)
@@ -119,3 +114,4 @@ void free_args(int argc, char **argv)
   for (i = 0; i < argc; i++) free(argv[i]);
   if (argv) free(argv);
 }
+

@@ -126,19 +126,31 @@ static struct binding *find_binding(struct device *dv)
   return NULL;
 }
 
-void bind_devices()
+static void *get_driver_entry(char *module, char *defentry)
 {
-  int n;
   char modfn[MAXPATH];
   char *entryname;
   hmodule_t hmod;
+
+  strcpy(modfn, module);
+  entryname = strchr(modfn, '!');
+  if (entryname)
+    *entryname++ = 0;
+  else 
+    entryname = defentry;
+
+  hmod = load(modfn);
+  if (!hmod) return NULL;
+
+  return resolve(hmod, entryname);
+}
+
+static void bind_devices()
+{
+  int n;
   int (*entry)(struct device *dv);
   int rc;
 
-  // Parse driver binding database
-  parse_bindings();
-
-  // Match bindings to devices
   for (n = 0; n < num_devices; n++)
   {
     struct device *dv = devicetab[n];
@@ -147,24 +159,10 @@ void bind_devices()
     // Install driver
     if (bind)
     {
-      strcpy(modfn, bind->module);
-      entryname = strchr(modfn, ',');
-      if (entryname)
-	*entryname++ = 0;
-      else 
-	entryname = "install";
-
-      hmod = load(modfn);
-      if (!hmod)
-      {
-	kprintf("warning: unable to load driver %s for device '%s'\n", modfn, dv->name);
-	continue;
-      }
-
-      entry = resolve(hmod, entryname);
+      entry = get_driver_entry(bind->module, "install");
       if (!entry)
       {
-	kprintf("warning: unable to load driver %s entry %s for device '%s'\n", modfn, entryname, dv->name);
+	kprintf("warning: unable to load driver %s for device '%s'\n", bind->module, dv->name);
 	continue;
       }
 
@@ -172,11 +170,49 @@ void bind_devices()
       rc = entry(dv);
       if (rc < 0)
       {
-	kprintf("warning: error %d loading driver %s for device '%s'\n", rc, modfn, dv->name);
+	kprintf("warning: error %d installing driver %s for device '%s'\n", rc, bind->module, dv->name);
 	continue;
       }
     }
   }
+}
+
+static void install_nonpnp_drivers()
+{
+  struct section *sect;
+  struct property *prop;
+  int (*entry)(char *opts);
+  int rc;
+
+  sect = find_section(krnlcfg, "drivers");
+  if (!sect) return;
+
+  prop = sect->properties;
+  while (prop)
+  {
+    entry = get_driver_entry(prop->name, "install");
+    if (entry)
+    {
+      rc = entry(prop->value);
+      if (rc < 0) kprintf("warning: error %d installing driver %s\n", rc, prop->name);      
+    }
+    else
+      kprintf("warning: unable to load driver %s\n", prop->name);
+
+    prop = prop->next;
+  }
+}
+
+void install_drivers()
+{
+  // Parse driver binding database
+  parse_bindings();
+
+  // Match bindings to devices
+  bind_devices();
+
+  // Install non-PnP drivers
+  install_nonpnp_drivers();
 }
 
 struct dev *device(devno_t devno)
@@ -185,24 +221,51 @@ struct dev *device(devno_t devno)
   return devtab[devno];
 }
 
-devno_t dev_make(char *name, struct driver *driver, struct device *device, void *privdata)
+devno_t dev_make(char *name, struct driver *driver, struct device *dv, void *privdata)
 {
   struct dev *dev;
   devno_t devno;
+  char *p;
+  unsigned int n, m;
+  int exists;
 
   if (num_devs == MAX_DEVS) panic("too many devices");
-  devno = num_devs++;
 
   dev = (struct dev *) kmalloc(sizeof(struct dev));
-  devtab[devno] = dev;
+  if (!dev) return NODEV;
+  memset(dev, 0, sizeof(struct dev));
 
   strcpy(dev->name, name);
+  
+  p = dev->name;
+  while (p[0] && p[1]) p++;
+  if (*p == '#')
+  {
+    n = 0;
+    while (1)
+    {
+      sprintf(p, "%d", n);
+      exists = 0;
+      for (m = 0; m < num_devs; m++) 
+      {
+	if (strcmp(devtab[m]->name, dev->name) == 0) exists = 1;
+	break;
+      }
+
+      if (!exists) break;
+    }
+  }
+
   dev->driver = driver;
-  dev->device = device;
+  dev->device = dv;
   dev->privdata = privdata;
   dev->refcnt = 0;
 
-  if (device) device->dev = dev;
+  if (dv) dv->dev = dev;
+
+  devno = num_devs++;
+  devtab[devno] = dev;
+  
   return devno;
 }
 
@@ -236,6 +299,7 @@ int dev_ioctl(devno_t devno, int cmd, void *args, size_t size)
 
   if (devno < 0 || devno >= num_devs) return -ENODEV;
   dev = devtab[devno];
+  if (!dev->driver->ioctl) return -ENOSYS;
 
   return dev->driver->ioctl(dev, cmd, args, size);
 }
@@ -246,6 +310,7 @@ int dev_read(devno_t devno, void *buffer, size_t count, blkno_t blkno)
 
   if (devno < 0 || devno >= num_devs) return -ENODEV;
   dev = devtab[devno];
+  if (!dev->driver->read) return -ENOSYS;
 
   return dev->driver->read(dev, buffer, count, blkno);
 }
@@ -256,6 +321,61 @@ int dev_write(devno_t devno, void *buffer, size_t count, blkno_t blkno)
 
   if (devno < 0 || devno >= num_devs) return -ENODEV;
   dev = devtab[devno];
+  if (!dev->driver->read) return -ENOSYS;
 
   return dev->driver->write(dev, buffer, count, blkno);
+}
+
+int dev_attach(devno_t devno, struct netif *netif, int (*receive)(struct netif *netif, struct pbuf *p))
+{
+  struct dev *dev;
+
+  if (devno < 0 || devno >= num_devs) return -ENODEV;
+  dev = devtab[devno];
+  if (!dev->driver->attach) return -ENOSYS;
+
+  dev->netif = netif;
+  dev->receive = receive;
+  return dev->driver->attach(dev, &netif->hwaddr);
+}
+
+int dev_detach(devno_t devno)
+{
+  struct dev *dev;
+  int rc;
+
+  if (devno < 0 || devno >= num_devs) return -ENODEV;
+  dev = devtab[devno];
+
+  if (dev->driver->detach) 
+    rc = dev->driver->detach(dev);
+  else
+    rc = 0;
+
+  dev->netif = NULL;
+  dev->receive = NULL;
+
+  return rc;
+}
+
+int dev_transmit(devno_t devno, struct pbuf *p)
+{
+  struct dev *dev;
+
+  if (devno < 0 || devno >= num_devs) return -ENODEV;
+  dev = devtab[devno];
+  if (!dev->driver->transmit) return -ENOSYS;
+
+  return dev->driver->transmit(dev, p);
+}
+
+int dev_receive(devno_t devno, struct pbuf *p)
+{
+  struct dev *dev;
+
+  if (devno < 0 || devno >= num_devs) return -ENODEV;
+  dev = devtab[devno];
+  if (!dev->receive) return -ENOSYS;
+
+  return dev->receive(dev->netif, p);
 }

@@ -18,6 +18,32 @@ struct ether_msg
 };
 
 //
+// ether_netif_add
+//
+
+struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr, struct ip_addr *netmask, struct ip_addr *gw)
+{
+  struct netif *netif;
+  devno_t devno;
+
+  // Open device
+  devno = dev_open(devname);
+  if (devno == NODEV) return NULL;
+  if (device(devno)->driver->type != DEV_TYPE_PACKET) return NULL;
+
+  // Attach device to network interface
+  netif = netif_add(name, ipaddr, netmask, gw);
+  if (!netif) return NULL;
+
+  netif->output = ether_output;
+  netif->state = (void *) devno;
+
+  dev_attach(devno, netif, ether_input);
+
+  return netif;
+}
+
+//
 // ether2str
 //
 // This function converts an ethernet address to string format.
@@ -102,7 +128,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
     q = arp_query(netif, &netif->hwaddr, queryaddr);
     if (q != NULL) 
     {
-      err = netif->ethoutput(netif, q);
+      err = dev_transmit((devno_t) netif->state, q);
       pbuf_free(q);
       return err;
     }
@@ -122,7 +148,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   ethhdr->type = htons(ETHTYPE_IP);
   
   stats.link.xmit++;
-  return netif->ethoutput(netif, p);
+  return dev_transmit((devno_t) netif->state, p);
 }
 
 //
@@ -132,7 +158,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
 // from the interface. 
 //
 
-err_t ether_input(struct pbuf *p, struct netif *netif)
+err_t ether_input(struct netif *netif, struct pbuf *p)
 {
   struct ether_msg *msg;
 
@@ -202,7 +228,7 @@ void ether_dispatcher(void *arg)
 	  p = arp_arp_input(netif, &netif->hwaddr, p);
 	  if (p != NULL) 
 	  {
-	    netif->ethoutput(netif, p);
+            dev_transmit((devno_t) netif->state, p);
 	    pbuf_free(p);
 	  }
 	  break;

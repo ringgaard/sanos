@@ -55,7 +55,8 @@ struct driver cmos_driver =
   cmos_write
 };
 
-void init_cmos()
+int __declspec(dllexport) install_cmos()
 {
   dev_make("cmos", &cmos_driver, NULL, NULL);
+  return 0;
 }

@@ -11,20 +11,25 @@
 #define DEBUGPORT  0x3F8 // COM1
 #define DBG_SIGNATURE 0xDB
 #define MAX_DBG_PACKETLEN 4096
+#define DRPC_VERSION 1
 
 //
 // Debugger commands
 //
 
-#define DBGCMD_READ_MEMORY        1
-#define DBGCMD_WRITE_MEMORY       2
-#define DBGCMD_SUSPEND_THREAD     3
-#define DBGCMD_RESUME_THREAD      4
-#define DBGCMD_GET_THREAD_CONTEXT 5
-#define DBGCMD_SET_THREAD_CONTEXT 6
-#define DBGCMD_GET_SELECTOR       7
-#define DBGCMD_GET_DEBUG_EVENT    8
-#define DBGCMD_CONTINUE           9
+#define DBGCMD_CONNECT            0
+#define DBGCMD_CONTINUE           1
+#define DBGCMD_READ_MEMORY        2
+#define DBGCMD_WRITE_MEMORY       3
+#define DBGCMD_SUSPEND_THREAD     4
+#define DBGCMD_RESUME_THREAD      5
+#define DBGCMD_GET_THREAD_CONTEXT 6
+#define DBGCMD_SET_THREAD_CONTEXT 7
+#define DBGCMD_GET_SELECTOR       8
+#define DBGCMD_GET_DEBUG_EVENT    9
+#define DBGCMD_GET_MODULES        10
+
+#define DBGERR_VERSION            128
 
 static int debug_initialized = 0;
 static char dbgdata[MAX_DBG_PACKETLEN];
@@ -52,21 +57,25 @@ void init_debug_port()
   _outp(DEBUGPORT + 4, 0x0B);
 }
 
-static void dbg_send(unsigned char *buffer, int count)
+static void dbg_send(void *buffer, int count)
 {
+  unsigned char *p = buffer;
+
   while (count-- > 0)
   {
     while ((_inp(DEBUGPORT + 5) & 0x20) == 0);
-    _outp(DEBUGPORT, *buffer++);
+    _outp(DEBUGPORT, *p++);
   }
 }
 
-static void dbg_recv(unsigned char *buffer, int count)
+static void dbg_recv(void *buffer, int count)
 {
+  unsigned char *p = buffer;
+
   while (count-- > 0)
   {
     while ((_inp(DEBUGPORT + 5) & 0x01) == 0);
-    *buffer++ = _inp(DEBUGPORT) & 0xFF;
+    *p++ = _inp(DEBUGPORT) & 0xFF;
   }
 }
 
@@ -90,8 +99,8 @@ static void dbg_send_packet(unsigned char cmd, unsigned char id, void *data, uns
   for (n = 0; n < len; n++) checksum += *p++;
   hdr.checksum = -checksum;
 
-  dbg_send((unsigned char *) &hdr, sizeof(struct dbghdr));
-  dbg_send((unsigned char *) data, len);
+  dbg_send(&hdr, sizeof(struct dbghdr));
+  dbg_send(data, len);
 }
 
 static void dbg_send_error(unsigned char errcode, unsigned char id)
@@ -99,7 +108,7 @@ static void dbg_send_error(unsigned char errcode, unsigned char id)
   dbg_send_packet(errcode, id, NULL, 0);
 }
 
-static int dcg_recv_packet(struct dbghdr *hdr, void *data)
+static int dbg_recv_packet(struct dbghdr *hdr, void *data)
 {
   unsigned int n;
   unsigned char checksum;
@@ -126,6 +135,125 @@ static int dcg_recv_packet(struct dbghdr *hdr, void *data)
   if (checksum != 0) return -EIO;
 
   return hdr->len;
+}
+
+static void dbg_connect(struct dbghdr *hdr, char *data)
+{
+  int version = *(int *) data;
+
+  if (version != DRPC_VERSION)
+    dbg_send_error(DBGERR_VERSION, hdr->id);
+  else
+  {
+    version = DRPC_VERSION;
+    dbg_send_packet(DBGCMD_CONNECT, hdr->id, &version, 4);
+  }
+}
+
+static void dbg_read_memory(struct dbghdr *hdr, char *data)
+{
+}
+
+static void dbg_write_memory(struct dbghdr *hdr, char *data)
+{
+}
+
+static void dbg_suspend_thread(struct dbghdr *hdr, char *data)
+{
+}
+
+static void dbg_resume_thread(struct dbghdr *hdr, char *data)
+{
+}
+
+static void dbg_get_thread_context(struct dbghdr *hdr, char *data)
+{
+}
+
+static void dbg_set_thread_context(struct dbghdr *hdr, char *data)
+{
+}
+
+static void dbg_get_selector(struct dbghdr *hdr, char *data)
+{
+}
+
+static void dbg_get_debug_event(struct dbghdr *hdr, char *data)
+{
+}
+
+static void dbg_get_modules(struct dbghdr *hdr, char *data)
+{
+}
+
+static void handle_drpc()
+{
+  struct dbghdr hdr;
+  int rc;
+
+  if (!debug_initialized)
+  {
+    init_debug_port();
+    debug_initialized = 1;
+    kprintf("dbg: waiting for remote debugger...\n");
+  }
+
+  while (1)
+  {
+    rc = dbg_recv_packet(&hdr, dbgdata);
+    if (rc < 0)
+    {
+      kprintf("dbg: error %d receiving debugger command\n", rc);
+      continue;
+    }
+
+    switch (hdr.cmd)
+    {
+      case DBGCMD_CONNECT:
+	dbg_connect(&hdr, dbgdata);
+	break;
+
+      case DBGCMD_CONTINUE:
+        dbg_send_packet(DBGCMD_CONTINUE, hdr.id, NULL, 0);
+	return;
+
+      case DBGCMD_READ_MEMORY:
+	dbg_read_memory(&hdr, dbgdata);
+	break;
+
+      case DBGCMD_WRITE_MEMORY:
+	dbg_write_memory(&hdr, dbgdata);
+	break;
+
+      case DBGCMD_SUSPEND_THREAD:
+	dbg_suspend_thread(&hdr, dbgdata);
+	break;
+
+      case DBGCMD_RESUME_THREAD:
+	dbg_resume_thread(&hdr, dbgdata);
+	break;
+
+      case DBGCMD_GET_THREAD_CONTEXT:
+	dbg_get_thread_context(&hdr, dbgdata);
+	break;
+
+      case DBGCMD_SET_THREAD_CONTEXT:
+	dbg_set_thread_context(&hdr, dbgdata);
+	break;
+
+      case DBGCMD_GET_SELECTOR:
+	dbg_get_selector(&hdr, dbgdata);
+	break;
+
+      case DBGCMD_GET_DEBUG_EVENT:
+	dbg_get_debug_event(&hdr, dbgdata);
+	break;
+
+      case DBGCMD_GET_MODULES:
+	dbg_get_modules(&hdr, dbgdata);
+	break;
+    }
+  }
 }
 
 void dumpregs(struct context *ctxt)

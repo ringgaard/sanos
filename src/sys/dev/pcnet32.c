@@ -146,7 +146,7 @@ struct pcnet32
   void *tx_buffer[TX_RING_SIZE];
 
   unsigned long phys_addr;              // Physical address of this structure
-  struct netif *netif;                  // Network interface
+  devno_t devno;                        // Device number
   struct pcnet32_access *func;
 
   unsigned short iobase;		// Configured I/O base
@@ -157,10 +157,9 @@ struct pcnet32
   unsigned long next_tx;                // Next transmit ring entry
 
   struct dpc dpc;                       // DPC for driver
-  int dpc_pending;                      // DPC is queued, but not processed
 
   struct event rdc;	                // Remote DMA completed event
-  struct event ptx;                     // packet transmitted event
+  struct event ptx;                     // Packet transmitted event
 
   struct eth_addr hwaddr;               // MAC address for NIC
 
@@ -174,7 +173,7 @@ struct pcnet32
   void (*reset)(unsigned short);
 };
 
-struct pcnet32 pcnet32;
+//struct pcnet32 pcnet32;
 
 static void dump_csr(unsigned short csr)
 {
@@ -310,9 +309,9 @@ static struct pcnet32_access pcnet32_dwio =
   pcnet32_dwio_reset
 };
 
-int pcnet32_transmit_old(struct netif *netif, struct pbuf *p)
+int pcnet32_transmit(struct dev *dev, struct pbuf *p)
 {
-  struct pcnet32 *pcnet32 = netif->state;
+  struct pcnet32 *pcnet32 = dev->privdata;
   unsigned char *data;
   int len;
   struct pbuf *q;
@@ -385,7 +384,7 @@ void pcnet32_receive(struct pcnet32 *pcnet32)
 	  packet_ptr += q->len;
 	}
 
-	pcnet32->netif->ethinput(p, pcnet32->netif);
+	dev_receive(pcnet32->devno, p);
       }
       else
       {
@@ -412,9 +411,6 @@ void pcnet32_dpc(void *arg)
   unsigned short iobase = pcnet32->iobase;
   unsigned short csr;
 
-  // Mark DPC as ready
-  pcnet32->dpc_pending = 0;
-
   while ((csr = pcnet32->read_csr(iobase, CSR)) & (CSR_ERR | CSR_RINT | CSR_TINT))
   {
     // Acknowledge all of the current interrupt sources
@@ -440,16 +436,9 @@ void pcnet32_dpc(void *arg)
 void pcnet32_handler(struct context *ctxt, void *arg)
 {
   struct pcnet32 *pcnet32 = (struct pcnet32 *) arg;
-  //kprintf("pcnet32: intr\n");
 
   // Queue DPC to service interrupt
-  if (!pcnet32->dpc_pending)
-  {
-    pcnet32->dpc_pending = 1;
-    queue_irq_dpc(&pcnet32->dpc, pcnet32_dpc, pcnet32);
-  }
-  else
-    kprintf("pcnet32: intr lost\n");
+  queue_irq_dpc(&pcnet32->dpc, pcnet32_dpc, pcnet32);
 }
 
 int pcnet32_ioctl(struct dev *dev, int cmd, void *args, size_t size)
@@ -457,25 +446,17 @@ int pcnet32_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-int pcnet32_attach(struct dev *dev, struct netif *netif)
+int pcnet32_attach(struct dev *dev, struct eth_addr *hwaddr)
 {
   struct pcnet32 *pcnet32 = dev->privdata;
-  pcnet32->netif = netif;
-  netif->state = &pcnet32;
-  netif->ethoutput = pcnet32_transmit_old;
-  netif->hwaddr = pcnet32->hwaddr;
+  *hwaddr = pcnet32->hwaddr;
 
   return 0;
 }
 
 int pcnet32_detach(struct dev *dev)
 {
-  return -ENOSYS;
-}
-
-int pcnet32_transmit(struct dev *dev, struct pbuf *p)
-{
-  return pcnet32_transmit_old(dev->netif, p);
+  return 0;
 }
 
 struct driver pcnet32_driver =
@@ -492,6 +473,7 @@ struct driver pcnet32_driver =
 
 int __declspec(dllexport) install(struct device *dv)
 {
+  struct pcnet32 *pcnet32;
   int version;
   char *chipname;
   struct pcnet32_access *func;
@@ -500,40 +482,38 @@ int __declspec(dllexport) install(struct device *dv)
   unsigned short val;
   unsigned long init_block;
   unsigned long value;
-  struct pci_dev *dev;
 
-  pcnet32.phys_addr = (unsigned long) virt2phys(&pcnet32);
-  //dev = lookup_pci_device(PCI_VENDOR_AMD, PCI_DEVICE_PCNET32);
-  //if (!dev) return 0;
+  // Allocate device structure
+  pcnet32 = (struct pcnet32 *) kmalloc(sizeof(struct pcnet32));
+  if (!pcnet32) return -ENOMEM;
+  memset(pcnet32, 0, sizeof(struct pcnet32));
+  pcnet32->phys_addr = (unsigned long) virt2phys(&pcnet32);
 
   // Setup NIC configuration
-  dev = dv->pci;
-  pcnet32.iobase = (unsigned short) dev->iobase;
-  pcnet32.irq = (unsigned short) dev->irq;
-  pcnet32.membase = (unsigned short) dev->membase;
-
-  //kprintf("pcnet32: iobase 0x%x irq %d\n", pcnet32.iobase, pcnet32.irq);
+  pcnet32->iobase = (unsigned short) dv->pci->iobase;
+  pcnet32->irq = (unsigned short) dv->pci->irq;
+  pcnet32->membase = (unsigned short) dv->pci->membase;
 
   // Enable bus mastering
-  value = pci_config_read(dev->bus->busno, dev->devno, dev->funcno, PCI_CONFIG_CMD_STAT);
+  value = pci_config_read(dv->pci->bus->busno, dv->pci->devno, dv->pci->funcno, PCI_CONFIG_CMD_STAT);
   value |= 0x00000004;
-  pci_config_write(dev->bus->busno, dev->devno, dev->funcno, PCI_CONFIG_CMD_STAT, value);
+  pci_config_write(dv->pci->bus->busno, dv->pci->devno, dv->pci->funcno, PCI_CONFIG_CMD_STAT, value);
   
   // Reset the chip
-  pcnet32_dwio_reset(pcnet32.iobase);
-  pcnet32_wio_reset(pcnet32.iobase);
+  pcnet32_dwio_reset(pcnet32->iobase);
+  pcnet32_wio_reset(pcnet32->iobase);
 
-  if (pcnet32_wio_read_csr(pcnet32.iobase, 0) == 4 && pcnet32_wio_check(pcnet32.iobase))
+  if (pcnet32_wio_read_csr(pcnet32->iobase, 0) == 4 && pcnet32_wio_check(pcnet32->iobase))
   {
     func = &pcnet32_wio;
-    pcnet32.func = &pcnet32_wio;
+    pcnet32->func = &pcnet32_wio;
   }
   else
   {
-    if (pcnet32_dwio_read_csr(pcnet32.iobase, 0) == 4 && pcnet32_dwio_check(pcnet32.iobase))
+    if (pcnet32_dwio_read_csr(pcnet32->iobase, 0) == 4 && pcnet32_dwio_check(pcnet32->iobase))
     {
       func = &pcnet32_dwio;
-      pcnet32.func = &pcnet32_dwio;
+      pcnet32->func = &pcnet32_dwio;
     }
     else
     {
@@ -542,15 +522,15 @@ int __declspec(dllexport) install(struct device *dv)
   }
 
   // Setup access functions
-  pcnet32.read_csr = func->read_csr;
-  pcnet32.write_csr = func->write_csr;
-  pcnet32.read_bcr = func->read_bcr;
-  pcnet32.write_bcr = func->write_bcr;
-  pcnet32.read_rap = func->read_rap;
-  pcnet32.write_rap = func->write_rap;
-  pcnet32.reset = func->reset;
+  pcnet32->read_csr = func->read_csr;
+  pcnet32->write_csr = func->write_csr;
+  pcnet32->read_bcr = func->read_bcr;
+  pcnet32->write_bcr = func->write_bcr;
+  pcnet32->read_rap = func->read_rap;
+  pcnet32->write_rap = func->write_rap;
+  pcnet32->reset = func->reset;
 
-  version = pcnet32.func->read_csr(pcnet32.iobase, 88) | (pcnet32_wio_read_csr(pcnet32.iobase, 89) << 16);
+  version = pcnet32->func->read_csr(pcnet32->iobase, 88) | (pcnet32_wio_read_csr(pcnet32->iobase, 89) << 16);
   //kprintf("PCnet chip version is %#x.\n", version);
   if ((version & 0xfff) != 0x003) return 0;
   version = (version >> 12) & 0xffff;
@@ -601,88 +581,89 @@ int __declspec(dllexport) install(struct device *dv)
   }
 
   // Install interrupt handler
-  pcnet32.dpc_pending = 0;
-  set_interrupt_handler(IRQ2INTR(pcnet32.irq), pcnet32_handler, &pcnet32);
-  enable_irq(pcnet32.irq);
+  set_interrupt_handler(IRQ2INTR(pcnet32->irq), pcnet32_handler, &pcnet32);
+  enable_irq(pcnet32->irq);
 
   // Read MAC address from PROM
-  for (i = 0; i < ETHER_ADDR_LEN; i++) pcnet32.hwaddr.addr[i] = (unsigned char) _inp((unsigned short) (pcnet32.iobase + i));
+  for (i = 0; i < ETHER_ADDR_LEN; i++) pcnet32->hwaddr.addr[i] = (unsigned char) _inp((unsigned short) (pcnet32->iobase + i));
 
   // Setup the init block
-  //pcnet32.init_block.mode = 0x0003;
-  //pcnet32.init_block.mode = 0x8000;
-  //pcnet32.init_block.mode = 0x0000;
-  pcnet32.init_block.mode = 0x0080; // ASEL
-  pcnet32.init_block.tlen_rlen = TX_RING_LEN_BITS | RX_RING_LEN_BITS;
-  for (i = 0; i < 6; i++) pcnet32.init_block.phys_addr[i] = pcnet32.hwaddr.addr[i];
-  pcnet32.init_block.filter[0] = 0x00000000;
-  pcnet32.init_block.filter[1] = 0x00000000;
-  pcnet32.init_block.rx_ring = pcnet32.phys_addr + offsetof(struct pcnet32, rx_ring);
-  pcnet32.init_block.tx_ring = pcnet32.phys_addr + offsetof(struct pcnet32, tx_ring);
+  //pcnet32->init_block.mode = 0x0003;
+  //pcnet32->init_block.mode = 0x8000;
+  //pcnet32->init_block.mode = 0x0000;
+  pcnet32->init_block.mode = 0x0080; // ASEL
+  pcnet32->init_block.tlen_rlen = TX_RING_LEN_BITS | RX_RING_LEN_BITS;
+  for (i = 0; i < 6; i++) pcnet32->init_block.phys_addr[i] = pcnet32->hwaddr.addr[i];
+  pcnet32->init_block.filter[0] = 0x00000000;
+  pcnet32->init_block.filter[1] = 0x00000000;
+  pcnet32->init_block.rx_ring = pcnet32->phys_addr + offsetof(struct pcnet32, rx_ring);
+  pcnet32->init_block.tx_ring = pcnet32->phys_addr + offsetof(struct pcnet32, tx_ring);
 
   // Allocate receive ring
   for (i = 0; i < RX_RING_SIZE; i++)
   {
-    pcnet32.rx_buffer[i] = kmalloc(1544);
-    pcnet32.rx_ring[i].buffer = virt2phys(pcnet32.rx_buffer[i]);
-    pcnet32.rx_ring[i].length = (short) -1544;
-    pcnet32.rx_ring[i].status = 0x8000;
+    pcnet32->rx_buffer[i] = kmalloc(1544);
+    pcnet32->rx_ring[i].buffer = virt2phys(pcnet32->rx_buffer[i]);
+    pcnet32->rx_ring[i].length = (short) -1544;
+    pcnet32->rx_ring[i].status = 0x8000;
   }
-  pcnet32.next_rx = 0;
+  pcnet32->next_rx = 0;
 
   // Initialize transmit ring
   for (i = 0; i < TX_RING_SIZE; i++)
   {
-    pcnet32.tx_buffer[i] = NULL;
-    pcnet32.tx_ring[i].buffer = NULL;
-    pcnet32.tx_ring[i].status = 0;
+    pcnet32->tx_buffer[i] = NULL;
+    pcnet32->tx_ring[i].buffer = NULL;
+    pcnet32->tx_ring[i].status = 0;
   }
-  pcnet32.next_tx = 0;
+  pcnet32->next_tx = 0;
 
   // Reset pcnet32
-  pcnet32.func->reset(pcnet32.iobase);
+  pcnet32->func->reset(pcnet32->iobase);
   
   /// Switch pcnet32 to 32bit mode
-  pcnet32.func->write_bcr(pcnet32.iobase, 20, 2);
+  pcnet32->func->write_bcr(pcnet32->iobase, 20, 2);
 
   // Set autoselect bit
-  //val = pcnet32.func->read_bcr(pcnet32.iobase, MISCCFG) & ~MISCCFG_ASEL;
+  //val = pcnet32->func->read_bcr(pcnet32->iobase, MISCCFG) & ~MISCCFG_ASEL;
   //val |= MISCCFG_ASEL;
-  //pcnet32.func->write_bcr(pcnet32.iobase, MISCCFG, val);
+  //pcnet32->func->write_bcr(pcnet32->iobase, MISCCFG, val);
 
   // Set full duplex
-  val = pcnet32.func->read_bcr(pcnet32.iobase, 9) & ~3;
+  val = pcnet32->func->read_bcr(pcnet32->iobase, 9) & ~3;
   val |= 1;
-  pcnet32.func->write_bcr(pcnet32.iobase, 9, val);
+  pcnet32->func->write_bcr(pcnet32->iobase, 9, val);
 
-  init_block = pcnet32.phys_addr + offsetof(struct pcnet32, init_block);
+  init_block = pcnet32->phys_addr + offsetof(struct pcnet32, init_block);
   //kprintf("init_block %08X\n", init_block);
-  //kprintf("rx_ring %08X\n", pcnet32.init_block.rx_ring);
-  //kprintf("tx_ring %08X\n", pcnet32.init_block.tx_ring);
-  pcnet32.func->write_csr(pcnet32.iobase, 1, (unsigned short) (init_block & 0xffff));
-  pcnet32.func->write_csr(pcnet32.iobase, 2, (unsigned short) (init_block >> 16));
+  //kprintf("rx_ring %08X\n", pcnet32->init_block.rx_ring);
+  //kprintf("tx_ring %08X\n", pcnet32->init_block.tx_ring);
+  pcnet32->func->write_csr(pcnet32->iobase, 1, (unsigned short) (init_block & 0xffff));
+  pcnet32->func->write_csr(pcnet32->iobase, 2, (unsigned short) (init_block >> 16));
 
-  pcnet32.func->write_csr(pcnet32.iobase, 4, 0x0915);
-  pcnet32.func->write_csr(pcnet32.iobase, 0, CSR_INIT);
+  pcnet32->func->write_csr(pcnet32->iobase, 4, 0x0915);
+  pcnet32->func->write_csr(pcnet32->iobase, 0, CSR_INIT);
 
   i = 0;
   while (i++ < 100)
   {
-    if (pcnet32.func->read_csr(pcnet32.iobase, 0) & CSR_IDON) break;
+    if (pcnet32->func->read_csr(pcnet32->iobase, 0) & CSR_IDON) break;
   }
 
   // 
   // We used to clear the InitDone bit, 0x0100, here but Mark Stockton
   // reports that doing so triggers a bug in the '974.
   //
-  pcnet32.func->write_csr(pcnet32.iobase, 0, CSR_IENA | CSR_STRT);
+  pcnet32->func->write_csr(pcnet32->iobase, 0, CSR_IENA | CSR_STRT);
 
   //printk(KERN_DEBUG "%s: pcnet32 open after %d ticks, init block %#x csr0 %4.4x.\n",
   //       dev->name, i, (u32) (lp->dma_addr + offsetof(struct pcnet32_private, init_block)),
   //       lp->a.read_csr (ioaddr, 0));
 
-  kprintf("pcnet32: %s iobase 0x%x irq %d hwaddr %s\n", chipname, pcnet32.iobase, pcnet32.irq, ether2str(&pcnet32.hwaddr, str));
-  dev_make("pcnet32", &pcnet32_driver, dv, &pcnet32);
+  pcnet32->devno = dev_make("nic#", &pcnet32_driver, dv, pcnet32);
+
+  kprintf("pcnet32: AMD %s iobase 0x%x irq %d hwaddr %s\n", chipname, pcnet32->iobase, pcnet32->irq, ether2str(&pcnet32->hwaddr, str));
+
   return 0;
 }
 

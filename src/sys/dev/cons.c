@@ -86,10 +86,12 @@ struct driver console_driver =
   console_write
 };
 
-void init_cons()
+int __declspec(dllexport) install_console()
 {
+  init_keyboard();
   dev_make("console", &console_driver, NULL, NULL);
   consdev = dev_open("console");
+  return 0;
 }
 
 void kprintf(const char *fmt,...)

@@ -29,7 +29,8 @@ struct eth_hdr
 #pragma pack(pop)
 
 krnlapi char *ether2str(struct eth_addr *hwaddr, char *s);
-krnlapi err_t ether_input(struct pbuf *p, struct netif *netif);
+krnlapi struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr, struct ip_addr *netmask, struct ip_addr *gw);
+krnlapi err_t ether_input(struct netif *netif, struct pbuf *p);
 krnlapi err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr);
 
 void ether_init();

@@ -75,26 +75,7 @@ void exit();
 
 extern devno_t consdev;
 
-void init_cons();
 krnlapi void kprintf(const char *fmt, ...);
-
-// cmos.c
-
-void init_cmos();
-
-// null.c
-
-extern devno_t nulldev;
-
-void init_null();
-
-// ramdisk.c
-
-void init_ramdisk(char *devname, int size);
-
-// serial.c
-
-void init_serial();
 
 // hd.c
 

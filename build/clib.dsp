@@ -91,6 +91,10 @@ SOURCE=..\src\lib\inifile.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\lib\opts.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\lib\rmap.c
 # End Source File
 # Begin Source File

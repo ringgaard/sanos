@@ -18,6 +18,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name os
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name clib
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -95,9 +98,6 @@ Package=<4>
     Project_Dep_Name boot
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name clib
-    End Project Dependency
-    Begin Project Dependency
     Project_Dep_Name fdisk
     End Project Dependency
     Begin Project Dependency
@@ -132,6 +132,9 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name pcnet32
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name ne2000
     End Project Dependency
 }}}
 
@@ -174,6 +177,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name os
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name clib
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -208,6 +214,25 @@ Package=<4>
 {{{
     Begin Project Dependency
     Project_Dep_Name os
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "ne2000"=.\ne2000.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+    begin source code control
+    ne2000
+    ..
+    end source code control
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name krnl
     End Project Dependency
 }}}
 
