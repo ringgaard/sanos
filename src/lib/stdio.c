@@ -232,8 +232,18 @@ char *gets(char *buf)
     else if (ch == '\r' || ch =='\n' || (unsigned char) ch >= ' ')
     {
       write(fdout, &ch, 1);
-      if (ch == '\r') write(fdout, "\n", 1);
-      if (ch == '\n' || ch == '\r') break;
+      if (ch == '\r')
+      {
+	if (fdin == 0)
+	{
+	  write(fdout, "\n", 1);
+	  break;
+	}
+	else
+	  continue;
+      }
+
+      if (ch == '\n') break;
       *p++ = ch;
     }
   }
