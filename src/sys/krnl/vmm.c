@@ -96,6 +96,8 @@ void *mmap(void *addr, unsigned long size, int type, int protect)
     unsigned long flags;
     unsigned long pfn;
 
+    if (!(protect & PAGE_GUARD)) kprintf("mmap: commit %dKB (%d KB free)\n", pages * (PAGESIZE / K), freemem * (PAGESIZE / K));
+
     switch (protect & ~PAGE_GUARD)
     {
       case PAGE_NOACCESS:
@@ -129,6 +131,8 @@ void *mmap(void *addr, unsigned long size, int type, int protect)
 	else
 	{
 	  pfn = alloc_pageframe(PFT_USED);
+	  if (pfn == 0xFFFFFFFF) return NULL;
+
 	  map_page(vaddr, pfn, flags | PT_PRESENT);
 	  memset(vaddr, 0, PAGESIZE);
 	}

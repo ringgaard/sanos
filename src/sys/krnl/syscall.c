@@ -36,8 +36,9 @@
 #define SYSCALL_PROFILE
 //#define SYSCALL_LOGENTER
 //#define SYSCALL_LOGEXIT
-#define SYSCALL_LOGERRORS
+//#define SYSCALL_LOGONLYERRORS
 //#define SYSCALL_LOGTIMEOUTS
+//#define SYSCALL_LOGWAIT
 
 #define SYSCALL_CHECKBUFFER
 
@@ -2459,7 +2460,11 @@ int syscall(int syscallno, char *params)
   if (syscallno < 0 || syscallno > SYSCALL_MAX) return -ENOSYS;
 
 #ifdef SYSCALL_LOGENTER
+#ifndef SYSCALL_LOGWAIT
+  if (syscallno != SYSCALL_WAIT)
+#endif
   {
+
     char buf[1024];
 
     vsprintf(buf, syscalltab[syscallno].argfmt, params);
@@ -2483,13 +2488,22 @@ int syscall(int syscallno, char *params)
   if (rc < 0) scerr[syscallno]++;
 #endif
 
-#if defined(SYSCALL_LOGEXIT) || defined(SYSCALL_LOGERRORS)
-#ifdef SYSCALL_LOGERRORS
+#if defined(SYSCALL_LOGEXIT) || defined(SYSCALL_LOGONLYERRORS)
+
+#ifdef SYSCALL_LOGONLYERRORS
+
 #ifdef SYSCALL_LOGTIMEOUTS
   if (rc < 0)
 #else
   if (rc < 0 && rc != -ETIMEOUT)
 #endif
+
+#else
+
+#ifndef SYSCALL_LOGWAIT
+  if (syscallno != SYSCALL_WAIT)
+#endif
+
 #endif
   {
     char buf[1024];

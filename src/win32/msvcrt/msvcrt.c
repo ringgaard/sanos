@@ -82,9 +82,13 @@ int printf(const char *fmt, ...)
 
 int _vsnprintf(char *buffer, size_t size, const char *fmt, va_list args)
 {
+  int n;
+
   TRACE("_vsnprintf");
   // TODO: check buffer length
-  return vsprintf(buffer, fmt, args);
+  n = vsprintf(buffer, fmt, args);
+  if (n >= size) panic("vsnprintf: overflow");
+  return n;
 }
 
 int _snprintf(char *buffer, size_t size, const char *fmt, ...)
@@ -102,6 +106,21 @@ int _snprintf(char *buffer, size_t size, const char *fmt, ...)
 int sscanf(const char *buffer, const char *fmt, ...)
 {
   TRACE("sscanf");
+
+  if (strcmp(fmt, "%I64d") == 0)
+  {
+    unsigned __int64 *np;
+    va_list args;
+
+    va_start(args, fmt);
+    np = va_arg(args, unsigned __int64 *);
+    *np = atoi(buffer);
+    va_end(args);
+
+    return 1;
+  }
+
+  syslog(LOG_DEBUG, "sscanf '%s' format '%s'\n", buffer, fmt);
   panic("sscanf not implemented");
   return 0;
 }

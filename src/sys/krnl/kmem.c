@@ -55,8 +55,7 @@ void *alloc_pages(int pages)
     map_page(vaddr + PTOB(i), pfn, PT_WRITABLE | PT_PRESENT);
   }
 
-  //kprintf("alloc kmem %dK @ %p\n", pages * PAGESIZE / K, vaddr);
-
+  //kprintf("alloc kmem %dK @ %p (%d KB free)\n", pages * (PAGESIZE / K), vaddr, freemem * (PAGESIZE / K));
   return vaddr;
 }
 
@@ -73,8 +72,7 @@ void *alloc_pages_align(int pages, int align)
     map_page(vaddr + PTOB(i), pfn, PT_WRITABLE | PT_PRESENT);
   }
 
-  //kprintf("alloc kmem %dK @ %p (align %dK)\n", pages * PAGESIZE / K, vaddr, align * PAGESIZE / K);
-
+  //kprintf("alloc kmem %dK @ %p (align %dK, %d KB free)\n", pages * (PAGESIZE / K), vaddr, align * (PAGESIZE / K), freemem * (PAGESIZE / K));
   return vaddr;
 }
 

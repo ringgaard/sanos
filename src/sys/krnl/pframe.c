@@ -33,11 +33,15 @@
 
 #include <os/krnl.h>
 
+#define SAFETYPOOL 1024
+
 unsigned long freemem;        // Number of pages free memory
 unsigned long totalmem;       // Total number of pages of memory (bad pages excluded)
 unsigned long maxmem;         // First unavailable memory page
 struct pageframe *pfdb;       // Page frame database      
 struct pageframe *freelist;   // List of free pages
+
+int memory_low;
 
 void panic(char *msg);
 
@@ -45,7 +49,20 @@ unsigned long alloc_pageframe(int type)
 {
   struct pageframe *pf;
 
-  if (freemem == 0) panic("out of memory");
+  if (memory_low)
+  {
+    if (freemem == 0) panic("out of memory");
+  }
+  else
+  {
+    if (freemem <= SAFETYPOOL)
+    {
+      kprintf("pframe: memory low, releasing safety pool\n");
+      memory_low = 1;
+      return 0xFFFFFFFF;
+    }
+  }
+
   pf = freelist;
   freelist = pf->next;
   freemem--;

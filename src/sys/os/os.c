@@ -90,6 +90,7 @@ void *malloc(size_t size)
   p = heap_alloc(size);
   leave(&heap_lock);
 
+  if (size && !p) panic("malloc: out of memory");
   //syslog(LOG_MODULE | LOG_DEBUG, "malloced %d bytes at %p\n", size, p);
 
   return p;
@@ -102,6 +103,9 @@ void *realloc(void *mem, size_t size)
   enter(&heap_lock);
   p = heap_realloc(mem, size);
   leave(&heap_lock);
+
+  if (size && !p) panic("realloc: out of memory");
+
   return p;
 }
 
@@ -112,6 +116,9 @@ void *calloc(size_t num, size_t size)
   enter(&heap_lock);
   p = heap_calloc(num, size);
   leave(&heap_lock);
+
+  if (size && !p) panic("realloc: out of memory");
+
   return p;
 }
 
