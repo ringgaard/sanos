@@ -134,6 +134,9 @@
 				RelativePath="..\src\include\rmap.h">
 			</File>
 			<File
+				RelativePath="..\src\include\setjmp.h">
+			</File>
+			<File
 				RelativePath="..\src\include\stdarg.h">
 			</File>
 			<File
@@ -190,6 +193,9 @@
 		</File>
 		<File
 			RelativePath="..\src\lib\rtttl.c">
+		</File>
+		<File
+			RelativePath="..\src\lib\setjmp.c">
 		</File>
 		<File
 			RelativePath="..\src\lib\stdio.c">

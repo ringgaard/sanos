@@ -139,3 +139,5 @@ CHANGES
 - select() implemented
 
 - Support for building with Visual Studio 6.
+
+- setjmp/longjmp moved from msvcrt to libc

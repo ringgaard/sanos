@@ -158,16 +158,6 @@ struct _iobuf
 
 typedef struct _iobuf FILE;
 
-typedef struct 
-{
-  unsigned long ebp;
-  unsigned long ebx;
-  unsigned long edi;
-  unsigned long esi;
-  unsigned long esp;
-  unsigned long eip;
-} jmp_buf[1];
-
 typedef void (__cdecl *_PVFV)(void);
 typedef int (__cdecl * _onexit_t)(void);
 
@@ -312,8 +302,5 @@ crtapi time_t _time(time_t *timer);
 crtapi char *asctime(const struct tm *timeptr);
 
 crtapi int *_errno();
-
-crtapi int _setjmp3(jmp_buf env);
-crtapi void longjmp(jmp_buf env, int value);
 
 #endif

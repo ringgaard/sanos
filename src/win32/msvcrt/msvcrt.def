@@ -57,3 +57,5 @@ EXPORTS
   towupper
   _purecall
   __initenv
+  _setjmp3=setjmp
+  longjmp

@@ -31,7 +31,7 @@
 // SUCH DAMAGE.
 // 
 
-#include "msvcrt.h"
+#include "setjmp.h"
 
 #define OFS_EBP   0
 #define OFS_EBX   4
@@ -40,7 +40,7 @@
 #define OFS_ESP   16
 #define OFS_EIP   20
 
-__declspec(naked) int _setjmp3(jmp_buf env)
+__declspec(naked) int setjmp(jmp_buf env)
 {
   __asm
   {
