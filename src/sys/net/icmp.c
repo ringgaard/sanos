@@ -17,15 +17,19 @@ void icmp_input(struct pbuf *p, struct netif *inp)
   struct icmp_echo_hdr *iecho;
   struct ip_hdr *iphdr;
   struct ip_addr tmpaddr;
+  int hlen;
   
   stats.icmp.recv++;
 
-  type = ((unsigned char *) p->payload)[0];
+  iphdr = p->payload;
+  hlen = IPH_HL(iphdr) * 4;
+  pbuf_header(p, -hlen);
+
+  type = *((unsigned char *) p->payload);
 
   switch (type) 
   {
     case ICMP_ECHO:
-      iphdr = (struct ip_hdr *) ((char *) p->payload - IP_HLEN);
       if (ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) || ip_addr_ismulticast(&iphdr->dest)) 
       {
 	stats.icmp.err++;
@@ -64,7 +68,8 @@ void icmp_input(struct pbuf *p, struct netif *inp)
 	iecho->chksum += htons(ICMP_ECHO << 8);
 
       stats.icmp.xmit++;
-
+      
+      pbuf_header(p, hlen);
       ip_output_if(p, &(iphdr->src), IP_HDRINCL, IPH_TTL(iphdr), IP_PROTO_ICMP, inp);
       break; 
 

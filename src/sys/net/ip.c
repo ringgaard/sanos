@@ -21,9 +21,10 @@ void ip_init()
 //
 // ip_route:
 //
-// Finds the appropriate network interface for a given IP address. It searches the
-// list of network interfaces linearly. A match is found if the masked IP address of
-// the network interface equals the masked IP address given to the function.
+// Finds the appropriate network interface for a given IP address. It
+// searches the list of network interfaces linearly. A match is found
+// if the masked IP address of the network interface equals the masked
+// IP address given to the function.
 //
 
 struct netif *ip_route(struct ip_addr *dest)
@@ -152,10 +153,21 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
     if (ip_addr_isany(&(netif->ip_addr)) ||
         ip_addr_cmp(&(iphdr->dest), &(netif->ip_addr)) ||
        (ip_addr_isbroadcast(&(iphdr->dest), &(netif->netmask)) &&
-	ip_addr_maskcmp(&(iphdr->dest), &(netif->ip_addr), &(netif->netmask))))
-         break;
+	ip_addr_maskcmp(&(iphdr->dest), &(netif->ip_addr), &(netif->netmask))) ||
+        ip_addr_cmp(&(iphdr->dest), IP_ADDR_BROADCAST)) 
+          break;
   }
 
+  // If a DHCP packet has arrived on the interface, we pass it up the
+  // stack regardless of destination IP address. The reason is that
+  // DHCP replies are sent to the IP adress that will be given to this
+  // node (as recommended by RFC 1542 section 3.1.1, referred by RFC 2131).
+
+  if (IPH_PROTO(iphdr) == IP_PROTO_UDP &&
+      ((struct udp_hdr *)((char *) iphdr + IPH_HL(iphdr) * 4))->src == DHCP_SERVER_PORT) 
+  {
+    netif = inp;
+  }  
   
   if (netif == NULL) 
   {
@@ -184,8 +196,6 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
   }
   
   // Send to upper layers
-  pbuf_header(p, -IP_HLEN);
-
   switch (IPH_PROTO(iphdr)) 
   {
     case IP_PROTO_UDP:
@@ -193,9 +203,7 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
       break;
 
     case IP_PROTO_TCP:
-      kprintf("ip_input: tcp_input not implemented\n");
-      pbuf_free(p);
-      //tcp_input(p, inp);
+      tcp_input(p, inp);
       break;
 
     case IP_PROTO_ICMP:
@@ -232,18 +240,18 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
   struct ip_hdr *iphdr;
   unsigned short ip_id = 0;
   
-  if (pbuf_header(p, IP_HLEN)) 
-  {
-    kprintf("ip_output: not enough room for IP header in pbuf\n");
-    stats.ip.err++;
-    pbuf_free(p);
-    return -EBUF;
-  }
-
-  iphdr = p->payload;
-
   if (dest != IP_HDRINCL)
   {
+    if (pbuf_header(p, IP_HLEN)) 
+    {
+      kprintf("ip_output: not enough room for IP header in pbuf\n");
+      stats.ip.err++;
+      pbuf_free(p);
+      return -EBUF;
+    }
+
+    iphdr = p->payload;
+
     IPH_TTL_SET(iphdr, ttl);
     IPH_PROTO_SET(iphdr, proto);
     
@@ -251,7 +259,7 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
 
     IPH_VHLTOS_SET(iphdr, 4, IP_HLEN / 4, 0);
     IPH_LEN_SET(iphdr, htons(p->tot_len));
-    IPH_OFFSET_SET(iphdr, 0);
+    IPH_OFFSET_SET(iphdr, htons(IP_DF));
     IPH_ID_SET(iphdr, htons(++ip_id));
 
     if (ip_addr_isany(src))
@@ -266,8 +274,11 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
       IPH_CHKSUM_SET(iphdr, inet_chksum(iphdr, IP_HLEN));
     }
   } 
-  else 
+  else
+  {
+    iphdr = p->payload;
     dest = &(iphdr->dest);
+  }
 
   stats.ip.xmit++;
 

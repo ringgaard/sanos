@@ -462,6 +462,10 @@ SOURCE=..\src\include\net\arp.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\include\net\dhcp.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\include\net\ether.h
 # End Source File
 # Begin Source File
@@ -560,6 +564,10 @@ SOURCE=..\src\include\types.h
 # Begin Source File
 
 SOURCE=..\src\sys\net\arp.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\sys\net\dhcp.c
 # End Source File
 # Begin Source File
 

@@ -30,7 +30,7 @@ void qsort(void *base, unsigned num, unsigned width, int (__cdecl *comp)(const v
   hi = (char *) base + width * (num-1);
 
 recurse:
-  size = (hi - lo) / width + 1;        /* number of el's to sort */
+  size = (hi - lo) / width + 1;        // number of el's to sort
 
   if (size <= CUTOFF) 
   {

@@ -31,8 +31,8 @@ struct udp_pcb
 {
   struct udp_pcb *next;
 
-  struct ip_addr local_ip, dest_ip;
-  unsigned short local_port, dest_port;
+  struct ip_addr local_ip, remote_ip;
+  unsigned short local_port, remote_port;
   
   int flags;
   int chksum_len;
@@ -48,7 +48,7 @@ void udp_remove (struct udp_pcb *pcb);
 err_t udp_bind(struct udp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port);
 err_t udp_connect(struct udp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port);
 void udp_recv(struct udp_pcb *pcb, void (*recv)(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct ip_addr *addr, unsigned short port), void *recv_arg);
-err_t udp_send(struct udp_pcb *pcb, struct pbuf *p);
+err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif);
 
 #define udp_flags(pcb) ((pcb)->flags)
 #define udp_setflags(pcb, f) ((pcb)->flags = (f))

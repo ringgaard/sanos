@@ -25,6 +25,7 @@ struct netif
   struct ip_addr netmask;  // netmask in network byte order
   struct ip_addr gw;
   struct eth_addr hwaddr;
+  int mtu;
   int flags;
   char name[NET_NAME_MAX];
 

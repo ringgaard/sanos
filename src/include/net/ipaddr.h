@@ -38,10 +38,8 @@ extern struct ip_addr ip_addr_broadcast;
                                          ((addr1)->addr == 0xFFFFFFFF) || \
                                          ((addr1)->addr == 0x00000000))
 
-
-#define ip_addr_ismulticast(addr1) (((addr1)->addr & 0xF0000000) == 0xE0000000)
+#define ip_addr_ismulticast(addr1) (((addr1)->addr & NTOHL(0xF0000000)) == NTOHL(0xE0000000))
 				   
-
 #define ip_addr_debug_print(ipaddr)  kprintf("%d.%d.%d.%d", \
 		    (ntohl((ipaddr)->addr) >> 24) & 0xFF, \
 		    (ntohl((ipaddr)->addr) >> 16) & 0xFF, \

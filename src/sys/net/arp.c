@@ -10,8 +10,10 @@
 
 #define HWTYPE_ETHERNET 1
 
-#define ARP_REQUEST 1
-#define ARP_REPLY 2
+#define ARP_REQUEST     1
+#define ARP_REPLY       2
+
+#define ARP_MAXAGE      120         // 120 * 10 seconds = 20 minutes
 
 #pragma pack(push)
 #pragma pack(1)
@@ -41,34 +43,49 @@ struct ethip_hdr
 #define ARPH_PROTOLEN(hdr) (NTOHS((hdr)->_hwlen_protolen) & 0xFF)
 
 #define ARPH_HWLEN_SET(hdr, len) (hdr)->_hwlen_protolen = HTONS(ARPH_PROTOLEN(hdr) | ((len) << 8))
-#define ARPH_PROTOLEN_SET(hdr, len) (hdr)->_hwlen_protolen = HTONS((len) | (ARPH_PROTOLEN(hdr) << 8))
+#define ARPH_PROTOLEN_SET(hdr, len) (hdr)->_hwlen_protolen = HTONS((len) | (ARPH_HWLEN(hdr) << 8))
 
 struct arp_entry 
 {
   struct ip_addr ipaddr;
   struct eth_addr ethaddr;
-  int age;
+  int ctime;
 };
 
-static struct arp_entry arp_table[ARPTABLE_SIZE];
+static struct arp_entry arp_table[ARP_TABLE_SIZE];
+int ctime;
 
 void arp_init()
 {
   int i;
   
-  for (i = 0; i < ARPTABLE_SIZE; ++i) ip_addr_set(&(arp_table[i].ipaddr), IP_ADDR_ANY);
+  for (i = 0; i < ARP_TABLE_SIZE; ++i) ip_addr_set(&(arp_table[i].ipaddr), IP_ADDR_ANY);
 }
 
+void arp_tmr()
+{
+  int i;
+  
+  ctime++;
+  for (i = 0; i < ARP_TABLE_SIZE; ++i)
+  {
+    if (!ip_addr_isany(&arp_table[i].ipaddr) && ctime - arp_table[i].ctime >= ARP_MAXAGE) 
+    {
+      kprintf("arp_timer: expired entry %d\n", i);
+      ip_addr_set(&(arp_table[i].ipaddr), IP_ADDR_ANY);
+    }
+  }  
+}
 
 static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
 {
   int i, j, k;
-  int maxage;
+  int maxtime;
   
   // Walk through the ARP mapping table and try to find an entry to
   // update. If none is found, the IP -> MAC address mapping is
   // inserted in the ARP table.
-  for (i = 0; i < ARPTABLE_SIZE; i++)
+  for (i = 0; i < ARP_TABLE_SIZE; i++)
   {
     // Only check those entries that are actually in use.
     if (!ip_addr_isany(&arp_table[i].ipaddr))
@@ -77,9 +94,9 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
       // the IP address in this ARP table entry.
       if (ip_addr_cmp(ipaddr, &arp_table[i].ipaddr)) 
       {
-	/* An old entry found, update this and return. */
+	// An old entry found, update this and return.
 	for (k = 0; k < 6; ++k) arp_table[i].ethaddr.addr[k] = ethaddr->addr[k];
-	arp_table[i].age = 0;
+	arp_table[i].ctime = 0;
 	return;
       }
     }
@@ -87,21 +104,21 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
 
   // If we get here, no existing ARP table entry was found, so we create one.
   /// First, we try to find an unused entry in the ARP table.
-  for (i = 0; i < ARPTABLE_SIZE; i++)
+  for (i = 0; i < ARP_TABLE_SIZE; i++)
   {
     if (ip_addr_isany(&arp_table[i].ipaddr)) break;
   }
 
   // If no unused entry is found, we try to find the oldest entry and throw it away
-  if (i == ARPTABLE_SIZE) 
+  if (i == ARP_TABLE_SIZE) 
   {
-    maxage = 0;
+    maxtime = 0;
     j = 0;
-    for (i = 0; i < ARPTABLE_SIZE; i++)
+    for (i = 0; i < ARP_TABLE_SIZE; ++i)
     {
-      if (arp_table[i].age > maxage) 
+      if(ctime - arp_table[i].ctime > maxtime) 
       {
-	maxage = arp_table[i].age;
+	maxtime = ctime - arp_table[i].ctime;
 	j = i;
       }
     }
@@ -111,7 +128,7 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
   // Now, i is the ARP table entry which we will fill with the new information.
   ip_addr_set(&arp_table[i].ipaddr, ipaddr);
   for(k = 0; k < 6; ++k) arp_table[i].ethaddr.addr[k] = ethaddr->addr[k];
-  arp_table[i].age = 0;
+  arp_table[i].ctime = ctime;
 
   kprintf("add new arp entry\n");
 }
@@ -145,24 +162,6 @@ struct pbuf *arp_arp_input(struct netif *netif, struct eth_addr *ethaddr, struct
   switch(htons(hdr->opcode)) 
   {
     case ARP_REQUEST:
-      {
-	char s[20];
-
-	kprintf("arp request\n");
-	
-	kprintf("dipaddr=");
-	ip_addr_debug_print(&hdr->dipaddr);
-	kprintf("\n");
-
-	kprintf("sipaddr=");
-	ip_addr_debug_print(&hdr->sipaddr);
-	kprintf("\n");
-
-	kprintf("dhwaddr=%s\n", ether2str(&hdr->dhwaddr, s));
-	kprintf("shwaddr=%s\n", ether2str(&hdr->shwaddr, s));
-
-      }
-
       // ARP request. If it asked for our address, we send out a reply
       if (ip_addr_cmp(&(hdr->dipaddr), &(netif->ip_addr))) 
       {
@@ -179,17 +178,23 @@ struct pbuf *arp_arp_input(struct netif *netif, struct eth_addr *ethaddr, struct
 	  hdr->ethhdr.src.addr[i] = ethaddr->addr[i];
 	}
 
-	hdr->ethhdr.type = htons(ETHTYPE_ARP);
+	hdr->hwtype = htons(HWTYPE_ETHERNET);
+	ARPH_HWLEN_SET(hdr, 6);
+      
+	hdr->proto = htons(ETHTYPE_IP);
+	ARPH_PROTOLEN_SET(hdr, sizeof(struct ip_addr));      
+      
+	hdr->ethhdr.type = htons(ETHTYPE_ARP);      
 	return p;
       }
       break;
 
     case ARP_REPLY:    
-kprintf("arp reply\n");
       // ARP reply. We insert or update the ARP table.
       if (ip_addr_cmp(&(hdr->dipaddr), &(netif->ip_addr))) 
       {
 	add_arp_entry(&(hdr->sipaddr), &(hdr->shwaddr));
+	//dhcp_arp_reply(&hdr->sipaddr);
       }
       break;
 
@@ -205,7 +210,7 @@ struct eth_addr *arp_lookup(struct ip_addr *ipaddr)
 {
   int i;
   
-  for (i = 0; i < ARPTABLE_SIZE; ++i) 
+  for (i = 0; i < ARP_TABLE_SIZE; ++i) 
   {
     if (ip_addr_cmp(ipaddr, &arp_table[i].ipaddr)) return &arp_table[i].ethaddr;
   }
@@ -226,7 +231,7 @@ struct pbuf *arp_query(struct netif *netif, struct eth_addr *ethaddr, struct ip_
 
   for (i = 0; i < 6; ++i) 
   {
-    hdr->dhwaddr.addr[i] = 0xFF;
+    hdr->dhwaddr.addr[i] = 0x00;
     hdr->shwaddr.addr[i] = ethaddr->addr[i];
   }
   

@@ -14,9 +14,9 @@ struct tcp_pcb;
 // Lower layer interface to TCP
 
 void tcp_init();         // Must be called first to initialize TCP
-void tcp_timer_coarse(); // Must be called every 500 ms.
-void tcp_timer_fine();   // Must be called every 100 ms.
-void tcp_timer();        // Called from timer DPC
+void tcp_slowtmr();      // Must be called every 500 ms.
+void tcp_fasttmr();      // Must be called every 100 ms.
+void tcp_tmr();          // Called from timer DPC every 10 ms
 
 void tcp_input(struct pbuf *p, struct netif *inp); // Called by IP to deliver TCP segment to TCP
 
@@ -87,6 +87,9 @@ struct tcp_hdr
 #define TCPH_OFFSET_SET(hdr, offset) (hdr)->_offset_flags = HTONS(((offset) << 8) | TCPH_FLAGS(hdr))
 #define TCPH_FLAGS_SET(hdr, flags) (hdr)->_offset_flags = HTONS((TCPH_OFFSET(hdr) << 8) | (flags))
 
+#define TCP_TCPLEN(seg) ((seg)->len + ((TCPH_FLAGS((seg)->tcphdr) & TCP_FIN || \
+					TCPH_FLAGS((seg)->tcphdr) & TCP_SYN) ? 1: 0))
+
 enum tcp_state 
 {
   CLOSED      = 0,
@@ -104,11 +107,12 @@ enum tcp_state
 
 // TCP protocol control block
 
-#define TF_ACK_NEXT 0x01   // Delayed ACK
-#define TF_INFR     0x02   // In fast recovery
-#define TF_RESET    0x04   // Connection was reset
-#define TF_CLOSED   0x08   // Connection was sucessfully closed
-#define TF_GOT_FIN  0x10   // Connection was closed by the remote end
+#define TF_ACK_DELAY 0x01   // Delayed ACK
+#define TF_ACK_NOW   0x02   // Immediate ACK
+#define TF_INFR      0x04   // In fast recovery
+#define TF_RESET     0x08   // Connection was reset
+#define TF_CLOSED    0x10   // Connection was sucessfully closed
+#define TF_GOT_FIN   0x20   // Connection was closed by the remote end
 
 struct tcp_pcb 
 {
@@ -124,8 +128,8 @@ struct tcp_pcb
   struct ip_addr local_ip;
   unsigned short local_port;
   
-  struct ip_addr dest_ip;
-  unsigned short dest_port;
+  struct ip_addr remote_ip;
+  unsigned short remote_port;
   
   // Receiver variables
   unsigned long rcv_nxt;   // Next seqno expected
@@ -230,17 +234,14 @@ int tcp_segs_free(struct tcp_seg *seg);
 int tcp_seg_free(struct tcp_seg *seg);
 struct tcp_seg *tcp_seg_copy(struct tcp_seg *seg);
 
-#define tcp_ack(pcb)     if ((pcb)->flags & TF_ACK_NEXT) { \
-                            tcp_send_ctrl((pcb), TCP_ACK); \
-                            (pcb)->flags &= ~TF_ACK_NEXT; \
+#define tcp_ack(pcb)     if ((pcb)->flags & TF_ACK_DELAY) { \
+                            (pcb)->flags |= TF_ACK_NOW; \
+                            tcp_output(pcb); \
                          } else { \
-                            (pcb)->flags |= TF_ACK_NEXT; \
+                            (pcb)->flags |= TF_ACK_DELAY; \
                          }
 
-#define tcp_ack_now(pcb) tcp_send_ctrl((pcb), TCP_ACK); \
-                         if ((pcb)->flags & TF_ACK_NEXT) { \
-                            (pcb)->flags &= ~TF_ACK_NEXT; \
-                         } \
+#define tcp_ack_now(pcb) (pcb)->flags |= TF_ACK_NOW; \
                          tcp_output(pcb)
 
 err_t tcp_send_ctrl(struct tcp_pcb *pcb, int flags);
@@ -248,7 +249,7 @@ err_t tcp_enqueue(struct tcp_pcb *pcb, void *dataptr, unsigned short len, int fl
 
 void tcp_rexmit_seg(struct tcp_pcb *pcb, struct tcp_seg *seg);
 
-void tcp_rst(unsigned long seqno, unsigned long ackno, struct ip_addr *local_ip, struct ip_addr *dest_ip, unsigned short local_port, unsigned short dest_port);
+void tcp_rst(unsigned long seqno, unsigned long ackno, struct ip_addr *local_ip, struct ip_addr *remote_ip, unsigned short local_port, unsigned short remote_port);
 
 unsigned long tcp_next_iss();
 

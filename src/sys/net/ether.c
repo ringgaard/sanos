@@ -109,9 +109,12 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   else if (ip_addr_ismulticast(ipaddr)) 
   {
     // Hash IP multicast address to MAC address.
-    mcastaddr.addr[0] = HTONS(0x01 << 8);
-    mcastaddr.addr[1] = HTONS((0x5E << 8) | (ip4_addr2(ipaddr) & 0x7F));
-    mcastaddr.addr[2] = HTONS((ip4_addr3(ipaddr) << 8) | ip4_addr4(ipaddr));
+    mcastaddr.addr[0] = 0x01;
+    mcastaddr.addr[1] = 0x0;
+    mcastaddr.addr[2] = 0x5e;
+    mcastaddr.addr[3] = ip4_addr2(ipaddr) & 0x7f;
+    mcastaddr.addr[4] = ip4_addr3(ipaddr);
+    mcastaddr.addr[5] = ip4_addr4(ipaddr);
     dest = &mcastaddr;
   } 
   else 

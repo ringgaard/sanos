@@ -14,7 +14,6 @@
 
 int tcp_initialized;
 unsigned long tcp_ticks;
-unsigned long tcp_subticks;
 unsigned long tcp_timer_expire;
 unsigned char tcp_backoff[13] = {1, 2, 4, 8, 16, 32, 64, 64, 64, 64, 64, 64, 64};
 
@@ -91,8 +90,8 @@ err_t tcp_close(struct tcp_pcb *pcb)
 void tcp_abort(struct tcp_pcb *pcb)
 {
   unsigned long seqno, ackno;
-  unsigned short dest_port, local_port;
-  struct ip_addr dest_ip, local_ip;
+  unsigned short remote_port, local_port;
+  struct ip_addr remote_ip, local_ip;
   void (*errf)(void *arg, err_t err);
   void *errf_arg;
 
@@ -115,9 +114,9 @@ void tcp_abort(struct tcp_pcb *pcb)
     seqno = pcb->snd_nxt;
     ackno = pcb->rcv_nxt;
     ip_addr_set(&local_ip, &(pcb->local_ip));
-    ip_addr_set(&dest_ip, &(pcb->dest_ip));
+    ip_addr_set(&remote_ip, &(pcb->remote_ip));
     local_port = pcb->local_port;
-    dest_port = pcb->dest_port;
+    remote_port = pcb->remote_port;
     errf = pcb->errf;
     errf_arg = pcb->callback_arg;
     tcp_pcb_remove(&tcp_active_pcbs, pcb);
@@ -125,7 +124,7 @@ void tcp_abort(struct tcp_pcb *pcb)
     if (errf != NULL) errf(errf_arg, -EABORT);
 
     kprintf("tcp_abort: sending RST\n");
-    tcp_rst(seqno, ackno, &local_ip, &dest_ip, local_port, dest_port);
+    tcp_rst(seqno, ackno, &local_ip, &remote_ip, local_port, remote_port);
   }
 }
 
@@ -211,7 +210,7 @@ void tcp_recved(struct tcp_pcb *pcb, unsigned short len)
 {
   pcb->rcv_wnd += len;
   if (pcb->rcv_wnd > TCP_WND) pcb->rcv_wnd = TCP_WND;
-  tcp_ack(pcb);
+  if (!(pcb->flags & TF_ACK_DELAY) ||!(pcb->flags & TF_ACK_NOW)) tcp_ack(pcb);
 
   kprintf("tcp_recved: recveived %d bytes, wnd %u (%u).\n", len, pcb->rcv_wnd, TCP_WND - pcb->rcv_wnd);
 }
@@ -267,12 +266,12 @@ err_t tcp_connect(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short po
   kprintf("tcp_connect to port %d\n", port);
 
   if (ipaddr != NULL)
-    pcb->dest_ip = *ipaddr;
+    pcb->remote_ip = *ipaddr;
   else
     return -EINVAL;
 
-  pcb->dest_port = port;
-  pcb->local_port = tcp_new_port();
+  pcb->remote_port = port;
+  if (pcb->local_port == 0) pcb->local_port = tcp_new_port();
   iss = tcp_next_iss();
   pcb->rcv_nxt = 0;
   pcb->snd_nxt = iss;
@@ -288,7 +287,11 @@ err_t tcp_connect(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short po
   TCP_REG(&tcp_active_pcbs, pcb);
   
   // Build an MSS option
-  optdata = HTONL((2 << 24) | (4 << 16) | ((pcb->mss / 256) << 8) | (pcb->mss & 255));
+  optdata = HTONL(((unsigned long) 2 << 24) | 
+		  ((unsigned long) 4 << 16) | 
+		  (((unsigned long) pcb->mss / 256) << 8) |
+		  (pcb->mss & 255));
+
   ret = tcp_enqueue(pcb, NULL, 0, TCP_SYN, 0, (unsigned char *) &optdata, 4);
   if (ret == 0) tcp_output(pcb);
 
@@ -296,14 +299,14 @@ err_t tcp_connect(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short po
 } 
 
 //
-// tcp_timer_coarse
+// tcp_slowtmr
 //
 // Called every 500 ms and implements the retransmission timer and the timer that
 // removes PCBs that have been in TIME-WAIT for enough time. It also increments
 // various timers such as the inactivity timer in each PCB.
 //
 
-void tcp_timer_coarse()
+void tcp_slowtmr()
 {
   struct tcp_pcb *pcb, *pcb2, *prev;
   struct tcp_seg *seg, *useg;
@@ -348,6 +351,8 @@ void tcp_timer_coarse()
           seg->next = NULL;
           pcb->snd_nxt = ntohl(pcb->unsent->tcphdr->seqno);
         }
+
+	// Do the actual retransmission
         tcp_rexmit_seg(pcb, seg);
 
         // Reduce congestion window and ssthresh
@@ -394,14 +399,9 @@ void tcp_timer_coarse()
       else 
         tcp_active_pcbs = pcb->next;
 
-      if(pcb->connected != NULL) 
+      if(pcb->errf != NULL) 
       {
-	pcb->connected(pcb->callback_arg, pcb, -EABORT);
-      }
-
-      if (pcb->recv != NULL) 
-      {
-	pcb->recv(pcb->callback_arg, pcb, NULL, -EABORT);
+	pcb->errf(pcb->callback_arg, -EABORT);
       }
 
       pcb2 = pcb->next;
@@ -459,51 +459,50 @@ void tcp_timer_coarse()
 
 //
 //
-// tcp_timer_fine
+// tcp_fasttmr
 //
 // Is called every 100 ms and sends delayed ACKs
 //
 
-void tcp_timer_fine()
+void tcp_fasttmr()
 {
   struct tcp_pcb *pcb;
 
-  // Send delayed ACKs
-  for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) 
+  // Send delayed ACKs  
+  for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next)
   {
-    if (pcb->flags & TF_ACK_NEXT)
+    if (pcb->flags & TF_ACK_DELAY) 
     {
-      pcb->flags &= ~TF_ACK_NEXT;
-      tcp_send_ctrl(pcb, TCP_ACK);
-      tcp_output(pcb);
       kprintf("tcp_timer_fine: delayed ACK\n");
+      tcp_ack_now(pcb);
+      pcb->flags &= ~(TF_ACK_DELAY | TF_ACK_NOW);
     }
   }
 }
 
 //
 //
-// tcp_timer
+// tcp_tmr
 //
 // Is called by timer DPC every 10 ms
 //
 
-void tcp_timer()
+void tcp_tmr()
 {
   unsigned long ticks = get_tick_count();
 
-  if (tcp_initialized) return;
+  if (!tcp_initialized) return;
   if (time_after_eq(tcp_timer_expire, ticks))
   {
     tcp_timer_expire = ticks + 100;
 
-    tcp_ticks++;  
-    tcp_timer_fine();
+    tcp_ticks++;
+    tcp_fasttmr();
 
-    if (++tcp_subticks == 5)
+    if (tcp_ticks % 5 == 0) 
     {
-      tcp_timer_coarse();
-      tcp_subticks = 0;
+      tcp_slowtmr();
+      if (tcp_ticks % 100 == 0) arp_tmr();
     }
   }
 }
@@ -731,15 +730,16 @@ void tcp_pcb_remove(struct tcp_pcb **pcblist, struct tcp_pcb *pcb)
 {
   TCP_RMV(pcblist, pcb);
 
-  // If there is an outstanding delayed ACKs, send it
-  if(pcb->state != TIME_WAIT && pcb->state != LISTEN && pcb->flags & TF_ACK_NEXT) 
-  {
-    tcp_send_ctrl(pcb, TCP_ACK);
-  }
-  
   tcp_pcb_purge(pcb);
+  
+  // If there is an outstanding delayed ACKs, send it
+  if (pcb->state != TIME_WAIT && pcb->state != LISTEN && pcb->flags & TF_ACK_DELAY) 
+  {
+    pcb->flags |= TF_ACK_NOW;
+    tcp_output(pcb);
+  }  
+
   pcb->state = CLOSED;
-  /*memp_free(MEMP_TCP_PCB, pcb);*/
 }
 
 //
@@ -817,8 +817,8 @@ void tcp_debug_print_pcbs()
   kprintf("Active PCB states:\n");
   for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) 
   {
-    kprintf("Local port %d, foreign port %d snd_nxt %lu rcv_nxt %lu ",
-	    pcb->local_port, pcb->dest_port,
+    kprintf("Local port %d, remote port %d snd_nxt %lu rcv_nxt %lu ",
+	    pcb->local_port, pcb->remote_port,
 	    pcb->snd_nxt, pcb->rcv_nxt);
     tcp_debug_print_state(pcb->state);
   }
@@ -826,8 +826,8 @@ void tcp_debug_print_pcbs()
   kprintf("Listen PCB states:\n");
   for (pcb = (struct tcp_pcb *) tcp_listen_pcbs; pcb != NULL; pcb = pcb->next)
   {
-    kprintf("Local port %d, foreign port %d snd_nxt %lu rcv_nxt %lu ",
-            pcb->local_port, pcb->dest_port,
+    kprintf("Local port %d, remote port %d snd_nxt %lu rcv_nxt %lu ",
+            pcb->local_port, pcb->remote_port,
             pcb->snd_nxt, pcb->rcv_nxt);
     tcp_debug_print_state(pcb->state);
   }    
@@ -835,8 +835,8 @@ void tcp_debug_print_pcbs()
   kprintf("TIME-WAIT PCB states:\n");
   for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next) 
   {
-    kprintf("Local port %d, foreign port %d snd_nxt %lu rcv_nxt %lu ",
-            pcb->local_port, pcb->dest_port,
+    kprintf("Local port %d, remote port %d snd_nxt %lu rcv_nxt %lu ",
+            pcb->local_port, pcb->remote_port,
             pcb->snd_nxt, pcb->rcv_nxt);
     tcp_debug_print_state(pcb->state);
   }    

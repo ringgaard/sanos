@@ -12,6 +12,8 @@
 #pragma pack(push)
 #pragma pack(1)
 
+#define ETHER_HLEN 14
+
 #define ETHER_ADDR_LEN 6
 
 struct eth_addr 

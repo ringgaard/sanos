@@ -151,12 +151,12 @@ struct pbuf *pbuf_alloc(int layer, int size, int flag)
   {
     case PBUF_TRANSPORT:
       offset += PBUF_TRANSPORT_HLEN;
-      /* FALLTHROUGH */
+      // FALLTHROUGH
 
     case PBUF_IP:
       offset += PBUF_IP_HLEN;
       offset += PBUF_LINK_HLEN;
-      /* FALLTHROUGH */
+      // FALLTHROUGH
 
     case PBUF_LINK:
       break;
@@ -221,7 +221,7 @@ struct pbuf *pbuf_alloc(int layer, int size, int flag)
       p = (struct pbuf *) kmalloc(sizeof(struct pbuf) + size + offset);
       if (p == NULL) return NULL;
 
-      // Set up internal structure of the pbuf. */
+      // Set up internal structure of the pbuf.
       p->payload = (void *) ((char *) p + sizeof(struct pbuf) + offset);
       p->len = p->tot_len = size;
       p->next = NULL;
@@ -464,6 +464,23 @@ int pbuf_free(struct pbuf *p)
 }
 
 //
+// pbuf_clen
+//
+// Returns the length of the pbuf chain.
+//
+
+int pbuf_clen(struct pbuf *p)
+{
+  int len;
+
+  if (!p) return 0;
+  
+  for (len = 0; p != NULL; p = p->next) ++len;
+
+  return len;
+}
+
+//
 // pbuf_ref
 //
 // Increments the reference count of the pbuf
@@ -503,6 +520,7 @@ struct pbuf *pbuf_dechain(struct pbuf *p)
   struct pbuf *q;
   
   q = p->next;
+  if (q) q->tot_len = p->tot_len - p->len;
   p->tot_len = p->len;
   p->next = NULL;
   return q;

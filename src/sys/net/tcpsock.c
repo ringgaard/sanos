@@ -239,8 +239,8 @@ static int tcpsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen,
     sin = (struct sockaddr_in *) addr;
     sin->sin_len = sizeof(struct sockaddr_in);
     sin->sin_family = AF_INET;
-    sin->sin_port = pcb->dest_port;
-    sin->sin_addr.s_addr = pcb->dest_ip.addr;
+    sin->sin_port = pcb->remote_port;
+    sin->sin_addr.s_addr = pcb->remote_ip.addr;
   }
   if (addrlen) *addrlen = sizeof(struct sockaddr_in);
   *retval = newsock;
@@ -427,8 +427,8 @@ static int tcpsock_recvfrom(struct socket *s, void *data, int size, unsigned int
     sin = (struct sockaddr_in *) from;
     sin->sin_len = sizeof(struct sockaddr_in);
     sin->sin_family = AF_INET;
-    sin->sin_port = s->tcp.pcb->dest_port;
-    sin->sin_addr.s_addr = s->tcp.pcb->dest_ip.addr;
+    sin->sin_port = s->tcp.pcb->remote_port;
+    sin->sin_addr.s_addr = s->tcp.pcb->remote_ip.addr;
   }
   if (fromlen) *fromlen = sizeof(struct sockaddr_in);
   

@@ -14,7 +14,9 @@
 
 #define BYTEORDER               LITTLE_ENDIAN
 
-#define ARPTABLE_SIZE           32
+#define ARP_TABLE_SIZE          32
+
+#define MTU                     1500
 
 #define ICMP_TTL                255
 #define UDP_TTL                 255
@@ -33,6 +35,3 @@
 #define PBUF_LINK_HLEN          0
 
 #endif
-
-
-
