@@ -71,6 +71,35 @@ struct vad vads[MAX_VADS];
 PTOP_LEVEL_EXCEPTION_FILTER topexcptfilter = NULL;
 void (*old_globalhandler)(int signum, struct siginfo *info);
 
+int convert_filename_to_unicode(const char *src, wchar_t *dst, int maxlen)
+{
+  wchar_t *end = dst + maxlen;
+  while (*src)
+  {
+    if (dst == end) return -ENAMETOOLONG;
+    *dst++ = (unsigned char) *src++;
+  }
+  
+  if (dst == end) return -ENAMETOOLONG;
+  *dst = 0;
+  return 0;
+}
+
+int convert_filename_from_unicode(const wchar_t *src, char *dst, int maxlen)
+{
+  char *end = dst + maxlen;
+  while (*src)
+  {
+    if (dst == end) return -ENAMETOOLONG;
+    if (*dst & 0xFF00) return -EINVAL;
+    *dst++ = (unsigned char) *src++;
+  }
+  
+  if (dst == end) return -ENAMETOOLONG;
+  *dst = 0;
+  return 0;
+}
+
 void convert_from_win32_context(struct context *ctxt, CONTEXT *ctx)
 {
   if (ctx->ContextFlags & CONTEXT_CONTROL)
@@ -541,6 +570,32 @@ HANDLE WINAPI CreateFileA
   return (HANDLE) h;
 }
 
+HANDLE WINAPI CreateFileW
+(
+  LPCWSTR lpFileName,
+  DWORD dwDesiredAccess,
+  DWORD dwShareMode,
+  LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+  DWORD dwCreationDisposition,
+  DWORD dwFlagsAndAttributes,
+  HANDLE hTemplateFile
+)
+{
+  char fn[MAXPATH];
+  int rc;
+
+  TRACE("CreateFileW");
+  
+  rc = convert_filename_from_unicode(lpFileName, fn, MAXPATH);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return INVALID_HANDLE_VALUE;
+  }
+
+  return CreateFileA(fn, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+}
+
 BOOL WINAPI CreatePipe
 (
   PHANDLE hReadPipe, 
@@ -609,6 +664,26 @@ BOOL WINAPI DeleteFileA
   TRACE("DeleteFileA");
   if (unlink(lpFileName) < 0) return FALSE;
   return TRUE;
+}
+
+BOOL WINAPI DeleteFileW
+(
+  LPCWSTR lpFileName
+)
+{
+  char fn[MAXPATH];
+  int rc;
+
+  TRACE("DeleteFileW");
+  
+  rc = convert_filename_from_unicode(lpFileName, fn, MAXPATH);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return FALSE;
+  }
+  
+  return DeleteFileA(fn);
 }
 
 BOOL WINAPI DisableThreadLibraryCalls
@@ -871,6 +946,17 @@ HANDLE WINAPI FindFirstFileA
   }
 }
 
+HANDLE WINAPI FindFirstFileW
+(
+  LPCWSTR lpFileName,
+  LPWIN32_FIND_DATAW lpFindFileData
+)
+{
+  TRACE("FindFirstFileW");
+  panic("FindFirstFileW not implemented");
+  return INVALID_HANDLE_VALUE;
+}
+
 BOOL WINAPI FindNextFileA
 (
   HANDLE hFindFile,
@@ -916,6 +1002,17 @@ BOOL WINAPI FindNextFileA
     errno = ESRCH;
     return FALSE;
   }
+}
+
+BOOL WINAPI FindNextFileW
+(
+  HANDLE hFindFile,
+  LPWIN32_FIND_DATAW lpFindFileData
+)
+{
+  TRACE("FindNextFileW");
+  panic("FindNextFileW not implemented");
+  return FALSE;
 }
 
 BOOL WINAPI FlushFileBuffers
@@ -1069,6 +1166,26 @@ DWORD WINAPI GetFileAttributesA
     return 0x00000010;
   else
     return 0x00000080;
+}
+
+DWORD WINAPI GetFileAttributesW
+(
+  LPCWSTR lpFileName
+)
+{
+  char fn[MAXPATH];
+  int rc;
+
+  TRACE("GetFileAttributesW");
+
+  rc = convert_filename_from_unicode(lpFileName, fn, MAXPATH);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return -1;
+  }
+
+  return GetFileAttributesA(fn);
 }
 
 BOOL WINAPI GetFileTime
@@ -1702,6 +1819,26 @@ BOOL WINAPI RemoveDirectoryA
   return TRUE;
 }
 
+BOOL WINAPI RemoveDirectoryW
+(
+  LPCWSTR lpPathName
+)
+{
+  char path[MAXPATH];
+  int rc;
+
+  TRACE("RemoveDirectoryW");
+
+  rc = convert_filename_from_unicode(lpPathName, path, MAXPATH);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return FALSE;
+  }
+
+  return RemoveDirectoryA(path);
+}
+
 BOOL WINAPI ResetEvent
 (
   HANDLE hEvent
@@ -1734,6 +1871,21 @@ VOID WINAPI RtlUnwind
   TRACE("RtlUnwind");
   memset(&ctxt, 0, sizeof(CONTEXT));
   unwind(endframe, eip, rec, retval, &ctxt);
+}
+
+DWORD WINAPI SearchPathA
+(
+  LPCSTR lpPath,
+  LPCSTR lpFileName,
+  LPCSTR lpExtension,
+  DWORD nBufferLength,
+  LPSTR lpBuffer,
+  LPSTR *lpFilePart
+)
+{
+  TRACE("SearchPathA");
+  panic("SearchPathA not implemented");
+  return 0;
 }
 
 BOOL WINAPI SetConsoleCtrlHandler
@@ -1785,6 +1937,27 @@ BOOL WINAPI SetFileAttributesA
   TRACE("SetFileAttributesA");
   if (dwFileAttributes != 0) syslog(LOG_DEBUG, "warning: SetFileAttributesA(%s,%08x) not implemented, ignored\n", lpFileName, dwFileAttributes);
   return TRUE;
+}
+
+BOOL WINAPI SetFileAttributesW
+(
+  LPCWSTR lpFileName,
+  DWORD dwFileAttributes
+)
+{
+  char fn[MAXPATH];
+  int rc;
+
+  TRACE("SetFileAttributesW");
+  
+  rc = convert_filename_from_unicode(lpFileName, fn, MAXPATH);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return 0;
+  }
+
+  return SetFileAttributesA(fn, dwFileAttributes);
 }
 
 DWORD WINAPI SetFilePointer

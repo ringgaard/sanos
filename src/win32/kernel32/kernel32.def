@@ -5,12 +5,14 @@ EXPORTS
   CompareFileTime
   CreateEventA
   CreateFileA
+  CreateFileW
   CreatePipe
   CreateProcessA
   CreateSemaphoreA
   DebugBreak
   DeleteCriticalSection
   DeleteFileA
+  DeleteFileW
   DisableThreadLibraryCalls
   DuplicateHandle
   EnterCriticalSection
@@ -18,7 +20,9 @@ EXPORTS
   FileTimeToSystemTime
   FindClose
   FindFirstFileA
+  FindFirstFileW
   FindNextFileA
+  FindNextFileW
   FlushFileBuffers
   FormatMessageA
   FreeLibrary
@@ -30,6 +34,7 @@ EXPORTS
   GetExitCodeProcess
   GetExitCodeThread
   GetFileAttributesA
+  GetFileAttributesW
   GetFileTime
   GetFullPathNameA
   GetLastError
@@ -72,14 +77,17 @@ EXPORTS
   PeekNamedPipe
   ReleaseSemaphore
   RemoveDirectoryA
+  RemoveDirectoryW
   ResetEvent
   ResumeThread
   RtlUnwind
+  SearchPathA
   SetConsoleCtrlHandler
   SetConsoleTitleA
   SetEndOfFile
   SetEvent
   SetFileAttributesA
+  SetFileAttributesW
   SetFilePointer
   SetFileTime
   SetHandleInformation

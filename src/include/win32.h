@@ -67,6 +67,7 @@ typedef const void *LPCVOID;
 
 typedef char TCHAR;
 typedef char CHAR;
+typedef unsigned short WCHAR;
 typedef unsigned char BYTE;
 typedef unsigned short WORD;
 typedef unsigned long DWORD;
@@ -382,6 +383,20 @@ typedef struct WIN32_FIND_DATA
   CHAR cFileName[MAX_PATH];
   CHAR cAlternateFileName[14];
 } WIN32_FIND_DATA, *PWIN32_FIND_DATA, *LPWIN32_FIND_DATA;
+
+typedef struct WIN32_FIND_DATAW 
+{
+  DWORD dwFileAttributes;
+  FILETIME ftCreationTime;
+  FILETIME ftLastAccessTime;
+  FILETIME ftLastWriteTime;
+  DWORD nFileSizeHigh;
+  DWORD nFileSizeLow;
+  DWORD dwReserved0;
+  DWORD dwReserved1;
+  WCHAR cFileName[MAX_PATH];
+  WCHAR cAlternateFileName[14];
+} WIN32_FIND_DATAW, *PWIN32_FIND_DATAW, *LPWIN32_FIND_DATAW;
 
 #define GENERIC_READ                     0x80000000
 #define GENERIC_WRITE                    0x40000000

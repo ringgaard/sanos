@@ -1,5 +1,5 @@
 //
-// winmm.c
+// advapi32.c
 //
 // Win32 ADVAPI32 emulation
 //
@@ -71,7 +71,7 @@ LONG WINAPI RegEnumKeyExA
 )
 {
   TRACE("RegEnumKeyExA");
-  panic("RegEnumKeyExA not implemented");
+  syslog(LOG_DEBUG, "warning: RegEnumKeyExA ignored\n");
   return -1;
 }
 
@@ -86,6 +86,88 @@ LONG WINAPI RegOpenKeyExA
 {
   TRACE("RegOpenKeyExA");
   syslog(LOG_DEBUG, "warning: RegOpenKeyEx(%p,%s) ignored\n", hKey, lpSubKey);
+  return -1;
+}
+
+LONG WINAPI RegCreateKeyExA
+(
+  HKEY hKey,
+  LPCSTR lpSubKey,
+  DWORD Reserved,
+  LPSTR lpClass,
+  DWORD dwOptions,
+  REGSAM samDesired,
+  LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+  PHKEY phkResult,
+  LPDWORD lpdwDisposition
+)
+{
+  TRACE("RegCreateKeyExA");
+  syslog(LOG_DEBUG, "warning: RegCreateKeyExA(%p,%s) ignored\n", hKey, lpSubKey);
+  return -1;
+}
+
+LONG WINAPI RegEnumValueA
+(
+  HKEY hKey,
+  DWORD dwIndex,
+  LPSTR lpValueName,
+  LPDWORD lpcbValueName,
+  LPDWORD lpReserved,
+  LPDWORD lpType,
+  LPBYTE lpData,
+  LPDWORD lpcbData
+)
+{
+  TRACE("RegEnumValueA");
+  syslog(LOG_DEBUG, "warning: RegEnumValueA ignored\n");
+  return -1;
+}
+
+LONG WINAPI RegDeleteValueA
+(
+  HKEY hKey,
+  LPCSTR lpValueName
+)
+{
+  TRACE("RegDeleteValueA");
+  syslog(LOG_DEBUG, "warning: RegDeleteValueA(%p,%s) ignored\n", hKey, lpValueName);
+  return -1;
+}
+
+LONG WINAPI RegSetValueExA
+(
+  HKEY hKey,
+  LPCSTR lpValueName,
+  DWORD Reserved,
+  DWORD dwType,
+  CONST BYTE *lpData,
+  DWORD cbData
+)
+{
+  TRACE("RegSetValueExA");
+  syslog(LOG_DEBUG, "warning: RegSetValueExA(%p,%s) ignored\n", hKey, lpValueName);
+  return -1;
+}
+
+LONG WINAPI RegFlushKey
+(
+  HKEY hKey
+)
+{
+  TRACE("RegFlushKey");
+  syslog(LOG_DEBUG, "warning: RegFlushKey ignored\n");
+  return -1;
+}
+
+LONG WINAPI RegDeleteKeyA
+(
+  HKEY hKey,
+  LPCSTR lpSubKey
+)
+{
+  TRACE("RegDeleteKeyA");
+  syslog(LOG_DEBUG, "warning: RegDeleteKeyA(%p,%s) ignored\n", hKey, lpSubKey);
   return -1;
 }
 
@@ -106,7 +188,7 @@ LONG WINAPI RegQueryInfoKeyA
 )
 {
   TRACE("RegQueryInfoKeyA");
-  panic("RegQueryInfoKeyA not implemented");
+  syslog(LOG_DEBUG, "warning: RegQueryInfoKeyA ignored\n");
   return -1;
 }
 
@@ -121,7 +203,36 @@ LONG WINAPI RegQueryValueExA
 )
 {
   TRACE("RegQueryValueExA");
-  panic("RegQueryValueExA not implemented");
+  syslog(LOG_DEBUG, "warning: RegQueryValueExA ignored\n");
+  return -1;
+}
+
+LONG WINAPI RegQueryValueExW
+(
+  HKEY hKey,
+  LPCWSTR lpValueName,
+  LPDWORD lpReserved,
+  LPDWORD lpType,
+  LPBYTE lpData,
+  LPDWORD lpcbData
+)
+{
+  TRACE("RegQueryValueExW");
+  syslog(LOG_DEBUG, "warning: RegQueryValueExW ignored\n");
+  return -1;
+}
+
+LONG WINAPI RegOpenKeyExW
+(
+  HKEY hKey,
+  LPCWSTR lpSubKey,
+  DWORD ulOptions,
+  REGSAM samDesired,
+  PHKEY phkResult
+)
+{
+  TRACE("RegOpenKeyExW");
+  syslog(LOG_DEBUG, "warning: RegOpenKeyExW ignored\n");
   return -1;
 }
 

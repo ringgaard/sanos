@@ -5,8 +5,16 @@ EXPORTS
   RegCloseKey
   RegEnumKeyExA
   RegOpenKeyExA
+  RegOpenKeyExW
   RegQueryInfoKeyA
   RegQueryValueExA
+  RegQueryValueExW
+  RegCreateKeyExA
+  RegEnumValueA
+  RegDeleteValueA
+  RegSetValueExA
+  RegFlushKey
+  RegDeleteKeyA
   RegisterEventSourceA
   DeregisterEventSource
   ReportEventA
