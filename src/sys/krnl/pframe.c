@@ -252,7 +252,7 @@ void init_pfdb()
   // Add interval [640K:1MB] as reserved pages
   for (i = 640 * K / PAGESIZE; i < syspage->bootparams.heapstart / PAGESIZE; i++) pfdb[i].tag = 'RESV';
 
-  // Add interval [BOOTHEAPBASE:heap] to pfdb as page table pages
+  // Add interval [heapstart:heap] to pfdb as page table pages
   for (i = syspage->bootparams.heapstart / PAGESIZE; i < heap / PAGESIZE; i++) pfdb[i].tag = 'PTAB';
 
   // Add interval [heap:maxmem] as free pages
