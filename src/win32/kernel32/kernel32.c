@@ -823,7 +823,7 @@ FARPROC WINAPI GetProcAddress
 )
 {
   TRACE("GetProcAddress");
-  syslog(LOG_DEBUG, "GetProcAddress name: %s hmod: %08X\n", lpProcName, hModule);
+  //syslog(LOG_DEBUG, "GetProcAddress name: %s hmod: %08X\n", lpProcName, hModule);
   return resolve((hmodule_t) hModule, (char *) lpProcName);
 }
 
@@ -1564,7 +1564,7 @@ BOOL WINAPI VirtualFree
 
   rc = munmap(lpAddress, dwSize, dwFreeType);
 
-  syslog(LOG_DEBUG, "VirtualFree %p %d bytes (%p) -> %d\n", lpAddress, dwSize, dwFreeType, rc);
+  //syslog(LOG_DEBUG, "VirtualFree %p %d bytes (%p) -> %d\n", lpAddress, dwSize, dwFreeType, rc);
 
   return rc == 0;
 }

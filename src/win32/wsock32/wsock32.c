@@ -304,20 +304,27 @@ sockapi int __stdcall winsock_getsockopt(SOCKET s, int level, int optname, char 
   return rc;
 }
 
-sockapi int winsock_setsockopt(SOCKET s, int level, int optname, const char *optval, int optlen)
+sockapi int __stdcall winsock_setsockopt(SOCKET s, int level, int optname, const char *optval, int optlen)
 {
   int rc;
 
   TRACE("setsockopt");
+
+  //TEST: ignore NODELAY option
+  if (level == 6 && optname == 1) 
+  {
+    syslog(LOG_DEBUG, "setsockopt TCP_NODELAY ignored\n");
+    return 0;
+  }
+
   rc = setsockopt(s, level, optname, optval, optlen);
   if (rc < 0)
   {
     errno = rc;
-    syslog(LOG_DEBUG, "setsockopt failed: %d\n", rc);
+    syslog(LOG_DEBUG, "setsockopt level %d optname %d failed: %d\n", level, optname, rc);
     return -1;
   }
 
-  syslog(LOG_DEBUG, "setsockopt successfully: %d\n", rc);
   return rc;
 }
 
