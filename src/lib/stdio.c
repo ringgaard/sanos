@@ -64,6 +64,14 @@ void init_stdio()
   crtbase->iob[2].flag = _IOWR | _IONBF | _IOCRLF;
 }
 
+FILE *__getstdhndl(int n)
+{
+  struct job *job = gettib()->job;
+  struct crtbase *crtbase = (struct crtbase *) job->crtbase;
+
+  return &crtbase->iob[n];
+}
+
 static void getbuf(FILE *stream)
 {
   // Try to get a buffer

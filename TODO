@@ -101,15 +101,11 @@ IDEAS for new features
 
 - Dynamic DNS registration
 
-- Test sanos with Tomcat 4
+- Test sanos with jdk1.4 and Tomcat 4
 
 - ANSI/VT100 handler in console device
 
 - Multiple consoles (switch consoles with ALT-<num>)
-
-- CD-ROM atapi driver
-
-- CDFS filesystem
 
 - DOS boot loader
 
@@ -412,3 +408,7 @@ CHANGES
 - setjmp() did not return the correct value from longjmp(). This problem has been fixed.
 
 - The C intrinsic fmod function (_CIfmod) implemented.
+
+- The stdin, stdout and stderr macros in stdio.h required os.h to be included to define
+  the job structure. This is no longer needed. The standard files are now resolved using
+  the __stdhndl() function in the stdio library.
