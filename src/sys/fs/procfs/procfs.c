@@ -67,6 +67,7 @@ struct fsops procfsops =
   procfs_open,
   procfs_close,
   NULL,
+  NULL,
 
   procfs_read,
   NULL,

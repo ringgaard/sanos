@@ -107,7 +107,7 @@ int write_log(struct httpd_server *server, char *data, int len, struct tm *tm)
 
     sprintf(logfn, "%s/web%04d%02d%02d.log", server->logdir, year, mon, day);
     server->logfd = open(logfn, O_CREAT | O_APPEND, S_IREAD | S_IWRITE);
-    if (server->logfd < 0) return server->logfd;
+    if (server->logfd < 0) return -1;
 
     sprintf(buf, "#Server: %s\r\n", server->swname);
     write(server->logfd, buf, strlen(buf));
@@ -237,12 +237,20 @@ int log_request(struct httpd_request *req)
     if (!value || !*value) value = "-";
     if (n > 0)
     {
-      if (p == end) return -EBUF;
+      if (p == end) 
+      {
+	errno = EBUF;
+	return -1;
+      }
       *p++ = ' ';
     }
     while (*value)
     {
-      if (p == end) return -EBUF;
+      if (p == end) 
+      {
+	errno = EBUF;
+	return -1;
+      }
       if (*value == ' ')
 	*p++ = '+';
       else
@@ -252,11 +260,23 @@ int log_request(struct httpd_request *req)
     }
   }
 
-  if (p == end) return -EBUF;
+  if (p == end) 
+  {
+    errno = EBUF;
+    return -1;
+  }
   *p++ = '\r';
-  if (p == end) return -EBUF;
+  if (p == end) 
+  {
+    errno = EBUF;
+    return -1;
+  }
   *p++ = '\n';
-  if (p == end) return -EBUF;
+  if (p == end) 
+  {
+    errno = EBUF;
+    return -1;
+  }
   *p++ = 0;
 
   enter(&conn->server->srvlock);

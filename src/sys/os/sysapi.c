@@ -94,18 +94,30 @@ int mount(const char *type, const char *mntto, const char *mntfrom, const char *
     struct in_addr ipaddr;
     int rc;
 
-    if (mntfrom[0] != '\\' && mntfrom[1] != '\\') return -EINVAL;
+    if (mntfrom[0] != '\\' && mntfrom[1] != '\\') 
+    {
+      errno = EINVAL;
+      return -1;
+    }
     p = (char *) mntfrom + 2;
     q = strchr(p, '\\');
-    if (!q) return -EINVAL;
-    if (q - p > sizeof(addr) - 1) return -EINVAL;
+    if (!q) 
+    {
+      errno = EINVAL;
+      return -1;
+    }
+    if (q - p > sizeof(addr) - 1) 
+    {
+      errno = EINVAL;
+      return -1;
+    }
     memcpy(addr, p, q - p);
     addr[q - p] = 0;
     hp = gethostbyname(addr);
-    if (!hp) return -errno;
+    if (!hp) return -1;
     memcpy(&ipaddr, hp->h_addr_list[0], hp->h_length);
     newopts = malloc((opts ? strlen(opts) : 0) + 32);
-    if (!newopts) return -ENOMEM;
+    if (!newopts) return -1;
     if (opts)
       sprintf(newopts, "%s,addr=0x%08X", opts, ipaddr.s_addr);
     else

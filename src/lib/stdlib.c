@@ -163,7 +163,6 @@ int system(const char *command)
   char pgm[MAXPATH];
   char *p;
   char *q;
-  int rc;
   int dotseen = 0;
 
   p = (char *) command;
@@ -177,7 +176,5 @@ int system(const char *command)
   *q++ = 0;
   if (!dotseen) strcat(pgm, ".exe");
 
-  rc = spawn(P_WAIT, pgm, command, NULL);
-
-  return rc;
+  return spawn(P_WAIT, pgm, command, NULL);
 }

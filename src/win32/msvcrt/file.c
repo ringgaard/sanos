@@ -78,32 +78,19 @@ static void free_stream(FILE *stream)
 
 int _pipe(int *phandles, unsigned int psize, int textmode)
 {
-  int rc;
-
   TRACE("_pipe");
-
-  rc = pipe(phandles);
-  if (rc < 0) return -1;
-
-  return 0;
+  return pipe(phandles);
 }
 
 int _open(const char *filename, int oflag)
 {
-  int rc;
-
   TRACE("_open");
   //syslog(LOG_DEBUG, "_open(%s,%p)\n", filename, oflag);
-  rc = open(filename, oflag, S_IREAD | S_IWRITE);
-  if (rc < 0) return -1;
-
-  return rc;
+  return open(filename, oflag, S_IREAD | S_IWRITE);
 }
 
 int _close(int handle)
 {
-  int rc;
-
   TRACE("_close");
 
   if (handle == -1)
@@ -112,27 +99,17 @@ int _close(int handle)
     return -1;
   }
 
-  rc = close(handle);
-  if (rc < 0) return -1;
-
-  return rc;
+  return close(handle);
 }
 
 int _commit(int handle)
 {
-  int rc;
-
   TRACE("_commit");
-  rc = flush(handle);
-  if (rc < 0) return -1;
-
-  return rc;
+  return flush(handle);
 }
 
 int _read(int handle, void *buffer, unsigned int count)
 {
-  int rc;
-
   TRACE("_read");
 
   if (handle == 0) 
@@ -146,11 +123,7 @@ int _read(int handle, void *buffer, unsigned int count)
       int len;
 
       len = readline(handle, stdinbuf, sizeof(stdinbuf) - 3);
-      if (len < 0) 
-      {
-	errno = len;
-	return -1;
-      }
+      if (len < 0) return -1;
 
       stdinbuf[len++] = '\r';
       stdinbuf[len++] = '\n';
@@ -170,45 +143,31 @@ int _read(int handle, void *buffer, unsigned int count)
   }
   else
   {
-    rc = read(handle, buffer, count);
-    if (rc < 0) return -1;
-    return rc;
+    return read(handle, buffer, count);
   }
 }
 
 int _write(int handle, const void *buffer, unsigned int count)
 {
-  int rc;
-
   TRACE("_write");
   
-  rc = write(handle, buffer, count);
-  if (rc < 0) return -1;
-
-  return rc;
+  return write(handle, buffer, count);
 }
 
 int _setmode(int handle, int mode)
 {
-  int rc;
-
   TRACE("_setmode");
-  rc = setmode(handle, mode);
-  if (rc < 0) return -1;
-
-  return 0;
+  return setmode(handle, mode);
 }
 
 int _stat(const char *path, struct _stat *buffer)
 {
-  int rc;
   struct stat64 fs;
 
   TRACE("_stat");
   //syslog(LOG_DEBUG, "stat on %s\n", path);
 
-  rc = stat64(path, &fs);
-  if (rc < 0) return -1;
+  if (stat64(path, &fs) < 0) return -1;
 
   if (buffer)
   {
@@ -226,14 +185,12 @@ int _stat(const char *path, struct _stat *buffer)
 
 __int64 _stati64(const char *path, struct _stati64 *buffer)
 {
-  int rc;
   struct stat64 fs;
 
   TRACE("_stati64");
   //syslog(LOG_DEBUG, "stat on %s\n", path);
 
-  rc = stat64(path, &fs);
-  if (rc < 0) return -1;
+  if (stat64(path, &fs) < 0) return -1;
 
   if (buffer)
   {
@@ -251,12 +208,10 @@ __int64 _stati64(const char *path, struct _stati64 *buffer)
 
 int _fstat(int handle, struct _stat *buffer)
 {
-  int rc;
   struct stat64 fs;
 
   TRACE("_fstat");
-  rc = fstat64(handle, &fs);
-  if (rc < 0) return -1; 
+  if (fstat64(handle, &fs) < 0) return -1;
 
   if (buffer)
   {
@@ -273,12 +228,10 @@ int _fstat(int handle, struct _stat *buffer)
 
 __int64 _fstati64(int handle, struct _stati64 *buffer)
 {
-  int rc;
   struct stat64 fs;
 
   TRACE("_fstati64");
-  rc = fstat64(handle, &fs);
-  if (rc < 0) return -1; 
+  if (fstat64(handle, &fs) < 0) return -1;
 
   if (buffer)
   {
@@ -295,24 +248,14 @@ __int64 _fstati64(int handle, struct _stati64 *buffer)
 
 loff_t _lseek(int f, loff_t offset, int origin)
 {
-  int rc;
-
   TRACE("_lseek");
-  rc = lseek(f, offset, origin);
-  if (rc < 0) return -1;
-
-  return rc;
+  return lseek(f, offset, origin);
 }
 
 __int64 _lseeki64(int handle, __int64 offset, int origin)
 {
-  int rc;
-
   TRACE("_lseeki64");
-  rc = (int) lseek64(handle, offset, origin);
-  if (rc < 0) return -1;
-
-  return rc;
+  return (int) lseek64(handle, offset, origin);
 }
 
 int _open_osfhandle(long osfhandle, int flags)
@@ -331,13 +274,8 @@ int _open_osfhandle(long osfhandle, int flags)
 
 int _dup2(int handle1, int handle2)
 {
-  int rc;
-
   TRACE("_dup2");
-  rc = dup2(handle1, handle2);
-  if (rc < 0) return -1;
-
-  return rc;
+  return dup2(handle1, handle2);
 }
 
 long _get_osfhandle(int filehandle)
@@ -382,91 +320,55 @@ char *_fullpath(char *abspath, const char *relpath, size_t maxlen)
 
 int _unlink(const char *filename)
 {
-  int rc;
-
   TRACE("_unlink");
-  rc = unlink(filename);
-  if (rc < 0) return -1;
-
-  return rc;
+  return unlink(filename);
 }
 
 int remove(const char *path)
 {
-  int rc;
-
   TRACE("_remove");
-  rc = unlink(path);
-  if (rc < 0) return -1;
-
-  return rc;
+  return unlink(path);
 }
 
 int _rename(const char *oldname, const char *newname)
 {
-  int rc;
-
   TRACE("_rename");
-  rc = rename(oldname, newname);
-  if (rc < 0) return -1;
-
-  return rc;
+  return rename(oldname, newname);
 }
 
 int _access(const char *path, int mode)
 {
-  int rc;
-
   TRACE("_access");
-
-  rc = access(path, mode);
-  if (rc < 0) return -1;
-
-  return 0;
+  return access(path, mode);
 }
 
 int _chmod(const char *filename, int pmode)
 {
-  int rc;
-
   TRACE("_chmod");
-
-  // Just check that file exists
-  rc = stat(filename, NULL);
-  if (rc < 0) return -1;
-
-  return 0;
+  return chmod(filename, pmode);
 }
 
 int _mkdir(const char *dirname)
 {
-  int rc;
-
   TRACE("_mkdir");
-  rc = mkdir(dirname, 0666);
-  if (rc < 0) return -1;
-
-  return rc;
+  return mkdir(dirname, 0666);
 }
 
 int _chdir(const char *dirname)
 {
   TRACE("_chdir");
-
   return chdir(dirname);
 }
 
 char *_getcwd(char *buffer, int maxlen)
 {
   TRACE("_getcwd");
-
   return getcwd(buffer, maxlen);
 }
 
 int _fileno(FILE *stream)
 {
   TRACE("_fileno");
-
   return stream->file;
 }
 
@@ -557,11 +459,7 @@ FILE *fopen(const char *filename, const char *mode)
   }
 
   handle = open(filename, oflag, S_IREAD | S_IWRITE);
-  if (handle < 0) 
-  {
-    errno = -handle;
-    return NULL;
-  }
+  if (handle < 0) return NULL;
 
   stream = alloc_stream();
   if (stream == NULL) panic("too many files open");
@@ -642,11 +540,7 @@ FILE *freopen(const char *path, const char *mode, FILE *stream)
   }
 
   handle = open(path, oflag, S_IREAD | S_IWRITE);
-  if (handle < 0) 
-  {
-    errno = -handle;
-    return NULL;
-  }
+  if (handle < 0) return NULL;
 
   close(stream->file);
   stream->file = handle;
@@ -660,8 +554,6 @@ int fclose(FILE *stream)
   TRACE("fclose");
   rc = close(stream->file);
   free_stream(stream);
-  if (rc < 0) return -1;
-
   return rc;
 }
 
@@ -735,14 +627,8 @@ int fputs(const char *string, FILE *stream)
 
 int fseek(FILE *stream, long offset, int whence)
 {
-  int rc;
-
   TRACE("fseek");
-
-  rc = lseek(stream->file, offset, whence);
-  if (rc < 0) return -1;
-
-  return 0;
+  return lseek(stream->file, offset, whence);
 }
 
 int fgetpos(FILE *stream, fpos_t *pos)
@@ -1064,7 +950,7 @@ wchar_t *_wfullpath(wchar_t *abspath, const wchar_t *relpath, size_t maxlen)
   
   if (maxlen < 2) 
   {
-    errno = -EINVAL;
+    errno = EINVAL;
     return NULL;
   }
 

@@ -33,7 +33,7 @@
 
 #include <os/krnl.h>
 
-#define SYSCALL_RETURNERRNO
+//#define SYSCALL_RETURNERRNO
 #define SYSCALL_PROFILE
 //#define SYSCALL_LOGENTER
 //#define SYSCALL_LOGEXIT
@@ -3177,7 +3177,8 @@ int syscall(int syscallno, char *params)
 #ifdef SYSCALL_RETURNERRNO
   return rc;
 #else
-  return rc < 0 : -1 : rc;
+  if (rc < 0) return -1;
+  return rc;
 #endif
 }
 

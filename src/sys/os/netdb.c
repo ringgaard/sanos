@@ -258,7 +258,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
   struct tib *tib = gettib();
   const struct dns_hdr *hp;
   const unsigned char *cp;
-  int n, rc;
+  int n;
   const unsigned char *eom, *erdata;
   char *bp, **ap, **hap;
   int type, class, ttl, buflen, ancount, qdcount;
@@ -292,11 +292,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
   }
 
   n = dn_expand(answer, eom, cp, bp, buflen);
-  if (n < 0) 
-  {
-    errno = -n;
-    return NULL;
-  }
+  if (n < 0) return NULL;
 
   cp += n + NS_QFIXEDSZ;
   if (cp > eom) 
@@ -339,7 +335,6 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
     n = dn_expand(answer, eom, cp, bp, buflen);
     if (n < 0)
     {
-      rc = n;
       had_error++;
       continue;
     }
@@ -383,7 +378,6 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       n = dn_expand(answer, eom, cp, tbuf, sizeof tbuf);
       if (n < 0) 
       {
-	rc = n;
 	had_error++;
 	continue;
       }
@@ -399,7 +393,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       n = strlen(bp) + 1;
       if (n >= MAXHOSTNAMELEN) 
       {
-	rc = -EMSGSIZE;
+	errno = EMSGSIZE;
 	had_error++;
 	continue;
       }
@@ -411,7 +405,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       n = strlen(tbuf) + 1;
       if (n > buflen || n >= MAXHOSTNAMELEN) 
       {
-	rc = -EMSGSIZE;
+	errno = EMSGSIZE;
 	had_error++;
 	continue;
       }
@@ -428,7 +422,6 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       n = dn_expand(answer, eom, cp, tbuf, sizeof tbuf);
       if (n < 0) 
       {
-	rc = n;
 	had_error++;
 	continue;
       }
@@ -443,7 +436,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       n = strlen(tbuf) + 1;
       if (n > buflen || n >= MAXHOSTNAMELEN) 
       {
-	rc = -EMSGSIZE;
+	errno = EMSGSIZE;
 	had_error++;
 	continue;
       }
@@ -472,7 +465,6 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
 	n = dn_expand(answer, eom, cp, bp, buflen);
 	if (n < 0) 
 	{
-	  rc = n;
 	  had_error++;
 	  break;
 	}
@@ -506,7 +498,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
 
 	if (bp + n >= &tib->hostbuf[sizeof tib->hostbuf]) 
 	{
-	  rc = -EMSGSIZE;
+	  errno = EMSGSIZE;
 	  had_error++;
 	  continue;
 	}
@@ -557,7 +549,6 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
     return &tib->host;
   }
 
-  errno = -rc;
   return NULL;
 }
 
@@ -625,11 +616,7 @@ struct hostent *gethostbyname(const char *name)
   }
 
   n = res_search(name, DNS_CLASS_IN, DNS_TYPE_A, buf, sizeof(buf));
-  if (n < 0)
-  {
-    errno = -n;
-    return NULL;
-  }
+  if (n < 0) return NULL;
 
   return getanswer(buf, n, name, DNS_TYPE_A);
 }
@@ -662,11 +649,7 @@ struct hostent *gethostbyaddr(const char *addr, int len, int type)
   sprintf(qbuf, "%u.%u.%u.%u.in-addr.arpa", uaddr[3], addr[2], uaddr[1], uaddr[0]);
 
   n = res_query(qbuf, DNS_CLASS_IN, DNS_TYPE_PTR, buf, sizeof buf);
-  if (n < 0)
-  {
-    errno = -n;
-    return NULL;
-  }
+  if (n < 0) return NULL;
 
   hp = getanswer(buf, n, qbuf, DNS_TYPE_PTR);
   if (!hp) return NULL;

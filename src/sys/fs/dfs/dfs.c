@@ -49,6 +49,7 @@ struct fsops dfsops =
 
   dfs_open,
   dfs_close,
+  dfs_destroy,
   dfs_flush,
 
   dfs_read,

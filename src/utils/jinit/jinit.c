@@ -256,7 +256,7 @@ int init_jvm()
     if (hjvm == NULL) 
     {
       syslog(LOG_ERR, "Error loading JVM %s\n", jvmname);
-      return 1;
+      return -1;
     }
   }
 
@@ -266,7 +266,7 @@ int init_jvm()
     if (!CreateJavaVM) 
     {
       syslog(LOG_ERR, "Unable to find CreateJavaVM\n");
-      return 1;
+      return -1;
     }
   }
 
@@ -277,7 +277,7 @@ int init_jvm()
     if (rc != JNI_OK) 
     {
       syslog(LOG_ERR, "Error %d creating java vm\n", rc);
-      return 1;
+      return -1;
     }
   }
   else
@@ -286,7 +286,7 @@ int init_jvm()
     if (rc != JNI_OK) 
     {
       syslog(LOG_ERR, "Error %d attaching to vm\n", rc);
-      return 1;
+      return -1;
     }
   }
 
@@ -306,7 +306,7 @@ int execute_main_method(char *mainclsname, char *mainclsargs)
   if (mainclass == NULL) 
   {
     syslog(LOG_ERR, "Unable to find main class %s\n", mainclsname);
-    return 1;
+    return -1;
   }
 
   // Find main method
@@ -314,7 +314,7 @@ int execute_main_method(char *mainclsname, char *mainclsargs)
   if (mainid == NULL) 
   {
     syslog(LOG_ERR, "Class %s does not have a main method\n", mainclsname);
-    return 1;
+    return -1;
   }
 
   // Create argument array
@@ -331,7 +331,7 @@ int execute_main_method(char *mainclsname, char *mainclsargs)
   if (mainargs == NULL)
   {
     syslog(LOG_ERR, "Error creating command arguments\n");
-    return 1;
+    return -1;
   }
 
   // Invoke main method
@@ -339,7 +339,7 @@ int execute_main_method(char *mainclsname, char *mainclsargs)
   if ((*env)->ExceptionOccurred(env)) 
   {
     (*env)->ExceptionDescribe(env);
-    return 1;
+    return -1;
   }
 
   free_args(argc, argv);

@@ -560,6 +560,23 @@ int close(struct file *filp)
   return rc;
 }
 
+int destroy(struct file *filp)
+{
+  int rc;
+
+  if (!filp) return -EINVAL;
+
+  if (filp->fs->ops->destroy)
+  {
+    rc = filp->fs->ops->destroy(filp);
+  }
+  else
+    rc = 0;
+
+  kfree(filp);
+  return rc;
+}
+
 int flush(struct file *filp)
 {
   int rc;

@@ -376,7 +376,7 @@ static void err_tcp(void *arg, err_t err)
     req = next;
   }
 
-  set_io_event(&s->iob, IOEVT_ERROR);
+  set_io_event(&s->iob, err == -ERST ? IOEVT_CLOSE : IOEVT_ERROR);
 }
 
 static err_t alloc_pcb(struct socket *s)

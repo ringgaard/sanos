@@ -71,7 +71,7 @@ int allocate_buffer(struct httpd_buffer *buf, int size)
   else
   {
     buf->floor = (char *) malloc(size);
-    if (!buf->floor) return -ENOMEM;
+    if (!buf->floor) return -1;
     buf->ceil = buf->floor + size;
     buf->start = buf->end = buf->floor;
   }
@@ -109,7 +109,7 @@ int expand_buffer(struct httpd_buffer *buf, int minfree)
   }
 
   p = (char *) realloc(buf->floor, size);
-  if (!p) return -ENOMEM;
+  if (!p) return -1;
 
   buf->start += p - buf->floor;
   buf->end += p - buf->floor;

@@ -185,7 +185,10 @@ int access(const char *name, int mode)
       if (buf.st_mode & S_IWRITE)
         rc = 0;
       else
-	rc = -EACCES;
+      {
+	errno = EACCES;
+	rc = -1;
+      }
       break; 
 
     case 4: 
@@ -193,7 +196,10 @@ int access(const char *name, int mode)
       if (buf.st_mode & S_IREAD)
         rc = 0;
       else
-	rc = -EACCES;
+      {
+	errno = EACCES;
+	rc = -1;
+      }
       break; 
 
     case 6:
@@ -201,14 +207,17 @@ int access(const char *name, int mode)
       if ((buf.st_mode & (S_IREAD | S_IWRITE)) ==  (S_IREAD | S_IWRITE))
         rc = 0;
       else
-	rc = -EACCES;
+      {
+	errno = EACCES;
+	rc = -1;
+      }
       break;
 
-    default: 
-      rc = -EINVAL;
+    default:
+      errno = EINVAL;
+      rc = -1;
   }
 
-  if (rc < 0) errno = -rc;
   return rc;
 }
 
@@ -238,6 +247,7 @@ void *malloc(size_t size)
   leave(&heap_lock);
 
   if (size && !p) panic("malloc: out of memory");
+  //if (size && !p) errno = ENOMEM;
   //syslog(LOG_MODULE | LOG_DEBUG, "malloced %d bytes at %p\n", size, p);
 
   return p;
@@ -252,6 +262,7 @@ void *realloc(void *mem, size_t size)
   leave(&heap_lock);
 
   if (size && !p) panic("realloc: out of memory");
+  //if (size && !p) errno = ENOMEM;
 
   return p;
 }
@@ -265,6 +276,7 @@ void *calloc(size_t num, size_t size)
   leave(&heap_lock);
 
   if (size * num != 0 && !p) panic("calloc: out of memory");
+  //if (size * num != 0 && !p) errno = ENOMEM;
 
   return p;
 }
@@ -294,7 +306,11 @@ int canonicalize(const char *filename, char *buffer, int size)
   int len;
 
   // Check for maximum filename length
-  if (!filename) return -EINVAL;
+  if (!filename) 
+  {
+    errno = EINVAL;
+    return -1;
+  }
 
   // Remove drive letter from filename (e.g. c:)
   if (filename[0] != 0 && filename[1] == ':') filename += 2;
@@ -319,7 +335,11 @@ int canonicalize(const char *filename, char *buffer, int size)
   {
     // Parse path separator
     if (*filename == PS1 || *filename == PS2) filename++;
-    if (p == end) return -ENAMETOOLONG;
+    if (p == end) 
+    {
+      errno = ENAMETOOLONG;
+      return -1;
+    }
     *p++ = PS1;
 
     // Parse next name part in path
@@ -327,8 +347,16 @@ int canonicalize(const char *filename, char *buffer, int size)
     while (*filename && *filename != PS1 && *filename != PS2)
     {
       // We do not allow control characters in filenames
-      if (*filename > 0 && *filename < ' ') return -EINVAL;
-      if (p == end) return -ENAMETOOLONG;
+      if (*filename > 0 && *filename < ' ') 
+      {
+	errno = EINVAL;
+	return -1;
+      }
+      if (p == end) 
+      {
+	errno = ENAMETOOLONG;
+	return -1;
+      }
       *p++ = *filename++;
       len++;
     }
@@ -341,7 +369,11 @@ int canonicalize(const char *filename, char *buffer, int size)
     else if (len == 2 && filename[-1] == '.' && filename[-2] == '.')
     {
       p -= 4;
-      if (p < buffer) return -EINVAL;
+      if (p < buffer) 
+      {
+	errno = EINVAL;
+	return -1;
+      }
       while (*p != PS1) p--;
     }
   }
@@ -350,7 +382,12 @@ int canonicalize(const char *filename, char *buffer, int size)
   if (p == buffer) *p++ = PS1;
 
   // Terminate string
-  if (p == end) return -ENAMETOOLONG;
+  if (p == end) 
+  {
+    errno = ENAMETOOLONG;
+    return -1;
+  }
+
   *p = 0;
 
   return p - buffer;
@@ -525,7 +562,14 @@ int getmodpath(hmodule_t hmod, char *buffer, int size)
   enter(&mod_lock);
   rc = get_module_filename(&usermods, hmod, buffer, size);
   leave(&mod_lock);
-  return rc;
+  
+  if (rc < 0)
+  {
+    errno = -rc;
+    return -1;
+  }
+
+  return 0;
 }
 
 hmodule_t load(const char *name)
@@ -664,7 +708,7 @@ void init_net()
 
     rc = ioctl(sock, SIOIFCFG, &ifcfg, sizeof(struct ifcfg));
     if (rc < 0)
-      syslog(LOG_ERR, "%s: unable to configure net interface, %s\n", ifcfg.name, strerror(rc));
+      syslog(LOG_ERR, "%s: unable to configure net interface, %s\n", ifcfg.name, strerror(errno));
     else
     {
       unsigned long addr = ((struct sockaddr_in *) &ifcfg.addr)->sin_addr.s_addr;
@@ -723,7 +767,7 @@ void init_mount()
     //syslog(LOG_DEBUG, "mount %s on %s type %s opts %s\n", devname, prop->name, type, opts);
 
     rc = mount(type, prop->name, devname, opts);
-    if (rc < 0) syslog(LOG_ERR, "%s: error %d mounting %s %s\n", prop->name, rc, type, devname);
+    if (rc < 0) syslog(LOG_ERR, "%s: error %d mounting %s %s\n", prop->name, errno, type, devname);
 
     prop = prop->next;
   }
@@ -743,7 +787,7 @@ int seed_random_device(char *rndfn)
   if (rndfile < 0)
   {
     close(rnddev);
-    return rndfile;
+    return -1;
   }
 
   n = read(rndfile, buf, sizeof buf);
@@ -763,13 +807,13 @@ int save_random_device(char *rndfn)
   int n;
 
   rnddev = open("/dev/urandom", O_BINARY);
-  if (rnddev < 0) return rnddev;
+  if (rnddev < 0) return -1;
 
   rndfile = open(rndfn, O_CREAT | O_BINARY);
   if (rndfile < 0)
   {
     close(rnddev);
-    return rndfile;
+    return -1;
   }
 
   n = read(rnddev, buf, sizeof buf);

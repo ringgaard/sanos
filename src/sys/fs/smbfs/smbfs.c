@@ -357,6 +357,11 @@ int smb_close(struct file *filp)
   return 0;
 }
 
+int smb_destroy(struct file *filp)
+{
+  return 0;
+}
+
 int smb_flush(struct file *filp)
 {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
@@ -971,6 +976,7 @@ struct fsops smbfsops =
 
   smb_open,
   smb_close,
+  smb_destroy,
   smb_flush,
 
   smb_read,

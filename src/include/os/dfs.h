@@ -51,12 +51,16 @@
 #define NOINODE                    (-1)
 #define NOBLOCK                    (-1)
 
+#define FSOPT_QUICK                1
+#define FSOPT_PROGRESS             2
+#define FSOPT_FORMAT               4
+
 struct fsoptions
 {
   int cache;
   int blocksize;
   int inode_ratio;
-  int quick;
+  int flags;
   int reserved_inodes;
   int reserved_blocks;
 };
@@ -200,6 +204,7 @@ int dfs_readdir(struct file *filp, struct dirent *dirp, int count);
 // file.c
 int dfs_open(struct file *filp, char *name);
 int dfs_close(struct file *filp);
+int dfs_destroy(struct file *filp);
 int dfs_flush(struct file *filp);
 int dfs_read(struct file *filp, void *data, size_t size, off64_t pos);
 int dfs_write(struct file *filp, void *data, size_t size, off64_t pos);

@@ -74,10 +74,22 @@ int decode_url(char *from, char *to)
     if (c == '%') 
     {
       x1 = *from++;
-      if (!isxdigit(x1)) return -EINVAL;
+      if (!isxdigit(x1)) 
+      {
+	errno = EINVAL;
+	return -1;
+      }
       x2 = *from++;
-      if (!isxdigit(x2)) return -EINVAL;
-      if (x1 == 0 && x2 == 0) return -EINVAL;
+      if (!isxdigit(x2)) 
+      {
+	errno = EINVAL;
+	return -1;
+      }
+      if (x1 == 0 && x2 == 0) 
+      {
+	errno = EINVAL;
+	return -1;
+      }
       *to++ = (hexdigit(x1) << 4) + hexdigit(x2);
     } 
     else

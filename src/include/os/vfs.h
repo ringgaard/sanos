@@ -115,6 +115,7 @@ struct fsops
 
   int (*open)(struct file *filp, char *name);
   int (*close)(struct file *filp);
+  int (*destroy)(struct file *filp);
   int (*flush)(struct file *filp);
 
   int (*read)(struct file *filp, void *data, size_t size, off64_t pos);
@@ -168,6 +169,7 @@ krnlapi int statfs(char *name, struct statfs *buf);
 
 krnlapi int open(char *name, int flags, int mode, struct file **retval);
 krnlapi int close(struct file *filp);
+krnlapi int destroy(struct file *filp);
 krnlapi int flush(struct file *filp);
 krnlapi int setmode(struct file *filp, int mode);
 

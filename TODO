@@ -1,8 +1,6 @@
 TODO for sanos
 --------------
 
-- Replace fdmotor thread with timers.
-
 - Use the BIOS memory map from osldr to initialize memory subsystem.
 
 - Finish implementation of APM support. This would allow sanos to turn off the
@@ -17,20 +15,15 @@ TODO for sanos
     - Implement int kill(int pid, int signum)
     - Return job number in getpid()
 
-- Add format option to dfs_mkfs() to allow a device to be formated when mounting. This is useful for ram disks.
-
 - Implement SOCK_RAW socket type and ping
 
-- Disable control87() or change the code to use the MSVCRT definitions of FPU control flags.
+- Change control87() to use the MSVCRT definitions of FPU control flags.
 
 - Implement 48-bit LBA support in IDE driver
 
 - Add read-only attribute to dfs
 
 - Improve sysalloc() in heap.c to enable dynamic expansion of wilderness region.
-
-- Add IOEVT_ERROR to readfds in select() and checkfds() to trigger event for read sockets when connection has been reset.
-  Alternatively change err_tcp() to set IOEVT_CLOSE if the error code is ERST.
 
 - Implement UDMA mode for ATAPI devices
 
@@ -56,14 +49,6 @@ TODO for sanos
 - Implement krealloc() in kmalloc.c
 
 - Handle reopening of files in smbfs after reconnect
-
-- What happens if a file is closed while being in read() or write() on another thread?
-  The file object is not destroyed until all locks are released. However, F_CLOSED flag
-  must be set in close() and the read() and write() must check for F_CLOSED after
-  potential waitable operations and return -EINTR if file has been closed.
-  The file inode is released in close(). This could be potentially dangerous in 
-  write() operations. The inode should not be released until destroy_object() is called
-  in object.c.
   
 - What happens if a tcp pcb is freed in tcp_input() while sending segments on another socket in tcp_output()?
 
@@ -553,3 +538,23 @@ CHANGES
 - pread() and pwrite() implemented
 
 - Intrinsic math functions implemented (acos, asin, cosh, pow, sinh, tanh).
+
+*** version 1.3.1 released (04/10/25) ***
+
+- The fdmotor task in the floppy driver has been replaced by a timer.
+
+- Standard POXIS/ANSI API routines now returns -1 on error and set error code in errno 
+  to comply with POXIS/ANSI standard.
+
+- Added format option to dfs mount options to allow a device to be formated when mounting. 
+  This is useful for ram disks. Also added progress option to log progress messages during
+  formating of device.
+
+- The file system now has a separate step for destroying the file object after all
+  locks has been released. This should prevent race condition when reads/writes are
+  pending when the file is closed. This could lead to kernel panic bacause the
+  file object was destroyed while being accessed in the read/write routines.
+
+- Changed err_tcp() in tcpsock.c to set IOEVT_CLOSE if the error code is ERST. This will
+  trigger a socket in readfds in select() when the connection has been reset by the
+  peer.

@@ -244,7 +244,11 @@ int readline(int f, char *buf, int size)
   int hist_idx;
   int dir;
 
-  if (size <= 0) return -EINVAL;
+  if (size <= 0) 
+  {
+    errno = EINVAL;
+    return -1;
+  }
 
   idx = 0;
   len = 0;
@@ -253,7 +257,11 @@ int readline(int f, char *buf, int size)
   while (!done)
   {
     key = getkey(f);
-    if (key < 0) return key;
+    if (key < 0) 
+    {
+      errno = -key;
+      return -1;
+    }
 
     if (key == KEY_TAB)
     {

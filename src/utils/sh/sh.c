@@ -206,7 +206,6 @@ int cmd_cat(int argc, char *argv[])
   {
     printf("usage: cat <filename>\n");
     return -EINVAL;
-
   }
   filename = argv[1];
 
@@ -228,7 +227,6 @@ int cmd_cat(int argc, char *argv[])
 int cmd_chdir(int argc, char *argv[])
 {
   char *path;
-  int rc;
 
   if (argc != 2)
   {
@@ -237,11 +235,10 @@ int cmd_chdir(int argc, char *argv[])
   }
   path = argv[1];
 
-  rc = chdir(path); 
-  if (rc < 0)
+  if (chdir(path) < 0)
   {
-    printf("%s: %s\n", path, strerror(rc));
-    return rc;
+    printf("%s: %s\n", path, strerror(errno));
+    return -1;
   }
 
   return 0;
@@ -272,15 +269,15 @@ int cmd_cp(int argc, char *argv[])
 
   if ((fd1 = open(srcfn, O_BINARY)) < 0)
   {
-    printf("%s: %s\n", srcfn, strerror(fd1));
-    return fd1;
+    printf("%s: %s\n", srcfn, strerror(errno));
+    return -1;
   }
 
   if ((fd2 = open(dstfn, O_CREAT | O_BINARY, S_IREAD | S_IWRITE)) < 0)
   {
     close(fd1);
-    printf("%s: %s\n", dstfn, strerror(fd2));
-    return fd2;
+    printf("%s: %s\n", dstfn, strerror(errno));
+    return -1;
   }
 
   data = malloc(64 * K);
@@ -296,10 +293,10 @@ int cmd_cp(int argc, char *argv[])
 
   if (count < 0) 
   {
-    printf("%s: %s\n", srcfn, strerror(count));
+    printf("%s: %s\n", srcfn, strerror(errno));
     close(fd1);
     close(fd2);
-    return count;
+    return -1;
   }
   
   close(fd1);
@@ -339,16 +336,16 @@ int cmd_df(int argc, char *argv[])
   count = getfsstat(NULL, 0);
   if (count < 0)
   {
-    printf("df: %s\n", strerror(count));
-    return count;
+    printf("df: %s\n", strerror(errno));
+    return -1;
   }
 
   buf = (struct statfs *) malloc(count * sizeof(struct statfs));
   rc = getfsstat(buf, count * sizeof(struct statfs));
   if (rc < 0)
   {
-    printf("df: %s\n", strerror(rc));
-    return rc;
+    printf("df: %s\n", strerror(errno));
+    return -1;
   }
 
   printf("type   mounted on mounted from          cache    total     used    avail files\n");
@@ -407,7 +404,7 @@ int cmd_dump(int argc, char *argv[])
 
   if ((fd = open(filename, O_BINARY)) < 0)
   {
-    printf("%s: %s\n", filename, strerror(fd));
+    printf("%s: %s\n", filename, strerror(errno));
     return -EINVAL;
   }
 
@@ -488,13 +485,13 @@ int cmd_ifconfig(int argc, char *argv[])
 
   if (peb->primary_dns.s_addr != INADDR_ANY)
   sock = socket(AF_INET, SOCK_DGRAM, 0);
-  if (sock < 0) sock;
+  if (sock < 0) return -1;
 
   n = ioctl(sock, SIOIFLIST, iflist, sizeof iflist);
   if (n < 0)
   {
     close(sock);
-    return n;
+    return -1;
   }
 
   for (i = 0; i < n / (int) sizeof(struct ifcfg); i++)
@@ -613,8 +610,8 @@ int cmd_httpget(int argc, char *argv[])
   rc = httpget(server, path, filename);
   if (rc < 0)
   {
-    printf("Error %d '%s' retrieving %s from %s\n", rc, strerror(rc), path, server);
-    return rc;
+    printf("Error %d '%s' retrieving %s from %s\n", errno, strerror(errno), path, server);
+    return -1;
   }
    
   t = clock() - t;
@@ -665,7 +662,7 @@ int cmd_kbd(int argc, char *argv[])
     rc = read(fdin, &ch, 1);
     if (rc != 1)
     {
-      printf("Error %d in read\n", rc);
+      printf("Error %d in read\n", errno);
       break;
     }
 
@@ -698,6 +695,7 @@ int cmd_klog(int argc, char *argv[])
   if (argc != 2)
   {
     printf("usage: klog [on|off]\n");
+    return -EINVAL;
   }
 
   enabled = strcmp(argv[1], "on") == 0;
@@ -720,7 +718,7 @@ int cmd_load(int argc, char *argv[])
   if (hmod == NULL)
   {
     printf("%s: unable to load module\n", pgm);
-    return -errno;
+    return -1;
   }
 
   return 0;
@@ -788,7 +786,7 @@ int cmd_ls(int argc, char *argv[])
 
   if ((dir = opendir(dirname)) < 0)
   {
-    printf("%s: %s\n", dirname, strerror(dir));
+    printf("%s: %s\n", dirname, strerror(errno));
     return dir;
   }
 
@@ -876,8 +874,8 @@ int cmd_mkdir(int argc, char *argv[])
   rc = mkdir(path, 0666); 
   if (rc < 0)
   {
-    printf("%s: %s\n", path, strerror(rc));
-    return rc;
+    printf("%s: %s\n", path, strerror(errno));
+    return -1;
   }
 
   return 0;
@@ -904,8 +902,8 @@ int cmd_mkfs(int argc, char *argv[])
   printf("\n");
   if (rc < 0)
   {
-    printf("%s: %s\n", devname, strerror(rc));
-    return rc;
+    printf("%s: %s\n", devname, strerror(errno));
+    return -1;
   }
 
   return 0;
@@ -931,7 +929,7 @@ int cmd_more(int argc, char *argv[])
 
   if ((fd = open(filename, O_BINARY)) < 0)
   {
-    printf("%s: %s\n", filename, strerror(fd));
+    printf("%s: %s\n", filename, strerror(errno));
     return fd;
   }
 
@@ -984,8 +982,8 @@ int cmd_mount(int argc, char *argv[])
   rc = mount(type, path, devname, opts); 
   if (rc < 0)
   {
-    printf("%s: %s\n", devname, strerror(rc));
-    return rc;
+    printf("%s: %s\n", devname, strerror(errno));
+    return -1;
   }
 
   return 0;
@@ -1008,8 +1006,8 @@ int cmd_mv(int argc, char *argv[])
   rc = rename(oldname, newname);
   if (rc < 0)
   {
-    printf("%s: %s\n", oldname, strerror(rc));
-    return rc;
+    printf("%s: %s\n", oldname, strerror(errno));
+    return -1;
   }
 
   return 0;
@@ -1037,7 +1035,7 @@ int cmd_nslookup(int argc, char *argv[])
     if (addr.s_addr == INADDR_NONE)
     {
       printf("%s: %s\n", name, strerror(errno));
-      return -errno;
+      return -1;
     }
 
     hp = gethostbyaddr((char *) &addr, sizeof(struct in_addr), AF_INET);
@@ -1099,7 +1097,7 @@ int cmd_play(int argc, char *argv[])
   if (!f)
   {
     printf("%s: %s\n", filename, strerror(errno));
-    return -errno;
+    return -1;
   }
   
   while (fgets(buffer, sizeof buffer, f))
@@ -1131,7 +1129,7 @@ int cmd_read(int argc, char *argv[])
 
   if ((fd = open(filename, 0)) < 0)
   {
-    printf("%s: %s\n", filename, strerror(fd));
+    printf("%s: %s\n", filename, strerror(errno));
     return fd;
   }
 
@@ -1150,7 +1148,7 @@ int cmd_read(int argc, char *argv[])
   
   free(data);
 
-  if (count < 0) printf("%s: %s\n", filename, strerror(count));
+  if (count < 0) printf("%s: %s\n", filename, strerror(errno));
 
   close(fd);
   return 0;
@@ -1176,8 +1174,8 @@ int cmd_rm(int argc, char *argv[])
   rc = unlink(filename); 
   if (rc < 0)
   {
-    printf("%s: %s\n", filename, strerror(rc));
-    return rc;
+    printf("%s: %s\n", filename, strerror(errno));
+    return -1;
   }
 
   return 0;
@@ -1198,8 +1196,8 @@ int cmd_rmdir(int argc, char *argv[])
   rc = rmdir(path); 
   if (rc < 0)
   {
-    printf("%s: %s\n", path, strerror(rc));
-    return rc;
+    printf("%s: %s\n", path, strerror(errno));
+    return -1;
   }
 
   return 0;
@@ -1249,15 +1247,12 @@ int cmd_sysinfo(int argc, char *argv[])
 
 int cmd_test(int argc, char *argv[])
 {
-  double a = 0.0;
-  double b = 0.0;
-  double c;
-
-  if (argc > 1) a = atof(argv[1]);
-  if (argc > 2) b = atof(argv[2]);
-
-  c = pow(a, b);
-  printf("pow(%g,%g)=%g\n", a, b, c);
+  char *fn;
+  
+  printf("find temp name\n");
+  fn = tempnam(NULL, "XXX");
+  printf("tempname=%s\n", fn);
+  free(fn);
   return 0;
 }
 
@@ -1276,8 +1271,8 @@ int cmd_umount(int argc, char *argv[])
   rc = umount(path);
   if (rc < 0)
   {
-    printf("%s: %s\n", path, strerror(rc));
-    return rc;
+    printf("%s: %s\n", path, strerror(errno));
+    return -1;
   }
 
   return 0;
@@ -1304,8 +1299,8 @@ int cmd_write(int argc, char *argv[])
 
   if ((fd = open(filename, O_CREAT | O_BINARY, S_IREAD | S_IWRITE)) < 0)
   {
-    printf("%s: %s\n", filename, strerror(fd));
-    return fd;
+    printf("%s: %s\n", filename, strerror(errno));
+    return -1;
   }
 
   data = malloc(64 * K);
@@ -1355,7 +1350,7 @@ static void exec_program(char *args)
 
   rc = spawn(P_WAIT, pgm, args, NULL);
   if (rc < 0)
-    printf("%s: %s\n", pgm, strerror(rc));
+    printf("%s: %s\n", pgm, strerror(errno));
   else if (rc > 0)
     printf("Exitcode: %d\n", rc);
 }
@@ -1385,7 +1380,7 @@ static void launch_program(char *args)
 
   h = spawn(P_NOWAIT, pgm, args, NULL);
   if (h < 0) 
-    printf("%s: %s\n", pgm, strerror(h));
+    printf("%s: %s\n", pgm, strerror(errno));
   else
   {
     printf("[job %d started]\n", h);
@@ -1519,7 +1514,7 @@ void __stdcall ttyd(void *arg)
   f = open(devname, O_RDWR | O_BINARY);
   if (f < 0) 
   {
-    syslog(LOG_INFO, "Error %d starting shell on device %s\n", f, devname);
+    syslog(LOG_INFO, "Error %d starting shell on device %s\n", errno, devname);
     exit(1);
   }
 
@@ -1566,7 +1561,7 @@ void __stdcall telnetd(void *arg)
   s = socket(AF_INET, SOCK_STREAM, 0);
   if (s < 0)
   {
-    printf("telnetd: error %d in socket\n", s);
+    printf("telnetd: error %d in socket\n", errno);
     return;
   }
 
@@ -1577,14 +1572,14 @@ void __stdcall telnetd(void *arg)
   rc = bind(s, (struct sockaddr *) &sin, sizeof sin);
   if (rc < 0)
   {
-    printf("telnetd: error %d in bind\n", rc);
+    printf("telnetd: error %d in bind\n", errno);
     return;
   }
 
   rc = listen(s, 5);
   if (rc < 0)
   {
-    printf("telnetd: error %d in listen\n", rc);
+    printf("telnetd: error %d in listen\n", errno);
     return;
   }
 
@@ -1595,7 +1590,7 @@ void __stdcall telnetd(void *arg)
     client = accept(s, (struct sockaddr *) &sin, NULL);
     if (client < 0)
     {
-      printf("telnetd: error %d in accept\n", client);
+      printf("telnetd: error %d in accept\n", errno);
       return;
     }
 

@@ -78,9 +78,13 @@ static int parse_options(char *opts, struct fsoptions *fsopts)
   fsopts->cache = get_num_option(opts, "cache", 0);
   fsopts->blocksize = get_num_option(opts, "blocksize", DEFAULT_BLOCKSIZE);
   fsopts->inode_ratio = get_num_option(opts, "inoderatio", DEFAULT_INODE_RATIO);
-  fsopts->quick = get_option(opts, "quick", NULL, 0, NULL) != NULL;
   fsopts->reserved_blocks = get_num_option(opts, "resvblks", DEFAULT_RESERVED_BLOCKS);
   fsopts->reserved_inodes = get_num_option(opts, "resvinodes", DEFAULT_RESERVED_INODES);
+
+  fsopts->flags = 0;
+  if (get_option(opts, "quick", NULL, 0, NULL)) fsopts->flags |= FSOPT_QUICK;
+  if (get_option(opts, "progress", NULL, 0, NULL)) fsopts->flags |= FSOPT_PROGRESS;
+  if (get_option(opts, "format", NULL, 0, NULL)) fsopts->flags |= FSOPT_FORMAT;
 
   return 0;
 }
@@ -180,7 +184,7 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
   fs->cache->nosync = 1;
 
   // Zero all blocks on disk
-  if (!fsopts->quick)
+  if ((fsopts->flags & FSOPT_QUICK) == 0)
   {
     int percent;
     int prev_percent;
@@ -195,10 +199,13 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
     {
       int rc;
 
-      percent = (i / 100) * 100 / (fs->super->block_count / 100);
-      if (percent != prev_percent) kprintf("%d%% complete\r", percent);
-      prev_percent = percent;
-      
+      if (fsopts->flags & FSOPT_PROGRESS)
+      {
+        percent = (i / 100) * 100 / (fs->super->block_count / 100);
+        if (percent != prev_percent) kprintf("%d%% complete\r", percent);
+        prev_percent = percent;
+      }
+
       if (i + blocks_per_io > fs->super->block_count)
         rc = dev_write(fs->devno, buffer, (fs->super->block_count - i) * fs->blocksize, i, 0);
       else
@@ -210,7 +217,7 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
 	return NULL;
       }
     }
-    kprintf("100%% complete\r");
+    if (fsopts->flags & FSOPT_PROGRESS) kprintf("100%% complete\r");
 
     kfree(buffer);
   }
@@ -285,7 +292,7 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
   }
 
   // Zero out block and inode bitmaps and inode tables
-  if (fsopts->quick)
+  if (fsopts->flags & FSOPT_QUICK)
   {
     buffer = (char *) kmalloc(fs->blocksize);
     memset(buffer, 0, fs->blocksize);
@@ -474,8 +481,10 @@ int dfs_mount(struct fs *fs, char *opts)
   struct fsoptions fsopts;
 
   if (parse_options(opts, &fsopts) != 0) return -EINVAL;
-
-  fs->data = open_filesystem(fs->mntfrom, &fsopts);
+  if (fsopts.flags & FSOPT_FORMAT)
+    fs->data = create_filesystem(fs->mntfrom, &fsopts);
+  else
+    fs->data = open_filesystem(fs->mntfrom, &fsopts);
   if (!fs->data) return -EIO;
 
   return 0;

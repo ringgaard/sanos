@@ -293,9 +293,17 @@ int dfs_close(struct file *filp)
     mark_inode_dirty(inode);
   }
 
-  release_inode(inode);
-
   if (filp->flags & O_TEMPORARY) unlink(filp->path);
+
+  return 0;
+}
+
+int dfs_destroy(struct file *filp)
+{
+  struct inode *inode;
+
+  inode = (struct inode *) filp->data;
+  release_inode(inode);
 
   return 0;
 }
@@ -332,6 +340,8 @@ int dfs_read(struct file *filp, void *data, size_t size, off64_t pos)
   p = (char *) data;
   while (pos < inode->desc->size && size > 0)
   {
+    if (filp->flags & F_CLOSED) return -EINTR;
+
     iblock = (unsigned int) pos / inode->fs->blocksize;
     start = (unsigned int) pos % inode->fs->blocksize;
 
@@ -395,6 +405,8 @@ int dfs_write(struct file *filp, void *data, size_t size, off64_t pos)
   p = (char *) data;
   while (size > 0)
   {
+    if (filp->flags & F_CLOSED) return -EINTR;
+
     iblock = (unsigned int) pos / inode->fs->blocksize;
     start = (unsigned int) pos % inode->fs->blocksize;
 

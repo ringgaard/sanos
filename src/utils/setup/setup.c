@@ -88,7 +88,7 @@ int doformat(struct section *sect)
 
   // Format device
   rc = mkfs(devname, fstype, options);
-  if (rc < 0) return rc;
+  if (rc < 0) return -1;
   printf("format complete\n");
   return 0;
 }
@@ -112,27 +112,27 @@ int install_loader(char *devname, char *loader, char *krnlopts)
 
   // Open device
   dev = open(str, O_RDWR | O_BINARY);
-  if (dev < 0) return dev;
+  if (dev < 0) return -1;
 
   // Read loader image
   ldr = open(loader, O_BINARY);
-  if (ldr < 0) return ldr;
+  if (ldr < 0) return -1;
 
   size = fstat(ldr, NULL);
   image = (char *) malloc(size);
-  if (!image) return -ENOMEM;
+  if (!image) return -1;
 
   rc = read(ldr, image, size);
-  if (rc < 0) return rc;
+  if (rc < 0) return -1;
 
   close(ldr);
 
   // Read super block from device
   rc = lseek(dev, 1 * SECTORSIZE, SEEK_SET);
-  if (rc < 0) return rc;
+  if (rc < 0) return -1;
 
   rc = read(dev, ssect, SECTORSIZE);
-  if (rc < 0) return rc;
+  if (rc < 0) return -1;
 
   super = (struct superblock *) ssect;
   blocksize = 1 << super->log_block_size;
@@ -143,7 +143,8 @@ int install_loader(char *devname, char *loader, char *krnlopts)
   if (size > (int) super->reserved_blocks * blocksize) 
   {
     printf("Loader too big\n");
-    return -EIO;
+    errno = EIO;
+    return -1;
   }
 
   // Patch kernel options into image
@@ -154,7 +155,8 @@ int install_loader(char *devname, char *loader, char *krnlopts)
     if (strlen(krnlopts) > KRNLOPTS_LEN - 1)
     {
       printf("Kernel options too long\n");
-      return -EBUF;
+      errno = EBUF;
+      return -1;
     }
     
     optspos = *(unsigned short *) (image + KRNLOPTS_POSOFS);
@@ -163,12 +165,12 @@ int install_loader(char *devname, char *loader, char *krnlopts)
 
   // Install loader into image
   rc = lseek(dev, super->first_reserved_block * blocksize, SEEK_SET);
-  if (rc < 0) return rc;
+  if (rc < 0) return -1;
 
   for (n = 0; n < size / blocksize; n++)
   {
     rc = write(dev, image + n * blocksize, blocksize);
-    if (rc < 0) return rc;
+    if (rc < 0) return -1;
   }
 
   close(dev);
@@ -196,10 +198,10 @@ int install_boot_sector(char *devname, char *bootstrap)
 
   // Read bootstrap
   boot = open(bootstrap, O_BINARY);
-  if (boot < 0) return boot;
+  if (boot < 0) return -1;
 
   rc = read(boot, bsect, SECTORSIZE);
-  if (rc < 0) return rc;
+  if (rc < 0) return -1;
 
   close(boot);
 
@@ -210,16 +212,17 @@ int install_boot_sector(char *devname, char *bootstrap)
     if (partno < 0 || partno > 3) 
     {
       printf("Invaid partition\n");
-      return -EINVAL;
+      errno = EINVAL;
+      return -1;
     }
 
     // Read master boot record and get partition offset
     sprintf(diskname, "/dev/%c%c%c", devname[0], devname[1], devname[2]);
     disk = open(diskname, O_BINARY);
-    if (disk < 0) return disk;
+    if (disk < 0) return -1;
 
     rc = read(disk, msect, SECTORSIZE);
-    if (rc < 0) return rc;
+    if (rc < 0) return -1;
 
     close(disk);
 
@@ -227,7 +230,8 @@ int install_boot_sector(char *devname, char *bootstrap)
     if (mbr->signature != MBR_SIGNATURE) 
     {
       printf("Invalid signature in master boot record\n");
-      return -EIO;
+      errno = EIO;
+      return -1;
     }
 
     partofs = mbr->parttab[partno].relsect;
@@ -241,7 +245,8 @@ int install_boot_sector(char *devname, char *bootstrap)
   if (bootsect->signature != MBR_SIGNATURE) 
   {
     printf("Invalid signature in bootstrap");
-    return -EINVAL;
+    errno = EINVAL;
+    return -1;
   }
   
   bootsect->ldrstart = ldr_start + partofs;
@@ -249,13 +254,13 @@ int install_boot_sector(char *devname, char *bootstrap)
 
   // Write boot sector to target device
   dev = open(str, O_RDWR | O_BINARY);
-  if (dev < 0) return dev;
+  if (dev < 0) return -1;
 
   rc = lseek(dev, 0 * SECTORSIZE, SEEK_SET);
-  if (rc < 0) return rc;
+  if (rc < 0) return -1;
 
   rc = write(dev, bsect, SECTORSIZE);
-  if (rc < 0) return rc;
+  if (rc < 0) return -1;
 
   close(dev);
 
@@ -282,11 +287,11 @@ int dosysprep(struct section *sect)
 
   // Install loader
   rc = install_loader(devname, loader, krnlopts);
-  if (rc < 0) return rc;
+  if (rc < 0) return -1;
 
   // Install boot sector
   rc = install_boot_sector(devname, bootstrap);
-  if (rc < 0) return rc;
+  if (rc < 0) return -1;
 
   return 0;
 }
@@ -315,7 +320,7 @@ int dokernel(struct section *sect)
 
   // Open source kernel file
   fin = open(kernel, O_BINARY);
-  if (fin < 0) return fin;
+  if (fin < 0) return -1;
 
   size = fstat(fin, NULL);
 
@@ -323,23 +328,27 @@ int dokernel(struct section *sect)
   if (stat(target, NULL) < 0)
   {
     rc = mkdir(target, 0666);
-    if (rc < 0) return rc;
+    if (rc < 0) return -1;
   }
 
   // Install kernel on target using reserved inode
   sprintf(targetfn, "%s/krnl.dll", target);
   fout = open(targetfn, O_SPECIAL | (DFS_INODE_KRNL << 24));
-  if (fout < 0) return rc;
+  if (fout < 0) return -1;
 
   left = size;
   while (left > 0)
   {
     bytes = read(fin, block, sizeof block);
-    if (!bytes) return -EIO;
-    if (bytes < 0) return bytes;
+    if (!bytes) 
+    {
+      errno = EIO;
+      return -1;
+    }
+    if (bytes < 0) return -1;
 
     rc = write(fout, block, bytes);
-    if (rc < 0) return rc;
+    if (rc < 0) return -1;
 
     left -= bytes;
   }
@@ -371,8 +380,9 @@ int domount(struct section *sect)
   // Mount file system
   printf("Mounting filesystem %s on %s\n", mntfrom, mntto);
   rc = mount(fstype, mntto, mntfrom, opts);
+  if (rc < 0) return -1;
 
-  return rc;
+  return 0;
 }
 
 //
@@ -390,8 +400,9 @@ int dounmount(struct section *sect)
   // Unmount file system
   printf("Unmounting filesystem %s\n", path);
   rc = umount(path);
+  if (rc < 0) return -1;
 
-  return rc;
+  return 0;
 }
 
 //
@@ -411,7 +422,7 @@ int domkdirs(struct section *sect)
     printf("Creating directory %s\n", dirname);
 
     rc = mkdir(dirname, 0666);
-    if (rc < 0) return rc;
+    if (rc < 0) return -1;
 
     prop = prop->next;
   }
@@ -434,15 +445,15 @@ int copy_file(char *srcfn, char *dstfn)
   if (fin < 0) return fin;
 
   fout = open(dstfn,  O_CREAT | O_EXCL | O_BINARY, S_IREAD | S_IWRITE);
-  if (fout < 0) return fout;
+  if (fout < 0) return -1;
 
   while ((bytes = read(fin , block, sizeof block)) > 0)
   {
     rc = write(fout, block, bytes);
-    if (rc < 0) return rc;
+    if (rc < 0) return -1;
   }
 
-  if (bytes < 0) return bytes;
+  if (bytes < 0) return -1;
 
   close(fin);
   close(fout);
@@ -474,7 +485,7 @@ int copy_dir(char *srcdir, char *dstdir)
   int rc;
 
   head = tail = (struct copyitem *) malloc(sizeof(struct copyitem));
-  if (!head) return -ENOMEM;
+  if (!head) return -1;
   strcpy(head->srcdir, srcdir);
   strcpy(head->dstdir, dstdir);
   head->next = NULL;
@@ -482,7 +493,7 @@ int copy_dir(char *srcdir, char *dstdir)
   while (head)
   {
     dir = opendir(head->srcdir);
-    if (dir < 0) return dir;
+    if (dir < 0) return -1;
 
     while (readdir(dir, &dirp, 1) > 0)
     {
@@ -490,16 +501,16 @@ int copy_dir(char *srcdir, char *dstdir)
       sprintf(dstfn, "%s/%s", head->dstdir, dirp.name);
 
       rc = stat64(srcfn, &buf);
-      if (rc < 0) return rc;
+      if (rc < 0) return -1;
 
       if ((buf.st_mode & S_IFMT) == S_IFDIR)
       {
         printf("Creating directory %s\n", dstfn);
 	rc = mkdir(dstfn, 0666);
-	if (rc < 0) return rc;
+	if (rc < 0) return -1;
 
 	tail->next = (struct copyitem *) malloc(sizeof(struct copyitem));
-	if (!tail->next) return -ENOMEM;
+	if (!tail->next) return -1;
 	tail = tail->next;
 	strcpy(tail->srcdir, srcfn);
 	strcpy(tail->dstdir, dstfn);
@@ -509,7 +520,7 @@ int copy_dir(char *srcdir, char *dstdir)
       {
         printf("Copying %s to %s\n", srcfn, dstfn);
         rc = copy_file(srcfn, dstfn);
-        if (rc < 0) return rc;
+        if (rc < 0) return -1;
       }
     }
 
@@ -544,21 +555,21 @@ int docopy(struct section *sect)
     printf("Installing %s\n", dstfn);
     
     rc = stat64(srcfn, &buf);
-    if (rc < 0) return rc;
+    if (rc < 0) return -1;
 
     if ((buf.st_mode & S_IFMT) == S_IFDIR)
     {
       printf("Creating directory %s\n", dstfn);
       rc = mkdir(dstfn, 0666);
-      if (rc < 0) return rc;
+      if (rc < 0) return -1;
 
       rc = copy_dir(srcfn, dstfn);
-      if (rc < 0) return rc;
+      if (rc < 0) return -1;
     }
     else
     {
       rc = copy_file(srcfn, dstfn);
-      if (rc < 0) return rc;
+      if (rc < 0) return -1;
     }
 
     prop = prop->next;
@@ -598,7 +609,8 @@ int runscript(char *scriptname)
     if (!scriptblock)
     {
       printf("Unable to find script block %s\n", scriptname);
-      return -EINVAL;
+      errno = EINVAL;
+      return -1;
     }
 
     if (strcmp(action, "format") == 0)
@@ -618,13 +630,14 @@ int runscript(char *scriptname)
     else
     {
       printf("Unknown action '%s' in script block %s\n", action, prop->name);
-      return -EINVAL;
+      errno = EINVAL;
+      return -1;
     }
 
     if (rc < 0)
     {
-      printf("Error %d (%s) performing %s\n", -rc, strerror(rc), prop->name);
-      return rc;
+      printf("Error %d (%s) performing %s\n", errno, strerror(errno), prop->name);
+      return -1;
     }
     
     prop = prop->next;
@@ -670,7 +683,7 @@ int main(int argc, char *argv[])
   {
     printf("Installation failed\n");
     free_properties(inst);
-    return rc;
+    return 1;
   }
 
   // Installation successfull

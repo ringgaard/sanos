@@ -101,7 +101,11 @@ handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, vo
   if (flags & CREATE_NEW_JOB)
   {
     job = malloc(sizeof(struct job));
-    if (!job) return -ENOMEM;
+    if (!job) 
+    {
+      errno = ENOMEM;
+      return -1;
+    }
     memset(job, 0, sizeof(struct job));
 
     if (flags & CREATE_DETACHED)
@@ -256,13 +260,13 @@ int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
   int rc;
 
   hmod = load(pgm);
-  if (!hmod) return errno ? -errno : -ENOEXEC;
+  if (!hmod) return -1;
 
   hthread = beginthread(spawn_program, 0, NULL, CREATE_SUSPENDED | CREATE_NEW_JOB | ((mode & P_DETACH) ? CREATE_DETACHED : 0), &tib);
   if (hthread < 0)
   {
     unload(hmod);
-    return hthread;
+    return -1;
   }
 
   job = tib->job;
@@ -281,7 +285,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
     handle_t terminated;
     
     terminated = dup(job->terminated);
-    if (terminated < 0) return terminated;
+    if (terminated < 0) return -1;
 
     job->exitcodeptr = &exitcode;
     
@@ -289,7 +293,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
     if (rc < 0) return rc;
 
     rc = wait(terminated, INFINITE);
-    if (rc < 0) return rc;
+    if (rc < 0) return -1;
 
     close(terminated);
     close(hthread);

@@ -145,7 +145,6 @@ struct fdc
 {
   struct mutex lock;	               // Controller mutex
   struct event done;	               // Controller interrupt event
-  struct event motor_change;           // Motor status change event
   struct interrupt intr;               // Interrupt object
   struct dpc dpc;                      // DPC for fd interrupt
   unsigned char dor;                   // DOR register with motor status
@@ -167,10 +166,10 @@ struct fd
 {
   struct fdc *fdc;
   struct fdgeometry *geom;
+  struct timer motortimer;
   int motor_status;
   int drive_initialized;
   int media_changed;
-  unsigned int motor_timeout;
   unsigned char drive;
   unsigned char curtrack;
   unsigned char st0;
@@ -266,33 +265,17 @@ static int fd_result(struct fd *fd, struct fdresult *result, int sensei)
 }
 
 //
-// fd_motor_task
+// fd_motor_timeout
 //
 
-static void fd_motor_task(void *arg)
+static void fd_motor_timeout(void *arg)
 {
-  int i;
+  struct fd *fd = (struct fd *) arg;
 
-  while (1)
-  {
-    wait_for_object(&fdc.motor_change, INFINITE);
-
-    while (fdc.dor & 0xF0)
-    {
-      for (i = 0; i < NUMDRIVES; i++)
-      {
-	if (fddrives[i].motor_status == FD_MOTOR_DELAY && time_before(fddrives[i].motor_timeout, clocks))
-	{
-          //kprintf("fd: motor off\n");
-	  fdc.dor &= ~(0x10 << i);
-          _outp(FDC_DOR, fdc.dor);
-	  fddrives[i].motor_status = FD_MOTOR_OFF;
-	}
-      }
-
-      sleep(FD_MOTOR_TIMEOUT);
-    }
-  }
+  //kprintf("fd: motor off\n");
+  fd->fdc->dor &= ~(0x10 << fd->drive);
+  _outp(FDC_DOR, fd->fdc->dor);
+  fd->motor_status = FD_MOTOR_OFF;
 }
 
 //
@@ -325,8 +308,7 @@ static void fd_motor_off(struct fd *fd)
   if (fd->motor_status == FD_MOTOR_ON)
   {
     fd->motor_status = FD_MOTOR_DELAY;
-    fd->motor_timeout = clocks + FD_MOTOR_TIMEOUT;
-    set_event(&fd->fdc->motor_change);
+    mod_timer(&fd->motortimer, ticks + FD_MOTOR_TIMEOUT / MSECS_PER_TICK);
   }
 }
 
@@ -646,6 +628,7 @@ static void init_drive(char *devname, struct fd *fd, struct fdc *fdc, int drive,
   fd->drive = drive;
   fd->curtrack = 0xFF;
   fd->drive_initialized = 0;
+  init_timer(&fd->motortimer, fd_motor_timeout, fd);
 
   dev_make(devname, &floppy_driver, NULL, fd);
 
@@ -705,7 +688,6 @@ void init_fd()
   init_dpc(&fdc.dpc);
   init_mutex(&fdc.lock, 0);
   init_event(&fdc.done, 0, 0);
-  init_event(&fdc.motor_change, 0, 0);
   fdc.dor = 0x0C; // TODO: select drive in DOR on transfer
 
   fdc.dmabuf = (char *) DMABUF_ADDRESS;
@@ -723,6 +705,4 @@ void init_fd()
   // FIXME: support other geometries: 0=unknown, 1=360K 5 1/4", 2=1.2M 5 1/4", 3=720K 3 1/2", 4=1.44M 3 1/2"
   if (first_floppy == 0x4) init_drive("fd0", &fddrives[0], &fdc, 0, &geom144);
   if (second_floppy == 0x4) init_drive("fd1", &fddrives[1], &fdc, 1, &geom144);
-
-  fdmotor_task = create_kernel_thread(fd_motor_task, NULL, PRIORITY_NORMAL, "fdmotor");
 }

@@ -414,7 +414,11 @@ int httpd_recv(struct httpd_request *req, char *data, int len)
   {
     n = recv(req->conn->sock, buf->floor, buf->ceil - buf->floor, 0);
     if (n < 0) return n;
-    if (n == 0) return -ECONNRESET;
+    if (n == 0) 
+    {
+      errno = ECONNRESET;
+      return -1;
+    }
 
     buf->start = buf->floor;
     buf->end = buf->floor + rc;
@@ -514,7 +518,7 @@ int httpd_redirect(struct httpd_response *rsp, char *newloc)
   int rc;
 
   hdrs = (char *) malloc(3 * strlen(newloc) + 16);
-  if (!hdrs) return -ENOMEM;
+  if (!hdrs) return -1;
 
   strcpy(hdrs, "Location: ");
   encode_url(newloc, hdrs + 10);
@@ -816,12 +820,20 @@ int httpd_parse_request(struct httpd_request *req)
   buf->start = buf->floor;
 
   s = bufgets(buf);
-  if (!s) return -EINVAL;
+  if (!s) 
+  {
+    errno = EINVAL;
+    return -1;
+  }
 
   // Parse method
   req->method = s;
   s = strchr(s, ' ');
-  if (!s) return -EINVAL;
+  if (!s) 
+  {
+    errno = EINVAL;
+    return -1;
+  }
   *s++ = 0;
 
   // Parse URL
@@ -844,7 +856,7 @@ int httpd_parse_request(struct httpd_request *req)
 
   // Decode and split URL
   req->decoded_url = (char *) malloc(strlen(req->encoded_url) + 1);
-  if (!req->decoded_url) return -ENOMEM;
+  if (!req->decoded_url) return -1;
 
   rc = decode_url(req->encoded_url, req->decoded_url);
   if (rc < 0) return rc;
@@ -933,7 +945,7 @@ int httpd_find_context(struct httpd_request *req)
     context = context->next;
   }
 
-  return -ENOENT;
+  return -1;
 }
 
 int httpd_translate_path(struct httpd_request *req)
@@ -989,7 +1001,7 @@ int httpd_translate_path(struct httpd_request *req)
   }
 
   req->path_translated = strdup(path);
-  if (!req) return -ENOMEM;
+  if (!req) return -1;
 
   return 1;
 }
@@ -1146,7 +1158,7 @@ int httpd_process(struct httpd_connection *conn)
 
 errorexit:
   httpd_finish_processing(conn);
-  return rc;
+  return -1;
 }
 
 int httpd_io(struct httpd_connection *conn)
@@ -1170,7 +1182,7 @@ int httpd_io(struct httpd_connection *conn)
       rc = recv(conn->sock, conn->reqhdr.end, buffer_left(&conn->reqhdr), 0);
       if (rc <= 0) 
       {
-	if (rc == -ECONNRESET && buffer_size(&conn->reqhdr) == 0)
+	if (errno == ECONNRESET && buffer_size(&conn->reqhdr) == 0)
 	{
 	  // Keep-Alive connection closed
 	  conn->state = HTTP_STATE_TERMINATED;
@@ -1230,7 +1242,8 @@ int httpd_io(struct httpd_connection *conn)
       return 1;
 
     default:
-      return -EINVAL;
+      errno = EINVAL;
+      return -1;
   }
 }
 
@@ -1271,7 +1284,7 @@ int httpd_start(struct httpd_server *server)
   int hthread;
 
   sock = socket(AF_INET, SOCK_STREAM, 0);
-  if (sock < 0) return sock;
+  if (sock < 0) return -1;
 
   addr.sa_in.sin_family = AF_INET;
   addr.sa_in.sin_port = htons(server->port);
@@ -1281,14 +1294,14 @@ int httpd_start(struct httpd_server *server)
   if (rc < 0)
   {
     close(sock);
-    return rc;
+    return -1;
   }
 
   rc = listen(sock, server->backlog);
   if (rc < 0)
   {
     close(sock);
-    return rc;
+    return -1;
   }
 
   ioctl(sock, FIONBIO, NULL, 0);

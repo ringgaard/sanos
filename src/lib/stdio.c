@@ -248,7 +248,8 @@ static int open_file(FILE *stream, const char *filename, const char *mode)
       break;
   
     default:
-      return -EINVAL;
+      errno = EINVAL;
+      return -1;
   }
 
   while (*++mode)
@@ -293,12 +294,13 @@ static int open_file(FILE *stream, const char *filename, const char *mode)
 	break;
 
       default:
-	return -EINVAL;
+	errno = EINVAL;
+	return -1;
     }
   }
 
-  handle = open(filename, oflag);
-  if (handle < 0) return handle;
+  handle = open(filename, oflag, S_IREAD | S_IWRITE);
+  if (handle < 0) return -1;
 
   stream->flag = streamflag;
   stream->cnt = 0;
@@ -385,15 +387,10 @@ FILE *fdopen(int fd, const char *mode)
 
 FILE *freopen(const char *filename, const char *mode, FILE *stream)
 { 
-  int rc;
-
   if (inuse(stream)) close_file(stream);
-  
-  rc = open_file(stream, filename, mode);
-  if (rc < 0)
+  if (open_file(stream, filename, mode) < 0)
   {
     free(stream);
-    errno = -rc;
     return NULL;
   }
 
@@ -403,7 +400,6 @@ FILE *freopen(const char *filename, const char *mode, FILE *stream)
 FILE *fopen(const char *filename, const char *mode)
 {
   FILE *stream;
-  int rc;
 
   stream = malloc(sizeof(FILE));
   if (!stream)
@@ -412,11 +408,9 @@ FILE *fopen(const char *filename, const char *mode)
     return NULL;
   }
 
-  rc = open_file(stream, filename, mode);
-  if (rc < 0)
+  if (open_file(stream, filename, mode) < 0)
   {
     free(stream);
-    errno = -rc;
     return NULL;
   }
 
@@ -435,7 +429,6 @@ int fclose(FILE *stream)
 
   rc = close_file(stream);
   free(stream);
-  
   return rc;
 }
 
@@ -677,7 +670,6 @@ size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
       else if ((int) nread < 0)
       {
 	// Error -- out of here
-	errno = -(int) nread;
 	stream->flag |= _IOERR;
 	return (total - count) / size;
       }
@@ -768,7 +760,6 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
       if ((int) nwritten < 0) 
       {
 	// Error -- out of here
-	errno = -(int) nwritten;
 	stream->flag |= _IOERR;
 	return (total - count) / size;
       }
@@ -953,7 +944,6 @@ static int gentmpfn(char *path, char *prefix, int unique, char *tempfn)
 {
   const char *format = "%s%c%s%4.4x.tmp";
   int len;
-  int rc;
 
   len = strlen(path);
   if (len > 0 && (path[len - 1] == PS1 || path[len - 1] == PS2)) len--;
@@ -961,11 +951,12 @@ static int gentmpfn(char *path, char *prefix, int unique, char *tempfn)
   if (unique == 0) unique = clock();
   
   sprintf(tempfn, format, path, PS1, prefix, unique);
-  while ((rc = access(tempfn, 0)) != -ENOENT)
+  while (access(tempfn, 0) == 0)
   {
     unique++;
     sprintf(tempfn, format, path, PS1, prefix, unique);
   }
+  if (errno != ENOENT) return -1;
 
   return unique;
 }
@@ -998,10 +989,9 @@ FILE *tmpfile()
     rc = open_file(stream, tempfn, "wb+TD");
     if (rc == 0) break;
 
-    if (rc < 0 && rc != -EEXIST)
+    if (rc < 0 && errno != EEXIST)
     {
       free(stream);
-      errno = -rc;
       return NULL;
     }
   }

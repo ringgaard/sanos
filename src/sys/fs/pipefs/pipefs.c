@@ -57,6 +57,7 @@ struct fsops pipefsops =
 
   NULL,
   pipefs_close,
+  NULL,
   pipefs_flush,
 
   pipefs_read,

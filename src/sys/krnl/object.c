@@ -231,7 +231,7 @@ int wait_for_object(object_t hobj, unsigned int timeout)
     struct waitblock wbtmo;
 
     // Initialize timer
-    if (timeout < MSECS_PER_TICK) panic("timeout too small");
+    if (timeout < MSECS_PER_TICK) timeout = MSECS_PER_TICK;
     init_waitable_timer(&timer, ticks + timeout / MSECS_PER_TICK);
     wb.next = &wbtmo;
     wbtmo.thread = t;
@@ -342,7 +342,7 @@ int wait_for_all_objects(struct object **objs, int count, unsigned int timeout)
   // Add waitable timer for timeout
   if (timeout != INFINITE)
   {
-    if (timeout < MSECS_PER_TICK) panic("timeout too small");
+    if (timeout < MSECS_PER_TICK) timeout = MSECS_PER_TICK;
     init_waitable_timer(&timer, ticks + timeout / MSECS_PER_TICK);
     wb[count - 1].next = &wbtmo;
     wbtmo.thread = t;
@@ -426,7 +426,7 @@ int wait_for_any_object(struct object **objs, int count, unsigned int timeout)
   // Add waitable timer for timeout
   if (timeout != INFINITE)
   {
-    if (timeout < MSECS_PER_TICK) panic("timeout too small");
+    if (timeout < MSECS_PER_TICK) timeout = MSECS_PER_TICK;
     init_waitable_timer(&timer, ticks + timeout / MSECS_PER_TICK);
     wb[count - 1].next = &wbtmo;
     wbtmo.thread = t;
@@ -529,7 +529,12 @@ int destroy_object(struct object *o)
     case OBJECT_MUTEX:
     case OBJECT_SEMAPHORE:
     case OBJECT_IOMUX:
+      kfree(o);
+      return 0;
+
     case OBJECT_FILE:
+      return destroy((struct file *) o);
+
     case OBJECT_SOCKET:
       kfree(o);
       return 0;

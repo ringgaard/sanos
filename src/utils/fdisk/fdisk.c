@@ -135,7 +135,12 @@ int read_mbr()
   rc = read(hdev, &mbr, sizeof(mbr));
   if (rc < 0) return rc;
 
-  if (mbr.signature != MBR_SIGNATURE) return -EINVAL;
+  if (mbr.signature != MBR_SIGNATURE) 
+  {
+    errno = EINVAL;
+    return -1;
+  }
+
   return 0;
 }
 
@@ -335,14 +340,14 @@ void commit_mbr()
     rc = write(hdev, &mbr, sizeof(mbr));
     if (rc < 0)
     {
-      printf("%s: error %d writing master boot record\n", devname, rc);
+      printf("%s: error %d writing master boot record\n", devname, errno);
       return;
     }
 
     rc = ioctl(hdev, IOCTL_REVALIDATE, NULL, 0);
     if (rc < 0)
     {
-      printf("%s: error %d revalidating partitions\n", devname, rc);
+      printf("%s: error %d revalidating partitions\n", devname, errno);
       return;
     }
 
@@ -404,7 +409,7 @@ int main(int argc, char *argv[])
   hdev = open(devname, O_RDWR | O_BINARY);
   if (hdev < 0)
   {
-    printf("%s: error %d opening device\n", devname, hdev);
+    printf("%s: error %d opening device\n", devname, errno);
     return 1;
   }
 
@@ -412,22 +417,22 @@ int main(int argc, char *argv[])
   rc = ioctl(hdev, IOCTL_GETGEOMETRY, &geom , sizeof(struct geometry));
   if (rc < 0)
   {
-    printf("%s: error %d determining disk geometry\n", devname, rc);
+    printf("%s: error %d determining disk geometry\n", devname, errno);
     close(hdev);
     return 1;
   }
 
   // Read master boot record
   rc = read_mbr();
-  if (rc < 0 && rc != -EINVAL)
+  if (rc < 0 && errno != -EINVAL)
   {
-    printf("%s: error %d reading master boot record\n", devname, rc);
+    printf("%s: error %d reading master boot record\n", devname, errno);
     close(hdev);
     return 1;
   }
 
   // Ask to create new master boot record if the existing is invalid
-  if (rc == -EINVAL)
+  if (rc < 0 && errno == EINVAL)
   {
     printf("%s: invalid master boot record\n", devname);
     if (ask("create new master boot record (y/n)? ", "yn") == 'y')

@@ -62,10 +62,10 @@ int httpd_return_file_error(struct httpd_connection *conn, int err)
 {
   switch (err)
   {
-    case -EACCES: 
+    case EACCES: 
       return httpd_send_error(conn->rsp, 403, "Forbidden", NULL);
 
-    case -ENOENT:
+    case ENOENT:
       return httpd_send_error(conn->rsp, 404, "Not Found", NULL);
 
     default:
@@ -85,7 +85,7 @@ int ls(struct httpd_connection *conn)
   struct tm *tm;
 
   dir = opendir(conn->req->path_translated);
-  if (dir < 0) return httpd_return_file_error(conn, dir);
+  if (dir < 0) return httpd_return_file_error(conn, errno);
 
   urllen = strlen(conn->req->decoded_url);
   if (urllen > 0 && conn->req->decoded_url[urllen - 1] == '/') urllen--;
@@ -111,10 +111,10 @@ int ls(struct httpd_connection *conn)
     strcat(path, dirp.name);
 
     rc = stat64(path, &statbuf);
-    if (rc < 0) return rc;
+    if (rc < 0) return -1;
 
     tm = gmtime(&statbuf.st_mtime);
-    if (!tm) return -EINVAL;
+    if (!tm) return -1;
 
     if ((statbuf.st_mode & S_IFMT) == S_IFDIR) 
       httpd_send(conn->rsp, "<IMG SRC=\"/icons/folder.gif\"> ", -1);
@@ -178,7 +178,7 @@ int httpd_file_handler(struct httpd_connection *conn)
 
   filename = conn->req->path_translated;
   rc = stat64(filename, &statbuf);
-  if (rc < 0) return httpd_return_file_error(conn, rc);
+  if (rc < 0) return httpd_return_file_error(conn, errno);
 
   if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
   {
@@ -192,7 +192,7 @@ int httpd_file_handler(struct httpd_connection *conn)
       strcat(buf, "/");
 
       rc = httpd_redirect(conn->rsp, buf);
-      if (rc < 0) return rc;
+      if (rc < 0) return -1;
 
       return 0;
     }
@@ -240,10 +240,10 @@ int httpd_file_handler(struct httpd_connection *conn)
   if (strcmp(conn->req->method, "HEAD") == 0) return 0;
 
   fd = open(filename, O_RDONLY | O_BINARY);
-  if (fd < 0) return httpd_return_file_error(conn, fd);
+  if (fd < 0) return httpd_return_file_error(conn, errno);
 
   rc = httpd_send_file(conn->rsp, fd);
-  if (rc < 0) return rc;
+  if (rc < 0) return -1;
 
   return 0;
 }

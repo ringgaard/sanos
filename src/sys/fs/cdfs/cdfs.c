@@ -747,6 +747,7 @@ struct fsops cdfsops =
 
   cdfs_open,
   cdfs_close,
+  NULL,
   cdfs_flush,
 
   cdfs_read,

@@ -76,11 +76,20 @@ int convert_filename_to_unicode(const char *src, wchar_t *dst, int maxlen)
   wchar_t *end = dst + maxlen;
   while (*src)
   {
-    if (dst == end) return -ENAMETOOLONG;
+    if (dst == end) 
+    {
+      errno = ENAMETOOLONG;
+      return -1;
+    }
+
     *dst++ = (unsigned char) *src++;
   }
   
-  if (dst == end) return -ENAMETOOLONG;
+  if (dst == end) 
+  {
+    errno = ENAMETOOLONG;
+    return -1;
+  }
   *dst = 0;
   return 0;
 }
@@ -90,12 +99,24 @@ int convert_filename_from_unicode(const wchar_t *src, char *dst, int maxlen)
   char *end = dst + maxlen;
   while (*src)
   {
-    if (dst == end) return -ENAMETOOLONG;
-    if (*src & 0xFF00) return -EINVAL;
+    if (dst == end) 
+    {
+      errno = ENAMETOOLONG;
+      return -1;
+    }
+    if (*src & 0xFF00) 
+    {
+      errno = EINVAL;
+      return -1;
+    }
     *dst++ = (unsigned char) *src++;
   }
   
-  if (dst == end) return -ENAMETOOLONG;
+  if (dst == end) 
+  {
+    errno = ENAMETOOLONG;
+    return -1;
+  }
   *dst = 0;
   return 0;
 }
@@ -498,11 +519,7 @@ BOOL WINAPI CreateDirectoryW
   TRACE("CreateDirectoryW");
   
   rc = convert_filename_from_unicode(lpPathName, fn, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return FALSE;
-  }
+  if (rc < 0) return FALSE;
 
   return CreateDirectoryA(fn, lpSecurityAttributes);
 }
@@ -641,11 +658,7 @@ HANDLE WINAPI CreateFileW
   TRACE("CreateFileW");
   
   rc = convert_filename_from_unicode(lpFileName, fn, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return INVALID_HANDLE_VALUE;
-  }
+  if (rc < 0) return INVALID_HANDLE_VALUE;
 
   return CreateFileA(fn, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 }
@@ -731,11 +744,7 @@ BOOL WINAPI DeleteFileW
   TRACE("DeleteFileW");
   
   rc = convert_filename_from_unicode(lpFileName, fn, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return FALSE;
-  }
+  if (rc < 0) return FALSE;
   
   return DeleteFileA(fn);
 }
@@ -940,7 +949,6 @@ HANDLE WINAPI FindFirstFileA
     finddata->fhandle = opendir(finddata->dir);
     if (finddata->fhandle < 0)
     {
-      errno = ENOTDIR;
       free(finddata);
       return INVALID_HANDLE_VALUE;
     }
@@ -1012,11 +1020,7 @@ HANDLE WINAPI FindFirstFileW
   HANDLE fh;
 
   rc = convert_filename_from_unicode(lpFileName, fn, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return INVALID_HANDLE_VALUE;
-  }
+  if (rc < 0) return INVALID_HANDLE_VALUE;
 
   fh = FindFirstFileA(fn, &fd);
   if (fh == INVALID_HANDLE_VALUE) return INVALID_HANDLE_VALUE;
@@ -1281,11 +1285,7 @@ DWORD WINAPI GetFileAttributesW
   TRACE("GetFileAttributesW");
 
   rc = convert_filename_from_unicode(lpFileName, fn, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   rc = GetFileAttributesA(fn);
   //syslog(LOG_DEBUG, "GetFileAttributesW(%s)=%08X\n", fn, rc);
@@ -1340,11 +1340,7 @@ DWORD WINAPI GetFullPathNameA
   TRACE("GetFullPathName");
 
   rc = canonicalize(lpFileName, fn, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return 0;
-  }
+  if (rc < 0) return 0;
 
   if (strlen(fn) + 2 >= nBufferLength) return strlen(fn) + 3;
 
@@ -1593,7 +1589,7 @@ BOOL WINAPI GetThreadContext
   rc = getcontext((handle_t) hThread, &ctxt);
   if (rc < 0) 
   {
-    if (rc == -EPERM)
+    if (errno == EPERM)
     {
       // Thead does not have a usermode context, just return dummy context
       memset(lpContext, 0, sizeof(CONTEXT));
@@ -2049,11 +2045,7 @@ BOOL WINAPI RemoveDirectoryW
   TRACE("RemoveDirectoryW");
 
   rc = convert_filename_from_unicode(lpPathName, path, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return FALSE;
-  }
+  if (rc < 0) return FALSE;
 
   return RemoveDirectoryA(path);
 }
@@ -2170,11 +2162,7 @@ BOOL WINAPI SetFileAttributesW
   TRACE("SetFileAttributesW");
   
   rc = convert_filename_from_unicode(lpFileName, fn, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return 0;
-  }
+  if (rc < 0) return 0;
 
   return SetFileAttributesA(fn, dwFileAttributes);
 }
@@ -2201,12 +2189,10 @@ DWORD WINAPI SetFilePointer
     retval.QuadPart = lseek64((handle_t) hFile, offset.QuadPart, dwMoveMethod);
     if (retval.QuadPart < 0)
     {
-      errno = (int) -retval.QuadPart;
       rc = -1;
     }
     else
     {
-      errno = 0;
       *lpDistanceToMoveHigh = retval.HighPart;
       rc = retval.LowPart;
     }
@@ -2601,8 +2587,13 @@ DWORD WINAPI WaitForMultipleObjects
   else
     rc = waitany((handle_t *) lpHandles, nCount, dwMilliseconds);
 
-  if (rc == -ETIMEOUT) return WAIT_TIMEOUT;
-  if (rc < 0) return WAIT_FAILED;
+  if (rc < 0)
+  {
+    if (errno == ETIMEOUT) 
+      return WAIT_TIMEOUT;
+    else
+      return WAIT_FAILED;
+  }
 
   return rc;
 }
@@ -2618,8 +2609,13 @@ DWORD WINAPI WaitForSingleObject
   TRACEX("WaitForSingleObject");
   rc = wait((handle_t) hHandle, dwMilliseconds);
 
-  if (rc == -ETIMEOUT) return WAIT_TIMEOUT;
-  if (rc < 0) return WAIT_FAILED;
+  if (rc < 0)
+  {
+    if (errno == ETIMEOUT) 
+      return WAIT_TIMEOUT;
+    else
+      return WAIT_FAILED;
+  }
 
   return rc;
 }

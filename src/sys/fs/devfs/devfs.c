@@ -70,6 +70,7 @@ struct fsops devfsops =
 
   devfs_open,
   devfs_close,
+  NULL,
   devfs_flush,
 
   devfs_read,
