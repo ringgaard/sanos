@@ -179,7 +179,6 @@ void main(void *arg)
 
   // Enumerate Plug-and-Play devices
   pnpbios_init();
-  //init_pdir();
 
   // Enumerate PCI devices
   init_pci();
@@ -223,7 +222,7 @@ void main(void *arg)
   init_keyboard();
   init_cons();
   init_serial();
-  init_ramdisk("ramdisk0", 2 * M);
+  //init_ramdisk("ramdisk0", 2 * M);
 
   // Initialize network
   init_net();

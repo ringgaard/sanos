@@ -461,9 +461,7 @@ int init_pcnet32(struct netif *netif)
   pcnet32.netif->ethoutput = pcnet32_transmit;
 
   pcnet32.phys_addr = (unsigned long) virt2phys(&pcnet32);
-  kprintf("0x%08X 0x%08X\n", &pcnet32, pcnet32.phys_addr);
   dev = lookup_pci_device(PCI_VENDOR_AMD, PCI_DEVICE_PCNET32);
-  kprintf("dev=%08X\n", dev);
   if (dev)
   {
     // Setup NIC configuration

@@ -128,8 +128,21 @@ static int dcg_recv_packet(struct dbghdr *hdr, void *data)
   return hdr->len;
 }
 
-void dbg_enter()
+void dumpregs(struct context *ctxt)
 {
+  kprintf("EAX  = %08X EBX  = %08X ECX  = %08X EDX  = %08X\n", ctxt->eax, ctxt->ebx, ctxt->ecx, ctxt->edx);
+  kprintf("EDI  = %08X ESI  = %08X EBP  = %08X ESP  = %08X\n", ctxt->edi, ctxt->esi, ctxt->ebp, ctxt->esp);
+  kprintf("CS   = %08X DS   = %08X ES   = %08X SS   = %08X\n", ctxt->ecs, ctxt->ds, ctxt->es, ctxt->ess);
+  kprintf("EIP  = %08X EFLG = %08X TRAP = %08X ERR  = %08X\n", ctxt->eip, ctxt->eflags, ctxt->traptype, ctxt->errcode);
+}
+
+void dbg_enter(struct context *ctxt, void *addr)
+{
+  kprintf("enter kernel debugger\n");
+  kprintf("trap %d (%p)\n", ctxt->traptype, addr);
+  dumpregs(ctxt);
+  if (ctxt->traptype == INTR_BPT) return;
+  panic("system halted\n");
 }
 
 void dbg_notify_create_thread(struct thread *t)

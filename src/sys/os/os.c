@@ -248,6 +248,11 @@ int exec(hmodule_t hmod, char *args)
   return ((int (__stdcall *)(hmodule_t, char *, int)) get_entrypoint(hmod))(hmod, args, 0);
 }
 
+void dbgbreak()
+{
+  __asm { int 3 };
+}
+
 int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 {
   char *initpgm;

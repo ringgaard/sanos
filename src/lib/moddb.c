@@ -44,7 +44,7 @@ static void insert_before(struct module *m, struct module *n)
 static void insert_after(struct module *m, struct module *n)
 {
   n->next = m->next;
-  n->prev = n;
+  n->prev = m;
   m->next->prev = n;
   m->next = n;
 }
@@ -440,7 +440,7 @@ static void protect_module(struct moddb *db, hmodule_t hmod)
   for (i = 0; i < imghdr->header.number_of_sections; i++)
   {
     int protect;
-    unsigned long  scn = imghdr->sections[i].characteristics & (IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE);
+    unsigned long scn = imghdr->sections[i].characteristics & (IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE);
 
     if (scn == (IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ)) 
       protect = PAGE_EXECUTE_READ;
@@ -655,4 +655,6 @@ void init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *li
   db->modules->next = db->modules;
   db->modules->prev = db->modules;
   db->modules->refcnt = 1;
+
+  if (db->protect_region) protect_module(db, db->modules->hmod);
 }

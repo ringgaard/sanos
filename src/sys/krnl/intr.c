@@ -130,26 +130,17 @@ static void init_trap_gate(int intrno, void *handler)
 }
 
 //
-// Dump registers
-//
-
-void dumpregs(struct context *ctxt)
-{
-  kprintf("EAX  = %08X EBX  = %08X ECX  = %08X EDX  = %08X\n", ctxt->eax, ctxt->ebx, ctxt->ecx, ctxt->edx);
-  kprintf("EDI  = %08X ESI  = %08X EBP  = %08X ESP  = %08X\n", ctxt->edi, ctxt->esi, ctxt->ebp, ctxt->esp);
-  kprintf("CS   = %08X DS   = %08X ES   = %08X SS   = %08X\n", ctxt->ecs, ctxt->ds, ctxt->es, ctxt->ess);
-  kprintf("EIP  = %08X EFLG = %08X TRAP = %08X ERR  = %08X\n", ctxt->eip, ctxt->eflags, ctxt->traptype, ctxt->errcode);
-}
-
-//
 // Default interrupt handler
 //
 
 void default_interrupt_handler(struct context *ctxt, void *arg)
 {
+#if 0
   kprintf("Panic: unexpected trap %d\n", ctxt->traptype);
   dumpregs(ctxt);
   __asm { hlt };
+#endif
+  dbg_enter(ctxt, NULL);
 }
 
 //
@@ -170,16 +161,22 @@ void pagefault_handler(struct context *ctxt, void *arg)
   {
     if (guard_page_handler(pageaddr) < 0)
     {
+#if 0
       kprintf("Panic: unexpected guard page fault at address %08X\n", addr);
       dumpregs(ctxt);
       __asm { hlt };
+#endif
+      dbg_enter(ctxt, (void *) addr);
     }
   }
   else
   {
+#if 0
     kprintf("Panic: page fault at address %08X\n", addr);
     dumpregs(ctxt);
     __asm { hlt };
+#endif
+    dbg_enter(ctxt, (void *) addr);
   }
 }
 
@@ -211,7 +208,7 @@ void init_intr()
   init_idt_gate(0, isr0);
   init_idt_gate(1, isr1);
   init_idt_gate(2, isr2);
-  init_idt_gate(3, isr3);
+  init_trap_gate(3, isr3);
   init_idt_gate(4, isr4);
   init_idt_gate(5, isr5);
   init_idt_gate(6, isr6);

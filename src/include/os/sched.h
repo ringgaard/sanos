@@ -38,6 +38,7 @@ struct dpc
 extern int resched;
 extern int idle;
 extern struct thread *idlethread;
+extern struct thread *threadlist;
 
 void mark_thread_running();
 

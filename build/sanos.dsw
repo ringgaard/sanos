@@ -7,6 +7,10 @@ Project: "advapi32"=.\advapi32.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    advapi32
+    ..
+    end source code control
 }}}
 
 Package=<4>
@@ -19,6 +23,10 @@ Project: "boot"=.\boot.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    boot
+    ..
+    end source code control
 }}}
 
 Package=<4>
@@ -31,6 +39,10 @@ Project: "clib"=.\clib.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    clib
+    ..
+    end source code control
 }}}
 
 Package=<4>
@@ -43,6 +55,10 @@ Project: "fdisk"=.\fdisk.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    fdisk
+    ..
+    end source code control
 }}}
 
 Package=<4>
@@ -55,6 +71,10 @@ Project: "jinit"=.\jinit.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    jinit
+    ..
+    end source code control
 }}}
 
 Package=<4>
@@ -67,6 +87,10 @@ Project: "kernel32"=.\kernel32.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    kernel32
+    ..
+    end source code control
 }}}
 
 Package=<4>
@@ -79,6 +103,10 @@ Project: "krnl"=.\krnl.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    krnl
+    ..
+    end source code control
 }}}
 
 Package=<4>
@@ -91,6 +119,10 @@ Project: "msvcrt"=.\msvcrt.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    msvcrt
+    ..
+    end source code control
 }}}
 
 Package=<4>
@@ -103,6 +135,10 @@ Project: "os"=.\os.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    os
+    ..
+    end source code control
 }}}
 
 Package=<4>
@@ -115,6 +151,10 @@ Project: "osldr"=.\osldr.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    osldr
+    ..
+    end source code control
 }}}
 
 Package=<4>
@@ -127,6 +167,10 @@ Project: "setup"=.\setup.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    setup
+    ..
+    end source code control
 }}}
 
 Package=<4>
@@ -139,6 +183,10 @@ Project: "sh"=.\sh.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    sh
+    ..
+    end source code control
 }}}
 
 Package=<4>
@@ -151,6 +199,10 @@ Project: "user32"=.\user32.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    user32
+    ..
+    end source code control
 }}}
 
 Package=<4>
@@ -163,6 +215,10 @@ Project: "winmm"=.\winmm.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    winmm
+    ..
+    end source code control
 }}}
 
 Package=<4>
@@ -175,6 +231,10 @@ Project: "zxlog"=.\zxlog.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    zxlog
+    ..
+    end source code control
 }}}
 
 Package=<4>

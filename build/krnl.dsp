@@ -327,6 +327,10 @@ SOURCE=..\src\include\os\buf.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\include\os\dbg.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\include\os\dev.h
 # End Source File
 # Begin Source File

@@ -423,6 +423,7 @@ osapi int semrel(handle_t h, int count);
 
 osapi handle_t self();
 osapi void exit(int status);
+osapi void dbgbreak();
 
 osapi handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, void *arg, int suspended, tid_t *tid);
 osapi int suspend(handle_t thread);

@@ -663,6 +663,22 @@ static void dump_devices()
   }
 }
 
+static void thread_list()
+{
+  struct thread *t = threadlist;
+  kprintf("tid tcb      self state prio tib      suspend entry    handles\n");
+  kprintf("--- -------- ---- ----- ---- -------  ------- -------- -------\n");
+  while (1)
+  {
+    kprintf("%3d %p %4d %3d   %3d  %p  %4d   %p   %2d\n",
+            t->id, t, t->self, t->state, t->priority, t->tib, t->suspend_count,
+	    t->entrypoint, t->object.handle_count);
+
+    t = t->next;
+    if (t == threadlist) break;
+  }
+}
+
 static void test(char *arg)
 {
   devno_t dev;
@@ -757,6 +773,8 @@ void shell()
       pmem_list();
     else if (strcmp(cmd, "fs") == 0)
       fs_list();
+    else if (strcmp(cmd, "threads") == 0)
+      thread_list();
     else if (strcmp(cmd, "test") == 0)
       test(arg);
     else if (*cmd)

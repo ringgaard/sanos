@@ -102,6 +102,9 @@ struct thread
   void *entrypoint;
   int exitcode;
 
+  struct thread *next;
+  struct thread *prev;
+
   struct thread *next_ready;
   struct waitblock *waitlist;
   int waitkey;

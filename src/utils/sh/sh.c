@@ -438,6 +438,7 @@ static void disk_usage(int argc, char **argv)
   }
 
   printf("type  mounted on      mounted from        total     used    avail files\n");
+  printf("----  --------------- ---------------- -------- -------- -------- -----\n");
 
   for (n = 0; n < count; n++)
   {
@@ -457,63 +458,6 @@ static void disk_usage(int argc, char **argv)
   }
 
   free(statfs);
-}
-
-void __stdcall rxtask(void *arg)
-{
-  char *port = (char *) arg;
-  int sin;
-  unsigned char ch;
-
-  printf("receiver started on %s\n", port);
-
-  sin = open(port, O_RDWR);
-  if (sin < 0) 
-  {
-    printf("Error %d opening device\n", sin);
-    return;
-  }
-
-  while (1)
-  {
-    read(sin, &ch, 1);
-    printf("%c", ch);
-    write(sin, &ch, 1);
-  }
-}
-
-static void startrx(int argc, char **argv)
-{
-  char *port = "/dev/com1";
-
-  if (argc > 1) port = argv[1];
-
-  beginthread(rxtask, 0, port, 0, NULL);
-}
-
-static void tx(int argc, char **argv)
-{
-  char *port = "/dev/com1";
-  char *data = "TEST";
-  int sin;
-  int len;
-  int rc;
-
-  if (argc > 1) data = argv[1];
-  if (argc > 2) port = argv[2];
-
-  sin = open(port, O_RDWR);
-  if (sin < 0) 
-  {
-    printf("Error %d opening device\n", sin);
-    return;
-  }
-
-  len = strlen(data);
-  rc = write(sin, data, len);
-  if (rc != len) printf("Error %d writing to device\n", rc);
-
-  close(sin);
 }
 
 static void test(int argc, char **argv)
@@ -627,10 +571,8 @@ void shell()
 	set_loglevel(argv[1], atoi(argv[2]));
       else if (strcmp(argv[0], "start") == 0)
 	start_program(argc, argv);
-      else if (strcmp(argv[0], "rx") == 0)
-	startrx(argc, argv);
-      else if (strcmp(argv[0], "tx") == 0)
-	tx(argc, argv);
+      else if (strcmp(argv[0], "break") == 0)
+	dbgbreak();
       else if (strcmp(argv[0], "test") == 0)
 	test(argc, argv);
       else

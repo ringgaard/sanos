@@ -15,6 +15,8 @@ int idle = 0;
 struct thread *idle_thread;
 struct thread *ready_queue_head[THREAD_PRIORITY_LEVELS];
 struct thread *ready_queue_tail[THREAD_PRIORITY_LEVELS];
+
+struct thread *threadlist;
 struct dpc *dpc_queue;
 struct thread *dead_tcb_queue;
 
@@ -59,6 +61,28 @@ __declspec(naked) struct thread *current_thread()
     and eax, TCBMASK
     ret
   }
+}
+
+static void insert_before(struct thread *t1, struct thread *t2)
+{
+  t2->next = t1;
+  t2->prev = t1->prev;
+  t1->prev->next = t2;
+  t1->prev = t2;
+}
+
+static void insert_after(struct thread *t1, struct thread *t2)
+{
+  t2->next = t1->next;
+  t2->prev = t1;
+  t1->next->prev = t2;
+  t1->next = t2;
+}
+
+static void remove(struct thread *t)
+{
+  t->next->prev = t->prev;
+  t->prev->next = t->next;
 }
 
 static void init_thread_stack(struct thread *t, void *startaddr, void *arg)
@@ -153,6 +177,9 @@ struct thread *create_task(taskproc_t task, void *arg, int priority)
 
   // Initialize the thread kernel stack to start executing the task function
   init_thread_stack(t, (void *) task, arg);
+
+  // Add thread to thread list
+  insert_before(threadlist, t);
 
   return t;
 }
@@ -253,7 +280,8 @@ int suspend_thread(struct thread *t)
 {
   int prevcount = t->suspend_count;
 
-  t->suspend_count++;
+  // Never suspend idle thread
+  if (t->id != 0) t->suspend_count++;
   return prevcount;
 }
 
@@ -266,7 +294,7 @@ int resume_thread(struct thread *t)
     t->suspend_count--;
     if (t->suspend_count == 0) 
     {
-      if (t->state != THREAD_STATE_TERMINATED) mark_thread_ready(t);
+      if (t->state == THREAD_STATE_READY || t->state == THREAD_STATE_INITIALIZED) mark_thread_ready(t);
     }
   }
 
@@ -354,15 +382,21 @@ void dispatch()
   dispatch_dpc_queue();
 
   // Find next thread to run
-  prio = THREAD_PRIORITY_LEVELS - 1;
-  while (ready_queue_head[prio] == 0 && prio > 0) prio--;
-  t = ready_queue_head[prio];
-  if (t == NULL) panic("No thread ready to run");
+  while (1)
+  {
+    prio = THREAD_PRIORITY_LEVELS - 1;
+    while (ready_queue_head[prio] == 0 && prio > 0) prio--;
+    t = ready_queue_head[prio];
+    if (t == NULL) panic("No thread ready to run");
 
-  // Remove thread from ready queue
-  ready_queue_head[prio] = t->next_ready;
-  if (t->next_ready == NULL) ready_queue_tail[prio] = NULL;
-  t->next_ready = NULL;
+    // Remove thread from ready queue
+    ready_queue_head[prio] = t->next_ready;
+    if (t->next_ready == NULL) ready_queue_tail[prio] = NULL;
+    t->next_ready = NULL;
+
+    // Check for suspended thread
+    if (t->suspend_count == 0) break;
+  }
 
   // If current thread has been selected to run again then just return
   if (t == self) return;
@@ -436,12 +470,15 @@ void init_sched()
 
   // The initial kernel thread will later become the idle thread
   idle_thread = current_thread();
+  threadlist = idle_thread;
 
   // The idle thread is always ready to run
   memset(idle_thread, 0, sizeof(struct thread));
   idle_thread->object.type = OBJECT_THREAD;
   idle_thread->priority = PRIORITY_IDLE;
   idle_thread->state = THREAD_STATE_RUNNING;
+  idle_thread->next = idle_thread;
+  idle_thread->prev = idle_thread;
 
   //set_interrupt_handler(INTR_DEBUG, debug_intr_handler, NULL);
 }
