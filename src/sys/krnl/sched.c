@@ -653,7 +653,7 @@ void dispatch()
   // Save fpu state if fpu has been used
   if (curthread->flags & THREAD_FPU_ENABLED)
   {
-    fpu_disable(curthread->fpustate);
+    fpu_disable(&curthread->fpustate);
     t->flags &= ~THREAD_FPU_ENABLED;
   }
 

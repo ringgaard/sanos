@@ -183,9 +183,10 @@ struct thread
 
   struct thread *next_waiter;
 
-  struct fpu *fpustate;
   struct context *ctxt;
   void *uctxt;
+
+  struct fpu fpustate;
 };
 
 extern struct object **htab;

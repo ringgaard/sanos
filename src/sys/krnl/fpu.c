@@ -93,7 +93,7 @@ int fpu_trap_handler(struct context *ctxt, void *arg)
 
   if (t->flags & THREAD_FPU_USED)
   {
-    fpu_enable(t->fpustate);
+    fpu_enable(&t->fpustate);
     t->flags |= THREAD_FPU_ENABLED;
   }
   else

@@ -145,6 +145,12 @@
 		</Filter>
 		<File
 			RelativePath="..\src\utils\sh\sh.c">
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					AssemblerOutput="4"/>
+			</FileConfiguration>
 		</File>
 	</Files>
 	<Globals>
