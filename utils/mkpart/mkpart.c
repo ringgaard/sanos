@@ -228,13 +228,13 @@ void write_image(HANDLE hdev, unsigned int startsect, unsigned int numsect, char
   {
     if (!ReadFile(himg, buf, sizeof buf, &bytes, NULL))
     {
-      printf("mkpart: error %d reading from partition image file\n");
+      printf("mkpart: error %d reading from partition image file\n", GetLastError());
       return;
     }
 
     if (!WriteFile(hdev, buf, bytes, &bytes, NULL))
     {
-      printf("mkpart: error %d writing to volume\n");
+      printf("mkpart: error %d writing to volume\n", , GetLastError());
       return;
     }
 

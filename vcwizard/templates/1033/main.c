@@ -15,7 +15,7 @@ int __stdcall DllMain(hmodule_t hmod, int reason, void *reserved)
 
 int main(int argc, char *argv[])
 {
-	// TODO: Add code here
-	return 0;
+  // TODO: Add code here
+  return 0;
 }
 [!endif]
