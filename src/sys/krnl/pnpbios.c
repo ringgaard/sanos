@@ -416,7 +416,7 @@ static void build_sys_devlist(struct bus *bus)
 
     classcode = (node->type_code[0] << 16) + (node->type_code[1] << 8) + node->type_code[0];
     unitcode = node->eisa_id;
-    unit = add_unit(bus, classcode, unitcode, nodenum);
+    unit = add_unit(bus, classcode, unitcode, nodenum + 16);
     unit->classname = get_device_type_name(node->type_code);
 
     extract_node_resource_data(node, unit);
@@ -425,7 +425,200 @@ static void build_sys_devlist(struct bus *bus)
   kfree(node);
 }
 
-static int build_isa_devlist()
+int enum_pnp_mem(struct unit *unit, unsigned char *b)
+{	
+  int i = 0;
+  unsigned long int start, len, more = 1;
+
+  //static char *datasizes[] = {"(byte)", "(word)", "(dword)", "(rsv)"};
+  //static char *decodeszs[] = {"(20bit)", "(24bit)", "(32bit)", "(rsv)"};
+  //static char *memtypes[] = {"(sys)", "(exp)", "(vir)", "(oth)"};
+
+  while (more) 
+  {
+    unsigned int ram, cached, wt_wb_cache, shared, datasize, decodesz, memtyp;
+
+    ram = b[i] & 0x01;
+    cached = b[i] & 0x02;
+    wt_wb_cache = b[i] & 0x04;
+    memtyp = (b[i] >> 3) & 0x03;
+    shared = b[i] & 0x10;
+    // bit 6: reserved
+    more = b[i] & 0x80;
+    datasize = b[i + 1] & 0x03;
+    decodesz =(b[i + 1] >> 2) & 0x03;
+    // bit 4-7: reserved
+
+    start = (b[i + 2] + b[i + 3] * 256 + b[i + 4] * 256 * 256) * 256;
+    len = (b[i + 5] + b[i + 6] * 256) * K;
+    if (len == 0) len = 64 * M;
+
+    add_resource(unit, RESOURCE_MEM, 0, start, len);
+ 
+    i += 7;
+  }
+
+  return i;
+}
+
+int enum_pnp_irq(struct unit *unit, unsigned char *b)
+{	
+  int i = 0, more = 1;
+
+  while (more) 
+  {
+    int irq, shared, mode;
+
+    more = b[i] & 0x80;
+    irq = b[i] & 0x0f;
+    shared = b[i] & 0x40;
+    mode = b[i] & 0x20;
+    // b[i] & 0x10 must be 0
+    // b[i + 1] set to 0 (reserved)
+
+    add_resource(unit, RESOURCE_IRQ, 0, irq, 1);
+
+    i += 2;
+  }
+
+  return i;
+}
+
+int enum_pnp_dma(struct unit *unit, unsigned char *b)
+{
+  int i = 0, more = 1;
+
+  //static char *transfers[] = {"8bit","(16bit)","(32bit)","(16bit w/count)"};
+  //static char *timings[] = {"ISA", "(Type A)", "(Type B)", "(Type C)"};
+
+  while (more) 
+  {
+    int dma, shared, timing, transfer;
+
+    more = b[i] & 0x80;
+    dma = b[i] & 0x07;
+    shared = b[i] & 0x40;
+    // b[i] & 0x38 must be 0
+    transfer = (b[i + 1] >> 2) & 0x03;
+    timing = (b[i + 1] >> 4) & 0x03;
+    // b[i + 2] & 0xc3 set to 0 (reserved)
+    
+    add_resource(unit, RESOURCE_DMA, 0, dma, 1);
+
+    i += 2;
+  }
+
+  return i;
+}
+
+int enum_pnp_io(struct unit *unit, unsigned char *b)
+{
+  int i = 0,more = 1;
+
+  while (more)  
+  {
+    unsigned int io, len, shared;
+
+    more = b[i] & 0x80;
+    len = (b[i] & 0x1f) + 1;
+    shared = b[i] & 0x40;
+    // b[i] & 0x20 set 0 (reserved)
+    io = b[i + 1] + b[i + 2] * 256;
+
+    add_resource(unit, RESOURCE_IO, 0, io, len);
+
+    i += 3;
+  }
+
+  return i;
+}
+
+static int enum_pnp_board(struct bus *bus, unsigned char *b)
+{
+  int size, len, off, type, o, slot, unitcode;
+  struct unit *unit;
+
+  size = b[0] + 256 * b[1];
+  if (size == 0) return 0;
+
+  slot = b[2];
+  // b[3] reserved
+  unitcode = *(unsigned long *) &b[4];
+  // b[8] and b[9] probably EISASLOTINFO: 0x60 0x40 or 0x40 0x40 mostly ?!
+  // b[10] and b[11] are 0
+
+  // We are only interested in PnP ISA devices (slot 1 to 15)
+  if (slot < 1 || slot > 15) return size;
+
+  // Allocate new unit
+  unit = add_unit(bus, 0, unitcode, slot);
+  unit->classname = "PNPISA";
+
+  // Enumerate resouces
+  off = 12;
+  while (off + 4 < size)
+  {
+    len = b[off];
+    if (len == 0) break;
+    type = b[off + 4];
+
+    //kprintf(" Function (len=%d,type=0x%02x)\n", len, type);
+    //if (b[off + 1] != 0) kprintf("escd: b[0x%x]=0x%x, expected 0\n", off + 1, b[off + 1]);
+    //if (b[off + 2] != 1) kprintf("escd: b[0x%x]=0x%x, expected 1\n", off + 2, b[off + 2]);
+    //if (b[off + 3] != 0) kprintf("escd: b[0x%x]=0x%x, expected 0\n", off + 3, b[off + 3]);
+    
+    if (type == 0xc0)
+    {
+      //showfreeform(&b[off + 4]);
+      break;
+    }
+    else
+    {
+      o = off + 5;
+      //if (type & 0x80) kprintf(" Device/Function disabled.\n");
+      if (type & 0x02) o += enum_pnp_mem(unit, &b[o]);
+      if (type & 0x04) o += enum_pnp_irq(unit, &b[o]);
+      if (type & 0x08) o += enum_pnp_dma(unit, &b[o]);
+      if (type & 0x10) o += enum_pnp_io(unit, &b[o]);
+    }
+
+    off += len + 2;
+  }
+
+  return size;
+}
+
+static void parse_escd(struct bus *bus, unsigned char *b, int maxlen)
+{
+  int off, len, size, major, minor, brdcnt, i;
+
+  if (memcmp("ACFG", &b[2], 4) != 0) 
+  {
+    kprintf("escd: signature does not match ACFG, is: %4s\n", &b[2]);
+    return;
+  }
+
+  size = b[0] + b[1] * 256;
+  minor = b[6];
+  major = b[7];
+  brdcnt = b[8];
+
+  //kprintf("escd: size=%d, version=%d.%d, boardcount=%d\n", size, major, minor, brdcnt);
+
+  off = 12;
+  for (i = 0; i < brdcnt; i++)
+  {
+    len = enum_pnp_board(bus, &b[off]);
+    off += len;
+    if (off > size)
+    {
+      kprintf("escd: offset exceeded size (%d)\n", off);
+      break;
+    }
+  }
+}
+
+static int build_isa_devlist(struct bus *bus)
 {
   int rc;
   struct pnp_isa_config_struc isacfg;
@@ -433,21 +626,22 @@ static int build_isa_devlist()
   unsigned char *escd;
   void *nvbase;
 
-  extern void dump_memory(unsigned long addr, unsigned char *p, int len);
-
   rc = pnp_bios_isapnp_config(&isacfg);
-  kprintf("pnp_bios_isapnp_config returned %d: revision=%d, #csn=%d, dataport=0x%x\n", rc, isacfg.revision, isacfg.no_csns, isacfg.isa_rd_data_port);
+  if (rc != 0) return rc;
 
   rc = pnp_bios_escd_info(&escdinfo);
-  kprintf("pnp_bios_escd_info returned %d: minwrite=%d, size=%d, nvbase=0x%x\n", rc, escdinfo.min_escd_write_size, escdinfo.escd_size, escdinfo.nv_storage_base);
+  if (rc != 0) return rc;
 
   escd = kmalloc(escdinfo.escd_size);
+  if (!escd) return -ENOMEM;
+
   nvbase = iomap(escdinfo.nv_storage_base, 64 * K);
+  if (!nvbase) return -EINVAL;
 
   rc = pnp_bios_read_escd(escd, nvbase);
-  kprintf("pnp_bios_read_escd returned %d: nvbase mapped to %p\n", rc, nvbase);
+  if (rc != 0) return rc;
 
-  //dump_memory(escdinfo.nv_storage_base, escd, escdinfo.escd_size);
+  parse_escd(bus, escd, escdinfo.escd_size);
 
   iounmap(nvbase, 64 * K);
   kfree(escd);
@@ -495,7 +689,7 @@ int enum_isapnp(struct bus *bus)
     pnp_thunk_entrypoint.offset = 0;
 
     build_sys_devlist(bus);
-    build_isa_devlist();
+    build_isa_devlist(bus);
 
     seginit(&syspage->gdt[GDT_PNPTEXT], 0, 0, 0, 0);
     seginit(&syspage->gdt[GDT_PNPDATA], 0, 0, 0, 0);
