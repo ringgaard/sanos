@@ -45,8 +45,9 @@ struct pnp_dev;
 
 struct resource
 {
-  int type;
-  int flags;
+  struct resource *next;
+  unsigned short type;
+  unsigned short flags;
   unsigned long start;
   unsigned long len;
 };
@@ -70,6 +71,7 @@ struct dev
   char name[DEVNAMELEN];
   struct driver *driver;
   struct device *device;
+  //struct unit *unit;
   void *privdata;
   int refcnt;
 
@@ -95,6 +97,50 @@ struct device
     struct pnp_dev *pnp;
   };
 };
+
+///////////////
+
+struct bus;
+
+struct unit
+{
+  struct bus *bus;
+  struct unit *sibling;
+  struct unit *next;
+  struct dev *dev;
+
+  char *typename;
+  char *vendorname;
+  char *productname;
+
+  unsigned long unitno;
+
+  unsigned long typecode;
+  unsigned long unitcode;
+
+  struct resource *resources;
+};
+
+struct bus
+{
+  struct bus *parent;
+  struct bus *sibling;
+  struct bus *next;
+
+  struct unit *self;
+
+  char *typename;
+  char *vendorname;
+  char *productname;
+
+  unsigned long bustype;
+  unsigned long busno;
+
+  struct unit *units;
+  struct bus *bridges;
+};
+
+//////////////
 
 struct binding
 {
