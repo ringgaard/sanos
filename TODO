@@ -392,3 +392,5 @@ CHANGES
 
  - /proc/loadavg implemented.
  
+ - shell code cleaned up.
+
