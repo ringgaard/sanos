@@ -275,6 +275,8 @@ int wait_for_all_objects(struct object **objs, int count, unsigned int timeout)
     return sleep(timeout);
   }
 
+  if (count > MAX_WAIT_OBJECTS) return -EINVAL;
+
   // Check for all objects signaled
   all = 1;
   for (n = 0; n < count; n++)
@@ -378,6 +380,8 @@ int wait_for_any_object(struct object **objs, int count, unsigned int timeout)
     return sleep(timeout);
   }
 
+  if (count > MAX_WAIT_OBJECTS) return -EINVAL;
+
   // Check for any object signaled
   for (n = 0; n < count; n++)
   {
@@ -466,6 +470,7 @@ void init_object(struct object *o, int type)
 int close_object(struct object *o)
 {
   // TODO: release all waitblocks waiting on object
+  if (o->waitlist_head) panic("object closed with active waitblocks");
 
   switch (o->type)
   {

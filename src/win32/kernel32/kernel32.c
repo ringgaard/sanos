@@ -917,12 +917,21 @@ BOOL WINAPI GetThreadContext
 )
 {
   struct context ctxt;
+  int rc;
 
   TRACE("GetThreadContext");
-  if (getcontext((handle_t) hThread, &ctxt) < 0) 
+  rc = getcontext((handle_t) hThread, &ctxt);
+  if (rc < 0) 
   {
-    syslog(LOG_DEBUG, "GetThreadContext(%d) failed, ignored\n", hThread);
-    return TRUE;
+    if (rc == -EPERM)
+    {
+      // Thead does not have a usermode context, just return dummy context
+      memset(lpContext, 0, sizeof(CONTEXT));
+      return TRUE;
+    }
+
+    syslog(LOG_DEBUG, "GetThreadContext(%d) failed\n", hThread);
+    return FALSE;
   }
 
   convert_to_win32_context(&ctxt, lpContext);
