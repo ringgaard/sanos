@@ -1328,6 +1328,30 @@ static void sound(int freq)
   ioctl(1, IOCTL_SOUND, &freq, 4);
 }
 
+static void play_file(int argc, char **argv)
+{
+  extern void play(char *song);
+
+#if 0
+  char buffer[4096];
+  FILE *f;
+
+  f = fopen("tunes.txt", "r");
+  while (fgets(buffer, sizeof buffer, f))
+  {
+    printf("%s\n", buffer);
+    play(buffer);
+  }
+  fclose(f);
+#endif
+
+  //play("AxelF:d=4, o=5, b=160:f#, 8a., 8f#, 16f#, 8a#, 8f#, 8e, f#, 8c.6, 8f#, 16f#, 8d6, 8c#6, 8a, 8f#, 8c#6, 8f#6, 16f#, 8e, 16e, 8c#, 8g#, f#.");
+  //play("dualingbanjos:d=4, o=5, b=200:8c#, 8d, e, c#, d, b4, c#, d#4, b4, p, 16c#6, 16p, 16d6, 16p, 8e6, 8p, 8c#6, 8p, 8d6, 8p, 8b, 8p, 8c#6, 8p, 8a, 8p, b, p, a4, a4, b4, c#, d#4, c#, b4, p, 8a, 8p, 8a, 8p, 8b, 8p, 8c#6, 8p, 8a, 8p, 8c#6, 8p, 8b");
+  play("Entertainer:d=4, o=5, b=140:8d, 8d#, 8e, c6, 8e, c6, 8e, 2c.6, 8c6, 8d6, 8d#6, 8e6, 8c6, 8d6, e6, 8b, d6, 2c6, p, 8d, 8d#, 8e, c6, 8e, c6, 8e, 2c.6, 8p, 8a, 8g, 8f#, 8a, 8c6, e6, 8d6, 8c6, 8a, 2d6");
+  //play("Barbiegirl:d=4,o=5,b=125:8g#,8e,8g#,8c#6,a,p,8f#,8d#,8f#,8b,g#,8f#,8e,p,8e,8c#,f#,c#,p,8f#,8e,g#,f#");
+  //play("Muppets:d=4, o=5, b=250:c6, c6, a, b, 8a, b, g, p, c6, c6, a, 8b, 8a, 8p, g., p, e, e, g, f, 8e, f, 8c6, 8c, 8d, e, 8e, 8e, 8p, 8e, g, 2p, c6, c6, a, b, 8a, b, g, p, c6, c6, a, 8b, a, g., p, e, e, g, f, 8e, f, 8c6, 8c, 8d, e, 8e, d, 8d, c");
+}
+
 static void reboot()
 {
   ioctl(1, IOCTL_REBOOT, NULL, 0);
@@ -1446,6 +1470,8 @@ void shell()
 	beep();
       else if (strcmp(argv[0], "sound") == 0)
 	sound(atoi(argv[1]));
+      else if (strcmp(argv[0], "play") == 0)
+	play_file(argc, argv);
       else if (strcmp(argv[0], "test") == 0)
 	test(argc, argv);
       else if (strcmp(argv[0], "kbd") == 0)

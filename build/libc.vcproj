@@ -186,6 +186,9 @@
 			RelativePath="..\src\lib\rmap.c">
 		</File>
 		<File
+			RelativePath="..\src\lib\rtttl.c">
+		</File>
+		<File
 			RelativePath="..\src\lib\stdio.c">
 		</File>
 		<File
