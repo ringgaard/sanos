@@ -263,7 +263,7 @@ struct httpd_context *httpd_add_resource_context(struct httpd_server *server, ch
 {
   struct httpd_context *context;
   char modfn[MAXPATH];
-  struct stat64 statbuf;
+  struct stat statbuf;
 
   if (getmodpath(hmod, modfn, MAXPATH) < 0) return NULL;
   if (stat(modfn, &statbuf) < 0) return NULL;

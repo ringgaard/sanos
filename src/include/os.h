@@ -252,16 +252,18 @@ struct section;
 
 #ifndef S_IFMT
 
-#define S_IFMT          0xF000         // File type mask
-#define S_IFIFO         0x1000         // Pipe
-#define S_IFCHR         0x2000         // Character device
-#define S_IFDIR         0x4000         // Directory
-#define S_IFBLK         0x6000         // Block device
-#define S_IFREG         0x8000         // Regular file
+#define S_IFMT         0170000         // File type mask
+#define S_IFSOCK       0140000         // Socket
+#define S_IFLNK	       0120000         // Symbolic link
+#define S_IFREG        0100000         // Regular file
+#define S_IFBLK        0060000         // Block device
+#define S_IFDIR        0040000         // Directory
+#define S_IFCHR        0020000         // Character device
+#define S_IFIFO        0010000         // Pipe
 
-#define S_IREAD         0x0100         // Read permission
-#define S_IWRITE        0x0080         // Write permission
-#define S_IEXEC         0x0040         // Execute/search permission
+#define S_IREAD        0000400         // Read permission, owner
+#define S_IWRITE       0000200         // Write permission, owner
+#define S_IEXEC        0000100         // Execute/search permission, owner
 
 #endif
 
@@ -532,6 +534,21 @@ typedef struct critsect *critsect_t;
 
 #ifndef _STAT_DEFINED
 #define _STAT_DEFINED
+
+struct stat
+{
+  dev_t st_dev;
+  ino_t st_ino;
+  unsigned short st_mode;
+  short st_nlink;
+  short st_uid;
+  short st_gid;
+  dev_t st_rdev;
+  loff_t st_size;
+  time_t st_atime;
+  time_t st_mtime;
+  time_t st_ctime;
+};
 
 struct stat64
 {
@@ -1027,14 +1044,19 @@ osapi int readv(handle_t f, const struct iovec *iov, int count);
 osapi int writev(handle_t f, const struct iovec *iov, int count);
 
 osapi loff_t tell(handle_t f);
+osapi off64_t tell64(handle_t f);
 osapi loff_t lseek(handle_t f, loff_t offset, int origin);
+osapi off64_t lseek64(handle_t f, off64_t offset, int origin);
 osapi int chsize(handle_t f, loff_t size);
+osapi int chsize64(handle_t f, off64_t size);
 
 osapi int futime(handle_t f, struct utimbuf *times);
 osapi int utime(const char *name, struct utimbuf *times);
 
-osapi int fstat(handle_t f, struct stat64 *buffer);
-osapi int stat(const char *name, struct stat64 *buffer);
+osapi int fstat(handle_t f, struct stat *buffer);
+osapi int fstat64(handle_t f, struct stat64 *buffer);
+osapi int stat(const char *name, struct stat *buffer);
+osapi int stat64(const char *name, struct stat64 *buffer);
 osapi int access(const char *name, int mode);
 
 osapi int chdir(const char *name);

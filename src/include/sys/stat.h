@@ -65,6 +65,21 @@ typedef int handle_t;
 #ifndef _STAT_DEFINED
 #define _STAT_DEFINED
 
+struct stat
+{
+  dev_t st_dev;
+  ino_t st_ino;
+  unsigned short st_mode;
+  short st_nlink;
+  short st_uid;
+  short st_gid;
+  dev_t st_rdev;
+  loff_t st_size;
+  time_t st_atime;
+  time_t st_mtime;
+  time_t st_ctime;
+};
+
 struct stat64
 {
   dev_t st_dev;
@@ -84,26 +99,47 @@ struct stat64
 
 #ifndef S_IFMT
 
-#define S_IFMT          0xF000         // File type mask
-#define S_IFIFO         0x1000         // Pipe
-#define S_IFCHR         0x2000         // Character device
-#define S_IFDIR         0x4000         // Directory
-#define S_IFBLK         0x6000         // Block device
-#define S_IFREG         0x8000         // Regular file
+#define S_IFMT         0170000         // File type mask
+#define S_IFSOCK       0140000         // Socket
+#define S_IFLNK	       0120000         // Symbolic link
+#define S_IFREG        0100000         // Regular file
+#define S_IFBLK        0060000         // Block device
+#define S_IFDIR        0040000         // Directory
+#define S_IFCHR        0020000         // Character device
+#define S_IFIFO        0010000         // Pipe
 
-#define S_IREAD         0x0100         // Read permission
-#define S_IWRITE        0x0080         // Write permission
-#define S_IEXEC         0x0040         // Execute/search permission
+#define S_IREAD        0000400         // Read permission, owner
+#define S_IWRITE       0000200         // Write permission, owner
+#define S_IEXEC        0000100         // Execute/search permission, owner
 
 #endif
 
+#define S_ISLNK(m)	(((m) & S_IFMT) == S_IFLNK)
 #define S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)
 #define S_ISDIR(m)	(((m) & S_IFMT) == S_IFDIR)
 #define S_ISCHR(m)	(((m) & S_IFMT) == S_IFCHR)
 #define S_ISBLK(m)	(((m) & S_IFMT) == S_IFBLK)
 #define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
+#define S_ISSOCK(m)	(((m) & S_IFMT) == S_IFSOCK)
 
-osapi int fstat(handle_t f, struct stat64 *buffer);
-osapi int stat(const char *name, struct stat64 *buffer);
+#define S_IRWXU 00700
+#define S_IRUSR 00400
+#define S_IWUSR 00200
+#define S_IXUSR 00100
+
+#define S_IRWXG 00070
+#define S_IRGRP 00040
+#define S_IWGRP 00020
+#define S_IXGRP 00010
+
+#define S_IRWXO 00007
+#define S_IROTH 00004
+#define S_IWOTH 00002
+#define S_IXOTH 00001
+
+osapi int fstat(handle_t f, struct stat *buffer);
+osapi int fstat64(handle_t f, struct stat64 *buffer);
+osapi int stat(const char *name, struct stat *buffer);
+osapi int stat64(const char *name, struct stat64 *buffer);
 
 #endif

@@ -178,19 +178,50 @@ int writev(handle_t f, const struct iovec *iov, int count)
   return syscall(SYSCALL_WRITEV, &f);
 }
 
-loff_t tell(handle_t f)
+static loff_t _tell(handle_t f, off64_t *retval)
 {
   return syscall(SYSCALL_TELL, &f);
 }
 
-loff_t lseek(handle_t f, loff_t offset, int origin)
+loff_t tell(handle_t f)
+{
+  return _tell(f, NULL);
+}
+
+off64_t tell64(handle_t f)
+{
+  off64_t rc;
+
+  _tell(f, &rc);
+  return rc;
+}
+
+static int _lseek(handle_t f, off64_t offset, int origin, off64_t *retval)
 {
   return syscall(SYSCALL_LSEEK, &f);
 }
 
-int chsize(handle_t f, loff_t size)
+off64_t lseek64(handle_t f, off64_t offset, int origin)
+{
+  off64_t rc;
+
+  _lseek(f, offset, origin, &rc);
+  return rc;
+}
+
+loff_t lseek(handle_t f, loff_t offset, int origin)
+{
+  return _lseek(f, offset, origin, NULL);
+}
+
+int chsize64(handle_t f, off64_t size)
 {
   return syscall(SYSCALL_CHSIZE, &f);
+}
+
+int chsize(handle_t f, loff_t size)
+{
+  return chsize64(f, size);
 }
 
 int futime(handle_t f, struct utimbuf *times)
@@ -203,14 +234,70 @@ int utime(const char *name, struct utimbuf *times)
   return syscall(SYSCALL_UTIME, (void *) &name);
 }
 
-int fstat(handle_t f, struct stat64 *buffer)
+int fstat64(handle_t f, struct stat64 *buffer)
 {
   return syscall(SYSCALL_FSTAT, &f);
 }
 
-int stat(const char *name, struct stat64 *buffer)
+int fstat(handle_t f, struct stat *buffer)
+{
+  if (buffer)
+  {
+    struct stat64 buf64;
+    int rc;
+
+    rc = fstat64(f, &buf64);
+    if (rc < 0) return rc;
+
+    buffer->st_dev = buf64.st_dev;
+    buffer->st_ino = buf64.st_ino;
+    buffer->st_mode = buf64.st_mode;
+    buffer->st_nlink = buf64.st_nlink;
+    buffer->st_uid = buf64.st_uid;
+    buffer->st_gid = buf64.st_gid;
+    buffer->st_rdev = buf64.st_rdev;
+    buffer->st_size = buf64.st_size > 0x7FFFFFFF ? 0x7FFFFFFF : (loff_t) buf64.st_size;
+    buffer->st_atime = buf64.st_atime;
+    buffer->st_mtime = buf64.st_mtime;
+    buffer->st_ctime = buf64.st_ctime;
+
+    return rc;
+  }
+  else
+    return fstat64(f, NULL);
+}
+
+int stat64(const char *name, struct stat64 *buffer)
 {
   return syscall(SYSCALL_STAT, (void *) &name);
+}
+
+int stat(const char *name, struct stat *buffer)
+{
+  if (buffer)
+  {
+    struct stat64 buf64;
+    int rc;
+
+    rc = stat64(name, &buf64);
+    if (rc < 0) return rc;
+
+    buffer->st_dev = buf64.st_dev;
+    buffer->st_ino = buf64.st_ino;
+    buffer->st_mode = buf64.st_mode;
+    buffer->st_nlink = buf64.st_nlink;
+    buffer->st_uid = buf64.st_uid;
+    buffer->st_gid = buf64.st_gid;
+    buffer->st_rdev = buf64.st_rdev;
+    buffer->st_size = buf64.st_size > 0x7FFFFFFF ? 0x7FFFFFFF : (loff_t) buf64.st_size;
+    buffer->st_atime = buf64.st_atime;
+    buffer->st_mtime = buf64.st_mtime;
+    buffer->st_ctime = buf64.st_ctime;
+
+    return rc;
+  }
+  else
+    return stat64(name, NULL);
 }
 
 int mkdir(const char *name)

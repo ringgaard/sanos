@@ -149,7 +149,7 @@ static void list_dir(int argc, char **argv)
     strcat(path, "/");
     strcat(path, dirp.name);
 
-    if (stat(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat64));
+    if (stat64(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat64));
 
     if (verbose == 2)
     {
@@ -169,7 +169,7 @@ static void list_dir(int argc, char **argv)
       strcat(path, "/");
       strcat(path, dirp.name);
 
-      if (stat(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat64));
+      if (stat64(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat64));
 
       if (verbose)
       {

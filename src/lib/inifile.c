@@ -355,7 +355,7 @@ struct section *read_properties(char *filename)
   f = open(filename, 0);
   if (f < 0) return NULL;
 
-  fstat(f, &buffer);
+  fstat64(f, &buffer);
   size = (int) buffer.st_size;
 
   props = (char *) malloc(size + 1);

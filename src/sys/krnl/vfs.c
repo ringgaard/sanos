@@ -196,7 +196,7 @@ static int files_proc(struct proc_file *pf, void *arg)
     if (o->type != OBJECT_FILE) continue;
 
     filp = (struct file *) o;
-    pprintf(pf, "%6d %08X %08X %10d %s\n", h, filp->flags, filp->mode, filp->pos, filp->path ? filp->path : "<no name>");
+    pprintf(pf, "%6d %08X %08o %10d %s\n", h, filp->flags, filp->mode, (int) filp->pos, filp->path ? filp->path : "<no name>");
   }
 
   return 0;

@@ -552,65 +552,12 @@ static int sys_tell(char *params)
   struct file *f;
   handle_t h;
   off64_t rc;
-
-  if (lock_buffer(params, 4) < 0) return -EFAULT;
-
-  h = *(handle_t *) params;
-  f = (struct file *) olock(h, OBJECT_FILE);
-  if (!f) 
-  {
-    unlock_buffer(params, 4);
-    return -EBADF;
-  }
-
-  rc = tell(f);
-
-  orel(f);
-  unlock_buffer(params, 4);
-
-  return (int) rc;
-}
-
-static int sys_lseek(char *params)
-{
-  struct file *f;
-  handle_t h;
-  loff_t offset;
-  int origin;
-  off64_t rc;
-
-  if (lock_buffer(params, 12) < 0) return -EFAULT;
-
-  h = *(handle_t *) params;
-  offset = *(loff_t *) (params + 4);
-  origin = *(int *) (params + 8);
-
-  f = (struct file *) olock(h, OBJECT_FILE);
-  if (!f) 
-  {
-    unlock_buffer(params, 12);
-    return -EBADF;
-  }
-
-  rc = lseek(f, offset, origin);
-
-  orel(f);
-  unlock_buffer(params, 12);
-
-  return (int) rc;
-}
-
-static int sys_chsize(char *params)
-{
-  struct file *f;
-  handle_t h;
-  loff_t size;
-  int rc;
+  off64_t *retval;
 
   if (lock_buffer(params, 8) < 0) return -EFAULT;
 
   h = *(handle_t *) params;
-  size = *(loff_t *) (params + 4);
+  retval = *(off64_t **) (params + 4);
 
   f = (struct file *) olock(h, OBJECT_FILE);
   if (!f) 
@@ -619,10 +566,86 @@ static int sys_chsize(char *params)
     return -EBADF;
   }
 
+  if (lock_buffer(retval, sizeof(off64_t)) < 0)
+  {
+    orel(f);
+    unlock_buffer(params, 8);
+    return -EFAULT;
+  }
+
+  rc = tell(f);
+  if (retval) *retval = rc;
+
+  orel(f);
+  unlock_buffer(retval, sizeof(off64_t));
+  unlock_buffer(params, 8);
+
+  return rc < 0 ? (int) rc : (int) (rc & 0x7FFFFFFF);
+}
+
+static int sys_lseek(char *params)
+{
+  struct file *f;
+  handle_t h;
+  off64_t offset;
+  int origin;
+  off64_t rc;
+  off64_t *retval;
+
+  if (lock_buffer(params, 20) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  offset = *(off64_t *) (params + 4);
+  origin = *(int *) (params + 12);
+  retval = *(off64_t **) (params + 16);
+
+  f = (struct file *) olock(h, OBJECT_FILE);
+  if (!f) 
+  {
+    unlock_buffer(params, 20);
+    return -EBADF;
+  }
+
+  if (lock_buffer(retval, sizeof(off64_t)) < 0)
+  {
+    orel(f);
+    unlock_buffer(params, 8);
+    return -EFAULT;
+  }
+
+  rc = lseek(f, offset, origin);
+  if (retval) *retval = rc;
+
+  orel(f);
+  unlock_buffer(retval, sizeof(off64_t));
+  unlock_buffer(params, 20);
+
+  return rc < 0 ? (int) rc : (int) (rc & 0x7FFFFFFF);
+}
+
+static int sys_chsize(char *params)
+{
+  struct file *f;
+  handle_t h;
+  off64_t size;
+  int rc;
+
+  if (lock_buffer(params, 12) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  size = *(off64_t *) (params + 4);
+
+  f = (struct file *) olock(h, OBJECT_FILE);
+  if (!f) 
+  {
+    unlock_buffer(params, 12);
+    return -EBADF;
+  }
+
   rc = chsize(f, size);
 
   orel(f);
-  unlock_buffer(params, 8);
+  unlock_buffer(params, 12);
 
   return rc;
 }
@@ -2717,9 +2740,9 @@ struct syscall_entry syscalltab[] =
   {"flush", "%d", sys_flush},
   {"read", "%d,%p,%d", sys_read},
   {"write", "%d,%p,%d", sys_write},
-  {"tell", "%d", sys_tell},
-  {"lseek", "%d,%d,%d", sys_lseek},
-  {"chsize", "%d,%d", sys_chsize},
+  {"tell", "%d,%p", sys_tell},
+  {"lseek", "%d,%d,%d-%d,%p", sys_lseek},
+  {"chsize", "%d,%d-%d", sys_chsize},
   {"fstat", "%d,%p", sys_fstat},
   {"stat", "'%s',%p", sys_stat},
   {"mkdir", "'%s'", sys_mkdir},

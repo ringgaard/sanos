@@ -464,7 +464,7 @@ int copy_dir(char *srcdir, char *dstdir)
       sprintf(srcfn, "%s/%s", head->srcdir, dirp.name);
       sprintf(dstfn, "%s/%s", head->dstdir, dirp.name);
 
-      rc = stat(srcfn, &buf);
+      rc = stat64(srcfn, &buf);
       if (rc < 0) return rc;
 
       if ((buf.st_mode & S_IFMT) == S_IFDIR)
@@ -518,7 +518,7 @@ int docopy(struct section *sect)
 
     printf("Installing %s\n", dstfn);
     
-    rc = stat(srcfn, &buf);
+    rc = stat64(srcfn, &buf);
     if (rc < 0) return rc;
 
     if ((buf.st_mode & S_IFMT) == S_IFDIR)

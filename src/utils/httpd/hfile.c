@@ -110,7 +110,7 @@ int ls(struct httpd_connection *conn)
     strcat(path, "/");
     strcat(path, dirp.name);
 
-    rc = stat(path, &statbuf);
+    rc = stat64(path, &statbuf);
     if (rc < 0) return rc;
 
     tm = gmtime(&statbuf.st_mtime);
@@ -177,7 +177,7 @@ int httpd_file_handler(struct httpd_connection *conn)
   }
 
   filename = conn->req->path_translated;
-  rc = stat(filename, &statbuf);
+  rc = stat64(filename, &statbuf);
   if (rc < 0) return httpd_return_file_error(conn, rc);
 
   if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
@@ -204,7 +204,7 @@ int httpd_file_handler(struct httpd_connection *conn)
       strcat(buf, "/");
       strcat(buf, conn->server->indexname);
 
-      rc = stat(buf, &statbuf);
+      rc = stat64(buf, &statbuf);
       if (rc < 0) 
       {
 	if (conn->server->allowdirbrowse) 

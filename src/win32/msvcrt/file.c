@@ -187,7 +187,7 @@ int _stat(const char *path, struct _stat *buffer)
   TRACE("_stat");
   //syslog(LOG_DEBUG, "stat on %s\n", path);
 
-  rc = stat(path, &fs);
+  rc = stat64(path, &fs);
   if (rc < 0) 
   {
     errno = -rc;
@@ -216,7 +216,7 @@ __int64 _stati64(const char *path, struct _stati64 *buffer)
   TRACE("_stati64");
   //syslog(LOG_DEBUG, "stat on %s\n", path);
 
-  rc = stat(path, &fs);
+  rc = stat64(path, &fs);
   if (rc < 0) 
   {
     errno = -rc;
@@ -243,7 +243,7 @@ int _fstat(int handle, struct _stat *buffer)
   struct stat64 fs;
 
   TRACE("_fstat");
-  rc = fstat(handle, &fs);
+  rc = fstat64(handle, &fs);
   if (rc < 0) 
   {
     errno = -rc;
@@ -269,7 +269,7 @@ __int64 _fstati64(int handle, struct _stati64 *buffer)
   struct stat64 fs;
 
   TRACE("_fstati64");
-  rc = fstat(handle, &fs);
+  rc = fstat64(handle, &fs);
   if (rc < 0) 
   {
     errno = -rc;

@@ -481,7 +481,7 @@ HANDLE WINAPI FindFirstFileA
 	strcpy(fn + strlen(fn), "\\");
 	strcpy(fn + strlen(fn), dirent.name);
 
-        if (stat(fn, &statbuf) < 0) 
+        if (stat64(fn, &statbuf) < 0) 
 	{
 	  errno = ENOENT;
           free(finddata);
@@ -496,7 +496,7 @@ HANDLE WINAPI FindFirstFileA
     // Add dummy entry
     close(finddata->fhandle);
     free(finddata);
-    if (stat(finddata->dir, &statbuf) < 0) 
+    if (stat64(finddata->dir, &statbuf) < 0) 
     {
       errno = ENOENT;
       return INVALID_HANDLE_VALUE;
@@ -507,7 +507,7 @@ HANDLE WINAPI FindFirstFileA
   }
   else
   {
-    if (stat((char *) lpFileName, &statbuf) < 0) 
+    if (stat64((char *) lpFileName, &statbuf) < 0) 
     {
       errno = ENOENT;
       return INVALID_HANDLE_VALUE;
@@ -558,7 +558,7 @@ BOOL WINAPI FindNextFileA
 	strcpy(fn + strlen(fn), "\\");
 	strcpy(fn + strlen(fn), dirent.name);
 
-        if (stat(fn, &statbuf) < 0) 
+        if (stat64(fn, &statbuf) < 0) 
 	{
 	  errno = ENOENT;
 	  return FALSE;
@@ -718,7 +718,7 @@ DWORD WINAPI GetFileAttributesA
   struct stat64 fs;
 
   TRACE("GetFileAttributesA");
-  if (stat((char *) lpFileName, &fs) < 0) return -1;
+  if (stat64((char *) lpFileName, &fs) < 0) return -1;
 
   // TODO: set other attributes for files (hidden, system, readonly etc.)
   if ((fs.st_mode & S_IFMT) == S_IFDIR) 
