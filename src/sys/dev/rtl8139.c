@@ -34,6 +34,8 @@
 
 #include <os/krnl.h>
 
+#define ETH_ZLEN  60 // Min. octets in frame sans FCS
+
 // The user-configurable values
 
 // Maximum events (Rx packets, etc.) to handle at each interrupt
@@ -79,10 +81,10 @@ static int multicast_filter_limit = 32;
 
 #define PKT_BUF_SZ    1536
 
-static void *rtl8139_probe1(struct pci_dev *pdev, void *init_dev, long ioaddr, int irq, int chip_idx, int find_cnt);
+static void *rtl8139_probe1(struct pci_dev *pdev, void *init_dev, long ioaddr, int irq, int board_idx, int find_cnt);
 static int rtl_pwr_event(void *dev_instance, int event);
 
-enum chip_capability_flags 
+enum board_capability_flags 
 {
   HAS_MII_XCVR    = 0x01, 
   HAS_CHIP_XCVR   = 0x02,
@@ -94,7 +96,7 @@ enum chip_capability_flags
 #define RTL8139_CAPS  HAS_CHIP_XCVR | HAS_LNK_CHNG
 #define RTL8139D_CAPS  HAS_CHIP_XCVR | HAS_LNK_CHNG | HAS_DESC
 
-struct chip_info
+struct board_info
 {
   char *vendorname;
   char *productname;
@@ -107,7 +109,7 @@ struct chip_info
   int flags;
 };
 
-static struct chip_info chip_tbl[] = 
+static struct board_info board_tbl[] = 
 {
   {"RealTek", "RealTek RTL8139+", PCI_UNITCODE(0x10ec, 0x8139), 0xffffffff, 0,0, 0x20, 0xff, RTL8139D_CAPS},
   {"RealTek", "RealTek RTL8139C Fast Ethernet", PCI_UNITCODE(0x10ec, 0x8139), 0xffffffff, 0,0, 0x10, 0xff, RTL8139_CAPS},
@@ -299,7 +301,7 @@ struct nic
 
   struct eth_addr hwaddr;               // MAC address for NIC
 
-  int chip_id;
+  int board_id;
   int flags;
   struct stats_nic stats;
   int msg_level;
@@ -311,11 +313,14 @@ struct nic
   unsigned int rx_buf_len;              // Size (8K 16K 32K or 64KB) of the Rx ring
 
   // Transmit state
-  unsigned int cur_tx, dirty_tx, tx_flag;
-  unsigned long tx_full;                // The Tx queue is full
+  struct sem tx_sem;                    // Semaphore for Tx ring full
+  unsigned int cur_tx;
+  unsigned int dirty_tx;
+  unsigned int tx_flag;
   struct pbuf *tx_pbuf[NUM_TX_DESC];    // The saved address of a sent-in-place packet
   unsigned char *tx_buf[NUM_TX_DESC];   // Tx bounce buffers
   unsigned char *tx_bufs;               // Tx bounce buffer region
+  unsigned int trans_start;
 
   // Receive filter state
   unsigned int rx_config;
@@ -336,24 +341,28 @@ struct nic
   unsigned char mediasense;           // Media sensing in progress
 };
 
-static int rtl8129_open(struct dev *dev);
-
-static void rtl_hw_start(struct dev *dev);
 static int read_eeprom(long ioaddr, int location, int addr_len);
 static int mdio_read(struct dev *dev, int phy_id, int location);
 static void mdio_write(struct dev *dev, int phy_id, int location, int val);
+
+static int rtl8129_open(struct dev *dev);
+static int rtl8129_close(struct dev *dev);
+
+static void rtl8129_init_ring(struct dev *dev);
+static void rtl_hw_start(struct dev *dev);
+
+static void rtl8139_timer(void *arg);
+
+static struct stats_nic *rtl8129_get_stats(struct dev *dev);
+static unsigned long ether_crc(int length, unsigned char *data);
+static void set_rx_mode(struct dev *dev);
+static int rtl8139_transmit(struct dev *dev, struct pbuf *p);
+
 static void rtl8129_timer(unsigned long data);
 static void rtl8129_tx_timeout(struct dev *dev);
-static void rtl8129_init_ring(struct dev *dev);
-static int rtl8129_start_xmit(struct sk_buff *skb, struct dev *dev);
 static int rtl8129_rx(struct dev *dev);
 static void rtl8129_interrupt(int irq, void *dev_instance, struct pt_regs *regs);
 static void rtl_error(struct dev *dev, int status, int link_status);
-static int rtl8129_close(struct dev *dev);
-static int mii_ioctl(struct dev *dev, struct ifreq *rq, int cmd);
-static struct net_device_stats *rtl8129_get_stats(struct dev *dev);
-static unsigned long ether_crc(int length, unsigned char *data);
-static void set_rx_mode(struct dev *dev);
 
 //
 // Serial EEPROM section
@@ -540,457 +549,22 @@ static void mdio_write(struct dev *dev, int phy_id, int location, int value)
   }
 }
 
-#ifdef xxx
-
-static void rtl8129_tx_timeout(struct net_device *dev)
+static struct stats_nic *rtl8129_get_stats(struct dev *dev)
 {
-  struct nic *tp = (struct nic *) dev->priv;
-  long ioaddr = dev->base_addr;
-  int status = inw(ioaddr + IntrStatus);
-  int mii_reg, i;
+  struct nic *tp = (struct nic *) dev->privdata;
+  long ioaddr = tp->iobase;
 
-  kprintf("%s: Transmit timeout, status %2.2x %4.4x media %2.2x\n",
-    dev->name, inp(ioaddr + ChipCmd), status, inp(ioaddr + GPPinData));
-
-  if (status & (TxOK | RxOK)) 
-  {
-    kprintf("%s: RTL8139 Interrupt line blocked, status %x\n", dev->name, status);
-  }
-
-  // Disable interrupts by clearing the interrupt mask
-  outpw(ioaddr + IntrMask, 0x0000);
-
-  // Emit info to figure out what went wrong
-  kprintf("%s: Tx queue start entry %d  dirty entry %d%s\n", dev->name, tp->cur_tx, tp->dirty_tx, tp->tx_full ? ", full" : "");
-  
-  for (i = 0; i < NUM_TX_DESC; i++)
-    kprintf("%s:  Tx descriptor %d is %8.8x.%s\n",
-         dev->name, i, (int)inpd(ioaddr + TxStatus0 + i * 4),
-         i == tp->dirty_tx % NUM_TX_DESC ? " (queue head)" : "");
-
-  kprintf("%s: MII #%d registers are:", dev->name, tp->phys[0]);
-  for (mii_reg = 0; mii_reg < 8; mii_reg++)
-    kprintf(" %4.4x", mdio_read(dev, tp->phys[0], mii_reg));
-  printk("\n");
-
-  // Stop a shared interrupt from scavenging while we are
-  tp->dirty_tx = tp->cur_tx = 0;
-
-  // Dump the unsent Tx packets
-  for (i = 0; i < NUM_TX_DESC; i++) 
-  {
-    if (tp->tx_skbuff[i]) 
-    {
-      dev_free_skb(tp->tx_skbuff[i]);
-      tp->tx_skbuff[i] = 0;
-      tp->stats.tx_dropped++;
-    }
-  }
-
-  rtl_hw_start(dev);
-  netif_unpause_tx_queue(dev);
-  tp->tx_full = 0;
-}
-
-static int rtl8129_start_xmit(struct sk_buff *skb, struct net_device *dev)
-{
-  struct nic *tp = (struct nic *) dev->priv;
-  long ioaddr = dev->base_addr;
-  int entry;
-
-  if (netif_pause_tx_queue(dev) != 0) 
-  {
-    // This watchdog code is redundant with the media monitor timer. */
-    if (ticks - dev->trans_start > TX_TIMEOUT) rtl8129_tx_timeout(dev);
-    return -EIO;
-  }
-
-  // Calculate the next Tx descriptor entry
-  entry = tp->cur_tx % NUM_TX_DESC;
-
-  tp->tx_skbuff[entry] = skb;
-  if ((long)skb->data & 3) 
-  {
-    // Must use alignment buffer
-    memcpy(tp->tx_buf[entry], skb->data, skb->len);
-    outpd(ioaddr + TxAddr0 + entry * 4, virt_to_bus(tp->tx_buf[entry]));
-  } 
-  else
-    outl(ioaddr + TxAddr0 + entry * 4, virt_to_bus(skb->data));
-  
-  // Note: the chip doesn't have auto-pad! */
-  outpd(ioaddr + TxStatus0 + entry * 4, tp->tx_flag | (skb->len >= ETH_ZLEN ? skb->len : ETH_ZLEN));
-
-  // There is a race condition here -- we might read dirty_tx, take an
-  // interrupt that clears the Tx queue, and only then set tx_full.
-  // So we do this in two phases
-
-  if (++tp->cur_tx - tp->dirty_tx >= NUM_TX_DESC)
-  {
-    set_bit(0, &tp->tx_full);
-
-    if (tp->cur_tx - (volatile unsigned int) tp->dirty_tx < NUM_TX_DESC) 
-    {
-      clear_bit(0, &tp->tx_full);
-      netif_unpause_tx_queue(dev);
-    } 
-    else
-      netif_stop_tx_queue(dev);
-  } 
-  else
-    netif_unpause_tx_queue(dev);
-
-  dev->trans_start = ticks;
-  if (tp->msg_level & NETIF_MSG_TX_QUEUED)
-  {
-    kprintf("%s: Queued Tx packet at %p size %d to slot %d\n", dev->name, skb->data, (int) skb->len, entry);
-  }
-
-  return 0;
-}
-
-// The interrupt handler does all of the Rx thread work and cleans up after the Tx thread
-
-static void rtl8129_interrupt(int irq, void *dev_instance, struct pt_regs *regs)
-{
-  struct net_device *dev = (struct net_device *) dev_instance;
-  struct nic *np = (struct nic *) dev->priv;
-  struct nic *tp = np;
-  int boguscnt = np->max_interrupt_work;
-  long ioaddr = dev->base_addr;
-  int link_changed = 0;
-
-  while (1)
-  {
-    int status = inpw(ioaddr + IntrStatus);
-    
-    // Acknowledge all of the current interrupt sources ASAP, but
-    // first get an additional status bit from CSCR
-    if (status & RxUnderrun) link_changed = inpw(ioaddr + CSCR) & CSCR_LinkChangeBit;
-    outpw(ioaddr + IntrStatus, status);
-
-    if (tp->msg_level & NETIF_MSG_INTR)
-    {
-      kprintf("%s: interrupt status=%#4.4x new intstat=%#4.4x\n", dev->name, status, inpw(ioaddr + IntrStatus));
-    }
-
-    if ((status & (PCIErr | PCSTimeout | RxUnderrun | RxOverflow | RxFIFOOver | TxErr | TxOK | RxErr | RxOK)) == 0) break;
-
-    if (status & (RxOK | RxUnderrun | RxOverflow | RxFIFOOver))
-    {
-      // Rx interrupt
-      rtl8129_rx(dev);
-    }
-
-    if (status & (TxOK | TxErr)) 
-    {
-      unsigned int dirty_tx = tp->dirty_tx;
-
-      while (tp->cur_tx - dirty_tx > 0) 
-      {
-        int entry = dirty_tx % NUM_TX_DESC;
-        int txstatus = inpd(ioaddr + TxStatus0 + entry * 4);
-
-        if (!(txstatus & (TxStatOK | TxUnderrun | TxAborted))) break; // It still hasn't been Txed
-
-        // Note: TxCarrierLost is always asserted at 100mbps
-        if (txstatus & (TxOutOfWindow | TxAborted))
-	{
-          // There was an major error, log it
-          if (tp->msg_level & NETIF_MSG_TX_ERR)
-	  {
-            kprintf("%s: Transmit error, Tx status %8.8x\n", dev->name, txstatus);
-	  }
-          tp->stats.tx_errors++;
-          if (txstatus & TxAborted) 
-	  {
-            tp->stats.tx_aborted_errors++;
-            outpd(ioaddr + TxConfig, TX_DMA_BURST << 8);
-          }
-          if (txstatus & TxCarrierLost) tp->stats.tx_carrier_errors++;
-          if (txstatus & TxOutOfWindow) tp->stats.tx_window_errors++;
-          if ((txstatus & 0x0f000000) == 0x0f000000) tp->stats.collisions16++;
-        }
-	else 
-	{
-          if (tp->msg_level & NETIF_MSG_TX_DONE)
-	  {
-            kprintf("%s: Transmit done, Tx status %8.8x\n", dev->name, txstatus);
-	  }
-
-          if (txstatus & TxUnderrun) 
-	  {
-            // Add 64 to the Tx FIFO threshold
-            if (tp->tx_flag <  0x00300000) tp->tx_flag += 0x00020000;
-            tp->stats.tx_fifo_errors++;
-          }
-          tp->stats.collisions += (txstatus >> 24) & 15;
-          tp->stats.tx_bytes += txstatus & 0x7ff;
-          tp->stats.tx_packets++;
-        }
-
-        // Free the original skb
-        dev_free_skb_irq(tp->tx_skbuff[entry]);
-        tp->tx_skbuff[entry] = 0;
-        if (test_bit(0, &tp->tx_full)) 
-	{
-          // The ring is no longer full, clear tbusy
-          clear_bit(0, &tp->tx_full);
-          netif_resume_tx_queue(dev);
-        }
-        dirty_tx++;
-      }
-
-      tp->dirty_tx = dirty_tx;
-    }
-
-    // Check uncommon events with one test
-    if (status & (PCIErr | PCSTimeout | RxUnderrun | RxOverflow | RxFIFOOver | TxErr | RxErr))
-    {
-      if (status == 0xffff) break; // Missing chip!
-      rtl_error(dev, status, link_changed);
-    }
-
-    if (--boguscnt < 0) 
-    {
-      kprintf("%s: Too much work at interrupt, IntrStatus=0x%4.4x\n", dev->name, status);
-      
-      // Clear all interrupt sources
-      outpw(ioaddr + IntrStatus, 0xffff);
-      break;
-    }
-  }
-
-  if (tp->msg_level & NETIF_MSG_INTR)
-  {
-    kprintf("%s: exiting interrupt, intr_status=%#4.4x\n", dev->name, inpw(ioaddr + IntrStatus));
-  }
-}
-
-// Receive packet from nic
-
-static int rtl8129_rx(struct net_device *dev)
-{
-  struct nic *tp = (struct nic *) dev->priv;
-  long ioaddr = dev->base_addr;
-  unsigned char *rx_ring = tp->rx_ring;
-  unsigned short cur_rx = tp->cur_rx;
-
-  if (tp->msg_level & NETIF_MSG_RX_STATUS)
-  {
-    kprintf("%s: In rtl8129_rx(), current %4.4x BufAddr %4.4x, free to %4.4x, Cmd %2.2x\n",
-      dev->name, cur_rx, inpw(ioaddr + RxBufAddr),
-      inpw(ioaddr + RxBufPtr), inp(ioaddr + ChipCmd));
-  }
-
-  while ((inp(ioaddr + ChipCmd) & RxBufEmpty) == 0) 
-  {
-    int ring_offset = cur_rx % tp->rx_buf_len;
-    unsigned long rx_status = le32_to_cpu(*(unsigned long *)(rx_ring + ring_offset));
-    int rx_size = rx_status >> 16;        // Includes the CRC
-
-    if (tp->msg_level & NETIF_MSG_RX_STATUS) 
-    {
-      int i;
-      kprintf("%s:  rtl8129_rx() status %4.4x, size %4.4x, cur %4.4x\n", dev->name, rx_status, rx_size, cur_rx);
-      kprintf("%s: Frame contents ", dev->name);
-      for (i = 0; i < 70; i++) printk(" %2.2x", rx_ring[ring_offset + i]);
-      kprintf("\n");
-    }
-
-    if (rx_status & (RxBadSymbol | RxRunt | RxTooLong | RxCRCErr | RxBadAlign)) 
-    {
-      if (tp->msg_level & NETIF_MSG_RX_ERR)
-      {
-        kprintf("%s: Ethernet frame had errors, status %8.8x\n", dev->name, rx_status);
-      }
-
-      if (rx_status == 0xffffffff) 
-      {
-        kprintf("%s: Invalid receive status at ring offset %4.4x\n", dev->name, ring_offset);
-        rx_status = 0;
-      }
-
-      if (rx_status & RxTooLong) 
-      {
-        if (tp->msg_level & NETIF_MSG_DRV)
-	{
-          kprintf("%s: Oversized Ethernet frame, status %4.4x!\n", dev->name, rx_status);
-	}
-
-        // The chip hangs here.
-        // This should never occur, which means that we are screwed when it does
-      }
-
-      tp->stats.rx_errors++;
-      if (rx_status & (RxBadSymbol | RxBadAlign)) tp->stats.rx_frame_errors++;
-      if (rx_status & (RxRunt | RxTooLong)) tp->stats.rx_length_errors++;
-      if (rx_status & RxCRCErr) tp->stats.rx_crc_errors++;
-      
-      // Reset the receiver, based on RealTek recommendation. (Bug?)
-      tp->cur_rx = 0;
-      outp(ioaddr + ChipCmd, CmdTxEnb);
-      
-      // Reset the multicast list
-      set_rx_mode(dev);
-      outb(ioaddr + ChipCmd, CmdRxEnb | CmdTxEnb);
-    } 
-    else 
-    {
-      // Malloc up new buffer
-      // Omit the four octet CRC from the length
-      struct sk_buff *skb;
-      int pkt_size = rx_size - 4;
-
-      // Allocate a common-sized skbuff if we are close
-      skb = dev_alloc_skb(1400 < pkt_size && pkt_size < PKT_BUF_SZ-2 ? PKT_BUF_SZ : pkt_size + 2);
-      if (skb == NULL) 
-      {
-        kprintf("%s: Memory squeeze, deferring packet.\n", dev->name);
-        
-	// We should check that some rx space is free.
-        // If not, free one and mark stats->rx_dropped
-        tp->stats.rx_dropped++;
-        break;
-      }
-      
-      skb->dev = dev;
-      skb_reserve(skb, 2);  // 16 byte align the IP fields
-      if (ring_offset + rx_size > tp->rx_buf_len) 
-      {
-        int semi_count = tp->rx_buf_len - ring_offset - 4;
-        
-	// This could presumably use two calls to copy_and_sum()?
-        memcpy(skb_put(skb, semi_count), &rx_ring[ring_offset + 4], semi_count);
-        memcpy(skb_put(skb, pkt_size-semi_count), rx_ring, pkt_size - semi_count);
-        if (tp->msg_level & NETIF_MSG_PKTDATA) 
-	{
-          int i;
-        
-	  kprintf("%s:  Frame wrap @%d", dev->name, semi_count);
-          for (i = 0; i < 16; i++) kprintf(" %2.2x", rx_ring[i]);
-          kprintf("\n");
-          memset(rx_ring, 0xcc, 16);
-        }
-      } 
-      else 
-      {
-        eth_copy_and_sum(skb, &rx_ring[ring_offset + 4], pkt_size, 0);
-        skb_put(skb, pkt_size);
-      }
-      skb->protocol = eth_type_trans(skb, dev);
-      netif_rx(skb);
-      tp->stats.rx_bytes += pkt_size;
-      tp->stats.rx_packets++;
-    }
-
-    cur_rx = (cur_rx + rx_size + 4 + 3) & ~3;
-    outpw(ioaddr + RxBufPtr, cur_rx - 16);
-  }
-
-  if (tp->msg_level & NETIF_MSG_RX_STATUS)
-  {
-    kprintf("%s: Done rtl8129_rx(), current %4.4x BufAddr %4.4x, free to %4.4x, Cmd %2.2x\n",
-      dev->name, cur_rx, inpw(ioaddr + RxBufAddr),
-      inpw(ioaddr + RxBufPtr), inp(ioaddr + ChipCmd));
-  }
-
-  tp->cur_rx = cur_rx;
-  return 0;
-}
-
-// Error and abnormal or uncommon events handlers
-
-static void rtl_error(struct net_device *dev, int status, int link_changed)
-{
-  struct nic *tp = (struct nic *) dev->priv;
-  long ioaddr = dev->base_addr;
-
-  if (tp->msg_level & NETIF_MSG_LINK)
-  {
-    kprintf("%s: Abnormal interrupt, status %8.8x\n", dev->name, status);
-  }
-
-  // Update the error count
   tp->stats.rx_missed_errors += inpd(ioaddr + RxMissed);
   outpd(ioaddr + RxMissed, 0);
-
-  if (status & RxUnderrun)
-  {
-    // This might actually be a link change event
-    if ((tp->drv_flags & HAS_LNK_CHNG) && link_changed)
-    {
-      // Really link-change on new chips
-      int lpar = inpw(ioaddr + NWayLPAR);
-      int duplex = (lpar&0x0100) || (lpar & 0x01C0) == 0x0040 || tp->duplex_lock;
-      
-      // Do not use MII_BMSR as that clears sticky bit
-      if (inpw(ioaddr + GPPinData) & 0x0004) 
-      {
-        netif_link_down(dev);
-      } 
-      else
-        netif_link_up(dev);
-
-      if (tp->msg_level & NETIF_MSG_LINK)
-      {
-        kprintf("%s: Link changed, link partner %4.4x new duplex %d\n", dev->name, lpar, duplex);
-      }
-
-      tp->full_duplex = duplex;
-
-      // Only count as errors with no link change
-      status &= ~RxUnderrun;
-    } 
-    else 
-    {
-      // If this does not work, we will do rtl_hw_start
-      outp(ioaddr + ChipCmd, CmdTxEnb);
-      set_rx_mode(dev); // Reset the multicast list
-      outb(ioaddr + ChipCmd, CmdRxEnb | CmdTxEnb);
-
-      tp->stats.rx_errors++;
-      tp->stats.rx_fifo_errors++;
-    }
-  }
-  
-  if (status & (RxOverflow | RxErr | RxFIFOOver)) tp->stats.rx_errors++;
-  if (status & (PCSTimeout)) tp->stats.rx_length_errors++;
-  if (status & RxFIFOOver) tp->stats.rx_fifo_errors++;
-  if (status & RxOverflow) 
-  {
-    tp->stats.rx_over_errors++;
-    tp->cur_rx = inpw(ioaddr + RxBufAddr) % tp->rx_buf_len;
-    outpw(ioaddr + RxBufPtr, tp->cur_rx - 16);
-  }
-
-  if (status & PCIErr) 
-  {
-    unsigned long pci_cmd_status;
-    pci_read_config_dword(tp->pci_dev, PCI_COMMAND, &pci_cmd_status);
-    kprintf("%s: PCI Bus error %4.4x.\n", dev->name, pci_cmd_status);
-  }
-}
-
-static struct net_device_stats *rtl8129_get_stats(struct net_device *dev)
-{
-  struct nic *tp = (struct nic *)dev->priv;
-  long ioaddr = dev->base_addr;
-
-  if (netif_running(dev)) 
-  {
-    tp->stats.rx_missed_errors += inpd(ioaddr + RxMissed);
-    outl(ioaddr + RxMissed, 0);
-  }
 
   return &tp->stats;
 }
 
 // Set or clear the multicast filter
 
-static unsigned const ethernet_polynomial = 0x04c11db7U;
+#define ETHERNET_POLYNOMIAL 0x04c11db7U
 
-static inline unsigned long ether_crc(int length, unsigned char *data)
+static unsigned long ether_crc(int length, unsigned char *data)
 {
   int crc = -1;
 
@@ -1000,23 +574,22 @@ static inline unsigned long ether_crc(int length, unsigned char *data)
     int bit;
     for (bit = 0; bit < 8; bit++, current_octet >>= 1)
       crc = (crc << 1) ^
-        ((crc < 0) ^ (current_octet & 1) ? ethernet_polynomial : 0);
+        ((crc < 0) ^ (current_octet & 1) ? ETHERNET_POLYNOMIAL : 0);
   }
 
   return crc;
 }
 
-static void set_rx_mode(struct net_device *dev)
+static void set_rx_mode(struct dev *dev)
 {
-  struct nic *tp = (struct nic *) dev->priv;
-  long ioaddr = dev->base_addr;
+  struct nic *tp = (struct nic *) dev->privdata;
+  long ioaddr = tp->iobase;
   unsigned long mc_filter[2];    // Multicast hash filter
-  int i, rx_mode;
+  int rx_mode;
 
-  if (tp->msg_level & NETIF_MSG_RXFILTER)
-  {
-    kprintf("%s: set_rx_mode(%4.4x) done -- Rx config %8.8x\n", dev->name, dev->flags, (int)inpd(ioaddr + RxConfig));
-  }
+#if 0
+   // TODO: handle promiscuous mode and multicast lists
+  kprintf("%s: set_rx_mode(%4.4x) done -- Rx config %8.8x\n", dev->name, dev->flags, (int)inpd(ioaddr + RxConfig));
 
   if (dev->flags & IFF_PROMISC)
   {
@@ -1035,6 +608,8 @@ static void set_rx_mode(struct net_device *dev)
   else 
   {
     struct dev_mc_list *mclist;
+    int i;
+
     rx_mode = AcceptBroadcast | AcceptMulticast | AcceptMyPhys;
     mc_filter[1] = mc_filter[0] = 0;
     for (i = 0, mclist = dev->mc_list; mclist && i < dev->mc_count; i++, mclist = mclist->next)
@@ -1042,7 +617,11 @@ static void set_rx_mode(struct net_device *dev)
       set_bit(ether_crc(ETH_ALEN, mclist->dmi_addr) >> 26, mc_filter);
     }
   }
-  
+#else
+  rx_mode = AcceptBroadcast | AcceptMulticast | AcceptMyPhys;
+  mc_filter[1] = mc_filter[0] = 0xffffffff;
+#endif
+
   // We can safely update without stopping the chip
   outpd(ioaddr + RxConfig, tp->rx_config | rx_mode);
   tp->mc_filter[0] = mc_filter[0];
@@ -1051,10 +630,6 @@ static void set_rx_mode(struct net_device *dev)
   outpd(ioaddr + MAR0 + 4, mc_filter[1]);
 }
 
-#endif
-
-void rtl8139_timer(void *arg);
-
 // Initialize the Rx and Tx rings
 
 static void rtl8129_init_ring(struct dev *dev)
@@ -1062,12 +637,11 @@ static void rtl8129_init_ring(struct dev *dev)
   struct nic *tp = (struct nic *) dev->privdata;
   int i;
 
-  tp->tx_full = 0;
   tp->dirty_tx = tp->cur_tx = 0;
 
   for (i = 0; i < NUM_TX_DESC; i++) 
   {
-    tp->tx_pbuf[i] = 0;
+    tp->tx_pbuf[i] = NULL;
     tp->tx_buf[i] = &tp->tx_bufs[i * TX_BUF_SIZE];
   }
 }
@@ -1134,7 +708,7 @@ static void rtl_hw_start(struct dev *dev)
 
   // Start the chip's Tx and Rx process
   outpd(ioaddr + RxMissed, 0);
-  //set_rx_mode(dev);
+  set_rx_mode(dev);
   outp(ioaddr + ChipCmd, CmdRxEnb | CmdTxEnb);
   
   // Enable all known interrupts by setting the interrupt mask
@@ -1148,6 +722,7 @@ static int rtl8129_open(struct dev *dev)
   int rx_buf_len_idx;
 
   enable_irq(tp->irq);
+  init_sem(&tp->tx_sem, NUM_TX_DESC);
 
   // The Rx ring allocation size is 2^N + delta, which is worst-case for
   // the kernel binary-buddy allocation.  We allocate the Tx bounce buffers
@@ -1206,13 +781,12 @@ static int rtl8129_close(struct dev *dev)
   outpd(ioaddr + RxMissed, 0);
 
   del_timer(&tp->timer);
-
   disable_irq(tp->irq);
 
   for (i = 0; i < NUM_TX_DESC; i++) 
   {
     if (tp->tx_pbuf[i]) pbuf_free(tp->tx_pbuf[i]);
-    tp->tx_pbuf[i] = 0;
+    tp->tx_pbuf[i] = NULL;
   }
   kfree(tp->rx_ring);
   tp->rx_ring = NULL;
@@ -1225,36 +799,380 @@ static int rtl8129_close(struct dev *dev)
   return 0;
 }
 
-int rtl8139_transmit(struct dev *dev, struct pbuf *p)
+static int rtl8139_transmit(struct dev *dev, struct pbuf *p)
 {
-  return -ENOSYS;
-}
+  struct nic *tp = (struct nic *) dev->privdata;
+  long ioaddr = tp->iobase;
+  int entry;
 
-int rtl8139_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
-  return -ENOSYS;
-}
+  // Wait for free entries in transmit ring
+  if (wait_for_object(&tp->tx_sem, TX_TIMEOUT) < 0)
+  {
+    kprintf("%s: transmit timeout, drop packet\n", dev->name);
+    tp->stats.tx_dropped++;
+    return -ETIMEOUT;
+  }
 
-int rtl8139_attach(struct dev *dev, struct eth_addr *hwaddr)
-{
-  struct nic *np = dev->privdata;
-  *hwaddr = np->hwaddr;
+  // Calculate the next Tx descriptor entry
+  entry = tp->cur_tx % NUM_TX_DESC;
+
+  tp->tx_pbuf[entry] = p;
+  if (p->next || ((unsigned long) (p->payload) & 3))
+  {
+    struct pbuf *q;
+    unsigned char *ptr;
+
+    // Must use alignment buffer
+    q = p;
+    ptr = tp->tx_buf[entry];
+    while (q)
+    {
+      memcpy(ptr, q->payload, q->len);
+      ptr += q->len;
+      q = q->next;
+    }
+
+    outpd(ioaddr + TxAddr0 + entry * 4, virt2phys(tp->tx_buf[entry]));
+  } 
+  else
+    outpd(ioaddr + TxAddr0 + entry * 4, virt2phys(p->payload));
+  
+  // Note: the chip doesn't have auto-pad! */
+  outpd(ioaddr + TxStatus0 + entry * 4, tp->tx_flag | (p->tot_len >= ETH_ZLEN ? p->tot_len : ETH_ZLEN));
+
+  tp->trans_start = ticks;
+
+  kprintf("%s: Queued Tx packet at %p size %d to slot %d\n", dev->name, p->payload, p->tot_len, entry);
 
   return 0;
 }
 
-int rtl8139_detach(struct dev *dev)
+// Receive packet from nic
+
+static int rtl8129_rx(struct dev *dev)
 {
+  struct nic *tp = (struct nic *) dev->privdata;
+  long ioaddr = tp->iobase;
+  unsigned char *rx_ring = tp->rx_ring;
+  unsigned short cur_rx = tp->cur_rx;
+
+  kprintf("%s: In rtl8129_rx(), current %4.4x BufAddr %4.4x, free to %4.4x, Cmd %2.2x\n",
+    dev->name, cur_rx, inpw(ioaddr + RxBufAddr),
+    inpw(ioaddr + RxBufPtr), inp(ioaddr + ChipCmd));
+
+  while ((inp(ioaddr + ChipCmd) & RxBufEmpty) == 0) 
+  {
+    unsigned int ring_offset = cur_rx % tp->rx_buf_len;
+    unsigned long rx_status = *(unsigned long *)(rx_ring + ring_offset);
+    unsigned int rx_size = rx_status >> 16;        // Includes the CRC
+
+    {
+      int i;
+      kprintf("%s:  rtl8129_rx() status %4.4x, size %4.4x, cur %4.4x\n", dev->name, rx_status, rx_size, cur_rx);
+      kprintf("%s: Frame contents ", dev->name);
+      for (i = 0; i < 70; i++) kprintf(" %2.2x", rx_ring[ring_offset + i]);
+      kprintf("\n");
+    }
+
+    if (rx_status & (RxBadSymbol | RxRunt | RxTooLong | RxCRCErr | RxBadAlign)) 
+    {
+      kprintf("%s: Ethernet frame had errors, status %8.8x\n", dev->name, rx_status);
+
+      if (rx_status == 0xffffffff) 
+      {
+        kprintf("%s: Invalid receive status at ring offset %4.4x\n", dev->name, ring_offset);
+        rx_status = 0;
+      }
+
+      if (rx_status & RxTooLong) 
+      {
+        kprintf("%s: Oversized Ethernet frame, status %4.4x!\n", dev->name, rx_status);
+
+        // The chip hangs here.
+        // This should never occur, which means that we are screwed when it does
+      }
+
+      tp->stats.rx_errors++;
+      if (rx_status & (RxBadSymbol | RxBadAlign)) tp->stats.rx_frame_errors++;
+      if (rx_status & (RxRunt | RxTooLong)) tp->stats.rx_length_errors++;
+      if (rx_status & RxCRCErr) tp->stats.rx_crc_errors++;
+      
+      // Reset the receiver, based on RealTek recommendation. (Bug?)
+      tp->cur_rx = 0;
+      outp(ioaddr + ChipCmd, CmdTxEnb);
+      
+      // Reset the multicast list
+      set_rx_mode(dev);
+      outp(ioaddr + ChipCmd, CmdRxEnb | CmdTxEnb);
+    } 
+    else 
+    {
+      // Allocate new pbuf
+      // Omit the four octet CRC from the length
+      struct pbuf *p;
+      int pkt_size = rx_size - 4;
+
+      p = pbuf_alloc(PBUF_RAW, pkt_size, PBUF_RW);
+      if (p == NULL) 
+      {
+        kprintf("%s: Memory squeeze, deferring packet.\n", dev->name);
+        
+	// We should check that some rx space is free.
+        // If not, free one and mark stats->rx_dropped
+        tp->stats.rx_dropped++;
+        break;
+      }
+      
+      if (ring_offset + rx_size > tp->rx_buf_len) 
+      {
+        int semi_count = tp->rx_buf_len - ring_offset - 4;
+        
+        memcpy(p->payload, &rx_ring[ring_offset + 4], semi_count);
+        memcpy((char *) p->payload + semi_count, rx_ring, pkt_size - semi_count);
+      } 
+      else 
+      {
+        memcpy(p->payload, &rx_ring[ring_offset + 4], pkt_size);
+      }
+
+      // Send packet to upper layer
+      if (dev_receive(tp->devno, p) < 0) pbuf_free(p);
+
+      tp->stats.rx_bytes += pkt_size;
+      tp->stats.rx_packets++;
+    }
+
+    cur_rx = (cur_rx + rx_size + 4 + 3) & ~3;
+    outpw(ioaddr + RxBufPtr, cur_rx - 16);
+  }
+
+  kprintf("%s: Done rtl8129_rx(), current %4.4x BufAddr %4.4x, free to %4.4x, Cmd %2.2x\n",
+    dev->name, cur_rx, inpw(ioaddr + RxBufAddr),
+    inpw(ioaddr + RxBufPtr), inp(ioaddr + ChipCmd));
+
+  tp->cur_rx = cur_rx;
   return 0;
 }
 
-void rtl8139_dpc(void *arg)
+static void rtl8129_tx_timeout(struct dev *dev)
+{
+  struct nic *tp = (struct nic *) dev->privdata;
+  long ioaddr = tp->iobase;
+  int status = inpw(ioaddr + IntrStatus);
+  int mii_reg, i;
+
+  kprintf("%s: Transmit timeout, status %2.2x %4.4x media %2.2x\n",
+    dev->name, inp(ioaddr + ChipCmd), status, inp(ioaddr + GPPinData));
+
+  if (status & (TxOK | RxOK)) 
+  {
+    kprintf("%s: RTL8139 Interrupt line blocked, status %x\n", dev->name, status);
+  }
+
+  // Disable interrupts by clearing the interrupt mask
+  outpw(ioaddr + IntrMask, 0x0000);
+
+  // Emit info to figure out what went wrong
+  kprintf("%s: Tx queue start entry %d  dirty entry %d\n", dev->name, tp->cur_tx, tp->dirty_tx);
+  
+  for (i = 0; i < NUM_TX_DESC; i++)
+    kprintf("%s:  Tx descriptor %d is %8.8x.%s\n",
+      dev->name, i, inpd(ioaddr + TxStatus0 + i*4),
+      i == tp->dirty_tx % NUM_TX_DESC ? " (queue head)" : "");
+
+  kprintf("%s: MII #%d registers are:", dev->name, tp->phys[0]);
+  for (mii_reg = 0; mii_reg < 8; mii_reg++) kprintf(" %4.4x", mdio_read(dev, tp->phys[0], mii_reg));
+  kprintf("\n");
+
+  // Dump the unsent Tx packets
+  for (i = 0; i < NUM_TX_DESC; i++) 
+  {
+    if (tp->tx_pbuf[i]) 
+    {
+      pbuf_free(tp->tx_pbuf[i]);
+      tp->tx_pbuf[i] = NULL;
+      tp->stats.tx_dropped++;
+    }
+  }
+
+  // Reset chip
+  rtl_hw_start(dev);
+
+  // Clear tx ring
+  tp->dirty_tx = tp->cur_tx = 0;
+  set_sem(&tp->tx_sem, NUM_TX_DESC);
+}
+
+// Error and abnormal or uncommon events handlers
+
+static void rtl_error(struct dev *dev, int status, int link_changed)
+{
+  struct nic *tp = (struct nic *) dev->privdata;
+  long ioaddr = tp->iobase;
+
+  kprintf("%s: Abnormal interrupt, status %8.8x\n", dev->name, status);
+
+  // Update the error count
+  tp->stats.rx_missed_errors += inpd(ioaddr + RxMissed);
+  outpd(ioaddr + RxMissed, 0);
+
+  if (status & RxUnderrun)
+  {
+    // This might actually be a link change event
+    if ((tp->flags & HAS_LNK_CHNG) && link_changed)
+    {
+      // Really link-change on new chips
+      int lpar = inpw(ioaddr + NWayLPAR);
+      int duplex = (lpar & 0x0100) || (lpar & 0x01C0) == 0x0040 || tp->duplex_lock;
+      
+      // Do not use MII_BMSR as that clears sticky bit
+      //if (inpw(ioaddr + GPPinData) & 0x0004) 
+      //  netif_link_down(dev);
+      //else
+      //  netif_link_up(dev);
+
+      kprintf("%s: Link changed, link partner %4.4x new duplex %d\n", dev->name, lpar, duplex);
+
+      tp->full_duplex = duplex;
+
+      // Only count as errors with no link change
+      status &= ~RxUnderrun;
+    } 
+    else 
+    {
+      // If this does not work, we will do rtl_hw_start
+      outp(ioaddr + ChipCmd, CmdTxEnb);
+      set_rx_mode(dev); // Reset the multicast list
+      outp(ioaddr + ChipCmd, CmdRxEnb | CmdTxEnb);
+
+      tp->stats.rx_errors++;
+      tp->stats.rx_fifo_errors++;
+    }
+  }
+  
+  if (status & (RxOverflow | RxErr | RxFIFOOver)) tp->stats.rx_errors++;
+  if (status & (PCSTimeout)) tp->stats.rx_length_errors++;
+  if (status & RxFIFOOver) tp->stats.rx_fifo_errors++;
+  if (status & RxOverflow) 
+  {
+    tp->stats.rx_over_errors++;
+    tp->cur_rx = inpw(ioaddr + RxBufAddr) % tp->rx_buf_len;
+    outpw(ioaddr + RxBufPtr, tp->cur_rx - 16);
+  }
+
+  if (status & PCIErr) 
+  {
+    unsigned long pci_cmd_status;
+    pci_cmd_status = pci_unit_read(dev->unit, PCI_CONFIG_CMD_STAT);
+    kprintf("%s: PCI Bus error %4.4x.\n", dev->name, pci_cmd_status);
+  }
+}
+
+// The interrupt handler does all of the Rx thread work and cleans up after the Tx thread
+
+static void rtl8139_dpc(void *arg)
 {
   struct dev *dev = (struct dev *) arg;
   struct nic *np = (struct nic *) dev->privdata;
+  struct nic *tp = np;
+  int boguscnt = np->max_interrupt_work;
+  long ioaddr = tp->iobase;
+  int link_changed = 0;
+
+  while (1)
+  {
+    int status = inpw(ioaddr + IntrStatus);
+    
+    // Acknowledge all of the current interrupt sources ASAP, but
+    // first get an additional status bit from CSCR
+    if (status & RxUnderrun) link_changed = inpw(ioaddr + CSCR) & CSCR_LinkChangeBit;
+    outpw(ioaddr + IntrStatus, status);
+
+    kprintf("%s: interrupt status=%#4.4x new intstat=%#4.4x\n", dev->name, status, inpw(ioaddr + IntrStatus));
+
+    if ((status & (PCIErr | PCSTimeout | RxUnderrun | RxOverflow | RxFIFOOver | TxErr | TxOK | RxErr | RxOK)) == 0) break;
+
+    if (status & (RxOK | RxUnderrun | RxOverflow | RxFIFOOver))
+    {
+      // Rx interrupt
+      rtl8129_rx(dev);
+    }
+
+    if (status & (TxOK | TxErr)) 
+    {
+      unsigned int dirty_tx = tp->dirty_tx;
+      int entries_freed = 0;
+
+      while (tp->cur_tx - dirty_tx > 0) 
+      {
+        int entry = dirty_tx % NUM_TX_DESC;
+        int txstatus = inpd(ioaddr + TxStatus0 + entry * 4);
+
+        if (!(txstatus & (TxStatOK | TxUnderrun | TxAborted))) break; // It still hasn't been Txed
+
+        // Note: TxCarrierLost is always asserted at 100mbps
+        if (txstatus & (TxOutOfWindow | TxAborted))
+	{
+          // There was an major error, log it
+          kprintf("%s: Transmit error, Tx status %8.8x\n", dev->name, txstatus);
+          tp->stats.tx_errors++;
+          if (txstatus & TxAborted) 
+	  {
+            tp->stats.tx_aborted_errors++;
+            outpd(ioaddr + TxConfig, TX_DMA_BURST << 8);
+          }
+          if (txstatus & TxCarrierLost) tp->stats.tx_carrier_errors++;
+          if (txstatus & TxOutOfWindow) tp->stats.tx_window_errors++;
+        }
+	else 
+	{
+          kprintf("%s: Transmit done, Tx status %8.8x\n", dev->name, txstatus);
+
+          if (txstatus & TxUnderrun) 
+	  {
+            // Add 64 to the Tx FIFO threshold
+            if (tp->tx_flag <  0x00300000) tp->tx_flag += 0x00020000;
+            tp->stats.tx_fifo_errors++;
+          }
+          tp->stats.collisions += (txstatus >> 24) & 15;
+          tp->stats.tx_bytes += txstatus & 0x7ff;
+          tp->stats.tx_packets++;
+        }
+
+        // Free the original pbuf
+	pbuf_free(tp->tx_pbuf[entry]);
+	tp->tx_pbuf[entry] = NULL;
+	entries_freed++;
+        
+        dirty_tx++;
+      }
+
+      tp->dirty_tx = dirty_tx;
+      release_sem(&tp->tx_sem, entries_freed);
+    }
+
+    // Check uncommon events with one test
+    if (status & (PCIErr | PCSTimeout | RxUnderrun | RxOverflow | RxFIFOOver | TxErr | RxErr))
+    {
+      if (status == 0xffff) break; // Missing chip!
+      rtl_error(dev, status, link_changed);
+    }
+
+    if (--boguscnt < 0) 
+    {
+      kprintf("%s: Too much work at interrupt, IntrStatus=0x%4.4x\n", dev->name, status);
+      
+      // Clear all interrupt sources
+      outpw(ioaddr + IntrStatus, 0xffff);
+      break;
+    }
+  }
+
+  kprintf("%s: exiting interrupt, intr_status=%#4.4x\n", dev->name, inpw(ioaddr + IntrStatus));
 }
 
-int rtl8139_handler(struct context *ctxt, void *arg)
+
+static int rtl8139_handler(struct context *ctxt, void *arg)
 {
   struct dev *dev = (struct dev *) arg;
   struct nic *np = (struct nic *) dev->privdata;
@@ -1262,10 +1180,12 @@ int rtl8139_handler(struct context *ctxt, void *arg)
   // Queue DPC to service interrupt
   queue_irq_dpc(&np->dpc, rtl8139_dpc, dev);
 
+  eoi(np->irq);
+
   return 0;
 }
 
-void rtl8139_timer(void *arg)
+static void rtl8139_timer(void *arg)
 {
   struct dev *dev = (struct dev *) arg;
   struct nic *np = (struct nic *) dev->privdata;
@@ -1292,24 +1212,11 @@ void rtl8139_timer(void *arg)
     }
   }
 
-#if 0
-  // Check for bogusness
-  if (inw(ioaddr + IntrStatus) & (TxOK | RxOK)) 
-  {
-    int status = inpw(ioaddr + IntrStatus);      // Double check
-    if (status & (TxOK | RxOK) && ! dev->interrupt) 
-    {
-      kprintf("%s: RTL8139 Interrupt line blocked, status %x\n", dev->name, status);
-      rtl8129_interrupt(dev->irq, dev, 0);
-    }
-  }
-  if (ticks - dev->trans_start >= 2 * TX_TIMEOUT)
+  if (np->cur_tx - np->dirty_tx > 1  && (ticks - np->trans_start) > TX_TIMEOUT) 
   {
     rtl8129_tx_timeout(dev);
   }
-#endif
 
-#define RTL_TUNE_TWISTER
 #if defined(RTL_TUNE_TWISTER)
   // This is a complicated state machine to configure the "twister" for
   // impedance/echos based on the cable length.
@@ -1411,6 +1318,24 @@ void rtl8139_timer(void *arg)
   mod_timer(&np->timer, ticks + next_tick);
 }
 
+static int rtl8139_ioctl(struct dev *dev, int cmd, void *args, size_t size)
+{
+  return -ENOSYS;
+}
+
+static int rtl8139_attach(struct dev *dev, struct eth_addr *hwaddr)
+{
+  struct nic *np = dev->privdata;
+  *hwaddr = np->hwaddr;
+
+  return 0;
+}
+
+static int rtl8139_detach(struct dev *dev)
+{
+  return 0;
+}
+
 struct driver rtl8139_driver =
 {
   "rtl8139",
@@ -1425,7 +1350,7 @@ struct driver rtl8139_driver =
 
 int __declspec(dllexport) install(struct unit *unit, char *opts)
 {
-  int chip_idx;
+  int board_idx;
   unsigned short ioaddr;
   unsigned short irq;
   struct dev *dev;
@@ -1434,21 +1359,22 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   int config1;
 
   // Determine NIC type
-  chip_idx = 0;
-  while (chip_tbl[chip_idx].vendorname != NULL)
+  i = 0;
+  while (board_tbl[i].vendorname != NULL)
   {
-    if ((unit->unitcode & chip_tbl[chip_idx].unitmask) == chip_tbl[chip_idx].unitcode &&
-        (unit->subunitcode & chip_tbl[chip_idx].subsystemmask) == chip_tbl[chip_idx].subsystemcode &&
-        (unit->revision & chip_tbl[chip_idx].revisionmask) == chip_tbl[chip_idx].revisioncode)
+    if ((unit->unitcode & board_tbl[i].unitmask) == board_tbl[i].unitcode &&
+        (unit->subunitcode & board_tbl[i].subsystemmask) == board_tbl[i].subsystemcode &&
+        (unit->revision & board_tbl[i].revisionmask) == board_tbl[i].revisioncode)
       break;
 
-    chip_idx++;
+    i++;
   }
 
-  if (chip_tbl[chip_idx].vendorname == NULL) return -EIO;
+  if (board_tbl[i].vendorname == NULL) return -EIO;
+  board_idx = i;
 
-  unit->vendorname = chip_tbl[chip_idx].vendorname;
-  unit->productname = chip_tbl[chip_idx].productname;
+  unit->vendorname = board_tbl[board_idx].vendorname;
+  unit->productname = board_tbl[board_idx].productname;
 
   // Get NIC PCI configuration
   ioaddr = (unsigned short) get_unit_iobase(unit);
@@ -1472,7 +1398,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
 
   // Bring the chip out of low-power mode
   config1 = inp(ioaddr + Config1);
-  if (chip_tbl[chip_idx].flags & HAS_MII_XCVR)
+  if (board_tbl[board_idx].flags & HAS_MII_XCVR)
   {
     // RTL8129 chip
     outp(ioaddr + Config1, config1 & ~0x03);
@@ -1482,7 +1408,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
     int addr_len = read_eeprom(ioaddr, 0, 8) == 0x8129 ? 8 : 6;
     for (i = 0; i < 3; i++)
     {
-      ((unsigned short *)(&np->hwaddr))[i] = read_eeprom(ioaddr, i + 7, addr_len);
+      ((unsigned short *)(np->hwaddr.addr))[i] = read_eeprom(ioaddr, i + 7, addr_len);
     }
   }
 
@@ -1491,8 +1417,8 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   np->dev = dev;
   np->iobase = ioaddr;
   np->irq = irq;
-  np->chip_id = chip_idx;
-  np->flags = chip_tbl[chip_idx].flags;
+  np->board_id = board_idx;
+  np->flags = board_tbl[board_idx].flags;
   np->max_interrupt_work = max_interrupt_work;
   np->multicast_filter_limit = multicast_filter_limit;
   np->config1 = 0;
@@ -1551,7 +1477,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   {
     np->medialock = 1;
 
-    kprintf("%s: Forcing %dMBits/s %s-duplex operation\n", dev->name, np->link_speed, np->full_duplex ? "full" : "half");
+    kprintf("%s: Forcing %dmbps %s-duplex operation\n", dev->name, np->link_speed, np->full_duplex ? "full" : "half");
 
     mdio_write(dev, np->phys[0], 0,
            ((np->link_speed == 100) ? 0x2000 : 0) |  // 100mbps?

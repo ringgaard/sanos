@@ -146,4 +146,15 @@ int __cdecl _outp(port_t, int);
 unsigned short __cdecl _outpw(port_t, unsigned short);
 unsigned long __cdecl _outpd(port_t, unsigned long);
 
+#ifdef DEBUG
+
+#define inp _inp
+#define inpw _inpw
+#define inpd _inpd
+#define outp _outp
+#define outpw _outpw
+#define outpd _outpd
+
+#endif
+
 #endif
