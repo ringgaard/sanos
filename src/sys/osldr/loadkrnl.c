@@ -6,7 +6,19 @@
 // Kernel loader
 //
 
-#include <os/krnl.h>
+#include <os.h>
+#include <os/pdir.h>
+#include <os/tss.h>
+#include <os/seg.h>
+#include <os/syspage.h>
+#include <os/mbr.h>
+#include <os/dfs.h>
+#include <os/pe.h>
+
+void kprintf(const char *fmt,...);
+void panic(char *msg);
+
+#define SECTORSIZE 512
 
 extern unsigned long krnlentry;
 extern int bootpart;

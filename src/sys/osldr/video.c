@@ -6,7 +6,9 @@
 // 6845 Video Controller
 //
 
-#include <os/krnl.h>
+#include <os.h>
+
+vsprintf(buffer, fmt, args);
 
 #define VIDEO_BASE           0xB8000
 

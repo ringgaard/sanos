@@ -122,6 +122,7 @@ void free_module_mem(void *addr, int pages)
 void init_kmem()
 {
   int pfn;
+  struct image_header *imghdr;
 
   // Allocate page frame for kernel heap resource map and map into syspages
   pfn = alloc_pageframe(PFT_SYS);
@@ -141,5 +142,7 @@ void init_kmem()
   rmap_init(kmodmap, KMODMAP_ENTRIES);
 
   // Add kernel heap address space to kmodmap
+  imghdr = get_image_header((hmodule_t) OSBASE);
   rmap_free(kmodmap, BTOP(OSBASE), BTOP(KMODSIZE));
+  rmap_reserve(kmodmap, BTOP(OSBASE), BTOP(imghdr->optional.size_of_image));
 }

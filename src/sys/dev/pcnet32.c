@@ -162,6 +162,8 @@ struct pcnet32
   struct event rdc;	                // Remote DMA completed event
   struct event ptx;                     // packet transmitted event
 
+  struct eth_addr hwaddr;               // MAC address for NIC
+
   // Access functions
   unsigned short (*read_csr)(unsigned short, int);
   void (*write_csr)(unsigned short, int, unsigned short);
@@ -308,12 +310,12 @@ static struct pcnet32_access pcnet32_dwio =
   pcnet32_dwio_reset
 };
 
-err_t pcnet32_transmit(struct netif *netif, struct pbuf *p)
+int pcnet32_transmit_old(struct netif *netif, struct pbuf *p)
 {
+  struct pcnet32 *pcnet32 = netif->state;
   unsigned char *data;
   int len;
   struct pbuf *q;
-  struct pcnet32 *pcnet32 = netif->state;
   int entry = pcnet32->next_tx;
   unsigned short status = 0x8300;
 
@@ -450,7 +452,45 @@ void pcnet32_handler(struct context *ctxt, void *arg)
     kprintf("pcnet32: intr lost\n");
 }
 
-int init_pcnet32(struct netif *netif)
+int pcnet32_ioctl(struct dev *dev, int cmd, void *args, size_t size)
+{
+  return -ENOSYS;
+}
+
+int pcnet32_attach(struct dev *dev, struct netif *netif)
+{
+  struct pcnet32 *pcnet32 = dev->privdata;
+  pcnet32->netif = netif;
+  netif->state = &pcnet32;
+  netif->ethoutput = pcnet32_transmit_old;
+  netif->hwaddr = pcnet32->hwaddr;
+
+  return 0;
+}
+
+int pcnet32_detach(struct dev *dev)
+{
+  return -ENOSYS;
+}
+
+int pcnet32_transmit(struct dev *dev, struct pbuf *p)
+{
+  return pcnet32_transmit_old(dev->netif, p);
+}
+
+struct driver pcnet32_driver =
+{
+  "pcnet32",
+  DEV_TYPE_PACKET,
+  pcnet32_ioctl,
+  NULL,
+  NULL,
+  pcnet32_attach,
+  pcnet32_detach,
+  pcnet32_transmit
+};
+
+int __declspec(dllexport) install(struct device *dv)
 {
   int version;
   char *chipname;
@@ -462,21 +502,17 @@ int init_pcnet32(struct netif *netif)
   unsigned long value;
   struct pci_dev *dev;
 
-  // Initialize network interface
-  pcnet32.netif = netif;
-  pcnet32.netif->state = &pcnet32;
-  pcnet32.netif->ethoutput = pcnet32_transmit;
-
   pcnet32.phys_addr = (unsigned long) virt2phys(&pcnet32);
-  dev = lookup_pci_device(PCI_VENDOR_AMD, PCI_DEVICE_PCNET32);
-  if (!dev) return 0;
+  //dev = lookup_pci_device(PCI_VENDOR_AMD, PCI_DEVICE_PCNET32);
+  //if (!dev) return 0;
 
   // Setup NIC configuration
+  dev = dv->pci;
   pcnet32.iobase = (unsigned short) dev->iobase;
   pcnet32.irq = (unsigned short) dev->irq;
   pcnet32.membase = (unsigned short) dev->membase;
 
-  //kprintf("PCnet32: iobase 0x%x irq %d\n", pcnet32.iobase, pcnet32.irq);
+  //kprintf("pcnet32: iobase 0x%x irq %d\n", pcnet32.iobase, pcnet32.irq);
 
   // Enable bus mastering
   value = pci_config_read(dev->bus->busno, dev->devno, dev->funcno, PCI_CONFIG_CMD_STAT);
@@ -521,36 +557,44 @@ int init_pcnet32(struct netif *netif)
   switch (version)
   {
     case 0x2420:
-      chipname = "PCnet/PCI 79C970";
+      chipname = "PCI 79C970";
       break;
+
     case 0x2430:
-      chipname = "PCnet/PCI 79C970";
+      chipname = "PCI 79C970";
       break;
+
     case 0x2621:
-      chipname = "PCnet/PCI II 79C970A";
+      chipname = "PCI II 79C970A";
       //fdx = 1;
       break;
+
     case 0x2623:
-      chipname = "PCnet/FAST 79C971";
+      chipname = "FAST 79C971";
       //fdx = 1; mii = 1; fset = 1;
       //ltint = 1;
       break;
+
     case 0x2624:
-      chipname = "PCnet/FAST+ 79C972";
+      chipname = "FAST+ 79C972";
       //fdx = 1; mii = 1; fset = 1;
       break;
+
     case 0x2625:
-      chipname = "PCnet/FAST III 79C973";
+      chipname = "FAST III 79C973";
       //fdx = 1; mii = 1;
       break;
+
     case 0x2626:
-      chipname = "PCnet/Home 79C978";
+      chipname = "Home 79C978";
       //fdx = 1;
       break;
+
     case 0x2627:
-      chipname = "PCnet/FAST III 79C975";
+      chipname = "FAST III 79C975";
       //fdx = 1; mii = 1;
       break;
+
     default:
       kprintf("pcnet32: PCnet version %#x, no PCnet32 chip.\n", version);
       return 0;
@@ -562,7 +606,7 @@ int init_pcnet32(struct netif *netif)
   enable_irq(pcnet32.irq);
 
   // Read MAC address from PROM
-  for (i = 0; i < ETHER_ADDR_LEN; i++) pcnet32.netif->hwaddr.addr[i] = (unsigned char) _inp((unsigned short) (pcnet32.iobase + i));
+  for (i = 0; i < ETHER_ADDR_LEN; i++) pcnet32.hwaddr.addr[i] = (unsigned char) _inp((unsigned short) (pcnet32.iobase + i));
 
   // Setup the init block
   //pcnet32.init_block.mode = 0x0003;
@@ -570,7 +614,7 @@ int init_pcnet32(struct netif *netif)
   //pcnet32.init_block.mode = 0x0000;
   pcnet32.init_block.mode = 0x0080; // ASEL
   pcnet32.init_block.tlen_rlen = TX_RING_LEN_BITS | RX_RING_LEN_BITS;
-  for (i = 0; i < 6; i++) pcnet32.init_block.phys_addr[i] = pcnet32.netif->hwaddr.addr[i];
+  for (i = 0; i < 6; i++) pcnet32.init_block.phys_addr[i] = pcnet32.hwaddr.addr[i];
   pcnet32.init_block.filter[0] = 0x00000000;
   pcnet32.init_block.filter[1] = 0x00000000;
   pcnet32.init_block.rx_ring = pcnet32.phys_addr + offsetof(struct pcnet32, rx_ring);
@@ -637,8 +681,13 @@ int init_pcnet32(struct netif *netif)
   //       dev->name, i, (u32) (lp->dma_addr + offsetof(struct pcnet32_private, init_block)),
   //       lp->a.read_csr (ioaddr, 0));
 
-  kprintf("pcnet32: iobase 0x%x irq %d hwaddr %s chip %s\n", pcnet32.iobase, pcnet32.irq, ether2str(&pcnet32.netif->hwaddr, str), chipname);
+  kprintf("pcnet32: %s iobase 0x%x irq %d hwaddr %s\n", chipname, pcnet32.iobase, pcnet32.irq, ether2str(&pcnet32.hwaddr, str));
+  dev_make("pcnet32", &pcnet32_driver, dv, &pcnet32);
+  return 0;
+}
 
+int __stdcall start(hmodule_t hmod, int reason, void *reserved2)
+{
   return 1;
 }
 

@@ -28,9 +28,10 @@ struct eth_hdr
 
 #pragma pack(pop)
 
-char *ether2str(struct eth_addr *hwaddr, char *s);
-err_t ether_input(struct pbuf *p, struct netif *netif);
-err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr);
+krnlapi char *ether2str(struct eth_addr *hwaddr, char *s);
+krnlapi err_t ether_input(struct pbuf *p, struct netif *netif);
+krnlapi err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr);
+
 void ether_init();
 
 #endif

@@ -41,12 +41,13 @@ struct pbuf
 };
 
 void pbuf_init();
-struct pbuf *pbuf_alloc(int layer, int size, int type);
-void pbuf_realloc(struct pbuf *p, int size); 
-int pbuf_header(struct pbuf *p, int header_size);
-void pbuf_ref(struct pbuf *p);
-int pbuf_free(struct pbuf *p);
-void pbuf_chain(struct pbuf *h, struct pbuf *t);
-struct pbuf *pbuf_dechain(struct pbuf *p);
+
+krnlapi struct pbuf *pbuf_alloc(int layer, int size, int type);
+krnlapi void pbuf_realloc(struct pbuf *p, int size); 
+krnlapi int pbuf_header(struct pbuf *p, int header_size);
+krnlapi void pbuf_ref(struct pbuf *p);
+krnlapi int pbuf_free(struct pbuf *p);
+krnlapi void pbuf_chain(struct pbuf *h, struct pbuf *t);
+krnlapi struct pbuf *pbuf_dechain(struct pbuf *p);
 
 #endif

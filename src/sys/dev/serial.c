@@ -671,6 +671,11 @@ static void init_serial_port(char *devname, int iobase, int irq)
   kprintf("%s: iobase=%x irq=%d type=%s\n", devname, sp->iobase, sp->irq, uart_name[sp->type]);
 }
 
+int __declspec(dllexport) install_serial(struct device *dv)
+{
+  return 0;
+}
+
 void init_serial()
 {
   int port;

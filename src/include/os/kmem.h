@@ -10,6 +10,7 @@
 #define KMEM_H
 
 extern struct rmap *osvmap;
+extern struct rmap *kmodmap;
 
 krnlapi void *alloc_pages(int pages);
 krnlapi void *alloc_pages_align(int pages, int align);

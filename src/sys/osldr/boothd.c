@@ -6,7 +6,9 @@
 // Boot Harddisk driver
 //
 
-#include <os/krnl.h>
+#include <os.h>
+
+void kprintf(const char *fmt,...);
 
 #define SECTORSIZE              512
 

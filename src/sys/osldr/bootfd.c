@@ -6,7 +6,14 @@
 // Boot floppy disk driver
 //
 
-#include <os/krnl.h>
+#include <os.h>
+#include <os/seg.h>
+#include <os/tss.h>
+#include <os/syspage.h>
+#include <os/pic.h>
+#include <os/intr.h>
+
+void panic(char *msg);
 
 #define SECTORSIZE            512
 #define NUMDRIVES             4

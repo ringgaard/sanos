@@ -15,6 +15,11 @@ struct pnp_dev;
 
 #define NODEV (-1)
 
+#define DEVNAMELEN              16
+#define MAX_DEVICES             64
+#define MAX_RESOURCES           32
+#define MAX_DEVS                64
+
 #define DEV_TYPE_STREAM		1
 #define DEV_TYPE_BLOCK		2
 #define DEV_TYPE_PACKET		3
@@ -26,10 +31,6 @@ struct pnp_dev;
 #define DEVICE_TYPE_LEGACY      0
 #define DEVICE_TYPE_PCI         1
 #define DEVICE_TYPE_PNP         2
-
-#define MAX_DEVICES             64
-#define MAX_RESOURCES           32
-#define MAX_DEVS                64
 
 #define RESOURCE_UNUSED	        0
 #define RESOURCE_IO	        1
@@ -59,14 +60,16 @@ struct driver
   int (*read)(struct dev *dev, void *buffer, size_t count, blkno_t blkno);
   int (*write)(struct dev *dev, void *buffer, size_t count, blkno_t blkno);
   int (*attach)(struct dev *dev, struct netif *netif);
-  int (*detach)(struct dev *dev, struct netif *netif);
+  int (*detach)(struct dev *dev);
+  int (*transmit)(struct dev *dev, struct pbuf *p);
 };
 
 struct dev 
 {
-  char *name;
+  char name[DEVNAMELEN];
   struct driver *driver;
   struct device *device;
+  struct netif *netif;
   void *privdata;
   int refcnt;
 };

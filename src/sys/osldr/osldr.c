@@ -6,7 +6,18 @@
 // Operating system loader
 //
 
-#include <os/krnl.h>
+#include <os.h>
+
+#include <os/pdir.h>
+#include <os/tss.h>
+#include <os/seg.h>
+#include <os/syspage.h>
+#include <os/object.h>
+#include <os/sched.h>
+
+void kprintf(const char *fmt,...);
+void clear_screen();
+void init_video();
 
 #define VIDEO_BASE           0xB8000
 #define HEAP_START           (1 * M)

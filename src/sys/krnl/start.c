@@ -161,7 +161,7 @@ void init_net()
   nic = netif_add("eth0", &ipaddr, &netmask, &gw);
   netif_set_default(nic);
   //init_ne2000(nic);
-  init_pcnet32(nic);
+  //init_pcnet32(nic);
 }
 
 void main(void *arg)

@@ -41,7 +41,7 @@ MTL=midl.exe
 # Begin Source File
 
 SOURCE=.\mkbootdisk.cmd
-USERDEP__MKBOO="..\bin\boot"	"..\bin\osldr.dll"	"..\bin\krnl.dll"	"..\bin\os.dll"	"..\bin\sh.exe"	"..\bin\fdisk.exe"	"..\bin\setup.exe"	"..\bin\msvcrt.dll"	"..\bin\kernel32.dll"	"..\bin\user32.dll"	"..\bin\advapi32.dll"	"..\bin\winmm.dll"	"..\bin\jinit.exe"	
+USERDEP__MKBOO="..\bin\boot"	"..\bin\osldr.dll"	"..\bin\krnl.dll"	"..\bin\pcnet32.sys"	"..\bin\os.dll"	"..\bin\sh.exe"	"..\bin\fdisk.exe"	"..\bin\setup.exe"	"..\bin\msvcrt.dll"	"..\bin\kernel32.dll"	"..\bin\user32.dll"	"..\bin\advapi32.dll"	"..\bin\winmm.dll"	"..\bin\jinit.exe"	
 # Begin Custom Build - Create boot disk
 InputPath=.\mkbootdisk.cmd
 

@@ -23,7 +23,7 @@
 #endif
 #endif
 
-#ifdef KERNEL
+#ifdef KRNL_LIB
 #define krnlapi __declspec(dllexport)
 #else
 #define krnlapi __declspec(dllimport)

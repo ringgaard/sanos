@@ -10,6 +10,7 @@ copy bin\os.dll img\bootdisk\os > nul
 copy bin\sh.exe img\bootdisk\os > nul
 copy bin\setup.exe img\bootdisk\os > nul
 copy bin\fdisk.exe img\bootdisk\os > nul
+copy bin\pcnet32.sys img\bootdisk\os > nul
 copy build\krnl.ini img\bootdisk\etc > nul
 copy build\os.ini img\bootdisk\etc > nul
 copy bin\boot img\bootdisk\setup > nul
@@ -17,6 +18,7 @@ copy bin\osldr.dll img\bootdisk\setup > nul
 copy bin\krnl.dll img\bootdisk\setup > nul
 copy bin\os.dll img\bootdisk\setup > nul
 copy bin\sh.exe img\bootdisk\setup > nul
+copy bin\pcnet32.sys img\bootdisk\setup > nul
 copy build\krnl.ini img\bootdisk\setup > nul
 copy build\os.ini img\bootdisk\setup > nul
 copy build\setup.ini img\bootdisk\setup > nul

@@ -130,6 +130,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name winmm
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name pcnet32
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -238,6 +241,25 @@ Package=<5>
 
 Package=<4>
 {{{
+}}}
+
+###############################################################################
+
+Project: "pcnet32"=.\pcnet32.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+    begin source code control
+    pcnet32
+    ..
+    end source code control
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name krnl
+    End Project Dependency
 }}}
 
 ###############################################################################

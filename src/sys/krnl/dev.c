@@ -129,6 +129,11 @@ static struct binding *find_binding(struct device *dv)
 void bind_devices()
 {
   int n;
+  char modfn[MAXPATH];
+  char *entryname;
+  hmodule_t hmod;
+  int (*entry)(struct device *dv);
+  int rc;
 
   // Parse driver binding database
   parse_bindings();
@@ -139,9 +144,37 @@ void bind_devices()
     struct device *dv = devicetab[n];
     struct binding *bind = find_binding(dv);
 
+    // Install driver
     if (bind)
     {
-      kprintf("dev %s bind to %s\n", dv->name, bind->module);
+      strcpy(modfn, bind->module);
+      entryname = strchr(modfn, ',');
+      if (entryname)
+	*entryname++ = 0;
+      else 
+	entryname = "install";
+
+      hmod = load(modfn);
+      if (!hmod)
+      {
+	kprintf("warning: unable to load driver %s for device '%s'\n", modfn, dv->name);
+	continue;
+      }
+
+      entry = resolve(hmod, entryname);
+      if (!entry)
+      {
+	kprintf("warning: unable to load driver %s entry %s for device '%s'\n", modfn, entryname, dv->name);
+	continue;
+      }
+
+      //kprintf("install driver %s for device '%s' (entry %p)\n", modfn, dv->name, entry);
+      rc = entry(dv);
+      if (rc < 0)
+      {
+	kprintf("warning: error %d loading driver %s for device '%s'\n", rc, modfn, dv->name);
+	continue;
+      }
     }
   }
 }
@@ -163,7 +196,6 @@ devno_t dev_make(char *name, struct driver *driver, struct device *device, void 
   dev = (struct dev *) kmalloc(sizeof(struct dev));
   devtab[devno] = dev;
 
-  dev->name = kmalloc(strlen(name) + 1);
   strcpy(dev->name, name);
   dev->driver = driver;
   dev->device = device;

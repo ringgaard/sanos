@@ -12,6 +12,8 @@
 char *strncpy(char *dest, const char *source, size_t count);
 char *strdup(char *s);
 int stricmp(const char *s1, const char *s2);
+char *strchr(const char *s, int ch);
+
 int vsprintf(char *buf, const char *fmt, va_list args);
 int sprintf(char *buf, const char *fmt, ...);
 

@@ -76,7 +76,7 @@ void exit();
 extern devno_t consdev;
 
 void init_cons();
-void kprintf(const char *fmt, ...);
+krnlapi void kprintf(const char *fmt, ...);
 
 // cmos.c
 

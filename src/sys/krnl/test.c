@@ -526,12 +526,18 @@ static void list_memmap(struct rmap *rmap, unsigned int startpos)
 
 static void vmem_list()
 {
-  list_memmap(vmap, 64 * K / PAGESIZE);
+  list_memmap(vmap, BTOP(64 * K));
 }
 
 static void kmem_list()
 {
-  list_memmap(osvmap, KHEAPBASE / PAGESIZE);
+  list_memmap(osvmap, BTOP(KHEAPBASE));
+}
+
+
+static void mmem_list()
+{
+  list_memmap(kmodmap, BTOP(OSBASE));
 }
 
 static void pmem_list()
@@ -727,6 +733,14 @@ static void dump_umods()
   dump_mods(((struct peb *) PEB_ADDRESS)->usermods);
 }
 
+static void load_mod(char *fn)
+{
+  hmodule_t hmod;
+
+  hmod = load(fn);
+  kprintf("hmodule: %08X\n", hmod);
+}
+
 static void test(char *arg)
 {
   devno_t dev;
@@ -817,6 +831,8 @@ void shell()
       vmem_list();
     else if (strcmp(cmd, "kmem") == 0)
       kmem_list();
+    else if (strcmp(cmd, "mmem") == 0)
+      mmem_list();
     else if (strcmp(cmd, "pmem") == 0)
       pmem_list();
     else if (strcmp(cmd, "fs") == 0)
@@ -831,6 +847,8 @@ void shell()
       dump_umods();
     else if (strcmp(cmd, "test") == 0)
       test(arg);
+    else if (strcmp(cmd, "load") == 0)
+      load_mod(arg);
     else if (*cmd)
       kprintf("%s: unknown command\n", cmd);
   }

@@ -48,6 +48,13 @@ int stricmp(const char *s1, const char *s2)
   return (int) (f - l);
 }
 
+char * strchr(const char *s, int ch)
+{
+  while (*s && *s != (char) ch) s++;
+  if (*s == (char) ch) return (char *) s;
+  return NULL;
+}
+
 void *memmove(void *dst, const void *src, size_t count)
 {
   void * ret = dst;

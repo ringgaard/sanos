@@ -47,7 +47,7 @@ struct stats_all
   struct stats_pbuf pbuf;
 };
 
-extern struct stats_all stats;
+krnlapi extern struct stats_all stats;
 
 void stats_init();
 
