@@ -135,9 +135,9 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
   else 
   {
     // No match was found, send ICMP destination port unreachable unless
-    // destination address was broadcast/multicast and netif has been configured.
+    // destination address was broadcast/multicast.
     
-    if (!ip_addr_isany(&inp->netmask) && !ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) && !ip_addr_ismulticast(&iphdr->dest))
+    if (!ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) && !ip_addr_ismulticast(&iphdr->dest))
     {	
       // Deconvert from host to network byte order
       udphdr->src = htons(udphdr->src);

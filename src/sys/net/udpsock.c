@@ -266,7 +266,6 @@ static int udpsock_send(struct socket *s, void *data, int size, unsigned int fla
   rc = udp_send(s->udp.pcb, p, NULL);
   if (rc < 0)
   {
-kprintf("udp: send error %d\n", rc);
     pbuf_free(p);
     return rc;
   }

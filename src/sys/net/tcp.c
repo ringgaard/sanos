@@ -156,7 +156,7 @@ void tcp_abort(struct tcp_pcb *pcb)
     kfree(pcb);
     if (errf != NULL) errf(errf_arg, -EABORT);
 
-    kprintf("tcp_abort: sending RST\n");
+    //kprintf("tcp_abort: sending RST\n");
     tcp_rst(seqno, ackno, &local_ip, &remote_ip, local_port, remote_port);
   }
 }
@@ -297,7 +297,7 @@ err_t tcp_connect(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short po
   err_t ret;
   unsigned long iss;
 
-  kprintf("tcp_connect to port %d\n", port);
+  //kprintf("tcp_connect to port %d\n", port);
 
   if (ipaddr != NULL)
     pcb->remote_ip = *ipaddr;
@@ -521,7 +521,6 @@ void tcp_fasttmr(void *arg)
     if (pcb->flags & TF_ACK_DELAY) 
     {
       //kprintf("tcp_fasttmr: delayed ACK\n");
-      //tcp_ack_now(pcb);
       pcb->flags |= TF_ACK_NOW;
       tcp_output(pcb);
       pcb->flags &= ~(TF_ACK_DELAY | TF_ACK_NOW);

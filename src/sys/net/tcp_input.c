@@ -334,7 +334,7 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       } 
       else if (flags & TCP_SYN) 
       {
-	kprintf("TCP connection request %d -> %d.\n", seg->tcphdr->src, seg->tcphdr->dest);
+	//kprintf("TCP connection request %d -> %d.\n", seg->tcphdr->src, seg->tcphdr->dest);
 	npcb = tcp_new();
 
 	// If a new PCB could not be created (probably due to lack of memory),
@@ -399,7 +399,6 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	{
 	  pcb->connected(pcb->callback_arg, pcb, 0);
 	}
-	//tcp_ack(pcb);
 	pcb->flags |= TF_ACK_DELAY;
       }    
       break;
@@ -410,7 +409,7 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	if (TCP_SEQ_LT(pcb->lastack, ackno) && TCP_SEQ_LEQ(ackno, pcb->snd_nxt)) 
 	{
 	  pcb->state = ESTABLISHED;
-	  kprintf("TCP connection established %d -> %d.\n", seg->tcphdr->src, seg->tcphdr->dest);
+	  //kprintf("TCP connection established %d -> %d.\n", seg->tcphdr->src, seg->tcphdr->dest);
 
 	  // Call the accept function
 	  if (pcb->accept != NULL) 
@@ -446,7 +445,6 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       tcp_receive(seg, pcb);
       if (flags & TCP_FIN)
       {
-	//tcp_ack_now(pcb);
 	pcb->flags |= TF_ACK_NOW;
 	pcb->state = CLOSE_WAIT;
       }
@@ -458,8 +456,7 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       {
 	if ((flags & TCP_ACK) && ackno == pcb->snd_nxt) 
 	{
-	  kprintf("TCP connection closed %d -> %d.\n", seg->tcphdr->src, seg->tcphdr->dest);
-	  //tcp_ack_now(pcb);
+	  //kprintf("TCP connection closed %d -> %d.\n", seg->tcphdr->src, seg->tcphdr->dest);
 	  pcb->flags |= TF_ACK_NOW;
 	  tcp_pcb_purge(pcb);
 	  TCP_RMV(&tcp_active_pcbs, pcb);
@@ -469,7 +466,6 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	} 
 	else 
 	{
-	  //tcp_ack_now(pcb);
   	  pcb->flags |= TF_ACK_NOW;
 	  pcb->state = CLOSING;
 	}
@@ -484,8 +480,7 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       tcp_receive(seg, pcb);
       if (flags & TCP_FIN) 
       {
-	kprintf("TCP connection closed %d -> %d.\n", seg->tcphdr->src, seg->tcphdr->dest);
-	//tcp_ack_now(pcb);
+	//kprintf("TCP connection closed %d -> %d.\n", seg->tcphdr->src, seg->tcphdr->dest);
 	pcb->flags |= TF_ACK_NOW;
 	tcp_pcb_purge(pcb);
 	TCP_RMV(&tcp_active_pcbs, pcb);
@@ -499,8 +494,7 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       tcp_receive(seg, pcb);
       if (flags & TCP_ACK && ackno == pcb->snd_nxt) 
       {
-	kprintf("TCP connection closed %d -> %d.\n", seg->tcphdr->src, seg->tcphdr->dest);
-	//tcp_ack_now(pcb);
+	//kprintf("TCP connection closed %d -> %d.\n", seg->tcphdr->src, seg->tcphdr->dest);
 	pcb->flags |= TF_ACK_NOW;
 	tcp_pcb_purge(pcb);
 	TCP_RMV(&tcp_active_pcbs, pcb);
@@ -514,7 +508,7 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       tcp_receive(seg, pcb);
       if (flags & TCP_ACK && ackno == pcb->snd_nxt) 
       {
-	kprintf("TCP connection closed %d -> %d.\n", seg->tcphdr->src, seg->tcphdr->dest);
+	//kprintf("TCP connection closed %d -> %d.\n", seg->tcphdr->src, seg->tcphdr->dest);
 	pcb->state = CLOSED;
 	pcb->flags |= TF_CLOSED;
       }
@@ -527,7 +521,6 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       }
       if (TCP_TCPLEN(seg) > 0) 
       {
-	//tcp_ack_now(pcb);
 	pcb->flags |= TF_ACK_NOW;
       }
       break;
@@ -658,10 +651,10 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
       // in fact be sent once
       while (pcb->unsent != NULL && TCP_SEQ_LEQ(ntohl(pcb->unsent->tcphdr->seqno) + TCP_TCPLEN(pcb->unsent), ackno)) 
       {
-	kprintf("tcp_receive: removing %lu:%lu from pcb->unsent\n",
-		   ntohl(pcb->unsent->tcphdr->seqno),
-		   ntohl(pcb->unsent->tcphdr->seqno) +
-		   TCP_TCPLEN(pcb->unsent));
+	//kprintf("tcp_receive: removing %lu:%lu from pcb->unsent\n",
+	//	   ntohl(pcb->unsent->tcphdr->seqno),
+	//	   ntohl(pcb->unsent->tcphdr->seqno) +
+	//	   TCP_TCPLEN(pcb->unsent));
 
 	next = pcb->unsent;
 	pcb->unsent = pcb->unsent->next;
@@ -868,7 +861,7 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	  
 	  if (TCPH_FLAGS(cseg->tcphdr) & TCP_FIN) 
 	  {
-	    kprintf("tcp_receive: dequeued FIN.\n");
+	    //kprintf("tcp_receive: dequeued FIN.\n");
 	    pcb->flags |= TF_GOT_FIN;
 	  }	    
 
@@ -880,7 +873,6 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	}
 
 	// Acknowledge the segment(s)
-	//tcp_ack(pcb);
 	if (pcb->flags & TF_ACK_DELAY)
 	  pcb->flags |= TF_ACK_NOW;
 	else
@@ -889,7 +881,6 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
       else 
       {
 	// We get here if the incoming segment is out-of-sequence.
-	//tcp_ack_now(pcb);
         pcb->flags |= TF_ACK_NOW;
 	kprintf("tcp_receive: out-of-order segment received\n");
 
@@ -1032,7 +1023,6 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
     // fall out of the window are ACKed
     if (TCP_SEQ_GT(pcb->rcv_nxt, seqno) || TCP_SEQ_GEQ(seqno, pcb->rcv_nxt + pcb->rcv_wnd)) 
     {
-      //tcp_ack_now(pcb);
       pcb->flags |= TF_ACK_NOW;
     }
   }

@@ -139,8 +139,6 @@ void preempt_thread()
   struct thread *t = self();
   int prio = t->priority;
 
-kprintf("sched: preempt thread %d\n", t->id);
-
   // Enable interrupt in case we have been called in interupt context
   sti();
 
@@ -654,8 +652,8 @@ static int threads_proc(struct proc_file *pf, void *arg)
   struct thread *t = threadlist;
   char *state;
 
-  pprintf(pf, "tid tcb      hndl state  prio tib      s #h  utime  stime ctxtsw name\n");
-  pprintf(pf, "--- -------- ---- ------ ---- -------- - -- ------ ------ ------ ---------------\n");
+  pprintf(pf, "tid tcb      hndl state  prio s #h   user kernel ctxtsw forced name\n");
+  pprintf(pf, "--- -------- ---- ------ ---- - -- ------ ------ ------ ------ --------------\n");
   while (1)
   {
     if (t->state == THREAD_STATE_WAITING)
@@ -663,9 +661,11 @@ static int threads_proc(struct proc_file *pf, void *arg)
     else
       state = threadstatename[t->state];
 
-    pprintf(pf,"%3d %p %4d %-6s %3d  %p %1d %2d%7d%7d%7d/%d %s\n",
-            t->id, t, t->hndl, state, t->priority, t->tib, 
-	    t->suspend_count, t->object.handle_count, t->utime, t->stime, t->context_switches, t->preempts, t->name ? t->name : "");
+    pprintf(pf,"%3d %p %4d %-6s %3d  %1d %2d%7d%7d%7d%7d %s\n",
+            t->id, t, t->hndl, state, t->priority, 
+	    t->suspend_count, t->object.handle_count, 
+	    t->utime, t->stime, t->context_switches, t->preempts, 
+	    t->name ? t->name : "");
 
     t = t->next;
     if (t == threadlist) break;

@@ -388,8 +388,6 @@ static int tcpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
   rc = submit_socket_request(s, &req, SOCKREQ_CONNECT, NULL, 0, INFINITE);
   if (rc < 0) return rc;
 
-  kprintf("connect: local %d remote %d\n", s->tcp.pcb->local_port, s->tcp.pcb->remote_port);
-
   return 0;
 }
 

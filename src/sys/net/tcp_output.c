@@ -581,5 +581,5 @@ void tcp_rst(unsigned long seqno, unsigned long ackno, struct ip_addr *local_ip,
 
   if (ip_output_if(p, local_ip, remote_ip, TCP_TTL, IP_PROTO_TCP, netif) < 0) pbuf_free(p);
 
-  kprintf("tcp_rst: seqno %lu ackno %lu.\n", seqno, ackno);
+  //kprintf("tcp_rst: seqno %lu ackno %lu.\n", seqno, ackno);
 }

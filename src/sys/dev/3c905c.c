@@ -9,7 +9,7 @@
 #include <os/krnl.h>
 #include "3c905c.h"
 
-#define tracenic 1
+#define tracenic 0
 #define nictrace if (tracenic) kprintf
 
 char *connectorname[] = {"10Base-T", "AUI", "n/a", "BNC", "100Base-TX", "100Base-FX", "MII", "n/a", "Auto", "Ext-MII"};
@@ -212,18 +212,18 @@ void update_statistics(struct nic *nic)
   // Read statistics from window 6
   select_window(nic, 6);
 
-  nic->stat.tx_sqe_errors += _inp(nic->iobase + SQE_ERRORS);
-  nic->stat.tx_multiple_collisions += _inp(nic->iobase + MULTIPLE_COLLISIONS);
-  nic->stat.tx_single_collisions += _inp(nic->iobase + SINGLE_COLLISIONS);
-  nic->stat.rx_overruns += _inp(nic->iobase + RX_OVERRUNS);
-  nic->stat.tx_carrier_lost += _inp(nic->iobase + CARRIER_LOST);
-  nic->stat.tx_late_collisions += _inp(nic->iobase + LATE_COLLISIONS);
-  nic->stat.tx_frames_deferred += _inp(nic->iobase + FRAMES_DEFERRED);
+  nic->stat.tx_sqe_errors += _inp(nic->iobase + SQE_ERRORS) & 0xFF;
+  nic->stat.tx_multiple_collisions += _inp(nic->iobase + MULTIPLE_COLLISIONS) & 0xFF;
+  nic->stat.tx_single_collisions += _inp(nic->iobase + SINGLE_COLLISIONS) & 0xFF;
+  nic->stat.rx_overruns += _inp(nic->iobase + RX_OVERRUNS) & 0xFF;
+  nic->stat.tx_carrier_lost += _inp(nic->iobase + CARRIER_LOST) & 0xFF;
+  nic->stat.tx_late_collisions += _inp(nic->iobase + LATE_COLLISIONS) & 0xFF;
+  nic->stat.tx_frames_deferred += _inp(nic->iobase + FRAMES_DEFERRED) & 0xFF;
 
   // Frames received/transmitted
-  rx_frames = _inp(nic->iobase + FRAMES_RECEIVED_OK);
-  tx_frames = _inp(nic->iobase + FRAMES_XMITTED_OK);
-  upper = _inp(nic->iobase + UPPER_FRAMES_OK);
+  rx_frames = _inp(nic->iobase + FRAMES_RECEIVED_OK) & 0xFF;
+  tx_frames = _inp(nic->iobase + FRAMES_XMITTED_OK) & 0xFF;
+  upper = _inp(nic->iobase + UPPER_FRAMES_OK) & 0xFF;
   rx_frames += (upper & 0x0F) << 8;
   tx_frames += (upper & 0xF0) << 4;
 
@@ -231,8 +231,8 @@ void update_statistics(struct nic *nic)
   nic->stat.tx_frames_ok += tx_frames;
 
   // Bytes received/transmitted - upper part added below from window 4
-  rx_bytes = _inpw(nic->iobase + BYTES_RECEIVED_OK);
-  tx_bytes = _inpw(nic->iobase + BYTES_XMITTED_OK);
+  rx_bytes = _inpw(nic->iobase + BYTES_RECEIVED_OK) & 0xFFFF;
+  tx_bytes = _inpw(nic->iobase + BYTES_XMITTED_OK) & 0xFFFF;
 
   // Read final statistics from window 4
   select_window(nic, 4);
@@ -245,7 +245,7 @@ void update_statistics(struct nic *nic)
   nic->stat.rx_bytes_ok += rx_bytes;
   nic->stat.tx_bytes_ok += tx_bytes;
 
-  nic->stat.rx_bad_ssd += _inp(nic->iobase + BAD_SSD);
+  nic->stat.rx_bad_ssd += _inp(nic->iobase + BAD_SSD) & 0xFF;
 
   // Set the window to its previous value
   select_window(nic, current_window);
@@ -1110,35 +1110,30 @@ int nic_get_link_speed(struct nic *nic)
 
   if ((phy_anar & MII_ANAR_100TXFD) && (phy_anlpar & MII_ANLPAR_100TXFD)) 
   {
-    kprintf("nic: connector is 100BaseTX full duplex\n");
     //nic->connector = CONNECTOR_100BASETX;
     nic->linkspeed = 100;
     nic->fullduplex = 1;
   }
   else if ((phy_anar & MII_ANAR_100TX) && (phy_anlpar & MII_ANLPAR_100TX)) 
   {
-    kprintf("nic: connector is 100BaseTX\n");
     //nic->connector = CONNECTOR_100BASETX;
     nic->linkspeed = 100;
     nic->fullduplex = 0;
   }
   else if ((phy_anar & MII_ANAR_10TFD) && (phy_anlpar & MII_ANLPAR_10TFD)) 
   {
-    kprintf("nic: connector is 10BaseT full duplex\n");
     //nic->connector = CONNECTOR_10BASET;
     nic->linkspeed = 10;
     nic->fullduplex = 1;
   }
   else if ((phy_anar & MII_ANAR_10T) && (phy_anlpar & MII_ANLPAR_10T)) 
   {
-    kprintf("nic: connector is 10BaseT\n");
     //nic->connector = CONNECTOR_10BASET;
     nic->linkspeed = 10;
     nic->fullduplex = 0;
   }
   else if (!(phy_aner & MII_ANER_LPANABLE))
   {
-    kprintf("nic: link partner is not capable of auto-negotiation\n");
     // Link partner is not capable of auto-negotiation. Fall back to 10HD.
     //nic->connector = CONNECTOR_10BASET;
     nic->linkspeed = 10;
@@ -1823,7 +1818,7 @@ int nic_start_adapter(struct nic *nic)
   execute_command(nic, CMD_TX_ENABLE, 0);
 
   // Delay three seconds, only some switches need this
-  sleep(3000);
+  //sleep(3000);
 
   nictrace("exit nic_start_adapter\n");
 

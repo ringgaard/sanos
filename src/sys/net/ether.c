@@ -45,7 +45,13 @@ struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr,
   if (ip_addr_isany(ipaddr))
   {
     state = dhcp_start(netif);
-    if (state) wait_for_object(&state->binding_complete, 10000);
+    if (state) 
+    {
+      if (wait_for_object(&state->binding_complete, 30000)  < 0)
+      {
+	kprintf("ether: timeout waiting for dhcp to complete on %s\n", name);
+      }
+    }
   }
 
   kprintf("%s: device %s addr %a mask %a gw %a\n", name, devname, &netif->ipaddr, &netif->netmask, &netif->gw);
@@ -231,7 +237,7 @@ void ether_dispatcher(void *arg)
     {
       ethhdr = p->payload;
 
-      /*if (!eth_addr_isbroadcast(&ethhdr->dest)) */ kprintf("ether: recv src=%la dst=%la type=%04X len=%d\n", &ethhdr->src, &ethhdr->dest, htons(ethhdr->type), p->tot_len);
+      //if (!eth_addr_isbroadcast(&ethhdr->dest)) kprintf("ether: recv src=%la dst=%la type=%04X len=%d\n", &ethhdr->src, &ethhdr->dest, htons(ethhdr->type), p->tot_len);
       
       switch (htons(ethhdr->type))
       {

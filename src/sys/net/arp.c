@@ -69,6 +69,21 @@ static struct xmit_queue_entry xmit_queue_table[ARP_XMIT_QUEUE_SIZE];
 struct timer arp_timer;
 int ctime;
 
+static int arp_proc(struct proc_file *pf, void *arg)
+{
+  int i;
+
+  for (i = 0; i < ARP_TABLE_SIZE; ++i)
+  {
+    if (!ip_addr_isany(&arp_table[i].ipaddr)) 
+    {
+      pprintf(pf, "%la %a\n", &arp_table[i].ethaddr, &arp_table[i].ipaddr);
+    }
+  }
+
+  return 0;
+}
+
 static void arp_tmr(void *arg)
 {
   int i;
@@ -78,7 +93,7 @@ static void arp_tmr(void *arg)
   {
     if (!ip_addr_isany(&arp_table[i].ipaddr) && ctime - arp_table[i].ctime >= ARP_MAXAGE) 
     {
-      kprintf("arp_timer: expired entry %d\n", i);
+      //kprintf("arp: expired entry %d\n", i);
       ip_addr_set(&arp_table[i].ipaddr, IP_ADDR_ANY);
     }
   }
@@ -106,6 +121,7 @@ void arp_init()
   memset(xmit_queue_table, 0, sizeof(xmit_queue_table));
   init_timer(&arp_timer, arp_tmr, NULL);
   mod_timer(&arp_timer, ticks + ARP_TIMER_INTERVAL / MSECS_PER_TICK);
+  register_proc_inode("arp", arp_proc, NULL);
 }
 
 static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
@@ -114,7 +130,7 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
   int maxtime;
   int err;
   
-  kprintf("arp: add %la -> %a\n", ethaddr, ipaddr);
+  //kprintf("arp: add %la -> %a\n", ethaddr, ipaddr);
 
   // Walk through the ARP mapping table and try to find an entry to
   // update. If none is found, the IP -> MAC address mapping is

@@ -575,8 +575,6 @@ static err_t dhcp_discover(struct dhcp_state *state)
   msecs = state->tries < 4 ? (state->tries + 1) * 1000 : 10 * 1000;
   mod_timer(&state->request_timeout_timer, ticks + msecs / MSECS_PER_TICK);
 
-  kprintf("dhcp: sending discover, timeout %d ms\n", msecs);
-
   dhcp_set_state(state, DHCP_SELECTING);
   return result;
 }

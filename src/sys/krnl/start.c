@@ -213,7 +213,7 @@ void init_net()
   socket_init();
 
   IP4_ADDR(&ipaddr, 0, 0, 0, 0);
-  IP4_ADDR(&netmask, 0, 0, 0, 0);
+  IP4_ADDR(&netmask, 255, 255, 255, 255);
   IP4_ADDR(&gw, 0, 0, 0, 0);
 
   nic = ether_netif_add("eth0", "nic0", &ipaddr, &netmask, &gw);
