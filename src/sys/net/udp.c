@@ -26,7 +26,6 @@ void udp_input(struct pbuf *p, struct netif *inp)
   
   iphdr = (struct ip_hdr *) ((char *) p->payload - IP_HLEN);
   udphdr = p->payload;
-
   
   if (IPH_PROTO(iphdr) == IP_PROTO_UDPLITE) 
   {
@@ -97,11 +96,9 @@ void udp_input(struct pbuf *p, struct netif *inp)
       return;
     }
   }
-  
-  
+   
   // No match was found, send ICMP destination port unreachable unless
   // destination address was broadcast/multicast
-
   if (!ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) && !ip_addr_ismulticast(&iphdr->dest)) 
   {  
     // Deconvert from host to network byte order
@@ -113,8 +110,8 @@ void udp_input(struct pbuf *p, struct netif *inp)
     icmp_dest_unreach(p, ICMP_DUR_PORT);
   }
 
-  ++stats.udp.proterr;
-  ++stats.udp.drop;
+  stats.udp.proterr++;
+  stats.udp.drop++;
   pbuf_free(p);
 }
 
@@ -212,7 +209,7 @@ err_t udp_connect(struct udp_pcb *pcb, struct ip_addr *ipaddr, unsigned short po
   pcb->dest_port = port;
 
   // Insert UDP PCB into the list of active UDP PCBs
-  for(ipcb = udp_pcbs; ipcb != NULL; ipcb = ipcb->next) 
+  for (ipcb = udp_pcbs; ipcb != NULL; ipcb = ipcb->next) 
   {
     // If it is already on the list, just return
     if(pcb == ipcb) return 0;

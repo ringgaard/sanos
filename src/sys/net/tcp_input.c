@@ -30,7 +30,6 @@ void tcp_input(struct pbuf *p, struct netif *inp)
   int offset;
   err_t err;
 
-
   stats.tcp.recv++;
   
   tcphdr = p->payload;

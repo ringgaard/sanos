@@ -343,7 +343,7 @@ static int sys_flush(char *params)
 static int sys_read(char *params)
 {
   handle_t h;
-  struct file *f;
+  struct object *o;
   int rc;
   void *data;
   int size;
@@ -354,22 +354,27 @@ static int sys_read(char *params)
   data = *(void **) (params + 4);
   size = *(int *) (params + 8);
 
-  f = (struct file *) hlock(h, OBJECT_FILE);
-  if (!f) 
+  o = hlock(h, OBJECT_ANY);
+  if (!o) 
   {
     unlock_buffer(params, 12);
     return -EBADF;
   }
-
+  
   if (lock_buffer(data, size) < 0)
   {
     hrel(h);
     unlock_buffer(params, 12);
     return -EFAULT;
   }
-  
-  rc = read(f, data, size);
-  
+
+  if (o->type == OBJECT_FILE)
+    rc = read((struct file *) o, data, size);
+  else if (o->type == OBJECT_SOCKET)
+    rc = recv((struct socket *) o, data, size, 0);
+  else
+    rc = -EBADF;
+
   hrel(h);
   unlock_buffer(params, 12);
 
@@ -379,7 +384,7 @@ static int sys_read(char *params)
 static int sys_write(char *params)
 {
   handle_t h;
-  struct file *f;
+  struct object *o;
   int rc;
   void *data;
   int size;
@@ -390,8 +395,8 @@ static int sys_write(char *params)
   data = *(void **) (params + 4);
   size = *(int *) (params + 8);
 
-  f = (struct file *) hlock(h, OBJECT_FILE);
-  if (!f) 
+  o = hlock(h, OBJECT_ANY);
+  if (!o) 
   {
     unlock_buffer(params, 12);
     return -EBADF;
@@ -404,7 +409,12 @@ static int sys_write(char *params)
     return -EFAULT;
   }
   
-  rc = write(f, data, size);
+  if (o->type == OBJECT_FILE)
+    rc = write((struct file *) o, data, size);
+  else if (o->type == OBJECT_SOCKET)
+    rc = send((struct socket *) o, data, size, 0);
+  else
+    rc = -EBADF;
   
   hrel(h);
   unlock_buffer(params, 12);
@@ -1462,6 +1472,377 @@ static int sys_semrel(char *params)
   return rc;
 }
 
+static int sys_accept(char *params)
+{
+  handle_t h;
+  struct socket *s;
+  struct socket *news;
+  int rc;
+  struct sockaddr *addr;
+  int *addrlen;
+
+  if (lock_buffer(params, 12) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  addr = *(struct sockaddr **) (params + 4);
+  addrlen = *(int **) (params + 8);
+
+  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  if (!s) 
+  {
+    unlock_buffer(params, 12);
+    return -EBADF;
+  }
+
+  if (lock_buffer(addr, sizeof(struct sockaddr)) < 0)
+  {
+    hrel(h);
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+  
+  if (lock_buffer(addrlen, sizeof(int)) < 0)
+  {
+    hrel(h);
+    unlock_buffer(addr, sizeof(struct sockaddr));
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+
+  rc = accept(s, addr, addrlen, &news);
+  if (rc == 0)
+  {
+    rc = halloc(&news->object);
+    if (rc < 0) closesocket(news);
+  }
+
+  hrel(h);
+  unlock_buffer(addrlen, sizeof(int));
+  unlock_buffer(addr, sizeof(struct sockaddr));
+  unlock_buffer(params, 12);
+
+  return rc;
+}
+
+static int sys_bind(char *params)
+{
+  handle_t h;
+  struct socket *s;
+  int rc;
+  struct sockaddr *name;
+  int namelen;
+
+  if (lock_buffer(params, 12) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  name = *(struct sockaddr **) (params + 4);
+  namelen = *(int *) (params + 8);
+
+  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  if (!s) 
+  {
+    unlock_buffer(params, 12);
+    return -EBADF;
+  }
+
+  if (lock_buffer(name, namelen) < 0)
+  {
+    hrel(h);
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+  
+  rc = bind(s, name, namelen);
+
+  hrel(h);
+  unlock_buffer(name, namelen);
+  unlock_buffer(params, 12);
+
+  return rc;
+}
+
+static int sys_connect(char *params)
+{
+  handle_t h;
+  struct socket *s;
+  int rc;
+  struct sockaddr *name;
+  int namelen;
+
+  if (lock_buffer(params, 12) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  name = *(struct sockaddr **) (params + 4);
+  namelen = *(int *) (params + 8);
+
+  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  if (!s) 
+  {
+    unlock_buffer(params, 12);
+    return -EBADF;
+  }
+
+  if (lock_buffer(name, namelen) < 0)
+  {
+    hrel(h);
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+  
+  rc = connect(s, name, namelen);
+
+  hrel(h);
+  unlock_buffer(name, namelen);
+  unlock_buffer(params, 12);
+
+  return rc;
+}
+
+static int sys_listen(char *params)
+{
+  handle_t h;
+  struct socket *s;
+  int rc;
+  int backlog;
+
+  if (lock_buffer(params, 8) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  backlog = *(int *) (params + 4);
+
+  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  if (!s) 
+  {
+    unlock_buffer(params, 8);
+    return -EBADF;
+  }
+  
+  rc = listen(s, backlog);
+
+  hrel(h);
+  unlock_buffer(params, 8);
+
+  return rc;
+}
+
+static int sys_recv(char *params)
+{
+  handle_t h;
+  struct socket *s;
+  int rc;
+  void *data;
+  int size;
+  unsigned int flags;
+
+  if (lock_buffer(params, 16) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  data = *(void **) (params + 4);
+  size = *(int *) (params + 8);
+  flags = *(unsigned int *) (params + 12);
+
+  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  if (!s) 
+  {
+    unlock_buffer(params, 16);
+    return -EBADF;
+  }
+
+  if (lock_buffer(data, size) < 0)
+  {
+    hrel(h);
+    unlock_buffer(params, 16);
+    return -EFAULT;
+  }
+  
+  rc = recv(s, data, size, flags);
+
+  hrel(h);
+  unlock_buffer(data, size);
+  unlock_buffer(params, 16);
+
+  return rc;
+}
+
+static int sys_recvfrom(char *params)
+{
+  handle_t h;
+  struct socket *s;
+  int rc;
+  void *data;
+  int size;
+  unsigned int flags;
+  struct sockaddr *from;
+  int *fromlen;
+
+  if (lock_buffer(params, 24) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  data = *(void **) (params + 4);
+  size = *(int *) (params + 8);
+  flags = *(unsigned int *) (params + 12);
+  from = *(struct sockaddr **) (params + 16);
+  fromlen = *(int **) (params + 20);
+
+  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  if (!s) 
+  {
+    unlock_buffer(params, 24);
+    return -EBADF;
+  }
+
+  if (lock_buffer(data, size) < 0)
+  {
+    hrel(h);
+    unlock_buffer(params, 24);
+    return -EFAULT;
+  }
+  
+  if (lock_buffer(from, sizeof(struct sockaddr)) < 0)
+  {
+    hrel(h);
+    unlock_buffer(data, size);
+    unlock_buffer(params, 24);
+    return -EFAULT;
+  }
+
+  if (lock_buffer(fromlen, sizeof(int)) < 0)
+  {
+    hrel(h);
+    unlock_buffer(from, sizeof(struct sockaddr));
+    unlock_buffer(data, size);
+    unlock_buffer(params, 24);
+    return -EFAULT;
+  }
+
+  rc = recvfrom(s, data, size, flags, from, fromlen);
+
+  hrel(h);
+  unlock_buffer(fromlen, sizeof(int));
+  unlock_buffer(from, sizeof(struct sockaddr));
+  unlock_buffer(data, size);
+  unlock_buffer(params, 24);
+
+  return rc;
+}
+
+static int sys_send(char *params)
+{
+  handle_t h;
+  struct socket *s;
+  int rc;
+  void *data;
+  int size;
+  unsigned int flags;
+
+  if (lock_buffer(params, 16) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  data = *(void **) (params + 4);
+  size = *(int *) (params + 8);
+  flags = *(unsigned int *) (params + 12);
+
+  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  if (!s) 
+  {
+    unlock_buffer(params, 16);
+    return -EBADF;
+  }
+
+  if (lock_buffer(data, size) < 0)
+  {
+    hrel(h);
+    unlock_buffer(params, 16);
+    return -EFAULT;
+  }
+  
+  rc = send(s, data, size, flags);
+
+  hrel(h);
+  unlock_buffer(data, size);
+  unlock_buffer(params, 16);
+
+  return rc;
+}
+
+static int sys_sendto(char *params)
+{
+  handle_t h;
+  struct socket *s;
+  int rc;
+  void *data;
+  int size;
+  unsigned int flags;
+  struct sockaddr *to;
+  int tolen;
+
+  if (lock_buffer(params, 24) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  data = *(void **) (params + 4);
+  size = *(int *) (params + 8);
+  flags = *(unsigned int *) (params + 12);
+  to = *(struct sockaddr **) (params + 16);
+  tolen = *(int *) (params + 20);
+
+  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  if (!s) 
+  {
+    unlock_buffer(params, 24);
+    return -EBADF;
+  }
+
+  if (lock_buffer(data, size) < 0)
+  {
+    hrel(h);
+    unlock_buffer(params, 24);
+    return -EFAULT;
+  }
+  
+  if (lock_buffer(to, sizeof(struct sockaddr)) < 0)
+  {
+    hrel(h);
+    unlock_buffer(data, size);
+    unlock_buffer(params, 24);
+    return -EFAULT;
+  }
+
+  rc = sendto(s, data, size, flags, to, tolen);
+
+  hrel(h);
+  unlock_buffer(to, sizeof(struct sockaddr));
+  unlock_buffer(data, size);
+  unlock_buffer(params, 24);
+
+  return rc;
+}
+
+static int sys_socket(char *params)
+{
+  int rc;
+  struct socket *s;
+  int domain;
+  int type;
+  int protocol;
+
+  if (lock_buffer(params, 12) < 0) return -EFAULT;
+
+  domain = *(int *) params;
+  type = *(int *) (params + 4);
+  protocol = *(int *) (params + 8);
+
+  rc = socket(domain, type, protocol, &s);
+  if (rc == 0)
+  {
+    rc = halloc(&s->object);
+    if (rc < 0) closesocket(s);
+  }
+
+  unlock_buffer(params, 12);
+
+  return rc;
+}
+
 struct syscall_entry syscalltab[] =
 {
   {"null","", sys_null},
@@ -1518,7 +1899,16 @@ struct syscall_entry syscalltab[] =
   {"statfs", "%s,%p", sys_statfs},
   {"futime", "%d,%p", sys_futime},
   {"utime", "%s,%p", sys_utime},
-  {"settimeofday", "%p", sys_settimeofday}
+  {"settimeofday", "%p", sys_settimeofday},
+  {"accept", "%d,%p,%p", sys_accept},
+  {"bind", "%d,%p,%d", sys_bind},
+  {"connect", "%d,%p,%d", sys_connect},
+  {"listen", "%d,%d", sys_listen},
+  {"recv", "%d,%p,%d,%d", sys_recv},
+  {"recvfrom", "%d,%p,%d,%d,%p,%p", sys_recvfrom},
+  {"send", "%d,%p,%d,%d", sys_send},
+  {"sendto", "%d,%p,%d,%d,%p,%d", sys_sendto},
+  {"socket", "%d,%d,%d", sys_socket}
 };
 
 int syscall(int syscallno, char *params)

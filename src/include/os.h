@@ -189,7 +189,7 @@ struct section;
 #define ERST            47               // Connection reset
 #define EABORT          48               // Connction aborted
 #define EUSED           49               // Address in use
-
+#define EPROTONOSUPPORT 50               // Protocol not supported
 //
 // File system
 //
@@ -377,9 +377,50 @@ struct tib
   char reserved2[240];
 };
 
-#ifndef KERNEL
+//
+// Sockets
+//
+
+struct in_addr 
+{
+  unsigned long s_addr;
+};
+
+struct sockaddr_in
+{
+  unsigned char sin_len;
+  unsigned char sin_family;
+  unsigned short sin_port;
+  struct in_addr sin_addr;
+  char sin_zero[8];
+};
+
+struct sockaddr 
+{
+  unsigned char sa_len;
+  unsigned char sa_family;
+  char sa_data[14];
+};
+
+#define SOCK_STREAM      1
+#define SOCK_DGRAM       2
+#define SOCK_RAW         3
+
+#define AF_INET          2
+#define PF_INET          AF_INET
+
+#define IPPROTO_IP       0
+#define IPPROTO_ICMP     1
+#define IPPROTO_TCP      6
+#define IPPROTO_UDP      17
+
+#define INADDR_ANY       0
+#define INADDR_BROADCAST 0xffffffff
+#define INADDR_LOOPBACK  0x7f000001
 
 // OS API functions
+
+#ifndef KERNEL
 
 osapi int syscall(int syscallno, void *params);
 
@@ -482,6 +523,16 @@ osapi tls_t tlsalloc();
 osapi void tlsfree(tls_t index);
 osapi void *tlsget(tls_t index);
 osapi void tlsset(tls_t index, void *value);
+
+osapi int accept(int s, struct sockaddr *addr, int *addrlen);
+osapi int bind(int s, const struct sockaddr *name, int namelen);
+osapi int connect(int s, const struct sockaddr *name, int namelen);
+osapi int listen(int s, int backlog);
+osapi int recv(int s, void *data, int size, unsigned int flags);
+osapi int recvfrom(int s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen);
+osapi int send(int s, const void *data, int size, unsigned int flags);
+osapi int sendto(int s, const void *data, int size, unsigned int flags, const struct sockaddr *to, int tolen);
+osapi int socket(int domain, int type, int protocol);
 
 osapi extern struct section *config;
 osapi extern struct peb *peb;

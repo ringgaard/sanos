@@ -57,6 +57,7 @@ struct dpc timerdpc;
 void timer_dpc(void *arg)
 {
   handle_timer_expiry(ticks);
+  tcp_timer();
 }
 
 void timer_handler(struct context *ctxt, void *arg)

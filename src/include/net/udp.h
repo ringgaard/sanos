@@ -56,6 +56,6 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p);
 // Lower layer interface to UDP
 
 void udp_input(struct pbuf *p, struct netif *inp);
-void udp_init ();
+void udp_init();
 
 #endif

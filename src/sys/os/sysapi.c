@@ -274,3 +274,48 @@ int semrel(handle_t h, int count)
 {
   return syscall(SYSCALL_SEMREL, &h);
 }
+
+int accept(int s, struct sockaddr *addr, int *addrlen)
+{
+  return syscall(SYSCALL_ACCEPT, &s);
+}
+
+int bind(int s, const struct sockaddr *name, int namelen)
+{
+  return syscall(SYSCALL_BIND, &s);
+}
+
+int connect(int s, const struct sockaddr *name, int namelen)
+{
+  return syscall(SYSCALL_CONNECT, &s);
+}
+
+int listen(int s, int backlog)
+{
+  return syscall(SYSCALL_LISTEN, &s);
+}
+
+int recv(int s, void *data, int size, unsigned int flags)
+{
+  return syscall(SYSCALL_RECV, &s);
+}
+
+int recvfrom(int s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen)
+{
+  return syscall(SYSCALL_RECVFROM, &s);
+}
+
+int send(int s, const void *data, int size, unsigned int flags)
+{
+  return syscall(SYSCALL_SEND, &s);
+}
+
+int sendto(int s, const void *data, int size, unsigned int flags, const struct sockaddr *to, int tolen)
+{
+  return syscall(SYSCALL_SENDTO, &s);
+}
+
+int socket(int domain, int type, int protocol)
+{
+  return syscall(SYSCALL_SOCKET, &domain);
+}

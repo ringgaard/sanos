@@ -334,7 +334,7 @@ int pcnet32_transmit(struct dev *dev, struct pbuf *p)
   unsigned short status = 0x8300;
 
   left = p->tot_len;
-  //kprintf("pcnet32_transmit: transmit packet len=%d\n", p->tot_len);
+  kprintf("pcnet32_transmit: transmit packet len=%d\n", p->tot_len);
   p->ref++;
 
   len = p->tot_len;

@@ -507,6 +507,10 @@ SOURCE=..\src\include\net\pbuf.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\include\net\socket.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\include\net\stats.h
 # End Source File
 # Begin Source File
@@ -600,6 +604,10 @@ SOURCE=..\src\sys\net\pbuf.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\sys\net\socket.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\sys\net\stats.c
 # End Source File
 # Begin Source File
@@ -616,7 +624,15 @@ SOURCE=..\src\sys\net\tcp_output.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\sys\net\tcpsock.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\sys\net\udp.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\sys\net\udpsock.c
 # End Source File
 # End Group
 # End Target

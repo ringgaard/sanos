@@ -83,7 +83,8 @@ struct drpc_processor_identification
 //
 
 #define DEBUGGER_PORT      24502
-#define DEBUGGEE_PORT      "COM1"
+//#define DEBUGGEE_PORT      "COM1"
+#define DEBUGGEE_PORT      "\\\\.\\pipe\\com_1"
 
 //
 // Global variables

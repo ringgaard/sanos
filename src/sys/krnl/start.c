@@ -208,22 +208,15 @@ void init_net()
   arp_init();
   ip_init();
   udp_init();
+  tcp_init();
+  socket_init();
 
-#if 0
-  IP4_ADDR(&ipaddr, 192, 168, 1, 200);
+  IP4_ADDR(&ipaddr, 192, 168, 252, 200);
   IP4_ADDR(&netmask, 255, 255, 255, 0);
-  IP4_ADDR(&gw, 192, 168, 1, 1);
-#else
-  IP4_ADDR(&ipaddr, 192, 168, 85, 2);
-  IP4_ADDR(&netmask, 255, 255, 255, 0);
-  IP4_ADDR(&gw, 192, 168, 85, 1);
-#endif
+  IP4_ADDR(&gw, 192, 168, 252, 1);
 
-  //nic = ether_netif_add("eth0", "nic0", &ipaddr, &netmask, &gw);
-  //netif_set_default(nic);
-
-  //init_ne2000(nic);
-  //init_pcnet32(nic);
+  nic = ether_netif_add("eth0", "nic0", &ipaddr, &netmask, &gw);
+  netif_set_default(nic);
 }
 
 void main(void *arg)

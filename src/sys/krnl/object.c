@@ -251,6 +251,9 @@ int close_object(struct object *o)
     
     case OBJECT_FILE:
       return close((struct file *) o);
+
+    case OBJECT_SOCKET:
+      return closesocket((struct socket *) o);
   }
 
   return -EBADF;

@@ -19,9 +19,23 @@ err_t tcp_send_ctrl(struct tcp_pcb *pcb, int flags)
 
 err_t tcp_write(struct tcp_pcb *pcb, const void *arg, unsigned short len, int copy)
 {
+  int rc;
+
   if (pcb->state == SYN_SENT || pcb->state == SYN_RCVD || pcb->state == ESTABLISHED || pcb->state == CLOSE_WAIT) 
   {
-    if (len > 0) return tcp_enqueue(pcb, (void *) arg, len, 0, copy, NULL, 0);
+    if (len > 0) 
+    {
+      rc = tcp_enqueue(pcb, (void *) arg, len, 0, copy, NULL, 0);
+      if (rc < 0) return rc;
+
+      // This is the Nagle algorithm: inhibit the sending of new TCP
+      // segments when new outgoing data arrives from the user if any
+      // previously transmitted data on the connection remains
+      // unacknowledged.
+
+      if (pcb->unacked == NULL) tcp_output(pcb);
+    }
+
     return 0;
   } 
   else
@@ -108,7 +122,7 @@ err_t tcp_enqueue(struct tcp_pcb *pcb, void *arg, unsigned short len, int flags,
     {
       kprintf("tcp_enqueue: too long queue %d (max %d)\n", queuelen, TCP_SND_QUEUELEN);
       goto memerr;
-    }   
+    }
     
     seg = NULL;
     seglen = 0;
@@ -127,7 +141,6 @@ err_t tcp_enqueue(struct tcp_pcb *pcb, void *arg, unsigned short len, int flags,
       seg->next = NULL;
       seg->p = NULL;
 
-      
       if (queue == NULL) 
       {
 	queue = seg;
@@ -149,7 +162,7 @@ err_t tcp_enqueue(struct tcp_pcb *pcb, void *arg, unsigned short len, int flags,
 	queuelen++;
 	seg->dataptr = seg->p->payload;
       } 
-      else if(copy) 
+      else if (copy) 
       {
 	if ((seg->p = pbuf_alloc(PBUF_TRANSPORT, seglen, PBUF_RW)) == NULL) 
 	{
@@ -239,7 +252,7 @@ err_t tcp_enqueue(struct tcp_pcb *pcb, void *arg, unsigned short len, int flags,
     } 
     else 
     {
-      for(useg = pcb->unsent; useg->next != NULL; useg = useg->next);
+      for (useg = pcb->unsent; useg->next != NULL; useg = useg->next);
     }
     
     // If there is room in the last pbuf on the unsent queue
@@ -324,7 +337,7 @@ err_t tcp_output(struct tcp_pcb *pcb)
       } 
       else 
       {
-        for(useg = pcb->unacked; useg->next != NULL; useg = useg->next);
+        for (useg = pcb->unacked; useg->next != NULL; useg = useg->next);
         useg->next = seg;
       }
 

@@ -64,7 +64,16 @@
 #define SYSCALL_FUTIME       52
 #define SYSCALL_UTIME        53
 #define SYSCALL_SETTIMEOFDAY 54
+#define SYSCALL_ACCEPT       55
+#define SYSCALL_BIND         56
+#define SYSCALL_CONNECT      57
+#define SYSCALL_LISTEN       58
+#define SYSCALL_RECV         59
+#define SYSCALL_RECVFROM     60
+#define SYSCALL_SEND         61
+#define SYSCALL_SENDTO       62
+#define SYSCALL_SOCKET       63
 
-#define SYSCALL_MAX          54
+#define SYSCALL_MAX          63
 
 #endif

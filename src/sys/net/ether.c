@@ -80,7 +80,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   struct ip_addr *queryaddr;
   err_t err;
   int i;
-  
+
   // Make room for Ethernet header
   if (pbuf_header(p, 14) != 0)
   {
@@ -124,7 +124,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
     else
     {
       // Otherwise we use the default router as the address to send the Ethernet frame to.
-      queryaddr = &(netif->gw);
+      queryaddr = &netif->gw;
     }
 
     dest = arp_lookup(queryaddr);

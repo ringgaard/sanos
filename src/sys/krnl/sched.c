@@ -12,6 +12,8 @@
 
 int resched = 0;
 int idle = 0;
+int dispatching_dpcs = 0;
+
 struct thread *idle_thread;
 struct thread *ready_queue_head[THREAD_PRIORITY_LEVELS];
 struct thread *ready_queue_tail[THREAD_PRIORITY_LEVELS];
@@ -376,6 +378,9 @@ void dispatch_dpc_queue()
   struct dpc *next;
   dpcproc_t proc;
 
+  // Do not recurse dispatching of dpcs
+  if (dispatching_dpcs) return;
+
   // Get list of queued deferred procedure calls
   cli();
   queue = dpc_queue;
@@ -383,6 +388,7 @@ void dispatch_dpc_queue()
   sti();
 
   // Execute each DPC
+  dispatching_dpcs = 1;
   while (queue)
   {
     next = queue->next;
@@ -393,6 +399,7 @@ void dispatch_dpc_queue()
     proc(queue->arg);
     queue = next;
   }
+  dispatching_dpcs = 0;
 }
 
 void dispatch()

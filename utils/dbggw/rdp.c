@@ -152,7 +152,7 @@ int dbg_xact(struct dbg_session *s, unsigned char cmd, void *reqdata, unsigned i
   rc = dbg_recv_packet(s, &hdr, rspdata);
   if (rc < 0)
   {
-    printf("Error %d receiving response for command 0x%x\n", rc);
+    printf("Error %d receiving response for command 0x%x\n", rc, cmd);
     return rc;
   }
 
@@ -204,12 +204,15 @@ struct dbg_session *dbg_create_session(char *port)
     return NULL;
   }
 
-  if (!GetCommState(target, &dcb)) return NULL;
-  dcb.BaudRate = 115200;
-  dcb.ByteSize = DATABITS_8;
-  dcb.StopBits = ONESTOPBIT;
-  dcb.Parity = NOPARITY;
-  if (!SetCommState(target, &dcb)) return NULL;
+  if (*port != '\\')
+  {
+    if (!GetCommState(target, &dcb)) return NULL;
+    dcb.BaudRate = 115200;
+    dcb.ByteSize = DATABITS_8;
+    dcb.StopBits = ONESTOPBIT;
+    dcb.Parity = NOPARITY;
+    if (!SetCommState(target, &dcb)) return NULL;
+  }
 
   // Allocate and initialize new session
   s = (struct dbg_session *) malloc(sizeof(struct dbg_session));

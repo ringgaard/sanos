@@ -12,10 +12,10 @@
 
 #include <net/net.h>
 
-// Incremented every coarse grained timer shot
-// (typically every 500 ms, determined by TCP_COARSE_TIMEOUT)
-
+int tcp_initialized;
 unsigned long tcp_ticks;
+unsigned long tcp_subticks;
+unsigned long tcp_timer_expire;
 unsigned char tcp_backoff[13] = {1, 2, 4, 8, 16, 32, 64, 64, 64, 64, 64, 64, 64};
 
 // TCP PCB lists
@@ -75,7 +75,7 @@ err_t tcp_close(struct tcp_pcb *pcb)
       break;
   }
 
-  if (pcb != NULL && err == 0)  err = tcp_output(pcb);
+  if (pcb != NULL && err == 0) err = tcp_output(pcb);
   return err;
 }
 
@@ -96,7 +96,6 @@ void tcp_abort(struct tcp_pcb *pcb)
   void (*errf)(void *arg, err_t err);
   void *errf_arg;
 
-  
   // Figure out on which TCP PCB list we are, and remove us. If we
   // are in an active state, call the receive function associated with
   // the PCB with a NULL argument, and send an RST to the remote end.
@@ -145,7 +144,7 @@ err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
   struct tcp_pcb *cpcb;
 
   // Check if the address already is in use
-  for (cpcb = (struct tcp_pcb *)tcp_listen_pcbs; cpcb != NULL; cpcb = cpcb->next) 
+  for (cpcb = (struct tcp_pcb *) tcp_listen_pcbs; cpcb != NULL; cpcb = cpcb->next) 
   {
     if (cpcb->local_port == port)
     {
@@ -170,8 +169,8 @@ err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
       }
     }
   }
-  if (!ip_addr_isany(ipaddr)) pcb->local_ip = *ipaddr;
 
+  if (!ip_addr_isany(ipaddr)) pcb->local_ip = *ipaddr;
   pcb->local_port = port;
   
   kprintf("tcp_bind: bind to port %d\n", port);
@@ -191,6 +190,8 @@ err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
 struct tcp_pcb *tcp_listen(struct tcp_pcb *pcb)
 {
   pcb->state = LISTEN;
+
+  //FIXME: we do not reallocate listen sockets, remove struct tcp_pcb_listen
   //pcb = memp_realloc(MEMP_TCP_PCB, MEMP_TCP_PCB_LISTEN, pcb);
   //if(pcb == NULL) return NULL;
 
@@ -295,22 +296,20 @@ err_t tcp_connect(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short po
 } 
 
 //
-// tcp_timer_coarse():
+// tcp_timer_coarse
 //
 // Called every 500 ms and implements the retransmission timer and the timer that
 // removes PCBs that have been in TIME-WAIT for enough time. It also increments
 // various timers such as the inactivity timer in each PCB.
 //
 
-void tcp_slowtmr()
+void tcp_timer_coarse()
 {
   struct tcp_pcb *pcb, *pcb2, *prev;
   struct tcp_seg *seg, *useg;
   unsigned long eff_wnd;
   int pcb_remove;      // flag if a PCB should be removed
 
-  tcp_ticks++;
-  
   // Steps through all of the active PCBs.
   prev = NULL;
   pcb = tcp_active_pcbs;
@@ -462,10 +461,10 @@ void tcp_slowtmr()
 //
 // tcp_timer_fine
 //
-// Is called every TCP_FINE_TIMEOUT (100 ms) and sends delayed ACKs
+// Is called every 100 ms and sends delayed ACKs
 //
 
-void tcp_fasttmr()
+void tcp_timer_fine()
 {
   struct tcp_pcb *pcb;
 
@@ -478,6 +477,33 @@ void tcp_fasttmr()
       tcp_send_ctrl(pcb, TCP_ACK);
       tcp_output(pcb);
       kprintf("tcp_timer_fine: delayed ACK\n");
+    }
+  }
+}
+
+//
+//
+// tcp_timer
+//
+// Is called by timer DPC every 10 ms
+//
+
+void tcp_timer()
+{
+  unsigned long ticks = get_tick_count();
+
+  if (tcp_initialized) return;
+  if (time_after_eq(tcp_timer_expire, ticks))
+  {
+    tcp_timer_expire = ticks + 100;
+
+    tcp_ticks++;  
+    tcp_timer_fine();
+
+    if (++tcp_subticks == 5)
+    {
+      tcp_timer_coarse();
+      tcp_subticks = 0;
     }
   }
 }
@@ -598,8 +624,9 @@ void tcp_init()
 {
   // Initialize timer
   tcp_ticks = 0;
+  tcp_timer_expire = get_tick_count();
+  tcp_initialized = 1;
 }
-
 
 //
 // tcp_arg
@@ -612,7 +639,6 @@ void tcp_arg(struct tcp_pcb *pcb, void *arg)
 {  
   pcb->callback_arg = arg;
 }
-
 
 //
 // tcp_recv

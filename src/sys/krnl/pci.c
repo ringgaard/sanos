@@ -314,7 +314,7 @@ void init_pci()
 
   if (num_pci_devices > 0)
   {
-    kprintf("pci: %d busses, %d devices\n", num_pci_busses, num_pci_devices);
+    kprintf("pci: %d pci bus%s, %d pci device%s\n", num_pci_busses, num_pci_busses != 1 ? "es" : "", num_pci_devices, num_pci_devices != 1 ? "s" : "");
   }
 }
 

@@ -25,6 +25,7 @@
 #include <net/ip.h>
 #include <net/udp.h>
 #include <net/tcp.h>
+#include <net/socket.h>
 
 // loopif.c
 

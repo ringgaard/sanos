@@ -14,8 +14,9 @@ struct tcp_pcb;
 // Lower layer interface to TCP
 
 void tcp_init();         // Must be called first to initialize TCP
-void tcp_slowtmr();      // Must be called every TCP_SLOW_INTERVAL ms.
-void tcp_fasttmr();      // Must be called every TCP_FAST_INTERVAL ms.
+void tcp_timer_coarse(); // Must be called every 500 ms.
+void tcp_timer_fine();   // Must be called every 100 ms.
+void tcp_timer();        // Called from timer DPC
 
 void tcp_input(struct pbuf *p, struct netif *inp); // Called by IP to deliver TCP segment to TCP
 
@@ -126,7 +127,7 @@ struct tcp_pcb
   struct ip_addr dest_ip;
   unsigned short dest_port;
   
-  // Receiver varables
+  // Receiver variables
   unsigned long rcv_nxt;   // Next seqno expected
   unsigned short rcv_wnd;  // Receiver window
 
@@ -146,7 +147,7 @@ struct tcp_pcb
   int sa, sv;
 
   unsigned short rto;     // Retransmission time-out
-  unsigned short nrtx;    // number of retransmissions
+  unsigned short nrtx;    // Number of retransmissions
 
   // Fast retransmit/recovery
   unsigned long lastack;  // Highest acknowledged seqno

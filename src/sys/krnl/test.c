@@ -449,7 +449,7 @@ static void test_alloc(int size)
 
 static void handle_list()
 {
-  static char *objtype[] = {"TASK", "EVNT", "TIMR", "MUTX", "SEMA", "FILE"};
+  static char *objtype[] = {"TASK", "EVNT", "TIMR", "MUTX", "SEMA", "FILE", "SOCK"};
 
   int h;
   int i;
@@ -457,7 +457,7 @@ static void handle_list()
   int lines = 0;
   int objcount[6];
 
-  for (i = 0; i < 6; i++) objcount[i] = 0;
+  for (i = 0; i < 7; i++) objcount[i] = 0;
 
   kprintf("handle addr     s type count\n");
   kprintf("------ -------- - ---- -----\n");
@@ -474,7 +474,7 @@ static void handle_list()
   }
 
   kprintf("\n");
-  for (i = 0; i < 6; i++) kprintf("%s:%d ", objtype[i], objcount[i] / FRAQ);
+  for (i = 0; i < 7; i++) kprintf("%s:%d ", objtype[i], objcount[i] / FRAQ);
   kprintf("\n");
 }
 

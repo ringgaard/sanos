@@ -20,6 +20,7 @@
 #define OBJECT_MUTEX      3
 #define OBJECT_SEMAPHORE  4
 #define OBJECT_FILE       5
+#define OBJECT_SOCKET     6
 
 #define THREAD_STATE_INITIALIZED 0
 #define THREAD_STATE_READY       1
