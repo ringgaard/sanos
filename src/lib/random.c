@@ -154,6 +154,7 @@ static long randtbl[DEG_3 + 1] =
 // (The position of the rear pointer, rptr, is really 0 (as explained above
 // in the initialization of randtbl) because the state table pointer is set
 // to point to randtbl[1] (as explained below).
+//
 
 static long *fptr = &randtbl[SEP_3 + 1];
 static long *rptr = &randtbl[1];
@@ -167,6 +168,7 @@ static long *rptr = &randtbl[1];
 // store the type of the R.N.G.  Also, we remember the last location, since
 // this is more efficient than indexing every time to find the address of
 // the last element to see if the front and rear pointers have wrapped.
+//
 
 static long *state = &randtbl[1];
 static long rand_type = TYPE_3;

@@ -254,7 +254,18 @@ void mark_thread_running()
   }
 }
 
-void threadstart(void *arg)
+void kernel_thread_start(void *arg)
+{
+  struct thread *t = self();
+
+  // Mark thread as running
+  mark_thread_running();
+
+  // Call entry point
+  ((void (*)(void *)) (t->entrypoint))(arg);
+}
+
+void user_thread_start(void *arg)
 {
   struct thread *t = self();
   unsigned long *stacktop;
@@ -309,9 +320,10 @@ struct thread *create_kernel_thread(threadproc_t startaddr, void *arg, int prior
   struct thread *t;
 
   // Create new thread object
-  t = create_thread(startaddr, arg, priority);
+  t = create_thread(kernel_thread_start, arg, priority);
   if (!t) return NULL;
   t->name = name;
+  t->entrypoint = startaddr;
 
   // Mark thread as ready to run
   mark_thread_ready(t);
@@ -334,7 +346,7 @@ int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread 
     stacksize = PAGES(stacksize) * PAGESIZE;
 
   // Create and initialize new TCB and suspend thread
-  t = create_thread(threadstart, NULL, PRIORITY_NORMAL);
+  t = create_thread(user_thread_start, NULL, PRIORITY_NORMAL);
   if (!t) return -ENOMEM;
   t->name = "user";
   t->suspend_count++;
