@@ -6,8 +6,6 @@
 // Quick sort
 //
 
-#include "msvcrt.h"
-
 #define CUTOFF 8
 
 static void shortsort(char *lo, char *hi, unsigned width, int (__cdecl *comp)(const void *, const void *));
@@ -22,7 +20,6 @@ void qsort(void *base, unsigned num, unsigned width, int (__cdecl *comp)(const v
   char *lostk[30], *histk[30];
   int stkptr;
 
-  TRACE("qsort");
   if (num < 2 || width == 0) return;
   stkptr = 0;
 

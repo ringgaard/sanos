@@ -89,6 +89,10 @@ SOURCE=..\src\include\bitops.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\include\ctype.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\include\hash.h
 # End Source File
 # Begin Source File
@@ -97,11 +101,19 @@ SOURCE=..\src\include\inifile.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\include\moddb.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\include\os.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\src\include\rmap.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\stdarg.h
 # End Source File
 # Begin Source File
 
@@ -115,10 +127,26 @@ SOURCE=..\src\include\stdlib.h
 
 SOURCE=..\src\include\string.h
 # End Source File
+# Begin Source File
+
+SOURCE=..\src\include\time.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\types.h
+# End Source File
 # End Group
 # Begin Source File
 
 SOURCE=..\src\lib\bitops.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lib\bsearch.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lib\ctype.c
 # End Source File
 # Begin Source File
 
@@ -131,6 +159,10 @@ SOURCE=..\src\lib\inifile.c
 # Begin Source File
 
 SOURCE=..\src\lib\opts.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lib\qsort.c
 # End Source File
 # Begin Source File
 
@@ -147,6 +179,10 @@ SOURCE=..\src\lib\stdlib.c
 # Begin Source File
 
 SOURCE=..\src\lib\string.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lib\strtol.c
 # End Source File
 # Begin Source File
 

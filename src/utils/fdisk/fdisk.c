@@ -70,7 +70,7 @@ int ask(char *question, char *choices)
   printf("%s", question);
   while (1)
   {
-    if (read(stdin, &ch, 1) == 1)
+    if (read(fdin, &ch, 1) == 1)
     {
       s = choices;
       while (*s)

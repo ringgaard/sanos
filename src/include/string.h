@@ -15,6 +15,7 @@ char *strdup(char *s);
 int stricmp(const char *s1, const char *s2);
 char *strchr(const char *s, int ch);
 
+long atol(const char *s);
 int atoi(const char *s);
 
 int vsprintf(char *buf, const char *fmt, va_list args);

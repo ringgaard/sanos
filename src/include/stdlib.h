@@ -21,4 +21,10 @@ int abs(int number);
 
 char *strerror(int errnum);
 
+void *bsearch(const void *key, const void *base, size_t num, size_t width, int (__cdecl *compare)(const void *, const void *));
+void qsort(void *base, unsigned num, unsigned width, int (__cdecl *comp)(const void *, const void *));
+
+long strtol(const char *nptr, char **endptr, int ibase);
+unsigned long strtoul(const char *nptr, char **endptr, int ibase);
+
 #endif

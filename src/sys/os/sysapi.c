@@ -255,9 +255,9 @@ handle_t dup(handle_t h)
   return syscall(SYSCALL_DUP, &h);
 }
 
-time_t time()
+time_t time(time_t *timeptr)
 {
-  return syscall(SYSCALL_TIME, NULL);
+  return syscall(SYSCALL_TIME, &timeptr);
 }
 
 int gettimeofday(struct timeval *tv)

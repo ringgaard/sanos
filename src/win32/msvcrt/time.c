@@ -13,7 +13,6 @@ time_t _time(time_t *timer)
   time_t t;
 
   TRACE("_time");
-  t = time();
-  if (timer) *timer = t;
+  t = time(timer);
   return t;
 }

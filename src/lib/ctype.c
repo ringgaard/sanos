@@ -6,7 +6,7 @@
 // Character types
 //
 
-#include "msvcrt.h"
+#include "ctype.h"
 
 unsigned short _ctype[257] = 
 {
@@ -142,86 +142,75 @@ unsigned short _ctype[257] =
   // and the rest are 0...
 };
 
-crtapi unsigned short *_pctype = _ctype + 1; // pointer to table for char's
+unsigned short *_pctype = _ctype + 1; // pointer to table for char's
 
 int _isctype(int c, int mask)
 {
-  TRACEX("_isctype");
   if (((unsigned) (c + 1)) <= 256)
     return _pctype[c] & mask;
   else
     return 0;
 }
 
+#ifdef NO_CTYPE_MACROS
+
 int isalpha(int c)
 {
-  TRACEX("isalpha");
   return _pctype[c] & (_UPPER | _LOWER);
 }
 
 int isupper(int c)
 {
-  TRACEX("isupper");
   return _pctype[c] & _UPPER;
 }
 
 int islower(int c)
 {
-  TRACEX("islower");
   return _pctype[c] & _LOWER;
 }
 
 int isdigit(int c)
 {
-  TRACEX("isdigit");
   return _pctype[c] & _DIGIT;
 }
 
 int isxdigit(int c)
 {
-  TRACEX("isxdigit");
   return _pctype[c] & _HEX;
 }
 
 int isspace(int c)
 {
-  TRACEX("isspace");
   return _pctype[c] & _SPACE;
 }
 
 int ispunct(int c)
 {
-  TRACEX("ispunct");
   return _pctype[c] & _PUNCT;
 }
 
 int isalnum(int c)
 {
-  TRACEX("isalnum");
   return _pctype[c] & (_UPPER | _LOWER | _DIGIT);
 }
 
 int isprint(int c)
 {
-  TRACEX("isprint");
   return _pctype[c] & (_BLANK | _PUNCT | _UPPER | _LOWER | _DIGIT);
 }
 
 int isgraph(int c)
 {
-  TRACEX("isgraph");
   return _pctype[c] & (_PUNCT | _UPPER | _LOWER | _DIGIT);
 }
 
 int iscntrl(int c)
 {
-  TRACEX("iscntrl");
   return _pctype[c] & _CONTROL;
 }
 
 int toupper(int c)
 {
-  TRACEX("toupper");
   if (_pctype[c] & _LOWER)
     return c - ('a' - 'A');
   else
@@ -230,9 +219,10 @@ int toupper(int c)
 
 int tolower(int c)
 {
-  TRACEX("tolower");
   if (_pctype[c] & _UPPER)
     return c + ('a' - 'A');
   else
     return c;
 }
+
+#endif

@@ -73,6 +73,13 @@ char *getenv(const char *option)
   return get_property(config, "env", (char *) option, NULL);
 }
 
+double atof(const char *nptr)
+{
+  TRACE("atof");
+  panic("atof not implemented");
+  return 0;
+}
+
 int *_errno()
 {
   TRACE("_errno");

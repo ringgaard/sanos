@@ -6,7 +6,7 @@
 // Binary search
 //
 
-#include "msvcrt.h"
+#include <types.h>
 
 void *bsearch(const void *key, const void *base, size_t num, size_t width, int (__cdecl *compare)(const void *, const void *))
 {
@@ -16,7 +16,6 @@ void *bsearch(const void *key, const void *base, size_t num, size_t width, int (
   unsigned int half;
   int result;
 
-  TRACE("bsearch");
   while (lo <= hi)
   {
     if (half = num / 2)

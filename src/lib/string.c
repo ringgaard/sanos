@@ -9,6 +9,7 @@
 #include <types.h>
 #include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
 
 char *strncpy(char *dest, const char *source, size_t count)
 {
@@ -91,22 +92,34 @@ void *memmove(void *dst, const void *src, size_t count)
   return ret;
 }
 
-int atoi(const char *s)
+long atol(const char *nptr)
 {
-  int n;
+  int c;
+  long total;
   int sign;
 
-  if (!s) return -1;
-  while (*s == ' ') s++;
+  while (isspace((int)(unsigned char) *nptr)) ++nptr;
 
-  sign = *s;
-  if (*s == '-' || *s == '+') s++;
+  c = (int)(unsigned char) *nptr++;
+  sign = c;
+  if (c == '-' || c == '+') c = (int)(unsigned char) *nptr++;
 
-  n = 0;
-  if (*s < '0' || *s > '9') return -1;
-  while (*s >= '0' && *s <= '9') n = 10 * n + (*s++ - '0');
+  total = 0;
+  while (isdigit(c)) 
+  {
+    total = 10 * total + (c - '0');
+    c = (int)(unsigned char) *nptr++;
+  }
 
-  return sign == '-' ? -n : n;
+  if (sign == '-')
+    return -total;
+  else
+    return total;
+}
+
+int atoi(const char *nptr)
+{
+  return (int) atol(nptr);
 }
 
 /////////////////////////////////////////////////////////////////////

@@ -6,7 +6,8 @@
 // String to number conversion
 //
 
-#include "msvcrt.h"
+#include <os.h>
+#include <ctype.h>
 
 #define FL_UNSIGNED   1
 #define FL_NEG        2
@@ -61,7 +62,6 @@ static unsigned long strtoxl(const char *nptr, const char **endptr, int ibase, i
 
   maxval = ULONG_MAX / ibase;
 
-
   for (;;) 
   {
     if (isdigit((int) (unsigned char) c))
@@ -110,12 +110,10 @@ static unsigned long strtoxl(const char *nptr, const char **endptr, int ibase, i
 
 long strtol(const char *nptr, char **endptr, int ibase)
 {
-  TRACE("strtol");
   return (long) strtoxl(nptr, endptr, ibase, 0);
 }
 
 unsigned long strtoul(const char *nptr, char **endptr, int ibase)
 {
-  TRACE("strtoul");
   return strtoxl(nptr, endptr, ibase, FL_UNSIGNED);
 }

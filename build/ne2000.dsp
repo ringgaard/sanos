@@ -91,13 +91,16 @@ LINK32=link.exe
 
 # Name "ne2000 - Win32 SanOS"
 # Name "ne2000 - Win32 SanOSDebug"
+# Begin Group "lib"
+
+# PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\src\sys\krnl\iop.c
+SOURCE=..\src\lib\ctype.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\sys\dev\ne2000.c
+SOURCE=..\src\sys\krnl\iop.c
 # End Source File
 # Begin Source File
 
@@ -106,6 +109,11 @@ SOURCE=..\src\lib\opts.c
 # Begin Source File
 
 SOURCE=..\src\lib\string.c
+# End Source File
+# End Group
+# Begin Source File
+
+SOURCE=..\src\sys\dev\ne2000.c
 # End Source File
 # End Target
 # End Project

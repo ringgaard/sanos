@@ -91,13 +91,12 @@ LINK32=link.exe
 
 # Name "3c905c - Win32 SanOS"
 # Name "3c905c - Win32 SanOSDebug"
+# Begin Group "lib"
+
+# PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\src\sys\dev\3c905c.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\sys\dev\3c905c.h
+SOURCE=..\src\lib\ctype.c
 # End Source File
 # Begin Source File
 
@@ -106,6 +105,15 @@ SOURCE=..\src\sys\krnl\iop.c
 # Begin Source File
 
 SOURCE=..\src\lib\string.c
+# End Source File
+# End Group
+# Begin Source File
+
+SOURCE=..\src\sys\dev\3c905c.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\sys\dev\3c905c.h
 # End Source File
 # End Target
 # End Project

@@ -11,24 +11,6 @@
 
 #include <os.h>
 
-#define ULONG_MAX   0xffffffffUL
-#define LONG_MIN    (-2147483647L - 1)
-#define LONG_MAX    2147483647L
-
-// Character types
-
-#define _UPPER          0x1     // upper case letter
-#define _LOWER          0x2     // lower case letter
-#define _DIGIT          0x4     // digit[0-9]
-#define _SPACE          0x8     // tab, carriage return, newline, vertical tab or form feed
-#define _PUNCT          0x10    // punctuation character
-#define _CONTROL        0x20    // control character
-#define _BLANK          0x40    // space char
-#define _HEX            0x80    // hexadecimal digit
-
-#define _LEADBYTE       0x8000                      // multibyte leadbyte
-#define _ALPHA          (0x0100 | _UPPER| _LOWER)  // alphabetic character
-
 // File attributes
 
 #define S_IFMT         0170000         // file type mask

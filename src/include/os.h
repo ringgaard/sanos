@@ -501,9 +501,9 @@ struct tib
   void *startaddr;                 // Start address for thread
   void *startarg;                  // Argument to thread start routine
 
-  handle_t in;                     // Thread specific stdin
-  handle_t out;                    // Thread specific stdout
-  handle_t err;                    // Thread specific stderr
+  handle_t in;                     // Thread specific stdin handle
+  handle_t out;                    // Thread specific stdout handle
+  handle_t err;                    // Thread specific stderr handle
 
   struct hostent host;             // Per-thread hostent buffer
   unsigned char host_addr[sizeof(struct in_addr)];
@@ -518,6 +518,10 @@ struct tib
 };
 
 #define errno (gettib()->errnum)
+
+#define fdin  (gettib()->in)
+#define fdout (gettib()->out)
+#define fderr (gettib()->err)
 
 // OS API functions
 
@@ -597,7 +601,7 @@ osapi int setprio(handle_t thread, int priority);
 osapi void sleep(int millisecs);
 osapi struct tib *gettib();
 
-osapi time_t time();
+osapi time_t time(time_t *timeptr);
 osapi int gettimeofday(struct timeval *tv);
 osapi int settimeofday(struct timeval *tv);
 osapi clock_t clock();

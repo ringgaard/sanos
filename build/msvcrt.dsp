@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 1
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MSVCRT_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /O2 /X /I "..\src\include" /u /D "MSVCRT_LIB" /YX"os.h" /FD /c
+# ADD CPP /nologo /MT /W3 /O2 /X /I "..\src\include" /u /D "MSVCRT_LIB" /D "NO_CTYPE_MACROS" /YX"os.h" /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x406 /d "NDEBUG"
@@ -71,7 +71,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 1
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /O2 /X /I "..\src\include" /u /D "MSVCRT_LIB" /YX"os.h" /FD /c
-# ADD CPP /nologo /MT /W3 /Zi /Od /X /I "..\src\include" /u /D "MSVCRT_LIB" /D "DEBUG" /YX"os.h" /FD /c
+# ADD CPP /nologo /MT /W3 /Zi /Od /X /I "..\src\include" /u /D "DEBUG" /D "MSVCRT_LIB" /D "NO_CTYPE_MACROS" /YX"os.h" /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x406 /d "NDEBUG"
@@ -108,21 +108,33 @@ SOURCE=..\src\include\os.h
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=..\src\lib\bsearch.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lib\ctype.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lib\inifile.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lib\qsort.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lib\string.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lib\strtol.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\lib\vsprintf.c
 # End Source File
 # End Group
-# Begin Source File
-
-SOURCE=..\src\win32\msvcrt\atox.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\win32\msvcrt\bsearch.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\win32\msvcrt\ctype.c
-# End Source File
 # Begin Source File
 
 SOURCE=..\src\win32\msvcrt\file.c
@@ -133,15 +145,7 @@ SOURCE=..\src\win32\msvcrt\float.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\lib\inifile.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\win32\msvcrt\malloc.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\win32\msvcrt\memmove.c
 # End Source File
 # Begin Source File
 
@@ -161,19 +165,7 @@ SOURCE=..\src\win32\msvcrt\new.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\win32\msvcrt\qsort.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\win32\msvcrt\setjmp.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\win32\msvcrt\string.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\win32\msvcrt\strtol.c
 # End Source File
 # Begin Source File
 

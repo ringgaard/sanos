@@ -30,7 +30,7 @@ static void list_file(char *filename)
 
   while ((count = read(file, buffer, 4096)) > 0)
   {
-    write(stdout, buffer, count);
+    write(fdout, buffer, count);
   }
 
   close(file);
@@ -258,8 +258,8 @@ static void display_file(char *filename)
     {
       if (line == 24)
       {
-	display_buffer(stdout, start, end - start);
-	while (read(stdin, &ch, 1) <= 0);
+	display_buffer(fdout, start, end - start);
+	while (read(fdin, &ch, 1) <= 0);
 	if (ch == 'x')
 	{
 	  close(file);
@@ -270,7 +270,7 @@ static void display_file(char *filename)
       }
       if (*end++ == '\n') line++;
     }
-    display_buffer(stdout, start, end - start);
+    display_buffer(fdout, start, end - start);
   }
 
   close(file);
@@ -281,7 +281,7 @@ static void show_date()
   time_t t;
   struct tm tm;
 
-  t = time();
+  t = time(NULL);
   gmtime(&t, &tm);
   printf("Time is %04d/%02d/%02d %02d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
@@ -384,7 +384,7 @@ static void idle_sleep(int ms)
   struct tm tm;
   clock_t c;
 
-  t = time();
+  t = time(NULL);
   c = clock();
   gmtime(&t, &tm);
   printf("Time is %04d/%02d/%02d %02d:%02d:%02d Clock is %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, c);
@@ -392,7 +392,7 @@ static void idle_sleep(int ms)
   printf("Sleep %d ms\n", ms);
   sleep(ms);
 
-  t = time();
+  t = time(NULL);
   c = clock();
   gmtime(&t, &tm);
   printf("Time is %04d/%02d/%02d %02d:%02d:%02d Clock is %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, c);
@@ -404,7 +404,7 @@ static void busy_loop(int ms)
   struct tm tm;
   clock_t c;
 
-  t = time();
+  t = time(NULL);
   c = clock();
   gmtime(&t, &tm);
   printf("Time is %04d/%02d/%02d %02d:%02d:%02d Clock is %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, c);
@@ -415,7 +415,7 @@ static void busy_loop(int ms)
     for (n = 0; n < 100000000; n++) c += n;
   }
 
-  t = time();
+  t = time(NULL);
   c = clock();
   gmtime(&t, &tm);
   printf("Time is %04d/%02d/%02d %02d:%02d:%02d Clock is %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, c);
@@ -1044,7 +1044,7 @@ static void nop()
 
 static void set_kprint(int enabled)
 {
-  ioctl(stdout, IOCTL_KPRINT_ENABLED, &enabled, 4);
+  ioctl(1, IOCTL_KPRINT_ENABLED, &enabled, 4);
 }
 
 static void beep()

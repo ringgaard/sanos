@@ -197,6 +197,10 @@ SOURCE=..\src\lib\bitops.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\lib\ctype.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\lib\inifile.c
 # End Source File
 # Begin Source File

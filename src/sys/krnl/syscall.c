@@ -1490,7 +1490,26 @@ static int sys_sleep(char *params)
 
 static int sys_time(char *params)
 {
-  return get_time();
+  time_t *timeptr;
+  time_t t;
+
+  if (lock_buffer(params, 4) < 0) return -EFAULT;
+
+  timeptr = *(time_t **) params;
+
+  if (lock_buffer(timeptr, sizeof(time_t *)) < 0)
+  {
+    unlock_buffer(params, 4);
+    return -EFAULT;
+  }
+
+  t = get_time();
+  if (timeptr) *timeptr = t;
+
+  unlock_buffer(timeptr, sizeof(time_t *));
+  unlock_buffer(params, 4);
+
+  return t;
 }
 
 static int sys_gettimeofday(char *params)
