@@ -191,6 +191,12 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\object.c">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="0"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\pci.c">

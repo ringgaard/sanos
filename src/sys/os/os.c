@@ -702,7 +702,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   // Setup pointer to process environment block (PEB)
   peb = (struct peb *) PEB_ADDRESS;
   peb->globalhandler = globalhandler;
-  peb->fmodeval = O_TEXT;
+  peb->fmodeval = O_BINARY; //O_TEXT;
 
   // Initialize heap and module locks
   mkcs(&heap_lock);

@@ -250,6 +250,8 @@ struct file *newfile(struct fs *fs, char *path, int flags, int mode)
   
   if ((flags & (O_TEXT | O_BINARY)) == 0) flags |= fmodeval;
 
+  if (flags & O_TEXT) kprintf("vfs: %d opened in text mode\n", path);
+
   filp->fs = fs;
   filp->flags = flags;
   filp->mode = mode & ~umaskval;
@@ -579,7 +581,7 @@ int setmode(struct file *filp, int mode)
 {
   int oldmode;
 
-  if (mode != O_TEXT || mode != O_BINARY) return -EINVAL;
+  if (mode != O_TEXT && mode != O_BINARY) return -EINVAL;
   oldmode = filp->mode & (O_TEXT | O_BINARY);
   filp->mode = (filp->mode & ~(O_TEXT | O_BINARY)) | mode;
   return oldmode;

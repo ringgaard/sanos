@@ -293,4 +293,30 @@ typedef struct WIN32_FIND_DATA
   CHAR cAlternateFileName[14];
 } WIN32_FIND_DATA, *PWIN32_FIND_DATA, *LPWIN32_FIND_DATA;
 
+#define GENERIC_READ                     0x80000000
+#define GENERIC_WRITE                    0x40000000
+#define GENERIC_EXECUTE                  0x20000000
+#define GENERIC_ALL                      0x10000000
+
+#define FILE_SHARE_READ                  0x00000001
+#define FILE_SHARE_WRITE                 0x00000002
+#define FILE_SHARE_DELETE                0x00000004
+
+#define CREATE_NEW                       1
+#define CREATE_ALWAYS                    2
+#define OPEN_EXISTING                    3
+#define OPEN_ALWAYS                      4
+#define TRUNCATE_EXISTING                5
+
+#define FILE_ATTRIBUTE_READONLY          0x00000001  
+#define FILE_ATTRIBUTE_NORMAL            0x00000080  
+#define FILE_ATTRIBUTE_TEMPORARY         0x00000100  
+
+#define FILE_FLAG_WRITE_THROUGH          0x80000000
+#define FILE_FLAG_NO_BUFFERING           0x20000000
+#define FILE_FLAG_RANDOM_ACCESS          0x10000000
+#define FILE_FLAG_SEQUENTIAL_SCAN        0x08000000
+#define FILE_FLAG_DELETE_ON_CLOSE        0x04000000
+#define FILE_FLAG_OVERLAPPED             0x40000000
+
 #endif

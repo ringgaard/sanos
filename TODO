@@ -296,3 +296,5 @@ CHANGES
  
 - Support for 64 bit integer arithmetic. All compiler support routines for 64 bit
   integer operations implemented in libc.
+
+- CreateFile() and SetFileTime() implemented in kernel32.

@@ -192,9 +192,82 @@ HANDLE WINAPI CreateFileA
   HANDLE hTemplateFile
 )
 {
-  TRACE("CreateFileA");
-  panic("CreateFileA not implemented");
-  return 0;
+  int flags = 0;
+  int mode = 0;
+  int shflags = 0;
+  handle_t h;
+
+  TRACE("CreateFile");
+
+  if ((dwDesiredAccess & (GENERIC_READ | GENERIC_WRITE)) == (GENERIC_READ | GENERIC_WRITE))
+    flags = O_RDWR;
+  else if (dwDesiredAccess & GENERIC_READ)
+    flags = O_RDONLY;
+  else if (dwDesiredAccess & GENERIC_WRITE)
+    flags = O_WRONLY;
+  else if (dwDesiredAccess & GENERIC_ALL)
+    flags = O_RDWR;
+  else
+    flags = O_RDONLY;
+
+  if ((dwShareMode & (FILE_SHARE_READ | FILE_SHARE_WRITE)) == (FILE_SHARE_READ | FILE_SHARE_WRITE))
+    shflags = SH_DENYNO;
+  else if (dwShareMode & FILE_SHARE_READ)
+    shflags = SH_DENYWR;
+  else if (dwShareMode & FILE_SHARE_WRITE)
+    shflags = SH_DENYRD;
+  else
+    shflags = SH_DENYRW;
+
+  switch (dwCreationDisposition)
+  {
+    case CREATE_NEW:
+      flags |= O_CREAT | O_EXCL;
+      break;
+
+    case CREATE_ALWAYS:
+      flags |= O_CREAT | O_TRUNC;
+      break;
+
+    case OPEN_EXISTING:
+      flags |= 0;
+      break;
+
+    case OPEN_ALWAYS:
+      flags |= O_CREAT;
+      break;
+
+    case TRUNCATE_EXISTING:
+      flags |= O_TRUNC;
+      break;
+
+    default:
+      errno = EINVAL;
+      return FALSE;
+  }
+
+  if (dwFlagsAndAttributes & FILE_ATTRIBUTE_READONLY)
+    mode = S_IREAD;
+  else
+    mode = S_IREAD | S_IWRITE | S_IEXEC;
+
+  if (dwFlagsAndAttributes & FILE_FLAG_OVERLAPPED)
+  {
+    syslog(LOG_WARNING, "CreateFile(%s): overlapped operation not supported\n", lpFileName);
+    errno = EINVAL;
+    return INVALID_HANDLE_VALUE;
+  }
+
+  if (dwFlagsAndAttributes & FILE_FLAG_NO_BUFFERING) flags |= O_DIRECT;
+  if (dwFlagsAndAttributes & FILE_FLAG_RANDOM_ACCESS) flags |= O_RANDOM;
+  if (dwFlagsAndAttributes & FILE_FLAG_SEQUENTIAL_SCAN) flags |= O_SEQUENTIAL;
+  if (dwFlagsAndAttributes & FILE_FLAG_DELETE_ON_CLOSE) flags |= O_TEMPORARY;
+  if (dwFlagsAndAttributes & FILE_ATTRIBUTE_TEMPORARY) flags |= O_SHORT_LIVED;
+
+  h = sopen(lpFileName, flags, shflags, mode);
+  if (h < 0) return INVALID_HANDLE_VALUE;
+
+  return (HANDLE) h;
 }
 
 BOOL WINAPI CreatePipe
@@ -1389,9 +1462,30 @@ BOOL WINAPI SetFileTime
   CONST FILETIME *lpLastWriteTime
 )
 {
+  struct utimbuf times;
+  int rc;
+
   TRACE("SetFileTime");
-  panic("SetFileTime not implemented");
-  return FALSE;
+
+  if (lpCreationTime != NULL)
+    times.ctime = (time_t)(((*(__int64 *) lpCreationTime) - EPOC) / SECTIMESCALE);
+  else
+    times.ctime = -1;
+
+  if (lpLastAccessTime != NULL)
+    times.atime = (time_t)(((*(__int64 *) lpLastAccessTime) - EPOC) / SECTIMESCALE);
+  else
+    times.atime = -1;
+
+  if (lpLastWriteTime != NULL)
+    times.mtime = (time_t)(((*(__int64 *) lpLastWriteTime) - EPOC) / SECTIMESCALE);
+  else
+    times.mtime = -1;
+
+  rc = futime((handle_t) hFile, &times);
+  if (rc < 0) return FALSE;
+
+  return TRUE;
 }
 
 BOOL WINAPI SetHandleInformation
