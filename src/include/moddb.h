@@ -11,6 +11,14 @@
 
 #define RVA(hmod, rva) (((char *) (hmod)) + (rva))
 
+#define MODULE_LOADED           0x0001
+#define MODULE_IMPORTS_REFED    0x0002
+#define MODULE_RESOLVED         0x0004
+#define MODULE_RELOCATED        0x0008
+#define MODULE_BOUND            0x0010
+#define MODULE_PROTECTED        0x0020
+#define MODULE_INITIALIZED      0x0040
+
 struct moddb
 {
   int flags;
@@ -19,6 +27,7 @@ struct moddb
   int (*protect_region)(void *mem, size_t size, int protect);
   void (*notify_load)(hmodule_t hmod, char **name);
   void (*notify_unload)(hmodule_t hmod);
+  void (*log)(char *msg);
 
   struct module *modules;
   struct module *execmod;
@@ -35,6 +44,7 @@ struct module
   struct module *next;
   struct module *prev;
   int refcnt;
+  int flags;
 };
 
 struct image_header *get_image_header(hmodule_t hmod);

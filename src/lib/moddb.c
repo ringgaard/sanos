@@ -17,6 +17,20 @@
 #include <os/krnl.h>
 #endif
 
+static void log(struct moddb *db, const char *fmt, ...)
+{
+  va_list args;
+  char buffer[1024];
+
+  if (db->log)
+  {
+    va_start(args, fmt);
+    vsprintf(buffer, fmt, args);
+    va_end(args);
+    db->log(buffer);
+  }
+}
+
 static char *get_basename(const char *filename, char *buffer, int size)
 {
   char *basename = (char *) filename;
@@ -295,13 +309,11 @@ static struct module *resolve_imports(struct module *mod)
   imp = (struct image_import_descriptor *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_IMPORT);
   if (!imp) return mod;
 
-  // Get or load each dependent module
+  // Load each dependent module
   while (imp->characteristics != 0)
   {
     char *name = RVA(mod->hmod, imp->name);
     struct module *newmod = get_module(mod->db, name);
-
-    //syslog(LOG_MODULE | LOG_DEBUG, "imports from %s%s\n", name, newmod != NULL ? " (loaded)" : "");
 
     if (newmod == NULL)
     {
@@ -310,14 +322,14 @@ static struct module *resolve_imports(struct module *mod)
       name = get_module_name(mod->db, name, path);
       if (!name)
       {
-	//syslog(LOG_MODULE | LOG_ERROR, "DLL %s not found\n", name);
+	log(mod->db, "module %s not found", name);
         return NULL;
       }
 
       imgbase = mod->db->load_image(path);
       if (imgbase == NULL) 
       {
-	//syslog(LOG_MODULE | LOG_ERROR, "DLL %s not found\n", path);
+	log(mod->db, "unable to load module %s", path);
         return NULL;
       }
 
@@ -327,6 +339,7 @@ static struct module *resolve_imports(struct module *mod)
       newmod->name = strdup(name);
       newmod->path = strdup(path);
       newmod->refcnt = 1;
+      newmod->flags = MODULE_LOADED;
       insert_before(mod, newmod);
 
       newmod = resolve_imports(newmod);
@@ -334,21 +347,41 @@ static struct module *resolve_imports(struct module *mod)
 
       if (modlist == mod) modlist = newmod;
     }
-    else
-      newmod->refcnt++;
-
+    
     imp++;
   }
 
   return modlist;
 }
 
-static void bind_imports(struct moddb *db, hmodule_t hmod)
+static void update_refcount(struct module *mod)
 {
   struct image_import_descriptor *imp;
 
   // Find import directory in image
-  imp = (struct image_import_descriptor *) get_image_directory(hmod, IMAGE_DIRECTORY_ENTRY_IMPORT);
+  imp = (struct image_import_descriptor *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_IMPORT);
+  if (!imp) return;
+
+  // Get or load each dependent module
+  while (imp->characteristics != 0)
+  {
+    char *name = RVA(mod->hmod, imp->name);
+    struct module *depmod = get_module(mod->db, name);
+
+    if (depmod != NULL) depmod->refcnt++;
+    
+    imp++;
+  }
+
+  mod->flags |= MODULE_IMPORTS_REFED;
+}
+
+static int bind_imports(struct moddb *db, struct module *mod)
+{
+  struct image_import_descriptor *imp;
+
+  // Find import directory in image
+  imp = (struct image_import_descriptor *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_IMPORT);
   if (!imp) return;
   
   // Update Import Address Table (IAT)
@@ -359,33 +392,45 @@ static void bind_imports(struct moddb *db, hmodule_t hmod)
     char *name;
     struct module *expmod;
 
-    name = RVA(hmod, imp->name);
+    name = RVA(mod->hmod, imp->name);
     expmod = get_module(db, name);
-    if (!expmod) panic("module no longer loaded");
-    if (imp->forwarder_chain != 0) panic("import forwarder chains not supported");
+    
+    if (!expmod) 
+    {
+      log(db, "module %s no longer loaded", name);
+      return -ENOEXEC;
+    }
+    
+    if (imp->forwarder_chain != 0) 
+    {
+      log(db, "import forwarder chains not supported (%s)", name);
+      return -ENOSYS;
+    }
 
-    //syslog(LOG_MODULE | LOG_TRACE, "import from %s (%p)\n", name, imp->characteristics);
-
-    thunks = (unsigned long *) RVA(hmod, imp->first_thunk);
+    thunks = (unsigned long *) RVA(mod->hmod, imp->first_thunk);
     while (*thunks)
     {
       if (*thunks & IMAGE_ORDINAL_FLAG)
       {
 	// Import by ordinal
-	//syslog(LOG_MODULE | LOG_TRACE, "  import ordinal %d from %s\n", *thunks & ~IMAGE_ORDINAL_FLAG, name);
-
-	*thunks = (unsigned long) get_proc_by_ordinal(expmod->hmod, *thunks & ~IMAGE_ORDINAL_FLAG);
-	if (*thunks == 0) panic("unable to resolve imports");
+        unsigned long ordinal = *thunks & ~IMAGE_ORDINAL_FLAG;
+	*thunks = (unsigned long) get_proc_by_ordinal(expmod->hmod, ordinal);
+	if (*thunks == 0) 
+        {
+          log(db, "unable to resolve %s.#%d in %s", name, ordinal, mod->name);
+          return -ENOEXEC;
+        }
       }
       else
       {
 	// Import by name (and hint)
-	ibn = (struct image_import_by_name *) RVA(hmod, *thunks);
-
-	//syslog(LOG_MODULE | LOG_TRACE, "  import %s from %s\n", ibn->name, name);
-
+	ibn = (struct image_import_by_name *) RVA(mod->hmod, *thunks);
 	*thunks = (unsigned long) get_proc_by_name(expmod->hmod, ibn->hint, ibn->name);
-	if (*thunks == 0) panic("unable to resolve imports");
+	if (*thunks == 0)
+        {
+	  log(db, "unable to resolve %s.%s in %s\n", name, ibn->name, mod->name);
+          return -ENOEXEC;
+        }
       }
 
       thunks++;
@@ -393,6 +438,10 @@ static void bind_imports(struct moddb *db, hmodule_t hmod)
 
     imp++;
   }
+
+  mod->flags |= MODULE_BOUND;
+
+  return 0;
 }
 
 static void relocate_module(hmodule_t hmod)
@@ -493,8 +542,6 @@ hmodule_t load_module(struct moddb *db, char *name)
   struct module *modlist;
   struct module *m;
 
-  //syslog(LOG_MODULE | LOG_DEBUG, "loading module %s\n", name);
-
   // Return existing handle if module already loaded
   mod = get_module(db, name);
   if (mod != NULL)
@@ -518,17 +565,23 @@ hmodule_t load_module(struct moddb *db, char *name)
   mod->name = strdup(basename);
   mod->path = strdup(buffer);
   mod->refcnt = 1;
+  mod->flags = MODULE_LOADED;
   insert_before(db->modules, mod);
 
   // Resolve module dependencies
   modlist = resolve_imports(mod);
+  if (modlist == NULL)
+  {
+    unload_unused_modules(moddb);
+    return NULL;
+  }
 
   // Relocate, bind imports and initialize DLL's
   m = modlist;
   while (1)
   {
     relocate_module(m->hmod);
-    bind_imports(db, m->hmod);
+    bind_imports(db, m);
     if (db->protect_region) protect_module(db, m->hmod);
 
     if (get_image_header(m->hmod)->header.characteristics & IMAGE_FILE_DLL)
@@ -661,6 +714,8 @@ void init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *li
   db->modules->next = db->modules;
   db->modules->prev = db->modules;
   db->modules->refcnt = 1;
+  db->modules->flags =  MODULE_LOADED | MODULE_IMPORTS_REFED | MODULE_RESOLVED | MODULE_RELOCATED | MODULE_BOUND | MODULE_PROTECTED | MODULE_INITIALIZED;
+
 
   if (db->protect_region) protect_module(db, db->modules->hmod);
 }
