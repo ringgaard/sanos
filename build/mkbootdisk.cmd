@@ -16,6 +16,7 @@ copy %1\fdisk.exe %2\bin > nul
 copy %1\pcnet32.sys %2\bin > nul
 copy %1\ne2000.sys %2\bin > nul
 copy %1\3c905c.sys %2\bin > nul
+copy %1\rtl8139.sys %2\bin > nul
 copy %1\msvcrt.dll %2\bin > nul
 copy %1\kernel32.dll %2\bin > nul
 copy %1\user32.dll %2\bin > nul

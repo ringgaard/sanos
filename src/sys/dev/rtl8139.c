@@ -36,10 +36,6 @@
 
 // The user-configurable values
 
-// Message enable level: 0..31 = no..all messages
-
-static int debug = 2;
-
 // Maximum events (Rx packets, etc.) to handle at each interrupt
 
 static int max_interrupt_work = 20;
@@ -50,13 +46,6 @@ static int max_interrupt_work = 20;
 // for a long filter list is painful
 
 static int multicast_filter_limit = 32;
-
-// Used to pass the full-duplex flag, etc.
-
-#define MAX_UNITS 8   // More are supported, limit only on options
-
-static int options[MAX_UNITS] = {-1, -1, -1, -1, -1, -1, -1, -1};
-static int full_duplex[MAX_UNITS] = {-1, -1, -1, -1, -1, -1, -1, -1};
 
 // Operational parameters that are set at compile time
 
@@ -130,34 +119,9 @@ static struct chip_info chip_tbl[] =
   {"D-Link", "D-Link DFE-538TX (RTL8139)", PCI_UNITCODE(0x1186, 0x1300), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
   {"LevelOne", "LevelOne FPC-0106Tx (RTL8139)", PCI_UNITCODE(0x018a, 0x0106), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
   {"Compaq", "Compaq HNE-300 (RTL8139c)", PCI_UNITCODE(0x021b, 0x8139), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
+  {"Generic", "Generic RTL8139", 0, 0, 0, 0, 0, 0, RTL8139_CAPS},
   {NULL,},
 };
-
-#ifdef xxx
-#define RTL8139_IOTYPE  PCI_USES_MASTER | PCI_USES_IO | PCI_ADDR0
-
-static struct pci_id_info pci_tbl[] = 
-{
-  {"RealTek RTL8139C+, 64 bit high performance",  { 0x813910ec, 0xffffffff, 0,0, 0x20, 0xff}, RTL8139_IOTYPE, 0x80, RTL8139D_CAPS, },
-  {"RealTek RTL8139C Fast Ethernet", { 0x813910ec, 0xffffffff, 0,0, 0x10, 0xff}, RTL8139_IOTYPE, 0x80, RTL8139_CAPS, },
-  {"RealTek RTL8129 Fast Ethernet", { 0x812910ec, 0xffffffff,}, RTL8139_IOTYPE, 0x80, RTL8129_CAPS, },
-  {"RealTek RTL8139 Fast Ethernet", { 0x813910ec, 0xffffffff,}, RTL8139_IOTYPE, 0x80, RTL8139_CAPS, },
-  {"RealTek RTL8139B PCI",  { 0x813810ec, 0xffffffff,}, RTL8139_IOTYPE, 0x80, RTL8139_CAPS, },
-  {"SMC1211TX EZCard 10/100 (RealTek RTL8139)", { 0x12111113, 0xffffffff,}, RTL8139_IOTYPE, 0x80, RTL8139_CAPS, },
-  {"Accton MPX5030 (RealTek RTL8139)", { 0x12111113, 0xffffffff,}, RTL8139_IOTYPE, 0x80, RTL8139_CAPS, },
-  {"D-Link DFE-538TX (RealTek RTL8139)", { 0x13001186, 0xffffffff,}, RTL8139_IOTYPE, 0x80, RTL8139_CAPS, },
-  {"LevelOne FPC-0106Tx (RealTek RTL8139)", { 0x0106018a, 0xffffffff,}, RTL8139_IOTYPE, 0x80, RTL8139_CAPS, },
-  {"Compaq HNE-300 (RealTek RTL8139c)", { 0x8139021b, 0xffffffff,}, RTL8139_IOTYPE, 0x80, RTL8139_CAPS, },
-  {0,},
-};
-
-
-struct drv_id_info rtl8139_drv_id = 
-{
-  "realtek", PCI_HOTSWAP, PCI_CLASS_NETWORK_ETHERNET << 8, pci_tbl, rtl8139_probe1, rtl_pwr_event 
-};
-
-#endif
 
 // Number of Tx descriptor registers
 
@@ -301,7 +265,7 @@ struct stats_nic
   unsigned long multicast;              // Multicast packets received
   unsigned long collisions;
 
-  // detailed rx errors
+  // Detailed rx errors
   unsigned long rx_length_errors;
   unsigned long rx_over_errors;         // Receiver ring buff overflow
   unsigned long rx_crc_errors;          // Recved pkt with crc error
@@ -321,30 +285,41 @@ struct stats_nic
   unsigned long tx_compressed;
 };
 
-struct rtl8129_private 
+struct nic 
 {
-  int chip_id, drv_flags;
-  struct pci_dev *pci_dev;
+  devno_t devno;                        // Device number
+  struct dev *dev;                      // Device block
+
+  unsigned short iobase;		// Configured I/O base
+  unsigned short irq;		        // Configured IRQ
+
+  struct interrupt intr;                // Interrupt object for driver
+  struct dpc dpc;                       // DPC for driver
+  struct timer timer;                   // Media selection timer
+
+  struct eth_addr hwaddr;               // MAC address for NIC
+
+  int chip_id;
+  int flags;
   struct stats_nic stats;
-  struct timer timer;                 // Media selection timer
   int msg_level;
   int max_interrupt_work;
 
   // Receive state
   unsigned char *rx_ring;
-  unsigned int cur_rx;                // Index into the Rx buffer of next Rx pkt.
-  unsigned int rx_buf_len;            // Size (8K 16K 32K or 64KB) of the Rx ring
+  unsigned int cur_rx;                  // Index into the Rx buffer of next Rx pkt.
+  unsigned int rx_buf_len;              // Size (8K 16K 32K or 64KB) of the Rx ring
 
   // Transmit state
   unsigned int cur_tx, dirty_tx, tx_flag;
-  unsigned long tx_full;              // The Tx queue is full
-  struct sk_buff* tx_skbuff[NUM_TX_DESC]; // The saved address of a sent-in-place packet/buffer, for skfree()
-  unsigned char *tx_buf[NUM_TX_DESC]; // Tx bounce buffers
-  unsigned char *tx_bufs;             // Tx bounce buffer region
+  unsigned long tx_full;                // The Tx queue is full
+  struct pbuf *tx_pbuf[NUM_TX_DESC];    // The saved address of a sent-in-place packet
+  unsigned char *tx_buf[NUM_TX_DESC];   // Tx bounce buffers
+  unsigned char *tx_bufs;               // Tx bounce buffer region
 
   // Receive filter state
   unsigned int rx_config;
-  unsigned long mc_filter[2];         // Multicast hash filter
+  unsigned long mc_filter[2];           // Multicast hash filter
   int cur_rx_mode;
   int multicast_filter_limit;
 
@@ -355,165 +330,30 @@ struct rtl8129_private
   unsigned char config1;
   unsigned char full_duplex;          // Full-duplex operation requested
   unsigned char duplex_lock;
-  unsigned char default_port;         // Last dev->if_port value
+  unsigned char link_speed;
   unsigned char media2;               // Secondary monitored media port
   unsigned char medialock;            // Don't sense media type
   unsigned char mediasense;           // Media sensing in progress
 };
 
-static int rtl8129_open(struct net_device *dev);
-static void rtl_hw_start(struct net_device *dev);
+static int rtl8129_open(struct dev *dev);
+
+static void rtl_hw_start(struct dev *dev);
 static int read_eeprom(long ioaddr, int location, int addr_len);
-static int mdio_read(struct net_device *dev, int phy_id, int location);
-static void mdio_write(struct net_device *dev, int phy_id, int location, int val);
+static int mdio_read(struct dev *dev, int phy_id, int location);
+static void mdio_write(struct dev *dev, int phy_id, int location, int val);
 static void rtl8129_timer(unsigned long data);
-static void rtl8129_tx_timeout(struct net_device *dev);
-static void rtl8129_init_ring(struct net_device *dev);
-static int rtl8129_start_xmit(struct sk_buff *skb, struct net_device *dev);
-static int rtl8129_rx(struct net_device *dev);
+static void rtl8129_tx_timeout(struct dev *dev);
+static void rtl8129_init_ring(struct dev *dev);
+static int rtl8129_start_xmit(struct sk_buff *skb, struct dev *dev);
+static int rtl8129_rx(struct dev *dev);
 static void rtl8129_interrupt(int irq, void *dev_instance, struct pt_regs *regs);
-static void rtl_error(struct net_device *dev, int status, int link_status);
-static int rtl8129_close(struct net_device *dev);
-static int mii_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
-static struct net_device_stats *rtl8129_get_stats(struct net_device *dev);
+static void rtl_error(struct dev *dev, int status, int link_status);
+static int rtl8129_close(struct dev *dev);
+static int mii_ioctl(struct dev *dev, struct ifreq *rq, int cmd);
+static struct net_device_stats *rtl8129_get_stats(struct dev *dev);
 static unsigned long ether_crc(int length, unsigned char *data);
-static void set_rx_mode(struct net_device *dev);
-
-int __stdcall start(hmodule_t hmod, int reason, void *reserved2)
-{
-  return 1;
-}
-
-#ifdef xxx
-
-static void *rtl8139_init(struct pci_dev *pdev, void *init_dev, long ioaddr, int irq, int chip_idx, int found_cnt)
-{
-  struct net_device *dev;
-  struct rtl8129_private *np;
-  int i, option = found_cnt < MAX_UNITS ? options[found_cnt] : 0;
-  int config1;
-
-  dev = init_etherdev(init_dev, 0);
-  if (!dev) return NULL;
-
-  kprintf("%s: %s at %#lx, irq %d, ", dev->name, pci_tbl[chip_idx].name, ioaddr, irq);
-
-  // Bring the chip out of low-power mode
-  config1 = inp(ioaddr + Config1);
-  if (pci_tbl[chip_idx].drv_flags & HAS_MII_XCVR)
-  {
-    // RTL8129 chip
-    outp(ioaddr + Config1, config1 & ~0x03);
-  }
-
-  {
-    int addr_len = read_eeprom(ioaddr, 0, 8) == 0x8129 ? 8 : 6;
-    for (i = 0; i < 3; i++)
-    {
-      ((unsigned short *)(dev->dev_addr))[i] = le16_to_cpu(read_eeprom(ioaddr, i + 7, addr_len));
-    }
-  }
-
-  for (i = 0; i < 5; i++) kprintf("%2.2x:", dev->dev_addr[i]);
-  kprintf("%2.2x.\n", dev->dev_addr[i]);
-
-  // Allocate private memory (must be 16 byte aligned)
-  np = kmalloc(struct rtl8129_private);
-  if (np == NULL) return NULL;
-  memset(np, 0, sizeof(struct rtl8129_private));
-
-  // We do a request_region() to register ioports
-  //request_region(ioaddr, pci_tbl[chip_idx].io_size, dev->name);
-
-  dev->base_addr = ioaddr;
-  dev->irq = irq;
-
-  np->next_module = root_rtl8129_dev;
-  root_rtl8129_dev = dev;
-
-  np->pci_dev = pdev;
-  np->chip_id = chip_idx;
-  np->drv_flags = pci_tbl[chip_idx].drv_flags;
-  np->msg_level = (1 << debug) - 1;
-  np->max_interrupt_work = max_interrupt_work;
-  np->multicast_filter_limit = multicast_filter_limit;
-
-  np->config1 = config1;
-
-  // Find the connected MII xcvrs.
-  if (np->drv_flags & HAS_MII_XCVR) 
-  {
-    int phy, phy_idx = 0;
-
-    for (phy = 0; phy < 32 && phy_idx < sizeof(np->phys); phy++) 
-    {
-      int mii_status = mdio_read(dev, phy, 1);
-      if (mii_status != 0xffff && mii_status != 0x0000) 
-      {
-        np->phys[phy_idx++] = phy;
-        np->advertising = mdio_read(dev, phy, 4);
-        printk("%s: MII transceiver %d status 0x%4.4x advertising %4.4x\n", dev->name, phy, mii_status, np->advertising);
-      }
-    }
-
-    if (phy_idx == 0) 
-    {
-      printk("%s: No MII transceivers found!  Assuming SYM transceiver\n", dev->name);
-      np->phys[0] = 32;
-    }
-  } 
-  else
-    np->phys[0] = 32;
-
-  // Put the chip into low-power mode
-  outp(ioaddr + Cfg9346, 0xC0);
-  if (np->drv_flags & HAS_MII_XCVR)
-  {
-    // RTL8129 chip
-    outb(ioaddr + Config1, 0x03);
-  }
-
-  outb(ioaddr + HltClk, 'H');   // 'R' would leave the clock running
-
-  // The lower four bits are the media type
-  if (option > 0) 
-  {
-    np->full_duplex = (option & 0x220) ? 1 : 0;
-    np->default_port = option & 0x330;
-    if (np->default_port) np->medialock = 1;
-  }
-
-  if (found_cnt < MAX_UNITS  &&  full_duplex[found_cnt] > 0)
-  {
-    np->full_duplex = full_duplex[found_cnt];
-  }
-
-  if (np->full_duplex) 
-  {
-    kprintf("%s: Media type forced to Full Duplex\n", dev->name);
-    
-    // Changing the MII-advertised media might prevent re-connection
-    np->duplex_lock = 1;
-  }
-
-  if (np->default_port) 
-  {
-    kprintf("Forcing %dMbs %s-duplex operation\n", (option & 0x300 ? 100 : 10), (option & 0x220 ? "full" : "half"));
-    mdio_write(dev, np->phys[0], 0,
-           ((option & 0x300) ? 0x2000 : 0) |  // 100mbps?
-           ((option & 0x220) ? 0x0100 : 0));  // Full duplex?
-  }
-
-  // The RTL81x9-specific entries in the device structure
-  dev->open = &rtl8129_open;
-  dev->hard_start_xmit = &rtl8129_start_xmit;
-  dev->stop = &rtl8129_close;
-  dev->get_stats = &rtl8129_get_stats;
-  dev->set_multicast_list = &set_rx_mode;
-  dev->do_ioctl = &mii_ioctl;
-
-  return dev;
-}
+static void set_rx_mode(struct dev *dev);
 
 //
 // Serial EEPROM section
@@ -613,9 +453,10 @@ static void mdio_sync(long mdio_addr)
   }
 }
 
-static int mdio_read(struct net_device *dev, int phy_id, int location)
+static int mdio_read(struct dev *dev, int phy_id, int location)
 {
-  long mdio_addr = dev->base_addr + MII_SMI;
+  struct nic *np = (struct nic *) dev->privdata;
+  long mdio_addr = np->iobase + MII_SMI;
   int mii_cmd = (0xf6 << 10) | (phy_id << 5) | location;
   int retval = 0;
   int i;
@@ -623,7 +464,7 @@ static int mdio_read(struct net_device *dev, int phy_id, int location)
   if (phy_id > 31) 
   {  
     // Really a 8139.  Use internal registers
-    return location < 8 && mii_2_8139_map[location] ? inpw(dev->base_addr + mii_2_8139_map[location]) : 0;
+    return location < 8 && mii_2_8139_map[location] ? inpw(np->iobase + mii_2_8139_map[location]) : 0;
   }
 
   mdio_sync(mdio_addr);
@@ -652,16 +493,17 @@ static int mdio_read(struct net_device *dev, int phy_id, int location)
   return (retval >> 1) & 0xffff;
 }
 
-static void mdio_write(struct net_device *dev, int phy_id, int location, int value)
+static void mdio_write(struct dev *dev, int phy_id, int location, int value)
 {
-  long mdio_addr = dev->base_addr + MII_SMI;
-  int mii_cmd = (0x5002 << 16) | (phy_id << 23) | (location<<18) | value;
+  struct nic *np = (struct nic *) dev->privdata;
+  long mdio_addr = np->iobase + MII_SMI;
+  int mii_cmd = (0x5002 << 16) | (phy_id << 23) | (location << 18) | value;
   int i;
 
   if (phy_id > 31) 
   {  
     /* Really a 8139.  Use internal registers. */
-    long ioaddr = dev->base_addr;
+    long ioaddr = np->iobase;
     if (location == 0) 
     {
       outp(ioaddr + Cfg9346, 0xC0);
@@ -698,278 +540,11 @@ static void mdio_write(struct net_device *dev, int phy_id, int location, int val
   }
 }
 
-static int rtl8129_open(struct net_device *dev)
-{
-  struct rtl8129_private *tp = (struct rtl8129_private *)dev->priv;
-  long ioaddr = dev->base_addr;
-  int rx_buf_len_idx;
-
-  if (request_irq(dev->irq, &rtl8129_interrupt, SA_SHIRQ, dev->name, dev)) 
-  {
-    return -EAGAIN;
-  }
-
-  // The Rx ring allocation size is 2^N + delta, which is worst-case for
-  // the kernel binary-buddy allocation.  We allocate the Tx bounce buffers
-  // at the same time to use some of the otherwise wasted space.
-  // The delta of +16 is required for dribble-over because the receiver does
-  // not wrap when the packet terminates just beyond the end of the ring
-
-  rx_buf_len_idx = RX_BUF_LEN_IDX;
-  do 
-  {
-    tp->rx_buf_len = 8192 << rx_buf_len_idx;
-    tp->rx_ring = kmalloc(tp->rx_buf_len + 16 + (TX_BUF_SIZE * NUM_TX_DESC));
-  } while (tp->rx_ring == NULL && --rx_buf_len_idx >= 0);
-
-  if (tp->rx_ring == NULL)  return -ENOMEM;
-  tp->tx_bufs = tp->rx_ring + tp->rx_buf_len + 16;
-
-  rtl8129_init_ring(dev);
-  tp->full_duplex = tp->duplex_lock;
-  tp->tx_flag = (TX_FIFO_THRESH << 11) & 0x003f0000;
-  tp->rx_config = (RX_FIFO_THRESH << 13) | (rx_buf_len_idx << 11) | (RX_DMA_BURST << 8);
-
-  rtl_hw_start(dev);
-  netif_start_tx_queue(dev);
-
-  if (tp->msg_level & NETIF_MSG_IFUP)
-  {
-    kprintf("%s: rtl8129_open() ioaddr %#lx IRQ %d GP Pins %2.2x %s-duplex.\n",
-         dev->name, ioaddr, dev->irq, inb(ioaddr + GPPinData),
-         tp->full_duplex ? "full" : "half");
-  }
-
-  // Set the timer to switch to check for link beat and perhaps switch
-  // to an alternate media type
-  init_timer(&tp->timer);
-  tp->timer.expires = ticks + 3*HZ;
-  tp->timer.data = (unsigned long) dev;
-  tp->timer.function = &rtl8129_timer;
-  add_timer(&tp->timer);
-
-  return 0;
-}
-
-// Start the hardware at open or resume
-
-static void rtl_hw_start(struct net_device *dev)
-{
-  struct rtl8129_private *tp = (struct rtl8129_private *) dev->priv;
-  long ioaddr = dev->base_addr;
-  int i;
-
-  // Soft reset the chip
-  outp(ioaddr + ChipCmd, CmdReset);
-
-  // Check that the chip has finished the reset
-  for (i = 1000; i > 0; i--)
-  {
-    if ((inp(ioaddr + ChipCmd) & CmdReset) == 0) break;
-  }
-
-  /* Restore our idea of the MAC address. */
-  outp(ioaddr + Cfg9346, 0xC0);
-  outpd(ioaddr + MAC0 + 0, cpu_to_le32(*(unsigned long *)(dev->dev_addr + 0)));
-  outpd(ioaddr + MAC0 + 4, cpu_to_le32(*(unsigned long *)(dev->dev_addr + 4)));
-
-  // Hmmm, do these belong here?
-  tp->cur_rx = 0;
-
-  // Must enable Tx/Rx before setting transfer thresholds!
-  outp(ioaddr + ChipCmd, CmdRxEnb | CmdTxEnb);
-  outpd(ioaddr + RxConfig, tp->rx_config);
-
-  // Check this value: the documentation contradicts ifself.  Is the
-  // IFG correct with bit 28:27 zero, or with |0x03000000 ?
-  outpd(ioaddr + TxConfig, (TX_DMA_BURST << 8));
-
-  // This is check_duplex()
-  if (tp->phys[0] >= 0 || (tp->drv_flags & HAS_MII_XCVR)) 
-  {
-    unsigned short mii_reg5 = mdio_read(dev, tp->phys[0], 5);
-    if (mii_reg5 == 0xffff)
-      ;         /* Not there */
-    else if ((mii_reg5 & 0x0100) == 0x0100 || (mii_reg5 & 0x00C0) == 0x0040)
-      tp->full_duplex = 1;
-
-    if (tp->msg_level & NETIF_MSG_LINK)
-    {
-      kprintf("%s: Setting %s%s-duplex based on auto-negotiated partner ability %4.4x.\n", 
-	dev->name, 
-	mii_reg5 == 0 ? "" : (mii_reg5 & 0x0180) ? "100mbps " : "10mbps ",
-        tp->full_duplex ? "full" : "half", mii_reg5);
-    }
-  }
-
-  if (tp->drv_flags & HAS_MII_XCVR)
-  {
-    // RTL8129 chip
-    outp(ioaddr + Config1, tp->full_duplex ? 0x60 : 0x20);
-  }
-  outp(ioaddr + Cfg9346, 0x00);
-
-  outpd(ioaddr + RxBuf, virt_to_bus(tp->rx_ring));
-
-  // Start the chip's Tx and Rx process
-  outl(ioaddr + RxMissed, 0);
-  set_rx_mode(dev);
-  outp(ioaddr + ChipCmd, CmdRxEnb | CmdTxEnb);
-  
-  // Enable all known interrupts by setting the interrupt mask
-  outpw(ioaddr + IntrMask, PCIErr | PCSTimeout | RxUnderrun | RxOverflow | RxFIFOOver | TxErr | TxOK | RxErr | RxOK);
-}
-
-static void rtl8129_timer(unsigned long data)
-{
-  struct net_device *dev = (struct net_device *)data;
-  struct rtl8129_private *np = (struct rtl8129_private *) dev->priv;
-  long ioaddr = dev->base_addr;
-  int next_tick = 60*HZ;
-  int mii_reg5 = mdio_read(dev, np->phys[0], 5);
-
-  if (!np->duplex_lock  && mii_reg5 != 0xffff) 
-  {
-    int duplex = (mii_reg5 & 0x0100) || (mii_reg5 & 0x01C0) == 0x0040;
-    if (np->full_duplex != duplex) 
-    {
-      np->full_duplex = duplex;
-      
-      kprintf("%s: Using %s-duplex based on MII #%d link partner ability of %4.4x\n", 
-	dev->name, np->full_duplex ? "full" : "half", np->phys[0], mii_reg5);
-
-      if (np->drv_flags & HAS_MII_XCVR) 
-      {
-        outp(ioaddr + Cfg9346, 0xC0);
-        outp(ioaddr + Config1, np->full_duplex ? 0x60 : 0x20);
-        outp(ioaddr + Cfg9346, 0x00);
-      }
-    }
-  }
-
-  // Check for bogusness
-  if (inw(ioaddr + IntrStatus) & (TxOK | RxOK)) 
-  {
-    int status = inpw(ioaddr + IntrStatus);      // Double check
-    if (status & (TxOK | RxOK) && ! dev->interrupt) 
-    {
-      kprintf("%s: RTL8139 Interrupt line blocked, status %x\n", dev->name, status);
-      rtl8129_interrupt(dev->irq, dev, 0);
-    }
-  }
-  if (dev->tbusy && ticks - dev->trans_start >= 2 * TX_TIMEOUT)
-  {
-    rtl8129_tx_timeout(dev);
-  }
-
-#if defined(RTL_TUNE_TWISTER)
-  // This is a complicated state machine to configure the "twister" for
-  // impedance/echos based on the cable length.
-  // All of this is magic and undocumented.
-
-  if (np->twistie) 
-  {
-    switch(np->twistie) 
-    {
-      case 1: 
-	if (inpw(ioaddr + CSCR) & CSCR_LinkOKBit) 
-	{
-	  // We have link beat, let us tune the twister
-	  outpw(ioaddr + CSCR, CSCR_LinkDownOffCmd);
-	  np->twistie = 2;
-	  next_tick = HZ / 10;
-	} 
-	else 
-	{
-	  // Just put in some reasonable defaults for when beat returns
-	  outpw(ioaddr + CSCR, CSCR_LinkDownCmd);
-	  outpd(ioaddr + FIFOTMS, 0x20);  // Turn on cable test mode
-	  outpd(ioaddr + PARA78, PARA78_default);
-	  outpd(ioaddr + PARA7c, PARA7c_default);
-	  np->twistie = 0;  // Bail from future actions
-	}
-        break;
-
-      case 2: 
-      {
-	// Read how long it took to hear the echo
-	int linkcase = inpw(ioaddr + CSCR) & CSCR_LinkStatusBits;
-	if (linkcase == 0x7000) 
-	  np->twist_row = 3;
-	else if (linkcase == 0x3000) 
-	  np->twist_row = 2;
-	else if (linkcase == 0x1000) 
-	  np->twist_row = 1;
-	else 
-	  np->twist_row = 0;
-	
-	np->twist_col = 0;
-	np->twistie = 3;
-	next_tick = HZ / 10;
-	break;
-      }
-
-      case 3: 
-	// Put out four tuning parameters, one per 100msec
-	if (np->twist_col == 0) outpw(ioaddr + FIFOTMS, 0);
-	outpd(ioaddr + PARA7c, param[(int) np->twist_row][(int) np->twist_col]);
-	next_tick = HZ / 10;
-	if (++np->twist_col >= 4) 
-	{
-	  // For short cables we are done. For long cables (row == 3) check for mistune
-	  np->twistie = (np->twist_row == 3) ? 4 : 0;
-	}
-	break;
-
-      case 4: 
-	// Special case for long cables: check for mistune
-	if ((inpw(ioaddr + CSCR) & CSCR_LinkStatusBits) == 0x7000) 
-	{
-	  np->twistie = 0;
-	} 
-	else 
-	{
-	  outpd(0xfb38de03, ioaddr + PARA7c);
-	  np->twistie = 5;
-	  next_tick = HZ / 10;
-	}
-	break;
-
-      case 5: 
-	// Retune for shorter cable (column 2)
-	outpd(ioaddr + FIFOTMS, 0x20);
-	outpd(ioaddr + PARA78, PARA78_default);
-	outpd(ioaddr + PARA7c, PARA7c_default);
-	outpd(ioaddr + FIFOTMS, 0x00);
-	np->twist_row = 2;
-	np->twist_col = 0;
-	np->twistie = 3;
-	next_tick = HZ / 10;
-	break;
-    }
-  }
-#endif
-
-  if (np->msg_level & NETIF_MSG_TIMER) 
-  {
-    if (np->drv_flags & HAS_MII_XCVR)
-      kprintf("%s: Media selection tick, GP pins %2.2x\n", dev->name, inp(ioaddr + GPPinData));
-    else
-      kprintf("%s: Media selection tick, Link partner %4.4x\n", dev->name, inpw(ioaddr + NWayLPAR));
-
-    kprintf("%s:  Other registers are IntMask %4.4x IntStatus %4.4x RxStatus %4.4x\n",
-         dev->name, inpw(ioaddr + IntrMask), inpw(ioaddr + IntrStatus), (int) inpd(ioaddr + RxEarlyStatus));
-
-    kprintf("%s:  Chip config %2.2x %2.2x\n", dev->name, inb(ioaddr + Config0), inb(ioaddr + Config1));
-  }
-
-  np->timer.expires = ticks + next_tick;
-  add_timer(&np->timer);
-}
+#ifdef xxx
 
 static void rtl8129_tx_timeout(struct net_device *dev)
 {
-  struct rtl8129_private *tp = (struct rtl8129_private *) dev->priv;
+  struct nic *tp = (struct nic *) dev->priv;
   long ioaddr = dev->base_addr;
   int status = inw(ioaddr + IntrStatus);
   int mii_reg, i;
@@ -1017,26 +592,9 @@ static void rtl8129_tx_timeout(struct net_device *dev)
   tp->tx_full = 0;
 }
 
-// Initialize the Rx and Tx rings
-
-static void rtl8129_init_ring(struct net_device *dev)
-{
-  struct rtl8129_private *tp = (struct rtl8129_private *) dev->priv;
-  int i;
-
-  tp->tx_full = 0;
-  tp->dirty_tx = tp->cur_tx = 0;
-
-  for (i = 0; i < NUM_TX_DESC; i++) 
-  {
-    tp->tx_skbuff[i] = 0;
-    tp->tx_buf[i] = &tp->tx_bufs[i * TX_BUF_SIZE];
-  }
-}
-
 static int rtl8129_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
-  struct rtl8129_private *tp = (struct rtl8129_private *) dev->priv;
+  struct nic *tp = (struct nic *) dev->priv;
   long ioaddr = dev->base_addr;
   int entry;
 
@@ -1067,7 +625,7 @@ static int rtl8129_start_xmit(struct sk_buff *skb, struct net_device *dev)
   // interrupt that clears the Tx queue, and only then set tx_full.
   // So we do this in two phases
 
-  if (++tp->cur_tx - tp->dirty_tx >= NUM_TX_DESC) 
+  if (++tp->cur_tx - tp->dirty_tx >= NUM_TX_DESC)
   {
     set_bit(0, &tp->tx_full);
 
@@ -1096,8 +654,8 @@ static int rtl8129_start_xmit(struct sk_buff *skb, struct net_device *dev)
 static void rtl8129_interrupt(int irq, void *dev_instance, struct pt_regs *regs)
 {
   struct net_device *dev = (struct net_device *) dev_instance;
-  struct rtl8129_private *np = (struct rtl8129_private *) dev->priv;
-  struct rtl8129_private *tp = np;
+  struct nic *np = (struct nic *) dev->priv;
+  struct nic *tp = np;
   int boguscnt = np->max_interrupt_work;
   long ioaddr = dev->base_addr;
   int link_changed = 0;
@@ -1113,12 +671,12 @@ static void rtl8129_interrupt(int irq, void *dev_instance, struct pt_regs *regs)
 
     if (tp->msg_level & NETIF_MSG_INTR)
     {
-      kprintf("%s: interrupt  status=%#4.4x new intstat=%#4.4x\n", dev->name, status, inpw(ioaddr + IntrStatus));
+      kprintf("%s: interrupt status=%#4.4x new intstat=%#4.4x\n", dev->name, status, inpw(ioaddr + IntrStatus));
     }
 
     if ((status & (PCIErr | PCSTimeout | RxUnderrun | RxOverflow | RxFIFOOver | TxErr | TxOK | RxErr | RxOK)) == 0) break;
 
-    if (status & (RxOK|RxUnderrun|RxOverflow|RxFIFOOver))
+    if (status & (RxOK | RxUnderrun | RxOverflow | RxFIFOOver))
     {
       // Rx interrupt
       rtl8129_rx(dev);
@@ -1144,15 +702,15 @@ static void rtl8129_interrupt(int irq, void *dev_instance, struct pt_regs *regs)
             kprintf("%s: Transmit error, Tx status %8.8x\n", dev->name, txstatus);
 	  }
           tp->stats.tx_errors++;
-          if (txstatus&TxAborted) 
+          if (txstatus & TxAborted) 
 	  {
             tp->stats.tx_aborted_errors++;
             outpd(ioaddr + TxConfig, TX_DMA_BURST << 8);
           }
-          if (txstatus&TxCarrierLost) tp->stats.tx_carrier_errors++;
-          if (txstatus&TxOutOfWindow) tp->stats.tx_window_errors++;
+          if (txstatus & TxCarrierLost) tp->stats.tx_carrier_errors++;
+          if (txstatus & TxOutOfWindow) tp->stats.tx_window_errors++;
           if ((txstatus & 0x0f000000) == 0x0f000000) tp->stats.collisions16++;
-        } 
+        }
 	else 
 	{
           if (tp->msg_level & NETIF_MSG_TX_DONE)
@@ -1209,12 +767,11 @@ static void rtl8129_interrupt(int irq, void *dev_instance, struct pt_regs *regs)
   }
 }
 
-// The data sheet doesn't describe the Rx ring at all, so I'm guessing at the
-// field alignments and semantics
+// Receive packet from nic
 
 static int rtl8129_rx(struct net_device *dev)
 {
-  struct rtl8129_private *tp = (struct rtl8129_private *) dev->priv;
+  struct nic *tp = (struct nic *) dev->priv;
   long ioaddr = dev->base_addr;
   unsigned char *rx_ring = tp->rx_ring;
   unsigned short cur_rx = tp->cur_rx;
@@ -1346,7 +903,7 @@ static int rtl8129_rx(struct net_device *dev)
 
 static void rtl_error(struct net_device *dev, int status, int link_changed)
 {
-  struct rtl8129_private *tp = (struct rtl8129_private *) dev->priv;
+  struct nic *tp = (struct nic *) dev->priv;
   long ioaddr = dev->base_addr;
 
   if (tp->msg_level & NETIF_MSG_LINK)
@@ -1415,52 +972,9 @@ static void rtl_error(struct net_device *dev, int status, int link_changed)
   }
 }
 
-static int rtl8129_close(struct net_device *dev)
-{
-  long ioaddr = dev->base_addr;
-  struct rtl8129_private *tp = (struct rtl8129_private *) dev->priv;
-  int i;
-
-  netif_stop_tx_queue(dev);
-
-  if (tp->msg_level & NETIF_MSG_IFDOWN)
-  {
-    kprintf("%s: Shutting down ethercard, status was 0x%4.4x\n", dev->name, inpw(ioaddr + IntrStatus));
-  }
-
-  // Disable interrupts by clearing the interrupt mask
-  outpw(ioaddr + IntrMask, 0x0000);
-
-  // Stop the chip's Tx and Rx DMA processes
-  outb(ioaddr + ChipCmd, 0x00);
-
-  // Update the error counts
-  tp->stats.rx_missed_errors += inpd(ioaddr + RxMissed);
-  outpd(ioaddr + RxMissed, 0);
-
-  del_timer(&tp->timer);
-
-  free_irq(dev->irq, dev);
-
-  for (i = 0; i < NUM_TX_DESC; i++) 
-  {
-    if (tp->tx_skbuff[i]) dev_free_skb(tp->tx_skbuff[i]);
-    tp->tx_skbuff[i] = 0;
-  }
-  kfree(tp->rx_ring);
-  tp->rx_ring = 0;
-
-  // Green! Put the chip in low-power mode
-  outb(ioaddr + Cfg9346, 0xC0);
-  outb(ioaddr + Config1, tp->config1 | 0x03);
-  outb(ioaddr + HltClk, 'H');   // 'R' would leave the clock running
-
-  return 0;
-}
-
 static struct net_device_stats *rtl8129_get_stats(struct net_device *dev)
 {
-  struct rtl8129_private *tp = (struct rtl8129_private *)dev->priv;
+  struct nic *tp = (struct nic *)dev->priv;
   long ioaddr = dev->base_addr;
 
   if (netif_running(dev)) 
@@ -1494,7 +1008,7 @@ static inline unsigned long ether_crc(int length, unsigned char *data)
 
 static void set_rx_mode(struct net_device *dev)
 {
-  struct rtl8129_private *tp = (struct rtl8129_private *) dev->priv;
+  struct nic *tp = (struct nic *) dev->priv;
   long ioaddr = dev->base_addr;
   unsigned long mc_filter[2];    // Multicast hash filter
   int i, rx_mode;
@@ -1538,3 +1052,516 @@ static void set_rx_mode(struct net_device *dev)
 }
 
 #endif
+
+void rtl8139_timer(void *arg);
+
+// Initialize the Rx and Tx rings
+
+static void rtl8129_init_ring(struct dev *dev)
+{
+  struct nic *tp = (struct nic *) dev->privdata;
+  int i;
+
+  tp->tx_full = 0;
+  tp->dirty_tx = tp->cur_tx = 0;
+
+  for (i = 0; i < NUM_TX_DESC; i++) 
+  {
+    tp->tx_pbuf[i] = 0;
+    tp->tx_buf[i] = &tp->tx_bufs[i * TX_BUF_SIZE];
+  }
+}
+
+// Start the hardware at open or resume
+
+static void rtl_hw_start(struct dev *dev)
+{
+  struct nic *tp = (struct nic *) dev->privdata;
+  long ioaddr = tp->iobase;
+  int i;
+
+  // Soft reset the chip
+  outp(ioaddr + ChipCmd, CmdReset);
+
+  // Check that the chip has finished the reset
+  for (i = 1000; i > 0; i--)
+  {
+    if ((inp(ioaddr + ChipCmd) & CmdReset) == 0) break;
+  }
+
+  // Restore our idea of the MAC address
+  outp(ioaddr + Cfg9346, 0xC0);
+  outpd(ioaddr + MAC0 + 0, *(unsigned long *)(tp->hwaddr.addr + 0));
+  outpd(ioaddr + MAC0 + 4, *(unsigned long *)(tp->hwaddr.addr + 4));
+
+  // Hmmm, do these belong here?
+  tp->cur_rx = 0;
+
+  // Must enable Tx/Rx before setting transfer thresholds!
+  outp(ioaddr + ChipCmd, CmdRxEnb | CmdTxEnb);
+  outpd(ioaddr + RxConfig, tp->rx_config);
+
+  // Check this value: the documentation contradicts ifself.  Is the
+  // IFG correct with bit 28:27 zero, or with |0x03000000 ?
+  outpd(ioaddr + TxConfig, (TX_DMA_BURST << 8));
+
+  // This is check_duplex()
+  if (tp->phys[0] >= 0 || (tp->flags & HAS_MII_XCVR)) 
+  {
+    unsigned short mii_reg5 = mdio_read(dev, tp->phys[0], 5);
+    if (mii_reg5 != 0xffff)
+    {
+      if ((mii_reg5 & 0x0100) == 0x0100 || (mii_reg5 & 0x00C0) == 0x0040)
+      {
+        tp->full_duplex = 1;
+      }
+    }
+
+    kprintf("%s: Setting %s%s-duplex based on auto-negotiated partner ability %4.4x\n", 
+      dev->name, 
+      mii_reg5 == 0 ? "" : (mii_reg5 & 0x0180) ? "100mbps " : "10mbps ",
+      tp->full_duplex ? "full" : "half", mii_reg5);
+  }
+
+  if (tp->flags & HAS_MII_XCVR)
+  {
+    // RTL8129 chip
+    outp(ioaddr + Config1, tp->full_duplex ? 0x60 : 0x20);
+  }
+  outp(ioaddr + Cfg9346, 0x00);
+
+  outpd(ioaddr + RxBuf, (unsigned long) virt2phys(tp->rx_ring));
+
+  // Start the chip's Tx and Rx process
+  outpd(ioaddr + RxMissed, 0);
+  //set_rx_mode(dev);
+  outp(ioaddr + ChipCmd, CmdRxEnb | CmdTxEnb);
+  
+  // Enable all known interrupts by setting the interrupt mask
+  outpw(ioaddr + IntrMask, PCIErr | PCSTimeout | RxUnderrun | RxOverflow | RxFIFOOver | TxErr | TxOK | RxErr | RxOK);
+}
+
+static int rtl8129_open(struct dev *dev)
+{
+  struct nic *tp = (struct nic *) dev->privdata;
+  long ioaddr = tp->iobase;
+  int rx_buf_len_idx;
+
+  enable_irq(tp->irq);
+
+  // The Rx ring allocation size is 2^N + delta, which is worst-case for
+  // the kernel binary-buddy allocation.  We allocate the Tx bounce buffers
+  // at the same time to use some of the otherwise wasted space.
+  // The delta of +16 is required for dribble-over because the receiver does
+  // not wrap when the packet terminates just beyond the end of the ring
+
+  rx_buf_len_idx = RX_BUF_LEN_IDX;
+  do 
+  {
+    tp->rx_buf_len = 8192 << rx_buf_len_idx;
+    tp->rx_ring = kmalloc(tp->rx_buf_len + 16 + (TX_BUF_SIZE * NUM_TX_DESC));
+  } while (tp->rx_ring == NULL && --rx_buf_len_idx >= 0);
+
+  if (tp->rx_ring == NULL) return -ENOMEM;
+  tp->tx_bufs = tp->rx_ring + tp->rx_buf_len + 16;
+
+  rtl8129_init_ring(dev);
+  tp->full_duplex = tp->duplex_lock;
+  tp->tx_flag = (TX_FIFO_THRESH << 11) & 0x003f0000;
+  tp->rx_config = (RX_FIFO_THRESH << 13) | (rx_buf_len_idx << 11) | (RX_DMA_BURST << 8);
+
+  rtl_hw_start(dev);
+  //netif_start_tx_queue(dev);
+
+  kprintf("%s: rtl8129_open() ioaddr %#lx IRQ %d GP Pins %2.2x %s-duplex\n",
+        dev->name, ioaddr, tp->irq, inp(ioaddr + GPPinData),
+        tp->full_duplex ? "full" : "half");
+
+  // Set the timer to switch to check for link beat and perhaps switch
+  // to an alternate media type
+  init_timer(&tp->timer, rtl8139_timer, dev);
+  mod_timer(&tp->timer, ticks + 3*HZ);
+
+  return 0;
+}
+
+static int rtl8129_close(struct dev *dev)
+{
+  struct nic *tp = (struct nic *) dev->privdata;
+  long ioaddr = tp->iobase;
+  int i;
+
+  //netif_stop_tx_queue(dev);
+
+  kprintf("%s: Shutting down ethercard, status was 0x%4.4x\n", dev->name, inpw(ioaddr + IntrStatus));
+
+  // Disable interrupts by clearing the interrupt mask
+  outpw(ioaddr + IntrMask, 0x0000);
+
+  // Stop the chip's Tx and Rx DMA processes
+  outp(ioaddr + ChipCmd, 0x00);
+
+  // Update the error counts
+  tp->stats.rx_missed_errors += inpd(ioaddr + RxMissed);
+  outpd(ioaddr + RxMissed, 0);
+
+  del_timer(&tp->timer);
+
+  disable_irq(tp->irq);
+
+  for (i = 0; i < NUM_TX_DESC; i++) 
+  {
+    if (tp->tx_pbuf[i]) pbuf_free(tp->tx_pbuf[i]);
+    tp->tx_pbuf[i] = 0;
+  }
+  kfree(tp->rx_ring);
+  tp->rx_ring = NULL;
+
+  // Green! Put the chip in low-power mode
+  outp(ioaddr + Cfg9346, 0xC0);
+  outp(ioaddr + Config1, tp->config1 | 0x03);
+  outp(ioaddr + HltClk, 'H');   // 'R' would leave the clock running
+
+  return 0;
+}
+
+int rtl8139_transmit(struct dev *dev, struct pbuf *p)
+{
+  return -ENOSYS;
+}
+
+int rtl8139_ioctl(struct dev *dev, int cmd, void *args, size_t size)
+{
+  return -ENOSYS;
+}
+
+int rtl8139_attach(struct dev *dev, struct eth_addr *hwaddr)
+{
+  struct nic *np = dev->privdata;
+  *hwaddr = np->hwaddr;
+
+  return 0;
+}
+
+int rtl8139_detach(struct dev *dev)
+{
+  return 0;
+}
+
+void rtl8139_dpc(void *arg)
+{
+  struct dev *dev = (struct dev *) arg;
+  struct nic *np = (struct nic *) dev->privdata;
+}
+
+int rtl8139_handler(struct context *ctxt, void *arg)
+{
+  struct dev *dev = (struct dev *) arg;
+  struct nic *np = (struct nic *) dev->privdata;
+
+  // Queue DPC to service interrupt
+  queue_irq_dpc(&np->dpc, rtl8139_dpc, dev);
+
+  return 0;
+}
+
+void rtl8139_timer(void *arg)
+{
+  struct dev *dev = (struct dev *) arg;
+  struct nic *np = (struct nic *) dev->privdata;
+  long ioaddr = np->iobase;
+  int next_tick = 60 * HZ;
+  int mii_reg5 = mdio_read(dev, np->phys[0], 5);
+
+  if (!np->duplex_lock && mii_reg5 != 0xffff) 
+  {
+    int duplex = (mii_reg5 & 0x0100) || (mii_reg5 & 0x01C0) == 0x0040;
+    if (np->full_duplex != duplex) 
+    {
+      np->full_duplex = duplex;
+      
+      kprintf("%s: Using %s-duplex based on MII #%d link partner ability of %4.4x\n", 
+	dev->name, np->full_duplex ? "full" : "half", np->phys[0], mii_reg5);
+
+      if (np->flags & HAS_MII_XCVR) 
+      {
+        outp(ioaddr + Cfg9346, 0xC0);
+        outp(ioaddr + Config1, np->full_duplex ? 0x60 : 0x20);
+        outp(ioaddr + Cfg9346, 0x00);
+      }
+    }
+  }
+
+#if 0
+  // Check for bogusness
+  if (inw(ioaddr + IntrStatus) & (TxOK | RxOK)) 
+  {
+    int status = inpw(ioaddr + IntrStatus);      // Double check
+    if (status & (TxOK | RxOK) && ! dev->interrupt) 
+    {
+      kprintf("%s: RTL8139 Interrupt line blocked, status %x\n", dev->name, status);
+      rtl8129_interrupt(dev->irq, dev, 0);
+    }
+  }
+  if (ticks - dev->trans_start >= 2 * TX_TIMEOUT)
+  {
+    rtl8129_tx_timeout(dev);
+  }
+#endif
+
+#define RTL_TUNE_TWISTER
+#if defined(RTL_TUNE_TWISTER)
+  // This is a complicated state machine to configure the "twister" for
+  // impedance/echos based on the cable length.
+  // All of this is magic and undocumented.
+
+  if (np->twistie) 
+  {
+    switch(np->twistie) 
+    {
+      case 1: 
+	if (inpw(ioaddr + CSCR) & CSCR_LinkOKBit) 
+	{
+	  // We have link beat, let us tune the twister
+	  outpw(ioaddr + CSCR, CSCR_LinkDownOffCmd);
+	  np->twistie = 2;
+	  next_tick = HZ / 10;
+	} 
+	else 
+	{
+	  // Just put in some reasonable defaults for when beat returns
+	  outpw(ioaddr + CSCR, CSCR_LinkDownCmd);
+	  outpd(ioaddr + FIFOTMS, 0x20);  // Turn on cable test mode
+	  outpd(ioaddr + PARA78, PARA78_default);
+	  outpd(ioaddr + PARA7c, PARA7c_default);
+	  np->twistie = 0;  // Bail from future actions
+	}
+        break;
+
+      case 2: 
+      {
+	// Read how long it took to hear the echo
+	int linkcase = inpw(ioaddr + CSCR) & CSCR_LinkStatusBits;
+	if (linkcase == 0x7000) 
+	  np->twist_row = 3;
+	else if (linkcase == 0x3000) 
+	  np->twist_row = 2;
+	else if (linkcase == 0x1000) 
+	  np->twist_row = 1;
+	else 
+	  np->twist_row = 0;
+	
+	np->twist_col = 0;
+	np->twistie = 3;
+	next_tick = HZ / 10;
+	break;
+      }
+
+      case 3: 
+	// Put out four tuning parameters, one per 100msec
+	if (np->twist_col == 0) outpw(ioaddr + FIFOTMS, 0);
+	outpd(ioaddr + PARA7c, param[(int) np->twist_row][(int) np->twist_col]);
+	next_tick = HZ / 10;
+	if (++np->twist_col >= 4) 
+	{
+	  // For short cables we are done. For long cables (row == 3) check for mistune
+	  np->twistie = (np->twist_row == 3) ? 4 : 0;
+	}
+	break;
+
+      case 4: 
+	// Special case for long cables: check for mistune
+	if ((inpw(ioaddr + CSCR) & CSCR_LinkStatusBits) == 0x7000) 
+	{
+	  np->twistie = 0;
+	} 
+	else 
+	{
+	  outpd(0xfb38de03, ioaddr + PARA7c);
+	  np->twistie = 5;
+	  next_tick = HZ / 10;
+	}
+	break;
+
+      case 5: 
+	// Retune for shorter cable (column 2)
+	outpd(ioaddr + FIFOTMS, 0x20);
+	outpd(ioaddr + PARA78, PARA78_default);
+	outpd(ioaddr + PARA7c, PARA7c_default);
+	outpd(ioaddr + FIFOTMS, 0x00);
+	np->twist_row = 2;
+	np->twist_col = 0;
+	np->twistie = 3;
+	next_tick = HZ / 10;
+	break;
+    }
+  }
+#endif
+
+  if (np->flags & HAS_MII_XCVR)
+    kprintf("%s: Media selection tick, GP pins %2.2x\n", dev->name, inp(ioaddr + GPPinData));
+  else
+    kprintf("%s: Media selection tick, Link partner %4.4x\n", dev->name, inpw(ioaddr + NWayLPAR));
+
+  kprintf("%s:  Other registers are IntMask %4.4x IntStatus %4.4x RxStatus %4.4x\n",
+        dev->name, inpw(ioaddr + IntrMask), inpw(ioaddr + IntrStatus), (int) inpd(ioaddr + RxEarlyStatus));
+
+  kprintf("%s:  Chip config %2.2x %2.2x\n", dev->name, inp(ioaddr + Config0), inp(ioaddr + Config1));
+
+  mod_timer(&np->timer, ticks + next_tick);
+}
+
+struct driver rtl8139_driver =
+{
+  "rtl8139",
+  DEV_TYPE_PACKET,
+  rtl8139_ioctl,
+  NULL,
+  NULL,
+  rtl8139_attach,
+  rtl8139_detach,
+  rtl8139_transmit
+};
+
+int __declspec(dllexport) install(struct unit *unit, char *opts)
+{
+  int chip_idx;
+  unsigned short ioaddr;
+  unsigned short irq;
+  struct dev *dev;
+  struct nic *np;
+  int i;
+  int config1;
+
+  // Determine NIC type
+  chip_idx = 0;
+  while (chip_tbl[chip_idx].vendorname != NULL)
+  {
+    if ((unit->unitcode & chip_tbl[chip_idx].unitmask) == chip_tbl[chip_idx].unitcode &&
+        (unit->subunitcode & chip_tbl[chip_idx].subsystemmask) == chip_tbl[chip_idx].subsystemcode &&
+        (unit->revision & chip_tbl[chip_idx].revisionmask) == chip_tbl[chip_idx].revisioncode)
+      break;
+
+    chip_idx++;
+  }
+
+  if (chip_tbl[chip_idx].vendorname == NULL) return -EIO;
+
+  unit->vendorname = chip_tbl[chip_idx].vendorname;
+  unit->productname = chip_tbl[chip_idx].productname;
+
+  // Get NIC PCI configuration
+  ioaddr = (unsigned short) get_unit_iobase(unit);
+  irq = irq = (unsigned short) get_unit_irq(unit);
+
+  // Allocate private memory (must be 16 byte aligned)
+  np = kmalloc(sizeof(struct nic));
+  if (np == NULL) return -ENOMEM;
+  memset(np, 0, sizeof(struct nic));
+
+  // Enable bus mastering
+  pci_enable_busmastering(unit);
+
+  // Create new device
+  np->devno = dev_make("eth#", &rtl8139_driver, unit, np);
+  if (np->devno == NODEV) return -ENODEV;
+  dev = device(np->devno);
+
+  init_dpc(&np->dpc);
+  register_interrupt(&np->intr, IRQ2INTR(irq), rtl8139_handler, dev);
+
+  // Bring the chip out of low-power mode
+  config1 = inp(ioaddr + Config1);
+  if (chip_tbl[chip_idx].flags & HAS_MII_XCVR)
+  {
+    // RTL8129 chip
+    outp(ioaddr + Config1, config1 & ~0x03);
+  }
+
+  {
+    int addr_len = read_eeprom(ioaddr, 0, 8) == 0x8129 ? 8 : 6;
+    for (i = 0; i < 3; i++)
+    {
+      ((unsigned short *)(&np->hwaddr))[i] = read_eeprom(ioaddr, i + 7, addr_len);
+    }
+  }
+
+  kprintf("%s: %s iobase 0x%x irq %d hwaddr %la\n", np->dev->name, unit->productname, ioaddr, irq, &np->hwaddr);
+
+  np->dev = dev;
+  np->iobase = ioaddr;
+  np->irq = irq;
+  np->chip_id = chip_idx;
+  np->flags = chip_tbl[chip_idx].flags;
+  np->max_interrupt_work = max_interrupt_work;
+  np->multicast_filter_limit = multicast_filter_limit;
+  np->config1 = 0;
+
+  // Find the connected MII xcvrs.
+  if (np->flags & HAS_MII_XCVR) 
+  {
+    int phy, phy_idx = 0;
+
+    for (phy = 0; phy < 32 && phy_idx < sizeof(np->phys); phy++) 
+    {
+      int mii_status = mdio_read(dev, phy, 1);
+      if (mii_status != 0xffff && mii_status != 0x0000) 
+      {
+        np->phys[phy_idx++] = phy;
+        np->advertising = mdio_read(dev, phy, 4);
+        kprintf("%s: MII transceiver %d status 0x%4.4x advertising %4.4x\n", dev->name, phy, mii_status, np->advertising);
+      }
+    }
+
+    if (phy_idx == 0) 
+    {
+      kprintf("%s: No MII transceivers found!  Assuming SYM transceiver\n", dev->name);
+      np->phys[0] = 32;
+    }
+  } 
+  else
+    np->phys[0] = 32;
+
+  // Put the chip into low-power mode
+  outp(ioaddr + Cfg9346, 0xC0);
+  if (np->flags & HAS_MII_XCVR)
+  {
+    // RTL8129 chip
+    outp(ioaddr + Config1, 0x03);
+  }
+
+  outp(ioaddr + HltClk, 'H');   // 'R' would leave the clock running
+
+  // Set options
+  if (opts) 
+  {
+    np->full_duplex = get_num_option(opts, "fullduplex", 0);
+    np->link_speed = get_num_option(opts, "linkspeed", 0);
+  }
+
+  if (np->full_duplex) 
+  {
+    // Changing the MII-advertised media might prevent re-connection
+    np->duplex_lock = 1;
+
+    kprintf("%s: Media type forced to Full Duplex\n", dev->name);    
+  }
+
+  if (np->link_speed)
+  {
+    np->medialock = 1;
+
+    kprintf("%s: Forcing %dMBits/s %s-duplex operation\n", dev->name, np->link_speed, np->full_duplex ? "full" : "half");
+
+    mdio_write(dev, np->phys[0], 0,
+           ((np->link_speed == 100) ? 0x2000 : 0) |  // 100mbps?
+           (np->full_duplex ? 0x0100 : 0));  // Full duplex?
+  }
+
+  return rtl8129_open(dev);
+}
+
+int __stdcall start(hmodule_t hmod, int reason, void *reserved2)
+{
+  return 1;
+}
