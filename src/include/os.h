@@ -224,6 +224,7 @@ struct section;
 
 #define CREATE_SUSPENDED        0x04
 #define CREATE_NEW_JOB          0x10
+#define CREATE_DETACHED         0x20
 
 // Spawn flags
 
@@ -940,16 +941,23 @@ struct peb
 // Job Object
 //
 
+#define TERM_UNKNOWN   0
+#define TERM_CONSOLE   1
+#define TERM_VT100     2
+
 struct job
 {
-  int threadcnt;       // Number of threads in job
-  hmodule_t hmod;      // Module handle for exec module
-  char *cmdline;       // Command line arguments
-  handle_t terminated; // Terminate event
+  int threadcnt;        // Number of threads in job
+  hmodule_t hmod;       // Module handle for exec module
+  char *cmdline;        // Command line arguments
+  handle_t terminated;  // Terminate event
+  int *exitcodeptr;     // Pointer to location to store job exit code
+  void (*atexit)();     // Exit handler (used by libc)
 
-  handle_t in;         // Standard input device
-  handle_t out;        // Standard output device
-  handle_t err;        // Standard error device
+  handle_t in;          // Standard input device
+  handle_t out;         // Standard output device
+  handle_t err;         // Standard error device
+  int termtype;         // Terminal type
 };
 
 //
@@ -998,11 +1006,8 @@ struct tib
   int errnum;                      // Per thread last error
   void *startaddr;                 // Start address for thread
   void *startarg;                  // Argument to thread start routine
-  char *args;                      // Command line arguments
 
-  handle_t in;                     // Thread specific stdin handle
-  handle_t out;                    // Thread specific stdout handle
-  handle_t err;                    // Thread specific stderr handle
+  struct job *job;                 // Job object for thread
 
   struct siginfo *cursig;          // Current signal used by getsiginfo()
 
@@ -1017,15 +1022,15 @@ struct tib
   char cvtbuf[CVTBUFSIZE];         // For ecvt() and fcvt()
   char ascbuf[ASCBUFSIZE];         // For asctime()
 
-  char reserved1[1764];
+  char reserved1[1776];
 
   void *tls[MAX_TLS];              // Thread local storage
   char reserved2[240];
 };
 
-#define fdin  (gettib()->in)
-#define fdout (gettib()->out)
-#define fderr (gettib()->err)
+#define fdin  (gettib()->job->in)
+#define fdout (gettib()->job->out)
+#define fderr (gettib()->job->err)
 
 //
 // SVID2/XPG mallinfo structure
@@ -1134,7 +1139,7 @@ osapi handle_t mkiomux(int flags);
 osapi int dispatch(handle_t iomux, handle_t h, int events, int context);
 
 osapi handle_t self();
-osapi void exit(int status);
+osapi void exitos(int status);
 osapi void dbgbreak();
 
 osapi handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, void *arg, int flags, struct tib **ptib);
@@ -1148,6 +1153,8 @@ osapi int getprio(handle_t thread);
 osapi int setprio(handle_t thread, int priority);
 osapi void sleep(int millisecs);
 osapi struct tib *gettib();
+osapi int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr);
+osapi void exit(int status);
 
 osapi sighandler_t signal(int signum, sighandler_t handler);
 osapi void raise(int signum);

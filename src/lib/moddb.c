@@ -662,7 +662,7 @@ hmodule_t get_module_handle(struct moddb *db, char *name)
 {
   struct module *mod;
   
-  mod = name ? get_module(db, name) : db->execmod;
+  mod = get_module(db, name);
   if (mod == NULL) return NULL;
   return mod->hmod;
 }
@@ -671,7 +671,7 @@ int get_module_filename(struct moddb *db, hmodule_t hmod, char *buffer, int size
 {
   struct module *mod;
   
-  mod = hmod ? get_module_for_handle(db, hmod) : db->execmod;
+  mod = get_module_for_handle(db, hmod);
   if (mod == NULL) return -EINVAL;
   strncpy(buffer, mod->path, size);
   return strlen(mod->path);
@@ -777,8 +777,6 @@ hmodule_t load_module(struct moddb *db, char *name, int flags)
         m->flags |= MODULE_INITIALIZED;
       }
     }
-    else if (db->execmod == NULL)
-      db->execmod = m;
 
     // Notify
     if (db->notify_load) db->notify_load(m->hmod, &m->name);
@@ -805,7 +803,7 @@ int unload_module(struct moddb *db, hmodule_t hmod)
   struct module *mod;
 
   // Find module
-  mod = hmod ? get_module_for_handle(db, hmod) : db->execmod;
+  mod = get_module_for_handle(db, hmod);
   if (mod == NULL) return -EINVAL;
 
   // Decrement reference count, return if not zero
@@ -875,7 +873,7 @@ int get_resource_data(struct moddb *db, hmodule_t hmod, char *id1, char *id2, ch
   struct image_resource_data_entry *dataentry;
 
   // Find module
-  mod = hmod ? get_module_for_handle(db, hmod) : db->execmod;
+  mod = get_module_for_handle(db, hmod);
   if (mod == NULL) return -EINVAL;
 
   // Find resource root directory

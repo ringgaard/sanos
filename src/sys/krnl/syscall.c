@@ -1334,7 +1334,7 @@ static int sys_self(char *params)
   return self()->hndl;
 }
 
-static int sys_exit(char *params)
+static int sys_exitos(char *params)
 {
   int status;
 
@@ -2797,7 +2797,7 @@ struct syscall_entry syscalltab[] =
   {"eset", "%d", sys_eset},
   {"ereset", "%d", sys_ereset},
   {"self", "", sys_self},
-  {"exit", "%d", sys_exit},
+  {"exitos", "%d", sys_exitos},
   {"dup", "%d", sys_dup},
   {"mkthread", "%p,%d,%p", sys_mkthread},
   {"suspend", "%d", sys_suspend},

@@ -36,21 +36,8 @@
 
 #include <os.h>
 #include <stdarg.h>
-
-#if 0
-// These are now defined in os.h
-
-// File attributes
-
-#define S_IFMT         0170000         // file type mask
-#define S_IFDIR        0040000         // directory
-#define S_IFCHR        0020000         // character special
-#define S_IFIFO        0010000         // pipe
-#define S_IFREG        0100000         // regular
-#define S_IREAD        0000400         // read permission, owner
-#define S_IWRITE       0000200         // write permission, owner
-#define S_IEXEC        0000100         // execute/search permission, owner
-#endif
+#include <inifile.h>
+#include <win32.h>
 
 // Application types
 
@@ -103,7 +90,11 @@
 typedef unsigned int size_t;
 #endif
 
+#ifndef _FPOS_T_DEFINED
+#define _FPOS_T_DEFINED
 typedef long fpos_t;
+#endif
+
 typedef unsigned short wchar_t;
 
 typedef unsigned short wint_t;

@@ -405,9 +405,9 @@ handle_t self()
   return syscall(SYSCALL_SELF, NULL);
 }
 
-void exit(int status)
+void exitos(int status)
 {
-  syscall(SYSCALL_EXIT, &status);
+  syscall(SYSCALL_EXITOS, &status);
 }
 
 handle_t dup(handle_t h)

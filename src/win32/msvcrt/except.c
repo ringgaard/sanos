@@ -32,8 +32,7 @@
 // SUCH DAMAGE.
 // 
 
-#include <os.h>
-#include <win32.h>
+#include "msvcrt.h"
 
 __declspec(dllimport) VOID __stdcall RtlUnwind(PEXCEPTION_FRAME endframe, LPVOID eip, PEXCEPTION_RECORD rec, DWORD retval);
 

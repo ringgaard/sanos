@@ -32,11 +32,45 @@
 // 
 
 #include <os.h>
+#include <string.h>
 
 #include <os/syscall.h>
 #include <os/seg.h>
 #include <os/tss.h>
 #include <os/syspage.h>
+
+__inline long atomic_add(long *dest, long add_value)
+{
+  __asm 
+  {
+    mov edx, dest
+    mov eax, add_value
+    mov ecx, eax
+    lock xadd dword ptr [edx], eax
+    add eax, ecx
+  }
+}
+
+void init_threads(hmodule_t hmod)
+{
+  struct tib *tib = gettib();
+  struct job *job;
+
+  job = malloc(sizeof(struct job));
+  if (!job) panic("unable to allocate initial job");
+  memset(job, 0, sizeof(struct job));
+
+  job->threadcnt = 1;
+  job->terminated = mkevent(1, 0);
+  job->in = 0;
+  job->out = 1;
+  job->err = 2;
+  job->termtype = TERM_CONSOLE;
+  job->hmod = hmod;
+  job->cmdline = NULL;
+
+  tib->job = job;
+}
 
 handle_t mkthread(void (__stdcall *startaddr)(struct tib *), unsigned long stacksize, struct tib **ptib)
 {
@@ -61,6 +95,7 @@ void __stdcall threadstart(struct tib *tib)
 handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, void *arg, int flags, struct tib **ptib)
 {
   struct tib *tib;
+  struct job *job;
   handle_t h;
 
   h = mkthread(threadstart, stacksize, &tib);
@@ -69,7 +104,35 @@ handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, vo
   tib->startaddr = (void *) startaddr;
   tib->startarg = arg;
 
-  if ((flags & CREATE_SUSPENDED) == 0) resume(h);
+  if (flags & CREATE_NEW_JOB)
+  {
+    job = malloc(sizeof(struct job));
+    if (!job) return -ENOMEM;
+    memset(job, 0, sizeof(struct job));
+
+    if (flags & CREATE_DETACHED)
+    {
+      job->in = job->out = job->err = -EBADF;
+    }
+    else
+    {
+      struct job *parent = gettib()->job;
+
+      job->in = dup(parent->in);
+      job->out = dup(parent->out);
+      job->err = dup(parent->err);
+      job->termtype = parent->termtype;
+    }
+
+    job->terminated = mkevent(1, 0);
+  }
+  else
+    job = gettib()->job;
+
+  atomic_add(&job->threadcnt, 1);
+  tib->job = job;
+
+  if (!(flags & CREATE_SUSPENDED)) resume(h);
 
   if (ptib) *ptib = tib;
   return h;
@@ -87,6 +150,23 @@ int resume(handle_t thread)
 
 void endthread(int retval)
 {
+  struct job *job;
+
+  job = gettib()->job;
+  if (atomic_add(&job->threadcnt, -1) == 0)
+  {
+    if (job->in >= 0) close(job->in);
+    if (job->out >= 0) close(job->out);
+    if (job->err >= 0) close(job->err);
+
+    if (job->hmod) unload(job->hmod);
+    if (job->cmdline) free(job->cmdline);
+
+    eset(job->terminated);
+    close(job->terminated);
+    free(job);
+  }
+
   syscall(SYSCALL_ENDTHREAD, &retval);
 }
 
@@ -133,3 +213,71 @@ struct tib *gettib()
   return tib;
 }
 
+void exit(int status)
+{
+  struct job *job = gettib()->job;
+
+  if (job->atexit) job->atexit();
+  if (job->exitcodeptr) *job->exitcodeptr = status;
+  eset(job->terminated);
+  endthread(status);
+}
+
+static void __stdcall spawn_program(void *args)
+{
+  struct job *job = gettib()->job;
+  int rc;
+
+  rc = exec(job->hmod, job->cmdline);
+  exit(rc);
+}
+
+int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
+{
+  hmodule_t hmod;
+  handle_t hthread;
+  struct tib *tib;
+  struct job *job;
+  int rc;
+
+  hmod = load(pgm);
+  if (!hmod) return -errno;
+
+  hthread = beginthread(spawn_program, 0, NULL, CREATE_SUSPENDED | CREATE_NEW_JOB | ((mode & P_DETACH) ? CREATE_DETACHED : 0), &tib);
+  if (hthread < 0)
+  {
+    unload(hmod);
+    return hthread;
+  }
+
+  job = tib->job;
+  job->hmod = hmod;
+  job->cmdline = strdup(cmdline);
+
+  if (mode & P_NOWAIT)
+  {
+    resume(hthread);
+    return hthread;
+  }
+  else
+  {
+    int exitcode;
+    handle_t terminated;
+    
+    terminated = dup(job->terminated);
+    if (terminated < 0) return terminated;
+
+    job->exitcodeptr = &exitcode;
+    
+    rc = resume(hthread);
+    if (rc < 0) return rc;
+
+    rc = wait(terminated, INFINITE);
+    if (rc < 0) return rc;
+
+    close(terminated);
+    close(hthread);
+
+    return exitcode;
+  }
+}

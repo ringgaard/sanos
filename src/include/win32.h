@@ -94,7 +94,7 @@ typedef INT *LPINT;
 typedef DWORD *LPDWORD;
 typedef BOOL *LPBOOL;
 typedef void *LPVOID;
-typedef handle_t HMODULE;
+typedef hmodule_t HMODULE;
 typedef void *FARPROC;
 typedef int LCID;
 typedef int HKEY;
@@ -282,28 +282,6 @@ typedef struct _NESTED_FRAME
   EXCEPTION_FRAME frame;
   EXCEPTION_FRAME *prev;
 } NESTED_FRAME;
-
-#if 0
-// TODO: move to msvcrt
-typedef struct _SCOPETABLE
-{
-  DWORD previousTryLevel;
-  DWORD lpfnFilter;
-  DWORD lpfnHandler;
-} SCOPETABLE, *PSCOPETABLE;
-
-typedef struct _EXCEPTION_REGISTRATION PEXCEPTION_REGISTRATION;
-
-struct _EXCEPTION_REGISTRATION
-{
-  struct _EXCEPTION_REGISTRATION *prev;
-  void (*handler)(PEXCEPTION_RECORD, PEXCEPTION_REGISTRATION, PCONTEXT, PEXCEPTION_RECORD);
-  struct _SCOPETABLE *scopetable;
-  int trylevel;
-  int _ebp;
-  PEXCEPTION_POINTERS xpointers;
-};
-#endif
 
 typedef union _LARGE_INTEGER 
 { 

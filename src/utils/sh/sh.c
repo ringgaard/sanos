@@ -547,7 +547,6 @@ static void exec_program(char *args)
   char pgm[MAXPATH];
   char *p;
   char *q;
-  hmodule_t hmod;
   int rc;
   int dotseen = 0;
 
@@ -562,32 +561,43 @@ static void exec_program(char *args)
   *q++ = 0;
   if (!dotseen) strcat(pgm, ".exe");
 
-  hmod = load(pgm);
-  if (hmod == NULL)
-  {
-    printf("%s: program not found\n", pgm);
-    return;
-  }
-
-  rc = exec(hmod, args);
-
-  if (rc != 0) printf("Exitcode: %d\n", rc);
-  //unload(hmod);
-}
-
-static void __stdcall spawn_program(void *args)
-{
-  exec_program(args);
-  printf("%s: terminated\n", args);
-  free(args);
+  rc = spawn(P_WAIT, pgm, args, NULL);
+  if (rc < 0)
+    printf("%s: %s\n", pgm, strerror(rc));
+  else if (rc > 0)
+    printf("Exitcode: %d\n", rc);
 }
 
 static void launch_program(char *args)
 {
+  char pgm[MAXPATH];
+  char *p;
+  char *q;
+  int h;
+  int dotseen = 0;
+
   while (*args != 0 && *args != ' ') args++;
   while (*args == ' ') args++;
 
-  beginthread(spawn_program, 0, strdup(args), 0, NULL);
+  p = args;
+  q = pgm;
+  while (*p != 0 && *p != ' ')
+  {
+    if (*p == '.') dotseen = 1;
+    if (*p == PS1 || *p == PS2) dotseen = 0;
+    *q++ = *p++;
+  }
+  *q++ = 0;
+  if (!dotseen) strcat(pgm, ".exe");
+
+  h = spawn(P_NOWAIT, pgm, args, NULL);
+  if (h < 0) 
+    printf("%s: %s\n", pgm, strerror(h));
+  else
+  {
+    printf("[job %d started]\n", h);
+    close(h);
+  }
 }
 
 static void load_module(int argc, char **argv)
@@ -1462,7 +1472,7 @@ static void kbdtest()
   escs = 0;
   while (1)
   {
-    rc = read(gettib()->in, &ch, 1);
+    rc = read(gettib()->job->in, &ch, 1);
     if (rc != 1)
     {
       printf("Error %d in read\n", rc);
@@ -1591,12 +1601,13 @@ void __stdcall ttyd(void *arg)
   char *devname = (char *) arg;
   handle_t f;
   struct serial_config cfg;
+  struct job *job = gettib()->job;
 
   f = open(devname, O_RDWR | O_BINARY);
   if (f < 0) 
   {
     syslog(LOG_INFO, "Error %d starting shell on device %s\n", f, devname);
-    endthread(1);
+    exit(1);
   }
 
   cfg.speed = 115200;
@@ -1610,22 +1621,23 @@ void __stdcall ttyd(void *arg)
 
   syslog(LOG_INFO, "sh: starting shell on device %s\n", devname);
 
-  gettib()->in = f;
-  gettib()->out = f;
-  gettib()->err = f;
+  job->in = f;
+  job->out = dup(f);
+  job->err = dup(f);
+  job->termtype = TERM_VT100;
 
   shell();
-
-  close(f);
 }
 
 void __stdcall telnet_task(void *arg)
 {
   int s = (int) arg;
+  struct job *job = gettib()->job;
 
-  gettib()->in = s;
-  gettib()->out = s;
-  gettib()->err = s;
+  job->in = s;
+  job->out = dup(s);
+  job->err = dup(s);
+  job->termtype = TERM_VT100;
 
 #ifdef DEBUG
   printf("%s version %s (Debug Build %s %s)\n", OSNAME, OSVERSION, __DATE__, __TIME__);
@@ -1635,8 +1647,6 @@ void __stdcall telnet_task(void *arg)
   printf("%s\n\n", COPYRIGHT);
 
   shell();
-
-  close(s);
 }
 
 void __stdcall telnetd(void *arg)
@@ -1685,7 +1695,7 @@ void __stdcall telnetd(void *arg)
 
     syslog(LOG_INFO, "telnetd: client connected from %a\n", &sin.sin_addr);
 
-    hthread = beginthread(telnet_task, 0, (void *) client, 0, NULL);
+    hthread = beginthread(telnet_task, 0, (void *) client, CREATE_NEW_JOB | CREATE_DETACHED, NULL);
     close(hthread);
   }
 }
@@ -1694,8 +1704,7 @@ int main(int argc, char *argv[])
 {
   if (sizeof(struct tib) != PAGESIZE) printf("warning: tib is %d bytes (%d expected)\n", sizeof(struct tib), PAGESIZE);
 
-  //beginthread(ttyd, 0, "/dev/com4", 0, NULL);
-
+  //beginthread(ttyd, 0, "/dev/com4", CREATE_NEW_JOB | CREATE_DETACHED, NULL);
   if (peb->ipaddr.s_addr != INADDR_ANY) beginthread(telnetd, 0, NULL, 0, NULL);
 
   shell();

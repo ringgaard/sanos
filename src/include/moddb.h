@@ -64,7 +64,6 @@ struct moddb
   void (*log)(char *msg);
 
   struct module *modules;
-  struct module *execmod;
   char **modpaths;
   int nmodpaths;
   struct modalias *aliases;

@@ -160,16 +160,8 @@ static void dbg_connect(struct dbg_hdr *hdr, union dbg_body *body)
   {
     body->conn.version = DRPC_VERSION;
     body->conn.trap = last_trap;
-    if (kmods.modules)
-    {
-      body->conn.mod.hmod = kmods.execmod->hmod;
-      body->conn.mod.name = &kmods.execmod->name;
-    }
-    else
-    {
-      body->conn.mod.hmod = (hmodule_t) OSBASE;
-      body->conn.mod.name = &krnlname;
-    }
+    body->conn.mod.hmod = (hmodule_t) OSBASE;
+    body->conn.mod.name = &krnlname;
     body->conn.thr.tid = t->id;
     body->conn.thr.tib = t->tib;
     body->conn.thr.startaddr = t->entrypoint;

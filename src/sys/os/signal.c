@@ -69,8 +69,18 @@ void sendsig(int signum, struct siginfo *info)
 
   handler = sighandlers[signum];
 
-  if (handler == SIG_DFL) 
-    dbgbreak();
+  if (handler == SIG_DFL)
+  {
+    switch (signum)
+    {
+      case SIGABRT:
+	exit(3);
+	break;
+
+      default:
+        dbgbreak();
+    }
+  }
   else if (handler != SIG_IGN)
     handler(signum);
 

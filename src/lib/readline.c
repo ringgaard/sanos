@@ -184,8 +184,8 @@ static int getkey(int f)
   {
     case 0x08: return KEY_BACKSPACE;
     case 0x09: return KEY_TAB;
-    case 0x0D: return f == 0 ? KEY_ENTER : KEY_UNKNOWN;
-    case 0x0A: return f != 0 ? KEY_ENTER : KEY_UNKNOWN;
+    case 0x0D: return gettib()->job->termtype == TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
+    case 0x0A: return gettib()->job->termtype != TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
 
     case 0x1B:
       ch = getch(f);

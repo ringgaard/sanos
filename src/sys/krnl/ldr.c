@@ -245,6 +245,8 @@ static int umods_proc(struct proc_file *pf, void *arg)
 
 void init_kernel_modules()
 {
+  struct module *krnlmod;
+
   init_mutex(&ldr_lock, 0);
 
   kmods.load_image = load_image;
@@ -255,10 +257,10 @@ void init_kernel_modules()
   kmods.notify_unload = dbg_notify_unload_module;
 
   init_module_database(&kmods, "krnl.dll", (hmodule_t) OSBASE, get_property(krnlcfg, "kernel", "libpath", "/bin"), find_section(krnlcfg, "modaliases"), 0);
-  kmods.execmod = kmods.modules;
 
   register_proc_inode("kmods", kmods_proc, NULL);
   register_proc_inode("umods", umods_proc, NULL);
 
-  set_pageframe_tag(kmods.execmod->hmod, get_image_header(kmods.execmod->hmod)->optional.size_of_image, 'KMOD');
+  krnlmod = kmods.modules;
+  set_pageframe_tag(krnlmod->hmod, get_image_header(krnlmod)->optional.size_of_image, 'KMOD');
 }

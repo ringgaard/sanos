@@ -31,9 +31,6 @@
 // SUCH DAMAGE.
 // 
 
-#include <os.h>
-#include <inifile.h>
-
 #include "msvcrt.h"
 
 crtapi int _adjust_fdiv = 0;
@@ -224,9 +221,9 @@ void __getmainargs(int *pargc, char ***pargv, char ***penvp, int dowildcard, _st
   TRACE("__getmainargs");
 
   // TODO: argv and envp should be freed on termination
-  *pargc = parse_args(gettib()->args, NULL);
+  *pargc = parse_args(gettib()->job->cmdline, NULL);
   *pargv = malloc(sizeof(char *) * *pargc);
-  if (*pargv) parse_args(gettib()->args, *pargv);
+  if (*pargv) parse_args(gettib()->job->cmdline, *pargv);
   *penvp = build_env_block();
 }
 
@@ -337,7 +334,7 @@ void _endthreadex(unsigned retval)
 void abort()
 {
   TRACE("abort");
-  panic("program aborted");
+  raise(SIGABRT);
 }
 
 void _exit(int status)
@@ -356,15 +353,16 @@ int _purecall()
 int crt_raise(int sig)
 {
   TRACE("raise");
-  panic("raise not implemented");
+
+  raise(sig);
   return 0;
 }
 
 void (*crt_signal(int sig, void (*func)(int)))(int)
 {
   TRACE("signal");
-  syslog(LOG_DEBUG, "warning: signal not implemented, ignored\n");
-  return 0;
+
+  return signal(sig, func);
 }
 
 void _assert(void *expr, void *filename, unsigned lineno)

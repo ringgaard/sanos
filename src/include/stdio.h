@@ -61,9 +61,9 @@ typedef void FILE;
 #define fileno(stream)   (((int) (stream)) - STREAM_OFFSET)
 #define strmno(fd)       ((FILE *) ((fd) + STREAM_OFFSET))
 
-#define stdin  (strmno(gettib()->in))
-#define stdout (strmno(gettib()->out))
-#define stderr (strmno(gettib()->err))
+#define stdin  (strmno(gettib()->job->in))
+#define stdout (strmno(gettib()->job->out))
+#define stderr (strmno(gettib()->job->err))
 
 FILE *fopen(const char *filename, const char *mode);
 int fflush(FILE *stream);

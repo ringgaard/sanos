@@ -56,6 +56,8 @@ unsigned long loglevel = LOG_DEBUG | LOG_APITRACE | LOG_AUX | LOG_MODULE;
 int logfile = -1;
 
 void init_sntpd();
+void init_threads(hmodule_t hmod);
+
 void globalhandler(int signum, struct siginfo *info);
 
 void panic(const char *msg)
@@ -473,6 +475,8 @@ int getmodpath(hmodule_t hmod, char *buffer, int size)
 {
   int rc;
 
+  if (hmod == NULL) hmod = gettib()->job->hmod;
+
   enter(&mod_lock);
   rc = get_module_filename(&usermods, hmod, buffer, size);
   leave(&mod_lock);
@@ -501,20 +505,11 @@ int unload(hmodule_t hmod)
 
 int exec(hmodule_t hmod, const char *args)
 {
-  struct module *prev_execmod;
-  char *prev_args;
   int rc;
 
-  prev_execmod = usermods.execmod;
-  prev_args = gettib()->args;
-
-  usermods.execmod = get_module_for_handle(&usermods, hmod);
-  gettib()->args = (char *) args;
+  if (get_image_header(hmod)->header.characteristics & IMAGE_FILE_DLL) return -ENOEXEC;
 
   rc = ((int (*)(hmodule_t, char *, int)) get_entrypoint(hmod))(hmod, (char *) args, 0);
-  
-  usermods.execmod = prev_execmod;
-  gettib()->args = prev_args;
 
   return rc;
 }
@@ -523,6 +518,8 @@ void *getresdata(hmodule_t hmod, int type, char *name, int lang)
 {
   void *data;
   int rc;
+
+  if (hmod == NULL) hmod = gettib()->job->hmod;
 
   rc = get_resource_data(&usermods, hmod, INTRES(type), name, INTRES(lang), &data);
   if (rc < 0)
@@ -538,6 +535,8 @@ int getreslen(hmodule_t hmod, int type, char *name, int lang)
 {
   void *data;
   int rc;
+
+  if (hmod == NULL) hmod = gettib()->job->hmod;
 
   rc = get_resource_data(&usermods, hmod, INTRES(type), name, INTRES(lang), &data);
   if (rc < 0)
@@ -687,7 +686,6 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 {
   char *initpgm;
   char *initargs;
-  hmodule_t hexecmod;
   int rc;
   char *logfn;
 
@@ -708,10 +706,8 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   mkcs(&heap_lock);
   mkcs(&mod_lock);
 
-  // Thread specific stdin, stdout and stderr
-  gettib()->in = 0;
-  gettib()->out = 1;
-  gettib()->err = 2;
+  // Initialize initial job
+  init_threads(hmod);
 
   // Load configuration file
   config = read_properties("/etc/os.ini");
@@ -752,12 +748,10 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   initargs = get_property(config, "os", "initargs", "");
 
   //syslog(LOG_DEBUG, "exec %s(%s)\n", initpgm, initargs);
-  hexecmod = load(initpgm);
-  if (hexecmod == NULL) panic("unable to load executable");
 
-  rc = exec(hexecmod, initargs);
-
+  rc = spawn(P_WAIT, initpgm, initargs, NULL);
   if (rc != 0) syslog(LOG_DEBUG, "Exitcode: %d\n", rc);
+
   if (logfile > 0) close(logfile);
-  exit(rc);
+  exitos(0);
 }

@@ -67,7 +67,7 @@
 #define SYSCALL_ESET         30
 #define SYSCALL_ERESET       31
 #define SYSCALL_SELF         32
-#define SYSCALL_EXIT         33
+#define SYSCALL_EXITOS       33
 #define SYSCALL_DUP          34
 #define SYSCALL_MKTHREAD     35
 #define SYSCALL_SUSPEND      36

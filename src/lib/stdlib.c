@@ -98,7 +98,7 @@ void free_args(int argc, char **argv)
 
 void abort()
 {
-  exit(3);
+  raise(SIGABRT);
 }
 
 int abs(int number)
