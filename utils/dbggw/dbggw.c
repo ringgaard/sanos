@@ -83,8 +83,9 @@ struct drpc_processor_identification
 //
 
 #define DEBUGGER_PORT      24502
+
 //#define DEBUGGEE_PORT      "COM1"
-#define DEBUGGEE_PORT      "\\\\.\\pipe\\com_1"
+//#define DEBUGGEE_PORT      "\\\\.\\pipe\\com_1"
 
 //
 // Global variables
@@ -93,6 +94,7 @@ struct drpc_processor_identification
 SOCKET listener;
 SOCKET debugger;
 
+char *debuggee_port;
 int dbg_state = 1;
 int first_event = 1;
 struct dbg_session *session = NULL;
@@ -399,7 +401,7 @@ void get_cpu_info(struct drpc_packet *pkt, char *buf)
 
 void open_process(struct drpc_packet *pkt, char *buf)
 {
-  session = dbg_create_session(DEBUGGEE_PORT);
+  session = dbg_create_session(debuggee_port);
   if (session == NULL) pkt->result = E_FAIL;
   first_event = 1;
 }
@@ -975,11 +977,17 @@ void handle_session()
 // main
 //
 
-void main()
+void main(int argc, char *argv[])
 { 
   WSADATA wsadata;
   SOCKADDR_IN sin;
   int rc;
+
+  // Parse arguments
+  if (argc > 1)
+    debuggee_port = argv[1];
+  else
+    debuggee_port = "COM1";
 
   // Initialize winsock
   rc = WSAStartup(MAKEWORD(2, 2), &wsadata);

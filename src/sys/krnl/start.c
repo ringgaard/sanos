@@ -127,7 +127,7 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
 
   // Initialize interrupts, floating-point support, and real-time clock
   init_pic();
-  init_intr();
+  init_trap();
   init_fpu();
   init_pit();
   
@@ -211,7 +211,7 @@ void init_net()
   tcp_init();
   socket_init();
 
-  IP4_ADDR(&ipaddr, 192, 168, 252, 200);
+  IP4_ADDR(&ipaddr, 192, 168, 85, 200);
   IP4_ADDR(&netmask, 255, 255, 255, 0);
   IP4_ADDR(&gw, 192, 168, 252, 1);
 
@@ -274,9 +274,8 @@ void main(void *arg)
   init_kernel_modules();
 
   // Install device drivers
-  install_drivers();
-
   //dbg_break();
+  install_drivers();
 
   // Initialize network
   init_net();

@@ -131,13 +131,16 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
   }
 
   // Verify checksum
-  if (inet_chksum(iphdr, hl * 4) != 0) 
+  if ((inp->flags & NETIF_IP_RX_CHECKSUM_OFFLOAD) == 0)
   {
-    kprintf("IP packet dropped due to failing checksum 0x%x\n", inet_chksum(iphdr, hl * 4));
-    pbuf_free(p);
-    stats.ip.chkerr++;
-    stats.ip.drop++;
-    return 0;
+    if (inet_chksum(iphdr, hl * 4) != 0)
+    {
+      kprintf("IP packet dropped due to failing checksum 0x%x\n", inet_chksum(iphdr, hl * 4));
+      pbuf_free(p);
+      stats.ip.chkerr++;
+      stats.ip.drop++;
+      return 0;
+    }
   }
   
   // Trim pbuf. This should have been done at the netif layer, but we'll do it anyway just to be sure that its done
@@ -257,7 +260,11 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
       ip_addr_set(&(iphdr->src), src);
 
     IPH_CHKSUM_SET(iphdr, 0);
-    IPH_CHKSUM_SET(iphdr, inet_chksum(iphdr, IP_HLEN));
+
+    if ((netif->flags & NETIF_IP_TX_CHECKSUM_OFFLOAD) == 0)
+    {
+      IPH_CHKSUM_SET(iphdr, inet_chksum(iphdr, IP_HLEN));
+    }
   } 
   else 
     dest = &(iphdr->dest);

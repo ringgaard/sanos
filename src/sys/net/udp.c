@@ -27,30 +27,33 @@ void udp_input(struct pbuf *p, struct netif *inp)
   iphdr = (struct ip_hdr *) ((char *) p->payload - IP_HLEN);
   udphdr = p->payload;
   
-  if (IPH_PROTO(iphdr) == IP_PROTO_UDPLITE) 
+  if ((inp->flags & NETIF_UDP_RX_CHECKSUM_OFFLOAD) == 0)
   {
-    // Do the UDP Lite checksum
-    if (inet_chksum_pseudo(p, (struct ip_addr *) &(iphdr->src), (struct ip_addr *) &(iphdr->dest), IP_PROTO_UDPLITE, ntohs(udphdr->len)) != 0) 
+    if (IPH_PROTO(iphdr) == IP_PROTO_UDPLITE) 
     {
-      kprintf("udp_input: UDP Lite datagram discarded due to failing checksum\n");
-      stats.udp.chkerr++;
-      stats.udp.drop++;
-      pbuf_free(p);
-      return;
-    }
-  } 
-  else 
-  {
-    if (udphdr->chksum != 0) 
-    {
-      if (inet_chksum_pseudo(p, (struct ip_addr *) &(iphdr->src), (struct ip_addr *) &(iphdr->dest), IP_PROTO_UDP, p->tot_len) != 0) 
+      // Do the UDP Lite checksum
+      if (inet_chksum_pseudo(p, (struct ip_addr *) &(iphdr->src), (struct ip_addr *) &(iphdr->dest), IP_PROTO_UDPLITE, ntohs(udphdr->len)) != 0) 
       {
-	kprintf("udp_input: UDP datagram discarded due to failing checksum\n");
-
+	kprintf("udp_input: UDP Lite datagram discarded due to failing checksum\n");
 	stats.udp.chkerr++;
 	stats.udp.drop++;
 	pbuf_free(p);
 	return;
+      }
+    } 
+    else 
+    {
+      if (udphdr->chksum != 0) 
+      {
+	if (inet_chksum_pseudo(p, (struct ip_addr *) &(iphdr->src), (struct ip_addr *) &(iphdr->dest), IP_PROTO_UDP, p->tot_len) != 0) 
+	{
+	  kprintf("udp_input: UDP datagram discarded due to failing checksum\n");
+
+	  stats.udp.chkerr++;
+	  stats.udp.drop++;
+	  pbuf_free(p);
+	  return;
+	}
       }
     }
   }
@@ -154,9 +157,11 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p)
     udphdr->len = htons(pcb->chksum_len);
     
     // Calculate checksum
-    udphdr->chksum = inet_chksum_pseudo(p, src_ip, &(pcb->dest_ip), IP_PROTO_UDP, pcb->chksum_len);
-    if (udphdr->chksum == 0x0000) udphdr->chksum = 0xFFFF;
-
+    if ((netif->flags & NETIF_UDP_TX_CHECKSUM_OFFLOAD) == 0)
+    {
+      udphdr->chksum = inet_chksum_pseudo(p, src_ip, &(pcb->dest_ip), IP_PROTO_UDP, pcb->chksum_len);
+      if (udphdr->chksum == 0x0000) udphdr->chksum = 0xFFFF;
+    }
     err = ip_output_if(p, src_ip, &pcb->dest_ip, UDP_TTL, IP_PROTO_UDPLITE, netif);
   } 
   else 
@@ -164,10 +169,13 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p)
     udphdr->len = htons(p->tot_len);
     
     // Calculate checksum
-    if ((pcb->flags & UDP_FLAGS_NOCHKSUM) == 0) 
+    if ((netif->flags & NETIF_UDP_TX_CHECKSUM_OFFLOAD) == 0)
     {
-      udphdr->chksum = inet_chksum_pseudo(p, src_ip, &pcb->dest_ip, IP_PROTO_UDP, p->tot_len);
-      if (udphdr->chksum == 0x0000) udphdr->chksum = 0xFFFF;
+      if ((pcb->flags & UDP_FLAGS_NOCHKSUM) == 0) 
+      {
+	udphdr->chksum = inet_chksum_pseudo(p, src_ip, &pcb->dest_ip, IP_PROTO_UDP, p->tot_len);
+	if (udphdr->chksum == 0x0000) udphdr->chksum = 0xFFFF;
+      }
     }
 
     err = ip_output_if(p, src_ip, &pcb->dest_ip, UDP_TTL, IP_PROTO_UDP, netif);

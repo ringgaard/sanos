@@ -11,6 +11,13 @@
 
 #define NET_NAME_MAX 16
 
+#define NETIF_IP_TX_CHECKSUM_OFFLOAD  0x0001
+#define NETIF_IP_RX_CHECKSUM_OFFLOAD  0x0002
+#define NETIF_UDP_RX_CHECKSUM_OFFLOAD 0x0004
+#define NETIF_UDP_TX_CHECKSUM_OFFLOAD 0x0008
+#define NETIF_TCP_RX_CHECKSUM_OFFLOAD 0x0010
+#define NETIF_TCP_TX_CHECKSUM_OFFLOAD 0x0020
+
 struct netif 
 {
   struct netif *next;
@@ -18,6 +25,7 @@ struct netif
   struct ip_addr netmask;  // netmask in network byte order
   struct ip_addr gw;
   struct eth_addr hwaddr;
+  int flags;
   char name[NET_NAME_MAX];
 
   err_t (*input)(struct pbuf *p, struct netif *inp);

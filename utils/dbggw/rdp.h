@@ -13,7 +13,7 @@ typedef unsigned long tid_t;
 typedef void *hmodule_t;
 
 #include <seg.h>
-#include <intr.h>
+#include <trap.h>
 #include <dbg.h>
 
 #define GLOBAL_PROCID      1

@@ -111,6 +111,8 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
     req->len -= bytes;
     req->err += bytes;
 
+    tcp_recved(pcb, (unsigned short) bytes);
+
     if (req->len == 0) release_socket_request(req);
 
     pbuf_header(p, -bytes);

@@ -21,6 +21,7 @@ struct netif *netif_add(char *name, struct ip_addr *ipaddr, struct ip_addr *netm
   strcpy(netif->name, name);
   netif->input = ip_input;
   netif->output = NULL;
+  netif->flags = 0;
 
   ip_addr_set(&(netif->ip_addr), ipaddr);
   ip_addr_set(&(netif->netmask), netmask);

@@ -42,17 +42,20 @@ void tcp_input(struct pbuf *p, struct netif *inp)
     return;
   }
 
-  // Verify TCP checksum
-  if (inet_chksum_pseudo(p, (struct ip_addr *) &(iphdr->src), (struct ip_addr *) &(iphdr->dest), IP_PROTO_TCP, p->tot_len) != 0) 
+  if ((inp->flags & NETIF_TCP_RX_CHECKSUM_OFFLOAD) == 0)
   {
-    kprintf("tcp_input: packet discarded due to failing checksum 0x%04x\n", inet_chksum_pseudo(p, (struct ip_addr *)&(iphdr->src), (struct ip_addr *)&(iphdr->dest), IP_PROTO_TCP, p->tot_len));
-    tcp_debug_print(tcphdr);
+    // Verify TCP checksum
+    if (inet_chksum_pseudo(p, (struct ip_addr *) &(iphdr->src), (struct ip_addr *) &(iphdr->dest), IP_PROTO_TCP, p->tot_len) != 0) 
+    {
+      kprintf("tcp_input: packet discarded due to failing checksum 0x%04x\n", inet_chksum_pseudo(p, (struct ip_addr *)&(iphdr->src), (struct ip_addr *)&(iphdr->dest), IP_PROTO_TCP, p->tot_len));
+      tcp_debug_print(tcphdr);
 
-    stats.tcp.chkerr++;
-    stats.tcp.drop++;
+      stats.tcp.chkerr++;
+      stats.tcp.drop++;
 
-    pbuf_free(p);
-    return;
+      pbuf_free(p);
+      return;
+    }
   }
 
   // Move the payload pointer in the pbuf so that it points to the TCP data instead of the IP header
@@ -807,7 +810,7 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	  
 	  // Since this pbuf now is the responsibility of the
 	  // application, we delete our reference to it so that we won't
-	  // (mistakingly) deallocate it. */
+	  // (mistakingly) deallocate it.
 	  seg->p = NULL;
 	}
 

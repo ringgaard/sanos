@@ -222,10 +222,10 @@ void wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh)
 }
 
 //
-// Initialize interrupts
+// Initialize traps and interrupts
 //
 
-void init_intr()
+void init_trap()
 {
   int i;
 

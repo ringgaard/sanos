@@ -368,11 +368,18 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
   else 
     seg->tcphdr->wnd = htons(pcb->rcv_wnd);
 
-  // If we don't have a local IP address, we get one by calling ip_route()
+  // Find route for segment
+  netif = ip_route(&(pcb->dest_ip));
+  if (netif == NULL) 
+  {
+    kprintf("tcp_output_segment: No route to 0x%lx\n", pcb->dest_ip.addr);
+    stats.ip.rterr++;
+    return;
+  }
+
+  // If we don't have a local IP address, we get it from netif
   if (ip_addr_isany(&(pcb->local_ip))) 
   {
-    netif = ip_route(&(pcb->dest_ip));
-    if (netif == NULL) return;
     ip_addr_set(&(pcb->local_ip), &(netif->ip_addr));
   }
 
@@ -387,12 +394,15 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
   kprintf("tcp_output_segment: %lu:%lu\n", htonl(seg->tcphdr->seqno), htonl(seg->tcphdr->seqno) + seg->len);
 
   seg->tcphdr->chksum = 0;
-  seg->tcphdr->chksum = inet_chksum_pseudo(seg->p, &(pcb->local_ip), &(pcb->dest_ip), IP_PROTO_TCP, seg->p->tot_len);
+  if ((netif->flags & NETIF_TCP_TX_CHECKSUM_OFFLOAD) == 0)
+  {
+    seg->tcphdr->chksum = inet_chksum_pseudo(seg->p, &(pcb->local_ip), &(pcb->dest_ip), IP_PROTO_TCP, seg->p->tot_len);
+  }
   stats.tcp.xmit++;
 
   len = seg->p->len;
   tot_len = seg->p->tot_len;
-  ip_output(seg->p, &(pcb->local_ip), &(pcb->dest_ip), TCP_TTL, IP_PROTO_TCP);
+  ip_output_if(seg->p, &(pcb->local_ip), &(pcb->dest_ip), TCP_TTL, IP_PROTO_TCP, netif);
   seg->p->len = len;
   seg->p->tot_len = tot_len;
   seg->p->payload = seg->tcphdr;
@@ -425,7 +435,10 @@ void tcp_rexmit_seg(struct tcp_pcb *pcb, struct tcp_seg *seg)
 
     // Recalculate checksum
     seg->tcphdr->chksum = 0;
-    seg->tcphdr->chksum = inet_chksum_pseudo(seg->p, &(pcb->local_ip), &(pcb->dest_ip), IP_PROTO_TCP, seg->p->tot_len);
+    if ((netif->flags & NETIF_TCP_TX_CHECKSUM_OFFLOAD) == 0)
+    {
+      seg->tcphdr->chksum = inet_chksum_pseudo(seg->p, &(pcb->local_ip), &(pcb->dest_ip), IP_PROTO_TCP, seg->p->tot_len);
+    }
     
     len = seg->p->len;
     tot_len = seg->p->tot_len;
@@ -452,6 +465,14 @@ void tcp_rst(unsigned long seqno, unsigned long ackno, struct ip_addr *local_ip,
 {
   struct pbuf *p;
   struct tcp_hdr *tcphdr;
+  struct netif *netif;
+
+  if ((netif = ip_route(dest_ip)) == NULL) 
+  {
+    kprintf("tcp_rst: No route to 0x%lx\n", dest_ip->addr);
+    stats.tcp.rterr++;
+    return;
+  }
 
   p = pbuf_alloc(PBUF_TRANSPORT, 0, PBUF_RW);
   if (p == NULL) 
@@ -480,11 +501,14 @@ void tcp_rst(unsigned long seqno, unsigned long ackno, struct ip_addr *local_ip,
   TCPH_OFFSET_SET(tcphdr, 5 << 4);
   
   tcphdr->chksum = 0;
-  tcphdr->chksum = inet_chksum_pseudo(p, local_ip, dest_ip, IP_PROTO_TCP, p->tot_len);
+  if ((netif->flags & NETIF_TCP_TX_CHECKSUM_OFFLOAD) == 0)
+  {
+    tcphdr->chksum = inet_chksum_pseudo(p, local_ip, dest_ip, IP_PROTO_TCP, p->tot_len);
+  }
 
   stats.tcp.xmit++;
 
-  ip_output(p, local_ip, dest_ip, TCP_TTL, IP_PROTO_TCP);
+  ip_output_if(p, local_ip, dest_ip, TCP_TTL, IP_PROTO_TCP, netif);
   pbuf_free(p);
 
   kprintf("tcp_rst: seqno %lu ackno %lu.\n", seqno, ackno);

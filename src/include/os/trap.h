@@ -87,7 +87,7 @@ struct interrupt_handler
 
 #ifdef KERNEL
 
-void init_intr();
+void init_trap();
 krnlapi void set_interrupt_handler(int intrno, intrproc_t f, void *arg);
 
 void __inline cli() { __asm cli };
