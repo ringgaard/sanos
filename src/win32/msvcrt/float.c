@@ -64,6 +64,8 @@ int _finite(double x)
 
 unsigned int _control87(unsigned int new, unsigned int mask)
 {
+  // TODO: map between msvcrt fp flag definitions to i387 flags
+#if 0
   unsigned int fpcw;
 
   __asm fnstcw fpcw;
@@ -71,6 +73,8 @@ unsigned int _control87(unsigned int new, unsigned int mask)
   __asm fldcw fpcw;
 
   return fpcw;
+#endif
+  return 0;
 }
 
 unsigned int _controlfp(unsigned int new, unsigned int mask)

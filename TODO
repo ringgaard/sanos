@@ -1,13 +1,36 @@
 TODO for sanos
 --------------
 
+- Replace fdmotor thread with timers.
+
+- Use the BIOS memory map from osldr to initialize memory subsystem.
+
+- Finish implementation of APM support. This would allow sanos to turn off the
+  computer on shutdown. Eventually, shutdown could be implemented only
+  enabling APM just before shutdown.
+ 
+- Suspend all user threads when shutting down. Remember not to suspend the
+  running thread.
+
+- Move signal handler table to job object to make signal handlers job specific. 
+    - Add job number to kill. 
+    - Implement int kill(int pid, int signum)
+    - Return job number in getpid()
+
+- Add format option to dfs_mkfs() to allow a device to be formated when mounting. This is useful for ram disks.
+
+- Implement SOCK_RAW socket type and ping
+
+- Disable control87() or change the code to use the MSVCRT definitions of FPU control flags.
+
 - Implement 48-bit LBA support in IDE driver
 
 - Add read-only attribute to dfs
 
-- Improve sysalloc() in heap.c to enable dynamic expansion of vilderness region.
+- Improve sysalloc() in heap.c to enable dynamic expansion of wilderness region.
 
-- Add IOEVT_ERROR to readfds in select() and checkfds() to trigger event for read sockets when connection has been reset
+- Add IOEVT_ERROR to readfds in select() and checkfds() to trigger event for read sockets when connection has been reset.
+  Alternatively change err_tcp() to set IOEVT_CLOSE if the error code is ERST.
 
 - Implement UDMA mode for ATAPI devices
 
@@ -35,7 +58,13 @@ TODO for sanos
 - Handle reopening of files in smbfs after reconnect
 
 - What happens if a file is closed while being in read() or write() on another thread?
-
+  The file object is not destroyed until all locks are released. However, F_CLOSED flag
+  must be set in close() and the read() and write() must check for F_CLOSED after
+  potential waitable operations and return -EINTR if file has been closed.
+  The file inode is released in close(). This could be potentially dangerous in 
+  write() operations. The inode should not be released until destroy_object() is called
+  in object.c.
+  
 - What happens if a tcp pcb is freed in tcp_input() while sending segments on another socket in tcp_output()?
 
 IDEAS for new features
@@ -47,8 +76,6 @@ IDEAS for new features
     - Large file support
     - Support for mode flags (drwxrwxrwx)
     - Support for owner and group
-
-- Implement SOCK_RAW socket type
 
 - Use type object in struct object
 
