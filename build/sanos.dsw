@@ -38,7 +38,7 @@ Package=<4>
     Project_Dep_Name os
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name clib
+    Project_Dep_Name libc
     End Project Dependency
 }}}
 
@@ -89,10 +89,10 @@ Package=<5>
 Package=<4>
 {{{
     Begin Project Dependency
-    Project_Dep_Name clib
+    Project_Dep_Name os
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name os
+    Project_Dep_Name libc
     End Project Dependency
 }}}
 
@@ -181,7 +181,7 @@ Package=<4>
     Project_Dep_Name os
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name clib
+    Project_Dep_Name libc
     End Project Dependency
 }}}
 
@@ -203,7 +203,7 @@ Package=<4>
     Project_Dep_Name os
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name clib
+    Project_Dep_Name libc
     End Project Dependency
 }}}
 
@@ -215,6 +215,22 @@ Package=<5>
 {{{
     begin source code control
     krnl
+    ..
+    end source code control
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libc"=.\libc.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+    begin source code control
+    libc
     ..
     end source code control
 }}}
@@ -327,10 +343,10 @@ Package=<5>
 Package=<4>
 {{{
     Begin Project Dependency
-    Project_Dep_Name clib
+    Project_Dep_Name os
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name os
+    Project_Dep_Name libc
     End Project Dependency
 }}}
 
@@ -349,10 +365,10 @@ Package=<5>
 Package=<4>
 {{{
     Begin Project Dependency
-    Project_Dep_Name clib
+    Project_Dep_Name os
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name os
+    Project_Dep_Name libc
     End Project Dependency
 }}}
 
