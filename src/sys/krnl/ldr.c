@@ -198,6 +198,11 @@ int unload(hmodule_t hmod)
   return rc;
 }
 
+void *getentrypoint(hmodule_t hmod)
+{
+  return get_entrypoint(hmod);
+}
+
 static int dump_mods(struct proc_file *pf, struct moddb *moddb)
 {
   struct module *mod = moddb->modules;

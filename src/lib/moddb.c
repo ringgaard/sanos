@@ -756,7 +756,7 @@ hmodule_t load_module(struct moddb *db, char *name, int flags)
   {
     if (get_image_header(m->hmod)->header.characteristics & IMAGE_FILE_DLL)
     {
-      if ((flags & MODLOAD_NOINIT) == 0 && m != mod)
+      if ((flags & MODLOAD_NOINIT) == 0 || m != mod)
       {
 	int ok;
         

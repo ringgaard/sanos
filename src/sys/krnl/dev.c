@@ -386,71 +386,75 @@ static struct binding *find_binding(struct unit *unit)
   return NULL;
 }
 
-static void *get_driver_entry(char *module, char *defentry)
+static int initialize_driver(struct unit *unit, char *driverstr)
 {
-  char modfn[MAXPATH];
+  char *buf;
+  char *p;
+  char *modname;
   char *entryname;
+  char *opts;
   hmodule_t hmod;
+  int rc;
+  int (*entry)(struct unit *unit, char *opts);
 
-  strcpy(modfn, module);
-  entryname = strchr(modfn, '!');
+  p = buf = kmalloc(strlen(driverstr) + 1);
+  if (!buf) return -ENOMEM;
+  memcpy(buf, driverstr, strlen(driverstr) + 1);
+
+  modname = p;
+  entryname = strchr(p, '!');
   if (entryname)
+  {
     *entryname++ = 0;
+    p = entryname;
+  }
   else 
-    entryname = defentry;
+    entryname = "install";
 
-  hmod = load(modfn, 0);
-  if (!hmod) return NULL;
+  opts = strchr(p, ':');
+  if (opts)
+    *opts++ = 0;
+  else 
+    opts = NULL;
 
-  return resolve(hmod, entryname);
-}
+  hmod = load(modname, 0);
+  if (!hmod)
+  {
+    kprintf("dev: unable to load module %s\n", modname);
+    kfree(buf);
+    return -ENOEXEC;
+  }
 
-static void *get_wdm_driver_entry(char *module)
-{
-  hmodule_t hmod;
+  entry = resolve(hmod, entryname);
+  if (!entry)
+  {
+    kprintf("dev: unable to find entry %s in module %s\n", entryname, modname);
+    unload(hmod);
+    kfree(buf);
+    return -ENOEXEC;
+  }
 
-  hmod = load(module, MODLOAD_NOINIT);
-  if (!hmod) return NULL;
+  rc = entry(unit, opts);
+  if (rc < 0)
+  {
+    kprintf("dev: initialization of %s!%s failed with error %d\n", modname, entryname, rc);
+    unload(hmod);
+    kfree(buf);
+    return rc;
+  }
 
-  return get_entrypoint(hmod);
+  kfree(buf);
+  return 0;
 }
 
 static void install_driver(struct unit *unit, struct binding *bind)
 {
-  int (*entry)(struct unit *unit);
-  int (__stdcall *wdmentry)(struct unit *unit, char *context);
   int rc;
 
-  if (bind->module[0] == '$')
+  rc = initialize_driver(unit, bind->module);
+  if (rc < 0)
   {
-    kprintf("dev: loading wdm driver %s\n", bind->module + 1);
-
-    wdmentry = get_wdm_driver_entry(bind->module + 1);
-    if (!wdmentry)
-    {
-      kprintf("warning: unable to load wdm driver %s for unit '%s'\n", bind->module + 1, get_unit_name(unit));
-      return;
-    }
-    
-    rc = wdmentry(unit, "");
-
-    kprintf("dev: wdm driver %s loaded for unit '%s'\n", bind->module + 1, get_unit_name(unit));
-  }
-  else
-  {
-    entry = get_driver_entry(bind->module, "install");
-    if (!entry)
-    {
-      kprintf("warning: unable to load driver %s for unit '%s'\n", bind->module, get_unit_name(unit));
-      return;
-    }
-
-    rc = entry(unit);
-    if (rc < 0)
-    {
-      kprintf("warning: error %d installing driver %s for unit '%s'\n", rc, bind->module, get_unit_name(unit));
-      return;
-    }
+    kprintf("dev: driver '%s' failed with error %d for unit %08X '%s'\n", bind->module, rc, unit->unitcode, get_unit_name(unit));
   }
 }
 
@@ -470,7 +474,8 @@ static void install_legacy_drivers()
 {
   struct section *sect;
   struct property *prop;
-  int (*entry)(char *opts);
+  int buflen;
+  char *buf;
   int rc;
 
   sect = find_section(krnlcfg, "drivers");
@@ -479,14 +484,27 @@ static void install_legacy_drivers()
   prop = sect->properties;
   while (prop)
   {
-    entry = get_driver_entry(prop->name, "install");
-    if (entry)
+    buflen = strlen(prop->name) + 1;
+    if (prop->value) buflen += strlen(prop->value) + 1;
+    buf = kmalloc(buflen);
+    
+    if (buf)
     {
-      rc = entry(prop->value);
-      if (rc < 0) kprintf("warning: error %d installing driver %s\n", rc, prop->name);      
+      strcpy(buf, prop->name);
+      if (prop->value)
+      {
+	strcat(buf, ":");
+	strcat(buf, prop->value);
+      }
+
+      rc = initialize_driver(NULL, buf);
+      if (rc < 0)
+      {
+	kprintf("dev: error %d initializing driver %s\n", rc, prop->name);
+      }
+
+      kfree(buf);
     }
-    else
-      kprintf("warning: unable to load driver %s\n", prop->name);
 
     prop = prop->next;
   }

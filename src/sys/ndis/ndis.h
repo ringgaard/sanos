@@ -420,7 +420,7 @@ typedef ndis_status (__stdcall *w_initialize_handler)
   unsigned int *selected_medium_index,
   enum ndis_medium *medium_array,
   unsigned int medium_array_size,
-  ndis_handle_t miniport_adapter_context,
+  ndis_handle_t miniport_adapter_handle,
   ndis_handle_t wrapper_configuration_context
 );
 
@@ -657,7 +657,7 @@ struct ndis_spin_lock
 };
 
 //
-// NDIS mini-port
+// NDIS mini-port block
 //
 
 typedef void (__stdcall *filter_packet_indication_handler)
@@ -808,10 +808,30 @@ struct ndis_miniport_block
   wan_rcv_complete_handler wan_rcv_complete_handler;
 };
 
-struct ndis_miniport
+//
+// NDIS driver
+//
+
+struct ndis_adapter;
+
+struct ndis_driver
 {
-  struct ndis_miniport_block ndis_handlers;
-  struct ndis_miniport_characteristics miniport_handlers;
+  struct ndis_driver *next;
+  hmodule_t hmod;
+  struct ndis_adapter *adapters;
+  int numadapters;
+  struct ndis_miniport_characteristics handlers;
+};
+
+struct ndis_adapter
+{
+  struct ndis_miniport_block callbacks;
+  struct unit *unit;
+  struct ndis_driver *driver;
+  struct section *cfg;
+  ndis_handle_t context;
+  devno_t devno;
+  int adapterno;
 };
 
 #endif

@@ -35,11 +35,9 @@
 #include "ndis.h"
 
 #define NDISTRACE(s) kprintf("ndis: %s called\n", s);
-
 #define ndisapi __declspec(dllexport) __stdcall
-//#define ndisapi
 
-static void ndis_setup_callbacks(struct ndis_miniport_block *nmpb);
+struct ndis_driver *drivers = NULL;
 
 //
 // NTOSKRNL functions
@@ -123,12 +121,9 @@ void ndisapi KeStallExecutionProcessor(unsigned long microseconds)
 
 void ndisapi NdisInitializeWrapper(ndis_handle_t *ndis_wrapper_handle, void *system_specific1, void *system_specific2, void *system_specific3)
 {
-  struct unit *unit  = (struct unit *) system_specific1;
+  struct ndis_driver *driver = (struct ndis_driver *) system_specific1;
   NDISTRACE("NdisInitializeWrapper");
-
-  kprintf("ndis: initialize wrapper for %s %s %p\n", get_unit_name(unit), system_specific2, system_specific3);
-  
-  *ndis_wrapper_handle = "wrapper";
+  *ndis_wrapper_handle = driver;
 }
 
 void ndisapi NdisTerminateWrapper(ndis_handle_t ndis_wrapper_handle, void *system_specific)
@@ -138,17 +133,13 @@ void ndisapi NdisTerminateWrapper(ndis_handle_t ndis_wrapper_handle, void *syste
 
 ndis_status ndisapi NdisMRegisterMiniport(ndis_handle_t ndis_wrapper_handle, struct ndis_miniport_characteristics *miniport_characteristics, unsigned int characteristics_length)
 {
-  struct ndis_miniport *mp;
+  struct ndis_driver *driver = (struct ndis_driver *) ndis_wrapper_handle;
+  int len;
 
   NDISTRACE("NdisMRegisterMiniport");
-  kprintf("ndis_wrapper_handle %s\n", ndis_wrapper_handle);
-  //dbg_break();
-
-  mp = kmalloc(sizeof(struct ndis_miniport));
-  if (!mp) return NDIS_STATUS_RESOURCES;
-  memset(mp, 0, sizeof(struct ndis_miniport));
-
-  ndis_setup_callbacks(&mp->ndis_handlers);
+  len = characteristics_length;
+  if (len > sizeof(struct ndis_miniport_characteristics)) len = sizeof(struct ndis_miniport_characteristics);
+  memcpy(&driver->handlers, miniport_characteristics, len);
 
   return 0;
 }
@@ -728,7 +719,62 @@ static void ndis_setup_callbacks(struct ndis_miniport_block *nmpb)
 // Module initialization
 //
 
+int __declspec(dllexport) install(struct unit *unit, char *opts)
+{
+  char *modfn = opts;
+  struct ndis_driver *driver;
+  hmodule_t hmod;
+  int rc;
+  
+  kprintf("ndis: loading driver %s for unit %08X\n", opts, unit->unitcode);
+
+  // Try to find existing driver
+  driver = NULL;
+  hmod = getmodule(modfn);
+  if (hmod)
+  {
+    driver = drivers;
+    while (driver)
+    {
+      if (driver->hmod == hmod) break;
+      driver = driver->next;
+    }
+  }
+
+  // If driver not loaded, load it now and initialize
+  if (!driver)
+  {
+    int (__stdcall *entry)(struct ndis_driver *driver, void *reserved);
+
+    hmod = load(modfn, MODLOAD_NOINIT);
+    if (!hmod) return -ENOEXEC;
+
+    entry = getentrypoint(hmod);
+    if (!entry) return -ENOEXEC;
+
+    driver = kmalloc(sizeof(struct ndis_driver));
+    if (!driver) return -ENOMEM;
+    memset(driver, 0, sizeof(struct ndis_driver));
+
+    rc = entry(driver, NULL);
+    if (rc < 0)
+    {
+      kprintf("ndis: driver initialization failed with error code %08X\n", rc);
+      kfree(driver);
+      unload(hmod);
+      return -ENXIO;
+    }
+
+    driver->hmod = hmod;
+    driver->next = drivers;
+    drivers = driver;
+  }
+
+  return 0;
+}
+
 int __stdcall start(hmodule_t hmod, int reason, void *reserved2)
 {
+  kprintf("ndis: loaded\n");
   return 1;
 }
