@@ -7,3 +7,9 @@ EXPORTS
   RegOpenKeyExA
   RegQueryInfoKeyA
   RegQueryValueExA
+  RegisterEventSourceA
+  DeregisterEventSource
+  ReportEventA
+  CryptAcquireContextA
+  CryptReleaseContext
+  CryptGenRandom

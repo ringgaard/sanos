@@ -20,6 +20,8 @@
 #define WSASYS_STATUS_LEN       128
 
 typedef handle_t SOCKET;
+typedef struct iovec WSABUF;
+typedef struct iovec *LPWSABUF;
 
 typedef struct WSAData 
 {
@@ -31,12 +33,6 @@ typedef struct WSAData
   unsigned short iMaxUdpDg;
   char *lpVendorInfo;
 } WSADATA, *LPWSADATA; 
-
-typedef struct _WSABUF 
-{
-  unsigned long len;
-  char *buf;
-} WSABUF, *LPWSABUF;
 
 sockapi int __stdcall WSAStartup(WORD wVersionRequested, LPWSADATA lpWSAData)
 {
@@ -359,6 +355,60 @@ sockapi int __stdcall WSAGetLastError()
 sockapi int __stdcall WSACleanup()
 {
   TRACE("WSACleanup");
+  return 0;
+}
+
+sockapi int __stdcall WSARecvFrom
+(
+  SOCKET s,
+  LPWSABUF lpBuffers,
+  DWORD dwBufferCount,
+  LPDWORD lpNumberOfBytesRecvd,
+  LPDWORD lpFlags,
+  struct sockaddr *lpFrom,
+  LPINT lpFromlen,
+  LPWSAOVERLAPPED lpOverlapped,
+  LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+)
+{
+  TRACE("WSARecvFrom");
+  panic("WSARecvFrom not implemented");
+  return 0;
+}
+
+sockapi int __stdcall WSASendTo
+(
+  SOCKET s,
+  LPWSABUF lpBuffers,
+  DWORD dwBufferCount,
+  LPDWORD lpNumberOfBytesSent,
+  DWORD dwFlags,
+  const struct sockaddr *lpTo,
+  int iToLen,
+  LPWSAOVERLAPPED lpOverlapped,
+  LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+)
+{
+  TRACE("WSASendTo");
+  panic("WSASendTo not implemented");
+  return 0;
+}
+
+sockapi int __stdcall WSAIoctl
+(
+  SOCKET s,
+  DWORD dwIoControlCode,
+  LPVOID lpvInBuffer,
+  DWORD cbInBuffer,
+  LPVOID lpvOutBuffer,
+  DWORD cbOutBuffer,
+  LPDWORD lpcbBytesReturned,
+  LPWSAOVERLAPPED lpOverlapped,
+  LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+)
+{
+  TRACE("WSAIoctl");
+  panic("WSAIoctl not implemented");
   return 0;
 }
 

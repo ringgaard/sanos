@@ -224,7 +224,7 @@ lastpage:
   }
 }
 
-char *strdup(char *s)
+char *strdup(const char *s)
 {
   char *t;
   int len;

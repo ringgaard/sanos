@@ -46,6 +46,7 @@ typedef unsigned char BYTE;
 typedef unsigned short WORD;
 typedef unsigned long DWORD;
 typedef unsigned int UINT;
+typedef int INT;
 typedef long LONG;
 typedef unsigned __int64 LONGLONG;
 
@@ -62,6 +63,7 @@ typedef const unsigned short *LPCWSTR;
 typedef BYTE *LPBYTE;
 typedef LONG *LPLONG;
 typedef LONG *PLONG;
+typedef INT *LPINT;
 typedef DWORD *LPDWORD;
 typedef BOOL *LPBOOL;
 typedef void *LPVOID;
@@ -82,6 +84,18 @@ typedef void *LPTIME_ZONE_INFORMATION;
 typedef void *PINPUT_RECORD;
 typedef void *PHANDLER_ROUTINE;
 typedef void *LPTOP_LEVEL_EXCEPTION_FILTER;
+typedef void *LPWSAOVERLAPPED;
+typedef void *LPWSAOVERLAPPED_COMPLETION_ROUTINE;
+typedef void *PSID;
+
+typedef void *HCRYPTPROV;
+
+#define EVENTLOG_SUCCESS                0x0000
+#define EVENTLOG_ERROR_TYPE             0x0001
+#define EVENTLOG_WARNING_TYPE           0x0002
+#define EVENTLOG_INFORMATION_TYPE       0x0004
+#define EVENTLOG_AUDIT_SUCCESS          0x0008
+#define EVENTLOG_AUDIT_FAILURE          0x0010
 
 #define CONTEXT_i386    0x00010000
 #define CONTEXT_i486    0x00010000

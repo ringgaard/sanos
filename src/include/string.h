@@ -19,8 +19,9 @@
 
 char *strncpy(char *dest, const char *source, size_t count);
 int strncmp(const char *s1, const char *s2, size_t count);
-char *strdup(char *s);
+char *strdup(const char *s);
 int stricmp(const char *s1, const char *s2);
+int strnicmp(const char *s1, const char *s2, size_t count);
 char *strchr(const char *s, int ch);
 char *strrchr(const char *s, int ch);
 char *strstr(const char *s1, const char *s2);
@@ -32,6 +33,7 @@ int vsprintf(char *buf, const char *fmt, va_list args);
 int sprintf(char *buf, const char *fmt, ...);
 
 void *memmove(void *dst, const void *src, size_t count);
+void *memchr(const void *buf, int ch, size_t count);
 
 // Intrinsic functions
 

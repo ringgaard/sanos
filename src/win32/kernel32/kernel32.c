@@ -121,6 +121,25 @@ BOOL WINAPI CloseHandle
   return TRUE;
 }
 
+LONG WINAPI CompareFileTime(
+  CONST FILETIME *lpFileTime1,
+  CONST FILETIME *lpFileTime2
+)
+{
+  TRACE("CompareFileTime");
+
+  if (lpFileTime1->dwHighDateTime > lpFileTime2->dwHighDateTime)
+    return 1;
+  else if (lpFileTime1->dwHighDateTime < lpFileTime2->dwHighDateTime)
+    return -1;
+  else if (lpFileTime1->dwLowDateTime > lpFileTime2->dwLowDateTime)
+    return 1;
+  else if (lpFileTime1->dwLowDateTime < lpFileTime2->dwLowDateTime)
+    return -1;
+  else
+    return 0;
+}
+
 HANDLE WINAPI CreateEventA
 (
   LPSECURITY_ATTRIBUTES lpEventAttributes,
@@ -201,6 +220,15 @@ VOID WINAPI DebugBreak(VOID)
   dbgbreak();
 }
 
+VOID WINAPI DeleteCriticalSection
+(
+  LPCRITICAL_SECTION lpCriticalSection
+)
+{
+  TRACE("DeleteCriticalSection");
+  csfree(lpCriticalSection);
+}
+
 BOOL WINAPI DeleteFileA
 (
   LPCTSTR lpFileName
@@ -244,6 +272,44 @@ VOID WINAPI EnterCriticalSection
 {
   TRACEX("EnterCriticalSection");
   enter(lpCriticalSection);
+}
+
+BOOL WINAPI FileTimeToLocalFileTime
+(
+  CONST FILETIME *lpFileTime,
+  LPFILETIME lpLocalFileTime
+)
+{
+  TRACEX("FileTimeToLocalFileTime");
+  *lpLocalFileTime = *lpFileTime;
+  return TRUE;
+}
+
+BOOL WINAPI FileTimeToSystemTime
+(
+  CONST FILETIME *lpFileTime,
+  LPSYSTEMTIME lpSystemTime
+)
+{
+  time_t t;
+  struct tm tm;
+
+  TRACEX("FileTimeToSystemTime");
+
+  t = (time_t) ((*(__int64 *) lpFileTime) - EPOC) / SECTIMESCALE;
+
+  _gmtime(&t, &tm);
+
+  lpSystemTime->wYear = tm.tm_year + 1900; 
+  lpSystemTime->wMonth = tm.tm_mon + 1; 
+  lpSystemTime->wDayOfWeek = tm.tm_wday;
+  lpSystemTime->wDay = tm.tm_mday; 
+  lpSystemTime->wHour = tm.tm_hour; 
+  lpSystemTime->wMinute = tm.tm_min; 
+  lpSystemTime->wSecond = tm.tm_sec; 
+  lpSystemTime->wMilliseconds = 0;
+
+  return TRUE;
 }
 
 static void fill_find_data(LPWIN32_FIND_DATA fd, char *filename, struct stat *statbuf)
@@ -578,6 +644,17 @@ BOOL WINAPI GetExitCodeProcess
   return 0;
 }
 
+BOOL WINAPI GetExitCodeThread
+(
+  HANDLE hThread,
+  LPDWORD lpExitCode
+)
+{
+  TRACE("GetExitCodeThread");
+  panic("GetExitCodeThread not implemented");
+  return FALSE;
+}
+
 DWORD WINAPI GetFileAttributesA
 (
   LPCTSTR lpFileName
@@ -593,6 +670,76 @@ DWORD WINAPI GetFileAttributesA
     return 0x00000010;
   else
     return 0x00000080;
+}
+
+BOOL WINAPI GetFileTime
+(
+  HANDLE hFile,
+  LPFILETIME lpCreationTime,
+  LPFILETIME lpLastAccessTime,
+  LPFILETIME lpLastWriteTime
+)
+{
+  struct utimbuf times;
+
+  TRACE("GetFileTime");
+
+  if (futime((handle_t) hFile, &times) < 0) return FALSE;
+
+  if (lpCreationTime)
+  {
+    *(__int64 *) lpCreationTime = (__int64) times.ctime * SECTIMESCALE + EPOC;
+  }
+
+  if (lpLastAccessTime)
+  {
+    *(__int64 *) lpLastAccessTime = (__int64) times.atime * SECTIMESCALE + EPOC;
+  }
+
+  if (lpLastWriteTime)
+  {
+    *(__int64 *) lpLastWriteTime = (__int64) times.mtime * SECTIMESCALE + EPOC;
+  }
+
+  return TRUE;
+}
+
+DWORD WINAPI GetFullPathNameA
+(
+  LPCTSTR lpFileName,
+  DWORD nBufferLength,
+  LPTSTR lpBuffer,
+  LPTSTR *lpFilePart
+)
+{
+  char fn[MAXPATH];
+  int rc;
+  char *basename;
+  char *p;
+
+  TRACE("GetFullPathName");
+
+  rc = canonicalize(lpFileName, fn, MAXPATH);
+  if (rc < 0)
+  {
+    errno = rc;
+    return 0;
+  }
+
+  if (strlen(fn) + 2 >= nBufferLength) return strlen(fn) + 3;
+
+  strcpy(lpBuffer, "C:");
+  strcat(lpBuffer, fn);
+
+  p = basename = lpBuffer;
+  while (*p)
+  {
+    if (*p == PS1 || *p == PS2) basename = p + 1;
+    p++;
+  }
+  *lpFilePart = basename;
+
+  return strlen(lpBuffer);
 }
 
 DWORD WINAPI GetLastError(VOID)
@@ -891,6 +1038,18 @@ HMODULE WINAPI LoadLibraryA
   return (HMODULE) load((char *) lpFileName);
 }
 
+BOOL WINAPI MoveFileA
+(
+  LPCTSTR lpExistingFileName,
+  LPCTSTR lpNewFileName
+)
+{
+  TRACE("MoveFileA");
+  if (rename(lpExistingFileName, lpNewFileName) < 0) return FALSE;
+
+  return TRUE;
+}
+
 BOOL WINAPI PeekConsoleInputA
 (
   HANDLE hConsoleInput,
@@ -996,6 +1155,15 @@ BOOL WINAPI SetConsoleCtrlHandler
 {
   TRACE("SetConsoleCtrlHandler");
   syslog(LOG_DEBUG, "warning: SetConsoleCtrlHandler not implemented, ignored\n");
+  return TRUE;
+}
+
+BOOL WINAI SetConsoleTitle
+(
+  LPCTSTR lpConsoleTitle
+)
+{
+  TRACE("SetConsoleTitle");
   return TRUE;
 }
 
@@ -1217,6 +1385,16 @@ BOOL WINAPI TlsSetValue
 {
   TRACEX("TlsSetValue");
   tlsset(dwTlsIndex, lpTlsValue);
+  return TRUE;
+}
+
+BOOL WINAPI TryEnterCriticalSection
+(
+  LPCRITICAL_SECTION lpCriticalSection
+)
+{
+  TRACE("TryEnterCriticalSection");
+  panic("TryEnterCriticalSection not implemented");
   return TRUE;
 }
 

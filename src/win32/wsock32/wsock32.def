@@ -25,8 +25,11 @@ EXPORTS
   getprotobyname = winsock_getprotobyname   @53
   getsockname = winsock_getsockname         @6
   socket = winsock_socket                   @23
-  ;WSASendDisconnect                        @74
+  ;WSASendDisconnect                        @73
   ioctlsocket = winsock_ioctlsocket         @12
   __WSAFDIsSet                              @151
   WSAGetLastError                           @111
   WSACleanup	                            @116
+  WSARecvFrom                               @69
+  WSASendTo                                 @74
+  WSAIoctl                                  @50

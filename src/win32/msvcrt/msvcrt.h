@@ -179,6 +179,7 @@ crtapi double _copysign(double a, double b);
 crtapi void _finite();
 crtapi void _CIfmod();
 crtapi unsigned int _control87(unsigned int newflags, unsigned int mask);
+crtapi unsigned int _controlfp(unsigned int newflags, unsigned int mask);
 
 crtapi unsigned long _beginthreadex(void *security, unsigned stack_size, unsigned (__stdcall *start_address)(void * ), void *arglist, unsigned initflag, unsigned *thrdaddr);
 crtapi void _endthreadex(unsigned retval);

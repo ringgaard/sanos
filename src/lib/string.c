@@ -57,6 +57,19 @@ int stricmp(const char *s1, const char *s2)
   return (int) (f - l);
 }
 
+int strnicmp(const char *s1, const char *s2, size_t count)
+{
+  int f, l;
+
+  do 
+  {
+      if (((f = (unsigned char)(*(s1++))) >= 'A') && (f <= 'Z')) f -= 'A' - 'a';
+      if (((l = (unsigned char)(*(s2++))) >= 'A') && (l <= 'Z')) l -= 'A' - 'a';
+  } while (--count && f && (f == l));
+
+  return f - l;
+}
+
 char *strchr(const char *s, int ch)
 {
   while (*s && *s != (char) ch) s++;
@@ -130,6 +143,17 @@ void *memmove(void *dst, const void *src, size_t count)
   }
 
   return ret;
+}
+
+void *memchr(const void *buf, int ch, size_t count)
+{
+  while (count && (*(unsigned char *)buf != (unsigned char)ch)) 
+  {
+    buf = (unsigned char *) buf + 1;
+    count--;
+  }
+
+  return (count ? (void *) buf : NULL);
 }
 
 long atol(const char *nptr)

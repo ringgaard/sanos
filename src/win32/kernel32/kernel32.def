@@ -2,16 +2,20 @@ LIBRARY KERNEL32
 
 EXPORTS
   CloseHandle
+  CompareFileTime
   CreateEventA
   CreateFileA
   CreatePipe
   CreateProcessA
   CreateSemaphoreA
   DebugBreak
+  DeleteCriticalSection
   DeleteFileA
   DisableThreadLibraryCalls
   DuplicateHandle
   EnterCriticalSection
+  FileTimeToLocalFileTime
+  FileTimeToSystemTime
   FindClose
   FindFirstFileA
   FindNextFileA
@@ -24,7 +28,10 @@ EXPORTS
   GetCurrentThreadId
   GetEnvironmentVariableA
   GetExitCodeProcess
+  GetExitCodeThread
   GetFileAttributesA
+  GetFileTime
+  GetFullPathNameA
   GetLastError
   GetLogicalDrives
   GetModuleFileNameA
@@ -49,6 +56,7 @@ EXPORTS
   IsDBCSLeadByte
   LeaveCriticalSection
   LoadLibraryA
+  MoveFileA
   PeekConsoleInputA
   QueryPerformanceCounter
   QueryPerformanceFrequency
@@ -58,6 +66,7 @@ EXPORTS
   ResetEvent
   ResumeThread
   SetConsoleCtrlHandler
+  SetConsoleTitleA
   SetEndOfFile
   SetEvent
   SetFileAttributesA
@@ -74,6 +83,7 @@ EXPORTS
   TlsAlloc
   TlsGetValue
   TlsSetValue
+  TryEnterCriticalSection
   VirtualAlloc
   VirtualFree
   VirtualQuery

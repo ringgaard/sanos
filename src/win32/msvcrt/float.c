@@ -103,6 +103,12 @@ unsigned int _control87(unsigned int new, unsigned int mask)
   return 0;
 }
 
+unsigned int _controlfp(unsigned int new, unsigned int mask)
+{
+  syslog(LOG_WARNING, "_controlcp not implemented, ignored\n");
+  return 0;
+}
+
 #if 0
 __declspec(naked) unsigned int _control87(unsigned int new, unsigned int mask)
 {
