@@ -730,7 +730,7 @@ int enum_isapnp(struct bus *bus)
   return 0;
 }
 
-int __declspec(dllexport) install_isapnp(struct unit *unit)
+int __declspec(dllexport) isapnp(struct unit *unit)
 {
   struct bus *isabus;
 

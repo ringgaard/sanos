@@ -34,7 +34,8 @@
 #include <os/krnl.h>
 #include "ndis.h"
 
-#define ndisapi __declspec(dllexport) __stdcall
+//#define ndisapi __declspec(dllexport) __stdcall
+#define ndisapi
 
 //
 // NTOSKRNL functions
@@ -47,7 +48,16 @@ boolean ndisapi RtlEqualUnicodeString(const wchar_t *string1, const wchar_t *str
 
 unsigned long __cdecl DbgPrint(char *format, ...)
 {
-  return 0;
+  va_list args;
+  char buffer[1024];
+  int len;
+
+  va_start(args, format);
+  len = vsprintf(buffer, format, args);
+  va_end(args);
+    
+  kprintf("ndis: %s\n", buffer);
+  return len;
 }
 
 //
@@ -75,7 +85,7 @@ void ndisapi KeStallExecutionProcessor(unsigned long microseconds)
 }
 
 //
-// Initialization and termination.
+// NDIS Initialization and Registration Functions
 //
 
 void ndisapi NdisInitializeWrapper(ndis_handle_t ndis_wrapper_handle, void *system_specific1, void *system_specific2, void *system_specific3)
@@ -91,8 +101,197 @@ ndis_status ndisapi NdisMRegisterMiniport(ndis_handle_t ndis_wrapper_handle, str
   return 0;
 }
 
+void ndisapi NdisMSetAttributesEx
+(
+  ndis_handle_t miniport_adapter_handle,
+  ndis_handle_t miniport_adapter_context,
+  unsigned int hang_check_interval,
+  unsigned long attribute_flags,
+  enum ndis_interface_type adapter_type
+)
+{
+}
+
+void ndisapi NdisOpenConfiguration(ndis_status *status, ndis_handle_t *configuration_handle, ndis_handle_t wrapper_configuration_context)
+{
+}
+
+void ndisapi NdisCloseConfiguration(ndis_handle_t configuration_handle)
+{
+}
+
+void ndisapi NdisReadConfiguration
+(
+  ndis_status *status,
+  struct ndis_configuration_parameter **parameter_value,
+  ndis_handle_t configuration_handle,
+  struct ndis_string *keyword,
+  enum ndis_parameter_type parameter_type
+)
+{
+}
+
+void ndisapi NdisReadNetworkAddress
+(
+  ndis_status *status,
+  void **network_address,
+  unsigned int *network_address_length,
+  ndis_handle_t configuration_handle
+)
+{
+}
+
+void ndisapi NdisMRegisterAdapterShutdownHandler
+(
+  ndis_handle_t miniport_handle,
+  void *shutdown_context,
+  adapter_shutdown_handler shutdown_handler
+)
+{
+}
+
+void ndisapi NdisMDeregisterAdapterShutdownHandler(ndis_handle_t miniport_handle)
+{
+}
+
+void ndisapi NdisMQueryAdapterResources
+(
+  ndis_status *status,
+  ndis_handle_t wrapper_configuration_context,
+  struct ndis_resource_list *resource_list,
+  unsigned int *buffer_size
+)
+{
+}
+
 //
-// Timers
+// NDIS Hardware Configuration Functions
+//
+
+unsigned long ndisapi NdisReadPciSlotInformation
+(
+  ndis_handle_t ndis_adapter_handle, 
+  unsigned long slot_number, 
+  unsigned long offset, 
+  void *buffer, 
+  unsigned long length
+)
+{
+  return 0;
+}
+
+unsigned long ndisapi NdisWritePciSlotInformation
+(
+  ndis_handle_t ndis_adapter_handle, 
+  unsigned long slot_number, 
+  unsigned long offset, 
+  void *buffer, 
+  unsigned long length
+)
+{
+  return 0;
+}
+
+//
+// NDIS I/O Port Functions
+//
+
+ndis_status ndisapi NdisMRegisterIoPortRange
+(
+  void **port_offset,
+  ndis_handle_t miniport_adapter_handle,
+  unsigned int initial_port,
+  unsigned int number_of_ports
+)
+{
+  return 0;
+}
+
+void ndisapi NdisMDeregisterIoPortRange
+(
+  ndis_handle_t miniport_adapter_handle,
+  unsigned int initial_port,
+  unsigned int number_of_ports,
+  void *port_offset
+)
+{
+}
+
+//
+// NDIS DMA-Related Functions
+//
+
+void ndisapi NdisMAllocateSharedMemory
+(
+  ndis_handle_t miniport_adapter_handle,
+  unsigned long length,
+  boolean cached,
+  void **virtual_address,
+  ndis_physical_address_t *physical_address
+)
+{
+}
+
+void ndisapi NdisMFreeSharedMemory
+(
+  ndis_handle_t miniport_adapter_handle,
+  unsigned long length,
+  boolean cached,
+  void *virtual_address,
+  ndis_physical_address_t physical_address
+)
+{
+}
+
+void ndisapi NdisMAllocateMapRegisters
+(
+  ndis_handle_t miniport_adapter_handle,
+  unsigned int dma_channel,
+  ndis_dma_size_t dma_size,
+  unsigned long base_map_registers_needed,
+  unsigned long maximum_physical_mapping
+)
+{
+}
+
+void ndisapi NdisMFreeMapRegisters(ndis_handle_t miniport_adapter_handle)
+{
+}
+
+//
+// NDIS Interrupt Handling Functions
+//
+
+ndis_status ndisapi NdisMRegisterInterrupt
+(
+  struct ndis_miniport_interrupt *interrupt,
+  ndis_handle_t miniport_adapter_handle,
+  unsigned int interrupt_vector,
+  unsigned int interrupt_level,
+  boolean request_isr,
+  boolean shared_interrupt,
+  enum ndis_interrupt_mode interrupt_mode
+)
+{
+  return 0;
+}
+
+void ndisapi NdisMDeregisterInterrupt(struct ndis_miniport_interrupt *interrupt)
+{
+}
+
+boolean ndisapi NdisMSynchronizeWithInterrupt
+(
+  struct ndis_miniport_interrupt *interrupt,
+  void *synchronize_function,
+  void *synchronize_context
+)
+{
+  return 0;
+}
+
+//
+// NDIS Synchronization Functions
 //
 
 void ndisapi NdisMInitializeTimer(struct ndis_miniport_timer *timer, ndis_handle_t miniport_adapter_handle, ndis_timer_func_t  timer_function, void *function_context)
@@ -107,21 +306,40 @@ void ndisapi NdisMSetPeriodicTimer(struct ndis_miniport_timer *timer, unsigned i
 {
 }
 
-//
-// Memory Allocation
-//
-
-ndis_status ndisapi NdisAllocateMemoryWithTag(void **virtual_address, unsigned int length, unsigned long tag)
-{
-  return 0;
-}
-
-void ndisapi NdisFreeMemory(void *virtual_address, unsigned int length, unsigned int memory_flags)
+void ndisapi NdisAllocateSpinLock(struct ndis_spin_lock *spin_lock)
 {
 }
 
+void ndisapi NdisFreeSpinLock(struct ndis_spin_lock *spin_lock)
+{
+}
+
+void ndisapi NdisAcquireSpinLock(struct ndis_spin_lock *spin_lock)
+{
+}
+
+void ndisapi NdisReleaseSpinLock(struct ndis_spin_lock *spin_lock)
+{
+}
+
 //
-// Packets
+// NDIS Query and Set Completion Functions
+//
+
+//
+// NDIS Status Indication Functions
+//
+
+//
+// NDIS Send and Receive Functions for Connectionless Miniport Drivers
+//
+
+//
+// NDIS Send and Receive Functions for Connection-Oriented Miniport Drivers
+//
+
+//
+// NDIS Packet and Buffer Handling Functions
 //
 
 void ndisapi NdisAllocatePacketPool(ndis_status *status, ndis_handle_t *pool_handle, unsigned int number_of_descriptors, unsigned int protocol_reserved_length)
@@ -139,10 +357,6 @@ void ndisapi NdisAllocatePacket(ndis_status *status, struct ndis_packet **packet
 void ndisapi NdisFreePacket(struct ndis_packet *packet)
 {
 }
-
-//
-// Buffers
-//
 
 void ndisapi NdisAllocateBufferPool()
 {
@@ -181,108 +395,29 @@ void ndisapi NDIS_BUFFER_TO_SPAN_PAGES()
 }
 
 //
-// Configuration
+// NDIS Memory Support Functions
 //
 
-void ndisapi NdisOpenConfiguration()
+ndis_status ndisapi NdisAllocateMemoryWithTag(void **virtual_address, unsigned int length, unsigned long tag)
 {
+  return 0;
 }
 
-void ndisapi NdisCloseConfiguration()
-{
-}
-
-void ndisapi NdisReadConfiguration()
-{
-}
-
-void ndisapi NdisReadNetworkAddress()
+void ndisapi NdisFreeMemory(void *virtual_address, unsigned int length, unsigned int memory_flags)
 {
 }
 
 //
-// Misc
+// NDIS Logging Support Functions
 //
-
-void ndisapi NdisMAllocateSharedMemory()
-{
-}
-
-void ndisapi NdisMFreeSharedMemory()
-{
-}
-
-void ndisapi NdisMAllocateMapRegisters()
-{
-}
-
-void ndisapi NdisMFreeMapRegisters()
-{
-}
-
-void ndisapi NdisAllocateSpinLock()
-{
-}
-
-void ndisapi NdisFreeSpinLock()
-{
-}
-
-void ndisapi NdisAcquireSpinLock()
-{
-}
-
-void ndisapi NdisReleaseSpinLock()
-{
-}
-
-void ndisapi NdisReadPciSlotInformation()
-{
-}
-
-void ndisapi NdisWritePciSlotInformation()
-{
-}
-
-void ndisapi NdisMSynchronizeWithInterrupt()
-{
-}
-
-void ndisapi NdisMDeregisterAdapterShutdownHandler()
-{
-}
-
-void ndisapi NdisMDeregisterIoPortRange()
-{
-}
-
-void ndisapi NdisMDeregisterInterrupt()
-{
-}
-
-void ndisapi NdisMRegisterInterrupt()
-{
-}
-
-void ndisapi NdisMSetAttributesEx()
-{
-}
 
 void ndisapi NdisWriteErrorLogEntry()
 {
 }
 
-void ndisapi NdisMRegisterIoPortRange()
-{
-}
-
-void ndisapi NdisMRegisterAdapterShutdownHandler()
-{
-}
-
-void ndisapi NdisMQueryAdapterResources()
-{
-}
+//
+// Module initialization
+//
 
 int __stdcall start(hmodule_t hmod, int reason, void *reserved2)
 {

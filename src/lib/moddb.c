@@ -676,7 +676,7 @@ void *get_entrypoint(hmodule_t hmod)
   return RVA(hmod, get_image_header(hmod)->optional.address_of_entry_point);
 }
 
-hmodule_t load_module(struct moddb *db, char *name)
+hmodule_t load_module(struct moddb *db, char *name, int flags)
 {
   char buffer[MAXPATH];
   char *basename;
@@ -755,13 +755,18 @@ hmodule_t load_module(struct moddb *db, char *name)
   {
     if (get_image_header(m->hmod)->header.characteristics & IMAGE_FILE_DLL)
     {
-      int ok;
-      
-      ok = ((int (__stdcall *)(hmodule_t, int, void *)) get_entrypoint(m->hmod))(m->hmod, DLL_PROCESS_ATTACH, NULL);
-      if (!ok)
+      if ((flags & MODLOAD_NOINIT) == 0 && m != mod)
       {
-	free_unused_modules(db);
-	return NULL;
+	int ok;
+        
+	ok = ((int (__stdcall *)(hmodule_t, int, void *)) get_entrypoint(m->hmod))(m->hmod, DLL_PROCESS_ATTACH, NULL);
+	if (!ok)
+	{
+	  free_unused_modules(db);
+	  return NULL;
+	}
+
+        m->flags |= MODULE_INITIALIZED;
       }
     }
     else if (db->execmod == NULL)

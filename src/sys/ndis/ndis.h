@@ -139,6 +139,43 @@ struct ndis_packet
 };
 
 //
+// NDIS Configuration
+//
+
+enum ndis_parameter_type
+{
+  NDIS_PARAMETER_INTEGER,
+  NDIS_PARAMETER_HEXINTEGER,
+  NDIS_PARAMETER_STRING,
+  NDIS_PARAMETER_MULTISTRING,
+  NDIS_PARAMETER_BINARY
+};
+
+struct ndis_string 
+{
+  unsigned short length;
+  unsigned short maxlength;
+  wchar_t *buffer;
+};
+
+struct ndis_blob
+{
+  unsigned short length;
+  void *buffer;
+};
+
+struct ndis_configuration_parameter
+{
+  enum ndis_parameter_type parameter_type;
+  union
+  {
+    unsigned long integer_data;
+    struct ndis_string string_data;
+    struct ndis_blob binary_data;
+  } parameter_data;
+};
+
+//
 // NDIS Timers
 //
 
@@ -147,6 +184,31 @@ typedef void (*ndis_timer_func_t)(void *system_specific1, void *function_context
 struct ndis_miniport_timer
 {
   int todo;
+};
+
+//
+// NDIS interface types
+//
+
+enum ndis_interface_type
+{
+  NDIS_INTERFACE_INTERNAL,
+  NDIS_INTERFACE_ISA,
+  NDIS_INTERFACE_EISA,
+  NDIS_INTERFACE_MCA,
+  NDIS_INTERFACE_TURBOCHANNEL,
+  NDIS_INTERFACE_PCI,
+  NDIS_INTERFACE_VMEBUS,
+  NDIS_INTERFACE_NUBUS,
+  NDIS_INTERFACE_PCMCIA,
+  NDIS_INTERFACE_CBUS,
+  NDIS_INTERFACE_MPIBUS,
+  NDIS_INTERFACE_MPSABUS,
+  NDIS_INTERFACE_PROCESSORINTERNAL,
+  NDIS_INTERFACE_INTERNALPOWERBUS,
+  NDIS_INTERFACE_PNPISABUS,
+  NDIS_INTERFACE_PNPBUS,
+  NDIS_INTERFACE_MAXIMUM
 };
 
 //
@@ -191,6 +253,128 @@ enum ndis_device_pnp_event
     NDIS_DEVICE_PNP_EVENT_STOPPED,
     NDIS_DEVICE_PNP_EVENT_POWER_PROFILE_CHANGED,
     NDIS_DEVICE_PNP_EVENT_MAXIMUM
+};
+
+//
+// NDIS shutdown handler
+//
+
+typedef void (*adapter_shutdown_handler)(void *shutdown_context);
+
+//
+// NDIS Resource list
+//
+
+#pragma pack(push)
+#pragma pack(4)
+
+struct ndis_resource_descriptor
+{
+  unsigned char type;
+  unsigned char share_disposition;
+  unsigned short flags;
+  union 
+  {
+    //
+    // Range of resources, inclusive.  These are physical, bus relative.
+    // It is known that Port and Memory below have the exact same layout
+    // as Generic.
+    //
+
+    struct 
+    {
+      ndis_physical_address_t start;
+      unsigned long length;
+    } generic;
+
+    //
+    // Range of port numbers, inclusive. These are physical, bus
+    // relative.
+    //
+
+    struct 
+    {
+	ndis_physical_address_t start;
+	unsigned long length;
+    } port;
+
+    //
+    // IRQL and vector.
+    //
+
+    struct 
+    {
+      unsigned long level;
+      unsigned long vector;
+      unsigned long affinity;
+    } interrupt;
+
+    //
+    // Range of memory addresses, inclusive. These are physical, bus
+    // relative. 
+    //
+
+    struct 
+    {
+      ndis_physical_address_t start;    // 64 bit physical addresses.
+      unsigned long length;
+    } memory;
+
+    //
+    // Physical DMA channel.
+    //
+
+    struct 
+    {
+      unsigned long channel;
+      unsigned long port;
+      unsigned long reserved1;
+    } dma;
+
+    //
+    // Device driver private data, usually used to help it figure
+    // what the resource assignments decisions that were made.
+    //
+
+    struct 
+    {
+      unsigned long data[3];
+    } device_private;
+
+    //
+    // Bus Number information.
+    //
+
+    struct 
+    {
+      unsigned long start;
+      unsigned long length;
+      unsigned long reserved;
+    } busnumber;
+
+    //
+    // Device Specific information defined by the driver.
+    // The DataSize field indicates the size of the data in bytes. The
+    // data is located immediately after the device_specific_data field in
+    // the structure.
+    //
+
+    struct 
+    {
+      unsigned long data_size;
+      unsigned long reserved1;
+      unsigned long reserved2;
+    } device_specific_data;
+  } u;
+};
+#pragma pack(pop)
+
+struct ndis_resource_list
+{
+  unsigned short version;
+  unsigned short revision;
+  unsigned long count;
+  struct ndis_resource_descriptor descriptors[0];
 };
 
 //
@@ -410,6 +594,58 @@ typedef struct ndis_miniport_characteristics
   void *reserved2;
   void *reserved3;
   void *reserved4;
+};
+
+//
+// NDIS DMA size
+//
+
+typedef unsigned char ndis_dma_size_t;
+
+#define NDIS_DMA_24BITS             ((ndis_dma_size_t) 0)
+#define NDIS_DMA_32BITS             ((ndis_dma_size_t) 1)
+#define NDIS_DMA_64BITS             ((ndis_dma_size_t) 2)
+
+//
+// NDIS Interrupt
+//
+
+enum ndis_interrupt_mode 
+{
+  NDIS_INTR_LEVELSENSITIVE,
+  NDIS_INTR_LATCHED
+};
+
+typedef struct ndis_miniport_interrupt
+{
+  //TODO PKINTERRUPT                 InterruptObject;
+  //TODO KSPIN_LOCK                  DpcCountLock;
+  void *reserved;
+  w_isr_handler miniport_isr;
+  w_handle_interrupt_handler miniport_dpc;
+  //TODO KDPC                        InterruptDpc;
+  struct ndis_miniport_block *miniport;
+
+  unsigned char dpc_count;
+  boolean filler1;
+
+  //
+  // This is used to tell when all the Dpcs for the adapter are completed.
+  //
+
+  //TODO KEVENT                      DpcsCompletedEvent;
+
+  //TODO BOOLEAN                     SharedInterrupt;
+  //TODO BOOLEAN                     IsrRequested;
+};
+
+//
+// NDIS Spin Lock
+//
+
+struct ndis_spin_lock
+{
+  int todo;
 };
 
 #endif

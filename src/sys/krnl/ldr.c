@@ -178,12 +178,12 @@ int getmodpath(hmodule_t hmod, char *buffer, int size)
   return rc;
 }
 
-hmodule_t load(char *name)
+hmodule_t load(char *name, int flags)
 {
   hmodule_t hmod;
 
   wait_for_object(&ldr_lock, INFINITE);
-  hmod = load_module(&kmods, name);
+  hmod = load_module(&kmods, name, flags);
   release_mutex(&ldr_lock);
   return hmod;
 }

@@ -80,7 +80,7 @@ struct driver cmos_driver =
   cmos_write
 };
 
-int __declspec(dllexport) install_cmos()
+int __declspec(dllexport) cmos()
 {
   dev_make("cmos", &cmos_driver, NULL, NULL);
   return 0;

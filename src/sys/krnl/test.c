@@ -761,7 +761,7 @@ static void load_mod(char *fn)
 {
   hmodule_t hmod;
 
-  hmod = load(fn);
+  hmod = load(fn, 0);
   kprintf("hmodule: %08X\n", hmod);
 }
 

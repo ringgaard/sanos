@@ -399,7 +399,7 @@ static void *get_driver_entry(char *module, char *defentry)
   else 
     entryname = defentry;
 
-  hmod = load(modfn);
+  hmod = load(modfn, 0);
   if (!hmod) return NULL;
 
   return resolve(hmod, entryname);

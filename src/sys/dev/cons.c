@@ -290,7 +290,7 @@ struct driver syslog_driver =
   syslog_write
 };
 
-int __declspec(dllexport) install_console()
+int __declspec(dllexport) console()
 {
   init_keyboard();
   dev_make("console", &console_driver, NULL, NULL);

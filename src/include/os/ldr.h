@@ -41,7 +41,7 @@ void *load_image_file(char *filename, int userspace);
 krnlapi void *resolve(hmodule_t hmod, char *procname);
 krnlapi hmodule_t getmodule(char *name);
 krnlapi int getmodpath(hmodule_t hmod, char *buffer, int size);
-krnlapi hmodule_t load(char *name);
+krnlapi hmodule_t load(char *name, int flags);
 krnlapi int unload(hmodule_t hmod);
 
 void init_kernel_modules();

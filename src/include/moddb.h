@@ -36,6 +36,8 @@
 
 #define RVA(hmod, rva) (((char *) (hmod)) + (rva))
 
+#define MODLOAD_NOINIT          1
+
 #define MODULE_LOADED           0x0001
 #define MODULE_IMPORTS_REFED    0x0002
 #define MODULE_RESOLVED         0x0004
@@ -85,7 +87,7 @@ void *get_proc_address(hmodule_t hmod, char *procname);
 hmodule_t get_module_handle(struct moddb *db, char *name);
 int get_module_filename(struct moddb *db, hmodule_t hmod, char *buffer, int size);
 void *get_entrypoint(hmodule_t hmod);
-hmodule_t load_module(struct moddb *db, char *name);
+hmodule_t load_module(struct moddb *db, char *name, int flags);
 int unload_module(struct moddb *db, hmodule_t hmod);
 
 int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *libpath, struct section *aliassect, int flags);

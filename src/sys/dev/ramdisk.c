@@ -86,7 +86,7 @@ struct driver ramdisk_driver =
   ramdisk_write
 };
 
-int __declspec(dllexport) install_ramdisk(char *opts)
+int __declspec(dllexport) ramdisk(char *opts)
 {
   struct ramdisk *rd;
   char devname[DEVNAMELEN];
