@@ -172,6 +172,9 @@ void kfree(void *addr)
   unsigned long bucket;
   struct bucket *b;
 
+  // Check for NULL
+  if (!addr) return;
+
   // Get page information
   bucket = pfdb[BTOP(virt2phys(addr))].size;
 

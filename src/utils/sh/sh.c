@@ -1137,6 +1137,7 @@ static void test(int argc, char **argv)
 }
 #endif
 
+#if 0
 static void test(int argc, char **argv)
 {
   char *fmt = "test %%f=[%f] %%g=[%g] %%e=[%e]";
@@ -1144,6 +1145,53 @@ static void test(int argc, char **argv)
   if (argc > 1) fmt = argv[1];
   printf(fmt, -1.2345, 12345.6789, 0.0987654321, -123456);
   printf("\n");
+}
+#endif
+
+void __stdcall pipereader(void *arg)
+{
+  int f = (int) arg;
+  char buf[128];
+  int rc;
+
+  while ((rc = read(f, buf, 128)) > 0)
+  {
+    printf("piperead: %d bytes [", rc);
+    write(fdout, buf, rc);
+    printf("]\n");
+  }
+
+  printf("piperead: exit rc=%d\n", rc);
+  close(f);
+}
+
+static void test(int argc, char **argv)
+{
+  int fildes[2];
+  int hthread;
+  int rc;
+  int i;
+
+  rc = pipe(fildes);
+  if (rc < 0)
+  {
+    printf("error %d in pipe()\n", rc);
+    return;
+  }
+
+  hthread = beginthread(pipereader, 0, (void *) fildes[0], 0, NULL);
+  close(hthread);
+
+  for (i = 0; i < argc; i++)
+  {
+    printf("pipewrite: %d bytes [", strlen(argv[i]));
+    write(fdout, argv[i], strlen(argv[i]));
+    printf("]\n");
+
+    write(fildes[1], argv[i], strlen(argv[i]));
+  }
+
+  close(fildes[1]);
 }
 
 static void disktest(int argc, char **argv)

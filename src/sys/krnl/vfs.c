@@ -490,7 +490,7 @@ int open(char *name, int mode, struct file **retval)
   if (!fs) return -ENOENT;
 
   filp = newfile(fs, path, mode);
-  if (!filp) return -ENOMEM;
+  if (!filp) return -ENFILE;
 
   if (fs->ops->open)
   {

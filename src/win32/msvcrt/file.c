@@ -74,9 +74,18 @@ static void free_stream(FILE *stream)
 
 int _pipe(int *phandles, unsigned int psize, int textmode)
 {
-  TRACE("pipe");
-  errno = -ENOSYS;
-  return -1;
+  int rc;
+
+  TRACE("_pipe");
+
+  rc = pipe(phandles);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return 0;
 }
 
 int _open(const char *filename, int oflag)
