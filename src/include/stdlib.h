@@ -75,7 +75,7 @@ int abs(int n);
 double atof(const char *str);
 int atoi(const char *string);
 long atol(const char *string);
-int atexit(void(*func)(void));
+int atexit(void (*func)(void));
 void *bsearch(const void *key, const void *base, size_t num, size_t width, int (*compare)(const void *, const void *));
 osapi void *calloc(size_t num, size_t size);
 div_t div(int numer, int denom);
