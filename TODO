@@ -407,7 +407,7 @@ CHANGES
 
 - SetFilePointer() implemented in kernel32
 
-- kbhit() implemented in conio.c
+- kbhit() and putch() implemented in conio.c
 
 - setjmp() did not return the correct value from longjmp(). This problem has been fixed.
 
