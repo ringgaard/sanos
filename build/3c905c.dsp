@@ -97,6 +97,10 @@ SOURCE=..\src\sys\dev\3c905c.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\sys\dev\3c905c.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\sys\krnl\iop.c
 # End Source File
 # Begin Source File

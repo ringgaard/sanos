@@ -165,6 +165,7 @@ static int fd_command(unsigned char cmd)
     yield(); // delay
   }
 
+  kprintf("fd: command timeout\n");
   return -ETIMEOUT;
 }
 
@@ -200,7 +201,7 @@ static int fd_result(struct fd *fd, struct fdresult *result, int sensei)
 
   // Read in command result bytes
   n = 0;
-  while (n < 7 && (_inp(FDC_MSR) & (1<<4)) != 0) 
+  while (n < 7 && (_inp(FDC_MSR) & (1 << 4)) != 0) 
   {
     data = fd_data();
     if (data < 0) return data;
@@ -358,9 +359,9 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
       }
 
       fd_result(fd, &result, 1);
-      if (fd->st0 != 0x20 || fd->curtrack != track)
+      if ((fd->st0 &0xE0) != 0x20 || fd->curtrack != track)
       {
-	kprintf("fd: seek failed\n");
+	kprintf("fd: seek failed, st0 0x%02x, current %d, target %d\n", fd->st0, fd->curtrack, track);
 	continue;
       }
 
@@ -427,10 +428,10 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
       if (mode == FD_MODE_READ) memcpy(buffer, fd->fdc->dmabuf, count);
       return count;
     }
-    else if ((result.st0 & 0xc0) == 0x40 && (result.st1 & 0x04) == 0x04)
-    {
-      fd_recalibrate(fd);
-    }
+    //else if ((result.st0 & 0xc0) == 0x40 && (result.st1 & 0x04) == 0x04)
+    //{
+    //  fd_recalibrate(fd);
+    //}
     else
     {
       kprintf("fd: xfer error, st0 %02X st1 %02X st2 %02X THS=%d/%d/%d\n", result.st0, result.st1, result.st2, result.track, result.head, result.sector);
@@ -587,7 +588,7 @@ static void init_drive(char *devname, struct fd *fd, struct fdc *fdc, int drive,
   
   dev_make(devname, &floppy_driver, NULL, fd);
 
-  fd_recalibrate(fd);
+  //fd_recalibrate(fd);
 
   kprintf("%s: %u blks (%d KB) THS=%u/%u/%u\n", devname, 
     fd->geom->tracks * fd->geom->heads * fd->geom->spt, 

@@ -7,412 +7,7 @@
 //
 
 #include <os/krnl.h>
-
-#define ETHER_FRAME_LEN         1544
-#define EEPROM_SIZE             0x21
-#define RX_COPYBREAK            128
-#define TX_TIMEOUT              5000
-
-//
-// PCI IDs
-//
-
-#define UNITCODE_3C905B1           PCI_UNITCODE(0x10B7, 0x9055)
-#define UNITCODE_3C905C            PCI_UNITCODE(0x10B7, 0x9200)
-
-//
-// Commands
-//
-
-#define CMD_RESET                  0x0000
-#define CMD_RX_RESET               0x2800
-#define CMD_TX_RESET               0x5800
-#define CMD_RX_ENABLE              0x2000
-#define CMD_TX_ENABLE              0x4800
-#define CMD_SET_RX_FILTER          0x8000
-#define CMD_REQUEST_INTERRUPT      0x6000
-#define CMD_SET_INDICATION_ENABLE  0x7800
-#define CMD_SET_INTERRUPT_ENABLE   0x7000
-#define CMD_SELECT_WINDOW          0x0800
-#define CMD_STATISTICS_ENABLE      0xA800
-#define CMD_STATISTICS_DISABLE     0xB000
-#define CMD_ACKNOWLEDGE_INTERRUPT  0x6800
-#define CMD_UP_STALL		   0x3000
-#define CMD_UP_UNSTALL		   0x3001
-#define CMD_DOWN_STALL		   0x3002
-#define CMD_DOWN_UNSTALL	   0x3003
-
-//
-// Non-windowed registers
-//
-
-#define CMD                   0x0E 
-#define STATUS                0x0E
-
-#define TIMER	              0x1A
-#define TX_STATUS	      0x1B
-#define INT_STATUS_AUTO       0x1E
-#define DMA_CONTROL  	      0x20
-#define DOWN_LIST_POINTER     0x24
-#define DOWN_POLL  	      0x2D
-#define UP_PACKET_STATUS      0x30
-#define FREE_TIMER  	      0x34
-#define COUNTDOWN 	      0x36
-#define UP_LIST_POINTER       0x38
-#define UP_POLL	              0x3D
-#define REAL_TIME_COUNTER     0x40
-#define CONFIG_ADDRESS 	      0x44
-#define CONFIG_DATA   	      0x48
-#define DEBUG_DATA 	      0x70
-#define DEBUG_CONTROL 	      0x74
-
-//
-// Window 0
-//
-
-#define BIOS_ROM_ADDR         0x04
-#define BIOS_ROM_DATA         0x08
-#define EEPROM_CMD            0x0A
-#define EEPROM_DATA           0x0C
-
-#define EEPROM_CMD_SUB    0x0000
-#define EEPROM_CMD_WRITE  0x0040
-#define EEPROM_CMD_READ   0x0080
-#define EEPROM_CMD_ERASE  0x00C0
-#define EEPROM_BUSY       0x8000
-
-//
-// Window 1
-//
-
-//
-// Window 2
-//
-
-#define STATION_ADDRESS_LOW   0x00
-#define STATION_ADDRESS_MID   0x02
-#define STATION_ADDRESS_HIGH  0x04
-
-//
-// Window 3
-//
-
-#define INTERNAL_CONFIG       0x00
-#define MAXIMUM_PACKET_SIZE   0x04
-#define MAC_CONTROL	      0x06
-#define MEDIA_OPTIONS  	      0x08
-#define RX_FREE	  	      0x0A
-#define TX_FREE		      0x0C
-
-//
-// Window 4
-//
-
-#define NETWORK_DIAGNOSTICS   0x06
-#define PHYSICAL_MANAGEMENT   0x08
-#define MEDIA_STATUS          0x0A
-#define BAD_SSD               0x0C
-#define UPPER_BYTES_OK        0x0D
-
-//
-// Window 5
-//
-
-#define RX_FILTER  	      0x08
-#define INTERRUPT_ENABLE      0x0A
-#define INDICATION_ENABLE     0x0C
-
-//
-// Window 6
-//
-
-#define CARRIER_LOST          0x00
-#define SQE_ERRORS            0x01
-#define MULTIPLE_COLLISIONS   0x02
-#define SINGLE_COLLISIONS     0x03
-#define LATE_COLLISIONS       0x04
-#define RX_OVERRUNS           0x05
-#define FRAMES_XMITTED_OK     0x06
-#define FRAMES_RECEIVED_OK    0x07
-#define FRAMES_DEFERRED       0x08
-#define UPPER_FRAMES_OK       0x09
-#define BYTES_RECEIVED_OK     0x0A
-#define BYTES_XMITTED_OK      0x0C
-
-#define FIRST_BYTE_STAT       0x00
-#define LAST_BYTE_STAT        0x09
-
-//
-// Window 7
-//
-
-//
-// TX status flags
-//
-
-#define TX_STATUS_MAXIMUM_COLLISION	(1 << 3)
-#define TX_STATUS_HWERROR		(1 << 4)
-#define TX_STATUS_JABBER		(1 << 5)
-#define TX_STATUS_INTERRUPT_REQUESTED	(1 << 6)
-#define TX_STATUS_COMPLETE		(1 << 7)
-
-//
-// Global reset flags
-//
-
-#define GLOBAL_RESET_MASK_TP_AUI_RESET	(1 << 0)
-#define GLOBAL_RESET_MASK_ENDEC_RESET   (1 << 1)
-#define GLOBAL_RESET_MASK_NETWORK_RESET	(1 << 2)
-#define GLOBAL_RESET_MASK_FIFO_RESET    (1 << 3)
-#define GLOBAL_RESET_MASK_AISM_RESET    (1 << 4)
-#define GLOBAL_RESET_MASK_HOST_RESET	(1 << 5)
-#define GLOBAL_RESET_MASK_SMB_RESET     (1 << 6)
-#define GLOBAL_RESET_MASK_VCO_RESET     (1 << 7)
-#define GLOBAL_RESET_MASK_UP_DOWN_RESET (1 << 8)
-
-//
-// IntStatus flags
-//
-
-#define INTSTATUS_INT_LATCH        0x0001
-#define INTSTATUS_HOST_ERROR       0x0002
-#define INTSTATUS_TX_COMPLETE      0x0004
-#define INTSTATUS_RX_COMPLETE      0x0010
-#define INTSTATUS_RX_EARLY         0x0020
-#define INTSTATUS_INT_REQUESTED    0x0040
-#define INTSTATUS_UPDATE_STATS     0x0080
-#define INTSTATUS_LINK_EVENT       0x0100
-#define INTSTATUS_DN_COMPLETE      0x0200
-#define INTSTATUS_UP_COMPLETE      0x0400
-#define INTSTATUS_CMD_IN_PROGRESS  0x1000
-#define INTSTATUS_WINDOW_NUMBER    0xE000
-
-#define ALL_INTERRUPTS		   0x06EE
-
-//
-// AcknowledgeInterrupt flags
-//
-
-#define INTERRUPT_LATCH_ACK        0x0001
-#define LINK_EVENT_ACK             0x0002
-#define RX_EARLY_ACK               0x0020
-#define INT_REQUESTED_ACK          0x0040
-#define DN_COMPLETE_ACK            0x0200
-#define UP_COMPLETE_ACK            0x0400
-
-#define ALL_ACK	                   0x07FF   
-
-//
-// RxFilter
-//
-
-#define RECEIVE_INDIVIDUAL        0x01
-#define RECEIVE_MULTICAST         0x02
-#define RECEIVE_BROADCAST         0x04
-#define RECEIVE_ALL_FRAMES        0x08
-#define RECEIVE_MULTICAST_HASH    0x10
-
-//
-// UpStatus
-//
-
-#define UP_PACKET_STATUS_ERROR			(1 << 14)
-#define UP_PACKET_STATUS_COMPLETE		(1 << 15)
-#define UP_PACKET_STATUS_OVERRUN		(1 << 16)
-#define UP_PACKET_STATUS_RUNT_FRAME		(1 << 17)
-#define UP_PACKET_STATUS_ALIGNMENT_ERROR	(1 << 18)
-#define UP_PACKET_STATUS_CRC_ERROR             	(1 << 19)
-#define UP_PACKET_STATUS_OVERSIZE_FRAME        	(1 << 20)
-#define UP_PACKET_STATUS_DRIBBLE_BITS		(1 << 23)
-#define UP_PACKET_STATUS_OVERFLOW		(1 << 24)
-#define UP_PACKET_STATUS_IP_CHECKSUM_ERROR	(1 << 25)
-#define UP_PACKET_STATUS_TCP_CHECKSUM_ERROR	(1 << 26)
-#define UP_PACKET_STATUS_UDP_CHECKSUM_ERROR	(1 << 27)
-#define UP_PACKET_STATUS_IMPLIED_BUFFER_ENABLE	(1 << 28)
-#define UP_PACKET_STATUS_IP_CHECKSUM_CHECKED	(1 << 29)
-#define UP_PACKET_STATUS_TCP_CHECKSUM_CHECKED	(1 << 30)
-#define UP_PACKET_STATUS_UDP_CHECKSUM_CHECKED	(1 << 31)
-#define UP_PACKET_STATUS_ERROR_MASK		0x1F0000
-
-//
-// Frame Start Header
-//
-#define FSH_CRC_APPEND_DISABLE		        (1 << 13)
-#define FSH_TX_INDICATE			        (1 << 15)
-#define FSH_DOWN_COMPLETE		        (1 << 16)
-#define FSH_LAST_KEEP_ALIVE_PACKET	        (1 << 24)
-#define FSH_ADD_IP_CHECKSUM		        (1 << 25)
-#define FSH_ADD_TCP_CHECKSUM		        (1 << 26)
-#define FSH_ADD_UDP_CHECKSUM		        (1 << 27)
-#define FSH_ROUND_UP_DEFEAT		        (1 << 28)
-#define FSH_DPD_EMPTY			        (1 << 29)
-#define FSH_DOWN_INDICATE		        (1 << 31)
-
-//
-// Internal Config
-//
-
-#define INTERNAL_CONFIG_DISABLE_BAD_SSD		(1 << 8)
-#define INTERNAL_CONFIG_ENABLE_TX_LARGE		(1 << 14)
-#define INTERNAL_CONFIG_ENABLE_RX_LARGE		(1 << 15)
-#define INTERNAL_CONFIG_AUTO_SELECT		(1 << 24)
-#define INTERNAL_CONFIG_DISABLE_ROM		(1 << 25)
-
-#define INTERNAL_CONFIG_TRANSCEIVER_MASK	0x00F00000
-#define INTERNAL_CONFIG_TRANSCEIVER_SHIFT	20
-
-//
-// Connector types
-//
-
-#define CONNECTOR_10BASET         0
-#define CONNECTOR_10AUI           1
-#define CONNECTOR_10BASE2         3
-#define CONNECTOR_100BASETX       4
-#define CONNECTOR_100BASEFX       5
-#define CONNECTOR_MII             6
-#define CONNECTOR_AUTONEGOTIATION 8
-#define CONNECTOR_EXTERNAL_MII    9
-#define CONNECTOR_UNKNOWN         0xFF
-
-//
-// Physical Management
-//
-
-#define PHY_WRITE			        0x0004  // Write to PHY (drive MDIO)
-#define PHY_DATA1			        0x0002  // MDIO data bit
-#define PHY_CLOCK			        0x0001  // MII clock signal
-
-#define MII_PHY_ADDRESS				0x0C00
-#define MII_PHY_ADDRESS_READ  		        (MII_PHY_ADDRESS | 0x6000)
-#define MII_PHY_ADDRESS_WRITE  		        (MII_PHY_ADDRESS | 0x5002)
-
-//
-// Media Options
-//
-
-#define MEDIA_OPTIONS_100BASET4_AVAILABLE	(1 << 0)
-#define MEDIA_OPTIONS_100BASETX_AVAILABLE	(1 << 1)
-#define MEDIA_OPTIONS_100BASEFX_AVAILABLE	(1 << 2)
-#define MEDIA_OPTIONS_10BASET_AVAILABLE		(1 << 3)
-#define MEDIA_OPTIONS_10BASE2_AVAILABLE		(1 << 4)
-#define MEDIA_OPTIONS_10AUI_AVAILABLE		(1 << 5)
-#define MEDIA_OPTIONS_MII_AVAILABLE		(1 << 6)
-#define MEDIA_OPTIONS_10BASEFL_AVAILABLE	(1 << 8)
-
-//
-// MAC Control
-//
-
-#define MAC_CONTROL_FULL_DUPLEX_ENABLE		(1 << 5)
-#define MAC_CONTROL_ALLOW_LARGE_PACKETS		(1 << 6)
-#define MAC_CONTROL_FLOW_CONTROL_ENABLE 	(1 << 8)
-
-//
-// MII Registers
-//
-
-#define MII_PHY_CONTROL			0   // Control reg address
-#define MII_PHY_STATUS              	1   // Status reg address
-#define MII_PHY_OUI                 	2   // Most of the OUI bits
-#define MII_PHY_MODEL               	3   // Model/rev bits, and rest of OUI
-#define MII_PHY_ANAR                	4   // Auto negotiate advertisement reg
-#define MII_PHY_ANLPAR              	5   // Auto negotiate link partner reg
-#define MII_PHY_ANER                	6   // Auto negotiate expansion reg
-
-//
-// MII control register
-//
-
-#define MII_CONTROL_RESET		0x8000  // Reset bit in control reg
-#define MII_CONTROL_100MB		0x2000  // 100Mbit or 10 Mbit flag
-#define MII_CONTROL_ENABLE_AUTO		0x1000  // Autonegotiate enable
-#define MII_CONTROL_ISOLATE		0x0400  // Islolate bit
-#define MII_CONTROL_START_AUTO		0x0200  // Restart autonegotiate
-#define MII_CONTROL_FULL_DUPLEX		0x0100  // Full duplex
-
-//
-// MII status register
-//
-
-#define MII_STATUS_100MB_MASK	0xE000  // Any of these indicate 100 Mbit
-#define MII_STATUS_10MB_MASK	0x1800  // Either of these indicate 10 Mbit
-#define MII_STATUS_AUTO_DONE	0x0020  // Auto negotiation complete
-#define MII_STATUS_AUTO		0x0008  // Auto negotiation is available
-#define MII_STATUS_LINK_UP	0x0004  // Link status bit
-#define MII_STATUS_EXTENDED	0x0001  // Extended regs exist
-#define MII_STATUS_100T4	0x8000  // Capable of 100BT4
-#define MII_STATUS_100TXFD	0x4000  // Capable of 100BTX full duplex
-#define MII_STATUS_100TX	0x2000  // Capable of 100BTX
-#define MII_STATUS_10TFD	0x1000  // Capable of 10BT full duplex
-#define MII_STATUS_10T		0x0800  // Capable of 10BT
-
-//
-// MII Auto-Negotiation Link Partner Ability
-//
-
-#define MII_ANLPAR_100T4	0x0200  // Support 100BT4
-#define MII_ANLPAR_100TXFD	0x0100  // Support 100BTX full duplex
-#define MII_ANLPAR_100TX	0x0080  // Support 100BTX half duplex
-#define MII_ANLPAR_10TFD	0x0040  // Support 10BT full duplex
-#define MII_ANLPAR_10T		0x0020  // Support 10BT half duplex
-
-//
-// MII Auto-Negotiation Advertisement
-//
-
-#define MII_ANAR_100T4		0x0200  // Support 100BT4
-#define MII_ANAR_100TXFD	0x0100  // Support 100BTX full duplex
-#define MII_ANAR_100TX		0x0080  // Support 100BTX half duplex
-#define MII_ANAR_10TFD		0x0040  // Support 10BT full duplex
-#define MII_ANAR_10T		0x0020  // Support 10BT half duplex
-#define MII_ANAR_FLOWCONTROL	0x0400  // Support Flow Control
-
-//
-// EEPROM contents
-//
-
-#define EEPROM_NODE_ADDRESS1      0x00
-#define EEPROM_NODE_ADDRESS2      0x01
-#define EEPROM_NODE_ADDRESS3      0x02
-#define EEPROM_DEVICE_ID          0x03
-#define EEPROM_MANUFACT_DATE      0x04
-#define EEPROM_MANUFACT_DIVISION  0x05
-#define EEPROM_MANUFACT_PRODCODE  0x06
-#define EEPROM_MANUFACT_ID        0x07
-#define EEPROM_PCI_PARM           0x08
-#define EEPROM_ROM_INFO           0x09
-#define EEPROM_OEM_NODE_ADDRESS1  0x0A
-#define EEPROM_OEM_NODE_ADDRESS2  0x0B
-#define EEPROM_OEM_NODE_ADDRESS3  0x0C
-#define EEPROM_SOFTWARE_INFO      0x0D
-#define EEPROM_COMPAT_WORD        0x0E
-#define EEPROM_SOFTWARE_INFO2     0x0F
-#define EEPROM_CAPABILITIES_WORD  0x10
-#define EEPROM_RESERVED_11        0x11
-#define EEPROM_INTERNAL_CONFIG0   0x12
-#define EEPROM_INTERNAL_CONFIG1   0x13
-#define EEPROM_RESERVED_14        0x14
-#define EEPROM_SOFTWARE_INFO3     0x15
-#define EEPROM_LANWORKD_DATA1     0x16
-#define EEPROM_SUBSYSTEM_VENDOR   0x17
-#define EEPROM_SUBSYSTEM_ID       0x18
-#define EEPROM_MEDIA_OPTIONS      0x19
-#define EEPROM_LANWORKD_DATA2     0x1A
-#define EEPROM_SMB_ADDRESS        0x1B
-#define EEPROM_PCI_PARM2          0x1C
-#define EEPROM_PCI_PARM3          0x1D
-#define EEPROM_RESERVED_1E        0x1E
-#define EEPROM_RESERVED_1F        0x1F
-#define EEPROM_CHECKSUM1          0x20
-
-#define TX_RING_SIZE	          16
-#define RX_RING_SIZE	          32
-#define TX_MAX_FRAGS              16
-
-#define LAST_FRAG 	          0x80000000  // Last entry in descriptor
-#define DN_COMPLETE	          0x00010000  // This packet has been downloaded
-#define UP_COMPLETE               0x00008000  // This packet has been uploaded
+#include "3c905c.h"
 
 char *connectorname[] = {"10Base-T", "AUI", "n/a", "BNC", "100Base-TX", "100Base-FX", "MII", "n/a", "Auto", "Ext-MII"};
 
@@ -484,13 +79,16 @@ struct nic
   int tx_size;                          // Number of active entries in transmit list
 
   devno_t devno;                        // Device number
+  unsigned long deviceid;               // PCI device id
 
   unsigned short iobase;		// Configured I/O base
   unsigned short irq;		        // Configured IRQ
 
+  int autoselect;                       // Auto-negotiate
   int connector;                        // Active connector
   int linkspeed;                        // Link speed in mbits/s
   int fullduplex;                       // Full duplex link
+  int flowcontrol;                      // Flow control
 
   struct eth_addr hwaddr;               // MAC address for NIC
 
@@ -522,23 +120,25 @@ __inline void execute_command(struct nic *nic, int cmd, int param)
   _outpw(nic->iobase + CMD, (unsigned short) (cmd + param));
 }
 
-void execute_command_wait(struct nic *nic, int cmd, int param)
+int execute_command_wait(struct nic *nic, int cmd, int param)
 {
   int i;
 
   execute_command(nic, cmd, param);
-  for (i = 0; i < 2000; i++)
+  for (i = 0; i < 100000; i++)
   {
-    if (!(_inpw(nic->iobase + STATUS) & INTSTATUS_CMD_IN_PROGRESS)) return;
+    if (!(_inpw(nic->iobase + STATUS) & INTSTATUS_CMD_IN_PROGRESS)) return 0;
+    usleep(10);
   }
 
   for (i = 0; i < 200; i++)
   {
-    if (!(_inpw(nic->iobase + STATUS) & INTSTATUS_CMD_IN_PROGRESS)) return;
+    if (!(_inpw(nic->iobase + STATUS) & INTSTATUS_CMD_IN_PROGRESS)) return 0;
     sleep(10);
   }
 
   kprintf("nic: command did not complete\n");
+  return -ETIMEOUT;
 }
 
 __inline void select_window(struct nic *nic, int window)
@@ -619,25 +219,25 @@ int nicstat_proc(struct proc_file *pf, void *arg)
 
   update_statistics(nic);
 
-  pprintf(pf, "Frames transmitted... : %d\n", nic->stat.tx_frames_ok);
-  pprintf(pf, "Bytes transmitted.... : %d\n", nic->stat.tx_bytes_ok);
-  pprintf(pf, "Frames deferred...... : %d\n", nic->stat.tx_frames_deferred);
-  pprintf(pf, "Single collisions.... : %d\n", nic->stat.tx_single_collisions);
-  pprintf(pf, "Multiple collisions.. : %d\n", nic->stat.tx_multiple_collisions);
-  pprintf(pf, "Late collisions...... : %d\n", nic->stat.tx_late_collisions);
-  pprintf(pf, "Carrier lost......... : %d\n", nic->stat.tx_carrier_lost);
-  pprintf(pf, "Maximum collisions .. : %d\n", nic->stat.tx_maximum_collisions);
-  pprintf(pf, "SQE errors........... : %d\n", nic->stat.tx_sqe_errors);
-  pprintf(pf, "HW errors............ : %d\n", nic->stat.tx_hw_errors);
-  pprintf(pf, "Jabber errors........ : %d\n", nic->stat.tx_jabber_error);
-  pprintf(pf, "Unknown errors....... : %d\n", nic->stat.tx_unknown_error);
-  pprintf(pf, "Frames received...... : %d\n", nic->stat.rx_frames_ok);
-  pprintf(pf, "Bytes received....... : %d\n", nic->stat.rx_bytes_ok);
-  pprintf(pf, "Overruns............. : %d\n", nic->stat.rx_overruns);
-  pprintf(pf, "Bad SSD.............. : %d\n", nic->stat.rx_bad_ssd);
-  pprintf(pf, "Allignment errors.... : %d\n", nic->stat.rx_alignment_error);
-  pprintf(pf, "CRC errors........... : %d\n", nic->stat.rx_bad_crc_error);
-  pprintf(pf, "Oversized frames..... : %d\n", nic->stat.rx_oversize_error);
+  pprintf(pf, "Frames transmitted... : %ul\n", nic->stat.tx_frames_ok);
+  pprintf(pf, "Bytes transmitted.... : %ul\n", nic->stat.tx_bytes_ok);
+  pprintf(pf, "Frames deferred...... : %ul\n", nic->stat.tx_frames_deferred);
+  pprintf(pf, "Single collisions.... : %ul\n", nic->stat.tx_single_collisions);
+  pprintf(pf, "Multiple collisions.. : %ul\n", nic->stat.tx_multiple_collisions);
+  pprintf(pf, "Late collisions...... : %ul\n", nic->stat.tx_late_collisions);
+  pprintf(pf, "Carrier lost......... : %ul\n", nic->stat.tx_carrier_lost);
+  pprintf(pf, "Maximum collisions .. : %ul\n", nic->stat.tx_maximum_collisions);
+  pprintf(pf, "SQE errors........... : %ul\n", nic->stat.tx_sqe_errors);
+  pprintf(pf, "HW errors............ : %ul\n", nic->stat.tx_hw_errors);
+  pprintf(pf, "Jabber errors........ : %ul\n", nic->stat.tx_jabber_error);
+  pprintf(pf, "Unknown errors....... : %ul\n", nic->stat.tx_unknown_error);
+  pprintf(pf, "Frames received...... : %ul\n", nic->stat.rx_frames_ok);
+  pprintf(pf, "Bytes received....... : %ul\n", nic->stat.rx_bytes_ok);
+  pprintf(pf, "Overruns............. : %ul\n", nic->stat.rx_overruns);
+  pprintf(pf, "Bad SSD.............. : %ul\n", nic->stat.rx_bad_ssd);
+  pprintf(pf, "Allignment errors.... : %ul\n", nic->stat.rx_alignment_error);
+  pprintf(pf, "CRC errors........... : %ul\n", nic->stat.rx_bad_crc_error);
+  pprintf(pf, "Oversized frames..... : %ul\n", nic->stat.rx_oversize_error);
 
   return 0;
 }
@@ -783,6 +383,45 @@ int nic_read_mii_phy(struct nic *nic, unsigned short reg)
   }
 
   return value;
+}
+
+int nic_eeprom_busy(struct nic *nic)
+{
+  unsigned short status;
+  unsigned long timeout;
+
+  timeout = ticks + 1 * TICKS_PER_SEC;
+  while (1)
+  {
+    status = _inpw(nic->iobase + EEPROM_CMD);
+    if (!(status & EEPROM_BUSY)) return 0;
+    if (time_after(ticks, timeout))
+    {
+      kprintf("nic: timeout reading eeprom\n");
+      return -ETIMEOUT;
+    }
+
+    usleep(10);
+  }
+}
+
+int nic_read_eeprom(struct nic *nic, unsigned short addr)
+{
+  if (addr > 0x003F)  addr = (addr & 0x003F) | ((addr & 0x03C0) << 2);
+
+  select_window(nic, 0);
+
+  // Check for eeprom busy
+  if (nic_eeprom_busy(nic) < 0) return -ETIMEOUT;
+
+  // Issue the read eeprom data command
+  _outpw(nic->iobase + EEPROM_CMD, (unsigned short) (EEPROM_CMD_READ + addr));
+
+  // Check for eeprom busy
+  if (nic_eeprom_busy(nic) < 0) return -ETIMEOUT;
+
+  // Return value read from eeprom
+  return _inpw(nic->iobase + EEPROM_DATA);
 }
 
 int nic_transmit(struct dev *dev, struct pbuf *p)
@@ -1166,7 +805,7 @@ struct driver nic_driver =
   nic_transmit
 };
 
-int nic_negotiate_link(struct nic *nic)
+int nic_negotiate_link(struct nic *nic, unsigned short options_available)
 {
   unsigned long internal_config;
   int connector;
@@ -1183,8 +822,11 @@ int nic_negotiate_link(struct nic *nic)
 
   if (connector != CONNECTOR_AUTONEGOTIATION)
   {
-    kprintf("nic: not configured for auto-negotiate\n");
-    return -EINVAL;
+    kprintf("nic: not configured for auto-negotiate, connector %d\n", connector);
+    nic->connector = CONNECTOR_10BASET;
+    nic->fullduplex = 0;
+    nic->linkspeed = 10;
+    return 0;
   }
 
   status = nic_read_mii_phy(nic, MII_PHY_STATUS);
@@ -1264,12 +906,535 @@ int nic_negotiate_link(struct nic *nic)
   return 0;
 }
 
+int nic_program_mmi(struct nic *nic, int connector)
+{
+  return -ENOSYS;
+}
+
+int nic_initialize_adapter(struct nic *nic)
+{
+  unsigned short mac_control;
+  int i;
+
+  // TX engine handling
+  execute_command_wait(nic, CMD_TX_DISABLE, 0);
+  execute_command_wait(nic, CMD_TX_RESET, TX_RESET_MASK_NETWORK_RESET);
+
+  // RX engine handling
+  execute_command_wait(nic, CMD_RX_DISABLE, 0);
+  execute_command_wait(nic, CMD_TX_RESET, RX_RESET_MASK_NETWORK_RESET);
+
+  // Acknowledge any pending interrupts.
+  execute_command(nic, CMD_ACKNOWLEDGE_INTERRUPT, ALL_ACK);
+  
+  // Clear the statistics from the hardware.
+  execute_command(nic, CMD_STATISTICS_DISABLE, 0);
+  clear_statistics(nic);
+
+  // Get the MAC address from the EEPROM
+  for (i = 0; i < ETHER_ADDR_LEN / 2; i++)
+    ((unsigned short *) nic->hwaddr.addr)[i] = htons(nic->eeprom[EEPROM_OEM_NODE_ADDRESS1 + i]);
+
+  // Set the card MAC address
+  select_window(nic, 2);
+  for (i = 0; i < ETHER_ADDR_LEN; i++) _outp(nic->iobase + i, nic->hwaddr.addr[i]);
+
+  _outpw(nic->iobase + 0x6, 0);
+  _outpw(nic->iobase + 0x8, 0);
+  _outpw(nic->iobase + 0xA, 0);
+
+  // Enable statistics
+  execute_command(nic, CMD_STATISTICS_ENABLE, 0);
+
+  // Clear the mac control register.
+  select_window(nic, 3);
+  mac_control = _inpw(nic->iobase + MAC_CONTROL);
+  mac_control &= 0x1;
+  _outpw(nic->iobase + MAC_CONTROL, mac_control);
+
+  return 0;
+}
+
+int nic_get_link_speed(struct nic *nic)
+{
+  int phy_anlpar;
+  int phy_aner;
+  int phy_anar;
+  int phy_status;
+
+  phy_aner = nic_read_mii_phy(nic, MII_PHY_ANER);
+  if (phy_aner < 0) return phy_aner;
+  
+  phy_anlpar = nic_read_mii_phy(nic, MII_PHY_ANLPAR);
+  if (phy_anlpar < 0) return phy_anlpar;
+
+  phy_anar = nic_read_mii_phy(nic, MII_PHY_ANAR);
+  if (phy_anar < 0) return phy_anar;
+
+  phy_status = nic_read_mii_phy(nic, MII_PHY_STATUS);
+  if (phy_status < 0) return phy_status;
+
+  // Check to see if we've completed auto-negotiation.
+  if (!(phy_status & MII_STATUS_AUTO_DONE)) return -EBUSY;
+
+  if ((phy_anar & MII_ANAR_100TXFD) && (phy_anlpar & MII_ANLPAR_100TXFD)) 
+  {
+    //pAdapter->Hardware.MIIPhyUsed = MII_100TXFD;
+    nic->linkspeed = 100;
+    nic->fullduplex = 1;
+  }
+  else if ((phy_anar & MII_ANAR_100TX) && (phy_anlpar & MII_ANLPAR_100TX)) 
+  {
+    //pAdapter->Hardware.MIIPhyUsed = MII_100TX ;
+    nic->linkspeed = 100;
+    nic->fullduplex = 0;
+  }
+  else if ((phy_anar & MII_ANAR_10TFD) && (phy_anlpar & MII_ANLPAR_10TFD)) 
+  {
+    //pAdapter->Hardware.MIIPhyUsed = MII_10TFD ;
+    nic->linkspeed = 10;
+    nic->fullduplex = 1;
+  }
+  else if ((phy_anar & MII_ANAR_10T) && (phy_anlpar & MII_ANLPAR_10T)) 
+  {
+    //pAdapter->Hardware.MIIPhyUsed = MII_10T;
+    nic->linkspeed = 10;
+    nic->fullduplex = 0;
+  }
+  else if (!(phy_aner & MII_ANER_LPANABLE))
+  {
+    // Link partner is not capable of auto-negotiation. Fall back to 10HD.
+    
+    //pAdapter->Hardware.MIIPhyUsed = MII_10T ;
+    nic->linkspeed = 10;
+    nic->fullduplex = 0;
+  }
+  else
+    return -EINVAL;
+
+  return nic->linkspeed;
+}
+
+int nic_restart_receiver(struct nic *nic)
+{
+  execute_command_wait(nic, CMD_RX_DISABLE, 0);
+  execute_command_wait(nic, CMD_RX_RESET, RX_RESET_MASK_NETWORK_RESET);
+  execute_command_wait(nic, CMD_RX_ENABLE, 0);
+
+  return 0;
+}
+
+int nic_restart_transmitter(struct nic *nic)
+{
+  unsigned short media_status;
+  unsigned long dma_control;
+  unsigned long timeout;
+
+  execute_command(nic, CMD_TX_DISABLE, 0);
+
+  // Wait for the transmit to go quiet.
+  select_window(nic, 4);
+
+  media_status = _inpw(nic->iobase + MEDIA_STATUS);
+  usleep(10);
+
+  if (media_status & MEDIA_STATUS_TX_IN_PROGRESS)
+  {
+    timeout = ticks + 1 * TICKS_PER_SEC;
+    while (1)
+    {
+      media_status = _inpw(nic->iobase + MEDIA_STATUS);
+      if (!(media_status & MEDIA_STATUS_TX_IN_PROGRESS)) break;
+      if (time_after(ticks, timeout))
+      {
+	kprintf("nic: timeout waiting for transmitter to go quiet\n");
+	return -ETIMEOUT;
+      }
+      sleep(10);
+    }
+  }
+
+  // Wait for download engine to stop
+  dma_control = _inpd(nic->iobase + DMA_CONTROL);
+  usleep(10);
+
+  if (dma_control & DMA_CONTROL_DOWN_IN_PROGRESS)
+  {
+    timeout = ticks + 1 * TICKS_PER_SEC;
+    while (1)
+    {
+      dma_control = _inpd(nic->iobase + DMA_CONTROL);
+      if (!(dma_control & DMA_CONTROL_DOWN_IN_PROGRESS)) break;
+      if (time_after(ticks, timeout))
+      {
+	kprintf("nic: timeout waiting for download engine to stop\n");
+	return -ETIMEOUT;
+      }
+      sleep(10);
+    }
+  }
+
+  if (execute_command_wait(nic, CMD_TX_RESET, TX_RESET_MASK_DOWN_RESET) < 0) return -ETIMEOUT;
+  execute_command(nic, CMD_TX_ENABLE, 0);
+
+  return 0;
+}
+
+int nic_flow_control(struct nic *nic)
+{
+  unsigned short phy_anar;
+  unsigned short phy_control;
+
+  phy_anar = nic_read_mii_phy(nic, MII_PHY_ANAR);
+  if (phy_anar < 0) return phy_anar;
+  phy_anar |= MII_ANAR_FLOWCONTROL;
+  nic_write_mii_phy(nic, MII_PHY_ANAR, phy_anar);
+
+  phy_control = nic_read_mii_phy(nic, MII_PHY_CONTROL);
+  if (phy_control < 0) return phy_control;
+  phy_control |= MII_CONTROL_START_AUTO;
+  nic_write_mii_phy(nic, MII_PHY_CONTROL, phy_control);
+
+  return 0;
+}
+
+int nic_configure_mii(struct nic *nic, unsigned short media_options)
+{
+  return -ENOSYS;
+}
+
+int nic_check_mii_configuration(struct nic *nic, unsigned short media_options)
+{
+#if 0
+  int phy_control;
+  int phy_status;
+  int phy_anar;
+  int temp_anar;
+  int rc;
+
+  //
+  // Check to see if auto-negotiation has completed. Check the results
+  // in the control and status registers.
+  //
+
+  phy_control = nic_read_mii_phy(nic, MII_PHY_CONTROL);
+  if (phy_control < 0) return phy_control;
+
+  phy_status = nic_read_mii_phy(nic, MII_PHY_STATUS);
+  if (phy_status < 0) return phy_status;
+
+  if (!((phy_control & MII_CONTROL_ENABLE_AUTO) && (phy_status & MII_STATUS_AUTO_DONE))) 
+  {
+    // Auto-negotiation did not complete, so start it over using the new settings.
+    rc = nic_configure_mii(nic, media_options);
+    if (rc < 0) return rc;
+  }
+  
+  //
+  // Auto-negotiation has completed. Check the results against the ANAR and ANLPAR
+  // registers to see if we need to restart auto-neg.
+  //
+  
+  phy_anar = nic_read_mii_phy(nic, MII_PHY_ANAR);
+  if (phy_anar < 0) return phy_anar;
+
+  //
+  // Check to see what we negotiated with the link partner. First, let's make
+  // sure that the ANAR is set properly based on the media options defined.
+  //
+  
+  temp_anar = 0;
+  if (media_options & MEDIA_OPTIONS_100BASETX_AVAILABLE) 
+  {
+    if (pAdapter->Hardware.AutoSelect) 
+    {
+	    tempAnar |= MII_ANAR_100TXFD | MII_ANAR_100TX;
+    }
+    else 
+    {
+	    if (pAdapter->Hardware.FullDuplexEnable)
+		    tempAnar |= MII_ANAR_100TXFD;
+	    else
+		    tempAnar |= MII_ANAR_100TX;
+    }
+  }
+
+  if (MediaOptions & MEDIA_OPTIONS_10BASET_AVAILABLE) 
+  {
+    if (pAdapter->Hardware.AutoSelect)
+	    tempAnar |= MII_ANAR_10TFD | MII_ANAR_10T;
+    else 
+    {
+	    if (pAdapter->Hardware.FullDuplexEnable)
+		    tempAnar |= MII_ANAR_10TFD;
+	    else
+		    tempAnar |= MII_ANAR_10T;
+    }
+  }
+
+  if ( pAdapter->Hardware.FullDuplexEnable && pAdapter->Hardware.FlowControlSupported ) tempAnar |= MII_ANAR_FLOWCONTROL;
+
+  if ((PhyAnar & MII_ANAR_MEDIA_MASK) == tempAnar) 
+  {
+    //
+    // The negotiated configuration hasn't changed.
+    // So, return and don't restart auto-negotiation.
+    //
+    return TRUE;
+  }
+
+  //
+  // Check the media settings.
+  //
+  if (MediaOptions & MEDIA_OPTIONS_100BASETX_AVAILABLE) 
+  {
+    //
+    // Check 100BaseTX settings.
+    //
+    if ((PhyAnar & MII_ANAR_MEDIA_100_MASK) != (tempAnar & MII_ANAR_MEDIA_100_MASK)) {
+    DBGPRINT_INITIALIZE(("CheckMIIConfiguration: Re-Initiating autonegotiation...\n"));
+	    return ConfigureMII(pAdapter,MediaOptions);
+    }
+  }
+  
+  if (MediaOptions & MEDIA_OPTIONS_10BASET_AVAILABLE) 
+  {
+    //
+    // Check 10BaseT settings.
+    //
+    if ((PhyAnar & MII_ANAR_MEDIA_10_MASK) != (tempAnar & MII_ANAR_MEDIA_10_MASK)) {
+    DBGPRINT_INITIALIZE(("CheckMIIConfiguration: Re-Initiating autonegotiation...\n"));
+	    return ConfigureMII(pAdapter,MediaOptions);
+    }
+  }
+
+  return TRUE;
+#endif
+  return -ENOSYS;
+}
+
+int nic_setup_connector(struct nic *nic, int connector)
+{
+#if 0
+  unsigned long internal_config;
+  unsigned long old_internal_config;
+  unsigned short media_status;
+
+  select_window(nic, 3);
+
+  internal_config = _inpd(nic->iobase + INTERNAL_CONFIG);
+  old_internal_config = internal_config;
+
+  // Program the MII registers if forcing the configuration to 10/100BaseT.
+  if (connector == CONNECTOR_10BASET) || connector == CONNECTOR_100BASETX)
+  {
+    // Clear transceiver type and change to new transceiver type.
+    internal_config &= ~(INTERNAL_CONFIG_TRANSCEIVER_MASK);
+    internal_config |= (CONNECTOR_AUTONEGOTIATION << 20);
+
+    // Update the internal config register. Only do this if the value has
+    // changed to avoid dropping link.
+    if (old_internal_config != internal_config)
+    {
+      _outpd(nic->iobase + INTERNAL_CONFIG, internal_config);
+    }
+
+    // Force the MII registers to the correct settings.
+    if (nic_check_mii_configuration(nic, (unsigned short) (connector == CONNECTOR_100BASETX ? MEDIA_OPTIONS_100BASETX_AVAILABLE : MEDIA_OPTIONS_10BASET_AVAILABLE) < 0) 
+    {
+      // If the forced configuration didn't work, check the results and see why.
+      nic_check_mii__auto_negotiation_status(nic);
+      return 0;
+    }
+  }
+  else 
+  {
+    // Clear transceiver type and change to new transceiver type
+    internal_config = internal_config & (~INTERNAL_CONFIG_TRANSCEIVER_MASK);
+    internal_config |= (connector << 20);
+
+    // Update the internal config register. Only do this if the value has
+    // changed to avoid dropping link.
+    if (old_internal_config != internal_config)
+    {
+      _outpd(nic->iobase + INTERNAL_CONFIG, internal_config);
+    }
+  }
+
+  //
+  // Determine whether to set enableSQEStats and linkBeatEnable
+  // Automatically set JabberGuardEnable in MediaStatus register.
+  //
+  select_window(nic, 4);
+
+  media_status = _inpw(nic->iobase + MEDIA_STATUS);
+  media_status &= ~(MEDIA_STATUS_SQE_STATISTICS_ENABLE | MEDIA_STATUS_LINK_BEAT_ENABLE | MEDIA_STATUS_JABBER_GUARD_ENABLE);
+  media_status |= MEDIA_STATUS_JABBER_GUARD_ENABLE;
+
+  if (connector == CONNECTOR_10AUI) media_status |= MEDIA_STATUS_SQE_STATISTICS_ENABLE;
+
+  if (connector == CONNECTOR_AUTONEGOTIATION)
+    MediaStatus |= MEDIA_STATUS_LINK_BEAT_ENABLE;
+  else 
+  {
+    if (connector == CONNECTOR_10BASET || connector == CONNECTOR_100BASETX || connector == CONNECTOR_100BASEFX)
+    {
+      if (nic->eeprom[EEPROM_SOFTWARE_INFO1] & 
+	    if (!pAdapter->Hardware.LinkBeatDisable)
+		    MediaStatus |= MEDIA_STATUS_LINK_BEAT_ENABLE;
+    }
+  }
+  NIC_WRITE_PORT_USHORT(pAdapter, MEDIA_STATUS_REGISTER, MediaStatus);
+
+  DBGPRINT_INITIALIZE((
+	  "tc90x_SetupConnector: MediaStatus = %x \n",MediaStatus));
+  //
+  // If configured for coax we must start the internal transceiver.
+  // If not, we stop it (in case the configuration changed across a
+  // warm boot).
+  //
+  if (NewConnector == CONNECTOR_10BASE2) {
+	  NIC_COMMAND(pAdapter, COMMAND_ENABLE_DC_CONVERTER);
+	  //
+	  // Check if DC converter has been enabled
+	  //
+	  tc90x_CheckDCConverter(pAdapter, TRUE);
+  }
+  else {
+	  NIC_COMMAND(pAdapter, COMMAND_DISABLE_DC_CONVERTER);
+	  //
+	  // Check if DC converter has been disabled
+	  //
+	  tc90x_CheckDCConverter(pAdapter, FALSE);
+  }
+#endif
+  return 0;
+}
+
+int nic_setup_media(struct nic *nic)
+{
+  unsigned short options_available;
+  unsigned long internal_config;
+  unsigned short mac_control;
+  int rc;
+
+  // If this is a 10mb Lightning card, assume that the 10FL bit is
+  // set in the media options register
+  if (nic->deviceid == 0x900A) 
+  {
+    options_available = MEDIA_OPTIONS_10BASEFL_AVAILABLE;
+  }
+  else 
+  {
+    // Read the MEDIA OPTIONS to see what connectors are available
+    select_window(nic, 3);
+    options_available = _inpw(nic->iobase + MEDIA_OPTIONS);
+  }
+
+  // Get internal config from EEPROM since reset invalidates the normal register value.
+  internal_config = nic->eeprom[EEPROM_INTERNAL_CONFIG0] | (nic->eeprom[EEPROM_INTERNAL_CONFIG1] << 16);
+
+  //
+  // Read the current value of the InternalConfig register. If it's different
+  // from the EEPROM values, than write it out using the EEPROM values.
+  // This is done since a global reset may invalidate the register value on
+  // some ASICs. Also, writing to InternalConfig may reset the PHY on some ASICs.
+  //
+
+  select_window(nic, 3);
+
+  if (internal_config != _inpd(nic->iobase + INTERNAL_CONFIG))
+  {
+    _outpd(nic->iobase + INTERNAL_CONFIG, internal_config);
+  }
+
+  // Get the connector to use.
+  if (nic->connector == CONNECTOR_UNKNOWN) 
+  {
+    nic->connector = (internal_config & INTERNAL_CONFIG_TRANSCEIVER_MASK) >> INTERNAL_CONFIG_TRANSCEIVER_SHIFT;
+  }
+
+  // If auto selection of connector was specified, do it now...
+  if (nic->connector == CONNECTOR_AUTONEGOTIATION) 
+  {
+    nic->autoselect = 1;
+    execute_command(nic, CMD_STATISTICS_DISABLE, 0);
+    nic_negotiate_link(nic, options_available);
+  }
+  else 
+  {
+    // MII connector needs to be initialized and the data rates
+    // set up even in the non-autoselect case
+    if (nic->connector == CONNECTOR_MII)
+    {
+      nic_program_mmi(nic, CONNECTOR_MII);
+    }
+    else 
+    {
+      if (nic->connector == CONNECTOR_100BASEFX || nic->connector == CONNECTOR_100BASETX) 
+	nic->linkspeed = 100;
+      else
+	nic->linkspeed = 10;
+    }
+
+    nic_setup_connector(nic, nic->connector);
+  }
+
+  //
+  // Check link speed and duplex settings before doing anything else.
+  // If the call succeeds, we know the link is up, so we'll update the
+  // link state.
+  //
+  if (nic_get_link_speed(nic) < 0) return -EIO;
+  
+  // Set up duplex mode
+  select_window(nic, 3);
+  mac_control = _inpw(nic->iobase +  MAC_CONTROL);
+  if (nic->fullduplex) 
+  {
+    // Set Full duplex in MacControl register
+    mac_control |= MAC_CONTROL_FULL_DUPLEX_ENABLE;
+
+    // Since we're switching to full duplex, enable flow control.
+    mac_control |=  MAC_CONTROL_FLOW_CONTROL_ENABLE;
+    nic->flowcontrol = 1;
+  }
+  else 
+  {
+    // Set Half duplex in MacControl register
+    mac_control &= ~MAC_CONTROL_FULL_DUPLEX_ENABLE;
+
+    // Since we're switching to half duplex, disable flow control
+    mac_control &= ~ MAC_CONTROL_FLOW_CONTROL_ENABLE;
+  }
+  _outpw(nic->iobase + MAC_CONTROL, mac_control);
+
+  // Reset and enable transmitter
+  rc = nic_restart_transmitter(nic);
+  if (rc < 0) return rc;
+
+  // Reset and enable receiver
+  rc = nic_restart_receiver(nic);
+  if (rc < 0) return rc;
+
+  //
+  // This is for advertisement of flow control.  We only need to
+  // call this if the adapter is using flow control, in Autoselect
+  // mode and not a Tornado board.
+  //
+  if (nic->autoselect && nic->flowcontrol && nic->deviceid != 0x9200 && nic->deviceid != 0x9201 && nic->deviceid != 0x9805) 
+  {
+    nic_flow_control(nic);
+  }
+
+  return 0;
+}
+
 int __declspec(dllexport) install(struct unit *unit)
 {
   struct nic *nic;
-  unsigned short eeprom_checksum = 0;
-  int eeprom_busy = 0;
-  int i, j;
+  int i;
+  int value;
   int rc;
 
   // Check for PCI device
@@ -1288,6 +1453,11 @@ int __declspec(dllexport) install(struct unit *unit)
       unit->productname = "3Com EtherLink 3C905C";
       break;
 
+    case UNITCODE_3C905TX:
+      unit->vendorname = "3Com";
+      unit->productname = "3Com EtherLink 3C905-TX";
+      break;
+
     default:
       unit->vendorname = "3Com";
       unit->productname = "3Com EtherLink 3c90xC";
@@ -1301,6 +1471,8 @@ int __declspec(dllexport) install(struct unit *unit)
   // Setup NIC configuration
   nic->iobase = (unsigned short) get_unit_iobase(unit);
   nic->irq = (unsigned short) get_unit_irq(unit);
+  nic->deviceid = PCI_DEVICE_ID(unit->unitcode);
+  nic->connector = CONNECTOR_UNKNOWN;
 
   // Enable bus mastering
   pci_enable_busmastering(unit);
@@ -1309,43 +1481,31 @@ int __declspec(dllexport) install(struct unit *unit)
   set_interrupt_handler(IRQ2INTR(nic->irq), nic_handler, nic);
   enable_irq(nic->irq);
 
-  // Reset NIC
-  // Don't reset the PHY - that upsets autonegotiation during DHCP operations
-  execute_command_wait(nic, CMD_RX_RESET, 0x04);
-  execute_command_wait(nic, CMD_TX_RESET, 0);
+  // Global reset
+  rc = execute_command_wait(nic, CMD_RESET, 
+         GLOBAL_RESET_MASK_TP_AUI_RESET | 
+         GLOBAL_RESET_MASK_ENDEC_RESET | 
+	 GLOBAL_RESET_MASK_AISM_RESET | 
+	 GLOBAL_RESET_MASK_SMB_RESET | 
+	 GLOBAL_RESET_MASK_VCO_RESET);
+
+  if (rc < 0)
+  {
+    kprintf("nic: wait asic ready timeout\n");
+    return -EIO;
+  }
 
   // Read the EEPROM
-  select_window(nic, 0);
-  for (i = 0; i < EEPROM_SIZE; i++)
+  for (i = 0; i < EEPROM_SIZE; i++) 
   {
-    unsigned short x;
-    _outpw(nic->iobase + EEPROM_CMD, (unsigned short) (EEPROM_CMD_READ + i));
-    for (j = 0; j < 10; j++)
-    {
-      usleep(162);
-      x = _inpw(nic->iobase + EEPROM_CMD);
-      if ((_inpw(nic->iobase + EEPROM_CMD) & EEPROM_BUSY) == 0) break;
-    }
-    if (j == 10) eeprom_busy = 1;
-    nic->eeprom[i] = _inpw(nic->iobase + EEPROM_DATA);
-  }
-  if (eeprom_busy) kprintf("warning: nic eeprom busy while reading\n");
-
-  // Calculate EEPROM checksum
-  for (i = 0; i < EEPROM_SIZE - 1; i++) eeprom_checksum ^= nic->eeprom[i];
-  eeprom_checksum = (eeprom_checksum ^ (eeprom_checksum >> 8)) & 0xff;
-  if (eeprom_checksum != nic->eeprom[EEPROM_CHECKSUM1])
-  {
-    kprintf("warning: nic eeprom checksum error (0x%x,0x%x)\n", eeprom_checksum, nic->eeprom[EEPROM_CHECKSUM1]);
+    value = nic_read_eeprom(nic, (unsigned short) i);
+    if (value < 0) return value;
+    nic->eeprom[i] = value;
   }
 
-  // Get the MAC address from the EEPROM
-  for (i = 0; i < ETHER_ADDR_LEN / 2; i++)
-    ((unsigned short *) nic->hwaddr.addr)[i] = htons(nic->eeprom[EEPROM_OEM_NODE_ADDRESS1 + i]);
-
-  // Set the card MAC address
-  select_window(nic, 2);
-  for (i = 0; i < ETHER_ADDR_LEN; i++) _outp(nic->iobase + i, nic->hwaddr.addr[i]);
+  // Initialize adapter
+  rc = nic_initialize_adapter(nic);
+  if (rc < 0) return rc;
 
   // Setup the receive ring
   for (i = 0; i < RX_RING_SIZE; i++)
@@ -1396,14 +1556,11 @@ int __declspec(dllexport) install(struct unit *unit)
   execute_command(nic, CMD_DOWN_UNSTALL, 0);
 
   // Auto-negotiate link
-  rc = nic_negotiate_link(nic);
+  rc = nic_negotiate_link(nic, 0);
   if (rc < 0) return rc;
 
   // Set receive filter
   execute_command(nic, CMD_SET_RX_FILTER, RECEIVE_INDIVIDUAL | RECEIVE_MULTICAST | RECEIVE_BROADCAST);
-
-  // Acknowledge any pending interrupts.
-  execute_command(nic, CMD_ACKNOWLEDGE_INTERRUPT, ALL_ACK);
 
   // Enable indication for all interrupts.
   execute_command(nic, CMD_SET_INDICATION_ENABLE, ALL_INTERRUPTS);

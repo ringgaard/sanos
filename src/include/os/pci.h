@@ -52,6 +52,9 @@
 #define PCI_UNITCODE(vendorid, deviceid) ((vendorid) << 16 | (deviceid))
 #define PCI_UNITNO(devno, funcno) ((devno) << 3 | (funcno))
 
+#define PCI_VENDOR_ID(unitcode) (((unitcode) >> 16) & 0xFFFF)
+#define PCI_DEVICE_ID(unitcode) ((unitcode) & 0xFFFF)
+
 #define PCI_DEVNO(unitno) ((unitno) >> 3)
 #define PCI_FUNCNO(unitno) ((unitno) & 7)
 
