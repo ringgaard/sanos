@@ -246,6 +246,7 @@ void main(void *arg)
   init_fd();
 
   // Initialize built-in file systems
+  init_vfs();
   init_dfs();
   init_devfs();
   init_procfs();

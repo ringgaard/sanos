@@ -963,7 +963,8 @@ static void test(int argc, char **argv)
   int sock;
   int rc;
 
-  server = "20.45.152.54";
+  //server = "20.45.152.54";
+  server = "192.168.123.190";
   port = 999;
 
   if (argc >= 2) server = argv[1];

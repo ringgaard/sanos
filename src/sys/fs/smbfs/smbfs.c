@@ -408,6 +408,7 @@ static int smb_write_normal(struct smb_share *share, struct smb_file *file, void
   smb->params.req.write.offset_high = 0;
 
   rc = smb_request(share, smb, SMB_COM_WRITE_ANDX, 14, data, size, 0);
+  kprintf("smb_write: %d/%d bytes, rc=%d\n", smb->params.rsp.write.count, size, rc);
   if (rc < 0) return rc;
 
   return smb->params.rsp.write.count;

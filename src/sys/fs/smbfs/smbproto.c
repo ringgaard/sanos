@@ -70,7 +70,7 @@ int smb_recv(struct smb_share *share, struct smb *smb)
   if (rc != 4) return -EIO;
 
   len = smb->len[3] | (smb->len[2] << 8) | (smb->len[1] << 16) | (smb->len[0] << 24);
-  if (len > SMB_MAX_BUFFER) return -EMSGSIZE;
+  if (len < 4 || len > SMB_MAX_BUFFER) return -EMSGSIZE;
 
   rc = recv_fully(share->server->sock, (char *) &smb->protocol, len, 0);
   if (rc < 0) return rc;

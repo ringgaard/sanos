@@ -132,6 +132,35 @@ void __inline unlock_fs(struct fs *fs, int fsop)
     release_mutex(&fs->exclusive);
 }
 
+static int files_proc(struct proc_file *pf, void *arg)
+{
+  int h;
+  struct object *o;
+  struct file *filp;
+
+  pprintf(pf, "handle    flags        pos path\n");
+  pprintf(pf, "------ -------- ---------- --------------------------------------------------\n");
+  for (h = 0; h < htabsize; h++)
+  {
+    o = htab[h];
+
+    if (o < (struct object *) OSBASE) continue;
+    if (o == (struct object *) NOHANDLE) continue;
+    if (o->type != OBJECT_FILE) continue;
+
+    filp = (struct file *) o;
+    pprintf(pf, "%6d %8X %10d %s\n", h, filp->flags, filp->pos, filp->path);
+  }
+
+  return 0;
+}
+
+int init_vfs()
+{
+  register_proc_inode("files", files_proc, NULL);
+  return 0;
+}
+
 struct filesystem *register_filesystem(char *name, struct fsops *ops)
 {
   struct filesystem *fsys;
@@ -398,6 +427,7 @@ int open(char *name, int mode, struct file **retval)
   filp->flags = mode;
   filp->pos = 0;
   filp->data = NULL;
+  filp->path = strdup(path);
 
   if (fs->ops->open)
   {
@@ -405,6 +435,7 @@ int open(char *name, int mode, struct file **retval)
     if (lock_fs(fs, FSOP_OPEN) < 0) 
     {
       fs->locks--;
+      kfree(filp->path);
       kfree(filp);
       return -ETIMEOUT;
     }
@@ -416,6 +447,7 @@ int open(char *name, int mode, struct file **retval)
     if (rc != 0)
     {
       fs->locks--;
+      kfree(filp->path);
       kfree(filp);
       return rc;
     }
@@ -441,7 +473,8 @@ int close(struct file *filp)
     rc = 0;
 
   if (rc == 0) filp->fs->locks--;
-
+  
+  kfree(filp->path);
   kfree(filp);
   return rc;
 }
@@ -812,11 +845,14 @@ int opendir(char *name, struct file **retval)
   filp->flags = O_RDONLY | F_DIR;
   filp->pos = 0;
   filp->data = NULL;
+  filp->path = strdup(path);
 
   fs->locks++;
   if (lock_fs(fs, FSOP_OPENDIR) < 0) 
   {
     fs->locks--;
+    kfree(filp->path);
+    kfree(filp);
     return -ETIMEOUT;
   }
   rc = fs->ops->opendir(filp, rest);
@@ -824,6 +860,7 @@ int opendir(char *name, struct file **retval)
   if (rc != 0)
   {
     fs->locks--;
+    kfree(filp->path);
     kfree(filp);
     return rc;
   }

@@ -67,6 +67,7 @@ struct file
   int flags;
   loff_t pos;
   void *data;
+  char *path;
 };
 
 struct fsops
@@ -113,6 +114,7 @@ struct fsops
 
 #ifdef KERNEL
 
+int init_vfs();
 int fnmatch(char *fn1, int len1, char *fn2, int len2);
 krnlapi struct filesystem *register_filesystem(char *name, struct fsops *ops);
 krnlapi struct fs *fslookup(char *name, char **rest);
