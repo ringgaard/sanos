@@ -136,10 +136,12 @@ struct syscall_context
 };
 
 
-typedef void (*intrproc_t)(struct context *ctxt, void *arg);
+typedef int (*intrproc_t)(struct context *ctxt, void *arg);
 
-struct interrupt_handler
+struct interrupt
 {
+  struct interrupt *next;
+  int flags;
   intrproc_t handler;
   void *arg;
 };
@@ -147,7 +149,8 @@ struct interrupt_handler
 #ifdef KERNEL
 
 void init_trap();
-krnlapi void set_interrupt_handler(int intrno, intrproc_t f, void *arg);
+krnlapi void register_interrupt(struct interrupt *intr, int intrno, intrproc_t f, void *arg);
+krnlapi void unregister_interrupt(struct interrupt *intr, int intrno);
 
 int get_context(struct thread *t, struct context *ctxt);
 int set_context(struct thread *t, struct context *ctxt);

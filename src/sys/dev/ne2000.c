@@ -260,6 +260,7 @@ struct ne
   unsigned short asic_addr;		// ASIC I/O bus address
   unsigned short nic_addr;		// NIC (DP8390) I/O bus address
   
+  struct interrupt intr;                // Interrupt object for driver
   struct dpc dpc;                       // DPC for driver
 
   unsigned short rx_ring_start;         // Start address of receive ring
@@ -436,13 +437,15 @@ void ne_dpc(void *arg)
   eoi(ne->irq);
 }
 
-void ne_handler(struct context *ctxt, void *arg)
+int ne_handler(struct context *ctxt, void *arg)
 {
   struct ne *ne = (struct ne *) arg;
 
   // Queue DPC to service interrupt
   kprintf("ne2000: intr\n");
   queue_irq_dpc(&ne->dpc, ne_dpc, ne);
+
+  return 0;
 }
 
 int ne_transmit(struct dev *dev, struct pbuf *p)
@@ -629,7 +632,7 @@ int ne_setup(unsigned short iobase, int irq, unsigned short membase, unsigned sh
 
   // Install interrupt handler
   init_dpc(&ne->dpc);
-  set_interrupt_handler(IRQ2INTR(ne->irq), ne_handler, ne);
+  register_interrupt(&ne->intr, IRQ2INTR(ne->irq), ne_handler, ne);
   enable_irq(ne->irq);
 
   // Set page 0 registers, abort remote DMA, stop NIC

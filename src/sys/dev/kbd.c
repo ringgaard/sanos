@@ -69,6 +69,7 @@ int ctrl_alt_del_enabled = 1;
 int keymap = 0;
 int ext;
 
+struct interrupt kbdintr;
 struct dpc kbddpc;
 struct sem kbdsem;
 
@@ -259,7 +260,7 @@ static void keyb_dpc(void *arg)
 // Keyboard interrupt handler
 //
 
-void keyboard_handler(struct context *ctxt, void *arg)
+int keyboard_handler(struct context *ctxt, void *arg)
 {
   if (last_scancode == -1) 
   {
@@ -276,6 +277,7 @@ void keyboard_handler(struct context *ctxt, void *arg)
   }
 
   eoi(IRQ_KBD);
+  return 0;
 }
 
 //
@@ -335,6 +337,6 @@ void init_keyboard()
   // Setup keyboard interrupt handler
   init_dpc(&kbddpc);
   init_sem(&kbdsem, 0);
-  set_interrupt_handler(INTR_KBD, keyboard_handler, NULL);
+  register_interrupt(&kbdintr, INTR_KBD, keyboard_handler, NULL);
   enable_irq(IRQ_KBD);
 }

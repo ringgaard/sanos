@@ -34,6 +34,8 @@
 #include <os/krnl.h>
 #include "ndis.h"
 
+#define NDISTRACE(s) kprintf("ndis: %s called\n", s);
+
 //#define ndisapi __declspec(dllexport) __stdcall
 #define ndisapi
 
@@ -43,6 +45,7 @@
 
 boolean ndisapi RtlEqualUnicodeString(const wchar_t *string1, const wchar_t *string2, boolean case_insensitive)
 {
+  NDISTRACE("RtlEqualUnicodeString");
   return 0;
 }
 
@@ -66,21 +69,25 @@ unsigned long __cdecl DbgPrint(char *format, ...)
 
 unsigned char ndisapi READ_PORT_UCHAR(unsigned char *port)
 {
-  return inp((unsigned short) port);
+  NDISTRACE("READ_PORT_UCHAR");
+  return _inp((unsigned short) port);
 }
 
 void ndisapi WRITE_PORT_USHORT(unsigned short *port, unsigned short value)
 {
-  outpw((unsigned short) port, value);
+  NDISTRACE("WRITE_PORT_USHORT");
+  _outpw((unsigned short) port, value);
 }
 
 unsigned short ndisapi READ_PORT_USHORT(unsigned short *port)
 {
-  return inpw((unsigned short) port);
+  NDISTRACE("READ_PORT_USHORT");
+  return _inpw((unsigned short) port);
 }
 
 void ndisapi KeStallExecutionProcessor(unsigned long microseconds)
 {
+  NDISTRACE("KeStallExecutionProcessor");
   usleep(microseconds);
 }
 
@@ -88,16 +95,19 @@ void ndisapi KeStallExecutionProcessor(unsigned long microseconds)
 // NDIS Initialization and Registration Functions
 //
 
-void ndisapi NdisInitializeWrapper(ndis_handle_t ndis_wrapper_handle, void *system_specific1, void *system_specific2, void *system_specific3)
+void ndisapi NdisInitializeWrapper(ndis_handle_t *ndis_wrapper_handle, void *system_specific1, void *system_specific2, void *system_specific3)
 {
+  NDISTRACE("NdisInitializeWrapper");
 }
 
 void ndisapi NdisTerminateWrapper(ndis_handle_t ndis_wrapper_handle, void *system_specific)
 {
+  NDISTRACE("NdisTerminateWrapper");
 }
 
 ndis_status ndisapi NdisMRegisterMiniport(ndis_handle_t ndis_wrapper_handle, struct ndis_miniport_characteristics *miniport_characteristics, unsigned int characteristics_length)
 {
+  NDISTRACE("NdisMRegisterMiniport");
   return 0;
 }
 
@@ -110,14 +120,17 @@ void ndisapi NdisMSetAttributesEx
   enum ndis_interface_type adapter_type
 )
 {
+  NDISTRACE("NdisMSetAttributesEx");
 }
 
 void ndisapi NdisOpenConfiguration(ndis_status *status, ndis_handle_t *configuration_handle, ndis_handle_t wrapper_configuration_context)
 {
+  NDISTRACE("NdisOpenConfiguration");
 }
 
 void ndisapi NdisCloseConfiguration(ndis_handle_t configuration_handle)
 {
+  NDISTRACE("NdisCloseConfiguration");
 }
 
 void ndisapi NdisReadConfiguration
@@ -129,6 +142,7 @@ void ndisapi NdisReadConfiguration
   enum ndis_parameter_type parameter_type
 )
 {
+  NDISTRACE("NdisReadConfiguration");
 }
 
 void ndisapi NdisReadNetworkAddress
@@ -139,6 +153,7 @@ void ndisapi NdisReadNetworkAddress
   ndis_handle_t configuration_handle
 )
 {
+  NDISTRACE("NdisReadNetworkAddress");
 }
 
 void ndisapi NdisMRegisterAdapterShutdownHandler
@@ -148,10 +163,12 @@ void ndisapi NdisMRegisterAdapterShutdownHandler
   adapter_shutdown_handler shutdown_handler
 )
 {
+  NDISTRACE("NdisMRegisterAdapterShutdownHandler");
 }
 
 void ndisapi NdisMDeregisterAdapterShutdownHandler(ndis_handle_t miniport_handle)
 {
+  NDISTRACE("NdisMDeregisterAdapterShutdownHandler");
 }
 
 void ndisapi NdisMQueryAdapterResources
@@ -162,6 +179,7 @@ void ndisapi NdisMQueryAdapterResources
   unsigned int *buffer_size
 )
 {
+  NDISTRACE("NdisMQueryAdapterResources");
 }
 
 //
@@ -177,6 +195,7 @@ unsigned long ndisapi NdisReadPciSlotInformation
   unsigned long length
 )
 {
+  NDISTRACE("NdisReadPciSlotInformation");
   return 0;
 }
 
@@ -189,6 +208,7 @@ unsigned long ndisapi NdisWritePciSlotInformation
   unsigned long length
 )
 {
+  NDISTRACE("NdisWritePciSlotInformation");
   return 0;
 }
 
@@ -204,6 +224,7 @@ ndis_status ndisapi NdisMRegisterIoPortRange
   unsigned int number_of_ports
 )
 {
+  NDISTRACE("NdisMRegisterIoPortRange");
   return 0;
 }
 
@@ -215,6 +236,7 @@ void ndisapi NdisMDeregisterIoPortRange
   void *port_offset
 )
 {
+  NDISTRACE("NdisMDeregisterIoPortRange");
 }
 
 //
@@ -230,6 +252,7 @@ void ndisapi NdisMAllocateSharedMemory
   ndis_physical_address_t *physical_address
 )
 {
+  NDISTRACE("NdisMAllocateSharedMemory");
 }
 
 void ndisapi NdisMFreeSharedMemory
@@ -241,6 +264,7 @@ void ndisapi NdisMFreeSharedMemory
   ndis_physical_address_t physical_address
 )
 {
+  NDISTRACE("NdisMFreeSharedMemory");
 }
 
 void ndisapi NdisMAllocateMapRegisters
@@ -252,10 +276,12 @@ void ndisapi NdisMAllocateMapRegisters
   unsigned long maximum_physical_mapping
 )
 {
+  NDISTRACE("NdisMAllocateMapRegisters");
 }
 
 void ndisapi NdisMFreeMapRegisters(ndis_handle_t miniport_adapter_handle)
 {
+  NDISTRACE("NdisMFreeMapRegisters");
 }
 
 //
@@ -273,11 +299,13 @@ ndis_status ndisapi NdisMRegisterInterrupt
   enum ndis_interrupt_mode interrupt_mode
 )
 {
+  NDISTRACE("NdisMRegisterInterrupt");
   return 0;
 }
 
 void ndisapi NdisMDeregisterInterrupt(struct ndis_miniport_interrupt *interrupt)
 {
+  NDISTRACE("NdisMDeregisterInterrupt");
 }
 
 boolean ndisapi NdisMSynchronizeWithInterrupt
@@ -287,6 +315,7 @@ boolean ndisapi NdisMSynchronizeWithInterrupt
   void *synchronize_context
 )
 {
+  NDISTRACE("NdisMSynchronizeWithInterrupt");
   return 0;
 }
 
@@ -296,30 +325,37 @@ boolean ndisapi NdisMSynchronizeWithInterrupt
 
 void ndisapi NdisMInitializeTimer(struct ndis_miniport_timer *timer, ndis_handle_t miniport_adapter_handle, ndis_timer_func_t  timer_function, void *function_context)
 {
+  NDISTRACE("NdisMInitializeTimer");
 }
 
 void ndisapi NdisMCancelTimer(struct ndis_miniport_timer *timer, boolean *timer_cancelled)
 {
+  NDISTRACE("NdisMCancelTimer");
 }
 
 void ndisapi NdisMSetPeriodicTimer(struct ndis_miniport_timer *timer, unsigned int millisecond_period)
 {
+  NDISTRACE("NdisMSetPeriodicTimer");
 }
 
 void ndisapi NdisAllocateSpinLock(struct ndis_spin_lock *spin_lock)
 {
+  NDISTRACE("NdisAllocateSpinLock");
 }
 
 void ndisapi NdisFreeSpinLock(struct ndis_spin_lock *spin_lock)
 {
+  NDISTRACE("NdisFreeSpinLock");
 }
 
 void ndisapi NdisAcquireSpinLock(struct ndis_spin_lock *spin_lock)
 {
+  NDISTRACE("NdisAcquireSpinLock");
 }
 
 void ndisapi NdisReleaseSpinLock(struct ndis_spin_lock *spin_lock)
 {
+  NDISTRACE("NdisReleaseSpinLock");
 }
 
 //
@@ -342,56 +378,88 @@ void ndisapi NdisReleaseSpinLock(struct ndis_spin_lock *spin_lock)
 // NDIS Packet and Buffer Handling Functions
 //
 
-void ndisapi NdisAllocatePacketPool(ndis_status *status, ndis_handle_t *pool_handle, unsigned int number_of_descriptors, unsigned int protocol_reserved_length)
+void ndisapi NdisAllocatePacketPool
+(
+  ndis_status *status, 
+  ndis_handle_t *pool_handle, 
+  unsigned int number_of_descriptors, 
+  unsigned int protocol_reserved_length
+)
 {
+  NDISTRACE("NdisAllocatePacketPool");
 }
 
 void ndisapi NdisFreePacketPool(ndis_handle_t pool_handle)
 {
+  NDISTRACE("NdisFreePacketPool");
 }
 
 void ndisapi NdisAllocatePacket(ndis_status *status, struct ndis_packet **packet, ndis_handle_t pool_handle)
 {
+  NDISTRACE("NdisAllocatePacket");
 }
 
 void ndisapi NdisFreePacket(struct ndis_packet *packet)
 {
+  NDISTRACE("NdisFreePacket");
 }
 
-void ndisapi NdisAllocateBufferPool()
+void ndisapi NdisAllocateBufferPool
+(
+  ndis_status *status, 
+  ndis_handle_t *pool_handle, 
+  unsigned int number_of_descriptors
+)
 {
+  NDISTRACE("NdisAllocateBufferPool");
 }
 
-void ndisapi NdisFreeBufferPool()
+void ndisapi NdisFreeBufferPool(ndis_handle_t pool_handle)
 {
+  NDISTRACE("NdisFreeBufferPool");
 }
 
-void ndisapi NdisAllocateBuffer()
+void ndisapi NdisAllocateBuffer
+(
+  ndis_status *status,
+  struct ndis_buffer **Buffer,
+  ndis_handle_t pool_handle,
+  void *virtual_address,
+  unsigned int length
+)
 {
+  NDISTRACE("NdisAllocateBuffer");
 }
 
-void ndisapi NdisFreeBuffer()
+void ndisapi NdisFreeBuffer(struct ndis_buffer *buffer)
 {
+  NDISTRACE("NdisFreeBuffer");
 }
 
-void ndisapi NdisQueryBuffer()
+void ndisapi NdisQueryBuffer(struct ndis_buffer *buffer, void **virtual_address,  unsigned int *length)
 {
+  NDISTRACE("NdisQueryBuffer");
 }
 
-void ndisapi NdisAdjustBufferLength()
+void ndisapi NdisAdjustBufferLength(struct ndis_buffer *buffer, unsigned int length)
 {
+  NDISTRACE("NdisAdjustBufferLength");
 }
 
-void ndisapi NdisQueryBufferOffset()
+void ndisapi NdisQueryBufferOffset(struct ndis_buffer *buffer,  unsigned int *offset, unsigned int *length)
 {
+  NDISTRACE("NdisQueryBufferOffset");
 }
 
-void ndisapi NdisUnchainBufferAtFront()
+void ndisapi NdisUnchainBufferAtFront(struct ndis_packet *packet, struct ndis_buffer *buffer)
 {
+  NDISTRACE("NdisUnchainBufferAtFront");
 }
 
-void ndisapi NDIS_BUFFER_TO_SPAN_PAGES()
+unsigned long ndisapi NDIS_BUFFER_TO_SPAN_PAGES(struct ndis_buffer *buffer)
 {
+  NDISTRACE("NDIS_BUFFER_TO_SPAN_PAGES");
+  return 0;
 }
 
 //
@@ -400,19 +468,22 @@ void ndisapi NDIS_BUFFER_TO_SPAN_PAGES()
 
 ndis_status ndisapi NdisAllocateMemoryWithTag(void **virtual_address, unsigned int length, unsigned long tag)
 {
+  NDISTRACE("NdisAllocateMemoryWithTag");
   return 0;
 }
 
 void ndisapi NdisFreeMemory(void *virtual_address, unsigned int length, unsigned int memory_flags)
 {
+  NDISTRACE("NdisFreeMemory");
 }
 
 //
 // NDIS Logging Support Functions
 //
 
-void ndisapi NdisWriteErrorLogEntry()
+void ndisapi NdisWriteErrorLogEntry(ndis_handle_t ndis_adapter_handle, unsigned long error_code, unsigned long errvals, ...)
 {
+  NDISTRACE("NdisWriteErrorLogEntry");
 }
 
 //

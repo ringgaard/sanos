@@ -33,6 +33,8 @@
 
 #include <os/krnl.h>
 
+struct interrupt fpuintr;
+
 void fpu_enable(struct fpu *state)
 {
   // Turn on access to FPU
@@ -85,7 +87,7 @@ void fpu_disable(struct fpu *state)
   }
 }
 
-void fpu_trap_handler(struct context *ctxt, void *arg)
+int fpu_trap_handler(struct context *ctxt, void *arg)
 {
   struct thread *t = self();
 
@@ -99,11 +101,13 @@ void fpu_trap_handler(struct context *ctxt, void *arg)
     fpu_enable(NULL);
     t->flags |= THREAD_FPU_ENABLED | THREAD_FPU_USED;
   }
+
+  return 0;
 }
 
 void init_fpu()
 {
-  set_interrupt_handler(INTR_FPU, fpu_trap_handler, NULL);
+  register_interrupt(&fpuintr, INTR_FPU, fpu_trap_handler, NULL);
 
   _asm
   {

@@ -83,6 +83,7 @@ void disable_irq(unsigned int irq)
 
 //
 // Signal end of interrupt to PIC
+//
 
 void eoi(unsigned int irq)
 {

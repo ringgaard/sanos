@@ -35,6 +35,81 @@
 
 #define INTRS MAXIDT
 
+struct syspage *syspage = (struct syspage *) SYSPAGE_ADDRESS;
+struct interrupt *intrhndlr[INTRS];
+int intrcount[INTRS];
+struct interrupt pgfintr;
+
+char *trapnames[INTRS] = 
+{
+  "Divide error",
+  "Debug exception",
+  "Non-maskable interrupt",
+  "Breakpoint",
+  "Overflow",
+  "Bounds check",
+  "Invalid opcode",
+  "FPU not available",
+  "Double fault",
+  "FPU segment overrun",
+  "Invalid task state segment",
+  "Segment not present",
+  "Stack fault",
+  "General protection fault",
+  "Page fault",
+  "(reserved)",
+  "FPU error",
+  "Alignment check",
+  "Machine check",
+  "SIMD FP exception",
+  "(reserved)",
+  "(reserved)",
+  "(reserved)",
+  "(reserved)",
+  "(reserved)",
+  "(reserved)",
+  "(reserved)",
+  "(reserved)",
+  "(reserved)",
+  "(reserved)",
+  "(reserved)",
+  "(reserved)",
+
+  "IRQ0 (timer)",
+  "IRQ1 (keyboard)",
+  "IRQ2",
+  "IRQ3 (com2)",
+  "IRQ4 (com1)",
+  "IRQ5",
+  "IRQ6 (fdc)",
+  "IRQ7 (par)",
+  "IRQ8 (rtc)",
+  "IRQ9",
+  "IRQ10",
+  "IRQ11",
+  "IRQ12",
+  "IRQ13",
+  "IRQ14 (hdc1)",
+  "IRQ15 (hdc2)",
+
+  "System call",
+  "(unused)",
+  "(unused)",
+  "(unused)",
+  "(unused)",
+  "(unused)",
+  "(unused)",
+  "(unused)",
+  "(unused)",
+  "(unused)",
+  "(unused)",
+  "(unused)",
+  "(unused)",
+  "(unused)",
+  "(unused)",
+  "(unused)"
+};
+
 //
 // trap
 //
@@ -174,9 +249,6 @@ ISR(40) ISR(41) ISR(42)  ISR(43)  ISR(44)  ISR(45)  ISR(46)  ISR(47)
         ISR(49) ISR(50)  ISR(51)  ISR(52)  ISR(53)  ISR(54)  ISR(55)
 ISR(56) ISR(57) ISR(58)  ISR(59)  ISR(60)  ISR(61)  ISR(62)  ISR(63)
 
-struct syspage *syspage = (struct syspage *) SYSPAGE_ADDRESS;
-struct interrupt_handler intrhndlr[INTRS];
-
 //
 // init_idt_gate
 //
@@ -206,23 +278,12 @@ static void init_trap_gate(int intrno, void *handler)
 }
 
 //
-// default_interrupt_handler
-//
-// Default interrupt handler
-//
-
-void default_interrupt_handler(struct context *ctxt, void *arg)
-{
-  dbg_enter(ctxt, NULL);
-}
-
-//
 // pagefault_handler
 //
 // Page fault handler
 //
 
-void pagefault_handler(struct context *ctxt, void *arg)
+int pagefault_handler(struct context *ctxt, void *arg)
 {
   unsigned long addr;
   void *pageaddr;
@@ -238,6 +299,8 @@ void pagefault_handler(struct context *ctxt, void *arg)
   }
   else
     dbg_enter(ctxt, (void *) addr);
+
+  return 0;
 }
 
 //
@@ -269,6 +332,30 @@ void wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh)
 }
 
 //
+// traps_proc
+//
+// Performance counters for traps
+//
+
+static int traps_proc(struct proc_file *pf, void *arg)
+{
+  int i;
+
+  pprintf(pf, "no trap                                  count\n");
+  pprintf(pf, "-- -------------------------------- ----------\n");
+
+  for (i = 0; i < INTRS; i++) 
+  {
+    if (intrcount[i] != 0)
+    {
+      pprintf(pf,"%2d %-32s %10d\n", i, trapnames[i], intrcount[i]);
+    }
+  }
+
+  return 0;
+}
+
+//
 // init_trap
 //
 // Initialize traps and interrupts
@@ -279,10 +366,10 @@ void init_trap()
   int i;
 
   // Initialize interrupt dispatch table
-  for (i = 0; i < INTRS; i++)
+  for (i = 0; i < INTRS; i++) 
   {
-    intrhndlr[i].handler = default_interrupt_handler;
-    intrhndlr[i].arg = NULL;
+    intrhndlr[i] = NULL;
+    intrcount[i] = 0;
   }
 
   // Setup idt
@@ -352,7 +439,7 @@ void init_trap()
   init_idt_gate(63, isr63);
 
   // Set system page fault handler
-  set_interrupt_handler(INTR_PGFLT, pagefault_handler, NULL);
+  register_interrupt(&pgfintr, INTR_PGFLT, pagefault_handler, NULL);
 
   // Initialize fast syscall
   if (cpu.features & CPU_FEATURE_SEP)
@@ -361,6 +448,9 @@ void init_trap()
     wrmsr(MSR_SYSENTER_ESP, TSS_ESP0, 0);
     wrmsr(MSR_SYSENTER_EIP, (unsigned long) sysentry, 0);
   }
+
+  // Register /proc/traps
+  register_proc_inode("traps", traps_proc, NULL);
 }
 
 //
@@ -373,17 +463,32 @@ static void __cdecl trap(unsigned long args)
 {
   struct context *ctxt = (struct context *) &args;
   struct thread *t = self();
-  struct interrupt_handler *h;
   struct context *prevctxt;
+  struct interrupt *intr;
+  int rc;
 
   // Save context
   prevctxt = t->ctxt;
   t->ctxt = ctxt;
   if (usermode(ctxt)) t->uctxt = (char *) ctxt + offsetof(struct context, traptype);
 
-  // Call interrupt handler
-  h = &intrhndlr[ctxt->traptype];
-  h->handler(ctxt, h->arg);
+  // Statistics
+  intrcount[ctxt->traptype]++;
+
+  // Call interrupt handlers
+  intr = intrhndlr[ctxt->traptype];
+  while (1)
+  {
+    if (!intr)
+    {
+      dbg_enter(ctxt, NULL);
+      break;
+    }
+
+    rc = intr->handler(ctxt, intr->arg);
+    if (rc == 0) break;
+    intr = intr->next;
+  }
 
   // If we interrupted a user mode context, dispatch DPC's now 
   // and check for quantum expiry.
@@ -399,15 +504,52 @@ static void __cdecl trap(unsigned long args)
 }
 
 //
-// set_interrupt_handler
+// register_interrupt
 //
-// Set interrupt handler for interrupt
+// Register interrupt handler for interrupt
 //
 
-void set_interrupt_handler(int intrno, intrproc_t f, void *arg)
+void register_interrupt(struct interrupt *intr, int intrno, intrproc_t f, void *arg)
 {
-  intrhndlr[intrno].handler = f;
-  intrhndlr[intrno].arg = arg;
+  cli();
+  intr->handler = f;
+  intr->arg = arg;
+  intr->flags = 0;
+  intr->next = intrhndlr[intrno];
+  intrhndlr[intrno] = intr;
+  sti();
+}
+
+//
+// unregister_interrupt
+//
+// Remove interrupt handler for interrupt
+//
+
+void unregister_interrupt(struct interrupt *intr, int intrno)
+{
+  struct interrupt *i;
+
+  cli();
+
+  if (intrhndlr[intrno] == intr)
+  {
+    intrhndlr[intrno] = intr->next;
+  }
+  else 
+  {
+    for (i = intrhndlr[intrno]; i != NULL; i = i->next)
+    {
+      if (i->next == intr)
+      {
+	i->next = intr->next;
+	break;
+      }
+    }
+  }
+  intr->next = NULL;
+
+  sti();
 }
 
 //

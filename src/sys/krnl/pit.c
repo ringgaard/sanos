@@ -78,6 +78,7 @@ time_t upsince;
 unsigned long cycles_per_tick;
 unsigned long loops_per_tick;
 
+struct interrupt timerintr;
 struct dpc timerdpc;
 
 void timer_dpc(void *arg)
@@ -85,7 +86,7 @@ void timer_dpc(void *arg)
   run_timer_list();
 }
 
-void timer_handler(struct context *ctxt, void *arg)
+int timer_handler(struct context *ctxt, void *arg)
 {
   struct thread *t;
 
@@ -123,6 +124,7 @@ void timer_handler(struct context *ctxt, void *arg)
   queue_irq_dpc(&timerdpc, timer_dpc, NULL);
 
   eoi(IRQ_TMR);
+  return 0;
 }
 
 unsigned char read_cmos_reg(int reg)
@@ -311,7 +313,7 @@ void init_pit()
   upsince = systemclock.tv_sec;
 
   init_dpc(&timerdpc);
-  set_interrupt_handler(INTR_TMR, timer_handler, NULL);
+  register_interrupt(&timerintr, INTR_TMR, timer_handler, NULL);
   enable_irq(IRQ_TMR);
 }
 

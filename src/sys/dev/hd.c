@@ -282,6 +282,7 @@ struct hdc
 {
   struct mutex lock;	               // Controller mutex
   struct event ready;	               // Controller interrupt event
+  struct interrupt intr;               // Interrupt object
   struct dpc xfer_dpc;                 // DPC for data transfer
   
   int status;                          // Controller status
@@ -1035,13 +1036,14 @@ void hd_dpc(void *arg)
   }
 }
 
-void hdc_handler(struct context *ctxt, void *arg)
+int hdc_handler(struct context *ctxt, void *arg)
 {
   struct hdc *hdc = (struct hdc *) arg;
 
   if (hdc->xfer_dpc.flags & DPC_QUEUED) kprintf("hd: intr lost\n");
   queue_irq_dpc(&hdc->xfer_dpc, hd_dpc, hdc);
   eoi(hdc->irq);
+  return 0;
 }
 
 static int part_ioctl(struct dev *dev, int cmd, void *args, size_t size)
@@ -1129,7 +1131,7 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase)
 #endif
 
   // Enable interrupts
-  set_interrupt_handler(IRQ2INTR(irq), hdc_handler, hdc);
+  register_interrupt(&hdc->intr, IRQ2INTR(irq), hdc_handler, hdc);
   enable_irq(irq);
   _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15);
 

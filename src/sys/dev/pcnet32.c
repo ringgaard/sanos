@@ -218,6 +218,7 @@ struct pcnet32
   unsigned long curr_tx;                // First outstanding transmit ring entry
   unsigned long next_tx;                // Next transmit ring entry
 
+  struct interrupt intr;                // Interrupt object for driver
   struct dpc dpc;                       // DPC for driver
 
   struct event rdc;	                // Remote DMA completed event
@@ -554,12 +555,13 @@ void pcnet32_dpc(void *arg)
   eoi(pcnet32->irq);
 }
 
-void pcnet32_handler(struct context *ctxt, void *arg)
+int pcnet32_handler(struct context *ctxt, void *arg)
 {
   struct pcnet32 *pcnet32 = (struct pcnet32 *) arg;
 
   // Queue DPC to service interrupt
   queue_irq_dpc(&pcnet32->dpc, pcnet32_dpc, pcnet32);
+  return 0;
 }
 
 int pcnet32_ioctl(struct dev *dev, int cmd, void *args, size_t size)
@@ -709,7 +711,7 @@ int __declspec(dllexport) install(struct unit *unit)
 
   // Install interrupt handler
   init_dpc(&pcnet32->dpc);
-  set_interrupt_handler(IRQ2INTR(pcnet32->irq), pcnet32_handler, pcnet32);
+  register_interrupt(&pcnet32->intr, IRQ2INTR(pcnet32->irq), pcnet32_handler, pcnet32);
   enable_irq(pcnet32->irq);
 
   // Read MAC address from PROM

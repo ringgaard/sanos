@@ -578,10 +578,11 @@ static int remove_module(struct module *mod)
   struct image_header *imghdr;
   struct image_import_descriptor *imp;
 
+  imghdr = get_image_header(mod->hmod);
+
   if (mod->flags & MODULE_INITIALIZED)
   {
     // Notify DLL
-    imghdr = get_image_header(mod->hmod);
     if (imghdr->header.characteristics & IMAGE_FILE_DLL)
     {
       ((int (__stdcall *)(hmodule_t, int, void *)) get_entrypoint(mod->hmod))(mod->hmod, DLL_PROCESS_DETACH, NULL);

@@ -405,23 +405,48 @@ static void *get_driver_entry(char *module, char *defentry)
   return resolve(hmod, entryname);
 }
 
+static void *get_wdm_driver_entry(char *module)
+{
+  hmodule_t hmod;
+
+  hmod = load(module, MODLOAD_NOINIT);
+  if (!hmod) return NULL;
+
+  return get_entrypoint(hmod);
+}
+
 static void install_driver(struct unit *unit, struct binding *bind)
 {
   int (*entry)(struct unit *unit);
+  int (*driverentry)(struct unit *unit, char *context, int reserved);
   int rc;
 
-  entry = get_driver_entry(bind->module, "install");
-  if (!entry)
+  if (bind->module[0] == '$')
   {
-    kprintf("warning: unable to load driver %s for unit '%s'\n", bind->module, get_unit_name(unit));
-    return;
-  }
+    driverentry = get_wdm_driver_entry(bind->module + 1);
+    if (!driverentry)
+    {
+      kprintf("warning: unable to load wdm driver %s for unit '%s'\n", bind->module + 1, get_unit_name(unit));
+      return;
+    }
 
-  rc = entry(unit);
-  if (rc < 0)
+    kprintf("dev: wdm driver %s loaded forunit '%s'\n", bind->module + 1, get_unit_name(unit));
+  }
+  else
   {
-    kprintf("warning: error %d installing driver %s for unit '%s'\n", rc, bind->module, get_unit_name(unit));
-    return;
+    entry = get_driver_entry(bind->module, "install");
+    if (!entry)
+    {
+      kprintf("warning: unable to load driver %s for unit '%s'\n", bind->module, get_unit_name(unit));
+      return;
+    }
+
+    rc = entry(unit);
+    if (rc < 0)
+    {
+      kprintf("warning: error %d installing driver %s for unit '%s'\n", rc, bind->module, get_unit_name(unit));
+      return;
+    }
   }
 }
 

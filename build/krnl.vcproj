@@ -437,9 +437,6 @@
 					RelativePath="..\src\include\os\mbr.h">
 				</File>
 				<File
-					RelativePath="..\src\include\os\ndis.h">
-				</File>
-				<File
 					RelativePath="..\src\include\os\object.h">
 				</File>
 				<File

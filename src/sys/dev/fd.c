@@ -144,8 +144,9 @@ struct fdresult
 struct fdc
 {
   struct mutex lock;	               // Controller mutex
-  struct event intr;	               // Controller interrupt event
+  struct event done;	               // Controller interrupt event
   struct event motor_change;           // Motor status change event
+  struct interrupt intr;               // Interrupt object
   struct dpc dpc;                      // DPC for fd interrupt
   unsigned char dor;                   // DOR register with motor status
 
@@ -342,11 +343,11 @@ static int fd_recalibrate(struct fd *fd)
   struct fdresult result;
 
   kprintf("fd: recalibrate\n");
-  reset_event(&fd->fdc->intr);
+  reset_event(&fd->fdc->done);
   fd_command(CMD_RECAL);
   fd_command(0x00);
 
-  if (wait_for_object(&fd->fdc->intr, FD_RECAL_TIMEOUT) < 0) 
+  if (wait_for_object(&fd->fdc->done, FD_RECAL_TIMEOUT) < 0) 
   {
     kprintf("fd: timeout waiting for calibrate to complete\n");
     return -ETIMEOUT;
@@ -382,14 +383,14 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
     // Perform seek if necessary
     if (fd->curtrack != track)
     {
-      reset_event(&fd->fdc->intr);
+      reset_event(&fd->fdc->done);
 
       //kprintf("fd: seek track %d head %d (curtrack %d)\n", track, head, fd->curtrack);
       fd_command(CMD_SEEK);
       fd_command((unsigned char) ((head << 2) | fd->drive));
       fd_command(track);
     
-      if (wait_for_object(&fd->fdc->intr, FD_SEEK_TIMEOUT) < 0) 
+      if (wait_for_object(&fd->fdc->done, FD_SEEK_TIMEOUT) < 0) 
       {
 	kprintf("fd: timeout waiting for seek to complete\n");
 	fd_recalibrate(fd);
@@ -434,7 +435,7 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
     _outp(DMA1_CHAN2_COUNT, ((count - 1) >> 8));
     _outp(DMA1_CHAN, 0x02);
 
-    reset_event(&fd->fdc->intr);
+    reset_event(&fd->fdc->done);
 
     // Perform transfer
     if (mode == FD_MODE_READ)
@@ -451,7 +452,7 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
     fd_command(fd->geom->gap3);
     fd_command(0xff); // DTL = unused
     
-    if (wait_for_object(&fd->fdc->intr, FD_XFER_TIMEOUT) < 0) 
+    if (wait_for_object(&fd->fdc->done, FD_XFER_TIMEOUT) < 0) 
     {
       kprintf("fd: timeout waiting for transfer to complete\n");
       fd_recalibrate(fd);
@@ -585,17 +586,18 @@ static int fd_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
 static void fd_dpc(void *arg)
 {
   struct fdc *fdc = (struct fdc *) arg;
-  set_event(&fdc->intr);
+  set_event(&fdc->done);
 }
 
 //
 // fd_handler
 //
 
-static void fd_handler(struct context *ctxt, void *arg)
+static int fd_handler(struct context *ctxt, void *arg)
 {
   queue_irq_dpc(&fdc.dpc, fd_dpc, arg);
   eoi(IRQ_FD);
+  return 0;
 }
 
 struct driver floppy_driver =
@@ -679,7 +681,7 @@ void init_fd()
 
   init_dpc(&fdc.dpc);
   init_mutex(&fdc.lock, 0);
-  init_event(&fdc.intr, 0, 0);
+  init_event(&fdc.done, 0, 0);
   init_event(&fdc.motor_change, 0, 0);
   fdc.dor = 0x0C; // TODO: select drive in DOR on transfer
 
@@ -690,7 +692,7 @@ void init_fd()
 
   for (i = 0; i < DMA_BUFFER_PAGES; i++) map_page(fdc.dmabuf + i * PAGESIZE, BTOP(DMA_BUFFER_START) + i, PT_WRITABLE | PT_PRESENT);
 
-  set_interrupt_handler(INTR_FD, fd_handler, &fdc);
+  register_interrupt(&fdc.intr, INTR_FD, fd_handler, &fdc);
   enable_irq(IRQ_FD); 
 
   kprintf("fdc: %s\n", fdc.name);

@@ -186,6 +186,7 @@ struct serial_port
   struct mutex tx_lock;                  // Transmit lock
   int tx_busy;                           // Transmitter busy
 
+  struct interrupt intr;                 // Serial interrupt object
   struct dpc dpc;                        // Serial DPC
   struct event event;                    // Line or modem status event
   int mlsc;                              // Model line status changed
@@ -599,7 +600,7 @@ static void serial_receive(struct serial_port *sp)
   }
 }
 
-static void serial_handler(struct context *ctxt, void *arg)
+static int serial_handler(struct context *ctxt, void *arg)
 {
   struct serial_port *sp = (struct serial_port *) arg;
   unsigned char iir;
@@ -644,6 +645,8 @@ static void serial_handler(struct context *ctxt, void *arg)
 
   queue_irq_dpc(&sp->dpc, serial_dpc, sp);
   eoi(sp->irq);
+
+  return 0;
 }
 
 struct driver serial_driver =
@@ -704,7 +707,7 @@ static void init_serial_port(char *devname, int iobase, int irq, struct unit *un
   devno = dev_make(devname, &serial_driver, unit, sp);
 
   // Enable interrupts
-  set_interrupt_handler(IRQ2INTR(sp->irq), serial_handler, sp);
+  register_interrupt(&sp->intr, IRQ2INTR(sp->irq), serial_handler, sp);
   enable_irq(sp->irq);
   _outp((unsigned short) (sp->iobase + UART_IER), IER_ERXRDY | IER_ETXRDY | IER_ERLS | IER_EMSC);
 

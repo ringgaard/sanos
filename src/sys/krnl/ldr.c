@@ -43,7 +43,7 @@ static void *load_image(char *filename)
 
 static int unload_image(hmodule_t hmod, size_t size)
 {
-  free_module_mem(hmod, size);
+  free_module_mem(hmod, PAGES(size));
   return 0;
 }
 
@@ -100,8 +100,8 @@ void *load_image_file(char *filename, int userspace)
   else
   {
     // Kernel module
-    imgbase = (char *) alloc_module_mem(BTOP(imghdr->optional.size_of_image));
-    if (imgbase) memset(imgbase, 0, imghdr->optional.size_of_image);
+    imgbase = (char *) alloc_module_mem(PAGES(imghdr->optional.size_of_image));
+    if (imgbase) memset(imgbase, 0, PAGES(imghdr->optional.size_of_image) * PAGESIZE);
   }
 
   if (imgbase == NULL)

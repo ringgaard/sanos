@@ -120,6 +120,7 @@ struct nic
 
   struct eth_addr hwaddr;               // MAC address for NIC
 
+  struct interrupt intr;                // Interrupt object for driver
   struct dpc dpc;                       // DPC for driver
 
   struct nicstat stat;                  // NIC statistics
@@ -148,7 +149,7 @@ void nic_down_complete(struct nic *nic);
 void nic_host_error(struct nic *nic);
 void nic_tx_complete(struct nic *nic);
 void nic_dpc(void *arg);
-void nic_handler(struct context *ctxt, void *arg);
+int nic_handler(struct context *ctxt, void *arg);
 
 int nic_try_mii(struct nic *nic, unsigned short options);
 int nic_negotiate_link(struct nic *nic, unsigned short options);
@@ -895,12 +896,14 @@ void nic_dpc(void *arg)
   eoi(nic->irq);
 }
 
-void nic_handler(struct context *ctxt, void *arg)
+int nic_handler(struct context *ctxt, void *arg)
 {
   struct nic *nic = (struct nic *) arg;
 
   // Queue DPC to service interrupt
   queue_irq_dpc(&nic->dpc, nic_dpc, nic);
+
+  return 0;
 }
 
 int nic_try_mii(struct nic *nic, unsigned short options)
@@ -1900,7 +1903,7 @@ int __declspec(dllexport) install(struct unit *unit)
 
   // Install interrupt handler
   init_dpc(&nic->dpc);
-  set_interrupt_handler(IRQ2INTR(nic->irq), nic_handler, nic);
+  register_interrupt(&nic->intr, IRQ2INTR(nic->irq), nic_handler, nic);
   enable_irq(nic->irq);
 
   // Setup buffers
