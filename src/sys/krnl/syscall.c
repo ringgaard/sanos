@@ -1523,7 +1523,7 @@ static int sys_getprio(char *params)
     return -EBADF;
   }
 
-  priority = t->priority;
+  priority = get_thread_priority(t);
 
   orel(t);
   unlock_buffer(params, 4);
@@ -1535,6 +1535,7 @@ static int sys_setprio(char *params)
   handle_t h;
   struct thread *t;
   int priority;
+  int rc;
 
   if (lock_buffer(params, 8) < 0) return -EFAULT;
 
@@ -1548,12 +1549,11 @@ static int sys_setprio(char *params)
     return -EBADF;
   }
 
-  t->priority = priority;
-  // TODO: reschedule thread to immediately reflect priority change
+  rc = set_thread_priority(t, priority);
 
   orel(t);
   unlock_buffer(params, 8);
-  return 0;
+  return rc;
 }
 
 static int sys_sleep(char *params)

@@ -159,3 +159,5 @@ CHANGES
 - new HTTP server
 
 - PE resource api
+
+- Threads are now resceduled after setprio() to immediately reflect the new thread priority

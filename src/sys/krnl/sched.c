@@ -217,6 +217,32 @@ void mark_thread_running()
   }
 }
 
+static void remove_ready_thread(struct thread *t)
+{
+  int prio = t->priority;
+  struct thread *rq;
+
+  if (ready_queue_head[prio] == t) 
+  {
+    ready_queue_head[prio] = t->next_ready;
+    if (ready_queue_tail[prio] == t) ready_queue_tail[prio] = NULL;
+  }
+  else 
+  {
+    for (rq = ready_queue_head[prio]; rq != NULL; rq = rq->next_ready)
+    {
+      if (rq->next_ready == t)
+      {
+	rq->next_ready = t->next_ready;
+	if (ready_queue_tail[prio] == t) ready_queue_tail[prio] = rq;
+	break;
+      }
+    }
+  }
+
+  t->next_ready = NULL;
+}
+
 void threadstart(void *arg)
 {
   struct thread *t = self();
@@ -450,6 +476,45 @@ void terminate_thread(int exitcode)
   hfree(t->hndl);
   dispatch();
 }
+
+int get_thread_priority(struct thread *t)
+{
+  return t->priority;
+}
+
+int set_thread_priority(struct thread *t, int priority)
+{
+  if (priority < 0 || priority >= THREAD_PRIORITY_LEVELS) return -EINVAL;
+  if (t->priority == priority) return 0;
+
+  if (t == self())
+  {
+    // Thread changed priority for it self, reschedule if new priority lower
+    if (priority < t->priority) 
+    {
+      t->priority = priority;
+      dispatch();
+    }
+    else
+      t->priority = priority;
+  }
+  else
+  {
+    // If thread is ready to run, remove it from the current ready queue 
+    // and insert the ready queue for the new priority
+    if (t->state == THREAD_STATE_READY)
+    {
+      remove_ready_thread(t);
+      t->priority = priority;
+      mark_thread_ready(t);
+    }
+    else
+      t->priority = priority;
+  }
+
+  return 0;
+}
+
 
 static void task_queue_task(void *tqarg)
 {
