@@ -168,7 +168,7 @@ struct timeval
 
 struct section;
 
-//#define TRACEAPI
+#define TRACEAPI
 //#define TRACEAPIX
 
 //

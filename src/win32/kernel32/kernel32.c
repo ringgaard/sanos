@@ -1235,15 +1235,45 @@ DWORD WINAPI GetFileAttributesA
 )
 {
   struct stat64 fs;
+  unsigned long attrs;
 
+  syslog(LOG_DEBUG, "GetFileAttributesA\n");
   TRACE("GetFileAttributesA");
-  if (stat64((char *) lpFileName, &fs) < 0) return -1;
+  if (stat64((char *) lpFileName, &fs) < 0) 
+  {
+    syslog(LOG_DEBUG, "stat failed\n");
+    return -1;
+  }
+  switch (fs.st_mode & S_IFMT)
+  {
+    case S_IFREG:
+      attrs = FILE_ATTRIBUTE_NORMAL;
+      break;
 
-  // TODO: set other attributes for files (hidden, system, readonly etc.)
-  if ((fs.st_mode & S_IFMT) == S_IFDIR) 
-    return 0x00000010;
-  else
-    return 0x00000080;
+    case S_IFDIR:
+      attrs = FILE_ATTRIBUTE_DIRECTORY;
+      break;
+
+    case S_IFSOCK:
+    case S_IFBLK:
+    case S_IFCHR:
+    case S_IFIFO:
+      attrs = FILE_ATTRIBUTE_DEVICE;
+      break;
+
+    case S_IFLNK:
+      attrs = 0;
+      break;
+
+    default:
+      attrs = 0;
+  }
+
+  if (!(fs.st_mode & S_IWRITE)) attrs |= FILE_ATTRIBUTE_READONLY;
+  // TODO: set other attributes for files (hidden, system, etc.)
+
+  syslog(LOG_DEBUG, "attrs: %s %08X %08X\n", lpFileName, fs.st_mode, attrs);
+  return attrs;
 }
 
 DWORD WINAPI GetFileAttributesW

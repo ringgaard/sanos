@@ -431,6 +431,15 @@ typedef struct WIN32_FIND_DATAW
 #define FILE_FLAG_DELETE_ON_CLOSE        0x04000000
 #define FILE_FLAG_OVERLAPPED             0x40000000
 
+#define FILE_ATTRIBUTE_READONLY          0x00000001  
+#define FILE_ATTRIBUTE_HIDDEN            0x00000002  
+#define FILE_ATTRIBUTE_SYSTEM            0x00000004  
+#define FILE_ATTRIBUTE_DIRECTORY         0x00000010  
+#define FILE_ATTRIBUTE_ARCHIVE           0x00000020  
+#define FILE_ATTRIBUTE_DEVICE            0x00000040  
+#define FILE_ATTRIBUTE_NORMAL            0x00000080  
+#define FILE_ATTRIBUTE_TEMPORARY         0x00000100  
+
 #define STD_INPUT_HANDLE                 ((DWORD)-10)
 #define STD_OUTPUT_HANDLE                ((DWORD)-11)
 #define STD_ERROR_HANDLE                 ((DWORD)-12)
