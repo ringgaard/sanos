@@ -1,6 +1,8 @@
 TODO for sanos
 --------------
 
+- Implement 48-bit LBA support in IDE driver
+
 - Add read-only attribute to dfs
 
 - Improve sysalloc() in heap.c to enable dynamic expansion of vilderness region.
@@ -522,3 +524,5 @@ CHANGES
 - mkmutex() and mutexrel() implemented
 
 - pread() and pwrite() implemented
+
+- Intrinsic math functions implemented (acos, asin, cosh, pow, sinh, tanh).

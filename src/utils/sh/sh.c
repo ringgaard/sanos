@@ -1249,37 +1249,16 @@ int cmd_sysinfo(int argc, char *argv[])
 
 int cmd_test(int argc, char *argv[])
 {
-#if 0
-  struct hostent *hp;
-  struct sockaddr_in sin;
-  int s;
-  int rc;
+  double a = 0.0;
+  double b = 0.0;
+  double c;
 
-  hp = gethostbyname(argv[1] ? argv[1] : "192.168.174.2");
-  if (!hp) return errno;
+  if (argc > 1) a = atof(argv[1]);
+  if (argc > 2) b = atof(argv[2]);
 
-  s = socket(AF_INET, SOCK_STREAM, 0);
-  if (s < 0) return s;
-
-  memset(&sin, 0, sizeof(sin));
-  sin.sin_family = AF_INET;
-  memcpy(&sin.sin_addr, hp->h_addr_list[0], hp->h_length);
-  sin.sin_port = htons(2000);
-
-  rc = connect(s, (struct sockaddr *) &sin, sizeof(sin));
-  if (rc  < 0)
-  {
-    close(s);
-    return rc;
-  }
-
-  printf("connected socket %d\n", s);
+  c = pow(a, b);
+  printf("pow(%g,%g)=%g\n", a, b, c);
   return 0;
-#endif
-
-  char buffer[64000];
-  memset(buffer, 0, sizeof buffer);
-  return buffer[0];
 }
 
 int cmd_umount(int argc, char *argv[])

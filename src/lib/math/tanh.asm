@@ -4,6 +4,7 @@
                 .386
 _TEXT           segment use32 para public 'CODE'
                 public  _tanh
+                public  __CItanh
 
 _tanh           proc    near
                 assume  cs:_TEXT
@@ -34,6 +35,15 @@ _tanh           proc    near
                 pop     ebp                     ; Restore register bp
                 ret
 _tanh           endp
+
+__CItanh        proc    near
+                assume  cs:_TEXT
+                sub     esp,8                   ; Allocate stack space for x
+                fstp    qword ptr [esp]         ; Copy x onto stack
+                call    _tanh                   ; Call tanh
+                add     esp,8                   ; Remove x from stack
+                ret
+__CItanh        endp
 
 _TEXT           ends                            ;End of segment
                 end                             ;End of module

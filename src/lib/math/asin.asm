@@ -4,6 +4,7 @@
                 .386
 _TEXT           segment use32 para public 'CODE'
                 public  _asin
+                public  __CIasin
                 
 _asin           proc    near
                 assume  cs:_TEXT
@@ -20,6 +21,18 @@ _asin           proc    near
                 pop     ebp
                 ret
 _asin           endp
+
+__CIasin        proc    near
+                assume  cs:_TEXT
+                fld     st(0)                   ; Load x
+                fld     st(0)                   ; Load x
+                fmul                            ; Multiply (x squared)
+                fld1                            ; Load 1
+                fsubr                           ; 1 - (x squared)
+                fsqrt                           ; Square root of (1 - x squared)
+                fpatan                          ; This gives the arc sine !
+                ret
+__CIasin        endp
 
 _TEXT           ends
                 end

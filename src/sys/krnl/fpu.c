@@ -34,6 +34,7 @@
 #include <os/krnl.h>
 
 struct interrupt fpuintr;
+struct interrupt fpuxcpt;
 
 void fpu_enable(struct fpu *state)
 {
@@ -105,9 +106,16 @@ int fpu_trap_handler(struct context *ctxt, void *arg)
   return 0;
 }
 
+int fpu_npx_handler(struct context *ctxt, void *arg)
+{
+  panic("floating point processor fault");
+  return 0;
+}
+
 void init_fpu()
 {
   register_interrupt(&fpuintr, INTR_FPU, fpu_trap_handler, NULL);
+  register_interrupt(&fpuxcpt, INTR_NPX, fpu_npx_handler, NULL);
 
   _asm
   {

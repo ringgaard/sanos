@@ -4,6 +4,7 @@
                 .386
 _TEXT           segment use32 para public 'CODE'
                 public  _sinh
+                public  __CIsinh
 
 _sinh           proc    near
                 assume  cs:_TEXT
@@ -46,6 +47,15 @@ _sinh           proc    near
                 pop     ebp
                 ret
 _sinh           endp
+
+__CIsinh        proc    near
+                assume  cs:_TEXT
+                sub     esp,8                   ; Allocate stack space for x
+                fstp    qword ptr [esp]         ; Copy x onto stack
+                call    _sinh                   ; Call sinh
+                add     esp,8                   ; Remove x from stack
+                ret
+__CIsinh        endp
 
 _TEXT           ends
                 end

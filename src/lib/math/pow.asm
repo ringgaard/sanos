@@ -6,6 +6,7 @@ _TEXT           segment use32 para public 'CODE'
 
 fzero           real8   0.0e0                   ; Floating point zero
                 public  _pow
+                public  __CIpow
 
 _pow            proc    near
                 assume  cs:_TEXT
@@ -100,6 +101,16 @@ __fpow6:        pop     eax                     ; Restore register eax
                 pop     ebp
                 ret
 _pow            endp
+
+__CIpow         proc    near
+                assume  cs:_TEXT
+                sub     esp,16                  ; Allocate stack space for args
+                fstp    qword ptr [esp+8]       ; Copy y onto stack
+                fstp    qword ptr [esp]         ; Copy x onto stack
+                call    _pow                    ; Call pow
+                add     esp,16                  ; Remove args from stack
+                ret
+__CIpow         endp
 
 _TEXT           ends
                 end
