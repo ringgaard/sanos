@@ -78,6 +78,10 @@
 
 typedef unsigned int size_t;
 typedef long fpos_t;
+typedef unsigned short wchar_t;
+
+typedef unsigned short wint_t;
+typedef unsigned short wctype_t;
 
 struct _exception 
 {
@@ -278,7 +282,6 @@ crtapi unsigned long _beginthreadex(void *security, unsigned stack_size, unsigne
 crtapi void _endthreadex(unsigned retval);
 crtapi void abort();
 crtapi void _exit(int status);
-crtapi void _purecall();
 crtapi void _assert(void *expr, void *filename, unsigned lineno);
 crtapi int _getpid();
 crtapi int raise(int sig);

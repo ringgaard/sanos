@@ -46,3 +46,13 @@ EXPORTS
   localtime
   _sys_nerr=sys_nerr
   _ftol
+  memcmp
+  memset
+  memcpy
+  strlen
+  strcmp
+  strcspn
+  wcslen
+  towlower
+  towupper
+  _purecall

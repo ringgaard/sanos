@@ -36,15 +36,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#pragma function(memset)
-#pragma function(memcmp)
-#pragma function(memcpy)
-
-#pragma function(strcpy)
-#pragma function(strlen)
-#pragma function(strcat)
-#pragma function(strcmp)
-
 char *strncpy(char *dest, const char *source, size_t count)
 {
   char *start = dest;
@@ -307,7 +298,14 @@ int atoi(const char *nptr)
 // intrinsic functions
 //
 
-#ifdef DEBUG
+#pragma function(memset)
+#pragma function(memcmp)
+#pragma function(memcpy)
+
+#pragma function(strcpy)
+#pragma function(strlen)
+#pragma function(strcat)
+#pragma function(strcmp)
 
 void *memset(void *p, int c, size_t n)
 {
@@ -378,5 +376,3 @@ char *strcat(char *dst, const char *src)
   while (*cp++ = *src++);
   return dst;
 }
-
-#endif

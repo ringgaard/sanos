@@ -333,10 +333,11 @@ void _exit(int status)
   exit(status);
 }
 
-void _purecall()
+int _purecall()
 {
   TRACE("_purecall");
   panic("pure virtual function call attempted");
+  return 0;
 }
 
 int raise(int sig)
@@ -391,6 +392,29 @@ void srand(unsigned int seed)
 int rand()
 {
   return (((holdrand = holdrand * 214013L + 2531011L) >> 16) & 0x7fff);
+}
+
+size_t wcslen(const wchar_t *s)
+{
+  const wchar_t *eos = s;
+  while (*eos++);
+  return (int) (eos - s - 1);
+}
+
+int towlower(wint_t c)
+{
+  if (c < 256)
+    return tolower(c);
+  else
+    return c;
+}
+
+int towupper(wint_t c)
+{
+  if (c < 256)
+    return toupper(c);
+  else
+    return c;
 }
 
 void init_fileio();
