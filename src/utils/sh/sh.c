@@ -547,20 +547,31 @@ static void disk_usage(int argc, char **argv)
     return;
   }
 
-  printf("type   mounted on    mounted from    cache    total     used    avail files\n");
-  printf("------ ------------- -------------- ------ -------- -------- -------- -----\n");
+  printf("type   mounted on mounted from          cache    total     used    avail files\n");
+  printf("------ ---------- -------------------- ------ -------- -------- -------- -----\n");
 
   for (n = 0; n < count; n++)
   {
     b = buf + n;
 
-    printf("%-7s%-14s%-14s", b->fstype, b->mntto, b->mntfrom);
+    printf("%-7s%-11s%-20s", b->fstype, b->mntto, b->mntfrom);
     if (b->blocks != -1)
     {
       printf("%6dK", b->cachesize / K);
-      printf("%8dK", b->blocks * (b->bsize / 512) / 2);
-      printf("%8dK", (b->blocks - b->bfree) * (b->bsize / 512) / 2);
-      printf("%8dK", b->bfree * (b->bsize / 512) / 2);
+      if (b->blocks * (b->bsize / 512) / 2 > 10000)
+	printf("%8dM", b->blocks * (b->bsize / 512) / 2000);
+      else
+	printf("%8dK", b->blocks * (b->bsize / 512) / 2);
+
+      if ((b->blocks - b->bfree) * (b->bsize / 512) / 2 > 10000)
+        printf("%8dM", (b->blocks - b->bfree) * (b->bsize / 512) / 2000);
+      else
+        printf("%8dK", (b->blocks - b->bfree) * (b->bsize / 512) / 2);
+
+      if (b->bfree * (b->bsize / 512) / 2 > 10000)
+         printf("%8dM", b->bfree * (b->bsize / 512) / 2000);
+      else
+        printf("%8dK", b->bfree * (b->bsize / 512) / 2);
 
       printf(" %d/%d", b->files - b->ffree, b->files);
     }

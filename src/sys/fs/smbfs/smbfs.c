@@ -11,8 +11,47 @@
 
 #define ROUNDUP(x) (((x) + 3) & ~3)
 
+#define SMB_DENTRY_CACHESIZE 16
+#define SMB_DIRBUF_SIZE      4096
+
 #define EPOC            116444736000000000     // 00:00:00 GMT on January 1, 1970
 #define SECTIMESCALE    10000000               // 1 sec resolution
+
+//
+// SMB directory entry
+//
+
+struct smb_dentry
+{
+  char filename[MAXPATH];
+  struct stat stat;
+};
+
+//
+// SMB file
+//
+
+struct smb_file
+{
+  unsigned short fid;
+  size_t size;
+  time_t atime;
+  time_t mtime;
+  time_t ctime;
+};
+
+//
+// SMF directory
+//
+
+struct smb_directory
+{
+  unsigned short sid;
+  int eos;
+  int entries_left;
+  struct smb_file_directory_info *fi;
+  char buffer[SMB_DIRBUF_SIZE];
+};
 
 //
 // SMB session
@@ -24,9 +63,12 @@ struct smb_session
   unsigned short tid;
   unsigned short uid;
   int tzofs;
+  time_t mounttime;
   unsigned long server_caps;
   unsigned long max_buffer_size;
   struct smb *packet;
+  int next_cacheidx;
+  struct smb_dentry dircache[SMB_DENTRY_CACHESIZE];
   char buffer[SMB_MAX_BUFFER + 4];
 };
 
@@ -259,6 +301,7 @@ int recv_smb(struct smb_session *sess)
   if (rc < 0) return rc;
   if (rc != len) return -EIO;
   if (smb->protocol[0] != 0xFF || smb->protocol[1] != 'S' || smb->protocol[2] != 'M' || smb->protocol[3] != 'B') return -EPROTO;
+  if (smb->error_class != SMB_SUCCESS) return smb_errno(smb);
 
   return 0;
 }
@@ -337,7 +380,6 @@ int smb_trans_recv(struct smb_session *sess,
     rc = recv_smb(sess);
     if (rc < 0) return rc;
     smb = sess->packet;
-    if (smb->error_class != SMB_SUCCESS) return smb_errno(smb);
 
     // Copy parameters
     paramofs = smb->params.rsp.trans.parameter_offset;
@@ -412,32 +454,176 @@ int smb_mount(struct fs *fs, char *opts)
   struct ip_addr ipaddr;
   char username[256];
   char password[256];
-  char *share;
+  char domain[256];
+  char buf[256];
+  int rc;
+  struct socket *s;
+  struct sockaddr_in sin;
+  struct smb_session *sess = NULL;
+  struct smb *smb;
+  unsigned short max_mpx_count;
+  char *p;
 
   // Get options
   ipaddr.addr = get_num_option(opts, "addr", IP_ADDR_ANY);
   if (ipaddr.addr == IP_ADDR_ANY) return -EINVAL;
   get_option(opts, "user", username, sizeof(username), "");
+  get_option(opts, "domain", domain, sizeof(domain), "");
   get_option(opts, "password", password, sizeof(password), "");
+
+  // Connect to SMB server on port 445
+  rc = socket(AF_INET, SOCK_STREAM, IPPROTO_IP, &s);
+  if (rc < 0) return rc;
+
+  memset(&sin, 0, sizeof(sin));
+  sin.sin_family = AF_INET;
+  sin.sin_addr.s_addr = ipaddr.addr;
+  sin.sin_port = htons(445);
   
-  share = fs->mntfrom;
-  if (share[0] != '\\' && share[1] != '\\') return -EINVAL;
-  share = strchr(share + 2, '\\');
-  if (!share++) return -EINVAL;
+  rc = connect(s, (struct sockaddr *) &sin, sizeof(sin));
+  if (rc < 0) goto error;
 
-  kprintf("smb: addr=%a user=%s password=%s share=%s\n", &ipaddr, username, password, share);
+  // Allocate session structure
+  sess = (struct smb_session *) kmalloc(sizeof(struct smb_session));
+  if (!sess) 
+  {
+    rc = -ENOMEM;
+    goto error;
+  }
+  memset(sess, 0, sizeof(struct smb_session));
 
-  return -ENOSYS;
+  smb = (struct smb *) sess->buffer;
+  sess->s = s;
+  sess->packet = smb;
+  sess->tid = 0xFFFF;
+
+  // Negotiate protocol version
+  smb = sess->packet;
+  memset(smb, 0, sizeof(struct smb));
+  rc = send_smb(sess, smb, SMB_COM_NEGOTIATE, 0, "\002NT LM 0.12", 12); 
+  if (rc < 0) goto error;
+
+  rc = recv_smb(sess);
+  if (rc < 0) goto error;
+
+  if (smb->params.rsp.negotiate.dialect_index == 0xFFFF) 
+  {
+    rc = -EREMOTEIO;
+    goto error;
+  }
+
+  sess->tzofs = 0; //smb->params.rsp.negotiate.server_timezone * 60;
+  sess->server_caps = smb->params.rsp.negotiate.capabilities;
+  sess->max_buffer_size = smb->params.rsp.negotiate.max_buffer_size;
+  max_mpx_count = smb->params.rsp.negotiate.max_mpx_count;
+
+  // Setup session
+  smb = sess->packet;
+  memset(smb, 0, sizeof(struct smb));
+  smb->params.req.setup.andx.cmd = 0xFF;
+  smb->params.req.setup.max_buffer_size = (unsigned short) SMB_MAX_BUFFER;
+  smb->params.req.setup.max_mpx_count = max_mpx_count;
+  smb->params.req.setup.ansi_password_length = strlen(password) + 1;
+  smb->params.req.setup.unicode_password_length = 0;
+  smb->params.req.setup.capabilities = SMB_CAP_NT_SMBS;
+
+  p = buf;
+  p = addstrz(p, password);
+  p = addstrz(p, username);
+  p = addstrz(p, domain);
+  p = addstrz(p, SMB_CLIENT_OS);
+  p = addstrz(p, SMB_CLIENT_LANMAN);
+
+  rc = send_smb(sess, smb, SMB_COM_SESSION_SETUP_ANDX, 13, buf, p - buf); 
+  if (rc < 0) goto error;
+
+  rc = recv_smb(sess);
+  if (rc < 0) goto error;
+  sess->uid = smb->uid;
+
+  // Connect to share
+  smb = sess->packet;
+  memset(smb, 0, sizeof(struct smb));
+  smb->params.req.connect.andx.cmd = 0xFF;
+  smb->params.req.connect.password_length = strlen(password) + 1;
+
+  p = buf;
+  p = addstrz(p, password);
+  p = addstrz(p, fs->mntfrom);
+  p = addstrz(p, SMB_SERVICE_DISK);
+
+  rc = send_smb(sess, smb, SMB_COM_TREE_CONNECT_ANDX, 4, buf, p - buf); 
+  if (rc < 0) goto error;
+
+  rc = recv_smb(sess);
+  if (rc < 0) goto error;
+  sess->tid = smb->tid;
+  sess->mounttime = time(0);
+
+  fs->data = sess;
+  return 0;
+
+error:
+  if (sess) free(sess);
+  closesocket(s);
+  return rc;
 }
 
 int smb_unmount(struct fs *fs)
 {
-  return -ENOSYS;
+  struct smb_session *sess = (struct smb_session *) fs->data;
+  struct smb *smb = sess->packet;
+  int rc;
+
+  // Disconnect from share
+  memset(smb, 0, sizeof(struct smb));
+  rc = send_smb(sess, smb, SMB_COM_TREE_DISCONNECT, 0, NULL, 0);
+  if (rc < 0) return rc;
+
+  rc = recv_smb(sess);
+  if (rc < 0) return rc;
+
+  // Logoff server
+  memset(smb, 0, sizeof(struct smb));
+  smb->params.andx.cmd = 0xFF;
+  rc = send_smb(sess, smb, SMB_COM_LOGOFF_ANDX, 2, NULL, 0);
+  if (rc < 0) return rc;
+
+  rc = recv_smb(sess);
+  if (rc < 0) return rc;
+
+  // Close socket
+  closesocket(sess->s);
+
+  // Deallocate session structure
+  kfree(sess);
+
+  return 0;
 }
 
 int smb_statfs(struct fs *fs, struct statfs *buf)
 {
-  return -ENOSYS;
+  struct smb_session *sess = (struct smb_session *) fs->data;
+  struct smb *smb = sess->packet;
+  struct smb_fsinfo_request req;
+  struct smb_info_allocation rsp;
+  int rc;
+  int rsplen;
+
+  req.infolevel = SMB_INFO_ALLOCATION;
+  rsplen = sizeof(rsp);
+  rc = smb_trans(sess, TRANS2_QUERY_FS_INFORMATION, &req, sizeof(req), NULL, 0, NULL, NULL, &rsp, &rsplen);
+  if (rc < 0) return rc;
+
+  buf->bsize = rsp.sector_per_unit * rsp.sectorsize;
+  buf->iosize = rsp.sector_per_unit * rsp.sectorsize;
+  buf->blocks = rsp.units_total;
+  buf->bfree = rsp.units_avail;
+  buf->files = -1;
+  buf->ffree = -1;
+  buf->cachesize = 0;
+
+  return 0;
 }
 
 int smb_open(struct file *filp, char *name)
