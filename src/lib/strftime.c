@@ -69,10 +69,10 @@ static char *_fmt(const char *format, const struct tm *t, char *pt, const char *
   {
     if (*format == '%') 
     {
-      if (*format == 'E')
-        ++format; //Alternate Era
+      if (*format == 'E') 
+	format++; // Alternate Era
       else if (*format == 'O')
-        ++format; // Alternate numeric symbols
+        format++; // Alternate numeric symbols
 
       switch (*++format) 
       {
