@@ -95,15 +95,15 @@ recurse:
     {
       if (loguy < hi) 
       {
-	  lostk[stkptr] = loguy;
-	  histk[stkptr] = hi;
-	  ++stkptr;
+        lostk[stkptr] = loguy;
+        histk[stkptr] = hi;
+        ++stkptr;
       }
 
       if (lo + width < higuy) 
       {
-	  hi = higuy - width;
-	  goto recurse;
+      	hi = higuy - width;
+      	goto recurse;
       }
     }
   }
