@@ -278,48 +278,6 @@ void pci_enable_busmastering(struct unit *unit)
   pci_write_config_dword(unit, PCI_CONFIG_CMD_STAT, value);
 }
 
-int pci_set_power_state(struct unit *unit, int new_state)
-{
-  unsigned long base[5], romaddr;
-  unsigned short pci_command, pwr_command;
-  unsigned char pci_latency, pci_cacheline, irq;
-  int i, old_state;
-  int pm;
-  
-  pm = pci_find_capability(unit, PCI_CAP_ID_PM);
-  if (!pm) return 0;
-
-  pwr_command = pci_read_config_word(unit, pm + PCI_PM_CTRL);
-  old_state = pwr_command & PCI_PM_CTRL_STATE_MASK;
-  if (old_state == new_state) return old_state;
-
-  if (old_state == 3) 
-  {
-    pci_command = pci_read_config_word(unit, PCI_CONFIG_CMD);
-    pci_write_config_word(unit, PCI_CONFIG_CMD, pci_command & ~(PCI_COMMAND_IO | PCI_COMMAND_MEMORY));
-    
-    for (i = 0; i < 5; i++) base[i] = pci_read_config_dword(unit, PCI_CONFIG_BASE_ADDR_0 + i * 4);
-    romaddr = pci_read_config_dword(unit, PCI_CONFIG_ROM);
-    irq = pci_read_config_byte(unit, PCI_CONFIG_INTERRUPT_LINE);
-    pci_latency = pci_read_config_byte(unit, PCI_CONFIG_LATENCY_TIMER);
-    pci_cacheline = pci_read_config_byte(unit, PCI_CONFIG_CACHE_LINE_SIZE);
-    
-    pci_write_config_word(unit, pm + PCI_PM_CTRL, new_state);
-    
-    for (i = 0; i < 5; i++)  pci_write_config_dword(unit, PCI_CONFIG_BASE_ADDR_0 + i * 4, base[i]);
-    pci_write_config_dword(unit, PCI_CONFIG_ROM, romaddr);
-    pci_write_config_byte(unit, PCI_CONFIG_INTERRUPT_LINE, irq);
-    pci_write_config_byte(unit, PCI_CONFIG_CACHE_LINE_SIZE, pci_cacheline);
-    pci_write_config_byte(unit, PCI_CONFIG_LATENCY_TIMER, pci_latency);
-
-    pci_write_config_word(unit, PCI_CONFIG_CMD, pci_command);
-  } 
-  else
-    pci_write_config_word(unit, pm + PCI_PM_CTRL, (pwr_command & ~PCI_PM_CTRL_STATE_MASK) | new_state);
-
-  return old_state;
-}
-
 static char *get_pci_class_name(int classcode)
 {
   int i = 0;

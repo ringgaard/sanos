@@ -182,7 +182,7 @@ struct geometry
 };
 
 //
-// PCI board info
+// Board info
 //
 
 struct board

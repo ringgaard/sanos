@@ -160,7 +160,6 @@ krnlapi void pci_read_buffer(struct unit *unit, int addr, void *buffer, int len)
 krnlapi void pci_write_buffer(struct unit *unit, int addr, void *buffer, int len);
 
 krnlapi void pci_enable_busmastering(struct unit *unit);
-krnlapi int pci_set_power_state(struct unit *unit, int new_state);
 
 void enum_pci_bus(struct bus *bus);
 unsigned long get_pci_hostbus_unitcode();

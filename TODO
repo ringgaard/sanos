@@ -154,6 +154,8 @@ CHANGES
 
 - getsockname() returned garbage in sin_port and sin_addr. This problem has been fixed.
 
+- getpeername() retunred garbage in sin_addr. This problem has been fixed.
+
 - new HTTP server
 
 - PE resource api
@@ -166,3 +168,15 @@ CHANGES
 
 - NIC support for multicast filtering. Implemented in sis900 and rtl8139. 
   Not yet implemented in network stack.
+
+- /dev/cmos renamed to /dev/nvram
+
+- ether_crc() moved to src\net\ether.c
+
+- struct stats_nic moved to include\net\stats.h
+
+- lookup_board() implemented in dev.c
+
+- pci_{read|write}_config_{byte|word|dword} implemeted in pci.c
+
+- Proper handling of kernel traps. Now enters debugger with correct exception.

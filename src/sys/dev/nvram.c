@@ -1,7 +1,7 @@
 //
-// cmod.c
+// nvram.c
 //
-// CMOS NVRAM driver
+// NVRAM driver
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -33,14 +33,14 @@
 
 #include <os/krnl.h>
 
-#define CMOS_REGISTERS 128
+#define NVRAM_SIZE 128
 
-static int cmos_ioctl(struct dev *dev, int cmd, void *args, size_t size)
+static int nvram_ioctl(struct dev *dev, int cmd, void *args, size_t size)
 {
   switch (cmd)
   {
     case IOCTL_GETDEVSIZE:
-      return CMOS_REGISTERS;
+      return NVRAM_SIZE;
 
     case IOCTL_GETBLKSIZE:
       return 1;
@@ -49,39 +49,39 @@ static int cmos_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int cmos_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int nvram_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
 {
   unsigned int n;
 
   if (count == 0) return 0;
-  if (blkno + count > CMOS_REGISTERS) return -EFAULT;
+  if (blkno + count > NVRAM_SIZE) return -EFAULT;
 
   for (n = 0; n < count; n++) ((unsigned char *) buffer)[n] = read_cmos_reg(n + blkno);
   return count;
 }
 
-static int cmos_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
+static int nvram_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
 {
   unsigned int n;
 
   if (count == 0) return 0;
-  if (blkno + count > CMOS_REGISTERS) return -EFAULT;
+  if (blkno + count > NVRAM_SIZE) return -EFAULT;
 
   for (n = 0; n < count; n++) write_cmos_reg(n + blkno, ((unsigned char *) buffer)[n]);
   return count;
 }
 
-struct driver cmos_driver =
+struct driver nvram_driver =
 {
-  "cmos",
+  "nvram",
   DEV_TYPE_BLOCK,
-  cmos_ioctl,
-  cmos_read,
-  cmos_write
+  nvram_ioctl,
+  nvram_read,
+  nvram_write
 };
 
-int __declspec(dllexport) cmos()
+int __declspec(dllexport) nvram()
 {
-  dev_make("cmos", &cmos_driver, NULL, NULL);
+  dev_make("nvram", &nvram_driver, NULL, NULL);
   return 0;
 }

@@ -276,9 +276,6 @@
 			Name="dev"
 			Filter="">
 			<File
-				RelativePath="..\src\sys\dev\cmos.c">
-			</File>
-			<File
 				RelativePath="..\src\sys\dev\cons.c">
 			</File>
 			<File
@@ -298,6 +295,9 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\dev\null.c">
+			</File>
+			<File
+				RelativePath="..\src\sys\dev\nvram.c">
 			</File>
 			<File
 				RelativePath="..\src\sys\dev\ramdisk.c">
