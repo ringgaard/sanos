@@ -1,7 +1,7 @@
 //
 // ndis.h
 //
-// NDIS network driver interface
+// NDIS network miniport driver interface
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -647,5 +647,60 @@ struct ndis_spin_lock
 {
   int todo;
 };
+
+//
+// NDIS mini-port
+//
+
+#if 0
+struct ndis_filter
+{
+  int todo;
+};
+
+struct ndis_filter_db
+{
+  struct ndis_filter *ethdb;
+  struct ndis_filter *trdb;
+  struct ndis_filter *fddidb;
+  struct ndis_filter *arcdb;
+};
+
+struct ndis_miniport_block
+{
+  char reserved1[216];
+  struct ndis_filter_db filterdb;
+
+  FILTER_PACKET_INDICATION_HANDLER packet_indicate_handler;
+  NDIS_M_SEND_COMPLETE_HANDLER send_complete_handler;
+  NDIS_M_SEND_RESOURCES_HANDLER send_resources_handler;
+  NDIS_M_RESET_COMPLETE_HANDLER reset_complete_handler;
+
+  char reserved2[108];
+
+  ETH_RCV_INDICATE_HANDLER eth_rx_indicate_handler;
+  TR_RCV_INDICATE_HANDLER tr_rx_indicate_handler;
+  FDDI_RCV_INDICATE_HANDLER fddi_rx_indicate_handler;
+
+  ETH_RCV_COMPLETE_HANDLER eth_rx_complete_handler;
+  TR_RCV_COMPLETE_HANDLER tr_rx_complete_handler;
+  FDDI_RCV_COMPLETE_HANDLER fddi_rx_complete_handler;
+
+  NDIS_M_STATUS_HANDLER status_handler;
+  NDIS_M_STS_COMPLETE_HANDLER status_complete_handler;
+  NDIS_M_TD_COMPLETE_HANDLER td_complete_handler;
+  NDIS_M_REQ_COMPLETE_HANDLER query_complete_handler;
+  NDIS_M_REQ_COMPLETE_HANDLER set_complete_handler;
+
+  NDIS_WM_SEND_COMPLETE_HANDLER wan_send_complete_handler;
+  WAN_RCV_HANDLER wan_rcv_handler;
+  WAN_RCV_COMPLETE_HANDLER wan_rcv_complete_handler;
+};
+
+struct ndis_miniport
+{
+  struct ndis_miniport_block block;
+};
+#endif
 
 #endif

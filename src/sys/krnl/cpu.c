@@ -224,16 +224,34 @@ void init_cpu()
     cpuid(0x80000000, val);
     if (val[0] > 0x80000000)
     {
-      char *p;
+      char model[64];
+      char *p, *q;
+      int space;
 
-      cpuid(0x80000002, (unsigned long *) cpu.modelid);
-      cpuid(0x80000003, (unsigned long *) (cpu.modelid + 16));
-      cpuid(0x80000004, (unsigned long *) (cpu.modelid + 32));
+      memset(model, 0, 64);
+      cpuid(0x80000002, (unsigned long *) model);
+      cpuid(0x80000003, (unsigned long *) (model + 16));
+      cpuid(0x80000004, (unsigned long *) (model + 32));
 
       // Trim brand string
-      p = cpu.modelid;
+      p = model;
+      q = cpu.modelid;
+      space = 0;
       while (*p == ' ') p++;
-      if (p != cpu.modelid) memmove(cpu.modelid, p, strlen(p) + 1);
+      while (*p)
+      {
+	if (*p == ' ')
+	  space = 1;
+	else
+	{
+	  if (space) *q++ = ' ';
+	  space = 0;
+	  *q++ = *p;
+	}
+
+	p++;
+      }
+      *q = 0;
     }
     else
     {

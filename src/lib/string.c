@@ -69,7 +69,7 @@ int strncmp(const char *s1, const char *s2, size_t count)
 
 int stricmp(const char *s1, const char *s2)
 {
-  char f,l;
+  char f, l;
 
   do 
   {

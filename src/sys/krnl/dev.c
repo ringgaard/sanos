@@ -418,19 +418,23 @@ static void *get_wdm_driver_entry(char *module)
 static void install_driver(struct unit *unit, struct binding *bind)
 {
   int (*entry)(struct unit *unit);
-  int (*driverentry)(struct unit *unit, char *context, int reserved);
+  int (__stdcall *wdmentry)(struct unit *unit, char *context);
   int rc;
 
   if (bind->module[0] == '$')
   {
-    driverentry = get_wdm_driver_entry(bind->module + 1);
-    if (!driverentry)
+    kprintf("dev: loading wdm driver %s\n", bind->module + 1);
+
+    wdmentry = get_wdm_driver_entry(bind->module + 1);
+    if (!wdmentry)
     {
       kprintf("warning: unable to load wdm driver %s for unit '%s'\n", bind->module + 1, get_unit_name(unit));
       return;
     }
+    
+    rc = wdmentry(unit, "");
 
-    kprintf("dev: wdm driver %s loaded forunit '%s'\n", bind->module + 1, get_unit_name(unit));
+    kprintf("dev: wdm driver %s loaded for unit '%s'\n", bind->module + 1, get_unit_name(unit));
   }
   else
   {

@@ -475,33 +475,33 @@ static int bind_imports(struct module *mod)
 
 static int relocate_module(struct module *mod)
 {
-  int offset;
+  unsigned long offset;
   char *pagestart;
   unsigned short *fixup;
   int i;
   struct image_base_relocation *reloc;
   int nrelocs;
 
-  offset = (int) mod->hmod - get_image_header(mod->hmod)->optional.image_base;
+  offset = (unsigned long) mod->hmod - get_image_header(mod->hmod)->optional.image_base;
   if (offset == 0) return 0;
 
   reloc = (struct image_base_relocation *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_BASERELOC);
   if (!reloc) return 0;
   if (get_image_header(mod->hmod)->header.characteristics & IMAGE_FILE_RELOCS_STRIPPED) 
   {
-    logmsg(mod->db, "relation info missing for %s", mod->name);
+    logmsg(mod->db, "relocation info missing for %s", mod->name);
     return -ENOEXEC;
   }
 
-  while (reloc->virtual_address != 0)
+  while (reloc->virtual_address != 0 || reloc->size_of_block != 0)
   {
     pagestart = RVA(mod->hmod, reloc->virtual_address);
     nrelocs = (reloc->size_of_block - sizeof(struct image_base_relocation)) / 2;
     fixup = (unsigned short *) (reloc + 1);
     for (i = 0; i < nrelocs; i++, fixup++)
     {
-      int type = *fixup >> 12;
-      int pos = *fixup & 0xfff;
+      unsigned short type = *fixup >> 12;
+      unsigned short pos = *fixup & 0xfff;
 
       if (type == IMAGE_REL_BASED_HIGHLOW)
 	*(unsigned long *) (pagestart + pos) += offset;

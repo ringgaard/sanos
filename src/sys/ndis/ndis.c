@@ -1,7 +1,7 @@
 //
 // ndis.c
 //
-// NDIS network driver interface
+// NDIS network miniport driver interface
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -36,8 +36,8 @@
 
 #define NDISTRACE(s) kprintf("ndis: %s called\n", s);
 
-//#define ndisapi __declspec(dllexport) __stdcall
-#define ndisapi
+#define ndisapi __declspec(dllexport) __stdcall
+//#define ndisapi
 
 //
 // NTOSKRNL functions
@@ -46,7 +46,31 @@
 boolean ndisapi RtlEqualUnicodeString(const wchar_t *string1, const wchar_t *string2, boolean case_insensitive)
 {
   NDISTRACE("RtlEqualUnicodeString");
-  return 0;
+  
+  if (case_insensitive)
+  {
+    wchar_t f, l;
+
+    while (1)
+    {
+      f = ((*string1 <= 'Z') && (*string1 >= 'A')) ? *string1 + 'a' - 'A' : *string1;
+      l = ((*string2 <= 'Z') && (*string2 >= 'A')) ? *string2 + 'a' - 'A' : *string2;
+      if (f != l) return 0;
+      if (!*string1 && !*string2) return 1;
+      string1++;
+      string2++;
+    }
+  }
+  else
+  {
+    while (*string1 == *string2)
+    {
+      string1++;
+      string2++;
+    }
+
+    return *string1 == 0 && *string2 == 0;
+  }
 }
 
 unsigned long __cdecl DbgPrint(char *format, ...)
@@ -97,7 +121,11 @@ void ndisapi KeStallExecutionProcessor(unsigned long microseconds)
 
 void ndisapi NdisInitializeWrapper(ndis_handle_t *ndis_wrapper_handle, void *system_specific1, void *system_specific2, void *system_specific3)
 {
+  struct unit *unit  = (struct unit *) system_specific1;
   NDISTRACE("NdisInitializeWrapper");
+
+  kprintf("ndis: initialize wrapper for %s %s %p\n", get_unit_name(unit), system_specific2, system_specific3);
+  *ndis_wrapper_handle = "wrapper";
 }
 
 void ndisapi NdisTerminateWrapper(ndis_handle_t ndis_wrapper_handle, void *system_specific)
@@ -108,6 +136,9 @@ void ndisapi NdisTerminateWrapper(ndis_handle_t ndis_wrapper_handle, void *syste
 ndis_status ndisapi NdisMRegisterMiniport(ndis_handle_t ndis_wrapper_handle, struct ndis_miniport_characteristics *miniport_characteristics, unsigned int characteristics_length)
 {
   NDISTRACE("NdisMRegisterMiniport");
+  kprintf("ndis_wrapper_handle %s\n", ndis_wrapper_handle);
+  //dbg_break();
+
   return 0;
 }
 

@@ -477,17 +477,18 @@ static void __cdecl trap(unsigned long args)
 
   // Call interrupt handlers
   intr = intrhndlr[ctxt->traptype];
-  while (1)
+  if (!intr)
   {
-    if (!intr)
+    dbg_enter(ctxt, NULL);
+  }
+  else
+  {
+    while (intr)
     {
-      dbg_enter(ctxt, NULL);
-      break;
+      rc = intr->handler(ctxt, intr->arg);
+      if (rc > 0) break;
+      intr = intr->next;
     }
-
-    rc = intr->handler(ctxt, intr->arg);
-    if (rc == 0) break;
-    intr = intr->next;
   }
 
   // If we interrupted a user mode context, dispatch DPC's now 
