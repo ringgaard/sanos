@@ -141,7 +141,7 @@ The DNS resolver is a port of ISC BIND lwres (http://www.isc.org/products/BIND)
 
 The kernel timer implementation is a port of Finn Arne Gangstads kernel timer implementation
 
-The rtl8139 and eepro100 network drivers are ported from Linux (Donald Becker)
+The rtl8139, eepro100 and sis900 network drivers are ported from Linux (Donald Becker)
 
 The win32 exception handling has been ported from WINE (Turchanov Sergey, Alexandre Julliard, and Jon Griffiths)
 

@@ -280,6 +280,8 @@ CHANGES
 - File sharing, permission mode and additional open flags (O_TEMPORARY, O_SHORT_LIVED, O_DIRECT,
   O_SEQUENTIAL, O_RANDOM) implemented for smbfs.
 
+- Temporary files added to dfs (O_TEMPORARY flag in open()).
+
 - tell() did not correctly return the file position. It just flushed the file. This has been fixed and
   tell() now returns the file position.
 
@@ -290,8 +292,9 @@ CHANGES
 - stat() and fstat() changed to conform to ANSI standard.
 
 - Modified signal() and raise to conform to ANSI standard. Signal info can be obtained
-  in signal handler by using getsiginfo().
- 
+  in signal handler by using getsiginfo(). The sendsig() function can be used to raise
+  signals with context info.
+
 - Support for 64 bit integer arithmetic. All compiler support routines for 64 bit
   integer operations implemented in libc.
 
@@ -305,7 +308,9 @@ CHANGES
 
 - setcontext() implemented.
 
-- Added more complete ANSI Standard C Library. 
+- Added more complete ANSI Standard C Library. Many standard header files has been added to the include
+  directory (conio.h, errno.h, fcntl.h, float.h, io.h, malloc.h, math.h, memory.h, process.h, share.h, signal.h,
+  stddef.h, sys/types.h, unistd.h), and prototypes has been moved to their ANSI specified standard headers.
 
 - The thread ready queues could become corrupted if a thread that was already ready was marked
   ready again. This could lead to kernel traps in the object manager because of faulty dispatching
@@ -313,8 +318,39 @@ CHANGES
   linked lists and introducing new thread states. Now only threads in ready state are in the
   ready queues.
 
-- Added job object to group threads executing an application
+- Added job object to group threads executing an application. The CREATE_NEW_JOB flags can be used in beginthread()
+  to start a new job. The spawn() function can be used to start an application in a new job.
 
-- /dev/random and /dev/urandom devices added
+- /dev/random and /dev/urandom devices added.
 
-- BSD random number functions added to lib
+- BSD style random number functions added to lib.
+
+- New stdio implementation with buffering, unget, and support for printf and scanf processing.
+
+- C/C++ initializers and terminators are now processed by the crt startup/shutdown code include atexit() handlers.
+
+- Math routines using the i387 instruction set added to standard C library (acos, asin, atan, atan2, ceil, cos,
+  cosh, exp, fabs, floor, fmod, frexp, ldexp, log, log10, modf, pow, sin, sinh, sqrt, tan, tanh).
+
+- abort() now raises SIGABRT.
+
+- div(), labs(), ldiv(), and system() added to stdlib.c.
+
+- memccpy(), memicmp(), strset() added to string.c.
+
+- strtod() and atof() implemented.
+
+- asctime(), _ctime(), _strdate(), _strtime() added to time.c.
+
+- /proc/bufstat added to buffer cache manager to show statistic for the buffer cache.
+
+- Previously the exit() stopped the user mode code and shutdown the kernel. The exit() routine now exits the
+  currently executing job. The exitos() routine now shuts down the kernel.
+
+- Support for O_TEXT and O_BINARY flags added to vsf.c.
+
+- connect() failed for local sockets. This problem has been fixed.
+
+- calloc() reported out of memory if num was zero. This problem has been fixed.
+
+*** version 1.2.7 released ***
