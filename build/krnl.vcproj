@@ -225,9 +225,6 @@
 				RelativePath="..\src\sys\krnl\syscall.c">
 			</File>
 			<File
-				RelativePath="..\src\sys\krnl\test.c">
-			</File>
-			<File
 				RelativePath="..\src\sys\krnl\timer.c">
 			</File>
 			<File
