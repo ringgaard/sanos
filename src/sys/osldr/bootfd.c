@@ -145,7 +145,7 @@ struct fdgeometry geom144 = {2, 80, 18, 0x1B}; // Drive geometry for 3 1/2" 1.44
 
 struct fdc fdc;
 struct fd fd;
-int fddone;
+volatile int fddone;
 
 struct selector bootidtsel;
 struct gate bootidt[MAXIDT];
