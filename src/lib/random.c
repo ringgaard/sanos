@@ -1,5 +1,5 @@
 //
-// rnd.h
+// random.c
 //
 // A strong random number generator
 //
