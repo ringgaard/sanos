@@ -95,7 +95,7 @@ struct thread
   int state;
   int flags;
   int priority;
-  int id;
+  tid_t id;
   handle_t self;
   struct tib *tib;
   int suspend_count;

@@ -115,7 +115,11 @@ struct interrupt_handler
   void *arg;
 };
 
+#ifdef KERNEL
+
 void init_intr();
 krnlapi void set_interrupt_handler(int intrno, intrproc_t f, void *arg);
+
+#endif
 
 #endif
