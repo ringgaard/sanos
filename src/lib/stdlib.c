@@ -163,7 +163,6 @@ int system(const char *command)
   char pgm[MAXPATH];
   char *p;
   char *q;
-  hmodule_t hmod;
   int rc;
   int dotseen = 0;
 
@@ -178,12 +177,7 @@ int system(const char *command)
   *q++ = 0;
   if (!dotseen) strcat(pgm, ".exe");
 
-  hmod = load(pgm);
-  if (hmod == NULL) return -ENOEXEC;
-
-  rc = exec(hmod, command);
-
-  unload(hmod);
+  rc = spawn(P_WAIT, pgm, command, NULL);
 
   return rc;
 }

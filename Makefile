@@ -139,12 +139,15 @@ $(MKDFS): \
 
 kernel: dirs boot $(BIN)/krnl.dll $(BIN)/os.dll
 
-boot: dirs $(BIN)/boot $(BIN)/cdboot $(BIN)/netboot $(BIN)/osldr.dll
+boot: dirs $(BIN)/boot $(BIN)/cdboot $(BIN)/cdemboot $(BIN)/netboot $(BIN)/osldr.dll
 
 $(BIN)/boot: $(SRC)/sys/boot/boot.asm
     $(NASM) -f bin $** -o $@
 
 $(BIN)/cdboot: $(SRC)/sys/boot/cdboot.asm
+    $(NASM) -f bin $** -o $@
+
+$(BIN)/cdemboot: $(SRC)/sys/boot/cdemboot.asm
     $(NASM) -f bin $** -o $@
 
 $(BIN)/netboot: $(SRC)/sys/boot/netboot.asm

@@ -166,7 +166,7 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
   fs->super->groupdesc_table_block = fs->super->first_reserved_block + fs->super->reserved_blocks;
 
   // If the last group is too small to hold the bitmaps and inode table skip it
-  blocks =  fs->super->block_count % fs->super->blocks_per_group;
+  blocks = fs->super->block_count % fs->super->blocks_per_group;
   if (blocks > 0 && blocks < fs->inode_blocks_per_group + 2) fs->super->group_count--;
   if (fs->super->group_count == 0) 
   {

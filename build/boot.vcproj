@@ -96,6 +96,31 @@
 			</FileConfiguration>
 		</File>
 		<File
+			RelativePath="..\src\sys\boot\cdemboot.asm">
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Assemble cdemboot.asm"
+					CommandLine="if not exist ..\dbg\obj\boot mkdir ..\dbg\obj\boot
+..\tools\nasmw.exe -f bin ..\src\sys\boot\cdemboot.asm -o ..\dbg\bin\cdemboot  -l ..\dbg\obj\boot\cdemboot.lst
+"
+					AdditionalDependencies="..\src\sys\boot\cdemboot.asm;"
+					Outputs="..\dbg\bin\cdemboot"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Assemble cdemboot.asm"
+					CommandLine="if not exist ..\obj\boot mkdir ..\obj\boot
+..\tools\nasmw.exe -f bin ..\src\sys\boot\cdemboot.asm -o ..\bin\cdemboot  -l ..\obj\boot\cdemboot.lst
+"
+					AdditionalDependencies="..\src\sys\boot\cdemboot.asm;"
+					Outputs="..\bin\cdemboot"/>
+			</FileConfiguration>
+		</File>
+		<File
 			RelativePath="..\src\sys\boot\netboot.asm">
 			<FileConfiguration
 				Name="SanOSDebug|Win32">

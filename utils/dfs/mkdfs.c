@@ -34,7 +34,8 @@ char *bootfile = NULL;
 char *ldrfile = NULL;
 char *krnlfile = NULL;
 char *filelist = NULL;
-int devsize = 40842 * 2;
+int devsize = 1440 * 2;
+int devcap = 1440 * 2;
 int blocksize = 4096;
 int inoderatio = 4096;
 int doshell = 0;
@@ -643,6 +644,7 @@ void usage()
   fprintf(stderr, "  -P <partition start sector>\n");
   fprintf(stderr, "  -q (quick format device)\n");
   fprintf(stderr, "  -B <block size> (default 4096)\n");
+  fprintf(stderr, "  -C <capacity> (capacity in kilobytes used for creating new device file)\n");
   fprintf(stderr, "  -F <file list file>\n");
   fprintf(stderr, "  -I <inode ratio> (default 1 inode per 4K)\n");
   fprintf(stderr, "  -K <kernel options>\n");
@@ -656,7 +658,7 @@ int main(int argc, char **argv)
   int c;
 
   // Parse command line options
-  while ((c = getopt(argc, argv, "d:b:c:ifk:l:swp:qB:F:I:K:P:S:T:?")) != EOF)
+  while ((c = getopt(argc, argv, "d:b:c:ifk:l:swp:qB:C:F:I:K:P:S:T:?")) != EOF)
   {
     switch (c)
     {
@@ -669,7 +671,7 @@ int main(int argc, char **argv)
 	break;
 
       case 'c':
-	devsize = atoi(optarg) * 2;
+	devsize = devcap = atoi(optarg) * 2;
 	break;
 
       case 'p':
@@ -706,6 +708,10 @@ int main(int argc, char **argv)
 
       case 'B':
 	blocksize = atoi(optarg);
+	break;
+
+      case 'C':
+	devcap = atoi(optarg) * 2;
 	break;
 
       case 'F':
@@ -745,8 +751,8 @@ int main(int argc, char **argv)
   // Create device file
   if (doinit) 
   {
-    printf("Creating device file %s %dKB\n", devname, devsize / 2);
-    create_device(devname, devsize);
+    printf("Creating device file %s %dKB\n", devname, devcap / 2);
+    create_device(devname, devcap);
   }
 
   // Open device file

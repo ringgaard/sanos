@@ -74,8 +74,12 @@ char *get_option(char *opts, char *name, char *buffer, int size, char *defval)
     }
     else
     {
-      if (buffer) *buffer = 0;
-      return buffer;
+      if (strncmp(name, opts, p - opts) == 0)
+      {
+        if (!buffer) return "";
+	*buffer = 0;
+        return buffer;
+      }
     }
 
     opts = p;

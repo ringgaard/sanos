@@ -159,6 +159,7 @@
 // ATAPI commands
 //
 
+#define ATAPI_CMD_REQUESTSENSE  0x03
 #define ATAPI_CMD_READCAPICITY  0x25
 #define ATAPI_CMD_READ10        0x28
 
@@ -582,9 +583,11 @@ static int atapi_packet_read(struct hd *hd, unsigned char *pkt, int pktlen, void
   int bufleft;
   unsigned short bytes;
   
+  hdc = hd->hdc;
+  if (wait_for_object(&hdc->lock, HDTIMEOUT_BUSY) < 0) return -EBUSY;
+
   bufp = (char *) buffer;
   bufleft = bufsize;
-  hdc = hd->hdc;
   hdc->dir = HD_XFER_IGNORE;
   hdc->active = hd;
   reset_event(&hdc->ready);
@@ -604,6 +607,11 @@ static int atapi_packet_read(struct hd *hd, unsigned char *pkt, int pktlen, void
   if (result != 0) 
   {
     kprintf("atapi_packet_read: busy waiting for packet ready (0x%02x)\n", result);
+
+    hdc->dir = HD_XFER_IDLE;
+    hdc->active = NULL;
+    release_mutex(&hdc->lock);
+
     return -EIO;
   }
 
@@ -621,9 +629,19 @@ static int atapi_packet_read(struct hd *hd, unsigned char *pkt, int pktlen, void
       hdc->result = -EIO;
       break;
     }
-    //kprintf("data ready result=%d\n", hdc->result);
-    if (hdc->result < 0) break;
     reset_event(&hdc->ready);
+
+    // Check for errors
+    if (hdc->status & HDCS_ERR)
+    {
+      unsigned char error;
+
+      error = _inp(hdc->iobase + HDC_ERR);
+      kprintf("hd: atapi packet read error (status=0x%02x,error=0x%02x)\n", hdc->status, error);
+
+      hdc->result = -EIO;
+      break;
+    }
 
     // Exit the read data loop if the device indicates this is the end of the command
     //kprintf("stat 0x%02x\n", hdc->status);
@@ -650,7 +668,7 @@ static int atapi_packet_read(struct hd *hd, unsigned char *pkt, int pktlen, void
   hdc->dir = HD_XFER_IDLE;
   hdc->active = NULL;
   result = hdc->result;
-  //release_mutex(&hdc->lock);
+  release_mutex(&hdc->lock);
   return result == 0 ? bufsize - bufleft : result;
 }
 
@@ -673,6 +691,22 @@ static int atapi_read_capacity(struct hd *hd)
   blksize = ntohl(buf[1]);
   if (blksize != CDSECTORSIZE) kprintf("%s: unexpected block size (%d)\n", device(hd->devno)->name, blksize);
   return blks;
+}
+
+static int atapi_request_sense(struct hd *hd)
+{
+  unsigned char pkt[12];
+  unsigned char buf[18];
+  int rc;
+
+  memset(pkt, 0, 12);
+  pkt[0] = ATAPI_CMD_REQUESTSENSE;
+  pkt[4] = sizeof buf;
+
+  rc = atapi_packet_read(hd, pkt, 12, buf, sizeof buf);
+  if (rc < 0) return rc;
+
+  return 0;
 }
 
 static int hd_ioctl(struct dev *dev, int cmd, void *args, size_t size)
@@ -1104,6 +1138,7 @@ static int cd_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, 
 static int cd_ioctl(struct dev *dev, int cmd, void *args, size_t size)
 {
   struct hd *hd = (struct hd *) dev->privdata;
+  int rc;
 
   switch (cmd)
   {
@@ -1115,8 +1150,12 @@ static int cd_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       return CDSECTORSIZE;
 
     case IOCTL_REVALIDATE:
-      hd->blks = atapi_read_capacity(hd);
-      if (hd->blks < 0) return hd->blks;
+      rc = atapi_request_sense(hd);
+      if (rc < 0) return rc;
+
+      rc = hd->blks = atapi_read_capacity(hd);
+      if (rc < 0) return rc;
+      
       return 0;
   }
 

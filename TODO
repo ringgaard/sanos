@@ -461,3 +461,8 @@ CHANGES
 
 - The kernel startup has been changed to open only one file object for the console. Then
   three handles are allocated for the initial stdin, stdout and stderr.
+
+- The get_option() routine failed to handle parameters without values. This problem has been
+  fixed.
+
+- system() now uses spawn() to execute new program.
