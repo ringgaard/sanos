@@ -53,7 +53,7 @@ struct moddb usermods;
 struct peb *peb;
 
 unsigned long loglevel = LOG_DEBUG | LOG_APITRACE | LOG_AUX | LOG_MODULE;
-int logfile = -1;
+handle_t syslogfd = -1;
 
 int vsprintf(char *buf, const char *fmt, va_list args);
 
@@ -66,7 +66,11 @@ void panic(const char *msg)
 {
   write(2, msg, strlen(msg));
   write(2, "\n", 1);
-  if (logfile > 0) close(logfile);
+  if (syslogfd > 0) 
+  {
+    close(syslogfd);
+    syslogfd = -1;
+  }
   dbgbreak();
   //exit(3);
 }
@@ -84,7 +88,7 @@ void syslog(int priority, const char *fmt,...)
     vsprintf(buffer, fmt, args);
     va_end(args);
     write(1, buffer, strlen(buffer));
-    if (logfile >= 0) write(logfile, buffer, strlen(buffer));
+    if (syslogfd >= 0) write(syslogfd, buffer, strlen(buffer));
   }
 }
 
@@ -794,8 +798,8 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   logfn = get_property(config, "os", "logfile", NULL);
   if (logfn != NULL) 
   {
-    logfile = open(logfn, O_CREAT, S_IREAD | S_IWRITE);
-    if (logfile >= 0) lseek(logfile, 0, SEEK_END);
+    syslogfd = open(logfn, O_CREAT, S_IREAD | S_IWRITE);
+    if (syslogfd >= 0) lseek(syslogfd, 0, SEEK_END);
   }
 
   // Initialize random device with seed
@@ -812,6 +816,10 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   if (rc != 0) syslog(LOG_DEBUG, "Exitcode: %d\n", rc);
 
   if (rndfn) save_random_device(rndfn);
-  if (logfile > 0) close(logfile);
+  if (syslogfd > 0) 
+  {
+    close(syslogfd);
+    syslogfd = -1;
+  }
   exitos(0);
 }

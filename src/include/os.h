@@ -1243,6 +1243,7 @@ osapi struct servent *getservbyport(int port, const char *proto);
 osapi extern struct section *config;
 osapi extern struct peb *peb;
 osapi extern unsigned long loglevel;
+osapi extern handle_t syslogfd;
 
 #ifndef errno
 osapi int *_errno();
