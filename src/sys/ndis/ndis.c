@@ -40,6 +40,193 @@
 struct ndis_driver *drivers = NULL;
 
 //
+// Configuration functions
+//
+
+static struct ndis_config *open_config(struct section *sect)
+{
+  struct ndis_config *cfg;
+
+  cfg = kmalloc(sizeof(struct ndis_config));
+  if (!cfg) return NULL;
+  cfg->sect = sect;
+  cfg->propcache = NULL;
+
+  return cfg;
+}
+
+static void free_config(struct ndis_config *cfg)
+{
+  struct ndis_property *prop;
+  struct ndis_property *next;
+
+  if (!cfg) return;
+  prop = cfg->propcache;
+  while (prop)
+  {
+    next = prop->next;
+
+    switch (prop->value.parameter_type)
+    {
+      case NDIS_PARAMETER_INTEGER:
+      case NDIS_PARAMETER_HEXINTEGER:
+	break;
+
+      case NDIS_PARAMETER_STRING:
+	kfree(prop->value.parameter_data.string_data.buffer);
+	break;
+
+      case NDIS_PARAMETER_MULTISTRING:
+	panic("unsupported ndis property type");
+	break;
+
+      case NDIS_PARAMETER_BINARY:
+	kfree(prop->value.parameter_data.binary_data.buffer);
+	break;
+    }
+
+    kfree(prop);
+    prop = next;
+  }
+
+  kfree(cfg);
+}
+
+static int hexdigit(int digit)
+{
+  if (digit >= '0' && digit <= '9') return digit - '0';
+  if (digit >= 'A' && digit <= 'F') return digit - 'A';
+  if (digit >= 'a' && digit <= 'f') return digit - 'a';
+  return 0;
+}
+
+static struct ndis_configuration_parameter *read_config(struct ndis_config *cfg, char *name, enum ndis_parameter_type type)
+{
+  struct ndis_property *np;
+  struct property *prop;
+  char *value;
+  wchar_t *buf;
+  unsigned char *data;
+  int len;
+  int i;
+
+  // Fail if no config or no config section
+  if (!cfg) return NULL;
+  if (!cfg->sect) return NULL;
+
+  // Try to find property in the property cache
+  np = cfg->propcache;
+  while (np)
+  {
+    if (stricmp(np->name, name) == 0) 
+    {
+      if (np->value.parameter_type != type) return NULL;
+      return &np->value;
+    }
+    np = np->next;
+  }
+
+  // Try to find the property in the configuration section
+  prop = cfg->sect->properties;
+  while (prop)
+  {
+    if (stricmp(prop->name, name) == 0) break;
+    prop = prop->next;
+  }
+
+  if (!prop) return NULL;
+
+  if (prop->value)
+    value = prop->value;
+  else
+    value = "";
+
+  // Add property to property cache
+  np = kmalloc(sizeof(struct ndis_property));
+  if (!np) return NULL;
+  memset(np, 0, sizeof(struct ndis_property));
+
+  np->name = name;
+  np->value.parameter_type = type;
+
+  switch (np->value.parameter_type)
+  {
+    case NDIS_PARAMETER_INTEGER:
+      np->value.parameter_data.integer_data = strtoul(value, NULL, 0);
+      break;
+
+    case NDIS_PARAMETER_HEXINTEGER:
+      np->value.parameter_data.integer_data = strtoul(value, NULL, 16);
+      break;
+
+    case NDIS_PARAMETER_STRING:
+      len = strlen(value);
+      buf = kmalloc(sizeof(wchar_t) * (len + 1));
+      if (!buf) return NULL;
+      for (i = 0; i < len; i++) buf[i] = value[i];
+      buf[len] = 0;
+      np->value.parameter_data.string_data.buffer = buf;
+      np->value.parameter_data.string_data.length = len;
+      np->value.parameter_data.string_data.maxlength = len + sizeof(wchar_t);
+      break;
+
+    case NDIS_PARAMETER_MULTISTRING:
+      kprintf("ndis: '%s', multisz properties not supported\n", name);
+      break;
+
+    case NDIS_PARAMETER_BINARY:
+      len = strlen(value) / 2;
+      data = kmalloc(len);
+      if (!data) return NULL;
+      for (i = 0; i < len; i++) data[i] = hexdigit(value[i * 2]) + (hexdigit(value[i * 2 + 1]) << 4);
+      np->value.parameter_data.binary_data.buffer = data;
+      np->value.parameter_data.binary_data.length = len;
+      break;
+  }
+
+  np->next = cfg->propcache;
+  cfg->propcache = np;
+
+  return &np->value;
+}
+
+static struct section *get_config_section(struct ndis_adapter *adapter)
+{
+  char buf[MAXPATH];
+  char *cfgname;
+  char *p;
+  char *lastdot;
+  struct section *sect;
+
+  if (getmodpath(adapter->driver->hmod, buf, sizeof buf) < 0) return NULL;
+  cfgname = buf;
+  lastdot = NULL;
+  
+  p = buf;
+  while (*p)
+  {
+    if (*p == PS1 || *p == PS2) cfgname = p + 1;
+    if (*p == '.') lastdot = p;
+    p++;
+  }
+  if (lastdot > cfgname) *lastdot = 0;
+  
+  p = cfgname + strlen(cfgname);
+  *p++ = '-';
+  *p++ = '0' + adapter->adapterno;
+  *p = 0;
+
+  sect = krnlcfg;
+  while (sect)
+  {
+    if (stricmp(sect->name, cfgname) == 0) return sect;
+    sect = sect->next;
+  }
+
+  return NULL;
+}
+
+//
 // NTOSKRNL functions
 //
 
@@ -93,19 +280,22 @@ unsigned long __cdecl DbgPrint(char *format, ...)
 
 unsigned char ndisapi READ_PORT_UCHAR(unsigned char *port)
 {
-  NDISTRACE("READ_PORT_UCHAR");
+  //NDISTRACE("READ_PORT_UCHAR");
+  kprintf("ndis: inp(0x%x)\n", port);
   return _inp((unsigned short) port);
 }
 
 void ndisapi WRITE_PORT_USHORT(unsigned short *port, unsigned short value)
 {
-  NDISTRACE("WRITE_PORT_USHORT");
+  //NDISTRACE("WRITE_PORT_USHORT");
+  kprintf("ndis: outpw(0x%x,0x%x)\n", port, value);
   _outpw((unsigned short) port, value);
 }
 
 unsigned short ndisapi READ_PORT_USHORT(unsigned short *port)
 {
-  NDISTRACE("READ_PORT_USHORT");
+  //NDISTRACE("READ_PORT_USHORT");
+  kprintf("ndis: inp(0x%x)\n", port);
   return _inpw((unsigned short) port);
 }
 
@@ -158,12 +348,30 @@ void ndisapi NdisMSetAttributesEx
 
 void ndisapi NdisOpenConfiguration(ndis_status *status, ndis_handle_t *configuration_handle, ndis_handle_t wrapper_configuration_context)
 {
+  struct ndis_adapter *adapter = (struct ndis_adapter *) wrapper_configuration_context;
+  struct section *sect;
+  struct ndis_config *cfg;
+
   NDISTRACE("NdisOpenConfiguration");
+
+  sect = get_config_section(adapter);
+  cfg = open_config(sect);
+  if (!cfg)
+  {
+    *status = NDIS_STATUS_FAILURE;
+    return;
+  }
+
+  *configuration_handle = cfg;
+  *status = 0;
 }
 
 void ndisapi NdisCloseConfiguration(ndis_handle_t configuration_handle)
 {
+  struct ndis_config *cfg = (struct ndis_config *) configuration_handle;
+
   NDISTRACE("NdisCloseConfiguration");
+  free_config(cfg);
 }
 
 void ndisapi NdisReadConfiguration
@@ -175,7 +383,36 @@ void ndisapi NdisReadConfiguration
   enum ndis_parameter_type parameter_type
 )
 {
-  NDISTRACE("NdisReadConfiguration");
+  struct ndis_config *cfg = (struct ndis_config *) configuration_handle;
+  char buf[256];
+  int len;
+  int i;
+
+  //NDISTRACE("NdisReadConfiguration");
+
+  // Parameter names are restricted to max 255 chars
+  len = keyword->length / sizeof(wchar_t);
+  if (len > sizeof(buf) - 1)
+  {
+    *status = NDIS_STATUS_RESOURCES;
+    return;
+  }
+
+  // Convert parameters name from unicode to ansi
+  for (i = 0; i < len; i++) buf[i] = (char) keyword->buffer[i];
+  buf[len] = 0;
+
+  kprintf("ndis: read config %s len %d type %d\n", buf, len, parameter_type);
+
+  // Read property from configuration
+  *parameter_value = read_config(cfg, buf,  parameter_type);
+  if (!*parameter_value)
+  {
+    *status = NDIS_STATUS_FAILURE;
+    return;
+  }
+
+  *status = 0;
 }
 
 void ndisapi NdisReadNetworkAddress
@@ -186,7 +423,40 @@ void ndisapi NdisReadNetworkAddress
   ndis_handle_t configuration_handle
 )
 {
+  struct ndis_config *cfg = (struct ndis_config *) configuration_handle;
+  struct ndis_configuration_parameter *param;
+  wchar_t *p;
+  unsigned char *q;
+  int addrlen;
+
   NDISTRACE("NdisReadNetworkAddress");
+
+  param = read_config(cfg, "NetworkAddress", NDIS_PARAMETER_STRING);
+  if (!param)
+  {
+    *status = NDIS_STATUS_FAILURE;
+    return;
+  }
+
+  p = param->parameter_data.string_data.buffer;
+  q = cfg->hwaddr.addr;
+  addrlen = 0;
+  while (*p)
+  {
+    if (addrlen > ETHER_ADDR_LEN) break;
+    if (*p == '-') *p++;
+    if (*p) 
+    {
+      *q = hexdigit(*p++);
+      if (*p) *q = (*q << 4) | hexdigit(*p++);
+      q++;
+      addrlen++;
+    }
+  }
+
+ *network_address = &cfg->hwaddr;
+ *network_address_length = addrlen;
+ *status = 0;
 }
 
 void ndisapi NdisMRegisterAdapterShutdownHandler
@@ -212,7 +482,82 @@ void ndisapi NdisMQueryAdapterResources
   unsigned int *buffer_size
 )
 {
+  struct ndis_adapter *adapter = (struct ndis_adapter *) wrapper_configuration_context;
+  struct resource *res;
+  struct ndis_resource_descriptor *desc;
+  unsigned int buflen;
+  int resno;
+
   NDISTRACE("NdisMQueryAdapterResources");
+
+  buflen = sizeof(struct ndis_resource_list);
+  resno = 0;
+
+  if (*buffer_size < buflen)
+  {
+    *status = NDIS_STATUS_RESOURCES;
+    return;
+  }
+
+  resource_list->version = 1;
+  resource_list->revision = 0;
+  
+  res = adapter->unit->resources;
+  desc = resource_list->descriptors;
+  while (res)
+  {
+    buflen += sizeof(struct ndis_resource_descriptor);
+    if (*buffer_size < buflen)
+    {
+      *status = NDIS_STATUS_RESOURCES;
+      return;
+    }
+
+    switch (res->type)
+    {
+      case RESOURCE_IO:
+	desc->type = NDIS_RESOURCE_TYPE_PORT;
+	desc->flags = NDIS_RESOURCE_PORT_IO;
+	desc->u.port.start = res->start;
+	desc->u.port.length = res->len;
+	break;
+
+      case RESOURCE_MEM:
+	desc->type = NDIS_RESOURCE_TYPE_MEMORY;
+	desc->flags = 0;
+	desc->u.memory.start = res->start;
+	desc->u.memory.length = res->len;
+	break;
+
+      case RESOURCE_IRQ:
+	desc->type = NDIS_RESOURCE_TYPE_INTERRUPT;
+	desc->flags = 0;
+	desc->u.interrupt.level = res->start;
+	desc->u.interrupt.vector = res->start;
+	desc->u.interrupt.affinity = 1;
+	break;
+
+      case RESOURCE_DMA:
+	desc->type = NDIS_RESOURCE_TYPE_DMA;
+	desc->flags = 0;
+	desc->u.dma.channel = res->start;
+	desc->u.dma.port = 0;
+	desc->u.dma.reserved1 = 0;
+	break;
+    }
+
+    resource_list->descriptors[resno].share_disposition = NDIS_RESOURCE_SHARE_UNDETERMINED;
+
+    resno++;
+    desc++;
+    res = res->next;
+  }
+  
+  kprintf("ndis: returned %d resource descriptors\n", resno);
+
+  resource_list->count = resno;
+  *buffer_size = buflen;
+  *status = 0;
 }
 
 //
@@ -229,7 +574,7 @@ unsigned long ndisapi NdisReadPciSlotInformation
 )
 {
   NDISTRACE("NdisReadPciSlotInformation");
-  return 0;
+  return NDIS_STATUS_FAILURE;
 }
 
 unsigned long ndisapi NdisWritePciSlotInformation
@@ -242,7 +587,7 @@ unsigned long ndisapi NdisWritePciSlotInformation
 )
 {
   NDISTRACE("NdisWritePciSlotInformation");
-  return 0;
+  return NDIS_STATUS_FAILURE;
 }
 
 //
@@ -667,13 +1012,22 @@ unsigned long ndisapi NDIS_BUFFER_TO_SPAN_PAGES(struct ndis_buffer *buffer)
 
 ndis_status ndisapi NdisAllocateMemoryWithTag(void **virtual_address, unsigned int length, unsigned long tag)
 {
+  void *addr;
+
   NDISTRACE("NdisAllocateMemoryWithTag");
+  
+  addr = kmalloc(length);
+  if (!addr) return NDIS_STATUS_FAILURE;
+
+  *virtual_address = addr;  
   return 0;
 }
 
 void ndisapi NdisFreeMemory(void *virtual_address, unsigned int length, unsigned int memory_flags)
 {
   NDISTRACE("NdisFreeMemory");
+
+  kfree(virtual_address);
 }
 
 //
@@ -683,6 +1037,7 @@ void ndisapi NdisFreeMemory(void *virtual_address, unsigned int length, unsigned
 void ndisapi NdisWriteErrorLogEntry(ndis_handle_t ndis_adapter_handle, unsigned long error_code, unsigned long errvals, ...)
 {
   NDISTRACE("NdisWriteErrorLogEntry");
+  kprintf("ndis: error code 0x%x %d values\n", error_code, errvals);
 }
 
 //
@@ -723,9 +1078,14 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
 {
   char *modfn = opts;
   struct ndis_driver *driver;
+  struct ndis_adapter *adapter;
   hmodule_t hmod;
   int rc;
-  
+  ndis_status open_status;
+  ndis_status status;
+  enum ndis_medium media;
+  unsigned int selected_index;
+
   kprintf("ndis: loading driver %s for unit %08X\n", opts, unit->unitcode);
 
   // Try to find existing driver
@@ -770,6 +1130,24 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
     drivers = driver;
   }
 
+  // Initialize new adapter
+  adapter = kmalloc(sizeof(struct ndis_adapter));
+  if (!adapter) return -ENOMEM;
+  memset(adapter, 0, sizeof(struct ndis_adapter));
+  ndis_setup_callbacks(&adapter->callbacks);
+  adapter->unit = unit;
+  adapter->adapterno = ++driver->numadapters;
+  adapter->driver = driver;
+  adapter->next = driver->adapters;
+  driver->adapters = adapter;
+  
+  // Initialize adapter
+  open_status = 0;
+  selected_index = 0;
+  media = NDIS_MEDIUM_802_3;
+  status = adapter->driver->handlers.initialize_handler(&open_status, &selected_index, &media, 1, adapter, adapter);
+  kprintf("ndis: initialize returned %08X\n", status);
+  
   return 0;
 }
 

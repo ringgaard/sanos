@@ -117,7 +117,10 @@ static unsigned long strtoxl(const char *nptr, const char **endptr, int ibase, i
   }
   else if ((flags & FL_OVERFLOW) || (!(flags & FL_UNSIGNED) && (((flags & FL_NEG) && (number > -LONG_MIN)) || (!(flags & FL_NEG) && (number > LONG_MAX)))))
   {
+#ifndef KERNEL
     errno = ERANGE;
+#endif
+
     if (flags & FL_UNSIGNED)
       number = ULONG_MAX;
     else if (flags & FL_NEG)

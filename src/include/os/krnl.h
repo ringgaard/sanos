@@ -98,11 +98,12 @@
 
 // start.c
 
-extern devno_t bootdev;
-extern struct section *krnlcfg;
-extern struct peb *peb;
+krnlapi extern devno_t bootdev;
+krnlapi extern struct section *krnlcfg;
+krnlapi extern struct peb *peb;
 
-void panic(char *msg);
+krnlapi void panic(char *msg);
+
 void exit();
 void stop(int restart);
 

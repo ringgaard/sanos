@@ -225,21 +225,21 @@ enum ndis_interface_type
 
 enum ndis_medium
 {
-    NDIS_MEDIUM_802_3,
-    NDIS_MEDIUM_802_5,
-    NDIS_MEDIUM_FDDI,
-    NDIS_MEDIUM_WAN,
-    NDIS_MEDIUM_LOCALTALK,
-    NDIS_MEDIUM_DIX,              // Defined for convenience, not a real medium
-    NDIS_MEDIUM_ARCNETRAW,
-    NDIS_MEDIUM_ARCNET878_2,
-    NDIS_MEDIUM_ATM,
-    NDIS_MEDIUM_WIRELESSWAN,
-    NDIS_MEDIUM_IRDA,
-    NDIS_MEDIUM_BPC,
-    NDIS_MEDIUM_COWAN,
-    NDIS_MEDIUM_1394,
-    NDIS_MEDIUM_MAX               // Not a real medium, defined as an upper-bound
+  NDIS_MEDIUM_802_3,
+  NDIS_MEDIUM_802_5,
+  NDIS_MEDIUM_FDDI,
+  NDIS_MEDIUM_WAN,
+  NDIS_MEDIUM_LOCALTALK,
+  NDIS_MEDIUM_DIX,              // Defined for convenience, not a real medium
+  NDIS_MEDIUM_ARCNETRAW,
+  NDIS_MEDIUM_ARCNET878_2,
+  NDIS_MEDIUM_ATM,
+  NDIS_MEDIUM_WIRELESSWAN,
+  NDIS_MEDIUM_IRDA,
+  NDIS_MEDIUM_BPC,
+  NDIS_MEDIUM_COWAN,
+  NDIS_MEDIUM_1394,
+  NDIS_MEDIUM_MAX               // Not a real medium, defined as an upper-bound
 };
 
 //
@@ -272,6 +272,61 @@ typedef void (__stdcall *adapter_shutdown_handler)(void *shutdown_context);
 //
 // NDIS Resource list
 //
+
+// Resource types
+
+#define NDIS_RESOURCE_TYPE_NULL                 0
+#define NDIS_RESOURCE_TYPE_PORT                 1
+#define NDIS_RESOURCE_TYPE_INTERRUPT            2
+#define NDIS_RESOURCE_TYPE_MEMORY               3
+#define NDIS_RESOURCE_TYPE_DMA                  4
+#define NDIS_RESOURCE_TYPE_DEVICESPECIFIC       5
+#define NDIS_RESOURCE_TYPE_BUSNUMBER            6
+#define NDIS_RESOURCE_TYPE_MAXIMUM              7
+
+// Share disposition
+
+#define NDIS_RESOURCE_SHARE_UNDETERMINED        0
+#define NDIS_RESOURCE_SHARE_DEVICE_EXCLUSIVE    1
+#define NDIS_RESOURCE_SHARE_DRIVER_EXCLUSIVE    2
+#define NDIS_RESOURCE_SHARE_SHARED              3
+
+// Interrupt resource flags
+
+#define NDIS_RESOURCE_INTERRUPT_LEVEL_SENSITIVE 0
+#define NDIS_RESOURCE_INTERRUPT_LATCHED         1
+
+// Memory resource flags
+
+#define NDIS_RESOURCE_MEMORY_READ_WRITE         0x0000
+#define NDIS_RESOURCE_MEMORY_READ_ONLY          0x0001
+#define NDIS_RESOURCE_MEMORY_WRITE_ONLY         0x0002
+#define NDIS_RESOURCE_MEMORY_PREFETCHABLE       0x0004
+#define NDIS_RESOURCE_MEMORY_COMBINEDWRITE      0x0008
+#define NDIS_RESOURCE_MEMORY_24                 0x0010
+#define NDIS_RESOURCE_MEMORY_CACHEABLE          0x0020
+
+// I/O port resource flags
+
+#define NDIS_RESOURCE_PORT_MEMORY               0x0000
+#define NDIS_RESOURCE_PORT_IO                   0x0001
+#define NDIS_RESOURCE_PORT_10_BIT_DECODE        0x0004
+#define NDIS_RESOURCE_PORT_12_BIT_DECODE        0x0008
+#define NDIS_RESOURCE_PORT_16_BIT_DECODE        0x0010
+#define NDIS_RESOURCE_PORT_POSITIVE_DECODE      0x0020
+#define NDIS_RESOURCE_PORT_PASSIVE_DECODE       0x0040
+#define NDIS_RESOURCE_PORT_WINDOW_DECODE        0x0080
+
+// DMA resource flags
+
+#define NDIS_RESOURCE_DMA_8                     0x0000
+#define NDIS_RESOURCE_DMA_16                    0x0001
+#define NDIS_RESOURCE_DMA_32                    0x0002
+#define NDIS_RESOURCE_DMA_8_AND_16              0x0004
+#define NDIS_RESOURCE_DMA_BUS_MASTER            0x0008
+#define NDIS_RESOURCE_DMA_TYPE_A                0x0010
+#define NDIS_RESOURCE_DMA_TYPE_B                0x0020
+#define NDIS_RESOURCE_DMA_TYPE_F                0x0040
 
 #pragma pack(push)
 #pragma pack(4)
@@ -826,12 +881,26 @@ struct ndis_driver
 struct ndis_adapter
 {
   struct ndis_miniport_block callbacks;
+  struct ndis_adapter *next;
   struct unit *unit;
   struct ndis_driver *driver;
-  struct section *cfg;
   ndis_handle_t context;
   devno_t devno;
   int adapterno;
+};
+
+struct ndis_property
+{
+  char *name;
+  struct ndis_property *next;
+  struct ndis_configuration_parameter value;
+};
+
+struct ndis_config
+{
+  struct section *sect;
+  struct ndis_property *propcache;
+  struct eth_addr hwaddr;
 };
 
 #endif

@@ -61,6 +61,9 @@
 #define PCI_CONFIG_CAPABILITIES		(13 << 2)
 #define PCI_CONFIG_INTR			(15 << 2)
 
+#define PCI_BASE_ADDRESS_MEM_MASK	(~0x0FUL)
+#define PCI_BASE_ADDRESS_IO_MASK	(~0x03UL)
+
 //
 // PCI device codes
 //

@@ -237,6 +237,17 @@ static char *get_pci_class_name(int classcode)
   return "Unknown";
 }
 
+static unsigned long pci_size(unsigned long base, unsigned long mask)
+{
+  // Find the significant bits
+  unsigned long size = mask & base;
+
+  // Get the lowest of them to find the decode size
+  size = size & ~(size-1);
+
+  return size;
+}
+
 void enum_pci_bus(struct bus *bus)
 {
   int devno;
@@ -246,6 +257,7 @@ void enum_pci_bus(struct bus *bus)
   int intrpin;
   int irq;
   unsigned long value;
+  unsigned long len;
   unsigned long vendorid;
   unsigned long deviceid;
   unsigned long classcode;
@@ -298,15 +310,25 @@ void enum_pci_bus(struct bus *bus)
 	// Function I/O and memory base addresses
 	for (bar = 0; bar < 6; bar++)
 	{
-  	  value = pci_config_read_long(bus->busno, devno, funcno, PCI_CONFIG_BASE_ADDR_0 + bar);
-	  if (value != 0)
+	  int reg = PCI_CONFIG_BASE_ADDR_0 + (bar << 2);
+
+  	  value = pci_config_read_long(bus->busno, devno, funcno, reg);
+	  pci_config_write_long(bus->busno, devno, funcno, reg, 0xFFFFFFFF);
+  	  len = pci_config_read_long(bus->busno, devno, funcno, reg);
+	  pci_config_write_long(bus->busno, devno, funcno, reg, value);
+
+	  if (len != 0 && len != 0xFFFFFFFF)
 	  {
-	    unsigned long res = value & 0xFFFFFFFC;
+	    if (value == 0xFFFFFFFF) value = 0;
 
 	    if (value & 1)
-	      add_resource(unit, RESOURCE_IO, 0, res, 1);
+	    {
+	      add_resource(unit, RESOURCE_IO, 0, value & PCI_BASE_ADDRESS_IO_MASK, pci_size(len, PCI_BASE_ADDRESS_IO_MASK & 0xFFFF));
+	    }
 	    else
-	      add_resource(unit, RESOURCE_MEM, 0, res, 1);
+	    {
+	      add_resource(unit, RESOURCE_MEM, 0, value & PCI_BASE_ADDRESS_MEM_MASK, pci_size(len, PCI_BASE_ADDRESS_MEM_MASK));
+	    }
 	  }
 	}
 
