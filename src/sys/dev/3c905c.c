@@ -9,6 +9,9 @@
 #include <os/krnl.h>
 #include "3c905c.h"
 
+#define tracenic 1
+#define nictrace if (tracenic) kprintf
+
 char *connectorname[] = {"10Base-T", "AUI", "n/a", "BNC", "100Base-TX", "100Base-FX", "MII", "n/a", "Auto", "Ext-MII"};
 
 struct sg_entry
@@ -510,7 +513,7 @@ int nic_transmit(struct dev *dev, struct pbuf *p)
   int i;
   struct tx_desc *entry;
 
-  //kprintf("nic: transmit packet, %d bytes, %d fragments\n", p->tot_len, pbuf_clen(p));
+  nictrace("nic: transmit packet, %d bytes, %d fragments\n", p->tot_len, pbuf_clen(p));
 
   // Wait for free entry in transmit ring
   if (wait_for_object(&nic->tx_sem, TX_TIMEOUT) < 0)
@@ -593,7 +596,7 @@ void nic_up_complete(struct nic *nic)
   {
     length = nic->curr_rx->status & 0x1FFF;
 
-    //kprintf("nic: packet received, %d bytes\n", length);
+    nictrace("nic: packet received, %d bytes\n", length);
 
     // Check for errors
     if (status & UP_PACKET_STATUS_ERROR)
@@ -726,7 +729,7 @@ void nic_down_complete(struct nic *nic)
     nic->curr_tx = nic->curr_tx->next;
   }
 
-  //kprintf("nic: release %d tx entries\n", freed);
+  nictrace("nic: release %d tx entries\n", freed);
 
   release_sem(&nic->tx_sem, freed);
 }
@@ -875,6 +878,8 @@ int nic_try_mii(struct nic *nic, unsigned short options)
 {
   int phy_status;
 
+  nictrace("enter nic_try_mii\n");
+
   // First see if there's anything connected to the MII
   if (nic_find_mii_phy(nic) < 0) return -ENODEV;
 
@@ -915,6 +920,7 @@ int nic_try_mii(struct nic *nic, unsigned short options)
 
 int nic_negotiate_link(struct nic *nic, unsigned short options)
 {
+  nictrace("enter nic_negotiate_link\n");
   nic->connector = CONNECTOR_UNKNOWN;
 
   // Try 100MB Connectors
@@ -974,6 +980,8 @@ int nic_program_mii(struct nic *nic, int connector)
   int phy_status;
   unsigned short mii_type;
 
+  nictrace("enter nic_program_mii\n");
+
   // First see if there's anything connected to the MII
   if (!nic_find_mii_phy(nic) < 0) return -ENODEV;
 
@@ -1031,6 +1039,8 @@ int nic_initialize_adapter(struct nic *nic)
   unsigned short mac_control;
   int i;
 
+  nictrace("enter nic_initialize_adapter\n");
+
   // TX engine handling
   execute_command_wait(nic, CMD_TX_DISABLE, 0);
   execute_command_wait(nic, CMD_TX_RESET, TX_RESET_MASK_NETWORK_RESET);
@@ -1076,6 +1086,8 @@ int nic_get_link_speed(struct nic *nic)
   int phy_aner;
   int phy_anar;
   int phy_status;
+
+  nictrace("enter nic_get_link_speed\n");
 
   phy_aner = nic_read_mii_phy(nic, MII_PHY_ANER);
   if (phy_aner < 0) return phy_aner;
@@ -1131,6 +1143,8 @@ int nic_get_link_speed(struct nic *nic)
 
 int nic_restart_receiver(struct nic *nic)
 {
+  nictrace("enter nic_restart_receiver\n");
+
   execute_command_wait(nic, CMD_RX_DISABLE, 0);
   execute_command_wait(nic, CMD_RX_RESET, RX_RESET_MASK_NETWORK_RESET);
   execute_command_wait(nic, CMD_RX_ENABLE, 0);
@@ -1143,6 +1157,8 @@ int nic_restart_transmitter(struct nic *nic)
   unsigned short media_status;
   unsigned long dma_control;
   unsigned long timeout;
+
+  nictrace("enter nic_restart_transmitter\n");
 
   execute_command(nic, CMD_TX_DISABLE, 0);
 
@@ -1199,6 +1215,8 @@ int nic_flow_control(struct nic *nic)
   unsigned short phy_anar;
   unsigned short phy_control;
 
+  nictrace("enter nic_flow_control\n");
+
   phy_anar = nic_read_mii_phy(nic, MII_PHY_ANAR);
   if (phy_anar < 0) return phy_anar;
   phy_anar |= MII_ANAR_FLOWCONTROL;
@@ -1218,6 +1236,8 @@ int nic_configure_mii(struct nic *nic, unsigned short media_options)
   int phy_anar;
   int phy_status;
   unsigned long timeout;
+
+  nictrace("enter nic_configure_mii\n");
 
   phy_control = nic_read_mii_phy(nic, MII_PHY_CONTROL);
   if (phy_control < 0) return phy_control;
@@ -1305,6 +1325,8 @@ int nic_check_mii_configuration(struct nic *nic, unsigned short media_options)
   int new_anar;
   int rc;
 
+  nictrace("enter nic_check_mii_configuration\n");
+
   // Check to see if auto-negotiation has completed.
   phy_control = nic_read_mii_phy(nic, MII_PHY_CONTROL);
   if (phy_control < 0) return phy_control;
@@ -1386,6 +1408,8 @@ int nic_check_mii_auto_negotiation_status(struct nic *nic)
   int phy_anar;
   int phy_anlpar;
 
+  nictrace("enter nic_check_mii_auto_negotiation_status\n");
+
   // Check to see if auto-negotiation has completed.
   phy_status = nic_read_mii_phy(nic, MII_PHY_STATUS);
   if (phy_status < 0) return phy_status;
@@ -1422,6 +1446,8 @@ int nic_check_dc_converter(struct nic *nic, int enabled)
   unsigned long timeout;
   unsigned short media_status;
 
+  nictrace("enter nic_check_dc_converter\n");
+
   media_status = _inpw(nic->iobase + MEDIA_STATUS);
   usleep(1000);
 
@@ -1451,6 +1477,8 @@ int nic_setup_connector(struct nic *nic, int connector)
   unsigned long internal_config;
   unsigned long old_internal_config;
   unsigned short media_status;
+
+  nictrace("enter nic_setup_connector\n");
 
   select_window(nic, 3);
 
@@ -1544,6 +1572,8 @@ int nic_setup_media(struct nic *nic)
   unsigned long internal_config;
   unsigned short mac_control;
   int rc;
+
+  nictrace("enter nic_setup_media\n");
 
   // If this is a 10mb Lightning card, assume that the 10FL bit is
   // set in the media options register
@@ -1663,6 +1693,8 @@ int nic_software_work(struct nic *nic)
   unsigned short net_diag;
   int phy_reg;
 
+  nictrace("enter nic_software_work\n");
+
   if (!(nic->eeprom[EEPROM_SOFTWARE_INFO2] & ENABLE_MWI_WORK)) 
   {
     dma_control = _inpd(nic->iobase + DMA_CONTROL);
@@ -1686,6 +1718,8 @@ int nic_software_work(struct nic *nic)
 int nic_setup_buffers(struct nic *nic)
 {
   int i;
+
+  nictrace("enter nic_setup_buffers\n");
 
   // Setup the receive ring
   for (i = 0; i < RX_RING_SIZE; i++)
@@ -1735,6 +1769,8 @@ int nic_start_adapter(struct nic *nic)
   unsigned short diagnostics;
   unsigned long dma_control;
 
+  nictrace("enter nic_start_adapter\n");
+
   // Enable upper bytes counting in diagnostics register.
   select_window(nic, 4);
 
@@ -1779,6 +1815,8 @@ int nic_start_adapter(struct nic *nic)
 
   // Delay three seconds, only some switches need this
   sleep(3000);
+
+  nictrace("exit nic_start_adapter\n");
 
   return 0;
 }
