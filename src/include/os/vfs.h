@@ -159,7 +159,7 @@ krnlapi int getfsstat(struct statfs *buf, size_t size);
 krnlapi int fstatfs(struct file *filp, struct statfs *buf);
 krnlapi int statfs(char *name, struct statfs *buf);
 
-krnlapi int open(char *name, int mode, struct file **retval);
+krnlapi int open(char *name, int flags, struct file **retval);
 krnlapi int close(struct file *filp);
 krnlapi int flush(struct file *filp);
 

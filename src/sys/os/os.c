@@ -89,6 +89,27 @@ int *_errno()
   return &(gettib()->errnum);
 }
 
+handle_t creat(const char *name, int mode)
+{
+  return open(name, O_CREAT | O_TRUNC, mode);
+}
+
+int access(const char *name, int mode)
+{
+  int rc;
+
+  // TODO: access checking by mode not yet implemented 
+  //   00 = existence
+  //   02 = write permission
+  //   04 = read permission
+  //   06 = read and write permission
+
+  rc = stat(name, NULL);
+  if (rc < 0) return rc;
+
+  return 0;
+}
+
 void *malloc(size_t size)
 {
   void *p;

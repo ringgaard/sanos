@@ -241,6 +241,7 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struc
 void init_handles();
 
 krnlapi handle_t halloc(struct object *o);
+krnlapi int hassign(struct object *o, handle_t h);
 krnlapi int hfree(handle_t h);
 
 krnlapi struct object *olock(handle_t h, int type);

@@ -38,21 +38,45 @@
 #ifndef IO_H
 #define IO_H
 
+#ifndef osapi
+#define osapi __declspec(dllimport)
+#endif
+
+#ifndef _SIZE_T_DEFINED
+#define _SIZE_T_DEFINED
+typedef unsigned int size_t;
+#endif
+
+#ifndef _HANDLE_T_DEFINED
+#define _HANDLE_T_DEFINED
+typedef int handle_t;
+#endif
+
+#ifndef _LOFF_T_DEFINED
+#define _LOFF_T_DEFINED
+typedef unsigned int loff_t;
+#endif
+
+osapi handle_t open(const char *name, int flags, ...);
+osapi handle_t creat(const char *name, int mode);
+osapi int close(handle_t h);
+
+osapi int read(handle_t f, void *data, size_t size);
+osapi int write(handle_t f, const void *data, size_t size);
+
+osapi handle_t dup(handle_t h);
+osapi handle_t dup2(handle_t h1, handle_t h2);
+
+osapi loff_t tell(handle_t f);
+osapi loff_t lseek(handle_t f, loff_t offset, int origin);
+
+osapi int access(const char *name, int mode);
+
 #if 0
-// TODO: libc implement (add support for O_TEXT to read() and write())
-int access(char *pathname, int mode);
-int eof(int handle);
-int close(int handle);
-int creat(char *filename, int pmode);
-int dup(int handle);
-int dup2(int handle1, int handle2);
-long lseek(int handle, long offset, int origin);
-int open(char *filename, int oflag, ...);
-int read(int handle, void *buffer, unsigned int count);
+// TODO: implement in os.dll
+int eof(int h);
 int sopen(char *filename, int oflag, int shflag, ...);
-long tell(int handle);
 int umask(int pmode);
-int write(int handle, void *buffer, unsigned int count);
 #endif
 
 #endif

@@ -39,6 +39,49 @@ struct object **htab = (struct object **) HTABBASE;
 handle_t hfreelist = NOHANDLE;
 int htabsize = 0;
 
+static int expand_htab()
+{
+  unsigned long pfn;
+  handle_t h;
+
+  if (htabsize == HTABSIZE / sizeof(struct object *)) return -ENFILE;
+  pfn = alloc_pageframe('HTAB');
+  map_page(htab + htabsize, pfn, PT_WRITABLE | PT_PRESENT);
+
+  for (h = htabsize + HANDLES_PER_PAGE - 1; h >= htabsize; h--)
+  {
+    htab[h] = (struct object *) hfreelist;
+    hfreelist = h;
+  }
+
+  htabsize += HANDLES_PER_PAGE;
+  return 0;
+}
+
+static int remove_from_freelist(handle_t h)
+{
+  if (h == hfreelist)
+  {
+    hfreelist = ((handle_t) htab[h]);
+    return 0;
+  }
+  else 
+  {
+    handle_t fl = hfreelist;
+
+    while (fl != NOHANDLE)
+    {
+      if (h == ((handle_t) htab[fl]))
+      {
+	htab[fl] = htab[h];
+	return 0;
+      }
+    }
+
+    return -EBADF;
+  }
+}
+
 //
 // halloc
 //
@@ -48,23 +91,13 @@ int htabsize = 0;
 handle_t halloc(struct object *o)
 {
   handle_t h;
+  int rc;
 
   // Expand handle table if full
   if (hfreelist == NOHANDLE)
   {
-    unsigned long pfn;
-
-    if (htabsize == HTABSIZE / sizeof(struct object *)) return -ENFILE;
-    pfn = alloc_pageframe('HTAB');
-    map_page(htab + htabsize, pfn, PT_WRITABLE | PT_PRESENT);
-
-    for (h = htabsize + HANDLES_PER_PAGE - 1; h >= htabsize; h--)
-    {
-      htab[h] = (struct object *) hfreelist;
-      hfreelist = h;
-    }
-
-    htabsize += HANDLES_PER_PAGE;
+    rc = expand_htab();
+    if (rc < 0) return rc;
   }
 
   h = hfreelist;
@@ -73,6 +106,48 @@ handle_t halloc(struct object *o)
   o->handle_count++;
 
   return h;
+}
+
+//
+// hassign
+//
+// Assign handle to object. If the handle is in use the handle os closed before beeing assigned
+//
+
+int hassign(struct object *o, handle_t h)
+{
+  int rc;
+
+  if (h > HTABSIZE / sizeof(handle_t)) return -EBADF;
+
+  while (htabsize <= h)
+  {
+    rc = expand_htab();
+    if (rc < 0) return rc;
+  }
+
+  if (htab[h] < (struct object *) OSBASE)
+  {
+    // Not allocated, remove from freelist
+    rc = remove_from_freelist(h);
+    if (rc < 0) return rc;
+  }
+  else
+  {
+    // Handle already allocated, free handle
+    if (--o->handle_count == 0)
+    {
+      rc = close_object(htab[h]);
+      if (htab[h]->lock_count == 0) destroy_object(htab[h]);
+      if (rc < 0) return rc;
+    }
+  }
+
+  // Assign handle to object
+  htab[h] = o;
+  o->handle_count++;
+
+  return 0;
 }
 
 //

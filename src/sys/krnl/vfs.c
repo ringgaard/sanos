@@ -228,7 +228,7 @@ struct filesystem *register_filesystem(char *name, struct fsops *ops)
   return fsys;
 }
 
-struct file *newfile(struct fs *fs, char *path, int mode)
+struct file *newfile(struct fs *fs, char *path, int flags)
 {
   struct file *filp;
 
@@ -237,7 +237,7 @@ struct file *newfile(struct fs *fs, char *path, int mode)
   init_object(&filp->object, OBJECT_FILE);
   
   filp->fs = fs;
-  filp->flags = mode;
+  filp->flags = flags;
   filp->pos = 0;
   filp->data = NULL;
   filp->path = strdup(path);
@@ -475,7 +475,7 @@ int statfs(char *name, struct statfs *buf)
   return get_fsstat(fs, buf);
 }
 
-int open(char *name, int mode, struct file **retval)
+int open(char *name, int flags, struct file **retval)
 {
   struct fs *fs;
   struct file *filp;
@@ -489,7 +489,7 @@ int open(char *name, int mode, struct file **retval)
   fs = fslookup(path, &rest);
   if (!fs) return -ENOENT;
 
-  filp = newfile(fs, path, mode);
+  filp = newfile(fs, path, flags);
   if (!filp) return -ENFILE;
 
   if (fs->ops->open)

@@ -349,21 +349,23 @@ static int sys_open(char *params)
 {
   struct file *f;
   char *name;
+  int flags;
   int mode;
   int rc;
 
-  if (lock_buffer(params, 8) < 0) return -EFAULT;
+  if (lock_buffer(params, 12) < 0) return -EFAULT;
 
   name = *(char **) params;
-  mode = *(int *) (params + 4);
+  flags = *(int *) (params + 4);
+  mode = *(int *) (params + 8);
 
   if (lock_string(name) < 0)
   {
-    unlock_buffer(params, 8);
+    unlock_buffer(params, 12);
     return -EFAULT;
   }
 
-  rc = open(name, mode, &f);
+  rc = open(name, flags, &f);
   if (rc == 0)
   {
     rc = halloc(&f->object);
@@ -371,7 +373,7 @@ static int sys_open(char *params)
   }
 
   unlock_string(name);
-  unlock_buffer(params, 8);
+  unlock_buffer(params, 12);
 
   return rc;
 }
@@ -1337,6 +1339,32 @@ static int sys_dup(char *params)
   orel(o);
   unlock_buffer(params, 4);
   return newh;
+}
+
+static int sys_dup2(char *params)
+{
+  handle_t h1;
+  handle_t h2;
+  struct object *o;
+  int rc;
+
+  if (lock_buffer(params, 8) < 0) return -EFAULT;
+
+  h1 = *(handle_t *) params;
+  h2 = *(handle_t *) (params + 4);
+
+  o = olock(h1, OBJECT_ANY);
+  if (!o) 
+  {
+    unlock_buffer(params, 8);
+    return -EBADF;
+  }
+
+  rc = hassign(o, h2);
+
+  orel(o);
+  unlock_buffer(params, 8);
+  return rc;
 }
 
 static int sys_mkthread(char *params)
@@ -2759,6 +2787,7 @@ struct syscall_entry syscalltab[] =
   {"sendmsg", "%d,%p,%d", sys_sendmsg},
   {"select", "%d,%p,%p,%p,%p", sys_select},
   {"pipe", "%p", sys_pipe},
+  {"dup2", "%d,%d", sys_dup2},
 };
 
 int syscall(int syscallno, char *params)

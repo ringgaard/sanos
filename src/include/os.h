@@ -222,17 +222,36 @@ struct section;
 #define O_RDONLY                0x0000  // Open for reading only
 #define O_WRONLY                0x0001  // Open for writing only
 #define O_RDWR                  0x0002  // Open for reading and writing
+#define O_SPECIAL               0x0004  // Open for special access
 #define O_APPEND                0x0008  // Writes done at EOF
 
-#define O_SPECIAL               0x0010
+#define O_RANDOM                0x0010  // File access is primarily random
+#define O_SEQUENTIAL            0x0020  // File access is primarily sequential
+#define O_TEMPORARY             0x0040  // Temporary file bit
+#define O_NOINHERIT             0x0080  // Child process doesn't inherit file
 
 #define O_CREAT                 0x0100  // Create and open file
 #define O_TRUNC                 0x0200  // Truncate file
 #define O_EXCL                  0x0400  // Open only if file doesn't already exist
 #define O_DIRECT                0x0800  // Do not use cache for reads and writes
 
-#define O_TEXT                  0x0040  // Enable CR/LF translation
-#define O_BINARY                0x0080  // Disable CR/LF translation
+#define O_SHORT_LIVED           0x1000  // Temporary storage file, try not to flush
+#define O_TEXT                  0x4000  // File mode is text (translated)
+#define O_BINARY                0x8000  // File mode is binary (untranslated)
+
+#endif
+
+//
+// Sharing mode flags
+//
+
+#ifndef SH_COMPAT
+
+#define SH_COMPAT               0x0000
+#define SH_DENYRW               0x0010  // Denies read and write access to file
+#define SH_DENYWR               0x0020  // Denies write access to file
+#define SH_DENYRD               0x0030  // Denies read access to file
+#define SH_DENYNO               0x0040  // Permits read and write access
 
 #endif
 
@@ -240,9 +259,13 @@ struct section;
 // Seek types
 //
 
+#ifndef SEEK_SET
+
 #define SEEK_SET                0       // Seek relative to begining of file
 #define SEEK_CUR                1       // Seek relative to current file position
 #define SEEK_END                2       // Seek relative to end of file
+
+#endif
 
 //
 // Logging
@@ -484,6 +507,9 @@ typedef struct critsect *critsect_t;
 #define PS1                     '\\'    // Primary path separator
 #define PS2                     '/'     // Alternate path separator
 
+#ifndef _STAT_DEFINED
+#define _STAT_DEFINED
+
 struct stat
 {
   int mode;
@@ -503,6 +529,8 @@ struct stat
     unsigned __int64 size;
   };
 };
+
+#endif
 
 struct statfs 
 {
@@ -965,10 +993,12 @@ osapi int getfsstat(struct statfs *buf, size_t size);
 osapi int fstatfs(handle_t f, struct statfs *buf);
 osapi int statfs(const char *name, struct statfs *buf);
 
-osapi handle_t open(const char *name, int mode);
+osapi handle_t open(const char *name, int flags, ...);
+osapi handle_t creat(const char *name, int mode);
 osapi int close(handle_t h);
 osapi int flush(handle_t f);
 osapi handle_t dup(handle_t h);
+osapi handle_t dup2(handle_t h1, handle_t h2);
 
 osapi int read(handle_t f, void *data, size_t size);
 osapi int write(handle_t f, const void *data, size_t size);
@@ -986,6 +1016,7 @@ osapi int utime(const char *name, struct utimbuf *times);
 
 osapi int fstat(handle_t f, struct stat *buffer);
 osapi int stat(const char *name, struct stat *buffer);
+osapi int access(const char *name, int mode);
 
 osapi int chdir(const char *name);
 osapi char *getcwd(char *buf, size_t size);

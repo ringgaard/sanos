@@ -266,3 +266,5 @@ CHANGES
   problem has been fixed.
 
 - The value of errno is now the positive version of the error number instead of the negative.
+
+- dup2(), creat(), and access() added to syscalls

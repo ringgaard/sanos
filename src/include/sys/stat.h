@@ -1,7 +1,7 @@
 //
-// share.h
+// stat.h
 //
-// File sharing modes for sopen
+// Defines structure used by stat() and fstat()
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -35,18 +35,73 @@
 #pragma once
 #endif
 
-#ifndef SHARE_H
-#define SHARE_H
+#ifndef STAT_H
+#define STAT_H
 
-#ifndef SH_COMPAT
-#define SH_COMPAT
+#ifndef osapi
+#define osapi __declspec(dllimport)
+#endif
 
-#define SH_COMPAT               0x0000
-#define SH_DENYRW               0x0010  // Denies read and write access to file
-#define SH_DENYWR               0x0020  // Denies write access to file
-#define SH_DENYRD               0x0030  // Denies read access to file
-#define SH_DENYNO               0x0040  // Permits read and write access
+#ifndef _TIME_T_DEFINED
+#define _TIME_T_DEFINED
+typedef long time_t;
+#endif
+
+#ifndef _INO_T_DEFINED
+#define _INO_T_DEFINED
+typedef unsigned int ino_t;
+#endif
+
+#ifndef _DEVNO_T_DEFINED
+#define _DEVNO_T_DEFINED
+typedef unsigned int devno_t;
+#endif
+
+#ifndef _HANDLE_T_DEFINED
+#define _HANDLE_T_DEFINED
+typedef int handle_t;
+#endif
+
+#ifndef _STAT_DEFINED
+#define _STAT_DEFINED
+
+struct stat
+{
+  int mode;
+  ino_t ino;
+  int nlink;
+  devno_t devno;
+  time_t atime;
+  time_t mtime;
+  time_t ctime;
+  union
+  {
+    struct
+    {
+      unsigned long size_low;
+      unsigned long size_high;
+    } quad;
+    unsigned __int64 size;
+  };
+};
 
 #endif
+
+#ifndef S_IFMT
+
+#define S_IFMT          0xF000         // File type mask
+#define S_IFIFO         0x1000         // Pipe
+#define S_IFCHR         0x2000         // Character device
+#define S_IFDIR         0x4000         // Directory
+#define S_IFREG         0x8000         // Regular file
+
+#define S_IREAD         0x0100         // Read permission
+#define S_IWRITE        0x0080         // Write permission
+#define S_IEXEC         0x0040         // Execute/search permission
+
+#endif
+
+osapi int fstat(handle_t f, struct stat *buffer);
+osapi int stat(const char *name, struct stat *buffer);
 
 #endif

@@ -138,7 +138,7 @@ int statfs(const char *name, struct statfs *buf)
   return syscall(SYSCALL_STATFS, (void *) &name);
 }
 
-handle_t open(const char *name, int mode)
+handle_t open(const char *name, int flags, ...)
 {
   return syscall(SYSCALL_OPEN, (void *) &name);
 }
@@ -463,3 +463,7 @@ int pipe(handle_t fildes[2])
   return syscall(SYSCALL_PIPE, (void *) &fildes);
 }
 
+handle_t dup2(handle_t h1, handle_t h2)
+{
+  return syscall(SYSCALL_DUP2, (void *) &h1);
+}
