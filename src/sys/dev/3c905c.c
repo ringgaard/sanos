@@ -150,26 +150,9 @@ struct driver nic_driver =
   nic_transmit
 };
 
-static void dump_dump_status(unsigned short status)
-{
-  kprintf("nic: Status: ");
-  if (status & INTSTATUS_INT_LATCH) kprintf(" interruptLatch");
-  if (status & INTSTATUS_HOST_ERROR) kprintf(" hostError");
-  if (status & INTSTATUS_TX_COMPLETE) kprintf(" txComplete");
-  if (status & INTSTATUS_RX_COMPLETE) kprintf(" rxComplete");
-  if (status & INTSTATUS_RX_EARLY) kprintf(" rxEarly");
-  if (status & INTSTATUS_INT_REQUESTED) kprintf(" intRequested");
-  if (status & INTSTATUS_UPDATE_STATS) kprintf(" updateStats");
-  if (status & INTSTATUS_LINK_EVENT) kprintf(" linkEvent");
-  if (status & INTSTATUS_DN_COMPLETE) kprintf(" dnComplete");
-  if (status & INTSTATUS_UP_COMPLETE) kprintf(" upComplete");
-  if (status & INTSTATUS_CMD_IN_PROGRESS) kprintf(" cmdInProgress");
-  kprintf(" windowNumber: %d\n", status & INTSTATUS_WINDOW_NUMBER >> 13);
-}
-
 __inline void execute_command(struct nic *nic, int cmd, int param)
 {
-  _outpw(nic->iobase + CMD, (unsigned short) (cmd + param));
+  _outpw(nic->iobase + CMD, (unsigned short) (cmd | param));
 }
 
 int execute_command_wait(struct nic *nic, int cmd, int param)
@@ -271,25 +254,25 @@ int nicstat_proc(struct proc_file *pf, void *arg)
 
   update_statistics(nic);
 
-  pprintf(pf, "Frames transmitted... : %ul\n", nic->stat.tx_frames_ok);
-  pprintf(pf, "Bytes transmitted.... : %ul\n", nic->stat.tx_bytes_ok);
-  pprintf(pf, "Frames deferred...... : %ul\n", nic->stat.tx_frames_deferred);
-  pprintf(pf, "Single collisions.... : %ul\n", nic->stat.tx_single_collisions);
-  pprintf(pf, "Multiple collisions.. : %ul\n", nic->stat.tx_multiple_collisions);
-  pprintf(pf, "Late collisions...... : %ul\n", nic->stat.tx_late_collisions);
-  pprintf(pf, "Carrier lost......... : %ul\n", nic->stat.tx_carrier_lost);
-  pprintf(pf, "Maximum collisions .. : %ul\n", nic->stat.tx_maximum_collisions);
-  pprintf(pf, "SQE errors........... : %ul\n", nic->stat.tx_sqe_errors);
-  pprintf(pf, "HW errors............ : %ul\n", nic->stat.tx_hw_errors);
-  pprintf(pf, "Jabber errors........ : %ul\n", nic->stat.tx_jabber_error);
-  pprintf(pf, "Unknown errors....... : %ul\n", nic->stat.tx_unknown_error);
-  pprintf(pf, "Frames received...... : %ul\n", nic->stat.rx_frames_ok);
-  pprintf(pf, "Bytes received....... : %ul\n", nic->stat.rx_bytes_ok);
-  pprintf(pf, "Overruns............. : %ul\n", nic->stat.rx_overruns);
-  pprintf(pf, "Bad SSD.............. : %ul\n", nic->stat.rx_bad_ssd);
-  pprintf(pf, "Allignment errors.... : %ul\n", nic->stat.rx_alignment_error);
-  pprintf(pf, "CRC errors........... : %ul\n", nic->stat.rx_bad_crc_error);
-  pprintf(pf, "Oversized frames..... : %ul\n", nic->stat.rx_oversize_error);
+  pprintf(pf, "Frames transmitted... : %lu\n", nic->stat.tx_frames_ok);
+  pprintf(pf, "Bytes transmitted.... : %lu\n", nic->stat.tx_bytes_ok);
+  pprintf(pf, "Frames deferred...... : %lu\n", nic->stat.tx_frames_deferred);
+  pprintf(pf, "Single collisions.... : %lu\n", nic->stat.tx_single_collisions);
+  pprintf(pf, "Multiple collisions.. : %lu\n", nic->stat.tx_multiple_collisions);
+  pprintf(pf, "Late collisions...... : %lu\n", nic->stat.tx_late_collisions);
+  pprintf(pf, "Carrier lost......... : %lu\n", nic->stat.tx_carrier_lost);
+  pprintf(pf, "Maximum collisions .. : %lu\n", nic->stat.tx_maximum_collisions);
+  pprintf(pf, "SQE errors........... : %lu\n", nic->stat.tx_sqe_errors);
+  pprintf(pf, "HW errors............ : %lu\n", nic->stat.tx_hw_errors);
+  pprintf(pf, "Jabber errors........ : %lu\n", nic->stat.tx_jabber_error);
+  pprintf(pf, "Unknown errors....... : %lu\n", nic->stat.tx_unknown_error);
+  pprintf(pf, "Frames received...... : %lu\n", nic->stat.rx_frames_ok);
+  pprintf(pf, "Bytes received....... : %lu\n", nic->stat.rx_bytes_ok);
+  pprintf(pf, "Overruns............. : %lu\n", nic->stat.rx_overruns);
+  pprintf(pf, "Bad SSD.............. : %lu\n", nic->stat.rx_bad_ssd);
+  pprintf(pf, "Allignment errors.... : %lu\n", nic->stat.rx_alignment_error);
+  pprintf(pf, "CRC errors........... : %lu\n", nic->stat.rx_bad_crc_error);
+  pprintf(pf, "Oversized frames..... : %lu\n", nic->stat.rx_oversize_error);
 
   return 0;
 }
@@ -771,13 +754,13 @@ void nic_tx_complete(struct nic *nic)
   {
     kprintf("nic: hw error\n");
     nic->stat.tx_hw_errors++;
-    //TODO: reset and enable transmitter
+    nic_restart_transmitter(nic);
   }
   else if (txstatus & TX_STATUS_JABBER) 
   {
     kprintf("nic: jabber error\n");
     nic->stat.tx_jabber_error++;
-    //TODO: reset and enable transmitter
+    nic_restart_transmitter(nic);
   }
   else if (txstatus & TX_STATUS_MAXIMUM_COLLISION)
   {
@@ -901,9 +884,7 @@ int nic_try_mii(struct nic *nic, unsigned short options)
 
   if ((phy_status & MII_STATUS_AUTO) && (phy_status & MII_STATUS_EXTENDED)) 
   {
-    //  If it is capable of auto negotiation, see if it has been done already.
-    kprintf("nic: capable of autonegotiation\n");
-
+    // If it is capable of auto negotiation, see if it has been done already.
     // Check the current MII auto-negotiation state and see if we need to
     // start auto-neg over.
  
@@ -1056,7 +1037,7 @@ int nic_initialize_adapter(struct nic *nic)
 
   // RX engine handling
   execute_command_wait(nic, CMD_RX_DISABLE, 0);
-  execute_command_wait(nic, CMD_TX_RESET, RX_RESET_MASK_NETWORK_RESET);
+  execute_command_wait(nic, CMD_RX_RESET, RX_RESET_MASK_NETWORK_RESET);
 
   // Acknowledge any pending interrupts.
   execute_command(nic, CMD_ACKNOWLEDGE_INTERRUPT, ALL_ACK);
@@ -1113,27 +1094,32 @@ int nic_get_link_speed(struct nic *nic)
 
   if ((phy_anar & MII_ANAR_100TXFD) && (phy_anlpar & MII_ANLPAR_100TXFD)) 
   {
+    //nic->connector = CONNECTOR_100BASETX;
     nic->linkspeed = 100;
     nic->fullduplex = 1;
   }
   else if ((phy_anar & MII_ANAR_100TX) && (phy_anlpar & MII_ANLPAR_100TX)) 
   {
+    //nic->connector = CONNECTOR_100BASETX;
     nic->linkspeed = 100;
     nic->fullduplex = 0;
   }
   else if ((phy_anar & MII_ANAR_10TFD) && (phy_anlpar & MII_ANLPAR_10TFD)) 
   {
+    //nic->connector = CONNECTOR_10BASET;
     nic->linkspeed = 10;
     nic->fullduplex = 1;
   }
   else if ((phy_anar & MII_ANAR_10T) && (phy_anlpar & MII_ANLPAR_10T)) 
   {
+    //nic->connector = CONNECTOR_10BASET;
     nic->linkspeed = 10;
     nic->fullduplex = 0;
   }
   else if (!(phy_aner & MII_ANER_LPANABLE))
   {
     // Link partner is not capable of auto-negotiation. Fall back to 10HD.
+    //nic->connector = CONNECTOR_10BASET;
     nic->linkspeed = 10;
     nic->fullduplex = 0;
   }
@@ -1278,7 +1264,6 @@ int nic_configure_mii(struct nic *nic, unsigned short media_options)
       phy_anar |= MII_ANAR_10TFD;
     else
       phy_anar |= MII_ANAR_10T;
-
   }
 
   // Enable and start auto-negotiation
@@ -1307,7 +1292,6 @@ int nic_configure_mii(struct nic *nic, unsigned short media_options)
       }
       sleep(10);
     }
-
   }
 
   return 0;
@@ -1595,12 +1579,12 @@ int nic_setup_media(struct nic *nic)
   if (nic->connector == CONNECTOR_UNKNOWN) 
   {
     nic->connector = (internal_config & INTERNAL_CONFIG_TRANSCEIVER_MASK) >> INTERNAL_CONFIG_TRANSCEIVER_SHIFT;
+    if (internal_config & INTERNAL_CONFIG_AUTO_SELECT) nic->autoselect = 1;
   }
 
   // If auto selection of connector was specified, do it now...
   if (nic->connector == CONNECTOR_AUTONEGOTIATION) 
   {
-    nic->autoselect = 1;
     execute_command(nic, CMD_STATISTICS_DISABLE, 0);
     nic_negotiate_link(nic, options_available);
   }
@@ -1774,6 +1758,9 @@ int nic_start_adapter(struct nic *nic)
   _outpd(nic->iobase + DOWN_LIST_POINTER, 0);
   execute_command(nic, CMD_DOWN_UNSTALL, 0);
 
+  // Set receive filter
+  execute_command(nic, CMD_SET_RX_FILTER, RECEIVE_INDIVIDUAL | RECEIVE_MULTICAST | RECEIVE_BROADCAST);
+
   // Enable the statistics back.
   execute_command(nic, CMD_STATISTICS_ENABLE, 0);
 
@@ -1819,9 +1806,9 @@ int __declspec(dllexport) install(struct unit *unit)
       unit->productname = "3Com EtherLink 3C905C";
       break;
 
-    case UNITCODE_3C905TX:
+    case UNITCODE_3C9051:
       unit->vendorname = "3Com";
-      unit->productname = "3Com EtherLink 3C905-TX";
+      unit->productname = "3Com EtherLink 3C905-1";
       break;
 
     default:
@@ -1839,6 +1826,7 @@ int __declspec(dllexport) install(struct unit *unit)
   nic->irq = (unsigned short) get_unit_irq(unit);
   nic->deviceid = PCI_DEVICE_ID(unit->unitcode);
   nic->connector = CONNECTOR_UNKNOWN;
+  nic->devno = dev_make("nic#", &nic_driver, unit, nic);
 
   // Enable bus mastering
   pci_enable_busmastering(unit);
@@ -1889,41 +1877,6 @@ int __declspec(dllexport) install(struct unit *unit)
   rc = nic_start_adapter(nic);
   if (rc < 0) return rc;
 
-#if 0
-  // Auto-negotiate link
-  rc = nic_negotiate_link(nic, 0);
-  if (rc < 0) return rc;
-
-  // Set buffers
-  execute_command_wait(nic, CMD_UP_STALL, 0);
-  _outpd(nic->iobase + UP_LIST_POINTER, (unsigned long) virt2phys(nic->curr_rx));
-  execute_command(nic, CMD_UP_UNSTALL, 0);
-
-  init_sem(&nic->tx_sem, TX_RING_SIZE);
-  execute_command_wait(nic, CMD_DOWN_STALL, 0);
-  _outpd(nic->iobase + DOWN_LIST_POINTER, 0);
-  execute_command(nic, CMD_DOWN_UNSTALL, 0);
-
-  // Set receive filter
-  execute_command(nic, CMD_SET_RX_FILTER, RECEIVE_INDIVIDUAL | RECEIVE_MULTICAST | RECEIVE_BROADCAST);
-
-  // Enable indication for all interrupts.
-  execute_command(nic, CMD_SET_INDICATION_ENABLE, ALL_INTERRUPTS);
-
-  // Enable all interrupts to the host.
-  execute_command(nic, CMD_SET_INTERRUPT_ENABLE, ALL_INTERRUPTS);
-  _inpw(nic->iobase + STATUS);
-
-  // Enable statistics
-  clear_statistics(nic);
-  execute_command(nic, CMD_STATISTICS_ENABLE, 0);
-
-  // Enable the transmit and receive engines.
-  execute_command(nic, CMD_RX_ENABLE, 0);
-  execute_command(nic, CMD_TX_ENABLE, 0);
-#endif
-
-  nic->devno = dev_make("nic#", &nic_driver, unit, nic);
   register_proc_inode(device(nic->devno)->name, nicstat_proc, nic);
 
   kprintf("%s: %s, iobase 0x%x irq %d hwaddr %la\n", device(nic->devno)->name, unit->productname, nic->iobase, nic->irq, &nic->hwaddr);

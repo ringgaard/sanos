@@ -28,33 +28,38 @@
 
 #define UNITCODE_3C905B1           PCI_UNITCODE(0x10B7, 0x9055)
 #define UNITCODE_3C905C            PCI_UNITCODE(0x10B7, 0x9200)
-#define UNITCODE_3C905TX           PCI_UNITCODE(0x10B7, 0x9050)
+#define UNITCODE_3C9051            PCI_UNITCODE(0x10B7, 0x9050)
 
 //
 // Commands
 //
 
-#define CMD_RESET                  0x0000
-#define CMD_SELECT_WINDOW          0x0800
-#define CMD_ENABLE_DC_CONVERTER    0x1000
-#define CMD_RX_DISABLE             0x1800
-#define CMD_RX_RESET               0x2800
-#define CMD_UP_STALL		   0x3000
-#define CMD_TX_RESET               0x5800
-#define CMD_RX_ENABLE              0x2000
-#define CMD_UP_UNSTALL		   0x3001
-#define CMD_DOWN_STALL		   0x3002
-#define CMD_DOWN_UNSTALL	   0x3003
-#define CMD_TX_ENABLE              0x4800
-#define CMD_TX_DISABLE	           0x5000
-#define CMD_SET_RX_FILTER          0x8000
-#define CMD_REQUEST_INTERRUPT      0x6000
-#define CMD_ACKNOWLEDGE_INTERRUPT  0x6800
-#define CMD_SET_INDICATION_ENABLE  0x7800
-#define CMD_SET_INTERRUPT_ENABLE   0x7000
-#define CMD_STATISTICS_ENABLE      0xA800
-#define CMD_STATISTICS_DISABLE     0xB000
-#define CMD_DISABLE_DC_CONVERTER   0xB800
+#define CMD_RESET                  (0x0 << 0xB)
+#define CMD_SELECT_WINDOW          (0x1 << 0xB)
+#define CMD_ENABLE_DC_CONVERTER    (0x2 << 0xB)
+#define CMD_RX_DISABLE             (0x3 << 0xB)
+#define CMD_RX_ENABLE              (0x4 << 0xB)
+#define CMD_RX_RESET               (0x5 << 0xB)
+#define CMD_UP_STALL		   ((0x6 << 0xB) | 0x0)
+#define CMD_UP_UNSTALL		   ((0x6 << 0xB) | 0x1)
+#define CMD_DOWN_STALL		   ((0x6 << 0xB) | 0x2)
+#define CMD_DOWN_UNSTALL	   ((0x6 << 0xB) | 0x3)
+#define CMD_TX_DONE                (0x7 << 0xB)
+#define CMD_RX_DISCARD             (0x8 << 0xB)
+#define CMD_TX_ENABLE              (0x9 << 0xB)
+#define CMD_TX_DISABLE	           (0xA << 0xB)
+#define CMD_TX_RESET               (0xB << 0xB)
+#define CMD_REQUEST_INTERRUPT      (0xC << 0xB)
+#define CMD_ACKNOWLEDGE_INTERRUPT  (0xD << 0xB)
+#define CMD_SET_INTERRUPT_ENABLE   (0xE << 0xB)
+#define CMD_SET_INDICATION_ENABLE  (0xF << 0xB)
+#define CMD_SET_RX_FILTER          (0x10 << 0xB)
+#define CMD_TX_AGAIN               (0x13 << 0xB)
+#define CMD_STATISTICS_ENABLE      (0x15 << 0xB)
+#define CMD_STATISTICS_DISABLE     (0x16 << 0xB)
+#define CMD_DISABLE_DC_CONVERTER   (0x17 << 0xB)
+#define CMD_SET_HASH_FILTER_BIT	   (0x19 << 0xB)
+#define CMD_TX_FIFO_BISECT	   (0x1B << 0xB)
 
 //
 // Non-windowed registers
@@ -208,20 +213,19 @@
 // IntStatus flags
 //
 
-#define INTSTATUS_INT_LATCH        0x0001
-#define INTSTATUS_HOST_ERROR       0x0002
-#define INTSTATUS_TX_COMPLETE      0x0004
-#define INTSTATUS_RX_COMPLETE      0x0010
-#define INTSTATUS_RX_EARLY         0x0020
-#define INTSTATUS_INT_REQUESTED    0x0040
-#define INTSTATUS_UPDATE_STATS     0x0080
-#define INTSTATUS_LINK_EVENT       0x0100
-#define INTSTATUS_DN_COMPLETE      0x0200
-#define INTSTATUS_UP_COMPLETE      0x0400
-#define INTSTATUS_CMD_IN_PROGRESS  0x1000
-#define INTSTATUS_WINDOW_NUMBER    0xE000
+#define INTSTATUS_INT_LATCH             (1 << 0)
+#define INTSTATUS_HOST_ERROR            (1 << 1)
+#define INTSTATUS_TX_COMPLETE           (1 << 2)
+#define INTSTATUS_RX_COMPLETE           (1 << 4)
+#define INTSTATUS_RX_EARLY              (1 << 5)
+#define INTSTATUS_INT_REQUESTED         (1 << 6)
+#define INTSTATUS_UPDATE_STATS          (1 << 7)
+#define INTSTATUS_LINK_EVENT            (1 << 8)
+#define INTSTATUS_DN_COMPLETE           (1 << 9)
+#define INTSTATUS_UP_COMPLETE           (1 << 10)
+#define INTSTATUS_CMD_IN_PROGRESS       (1 << 12)
 
-#define ALL_INTERRUPTS		   0x06EE
+#define ALL_INTERRUPTS		        0x06EE
 
 //
 // AcknowledgeInterrupt flags
@@ -496,7 +500,7 @@
 #define ENABLE_MWI_WORK	           0x0020
 
 //
-// MII Transceiver Type store in miiSelect
+// MII Transceiver Type
 //
 #define MIISELECT_GENERIC	0x0000
 #define MIISELECT_100BT4	0x0001
