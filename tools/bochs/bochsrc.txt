@@ -20,9 +20,10 @@ romimage: file=BIOS-bochs, address=0xf0000
 #megs: 256
 #megs: 128
 #megs: 64
-megs: 32
+#megs: 32
 #megs: 16
 #megs: 8
+megs: 8
 
 #=======================================================================
 # VGAROMIMAGE
