@@ -288,7 +288,7 @@ void httpd_accept(struct httpd_server *server)
   sock = accept(server->sock, &addr.sa, &addrlen);
   if (sock < 0) return;
 
-  //printf("connect %a port %d\n", &addr.sa_in.sin_addr.s_addr, ntohs(addr.sa_in.sin_port));
+  //printf("connect %s port %d\n", inet_ntoa(addr.sa_in.sin_addr), ntohs(addr.sa_in.sin_port));
 
   conn = (struct httpd_connection *) malloc(sizeof(struct httpd_connection));
   if (!conn) return;
@@ -362,7 +362,7 @@ void httpd_close_connection(struct httpd_connection *conn)
 {
   struct httpd_server *server = conn->server;
 
-  //printf("close %a port %d\n", &conn->client_addr.sa_in.sin_addr.s_addr, ntohs(conn->client_addr.sa_in.sin_port));
+  //printf("close %s port %d\n", inet_ntoa(conn->client_addr.sa_in.sin_addr), ntohs(conn->client_addr.sa_in.sin_port));
 
   close(conn->sock);
   if (conn->fd >= 0)
@@ -1142,7 +1142,7 @@ int httpd_process(struct httpd_connection *conn)
   conn->keep = rsp.keep_alive;
   httpd_finish_processing(conn);
 
-  return rc;
+  return 0;
 
 errorexit:
   httpd_finish_processing(conn);

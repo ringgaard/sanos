@@ -201,6 +201,9 @@
 			<File
 				RelativePath="..\src\include\time.h">
 			</File>
+			<File
+				RelativePath="..\src\include\unistd.h">
+			</File>
 			<Filter
 				Name="include/sys"
 				Filter="">

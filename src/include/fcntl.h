@@ -38,6 +38,15 @@
 #ifndef FCNTL_H
 #define FCNTL_H
 
+#ifndef osapi
+#define osapi __declspec(dllimport)
+#endif
+
+#ifndef _HANDLE_T_DEFINED
+#define _HANDLE_T_DEFINED
+typedef int handle_t;
+#endif
+
 #ifndef O_RDONLY
 
 #define O_RDONLY                0x0000  // Open for reading only
@@ -61,5 +70,25 @@
 #define O_BINARY                0x8000  // File mode is binary (untranslated)
 
 #endif
+
+#ifndef R_OK
+
+#define	R_OK	4		// Test for read permission
+#define	W_OK	2		// Test for write permission
+#define	X_OK	1		// Test for execute permission
+#define	F_OK	0		// Test for existence
+
+#endif
+
+#ifndef SEEK_SET
+
+#define SEEK_SET                0       // Seek relative to begining of file
+#define SEEK_CUR                1       // Seek relative to current file position
+#define SEEK_END                2       // Seek relative to end of file
+
+#endif
+
+osapi handle_t open(const char *name, int flags, ...);
+osapi handle_t creat(const char *name, int mode);
 
 #endif

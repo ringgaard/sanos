@@ -282,7 +282,7 @@ httpdapi int httpd_resource_handler(struct httpd_connection *conn);
 
 #ifdef HTTPD_LIB
 
-// hloc.c
+// hlog.c
 
 int parse_log_columns(struct httpd_server *server, char *fields);
 int log_request(struct httpd_request *req);
