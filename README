@@ -1,0 +1,53 @@
+Sanos Operating System Kernel
+-----------------------------
+
+Sanos is a OS kernel for use in PC based server appliances. The kernel
+was developed as part of an experiment on investigating the feasibility
+of running java server applications without a traditional operating but
+only using a simple kernel.
+
+Sanos is open source under a BSD style license. Please see the COPYING
+file for details. Sanos can be downloaded from www.jbox.dk.
+
+Features:
+
+ - No nonsense modern application server operating system kernel.
+ - Open Source (BSD style license).
+ - Runs on standard PC hardware.
+ - Simple installation.
+ - 32-bit protected mode.
+ - Interrupt driven.
+ - Multitasking.
+ - Single address space.
+ - Kernel protection.
+ - Virtual memory.
+ - PE dynamically loadable modules (standard EXE/DLL format).
+ - Both kernel and user modules.
+ - Low memory footprint (less than 512 KB RAM)
+ - Lightweight
+ - Embedding support with PC104 and Flash devices
+ - Self configuring (PCI,PnP & DHCP support)
+ - TCP/IP networking stack
+ - Very efficient multithreading
+ - Written in C (98%) and x86 assembler (2%)
+ - Development using Microsoft Visual C.
+ - Remote source level debugging support (windbg)
+
+
+  -- Michael Ringgaard <mri@jbox.dk>
+
+
+Contributions to sanos
+----------------------
+
+The sanos kernel was written by Michael Ringgaard <mri@jbox.dk>
+
+The heap allocator is a port of dlmalloc by Doug Lea <dl@cs.oswego.edu>
+
+The TCP/IP network stack is a port of lwIP by Adam Dunkels <adam@sics.se>
+
+The DHCP module is a port of the lwIP DHCP module by Leon Woestenberg <leon.woestenberg@axon.nl>
+
+The DNS resolver is a port of ISC BIND lwres (http://www.isc.org/products/BIND)
+
+The kernel timer implementation is a port of Finn Arne Gangstads kernel timer implementation
