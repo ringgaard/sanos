@@ -455,7 +455,7 @@ static void handle_list()
   int i;
   struct object *o;
   int lines = 0;
-  int objcount[6];
+  int objcount[7];
 
   for (i = 0; i < 7; i++) objcount[i] = 0;
 
