@@ -13,6 +13,7 @@
 #include <net/net.h>
 
 unsigned long tcp_ticks;
+unsigned long iss;
 struct timer tcpslow_timer;
 struct timer tcpfast_timer;
 struct task tcp_slow_task;
@@ -650,6 +651,7 @@ struct tcp_pcb *tcp_new()
 void tcp_init()
 {
   // Initialize timer
+  iss = time(0) + 6510;
   tcp_ticks = 0;
   init_task(&tcp_slow_task);
   init_task(&tcp_fast_task);
@@ -782,8 +784,6 @@ void tcp_pcb_remove(struct tcp_pcb **pcblist, struct tcp_pcb *pcb)
 
 unsigned long tcp_next_iss()
 {
-  static unsigned long iss = 6510;
-
   iss += tcp_ticks;
   return iss;
 }

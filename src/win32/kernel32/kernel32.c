@@ -463,6 +463,7 @@ HANDLE WINAPI FindFirstFileA
     }
 
     // Add dummy entry
+    close(finddata->fhandle);
     free(finddata);
     if (stat(finddata->dir, &statbuf) < 0) 
     {

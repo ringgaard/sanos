@@ -140,19 +140,19 @@ void load_kernel(int bootdrv)
   kerneladdr = alloc_heap(kernelpages);
 
   // Read kernel from boot device
+  kprintf("  ");
   if (inode->depth == 0)
   {
     addr = kerneladdr;
     for (i = 0; i < (int) inode->blocks; i++)
     {
-      kprintf(".");
+      kprintf("\b%c", "|/-\\"[i % 4]);
       if (boot_read(addr, blocksize, inode->blockdir[i] * blks_per_sect + start) != blocksize)
       {
         panic("error reading kernel from boot device");
       }
       addr += blocksize;
     }
-    kprintf("\n");
   }
   else if (inode->depth == 1)
   {
@@ -167,7 +167,7 @@ void load_kernel(int bootdrv)
 
       for (j = 0; j < (int) (blocksize / sizeof(blkno_t)); j++)
       {
-        kprintf(".");
+        kprintf("\b%c", "|/-\\"[j % 4]);
         if (boot_read(addr, blocksize, blockdir[j] * blks_per_sect + start) != blocksize)
         {
           panic("error reading kernel inode dir from boot device");
@@ -181,10 +181,11 @@ void load_kernel(int bootdrv)
 
       if (blkno == inode->blocks) break;
     }
-    kprintf("\n");
   }
   else
     panic("unsupported inode depth");
+
+  kprintf("\b\n");
 
   // Determine entry point for kernel
   doshdr = (struct dos_header *) kerneladdr;

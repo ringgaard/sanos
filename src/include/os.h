@@ -353,10 +353,32 @@ struct critsect
 typedef struct critsect *critsect_t;
 
 //
+// I/O control codes
+//
+//   3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1
+//   1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
+//  +---+-------------+-------------+---------------+---------------+
+//  |dir|             |   paramlen  |  category     |   function    |
+//  +---+-------------+-------------+---------------+---------------+
+
+#define IOCPARM_MASK    0x7F            // Parameters must be < 128 bytes
+#define IOC_VOID        0x20000000      // No parameters
+#define IOC_OUT         0x40000000      // Copy out parameters
+#define IOC_IN          0x80000000      // Copy in parameters
+#define IOC_INOUT       (IOC_IN | IOC_OUT)
+
+#define _IO(x,y)        (IOC_VOID | ((x) << 8) | (y))
+#define _IOR(x,y,t)     (IOC_OUT | (((long) sizeof(t) & IOCPARM_MASK) << 16) | ((x) << 8) | (y))
+#define _IOW(x,y,t)     (IOC_IN |(((long) sizeof(t) & IOCPARM_MASK) << 16) | ((x) << 8)| (y))
+
+//
 // Sockets
 //
 
-#define IOCTL_SOCKWAIT_RECV      1024
+#define FIONREAD      _IOR('f', 127, unsigned long) // Get # bytes to read
+#define FIONBIO       _IOW('f', 126, unsigned long) // Set/clear non-blocking i/o
+
+#define SIOWAITRECV  _IOW('s', 120, unsigned long)
 
 struct in_addr 
 {

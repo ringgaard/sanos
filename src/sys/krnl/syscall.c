@@ -2433,7 +2433,7 @@ int syscall(int syscallno, char *params)
   t->uctxt = (char *) sysctxt + offsetof(struct syscall_context, traptype);
   if (syscallno < 0 || syscallno > SYSCALL_MAX) return -ENOSYS;
 
-#if SYSCALL_LOGENTER
+#ifdef SYSCALL_LOGENTER
   {
     char buf[1024];
 

@@ -19,6 +19,12 @@
 #define SOCKTYPE_NUM          2
 
 //
+// Socket flags
+//
+
+#define SOCK_NBIO             1
+
+//
 // Socket state
 //
 
@@ -97,6 +103,7 @@ struct socket
   struct object object;
   int type;
   int state;
+  int flags;
 
   struct sockreq *waithead;
   struct sockreq *waittail;

@@ -159,7 +159,7 @@ sockapi int __stdcall winsock_select(int nfds, fd_set *readfds, fd_set *writefds
 
   millisecs = timeout->tv_sec * 1000 + timeout->tv_usec / 1000;
 
-  rc = ioctl(readfds->fd[0], IOCTL_SOCKWAIT_RECV, &millisecs, 4);
+  rc = ioctl(readfds->fd[0], SIOWAITRECV, &millisecs, 4);
 
   if (rc == -ETIMEOUT) return 0;
   if (rc == -EABORT) return -2;
@@ -332,10 +332,18 @@ sockapi SOCKET __stdcall winsock_socket(int af, int type, int protocol)
 
 sockapi int __stdcall winsock_ioctlsocket(SOCKET s, long cmd, unsigned long *argp)
 {
+  int rc;
+
   TRACE("ioctlsocket");
-  syslog(LOG_DEBUG, "warning: winsock ioctlsocket not implemented\n");
-  //return ioctl(s, cmd, argp, 0);
-  return 0;
+  rc = ioctl(s, cmd, argp, 4);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  return rc;
+
 }
 
 sockapi int __stdcall  __WSAFDIsSet(SOCKET s, fd_set *fd)

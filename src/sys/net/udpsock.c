@@ -248,7 +248,6 @@ static int udpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   int rc;
 
   size = get_iovec_size(msg->iov, msg->iovlen);
-  if (size == 0) return 0;
 
   if (msg->name)
   {

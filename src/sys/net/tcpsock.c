@@ -85,6 +85,20 @@ static int fetch_rcvbuf(struct socket *s, struct iovec *iov, int iovlen)
   return recved;
 }
 
+static int recv_ready(struct socket *s)
+{
+  struct pbuf *p = s->tcp.recvhead;
+  int bytes = 0;
+
+  while (p)
+  {
+    bytes += p->len;
+    p = p->next;
+  }
+
+  return bytes;
+}
+
 static struct socket *accept_connection(struct tcp_pcb *pcb)
 {
   struct socket *s;
@@ -318,6 +332,8 @@ static int tcpsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen,
 
   if (s->tcp.numpending == 0)
   {
+    if (s->flags & SOCK_NBIO) return -EAGAIN;
+
     rc = submit_socket_request(s, &req, SOCKREQ_ACCEPT, NULL, INFINITE);
     if (rc < 0) return rc;
     newsock = req.newsock;
@@ -428,6 +444,7 @@ static int tcpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
   if (sin->sin_family != AF_INET && sin->sin_family != AF_UNSPEC) return -EPROTONOSUPPORT;
 
   if (s->state != SOCKSTATE_BOUND && s->state != SOCKSTATE_UNBOUND) return -EINVAL;
+  if (s->flags & SOCK_NBIO) return -EAGAIN;
 
   if (!s->tcp.pcb)
   {
@@ -497,7 +514,7 @@ static int tcpsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
   
   switch (cmd)
   {
-    case IOCTL_SOCKWAIT_RECV:
+    case SIOWAITRECV:
       if (!data || size != 4) return -EFAULT;
       timeout = *(unsigned int *) data;
       if (s->state != SOCKSTATE_CONNECTED) return -ECONN;
@@ -511,6 +528,19 @@ static int tcpsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
 	return rc;
       }
 
+      break;
+
+    case FIONREAD:
+      if (!data || size != 4) return -EFAULT;
+      *(int *) data = recv_ready(s);
+      break;
+
+    case FIONBIO:
+      if (!data || size != 4) return -EFAULT;
+      if (*(int *) data)
+	s->flags |= SOCK_NBIO;
+      else
+	s->flags &= ~SOCK_NBIO;
       break;
 
     default:
@@ -575,6 +605,7 @@ static int tcpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   }
  
   if (s->state == SOCKSTATE_CLOSING) return 0;
+  if (s->flags & SOCK_NBIO) return -EAGAIN;
 
   rc = submit_socket_request(s, &req, SOCKREQ_RECV, msg, INFINITE);
   if (rc < 0) 
@@ -598,6 +629,7 @@ static int tcpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
 
   size = get_iovec_size(msg->iov, msg->iovlen);
   if (size == 0) return 0;
+  if ((s->flags & SOCK_NBIO) && size > tcp_sndbuf(s->tcp.pcb)) return -EAGAIN;
 
   rc = fill_sndbuf(s, msg->iov, msg->iovlen);
   if (rc < 0) return rc;
@@ -605,6 +637,8 @@ static int tcpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
 
   if (bytes < size)
   {
+    if (s->flags & SOCK_NBIO) return -EBUF;
+
     rc = submit_socket_request(s, &req, SOCKREQ_SEND, msg, INFINITE);
     if (rc < 0) return rc;
 
