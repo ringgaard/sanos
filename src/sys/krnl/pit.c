@@ -123,7 +123,7 @@ static void get_cmos_time(struct tm *tm)
   tm->tm_isdst = 0;
 }
 
-__inline long __declspec(naked) rdtscl()
+__inline static long __declspec(naked) rdtscl()
 {
   __asm { rdtsc }
   __asm { ret }

@@ -8,7 +8,7 @@
 
 #include <os/krnl.h>
 
-#define SYSLOG_SIZE (64 * K)
+#define SYSLOG_SIZE (512 * K)
 
 devno_t consdev = NODEV;
 static int cursoff = 0;

@@ -147,6 +147,16 @@
 //
 
 //
+// TX status flags
+//
+
+#define TX_STATUS_MAXIMUM_COLLISION	(1 << 3)
+#define TX_STATUS_HWERROR		(1 << 4)
+#define TX_STATUS_JABBER		(1 << 5)
+#define TX_STATUS_INTERRUPT_REQUESTED	(1 << 6)
+#define TX_STATUS_COMPLETE		(1 << 7)
+
+//
 // Global reset flags
 //
 
@@ -297,6 +307,7 @@ struct rx_desc
   struct sg_entry sglist[1];
   struct rx_desc *next;
   struct pbuf *pkt;
+  char filler[8];
 };
 
 struct tx_desc
@@ -308,6 +319,35 @@ struct tx_desc
   struct tx_desc *prev;
   struct pbuf *pkt;
   unsigned long phys_addr;
+  char filler[8];
+};
+
+struct nicstat
+{
+  // Transmit statistics.
+  unsigned long tx_frames_ok;
+  unsigned long tx_bytes_ok;
+  unsigned long tx_frames_deferred;
+  unsigned long tx_single_collisions;
+  unsigned long tx_multiple_collisions;
+  unsigned long tx_late_collisions;
+  unsigned long tx_carrier_lost;
+
+  unsigned long tx_maximum_collisions;
+  unsigned long tx_sqe_errors;
+  unsigned long tx_hw_errors;
+  unsigned long tx_jabber_error;
+  unsigned long tx_unknown_error;
+
+  // Receive statistics.
+  unsigned long rx_frames_ok;
+  unsigned long rx_bytes_ok;
+
+  unsigned long rx_overruns;
+  unsigned long rx_bad_ssd;
+  unsigned long rx_alignment_error;
+  unsigned long rx_bad_crc_error;
+  unsigned long rx_oversize_error;
 };
 
 struct nic
@@ -330,6 +370,7 @@ struct nic
 
   struct dpc dpc;                       // DPC for driver
 
+  struct nicstat stat;                  // NIC statistics
   unsigned short eeprom[EEPROM_SIZE];   // EEPROM contents
 };
 
@@ -392,7 +433,6 @@ void update_statistics(struct nic *nic)
   unsigned long rx_bytes;
   unsigned long tx_bytes;
   unsigned char upper;
-  int errs;
   
   // Read the current window
   current_window = _inpw(nic->iobase + STATUS) >> 13;
@@ -407,19 +447,20 @@ void update_statistics(struct nic *nic)
   rx_frames += (upper & 0x0F) << 8;
   tx_frames += (upper & 0xF0) << 4;
 
+  nic->stat.rx_frames_ok += rx_frames;
+  nic->stat.tx_frames_ok += tx_frames;
+
   // Bytes received/transmitted - upper part added below from window 4
   rx_bytes = _inpw(nic->iobase + BYTES_RECEIVED_OK);
   tx_bytes = _inpw(nic->iobase + BYTES_XMITTED_OK);
 
-  errs = 0;
-  errs += _inp(nic->iobase + CARRIER_LOST);
-  errs += _inp(nic->iobase + SQE_ERRORS);
-  errs += _inp(nic->iobase + MULTIPLE_COLLISIONS);
-  errs += _inp(nic->iobase + SINGLE_COLLISIONS);
-  errs += _inp(nic->iobase + LATE_COLLISIONS);
-  errs += _inp(nic->iobase + RX_OVERRUNS);
-  errs += _inp(nic->iobase + FRAMES_DEFERRED);
-  stats.link.err += errs;
+  nic->stat.tx_carrier_lost += _inp(nic->iobase + CARRIER_LOST);
+  nic->stat.tx_sqe_errors += _inp(nic->iobase + SQE_ERRORS);
+  nic->stat.tx_multiple_collisions += _inp(nic->iobase + MULTIPLE_COLLISIONS);
+  nic->stat.tx_single_collisions += _inp(nic->iobase + SINGLE_COLLISIONS);
+  nic->stat.tx_late_collisions += _inp(nic->iobase + LATE_COLLISIONS);
+  nic->stat.rx_overruns += _inp(nic->iobase + RX_OVERRUNS);
+  nic->stat.tx_frames_deferred += _inp(nic->iobase + FRAMES_DEFERRED);
 
   // Read final statistics from window 4
   select_window(nic, 4);
@@ -429,7 +470,10 @@ void update_statistics(struct nic *nic)
   rx_bytes += (upper & 0x0F) << 16;
   tx_bytes += (upper & 0xF0) << 12;
 
-  _inp(nic->iobase + BAD_SSD);
+  nic->stat.rx_bytes_ok += rx_bytes;
+  nic->stat.tx_bytes_ok += tx_bytes;
+
+  nic->stat.rx_bad_ssd += _inp(nic->iobase + BAD_SSD);
 
   // Update global statistics
   stats.link.recv += rx_frames;
@@ -437,6 +481,35 @@ void update_statistics(struct nic *nic)
 
   // Set the window to its previous value
   select_window(nic, current_window);
+}
+
+int nicstat_proc(struct proc_file *pf, void *arg)
+{
+  struct nic *nic = arg;
+
+  update_statistics(nic);
+
+  pprintf(pf, "Frames transmitted... : %10lu\n", nic->stat.tx_frames_ok);
+  pprintf(pf, "Bytes transmitted.... : %10lu\n", nic->stat.tx_bytes_ok);
+  pprintf(pf, "Frames deferred...... : %10lu\n", nic->stat.tx_frames_deferred);
+  pprintf(pf, "Single collisions.... : %10lu\n", nic->stat.tx_single_collisions);
+  pprintf(pf, "Multiple collisions.. : %10lu\n", nic->stat.tx_multiple_collisions);
+  pprintf(pf, "Late collisions...... : %10lu\n", nic->stat.tx_late_collisions);
+  pprintf(pf, "Carrier lost......... : %10lu\n", nic->stat.tx_carrier_lost);
+  pprintf(pf, "Maximum collisions .. : %10lu\n", nic->stat.tx_maximum_collisions);
+  pprintf(pf, "SQE errors........... : %10lu\n", nic->stat.tx_sqe_errors);
+  pprintf(pf, "HW errors............ : %10lu\n", nic->stat.tx_hw_errors);
+  pprintf(pf, "Jabber errors........ : %10lu\n", nic->stat.tx_jabber_error);
+  pprintf(pf, "Unknown errors....... : %10lu\n", nic->stat.tx_unknown_error);
+  pprintf(pf, "Frames received...... : %10lu\n", nic->stat.rx_frames_ok);
+  pprintf(pf, "Bytes received....... : %10lu\n", nic->stat.rx_bytes_ok);
+  pprintf(pf, "Overruns............. : %10lu\n", nic->stat.rx_overruns);
+  pprintf(pf, "Bad SSD.............. : %10lu\n", nic->stat.rx_bad_ssd);
+  pprintf(pf, "Allignment errors.... : %10lu\n", nic->stat.rx_alignment_error);
+  pprintf(pf, "CRC errors........... : %10lu\n", nic->stat.rx_bad_crc_error);
+  pprintf(pf, "Oversized frames..... : %10lu\n", nic->stat.rx_oversize_error);
+
+  return 0;
 }
 
 int nic_transmit(struct dev *dev, struct pbuf *p)
@@ -475,7 +548,7 @@ int nic_transmit(struct dev *dev, struct pbuf *p)
       entry->sglist[i].length = q->len;
   }
 
-  entry->header = FSH_ROUND_UP_DEFEAT | FSH_DOWN_INDICATE | FSH_ADD_IP_CHECKSUM | FSH_ADD_TCP_CHECKSUM | FSH_ADD_UDP_CHECKSUM;
+  entry->header = FSH_ROUND_UP_DEFEAT | FSH_DOWN_INDICATE | FSH_TX_INDICATE | FSH_ADD_IP_CHECKSUM | FSH_ADD_TCP_CHECKSUM | FSH_ADD_UDP_CHECKSUM;
   entry->phys_next = 0;
   entry->pkt = p;
 
@@ -532,6 +605,27 @@ void nic_up_complete(struct nic *nic)
     if (status & UP_PACKET_STATUS_ERROR)
     {
       stats.link.err++;
+
+      if (status & UP_PACKET_STATUS_RUNT_FRAME) 
+      {
+	kprintf("nic: runt frame\n");
+      }
+      if (status & UP_PACKET_STATUS_ALIGNMENT_ERROR) 
+      {
+	kprintf("nic: alignment error\n");
+	nic->stat.rx_alignment_error++;
+      }
+      if (status & UP_PACKET_STATUS_CRC_ERROR) 
+      {
+	kprintf("nic: crc error\n");
+	nic->stat.rx_bad_crc_error++;
+      }
+      if (status & UP_PACKET_STATUS_OVERSIZE_FRAME)
+      {
+	kprintf("nic: oversize frame\n");
+	nic->stat.rx_oversize_error++;
+      }
+
       nic->curr_rx->status = 0;
       nic->curr_rx = nic->curr_rx->next;
       continue;
@@ -654,6 +748,39 @@ void nic_host_error(struct nic *nic)
     GLOBAL_RESET_MASK_UP_DOWN_RESET);
 }
 
+void nic_tx_complete(struct nic *nic)
+{
+  unsigned char txstatus;
+
+  txstatus = _inp(nic->iobase + TX_STATUS);
+  _outp(nic->iobase + TX_STATUS, txstatus);
+
+  if (txstatus & TX_STATUS_HWERROR) 
+  {
+    kprintf("nic: hw error\n");
+    nic->stat.tx_hw_errors++;
+    //TODO: reset and enable transmitter
+  }
+  else if (txstatus & TX_STATUS_JABBER) 
+  {
+    kprintf("nic: jabber error\n");
+    nic->stat.tx_jabber_error++;
+    //TODO: reset and enable transmitter
+  }
+  else if (txstatus & TX_STATUS_MAXIMUM_COLLISION)
+  {
+    kprintf("nic: maximum collisions\n");
+    nic->stat.tx_maximum_collisions++;
+    execute_command(nic, CMD_TX_ENABLE, 0);
+  }
+  else if (txstatus & 0x3F)
+  {
+    kprintf("nic: unknown errror in 0x%02X tx complete\n", txstatus);
+    nic->stat.tx_unknown_error++;
+    execute_command(nic, CMD_TX_ENABLE, 0);
+  }
+}
+
 void nic_dpc(void *arg)
 {
   struct nic *nic = (struct nic *) arg;
@@ -675,16 +802,14 @@ void nic_dpc(void *arg)
     // Handle host error event
     if (status & INTSTATUS_HOST_ERROR)
     {
-      static int host_errors = 0;
-
-      if (host_errors++ == 0) kprintf("nic: host error\n");
+      kprintf("nic: host error\n");
       nic_host_error(nic);
     }
 
     // Handle tx complete event
     if (status & INTSTATUS_TX_COMPLETE)
     {
-      kprintf("nic: tx complete\n");
+      nic_tx_complete(nic);
     }
 
     // Handle rx complete event
@@ -912,6 +1037,7 @@ int __declspec(dllexport) install(struct unit *unit)
   execute_command(nic, CMD_TX_ENABLE, 0);
 
   nic->devno = dev_make("nic#", &nic_driver, unit, nic);
+  register_proc_inode(device(nic->devno)->name, nicstat_proc, nic);
 
   kprintf("%s: %s iobase 0x%x irq %d hwaddr %la\n", device(nic->devno)->name, unit->productname, nic->iobase, nic->irq, &nic->hwaddr);
 

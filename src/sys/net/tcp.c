@@ -242,7 +242,9 @@ void tcp_recved(struct tcp_pcb *pcb, int len)
 {
   pcb->rcv_wnd += len;
   if (pcb->rcv_wnd > TCP_WND) pcb->rcv_wnd = TCP_WND;
-  if (!(pcb->flags & TF_ACK_DELAY) && !(pcb->flags & TF_ACK_NOW)) tcp_ack(pcb);
+  
+  //if (!(pcb->flags & TF_ACK_DELAY) && !(pcb->flags & TF_ACK_NOW)) tcp_ack(pcb);
+  if (!(pcb->flags & TF_IN_RECV)) pcb->flags |= TF_ACK_DELAY;
 
   //kprintf("tcp_recved: received %d bytes, wnd %u (%u).\n", len, pcb->rcv_wnd, TCP_WND - pcb->rcv_wnd);
 }
@@ -519,7 +521,9 @@ void tcp_fasttmr(void *arg)
     if (pcb->flags & TF_ACK_DELAY) 
     {
       //kprintf("tcp_fasttmr: delayed ACK\n");
-      tcp_ack_now(pcb);
+      //tcp_ack_now(pcb);
+      pcb->flags |= TF_ACK_NOW;
+      tcp_output(pcb);
       pcb->flags &= ~(TF_ACK_DELAY | TF_ACK_NOW);
     }
   }

@@ -212,17 +212,27 @@ err_t ether_input(struct netif *netif, struct pbuf *p)
 // to the TCP/IP stack. 
 //
 
+__inline static long __declspec(naked) rdtscl()
+{
+  __asm { rdtsc }
+  __asm { ret }
+}
+
 void ether_dispatcher(void *arg)
 {
   struct ether_msg *msg;
   struct pbuf *p;
   struct netif *netif;
   struct eth_hdr *ethhdr;
+  long a, b, c, d;
 
   while (1)
   {
+    a = rdtscl();
     msg = dequeue(ether_queue, INFINITE);
     if (!msg) panic("error retrieving message from ethernet packet queue\n");
+    b = rdtscl();
+    if (b > a + 200000) kprintf("ether: %d in queue, %d ms wait\n", ether_queue->notempty.count, b - a);
 
     p = msg->p;
     netif = msg->netif;
@@ -256,6 +266,13 @@ void ether_dispatcher(void *arg)
 	  break;
       }
     }
+
+    c = rdtscl();
+
+    yield();
+    d = rdtscl();
+
+    //kprintf("ether: %d in queue, %d ms wait, %d ms process, %d ms yield\n", ether_queue->notempty.count, b - a, c - b, d - c);
   }
 }
 

@@ -110,6 +110,7 @@ enum tcp_state
 #define TF_RESET     0x08   // Connection was reset
 #define TF_CLOSED    0x10   // Connection was sucessfully closed
 #define TF_GOT_FIN   0x20   // Connection was closed by the remote end
+#define TF_IN_RECV   0x40   // Connection is processing received segment
 
 struct tcp_pcb 
 {

@@ -406,6 +406,8 @@ static void task_queue_task(void *tqarg)
 
       if (!(tq->flags & TASK_QUEUE_ACTIVE_TASK_INVALID)) task->flags &= ~TASK_EXECUTING;
       tq->flags &= ~(TASK_QUEUE_ACTIVE | TASK_QUEUE_ACTIVE_TASK_INVALID);
+
+      yield();
     }
   }
 }
@@ -666,7 +668,7 @@ void init_sched()
   idle_thread->name = "idle";
 
   // Initialize system task queue
-  init_task_queue(&sys_task_queue, PRIORITY_SYSTEM, INFINITE, "systask");
+  init_task_queue(&sys_task_queue, PRIORITY_NORMAL /*PRIORITY_SYSTEM*/, INFINITE, "systask");
 
   // Register /proc/threads and /proc/dpcs
   register_proc_inode("threads", threads_proc, NULL);

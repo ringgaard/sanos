@@ -35,10 +35,6 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
   iphdr = p->payload;
   tcphdr = (struct tcp_hdr *)((char *) p->payload + IPH_HL(iphdr) * 4);
 
-  kprintf("tcp_input: size %d seqno %lu ackno %lu wnd %d flags: ", p->tot_len, htonl(tcphdr->seqno), htonl(tcphdr->ackno), ntohs(tcphdr->wnd));
-  tcp_debug_print_flags(TCPH_FLAGS(tcphdr));
-  kprintf("\n");
-
   //kprintf("receiving TCP segment:\n");
   //tcp_debug_print(tcphdr);
 
@@ -76,6 +72,10 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
   tcphdr->ackno = ntohl(tcphdr->ackno);
   tcphdr->wnd = ntohs(tcphdr->wnd);
   
+  kprintf("tcp_input: size %d seqno %lu ackno %lu wnd %d flags: ", p->tot_len, tcphdr->seqno, tcphdr->ackno, tcphdr->wnd);
+  tcp_debug_print_flags(TCPH_FLAGS(tcphdr));
+  kprintf("\n");
+
   // Demultiplex an incoming segment. First, we check if it is destined for an active connection
   prev = NULL;  
   for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next)
@@ -153,7 +153,13 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
     seg.p = p;
     seg.tcphdr = tcphdr;
     
-    if (pcb->state != LISTEN && pcb->state != TIME_WAIT) pcb->recv_data = NULL;
+    if (pcb->state != LISTEN && pcb->state != TIME_WAIT) 
+    {
+      pcb->recv_data = NULL;
+      pcb->acked = 0;
+    }
+
+    pcb->flags |= TF_IN_RECV;
 
     err = tcp_process(&seg, pcb);
 
@@ -222,6 +228,7 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
       }
     }
     
+    pcb->flags &= ~TF_IN_RECV;
     if (seg.p) pbuf_free(seg.p);
   }
   else
@@ -392,7 +399,8 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	{
 	  pcb->connected(pcb->callback_arg, pcb, 0);
 	}
-	tcp_ack(pcb);
+	//tcp_ack(pcb);
+	pcb->flags |= TF_ACK_DELAY;
       }    
       break;
 
@@ -438,7 +446,8 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       tcp_receive(seg, pcb);
       if (flags & TCP_FIN)
       {
-	tcp_ack_now(pcb);
+	//tcp_ack_now(pcb);
+	pcb->flags |= TF_ACK_NOW;
 	pcb->state = CLOSE_WAIT;
       }
       break;
@@ -450,7 +459,8 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	if ((flags & TCP_ACK) && ackno == pcb->snd_nxt) 
 	{
 	  kprintf("TCP connection closed %d -> %d.\n", seg->tcphdr->src, seg->tcphdr->dest);
-	  tcp_ack_now(pcb);
+	  //tcp_ack_now(pcb);
+	  pcb->flags |= TF_ACK_NOW;
 	  tcp_pcb_purge(pcb);
 	  TCP_RMV(&tcp_active_pcbs, pcb);
 	  pcb->state = TIME_WAIT;
@@ -459,7 +469,8 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	} 
 	else 
 	{
-	  tcp_ack_now(pcb);
+	  //tcp_ack_now(pcb);
+  	  pcb->flags |= TF_ACK_NOW;
 	  pcb->state = CLOSING;
 	}
       } 
@@ -474,7 +485,8 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       if (flags & TCP_FIN) 
       {
 	kprintf("TCP connection closed %d -> %d.\n", seg->tcphdr->src, seg->tcphdr->dest);
-	tcp_ack_now(pcb);
+	//tcp_ack_now(pcb);
+	pcb->flags |= TF_ACK_NOW;
 	tcp_pcb_purge(pcb);
 	TCP_RMV(&tcp_active_pcbs, pcb);
 	//pcb = memp_realloc(MEMP_TCP_PCB, MEMP_TCP_PCB_TW, pcb);
@@ -488,7 +500,8 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       if (flags & TCP_ACK && ackno == pcb->snd_nxt) 
       {
 	kprintf("TCP connection closed %d -> %d.\n", seg->tcphdr->src, seg->tcphdr->dest);
-	tcp_ack_now(pcb);
+	//tcp_ack_now(pcb);
+	pcb->flags |= TF_ACK_NOW;
 	tcp_pcb_purge(pcb);
 	TCP_RMV(&tcp_active_pcbs, pcb);
 	//pcb = memp_realloc(MEMP_TCP_PCB, MEMP_TCP_PCB_TW, pcb);
@@ -512,7 +525,11 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       {
 	pcb->rcv_nxt = seqno + TCP_TCPLEN(seg);
       }
-      if (TCP_TCPLEN(seg) > 0) tcp_ack_now(pcb);
+      if (TCP_TCPLEN(seg) > 0) 
+      {
+	//tcp_ack_now(pcb);
+	pcb->flags |= TF_ACK_NOW;
+      }
       break;
   }
   
@@ -857,20 +874,24 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
 
 	  pcb->ooseq = cseg->next;
 	  tcp_seg_free(cseg);
+
+	  // Acknowledge immediately (MRI)
+	  pcb->flags |= TF_ACK_NOW;
 	}
 
 	// Acknowledge the segment(s)
-	// RFC 813 suggests that we should postpone the acknowledge if:
-	//   1) The push bit is not set in the segment.
-	//   2) There is no revised window to information to be sent back.
-
-	if (TCPH_FLAGS(seg->tcphdr) & TCP_PSH) tcp_ack_now(pcb); //TODO: only if we advertise a substantially larger window
 	//tcp_ack(pcb);
+	if (pcb->flags & TF_ACK_DELAY)
+	  pcb->flags |= TF_ACK_NOW;
+	else
+	  pcb->flags |= TF_ACK_DELAY;
       } 
       else 
       {
 	// We get here if the incoming segment is out-of-sequence.
-	tcp_ack_now(pcb);
+	//tcp_ack_now(pcb);
+        pcb->flags |= TF_ACK_NOW;
+	kprintf("tcp_receive: out-of-order segment received\n");
 
 	// We queue the segment on the ->ooseq queue
 	if (pcb->ooseq == NULL) 
@@ -1011,7 +1032,8 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
     // fall out of the window are ACKed
     if (TCP_SEQ_GT(pcb->rcv_nxt, seqno) || TCP_SEQ_GEQ(seqno, pcb->rcv_nxt + pcb->rcv_wnd)) 
     {
-      tcp_ack_now(pcb);
+      //tcp_ack_now(pcb);
+      pcb->flags |= TF_ACK_NOW;
     }
   }
 }
