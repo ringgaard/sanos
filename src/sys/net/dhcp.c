@@ -409,6 +409,7 @@ struct dhcp_state *dhcp_start(struct netif *netif)
     return NULL;
   }
 
+  state->pcb->flags |= UDP_FLAGS_BROADCAST;
   state->netif = netif;
   state->next = NULL;
   init_event(&state->binding_complete, 0, 0);
@@ -454,6 +455,7 @@ err_t dhcp_inform(struct netif *netif)
     return -ENOMEM;
   }
 
+  state->pcb->flags |= UDP_FLAGS_BROADCAST;
   state->netif = netif;
   state->next = NULL;
 

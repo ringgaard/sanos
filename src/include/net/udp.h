@@ -50,7 +50,8 @@ struct udp_hdr
 
 #pragma pack(pop)
 
-#define UDP_FLAGS_NOCHKSUM 0x01
+#define UDP_FLAGS_NOCHKSUM  0x01
+#define UDP_FLAGS_BROADCAST 0x02
 
 struct udp_pcb 
 {
@@ -60,7 +61,6 @@ struct udp_pcb
   unsigned short local_port, remote_port;
   
   int flags;
-  int chksum_len;
   
   err_t (*recv)(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, unsigned short port);
   void *recv_arg;  

@@ -862,19 +862,19 @@ static int res_nquery(struct res_state *statp, const char *dname,
     switch (hp->rcode) 
     {
       case DNS_ERR_NXDOMAIN:
-	return -EHOST;
+	return -EHOSTNOTFOUND;
 
       case DNS_ERR_SERVFAIL:
-	return -EAGAIN;
+	return -ETRYAGAIN;
 
       case DNS_ERR_NOERROR:
-	return -ENOENT;
+	return -ENODATA;
 
       case DNS_ERR_FORMERR:
       case DNS_ERR_NOTIMPL:
       case DNS_ERR_REFUSED:
       default:
-	return -EIO;
+	return -ENORECOVERY;
     }
   }
 

@@ -106,6 +106,7 @@ static int udpsock_bind(struct socket *s, struct sockaddr *name, int namelen)
   {
     s->udp.pcb = udp_new();
     if (!s->udp.pcb) return -ENOMEM;
+    if (s->flags & SOCK_BCAST) s->udp.pcb->flags |= UDP_FLAGS_BROADCAST;
     udp_recv(s->udp.pcb, recv_udp, s);
   }
 
@@ -156,6 +157,7 @@ static int udpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
   {
     s->udp.pcb = udp_new();
     if (!s->udp.pcb) return -ENOMEM;
+    if (s->flags & SOCK_BCAST) s->udp.pcb->flags |= UDP_FLAGS_BROADCAST;
     udp_recv(s->udp.pcb, recv_udp, s);
   }
 
@@ -304,6 +306,20 @@ static int udpsock_setsockopt(struct socket *s, int level, int optname, const ch
   {
     switch (optname)
     {
+      case SO_BROADCAST:
+	if (optlen != 4) return -EINVAL;
+	if (*(int *) optval)
+	{
+	  s->flags |= SOCK_BCAST;
+	  if (s->udp.pcb) s->udp.pcb->flags |= UDP_FLAGS_BROADCAST;
+	}
+	else
+	{
+	  s->flags &= ~SOCK_BCAST;
+	  if (s->udp.pcb) s->udp.pcb->flags &= ~UDP_FLAGS_BROADCAST;
+	}
+        break;
+
       case SO_SNDTIMEO:
 	if (optlen != 4) return -EINVAL;
 	s->udp.sndtimeo = *(unsigned int *) optval;

@@ -49,6 +49,7 @@
 
 #define SOCK_NBIO             1
 #define SOCK_NODELAY          2
+#define SOCK_BCAST            4
 
 //
 // Socket state

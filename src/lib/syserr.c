@@ -1,7 +1,7 @@
 //
 // syserr.c
 //
-// Standard library functions
+// System error messages
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -79,24 +79,56 @@ char *sys_errlist[] =
   /* 41 ENOTEMPTY       */  "Directory not empty",
   /* 42 EILSEQ          */  "Illegal byte sequence",
 
-  /* 43 ETIMEOUT        */  "Timeout",
-  /* 44 EBUF            */  "Buffer error",
-  /* 45 EROUTE          */  "No route",
-  /* 46 ECONN           */  "Not connected",
-  /* 47 ERST            */  "Connection reset",
-  /* 48 EABORT          */  "Connction aborted",
-  /* 49 EUSED           */  "Address in use",
-  /* 50 EPROTONOSUPPORT */  "Protocol not supported",
-  /* 51 EMSGSIZE        */  "Message too long",
-  /* 52 ECONNREFUSED    */  "Connection refused",
-  /* 53 EHOSTUNREACH    */  "Host unreachable",
-  /* 54 ENETUNREACH     */  "Network unrechable",
-  /* 55 EHOST           */  "Host not found",
-  /* 56 EPROTO          */  "Protocol error",
-  /* 57 ECHKSUM         */  "Checksum error",
-  /* 58 EDESTUNREACH    */  "Destination unreachable",
-  /* 59 EBADSLT         */  "Invalid slot",
-  /* 60 EREMOTEIO       */  "Remote I/O error",
+  /* 43 EUNUSED43       */  "Unknown error 43",
+  /* 44 EUNUSED44       */  "Unknown error 44",
+
+  /* 45 EWOULDBLOCK     */  "Operation would block",
+  /* 46 EINPROGRESS     */  "Operation now in progress",
+  /* 47 EALREADY        */  "Operation already in progress",
+  /* 48 ENOTSOCK        */  "Socket operation on nonsocket",
+  /* 49 EDESTADDRREQ    */  "Destination address required",
+  /* 50 EMSGSIZE        */  "Message too long",
+  /* 51 EPROTOTYPE      */  "Protocol wrong type for socket",
+  /* 52 ENOPROTOOPT     */  "Bad protocol option",
+  /* 53 EPROTONOSUPPORT */  "Protocol not supported",
+  /* 54 ESOCKTNOSUPPORT */  "Socket type not supported",
+  /* 55 EOPNOTSUPP      */  "Operation not supported",
+  /* 56 EPFNOSUPPORT    */  "Protocol family not supported",
+  /* 57 EAFNOSUPPORT    */  "Address family not supported",
+  /* 58 EADDRINUSE      */  "Address already in use",
+  /* 59 EADDRNOTAVAIL   */  "Cannot assign requested address",
+  /* 60 ENETDOWN        */  "Network is down",
+  /* 61 ENETUNREACH     */  "Network is unreachable",
+  /* 62 ENETRESET       */  "Network dropped connection on reset",
+  /* 63 ECONNABORTED    */  "Connection aborted",
+  /* 64 ECONNRESET      */  "Connection reset by peer",
+  /* 65 ENOBUFS         */  "No buffer space available",
+  /* 66 EISCONN         */  "Socket is already connected",
+  /* 67 ENOTCONN        */  "Socket is not connected",
+  /* 68 ESHUTDOWN       */  "Cannot send after socket shutdown",
+  /* 69 ETOOMANYREFS    */  "Too many references",
+  /* 70 ETIMEDOUT       */  "Operation timed out",
+  /* 71 ECONNREFUSED    */  "Connection refused",
+  /* 72 ELOOP           */  "Cannot translate name",
+  /* 73 EWSNAMETOOLONG  */  "Name component or name was too long",
+  /* 74 EHOSTDOWN       */  "Host is down",
+  /* 75 EHOSTUNREACH    */  "No route to host",
+  /* 76 EWSNOTEMPTY     */  "Cannot remove a directory that is not empty",
+  /* 77 EPROCLIM        */  "Too many processes",
+  /* 78 EUSERS          */  "Ran out of quota",
+  /* 79 EDQUOT          */  "Ran out of disk quota",
+  /* 80 ESTALE          */  "File handle reference is no longer available",
+  /* 81 EREMOTE         */  "Item is not available locally",
+
+  /* 82 EHOSTNOTFOUND   */  "Host not found",
+  /* 83 ETRYAGAIN       */  "Nonauthoritative host not found",
+  /* 84 ENORECOVERY     */  "A nonrecoverable error occured",
+  /* 85 ENODATA         */  "Valid name, no data record of requested type",
+
+  /* 86 EPROTO          */  "Protocol error",
+  /* 87 ECHKSUM         */  "Checksum error",
+  /* 88 EBADSLT         */  "Invalid slot",
+  /* 89 EREMOTEIO       */  "Remote I/O error",
 };
 
 int sys_nerr = sizeof(sys_errlist) / sizeof(sys_errlist[0]);

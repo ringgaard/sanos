@@ -12,6 +12,7 @@ TODO for sanos
     - Add error strings to strerror()
     - Update error codes in network code
     - Map winsock errors in wsock32.c
+    - Go through each Winsock error and check net code for compliance
 
 - Move netif binding to os.c
     - Read netif parameters from [netif] in os.ini
@@ -104,3 +105,4 @@ CHANGES
 
 - Rename /os to /bin
 
+- SO_BROADCAST implemented

@@ -196,7 +196,6 @@ void tcp_abort(struct tcp_pcb *pcb)
 // IP address is not given (i.e., ipaddr == NULL), the IP address of
 // the outgoing network interface is used instead.
 //
-//
 
 err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
 {
@@ -211,7 +210,7 @@ err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
 	  ip_addr_isany(ipaddr) ||
 	  ip_addr_cmp(&cpcb->local_ip, ipaddr)) 
       {
-	return -EUSED;
+	return -EADDRINUSE;
       }
     }
   }
@@ -224,12 +223,16 @@ err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
 	  ip_addr_isany(ipaddr) ||
 	  ip_addr_cmp(&cpcb->local_ip, ipaddr))
       {
-	return -EUSED;
+	return -EADDRINUSE;
       }
     }
   }
 
-  if (!ip_addr_isany(ipaddr)) pcb->local_ip = *ipaddr;
+  if (!ip_addr_isany(ipaddr)) 
+  {
+    if (!ip_ownaddr(ipaddr)) return -EADDRNOTAVAIL;
+    pcb->local_ip = *ipaddr;
+  }
   pcb->local_port = port;
   
   //kprintf("tcp_bind: bind to port %d\n", port);
@@ -326,11 +329,9 @@ err_t tcp_connect(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short po
 
   //kprintf("tcp_connect to port %d\n", port);
 
-  if (ipaddr != NULL)
-    pcb->remote_ip = *ipaddr;
-  else
-    return -EINVAL;
+  if (ip_addr_isany(ipaddr) || port == 0) return -EADDRNOTAVAIL;
 
+  pcb->remote_ip = *ipaddr;
   pcb->remote_port = port;
   if (pcb->local_port == 0) pcb->local_port = tcp_new_port();
   iss = tcp_next_iss();

@@ -44,6 +44,8 @@
 #define WSADESCRIPTION_LEN      256
 #define WSASYS_STATUS_LEN       128
 
+#define WSAERRBASE              10000
+
 typedef handle_t SOCKET;
 typedef struct iovec WSABUF;
 typedef struct iovec *LPWSABUF;
@@ -383,8 +385,18 @@ sockapi int __stdcall  __WSAFDIsSet(SOCKET s, fd_set *fd)
 
 sockapi int __stdcall WSAGetLastError()
 {
+  int err = gettib()->err;
+
   TRACE("WSAGetLastError");
-  return gettib()->err;
+  
+  if (err >= 0) return 0;
+  if (err > 45) return -err + WSAERRBASE;
+  if (err > 82) return -err - 10 + WSAERRBASE;
+  if (err == -EHOSTNOTFOUND) return 1001 + WSAERRBASE;
+  if (err == -ETRYAGAIN) return 1002 + WSAERRBASE;
+  if (err == -ENORECOVERY) return 1003 + WSAERRBASE;
+  if (err == -ENODATA) return 1004 + WSAERRBASE;
+  return EIO;
 }
 
 sockapi int __stdcall WSACleanup()

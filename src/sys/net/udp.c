@@ -177,7 +177,7 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
     ++stats.udp.proterr;
     ++stats.udp.drop;
 
-    return -EDESTUNREACH;
+    return -EHOSTUNREACH;
   }
 }
 
@@ -208,6 +208,8 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
       return -EROUTE;
     }
   }
+
+  if (ip_addr_isbroadcast(&pcb->remote_ip, &netif->netmask) && (pcb->flags & UDP_FLAGS_BROADCAST) == 0) return -EACCES;
 
   if (ip_addr_isany(&pcb->local_ip)) 
     src_ip = &netif->ipaddr;
