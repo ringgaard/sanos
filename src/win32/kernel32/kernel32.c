@@ -1149,7 +1149,7 @@ BOOL WINAPI FreeLibrary
 )
 {
   TRACE("FreeLibrary");
-  if (unload((hmodule_t) hModule) < 0) return FALSE;
+  if (dlclose((hmodule_t) hModule) < 0) return FALSE;
   return TRUE;
 }
 
@@ -1445,7 +1445,7 @@ FARPROC WINAPI GetProcAddress
 {
   TRACE("GetProcAddress");
   //syslog(LOG_DEBUG, "GetProcAddress name: %s hmod: %08X\n", lpProcName, hModule);
-  return resolve((hmodule_t) hModule, (char *) lpProcName);
+  return dlsym((hmodule_t) hModule, (char *) lpProcName);
 }
 
 BOOL WINAPI GetProcessAffinityMask
@@ -1868,7 +1868,7 @@ HMODULE WINAPI LoadLibraryA
 )
 {
   TRACE("LoadLibraryA");
-  return (HMODULE) load((char *) lpFileName);
+  return (HMODULE) dlopen((char *) lpFileName, 0);
 }
 
 LPVOID WINAPI MapViewOfFile

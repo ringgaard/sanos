@@ -132,6 +132,9 @@
 				RelativePath="..\src\include\dirent.h">
 			</File>
 			<File
+				RelativePath="..\src\include\dlfcn.h">
+			</File>
+			<File
 				RelativePath="..\src\include\errno.h">
 			</File>
 			<File
@@ -258,7 +261,7 @@
 			<File
 				RelativePath="..\src\lib\math\acos.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -267,7 +270,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -279,7 +282,7 @@
 			<File
 				RelativePath="..\src\lib\math\asin.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -288,7 +291,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -300,7 +303,7 @@
 			<File
 				RelativePath="..\src\lib\math\atan.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -309,7 +312,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -321,7 +324,7 @@
 			<File
 				RelativePath="..\src\lib\math\atan2.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -330,7 +333,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -342,7 +345,7 @@
 			<File
 				RelativePath="..\src\lib\math\ceil.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -351,7 +354,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -363,7 +366,7 @@
 			<File
 				RelativePath="..\src\lib\math\cos.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -372,7 +375,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -384,7 +387,7 @@
 			<File
 				RelativePath="..\src\lib\math\cosh.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -393,7 +396,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -405,7 +408,7 @@
 			<File
 				RelativePath="..\src\lib\math\exp.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -414,7 +417,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -426,7 +429,7 @@
 			<File
 				RelativePath="..\src\lib\math\fabs.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -435,7 +438,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -447,7 +450,7 @@
 			<File
 				RelativePath="..\src\lib\math\floor.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -456,7 +459,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -468,7 +471,7 @@
 			<File
 				RelativePath="..\src\lib\math\fmod.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -477,7 +480,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -489,7 +492,7 @@
 			<File
 				RelativePath="..\src\lib\math\fpconst.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -498,7 +501,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -510,7 +513,7 @@
 			<File
 				RelativePath="..\src\lib\math\fpreset.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -519,7 +522,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -531,7 +534,7 @@
 			<File
 				RelativePath="..\src\lib\math\frexp.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -540,7 +543,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -552,7 +555,7 @@
 			<File
 				RelativePath="..\src\lib\math\ftol.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -561,7 +564,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -573,7 +576,7 @@
 			<File
 				RelativePath="..\src\lib\math\ldexp.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -582,7 +585,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -594,7 +597,7 @@
 			<File
 				RelativePath="..\src\lib\math\log.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -603,7 +606,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -615,7 +618,7 @@
 			<File
 				RelativePath="..\src\lib\math\log10.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -624,7 +627,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -636,7 +639,7 @@
 			<File
 				RelativePath="..\src\lib\math\modf.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -645,7 +648,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -657,7 +660,7 @@
 			<File
 				RelativePath="..\src\lib\math\pow.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -666,7 +669,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -678,7 +681,7 @@
 			<File
 				RelativePath="..\src\lib\math\sin.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -687,7 +690,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -699,7 +702,7 @@
 			<File
 				RelativePath="..\src\lib\math\sinh.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -708,7 +711,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -720,7 +723,7 @@
 			<File
 				RelativePath="..\src\lib\math\sqrt.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -729,7 +732,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -741,7 +744,7 @@
 			<File
 				RelativePath="..\src\lib\math\tan.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -750,7 +753,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -762,7 +765,7 @@
 			<File
 				RelativePath="..\src\lib\math\tanh.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -771,7 +774,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -793,7 +796,7 @@
 		<File
 			RelativePath="..\src\lib\chkstk.asm">
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -802,7 +805,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -838,7 +841,7 @@
 		<File
 			RelativePath="..\src\lib\lldiv.asm">
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -847,7 +850,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -859,7 +862,7 @@
 		<File
 			RelativePath="..\src\lib\lldvrm.asm">
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -868,7 +871,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -880,7 +883,7 @@
 		<File
 			RelativePath="..\src\lib\llmul.asm">
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -889,7 +892,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -901,7 +904,7 @@
 		<File
 			RelativePath="..\src\lib\llrem.asm">
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -910,7 +913,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -922,7 +925,7 @@
 		<File
 			RelativePath="..\src\lib\llshl.asm">
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -931,7 +934,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -943,7 +946,7 @@
 		<File
 			RelativePath="..\src\lib\llshr.asm">
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -952,7 +955,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1015,7 +1018,7 @@
 		<File
 			RelativePath="..\src\lib\ulldiv.asm">
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1024,7 +1027,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1036,7 +1039,7 @@
 		<File
 			RelativePath="..\src\lib\ulldvrm.asm">
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1045,7 +1048,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1057,7 +1060,7 @@
 		<File
 			RelativePath="..\src\lib\ullrem.asm">
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1066,7 +1069,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1078,7 +1081,7 @@
 		<File
 			RelativePath="..\src\lib\ullshr.asm">
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1087,7 +1090,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""

@@ -252,7 +252,7 @@ int init_jvm()
   {
     char *jvmname = get_property(cfg, cfgname, "jvm", "jvm.dll");
 
-    hjvm = load(jvmname);
+    hjvm = dlopen(jvmname, 0);
     if (hjvm == NULL) 
     {
       syslog(LOG_ERR, "Error loading JVM %s\n", jvmname);
@@ -262,7 +262,7 @@ int init_jvm()
 
   if (!CreateJavaVM)
   {
-    CreateJavaVM = (jint (JNICALL *)(JavaVM **pvm, void **env, void *args)) resolve(hjvm, "JNI_CreateJavaVM");
+    CreateJavaVM = (jint (JNICALL *)(JavaVM **pvm, void **env, void *args)) dlsym(hjvm, "JNI_CreateJavaVM");
     if (!CreateJavaVM) 
     {
       syslog(LOG_ERR, "Unable to find CreateJavaVM\n");

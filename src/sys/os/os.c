@@ -533,7 +533,7 @@ static void logldr(char *msg)
   syslog(LOG_MODULE | LOG_DEBUG, "mod: %s\n", msg);
 }
 
-void *resolve(hmodule_t hmod, const char *procname)
+void *dlsym(hmodule_t hmod, const char *procname)
 {
   void *addr;
 
@@ -572,7 +572,7 @@ int getmodpath(hmodule_t hmod, char *buffer, int size)
   return 0;
 }
 
-hmodule_t load(const char *name)
+hmodule_t dlopen(const char *name, int mode)
 {
   hmodule_t hmod;
 
@@ -583,7 +583,7 @@ hmodule_t load(const char *name)
   return hmod;
 }
 
-int unload(hmodule_t hmod)
+int dlclose(hmodule_t hmod)
 {
   int rc;
 
@@ -591,6 +591,11 @@ int unload(hmodule_t hmod)
   rc = unload_module(&usermods, hmod);
   leave(&mod_lock);
   return rc;
+}
+
+char *dlerror()
+{
+  return strerror(errno);
 }
 
 int exec(hmodule_t hmod, const char *args)

@@ -177,7 +177,7 @@ void endthread(int retval)
     if (job->out >= 0) close(job->out);
     if (job->err >= 0) close(job->err);
 
-    if (job->hmod) unload(job->hmod);
+    if (job->hmod) dlclose(job->hmod);
     if (job->cmdline) free(job->cmdline);
 
     eset(job->terminated);
@@ -259,13 +259,13 @@ int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
   struct job *job;
   int rc;
 
-  hmod = load(pgm);
+  hmod = dlopen(pgm, 0);
   if (!hmod) return -1;
 
   hthread = beginthread(spawn_program, 0, NULL, CREATE_SUSPENDED | CREATE_NEW_JOB | ((mode & P_DETACH) ? CREATE_DETACHED : 0), &tib);
   if (hthread < 0)
   {
-    unload(hmod);
+    dlclose(hmod);
     return -1;
   }
 

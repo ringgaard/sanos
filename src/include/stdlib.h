@@ -125,7 +125,7 @@ char *initstate(unsigned long seed, char *arg_state, long n);
 char *setstate(char *arg_state);
 long random();
 
-char *realpath(char *path, char *buffer);
+char *realpath(const char *path, char *buffer);
 
 #ifdef  __cplusplus
 }

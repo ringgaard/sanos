@@ -1322,11 +1322,12 @@ osapi void *calloc(size_t num, size_t size);
 osapi void free(void *p);
 osapi struct mallinfo mallinfo();
 
-osapi void *resolve(hmodule_t hmod, const char *procname);
+osapi hmodule_t dlopen(const char *name, int mode);
+osapi int dlclose(hmodule_t hmod);
+osapi void *dlsym(hmodule_t hmod, const char *procname);
+osapi char *dlerror();
 osapi hmodule_t getmodule(const char *name);
 osapi int getmodpath(hmodule_t hmod, char *buffer, int size);
-osapi hmodule_t load(const char *name);
-osapi int unload(hmodule_t hmod);
 osapi int exec(hmodule_t hmod, const char *args);
 osapi void *getresdata(hmodule_t hmod, int type, char *name, int lang, int *len);
 osapi int getreslen(hmodule_t hmod, int type, char *name, int lang);

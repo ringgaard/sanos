@@ -1,7 +1,7 @@
 //
-// types.h
+// dlfcn.h
 //
-// Basic type definitions
+// Dynamic linking
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -35,67 +35,11 @@
 #pragma once
 #endif
 
-#ifndef SYS_TYPES_H
-#define SYS_TYPES_H
+#ifndef DLFCN_H
+#define DLFCN_H
 
-#ifndef _SIZE_T_DEFINED
-#define _SIZE_T_DEFINED
-typedef unsigned int size_t;
-#endif
-
-#ifndef _SSIZE_T_DEFINED
-#define _SSIZE_T_DEFINED
-typedef int ssize_t;
-#endif
-
-#ifndef _TIME_T_DEFINED
-#define _TIME_T_DEFINED
-typedef long time_t;
-#endif
-
-#ifndef _CLOCK_T_DEFINED
-#define _CLOCK_T_DEFINED
-typedef long clock_t;
-#endif
-
-#ifndef _INO_T_DEFINED
-#define _INO_T_DEFINED
-typedef unsigned int ino_t;
-#endif
-
-#ifndef _DEV_T_DEFINED
-#define _DEV_T_DEFINED
-typedef unsigned int dev_t;
-#endif
-
-#ifndef _BLKNO_T_DEFINED
-#define _BLKNO_T_DEFINED
-typedef unsigned int blkno_t;
-#endif
-
-#ifndef _LOFF_T_DEFINED
-#define _LOFF_T_DEFINED
-typedef long loff_t;
-#endif
-
-#ifndef _OFF64_T_DEFINED
-#define _OFF64_T_DEFINED
-typedef __int64 off64_t;
-#endif
-
-#ifndef _HANDLE_T_DEFINED
-#define _HANDLE_T_DEFINED
-typedef int handle_t;
-#endif
-
-#ifndef _TID_T_DEFINED
-#define _TID_T_DEFINED
-typedef unsigned long tid_t;
-#endif
-
-#ifndef _PID_T_DEFINED
-#define _PID_T_DEFINED
-typedef unsigned long pid_t;
+#ifndef osapi
+#define osapi __declspec(dllimport)
 #endif
 
 #ifndef _HMODULE_T_DEFINED
@@ -103,50 +47,24 @@ typedef unsigned long pid_t;
 typedef void *hmodule_t;
 #endif
 
-#ifndef _TLS_T_DEFINED
-#define _TLS_T_DEFINED
-typedef unsigned long tls_t;
+#define RTLD_LAZY   0x0001
+#define RTLD_NOW    0x0002
+#define RTLD_GLOBAL 0x0100
+#define RTLD_LOCAL  0x0000
+
+#define RTLD_DEFAULT ((void *) 0)
+
+#ifdef  __cplusplus
+extern "C" {
 #endif
 
-#ifndef _WCHAR_T_DEFINED
-#define _WCHAR_T_DEFINED
-typedef unsigned short wchar_t;
+osapi hmodule_t dlopen(const char *name, int mode);
+osapi int dlclose(hmodule_t hmod);
+osapi void *dlsym(hmodule_t hmod, const char *procname);
+osapi char *dlerror();
+
+#ifdef  __cplusplus
+}
 #endif
-
-typedef int port_t;
-typedef int err_t;
-
-typedef __int64 systime_t;
-typedef int mode_t;
-typedef int uid_t;
-typedef int gid_t;
-
-#ifndef NULL
-#ifdef __cplusplus
-#define NULL    0
-#else
-#define NULL    ((void *)0)
-#endif
-#endif
-
-#define K 1024
-#define M (K * K)
-
-#ifndef FALSE
-#define FALSE 0
-#endif
-
-#ifndef TRUE
-#define TRUE  1
-#endif
-
-#ifndef NOHANDLE
-#define NOHANDLE ((handle_t) -1)
-#endif
-
-typedef unsigned char BYTE;
-typedef unsigned short WORD;
-typedef unsigned long DWORD;
-typedef unsigned __int64 QWORD;
 
 #endif

@@ -716,7 +716,7 @@ int cmd_load(int argc, char *argv[])
   }
   pgm = argv[1];
 
-  hmod = load(pgm);
+  hmod = dlopen(pgm, 0);
   if (hmod == NULL)
   {
     printf("%s: unable to load module\n", pgm);

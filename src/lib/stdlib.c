@@ -179,7 +179,7 @@ int system(const char *command)
   return spawn(P_WAIT, pgm, command, NULL);
 }
 
-char *realpath(char *path, char *buffer)
+char *realpath(const char *path, char *buffer)
 {
   int rc;
 
