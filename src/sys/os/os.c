@@ -213,7 +213,7 @@ void *calloc(size_t num, size_t size)
   p = heap_calloc(num, size);
   leave(&heap_lock);
 
-  if (size && !p) panic("realloc: out of memory");
+  if (size && !p) panic("calloc: out of memory");
 
   return p;
 }
