@@ -306,3 +306,5 @@ CHANGES
 - MSVCRT exception handling implemented.
 
 - setcontext() implemented.
+
+- Added more complete ANSI Standard C Library

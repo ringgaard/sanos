@@ -36,9 +36,6 @@
 struct waitable_timer *timer_list = NULL;
 int nexttid = 1;
 
-static int wbadds = 0;
-static int wbrems = 0;
-
 //
 // insert_in_waitlist
 //
@@ -47,8 +44,7 @@ static int wbrems = 0;
 
 static void insert_in_waitlist(struct object *obj, struct waitblock *wb)
 {
-  wbadds++;
-  if (!debugging) kprintf("waitlist: add %d to %p\n", wb->thread->id, obj);
+  //if (!debugging) kprintf("waitlist: add %d to %p\n", wb->thread->id, obj);
   wb->next_wait = NULL;
   wb->prev_wait = obj->waitlist_tail;
   if (obj->waitlist_tail) obj->waitlist_tail->next_wait = wb;
@@ -64,8 +60,7 @@ static void insert_in_waitlist(struct object *obj, struct waitblock *wb)
 
 static void remove_from_waitlist(struct waitblock *wb)
 {
-  wbrems++;
-  if (!debugging) kprintf("waitlist: remove %d from %p\n", wb->thread->id, wb->object);
+  //if (!debugging) kprintf("waitlist: remove %d from %p\n", wb->thread->id, wb->object);
   if (wb->next_wait) wb->next_wait->prev_wait = wb->prev_wait;
   if (wb->prev_wait) wb->prev_wait->next_wait = wb->next_wait;
   if (wb == wb->object->waitlist_head) wb->object->waitlist_head = wb->next_wait;
@@ -131,7 +126,7 @@ void release_thread(struct thread *t)
   }
 
   // Clear wait list for thread
-  t->waitlist = NULL;
+  //t->waitlist = NULL;
 
   // Mark thread as ready
   mark_thread_ready(t);
@@ -203,7 +198,7 @@ void clear_thread_waitlist(struct thread *t)
     wb = wb->next;
   }
 
-  //xxx t->waitlist = NULL;
+  t->waitlist = NULL;
 }
 
 //

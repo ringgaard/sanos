@@ -135,6 +135,7 @@ void mark_thread_ready(struct thread *t)
   int prio = t->priority;
 
   // Set thread state to ready
+  //if (t->state == THREAD_STATE_READY) panic("thread already ready");
   t->state = THREAD_STATE_READY;
 
   if (t->quantum > 0)
@@ -506,6 +507,7 @@ int set_thread_priority(struct thread *t, int priority)
     {
       remove_ready_thread(t);
       t->priority = priority;
+      t->state = THREAD_STATE_TRANSITION;
       mark_thread_ready(t);
     }
     else
@@ -755,7 +757,7 @@ void idle_task()
 
 static int threads_proc(struct proc_file *pf, void *arg)
 {
-  static char *threadstatename[] = {"init", "ready", "run", "wait", "term"};
+  static char *threadstatename[] = {"init", "ready", "run", "wait", "term", "susp", "trans"};
   static char *waitreasonname[] = {"wait", "fileio", "taskq", "sockio", "sleep", "pipe"};
   struct thread *t = threadlist;
   char *state;
