@@ -277,7 +277,7 @@ CHANGES
 
 - The value of errno is now the positive version of the error number instead of the negative.
 
-- dup2(), creat(), sopen(), and access() added
+- dup2(), creat(), sopen(), umask(), eof(), and access() added
 
 - File sharing, permission mode and additional open flags (O_TEMPORARY, O_SHORT_LIVED, O_DIRECT,
   O_SEQUENTIAL, O_RANDOM) implemented for smbfs.

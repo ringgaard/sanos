@@ -599,7 +599,7 @@ DWORD WINAPI FormatMessageA
 
   TRACE("FormatMessageA");
 
-  // TODO: generate mote descriptive message
+  // TODO: generate more descriptive message
   if (dwFlags & FORMAT_MESSAGE_ALLOCATE_BUFFER)
   {
     buf = malloc(nSize > 256 ? nSize : 256);

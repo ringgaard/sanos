@@ -72,11 +72,7 @@ osapi loff_t tell(handle_t f);
 osapi loff_t lseek(handle_t f, loff_t offset, int origin);
 
 osapi int access(const char *name, int mode);
-
-#if 0
-// TODO: implement in os.dll
-int eof(int h);
-int umask(int pmode);
-#endif
+osapi int umask(int mode);
+osapi int eof(handle_t f);
 
 #endif

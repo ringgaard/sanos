@@ -919,6 +919,7 @@ struct peb
   struct in_addr ntp_server2;
 
   void (*globalhandler)(int, struct siginfo *);
+  int umaskval;
 };
 
 //
@@ -1057,7 +1058,10 @@ osapi int fstat(handle_t f, struct stat *buffer);
 osapi int fstat64(handle_t f, struct stat64 *buffer);
 osapi int stat(const char *name, struct stat *buffer);
 osapi int stat64(const char *name, struct stat64 *buffer);
+
 osapi int access(const char *name, int mode);
+osapi int eof(handle_t f);
+osapi int umask(int mode);
 
 osapi int chdir(const char *name);
 osapi char *getcwd(char *buf, size_t size);

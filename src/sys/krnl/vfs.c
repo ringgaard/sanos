@@ -231,14 +231,16 @@ struct filesystem *register_filesystem(char *name, struct fsops *ops)
 struct file *newfile(struct fs *fs, char *path, int flags, int mode)
 {
   struct file *filp;
+  int umaskval = peb ? peb->umaskval : 0;
 
   filp = (struct file *) kmalloc(sizeof(struct file));
   if (!filp) return NULL;
   init_object(&filp->object, OBJECT_FILE);
   
+
   filp->fs = fs;
   filp->flags = flags;
-  filp->mode = mode;
+  filp->mode = mode & ~umaskval;
   filp->pos = 0;
   filp->data = NULL;
   filp->path = strdup(path);

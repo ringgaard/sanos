@@ -112,17 +112,63 @@ handle_t sopen(const char *name, int flags, int shflags, ...)
 int access(const char *name, int mode)
 {
   int rc;
+  struct stat64 buf;
 
-  // TODO: access checking by mode not yet implemented 
-  //   00 = existence
-  //   02 = write permission
-  //   04 = read permission
-  //   06 = read and write permission
-
-  rc = stat(name, NULL);
+  rc = stat64(name, &buf);
   if (rc < 0) return rc;
 
-  return 0;
+  switch (mode)
+  {
+    case 0:
+      // Existence
+      rc = 0; 
+      break;
+
+    case 2:
+      // Write permission
+      if (buf.st_mode & S_IWRITE)
+        rc = 0;
+      else
+	rc = -EACCES;
+      break; 
+
+    case 4: 
+      // Read permission
+      if (buf.st_mode & S_IREAD)
+        rc = 0;
+      else
+	rc = -EACCES;
+      break; 
+
+    case 6:
+      // Read and write permission
+      if ((buf.st_mode & (S_IREAD | S_IWRITE)) ==  (S_IREAD | S_IWRITE))
+        rc = 0;
+      else
+	rc = -EACCES;
+      break;
+
+    default: 
+      rc = -EINVAL;
+  }
+
+  if (rc < 0) errno = -rc;
+  return rc;
+}
+
+int eof(handle_t f)
+{
+  return tell(f) == fstat64(f, NULL);
+}
+
+int umask(int mode)
+{
+  int oldmode;
+
+  mode &= 0777;
+  oldmode = peb->umaskval;
+  peb->umaskval = mode;
+  return oldmode;
 }
 
 void *malloc(size_t size)

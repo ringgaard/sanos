@@ -101,8 +101,6 @@ void abort()
   exit(3);
 }
 
-/////////////////////
-
 int abs(int number)
 {
   return number >= 0 ? number : -number;
