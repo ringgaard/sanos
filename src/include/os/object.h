@@ -80,13 +80,13 @@ struct mutex
   int recursion;
 };
 
-struct timer
+struct waitable_timer
 {
   struct object object;
   unsigned int expires;
 
-  struct timer *next_timer;
-  struct timer *prev_timer;
+  struct waitable_timer *next_timer;
+  struct waitable_timer *prev_timer;
 };
 
 struct thread
@@ -112,7 +112,7 @@ struct thread
 
   struct thread *next_waiter;
 
-  struct timer auxtimer;
+  struct waitable_timer auxtimer;
   struct waitblock auxwb0;
   struct waitblock auxwb1;
 
@@ -141,9 +141,9 @@ krnlapi void init_mutex(struct mutex *m, int owned);
 krnlapi void release_mutex(struct mutex *m);
 
 void handle_timer_expiry(unsigned int ticks);
-krnlapi void init_timer(struct timer *t, unsigned int expires);
-krnlapi void modify_timer(struct timer *t, unsigned int expires);
-krnlapi void cancel_timer(struct timer *t);
+krnlapi void init_waitable_timer(struct waitable_timer *t, unsigned int expires);
+krnlapi void modify_waitable_timer(struct waitable_timer *t, unsigned int expires);
+krnlapi void cancel_waitable_timer(struct waitable_timer *t);
 
 krnlapi int wait_for_object(object_t hobj, unsigned int timeout);
 krnlapi void sleep(unsigned int millisecs);

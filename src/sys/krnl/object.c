@@ -8,7 +8,7 @@
 
 #include <os/krnl.h>
 
-struct timer *timer_list = NULL;
+struct waitable_timer *timer_list = NULL;
 int nexttid = 1;
 
 #define HANDLES_PER_PAGE (PAGESIZE / sizeof(struct object *))
@@ -178,7 +178,7 @@ int wait_for_object(object_t hobj, unsigned int timeout)
     else
     {
       // Initialize timer
-      init_timer(&t->auxtimer, get_tick_count() + timeout);
+      init_waitable_timer(&t->auxtimer, get_tick_count() + timeout);
       t->auxwb0.waittype = WAIT_ANY;
       t->auxwb0.next = &t->auxwb1;
       t->auxwb1.thread = t;
@@ -193,7 +193,7 @@ int wait_for_object(object_t hobj, unsigned int timeout)
       dispatch();
 
       // Stop timer
-      cancel_timer(&t->auxtimer);
+      cancel_waitable_timer(&t->auxtimer);
 
       // Clear wait list
       t->waitlist = NULL;
@@ -237,7 +237,7 @@ int close_object(struct object *o)
       return 0;
 
     case OBJECT_TIMER:
-      cancel_timer((struct timer *) o);
+      cancel_waitable_timer((struct waitable_timer *) o);
       kfree(o);
       break;
 
@@ -529,7 +529,7 @@ void release_mutex(struct mutex *m)
 // Insert timer in active timer list
 //
 
-static void insert_timer(struct timer *t)
+static void insert_waitable_timer(struct waitable_timer *t)
 {
   t->next_timer = timer_list;
   t->prev_timer = NULL;
@@ -541,7 +541,7 @@ static void insert_timer(struct timer *t)
 // Remove timer from active timer list
 //
 
-static void remove_timer(struct timer *t)
+static void remove_waitable_timer(struct waitable_timer *t)
 {
   if (t->next_timer) t->next_timer->prev_timer = t->prev_timer;
   if (t->prev_timer) t->prev_timer->next_timer = t->next_timer;
@@ -552,7 +552,7 @@ static void remove_timer(struct timer *t)
 // Expire timer
 //
 
-static void expire_timer(struct timer *t)
+static void expire_waitable_timer(struct waitable_timer *t)
 {
   struct waitblock *wb;
   struct waitblock *wb_next;
@@ -570,7 +570,7 @@ static void expire_timer(struct timer *t)
   }
 
   // Remove timer from timer list
-  remove_timer(t);
+  remove_waitable_timer(t);
 }
 
 //
@@ -580,13 +580,13 @@ static void expire_timer(struct timer *t)
 
 void handle_timer_expiry(unsigned int ticks)
 {
-  struct timer *t = timer_list;
+  struct waitable_timer *t = timer_list;
 
   while (t)
   {
-    struct timer *t_next = t->next_timer;
-    if (time_before_eq(t->expires, ticks)) expire_timer(t);
-    t = t_next;
+    struct waitable_timer *next = t->next_timer;
+    if (time_before_eq(t->expires, ticks)) expire_waitable_timer(t);
+    t = next;
   }
 }
 
@@ -594,7 +594,7 @@ void handle_timer_expiry(unsigned int ticks)
 // Initialize timer
 //
 
-void init_timer(struct timer *t, unsigned int expires)
+void init_waitable_timer(struct waitable_timer *t, unsigned int expires)
 {
   init_object(&t->object, OBJECT_TIMER);
   t->expires = expires;
@@ -607,7 +607,7 @@ void init_timer(struct timer *t, unsigned int expires)
   else
   {
     // Insert timer in timer list
-    insert_timer(t);
+    insert_waitable_timer(t);
   }
 }
 
@@ -615,13 +615,13 @@ void init_timer(struct timer *t, unsigned int expires)
 // Modify timer
 //
 
-void modify_timer(struct timer *t, unsigned int expires)
+void modify_waitable_timer(struct waitable_timer *t, unsigned int expires)
 {
   t->expires = expires;
   if (time_before_eq(expires, get_tick_count()))
   {
     // Remove timer from timer list if timer is active
-    if (!t->object.signaled) expire_timer(t);
+    if (!t->object.signaled) expire_waitable_timer(t);
   }
   else
   {
@@ -629,7 +629,7 @@ void modify_timer(struct timer *t, unsigned int expires)
     if (t->object.signaled) 
     {
       t->object.signaled = 0;
-      insert_timer(t);
+      insert_waitable_timer(t);
     }
   }
 }
@@ -638,7 +638,7 @@ void modify_timer(struct timer *t, unsigned int expires)
 // Cancel timer
 //
 
-void cancel_timer(struct timer *t)
+void cancel_waitable_timer(struct waitable_timer *t)
 {
   t->expires = 0;
 
@@ -646,7 +646,7 @@ void cancel_timer(struct timer *t)
   if (!t->object.signaled)
   {
     t->object.signaled = 1;
-    remove_timer(t);
+    remove_waitable_timer(t);
   }
 }
 
@@ -656,9 +656,9 @@ void cancel_timer(struct timer *t)
 
 void sleep(unsigned int millisecs)
 {
-  struct timer timer;
+  struct waitable_timer timer;
 
-  init_timer(&timer, get_tick_count() + (millisecs * TICKS_PER_SEC / 1000));
+  init_waitable_timer(&timer, get_tick_count() + (millisecs * TICKS_PER_SEC / 1000));
   wait_for_object(&timer, INFINITE);
 }
 
