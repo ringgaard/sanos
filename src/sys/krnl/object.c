@@ -641,6 +641,7 @@ handle_t halloc(struct object *o)
 int hfree(handle_t h)
 {
   struct object *o;
+  int rc;
 
   if (h < 0 || h >= htabsize) return -EBADF;
   o = htab[h];
@@ -648,36 +649,23 @@ int hfree(handle_t h)
   if (o == (struct object *) NOHANDLE) return -EBADF;
   if (o < (struct object *) OSBASE) return -EBADF;
 
-  return hrel(h);
-}
-
-//
-// Release handle
-//
-
-int hrel(handle_t h)
-{
-  struct object *o;
-  int rc;
-
   o = htab[h];
   if (--o->handle_count == 0) 
-  {
     rc = close_object(o);
-    htab[h] = (struct object *) hfreelist;
-    hfreelist = h;
-  }
   else
     rc = 0;
 
+  htab[h] = (struct object *) hfreelist;
+  hfreelist = h;
+  
   return rc;
 }
 
 //
-// Lock handle
+// Lock object
 //
 
-struct object *hlock(handle_t h, int type)
+struct object *olock(handle_t h, int type)
 {
   struct object *o;
 
@@ -689,6 +677,18 @@ struct object *hlock(handle_t h, int type)
   if (o->type != type && type != OBJECT_ANY) return NULL;
   o->handle_count++;
   return o;
+}
+
+//
+// Release object
+//
+
+int orel(object_t hobj)
+{
+  struct object *o = (struct object *) hobj;
+
+  if (--o->handle_count == 0) return close_object(o);
+  return 0;
 }
 
 //
@@ -718,7 +718,7 @@ static int handles_proc(struct proc_file *pf, void *arg)
     if (o == (struct object *) NOHANDLE) continue;
     
     pprintf(pf, "%6d %8X %d %4s %5d\n", h, o, o->signaled, objtype[o->type], o->handle_count);
-    objcount[o->type] += FRAQ / o->handle_count;
+    if (o->handle_count != 0) objcount[o->type] += FRAQ / o->handle_count;
   }
 
   pprintf(pf, "\n");

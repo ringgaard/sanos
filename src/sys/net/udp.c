@@ -21,7 +21,7 @@ static int udpstat_proc(struct proc_file *pf, void *arg)
 
   for (pcb = udp_pcbs; pcb != NULL; pcb = pcb->next) 
   {
-    pprintf(pf, "%8d    %8d    %-15a %-15a %s\n", pcb->local_port, pcb->remote_port, &pcb->local_ip, &pcb->remote_ip);
+    pprintf(pf, "%8d    %8d    %-15a %-15a\n", pcb->local_port, pcb->remote_port, &pcb->local_ip, &pcb->remote_ip);
   }
 
   return 0;

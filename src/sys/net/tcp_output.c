@@ -375,7 +375,7 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
     pcb->rtseq = ntohl(seg->tcphdr->seqno);
   }
 
-  //kprintf("tcp_output_segment: %lu:%lu\n", htonl(seg->tcphdr->seqno), htonl(seg->tcphdr->seqno) + seg->len);
+  kprintf("tcp_output_segment: %lu:%lu\n", htonl(seg->tcphdr->seqno), htonl(seg->tcphdr->seqno) + seg->len);
 
   seg->tcphdr->chksum = 0;
   if ((netif->flags & NETIF_TCP_TX_CHECKSUM_OFFLOAD) == 0)
@@ -412,7 +412,7 @@ void tcp_rexmit_seg(struct tcp_pcb *pcb, struct tcp_seg *seg)
   // packet is still on the transmission queue.
   if (seg->p->ref > 1) 
   {
-    kprintf("tcp_rexmit_segment: packet not retransmitted due to refcount\n");
+    kprintf("tcp_rexmit_segment: packet not retransmitted, still in tx queue\n");
     return;
   }
 

@@ -213,7 +213,7 @@ static int sys_fstatfs(char *params)
   h = *(handle_t *) params;
   buf = *(struct statfs **) (params + 4);
 
-  f = (struct file *) hlock(h, OBJECT_FILE);
+  f = (struct file *) olock(h, OBJECT_FILE);
   if (!f) 
   {
     unlock_buffer(params, 8);
@@ -222,7 +222,7 @@ static int sys_fstatfs(char *params)
 
   if (lock_buffer(buf, sizeof(struct statfs)) < 0)
   {
-    hrel(h);
+    orel(f);
     unlock_buffer(params, 8);
     return -EFAULT;
   }
@@ -230,7 +230,7 @@ static int sys_fstatfs(char *params)
   rc = fstatfs(f, buf);
 
   unlock_buffer(buf, sizeof(struct statfs));
-  hrel(h);
+  orel(f);
   unlock_buffer(params, 8);
 
   return rc;
@@ -325,7 +325,7 @@ static int sys_flush(char *params)
   if (lock_buffer(params, 4) < 0) return -EFAULT;
 
   h = *(handle_t *) params;
-  f = (struct file *) hlock(h, OBJECT_FILE);
+  f = (struct file *) olock(h, OBJECT_FILE);
   if (!f) 
   {
     unlock_buffer(params, 4);
@@ -334,7 +334,7 @@ static int sys_flush(char *params)
 
   rc = flush(f);
 
-  hrel(h);
+  orel(f);
   unlock_buffer(params, 4);
 
   return rc;
@@ -354,7 +354,7 @@ static int sys_read(char *params)
   data = *(void **) (params + 4);
   size = *(int *) (params + 8);
 
-  o = hlock(h, OBJECT_ANY);
+  o = olock(h, OBJECT_ANY);
   if (!o) 
   {
     unlock_buffer(params, 12);
@@ -363,7 +363,7 @@ static int sys_read(char *params)
   
   if (lock_buffer(data, size) < 0)
   {
-    hrel(h);
+    orel(o);
     unlock_buffer(params, 12);
     return -EFAULT;
   }
@@ -375,7 +375,7 @@ static int sys_read(char *params)
   else
     rc = -EBADF;
 
-  hrel(h);
+  orel(o);
   unlock_buffer(params, 12);
 
   return rc;
@@ -395,7 +395,7 @@ static int sys_write(char *params)
   data = *(void **) (params + 4);
   size = *(int *) (params + 8);
 
-  o = hlock(h, OBJECT_ANY);
+  o = olock(h, OBJECT_ANY);
   if (!o) 
   {
     unlock_buffer(params, 12);
@@ -404,7 +404,7 @@ static int sys_write(char *params)
 
   if (lock_buffer(data, size) < 0)
   {
-    hrel(h);
+    orel(o);
     unlock_buffer(params, 12);
     return -EFAULT;
   }
@@ -416,7 +416,7 @@ static int sys_write(char *params)
   else
     rc = -EBADF;
   
-  hrel(h);
+  orel(o);
   unlock_buffer(params, 12);
 
   return rc;
@@ -438,7 +438,7 @@ static int sys_ioctl(char *params)
   data = *(void **) (params + 8);
   size = *(int *) (params + 12);
 
-  o = hlock(h, OBJECT_ANY);
+  o = olock(h, OBJECT_ANY);
   if (!o) 
   {
     unlock_buffer(params, 16);
@@ -447,7 +447,7 @@ static int sys_ioctl(char *params)
 
   if (lock_buffer(data, size) < 0)
   {
-    hrel(h);
+    orel(o);
     unlock_buffer(params, 16);
     return -EFAULT;
   }
@@ -459,7 +459,7 @@ static int sys_ioctl(char *params)
   else
     rc = -EBADF;
   
-  hrel(h);
+  orel(o);
   unlock_buffer(params, 16);
 
   return rc;
@@ -474,7 +474,7 @@ static int sys_tell(char *params)
   if (lock_buffer(params, 4) < 0) return -EFAULT;
 
   h = *(handle_t *) params;
-  f = (struct file *) hlock(h, OBJECT_FILE);
+  f = (struct file *) olock(h, OBJECT_FILE);
   if (!f) 
   {
     unlock_buffer(params, 4);
@@ -483,7 +483,7 @@ static int sys_tell(char *params)
 
   retval = flush(f);
 
-  hrel(h);
+  orel(f);
   unlock_buffer(params, 4);
 
   return (int) retval;
@@ -503,7 +503,7 @@ static int sys_lseek(char *params)
   offset = *(loff_t *) (params + 4);
   origin = *(int *) (params + 8);
 
-  f = (struct file *) hlock(h, OBJECT_FILE);
+  f = (struct file *) olock(h, OBJECT_FILE);
   if (!f) 
   {
     unlock_buffer(params, 12);
@@ -512,7 +512,7 @@ static int sys_lseek(char *params)
 
   retval = lseek(f, offset, origin);
 
-  hrel(h);
+  orel(f);
   unlock_buffer(params, 12);
 
   return (int) retval;
@@ -530,7 +530,7 @@ static int sys_chsize(char *params)
   h = *(handle_t *) params;
   size = *(loff_t *) (params + 4);
 
-  f = (struct file *) hlock(h, OBJECT_FILE);
+  f = (struct file *) olock(h, OBJECT_FILE);
   if (!f) 
   {
     unlock_buffer(params, 8);
@@ -539,7 +539,7 @@ static int sys_chsize(char *params)
 
   rc = chsize(f, size);
 
-  hrel(h);
+  orel(f);
   unlock_buffer(params, 8);
 
   return rc;
@@ -557,7 +557,7 @@ static int sys_futime(char *params)
   h = *(handle_t *) params;
   times = *(struct utimbuf **) (params + 4);
 
-  f = (struct file *) hlock(h, OBJECT_FILE);
+  f = (struct file *) olock(h, OBJECT_FILE);
   if (!f) 
   {
     unlock_buffer(params, 8);
@@ -566,7 +566,7 @@ static int sys_futime(char *params)
 
   if (lock_buffer(times, sizeof(struct utimbuf)) < 0)
   {
-    hrel(h);
+    orel(f);
     unlock_buffer(params, 8);
     return -EFAULT;
   }
@@ -574,7 +574,7 @@ static int sys_futime(char *params)
   rc = futime(f, times);
 
   unlock_buffer(times, sizeof(struct utimbuf));
-  hrel(h);
+  orel(f);
   unlock_buffer(params, 8);
 
   return rc;
@@ -625,7 +625,7 @@ static int sys_fstat(char *params)
   h = *(handle_t *) params;
   buffer = *(struct stat **) (params + 4);
 
-  f = (struct file *) hlock(h, OBJECT_FILE);
+  f = (struct file *) olock(h, OBJECT_FILE);
   if (!f) 
   {
     unlock_buffer(params, 8);
@@ -634,7 +634,7 @@ static int sys_fstat(char *params)
 
   if (lock_buffer(buffer, sizeof(struct stat)) < 0)
   {
-    hrel(h);
+    orel(f);
     unlock_buffer(params, 8);
     return -EFAULT;
   }
@@ -642,7 +642,7 @@ static int sys_fstat(char *params)
   rc = fstat(f, buffer);
 
   unlock_buffer(buffer, sizeof(struct stat));
-  hrel(h);
+  orel(f);
   unlock_buffer(params, 8);
 
   return rc;
@@ -859,7 +859,7 @@ static int sys_readdir(char *params)
   dirp = *(struct dirent **) (params + 4);
   count = *(int *) (params + 8);
 
-  f = (struct file *) hlock(h, OBJECT_FILE);
+  f = (struct file *) olock(h, OBJECT_FILE);
   if (f == NULL) 
   {
     unlock_buffer(params, 12);
@@ -868,14 +868,14 @@ static int sys_readdir(char *params)
 
   if (lock_buffer(dirp, count * sizeof(struct dirent)) < 0)
   {
-    hrel(h);
+    orel(f);
     unlock_buffer(params, 12);
     return -EFAULT;
   }
   
   rc = readdir(f, dirp, count);
   
-  hrel(h);
+  orel(f);
   unlock_buffer(params, 12);
 
   return rc;
@@ -1015,7 +1015,7 @@ static int sys_wait(char *params)
   h = *(handle_t *) params;
   timeout = *(unsigned int *) (params + 4);
 
-  o = (struct object *) hlock(h, OBJECT_ANY);
+  o = (struct object *) olock(h, OBJECT_ANY);
   if (!o) 
   {
     unlock_buffer(params, 8);
@@ -1024,7 +1024,7 @@ static int sys_wait(char *params)
 
   rc = wait_for_object(o, timeout);
 
-  hrel(h);
+  orel(o);
   unlock_buffer(params, 8);
   return rc;
 }
@@ -1054,7 +1054,6 @@ static int sys_mkevent(char *params)
   if (h < 0)
   {
     close_object(&e->object);
-    kfree(e);
     unlock_buffer(params, 8);
     return h;
   }
@@ -1072,7 +1071,7 @@ static int sys_epulse(char *params)
   if (lock_buffer(params, 4) < 0) return -EFAULT;
 
   h = *(handle_t *) params;
-  e = (struct event *) hlock(h, OBJECT_EVENT);
+  e = (struct event *) olock(h, OBJECT_EVENT);
   if (!e) 
   {
     unlock_buffer(params, 4);
@@ -1081,7 +1080,7 @@ static int sys_epulse(char *params)
 
   pulse_event(e);
 
-  hrel(h);
+  orel(e);
   unlock_buffer(params, 4);
 
   return 0;
@@ -1095,7 +1094,7 @@ static int sys_eset(char *params)
   if (lock_buffer(params, 4) < 0) return -EFAULT;
 
   h = *(handle_t *) params;
-  e = (struct event *) hlock(h, OBJECT_EVENT);
+  e = (struct event *) olock(h, OBJECT_EVENT);
   if (!e) 
   {
     unlock_buffer(params, 4);
@@ -1104,7 +1103,7 @@ static int sys_eset(char *params)
 
   set_event(e);
 
-  hrel(h);
+  orel(e);
   unlock_buffer(params, 4);
 
   return 0;
@@ -1118,7 +1117,7 @@ static int sys_ereset(char *params)
   if (lock_buffer(params, 4) < 0) return -EFAULT;
 
   h = *(handle_t *) params;
-  e = (struct event *) hlock(h, OBJECT_EVENT);
+  e = (struct event *) olock(h, OBJECT_EVENT);
   if (!e) 
   {
     unlock_buffer(params, 4);
@@ -1127,7 +1126,7 @@ static int sys_ereset(char *params)
 
   reset_event(e);
 
-  hrel(h);
+  orel(e);
   unlock_buffer(params, 4);
 
   return 0;
@@ -1162,7 +1161,7 @@ static int sys_dup(char *params)
 
   h = *(handle_t *) params;
 
-  o = hlock(h, OBJECT_ANY);
+  o = olock(h, OBJECT_ANY);
   if (!o) 
   {
     unlock_buffer(params, 4);
@@ -1171,7 +1170,7 @@ static int sys_dup(char *params)
 
   newh = halloc(o);
 
-  hrel(h);
+  orel(o);
   unlock_buffer(params, 4);
   return newh;
 }
@@ -1222,7 +1221,7 @@ static int sys_suspend(char *params)
 
   h = *(handle_t *) params;
 
-  t = (struct thread *) hlock(h, OBJECT_THREAD);
+  t = (struct thread *) olock(h, OBJECT_THREAD);
   if (!t || t->id == 0) 
   {
     unlock_buffer(params, 4);
@@ -1231,7 +1230,7 @@ static int sys_suspend(char *params)
 
   rc = suspend_thread(t);
 
-  hrel(h);
+  orel(t);
   unlock_buffer(params, 4);
   return rc;
 }
@@ -1246,7 +1245,7 @@ static int sys_resume(char *params)
 
   h = *(handle_t *) params;
 
-  t = (struct thread *) hlock(h, OBJECT_THREAD);
+  t = (struct thread *) olock(h, OBJECT_THREAD);
   if (!t) 
   {
     unlock_buffer(params, 4);
@@ -1255,7 +1254,7 @@ static int sys_resume(char *params)
 
   rc = resume_thread(t);
 
-  hrel(h);
+  orel(t);
   unlock_buffer(params, 4);
   return rc;
 }
@@ -1284,7 +1283,7 @@ static int sys_getcontext(char *params)
   h = *(handle_t *) params;
   context = *(void **) (params + 4);
 
-  t = (struct thread *) hlock(h, OBJECT_THREAD);
+  t = (struct thread *) olock(h, OBJECT_THREAD);
   if (!t) 
   {
     unlock_buffer(params, 8);
@@ -1293,7 +1292,7 @@ static int sys_getcontext(char *params)
 
   kprintf("warning: getcontext not implemented\n");
 
-  hrel(h);
+  orel(t);
   unlock_buffer(params, 8);
   return -ENOSYS;
 }
@@ -1308,7 +1307,7 @@ static int sys_getprio(char *params)
 
   h = *(handle_t *) params;
 
-  t = (struct thread *) hlock(h, OBJECT_THREAD);
+  t = (struct thread *) olock(h, OBJECT_THREAD);
   if (!t) 
   {
     unlock_buffer(params, 4);
@@ -1317,7 +1316,7 @@ static int sys_getprio(char *params)
 
   priority = t->priority;
 
-  hrel(h);
+  orel(t);
   unlock_buffer(params, 4);
   return priority;
 }
@@ -1333,7 +1332,7 @@ static int sys_setprio(char *params)
   h = *(handle_t *) params;
   priority = *(int *) (params + 4);
 
-  t = (struct thread *) hlock(h, OBJECT_THREAD);
+  t = (struct thread *) olock(h, OBJECT_THREAD);
   if (!t) 
   {
     unlock_buffer(params, 8);
@@ -1343,7 +1342,7 @@ static int sys_setprio(char *params)
   t->priority = priority;
   // TODO: reschedule thread to immediately reflect priority change
 
-  hrel(h);
+  orel(t);
   unlock_buffer(params, 8);
   return 0;
 }
@@ -1441,7 +1440,6 @@ static int sys_mksem(char *params)
   if (h < 0)
   {
     close_object(&s->object);
-    kfree(s);
     unlock_buffer(params, 4);
     return h;
   }
@@ -1463,7 +1461,7 @@ static int sys_semrel(char *params)
   h = *(handle_t *) params;
   count = *(int *) (params + 4);
 
-  s = (struct sem *) hlock(h, OBJECT_SEMAPHORE);
+  s = (struct sem *) olock(h, OBJECT_SEMAPHORE);
   if (!s) 
   {
     unlock_buffer(params, 8);
@@ -1472,7 +1470,7 @@ static int sys_semrel(char *params)
 
   rc = release_sem(s, count);
 
-  hrel(h);
+  orel(s);
   unlock_buffer(params, 8);
   return rc;
 }
@@ -1492,7 +1490,7 @@ static int sys_accept(char *params)
   addr = *(struct sockaddr **) (params + 4);
   addrlen = *(int **) (params + 8);
 
-  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) 
   {
     unlock_buffer(params, 12);
@@ -1501,14 +1499,14 @@ static int sys_accept(char *params)
 
   if (lock_buffer(addr, sizeof(struct sockaddr)) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(params, 12);
     return -EFAULT;
   }
   
   if (lock_buffer(addrlen, sizeof(int)) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(addr, sizeof(struct sockaddr));
     unlock_buffer(params, 12);
     return -EFAULT;
@@ -1521,7 +1519,7 @@ static int sys_accept(char *params)
     if (rc < 0) closesocket(news);
   }
 
-  hrel(h);
+  orel(s);
   unlock_buffer(addrlen, sizeof(int));
   unlock_buffer(addr, sizeof(struct sockaddr));
   unlock_buffer(params, 12);
@@ -1543,7 +1541,7 @@ static int sys_bind(char *params)
   name = *(struct sockaddr **) (params + 4);
   namelen = *(int *) (params + 8);
 
-  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) 
   {
     unlock_buffer(params, 12);
@@ -1552,14 +1550,14 @@ static int sys_bind(char *params)
 
   if (lock_buffer(name, namelen) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(params, 12);
     return -EFAULT;
   }
   
   rc = bind(s, name, namelen);
 
-  hrel(h);
+  orel(s);
   unlock_buffer(name, namelen);
   unlock_buffer(params, 12);
 
@@ -1580,7 +1578,7 @@ static int sys_connect(char *params)
   name = *(struct sockaddr **) (params + 4);
   namelen = *(int *) (params + 8);
 
-  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) 
   {
     unlock_buffer(params, 12);
@@ -1589,14 +1587,14 @@ static int sys_connect(char *params)
 
   if (lock_buffer(name, namelen) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(params, 12);
     return -EFAULT;
   }
   
   rc = connect(s, name, namelen);
 
-  hrel(h);
+  orel(s);
   unlock_buffer(name, namelen);
   unlock_buffer(params, 12);
 
@@ -1617,7 +1615,7 @@ static int sys_getpeername(char *params)
   name = *(struct sockaddr **) (params + 4);
   namelen = *(int **) (params + 8);
 
-  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) 
   {
     unlock_buffer(params, 12);
@@ -1626,14 +1624,14 @@ static int sys_getpeername(char *params)
 
   if (lock_buffer(name, sizeof(struct sockaddr)) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(params, 12);
     return -EFAULT;
   }
   
   if (lock_buffer(namelen, 4) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(name, sizeof(struct sockaddr));
     unlock_buffer(params, 12);
     return -EFAULT;
@@ -1641,7 +1639,7 @@ static int sys_getpeername(char *params)
 
   rc = getpeername(s, name, namelen);
 
-  hrel(h);
+  orel(s);
   unlock_buffer(namelen, 4);
   unlock_buffer(name, sizeof(struct sockaddr));
   unlock_buffer(params, 12);
@@ -1663,7 +1661,7 @@ static int sys_getsockname(char *params)
   name = *(struct sockaddr **) (params + 4);
   namelen = *(int **) (params + 8);
 
-  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) 
   {
     unlock_buffer(params, 12);
@@ -1672,14 +1670,14 @@ static int sys_getsockname(char *params)
 
   if (lock_buffer(name, sizeof(struct sockaddr)) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(params, 12);
     return -EFAULT;
   }
   
   if (lock_buffer(namelen, 4) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(name, sizeof(struct sockaddr));
     unlock_buffer(params, 12);
     return -EFAULT;
@@ -1687,7 +1685,7 @@ static int sys_getsockname(char *params)
 
   rc = getsockname(s, name, namelen);
 
-  hrel(h);
+  orel(s);
   unlock_buffer(namelen, 4);
   unlock_buffer(name, sizeof(struct sockaddr));
   unlock_buffer(params, 12);
@@ -1714,7 +1712,7 @@ static int sys_getsockopt(char *params)
   optval = *(char **) (params + 12);
   optlen = *(int **) (params + 16);
 
-  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) 
   {
     unlock_buffer(params, 20);
@@ -1723,7 +1721,7 @@ static int sys_getsockopt(char *params)
 
   if (!optlen || lock_buffer(optlen, 4) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(params, 20);
     return -EFAULT;
   }
@@ -1731,7 +1729,7 @@ static int sys_getsockopt(char *params)
 
   if (lock_buffer(optval, inoptlen) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(optlen, 4);
     unlock_buffer(params, 20);
     return -EFAULT;
@@ -1739,7 +1737,7 @@ static int sys_getsockopt(char *params)
   
   rc = getsockopt(s, level, optname, optval, optlen);
 
-  hrel(h);
+  orel(s);
   unlock_buffer(optval, inoptlen);
   unlock_buffer(optlen, 4);
   unlock_buffer(params, 20);
@@ -1759,7 +1757,7 @@ static int sys_listen(char *params)
   h = *(handle_t *) params;
   backlog = *(int *) (params + 4);
 
-  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) 
   {
     unlock_buffer(params, 8);
@@ -1768,7 +1766,7 @@ static int sys_listen(char *params)
   
   rc = listen(s, backlog);
 
-  hrel(h);
+  orel(s);
   unlock_buffer(params, 8);
 
   return rc;
@@ -1790,7 +1788,7 @@ static int sys_recv(char *params)
   size = *(int *) (params + 8);
   flags = *(unsigned int *) (params + 12);
 
-  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) 
   {
     unlock_buffer(params, 16);
@@ -1799,14 +1797,14 @@ static int sys_recv(char *params)
 
   if (lock_buffer(data, size) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(params, 16);
     return -EFAULT;
   }
   
   rc = recv(s, data, size, flags);
 
-  hrel(h);
+  orel(s);
   unlock_buffer(data, size);
   unlock_buffer(params, 16);
 
@@ -1833,7 +1831,7 @@ static int sys_recvfrom(char *params)
   from = *(struct sockaddr **) (params + 16);
   fromlen = *(int **) (params + 20);
 
-  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) 
   {
     unlock_buffer(params, 24);
@@ -1842,14 +1840,14 @@ static int sys_recvfrom(char *params)
 
   if (lock_buffer(data, size) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(params, 24);
     return -EFAULT;
   }
   
   if (lock_buffer(from, sizeof(struct sockaddr)) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(data, size);
     unlock_buffer(params, 24);
     return -EFAULT;
@@ -1857,7 +1855,7 @@ static int sys_recvfrom(char *params)
 
   if (lock_buffer(fromlen, sizeof(int)) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(from, sizeof(struct sockaddr));
     unlock_buffer(data, size);
     unlock_buffer(params, 24);
@@ -1866,7 +1864,7 @@ static int sys_recvfrom(char *params)
 
   rc = recvfrom(s, data, size, flags, from, fromlen);
 
-  hrel(h);
+  orel(s);
   unlock_buffer(fromlen, sizeof(int));
   unlock_buffer(from, sizeof(struct sockaddr));
   unlock_buffer(data, size);
@@ -1891,7 +1889,7 @@ static int sys_send(char *params)
   size = *(int *) (params + 8);
   flags = *(unsigned int *) (params + 12);
 
-  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) 
   {
     unlock_buffer(params, 16);
@@ -1900,14 +1898,14 @@ static int sys_send(char *params)
 
   if (lock_buffer(data, size) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(params, 16);
     return -EFAULT;
   }
   
   rc = send(s, data, size, flags);
 
-  hrel(h);
+  orel(s);
   unlock_buffer(data, size);
   unlock_buffer(params, 16);
 
@@ -1934,7 +1932,7 @@ static int sys_sendto(char *params)
   to = *(struct sockaddr **) (params + 16);
   tolen = *(int *) (params + 20);
 
-  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) 
   {
     unlock_buffer(params, 24);
@@ -1943,14 +1941,14 @@ static int sys_sendto(char *params)
 
   if (lock_buffer(data, size) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(params, 24);
     return -EFAULT;
   }
   
   if (lock_buffer(to, sizeof(struct sockaddr)) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(data, size);
     unlock_buffer(params, 24);
     return -EFAULT;
@@ -1958,7 +1956,7 @@ static int sys_sendto(char *params)
 
   rc = sendto(s, data, size, flags, to, tolen);
 
-  hrel(h);
+  orel(s);
   unlock_buffer(to, sizeof(struct sockaddr));
   unlock_buffer(data, size);
   unlock_buffer(params, 24);
@@ -1984,7 +1982,7 @@ static int sys_setsockopt(char *params)
   optval = *(char **) (params + 12);
   optlen = *(int *) (params + 16);
 
-  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) 
   {
     unlock_buffer(params, 20);
@@ -1993,14 +1991,14 @@ static int sys_setsockopt(char *params)
 
   if (lock_buffer(optval, optlen) < 0)
   {
-    hrel(h);
+    orel(s);
     unlock_buffer(params, 20);
     return -EFAULT;
   }
   
   rc = setsockopt(s, level, optname, optval, optlen);
 
-  hrel(h);
+  orel(s);
   unlock_buffer(optval, optlen);
   unlock_buffer(params, 20);
 
@@ -2019,7 +2017,7 @@ static int sys_shutdown(char *params)
   h = *(handle_t *) params;
   how = *(int *) (params + 4);
 
-  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) 
   {
     unlock_buffer(params, 8);
@@ -2028,7 +2026,7 @@ static int sys_shutdown(char *params)
   
   rc = shutdown(s, how);
 
-  hrel(h);
+  orel(s);
   unlock_buffer(params, 8);
 
   return rc;

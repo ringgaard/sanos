@@ -155,6 +155,8 @@ int list_memmap(struct proc_file *pf, struct rmap *rmap, unsigned int startpos)
   unsigned int pos = startpos;
   unsigned int total = 0;
 
+  pprintf(pf, "Memory map:\n");
+
   rlim = &rmap[rmap->offset];
   for (r = &rmap[1]; r <= rlim; r++) 
   {

@@ -680,7 +680,7 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
     {
       m = tcp_ticks - pcb->rttest;
 
-      kprintf("tcp_receive: experienced rtt %d ticks (%d msec).\n", m, m * TCP_SLOW_INTERVAL);
+      //kprintf("tcp_receive: experienced rtt %d ticks (%d msec).\n", m, m * TCP_SLOW_INTERVAL);
 
       // This is taken directly from VJs original code in his paper
       m = m - (pcb->sa >> 3);
@@ -690,7 +690,7 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
       pcb->sv += m;
       pcb->rto = (pcb->sa >> 3) + pcb->sv;
       
-      kprintf("tcp_receive: RTO %d (%d miliseconds)\n", pcb->rto, pcb->rto * TCP_SLOW_INTERVAL);
+      //kprintf("tcp_receive: RTO %d (%d miliseconds)\n", pcb->rto, pcb->rto * TCP_SLOW_INTERVAL);
 
       pcb->rttest = 0;
     } 

@@ -149,7 +149,8 @@ krnlapi void sleep(unsigned int millisecs);
 
 krnlapi handle_t halloc(struct object *o);
 krnlapi int hfree(handle_t h);
-krnlapi int hrel(handle_t h);
-krnlapi struct object *hlock(handle_t h, int type);
+
+krnlapi struct object *olock(handle_t h, int type);
+krnlapi int orel(object_t hobj);
 
 #endif

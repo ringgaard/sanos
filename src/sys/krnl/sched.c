@@ -276,13 +276,18 @@ int destroy_thread(struct thread *t)
 {
   struct task *task;
 
+  // We can only remove terminated threads
+  if (t->state != THREAD_STATE_TERMINATED) panic("thread terminated in invalid state");
+ 
   // Deallocate user context
   if (t->tib)
   {
     // Deallocate user stack
     if (t->tib->stackbase) 
     {
+kprintf("before munmap %p %p\n", t->tib->stackbase, t->tib->stacktop);
       munmap(t->tib->stackbase, (char *) (t->tib->stacktop) - (char *) (t->tib->stackbase), MEM_RELEASE);
+kprintf("after munmap\n");
       t->tib->stackbase = NULL;
     }
 
@@ -293,6 +298,9 @@ int destroy_thread(struct thread *t)
 
   // Notify debugger
   dbg_notify_exit_thread(t);
+
+  // Remove thread from thread list
+  remove(t);
 
   // Add task to delete the TCB
   task = (struct task *) (t + 1);
