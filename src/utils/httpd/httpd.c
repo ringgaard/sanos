@@ -544,7 +544,6 @@ int httpd_send(struct httpd_response *rsp, char *data, int len)
     rc = httpd_flush(rsp);
     if (rc < 0) return rc;
 
-    write(1, buf->start, buf->end - buf->start);
     rc = send(rsp->conn->sock, data, len, 0);
     return rc;
   }
