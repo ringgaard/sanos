@@ -149,3 +149,5 @@ CHANGES
 
 - recv() call hangs when reading from a TCP socket which have been cloed by remote peer. This problem has
   been fixed. recv() now returns -ECONNRESET.
+
+*** version 1.2.5 released ***
