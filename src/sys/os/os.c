@@ -167,7 +167,7 @@ int access(const char *name, int mode)
 
 int eof(handle_t f)
 {
-  return tell(f) == fstat64(f, NULL);
+  return tell64(f) == fstat64(f, NULL);
 }
 
 int umask(int mode)

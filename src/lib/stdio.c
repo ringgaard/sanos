@@ -214,66 +214,8 @@ int flsbuf(int ch, FILE *stream)
   return ch & 0xff;
 }
 
-FILE *fdopen(int fd, const char *mode)
+static int open_file(FILE *stream, const char *filename, const char *mode)
 {
-  FILE *stream; 
-  int streamflag;
-
-  switch (*mode)
-  {
-    case 'r':
-      streamflag = _IORD;
-      break;
-
-    case 'w':
-      streamflag = _IOWR;
-      break;
-
-    case 'a':
-      streamflag = _IOWR;
-      break;
-  
-    default:
-      errno = -EINVAL;
-      return NULL;
-  }
-
-  while (*++mode)
-  {
-    switch (*mode)
-    {
-      case '+':
-        streamflag |= _IORW;
-        streamflag &= ~(_IORD | _IOWR);
-	break;
-    }
-  }
-
-  stream = malloc(sizeof(FILE));
-  if (!stream)
-  {
-    errno = -ENFILE;
-    return NULL;
-  }
-
-  stream->flag = streamflag;
-  stream->cnt = 0;
-  stream->tmpfname = stream->base = stream->ptr = NULL;
-  stream->file = fd;
-
-  return stream;
-}
-
-FILE *freopen(const char *filename, const char *mode, FILE *stream)
-{
-  // TODO: implement
-  panic("freopen() not implemented");
-  return NULL;
-}
-
-FILE *fopen(const char *filename, const char *mode)
-{
-  FILE *stream; 
   int oflag;
   int streamflag;
   handle_t handle;
@@ -296,8 +238,7 @@ FILE *fopen(const char *filename, const char *mode)
       break;
   
     default:
-      errno = -EINVAL;
-      return NULL;
+      return -EINVAL;
   }
 
   while (*++mode)
@@ -342,30 +283,132 @@ FILE *fopen(const char *filename, const char *mode)
 	break;
 
       default:
-	errno = EINVAL;
-	return NULL;
+	return -EINVAL;
+    }
+  }
+
+  handle = open(filename, oflag);
+  if (handle < 0) return handle;
+
+  stream->flag = streamflag;
+  stream->cnt = 0;
+  stream->tmpfname = stream->base = stream->ptr = NULL;
+  stream->file = handle;
+
+  return 0;
+}
+
+static int close_file(FILE *stream)
+{
+  int rc = EOF;
+
+  if (stream->flag & _IOSTR) 
+  {
+    stream->flag = 0;
+    return EOF;
+  }
+
+  rc = fflush(stream);
+  freebuf(stream);
+
+  if (close(fileno(stream)) < 0)
+    rc = EOF;
+  else if (stream->tmpfname != NULL) 
+  {
+    if (unlink(stream->tmpfname) < 0) rc = EOF;
+    free(stream->tmpfname);
+    stream->tmpfname = NULL;
+  }
+
+  return rc;
+}
+
+FILE *fdopen(int fd, const char *mode)
+{
+  FILE *stream; 
+  int streamflag;
+
+  switch (*mode)
+  {
+    case 'r':
+      streamflag = _IORD;
+      break;
+
+    case 'w':
+      streamflag = _IOWR;
+      break;
+
+    case 'a':
+      streamflag = _IOWR;
+      break;
+  
+    default:
+      errno = EINVAL;
+      return NULL;
+  }
+
+  while (*++mode)
+  {
+    switch (*mode)
+    {
+      case '+':
+        streamflag |= _IORW;
+        streamflag &= ~(_IORD | _IOWR);
+	break;
     }
   }
 
   stream = malloc(sizeof(FILE));
   if (!stream)
   {
-    errno = -ENFILE;
-    return NULL;
-  }
-
-  handle = open(filename, oflag);
-  if (handle < 0) 
-  {
-    free(stream);
-    errno = handle;
+    errno = ENFILE;
     return NULL;
   }
 
   stream->flag = streamflag;
   stream->cnt = 0;
   stream->tmpfname = stream->base = stream->ptr = NULL;
-  stream->file = handle;
+  stream->file = fd;
+
+  return stream;
+}
+
+FILE *freopen(const char *filename, const char *mode, FILE *stream)
+{ 
+  int rc;
+
+  if (inuse(stream)) close_file(stream);
+  
+  rc = open_file(stream, filename, mode);
+  if (rc < 0)
+  {
+    free(stream);
+    errno = -rc;
+    return NULL;
+  }
+
+  return stream;
+}
+
+FILE *fopen(const char *filename, const char *mode)
+{
+  FILE *stream;
+  int rc;
+
+  stream = malloc(sizeof(FILE));
+  if (!stream)
+  {
+    errno = ENFILE;
+    return NULL;
+  }
+
+  rc = open_file(stream, filename, mode);
+  if (rc < 0)
+  {
+    free(stream);
+    errno = -rc;
+    return NULL;
+  }
 
   return stream;
 }
@@ -378,29 +421,12 @@ void clearerr(FILE *stream)
 
 int fclose(FILE *stream)
 {
-  int result = EOF;
+  int rc;
 
-  if (stream->flag & _IOSTR) 
-  {
-    stream->flag = 0;
-    return EOF;
-  }
-
-  result = fflush(stream);
-  freebuf(stream);
-
-  if (close(fileno(stream)) < 0)
-    result = EOF;
-  else if (stream->tmpfname != NULL) 
-  {
-    if (unlink(stream->tmpfname) < 0) result = EOF;
-    free(stream->tmpfname);
-    stream->tmpfname = NULL;
-  }
-
+  rc = close_file(stream);
   free(stream);
   
-  return result;
+  return rc;
 }
 
 int fflush(FILE *stream)
@@ -641,7 +667,7 @@ size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
       else if ((int) nread < 0)
       {
 	// Error -- out of here
-	errno = (int) nread;
+	errno = -(int) nread;
 	stream->flag |= _IOERR;
 	return (total - count) / size;
       }
@@ -732,7 +758,7 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
       if ((int) nwritten < 0) 
       {
 	// Error -- out of here
-	errno = (int) nwritten;
+	errno = -(int) nwritten;
 	stream->flag |= _IOERR;
 	return (total - count) / size;
       }
@@ -775,7 +801,7 @@ int fseek(FILE *stream, long offset, int whence)
 {
   if (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END)
   {
-    errno = -EINVAL;
+    errno = EINVAL;
     return -1;
   }
 
