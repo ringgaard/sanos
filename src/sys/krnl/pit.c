@@ -307,7 +307,7 @@ static int uptime_proc(struct proc_file *pf, void *arg)
   days = uptime / (24 * 60 * 60);
   uptime -= days * (24 * 60 * 60);
   hours = uptime / (60 * 60);
-  uptime -= days * (60 * 60);
+  uptime -= hours * (60 * 60);
   mins = uptime / 60;
   secs = uptime % 60;
 

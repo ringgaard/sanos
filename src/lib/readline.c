@@ -61,6 +61,9 @@ static void add_to_history(char *line)
 {
   int i;
 
+  if (!line || !*line) return;
+  if (history_len > 0 && strcmp(line, history[history_len - 1]) == 0) return;
+
   if (history_len == MAX_HISTORY)
   {
     free(history[0]);
@@ -478,7 +481,7 @@ int readline(int f, char *buf, int size)
 
   buf[len] = 0;
 
-  if (len > 0) add_to_history(buf);
+  add_to_history(buf);
 
   return len;
 }

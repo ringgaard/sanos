@@ -46,6 +46,8 @@ void free_args(int argc, char **argv);
 char *get_option(char *opts, char *name, char *buffer, int size, char *defval);
 int get_num_option(char *opts, char *name, int defval);
 
+int readline(int f, char *buf, int size);
+
 int abs(int number);
 
 double modf(double x, double *iptr);

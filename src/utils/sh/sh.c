@@ -1299,12 +1299,10 @@ void shell()
   char cmd[256];
   int argc;
   char **argv;
-  int readline(int f, char *buf, int size);
 
   while (1)
   {
     printf("%s$ ", getcwd(cmd, 256));
-    //if (gets(cmd) == NULL) break;
     if (readline(fdin, cmd, 256) < 0) break;
 
     argc = parse_args(cmd, NULL);
