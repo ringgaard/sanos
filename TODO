@@ -392,5 +392,7 @@ CHANGES
 
  - /proc/loadavg implemented.
  
- - shell code cleaned up.
+ - Shell code cleaned up. Help texts added. Better argument checking.
 
+ - Buffer overflows fixed in module loader
+ 

@@ -1183,10 +1183,11 @@ static void exec_program(char *args)
   {
     if (*p == '.') dotseen = 1;
     if (*p == PS1 || *p == PS2) dotseen = 0;
+    if (q - pgm == MAXPATH - 1) break;
     *q++ = *p++;
   }
   *q++ = 0;
-  if (!dotseen) strcat(pgm, ".exe");
+  if (!dotseen && strlen(pgm) + 5 < MAXPATH) strcat(pgm, ".exe");
 
   rc = spawn(P_WAIT, pgm, args, NULL);
   if (rc < 0)
@@ -1212,10 +1213,11 @@ static void launch_program(char *args)
   {
     if (*p == '.') dotseen = 1;
     if (*p == PS1 || *p == PS2) dotseen = 0;
+    if (q - pgm == MAXPATH - 1) break;
     *q++ = *p++;
   }
   *q++ = 0;
-  if (!dotseen) strcat(pgm, ".exe");
+  if (!dotseen && strlen(pgm) + 5 < MAXPATH) strcat(pgm, ".exe");
 
   h = spawn(P_NOWAIT, pgm, args, NULL);
   if (h < 0) 

@@ -496,6 +496,7 @@ hmodule_t load(const char *name)
   enter(&mod_lock);
   hmod = load_module(&usermods, (char *) name, 0);
   leave(&mod_lock);
+
   return hmod;
 }
 

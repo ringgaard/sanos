@@ -241,7 +241,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
   int rc;
 
   hmod = load(pgm);
-  if (!hmod) return -errno;
+  if (!hmod) return errno ? -errno : -ENOEXEC;
 
   hthread = beginthread(spawn_program, 0, NULL, CREATE_SUSPENDED | CREATE_NEW_JOB | ((mode & P_DETACH) ? CREATE_DETACHED : 0), &tib);
   if (hthread < 0)

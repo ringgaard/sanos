@@ -62,9 +62,10 @@ static void logmsg(struct moddb *db, const char *fmt, ...)
 static char *get_basename(char *filename, char *buffer, int size)
 {
   char *basename = filename;
+  char *bufend = buffer + size - 1;
   char *p = filename;
 
-  while (*p)
+  while (*p && buffer < bufend)
   {
     *buffer = *p;
     if (*buffer == PS1 || *buffer == PS2) basename = buffer + 1;
@@ -135,6 +136,7 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path)
   char *s;
   char *basename;
   char *dot;
+  char *pathend = path + MAXPATH - 1;
   int len;
   struct modalias *ma;
 
@@ -142,6 +144,7 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path)
   {
     // Build path name
     len = strlen(db->modpaths[i]);
+    if (len > MAXPATH - 2) continue;
     p = path;
     memcpy(p, db->modpaths[i], len);
     p += len;
@@ -151,7 +154,7 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path)
     basename = p;
     dot = NULL;
     s = name;
-    while (*s)
+    while (*s && p < pathend)
     {
       if (*s == '.')
       {
@@ -166,7 +169,7 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path)
       s++;
     }
 
-    if (!dot)
+    if (!dot && p + 4 < pathend)
     {
       memcpy(p, ".dll", 4);
       p += 4;
@@ -178,7 +181,7 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path)
     ma = db->aliases;
     while (ma)
     {
-      if (strcmp(basename, ma->name) == 0)
+      if (strcmp(basename, ma->name) == 0 && basename + strlen(ma->name) < pathend)
       {
 	strcpy(basename, ma->alias);
 	break;
@@ -263,6 +266,8 @@ static struct module *get_module(struct moddb *db, char *name)
   dot = NULL;
   while (*s)
   {
+    if (p - buffer == MAXPATH - 1) break;
+
     if (*s == '.')
     {
       dot = s;
@@ -276,7 +281,7 @@ static struct module *get_module(struct moddb *db, char *name)
     s++;
   }
 
-  if (!dot)
+  if (!dot && p - buffer < MAXPATH - 5)
   {
     memcpy(p, ".dll", 4);
     p += 4;
@@ -664,6 +669,7 @@ hmodule_t get_module_handle(struct moddb *db, char *name)
 {
   struct module *mod;
   
+  if (!name || strlen(name) > MAXPATH - 1) return NULL;
   mod = get_module(db, name);
   if (mod == NULL) return NULL;
   return mod->hmod;
@@ -703,6 +709,7 @@ hmodule_t load_module(struct moddb *db, char *name, int flags)
   }
 
   // Get canonical name
+  if (!name || strlen(name) > MAXPATH - 1) return NULL;
   basename = get_module_name(db, name, buffer);
   if (!basename) return NULL;
 
