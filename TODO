@@ -367,3 +367,9 @@ CHANGES
 - new mkfloppy utility for writing raw floppy disks.
 
 - TCP connections are now reset before kernel shutdown or reboot.
+
+- Serial transmitter could hang. Interrupts are now disabled when draining the transmit
+  queue to prevent race condition with interrupt service routine. The transmitter is now
+  started directly by the write routine. Previosly the transmitter was started by the DPC.
+  The interrupt service routines now also checks for multiple interrupt indication per 
+  interrupt.

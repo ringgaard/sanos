@@ -34,6 +34,7 @@
 #include <os/krnl.h>
 
 #define QUEUE_SIZE      4096
+#define ISR_LIMIT       256
 
 //
 // UART registers
@@ -69,12 +70,12 @@
 //
 
 #define	IIR_IMASK	0x0F
-#define	IIR_RXTOUT	0x0C
-#define	IIR_RLS		0x06
-#define	IIR_RXRDY	0x04
-#define	IIR_TXRDY	0x02
 #define	IIR_NOPEND	0x01
 #define	IIR_MLSC	0x00
+#define	IIR_TXRDY	0x02
+#define	IIR_RXRDY	0x04
+#define	IIR_RLS		0x06
+#define IIR_RXTOUT	0x0C
 #define	IIR_FIFO_MASK	0xC0	// Set if FIFOs are enabled
 
 //
@@ -198,6 +199,7 @@ struct serial_port
 };
 
 void serial_dpc(void *arg);
+static void drain_tx_queue(struct serial_port *sp);
 
 static void fifo_clear(struct fifo *f)
 {
@@ -464,7 +466,10 @@ static int serial_write(struct dev *dev, void *buffer, size_t count, blkno_t blk
     //kprintf("fifo put: h:%d t:%d c:%d\n", sp->txq.head, sp->txq.tail, sp->txq.count);
 
     // If transmitter idle then queue a DPC to restart transmission
-    if (!sp->tx_busy) queue_dpc(&sp->dpc, serial_dpc, sp);
+    //if (!sp->tx_busy) queue_dpc(&sp->dpc, serial_dpc, sp);
+
+    // If transmitter idle then restart transmission
+    if (!sp->tx_busy) drain_tx_queue(sp);
   }
 
   release_mutex(&sp->tx_lock);
@@ -480,16 +485,20 @@ static void drain_tx_queue(struct serial_port *sp)
   count = 0;
   while (1)
   {
+    cli();
+
     // Is UART ready to transmit next byte
     lsr = _inp((unsigned short) (sp->iobase + UART_LSR));
     sp->linestatus |= (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI));
     //kprintf("drain_tx_queue: lsr=%02X\n", lsr);
 
-    //if (!(lsr & LSR_TSRE) || !(lsr & LSR_TXRDY)) break;
-    if (!(lsr & LSR_TXRDY)) break;
+    if (!(lsr & LSR_TXRDY)) 
+    {
+      sti();
+      break;
+    }
 
     // Is tx queue empty
-    cli();
     if (fifo_empty(&sp->txq))
     {
       sti();
@@ -499,12 +508,12 @@ static void drain_tx_queue(struct serial_port *sp)
     // Get next byte from queue
     b = fifo_get(&sp->txq);
     //kprintf("fifo get: h:%d t:%d c:%d\n", sp->txq.head, sp->txq.tail, sp->txq.count);
-    sti();
 
     //kprintf("serial: xmit %02X (drain)\n", b);
     _outp(sp->iobase + UART_TX, b);
     sp->tx_busy = 1;
     count++;
+    sti();
   }
 
   // Release transmitter queue resources
@@ -537,9 +546,6 @@ static void serial_dpc(void *arg)
   if (tqr > 0) release_sem(&sp->tx_sem, tqr);
   if (rqr > 0) release_sem(&sp->rx_sem, rqr);
   if (mlsc || rls) set_event(&sp->event);
-
-  // Drain transmit queue
-  drain_tx_queue(sp);
 }
 
 static void serial_transmit(struct serial_port *sp)
@@ -554,7 +560,6 @@ static void serial_transmit(struct serial_port *sp)
     sp->linestatus |= (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI));
     //kprintf("serial_transmit: lsr=%02X\n", lsr);
 
-    //if (!(lsr & LSR_TSRE) || !(lsr & LSR_TXRDY)) break;
     if (!(lsr & LSR_TXRDY)) break;
 
     // Is tx queue empty
@@ -605,40 +610,45 @@ static int serial_handler(struct context *ctxt, void *arg)
   struct serial_port *sp = (struct serial_port *) arg;
   unsigned char iir;
   unsigned char lsr;
+  int boguscnt = ISR_LIMIT;
 
-  iir = _inp((unsigned short) (sp->iobase + UART_IIR));
-  //kprintf("[sisr %d %x]", sp->irq, iir);
-  switch (iir & IIR_IMASK)
+  while (1)
   {
-    case IIR_MLSC:
-      // Modem status changed
-      sp->mlsc = 1;
-      break;
+    lsr = _inp((unsigned short) (sp->iobase + UART_LSR));
 
-    case IIR_TXRDY:
-      // Transmitter ready, send next bytes from tx queue
-      serial_transmit(sp);
-      break;
+    // If receiver ready drain FIFO
+    if (lsr & LSR_RXRDY) serial_receive(sp);
 
-    case IIR_RXTOUT:
-    case IIR_RXRDY:
-      // Receiver ready, drain FIFO
-      serial_receive(sp);
-      break;
+    // If transmitter ready send next bytes from tx queue
+    if (lsr & LSR_TXRDY) serial_transmit(sp);
 
-    case IIR_RLS:
-      // Line status changed
-      sp->rls = 1;
+    // Get interrupt identification register
+    iir = _inp((unsigned short) (sp->iobase + UART_IIR));
+    //kprintf("[sisr %d %x]", sp->irq, iir);
+
+    if (iir & IIR_NOPEND) break;
+
+    switch (iir & IIR_IMASK)
+    {
+      case IIR_MLSC:
+	// Modem status changed
+        sp->msr = _inp((unsigned short) (sp->iobase + UART_MSR));
+	sp->mlsc = 1;
+	break;
+
+      case IIR_RLS:
+	// Line status changed
+        sp->linestatus |= (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI));
+	sp->rls = 1;
+	break;
+    }
+
+    if (--boguscnt < 0) 
+    {
+      kprintf("serial: Too much work at interrupt, iir=0x%02x\n", iir);
       break;
+    }
   }
-
-  // Get modem status
-  sp->msr = _inp((unsigned short) (sp->iobase + UART_MSR));
-
-  // Get line status
-  lsr = _inp((unsigned short) (sp->iobase + UART_LSR));
-  sp->linestatus |= (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI));
-  //kprintf("serial_handler: lsr=%02X\n", lsr);
 
   // Set OUT2 to enable interrupts
   _outp(sp->iobase + UART_MCR, sp->mcr);
@@ -701,7 +711,8 @@ static void init_serial_port(char *devname, int iobase, int irq, struct unit *un
   }
 
   // Turn on DTR, RTS and OUT2
-  sp->mcr = MCR_DTR | MCR_RTS | MCR_IENABLE;  _outp(sp->iobase + UART_MCR, sp->mcr);
+  sp->mcr = MCR_DTR | MCR_RTS | MCR_IENABLE;  
+  _outp(sp->iobase + UART_MCR, sp->mcr);
 
   // Create device
   devno = dev_make(devname, &serial_driver, unit, sp);
