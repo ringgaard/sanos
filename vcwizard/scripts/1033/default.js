@@ -75,7 +75,8 @@ function AddConfig(proj, strProjectName)
   {
     var prjname = wizard.FindSymbol('PROJECT_NAME');
     var sdkpath = wizard.FindSymbol('SANOS_SDKPATH');
-    var isdll = wizard.FindSymbol('APP_TYPE_USERDLL');
+    var isdll = !wizard.FindSymbol('APP_TYPE_USEREXE');
+    var isdrv = wizard.FindSymbol('APP_TYPE_KRNLDRV');
     var useclib = wizard.FindSymbol('USE_CLIB');
     
     //proj.Object.RemoveConfiguration(proj.Object.Configurations('Release'));
@@ -114,16 +115,21 @@ function AddConfig(proj, strProjectName)
       LinkTool.AdditionalDependencies = 'os.lib libc.lib $(NOINHERIT)';
     else
       LinkTool.AdditionalDependencies = 'os.lib $(NOINHERIT)';
+    if (isdrv) LinkTool.OutputFile = '$(OutDir)/$(ProjectName).sys';
     LinkTool.LinkIncremental = 1;
     LinkTool.SuppressStartupBanner = true;
     LinkTool.AdditionalLibraryDirectories = sdkpath + "\\dbg\\lib";
     LinkTool.IgnoreAllDefaultLibraries = true;
     LinkTool.GenerateDebugInformation = true;
-    //LinkTool.ProgramDatabaseFile="..\dbg\symbols\sh.pdb"
     LinkTool.GenerateMapFile = false;
-    //LinkTool.MapFileName = 'debug\\' + prjname + '.map';
     LinkTool.SubSystem = 1;
-    if (isdll)LinkTool.EntryPointSymbol = 'DllMain';
+    if (isdll)
+    {
+      if (wizard.FindSymbol('APP_TYPE_USERDLL'))
+        LinkTool.EntryPointSymbol = 'DllMain';
+      else
+        LinkTool.EntryPointSymbol = 'start';
+    }
 
     //config = proj.Object.Configurations('Sanos');
     config = proj.Object.Configurations('Release');
@@ -152,7 +158,6 @@ function AddConfig(proj, strProjectName)
     CLTool.EnableFunctionLevelLinking = true;
     CLTool.UsePrecompiledHeader = 2;
     CLTool.PrecompiledHeaderFile = 'release\\' + prjname + '.pch';
-    //CLTool.ProgramDataBaseFileName=".\..\obj\sh/"
     CLTool.WarningLevel = 3;
     CLTool.SuppressStartupBanner = true;
     CLTool.CompileAs = 0; 
@@ -165,16 +170,21 @@ function AddConfig(proj, strProjectName)
       LinkTool.AdditionalDependencies = 'os.lib libc.lib $(NOINHERIT)';
     else
       LinkTool.AdditionalDependencies = 'os.lib $(NOINHERIT)';
+    if (isdrv) LinkTool.OutputFile = '$(OutDir)/$(ProjectName).sys';
     LinkTool.LinkIncremental = 1;
     LinkTool.SuppressStartupBanner = true;
     LinkTool.AdditionalLibraryDirectories = sdkpath + "\\lib";
     LinkTool.IgnoreAllDefaultLibraries = true;
     LinkTool.GenerateDebugInformation = true;
-    //LinkTool.ProgramDatabaseFile="..\dbg\symbols\sh.pdb"
     LinkTool.GenerateMapFile = false;
-    //LinkTool.MapFileName = 'debug\\' + prjname + '.map';
     LinkTool.SubSystem = 1;
-    if (isdll) LinkTool.EntryPointSymbol = 'DllMain';
+    if (isdll)
+    {
+      if (wizard.FindSymbol('APP_TYPE_USERDLL'))
+        LinkTool.EntryPointSymbol = 'DllMain';
+      else
+        LinkTool.EntryPointSymbol = 'start';
+    }
   }
   catch(e)
   {
