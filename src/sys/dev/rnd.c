@@ -306,7 +306,7 @@ static int batch_entropy_init(int size)
 
 void batch_entropy_store(unsigned long a, unsigned long b, int num)
 {
-  int new;
+  int batch_new;
 
   if (!batch_max) return;
 
@@ -316,11 +316,12 @@ void batch_entropy_store(unsigned long a, unsigned long b, int num)
   batch_entropy_pool[(2 * batch_head) + 1] = b;
   batch_entropy_credit[batch_head] = num;
 
-  new = (batch_head + 1) & (batch_max - 1);
-  if (new != batch_tail) 
+  batch_new = (batch_head + 1) & (batch_max - 1);
+  if (batch_new != batch_tail) 
   {
-    queue_task(NULL, &batch_task, batch_entropy_process, NULL);
-    batch_head = new;
+    //SCHEDEVT('!');
+    //queue_task(NULL, &batch_task, batch_entropy_process, NULL);
+    batch_head = batch_new;
   } 
   else 
   {

@@ -373,3 +373,5 @@ CHANGES
   started directly by the write routine. Previosly the transmitter was started by the DPC.
   The interrupt service routines now also checks for multiple interrupt indication per 
   interrupt.
+
+- Visual Studio wizard for creating sanos application projects

@@ -39,6 +39,7 @@ typedef void (*dpcproc_t)(void *arg);
 typedef void (*taskproc_t)(void *arg);
 
 //#define NOPREEMPTION
+#define SCHEDMAP
 
 #define DEFAULT_QUANTUM          12
 #define THREAD_PRIORITY_LEVELS   8
@@ -181,5 +182,20 @@ __inline void check_preempt()
   if (preempt) preempt_thread();
 #endif
 }
+
+#ifdef SCHEDMAP
+
+#define SCHEDMAPSIZE 2048
+
+extern char schedmap[SCHEDMAPSIZE];
+extern unsigned long schedmapidx;
+
+#define SCHEDEVT(e) schedmap[schedmapidx++ % SCHEDMAPSIZE] = (unsigned char) (e)
+
+#else
+
+#define SCHEDEVT(e)
+
+#endif
 
 #endif

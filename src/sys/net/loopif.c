@@ -55,7 +55,7 @@ static err_t loopif_output(struct netif *netif, struct pbuf *p, struct ip_addr *
   }
 
   pbuf_free(p);
-  yield();
+  //yield();
 
   return 0;
 }

@@ -371,7 +371,7 @@ void ether_dispatcher(void *arg)
       }
     }
 
-    yield();
+    //yield();
   }
 }
 

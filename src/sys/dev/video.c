@@ -101,12 +101,20 @@ void print_buffer(const char *str, int len)
   int ch;
   int i;
   unsigned short *p;
+  char *end;
 
   if (!str) return;
-  while ((ch = *str++) && len--)
+  
+  end = (char *) str + len;
+  while (str < end)
   {
+    ch = *str++;
+
     switch (ch)
     {
+      case 0:
+	break;
+
       case '\n': // Newline
 	cursor_pos = (cursor_pos / LINESIZE + 1) * LINESIZE;
 	break;
@@ -146,7 +154,7 @@ void print_buffer(const char *str, int len)
 
 void print_string(const char *str)
 {
-  print_buffer(str, -1);
+  if (str) print_buffer(str, strlen(str));
   show_cursor();
 }
 
