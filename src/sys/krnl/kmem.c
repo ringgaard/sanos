@@ -99,6 +99,7 @@ void *alloc_module_mem(int pages)
   {
     pfn = alloc_pageframe(PFT_SYS);
     map_page(vaddr + PTOB(i), pfn, PT_WRITABLE | PT_PRESENT);
+    memset(vaddr + PTOB(i), 0, PAGESIZE);
   }
 
   return vaddr;

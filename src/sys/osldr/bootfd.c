@@ -208,7 +208,7 @@ static void blk2ths(struct fd *fd, blkno_t blkno, unsigned char *track, unsigned
 static int fd_transfer(struct fd *fd, void *buffer, size_t count, blkno_t blkno)
 {
   struct fdresult result;
-  int retries = 3;
+  int retries = 10;
   unsigned char track, head, sector;
   unsigned int remaining;
 
@@ -283,12 +283,21 @@ static int fd_transfer(struct fd *fd, void *buffer, size_t count, blkno_t blkno)
     result.sector = fd_result();
     result.size = fd_result();
 
-    if ((result.st0 & 0xc0) == 0x40 && (result.st1 & 0x04) == 0x04) 
+    if ((result.st0 & 0xc0) == 0) 
     {
-//kprintf("fd: recal\n");
-      // Abnormal command termination because the specified sector
-      // could not be found.  Recalibrate before retrying.
+      // Successful transfer
+      memcpy(buffer, fd->fdc->dmabuf, count);
+      return count;
+    }
+    else // if ((result.st0 & 0xc0) == 0x40 && (result.st1 & 0x04) == 0x04) 
+    {
+//kprintf("fd: recal st0 %02X st1 %02X st2 %02X track %d head %d sector %d size %d\n", 
+//	result.st0, result.st1, result.st2, 
+//	result.track, result.head, result.sector, result.size);
+
+      // Recalibrate before retrying.
       fddone = 0;
+      fd->curtrack = 0;
       fd_command(CMD_RECAL);
       fd_command(0x00);
 
@@ -299,12 +308,6 @@ static int fd_transfer(struct fd *fd, void *buffer, size_t count, blkno_t blkno)
       result.st0 = fd_result();
       result.track = fd_result();
     } 
-    else if ((result.st0 & 0xc0) == 0) 
-    {
-      // Successful transfer
-      memcpy(buffer, fd->fdc->dmabuf, count);
-      return count;
-    }
 
     retries--;
   }

@@ -72,6 +72,7 @@ SOURCE=..\src\sys\os\heap.h
 # Begin Source File
 
 SOURCE=..\src\sys\os\os.c
+# ADD CPP /FAcs
 # End Source File
 # Begin Source File
 

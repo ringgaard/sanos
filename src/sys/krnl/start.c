@@ -21,6 +21,8 @@ struct file *stdin;
 struct file *stdout;
 struct file *stderr;
 
+struct peb *peb;
+
 void shell();
 int init_ne2000(struct netif *netif);
 int init_pcnet32(struct netif *netif);
@@ -209,8 +211,8 @@ void init_net()
   IP4_ADDR(&gw, 192, 168, 85, 1);
 #endif
 
-  nic = ether_netif_add("eth0", "nic0", &ipaddr, &netmask, &gw);
-  netif_set_default(nic);
+  //nic = ether_netif_add("eth0", "nic0", &ipaddr, &netmask, &gw);
+  //netif_set_default(nic);
 
   //init_ne2000(nic);
   //init_pcnet32(nic);
@@ -226,7 +228,6 @@ void main(void *arg)
   unsigned long stack_reserve;
   unsigned long stack_commit;
   struct image_header *imghdr;
-  struct peb *peb;
 
   char bootdevname[8];
   int rc;

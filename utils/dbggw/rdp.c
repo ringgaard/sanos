@@ -23,6 +23,7 @@ static struct dbg_event *add_event(struct dbg_session *s)
 
   if (s->event_tail) s->event_tail->next = e;
   e->next = NULL;
+  s->event_tail = e;
   if (!s->event_head) s->event_head = e;
 
   return e;
@@ -193,7 +194,6 @@ struct dbg_session *dbg_create_session(char *port)
   HANDLE target;
   struct dbg_session *s;
   struct dbg_event *e;
-
   int n;
 
   // Open and configure port
@@ -244,11 +244,14 @@ struct dbg_session *dbg_create_session(char *port)
 
   for (n = 0; n < s->body->mod.count; n++)
   {
-    e = add_event(s);
-    e->tid = s->conn.trap.tid;
-    e->type = DBGEVT_LOAD_MODULE;
-    e->evt.load.hmod = s->body->mod.mods[n].hmod;
-    e->evt.load.name = s->body->mod.mods[n].name;
+    if (s->body->mod.mods[n].hmod != s->conn.mod.hmod)
+    {
+      e = add_event(s);
+      e->tid = s->conn.trap.tid;
+      e->type = DBGEVT_LOAD_MODULE;
+      e->evt.load.hmod = s->body->mod.mods[n].hmod;
+      e->evt.load.name = s->body->mod.mods[n].name;
+    }
   }
 
   // Get thread list
@@ -256,12 +259,15 @@ struct dbg_session *dbg_create_session(char *port)
 
   for (n = 0; n < s->body->thl.count; n++)
   {
-    e = add_event(s);
-    e->tid = s->conn.trap.tid;
-    e->type = DBGEVT_CREATE_THREAD;
-    e->evt.create.tid = s->body->thl.threads[n].tid;
-    e->evt.create.tib = s->body->thl.threads[n].tib;
-    e->evt.create.startaddr = s->body->thl.threads[n].startaddr;
+    if (s->body->thl.threads[n].tid != s->conn.thr.tid)
+    {
+      e = add_event(s);
+      e->tid = s->conn.trap.tid;
+      e->type = DBGEVT_CREATE_THREAD;
+      e->evt.create.tid = s->body->thl.threads[n].tid;
+      e->evt.create.tib = s->body->thl.threads[n].tib;
+      e->evt.create.startaddr = s->body->thl.threads[n].startaddr;
+    }
   }
 
   // Add break trap
@@ -331,5 +337,106 @@ int dbg_read_memory(struct dbg_session *s, void *addr, int size, void *buffer)
   mem.size = size;
 
   rc = dbg_xact(s, DBGCMD_READ_MEMORY, &mem, sizeof(struct dbg_memory), buffer);
+  return rc;
+}
+
+//
+// dbg_write_memory
+//
+
+int dbg_write_memory(struct dbg_session *s, void *addr, int size, void *buffer)
+{
+  int rc;
+
+  if (size <= 0 || size >= 4096) 
+  {
+    printf("rdp: write memory size is %d bytes, truncated\n", size);
+    size = 4096;
+  }
+  s->body->mem.addr = addr;
+  s->body->mem.size = size;
+  memcpy(s->body->mem.data, buffer, size);
+
+  rc = dbg_xact(s, DBGCMD_WRITE_MEMORY, s->body, sizeof(struct dbg_memory) + size, s->body);
+  return rc;
+}
+
+//
+// dbg_get_context
+//
+
+int dbg_get_context(struct dbg_session *s, tid_t tid, struct context *ctxt)
+{
+  int rc;
+
+  s->body->ctx.tid = tid;
+  rc = dbg_xact(s, DBGCMD_GET_THREAD_CONTEXT, s->body, 4, s->body);
+  memcpy(ctxt, &s->body->ctx.ctxt, sizeof(struct context));
+  return rc;
+}
+
+//
+// dbg_set_context
+//
+
+int dbg_set_context(struct dbg_session *s, tid_t tid, struct context *ctxt)
+{
+  int rc;
+
+  s->body->ctx.tid = tid;
+  memcpy(&s->body->ctx.ctxt, ctxt, sizeof(struct context));
+  rc = dbg_xact(s, DBGCMD_SET_THREAD_CONTEXT, s->body, sizeof(struct dbg_context), s->body);
+  return rc;
+}
+
+//
+// dbg_suspend_threads
+//
+
+int dbg_suspend_threads(struct dbg_session *s, tid_t *threadids, int count)
+{
+  int rc;
+  int n;
+
+  s->body->thr.count = count;
+  memcpy(s->body->thr.threadids, threadids, sizeof(tid_t) * count);
+
+  rc = dbg_xact(s, DBGCMD_SUSPEND_THREAD, s->body, sizeof(struct dbg_thread) + sizeof(tid_t) * count, s->body);
+  if (rc < 0) return rc;
+
+  for (n = 0; n < count; n++)
+  {
+    if (s->body->thr.threadids[n] & 0x80000000)
+      threadids[n] = 0;
+    else
+      threadids[n] = s->body->thr.threadids[n] + 1;
+  }
+
+  return rc;
+}
+
+//
+// dbg_resume_threads
+//
+
+int dbg_resume_threads(struct dbg_session *s, tid_t *threadids, int count)
+{
+  int rc;
+  int n;
+
+  s->body->thr.count = count;
+  memcpy(s->body->thr.threadids, threadids, sizeof(tid_t) * count);
+
+  rc = dbg_xact(s, DBGCMD_RESUME_THREAD, s->body, sizeof(struct dbg_thread) + sizeof(tid_t) * count, s->body);
+  if (rc < 0) return rc;
+
+  for (n = 0; n < count; n++)
+  {
+    if (s->body->thr.threadids[n] & 0x80000000)
+      threadids[n] = 0;
+    else
+      threadids[n] = s->body->thr.threadids[n] - 1;
+  }
+
   return rc;
 }

@@ -32,6 +32,8 @@ void map_page(void *vaddr, unsigned long pfn, unsigned long flags)
       pdir[PDEIDX(vaddr)] = PTOB(alloc_pageframe(PFT_SYS)) | PT_PRESENT | PT_WRITABLE | PT_USER;
     else
       pdir[PDEIDX(vaddr)] = PTOB(alloc_pageframe(PFT_SYS)) | PT_PRESENT | PT_WRITABLE;
+
+    memset(ptab + PDEIDX(vaddr) * PTES_PER_PAGE, 0, PAGESIZE);
   }
 
   // Map page frame into address space

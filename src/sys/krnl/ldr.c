@@ -83,7 +83,7 @@ void *load_image_file(char *filename, int userspace)
     return NULL;
   }
 
-  // copy header to image
+  // Copy header to image
   memcpy(imgbase, buffer, PAGESIZE);
 
   // Read sections

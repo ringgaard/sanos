@@ -294,6 +294,36 @@ void convert_from_sanos_context(struct context *ctxt, CONTEXT *ctx)
 }
 
 //
+// convert_trap_number
+//
+
+unsigned long convert_trap_number(unsigned long traptype)
+{
+  switch (traptype)
+  {
+    case INTR_DIV:     return EXCEPTION_INT_DIVIDE_BY_ZERO;
+    case INTR_DEBUG:   return EXCEPTION_SINGLE_STEP;
+    case INTR_NMI:     return 0x80001002L;
+    case INTR_BPT:     return EXCEPTION_BREAKPOINT;
+    case INTR_OVFL:    return EXCEPTION_INT_OVERFLOW;
+    case INTR_BOUND:   return EXCEPTION_ARRAY_BOUNDS_EXCEEDED;
+    case INTR_INSTR:   return EXCEPTION_ILLEGAL_INSTRUCTION;
+    case INTR_FPU:     return 0x80001007L;
+    case INTR_DFAULT:  return 0x80001008L;
+    case INTR_CPSOVER: return 0x80001009L;
+    case INTR_INVTSS:  return 0x8000100AL;
+    case INTR_SEG:     return 0x8000100BL;
+    case INTR_STACK:   return EXCEPTION_STACK_OVERFLOW;
+    case INTR_GENPRO:  return EXCEPTION_PRIV_INSTRUCTION;
+    case INTR_PGFLT:   return EXCEPTION_ACCESS_VIOLATION;
+    case INTR_RESVD1:  return 0x8000100FL;
+    case INTR_NPX:     return 0x80001010L;
+  }
+
+  return 0x800010FFL;
+}
+
+//
 // get_process_list
 //
 
@@ -322,7 +352,7 @@ void get_host_info(struct drpc_packet *pkt, char *buf)
   int hostlen = *(int *) (buf + 0);
   int tplen = *(int *) (buf + 16);
 
-  strcpy(buf, "CASTOR");
+  strcpy(buf, "sanos");
   strcpy(buf + hostlen, "tcp 127.0.0.1, port 24502");
 }
 
@@ -401,7 +431,7 @@ void get_debug_event(struct drpc_packet *pkt, char *buf)
     evt->u.CreateProcessInfo.nDebugInfoSize = 0;
     evt->u.CreateProcessInfo.lpThreadLocalBase = session->conn.thr.tib;
     evt->u.CreateProcessInfo.lpStartAddress = session->conn.thr.startaddr;
-    evt->u.CreateProcessInfo.lpImageName = NULL; //session->conn.mod.name; Should be address to string pointer !!!
+    evt->u.CreateProcessInfo.lpImageName = session->conn.mod.name;
     evt->u.CreateProcessInfo.fUnicode = 0;
 
     first_event = 0;
@@ -409,6 +439,89 @@ void get_debug_event(struct drpc_packet *pkt, char *buf)
   }
 
   e = dbg_next_event(session);
+  if (!e)
+  {
+    pkt->result = E_FAIL;
+    return;
+  }
+
+  evt->dwProcessId = GLOBAL_PROCID;
+  evt->dwThreadId = session->conn.trap.tid;
+
+  switch (e->type)
+  {
+    case DBGEVT_TRAP:
+      printf("EVENT Trap %d tid %d eip %08X err %08X addr %08X\n", 
+	     e->evt.trap.traptype, 
+	     e->evt.trap.tid, 
+	     e->evt.trap.eip,
+	     e->evt.trap.errcode, 
+	     e->evt.trap.addr);
+
+      evt->dwDebugEventCode = EXCEPTION_DEBUG_EVENT;
+      evt->dwThreadId = e->evt.trap.tid;
+      evt->u.Exception.ExceptionRecord.ExceptionCode = convert_trap_number(e->evt.trap.traptype);
+      evt->u.Exception.ExceptionRecord.ExceptionAddress = (void *) e->evt.trap.eip;
+      evt->u.Exception.ExceptionRecord.ExceptionFlags = 0;
+      evt->u.Exception.ExceptionRecord.NumberParameters = 0;
+      if (e->evt.trap.traptype == INTR_PGFLT)
+      {
+        evt->u.Exception.ExceptionRecord.NumberParameters = 2;
+        evt->u.Exception.ExceptionRecord.ExceptionInformation[0] = (e->evt.trap.errcode & 2) != 0;
+        evt->u.Exception.ExceptionRecord.ExceptionInformation[1] = (unsigned long) e->evt.trap.addr;
+      }
+
+      return;
+
+    case DBGEVT_CREATE_THREAD:
+      printf("EVENT CreateThread tid %d tib %08X entry %08X\n", e->evt.create.tid, e->evt.create.tib, e->evt.create.startaddr);
+
+      evt->dwDebugEventCode = CREATE_THREAD_DEBUG_EVENT;
+      evt->u.CreateThread.hThread = (HANDLE) e->evt.create.tid;
+      evt->u.CreateThread.lpThreadLocalBase = e->evt.create.tib;
+      evt->u.CreateThread.lpStartAddress = e->evt.create.startaddr;
+      break;
+
+    case DBGEVT_EXIT_THREAD:
+      printf("EVENT ExitThread tid %d exitcode %d\n", e->evt.exit.tid, e->evt.create.tib, e->evt.exit.exitcode);
+
+      evt->dwDebugEventCode = EXIT_THREAD_DEBUG_EVENT;
+      evt->dwThreadId = e->evt.exit.tid;
+      evt->u.ExitThread.dwExitCode = e->evt.exit.exitcode;
+      break;
+
+    case DBGEVT_LOAD_MODULE:
+      printf("EVENT LoadModule hmod %08X name %08X\n", e->evt.load.hmod, e->evt.load.name);
+
+      evt->dwDebugEventCode = LOAD_DLL_DEBUG_EVENT;
+      evt->u.LoadDll.hFile = NULL;
+      evt->u.LoadDll.lpBaseOfDll = e->evt.load.hmod;
+      evt->u.LoadDll.dwDebugInfoFileOffset = 0;
+      evt->u.LoadDll.nDebugInfoSize = 0;
+      evt->u.LoadDll.lpImageName = e->evt.load.name; 
+      evt->u.LoadDll.fUnicode = 0;
+      break;
+
+    case DBGEVT_UNLOAD_MODULE:
+      printf("EVENT UnloadModule hmod %08X\n", e->evt.unload.hmod);
+
+      evt->dwDebugEventCode = UNLOAD_DLL_DEBUG_EVENT;
+      evt->u.UnloadDll.lpBaseOfDll = e->evt.unload.hmod;
+      break;
+
+    case DBGEVT_OUTPUT:
+      printf("EVENT Output msgptr %08X msglen %s\n", e->evt.output.msgptr, e->evt.output.msglen);
+
+      evt->dwDebugEventCode = OUTPUT_DEBUG_STRING_EVENT;
+      evt->u.DebugString.lpDebugStringData = e->evt.output.msgptr;
+      evt->u.DebugString.nDebugStringLength = e->evt.output.msglen;
+      evt->u.DebugString.fUnicode = 0;
+      break;
+
+    default:
+      printf("unknown event: %d\n", e->type);
+  }
+
   dbg_release_event(e);
 }
 
@@ -420,12 +533,107 @@ void read_memory(struct drpc_packet *pkt, char *buf)
 {
   void *addr;
   int size;
+  int rc;
 
   addr = *(void **) (buf + 8);
   size = *(int *) (buf + 16);
 
-  dbg_read_memory(session, addr, size, buf);
+  rc = dbg_read_memory(session, addr, size, buf);
+  if (rc < 0) pkt->result = E_FAIL;
   *(int *) (buf + size) = size;
+}
+
+//
+// write_memory
+//
+
+void write_memory(struct drpc_packet *pkt, char *buf)
+{
+  void *addr;
+  int size;
+  int rc;
+
+  addr = *(void **) (buf + 8);
+  size = *(int *) (buf + 16);
+
+  rc = dbg_write_memory(session, addr, size, buf + 20);
+  if (rc < 0) pkt->result = E_FAIL;
+  *(int *) buf = size;
+}
+
+//
+// suspend_threads
+//
+
+void suspend_threads(struct drpc_packet *pkt, char *buf)
+{
+  int rc;
+  int count;
+
+  count = *(int *) buf;
+
+  rc = dbg_suspend_threads(session, (tid_t *) (buf + 8), count);
+  if (rc < 0) 
+    pkt->result = E_FAIL;
+  else
+    memmove(buf, buf + 8, 4 * count);
+}
+
+//
+// resume_threads
+//
+
+void resume_threads(struct drpc_packet *pkt, char *buf)
+{
+  int rc;
+  int count;
+
+  count = *(int *) buf;
+
+  rc = dbg_resume_threads(session, (tid_t *) (buf + 8), count);
+  if (rc < 0) 
+    pkt->result = E_FAIL;
+  else
+    memmove(buf, buf + 8, 4 * count);
+}
+
+//
+// get_context
+//
+
+void get_context(struct drpc_packet *pkt, char *buf)
+{
+  int rc;
+  int tid;
+  struct context ctxt;
+
+  tid = *(tid_t *) (buf + 0);
+
+  rc = dbg_get_context(session, tid, &ctxt);
+  if (rc < 0) 
+    pkt->result = E_FAIL;
+  else
+    convert_from_sanos_context(&ctxt, (CONTEXT *) buf);
+}
+
+//
+// set_context
+//
+
+void set_context(struct drpc_packet *pkt, char *buf)
+{
+  int rc;
+  int tid;
+  struct context ctxt;
+  CONTEXT *ctx;
+
+  tid = *(tid_t *) (buf + 0); 
+  ctx = (CONTEXT *) (buf + 12);
+
+  convert_to_sanos_context(&ctxt, ctx);
+
+  rc = dbg_set_context(session, tid, &ctxt);
+  if (rc < 0) pkt->result = E_FAIL;
 }
 
 //
@@ -469,6 +677,7 @@ void handle_command(struct drpc_packet *pkt, char *buf)
     case DRPC_DEBUG_BREAK:
       tid = *(unsigned long *) (buf + 0);
       logmsg("COMMAND DebugBreak hthread=%08X\n", tid);
+      pkt->result = E_FAIL;
       break;
 
     case DRPC_GET_HOST_INFO:
@@ -495,6 +704,7 @@ void handle_command(struct drpc_packet *pkt, char *buf)
     case DRPC_DEBUG_PROCESS:
       pid = *(unsigned long *) buf;
       logmsg("COMMAND DebugProcess pid=%d (%08X):\n", pid, pid);
+      pkt->result = E_FAIL;
       break;
 
     case DRPC_OPEN_PROCESS:
@@ -507,6 +717,7 @@ void handle_command(struct drpc_packet *pkt, char *buf)
     case DRPC_CREATE_PROCESS:
       pid = *(unsigned long *) buf;
       logmsg("COMMAND CreateProcess: cmd=%S flags=%08X:\n", buf, *(unsigned long *)(buf + pkt->reqlen - 4));
+      pkt->result = E_FAIL;
       break;
 
     case DRPC_READ_PROCESS_MEMORY:
@@ -522,6 +733,7 @@ void handle_command(struct drpc_packet *pkt, char *buf)
       addr = *(unsigned long *) (buf + 8);
       len = *(unsigned long *) (buf + 16);
       logmsg("COMMAND WriteProcessMemory hproc=%08X addr=%08x len=%d:\n", pid, addr, len);
+      write_memory(pkt, buf);
       break;
 
     case DRPC_SUSPEND_THREAD:
@@ -533,6 +745,7 @@ void handle_command(struct drpc_packet *pkt, char *buf)
 	logmsg(" %08X", tid);
       }
       logmsg("\n");
+      suspend_threads(pkt, buf);
       break;
 
     case DRPC_RESUME_THREAD:
@@ -544,6 +757,7 @@ void handle_command(struct drpc_packet *pkt, char *buf)
 	logmsg(" %08X", tid);
       }
       logmsg("\n");
+      resume_threads(pkt, buf);
       break;
 
     case DRPC_GET_THREAD_CONTEXT:
@@ -551,6 +765,7 @@ void handle_command(struct drpc_packet *pkt, char *buf)
       flags = *(unsigned long *) (buf + 8);
       len = *(unsigned long *) (buf + 16);
       logmsg("COMMAND GetThreadContext hthread=%08X context=%08x len=%d:\n", tid, flags, len);
+      get_context(pkt, buf);
       break;
 
     case DRPC_SET_THREAD_CONTEXT:
@@ -558,6 +773,7 @@ void handle_command(struct drpc_packet *pkt, char *buf)
       len = *(unsigned long *) (buf + 8);
       ctxt = (CONTEXT *) (buf + 12);
       logmsg("COMMAND SetThreadContext hthread=%08X eax=%08x len=%d:\n", tid, ctxt->Eax, len);
+      set_context(pkt, buf);
       break;
 
     case DRPC_GET_PEB_ADDRESS:
@@ -571,6 +787,7 @@ void handle_command(struct drpc_packet *pkt, char *buf)
       sel = *(unsigned long *) (buf + 8);
       len = *(unsigned long *) (buf + 12);
       logmsg("COMMAND GetThreadSelector hthread=%08X selector=%08x len=%08x:\n", tid, sel, len);
+      pkt->result = E_FAIL;
       break;
 
     case DRPC_GET_DEBUG_EVENT:
@@ -607,10 +824,10 @@ void handle_command(struct drpc_packet *pkt, char *buf)
 	dump_data(stdout, buf, pkt->reqlen > 256 ? 256 : pkt->reqlen, 4, NULL);
 	if (logfile) dump_data(logfile, buf, pkt->reqlen, 4, NULL);
       }
+      pkt->result = E_FAIL;
   }
 
   pkt->cmd |= 0x00010000;
-  logmsg("\n");
 }
 
 //

@@ -250,6 +250,7 @@ int init_user_thread(struct thread *t, void *entrypoint)
   tib->tlsbase = &tib->tls;
   tib->pid = 1;
   tib->tid = t->id;
+  tib->peb = peb;
 
   return 0;
 }

@@ -82,5 +82,53 @@ SOURCE=..\src\sys\osldr\video.c
 SOURCE=..\src\lib\vsprintf.c
 # End Source File
 # End Group
+# Begin Group "include"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\src\include\os\dfs.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\intr.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\mbr.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\object.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\pdir.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\pe.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\pic.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\sched.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\seg.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\syspage.h
+# End Source File
+# End Group
 # End Target
 # End Project

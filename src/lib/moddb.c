@@ -542,7 +542,7 @@ hmodule_t load_module(struct moddb *db, char *name)
       db->execmod = m;
 
     // Notify
-    if (db->notify_load) db->notify_load(m->hmod, m->name);
+    if (db->notify_load) db->notify_load(m->hmod, &m->name);
 
     if (m == mod) break;
     m = m->next;

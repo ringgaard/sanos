@@ -125,7 +125,7 @@ static void dbg_connect(struct dbg_hdr *hdr, union dbg_body *body)
     body->conn.version = DRPC_VERSION;
     body->conn.trap = last_trap;
     body->conn.mod.hmod = kmods.execmod->hmod;
-    body->conn.mod.name = kmods.execmod->name;
+    body->conn.mod.name = &kmods.execmod->name;
     body->conn.thr.tid = t->id;
     body->conn.thr.tib = t->tib;
     body->conn.thr.startaddr = t->entrypoint;
@@ -205,6 +205,9 @@ static void dbg_get_thread_context(struct dbg_hdr *hdr, union dbg_body *body)
   }
 
   memcpy(&body->ctx.ctxt, t->ctxt, sizeof(struct context));
+dumpregs(t->ctxt);
+dumpregs(&body->ctx.ctxt);
+
   dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_context));
 }
 
@@ -245,6 +248,8 @@ static void dbg_get_selector(struct dbg_hdr *hdr, union dbg_body *body)
 
 static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
 {
+  static char *krnl = "krnl.dll";
+
   struct peb *peb = (struct peb *) PEB_ADDRESS;
   struct module *mod;
   int n = 0;
@@ -255,7 +260,7 @@ static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
     while (1)
     {
       body->mod.mods[n].hmod = mod->hmod;
-      body->mod.mods[n].name = mod->name;
+      body->mod.mods[n].name = &mod->name;
       n++;
 
       mod = mod->next;
@@ -269,7 +274,7 @@ static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
     while (1)
     {
       body->mod.mods[n].hmod = mod->hmod;
-      body->mod.mods[n].name = mod->name;
+      body->mod.mods[n].name = &mod->name;
       n++;
 
       mod = mod->next;
@@ -280,7 +285,7 @@ static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
   if (n == 0) 
   {
     body->mod.mods[n].hmod = (hmodule_t) OSBASE;
-    body->mod.mods[n].name = "krnl.dll";
+    body->mod.mods[n].name = &krnl;
     n++;
   }
 
@@ -401,7 +406,7 @@ void dbg_enter(struct context *ctxt, void *addr)
   dumpregs(ctxt);
 
   //if (ctxt->traptype != 3) panic("system halted");
-  //shell();
+  shell();
 
   last_trap.tid = current_thread()->id;
   last_trap.traptype = ctxt->traptype;
@@ -453,7 +458,7 @@ void dbg_notify_exit_thread(struct thread *t)
   }
 }
 
-void dbg_notify_load_module(hmodule_t hmod, char *name)
+void dbg_notify_load_module(hmodule_t hmod, char **name)
 {
   struct dbg_evt_load_module load;
 

@@ -88,7 +88,7 @@ struct dbg_selector
 struct dbg_module
 {
   int count;
-  struct { hmodule_t hmod; char *name; } mods[0];
+  struct { hmodule_t hmod; char **name; } mods[0];
 };
 
 struct dbg_evt_trap
@@ -116,7 +116,7 @@ struct dbg_evt_exit_thread
 struct dbg_evt_load_module
 {
   hmodule_t hmod;
-  char *name;
+  char **name;
 };
 
 struct dbg_evt_unload_module
@@ -141,7 +141,7 @@ struct dbg_connect
 
 union dbg_body
 {
-  char *string;
+  char string[0];
   unsigned char data[0];
   struct dbg_connect conn;
   struct dbg_memory mem;
@@ -179,7 +179,7 @@ void dbg_enter(struct context *ctxt, void *addr);
 
 void dbg_notify_create_thread(struct thread *t, void *startaddr);
 void dbg_notify_exit_thread(struct thread *t);
-void dbg_notify_load_module(hmodule_t hmod, char *name);
+void dbg_notify_load_module(hmodule_t hmod, char **name);
 void dbg_notify_unload_module(hmodule_t hmod);
 void dbg_output(char *msg);
 

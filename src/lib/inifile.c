@@ -232,6 +232,7 @@ struct section *parse_properties(char *props)
 
       newsect->name = trimstr(p, end);
       newsect->next = NULL;
+      newsect->properties = NULL;
       if (!secthead) secthead = newsect;
       if (sect) sect->next = newsect;
       sect = newsect;

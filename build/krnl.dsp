@@ -131,6 +131,7 @@ SOURCE=..\src\sys\krnl\sched.c
 # Begin Source File
 
 SOURCE=..\src\sys\krnl\start.c
+# SUBTRACT CPP /FA<none>
 # End Source File
 # Begin Source File
 

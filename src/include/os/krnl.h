@@ -67,6 +67,7 @@
 
 extern devno_t bootdev;
 extern struct section *krnlcfg;
+extern struct peb *peb;
 
 void panic(char *msg);
 void exit();
