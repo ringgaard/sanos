@@ -42,6 +42,7 @@
 #include <os/tss.h>
 #include <os/syspage.h>
 #include <os/pe.h>
+#include <os/version.h>
 
 #include "heap.h"
 #include "resolv.h"
@@ -642,6 +643,34 @@ int getreslen(hmodule_t hmod, int type, char *name, int lang)
   }
 
   return rc;
+}
+
+int uname(struct utsname *buf)
+{
+  struct cpuinfo cpu;
+  char machine[8];
+
+  if (!buf)
+  {
+    errno = EINVAL;
+    return -1;
+  }
+
+  if (sysinfo(SYSINFO_CPU, &cpu, sizeof(struct cpuinfo)) < 0) return -1;
+  machine[0] = 'i';
+  machine[1] = '0' + cpu.cpu_family;
+  machine[2] = '8';
+  machine[3] = '6';
+  machine[4] = 0;
+
+  memset(buf, 0, sizeof(struct utsname));
+  strncpy(buf->sysname, OSNAME, UTSNAMELEN);
+  gethostname(buf->nodename, UTSNAMELEN);
+  strncpy(buf->release, OSVERSION, UTSNAMELEN);
+  strncpy(buf->version, RELEASE_DATE, UTSNAMELEN);
+  strncpy(buf->machine, machine, UTSNAMELEN);
+
+  return 0;
 }
 
 void dbgbreak()

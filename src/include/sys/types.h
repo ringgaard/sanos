@@ -83,6 +83,15 @@ typedef long loff_t;
 typedef __int64 off64_t;
 #endif
 
+#ifndef _OFF_T_DEFINED
+#define _OFF_T_DEFINED
+#ifdef LARGEFILES
+typedef off64_t off_t;
+#else
+typedef loff_t off_t;
+#endif
+#endif
+
 #ifndef _HANDLE_T_DEFINED
 #define _HANDLE_T_DEFINED
 typedef int handle_t;

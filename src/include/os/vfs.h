@@ -46,13 +46,13 @@
 #define FSOP_STATFS     0x00000008
 #define FSOP_OPEN       0x00000010
 #define FSOP_CLOSE      0x00000020
-#define FSOP_FLUSH      0x00000040
+#define FSOP_FSYNC      0x00000040
 #define FSOP_READ       0x00000080
 #define FSOP_WRITE      0x00000100
 #define FSOP_IOCTL      0x00000200
 #define FSOP_TELL       0x00000400
 #define FSOP_LSEEK      0x00000800
-#define FSOP_CHSIZE     0x00001000
+#define FSOP_FTRUNCATE  0x00001000
 #define FSOP_FUTIME     0x00002000
 #define FSOP_UTIME      0x00004000
 #define FSOP_FSTAT      0x00008000
@@ -116,7 +116,7 @@ struct fsops
   int (*open)(struct file *filp, char *name);
   int (*close)(struct file *filp);
   int (*destroy)(struct file *filp);
-  int (*flush)(struct file *filp);
+  int (*fsync)(struct file *filp);
 
   int (*read)(struct file *filp, void *data, size_t size, off64_t pos);
   int (*write)(struct file *filp, void *data, size_t size, off64_t pos);
@@ -124,7 +124,7 @@ struct fsops
 
   off64_t (*tell)(struct file *filp);
   off64_t (*lseek)(struct file *filp, off64_t offset, int origin);
-  int (*chsize)(struct file *filp, off64_t size);
+  int (*ftruncate)(struct file *filp, off64_t size);
 
   int (*futime)(struct file *filp, struct utimbuf *times);
   int (*utime)(struct fs *fs, char *name, struct utimbuf *times);
@@ -171,7 +171,7 @@ krnlapi int statfs(char *name, struct statfs *buf);
 krnlapi int open(char *name, int flags, int mode, struct file **retval);
 krnlapi int close(struct file *filp);
 krnlapi int destroy(struct file *filp);
-krnlapi int flush(struct file *filp);
+krnlapi int fsync(struct file *filp);
 krnlapi int setmode(struct file *filp, int mode);
 
 krnlapi int read(struct file *filp, void *data, size_t size);
@@ -185,7 +185,7 @@ krnlapi int writev(struct file *filp, struct iovec *iov, int count);
 
 krnlapi off64_t tell(struct file *filp);
 krnlapi off64_t lseek(struct file *filp, off64_t offset, int origin);
-krnlapi int chsize(struct file *filp, off64_t size);
+krnlapi int ftruncate(struct file *filp, off64_t size);
 
 krnlapi int futime(struct file *filp, struct utimbuf *times);
 krnlapi int utime(char *name, struct utimbuf *times);

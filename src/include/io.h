@@ -78,6 +78,7 @@ osapi loff_t lseek(handle_t f, loff_t offset, int origin);
 osapi int access(const char *name, int mode);
 osapi int umask(int mode);
 osapi int eof(handle_t f);
+osapi int setmode(handle_t f, int mode);
 
 #ifdef  __cplusplus
 }

@@ -174,7 +174,10 @@ function AddConfig(proj, strProjectName)
 
       LinkTool.LinkIncremental = 1;
       LinkTool.SuppressStartupBanner = true;
-      LinkTool.AdditionalLibraryDirectories = sdkpath + "\\dbg\\lib";
+      if (extendedProject)
+        LinkTool.AdditionalLibraryDirectories = '..\\dbg\\lib;' + sdkpath + '\\dbg\\lib';
+      else
+        LinkTool.AdditionalLibraryDirectories = sdkpath + '\\dbg\\lib';
       LinkTool.IgnoreAllDefaultLibraries = true;
       LinkTool.GenerateDebugInformation = true;
       
@@ -276,7 +279,10 @@ function AddConfig(proj, strProjectName)
       if (isdrv) LinkTool.OutputFile = '$(OutDir)\\$(ProjectName).sys';
       LinkTool.LinkIncremental = 1;
       LinkTool.SuppressStartupBanner = true;
-      LinkTool.AdditionalLibraryDirectories = sdkpath + "\\lib";
+      if (extendedProject)
+        LinkTool.AdditionalLibraryDirectories = '..\\lib;' + sdkpath + '\\lib';
+      else
+        LinkTool.AdditionalLibraryDirectories = sdkpath + '\\lib';
       LinkTool.IgnoreAllDefaultLibraries = true;
       LinkTool.GenerateDebugInformation = false;
       LinkTool.GenerateMapFile = false;

@@ -768,9 +768,6 @@ int __declspec(dllexport) install(struct unit *unit)
   pcnet32->write_bcr(pcnet32->iobase, 9, val);
 
   init_block = pcnet32->phys_addr + offsetof(struct pcnet32, init_block);
-  //kprintf("init_block %08X\n", init_block);
-  //kprintf("rx_ring %08X\n", pcnet32->init_block.rx_ring);
-  //kprintf("tx_ring %08X\n", pcnet32->init_block.tx_ring);
   pcnet32->write_csr(pcnet32->iobase, 1, (unsigned short) (init_block & 0xffff));
   pcnet32->write_csr(pcnet32->iobase, 2, (unsigned short) (init_block >> 16));
 
@@ -785,10 +782,6 @@ int __declspec(dllexport) install(struct unit *unit)
 
   pcnet32->write_csr(pcnet32->iobase, 0, CSR_IENA | CSR_STRT); // note 2
 
-  //printk(KERN_DEBUG "%s: pcnet32 open after %d ticks, init block %#x csr0 %4.4x.\n",
-  //       dev->name, i, (u32) (lp->dma_addr + offsetof(struct pcnet32_private, init_block)),
-  //       lp->a.read_csr (ioaddr, 0));
-
   pcnet32->devno = dev_make("eth#", &pcnet32_driver, unit, pcnet32);
 
   kprintf("%s: %s iobase 0x%x irq %d hwaddr %s\n", device(pcnet32->devno)->name, unit->productname, pcnet32->iobase, pcnet32->irq, ether2str(&pcnet32->hwaddr, str));
@@ -800,17 +793,3 @@ int __stdcall start(hmodule_t hmod, int reason, void *reserved2)
 {
   return 1;
 }
-
-// Note 1
-
-//
-// The docs say that the buffer length isn't touched, but Andrew Boyd
-// of QNX reports that some revs of the 79C965 clear it.
-//
-
-// Note 2
-
-// 
-// We used to clear the InitDone bit, 0x0100, here but Mark Stockton
-// reports that doing so triggers a bug in the '974.
-//

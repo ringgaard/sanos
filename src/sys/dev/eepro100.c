@@ -3,36 +3,23 @@
 //
 // Intel EtherExpress Pro100 NIC network driver
 //
+// Written 1998-2002 by Donald Becker.
+// Ported to sanos 2002-2004 by Michael Ringgaard.
+//
+// This software may be used and distributed according to the terms of
+// the GNU General Public License (GPL), incorporated herein by reference.
+// Drivers based on or derived from this code fall under the GPL and must
+// retain the authorship, copyright and license notice.  This driver is not
+// a complete program and may only be used when the entire operating
+// system is licensed under the GPL.
+//
 // This driver is for the Intel EtherExpress Pro100 (Speedo3) design.
 // It should work with all i82557/558/559 boards.
 //
-// Copyright (C) 2002 Michael Ringgaard. All rights reserved.
-// Portions Copyright (C) 1998-2002 by Donald Becker.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
-// 
-// 1. Redistributions of source code must retain the above copyright 
-//    notice, this list of conditions and the following disclaimer.  
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.  
-// 3. Neither the name of the project nor the names of its contributors
-//    may be used to endorse or promote products derived from this software
-//    without specific prior written permission. 
-// 
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-// OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-// OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
-// SUCH DAMAGE.
+// The author may be reached as becker@scyld.com, or C/O
+// Scyld Computing Corporation
+// 410 Severn Ave., Suite 210
+// Annapolis MD 21403
 // 
 
 #include <os/krnl.h>
@@ -1479,6 +1466,9 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   unsigned short ioaddr;
   unsigned short irq;
   unsigned short eeprom[0x100];
+
+  // Check license
+  if (license() != LICENSE_GPL) kprintf("warning: license violation, eepro100 driver may only be used under GPL\n");
 
   // Determine NIC type
   board = lookup_board(board_tbl, unit);

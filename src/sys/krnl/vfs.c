@@ -580,17 +580,17 @@ int destroy(struct file *filp)
   return rc;
 }
 
-int flush(struct file *filp)
+int fsync(struct file *filp)
 {
   int rc;
 
   if (!filp) return -EINVAL;
 
-  if (!filp->fs->ops->flush) return -ENOSYS;
+  if (!filp->fs->ops->fsync) return -ENOSYS;
 
-  if (lock_fs(filp->fs, FSOP_FLUSH) < 0) return -ETIMEOUT;
-  rc = filp->fs->ops->flush(filp);
-  unlock_fs(filp->fs, FSOP_FLUSH);
+  if (lock_fs(filp->fs, FSOP_FSYNC) < 0) return -ETIMEOUT;
+  rc = filp->fs->ops->fsync(filp);
+  unlock_fs(filp->fs, FSOP_FSYNC);
 
   return rc;
 }
@@ -862,17 +862,17 @@ off64_t lseek(struct file *filp, off64_t offset, int origin)
   return rc;
 }
 
-int chsize(struct file *filp, off64_t size)
+int ftruncate(struct file *filp, off64_t size)
 {
   int rc;
 
   if (!filp) return -EINVAL;
   if (filp->flags & O_RDONLY) return -EACCES;
 
-  if (!filp->fs->ops->chsize) return -ENOSYS;
-  if (lock_fs(filp->fs, FSOP_CHSIZE) < 0) return -ETIMEOUT;
-  rc = filp->fs->ops->chsize(filp, size);
-  unlock_fs(filp->fs, FSOP_CHSIZE);
+  if (!filp->fs->ops->ftruncate) return -ENOSYS;
+  if (lock_fs(filp->fs, FSOP_FTRUNCATE) < 0) return -ETIMEOUT;
+  rc = filp->fs->ops->ftruncate(filp, size);
+  unlock_fs(filp->fs, FSOP_FTRUNCATE);
   return rc;
 }
 

@@ -293,6 +293,10 @@ static int open_file(FILE *stream, const char *filename, const char *mode)
 	oflag |= O_TEMPORARY;
 	break;
 
+      case ' ':
+	// Ignore
+	break;
+
       default:
 	errno = EINVAL;
 	return -1;

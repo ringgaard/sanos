@@ -105,7 +105,7 @@ int _close(int handle)
 int _commit(int handle)
 {
   TRACE("_commit");
-  return flush(handle);
+  return fsync(handle);
 }
 
 int _read(int handle, void *buffer, unsigned int count)
@@ -562,7 +562,7 @@ int fflush(FILE *stream)
   int rc;
 
   TRACE("fflush");
-  rc = flush(stream->file);
+  rc = fsync(stream->file);
   if (rc < 0)
   {
     stream->flag |= _IOERR;

@@ -35,6 +35,7 @@
 #include <pthread.h>
 #include <sched.h> 
 #include <atomic.h>
+#include <string.h>
 
 //
 // Helper functions

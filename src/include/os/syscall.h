@@ -40,12 +40,12 @@
 #define SYSCALL_UMOUNT         3
 #define SYSCALL_OPEN           4
 #define SYSCALL_CLOSE          5
-#define SYSCALL_FLUSH          6
+#define SYSCALL_FSYNC          6
 #define SYSCALL_READ           7
 #define SYSCALL_WRITE          8
 #define SYSCALL_TELL           9
 #define SYSCALL_LSEEK          10
-#define SYSCALL_CHSIZE         11
+#define SYSCALL_FTRUNCATE      11
 #define SYSCALL_FSTAT          12
 #define SYSCALL_STAT           13
 #define SYSCALL_MKDIR          14

@@ -308,7 +308,7 @@ int dfs_destroy(struct file *filp)
   return 0;
 }
 
-int dfs_flush(struct file *filp)
+int dfs_fsync(struct file *filp)
 {
   int rc;
   struct inode *inode = (struct inode *) filp->data;
@@ -397,7 +397,7 @@ int dfs_write(struct file *filp, void *data, size_t size, off64_t pos)
 
   if (pos > inode->desc->size)
   {
-    rc = dfs_chsize(filp, pos);
+    rc = dfs_ftruncate(filp, pos);
     if (rc < 0) return rc;
   }
 
@@ -494,7 +494,7 @@ off64_t dfs_lseek(struct file *filp, off64_t offset, int origin)
   return offset;
 }
 
-int dfs_chsize(struct file *filp, off64_t size)
+int dfs_ftruncate(struct file *filp, off64_t size)
 {
   struct inode *inode;
   int rc;

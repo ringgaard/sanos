@@ -224,6 +224,9 @@
 			<File
 				RelativePath="..\src\include\unistd.h">
 			</File>
+			<File
+				RelativePath="..\src\include\utime.h">
+			</File>
 			<Filter
 				Name="include/sys"
 				Filter="">
@@ -243,7 +246,7 @@
 					RelativePath="..\src\include\sys\uio.h">
 				</File>
 				<File
-					RelativePath="..\src\include\sys\utime.h">
+					RelativePath="..\src\include\sys\utsname.h">
 				</File>
 			</Filter>
 			<Filter

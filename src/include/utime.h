@@ -35,8 +35,8 @@
 #pragma once
 #endif
 
-#ifndef SYS_UTIME_H
-#define SYS_UTIME_H
+#ifndef UTIME_H
+#define UTIME_H
 
 #ifndef osapi
 #define osapi __declspec(dllimport)

@@ -1179,6 +1179,20 @@ struct loadinfo
   int load_idle;
 };
 
+#define UTSNAMELEN 65
+
+#ifndef _UTSNAME_DEFINED
+#define _UTSNAME_DEFINED
+struct utsname
+{
+  char sysname[UTSNAMELEN];
+  char nodename[UTSNAMELEN];
+  char release[UTSNAMELEN];
+  char version[UTSNAMELEN];
+  char machine[UTSNAMELEN];
+};
+#endif
+
 //
 // OS API functions
 //
@@ -1203,7 +1217,7 @@ osapi handle_t open(const char *name, int flags, ...);
 osapi handle_t sopen(const char *name, int flags, int shflags, ...);
 osapi handle_t creat(const char *name, int mode);
 osapi int close(handle_t h);
-osapi int flush(handle_t f);
+osapi int fsync(handle_t f);
 osapi handle_t dup(handle_t h);
 osapi handle_t dup2(handle_t h1, handle_t h2);
 
@@ -1220,8 +1234,8 @@ osapi loff_t tell(handle_t f);
 osapi off64_t tell64(handle_t f);
 osapi loff_t lseek(handle_t f, loff_t offset, int origin);
 osapi off64_t lseek64(handle_t f, off64_t offset, int origin);
-osapi int chsize(handle_t f, loff_t size);
-osapi int chsize64(handle_t f, off64_t size);
+osapi int ftruncate(handle_t f, loff_t size);
+osapi int ftruncate64(handle_t f, off64_t size);
 
 osapi int futime(handle_t f, struct utimbuf *times);
 osapi int utime(const char *name, struct utimbuf *times);
@@ -1280,6 +1294,7 @@ osapi handle_t mkiomux(int flags);
 osapi int dispatch(handle_t iomux, handle_t h, int events, int context);
 
 osapi int sysinfo(int cmd, void *data, size_t size);
+osapi int uname(struct utsname *buf);
 osapi handle_t self();
 osapi void exitos(int status);
 osapi void dbgbreak();

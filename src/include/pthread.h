@@ -47,11 +47,6 @@
 typedef unsigned int size_t;
 #endif
 
-#ifndef _TID_T_DEFINED
-#define _TID_T_DEFINED
-typedef unsigned long tid_t;
-#endif
-
 #ifndef _TLS_T_DEFINED
 #define _TLS_T_DEFINED
 typedef unsigned long tls_t;
@@ -95,7 +90,6 @@ struct sched_param
 // POSIX limits
 //
 
-#define PTHREAD_DESTRUCTOR_ITERATIONS         4
 #define PTHREAD_KEYS_MAX                      64
 #define PTHREAD_STACK_MIN                     0
 #define PTHREAD_THREADS_MAX                   2019
@@ -104,7 +98,7 @@ struct sched_param
 // POSIX pthread types
 //
 
-typedef tid_t pthread_t;
+typedef handle_t pthread_t;
 typedef tls_t pthread_key_t;
 
 //
@@ -128,8 +122,6 @@ typedef tls_t pthread_key_t;
 
 #define PTHREAD_PROCESS_PRIVATE       0
 #define PTHREAD_PROCESS_SHARED        1
-
-#define PTHREAD_BARRIER_SERIAL_THREAD (-1)
 
 //
 // Threads
@@ -221,6 +213,8 @@ typedef struct pthread_cond pthread_cond_t;
 //
 // Barriers
 //
+
+#define PTHREAD_BARRIER_SERIAL_THREAD 1
 
 struct pthread_barrierattr
 {

@@ -362,7 +362,7 @@ int smb_destroy(struct file *filp)
   return 0;
 }
 
-int smb_flush(struct file *filp)
+int smb_fsync(struct file *filp)
 {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb_file *file = (struct smb_file *) filp->data;
@@ -573,7 +573,7 @@ off64_t smb_lseek(struct file *filp, off64_t offset, int origin)
   return offset;
 }
 
-int smb_chsize(struct file *filp, off64_t size)
+int smb_ftruncate(struct file *filp, off64_t size)
 {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb_file *file = (struct smb_file *) filp->data;
@@ -977,7 +977,7 @@ struct fsops smbfsops =
   smb_open,
   smb_close,
   smb_destroy,
-  smb_flush,
+  smb_fsync,
 
   smb_read,
   smb_write,
@@ -985,7 +985,7 @@ struct fsops smbfsops =
 
   smb_tell,
   smb_lseek,
-  smb_chsize,
+  smb_ftruncate,
 
   smb_futime,
   smb_utime,

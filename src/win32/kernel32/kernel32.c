@@ -1103,7 +1103,7 @@ BOOL WINAPI FlushFileBuffers
 )
 {
   TRACE("FlushFileBuffers");
-  if (flush((handle_t) hFile) < 0) return FALSE;
+  if (fsync((handle_t) hFile) < 0) return FALSE;
   return TRUE;
 }
 
@@ -2125,7 +2125,7 @@ BOOL WINAPI SetEndOfFile
 )
 {
   TRACE("SetEndOfFile");
-  if (chsize((handle_t) hFile, tell((handle_t) hFile)) < 0) return FALSE;
+  if (ftruncate((handle_t) hFile, tell((handle_t) hFile)) < 0) return FALSE;
   return TRUE;
 }
 

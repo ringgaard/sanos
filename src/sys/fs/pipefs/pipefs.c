@@ -35,7 +35,7 @@
 
 int pipefs_mount(struct fs *fs, char *opts);
 int pipefs_close(struct file *filp);
-int pipefs_flush(struct file *filp);
+int pipefs_fsync(struct file *filp);
 int pipefs_read(struct file *filp, void *data, size_t size, off64_t pos);
 int pipefs_write(struct file *filp, void *data, size_t size, off64_t pos);
 int pipefs_ioctl(struct file *filp, int cmd, void *data, size_t size);
@@ -58,7 +58,7 @@ struct fsops pipefsops =
   NULL,
   pipefs_close,
   NULL,
-  pipefs_flush,
+  pipefs_fsync,
 
   pipefs_read,
   pipefs_write,
@@ -198,7 +198,7 @@ int pipefs_close(struct file *filp)
   return 0;
 }
 
-int pipefs_flush(struct file *filp)
+int pipefs_fsync(struct file *filp)
 {
   return 0;
 }

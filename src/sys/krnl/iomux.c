@@ -348,6 +348,7 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struc
     tmo = timeout->tv_sec * 1000 + timeout->tv_usec / 1000;
 
   if (tmo == 0) return 0;
+  if (timeout && !readfds && !writefds && !exceptfds) return sleep(tmo);
 
   init_iomux(&iomux, 0);
 

@@ -397,7 +397,7 @@ static int sys_close(char *params)
   return rc;
 }
 
-static int sys_flush(char *params)
+static int sys_fsync(char *params)
 {
   struct file *f;
   handle_t h;
@@ -413,7 +413,7 @@ static int sys_flush(char *params)
     return -EBADF;
   }
 
-  rc = flush(f);
+  rc = fsync(f);
 
   orel(f);
   unlock_buffer(params, 4);
@@ -624,7 +624,7 @@ static int sys_lseek(char *params)
   return rc < 0 ? (int) rc : (int) (rc & 0x7FFFFFFF);
 }
 
-static int sys_chsize(char *params)
+static int sys_ftruncate(char *params)
 {
   struct file *f;
   handle_t h;
@@ -643,7 +643,7 @@ static int sys_chsize(char *params)
     return -EBADF;
   }
 
-  rc = chsize(f, size);
+  rc = ftruncate(f, size);
 
   orel(f);
   unlock_buffer(params, 12);
@@ -3040,12 +3040,12 @@ struct syscall_entry syscalltab[] =
   {"umount", "'%s'", sys_umount},
   {"open", "'%s',%x", sys_open},
   {"close", "%d", sys_close},
-  {"flush", "%d", sys_flush},
+  {"fsync", "%d", sys_fsync},
   {"read", "%d,%p,%d", sys_read},
   {"write", "%d,%p,%d", sys_write},
   {"tell", "%d,%p", sys_tell},
   {"lseek", "%d,%d,%d-%d,%p", sys_lseek},
-  {"chsize", "%d,%d-%d", sys_chsize},
+  {"ftruncate", "%d,%d-%d", sys_ftruncate},
   {"fstat", "%d,%p", sys_fstat},
   {"stat", "'%s',%p", sys_stat},
   {"mkdir", "'%s',%d", sys_mkdir},

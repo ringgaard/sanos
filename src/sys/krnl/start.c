@@ -36,6 +36,7 @@
 
 #define KERNEL_CONFIG  "/etc/krnl.ini"
 
+#ifdef BSD
 char *copyright = 
 OSNAME " version " OSVERSION "\n"
 COPYRIGHT "\n"
@@ -63,6 +64,26 @@ COPYRIGHT "\n"
 "ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n"
 "(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\n"
 "SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n";
+#endif
+
+#ifdef GPL
+char *copyright = 
+OSNAME " version " OSVERSION "\n"
+COPYRIGHT "\n"
+"\n"
+"This program is free software; you can redistribute it and/or modify it under\n"
+"the terms of the GNU General Public License as published by the Free Software\n"
+"Foundation; either version 2 of the License, or (at your option) any later\n"
+"version.\n"
+"\n"
+"This program is distributed in the hope that it will be useful, but WITHOUT\n"
+"ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS\n"
+"FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.\n"
+"\n"
+"You should have received a copy of the GNU General Public License along with\n"
+"this program; if not, write to the Free Software Foundation,\n"
+"Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA\n";
+#endif
 
 #define ONPANIC_HALT   0
 #define ONPANIC_REBOOT 1
@@ -76,6 +97,11 @@ struct peb *peb;
 char krnlopts[KRNLOPTS_LEN];
 
 void main(void *arg);
+
+int license()
+{
+  return LICENSE;
+}
 
 void stop(int restart)
 {

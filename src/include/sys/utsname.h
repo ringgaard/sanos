@@ -1,7 +1,7 @@
 //
-// uio.h
+// utsname.h
 //
-// Defines for vector I/O functions
+// System name
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -35,35 +35,32 @@
 #pragma once
 #endif
 
-#ifndef SYS_UIO_H
-#define SYS_UIO_H
+#ifndef SYS_UTSNAME_H
+#define SYS_UTSNAME_H
 
 #ifndef osapi
 #define osapi __declspec(dllimport)
 #endif
 
-#ifndef _HANDLE_T_DEFINED
-#define _HANDLE_T_DEFINED
-typedef int handle_t;
-#endif
+#define UTSNAMELEN 65
 
-#ifndef _IOVEC_DEFINED
-#define _IOVEC_DEFINED
-
-struct iovec 
-{ 
-  void *iov_base;
-  size_t iov_len;
+#ifndef _UTSNAME_DEFINED
+#define _UTSNAME_DEFINED
+struct utsname
+{
+  char sysname[UTSNAMELEN];
+  char nodename[UTSNAMELEN];
+  char release[UTSNAMELEN];
+  char version[UTSNAMELEN];
+  char machine[UTSNAMELEN];
 };
-
 #endif
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
-osapi int readv(handle_t f, const struct iovec *iov, int count);
-osapi int writev(handle_t f, const struct iovec *iov, int count);
+osapi int uname(struct utsname *buf);
 
 #ifdef  __cplusplus
 }

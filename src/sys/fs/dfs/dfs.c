@@ -35,7 +35,7 @@
 
 struct fsops dfsops =
 {
-  FSOP_READ | FSOP_WRITE | FSOP_IOCTL | FSOP_TELL | FSOP_LSEEK | FSOP_CHSIZE | 
+  FSOP_READ | FSOP_WRITE | FSOP_IOCTL | FSOP_TELL | FSOP_LSEEK | FSOP_FTRUNCATE | 
   FSOP_FUTIME | FSOP_FSTAT,
 
   NULL,
@@ -50,7 +50,7 @@ struct fsops dfsops =
   dfs_open,
   dfs_close,
   dfs_destroy,
-  dfs_flush,
+  dfs_fsync,
 
   dfs_read,
   dfs_write,
@@ -58,7 +58,7 @@ struct fsops dfsops =
 
   dfs_tell,
   dfs_lseek,
-  dfs_chsize,
+  dfs_ftruncate,
 
   dfs_futime,
   dfs_utime,

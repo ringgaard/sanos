@@ -39,7 +39,7 @@ static time_t mounttime;
 
 int devfs_open(struct file *filp, char *name);
 int devfs_close(struct file *filp);
-int devfs_flush(struct file *filp);
+int devfs_fsync(struct file *filp);
 
 int devfs_read(struct file *filp, void *data, size_t size, off64_t pos);
 int devfs_write(struct file *filp, void *data, size_t size, off64_t pos);
@@ -56,7 +56,7 @@ int devfs_readdir(struct file *filp, struct direntry *dirp, int count);
 
 struct fsops devfsops =
 {
-  FSOP_OPEN | FSOP_CLOSE | FSOP_FLUSH | FSOP_READ | FSOP_WRITE | FSOP_IOCTL | 
+  FSOP_OPEN | FSOP_CLOSE | FSOP_FSYNC | FSOP_READ | FSOP_WRITE | FSOP_IOCTL | 
   FSOP_TELL | FSOP_LSEEK | FSOP_STAT | FSOP_FSTAT | FSOP_OPENDIR | FSOP_READDIR,
 
   NULL,
@@ -71,7 +71,7 @@ struct fsops devfsops =
   devfs_open,
   devfs_close,
   NULL,
-  devfs_flush,
+  devfs_fsync,
 
   devfs_read,
   devfs_write,
@@ -154,7 +154,7 @@ int devfs_close(struct file *filp)
   return 0;
 }
 
-int devfs_flush(struct file *filp)
+int devfs_fsync(struct file *filp)
 {
   return 0;
 }

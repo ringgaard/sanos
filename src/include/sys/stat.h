@@ -62,9 +62,31 @@ typedef unsigned int dev_t;
 typedef int handle_t;
 #endif
 
+#ifndef _LOFF_T_DEFINED
+#define _LOFF_T_DEFINED
+typedef long loff_t;
+#endif
+
+#ifndef _OFF64_T_DEFINED
+#define _OFF64_T_DEFINED
+typedef __int64 off64_t;
+#endif
+
+#ifndef _OFF_T_DEFINED
+#define _OFF_T_DEFINED
+#ifdef LARGEFILES
+typedef off64_t off_t;
+#else
+typedef loff_t off_t;
+#endif
+#endif
+
 #ifndef _STAT_DEFINED
 #define _STAT_DEFINED
 
+#ifdef LARGEFILES
+#define stat stat64
+#else
 struct stat
 {
   dev_t st_dev;
@@ -79,6 +101,7 @@ struct stat
   time_t st_mtime;
   time_t st_ctime;
 };
+#endif
 
 struct stat64
 {
@@ -141,9 +164,15 @@ struct stat64
 extern "C" {
 #endif
 
+#ifdef LARGEFILES
+#define fstat(f, buffer) fstat64((f), (buffer))
+#define stat(name, buffer) fstat64((name), (buffer))
+#else
 osapi int fstat(handle_t f, struct stat *buffer);
-osapi int fstat64(handle_t f, struct stat64 *buffer);
 osapi int stat(const char *name, struct stat *buffer);
+#endif
+
+osapi int fstat64(handle_t f, struct stat64 *buffer);
 osapi int stat64(const char *name, struct stat64 *buffer);
 
 osapi int chmod(const char *name, int mode);

@@ -162,9 +162,9 @@ int close(handle_t h)
   return syscall(SYSCALL_CLOSE, &h);
 }
 
-int flush(handle_t f)
+int fsync(handle_t f)
 {
-  return syscall(SYSCALL_FLUSH, &f);
+  return syscall(SYSCALL_FSYNC, &f);
 }
 
 int read(handle_t f, void *data, size_t size)
@@ -238,14 +238,14 @@ loff_t lseek(handle_t f, loff_t offset, int origin)
   return _lseek(f, offset, origin, NULL);
 }
 
-int chsize64(handle_t f, off64_t size)
+int ftruncate64(handle_t f, off64_t size)
 {
-  return syscall(SYSCALL_CHSIZE, &f);
+  return syscall(SYSCALL_FTRUNCATE, &f);
 }
 
-int chsize(handle_t f, loff_t size)
+int ftruncate(handle_t f, loff_t size)
 {
-  return chsize64(f, size);
+  return ftruncate64(f, size);
 }
 
 int futime(handle_t f, struct utimbuf *times)

@@ -65,6 +65,15 @@ typedef long loff_t;
 typedef __int64 off64_t;
 #endif
 
+#ifndef _OFF_T_DEFINED
+#define _OFF_T_DEFINED
+#ifdef LARGEFILES
+typedef off64_t off_t;
+#else
+typedef loff_t off_t;
+#endif
+#endif
+
 #ifndef _HANDLE_T_DEFINED
 #define _HANDLE_T_DEFINED
 typedef int handle_t;
@@ -107,12 +116,26 @@ typedef int handle_t;
 extern "C" {
 #endif
 
-osapi int access(const char *name, int mode);
+#ifdef LARGEFILES
+#define lseek(f, offset, origin) lseek((f), (offset), (origin))
+#define ftruncate(f, size) ftruncate64((f), (size))
+#else
 osapi loff_t lseek(handle_t f, loff_t offset, int origin);
+osapi int ftruncate(handle_t f, loff_t size);
+#endif
+
+osapi int ftruncate64(handle_t f, off64_t size);
 osapi off64_t lseek64(handle_t f, off64_t offset, int origin);
+
+osapi int access(const char *name, int mode);
 osapi int close(handle_t h);
+osapi int fsync(handle_t f);
 osapi int read(handle_t f, void *data, size_t size);
 osapi int write(handle_t f, const void *data, size_t size);
+#ifdef LARGEFILES
+osapi int pread(handle_t f, void *data, size_t size, off64_t offset);
+osapi int pwrite(handle_t f, const void *data, size_t size, off64_t offset);
+#endif
 osapi int pipe(handle_t fildes[2]);
 osapi int chdir(const char *name);
 osapi char *getcwd(char *buf, size_t size);
@@ -120,7 +143,9 @@ osapi handle_t dup(handle_t h);
 osapi handle_t dup2(handle_t h1, handle_t h2);
 osapi int link(const char *oldname, const char *newname);
 osapi int unlink(const char *name);
+osapi int mkdir(const char *name, int mode);
 osapi int rmdir(const char *name);
+osapi int gethostname(char *name, int namelen);
 
 #ifdef  __cplusplus
 }

@@ -901,7 +901,6 @@ int cmd_mkfs(int argc, char *argv[])
   if (argc > 3) opts = argv[3];
 
   rc = mkfs(devname, type, opts); 
-  printf("\n");
   if (rc < 0)
   {
     printf("%s: %s\n", devname, strerror(errno));
@@ -1259,6 +1258,20 @@ int cmd_test(int argc, char *argv[])
   return 0;
 }
 
+int cmd_uname(int argc, char *argv[])
+{
+  struct utsname buf;
+  
+  if (uname(&buf) < 0)
+  {
+    perror("uname");
+    return -1;
+  }
+
+  printf("%s %s %s %s %s\n", buf.sysname, buf.nodename, buf.release, buf.version, buf.machine);
+  return 0;
+}
+
 int cmd_umount(int argc, char *argv[])
 {
   char *path;
@@ -1442,6 +1455,7 @@ struct command cmdtab[] =
   {"sysinfo",  cmd_sysinfo,  "Display system info"},
   {"test",     cmd_test,     "Dummy command for misc. tests"},
   {"type",     cmd_cat,      "Display file"},
+  {"uname",    cmd_uname,    "Print system information"},
   {"umount",   cmd_umount,   "Unmount file system"},
   {"write",    cmd_write,    "Write zero filled file to disk"},
   {NULL, NULL, NULL}

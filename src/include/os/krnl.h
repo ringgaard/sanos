@@ -34,6 +34,21 @@
 #ifndef KRNL_H
 #define KRNL_H
 
+#define LICENSE_BSD 0
+#define LICENSE_GPL 1
+
+#ifndef LICENSE
+#define LICENSE LICENSE_BSD
+#endif
+
+#if LICENSE == LICENSE_BSD
+#define BSD
+#endif
+
+#if LICENSE == LICENSE_GPL
+#define GPL
+#endif
+
 #include <os.h>
 
 #include <sys/types.h>
@@ -110,6 +125,7 @@ krnlapi extern struct section *krnlcfg;
 krnlapi extern struct peb *peb;
 
 krnlapi void panic(char *msg);
+krnlapi int license();
 
 void exit();
 void stop(int restart);

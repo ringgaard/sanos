@@ -205,13 +205,13 @@ int dfs_readdir(struct file *filp, struct direntry *dirp, int count);
 int dfs_open(struct file *filp, char *name);
 int dfs_close(struct file *filp);
 int dfs_destroy(struct file *filp);
-int dfs_flush(struct file *filp);
+int dfs_fsync(struct file *filp);
 int dfs_read(struct file *filp, void *data, size_t size, off64_t pos);
 int dfs_write(struct file *filp, void *data, size_t size, off64_t pos);
 int dfs_ioctl(struct file *filp, int cmd, void *data, size_t size);
 off64_t dfs_tell(struct file *filp);
 off64_t dfs_lseek(struct file *filp, off64_t offset, int origin);
-int dfs_chsize(struct file *filp, off64_t size);
+int dfs_ftruncate(struct file *filp, off64_t size);
 int dfs_futime(struct file *filp, struct utimbuf *times);
 int dfs_fstat(struct file *filp, struct stat64 *buffer);
 

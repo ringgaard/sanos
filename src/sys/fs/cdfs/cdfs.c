@@ -484,7 +484,7 @@ int cdfs_close(struct file *filp)
   return 0;
 }
 
-int cdfs_flush(struct file *filp)
+int cdfs_fsync(struct file *filp)
 {
   return 0;
 }
@@ -732,7 +732,7 @@ recagain:
 
 struct fsops cdfsops =
 {
-  FSOP_OPEN | FSOP_CLOSE | FSOP_FLUSH | FSOP_READ | 
+  FSOP_OPEN | FSOP_CLOSE | FSOP_FSYNC | FSOP_READ | 
   FSOP_TELL | FSOP_LSEEK | FSOP_STAT | FSOP_FSTAT | 
   FSOP_OPENDIR | FSOP_READDIR,
 
@@ -748,7 +748,7 @@ struct fsops cdfsops =
   cdfs_open,
   cdfs_close,
   NULL,
-  cdfs_flush,
+  cdfs_fsync,
 
   cdfs_read,
   NULL,
