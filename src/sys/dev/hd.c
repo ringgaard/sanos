@@ -33,7 +33,6 @@
 
 #include <os/krnl.h>
 
-//#define COMPATMODE
 #define SECTORSIZE              512
 #define CDSECTORSIZE            2048
 
@@ -52,6 +51,8 @@
 
 #define HD0_DRVSEL              0xA0
 #define HD1_DRVSEL              0xB0
+
+#define idedelay() udelay(1)
 
 //
 // Controller registers
@@ -106,7 +107,7 @@
 // Device control 
 //
 
-#define HDDC_HD15               0x08  // Use 4 bits for head
+#define HDDC_HD15               0x00  // Use 4 bits for head (not used, was 0x08)
 #define HDDC_SRST               0x04  // Soft reset
 #define HDDC_NIEN               0x02  // Disable interrupts
 
@@ -138,8 +139,10 @@
 //
 
 #define HDIF_NONE               0
-#define HDIF_ATA                1
-#define HDIF_ATAPI              2
+#define HDIF_PRESENT            1
+#define HDIF_UNKNOWN            2
+#define HDIF_ATA                3
+#define HDIF_ATAPI              4
 
 //
 // IDE media types
@@ -158,14 +161,6 @@
 
 #define ATAPI_CMD_READCAPICITY  0x25
 #define ATAPI_CMD_READ10        0x28
-
-//
-// Buffer type
-//
-
-#define HDTYPE_SINGLE           1      // Single port, single sector buf
-#define HDTYPE_DUAL             2      // Dual port, multiple sector buf
-#define HDTYPE_DUAL_CACHE       3      // Above plus track cache
 
 //
 // Transfer type
@@ -512,9 +507,7 @@ static int hd_identify(struct hd *hd)
   hd->hdc->dir = HD_XFER_IGNORE;
 
   // Issue read drive parameters command
-#ifndef COMPATMODE
   _outp(hd->hdc->iobase + HDC_FEATURE, 0);
-#endif
   _outp(hd->hdc->iobase + HDC_DRVHD, hd->drvsel);
   _outp(hd->hdc->iobase + HDC_COMMAND, hd->iftype == HDIF_ATAPI ? HDCMD_PIDENTIFY : HDCMD_IDENTIFY);
 
@@ -543,11 +536,7 @@ static int hd_identify(struct hd *hd)
     hd->media = (hd->param.config >> 8) & 0x1f;
 
   // Determine LBA or CHS mode
-#ifdef COMPATMODE
-  if (hd->param.totalsec0 == 0 && hd->param.totalsec1 == 0)
-#else
   if ((hd->param.caps & 0x0200) == 0)
-#endif
   {
     hd->lba = 0;
     hd->blks = hd->cyls * hd->heads * hd->sectors;
@@ -1299,58 +1288,6 @@ struct driver partition_driver =
   part_write
 };
 
-static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase)
-{
-  memset(hdc, 0, sizeof(struct hdc));
-  hdc->iobase = iobase;
-  hdc->irq = irq;
-  hdc->bmregbase = bmregbase;
-  hdc->dir = HD_XFER_IGNORE;
-
-  if (hdc->bmregbase)
-  {
-    // Allocate one page for PRD list
-    hdc->prds = (struct prd *) kmalloc(PAGESIZE);
-    hdc->prds_phys = virt2phys(hdc->prds);
-  }
-
-  init_dpc(&hdc->xfer_dpc);
-  init_mutex(&hdc->lock, 0);
-  init_event(&hdc->ready, 0, 0);
-
-#ifndef COMPATMODE
-  // Reset controller
-  _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_SRST | HDDC_NIEN);
-  udelay(10);
-  _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_NIEN);
-  udelay(10);
-#endif
-
-  // Enable interrupts
-  register_interrupt(&hdc->intr, IRQ2INTR(irq), hdc_handler, hdc);
-  enable_irq(irq);
-  _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15);
-
-#if 0
-  // Performs internal diagnostic tests implemented by the drive
-  _outp(hdc->iobase + HDC_COMMAND, HDCMD_DIAG);
-  if (wait_for_object(&hdc->ready, HDTIMEOUT_CMD) >= 0)
-  {
-    hdc->status = _inp(hdc->iobase + HDC_STATUS);
-    if (hdc->status & HDCS_ERR)
-    {
-      unsigned char error;
-
-      error = _inp(hdc->iobase + HDC_ERR);
-      hd_error("hddiag", error);
-      return -EIO;
-    }
-  }
-#endif
-
-  return 0;
-}
-
 static int create_partitions(struct hd *hd)
 {
   struct master_boot_record mbr;
@@ -1399,46 +1336,137 @@ static int create_partitions(struct hd *hd)
   return 0;
 }
 
-static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel)
+static int probe_device(struct hdc *hdc, int drvsel)
 {
-  static int udma_speed[] = {16, 25, 33, 44, 66, 100};
+  unsigned char sc, sn;
 
-  int rc;
-#ifndef  COMPATMODE
-  unsigned char sc, sn, cl, ch, st;
-#endif
+  // Probe for device on controller
+  _outp(hdc->iobase + HDC_DRVHD, drvsel);
+  idedelay();
 
-  // Initialize drive block
-  memset(hd, 0, sizeof(struct hd));
-  hd->hdc = hdc;
-  hd->drvsel = drvsel;
+  _outp(hdc->iobase + HDC_SECTORCNT, 0x55);
+  _outp(hdc->iobase + HDC_SECTOR, 0xAA);
 
-#ifndef  COMPATMODE
-  // Check interface type
-  _outp(hd->hdc->iobase + HDC_DRVHD, hd->drvsel);
-  udelay(10);
+  _outp(hdc->iobase + HDC_SECTORCNT, 0xAA);
+  _outp(hdc->iobase + HDC_SECTOR, 0x55);
+
+  _outp(hdc->iobase + HDC_SECTORCNT, 0x55);
+  _outp(hdc->iobase + HDC_SECTOR, 0xAA);
 
   sc = _inp(hdc->iobase + HDC_SECTORCNT);
   sn = _inp(hdc->iobase + HDC_SECTOR);
+
+  if (sc == 0x55 && sn == 0xAA)
+    return 1;
+  else
+    return -EIO;
+}
+
+static int wait_reset_done(struct hdc *hdc, int drvsel)
+{
+  unsigned int tmo;
+
+  _outp(hdc->iobase + HDC_DRVHD, drvsel);
+  idedelay();
+
+  tmo = ticks + 5*HZ;
+  while (time_after(tmo, ticks))
+  {
+    hdc->status = _inp(hdc->iobase + HDC_STATUS);
+    if ((hdc->status & HDCS_BSY) == 0) return 0;
+  }
+
+  return -EBUSY;
+}
+
+static int get_interface_type(struct hdc *hdc, int drvsel)
+{
+  unsigned char sc, sn, cl, ch, st;
+
+  _outp(hdc->iobase + HDC_DRVHD, drvsel);
+  idedelay();
+
+  sc = _inp(hdc->iobase + HDC_SECTORCNT);
+  sn = _inp(hdc->iobase + HDC_SECTOR);
+  kprintf("%x: sc=0x%02x sn=0x%02x\n", hdc->iobase, sc, sn);
+
   if (sc == 0x01 && sn == 0x01)
   {
     cl = _inp(hdc->iobase + HDC_TRACKLSB);
     ch = _inp(hdc->iobase + HDC_TRACKMSB);
     st = _inp(hdc->iobase + HDC_STATUS);
 
-    if (cl == 0x14 && ch == 0xeb)
-      hd->iftype = HDIF_ATAPI;
-    else if (cl == 0x00 && ch == 0x00 && st != 0x00)
-      hd->iftype = HDIF_ATA;
-  }
-  
-  // If no interface present, abort now
-  if (hd->iftype == HDIF_NONE) return;
+    kprintf("%x: cl=0x%02x ch=0x%02x st=0x%02x\n", hdc->iobase, cl, ch, st);
 
-#else
-  hd->iftype = HDIF_ATA;
-  hd->media = IDE_DISK;
-#endif
+    if (cl == 0x14 && ch == 0xeb) return HDIF_ATAPI;
+    if (cl == 0x00 && ch == 0x00 && st != 0x00) return HDIF_ATA;
+  }
+
+  return HDIF_UNKNOWN;
+}
+
+static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase, int *masterif, int *slaveif)
+{
+  memset(hdc, 0, sizeof(struct hdc));
+  hdc->iobase = iobase;
+  hdc->irq = irq;
+  hdc->bmregbase = bmregbase;
+  hdc->dir = HD_XFER_IGNORE;
+
+  if (hdc->bmregbase)
+  {
+    // Allocate one page for PRD list
+    hdc->prds = (struct prd *) kmalloc(PAGESIZE);
+    hdc->prds_phys = virt2phys(hdc->prds);
+  }
+
+  init_dpc(&hdc->xfer_dpc);
+  init_mutex(&hdc->lock, 0);
+  init_event(&hdc->ready, 0, 0);
+
+  *masterif = HDIF_NONE;
+  *slaveif = HDIF_NONE;
+
+  // Setup device control register
+  _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_NIEN);
+
+  // Probe for master and slave device on controller
+  if (probe_device(hdc, HD0_DRVSEL) >= 0) *masterif = HDIF_PRESENT;
+  if (probe_device(hdc, HD1_DRVSEL) >= 0) *slaveif = HDIF_PRESENT;
+
+  // Reset controller
+  _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_SRST | HDDC_NIEN);
+  idedelay();
+  _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_NIEN);
+  idedelay();
+
+  // Wait for reset to finish on all present devices
+  if (*masterif != HDIF_NONE) wait_reset_done(hdc, HD0_DRVSEL);
+  if (*slaveif != HDIF_NONE) wait_reset_done(hdc, HD1_DRVSEL);
+
+  // Determine interface types
+  if (*masterif != HDIF_NONE) *masterif = get_interface_type(hdc, HD0_DRVSEL);
+  if (*slaveif != HDIF_NONE) *slaveif = get_interface_type(hdc, HD1_DRVSEL);
+
+  // Enable interrupts
+  register_interrupt(&hdc->intr, IRQ2INTR(irq), hdc_handler, hdc);
+  enable_irq(irq);
+  _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15);
+
+  return 0;
+}
+
+static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, int iftype)
+{
+  static int udma_speed[] = {16, 25, 33, 44, 66, 100};
+
+  int rc;
+
+  // Initialize drive block
+  memset(hd, 0, sizeof(struct hd));
+  hd->hdc = hdc;
+  hd->drvsel = drvsel;
+  hd->iftype = iftype;
 
   // Get info block from device
   if (hd_identify(hd) < 0)
@@ -1510,12 +1538,11 @@ void init_hd()
   int numhd;
   struct unit *ide;
   int rc;
+  int masterif;
+  int slaveif;
 
-#ifdef COMPATMODE
-  numhd = syspage->biosdata[0x75];
-#else
+  //numhd = syspage->biosdata[0x75];
   numhd = 4;
-#endif
 
   ide = lookup_unit_by_class(NULL, PCI_CLASS_STORAGE_IDE, PCI_SUBCLASS_MASK);
   if (ide)
@@ -1525,25 +1552,25 @@ void init_hd()
 
   if (numhd >= 1) 
   {
-    rc = setup_hdc(&hdctab[0], HDC0_IOBASE, HDC0_IRQ, ide ? bmiba : 0);
+    rc = setup_hdc(&hdctab[0], HDC0_IOBASE, HDC0_IRQ, ide ? bmiba : 0, &masterif, &slaveif);
     if (rc < 0)
-      kprintf("hd: error %d initializing primary ide controller\n", rc);
+      kprintf("hd: error %d initializing primary IDE controller\n", rc);
     else
     {
-      if (numhd >= 1) setup_hd(&hdtab[0], &hdctab[0], "hd0", HD0_DRVSEL);
-      if (numhd >= 2) setup_hd(&hdtab[1], &hdctab[0], "hd1", HD1_DRVSEL);
+      if (numhd >= 1 && masterif > HDIF_UNKNOWN) setup_hd(&hdtab[0], &hdctab[0], "hd0", HD0_DRVSEL, masterif);
+      if (numhd >= 2 && slaveif > HDIF_UNKNOWN) setup_hd(&hdtab[1], &hdctab[0], "hd1", HD1_DRVSEL, slaveif);
     }
   }
 
   if (numhd >= 3) 
   {
-    rc = setup_hdc(&hdctab[1], HDC1_IOBASE, HDC1_IRQ, ide ? bmiba + 8: 0);
+    rc = setup_hdc(&hdctab[1], HDC1_IOBASE, HDC1_IRQ, ide ? bmiba + 8: 0, &masterif, &slaveif);
     if (rc < 0)
-      kprintf("hd: error %d initializing secondary ide controller\n", rc);
+      kprintf("hd: error %d initializing secondary IDE controller\n", rc);
     else
     {
-      if (numhd >= 3) setup_hd(&hdtab[2], &hdctab[1], "hd2", HD0_DRVSEL);
-      if (numhd >= 4) setup_hd(&hdtab[3], &hdctab[1], "hd3", HD1_DRVSEL);
+      if (numhd >= 3 && masterif > HDIF_UNKNOWN) setup_hd(&hdtab[2], &hdctab[1], "hd2", HD0_DRVSEL, masterif);
+      if (numhd >= 4 && slaveif > HDIF_UNKNOWN) setup_hd(&hdtab[3], &hdctab[1], "hd3", HD1_DRVSEL, slaveif);
     }
   }
 }
