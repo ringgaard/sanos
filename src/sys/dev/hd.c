@@ -497,7 +497,7 @@ static int hd_identify(struct hd *hd)
   hd->hdc->dir = HD_XFER_IGNORE;
 
   // Issue read drive parameters command
-  _outp(hd->hdc->iobase + HDC_FEATURE, 0);
+  //_outp(hd->hdc->iobase + HDC_FEATURE, 0);
   _outp(hd->hdc->iobase + HDC_DRVHD, hd->drvsel);
   _outp(hd->hdc->iobase + HDC_COMMAND, hd->iftype == HDIF_ATAPI ? HDCMD_PIDENTIFY : HDCMD_IDENTIFY);
 
@@ -520,7 +520,7 @@ static int hd_identify(struct hd *hd)
   hd_fixstring(hd->param.rev, sizeof(hd->param.rev));
   hd_fixstring(hd->param.serial, sizeof(hd->param.serial));
 
-  kprintf("hd: type=%d\n", (hd->param.config >> 8) & 0x1f);
+  //kprintf("hd: type=%d\n", (hd->param.config >> 8) & 0x1f);
 
   // Determine LBA or CHS mode
   if (hd->param.totalsec0 == 0 && hd->param.totalsec1 == 0)
@@ -1136,11 +1136,13 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase)
   init_mutex(&hdc->lock, 0);
   init_event(&hdc->ready, 0, 0);
 
+#if 0
   // Reset controller
   _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_SRST | HDDC_NIEN);
   udelay(10);
   _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_NIEN);
   udelay(10);
+#endif
 
   // Enable interrupts
   register_interrupt(&hdc->intr, IRQ2INTR(irq), hdc_handler, hdc);
@@ -1220,13 +1222,14 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel)
   static int udma_speed[] = {16, 25, 33, 44, 66, 100};
 
   int rc;
-  unsigned char sc, sn, cl, ch, st;
+  //unsigned char sc, sn, cl, ch, st;
 
   // Initialize drive block
   memset(hd, 0, sizeof(struct hd));
   hd->hdc = hdc;
   hd->drvsel = drvsel;
 
+#if 0
   // Check interface type
   _outp(hd->hdc->iobase + HDC_DRVHD, hd->drvsel);
   udelay(10);
@@ -1247,6 +1250,9 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel)
   
   // If no interface present, abort now
   if (hd->iftype == HDIF_NONE) return;
+#else
+  hd->iftype = HDIF_ATA;
+#endif
 
   // Get info block from device
   if (hd_identify(hd) < 0)
