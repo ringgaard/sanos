@@ -7,6 +7,7 @@
 //
 
 #include <os.h>
+#include <os/trap.h>
 #include <win32.h>
 #include <string.h>
 #include <inifile.h>
@@ -25,6 +26,80 @@ struct winfinddata
   char dir[MAXPATH];
   char *mask;
 };
+
+void convert_from_win32_context(struct context *ctxt, CONTEXT *ctx)
+{
+  if (ctx->ContextFlags & CONTEXT_CONTROL)
+  {
+    ctxt->ess = ctx->SegSs;
+    ctxt->esp = ctx->Esp;
+    ctxt->ecs = ctx->SegCs;
+    ctxt->eip = ctx->Eip;
+    ctxt->eflags = ctx->EFlags;
+    ctxt->ebp = ctx->Ebp;
+  }
+
+  if (ctx->ContextFlags & CONTEXT_INTEGER)
+  {
+    ctxt->eax = ctx->Eax;
+    ctxt->ebx = ctx->Ebx;
+    ctxt->ecx = ctx->Ecx;
+    ctxt->edx = ctx->Edx;
+    ctxt->esi = ctx->Esi;
+    ctxt->edi = ctx->Edi;
+  }
+
+  if (ctx->ContextFlags & CONTEXT_SEGMENTS)
+  {
+    ctxt->ds = ctx->SegDs;
+    ctxt->es = ctx->SegEs;
+    // fs missing
+    // gs missing
+  }
+
+  if (ctx->ContextFlags & CONTEXT_FLOATING_POINT)
+  {
+    // fpu state missing
+  }
+ 
+  if (ctx->ContextFlags & CONTEXT_FLOATING_POINT)
+  {
+    // fpu state missing
+  }
+
+  if (ctx->ContextFlags & CONTEXT_DEBUG_REGISTERS)
+  {
+    // debug registers missing
+  }
+
+  ctxt->traptype = 0;
+  ctxt->errcode = 0;
+}
+
+void convert_to_win32_context(struct context *ctxt, CONTEXT *ctx)
+{
+  memset(ctx, 0, sizeof(CONTEXT));
+  ctx->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS;
+
+  ctx->SegSs = ctxt->ess;
+  ctx->Esp = ctxt->esp;
+  ctx->SegCs = ctxt->ecs;
+  ctx->Eip = ctxt->eip;
+  ctx->EFlags = ctxt->eflags;
+  ctx->Ebp = ctxt->ebp;
+
+  ctx->Eax = ctxt->eax;
+  ctx->Ebx = ctxt->ebx;
+  ctx->Ecx = ctxt->ecx;
+  ctx->Edx = ctxt->edx;
+  ctx->Esi = ctxt->esi;
+  ctx->Edi = ctxt->edi;
+
+  ctx->SegDs = ctxt->ds;
+  ctx->SegEs = ctxt->es;
+  ctx->SegFs = 0;
+  ctx->SegGs = 0;
+}
 
 BOOL WINAPI CloseHandle
 (
@@ -616,8 +691,12 @@ BOOL WINAPI GetThreadContext
   LPCONTEXT lpContext
 )
 {
+  struct context ctxt;
+
   TRACE("GetThreadContext");
-  if (getcontext((handle_t) hThread, lpContext) < 0) return FALSE;
+  if (getcontext((handle_t) hThread, &ctxt) < 0) return FALSE;
+  convert_to_win32_context(&ctxt, lpContext);
+  return TRUE;
 }
 
 LCID WINAPI GetThreadLocale(void)
@@ -955,9 +1034,12 @@ BOOL WINAPI SetThreadContext
   CONST CONTEXT *lpContext
 )
 {
+  struct context ctxt;
+
   TRACE("SetThreadContext");
-  panic("SetThreadContext not implemented");
-  return FALSE;
+  convert_from_win32_context(&ctxt, (CONTEXT *) lpContext);
+  if (setcontext((handle_t) hThread, &ctxt) < 0) return FALSE;
+  return TRUE;
 }
 
 BOOL WINAPI SetThreadPriority
