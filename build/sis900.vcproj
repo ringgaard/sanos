@@ -28,6 +28,7 @@
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
+				OptimizeForProcessor="0"
 				AdditionalIncludeDirectories="..\src\include"
 				PreprocessorDefinitions="SIS900_LIB;KERNEL"
 				IgnoreStandardIncludePath="TRUE"

@@ -45,6 +45,8 @@
 #include <inifile.h>
 #include <httpd.h>
 
+int telnetd_started = 0;
+
 unsigned char buffer[4096];
 
 unsigned char orig[4096];
@@ -1768,7 +1770,14 @@ int main(int argc, char *argv[])
 {
   if (sizeof(struct tib) != PAGESIZE) printf("warning: tib is %d bytes (%d expected)\n", sizeof(struct tib), PAGESIZE);
 
-  if (peb->ipaddr.s_addr != INADDR_ANY) beginthread(telnetd, 0, NULL, 0, NULL);
+  if (peb->ipaddr.s_addr != INADDR_ANY) 
+  {
+    if (get_numeric_property(config, "shell", "telnetd", 1) && !telnetd_started)
+    {
+      beginthread(telnetd, 0, NULL, 0, NULL);
+      telnetd_started = 1;
+    }
+  }
 
   shell();
 

@@ -96,6 +96,7 @@
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
+				OptimizeForProcessor="0"
 				AdditionalIncludeDirectories="..\src\include"
 				PreprocessorDefinitions="HTTPD_LIB"
 				IgnoreStandardIncludePath="TRUE"
