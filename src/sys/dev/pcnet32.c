@@ -683,6 +683,7 @@ int __declspec(dllexport) install(struct unit *unit)
   }
 
   // Install interrupt handler
+  init_dpc(&pcnet32->dpc);
   set_interrupt_handler(IRQ2INTR(pcnet32->irq), pcnet32_handler, pcnet32);
   enable_irq(pcnet32->irq);
 

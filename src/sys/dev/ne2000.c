@@ -46,13 +46,13 @@
 #define NE_P0_RSR	0x0C	       // Receive Status (read)
 #define NE_P0_RCR	0x0C	       // Receive Configuration Reg (write)
 
-#define NE_P0_CNTR0	0x0D	       // frame alignment error counter (read)
+#define NE_P0_CNTR0	0x0D	       // Frame alignment error counter (read)
 #define NE_P0_TCR	0x0D	       // Transmit Configuration Reg (write)
 
 #define NE_P0_CNTR1	0x0E	       // CRC error counter (read)
 #define NE_P0_DCR	0x0E	       // Data Configuration Reg (write)
 
-#define NE_P0_CNTR2	0x0F	       // missed packet counter (read)
+#define NE_P0_CNTR2	0x0F	       // Missed packet counter (read)
 #define NE_P0_IMR	0x0F	       // Interrupt Mask Register (write)
 
 //
@@ -205,6 +205,8 @@
 #define NE_TXBUF_SIZE		6      // Size of TX buffer in pages
 #define NE_TX_BUFERS            2      // Number of transmit buffers
 
+#define NE_TIMEOUT              10000
+
 //
 // Receive ring descriptor
 //
@@ -278,7 +280,7 @@ static int ne_probe(struct ne *ne)
   _outp(ne->asic_addr + NE_NOVELL_RESET, byte);
   _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STP);
 
-  //sleep(5000);
+  sleep(5000);
 
   // Test for a generic DP8390 NIC
   byte = _inp(ne->nic_addr + NE_P0_CR);
@@ -345,7 +347,7 @@ void ne_receive(struct ne *ne)
     else
     {
       // Drop packet
-      kprintf("drop\n");
+      kprintf("ne200: packet dropped\n");
       stats.link.memerr++;
       stats.link.drop++;
     }
@@ -361,7 +363,7 @@ void ne_receive(struct ne *ne)
     if (bndry < ne->rx_page_start) bndry = ne->rx_page_stop - 1;
     _outp(ne->nic_addr + NE_P0_BNRY, bndry);
 
-    //kprintf("start: %02x stop: %02x next: %02x bndry: %02x\n", ne->rx_page_start, ne->rx_page_stop, ne->next_pkt, bndry);
+    kprintf("start: %02x stop: %02x next: %02x bndry: %02x\n", ne->rx_page_start, ne->rx_page_stop, ne->next_pkt, bndry);
     //if (bndry == 0xff && ne->next_pkt == 0) sleep(30000);
 
     // Set page 1 registers
@@ -373,6 +375,8 @@ void ne_dpc(void *arg)
 {
   struct ne *ne = arg;
   unsigned char isr;
+
+  kprintf("ne2000: dpc\n");
 
   // Select page 0
   _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
@@ -389,14 +393,14 @@ void ne_dpc(void *arg)
     // Packet transamitted
     if (isr & NE_ISR_PTX) 
     {
-      //kprintf("ne2000: packet transmitted\n");
+      kprintf("ne2000: packet transmitted\n");
       set_event(&ne->ptx);
     }
 
     // Remote DMA complete
     if (isr & NE_ISR_RDC) 
     {
-      //kprintf("ne2000: remote DMA complete\n");
+      kprintf("ne2000: remote DMA complete\n");
       set_event(&ne->rdc);
     }
 
@@ -412,10 +416,9 @@ void ne_handler(struct context *ctxt, void *arg)
   struct ne *ne = (struct ne *) arg;
 
   // Queue DPC to service interrupt
+  kprintf("ne2000: intr\n");
   queue_irq_dpc(&ne->dpc, ne_dpc, ne);
 }
-
-void dump_memory(unsigned char *p, int len);
 
 int ne_transmit(struct dev *dev, struct pbuf *p)
 {
@@ -428,8 +431,7 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   unsigned char save_byte[2];
   struct pbuf *q;
 
-kprintf("ne_transmit: transmit packet len=%d\n", p->tot_len);
-//dump_memory((unsigned char *) p->payload, p->len);
+  kprintf("ne_transmit: transmit packet len=%d\n", p->tot_len);
 
   // We need to transfer a whole number of words
   dma_len = p->tot_len;
@@ -499,7 +501,11 @@ kprintf("ne_transmit: transmit packet len=%d\n", p->tot_len);
   }
 
   // Wait for remote DMA complete
-  wait_for_object(&ne->rdc, INFINITE);
+  if (wait_for_object(&ne->rdc, NE_TIMEOUT) < 0)
+  {
+    kprintf("ne2000: timeout waiting for remote dma to complete\n");
+    return -EIO;
+  }
 
   // Set TX buffer start page
   _outp(ne->nic_addr + NE_P0_TPSR, dst);
@@ -520,9 +526,13 @@ kprintf("ne_transmit: transmit packet len=%d\n", p->tot_len);
   _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_TXP | NE_CR_STA);
 
   // Wait for packet transmitted
-  wait_for_object(&ne->ptx, INFINITE);
+  if (wait_for_object(&ne->ptx, NE_TIMEOUT) < 0)
+  {
+    kprintf("ne2000: timeout waiting for packet transmit\n");
+    return -EIO;
+  }
 
-//kprintf("ne_transmit: packet transmitted\n");
+  kprintf("ne_transmit: packet transmitted\n");
   return 0;
 }
 
@@ -586,13 +596,14 @@ int ne_setup(unsigned short iobase, int irq, unsigned short membase, unsigned sh
   ne->rx_ring_end = ne->rx_page_stop * NE_PAGE_SIZE;
 
   // Probe for NE2000 card
-  //if (!ne_probe()) return 0;
+  if (!ne_probe(ne)) return 0;
 
   // Initialize network interface
   init_event(&ne->ptx, 0, 0);
   init_event(&ne->rdc, 0, 0);
 
   // Install interrupt handler
+  init_dpc(&ne->dpc);
   set_interrupt_handler(IRQ2INTR(ne->irq), ne_handler, ne);
   enable_irq(ne->irq);
 
@@ -667,8 +678,16 @@ int __declspec(dllexport) install(struct unit *unit)
   iobase = (unsigned short) get_unit_iobase(unit);
   irq = get_unit_irq(unit);
   memres = get_unit_resource(unit, RESOURCE_MEM, 0);
-  membase = (unsigned short) memres->start;
-  memsize = (unsigned short) memres->len;
+  if (memres)
+  {
+    membase = (unsigned short) memres->start;
+    memsize = (unsigned short) memres->len;
+  }
+  else
+  {
+    membase = 16 * K;
+    memsize = 16 * K;
+  }
 
   return ne_setup(iobase, irq, membase, memsize, unit);
 }

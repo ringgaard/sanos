@@ -1874,6 +1874,7 @@ int __declspec(dllexport) install(struct unit *unit)
   pci_enable_busmastering(unit);
 
   // Install interrupt handler
+  init_dpc(&nic->dpc);
   set_interrupt_handler(IRQ2INTR(nic->irq), nic_handler, nic);
   enable_irq(nic->irq);
 
