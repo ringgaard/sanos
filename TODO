@@ -190,4 +190,7 @@ CHANGES
 
 - Handles to kernel objects was not removed from the handle table if the handle count 
   was greater than one. This problem has been fixed.
+  
+- Closing a socket now sends a IOEVT_CLOSE event to attached iomux. This signals a select()
+  on a socket to return when one of the read sockets are being closed by the application.
 

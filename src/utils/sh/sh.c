@@ -37,6 +37,9 @@
 #include <stdlib.h>
 #include <os/version.h>
 
+#include <inifile.h>
+#include <httpd.h>
+
 unsigned char buffer[4096];
 
 unsigned char orig[4096];
@@ -1083,20 +1086,43 @@ static void heap_stat()
   printf("Top-most, releasable space ............... : %12d\n", m.keepcost);
 }
 
+static void close_handle(int argc, char **argv)
+{
+  int fd;
+  int rc;
+
+  if (argc != 2)
+  {
+    printf("usage: close <handle>\n");
+    return;
+  }
+
+  fd = atoi(argv[1]);
+  rc = close(fd);
+  if (rc < 0) printf("close: error %d '%s' closing %d\n", rc, strerror(rc), fd);
+}
+
 static void httpinit()
 {
-#if 0
   struct httpd_server *server;
+  
+  hmodule_t hmod = load("httpd");
+  struct httpd_server *(*_httpd_initialize)(struct section *cfg); 
+  struct httpd_context *(*_httpd_add_file_context)(struct httpd_server *server, char *alias, char *location, struct section *cfg);
+  struct httpd_context *(*_httpd_add_resource_context)(struct httpd_server *server, char *alias, hmodule_t hmod, struct section *cfg);
+  int (*_httpd_start)(struct httpd_server *server);
 
-  server = httpd_initialize(find_section(config, "httpd"));
+  _httpd_initialize = resolve(hmod, "httpd_initialize");
+  _httpd_add_file_context = resolve(hmod, "httpd_add_file_context");
+  _httpd_add_resource_context = resolve(hmod, "httpd_add_resource_context");
+  _httpd_start = resolve(hmod, "httpd_start");
 
-  httpd_add_file_context(server, "/", "/usr/www", find_section(config, "webroot"));
-  httpd_add_file_context(server, "/files", "/", find_section(config, "webfs"));
+  server = _httpd_initialize(find_section(config, "httpd"));
 
-  httpd_add_resource_context(server, "/icons", hmod, NULL);
+  _httpd_add_file_context(server, "/", "/", find_section(config, "webfs"));
+  _httpd_add_resource_context(server, "/icons", hmod, NULL);
 
-  httpd_start(server);
-#endif
+  _httpd_start(server);
 }
 
 static void test1(int argc, char **argv)
@@ -1502,6 +1528,8 @@ void shell()
 	download(argc, argv);
       else if (strcmp(argv[0], "reboot") == 0)
 	reboot();
+      else if (strcmp(argv[0], "close") == 0)
+	close_handle(argc, argv);
       else if (strcmp(argv[0], "beep") == 0)
 	beep();
       else if (strcmp(argv[0], "sound") == 0)
@@ -1514,6 +1542,8 @@ void shell()
 	kbdtest();
       else if (strcmp(argv[0], "cstest") == 0)
 	cstest();
+      else if (strcmp(argv[0], "httpd") == 0)
+	httpinit();
       else
 	exec_program(cmd);
 

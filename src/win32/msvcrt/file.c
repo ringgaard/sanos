@@ -109,6 +109,13 @@ int _close(int handle)
   int rc;
 
   TRACE("_close");
+
+  if (handle == -1)
+  {
+    errno = -EBADF;
+    return -1;
+  }
+
   rc = close(handle);
   if (rc < 0)
   {

@@ -476,6 +476,8 @@ static int tcpsock_close(struct socket *s)
     release_socket_request(req, -EABORT);
     req = next;
   }
+  
+  set_io_event(&s->iob, IOEVT_CLOSE);
 
   if (s->tcp.pcb)
   {

@@ -32,6 +32,7 @@
 // 
 
 #include <os.h>
+#include <string.h>
 
 #include <httpd.h>
 
