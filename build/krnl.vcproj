@@ -165,6 +165,12 @@
 				RelativePath="..\src\sys\krnl\fpu.c">
 			</File>
 			<File
+				RelativePath="..\src\sys\krnl\hndl.c">
+			</File>
+			<File
+				RelativePath="..\src\sys\krnl\iomux.c">
+			</File>
+			<File
 				RelativePath="..\src\sys\krnl\iop.c">
 			</File>
 			<File
