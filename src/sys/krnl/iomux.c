@@ -106,7 +106,7 @@ int queue_ioobject(struct iomux *iomux, object_t hobj, int events, int context)
 {
   struct ioobject *iob = (struct ioobject *) hobj;
 
-  if (iob->object.type != OBJECT_SOCKET) return -EBADF;
+  if (!ISIOOBJECT(iob)) return -EBADF;
   if (!events) return -EINVAL;
 
   if (iob->iomux) 
@@ -252,7 +252,141 @@ int dequeue_event_from_iomux(struct iomux *iomux)
   return iob->context;
 }
 
+static int check_fds(fd_set *fds, int eventmask)
+{
+  unsigned int n;
+  int matches;
+  struct ioobject *iob;
+
+  if (!fds) return 0;
+
+  matches = 0;
+  for (n = 0; n < fds->count; n++)
+  {
+    iob = (struct ioobject *) olock(fds->fd[n], OBJECT_ANY);
+    if (!iob) return -EBADF;
+    if (!ISIOOBJECT(iob))
+    {
+      orel(iob);
+      return -EBADF;
+    }
+
+    if (iob->events_signaled & eventmask) fds->fd[matches++] = fds->fd[n];
+    orel(iob);
+  }
+
+  return matches;
+}
+
+static int add_fds_to_iomux(struct iomux *iomux, fd_set *fds, int eventmask)
+{
+  unsigned int n;
+  struct ioobject *iob;
+  int rc;
+
+  if (!fds) return 0;
+
+  for (n = 0; n < fds->count; n++)
+  {
+    iob = (struct ioobject *) olock(fds->fd[n], OBJECT_ANY);
+    if (!iob) return -EBADF;
+    if (!ISIOOBJECT(iob))
+    {
+      orel(iob);
+      return -EBADF;
+    }
+
+    rc = queue_ioobject(iomux, iob, eventmask, 0);
+    if (rc < 0) return rc;
+
+    orel(iob);
+  }
+
+  return 0;
+}
+
+static int check_select(fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
+{
+  int numread;
+  int numwrite;
+  int numexcept;
+
+  numread = check_fds(readfds, IOEVT_READ | IOEVT_ACCEPT | IOEVT_CLOSE);
+  if (numread < 0) return numread;
+
+  numwrite = check_fds(writefds, IOEVT_WRITE | IOEVT_CONNECT);
+  if (numwrite < 0) return numwrite;
+
+  numexcept = check_fds(exceptfds, IOEVT_ERROR);
+  if (numexcept < 0) return numexcept;
+
+  if (numread != 0 || numwrite != 0 || numexcept != 0)
+  {
+    if (readfds) readfds->count = numread;
+    if (writefds) writefds->count = numwrite;
+    if (exceptfds) exceptfds->count = numexcept;
+
+    return numread + numwrite + numexcept;
+  }
+
+  return 0;
+}
+
 int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
 {
-  return -ENOSYS;
+  unsigned int tmo;
+  int rc;
+  struct iomux iomux;
+
+  rc = check_select(readfds, writefds, exceptfds);
+  if (rc != 0) return rc;
+
+  if (!timeout) 
+    tmo = INFINITE;
+  else
+    tmo = timeout->tv_sec * 1000 + timeout->tv_usec / 1000;
+
+  if (tmo == 0) return 0;
+
+  init_iomux(&iomux, 0);
+
+  rc = add_fds_to_iomux(&iomux, readfds, IOEVT_READ | IOEVT_ACCEPT | IOEVT_CLOSE);
+  if (rc < 0)
+  {
+    close_iomux(&iomux);
+    return rc;
+  }
+
+  rc = add_fds_to_iomux(&iomux, writefds, IOEVT_WRITE | IOEVT_CONNECT);
+  if (rc < 0)
+  {
+    close_iomux(&iomux);
+    return rc;
+  }
+
+  rc = add_fds_to_iomux(&iomux, exceptfds, IOEVT_ERROR);
+  if (rc < 0)
+  {
+    close_iomux(&iomux);
+    return rc;
+  }
+
+  rc = wait_for_object(&iomux, tmo);
+  if (rc < 0)
+  {
+    close_iomux(&iomux);
+    if (rc == -ETIMEOUT) rc = 0;
+    return rc;
+  }
+
+  rc = check_select(readfds, writefds, exceptfds);
+  if (rc == 0)
+  {
+    if (readfds) readfds->count = 0;
+    if (writefds) writefds->count = 0;
+    if (exceptfds) exceptfds->count = 0;
+  }
+
+  close_iomux(&iomux);
+  return rc;
 }

@@ -13,19 +13,9 @@ TODO for sanos
 
 - Multicast filtering support in network drivers
 
-- Add sendmsg() and recvmsg() syscalls
-
 - Implement mremap() and use it in heap.c for realloc() of large blocks
 
 - Implement krealloc() in kmalloc.c
-
-- Implement iomux kernel syncronization object
-    - Add struct ioobject to object.h
-    - Add struct iomux to object.h
-    - Add OBJECT_IOMUX to object.h and extend all switch(object->type)
-    - Replace struct object with struct ioobject in socket.h
-    - Add dispatch(iomux,h,mask,context) syscall
-    - Add synchronization on iomuxes...
  
 - Revalidate partition drivers after fdisk
 
@@ -67,6 +57,8 @@ IDEAS for new features
 - DOS boot loader
 
 - FATFS support
+
+- ACPI/APM support for shutdown
 
 - Memory paging support
 
@@ -138,5 +130,10 @@ CHANGES
 
 - Keyboard interrupt handling has been made more robust (failed on xpc).
 
+- sendmsg() and recvmsg() added
 
 *** version 1.2.4 released ***
+
+- iomux kernel syncronization object implemented
+
+- select() implemented
