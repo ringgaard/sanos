@@ -40,7 +40,7 @@
 #include <os/object.h>
 #include <os/queue.h>
 #include <os/sched.h>
-#include <os/intr.h>
+#include <os/trap.h>
 #include <os/dbg.h>
 
 #include <os/pic.h>

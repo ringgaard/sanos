@@ -1,13 +1,13 @@
 //
-// intr.h
+// trap.h
 //
 // Copyright (c) 2001 Michael Ringgaard. All rights reserved.
 //
 // Interrupt and trap handling
 //
 
-#ifndef INTR_H
-#define INTR_H
+#ifndef TRAP_H
+#define TRAP_H
 
 #define IRQBASE       0x20
 

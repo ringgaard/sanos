@@ -1,5 +1,5 @@
 //
-// intr.c
+// trap.c
 //
 // Copyright (c) 2001 Michael Ringgaard. All rights reserved.
 //

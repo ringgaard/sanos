@@ -114,19 +114,6 @@ SOURCE=..\src\sys\krnl\fpu.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\sys\krnl\intr.c
-
-!IF  "$(CFG)" == "krnl - Win32 SanOS"
-
-# ADD CPP /FA
-
-!ELSEIF  "$(CFG)" == "krnl - Win32 SanOSDebug"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\sys\krnl\iop.c
 # End Source File
 # Begin Source File
@@ -197,6 +184,10 @@ SOURCE=..\src\sys\krnl\test.c
 
 !ENDIF 
 
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\sys\krnl\trap.c
 # End Source File
 # Begin Source File
 
@@ -363,10 +354,6 @@ SOURCE=..\src\include\os\fpu.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\include\os\intr.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\include\os\kbd.h
 # End Source File
 # Begin Source File
@@ -440,6 +427,10 @@ SOURCE=..\src\include\os\syscall.h
 # Begin Source File
 
 SOURCE=..\src\include\os\syspage.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\trap.h
 # End Source File
 # Begin Source File
 
