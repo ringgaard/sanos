@@ -40,7 +40,10 @@ char *get_option(char *opts, char *name, char *buffer, int size, char *defval)
 	if (p - (eq + 1) > size)
 	  strncpy(buffer, eq + 1, size);
 	else
-	  strncpy(buffer, eq + 1, p - (eq + 1));
+	{
+	  memcpy(buffer, eq + 1, p - (eq + 1));
+	  buffer[p - (eq + 1)] = 0;
+	}
 
 	return buffer;
       }

@@ -305,10 +305,10 @@ void init_mount()
       opts = NULL;
     }
 
-    //kprintf("mount %s on %s type %s opts %s\n", devname, prop->name, type, opts);
+    //syslog(LOG_DEBUG, "mount %s on %s type %s opts %s\n", devname, prop->name, type, opts);
 
     rc = mount(type, prop->name, devname, opts);
-    if (rc < 0) syslog(LOG_ERR, "%s: error %d mounting device %s\n", prop->name, rc, devname);
+    if (rc < 0) syslog(LOG_ERR, "%s: error %d mounting %s %s\n", prop->name, rc, type, devname);
 
     prop = prop->next;
   }

@@ -409,6 +409,24 @@ int smb_format(char *devname, char *opts)
 
 int smb_mount(struct fs *fs, char *opts)
 {
+  struct ip_addr ipaddr;
+  char username[256];
+  char password[256];
+  char *share;
+
+  // Get options
+  ipaddr.addr = get_num_option(opts, "addr", IP_ADDR_ANY);
+  if (ipaddr.addr == IP_ADDR_ANY) return -EINVAL;
+  get_option(opts, "user", username, sizeof(username), "");
+  get_option(opts, "password", password, sizeof(password), "");
+  
+  share = fs->mntfrom;
+  if (share[0] != '\\' && share[1] != '\\') return -EINVAL;
+  share = strchr(share + 2, '\\');
+  if (!share++) return -EINVAL;
+
+  kprintf("smb: addr=%a user=%s password=%s share=%s\n", &ipaddr, username, password, share);
+
   return -ENOSYS;
 }
 
