@@ -20,10 +20,10 @@ romimage: file=BIOS-bochs, address=0xf0000
 #megs: 256
 #megs: 128
 #megs: 64
-#megs: 32
+megs: 32
 #megs: 16
 #megs: 8
-megs: 8
+#megs: 4
 
 #=======================================================================
 # VGAROMIMAGE
@@ -51,7 +51,8 @@ vgaromimage: VGABIOS-elpin-2.40
 #floppya: 1_2=../1_2, status=ejected
 
 #floppya: 1_44=..\..\bin\boot.img, status=inserted
-floppya: 1_44=bootdisk.img, status=inserted
+floppya: 1_44=..\..\img\bootdisk.img, status=inserted
+#floppya: 1_44=\zignx\zxlog\img\zxlog.img, status=inserted
 
 #=======================================================================
 # FLOPPYB:
@@ -77,7 +78,7 @@ floppya: 1_44=bootdisk.img, status=inserted
 #diskc: file=c.img, cyl=20, heads=16, spt=63
 
 #diskc: file="sanos.img", cyl=81, heads=16, spt=63
-diskc: file="hd16.img", cyl=496, heads=2, spt=32
+diskc: file="..\..\img\hd16.img", cyl=496, heads=2, spt=32
 
 #=======================================================================
 # DISKD:

@@ -232,6 +232,7 @@ struct statfs
   unsigned int bfree;        // Free blocks in fs
   unsigned int files;        // Total file nodes in file system
   unsigned int ffree;        // Free file nodes in fs
+  unsigned int cachesize;    // Cache buffers
   char fstype[MFSNAMELEN];   // File system type name */
   char mntonname[MAXPATH];   // Directory on which mounted
   char mntfromname[MAXPATH]; // Mounted file system

@@ -25,7 +25,7 @@ CFG=krnl - Win32 SanOS
 # PROP AllowPerConfigDependencies 0
 # PROP Scc_ProjName "krnl"
 # PROP Scc_LocalPath ".."
-CPP=xicl6.exe
+CPP=cl.exe
 MTL=midl.exe
 RSC=rc.exe
 
@@ -51,14 +51,9 @@ RSC=rc.exe
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
-LINK32=xilink6.exe
+LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
 # ADD LINK32 /nologo /base:"0x80000000" /entry:"start" /dll /pdb:none /map /machine:I386 /nodefaultlib /implib:"..\lib/krnl.lib" /fixed /comment:driver
-# Begin Special Build Tool
-SOURCE="$(InputPath)"
-PostBuild_Desc=Creating boot disk
-PostBuild_Cmds=mkbootdisk
-# End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "krnl - Win32 Debug"
 
@@ -83,7 +78,7 @@ PostBuild_Cmds=mkbootdisk
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
-LINK32=xilink6.exe
+LINK32=link.exe
 # ADD BASE LINK32 /nologo /base:"0x80000000" /entry:"start" /dll /pdb:none /map /machine:I386 /nodefaultlib /implib:"..\lib/krnl.lib" /fixed /comment:driver
 # ADD LINK32 /nologo /base:"0x80000000" /entry:"start" /dll /map /debug /machine:I386 /nodefaultlib /implib:"..\lib/krnl.lib" /fixed /comment:driver
 # SUBTRACT LINK32 /pdb:none

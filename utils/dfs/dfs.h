@@ -30,6 +30,7 @@ struct superblock
   unsigned int inodes_per_group;
   blkno_t first_reserved_block;
   unsigned int reserved_blocks;
+  unsigned int cache_buffers;
 };
 
 struct groupdesc

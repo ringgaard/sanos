@@ -41,6 +41,7 @@ int format_target()
   char *fstype;
   int blocksize;
   int quick;
+  int cache;
   char options[128];
   int rc;
 
@@ -48,8 +49,9 @@ int format_target()
   fstype = get_property(inst, "format", "fstype", "dfs");
   blocksize = get_numeric_property(inst, "format", "blocksize", 4096);
   quick = get_numeric_property(inst, "format", "quick", 0);
+  cache = get_numeric_property(inst, "format", "cache", 0);
 
-  sprintf(options, "blocksize=%d%s", blocksize, quick ? ",quick" : "");
+  sprintf(options, "blocksize=%d,cache=%d,%s", blocksize, cache, quick ? ",quick" : "");
   printf("Formatting device %s (%s)...\n", devname);
 
   // Format device

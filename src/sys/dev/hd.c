@@ -1089,7 +1089,6 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
 	kprintf("%s: partition %d on %s, %dMB (type %02x)\n", partnames[i], i, devname, mbr.parttab[i].numsect / (M / SECTORSIZE), mbr.parttab[i].systid);
       }
     }
-
   }
 }
 

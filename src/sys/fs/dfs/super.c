@@ -52,7 +52,7 @@ static int parse_options(char *opts, struct fsoptions *fsopts)
   char *p;
   char endch;
 
-  fsopts->cache = DEFAULT_CACHE_BUFFERS;
+  fsopts->cache = 0;
   fsopts->blocksize = DEFAULT_BLOCKSIZE;
   fsopts->inode_ratio = DEFAULT_INODE_RATIO;
   fsopts->quick = 0;
@@ -153,6 +153,13 @@ static struct filsys *create_filesystem(devno_t devno, struct fsoptions *fsopts)
   // Get the device size in sectors from the device and convert it to blocks
   fs->super->block_count =  sectcount / (fs->blocksize / SECTORSIZE);
 
+  // Set cache size
+  if (fsopts->cache == 0)
+    fs->super->cache_buffers = DEFAULT_CACHE_BUFFERS;
+  else
+    fs->super->cache_buffers = fsopts->cache;
+  if (fs->super->cache_buffers > fs->super->block_count) fs->super->cache_buffers = fs->super->block_count;
+
   // The number of inodes in a group is computed as a ratio of the size of the group.
   // If the device has only one group the inode count is based on size of device.
   // The number of inodes per block is then rounded up to fit a whole number of blocks.
@@ -191,7 +198,7 @@ static struct filsys *create_filesystem(devno_t devno, struct fsoptions *fsopts)
   }
 
   // Initialize buffer cache
-  fs->cache = init_buffer_pool(devno, (unsigned int) fsopts->cache < fs->super->block_count ? fsopts->cache : fs->super->block_count, fs->blocksize, dfs_sync, fs);
+  fs->cache = init_buffer_pool(devno, fs->super->cache_buffers, fs->blocksize, dfs_sync, fs);
   if (!fs->cache) return NULL;
 
   // Zero all blocks on disk
@@ -337,6 +344,7 @@ static struct filsys *open_filesystem(devno_t devno, struct fsoptions *fsopts)
   struct filsys *fs;
   struct groupdesc *gd;
   unsigned int i;
+  unsigned int cache_buffers;
 
   // Check device
   if (!device(devno)) return NULL;
@@ -381,7 +389,11 @@ static struct filsys *open_filesystem(devno_t devno, struct fsoptions *fsopts)
   fs->inodes_per_block = fs->blocksize / sizeof(struct inodedesc);
 
   // Initialize buffer cache
-  fs->cache = init_buffer_pool(devno, (unsigned int) fsopts->cache < fs->super->block_count ? fsopts->cache : fs->super->block_count, fs->blocksize, dfs_sync, fs);
+  cache_buffers = (unsigned int) fsopts->cache;
+  if (cache_buffers == 0) cache_buffers = fs->super->cache_buffers;
+  if (cache_buffers == 0) cache_buffers = DEFAULT_CACHE_BUFFERS;
+  if (cache_buffers > fs->super->block_count) cache_buffers = fs->super->block_count;
+  fs->cache = init_buffer_pool(devno, cache_buffers, fs->blocksize, dfs_sync, fs);
   if (!fs->cache) return NULL;
 
   // Calculate the number of group descriptors blocks
@@ -445,6 +457,7 @@ static void get_filesystem_status(struct filsys *fs, struct statfs *buf)
   buf->bfree = fs->super->free_block_count;
   buf->files = fs->super->inode_count;
   buf->ffree = fs->super->free_inode_count;
+  buf->cachesize = fs->cache->poolsize * fs->cache->bufsize;
 }
 
 int dfs_format(devno_t devno, char *opts)

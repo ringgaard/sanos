@@ -437,16 +437,17 @@ static void disk_usage(int argc, char **argv)
     return;
   }
 
-  printf("type  mounted on      mounted from        total     used    avail files\n");
-  printf("----  --------------- ---------------- -------- -------- -------- -----\n");
+  printf("type  mounted on    mounted from    cache    total     used    avail files\n");
+  printf("----  ------------- -------------- ------ -------- -------- -------- -----\n");
 
   for (n = 0; n < count; n++)
   {
     b = buf + n;
 
-    printf("%-6s%-16s%-16s", b->fstype, b->mntonname, b->mntfromname);
+    printf("%-6s%-14s%-14s", b->fstype, b->mntonname, b->mntfromname);
     if (b->blocks != -1)
     {
+      printf("%6dK", b->cachesize / K);
       printf("%8dK", b->blocks * (b->bsize / 512) / 2);
       printf("%8dK", (b->blocks - b->bfree) * (b->bsize / 512) / 2);
       printf("%8dK", b->bfree * (b->bsize / 512) / 2);

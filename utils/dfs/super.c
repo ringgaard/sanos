@@ -125,6 +125,10 @@ static struct filsys *create_filesystem(devno_t devno, int blocksize, int inode_
   // Get the device size in sectors from the device and convert it to blocks
   fs->super->block_count = dev_getsize(fs->devno) / (fs->blocksize / SECTORSIZE);
 
+  // Set cache size
+  fs->super->cache_buffers = CACHEBUFFERS;
+  if (fs->super->cache_buffers > fs->super->block_count) fs->super->cache_buffers = 64;
+
   // The number of inodes in a group is computed as a ratio of the size of group
   fs->inodes_per_block = fs->blocksize / sizeof(struct inodedesc);
   if (fs->super->blocks_per_group < fs->super->block_count)
