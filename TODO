@@ -1,9 +1,7 @@
 TODO for sanos
 --------------
 
-- Update TCP implementation with changes from lwIP 0.5.3 to 0.6.4
-   - While loop in line 678 has been moved to after while loop in line 697 in lwIP 0.6.4 in tcp_receive()
-   - Revisit fast retransmit in tcp_receive() according to lwIP 0.6.4
+- Improve sysalloc() in heap.c to enable dynamic expansion of vilderness region.
 
 - Add IOEVT_ERROR to readfds in select() and checkfds() to trigger event for read sockets when connection has been reset
 

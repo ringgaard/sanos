@@ -238,7 +238,7 @@ typedef struct chunk *mchunkptr;
 
 #define inuse(p) ((((mchunkptr) (((char *) (p))+((p)->size & ~PREV_INUSE)))->size) & PREV_INUSE)
 
-// set/clear chunk as being inuse without otherwise disturbing
+// Set/clear chunk as being inuse without otherwise disturbing
 
 #define set_inuse(p) ((mchunkptr) (((char *) (p)) + ((p)->size & ~PREV_INUSE)))->size |= PREV_INUSE
 #define clear_inuse(p) ((mchunkptr) (((char *) (p)) + ((p)->size & ~PREV_INUSE)))->size &= ~(PREV_INUSE)
@@ -341,10 +341,10 @@ typedef struct chunk *mbinptr;
 //  64 bins of size       8
 //  32 bins of size      64
 //  16 bins of size     512
-//  8 bins of size    4096
-//  4 bins of size   32768
-//  2 bins of size  262144
-//  1 bin  of size what's left
+//   8 bins of size    4096
+//   4 bins of size   32768
+//   2 bins of size  262144
+//   1 bin  of size what's left
 // 
 // There is actually a little bit of slop in the numbers in bin_index
 // for the sake of speed. This makes no difference elsewhere.
@@ -425,11 +425,11 @@ typedef struct chunk *mbinptr;
 #define BINMAPSIZE       (NBINS / BITSPERMAP)
 
 #define idx2block(i)     ((i) >> BINMAPSHIFT)
-#define idx2bit(i)       ((1U << ((i) & ((1U << BINMAPSHIFT)-1))))
+#define idx2bit(i)       ((1U << ((i) & ((1U << BINMAPSHIFT) - 1))))
 
-#define mark_bin(m,i)    ((m)->binmap[idx2block(i)] |=  idx2bit(i))
+#define mark_bin(m,i)    ((m)->binmap[idx2block(i)] |= idx2bit(i))
 #define unmark_bin(m,i)  ((m)->binmap[idx2block(i)] &= ~(idx2bit(i)))
-#define get_binmap(m,i)  ((m)->binmap[idx2block(i)] &   idx2bit(i))
+#define get_binmap(m,i)  ((m)->binmap[idx2block(i)] & idx2bit(i))
 
 // 
 // Fastbins
@@ -563,11 +563,10 @@ struct heap
 static struct heap mainheap;  // never directly referenced
 
 // 
-// All uses of av_ are via get_malloc_state().
+// All uses of mainheap are via get_malloc_state().
 // At most one "call" to get_malloc_state is made per invocation of
 // the public versions of malloc and free, but other routines
 // that in turn invoke malloc and/or free may call more then once. 
-// Also, it is called in check* routines if DEBUG is set.
 // 
 
 #define get_malloc_state() (&(mainheap))
@@ -584,7 +583,7 @@ static struct heap mainheap;  // never directly referenced
 
 static heap_init(struct heap *av)
 {
-  int     i;
+  int i;
   mbinptr bin;
 
   // Establish circular links for normal bins
@@ -594,16 +593,14 @@ static heap_init(struct heap *av)
     bin->fd = bin->bk = bin;
   }
 
-  av->top_pad        = DEFAULT_TOP_PAD;
-  av->n_mmaps_max    = DEFAULT_MMAP_MAX;
+  av->top_pad = DEFAULT_TOP_PAD;
+  av->n_mmaps_max = DEFAULT_MMAP_MAX;
   av->mmap_threshold = DEFAULT_MMAP_THRESHOLD;
   av->trim_threshold = DEFAULT_TRIM_THRESHOLD;
 
   //set_noncontiguous(av);
-
   set_max_fast(av, DEFAULT_MXFAST);
-
-  av->top            = initial_top(av);
+  av->top = initial_top(av);
 }
 
 //
@@ -618,24 +615,25 @@ static heap_init(struct heap *av)
 // Also, because this routine needs to be called the first time through
 // malloc anyway, it turns out to be the perfect place to trigger
 // initialization code.
+//
 
 static void heap_consolidate(struct heap *av)
 {
-  mfastbinptr *   fb;                 // Current fastbin being consolidated
-  mfastbinptr *   maxfb;              // Last fastbin (for loop control)
-  mchunkptr       p;                  // Current chunk being consolidated
-  mchunkptr       nextp;              // Next chunk to consolidate
-  mchunkptr       unsorted_bin;       // Bin header
-  mchunkptr       first_unsorted;     // chunk to link to
+  mfastbinptr *fb;          // Current fastbin being consolidated
+  mfastbinptr *maxfb;       // Last fastbin (for loop control)
+  mchunkptr p;              // Current chunk being consolidated
+  mchunkptr nextp;          // Next chunk to consolidate
+  mchunkptr unsorted_bin;   // Bin header
+  mchunkptr first_unsorted; // Chunk to link to
 
   // These have same use as in free()
-  mchunkptr       nextchunk;
-  size_t          size;
-  size_t          nextsize;
-  size_t          prevsize;
-  int             nextinuse;
-  mchunkptr       bck;
-  mchunkptr       fwd;
+  mchunkptr nextchunk;
+  size_t size;
+  size_t nextsize;
+  size_t prevsize;
+  int nextinuse;
+  mchunkptr bck;
+  mchunkptr fwd;
 
   // If max_fast is 0, we know that av hasn't yet been initialized, in which case do so below
   if (av->max_fast != 0) 
@@ -724,13 +722,13 @@ static char *heapend = NULL;
 
 static void *sysalloc(size_t nb, struct heap *av)
 {
-  mchunkptr       top;             // incoming value of av->top
-  size_t          size;            // its size
-  size_t          newsize;
-  mchunkptr       p;               // the allocated/returned chunk
-  mchunkptr       remainder;       // remainder from allocation
-  unsigned long   remainder_size;  // its size
-  size_t          expand;
+  mchunkptr top;                // Incoming value of av->top
+  size_t size;                  // Its size
+  size_t newsize;
+  mchunkptr p;                  // The allocated/returned chunk
+  mchunkptr remainder;          // Remainder from allocation
+  unsigned long remainder_size; // Its size
+  size_t expand;
 
   // Allocate big chunks directly from system
   if (nb >= av->mmap_threshold && av->n_mmaps < av->n_mmaps_max) 
@@ -831,24 +829,24 @@ void *heap_alloc(size_t bytes)
 {
   struct heap *av = get_malloc_state();
 
-  size_t          nb;               // normalized request size
-  unsigned int    idx;              // associated bin index
-  mbinptr         bin;              // associated bin
-  mfastbinptr*    fb;               // associated fastbin
+  size_t nb;                    // Normalized request size
+  unsigned int idx;             // Associated bin index
+  mbinptr bin;                  // Associated bin
+  mfastbinptr *fb;              // Associated fastbin
 
-  mchunkptr       victim;           // inspected/selected chunk
-  size_t          size;             // its size
-  int             victim_index;     // its bin index
+  mchunkptr victim;             // Inspected/selected chunk
+  size_t size;                  // Its size
+  int victim_index;             // Its bin index
 
-  mchunkptr       remainder;        // remainder from a split
-  unsigned long   remainder_size;   // its size
+  mchunkptr remainder;          // Remainder from a split
+  unsigned long remainder_size; // Its size
 
-  unsigned int    block;            // bit map traverser
-  unsigned int    bit;              // bit map traverser
-  unsigned int    map;              // current word of binmap
+  unsigned int block;            // Bit map traverser
+  unsigned int bit;              // Bit map traverser
+  unsigned int map;              // Current word of binmap
 
-  mchunkptr       fwd;              // misc temp for linking
-  mchunkptr       bck;              // misc temp for linking
+  mchunkptr fwd;                 // Misc temp for linking
+  mchunkptr bck;                 // Misc temp for linking
 
   // Convert request size to internal form by adding sizeof(size_t) bytes
   // overhead plus possibly more to obtain necessary alignment and/or
@@ -884,7 +882,7 @@ void *heap_alloc(size_t bytes)
 
     if ((victim = last(bin)) != bin) 
     {
-      if (victim == 0) // initialization check
+      if (victim == 0) // Initialization check
         heap_consolidate(av);
       else 
       {
@@ -926,7 +924,6 @@ void *heap_alloc(size_t bytes)
     
   for(;;) 
   {    
-    
     while ((victim = unsorted_chunks(av)->bk) != unsorted_chunks(av)) 
     {
       bck = victim->bk;
@@ -940,7 +937,7 @@ void *heap_alloc(size_t bytes)
 
       if (in_smallbin_range(nb) && bck == unsorted_chunks(av) && victim == av->last_remainder && size > nb + MINSIZE)
       {
-        // split and reattach remainder
+        // Split and reattach remainder
         remainder_size = size - nb;
         remainder = chunk_at_offset(victim, nb);
         unsorted_chunks(av)->bk = unsorted_chunks(av)->fd = remainder;
@@ -1160,7 +1157,7 @@ void *heap_alloc(size_t bytes)
     {
       assert(in_smallbin_range(nb));
       heap_consolidate(av);
-      idx = smallbin_index(nb); // restore original bin index
+      idx = smallbin_index(nb); // Restore original bin index
     }
     else 
       // Otherwise, relay to handle system-dependent cases 
@@ -1176,15 +1173,15 @@ void heap_free(void *mem)
 {
   struct heap *av = get_malloc_state();
 
-  mchunkptr       p;           // chunk corresponding to mem
-  size_t          size;        // its size
-  mfastbinptr*    fb;          // associated fastbin
-  mchunkptr       nextchunk;   // next contiguous chunk
-  size_t          nextsize;    // its size
-  int             nextinuse;   // true if nextchunk is used
-  size_t          prevsize;    // size of previous contiguous chunk
-  mchunkptr       bck;         // misc temp for linking
-  mchunkptr       fwd;         // misc temp for linking
+  mchunkptr p;         // Chunk corresponding to mem
+  size_t size;         // Its size
+  mfastbinptr *fb;     // Associated fastbin
+  mchunkptr nextchunk; // Next contiguous chunk
+  size_t nextsize;     // Its size
+  int nextinuse;       // True if nextchunk is used
+  size_t prevsize;     // Size of previous contiguous chunk
+  mchunkptr bck;       // Misc temp for linking
+  mchunkptr fwd;       // Misc temp for linking
 
   // free(0) has no effect
   if (mem != 0) 
@@ -1306,22 +1303,22 @@ void *heap_realloc(void *oldmem, size_t bytes)
 {
   struct heap *av = get_malloc_state();
 
-  size_t           nb;              // padded request size
+  size_t nb;                   // Padded request size
 
-  mchunkptr        oldp;            // chunk corresponding to oldmem
-  size_t           oldsize;         // its size
+  mchunkptr oldp;               // Chunk corresponding to oldmem
+  size_t oldsize;               // Its size
 
-  mchunkptr        newp;            // chunk to return
-  size_t           newsize;         // its size
-  void *           newmem;          // corresponding user mem
+  mchunkptr newp;               // Chunk to return
+  size_t newsize;               // Its size
+  void *newmem;                 // Corresponding user mem
 
-  mchunkptr        next;            // next contiguous chunk after oldp
+  mchunkptr next;               // Next contiguous chunk after oldp
 
-  mchunkptr        remainder;       // extra space at end of newp
-  unsigned long    remainder_size;  // its size
+  mchunkptr remainder;          // Extra space at end of newp
+  unsigned long remainder_size; // Its size
 
-  mchunkptr        bck;             // misc temp for linking
-  mchunkptr        fwd;             // misc temp for linking
+  mchunkptr bck;                // Misc temp for linking
+  mchunkptr fwd;                // Misc temp for linking
 
   if (bytes == 0)
   {
@@ -1339,7 +1336,6 @@ void *heap_realloc(void *oldmem, size_t bytes)
 
   if (!chunk_is_mmapped(oldp)) 
   {
-
     if (oldsize >= nb) 
     {
       // Already big enough; split below
@@ -1395,13 +1391,13 @@ void *heap_realloc(void *oldmem, size_t bytes)
 
     if (remainder_size < MINSIZE) 
     {
-      // not enough extra to split off
+      // Not enough extra to split off
       set_head_size(newp, newsize);
       set_inuse_bit_at_offset(newp, newsize);
     }
     else 
     { 
-      // split remainder
+      // Split remainder
       remainder = chunk_at_offset(newp, nb);
       set_head_size(newp, nb);
       set_head(remainder, remainder_size | PREV_INUSE);
@@ -1425,19 +1421,19 @@ void *heap_realloc(void *oldmem, size_t bytes)
     // Note the extra sizeof(size_t) overhead
     newsize = (nb + offset + sizeof(size_t) + pagemask) & ~pagemask;
 
-    // don't need to remap if still within same page
+    // Don't need to remap if still within same page
     if (oldsize == newsize - offset) return oldmem;
 
     cp = (char *) mremap((char *) oldp - offset, oldsize + offset, newsize, 1);
-    if (cp != (char*)MORECORE_FAILURE) 
+    if (cp != (char *) MORECORE_FAILURE) 
     {
-      newp = (mchunkptr)(cp + offset);
+      newp = (mchunkptr) (cp + offset);
       set_head(newp, (newsize - offset) | IS_MMAPPED);
       
       assert(aligned(chunk2mem(newp)));
       assert((newp->prev_size == offset));
       
-      // update statistics
+      // Update statistics
       sum = av->mmapped_mem += newsize - oldsize;
       if (sum > av->max_mmapped_mem) av->max_mmapped_mem = sum;
       sum += av->sbrked_mem;
@@ -1491,6 +1487,7 @@ void *heap_calloc(size_t n_elements, size_t elem_size)
 struct mallinfo heap_mallinfo()
 {
   struct heap *av = get_malloc_state();
+
   struct mallinfo mi;
   int i;
   mbinptr b;
