@@ -263,6 +263,9 @@
 					RelativePath="..\src\include\netinet\in.h">
 				</File>
 				<File
+					RelativePath="..\src\include\netinet\in_systm.h">
+				</File>
+				<File
 					RelativePath="..\src\include\netinet\tcp.h">
 				</File>
 			</Filter>

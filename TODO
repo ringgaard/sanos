@@ -604,3 +604,5 @@ CHANGES
 - chsize{64} renamed to ftruncate{64} and added to unistd.h
 
 - flush() renamed to fsync() and added to unistd.h
+
+- Added strtok_r()

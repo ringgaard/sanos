@@ -84,9 +84,6 @@ typedef loff_t off_t;
 #ifndef _STAT_DEFINED
 #define _STAT_DEFINED
 
-#ifdef LARGEFILES
-#define stat stat64
-#else
 struct stat
 {
   dev_t st_dev;
@@ -101,7 +98,6 @@ struct stat
   time_t st_mtime;
   time_t st_ctime;
 };
-#endif
 
 struct stat64
 {
@@ -165,8 +161,8 @@ extern "C" {
 #endif
 
 #ifdef LARGEFILES
-#define fstat(f, buffer) fstat64((f), (buffer))
-#define stat(name, buffer) fstat64((name), (buffer))
+#define fstat fstat64
+#define stat stat64
 #else
 osapi int fstat(handle_t f, struct stat *buffer);
 osapi int stat(const char *name, struct stat *buffer);

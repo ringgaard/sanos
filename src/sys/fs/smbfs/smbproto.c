@@ -350,14 +350,14 @@ int smb_connect(struct smb_share *share)
   char *p;
   char buf[SMB_NAMELEN];
 
-  // Connect to SMB server on port 445
+  // Connect to SMB server
   rc = socket(AF_INET, SOCK_STREAM, IPPROTO_IP, &server->sock);
   if (rc < 0) return rc;
 
   memset(&sin, 0, sizeof(sin));
   sin.sin_family = AF_INET;
   sin.sin_addr.s_addr = server->ipaddr.addr;
-  sin.sin_port = htons(445);
+  sin.sin_port = htons(server->port);
   
   rc = connect(server->sock, (struct sockaddr *) &sin, sizeof(sin));
   if (rc < 0) goto error;
@@ -435,7 +435,7 @@ int smb_disconnect(struct smb_share *share)
   return 0;
 }
 
-int smb_get_connection(struct smb_share *share, struct ip_addr *ipaddr, char *domain, char *username, char *password)
+int smb_get_connection(struct smb_share *share, struct ip_addr *ipaddr, unsigned short port, char *domain, char *username, char *password)
 {
   struct smb_server *server;
   int rc;
@@ -444,7 +444,7 @@ int smb_get_connection(struct smb_share *share, struct ip_addr *ipaddr, char *do
   server = servers;
   while (server)
   {
-    if (ip_addr_cmp(&server->ipaddr, ipaddr))
+    if (ip_addr_cmp(&server->ipaddr, ipaddr) && server->port == port)
     {
       // Add share to server
       share->server = server;
@@ -464,6 +464,7 @@ int smb_get_connection(struct smb_share *share, struct ip_addr *ipaddr, char *do
   memset(server, 0, sizeof(struct smb_server));
 
   server->ipaddr = *ipaddr;
+  server->port = port;
   strcpy(server->domain, domain); 
   strcpy(server->username, username); 
   strcpy(server->password, password);

@@ -82,6 +82,7 @@ char *strnset(char *s, int c, size_t count);
 char *strset(char *s, int c);
 char *strrev(char *s);
 char *strtok(char *string, const char *control);
+char *strtok_r(char *string, const char *control, char **lasts);
 
 char *strerror(int errnum);
 

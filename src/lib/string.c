@@ -346,9 +346,7 @@ char *strrev(char *s)
   return start;
 }
 
-#ifndef KERNEL
-
-char *strtok(char *string, const char *control)
+char *strtok_r(char *string, const char *control, char **lasts)
 {
   unsigned char *str;
   const unsigned char *ctrl = control;
@@ -368,7 +366,7 @@ char *strtok(char *string, const char *control)
   if (string)
     str = string;
   else
-    str = gettib()->nexttoken;
+    str = *lasts;
 
   // Find beginning of token (skip over leading delimiters). Note that
   // there is no token iff this loop sets str to point to the terminal
@@ -390,13 +388,20 @@ char *strtok(char *string, const char *control)
   }
 
   // Update nexttoken
-  gettib()->nexttoken = str;
+  *lasts = str;
 
   // Determine if a token has been found.
   if (string == str)
     return NULL;
   else
     return string;
+}
+
+#ifndef KERNEL
+
+char *strtok(char *string, const char *control)
+{
+  return strtok_r(string, control, &gettib()->nexttoken);
 }
 
 #endif

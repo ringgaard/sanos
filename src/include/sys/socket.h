@@ -89,6 +89,11 @@ struct linger
 
 #endif
 
+#ifndef _SOCKLEN_T_DEFINED
+#define _SOCKLEN_T_DEFINED
+typedef int socklen_t;
+#endif
+
 #define SOCK_STREAM     1
 #define SOCK_DGRAM      2
 #define SOCK_RAW        3
@@ -96,6 +101,7 @@ struct linger
 #define SOL_SOCKET      0xffff
 
 #define SO_REUSEADDR    0x0004
+#define SO_KEEPALIVE    0x0008
 #define SO_BROADCAST    0x0020
 #define SO_SNDTIMEO     0x1005
 #define SO_RCVTIMEO     0x1006

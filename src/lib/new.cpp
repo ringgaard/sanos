@@ -50,7 +50,6 @@ void *operator new(unsigned int size)
 {
   void *p;
 
-  TRACE("new");
   p = malloc(size);
   if (p) memset(p, 0, size);
   return p;
@@ -58,6 +57,5 @@ void *operator new(unsigned int size)
 
 void operator delete(void *p)
 {
-  TRACE("delete");
   if (p) free(p);
 }

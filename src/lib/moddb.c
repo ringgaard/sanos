@@ -625,7 +625,7 @@ static int remove_module(struct module *mod)
   if (mod->flags & MODULE_LOADED)
   {
     mod->db->unload_image(mod->hmod, imghdr->optional.size_of_image);
-    mod->flags &= ~MODULE_IMPORTS_REFED;
+    mod->flags &= ~MODULE_LOADED;
   }
 
   // Notify

@@ -186,6 +186,7 @@
 
 //
 // SMB access mask
+//
 
 #define SMB_ACCESS_DELETE               0x00010000
 #define SMB_ACCESS_READ_CONTROL         0x00020000
@@ -915,9 +916,9 @@ struct smb_file_directory_info
   char filename[0];			// Name of the file
 };
 
-struct smb_share;
-
 #pragma pack(pop)
+
+struct smb_share;
 
 //
 // SMB directory entry
@@ -961,6 +962,7 @@ struct smb_directory
 struct smb_server
 {
   struct ip_addr ipaddr;
+  unsigned short port;
   struct socket *sock;
   char username[SMB_NAMELEN];
   char password[SMB_NAMELEN];
@@ -1029,7 +1031,7 @@ int smb_disconnect_tree(struct smb_share *share);
 int smb_connect(struct smb_share *share);
 int smb_disconnect(struct smb_share *share);
 
-int smb_get_connection(struct smb_share *share, struct ip_addr *ipaddr, char *domain, char *username, char *password);
+int smb_get_connection(struct smb_share *share, struct ip_addr *ipaddr, unsigned short port, char *domain, char *username, char *password);
 int smb_release_connection(struct smb_share *share);
 
 int smb_check_connection(struct smb_share *share);

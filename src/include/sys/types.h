@@ -138,8 +138,10 @@ typedef int gid_t;
 #endif
 #endif
 
+#ifndef _ONLY_STD_TYPES
 #define K 1024
 #define M (K * K)
+#endif
 
 #ifndef FALSE
 #define FALSE 0

@@ -59,6 +59,7 @@ int smb_mount(struct fs *fs, char *opts)
   char domain[SMB_NAMELEN];
   struct smb_share *share;
   int rc;
+  unsigned short port;
 
   // Get options
   ipaddr.addr = get_num_option(opts, "addr", IP_ADDR_ANY);
@@ -66,6 +67,7 @@ int smb_mount(struct fs *fs, char *opts)
   get_option(opts, "user", username, sizeof(username), "sanos");
   get_option(opts, "domain", domain, sizeof(domain), "");
   get_option(opts, "password", password, sizeof(password), "");
+  port = get_num_option(opts, "port", 445);
 
   // Check arguments
   if (!fs->mntfrom) return -EINVAL;
@@ -94,7 +96,7 @@ int smb_mount(struct fs *fs, char *opts)
   strcpy(share->sharename, fs->mntfrom);
 
   // Get connection to server
-  rc = smb_get_connection(share, &ipaddr, domain, username, password);
+  rc = smb_get_connection(share, &ipaddr, port, domain, username, password);
   if (rc < 0)
   {
     kfree(share);
