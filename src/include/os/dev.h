@@ -95,6 +95,8 @@ struct unit
 
   unsigned long classcode;
   unsigned long unitcode;
+  unsigned long subunitcode;
+  unsigned long revision;
   unsigned long unitno;
 
   char *classname;

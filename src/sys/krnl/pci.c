@@ -261,6 +261,7 @@ void enum_pci_bus(struct bus *bus)
   unsigned long vendorid;
   unsigned long deviceid;
   unsigned long classcode;
+  unsigned long revision;
   struct unit *unit;
   unsigned long prev_deviceid;
 
@@ -282,6 +283,7 @@ void enum_pci_bus(struct bus *bus)
       // Function class code
       value = pci_config_read_long(bus->busno, devno, funcno, PCI_CONFIG_CLASS_REV);
       classcode = value >> 8;
+      revision = value & 0xFF;
 
       // Register new unit, host bridge is a special case
       if (bus->busno == 0 && devno == 0 && funcno == 0 && bus->self)
@@ -290,6 +292,11 @@ void enum_pci_bus(struct bus *bus)
         unit = add_unit(bus, classcode, PCI_UNITCODE(vendorid, deviceid), PCI_UNITNO(devno, funcno));
       
       unit->classname = get_pci_class_name(classcode);
+      unit->revision = revision;
+
+      // Subsystem id
+      value = pci_config_read_long(bus->busno, devno, funcno, PCI_CONFIG_SUBSYSTEM);
+      unit->subunitcode = PCI_UNITCODE(value & 0xFFFF, value >> 16);
 
       if (classcode == PCI_BRIDGE)
       {
