@@ -359,6 +359,7 @@ struct tib
   unsigned long unknown2;
 
   void *tlsbase;                   // Pointer to TLS array
+  struct peb *peb;                 // Process environment block
 
   void *stackbase;                 // Lowest reserved address of the threads stack
   int errnum;                      // Per thread last error
@@ -369,7 +370,7 @@ struct tib
   handle_t out;                    // Thread specific stdout
   handle_t err;                    // Thread specific stderr
 
-  char reserved1[3524];
+  char reserved1[3520];
 
   void *tls[MAX_TLS];              // Thread local storage
   char reserved2[240];
