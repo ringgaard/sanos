@@ -860,7 +860,12 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	}
 
 	// Acknowledge the segment(s)
-	tcp_ack(pcb);
+	// RFC 813 suggests that we should postpone the acknowledge if:
+	//   1) The push bit is not set in the segment.
+	//   2) There is no revised window to information to be sent back.
+
+	if (TCPH_FLAGS(seg->tcphdr) & TCP_PSH) tcp_ack_now(pcb); //TODO: only if we advertise a substantially larger window
+	//tcp_ack(pcb);
       } 
       else 
       {

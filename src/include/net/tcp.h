@@ -138,12 +138,12 @@ struct tcp_pcb
   // Retransmission timer
   int rtime;
   
-  unsigned short mss;     // Maximum segment size
+  int mss;                 // Maximum segment size
 
   int flags;
   
   // RTT estimation variables
-  unsigned short rttest;  // RTT estimate in 500ms ticks
+  unsigned long rttest;   // RTT estimate in 500ms ticks
   unsigned long rtseq;    // sequence number being timed
   int sa, sv;
 

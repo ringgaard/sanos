@@ -244,7 +244,7 @@ void tcp_recved(struct tcp_pcb *pcb, int len)
   if (pcb->rcv_wnd > TCP_WND) pcb->rcv_wnd = TCP_WND;
   if (!(pcb->flags & TF_ACK_DELAY) ||!(pcb->flags & TF_ACK_NOW)) tcp_ack(pcb);
 
-  kprintf("tcp_recved: received %d bytes, wnd %u (%u).\n", len, pcb->rcv_wnd, TCP_WND - pcb->rcv_wnd);
+  //kprintf("tcp_recved: received %d bytes, wnd %u (%u).\n", len, pcb->rcv_wnd, TCP_WND - pcb->rcv_wnd);
 }
 
 //
@@ -393,7 +393,7 @@ void tcp_slowtmr(void *arg)
         // Reduce congestion window and ssthresh
         eff_wnd = MIN(pcb->cwnd, pcb->snd_wnd);
         pcb->ssthresh = eff_wnd >> 1;
-        if (pcb->ssthresh < pcb->mss) pcb->ssthresh = pcb->mss * 2;
+        if (pcb->ssthresh < (unsigned long) pcb->mss) pcb->ssthresh = pcb->mss * 2;
         pcb->cwnd = pcb->mss;
 
         kprintf("tcp_rexmit_seg: cwnd %u ssthresh %u\n", pcb->cwnd, pcb->ssthresh);
