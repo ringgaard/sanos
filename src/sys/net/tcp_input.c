@@ -908,7 +908,7 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
       {
 	// We get here if the incoming segment is out-of-sequence.
         pcb->flags |= TF_ACK_NOW;
-	kprintf("tcp_receive: out-of-order segment received\n");
+	//kprintf("tcp_receive: out-of-order segment received\n");
 
 	// We queue the segment on the ->ooseq queue
 	if (pcb->ooseq == NULL) 

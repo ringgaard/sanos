@@ -21,8 +21,6 @@ TODO for sanos
 
 - Add support for shared interrupts to driver isr handlers
 
-- Fix bug in TCP retransmission
-
 - Use bitmap for port number handling
 
 - Multicast filtering support in network drivers
@@ -109,4 +107,6 @@ CHANGES
     - Map winsock errors in wsock32.c
     - Go through each Winsock error and check net code for compliance
 
- - Implemented main entry in libc with parseargs
+- Implemented main entry in libc with parseargs
+
+- Fixed bug in TCP retransmission

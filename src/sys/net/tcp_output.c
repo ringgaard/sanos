@@ -532,6 +532,7 @@ void tcp_rexmit_seg(struct tcp_pcb *pcb, struct tcp_seg *seg)
   // the lower protocol layers, and we need to adjust the payload pointer
   // and length before resubmitting the packet. It is assummed that the
   // first buffer contains all the headers.
+
   offset = (char *) seg->p->payload - (char *) seg->tcphdr;
   pbuf_header(seg->p, offset);
 
@@ -550,7 +551,8 @@ void tcp_rexmit_seg(struct tcp_pcb *pcb, struct tcp_seg *seg)
   //tcp_debug_print(seg->tcphdr);
 
   pbuf_ref(seg->p);
-  if (ip_output_if(seg->p, NULL, IP_HDRINCL, TCP_TTL, IP_PROTO_TCP, netif) < 0) pbuf_free(seg->p);
+  //if (ip_output_if(seg->p, NULL, IP_HDRINCL, TCP_TTL, IP_PROTO_TCP, netif) < 0) pbuf_free(seg->p);
+  if (ip_output_if(seg->p, &pcb->local_ip, &pcb->remote_ip, TCP_TTL, IP_PROTO_TCP, netif) < 0) pbuf_free(seg->p);
 
   stats.tcp.xmit++;
   stats.tcp.rexmit++;

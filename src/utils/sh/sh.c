@@ -832,7 +832,7 @@ static int httpget(char *server, char *path, char *filename)
   buf = malloc(8*K);
   if (!buf) return -ENOMEM;
 
-  sprintf(buf, "GET %s HTTP/1.0\r\n\r\n", path);
+  sprintf(buf, "GET %s HTTP/1.0\r\nHost: %s\r\n\r\n", path, server);
   rc = send(s, buf, strlen(buf), 0);
   if (rc < 0)
   {
