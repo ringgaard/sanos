@@ -39,6 +39,8 @@
 
 #include "resolv.h"
 
+int sprintf(char *buf, const char *fmt, ...);
+
 struct res_state res;
 
 static int res_nsend(struct res_state *statp, const char *buf, int buflen, char *answer, int anslen);

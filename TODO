@@ -86,8 +86,6 @@ IDEAS for new features
     - Large file support
     - Support for mode flags (drwxrwxrwx)
     - Support for owner and group
-    
-- Thread groups
 
 - Implement SOCK_RAW socket type
 
@@ -314,4 +312,6 @@ CHANGES
   of threads. This problem has been fixed, by linking the threads on the ready queues in double
   linked lists and introducing new thread states. Now only threads in ready state are in the
   ready queues.
+
+- Added job object to group threads executing an application
  

@@ -42,7 +42,7 @@
 //#define sockapi __declspec(dllexport)
 #define sockapi
 
-#define SIO_GET_INTERFACE_LIST  _IOR('t', 127, unsigned long)
+#define SIO_GET_INTERFACE_LIST  _IOCR('t', 127, unsigned long)
 
 #define WSADESCRIPTION_LEN      256
 #define WSASYS_STATUS_LEN       128

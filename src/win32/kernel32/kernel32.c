@@ -41,6 +41,8 @@
 #include <inifile.h>
 #include <win32.h>
 
+int sprintf(char *buf, const char *fmt, ...);
+
 #define MAX_VADS        256
 
 #define EPOC            116444736000000000     // 00:00:00 GMT on January 1, 1970

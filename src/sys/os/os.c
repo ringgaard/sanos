@@ -55,6 +55,8 @@ struct peb *peb;
 unsigned long loglevel = LOG_DEBUG | LOG_APITRACE | LOG_AUX | LOG_MODULE;
 int logfile = -1;
 
+int vsprintf(char *buf, const char *fmt, va_list args);
+
 void init_sntpd();
 void init_threads(hmodule_t hmod);
 

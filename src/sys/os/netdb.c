@@ -39,6 +39,8 @@
 
 #include "resolv.h"
 
+int sprintf(char *buf, const char *fmt, ...);
+
 //
 // Protocol aliases
 //

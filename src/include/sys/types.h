@@ -103,6 +103,11 @@ typedef void *hmodule_t;
 typedef unsigned long tls_t;
 #endif
 
+#ifndef _WCHAR_T_DEFINED
+#define _WCHAR_T_DEFINED
+typedef unsigned short wchar_t;
+#endif
+
 typedef int port_t;
 typedef int err_t;
 

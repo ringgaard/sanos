@@ -154,6 +154,11 @@ int get_num_option(char *opts, char *name, int defval);
 
 unsigned long strtoul(const char *nptr, char **endptr, int ibase);
 
+// vsprintf.c
+
+int vsprintf(char *buf, const char *fmt, va_list args);
+int sprintf(char *buf, const char *fmt, ...);
+
 // Intrinsic i/o functions
 
 int __cdecl _inp(port_t);

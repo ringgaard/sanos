@@ -36,6 +36,8 @@
 #include <os/syscall.h>
 #include <os/cpu.h>
 
+int sprintf(char *buf, const char *fmt, ...);
+
 __declspec(naked) int syscall(int syscallno, void *params)
 {
   __asm

@@ -34,6 +34,8 @@
 #include <os.h>
 #include <stdlib.h>
 
+void init_stdio();
+
 typedef void (__cdecl *proc_t)(void);
 typedef int (__cdecl *func_t)(void);
 
@@ -128,6 +130,9 @@ static int inittermi(func_t *begin, func_t *end)
 static int initcrt()
 {
   int rc;
+
+  // Initialize stdio
+  init_stdio();
 
   // Execute C initializers
   rc = inittermi(__xi_a, __xi_z);

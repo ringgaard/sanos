@@ -95,7 +95,10 @@ typedef unsigned int size_t;
 typedef long fpos_t;
 #endif
 
+#ifndef _WCHAR_T_DEFINED
+#define _WCHAR_T_DEFINED
 typedef unsigned short wchar_t;
+#endif
 
 typedef unsigned short wint_t;
 typedef unsigned short wctype_t;

@@ -43,6 +43,8 @@
 #include <os/krnl.h>
 #endif
 
+int vsprintf(char *buf, const char *fmt, va_list args);
+
 static void logmsg(struct moddb *db, const char *fmt, ...)
 {
   va_list args;
