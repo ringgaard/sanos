@@ -751,8 +751,6 @@ void dispatch_dpc_queue()
     arg = dpc->arg;
     clear_bit(&dpc->flags, DPC_QUEUED_BIT);
  
-    if ((dpc->flags & DPC_NORAND) == 0) add_dpc_randomness(dpc);
-
     if ((dpc->flags & DPC_EXECUTING) == 0)
     {
       set_bit(&dpc->flags, DPC_EXECUTING_BIT);
@@ -760,11 +758,12 @@ void dispatch_dpc_queue()
       clear_bit(&dpc->flags, DPC_EXECUTING_BIT);
       dpc_total++;
     }
+ 
+    if ((dpc->flags & DPC_NORAND) == 0) add_dpc_randomness(dpc);
   }
 
   in_dpc = 0;
 }
-
 
 static int find_highest_bit(unsigned mask)
 {

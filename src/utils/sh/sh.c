@@ -337,6 +337,59 @@ static void display_file(char *filename)
   close(file);
 }
 
+static void dump_file(int argc, char *argv[])
+{
+  char *filename;
+  int fd;
+  unsigned char buf[16];
+  int pos;
+  int count;
+  int line;
+  int i;
+  char ch;
+
+  if (argc != 2)
+  {
+    printf("usage: dump <file>\n");
+    return;
+  }
+  filename = argv[1];
+
+  if ((fd = open(filename, O_BINARY)) < 0)
+  {
+    printf("%s: %s\n", filename, strerror(fd));
+    return;
+  }
+
+  line = 0;
+  pos = 0;
+  while ((count = read(fd, buf, 16)) > 0)
+  {
+    printf("%08X ", pos);
+    for (i = 0; i < count; i++) printf("%02X ", buf[i]);
+    for (i = count; i < 16; i++) printf("   ");
+    for (i = 0; i < count; i++) printf("%c", buf[i] < 0x20 ? '.' : buf[i]);
+    printf("\n");
+
+    if (line == 23)
+    {
+      while (read(fdin, &ch, 1) <= 0);
+      if (ch == 'x')
+      {
+	close(fd);
+	return;
+      }
+      line = 0;
+    }
+    else
+      line++;
+
+    pos += count;
+  }
+
+  close(fd);
+}
+
 static void show_date(int argc, char *argv[])
 {
   time_t t;
@@ -1584,6 +1637,8 @@ void shell()
 	disk_usage(argc, argv);
       else if (strcmp(argv[0], "date") == 0)
 	show_date(argc, argv);
+      else if (strcmp(argv[0], "dump") == 0)
+	dump_file(argc, argv);
       else if (strcmp(argv[0], "read") == 0)
 	test_read_file(argv[1]);
       else if (strcmp(argv[0], "more") == 0)

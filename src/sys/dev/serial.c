@@ -689,6 +689,8 @@ static void init_serial_port(char *devname, int iobase, int irq, struct unit *un
   sp->cfg.tx_timeout = INFINITE;
 
   init_dpc(&sp->dpc);
+  sp->dpc.flags |= DPC_NORAND;
+
   init_event(&sp->event, 0, 0);
 
   init_sem(&sp->tx_sem, QUEUE_SIZE);
