@@ -1,0 +1,56 @@
+LIBRARY NDIS
+
+EXPORTS
+  RtlEqualUnicodeString
+  DbgPrint
+
+  READ_PORT_UCHAR
+  READ_PORT_USHORT
+  WRITE_PORT_USHORT
+  KeStallExecutionProcessor
+
+  NdisMRegisterMiniport
+  NdisInitializeWrapper
+  NdisAllocateBuffer
+  NdisMFreeSharedMemory
+  NdisMFreeMapRegisters
+  NdisMAllocateSharedMemory
+  NdisMAllocateMapRegisters
+  NdisAdjustBufferLength
+  NdisReleaseSpinLock
+  NDIS_BUFFER_TO_SPAN_PAGES
+  NdisQueryBufferOffset
+  NdisAcquireSpinLock
+  NdisReadPciSlotInformation
+  NdisWritePciSlotInformation
+  NdisMSynchronizeWithInterrupt
+  NdisMCancelTimer
+  NdisMSetPeriodicTimer
+  NdisQueryBuffer
+  NdisFreePacket
+  NdisFreeBuffer
+  NdisUnchainBufferAtFront
+  NdisFreeBufferPool
+  NdisAllocatePacket
+  NdisFreePacketPool
+  NdisAllocateBufferPool
+  NdisAllocatePacketPool
+  NdisFreeMemory
+  NdisFreeSpinLock
+  NdisMDeregisterAdapterShutdownHandler
+  NdisMDeregisterIoPortRange
+  NdisMDeregisterInterrupt
+  NdisMRegisterInterrupt
+  NdisMSetAttributesEx
+  NdisWriteErrorLogEntry
+  NdisMRegisterIoPortRange
+  NdisMInitializeTimer
+  NdisMRegisterAdapterShutdownHandler
+  NdisAllocateSpinLock
+  NdisCloseConfiguration
+  NdisReadNetworkAddress
+  NdisReadConfiguration
+  NdisMQueryAdapterResources
+  NdisOpenConfiguration
+  NdisAllocateMemoryWithTag
+  NdisTerminateWrapper
