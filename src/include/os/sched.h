@@ -39,7 +39,7 @@ typedef void (*dpcproc_t)(void *arg);
 typedef void (*taskproc_t)(void *arg);
 
 //#define NOPREEMPTION
-#define SCHEDMAP
+//#define SCHEDMAP
 
 #define DEFAULT_QUANTUM          36
 #define QUANTUM_UNITS_PER_TICK   3

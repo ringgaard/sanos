@@ -40,6 +40,8 @@
 
 unsigned long tcp_ticks;
 unsigned long iss;
+unsigned short tcp_next_port;
+
 struct timer tcpslow_timer;
 struct timer tcpfast_timer;
 struct task tcp_slow_task;
@@ -96,27 +98,26 @@ static int tcpstat_proc(struct proc_file *pf, void *arg)
 static unsigned short tcp_new_port()
 {
   struct tcp_pcb *pcb;
-  static unsigned short port = 4096;
-  
+
 again:
-  if (++port > 0x7FFF) port = 4096;
+  if (++tcp_next_port > 0x7FFF) tcp_next_port = 4096;
   
   for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next)
   {
-    if (pcb->local_port == port) goto again;
+    if (pcb->local_port == tcp_next_port) goto again;
   }
 
   for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next)
   {
-    if (pcb->local_port == port) goto again;
+    if (pcb->local_port == tcp_next_port) goto again;
   }
 
   for (pcb = (struct tcp_pcb *)tcp_listen_pcbs; pcb != NULL; pcb = pcb->next)
   {
-    if (pcb->local_port == port) goto again;
+    if (pcb->local_port == tcp_next_port) goto again;
   }
 
-  return port;
+  return tcp_next_port;
 }
 
 //
@@ -678,6 +679,7 @@ void tcp_init()
 {
   // Initialize timer
   iss = time(0) + 6510;
+  tcp_next_port = (unsigned short) (4096 + (time(0) % 1024));
   tcp_ticks = 0;
   init_task(&tcp_slow_task);
   init_task(&tcp_fast_task);
@@ -687,6 +689,7 @@ void tcp_init()
   mod_timer(&tcpfast_timer, ticks + TCP_FAST_INTERVAL / MSECS_PER_TICK);
   register_proc_inode("tcpstat", tcpstat_proc, NULL);
 }
+
 //
 // tcp_shutdown
 //

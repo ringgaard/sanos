@@ -402,6 +402,7 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       fifo_clear(&sp->txq);
       set_sem(&sp->tx_sem, QUEUE_SIZE);
       sp->tx_queue_rel = 0;
+      if (sp->type == UART_16550A) _outp(sp->iobase + UART_FCR, FCR_ENABLE | FCR_XMT_RST | FCR_TRIGGER_14);
       sti();
       return 0;
 
@@ -410,6 +411,7 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       fifo_clear(&sp->rxq);
       set_sem(&sp->rx_sem, 0);
       sp->rx_queue_rel = 0;
+      if (sp->type == UART_16550A) _outp(sp->iobase + UART_FCR, FCR_ENABLE | FCR_RCV_RST | FCR_TRIGGER_14);
       sti();
       return 0;
   }

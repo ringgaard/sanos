@@ -374,7 +374,7 @@ CHANGES
   The interrupt service routines now also checks for multiple interrupt indication per 
   interrupt.
 
-- Visual Studio wizard for creating sanos application projects
+- Visual Studio wizard for creating sanos application projects.
 
 - Scheduler enhancements
     - Number of thread priorities changed from 8 to 32
@@ -387,4 +387,6 @@ CHANGES
     - Priority boosting implemented
     - Quantum units are now changed efter restarting waiting thread
     - Preemption when threads with higher priority than running thread implemented
+ 
+ - TCP port numbers initialized to random range 4096-5120.
  
