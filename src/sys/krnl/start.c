@@ -72,15 +72,8 @@ COPYRIGHT "\n"
 struct thread *mainthread;
 struct section *krnlcfg;
 int onpanic = ONPANIC_HALT;
-
 struct netif *nic;
-
-struct file *stdin;
-struct file *stdout;
-struct file *stderr;
-
 struct peb *peb;
-
 char krnlopts[KRNLOPTS_LEN];
 
 void main(void *arg);
@@ -342,6 +335,7 @@ void main(void *arg)
   char bootdev[8];
   int rc;
   char *str;
+  struct file *cons;
 
   // Allocate and initialize PEB
   peb = mmap((void *) PEB_ADDRESS, PAGESIZE, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'PEB');
@@ -418,12 +412,10 @@ void main(void *arg)
   register_proc_inode("copyright", copyright_proc, NULL);
 
   // Allocate handles for stdin, stdout and stderr
-  open("/dev/console", O_RDONLY, S_IREAD, &stdin);
-  open("/dev/console", O_WRONLY, S_IWRITE, &stdout);
-  open("/dev/console", O_WRONLY, S_IWRITE, &stderr);
-  if (halloc(&stdin->iob.object) != 0) panic("unexpected stdin handle");
-  if (halloc(&stdout->iob.object) != 1) panic("unexpected stdout handle");
-  if (halloc(&stderr->iob.object) != 2) panic("unexpected stderr handle");
+  open("/dev/console", O_RDWR, S_IREAD | S_IWRITE, &cons);
+  if (halloc(&cons->iob.object) != 0) panic("unexpected stdin handle");
+  if (halloc(&cons->iob.object) != 1) panic("unexpected stdout handle");
+  if (halloc(&cons->iob.object) != 2) panic("unexpected stderr handle");
 
   // Load os.dll in user address space
   imgbase = load_image_file("/bin/os.dll", 1);

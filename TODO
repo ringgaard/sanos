@@ -458,3 +458,6 @@ CHANGES
 
 - Added job list to PEB. The jobs command in the shell can now be used to display
   all running jobs.
+
+- The kernel startup has been changed to open only one file object for the console. Then
+  three handles are allocated for the initial stdin, stdout and stderr.
