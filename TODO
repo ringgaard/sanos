@@ -129,3 +129,4 @@ CHANGES
 
 - Buffer leak in devfs set_inode_block() fixed.
 
+- Support for lseek() beyond end of file in dfs and smbfs.

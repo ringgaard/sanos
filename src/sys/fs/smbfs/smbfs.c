@@ -501,7 +501,7 @@ loff_t smb_lseek(struct file *filp, loff_t offset, int origin)
       offset += filp->pos;
   }
 
-  if (offset < 0 || offset > file->statbuf.quad.size_low) return -EINVAL;
+  if (offset < 0) return -EINVAL;
 
   filp->pos = offset;
   return offset;

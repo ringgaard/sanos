@@ -2579,7 +2579,7 @@ int syscall(int syscallno, char *params)
 #else
 
 #ifndef SYSCALL_LOGWAIT
-  if (syscallno != SYSCALL_WAIT)
+  if (syscallno != SYSCALL_WAIT && syscallno != SYSCALL_WAITALL && syscallno != SYSCALL_WAITANY)
 #endif
 
 #endif

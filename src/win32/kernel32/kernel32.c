@@ -776,11 +776,11 @@ DWORD WINAPI GetFullPathNameA
 DWORD WINAPI GetLastError(VOID)
 {
   TRACE("GetLastError");
-  // TODO: implement better error reporting, for now just return E_FAIL
+  // TODO: implement better error reporting
   if (errno == 0) return 0;
   if (errno == -ENOENT) return ERROR_FILE_NOT_FOUND;
   if (errno == -ESRCH) return ERROR_NO_MORE_FILES;
-  return 0x80000008L;
+  return 0x80040000 | -errno;
 }
 
 DWORD WINAPI GetLogicalDrives(VOID)
@@ -1340,8 +1340,8 @@ BOOL WINAPI SetFileAttributesA
 )
 {
   TRACE("SetFileAttributesA");
-  syslog(LOG_DEBUG, "warning: SetFileAttributesA not implemented\n");
-  return FALSE;
+  syslog(LOG_DEBUG, "warning: SetFileAttributesA not implemented, ignored\n");
+  return TRUE;
 }
 
 DWORD WINAPI SetFilePointer

@@ -387,8 +387,16 @@ int dfs_write(struct file *filp, void *data, size_t size)
   unsigned int start;
   blkno_t blk;
   struct buf *buf;
+  int rc;
 
   inode = (struct inode *) filp->data;
+
+  if (filp->pos > inode->desc->size)
+  {
+    rc = dfs_chsize(filp, filp->pos);
+    if (rc < 0) return rc;
+  }
+
   written = 0;
   p = (char *) data;
   while (size > 0)
@@ -474,7 +482,7 @@ loff_t dfs_lseek(struct file *filp, loff_t offset, int origin)
       offset += filp->pos;
   }
 
-  if (offset < 0 || offset > inode->desc->size) return -EINVAL;
+  if (offset < 0) return -EINVAL;
 
   filp->pos = offset;
   return offset;
@@ -485,20 +493,43 @@ int dfs_chsize(struct file *filp, loff_t size)
   struct inode *inode;
   int rc;
   unsigned int blocks;
+  blkno_t blk;
+  struct buf *buf;
 
   inode = (struct inode *) filp->data;
 
-  if (size < 0 || size > inode->desc->size) return -EINVAL;
+  if (size < 0) return -EINVAL;
+  if (size == inode->desc->size) return 0;
+
+  blocks = (size + inode->fs->blocksize - 1) / inode->fs->blocksize;
+
+  if (size > inode->desc->size)
+  {
+    while (blocks < inode->desc->blocks)
+    {
+      blk = expand_inode(inode);
+      if (blk == NOBLOCK) return -ENOSPC;
+
+      buf = alloc_buffer(inode->fs->cache, blk);
+      if (!buf) return -EIO;
+
+      memset(buf->data, 0, inode->fs->blocksize);
+
+      mark_buffer_updated(inode->fs->cache, buf);
+      release_buffer(inode->fs->cache, buf);
+    }
+  }
+  else
+  {
+    blocks = (size + inode->fs->blocksize - 1) / inode->fs->blocksize;
+    rc = truncate_inode(inode, blocks);
+    if (rc < 0) return rc;
+  }
 
   inode->desc->size = size;
   mark_inode_dirty(inode);
 
   filp->flags |= F_MODIFIED;
-  if (filp->pos > size) filp->pos = size;
-
-  blocks = (size + inode->fs->blocksize - 1) / inode->fs->blocksize;
-  rc = truncate_inode(inode, blocks);
-  if (rc < 0) return rc;
 
   return 0;
 }
