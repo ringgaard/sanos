@@ -39,9 +39,9 @@ TODO for sanos
     - Add dispatch(iomux,h,mask,context) syscall
     - Add synchronization on iomuxes...
  
- - Revalidate partition drivers after fdisk
+- Revalidate partition drivers after fdisk
 
- - Handle reopening of files in smbfs after reconnect
+- Handle reopening of files in smbfs after reconnect
  
 IDEAS for new features
 ----------------------
