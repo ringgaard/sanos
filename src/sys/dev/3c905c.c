@@ -10,6 +10,7 @@
 
 #define ETHER_FRAME_LEN         1544
 #define EEPROM_SIZE             0x21
+#define RX_COPYBREAK            128
 
 //
 // PCI IDs
@@ -39,12 +40,6 @@
 #define CMD_UP_UNSTALL		   0x3001
 #define CMD_DOWN_STALL		   0x3002
 #define CMD_DOWN_UNSTALL	   0x3003
-
-//
-// Command arguments
-//
-
-#define ACKNOWLEDGE_ALL_INTERRUPTS	0x7FF   
 
 //
 // Non-windowed registers
@@ -180,6 +175,8 @@
 #define DN_COMPLETE_ACK            0x0200
 #define UP_COMPLETE_ACK            0x0400
 
+#define ALL_ACK	                   0x07FF   
+
 //
 // RxFilter
 //
@@ -189,6 +186,28 @@
 #define RECEIVE_BROADCAST         0x04
 #define RECEIVE_ALL_FRAMES        0x08
 #define RECEIVE_MULTICAST_HASH    0x10
+
+//
+// UpStatus
+//
+
+#define UP_PACKET_STATUS_ERROR			(1 << 14)
+#define UP_PACKET_STATUS_COMPLETE		(1 << 15)
+#define UP_PACKET_STATUS_OVERRUN		(1 << 16)
+#define UP_PACKET_STATUS_RUNT_FRAME		(1 << 17)
+#define UP_PACKET_STATUS_ALIGNMENT_ERROR	(1 << 18)
+#define UP_PACKET_STATUS_CRC_ERROR             	(1 << 19)
+#define UP_PACKET_STATUS_OVERSIZE_FRAME        	(1 << 20)
+#define UP_PACKET_STATUS_DRIBBLE_BITS		(1 << 23)
+#define UP_PACKET_STATUS_OVERFLOW		(1 << 24)
+#define UP_PACKET_STATUS_IP_CHECKSUM_ERROR	(1 << 25)
+#define UP_PACKET_STATUS_TCP_CHECKSUM_ERROR	(1 << 26)
+#define UP_PACKET_STATUS_UDP_CHECKSUM_ERROR	(1 << 27)
+#define UP_PACKET_STATUS_IMPLIED_BUFFER_ENABLE	(1 << 28)
+#define UP_PACKET_STATUS_IP_CHECKSUM_CHECKED	(1 << 29)
+#define UP_PACKET_STATUS_TCP_CHECKSUM_CHECKED	(1 << 30)
+#define UP_PACKET_STATUS_UDP_CHECKSUM_CHECKED	(1 << 31)
+#define UP_PACKET_STATUS_ERROR_MASK		0x1F0000
 
 //
 // EEPROM contents
@@ -232,8 +251,9 @@
 #define RX_RING_SIZE	          32
 #define TX_MAX_FRAGS              16
 
-#define LAST_FRAG 	          0x80000000  // Last Addr/Len pair in descriptor
+#define LAST_FRAG 	          0x80000000  // Last entry in descriptor
 #define DN_COMPLETE	          0x00010000  // This packet has been downloaded
+#define UP_COMPLETE               0x00008000  // This packet has been uploaded
 
 struct sg_entry
 {
@@ -292,7 +312,7 @@ static void dump_dump_status(unsigned short status)
   if (status & INTSTATUS_DN_COMPLETE) kprintf(" dnComplete");
   if (status & INTSTATUS_UP_COMPLETE) kprintf(" upComplete");
   if (status & INTSTATUS_CMD_IN_PROGRESS) kprintf(" cmdInProgress");
-  kprintf(" windowNumber: %d", status & INTSTATUS_WINDOW_NUMBER >> 13);
+  kprintf(" windowNumber: %d\n", status & INTSTATUS_WINDOW_NUMBER >> 13);
 }
 
 __inline void execute_command(struct nic *nic, int cmd, int param)
@@ -421,11 +441,12 @@ void clear_statistics(struct nic *nic)
 void update_statistics(struct nic *nic)
 {
   int current_window;
-  unsigned short rx_frames;
-  unsigned short tx_frames;
-  unsigned short rx_bytes;
-  unsigned short tx_bytes;
+  unsigned long rx_frames;
+  unsigned long tx_frames;
+  unsigned long rx_bytes;
+  unsigned long tx_bytes;
   unsigned char upper;
+  int errs;
   
   // Read the current window
   current_window = _inpw(nic->iobase + STATUS) >> 13;
@@ -435,8 +456,8 @@ void update_statistics(struct nic *nic)
 
   // Frames received/transmitted
   upper = _inp(nic->iobase + UPPER_FRAMES_OK);
-  rx_frames = _inp(nic->iobase + FRAMES_RCVD_OK);
-  tx_frames = _inp(nic->iobase + FRAMES_XMITTED_OK);
+  rx_frames = _inpw(nic->iobase + FRAMES_RCVD_OK);
+  tx_frames = _inpw(nic->iobase + FRAMES_XMITTED_OK);
   rx_frames += (upper & 0x0F) << 8;
   tx_frames += (upper & 0xF0) << 4;
 
@@ -444,13 +465,15 @@ void update_statistics(struct nic *nic)
   rx_bytes = _inpw(nic->iobase + BYTES_RECEIVED_OK);
   tx_bytes = _inpw(nic->iobase + BYTES_XMITTED_OK);
 
-  _inp(nic->iobase + CARRIER_LOST);
-  _inp(nic->iobase + SQE_ERRORS);
-  _inp(nic->iobase + MULTIPLE_COLLISIONS);
-  _inp(nic->iobase + SINGLE_COLLISIONS);
-  _inp(nic->iobase + LATE_COLLISIONS);
-  _inp(nic->iobase + RX_OVERRUNS);
-  _inp(nic->iobase + FRAMES_DEFERRED);
+  errs = 0;
+  errs += _inp(nic->iobase + CARRIER_LOST);
+  errs += _inp(nic->iobase + SQE_ERRORS);
+  errs += _inp(nic->iobase + MULTIPLE_COLLISIONS);
+  errs += _inp(nic->iobase + SINGLE_COLLISIONS);
+  errs += _inp(nic->iobase + LATE_COLLISIONS);
+  errs += _inp(nic->iobase + RX_OVERRUNS);
+  errs += _inp(nic->iobase + FRAMES_DEFERRED);
+  stats.link.err += errs;
 
   // Read final statistics from window 4
   select_window(nic, 4);
@@ -493,17 +516,75 @@ int nic_detach(struct dev *dev)
   return 0;
 }
 
-struct driver nic_driver =
+void nic_up_complete(struct nic *nic)
 {
-  "3c905c",
-  DEV_TYPE_PACKET,
-  nic_ioctl,
-  NULL,
-  NULL,
-  nic_attach,
-  nic_detach,
-  nic_transmit
-};
+  unsigned long status;
+  int length;
+  struct pbuf *p, *q;
+
+  while ((status = nic->curr_rx->status) & UP_COMPLETE)
+  {
+    length = nic->curr_rx->status & 0x1FFF;
+
+    // Check for errors
+    if (status & UP_PACKET_STATUS_ERROR)
+    {
+      stats.link.err++;
+      nic->curr_rx->status = 0;
+      nic->curr_rx = nic->curr_rx->next;
+      continue;
+    }
+
+    kprintf("nic: packet received, %d bytes\n", length);
+
+    if (length < RX_COPYBREAK)
+    {
+      // Allocate properly sized pbuf and copy
+      p = pbuf_alloc(PBUF_RAW, length, PBUF_RW);
+      if (p)
+      {
+	memcpy(p->payload, nic->curr_rx->pkt->payload, length);
+      }
+      else
+      {
+	stats.link.memerr++;
+	stats.link.drop++;
+      }
+    }
+    else
+    {
+      // Allocate new full sized pbuf and existing replace pbuf in rx ring
+      q = pbuf_alloc(PBUF_RAW, ETHER_FRAME_LEN, PBUF_RW);
+      if (q)
+      {
+	p = nic->curr_rx->pkt;
+	pbuf_realloc(p, length);
+
+	nic->curr_rx->pkt = q;
+	nic->curr_rx->sglist[0].addr = (unsigned long) virt2phys(q->payload);
+      }
+      else
+      {
+	p = NULL;
+	stats.link.memerr++;
+	stats.link.drop++;
+      }
+    }
+
+    // Send packet to upper layer
+    if (p)
+    {
+      if (dev_receive(nic->devno, p) < 0) pbuf_free(p);
+    }
+
+    // Clear status and move to next packet in rx ring
+    nic->curr_rx->status = 0;
+    nic->curr_rx = nic->curr_rx->next;
+  }
+
+  // Unstall upload engine
+  execute_command(nic, CMD_UP_UNSTALL, 0);
+}
 
 void nic_dpc(void *arg)
 {
@@ -524,10 +605,62 @@ void nic_dpc(void *arg)
     status &= ALL_INTERRUPTS;
     if (!status) break;
 
+    // Handle host error event
+    if (status & INTSTATUS_HOST_ERROR)
+    {
+      kprintf("nic: host error\n");
+    }
+
+    // Handle tx complete event
+    if (status & INTSTATUS_TX_COMPLETE)
+    {
+      kprintf("nic: tx complete\n");
+    }
+
+    // Handle rx complete event
+    if (status & INTSTATUS_RX_COMPLETE)
+    {
+      kprintf("nic: rx complete\n");
+    }
+
+    // Handle rx early event
+    if (status & INTSTATUS_RX_EARLY)
+    {
+      kprintf("nic: rx early\n");
+      execute_command(nic, CMD_ACKNOWLEDGE_INTERRUPT, RX_EARLY_ACK);
+    }
+
+    // Handle int requested event
+    if (status & INTSTATUS_INT_REQUESTED)
+    {
+      kprintf("nic: int request\n");
+      execute_command(nic, CMD_ACKNOWLEDGE_INTERRUPT, INT_REQUESTED_ACK);
+    }
+
+    // Handle update statistics event
+    if (status & INTSTATUS_UPDATE_STATS)
+    {
+      kprintf("nic: update stats\n");
+      update_statistics(nic);
+    }
+
+    // Handle link event
+    if (status & INTSTATUS_LINK_EVENT)
+    {
+      kprintf("nic: link event\n");
+    }
+
+    // Handle download complete event
+    if (status & INTSTATUS_DN_COMPLETE)
+    {
+      kprintf("nic: download complete\n");
+      execute_command(nic, CMD_ACKNOWLEDGE_INTERRUPT, DN_COMPLETE_ACK);
+    }
+
     // Handle upload complete event
     if (status & INTSTATUS_UP_COMPLETE)
     {
-      kprintf("nic: packet received\n");
+      nic_up_complete(nic);
       execute_command(nic, CMD_ACKNOWLEDGE_INTERRUPT, UP_COMPLETE_ACK);
     }
 
@@ -550,10 +683,23 @@ void handler(struct context *ctxt, void *arg)
   queue_irq_dpc(&nic->dpc, nic_dpc, nic);
 }
 
+struct driver nic_driver =
+{
+  "3c905c",
+  DEV_TYPE_PACKET,
+  nic_ioctl,
+  NULL,
+  NULL,
+  nic_attach,
+  nic_detach,
+  nic_transmit
+};
+
 int __declspec(dllexport) install(struct unit *unit)
 {
   struct nic *nic;
   unsigned short eeprom_checksum = 0;
+  int eeprom_busy = 0;
   int i, j;
 
   // Check for PCI device
@@ -594,6 +740,10 @@ int __declspec(dllexport) install(struct unit *unit)
   set_interrupt_handler(IRQ2INTR(nic->irq), handler, nic);
   enable_irq(nic->irq);
 
+  // Reset NIC
+  execute_command_wait(nic, CMD_RX_RESET, 0);
+  execute_command_wait(nic, CMD_TX_RESET, 0);
+
   // Read the EEPROM
   select_window(nic, 0);
   for (i = 0; i < EEPROM_SIZE; i++)
@@ -606,8 +756,10 @@ int __declspec(dllexport) install(struct unit *unit)
       x = _inpw(nic->iobase + EEPROM_CMD);
       if ((_inpw(nic->iobase + EEPROM_CMD) & EEPROM_BUSY) == 0) break;
     }
+    if (j == 10) eeprom_busy = 1;
     nic->eeprom[i] = _inpw(nic->iobase + EEPROM_DATA);
   }
+  if (eeprom_busy) kprintf("warning: nic eeprom busy while reading\n");
 
   // Calculate EEPROM checksum
   for (i = 0; i < EEPROM_SIZE - 1; i++) eeprom_checksum ^= nic->eeprom[i];
@@ -647,21 +799,25 @@ int __declspec(dllexport) install(struct unit *unit)
   execute_command(nic, CMD_UP_UNSTALL, 0);
 
   // Select 10BASE-T 
-  select_window(nic, 3);
-  _outpd(nic->iobase + INTERNAL_CONFIG, _inpd(nic->iobase + INTERNAL_CONFIG) & 0xFFF0FFFF);
+  //select_window(nic, 3);
+  //_outpd(nic->iobase + INTERNAL_CONFIG, _inpd(nic->iobase + INTERNAL_CONFIG) & 0xFFF0FFFF);
 
-  execute_command_wait(nic, CMD_TX_RESET, 0);
-  execute_command_wait(nic, CMD_RX_RESET, 0);
-
-  execute_command(nic, CMD_TX_ENABLE, 0);
-  execute_command(nic, CMD_RX_ENABLE, 0);
-
-  execute_command(nic, CMD_SET_INDICATION_ENABLE, ALL_INTERRUPTS);
-  execute_command(nic, CMD_SET_INTERRUPT_ENABLE, ALL_INTERRUPTS);
-
+  // Set receive filter
   execute_command(nic, CMD_SET_RX_FILTER, RECEIVE_INDIVIDUAL | RECEIVE_MULTICAST | RECEIVE_BROADCAST);
 
-  select_window(nic, 7);
+  // Acknowledge any pending interrupts.
+  execute_command(nic, CMD_ACKNOWLEDGE_INTERRUPT, ALL_ACK);
+
+  // Enable indication for all interrupts.
+  execute_command(nic, CMD_SET_INDICATION_ENABLE, ALL_INTERRUPTS);
+
+  // Enable all interrupts to the host.
+  execute_command(nic, CMD_SET_INTERRUPT_ENABLE, ALL_INTERRUPTS);
+  _inpw(nic->iobase + STATUS);
+
+  // Enable the transmit and receive engines.
+  execute_command(nic, CMD_RX_ENABLE, 0);
+  execute_command(nic, CMD_TX_ENABLE, 0);
 
   nic->devno = dev_make("nic#", &nic_driver, unit, nic);
 

@@ -195,7 +195,7 @@ err_t ether_input(struct netif *netif, struct pbuf *p)
 
   if (enqueue(ether_queue, msg, 0) < 0)
   {
-    kprintf("drop (queue full)\n");
+    kprintf("ether: drop (queue full)\n");
     kfree(msg);
     stats.link.memerr++;
     stats.link.drop++;
@@ -234,6 +234,7 @@ void ether_dispatcher(void *arg)
       ethhdr = p->payload;
 
       //if (!eth_addr_isbroadcast(&ethhdr->dest)) kprintf("ether: recv src=%la dst=%la type=%04X len=%d\n", &ethhdr->src, &ethhdr->dest, htons(ethhdr->type), p->tot_len);
+      kprintf("ether: recv src=%la dst=%la type=%04X len=%d\n", &ethhdr->src, &ethhdr->dest, htons(ethhdr->type), p->tot_len);
       
       switch (htons(ethhdr->type))
       {
