@@ -46,10 +46,10 @@ struct filesystem
 
 struct fs
 {
-  devno_t devno;
   int locks;
   struct mutex exclusive;
-  char path[MAXPATH + 1];
+  char mntfrom[MAXPATH];
+  char mntto[MAXPATH];
   struct fsops *ops;
   struct fs *next;
   struct fs *prev;
@@ -71,7 +71,7 @@ struct fsops
 {
   unsigned long reentrant;
 
-  int (*format)(devno_t devno, char *opts);
+  int (*format)(char *devname, char *opts);
   int (*mount)(struct fs *fs, char *opts);
   int (*unmount)(struct fs *fs);
 
@@ -112,8 +112,8 @@ int fnmatch(char *fn1, int len1, char *fn2, int len2);
 krnlapi struct filesystem *register_filesystem(char *name, struct fsops *ops);
 krnlapi struct fs *fslookup(char *name, char **rest);
 
-krnlapi int format(devno_t devno, char *type, char *opts);
-krnlapi int mount(char *type, char *path, devno_t devno, char *opts);
+krnlapi int format(char *devname, char *type, char *opts);
+krnlapi int mount(char *type, char *mntto, char *mntfrom, char *opts);
 krnlapi int unmount(char *path);
 int unmount_all();
 

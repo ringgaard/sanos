@@ -142,6 +142,10 @@ SOURCE=..\src\lib\string.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\lib\syserr.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\lib\time.c
 # End Source File
 # Begin Source File

@@ -12,7 +12,6 @@
 #define KERNEL_CONFIG  "/etc/krnl.ini"
 
 struct thread *mainthread;
-devno_t bootdev = NODEV;
 struct section *krnlcfg;
 
 struct netif *nic;
@@ -160,7 +159,6 @@ void init_mount()
   char *type;
   char *opts;
   int rc;
-  devno_t devno;
 
   sect = find_section(krnlcfg, "mount");
   if (!sect) return;
@@ -191,14 +189,8 @@ void init_mount()
 
     //kprintf("mount %s on %s type %s opts %s\n", devname, prop->name, type, opts);
 
-    devno = dev_open(devname);
-    if (devno != NODEV)
-    {
-      rc = mount(type, prop->name, devno, opts);
-      if (rc < 0) kprintf("%s: error %d mounting device %s\n", prop->name, rc, devname);
-    }
-    else
-      kprintf("%s: device %s not found\n", prop->name, devname);
+    rc = mount(type, prop->name, devname, opts);
+    if (rc < 0) kprintf("%s: error %d mounting device %s\n", prop->name, rc, devname);
 
     prop = prop->next;
   }
@@ -249,7 +241,7 @@ void main(void *arg)
   unsigned long stack_commit;
   struct image_header *imghdr;
 
-  char bootdevname[8];
+  char bootdev[8];
   int rc;
 
   // Allocate and initialize PEB
@@ -274,21 +266,19 @@ void main(void *arg)
   if (syspage->bootparams.bootdrv & 0x80)
   {
     if (syspage->bootparams.bootpart == -1)
-      sprintf(bootdevname, "hd%c", '0' + (syspage->bootparams.bootdrv & 0x7F));
+      sprintf(bootdev, "hd%c", '0' + (syspage->bootparams.bootdrv & 0x7F));
     else
-      sprintf(bootdevname, "hd%c%c", '0' + (syspage->bootparams.bootdrv & 0x7F), 'a' + syspage->bootparams.bootpart);
+      sprintf(bootdev, "hd%c%c", '0' + (syspage->bootparams.bootdrv & 0x7F), 'a' + syspage->bootparams.bootpart);
   }
   else
-    sprintf(bootdevname, "fd%c", '0' + (syspage->bootparams.bootdrv & 0x7F));
+    sprintf(bootdev, "fd%c", '0' + (syspage->bootparams.bootdrv & 0x7F));
 
-  kprintf("mount: root on device %s\n", bootdevname);
-  bootdev = dev_open(bootdevname);
-  if (bootdev == NODEV) panic("unable to find boot device");
+  kprintf("mount: root on device %s\n", bootdev);
 
   // Mount root and device file systems
   mount("dfs", "/", bootdev, "");
-  mount("devfs", "/dev", NODEV, NULL);
-  mount("procfs", "/proc", NODEV, NULL);
+  mount("devfs", "/dev", NULL, NULL);
+  mount("procfs", "/proc", NULL, NULL);
 
   // Load kernel configuration
   rc = load_kernel_config();

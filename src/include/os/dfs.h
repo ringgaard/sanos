@@ -132,8 +132,8 @@ int dfs_utime(struct fs *fs, char *name, struct utimbuf *times);
 int dfs_stat(struct fs *fs, char *name, struct stat *buffer);
 
 // super.c
-struct filsys *create_filesystem(devno_t devno, struct fsoptions *fsopts);
-struct filsys *open_filesystem(devno_t devno, struct fsoptions *fsopts);
+struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts);
+struct filsys *open_filesystem(char *devname, struct fsoptions *fsopts);
 void close_filesystem(struct filsys *fs);
 int dfs_format(devno_t devno, char *opts);
 int dfs_mount(struct fs *fs, char *opts);

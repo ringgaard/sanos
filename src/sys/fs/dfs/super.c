@@ -112,9 +112,10 @@ static int parse_options(char *opts, struct fsoptions *fsopts)
   return 0;
 }
 
-static struct filsys *create_filesystem(devno_t devno, struct fsoptions *fsopts)
+static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
 {
   struct filsys *fs;
+  devno_t devno;
   unsigned int sectcount;
   unsigned int blocks;
   unsigned int first_block;
@@ -126,7 +127,8 @@ static struct filsys *create_filesystem(devno_t devno, struct fsoptions *fsopts)
   char *buffer;
 
   // Check device
-  if (!device(devno)) return NULL;
+  devno = dev_open(devname);
+  if (devno == NODEV) return NULL;
   if (device(devno)->driver->type != DEV_TYPE_BLOCK) return NULL;
   sectcount = dev_ioctl(devno, IOCTL_GETDEVSIZE, NULL, 0);
   if (sectcount < 0) return NULL;
@@ -356,15 +358,17 @@ static struct filsys *create_filesystem(devno_t devno, struct fsoptions *fsopts)
   return fs;
 }
 
-static struct filsys *open_filesystem(devno_t devno, struct fsoptions *fsopts)
+static struct filsys *open_filesystem(char *devname, struct fsoptions *fsopts)
 {
   struct filsys *fs;
+  devno_t devno;
   struct groupdesc *gd;
   unsigned int i;
   unsigned int cache_buffers;
 
   // Check device
-  if (!device(devno)) return NULL;
+  devno = dev_open(devname);
+  if (devno == NODEV) return NULL;
   if (device(devno)->driver->type != DEV_TYPE_BLOCK) return NULL;
 
   // Allocate file system
@@ -462,6 +466,9 @@ static void close_filesystem(struct filsys *fs)
   if (fs->super_dirty) dev_write(fs->devno, fs->super, SECTORSIZE, 1);
   kfree(fs->super);
 
+  // Close device
+  dev_close(fs->devno);
+
   // Deallocate file system
   kfree(fs);
 }
@@ -477,13 +484,13 @@ static void get_filesystem_status(struct filsys *fs, struct statfs *buf)
   buf->cachesize = fs->cache->poolsize * fs->cache->bufsize;
 }
 
-int dfs_format(devno_t devno, char *opts)
+int dfs_format(char *devname, char *opts)
 {
   struct fsoptions fsopts;
   struct filsys *fs;
 
   if (parse_options(opts, &fsopts) != 0) return -EINVAL;
-  fs = create_filesystem(devno, &fsopts);
+  fs = create_filesystem(devname, &fsopts);
   if (!fs) return -EIO;
   close_filesystem(fs);
   return 0;
@@ -495,7 +502,7 @@ int dfs_mount(struct fs *fs, char *opts)
 
   if (parse_options(opts, &fsopts) != 0) return -EINVAL;
 
-  fs->data = open_filesystem(fs->devno, &fsopts);
+  fs->data = open_filesystem(fs->mntfrom, &fsopts);
   if (!fs->data) return -EIO;
 
   return 0;
@@ -512,4 +519,3 @@ int dfs_statfs(struct fs *fs, struct statfs *buf)
   get_filesystem_status((struct filsys *) fs->data, buf);
   return 0;
 }
-

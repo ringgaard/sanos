@@ -94,7 +94,7 @@ struct fs *fslookup(char *name, char **rest)
   fs = mountlist;
   while (fs)
   {
-    q = fs->path;
+    q = fs->mntto;
     if (*q == PS1 || *q == PS2) q++;
 
     if (!*q)
@@ -143,7 +143,7 @@ struct filesystem *register_filesystem(char *name, struct fsops *ops)
   return fsys;
 }
 
-int format(devno_t devno, char *type, char *opts)
+int format(char *devname, char *type, char *opts)
 {
   struct filesystem *fsys;
   int rc;
@@ -162,11 +162,11 @@ int format(devno_t devno, char *type, char *opts)
 
   // Format device for filesystem
   if (!fsys->ops->format) return -ENODEV;
-  rc = fsys->ops->format(devno, opts);
+  rc = fsys->ops->format(devname, opts);
   return rc;
 }
 
-int mount(char *type, char *path, devno_t devno, char *opts)
+int mount(char *type, char *mntto, char *mntfrom, char *opts)
 {
   struct filesystem *fsys;
   struct fs *fs;
@@ -175,15 +175,15 @@ int mount(char *type, char *path, devno_t devno, char *opts)
 
   // Check parameters
   if (!type) return -EINVAL;
-  if (!path) return -EINVAL;
+  if (!mntto) return -EINVAL;
 
   // Check for file system already mounted
   fs = mountlist;
   prevfs = NULL;
   while (fs)
   {
-    if (fnmatch(path, strlen(path), fs->path, strlen(fs->path))) return -EEXIST;
-    if (strlen(path) < strlen(fs->path)) prevfs = fs;
+    if (fnmatch(mntto, strlen(mntto), fs->mntto, strlen(fs->mntto))) return -EEXIST;
+    if (strlen(mntto) < strlen(fs->mntto)) prevfs = fs;
     fs = fs->next;
   }
 
@@ -201,8 +201,8 @@ int mount(char *type, char *path, devno_t devno, char *opts)
   if (!fs) return -ENOMEM;
   memset(fs, 0, sizeof(struct fs));
 
-  fs->devno = devno;
-  strcpy(fs->path, path);
+  strcpy(fs->mntto, mntto);
+  strcpy(fs->mntfrom, mntfrom ? mntfrom : "");
   fs->fsys = fsys;
   fs->ops = fsys->ops;
   init_mutex(&fs->exclusive, 0);
@@ -250,7 +250,7 @@ int unmount(char *path)
   fs = mountlist;
   while (fs)
   {
-    if (fnmatch(path, strlen(path), fs->path, strlen(fs->path))) break;
+    if (fnmatch(path, strlen(path), fs->mntto, strlen(fs->mntto))) break;
     fs = fs->next;
   }
   if (!fs) return -ENOENT;
@@ -297,12 +297,8 @@ static int get_fsstat(struct fs *fs, struct statfs *buf)
   int rc;
 
   strcpy(buf->fstype, fs->fsys->name);
-  strcpy(buf->mntonname, fs->path);
-  if (fs->devno != NODEV)
-  {
-    strcpy(buf->mntfromname, "/dev/");
-    strcpy(buf->mntfromname + 5, device(fs->devno)->name);
-  }
+  strcpy(buf->mntto, fs->mntto);
+  strcpy(buf->mntfrom, fs->mntfrom);
 
   if (fs->ops->statfs)
   {

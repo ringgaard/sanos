@@ -153,7 +153,7 @@ struct section;
 #define ENOMEM          12               // Cannot allocate memory
 #define EACCES          13               // Access denied
 #define EFAULT          14               // Bad address
-//#define E0015           15               // Error 15
+//#define ENOTBLK           15               // Unknown error
 #define EBUSY           16               // Device busy
 #define EEXIST          17               // File exist
 #define EXDEV           18               // Cross-device link
@@ -164,7 +164,7 @@ struct section;
 #define ENFILE          23               // Too many open files in system
 //#define EMFILE          24               // Too many files open
 //#define ENOTTY          25               // Inappropriate ioctl for device
-//#define E0026           26               // Error 26
+//#define ETXTBSY         26               // Unknown error
 //#define EFBIG           27               // File too large
 #define ENOSPC          28               // No space left on device
 //#define ESPIPE          29               // Illegal seek
@@ -173,9 +173,9 @@ struct section;
 //#define EPIPE           32               // Broken pipe
 //#define EDOM            33               // Numerical arg out of domain
 #define ERANGE          34               // Result too large
-//#define E0035           35               // Error 35
+//#define EUCLEAN           35               // Unknown error
 //#define EDEADLK         36               // Resource deadlock avoided
-//#define E0037           37               // Error 37
+//#define EUNKNOWN         37               // Unknown error
 #define ENAMETOOLONG    38               // File name too long
 //#define ENOLCK          39               // No locks available
 #define ENOSYS          40               // Function not implemented
@@ -243,8 +243,8 @@ struct statfs
   unsigned int ffree;        // Free file nodes in fs
   unsigned int cachesize;    // Cache buffers
   char fstype[MFSNAMELEN];   // File system type name
-  char mntonname[MAXPATH];   // Directory on which mounted
-  char mntfromname[MAXPATH]; // Mounted file system
+  char mntto[MAXPATH];       // Directory on which mounted
+  char mntfrom[MAXPATH];     // Mounted file system
 };
 
 struct dirent
@@ -522,7 +522,7 @@ struct tib
 osapi int syscall(int syscallno, void *params);
 
 osapi int format(const char *devname, const char *type, const char *opts);
-osapi int mount(const char *type, const char *path, const char *devname, const char *opts);
+osapi int mount(const char *type, const char *mntto, const char *mntfrom, const char *opts);
 osapi int unmount(const char *path);
 
 osapi int getfsstat(struct statfs *buf, size_t size);

@@ -318,16 +318,7 @@ static void dump_mbr(char *devname)
 
 static void mount_device(char *devname, char *path)
 {
-  devno_t dev;
-
-  dev = dev_open(devname);
-  if (dev == NODEV)
-  {
-    kprintf("%s: unable to open device\n", devname);
-    return;
-  }
-
-  if (mount("dfs", path, dev, NULL) < 0)
+  if (mount("dfs", path, devname, NULL) < 0)
   {
     kprintf("%s: unable to mount device to %s\n", devname, path);
     return;
@@ -594,25 +585,6 @@ static void dump_pdir()
   }
 
   kprintf("\ntotal: %d user: %d sys: %d r/w: %d r/o: %d accessed: %d dirty: %d\n", ma, us, su, rw, ro, ac, dt);
-}
-
-static void fs_list()
-{
-  struct fs *fs = mountlist;
-  struct dev *dev;
-
-  while (fs)
-  {
-    if (fs->devno != NODEV)
-    {
-      dev = devtab[fs->devno];
-      kprintf("%s (%s) mounted on %s with %s\n", dev->name, dev->driver->name, fs->path, fs->fsys->name);
-    }
-    else
-      kprintf("%s mounted with %s\n", fs->path, fs->fsys->name);
-
-    fs = fs->next;
-  }
 }
 
 static void dump_units()
@@ -939,8 +911,6 @@ void shell()
       dump_pdir();
     else if (strcmp(cmd, "bufpools") == 0)
       dump_bufpools();
-    else if (strcmp(cmd, "fs") == 0)
-      fs_list();
     else if (strcmp(cmd, "threads") == 0)
       thread_list();
     else if (strcmp(cmd, "cmos") == 0)

@@ -19,4 +19,6 @@ int get_num_option(char *opts, char *name, int defval);
 
 int abs(int number);
 
+char *strerror(int errnum);
+
 #endif

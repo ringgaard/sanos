@@ -763,7 +763,7 @@ int __declspec(dllexport) install(struct unit *unit)
 
   pcnet32->devno = dev_make("nic#", &pcnet32_driver, unit, pcnet32);
 
-  kprintf("%s: AMD %s iobase 0x%x irq %d hwaddr %s\n", device(pcnet32->devno)->name, unit->productname, pcnet32->iobase, pcnet32->irq, ether2str(&pcnet32->hwaddr, str));
+  kprintf("%s: %s iobase 0x%x irq %d hwaddr %s\n", device(pcnet32->devno)->name, unit->productname, pcnet32->iobase, pcnet32->irq, ether2str(&pcnet32->hwaddr, str));
 
   return 0;
 }

@@ -24,7 +24,7 @@ static void list_file(char *filename)
 
   if ((file = open(filename, 0)) < 0)
   {
-    printf("%s: file not found\n", filename);
+    printf("%s: %s\n", filename, strerror(file));
     return;
   }
 
@@ -45,14 +45,14 @@ static void copy_file(char *srcfn, char *dstfn)
 
   if ((f1 = open(srcfn, 0)) < 0)
   {
-    printf("%s: file not found\n", srcfn);
+    printf("%s: %s\n", srcfn, strerror(f1));
     return;
   }
 
   if ((f2 = open(dstfn, O_CREAT)) < 0)
   {
     close(f1);
-    printf("%s: unable to create file\n", dstfn);
+    printf("%s: %s\n", dstfn, strerror(f2));
     return;
   }
 
@@ -67,7 +67,7 @@ static void copy_file(char *srcfn, char *dstfn)
   }
   free(data);
 
-  if (count < 0) printf("%s: error reading data\n", srcfn);
+  if (count < 0) printf("%s: %s\n", srcfn, strerror(count));
   
   close(f1);
   close(f2);
@@ -114,7 +114,7 @@ static void list_dir(int argc, char **argv)
 
   if ((dir = opendir(dirname)) < 0)
   {
-    printf("%s: directory not found\n", dirname);
+    printf("%s: %s\n", dirname, strerror(dir));
     return;
   }
 
@@ -166,36 +166,48 @@ static void list_dir(int argc, char **argv)
 
 static void remove_file(char *filename)
 {
-  if (unlink(filename) < 0)
+  int rc;
+
+  rc = unlink(filename); 
+  if (rc < 0)
   {
-    printf("%s: file not found\n", filename);
+    printf("%s: %s\n", filename, strerror(rc));
     return;
   }
 }
 
 static void move_file(char *oldname, char *newname)
 {
-  if (rename(oldname, newname) < 0)
+  int rc;
+
+  rc = rename(oldname, newname);
+  if (rc < 0)
   {
-    printf("%s: unable to rename file to %s\n", oldname, newname);
+    printf("%s: %s\n", oldname, strerror(rc));
     return;
   }
 }
 
 static void make_dir(char *filename)
 {
-  if (mkdir(filename) < 0)
+  int rc;
+
+  rc = mkdir(filename); 
+  if (rc < 0)
   {
-    printf("%s: cannot make directory\n", filename);
+    printf("%s: %s\n", filename, strerror(rc));
     return;
   }
 }
 
 static void remove_dir(char *filename)
 {
-  if (rmdir(filename) < 0)
+  int rc;
+
+  rc = rmdir(filename); 
+  if (rc < 0)
   {
-    printf("%s: cannot delete directory\n", filename);
+    printf("%s: %s\n", filename, strerror(rc));
     return;
   }
 }
@@ -234,7 +246,7 @@ static void display_file(char *filename)
 
   if ((file = open(filename, 0)) < 0)
   {
-    printf("%s: file not found\n", filename);
+    printf("%s: %s\n", filename, strerror(file));
     return;
   }
 
@@ -285,7 +297,7 @@ static void test_read_file(char *filename)
 
   if ((file = open(filename, 0)) < 0)
   {
-    printf("%s: file not found\n", filename);
+    printf("%s: %s\n", filename, strerror(file));
     return;
   }
 
@@ -304,7 +316,7 @@ static void test_read_file(char *filename)
   
   free(data);
 
-  if (count < 0) printf("%s: error reading file\n", filename);
+  if (count < 0) printf("%s: %s\n", filename, strerror(count));
 
   close(file);
 }
@@ -320,7 +332,7 @@ static void test_write_file(char *filename, int size)
 
   if ((file = open(filename, O_CREAT)) < 0)
   {
-    printf("%s: error creating file\n", filename);
+    printf("%s: %s\n", filename, strerror(file));
     return;
   }
 
@@ -437,7 +449,7 @@ static void mount_device(int argc, char **argv)
   rc = mount(type, path, devname, opts); 
   if (rc < 0)
   {
-    printf("mount: error %d mounting %s\n", rc, devname);
+    printf("%s: %s\n", devname, strerror(rc));
     return;
   }
 }
@@ -458,7 +470,7 @@ static void unmount_device(int argc, char **argv)
   rc = unmount(path);
   if (rc < 0)
   {
-    printf("unmount: error %d mounting %s\n", rc, path);
+    printf("%s: %s\n", path, strerror(rc));
     return;
   }
 }
@@ -484,7 +496,7 @@ static void format_device(int argc, char **argv)
   printf("\n");
   if (rc < 0)
   {
-    printf("format: error %d formatting %s\n", rc, devname);
+    printf("%s: %s\n", devname, strerror(rc));
     return;
   }
 }
@@ -500,7 +512,7 @@ static void disk_usage(int argc, char **argv)
   count = getfsstat(NULL, 0);
   if (count < 0)
   {
-    printf("du: error %d in getfsstat\n", count);
+    printf("du: %s\n", strerror(count));
     return;
   }
 
@@ -508,7 +520,7 @@ static void disk_usage(int argc, char **argv)
   rc = getfsstat(buf, count * sizeof(struct statfs));
   if (rc < 0)
   {
-    printf("du: error %d in getfsstat\n", rc);
+    printf("du: %s\n", strerror(rc));
     return;
   }
 
@@ -519,7 +531,7 @@ static void disk_usage(int argc, char **argv)
   {
     b = buf + n;
 
-    printf("%-7s%-14s%-14s", b->fstype, b->mntonname, b->mntfromname);
+    printf("%-7s%-14s%-14s", b->fstype, b->mntto, b->mntfrom);
     if (b->blocks != -1)
     {
       printf("%6dK", b->cachesize / K);
@@ -549,7 +561,7 @@ static void lookup(char *name)
     addr.s_addr = inet_addr(name);
     if (addr.s_addr == INADDR_NONE)
     {
-      printf("%s: invalid address\n", name);
+      printf("%s: %s\n", name, strerror(errno));
       return;
     }
 
@@ -560,7 +572,7 @@ static void lookup(char *name)
 
   if (!hp)
   {
-    printf("%s: error %d resolving name\n", name, errno);
+    printf("%s: %s\n", name, strerror(errno));
     return;
   }
 
@@ -784,7 +796,7 @@ static void http(int argc, char **argv)
   t = clock();
   rc = httpget(server, path, filename);
   if (rc < 0)
-    printf("error %d retrieving %s from %s\n", rc, path, server);
+    printf("error %d '%s' retrieving %s from %s\n", rc, strerror(rc), path, server);
   else
   {
     t = clock() - t;
@@ -848,7 +860,7 @@ static void download(int argc, char **argv)
       printf("create directory %s\n", p);
       sprintf(fn, "%s/%s", dst, p);
       rc = mkdir(fn);
-      if (rc < 0) printf("%s: error %d creating directory\n", fn, rc);
+      if (rc < 0) printf("%s: error %d '%s' creating directory\n", fn, rc, strerror(rc));
     }
     else
     {
@@ -856,7 +868,7 @@ static void download(int argc, char **argv)
       sprintf(fn, "%s/%s", dst, p);
       sprintf(path, "%s/%s", src, p);
       rc = httpget(server, path, fn);
-      if (rc < 0) printf("%s: error %d downloading file\n", fn, rc);
+      if (rc < 0) printf("%s: error %d '%s' downloading file\n", fn, rc, strerror(rc));
     }
 
     if (*q == '\n') *q++ = 0;

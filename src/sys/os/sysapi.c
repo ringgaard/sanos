@@ -50,7 +50,7 @@ int format(const char *devname, const char *type, const char *opts)
   return syscall(SYSCALL_FORMAT, (void *) &devname);
 }
 
-int mount(const char *type, const char *path, const char *devname, const char *opts)
+int mount(const char *type, const char *mntto, const char *mntfrom, const char *opts)
 {
   return syscall(SYSCALL_MOUNT, (void *) &type);
 }

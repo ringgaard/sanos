@@ -58,7 +58,6 @@ static int sys_format(char *params)
   char *type;
   char *opts;
   int rc;
-  devno_t dev;
 
   if (lock_buffer(params, 12) < 0) return -EFAULT;
 
@@ -87,14 +86,7 @@ static int sys_format(char *params)
     return -EFAULT;
   }
 
-  dev = dev_open(devname);
-  if (dev != NODEV)
-  {
-    rc = format(dev, type, opts);
-    dev_close(dev);
-  }
-  else
-    rc = -ENOENT;
+  rc = format(devname, type, opts);
 
   unlock_string(opts);
   unlock_string(type);
@@ -107,17 +99,16 @@ static int sys_format(char *params)
 static int sys_mount(char *params)
 {
   char *type;
-  char *path;
-  char *devname; 
+  char *mntto;
+  char *mntfrom; 
   char *opts;
   int rc;
-  devno_t dev;
 
   if (lock_buffer(params, 16) < 0) return -EFAULT;
 
   type = *(char **) params;
-  path = *(char **) (params + 4);
-  devname = *(char **) (params + 8);
+  mntto = *(char **) (params + 4);
+  mntfrom = *(char **) (params + 8);
   opts = *(char **) (params + 12);
 
   if (lock_string(type) < 0)
@@ -126,16 +117,16 @@ static int sys_mount(char *params)
     return -EFAULT;
   }
 
-  if (lock_string(path) < 0)
+  if (lock_string(mntto) < 0)
   {
     unlock_string(type);
     unlock_buffer(params, 16);
     return -EFAULT;
   }
 
-  if (lock_string(devname) < 0)
+  if (lock_string(mntfrom) < 0)
   {
-    unlock_string(path);
+    unlock_string(mntto);
     unlock_string(type);
     unlock_buffer(params, 16);
     return -EFAULT;
@@ -143,22 +134,18 @@ static int sys_mount(char *params)
 
   if (lock_string(opts) < 0)
   {
-    unlock_string(devname);
-    unlock_string(path);
+    unlock_string(mntfrom);
+    unlock_string(mntto);
     unlock_string(type);
     unlock_buffer(params, 16);
     return -EFAULT;
   }
 
-  dev = dev_open(devname);
-  if (dev != NODEV)
-    rc = mount(type, path, dev, opts);
-  else
-    rc = -ENOENT;
+  rc = mount(type, mntto, mntfrom, opts);
 
   unlock_string(opts);
-  unlock_string(devname);
-  unlock_string(path);
+  unlock_string(mntfrom);
+  unlock_string(mntto);
   unlock_string(type);
   unlock_buffer(params, 16);
 

@@ -7,6 +7,7 @@
 //
 
 #include <os.h>
+#include <string.h>
 #include <inifile.h>
 
 #define NTP_EPOCH            (86400U * (365U * 70U + 17U))
