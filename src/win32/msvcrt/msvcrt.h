@@ -202,6 +202,7 @@ crtapi void _ftol();
 crtapi void _isnan();
 crtapi double _copysign(double a, double b);
 crtapi void _finite();
+crtapi void _floor();
 crtapi void _CIfmod();
 crtapi unsigned int _control87(unsigned int newflags, unsigned int mask);
 crtapi unsigned int _controlfp(unsigned int newflags, unsigned int mask);

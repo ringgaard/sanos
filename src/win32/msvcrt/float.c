@@ -117,6 +117,121 @@ __declspec(naked) void _finite()
   }
 }
 
+__declspec(naked) void _floor()
+{
+  __asm 
+  {
+    push        ebp
+    mov         ebp,esp
+    push        ecx
+    push        ecx
+    push        ebx
+    push        esi
+    mov         esi,0FFFFh
+    push        esi
+    push        dword ptr [_floor]
+    call        floor1
+  floor1:
+    fld         qword ptr [ebp+8]
+    pop         ecx
+    mov         ebx,eax
+    mov         eax,dword ptr [ebp+0Eh]
+    pop         ecx
+    push        ecx
+    and         ax,7FF0h
+    push        ecx
+    cmp         ax,7FF0h
+    fstp        qword ptr [esp]
+    jne         floor6
+    call        floor2
+  floor2:
+    pop         ecx
+    test        eax,eax
+    pop         ecx
+    jle         floor5
+    cmp         eax,2
+    jle         floor3
+    cmp         eax,3
+    jne         floor5
+    fld         qword ptr [ebp+8]
+    push        ebx
+    push        ecx
+    push        ecx
+    fstp        qword ptr [esp]
+    push        0Bh
+    call        floor21
+  floor21:
+    add         esp,10h
+    jmp         floor12
+  floor3:
+    push        esi
+    push        ebx
+    call        floor4
+  floor4:
+    fld         qword ptr [ebp+8]
+    pop         ecx
+    pop         ecx
+    jmp         floor12
+  floor5:
+    fld         qword ptr [ebp+8]
+    fadd        qword ptr [_floor]
+    push        ebx
+    push        ecx
+    push        ecx
+    fstp        qword ptr [esp]
+    fld         qword ptr [ebp+8]
+    push        ecx
+    push        ecx
+    fstp        qword ptr [esp]
+    push        0Bh
+    push        8
+    jmp         floor10
+  floor6:
+    call        floor7
+    fstp        qword ptr [ebp-8]
+  floor7:
+    fld         qword ptr [ebp-8]
+    fcomp       qword ptr [ebp+8]
+    pop         ecx
+    pop         ecx
+    fnstsw      ax
+    sahf
+    jne         floor9
+  floor71:
+    push        esi
+    push        ebx
+    call        floor8
+  floor8:
+    fld         qword ptr [ebp-8]
+    pop         ecx
+    pop         ecx
+    jmp         floor12
+  floor9:
+    test        bl,20h
+    jne         floor71
+    fld         qword ptr [ebp-8]
+    push        ebx
+    push        ecx
+    push        ecx
+    fstp        qword ptr [esp]
+    fld         qword ptr [ebp+8]
+    push        ecx
+    push        ecx
+    fstp        qword ptr [esp]
+    push        0Bh
+    push        10h
+  floor10:
+    call        floor11
+  floor11:
+    add         esp,1Ch
+  floor12:
+    pop         esi
+    pop         ebx
+    leave
+    ret
+  }
+}
+
 void _CIfmod()
 {
   panic("_CIfmod not implemented");
