@@ -53,7 +53,7 @@
 				GenerateMapFile="TRUE"
 				MapFileName=".\..\dbg\obj\fdisk/fdisk.map"
 				SubSystem="1"
-				EntryPointSymbol="main"/>
+				EntryPointSymbol=""/>
 			<Tool
 				Name="VCMIDLTool"
 				TypeLibraryName=".\..\dbg\bin/fdisk.tlb"/>
@@ -112,7 +112,7 @@
 				GenerateMapFile="TRUE"
 				MapFileName=".\..\obj\fdisk/fdisk.map"
 				SubSystem="1"
-				EntryPointSymbol="main"/>
+				EntryPointSymbol=""/>
 			<Tool
 				Name="VCMIDLTool"
 				TypeLibraryName=".\..\bin/fdisk.tlb"/>

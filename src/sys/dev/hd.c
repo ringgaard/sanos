@@ -1221,29 +1221,34 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
   if (hd->udmamode == -1 && hd->multsect > 1) kprintf(", %d sects/intr", hd->multsect);
   kprintf("\n");
 
-  // Create partitions
-  dev_read(devno, &mbr, SECTORSIZE, 0);
+  // Read partition table
+  rc = dev_read(devno, &mbr, SECTORSIZE, 0);
+  if (rc < 0)
+  {
+    kprintf("%s: error %d reading partition table\n", devname, rc);
+    return;
+  }
 
+  // Create partition devices
   if (mbr.signature != MBR_SIGNATURE)
   {
     kprintf("%s: illegal boot sector signature\n", devname);
+    return;
   }
-  else
-  {
-    for (i = 0; i < HD_PARTITIONS; i++)
-    {
-      if (mbr.parttab[i].systid != 0)
-      {
-	hd->parts[i].dev = devno;
-	hd->parts[i].bootid = mbr.parttab[i].bootid;
-	hd->parts[i].systid = mbr.parttab[i].systid;
-	hd->parts[i].start = mbr.parttab[i].relsect;
-	hd->parts[i].len = mbr.parttab[i].numsect;
 
-	partdevno = dev_make(partnames[i], &partition_driver, NULL, &hd->parts[i]);
- 
-	kprintf("%s: partition %d on %s, %dMB (type %02x)\n", partnames[i], i, devname, mbr.parttab[i].numsect / (M / SECTORSIZE), mbr.parttab[i].systid);
-      }
+  for (i = 0; i < HD_PARTITIONS; i++)
+  {
+    if (mbr.parttab[i].systid != 0)
+    {
+      hd->parts[i].dev = devno;
+      hd->parts[i].bootid = mbr.parttab[i].bootid;
+      hd->parts[i].systid = mbr.parttab[i].systid;
+      hd->parts[i].start = mbr.parttab[i].relsect;
+      hd->parts[i].len = mbr.parttab[i].numsect;
+
+      partdevno = dev_make(partnames[i], &partition_driver, NULL, &hd->parts[i]);
+
+      kprintf("%s: partition %d on %s, %dMB (type %02x)\n", partnames[i], i, devname, mbr.parttab[i].numsect / (M / SECTORSIZE), mbr.parttab[i].systid);
     }
   }
 }

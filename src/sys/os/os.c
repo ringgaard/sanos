@@ -416,7 +416,7 @@ int exec(hmodule_t hmod, char *args)
   usermods.execmod = get_module_for_handle(&usermods, hmod);
   gettib()->args = args;
 
-  rc = ((int (__stdcall *)(hmodule_t, char *, int)) get_entrypoint(hmod))(hmod, args, 0);
+  rc = ((int (*)(hmodule_t, char *, int)) get_entrypoint(hmod))(hmod, args, 0);
   
   usermods.execmod = prev_execmod;
   gettib()->args = prev_args;

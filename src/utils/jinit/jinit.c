@@ -292,32 +292,15 @@ int init_jvm()
   return 0;
 }
 
-int __stdcall main(hmodule_t hmod, char *cmdline, int reserved)
+int execute_main_method(char *mainclsname, char *mainclsargs)
 {
-  char *mainclsname;
-  char *mainclsargs;
   int argc;
   char **argv;
-
   jclass mainclass;
   jmethodID mainid;
   jobjectArray mainargs;
 
-  // Determine configuration
-  cfgname = cmdline;
-  while (*cfgname != 0 && *cfgname != ' ') cfgname++;
-  while (*cfgname == ' ') cfgname++;
-  if (!cfgname || !*cfgname) cfgname = "java";
-
-  // Initialize Java VM
-  if (init_jvm() != 0) return 1;
-
-  // Get main class and arguments
-  mainclsname = get_property(config, cfgname, "mainclass", "sanos.os.Shell");
-  mainclsargs = get_property(config, cfgname, "mainargs", "");
-
   // Load main class
-  //syslog(LOG_DEBUG, "load main class %s\n", mainclsname);
   mainclass = load_class(env, mainclsname);
   if (mainclass == NULL) 
   {
@@ -326,7 +309,6 @@ int __stdcall main(hmodule_t hmod, char *cmdline, int reserved)
   }
 
   // Find main method
-  //syslog(LOG_DEBUG, "find main method\n");
   mainid = (*env)->GetStaticMethodID(env, mainclass, "main", "([Ljava/lang/String;)V");
   if (mainid == NULL) 
   {
@@ -352,11 +334,39 @@ int __stdcall main(hmodule_t hmod, char *cmdline, int reserved)
   }
 
   // Invoke main method
-  //syslog(LOG_DEBUG, "invoke main\n");
   (*env)->CallStaticVoidMethod(env, mainclass, mainid, mainargs);
-  //syslog(LOG_DEBUG, "return from main\n");
-  if ((*env)->ExceptionOccurred(env)) (*env)->ExceptionDescribe(env);
+  if ((*env)->ExceptionOccurred(env)) 
+  {
+    (*env)->ExceptionDescribe(env);
+    return 1;
+  }
 
+  free_args(argc, argv);
+  return 0;
+}
+
+int main(int argc, char *argv[])
+{
+  char *mainclsname;
+  char *mainclsargs;
+
+  // Determine configuration
+  if (argc == 2)
+    cfgname = argv[1];
+  else
+    cfgname = "java";
+
+  // Initialize Java VM
+  if (init_jvm() != 0) return 1;
+
+  // Get main class and arguments
+  mainclsname = get_property(config, cfgname, "mainclass", "sanos.os.Shell");
+  mainclsargs = get_property(config, cfgname, "mainargs", "");
+
+  // Call main method
+  execute_main_method(mainclsname, mainclsargs);
+
+  // Detach main thread from jvm
   if ((*vm)->DetachCurrentThread(vm) != 0) 
   {
     syslog(LOG_ERR, "Could not detach main thread\n");
@@ -364,6 +374,5 @@ int __stdcall main(hmodule_t hmod, char *cmdline, int reserved)
   }
 
   (*vm)->DestroyJavaVM(vm);
-  free_args(argc, argv);
   return 0;
 }

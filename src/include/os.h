@@ -456,7 +456,7 @@ typedef struct critsect *critsect_t;
 #define FIONREAD      _IOR('f', 127, unsigned long) // Get # bytes to read
 #define FIONBIO       _IOW('f', 126, unsigned long) // Set/clear non-blocking i/o
 
-#define SIOWAITRECV  _IOW('s', 120, unsigned long)
+#define SIOWAITRECV   _IOW('s', 120, unsigned long)
 
 struct in_addr 
 {

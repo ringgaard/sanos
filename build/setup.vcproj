@@ -52,7 +52,7 @@
 				GenerateMapFile="TRUE"
 				MapFileName=".\..\obj\setup/setup.map"
 				SubSystem="1"
-				EntryPointSymbol="main"/>
+				EntryPointSymbol=""/>
 			<Tool
 				Name="VCMIDLTool"
 				TypeLibraryName=".\..\bin/setup.tlb"/>
@@ -112,7 +112,7 @@
 				GenerateMapFile="TRUE"
 				MapFileName=".\..\dbg\obj\setup/setup.map"
 				SubSystem="1"
-				EntryPointSymbol="main"/>
+				EntryPointSymbol=""/>
 			<Tool
 				Name="VCMIDLTool"
 				TypeLibraryName=".\..\dbg\bin/setup.tlb"/>

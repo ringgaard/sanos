@@ -1513,7 +1513,7 @@ void __stdcall telnetd(void *arg)
   }
 }
 
-int __stdcall main(hmodule_t hmod, char *cmdline, void *env)
+int main(int argc, char *argv[])
 {
   //beginthread(ttyd, 0, "/dev/com4", 0, NULL);
   if (peb->ipaddr.s_addr != INADDR_ANY) beginthread(telnetd, 0, NULL, 0, NULL);

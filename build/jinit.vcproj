@@ -52,7 +52,7 @@
 				GenerateMapFile="TRUE"
 				MapFileName=".\..\obj\jinit/jinit.map"
 				SubSystem="1"
-				EntryPointSymbol="main"/>
+				EntryPointSymbol=""/>
 			<Tool
 				Name="VCMIDLTool"
 				TypeLibraryName=".\..\bin/jinit.tlb"/>
@@ -112,7 +112,7 @@
 				GenerateMapFile="TRUE"
 				MapFileName=".\..\dbg\obj\jinit/jinit.map"
 				SubSystem="1"
-				EntryPointSymbol="main"/>
+				EntryPointSymbol=""/>
 			<Tool
 				Name="VCMIDLTool"
 				TypeLibraryName=".\..\dbg\bin/jinit.tlb"/>

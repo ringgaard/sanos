@@ -86,7 +86,7 @@ struct netif *netif_find(char *name)
 
   for (netif = netif_list; netif != NULL; netif = netif->next) 
   {
-    if(strcmp(name, netif->name) == 0) return netif;
+    if (strcmp(name, netif->name) == 0) return netif;
   }
 
   return NULL;

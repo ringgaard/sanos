@@ -53,7 +53,7 @@
 				GenerateMapFile="TRUE"
 				MapFileName=".\..\dbg\obj\sh/sh.map"
 				SubSystem="1"
-				EntryPointSymbol="main"/>
+				EntryPointSymbol=""/>
 			<Tool
 				Name="VCMIDLTool"
 				TypeLibraryName=".\..\dbg\bin/sh.tlb"/>

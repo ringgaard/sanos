@@ -610,7 +610,7 @@ int runscript(char *scriptname)
 // main
 //
 
-int __stdcall main(hmodule_t hmod, char *cmdline, void *env)
+int main(int argc, char *argv[])
 {
   char *instfn;
   char *prodname;
@@ -618,14 +618,8 @@ int __stdcall main(hmodule_t hmod, char *cmdline, void *env)
   char *scriptname;
   int rc;
 
-  if (cmdline)
-  {
-    while (*cmdline != 0 && *cmdline != ' ') cmdline++;
-    while (*cmdline == ' ') cmdline++;
-  }
-
-  if (cmdline && *cmdline)
-    instfn = cmdline;
+  if (argc == 2)
+    instfn = argv[1];
   else
     instfn = "/setup/setup.ini";
 

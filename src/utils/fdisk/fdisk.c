@@ -381,25 +381,19 @@ void help()
 // main
 //
 
-int __stdcall main(hmodule_t hmod, char *cmdline, void *env)
+int main(int argc, char *argv[])
 {
   int rc;
   int cmd;
   int done = 0;
 
   // Check arguments
-  if (cmdline)
-  {
-    while (*cmdline != 0 && *cmdline != ' ') cmdline++;
-    while (*cmdline == ' ') cmdline++;
-  }
-
-  if (!cmdline || !*cmdline)
+  if (argc != 2)
   {
     printf("usage: fdisk <device>\n");
     return 1;
   }
-  devname = cmdline;
+  devname = argv[1];
 
   // Open device
   hdev = open(devname, O_RDWR);

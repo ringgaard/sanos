@@ -156,7 +156,13 @@
 			RelativePath="..\src\lib\bsearch.c">
 		</File>
 		<File
+			RelativePath="..\src\lib\crt0.c">
+		</File>
+		<File
 			RelativePath="..\src\lib\ctype.c">
+		</File>
+		<File
+			RelativePath="..\src\lib\entry.cpp">
 		</File>
 		<File
 			RelativePath="..\src\lib\fp.c">

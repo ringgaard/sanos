@@ -10,6 +10,8 @@ TODO for sanos
 - Move netif binding to os.c
     - Read netif parameters from [netif] in os.ini
     - Allow static configuration of ip address and dns servers
+    - Add disabled netif for all packet devices on startup
+    - Add ioctl() support for changing netif parameters
 
 - Make ne2000 driver work with WAFER.
 
@@ -41,8 +43,6 @@ TODO for sanos
  
  - Revalidate partition drivers after fdisk
 
- - Implement main entry in libc with parseargs
- 
  - Handle reopening of files in smbfs after reconnect
  
 IDEAS for new features
@@ -108,3 +108,5 @@ CHANGES
     - Update error codes in network code
     - Map winsock errors in wsock32.c
     - Go through each Winsock error and check net code for compliance
+
+ - Implemented main entry in libc with parseargs
