@@ -50,6 +50,16 @@ int buffer_left(struct httpd_buffer *buf)
   return buf->ceil - buf->end;
 }
 
+int buffer_empty(struct httpd_buffer *buf)
+{
+  return buf->start == buf->end;
+}
+
+int buffer_full(struct httpd_buffer *buf)
+{
+  return buf->end == buf->ceil;
+}
+
 int allocate_buffer(struct httpd_buffer *buf, int size)
 {
   if (size == 0)

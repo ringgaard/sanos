@@ -50,9 +50,10 @@
 
 // HTTP connection states
 
-#define HTTP_STATE_IDLE       0
-#define HTTP_STATE_HEADER     1
-#define HTTP_STATE_PROCESSING 2
+#define HTTP_STATE_IDLE           0
+#define HTTP_STATE_READ_REQUEST   1
+#define HTTP_STATE_PROCESSING     2
+#define HTTP_STATE_WRITE_RESPONSE 3
 
 #define HDR_STATE_FIRSTWORD   0
 #define HDR_STATE_FIRSTWS     1
@@ -150,12 +151,12 @@ struct httpd_request
   char *path_translated;
 
   char *referer;
-  char *useragent;
+  char *user_agent;
   char *accept;
   char *cookie;
   char *authorization;
-  char *contenttype;
-  int contentlength;
+  char *content_type;
+  int content_length;
   char *host;
   time_t if_modified_since;
   int keep_alive;
@@ -170,10 +171,12 @@ struct httpd_response
 {
   struct httpd_connection *conn;
 
-  int hdrsent;
-  char *contenttype;
-  int contentlength;
-  time_t lastmodified;
+  int status;
+
+  int keep_alive;
+  char *content_type;
+  int content_length;
+  time_t last_modified;
 };
 
 // HTTP connection
@@ -195,6 +198,9 @@ struct httpd_connection
   struct httpd_buffer rspbody;
   int state;
   int hdrstate;
+  int fd;
+  int hdrsent;
+  int keep;
 };
 
 httpdapi struct httpd_server *httpd_initialize(struct section *cfg); 
@@ -225,6 +231,9 @@ char *rfctime(time_t t, char *buf);
 int buffer_size(struct httpd_buffer *buf);
 int buffer_capacity(struct httpd_buffer *buf);
 int buffer_left(struct httpd_buffer *buf);
+int buffer_empty(struct httpd_buffer *buf);
+int buffer_full(struct httpd_buffer *buf);
+
 int allocate_buffer(struct httpd_buffer *buf, int size);
 void free_buffer(struct httpd_buffer *buf);
 void clear_buffer(struct httpd_buffer *buf);

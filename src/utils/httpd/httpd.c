@@ -164,6 +164,11 @@ void httpd_close_connection(struct httpd_connection *conn)
   printf("close %a port %d\n", &conn->client_addr.sa_in.sin_addr.s_addr, ntohs(conn->client_addr.sa_in.sin_port));
 
   close(conn->sock);
+  if (conn->fd >= 0)
+  {
+    close(conn->fd);
+    conn->fd = -1;
+  }
   free_buffer(&conn->reqhdr);
   free_buffer(&conn->reqbody);
   free_buffer(&conn->rsphdr);
@@ -228,6 +233,8 @@ int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *
   char buf[2048];
   char datebuf[32];
 
+  rsp->status = state;
+
   sprintf(buf, "HTTP/%s %d %s\r\nServer: %s\r\nDate: %s\r\n", 
     rsp->conn->req->http11 ? "1.1" : "1.0",
     state, title, HTTPD_SOFTWARE,
@@ -236,23 +243,23 @@ int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *
   rc = bufcat(&rsp->conn->rsphdr, buf);
   if (rc < 0) return rc;
 
-  if (rsp->lastmodified)
+  if (rsp->last_modified)
   {
-    sprintf(buf, "Last-Modified: %s\r\n", rfctime(rsp->lastmodified, datebuf));
+    sprintf(buf, "Last-Modified: %s\r\n", rfctime(rsp->last_modified, datebuf));
     rc = bufcat(&rsp->conn->rsphdr, buf);
     if (rc < 0) return rc;
   }
 
-  if (rsp->contenttype)
+  if (rsp->content_type)
   {
-    sprintf(buf, "Content-Type: %s\r\n", rsp->contenttype);
+    sprintf(buf, "Content-Type: %s\r\n", rsp->content_type);
     rc = bufcat(&rsp->conn->rsphdr, buf);
     if (rc < 0) return rc;
   }
 
-  if (rsp->contentlength != -1)
+  if (rsp->content_length >= 0)
   {
-    sprintf(buf, "Content-Length: %d\r\n", rsp->contentlength);
+    sprintf(buf, "Content-Length: %d\r\n", rsp->content_length);
     rc = bufcat(&rsp->conn->rsphdr, buf);
     if (rc < 0) return rc;
   }
@@ -263,7 +270,10 @@ int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *
     if (rc < 0) return rc;
   }
 
-  if (rsp->conn->req->keep_alive && rsp->contentlength != -1)
+  if (rsp->content_length < 0) rsp->keep_alive = 0;
+  if (state >= 400) rsp->keep_alive = 0;
+
+  if (rsp->keep_alive)
   {
     rc = bufcat(&rsp->conn->rsphdr, "Connection: Keep-Alive\r\n");
     if (rc < 0) return rc;
@@ -284,8 +294,8 @@ int httpd_send_error(struct httpd_response *rsp, int state, char *title, char *m
   sprintf(buf, "<HTML><HEAD><TITLE>%d %s</TITLE></HEAD>\n<BODY><H1>%d %s</H1>\n%s\n</BODY></HTML>\n",
           state, title, state, title, msg);
 
-  rsp->contenttype = "text/html";
-  rsp->contentlength = strlen(buf);
+  rsp->content_type = "text/html";
+  rsp->content_length = strlen(buf);
 
   rc = httpd_send_header(rsp, state, title ? title : statustitle(state), NULL);
   if (rc < 0) return rc;
@@ -349,7 +359,7 @@ int httpd_flush(struct httpd_response *rsp)
   int rc;
 
   // Send response header if not already done
-  if (!rsp->hdrsent)
+  if (!rsp->conn->hdrsent)
   {
     buf = &rsp->conn->rsphdr;
 
@@ -371,7 +381,7 @@ int httpd_flush(struct httpd_response *rsp)
       buf->start = buf->end;
     }
 
-    rsp->hdrsent = 1;
+    rsp->conn->hdrsent = 1;
   }
 
   // Send response body
@@ -390,7 +400,8 @@ int httpd_flush(struct httpd_response *rsp)
 
 int httpd_send_file(struct httpd_response *rsp, int fd)
 {
-  return -ENOSYS;
+  rsp->conn->fd = fd;
+  return 0;
 }
 
 int httpd_check_header(struct httpd_connection *conn)
@@ -640,7 +651,7 @@ int httpd_parse_request(struct httpd_request *req)
     if (stricmp(l, "Referer") == 0)
       req->referer = s;
     else if (stricmp(l, "User-agent") == 0)
-      req->useragent = s;
+      req->user_agent = s;
     else if (stricmp(l, "Accept") == 0)
       req->accept = s;
     else if (stricmp(l, "Cookie") == 0)
@@ -648,9 +659,9 @@ int httpd_parse_request(struct httpd_request *req)
     else if (stricmp(l, "Authorization") == 0)
       req->authorization = s;
     else if (stricmp(l, "Content-type") == 0)
-      req->contenttype = s;
+      req->content_type = s;
     else if (stricmp(l, "Content-length") == 0)
-      req->contentlength = atoi(s);
+      req->content_length = atoi(s);
     else if (stricmp(l, "Host") == 0)
       req->host = s;
     else if (stricmp(l, "If-modified-since") == 0)
@@ -710,48 +721,54 @@ int httpd_process(struct httpd_connection *conn)
   struct httpd_request req;
   struct httpd_response rsp;
   int rc;
+  int finished;
 
+  // Initialize new request and response objects
   memset(&req, 0, sizeof(struct httpd_request));
   memset(&rsp, 0, sizeof(struct httpd_response));
-  rsp.contentlength = -1;
+  rsp.content_length = -1;
 
   req.conn = conn;
   rsp.conn = conn;
   conn->req = &req;
   conn->rsp = &rsp;
-  conn->state = HTTP_STATE_PROCESSING;
+  conn->fd = -1;
+  conn->keep = 0;
+  conn->hdrsent = 0;
 
-  printf("parse request\n");
+  // Parse HTTP request
   rc = httpd_parse_request(&req);
-  if (rc < 0) 
-  {
-    printf("httpd: error %d in parse request\n", rc);
-    goto errorexit;
-  }
+  if (rc < 0) goto errorexit;
+  rsp.keep_alive = req.keep_alive;
 
-#if 0
+  // Find context handler for request
   rc = httpd_find_context(&req);
   if (rc < 0)
   {
-    httpd_send_error(&rsp, 404, "Not Found", NULL);
+    // No context found - return error
+    rc = httpd_send_error(&rsp, 404, "Not Found", NULL);
+    if (rc < 0) goto errorexit;
   }
   else
   {
-    httpd_send_error(&rsp, 501, "Not Implemented", NULL);
+    // Call context handler to handle request
+    rc = req.context->handler(conn);
+    if (rc < 0) goto errorexit;
+    if (rc > 0)
+    {
+      // Return HTTP error to client
+      rc = httpd_send_error(&rsp, rc, NULL, NULL);
+      if (rc < 0) goto errorexit;
+    }
+
+    // Prepare for sending back response
+    conn->keep = rsp.keep_alive;
+    finished = conn->hdrsent && buffer_empty(&conn->rspbody) && conn->fd == -1;
+
+    //TODO
   }
-#endif
-  {
-    char *buf;
 
-    buf = "<html><head><title>This is a test</title></head><body>This is a test</body></html>";
-    rsp.contenttype = "text/html";
-    rsp.contentlength = strlen(buf);
-    rsp.lastmodified = time(0);
-
-    httpd_send(&rsp, buf, strlen(buf));
-    httpd_flush(&rsp);
-  }
-
+  httpd_flush(&rsp);
   httpd_clear_connection(conn);
   //close(conn->sock);
 
@@ -771,11 +788,11 @@ int httpd_io(struct httpd_connection *conn)
     case HTTP_STATE_IDLE:
       rc = allocate_buffer(&conn->reqhdr, conn->server->min_hdrbufsiz);
       if (rc < 0) return rc;
-      conn->state = HTTP_STATE_HEADER;
+      conn->state = HTTP_STATE_READ_REQUEST;
       conn->hdrstate = HDR_STATE_FIRSTWORD;
       // Fall through
 
-    case HTTP_STATE_HEADER:
+    case HTTP_STATE_READ_REQUEST:
       if (buffer_capacity(&conn->reqhdr) >= conn->server->max_hdrbufsiz) return -EBUF;
       rc = expand_buffer(&conn->reqhdr, 1);
       if (rc < 0) return rc;
@@ -791,6 +808,7 @@ int httpd_io(struct httpd_connection *conn)
       if (rc < 0) return rc;
       if (rc > 0)
       {
+	conn->state = HTTP_STATE_PROCESSING;
         rc = httpd_process(conn);
         if (rc < 0) return rc;
       }
@@ -801,6 +819,9 @@ int httpd_io(struct httpd_connection *conn)
       }
 
       return 1;
+
+    case HTTP_STATE_WRITE_RESPONSE:
+      break;
 
     default:
       return -EINVAL;
@@ -883,6 +904,20 @@ int httpd_start(struct httpd_server *server)
   return 0;
 }
 
+int httpd_file_handler(struct httpd_connection *conn)
+{
+  char *buf;
+
+  buf = "<html><head><title>This is a test</title></head><body>This is a test</body></html>";
+  conn->rsp->content_type = "text/html";
+  conn->rsp->content_length = strlen(buf);
+  conn->rsp->last_modified = time(0);
+
+  httpd_send(conn->rsp, buf, strlen(buf));
+
+  return 0;
+};
+
 int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
 {
   struct httpd_server *server;
@@ -891,7 +926,7 @@ int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
   {
     mkcs(&srvlock);
     server = httpd_initialize(NULL);
-    httpd_add_context(server, NULL, NULL);
+    httpd_add_context(server, find_section(config, "webroot"), httpd_file_handler);
     httpd_start(server);
   }
 
