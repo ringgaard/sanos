@@ -89,17 +89,25 @@ static int bufpools_proc(struct proc_file *pf, void *arg)
 static int bufstats_proc(struct proc_file *pf, void *arg)
 {
   struct bufpool *pool;
-  int i;
+  int hitratio;
 
-  pprintf(pf, "device   bufsize   size  free clean dirty  read write  lock   upd  invl   err\n");
-  pprintf(pf, "-------- ------- ------ ----- ----- ----- ----- ----- ----- ----- ----- -----\n");
+  pprintf(pf, "device      reads   writes   hits%%   alloc    free  update    lazy    sync\n");
+  pprintf(pf, "-------- -------- -------- ------- ------- ------- ------- ------- -------\n");
 
   pool = bufpools;
   while (pool)
   {
-    pprintf(pf, "%-8s %7d %5dK", device(pool->devno)->name, pool->bufsize, pool->poolsize * pool->bufsize / K);
-    for (i = 0; i < BUF_STATES; i++) pprintf(pf, "%6d", pool->bufcount[i]);
-    pprintf(pf, "\n");
+    if (pool->cache_hits + pool->cache_misses == 0)
+      hitratio = 0;
+    else
+      hitratio = pool->cache_hits * 100 / (pool->cache_hits + pool->cache_misses);
+
+    pprintf(pf, "%-8s %8d %8d %6d%% %7d %7d %7d %7d %7d\n", 
+      device(pool->devno)->name,
+      pool->blocks_read, pool->blocks_written, hitratio,
+      pool->blocks_allocated, pool->blocks_freed,
+      pool->blocks_updated, pool->blocks_lazywrite, pool->blocks_synched);
+
     pool = pool->next;
   }
 
@@ -323,7 +331,7 @@ static int write_buffer(struct bufpool *pool, struct buf *buf, int flush)
     change_state(pool, buf, BUF_STATE_WRITING);
     if (!flush) pool->ioactive = 1;
     rc = dev_write(pool->devno, buf->data, pool->bufsize, buf->blkno * pool->blks_per_buffer);
-    pool->blocks_written;
+    pool->blocks_written++;
   }
   else
     rc = pool->bufsize;
@@ -794,7 +802,7 @@ int flush_buffers(struct bufpool *pool, int interruptable)
     rc = write_buffer(pool, buf, 1);
     if (rc < 0) return rc;
 
-    pool->blocks_flushed;
+    pool->blocks_lazywrite++;
 
     // Move buffer to clean list if it is not locked
     if (buf->locks == 0)
@@ -856,8 +864,8 @@ int sync_buffers(struct bufpool *pool, int interruptable)
       rc = dev_write(pool->devno, buf->data, pool->bufsize, buf->blkno * pool->blks_per_buffer);
       if (rc < 0) return rc;
       
-      pool->blocks_written;
-      pool->blocks_synched;
+      pool->blocks_written++;
+      pool->blocks_synched++;
 
       // Change state from updated to locked
       change_state(pool, buf, BUF_STATE_LOCKED);

@@ -96,7 +96,7 @@ struct bufpool
 
   int blocks_updated;
   int blocks_written;
-  int blocks_flushed;
+  int blocks_lazywrite;
   int blocks_synched;
 
   struct bufpool *next;
