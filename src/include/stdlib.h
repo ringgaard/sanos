@@ -9,6 +9,10 @@
 #ifndef STDLIB_H
 #define STDLIB_H
 
+#ifndef TYPES_H
+#include <types.h>
+#endif
+
 #define offsetof(s, m) ((size_t)&(((s *) 0)->m))
 
 int parse_args(char *args, char **argv);
@@ -26,5 +30,9 @@ void qsort(void *base, unsigned num, unsigned width, int (__cdecl *comp)(const v
 
 long strtol(const char *nptr, char **endptr, int ibase);
 unsigned long strtoul(const char *nptr, char **endptr, int ibase);
+
+char *getenv(const char *option);
+
+void abort();
 
 #endif

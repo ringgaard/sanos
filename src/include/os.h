@@ -9,6 +9,10 @@
 #ifndef OS_H
 #define OS_H
 
+#ifndef SANOS
+#define SANOS
+#endif
+
 #include <types.h>
 #include <stdarg.h>
 #include <time.h>
@@ -109,11 +113,15 @@ struct section;
 #define LOG_LEVEL_MASK          0x0000000F
 #define LOG_SUBSYS_MASK         0xFFFFFFF0
 
-#define LOG_ERROR               1
-#define LOG_WARNING             2
-#define LOG_INFO                3
-#define LOG_DEBUG               4
-#define LOG_TRACE               5
+#define LOG_EMERG	0
+#define LOG_ALERT	1
+#define LOG_CRIT	2
+#define LOG_ERR		3
+#define LOG_WARNING	4
+#define LOG_NOTICE	5
+#define LOG_INFO	6
+#define LOG_DEBUG	7
+#define LOG_TRACE       8
 
 #define LOG_MODULE              0x80000000
 #define LOG_HEAP                0x40000000
@@ -511,7 +519,9 @@ struct tib
   char *host_aliases[MAX_HOST_ALIASES];
   char hostbuf[HOSTBUF_SIZE];
 
-  char reserved1[2192];
+  struct tm tmbuf;                 // For gmtime() and localtime()
+
+  char reserved1[2156];
 
   void *tls[MAX_TLS];              // Thread local storage
   char reserved2[240];

@@ -180,7 +180,7 @@ int init_jvm()
     hjvm = load(jvmname);
     if (hjvm == NULL) 
     {
-      syslog(LOG_ERROR, "Error loading JVM %s\n", jvmname);
+      syslog(LOG_ERR, "Error loading JVM %s\n", jvmname);
       return 1;
     }
   }
@@ -190,7 +190,7 @@ int init_jvm()
     CreateJavaVM = (jint (JNICALL *)(JavaVM **pvm, void **env, void *args)) resolve(hjvm, "JNI_CreateJavaVM");
     if (!CreateJavaVM) 
     {
-      syslog(LOG_ERROR, "Unable to find CreateJavaVM\n");
+      syslog(LOG_ERR, "Unable to find CreateJavaVM\n");
       return 1;
     }
   }
@@ -201,7 +201,7 @@ int init_jvm()
     rc = CreateJavaVM(&vm, (void **) &env, &args);
     if (rc != JNI_OK) 
     {
-      syslog(LOG_ERROR, "Error %d creating java vm\n", rc);
+      syslog(LOG_ERR, "Error %d creating java vm\n", rc);
       return 1;
     }
   }
@@ -259,7 +259,7 @@ int __stdcall main(hmodule_t hmod, char *cmdline, int reserved)
   mainclass = load_class(env, mainclsname);
   if (mainclass == NULL) 
   {
-    syslog(LOG_ERROR, "Unable to find main class %s\n", mainclsname);
+    syslog(LOG_ERR, "Unable to find main class %s\n", mainclsname);
     return 1;
   }
 
@@ -268,7 +268,7 @@ int __stdcall main(hmodule_t hmod, char *cmdline, int reserved)
   mainid = (*env)->GetStaticMethodID(env, mainclass, "main", "([Ljava/lang/String;)V");
   if (mainid == NULL) 
   {
-    syslog(LOG_ERROR, "Class %s does not have a main method\n", mainclsname);
+    syslog(LOG_ERR, "Class %s does not have a main method\n", mainclsname);
     return 1;
   }
 
@@ -285,7 +285,7 @@ int __stdcall main(hmodule_t hmod, char *cmdline, int reserved)
   mainargs = new_string_array(env, argc, argv);
   if (mainargs == NULL)
   {
-    syslog(LOG_ERROR, "Error creating command arguments\n");
+    syslog(LOG_ERR, "Error creating command arguments\n");
     return 1;
   }
 
@@ -298,7 +298,7 @@ int __stdcall main(hmodule_t hmod, char *cmdline, int reserved)
 #if 0
   if ((*vm)->DetachCurrentThread(vm) != 0) 
   {
-    syslog(LOG_ERROR, "Could not detach main thread\n");
+    syslog(LOG_ERR, "Could not detach main thread\n");
     return 1;
   }
 #endif

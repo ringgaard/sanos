@@ -8,10 +8,17 @@
 
 #include <os.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <inifile.h>
 
 #ifdef KERNEL
 #include <os/krnl.h>
 #endif
+
+#pragma function(abs)
+
+int _fltused = 0x9875;
 
 __declspec(naked) void _allmul()
 {
@@ -46,6 +53,43 @@ __declspec(naked) void _allmul()
     pop     ebx
 
     ret     16              ; callee restores the stack
+  }
+}
+
+__declspec(naked) void _chkstk()
+{
+  __asm
+  {
+        push    ecx                     ; save ecx
+        cmp     eax,PAGESIZE            ; more than one page requested?
+        lea     ecx,[esp] + 8           ;   compute new stack pointer in ecx
+                                        ;   correct for return address and
+                                        ;   saved ecx
+        jb      short lastpage          ; no
+
+probepages:
+        sub     ecx,PAGESIZE            ; yes, move down a page
+        sub     eax,PAGESIZE            ; adjust request and...
+
+        test    dword ptr [ecx],eax     ; ...probe it
+
+        cmp     eax,PAGESIZE            ; more than one page requested?
+        jae     short probepages        ; no
+
+lastpage:
+        sub     ecx,eax                 ; move stack down by eax
+        mov     eax,esp                 ; save current tos and do a...
+
+        test    dword ptr [ecx],eax     ; ...probe in case a page was crossed
+
+        mov     esp,ecx                 ; set the new stack pointer
+
+        mov     ecx,dword ptr [eax]     ; recover ecx
+        mov     eax,dword ptr [eax + 4] ; recover return address
+
+        push    eax                     ; prepare return address
+                                        ; ...probe in case a page was crossed
+        ret
   }
 }
 
@@ -115,11 +159,31 @@ void free_args(int argc, char **argv)
   if (argv) free(argv);
 }
 
-#ifdef DEBUG
-
 int abs(int number)
 {
   return number >= 0 ? number : -number;
 }
+
+#ifndef KERNEL
+
+char *getenv(const char *option)
+{
+  return get_property(config, "env", (char *) option, NULL);
+}
+
+void abort()
+{
+  exit(3);
+}
+
+#ifdef DEBUG
+
+void _assert(void *expr, void *filename, unsigned lineno)
+{
+  printf("Assertion failed: %s, file %s, line %d\n", expr, filename, lineno);
+  exit(3);
+}
+
+#endif
 
 #endif

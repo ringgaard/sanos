@@ -130,7 +130,7 @@ static void list_dir(int argc, char **argv)
     {
       printf("%8d %4d %1d %2d ", buf.quad.size_low, buf.ino, buf.nlink, buf.devno);
 
-      gmtime(&buf.ctime, &tm);
+      _gmtime(&buf.ctime, &tm);
       printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
     }
     else
@@ -152,7 +152,7 @@ static void list_dir(int argc, char **argv)
       }
     }
 
-    gmtime(&buf.mtime, &tm);
+    _gmtime(&buf.mtime, &tm);
     printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
     printf("%s", dirp.name);
@@ -282,7 +282,7 @@ static void show_date()
   struct tm tm;
 
   t = time(NULL);
-  gmtime(&t, &tm);
+  _gmtime(&t, &tm);
   printf("Time is %04d/%02d/%02d %02d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
 
@@ -386,7 +386,7 @@ static void idle_sleep(int ms)
 
   t = time(NULL);
   c = clock();
-  gmtime(&t, &tm);
+  _gmtime(&t, &tm);
   printf("Time is %04d/%02d/%02d %02d:%02d:%02d Clock is %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, c);
 
   printf("Sleep %d ms\n", ms);
@@ -394,7 +394,7 @@ static void idle_sleep(int ms)
 
   t = time(NULL);
   c = clock();
-  gmtime(&t, &tm);
+  _gmtime(&t, &tm);
   printf("Time is %04d/%02d/%02d %02d:%02d:%02d Clock is %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, c);
 }
 
@@ -406,7 +406,7 @@ static void busy_loop(int ms)
 
   t = time(NULL);
   c = clock();
-  gmtime(&t, &tm);
+  _gmtime(&t, &tm);
   printf("Time is %04d/%02d/%02d %02d:%02d:%02d Clock is %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, c);
 
   //while (clock() < c + ms);
@@ -417,7 +417,7 @@ static void busy_loop(int ms)
 
   t = time(NULL);
   c = clock();
-  gmtime(&t, &tm);
+  _gmtime(&t, &tm);
   printf("Time is %04d/%02d/%02d %02d:%02d:%02d Clock is %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, c);
 }
 

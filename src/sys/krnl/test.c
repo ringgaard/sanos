@@ -219,7 +219,7 @@ static void list_dir(char *dirname)
 
     if (stat(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat));
 
-    gmtime(&buf.ctime, &tm);
+    _gmtime(&buf.ctime, &tm);
 
     kprintf("%8d %8d %02d/%02d/%04d %02d:%02d:%02d ", buf.ino, buf.quad.size_low, tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
     if (buf.mode & FS_DIRECTORY) 
@@ -275,7 +275,7 @@ static void show_date()
   struct tm tm;
 
   time = get_time();
-  gmtime(&time, &tm);
+  _gmtime(&time, &tm);
   kprintf("Time is %04d/%02d/%02d %02d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
 

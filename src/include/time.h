@@ -34,7 +34,12 @@ struct timezone
   int tz_dsttime;	        // Type of daylight saving correction
 };
 
-struct tm *gmtime(const time_t *timer, struct tm *tmbuf);
+struct tm *_gmtime(const time_t *timer, struct tm *tmbuf);
+struct tm *_localtime(const time_t *timer, struct tm *tmbuf);
+
+struct tm *gmtime(const time_t *timer);
+struct tm *localtime(const time_t *timer);
+
 time_t mktime(struct tm *tmbuf);
 
 #endif

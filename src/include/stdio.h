@@ -9,7 +9,9 @@
 #ifndef STDIO_H
 #define STDIO_H
 
-#include <stdarg.h>
+#ifndef OS_H
+#include <os.h>
+#endif
 
 typedef void FILE;
 

@@ -320,6 +320,6 @@ void set_time(struct timeval *tv)
 
   systemclock.tv_usec = tv->tv_usec;
   systemclock.tv_sec = tv->tv_sec;
-  gmtime(&tv->tv_sec, &tm);
+  _gmtime(&tv->tv_sec, &tm);
   set_cmos_time(&tm);
 }

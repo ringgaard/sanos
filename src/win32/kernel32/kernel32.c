@@ -691,7 +691,7 @@ VOID WINAPI GetSystemTime
 
   TRACE("GetSystemTime");
   gettimeofday(&tv);
-  gmtime(&tv.tv_sec, &tm);
+  _gmtime(&tv.tv_sec, &tm);
 
   lpSystemTime->wYear = tm.tm_year + 1900; 
   lpSystemTime->wMonth = tm.tm_mon + 1; 

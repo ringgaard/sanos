@@ -171,6 +171,7 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
   init_timers();
   init_sched();
   init_objects();
+  init_syscall();
 
   // Enable interrupts and calibrate delay
   __asm { sti };

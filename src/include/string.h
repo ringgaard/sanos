@@ -9,6 +9,14 @@
 #ifndef STRING_H
 #define STRING_H
 
+#ifndef TYPES_H
+#include <types.h>
+#endif
+
+#ifndef STDARG_H
+#include <stdarg.h>
+#endif
+
 char *strncpy(char *dest, const char *source, size_t count);
 int strncmp(const char *s1, const char *s2, size_t count);
 char *strdup(char *s);

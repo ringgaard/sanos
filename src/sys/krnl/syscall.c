@@ -8,6 +8,11 @@
 
 #include <os/krnl.h>
 
+//#define SYSCALL_PROFILE
+//#define SYSCALL_LOGENTER
+//#define SYSCALL_LOGEXIT
+#define SYSCALL_CHECKBUFFER
+
 struct syscall_entry
 {
   char *name;
@@ -15,36 +20,44 @@ struct syscall_entry
   int (*func)(char *); 
 };
 
-static int lock_buffer(void *buffer, int size)
+#ifdef SYSCALL_PROFILE
+static unsigned long sccnt[SYSCALL_MAX  + 1];
+static unsigned long scerr[SYSCALL_MAX  + 1];
+#endif
+
+static __inline int lock_buffer(void *buffer, int size)
 {
+#ifdef SYSCALL_CHECKBUFFER
   if (buffer)
   {
     if (buffer >= (void *) OSBASE) return -EFAULT;
+    if ((char *) buffer + size >= (char *) OSBASE) return -EFAULT;
     if (!mem_mapped(buffer, size)) return -EFAULT;
   }
+#endif
 
   return 0;
 }
 
-static int unlock_buffer(void *buffer, int size)
+static __inline void unlock_buffer(void *buffer, int size)
 {
-  return 0;
 }
 
-static int lock_string(char *s)
+static __inline int lock_string(char *s)
 {
+#ifdef SYSCALL_CHECKBUFFER
   if (s)
   {
     if (s >= (char *) OSBASE) return -EFAULT;
     if (!str_mapped(s)) return -EFAULT;
   }
+#endif
 
   return 0;
 }
 
-static int unlock_string(char *s)
+static __inline void unlock_string(char *s)
 {
-  return 0;
 }
 
 static int sys_null(char *params)
@@ -2289,8 +2302,9 @@ int syscall(int syscallno, char *params)
   struct syscall_context *sysctxt = (struct syscall_context *) &syscallno;
 
   t->uctxt = (char *) sysctxt + offsetof(struct syscall_context, traptype);
+  if (syscallno < 0 || syscallno > SYSCALL_MAX) return -ENOSYS;
 
-#if 0
+#if SYSCALL_LOGENTER
   {
     char buf[1024];
 
@@ -2298,11 +2312,24 @@ int syscall(int syscallno, char *params)
     kprintf("<-%s(%s)\n", syscalltab[syscallno].name, buf);
   }
 #endif
+  
+#ifdef SYSCALL_PROFILE
+  sccnt[syscallno]++;
+#endif
 
-  if (syscallno < 0 || syscallno > SYSCALL_MAX) return -ENOSYS;
   rc = syscalltab[syscallno].func(params);
 
-#if 0
+  if (rc < 0)
+  {
+    struct tib *tib = self()->tib;
+    if (tib) tib->err = rc;
+  }
+
+#ifdef SYSCALL_PROFILE
+  if (rc < 0) scerr[syscallno]++;
+#endif
+
+#if SYSCALL_LOGEXIT
   {
     char buf[1024];
 
@@ -2317,4 +2344,30 @@ int syscall(int syscallno, char *params)
   t->uctxt = NULL;
 
   return rc;
+}
+
+#ifdef SYSCALL_PROFILE
+static int syscalls_proc(struct proc_file *pf, void *arg)
+{
+  int i = 0;
+
+  pprintf(pf, "syscall               calls     errors\n");
+  pprintf(pf, "---------------- ---------- ----------\n");
+  for (i = 0; i < SYSCALL_MAX  + 1; i++)
+  {
+    if (sccnt[i] != 0) 
+    {
+      pprintf(pf, "%-16s %10d %10d\n", syscalltab[i].name, sccnt[i], scerr[i]);
+    }
+  }
+
+  return 0;
+}
+#endif
+
+void init_syscall()
+{
+#ifdef SYSCALL_PROFILE
+  register_proc_inode("syscalls", syscalls_proc, NULL);
+#endif
 }

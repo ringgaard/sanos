@@ -171,6 +171,15 @@ SOURCE=..\src\sys\krnl\start.c
 # Begin Source File
 
 SOURCE=..\src\sys\krnl\syscall.c
+
+!IF  "$(CFG)" == "krnl - Win32 SanOS"
+
+# SUBTRACT CPP /FA<none>
+
+!ELSEIF  "$(CFG)" == "krnl - Win32 SanOSDebug"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 

@@ -85,6 +85,10 @@ LIB32=link.exe -lib
 # PROP Default_Filter ".h"
 # Begin Source File
 
+SOURCE=..\src\include\assert.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\include\bitops.h
 # End Source File
 # Begin Source File
@@ -98,6 +102,10 @@ SOURCE=..\src\include\hash.h
 # Begin Source File
 
 SOURCE=..\src\include\inifile.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\limits.h
 # End Source File
 # Begin Source File
 

@@ -6,6 +6,10 @@
 // Time routines
 //
 
+#ifndef KERNEL
+#include <os.h>
+#endif
+
 #include <types.h>
 #include <time.h>
 
@@ -42,7 +46,7 @@ const int _ytab[2][12] =
   { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
 };
 
-struct tm *gmtime(const time_t *timer, struct tm *tmbuf)
+struct tm *_gmtime(const time_t *timer, struct tm *tmbuf)
 {
   time_t time = *timer;
   unsigned long dayclock, dayno;
@@ -73,6 +77,26 @@ struct tm *gmtime(const time_t *timer, struct tm *tmbuf)
 
   return tmbuf;
 }
+
+struct tm *_localtime(const time_t *timer, struct tm *tmbuf)
+{
+  time_t t;
+
+  t = *timer - _timezone;
+  return _gmtime(&t, tmbuf);
+}
+
+#ifndef KERNEL
+struct tm *gmtime(const time_t *timer)
+{
+  return _gmtime(timer, &gettib()->tmbuf);
+}
+
+struct tm *localtime(const time_t *timer)
+{
+  return _localtime(timer, &gettib()->tmbuf);
+}
+#endif
 
 time_t mktime(struct tm *tmbuf)
 {

@@ -78,6 +78,10 @@ void panic(char *msg);
 void exit();
 void stop(int restart);
 
+// syscall.c
+
+void init_syscall();
+
 // cons.c
 
 extern devno_t consdev;

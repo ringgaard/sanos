@@ -209,11 +209,19 @@ SOURCE=..\src\lib\moddb.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\lib\stdio.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\lib\stdlib.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\src\lib\string.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lib\syserr.c
 # End Source File
 # Begin Source File
 
