@@ -605,7 +605,7 @@ void tcp_init()
   tcp_ticks = 0;
   init_timer(&tcpslow_timer, tcp_slowtmr, NULL);
   init_timer(&tcpfast_timer, tcp_fasttmr, NULL);
-  mod_timer(&tcpslow_timer, ticks + TCP_SLOW_INTERVAL / MSECS_PER_TICK);
+  //TEST mod_timer(&tcpslow_timer, ticks + TCP_SLOW_INTERVAL / MSECS_PER_TICK);
   mod_timer(&tcpfast_timer, ticks + TCP_FAST_INTERVAL / MSECS_PER_TICK);
 }
 
@@ -735,32 +735,37 @@ unsigned long tcp_next_iss()
   static unsigned long iss = 6510;
   
   iss += tcp_ticks;
+kprintf("iss = %d\n", iss);
   return iss;
 }
 
 void tcp_debug_print(struct tcp_hdr *tcphdr)
 {
-  kprintf("TCP header:\n");
   kprintf("+-------------------------------+\n");
-  kprintf("|      %04x     |      %04x     | (src port, dest port)\n", tcphdr->src, tcphdr->dest);
+  kprintf("|      %4d     |      %4d     | (src port, dest port)\n", ntohs(tcphdr->src), ntohs(tcphdr->dest));
   kprintf("+-------------------------------+\n");
-  kprintf("|            %08lu           | (seq no)\n", tcphdr->seqno);
+  kprintf("|          %10lu           | (seq no)\n", ntohl(tcphdr->seqno));
   kprintf("+-------------------------------+\n");
-  kprintf("|            %08lu           | (ack no)\n", tcphdr->ackno);
+  kprintf("|          %10lu           | (ack no)\n", ntohl(tcphdr->ackno));
   kprintf("+-------------------------------+\n");
   kprintf("| %2d |    |%d%d%d%d%d|    %5d      | (offset, flags (",
-	  tcphdr->_offset_flags >> 4 & 1,
-	  tcphdr->_offset_flags >> 4 & 1,
-	  tcphdr->_offset_flags >> 3 & 1,
-	  tcphdr->_offset_flags >> 2 & 1,
-	  tcphdr->_offset_flags >> 1 & 1,
-	  tcphdr->_offset_flags & 1,
-	  tcphdr->wnd);
-  tcp_debug_print_flags(tcphdr->_offset_flags);
+	  ntohs(tcphdr->_offset_flags) >> 4 & 1,
+	  ntohs(tcphdr->_offset_flags) >> 4 & 1,
+	  ntohs(tcphdr->_offset_flags) >> 3 & 1,
+	  ntohs(tcphdr->_offset_flags) >> 2 & 1,
+	  ntohs(tcphdr->_offset_flags) >> 1 & 1,
+	  ntohs(tcphdr->_offset_flags) & 1,
+	  ntohs(tcphdr->wnd));
+  tcp_debug_print_flags(ntohs(tcphdr->_offset_flags));
   kprintf("), win)\n");
   kprintf("+-------------------------------+\n");
   kprintf("|    0x%04x     |     %5d     | (chksum, urgp)\n", ntohs(tcphdr->chksum), ntohs(tcphdr->urgp));
   kprintf("+-------------------------------+\n");
+
+  //{
+  //  unsigned char ch;
+  //  dev_read(consdev, &ch, 1, 0);
+  //}
 }
 
 void tcp_debug_print_state(enum tcp_state s)

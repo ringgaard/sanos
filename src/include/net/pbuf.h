@@ -50,5 +50,6 @@ krnlapi void pbuf_ref(struct pbuf *p);
 krnlapi int pbuf_free(struct pbuf *p);
 krnlapi void pbuf_chain(struct pbuf *h, struct pbuf *t);
 krnlapi struct pbuf *pbuf_dechain(struct pbuf *p);
+krnlapi struct pbuf *pbuf_dup(struct pbuf *p);
 
 #endif

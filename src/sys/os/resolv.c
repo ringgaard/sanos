@@ -13,7 +13,7 @@
 
 #define NS_PACKETSZ	512		// Maximum packet size
 #define NS_MAXCDNAME	255	        // Maximum compressed domain name
-#define NS_MAXDNAME	255 /*1025*/	// Maximum domain name
+#define NS_MAXDNAME	1025	  	// Maximum domain name
 #define NS_CMPRSFLGS	0xc0	        // Flag bits indicating name compression
 #define NS_HFIXEDSZ	12		// #/bytes of fixed data in header
 #define NS_QFIXEDSZ	4		// #/bytes of fixed data in query
@@ -82,53 +82,6 @@ static int special(int ch)
 static int printable(int ch) 
 {
   return (ch > 0x20 && ch < 0x7f);
-}
-
-//
-// inet_pton
-//
-// Convert from presentation format (which usually means ASCII printable)
-// to network format (which is usually some kind of binary format).
-// Return:
-//   1 if the address was valid
-//   0 if the address wasn't valid (`dst' is untouched in this case)
-//
-
-static int inet_pton(const char *src, unsigned char *dst)
-{
-  int saw_digit, octets, ch;
-  unsigned char buf[sizeof(struct in_addr)], *p;
-
-  saw_digit = 0;
-  octets = 0;
-  *(p = buf) = 0;
-  while ((ch = *src++) != '\0') 
-  {
-    if (ch >= '0' && ch <= '9') 
-    {
-      unsigned int newval = *p * 10 + (ch - '0');
-      if (newval > 255) return 0;
-      *p = newval;
-      
-      if (!saw_digit) 
-      {
-        if (++octets > sizeof(struct in_addr)) return 0;
-        saw_digit = 1;
-      }
-    } 
-    else if (ch == '.' && saw_digit) 
-    {
-      if (octets == sizeof(struct in_addr)) return 0;
-      *++p = 0;
-      saw_digit = 0;
-    } 
-    else
-      return 0;
-  }
-
-  if (octets < sizeof(struct in_addr)) return 0;
-  memcpy(dst, p, sizeof(struct in_addr));
-  return 1;
 }
 
 //
@@ -1541,8 +1494,7 @@ struct hostent *gethostbyname(const char *name)
 {
   char buf[QUERYBUF_SIZE];
   const char *cp;
-  char *bp;
-  int n, len, rc;
+  int n;
   struct tib *tib = gettib();
 
   tib->host.h_addrtype = AF_INET;
@@ -1555,20 +1507,17 @@ struct hostent *gethostbyname(const char *name)
     {
       if (!*cp) 
       {
+	struct in_addr addr;
+
 	if (*--cp == '.') break;
 
 	// All-numeric, no dot at the end. Fake up a hostent as if we'd actually done a lookup.
-        rc = inet_pton(name, tib->host_addr); 
-	if (rc <= 0) 
-	{
-	  errno = rc;
-	  return NULL;
-	}
+	addr.s_addr = inet_addr(name);
+	if (addr.s_addr == INADDR_NONE) return NULL;
 
-	strncpy(tib->hostbuf, name, NS_MAXDNAME);
-	tib->hostbuf[NS_MAXDNAME] = '\0';
-	bp = tib->hostbuf + NS_MAXDNAME;
-	len = sizeof tib->hostbuf - NS_MAXDNAME;
+	memcpy(tib->host_addr, &addr, tib->host.h_length);
+	strncpy(tib->hostbuf, name, HOSTBUF_SIZE - 1);
+	tib->hostbuf[HOSTBUF_SIZE - 1] = '\0';
 	tib->host.h_name = tib->hostbuf;
 	tib->host.h_aliases = tib->host_aliases;
 	tib->host_aliases[0] = NULL;

@@ -44,7 +44,7 @@ void icmp_input(struct pbuf *p, struct netif *inp)
 	return;
       }
 
-      //kprintf("icmp_input: ping src %08X dest %08X\n", iphdr->src.addr, iphdr->dest.addr);
+      kprintf("icmp_input: ping src %08X dest %08X\n", iphdr->src.addr, iphdr->dest.addr);
 
       if (p->tot_len < sizeof(struct icmp_echo_hdr)) 
       {

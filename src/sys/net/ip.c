@@ -307,7 +307,9 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
 
   stats.ip.xmit++;
 
-  //ip_debug_print(p);
+  kprintf("sending IP datagram:\n");
+  ip_debug_print(p);
+
   return netif->output(netif, p, dest);
 }
 
@@ -341,7 +343,6 @@ void ip_debug_print(struct pbuf *p)
 
   payload = (unsigned char *) iphdr + IP_HLEN;
   
-  kprintf("IP header:\n");
   kprintf("+-------------------------------+\n");
   kprintf("|%2d |%2d |   %2d  |      %4d     | (v, hl, tos, len)\n", 
              IPH_V(iphdr), 
@@ -374,8 +375,3 @@ void ip_debug_print(struct pbuf *p)
 	     ntohl(iphdr->dest.addr) & 0xFF);
   kprintf("+-------------------------------+\n");
 }
-
-
-
-
-

@@ -8,7 +8,7 @@
 
 #include <net/net.h>
 
-#define MIN(x,y) (x) < (y)? (x): (y)
+#define MIN(x,y) ((x) < (y) ? (x): (y))
 
 static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb);
 
@@ -287,6 +287,9 @@ err_t tcp_output(struct tcp_pcb *pcb)
     tcphdr->chksum = 0;
     tcphdr->chksum = inet_chksum_pseudo(p, &(pcb->local_ip), &(pcb->remote_ip), IP_PROTO_TCP, p->tot_len);
 
+    kprintf("sending TCP ack segment:\n");
+    tcp_debug_print(tcphdr);
+
     ip_output(p, &(pcb->local_ip), &(pcb->remote_ip), TCP_TTL, IP_PROTO_TCP);
     pbuf_free(p);
 
@@ -383,6 +386,10 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
 
   len = seg->p->len;
   tot_len = seg->p->tot_len;
+
+  kprintf("sending TCP segment:\n");
+  tcp_debug_print(seg->tcphdr);
+ 
   ip_output_if(seg->p, &(pcb->local_ip), &(pcb->remote_ip), TCP_TTL, IP_PROTO_TCP, netif);
   seg->p->len = len;
   seg->p->tot_len = tot_len;
@@ -404,7 +411,7 @@ void tcp_rexmit_seg(struct tcp_pcb *pcb, struct tcp_seg *seg)
     // Count the number of retransmissions
     pcb->nrtx++;
     
-    if ((netif = ip_route((struct ip_addr *)&(pcb->remote_ip))) == NULL) 
+    if ((netif = ip_route((struct ip_addr *) &(pcb->remote_ip))) == NULL) 
     {
       kprintf("tcp_rexmit_segment: No route to 0x%lx\n", pcb->remote_ip.addr);
       stats.tcp.rterr++;
@@ -424,7 +431,12 @@ void tcp_rexmit_seg(struct tcp_pcb *pcb, struct tcp_seg *seg)
     len = seg->p->len;
     tot_len = seg->p->tot_len;
     pbuf_header(seg->p, IP_HLEN);
+    
+    kprintf("resending TCP segment:\n");
+    tcp_debug_print(seg->tcphdr);
+
     ip_output_if(seg->p, NULL, IP_HDRINCL, TCP_TTL, IP_PROTO_TCP, netif);
+ 
     seg->p->len = len;
     seg->p->tot_len = tot_len;
     seg->p->payload = seg->tcphdr;
@@ -489,6 +501,9 @@ void tcp_rst(unsigned long seqno, unsigned long ackno, struct ip_addr *local_ip,
   }
 
   stats.tcp.xmit++;
+
+  kprintf("sending TCP rst segment:\n");
+  tcp_debug_print(tcphdr);
 
   ip_output_if(p, local_ip, remote_ip, TCP_TTL, IP_PROTO_TCP, netif);
   pbuf_free(p);

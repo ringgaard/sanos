@@ -204,6 +204,8 @@ static int tcpsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen,
 
   if (s->state != SOCKSTATE_LISTENING) return -EINVAL;
 
+  tcp_debug_print_pcbs();
+
   if (s->tcp.numpending == 0)
   {
     rc = submit_socket_request(s, &req, SOCKREQ_ACCEPT, NULL, 0, INFINITE);

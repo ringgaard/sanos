@@ -184,7 +184,7 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
 
       stats.link.xmit++;
 
-      //kprintf("arp: delayed transmit %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
+      kprintf("arp: delayed transmit %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
       dev_transmit((devno_t) entry->netif->state, p);
     }
   }

@@ -36,6 +36,9 @@ void tcp_input(struct pbuf *p, struct netif *inp)
   iphdr = p->payload;
   tcphdr = (struct tcp_hdr *)((char *) p->payload + IPH_HL(iphdr) * 4);
 
+  kprintf("receiving TCP segment:\n");
+  tcp_debug_print(tcphdr);
+
   pbuf_header(p, -(IPH_HL(iphdr) * 4));
 
   // Don't even process incoming broadcasts/multicasts
@@ -116,7 +119,7 @@ void tcp_input(struct pbuf *p, struct netif *inp)
     prev = NULL;  
     if (pcb == NULL) 
     {
-      for (pcb = (struct tcp_pcb *)tcp_listen_pcbs; pcb != NULL; pcb = pcb->next) 
+      for (pcb = (struct tcp_pcb *) tcp_listen_pcbs; pcb != NULL; pcb = pcb->next) 
       {
 	if ((ip_addr_isany(&(pcb->local_ip)) || ip_addr_cmp(&(pcb->local_ip), &(iphdr->dest))) &&
 	     pcb->local_port == tcphdr->dest) 
@@ -148,17 +151,11 @@ void tcp_input(struct pbuf *p, struct netif *inp)
     seg->p = p;
     seg->tcphdr = tcphdr;
     
-    // The len field in the tcp_seg structure is the segment length
-    // in TCP terms. In TCP, the SYN and FIN segments are treated as
-    // one byte, hence increment the len field
-    
-    //if (TCPH_FLAGS(tcphdr) & TCP_FIN || TCPH_FLAGS(tcphdr) & TCP_SYN) seg->len++;
-
     if (pcb->state != LISTEN && pcb->state != TIME_WAIT) pcb->recv_data = NULL;
 
     err = tcp_process(seg, pcb);
 
-    // A return value of ERR_ABRT means that tcp_abort() was called  and that the pcb has been freed.
+    // A return value of EABORT means that tcp_abort() was called  and that the pcb has been freed.
     if (err != -EABORT)
     {
       if (pcb->state != LISTEN) 
@@ -316,9 +313,7 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
     return -ERST;
   }
 
-  // Update the PCB timer unless we are in the LISTEN state, in
-  // which case we don't even have memory allocated for the timer,
-  // much less use it
+  // Update the PCB timer unless we are in the LISTEN state
   if (pcb->state != LISTEN) pcb->tmr = tcp_ticks;
   
   // Do different things depending on the TCP state
@@ -384,9 +379,10 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       break;
 
     case SYN_SENT:
-      kprintf("SYN-SENT: ackno %lu pcb->snd_nxt %lu unacked %lu\n", ackno, pcb->snd_nxt, ntohl(pcb->unacked->tcphdr->seqno));
+      kprintf("SYN-SENT: ackno %lu pcb->snd_nxt %lu unacked %lu\n", ackno, pcb->snd_nxt, pcb->unacked ? ntohl(pcb->unacked->tcphdr->seqno) : 0);
       if (flags & TCP_ACK &&
 	  flags & TCP_SYN &&
+	  pcb->unacked && 
 	  ackno == ntohl(pcb->unacked->tcphdr->seqno) + 1) 
       {
 	pcb->rcv_nxt = seqno + 1;
@@ -538,7 +534,7 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 // tcp_receive
 //
 // Called by tcp_process. Checks if the given segment is an ACK for outstanding
-// data, and if so frees the memory of the buffered data. Next, is places the
+// data, and if so frees the memory of the buffered data. Next, it places the
 // segment on any of the receive queues (pcb->recved or pcb->ooseq). If the segment
 // is buffered, the pbuf is referenced by pbuf_ref so that it will not be freed until
 // it has been removed from the buffer.

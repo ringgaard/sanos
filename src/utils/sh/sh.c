@@ -541,7 +541,7 @@ static void http(int argc, char **argv)
   int n;
   char buf[256];
 
-  server = "192.168.123.1";
+  server = "192.168.12.1";
   path = "/";
   if (argc >= 2) server = argv[1];
   if (argc >= 3) path = argv[2];
@@ -552,6 +552,8 @@ static void http(int argc, char **argv)
     printf("%s: host not found\n", server);
     return;
   }
+
+  printf("address: %s\n", inet_ntoa(*(struct in_addr *) hp->h_addr_list[0]));
 
   s = socket(AF_INET, SOCK_STREAM, 0);
   if (s < 0)
@@ -564,7 +566,8 @@ static void http(int argc, char **argv)
   sin.sin_family = AF_INET;
   memcpy(&sin.sin_addr, hp->h_addr_list[0], hp->h_length);
   sin.sin_port = htons(80);
-  
+
+  printf("connect to %s port %d\n", inet_ntoa(sin.sin_addr), ntohs(sin.sin_port));
   rc = connect(s, (struct sockaddr *) &sin, sizeof(sin));
   if (rc  < 0)
   {
@@ -573,7 +576,6 @@ static void http(int argc, char **argv)
 
   printf("connected\n");
 
-#if 0
   sprintf(buf, "GET %s HTTP/1.1\r\n\r\n", path);
   rc = send(s, buf, strlen(buf), 0);
   if (rc < 0)
@@ -593,7 +595,6 @@ static void http(int argc, char **argv)
   {
     printf("recv: error %d\n", n);
   }
-#endif
   sleep(10000);
 
   printf("closing\n");

@@ -413,6 +413,8 @@ int pbuf_free(struct pbuf *p)
   // Decrement reference count
   p->ref--;
 
+return 0; //TEST
+
   // If reference count is zero, actually deallocate pbuf
   if (p->ref == 0) 
   {
@@ -515,5 +517,36 @@ struct pbuf *pbuf_dechain(struct pbuf *p)
   if (q) q->tot_len = p->tot_len - p->len;
   p->tot_len = p->len;
   p->next = NULL;
+  return q;
+}
+
+//
+// pbuf_dup
+//
+// Makes a duplicate of the pbuf. The new buffer is created as one
+// buffer.
+//
+
+struct pbuf *pbuf_dup(struct pbuf *p)
+{
+  struct pbuf *q;
+  char *ptr;
+  int size;
+
+  // TODO: allocate header space
+
+  // Allocate new pbuf
+  size = p->tot_len;
+  q = pbuf_alloc(PBUF_RAW, PBUF_RW, size);
+  if (q == NULL) return NULL;
+
+  // Copy buffer contents
+  ptr = q->payload;
+  for (; p->next != NULL; p = p->next)
+  {
+    memcpy(ptr, p->payload, p->len);
+    ptr += p->len;
+  }
+
   return q;
 }
