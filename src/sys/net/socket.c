@@ -76,6 +76,26 @@ int connect(struct socket *s, struct sockaddr *name, int namelen)
   return sockops[s->type]->connect(s, name, namelen);
 }
 
+int getpeername(struct socket *s, struct sockaddr *name, int *namelen)
+{
+  return sockops[s->type]->getpeername(s, name, namelen);
+}
+
+int getsockname(struct socket *s, struct sockaddr *name, int *namelen)
+{
+  return sockops[s->type]->getsockname(s, name, namelen);
+}
+
+int getsockopt(struct socket *s, int level, int optname, char *optval, int *optlen)
+{
+  return sockops[s->type]->getsockopt(s, level, optname, optval, optlen);
+}
+
+int ioctlsocket(struct socket *s, int cmd, void *data, size_t size)
+{
+  return sockops[s->type]->ioctl(s, cmd, data, size);
+}
+
 int listen(struct socket *s, int backlog)
 {
   return sockops[s->type]->listen(s, backlog);
@@ -99,6 +119,16 @@ int send(struct socket *s, void *data, int size, unsigned int flags)
 int sendto(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *to, int tolen)
 {
   return sockops[s->type]->sendto(s, data, size, flags, to, tolen);
+}
+
+int setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen)
+{
+  return sockops[s->type]->setsockopt(s, level, optname, optval, optlen);
+}
+
+int shutdown(struct socket *s, int how)
+{
+  return sockops[s->type]->shutdown(s, how);
 }
 
 int socket(int domain, int type, int protocol, struct socket **retval)

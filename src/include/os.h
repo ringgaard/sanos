@@ -527,11 +527,16 @@ osapi void tlsset(tls_t index, void *value);
 osapi int accept(int s, struct sockaddr *addr, int *addrlen);
 osapi int bind(int s, const struct sockaddr *name, int namelen);
 osapi int connect(int s, const struct sockaddr *name, int namelen);
+osapi int getpeername(int s, struct sockaddr *name, int *namelen);
+osapi int getsockname(int s, struct sockaddr *name, int *namelen);
+osapi int getsockopt(int s, int level, int optname, char *optval, int *optlen);
 osapi int listen(int s, int backlog);
 osapi int recv(int s, void *data, int size, unsigned int flags);
 osapi int recvfrom(int s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen);
 osapi int send(int s, const void *data, int size, unsigned int flags);
 osapi int sendto(int s, const void *data, int size, unsigned int flags, const struct sockaddr *to, int tolen);
+osapi int setsockopt(int s, int level, int optname, const char *optval, int optlen);
+osapi int shutdown(int s, int how);
 osapi int socket(int domain, int type, int protocol);
 
 osapi extern struct section *config;

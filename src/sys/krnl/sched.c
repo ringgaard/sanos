@@ -111,7 +111,6 @@ void mark_thread_running()
 
   // Set thread state to running
   self->state = THREAD_STATE_RUNNING;
-  self->ctxt = NULL;
 
   // Set FS register to point to current TIB
   seg = &syspage->gdt[GDT_TIB];

@@ -57,6 +57,7 @@ static void dhcp_option_long(struct dhcp_state *state, unsigned long value);
 static void dhcp_option_trailer(struct dhcp_state *state);
 
 struct dhcp_state *dhcp_find_client(struct netif *netif);
+static void dhcp_dump_options(struct dhcp_state *state);
 
 //
 // dhcp_handle_nak
@@ -579,11 +580,13 @@ static err_t dhcp_discover(struct dhcp_state *state)
     dhcp_option(state, DHCP_OPTION_DHCP_MAX_MESSAGE_SIZE, 2);
     dhcp_option_short(state, 576);
 
+#if 0
     dhcp_option(state, DHCP_OPTION_DHCP_PARAMETER_REQUEST_LIST, 4);
     dhcp_option_byte(state, DHCP_OPTION_SUBNET_MASK);
     dhcp_option_byte(state, DHCP_OPTION_ROUTERS);
     dhcp_option_byte(state, DHCP_OPTION_BROADCAST_ADDRESS);
     dhcp_option_byte(state, DHCP_OPTION_DOMAIN_NAME_SERVERS);
+#endif
 
     dhcp_option_trailer(state);
 
@@ -678,6 +681,8 @@ static void dhcp_bind(struct dhcp_state *state)
   //kprintf(" ");
   //ip_addr_debug_print(&state->offered_dns2_addr);
   //kprintf("\n");
+
+  //dhcp_dump_options(state);
 
   set_event(&state->binding_complete);
   dhcp_set_state(state, DHCP_BOUND);
@@ -1232,4 +1237,77 @@ struct dhcp_state *dhcp_find_client(struct netif *netif)
     state = state->next;
   }
   return NULL;
+}
+
+//
+// dhcp_dump_options
+//
+
+static void dhcp_dump_options(struct dhcp_state *state)
+{
+  unsigned char overload = DHCP_OVERLOAD_NONE;
+
+  kprintf("dhcp options:\n");
+  // Options available?
+  if (state->options_in != NULL && state->options_in_len > 0)
+  {
+    // Start with options field
+    unsigned char *options = (unsigned char *) state->options_in;
+    int offset = 0;
+    
+    // At least 1 byte to read and no end marker, then at least 3 bytes to read?
+    while ((offset < state->options_in_len) && (options[offset] != DHCP_OPTION_END))
+    {
+      // Are the sname and/or file field overloaded with options?
+      if (options[offset] == DHCP_OPTION_DHCP_OPTION_OVERLOAD)
+      {
+        // Skip option type and length
+        offset += 2;
+        overload = options[offset++];
+      }
+      else if (options[offset] == DHCP_OPTION_PAD)
+	offset++;
+      else
+      {
+        kprintf(" option %d len %d\n", options[offset], options[offset + 1]);
+        offset++;
+        offset += 1 + options[offset];
+      }
+    }
+
+    // Is this an overloaded message?
+    if (overload != DHCP_OVERLOAD_NONE)
+    {
+      int field_len;
+      if (overload == DHCP_OVERLOAD_FILE)
+      {
+        options = (unsigned char *) &state->msg_in->file;
+        field_len = DHCP_FILE_LEN;
+      }
+      else if (overload == DHCP_OVERLOAD_SNAME)
+      {
+        options = (unsigned char *) &state->msg_in->sname;
+        field_len = DHCP_SNAME_LEN;
+      }
+      else
+      {
+        options = (unsigned char *) &state->msg_in->sname;
+        field_len = DHCP_FILE_LEN + DHCP_SNAME_LEN;
+      }
+      offset = 0;
+
+      // At least 1 byte to read and no end marker
+      while ((offset < field_len) && (options[offset] != DHCP_OPTION_END))
+      {
+        if (options[offset] == DHCP_OPTION_PAD)
+	  offset++;
+        else
+        {
+          kprintf(" option %d len %d\n", options[offset], options[offset + 1]);
+          offset++;
+          offset += 1 + options[offset];
+        }
+      }
+    }
+  }
 }

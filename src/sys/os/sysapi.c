@@ -290,6 +290,21 @@ int connect(int s, const struct sockaddr *name, int namelen)
   return syscall(SYSCALL_CONNECT, &s);
 }
 
+int getpeername(int s, struct sockaddr *name, int *namelen)
+{
+  return syscall(SYSCALL_GETPEERNAME, &s);
+}
+
+int getsockname(int s, struct sockaddr *name, int *namelen)
+{
+  return syscall(SYSCALL_GETSOCKNAME, &s);
+}
+
+int getsockopt(int s, int level, int optname, char *optval, int *optlen)
+{
+  return syscall(SYSCALL_GETSOCKOPT, &s);
+}
+
 int listen(int s, int backlog)
 {
   return syscall(SYSCALL_LISTEN, &s);
@@ -313,6 +328,16 @@ int send(int s, const void *data, int size, unsigned int flags)
 int sendto(int s, const void *data, int size, unsigned int flags, const struct sockaddr *to, int tolen)
 {
   return syscall(SYSCALL_SENDTO, &s);
+}
+
+int setsockopt(int s, int level, int optname, const char *optval, int optlen)
+{
+  return syscall(SYSCALL_SETSOCKOPT, &s);
+}
+
+int shutdown(int s, int how)
+{
+  return syscall(SYSCALL_SHUTDOWN, &s);
 }
 
 int socket(int domain, int type, int protocol)

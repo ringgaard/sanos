@@ -49,11 +49,17 @@ struct sockops
   int (*bind)(struct socket *s, struct sockaddr *name, int namelen);
   int (*close)(struct socket *s);
   int (*connect)(struct socket *s, struct sockaddr *name, int namelen);
+  int (*getpeername)(struct socket *s, struct sockaddr *name, int *namelen);
+  int (*getsockname)(struct socket *s, struct sockaddr *name, int *namelen);
+  int (*getsockopt)(struct socket *s, int level, int optname, char *optval, int *optlen);
+  int (*ioctl)(struct socket *s, int cmd, void *data, size_t size);
   int (*listen)(struct socket *s, int backlog);
   int (*recv)(struct socket *s, void *data, int size, unsigned int flags);
   int (*recvfrom)(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen);
   int (*send)(struct socket *s, void *data, int size, unsigned int flags);
   int (*sendto)(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *to, int tolen);
+  int (*setsockopt)(struct socket *s, int level, int optname, const char *optval, int optlen);
+  int (*shutdown)(struct socket *s, int how);
   int (*socket)(struct socket *s, int domain, int type, int protocol);
 };
 
@@ -114,11 +120,17 @@ int accept(struct socket *s, struct sockaddr *addr, int *addrlen, struct socket 
 int bind(struct socket *s, struct sockaddr *name, int namelen);
 int closesocket(struct socket *s);
 int connect(struct socket *s, struct sockaddr *name, int namelen);
+int getpeername(struct socket *s, struct sockaddr *name, int *namelen);
+int getsockname(struct socket *s, struct sockaddr *name, int *namelen);
+int getsockopt(struct socket *s, int level, int optname, char *optval, int *optlen);
+int ioctlsocket(struct socket *s, int cmd, void *data, size_t size);
 int listen(struct socket *s, int backlog);
 int recv(struct socket *s, void *data, int size, unsigned int flags);
 int recvfrom(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen);
 int send(struct socket *s, void *data, int size, unsigned int flags);
 int sendto(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *to, int tolen);
+int setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen);
+int shutdown(struct socket *s, int how);
 int socket(int domain, int type, int protocol, struct socket **retval);
 
 #endif

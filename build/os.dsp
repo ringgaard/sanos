@@ -112,6 +112,14 @@ SOURCE=..\src\sys\os\os.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\sys\os\resolv.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\sys\os\resolv.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\sys\os\sysapi.c
 
 !IF  "$(CFG)" == "os - Win32 SanOS"

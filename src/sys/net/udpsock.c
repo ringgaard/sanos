@@ -123,6 +123,52 @@ static int udpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
   return 0;
 }
 
+static int udpsock_getpeername(struct socket *s, struct sockaddr *name, int *namelen)
+{
+  struct sockaddr_in *sin;
+
+  if (!namelen) return -EINVAL;
+  if (*namelen < sizeof(struct sockaddr_in)) return -EINVAL;
+  if (s->state != SOCKSTATE_CONNECTED) return -EINVAL;
+
+  sin = (struct sockaddr_in *) name;
+  sin->sin_len = sizeof(struct sockaddr_in);
+  sin->sin_family = AF_INET;
+  sin->sin_port = s->udp.pcb->remote_port;
+  sin->sin_addr.s_addr = s->udp.pcb->remote_ip.addr;
+
+  *namelen = sizeof(struct sockaddr_in);
+  return 0;
+}
+
+static int udpsock_getsockname(struct socket *s, struct sockaddr *name, int *namelen)
+{
+  struct sockaddr_in *sin;
+
+  if (!namelen) return -EINVAL;
+  if (*namelen < sizeof(struct sockaddr_in)) return -EINVAL;
+  if (s->state != SOCKSTATE_CONNECTED) return -EINVAL;
+
+  sin = (struct sockaddr_in *) name;
+  sin->sin_len = sizeof(struct sockaddr_in);
+  sin->sin_family = AF_INET;
+  sin->sin_port = s->udp.pcb->local_port;
+  sin->sin_addr.s_addr = s->udp.pcb->local_ip.addr;
+
+  *namelen = sizeof(struct sockaddr_in);
+  return 0;
+}
+
+static int udpsock_getsockopt(struct socket *s, int level, int optname, char *optval, int *optlen)
+{
+  return -ENOSYS;
+}
+
+static int udpsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
+{
+  return -ENOSYS;
+}
+
 static int udpsock_listen(struct socket *s, int backlog)
 {
   return -EINVAL;
@@ -230,6 +276,16 @@ static int udpsock_sendto(struct socket *s, void *data, int size, unsigned int f
   return 0;
 }
 
+static int udpsock_setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen)
+{
+  return -ENOSYS;
+}
+
+static int udpsock_shutdown(struct socket *s, int how)
+{
+  return -ENOSYS;
+}
+
 static int udpsock_socket(struct socket *s, int domain, int type, int protocol)
 {
   return 0;
@@ -241,10 +297,16 @@ struct sockops udpops =
   udpsock_bind,
   udpsock_close,
   udpsock_connect,
+  udpsock_getpeername,
+  udpsock_getsockname,
+  udpsock_getsockopt,
+  udpsock_ioctl,
   udpsock_listen,
   udpsock_recv,
   udpsock_recvfrom,
   udpsock_send,
   udpsock_sendto,
+  udpsock_setsockopt,
+  udpsock_shutdown,
   udpsock_socket,
 };

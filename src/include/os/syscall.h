@@ -67,13 +67,18 @@
 #define SYSCALL_ACCEPT       55
 #define SYSCALL_BIND         56
 #define SYSCALL_CONNECT      57
-#define SYSCALL_LISTEN       58
-#define SYSCALL_RECV         59
-#define SYSCALL_RECVFROM     60
-#define SYSCALL_SEND         61
-#define SYSCALL_SENDTO       62
-#define SYSCALL_SOCKET       63
+#define SYSCALL_GETPEERNAME  58
+#define SYSCALL_GETSOCKNAME  59
+#define SYSCALL_GETSOCKOPT   60
+#define SYSCALL_LISTEN       61
+#define SYSCALL_RECV         62
+#define SYSCALL_RECVFROM     63
+#define SYSCALL_SEND         64
+#define SYSCALL_SENDTO       65
+#define SYSCALL_SETSOCKOPT   66
+#define SYSCALL_SHUTDOWN     67
+#define SYSCALL_SOCKET       68
 
-#define SYSCALL_MAX          63
+#define SYSCALL_MAX          68
 
 #endif

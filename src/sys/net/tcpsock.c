@@ -45,6 +45,7 @@ static err_t connected_tcp(void *arg, struct tcp_pcb *pcb, err_t err)
   {
     if (req->type == SOCKREQ_CONNECT)
     {
+      s->state = SOCKSTATE_CONNECTED;
       req->pcb = pcb;
       req->err = err;
       release_socket_request(req);
@@ -346,6 +347,52 @@ static int tcpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
   return 0;
 }
 
+static int tcpsock_getpeername(struct socket *s, struct sockaddr *name, int *namelen)
+{
+  struct sockaddr_in *sin;
+
+  if (!namelen) return -EINVAL;
+  if (*namelen < sizeof(struct sockaddr_in)) return -EINVAL;
+  if (s->state != SOCKSTATE_CONNECTED) return -EINVAL;
+
+  sin = (struct sockaddr_in *) name;
+  sin->sin_len = sizeof(struct sockaddr_in);
+  sin->sin_family = AF_INET;
+  sin->sin_port = s->tcp.pcb->remote_port;
+  sin->sin_addr.s_addr = s->udp.pcb->remote_ip.addr;
+
+  *namelen = sizeof(struct sockaddr_in);
+  return 0;
+}
+
+static int tcpsock_getsockname(struct socket *s, struct sockaddr *name, int *namelen)
+{
+  struct sockaddr_in *sin;
+
+  if (!namelen) return -EINVAL;
+  if (*namelen < sizeof(struct sockaddr_in)) return -EINVAL;
+  if (s->state != SOCKSTATE_CONNECTED) return -EINVAL;
+
+  sin = (struct sockaddr_in *) name;
+  sin->sin_len = sizeof(struct sockaddr_in);
+  sin->sin_family = AF_INET;
+  sin->sin_port = s->udp.pcb->local_port;
+  sin->sin_addr.s_addr = s->udp.pcb->local_ip.addr;
+
+  *namelen = sizeof(struct sockaddr_in);
+  return 0;
+}
+
+static int tcpsock_getsockopt(struct socket *s, int level, int optname, char *optval, int *optlen)
+{
+  return -ENOSYS;
+}
+
+static int tcpsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
+{
+  return -ENOSYS;
+}
+
 static int tcpsock_listen(struct socket *s, int backlog)
 {
   if (s->state != SOCKSTATE_BOUND) return -EINVAL;
@@ -474,6 +521,16 @@ static int tcpsock_sendto(struct socket *s, void *data, int size, unsigned int f
   return tcpsock_send(s, data, size, flags);
 }
 
+static int tcpsock_setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen)
+{
+  return -ENOSYS;
+}
+
+static int tcpsock_shutdown(struct socket *s, int how)
+{
+  return -ENOSYS;
+}
+
 static int tcpsock_socket(struct socket *s, int domain, int type, int protocol)
 {
   return 0;
@@ -485,10 +542,16 @@ struct sockops tcpops =
   tcpsock_bind,
   tcpsock_close,
   tcpsock_connect,
+  tcpsock_getpeername,
+  tcpsock_getsockname,
+  tcpsock_getsockopt,
+  tcpsock_ioctl,
   tcpsock_listen,
   tcpsock_recv,
   tcpsock_recvfrom,
   tcpsock_send,
   tcpsock_sendto,
+  tcpsock_setsockopt,
+  tcpsock_shutdown,
   tcpsock_socket,
 };

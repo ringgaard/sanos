@@ -425,7 +425,7 @@ static int sys_write(char *params)
 static int sys_ioctl(char *params)
 {
   handle_t h;
-  struct file *f;
+  struct object *o;
   int rc;
   int cmd;
   void *data;
@@ -438,8 +438,8 @@ static int sys_ioctl(char *params)
   data = *(void **) (params + 8);
   size = *(int *) (params + 12);
 
-  f = (struct file *) hlock(h, OBJECT_FILE);
-  if (!f) 
+  o = hlock(h, OBJECT_ANY);
+  if (!o) 
   {
     unlock_buffer(params, 16);
     return -EBADF;
@@ -452,7 +452,12 @@ static int sys_ioctl(char *params)
     return -EFAULT;
   }
   
-  rc = ioctl(f, cmd, data, size);
+  if (o->type == OBJECT_FILE)
+    rc = ioctl((struct file *) o, cmd, data, size);
+  else if (o->type == OBJECT_SOCKET)
+    rc = ioctlsocket((struct socket *) o, cmd, data, size);
+  else
+    rc = -EBADF;
   
   hrel(h);
   unlock_buffer(params, 16);
@@ -1598,6 +1603,150 @@ static int sys_connect(char *params)
   return rc;
 }
 
+static int sys_getpeername(char *params)
+{
+  handle_t h;
+  struct socket *s;
+  int rc;
+  struct sockaddr *name;
+  int *namelen;
+
+  if (lock_buffer(params, 12) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  name = *(struct sockaddr **) (params + 4);
+  namelen = *(int **) (params + 8);
+
+  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  if (!s) 
+  {
+    unlock_buffer(params, 12);
+    return -EBADF;
+  }
+
+  if (lock_buffer(name, sizeof(struct sockaddr)) < 0)
+  {
+    hrel(h);
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+  
+  if (lock_buffer(namelen, 4) < 0)
+  {
+    hrel(h);
+    unlock_buffer(name, sizeof(struct sockaddr));
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+
+  rc = getpeername(s, name, namelen);
+
+  hrel(h);
+  unlock_buffer(namelen, 4);
+  unlock_buffer(name, sizeof(struct sockaddr));
+  unlock_buffer(params, 12);
+
+  return rc;
+}
+
+static int sys_getsockname(char *params)
+{
+  handle_t h;
+  struct socket *s;
+  int rc;
+  struct sockaddr *name;
+  int *namelen;
+
+  if (lock_buffer(params, 12) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  name = *(struct sockaddr **) (params + 4);
+  namelen = *(int **) (params + 8);
+
+  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  if (!s) 
+  {
+    unlock_buffer(params, 12);
+    return -EBADF;
+  }
+
+  if (lock_buffer(name, sizeof(struct sockaddr)) < 0)
+  {
+    hrel(h);
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+  
+  if (lock_buffer(namelen, 4) < 0)
+  {
+    hrel(h);
+    unlock_buffer(name, sizeof(struct sockaddr));
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+
+  rc = getsockname(s, name, namelen);
+
+  hrel(h);
+  unlock_buffer(namelen, 4);
+  unlock_buffer(name, sizeof(struct sockaddr));
+  unlock_buffer(params, 12);
+
+  return rc;
+}
+
+static int sys_getsockopt(char *params)
+{
+  handle_t h;
+  struct socket *s;
+  int rc;
+  int level;
+  int optname;
+  char *optval;
+  int *optlen;
+  int inoptlen;
+
+  if (lock_buffer(params, 20) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  level = *(int *) (params + 4);
+  optname = *(int *) (params + 8);
+  optval = *(char **) (params + 12);
+  optlen = *(int **) (params + 16);
+
+  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  if (!s) 
+  {
+    unlock_buffer(params, 20);
+    return -EBADF;
+  }
+
+  if (!optlen || lock_buffer(optlen, 4) < 0)
+  {
+    hrel(h);
+    unlock_buffer(params, 20);
+    return -EFAULT;
+  }
+  inoptlen = *optlen;
+
+  if (lock_buffer(optval, inoptlen) < 0)
+  {
+    hrel(h);
+    unlock_buffer(optlen, 4);
+    unlock_buffer(params, 20);
+    return -EFAULT;
+  }
+  
+  rc = getsockopt(s, level, optname, optval, optlen);
+
+  hrel(h);
+  unlock_buffer(optval, inoptlen);
+  unlock_buffer(optlen, 4);
+  unlock_buffer(params, 20);
+
+  return rc;
+}
+
 static int sys_listen(char *params)
 {
   handle_t h;
@@ -1817,6 +1966,74 @@ static int sys_sendto(char *params)
   return rc;
 }
 
+static int sys_setsockopt(char *params)
+{
+  handle_t h;
+  struct socket *s;
+  int rc;
+  int level;
+  int optname;
+  char *optval;
+  int optlen;
+
+  if (lock_buffer(params, 20) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  level = *(int *) (params + 4);
+  optname = *(int *) (params + 8);
+  optval = *(char **) (params + 12);
+  optlen = *(int *) (params + 16);
+
+  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  if (!s) 
+  {
+    unlock_buffer(params, 20);
+    return -EBADF;
+  }
+
+  if (lock_buffer(optval, optlen) < 0)
+  {
+    hrel(h);
+    unlock_buffer(params, 20);
+    return -EFAULT;
+  }
+  
+  rc = setsockopt(s, level, optname, optval, optlen);
+
+  hrel(h);
+  unlock_buffer(optval, optlen);
+  unlock_buffer(params, 20);
+
+  return rc;
+}
+
+static int sys_shutdown(char *params)
+{
+  handle_t h;
+  struct socket *s;
+  int rc;
+  int how;
+
+  if (lock_buffer(params, 8) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  how = *(int *) (params + 4);
+
+  s = (struct socket *) hlock(h, OBJECT_SOCKET);
+  if (!s) 
+  {
+    unlock_buffer(params, 8);
+    return -EBADF;
+  }
+  
+  rc = shutdown(s, how);
+
+  hrel(h);
+  unlock_buffer(params, 8);
+
+  return rc;
+}
+
 static int sys_socket(char *params)
 {
   int rc;
@@ -1903,11 +2120,16 @@ struct syscall_entry syscalltab[] =
   {"accept", "%d,%p,%p", sys_accept},
   {"bind", "%d,%p,%d", sys_bind},
   {"connect", "%d,%p,%d", sys_connect},
+  {"getpeername", "%d,%p,%p", sys_getpeername},
+  {"getsockname", "%d,%p,%p", sys_getsockname},
+  {"getsockopt", "%d,%d,%d,%p,%p", sys_getsockopt},
   {"listen", "%d,%d", sys_listen},
   {"recv", "%d,%p,%d,%d", sys_recv},
   {"recvfrom", "%d,%p,%d,%d,%p,%p", sys_recvfrom},
   {"send", "%d,%p,%d,%d", sys_send},
   {"sendto", "%d,%p,%d,%d,%p,%d", sys_sendto},
+  {"setsockopt", "%d,%d,%d,%p,%d", sys_setsockopt},
+  {"shutdown", "%d,%d", sys_shutdown},
   {"socket", "%d,%d,%d", sys_socket}
 };
 
