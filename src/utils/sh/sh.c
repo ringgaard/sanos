@@ -441,7 +441,7 @@ int cmd_dump(int argc, char *argv[])
   return 0;
 }
 
-int cmd_format(int argc, char *argv[])
+int cmd_mkfs(int argc, char *argv[])
 {
   char *devname;
   char *type = "dfs";
@@ -450,7 +450,7 @@ int cmd_format(int argc, char *argv[])
 
   if (argc < 2)
   {
-    printf("usage: format <device> [<type> [<options>]]\n");
+    printf("usage: mkfs <device> [<type> [<options>]]\n");
     return -EINVAL;
   }
 
@@ -458,7 +458,7 @@ int cmd_format(int argc, char *argv[])
   if (argc > 2) type = argv[2];
   if (argc > 3) opts = argv[3];
 
-  rc = format(devname, type, opts); 
+  rc = mkfs(devname, type, opts); 
   printf("\n");
   if (rc < 0)
   {
@@ -1302,7 +1302,6 @@ struct command cmdtab[] =
   {"dir",      cmd_ls,       "List directory"},
   {"dump",     cmd_dump,     "Display file in hex format"},
   {"exit",     NULL,         "Exit shell"},
-  {"format",   cmd_format,   "Format device for new file system"},
   {"heapstat", cmd_heapstat, "Display heap statistics"},
   {"help",     cmd_help,     "This help"},
   {"httpget",  cmd_httpget,  "Retrieve file via http"},
@@ -1315,6 +1314,7 @@ struct command cmdtab[] =
   {"ls",       cmd_ls,       "List directory"},
   {"md",       cmd_mkdir,    "Make new directory"},
   {"mkdir",    cmd_mkdir,    "Make new directory"},
+  {"mkfs",     cmd_mkfs,     "Format device for new file system"},
   {"more",     cmd_more,     "Display file paginated"},
   {"mount",    cmd_mount,    "Mount file system"},
   {"move",     cmd_mv,       "Move file"},

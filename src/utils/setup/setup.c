@@ -87,7 +87,7 @@ int doformat(struct section *sect)
   printf("Formatting device %s (%s)...\n", devname, options);
 
   // Format device
-  rc = format(devname, fstype, options);
+  rc = mkfs(devname, fstype, options);
   if (rc < 0) return rc;
   printf("format complete\n");
   return 0;

@@ -161,7 +161,7 @@ int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer);
 struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts);
 struct filsys *open_filesystem(char *devname, struct fsoptions *fsopts);
 void close_filesystem(struct filsys *fs);
-int dfs_format(char *devname, char *opts);
+int dfs_mkfs(char *devname, char *opts);
 int dfs_mount(struct fs *fs, char *opts);
 int dfs_umount(struct fs *fs);
 int dfs_statfs(struct fs *fs, struct statfs *buf);

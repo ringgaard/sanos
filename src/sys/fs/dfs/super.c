@@ -457,7 +457,7 @@ static void get_filesystem_status(struct filsys *fs, struct statfs *buf)
   buf->cachesize = fs->cache->poolsize * fs->cache->bufsize;
 }
 
-int dfs_format(char *devname, char *opts)
+int dfs_mkfs(char *devname, char *opts)
 {
   struct fsoptions fsopts;
   struct filsys *fs;

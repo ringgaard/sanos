@@ -40,7 +40,7 @@
 #define F_DIR                   0x2000  // File is a directory
 #define F_CLOSED                0x4000  // File is closed
 
-#define FSOP_FORMAT     0x00000001
+#define FSOP_MKFS       0x00000001
 #define FSOP_MOUNT      0x00000002
 #define FSOP_UMOUNT     0x00000004
 #define FSOP_STATFS     0x00000008
@@ -107,7 +107,7 @@ struct fsops
   int (*lockfs)(struct fs *fs);
   void (*unlockfs)(struct fs *fs);
 
-  int (*format)(char *devname, char *opts);
+  int (*mkfs)(char *devname, char *opts);
   int (*mount)(struct fs *fs, char *opts);
   int (*umount)(struct fs *fs);
 
@@ -156,7 +156,7 @@ krnlapi struct filesystem *register_filesystem(char *name, struct fsops *ops);
 krnlapi struct fs *fslookup(char *name, char **rest);
 krnlapi struct file *newfile(struct fs *fs, char *path, int flags, int mode);
 
-krnlapi int format(char *devname, char *type, char *opts);
+krnlapi int mkfs(char *devname, char *type, char *opts);
 krnlapi int mount(char *type, char *mntto, char *mntfrom, char *opts, struct fs **newfs);
 krnlapi int umount(char *path);
 

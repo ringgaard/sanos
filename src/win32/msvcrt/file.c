@@ -1001,7 +1001,7 @@ int _wopen(const wchar_t *filename, int oflag)
   char buf[MAXPATH];
   int rc;
 
-  rc = convert_filename_from_unicode(filename, buf);
+  rc = convert_filename_from_unicode(filename, buf, MAXPATH);
   if (rc < 0)
   {
     errno = -rc;
@@ -1016,7 +1016,7 @@ int _waccess(const wchar_t *path, int mode)
   char buf[MAXPATH];
   int rc;
 
-  rc = convert_filename_from_unicode(path, buf);
+  rc = convert_filename_from_unicode(path, buf, MAXPATH);
   if (rc < 0)
   {
     errno = -rc;
@@ -1031,7 +1031,7 @@ __int64 _wstati64(const wchar_t *path, struct _stati64 *buffer)
   char buf[MAXPATH];
   int rc;
 
-  rc = convert_filename_from_unicode(path, buf);
+  rc = convert_filename_from_unicode(path, buf, MAXPATH);
   if (rc < 0)
   {
     errno = -rc;
@@ -1046,7 +1046,7 @@ int _wmkdir(const wchar_t *dirname)
   char buf[MAXPATH];
   int rc;
 
-  rc = convert_filename_from_unicode(dirname, buf);
+  rc = convert_filename_from_unicode(dirname, buf, MAXPATH);
   if (rc < 0)
   {
     errno = -rc;
@@ -1062,14 +1062,14 @@ int _wrename(const wchar_t *oldname, const wchar_t *newname)
   char buf2[MAXPATH];
   int rc;
 
-  rc = convert_filename_from_unicode(oldname, buf1);
+  rc = convert_filename_from_unicode(oldname, buf1, MAXPATH);
   if (rc < 0)
   {
     errno = -rc;
     return -1;
   }
 
-  rc = convert_filename_from_unicode(newname, buf2);
+  rc = convert_filename_from_unicode(newname, buf2, MAXPATH);
   if (rc < 0)
   {
     errno = -rc;
@@ -1082,7 +1082,6 @@ int _wrename(const wchar_t *oldname, const wchar_t *newname)
 wchar_t *_wgetdcwd(int drive, wchar_t *buffer, int maxlen)
 {
   int len = strlen(peb->curdir);
-  int n;
 
   if (buffer)
   {
@@ -1094,18 +1093,15 @@ wchar_t *_wgetdcwd(int drive, wchar_t *buffer, int maxlen)
   }
   else
   {
-    if (maxlen == 0)
-      buffer = malloc((len + 1) * sizeof(wchar_t));
-    else
+    if (maxlen == 0) 
+      maxlen = len + 1;
+    else if (len >= maxlen)
     {
-      if (len >= maxlen)
-      {
-	errno = ERANGE;
-	return NULL;
-      }
-
-      buffer = malloc(maxlen * sizeof(wchar_t));
+      errno = ERANGE;
+      return NULL;
     }
+
+    buffer = malloc(maxlen * sizeof(wchar_t));
 
     if (!buffer) 
     {
@@ -1114,8 +1110,43 @@ wchar_t *_wgetdcwd(int drive, wchar_t *buffer, int maxlen)
     }
   }
 
-  for (n = 0; n < len + 1; n++) buffer[n] = (unsigned char) peb->curdir[n];
+  convert_filename_to_unicode(peb->curdir, buffer, maxlen);
   return buffer;
+}
+
+wchar_t *_wfullpath(wchar_t *abspath, const wchar_t *relpath, size_t maxlen) 
+{
+  char buf1[MAXPATH];
+  char buf2[MAXPATH];
+  int rc;
+
+  rc = convert_filename_from_unicode(relpath, buf1, MAXPATH);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return NULL;
+  }
+
+  rc = canonicalize(buf1, buf2, MAXPATH);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return NULL;
+  }
+
+  if (!abspath)
+  {
+    maxlen = MAXPATH;
+    abspath = (wchar_t *) malloc(maxlen * sizeof(wchar_t));
+    if (!abspath)
+    {
+      errno = ENOMEM;
+      return NULL;
+    }
+  }
+
+  rc = convert_filename_to_unicode(buf2, abspath, maxlen);
+  return abspath;
 }
 
 void init_fileio()

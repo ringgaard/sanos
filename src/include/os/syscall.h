@@ -35,7 +35,7 @@
 #define SYSCALL_H
 
 #define SYSCALL_NULL         0
-#define SYSCALL_FORMAT       1
+#define SYSCALL_MKFS         1
 #define SYSCALL_MOUNT        2
 #define SYSCALL_UMOUNT       3
 #define SYSCALL_OPEN         4

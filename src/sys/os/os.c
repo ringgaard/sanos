@@ -330,18 +330,14 @@ char *getcwd(char *buf, size_t size)
   else
   {
     if (size == 0)
-      buf = malloc(len + 1);
-    else
+      size = len + 1;
+    else if (len >= size)
     {
-      if (len >= size)
-      {
-	errno = ERANGE;
-	return NULL;
-      }
-
-      buf = malloc(size);
+      errno = ERANGE;
+      return NULL;
     }
 
+    buf = malloc(size);
     if (!buf) 
     {
       errno = ENOMEM;

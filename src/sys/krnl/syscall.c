@@ -129,7 +129,7 @@ static int sys_null(char *params)
   return 0;
 }
 
-static int sys_format(char *params)
+static int sys_mkfs(char *params)
 {
   char *devname; 
   char *type;
@@ -163,7 +163,7 @@ static int sys_format(char *params)
     return -EFAULT;
   }
 
-  rc = format(devname, type, opts);
+  rc = mkfs(devname, type, opts);
 
   unlock_string(opts);
   unlock_string(type);
@@ -2879,7 +2879,7 @@ static int sys_sysinfo(char *params)
 struct syscall_entry syscalltab[] =
 {
   {"null","", sys_null},
-  {"format", "'%s','%s','%s'", sys_format},
+  {"mkfs", "'%s','%s','%s'", sys_mkfs},
   {"mount", "'%s','%s','%s','%s'", sys_mount},
   {"umount", "'%s'", sys_umount},
   {"open", "'%s',%x", sys_open},

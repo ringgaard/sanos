@@ -41,7 +41,7 @@ struct fsops dfsops =
   NULL,
   NULL,
 
-  dfs_format,
+  dfs_mkfs,
   dfs_mount,
   dfs_umount,
 

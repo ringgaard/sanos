@@ -261,7 +261,7 @@ struct file *newfile(struct fs *fs, char *path, int flags, int mode)
   return filp;
 }
 
-int format(char *devname, char *type, char *opts)
+int mkfs(char *devname, char *type, char *opts)
 {
   struct filesystem *fsys;
   int rc;
@@ -279,8 +279,8 @@ int format(char *devname, char *type, char *opts)
   if (!fsys) return -EINVAL;
 
   // Format device for filesystem
-  if (!fsys->ops->format) return -ENODEV;
-  rc = fsys->ops->format(devname, opts);
+  if (!fsys->ops->mkfs) return -ENODEV;
+  rc = fsys->ops->mkfs(devname, opts);
   return rc;
 }
 

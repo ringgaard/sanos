@@ -46,7 +46,7 @@ void smb_unlockfs(struct fs *fs)
   release_mutex(&share->server->lock);
 }
 
-int smb_format(char *devname, char *opts)
+int smb_mkfs(char *devname, char *opts)
 {
   return -ENOSYS;
 }
@@ -963,7 +963,7 @@ struct fsops smbfsops =
   smb_lockfs,
   smb_unlockfs,
 
-  smb_format,
+  smb_mkfs,
   smb_mount,
   smb_umount,
 

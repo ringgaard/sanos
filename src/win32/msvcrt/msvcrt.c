@@ -399,9 +399,9 @@ int rand()
   return (((holdrand = holdrand * 214013L + 2531011L) >> 16) & 0x7fff);
 }
 
-int convert_filename_to_unicode(const char *src, wchar_t *dst)
+int convert_filename_to_unicode(const char *src, wchar_t *dst, int maxlen)
 {
-  wchar_t *end = dst + MAXPATH;
+  wchar_t *end = dst + maxlen;
   while (*src)
   {
     if (dst == end) return -ENAMETOOLONG;
@@ -413,9 +413,9 @@ int convert_filename_to_unicode(const char *src, wchar_t *dst)
   return 0;
 }
 
-int convert_filename_from_unicode(const wchar_t *src, char *dst)
+int convert_filename_from_unicode(const wchar_t *src, char *dst, int maxlen)
 {
-  char *end = dst + MAXPATH;
+  char *end = dst + maxlen;
   while (*src)
   {
     if (dst == end) return -ENAMETOOLONG;
@@ -477,6 +477,14 @@ int towupper(wint_t c)
     return toupper(c);
   else
     return c;
+}
+
+int iswctype(wint_t c, int mask)
+{
+  if (c < 256)
+    return 0;
+  else
+    return _isctype(c, mask);
 }
 
 void init_fileio();

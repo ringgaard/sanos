@@ -73,9 +73,9 @@ slow_syscall:
   }
 }
 
-int format(const char *devname, const char *type, const char *opts)
+int mkfs(const char *devname, const char *type, const char *opts)
 {
-  return syscall(SYSCALL_FORMAT, (void *) &devname);
+  return syscall(SYSCALL_MKFS, (void *) &devname);
 }
 
 static int _mount(const char *type, const char *mntto, const char *mntfrom, const char *opts)

@@ -1103,7 +1103,7 @@ struct loadinfo
 
 osapi int syscall(int syscallno, void *params);
 
-osapi int format(const char *devname, const char *type, const char *opts);
+osapi int mkfs(const char *devname, const char *type, const char *opts);
 osapi int mount(const char *type, const char *mntto, const char *mntfrom, const char *opts);
 osapi int umount(const char *path);
 
