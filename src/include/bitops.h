@@ -34,6 +34,10 @@
 #ifndef BITOPS_H
 #define BITOPS_H
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 __inline void set_bit(void *bitmap, int pos)
 {
   __asm 
@@ -77,5 +81,9 @@ __inline void set_bits(void *bitmap, int pos, int len)
 
 int find_first_zero_bit(void *bitmap, int len);
 int find_next_zero_bit(void *bitmap, int len, int start);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

@@ -81,6 +81,10 @@ struct module
   int flags;
 };
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 struct module *get_module_for_handle(struct moddb *db, hmodule_t hmod);
 struct image_header *get_image_header(hmodule_t hmod);
 void *get_proc_address(hmodule_t hmod, char *procname);
@@ -92,5 +96,9 @@ int unload_module(struct moddb *db, hmodule_t hmod);
 int get_resource_data(struct moddb *db, hmodule_t hmod, char *id1, char *id2, char *id3, void **data);
 
 int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *libpath, struct section *aliassect, int flags);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

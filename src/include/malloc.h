@@ -47,6 +47,10 @@
 typedef unsigned int size_t;
 #endif
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 osapi void *malloc(size_t size);
 osapi void *realloc(void *mem, size_t size);
 osapi void *calloc(size_t num, size_t size);
@@ -54,5 +58,9 @@ osapi void free(void *p);
 
 // TODO: libc implement
 void  *_alloca(size_t size);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

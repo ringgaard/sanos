@@ -2877,6 +2877,62 @@ static int sys_sysinfo(char *params)
   return rc;
 }
 
+static int sys_mkmutex(char *params)
+{
+  int owned;
+  struct mutex *m;
+  handle_t h;
+
+  lock_buffer(params, 4);
+
+  owned = *(int *) params;
+
+  m = (struct mutex *) kmalloc(sizeof(struct mutex));
+  if (!m) 
+  {
+    unlock_buffer(params, 4);
+    return -ENOMEM;
+  }
+
+  init_mutex(m, owned);
+
+  h = halloc(&m->object);
+  if (h < 0)
+  {
+    close_object(&m->object);
+    unlock_buffer(params, 4);
+    return h;
+  }
+
+  unlock_buffer(params, 4);
+
+  return h;
+}
+
+static int sys_mutexrel(char *params)
+{
+  handle_t h;
+  struct mutex *m;
+  int rc;
+
+  if (lock_buffer(params, 4) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+
+  m = (struct mutex *) olock(h, OBJECT_MUTEX);
+  if (!m) 
+  {
+    unlock_buffer(params, 4);
+    return -EBADF;
+  }
+
+  rc = release_mutex(m);
+
+  orel(m);
+  unlock_buffer(params, 4);
+  return rc;
+}
+
 struct syscall_entry syscalltab[] =
 {
   {"null","", sys_null},
@@ -2965,6 +3021,8 @@ struct syscall_entry syscalltab[] =
   {"chmod", "%s,%d", sys_chmod},
   {"fchmod", "%d,%d", sys_fchmod},
   {"sysinfo", "%d,%p,%d", sys_sysinfo},
+  {"mkmutex", "%d", sys_mkmutex},
+  {"mutexrel", "%p", sys_mutexrel},
 };
 
 int syscall(int syscallno, char *params)

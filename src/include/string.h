@@ -49,7 +49,15 @@ typedef char *va_list;
 #endif
 
 #ifndef NULL
-#define NULL ((void *) 0)
+#ifdef __cplusplus
+#define NULL    0
+#else
+#define NULL    ((void *)0)
+#endif
+#endif
+
+#ifdef  __cplusplus
+extern "C" {
 #endif
 
 char *strncpy(char *dest, const char *source, size_t count);
@@ -93,5 +101,9 @@ char *strcpy(char *, const char *);
 char *strcat(char *, const char *);
 int strcmp(const char *, const char *);
 size_t strlen(const char *);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

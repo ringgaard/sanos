@@ -221,6 +221,9 @@
 				<File
 					RelativePath="..\src\include\sys\types.h">
 				</File>
+				<File
+					RelativePath="..\src\include\sys\utime.h">
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
@@ -928,6 +931,9 @@
 "
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\src\lib\new.cpp">
 		</File>
 		<File
 			RelativePath="..\src\lib\opts.c">

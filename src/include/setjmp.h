@@ -48,7 +48,15 @@ typedef struct
   unsigned long eip;
 } jmp_buf[1];
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 int setjmp(jmp_buf env);
 void longjmp(jmp_buf env, int value);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

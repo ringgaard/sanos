@@ -96,7 +96,7 @@ int dfs_utime(struct fs *fs, char *name, struct utimbuf *times)
   if (!inode) return -EIO;
 
   if (times->ctime != -1) inode->desc->ctime = times->ctime;
-  if (times->mtime != -1) inode->desc->mtime = times->mtime;
+  if (times->modtime != -1) inode->desc->mtime = times->modtime;
   mark_inode_dirty(inode);
 
   release_inode(inode);

@@ -218,7 +218,7 @@ krnlapi unsigned int release_sem(struct sem *s, unsigned int count);
 krnlapi unsigned int set_sem(struct sem *s, unsigned int count);
 
 krnlapi void init_mutex(struct mutex *m, int owned);
-krnlapi void release_mutex(struct mutex *m);
+krnlapi int release_mutex(struct mutex *m);
 
 krnlapi void init_waitable_timer(struct waitable_timer *t, unsigned int expires);
 krnlapi void modify_waitable_timer(struct waitable_timer *t, unsigned int expires);

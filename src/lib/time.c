@@ -86,7 +86,7 @@ const int _ytab[2][12] =
   {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
 };
 
-struct tm *_gmtime(const time_t *timer, struct tm *tmbuf)
+struct tm *gmtime_r(const time_t *timer, struct tm *tmbuf)
 {
   time_t time = *timer;
   unsigned long dayclock, dayno;
@@ -118,23 +118,23 @@ struct tm *_gmtime(const time_t *timer, struct tm *tmbuf)
   return tmbuf;
 }
 
-struct tm *_localtime(const time_t *timer, struct tm *tmbuf)
+struct tm *localtime_r(const time_t *timer, struct tm *tmbuf)
 {
   time_t t;
 
   t = *timer - _timezone;
-  return _gmtime(&t, tmbuf);
+  return gmtime_r(&t, tmbuf);
 }
 
 #ifndef KERNEL
 struct tm *gmtime(const time_t *timer)
 {
-  return _gmtime(timer, &gettib()->tmbuf);
+  return gmtime_r(timer, &gettib()->tmbuf);
 }
 
 struct tm *localtime(const time_t *timer)
 {
-  return _localtime(timer, &gettib()->tmbuf);
+  return localtime_r(timer, &gettib()->tmbuf);
 }
 #endif
 

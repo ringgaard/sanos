@@ -961,7 +961,7 @@ static int gentmpfn(char *path, char *prefix, int unique, char *tempfn)
   if (unique == 0) unique = clock();
   
   sprintf(tempfn, format, path, PS1, prefix, unique);
-  while ((rc = stat64(tempfn, NULL)) < 0)
+  while ((rc = access(tempfn, 0)) < 0)
   {
     if (rc != -EEXIST) return rc;
     unique++;
@@ -973,10 +973,11 @@ static int gentmpfn(char *path, char *prefix, int unique, char *tempfn)
 
 FILE *tmpfile()
 {
+  static int unique = 0;
+
   FILE *stream;
   char *path;
   char tempfn[MAXPATH];
-  int unique = 0;
   int rc;
 
   path = getenv("tmp");
@@ -1011,6 +1012,7 @@ FILE *tmpfile()
 
 char *tmpnam(char *string)
 {
+  static int unique = 0;
   char *path;
   char *tempfn;
   int rc;
@@ -1025,8 +1027,29 @@ char *tmpnam(char *string)
 
   rc = gentmpfn(path, "s", 0, tempfn);
   if (rc < 0) return NULL;
+  unique = rc;
 
   return tempfn;
+}
+
+char *tempnam(const char *dir, const char *prefix)
+{
+  static int unique = 0;
+  char *path;
+  char *tempfn;
+  int rc;
+
+  tempfn = gettib()->tmpnambuf;
+  
+  path = (char *) dir;
+  if (!path) path = getenv("tmp");
+  if (!path) path = ".";
+
+  rc = gentmpfn(path, (char *) prefix, unique, tempfn);
+  if (rc < 0) return NULL;
+  unique = rc;
+
+  return strdup(tempfn);
 }
 
 int vfprintf(FILE *stream, const char *fmt, va_list args)

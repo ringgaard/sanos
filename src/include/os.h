@@ -134,7 +134,11 @@ typedef unsigned int blkno_t;
 #endif
 
 #ifndef NULL
-#define NULL ((void *) 0)
+#ifdef __cplusplus
+#define NULL    0
+#else
+#define NULL    ((void *)0)
+#endif
 #endif
 
 #ifndef _TM_DEFINED
@@ -168,7 +172,7 @@ struct timeval
 
 struct section;
 
-#define TRACEAPI
+//#define TRACEAPI
 //#define TRACEAPIX
 
 //
@@ -387,7 +391,7 @@ struct section;
 #define EROFS           30               // Read-only file system
 //#define EMLINK          31               // Too many links
 #define EPIPE           32               // Broken pipe
-//#define EDOM            33               // Numerical arg out of domain
+#define EDOM            33               // Numerical arg out of domain
 #define ERANGE          34               // Result too large
 #define EUCLEAN           35               // Structure needs cleaning
 #define EDEADLK         36               // Resource deadlock avoided
@@ -607,12 +611,17 @@ struct dirent
   char name[MAXPATH];
 };
 
+#ifndef _UTIMBUF_DEFINED
+#define _UTIMBUF_DEFINED
+
 struct utimbuf 
 {
+  time_t modtime;
+  time_t actime;
   time_t ctime;
-  time_t mtime;
-  time_t atime;
 };
+
+#endif
 
 struct iovec 
 { 
@@ -779,6 +788,8 @@ struct hostent
   short h_length;      // Length of address
   char **h_addr_list;  // List of addresses
 };
+
+#define h_addr h_addr_list[0]
 
 struct protoent
 {
@@ -1023,6 +1034,7 @@ struct tib
   void *startaddr;                 // Start address for thread
   void *startarg;                  // Argument to thread start routine
 
+  handle_t hndl;                   // Handle for thread
   struct job *job;                 // Job object for thread
 
   struct siginfo *cursig;          // Current signal used by getsiginfo()
@@ -1039,7 +1051,7 @@ struct tib
   char ascbuf[ASCBUFSIZE];         // For asctime()
   char tmpnambuf[MAXPATH];         // For tmpnam()
 
-  char reserved1[1520];
+  char reserved1[1516];
 
   void *tls[MAX_TLS];              // Thread local storage
   char reserved2[240];
@@ -1109,6 +1121,10 @@ struct loadinfo
 //
 
 #ifndef KERNEL
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
 
 osapi int syscall(int syscallno, void *params);
 
@@ -1192,6 +1208,9 @@ osapi int ereset(handle_t h);
 osapi handle_t mksem(int initial_count);
 osapi int semrel(handle_t h, int count);
 
+osapi handle_t mkmutex(int owned);
+osapi int mutexrel(handle_t h);
+
 osapi handle_t mkiomux(int flags);
 osapi int dispatch(handle_t iomux, handle_t h, int events, int context);
 
@@ -1252,7 +1271,7 @@ osapi int getreslen(hmodule_t hmod, int type, char *name, int lang);
 osapi tls_t tlsalloc();
 osapi void tlsfree(tls_t index);
 osapi void *tlsget(tls_t index);
-osapi void tlsset(tls_t index, void *value);
+osapi int tlsset(tls_t index, void *value);
 
 osapi int accept(int s, struct sockaddr *addr, int *addrlen);
 osapi int bind(int s, const struct sockaddr *name, int namelen);
@@ -1304,6 +1323,10 @@ osapi int *_errno();
 #ifndef fmode
 osapi int *_fmode();
 #define fmode (*_fmode())
+#endif
+
+#ifdef  __cplusplus
+}
 #endif
 
 #endif

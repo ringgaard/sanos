@@ -120,7 +120,9 @@
 #define SYSCALL_CHMOD        83
 #define SYSCALL_FCHMOD       84
 #define SYSCALL_SYSINFO      85
+#define SYSCALL_MKMUTEX      86
+#define SYSCALL_MUTEXREL     87
 
-#define SYSCALL_MAX          85
+#define SYSCALL_MAX          87
 
 #endif

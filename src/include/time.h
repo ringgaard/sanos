@@ -43,7 +43,11 @@
 #endif
 
 #ifndef NULL
-#define NULL ((void *) 0)
+#ifdef __cplusplus
+#define NULL    0
+#else
+#define NULL    ((void *)0)
+#endif
 #endif
 
 #ifndef _TIME_T_DEFINED
@@ -110,8 +114,12 @@ extern char *_tzname[2];  // Standard/daylight savings time zone names
 
 #define difftime(time2, time1) ((double)((time2) - (time1)))
 
-struct tm *_gmtime(const time_t *timer, struct tm *tmbuf);
-struct tm *_localtime(const time_t *timer, struct tm *tmbuf);
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
+struct tm *gmtime_r(const time_t *timer, struct tm *tmbuf);
+struct tm *localtime_r(const time_t *timer, struct tm *tmbuf);
 
 struct tm *gmtime(const time_t *timer);
 struct tm *localtime(const time_t *timer);
@@ -128,6 +136,10 @@ char *ctime(const time_t *tp);
 char *_strdate(char *s);
 char *_strtime(char *s);
 void _tzset();
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif
 

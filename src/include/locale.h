@@ -75,8 +75,16 @@ struct lconv
 
 #endif
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 // TODO: libc implement
 char *setlocale(int category, const char *locale);
 struct lconv *localeconv(void);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

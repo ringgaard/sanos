@@ -799,7 +799,7 @@ BOOL WINAPI FileTimeToSystemTime
 
   t = (time_t) ((*(unsigned __int64 *) lpFileTime) - EPOC) / SECTIMESCALE;
 
-  _gmtime(&t, &tm);
+  gmtime_r(&t, &tm);
 
   lpSystemTime->wYear = tm.tm_year + 1900; 
   lpSystemTime->wMonth = tm.tm_mon + 1; 
@@ -1237,13 +1237,8 @@ DWORD WINAPI GetFileAttributesA
   struct stat64 fs;
   unsigned long attrs;
 
-  syslog(LOG_DEBUG, "GetFileAttributesA\n");
-  TRACE("GetFileAttributesA");
-  if (stat64((char *) lpFileName, &fs) < 0) 
-  {
-    syslog(LOG_DEBUG, "stat failed\n");
-    return -1;
-  }
+  if (stat64((char *) lpFileName, &fs) < 0) return -1;
+
   switch (fs.st_mode & S_IFMT)
   {
     case S_IFREG:
@@ -1272,7 +1267,6 @@ DWORD WINAPI GetFileAttributesA
   if (!(fs.st_mode & S_IWRITE)) attrs |= FILE_ATTRIBUTE_READONLY;
   // TODO: set other attributes for files (hidden, system, etc.)
 
-  syslog(LOG_DEBUG, "attrs: %s %08X %08X\n", lpFileName, fs.st_mode, attrs);
   return attrs;
 }
 
@@ -1551,7 +1545,7 @@ VOID WINAPI GetSystemTime
 
   TRACE("GetSystemTime");
   gettimeofday(&tv);
-  _gmtime(&tv.tv_sec, &tm);
+  gmtime_r(&tv.tv_sec, &tm);
 
   lpSystemTime->wYear = tm.tm_year + 1900; 
   lpSystemTime->wMonth = tm.tm_mon + 1; 
@@ -2120,7 +2114,7 @@ BOOL WINAPI SetConsoleCtrlHandler
 )
 {
   TRACE("SetConsoleCtrlHandler");
-  syslog(LOG_DEBUG, "warning: SetConsoleCtrlHandler not implemented, ignored\n");
+  //syslog(LOG_DEBUG, "warning: SetConsoleCtrlHandler not implemented, ignored\n");
   return TRUE;
 }
 
@@ -2245,14 +2239,14 @@ BOOL WINAPI SetFileTime
     times.ctime = -1;
 
   if (lpLastAccessTime != NULL)
-    times.atime = (time_t)(((*(__int64 *) lpLastAccessTime) - EPOC) / SECTIMESCALE);
+    times.actime = (time_t)(((*(__int64 *) lpLastAccessTime) - EPOC) / SECTIMESCALE);
   else
-    times.atime = -1;
+    times.actime = -1;
 
   if (lpLastWriteTime != NULL)
-    times.mtime = (time_t)(((*(__int64 *) lpLastWriteTime) - EPOC) / SECTIMESCALE);
+    times.modtime = (time_t)(((*(__int64 *) lpLastWriteTime) - EPOC) / SECTIMESCALE);
   else
-    times.mtime = -1;
+    times.modtime = -1;
 
   rc = futime((handle_t) hFile, &times);
   if (rc < 0) return FALSE;
@@ -2269,7 +2263,7 @@ BOOL WINAPI SetHandleInformation
 {
   TRACE("SetHandleInformation");
   // Ignored, only used for setting handle inheritance
-  syslog(LOG_DEBUG, "warning: SetHandleInformation ignored\n");
+  //syslog(LOG_DEBUG, "warning: SetHandleInformation ignored\n");
   return TRUE;
 }
 

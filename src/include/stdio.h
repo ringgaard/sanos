@@ -43,7 +43,11 @@
 #endif
 
 #ifndef NULL
-#define NULL ((void *) 0)
+#ifdef __cplusplus
+#define NULL    0
+#else
+#define NULL    ((void *)0)
+#endif
 #endif
 
 #ifndef _VA_LIST_DEFINED
@@ -116,6 +120,10 @@ typedef struct _iobuf FILE;
 
 #define _IOCRLF         0x8000
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 int filbuf(FILE *stream);
 int flsbuf(int, FILE *stream);
 
@@ -157,6 +165,7 @@ osapi int rename(const char *oldname, const char *newname);
 
 FILE *tmpfile();
 char *tmpnam(char *string);
+char *tempnam(const char *dir, const char *prefix);
 
 int vfprintf(FILE *stream, const char *fmt, va_list args);
 int fprintf(FILE *stream, const char *fmt, ...);
@@ -175,6 +184,10 @@ int scanf(const char *fmt, ...);
 int sscanf(const char *buffer, const char *fmt, ...);
 
 FILE *__getstdhndl(int n);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #define feof(stream)     ((stream)->flag & _IOEOF)
 #define ferror(stream)   ((stream)->flag & _IOERR)

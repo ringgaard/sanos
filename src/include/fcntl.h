@@ -89,7 +89,15 @@ typedef int handle_t;
 
 #endif
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 osapi handle_t open(const char *name, int flags, ...);
 osapi handle_t creat(const char *name, int mode);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

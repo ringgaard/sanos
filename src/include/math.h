@@ -38,8 +38,6 @@
 #ifndef MATH_H
 #define MATH_H
 
-extern const double _infinity;
-
 #define HUGE_VAL _infinity
 
 #define M_E        2.71828182845904523536     // e
@@ -55,6 +53,12 @@ extern const double _infinity;
 #define M_2_SQRTPI 1.12837916709551257390     // 2/sqrt(pi)
 #define M_SQRT2    1.41421356237309504880     // sqrt(2)
 #define M_SQRT1_2  0.707106781186547524401    // 1/sqrt(2)
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
+extern const double _infinity;
 
 double acos(double x);
 double asin(double x);
@@ -80,5 +84,9 @@ double tan(double x);
 double tanh(double x);
 
 double atof(const char *str);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

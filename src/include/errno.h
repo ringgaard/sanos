@@ -90,9 +90,17 @@
 
 #endif
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 #ifndef errno
 osapi int *_errno();
 #define errno (*_errno())
+#endif
+
+#ifdef  __cplusplus
+}
 #endif
 
 #endif

@@ -43,6 +43,10 @@
 typedef unsigned int size_t;
 #endif
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 void *memcpy(void *, const void *, size_t);
 int memcmp(const void *, const void *, size_t);
 void *memset(void *, int, size_t);
@@ -52,5 +56,9 @@ void *memchr(const void *buf, int ch, size_t count);
 
 void *memccpy(void *dst, const void *src, int c, size_t count);
 int memicmp(const void *buf1, const void *buf2, size_t count);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

@@ -537,7 +537,7 @@ int dfs_futime(struct file *filp, struct utimbuf *times)
 
   inode = (struct inode *) filp->data;
   if (times->ctime != -1) inode->desc->ctime = times->ctime;
-  if (times->mtime != -1) inode->desc->mtime = times->mtime;
+  if (times->modtime != -1) inode->desc->mtime = times->modtime;
   mark_inode_dirty(inode);
 
   return 0;

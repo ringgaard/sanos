@@ -55,6 +55,10 @@
 #define _ALPHA          (0x0100 | _UPPER| _LOWER)   // Alphabetic character
 
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 extern unsigned short *_pctype; // pointer to table for char's
 
 int _isctype(int c, int mask);
@@ -75,19 +79,23 @@ int isleadbyte(int c);
 int toupper(int c);
 int tolower(int c);
 
+#ifdef  __cplusplus
+}
+#endif
+
 #ifndef _CTYPE_DISABLE_MACROS
 
-#define isalpha(c)     (_pctype[c] & (_UPPER | _LOWER))
-#define isupper(c)     (_pctype[c] & _UPPER)
-#define islower(c)     (_pctype[c] & _LOWER)
-#define isdigit(c)     (_pctype[c] & _DIGIT)
-#define isxdigit(c)    (_pctype[c] & _HEX)
-#define isspace(c)     (_pctype[c] & _SPACE)
-#define ispunct(c)     (_pctype[c] & _PUNCT)
-#define isalnum(c)     (_pctype[c] & (_UPPER | _LOWER | _DIGIT))
-#define isprint(c)     (_pctype[c] & (_BLANK | _PUNCT | _UPPER | _LOWER | _DIGIT))
-#define isgraph(c)     (_pctype[c] & (_PUNCT | _UPPER | _LOWER | _DIGIT))
-#define iscntrl(c)     (_pctype[c] & _CONTROL)
+#define isalpha(c)     (_pctype[(c)] & (_UPPER | _LOWER))
+#define isupper(c)     (_pctype[(c)] & _UPPER)
+#define islower(c)     (_pctype[(c)] & _LOWER)
+#define isdigit(c)     (_pctype[(c)] & _DIGIT)
+#define isxdigit(c)    (_pctype[(c)] & _HEX)
+#define isspace(c)     (_pctype[(c)] & _SPACE)
+#define ispunct(c)     (_pctype[(c)] & _PUNCT)
+#define isalnum(c)     (_pctype[(c)] & (_UPPER | _LOWER | _DIGIT))
+#define isprint(c)     (_pctype[(c)] & (_BLANK | _PUNCT | _UPPER | _LOWER | _DIGIT))
+#define isgraph(c)     (_pctype[(c)] & (_PUNCT | _UPPER | _LOWER | _DIGIT))
+#define iscntrl(c)     (_pctype[(c)] & _CONTROL)
 #define isleadbyte(c)  (_pctype[(unsigned char)(c)] & _LEADBYTE)
 
 #define tolower(c)     ((c) - 'A' + 'a')

@@ -412,11 +412,6 @@ int ereset(handle_t h)
   return syscall(SYSCALL_ERESET, &h);
 }
 
-handle_t self()
-{
-  return syscall(SYSCALL_SELF, NULL);
-}
-
 void exitos(int status)
 {
   syscall(SYSCALL_EXITOS, &status);
@@ -575,4 +570,14 @@ int setmode(handle_t f, int mode)
 int sysinfo(int cmd, void *data, size_t size)
 {
   return syscall(SYSCALL_SYSINFO, (void *) &cmd);
+}
+
+handle_t mkmutex(int owned)
+{
+  return syscall(SYSCALL_MKMUTEX, (void *) &owned);
+}
+
+int mutexrel(handle_t h)
+{
+  return syscall(SYSCALL_MUTEXREL, (void *) &h);
 }

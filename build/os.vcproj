@@ -21,6 +21,7 @@
 			ATLMinimizesCRunTimeLibraryUsage="FALSE">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/Oi /Ob1 /Gy /GF"
 				Optimization="2"
 				GlobalOptimizations="TRUE"
 				InlineFunctionExpansion="1"
@@ -44,8 +45,7 @@
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
 				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="FALSE"
-                AdditionalOptions="/Oi /Ob1 /Gy /GF" />
+				UndefineAllPreprocessorDefinitions="FALSE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
@@ -197,6 +197,9 @@
 		<Filter
 			Name="include"
 			Filter="">
+			<File
+				RelativePath="..\src\include\atomic.h">
+			</File>
 			<File
 				RelativePath="..\src\include\bitops.h">
 			</File>

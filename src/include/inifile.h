@@ -50,6 +50,10 @@ struct property
   struct property *next;
 };
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 struct section *find_section(struct section *sect, char *name);
 int get_section_size(struct section *sect);
 char *find_property(struct section *sect, char *name);
@@ -59,5 +63,9 @@ void free_properties(struct section *sect);
 struct section *parse_properties(char *props);
 void list_properties(int f, struct section *sect);
 struct section *read_properties(char *filename);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

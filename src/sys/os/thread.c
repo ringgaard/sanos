@@ -139,6 +139,12 @@ handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, vo
   return h;
 }
 
+handle_t self()
+{
+  //return syscall(SYSCALL_SELF, NULL);
+  return gettib()->hndl;
+}
+
 int suspend(handle_t thread)
 {
   return syscall(SYSCALL_SUSPEND, &thread);

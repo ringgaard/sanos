@@ -43,7 +43,11 @@
 #endif
 
 #ifndef NULL
-#define NULL ((void *) 0)
+#ifdef __cplusplus
+#define NULL    0
+#else
+#define NULL    ((void *)0)
+#endif
 #endif
 
 #define RAND_MAX     0x7fff
@@ -68,6 +72,10 @@ typedef struct _ldiv_t
   long rem;
 } ldiv_t;
 
+#endif
+
+#ifdef  __cplusplus
+extern "C" {
 #endif
 
 void abort();
@@ -117,7 +125,16 @@ char *initstate(unsigned long seed, char *arg_state, long n);
 char *setstate(char *arg_state);
 long random();
 
+#ifdef  __cplusplus
+}
+#endif
+
+#ifndef max
 #define max(a,b) (((a) > (b)) ? (a) : (b))
+#endif
+
+#ifndef min
 #define min(a,b) (((a) < (b)) ? (a) : (b))
+#endif
 
 #endif

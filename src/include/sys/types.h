@@ -114,14 +114,23 @@ typedef int err_t;
 typedef __int64 systime_t;
 
 #ifndef NULL
-#define NULL ((void *) 0)
+#ifdef __cplusplus
+#define NULL    0
+#else
+#define NULL    ((void *)0)
+#endif
 #endif
 
 #define K 1024
 #define M (K * K)
 
+#ifndef FALSE
 #define FALSE 0
+#endif
+
+#ifndef TRUE
 #define TRUE  1
+#endif
 
 #ifndef NOHANDLE
 #define NOHANDLE ((handle_t) -1)

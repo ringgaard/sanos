@@ -509,3 +509,15 @@ CHANGES
 - _open_osfhandle() in msvcrt leaked file handles. This has been fixed.
 
 - Console input implemented using readline() in msvcrt.
+
+- tempnam() added to stdio.h
+
+- sys/utime.h added
+
+- Self handle for thread now stored in TIB.
+
+- Improved C++ compatibility in Standard C library. All function declarations now 
+  in extern "C". The standard new and delete operator implemented.
+
+- mkmutex() and mutexrel() implemented
+

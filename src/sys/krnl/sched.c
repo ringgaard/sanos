@@ -400,8 +400,8 @@ int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread 
   rc = allocate_user_stack(t, stacksize, DEFAULT_INITIAL_STACK_COMMIT);
   if (rc < 0) return rc;
 
-  // Allocate self handle
-  t->hndl = halloc(&t->object);
+  // Allocate self handle (it is also stored in the tib for fast access)
+  t->hndl = t->tib->hndl = halloc(&t->object);
 
   // Notify debugger
   dbg_notify_create_thread(t, entrypoint);

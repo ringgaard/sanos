@@ -425,7 +425,7 @@ void set_time(struct timeval *tv)
   upsince += (tv->tv_sec - systemclock.tv_sec);
   systemclock.tv_usec = tv->tv_usec;
   systemclock.tv_sec = tv->tv_sec;
-  _gmtime(&tv->tv_sec, &tm);
+  gmtime_r(&tv->tv_sec, &tm);
   set_cmos_time(&tm);
 }
 

@@ -313,7 +313,7 @@ int cmd_date(int argc, char *argv[])
   struct tm tm;
 
   t = time(NULL);
-  _gmtime(&t, &tm);
+  gmtime_r(&t, &tm);
 
   if (argc > 1)
   {
@@ -682,6 +682,15 @@ int cmd_kbd(int argc, char *argv[])
   return 0;
 }
 
+int cmd_kill(int argc, char *argv[])
+{
+  int signum = SIGINT;
+  
+  if (argc > 1) signum = atoi(argv[1]);
+  sendsig(signum, NULL);
+  return 0;
+}
+
 int cmd_klog(int argc, char *argv[])
 {
   int enabled;
@@ -816,7 +825,7 @@ int cmd_ls(int argc, char *argv[])
       {
 	printf("%8d %4d %1d %2d ", (int) buf.st_size, buf.st_ino, buf.st_nlink, buf.st_dev);
 
-	_gmtime(&buf.st_ctime, &tm);
+	gmtime_r(&buf.st_ctime, &tm);
 	printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
       }
       else
@@ -836,7 +845,7 @@ int cmd_ls(int argc, char *argv[])
 	}
       }
 
-      _gmtime(&buf.st_mtime, &tm);
+      gmtime_r(&buf.st_mtime, &tm);
       printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
       printf("%s", dirp.name);
@@ -1430,6 +1439,7 @@ struct command cmdtab[] =
   {"httpget",  cmd_httpget,  "Retrieve file via http"},
   {"jobs",     cmd_jobs,     "Display job list"},
   {"kbd",      cmd_kbd,      "Keyboard test"},
+  {"kill",     cmd_kill,     "Send signal"},
   {"klog",     cmd_klog,     "Enable/disable kernel log messages"},
   {"less",     cmd_more,     "Display file paginated"},
   {"load",     cmd_load,     "Load module"},

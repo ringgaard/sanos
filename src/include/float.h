@@ -56,6 +56,14 @@
 #define DBL_MIN        2.2250738585072014e-308
 #define DBL_MIN_EXP    (-307)
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 void _fpreset();
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

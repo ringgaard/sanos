@@ -113,7 +113,7 @@ void _amsg_exit(int rterrnum)
 _onexit_t __dllonexit(_onexit_t func, _PVFV **pbegin, _PVFV **pend)
 {
   TRACE("__dllonexit");
-  syslog(LOG_DEBUG, "warning: __dllonexit not implemented, ignored\n");
+  //syslog(LOG_DEBUG, "warning: __dllonexit not implemented, ignored\n");
   return func;
 }
 
@@ -341,13 +341,6 @@ void _exit(int status)
 {
   TRACE("_exit");
   exit(status);
-}
-
-int _purecall()
-{
-  TRACE("_purecall");
-  panic("pure virtual function call attempted");
-  return 0;
 }
 
 int crt_raise(int sig)

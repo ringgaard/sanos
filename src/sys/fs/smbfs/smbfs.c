@@ -608,9 +608,9 @@ int smb_futime(struct file *filp, struct utimbuf *times)
   req.infolevel = 0x101;
 
   info.creation_time = time2ft(times->ctime == -1 ? file->statbuf.st_ctime : times->ctime);
-  info.last_access_time = time2ft(times->atime == -1 ? file->statbuf.st_atime : times->atime);
-  info.last_write_time = time2ft(times->mtime == -1 ? file->statbuf.st_mtime : times->mtime);
-  info.change_time = time2ft(times->mtime == -1 ? file->statbuf.st_mtime : times->mtime);
+  info.last_access_time = time2ft(times->actime == -1 ? file->statbuf.st_atime : times->actime);
+  info.last_write_time = time2ft(times->modtime == -1 ? file->statbuf.st_mtime : times->modtime);
+  info.change_time = time2ft(times->modtime == -1 ? file->statbuf.st_mtime : times->modtime);
   info.attributes = file->attrs;
 
   rsplen = sizeof(rsp);
@@ -618,8 +618,8 @@ int smb_futime(struct file *filp, struct utimbuf *times)
   if (rc < 0) return rc;
 
   if (times->ctime != -1) file->statbuf.st_ctime = times->ctime;
-  if (times->mtime != -1) file->statbuf.st_mtime = times->mtime;
-  if (times->atime != -1) file->statbuf.st_atime = times->atime;
+  if (times->modtime != -1) file->statbuf.st_mtime = times->modtime;
+  if (times->actime != -1) file->statbuf.st_atime = times->actime;
 
   return 0;
 }

@@ -271,6 +271,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\lib\new.cpp">
+			</File>
+			<File
 				RelativePath="..\src\lib\qsort.c">
 			</File>
 			<File
@@ -324,9 +327,6 @@
 		</File>
 		<File
 			RelativePath="..\src\win32\msvcrt\msvcrt.h">
-		</File>
-		<File
-			RelativePath="..\src\win32\msvcrt\new.cpp">
 		</File>
 	</Files>
 	<Globals>

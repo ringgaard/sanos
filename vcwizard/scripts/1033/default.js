@@ -75,7 +75,8 @@ function AddConfig(proj, strProjectName)
   {
     var prjname = wizard.FindSymbol('PROJECT_NAME');
     var sdkpath = wizard.FindSymbol('SANOS_SDKPATH');
-    var isdll = !wizard.FindSymbol('APP_TYPE_USEREXE');
+    var isdll = !wizard.FindSymbol('APP_TYPE_USEREXE') && !wizard.FindSymbol('APP_TYPE_USERLIB');
+    var islib = wizard.FindSymbol('APP_TYPE_USERLIB');
     var isdrv = wizard.FindSymbol('APP_TYPE_KRNLDRV');
     var iskrnl = wizard.FindSymbol('APP_TYPE_KRNLDRV') || wizard.FindSymbol('APP_TYPE_KRNLMOD');
     var useclib = wizard.FindSymbol('USE_CLIB');
@@ -90,12 +91,15 @@ function AddConfig(proj, strProjectName)
     var config = proj.Object.Configurations('Debug');
     config.IntermediateDirectory = 'debug';
     config.OutputDirectory = 'debug';
-    if (isdll) config.COnfigurationType = 2;
-
+    if (isdll) 
+      config.ConfigurationType = 2;
+    else if (islib)
+      config.ConfigurationType = 4;
+    
     var CLTool = config.Tools('VCCLCompilerTool');
     CLTool.Optimization = 0;
     CLTool.AdditionalIncludeDirectories = sdkpath + '\\src\\include';
-    if (isdll)
+    if (isdll || islib)
     {
       if (iskrnl)
         CLTool.PreprocessorDefinitions = prjname.toUpperCase() + '_LIB;KERNEL;DEBUG;SANOS';
@@ -115,28 +119,38 @@ function AddConfig(proj, strProjectName)
     CLTool.CompileAs = 0; 
     CLTool.Detect64BitPortabilityProblems = false;
     
-    var LinkTool = config.Tools('VCLinkerTool');
-    LinkTool.AdditionalOptions = '/MACHINE:I386 /FIXED:NO';
-    if (useclib)
-      LinkTool.AdditionalDependencies = 'os.lib libc.lib $(NOINHERIT)';
-    else if (iskrnl)
-      LinkTool.AdditionalDependencies = 'krnl.lib $(NOINHERIT)';
-    else
-      LinkTool.AdditionalDependencies = 'os.lib $(NOINHERIT)';
-    if (isdrv) LinkTool.OutputFile = '$(OutDir)/$(ProjectName).sys';
-    LinkTool.LinkIncremental = 1;
-    LinkTool.SuppressStartupBanner = true;
-    LinkTool.AdditionalLibraryDirectories = sdkpath + "\\dbg\\lib";
-    LinkTool.IgnoreAllDefaultLibraries = true;
-    LinkTool.GenerateDebugInformation = true;
-    LinkTool.GenerateMapFile = false;
-    LinkTool.SubSystem = 1;
-    if (isdll)
+    if (islib)
     {
-      if (wizard.FindSymbol('APP_TYPE_USERDLL'))
-        LinkTool.EntryPointSymbol = 'DllMain';
+      var LibTool = config.Tools('VCLibrarianTool');
+      LibTool.OutputFile = '$(OutDir)/$(ProjectName).lib';
+      LibTool.SuppressStartupBanner = true;
+      LibTool.IgnoreAllDefaultLibraries = true;
+    }
+    else
+    {
+      var LinkTool = config.Tools('VCLinkerTool');
+      LinkTool.AdditionalOptions = '/MACHINE:I386 /FIXED:NO';
+      if (useclib)
+        LinkTool.AdditionalDependencies = 'os.lib libc.lib $(NOINHERIT)';
+      else if (iskrnl)
+        LinkTool.AdditionalDependencies = 'krnl.lib $(NOINHERIT)';
       else
-        LinkTool.EntryPointSymbol = 'start';
+        LinkTool.AdditionalDependencies = 'os.lib $(NOINHERIT)';
+      if (isdrv) LinkTool.OutputFile = '$(OutDir)/$(ProjectName).sys';
+      LinkTool.LinkIncremental = 1;
+      LinkTool.SuppressStartupBanner = true;
+      LinkTool.AdditionalLibraryDirectories = sdkpath + "\\dbg\\lib";
+      LinkTool.IgnoreAllDefaultLibraries = true;
+      LinkTool.GenerateDebugInformation = true;
+      LinkTool.GenerateMapFile = false;
+      LinkTool.SubSystem = 1;
+      if (isdll)
+      {
+        if (wizard.FindSymbol('APP_TYPE_USERDLL'))
+          LinkTool.EntryPointSymbol = 'DllMain';
+        else
+          LinkTool.EntryPointSymbol = 'start';
+      }
     }
 
     //config = proj.Object.Configurations('Sanos');
@@ -144,7 +158,10 @@ function AddConfig(proj, strProjectName)
 
     config.IntermediateDirectory = 'release';
     config.OutputDirectory = 'release';
-    if (isdll) config.ConfigurationType = 2;
+    if (isdll) 
+      config.ConfigurationType = 2;
+    else if (islib)
+      config.ConfigurationType = 4;
 
     var CLTool = config.Tools('VCCLCompilerTool');
     CLTool.Optimization = 2;
@@ -155,7 +172,7 @@ function AddConfig(proj, strProjectName)
     CLTool.OmitFramePointers = true;
     //CLTool.OptimizeForProcessor = 2;
     CLTool.AdditionalIncludeDirectories = sdkpath + '\\src\\include';
-    if (isdll)
+    if (isdll || islib)
     {
       if (iskrnl)
         CLTool.PreprocessorDefinitions = prjname.toUpperCase() + '_LIB;KERNEL;SANOS';
@@ -177,28 +194,38 @@ function AddConfig(proj, strProjectName)
     CLTool.UndefineAllPreprocessorDefinitions = false;
     CLTool.Detect64BitPortabilityProblems = false;
 
-    var LinkTool = config.Tools('VCLinkerTool');
-    LinkTool.AdditionalOptions = '/MACHINE:I386 /FIXED:NO';
-    if (useclib)
-      LinkTool.AdditionalDependencies = 'os.lib libc.lib $(NOINHERIT)';
-    else if (iskrnl)
-      LinkTool.AdditionalDependencies = 'krnl.lib $(NOINHERIT)';
-    else
-      LinkTool.AdditionalDependencies = 'os.lib $(NOINHERIT)';
-    if (isdrv) LinkTool.OutputFile = '$(OutDir)/$(ProjectName).sys';
-    LinkTool.LinkIncremental = 1;
-    LinkTool.SuppressStartupBanner = true;
-    LinkTool.AdditionalLibraryDirectories = sdkpath + "\\lib";
-    LinkTool.IgnoreAllDefaultLibraries = true;
-    LinkTool.GenerateDebugInformation = true;
-    LinkTool.GenerateMapFile = false;
-    LinkTool.SubSystem = 1;
-    if (isdll)
+    if (islib)
     {
-      if (wizard.FindSymbol('APP_TYPE_USERDLL'))
-        LinkTool.EntryPointSymbol = 'DllMain';
+      var LibTool = config.Tools('VCLibrarianTool');
+      LibTool.OutputFile = '$(OutDir)/$(ProjectName).lib';
+      LibTool.SuppressStartupBanner = true;
+      LibTool.IgnoreAllDefaultLibraries = true;
+    }
+    else
+    {
+      var LinkTool = config.Tools('VCLinkerTool');
+      LinkTool.AdditionalOptions = '/MACHINE:I386 /FIXED:NO';
+      if (useclib)
+        LinkTool.AdditionalDependencies = 'os.lib libc.lib $(NOINHERIT)';
+      else if (iskrnl)
+        LinkTool.AdditionalDependencies = 'krnl.lib $(NOINHERIT)';
       else
-        LinkTool.EntryPointSymbol = 'start';
+        LinkTool.AdditionalDependencies = 'os.lib $(NOINHERIT)';
+      if (isdrv) LinkTool.OutputFile = '$(OutDir)/$(ProjectName).sys';
+      LinkTool.LinkIncremental = 1;
+      LinkTool.SuppressStartupBanner = true;
+      LinkTool.AdditionalLibraryDirectories = sdkpath + "\\lib";
+      LinkTool.IgnoreAllDefaultLibraries = true;
+      LinkTool.GenerateDebugInformation = true;
+      LinkTool.GenerateMapFile = false;
+      LinkTool.SubSystem = 1;
+      if (isdll)
+      {
+        if (wizard.FindSymbol('APP_TYPE_USERDLL'))
+          LinkTool.EntryPointSymbol = 'DllMain';
+        else
+          LinkTool.EntryPointSymbol = 'start';
+      }
     }
   }
   catch(e)

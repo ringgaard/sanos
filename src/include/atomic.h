@@ -38,6 +38,10 @@
 #ifndef ATOMIC_H
 #define ATOMIC_H
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 // On uniprocessors, the 'lock' prefixes are not necessary (and expensive). 
 // Since sanos does not (yet) support SMP the 'lock' prefix is disabled for now.
 
@@ -88,5 +92,9 @@ __inline int atomic_exchange(int *dest, int value)
 }
 
 #pragma warning(default: 4035)
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

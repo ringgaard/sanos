@@ -70,7 +70,15 @@ typedef void (*sighandler_t)(int signum);
 
 #endif
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 osapi sighandler_t signal(int signum, sighandler_t handler);
 osapi void raise(int signum);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

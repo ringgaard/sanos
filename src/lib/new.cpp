@@ -31,11 +31,19 @@
 // SUCH DAMAGE.
 // 
 
-extern "C"
-{
 #include "os.h"
 
+extern "C"
+{
+
 void *memset(void *, int, size_t);
+
+int _purecall()
+{
+  panic("pure virtual function call attempted");
+  return 0;
+}
+
 }
 
 void *operator new(unsigned int size)

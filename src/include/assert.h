@@ -40,7 +40,15 @@
 
 #ifdef NDEBUG
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 void _assert(void *expr, void *filename, unsigned lineno);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #define assert(exp) (void) ((exp) || (_assert(#exp, __FILE__, __LINE__), 0))
 

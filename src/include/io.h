@@ -57,6 +57,10 @@ typedef int handle_t;
 typedef unsigned int loff_t;
 #endif
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 osapi handle_t open(const char *name, int flags, ...);
 osapi handle_t sopen(const char *name, int flags, int shflags, ...);
 osapi handle_t creat(const char *name, int mode);
@@ -74,5 +78,9 @@ osapi loff_t lseek(handle_t f, loff_t offset, int origin);
 osapi int access(const char *name, int mode);
 osapi int umask(int mode);
 osapi int eof(handle_t f);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

@@ -790,15 +790,15 @@ void init_mutex(struct mutex *m, int owned)
 // Release mutex
 //
 
-void release_mutex(struct mutex *m)
+int release_mutex(struct mutex *m)
 {
   struct waitblock *wb;
 
   // Check that caller is the owner
-  if (m->owner != self()) return;
+  if (m->owner != self()) return -EPERM;
 
   // Check for recursion
-  if (--m->recursion > 0) return;
+  if (--m->recursion > 0) return 0;
 
   // Set the mutex to the signaled state
   m->object.signaled = 1;
@@ -822,6 +822,8 @@ void release_mutex(struct mutex *m)
     // Release waiting thread
     release_thread(wb->thread);
   }
+
+  return 0;
 }
 
 //

@@ -66,7 +66,7 @@ void *tlsget(tls_t index)
   return tib->tls[index];
 }
 
-void tlsset(tls_t index, void *value)
+int tlsset(tls_t index, void *value)
 {
   struct tib *tib;
 
@@ -77,4 +77,5 @@ void tlsset(tls_t index, void *value)
   }
 
   tib->tls[index] = value;
+  return 0;
 }

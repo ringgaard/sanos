@@ -85,7 +85,7 @@ LONG WINAPI RegOpenKeyExA
 )
 {
   TRACE("RegOpenKeyExA");
-  syslog(LOG_DEBUG, "warning: RegOpenKeyEx(%p,%s) ignored\n", hKey, lpSubKey);
+  //syslog(LOG_DEBUG, "warning: RegOpenKeyEx(%p,%s) ignored\n", hKey, lpSubKey);
   return -1;
 }
 

@@ -43,7 +43,11 @@
 #endif
 
 #ifndef NULL
-#define NULL ((void *) 0)
+#ifdef __cplusplus
+#define NULL    0
+#else
+#define NULL    ((void *)0)
+#endif
 #endif
 
 #ifndef _SIZE_T_DEFINED
@@ -99,6 +103,10 @@ typedef int handle_t;
 
 #endif
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 osapi int access(const char *name, int mode);
 osapi loff_t lseek(handle_t f, loff_t offset, int origin);
 osapi off64_t lseek64(handle_t f, off64_t offset, int origin);
@@ -113,5 +121,9 @@ osapi handle_t dup2(handle_t h1, handle_t h2);
 osapi int link(const char *oldname, const char *newname);
 osapi int unlink(const char *name);
 osapi int rmdir(const char *name);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

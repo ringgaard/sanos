@@ -53,13 +53,27 @@ typedef int ptrdiff_t;
 #endif
 
 #ifndef NULL
-#define NULL ((void *) 0)
+#ifdef __cplusplus
+#define NULL    0
+#else
+#define NULL    ((void *)0)
+#endif
 #endif
 
 #ifndef KERNEL
 #ifndef errno
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 osapi int *_errno();
 #define errno (*_errno())
+
+#ifdef  __cplusplus
+}
+#endif
+
 #endif
 #endif
 

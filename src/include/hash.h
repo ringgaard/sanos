@@ -62,6 +62,10 @@ typedef int (*enumfunc_t)(int key, void *val, void *arg);
 // Hash routines
 //
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 struct hash *hash_alloc(int hashsize);
 int hash_insert(struct hash *h, unsigned long key, void *val);
 int hash_delete(struct hash *h, unsigned long key);
@@ -69,5 +73,9 @@ void *hash_lookup(struct hash *h, unsigned long key);
 void hash_dealloc(struct hash *h);
 int hash_foreach(struct hash *h, enumfunc_t f, void *arg);
 int hash_size(struct hash *h);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

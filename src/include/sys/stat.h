@@ -137,6 +137,10 @@ struct stat64
 #define S_IWOTH 00002
 #define S_IXOTH 00001
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 osapi int fstat(handle_t f, struct stat *buffer);
 osapi int fstat64(handle_t f, struct stat64 *buffer);
 osapi int stat(const char *name, struct stat *buffer);
@@ -146,5 +150,9 @@ osapi int chmod(const char *name, int mode);
 osapi int fchmod(handle_t f, int mode);
 
 osapi int mkdir(const char *name, int mode);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

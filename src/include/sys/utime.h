@@ -1,7 +1,7 @@
 //
-// rmap.h
+// utime.h
 //
-// Routines for working with a resource map
+// Definitions/declarations for utime()
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -31,25 +31,45 @@
 // SUCH DAMAGE.
 // 
 
-#ifndef RMAP_H
-#define RMAP_H
+#if _MSC_VER > 1000
+#pragma once
+#endif
 
-struct rmap
+#ifndef UTIME_H
+#define UTIME_H
+
+#ifndef osapi
+#define osapi __declspec(dllimport)
+#endif
+
+#ifndef _TIME_T_DEFINED
+#define _TIME_T_DEFINED
+typedef long time_t;
+#endif
+
+#ifndef _HANDLE_T_DEFINED
+#define _HANDLE_T_DEFINED
+typedef int handle_t;
+#endif
+
+#ifndef _UTIMBUF_DEFINED
+#define _UTIMBUF_DEFINED
+
+struct utimbuf 
 {
-  unsigned int offset;
-  unsigned int size;
+  time_t modtime;
+  time_t actime;
+  time_t ctime;
 };
+
+#endif
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
-void rmap_init(struct rmap *r, unsigned int size);
-unsigned int rmap_alloc(struct rmap *rmap, unsigned int size);
-unsigned int rmap_alloc_align(struct rmap *rmap, unsigned int size, unsigned int align);
-void rmap_free(struct rmap *rmap, unsigned int offset, unsigned int size);
-int rmap_reserve(struct rmap *rmap, unsigned int offset, unsigned int size);
-int rmap_status(struct rmap *rmap, unsigned int offset, unsigned int size);
+osapi int futime(handle_t f, struct utimbuf *times);
+osapi int utime(const char *name, struct utimbuf *times);
 
 #ifdef  __cplusplus
 }
