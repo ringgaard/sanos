@@ -405,4 +405,10 @@ CHANGES
 
 - cdfs iso9660 filesystem implemented
 
-- SetFilePointer implemented in kernel32
+- SetFilePointer() implemented in kernel32
+
+- kbhit() implemented in conio.c
+
+- setjmp() did not return the correct value from longjmp(). This problem has been fixed.
+
+- The C intrinsic fmod function (_CIfmod) implemented.

@@ -4,6 +4,7 @@
                 .386
 _TEXT           segment use32 para public 'CODE'
                 public  _fmod
+                public  __CIfmod
                 
 _fmod           proc    near
                 assume  cs:_TEXT
@@ -19,6 +20,17 @@ __fmod1:        fprem                           ; Get the partial remainder
                 pop     ebp
                 ret
 _fmod           endp
+
+__CIfmod        proc    near
+                assume  cs:_TEXT
+                fxch    st(1)                   ; Swap arguments
+__CIfmod1:      fprem                           ; Get the partial remainder
+                fstsw   ax                      ; Get coprocessor status
+                test    ax,0400h                ; Complete remainder ?
+                jnz     __CIfmod1               ; No, go get next remainder
+                fstp    st(1)                   ; Set new top of stack
+                ret
+__CIfmod        endp
 
 _TEXT           ends
                 end

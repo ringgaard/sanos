@@ -677,6 +677,7 @@ struct serial_status
 #define IOCTL_BEEP               1028
 #define IOCTL_SOUND              1029
 #define IOCTL_REBOOT             1030
+#define IOCTL_KBHIT              1031
 
 //
 // I/O control codes

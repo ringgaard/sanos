@@ -65,8 +65,8 @@ __declspec(naked) void longjmp(jmp_buf env, int value)
     mov	eax, 8[esp]          // Get return value (eax)
 
     mov esp, OFS_ESP[edx]    // Switch to new stack position
-    mov	eax, OFS_EIP[edx]    // Get new EIP value and set as return address
-    mov [esp], eax
+    mov	ebx, OFS_EIP[edx]    // Get new EIP value and set as return address
+    mov [esp], ebx
     
     mov	ebp, OFS_EBP[edx]    // Restore EBP, EBX, EDI, and ESI
     mov	ebx, OFS_EBX[edx]

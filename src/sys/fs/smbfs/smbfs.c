@@ -63,7 +63,7 @@ int smb_mount(struct fs *fs, char *opts)
   // Get options
   ipaddr.addr = get_num_option(opts, "addr", IP_ADDR_ANY);
   if (ipaddr.addr == IP_ADDR_ANY) return -EINVAL;
-  get_option(opts, "user", username, sizeof(username), "");
+  get_option(opts, "user", username, sizeof(username), "sanos");
   get_option(opts, "domain", domain, sizeof(domain), "");
   get_option(opts, "password", password, sizeof(password), "");
 

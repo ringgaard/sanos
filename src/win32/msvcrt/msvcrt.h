@@ -282,7 +282,6 @@ crtapi char *getenv(const char *option);
 crtapi int _isnan(double x);
 crtapi double _copysign(double a, double b);
 crtapi int _finite(double x);
-crtapi void _CIfmod();
 crtapi unsigned int _control87(unsigned int newflags, unsigned int mask);
 crtapi unsigned int _controlfp(unsigned int newflags, unsigned int mask);
 

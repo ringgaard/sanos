@@ -66,3 +66,4 @@ EXPORTS
   _ftol
   asctime
   _except_handler3
+  _CIfmod

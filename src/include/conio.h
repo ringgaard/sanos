@@ -40,5 +40,7 @@
 
 int cputs(char *string);
 int getch();
+int putch(int ch);
+int kbhit();
 
 #endif

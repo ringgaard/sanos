@@ -137,6 +137,9 @@ static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size)
     case IOCTL_REBOOT:
       stop(1);
       return 0;
+
+    case IOCTL_KBHIT:
+      return kbhit();
   }
   
   return -ENOSYS;

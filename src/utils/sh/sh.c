@@ -1097,18 +1097,24 @@ int cmd_sound(int argc, char *argv[])
   return ioctl(1, IOCTL_SOUND, &freq, 4);
 }
 
+#include <setjmp.h>
+
+jmp_buf save_env;
+
 int cmd_test(int argc, char *argv[])
 {
-  int fd;
-  int rc;
+  int val;
 
-  fd = open("/etc/os.ini", O_RDWR);
-  lseek(fd, 100, SEEK_SET);
-  printf("chsize\n");
-  rc = chsize(fd, tell(fd));
-  printf("chsize returned %d\n", rc);
-  write(fd, "end.", 4);
-  close(fd);
+  val = setjmp(save_env);
+  if (val != 0)
+  {
+    printf("longjmp returned %d\n", val);
+    return 0;
+  }
+
+  printf("do longjump\n");
+  longjmp(save_env, 10);
+  printf("after longjump\n");
 
   return 0;
 }
