@@ -40,7 +40,7 @@ int buffer_size(struct httpd_buffer *buf)
   return buf->end - buf->start;
 }
 
-int buffer_allocated(struct httpd_buffer *buf)
+int buffer_capacity(struct httpd_buffer *buf)
 {
   return buf->ceil < buf->floor;
 }

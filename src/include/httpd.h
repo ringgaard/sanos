@@ -217,7 +217,7 @@ char *rfctime(time_t t, char *buf);
 // hbuf.c
 
 int buffer_size(struct httpd_buffer *buf);
-int buffer_allocated(struct httpd_buffer *buf);
+int buffer_capacity(struct httpd_buffer *buf);
 int buffer_left(struct httpd_buffer *buf);
 int allocate_buffer(struct httpd_buffer *buf, int size);
 void free_buffer(struct httpd_buffer *buf);

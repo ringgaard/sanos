@@ -172,28 +172,46 @@ void httpd_close_connection(struct httpd_connection *conn)
 
 int httpd_recv(struct httpd_response *req, char *data, int len)
 {
+  struct httpd_buffer *buf;
   int rc;
   int n;
 
   // First copy any remaining data in the request header buffer
-  n = buffer_left(&req->conn->reqhdr);
+  buf = &req->conn->reqhdr;
+  n = buf->end - buf->start;
   if (n > 0)
   {
     if (n > len) n = len;
-    memcpy(data, req->conn->reqhdr.end, n);
-    req->conn->reqhdr.end += n;
+    memcpy(data, buf->start, n);
+    buf->start += n;
     return n;
   }
 
   // Allocate request body buffer if it has not already been done
-  if (!req->conn->reqbody.floor)
+  buf = &req->conn->reqbody;
+  if (!buf->floor)
   {
-    rc = allocate_buffer(&req->conn->reqbody, req->conn->server->reqbufsiz);
+    rc = allocate_buffer(buf, req->conn->server->reqbufsiz);
     if (rc < 0) return rc;
   }
 
   // Receive new data if request body buffer empty
-  if (buffer_avail(
+  if (buf->end == buf->start)
+  {
+    n = recv(req->conn->sock, buf->floor, buf->ceil - buf->floor, 0);
+    if (n <= 0) return n;
+
+    buf->start = buf->floor;
+    buf->end = buf->floor + rc;
+  }
+
+  // Copy data from request body buffer
+  n = buf->end - buf->start;
+  if (n > len) n = len;
+  memcpy(data, buf->start, n);
+  buf->start += n;
+
+  return n;
 }
 
 int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *headers)
@@ -234,6 +252,26 @@ int httpd_send_error(struct httpd_response *rsp, int state, char *title)
 
 int httpd_send(struct httpd_response *rsp, char *data, int len)
 {
+  struct httpd_buffer *buf = &rsp->conn->rspbody;
+  int rc;
+
+  // Send directly if data larger than buffer
+  if (len > rsp->conn->server->rspbufsiz)
+  {
+    rc = httpd_flush(rsp);
+    if (rc < 0) return rc;
+
+    rc = send(rsp->conn->sock, data, len, 0);
+    return rc;
+  }
+
+  // Allocate response body buffer if not already done
+  if (!buf->floor)
+  {
+    rc = allocate_buffer(buf, rsp->conn->server->rspbufsiz);
+    if (rc < 0) return rc;
+  }
+
   return -ENOSYS;
 }
 
@@ -585,11 +623,11 @@ int httpd_process(struct httpd_connection *conn)
   {
   }
 
-  clear_connection(conn);
+  httpd_clear_connection(conn);
   return 0;
 
 errorexit:
-  clear_connection(conn);
+  httpd_clear_connection(conn);
   return rc;
 }
 
@@ -607,7 +645,7 @@ int httpd_io(struct httpd_connection *conn)
       // Fall through
 
     case HTTP_STATE_HEADER:
-      if (buffer_allocated(&conn->reqhdr) >= conn->server->max_hdrbufsiz) return -EBUF;
+      if (buffer_capacity(&conn->reqhdr) >= conn->server->max_hdrbufsiz) return -EBUF;
       rc = expand_buffer(&conn->reqhdr, 1);
       if (rc < 0) return rc;
 
