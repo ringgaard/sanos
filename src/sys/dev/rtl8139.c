@@ -280,16 +280,16 @@ struct nic
   int multicast_filter_limit;
 
   // Transceiver state
-  char phys[4];                       // MII device addresses
-  unsigned short advertising;         // NWay media advertisement
-  char twistie, twist_row, twist_col; // Twister tune state
+  char phys[4];                         // MII device addresses
+  unsigned short advertising;           // NWay media advertisement
+  char twistie, twist_row, twist_col;   // Twister tune state
   unsigned char config1;
-  unsigned char full_duplex;          // Full-duplex operation requested
+  unsigned char full_duplex;            // Full-duplex operation requested
   unsigned char duplex_lock;
   unsigned char link_speed;
-  unsigned char media2;               // Secondary monitored media port
-  unsigned char medialock;            // Don't sense media type
-  unsigned char mediasense;           // Media sensing in progress
+  unsigned char media2;                 // Secondary monitored media port
+  unsigned char medialock;              // Don't sense media type
+  unsigned char mediasense;             // Media sensing in progress
 };
 
 static int read_eeprom(long ioaddr, int location, int addr_len);
@@ -997,7 +997,7 @@ static void rtl_error(struct dev *dev, int status, int link_changed)
   if (status & PCIErr) 
   {
     unsigned long pci_cmd_status;
-    pci_cmd_status = pci_unit_read(dev->unit, PCI_CONFIG_CMD_STAT);
+    pci_cmd_status = pci_read_config_dword(dev->unit, PCI_CONFIG_CMD_STAT);
     kprintf("%s: PCI Bus error %4.4x.\n", dev->name, pci_cmd_status);
   }
 }

@@ -171,7 +171,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   err_t err;
   int i;
 
-  //kprintf("ether: xmit %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
+  kprintf("ether: xmit %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
 
   if ((netif->flags & NETIF_UP) == 0) return -ENETDOWN;
 
@@ -323,7 +323,7 @@ void ether_dispatcher(void *arg)
     {
       ethhdr = p->payload;
 
-      //if (!eth_addr_isbroadcast(&ethhdr->dest)) kprintf("ether: recv src=%la dst=%la type=%04X len=%d\n", &ethhdr->src, &ethhdr->dest, htons(ethhdr->type), p->tot_len);
+      if (!eth_addr_isbroadcast(&ethhdr->dest)) kprintf("ether: recv src=%la dst=%la type=%04X len=%d\n", &ethhdr->src, &ethhdr->dest, htons(ethhdr->type), p->tot_len);
       
       switch (htons(ethhdr->type))
       {

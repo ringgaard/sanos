@@ -472,7 +472,7 @@ void pcnet32_receive(struct pcnet32 *pcnet32)
       // Get packet
       p = pcnet32->rx_buffer[entry];
 
-      // Allocate new packet for reveice ring
+      // Allocate new packet for receive ring
       pcnet32->rx_buffer[entry] = pbuf_alloc(PBUF_RAW, ETHER_FRAME_LEN, PBUF_RW);
       if (pcnet32->rx_buffer[entry])
       {

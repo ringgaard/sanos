@@ -1281,7 +1281,7 @@ void init_hd()
   ide = lookup_unit_by_class(NULL, PCI_CLASS_STORAGE_IDE, PCI_SUBCLASS_MASK);
   if (ide)
   {
-    bmiba = pci_unit_read(ide, PCI_CONFIG_BASE_ADDR_4) & 0xFFF0;
+    bmiba = pci_read_config_dword(ide, PCI_CONFIG_BASE_ADDR_4) & 0xFFF0;
   }
 
   if (numhd >= 1) 

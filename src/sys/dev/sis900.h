@@ -230,6 +230,15 @@ enum sis900_eeprom_command
   EEcmdShift     = 16
 };
 
+// For SiS962 or SiS963, request the eeprom software access
+
+enum sis96x_eeprom_command 
+{
+  EEREQ  = 0x00000400, 
+  EEDONE = 0x00000200, 
+  EEGNT  = 0x00000100
+};
+
 // Manamgement Data I/O (mdio) frame
 
 #define MIIread         0x6000
@@ -406,6 +415,7 @@ enum sis900_revision_id
   SIS630EA1_900_REV = 0x83,
   SIS630ET_900_REV  = 0x84,
   SIS635A_900_REV   = 0x90,
+  SIS96x_900_REV    = 0X91,
   SIS900B_900_REV   = 0x03
 };
 
