@@ -136,6 +136,10 @@ extern dev_t consdev;
 
 krnlapi void kprintf(const char *fmt, ...);
 
+// ramdisk.c
+
+int create_initrd();
+
 // hd.c
 
 void init_hd();

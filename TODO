@@ -421,3 +421,12 @@ CHANGES
 *** version 1.2.9.2 released (03/11/12) ***
 
 - Renamed format() syscall to mkfs()
+
+- Boot from CD-ROM using El Torito implemented. The system is booted in No Emulation
+  mode. The BOOTIMG.BIN contains a small DFS filesystem (512K). A special boot sector
+  (cdboot) loads the secondary boot loader (osldr) from the image and starts it using 
+  boot drive 0xFF. The secondary bootloader has been relocated to 0x00090000 to allow 
+  the boot image to fit into low memory. It loads the kernel from the boot image and 
+  starts the kernel. The kernel boots the system using the boot image (/dev/initrd) 
+  as root file system. The rest of the CD is mouted on /usr to allow access to the 
+  entire CD. The boot ISO image can be created using the mkisofs tool.

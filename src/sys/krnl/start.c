@@ -367,7 +367,10 @@ void main(void *arg)
  
   // Open boot device
   if (syspage->bootparams.bootdrv & 0xF0)
-    sprintf(bootdev, "rd%c", '0' + (syspage->bootparams.bootdrv & 0x7F));
+  {
+    create_initrd();
+    strcpy(bootdev, "initrd");
+  }
   else if (syspage->bootparams.bootdrv & 0x80)
   {
     if (syspage->bootparams.bootpart == -1)

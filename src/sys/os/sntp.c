@@ -163,13 +163,10 @@ void __stdcall sntpd(void *arg)
 
     if (success)
     {
-      struct timeval now;
-
-      gettimeofday(&now);
+      //struct timeval now;
+      //gettimeofday(&now);
       settimeofday(&tv);
-
       //syslog(LOG_AUX, "sntpd: adjusting %d %d %a\n", tv.tv_sec - now.tv_sec, tv.tv_usec - now.tv_usec, &srv->sa.sin_addr);
-
       sleep(TIME_ADJUST_INTERVAL);
     }
     else

@@ -224,12 +224,23 @@ void setup_descriptors()
 void copy_ramdisk(char *bootimg)
 {
   struct superblock *super = (struct superblock *) (bootimg + 512);
-  
+  int i;
+  int rdpages;
+    
+  // Copy ram disk to heap
   if (!bootimg) panic("no boot image");
   if (super->signature != DFS_SIGNATURE) panic("invalid DFS signature on initial RAM disk");
+  
   initrd_size = (1 << super->log_block_size) * super->block_count;
-  initrd = alloc_heap(PAGES(initrd_size));
+  rdpages = PAGES(initrd_size);
+  initrd = alloc_heap(rdpages);
   memcpy(initrd, bootimg, initrd_size);
+
+  // Map initial initial ram disk into syspages
+  for (i = 0; i < rdpages; i++)
+  {
+    syspagetable[PTEIDX(INITRD_ADDRESS) + i] = ((unsigned long) initrd + i * PAGESIZE) | PT_PRESENT | PT_WRITABLE;
+  }
 
   kprintf("%d KB boot image found\n", initrd_size / K);
 }
@@ -289,7 +300,6 @@ void __stdcall start(void *hmod, int bootdrv, char *bootimg)
   {
     copy_ramdisk(bootimg);
     load_kernel(bootdrv);
-    panic("stopped");
   }
   else if (bootdrv & 0x80)
   {
@@ -323,7 +333,6 @@ void __stdcall start(void *hmod, int bootdrv, char *bootimg)
   syspage->bootparams.memend = mem_end;
   syspage->bootparams.bootdrv = bootdrv;
   syspage->bootparams.bootpart = bootpart;
-  syspage->bootparams.initrd_addr = (unsigned long) initrd;
   syspage->bootparams.initrd_size = initrd_size;
   memcpy(syspage->biosdata, (void *) 0x0400, 256);
 

@@ -76,11 +76,8 @@ struct bootparams
   unsigned long heapstart;
   unsigned long heapend;
   unsigned long memend;
-
   int bootdrv;
   int bootpart;
-
-  unsigned long initrd_addr;
   unsigned long initrd_size;
 };
 
@@ -115,7 +112,8 @@ krnlapi extern struct syspage *syspage;
 #define KMODMAP_ADDRESS (SYSBASE + 5 * PAGESIZE)
 #define VIDBASE_ADDRESS (SYSBASE + 6 * PAGESIZE)
 
-#define DMABUF_ADDRESS  (SYSBASE + 16 * PAGESIZE)
+#define DMABUF_ADDRESS  (SYSBASE + 16 * PAGESIZE)  // 64K
+#define INITRD_ADDRESS  (SYSBASE + 32 * PAGESIZE)  // 512K
 
 #define TSS_ESP0 (SYSPAGE_ADDRESS + 4)
 
