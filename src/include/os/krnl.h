@@ -40,7 +40,6 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <string.h>
-#include <stdlib.h>
 #include <time.h>
 
 #include <bitops.h>
@@ -145,6 +144,15 @@ void insw(int port, void *buf, int count);
 void outsw(int port, void *buf, int count);
 void insd(int port, void *buf, int count);
 void outsd(int port, void *buf, int count);
+
+// opts.c
+
+char *get_option(char *opts, char *name, char *buffer, int size, char *defval);
+int get_num_option(char *opts, char *name, int defval);
+
+// strtol.c
+
+unsigned long strtoul(const char *nptr, char **endptr, int ibase);
 
 // Intrinsic i/o functions
 

@@ -58,6 +58,7 @@ typedef unsigned int loff_t;
 #endif
 
 osapi handle_t open(const char *name, int flags, ...);
+osapi handle_t sopen(const char *name, int flags, int shflags, ...);
 osapi handle_t creat(const char *name, int mode);
 osapi int close(handle_t h);
 
@@ -75,7 +76,6 @@ osapi int access(const char *name, int mode);
 #if 0
 // TODO: implement in os.dll
 int eof(int h);
-int sopen(char *filename, int oflag, int shflag, ...);
 int umask(int pmode);
 #endif
 

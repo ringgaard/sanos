@@ -131,8 +131,8 @@ int pipe(struct file **readpipe, struct file **writepipe)
   struct pipe *rdp;
   struct pipe *wrp;
 
-  rd = newfile(pipefs, NULL, O_RDONLY);
-  wr = newfile(pipefs, NULL, O_WRONLY);
+  rd = newfile(pipefs, NULL, O_RDONLY, S_IREAD);
+  wr = newfile(pipefs, NULL, O_WRONLY, S_IWRITE);
   rdp = kmalloc(sizeof(struct pipe));
   wrp = kmalloc(sizeof(struct pipe));
   if (!rd || !wr || !rdp || !wrp) 
@@ -141,7 +141,7 @@ int pipe(struct file **readpipe, struct file **writepipe)
     kfree(wr);
     kfree(rdp);
     kfree(wrp);
-    return -ENFILE;
+    return -EMFILE;
   }
 
   rd->data = rdp;

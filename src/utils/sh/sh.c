@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include <limits.h>
 #include <os/version.h>
 
 #include <inifile.h>
@@ -80,7 +81,7 @@ static void copy_file(char *srcfn, char *dstfn)
     return;
   }
 
-  if ((f2 = open(dstfn, O_CREAT)) < 0)
+  if ((f2 = open(dstfn, O_CREAT, S_IREAD | S_IWRITE)) < 0)
   {
     close(f1);
     printf("%s: %s\n", dstfn, strerror(f2));
@@ -396,7 +397,7 @@ static void test_write_file(char *filename, int size)
   clock_t time;
   int bytes;
 
-  if ((file = open(filename, O_CREAT)) < 0)
+  if ((file = open(filename, O_CREAT, S_IREAD | S_IWRITE)) < 0)
   {
     printf("%s: %s\n", filename, strerror(file));
     return;
@@ -860,7 +861,7 @@ static int httpget(char *server, char *path, char *filename)
 
   if (rc < 0) return rc;
 
-  f = open(filename, O_CREAT);
+  f = open(filename, O_CREAT, S_IREAD | S_IWRITE);
   if (f < 0)
   {
     close(s);
@@ -1389,17 +1390,23 @@ static void divtest(int argc, char **argv)
 
 static void test(int argc, char **argv)
 {
-  double x = atof(argv[1]);
-  double a, b;
+  //double x = atof(argv[1]);
+  //double a, b;
 
-  a = modf(x, &b);
-  printf("modf(%f) = (%f,%f)\n", x, a, b);
+  //a = modf(x, &b);
+  //printf("modf(%f) = (%f,%f)\n", x, a, b);
 
   //printf("sin(%g)=%g\n", x, sin(x));
   //printf("cos(%g)=%g\n", x, cos(x));
   //printf("log(%g)=%g\n", x, log(x));
   //printf("exp(%g)=%g\n", x, exp(x));
   //printf("sin*sin+cos*cos=%g\n", sin(x) * sin(x) + cos(x) * cos(x));
+
+  time_t doomsday = INT_MAX;
+  time_t genesis = INT_MIN;
+
+  printf("Doomsday %s", asctime(gmtime(&doomsday)));
+  printf("Genesis %s", asctime(gmtime(&genesis)));
 }
 
 static void set_kprint(int enabled)

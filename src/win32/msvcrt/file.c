@@ -94,7 +94,7 @@ int _open(const char *filename, int oflag)
 
   TRACE("_open");
   //syslog(LOG_DEBUG, "_open(%s,%p)\n", filename, oflag);
-  rc = open(filename, oflag);
+  rc = open(filename, oflag, S_IREAD | S_IWRITE);
   if (rc < 0)
   {
     errno = -rc;
@@ -337,9 +337,17 @@ int _open_osfhandle(long osfhandle, int flags)
 
 int _dup2(int handle1, int handle2)
 {
-  syslog(LOG_WARNING, "dup2(%d,%d) not implemented\n", handle1, handle2);
-  errno = EMFILE;
-  return -1;
+  int rc;
+
+  TRACE("_dup2");
+  rc = dup2(handle1, handle2);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return -1;
+  }
+
+  return rc;
 }
 
 long _get_osfhandle(int filehandle)
@@ -437,7 +445,7 @@ int _access(const char *path, int mode)
 
   TRACE("_access");
 
-  rc = stat(path, NULL);
+  rc = access(path, mode);
   if (rc < 0)
   {
     errno = -rc;
@@ -546,7 +554,7 @@ FILE *fopen(const char *filename, const char *mode)
     oflag &= ~(O_RDONLY | O_WRONLY);
   }
 
-  handle = open(filename, oflag);
+  handle = open(filename, oflag, S_IREAD | S_IWRITE);
   if (handle < 0) 
   {
     errno = -handle;
@@ -591,7 +599,7 @@ FILE *freopen(const char *path, const char *mode, FILE *stream)
     oflag &= ~(O_RDONLY | O_WRONLY);
   }
 
-  handle = open(path, oflag);
+  handle = open(path, oflag, S_IREAD | S_IWRITE);
   if (handle < 0) 
   {
     errno = -handle;

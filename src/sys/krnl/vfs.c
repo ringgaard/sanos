@@ -185,8 +185,8 @@ static int files_proc(struct proc_file *pf, void *arg)
   struct object *o;
   struct file *filp;
 
-  pprintf(pf, "handle    flags        pos path\n");
-  pprintf(pf, "------ -------- ---------- --------------------------------------------------\n");
+  pprintf(pf, "handle    flags     mode        pos path\n");
+  pprintf(pf, "------ -------- -------- ---------- -------------------------------------------\n");
   for (h = 0; h < htabsize; h++)
   {
     o = htab[h];
@@ -196,7 +196,7 @@ static int files_proc(struct proc_file *pf, void *arg)
     if (o->type != OBJECT_FILE) continue;
 
     filp = (struct file *) o;
-    pprintf(pf, "%6d %8X %10d %s\n", h, filp->flags, filp->pos, filp->path ? filp->path : "<no name>");
+    pprintf(pf, "%6d %08X %08X %10d %s\n", h, filp->flags, filp->mode, filp->pos, filp->path ? filp->path : "<no name>");
   }
 
   return 0;
@@ -228,7 +228,7 @@ struct filesystem *register_filesystem(char *name, struct fsops *ops)
   return fsys;
 }
 
-struct file *newfile(struct fs *fs, char *path, int flags)
+struct file *newfile(struct fs *fs, char *path, int flags, int mode)
 {
   struct file *filp;
 
@@ -238,6 +238,7 @@ struct file *newfile(struct fs *fs, char *path, int flags)
   
   filp->fs = fs;
   filp->flags = flags;
+  filp->mode = mode;
   filp->pos = 0;
   filp->data = NULL;
   filp->path = strdup(path);
@@ -475,7 +476,7 @@ int statfs(char *name, struct statfs *buf)
   return get_fsstat(fs, buf);
 }
 
-int open(char *name, int flags, struct file **retval)
+int open(char *name, int flags, int mode, struct file **retval)
 {
   struct fs *fs;
   struct file *filp;
@@ -489,8 +490,8 @@ int open(char *name, int flags, struct file **retval)
   fs = fslookup(path, &rest);
   if (!fs) return -ENOENT;
 
-  filp = newfile(fs, path, flags);
-  if (!filp) return -ENFILE;
+  filp = newfile(fs, path, flags, mode);
+  if (!filp) return -EMFILE;
 
   if (fs->ops->open)
   {

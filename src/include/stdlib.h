@@ -98,8 +98,10 @@ unsigned long strtoul(const char *nptr, char **endptr, int ibase);
 int system(const char *command);
 char *ultoa(unsigned long val, char *buf, int radix);
 
-#define max(a,b) (((a) > (b)) ? (a) : (b))
-#define min(a,b) (((a) < (b)) ? (a) : (b))
+char *ecvt(double arg, int ndigits, int *decpt, int *sign);
+char *ecvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf);
+char *fcvt(double arg, int ndigits, int *decpt, int *sign);
+char *fcvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf);
 
 int parse_args(char *args, char **argv);
 void free_args(int argc, char **argv);
@@ -109,9 +111,7 @@ int get_num_option(char *opts, char *name, int defval);
 
 int readline(int f, char *buf, int size);
 
-char *ecvt(double arg, int ndigits, int *decpt, int *sign);
-char *ecvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf);
-char *fcvt(double arg, int ndigits, int *decpt, int *sign);
-char *fcvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf);
+#define max(a,b) (((a) > (b)) ? (a) : (b))
+#define min(a,b) (((a) < (b)) ? (a) : (b))
 
 #endif

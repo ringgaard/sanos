@@ -47,8 +47,10 @@
 
 #define TIME_MAX                2147483647L
 
-long _timezone = 0;
-long _dst_off = 0;
+int _daylight = 0;                  // Non-zero if daylight savings time is used
+long _dstbias = 0;                  // Offset for Daylight Saving Time
+long _timezone = 0;                 // Difference in seconds between GMT and local time
+char *_tzname[2] = {"GMT", "GMT"};  // Standard/daylight savings time zone names
 
 const char *_days[] = 
 {
@@ -238,7 +240,7 @@ time_t mktime(struct tm *tmbuf)
   seconds += _timezone;
 
   if (tmbuf->tm_isdst)
-    dst = _dst_off;
+    dst = _dstbias;
   else 
     dst = 0;
 

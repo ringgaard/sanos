@@ -163,6 +163,8 @@ int smb_open(struct file *filp, char *name)
   struct smb_file *file;
   unsigned long mode;
   unsigned long access;
+  unsigned long sharing;
+  unsigned long attrs;
   int rc;
 
   // Convert filename
@@ -215,9 +217,54 @@ int smb_open(struct file *filp, char *name)
   else
     access = SMB_ACCESS_GENERIC_READ;
 
+  // Determine sharing access
+  switch (SH_FLAGS(filp->flags))
+  {
+    case SH_DENYRW:
+      sharing = 0;
+      break;
+
+    case SH_DENYWR:
+      sharing = SMB_FILE_SHARE_READ;
+      break;
+
+    case SH_DENYRD:
+      sharing = SMB_FILE_SHARE_WRITE;
+      break;
+
+    case SH_DENYNO:
+    case SH_COMPAT:
+      sharing = SMB_FILE_SHARE_READ | SMB_FILE_SHARE_WRITE;
+      break;
+
+    default:
+      return -EINVAL;
+  }
+
+  // Determine file attributes
+  attrs = SMB_FILE_ATTR_NORMAL;
+
+  if ((filp->flags & O_CREAT) != 0 && (filp->mode & S_IWRITE) == 0) attrs = SMB_FILE_ATTR_READONLY;
+
+  if (filp->flags & O_TEMPORARY)
+  {
+    attrs |= SMB_FILE_FLAG_DELETE_ON_CLOSE;
+    access |= SMB_ACCESS_DELETE;
+    sharing |= SMB_FILE_SHARE_DELETE;
+  }
+
+  if (filp->flags & O_SHORT_LIVED) attrs |= SMB_FILE_ATTR_TEMPORARY;
+
+  if (filp->flags & O_SEQUENTIAL)
+    attrs |= SMB_FILE_FLAG_SEQUENTIAL_SCAN;
+  else if (filp->flags & O_RANDOM)
+    attrs |= SMB_FILE_FLAG_RANDOM_ACCESS;
+
+  if (filp->flags & O_DIRECT) attrs |= SMB_FILE_FLAG_NO_BUFFERING | SMB_FILE_FLAG_WRITE_THROUGH;
+
   // Allocate file structure
   file = (struct smb_file *) kmalloc(sizeof(struct smb_file));
-  if (!file) return -ENOMEM;
+  if (!file) return -EMFILE;
   memset(file, 0, sizeof(struct smb_file));
 
   // Open/create file
@@ -226,7 +273,7 @@ int smb_open(struct file *filp, char *name)
   smb->params.req.create.name_length = strlen(name) + 1;
   smb->params.req.create.desired_access = access;
   smb->params.req.create.ext_file_attributes = SMB_FILE_ATTR_NORMAL;
-  smb->params.req.create.share_access = SMB_FILE_SHARE_READ | SMB_FILE_SHARE_WRITE;
+  smb->params.req.create.share_access = sharing;
   smb->params.req.create.create_disposition = mode;
   smb->params.req.create.impersonation_level = 0x02;
 

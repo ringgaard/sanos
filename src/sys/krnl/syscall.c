@@ -359,13 +359,15 @@ static int sys_open(char *params)
   flags = *(int *) (params + 4);
   mode = *(int *) (params + 8);
 
+  if ((flags & O_CREAT) == 0) mode = 0;
+
   if (lock_string(name) < 0)
   {
     unlock_buffer(params, 12);
     return -EFAULT;
   }
 
-  rc = open(name, flags, &f);
+  rc = open(name, flags, mode, &f);
   if (rc == 0)
   {
     rc = halloc(&f->object);

@@ -8,8 +8,8 @@ TODO for sanos
     - Add new stdio.h implementation with buffering and new output() routine
     - Add support for O_TEXT and O_BINARY flags in read() and write()
     - Rename stat fields to standard names (st_*)
-    - Implement pmode for creat()
-    - Implement sharing flags and sopen()
+    x Implement pmode for creat()
+    x Implement sharing flags and sopen()
  
     x use tib for all static buffers to provide reentrant library
     x implement _r methods for reentrant version that does not use static buffers
@@ -270,4 +270,7 @@ CHANGES
 
 - The value of errno is now the positive version of the error number instead of the negative.
 
-- dup2(), creat(), and access() added to syscalls
+- dup2(), creat(), sopen(), and access() added
+
+- File sharing, permission mode and additional open flags (O_TEMPORARY, O_SHORT_LIVED, O_DIRECT,
+  O_SEQUENTIAL, O_RANDOM) implemented for smbfs.

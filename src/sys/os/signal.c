@@ -61,15 +61,20 @@ void sendsig(int signum, struct siginfo *info)
   sighandler_t handler;
   struct siginfo *prevsig;
 
+  if (signum < 0 || signum >= NSIG) return;
+
   tib = gettib();
   prevsig = tib->cursig;
   tib->cursig = info;
 
-  if (signum < 0 || signum >= NSIG) return;
   handler = sighandlers[signum];
-  if (handler == SIG_IGN) return;
-  if (handler == SIG_DFL) dbgbreak();
-  handler(signum);
+
+  if (handler == SIG_DFL) 
+    dbgbreak();
+  else if (handler != SIG_IGN)
+    handler(signum);
+
+  tib->cursig = prevsig;
 }
 
 void raise(int signum)

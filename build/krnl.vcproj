@@ -254,7 +254,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -262,7 +263,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -273,7 +275,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -281,7 +284,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -430,9 +434,6 @@
 			</File>
 			<File
 				RelativePath="..\src\include\stdarg.h">
-			</File>
-			<File
-				RelativePath="..\src\include\stdlib.h">
 			</File>
 			<File
 				RelativePath="..\src\include\string.h">

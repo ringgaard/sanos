@@ -408,7 +408,7 @@ int copy_file(char *srcfn, char *dstfn)
   fin = open(srcfn, 0);
   if (fin < 0) return fin;
 
-  fout = open(dstfn,  O_CREAT | O_EXCL);
+  fout = open(dstfn,  O_CREAT | O_EXCL, S_IREAD | S_IWRITE);
   if (fout < 0) return fout;
 
   while ((bytes = read(fin , block, 4096)) > 0)

@@ -91,6 +91,7 @@ struct file
 
   struct fs *fs;
   int flags;
+  int mode;
   loff_t pos;
   void *data;
   char *path;
@@ -147,7 +148,7 @@ int fnmatch(char *fn1, int len1, char *fn2, int len2);
 
 krnlapi struct filesystem *register_filesystem(char *name, struct fsops *ops);
 krnlapi struct fs *fslookup(char *name, char **rest);
-krnlapi struct file *newfile(struct fs *fs, char *path, int mode);
+krnlapi struct file *newfile(struct fs *fs, char *path, int flags, int mode);
 
 krnlapi int format(char *devname, char *type, char *opts);
 krnlapi int mount(char *type, char *mntto, char *mntfrom, char *opts, struct fs **newfs);
@@ -159,7 +160,7 @@ krnlapi int getfsstat(struct statfs *buf, size_t size);
 krnlapi int fstatfs(struct file *filp, struct statfs *buf);
 krnlapi int statfs(char *name, struct statfs *buf);
 
-krnlapi int open(char *name, int flags, struct file **retval);
+krnlapi int open(char *name, int flags, int mode, struct file **retval);
 krnlapi int close(struct file *filp);
 krnlapi int flush(struct file *filp);
 

@@ -105,7 +105,7 @@ struct timezone
 
 extern int _daylight;     // Non-zero if daylight savings time is used
 extern long _dstbias;     // Offset for Daylight Saving Time
-extern long _timezone;    // difference in seconds between GMT and local time
+extern long _timezone;    // Difference in seconds between GMT and local time
 extern char *_tzname[2];  // Standard/daylight savings time zone names
 
 #define difftime(time2, time1) ((double)((time2) - (time1)))

@@ -242,6 +242,25 @@ struct section;
 #endif
 
 //
+// File mode flags (type and permissions)
+//
+
+#ifndef S_IFMT
+
+#define S_IFMT          0xF000         // File type mask
+#define S_IFIFO         0x1000         // Pipe
+#define S_IFCHR         0x2000         // Character device
+#define S_IFDIR         0x4000         // Directory
+#define S_IFBLK         0x6000         // Block device
+#define S_IFREG         0x8000         // Regular file
+
+#define S_IREAD         0x0100         // Read permission
+#define S_IWRITE        0x0080         // Write permission
+#define S_IEXEC         0x0040         // Execute/search permission
+
+#endif
+
+//
 // Sharing mode flags
 //
 
@@ -497,26 +516,14 @@ typedef struct critsect *critsect_t;
 // File system
 //
 
-#ifndef S_IFMT
-
-#define S_IFMT          0xF000         // File type mask
-#define S_IFIFO         0x1000         // Pipe
-#define S_IFCHR         0x2000         // Character device
-#define S_IFDIR         0x4000         // Directory
-#define S_IFBLK         0x6000         // Block device
-#define S_IFREG         0x8000         // Regular file
-
-#define S_IREAD         0x0100         // Read permission
-#define S_IWRITE        0x0080         // Write permission
-#define S_IEXEC         0x0040         // Execute/search permission
-
-#endif
-
 #define MAXPATH                 256     // Maximum filename length (including trailing zero)
 #define MFSNAMELEN              16      // Length of fs type name
 
 #define PS1                     '\\'    // Primary path separator
 #define PS2                     '/'     // Alternate path separator
+
+#define SH_FLAGS(flags)                 (((flags) >> 16) & 0x0F)
+#define FILE_FLAGS(flags, shflags)      ((flags) | ((shflags) << 16))
 
 #ifndef _STAT_DEFINED
 #define _STAT_DEFINED
@@ -1005,6 +1012,7 @@ osapi int fstatfs(handle_t f, struct statfs *buf);
 osapi int statfs(const char *name, struct statfs *buf);
 
 osapi handle_t open(const char *name, int flags, ...);
+osapi handle_t sopen(const char *name, int flags, int shflags, ...);
 osapi handle_t creat(const char *name, int mode);
 osapi int close(handle_t h);
 osapi int flush(handle_t f);
@@ -1112,7 +1120,7 @@ osapi hmodule_t getmodule(const char *name);
 osapi int getmodpath(hmodule_t hmod, char *buffer, int size);
 osapi hmodule_t load(const char *name);
 osapi int unload(hmodule_t hmod);
-osapi int exec(hmodule_t hmod, char *args);
+osapi int exec(hmodule_t hmod, const char *args);
 osapi void *getresdata(hmodule_t hmod, int type, char *name, int lang);
 osapi int getreslen(hmodule_t hmod, int type, char *name, int lang);
 

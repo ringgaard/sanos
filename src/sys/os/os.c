@@ -94,6 +94,21 @@ handle_t creat(const char *name, int mode)
   return open(name, O_CREAT | O_TRUNC, mode);
 }
 
+handle_t sopen(const char *name, int flags, int shflags, ...)
+{
+  va_list args;
+  int mode = 0;
+
+  if (flags & O_CREAT)
+  {
+    va_start(args, shflags);
+    mode = va_arg(args, int);
+    va_end(args);
+  }
+
+  return open(name, FILE_FLAGS(flags, shflags), mode);
+}
+
 int access(const char *name, int mode)
 {
   int rc;
@@ -433,7 +448,7 @@ int unload(hmodule_t hmod)
   return rc;
 }
 
-int exec(hmodule_t hmod, char *args)
+int exec(hmodule_t hmod, const char *args)
 {
   struct module *prev_execmod;
   char *prev_args;
@@ -443,9 +458,9 @@ int exec(hmodule_t hmod, char *args)
   prev_args = gettib()->args;
 
   usermods.execmod = get_module_for_handle(&usermods, hmod);
-  gettib()->args = args;
+  gettib()->args = (char *) args;
 
-  rc = ((int (*)(hmodule_t, char *, int)) get_entrypoint(hmod))(hmod, args, 0);
+  rc = ((int (*)(hmodule_t, char *, int)) get_entrypoint(hmod))(hmod, (char *) args, 0);
   
   usermods.execmod = prev_execmod;
   gettib()->args = prev_args;
@@ -676,7 +691,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   logfn = get_property(config, "os", "logfile", NULL);
   if (logfn != NULL) 
   {
-    logfile = open(logfn, O_CREAT);
+    logfile = open(logfn, O_CREAT, S_IREAD | S_IWRITE);
     if (logfile >= 0) lseek(logfile, 0, SEEK_END);
   }
 

@@ -129,14 +129,10 @@ div_t div(int numer, int denom)
   return result;
 }
 
-#ifndef KERNEL
-
 char *getenv(const char *option)
 {
   return get_property(config, "env", (char *) option, NULL);
 }
-
-#endif
 
 long labs(long n)
 {
@@ -176,5 +172,30 @@ int rand()
 
 int system(const char *command)
 {
-  return -1; // TODO: implement
+  char pgm[MAXPATH];
+  char *p;
+  char *q;
+  hmodule_t hmod;
+  int rc;
+  int dotseen = 0;
+
+  p = (char *) command;
+  q = pgm;
+  while (*p != 0 && *p != ' ')
+  {
+    if (*p == '.') dotseen = 1;
+    if (*p == PS1 || *p == PS2) dotseen = 0;
+    *q++ = *p++;
+  }
+  *q++ = 0;
+  if (!dotseen) strcat(pgm, ".exe");
+
+  hmod = load(pgm);
+  if (hmod == NULL) return -ENOEXEC;
+
+  rc = exec(hmod, command);
+
+  unload(hmod);
+
+  return rc;
 }

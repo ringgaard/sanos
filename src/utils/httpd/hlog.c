@@ -105,7 +105,7 @@ int write_log(struct httpd_server *server, char *data, int len, struct tm *tm)
     if (server->logfd >= 0) close(server->logfd);
 
     sprintf(logfn, "%s/web%04d%02d%02d.log", server->logdir, year, mon, day);
-    server->logfd = open(logfn, O_CREAT | O_APPEND);
+    server->logfd = open(logfn, O_CREAT | O_APPEND, S_IREAD | S_IWRITE);
     if (server->logfd < 0) return server->logfd;
 
     sprintf(buf, "#Server: %s\r\n", server->swname);

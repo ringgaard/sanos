@@ -64,7 +64,7 @@ void *load_image_file(char *filename, int userspace)
   if (!buffer) return NULL;
 
   // Open file
-  if (open(filename, O_RDONLY, &f) < 0) 
+  if (open(filename, O_RDONLY, 0, &f) < 0) 
   {
     kfree(buffer);
     return NULL;
