@@ -190,6 +190,8 @@ struct section;
 #define EABORT          48               // Connction aborted
 #define EUSED           49               // Address in use
 #define EPROTONOSUPPORT 50               // Protocol not supported
+#define EMSGSIZE        51               // Message too long
+
 //
 // File system
 //

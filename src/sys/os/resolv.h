@@ -145,10 +145,8 @@ int res_mkquery(int op, const char *dname, int class, int type, char *data, int 
 
 int res_send(const char *msg, int msglen, char *answer, int anslen); 
 
-int dn_comp(unsigned char *exp_dn, unsigned char *comp_dn, int length, unsigned char **dnptrs, 
-	    unsigned char **lastdnptr); 
+int dn_comp(const char *src, unsigned char *dst, int dstsiz, unsigned char **dnptrs, unsigned char **lastdnptr);
 
-int dn_expand(unsigned char *msg, unsigned char *eomorig, unsigned char *comp_dn, 
-	      unsigned char *exp_dn, int length); 
+int dn_expand(const unsigned char *msg, const unsigned char *eom, const unsigned char *src,  char *dst, int dstsiz);
 
 #endif
