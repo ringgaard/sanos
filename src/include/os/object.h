@@ -213,6 +213,8 @@ krnlapi void cancel_waitable_timer(struct waitable_timer *t);
 
 krnlapi void init_iomux(struct iomux *iomux, int flags);
 krnlapi int iodispatch(struct iomux *iomux, object_t hobj, int events, int context);
+krnlapi void init_ioobject(struct ioobject *iob, int type);
+krnlapi void close_ioobject(struct ioobject *iob);
 krnlapi void set_io_event(struct ioobject *iob, int events);
 krnlapi void clear_io_event(struct ioobject *iob, int events);
 

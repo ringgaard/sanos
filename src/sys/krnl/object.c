@@ -42,6 +42,8 @@ struct object **htab = (struct object **) HTABBASE;
 handle_t hfreelist = NOHANDLE;
 int htabsize = 0;
 
+int close_iomux(struct iomux *iomux);
+
 //
 // insert_in_waitlist
 //
@@ -534,8 +536,7 @@ int close_object(struct object *o)
       return closesocket((struct socket *) o);
 
     case OBJECT_IOMUX:
-      //TODO: remove iomux from all attached objects
-      return 0;
+      return close_iomux((struct iomux *) o);
   }
 
   return -EBADF;
@@ -943,14 +944,92 @@ void init_iomux(struct iomux *iomux, int flags)
 }
 
 //
+// close_iomux
+//
+// Detach all objects from iomux
+//
+
+int close_iomux(struct iomux *iomux)
+{
+  struct ioobject *iob;
+  struct ioobject *next;
+
+  iob = iomux->ready_head;
+  while (iob)
+  {
+    next = iob->next;
+    iob->iomux = NULL;
+    iob->next = NULL;
+    iob->prev = NULL;
+    iob = next;
+  }
+
+  iob = iomux->waiting_head;
+  while (iob)
+  {
+    next = iob->next;
+    iob->iomux = NULL;
+    iob->next = NULL;
+    iob->prev = NULL;
+    iob = next;
+  }
+
+  return 0;
+}
+
+//
 // iodispatch
 //
-// Add object to iomux for i/o dispatching
+// Add object to iomux for I/O dispatching
 //
 
 int iodispatch(struct iomux *iomux, object_t hobj, int events, int context)
 {
   return -ENOSYS;
+}
+
+//
+// init_ioobject
+//
+// Initialize ioobject
+//
+
+void init_ioobject(struct ioobject *iob, int type)
+{
+  init_object(&iob->object, type);
+  iob->iomux = NULL;
+  iob->context = 0;
+  iob->next = iob->prev = NULL;
+  iob->events_signaled = iob->events_monitored = 0;
+}
+
+//
+// close_ioobject
+//
+// Remove ioobject from iomux
+//
+
+void close_ioobject(struct ioobject *iob)
+{
+  if (iob->iomux)
+  {
+    if (iob->next) iob->next->prev = iob->prev;
+    if (iob->prev) iob->prev->next = iob->next;
+
+    if (iob->events_monitored & iob->events_signaled)
+    {
+      if (iob->iomux->ready_head == iob) iob->iomux->ready_head = iob->next; 
+      if (iob->iomux->ready_tail == iob) iob->iomux->ready_tail = iob->prev; 
+    }
+    else
+    {
+      if (iob->iomux->waiting_head == iob) iob->iomux->waiting_head = iob->next; 
+      if (iob->iomux->waiting_tail == iob) iob->iomux->waiting_tail = iob->prev; 
+    }
+
+    iob->iomux = NULL;
+    iob->next = iob->prev = NULL;
+  }
 }
 
 //
@@ -961,6 +1040,7 @@ int iodispatch(struct iomux *iomux, object_t hobj, int events, int context)
 
 void set_io_event(struct ioobject *iob, int events)
 {
+  iob->events_signaled |= events;
 }
 
 //
@@ -971,6 +1051,7 @@ void set_io_event(struct ioobject *iob, int events)
 
 void clear_io_event(struct ioobject *iob, int events)
 {
+  iob->events_signaled &= ~events;
 }
 
 //

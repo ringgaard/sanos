@@ -112,6 +112,7 @@ int closesocket(struct socket *s)
   int rc;
 
   rc = sockops[s->type]->close(s);
+  close_ioobject(&s->iob);
   kfree(s);
   return rc;
 }
@@ -350,7 +351,7 @@ int socket(int domain, int type, int protocol, struct socket **retval)
   if (!s) return -ENOMEM;
   memset(s, 0, sizeof(struct socket));
 
-  init_object(&s->iob.object, OBJECT_SOCKET);
+  init_ioobject(&s->iob, OBJECT_SOCKET);
   s->type = socktype;
   s->state = SOCKSTATE_UNBOUND;
 

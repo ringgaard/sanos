@@ -375,6 +375,8 @@ static void err_tcp(void *arg, err_t err)
     req->socket->tcp.pcb = NULL;
     req = next;
   }
+
+  set_io_event(&s->iob, IOEVT_ERROR);
 }
 
 static err_t alloc_pcb(struct socket *s)
@@ -415,6 +417,7 @@ static int tcpsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen,
     {
       memmove(s->tcp.pending, s->tcp.pending + 1, s->tcp.numpending * sizeof(struct socket *));
     }
+
     if (s->tcp.numpending == 0) clear_io_event(&s->iob, IOEVT_ACCEPT);
   }
 
@@ -429,8 +432,8 @@ static int tcpsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen,
     sin->sin_addr.s_addr = pcb->remote_ip.addr;
   }
   if (addrlen) *addrlen = sizeof(struct sockaddr_in);
-  *retval = newsock;
 
+  *retval = newsock;
   return 0;
 }
 
@@ -439,8 +442,8 @@ static int tcpsock_bind(struct socket *s, struct sockaddr *name, int namelen)
   int rc;
   struct sockaddr_in *sin;
 
-  if (!name) return -EINVAL;
-  if (namelen < sizeof(struct sockaddr_in)) return -EINVAL;
+  if (!name) return -EFAULT;
+  if (namelen < sizeof(struct sockaddr_in)) return -EFAULT;
   sin = (struct sockaddr_in *) name;
   if (sin->sin_family != AF_INET && sin->sin_family != AF_UNSPEC) return -EAFNOSUPPORT;
 
@@ -509,8 +512,8 @@ static int tcpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
   struct sockaddr_in *sin;
   struct sockreq req;
 
-  if (!name) return -EINVAL;
-  if (namelen < sizeof(struct sockaddr_in)) return -EINVAL;
+  if (!name) return -EFAULT;
+  if (namelen < sizeof(struct sockaddr_in)) return -EFAULT;
   sin = (struct sockaddr_in *) name;
   if (sin->sin_family != AF_INET && sin->sin_family != AF_UNSPEC) return -EAFNOSUPPORT;
 
@@ -540,8 +543,8 @@ static int tcpsock_getpeername(struct socket *s, struct sockaddr *name, int *nam
 {
   struct sockaddr_in *sin;
 
-  if (!namelen) return -EINVAL;
-  if (*namelen < sizeof(struct sockaddr_in)) return -EINVAL;
+  if (!namelen) return -EFAULT;
+  if (*namelen < sizeof(struct sockaddr_in)) return -EFAULT;
   if (s->state != SOCKSTATE_CONNECTED) return -ENOTCONN;
   if (!s->tcp.pcb) return -ENOTCONN;
 
@@ -559,8 +562,8 @@ static int tcpsock_getsockname(struct socket *s, struct sockaddr *name, int *nam
 {
   struct sockaddr_in *sin;
 
-  if (!namelen) return -EINVAL;
-  if (*namelen < sizeof(struct sockaddr_in)) return -EINVAL;
+  if (!namelen) return -EFAULT;
+  if (*namelen < sizeof(struct sockaddr_in)) return -EFAULT;
   if (s->state != SOCKSTATE_CONNECTED && s->state != SOCKSTATE_BOUND) return -ENOTCONN;
   if (!s->tcp.pcb) return -ENOTCONN;
 
@@ -625,6 +628,7 @@ static int tcpsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
 
 static int tcpsock_listen(struct socket *s, int backlog)
 {
+  if (s->state == SOCKSTATE_CONNECTED) return -EISCONN;
   if (s->state != SOCKSTATE_BOUND) return -EINVAL;
 
   s->tcp.backlog = backlog;

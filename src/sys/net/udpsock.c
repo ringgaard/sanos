@@ -99,8 +99,8 @@ static int udpsock_bind(struct socket *s, struct sockaddr *name, int namelen)
   int rc;
   struct sockaddr_in *sin;
 
-  if (!name) return -EINVAL;
-  if (namelen < sizeof(struct sockaddr_in)) return -EINVAL;
+  if (!name) return -EFAULT;
+  if (namelen < sizeof(struct sockaddr_in)) return -EFAULT;
   sin = (struct sockaddr_in *) name;
   if (sin->sin_family != AF_INET && sin->sin_family != AF_UNSPEC) return -EAFNOSUPPORT;
 
@@ -149,8 +149,8 @@ static int udpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
   int rc;
   struct sockaddr_in *sin;
 
-  if (!name) return -EINVAL;
-  if (namelen < sizeof(struct sockaddr_in)) return -EINVAL;
+  if (!name) return -EFAULT;
+  if (namelen < sizeof(struct sockaddr_in)) return -EFAULT;
   sin = (struct sockaddr_in *) name;
   if (sin->sin_family != AF_INET && sin->sin_family != AF_UNSPEC) return -EAFNOSUPPORT;
   if (s->state == SOCKSTATE_CLOSED) return -EINVAL;
@@ -174,8 +174,8 @@ static int udpsock_getpeername(struct socket *s, struct sockaddr *name, int *nam
 {
   struct sockaddr_in *sin;
 
-  if (!namelen) return -EINVAL;
-  if (*namelen < sizeof(struct sockaddr_in)) return -EINVAL;
+  if (!namelen) return -EFAULT;
+  if (*namelen < sizeof(struct sockaddr_in)) return -EFAULT;
   if (s->state != SOCKSTATE_CONNECTED) return -EINVAL;
 
   sin = (struct sockaddr_in *) name;
@@ -192,9 +192,9 @@ static int udpsock_getsockname(struct socket *s, struct sockaddr *name, int *nam
 {
   struct sockaddr_in *sin;
 
-  if (!namelen) return -EINVAL;
-  if (*namelen < sizeof(struct sockaddr_in)) return -EINVAL;
-  if (s->state != SOCKSTATE_CONNECTED) return -EINVAL;
+  if (!namelen) return -EFAULT;
+  if (*namelen < sizeof(struct sockaddr_in)) return -EFAULT;
+  if (s->state != SOCKSTATE_BOUND && s->state != SOCKSTATE_CONNECTED) return -EINVAL;
 
   sin = (struct sockaddr_in *) name;
   sin->sin_len = sizeof(struct sockaddr_in);
@@ -301,7 +301,7 @@ static int udpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
     if (rc < 0) return rc;
   }
 
-  if (s->state != SOCKSTATE_CONNECTED) return -EINVAL;
+  if (s->state != SOCKSTATE_CONNECTED) return -ENOTCONN;
 
   p = pbuf_alloc(PBUF_TRANSPORT, size, PBUF_RW);
   if (!p) return -ENOMEM;

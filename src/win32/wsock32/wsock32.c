@@ -408,12 +408,14 @@ sockapi int __stdcall WSAGetLastError()
   
   if (err >= 0) return 0;
   if (err == -EAGAIN) return EWOULDBLOCK + WSAERRBASE;
+  if (err == -EBADF) return ENOTSOCK + WSAERRBASE;
   if (err > 45) return -err + WSAERRBASE;
   if (err > 82) return -err - 10 + WSAERRBASE;
   if (err == -EHOSTNOTFOUND) return 1001 + WSAERRBASE;
   if (err == -ETRYAGAIN) return 1002 + WSAERRBASE;
   if (err == -ENORECOVERY) return 1003 + WSAERRBASE;
   if (err == -ENODATA) return 1004 + WSAERRBASE;
+
   return EIO;
 }
 
