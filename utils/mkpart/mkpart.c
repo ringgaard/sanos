@@ -177,10 +177,20 @@ int set_partition_info(char *fn)
 __int64 get_device_size(HANDLE hdev)
 {
   GET_LENGTH_INFORMATION li;
+  DISK_GEOMETRY geom;
   DWORD len;
 
-  if (!DeviceIoControl(hdev, IOCTL_DISK_GET_LENGTH_INFO, NULL, 0, &li, sizeof(li), &len, NULL)) return -1;
-  return li.Length.QuadPart;
+  if (DeviceIoControl(hdev, IOCTL_DISK_GET_LENGTH_INFO, NULL, 0, &li, sizeof(li), &len, NULL)) 
+  {
+    return li.Length.QuadPart;
+  }
+
+  if (DeviceIoControl(hdev, IOCTL_DISK_GET_DRIVE_GEOMETRY, NULL, 0, &geom, sizeof(geom), &len, NULL)) 
+  {
+    return geom.Cylinders.QuadPart * geom.TracksPerCylinder * geom.SectorsPerTrack * geom.BytesPerSector;
+  }
+
+  return -1;
 }
 
 void write_image(HANDLE hdev, unsigned int startsect, unsigned int numsect, char *filename)
@@ -188,7 +198,7 @@ void write_image(HANDLE hdev, unsigned int startsect, unsigned int numsect, char
   HANDLE himg;
   LARGE_INTEGER filesize;
   LARGE_INTEGER partstart;
-  char buf[512];
+  char buf[64 * 1024];
   unsigned int sectno;
   unsigned long bytes;
 
@@ -213,19 +223,22 @@ void write_image(HANDLE hdev, unsigned int startsect, unsigned int numsect, char
     return;
   }
 
-  for (sectno = 0; sectno < numsect; sectno++)
+  sectno = 0;
+  while (sectno < numsect)
   {
-    if (!ReadFile(himg, buf, 512, &bytes, NULL))
+    if (!ReadFile(himg, buf, sizeof buf, &bytes, NULL))
     {
-      printf("mkpart: error %d reading from partition file\n");
+      printf("mkpart: error %d reading from partition image file\n");
       return;
     }
 
-    if (!WriteFile(himg, buf, 512, &bytes, NULL))
+    if (!WriteFile(hdev, buf, bytes, &bytes, NULL))
     {
       printf("mkpart: error %d writing to volume\n");
       return;
     }
+
+    sectno += (bytes / 512);
   }
 
   CloseHandle(himg);
@@ -332,6 +345,8 @@ int main(int argc, char **argv)
       printf("mkpart: error writing master boot record\n");
       return 3;
     }
+
+    printf("partition table written to %s\n", devname);
   }
 
   CloseHandle(hdev);
