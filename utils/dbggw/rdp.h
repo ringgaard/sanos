@@ -12,6 +12,22 @@
 typedef unsigned long tid_t;
 typedef void *hmodule_t;
 
+//
+// Context structure from os.h
+//
+
+struct context
+{
+  unsigned long es, ds;
+  unsigned long edi, esi, ebp, ebx, edx, ecx, eax;
+  unsigned long traptype;
+  unsigned long errcode;
+
+  unsigned long eip, ecs;
+  unsigned long eflags;
+  unsigned long esp, ess;
+};
+
 #include <seg.h>
 #include <trap.h>
 #include <dbg.h>
