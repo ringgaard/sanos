@@ -5,8 +5,6 @@ TODO for sanos
 
 - Add IOEVT_ERROR to readfds in select() and checkfds() to trigger event for read sockets when connection has been reset
 
-- Try other interface type (HDIF_ATA <-> HDIF_ATAPI) if hd_identify() fails in hd.c
-
 - Implement UDMA mode for ATAPI devices
 
 - Implement stack guard page handling in user mode signal handler
@@ -359,7 +357,7 @@ CHANGES
 
 *** version 1.2.9 released ***
 
-- ide cd support added
+- cd support added to ide driver
 
 - cdfs iso9660 filesystem implemented
 
@@ -406,3 +404,5 @@ CHANGES
   - Now also sending an acknowledge for TCP segments that fall outside the current window.
   - Only direct UDP packets which does not match perfectly to unconnected pcbs.
   - Check for short packets in udp.
+
+*** version 1.2.9.1 released ***

@@ -1469,10 +1469,21 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
   hd->iftype = iftype;
 
   // Get info block from device
-  if (hd_identify(hd) < 0)
+  rc = hd_identify(hd);
+  if (rc < 0)
   {
-    kprintf("hd: device %s not responding, ignored.\n", devname);
-    return;
+    // Try other interface type
+    if (hd->iftype == HDIF_ATA)
+      hd->iftype = HDIF_ATAPI;
+    else if (hd->iftype == HDIF_ATAPI)
+      hd->iftype = HDIF_ATA;
+
+    rc = hd_identify(hd);
+    if (rc < 0)
+    {
+      kprintf("hd: device %s not responding, ignored.\n", devname);
+      return;
+    }
   }
 
   // Determine UDMA mode
