@@ -46,6 +46,7 @@ Supported hardware
  - Minimum 2MB RAM (Maximum 4GB RAM)
  - Intel IA-32 and compatible processors (486 and Pentium)
  - IDE disks (PIO and UDMA mode)
+ - IDE cdrom (PIO mode)
  - Floppy disks (3½" 1.44MB)
  - Keyboard (US and DK)
  - Text mode video
