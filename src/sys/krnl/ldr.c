@@ -176,4 +176,5 @@ void init_kernel_modules()
   kmods.notify_unload = dbg_notify_unload_module;
 
   init_module_database(&kmods, "krnl.dll", (hmodule_t) OSBASE, get_property(krnlcfg, "kernel", "libpath", "/os"), 0);
+  kmods.execmod = kmods.modules;
 }

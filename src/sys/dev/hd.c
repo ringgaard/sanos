@@ -264,8 +264,6 @@ struct hd
   struct partition parts[HD_PARTITIONS]; // Partition info
 };
 
-struct pci_dev *idedev;
-
 static struct hdc hdctab[HD_CONTROLLERS];
 static struct hd hdtab[HD_DRIVES];
 
@@ -1056,7 +1054,7 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
     return;
   }
 
-  if (hdc->bmregbase && strcmp(hd->param.model, "VMware Virtual IDE Hard Drive") != 0)
+  if (hdc->bmregbase)
     devno = dev_make(devname, &harddisk_dma_driver, NULL, hd);
   else
     devno = dev_make(devname, &harddisk_intr_driver, NULL, hd);
@@ -1096,11 +1094,11 @@ void init_hd()
 {
   int bmiba;
   int numhd;
+  struct pci_dev *idedev;
 
   numhd = syspage->biosdata[0x75];
 
   idedev = lookup_pci_device_class(PCI_CLASS_STORAGE_IDE, PCI_SUBCLASS_MASK);
-  idedev = NULL;
   if (idedev)
   {
     bmiba = pci_config_read(idedev->bus->busno, idedev->devno, idedev->funcno, PCI_CONFIG_BASE_ADDR_4) & 0xFFF0;

@@ -54,17 +54,6 @@ struct dbg_hdr
   unsigned int len;
 };
 
-struct dbg_connect
-{
-  int version;
-  
-  tid_t tid;
-  unsigned long traptype;
-  unsigned long errcode;
-  unsigned long eip;
-  void *addr;
-};
-
 struct dbg_memory
 {
   void *addr;
@@ -76,6 +65,12 @@ struct dbg_thread
 {
   int count;
   tid_t threadids[0];
+};
+
+struct dbg_threadlist
+{
+  int count;
+  struct { tid_t tid; void *tib; void *startaddr; } threads[0];
 };
 
 struct dbg_context
@@ -121,6 +116,7 @@ struct dbg_evt_exit_thread
 struct dbg_evt_load_module
 {
   hmodule_t hmod;
+  char *name;
 };
 
 struct dbg_evt_unload_module
@@ -134,6 +130,15 @@ struct dbg_evt_output
   int msglen;
 };
 
+struct dbg_connect
+{
+  int version;
+  
+  struct dbg_evt_trap trap;
+  struct dbg_evt_load_module mod;
+  struct dbg_evt_create_thread thr;
+};
+
 union dbg_body
 {
   char *string;
@@ -141,6 +146,7 @@ union dbg_body
   struct dbg_connect conn;
   struct dbg_memory mem;
   struct dbg_thread thr;
+  struct dbg_threadlist thl;
   struct dbg_context ctx;
   struct dbg_selector sel;
   struct dbg_module mod;
@@ -155,9 +161,10 @@ union dbg_body
 
 struct dbg_event
 {
-  struct dbg_event *next;
   tid_t tid;
+  int type;
   union dbg_body evt;
+  struct dbg_event *next;
 };
 
 #ifdef KERNEL
@@ -172,7 +179,7 @@ void dbg_enter(struct context *ctxt, void *addr);
 
 void dbg_notify_create_thread(struct thread *t, void *startaddr);
 void dbg_notify_exit_thread(struct thread *t);
-void dbg_notify_load_module(hmodule_t hmod);
+void dbg_notify_load_module(hmodule_t hmod, char *name);
 void dbg_notify_unload_module(hmodule_t hmod);
 void dbg_output(char *msg);
 

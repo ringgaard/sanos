@@ -116,16 +116,20 @@ static int dbg_recv_packet(struct dbg_hdr *hdr, void *data)
 
 static void dbg_connect(struct dbg_hdr *hdr, union dbg_body *body)
 {
+  struct thread *t = current_thread();
+
   if (body->conn.version != DRPC_VERSION)
     dbg_send_error(DBGERR_VERSION, hdr->id);
   else
   {
     body->conn.version = DRPC_VERSION;
-    body->conn.tid = last_trap.tid;
-    body->conn.traptype = last_trap.traptype;
-    body->conn.errcode = last_trap.errcode;
-    body->conn.eip = last_trap.eip;
-    body->conn.addr = last_trap.addr;
+    body->conn.trap = last_trap;
+    body->conn.mod.hmod = kmods.execmod->hmod;
+    body->conn.mod.name = kmods.execmod->name;
+    body->conn.thr.tid = t->id;
+    body->conn.thr.tib = t->tib;
+    body->conn.thr.startaddr = t->entrypoint;
+
     dbg_send_packet(hdr->cmd + DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_connect));
   }
 }
@@ -290,12 +294,16 @@ static void dbg_get_threads(struct dbg_hdr *hdr, union dbg_body *body)
   struct thread *t = threadlist;
   while (1)
   {
-    body->thr.threadids[n++] = t->id;
+    body->thl.threads[n].tid = t->id;
+    body->thl.threads[n].tib = t->tib;
+    body->thl.threads[n].startaddr = t->entrypoint;
+    n++;
+
     t = t->next;
     if (t == threadlist) break;
   }
-  body->thr.count = n;
-  dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_thread) + n * sizeof(tid_t));
+  body->thl.count = n;
+  dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_threadlist) + n * 12);
 }
 
 static void dbg_main()
@@ -445,13 +453,14 @@ void dbg_notify_exit_thread(struct thread *t)
   }
 }
 
-void dbg_notify_load_module(hmodule_t hmod)
+void dbg_notify_load_module(hmodule_t hmod, char *name)
 {
   struct dbg_evt_load_module load;
 
   if (debugging)
   {
     load.hmod = hmod;
+    load.name = name;
 
     dbg_send_packet(DBGEVT_LOAD_MODULE, 0, &load, sizeof(struct dbg_evt_load_module));
     dbg_main();

@@ -10,13 +10,7 @@
 #include <stdio.h>
 #include <process.h>
 
-typedef unsigned long tid_t;
-typedef void *hmodule_t;
-
-#include <seg.h>
-#include <intr.h>
-#include <dbg.h>
-
+#include "rdp.h"
 //
 // DRPC definitions
 //
@@ -65,17 +59,31 @@ struct drpc_packet
   unsigned long reserved2;    // Always zero
 };
 
+struct drpc_system_version
+{
+  unsigned long unknown1;    // 0x14c
+  unsigned long processors;  // 1
+  unsigned long platformid;  // 2
+  unsigned long build;       // 0xA28
+  unsigned long spnum;       // 0
+  char spname[0x104];
+  char buildname[0x110];
+};
+
+struct drpc_processor_identification
+{
+  unsigned long family;
+  unsigned long model;
+  unsigned long stepping;
+  char vendor[16];
+};
+
 //
 // Debug gateway configiration
 //
 
 #define DEBUGGER_PORT      24502
 #define DEBUGGEE_PORT      "COM1"
-#define MAX_DBG_CHUNKSIZE  4096
-
-#define GLOBAL_PROCID      1
-
-#define MAX_DBG_PACKETLEN  (MAX_DBG_CHUNKSIZE + sizeof(union dbg_body))
 
 //
 // Global variables
@@ -83,19 +91,14 @@ struct drpc_packet
 
 SOCKET listener;
 SOCKET debugger;
-HANDLE debugee = INVALID_HANDLE_VALUE;
+
+int dbg_state = 1;
+int first_event = 1;
+struct dbg_session *session = NULL;
 
 FILE *logfile = NULL;
 
 unsigned long startmark;
-unsigned char next_reqid = 1;
-
-struct dbg_hdr hdr;
-char dbg_data[MAX_DBG_PACKETLEN];
-union dbg_body *body;
-
-struct dbg_event *event_head = NULL;
-struct dbg_event *event_tail = NULL;
 
 //
 // panic
@@ -210,16 +213,84 @@ void dump_data(FILE *f, unsigned char *buf, int bytes, int wordsize, unsigned ch
 }
 
 //
-// dbg_close_connection
+// convert_to_sanos_context
 //
 
-void dbg_close_connection()
+void convert_to_sanos_context(struct context *ctxt, CONTEXT *ctx)
 {
-  if (debugee != INVALID_HANDLE_VALUE)
+  if (ctx->ContextFlags & CONTEXT_CONTROL)
   {
-    CloseHandle(debugee);
-    debugee = INVALID_HANDLE_VALUE;
+    ctxt->ess = ctx->SegSs;
+    ctxt->esp = ctx->Esp;
+    ctxt->ecs = ctx->SegCs;
+    ctxt->eip = ctx->Eip;
+    ctxt->eflags = ctx->EFlags;
+    ctxt->ebp = ctx->Ebp;
   }
+
+  if (ctx->ContextFlags & CONTEXT_INTEGER)
+  {
+    ctxt->eax = ctx->Eax;
+    ctxt->ebx = ctx->Ebx;
+    ctxt->ecx = ctx->Ecx;
+    ctxt->edx = ctx->Edx;
+    ctxt->esi = ctx->Esi;
+    ctxt->edi = ctx->Edi;
+  }
+
+  if (ctx->ContextFlags & CONTEXT_SEGMENTS)
+  {
+    ctxt->ds = ctx->SegDs;
+    ctxt->es = ctx->SegEs;
+    // fs missing
+    // gs missing
+  }
+
+  if (ctx->ContextFlags & CONTEXT_FLOATING_POINT)
+  {
+    // fpu state missing
+  }
+ 
+  if (ctx->ContextFlags & CONTEXT_FLOATING_POINT)
+  {
+    // fpu state missing
+  }
+
+  if (ctx->ContextFlags & CONTEXT_DEBUG_REGISTERS)
+  {
+    // debug registers missing
+  }
+
+  ctxt->traptype = 0;
+  ctxt->errcode = 0;
+}
+
+//
+// convert_from_sanos_context
+//
+
+void convert_from_sanos_context(struct context *ctxt, CONTEXT *ctx)
+{
+  ctx->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS;
+
+  ctx->SegSs = ctxt->ess;
+  ctx->Esp = ctxt->esp;
+  ctx->SegCs = ctxt->ecs;
+  ctx->Eip = ctxt->eip;
+  ctx->EFlags = ctxt->eflags;
+  ctx->Ebp = ctxt->ebp;
+
+  ctx->Eax = ctxt->eax;
+  ctx->Ebx = ctxt->ebx;
+  ctx->Ecx = ctxt->ecx;
+  ctx->Edx = ctxt->edx;
+  ctx->Esi = ctxt->esi;
+  ctx->Edi = ctxt->edi;
+
+  ctx->SegDs = ctxt->ds;
+  ctx->SegEs = ctxt->es;
+  ctx->SegFs = 0;
+  ctx->SegGs = 0;
 }
 
 //
@@ -240,6 +311,130 @@ void get_process_list(struct drpc_packet *pkt, char *buf)
 void get_process_name(struct drpc_packet *pkt, char *buf)
 {
   wcscpy((wchar_t *) buf, L"SanOS Kernel");
+}
+
+//
+// get_host_info
+//
+
+void get_host_info(struct drpc_packet *pkt, char *buf)
+{
+  int hostlen = *(int *) (buf + 0);
+  int tplen = *(int *) (buf + 16);
+
+  strcpy(buf, "CASTOR");
+  strcpy(buf + hostlen, "tcp 127.0.0.1, port 24502");
+}
+
+//
+// get_system_version
+//
+
+void get_system_version(struct drpc_packet *pkt, char *buf)
+{
+  struct drpc_system_version *vers = (struct drpc_system_version *) buf;
+
+  memset(vers, 0, sizeof(struct drpc_system_version));
+  vers->unknown1 = 0x14c;
+  vers->processors = 1;
+  vers->platformid = 2;
+  vers->build = 2000;
+  vers->spnum = 1;
+  strcpy(vers->spname, "SanOS");
+  strcpy(vers->buildname, "Version 0.0.4 (Build 15 Mar 2002)");
+}
+
+//
+// get_cpu_info
+//
+
+void get_cpu_info(struct drpc_packet *pkt, char *buf)
+{
+  int maxlen = *(int *) buf;
+  struct drpc_processor_identification *cpuinfo = (struct drpc_processor_identification *) buf;
+
+  *(int *) (buf + maxlen) = sizeof(struct drpc_processor_identification);
+
+  cpuinfo->family = 6;
+  cpuinfo->model = 5;
+  cpuinfo->stepping = 2;
+  strcpy(cpuinfo->vendor, "GenuineIntel");
+}
+
+//
+// open_process
+//
+
+void open_process(struct drpc_packet *pkt, char *buf)
+{
+  session = dbg_create_session(DEBUGGEE_PORT);
+  if (session == NULL) pkt->result = E_FAIL;
+  first_event = 1;
+}
+
+//
+// get_debug_event
+//
+
+void get_debug_event(struct drpc_packet *pkt, char *buf)
+{
+  int evtlen;
+  struct dbg_event *e;
+  DEBUG_EVENT *evt;
+
+  evtlen = *(int *) (buf + 4);
+  evt = (DEBUG_EVENT *) buf;
+  memset(evt, 0, sizeof(DEBUG_EVENT));
+  *(int *) (buf + evtlen) = sizeof(DEBUG_EVENT);
+
+  if (first_event)
+  {
+    evt->dwDebugEventCode = CREATE_PROCESS_DEBUG_EVENT;
+    evt->dwProcessId = GLOBAL_PROCID;
+    evt->dwThreadId = session->conn.trap.tid;
+
+    evt->u.CreateProcessInfo.hFile = 0;
+    evt->u.CreateProcessInfo.hProcess = (HANDLE) GLOBAL_HPROC;
+    evt->u.CreateProcessInfo.hThread = (HANDLE) session->conn.trap.tid;
+    evt->u.CreateProcessInfo.lpBaseOfImage = session->conn.mod.hmod;
+    evt->u.CreateProcessInfo.dwDebugInfoFileOffset = 0;
+    evt->u.CreateProcessInfo.nDebugInfoSize = 0;
+    evt->u.CreateProcessInfo.lpThreadLocalBase = session->conn.thr.tib;
+    evt->u.CreateProcessInfo.lpStartAddress = session->conn.thr.startaddr;
+    evt->u.CreateProcessInfo.lpImageName = NULL; //session->conn.mod.name; Should be address to string pointer !!!
+    evt->u.CreateProcessInfo.fUnicode = 0;
+
+    first_event = 0;
+    return;
+  }
+
+  e = dbg_next_event(session);
+  dbg_release_event(e);
+}
+
+//
+// read_memory
+//
+
+void read_memory(struct drpc_packet *pkt, char *buf)
+{
+  void *addr;
+  int size;
+
+  addr = *(void **) (buf + 8);
+  size = *(int *) (buf + 16);
+
+  dbg_read_memory(session, addr, size, buf);
+  *(int *) (buf + size) = size;
+}
+
+//
+// get_peb_address
+//
+
+void get_peb_address(struct drpc_packet *pkt, char *buf)
+{
+  *(unsigned long *) (buf) = 0x7FFDF000;
 }
 
 //
@@ -268,6 +463,7 @@ void handle_command(struct drpc_packet *pkt, char *buf)
   {
     case DRPC_GET_SYSTEM_VERSION:
       logmsg("COMMAND GetSystemVersion: spnamelen=%d, buildnamelen=%d\n", *(unsigned long *) (buf + 0), *(unsigned long *) (buf + 8));
+      get_system_version(pkt, buf);
       break;
 
     case DRPC_DEBUG_BREAK:
@@ -277,10 +473,12 @@ void handle_command(struct drpc_packet *pkt, char *buf)
 
     case DRPC_GET_HOST_INFO:
       logmsg("COMMAND GetHostInfo: hostlen=%d, transportlen=%d\n", *(unsigned long *) (buf + 0), *(unsigned long *) (buf + 8));
+      get_host_info(pkt, buf);
       break;
 
     case DRPC_GET_CPU_INFO:
       logmsg("COMMAND GetCpuInfo: maxlen=%d\n", *(unsigned long *) buf);
+      get_cpu_info(pkt, buf);
       break;
 
     case DRPC_GET_PROCESS_LIST:
@@ -303,6 +501,7 @@ void handle_command(struct drpc_packet *pkt, char *buf)
       pid = *(unsigned long *) buf;
       flags = *(unsigned long *) (buf + 8);
       logmsg("COMMAND OpenProcess pid=%d (%08X) flags=%08X:\n", pid, pid, flags);
+      open_process(pkt, buf);
       break;
 
     case DRPC_CREATE_PROCESS:
@@ -315,6 +514,7 @@ void handle_command(struct drpc_packet *pkt, char *buf)
       addr = *(unsigned long *) (buf + 8);
       len = *(unsigned long *) (buf + 16);
       logmsg("COMMAND ReadProcessMemory hproc=%08X addr=%08x len=%d:\n", pid, addr, len);
+      read_memory(pkt, buf);
       break;
 
     case DRPC_WRITE_PROCESS_MEMORY:
@@ -363,6 +563,7 @@ void handle_command(struct drpc_packet *pkt, char *buf)
     case DRPC_GET_PEB_ADDRESS:
       pid = *(unsigned long *) (buf + 0);
       logmsg("COMMAND GetPebAddress hproc=%08X:\n", pid);
+      get_peb_address(pkt, buf);
       break;
 
     case DRPC_GET_THREAD_SELECTOR:
@@ -374,6 +575,7 @@ void handle_command(struct drpc_packet *pkt, char *buf)
 
     case DRPC_GET_DEBUG_EVENT:
       logmsg("COMMAND GetDebugEvent %08X %08X:\n", *(unsigned long *) buf, *(unsigned long *) (buf + 4));
+      get_debug_event(pkt, buf);
       break;
 
     case DRPC_CONTINUE_DEBUG_EVENT:
@@ -384,19 +586,27 @@ void handle_command(struct drpc_packet *pkt, char *buf)
         logmsg("COMMAND ContinueDebugEvent: DBG_CONTINUE\n");
       else
         logmsg("COMMAND ContinueDebugEvent: %08X\n", flags);
+
+      break;
+
+    case 0x0000C001:
+      logmsg("COMMAND 0000C001\n");
+      pkt->result = dbg_state;
+      break;
+
+    case 0x0004C002:
+      logmsg("COMMAND 0004C002\n");
+      *(unsigned long *) buf = 5;
       break;
 
     default:
-      logmsg("COMMAND %08X (reqlen=%d, rsplen=%d):\n", pkt->cmd, pkt->reqlen, pkt->rsplen);
-#if 0
+      logmsg("COMMAND %08X ??? (reqlen=%d, rsplen=%d):\n", pkt->cmd, pkt->reqlen, pkt->rsplen);
       if (pkt->reqlen > 0)
       {
 	logmsg("reqdata: ");
 	dump_data(stdout, buf, pkt->reqlen > 256 ? 256 : pkt->reqlen, 4, NULL);
-	dump_data(logfile, buf, pkt->reqlen, 4, NULL);
+	if (logfile) dump_data(logfile, buf, pkt->reqlen, 4, NULL);
       }
-#endif
-
   }
 
   pkt->cmd |= 0x00010000;
@@ -447,10 +657,11 @@ void handle_session()
   unsigned int buflen = 0;
   char fn[256];
 
-  printf("----------------------------------------------------------------------------------------------\n");
+  printf("starting session\n");
   sprintf(fn, "dbgspy%8d.log", GetTickCount());
   //logfile = fopen(fn, "w");
 
+  first_event = 1;
   if (handshake() < 0)
   {
     closesocket(debugger);
@@ -495,6 +706,11 @@ void handle_session()
   if (logfile) fclose(logfile);
   logfile = NULL;
   if (buf) free(buf);
+  if (session)
+  {
+    dbg_close_session(session);
+    session = NULL;
+  }
 }
 
 //
