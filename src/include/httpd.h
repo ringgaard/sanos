@@ -116,7 +116,7 @@ struct httpd_server
   int reqbufsiz;
   int rspbufsiz;
   int backlog;
-
+  char *indexname;
 };
 
 // HTTP context
@@ -202,6 +202,7 @@ httpdapi int httpd_send_header(struct httpd_response *rsp, int state, char *titl
 httpdapi int httpd_send_error(struct httpd_response *rsp, int state, char *title);
 httpdapi int httpd_send(struct httpd_response *rsp, char *data, int len);
 httpdapi int httpd_send_file(struct httpd_response *rsp, int fd);
+httpdapi int httpd_flush(struct httpd_response *rsp);
 
 #ifdef HTTPD_LIB
 

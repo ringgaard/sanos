@@ -84,6 +84,7 @@ struct httpd_server *httpd_initialize(struct section *cfg)
   server->reqbufsiz = getnumconfig(cfg, "requestbuffer", 4*K);
   server->rspbufsiz = getnumconfig(cfg, "responsebuffer", 4*K);
   server->backlog = getnumconfig(cfg, "backlog", 5);
+  server->indexname = getstrconfig(cfg, "indexname", "index.htm");
 
   return server;
 }
@@ -142,6 +143,20 @@ void httpd_accept(struct httpd_server *server)
   dispatch(server->iomux, conn->sock, IOEVT_READ | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
 }
 
+void httpd_clear_connection(struct httpd_connection *conn)
+{
+  if (conn->req)
+  {
+    if (conn->req->decoded_url) free(conn->req->decoded_url);
+    conn->req = NULL;
+  }
+
+  if (conn->rsp)
+  {
+    conn->rsp = NULL;
+  }
+}
+
 void httpd_close_connection(struct httpd_connection *conn)
 {
   printf("close %a port %d\n", &conn->client_addr.sa_in.sin_addr.s_addr, ntohs(conn->client_addr.sa_in.sin_port));
@@ -153,6 +168,32 @@ void httpd_close_connection(struct httpd_connection *conn)
   free_buffer(&conn->rspbody);
   free(conn);
   // TODO: remove connection from server
+}
+
+int httpd_recv(struct httpd_response *req, char *data, int len)
+{
+  int rc;
+  int n;
+
+  // First copy any remaining data in the request header buffer
+  n = buffer_left(&req->conn->reqhdr);
+  if (n > 0)
+  {
+    if (n > len) n = len;
+    memcpy(data, req->conn->reqhdr.end, n);
+    req->conn->reqhdr.end += n;
+    return n;
+  }
+
+  // Allocate request body buffer if it has not already been done
+  if (!req->conn->reqbody.floor)
+  {
+    rc = allocate_buffer(&req->conn->reqbody, req->conn->server->reqbufsiz);
+    if (rc < 0) return rc;
+  }
+
+  // Receive new data if request body buffer empty
+  if (buffer_avail(
 }
 
 int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *headers)
@@ -183,7 +224,27 @@ int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *
 
 int httpd_send_error(struct httpd_response *rsp, int state, char *title)
 {
-  return httpd_send_header(rsp, state, title ? title : statustitle(state), NULL);
+  int rc;
+
+  rc = httpd_send_header(rsp, state, title ? title : statustitle(state), NULL);
+  if (rc < 0) return rc;
+
+  return 0;
+}
+
+int httpd_send(struct httpd_response *rsp, char *data, int len)
+{
+  return -ENOSYS;
+}
+
+int httpd_flush(struct httpd_response *rsp)
+{
+  return -ENOSYS;
+}
+
+int httpd_send_file(struct httpd_response *rsp, int fd)
+{
+  return -ENOSYS;
 }
 
 int httpd_check_header(struct httpd_connection *conn)
@@ -513,7 +574,7 @@ int httpd_process(struct httpd_connection *conn)
   conn->rsp = &rsp;
 
   rc = httpd_parse_request(&req);
-  if (rc < 0) goto exit;
+  if (rc < 0) goto errorexit;
 
   rc = httpd_find_context(&req);
   if (rc < 0)
@@ -524,13 +585,11 @@ int httpd_process(struct httpd_connection *conn)
   {
   }
 
-  rc = 0;
+  clear_connection(conn);
+  return 0;
 
-exit:
-  if (req.decoded_url) free(req.decoded_url);
-  conn->req = NULL;
-  conn->rsp = NULL;
-
+errorexit:
+  clear_connection(conn);
   return rc;
 }
 
