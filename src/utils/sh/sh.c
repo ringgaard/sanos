@@ -1104,10 +1104,11 @@ static void test(int argc, char **argv)
 
 static void test(int argc, char **argv)
 {
-  char *fmt = "test %%f=[%f] %%g=[%g] %%e=[%e]\n";
+  char *fmt = "test %%f=[%f] %%g=[%g] %%e=[%e]";
 
   if (argc > 1) fmt = argv[1];
-  printf(fmt, -1.2345, 12345.6789, 0.0987654321);
+  printf(fmt, -1.2345, 12345.6789, 0.0987654321, -123456);
+  printf("\n");
 }
 
 static void disktest(int argc, char **argv)

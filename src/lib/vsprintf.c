@@ -33,6 +33,7 @@
 
 #include <types.h>
 #include <stdarg.h>
+#include <string.h>
 
 #ifdef KERNEL
 #define NOFLOAT
@@ -403,12 +404,10 @@ static char *flt(char *str, double num, int size, int precision, char fmt, int f
   n = strlen(tmp);
 
   // Output number with alignment and padding
-  if (n > precision) precision = n;
-  size -= precision;
+  size -= n;
   if (!(flags & (ZEROPAD | LEFT))) while(size-- > 0) *str++ = ' ';
   if (sign) *str++ = sign;
   if (!(flags & LEFT)) while (size-- > 0) *str++ = c;
-  while (n < precision--) *str++ = '0';
   for (i = 0; i < n; i++) *str++ = tmp[i];
   while (size-- > 0) *str++ = ' ';
 
@@ -568,7 +567,7 @@ repeat:
       case 'e':
       case 'f':
       case 'g':
-        str = flt(str, va_arg(args, double), field_width, precision, *fmt, flags);
+        str = flt(str, va_arg(args, double), field_width, precision, *fmt, flags | SIGN);
 	continue;
 
 #endif
