@@ -50,7 +50,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 os.lib clib.lib /nologo /entry:"main" /subsystem:console /map /machine:I386 /nodefaultlib /libpath:"..\lib" /fixed:no
+# ADD LINK32 os.lib libc.lib /nologo /entry:"main" /subsystem:console /map /machine:I386 /nodefaultlib /libpath:"..\lib" /fixed:no
 # SUBTRACT LINK32 /pdb:none
 
 !ELSEIF  "$(CFG)" == "setup - Win32 SanOSDebug"
@@ -77,7 +77,7 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 os.lib clib.lib /nologo /entry:"main" /subsystem:console /map /machine:I386 /nodefaultlib /libpath:"..\lib" /fixed:no
 # SUBTRACT BASE LINK32 /pdb:none
-# ADD LINK32 os.lib clib.lib /nologo /entry:"main" /subsystem:console /pdb:"..\dbg\symbols\setup.pdb" /map /debug /machine:I386 /nodefaultlib /libpath:"..\dbg\lib" /fixed:no
+# ADD LINK32 os.lib libc.lib /nologo /entry:"main" /subsystem:console /pdb:"..\dbg\symbols\setup.pdb" /map /debug /machine:I386 /nodefaultlib /libpath:"..\dbg\lib" /fixed:no
 # SUBTRACT LINK32 /pdb:none
 
 !ENDIF 

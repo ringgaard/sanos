@@ -7,6 +7,7 @@
 //
 
 #include <os.h>
+#include <string.h>
 #include <hash.h>
 
 //

@@ -60,22 +60,6 @@ Package=<4>
 
 ###############################################################################
 
-Project: "clib"=.\clib.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-    begin source code control
-    clib
-    ..
-    end source code control
-}}}
-
-Package=<4>
-{{{
-}}}
-
-###############################################################################
-
 Project: "fdisk"=.\fdisk.dsp - Package Owner=<4>
 
 Package=<5>

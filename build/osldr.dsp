@@ -40,7 +40,7 @@ RSC=rc.exe
 # PROP Use_Debug_Libraries 0
 # PROP Output_Dir "..\bin"
 # PROP Intermediate_Dir "..\obj\osldr"
-# PROP Ignore_Export_Lib 1
+# PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "OSLDR_EXPORTS" /YX /FD /c
 # ADD CPP /nologo /MT /W3 /O2 /X /I "..\src\include" /u /D "KERNEL" /D "OSLDR" /YX"krnl.h" /FD /c
