@@ -338,6 +338,7 @@ void init_net()
   arp_init();
   ip_init();
   udp_init();
+  raw_init();
   dhcp_init();
   tcp_init();
   socket_init();

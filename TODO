@@ -12,8 +12,6 @@ TODO for sanos
     - Implement int kill(int pid, int signum)
     - Return job number in getpid()
 
-- Implement SOCK_RAW socket type and ping
-
 - Change control87() to use the MSVCRT definitions of FPU control flags.
 
 - Implement 48-bit LBA support in IDE driver
@@ -540,8 +538,8 @@ CHANGES
 
 - The fdmotor task in the floppy driver has been replaced by a timer.
 
-- Standard POXIS/ANSI API routines now returns -1 on error and set error code in errno 
-  to comply with POXIS/ANSI standard.
+- Standard POSIX/ANSI API routines now returns -1 on error and set error code in errno 
+  to comply with POSIX/ANSI standard.
 
 - Added format option to dfs mount options to allow a device to be formated when mounting. 
   This is useful for ram disks. Also added progress option to log progress messages during
@@ -557,3 +555,5 @@ CHANGES
   peer.
 
 - Suspending all user threads when shutting down.
+
+- Raw socket implemented.

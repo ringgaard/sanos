@@ -105,6 +105,7 @@ struct stats_all
   struct stats_proto icmp;
   struct stats_proto udp;
   struct stats_proto tcp;
+  struct stats_proto raw;
   struct stats_pbuf pbuf;
 };
 

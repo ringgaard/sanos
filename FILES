@@ -93,6 +93,7 @@ src\                           Souce files
       netif.h                  Network interface
       opt.h                    Network configuration parameters
       pbuf.h                   Packet buffer management
+      raw.h                    Raw network protocol interface
       socket.h                 BSD socket interface
       stats.h                  Network statistics
       tcp.h                    Transmission Control Protocol (TCP)
@@ -303,6 +304,8 @@ src\                           Souce files
       loopif.c                 Loopback network interface
       netif.c                  Network interface
       pbuf.c                   Packet buffer management
+      raw.c                    Raw network protocol interface
+      rawsock.c                Raw socket interface
       socket.c                 BSD socket interface
       stats.c                  Network statistics
       tcp.c                    Transmission Control Protocol (TCP)

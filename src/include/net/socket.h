@@ -40,8 +40,9 @@
 
 #define SOCKTYPE_TCP          0
 #define SOCKTYPE_UDP          1
+#define SOCKTYPE_RAW          2
 
-#define SOCKTYPE_NUM          2
+#define SOCKTYPE_NUM          3
 
 //
 // Socket flags
@@ -117,6 +118,13 @@ struct udpsocket
   struct pbuf *recvtail;
 };
 
+struct rawsocket
+{
+  struct raw_pcb *pcb;
+  struct pbuf *recvhead;
+  struct pbuf *recvtail;
+};
+
 struct socket
 {
   struct ioobject iob;
@@ -135,6 +143,7 @@ struct socket
   {
     struct tcpsocket tcp;
     struct udpsocket udp;
+    struct rawsocket raw;
   };
 };
 

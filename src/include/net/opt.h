@@ -48,6 +48,7 @@
 #define ICMP_TTL                255              // ICMP time to live
 #define UDP_TTL                 255              // UDP time to live
 #define TCP_TTL                 255              // TCP time to live
+#define RAW_TTL                 255              // RAW time to live
 
 //#define TCP_MIN_SEGLEN          512              // Minimum segment allocation size
 #define TCP_MIN_SEGLEN          (MTU - 40)       // Minimum segment allocation size

@@ -71,6 +71,7 @@ $(SRC)/include/net/net.h: \
   $(SRC)/include/net/arp.h \
   $(SRC)/include/net/icmp.h \
   $(SRC)/include/net/ip.h \
+  $(SRC)/include/net/raw.h \
   $(SRC)/include/net/udp.h \
   $(SRC)/include/net/tcp.h \
   $(SRC)/include/net/socket.h \

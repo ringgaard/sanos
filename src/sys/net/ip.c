@@ -177,6 +177,7 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
   struct netif *netif;
   int hl;
   int iphdrlen;
+  int rc;
 
   stats.ip.recv++;
   
@@ -272,7 +273,12 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
     stats.ip.drop++;
     return -EPROTO;
   }
-  
+
+  // Try to see if any raw sockets wants the packet
+  rc = raw_input(p, inp);
+  if (rc < 0) return rc;
+  if (rc > 0) return 0;
+
   // Send to upper layers
   switch (IPH_PROTO(iphdr)) 
   {

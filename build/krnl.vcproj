@@ -626,6 +626,9 @@
 					RelativePath="..\src\include\net\pbuf.h">
 				</File>
 				<File
+					RelativePath="..\src\include\net\raw.h">
+				</File>
+				<File
 					RelativePath="..\src\include\net\socket.h">
 				</File>
 				<File
@@ -678,6 +681,12 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\net\pbuf.c">
+			</File>
+			<File
+				RelativePath="..\src\sys\net\raw.c">
+			</File>
+			<File
+				RelativePath="..\src\sys\net\rawsock.c">
 			</File>
 			<File
 				RelativePath="..\src\sys\net\socket.c">

@@ -209,6 +209,8 @@ $(LIBS)/krnl.lib $(BIN)/krnl.dll: \
   $(SRC)\sys\dev\cons.c \
   $(SRC)\sys\net\udpsock.c \
   $(SRC)\sys\net\udp.c \
+  $(SRC)\sys\net\rawsock.c \
+  $(SRC)\sys\net\raw.c \
   $(SRC)\sys\net\tcpsock.c \
   $(SRC)\sys\net\tcp_output.c \
   $(SRC)\sys\net\tcp_input.c \

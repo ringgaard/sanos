@@ -1,7 +1,7 @@
 //
-// stats.c
+// raw.h
 //
-// Network statistics
+// Raw network protocol interface
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 // Portions Copyright (C) 2001, Swedish Institute of Computer Science.
@@ -32,50 +32,34 @@
 // SUCH DAMAGE.
 // 
 
-#include <net/net.h>
+#ifndef RAW_H
+#define RAW_H
 
-struct stats_all stats;
-
-static void protstat(struct proc_file *pf, char *prot, struct stats_proto *stat)
+struct raw_pcb 
 {
-  pprintf(pf, "%-4s%7d%6d%7d%6d%6d%6d%6d%6d%6d%6d%6d%6d\n",
-          prot, stat->xmit, stat->rexmit, stat->recv, stat->fw, stat->drop,
-	  stat->chkerr, stat->lenerr, stat->memerr, stat->rterr, stat->proterr,
-	  stat->opterr, stat->err);
-}
+  struct ip_addr local_ip;
+  struct ip_addr remote_ip;
+  int ttl;
+  struct raw_pcb *next;
+  unsigned short protocol;
+  void *recv_arg;
 
-static int netstat_proc(struct proc_file *pf, void *arg)
-{
-  pprintf(pf, "     -------------- packets -------- ----------------- errors ----------------\n");
-  pprintf(pf, "       xmit rexmt   recv forwd  drop cksum   len   mem route proto   opt  misc\n");
-  pprintf(pf, "---- ------ ----- ------ ----- ----- ----- ----- ----- ----- ----- ----- -----\n");
+  err_t (*recv)(void *arg, struct raw_pcb *pcb, struct pbuf *p, struct ip_addr *addr);
+};
 
-  protstat(pf, "link", &stats.link);
-  protstat(pf, "ip", &stats.ip);
-  protstat(pf, "icmp", &stats.icmp);
-  protstat(pf, "udp", &stats.udp);
-  protstat(pf, "tcp", &stats.tcp);
-  protstat(pf, "raw", &stats.raw);
+// Application layer interface to the RAW code
 
-  return 0;
-}
+struct raw_pcb *raw_new(unsigned short proto);
+void raw_remove(struct raw_pcb *pcb);
+err_t raw_bind(struct raw_pcb *pcb, struct ip_addr *ipaddr);
+err_t raw_connect(struct raw_pcb *pcb, struct ip_addr *ipaddr);
+err_t raw_recv(struct raw_pcb *pcb, err_t (*recv)(void *arg, struct raw_pcb *pcb, struct pbuf *p, struct ip_addr *addr), void *recv_arg);
+err_t raw_sendto(struct raw_pcb *pcb, struct pbuf *p, struct ip_addr *ipaddr);
+err_t raw_send(struct raw_pcb *pcb, struct pbuf *p);
 
-static int pbufs_proc(struct proc_file *pf, void *arg)
-{
-  pprintf(pf, "Pool Available .. : %6d\n", stats.pbuf.avail);
-  pprintf(pf, "Pool Used ....... : %6d\n", stats.pbuf.used);
-  pprintf(pf, "Pool Max Used ... : %6d\n", stats.pbuf.max);
-  pprintf(pf, "Errors .......... : %6d\n", stats.pbuf.err);
-  pprintf(pf, "Reclaimed ....... : %6d\n", stats.pbuf.reclaimed);
-  pprintf(pf, "R/W Allocated ... : %6d\n", stats.pbuf.rwbufs);
+// Lower layer interface to RAW
 
-  return 0;
-}
+err_t raw_input(struct pbuf *p, struct netif *inp);
+void raw_init();
 
-void stats_init()
-{
-  //memset(&stats, 0, sizeof(struct stats_all));
-  
-  register_proc_inode("pbufs", pbufs_proc, NULL);
-  register_proc_inode("netstat", netstat_proc, NULL);
-}
+#endif

@@ -35,6 +35,7 @@
 
 extern struct sockops tcpops;
 extern struct sockops udpops;
+extern struct sockops rawops;
 
 struct sockops *sockops[SOCKTYPE_NUM];
 
@@ -42,6 +43,7 @@ void socket_init()
 {
   sockops[SOCKTYPE_TCP] = &tcpops;
   sockops[SOCKTYPE_UDP] = &udpops;
+  sockops[SOCKTYPE_RAW] = &rawops;
 }
 
 void release_socket_request(struct sockreq *req, int rc)
@@ -342,6 +344,10 @@ int socket(int domain, int type, int protocol, struct socket **retval)
 	socktype = SOCKTYPE_UDP;
       else
 	return -EPROTONOSUPPORT;
+      break;
+
+    case SOCK_RAW:
+      socktype = SOCKTYPE_RAW;
       break;
 
     default:
