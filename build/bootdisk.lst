@@ -19,7 +19,6 @@
 /bin/httpd.dll    \bin\httpd.dll
 /bin/setup.exe    \bin\setup.exe
 /bin/fdisk.exe    \bin\fdisk.exe
-/bin/test.exe     test\release\test.exe
 
 ; Drivers
 
