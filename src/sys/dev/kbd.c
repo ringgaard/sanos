@@ -79,7 +79,6 @@ unsigned char keyboard_buffer[KEYBOARD_BUFFER_SIZE];
 int keyboard_buffer_in = 0;
 int keyboard_buffer_out = 0;
 
-
 //
 // Reboot machine
 //
@@ -266,6 +265,7 @@ int keyboard_handler(struct context *ctxt, void *arg)
   {
     // Record scan code
     last_scancode = _inp(KB_DATA) & 0xFF;
+    if (last_scancode == 41) dbg_break();
     queue_irq_dpc(&kbddpc, keyb_dpc, NULL);
     //kprintf("key %d\n", last_scancode);
   }
@@ -273,6 +273,7 @@ int keyboard_handler(struct context *ctxt, void *arg)
   {
     // Keyboard overflow, ignore
     unsigned int lost_scancode = _inp(KB_DATA) & 0xFF;
+    if (lost_scancode == 41) dbg_break();
     //kprintf("key overflow %d\n", lost_scancode);
   }
 

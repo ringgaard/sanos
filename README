@@ -9,7 +9,9 @@ system but only using a simple kernel.
 Sanos is open source under a BSD style license. Please see the COPYING
 file for details. Sanos can be downloaded from www.jbox.dk.
 
-Features:
+
+Features
+--------
 
  - No nonsense modern application server operating system kernel.
  - Open Source (BSD style license).
@@ -26,23 +28,41 @@ Features:
  - Low memory footprint (less than 512 KB RAM)
  - Lightweight
  - Embedding support with PC104 and Flash devices
- - Self configuring (PCI,PnP & DHCP support)
- - TCP/IP networking stack
+ - Self configuring (PCI, PnP & DHCP support)
+ - TCP/IP networking stack with BSD socket interface
+ - SMB file system support
  - Very efficient multithreading
  - Written in C (98%) and x86 assembler (2%)
  - Development using Microsoft Visual C.
  - Remote source level debugging support (windbg)
 
-
   -- Michael Ringgaard <mri@jbox.dk>
 
+
+Supported hardware
+------------------
+
+- Standard PC architecture
+- Minimum 2MB RAM (Maximum 4GB RAM)
+- Intel IA-32 and compatible processors (486 and Pentium)
+- IDE disks (PIO and UDMA mode)
+- Floppy disks (3½" 1.44MB)
+- Keyboard (US and DK)
+- Text mode video
+- Serial ports (8250, 16450, 16550 and 16550A)
+- Supported network interface cards:
+    - 3Com 3C905
+    - Intel EtherExpress Pro/100 (i82557/558/559 based boards)
+    - RealTek 8139 and compatible
+    - AMD PCNET32 and compatible
+    - Novell NE2000 (DP8390) and compatible
 
 Contributions to sanos
 ----------------------
 
 The sanos kernel was written by Michael Ringgaard <mri@jbox.dk>
 
-The PCNET32 driver was written by Søren Gjesse.
+The pcnet32 driver was written by Søren Gjesse.
 
 The heap allocator is a port of dlmalloc by Doug Lea <dl@cs.oswego.edu>
 
@@ -53,3 +73,5 @@ The DHCP module is a port of the lwIP DHCP module by Leon Woestenberg <leon.woes
 The DNS resolver is a port of ISC BIND lwres (http://www.isc.org/products/BIND)
 
 The kernel timer implementation is a port of Finn Arne Gangstads kernel timer implementation
+
+The rtl8139 and eepro100 network drivers are ported from Linux (Donald Becker)

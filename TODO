@@ -115,14 +115,17 @@ CHANGES
     - Add ioctl() support for changing netif parameters
 
 - Added alloc_linear_pageframes() and alloc_pages_linear() for
-  allocating linear physical memory blocks
+  allocating linear physical memory blocks.
   
 - RTL8139 network driver implemented (rtl8139.sys)
 
-- Added PCI subsystem identifier to driver binding code
+- Added PCI subsystem identifier to driver binding code.
 
 - Implemented Intel EtherExpress Pro100 NIC network driver (eepro100.sys)
 
 - Implemented lock count on objects
     - close object when handle count reaches zero.
     - destroy object when handle count and refcnt reaches zero.
+
+- Buffer leak in devfs set_inode_block() fixed.
+
