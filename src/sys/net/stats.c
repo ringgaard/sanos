@@ -12,7 +12,7 @@ struct stats_all stats;
 
 static void protstat(struct proc_file *pf, char *prot, struct stats_proto *stat)
 {
-  pprintf(pf, "%-6s%6d%6d%6d%6d%6d%6d%6d%6d%6d%6d%6d%6d\n",
+  pprintf(pf, "%-4s%7d%6d%7d%6d%6d%6d%6d%6d%6d%6d%6d%6d\n",
           prot, stat->xmit, stat->rexmit, stat->recv, stat->fw, stat->drop,
 	  stat->chkerr, stat->lenerr, stat->memerr, stat->rterr, stat->proterr,
 	  stat->opterr, stat->err);
@@ -20,9 +20,9 @@ static void protstat(struct proc_file *pf, char *prot, struct stats_proto *stat)
 
 static int netstat_proc(struct proc_file *pf, void *arg)
 {
-  pprintf(pf, "                                     ----------------- errors ----------------\n");
-  pprintf(pf, "        xmit rexmt  recv forwd  drop cksum   len   mem route proto   opt  misc\n");
-  pprintf(pf, "------ ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----\n");
+  pprintf(pf, "     -------------- packets -------- ----------------- errors ----------------\n");
+  pprintf(pf, "       xmit rexmt   recv forwd  drop cksum   len   mem route proto   opt  misc\n");
+  pprintf(pf, "---- ------ ----- ------ ----- ----- ----- ----- ----- ----- ----- ----- -----\n");
 
   protstat(pf, "link", &stats.link);
   protstat(pf, "ip", &stats.ip);
@@ -49,6 +49,6 @@ void stats_init()
 {
   //memset(&stats, 0, sizeof(struct stats_all));
   
-  //register_proc_inode("pbufs", pbufs_proc, NULL);
+  register_proc_inode("pbufs", pbufs_proc, NULL);
   register_proc_inode("netstat", netstat_proc, NULL);
 }

@@ -1,0 +1,33 @@
+LIBRARY WSOCK32
+DESCRIPTION 'WSOCK32'
+
+EXPORTS
+  WSAStartup                                @115
+  recv = winsock_recv                       @16
+  send = winsock_send                       @19
+  listen = winsock_listen                   @13
+  bind = winsock_bind                       @2
+  accept = winsock_accept                   @1
+  recvfrom = winsock_recvfrom               @17
+  sendto = winsock_sendto                   @20
+  select = winsock_select                   @18
+  connect = winsock_connect                 @4
+  closesocket = winsock_closesocket         @3
+  shutdown = winsock_shutdown               @22
+  gethostname = winsock_gethostname         @57
+  gethostbyaddr = winsock_gethostbyaddr     @51
+  gethostbyname = winsock_gethostbyname     @52
+  htons = winsock_htons                     @9
+  htonl = winsock_htonl                     @8
+  ntohs = winsock_ntohs                     @15
+  ntohl = winsock_ntohl                     @14
+  getsockopt = winsock_getsockopt           @7
+  setsockopt = winsock_setsockopt           @21
+  getprotobyname = winsock_getprotobyname   @53
+  getsockname = winsock_getsockname         @6
+  socket = winsock_socket                   @23
+  ;WSASendDisconnect                        @74
+  ioctlsocket = winsock_ioctlsocket         @12
+  __WSAFDIsSet                              @151
+  WSAGetLastError                           @111
+  WSACleanup	                            @116

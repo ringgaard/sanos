@@ -372,6 +372,13 @@ struct hostent
   char **h_addr_list;  // List of addresses
 };
 
+struct protoent 
+{
+  char *p_name;
+  char **p_aliases;
+  short p_proto;
+};
+
 #define SOCK_STREAM      1
 #define SOCK_DGRAM       2
 #define SOCK_RAW         3

@@ -847,7 +847,7 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	  
 	  if (TCPH_FLAGS(cseg->tcphdr) & TCP_FIN) 
 	  {
-	    kprintf("tcp_receive: dequeued FIN.");
+	    kprintf("tcp_receive: dequeued FIN.\n");
 	    pcb->flags |= TF_GOT_FIN;
 	  }	    
 

@@ -8,6 +8,7 @@
 
 #include <os.h>
 #include <string.h>
+#include <inifile.h>
 
 #include "resolv.h"
 
@@ -474,6 +475,8 @@ static unsigned int res_randomid()
 
 int res_init()
 {
+  char *addr;
+
   memset(&res, 0, sizeof(struct res_state));
   res.options = RES_DEFAULT;
   res.retry = RES_DFLRETRY;
@@ -498,16 +501,38 @@ int res_init()
     res.nscount++;
   }
 
-  if (res.nscount == 0)
+  addr = get_property(config, "dns", "primary", NULL);
+  if (addr != NULL)
   {
-    res.nsaddr_list[res.nscount].sin_addr.s_addr = INADDR_LOOPBACK;
+    res.nsaddr_list[res.nscount].sin_addr.s_addr = inet_addr(addr);
     res.nsaddr_list[res.nscount].sin_family = AF_INET;
     res.nsaddr_list[res.nscount].sin_port = htons(NS_DEFAULTPORT);
     res.nscount++;
   }
 
+  addr = get_property(config, "dns", "secondary", NULL);
+  if (addr != NULL)
+  {
+    res.nsaddr_list[res.nscount].sin_addr.s_addr = inet_addr(addr);
+    res.nsaddr_list[res.nscount].sin_family = AF_INET;
+    res.nsaddr_list[res.nscount].sin_port = htons(NS_DEFAULTPORT);
+    if (res.nsaddr_list[res.nscount].sin_addr.s_addr != INADDR_NONE) res.nscount++;
+  }
+
+  if (res.nscount == 0)
+  {
+    res.nsaddr_list[res.nscount].sin_addr.s_addr = INADDR_LOOPBACK;
+    res.nsaddr_list[res.nscount].sin_family = AF_INET;
+    res.nsaddr_list[res.nscount].sin_port = htons(NS_DEFAULTPORT);
+    if (res.nsaddr_list[res.nscount].sin_addr.s_addr != INADDR_NONE) res.nscount++;
+  }
+
   strcpy(res.defdname, peb->default_domain);
-  if (!*res.defdname) strcpy(res.defdname, "local.domain");
+  if (!*res.defdname) 
+  {
+    strcpy(res.defdname, get_property(config, "dns", "domain", "local.domain"));
+  }
+
   res.dnsrch[0] = res.defdname;
 
   return 0;

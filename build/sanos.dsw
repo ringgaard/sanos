@@ -158,6 +158,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name 3c905c
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name wsock32
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -389,6 +392,22 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name os
     End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "wsock32"=.\wsock32.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+    begin source code control
+    wsock32
+    ..
+    end source code control
+}}}
+
+Package=<4>
+{{{
 }}}
 
 ###############################################################################

@@ -24,6 +24,8 @@
 #define THREAD_PRIORITY_HIGHEST         2
 #define THREAD_PRIORITY_TIME_CRITICAL   15
 
+#define FD_SETSIZE 64
+
 typedef void *HANDLE;
 typedef HANDLE *PHANDLE;
 typedef HANDLE *LPHANDLE;
@@ -166,5 +168,11 @@ typedef struct WIN32_FIND_DATA
   CHAR cFileName[MAX_PATH];
   CHAR cAlternateFileName[14];
 } WIN32_FIND_DATA, *PWIN32_FIND_DATA, *LPWIN32_FIND_DATA;
+
+typedef struct fd_set 
+{
+  unsigned int fd_count;
+  handle_t fd_array[FD_SETSIZE];
+} fd_set;
 
 #endif
