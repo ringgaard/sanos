@@ -91,7 +91,7 @@ int _stat(const char *path, struct _stat *buffer)
   struct stat fs;
 
   TRACE("_stat");
-  syslog(LOG_DEBUG, "stat on %s\n", path);
+  //syslog(LOG_DEBUG, "stat on %s\n", path);
 
   rc = stat(path, &fs);
   if (rc < 0) 
@@ -114,7 +114,7 @@ int _stat(const char *path, struct _stat *buffer)
       buffer->st_mode |= S_IFREG;
   }
 
-  syslog(LOG_DEBUG, "%s: mode=%d size=%d\n", path, buffer->st_mode, buffer->st_size);
+  //syslog(LOG_DEBUG, "%s: mode=%d size=%d\n", path, buffer->st_mode, buffer->st_size);
   return 0;
 }
 
@@ -124,7 +124,7 @@ __int64 _stati64(const char *path, struct _stati64 *buffer)
   struct stat fs;
 
   TRACE("_stati64");
-  syslog(LOG_DEBUG, "stat on %s\n", path);
+  //syslog(LOG_DEBUG, "stat on %s\n", path);
 
   rc = stat(path, &fs);
   if (rc < 0) return -1;
@@ -143,7 +143,7 @@ __int64 _stati64(const char *path, struct _stati64 *buffer)
       buffer->st_mode |= S_IFREG;
   }
 
-  syslog(LOG_DEBUG, "%s: mode=%d size=%d\n", path, buffer->st_mode, buffer->st_size);
+  //syslog(LOG_DEBUG, "%s: mode=%d size=%d\n", path, buffer->st_mode, buffer->st_size);
   return 0;
 }
 
@@ -209,7 +209,7 @@ char *_fullpath(char *abspath, const char *relpath, size_t maxlen)
 {
   TRACE("_fullpath");
   canonicalize(relpath, abspath, maxlen);
-  syslog(LOG_DEBUG, "fullpath: abspath: %s relpath: %s\n", abspath, relpath);
+  //syslog(LOG_DEBUG, "fullpath: abspath: %s relpath: %s\n", abspath, relpath);
   return abspath;
 }
 
@@ -226,7 +226,7 @@ int _access(const char *path, int mode)
   int rc;
 
   TRACE("_access");
-  syslog(LOG_DEBUG, "access check on %s\n", path);
+  //syslog(LOG_DEBUG, "access check on %s\n", path);
 
   rc = stat(path, &fs);
   if (rc < 0) return -1;
@@ -293,7 +293,7 @@ int fclose(FILE *stream)
 int fflush(FILE *stream)
 {
   TRACE("fflush");
-  syslog(LOG_DEBUG, "fflush(%d)\n", stream->file);
+  //syslog(LOG_DEBUG, "fflush(%d)\n", stream->file);
   if (flush(stream->file) < 0) return -1;
   return 0;
 }
@@ -303,7 +303,7 @@ int getc(FILE *stream)
   char ch;
 
   TRACE("getc");
-  syslog(LOG_DEBUG, "getc on %p\n", stream - _iob);
+  //syslog(LOG_DEBUG, "getc on %p\n", stream - _iob);
   if (read(stream->file, &ch, 1) < 0) return EOF;
   return 0;
 }

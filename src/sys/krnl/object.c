@@ -18,6 +18,8 @@ handle_t hfreelist = NOHANDLE;
 int htabsize = 0;
 
 //
+// insert_in_waitlist
+//
 // Insert thread wait block in wait list for object
 //
 
@@ -30,6 +32,8 @@ static void insert_in_waitlist(struct object *obj, struct waitblock *wb)
   if (!obj->waitlist_head) obj->waitlist_head = wb;
 }
 
+//
+// remove_from_waitlist
 //
 // Remove thread wait block from wait list for object
 //
@@ -46,6 +50,8 @@ static void remove_from_waitlist(struct waitblock *wb)
 }
 
 //
+// thread_ready_to_run
+//
 // Test if thread is ready to run, i.e. all waitall objects on the
 // waiting list are signaled or one waitany object is signaled.
 //
@@ -58,7 +64,8 @@ static int thread_ready_to_run(struct thread *t)
   struct waitblock *wb = t->waitlist;
   while (wb)
   {
-//kprintf("check wb %p type %d key %d signaled %d\n", wb, wb->waittype, wb->waitkey, wb->object->signaled);
+    //kprintf("check wb %p type %d key %d signaled %d\n", wb, wb->waittype, wb->waitkey, wb->object->signaled);
+    
     if (wb->waittype == WAIT_ANY)
     {
       if (!wb->object || wb->object->signaled) 
@@ -82,6 +89,8 @@ static int thread_ready_to_run(struct thread *t)
 }
 
 //
+// release_thread
+//
 // Release thread and mark is as ready to run
 //
 
@@ -100,6 +109,49 @@ static void release_thread(struct thread *t)
 }
 
 //
+// enter_object
+//
+// Called when a object wait on a signaled object.
+//
+
+void enter_object(struct object *obj)
+{
+  switch (obj->type)
+  {
+    case OBJECT_THREAD:
+      // Do nothing
+      break;
+
+    case OBJECT_EVENT:
+      // Reset auto-reset event
+      if (!((struct event *) obj)->manual_reset) obj->signaled = 0;
+      break;
+
+    case OBJECT_TIMER:
+      // Do nothing
+      break;
+
+    case OBJECT_MUTEX:
+      // Set state to nonsignaled and set current thread as owner
+      obj->signaled = 0;
+      ((struct mutex *) obj)->owner = self();
+      ((struct mutex *) obj)->recursion = 1;
+      break;
+
+    case OBJECT_SEMAPHORE:
+      // Decrease count and set to nonsignaled if count reaches zero
+      if (--(((struct sem *) obj)->count) == 0) obj->signaled = 0;
+      break;
+
+    case OBJECT_FILE:
+      // Do nothing
+      break;
+  }
+}
+
+//
+// wait_for_object
+//
 // Wait for object to become signaled.
 //
 
@@ -110,37 +162,7 @@ int wait_for_object(object_t hobj, unsigned int timeout)
   // If object is signaled we does not have to wait
   if (obj->signaled)
   {
-    switch (obj->type)
-    {
-      case OBJECT_THREAD:
-	// Do nothing
-	break;
-
-      case OBJECT_EVENT:
-	// Reset auto-reset event
-	if (!((struct event *) obj)->manual_reset) obj->signaled = 0;
-	break;
-
-      case OBJECT_TIMER:
-	// Do nothing
-	break;
-
-      case OBJECT_MUTEX:
-	// Set state to nonsignaled and set current thread as owner
-	obj->signaled = 0;
-	((struct mutex *) obj)->owner = self();
-	((struct mutex *) obj)->recursion = 1;
-	break;
-
-      case OBJECT_SEMAPHORE:
-	// Decrease count and set to nonsignaled if count reaches zero
-	if (--(((struct sem *) obj)->count) == 0) obj->signaled = 0;
-	break;
-
-      case OBJECT_FILE:
-	// Do nothing
-	break;
-    }
+    enter_object(obj);
   }
   else if (obj->type == OBJECT_MUTEX && ((struct mutex *) obj)->owner == self())
   {
@@ -151,20 +173,21 @@ int wait_for_object(object_t hobj, unsigned int timeout)
     return -ETIMEOUT;
   else
   {
+    struct waitblock wb;
     struct thread *t = self();
 
     // Mark thread as waiting
     t->state = THREAD_STATE_WAITING;
 
     // Insert thread in waitlist for object
-    t->waitlist = &t->auxwb0;
-    t->auxwb0.thread = t;
-    t->auxwb0.object = obj;
-    t->auxwb0.waittype = WAIT_ALL;
-    t->auxwb0.waitkey = 0;
-    t->auxwb0.next = NULL;
+    t->waitlist = &wb;
+    wb.thread = t;
+    wb.object = obj;
+    wb.waittype = WAIT_ALL;
+    wb.waitkey = 0;
+    wb.next = NULL;
 
-    insert_in_waitlist(obj, &t->auxwb0);
+    insert_in_waitlist(obj, &wb);
 
     if (timeout == INFINITE)
     {
@@ -173,27 +196,30 @@ int wait_for_object(object_t hobj, unsigned int timeout)
 
       // Clear waitlist and return waitkey
       t->waitlist = NULL;
-      return t->auxwb0.waitkey;
+      return t->waitkey;
     }
     else
     {
-      // Initialize timer
-      init_waitable_timer(&t->auxtimer, ticks + timeout / MSECS_PER_TICK);
-      t->auxwb0.waittype = WAIT_ANY;
-      t->auxwb0.next = &t->auxwb1;
-      t->auxwb1.thread = t;
-      t->auxwb1.object = &t->auxtimer.object;
-      t->auxwb1.waittype = WAIT_ANY;
-      t->auxwb1.waitkey = -ETIMEOUT;
-      t->auxwb1.next = NULL;
+      struct waitable_timer timer;
+      struct waitblock wbtmo;
 
-      insert_in_waitlist(&t->auxtimer.object, &t->auxwb1);
+      // Initialize timer
+      init_waitable_timer(&timer, ticks + timeout / MSECS_PER_TICK);
+      wb.waittype = WAIT_ANY;
+      wb.next = &wbtmo;
+      wbtmo.thread = t;
+      wbtmo.object = &timer.object;
+      wbtmo.waittype = WAIT_ANY;
+      wbtmo.waitkey = -ETIMEOUT;
+      wbtmo.next = NULL;
+
+      insert_in_waitlist(&timer.object, &wbtmo);
 
       // Wait for object to become signaled or time out
       dispatch();
 
       // Stop timer
-      cancel_waitable_timer(&t->auxtimer);
+      cancel_waitable_timer(&timer);
 
       // Clear wait list
       t->waitlist = NULL;
@@ -207,23 +233,197 @@ int wait_for_object(object_t hobj, unsigned int timeout)
 }
 
 //
+// wait_for_all_objects
+//
 // Wait for all objects to become signaled
 //
 
 int wait_for_all_objects(struct object **objs, int count, unsigned int timeout)
 {
-  return -ENOSYS;
+  int n;
+  struct thread *t = self();
+  struct waitblock wb[MAX_WAIT_OBJECTS];
+  struct waitblock wbtmo;
+  struct waitable_timer timer;
+  int all;
+
+  if (count == 0)
+  {
+    if (timeout == INFINITE) return -EINVAL;
+    return sleep(timeout);
+  }
+
+  // Check for all objects signaled
+  all = 1;
+  for (n = 0; n < count; n++)
+  {
+    if (!objs[n]->signaled)
+    {
+      all = 0;
+      break;
+    }
+
+    if (objs[n]->type != OBJECT_MUTEX || ((struct mutex *) objs[n])->owner != self())
+    {
+      all = 0;
+      break;
+    }
+  }
+
+  // If all object are signaled enter all objects and return
+  if (all)
+  {
+    for (n = 0; n < count; n++)
+    {
+      if (objs[n]->signaled)
+	enter_object(objs[n]);
+      else if (objs[n]->type == OBJECT_MUTEX && ((struct mutex *) objs[n])->owner == self())
+      {
+	// Mutex is already owned by current thread, increase recursion count
+	((struct mutex *) objs[n])->recursion++;
+	return n;
+      }
+    }
+
+    return 0;
+  }
+
+  // Return immediately if timeout is zero
+  if (timeout == 0) return -ETIMEOUT;
+
+  // Setup waitblocks
+  for (n = 0; n < count; n++)
+  {
+    // Insert thread in waitlist for object
+    if (n == 0)
+      t->waitlist = &wb[n];
+    else
+      wb[n - 1].next = &wb[n];
+
+    wb[n].thread = t;
+    wb[n].object = objs[n];
+    wb[n].waittype = WAIT_ALL;
+    wb[n].waitkey = n;
+    wb[n].next = NULL;
+
+    insert_in_waitlist(objs[n], &wb[n]);
+  }
+
+  // Add waitable timer for timeout
+  if (timeout != INFINITE)
+  {
+    init_waitable_timer(&timer, ticks + timeout / MSECS_PER_TICK);
+    wb[count - 1].next = &wbtmo;
+    wbtmo.thread = t;
+    wbtmo.object = &timer.object;
+    wbtmo.waittype = WAIT_ANY;
+    wbtmo.waitkey = -ETIMEOUT;
+    wbtmo.next = NULL;
+
+    insert_in_waitlist(&timer.object, &wbtmo);
+  }
+
+  // Wait for all objects to become signaled or time out
+  t->state = THREAD_STATE_WAITING;
+  dispatch();
+
+  // Stop timer
+  if (timeout != INFINITE) cancel_waitable_timer(&timer);
+
+  // Clear wait list
+  t->waitlist = NULL;
+
+  // Return wait key
+  return t->waitkey;
 }
 
+//
+// wait_for_any_object
 //
 // Wait for some object to become signaled
 //
 
 int wait_for_any_object(struct object **objs, int count, unsigned int timeout)
 {
-  return -ENOSYS;
+  int n;
+  struct thread *t = self();
+  struct waitblock wb[MAX_WAIT_OBJECTS];
+  struct waitblock wbtmo;
+  struct waitable_timer timer;
+
+  if (count == 0)
+  {
+    if (timeout == INFINITE) return -EINVAL;
+    return sleep(timeout);
+  }
+
+  // Check for any object signaled
+  for (n = 0; n < count; n++)
+  {
+    if (objs[n]->signaled)
+    {
+      enter_object(objs[n]);
+      return n;
+    }
+    else if (objs[n]->type == OBJECT_MUTEX && ((struct mutex *) objs[n])->owner == self())
+    {
+      // Mutex is already owned by current thread, increase recursion count
+      ((struct mutex *) objs[n])->recursion++;
+      return n;
+    }
+  }
+
+  // Return immediately if timeout is zero
+  if (timeout == 0) return -ETIMEOUT;
+
+  // Setup waitblocks
+  for (n = 0; n < count; n++)
+  {
+    // Insert thread in waitlist for object
+    if (n == 0)
+      t->waitlist = &wb[n];
+    else
+      wb[n - 1].next = &wb[n];
+
+    wb[n].thread = t;
+    wb[n].object = objs[n];
+    wb[n].waittype = WAIT_ANY;
+    wb[n].waitkey = n;
+    wb[n].next = NULL;
+
+    insert_in_waitlist(objs[n], &wb[n]);
+  }
+
+  // Add waitable timer for timeout
+  if (timeout != INFINITE)
+  {
+    init_waitable_timer(&timer, ticks + timeout / MSECS_PER_TICK);
+    wb[count - 1].next = &wbtmo;
+    wbtmo.thread = t;
+    wbtmo.object = &timer.object;
+    wbtmo.waittype = WAIT_ANY;
+    wbtmo.waitkey = -ETIMEOUT;
+    wbtmo.next = NULL;
+
+    insert_in_waitlist(&timer.object, &wbtmo);
+  }
+
+  // Wait for any object to become signaled or time out
+  t->state = THREAD_STATE_WAITING;
+  dispatch();
+
+  // Stop timer
+  if (timeout != INFINITE) cancel_waitable_timer(&timer);
+
+  // Clear wait list
+  t->waitlist = NULL;
+
+  // Return wait key
+  return t->waitkey;
 }
 
+//
+// init_object
 //
 // Initialize object
 //
@@ -237,6 +437,8 @@ void init_object(struct object *o, int type)
   o->waitlist_tail = NULL;
 }
 
+//
+// close_object
 //
 // Close object
 //
@@ -278,6 +480,8 @@ int close_object(struct object *o)
 }
 
 //
+// init_thread
+//
 // Initialize thread object
 //
 
@@ -292,6 +496,8 @@ void init_thread(struct thread *t, int priority)
 }
 
 //
+// init_event
+//
 // Initialize event object
 //
 
@@ -302,6 +508,8 @@ void init_event(struct event *e, int manual_reset, int initial_state)
   e->object.signaled = initial_state;
 }
 
+//
+// pulse_event
 //
 // Pulse event
 //
@@ -335,6 +543,8 @@ void pulse_event(struct event *e)
   e->object.signaled = 0;
 }
 
+//
+// set_event
 //
 // Set event
 //
@@ -370,6 +580,8 @@ void set_event(struct event *e)
 }
 
 //
+// reset_event
+//
 // Reset event
 //
 
@@ -379,6 +591,8 @@ void reset_event(struct event *e)
   e->object.signaled = 0;
 }
 
+//
+// init_sem
 //
 // Initialize semaphore object
 //
@@ -390,6 +604,8 @@ void init_sem(struct sem *s, unsigned int initial_count)
   s->object.signaled = (s->count > 0);
 }
 
+//
+// release_sem
 //
 // Release 'count' resouces for the semaphore
 //
@@ -438,6 +654,8 @@ unsigned int release_sem(struct sem *s, unsigned int count)
 }
 
 //
+// set_sem
+//
 // Set semaphore resource count
 //
 
@@ -485,6 +703,8 @@ unsigned int set_sem(struct sem *s, unsigned int count)
 }
 
 //
+// init_mutex
+//
 // Initialize mutex object
 //
 
@@ -505,6 +725,8 @@ void init_mutex(struct mutex *m, int owned)
   }
 }
 
+//
+// release_mutex
 //
 // Release mutex
 //
@@ -544,6 +766,8 @@ void release_mutex(struct mutex *m)
 }
 
 //
+// expire_waitable_timer
+//
 // Expire waitable timer
 //
 
@@ -567,6 +791,8 @@ static void expire_waitable_timer(void *arg)
 }
 
 //
+// init_waitable_timer
+//
 // Initialize timer
 //
 
@@ -589,6 +815,8 @@ void init_waitable_timer(struct waitable_timer *t, unsigned int expires)
 }
 
 //
+// modify_waitable_timer
+//
 // Modify timer
 //
 
@@ -597,6 +825,8 @@ void modify_waitable_timer(struct waitable_timer *t, unsigned int expires)
   mod_timer(&t->timer, expires);
 }
 
+//
+// cancel_waitable_timer
 //
 // Cancel timer
 //
@@ -607,17 +837,21 @@ void cancel_waitable_timer(struct waitable_timer *t)
 }
 
 //
+// sleep
+//
 // Sleep for a number of milliseconds
 //
 
-void sleep(unsigned int millisecs)
+int sleep(unsigned int millisecs)
 {
   struct waitable_timer timer;
 
   init_waitable_timer(&timer, ticks + millisecs / MSECS_PER_TICK);
-  wait_for_object(&timer, INFINITE);
+  return wait_for_object(&timer, INFINITE);
 }
 
+//
+// halloc
 //
 // Allocate handle
 //
@@ -653,6 +887,8 @@ handle_t halloc(struct object *o)
 }
 
 //
+// hfree
+//
 // Free handle
 //
 
@@ -680,6 +916,8 @@ int hfree(handle_t h)
 }
 
 //
+// olock
+//
 // Lock object
 //
 
@@ -697,6 +935,8 @@ struct object *olock(handle_t h, int type)
   return o;
 }
 
+//
+// orel
 //
 // Release object
 //

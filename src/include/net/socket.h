@@ -41,6 +41,7 @@
 #define SOCKREQ_SEND          4
 #define SOCKREQ_SENDTO        5
 #define SOCKREQ_CLOSE         6
+#define SOCKREQ_WAITRECV      7
 
 struct sockreq;
 

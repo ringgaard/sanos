@@ -112,10 +112,6 @@ struct thread
 
   struct thread *next_waiter;
 
-  struct waitable_timer auxtimer;
-  struct waitblock auxwb0;
-  struct waitblock auxwb1;
-
   struct fpu *fpustate;
   struct context *ctxt;
   void *uctxt;
@@ -150,7 +146,7 @@ krnlapi void cancel_waitable_timer(struct waitable_timer *t);
 krnlapi int wait_for_object(object_t hobj, unsigned int timeout);
 krnlapi int wait_for_all_objects(struct object **objs, int count, unsigned int timeout);
 krnlapi int wait_for_any_object(struct object **objs, int count, unsigned int timeout);
-krnlapi void sleep(unsigned int millisecs);
+krnlapi int sleep(unsigned int millisecs);
 
 krnlapi handle_t halloc(struct object *o);
 krnlapi int hfree(handle_t h);

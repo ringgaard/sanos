@@ -1058,7 +1058,7 @@ static int sys_waitall(char *params)
 
   if (count < 0 || count > MAX_WAIT_OBJECTS) return -EINVAL;
 
-  if (lock_buffer(h, count * sizeof(handle_t *)) < 0)
+  if ((!h && count > 0) || lock_buffer(h, count * sizeof(handle_t *)) < 0)
   {
     unlock_buffer(params, 12);
     return -EFAULT;
@@ -1099,7 +1099,7 @@ static int sys_waitany(char *params)
 
   if (count < 0 || count > MAX_WAIT_OBJECTS) return -EINVAL;
 
-  if (lock_buffer(h, count * sizeof(handle_t *)) < 0)
+  if ((!h && count > 0) || lock_buffer(h, count * sizeof(handle_t *)) < 0)
   {
     unlock_buffer(params, 12);
     return -EFAULT;
@@ -1489,15 +1489,16 @@ static int sys_setprio(char *params)
 static int sys_sleep(char *params)
 {
   int millisecs;
+  int rc;
 
   if (lock_buffer(params, 4) < 0) return -EFAULT;
 
   millisecs = *(int *) params;
 
-  sleep(millisecs);
+  rc = sleep(millisecs);
 
   unlock_buffer(params, 4);
-  return 0;
+  return rc;
 }
 
 static int sys_time(char *params)

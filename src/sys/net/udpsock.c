@@ -68,7 +68,7 @@ static int udpsock_bind(struct socket *s, struct sockaddr *name, int namelen)
   if (!name) return -EINVAL;
   if (namelen < sizeof(struct sockaddr_in)) return -EINVAL;
   sin = (struct sockaddr_in *) name;
-  if (sin->sin_family != AF_INET) return -EPROTONOSUPPORT;
+  if (sin->sin_family != AF_INET && sin->sin_family != AF_UNSPEC) return -EPROTONOSUPPORT;
 
   if (!s->udp.pcb)
   {
@@ -87,13 +87,15 @@ static int udpsock_bind(struct socket *s, struct sockaddr *name, int namelen)
 static int udpsock_close(struct socket *s)
 {
   struct sockreq *req;
+  struct sockreq *next;
 
   s->state = SOCKSTATE_CLOSED;
   req = s->waithead;
   while (req)
   {
+    next = req->next;
     release_socket_request(req, -EABORT);
-    req = req->next;
+    req = next;
   }
 
   if (s->udp.pcb)
@@ -115,7 +117,7 @@ static int udpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
   if (!name) return -EINVAL;
   if (namelen < sizeof(struct sockaddr_in)) return -EINVAL;
   sin = (struct sockaddr_in *) name;
-  if (sin->sin_family != AF_INET) return -EPROTONOSUPPORT;
+  if (sin->sin_family != AF_INET && sin->sin_family != AF_UNSPEC) return -EPROTONOSUPPORT;
   if (s->state == SOCKSTATE_CLOSED) return -EINVAL;
 
   if (!s->udp.pcb)

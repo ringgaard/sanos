@@ -6,18 +6,12 @@
 // Windows Socket Library
 //
 
+#define TRACEAPI
+
 #include <os.h>
 #include <win32.h>
 #include <string.h>
 #include <inifile.h>
-
-//#define TRACEAPI
-
-#ifdef TRACEAPI
-#define TRACE(s) print_string(s " called\n");
-#else
-#define TRACE(s)
-#endif
 
 //#define sockapi __declspec(dllexport)
 #define sockapi
@@ -65,14 +59,32 @@ sockapi int __stdcall winsock_send(SOCKET s, const char *buf, int len, int flags
 
 sockapi int __stdcall winsock_listen(SOCKET s, int backlog)
 {
+  int rc;
+
   TRACE("listen");
-  return listen(s, backlog);
+  rc = listen(s, backlog);
+  if (rc < 0)
+  {
+    syslog(LOG_DEBUG, "error %d in listen\n", rc);
+    dbgbreak();
+  }
+
+  return rc;
 }
 
 sockapi int __stdcall winsock_bind(SOCKET s, const struct sockaddr *name, int namelen)
 {
+  int rc;
+
   TRACE("bind");
-  return bind(s, name, namelen);
+  rc = bind(s, name, namelen);
+  if (rc < 0)
+  {
+    syslog(LOG_DEBUG, "error %d in bind\n", rc);
+    dbgbreak();
+  }
+
+  return rc;
 }
 
 sockapi SOCKET __stdcall winsock_accept(SOCKET s, struct sockaddr *addr, int *addrlen)
@@ -95,9 +107,22 @@ sockapi int __stdcall winsock_sendto(SOCKET s, const char *buf, int len, int fla
 
 sockapi int __stdcall winsock_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timeval *timeout)
 {
+  unsigned int millisecs;
+  int rc;
+
   TRACE("select");
-  panic("winsock select not implemented");
-  return 0;
+
+  if (!readfds || readfds->fd_count != 1 || !timeout || writefds || exceptfds) panic("winsock select not implemented");
+
+  millisecs = timeout->tv_sec * 1000 + timeout->tv_usec / 1000;
+
+  rc = ioctl(readfds->fd_array[0], IOCTL_SOCKWAIT_RECV, &millisecs, 4);
+
+  if (rc == -ETIMEOUT) return 0;
+  if (rc == -EABORT) return -2;
+  if (rc < 0) return -1;
+
+  return 1;
 }
 
 sockapi int __stdcall winsock_connect(SOCKET s, const struct sockaddr *name, int namelen)

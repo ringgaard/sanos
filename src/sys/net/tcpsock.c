@@ -60,7 +60,9 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 {
   struct socket *s = arg;
   struct sockreq *req;
+  struct sockreq *next;
   int bytes;
+  int waitrecv;
 
   if (p)
   {
@@ -83,8 +85,9 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
     req = s->waithead;
     while (req)
     {
-      if (req->type == SOCKREQ_RECV) release_socket_request(req, 0);
-      req = req->next;
+      next = req->next;
+      if (req->type == SOCKREQ_RECV || req->type == SOCKREQ_WAITRECV) release_socket_request(req, 0);
+      req = next;
     }
 
     return 0;
@@ -96,13 +99,30 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
     if (!p) return 0;
 
     req = s->waithead;
+    waitrecv = 0;
+
     while (req)
     {
       if (req->type == SOCKREQ_RECV) break;
+      if (req->type == SOCKREQ_WAITRECV) waitrecv++;
       req = req->next;
     }
 
-    if (!req) return 0;
+    if (!req) 
+    {
+      if (waitrecv)
+      {
+	req = s->waithead;
+	while (req)
+	{
+	  next = req->next;
+	  if (req->type == SOCKREQ_WAITRECV) release_socket_request(req, 0);
+	  req = next;
+	}
+      }
+
+      return 0;
+    }
 
     bytes = req->len;
     if (bytes > p->len) bytes = p->len;
@@ -174,11 +194,13 @@ static void err_tcp(void *arg, err_t err)
 {
   struct socket *s = arg;
   struct sockreq *req = s->waithead;
+  struct sockreq *next;
 
   while (req)
   {
+    next = req->next;
     release_socket_request(req, err);
-    req = req->next;
+    req = next;
   }
 }
 
@@ -257,7 +279,7 @@ static int tcpsock_bind(struct socket *s, struct sockaddr *name, int namelen)
   if (!name) return -EINVAL;
   if (namelen < sizeof(struct sockaddr_in)) return -EINVAL;
   sin = (struct sockaddr_in *) name;
-  if (sin->sin_family != AF_INET) return -EPROTONOSUPPORT;
+  if (sin->sin_family != AF_INET && sin->sin_family != AF_UNSPEC) return -EPROTONOSUPPORT;
 
   if (s->state != SOCKSTATE_UNBOUND) return -EINVAL;
 
@@ -278,13 +300,15 @@ static int tcpsock_close(struct socket *s)
 {
   int n;
   struct sockreq *req;
+  struct sockreq *next;
 
   s->state = SOCKSTATE_CLOSED;
   req = s->waithead;
   while (req)
   {
+    next = req->next;
     release_socket_request(req, -EABORT);
-    req = req->next;
+    req = next;
   }
 
   if (s->tcp.pcb)
@@ -325,7 +349,7 @@ static int tcpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
   if (!name) return -EINVAL;
   if (namelen < sizeof(struct sockaddr_in)) return -EINVAL;
   sin = (struct sockaddr_in *) name;
-  if (sin->sin_family != AF_INET) return -EINVAL;
+  if (sin->sin_family != AF_INET && sin->sin_family != AF_UNSPEC) return -EPROTONOSUPPORT;
 
   if (s->state != SOCKSTATE_BOUND && s->state != SOCKSTATE_UNBOUND) return -EINVAL;
 
@@ -391,7 +415,28 @@ static int tcpsock_getsockopt(struct socket *s, int level, int optname, char *op
 
 static int tcpsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
 {
-  return -ENOSYS;
+  unsigned int timeout;
+  int rc;
+  struct sockreq req;
+  
+  switch (cmd)
+  {
+    case IOCTL_SOCKWAIT_RECV:
+      if (!data || size != 4) return -EFAULT;
+      timeout = *(unsigned int *) data;
+      if (s->state != SOCKSTATE_CONNECTED) return -ECONN;
+      if (s->tcp.recvhead != NULL) return 0;
+
+      rc = submit_socket_request(s, &req, SOCKREQ_WAITRECV, NULL, 0, timeout);
+      if (rc < 0) return rc;
+
+      break;
+
+    default:
+      return -ENOSYS;
+  }
+
+  return 0;
 }
 
 static int tcpsock_listen(struct socket *s, int backlog)

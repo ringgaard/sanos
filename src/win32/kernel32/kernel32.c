@@ -182,14 +182,13 @@ HANDLE WINAPI CreateSemaphoreA
 {
   TRACE("CreateSemaphoreA");
   if (lpName != NULL) panic("named semaphores not supported");
-  syslog(LOG_DEBUG, "create sem with (%d,%d)\n", lInitialCount, lMaximumCount);
   return (HANDLE) mksem(lInitialCount);
 }
 
 VOID WINAPI DebugBreak(VOID)
 {
   TRACE("DebugBreak");
-  panic("DebugBreak not implemented");
+  dbgbreak();
 }
 
 BOOL WINAPI DeleteFileA
@@ -322,7 +321,7 @@ HANDLE WINAPI FindFirstFileA
   char fn[MAXPATH];
 
   TRACE("FindFirstFileA");
-  syslog(LOG_DEBUG | LOG_AUX, "FindFirstFile %s\n", lpFileName);
+  //syslog(LOG_DEBUG | LOG_AUX, "FindFirstFile %s\n", lpFileName);
   p = (char *) lpFileName;
   while (*p != 0 && *p != '*' && *p != '?') p++;
   
@@ -361,7 +360,7 @@ HANDLE WINAPI FindFirstFileA
 
     while (readdir(finddata->fhandle, &dirent, 1) > 0)
     {
-      syslog(LOG_DEBUG | LOG_AUX, "match %s with %s\n", dirent.name, finddata->mask);
+      //syslog(LOG_DEBUG | LOG_AUX, "match %s with %s\n", dirent.name, finddata->mask);
       if (like(dirent.name, finddata->mask))
       {
 	strcpy(fn, finddata->dir);
@@ -420,7 +419,7 @@ BOOL WINAPI FindNextFileA
 
     while (readdir(finddata->fhandle, &dirent, 1) > 0)
     {
-      syslog(LOG_DEBUG | LOG_AUX, "match next %s with %s\n", dirent.name, finddata->mask);
+      //syslog(LOG_DEBUG | LOG_AUX, "match next %s with %s\n", dirent.name, finddata->mask);
       if (like(dirent.name, finddata->mask))
       {
 	strcpy(fn, finddata->dir);
@@ -582,7 +581,7 @@ DWORD WINAPI GetModuleFileNameA
 
   TRACE("GetModuleFileNameA");
   rc = getmodpath((hmodule_t) hModule, lpFilename, nSize);
-  syslog(LOG_DEBUG, "Module filename for %p is %s\n", hModule, lpFilename);
+  //syslog(LOG_DEBUG, "Module filename for %p is %s\n", hModule, lpFilename);
   return rc;
 }
 
@@ -1188,7 +1187,7 @@ LPVOID WINAPI VirtualAlloc
 )
 {
   TRACE("VirtualAlloc");
-  syslog(LOG_DEBUG, "VirtualAlloc %d bytes (%p,%p)\n", dwSize, flAllocationType, flProtect);
+  //syslog(LOG_DEBUG, "VirtualAlloc %d bytes (%p,%p)\n", dwSize, flAllocationType, flProtect);
   return mmap(lpAddress, dwSize, flAllocationType, flProtect);
 }
 
@@ -1228,10 +1227,19 @@ DWORD WINAPI WaitForMultipleObjects
   DWORD dwMilliseconds
 )
 {
+  int rc;
+
   TRACE("WaitForMultipleObjects");
-  panic("WaitForMultipleObjects not implemented");
-  return 0;
-  //return wait_for_objects((handle_t *) lpHandles, nCount, bWaitAll, dwMilliseconds);
+
+  if (bWaitAll)
+    rc = waitall((handle_t *) lpHandles, nCount, dwMilliseconds);
+  else
+    rc = waitany((handle_t *) lpHandles, nCount, dwMilliseconds);
+
+  if (rc == -ETIMEOUT) return WAIT_TIMEOUT;
+  if (rc < 0) return WAIT_FAILED;
+
+  return rc;
 }
 
 DWORD WINAPI WaitForSingleObject
@@ -1240,8 +1248,15 @@ DWORD WINAPI WaitForSingleObject
   DWORD dwMilliseconds
 )
 {
+  int rc;
+
   TRACE("WaitForSingleObject");
-  return wait((handle_t) hHandle, dwMilliseconds);
+  rc = wait((handle_t) hHandle, dwMilliseconds);
+
+  if (rc == -ETIMEOUT) return WAIT_TIMEOUT;
+  if (rc < 0) return WAIT_FAILED;
+
+  return rc;
 }
 
 int WINAPI WideCharToMultiByte

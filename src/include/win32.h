@@ -13,8 +13,11 @@
 
 #define CONST const
 
-#define MAX_PATH          260
+#define MAX_PATH             260
 #define INVALID_HANDLE_VALUE ((HANDLE) -1)
+
+#define WAIT_TIMEOUT         0x00000102L
+#define WAIT_FAILED          0xFFFFFFFFL
 
 #define THREAD_PRIORITY_IDLE            -15
 #define THREAD_PRIORITY_LOWEST          -2

@@ -233,8 +233,8 @@ int dfs_open(struct file *filp, char *name)
 
     case O_CREAT | O_EXCL:
     case O_CREAT | O_TRUNC | O_EXCL:
-      // Create new file, unlink existing file if it exists
-      rc = create_new(fs, name, len, &inode);
+      // Create new file, fail if it exists
+      rc = create_always(fs, name, len, NOINODE, &inode);
       filp->flags |= F_MODIFIED;
       break;
 
@@ -246,8 +246,8 @@ int dfs_open(struct file *filp, char *name)
       break;
 
     case O_CREAT | O_TRUNC:
-      // Create new file, fail if it exists
-      rc = create_always(fs, name, len, NOINODE, &inode);
+      // Create new file, unlink existing file if it exists
+      rc = create_new(fs, name, len, &inode);
       filp->flags |= F_MODIFIED;
       break;
 

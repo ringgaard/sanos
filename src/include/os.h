@@ -337,6 +337,8 @@ typedef struct critsect *critsect_t;
 // Sockets
 //
 
+#define IOCTL_SOCKWAIT_RECV      1024
+
 struct in_addr 
 {
   union 
@@ -391,7 +393,10 @@ struct servent
 #define SOCK_DGRAM       2
 #define SOCK_RAW         3
 
+#define AF_UNSPEC        0
 #define AF_INET          2
+
+#define PF_UNSPEC        AF_UNSPEC
 #define PF_INET          AF_INET
 
 #define IPPROTO_IP       0
