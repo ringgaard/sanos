@@ -219,8 +219,8 @@ void init_pfdb()
   struct pageframe *pf;
 
   // Calculates number of pages needed for page frame database
-  memend = syspage->bootparams.memend;
-  heap = syspage->bootparams.heapend;
+  memend = syspage->ldrparams.memend;
+  heap = syspage->ldrparams.heapend;
   pfdbpages = PAGES((memend / PAGESIZE) * sizeof(struct pageframe));
   if ((pfdbpages + 2) * PAGESIZE + heap >= memend) panic("not enough memory for page table database");
 
@@ -239,7 +239,7 @@ void init_pfdb()
   }
 
   // Initialize page frame database
-  maxmem = syspage->bootparams.memend / PAGESIZE;
+  maxmem = syspage->ldrparams.memend / PAGESIZE;
   totalmem = maxmem - (1024 - 640) * K / PAGESIZE;
   freemem = 0;
 
@@ -250,10 +250,10 @@ void init_pfdb()
   for (i = 0; i < 640 * K / PAGESIZE; i++) pfdb[i].tag = 'FREE';
 
   // Add interval [640K:1MB] as reserved pages
-  for (i = 640 * K / PAGESIZE; i < syspage->bootparams.heapstart / PAGESIZE; i++) pfdb[i].tag = 'RESV';
+  for (i = 640 * K / PAGESIZE; i < syspage->ldrparams.heapstart / PAGESIZE; i++) pfdb[i].tag = 'RESV';
 
   // Add interval [heapstart:heap] to pfdb as page table pages
-  for (i = syspage->bootparams.heapstart / PAGESIZE; i < heap / PAGESIZE; i++) pfdb[i].tag = 'PTAB';
+  for (i = syspage->ldrparams.heapstart / PAGESIZE; i < heap / PAGESIZE; i++) pfdb[i].tag = 'PTAB';
 
   // Add interval [heap:maxmem] as free pages
   for (i = heap / PAGESIZE; i < maxmem; i++) pfdb[i].tag = 'FREE';
@@ -265,7 +265,7 @@ void init_pfdb()
   set_pageframe_tag(pfdb, pfdbpages * PAGESIZE, 'PFDB');
   set_pageframe_tag(syspage, PAGESIZE, 'SYS');
   set_pageframe_tag(self(), TCBSIZE, 'TCB');
-  set_pageframe_tag((void *) INITRD_ADDRESS, syspage->bootparams.initrd_size, 'BOOT');
+  set_pageframe_tag((void *) INITRD_ADDRESS, syspage->ldrparams.initrd_size, 'BOOT');
 
   // Insert all free pages into free list
   pf = pfdb + maxmem;

@@ -191,7 +191,7 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path)
     }
 
     // Return path if file exists
-    if (stat(path, NULL) > 0) return basename;
+    if (stat(path, NULL) >= 0) return basename;
   }
 
   return NULL;

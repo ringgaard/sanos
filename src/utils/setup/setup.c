@@ -105,6 +105,7 @@ int install_loader(char *devname, char *loader, char *krnlopts)
   int rc;
   int blocksize;
   int size;
+  char *image;
 
   sprintf(str, "/dev/%s", devname);
   printf("Installing loader %s on %s\n", loader, str);
@@ -113,11 +114,18 @@ int install_loader(char *devname, char *loader, char *krnlopts)
   dev = open(str, O_RDWR | O_BINARY);
   if (dev < 0) return dev;
 
-  // Open loader and get loader size
+  // Read loader image
   ldr = open(loader, O_BINARY);
   if (ldr < 0) return ldr;
 
   size = fstat(ldr, NULL);
+  image = (char *) malloc(size);
+  if (!image) return -ENOMEM;
+
+  rc = read(ldr, image, size);
+  if (rc < 0) return rc;
+
+  close(ldr);
 
   // Read super block from device
   rc = lseek(dev, 1 * SECTORSIZE, SEEK_SET);
@@ -138,26 +146,33 @@ int install_loader(char *devname, char *loader, char *krnlopts)
     return -EIO;
   }
 
-  // Install loader
+  // Patch kernel options into image
+  if (krnlopts)
+  {
+    int optspos;
+
+    if (strlen(krnlopts) > KRNLOPTS_LEN - 1)
+    {
+      printf("Kernel options too long\n");
+      return -EBUF;
+    }
+    
+    optspos = *(unsigned short *) (image + KRNLOPTS_POSOFS);
+    strcpy(image + optspos, krnlopts);
+  }
+
+  // Install loader into image
   rc = lseek(dev, super->first_reserved_block * blocksize, SEEK_SET);
   if (rc < 0) return rc;
 
   for (n = 0; n < size / blocksize; n++)
   {
-    rc = read(ldr, block, blocksize);
-    if (rc < 0) return rc;
-
-    if (n * blocksize <= KRNLOPTS_POS && (n + 1) * blocksize > KRNLOPTS_POS)
-    {
-      memcpy(block + (KRNLOPTS_POS - n * blocksize), krnlopts, strlen(krnlopts));
-    }
-
-    rc = write(dev, block, blocksize);
+    rc = write(dev, image + n * blocksize, blocksize);
     if (rc < 0) return rc;
   }
 
   close(dev);
-  close(ldr);
+  free(image);
 
   return 0;
 }

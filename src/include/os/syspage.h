@@ -68,26 +68,71 @@
 #define SEL_RPL0    0
 #define SEL_RPL3    3
 
-#define KRNLOPTS_POS         0x0E00
-#define KRNLOPTS_LEN         0x0200
+#define KRNLOPTS_POSOFS      0x1A   // Offset in os loader for kernel option address
+#define KRNLOPTS_LEN         128    // Maximum length of kernel options
+
+// APM install check flags
+
+#define APM_16_BIT_SUPPORT	0x0001
+#define APM_32_BIT_SUPPORT	0x0002
+#define APM_IDLE_SLOWS_CLOCK	0x0004
+#define APM_BIOS_DISABLED      	0x0008
+#define APM_BIOS_DISENGAGED     0x0010
+
+// APM BIOS parameter block
+
+struct apmparams
+{
+  unsigned short version;      // APM version (BCD format)
+  unsigned short flags;        // APM flags from install check
+  unsigned short cseg32;       // APM 32-bit code segment (real mode segment base address)
+  unsigned short entry;        // Offset of the entry point into the APM BIOS
+  unsigned short cseg16;       // APM 16-bit code segment (real mode segment base address)
+  unsigned short dseg;         // APM data segment (real mode segment base address)
+  unsigned short cseg32len;    // APM BIOS 32-bit code segment length
+  unsigned short cseg16len;    // APM BIOS 16-bit code segment length
+  unsigned short dseglen;      // APM BIOS data segment length
+};
+
+// Boot parameter block
 
 struct bootparams
 {
-  unsigned long heapstart;
-  unsigned long heapend;
-  unsigned long memend;
-  int bootdrv;
-  int bootpart;
-  unsigned long initrd_size;
+  int bootdrv;                 // Boot drive:
+                               //  0x00 First floppy
+                               //  0x01 Second floppy
+                               //  0x80 First harddisk
+                               //  0x81 Second harddisk
+                               //  0xFD CD-ROM (1.44 MB Floppy Emulation)
+                               //  0xFE PXE netboot
+                               //  0xFF CD-ROM (No emulation)
+  char *bootimg;               // Physical address of boot image
+  char krnlopts[KRNLOPTS_LEN]; // Kernel options (set by mkdfs)
+  struct apmparams apm;        // APM BIOS parameters
 };
+
+// Loader parameter block
+
+struct ldrparams
+{
+  unsigned long heapstart;	// Start of boot heap
+  unsigned long heapend;	// End of boot heap
+  unsigned long memend;		// End of RAM
+  int bootdrv;			// Boot drive
+  int bootpart;			// Boot partition
+  unsigned long initrd_size;	// Initial RAM disk size
+};
+
+// System page
 
 struct syspage
 {
-  struct tss tss;
-  struct segment gdt[MAXGDT];
-  struct gate idt[MAXIDT];
-  struct bootparams bootparams;
-  unsigned char biosdata[256];
+  struct tss tss;		// Task State Segment
+  struct segment gdt[MAXGDT];	// Global Descriptor Table
+  struct gate idt[MAXIDT];	// Interrupt Descriptor Table
+  struct bootparams bootparams;	// Boot parameter block
+  struct ldrparams ldrparams;	// Loader parameter block
+  unsigned char biosdata[256];	// Copy of BIOS data area
 };
 
 #ifndef OSLDR

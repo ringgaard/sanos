@@ -118,7 +118,7 @@ int create_initrd()
   dev_t devno;
   int size;
 
-  size = syspage->bootparams.initrd_size;
+  size = syspage->ldrparams.initrd_size;
   if (size == 0) return 0;
 
   rd = kmalloc(sizeof(struct ramdisk));

@@ -294,6 +294,13 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
   init_handles();
   init_syscall();
 
+  if (syspage->bootparams.apm.version != 0)
+  {
+    struct apmparams *apm = &syspage->bootparams.apm;
+
+    kprintf("apm: BIOS version %d.%d Flags 0x%02x\n", ((apm->version >> 8) & 0xff), (apm->version & 0xff), apm->flags);
+  }
+
   // Enable interrupts and calibrate delay
   __asm { sti };
   calibrate_delay();
@@ -360,20 +367,20 @@ void main(void *arg)
   init_cdfs();
  
   // Open boot device
-  if ((syspage->bootparams.bootdrv & 0xF0) == 0xF0)
+  if ((syspage->ldrparams.bootdrv & 0xF0) == 0xF0)
   {
     create_initrd();
     strcpy(bootdev, "initrd");
   }
-  else if (syspage->bootparams.bootdrv & 0x80)
+  else if (syspage->ldrparams.bootdrv & 0x80)
   {
-    if (syspage->bootparams.bootpart == -1)
-      sprintf(bootdev, "hd%c", '0' + (syspage->bootparams.bootdrv & 0x7F));
+    if (syspage->ldrparams.bootpart == -1)
+      sprintf(bootdev, "hd%c", '0' + (syspage->ldrparams.bootdrv & 0x7F));
     else
-      sprintf(bootdev, "hd%c%c", '0' + (syspage->bootparams.bootdrv & 0x7F), 'a' + syspage->bootparams.bootpart);
+      sprintf(bootdev, "hd%c%c", '0' + (syspage->ldrparams.bootdrv & 0x7F), 'a' + syspage->ldrparams.bootpart);
   }
   else
-    sprintf(bootdev, "fd%c", '0' + (syspage->bootparams.bootdrv & 0x7F));
+    sprintf(bootdev, "fd%c", '0' + (syspage->ldrparams.bootdrv & 0x7F));
 
   kprintf("mount: root on device %s\n", bootdev);
 

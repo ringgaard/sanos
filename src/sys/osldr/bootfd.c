@@ -42,7 +42,19 @@ void panic(char *msg);
 
 #define SECTORSIZE            512
 #define NUMDRIVES             4
-#define BOOT_DMA_BUF          0x90000
+
+//
+// Place DMA buffer between boot image and os loader. This gives the following
+// low memory layout:
+//
+// 0x00000000 BIOS data area
+// 0x00007C00 Boot sector + boot disk image (up to 512K)
+// 0x00088000 32K DMA buffer
+// 0x00090000 OS loader
+// 0x000A0000 Start of BIOS ROM area and top of stack
+//
+
+#define BOOT_DMA_BUF          0x88000
 
 //
 // FDC I/O ports

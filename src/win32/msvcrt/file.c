@@ -79,11 +79,7 @@ int _pipe(int *phandles, unsigned int psize, int textmode)
   TRACE("_pipe");
 
   rc = pipe(phandles);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return 0;
 }
@@ -95,11 +91,7 @@ int _open(const char *filename, int oflag)
   TRACE("_open");
   //syslog(LOG_DEBUG, "_open(%s,%p)\n", filename, oflag);
   rc = open(filename, oflag, S_IREAD | S_IWRITE);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return rc;
 }
@@ -117,11 +109,7 @@ int _close(int handle)
   }
 
   rc = close(handle);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return rc;
 }
@@ -132,11 +120,7 @@ int _commit(int handle)
 
   TRACE("_commit");
   rc = flush(handle);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return rc;
 }
@@ -147,11 +131,7 @@ int _read(int handle, void *buffer, unsigned int count)
 
   TRACE("_read");
   rc = read(handle, buffer, count);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return rc;
 }
@@ -163,11 +143,7 @@ int _write(int handle, const void *buffer, unsigned int count)
   TRACE("_write");
   
   rc = write(handle, buffer, count);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return rc;
 }
@@ -178,11 +154,7 @@ int _setmode(int handle, int mode)
 
   TRACE("_setmode");
   rc = setmode(handle, mode);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return 0;
 }
@@ -196,11 +168,7 @@ int _stat(const char *path, struct _stat *buffer)
   //syslog(LOG_DEBUG, "stat on %s\n", path);
 
   rc = stat64(path, &fs);
-  if (rc < 0) 
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   if (buffer)
   {
@@ -225,11 +193,7 @@ __int64 _stati64(const char *path, struct _stati64 *buffer)
   //syslog(LOG_DEBUG, "stat on %s\n", path);
 
   rc = stat64(path, &fs);
-  if (rc < 0) 
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   if (buffer)
   {
@@ -252,11 +216,7 @@ int _fstat(int handle, struct _stat *buffer)
 
   TRACE("_fstat");
   rc = fstat64(handle, &fs);
-  if (rc < 0) 
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1; 
 
   if (buffer)
   {
@@ -278,11 +238,7 @@ __int64 _fstati64(int handle, struct _stati64 *buffer)
 
   TRACE("_fstati64");
   rc = fstat64(handle, &fs);
-  if (rc < 0) 
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1; 
 
   if (buffer)
   {
@@ -303,11 +259,7 @@ loff_t _lseek(int f, loff_t offset, int origin)
 
   TRACE("_lseek");
   rc = lseek(f, offset, origin);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return rc;
 }
@@ -318,11 +270,7 @@ __int64 _lseeki64(int handle, __int64 offset, int origin)
 
   TRACE("_lseeki64");
   rc = (int) lseek64(handle, offset, origin);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return rc;
 }
@@ -333,11 +281,7 @@ int _open_osfhandle(long osfhandle, int flags)
 
   TRACE("_open_osfhandle");
   rc = dup(osfhandle);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return rc;
 }
@@ -348,11 +292,7 @@ int _dup2(int handle1, int handle2)
 
   TRACE("_dup2");
   rc = dup2(handle1, handle2);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return rc;
 }
@@ -392,11 +332,7 @@ char *_fullpath(char *abspath, const char *relpath, size_t maxlen)
   abspath[1] = ':';
 
   rc = canonicalize(relpath, abspath + 2, maxlen - 2);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return NULL;
-  }
+  if (rc < 0) return NULL;
 
   return abspath;
 }
@@ -407,11 +343,7 @@ int _unlink(const char *filename)
 
   TRACE("_unlink");
   rc = unlink(filename);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return rc;
 }
@@ -422,11 +354,7 @@ int remove(const char *path)
 
   TRACE("_remove");
   rc = unlink(path);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return rc;
 }
@@ -437,11 +365,7 @@ int _rename(const char *oldname, const char *newname)
 
   TRACE("_rename");
   rc = rename(oldname, newname);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return rc;
 }
@@ -453,11 +377,7 @@ int _access(const char *path, int mode)
   TRACE("_access");
 
   rc = access(path, mode);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return 0;
 }
@@ -470,11 +390,7 @@ int _chmod(const char *filename, int pmode)
 
   // Just check that file exists
   rc = stat(filename, NULL);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return 0;
 }
@@ -485,11 +401,7 @@ int _mkdir(const char *dirname)
 
   TRACE("_mkdir");
   rc = mkdir(dirname, 0666);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return rc;
 }
@@ -705,11 +617,7 @@ int fclose(FILE *stream)
   TRACE("fclose");
   rc = close(stream->file);
   free_stream(stream);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return rc;
 }
@@ -723,7 +631,6 @@ int fflush(FILE *stream)
   if (rc < 0)
   {
     stream->flag |= _IOERR;
-    errno = -rc;
     return -1;
   }
 
@@ -743,7 +650,6 @@ size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
   if (rc < 0)
   {
     stream->flag |= _IOERR;
-    errno = -rc;
     return 0;
   }
 
@@ -765,7 +671,6 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
   if (rc < 0)
   {
     stream->flag |= _IOERR;
-    errno = -rc;
     return 0;
   }
 
@@ -792,11 +697,7 @@ int fseek(FILE *stream, long offset, int whence)
   TRACE("fseek");
 
   rc = lseek(stream->file, offset, whence);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return 0;
 }
@@ -808,11 +709,7 @@ int fgetpos(FILE *stream, fpos_t *pos)
   TRACE("fgetpos");
 
   rc = tell(stream->file);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   *pos = rc;
   return 0;
@@ -1004,11 +901,7 @@ int _wopen(const wchar_t *filename, int oflag)
 
   TRACE("_wopen");
   rc = convert_filename_from_unicode(filename, buf, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return _open(buf, oflag);
 }
@@ -1020,11 +913,7 @@ int _waccess(const wchar_t *path, int mode)
 
   TRACE("_waccess");
   rc = convert_filename_from_unicode(path, buf, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return _access(buf, mode);
 }
@@ -1036,11 +925,7 @@ __int64 _wstati64(const wchar_t *path, struct _stati64 *buffer)
 
   TRACE("_wstati64");
   rc = convert_filename_from_unicode(path, buf, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return _stati64(buf, buffer);
 }
@@ -1052,11 +937,7 @@ int _wmkdir(const wchar_t *dirname)
 
   TRACE("_wmkdir");
   rc = convert_filename_from_unicode(dirname, buf, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return _mkdir(buf);
 }
@@ -1069,18 +950,10 @@ int _wrename(const wchar_t *oldname, const wchar_t *newname)
 
   TRACE("_wrename");
   rc = convert_filename_from_unicode(oldname, buf1, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   rc = convert_filename_from_unicode(newname, buf2, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return -1;
-  }
+  if (rc < 0) return -1;
 
   return _rename(buf1, buf2);
 }
@@ -1136,18 +1009,10 @@ wchar_t *_wfullpath(wchar_t *abspath, const wchar_t *relpath, size_t maxlen)
   }
 
   rc = convert_filename_from_unicode(relpath, buf1, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return NULL;
-  }
+  if (rc < 0) return NULL;
 
   rc = canonicalize(buf1, buf2, MAXPATH);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return NULL;
-  }
+  if (rc < 0) return NULL;
 
   if (!abspath)
   {
@@ -1163,11 +1028,7 @@ wchar_t *_wfullpath(wchar_t *abspath, const wchar_t *relpath, size_t maxlen)
   abspath[0] = 'c';
   abspath[1] = ':';
   rc = convert_filename_to_unicode(buf2, abspath + 2, maxlen - 2);
-  if (rc < 0)
-  {
-    errno = -rc;
-    return NULL;
-  }
+  if (rc < 0) return NULL;
 
   return abspath;
 }

@@ -154,7 +154,7 @@ void load_kernel(int bootdrv)
   // Calculate kernel size
   kernelsize = inode->size;
   kernelpages = PAGES(kernelsize);
-  //kprintf("Kernel size %d KB\n", kernelsize / K);
+  //kprintf("Kernel size %d KB\n", kernelsize / 1024);
 
   // Allocate page table for kernel
   if (kernelpages > PTES_PER_PAGE) panic("kernel too big");

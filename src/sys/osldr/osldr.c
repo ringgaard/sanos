@@ -163,7 +163,7 @@ unsigned long memsize()
 
   return addr;
 }
-	
+
 void setup_descriptors()
 {
   struct syspage *syspage;
@@ -245,10 +245,11 @@ void copy_ramdisk(char *bootimg)
   kprintf("%d KB boot image found\n", initrd_size / K);
 }
 
-void __stdcall start(void *hmod, int bootdrv, char *bootimg)
+void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
 {
   pte_t *pt;
   int i;
+  char *bootimg = bootparams->bootimg;
 
   // Initialize video 
   init_video();
@@ -295,22 +296,22 @@ void __stdcall start(void *hmod, int bootdrv, char *bootimg)
   for (i = 0; i < PTES_PER_PAGE; i++) pt[i] = (i * PAGESIZE) | PT_PRESENT | PT_WRITABLE;
 
   // Copy kernel from boot device
-  bootdrive = bootdrv;
-  if ((bootdrv & 0xF0) == 0xF0)
+  bootdrive = bootparams->bootdrv;
+  if ((bootdrive & 0xF0) == 0xF0)
   {
     copy_ramdisk(bootimg);
-    load_kernel(bootdrv);
+    load_kernel(bootdrive);
   }
-  else if (bootdrv & 0x80)
+  else if (bootdrive & 0x80)
   {
-    init_boothd(bootdrv);
-    load_kernel(bootdrv);
+    init_boothd(bootdrive);
+    load_kernel(bootdrive);
     uninit_boothd();
   }
   else
   {
-    init_bootfd(bootdrv);
-    load_kernel(bootdrv);
+    init_bootfd(bootdrive);
+    load_kernel(bootdrive);
     uninit_bootfd();
   }
 
@@ -328,16 +329,17 @@ void __stdcall start(void *hmod, int bootdrv, char *bootimg)
   setup_descriptors();
 
   // Setup boot parameters
-  syspage->bootparams.heapstart = HEAP_START;
-  syspage->bootparams.heapend = (unsigned long) heap;
-  syspage->bootparams.memend = mem_end;
-  syspage->bootparams.bootdrv = bootdrv;
-  syspage->bootparams.bootpart = bootpart;
-  syspage->bootparams.initrd_size = initrd_size;
+  memcpy(&syspage->bootparams, bootparams, sizeof(struct bootparams));
+  syspage->ldrparams.heapstart = HEAP_START;
+  syspage->ldrparams.heapend = (unsigned long) heap;
+  syspage->ldrparams.memend = mem_end;
+  syspage->ldrparams.bootdrv = bootdrive;
+  syspage->ldrparams.bootpart = bootpart;
+  syspage->ldrparams.initrd_size = initrd_size;
   memcpy(syspage->biosdata, (void *) 0x0400, 256);
 
-  // Kernel options are located in the header of the osldr image
-  krnlopts = (char *) hmod + KRNLOPTS_POS;
+  // Kernel options are located boot parameter block
+  krnlopts = syspage->bootparams.krnlopts;
 
   // Reload segment registers
   __asm

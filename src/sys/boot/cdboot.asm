@@ -34,8 +34,6 @@
 OSLDRSEG    equ 0x9000
 OSLDRBASE   equ (OSLDRSEG * 16)
 
-STACKTOP    equ	0xA0000
-
 OSLDRSTART  equ 8
 OSLDRSIZE   equ 32
 
@@ -88,79 +86,16 @@ start1:
 	rep movsb
 	pop	ds
 
-	; Move system into 32-bit protected mode
-	cli			    ; no interrupts allowed
+	; Call real mode entry point in os loader
+	mov	ax, OSLDRSEG
+        mov     ds, ax
+        add     ax, [0x16]	    ; cs
+        push    ax
+        push    word [0x14]	    ; ip
 
-	; Enable A20
-	call	empty8042
-	mov	al, 0xd1	    ; command write
-	out	0x64, al
-	call	empty8042
-	mov	al,0xdf	  	    ; A20 on
-	out	0x60, al
-	call	empty8042
-
-	; Load idt, gdt and ldt
-	lidt	[idtsel]	    ; load idt with 0,0
-	lgdt	[gdtsel]	    ; load gdt with whatever appropriate
-
-	; Switch to protected mode
-	mov	ax, 0x0001
-	lmsw	ax
-
-	; Initialize segment registers
-	mov	ax, flat_data - gdt
-	mov	ds, ax
-	mov	es, ax
-	mov	fs, ax
-	mov	gs, ax
-	mov	ss, ax
-
-	; Set code segment and clear prefetch
-	jmp	dword (flat_code - gdt):start32
-
-start32:
-	BITS	32
-	; Setup stack
-	mov	esp, STACKTOP
-
-	; Clear flags
-	push	dword 2
-	popfd
-
-	; Calculate entrypoint
-	mov	eax, [OSLDRBASE + 0x3c]
-	mov	eax, [eax + OSLDRBASE + 0x28]
-	add	eax, OSLDRBASE
-
-	; Push os loader load address, boot drive (0xFF for CD) and initial ram disk image
-	push	dword 0x7C00
-	push	dword 0xFF
-	push	dword OSLDRBASE
-
-	; Call startup code in os loader
-	call	eax
-
-	; We never return here
-	cli
-	hlt
-
-	BITS	16
-		
-	; Empty keyboard command queue
-
-empty8042:
-	call	delay
-	in	al,0x64		; 8042 status port
-	test	al,2		; is input buffer full?
-	jnz	empty8042	; yes - loop
-	ret
-
-	; delay is needed after doing i/o
-delay:
-	dw	0x00eb, 0x00eb
-	ret
-
+        mov     dl, 0xFF	    ; boot drive (0xFF for CD)
+        mov	ebx, 0x7C00	    ; RAM disk image
+        retf
 
 	; Print string to console
 	; si = ptr to first character of a null terminated string
@@ -184,46 +119,6 @@ printchar:
 	mov	ah, 0x0e
 	int	0x10
 	ret
-
-	; Global descriptor table
-
-D_DATA		equ	0x1000
-D_CODE		equ	0x1800
-
-D_WRITE		equ	0x200
-D_READ		equ	0x200
-
-D_BIG		equ	0x40
-D_BIG_LIM	equ	0x80
-
-D_PRESENT	equ	0x8000
-
-%macro segdesc 3
-	dw	%2
-	dw	%1
-	db	(%1) >> 16
-	db	((%3) | D_PRESENT) >> 8
-	db	((%3) & 0xff) | ((%2) >> 16)
-	db	(%1) >> 24
-%endmacro
-
-idtsel:
-	dw	0		; idt limit = 0
-	dw	0,0		; idt base = 0L
-
-gdtsel:
-
-	dw	gdtlen
-	dd	gdt
-
-	;align	8
-gdt:
-
-null_desc	segdesc	0,0,0
-flat_code	segdesc	0, 0xFFFFF, D_CODE | D_READ | D_BIG | D_BIG_LIM
-flat_data	segdesc	0, 0xFFFFF, D_DATA | D_WRITE | D_BIG | D_BIG_LIM
-
-gdtlen	  	equ $ - gdt - 1
 
 	; Variables
 

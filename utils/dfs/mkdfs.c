@@ -21,8 +21,8 @@ extern struct fs *mountlist;
 #define BLOCKSIZE        4096
 #define INODE_RATIO      4096
 
-#define KRNLOPTS_POS     0x0E00
-#define KRNLOPTS_LEN     0x0200
+#define KRNLOPTS_POSOFS      0x1A
+#define KRNLOPTS_LEN         128
 
 char bootsect[SECTORSIZE];
 
@@ -161,14 +161,29 @@ void install_loader()
   size_t count;
   struct filsys *fs;
 
-  char buf[4096];
   unsigned int i;
   unsigned int blocks;
+  char *image;
 
+  // Read loader
   hfile = CreateFile(ldrfile, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
   if (hfile == INVALID_HANDLE_VALUE) panic("unable to read os loader");
   size = GetFileSize(hfile, NULL);
+  image = malloc(size);
+  ReadFile(hfile, image, size, &count, NULL);
+  CloseHandle(hfile);
 
+  // Patch kernel options into image
+  if (krnlopts)
+  {
+    int optspos;
+
+    if (strlen(krnlopts) > KRNLOPTS_LEN - 1) panic("kernel options too long");
+    optspos = *(unsigned short *) (image + KRNLOPTS_POSOFS);
+    strcpy(image + optspos, krnlopts);
+  }
+
+  // Write loader to device
   fs = (struct filsys *) (mountlist->data); // assume first mounted device
   blocks = size / fs->blocksize;
   ldrsize = size / SECTORSIZE;
@@ -176,15 +191,10 @@ void install_loader()
 
   for (i = 0; i < blocks; i++)
   {
-    ReadFile(hfile, buf, fs->blocksize, &count, NULL);
-    if (i * fs->blocksize <= KRNLOPTS_POS && (i + 1) * fs->blocksize > KRNLOPTS_POS)
-    {
-      memcpy(buf + (KRNLOPTS_POS - i * fs->blocksize), krnlopts, strlen(krnlopts));
-    }
-    dev_write(fs->devno, buf, fs->blocksize, (fs->super->first_reserved_block + i) * (fs->blocksize / SECTORSIZE));
+    dev_write(fs->devno, image + i * fs->blocksize, fs->blocksize, (fs->super->first_reserved_block + i) * (fs->blocksize / SECTORSIZE));
   }
 
-  CloseHandle(hfile);
+  free(image);
 }
 
 unsigned int ft2time(FILETIME *ft)

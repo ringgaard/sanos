@@ -669,7 +669,7 @@ void init_fd()
   if (!first_floppy && !second_floppy) return;
 
 #if 0
-  // FIXME: the version command times out when not floppy is inserted
+  // FIXME: the version command times out when no floppy is inserted
   fd_init = 1;
   if (fd_command(CMD_VERSION) < 0) return;
   version = fd_data();

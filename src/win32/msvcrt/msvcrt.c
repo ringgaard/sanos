@@ -404,11 +404,21 @@ int convert_filename_to_unicode(const char *src, wchar_t *dst, int maxlen)
   wchar_t *end = dst + maxlen;
   while (*src)
   {
-    if (dst == end) return -ENAMETOOLONG;
+    if (dst == end) 
+    {
+      errno = ENAMETOOLONG;
+      return -1;
+    }
+
     *dst++ = (unsigned char) *src++;
   }
   
-  if (dst == end) return -ENAMETOOLONG;
+  if (dst == end) 
+  {
+    errno = ENAMETOOLONG;
+    return -1;
+  }
+
   *dst = 0;
   return 0;
 }
@@ -418,12 +428,27 @@ int convert_filename_from_unicode(const wchar_t *src, char *dst, int maxlen)
   char *end = dst + maxlen;
   while (*src)
   {
-    if (dst == end) return -ENAMETOOLONG;
-    if (*src & 0xFF00) return -EINVAL;
+    if (dst == end) 
+    {
+      errno = ENAMETOOLONG;
+      return -1;
+    }
+
+    if (*src & 0xFF00) 
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
     *dst++ = (unsigned char) *src++;
   }
   
-  if (dst == end) return -ENAMETOOLONG;
+  if (dst == end) 
+  {
+    errno = ENAMETOOLONG;
+    return -1;
+  }
+
   *dst = 0;
   return 0;
 }

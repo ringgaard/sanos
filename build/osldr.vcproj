@@ -49,7 +49,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /FIXED"
+				AdditionalOptions="/MACHINE:I386 /FIXED /STUB:.\..\obj\boot\ldrinit.exe"
 				AdditionalDependencies="$(NOINHERIT)"
 				OutputFile=".\..\bin/osldr.dll"
 				LinkIncremental="1"
@@ -116,7 +116,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /FIXED"
+				AdditionalOptions="/MACHINE:I386 /FIXED /STUB:.\..\dbg\obj\boot\ldrinit.exe"
 				AdditionalDependencies="odbc32.lib odbccp32.lib"
 				OutputFile=".\..\dbg\bin/osldr.dll"
 				LinkIncremental="1"

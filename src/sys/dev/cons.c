@@ -139,6 +139,11 @@ static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       return 0;
 
     case IOCTL_KBHIT:
+      if (cursoff)
+      {
+	cursoff = 0;
+	show_cursor();
+      }
       return kbhit();
   }
   

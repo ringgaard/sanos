@@ -121,6 +121,31 @@
 			</FileConfiguration>
 		</File>
 		<File
+			RelativePath="..\src\sys\boot\ldrinit.asm">
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Assemble ldrinit.asm"
+					CommandLine="if not exist ..\dbg\obj\boot mkdir ..\dbg\obj\boot
+..\tools\nasmw.exe -f bin ..\src\sys\boot\ldrinit.asm -o ..\dbg\obj\boot\ldrinit.exe  -l ..\dbg\obj\boot\ldrinit.lst
+if exist ..\dbg\bin\osldr.dll del ..\dbg\bin\osldr.dll"
+					AdditionalDependencies="..\src\sys\boot\ldrinit.asm;"
+					Outputs="..\dbg\obj\boot\ldrinit.exe"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Assemble ldrinit.asm"
+					CommandLine="if not exist ..\obj\boot mkdir ..\obj\boot
+..\tools\nasmw.exe -f bin ..\src\sys\boot\ldrinit.asm -o ..\obj\boot\ldrinit.exe  -l ..\obj\boot\ldrinit.lst
+if exist ..\bin\osldr.dll del ..\bin\osldr.dll"
+					AdditionalDependencies="..\src\sys\boot\ldrinit.asm;"
+					Outputs="..\obj\boot\ldrinit.exe"/>
+			</FileConfiguration>
+		</File>
+		<File
 			RelativePath="..\src\sys\boot\netboot.asm">
 			<FileConfiguration
 				Name="SanOSDebug|Win32">
