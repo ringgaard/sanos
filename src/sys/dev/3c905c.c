@@ -555,9 +555,15 @@ int nic_transmit(struct dev *dev, struct pbuf *p)
   execute_command_wait(nic, CMD_DOWN_STALL, 0);
   dnlistptr = _inpd(nic->iobase + DOWN_LIST_POINTER);
   if (dnlistptr == 0)
+  {
+    nictrace("nic: set dnlist to %p\n", entry->phys_addr);
     _outpd(nic->iobase + DOWN_LIST_POINTER, entry->phys_addr);
+  }
   else
+  {
+    nictrace("nic: chaining %p to %p\n", entry->phys_addr, entry->prev->phys_next);
     entry->prev->phys_next = entry->phys_addr;
+  }
   execute_command(nic, CMD_DOWN_UNSTALL, 0);
 
   stats.link.xmit++;
@@ -792,8 +798,6 @@ void nic_dpc(void *arg)
 
   while (1)
   {
-    //dump_dump_status(status);
-
     status &= ALL_INTERRUPTS;
     if (!status) break;
 
