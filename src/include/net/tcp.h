@@ -37,7 +37,7 @@ err_t tcp_connect (struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short p
 struct tcp_pcb *tcp_listen(struct tcp_pcb *pcb);
 void tcp_abort(struct tcp_pcb *pcb);
 err_t tcp_close(struct tcp_pcb *pcb);
-err_t tcp_write(struct tcp_pcb *pcb, const void *dataptr, unsigned short len, int copy);
+err_t tcp_write(struct tcp_pcb *pcb, const void *data, int len);
 
 // Used within the TCP code only
 
@@ -242,7 +242,7 @@ struct tcp_seg *tcp_seg_copy(struct tcp_seg *seg);
                          tcp_output(pcb)
 
 err_t tcp_send_ctrl(struct tcp_pcb *pcb, int flags);
-err_t tcp_enqueue(struct tcp_pcb *pcb, void *dataptr, unsigned short len, int flags, int copy, unsigned char *optdata, int optlen);
+err_t tcp_enqueue(struct tcp_pcb *pcb, void *data, int len, int flags, unsigned char *optdata, int optlen);
 
 void tcp_rexmit_seg(struct tcp_pcb *pcb, struct tcp_seg *seg);
 

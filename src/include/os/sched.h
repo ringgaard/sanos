@@ -24,7 +24,9 @@ typedef void (*taskproc_t)(void *arg);
 #define DPC_QUEUED        1
 #define DPC_EXECUTING     2
 
-#define TASK_QUEUE_ACTIVE 1
+#define TASK_QUEUE_ACTIVE              1
+#define TASK_QUEUE_ACTIVE_TASK_INVALID 2
+
 
 #define TASK_QUEUED       1
 #define TASK_EXECUTING    2

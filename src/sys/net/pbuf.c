@@ -42,7 +42,7 @@ void pbuf_init()
   for (i = 0; i < PBUF_POOL_SIZE; i++)
   {
     p->next = (struct pbuf *) ((char *) p + PBUF_POOL_BUFSIZE + sizeof(struct pbuf));
-    p->len = p->tot_len = PBUF_POOL_BUFSIZE;
+    p->len = p->tot_len = p->size = PBUF_POOL_BUFSIZE;
     p->payload = (void *) ((char *) p + sizeof(struct pbuf));
     q = p;
     p = p->next;
@@ -53,7 +53,6 @@ void pbuf_init()
 
   pbuf_pool_alloc_lock = 0;
   pbuf_pool_free_lock = 0;
-  //pbuf_pool_free_sem = sys_sem_new(1);
 }
 
 static struct pbuf *pbuf_pool_alloc()
@@ -218,7 +217,7 @@ struct pbuf *pbuf_alloc(int layer, int size, int flag)
 
       // Set up internal structure of the pbuf.
       p->payload = (void *) ((char *) p + sizeof(struct pbuf) + offset);
-      p->len = p->tot_len = size;
+      p->len = p->tot_len = p->size = size;
       p->next = NULL;
       p->flags = PBUF_FLAG_RW;
       stats.pbuf.rwbufs++;
@@ -230,7 +229,7 @@ struct pbuf *pbuf_alloc(int layer, int size, int flag)
       if (p == NULL) return NULL;
 
       p->payload = NULL;
-      p->len = p->tot_len = size;
+      p->len = p->tot_len = p->size = size;
       p->next = NULL;
       p->flags = PBUF_FLAG_RO;
       break;
@@ -255,8 +254,6 @@ void pbuf_refresh()
 {
   struct pbuf *p;
 
-  //sys_sem_wait(pbuf_pool_free_sem);
-  
   if (pbuf_pool_free_cache != NULL) 
   {
     pbuf_pool_free_lock++;
@@ -268,7 +265,7 @@ void pbuf_refresh()
       } 
       else 
       {  
-	for(p = pbuf_pool; p->next != NULL; p = p->next);
+	for (p = pbuf_pool; p->next != NULL; p = p->next);
 	p->next = pbuf_pool_free_cache;
       }
 
@@ -281,8 +278,6 @@ void pbuf_refresh()
     
     pbuf_pool_free_lock--;
   }
-  
-  //sys_sem_signal(pbuf_pool_free_sem);
 }
 
 //
@@ -327,10 +322,8 @@ void pbuf_realloc(struct pbuf *p, int size)
       {
 	r = q->next;
 
-        //sys_sem_wait(pbuf_pool_free_sem);
         q->next = pbuf_pool_free_cache;
         pbuf_pool_free_cache = q;
-        //sys_sem_signal(pbuf_pool_free_sem);
 
 	stats.pbuf.used--;
 	q = r;
@@ -426,10 +419,8 @@ int pbuf_free(struct pbuf *p)
 	p->payload = (void *)((char *) p + sizeof(struct pbuf));
 	q = p->next;
 
-        //sys_sem_wait(pbuf_pool_free_sem);
         p->next = pbuf_pool_free_cache;
         pbuf_pool_free_cache = p;
-        //sys_sem_signal(pbuf_pool_free_sem);
 
 	stats.pbuf.used--;
       } 
@@ -470,6 +461,17 @@ int pbuf_clen(struct pbuf *p)
   for (len = 0; p != NULL; p = p->next) ++len;
 
   return len;
+}
+
+//
+// pbuf_spare
+//
+// Returns the number of unused bytes after the payload in the pbuf.
+//
+
+int pbuf_spare(struct pbuf *p)
+{
+  return ((char *) (p + 1) + p->size) - ((char *) p->payload + p->len);
 }
 
 //
@@ -576,6 +578,7 @@ struct pbuf *pbuf_linearize(int layer, struct pbuf *p)
 // Creates a new private copy of pbuf. If there is only one ref on
 // the pbuf the pbuf is returned as is. Otherwise a new pbuf is
 // allocated and the old pbuf is dereferenced.
+//
 
 struct pbuf *pbuf_cow(int layer, struct pbuf *p)
 {

@@ -129,9 +129,7 @@ int munmap(void *addr, unsigned long size, int type)
 	unsigned long pfn;
 
 	pfn = BTOP(virt2phys(vaddr));
-kprintf("d %p %p\n", pfn, vaddr);
 	unmap_page(vaddr);
-kprintf("e\n");
 	free_pageframe(pfn);
       }
       vaddr += PAGESIZE;

@@ -324,7 +324,7 @@ err_t tcp_connect(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short po
 		  (((unsigned long) pcb->mss / 256) << 8) |
 		  (pcb->mss & 255));
 
-  ret = tcp_enqueue(pcb, NULL, 0, TCP_SYN, 0, (unsigned char *) &optdata, 4);
+  ret = tcp_enqueue(pcb, NULL, 0, TCP_SYN, (unsigned char *) &optdata, 4);
   if (ret == 0) tcp_output(pcb);
 
   return ret;

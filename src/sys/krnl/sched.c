@@ -269,7 +269,14 @@ int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned 
 
 static void destroy_tcb(void *arg)
 {
+  // Deallocate TCB
   free_pages(arg, PAGES_PER_TCB);
+
+  // Set the TASK_QUEUE_ACTIVE_TASK_INVALID flag, to inform the sys task queue that the
+  // executing task is invalid. The destroy_tcb task is placed in the TCB, and we dont want
+  // the flag to be updated after this task finish executing, because we have deallocated the
+  // task.
+  sys_task_queue.flags |= TASK_QUEUE_ACTIVE_TASK_INVALID;
 }
 
 int destroy_thread(struct thread *t)
@@ -285,9 +292,7 @@ int destroy_thread(struct thread *t)
     // Deallocate user stack
     if (t->tib->stackbase) 
     {
-kprintf("before munmap %p %p\n", t->tib->stackbase, t->tib->stacktop);
       munmap(t->tib->stackbase, (char *) (t->tib->stacktop) - (char *) (t->tib->stackbase), MEM_RELEASE);
-kprintf("after munmap\n");
       t->tib->stackbase = NULL;
     }
 
@@ -388,8 +393,8 @@ static void task_queue_task(void *tqarg)
   
       proc(arg);
 
-      tq->flags &= ~TASK_QUEUE_ACTIVE;
-      task->flags &= ~TASK_EXECUTING;
+      if (!(tq->flags & TASK_QUEUE_ACTIVE_TASK_INVALID)) task->flags &= ~TASK_EXECUTING;
+      tq->flags &= ~(TASK_QUEUE_ACTIVE | TASK_QUEUE_ACTIVE_TASK_INVALID);
     }
   }
 }

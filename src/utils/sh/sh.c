@@ -650,7 +650,20 @@ static void http(int argc, char **argv)
   //close(f);
 }
 
+void __stdcall test_task(void *arg)
+{
+  printf("hello from thread\n");
+}
+
 static void test(int argc, char **argv)
+{
+  int hthread;
+
+  hthread = beginthread(test_task, 0, NULL, 0, NULL);
+  close(hthread);
+}
+
+static void test1(int argc, char **argv)
 {
   int dev;
   int n;

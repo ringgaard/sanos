@@ -64,8 +64,6 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 
   if (p)
   {
-    kprintf("recv_tcp: %d bytes\n", p->tot_len);
-
     if (s->tcp.recvtail)
     {
       pbuf_chain(s->tcp.recvtail, p);
@@ -157,7 +155,7 @@ static err_t sent_tcp(void *arg, struct tcp_pcb *pcb, unsigned short len)
     bytes = req->len;
     if (bytes > tcp_sndbuf(pcb)) bytes = tcp_sndbuf(pcb);
 
-    rc = tcp_write(pcb, req->data, (unsigned short) bytes, 1);
+    rc = tcp_write(pcb, req->data, (unsigned short) bytes);
     if (rc < 0)
     {
       release_socket_request(req, rc);
@@ -507,7 +505,7 @@ static int tcpsock_send(struct socket *s, void *data, int size, unsigned int fla
   len = tcp_sndbuf(s->tcp.pcb);
   if (size <= len)
   {
-    rc = tcp_write(s->tcp.pcb, data, (unsigned short) size, 1);
+    rc = tcp_write(s->tcp.pcb, data, (unsigned short) size);
     if (rc < 0) return rc;
     return size;
   }
@@ -515,7 +513,7 @@ static int tcpsock_send(struct socket *s, void *data, int size, unsigned int fla
   {
     if (len > 0)
     {
-      rc = tcp_write(s->tcp.pcb, data, (unsigned short) len, 1);
+      rc = tcp_write(s->tcp.pcb, data, (unsigned short) len);
       if (rc < 0) return rc;
     }
 

@@ -39,6 +39,7 @@ struct pbuf
   
   int tot_len;                // Total length of buffer + additionally chained buffers.
   int len;                    // Length of this buffer.
+  int size;                   // Allocated size of buffer
 };
 
 void pbuf_init();
@@ -47,6 +48,7 @@ krnlapi struct pbuf *pbuf_alloc(int layer, int size, int type);
 krnlapi void pbuf_realloc(struct pbuf *p, int size); 
 krnlapi int pbuf_header(struct pbuf *p, int header_size);
 krnlapi int pbuf_clen(struct pbuf *p);
+krnlapi int pbuf_spare(struct pbuf *p);
 krnlapi void pbuf_ref(struct pbuf *p);
 krnlapi int pbuf_free(struct pbuf *p);
 krnlapi void pbuf_chain(struct pbuf *h, struct pbuf *t);

@@ -201,7 +201,7 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
 	    {
 	      err = 0;
 	      pbuf_free(pcb->recv_data);
-	      //causes loop: if (pcb->flags & TF_GOT_FIN) tcp_close(pcb);
+	      if (pcb->flags & TF_GOT_FIN) tcp_close(pcb); //FIXME: causes loop somtimes
 	    }
 
 	    if (err == 0)
@@ -361,7 +361,7 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 			(npcb->mss & 255));
 
 	// Send a SYN|ACK together with the MSS option
-	tcp_enqueue(npcb, NULL, 0, TCP_SYN | TCP_ACK, 0, (unsigned char *) &optdata, 4);
+	tcp_enqueue(npcb, NULL, 0, TCP_SYN | TCP_ACK, (unsigned char *) &optdata, 4);
 	return tcp_output(npcb);
       }  
       break;
@@ -624,10 +624,10 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
         }
       }
 
-      kprintf("tcp_receive: ACK for %lu, unacked->seqno %lu:%lu\n",
-	       ackno,
-	       pcb->unacked != NULL ? ntohl(pcb->unacked->tcphdr->seqno): 0,
-	       pcb->unacked != NULL ? ntohl(pcb->unacked->tcphdr->seqno) + TCP_TCPLEN(pcb->unacked): 0);
+      //kprintf("tcp_receive: ACK for %lu, unacked->seqno %lu:%lu\n",
+      //       ackno,
+      //       pcb->unacked != NULL ? ntohl(pcb->unacked->tcphdr->seqno): 0,
+      //       pcb->unacked != NULL ? ntohl(pcb->unacked->tcphdr->seqno) + TCP_TCPLEN(pcb->unacked): 0);
 
       // We go through the unsent list to see if any of the segments
       // on the list are acknowledged by the ACK. This may seem
@@ -656,10 +656,10 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
       // Remove segment from the unacknowledged list if the incoming ACK acknowlegdes them
       while (pcb->unacked != NULL && TCP_SEQ_LEQ(ntohl(pcb->unacked->tcphdr->seqno) + TCP_TCPLEN(pcb->unacked), ackno)) 
       {
-	kprintf("tcp_receive: removing %lu:%lu from pcb->unacked\n",
-		   ntohl(pcb->unacked->tcphdr->seqno),
-		   ntohl(pcb->unacked->tcphdr->seqno) +
-		   TCP_TCPLEN(pcb->unacked));
+	//kprintf("tcp_receive: removing %lu:%lu from pcb->unacked\n",
+	//	   ntohl(pcb->unacked->tcphdr->seqno),
+	//	   ntohl(pcb->unacked->tcphdr->seqno) +
+	//	   TCP_TCPLEN(pcb->unacked));
 
 	next = pcb->unacked;
 	pcb->unacked = pcb->unacked->next;
@@ -728,7 +728,7 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
     // than rcv_nxt, and the sequence number plus the length of the
     // segment is larger than rcv_nxt
 
-    kprintf("tcp_receive: seqno %lu rcv_nxt %lu tcplen %d\n", seqno, pcb->rcv_nxt, TCP_TCPLEN(seg));
+    //kprintf("tcp_receive: seqno %lu rcv_nxt %lu tcplen %d\n", seqno, pcb->rcv_nxt, TCP_TCPLEN(seg));
 
     if (TCP_SEQ_LT(seqno, pcb->rcv_nxt) && TCP_SEQ_LT(pcb->rcv_nxt, seqno + seg->len)) 
     {

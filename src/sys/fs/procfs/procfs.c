@@ -140,6 +140,8 @@ int proc_write(struct proc_file *pf, void *buffer, size_t size)
       blk = (struct proc_blk *) kmalloc(sizeof(struct proc_blk));
       if (!blk) return -ENOMEM;
 
+      memset(blk->data, '~', PROC_BLKSIZE);
+
       blk->next = NULL;
       blk->size = 0;
 
@@ -156,11 +158,24 @@ int proc_write(struct proc_file *pf, void *buffer, size_t size)
 
     count = blk->size + left > PROC_BLKSIZE ? (size_t) (PROC_BLKSIZE - blk->size) : left;
 
+    if (blk->size + count > PROC_BLKSIZE)
+    {
+      kprintf("invalid proc blk copy\n");
+      dbg_break();
+    }
+
     memcpy(blk->data + blk->size, ptr, count);
     blk->size += count;
     ptr += count;
     left -= count;
     pf->size += count;
+
+    if (pf->blktail->size > PROC_BLKSIZE)
+    {
+      kprintf("invalid proc blk\n");
+      dbg_break();
+    }
+
   }
 
   return size;
@@ -233,7 +248,7 @@ int procfs_read(struct file *filp, void *data, size_t size)
   if (!size) return 0;
 
   blk = pf->blkhead;
-  while (blk && start + blk->size < filp->pos)
+  while (blk && start + blk->size <= filp->pos)
   {
     start += blk->size;
     blk = blk->next;
@@ -242,6 +257,13 @@ int procfs_read(struct file *filp, void *data, size_t size)
   if (blk)
   {
     offset = filp->pos - start;
+
+    if (offset < 0 || offset >= PROC_BLKSIZE)
+    {
+      kprintf("invalid proc blk offset %d\n", offset);
+      dbg_break();
+    }
+
     if (left < blk->size - offset)
       count = left;
     else

@@ -18,10 +18,10 @@ err_t tcp_send_ctrl(struct tcp_pcb *pcb, int flags)
   //tcp_debug_print_flags(flags);
   //kprintf(")\n");
 
-  return tcp_enqueue(pcb, NULL, 0, flags, 1, NULL, 0);
+  return tcp_enqueue(pcb, NULL, 0, flags, NULL, 0);
 }
 
-err_t tcp_write(struct tcp_pcb *pcb, const void *arg, unsigned short len, int copy)
+err_t tcp_write(struct tcp_pcb *pcb, const void *data, int len)
 {
   int rc;
 
@@ -29,7 +29,7 @@ err_t tcp_write(struct tcp_pcb *pcb, const void *arg, unsigned short len, int co
   {
     if (len > 0) 
     {
-      rc = tcp_enqueue(pcb, (void *) arg, len, 0, copy, NULL, 0);
+      rc = tcp_enqueue(pcb, (void *) data, len, 0, NULL, 0);
       if (rc < 0) return rc;
 
       // This is the Nagle algorithm (RFC 896): inhibit the sending of new TCP
@@ -46,17 +46,20 @@ err_t tcp_write(struct tcp_pcb *pcb, const void *arg, unsigned short len, int co
     return -ECONN;
 }
 
-err_t tcp_enqueue(struct tcp_pcb *pcb, void *arg, unsigned short len, int flags, int copy, unsigned char *optdata, int optlen)
+err_t tcp_enqueue(struct tcp_pcb *pcb, void *data, int len, int flags, unsigned char *optdata, int optlen)
 {
   struct pbuf *p;
   struct tcp_seg *seg, *useg, *queue;
-  unsigned long left, seqno;
-  unsigned short seglen;
+  unsigned long seqno;
+  int left;
+  int buflen;
+  int seglen;
+  int size;
   void *ptr;
   int queuelen;
 
   left = len;
-  ptr = arg;
+  ptr = data;
   
   if (len > pcb->snd_buf) 
   {
@@ -74,159 +77,186 @@ err_t tcp_enqueue(struct tcp_pcb *pcb, void *arg, unsigned short len, int flags,
     goto memerr;
   }
   
-  seg = NULL;
-  seglen = 0;
-  
-  while (queue == NULL || left > 0) 
+  // Fill last pbuf of the last segment on the unsent queue
+  if (optlen == 0 && flags == 0)
   {
-    seglen = (unsigned short) (left > pcb->mss ? pcb->mss : left);
-
-    // Allocate memory for tcp_seg, and fill in fields
-    seg = (struct tcp_seg *) kmalloc(sizeof(struct tcp_seg));
-    if (seg == NULL) 
+    // Go to the last segment on the unsent queue
+    if (pcb->unsent == NULL)
     {
-      kprintf("tcp_enqueue: could not allocate memory for tcp_seg\n");
-      goto memerr;
-    }
-    seg->next = NULL;
-    seg->p = NULL;
-
-    if (queue == NULL) 
-    {
-      queue = seg;
+      useg = NULL;
     } 
     else 
     {
-      for (useg = queue; useg->next != NULL; useg = useg->next);
-      useg->next = seg;
+      for (useg = pcb->unsent; useg->next != NULL; useg = useg->next);
     }
-    
-    // If copy is set, memory should be allocated
-    // and data copied into pbuf, otherwise data comes from
-    // ROM or other static memory, and need not be copied. If
-    // optdata is != NULL, we have options instead of data
 
-    if (optdata != NULL) 
+    if (useg != NULL)
     {
-      if ((seg->p = pbuf_alloc(PBUF_TRANSPORT, optlen, PBUF_RW)) == NULL) goto memerr;
-      queuelen++;
-      seg->dataptr = (char *) seg->p->payload + optlen;
-    } 
-    else if (copy) 
-    {
-      if ((seg->p = pbuf_alloc(PBUF_TRANSPORT, seglen, PBUF_RW)) == NULL) 
+      p = useg->p;
+      while (p->next) p = p->next;
+
+      buflen = pbuf_spare(p);
+      if (buflen > left) buflen = left;
+      if (useg->len + buflen > pcb->mss) buflen = pcb->mss - useg->len;
+
+      if (buflen > 0)
       {
-	kprintf("tcp_enqueue: could not allocate memory for pbuf copy\n");
-	goto memerr;
+        //kprintf("tcp_enqueue: add %d bytes to segment\n", buflen);
+	memcpy((char *) p->payload + p->len, ptr, buflen);
+	p->len += buflen;
+	useg->p->tot_len += buflen;
+	useg->len += buflen;
+	left -= buflen;
+	ptr = (void *) ((char *) ptr + buflen);
       }
-      queuelen++;
-
-      if (arg != NULL) memcpy(seg->p->payload, ptr, seglen);
-      seg->dataptr = seg->p->payload;
-    } 
-    else 
-    {
-      // Do not copy the data
-      if ((p = pbuf_alloc(PBUF_TRANSPORT, seglen, PBUF_RO)) == NULL)
-      {
-	kprintf("tcp_enqueue: could not allocate memory for pbuf non-copy\n");
-	goto memerr;
-      }
-      
-      queuelen++;
-      p->payload = ptr;
-      seg->dataptr = ptr;
-
-      if ((seg->p = pbuf_alloc(PBUF_TRANSPORT, 0, PBUF_RW)) == NULL) 
-      {
-        pbuf_free(p);
-	kprintf("tcp_enqueue: could not allocate memory for header pbuf\n");
-	goto memerr;
-      }
-
-      queuelen++;
-      pbuf_chain(seg->p, p);
     }
-
-    if (queuelen > TCP_SND_QUEUELEN) 
-    {
-      kprintf("tcp_enqueue: queue too long %d (%d)\n", queuelen, TCP_SND_QUEUELEN);
-      goto memerr;
-    }
-    
-    seg->len = seglen;
-    
-    // Build TCP header
-    if (pbuf_header(seg->p, TCP_HLEN) < 0) 
-    {
-      kprintf("tcp_enqueue: no room for TCP header in pbuf.\n");
-      
-      stats.tcp.err++;
-      goto memerr;
-    }
-
-    seg->tcphdr = seg->p->payload;
-    seg->tcphdr->src = htons(pcb->local_port);
-    seg->tcphdr->dest = htons(pcb->remote_port);
-    seg->tcphdr->seqno = htonl(seqno);
-    seg->tcphdr->urgp = 0;
-    TCPH_FLAGS_SET(seg->tcphdr, flags);
-    // Don't fill in tcphdr->ackno and tcphdr->wnd until later
-    
-    if (optdata == NULL) 
-    {
-      TCPH_OFFSET_SET(seg->tcphdr, 5 << 4);
-    } 
-    else 
-    {
-      TCPH_OFFSET_SET(seg->tcphdr, (5 + optlen / 4) << 4);
-      
-      // Copy options into segment after fixed TCP header
-      memcpy(seg->tcphdr + 1, optdata, optlen);
-    }
-
-    //kprintf("tcp_enqueue: queueing %lu:%lu (0x%x)\n", ntohl(seg->tcphdr->seqno), ntohl(seg->tcphdr->seqno) + TCP_TCPLEN(seg), flags);
-
-    left -= seglen;
-    seqno += seglen;
-    ptr = (void *) ((char *) ptr + seglen);
   }
-  
-  // Go to the last segment on the unsent queue
-  if (pcb->unsent == NULL)
-  {
-    useg = NULL;
-  } 
-  else 
-  {
-    for (useg = pcb->unsent; useg->next != NULL; useg = useg->next);
-  }
-  
-  // If there is room in the last pbuf on the unsent queue
-  // chain the first pbuf on the queue together with that
-  if (useg != NULL && 
-      TCP_TCPLEN(useg) != 0 && 
-      !(TCPH_FLAGS(useg->tcphdr) & (TCP_SYN | TCP_FIN)) && 
-      !(flags & (TCP_SYN | TCP_FIN)) && 
-      useg->len + queue->len <= pcb->mss) 
-  {
-    // Remove TCP header from first segment
-    pbuf_header(queue->p, -TCP_HLEN);
-    pbuf_chain(useg->p, queue->p);
-    useg->len += queue->len;
-    useg->next = queue->next;
-    
-    kprintf("tcp_output: chaining, new len %u\n", useg->len);
 
-    if (seg == queue) seg = NULL;
-    kfree(queue);
-  } 
-  else 
-  {      
-    if (useg == NULL) 
-      pcb->unsent = queue;
-    else
-      useg->next = queue;
+  // Split rest of data into segments
+  if (left > 0 || optlen > 0 || flags)
+  {
+    while (queue == NULL || left > 0) 
+    {
+      seglen = (left > pcb->mss ? pcb->mss : left);
+
+      // Allocate memory for tcp_seg, and fill in fields
+      seg = (struct tcp_seg *) kmalloc(sizeof(struct tcp_seg));
+      if (seg == NULL) 
+      {
+	kprintf("tcp_enqueue: could not allocate memory for tcp_seg\n");
+	goto memerr;
+      }
+      seg->next = NULL;
+      seg->p = NULL;
+
+      if (queue == NULL) 
+      {
+	queue = seg;
+      } 
+      else 
+      {
+	for (useg = queue; useg->next != NULL; useg = useg->next);
+	useg->next = seg;
+      }
+    
+      // If copy is set, memory should be allocated
+      // and data copied into pbuf, otherwise data comes from
+      // ROM or other static memory, and need not be copied. If
+      // optdata is != NULL, we have options instead of data
+
+      if (optdata != NULL) 
+      {
+	if ((seg->p = pbuf_alloc(PBUF_TRANSPORT, optlen, PBUF_RW)) == NULL) goto memerr;
+	queuelen++;
+	seg->dataptr = (char *) seg->p->payload + optlen;
+      } 
+      else
+      {
+	size = seglen;
+	if (seglen < TCP_MIN_SEGLEN) 
+	{
+	  if (pcb->mss < TCP_MIN_SEGLEN)
+	    size = pcb->mss;
+	  else
+	    size = TCP_MIN_SEGLEN;
+	}
+
+	if ((seg->p = pbuf_alloc(PBUF_TRANSPORT, size, PBUF_RW)) == NULL) 
+	{
+	  kprintf("tcp_enqueue: could not allocate memory for pbuf copy\n");
+	  goto memerr;
+	}
+	pbuf_realloc(seg->p, seglen);
+
+	queuelen++;
+
+	if (data != NULL) memcpy(seg->p->payload, ptr, seglen);
+	seg->dataptr = seg->p->payload;
+      } 
+
+      if (queuelen > TCP_SND_QUEUELEN) 
+      {
+	kprintf("tcp_enqueue: queue too long %d (%d)\n", queuelen, TCP_SND_QUEUELEN);
+	goto memerr;
+      }
+    
+      seg->len = seglen;
+    
+      // Build TCP header
+      if (pbuf_header(seg->p, TCP_HLEN) < 0) 
+      {
+	kprintf("tcp_enqueue: no room for TCP header in pbuf.\n");
+      
+	stats.tcp.err++;
+	goto memerr;
+      }
+
+      seg->tcphdr = seg->p->payload;
+      seg->tcphdr->src = htons(pcb->local_port);
+      seg->tcphdr->dest = htons(pcb->remote_port);
+      seg->tcphdr->seqno = htonl(seqno);
+      seg->tcphdr->urgp = 0;
+      TCPH_FLAGS_SET(seg->tcphdr, flags);
+      // Don't fill in tcphdr->ackno and tcphdr->wnd until later
+    
+      if (optdata == NULL) 
+      {
+	TCPH_OFFSET_SET(seg->tcphdr, 5 << 4);
+      } 
+      else 
+      {
+	TCPH_OFFSET_SET(seg->tcphdr, (5 + optlen / 4) << 4);
+      
+	// Copy options into segment after fixed TCP header
+	memcpy(seg->tcphdr + 1, optdata, optlen);
+      }
+
+      //kprintf("tcp_enqueue: queueing %lu:%lu (0x%x)\n", ntohl(seg->tcphdr->seqno), ntohl(seg->tcphdr->seqno) + TCP_TCPLEN(seg), flags);
+
+      left -= seglen;
+      seqno += seglen;
+      ptr = (void *) ((char *) ptr + seglen);
+    }
+  }
+
+  if (queue != NULL)
+  {
+    // Go to the last segment on the unsent queue
+    if (pcb->unsent == NULL)
+    {
+      useg = NULL;
+    } 
+    else 
+    {
+      for (useg = pcb->unsent; useg->next != NULL; useg = useg->next);
+    }
+
+    // If there is room in the last segment on the unsent queue
+    // chain the first pbuf on the queue together with that
+    if (useg != NULL && 
+	TCP_TCPLEN(useg) != 0 && 
+	!(TCPH_FLAGS(useg->tcphdr) & (TCP_SYN | TCP_FIN)) && 
+	!(flags & (TCP_SYN | TCP_FIN)) && 
+	useg->len + queue->len <= pcb->mss) 
+    {
+      // Remove TCP header from first segment
+      pbuf_header(queue->p, -TCP_HLEN);
+      pbuf_chain(useg->p, queue->p);
+      useg->len += queue->len;
+      useg->next = queue->next;
+    
+      kprintf("tcp_output: chaining, new len %u\n", useg->len);
+
+      if (seg == queue) seg = NULL;
+      kfree(queue);
+    } 
+    else 
+    {      
+      if (useg == NULL) 
+	pcb->unsent = queue;
+      else
+	useg->next = queue;
+    }
   }
 
   if ((flags & TCP_SYN) || (flags & TCP_FIN)) len++;
@@ -375,7 +405,7 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
     pcb->rtseq = ntohl(seg->tcphdr->seqno);
   }
 
-  kprintf("tcp_output_segment: %lu:%lu\n", htonl(seg->tcphdr->seqno), htonl(seg->tcphdr->seqno) + seg->len);
+  //kprintf("tcp_output_segment: %lu:%lu\n", htonl(seg->tcphdr->seqno), htonl(seg->tcphdr->seqno) + seg->len);
 
   seg->tcphdr->chksum = 0;
   if ((netif->flags & NETIF_TCP_TX_CHECKSUM_OFFLOAD) == 0)
