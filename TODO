@@ -1,11 +1,11 @@
 TODO for sanos
 --------------
 
-- Implement /proc/uptime to display time since bootup.
+x Implement /proc/uptime to display time since bootup.
 
 - Implement refcnt on objects
-    - close objects when handle count reaches zero.
-    - free objects when handle count and refcnt reaches zero.
+    - close objects when handle count reaches zero (close_object).
+    - free objects when handle count and refcnt reaches zero (free_object).
 
 - Implement ICMP messages host unreachable, net unreachable and port unreachable
 
@@ -35,6 +35,10 @@ TODO for sanos
 
 IDEAS for new features
 ----------------------
+
+- Implement iowait kernel syncronization object
+
+- Add support for select()
 
 - DNS resolver cache
 

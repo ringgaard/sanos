@@ -299,6 +299,27 @@ void calibrate_delay()
   cpu.mhz = mhz;
 }
 
+static int uptime_proc(struct proc_file *pf, void *arg)
+{
+  int days, hours, mins, secs;
+  int uptime = get_time() - upsince;
+
+  days = uptime / (24 * 60 * 60);
+  uptime -= days * (24 * 60 * 60);
+  hours = uptime / (60 * 60);
+  uptime -= days * (60 * 60);
+  mins = uptime / 60;
+  secs = uptime % 60;
+
+  pprintf(pf, "%d day%s %d hour%s %d minute%s %d second%s\n",
+    days, days == 1 ? "" : "s",
+    hours, hours == 1 ? "" : "s",
+    mins, mins == 1 ? "" : "s",
+    secs, secs == 1 ? "" : "s");
+
+  return 0;
+}
+
 void init_pit()
 {
   struct tm tm;
@@ -315,6 +336,8 @@ void init_pit()
   init_dpc(&timerdpc);
   register_interrupt(&timerintr, INTR_TMR, timer_handler, NULL);
   enable_irq(IRQ_TMR);
+
+  register_proc_inode("uptime", uptime_proc, NULL);
 }
 
 void usleep(unsigned long us)
@@ -345,6 +368,7 @@ void set_time(struct timeval *tv)
 {
   struct tm tm;
 
+  upsince += (tv->tv_sec - systemclock.tv_sec);
   systemclock.tv_usec = tv->tv_usec;
   systemclock.tv_sec = tv->tv_sec;
   _gmtime(&tv->tv_sec, &tm);

@@ -102,39 +102,31 @@ static void list_dir(int argc, char **argv)
 {
   char *dirname;
   int verbose;
+  int i;
   int dir;
   struct dirent dirp;
   struct stat buf;
   struct tm tm;
   char path[MAXPATH];
+  char *arg;
+  int col;
 
   verbose = 0;
-  if (argc == 1)
-    dirname = ".";
-  else if (argc == 2)
+  dirname = ".";
+  for (i = 1; i < argc; i++)
   {
-    if (strcmp(argv[1], "-l") == 0)
+    arg = argv[i];
+
+    if (*arg == '-')
     {
-      verbose = 1;
-      dirname = ".";
+      while (*++arg)
+      {
+	if (*arg == 'l') verbose = 1;
+	if (*arg == 'w') verbose = 2;
+      }
     }
     else
-      dirname = argv[1];
-  }
-  else if (argc == 3)
-  {
-    if (strcmp(argv[1], "-l") != 0)
-    {
-      printf("usage: ls [-l] <dir>\n");
-      return;
-    }
-    verbose = 1;
-    dirname = argv[2];
-  }
-  else
-  {
-    printf("usage: ls [-l] <dir>\n");
-    return;
+      dirname = arg;
   }
 
   if ((dir = opendir(dirname)) < 0)
@@ -143,6 +135,7 @@ static void list_dir(int argc, char **argv)
     return;
   }
 
+  col = 0;
   while (readdir(dir, &dirp, 1) > 0)
   {
     strcpy(path, dirname);
@@ -151,40 +144,63 @@ static void list_dir(int argc, char **argv)
 
     if (stat(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat));
 
-    if (verbose)
+    if (verbose == 2)
     {
-      printf("%8d %4d %1d %2d ", buf.quad.size_low, buf.ino, buf.nlink, buf.devno);
+      if (col == 4)
+      {
+	col = 0;
+	//printf("\n");
+      }
 
-      _gmtime(&buf.ctime, &tm);
-      printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
+      if (buf.mode & FS_DIRECTORY) strcat(dirp.name, "/");
+      printf("%-20s", dirp.name);
+      col++;
     }
     else
     {
-      if (buf.mode & FS_DIRECTORY)
-        printf("         ");
+      strcpy(path, dirname);
+      strcat(path, "/");
+      strcat(path, dirp.name);
+
+      if (stat(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat));
+
+      if (verbose)
+      {
+	printf("%8d %4d %1d %2d ", buf.quad.size_low, buf.ino, buf.nlink, buf.devno);
+
+	_gmtime(&buf.ctime, &tm);
+	printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
+      }
       else
       {
-	int size;
-
-	if (buf.quad.size_low >= K)
-	  size = buf.quad.size_low / K;
-	else if (buf.quad.size_low > 0)
-	  size = 1;
+	if (buf.mode & FS_DIRECTORY)
+	  printf("         ");
 	else
-	  size = 0;
+	{
+	  int size;
 
-        printf("%6dKB ", size);
+	  if (buf.quad.size_low >= K)
+	    size = buf.quad.size_low / K;
+	  else if (buf.quad.size_low > 0)
+	    size = 1;
+	  else
+	    size = 0;
+
+	  printf("%6dKB ", size);
+	}
       }
+
+      _gmtime(&buf.mtime, &tm);
+      printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+      printf("%s", dirp.name);
+      if (buf.mode & FS_DIRECTORY) printf("/", dirp.name);
+
+      printf("\n");
     }
-
-    _gmtime(&buf.mtime, &tm);
-    printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
-
-    printf("%s", dirp.name);
-    if (buf.mode & FS_DIRECTORY) printf("/", dirp.name);
-
-    printf("\n");
   }
+
+  if (verbose == 2) printf("\n");
 
   close(dir);
 }
