@@ -407,6 +407,7 @@ sockapi int __stdcall WSAGetLastError()
   TRACE("WSAGetLastError");
   
   if (err >= 0) return 0;
+  if (err == -EAGAIN) return EWOULDBLOCK + WSAERRBASE;
   if (err > 45) return -err + WSAERRBASE;
   if (err > 82) return -err - 10 + WSAERRBASE;
   if (err == -EHOSTNOTFOUND) return 1001 + WSAERRBASE;
@@ -435,8 +436,29 @@ sockapi int __stdcall WSARecvFrom
   LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
 )
 {
+  struct msghdr msg;
+  int rc;
+
   TRACE("WSARecvFrom");
-  panic("WSARecvFrom not implemented");
+  
+  if (lpOverlapped != NULL) panic("Overlapped I/O not implemented in WSARecvFrom");
+  if (lpCompletionRoutine != NULL) panic("Completion routines not implemented in WSARecvFrom");
+
+  msg.iov = lpBuffers;
+  msg.iovlen = dwBufferCount;
+  msg.name = lpFrom;
+  msg.namelen = lpFromlen ? *lpFromlen : 0;
+
+  rc = recvmsg(s, &msg, lpFlags ? *lpFlags : 0);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  if (lpFromlen) *lpFromlen = msg.namelen;
+  if (lpNumberOfBytesRecvd) *lpNumberOfBytesRecvd = rc;
+
   return 0;
 }
 
@@ -453,8 +475,28 @@ sockapi int __stdcall WSASendTo
   LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
 )
 {
+  struct msghdr msg;
+  int rc;
+
   TRACE("WSASendTo");
-  panic("WSASendTo not implemented");
+  
+  if (lpOverlapped != NULL) panic("Overlapped I/O not implemented in WSASendTo");
+  if (lpCompletionRoutine != NULL) panic("Completion routines not implemented in WSASendTo");
+
+  msg.iov = lpBuffers;
+  msg.iovlen = dwBufferCount;
+  msg.name = (struct sockaddr *) lpTo;
+  msg.namelen = iToLen;
+
+  rc = sendmsg(s, &msg, dwFlags);
+  if (rc < 0)
+  {
+    errno = rc;
+    return -1;
+  }
+
+  if (lpNumberOfBytesSent) *lpNumberOfBytesSent = rc;
+
   return 0;
 }
 

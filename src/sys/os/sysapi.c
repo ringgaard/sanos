@@ -442,3 +442,13 @@ int dispatch(handle_t iomux, handle_t h, int events, int context)
 {
   return syscall(SYSCALL_DISPATCH, (void *) &iomux);
 }
+
+int recvmsg(int s, struct msghdr *hdr, unsigned int flags)
+{
+  return syscall(SYSCALL_RECVMSG, (void *) &s);
+}
+
+int sendmsg(int s, struct msghdr *hdr, unsigned int flags)
+{
+  return syscall(SYSCALL_SENDMSG, (void *) &s);
+}

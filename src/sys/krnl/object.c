@@ -948,9 +948,29 @@ void init_iomux(struct iomux *iomux, int flags)
 // Add object to iomux for i/o dispatching
 //
 
-int iodispatch(struct iomux *iomux, object_t hobj, int event, int context)
+int iodispatch(struct iomux *iomux, object_t hobj, int events, int context)
 {
   return -ENOSYS;
+}
+
+//
+// set_io_event
+//
+// Set I/O event(s) for object
+//
+
+void set_io_event(struct ioobject *iob, int events)
+{
+}
+
+//
+// clear_io_event
+//
+// Clear I/O event(s) for object
+//
+
+void clear_io_event(struct ioobject *iob, int events)
+{
 }
 
 //
@@ -1034,6 +1054,7 @@ struct object *olock(handle_t h, int type)
   if (o == (struct object *) NOHANDLE) return NULL;
   if (o < (struct object *) OSBASE) return NULL;
   if (o->type != type && type != OBJECT_ANY) return NULL;
+  if (o->handle_count == 0) return NULL;
   o->lock_count++;
   return o;
 }

@@ -159,6 +159,8 @@ static struct socket *accept_connection(struct tcp_pcb *pcb)
   tcp_sent(pcb, sent_tcp);
   tcp_err(pcb, err_tcp);
 
+  set_io_event(&s->iob, IOEVT_WRITE);
+
   return s;
 }
 
@@ -190,9 +192,11 @@ static err_t accept_tcp(void *arg, struct tcp_pcb *newpcb, err_t err)
   {
     if (err < 0) return err;
     newsock = accept_connection(newpcb);
-    if (newsock < 0) return -ENOMEM;
+    if (!newsock) return -ENOMEM;
 
     s->tcp.pending[s->tcp.numpending++] = newsock;
+    set_io_event(&s->iob, IOEVT_ACCEPT);
+
     return 0;
   }
 
@@ -209,6 +213,7 @@ static err_t connected_tcp(void *arg, struct tcp_pcb *pcb, err_t err)
     if (req->type == SOCKREQ_CONNECT)
     {
       s->state = SOCKSTATE_CONNECTED;
+      set_io_event(&s->iob, IOEVT_WRITE);
       release_socket_request(req, err);
       return 0;
     }
@@ -216,7 +221,10 @@ static err_t connected_tcp(void *arg, struct tcp_pcb *pcb, err_t err)
     req = req->next;
   }
 
-  return -EABORT;
+  s->state = SOCKSTATE_CONNECTED;
+  set_io_event(&s->iob, IOEVT_CONNECT | IOEVT_WRITE);
+  
+  return 0;
 }
 
 static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
@@ -242,7 +250,10 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
     }
   }
   else
+  {
     s->state = SOCKSTATE_CLOSING;
+    set_io_event(&s->iob, IOEVT_CLOSE);
+  }
 
   if (s->state == SOCKSTATE_CLOSING && s->tcp.recvhead == NULL)
   {
@@ -297,6 +308,11 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
   }
 
   if (bytesrecv) tcp_recved(pcb, bytesrecv);
+  
+  if (s->tcp.recvhead) 
+    set_io_event(&s->iob, IOEVT_READ);
+  else
+    clear_io_event(&s->iob, IOEVT_READ);
 
   return 0;
 }
@@ -315,7 +331,7 @@ static err_t sent_tcp(void *arg, struct tcp_pcb *pcb, unsigned short len)
 
   while (1)
   {
-    if (tcp_sndbuf(pcb) == 0) return 0;
+    if (tcp_sndbuf(pcb) == 0) break;
 
     req = s->waithead;
     while (req)
@@ -324,7 +340,7 @@ static err_t sent_tcp(void *arg, struct tcp_pcb *pcb, unsigned short len)
       req = req->next;
     }
 
-    if (!req) return 0;
+    if (!req) break;
 
     rc = fill_sndbuf(s, req->msg->iov, req->msg->iovlen);
     if (rc < 0)
@@ -337,6 +353,13 @@ static err_t sent_tcp(void *arg, struct tcp_pcb *pcb, unsigned short len)
 
     if (get_iovec_size(req->msg->iov, req->msg->iovlen) == 0) release_socket_request(req, req->rc);
   }
+
+  if (tcp_sndbuf(pcb) > 0)
+    set_io_event(&s->iob, IOEVT_READ);
+  else
+    clear_io_event(&s->iob, IOEVT_READ);
+
+  return 0;
 }
 
 static void err_tcp(void *arg, err_t err)
@@ -392,6 +415,7 @@ static int tcpsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen,
     {
       memmove(s->tcp.pending, s->tcp.pending + 1, s->tcp.numpending * sizeof(struct socket *));
     }
+    if (s->tcp.numpending == 0) clear_io_event(&s->iob, IOEVT_ACCEPT);
   }
 
   if (addr) 
@@ -490,8 +514,9 @@ static int tcpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
   sin = (struct sockaddr_in *) name;
   if (sin->sin_family != AF_INET && sin->sin_family != AF_UNSPEC) return -EAFNOSUPPORT;
 
+  if (s->state == SOCKSTATE_CONNECTED) return -EISCONN;
+  if (s->state == SOCKSTATE_CONNECTING) return -EALREADY;
   if (s->state != SOCKSTATE_BOUND && s->state != SOCKSTATE_UNBOUND) return -EINVAL;
-  if (s->flags & SOCK_NBIO) return -EAGAIN;
 
   if (!s->tcp.pcb)
   {
@@ -503,6 +528,7 @@ static int tcpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
   if (rc < 0) return rc;
 
   s->state = SOCKSTATE_CONNECTING;
+  if (s->flags & SOCK_NBIO) return -EAGAIN;
   
   rc = submit_socket_request(s, &req, SOCKREQ_CONNECT, NULL, INFINITE);
   if (rc < 0) return rc;
@@ -645,6 +671,9 @@ static int tcpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
 
   rc = fetch_rcvbuf(s, msg->iov, msg->iovlen);
   if (rc < 0) return rc;
+
+  if (!s->tcp.recvhead) clear_io_event(&s->iob, IOEVT_READ);
+
   if (rc > 0)
   {
     tcp_recved(s->tcp.pcb, rc);
@@ -680,6 +709,8 @@ static int tcpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   rc = fill_sndbuf(s, msg->iov, msg->iovlen);
   if (rc < 0) return rc;
   bytes = rc;
+
+  if (tcp_sndbuf(s->tcp.pcb) == 0) clear_io_event(&s->iob, IOEVT_WRITE);
 
   if (bytes < size && (s->flags & SOCK_NBIO) == 0)
   {

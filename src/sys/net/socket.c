@@ -172,6 +172,24 @@ int recv(struct socket *s, void *data, int size, unsigned int flags)
   return rc;
 }
 
+int recvmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
+{
+  struct msghdr m;
+  int rc;
+
+  m.name = msg->name;
+  m.namelen = msg->namelen;
+  m.iov = dup_iovec(msg->iov, msg->iovlen);
+  m.iovlen = msg->iovlen;
+  if (!m.iov) return -ENOMEM;
+
+  rc = sockops[s->type]->recvmsg(s, &m, flags);
+  msg->namelen = m.namelen;
+  kfree(m.iov);
+
+  return rc;
+}
+
 int recvv(struct socket *s, struct iovec *iov, int count)
 {
   struct msghdr msg;
@@ -228,6 +246,23 @@ int send(struct socket *s, void *data, int size, unsigned int flags)
   iov.iov_len = size;
 
   rc = sockops[s->type]->sendmsg(s, &msg, flags);
+
+  return rc;
+}
+
+int sendmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
+{
+  struct msghdr m;
+  int rc;
+
+  m.name = msg->name;
+  m.namelen = msg->namelen;
+  m.iov = dup_iovec(msg->iov, msg->iovlen);
+  m.iovlen = msg->iovlen;
+  if (!m.iov) return -ENOMEM;
+
+  rc = sockops[s->type]->sendmsg(s, &m, flags);
+  kfree(m.iov);
 
   return rc;
 }
@@ -315,7 +350,7 @@ int socket(int domain, int type, int protocol, struct socket **retval)
   if (!s) return -ENOMEM;
   memset(s, 0, sizeof(struct socket));
 
-  init_object(&s->object, OBJECT_SOCKET);
+  init_object(&s->iob.object, OBJECT_SOCKET);
   s->type = socktype;
   s->state = SOCKSTATE_UNBOUND;
 

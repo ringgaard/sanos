@@ -1726,7 +1726,7 @@ static int sys_accept(char *params)
   rc = accept(s, addr, addrlen, &news);
   if (rc == 0)
   {
-    rc = halloc(&news->object);
+    rc = halloc(&news->iob.object);
     if (rc < 0) closesocket(news);
   }
 
@@ -2260,7 +2260,7 @@ static int sys_socket(char *params)
   rc = socket(domain, type, protocol, &s);
   if (rc == 0)
   {
-    rc = halloc(&s->object);
+    rc = halloc(&s->iob.object);
     if (rc < 0) closesocket(s);
   }
 
@@ -2304,6 +2304,7 @@ static int sys_readv(char *params)
   else
     rc = -EBADF;
 
+  unlock_iovec(iov, count);
   orel(o);
   unlock_buffer(params, 12);
 
@@ -2345,6 +2346,7 @@ static int sys_writev(char *params)
   else
     rc = -EBADF;
 
+  lock_iovec(iov, count);
   orel(o);
   unlock_buffer(params, 12);
 
@@ -2446,6 +2448,116 @@ static int sys_dispatch(char *params)
   return rc;
 }
 
+static int sys_recvmsg(char *params)
+{
+  handle_t h;
+  struct msghdr *msg;
+  unsigned int flags;
+  struct socket *s;
+  int rc;
+
+  if (lock_buffer(params, 12) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  msg = *(struct msghdr **) (params + 4);
+  flags = *(unsigned int *) (params + 8);
+
+  s = (struct socket *) olock(h, OBJECT_SOCKET);
+  if (!s) 
+  {
+    unlock_buffer(params, 12);
+    return -EBADF;
+  }
+
+  if (lock_buffer(msg, sizeof(struct msghdr)) < 0)
+  {
+    orel(s);
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+  
+  if (lock_iovec(msg->iov, msg->iovlen) < 0)
+  {
+    unlock_buffer(msg, sizeof(struct msghdr));
+    orel(s);
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+
+  if (lock_buffer(msg->name, msg->namelen) < 0)
+  {
+    unlock_iovec(msg->iov, msg->iovlen);
+    unlock_buffer(msg, sizeof(struct msghdr));
+    orel(s);
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+
+  rc = recvmsg(s, msg, flags);
+
+  unlock_iovec(msg->iov, msg->iovlen);
+  unlock_buffer(msg, sizeof(struct msghdr));
+  orel(s);
+  unlock_buffer(params, 12);
+
+  return rc;
+}
+
+static int sys_sendmsg(char *params)
+{
+  handle_t h;
+  struct msghdr *msg;
+  unsigned int flags;
+  struct socket *s;
+  int rc;
+
+  if (lock_buffer(params, 12) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  msg = *(struct msghdr **) (params + 4);
+  flags = *(unsigned int *) (params + 8);
+
+  s = (struct socket *) olock(h, OBJECT_SOCKET);
+  if (!s) 
+  {
+    unlock_buffer(params, 12);
+    return -EBADF;
+  }
+
+  if (lock_buffer(msg, sizeof(struct msghdr)) < 0)
+  {
+    orel(s);
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+  
+  if (lock_iovec(msg->iov, msg->iovlen) < 0)
+  {
+    unlock_buffer(msg, sizeof(struct msghdr));
+    orel(s);
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+
+  if (lock_buffer(msg->name, msg->namelen) < 0)
+  {
+    unlock_iovec(msg->iov, msg->iovlen);
+    unlock_buffer(msg, sizeof(struct msghdr));
+    orel(s);
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+
+  rc = sendmsg(s, msg, flags);
+
+  unlock_iovec(msg->iov, msg->iovlen);
+  unlock_buffer(msg, sizeof(struct msghdr));
+  orel(s);
+  unlock_buffer(params, 12);
+
+  return rc;
+}
+
 struct syscall_entry syscalltab[] =
 {
   {"null","", sys_null},
@@ -2525,6 +2637,8 @@ struct syscall_entry syscalltab[] =
   {"chdir", "'%s'", sys_chdir},
   {"mkiomux", "%d", sys_mkiomux},
   {"dispatch", "%d,%d,%d,%d", sys_dispatch},
+  {"recvmsg", "%d,%p,%d", sys_recvmsg},
+  {"sendmsg", "%d,%p,%d", sys_sendmsg},
 };
 
 int syscall(int syscallno, char *params)
@@ -2539,7 +2653,7 @@ int syscall(int syscallno, char *params)
 
 #ifdef SYSCALL_LOGENTER
 #ifndef SYSCALL_LOGWAIT
-  if (syscallno != SYSCALL_WAIT)
+  if (syscallno != SYSCALL_WAIT && syscallno != SYSCALL_WAITALL && syscallno != SYSCALL_WAITANY)
 #endif
   {
 

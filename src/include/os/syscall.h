@@ -111,7 +111,9 @@
 #define SYSCALL_CHDIR        74
 #define SYSCALL_MKIOMUX      75
 #define SYSCALL_DISPATCH     76
+#define SYSCALL_RECVMSG      77
+#define SYSCALL_SENDMSG      78
 
-#define SYSCALL_MAX          76
+#define SYSCALL_MAX          78
 
 #endif

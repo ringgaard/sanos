@@ -82,6 +82,8 @@ static err_t recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
       s->udp.recvhead = p;
       s->udp.recvtail = p;
     }
+
+    set_io_event(&s->iob, IOEVT_READ);
   }
 
   return 0;
@@ -211,7 +213,21 @@ static int udpsock_getsockopt(struct socket *s, int level, int optname, char *op
 
 static int udpsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
 {
-  return -ENOSYS;
+  switch (cmd)
+  {
+    case FIONBIO:
+      if (!data || size != 4) return -EFAULT;
+      if (*(int *) data)
+	s->flags |= SOCK_NBIO;
+      else
+	s->flags &= ~SOCK_NBIO;
+      break;
+
+    default:
+      return -ENOSYS;
+  }
+
+  return 0;
 }
 
 static int udpsock_listen(struct socket *s, int backlog)
@@ -235,6 +251,7 @@ static int udpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   {
     s->udp.recvhead = pbuf_dechain(p);
     if (!s->udp.recvhead) s->udp.recvtail = NULL; 
+    if (!s->udp.recvhead) clear_io_event(&s->iob, IOEVT_READ);
 
     buf = p->payload;
     len = p->len;
@@ -262,6 +279,8 @@ static int udpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
 
     pbuf_free(p);
   }
+  else if (s->flags & SOCK_NBIO)
+    rc = -EAGAIN;
   else
     rc = submit_socket_request(s, &req, SOCKREQ_RECV, msg, s->udp.rcvtimeo);
 
@@ -349,6 +368,8 @@ static int udpsock_socket(struct socket *s, int domain, int type, int protocol)
 {
   s->udp.sndtimeo = INFINITE;
   s->udp.rcvtimeo = INFINITE;
+  set_io_event(&s->iob, IOEVT_WRITE);
+
   return 0;
 }
 

@@ -506,6 +506,14 @@ struct ifcfg
   struct sockaddr netmask;
 };
 
+struct msghdr
+{
+  struct sockaddr *name;
+  int namelen;
+  struct iovec *iov;
+  int iovlen;
+};
+
 struct hostent 
 {
   char *h_name;        // Official name of host
@@ -629,6 +637,20 @@ __inline void _fd_clr(int fd, fd_set *set)
     }
   }
 }
+
+struct pollfd 
+{
+  int fd;           // File descriptor
+  short events;     // Requested events
+  short revents;    // Returned events
+};
+
+#define IOEVT_READ     0x0001
+#define IOEVT_WRITE    0x0002
+#define IOEVT_ERROR    0x0004
+#define IOEVT_ACCEPT   0x0008
+#define IOEVT_CONNECT  0x0010
+#define IOEVT_CLOSE    0x0020
 
 //
 // Process Environment Block
@@ -866,8 +888,10 @@ osapi int getsockopt(int s, int level, int optname, char *optval, int *optlen);
 osapi int listen(int s, int backlog);
 osapi int recv(int s, void *data, int size, unsigned int flags);
 osapi int recvfrom(int s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen);
+osapi int recvmsg(int s, struct msghdr *hdr, unsigned int flags);
 osapi int send(int s, const void *data, int size, unsigned int flags);
 osapi int sendto(int s, const void *data, int size, unsigned int flags, const struct sockaddr *to, int tolen);
+osapi int sendmsg(int s, struct msghdr *hdr, unsigned int flags);
 osapi int setsockopt(int s, int level, int optname, const char *optval, int optlen);
 osapi int shutdown(int s, int how);
 osapi int socket(int domain, int type, int protocol);

@@ -96,14 +96,6 @@ struct sockops
   int (*socket)(struct socket *s, int domain, int type, int protocol);
 };
 
-struct msghdr
-{
-  struct sockaddr *name;
-  int namelen;
-  struct iovec *iov;
-  int iovlen;
-};
-
 struct tcpsocket
 {
   struct tcp_pcb *pcb;
@@ -127,7 +119,8 @@ struct udpsocket
 
 struct socket
 {
-  struct object object;
+  struct ioobject iob;
+
   int type;
   int state;
   int flags;
@@ -169,8 +162,10 @@ int ioctlsocket(struct socket *s, int cmd, void *data, size_t size);
 int listen(struct socket *s, int backlog);
 int recv(struct socket *s, void *data, int size, unsigned int flags);
 int recvfrom(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen);
+int recvmsg(struct socket *s, struct msghdr *msg, unsigned int flags);
 int recvv(struct socket *s, struct iovec *iov, int count);
 int send(struct socket *s, void *data, int size, unsigned int flags);
+int sendmsg(struct socket *s, struct msghdr *msg, unsigned int flags);
 int sendto(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *to, int tolen);
 int sendv(struct socket *s, struct iovec *iov, int count);
 int setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen);
