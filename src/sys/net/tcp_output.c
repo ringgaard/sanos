@@ -354,8 +354,8 @@ err_t tcp_output(struct tcp_pcb *pcb)
         for (useg = pcb->unacked; useg->next != NULL; useg = useg->next);
         useg->next = seg;
       }
-    } 
-    else 
+    }
+    else
       tcp_seg_free(seg);
     
     seg = pcb->unsent;

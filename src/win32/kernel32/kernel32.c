@@ -1359,7 +1359,7 @@ BOOL WINAPI SetFileAttributesA
 )
 {
   TRACE("SetFileAttributesA");
-  syslog(LOG_DEBUG, "warning: SetFileAttributesA not implemented, ignored\n");
+  syslog(LOG_DEBUG, "warning: SetFileAttributesA(%s,%08x) not implemented, ignored\n", lpFileName, dwFileAttributes);
   return TRUE;
 }
 

@@ -168,6 +168,7 @@ struct fd
   struct fdc *fdc;
   struct fdgeometry *geom;
   int motor_status;
+  int drive_initialized;
   int media_changed;
   unsigned int motor_timeout;
   unsigned char drive;
@@ -365,6 +366,23 @@ static int fd_recalibrate(struct fd *fd)
 }
 
 //
+// fd_initialize
+//
+
+static int fd_initialize(struct fd *fd)
+{
+  // Specify drive timings
+  fd_command(CMD_SPECIFY);
+  fd_command(0xdf);  // SRT = 3ms, HUT = 240ms 
+  fd_command(0x02);  // HLT = 16ms, ND = 0
+  
+  //fd_recalibrate(fd);
+
+  fd->drive_initialized = 1;
+  return 0;
+}
+
+//
 // fd_transfer
 //
 
@@ -521,6 +539,7 @@ static int fd_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
   char *buf;
 
   if (wait_for_object(&fd->fdc->lock, FD_BUSY_TIMEOUT) < 0) return -EBUSY;
+  if (!fd->drive_initialized) fd_initialize(fd);
   fd_motor_on(fd);
 
   left = count;
@@ -559,6 +578,7 @@ static int fd_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
   char *buf;
 
   if (wait_for_object(&fd->fdc->lock, FD_BUSY_TIMEOUT) < 0) return -EBUSY;
+  if (!fd->drive_initialized) fd_initialize(fd);
   fd_motor_on(fd);
 
   left = count;
@@ -625,15 +645,9 @@ static void init_drive(char *devname, struct fd *fd, struct fdc *fdc, int drive,
   fd->geom = geom;
   fd->drive = drive;
   fd->curtrack = 0xFF;
+  fd->drive_initialized = 0;
 
-  // Specify drive timings
-  fd_command(CMD_SPECIFY);
-  fd_command(0xdf);  // SRT = 3ms, HUT = 240ms 
-  fd_command(0x02);  // HLT = 16ms, ND = 0
-  
   dev_make(devname, &floppy_driver, NULL, fd);
-
-  //fd_recalibrate(fd);
 
   kprintf("%s: %s, %d KB, THS=%u/%u/%u\n", devname, fd->geom->name,
     fd->geom->tracks * fd->geom->heads * fd->geom->spt * SECTORSIZE / K,
@@ -646,14 +660,15 @@ void init_fd()
   unsigned char fdtypes;
   int first_floppy;
   int second_floppy;
-  int version;
-  char *name;
+  //int version;
+  //char *name;
 
   fdtypes = read_cmos_reg(0x10);
   first_floppy = (fdtypes >> 4) & 0x0F;
   second_floppy = fdtypes & 0x0F;
   if (!first_floppy && !second_floppy) return;
 
+#if 0
   // FIXME: the version command times out when not floppy is inserted
   fd_init = 1;
   if (fd_command(CMD_VERSION) < 0) return;
@@ -679,12 +694,13 @@ void init_fd()
       kprintf("fd: unknown fdc type 0x%02x\n", version);
       return;
   }
+#endif
 
   memset(&fdc, 0, sizeof(struct fdc));
   memset(&fddrives, 0, sizeof(struct fd) * NUMDRIVES);
 
-  fdc.type = version;
-  fdc.name = name;
+  //fdc.type = version;
+  //fdc.name = name;
 
   init_dpc(&fdc.dpc);
   init_mutex(&fdc.lock, 0);
@@ -702,7 +718,7 @@ void init_fd()
   register_interrupt(&fdc.intr, INTR_FD, fd_handler, &fdc);
   enable_irq(IRQ_FD); 
 
-  kprintf("fdc: %s\n", fdc.name);
+  //kprintf("fdc: %s\n", fdc.name);
 
   // FIXME: support other geometries: 0=unknown, 1=360K 5 1/4", 2=1.2M 5 1/4", 3=720K 3 1/2", 4=1.44M 3 1/2"
   if (first_floppy == 0x4) init_drive("fd0", &fddrives[0], &fdc, 0, &geom144);

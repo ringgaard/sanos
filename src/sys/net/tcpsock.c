@@ -529,14 +529,18 @@ static int tcpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
     if (rc < 0) return rc;
   }
 
+  s->state = SOCKSTATE_CONNECTING;
+
   rc = tcp_connect(s->tcp.pcb, (struct ip_addr *) &sin->sin_addr, ntohs(sin->sin_port), connected_tcp);
   if (rc < 0) return rc;
 
-  s->state = SOCKSTATE_CONNECTING;
-  if (s->flags & SOCK_NBIO) return -EAGAIN;
+  if (s->state != SOCKSTATE_CONNECTED)
+  {
+    if (s->flags & SOCK_NBIO) return -EAGAIN;
   
-  rc = submit_socket_request(s, &req, SOCKREQ_CONNECT, NULL, INFINITE);
-  if (rc < 0) return rc;
+    rc = submit_socket_request(s, &req, SOCKREQ_CONNECT, NULL, INFINITE);
+    if (rc < 0) return rc;
+  }
 
   return 0;
 }

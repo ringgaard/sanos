@@ -400,7 +400,7 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	// Send a SYN|ACK together with the MSS option
 	tcp_enqueue(npcb, NULL, 0, TCP_SYN | TCP_ACK, (unsigned char *) &optdata, 4);
 	return tcp_output(npcb);
-      }  
+      }
       break;
 
     case SYN_SENT:
