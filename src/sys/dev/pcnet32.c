@@ -10,12 +10,13 @@
 
 #define offsetof(s,m)   (size_t)&(((s *)0)->m)
 
+/*XXX  Need to get a few more of these in */
 #define PCI_DEVICE_PCNET32	0x2000
 #define PCI_VENDOR_AMD		0x1022
 
-// Offsets from base I/O address
-#define PCNET32_WIO_RDP		0x10 // Register data port
-#define PCNET32_WIO_RAP		0x12 // Register address port
+/* Offsets from base I/O address */
+#define PCNET32_WIO_RDP		0x10 /* Register data port */
+#define PCNET32_WIO_RAP		0x12 /* Register address port */
 #define PCNET32_WIO_RESET	0x14
 #define PCNET32_WIO_BDP		0x16
 

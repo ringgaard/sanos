@@ -422,7 +422,7 @@ void idle_task()
 
 void debug_intr_handler(struct context *ctxt, void *arg)
 {
-  //kprintf("debug intr\n");
+  kprintf("debug intr\n");
 }
 
 void init_sched()
@@ -443,5 +443,5 @@ void init_sched()
   idle_thread->priority = PRIORITY_IDLE;
   idle_thread->state = THREAD_STATE_RUNNING;
 
-  set_interrupt_handler(INTR_DEBUG, debug_intr_handler, NULL);
+  //set_interrupt_handler(INTR_DEBUG, debug_intr_handler, NULL);
 }

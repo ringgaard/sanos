@@ -24,7 +24,7 @@ CFG=clib - Win32 SanOS
 # PROP AllowPerConfigDependencies 0
 # PROP Scc_ProjName "clib"
 # PROP Scc_LocalPath ".."
-CPP=xicl6.exe
+CPP=cl.exe
 RSC=rc.exe
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
@@ -43,7 +43,7 @@ RSC=rc.exe
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
-LIB32=xilink6.exe -lib
+LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo /out:"..\lib\clib.lib"
 # Begin Target
