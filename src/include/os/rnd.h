@@ -1,5 +1,5 @@
 //
-// random.h
+// rnd.h
 //
 // A strong random number generator
 //
@@ -32,8 +32,8 @@
 // SUCH DAMAGE.
 // 
 
-#ifndef RANDOM_H
-#define RANDOM_H
+#ifndef RND_H
+#define RND_H
 
 krnlapi void get_random_bytes(void *buf, int nbytes);
 void add_dpc_randomness(void *dpc);

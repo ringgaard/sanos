@@ -1492,7 +1492,7 @@ static void kbdtest()
   printf("\n");
 }
 
-static void rndtest(int argc, char *argv[])
+static void rndtest0(int argc, char *argv[])
 {
   int f;
   unsigned char buf[16];
@@ -1500,10 +1500,10 @@ static void rndtest(int argc, char *argv[])
   int n;
   int m;
 
-  f = open("/dev/random", 0);
+  f = open("/dev/urandom", 0);
   if (f < 0)
   {
-    perror("/dev/random");
+    perror("/dev/urandom");
     return;
   }
 
@@ -1514,10 +1514,29 @@ static void rndtest(int argc, char *argv[])
     printf("random: ");
     for (n = 0; n < bytes; n++) printf("%02x", buf[n]);
     printf("\n");
-    sleep(1000);
+    //sleep(1000);
   }
 
   close(f);
+}
+
+static void rndtest(int argc, char *argv[])
+{
+  static int seeded = 0;
+  int m, n;
+
+  if (!seeded)
+  {
+    srandomdev();
+    seeded = 1;
+  }
+
+  for (m = 0; m < 10; m++)
+  {
+    printf("random: ");
+    for (n = 0; n < 4; n++) printf("%08x", random());
+    printf("\n");
+  }
 }
 
 void shell()

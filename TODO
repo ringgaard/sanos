@@ -316,3 +316,6 @@ CHANGES
 - Added job object to group threads executing an application
 
 - /dev/random and /dev/urandom devices added
+
+- BSD random number functions added to lib
+

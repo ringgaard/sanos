@@ -931,6 +931,9 @@
 			RelativePath="..\src\lib\qsort.c">
 		</File>
 		<File
+			RelativePath="..\src\lib\random.c">
+		</File>
+		<File
 			RelativePath="..\src\lib\readline.c">
 		</File>
 		<File

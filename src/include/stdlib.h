@@ -110,6 +110,12 @@ int get_num_option(char *opts, char *name, int defval);
 
 int readline(int f, char *buf, int size);
 
+void srandom(unsigned long x);
+void srandomdev();
+char *initstate(unsigned long seed, char *arg_state, long n);
+char *setstate(char *arg_state);
+long random();
+
 #define max(a,b) (((a) > (b)) ? (a) : (b))
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 
