@@ -410,7 +410,7 @@ static int bind_imports(struct module *mod)
 
   // Find import directory in image
   imp = (struct image_import_descriptor *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_IMPORT);
-  if (!imp) return -ENOEXEC;
+  if (!imp) return 0;
   
   if (imp->forwarder_chain != 0 && imp->forwarder_chain != 0xFFFFFFFF)
   {

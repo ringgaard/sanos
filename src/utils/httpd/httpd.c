@@ -46,5 +46,6 @@ httpdapi int httpd_start(struct httpd_server *hs)
 
 int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
 {
+  //syslog(LOG_DEBUG, "httpd loaded\n");
   return TRUE;
 }

@@ -116,6 +116,44 @@ void stop(int restart)
   }
 }
 
+
+// Date string Mmm dd YYYY
+//             01234567890
+
+static int daynumber(char *datestr)
+{
+  struct tm tm;
+
+  memset(&tm, 0, sizeof(struct tm));
+
+  switch (datestr[0])
+  {
+    case 'J': tm.tm_mon = (datestr[1] == 'a') ? 0 : ((datestr[2] == 'n') ? 5 : 6); break;
+    case 'F': tm.tm_mon = 1; break;
+    case 'M': tm.tm_mon = (datestr[2] == 'r') ? 2 : 4; break;
+    case 'A': tm.tm_mon = (datestr[1] == 'p') ? 3 : 7; break;
+    case 'S': tm.tm_mon = 8; break;
+    case 'O': tm.tm_mon = 9; break;
+    case 'N': tm.tm_mon = 10; break;
+    case 'D': tm.tm_mon = 11; break;
+  }
+
+  tm.tm_mday = datestr[5] - '0';
+  if (datestr[4] != ' ') tm.tm_mday += (datestr[4] - '0') * 10;
+
+  tm.tm_year += (datestr[7] - '0') * 1000;
+  tm.tm_year += (datestr[8] - '0') * 100;
+  tm.tm_year += (datestr[9] - '0') * 10;
+  tm.tm_year += (datestr[10] - '0') - 1900;
+
+  return mktime(&tm) / (24 * 60 * 60);
+}
+
+int buildno()
+{
+  return daynumber(__DATE__) - daynumber(LAST_RELEASE_DATE) + 1;
+}
+
 static int load_kernel_config()
 {
   struct file *f;
@@ -158,11 +196,11 @@ static int load_kernel_config()
 static int version_proc(struct proc_file *pf, void *arg)
 {
 #ifdef DEBUG
-  pprintf(pf, OSNAME " version " OSVERSION " (Debug Build " __DATE__ " " __TIME__ ")\n");
+  pprintf(pf, "%s version %s Debug Build %d (%s %s)\n", OSNAME, OSVERSION, buildno(), __DATE__, __TIME__);
 #else
-  pprintf(pf, OSNAME " version " OSVERSION " (Build " __DATE__ " " __TIME__ ")\n");
+  pprintf(pf, "%s version %s Build %d (%s %s)\n", OSNAME, OSVERSION, buildno(), __DATE__, __TIME__);
 #endif
-  pprintf(pf, COPYRIGHT "\n");
+  pprintf(pf, "%s\n", COPYRIGHT);
 
   return 0;
 }
@@ -181,11 +219,11 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
 
   // Display banner
 #ifdef DEBUG
-  print_string(OSNAME " version " OSVERSION " (Debug Build " __DATE__ " " __TIME__ ")\n");
+  kprintf("%s version %s Debug Build %d (%s %s)\n", OSNAME, OSVERSION, buildno(), __DATE__, __TIME__);
 #else
-  print_string(OSNAME " version " OSVERSION " (Build " __DATE__ " " __TIME__ ")\n");
+  kprintf("%s version %s Build %d (%s %s)\n", OSNAME, OSVERSION, buildno(), __DATE__, __TIME__);
 #endif
-  print_string(COPYRIGHT "\n\n");
+  kprintf("%s\n", COPYRIGHT);
 
   // Initialize CPU
   init_cpu();

@@ -142,3 +142,7 @@ CHANGES
 - Revalidate partition drivers after fdisk
 
 - Bug in FPU context handling fixed
+
+- strftime() implemented
+
+- Bug loading DLL with no imports fixed
