@@ -126,7 +126,7 @@ static int cdfs_read_path_table(struct cdfs *cdfs, struct iso_primary_descriptor
   if (!cdfs->path_table) return -ENOMEM;
   cdfs->path_table[0] = NULL;
 
-  // Setup pointers into path table buffers
+  // Setup pointers into path table buffer
   pt = cdfs->path_table_buffer;
   for (n = 1; n < cdfs->path_table_records; n++)
   {
@@ -233,18 +233,26 @@ static int cdfs_find_in_dir(struct cdfs *cdfs, int dir, char *name, int len, str
     rec = (struct iso_directory_record *) p;
     reclen = isonum_711(rec->length);
     namelen = isonum_711(rec->name_len);
-    if (reclen == 0) break;
-
-    if (cdfs_fnmatch(cdfs, name, len, (char *) rec->name, namelen))
+    
+    if (reclen > 0)
     {
-      *dirrec = rec;
-      *dirbuf = buf;
-      return 0;
-    }
+      if (cdfs_fnmatch(cdfs, name, len, (char *) rec->name, namelen))
+      {
+        *dirrec = rec;
+        *dirbuf = buf;
+        return 0;
+      }
 
-    // Skip to next record
-    p += reclen;
-    left -= reclen;
+      // Skip to next record
+      p += reclen;
+      left -= reclen;
+    }
+    else
+    {
+      // Skip to next block
+      left -= (buf->data + CDFS_BLOCKSIZE) - p;
+      p = buf->data + CDFS_BLOCKSIZE;
+    }
   }
 
   release_buffer(cdfs->cache, buf);
@@ -499,6 +507,7 @@ int cdfs_readdir(struct file *filp, struct dirent *dirp, int count)
   int namelen;
   int reclen;
 
+blkagain:
   if (count != 1) return -EINVAL;
   if (filp->pos >= cdfile->size) return 0;
 
@@ -507,26 +516,29 @@ int cdfs_readdir(struct file *filp, struct dirent *dirp, int count)
   if (!buf) return -EIO;
   
   // Locate directory record
-again:
+recagain:
   rec = (struct iso_directory_record *) (buf->data + (int) filp->pos % CDFS_BLOCKSIZE);
   reclen = isonum_711(rec->length);
   namelen = isonum_711(rec->name_len);
   if (namelen > 1 && rec->name[namelen - 2] == ';') namelen -= 2;
   
-  // Check for end of directory
+  // Check for no more records in block
   if (reclen == 0)
   {
+    int blkleft = CDFS_BLOCKSIZE - ((int) filp->pos % CDFS_BLOCKSIZE);
     release_buffer(cdfs->cache, buf);
-    return 0;
+    filp->pos += blkleft;
+    goto blkagain;
   }
 
   // Check for . and .. entries
   if (namelen == 1 && (rec->name[0] == 0 || rec->name[0] == 1))
   {
     filp->pos += reclen;
-    goto again;
+    goto recagain;
   }
 
+  // Get info from directory record
   dirp->ino = isonum_733(rec->extent);
   dirp->namelen = namelen;
   dirp->reclen = sizeof(struct dirent) - MAXPATH + namelen + 1;
@@ -534,6 +546,7 @@ again:
   dirp->name[namelen] = 0;
   filp->pos += reclen;
 
+  release_buffer(cdfs->cache, buf);
   return 1;
 }
 
