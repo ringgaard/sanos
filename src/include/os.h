@@ -168,7 +168,6 @@ struct section;
 #define TRACEX(s)
 #endif
 
-#define OK    0
 #define INFINITE  0xFFFFFFFF
 
 #define INTRES(x) ((char *)((unsigned long)((unsigned short)(x))))
