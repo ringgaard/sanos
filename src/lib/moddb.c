@@ -763,8 +763,10 @@ hmodule_t load_module(struct moddb *db, char *name, int flags)
       if ((flags & MODLOAD_NOINIT) == 0 || m != mod)
       {
 	int ok;
-        
+
+	logmsg(db, "initializing module %s", m->name);
 	ok = ((int (__stdcall *)(hmodule_t, int, void *)) get_entrypoint(m->hmod))(m->hmod, DLL_PROCESS_ATTACH, NULL);
+	logmsg(db, "module %s initialized%s", m->name, ok ? "" : ", init failed");
 	if (!ok)
 	{
 	  free_unused_modules(db);

@@ -78,7 +78,7 @@ void syslog(int priority, const char *fmt,...)
     vsprintf(buffer, fmt, args);
     va_end(args);
     write(1, buffer, strlen(buffer));
-    if (logfile > 0) write(logfile, buffer, strlen(buffer));
+    if (logfile >= 0) write(logfile, buffer, strlen(buffer));
   }
 }
 
@@ -581,13 +581,6 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   // Load configuration file
   config = read_properties("/etc/os.ini");
   if (!config) panic("error reading /etc/os.ini");
-  loglevel = get_numeric_property(config, "os", "loglevel", loglevel);
-  logfn = get_property(config, "os", "logfile", NULL);
-  if (logfn != NULL) 
-  {
-    logfile = open(logfn, O_CREAT);
-    if (logfile > 0) lseek(logfile, 0, SEEK_END);
-  }
 
   // Initialize network interfaces
   init_net();
@@ -609,6 +602,15 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 
   // Mount devices
   init_mount();
+
+  // Initialize log
+  loglevel = get_numeric_property(config, "os", "loglevel", loglevel);
+  logfn = get_property(config, "os", "logfile", NULL);
+  if (logfn != NULL) 
+  {
+    logfile = open(logfn, O_CREAT);
+    if (logfile >= 0) lseek(logfile, 0, SEEK_END);
+  }
 
   // Load and execute init program
   initpgm = get_property(config, "os", "initpgm", "/bin/init.exe");

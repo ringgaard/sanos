@@ -257,7 +257,7 @@ BOOL WINAPI SetServiceStatus
   return TRUE;
 }
 
-SERVICE_STATUS_HANDLE RegisterServiceCtrlHandlerA
+SERVICE_STATUS_HANDLE WINAPI RegisterServiceCtrlHandlerA
 (
   LPCTSTR lpServiceName,
   LPHANDLER_FUNCTION lpHandlerProc

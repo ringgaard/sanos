@@ -590,10 +590,29 @@ DWORD WINAPI FormatMessageA
   va_list *Arguments
 )
 {
+  char *buf;
+
   TRACE("FormatMessageA");
+
   // TODO: generate mote descriptive message
-  sprintf(lpBuffer, "Error Message %p.\n", dwMessageId);
-  return strlen(lpBuffer);
+  if (dwFlags & FORMAT_MESSAGE_ALLOCATE_BUFFER)
+  {
+    buf = malloc(nSize > 256 ? nSize : 256);
+    if (!buf) 
+    {
+      errno = -ENOMEM;
+      return 0;
+    }
+
+    *(char **) lpBuffer = buf;
+  }
+  else
+  {
+    buf = lpBuffer;
+  }
+
+  sprintf(buf, "Error 0x%08X.\n", dwMessageId);
+  return strlen(buf);
 }
 
 BOOL WINAPI FreeLibrary
@@ -901,7 +920,7 @@ VOID WINAPI GetSystemTime
   lpSystemTime->wMilliseconds = (WORD) (tv.tv_usec / 1000);
 }
 
-VOID GetSystemTimeAsFileTime
+VOID WINAPI GetSystemTimeAsFileTime
 (
   LPFILETIME lpSystemTimeAsFileTime
 )
