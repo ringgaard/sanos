@@ -731,8 +731,13 @@ void dispatch()
 
 void yield()
 {
+  struct thread *t = self();
+
+  // Give up remaining quantum
+  t->quantum = 0;
+
   // Mark thread as ready to run
-  mark_thread_ready(self());
+  mark_thread_ready(t);
 
   // Dispatch next thread
   dispatch();

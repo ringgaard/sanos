@@ -870,7 +870,7 @@ static int httpget(char *server, char *path, char *filename)
   {
     write(f, buf, n);
     count += n;
-    //printf("count %d\n", count);
+    //printf("len %d\n", n);
   }
 
   if (rc < 0)

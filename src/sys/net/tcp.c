@@ -677,7 +677,7 @@ struct tcp_pcb *tcp_new()
 void tcp_init()
 {
   // Initialize timer
-  iss = time(0) + 6510;
+  iss = 1; //time(0) + 6510;
   tcp_ticks = 0;
   init_task(&tcp_slow_task);
   init_task(&tcp_fast_task);

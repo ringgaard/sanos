@@ -337,7 +337,6 @@ err_t tcp_output(struct tcp_pcb *pcb)
       pcb->flags &= ~(TF_ACK_DELAY | TF_ACK_NOW);
     }
     
-    tcp_output_segment(seg, pcb);
     pcb->snd_nxt = ntohl(seg->tcphdr->seqno) + TCP_TCPLEN(seg);
     if (TCP_SEQ_LT(pcb->snd_max, pcb->snd_nxt)) pcb->snd_max = pcb->snd_nxt;
 
@@ -354,10 +353,15 @@ err_t tcp_output(struct tcp_pcb *pcb)
         for (useg = pcb->unacked; useg->next != NULL; useg = useg->next);
         useg->next = seg;
       }
+
+      tcp_output_segment(seg, pcb);
     }
     else
+    {
+      tcp_output_segment(seg, pcb);
       tcp_seg_free(seg);
-    
+    }
+
     seg = pcb->unsent;
   } 
   

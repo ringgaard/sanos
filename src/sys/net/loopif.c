@@ -39,23 +39,14 @@ struct queue *loopback_queue;
 
 static err_t loopif_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
 {
-  struct pbuf *q, *r;
-  char *ptr;
+  struct pbuf *q;
 
   if ((netif->flags & NETIF_UP) == 0) return -ENETDOWN;
 
-  r = pbuf_alloc(PBUF_RAW, p->tot_len, PBUF_RW);
-  if (!r) return -ENOMEM;
+  q = pbuf_dup(PBUF_RAW, p);
+  if (!q) return -ENOMEM;
 
-  ptr = r->payload;
-    
-  for (q = p; q != NULL; q = q->next) 
-  {
-    memcpy(ptr, q->payload, q->len);
-    ptr += q->len;
-  }
-
-  if (enqueue(loopback_queue, r, 0) < 0)
+  if (enqueue(loopback_queue, q, 0) < 0)
   {
     kprintf("loopif: drop (queue full)\n");
     stats.link.memerr++;
@@ -64,6 +55,7 @@ static err_t loopif_output(struct netif *netif, struct pbuf *p, struct ip_addr *
   }
 
   pbuf_free(p);
+  yield();
 
   return 0;
 }

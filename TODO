@@ -202,4 +202,4 @@ CHANGES
 
 - Added queue to loopback adapter
 
-
+- The yield() routine now discards the remaining quantum for the thread before yielding.
