@@ -147,9 +147,9 @@ int suspend_thread(struct thread *t);
 int resume_thread(struct thread *t);
 void terminate_thread(int exitcode);
 
-int init_task_queue(struct task_queue *tq, int priority, int maxsize, char *name);
-void init_task(struct task *task);
-int queue_task(struct task_queue *tq, struct task *task, taskproc_t proc, void *arg);
+krnlapi int init_task_queue(struct task_queue *tq, int priority, int maxsize, char *name);
+krnlapi void init_task(struct task *task);
+krnlapi int queue_task(struct task_queue *tq, struct task *task, taskproc_t proc, void *arg);
 
 krnlapi void init_dpc(struct dpc *dpc);
 krnlapi void queue_dpc(struct dpc *dpc, dpcproc_t proc, void *arg);

@@ -127,6 +127,7 @@ void ndisapi NdisInitializeWrapper(ndis_handle_t *ndis_wrapper_handle, void *sys
   NDISTRACE("NdisInitializeWrapper");
 
   kprintf("ndis: initialize wrapper for %s %s %p\n", get_unit_name(unit), system_specific2, system_specific3);
+  
   *ndis_wrapper_handle = "wrapper";
 }
 
