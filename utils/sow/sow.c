@@ -1,7 +1,7 @@
 //
 // sow.c
 //
-// Copyright (c) 2001 Michael Ringgaard. All rights reserved.
+// Copyright (c) 2002 Michael Ringgaard. All rights reserved.
 //
 // Sanos on Win32
 //
