@@ -100,7 +100,7 @@
 #define INTR_SYSENTER           0xFFFF
 
 //
-// Syscall context
+// syscall context
 //
 
 struct syscall_context
@@ -124,7 +124,6 @@ struct syscall_context
     } sysentry;
   };
 };
-
 
 typedef int (*intrproc_t)(struct context *ctxt, void *arg);
 

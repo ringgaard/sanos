@@ -371,6 +371,7 @@ static int sigexit_handler(struct context *ctxt, void *arg)
   debug = ctxt->eax;
   info = (struct siginfo *) ctxt->ebx;
 
+  // TODO: make sanity check on new context
   memcpy(ctxt, &info->ctxt, sizeof(struct context));
 
   if (debug) dbg_enter(ctxt, info->addr);
@@ -826,5 +827,42 @@ int get_context(struct thread *t, struct context *ctxt)
 
 int set_context(struct thread *t, struct context *ctxt)
 {
-  return -ENOSYS;
+  unsigned long *uctxt = (unsigned long *) t->uctxt;
+
+  if (!ctxt) return -EINVAL;
+  if (uctxt == NULL) return -EPERM;
+
+  if (*uctxt == INTR_SYSCALL)
+  {
+    struct syscall_context *sysctxt = (struct syscall_context *) ((char *) uctxt - offsetof(struct syscall_context, traptype));
+
+    sysctxt->softint.eip = ctxt->eip;
+    sysctxt->softint.eflags = ctxt->eflags;
+    sysctxt->softint.esp = ctxt->esp;
+  }
+  else if (*uctxt == INTR_SYSENTER)
+  {
+    struct syscall_context *sysctxt = (struct syscall_context *) ((char *) uctxt - offsetof(struct syscall_context, traptype));
+
+    sysctxt->sysentry.eip = ctxt->eip;
+    sysctxt->sysentry.esp = ctxt->esp;
+  }
+  else
+  {
+    struct context *trapctxt = (struct context *) ((char *) uctxt - offsetof(struct context, traptype));
+
+    trapctxt->esp = ctxt->esp;
+    trapctxt->eip = ctxt->eip;
+    trapctxt->eflags = ctxt->eflags;
+    trapctxt->ebp = ctxt->ebp;
+
+    trapctxt->eax = ctxt->eax;
+    trapctxt->ebx = ctxt->ebx;
+    trapctxt->ecx = ctxt->ecx;
+    trapctxt->edx = ctxt->edx;
+    trapctxt->esi = ctxt->esi;
+    trapctxt->edi = ctxt->edi;
+  }
+
+  return 0;
 }

@@ -1794,9 +1794,16 @@ BOOL WINAPI SetThreadContext
   struct context ctxt;
 
   TRACE("SetThreadContext");
+
+  if (lpContext->ContextFlags != (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS))
+  {
+    syslog(LOG_WARNING, "kernel32: incomplete context in SetContext, flags %lx\n", lpContext->ContextFlags); 
+  }
+
   memset(&ctxt, 0, sizeof(struct context));
   convert_from_win32_context(&ctxt, (CONTEXT *) lpContext);
   if (setcontext((handle_t) hThread, &ctxt) < 0) return FALSE;
+
   return TRUE;
 }
 

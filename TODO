@@ -299,7 +299,10 @@ CHANGES
 
 - CreateFile() and SetFileTime() implemented in kernel32.
 
-- WIN32 structured exception handling implemented in kernel32. When kernel32 is loaded it takes over the
-  global signal handler and dispatches the exceptions in the exception chain in the TIB.
+- WIN32 structured exception handling implemented in kernel32. When kernel32 is loaded it 
+  takes over the global signal handler and dispatches the exceptions in the exception 
+  chain in the TIB.
 
 - MSVCRT exception handling implemented.
+
+- setcontext() implemented.
