@@ -54,6 +54,7 @@
 #define HTTP_STATE_READ_REQUEST   1
 #define HTTP_STATE_PROCESSING     2
 #define HTTP_STATE_WRITE_RESPONSE 3
+#define HTTP_STATE_TERMINATED     4
 
 #define HDR_STATE_FIRSTWORD   0
 #define HDR_STATE_FIRSTWS     1
@@ -105,6 +106,7 @@ typedef union
 struct httpd_server
 {
   struct section *cfg;
+  struct section *mimemap;
   int port;
   int sock;
   int iomux;
@@ -128,6 +130,7 @@ struct httpd_context
   struct section *cfg;
   struct httpd_context *next;
   char *alias;
+  char *location;
   httpd_handler handler;
 };
 
@@ -207,14 +210,17 @@ httpdapi struct httpd_server *httpd_initialize(struct section *cfg);
 httpdapi int httpd_terminate(struct httpd_server *server);
 httpdapi struct httpd_context *httpd_add_context(struct httpd_server *server, struct section *cfg, httpd_handler handler); 
 httpdapi int httpd_start(struct httpd_server *server);
+httpdapi char *gttpd_get_mimetype(struct httpd_server *server, char *ext);
 
-httpdapi int httpd_recv(struct httpd_response *req, char *data, int len);
+httpdapi int httpd_recv(struct httpd_request *req, char *data, int len);
 
 httpdapi int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *headers);
 httpdapi int httpd_send_error(struct httpd_response *rsp, int state, char *title, char *msg);
 httpdapi int httpd_send(struct httpd_response *rsp, char *data, int len);
 httpdapi int httpd_send_file(struct httpd_response *rsp, int fd);
 httpdapi int httpd_flush(struct httpd_response *rsp);
+
+httpdapi int httpd_file_handler(struct httpd_connection *conn);
 
 #ifdef HTTPD_LIB
 

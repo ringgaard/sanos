@@ -45,6 +45,94 @@
 
 struct critsect srvlock;
 
+struct mimetype
+{
+  char *ext;
+  char *mime;
+};
+
+struct mimetype mimetypes[] = 
+{
+  {"txt",  "text/plain"},
+  {"html", "text/html"},
+  {"htm",  "text/html"},
+  {"rtx",  "text/richtext"},
+  {"css",  "text/css"},
+  {"xml",  "text/xml"},
+  {"dtd",  "text/xml"},
+
+  {"gif",  "image/gif"},
+  {"jpg",  "image/jpeg"},
+  {"jpeg", "image/jpeg"},
+  {"tif",  "image/tiff"},
+  {"tiff", "image/tiff"},
+  {"pbm",  "image/x-portable-bitmap"},
+  {"pgm",  "image/x-portable-graymap"},
+  {"ppm",  "image/x-portable-pixmap"},
+  {"pnm",  "image/x-portable-anymap"},
+  {"xbm",  "image/x-xbitmap"},
+  {"xpm",  "image/x-xpixmap"},
+  {"png",  "image/png"},
+
+  {"au",   "audio/basic"},
+  {"snd",  "audio/basic"},
+  {"aif",  "audio/x-aiff"},
+  {"aiff", "audio/x-aiff"},
+  {"aifc", "audio/x-aiff"},
+  {"ra",   "audio/x-pn-realaudio"},
+  {"ram",  "audio/x-pn-realaudio"},
+  {"rm",   "audio/x-pn-realaudio"},
+  {"rpm",  "audio/x-pn-realaudio-plugin"},
+  {"wav",  "audio/wav"},
+  {"mid",  "audio/midi"},
+  {"midi", "audio/midi"},
+  {"mpga", "audio/mpeg"},
+  {"mp2",  "audio/mpeg"},
+  {"mp3",  "audio/mpeg"},
+
+  {"mpeg", "video/mpeg"},
+  {"mpg",  "video/mpeg"},
+  {"mpe",  "video/mpeg"},
+  {"qt",   "video/quicktime"},
+  {"mov",  "video/quicktime"},
+  {"avi",  "video/x-msvideo"},
+
+  {"dll",  "application/octet-stream"},
+  {"exe",  "application/octet-stream"},
+  {"sys",  "application/octet-stream"},
+  {"class","application/java"},
+  {"js",   "application/x-javascript"},
+  {"eps",  "application/postscript"},
+  {"ps",   "application/postscript"},
+  {"spl",  "application/futuresplash"},
+  {"swf",  "application/x-shockwave-flash"},
+  {"dvi",  "application/x-dvi"},
+  {"gtar", "application/x-gtar"},
+  {"hqx",  "application/mac-binhex40"},
+  {"latex","application/x-latex"},
+  {"oda",  "application/oda"},
+  {"pdf",  "application/pdf"},
+  {"rtf",  "application/rtf"},
+  {"sit",  "application/x-stuffit"},
+  {"tar",  "application/x-tar"},
+  {"tex",  "application/x-tex"},
+  {"zip",  "application/x-zip-compressed"},
+  {"doc",  "application/msword"},
+  {"ppt",  "application/powerpoint"},
+
+  {"wrl",  "model/vrml"},
+  {"vrml", "model/vrml"},
+  {"mime", "message/rfc822"},
+
+  {"wml",  "text/vnd.wap.wml"},
+  {"wmlc", "application/vnd.wap.wmlc"},
+  {"wmls", "text/vnd.wap.wmlscript"},
+  {"wmlsc","application/vnd.wap.wmlscriptc"},
+  {"wbmp", "image/vnd.wap.wbmp"},
+
+  {NULL, NULL}
+};
+
 char *statustitle(int status)
 {
   switch (status)
@@ -70,6 +158,7 @@ char *statustitle(int status)
 struct httpd_server *httpd_initialize(struct section *cfg)
 {
   struct httpd_server *server;
+  char *name;
 
   server = (struct httpd_server *) malloc(sizeof(struct httpd_server));
   if (!server) return NULL;
@@ -86,12 +175,45 @@ struct httpd_server *httpd_initialize(struct section *cfg)
   server->backlog = getnumconfig(cfg, "backlog", 5);
   server->indexname = getstrconfig(cfg, "indexname", "index.htm");
 
+  if (cfg)
+  {
+    name = getstrconfig(cfg, "mimemap", "mimetypes");
+    server->mimemap = find_section(cfg, name);
+  }
+
   return server;
 }
 
 int httpd_terminate(struct httpd_server *server)
 {
   return -ENOSYS;
+}
+
+char *gttpd_get_mimetype(struct httpd_server *server, char *ext)
+{
+  struct property *prop;
+  struct mimetype *m;
+
+  // Find MIME type in servers mime map
+  if (server && server->mimemap)
+  {
+    prop = server->mimemap->properties;
+    while (prop)
+    {
+      if (stricmp(ext, prop->name) == 0) return prop->value;
+      prop = prop->next;
+    }
+  }
+
+  // Find MIME type in default MIME type table
+  m = mimetypes;
+  while (m->ext)
+  {
+    if (stricmp(ext, m->ext) == 0) return m->mime;
+    m++;
+  }
+
+  return NULL;
 }
 
 struct httpd_context *httpd_add_context(struct httpd_server *server, struct section *cfg, httpd_handler handler)
@@ -105,6 +227,9 @@ struct httpd_context *httpd_add_context(struct httpd_server *server, struct sect
   context->server = server;
   context->cfg = cfg;
   context->alias = getstrconfig(cfg, "alias", "/");
+  if (strcmp(context->alias, "/") == 0) context->alias = "";
+  context->location = getstrconfig(cfg, "location", "/usr/www");
+  if (strcmp(context->location, "/") == 0) context->location = "";
   context->handler = handler;
   context->next = server->contexts;
   server->contexts = context;
@@ -119,13 +244,11 @@ void httpd_accept(struct httpd_server *server)
   struct httpd_connection *conn;
   int addrlen;
 
-  printf("httpd_accept\n");
-
   addrlen = sizeof(addr);
   sock = accept(server->sock, &addr.sa, &addrlen);
   if (sock < 0) return;
     
-  printf("%a port %d connected\n", &addr.sa_in.sin_addr.s_addr, ntohs(addr.sa_in.sin_port));
+  printf("connect %a port %d\n", &addr.sa_in.sin_addr.s_addr, ntohs(addr.sa_in.sin_port));
 
   conn = (struct httpd_connection *) malloc(sizeof(struct httpd_connection));
   if (!conn) return;
@@ -145,11 +268,13 @@ void httpd_accept(struct httpd_server *server)
   dispatch(server->iomux, conn->sock, IOEVT_READ | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
 }
 
-void httpd_clear_connection(struct httpd_connection *conn)
+void httpd_finish_processing(struct httpd_connection *conn)
 {
   if (conn->req)
   {
     if (conn->req->decoded_url) free(conn->req->decoded_url);
+    if (conn->req->path_translated) free(conn->req->path_translated);
+
     conn->req = NULL;
   }
 
@@ -157,6 +282,30 @@ void httpd_clear_connection(struct httpd_connection *conn)
   {
     conn->rsp = NULL;
   }
+}
+
+int httpd_terminate_request(struct httpd_connection *conn)
+{
+  int off = 0;
+
+  if (!conn->keep) return 0;
+  
+  if (conn->fd >= 0)
+  {
+    close(conn->fd);
+    conn->fd = -1;
+  }
+
+  ioctl(conn->sock, FIONBIO, &off, sizeof(off));
+
+  free_buffer(&conn->reqhdr);
+  free_buffer(&conn->reqbody);
+  free_buffer(&conn->rsphdr);
+  free_buffer(&conn->rspbody);
+
+  conn->keep = 0;
+  conn->hdrsent = 0;
+  return 1;
 }
 
 void httpd_close_connection(struct httpd_connection *conn)
@@ -183,7 +332,7 @@ void httpd_close_connection(struct httpd_connection *conn)
   free(conn);
 }
 
-int httpd_recv(struct httpd_response *req, char *data, int len)
+int httpd_recv(struct httpd_request *req, char *data, int len)
 {
   struct httpd_buffer *buf;
   int rc;
@@ -212,7 +361,8 @@ int httpd_recv(struct httpd_response *req, char *data, int len)
   if (buf->end == buf->start)
   {
     n = recv(req->conn->sock, buf->floor, buf->ceil - buf->floor, 0);
-    if (n <= 0) return n;
+    if (n < 0) return n;
+    if (n == 0) return -ECONNRESET;
 
     buf->start = buf->floor;
     buf->end = buf->floor + rc;
@@ -629,10 +779,10 @@ int httpd_parse_request(struct httpd_request *req)
     req->query = s;
   }
 
-  printf("method: [%s]\n", req->method);
-  printf("pathinfo: [%s]\n", req->pathinfo);
-  printf("query: [%s]\n", req->query);
-  printf("protocol: [%s]\n", req->protocol);
+  //printf("method: [%s]\n", req->method);
+  //printf("pathinfo: [%s]\n", req->pathinfo);
+  //printf("query: [%s]\n", req->query);
+  //printf("protocol: [%s]\n", req->protocol);
 
   // Parse headers
   req->nheaders = 0;
@@ -645,8 +795,6 @@ int httpd_parse_request(struct httpd_request *req)
     *s++ = 0;
     while (*s == ' ') s++;
     if (!*s) continue;
-
-    printf("hdr: [%s]=[%s]\n", l, s);
 
     if (stricmp(l, "Referer") == 0)
       req->referer = s;
@@ -687,7 +835,6 @@ int httpd_find_context(struct httpd_request *req)
   struct httpd_context *context = req->conn->server->contexts;
   char *pathinfo = req->pathinfo;
 
-
   while (context)
   {
     n = strlen(context->alias);
@@ -716,12 +863,120 @@ int httpd_find_context(struct httpd_request *req)
   return -ENOENT;
 }
 
+int httpd_translate_path(struct httpd_request *req)
+{
+  int rc;
+  char buf[512];
+  char path[256];
+  int loclen;
+  int pathlen;
+  char *p;
+
+  if (req->context->location == NULL)
+  {
+    rc = httpd_send_error(req->conn->rsp, 500, "Internal Server Error", "No location for context");
+    if (rc < 0) return rc;
+    return 0;
+  }
+
+  loclen = strlen(req->context->location);
+  pathlen = strlen(req->pathinfo);
+  if (loclen + 1 +  pathlen >= sizeof(buf))
+  {
+    rc = httpd_send_error(req->conn->rsp, 400, "Bad Request", "URL to long");
+    if (rc < 0) return rc;
+    return 0;
+  }
+
+  memcpy(buf, req->context->location, loclen);
+  buf[loclen] = '/';
+  memcpy(buf + loclen + 1, req->pathinfo, pathlen);
+  buf[loclen + 1 + pathlen] = 0;
+
+  rc = canonicalize(buf, path, sizeof(path));
+  if (rc < 0)
+  {
+    rc = httpd_send_error(req->conn->rsp, 400, "Bad Request", "Bad URL");
+    if (rc < 0) return rc;
+    return 0;
+  }
+
+  p = path;
+  while (*p)
+  {
+    if (*p == '\\') *p = '/';
+    p++;
+  }
+
+  if (strnicmp(req->context->location, path, loclen) != 0)
+  {
+    rc = httpd_send_error(req->conn->rsp, 400, "Bad Request", "Illegal URL");
+    if (rc < 0) return rc;
+    return 0;
+  }
+
+  req->path_translated = strdup(path);
+  if (!req) return -ENOMEM;
+
+  return 1;
+}
+
+int httpd_write(struct httpd_connection *conn)
+{
+  int left;
+  int bytes;
+  int rc;
+
+  // Sent any remaining data in response header
+  left = conn->rsphdr.end - conn->rsphdr.start;
+  if (left > 0)
+  {
+    bytes = send(conn->sock, conn->rsphdr.start, left, 0);
+    if (bytes < 0) return bytes;
+    conn->rsphdr.start += bytes;
+    if (bytes < left) return 1;
+  }
+
+  // Send response body
+  while (1)
+  {
+    // Send any remaining data in response body buffer
+    left = conn->rspbody.end - conn->rspbody.start;
+    if (left > 0)
+    {
+      bytes = send(conn->sock, conn->rspbody.start, left, 0);
+      if (bytes < 0) return bytes;
+      conn->rspbody.start += bytes;
+      if (bytes < left) return 1;
+    }
+
+    // Fill response buffer
+    if (conn->fd >= 0)
+    {
+      // Allocate response body buffer if not already done
+      if (conn->rspbody.floor == NULL)
+      {
+	rc = allocate_buffer(&conn->rspbody, conn->server->rspbufsiz);
+	if (rc < 0) return rc;
+      }
+
+      // Read from file
+      bytes = read(conn->fd, conn->rspbody.floor, buffer_capacity(&conn->rspbody));
+      if (bytes < 0) return bytes;
+      if (bytes == 0) return 0;
+    }
+    else
+      return 0;
+  }
+}
+
 int httpd_process(struct httpd_connection *conn)
 {
   struct httpd_request req;
   struct httpd_response rsp;
   int rc;
-  int finished;
+  int size;
+  int on = 1;
 
   // Initialize new request and response objects
   memset(&req, 0, sizeof(struct httpd_request));
@@ -746,36 +1001,56 @@ int httpd_process(struct httpd_connection *conn)
   if (rc < 0)
   {
     // No context found - return error
-    rc = httpd_send_error(&rsp, 404, "Not Found", NULL);
+    rc = httpd_send_error(&rsp, 404, "Not Found", "Context does not exist");
     if (rc < 0) goto errorexit;
   }
   else
   {
-    // Call context handler to handle request
-    rc = req.context->handler(conn);
+    // Translate path
+    rc = httpd_translate_path(&req);
     if (rc < 0) goto errorexit;
     if (rc > 0)
     {
-      // Return HTTP error to client
-      rc = httpd_send_error(&rsp, rc, NULL, NULL);
+      // Call context handler to handle request
+      rc = req.context->handler(conn);
       if (rc < 0) goto errorexit;
+      if (rc > 0)
+      {
+	// Return HTTP error to client
+	rc = httpd_send_error(&rsp, rc, NULL, NULL);
+	if (rc < 0) goto errorexit;
+      }
+
+      // Build HTTP header if not already done
+      if (!conn->hdrsent)
+      {
+	if (rsp.content_length < 0)
+	{
+	  if (conn->fd >= 0)
+	  {
+	    size = fstat(conn->fd, NULL);
+	    if (size >= 0) rsp.content_length = size + buffer_size(&conn->rspbody);
+	  }
+	  else
+	    rsp.content_length = buffer_size(&conn->rspbody);
+	}
+
+	rc = httpd_send_header(&rsp, 200, "OK", NULL);
+	if (rc < 0) goto errorexit;
+      }
     }
-
-    // Prepare for sending back response
-    conn->keep = rsp.keep_alive;
-    finished = conn->hdrsent && buffer_empty(&conn->rspbody) && conn->fd == -1;
-
-    //TODO
   }
 
-  httpd_flush(&rsp);
-  httpd_clear_connection(conn);
-  //close(conn->sock);
+  // Prepare for sending back response
+  rc = ioctl(conn->sock, FIONBIO, &on, sizeof(on));
+  if (rc < 0) goto errorexit;
+  conn->keep = rsp.keep_alive;
+  httpd_finish_processing(conn);
 
-  return 0;
+  return rc;
 
 errorexit:
-  httpd_clear_connection(conn);
+  httpd_finish_processing(conn);
   return rc;
 }
 
@@ -798,36 +1073,71 @@ int httpd_io(struct httpd_connection *conn)
       if (rc < 0) return rc;
 
       rc = recv(conn->sock, conn->reqhdr.end, buffer_left(&conn->reqhdr), 0);
-      printf("httpd_io %d bytes\n", rc);
-      if (rc <= 0) return rc;
+      if (rc <= 0) 
+      {
+	if (rc == -ECONNRESET && buffer_size(&conn->reqhdr) == 0)
+	{
+	  // Keep-Alive connection closed
+	  conn->state = HTTP_STATE_TERMINATED;
+	  httpd_close_connection(conn);
+	  return 1;
+	}
+
+	return rc;
+      }
 
       conn->reqhdr.end += rc;
 
       rc = httpd_check_header(conn);
-      printf("httpd_check_header returned %d\n", rc);
       if (rc < 0) return rc;
-      if (rc > 0)
-      {
-	conn->state = HTTP_STATE_PROCESSING;
-        rc = httpd_process(conn);
-        if (rc < 0) return rc;
-      }
-      else
+      if (rc == 0)
       {
         rc = dispatch(conn->server->iomux, conn->sock, IOEVT_READ | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
         if (rc < 0) return rc;
+	return 1;
       }
+      conn->state = HTTP_STATE_PROCESSING;
+      // Fall through
 
-      return 1;
+    case HTTP_STATE_PROCESSING:
+      rc = httpd_process(conn);
+      if (rc < 0) return rc;
+      conn->state = HTTP_STATE_WRITE_RESPONSE;
+      // Fall through
 
     case HTTP_STATE_WRITE_RESPONSE:
-      break;
+      rc = httpd_write(conn);
+      if (rc < 0) return rc;
+
+      if (rc > 0)
+      {
+	rc = dispatch(conn->server->iomux, conn->sock, IOEVT_WRITE | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
+	if (rc < 0) return rc;
+      }
+      else
+      {
+	rc = httpd_terminate_request(conn);
+	if (rc > 0)
+	{
+	  conn->state = HTTP_STATE_IDLE;
+	  rc = dispatch(conn->server->iomux, conn->sock, IOEVT_READ | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
+	  if (rc < 0) return rc;
+	}
+	else
+	{
+	  conn->state = HTTP_STATE_TERMINATED;
+	  httpd_close_connection(conn);
+	}
+
+        return 1;
+      }
+
+    case HTTP_STATE_TERMINATED:
+      return 1;
 
     default:
       return -EINVAL;
   }
-
-  return 1;
 }
 
 void __stdcall httpd_worker(void *arg)
@@ -839,7 +1149,6 @@ void __stdcall httpd_worker(void *arg)
   while (1)
   {
     rc = wait(server->iomux, INFINITE);
-    //printf("iomux: wait returned %d\n", rc);
     if (rc < 0) break;
 
     conn = (struct httpd_connection *) rc;
@@ -853,7 +1162,6 @@ void __stdcall httpd_worker(void *arg)
       rc = httpd_io(conn);
       if (rc <= 0)
       {
-	printf("httpd: error %d in i/o\n", rc);
         httpd_close_connection(conn);
       }
     }
@@ -903,20 +1211,6 @@ int httpd_start(struct httpd_server *server)
 
   return 0;
 }
-
-int httpd_file_handler(struct httpd_connection *conn)
-{
-  char *buf;
-
-  buf = "<html><head><title>This is a test</title></head><body>This is a test</body></html>";
-  conn->rsp->content_type = "text/html";
-  conn->rsp->content_length = strlen(buf);
-  conn->rsp->last_modified = time(0);
-
-  httpd_send(conn->rsp, buf, strlen(buf));
-
-  return 0;
-};
 
 int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
 {

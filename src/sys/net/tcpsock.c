@@ -355,9 +355,9 @@ static err_t sent_tcp(void *arg, struct tcp_pcb *pcb, unsigned short len)
   }
 
   if (tcp_sndbuf(pcb) > 0)
-    set_io_event(&s->iob, IOEVT_READ);
+    set_io_event(&s->iob, IOEVT_WRITE);
   else
-    clear_io_event(&s->iob, IOEVT_READ);
+    clear_io_event(&s->iob, IOEVT_WRITE);
 
   return 0;
 }
