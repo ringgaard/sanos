@@ -39,6 +39,7 @@ void ip_init();
 int ip_ownaddr(struct ip_addr *addr);
 struct netif *ip_route(struct ip_addr *dest);
 err_t ip_input(struct pbuf *p, struct netif *inp);
+err_t ip_input_dur(int code, struct pbuf *p);
 err_t ip_output(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, int ttl, int proto);
 err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, int ttl, int proto, struct netif *netif);
 
@@ -50,7 +51,7 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
 
 // This is passed as the destination address to ip_output_if (not
 // to ip_output), meaning that an IP header already is constructed
-// in the pbuf. This is used when TCP retransmits.
+// in the pbuf.
 
 #define IP_HDRINCL  NULL
 

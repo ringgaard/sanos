@@ -294,6 +294,25 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
 }
 
 //
+// ip_input_dur
+//
+
+err_t ip_input_dur(int code, struct pbuf *p)
+{
+  struct ip_hdr *orig_iphdr = (struct ip_hdr *) p->payload;
+
+  if (p->tot_len < sizeof(struct ip_hdr)) 
+  {
+    kprintf("ip_input_dur: ICMP message too short\n");
+    stats.icmp.lenerr++;
+    return -EPROTO;
+  }
+
+  kprintf("icmp: destination unreachable src=%a dest=%a proto=%d (code %d)\n", &orig_iphdr->src, &orig_iphdr->dest, IPH_PROTO(orig_iphdr), code);
+  return -EPROTO;
+}
+
+//
 // ip_output_if
 //
 // Sends an IP packet on a network interface. This function constructs the IP header

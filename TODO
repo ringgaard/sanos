@@ -1,6 +1,8 @@
 TODO for sanos
 --------------
 
+- Floppy driver not initialized if no floppy inserted
+
 - Return error in tcp_rexmit_seg() to signal error in retransmit (reset rtime)
 
 - Implement ICMP messages host unreachable, net unreachable and port unreachable

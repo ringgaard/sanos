@@ -718,44 +718,32 @@ int ne_setup(unsigned short iobase, int irq, unsigned short membase, unsigned sh
   return 0;
 }
 
-int __declspec(dllexport) install(struct unit *unit)
+int __declspec(dllexport) install(struct unit *unit, char *opts)
 {
-  unsigned short iobase;
-  int irq;
+  unsigned short iobase = 0x280;
+  int irq = 9;
+  unsigned short membase = 16 * K;
+  unsigned short memsize = 16 * K;
   struct resource *memres;
-  unsigned short membase;
-  unsigned short memsize;
 
-  iobase = (unsigned short) get_unit_iobase(unit);
-  irq = get_unit_irq(unit);
-  memres = get_unit_resource(unit, RESOURCE_MEM, 0);
-  if (memres)
+  if (unit)
   {
-    membase = (unsigned short) memres->start;
-    memsize = (unsigned short) memres->len;
+    iobase = (unsigned short) get_unit_iobase(unit);
+    irq = get_unit_irq(unit);
+    memres = get_unit_resource(unit, RESOURCE_MEM, 0);
+    if (memres)
+    {
+      membase = (unsigned short) memres->start;
+      memsize = (unsigned short) memres->len;
+    }
   }
-  else
-  {
-    membase = 16 * K;
-    memsize = 16 * K;
-  }
+
+  iobase = get_num_option(opts, "iobase", iobase);
+  irq = get_num_option(opts, "irq", irq);
+  membase = get_num_option(opts, "membase", membase);
+  memsize = get_num_option(opts, "memsize", memsize);
 
   return ne_setup(iobase, irq, membase, memsize, unit);
-}
-
-int __declspec(dllexport) install_ne2000(struct unit *unit, char *opts)
-{
-  unsigned short iobase;
-  int irq;
-  unsigned short membase;
-  unsigned short memsize;
-
-  iobase = get_num_option(opts, "iobase", 0x280);
-  irq = get_num_option(opts, "irq", 9);
-  membase = get_num_option(opts, "membase", 16 * K);
-  memsize = get_num_option(opts, "memsize", 16 * K);
-
-  return ne_setup(iobase, irq, membase, memsize, NULL);
 }
 
 int __stdcall start(hmodule_t hmod, int reason, void *reserved2)

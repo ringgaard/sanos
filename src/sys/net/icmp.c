@@ -42,8 +42,8 @@ err_t icmp_input(struct pbuf *p, struct netif *inp)
   unsigned char type;
   unsigned char code;
   struct icmp_echo_hdr *iecho;
+  struct icmp_dur_hdr *idur;
   struct ip_hdr *iphdr;
-  struct ip_hdr *orig_iphdr;
   struct ip_addr tmpaddr;
   int hlen;
   
@@ -106,13 +106,20 @@ err_t icmp_input(struct pbuf *p, struct netif *inp)
       return ip_output_if(p, &iphdr->src, IP_HDRINCL, IPH_TTL(iphdr), IP_PROTO_ICMP, inp);
 
     case ICMP_DUR:
-      code =  *((unsigned char *) p->payload + 1);
-      orig_iphdr = (struct ip_hdr *) ((char *) p->payload + 8);
-      kprintf("icmp: destination unreachable src=%a dest=%a (code %d)\n", &orig_iphdr->src, &orig_iphdr->dest, code);
-      return -EPROTO;
+      if (p->tot_len < ICMP_HLEN)
+      {
+	kprintf("icmp_input: ICMP message too short\n");
+	stats.icmp.lenerr++;
+	return -EPROTO;
+      }
+
+      idur = (struct icmp_dur_hdr *) p->payload;
+      code = ICMPH_CODE(idur);
+      pbuf_header(p, -ICMP_HLEN);
+      return ip_input_dur(code, p);
 
     default:
-      kprintf("icmp_input: ICMP type not supported.\n");
+      kprintf("icmp_input: ICMP type %d not supported\n", type);
       stats.icmp.proterr++;
       stats.icmp.drop++;
       return -EPROTO;
