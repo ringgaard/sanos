@@ -223,7 +223,7 @@ char *httpd_get_mimetype(struct httpd_server *server, char *ext)
   return NULL;
 }
 
-struct httpd_context *httpd_add_context(struct httpd_server *server, struct section *cfg, httpd_handler handler)
+struct httpd_context *httpd_add_context(struct httpd_server *server, char *alias, httpd_handler handler, void *userdata, struct section *cfg)
 {
   struct httpd_context *context;
 
@@ -233,13 +233,44 @@ struct httpd_context *httpd_add_context(struct httpd_server *server, struct sect
 
   context->server = server;
   context->cfg = cfg;
-  context->alias = getstrconfig(cfg, "alias", "/");
+  context->location = "/";
+  context->alias = getstrconfig(cfg, "alias", alias);
   if (strcmp(context->alias, "/") == 0) context->alias = "";
-  context->location = getstrconfig(cfg, "location", "/usr/www");
-  if (strcmp(context->location, "/") == 0) context->location = "";
   context->handler = handler;
+  context->userdata = userdata;
   context->next = server->contexts;
   server->contexts = context;
+
+  return context;
+}
+
+struct httpd_context *httpd_add_file_context(struct httpd_server *server, char *alias, char *location, struct section *cfg)
+{
+  struct httpd_context *context;
+
+  context = httpd_add_context(server, alias, httpd_file_handler, NULL, cfg);
+  if (!context) return NULL;
+
+  context->location = getstrconfig(cfg, "location", location);
+  if (strcmp(context->location, "/") == 0) context->location = "";
+
+  return context;
+}
+
+struct httpd_context *httpd_add_resource_context(struct httpd_server *server, char *alias, hmodule_t hmod, struct section *cfg)
+{
+  struct httpd_context *context;
+  char modfn[MAXPATH];
+  struct stat statbuf;
+
+  if (getmodpath(hmod, modfn, MAXPATH) < 0) return NULL;
+  if (stat(modfn, &statbuf) < 0) return NULL;
+
+  context = httpd_add_context(server, alias, httpd_resource_handler, NULL, cfg);
+  if (!context) return NULL;
+
+  context->hmod = hmod;
+  context->mtime = statbuf.mtime;
 
   return context;
 }
@@ -306,6 +337,9 @@ int httpd_terminate_request(struct httpd_connection *conn)
     close(conn->fd);
     conn->fd = -1;
   }
+
+  conn->fixed_rsp_data = NULL;
+  conn->fixed_rsp_len = 0;
 
   ioctl(conn->sock, FIONBIO, &off, sizeof(off));
 
@@ -562,7 +596,6 @@ int httpd_flush(struct httpd_response *rsp)
     // Send header
     if (buf->end != buf->start)
     {
-      write(1, buf->start, buf->end - buf->start);
       rc = send(rsp->conn->sock, buf->start, buf->end - buf->start, 0);
       if (rc < 0) return rc;
 
@@ -576,7 +609,6 @@ int httpd_flush(struct httpd_response *rsp)
   buf = &rsp->conn->rspbody;
   if (buf->end != buf->start)
   {
-    //write(1, buf->start, buf->end - buf->start);
     rc = send(rsp->conn->sock, buf->start, buf->end - buf->start, 0);
     if (rc < 0) return rc;
 
@@ -589,6 +621,13 @@ int httpd_flush(struct httpd_response *rsp)
 int httpd_send_file(struct httpd_response *rsp, int fd)
 {
   rsp->conn->fd = fd;
+  return 0;
+}
+
+int httpd_send_fixed_data(struct httpd_response *rsp, char *data, int len)
+{
+  rsp->conn->fixed_rsp_data = data;
+  rsp->conn->fixed_rsp_len = len;
   return 0;
 }
 
@@ -964,10 +1003,20 @@ int httpd_write(struct httpd_connection *conn)
   left = conn->rsphdr.end - conn->rsphdr.start;
   if (left > 0)
   {
-    //write(1, conn->rsphdr.start, left);
     bytes = send(conn->sock, conn->rsphdr.start, left, 0);
     if (bytes < 0) return bytes;
     conn->rsphdr.start += bytes;
+    if (bytes < left) return 1;
+  }
+
+  // Sent any remaining fixed response data
+  left = conn->fixed_rsp_len;
+  if (left > 0)
+  {
+    bytes = send(conn->sock, conn->fixed_rsp_data, left, 0);
+    if (bytes < 0) return bytes;
+    conn->fixed_rsp_data += bytes;
+    conn->fixed_rsp_len -= bytes;
     if (bytes < left) return 1;
   }
 
@@ -978,7 +1027,6 @@ int httpd_write(struct httpd_connection *conn)
     left = conn->rspbody.end - conn->rspbody.start;
     if (left > 0)
     {
-      //write(1, conn->rspbody.start, left);
       bytes = send(conn->sock, conn->rspbody.start, left, 0);
       if (bytes < 0) return bytes;
       conn->rspbody.start += bytes;
@@ -1064,13 +1112,17 @@ int httpd_process(struct httpd_connection *conn)
       {
 	if (rsp.content_length < 0)
 	{
+	  int len = 0;
+
+	  len += buffer_size(&conn->rspbody);
+	  len += conn->fixed_rsp_len;
 	  if (conn->fd >= 0)
 	  {
 	    size = fstat(conn->fd, NULL);
-	    if (size >= 0) rsp.content_length = size + buffer_size(&conn->rspbody);
+	    if (size >= 0) len += size;
 	  }
-	  else
-	    rsp.content_length = buffer_size(&conn->rspbody);
+
+          rsp.content_length = len;
 	}
 
 	rc = httpd_send_header(&rsp, 200, "OK", NULL);
@@ -1253,15 +1305,19 @@ int httpd_start(struct httpd_server *server)
   return 0;
 }
 
-int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
+int __stdcall DllMain(hmodule_t hmod, int reason, void *reserved)
 {
   struct httpd_server *server;
 
   if (reason == DLL_PROCESS_ATTACH)
   {
     server = httpd_initialize(find_section(config, "httpd"));
-    httpd_add_context(server, find_section(config, "webroot"), httpd_file_handler);
-    httpd_add_context(server, find_section(config, "webfs"), httpd_file_handler);
+
+    httpd_add_file_context(server, "/", "/usr/www", find_section(config, "webroot"));
+    httpd_add_file_context(server, "/files", "/", find_section(config, "webfs"));
+
+    httpd_add_resource_context(server, "/icons", hmod, NULL);
+
     httpd_start(server);
   }
 

@@ -814,6 +814,96 @@ int unload_module(struct moddb *db, hmodule_t hmod)
   return remove_module(mod);
 }
 
+static struct image_resource_directory_entry *find_resource(char *resbase, struct image_resource_directory *dir, char *id)
+{
+  struct image_resource_directory_entry *direntry;
+  struct image_resource_directory_string *entname;
+  int i;
+
+  direntry = (struct image_resource_directory_entry *) (dir + 1);
+  if ((unsigned long) id < 0x10000)
+  {
+    // Lookup by ID, first skip named entries
+    direntry += dir->number_of_named_entries;
+
+    for (i = 0; i < dir->number_of_id_entries; i++)
+    {
+      if (direntry->id == (unsigned long) id) return direntry;
+      direntry++;
+    }
+  }
+  else
+  {
+    // Lookup by name
+    for (i = 0; i < dir->number_of_named_entries; i++)
+    {
+      unsigned short *p1;
+      unsigned char *p2;
+      int left;
+      unsigned short ch1;
+      unsigned short ch2;
+
+      entname = (struct image_resource_directory_string *) RVA(resbase, direntry->name_offset);
+      p1 = (unsigned short *) entname->name_string;
+      p2 = (unsigned char *) id;
+      left = entname->length;
+      while (left > 0 && *p2 != 0)
+      {
+	if (((ch1 = *p1++) >= 'a') && (ch1 <= 'z')) ch1 += 'A' - 'a';
+	if (((ch2 = *p2++) >= 'a') && (ch2 <= 'z')) ch2 += 'A' - 'a';
+
+	if (ch1 != ch2) break;
+
+	left--;
+      }
+      
+      if (left == 0 && *p2 == 0) return direntry;
+      direntry++;
+    }
+  }
+
+  return NULL;
+}
+
+int get_resource_data(struct moddb *db, hmodule_t hmod, char *id1, char *id2, char *id3, void **data)
+{
+  struct module *mod;
+  char *resbase;
+  struct image_resource_directory *dir;
+  struct image_resource_directory_entry *direntry;
+  struct image_resource_data_entry *dataentry;
+
+  // Find module
+  mod = hmod ? get_module_for_handle(db, hmod) : db->execmod;
+  if (mod == NULL) return -EINVAL;
+
+  // Find resource root directory
+  resbase = get_image_directory(hmod, IMAGE_DIRECTORY_ENTRY_RESOURCE);
+  if (!resbase) return -ENOENT;
+  dir = (struct image_resource_directory *) resbase;
+
+  // Find first level entry
+  direntry = find_resource(resbase, dir, id1);
+  if (!direntry) return -ENOENT;
+  if (!direntry->data_is_directory) return -EINVAL;
+  dir = (struct image_resource_directory *) RVA(resbase, direntry->offset_to_directory);
+
+  // Find second level entry
+  direntry = find_resource(resbase, dir, id2);
+  if (!direntry) return -ENOENT;
+  if (!direntry->data_is_directory) return -EINVAL;
+  dir = (struct image_resource_directory *) RVA(resbase, direntry->offset_to_directory);
+
+  // Find third level entry
+  direntry = find_resource(resbase, dir, id3);
+  if (!direntry) return -ENOENT;
+  if (direntry->data_is_directory) return -EINVAL;
+
+  dataentry = (struct image_resource_data_entry *) RVA(resbase, direntry->offset_to_data);
+  *data = RVA(hmod, dataentry->offset_to_data);
+  return dataentry->size;
+}
+
 int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *libpath, struct section *aliassect, int flags)
 {
   char buffer[MAXPATH];

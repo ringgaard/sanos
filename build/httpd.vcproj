@@ -161,6 +161,16 @@
 				RelativePath="..\src\include\os.h">
 			</File>
 		</Filter>
+		<Filter
+			Name="resources"
+			Filter="">
+			<File
+				RelativePath="..\src\utils\httpd\file.gif">
+			</File>
+			<File
+				RelativePath="..\src\utils\httpd\folder.gif">
+			</File>
+		</Filter>
 		<File
 			RelativePath="..\src\utils\httpd\hbuf.c">
 		</File>
@@ -172,6 +182,9 @@
 		</File>
 		<File
 			RelativePath="..\src\utils\httpd\httpd.c">
+		</File>
+		<File
+			RelativePath="..\src\utils\httpd\httpd.rc">
 		</File>
 		<File
 			RelativePath="..\src\utils\httpd\hutils.c">

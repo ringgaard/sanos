@@ -166,8 +166,12 @@ struct httpd_context
   struct section *cfg;
   struct httpd_context *next;
   char *alias;
-  char *location;
   httpd_handler handler;
+  void *userdata;
+
+  char *location;
+  hmodule_t hmod;
+  time_t mtime;
 };
 
 // HTTP request
@@ -237,17 +241,29 @@ struct httpd_connection
   struct httpd_buffer reqbody;
   struct httpd_buffer rsphdr;
   struct httpd_buffer rspbody;
+  
   int state;
   int hdrstate;
-  int fd;
+
   int hdrsent;
+  
+  char *fixed_rsp_data;
+  int fixed_rsp_len;
+
+  int fd;
+  
   int keep;
 };
 
 httpdapi struct httpd_server *httpd_initialize(struct section *cfg); 
 httpdapi int httpd_terminate(struct httpd_server *server);
-httpdapi struct httpd_context *httpd_add_context(struct httpd_server *server, struct section *cfg, httpd_handler handler); 
+
+httpdapi struct httpd_context *httpd_add_context(struct httpd_server *server, char *alias, httpd_handler handler, void *userdata, struct section *cfg);
+httpdapi struct httpd_context *httpd_add_file_context(struct httpd_server *server, char *alias, char *location, struct section *cfg);
+httpdapi struct httpd_context *httpd_add_resource_context(struct httpd_server *server, char *alias, hmodule_t hmod, struct section *cfg);
+
 httpdapi int httpd_start(struct httpd_server *server);
+
 httpdapi char *httpd_get_mimetype(struct httpd_server *server, char *ext);
 
 httpdapi int httpd_recv(struct httpd_request *req, char *data, int len);
@@ -256,11 +272,13 @@ httpdapi int httpd_send_header(struct httpd_response *rsp, int state, char *titl
 httpdapi int httpd_send_error(struct httpd_response *rsp, int state, char *title, char *msg);
 httpdapi int httpd_send(struct httpd_response *rsp, char *data, int len);
 httpdapi int httpd_send_file(struct httpd_response *rsp, int fd);
+httpdapi int httpd_send_fixed_data(struct httpd_response *rsp, char *data, int len);
 httpdapi int httpd_flush(struct httpd_response *rsp);
 
 httpdapi int httpd_redirect(struct httpd_response *rsp, char *newloc);
 
 httpdapi int httpd_file_handler(struct httpd_connection *conn);
+httpdapi int httpd_resource_handler(struct httpd_connection *conn);
 
 #ifdef HTTPD_LIB
 

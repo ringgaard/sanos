@@ -426,6 +426,36 @@ int exec(hmodule_t hmod, char *args)
   return rc;
 }
 
+void *getresdata(hmodule_t hmod, int type, char *name, int lang)
+{
+  void *data;
+  int rc;
+
+  rc = get_resource_data(&usermods, hmod, INTRES(type), name, INTRES(lang), &data);
+  if (rc < 0)
+  {
+    errno = rc;
+    return NULL;
+  }
+
+  return data;
+}
+
+int getreslen(hmodule_t hmod, int type, char *name, int lang)
+{
+  void *data;
+  int rc;
+
+  rc = get_resource_data(&usermods, hmod, INTRES(type), name, INTRES(lang), &data);
+  if (rc < 0)
+  {
+    errno = rc;
+    return rc;
+  }
+
+  return rc;
+}
+
 void dbgbreak()
 {
   __asm { int 3 };

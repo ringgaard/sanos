@@ -329,7 +329,7 @@ struct image_bound_import_descriptor
   unsigned long timestamp;
   unsigned short offset_module_name;
   unsigned short number_of_module_forwarder_refs;
-  // array of zero or more IMAGE_BOUND_FORWARDER_REF follows
+  // array of zero or more struct image_bound_forwarder_ref follows
 };
 
 struct image_bound_forwarder_ref
@@ -337,6 +337,61 @@ struct image_bound_forwarder_ref
   unsigned long timestamp;
   unsigned short offset_module_name;
   unsigned short reserved;
+};
+
+//
+// Resource Format
+//
+
+struct image_resource_directory 
+{
+  unsigned long characteristics;
+  unsigned long timestamp;
+  unsigned short major_version;
+  unsigned short minor_version;
+  unsigned short number_of_named_entries;
+  unsigned short number_of_id_entries;
+  // struct image_resource_directory_entry directoryentries[];
+};
+
+#define IMAGE_RESOURCE_NAME_IS_STRING        0x80000000
+#define IMAGE_RESOURCE_DATA_IS_DIRECTORY     0x80000000
+
+struct image_resource_directory_entry 
+{
+  union 
+  {
+    struct 
+    {
+      unsigned long name_offset : 31;
+      unsigned long name_is_string : 1;
+    };
+    unsigned long name;
+    unsigned short id;
+  };
+  union 
+  {
+    unsigned long offset_to_data;
+    struct 
+    {
+      unsigned long offset_to_directory : 31;
+      unsigned long data_is_directory : 1;
+    };
+  };
+};
+
+struct image_resource_directory_string
+{
+ unsigned short length;
+ char name_string[1];
+};
+
+struct image_resource_data_entry 
+{
+  unsigned long offset_to_data;
+  unsigned long size;
+  unsigned long codepage;
+  unsigned long reserved;
 };
 
 #endif

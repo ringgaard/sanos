@@ -92,10 +92,10 @@ int ls(struct httpd_connection *conn)
   httpd_send(conn->rsp, "</TITLE></HEAD>\r\n<BODY>\r\n<H1>Index of ", -1);
   httpd_send(conn->rsp, conn->req->decoded_url, urllen);
   httpd_send(conn->rsp, "</H1><PRE>\r\n", -1);
-  httpd_send(conn->rsp, "Name                             Last Modified           Size\r\n", -1);
+  httpd_send(conn->rsp, "   Name                              Last Modified           Size\r\n", -1);
   httpd_send(conn->rsp, "<HR>\r\n", -1);
 
-  if (urllen > 1) httpd_send(conn->rsp, "<A HREF=\"..\">..</A>\r\n", -1);
+  if (urllen > 1) httpd_send(conn->rsp, "<IMG SRC=\"/icons/folder.gif\"> <A HREF=\"..\">..</A>\r\n", -1);
 
   while (readdir(dir, &dirp, 1) > 0)
   {
@@ -108,6 +108,11 @@ int ls(struct httpd_connection *conn)
 
     tm = gmtime(&statbuf.mtime);
     if (!tm) return -EINVAL;
+
+    if (statbuf.mode & FS_DIRECTORY) 
+      httpd_send(conn->rsp, "<IMG SRC=\"/icons/folder.gif\"> ", -1);
+    else
+      httpd_send(conn->rsp, "<IMG SRC=\"/icons/file.gif\"> ", -1);
 
     httpd_send(conn->rsp, "<A HREF=\"", -1);
     httpd_send(conn->rsp, dirp.name, dirp.namelen);
@@ -231,6 +236,41 @@ int httpd_file_handler(struct httpd_connection *conn)
   if (fd < 0) return httpd_return_file_error(conn, fd);
 
   rc = httpd_send_file(conn->rsp, fd);
+  if (rc < 0) return rc;
+
+  return 0;
+}
+
+int httpd_resource_handler(struct httpd_connection *conn)
+{
+  char *resdata;
+  int reslen;
+  int rc;
+
+  if (strcmp(conn->req->method, "GET") != 0 && strcmp(conn->req->method, "HEAD") != 0)
+  {
+    return httpd_send_error(conn->rsp, 405, "Method Not Allowed", NULL);
+  }
+
+  resdata = getresdata(conn->req->context->hmod, 10, conn->req->pathinfo, 0);
+  if (!resdata)
+  {
+    return httpd_send_error(conn->rsp, 404, "Not Found", NULL);
+  }
+  reslen = getreslen(conn->req->context->hmod, 10, conn->req->pathinfo, 0);
+
+  conn->rsp->content_length = reslen;
+  conn->rsp->last_modified = conn->req->context->mtime;
+  conn->rsp->content_type = httpd_get_mimetype(conn->server, get_extension(conn->req->pathinfo));
+
+  if (conn->rsp->last_modified <= conn->req->if_modified_since)
+  {
+    return httpd_send_header(conn->rsp, 304, "Not Modified", NULL);
+  }
+
+  if (strcmp(conn->req->method, "HEAD") == 0) return 0;
+
+  rc = httpd_send_fixed_data(conn->rsp, resdata, reslen);
   if (rc < 0) return rc;
 
   return 0;
