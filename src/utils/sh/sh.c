@@ -49,6 +49,8 @@ int telnetd_started = 0;
 
 #define BUFSIZE 4096
 
+int cmd_ping(int argc, char *argv[]);
+
 typedef int (*cmdproc_t)(int argc, char *argv[]);
 
 struct command
@@ -1430,6 +1432,7 @@ struct command cmdtab[] =
   {"move",     cmd_mv,       "Move file"},
   {"mv",       cmd_mv,       "Move file"},
   {"nslookup", cmd_nslookup, "Lookup hostname or IP address using DNS"},
+  {"ping",     cmd_ping,     "Send ICMP echo request to network host"},
   {"play",     cmd_play,     "Play RTTTL file in speaker"},
   {"read",     cmd_read,     "Read file from disk"},
   {"reboot",   cmd_reboot,   "Reboot computer"},

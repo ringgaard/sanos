@@ -95,5 +95,3 @@ struct ip_hdr
 #define IPH_CHKSUM_SET(hdr, chksum) (hdr)->_chksum = (chksum)
 
 #endif
-
-

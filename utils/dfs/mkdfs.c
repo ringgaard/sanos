@@ -214,6 +214,13 @@ unsigned int ft2time(FILETIME *ft)
   return mktime(&tm);
 }
 
+int isdir(char *filename)
+{
+  ULONG flags = GetFileAttributes(filename);
+  if (flags == (DWORD) -1) return 0;
+  return (flags & FILE_ATTRIBUTE_DIRECTORY) != 0;
+}
+
 void set_time(HANDLE hfile, struct file *f)
 {
   FILETIME ctime, atime, mtime;
@@ -335,7 +342,6 @@ void process_filelist(char *filelist)
   char *p;
   char *src;
   char *dst;
-  char fnbuf[256];
 
   f = fopen(filelist, "r");
   if (!f)
@@ -369,11 +375,10 @@ void process_filelist(char *filelist)
     }
     else
     {
-      if (source && *src == '\\')
+      if (isdir(src))
       {
-	strcpy(fnbuf, source);
-	strcat(fnbuf, src);
-	transfer_file(dst, fnbuf);
+        make_directory(dst);
+	transfer_files(dst, src);
       }
       else
 	transfer_file(dst, src);
@@ -830,14 +835,14 @@ int main(int argc, char **argv)
   if (filelist)
   {
     printf("Transfering files from %s to device\n", filelist);
+    if (source) SetCurrentDirectory(source);
     process_filelist(filelist);
   }
   else if (source)
   {
     printf("Transfering files\n");
-    if (source[strlen(source) - 1] == '\\')
+    if (isdir(source))
     {
-      source[strlen(source) - 1] = 0;
       transfer_files(target, source);
     }
     else

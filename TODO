@@ -557,3 +557,5 @@ CHANGES
 - Suspending all user threads when shutting down.
 
 - Raw socket implemented.
+
+- Ping command added to shell

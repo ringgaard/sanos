@@ -10,20 +10,21 @@
 /etc
 /mnt
 /usr
+/tmp
 
 ; System files
 
-/bin/os.dll       \bin\os.dll
-/bin/sh.exe       \bin\sh.exe
+/bin/os.dll       bin\os.dll
+/bin/sh.exe       bin\sh.exe
 
 ; Drivers
 
-/bin/pcnet32.sys  \bin\pcnet32.sys
-/bin/ne2000.sys   \bin\ne2000.sys
-/bin/3c905c.sys   \bin\3c905c.sys
-/bin/rtl8139.sys  \bin\rtl8139.sys
-/bin/eepro100.sys \bin\eepro100.sys
-/bin/sis900.sys   \bin\sis900.sys
+/bin/pcnet32.sys  bin\pcnet32.sys
+/bin/ne2000.sys   bin\ne2000.sys
+/bin/3c905c.sys   bin\3c905c.sys
+/bin/rtl8139.sys  bin\rtl8139.sys
+/bin/eepro100.sys bin\eepro100.sys
+/bin/sis900.sys   bin\sis900.sys
 
 ; Configuration files
 

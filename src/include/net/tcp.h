@@ -118,7 +118,7 @@ struct tcp_hdr
 #define TCPH_FLAGS_SET(hdr, flags) (hdr)->_offset_flags = HTONS((TCPH_OFFSET(hdr) << 8) | (flags))
 
 #define TCP_TCPLEN(seg) ((seg)->len + ((TCPH_FLAGS((seg)->tcphdr) & TCP_FIN || \
-					TCPH_FLAGS((seg)->tcphdr) & TCP_SYN) ? 1: 0))
+					TCPH_FLAGS((seg)->tcphdr) & TCP_SYN) ? 1 : 0))
 
 enum tcp_state 
 {
@@ -288,15 +288,13 @@ extern unsigned long tcp_ticks;
 void tcp_debug_print(struct tcp_hdr *tcphdr);
 void tcp_debug_print_flags(int flags);
 void tcp_debug_print_state(enum tcp_state s);
-void tcp_debug_print_pcbs(void);
-int tcp_pcbs_sane();
+void tcp_debug_print_pcbs();
 
 // TCP PCB lists
 
 extern struct tcp_pcb_listen *tcp_listen_pcbs;  // List of all TCP PCBs in LISTEN state
 extern struct tcp_pcb *tcp_active_pcbs;         // List of all TCP PCBs that are in a state in which they accept or send data
 extern struct tcp_pcb *tcp_tw_pcbs;             // List of all TCP PCBs in TIME-WAIT
-extern struct tcp_pcb *tcp_tmp_pcb;             // Only used for temporary storage
 
 //
 // Axoims about the above lists:
@@ -315,6 +313,7 @@ extern struct tcp_pcb *tcp_tmp_pcb;             // Only used for temporary stora
                             } while (0)
 
 #define TCP_RMV(pcbs, npcb) do { \
+                            struct tcp_pcb *tcp_tmp_pcb; \
                             if (*pcbs == npcb) { \
                                *pcbs = (*pcbs)->next; \
                             } else for (tcp_tmp_pcb = *pcbs; tcp_tmp_pcb != NULL; tcp_tmp_pcb = tcp_tmp_pcb->next) { \

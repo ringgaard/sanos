@@ -45,13 +45,13 @@
 
 ; Configuration files
 
-/etc/krnl.ini     build\krnl.ini
-/etc/os.ini       build\os.ini
+/etc/krnl.ini     ..\build\krnl.ini
+/etc/os.ini       ..\build\os.ini
 
 ; Setup files for hard disk install
 
 /setup/boot       bin\boot
 /setup/osldr.dll  bin\osldr.dll
-/setup/krnl.ini   build\krnl.ini
-/setup/os.ini     build\os.ini
-/setup/setup.ini  build\setup.ini
+/setup/krnl.ini   ..\build\krnl.ini
+/setup/os.ini     ..\build\os.ini
+/setup/setup.ini  ..\build\setup.ini

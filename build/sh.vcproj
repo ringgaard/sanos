@@ -149,6 +149,9 @@
 			</File>
 		</Filter>
 		<File
+			RelativePath="..\src\utils\sh\ping.c">
+		</File>
+		<File
 			RelativePath="..\src\utils\sh\sh.c">
 			<FileConfiguration
 				Name="SanOSDebug|Win32">

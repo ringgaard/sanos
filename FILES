@@ -9,6 +9,7 @@ build\                         Build files for sanos
   advapi32.vcproj              Project file for win32 wrapper for advapi32.dll
   boot.vcproj                  Project file for boot sector
   bootdisk.lst                 Control file for mkdfs to make bootdisk.img
+  bootdiskdbg.lst              Control file for mkdfs to make debug bootdisk.img
   eepro100.vcproj              Project file for Intel EtherExpress Pro/100 network driver (eepro100.sys)
   exclrel.lst                  List of files excluded from release build
   fdisk.vcproj                 Project file for partition utility (fdisk.exe)
@@ -352,6 +353,7 @@ src\                           Souce files
       setup.c                  Setup utility
     sh\                        Shell source files
       sh.c                     Shell
+      ping.c                   Send ICMP echo request to network host
   win32\                       Win32 API wrapper source files
     advapi32\                  Source files for advapi32
       advapi32.c               Win32 ADVAPI32 emulation

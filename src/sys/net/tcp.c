@@ -54,7 +54,6 @@ unsigned char tcp_backoff[13] = {1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 7};
 struct tcp_pcb_listen *tcp_listen_pcbs; // TCP PCBs in LISTEN state
 struct tcp_pcb *tcp_active_pcbs;        // TCP PCBs that are in a state in which they accept or send data
 struct tcp_pcb *tcp_tw_pcbs;            // TCP PCBs in TIME-WAIT
-struct tcp_pcb *tcp_tmp_pcb;
 
 #define MIN(x,y) ((x) < (y) ? (x): (y))
 

@@ -52,13 +52,10 @@ static unsigned long chksum(void *dataptr, int len)
   for (acc = 0; len > 1; len -= 2) acc += *((unsigned short *) dataptr)++;
 
   // Add up any odd byte
-  if (len == 1)
-  {
-    acc += htons((unsigned short)((*(unsigned char *) dataptr) & 0xFF) << 8);
-  }
+  if (len == 1) acc += *(unsigned char *) dataptr;
 
   acc = (acc >> 16) + (acc & 0xFFFF);
-  if ((acc & 0xFFFF0000) != 0) acc = (acc >> 16) + (acc & 0xFFFF);
+  acc += (acc >> 16);
 
   return acc;
 }
