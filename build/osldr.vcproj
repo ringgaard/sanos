@@ -60,7 +60,7 @@
 				MapFileName=".\..\obj\osldr/osldr.map"
 				OptimizeForWindows98="2"
 				EntryPointSymbol="start"
-				BaseAddress="0x00010000"
+				BaseAddress="0x00090000"
 				ImportLibrary=".\..\bin/osldr.lib"/>
 			<Tool
 				Name="VCMIDLTool"
@@ -126,7 +126,7 @@
 				MapFileName=".\..\dbg\obj\osldr/osldr.map"
 				OptimizeForWindows98="2"
 				EntryPointSymbol="start"
-				BaseAddress="0x00010000"
+				BaseAddress="0x00090000"
 				ImportLibrary=".\..\dbg\bin/osldr.lib"/>
 			<Tool
 				Name="VCMIDLTool"

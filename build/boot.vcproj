@@ -70,6 +70,31 @@
 					Outputs="..\bin\boot"/>
 			</FileConfiguration>
 		</File>
+		<File
+			RelativePath="..\src\sys\boot\cdboot.asm">
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Assemble cdboot.asm"
+					CommandLine="if not exist ..\dbg\obj\boot mkdir ..\dbg\obj\boot
+..\tools\nasmw.exe -f bin ..\src\sys\boot\cdboot.asm -o ..\dbg\bin\cdboot  -l ..\dbg\obj\boot\cdboot.lst
+"
+					AdditionalDependencies="..\src\sys\boot\cdboot.asm;"
+					Outputs="..\dbg\bin\cdboot"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Assemble cdboot.asm"
+					CommandLine="if not exist ..\obj\boot mkdir ..\obj\boot
+..\tools\nasmw.exe -f bin ..\src\sys\boot\cdboot.asm -o ..\bin\cdboot  -l ..\obj\boot\cdboot.lst
+"
+					AdditionalDependencies="..\src\sys\boot\cdboot.asm;"
+					Outputs="..\bin\cdboot"/>
+			</FileConfiguration>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

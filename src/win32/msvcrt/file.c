@@ -922,6 +922,7 @@ void _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext
   char *last_slash = NULL, *dot = NULL;
   int len;
 
+  TRACE("_splitpath");
   if (strlen(path) >= 1 && path[1] == ':')
   {
     if (drive) 
@@ -1001,6 +1002,7 @@ int _wopen(const wchar_t *filename, int oflag)
   char buf[MAXPATH];
   int rc;
 
+  TRACE("_wopen");
   rc = convert_filename_from_unicode(filename, buf, MAXPATH);
   if (rc < 0)
   {
@@ -1016,6 +1018,7 @@ int _waccess(const wchar_t *path, int mode)
   char buf[MAXPATH];
   int rc;
 
+  TRACE("_waccess");
   rc = convert_filename_from_unicode(path, buf, MAXPATH);
   if (rc < 0)
   {
@@ -1031,6 +1034,7 @@ __int64 _wstati64(const wchar_t *path, struct _stati64 *buffer)
   char buf[MAXPATH];
   int rc;
 
+  TRACE("_wstati64");
   rc = convert_filename_from_unicode(path, buf, MAXPATH);
   if (rc < 0)
   {
@@ -1046,6 +1050,7 @@ int _wmkdir(const wchar_t *dirname)
   char buf[MAXPATH];
   int rc;
 
+  TRACE("_wmkdir");
   rc = convert_filename_from_unicode(dirname, buf, MAXPATH);
   if (rc < 0)
   {
@@ -1062,6 +1067,7 @@ int _wrename(const wchar_t *oldname, const wchar_t *newname)
   char buf2[MAXPATH];
   int rc;
 
+  TRACE("_wrename");
   rc = convert_filename_from_unicode(oldname, buf1, MAXPATH);
   if (rc < 0)
   {
@@ -1083,6 +1089,7 @@ wchar_t *_wgetdcwd(int drive, wchar_t *buffer, int maxlen)
 {
   int len = strlen(peb->curdir);
 
+  TRACE("_wgetdcwd");
   if (buffer)
   {
     if (len >= maxlen)
@@ -1120,6 +1127,14 @@ wchar_t *_wfullpath(wchar_t *abspath, const wchar_t *relpath, size_t maxlen)
   char buf2[MAXPATH];
   int rc;
 
+  TRACE("_wfullpath");
+  
+  if (maxlen < 2) 
+  {
+    errno = -EINVAL;
+    return NULL;
+  }
+
   rc = convert_filename_from_unicode(relpath, buf1, MAXPATH);
   if (rc < 0)
   {
@@ -1145,7 +1160,15 @@ wchar_t *_wfullpath(wchar_t *abspath, const wchar_t *relpath, size_t maxlen)
     }
   }
 
-  rc = convert_filename_to_unicode(buf2, abspath, maxlen);
+  abspath[0] = 'c';
+  abspath[1] = ':';
+  rc = convert_filename_to_unicode(buf2, abspath + 2, maxlen - 2);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return NULL;
+  }
+
   return abspath;
 }
 

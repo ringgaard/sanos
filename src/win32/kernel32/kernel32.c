@@ -91,7 +91,7 @@ int convert_filename_from_unicode(const wchar_t *src, char *dst, int maxlen)
   while (*src)
   {
     if (dst == end) return -ENAMETOOLONG;
-    if (*dst & 0xFF00) return -EINVAL;
+    if (*src & 0xFF00) return -EINVAL;
     *dst++ = (unsigned char) *src++;
   }
   
@@ -952,9 +952,24 @@ HANDLE WINAPI FindFirstFileW
   LPWIN32_FIND_DATAW lpFindFileData
 )
 {
-  TRACE("FindFirstFileW");
-  panic("FindFirstFileW not implemented");
-  return INVALID_HANDLE_VALUE;
+  char fn[MAXPATH];
+  int rc;
+  WIN32_FIND_DATA fd;
+  HANDLE fh;
+
+  rc = convert_filename_from_unicode(lpFileName, fn, MAXPATH);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return INVALID_HANDLE_VALUE;
+  }
+
+  fh = FindFirstFileA(fn, &fd);
+  if (fh == INVALID_HANDLE_VALUE) return INVALID_HANDLE_VALUE;
+
+  memcpy(lpFindFileData, &fd, sizeof(WIN32_FIND_DATA) - MAX_PATH - 14);
+  convert_filename_to_unicode(fd.cFileName, lpFindFileData->cFileName, MAXPATH);
+  return fh;
 }
 
 BOOL WINAPI FindNextFileA
@@ -1010,9 +1025,18 @@ BOOL WINAPI FindNextFileW
   LPWIN32_FIND_DATAW lpFindFileData
 )
 {
+  WIN32_FIND_DATA fd;
+  BOOL ok;
+
   TRACE("FindNextFileW");
-  panic("FindNextFileW not implemented");
-  return FALSE;
+
+  ok = FindNextFileA(hFindFile, &fd);
+  if (!ok) return FALSE;
+
+  memcpy(lpFindFileData, &fd, sizeof(WIN32_FIND_DATA) - MAX_PATH - 14);
+  convert_filename_to_unicode(fd.cFileName, lpFindFileData->cFileName, MAXPATH);
+
+  return TRUE;
 }
 
 BOOL WINAPI FlushFileBuffers
@@ -1080,7 +1104,7 @@ DWORD WINAPI GetCurrentDirectoryA
   TRACE("GetCurrentDirectoryA");
   
   if (nBufferLength < strlen(peb->curdir) + 3) return strlen(peb->curdir) + 3;
-  lpBuffer[0] = 'C';
+  lpBuffer[0] = 'c';
   lpBuffer[1] = ':';
   strcpy(lpBuffer + 2, peb->curdir);
   return strlen(lpBuffer);
@@ -1185,7 +1209,9 @@ DWORD WINAPI GetFileAttributesW
     return -1;
   }
 
-  return GetFileAttributesA(fn);
+  rc = GetFileAttributesA(fn);
+  //syslog(LOG_DEBUG, "GetFileAttributesW(%s)=%08X\n", fn, rc);
+  return rc;
 }
 
 BOOL WINAPI GetFileTime
@@ -1244,7 +1270,7 @@ DWORD WINAPI GetFullPathNameA
 
   if (strlen(fn) + 2 >= nBufferLength) return strlen(fn) + 3;
 
-  strcpy(lpBuffer, "C:");
+  strcpy(lpBuffer, "c:");
   strcat(lpBuffer, fn);
 
   p = basename = lpBuffer;
@@ -2357,7 +2383,7 @@ DWORD WINAPI WaitForSingleObject
 {
   int rc;
 
-  TRACE("WaitForSingleObject");
+  TRACEX("WaitForSingleObject");
   rc = wait((handle_t) hHandle, dwMilliseconds);
 
   if (rc == -ETIMEOUT) return WAIT_TIMEOUT;

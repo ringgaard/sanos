@@ -419,7 +419,7 @@ int convert_filename_from_unicode(const wchar_t *src, char *dst, int maxlen)
   while (*src)
   {
     if (dst == end) return -ENAMETOOLONG;
-    if (*dst & 0xFF00) return -EINVAL;
+    if (*src & 0xFF00) return -EINVAL;
     *dst++ = (unsigned char) *src++;
   }
   
