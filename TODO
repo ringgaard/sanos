@@ -151,3 +151,11 @@ CHANGES
   been fixed. recv() now returns -ECONNRESET.
 
 *** version 1.2.5 released ***
+
+- iomux did not work with IOEVT_WRITE. This problem has been fixed.
+
+- getsockname() returned garbage in sin_port and sin_addr. This problem has been fixed.
+
+- new HTTP server
+
+

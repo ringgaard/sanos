@@ -95,6 +95,8 @@ int ls(struct httpd_connection *conn)
   httpd_send(conn->rsp, "Name                             Last Modified           Size\r\n", -1);
   httpd_send(conn->rsp, "<HR>\r\n", -1);
 
+  if (urllen > 1) httpd_send(conn->rsp, "<A HREF=\"..\">..</A>\r\n", -1);
+
   while (readdir(dir, &dirp, 1) > 0)
   {
     strcpy(path, conn->req->path_translated);

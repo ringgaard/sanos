@@ -134,7 +134,7 @@ struct httpd_server
   int port;
   int sock;
   int iomux;
-  int logfd;
+  struct critsect srvlock;
   struct httpd_context *contexts;
   struct httpd_connection *connections;
 
@@ -147,8 +147,15 @@ struct httpd_server
   char *indexname;
   char *swname;
   int allowdirbrowse;
+
+  char *logdir;
   int nlogcolumns;
   int logcoumns[HTTP_NLOGCOLUMNS];
+
+  int logfd;
+  int logyear;
+  int logmon;
+  int logday;
 };
 
 // HTTP context

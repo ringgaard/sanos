@@ -168,6 +168,9 @@
 			RelativePath="..\src\utils\httpd\hfile.c">
 		</File>
 		<File
+			RelativePath="..\src\utils\httpd\hlog.c">
+		</File>
+		<File
 			RelativePath="..\src\utils\httpd\httpd.c">
 		</File>
 		<File

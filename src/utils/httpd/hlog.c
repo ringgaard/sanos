@@ -89,6 +89,46 @@ int parse_log_columns(struct httpd_server *server, char *fields)
   return 0;
 }
 
+int write_log(struct httpd_server *server, char *data, int len, struct tm *tm)
+{
+  int year = tm->tm_year + 1900;
+  int mon = tm->tm_mon + 1;
+  int day = tm->tm_mday;
+
+  if (year != server->logyear || mon != server->logmon || day != server->logday)
+  {
+    char logfn[MAXPATH];
+    char buf[1024];
+    int n;
+
+    if (server->logfd >= 0) close(server->logfd);
+
+    sprintf(logfn, "%s/web%04d%02d%02d.log", server->logdir, year, mon, day);
+    server->logfd = open(logfn, O_CREAT | O_APPEND);
+    if (server->logfd < 0) return server->logfd;
+
+    sprintf(buf, "#Server: %s\r\n", server->swname);
+    write(server->logfd, buf, strlen(buf));
+
+    write(server->logfd, "#Version: 1.0\r\n", 15);
+    write(server->logfd, "#Fields: ", 9);
+    for (n = 0; n < server->nlogcolumns; n++)
+    {
+      if (n > 0) write(server->logfd, " ", 1);
+      write(server->logfd, logfieldnames[server->logcoumns[n]], strlen(logfieldnames[server->logcoumns[n]]));
+    }
+    write(server->logfd, "\r\n", 2);
+    sprintf(buf, "#Date: %04d-%02d-%02 %02:%02:%02\r\n", year, mon, day, tm->tm_hour, tm->tm_min, tm->tm_sec);
+    write(server->logfd, buf, strlen(buf));
+
+    server->logyear = year;
+    server->logmon = mon;
+    server->logday = day;
+  }
+
+  return write(server->logfd, data, len);
+}
+
 int log_request(struct httpd_request *req)
 {
   char line[MAX_LOGLINE_SIZE];
@@ -103,7 +143,7 @@ int log_request(struct httpd_request *req)
   int n;
   int field;
 
-  if (req->conn->server->nlogcolumns == 0) return 0;
+  if (req->conn->server->nlogcolumns == 0 || req->conn->server->logdir == NULL) return 0;
 
   for (n = 0; n < req->conn->server->nlogcolumns; n++)
   {
@@ -217,7 +257,9 @@ int log_request(struct httpd_request *req)
   if (p == end) return -EBUF;
   *p++ = 0;
 
-  write(conn->server->logfd, line, p - line);
+  enter(&conn->server->srvlock);
+  write_log(conn->server, line, p - line - 1, tm);
+  leave(&conn->server->srvlock);
 
-  return p - line;
+  return p - line - 1;
 }

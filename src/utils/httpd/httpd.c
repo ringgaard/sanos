@@ -43,8 +43,6 @@
 
 #define HTTPD_SOFTWARE (OSNAME "/" OSVERSION)
 
-struct critsect srvlock;
-
 struct mimetype
 {
   char *ext;
@@ -165,9 +163,9 @@ struct httpd_server *httpd_initialize(struct section *cfg)
   if (!server) return NULL;
   memset(server, 0, sizeof(struct httpd_server));
 
+  mkcs(&server->srvlock);
   server->cfg = cfg;
   server->port = getnumconfig(cfg, "port", 80);
-
   server->num_workers = getnumconfig(cfg, "workerthreads", 1);
   server->min_hdrbufsiz = getnumconfig(cfg, "minhdrsize", 1*K);
   server->max_hdrbufsiz = getnumconfig(cfg, "maxhdrsize", 16*K);
@@ -178,8 +176,9 @@ struct httpd_server *httpd_initialize(struct section *cfg)
   server->swname = getstrconfig(cfg, "swname", HTTPD_SOFTWARE);
   server->allowdirbrowse = getnumconfig(cfg, "allowdirbrowse", 1);
 
-  parse_log_columns(server, getstrconfig(cfg, "logcolumns", "date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status"));
-  server->logfd = 1; // TODO: For now just log to stdout, implement date based log files
+  parse_log_columns(server, getstrconfig(cfg, "logcolumns", "date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status cs(user-agent)"));
+  server->logdir = getstrconfig(cfg, "logdir", NULL);
+  server->logfd = -1;
 
   if (cfg)
   {
@@ -269,12 +268,12 @@ void httpd_accept(struct httpd_server *server)
   addrlen = sizeof(conn->server_addr);
   getsockname(conn->sock, &conn->server_addr.sa, &addrlen);
 
-  enter(&srvlock);
+  enter(&server->srvlock);
   if (server->connections) server->connections->prev = conn;
   conn->next = server->connections;
   conn->prev = NULL;
   server->connections = conn;
-  leave(&srvlock);
+  leave(&server->srvlock);
 
   dispatch(server->iomux, conn->sock, IOEVT_READ | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
 }
@@ -325,6 +324,8 @@ int httpd_terminate_request(struct httpd_connection *conn)
 
 void httpd_close_connection(struct httpd_connection *conn)
 {
+  struct httpd_server *server = conn->server;
+
   //printf("close %a port %d\n", &conn->client_addr.sa_in.sin_addr.s_addr, ntohs(conn->client_addr.sa_in.sin_port));
 
   close(conn->sock);
@@ -338,11 +339,11 @@ void httpd_close_connection(struct httpd_connection *conn)
   free_buffer(&conn->rsphdr);
   free_buffer(&conn->rspbody);
 
-  enter(&srvlock);
+  enter(&server->srvlock);
   if (conn->next) conn->next->prev = conn->prev;
   if (conn->prev) conn->prev->next = conn->next;
-  if (conn == conn->server->connections) conn->server->connections = conn->next;
-  leave(&srvlock);
+  if (conn == server->connections) server->connections = conn->next;
+  leave(&server->srvlock);
 
   free(conn);
 }
@@ -1258,7 +1259,6 @@ int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
 
   if (reason == DLL_PROCESS_ATTACH)
   {
-    mkcs(&srvlock);
     server = httpd_initialize(find_section(config, "httpd"));
     httpd_add_context(server, find_section(config, "webroot"), httpd_file_handler);
     httpd_add_context(server, find_section(config, "webfs"), httpd_file_handler);
