@@ -60,7 +60,8 @@ void panic(const char *msg)
   write(2, msg, strlen(msg));
   write(2, "\n", 1);
   if (logfile > 0) close(logfile);
-  exit(3);
+  dbgbreak();
+  //exit(3);
 }
 
 void syslog(int priority, const char *fmt,...)

@@ -117,7 +117,7 @@ int smb_request(struct smb_share *share, struct smb *smb, unsigned char cmd, int
   }
 
   rc = smb_send(share, smb, cmd, params, data, datasize);
-  if (rc == -ECONN && retry)
+  if ((rc == -ECONN || rc == -ERST) && retry)
   {
     rc = smb_reconnect(share);
     if (rc < 0) return rc;
@@ -194,7 +194,7 @@ int smb_trans_send(struct smb_share *share, unsigned short cmd,
   if (data) memcpy(p + dataofs, data, datalen);
 
   rc = send(share->server->sock, (char *) smb, len + 4, 0);
-  if (rc == -ECONN)
+  if (rc == -ECONN || rc == -ERST)
   {
     rc = smb_reconnect(share);
     if (rc < 0) return rc;
@@ -286,6 +286,17 @@ int smb_trans(struct smb_share *share,
   if (rc < 0) return rc;
 
   rc = smb_trans_recv(share, rspparams, rspparamlen, rspdata, rspdatalen);
+  if (rc == -ERST)
+  {
+    rc = smb_reconnect(share);
+    if (rc < 0) return rc;
+
+    rc = smb_trans_send(share, cmd, reqparams, reqparamlen, reqdata, reqdatalen, *rspparamlen, *rspdatalen);
+    if (rc < 0) return rc;
+
+    rc = smb_trans_recv(share, rspparams, rspparamlen, rspdata, rspdatalen);
+  }
+
   if (rc < 0) return rc;
 
   return 0;

@@ -33,15 +33,46 @@
 
 #include "msvcrt.h"
 
-int _setjmp3(void *env)
+#define OFS_EBP   0
+#define OFS_EBX   4
+#define OFS_EDI   8
+#define OFS_ESI   12
+#define OFS_ESP   16
+#define OFS_EIP   20
+
+__declspec(naked) int _setjmp3(jmp_buf env)
 {
-  TRACE("_setjmp3");
-  //syslog(LOG_DEBUG, "setjmp called\n");
-  return 0;
+  __asm
+  {
+    mov edx, 4[esp]          // Get jmp_buf pointer
+    mov	eax, [esp]           // Save EIP
+    mov	OFS_EIP[edx], eax
+    mov	OFS_EBP[edx], ebp    // Save EBP, EBX, EDI, ESI, and ESP
+    mov	OFS_EBX[edx], ebx
+    mov	OFS_EDI[edx], edi
+    mov	OFS_ESI[edx], esi
+    mov	OFS_ESP[edx], esp
+    xor	eax, eax             // Return 0
+    ret
+  }
 }
 
-void longjmp(void *env, int value)
+__declspec(naked) void longjmp(jmp_buf env, int value)
 {
-  TRACE("longjmp");
-  panic("longjmp not implemented");
+  __asm
+  {
+    mov edx, 4[esp]          // Get jmp_buf pointer
+    mov	eax, 8[esp]          // Get return value (eax)
+
+    mov esp, OFS_ESP[edx]    // Switch to new stack position
+    mov	eax, OFS_EIP[edx]    // Get new EIP value and set as return address
+    mov [esp], eax
+    
+    mov	ebp, OFS_EBP[edx]    // Restore EBP, EBX, EDI, and ESI
+    mov	ebx, OFS_EBX[edx]
+    mov	edi, OFS_EDI[edx]
+    mov	esi, OFS_ESI[edx]
+
+    ret
+  }
 }

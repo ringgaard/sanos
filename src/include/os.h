@@ -60,7 +60,7 @@
 
 struct section;
 
-//#define TRACEAPI
+#define TRACEAPI
 //#define TRACEAPIX
 
 //

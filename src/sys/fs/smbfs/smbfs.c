@@ -103,7 +103,7 @@ int smb_mount(struct fs *fs, char *opts)
 
   // Connect to share
   rc = smb_connect_tree(share);
-  if (rc == -ECONN) rc = smb_reconnect(share);
+  if (rc == -ECONN || rc == -ERST) rc = smb_reconnect(share);
   if (rc < 0)
   {
     smb_release_connection(share);

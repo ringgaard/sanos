@@ -92,6 +92,16 @@ struct _iobuf
   char *tmpfname;
 };
 
+typedef struct 
+{
+  unsigned long ebp;
+  unsigned long ebx;
+  unsigned long edi;
+  unsigned long esi;
+  unsigned long esp;
+  unsigned long eip;
+} jmp_buf[1];
+
 typedef struct _iobuf FILE;
 
 typedef void (__cdecl *_PVFV)(void);
@@ -204,7 +214,7 @@ crtapi void _ftol();
 //crtapi void _isnan();
 crtapi int _isnan(double x);
 crtapi double _copysign(double a, double b);
-crtapi void _finite();
+crtapi int _finite(double x);
 crtapi void floor();
 crtapi void _CIfmod();
 crtapi unsigned int _control87(unsigned int newflags, unsigned int mask);
@@ -228,7 +238,7 @@ crtapi char *asctime(const struct tm *timeptr);
 
 crtapi int *_errno();
 
-crtapi int _setjmp3(void *env);
-crtapi void longjmp(void *env, int value);
+crtapi int _setjmp3(jmp_buf env);
+crtapi void longjmp(jmp_buf env, int value);
 
 #endif

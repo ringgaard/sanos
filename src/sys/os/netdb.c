@@ -573,6 +573,21 @@ struct hostent *gethostbyname(const char *name)
   tib->host.h_addrtype = AF_INET;
   tib->host.h_length = sizeof(struct in_addr);
 
+  // Return host ip address for localhost
+  if (strcmp(name, "localhost") == 0)
+  {
+    memcpy(tib->host_addr, &tib->peb->ipaddr, sizeof(struct in_addr));
+    strcpy(tib->hostbuf, "localhost");
+    tib->host.h_name = tib->hostbuf;
+    tib->host.h_aliases = tib->host_aliases;
+    tib->host_aliases[0] = NULL;
+    tib->h_addr_ptrs[0] = (char *) tib->host_addr;
+    tib->h_addr_ptrs[1] = NULL;
+    tib->host.h_addr_list = tib->h_addr_ptrs;
+
+    return &tib->host;
+  }
+
   // Disallow names consisting only of digits/dots, unless they end in a dot
   if (*name >= '0' && *name <= '9')
   {
@@ -804,15 +819,23 @@ int gethostname(char *name, int namelen)
   if (*peb->hostname)
     host = peb->hostname;
   else
-    host = get_property(config, "os", "hostname", "localhost");
+    host = get_property(config, "os", "hostname", NULL);
 
   if (*peb->default_domain)
     domain = peb->default_domain;
   else
-    host = get_property(config, "dns", "domain", "localdomain");
+    host = get_property(config, "dns", "domain", NULL);
 
-  sprintf(buf, "%s.%s", host, domain);
-  strncpy(name, buf, namelen);
+  if (!host)
+    strncpy(name, "localhost", namelen);
+  else if (!domain)
+    strncpy(name, host, namelen);
+  else
+  {
+    sprintf(buf, "%s.%s", host, domain);
+    strncpy(name, buf, namelen);
+  }
+
   return 0;
 }
 

@@ -55,9 +55,11 @@ double _copysign(double x, double y)
   return x;
 }
 
-void _finite()
+int _finite(double x)
 {
-  panic("_finite not implemented");
+  int hx; 
+  hx = HI(x);
+  return  (unsigned) ((hx & 0x7fffffff) - 0x7ff00000) >> 31;
 }
 
 void floor()

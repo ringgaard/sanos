@@ -823,6 +823,7 @@ FARPROC WINAPI GetProcAddress
 )
 {
   TRACE("GetProcAddress");
+  syslog(LOG_DEBUG, "GetProcAddress name: %s hmod: %08X\n", lpProcName, hModule);
   return resolve((hmodule_t) hModule, (char *) lpProcName);
 }
 
@@ -1413,7 +1414,7 @@ VOID WINAPI Sleep
   DWORD dwMilliseconds
 )
 {
-  TRACE("Sleep");
+  TRACEX("Sleep");
   sleep(dwMilliseconds);
 }
 

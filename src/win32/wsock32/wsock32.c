@@ -313,9 +313,11 @@ sockapi int winsock_setsockopt(SOCKET s, int level, int optname, const char *opt
   if (rc < 0)
   {
     errno = rc;
+    syslog(LOG_DEBUG, "setsockopt failed: %d\n", rc);
     return -1;
   }
 
+  syslog(LOG_DEBUG, "setsockopt successfully: %d\n", rc);
   return rc;
 }
 
