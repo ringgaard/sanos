@@ -249,6 +249,51 @@
 #define FSH_DOWN_INDICATE		        (1 << 31)
 
 //
+// Physical Management
+//
+
+#define PHY_WRITE			        0x0004  // Write to PHY (drive MDIO)
+#define PHY_DATA1			        0x0002  // MDIO data bit
+#define PHY_CLOCK			        0x0001  // MII clock signal
+
+#define MII_PHY_ADDRESS				0x0C00
+#define MII_PHY_ADDRESS_READ  		        (MII_PHY_ADDRESS | 0x6000)
+#define MII_PHY_ADDRESS_WRITE  		        (MII_PHY_ADDRESS | 0x5002)
+
+//
+// Media Options
+//
+
+#define MEDIA_OPTIONS_100BASET4_AVAILABLE	(1 << 0)
+#define MEDIA_OPTIONS_100BASETX_AVAILABLE	(1 << 1)
+#define MEDIA_OPTIONS_100BASEFX_AVAILABLE	(1 << 2)
+#define MEDIA_OPTIONS_10BASET_AVAILABLE		(1 << 3)
+#define MEDIA_OPTIONS_10BASE2_AVAILABLE		(1 << 4)
+#define MEDIA_OPTIONS_10AUI_AVAILABLE		(1 << 5)
+#define MEDIA_OPTIONS_MII_AVAILABLE		(1 << 6)
+#define MEDIA_OPTIONS_10BASEFL_AVAILABLE	(1 << 8)
+
+//
+// MAC Control
+//
+
+#define MAC_CONTROL_FULL_DUPLEX_ENABLE		(1 << 5)
+#define MAC_CONTROL_ALLOW_LARGE_PACKETS		(1 << 6)
+#define MAC_CONTROL_FLOW_CONTROL_ENABLE 	(1 << 8)
+
+//
+// MII Registers
+//
+
+#define MII_PHY_CONTROL			0   // Control reg address
+#define MII_PHY_STATUS              	1   // Status reg address
+#define MII_PHY_OUI                 	2   // Most of the OUI bits
+#define MII_PHY_MODEL               	3   // Model/rev bits, and rest of OUI
+#define MII_PHY_ANAR                	4   // Auto negotiate advertisement reg
+#define MII_PHY_ANLPAR              	5   // Auto negotiate link partner reg
+#define MII_PHY_ANER                	6   // Auto negotiate expansion reg
+
+//
 // EEPROM contents
 //
 
@@ -366,6 +411,9 @@ struct nic
   unsigned short iobase;		// Configured I/O base
   unsigned short irq;		        // Configured IRQ
 
+  int connector;                        // Active connector
+  int linkspeed;                        // Link speed in mbits/s
+
   struct eth_addr hwaddr;               // MAC address for NIC
 
   struct dpc dpc;                       // DPC for driver
@@ -398,11 +446,19 @@ __inline void execute_command(struct nic *nic, int cmd, int param)
 
 void execute_command_wait(struct nic *nic, int cmd, int param)
 {
-  int i = 4000000;
+  int i;
+
   execute_command(nic, cmd, param);
-  while (--i > 0)
-    if (!(_inpw(nic->iobase + STATUS) & INTSTATUS_CMD_IN_PROGRESS))
-      return;
+  for (i = 0; i < 2000; i++)
+  {
+    if (!(_inpw(nic->iobase + STATUS) & INTSTATUS_CMD_IN_PROGRESS)) return;
+  }
+
+  for (i = 0; i < 200; i++)
+  {
+    if (!(_inpw(nic->iobase + STATUS) & INTSTATUS_CMD_IN_PROGRESS)) return;
+    sleep(10);
+  }
 
   kprintf("nic: command did not complete\n");
 }
@@ -510,6 +566,189 @@ int nicstat_proc(struct proc_file *pf, void *arg)
   pprintf(pf, "Oversized frames..... : %10lu\n", nic->stat.rx_oversize_error);
 
   return 0;
+}
+
+int nic_find_mii_phy(struct nic *nic)
+{
+  unsigned short media_options = 0;
+  unsigned short phy_mgmt = 0;
+  int i;
+
+  // Read the MEDIA OPTIONS to see what connectors are available
+  select_window(nic, 3);
+  media_options = _inpw(nic->iobase + MEDIA_OPTIONS);
+
+  if ((media_options & MEDIA_OPTIONS_MII_AVAILABLE) ||
+      (media_options & MEDIA_OPTIONS_100BASET4_AVAILABLE)) 
+  {
+    // Drop everything, so we are not driving the data, and run the
+    // clock through 32 cycles in case the PHY is trying to tell us
+    // something. Then read the data line, since the PHY's pull-up
+    // will read as a 1 if it's present.
+
+    select_window(nic, 4);
+    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+
+    for (i = 0; i < 32; i++) 
+    {
+      usleep(1);
+      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
+      usleep(1);
+      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+    }
+
+    phy_mgmt = _inpw(nic->iobase + PHYSICAL_MANAGEMENT);
+
+    if (phy_mgmt & PHY_DATA1)
+      return 0;
+    else 
+      return -ENODEV;
+  }
+
+  return 0;
+}
+
+void nic_send_mii_phy_preamble(struct nic *nic)
+{
+  int i;
+
+  // Set up and send the preamble, a sequence of 32 "1" bits
+  select_window(nic, 4);
+  _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
+
+  for (i = 0; i < 32; i++) 
+  {
+    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1);
+    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1 | PHY_CLOCK);
+    usleep(1);
+    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
+    usleep(1);
+  }
+}
+
+void nic_write_mii_phy(struct nic *nic, unsigned short reg, unsigned short value)
+{
+  int i,j;
+  unsigned short writecmd[2];
+
+  writecmd[0] = MII_PHY_ADDRESS_WRITE;
+  writecmd[1] = 0;
+
+  nic_send_mii_phy_preamble(nic);
+
+  // Bits 2..6 of the command word specify the register
+  writecmd[0] |= (reg & 0x1F) << 2;
+  writecmd[1] = value;
+
+  select_window(nic, 4);
+
+  for (i = 0; i < 2; i++) 
+  {
+    for (j = 0x8000; j; j >>= 1) 
+    {
+
+      if (writecmd[i] & j) 
+      {
+        _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1);
+        _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1 | PHY_CLOCK);
+      }
+      else 
+      {
+        _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
+        _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_CLOCK);
+      }
+      usleep(1);
+      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
+      usleep(1);
+    }
+  }
+
+  // Now give it a couple of clocks with nobody driving
+  _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+  for (i = 0; i < 2; i++) 
+  {
+    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
+    usleep(1);
+    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+    usleep(1);
+  }
+}
+
+int nic_read_mii_phy(struct nic *nic, unsigned short reg)
+{
+  unsigned short  phy_mgmt = 0;
+  unsigned short read_cmd;
+  unsigned short value;
+  int i;
+
+  read_cmd = MII_PHY_ADDRESS_READ;
+
+  nic_send_mii_phy_preamble(nic);
+  
+  // Bits 2..6 of the command word specify the register
+  read_cmd |= (reg & 0x1F) << 2;
+
+  select_window(nic, 4);
+
+  for (i = 0x8000; i > 2; i >>= 1) 
+  {
+    if (read_cmd & i) 
+    {
+      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1);
+      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1 | PHY_CLOCK);
+    }
+    else 
+    {
+      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
+      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_CLOCK);
+    }
+
+    usleep(1);
+    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
+    usleep(1);
+  }
+
+  // Now run one clock with nobody driving
+  _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+  _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
+  usleep(1);
+  _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+  usleep(1);
+
+  // Now run one clock, expecting the PHY to be driving a 0 on the data
+  // line.  If we read a 1, it has to be just his pull-up, and he's not
+  // responding.
+
+  phy_mgmt = _inpw(nic->iobase + PHYSICAL_MANAGEMENT);
+  if (phy_mgmt & PHY_DATA1) return -EIO;
+
+  // We think we are in sync.  Now we read 16 bits of data from the PHY.
+  select_window(nic, 4);
+  value = 0;
+  for (i = 0x8000; i; i >>= 1) 
+  {
+    // Shift input up one to make room
+    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
+    usleep(1);
+    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+    usleep(1);
+
+    phy_mgmt = _inpw(nic->iobase + PHYSICAL_MANAGEMENT);
+
+    if (phy_mgmt & PHY_DATA1) value |= i;
+  }
+
+  // Now give it a couple of clocks with nobody driving
+  _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+  for (i = 0; i < 2; i++) 
+  {
+    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
+    usleep(1);
+    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+    usleep(1);
+  }
+
+  return value;
 }
 
 int nic_transmit(struct dev *dev, struct pbuf *p)
