@@ -66,10 +66,29 @@ start:
 	call	print
 	
 	; Copy os loader from ram boot image 
-xxx:
-	mov	al, '.'
-	call	printchar
-	jmp	xxx
+	push	ds
+
+	mov	cx, [ldrsize]	    ; cx = number of bytes to copy
+	shl	cx, 9	            ; convert from sectors to bytes
+
+	mov	eax, [ldrstrt]	    ; ds = loader start segment
+	shl	eax, 5		    ; convert from sectors to segments
+	add	eax, 0x7c00
+	mov	ds, ax
+
+	mov	ax, OSLDRSEG	    ; es = loader segment
+	mov	es, ax
+
+	xor	di, di
+	xor	si, si
+	cld
+	rep movsb
+	pop	ds
+
+;xxx:
+;	mov	al, '.'
+;	call	printchar
+;	jmp	xxx
 
 	; Move system into 32-bit protected mode
 	cli			    ; no interrupts allowed
@@ -116,12 +135,11 @@ start32:
 	mov	eax, [eax + OSLDRBASE + 0x28]
 	add	eax, OSLDRBASE
 
-	; Get boot drive
-	xor	ebx, ebx
-	mov	bl, [bootdrv]
+	; Set boot drive to 0xFF to signal boot from CD
+	mov	ebx, 0xFF
 
-	; Push os loader load address, boot drive and a dummy parameter
-	push	dword 0
+	; Push os loader load address, boot drive and initial ram disk image
+	push	dword 0x7C00
 	push	ebx
 	push	dword OSLDRBASE
 

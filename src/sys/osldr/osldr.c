@@ -42,6 +42,7 @@
 #include <os/fpu.h>
 #include <os/object.h>
 #include <os/sched.h>
+#include <os/dfs.h>
 
 void kprintf(const char *fmt,...);
 void clear_screen();
@@ -64,6 +65,8 @@ struct selector idtsel;         // IDT selector
 int bootdrive;                  // Boot drive
 int bootpart;                   // Boot partition
 char *krnlopts;                 // Kernel options
+void *initrd;                   // Initial RAM disk location in heap
+int initrd_size;                // Initial RAM disk size (in bytes)
 
 void load_kernel();
 
@@ -75,9 +78,17 @@ void init_boothd(int bootdrv);
 void uninit_boothd();
 int bootfd_read(void *buffer, size_t count, blkno_t blkno);
 
+int bootrd_read(void *buffer, size_t count, blkno_t blkno)
+{
+  memcpy(buffer, (char *) initrd + blkno * 512, count * 512);
+  return count;
+}
+
 int boot_read(void *buffer, size_t count, blkno_t blkno)
 {
-  if (bootdrive & 0x80)
+  if (bootdrive & 0xF0)
+    return bootrd_read(buffer, count, blkno);
+  else if (bootdrive & 0x80)
     return boothd_read(buffer, count, blkno);
   else
     return bootfd_read(buffer, count, blkno);
@@ -211,7 +222,18 @@ void setup_descriptors()
   __asm { ltr tssval };
 }
 
-void __stdcall start(void *hmod, int bootdrv, int reserved2)
+void copy_ramdisk(void *bootimg)
+{
+  struct superblock *super = (struct superblock *) ((char *) bootimg + 512);
+  
+  if (!bootimg) panic("no boot image");
+  if (super->signature != DFS_SIGNATURE) panic("invalid DFS signature on initial RAM disk");
+  initrd_size = (1 << super->log_block_size) * super->block_count;
+  initrd = alloc_heap(PAGES(initrd_size));
+  memcpy(initrd, bootimg, initrd_size);
+}
+
+void __stdcall start(void *hmod, int bootdrv, void *bootimg)
 {
   pte_t *pt;
   int i;
@@ -260,9 +282,14 @@ void __stdcall start(void *hmod, int bootdrv, int reserved2)
   pdir[0] = (unsigned long) pt | PT_PRESENT | PT_WRITABLE | PT_USER;
   for (i = 0; i < PTES_PER_PAGE; i++) pt[i] = (i * PAGESIZE) | PT_PRESENT | PT_WRITABLE;
 
-  // Copy kernel from boot disk
+  // Copy kernel from boot device
   bootdrive = bootdrv;
-  if (bootdrv & 0x80)
+  if (bootdrv & 0xF0)
+  {
+    copy_ramdisk(bootimg);
+    init_boothd(bootdrv);
+  }
+  else if (bootdrv & 0x80)
   {
     init_boothd(bootdrv);
     load_kernel(bootdrv);
@@ -294,6 +321,8 @@ void __stdcall start(void *hmod, int bootdrv, int reserved2)
   syspage->bootparams.memend = mem_end;
   syspage->bootparams.bootdrv = bootdrv;
   syspage->bootparams.bootpart = bootpart;
+  syspage->bootparams.initrd = initrd;
+  syspage->bootparams.initrd_size = initrd_size;
   memcpy(syspage->biosdata, (void *) 0x0400, 256);
 
   // Kernel options are located in the header of the osldr image

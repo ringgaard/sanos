@@ -76,8 +76,12 @@ struct bootparams
   unsigned long heapstart;
   unsigned long heapend;
   unsigned long memend;
+
   int bootdrv;
   int bootpart;
+
+  void *initrd;
+  unsigned long initrd_size;
 };
 
 struct syspage

@@ -173,7 +173,7 @@ start32:
 	xor	ebx, ebx
 	mov	bl, [bootdrv]
 
-	; Push os loader load address, boot drive and a dummy parameter
+	; Push os loader load address, boot drive and a initial ram disk image
 	push	dword 0
 	push	ebx
 	push	dword OSLDRBASE
