@@ -35,7 +35,7 @@
 
 #define _NSTREAM_ 128
 
-crtapi struct _iobuf _iob[_NSTREAM_];
+struct _iobuf _iob[_NSTREAM_];
 
 struct critsect iob_lock;
 
@@ -297,12 +297,27 @@ __int64 _fstati64(int handle, struct _stati64 *buffer)
   return 0;
 }
 
+loff_t _lseek(int f, loff_t offset, int origin)
+{
+  int rc;
+
+  TRACE("_lseek");
+  rc = lseek(f, offset, origin);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return -1;
+  }
+
+  return rc;
+}
+
 __int64 _lseeki64(int handle, __int64 offset, int origin)
 {
   int rc;
 
   TRACE("_lseeki64");
-  rc = lseek(handle, (int) offset, origin);
+  rc = (int) lseek64(handle, offset, origin);
   if (rc < 0)
   {
     errno = -rc;

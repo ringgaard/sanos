@@ -33,8 +33,8 @@
 
 #include "msvcrt.h"
 
-crtapi int _adjust_fdiv = 0;
-crtapi int __mb_cur_max = 1;
+int _adjust_fdiv = 0;
+int __mb_cur_max = 1;
 
 int _app_type = _UNKNOWN_APP;
 int _error_mode;
@@ -404,6 +404,34 @@ size_t wcslen(const wchar_t *s)
   const wchar_t *eos = s;
   while (*eos++);
   return (int) (eos - s - 1);
+}
+
+wchar_t *wcscpy(wchar_t *dst, const wchar_t *src)
+{
+  wchar_t *cp = dst;
+  while (*cp++ = *src++);
+  return dst;
+}
+
+wchar_t *wcscat(wchar_t *dst, const wchar_t *src)
+{
+  wchar_t *cp = dst;
+  while(*cp) cp++;
+  while (*cp++ = *src++);
+  return dst;
+}
+
+int wcscmp(const wchar_t *s1, const wchar_t *s2)
+{
+  int ret = 0;
+  while (!(ret = *(unsigned short *) s1 - *(unsigned short *) s2) && *s2) ++s1, ++s2;
+
+  if (ret < 0)
+    ret = -1;
+  else if (ret > 0)
+    ret = 1 ;
+
+  return ret;
 }
 
 int towlower(wint_t c)

@@ -381,3 +381,5 @@ CHANGES
 
 - sysinfo() implemented. GetSystemInfo() and GlobalMemoryStatus() in kernel32 now returns
   correct values.
+
+- Code cleanup in msvcrt.h. All exports moved to msvcrt.def.
