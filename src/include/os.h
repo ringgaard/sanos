@@ -219,6 +219,19 @@ struct section;
 #define PRIORITY_SYSTEM          7
 
 //
+// Thread creation flags
+//
+
+#define CREATE_SUSPENDED        0x04
+#define CREATE_NEW_JOB          0x10
+
+// Spawn flags
+
+#define P_WAIT      0
+#define P_NOWAIT    1
+#define P_DETACH    4
+
+//
 // File open modes
 //
 
@@ -924,6 +937,22 @@ struct peb
 };
 
 //
+// Job Object
+//
+
+struct job
+{
+  int threadcnt;       // Number of threads in job
+  hmodule_t hmod;      // Module handle for exec module
+  char *cmdline;       // Command line arguments
+  handle_t terminated; // Terminate event
+
+  handle_t in;         // Standard input device
+  handle_t out;        // Standard output device
+  handle_t err;        // Standard error device
+};
+
+//
 // Thread Information Block
 //
 
@@ -1016,7 +1045,9 @@ struct mallinfo
   int keepcost; // Top-most, releasable (via malloc_trim) space
 };
 
+//
 // OS API functions
+//
 
 #ifndef KERNEL
 
@@ -1106,7 +1137,7 @@ osapi handle_t self();
 osapi void exit(int status);
 osapi void dbgbreak();
 
-osapi handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, void *arg, int suspended, tid_t *tid);
+osapi handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, void *arg, int flags, struct tib **ptib);
 osapi int suspend(handle_t thread);
 osapi int resume(handle_t thread);
 osapi void endthread(int retval);

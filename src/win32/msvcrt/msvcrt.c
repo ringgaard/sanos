@@ -319,8 +319,13 @@ int *__errno()
 
 unsigned long _beginthreadex(void *security, unsigned stack_size, unsigned (__stdcall *start_address)(void * ), void *arglist, unsigned initflag, unsigned *thrdaddr)
 {
+  struct tib *tib;
+  handle_t hthread;
+
   TRACE("_beginthreadex");
-  return beginthread(start_address, stack_size, arglist, initflag != 0, thrdaddr);
+  hthread = beginthread(start_address, stack_size, arglist, initflag, &tib);
+  if (hthread >= 0 && thrdaddr && tib) *thrdaddr = tib->tid;
+  return hthread;
 }
 
 void _endthreadex(unsigned retval)

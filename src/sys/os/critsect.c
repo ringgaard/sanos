@@ -37,11 +37,11 @@ __inline long atomic_add(long *dest, long add_value)
 {
   __asm 
   {
-    mov edx, dest;
-    mov eax, add_value;
-    mov ecx, eax;
-    lock xadd dword ptr [edx], eax;
-    add eax, ecx;
+    mov edx, dest
+    mov eax, add_value
+    mov ecx, eax
+    lock xadd dword ptr [edx], eax
+    add eax, ecx
   }
 }
 

@@ -98,7 +98,11 @@
 #define _TLOSS      5   // Total loss of precision
 #define _PLOSS      6   // Partial loss of precision
 
+#ifndef _SIZE_T_DEFINED
+#define _SIZE_T_DEFINED
 typedef unsigned int size_t;
+#endif
+
 typedef long fpos_t;
 typedef unsigned short wchar_t;
 

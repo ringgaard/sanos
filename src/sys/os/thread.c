@@ -58,7 +58,7 @@ void __stdcall threadstart(struct tib *tib)
   endthread(0);
 }
 
-handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, void *arg, int suspended, tid_t *tid)
+handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, void *arg, int flags, struct tib **ptib)
 {
   struct tib *tib;
   handle_t h;
@@ -69,9 +69,9 @@ handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, vo
   tib->startaddr = (void *) startaddr;
   tib->startarg = arg;
 
-  if (!suspended) resume(h);
+  if ((flags & CREATE_SUSPENDED) == 0) resume(h);
 
-  if (tid) *tid = tib->tid;
+  if (ptib) *ptib = tib;
   return h;
 }
 
