@@ -55,6 +55,7 @@ dirs:
     -@if not exist $(BIN) mkdir $(BIN)
     -@if not exist $(OBJ) mkdir $(OBJ)
     -@if not exist $(IMG) mkdir $(IMG)
+    -@if not exist $(LIBS) mkdir $(LIBS)
     -@if not exist $(OBJ)\3c905c mkdir $(OBJ)\3c905c
     -@if not exist $(OBJ)\advapi32 mkdir $(OBJ)\advapi32
     -@if not exist $(OBJ)\boot mkdir $(OBJ)\boot

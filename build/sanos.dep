@@ -557,6 +557,9 @@ $(SRC)/sys/osldr/osldr.c: \
   $(SRC)/include/os/sched.h \
   $(SRC)/include/os/dfs.h
 
+$(SRC)/sys/osldr/unzip.c: \
+  $(SRC)/include/string.h
+
 $(SRC)/sys/osldr/video.c: \
   $(SRC)/include/os.h \
   $(SRC)/include/stdarg.h
