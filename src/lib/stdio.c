@@ -71,25 +71,27 @@ char *gets(char *buf)
 {
   char *p = buf;
   char ch;
+  int rc;
 
   while (1)
   {
-    if (read(stdin, &ch, 1) == 1)
+    rc = read(stdin, &ch, 1);
+    if (rc == -ETIMEOUT) continue;
+    if (rc <= 0) return NULL;
+
+    if (ch == 8)
     {
-      if (ch == 8)
+      if (p > buf)
       {
-	if (p > buf)
-	{
-	  write(stdout, "\b \b", 3);
-	  p--;
-	}
+	write(stdout, "\b \b", 3);
+	p--;
       }
-      else if (ch == '\r' || ch =='\n' || ch >= ' ')
-      {
-	write(stdout, &ch, 1);
-        if (ch == '\n') break;
-	if (ch != '\r') *p++ = ch;
-      }
+    }
+    else if (ch == '\r' || ch =='\n' || ch >= ' ')
+    {
+      write(stdout, &ch, 1);
+      if (ch == '\n') break;
+      if (ch != '\r') *p++ = ch;
     }
   }
 

@@ -87,8 +87,7 @@ static int wait_for_buffer(struct buf *buf)
 
   t->next_waiter = buf->waiters;
   buf->waiters = t;
-  t->state = THREAD_STATE_WAITING;
-  dispatch();
+  enter_wait(THREAD_WAIT_BUFFER);
   return t->waitkey;
 }
 

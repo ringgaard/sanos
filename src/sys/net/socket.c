@@ -66,8 +66,7 @@ err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, cha
     add_timer(&timer);
   }
 
-  req->thread->state = THREAD_STATE_WAITING;
-  dispatch();
+  enter_wait(THREAD_WAIT_SOCKET);
 
   if (timeout != INFINITE) del_timer(&timer);
 

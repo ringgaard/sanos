@@ -637,7 +637,7 @@ static int httpget(char *server, char *path, char *filename)
     return rc;
   }
 
-  buf = malloc(4096);
+  buf = malloc(8*K);
   if (!buf) return -ENOMEM;
 
   sprintf(buf, "GET %s HTTP/1.0\r\n\r\n", path);
@@ -664,7 +664,7 @@ static int httpget(char *server, char *path, char *filename)
   }
 
   count = 0;
-  while ((n = recv(s, buf, 4096, 0)) > 0)
+  while ((n = recv(s, buf, 8*K, 0)) > 0)
   {
     write(f, buf, n);
     count += n;
@@ -771,6 +771,7 @@ static void http(int argc, char **argv)
   char *path;
   char *filename;
   int rc;
+  clock_t t;
 
   server = "192.168.12.1";
   path = "/";
@@ -780,11 +781,16 @@ static void http(int argc, char **argv)
   if (argc >= 3) path = argv[2];
   if (argc >= 4) filename = argv[3];
   
+  t = clock();
   rc = httpget(server, path, filename);
   if (rc < 0)
     printf("error %d retrieving %s from %s\n", rc, path, server);
   else
-    printf("received %d bytes\n", rc);
+  {
+    t = clock() - t;
+    if (t == 0) t = 1;
+    printf("received %d bytes in %d ms (%d KB/s)\n", rc, t, rc / t);
+  }
 }
 
 static void download(int argc, char **argv)
@@ -1118,7 +1124,7 @@ void shell()
   while (1)
   {
     printf("$ ");
-    gets(cmd);
+    if (gets(cmd) == NULL) break;
 
     argc = parse_args(cmd, NULL);
     if (argc)

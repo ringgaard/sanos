@@ -30,6 +30,12 @@
 #define THREAD_STATE_WAITING     3
 #define THREAD_STATE_TERMINATED  4
 
+#define THREAD_WAIT_OBJECT       0
+#define THREAD_WAIT_BUFFER       1
+#define THREAD_WAIT_TASK         2
+#define THREAD_WAIT_SOCKET       3
+#define THREAD_WAIT_SLEEP        4
+
 #define THREAD_FPU_USED          1
 #define THREAD_FPU_ENABLED       2
 
@@ -93,6 +99,7 @@ struct thread
   struct object object;
 
   int state;
+  int wait_reason;
   int flags;
   int priority;
   tid_t id;
@@ -102,6 +109,9 @@ struct thread
   void *entrypoint;
   int exitcode;
   char *name;
+  unsigned long utime;
+  unsigned long stime;
+  unsigned long context_switches;
 
   struct thread *next;
   struct thread *prev;

@@ -31,7 +31,7 @@ void tcp_err(struct tcp_pcb *pcb, void (*err)(void *arg, err_t err));
 
 #define tcp_sndbuf(pcb)   ((pcb)->snd_buf)
 
-void tcp_recved(struct tcp_pcb *pcb, unsigned short len);
+void tcp_recved(struct tcp_pcb *pcb, int len);
 err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port);
 err_t tcp_connect (struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port, err_t (*connected)(void *arg, struct tcp_pcb *tpcb, err_t err));
 struct tcp_pcb *tcp_listen(struct tcp_pcb *pcb);

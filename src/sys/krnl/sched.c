@@ -12,6 +12,9 @@
 
 int resched = 0;
 int idle = 0;
+int in_dpc = 0;
+unsigned long dpc_time = 0;
+unsigned long dpc_total = 0;
 
 struct thread *idle_thread;
 struct thread *ready_queue_head[THREAD_PRIORITY_LEVELS];
@@ -92,6 +95,15 @@ static void init_thread_stack(struct thread *t, void *startaddr, void *arg)
   tcb->esp = esp;
 }
 
+void enter_wait(int reason)
+{
+  struct thread *t = self();
+
+  t->state = THREAD_STATE_WAITING;
+  t->wait_reason = reason;
+  dispatch();
+}
+
 void mark_thread_ready(struct thread *t)
 {
   t->state = THREAD_STATE_READY;
@@ -105,14 +117,17 @@ void mark_thread_ready(struct thread *t)
 
 void mark_thread_running()
 {
+  struct thread *t;
   struct tib *tib;
   struct segment *seg;
 
   // Set thread state to running
-  tib = self()->tib;
-  self()->state = THREAD_STATE_RUNNING;
+  t = self();
+  t->state = THREAD_STATE_RUNNING;
+  t->context_switches++;
 
   // Set FS register to point to current TIB
+  tib = t->tib;
   seg = &syspage->gdt[GDT_TIB];
   seg->base_low = (unsigned short)((unsigned long) tib & 0xFFFF);
   seg->base_med = (unsigned char)(((unsigned long) tib >> 16) & 0xFF);
@@ -370,11 +385,7 @@ static void task_queue_task(void *tqarg)
   while (1)
   {
     // Wait until tasks arrive on the task queue
-    while (tq->head == NULL)
-    {
-      tq->thread->state = THREAD_STATE_WAITING;
-      dispatch();
-    }
+    while (tq->head == NULL) enter_wait(THREAD_WAIT_TASK);
 
     // Get next task from task queue
     task = tq->head;
@@ -425,7 +436,7 @@ int queue_task(struct task_queue *tq, struct task *task, taskproc_t proc, void *
   task->proc = proc;
   task->arg = arg;
   task->next = NULL;
-  task->flags |= DPC_QUEUED;
+  task->flags |= TASK_QUEUED;
 
   if (tq->tail)
   {
@@ -477,6 +488,8 @@ void dispatch_dpc_queue()
   dpcproc_t proc;
   void *arg;
 
+  if (in_dpc) panic("sched: nested execution of dpc queue");
+
   while (1)
   {
     // Get next deferred procedure call
@@ -498,8 +511,11 @@ void dispatch_dpc_queue()
       dpc->flags |= DPC_EXECUTING;
       proc = dpc->proc;
       arg = dpc->arg;
-  
+      
+      in_dpc = 1;
       proc(arg);
+      in_dpc = 0;
+      dpc_total++;
 
       dpc->flags &= ~DPC_EXECUTING;
     }
@@ -578,23 +594,53 @@ void idle_task()
   }
 }
 
+void update_thread_times(struct context *ctxt)
+{
+  struct thread *t;
+
+  if (in_dpc)
+    dpc_time++;
+  else
+  {
+    t = self();
+    if (ctxt->eip < OSBASE)
+      t->utime++;
+    else
+      t->stime++;
+  }
+}
+
 static int threads_proc(struct proc_file *pf, void *arg)
 {
   static char *threadstatename[] = {"init", "ready", "run", "wait", "term"};
+  static char *waitreasonname[] = {"wait", "fileio", "taskq", "sockio", "sleep"};
   struct thread *t = threadlist;
+  char *state;
 
-  pprintf(pf, "tid tcb      hndl state prio tib      suspend entry    handles name\n");
-  pprintf(pf, "--- -------- ---- ----- ---- -------- ------- -------- ------- ----------------\n");
+  pprintf(pf, "tid tcb      hndl state  prio tib      s #h  utime  stime ctxtsw name\n");
+  pprintf(pf, "--- -------- ---- ------ ---- -------- - -- ------ ------ ------ ---------------\n");
   while (1)
   {
-    pprintf(pf,"%3d %p %4d %-5s %3d  %p  %4d   %p   %2d    %s\n",
-            t->id, t, t->hndl, threadstatename[t->state], t->priority, t->tib, 
-	    t->suspend_count, t->entrypoint, t->object.handle_count, t->name ? t->name : "");
+    if (t->state == THREAD_STATE_WAITING)
+      state = waitreasonname[t->wait_reason];
+    else
+      state = threadstatename[t->state];
+
+    pprintf(pf,"%3d %p %4d %-6s %3d  %p %1d %2d%7d%7d%7d %s\n",
+            t->id, t, t->hndl, state, t->priority, t->tib, 
+	    t->suspend_count, t->object.handle_count, t->utime, t->stime, t->context_switches, t->name ? t->name : "");
 
     t = t->next;
     if (t == threadlist) break;
   }
 
+  return 0;
+}
+
+static int dpcs_proc(struct proc_file *pf, void *arg)
+{
+  pprintf(pf, "dpc time  : %8d\n", dpc_time);
+  pprintf(pf, "total dpcs: %8d\n", dpc_total);
   return 0;
 }
 
@@ -622,6 +668,7 @@ void init_sched()
   // Initialize system task queue
   init_task_queue(&sys_task_queue, PRIORITY_SYSTEM, INFINITE, "systask");
 
-  // Register /proc/threads
+  // Register /proc/threads and /proc/dpcs
   register_proc_inode("threads", threads_proc, NULL);
+  register_proc_inode("dpcs", dpcs_proc, NULL);
 }

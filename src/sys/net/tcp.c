@@ -92,7 +92,7 @@ err_t tcp_close(struct tcp_pcb *pcb)
 
     case ESTABLISHED:
       err = tcp_send_ctrl(pcb, TCP_FIN);
-      if(err == 0) pcb->state = FIN_WAIT_1;
+      if (err == 0) pcb->state = FIN_WAIT_1;
       break;
 
     case CLOSE_WAIT:
@@ -224,7 +224,7 @@ struct tcp_pcb *tcp_listen(struct tcp_pcb *pcb)
 
   //FIXME: we do not reallocate listen sockets, remove struct tcp_pcb_listen
   //pcb = memp_realloc(MEMP_TCP_PCB, MEMP_TCP_PCB_LISTEN, pcb);
-  //if(pcb == NULL) return NULL;
+  //if (pcb == NULL) return NULL;
 
   TCP_REG((struct tcp_pcb **) &tcp_listen_pcbs, pcb);
   return pcb;
@@ -238,13 +238,13 @@ struct tcp_pcb *tcp_listen(struct tcp_pcb *pcb)
 // when the data has been processed.
 //
 
-void tcp_recved(struct tcp_pcb *pcb, unsigned short len)
+void tcp_recved(struct tcp_pcb *pcb, int len)
 {
   pcb->rcv_wnd += len;
   if (pcb->rcv_wnd > TCP_WND) pcb->rcv_wnd = TCP_WND;
   if (!(pcb->flags & TF_ACK_DELAY) ||!(pcb->flags & TF_ACK_NOW)) tcp_ack(pcb);
 
-  //kprintf("tcp_recved: received %d bytes, wnd %u (%u).\n", len, pcb->rcv_wnd, TCP_WND - pcb->rcv_wnd);
+  kprintf("tcp_recved: received %d bytes, wnd %u (%u).\n", len, pcb->rcv_wnd, TCP_WND - pcb->rcv_wnd);
 }
 
 //
@@ -260,7 +260,7 @@ static unsigned short tcp_new_port()
   static unsigned short port = 4096;
   
 again:
-  if(++port > 0x7FFF) port = 4096;
+  if (++port > 0x7FFF) port = 4096;
   
   for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next)
   {
@@ -357,7 +357,7 @@ void tcp_slowtmr(void *arg)
 
     if (pcb->state == SYN_SENT && pcb->nrtx == TCP_SYNMAXRTX)
       pcb_remove++;
-    else if(pcb->nrtx == TCP_MAXRTX)
+    else if (pcb->nrtx == TCP_MAXRTX)
       pcb_remove++;
     else 
     {
@@ -433,7 +433,7 @@ void tcp_slowtmr(void *arg)
       else 
         tcp_active_pcbs = pcb->next;
 
-      if(pcb->errf != NULL) 
+      if (pcb->errf != NULL) 
       {
 	pcb->errf(pcb->callback_arg, -EABORT);
       }
@@ -587,7 +587,6 @@ int tcp_seg_free(struct tcp_seg *seg)
 //
 // Returns a copy of the given TCP segment.
 //
-// 
 
 struct tcp_seg *tcp_seg_copy(struct tcp_seg *seg)
 {
@@ -606,7 +605,6 @@ struct tcp_seg *tcp_seg_copy(struct tcp_seg *seg)
 //
 // Creates a new TCP protocol control block but doesn't place it on
 // any of the TCP PCB lists.
-//
 //
 
 struct tcp_pcb *tcp_new()
@@ -774,7 +772,7 @@ void tcp_pcb_remove(struct tcp_pcb **pcblist, struct tcp_pcb *pcb)
 }
 
 //
-// tcp_next_iss():
+// tcp_next_iss
 //
 // Calculates a new initial sequence number for new connections.
 //

@@ -35,9 +35,9 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
   iphdr = p->payload;
   tcphdr = (struct tcp_hdr *)((char *) p->payload + IPH_HL(iphdr) * 4);
 
-  //kprintf("tcp_input: size %d seqno %lu ackno %lu flags: ", p->tot_len, htonl(tcphdr->seqno), htonl(tcphdr->ackno));
-  //tcp_debug_print_flags(TCPH_FLAGS(tcphdr));
-  //kprintf("\n");
+  kprintf("tcp_input: size %d seqno %lu ackno %lu wnd %d flags: ", p->tot_len, htonl(tcphdr->seqno), htonl(tcphdr->ackno), ntohs(tcphdr->wnd));
+  tcp_debug_print_flags(TCPH_FLAGS(tcphdr));
+  kprintf("\n");
 
   //kprintf("receiving TCP segment:\n");
   //tcp_debug_print(tcphdr);
@@ -612,7 +612,7 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
       {
         if (pcb->cwnd < pcb->ssthresh) 
 	{
-	  if(pcb->cwnd + pcb->mss > pcb->cwnd) 
+	  if (pcb->cwnd + pcb->mss > pcb->cwnd) 
 	  {
 	    pcb->cwnd += pcb->mss;
 	  }
@@ -924,7 +924,7 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
 	    {
 	      if (prev == NULL) 
 	      {
-		if(TCP_SEQ_LT(seqno, next->tcphdr->seqno)) 
+		if (TCP_SEQ_LT(seqno, next->tcphdr->seqno)) 
 		{
 		  // The sequence number of the incoming segment is lower
 		  // than the sequence number of the first segment on the
@@ -1004,11 +1004,10 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
   {
     // Segments with length 0 is taken care of here. Segments that
     // fall out of the window are ACKed
-    if (TCP_SEQ_GT(pcb->rcv_nxt, seqno) || 
-        TCP_SEQ_GEQ(seqno, pcb->rcv_nxt + pcb->rcv_wnd)) 
+    if (TCP_SEQ_GT(pcb->rcv_nxt, seqno) || TCP_SEQ_GEQ(seqno, pcb->rcv_nxt + pcb->rcv_wnd)) 
     {
       tcp_ack_now(pcb);
-    }      
+    }
   }
 }
 
@@ -1055,7 +1054,7 @@ static void tcp_parseopt(struct tcp_seg *seg, struct tcp_pcb *pcb)
       } 
       else 
       {
-	if(opts[c + 1] == 0) 
+	if (opts[c + 1] == 0) 
 	{
           // If the length field is zero, the options are malformed
           // and we don't process them further

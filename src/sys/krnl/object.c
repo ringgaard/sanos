@@ -176,9 +176,6 @@ int wait_for_object(object_t hobj, unsigned int timeout)
     struct waitblock wb;
     struct thread *t = self();
 
-    // Mark thread as waiting
-    t->state = THREAD_STATE_WAITING;
-
     // Insert thread in waitlist for object
     t->waitlist = &wb;
     wb.thread = t;
@@ -192,7 +189,7 @@ int wait_for_object(object_t hobj, unsigned int timeout)
     if (timeout == INFINITE)
     {
       // Wait for object to become signaled
-      dispatch();
+      enter_wait(THREAD_WAIT_OBJECT);
 
       // Clear waitlist and return waitkey
       t->waitlist = NULL;
@@ -216,7 +213,7 @@ int wait_for_object(object_t hobj, unsigned int timeout)
       insert_in_waitlist(&timer.object, &wbtmo);
 
       // Wait for object to become signaled or time out
-      dispatch();
+      enter_wait(THREAD_WAIT_OBJECT);
 
       // Stop timer
       cancel_waitable_timer(&timer);
@@ -324,8 +321,7 @@ int wait_for_all_objects(struct object **objs, int count, unsigned int timeout)
   }
 
   // Wait for all objects to become signaled or time out
-  t->state = THREAD_STATE_WAITING;
-  dispatch();
+  enter_wait(THREAD_WAIT_OBJECT);
 
   // Stop timer
   if (timeout != INFINITE) cancel_waitable_timer(&timer);
@@ -409,8 +405,7 @@ int wait_for_any_object(struct object **objs, int count, unsigned int timeout)
   }
 
   // Wait for any object to become signaled or time out
-  t->state = THREAD_STATE_WAITING;
-  dispatch();
+  enter_wait(THREAD_WAIT_OBJECT);
 
   // Stop timer
   if (timeout != INFINITE) cancel_waitable_timer(&timer);
@@ -837,6 +832,18 @@ void cancel_waitable_timer(struct waitable_timer *t)
 }
 
 //
+// tmr_sleep
+//
+// End sleep state for thread
+//
+
+static void tmr_sleep(void *arg)
+{
+  struct thread *t = arg;
+  mark_thread_ready(t);
+}
+
+//
 // sleep
 //
 // Sleep for a number of milliseconds
@@ -844,10 +851,14 @@ void cancel_waitable_timer(struct waitable_timer *t)
 
 int sleep(unsigned int millisecs)
 {
-  struct waitable_timer timer;
+  struct timer timer;
 
-  init_waitable_timer(&timer, ticks + millisecs / MSECS_PER_TICK);
-  return wait_for_object(&timer, INFINITE);
+  init_timer(&timer, tmr_sleep, self());
+  timer.expires = ticks + millisecs / MSECS_PER_TICK;
+  add_timer(&timer);
+  enter_wait(THREAD_WAIT_SLEEP);
+  del_timer(&timer);
+  return 0;
 }
 
 //

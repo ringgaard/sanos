@@ -92,6 +92,7 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
   struct sockreq *next;
   int bytes;
   int waitrecv;
+  int bytesrecv = 0;
 
   if (p)
   {
@@ -125,7 +126,7 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
   while (1)
   {
     p = s->tcp.recvhead;
-    if (!p) return 0;
+    if (!p) break;
 
     req = s->waithead;
     waitrecv = 0;
@@ -150,7 +151,7 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 	}
       }
 
-      return 0;
+      break;
     }
 
     bytes = req->len;
@@ -161,7 +162,7 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
     req->len -= bytes;
     req->err += bytes;
 
-    tcp_recved(pcb, (unsigned short) bytes);
+    bytesrecv += bytes;
 
     release_socket_request(req, req->err);
 
@@ -173,6 +174,9 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
       pbuf_free(p);
     }
   }
+
+  if (bytesrecv) tcp_recved(pcb, bytesrecv);
+  return 0;
 }
 
 static err_t poll_tcp(void *arg, struct tcp_pcb *pcb)
@@ -509,7 +513,7 @@ static int tcpsock_recv(struct socket *s, void *data, int size, unsigned int fla
     {
       memcpy(bufp, p->payload, left);
       pbuf_header(p, -left);
-      tcp_recved(s->tcp.pcb, (unsigned short) size);
+      tcp_recved(s->tcp.pcb, size);
       return size;
     }
     else
@@ -528,7 +532,7 @@ static int tcpsock_recv(struct socket *s, void *data, int size, unsigned int fla
   len = size - left;
   if (len > 0) 
   {
-    tcp_recved(s->tcp.pcb, (unsigned short) len);
+    tcp_recved(s->tcp.pcb, len);
     return len;
   }
 

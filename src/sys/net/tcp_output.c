@@ -292,48 +292,8 @@ err_t tcp_output(struct tcp_pcb *pcb)
     
   wnd = MIN(pcb->snd_wnd, pcb->cwnd);
   seg = pcb->unsent;
+  //kprintf("tcp_output: wnd %d snd_wnd %d cwnd %d\n", wnd, pcb->snd_wnd, pcb->cwnd);
   
-  if (pcb->flags & TF_ACK_NOW) 
-  {
-    // If no segments are enqueued but we should send an ACK, we
-    // construct the ACK and send it
-    
-    //kprintf("tcp_enqueue: sending ACK for %lu\n", pcb->rcv_nxt);
-    pcb->flags &= ~(TF_ACK_DELAY | TF_ACK_NOW);
-    p = pbuf_alloc(PBUF_TRANSPORT, 0, PBUF_RW);
-    if (!p) 
-    {
-      stats.tcp.memerr++;
-      return -ENOMEM; 
-    }
-    if (pbuf_header(p, TCP_HLEN) < 0) 
-    {      
-      stats.tcp.err++;
-      pbuf_free(p);
-      return -ENOMEM;
-    }
-    
-    tcphdr = p->payload;
-    tcphdr->src = htons(pcb->local_port);
-    tcphdr->dest = htons(pcb->remote_port);
-    tcphdr->seqno = htonl(pcb->snd_nxt);
-    tcphdr->ackno = htonl(pcb->rcv_nxt);
-    TCPH_FLAGS_SET(tcphdr, TCP_ACK);
-    tcphdr->wnd = htons(pcb->rcv_wnd);
-    tcphdr->urgp = 0;
-    TCPH_OFFSET_SET(tcphdr, 5 << 4);
-    
-    tcphdr->chksum = 0;
-    tcphdr->chksum = inet_chksum_pseudo(p, &pcb->local_ip, &pcb->remote_ip, IP_PROTO_TCP, p->tot_len);
-
-    //kprintf("sending TCP ack segment:\n");
-    //tcp_debug_print(tcphdr);
-
-    if (ip_output(p, &pcb->local_ip, &pcb->remote_ip, TCP_TTL, IP_PROTO_TCP) < 0) pbuf_free(p);
-
-    return 0;
-  } 
- 
   while (seg != NULL &&	ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len <= wnd) 
   {
     pcb->rtime = 0;
@@ -369,6 +329,57 @@ err_t tcp_output(struct tcp_pcb *pcb)
     seg = pcb->unsent;
   } 
   
+  //if (seg) 
+  //{
+  //  int i = 0;
+  //  for (useg = seg; useg->next != NULL; useg = useg->next) i++;
+  //  kprintf("tcp_output: %d segments still in send queue\n", i);
+  //}
+
+  // If no segments are enqueued but we should send an ACK, we
+  // construct the ACK and send it
+  if (pcb->flags & TF_ACK_NOW)
+  {
+    //kprintf("tcp_output: sending ACK for %lu\n", pcb->rcv_nxt);
+    pcb->flags &= ~(TF_ACK_DELAY | TF_ACK_NOW);
+    p = pbuf_alloc(PBUF_TRANSPORT, 0, PBUF_RW);
+    if (!p) 
+    {
+      stats.tcp.memerr++;
+      return -ENOMEM; 
+    }
+    if (pbuf_header(p, TCP_HLEN) < 0) 
+    {      
+      stats.tcp.err++;
+      pbuf_free(p);
+      return -ENOMEM;
+    }
+    
+    tcphdr = p->payload;
+    tcphdr->src = htons(pcb->local_port);
+    tcphdr->dest = htons(pcb->remote_port);
+    tcphdr->seqno = htonl(pcb->snd_nxt);
+    tcphdr->ackno = htonl(pcb->rcv_nxt);
+    TCPH_FLAGS_SET(tcphdr, TCP_ACK);
+    tcphdr->wnd = htons(pcb->rcv_wnd);
+    tcphdr->urgp = 0;
+    TCPH_OFFSET_SET(tcphdr, 5 << 4);
+    
+    tcphdr->chksum = 0;
+    //if ((netif->flags & NETIF_TCP_TX_CHECKSUM_OFFLOAD) == 0)
+    //{
+    tcphdr->chksum = inet_chksum_pseudo(p, &pcb->local_ip, &pcb->remote_ip, IP_PROTO_TCP, p->tot_len);
+    //}
+
+    kprintf("tcp_output: seqno %lu ackno %lu wnd %d ", htonl(tcphdr->seqno), htonl(tcphdr->ackno), ntohs(tcphdr->wnd));
+    tcp_debug_print_flags(TCPH_FLAGS(tcphdr));
+    kprintf("\n");
+
+    //tcp_debug_print(tcphdr);
+
+    if (ip_output(p, &pcb->local_ip, &pcb->remote_ip, TCP_TTL, IP_PROTO_TCP) < 0) pbuf_free(p);
+  } 
+ 
   return 0;
 }
 
@@ -416,7 +427,9 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
 
   pbuf_header(seg->p, (char *) seg->p->payload - (char *) seg->tcphdr);
 
-  //kprintf("tcp_output_segment: %lu:%lu (ack %lu)\n", htonl(seg->tcphdr->seqno), htonl(seg->tcphdr->seqno) + seg->len, htonl(seg->tcphdr->ackno));
+  kprintf("tcp_output_segment: seqno %lu ackno %lu len %d wnd %d ", htonl(seg->tcphdr->seqno), htonl(seg->tcphdr->ackno), seg->len, ntohs(seg->tcphdr->wnd));
+  tcp_debug_print_flags(TCPH_FLAGS(seg->tcphdr));
+  kprintf("\n");
 
   seg->tcphdr->chksum = 0;
   if ((netif->flags & NETIF_TCP_TX_CHECKSUM_OFFLOAD) == 0)

@@ -170,8 +170,15 @@ static void *load_image(char *filename)
   {
     if (imghdr->sections[i].pointer_to_raw_data != 0)
     {
-      lseek(f, imghdr->sections[i].pointer_to_raw_data, SEEK_SET);
-      if (read(f, RVA(imgbase, imghdr->sections[i].virtual_address), imghdr->sections[i].size_of_raw_data) < 0)
+      if (lseek(f, imghdr->sections[i].pointer_to_raw_data, SEEK_SET) != imghdr->sections[i].pointer_to_raw_data)
+      {
+	munmap(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
+	close(f);
+        free(buffer);
+	return NULL;
+      }
+
+      if (read(f, RVA(imgbase, imghdr->sections[i].virtual_address), imghdr->sections[i].size_of_raw_data) != imghdr->sections[i].size_of_raw_data)
       {
 	munmap(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
 	close(f);

@@ -76,6 +76,9 @@ void timer_handler(struct context *ctxt, void *arg)
     systemclock.tv_usec -= 1000000;
   }
 
+  // Update thread times
+  update_thread_times(ctxt);
+
   // Queue timer DPC
   queue_irq_dpc(&timerdpc, timer_dpc, NULL);
 

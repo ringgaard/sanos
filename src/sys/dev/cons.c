@@ -8,9 +8,7 @@
 
 #include <os/krnl.h>
 
-#define SYSLOG_SIZE (16 * K)
-
-//#define MONPORT   0x2F8 // COM2
+#define SYSLOG_SIZE (64 * K)
 
 devno_t consdev = NODEV;
 static int cursoff = 0;
@@ -147,16 +145,7 @@ void kprintf(const char *fmt,...)
       print_string(buffer);
     else
     {
-#ifdef MONPORT
-      unsigned char *p = (unsigned char *) buffer;
-      while (len-- > 0)
-      {
-	while ((_inp(MONPORT + 5) & 0x20) == 0);
-	_outp(MONPORT, *p++);
-      }
-#else
       dev_write(consdev, buffer, len, 0);
-#endif
     }
   }
 }
@@ -217,19 +206,6 @@ int __declspec(dllexport) install_console()
   dev_make("console", &console_driver, NULL, NULL);
   dev_make("syslog", &syslog_driver, NULL, NULL);
   consdev = dev_open("console");
-
-#ifdef MONPORT
-  // Turn off interrupts
-  _outp(MONPORT + 1, 0);
-  
-  // Set 115200 baud, 8 bits, no parity, one stopbit
-  _outp(MONPORT + 3, 0x80);
-  _outp(MONPORT + 0, 0x01); // 0x0C = 9600, 0x01 = 115200
-  _outp(MONPORT + 1, 0x00);
-  _outp(MONPORT + 3, 0x03);
-  _outp(MONPORT + 2, 0xC7);
-  _outp(MONPORT + 4, 0x0B);
-#endif
 
   return 0;
 }

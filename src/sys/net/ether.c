@@ -270,5 +270,5 @@ void ether_init()
   struct thread *ethertask;
 
   ether_queue = alloc_queue(256);
-  ethertask = create_kernel_thread(ether_dispatcher, NULL, PRIORITY_NORMAL, "ethertask");
+  ethertask = create_kernel_thread(ether_dispatcher, NULL, /*PRIORITY_ABOVE_NORMAL*/ PRIORITY_NORMAL, "ethertask");
 }

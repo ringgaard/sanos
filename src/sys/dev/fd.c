@@ -484,6 +484,7 @@ static int fd_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
     result = fd_transfer(fd, FD_MODE_READ, buf, left, blkno);
     if (result < 0)
     {
+      kprintf("fd: error %d reading from floppy\n", result);
       fd_motor_off(fd);
       release_mutex(&fd->fdc->lock);
       return result;
@@ -521,6 +522,7 @@ static int fd_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
     result = fd_transfer(fd, FD_MODE_WRITE, buf, left, blkno);
     if (result < 0)
     {
+      kprintf("fd: error %d writing to floppy\n", result);
       fd_motor_off(fd);
       release_mutex(&fd->fdc->lock);
       return result;

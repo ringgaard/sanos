@@ -371,95 +371,6 @@ __inline void select_window(struct nic *nic, int window)
   execute_command(nic, CMD_SELECT_WINDOW, window);
 }
 
-static void print_bits(struct proc_file *pf, unsigned long value)
-{
-  int i;
-
-  i = 0;
-  while (value)
-  {
-    if (value & 1) pprintf(pf, " b%d", i);
-    i++;
-    value >>= 1;
-  }
-}
-
-static int nicstat_proc(struct proc_file *pf, void *arg)
-{
-  struct nic *nic = arg;
-
-  int current_window;
-  int i;
-  unsigned short rx_frames;
-  unsigned short tx_frames;
-  unsigned long rx_bytes;
-  unsigned long tx_bytes;
-  unsigned char upper;
-  
-  // Read the current window
-  current_window = _inpw(nic->iobase + STATUS) >> 13;
-
-  // Read statistics from window 6
-  select_window(nic, 6);
-
-  // Frames received/transmitted
-  upper = _inp(nic->iobase + UPPER_FRAMES_OK);
-  rx_frames = _inp(nic->iobase + FRAMES_RCVD_OK);
-  tx_frames = _inp(nic->iobase + FRAMES_XMITTED_OK);
-  rx_frames += (upper & 0x0F) << 8;
-  tx_frames += (upper & 0xF0) << 4;
-
-  // Bytes received/transmitted - upper part added below from window 4
-  rx_bytes = _inpw(nic->iobase + BYTES_RECEIVED_OK) & 0xFFFF;
-  tx_bytes = _inpw(nic->iobase + BYTES_XMITTED_OK) & 0xFFFF;
-
-  pprintf(pf, "carrier lost: %lu\n", _inp(nic->iobase + CARRIER_LOST));
-  pprintf(pf, "sqe errors: %lu\n", _inp(nic->iobase + SQE_ERRORS));
-  pprintf(pf, "multiple collisions: %lu\n", _inp(nic->iobase + MULTIPLE_COLLISIONS));
-  pprintf(pf, "single collisions: %lu\n", _inp(nic->iobase + SINGLE_COLLISIONS));
-  pprintf(pf, "late collisions: %lu\n", _inp(nic->iobase + LATE_COLLISIONS));
-  pprintf(pf, "rx overruns: %lu\n", _inp(nic->iobase + RX_OVERRUNS));
-  pprintf(pf, "frames deferred: %lu\n", _inp(nic->iobase + FRAMES_DEFERRED));
-
-  // Read final statistics from window 4
-  select_window(nic, 4);
-
-  // Update bytes received/transmitted with upper part
-  upper = _inp(nic->iobase + UPPER_BYTES_OK);
-  rx_bytes += (upper & 0x0F) << 16;
-  tx_bytes += (upper & 0xF0) << 12;
-
-  _inp(nic->iobase + BAD_SSD);
-
-  pprintf(pf, "rx frames: %lu\n", rx_frames);
-  pprintf(pf, "rx bytes: %lu\n", rx_bytes);
-  pprintf(pf, "tx frames: %lu\n", tx_frames);
-  pprintf(pf, "tx bytes: %lu\n", tx_bytes);
-
-  pprintf(pf, "eeprom:\n");
-  for (i = 0; i < EEPROM_SIZE; i++) 
-  {
-    pprintf(pf, " %02X: %04X ", i, nic->eeprom[i]);
-    print_bits(pf, nic->eeprom[i]);
-    pprintf(pf, "\n");
-  }
-
-  select_window(nic, 3);
-  pprintf(pf, "media options: ");
-  print_bits(pf, _inpw(nic->iobase + MEDIA_OPTIONS));
-  pprintf(pf, "\n");
-
-  select_window(nic, 4);
-  pprintf(pf, "media status: ");
-  print_bits(pf, _inpw(nic->iobase + MEDIA_STATUS));
-  pprintf(pf, "\n");
-
-  // Set the window to its previous value
-  select_window(nic, current_window);
-
-  return 0;
-}
-
 void clear_statistics(struct nic *nic)
 {
   int i;
@@ -1004,7 +915,6 @@ int __declspec(dllexport) install(struct unit *unit)
 
   kprintf("%s: %s iobase 0x%x irq %d hwaddr %la\n", device(nic->devno)->name, unit->productname, nic->iobase, nic->irq, &nic->hwaddr);
 
-  register_proc_inode("nicstat", nicstat_proc, nic);
   return 0;
 }
 

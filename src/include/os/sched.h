@@ -90,6 +90,7 @@ __inline __declspec(naked) struct thread *self()
 void mark_thread_running();
 
 krnlapi void mark_thread_ready(struct thread *t);
+krnlapi void enter_wait(int reason);
 
 krnlapi struct thread *create_kernel_thread(threadproc_t startaddr, void *arg, int priority, char *name);
 
@@ -116,6 +117,8 @@ void idle_task();
 krnlapi void yield();
 void dispatch_dpc_queue();
 krnlapi void dispatch();
+
+void update_thread_times(struct context *ctxt);
 
 void init_sched();
 
