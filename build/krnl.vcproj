@@ -211,6 +211,12 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\sched.c">
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="0"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\start.c">

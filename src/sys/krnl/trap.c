@@ -512,13 +512,11 @@ static void __cdecl trap(unsigned long args)
 
 void register_interrupt(struct interrupt *intr, int intrno, intrproc_t f, void *arg)
 {
-  cli();
   intr->handler = f;
   intr->arg = arg;
   intr->flags = 0;
   intr->next = intrhndlr[intrno];
   intrhndlr[intrno] = intr;
-  sti();
 }
 
 //
@@ -530,8 +528,6 @@ void register_interrupt(struct interrupt *intr, int intrno, intrproc_t f, void *
 void unregister_interrupt(struct interrupt *intr, int intrno)
 {
   struct interrupt *i;
-
-  cli();
 
   if (intrhndlr[intrno] == intr)
   {
@@ -549,8 +545,6 @@ void unregister_interrupt(struct interrupt *intr, int intrno)
     }
   }
   intr->next = NULL;
-
-  sti();
 }
 
 //

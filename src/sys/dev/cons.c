@@ -290,9 +290,9 @@ struct driver syslog_driver =
   syslog_write
 };
 
-int __declspec(dllexport) console()
+int __declspec(dllexport) console(struct unit *unit, char *opts)
 {
-  init_keyboard();
+  init_keyboard(get_num_option(opts, "resetkbd", 0));
   dev_make("console", &console_driver, NULL, NULL);
   dev_make("syslog", &syslog_driver, NULL, NULL);
   consdev = dev_open("console");

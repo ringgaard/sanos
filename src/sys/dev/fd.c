@@ -306,12 +306,7 @@ static void fd_motor_on(struct fd *fd)
     fd->fdc->dor |= 0x10 << fd->drive;
     _outp(FDC_DOR, fd->fdc->dor);
     fd->motor_status = FD_MOTOR_ON;
-    // FIXME: Kernel hangs on this sleep, for now we just avoid this by busy looping
     sleep(FD_MOTOR_SPINUP_TIME);
-    //{
-    //  unsigned int tmo = ticks + 1*HZ;
-    //  while (time_before(ticks, tmo)) yield();
-    //}
     //kprintf("fd: motor spinned up\n");
   }
   else
@@ -708,7 +703,7 @@ void init_fd()
 
   kprintf("fdc: %s\n", fdc.name);
 
-  //FIXME: support other geometries: 0=unknown, 1=360K 5 1/4", 2=1.2M 5 1/4", 3=720K 3 1/2", 4=1.44M 3 1/2"
+  // FIXME: support other geometries: 0=unknown, 1=360K 5 1/4", 2=1.2M 5 1/4", 3=720K 3 1/2", 4=1.44M 3 1/2"
   if (first_floppy == 0x4) init_drive("fd0", &fddrives[0], &fdc, 0, &geom144);
   if (second_floppy == 0x4) init_drive("fd1", &fddrives[1], &fdc, 1, &geom144);
 

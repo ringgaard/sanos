@@ -35,9 +35,6 @@
 
 #define DEFAULT_STACK_SIZE (1 * M)
 
-int testidlecount = 0; // TEST
-int stucked = 0;
-
 int preempt = 0;
 int in_dpc = 0;
 unsigned long dpc_time = 0;
@@ -549,19 +546,6 @@ void queue_irq_dpc(struct dpc *dpc, dpcproc_t proc, void *arg)
 {
   if (dpc->flags & DPC_QUEUED) 
   {
-    if (dpc_queue_head == NULL)
-    {
-      extern int debug_nointr;
-
-      debug_nointr = 1;
-      panic("bad dpc queue");
-    }
-
-    if (stucked) 
-    {
-      //kprintf("dpc flags %d next %p head %p tail %p\n", dpc->flags, dpc->next, dpc_queue_head, dpc_queue_tail);
-      kprintf("?");
-    }
     dpc_lost++;
     return;
   }
@@ -573,7 +557,6 @@ void queue_irq_dpc(struct dpc *dpc, dpcproc_t proc, void *arg)
   dpc_queue_tail = dpc;
   if (!dpc_queue_head) dpc_queue_head = dpc;
   set_bit(&dpc->flags, DPC_QUEUED_BIT);
-  if (stucked) kprintf(">");
 }
 
 void queue_dpc(struct dpc *dpc, dpcproc_t proc, void *arg)
@@ -583,44 +566,52 @@ void queue_dpc(struct dpc *dpc, dpcproc_t proc, void *arg)
   sti();
 }
 
+struct dpc *get_next_dpc()
+{
+  struct dpc *dpc;
+
+  cli();
+
+  if (dpc_queue_head)
+  {
+    dpc = dpc_queue_head;
+    dpc_queue_head = dpc->next;
+    if (dpc_queue_tail == dpc) dpc_queue_tail = NULL;
+  }
+  else
+    dpc = NULL;
+
+  sti();
+
+  return dpc;
+}
+
 void dispatch_dpc_queue()
 {
   struct dpc *dpc;
   dpcproc_t proc;
   void *arg;
 
-  if (stucked) kprintf("#");
   if (in_dpc) panic("sched: nested execution of dpc queue");
   in_dpc = 1;
 
   while (1)
   {
     // Get next deferred procedure call
-    cli();
-    if (dpc_queue_head)
-    {
-      dpc = dpc_queue_head;
-      dpc_queue_head = dpc->next;
-      if (dpc_queue_tail == dpc) dpc_queue_tail = NULL;
-    }
-    else
-      dpc = NULL;
-    sti();
+    // As a side effect this will enable interrupts
+    dpc = get_next_dpc();
     if (!dpc) break;
 
     // Execute DPC
+    proc = dpc->proc;
+    arg = dpc->arg;
     clear_bit(&dpc->flags, DPC_QUEUED_BIT);
     if ((dpc->flags & DPC_EXECUTING) == 0)
     {
       set_bit(&dpc->flags, DPC_EXECUTING_BIT);
-      proc = dpc->proc;
-      arg = dpc->arg;
-      testidlecount = 0;
-
       proc(arg);
-
-      dpc_total++;
       clear_bit(&dpc->flags, DPC_EXECUTING_BIT);
+      dpc_total++;
     }
   }
 
@@ -689,34 +680,7 @@ void idle_task()
     mark_thread_ready(self());
     dispatch();
 
-    if ((eflags() & EFLAG_IF) == 0) panic("sched: interrupts disabled in idle loop");
-
-    {
-      extern struct dpc timerdpc;
-      extern int debug_nointr;
-
-      if ((timerdpc.flags & 1) != 0 && dpc_queue_head == NULL)
-      {
-	debug_nointr = 1;
-	panic("dpc queue corrupted");
-      }
-    }
-
-    if (++testidlecount > 1000000) 
-    {
-      stucked = 1;
-      kprintf("sched: kernel stucked\n");
-      if (dpc_queue_head)
-	kprintf("dpc_queue_head %p next %p flags %d\n", dpc_queue_head, dpc_queue_head->next, dpc_queue_head->flags);
-      else
-	kprintf("dpc queue empty\n");
-
-      testidlecount = 0;
-    }
-
-    //check_dpc_queue();
-    //sti();
-    //halt();
+    //if ((eflags() & EFLAG_IF) == 0) panic("sched: interrupts disabled in idle loop");
   }
 }
 
@@ -758,9 +722,10 @@ static int threads_proc(struct proc_file *pf, void *arg)
 
 static int dpcs_proc(struct proc_file *pf, void *arg)
 {
-  pprintf(pf, "dpc time  : %8d\n", dpc_time);
-  pprintf(pf, "total dpcs: %8d\n", dpc_total);
-  pprintf(pf, "lost dpcs: %8d\n", dpc_lost);
+  pprintf(pf, "dpc time   : %8d\n", dpc_time);
+  pprintf(pf, "total dpcs : %8d\n", dpc_total);
+  pprintf(pf, "lost dpcs  : %8d\n", dpc_lost);
+
   return 0;
 }
 

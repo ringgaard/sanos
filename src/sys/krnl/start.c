@@ -275,15 +275,6 @@ void main(void *arg)
   char bootdev[8];
   int rc;
 
-  kprintf("start: loop\n");
-  {
-    unsigned int tmo = ticks + 1*HZ;
-    while (time_before(ticks, tmo)) yield();
-  }
-  kprintf("start: sleep\n");
-  sleep(1000);
-  kprintf("start: sleep done \n");
-
   // Allocate and initialize PEB
   peb = mmap((void *) PEB_ADDRESS, PAGESIZE, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'PEB');
   if (!peb) panic("unable to allocate PEB");

@@ -33,16 +33,85 @@
 
 #include <os/krnl.h>
 
-#define KB_DATA		0x60	// I/O port for keyboard data
-#define KB_COMMAND	0x64	// I/O port for keyboard commands (write)
-#define KB_STATUS	0x64	// I/O port for keyboard status (read)
+//
+// Keyboard Ports
+//
 
-#define KB_BUSY		0x02	// status bit set when KEYBD port ready
-#define KB_LED	  	0xED	// command to keyboard to set LEDs
+#define KBD_DATA	0x60	// I/O port for keyboard data
+#define KBD_COMMAND	0x64	// I/O port for keyboard commands (write)
+#define KBD_STATUS	0x64	// I/O port for keyboard status (read)
 
+//
+// Keyboard Controller Commands
+//
+
+#define KBD_CCMD_READ_MODE	0x20	// Read mode bits
+#define KBD_CCMD_WRITE_MODE	0x60	// Write mode bits
+#define KBD_CCMD_GET_VERSION	0xA1	// Get controller version
+#define KBD_CCMD_MOUSE_DISABLE	0xA7	// Disable mouse interface
+#define KBD_CCMD_MOUSE_ENABLE	0xA8	// Enable mouse interface
+#define KBD_CCMD_TEST_MOUSE	0xA9	// Mouse interface test
+#define KBD_CCMD_SELF_TEST	0xAA	// Controller self test
+#define KBD_CCMD_KBD_TEST	0xAB	// Keyboard interface test
+#define KBD_CCMD_KBD_DISABLE	0xAD	// Keyboard interface disable
+#define KBD_CCMD_KBD_ENABLE	0xAE	// Keyboard interface enable
+#define KBD_CCMD_WRITE_AUX_OBUF	0xD3    // Write to output buffer as if initiated by the auxiliary device
+#define KBD_CCMD_WRITE_MOUSE	0xD4	// Write the following byte to the mouse
+
+//
+// Keyboard Commands
+//
+
+#define KBD_CMD_SET_LEDS	0xED	// Set keyboard leds
+#define KBD_CMD_SET_RATE	0xF3	// Set typematic rate
+#define KBD_CMD_ENABLE		0xF4	// Enable scanning
+#define KBD_CMD_DISABLE		0xF5	// Disable scanning
+#define KBD_CMD_RESET		0xFF	// Reset
+
+//
+// Keyboard Replies
+//
+
+#define KBD_REPLY_POR		0xAA	// Power on reset
+#define KBD_REPLY_ACK		0xFA	// Command ACK
+#define KBD_REPLY_RESEND	0xFE	// Command NACK, send command again
+
+//
+// Keyboard Status Register Bits
+//
+
+#define KBD_STAT_OBF 		0x01	// Keyboard output buffer full
+#define KBD_STAT_IBF 		0x02	// Keyboard input buffer full
+#define KBD_STAT_SELFTEST	0x04	// Self test successful
+#define KBD_STAT_CMD		0x08	// Last write was a command write
+#define KBD_STAT_UNLOCKED	0x10	// Zero if keyboard locked
+#define KBD_STAT_MOUSE_OBF	0x20	// Mouse output buffer full
+#define KBD_STAT_GTO 		0x40	// General receive/xmit timeout
+#define KBD_STAT_PERR 		0x80	// Parity error
+
+//
+// Controller Mode Register Bits
+//
+
+#define KBD_MODE_KBD_INT	0x01	// Keyboard data generate IRQ1
+#define KBD_MODE_MOUSE_INT	0x02	// Mouse data generate IRQ12
+#define KBD_MODE_SYS 		0x04	// System flag
+#define KBD_MODE_NO_KEYLOCK	0x08	// The keylock doesn't affect the keyboard if set
+#define KBD_MODE_DISABLE_KBD	0x10	// Disable keyboard interface
+#define KBD_MODE_DISABLE_MOUSE	0x20	// Disable mouse interface
+#define KBD_MODE_KCC 		0x40	// Scan code conversion to PC format
+#define KBD_MODE_RFU		0x80
+
+//
+// Keyboard LEDs
+//
 #define LED_NUM_LOCK		2
 #define LED_SCROLL_LOCK		1
 #define LED_CAPS_LOCK		4
+
+//
+// Control Keys
+//
 
 #define CK_LSHIFT	        0x01
 #define	CK_LALT		        0x02
@@ -52,6 +121,7 @@
 #define CK_RCTRL 	        0x40
 
 #define KEYBOARD_BUFFER_SIZE    256
+#define KEYBOARD_TIMEOUT        100000
 
 struct keytable *keytables[MAX_KEYTABLES];
 
@@ -64,7 +134,6 @@ struct keytable *keytables[MAX_KEYTABLES];
 
 unsigned char led_status = 0;
 unsigned char control_keys = 0;
-unsigned int last_scancode = -1;
 int ctrl_alt_del_enabled = 1;
 int keymap = 0;
 int ext;
@@ -80,13 +149,96 @@ int keyboard_buffer_in = 0;
 int keyboard_buffer_out = 0;
 
 //
+// Wait for keyboard ready
+//
+
+static void kbd_wait()
+{
+  int tmo = KEYBOARD_TIMEOUT;
+
+  while (_inp(KBD_STATUS) & KBD_STAT_IBF)
+  {
+    if (--tmo == 0)
+    {
+      kprintf("kbd: busy timeout\n");
+      return;
+    }
+
+    udelay(1);
+  }
+}
+
+//
+// Read data from keyboard
+//
+
+static int kbd_read_data()
+{
+  unsigned char status;
+
+  status = _inp(KBD_STATUS);
+  if (status & KBD_STAT_OBF) 
+  {
+    unsigned char data = _inp(KBD_DATA);
+
+    if (status & (KBD_STAT_GTO | KBD_STAT_PERR)) 
+      return -EIO;
+    else
+      return data;
+  }
+  else
+    return -EAGAIN;
+}
+
+//
+// Wait for data from keyboard
+//
+
+static int kbd_wait_for_data()
+{
+  int tmo = KEYBOARD_TIMEOUT;
+
+  while (1)
+  {
+    int rc = kbd_read_data();
+    if (rc >= 0) return rc;
+
+    if (--tmo == 0)
+    {
+      //kprintf("kbd: read timeout\n");
+      return -ETIMEOUT;
+    }
+
+    udelay(1);
+  }
+}
+
+//
+// Write data to keyboard
+//
+
+static void kbd_write_data(unsigned char data)
+{
+  _outp(KBD_DATA, data);
+}
+
+//
+// Write command to keyboard
+//
+
+static void kbd_write_command(unsigned char cmd)
+{
+  _outp(KBD_COMMAND, cmd);
+}
+
+//
 // Reboot machine
 //
 
 void reboot()
 {
-  while (_inp(KB_STATUS) & KB_BUSY);
-  _outp(KB_COMMAND, 0xFE);
+  kbd_wait();
+  kbd_write_command(0xFE);
   cli();
   halt();
 }		
@@ -97,10 +249,10 @@ void reboot()
 
 static void setleds()
 {
-  _outp(KB_DATA, KB_LED);
-  while (_inp(KB_STATUS) & KB_BUSY);
-  _outp(KB_DATA, led_status);
-  while (_inp(KB_STATUS) & KB_BUSY);
+  kbd_write_data(KBD_CMD_SET_LEDS);
+  kbd_wait();
+  kbd_write_data(led_status);
+  kbd_wait();
 }
 
 //
@@ -118,20 +270,14 @@ static void insert_key(unsigned char ch)
 }
 
 //
-// Keyboard DPC
+// Process keyboard scancode
 //
 
-static void keyb_dpc(void *arg)
+static void process_scancode(unsigned int scancode)
 {
-  unsigned int scancode;
   unsigned int keycode = 0;
   struct keytable *kt;
   int state;
-
-  // Get scancode
-  scancode = last_scancode;
-  last_scancode = -1;
-  if (scancode == -1) return;
 
   // In scancode mode just insert scancode
   if (keymap == -1)
@@ -256,28 +402,36 @@ static void keyb_dpc(void *arg)
 }
 
 //
+// Keyboard DPC
+//
+
+static void keyb_dpc(void *arg)
+{
+  unsigned int scancode;
+  unsigned char status;
+
+
+  while ((status = _inp(KBD_STATUS)) & KBD_STAT_OBF) 
+  {
+    // Get next scancode from keyboard
+    scancode = _inp(KBD_DATA) & 0xFF;
+    //kprintf("key %d\n", scancode);
+
+    // Process scan code
+    process_scancode(scancode);
+  }
+
+  eoi(IRQ_KBD);
+}
+
+//
 // Keyboard interrupt handler
 //
 
 int keyboard_handler(struct context *ctxt, void *arg)
 {
-  if (last_scancode == -1) 
-  {
-    // Record scan code
-    last_scancode = _inp(KB_DATA) & 0xFF;
-    if (last_scancode == 41) dbg_break();
-    queue_irq_dpc(&kbddpc, keyb_dpc, NULL);
-    //kprintf("key %d\n", last_scancode);
-  }
-  else
-  {
-    // Keyboard overflow, ignore
-    unsigned int lost_scancode = _inp(KB_DATA) & 0xFF;
-    if (lost_scancode == 41) dbg_break();
-    //kprintf("key overflow %d\n", lost_scancode);
-  }
+  queue_irq_dpc(&kbddpc, keyb_dpc, NULL);
 
-  eoi(IRQ_KBD);
   return 0;
 }
 
@@ -308,10 +462,115 @@ int kbhit()
 }
 
 //
+// Reset keyboard hardware
+//
+
+int reset_keyboard()
+{
+  int status;
+
+  // Test the keyboard interface
+  kbd_wait();
+  kbd_write_command(KBD_CCMD_SELF_TEST);
+  if (kbd_wait_for_data() != 0x55)
+  {
+    kprintf("kbd: Keyboard failed self test\n");
+    return -EIO;
+  }
+  
+  // Perform a keyboard interface test. This causes the controller
+  // to test the keyboard clock and data lines.
+  kbd_wait();
+  kbd_write_command(KBD_CCMD_KBD_TEST);
+  if (kbd_wait_for_data() != 0x00)
+  {
+    kprintf("kbd: Keyboard interface failed self test\n");
+    return -EIO;
+  }
+
+  // Enable the keyboard by allowing the keyboard clock to run
+  kbd_wait();
+  kbd_write_command(KBD_CCMD_KBD_ENABLE);
+
+  // Reset keyboard. If the read times out then the assumption is that no keyboard is
+  // plugged into the machine.
+  while (1)
+  {
+    kbd_wait();
+    kbd_write_data(KBD_CMD_RESET);
+    status = kbd_wait_for_data();
+    if (status == KBD_REPLY_ACK) break;
+    if (status != KBD_REPLY_RESEND)
+    {
+      kprintf("kbd: Keyboard reset failed, no ACK\n");
+      return -EIO;
+    }
+  }
+
+  if ((status = kbd_wait_for_data()) != KBD_REPLY_POR)
+  {
+    kprintf("kbd: Keyboard reset failed, no POR (%d)\n", status);
+    return -EIO;
+  }
+
+  // Set keyboard controller mode. During this, the keyboard should be
+  // in the disabled state.
+  while (1)
+  {
+    kbd_wait();
+    kbd_write_data(KBD_CMD_DISABLE);
+    status = kbd_wait_for_data();
+    if (status == KBD_REPLY_ACK) break;
+    if (status != KBD_REPLY_RESEND)
+    {
+      kprintf("kbd: Disable keyboard: no ACK\n");
+      return -EIO;
+    }
+  }
+
+  kbd_wait();
+  kbd_write_command(KBD_CCMD_WRITE_MODE);
+
+  kbd_wait();
+  kbd_write_data(KBD_MODE_KBD_INT | KBD_MODE_SYS | KBD_MODE_DISABLE_MOUSE | KBD_MODE_KCC);
+
+  kbd_wait();
+  kbd_write_data(KBD_CMD_ENABLE);
+  if (kbd_wait_for_data() != KBD_REPLY_ACK)
+  {
+    kprintf("kbd: Enable keyboard: no ACK\n");
+    return -EIO;
+  }
+
+  // Set the typematic rate to maximum
+  kbd_wait();
+  kbd_write_data(KBD_CMD_SET_RATE);
+  if (kbd_wait_for_data() != KBD_REPLY_ACK)
+  {
+    kprintf("kbd: Set rate: no ACK\n");
+    return -EIO;
+  }
+  
+  kbd_wait();
+  kbd_write_data(0x00);
+  if (kbd_wait_for_data() != KBD_REPLY_ACK)
+  {
+    kprintf("kbd: Set rate: no ACK\n");
+    return -EIO;
+  }
+
+  // Set all keyboard LEDs off
+  led_status = 0; 
+  setleds();
+
+  return 0;
+}
+
+//
 // Initialize keyboard
 //
 
-void init_keyboard()
+void init_keyboard(int reset)
 {
   char *kbdname;
   int i;
@@ -331,9 +590,8 @@ void init_keyboard()
     }
   }
 
-  // Set all keyboard LEDs off
-  led_status = 0; 
-  setleds();
+  // Reset keyboard
+  if (reset) reset_keyboard();
 
   // Setup keyboard interrupt handler
   init_dpc(&kbddpc);

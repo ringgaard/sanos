@@ -112,7 +112,6 @@ extern struct dpc *dpc_queue_tail;
 extern int in_dpc;
 extern int preempt;
 extern unsigned long dpc_time;
-extern unsigned long dpc_total;
 
 #if 0
 __inline __declspec(naked) struct thread *self()

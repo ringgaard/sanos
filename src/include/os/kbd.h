@@ -60,7 +60,7 @@ extern int keymap;
 
 krnlapi struct keytable *keytables[MAX_KEYTABLES];
 
-void init_keyboard();
+void init_keyboard(int reset);
 
 int getch(unsigned int timeout);
 int kbhit();
