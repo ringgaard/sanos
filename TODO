@@ -23,6 +23,10 @@ TODO for sanos
 
 - Handle reopening of files in smbfs after reconnect
 
+- what happens if a file is closed while being in read() or write() on another thread?
+
+- what happens if a tcp pcb is freed in tcp_input() while sending segments on another soket in tcp_output()?
+
 - Scheduler enhancements
     - Change from 8 to 32 priority levels
     - Change win32 mapping to sanos priority levels
