@@ -571,7 +571,7 @@ int output(FILE *stream, const char *format, va_list args)
     {
       int n;
 
-      for (n = 0; n < prefixlen; n++);
+      for (n = 0; n < prefixlen; n++)
       {
 	putc(prefix[n], stream);
 	cnt++;

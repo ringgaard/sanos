@@ -165,7 +165,7 @@ off64_t devfs_tell(struct file *filp)
 
 off64_t devfs_lseek(struct file *filp, off64_t offset, int origin)
 {
-  int devsize;
+  __int64 devsize;
   int blksize;
   off64_t size;
 

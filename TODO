@@ -354,3 +354,7 @@ CHANGES
 - calloc() reported out of memory if num was zero. This problem has been fixed.
 
 *** version 1.2.7 released ***
+
+- Garbage was outputted when printing negative numbers using printf. This problem has been fixed.
+
+- lseek() failed with -EINVAL when seeking on a device larger than 2GB. This problem has been fixed.
