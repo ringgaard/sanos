@@ -1151,7 +1151,7 @@ void shell()
   }
 }
 
-void __stdcall shelltask(void *arg)
+void __stdcall ttyd(void *arg)
 {
   char *devname = (char *) arg;
   handle_t f;
@@ -1244,7 +1244,7 @@ void __stdcall telnetd(void *arg)
 
 int __stdcall main(hmodule_t hmod, char *cmdline, void *env)
 {
-  //beginthread(shelltask, 0, "/dev/com4", 0, NULL);
+  beginthread(ttyd, 0, "/dev/com1", 0, NULL);
   if (peb->ipaddr.s_addr != INADDR_ANY) beginthread(telnetd, 0, NULL, 0, NULL);
   shell();
   return 0;

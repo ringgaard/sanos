@@ -89,6 +89,10 @@ SOURCE=..\src\include\bitops.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\include\hash.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\include\inifile.h
 # End Source File
 # Begin Source File
@@ -115,6 +119,10 @@ SOURCE=..\src\include\string.h
 # Begin Source File
 
 SOURCE=..\src\lib\bitops.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\lib\hash.c
 # End Source File
 # Begin Source File
 

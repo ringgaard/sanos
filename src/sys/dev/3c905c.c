@@ -638,7 +638,7 @@ void nic_up_complete(struct nic *nic)
     if ((nic->curr_rx->status & UP_PACKET_STATUS_IP_CHECKSUM_CHECKED) &&
         (nic->curr_rx->status & UP_PACKET_STATUS_IP_CHECKSUM_ERROR))
     {
-      kprintf("nic: ip checksum error\n");
+      //kprintf("nic: ip checksum error\n");
       stats.ip.chkerr++;
       nic->curr_rx->status = 0;
       nic->curr_rx = nic->curr_rx->next;
@@ -649,7 +649,7 @@ void nic_up_complete(struct nic *nic)
     if ((nic->curr_rx->status & UP_PACKET_STATUS_UDP_CHECKSUM_CHECKED) &&
         (nic->curr_rx->status & UP_PACKET_STATUS_UDP_CHECKSUM_ERROR))
     {
-      kprintf("nic: udp checksum error\n");
+      //kprintf("nic: udp checksum error\n");
       stats.udp.chkerr++;
       nic->curr_rx->status = 0;
       nic->curr_rx = nic->curr_rx->next;
@@ -660,7 +660,7 @@ void nic_up_complete(struct nic *nic)
     if ((nic->curr_rx->status & UP_PACKET_STATUS_TCP_CHECKSUM_CHECKED) &&
         (nic->curr_rx->status & UP_PACKET_STATUS_TCP_CHECKSUM_ERROR))
     {
-      kprintf("nic: tcp checksum error\n");
+      //kprintf("nic: tcp checksum error\n");
       stats.tcp.chkerr++;
       nic->curr_rx->status = 0;
       nic->curr_rx = nic->curr_rx->next;
