@@ -228,6 +228,9 @@ src\                           Souce files
       tulip.c                  Digital "Tulip" Ethernet network driver for DEC 21*4*-based chips/ethercards
       video.c                  6845 Video Controller
     fs\                        File system source files
+      cdfs\                    CD file system source files
+        cdfs.c                 ISO-9660 CD-ROM file system
+        iso9660.h              ISO-9660 CD-ROM file system definitions
       devfs\                   Device file system source files
         devfs.c                Device file system
       dfs\                     Disk file system source files
