@@ -34,6 +34,11 @@
 #ifndef TIME_H
 #define TIME_H
 
+#ifndef SANOS
+typedef long time_t;
+typedef unsigned int size_t;
+#endif
+
 struct tm
 {
   int tm_sec;			// Seconds after the minute [0, 59]
