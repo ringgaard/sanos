@@ -1388,7 +1388,7 @@ static int get_interface_type(struct hdc *hdc, int drvsel)
 
   sc = _inp(hdc->iobase + HDC_SECTORCNT);
   sn = _inp(hdc->iobase + HDC_SECTOR);
-  kprintf("%x: sc=0x%02x sn=0x%02x\n", hdc->iobase, sc, sn);
+  //kprintf("%x: sc=0x%02x sn=0x%02x\n", hdc->iobase, sc, sn);
 
   if (sc == 0x01 && sn == 0x01)
   {
@@ -1396,7 +1396,7 @@ static int get_interface_type(struct hdc *hdc, int drvsel)
     ch = _inp(hdc->iobase + HDC_TRACKMSB);
     st = _inp(hdc->iobase + HDC_STATUS);
 
-    kprintf("%x: cl=0x%02x ch=0x%02x st=0x%02x\n", hdc->iobase, cl, ch, st);
+    //kprintf("%x: cl=0x%02x ch=0x%02x st=0x%02x\n", hdc->iobase, cl, ch, st);
 
     if (cl == 0x14 && ch == 0xeb) return HDIF_ATAPI;
     if (cl == 0x00 && ch == 0x00 && st != 0x00) return HDIF_ATA;
@@ -1518,6 +1518,11 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
   else if (hd->media == IDE_CDROM)
   {
     hd->devno = dev_make("cd#", &cdrom_pio_driver, NULL, hd);
+  }
+  else
+  {
+    kprintf("%s: unknown media type 0x%02x (iftype %d, config 0x%04x)\n", devname, hd->media, hd->iftype, hd->param.config);
+    return;
   }
 
   kprintf("%s: %s", device(hd->devno)->name, hd->param.model);
