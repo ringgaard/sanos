@@ -45,7 +45,7 @@
 				Name="VCLinkerTool"
 				IgnoreImportLibrary="TRUE"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="os.lib $(NOINHERIT)"
+				AdditionalDependencies="os.lib kernel32.lib $(NOINHERIT)"
 				OutputFile=".\..\dbg\bin/msvcrt.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
@@ -56,6 +56,7 @@
 				ProgramDatabaseFile="..\dbg\symbols\msvcrt.pdb"
 				GenerateMapFile="TRUE"
 				MapFileName=".\..\dbg\obj\msvcrt/msvcrt.map"
+				OptimizeReferences="1"
 				EntryPointSymbol="dllmain"
 				ImportLibrary="..\dbg\lib/msvcrt.lib"/>
 			<Tool
@@ -115,7 +116,7 @@
 				Name="VCLinkerTool"
 				IgnoreImportLibrary="TRUE"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="os.lib $(NOINHERIT)"
+				AdditionalDependencies="os.lib kernel32.lib $(NOINHERIT)"
 				OutputFile=".\..\bin/msvcrt.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
@@ -125,6 +126,7 @@
 				ProgramDatabaseFile=".\..\bin/msvcrt.pdb"
 				GenerateMapFile="TRUE"
 				MapFileName=".\..\obj\msvcrt/msvcrt.map"
+				OptimizeReferences="1"
 				EntryPointSymbol="dllmain"
 				ImportLibrary="..\lib/msvcrt.lib"/>
 			<Tool
@@ -201,6 +203,15 @@
 				RelativePath="..\src\lib\vsprintf.c">
 			</File>
 		</Filter>
+		<File
+			RelativePath="..\src\win32\msvcrt\except.c">
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					AssemblerOutput="4"/>
+			</FileConfiguration>
+		</File>
 		<File
 			RelativePath="..\src\win32\msvcrt\file.c">
 		</File>

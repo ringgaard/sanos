@@ -205,6 +205,12 @@ typedef struct _CONTEXT
 typedef CONTEXT *PCONTEXT;
 typedef CONTEXT *LPCONTEXT;
 
+#define STATUS_NONCONTINUABLE_EXCEPTION     0xC0000025
+#define STATUS_INVALID_DISPOSITION          0xC0000026
+#define STATUS_UNWIND                       0xC0000027
+#define STATUS_BAD_STACK                    0xC0000028
+#define STATUS_INVALID_UNWIND_TARGET        0xC0000029
+
 #define EXCEPTION_DATATYPE_MISALIGNMENT     0x80000002
 #define EXCEPTION_ACCESS_VIOLATION          0xC0000005
 #define EXCEPTION_ILLEGAL_INSTRUCTION       0xC000001D
@@ -217,8 +223,16 @@ typedef CONTEXT *LPCONTEXT;
 #define EXCEPTION_CONTINUE_SEARCH           0
 #define EXCEPTION_CONTINUE_EXECUTION        -1
 
-#define EXCEPTION_NONCONTINUABLE     0x1    // Noncontinuable exception
-#define EXCEPTION_MAXIMUM_PARAMETERS 15     // maximum number of exception parameters
+#define EH_NONCONTINUABLE   0x01
+#define EH_UNWINDING        0x02
+#define EH_EXIT_UNWIND      0x04
+#define EH_STACK_INVALID    0x08
+#define EH_NESTED_CALL      0x10
+
+#define EXCEPTION_CONTINUABLE        0
+#define EXCEPTION_NONCONTINUABLE     EH_NONCONTINUABLE
+
+#define EXCEPTION_MAXIMUM_PARAMETERS 15
 
 typedef struct _EXCEPTION_RECORD 
 {
@@ -228,9 +242,7 @@ typedef struct _EXCEPTION_RECORD
   PVOID ExceptionAddress;
   DWORD NumberParameters;
   ULONG *ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
-} EXCEPTION_RECORD;
-
-typedef EXCEPTION_RECORD *PEXCEPTION_RECORD;
+} EXCEPTION_RECORD, *PEXCEPTION_RECORD;
 
 typedef struct _EXCEPTION_POINTERS
 {
@@ -238,7 +250,7 @@ typedef struct _EXCEPTION_POINTERS
   PCONTEXT ContextRecord;
 } EXCEPTION_POINTERS, *PEXCEPTION_POINTERS;
 
-typedef LONG (__stdcall *PTOP_LEVEL_EXCEPTION_FILTER)(struct _EXCEPTION_POINTERS *ExceptionInfo);
+typedef LONG (__stdcall *PTOP_LEVEL_EXCEPTION_FILTER)(PEXCEPTION_POINTERS ExceptionInfo);
 typedef PTOP_LEVEL_EXCEPTION_FILTER LPTOP_LEVEL_EXCEPTION_FILTER;
 
 typedef enum _EXCEPTION_DISPOSITION 
@@ -249,14 +261,30 @@ typedef enum _EXCEPTION_DISPOSITION
   ExceptionCollidedUnwind
 } EXCEPTION_DISPOSITION;
 
-EXCEPTION_DISPOSITION __cdecl _except_handler
+struct _EXCEPTION_FRAME;
+
+typedef EXCEPTION_DISPOSITION (*PEXCEPTION_HANDLER)
 (
-  struct _EXCEPTION_RECORD *ExceptionRecord,
-  void *EstablisherFrame,
+  struct _EXCEPTION_RECORD *ExceptionRecord, 
+  struct _EXCEPTION_FRAME *EstablisherFrame,
   struct _CONTEXT *ContextRecord,
-  void *DispatcherContext
+  struct _EXCEPTION_FRAME **DispatcherContext
 );
 
+typedef struct _EXCEPTION_FRAME
+{
+  struct _EXCEPTION_FRAME *prev;
+  PEXCEPTION_HANDLER handler;
+} EXCEPTION_FRAME, *PEXCEPTION_FRAME;
+
+typedef struct _NESTED_FRAME
+{
+  EXCEPTION_FRAME frame;
+  EXCEPTION_FRAME *prev;
+} NESTED_FRAME;
+
+#if 0
+// TODO: move to msvcrt
 typedef struct _SCOPETABLE
 {
   DWORD previousTryLevel;
@@ -275,6 +303,7 @@ struct _EXCEPTION_REGISTRATION
   int _ebp;
   PEXCEPTION_POINTERS xpointers;
 };
+#endif
 
 typedef union _LARGE_INTEGER 
 { 

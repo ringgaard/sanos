@@ -361,6 +361,7 @@ int init_user_thread(struct thread *t, void *entrypoint)
   tib->pid = 1;
   tib->tid = t->id;
   tib->peb = peb;
+  tib->except = (struct xcptrec *) 0xFFFFFFFF;
 
   return 0;
 }

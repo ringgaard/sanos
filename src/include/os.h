@@ -1122,6 +1122,7 @@ osapi sighandler_t signal(int signum, sighandler_t handler);
 osapi void raise(int signum);
 osapi void sendsig(int signum, struct siginfo *info);
 osapi struct siginfo *getsiginfo();
+osapi void sigexit(struct siginfo *info, int action);
 
 osapi time_t time(time_t *timeptr);
 osapi int gettimeofday(struct timeval *tv);

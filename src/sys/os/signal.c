@@ -35,7 +35,7 @@
 
 sighandler_t sighandlers[NSIG];
 
-static void sigexit(struct siginfo *info, int action)
+void sigexit(struct siginfo *info, int action)
 {
   __asm
   {

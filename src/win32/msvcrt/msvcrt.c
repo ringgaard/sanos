@@ -362,12 +362,6 @@ void (*crt_signal(int sig, void (*func)(int)))(int)
   return 0;
 }
 
-void _except_handler3()
-{
-  TRACE("_except_handler3");
-  panic("_except_handler3 not implemented");
-}
-
 void _assert(void *expr, void *filename, unsigned lineno)
 {
   TRACE("_assert");

@@ -72,6 +72,7 @@ EXPORTS
   RemoveDirectoryA
   ResetEvent
   ResumeThread
+  RtlUnwind
   SetConsoleCtrlHandler
   SetConsoleTitleA
   SetEndOfFile

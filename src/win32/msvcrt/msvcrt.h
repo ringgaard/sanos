@@ -296,7 +296,6 @@ crtapi void _assert(void *expr, void *filename, unsigned lineno);
 crtapi int _getpid();
 crtapi int crt_raise(int sig);
 crtapi void (*crt_signal(int sig, void (*func)(int)))(int);
-crtapi void _except_handler3();
 crtapi void srand(unsigned int seed);
 crtapi int rand();
 

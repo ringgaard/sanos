@@ -4,6 +4,8 @@
 // Win32 KERNEL32 emulation
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
+// Portions Copyright (C) 1999 Turchanov Sergey
+// Portions Copyright (C) 1999 Alexandre Julliard
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -106,9 +108,6 @@ void convert_from_win32_context(struct context *ctxt, CONTEXT *ctx)
   {
     // debug registers missing
   }
-
-  ctxt->traptype = 0;
-  ctxt->errcode = 0;
 }
 
 void convert_to_win32_context(struct context *ctxt, CONTEXT *ctx)
@@ -136,51 +135,264 @@ void convert_to_win32_context(struct context *ctxt, CONTEXT *ctx)
   ctx->SegGs = 0;
 }
 
+static __inline EXCEPTION_FRAME *push_frame(EXCEPTION_FRAME *frame)
+{
+  struct tib *tib = gettib();
+  frame->prev = (EXCEPTION_FRAME *) tib->except;
+  tib->except = (struct xcptrec *) frame;
+  return frame->prev;
+}
+
+static __inline EXCEPTION_FRAME *pop_frame(EXCEPTION_FRAME *frame)
+{
+  struct tib *tib = gettib();
+  tib->except = (struct xcptrec *) frame->prev;
+  return frame->prev;
+}
+
+//
+// Handler for exceptions happening inside a handler
+//
+
+static EXCEPTION_DISPOSITION raise_handler(EXCEPTION_RECORD *rec, EXCEPTION_FRAME *frame, CONTEXT *ctxt, EXCEPTION_FRAME **dispatcher)
+{
+  if (rec->ExceptionFlags & (EH_UNWINDING | EH_EXIT_UNWIND)) return ExceptionContinueSearch;
+
+  // We shouldn't get here so we store faulty frame in dispatcher
+  *dispatcher = ((NESTED_FRAME *) frame)->prev;
+  return ExceptionNestedException;
+}
+
+//
+// Handler for exceptions happening inside an unwind handler.
+//
+
+static EXCEPTION_DISPOSITION unwind_handler(EXCEPTION_RECORD *rec, EXCEPTION_FRAME *frame, CONTEXT *ctxt, EXCEPTION_FRAME **dispatcher)
+{
+  if (!(rec->ExceptionFlags & (EH_UNWINDING | EH_EXIT_UNWIND))) return ExceptionContinueSearch;
+
+  // We shouldn't get here so we store faulty frame in dispatcher
+  *dispatcher = ((NESTED_FRAME *) frame)->prev;
+  return ExceptionCollidedUnwind;
+}
+
+//
+// Call an exception handler, setting up an exception frame to catch exceptions
+// happening during the handler execution.
+//
+
+static EXCEPTION_DISPOSITION call_handler
+(
+  EXCEPTION_RECORD *record, 
+  EXCEPTION_FRAME *frame,
+  CONTEXT *ctxt, 
+  EXCEPTION_FRAME **dispatcher,
+  PEXCEPTION_HANDLER handler, 
+  PEXCEPTION_HANDLER nested_handler
+)
+{
+  NESTED_FRAME newframe;
+  EXCEPTION_DISPOSITION rc;
+
+  newframe.frame.handler = nested_handler;
+  newframe.prev = frame;
+  push_frame(&newframe.frame);
+  syslog(LOG_DEBUG, "calling handler at %p code=%x flags=%x\n", handler, record->ExceptionCode, record->ExceptionFlags);
+  rc = handler(record, frame, ctxt, dispatcher);
+  syslog(LOG_DEBUG, "handler returned %x\n", rc);
+  pop_frame(&newframe.frame);
+
+  return rc;
+}
+
+void raise_exception(EXCEPTION_RECORD *rec, CONTEXT *ctxt)
+{
+  PEXCEPTION_FRAME frame, dispatch, nested_frame;
+  EXCEPTION_RECORD newrec;
+  EXCEPTION_DISPOSITION rc;
+  struct tib *tib = gettib();
+
+  syslog(LOG_DEBUG, "raise_exception: code=%lx flags=%lx addr=%p\n", rec->ExceptionCode, rec->ExceptionFlags, rec->ExceptionAddress);
+
+  frame = (EXCEPTION_FRAME *) tib->except;
+  nested_frame = NULL;
+  while (frame != (PEXCEPTION_FRAME) 0xFFFFFFFF)
+  {
+    syslog(LOG_DEBUG, "frame: %p handler: %p\n", frame, frame->handler);
+    
+    // Check frame address
+    if ((void *) frame < tib->stacklimit || (void *)(frame + 1) > tib->stacktop || (int) frame & 3)
+    {
+      rec->ExceptionFlags |= EH_STACK_INVALID;
+      break;
+    }
+
+    // Call handler
+    rc = call_handler(rec, frame, ctxt, &dispatch, frame->handler, raise_handler);
+    if (frame == nested_frame)
+    {
+      // No longer nested
+      nested_frame = NULL;
+      rec->ExceptionFlags &= ~EH_NESTED_CALL;
+    }
+
+    switch (rc)
+    {
+      case ExceptionContinueExecution:
+	if (!(rec->ExceptionFlags & EH_NONCONTINUABLE)) return;
+	newrec.ExceptionCode = STATUS_NONCONTINUABLE_EXCEPTION;
+	newrec.ExceptionFlags = EH_NONCONTINUABLE;
+	newrec.ExceptionRecord  = rec;
+	newrec.NumberParameters = 0;
+	panic("kernel32: exception not continuable");
+	//TODO: RtlRaiseException(&newrec);  // Never returns
+	break;
+
+      case ExceptionContinueSearch:
+	break;
+
+      case ExceptionNestedException:
+	if (nested_frame < dispatch) nested_frame = dispatch;
+	rec->ExceptionFlags |= EH_NESTED_CALL;
+	break;
+
+      default:
+	newrec.ExceptionCode = STATUS_INVALID_DISPOSITION;
+	newrec.ExceptionFlags = EH_NONCONTINUABLE;
+	newrec.ExceptionRecord = rec;
+	newrec.NumberParameters = 0;
+	panic("kernel32: invalid disposition returned from exception handler");
+	//TODO: RtlRaiseException(&newrec);  // Never returns
+    }
+
+    frame = frame->prev;
+  }
+  
+  // TODO: perform default handling
+  // DefaultHandling(rec, context);
+}
+
+void unwind(PEXCEPTION_FRAME endframe, LPVOID eip, PEXCEPTION_RECORD rec, DWORD retval, CONTEXT *ctxt)
+{
+  EXCEPTION_RECORD record, newrec;
+  PEXCEPTION_FRAME frame, dispatch;
+  EXCEPTION_DISPOSITION rc;
+  struct tib *tib = gettib();
+
+  ctxt->Eax = retval;
+
+  // Build an exception record, if we do not have one
+  if (!rec)
+  {
+    record.ExceptionCode    = STATUS_UNWIND;
+    record.ExceptionFlags   = 0;
+    record.ExceptionRecord  = NULL;
+    record.ExceptionAddress = (void *) ctxt->Eip;
+    record.NumberParameters = 0;
+    rec = &record;
+  }
+
+  rec->ExceptionFlags |= EH_UNWINDING | (endframe ? 0 : EH_EXIT_UNWIND);
+
+  syslog(LOG_DEBUG, "code=%lx flags=%lx\n", rec->ExceptionCode, rec->ExceptionFlags);
+
+  // Get chain of exception frames
+  frame = (EXCEPTION_FRAME *) tib->except;
+  while (frame != (PEXCEPTION_FRAME) 0xffffffff && frame != endframe)
+  {
+    // Check frame address
+    if (endframe && (frame > endframe))
+    {
+      newrec.ExceptionCode = STATUS_INVALID_UNWIND_TARGET;
+      newrec.ExceptionFlags = EH_NONCONTINUABLE;
+      newrec.ExceptionRecord = rec;
+      newrec.NumberParameters = 0;
+      panic("kernel32: invalid unwind target");
+      //TODO: RtlRaiseException(&newrec);  // Never returns
+    }
+
+    if ((void *) frame < tib->stacklimit || (void *)(frame + 1) > tib->stacktop || (int) frame & 3)
+    {
+      newrec.ExceptionCode = STATUS_BAD_STACK;
+      newrec.ExceptionFlags = EH_NONCONTINUABLE;
+      newrec.ExceptionRecord = rec;
+      newrec.NumberParameters = 0;
+      panic("kernel32: bad stack in unwind");
+      //TODO: RtlRaiseException(&newrec);  // Never returns
+    }
+
+    // Call handler
+    rc = call_handler(rec, frame, ctxt, &dispatch, frame->handler, unwind_handler);
+
+    switch (rc)
+    {
+      case ExceptionContinueSearch:
+	break;
+
+      case ExceptionCollidedUnwind:
+	frame = dispatch;
+	break;
+
+      default:
+	newrec.ExceptionCode = STATUS_INVALID_DISPOSITION;
+	newrec.ExceptionFlags = EH_NONCONTINUABLE;
+	newrec.ExceptionRecord = rec;
+	newrec.NumberParameters = 0;
+	panic("kernel32: invalid disposition returned from exception handler in unwind");
+	//TODO: RtlRaiseException(&newrec);  // Never returns
+    }
+
+    frame = pop_frame(frame);
+  }
+}
+
 void win32_globalhandler(int signum, struct siginfo *info)
 {
   CONTEXT ctxt;
-  EXCEPTION_RECORD xcptrec;
+  EXCEPTION_RECORD rec;
   EXCEPTION_POINTERS ep;
-  //LONG action;
 
   syslog(LOG_DEBUG, "kernel32: caught signal %d\n", signum);
 
   ep.ContextRecord = &ctxt;
-  ep.ExceptionRecord = &xcptrec;
+  ep.ExceptionRecord = &rec;
+
+  memset(&rec, 0, sizeof(EXCEPTION_RECORD));
+  rec.ExceptionAddress = (void *) info->ctxt.eip;
 
   convert_to_win32_context(&info->ctxt, &ctxt);
   
   switch (info->ctxt.traptype)
   {
     case INTR_DIV:
-      xcptrec.ExceptionCode = EXCEPTION_INT_DIVIDE_BY_ZERO;
+      rec.ExceptionCode = EXCEPTION_INT_DIVIDE_BY_ZERO;
       break;
 
     case INTR_OVFL:
-      xcptrec.ExceptionCode = EXCEPTION_INT_OVERFLOW;
+      rec.ExceptionCode = EXCEPTION_INT_OVERFLOW;
       break;
 
     case INTR_BOUND:
-      xcptrec.ExceptionCode = EXCEPTION_ARRAY_BOUNDS_EXCEEDED;
+      rec.ExceptionCode = EXCEPTION_ARRAY_BOUNDS_EXCEEDED;
       break;
 
     case INTR_INSTR:
-      xcptrec.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION;
+      rec.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION;
       break;
 
     case INTR_STACK:
-      xcptrec.ExceptionCode = EXCEPTION_STACK_OVERFLOW;
+      rec.ExceptionCode = EXCEPTION_STACK_OVERFLOW;
       break;
 
     case INTR_PGFLT:
-      xcptrec.ExceptionCode = EXCEPTION_ACCESS_VIOLATION;
-      xcptrec.NumberParameters = 2;
-      xcptrec.ExceptionInformation[0] = (void *) ((info->ctxt.errcode & 2) ? 1 : 0);
-      xcptrec.ExceptionInformation[1] = info->addr;
+      rec.ExceptionCode = EXCEPTION_ACCESS_VIOLATION;
+      rec.NumberParameters = 2;
+      rec.ExceptionInformation[0] = (void *) ((info->ctxt.errcode & 2) ? 1 : 0);
+      rec.ExceptionInformation[1] = info->addr;
       break;
 
     case INTR_ALIGN:
-      xcptrec.ExceptionCode = EXCEPTION_DATATYPE_MISALIGNMENT;
+      rec.ExceptionCode = EXCEPTION_DATATYPE_MISALIGNMENT;
       break;
 
     default:
@@ -188,22 +400,12 @@ void win32_globalhandler(int signum, struct siginfo *info)
       old_globalhandler(signum, info);
   }
 
-  xcptrec.ExceptionAddress = (void *) info->ctxt.eip;
-
-  // TODO: run through exception EXCEPTION_REGISTRATION chain in tib()->except
-  // and try each handler. Each handler can return:
-  //
-  // ExceptionContinueExecution
-  // ExceptionContinueSearch,
-  //
-
-  //action = topexcptfilter(&ep);
-  //if (action == EXCEPTION_EXECUTE_HANDLER) syslog(LOG_WARNING, "kernel32: unable to execute exception handler");
-  //if (action == EXCEPTION_CONTINUE_SEARCH) syslog(LOG_WARNING, "kernel32: unable to execute exception continue search");
+  raise_exception(&rec, &ctxt);
 
   convert_from_win32_context(&info->ctxt, &ctxt);
 
-  old_globalhandler(signum, info);
+  syslog(LOG_DEBUG, "kernel32: sigexit\n", signum);
+  sigexit(info, 0);
 }
 
 BOOL WINAPI CloseHandle
@@ -1373,6 +1575,21 @@ BOOL WINAPI PeekConsoleInputA
   return FALSE;
 }
 
+BOOL WINAPI PeekNamedPipe
+(
+  HANDLE hNamedPipe,
+  LPVOID lpBuffer,
+  DWORD nBufferSize,
+  LPDWORD lpBytesRead,
+  LPDWORD lpTotalBytesAvail,
+  LPDWORD lpBytesLeftThisMessage
+)
+{
+  TRACE("PeekNamedPipe");
+  panic("PeekNamedPipe not implemented");
+  return FALSE;
+}
+
 BOOL WINAPI QueryPerformanceCounter
 (
   LARGE_INTEGER *lpPerformanceCount
@@ -1396,21 +1613,6 @@ BOOL WINAPI QueryPerformanceFrequency
   lpFrequency->LowPart = 1000;
 
   return TRUE;
-}
-
-BOOL WINAPI PeekNamedPipe
-(
-  HANDLE hNamedPipe,
-  LPVOID lpBuffer,
-  DWORD nBufferSize,
-  LPDWORD lpBytesRead,
-  LPDWORD lpTotalBytesAvail,
-  LPDWORD lpBytesLeftThisMessage
-)
-{
-  TRACE("PeekNamedPipe");
-  panic("PeekNamedPipe not implemented");
-  return FALSE;
 }
 
 BOOL WINAPI ReleaseSemaphore
@@ -1455,6 +1657,21 @@ DWORD WINAPI ResumeThread
 {
   TRACE("ResumeThread");
   return resume((handle_t) hThread);
+}
+
+VOID WINAPI RtlUnwind
+(
+  PEXCEPTION_FRAME endframe, 
+  LPVOID eip, 
+  PEXCEPTION_RECORD rec, 
+  DWORD retval
+)
+{
+  CONTEXT ctxt;
+
+  TRACE("RtlUnwind");
+  memset(&ctxt, 0, sizeof(CONTEXT));
+  unwind(endframe, eip, rec, retval, &ctxt);
 }
 
 BOOL WINAPI SetConsoleCtrlHandler
@@ -1577,6 +1794,7 @@ BOOL WINAPI SetThreadContext
   struct context ctxt;
 
   TRACE("SetThreadContext");
+  memset(&ctxt, 0, sizeof(struct context));
   convert_from_win32_context(&ctxt, (CONTEXT *) lpContext);
   if (setcontext((handle_t) hThread, &ctxt) < 0) return FALSE;
   return TRUE;
@@ -1877,9 +2095,12 @@ int WINAPI WideCharToMultiByte
 
 int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
 {
-  // Register global WIN32 handler for all signals
-  old_globalhandler = peb->globalhandler;
-  peb->globalhandler = win32_globalhandler;
+  if (reason == DLL_PROCESS_ATTACH)
+  {
+    // Register global WIN32 handler for all signals
+    old_globalhandler = peb->globalhandler;
+    peb->globalhandler = win32_globalhandler;
+  }
 
   return TRUE;
 }

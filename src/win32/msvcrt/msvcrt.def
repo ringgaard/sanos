@@ -65,3 +65,4 @@ EXPORTS
   floor
   _ftol
   asctime
+  _except_handler3
