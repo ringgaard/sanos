@@ -50,6 +50,9 @@ int strnicmp(const char *s1, const char *s2, size_t count);
 char *strchr(const char *s, int ch);
 char *strrchr(const char *s, int ch);
 char *strstr(const char *s1, const char *s2);
+size_t strspn(const char *string, const char *control);
+size_t strcspn(const char *string, const char *control);
+char *strpbrk(const char *string, const char *control);
 
 long atol(const char *s);
 int atoi(const char *s);

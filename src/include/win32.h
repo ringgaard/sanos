@@ -83,6 +83,7 @@ typedef char *LPTSTR;
 typedef const char *LPCTSTR;
 typedef const char *LPCSTR;
 
+typedef unsigned short *LPWSTR;
 typedef const unsigned short *LPCWSTR;
 
 typedef BYTE *LPBYTE;

@@ -412,10 +412,17 @@ static int bind_imports(struct module *mod)
   imp = (struct image_import_descriptor *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_IMPORT);
   if (!imp) return -ENOEXEC;
   
+  if (imp->forwarder_chain != 0 && imp->forwarder_chain != 0xFFFFFFFF)
+  {
+    logmsg(mod->db, "import forwarder chains not supported (%s)", mod->name);
+    return -ENOSYS;
+  }
+
   // Update Import Address Table (IAT)
   while (imp->characteristics != 0)
   {
     unsigned long *thunks;
+    unsigned long *origthunks;
     struct image_import_by_name *ibn;
     char *name;
     struct module *expmod;
@@ -429,19 +436,14 @@ static int bind_imports(struct module *mod)
       return -ENOEXEC;
     }
     
-    if (imp->forwarder_chain != 0) 
-    {
-      logmsg(mod->db, "import forwarder chains not supported (%s)", name);
-      return -ENOSYS;
-    }
-
     thunks = (unsigned long *) RVA(mod->hmod, imp->first_thunk);
+    origthunks = (unsigned long *) RVA(mod->hmod, imp->original_first_thunk);
     while (*thunks)
     {
-      if (*thunks & IMAGE_ORDINAL_FLAG)
+      if (*origthunks & IMAGE_ORDINAL_FLAG)
       {
 	// Import by ordinal
-        unsigned long ordinal = *thunks & ~IMAGE_ORDINAL_FLAG;
+        unsigned long ordinal = *origthunks & ~IMAGE_ORDINAL_FLAG;
 	*thunks = (unsigned long) get_proc_by_ordinal(expmod->hmod, ordinal);
 	if (*thunks == 0) 
         {
@@ -452,7 +454,7 @@ static int bind_imports(struct module *mod)
       else
       {
 	// Import by name (and hint)
-	ibn = (struct image_import_by_name *) RVA(mod->hmod, *thunks);
+	ibn = (struct image_import_by_name *) RVA(mod->hmod, *origthunks);
 	*thunks = (unsigned long) get_proc_by_name(expmod->hmod, ibn->hint, ibn->name);
 	if (*thunks == 0)
         {
@@ -462,6 +464,7 @@ static int bind_imports(struct module *mod)
       }
 
       thunks++;
+      origthunks++;
     }
 
     imp++;

@@ -56,11 +56,13 @@ EXPORTS
   HeapFree
   InitializeCriticalSection
   InterlockedDecrement
+  InterlockedExchange
   InterlockedIncrement
   IsDBCSLeadByte
   LeaveCriticalSection
   LoadLibraryA
   MoveFileA
+  MultiByteToWideChar
   OpenProcess
   PeekConsoleInputA
   QueryPerformanceCounter

@@ -1094,6 +1094,24 @@ __declspec(naked) LONG WINAPI InterlockedDecrement
   }
 }
 
+__declspec(naked) LONG WINAPI InterlockedExchange
+(
+  LPLONG volatile Target,
+  LONG Value
+)
+{
+  __asm
+  {
+    mov ecx,dword ptr [esp+4]
+    mov edx,dword ptr [esp+8]
+    mov eax,dword ptr [ecx]
+ileagain:
+    lock cmpxchg dword ptr [ecx],edx
+    jne ileagain
+    ret 8
+  }
+}
+
 __declspec(naked) LONG WINAPI InterlockedIncrement
 (
   LPLONG volatile lpAddend
@@ -1149,6 +1167,21 @@ BOOL WINAPI MoveFileA
   if (rename(lpExistingFileName, lpNewFileName) < 0) return FALSE;
 
   return TRUE;
+}
+
+int WINAPI MultiByteToWideChar
+(
+  UINT CodePage,         // code page
+  DWORD dwFlags,         // character-type options
+  LPCSTR lpMultiByteStr, // string to map
+  int cbMultiByte,       // number of bytes in string
+  LPWSTR lpWideCharStr,  // wide-character buffer
+  int cchWideChar        // size of buffer
+)
+{
+  TRACE("MultiByteToWideChar");
+  panic("MultiByteToWideChar not implemented");
+  return 0;
 }
 
 HANDLE WINAPI OpenProcess

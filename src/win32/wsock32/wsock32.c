@@ -61,6 +61,13 @@ typedef struct WSAData
   char *lpVendorInfo;
 } WSADATA, *LPWSADATA; 
 
+char *strcpy(char *dst, const char *src)
+{
+  char *cp = dst;
+  while (*cp++ = *src++);
+  return dst;
+}
+
 sockapi int __stdcall WSAStartup(WORD wVersionRequested, LPWSADATA lpWSAData)
 {
   TRACE("WSAStartup");

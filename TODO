@@ -9,12 +9,6 @@ TODO for sanos
 
 - Implement ICMP messages host unreachable, net unreachable and port unreachable
 
-- Move netif binding to os.c
-    - Read netif parameters from [netif] in os.ini
-    - Allow static configuration of ip address and dns servers
-    - Add disabled netif for all packet devices on startup
-    - Add ioctl() support for changing netif parameters
-
 - Add PCI subsystem identifier to driver binding code
 
 - Finish implementation of NDIS subsystem
@@ -116,3 +110,9 @@ CHANGES
 - Make ne2000 driver work with WAFER.
 
 - Return info on WSAStartup
+
+- Moved netif binding to os.c
+    - Read netif parameters from [netif] in os.ini
+    - Allow static configuration of ip address and dns servers
+    - Add disabled netif for all packet devices on startup
+    - Add ioctl() support for changing netif parameters
