@@ -1,0 +1,774 @@
+#
+# Dependencies between sanos source files
+#
+
+# include
+
+$(SRC)/include/crtbase.h: \
+  $(SRC)/include/stdio.h
+
+$(SRC)/include/java/jni.h: \
+  $(SRC)/include/java/jni_md.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/stdarg.h
+
+$(SRC)/include/os/krnl.h: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/stddef.h \
+  $(SRC)/include/stdarg.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/time.h \
+  $(SRC)/include/bitops.h \
+  $(SRC)/include/rmap.h \
+  $(SRC)/include/inifile.h \
+  $(SRC)/include/moddb.h \
+  $(SRC)/include/os/tss.h \
+  $(SRC)/include/os/seg.h \
+  $(SRC)/include/os/fpu.h \
+  $(SRC)/include/os/cpu.h \
+  $(SRC)/include/os/pdir.h \
+  $(SRC)/include/os/pframe.h \
+  $(SRC)/include/os/kmem.h \
+  $(SRC)/include/os/kmalloc.h \
+  $(SRC)/include/os/vmm.h \
+  $(SRC)/include/os/syspage.h \
+  $(SRC)/include/os/pe.h \
+  $(SRC)/include/os/buf.h \
+  $(SRC)/include/os/timer.h \
+  $(SRC)/include/os/object.h \
+  $(SRC)/include/os/queue.h \
+  $(SRC)/include/os/sched.h \
+  $(SRC)/include/os/trap.h \
+  $(SRC)/include/os/dbg.h \
+  $(SRC)/include/os/pic.h \
+  $(SRC)/include/os/pit.h \
+  $(SRC)/include/os/dev.h \
+  $(SRC)/include/os/pci.h \
+  $(SRC)/include/os/pnpbios.h \
+  $(SRC)/include/os/video.h \
+  $(SRC)/include/os/kbd.h \
+  $(SRC)/include/os/rnd.h \
+  $(SRC)/include/os/iovec.h \
+  $(SRC)/include/os/vfs.h \
+  $(SRC)/include/os/dfs.h \
+  $(SRC)/include/os/devfs.h \
+  $(SRC)/include/os/procfs.h \
+  $(SRC)/include/os/mbr.h \
+  $(SRC)/include/os/pe.h \
+  $(SRC)/include/os/ldr.h \
+  $(SRC)/include/os/syscall.h \
+  $(SRC)/include/net/net.h
+
+$(SRC)/include/net/net.h: \
+  $(SRC)/include/net/stats.h \
+  $(SRC)/include/net/opt.h \
+  $(SRC)/include/net/ether.h \
+  $(SRC)/include/net/ipaddr.h \
+  $(SRC)/include/net/inet.h \
+  $(SRC)/include/net/netif.h \
+  $(SRC)/include/net/pbuf.h \
+  $(SRC)/include/net/arp.h \
+  $(SRC)/include/net/icmp.h \
+  $(SRC)/include/net/ip.h \
+  $(SRC)/include/net/udp.h \
+  $(SRC)/include/net/tcp.h \
+  $(SRC)/include/net/socket.h \
+  $(SRC)/include/net/dhcp.h
+
+# lib
+
+$(SRC)/lib/assert.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/stdio.h
+
+$(SRC)/lib/bitops.c: \
+  $(SRC)/include/bitops.h
+
+$(SRC)/lib/bsearch.c: \
+  $(SRC)/include/sys/types.h
+
+$(SRC)/lib/conio.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/string.h
+
+$(SRC)/lib/crt0.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/stdlib.h
+
+$(SRC)/lib/ctype.c: \
+  $(SRC)/include/ctype.h
+
+$(SRC)/lib/fcvt.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/math.h
+
+$(SRC)/lib/hash.c: \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/errno.h \
+  $(SRC)/include/hash.h
+
+$(SRC)/lib/inifile.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/inifile.h \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/lib/input.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/stdarg.h \
+  $(SRC)/include/ctype.h \
+  $(SRC)/include/sys/types.h
+
+$(SRC)/lib/moddb.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/os/pe.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/stdarg.h \
+  $(SRC)/include/inifile.h \
+  $(SRC)/include/moddb.h \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/lib/opts.c: \
+  $(SRC)/include/string.h \
+  $(SRC)/include/stdlib.h
+
+$(SRC)/lib/output.c: \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/stdarg.h \
+  $(SRC)/include/limits.h
+
+$(SRC)/lib/random.c: \
+  $(SRC)/include/os.h
+
+$(SRC)/lib/readline.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/string.h
+
+$(SRC)/lib/rmap.c: \
+  $(SRC)/include/stdarg.h \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/rmap.h
+
+$(SRC)/lib/rtttl.c: \
+  $(SRC)/include/os.h
+
+$(SRC)/lib/setjmp.c: \
+  $(SRC)/include/setjmp.h
+
+$(SRC)/lib/stdio.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/limits.h \
+  $(SRC)/include/stdarg.h \
+  $(SRC)/include/crtbase.h
+
+$(SRC)/lib/stdlib.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/inifile.h
+
+$(SRC)/lib/strftime.c: \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/time.h
+
+$(SRC)/lib/string.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/ctype.h \
+  $(SRC)/include/string.h
+
+$(SRC)/lib/strtod.c: \
+  $(SRC)/include/errno.h \
+  $(SRC)/include/ctype.h \
+  $(SRC)/include/math.h \
+  $(SRC)/include/float.h \
+  $(SRC)/include/stdlib.h
+
+$(SRC)/lib/strtol.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/ctype.h \
+  $(SRC)/include/limits.h
+
+$(SRC)/lib/syserr.c: \
+  $(SRC)/include/os.h
+
+$(SRC)/lib/time.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/time.h
+
+$(SRC)/lib/vsprintf.c: \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/stdarg.h \
+  $(SRC)/include/string.h
+
+# sys/dev
+
+$(SRC)/sys/dev/3c905c.c: \
+  $(SRC)/include/os/krnl.h \
+  $(SRC)/sys/dev/3c905c.h
+
+$(SRC)/sys/dev/cons.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/dev/eepro100.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/dev/fd.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/dev/hd.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/dev/kbd.c: \
+  $(SRC)/include/os/krnl.h \
+  $(SRC)/sys/dev/kbdus.h \
+  $(SRC)/sys/dev/kbddk.h
+
+$(SRC)/sys/dev/ne2000.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/dev/null.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/dev/nvram.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/dev/pcnet32.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/dev/ramdisk.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/dev/rnd.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/dev/rtl8139.c: \
+  $(SRC)/include/os/krnl.h \
+  $(SRC)/include/bitops.h
+
+$(SRC)/sys/dev/serial.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/dev/sis900.c: \
+  $(SRC)/include/os/krnl.h \
+  $(SRC)/include/bitops.h \
+  $(SRC)/sys/dev/sis900.h
+
+$(SRC)/sys/dev/video.c: \
+  $(SRC)/include/os/krnl.h
+
+# sys/fs
+
+$(SRC)/sys/fs/cdfs/cdfs.c: \
+  $(SRC)/include/os/krnl.h \
+  $(SRC)/sys/fs/cdfs/iso9660.h
+
+$(SRC)/sys/fs/devfs/devfs.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/fs/dfs/dfs.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/fs/dfs/file.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/fs/dfs/group.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/fs/dfs/inode.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/fs/dfs/super.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/fs/pipefs/pipefs.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/fs/procfs/procfs.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/fs/smbfs/smbcache.c: \
+  $(SRC)/include/os/krnl.h \
+  $(SRC)/sys/fs/smbfs/smb.h
+
+$(SRC)/sys/fs/smbfs/smbfs.c: \
+  $(SRC)/include/os/krnl.h \
+  $(SRC)/sys/fs/smbfs/smb.h
+
+$(SRC)/sys/fs/smbfs/smbproto.c: \
+  $(SRC)/include/os/krnl.h \
+  $(SRC)/sys/fs/smbfs/smb.h
+
+$(SRC)/sys/fs/smbfs/smbutil.c: \
+  $(SRC)/include/os/krnl.h \
+  $(SRC)/sys/fs/smbfs/smb.h
+
+# sys/krnl
+
+$(SRC)/sys/krnl/apm.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/buf.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/cpu.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/dbg.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/dev.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/fpu.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/hndl.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/iomux.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/iop.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/iovec.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/kmalloc.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/kmem.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/ldr.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/object.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/pci.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/pdir.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/pframe.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/pic.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/pit.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/pnpbios.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/queue.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/sched.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/start.c: \
+  $(SRC)/include/os/krnl.h \
+  $(SRC)/include/os/version.h
+
+$(SRC)/sys/krnl/syscall.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/timer.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/trap.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/vfs.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/vmm.c: \
+  $(SRC)/include/os/krnl.h
+
+# sys/net
+
+$(SRC)/sys/net/arp.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/dhcp.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/ether.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/icmp.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/inet.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/ip.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/ipaddr.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/loopif.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/netif.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/pbuf.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/socket.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/stats.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/tcp.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/tcpsock.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/tcp_input.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/tcp_output.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/udp.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/udpsock.c: \
+  $(SRC)/include/net/net.h
+
+# sys/os
+
+$(SRC)/sys/os/critsect.c: \
+  $(SRC)/include/os.h
+
+$(SRC)/sys/os/heap.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/string.h
+
+$(SRC)/sys/os/netdb.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/inifile.h \
+  $(SRC)/sys/os/resolv.h
+
+$(SRC)/sys/os/os.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/inifile.h \
+  $(SRC)/include/moddb.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/stdarg.h \
+  $(SRC)/include/os/seg.h \
+  $(SRC)/include/os/tss.h \
+  $(SRC)/include/os/syspage.h \
+  $(SRC)/include/os/pe.h \
+  $(SRC)/sys/os/heap.h \
+  $(SRC)/sys/os/resolv.h
+
+$(SRC)/sys/os/resolv.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/inifile.h \
+  $(SRC)/sys/os/resolv.h
+
+$(SRC)/sys/os/signal.c: \
+  $(SRC)/include/os.h
+
+$(SRC)/sys/os/sntp.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/inifile.h
+
+$(SRC)/sys/os/sysapi.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/os/syscall.h \
+  $(SRC)/include/os/cpu.h
+
+$(SRC)/sys/os/thread.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/os/syscall.h \
+  $(SRC)/include/os/seg.h \
+  $(SRC)/include/os/tss.h \
+  $(SRC)/include/os/syspage.h
+
+$(SRC)/sys/os/tls.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/bitops.h
+
+# sys/osldr
+
+$(SRC)/sys/osldr/bootfd.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/os/seg.h \
+  $(SRC)/include/os/tss.h \
+  $(SRC)/include/os/syspage.h \
+  $(SRC)/include/os/pic.h \
+  $(SRC)/include/os/trap.h
+
+$(SRC)/sys/osldr/boothd.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/sys/types.h
+
+$(SRC)/sys/osldr/loadkrnl.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/os/pdir.h \
+  $(SRC)/include/os/tss.h \
+  $(SRC)/include/os/seg.h \
+  $(SRC)/include/os/syspage.h \
+  $(SRC)/include/os/mbr.h \
+  $(SRC)/include/os/dfs.h \
+  $(SRC)/include/os/pe.h
+
+$(SRC)/sys/osldr/osldr.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/os/pdir.h \
+  $(SRC)/include/os/tss.h \
+  $(SRC)/include/os/seg.h \
+  $(SRC)/include/os/syspage.h \
+  $(SRC)/include/os/timer.h \
+  $(SRC)/include/os/fpu.h \
+  $(SRC)/include/os/object.h \
+  $(SRC)/include/os/sched.h \
+  $(SRC)/include/os/dfs.h
+
+$(SRC)/sys/osldr/video.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/stdarg.h
+
+# utils
+
+$(SRC)/utils/fdisk/fdisk.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/inifile.h \
+  $(SRC)/include/os/mbr.h \
+  $(SRC)/include/os/dev.h
+
+$(SRC)/utils/httpd/hbuf.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/httpd.h
+
+$(SRC)/utils/httpd/hfile.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/time.h \
+  $(SRC)/include/httpd.h
+
+$(SRC)/utils/httpd/hlog.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/time.h \
+  $(SRC)/include/httpd.h
+
+$(SRC)/utils/httpd/httpd.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/inifile.h \
+  $(SRC)/include/ctype.h \
+  $(SRC)/include/time.h \
+  $(SRC)/include/os/version.h \
+  $(SRC)/include/httpd.h
+
+$(SRC)/utils/httpd/hutils.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/ctype.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/time.h \
+  $(SRC)/include/inifile.h
+
+$(SRC)/utils/jinit/jinit.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/java/jni.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/inifile.h \
+  $(SRC)/include/stdlib.h
+
+$(SRC)/utils/setup/setup.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/inifile.h \
+  $(SRC)/include/os/mbr.h \
+  $(SRC)/include/os/dfs.h \
+  $(SRC)/include/os/seg.h \
+  $(SRC)/include/os/tss.h \
+  $(SRC)/include/os/syspage.h \
+  $(SRC)/include/os/version.h
+
+$(SRC)/utils/sh/sh.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/time.h \
+  $(SRC)/include/math.h \
+  $(SRC)/include/limits.h \
+  $(SRC)/include/os/version.h \
+  $(SRC)/include/crtbase.h \
+  $(SRC)/include/inifile.h \
+  $(SRC)/include/httpd.h
+
+# win32
+
+$(SRC)/win32/advapi32/advapi32.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/win32.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/inifile.h
+
+$(SRC)/win32/kernel32/kernel32.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/os/trap.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/time.h \
+  $(SRC)/include/inifile.h \
+  $(SRC)/include/win32.h
+
+$(SRC)/win32/msvcrt/except.c: \
+  $(SRC)/win32/msvcrt/msvcrt.h
+
+$(SRC)/win32/msvcrt/file.c: \
+  $(SRC)/win32/msvcrt/msvcrt.h
+
+$(SRC)/win32/msvcrt/float.c: \
+  $(SRC)/win32/msvcrt/msvcrt.h
+
+$(SRC)/win32/msvcrt/malloc.c: \
+  $(SRC)/win32/msvcrt/msvcrt.h
+
+$(SRC)/win32/msvcrt/msvcrt.c: \
+  $(SRC)/win32/msvcrt/msvcrt.h
+
+$(SRC)/win32/msvcrt/msvcrt.h: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/stdarg.h \
+  $(SRC)/include/ctype.h \
+  $(SRC)/include/inifile.h \
+  $(SRC)/include/win32.h
+
+$(SRC)/win32/user32/user32.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/win32.h
+
+$(SRC)/win32/winmm/winmm.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/win32.h
+
+$(SRC)/win32/wsock32/wsock32.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/win32.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/inifile.h
+
+# tools
+
+$(TOOLSRC)/dbggw/dbggw.c: \
+  $(TOOLSRC)/dbggw/rdp.h
+
+$(TOOLSRC)/dbggw/rdp.c: \
+  $(TOOLSRC)/dbggw/rdp.h
+
+$(TOOLSRC)/dfs/bitops.c: \
+  $(TOOLSRC)/dfs/bitops.h
+
+$(TOOLSRC)/dfs/buf.c: \
+  $(TOOLSRC)/dfs/types.h \
+  $(TOOLSRC)/dfs/buf.h
+
+$(TOOLSRC)/dfs/dfs.c: \
+  $(TOOLSRC)/dfs/types.h \
+  $(TOOLSRC)/dfs/vfs.h \
+  $(TOOLSRC)/dfs/dfs.h \
+
+$(TOOLSRC)/dfs/dir.c: \
+  $(TOOLSRC)/dfs/types.h \
+  $(TOOLSRC)/dfs/buf.h \
+  $(TOOLSRC)/dfs/vfs.h \
+  $(TOOLSRC)/dfs/dfs.h
+
+$(TOOLSRC)/dfs/file.c: \
+  $(TOOLSRC)/dfs/types.h \
+  $(TOOLSRC)/dfs/buf.h \
+  $(TOOLSRC)/dfs/vfs.h \
+  $(TOOLSRC)/dfs/dfs.h
+
+$(TOOLSRC)/dfs/group.c: \
+  $(TOOLSRC)/dfs/types.h \
+  $(TOOLSRC)/dfs/vfs.h \
+  $(TOOLSRC)/dfs/bitops.h \
+  $(TOOLSRC)/dfs/buf.h \
+  $(TOOLSRC)/dfs/dfs.h
+
+$(TOOLSRC)/dfs/inode.c: \
+  $(TOOLSRC)/dfs/types.h \
+  $(TOOLSRC)/dfs/vfs.h \
+  $(TOOLSRC)/dfs/bitops.h \
+  $(TOOLSRC)/dfs/buf.h \
+  $(TOOLSRC)/dfs/dfs.h
+
+$(TOOLSRC)/dfs/mkdfs.c: \
+  $(TOOLSRC)/dfs/getopt.h \
+  $(TOOLSRC)/dfs/types.h \
+  $(TOOLSRC)/dfs/bitops.h \
+  $(TOOLSRC)/dfs/buf.h \
+  $(TOOLSRC)/dfs/vfs.h \
+  $(TOOLSRC)/dfs/dfs.h \
+  $(TOOLSRC)/dfs/mbr.h
+
+$(TOOLSRC)/dfs/super.c: \
+  $(TOOLSRC)/dfs/types.h \
+  $(TOOLSRC)/dfs/bitops.h \
+  $(TOOLSRC)/dfs/buf.h \
+  $(TOOLSRC)/dfs/vfs.h \
+  $(TOOLSRC)/dfs/dfs.h
+
+$(TOOLSRC)/dfs/vfs.c: \
+  $(TOOLSRC)/dfs/types.h \
+  $(TOOLSRC)/dfs/vfs.h

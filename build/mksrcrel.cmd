@@ -22,6 +22,7 @@ copy build\bootdisk.lst %1\build
 copy build\krnlrel.ini %1\build\krnl.ini
 copy build\osrel.ini %1\build\os.ini
 copy build\setuprel.ini %1\build\setup.ini
+copy build\sanos.dep %1\build\sanos.dep
 
 xcopy src %1\src /s /exclude:build\exclrel.lst
 xcopy vcwizard %1\vcwizard /s /exclude:build\exclrel.lst
