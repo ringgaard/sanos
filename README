@@ -154,4 +154,4 @@ The random device driver has been ported from Linux (Theodore Ts'o)
 
 The inflate decompression routines has been ported from zlib (Jean-loup Gailly and Mark Adler)
 
-The bug fixes and uk key binding by Thierry Supplisson
+Bug fixes and uk key binding by Thierry Supplisson

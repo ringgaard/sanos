@@ -1246,7 +1246,7 @@ osapi int getmodpath(hmodule_t hmod, char *buffer, int size);
 osapi hmodule_t load(const char *name);
 osapi int unload(hmodule_t hmod);
 osapi int exec(hmodule_t hmod, const char *args);
-osapi void *getresdata(hmodule_t hmod, int type, char *name, int lang);
+osapi void *getresdata(hmodule_t hmod, int type, char *name, int lang, int *len);
 osapi int getreslen(hmodule_t hmod, int type, char *name, int lang);
 
 osapi tls_t tlsalloc();

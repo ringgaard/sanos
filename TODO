@@ -9,10 +9,6 @@ TODO for sanos
 
 - Implement UDMA mode for ATAPI devices
 
-- Implement stack guard page handling in user mode signal handler
-
-- Handle guard pages in mmap(), munmap() and mprotect()
-
 - Replace syslog() in sysapi.c with:
     int vsyslog(int syscallno, va_list params);
     int syslog(int syscallno, ...);
@@ -63,10 +59,6 @@ IDEAS for new features
 - DNS resolver cache
 
 - Dynamic DNS registration
-
-- Test sanos with jdk1.4 and Tomcat 4
-
-- ANSI/VT100 handler in console device
 
 - Multiple consoles (switch consoles with ALT-<num>)
 
@@ -501,3 +493,7 @@ CHANGES
 - Instance counting added in crt0.c to properly initialize/terminate the crt.
 
 - Guard pages implemented
+
+- Support for JDK 1.4.2
+
+- Changed stack guard page support to comply with win32

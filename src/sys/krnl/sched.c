@@ -766,7 +766,7 @@ void dispatch_dpc_queue()
   in_dpc = 0;
 }
 
-static int find_highest_bit(unsigned mask)
+static __inline int find_highest_bit(unsigned mask)
 {
   int n;
 
@@ -874,7 +874,7 @@ void yield()
   dispatch();
 }
 
-int system_idle()
+__inline int system_idle()
 {
   if (thread_ready_summary != 0) return 0;
   if (dpc_queue_head != NULL) return 0;
@@ -904,16 +904,19 @@ void idle_task()
   while (1) 
   {
     struct task *task = idle_tasks_head;
-    while (task)
+    if (task)
     {
-      if (!system_idle()) break;
-      task->flags |= TASK_EXECUTING;
-      task->proc(task->arg);
-      task->flags &= ~TASK_EXECUTING;
-      task = task->next;
+      while (task)
+      {
+	if (!system_idle()) break;
+	task->flags |= TASK_EXECUTING;
+	task->proc(task->arg);
+	task->flags &= ~TASK_EXECUTING;
+	task = task->next;
+      }
     }
-
-    if (system_idle()) halt();
+    else if (system_idle()) 
+      halt();
 
     mark_thread_ready(t, 0, 0);
     dispatch();

@@ -153,7 +153,7 @@ static int httpget(char *server, char *path, char *filename)
 
   if (rc < 0) return rc;
 
-  f = open(filename, O_CREAT | O_BINARY, S_IREAD | S_IWRITE);
+  f = open(filename, O_CREAT | O_TRUNC | O_BINARY, S_IREAD | S_IWRITE);
   if (f < 0)
   {
     close(s);

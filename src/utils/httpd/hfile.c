@@ -259,12 +259,11 @@ int httpd_resource_handler(struct httpd_connection *conn)
     return httpd_send_error(conn->rsp, 405, "Method Not Allowed", NULL);
   }
 
-  resdata = getresdata(conn->req->context->hmod, 10, conn->req->pathinfo, 0);
+  resdata = getresdata(conn->req->context->hmod, 10, conn->req->pathinfo, 0, &reslen);
   if (!resdata)
   {
     return httpd_send_error(conn->rsp, 404, "Not Found", NULL);
   }
-  reslen = getreslen(conn->req->context->hmod, 10, conn->req->pathinfo, 0);
 
   conn->rsp->content_length = reslen;
   conn->rsp->last_modified = conn->req->context->mtime;

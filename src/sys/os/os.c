@@ -560,7 +560,7 @@ int exec(hmodule_t hmod, const char *args)
   return rc;
 }
 
-void *getresdata(hmodule_t hmod, int type, char *name, int lang)
+void *getresdata(hmodule_t hmod, int type, char *name, int lang, int *len)
 {
   void *data;
   int rc;
@@ -574,6 +574,7 @@ void *getresdata(hmodule_t hmod, int type, char *name, int lang)
     return NULL;
   }
 
+  if (*len) *len = rc;
   return data;
 }
 
