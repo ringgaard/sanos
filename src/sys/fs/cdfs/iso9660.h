@@ -36,35 +36,27 @@
 
 #define ISODCL(from, to) (to - from + 1)
 
+
+#define ISO_VD_BOOT         0
 #define ISO_VD_PRIMARY      1
 #define ISO_VD_SUPPLEMENTAL 2
+#define ISO_VD_PARTITION    3
 #define ISO_VD_END          255
-
-#define ISO_STANDARD_ID     "CD001"
-#define ISO_ECMA_ID         "CDW01"
 
 #pragma pack(push)
 #pragma pack(1)
 
 struct iso_volume_descriptor 
 {
-  unsigned char type                    [ISODCL(1, 1)]; // 711
-  unsigned char id                      [ISODCL(2, 6)];
-  unsigned char version                 [ISODCL(7, 7)];
-  unsigned char data                    [ISODCL(8, 2048)];
-};
-
-struct iso_primary_descriptor 
-{
   unsigned char type			[ISODCL(  1,   1)]; // 711
   unsigned char id			[ISODCL(  2,   6)];
   unsigned char version			[ISODCL(  7,   7)]; // 711
-  unsigned char unused1			[ISODCL(  8,   8)];
+  unsigned char flags			[ISODCL(  8,   8)];
   unsigned char system_id		[ISODCL(  9,  40)]; // achars
   unsigned char volume_id		[ISODCL( 41,  72)]; // dchars
-  unsigned char unused2			[ISODCL( 73,  80)];
+  unsigned char unused1			[ISODCL( 73,  80)];
   unsigned char volume_space_size	[ISODCL( 81,  88)]; // 733
-  unsigned char unused3			[ISODCL( 89, 120)];
+  unsigned char escape_sequences	[ISODCL( 89, 120)];
   unsigned char volume_set_size		[ISODCL(121, 124)]; // 723
   unsigned char volume_sequence_number	[ISODCL(125, 128)]; // 723
   unsigned char logical_block_size	[ISODCL(129, 132)]; // 723
@@ -86,9 +78,9 @@ struct iso_primary_descriptor
   unsigned char expiration_date		[ISODCL(848, 864)]; // 8.4.26.1
   unsigned char effective_date		[ISODCL(865, 881)]; // 8.4.26.1
   unsigned char file_structure_version	[ISODCL(882, 882)]; // 711
-  unsigned char unused4			[ISODCL(883, 883)];
+  unsigned char unused2			[ISODCL(883, 883)];
   unsigned char application_data	[ISODCL(884, 1395)];
-  unsigned char unused5			[ISODCL(1396, 2048)];
+  unsigned char unused3			[ISODCL(1396, 2048)];
 };
 
 struct iso_directory_record 
