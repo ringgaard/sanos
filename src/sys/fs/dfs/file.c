@@ -213,6 +213,7 @@ static int create_new(struct filsys *fs, char *name, int len, ino_t ino, struct 
   if (!inode)
   {
     release_inode(dir);
+    release_inode(dir);
     return -ENOSPC;
   }
 

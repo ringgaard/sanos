@@ -202,7 +202,7 @@ ino_t new_inode(struct filsys *fs, ino_t parent, int flags)
   if (ino == fs->super->inodes_per_group)
   {
     release_buffer(fs->cache, buf);
-    panic("inode table full");
+    //panic("inode table full");
     return NOINODE;
   }
 
