@@ -33,11 +33,15 @@
 
 #include <os.h>
 #include <stdlib.h>
+#include <atomic.h>
+#include <crtbase.h>
 
 void init_stdio();
 
 typedef void (__cdecl *proc_t)(void);
 typedef int (__cdecl *func_t)(void);
+
+int __instcount;
 
 proc_t *atexit_begin = NULL;
 proc_t *atexit_end = NULL;
@@ -87,9 +91,6 @@ proc_t __xt_z[] = { NULL };
 
 #pragma comment(linker, "/merge:.CRT=.data")
 
-int argc;
-char **argv;
-
 int main(int argc, char *argv[]);
 
 int atexit(proc_t exitfunc)
@@ -137,49 +138,60 @@ static int initcrt()
   // Initialize stdio
   init_stdio();
 
-  // Execute C initializers
-  rc = inittermi(__xi_a, __xi_z);
-  if (rc != 0) return rc;
+  if (atomic_increment(&__instcount) == 1)
+  {
+    // Execute C initializers
+    rc = inittermi(__xi_a, __xi_z);
+    if (rc != 0) return rc;
 
-  // Execute C++ initializers
-  initterm(__xc_a, __xc_z);
+    // Execute C++ initializers
+    initterm(__xc_a, __xc_z);
+  }
 
   return 0;
 }
 
 static void termcrt()
 {
-  // Execute atexit handlers
-  if (atexit_begin)
+  struct job *job = gettib()->job;
+  struct crtbase *crtbase = (struct crtbase *) job->crtbase;
+
+  if (atomic_decrement(&__instcount) == 0)
   {
-    while (--atexit_end >= atexit_begin) if (*atexit_end != NULL) (**atexit_end)();
-    free(atexit_begin);
-    atexit_begin = atexit_end = atexit_last = NULL;
+    // Execute atexit handlers
+    if (atexit_begin)
+    {
+      while (--atexit_end >= atexit_begin) if (*atexit_end != NULL) (**atexit_end)();
+      free(atexit_begin);
+      atexit_begin = atexit_end = atexit_last = NULL;
+    }
+
+    // Execute C pre-terminators
+    initterm(__xp_a, __xp_z);
+
+    // Execute C terminators
+    initterm(__xt_a, __xt_z);
   }
 
-  // Execute C pre-terminators
-  initterm(__xp_a, __xp_z);
-
-  // Execute C terminators
-  initterm(__xt_a, __xt_z);
-
   // Deallocate arguments
-  free_args(argc, argv);
+  free_args(crtbase->argc, crtbase->argv);
 }
 
 int mainCRTStartup(hmodule_t hmod, char *cmdline, void *env)
 {
   int rc;
+  struct job *job = gettib()->job;
+  struct crtbase *crtbase = (struct crtbase *) job->crtbase;
 
-  argc = parse_args(cmdline, NULL);
-  argv = (char **) malloc(argc * sizeof(char *));
-  parse_args(cmdline, argv);
+  crtbase->argc = parse_args(cmdline, NULL);
+  crtbase->argv = (char **) malloc(crtbase->argc * sizeof(char *));
+  parse_args(cmdline, crtbase->argv);
 
   rc = initcrt();
   if (rc == 0) 
   {
     gettib()->job->atexit = termcrt;
-    rc = main(argc, argv);
+    rc = main(crtbase->argc, crtbase->argv);
   }
 
   return rc;

@@ -1,7 +1,7 @@
 //
-// critsect.c
+// atomic.h
 //
-// Critical sections
+// Atomic operations
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -31,60 +31,62 @@
 // SUCH DAMAGE.
 // 
 
-#include <os.h>
-#include <atomic.h>
+#if _MSC_VER > 1000
+#pragma once
+#endif
 
-__inline tid_t threadid()
+#ifndef ATOMIC_H
+#define ATOMIC_H
+
+// On uniprocessors, the 'lock' prefixes are not necessary (and expensive). 
+// Since sanos does not (yet) support SMP the 'lock' prefix is disabled for now.
+
+#pragma warning(disable: 4035) // Disables warnings reporting missing return statement
+
+__inline int atomic_add(int *dest, int value)
 {
-  struct tib *tib;
-
-  __asm
+  __asm 
   {
-    mov eax, fs:[TIB_SELF_OFFSET]
-    mov [tib], eax
+    mov edx, dest;
+    mov eax, value;
+    mov ecx, eax;
+    /*lock*/ xadd dword ptr [edx], eax;
+    add eax, ecx;
   }
-
-  return tib->tid;
 }
 
-void mkcs(critsect_t cs)
+__inline int atomic_increment(int *dest) 
 {
-  cs->count = -1;
-  cs->recursion = 0;
-  cs->owner = NOHANDLE;
-  cs->event = mkevent(0, 0);
-}
-
-void csfree(critsect_t cs)
-{
-  close(cs->event);
-}
-
-void enter(critsect_t cs)
-{
-  tid_t tid = threadid();
-
-  if (cs->owner == tid)
+  __asm 
   {
-    cs->recursion++;
-  }
-  else 
-  {    
-    if (atomic_add(&cs->count, 1) > 0) wait(cs->event, INFINITE);
-    cs->owner = tid;
+    mov edx, dest;
+    mov eax, 1;
+    /*lock*/ xadd dword ptr [edx], eax;
+    inc eax;
   }
 }
 
-void leave(critsect_t cs)
+__inline int atomic_decrement(int *dest)
 {
-  if (cs->owner != threadid()) return;
-  if (cs->recursion > 0)
+  __asm 
   {
-    cs->recursion--;
-  }
-  else
-  {
-    cs->owner = NOHANDLE;
-    if (atomic_add(&cs->count, -1) >= 0) eset(cs->event);
+    mov edx, dest;
+    mov eax, -1;
+    /*lock*/ xadd dword ptr [edx], eax;
+    dec eax;
   }
 }
+
+__inline int atomic_exchange(int *dest, int value) 
+{
+  __asm 
+  {
+    mov eax, value;
+    mov ecx, dest;
+    xchg eax, dword ptr [ecx];
+  }
+}
+
+#pragma warning(default: 4035)
+
+#endif

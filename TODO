@@ -490,3 +490,12 @@ CHANGES
 
 - The add_to_history() function in readline.c has is no longer static and now
   has a prototype in stdlib.h.
+
+- The os.vcproj file has been modified to explicitly set the /GF /Gy /Oi /Ob1 flags. Now the
+  project file is converted correctly to VC7.1 format (TSU).
+
+- VT102 support in console driver
+
+- Atomic operations added in atomic.h.
+
+- Instance counting added in crt0.c to properly initialize/terminate the crt.

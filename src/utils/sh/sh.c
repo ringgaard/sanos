@@ -1153,6 +1153,7 @@ int cmd_sysinfo(int argc, char *argv[])
 
 int cmd_test(int argc, char *argv[])
 {
+#if 0
   struct hostent *hp;
   struct sockaddr_in sin;
   int s;
@@ -1178,6 +1179,13 @@ int cmd_test(int argc, char *argv[])
 
   printf("connected socket %d\n", s);
   return 0;
+#endif
+#if 0
+  int col = atoi(argv[1]);
+  int line = atoi(argv[2]);
+  printf("goto(%d,%d)\033[%d;%dH(X)", col, line, line, col);
+  return 0;
+#endif
 }
 
 int cmd_umount(int argc, char *argv[])
@@ -1387,7 +1395,11 @@ void shell()
 
     if (command->cmdname)
     {
-      if (!command->proc) break;
+      if (!command->proc) 
+      {
+	free_args(argc, argv);
+	break;
+      }
       command->proc(argc, argv);
     }
     else if (strcmp(argv[0], "start") == 0)

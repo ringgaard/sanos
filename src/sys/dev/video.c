@@ -33,7 +33,7 @@
 
 #include <os/krnl.h>
 
-#define VIDEO_PORT_REG 	     0x3D4
+#define VIDEO_PORT_REG        0x3D4
 #define VIDEO_PORT_DATA      0x3D5
 
 #define VIDEO_REG_CURSOR_MSB 0x0E
@@ -46,8 +46,14 @@
 #define SCREENSIZE           (LINESIZE * LINES)
 #define TABSTOP              8
 
+#define ATTR_NORMAL         0x07
+#define ATTR_INVERSE        0x70
+
 unsigned char *vidmem;
-unsigned int cursor_pos;
+int cursor_pos;
+unsigned char video_attr = ATTR_NORMAL;
+int video_state = 0;
+int saved_cursor_pos = 0;
 
 void init_video()
 {
@@ -83,25 +89,281 @@ void hide_cursor()
   _outp(VIDEO_PORT_DATA, pos >> 8);
 }
 
-static void scroll_up()
+void set_cursor(int col, int line)
+{
+  cursor_pos = (line * COLS + col) * CELLSIZE;
+}
+
+static void clear_line(unsigned char *p)
 {
   int i;
-  unsigned short *p;
+  unsigned char attr = video_attr;
 
+  for (i = 0; i < COLS; i++) 
+  {
+    *p++ = ' ';
+    *p++ = attr;
+  }
+}
+
+static void scroll_up()
+{
   // Scroll screen up
   memcpy(vidmem, vidmem + LINESIZE, SCREENSIZE - LINESIZE);
 
   // Clear bottom row
-  p = (unsigned short *) (vidmem + SCREENSIZE - LINESIZE);
-  for (i = 0; i < COLS; i++) *p++ = 0x0720;
+  clear_line(vidmem + SCREENSIZE - LINESIZE);
+}
+
+static void scroll_down()
+{
+  // Scroll screen down
+  memcpy(vidmem + LINESIZE, vidmem, SCREENSIZE - LINESIZE);
+
+  // Clear top row
+  clear_line(vidmem);
+}
+
+static void handle_sequence(int x, int y, char ch)
+{
+  switch (ch) 
+  {
+    case 'A':  // Cursor up
+      while (x-- > 0) 
+      {
+        cursor_pos -= LINESIZE;
+        if (cursor_pos < 0) 
+        {
+          cursor_pos += LINESIZE;
+          break;
+        }
+      }
+      break;
+
+    case 'B': // Cursor down
+      while (x-- > 0) 
+      {
+        cursor_pos += LINESIZE;
+        if (cursor_pos >= SCREENSIZE) 
+        {
+          cursor_pos -= LINESIZE;
+          break;
+        }
+      }
+      break;
+    
+    case 'C': // Cursor right
+      cursor_pos += x * CELLSIZE;
+      if (cursor_pos >= SCREENSIZE) cursor_pos = SCREENSIZE - 1;
+      break;
+    
+    case 'D': // Cursor left
+      cursor_pos -= x * CELLSIZE;
+      if (cursor_pos < 0) cursor_pos = 0;
+      break;
+
+    case 'L': // Insert line
+      while (x-- > 0) 
+      {
+        int sol = cursor_pos - cursor_pos % LINESIZE;
+        memcpy(vidmem + sol + LINESIZE, vidmem + sol, SCREENSIZE - LINESIZE - sol);
+        clear_line(vidmem + sol * LINESIZE);
+      }
+      break;
+
+    case 'M': // Delete line
+      while (x-- > 0) 
+      {
+        int sol = cursor_pos - cursor_pos % LINESIZE;
+        memcpy(vidmem + sol, vidmem + sol + LINESIZE, SCREENSIZE - LINESIZE - sol);
+        clear_line(vidmem + SCREENSIZE - LINESIZE);
+      }
+      break;
+
+    case '@': // Insert character
+      while (x-- > 0)
+      {
+        memcpy(vidmem + cursor_pos + CELLSIZE, vidmem + cursor_pos, SCREENSIZE - cursor_pos - 1);
+        vidmem[cursor_pos] = ' ';
+        vidmem[cursor_pos + 1] = video_attr;
+      }
+      break;
+
+    case 'P': // Delete character
+      while (x-- > 0) 
+      {
+        memcpy(vidmem + cursor_pos, vidmem + cursor_pos + CELLSIZE, SCREENSIZE - cursor_pos - 1);
+        vidmem[SCREENSIZE - 2] = ' ';
+        vidmem[SCREENSIZE - 1] = video_attr;
+      }
+      break;
+    
+    case 's': // Save cursor
+      saved_cursor_pos = cursor_pos;
+      break;
+
+    case 'u': // Restore cursor
+      cursor_pos = saved_cursor_pos;
+      break;
+
+    case 'J': // Clear screen/eos
+      if (x == 1) 
+      {
+        unsigned char *p = vidmem + cursor_pos;
+        while (p < vidmem + SCREENSIZE)
+        {
+          *p++ = ' ';
+          *p++ = video_attr;
+        }
+      }
+      else 
+      {
+        unsigned char *p = vidmem;
+        while (p < vidmem + SCREENSIZE)
+        {
+          *p++ = ' ';
+          *p++ = video_attr;
+        }
+        cursor_pos = 0;
+      }
+      break;
+    
+    case 'H': // Position
+    {
+      int line = x;
+      int col = y;
+
+      if (line < 1) line = 1;
+      if (line > LINES) line = LINES;
+      if (col < 1) col = 1;
+      if (col > COLS) col = COLS;
+      set_cursor(col - 1, line - 1);
+      break;
+    }
+    
+    case 'K': // Clear to end of line
+    {
+      int pos = cursor_pos;
+      do {
+        vidmem[pos++] = ' ';
+        vidmem[pos++] = video_attr;
+      } while ((pos) % LINESIZE != 0);
+      break;
+    }
+    
+    case 'm': // Set character enhancements
+      // Just make it reverse if any enhancement selected, otherwise normal
+      if (x) 
+        video_attr = ATTR_INVERSE;
+      else
+        video_attr = ATTR_NORMAL;
+      break;
+  }
+}
+
+static int handle_multichar(int state, char ch)
+{
+  static int x, y;
+
+  switch (state)
+  {
+    case 1: // Escape has arrived
+      switch (ch)
+      {
+        case 'P': // Cursor down a line
+          cursor_pos += LINESIZE;
+          if (cursor_pos >= SCREENSIZE) cursor_pos -= LINESIZE;
+          return 0;
+
+        case 'K': // Cursor left
+          if (cursor_pos > 0) cursor_pos -= CELLSIZE;
+          return 0;
+
+        case 'H': // Cursor up
+          cursor_pos -= LINESIZE;
+          if (cursor_pos < 0) cursor_pos += LINESIZE;
+          return 0;
+
+        case 'D': // Scroll forward
+          scroll_up();
+          return 0;
+
+        case 'M': // Scroll reverse
+          scroll_down();
+          return 0;
+
+        case 'G':  // Cursor home
+          cursor_pos = 0;
+          return 0;
+
+        case '[': // Extended sequence
+          return 2;
+
+        case '(': // Extended char set
+          return 5;
+
+        default:
+          return 0;
+      }
+
+    case 2: // Seen Esc-[
+      if (ch == '?') return 3;
+      if (ch >= '0' && ch <= '9')
+      {
+        x = ch - '0';
+        return 3;
+      }
+
+      if (ch == 's' || ch == 'u')
+        handle_sequence(0, 0, ch);
+      else if (ch == 'r' || ch == 'm')
+        handle_sequence(0, 0, ch);
+      else
+        handle_sequence(1, 1, ch);
+
+      return 0;
+
+    case 3: // Seen Esc-[<digit>
+      if (ch >= '0' && ch <= '9')
+      {
+        x = x * 10 + (ch - '0');
+        return 3;
+      }
+      if (ch == ';') 
+      {
+        y = 0;
+        return 4;
+      }
+
+      handle_sequence(x, 1, ch);
+      return 0;
+
+    case 4:  // Seen Esc-[<digits>;
+      if (ch >= '0' && ch <= '9')
+      {
+        y = y * 10 + (ch - '0');
+        return 4;
+      }
+
+      handle_sequence(x, y, ch);
+      return 0;
+
+    case 5: // Seen Esc-(
+      // Ignore char set selection
+      return 0;
+
+    default:
+      return 0;
+  }
 }
 
 void print_buffer(const char *str, int len)
 {
   int ch;
   int i;
-  unsigned short *p;
+  unsigned char *p;
   char *end;
+  unsigned char attr = video_attr;
 
   if (!str) return;
   
@@ -110,37 +372,53 @@ void print_buffer(const char *str, int len)
   {
     ch = *str++;
 
+    // If we are inside a multi-character sequence handle it using state machine
+    if (video_state > 0)
+    {
+      video_state = handle_multichar(video_state, ch);
+      attr = video_attr;
+      continue;
+    }
+
     switch (ch)
     {
       case 0:
-	break;
+        break;
 
       case '\n': // Newline
-	cursor_pos = (cursor_pos / LINESIZE + 1) * LINESIZE;
-	break;
+        cursor_pos = (cursor_pos / LINESIZE + 1) * LINESIZE;
+        break;
 
       case '\r': // Carriage return
-	cursor_pos = (cursor_pos / LINESIZE) * LINESIZE;
-	break;
+        cursor_pos = (cursor_pos / LINESIZE) * LINESIZE;
+        break;
 
       case '\t':
-	cursor_pos = (cursor_pos / (TABSTOP * CELLSIZE) + 1) * (TABSTOP * CELLSIZE);
-	break;
+        cursor_pos = (cursor_pos / (TABSTOP * CELLSIZE) + 1) * (TABSTOP * CELLSIZE);
+        break;
        
       case 8: // Backspace
-	if (cursor_pos > 0) cursor_pos -= CELLSIZE;
-	break;
+        if (cursor_pos > 0) cursor_pos -= CELLSIZE;
+        break;
 
       case 12: // Formfeed
-	p = (unsigned short *) vidmem;
-	for (i = 0; i < COLS * LINES; i++) *p++ = 0x0720;
+        p = (unsigned char *) vidmem;
+        for (i = 0; i < COLS * LINES; i++) 
+        {
+          *p++ = ' ';
+          *p++ = attr;
+        }
         cursor_pos = 0;
-	break;
+        break;
+
+      case 27: // Escape
+        video_state = 1;
+        break;
 
       default: // Normal character
-	vidmem[cursor_pos++] = ch;
-	vidmem[cursor_pos++] = 0x07;
-	break;
+        vidmem[cursor_pos++] = ch;
+        vidmem[cursor_pos++] = attr;
+        break;
     }
 
     // Scroll if position is off-screen
@@ -165,19 +443,19 @@ void print_char(int ch)
   show_cursor();
 }
 
-void set_cursor(int x, int y)
-{
-  cursor_pos = (x * COLS + y) * CELLSIZE;
-}
-
 void clear_screen()
 {
   int i;
-  unsigned short *p;
+  unsigned char *p;
+  unsigned char attr = video_attr;
 
   // Fill screen with background color
-  p = (unsigned short *) vidmem;
-  for (i = 0; i < COLS * LINES; i++) *p++ = 0x0720;
+  p = (unsigned char *) vidmem;
+  for (i = 0; i < COLS * LINES; i++) 
+  {
+    *p++ = ' ';
+    *p++ = attr;
+  }
 
   // Set cursor to upper-left corner of the screen
   cursor_pos = 0;

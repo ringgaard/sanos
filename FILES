@@ -46,6 +46,7 @@ build\                         Build files for sanos
 src\                           Souce files
   include\                     Include files
     assert.h                   Assert macro
+    atomic.h                   Atomic operations
     bitops.h                   Bitmap manipulation routines
     conio.h                    Console I/O
     crtbase.h                  Internal definitions for C runtime library

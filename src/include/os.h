@@ -954,7 +954,7 @@ struct peb
 #define TERM_CONSOLE   1
 #define TERM_VT100     2
 
-#define CRTBASESIZE    (3 * 8 + 512)
+#define CRTBASESIZE    (5 * 8 + 512)
 
 struct job
 {

@@ -123,6 +123,9 @@
 				RelativePath="..\src\include\assert.h">
 			</File>
 			<File
+				RelativePath="..\src\include\atomic.h">
+			</File>
+			<File
 				RelativePath="..\src\include\bitops.h">
 			</File>
 			<File

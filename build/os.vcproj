@@ -44,7 +44,8 @@
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
 				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="FALSE"/>
+				UndefineAllPreprocessorDefinitions="FALSE"
+                AdditionalOptions="/Oi /Ob1 /Gy /GF" />
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool

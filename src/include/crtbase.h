@@ -42,6 +42,8 @@
 
 struct crtbase
 {
+  int argc;
+  char **argv;
   FILE iob[3];
   char stdinbuf[BUFSIZ];
 };

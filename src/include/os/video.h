@@ -42,7 +42,7 @@ void print_string(const char *str);
 
 void show_cursor();
 void hide_cursor();
-void set_cursor(int x, int y);
+void set_cursor(int col, int line);
 
 void clear_screen();
 
