@@ -1158,7 +1158,7 @@ BOOL WINAPI SetConsoleCtrlHandler
   return TRUE;
 }
 
-BOOL WINAI SetConsoleTitle
+BOOL WINAPI SetConsoleTitleA
 (
   LPCTSTR lpConsoleTitle
 )

@@ -13,13 +13,17 @@ static err_t recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
   struct socket *s = arg;
   struct sockreq *req = s->waithead;
   int len;
+  int rc;
 
   if (req)
   {
     if (p->len > req->len)
+    {
+      rc = -EMSGSIZE;
       len = req->len;
+    }
     else
-      len = p->len;
+      rc = len = p->len;
 
     memcpy(req->data, p->payload, len);
 
@@ -30,7 +34,7 @@ static err_t recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
 
     pbuf_free(p);
 
-    release_socket_request(req, len);
+    release_socket_request(req, rc);
   }
   else 
   {
