@@ -485,7 +485,6 @@ static int tcpsock_close(struct socket *s)
     tcp_sent(s->tcp.pcb, NULL);
     tcp_recv(s->tcp.pcb, NULL);
     tcp_accept(s->tcp.pcb, NULL);
-    tcp_poll(s->tcp.pcb, NULL, 0);
     tcp_err(s->tcp.pcb, NULL);
 
     if (s->tcp.pcb->state == LISTEN)
