@@ -109,6 +109,12 @@ struct selector
   void *dt;
 };
 
+struct fullptr
+{
+  unsigned long offset;
+  unsigned short segment;
+};
+
 void __inline seginit(struct segment *seg, unsigned long addr, unsigned long size, int access, int granularity)
 {
   seg->base_low = (unsigned short)(addr & 0xFFFF);

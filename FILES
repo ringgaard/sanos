@@ -256,6 +256,7 @@ src\                           Souce files
         smbproto.c             SMB protocol
         smbutil.c              SMB utility functions
     krnl\                      Kernel source files
+      apm.c                    APM BIOS power management
       buf.c                    I/O buffer cache
       cpu.c                    CPU information
       dbg.c                    Remote debugging support

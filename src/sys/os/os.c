@@ -54,6 +54,7 @@ struct peb *peb;
 
 unsigned long loglevel = LOG_DEBUG | LOG_APITRACE | LOG_AUX | LOG_MODULE;
 handle_t syslogfd = -1;
+int syslogsock = -1;
 
 int vsprintf(char *buf, const char *fmt, va_list args);
 
@@ -62,17 +63,48 @@ void init_threads(hmodule_t hmod);
 
 void globalhandler(int signum, struct siginfo *info);
 
-void panic(const char *msg)
+void start_syslog()
 {
-  write(2, msg, strlen(msg));
-  write(2, "\n", 1);
-  if (syslogfd > 0) 
+  char *logfn;
+  char *loghost;
+
+  loglevel = get_numeric_property(config, "os", "loglevel", loglevel);
+
+  logfn = get_property(config, "os", "logfile", NULL);
+  if (logfn != NULL) 
+  {
+    syslogfd = open(logfn, O_CREAT, S_IREAD | S_IWRITE);
+    if (syslogfd >= 0) lseek(syslogfd, 0, SEEK_END);
+  }
+
+  loghost = get_property(config, "os", "syslogsrv", NULL);
+  if (loghost != NULL)
+  {
+    struct sockaddr_in sin;
+
+    memset(&sin, 0, sizeof(sin));
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = inet_addr(loghost);
+    sin.sin_port = htons(514);
+
+    syslogsock = socket(AF_INET, SOCK_DGRAM, 0);
+    connect(syslogsock, (struct sockaddr *) &sin, sizeof(sin));
+  }
+}
+
+void stop_syslog()
+{
+  if (syslogfd >= 0) 
   {
     close(syslogfd);
     syslogfd = -1;
   }
-  dbgbreak();
-  //exit(3);
+
+  if (syslogsock > 0)
+  {
+    close(syslogsock);
+    syslogsock = -1;
+  }
 }
 
 void syslog(int priority, const char *fmt,...)
@@ -87,9 +119,20 @@ void syslog(int priority, const char *fmt,...)
     va_start(args, fmt);
     vsprintf(buffer, fmt, args);
     va_end(args);
+
     write(1, buffer, strlen(buffer));
+    if (syslogsock >= 0) write(syslogsock, buffer, strlen(buffer)); // TODO: add <n> Mmm dd hh:mm:ss host proc[n]: to message
     if (syslogfd >= 0) write(syslogfd, buffer, strlen(buffer));
   }
+}
+
+void panic(const char *msg)
+{
+  write(2, msg, strlen(msg));
+  write(2, "\n", 1);
+  stop_syslog();
+  dbgbreak();
+  //exit(3);
 }
 
 int *_errno()
@@ -742,7 +785,6 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   char *initpgm;
   char *initargs;
   int rc;
-  char *logfn;
   char *rndfn;
 
   // Set usermode segment selectors
@@ -791,13 +833,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   init_mount();
 
   // Initialize log
-  loglevel = get_numeric_property(config, "os", "loglevel", loglevel);
-  logfn = get_property(config, "os", "logfile", NULL);
-  if (logfn != NULL) 
-  {
-    syslogfd = open(logfn, O_CREAT, S_IREAD | S_IWRITE);
-    if (syslogfd >= 0) lseek(syslogfd, 0, SEEK_END);
-  }
+  start_syslog();
 
   // Initialize random device with seed
   rndfn = get_property(config, "os", "rndfile", NULL);
@@ -812,10 +848,6 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   if (rc != 0) syslog(LOG_DEBUG, "Exitcode: %d\n", rc);
 
   if (rndfn) save_random_device(rndfn);
-  if (syslogfd > 0) 
-  {
-    close(syslogfd);
-    syslogfd = -1;
-  }
+  stop_syslog();
   exitos(0);
 }

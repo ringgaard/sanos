@@ -195,6 +195,7 @@ $(LIBS)/krnl.lib $(BIN)/krnl.dll: \
   $(SRC)\sys\krnl\dbg.c \
   $(SRC)\sys\krnl\cpu.c \
   $(SRC)\sys\krnl\buf.c \
+  $(SRC)\sys\krnl\apm.c \
   $(SRC)\sys\dev\video.c \
   $(SRC)\sys\dev\serial.c \
   $(SRC)\sys\dev\rnd.c \

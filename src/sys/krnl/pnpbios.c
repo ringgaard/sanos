@@ -35,12 +35,6 @@
 
 #pragma warning(disable: 4731)
 
-struct fullptr
-{
-  unsigned long offset;
-  unsigned short segment;
-};
-
 struct pnp_bios_expansion_header pnpbios;
 struct fullptr pnp_thunk_entrypoint;
 

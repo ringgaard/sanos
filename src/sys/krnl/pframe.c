@@ -160,6 +160,15 @@ int memmap_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
+void tag2str(unsigned long tag, char *str)
+{
+  if (tag & 0xFF000000) *str++ = (char) ((tag >> 24) & 0xFF);
+  if (tag & 0x00FF0000) *str++ = (char) ((tag >> 16) & 0xFF);
+  if (tag & 0x0000FF00) *str++ = (char) ((tag >> 8) & 0xFF);
+  if (tag & 0x000000FF) *str++ = (char) (tag & 0xFF);
+  *str++ = 0;
+}
+
 int memusage_proc(struct proc_file *pf, void *arg)
 {
   unsigned int num_memtypes = 0;
@@ -188,15 +197,7 @@ int memusage_proc(struct proc_file *pf, void *arg)
   for (n = 0; n < num_memtypes; n++)
   {
     char tagname[5];
-    char *p = tagname;
-
-    tag = memtype[n].tag;
-    if (tag & 0xFF000000) *p++ = (char) ((tag >> 24) & 0xFF);
-    if (tag & 0x00FF0000) *p++ = (char) ((tag >> 16) & 0xFF);
-    if (tag & 0x0000FF00) *p++ = (char) ((tag >> 8) & 0xFF);
-    if (tag & 0x000000FF) *p++ = (char) (tag & 0xFF);
-    *p++ = 0;
-
+    tag2str(memtype[n].tag, tagname);
     pprintf(pf, "%-4s    %8d KB\n", tagname, memtype[n].pages * (PAGESIZE / K));
   }
 
@@ -227,10 +228,16 @@ int physmem_proc(struct proc_file *pf, void *arg)
 
     if (pfdb[n].tag == 'FREE')
       pprintf(pf, ".");
+    else if (pfdb[n].tag == 'RESV')
+      pprintf(pf, "-");
     else if (pfdb[n].tag == 0)
       pprintf(pf, "?");
     else
-      pprintf(pf, "X");
+    {
+      char tagname[5];
+      tag2str(pfdb[n].tag, tagname);
+      pprintf(pf, "%c", *tagname);
+    }
   }
 
   pprintf(pf, "\n");
@@ -268,7 +275,7 @@ void init_pfdb()
 
   // Initialize page frame database
   maxmem = syspage->ldrparams.memend / PAGESIZE;
-  totalmem = maxmem - (1024 - 640 + 1) * K / PAGESIZE;
+  totalmem = maxmem - (1024 - 640 + 4) * K / PAGESIZE;
   freemem = 0;
 
   pfdb = (struct pageframe *) PFDBBASE;

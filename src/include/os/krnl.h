@@ -148,6 +148,10 @@ void init_hd();
 
 void init_fd();
 
+// apm.c
+
+void init_apm();
+
 // iop.c
 
 void insw(int port, void *buf, int count);

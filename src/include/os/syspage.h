@@ -43,11 +43,15 @@
 #define GDT_UDATA    4
 #define GDT_TSS      5
 #define GDT_TIB      6
-#define GDT_PNPTEXT  7
-#define GDT_PNPDATA  8
-#define GDT_PNPTHUNK 9
-#define GDT_AUX1     10
-#define GDT_AUX2     11
+#define GDT_AUX1     7
+#define GDT_APM40    8
+#define GDT_APMCS    9
+#define GDT_APMCS16  10
+#define GDT_APMDS    11
+#define GDT_PNPTEXT  12
+#define GDT_PNPDATA  13
+#define GDT_PNPTHUNK 14
+#define GDT_AUX2     15
 
 #define MAXGDT 16
 #define MAXIDT 64
@@ -59,10 +63,14 @@
 #define SEL_UDATA    GDT_TO_SEL(GDT_UDATA)
 #define SEL_TSS      GDT_TO_SEL(GDT_TSS)
 #define SEL_TIB      GDT_TO_SEL(GDT_TIB)
+#define SEL_AUX1     GDT_TO_SEL(GDT_AUX1)
+#define SEL_APM40    GDT_TO_SEL(GDT_APM40)
+#define SEL_APMCS    GDT_TO_SEL(GDT_APMCS)
+#define SEL_APMCS16  GDT_TO_SEL(GDT_APMCS16)
+#define SEL_APMDS    GDT_TO_SEL(GDT_APMDS)
 #define SEL_PNPTEXT  GDT_TO_SEL(GDT_PNPTEXT)
 #define SEL_PNPDATA  GDT_TO_SEL(GDT_PNPDATA)
 #define SEL_PNPTHUNK GDT_TO_SEL(GDT_PNPTHUNK)
-#define SEL_AUX1     GDT_TO_SEL(GDT_AUX1)
 #define SEL_AUX2     GDT_TO_SEL(GDT_AUX2)
 
 #define SEL_RPL0    0

@@ -57,8 +57,8 @@ int smb_send(struct smb_share *share, struct smb *smb, unsigned char cmd, int pa
 
   len = SMB_HEADER_LEN + params * 2 + 2 + datasize;
 
-  smb->len[0] = (len > 0xFF000000) >> 24;
-  smb->len[1] = (len > 0xFF0000) >> 16;
+  smb->len[0] = (len & 0xFF000000) >> 24;
+  smb->len[1] = (len & 0xFF0000) >> 16;
   smb->len[2] = (len & 0xFF00) >> 8;
   smb->len[3] = (len & 0xFF);
     

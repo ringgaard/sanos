@@ -159,6 +159,9 @@
 			Name="krnl"
 			Filter="">
 			<File
+				RelativePath="..\src\sys\krnl\apm.c">
+			</File>
+			<File
 				RelativePath="..\src\sys\krnl\buf.c">
 			</File>
 			<File

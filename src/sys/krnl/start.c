@@ -300,30 +300,19 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
   init_handles();
   init_syscall();
 
-  if (syspage->bootparams.apm.version != 0)
-  {
-    struct apmparams *apm = &syspage->bootparams.apm;
+  //if (syspage->bootparams.memmap.count != 0)
+  //{
+  //  struct memmap *memmap = &syspage->bootparams.memmap;
+  //  int n;
 
-    kprintf("apm: BIOS version %d.%d Flags 0x%02x\n", ((apm->version >> 8) & 0xff), (apm->version & 0xff), apm->flags);
-    //kprintf("apm: cseg32 0x%04x %d bytes\n", apm->cseg32, apm->cseg32len);
-    //kprintf("apm: cseg16 0x%04x %d bytes\n", apm->cseg16, apm->cseg16len);
-    //kprintf("apm: dseg 0x%04x %d bytes\n", apm->dseg, apm->dseglen);
-    //kprintf("apm: entry 0x%04x\n", apm->entry);
-  }
-
-  if (syspage->bootparams.memmap.count != 0)
-  {
-    //struct memmap *memmap = &syspage->bootparams.memmap;
-    //int n;
-
-    //for (n = 0; n < memmap->count; n++)
-    //{
-    //  unsigned long addr = (unsigned long) memmap->entry[n].addr;
-    //  unsigned long size = (unsigned long) memmap->entry[n].size;
-    //  unsigned long type = memmap->entry[n].type;
-    //  kprintf("%p %p %d\n", addr, size, type);
-    //}
-  }
+  //  for (n = 0; n < memmap->count; n++)
+  //  {
+  //    unsigned long addr = (unsigned long) memmap->entry[n].addr;
+  //    unsigned long size = (unsigned long) memmap->entry[n].size;
+  //    unsigned long type = memmap->entry[n].type;
+  //    kprintf("%p %p %d\n", addr, size, type);
+  //  }
+  //}
 
   // Enable interrupts and calibrate delay
   __asm { sti };
@@ -373,6 +362,9 @@ void main(void *arg)
   if (!peb) panic("unable to allocate PEB");
   memset(peb, 0, PAGESIZE);
   peb->fast_syscalls_supported = (cpu.features & CPU_FEATURE_SEP) != 0;
+
+  // Initialize APM BIOS
+  //init_apm();
 
   // Enumerate root host buses and units
   enum_host_bus();
