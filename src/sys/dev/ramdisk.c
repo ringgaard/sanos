@@ -92,13 +92,20 @@ int __declspec(dllexport) ramdisk(struct unit *unit, char *opts)
   char devname[DEVNAMELEN];
   int size;
   dev_t devno;
+  char *data;
 
-  get_option(opts, "devname", devname, DEVNAMELEN, "ramdisk#");
+  get_option(opts, "devname", devname, DEVNAMELEN, "rd#");
   size = get_num_option(opts, "size", 1440) * K;
 
+  data = kmalloc(size);
+  if (!data) return -ENOMEM;
+
   rd = kmalloc(sizeof(struct ramdisk));
+  if (!rd) return -ENOMEM;
+
   rd->blks = size / SECTORSIZE;
-  rd->data = kmalloc(size);
+  rd->data = data;
+
   devno = dev_make(devname, &ramdisk_driver, NULL, rd);
   
   kprintf("%s: ramdisk (%d KB)\n", device(devno)->name, size / K);

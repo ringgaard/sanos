@@ -261,6 +261,12 @@ void init_pfdb()
   // Reserve DMA buffers at 0x10000 (used by floppy driver)
   for (i = DMA_BUFFER_START / PAGESIZE; i < DMA_BUFFER_START / PAGESIZE + DMA_BUFFER_PAGES; i++) pfdb[i].tag = 'DMA';
 
+  // Reserve memory for initial ram disk
+  if (syspage->bootparams.initrd_addr)
+  {
+    for (i = BTOP(syspage->bootparams.initrd_addr); i < BTOP(syspage->bootparams.initrd_addr + syspage->bootparams.initrd_size); i++) pfdb[i].tag = 'BOOT';
+  }
+
   // Fixup tags for pfdb and syspage and intial tcb
   set_pageframe_tag(pfdb, pfdbpages * PAGESIZE, 'PFDB');
   set_pageframe_tag(syspage, PAGESIZE, 'SYS');

@@ -80,7 +80,7 @@ struct bootparams
   int bootdrv;
   int bootpart;
 
-  void *initrd;
+  unsigned long initrd_addr;
   unsigned long initrd_size;
 };
 

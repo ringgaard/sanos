@@ -65,7 +65,7 @@ struct selector idtsel;         // IDT selector
 int bootdrive;                  // Boot drive
 int bootpart;                   // Boot partition
 char *krnlopts;                 // Kernel options
-void *initrd;                   // Initial RAM disk location in heap
+char *initrd;                   // Initial RAM disk location in heap
 int initrd_size;                // Initial RAM disk size (in bytes)
 
 void load_kernel();
@@ -80,7 +80,7 @@ int boothd_read(void *buffer, size_t count, blkno_t blkno);
 
 int bootrd_read(void *buffer, size_t count, blkno_t blkno)
 {
-  memcpy(buffer, (char *) initrd + blkno * 512, count);
+  memcpy(buffer, initrd + blkno * 512, count);
   return count;
 }
 
@@ -221,9 +221,9 @@ void setup_descriptors()
   __asm { ltr tssval };
 }
 
-void copy_ramdisk(void *bootimg)
+void copy_ramdisk(char *bootimg)
 {
-  struct superblock *super = (struct superblock *) ((char *) bootimg + 512);
+  struct superblock *super = (struct superblock *) (bootimg + 512);
   
   if (!bootimg) panic("no boot image");
   if (super->signature != DFS_SIGNATURE) panic("invalid DFS signature on initial RAM disk");
@@ -234,7 +234,7 @@ void copy_ramdisk(void *bootimg)
   kprintf("%d KB boot image found\n", initrd_size / K);
 }
 
-void __stdcall start(void *hmod, int bootdrv, void *bootimg)
+void __stdcall start(void *hmod, int bootdrv, char *bootimg)
 {
   pte_t *pt;
   int i;
@@ -323,7 +323,7 @@ void __stdcall start(void *hmod, int bootdrv, void *bootimg)
   syspage->bootparams.memend = mem_end;
   syspage->bootparams.bootdrv = bootdrv;
   syspage->bootparams.bootpart = bootpart;
-  syspage->bootparams.initrd = initrd;
+  syspage->bootparams.initrd_addr = (unsigned long) initrd;
   syspage->bootparams.initrd_size = initrd_size;
   memcpy(syspage->biosdata, (void *) 0x0400, 256);
 

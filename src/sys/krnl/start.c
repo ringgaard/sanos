@@ -366,7 +366,9 @@ void main(void *arg)
   init_cdfs();
  
   // Open boot device
-  if (syspage->bootparams.bootdrv & 0x80)
+  if (syspage->bootparams.bootdrv & 0xF0)
+    sprintf(bootdev, "rd%c", '0' + (syspage->bootparams.bootdrv & 0x7F));
+  else if (syspage->bootparams.bootdrv & 0x80)
   {
     if (syspage->bootparams.bootpart == -1)
       sprintf(bootdev, "hd%c", '0' + (syspage->bootparams.bootdrv & 0x7F));
