@@ -598,11 +598,12 @@ static err_t dhcp_discover(struct dhcp_state *state)
     dhcp_option_short(state, 576);
 
 #if 0
-    dhcp_option(state, DHCP_OPTION_DHCP_PARAMETER_REQUEST_LIST, 4);
+    dhcp_option(state, DHCP_OPTION_DHCP_PARAMETER_REQUEST_LIST, 5);
     dhcp_option_byte(state, DHCP_OPTION_SUBNET_MASK);
     dhcp_option_byte(state, DHCP_OPTION_ROUTERS);
     dhcp_option_byte(state, DHCP_OPTION_BROADCAST_ADDRESS);
     dhcp_option_byte(state, DHCP_OPTION_DOMAIN_NAME_SERVERS);
+    dhcp_option_byte(state, DHCP_OPTION_DOMAIN_NAME);
 #endif
 
     dhcp_option_trailer(state);

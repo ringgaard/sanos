@@ -165,7 +165,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
       return -ENOMEM;
     }
 
-    kprintf("ether: queue %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
+    //kprintf("ether: queue %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
     return 0;
   }
 
@@ -180,7 +180,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   
   stats.link.xmit++;
 
-  kprintf("ether: xmit %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
+  //kprintf("ether: xmit %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
   return dev_transmit((devno_t) netif->state, p);
 }
 
@@ -242,7 +242,7 @@ void ether_dispatcher(void *arg)
       stats.link.recv++;
       ethhdr = p->payload;
 
-#if 1
+#if 0
       {
         char s[20];
         char d[20];
