@@ -132,6 +132,34 @@ void set_pageframe_tag(void *addr, unsigned int len, unsigned long tag)
   }
 }
 
+int memmap_proc(struct proc_file *pf, void *arg)
+{
+  struct memmap *mm = &syspage->bootparams.memmap;
+  int i;
+
+  for (i = 0; i < mm->count; i++)
+  {
+    char *type;
+
+    switch (mm->entry[i].type)
+    {
+      case MEMTYPE_RAM: type = "RAM "; break;
+      case MEMTYPE_RESERVED: type = "RESV"; break;
+      case MEMTYPE_ACPI: type = "ACPI"; break;
+      case MEMTYPE_NVS: type = "NVS "; break;
+      default: type = "MEM?"; break;
+    }
+
+    pprintf(pf, "0x%08x-0x%08x type %s %8d KB\n", 
+      (unsigned long) mm->entry[i].addr, 
+      (unsigned long) (mm->entry[i].addr + mm->entry[i].size) - 1,
+      type,
+      (unsigned long) mm->entry[i].size / 1024); 
+  }
+
+  return 0;
+}
+
 int memusage_proc(struct proc_file *pf, void *arg)
 {
   unsigned int num_memtypes = 0;
@@ -240,14 +268,17 @@ void init_pfdb()
 
   // Initialize page frame database
   maxmem = syspage->ldrparams.memend / PAGESIZE;
-  totalmem = maxmem - (1024 - 640) * K / PAGESIZE;
+  totalmem = maxmem - (1024 - 640 + 1) * K / PAGESIZE;
   freemem = 0;
 
   pfdb = (struct pageframe *) PFDBBASE;
   memset(pfdb, 0, pfdbpages * PAGESIZE);
 
-  // Add interval [0:640K] as free pages
-  for (i = 0; i < 640 * K / PAGESIZE; i++) pfdb[i].tag = 'FREE';
+  // Reserve physical page 0 for BIOS
+  pfdb[0].tag = 'RESV';
+
+  // Add interval [4K:640K] as free pages
+  for (i = 4 * K / PAGESIZE; i < 640 * K / PAGESIZE; i++) pfdb[i].tag = 'FREE';
 
   // Add interval [640K:1MB] as reserved pages
   for (i = 640 * K / PAGESIZE; i < syspage->ldrparams.heapstart / PAGESIZE; i++) pfdb[i].tag = 'RESV';

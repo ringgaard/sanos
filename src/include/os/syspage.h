@@ -94,6 +94,29 @@ struct apmparams
   unsigned short dseglen;      // APM BIOS data segment length
 };
 
+// Memory map
+
+#define MAX_MEMENTRIES    32
+
+#define MEMTYPE_RAM       1
+#define MEMTYPE_RESERVED  2
+#define MEMTYPE_ACPI      3
+#define MEMTYPE_NVS       4
+
+#pragma pack(push)
+#pragma pack(1)
+
+struct memmap
+{
+  int count;              // Number of entries in memory map
+  struct mementry
+  {
+    unsigned __int64 addr;     // Start of memory segment
+    unsigned __int64 size;     // Size of memory segment
+    unsigned long type;        // Type of memory segment
+  } entry[MAX_MEMENTRIES];
+};
+
 // Boot parameter block
 
 struct bootparams
@@ -109,7 +132,10 @@ struct bootparams
   char *bootimg;               // Physical address of boot image
   char krnlopts[KRNLOPTS_LEN]; // Kernel options (set by mkdfs)
   struct apmparams apm;        // APM BIOS parameters
+  struct memmap memmap;        // System memory map from BIOS
 };
+
+#pragma pack(pop)
 
 // Loader parameter block
 

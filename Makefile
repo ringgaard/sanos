@@ -43,7 +43,7 @@ CFLAGS=/nologo /O2 /Og /Ob1 /Oi /Ot /Oy /X /GF /Gy /W3 /I $(SRC)/include
 
 !INCLUDE $(BUILD)/sanos.dep
 
-all: tools sanos bootdisk netbootimg
+all: tools sanos bootdisk netbootimg bootcd
 
 sanos: dirs kernel drivers libc win32 utils
 

@@ -273,6 +273,7 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
   flushtlb();
 
   // Register memory management procs
+  register_proc_inode("memmap", memmap_proc, NULL);
   register_proc_inode("memusage", memusage_proc, NULL);
   register_proc_inode("memstat", memstat_proc, NULL);
   register_proc_inode("physmem", physmem_proc, NULL);
@@ -303,6 +304,7 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
     kprintf("apm: cseg16 0x%04x %d bytes\n", apm->cseg16, apm->cseg16len);
     kprintf("apm: dseg 0x%04x %d bytes\n", apm->dseg, apm->dseglen);
     kprintf("apm: entry 0x%04x\n", apm->entry);
+    kprintf("sizeof(syspage)=%d\n", sizeof(struct syspage));
   }
 
   // Enable interrupts and calibrate delay

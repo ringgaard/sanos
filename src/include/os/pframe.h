@@ -59,6 +59,7 @@ krnlapi unsigned long alloc_linear_pageframes(int pages, unsigned long tag);
 krnlapi void free_pageframe(unsigned long pfn);
 krnlapi void set_pageframe_tag(void *addr, unsigned int len, unsigned long tag);
 
+int memmap_proc(struct proc_file *pf, void *arg);
 int memusage_proc(struct proc_file *pf, void *arg);
 int memstat_proc(struct proc_file *pf, void *arg);
 int physmem_proc(struct proc_file *pf, void *arg);

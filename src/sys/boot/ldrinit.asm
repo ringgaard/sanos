@@ -38,9 +38,16 @@
 ; for the DLL.
 ;
 
-STACKTOP    equ	0xA0000
+; The os loader is loaded at the fixed address 0x90000. 
+; This allows for 62K for the loader, data area and stack.
+
 OSLDRSEG    equ 0x9000
 OSLDRBASE   equ (OSLDRSEG * 16)
+
+; Put the stack 2K below the 640K border to allow room for
+; the Extended BIOS Data Area
+
+STACKTOP    equ	0x9F800
 
 	BITS	16
 	SECTION	.text
@@ -85,6 +92,9 @@ start:
 	; Display boot message
 	mov	si, osldrmsg
 	call	print
+
+	; Try to get system memory map from BIOS
+	call	getmemmap
 
 	; Check for APM BIOS
 	call	apmbioscheck
@@ -259,6 +269,52 @@ apmdone:
 	ret
 
 ;
+; Get memory map from BIOS
+;
+
+SMAP	   equ 0x534d4150
+MAXMEMRECS equ 32
+MEMRECSIZ  equ 20
+   
+getmemmap:
+	; Get memory map using int 15 ax=0xe80
+	xor	ebx, ebx	    ; Continuation value
+	mov	di, memrecs	    ; Pointer to memmap
+
+e820loop:
+	; Get next memory map entry
+	mov	eax, 0x0000e820	    ; eax = E820
+	mov	edx, SMAP	    ; edx = ASCII 'SMAP'
+	mov	ecx, MEMRECSIZ	    ; ecx = Size of the mementry
+	push	ds		    ; es:di = Address of memory map
+	pop	es
+	int	0x15
+	jc	e820fail
+
+	cmp	eax, SMAP	    ; Check the return is `SMAP'
+	jne	e820fail
+
+	; Save new memory entry
+	mov	eax, [nrmemrecs]    ; Check for max number of memory record
+	cmp	eax, MAXMEMRECS
+	jnl	e820fail
+
+	inc	eax		    ; Move forward to next record in memory map
+	mov	[nrmemrecs], eax
+	add	di, MEMRECSIZ
+	
+	; Check for more memory records
+	cmp	ebx, 0
+	jne	e820loop
+
+	ret
+
+e820fail:
+	xor	eax, eax	    ; Reset memory map
+	mov	[nrmemrecs], eax
+	ret
+
+;
 ; Global descriptor table
 ;
 
@@ -307,7 +363,9 @@ bootparams:
 
 bootdrv	     dd	   0	    ; Boot drive
 bootimg      dd    0	    ; RAM disk image address
+
 krnlopts     times 128 db 0 ; Kernel options
+
 apmversion   dw    0	    ; APM version (BCD format)
 apmflags     dw    0	    ; APM flags from install check
 apmcseg32    dw    0	    ; APM 32-bit code segment (real mode segment base address)
@@ -317,6 +375,9 @@ apmdseg      dw    0	    ; APM data segment (real mode segment base address)
 apmcseg32len dw    0	    ; APM BIOS 32-bit code segment length
 apmcseg16len dw    0	    ; APM BIOS 16-bit code segment length
 apmdseglen   dw    0	    ; APM BIOS data segment length
+
+nrmemrecs    dd	   0	    ; System memory map
+memrecs	     times (MAXMEMRECS * MEMRECSIZ) db 0
 
 ;
 ; Strings
