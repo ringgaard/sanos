@@ -411,6 +411,8 @@ struct section;
 
 #define NSIG 32
 
+#ifndef SIGINT
+
 #define SIGINT          2               // Interrupt
 #define SIGILL          4               // Illegal instruction
 #define SIGFPE          8               // Floating point exception
@@ -420,6 +422,8 @@ struct section;
 #define SIGABRT         22              // Abnormal termination
 #define SIGBUS          23              // Bus error
 #define SIGTRAP         24              // Debug trap
+
+#endif
 
 struct context
 {
@@ -439,11 +443,18 @@ struct siginfo
   void *addr;
 };
 
-typedef void (*sighandler_t)(int signum, struct siginfo *info);
+#ifndef _SIGHANDLER_T_DEFINED
+#define _SIGHANDLER_T_DEFINED
+typedef void (*sighandler_t)(int signum);
+#endif
+
+#ifndef SIG_DFL
 
 #define SIG_DFL ((sighandler_t) 0)      // Default signal action
 #define SIG_IGN ((sighandler_t) 1)      // Ignore signal
 #define SIG_ERR ((sighandler_t) -1)     // Signal error value
+
+#endif
 
 //
 // Critical sections
@@ -844,7 +855,7 @@ struct peb
   struct in_addr ntp_server1;
   struct in_addr ntp_server2;
 
-  sighandler_t globalhandler;
+  void (*globalhandler)(int, struct siginfo *);
 };
 
 //
@@ -860,7 +871,8 @@ struct peb
 #define	MAX_HOST_ADDRS	  35
 #define HOSTBUF_SIZE      1024
 
-#define CVTBUFSIZE        (309 + 40)
+#define CVTBUFSIZE        (309 + 43)
+#define ASCBUFSIZE        (26 + 2)
 
 struct xcptrec
 {
@@ -898,6 +910,8 @@ struct tib
   handle_t out;                    // Thread specific stdout handle
   handle_t err;                    // Thread specific stderr handle
 
+  struct siginfo *cursig;          // Current signal used by getsiginfo()
+
   struct hostent host;             // Per-thread hostent buffer
   unsigned char host_addr[sizeof(struct in_addr)];
   char *h_addr_ptrs[MAX_HOST_ADDRS + 1];
@@ -907,8 +921,9 @@ struct tib
   struct tm tmbuf;                 // For gmtime() and localtime()
   char *nexttoken;                 // For strtok()
   char cvtbuf[CVTBUFSIZE];         // For ecvt() and fcvt()
+  char ascbuf[ASCBUFSIZE];         // For asctime()
 
-  char reserved1[1799];
+  char reserved1[1764];
 
   void *tls[MAX_TLS];              // Thread local storage
   char reserved2[240];
@@ -1026,7 +1041,9 @@ osapi void sleep(int millisecs);
 osapi struct tib *gettib();
 
 osapi sighandler_t signal(int signum, sighandler_t handler);
-osapi void raise(int signum, struct siginfo *info);
+osapi void raise(int signum);
+osapi void sendsig(int signum, struct siginfo *info);
+osapi struct siginfo *getsiginfo();
 
 osapi time_t time(time_t *timeptr);
 osapi int gettimeofday(struct timeval *tv);

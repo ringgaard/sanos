@@ -84,6 +84,7 @@
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				EnableIntrinsicFunctions="TRUE"
+				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories="..\src\include"
 				PreprocessorDefinitions="SHELL"
 				IgnoreStandardIncludePath="TRUE"
@@ -145,6 +146,12 @@
 		</Filter>
 		<File
 			RelativePath="..\src\utils\sh\sh.c">
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					AssemblerOutput="4"/>
+			</FileConfiguration>
 			<FileConfiguration
 				Name="SanOS|Win32">
 				<Tool

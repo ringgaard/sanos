@@ -1,11 +1,17 @@
 TODO for sanos
 --------------
 
-- errno should contain positive error code, check all uses of errno
+- Implement more complete ANSI C runtime library
+    x Modify signal() and raise to conform to ANSI standard (remove siginfo parameter)
+    - Modify io.h to call os routines (stat() and _S_IFDIR and _S_IFREG flags)
+    x Implement remaining time.h routines
+    - Add new stdio.h implementation with buffering and new output() routine
+    - Add support for O_TEXT and O_BINARY flags in read() and write()
+ 
+    - use tib for all static buffers to provide reentrant library
+    - implement _r methods for reentrant version that does not use static buffers
 
 - Keyboard locks up when pressing CAPSLOCK
-
-- Floppy driver not initialized if no floppy inserted
 
 - Return error in tcp_rexmit_seg() to signal error in retransmit (reset rtime)
 
@@ -70,10 +76,6 @@ TODO for sanos
  
 IDEAS for new features
 ----------------------
-
-- Implement more complete ANSI C runtime library
-    - use tib for all static buffers to provide reentrant library
-    - implement _r methods for reentrant version that does not use static buffers
 
 - Thread groups
 
@@ -262,3 +264,5 @@ CHANGES
 
 - Garbage returned by WSAGetLastError() because tib->err was mistakenly used instead of tib->errnum. This
   problem has been fixed.
+
+- The value of errno is now the positive version of the error number instead of the negative.

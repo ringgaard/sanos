@@ -62,11 +62,6 @@ int _finite(double x)
   return  (unsigned) ((hx & 0x7fffffff) - 0x7ff00000) >> 31;
 }
 
-void floor()
-{
-  panic("floor not implemented");
-}
-
 void _CIfmod()
 {
   panic("_CIfmod not implemented");

@@ -42,8 +42,6 @@ static long holdrand = 1L;
 #pragma function(abs)
 #pragma function(labs)
 
-int _fltused = 0x9875;
-
 int parse_args(char *args, char **argv)
 {
   char *p;

@@ -38,8 +38,12 @@
 #ifndef SIGNAL_H
 #define SIGNAL_H
 
-// TODO: libc implement
-#if 0
+#ifndef osapi
+#define osapi __declspec(dllimport)
+#endif
+
+#ifndef SIGINT
+
 #define SIGINT          1
 #define SIGILL          2
 #define SIGFPE          3
@@ -48,14 +52,22 @@
 #define SIGBREAK        6
 #define SIGABRT         7
 
-typedef void (*PFSIG)(int);
-
-#define SIG_DFL ((PFSIG)0)
-#define SIG_IGN ((PFSIG)1)
-#define SIG_ERR ((PFSIG)-1)
-
-int raise(int sig);
-PFSIG signal(int, PFSIG);
 #endif
+
+#ifndef _SIGHANDLER_T_DEFINED
+#define _SIGHANDLER_T_DEFINED
+typedef void (*sighandler_t)(int signum);
+#endif
+
+#ifndef SIG_DFL
+
+#define SIG_DFL ((sighandler_t) 0)
+#define SIG_IGN ((sighandler_t) 1)
+#define SIG_ERR ((sighandler_t) -1)
+
+#endif
+
+osapi sighandler_t signal(int signum, sighandler_t handler);
+osapi void raise(int signum);
 
 #endif

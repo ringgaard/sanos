@@ -229,13 +229,70 @@
 				RelativePath="..\src\lib\ctype.c">
 			</File>
 			<File
-				RelativePath="..\src\lib\fp.c">
+				RelativePath="..\src\lib\fcvt.c">
+			</File>
+			<File
+				RelativePath="..\src\lib\math\fpconst.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\ftol.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\lib\inifile.c">
 			</File>
 			<File
 				RelativePath="..\src\lib\moddb.c">
+			</File>
+			<File
+				RelativePath="..\src\lib\math\modf.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\lib\opts.c">

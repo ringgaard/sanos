@@ -55,21 +55,37 @@ sighandler_t signal(int signum, sighandler_t handler)
   return prev;
 }
 
-void raise(int signum, struct siginfo *info)
+void sendsig(int signum, struct siginfo *info)
 {
+  struct tib *tib;
   sighandler_t handler;
+  struct siginfo *prevsig;
+
+  tib = gettib();
+  prevsig = tib->cursig;
+  tib->cursig = info;
 
   if (signum < 0 || signum >= NSIG) return;
   handler = sighandlers[signum];
   if (handler == SIG_IGN) return;
   if (handler == SIG_DFL) dbgbreak();
-  handler(signum, info);
+  handler(signum);
+}
+
+void raise(int signum)
+{
+  sendsig(signum, NULL);
+}
+
+struct siginfo *getsiginfo()
+{
+  return gettib()->cursig;
 }
 
 void globalhandler(int signum, struct siginfo *info)
 {
   //syslog(LOG_DEBUG, "signal %d received (trap 0x%x)\n", signum, info->ctxt.traptype);
   if (sighandlers[signum] == SIG_DFL) sigexit(info, 1);
-  raise(signum, info);
+  sendsig(signum, info);
   sigexit(info, 0);
 }

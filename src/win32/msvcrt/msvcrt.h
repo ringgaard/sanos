@@ -277,12 +277,9 @@ crtapi int sscanf(const char *buffer, const char *fmt, ...);
 
 crtapi char *getenv(const char *option);
 
-crtapi void _ftol();
-//crtapi void _isnan();
 crtapi int _isnan(double x);
 crtapi double _copysign(double a, double b);
 crtapi int _finite(double x);
-crtapi void floor();
 crtapi void _CIfmod();
 crtapi unsigned int _control87(unsigned int newflags, unsigned int mask);
 crtapi unsigned int _controlfp(unsigned int newflags, unsigned int mask);
@@ -300,7 +297,6 @@ crtapi void srand(unsigned int seed);
 crtapi int rand();
 
 crtapi time_t _time(time_t *timer);
-crtapi char *asctime(const struct tm *timeptr);
 
 crtapi int *__errno();
 

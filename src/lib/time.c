@@ -250,3 +250,41 @@ time_t mktime(struct tm *tmbuf)
   if ((time_t) seconds != seconds) return (time_t) -1;
   return (time_t) seconds;
 }
+
+#ifndef KERNEL
+
+char *asctime(const struct tm *tp)
+{
+  char *ascbuf = gettib()->ascbuf;
+  strftime(ascbuf, ASCBUFSIZE, "%c\n", tp);
+  return ascbuf;
+}
+
+char *ctime(const time_t *tp)
+{
+  return asctime(localtime(tp));
+}
+
+char *_strdate(char *s)
+{
+  time_t now;
+
+  time(&now);
+  strftime(s, 9, "%D", localtime(&now));
+  return s;
+}
+
+char *_strtime(char *s)
+{
+  time_t now;
+
+  time(&now);
+  strftime(s, 9, "%T", localtime(&now));
+  return s;
+}
+
+void _tzset()
+{
+}
+
+#endif

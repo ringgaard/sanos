@@ -206,6 +206,485 @@
 				</File>
 			</Filter>
 		</Filter>
+		<Filter
+			Name="math"
+			Filter="">
+			<File
+				RelativePath="..\src\lib\math\acos.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\asin.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\atan.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\atan2.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\ceil.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\cos.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\cosh.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\exp.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\fabs.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\floor.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\fmod.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\fpconst.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\fpreset.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\frexp.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\ftol.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\ldexp.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\log.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\log10.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\modf.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\pow.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\sin.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\sinh.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\sqrt.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\tan.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\tanh.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+		</Filter>
 		<File
 			RelativePath="..\src\lib\assert.c">
 		</File>
@@ -247,7 +726,7 @@
 			RelativePath="..\src\lib\entry.cpp">
 		</File>
 		<File
-			RelativePath="..\src\lib\fp.c">
+			RelativePath="..\src\lib\fcvt.c">
 		</File>
 		<File
 			RelativePath="..\src\lib\hash.c">

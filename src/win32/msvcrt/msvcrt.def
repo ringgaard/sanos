@@ -62,3 +62,6 @@ EXPORTS
   signal=crt_signal
   raise=crt_raise
   _errno=__errno
+  floor
+  _ftol
+  asctime

@@ -93,7 +93,7 @@ static struct arp_entry arp_table[ARP_TABLE_SIZE];
 static struct xmit_queue_entry xmit_queue_table[ARP_XMIT_QUEUE_SIZE];
 
 struct timer arp_timer;
-int ctime;
+int arp_ctime;
 
 static int arp_proc(struct proc_file *pf, void *arg)
 {
@@ -114,10 +114,10 @@ static void arp_tmr(void *arg)
 {
   int i;
   
-  ctime++;
+  arp_ctime++;
   for (i = 0; i < ARP_TABLE_SIZE; ++i)
   {
-    if (!ip_addr_isany(&arp_table[i].ipaddr) && ctime - arp_table[i].ctime >= ARP_MAXAGE) 
+    if (!ip_addr_isany(&arp_table[i].ipaddr) && arp_ctime - arp_table[i].ctime >= ARP_MAXAGE) 
     {
       //kprintf("arp: expired entry %d\n", i);
       ip_addr_set(&arp_table[i].ipaddr, IP_ADDR_ANY);
@@ -172,7 +172,7 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
       {
 	// An old entry found, update this and return.
 	for (k = 0; k < 6; ++k) arp_table[i].ethaddr.addr[k] = ethaddr->addr[k];
-	arp_table[i].ctime = ctime;
+	arp_table[i].ctime = arp_ctime;
 	return;
       }
     }
@@ -192,9 +192,9 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
     j = 0;
     for (i = 0; i < ARP_TABLE_SIZE; ++i)
     {
-      if(ctime - arp_table[i].ctime > maxtime) 
+      if (arp_ctime - arp_table[i].ctime > maxtime) 
       {
-	maxtime = ctime - arp_table[i].ctime;
+	maxtime = arp_ctime - arp_table[i].ctime;
 	j = i;
       }
     }
@@ -204,7 +204,7 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
   // Now, i is the ARP table entry which we will fill with the new information.
   ip_addr_set(&arp_table[i].ipaddr, ipaddr);
   for(k = 0; k < 6; k++) arp_table[i].ethaddr.addr[k] = ethaddr->addr[k];
-  arp_table[i].ctime = ctime;
+  arp_table[i].ctime = arp_ctime;
 
   // Check for delayed transmissions
   for (i = 0; i < ARP_XMIT_QUEUE_SIZE; i++)

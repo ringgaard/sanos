@@ -169,17 +169,17 @@ static char *_fmt(const char *format, const struct tm *t, char *pt, const char *
 	  continue;
 
 	case 's':
-	  {
-	    struct tm  tm;
-	    char buf[32];
-	    time_t mkt;
+	{
+	  struct tm  tm;
+	  char buf[32];
+	  time_t mkt;
 
-	    tm = *t;
-	    mkt = mktime(&tm);
-	    sprintf(buf, "%lu", mkt);
-	    pt = _add(buf, pt, ptlim);
-	  }
-	  continue;
+	  tm = *t;
+	  mkt = mktime(&tm);
+	  sprintf(buf, "%lu", mkt);
+	  pt = _add(buf, pt, ptlim);
+  	  continue;
+	}
 
 	case 'T':
 	  pt = _fmt("%H:%M:%S", t, pt, ptlim);
@@ -200,48 +200,49 @@ static char *_fmt(const char *format, const struct tm *t, char *pt, const char *
 	case 'V':  // ISO 8601 week number
 	case 'G':  // ISO 8601 year (four digits)
 	case 'g':  // ISO 8601 year (two digits)
-  	  {
-	    int  year;
-	    int  yday;
-	    int  wday;
-	    int  w;
+  	{
+	  int  year;
+	  int  yday;
+	  int  wday;
+	  int  w;
 
-	    year = t->tm_year + TM_YEAR_BASE;
-	    yday = t->tm_yday;
-	    wday = t->tm_wday;
-	    while (1) 
+	  year = t->tm_year + TM_YEAR_BASE;
+	  yday = t->tm_yday;
+	  wday = t->tm_wday;
+	  while (1) 
+	  {
+	    int  len;
+	    int  bot;
+	    int  top;
+
+	    len = LEAPYEAR(year) ? DAYSPERLYEAR : DAYSPERNYEAR;
+	    bot = ((yday + 11 - wday) % DAYSPERWEEK) - 3;
+	    top = bot - (len % DAYSPERWEEK);
+	    if (top < -3) top += DAYSPERWEEK;
+	    top += len;
+	    if (yday >= top) 
 	    {
-	      int  len;
-	      int  bot;
-	      int  top;
-
-	      len = LEAPYEAR(year) ? DAYSPERLYEAR : DAYSPERNYEAR;
-	      bot = ((yday + 11 - wday) % DAYSPERWEEK) - 3;
-	      top = bot - (len % DAYSPERWEEK);
-	      if (top < -3) top += DAYSPERWEEK;
-	      top += len;
-	      if (yday >= top) 
-	      {
-		++year;
-		w = 1;
-		break;
-	      }
-	      if (yday >= bot) 
-	      {
-		w = 1 + ((yday - bot) / DAYSPERWEEK);
-		break;
-	      }
-	      --year;
-	      yday += LEAPYEAR(year) ? DAYSPERLYEAR : DAYSPERNYEAR;
+	      ++year;
+	      w = 1;
+	      break;
 	    }
-	    if (*format == 'V')
-	      pt = _conv(w, "%02d", pt, ptlim);
-	    else if (*format == 'g') 
-	      pt = _conv(year % 100, "%02d", pt, ptlim);
-	    else  
-	      pt = _conv(year, "%04d", pt, ptlim);
+	    if (yday >= bot) 
+	    {
+	      w = 1 + ((yday - bot) / DAYSPERWEEK);
+	      break;
+	    }
+	    --year;
+	    yday += LEAPYEAR(year) ? DAYSPERLYEAR : DAYSPERNYEAR;
 	  }
-	  continue;
+	  if (*format == 'V')
+	    pt = _conv(w, "%02d", pt, ptlim);
+	  else if (*format == 'g') 
+	    pt = _conv(year % 100, "%02d", pt, ptlim);
+	  else  
+	    pt = _conv(year, "%04d", pt, ptlim);
+
+          continue;
+	}
 
 	case 'v':
 	  pt = _fmt("%e-%b-%Y", t, pt, ptlim);
@@ -276,22 +277,23 @@ static char *_fmt(const char *format, const struct tm *t, char *pt, const char *
 	  continue;
 
 	case 'z':
+	{
+	  long absoff;
+	  if (_timezone >= 0) 
 	  {
-	    long absoff;
-	    if (_timezone >= 0) 
-	    {
-	      absoff = _timezone;
-	      pt = _add("+", pt, ptlim);
-	    } 
-	    else 
-	    {
-	      absoff = _timezone;
-	      pt = _add("-", pt, ptlim);
-	    }
-	    pt = _conv(absoff / 3600, "%02d", pt, ptlim);
-	    pt = _conv((absoff % 3600) / 60, "%02d", pt, ptlim);
+	    absoff = _timezone;
+	    pt = _add("+", pt, ptlim);
+	  } 
+	  else 
+	  {
+	    absoff = _timezone;
+	    pt = _add("-", pt, ptlim);
 	  }
+	  pt = _conv(absoff / 3600, "%02d", pt, ptlim);
+	  pt = _conv((absoff % 3600) / 60, "%02d", pt, ptlim);
+
 	  continue;
+	}
 
 	case '+':
 	  pt = _fmt("%a, %d %b %Y %H:%M:%S %z", t, pt, ptlim);

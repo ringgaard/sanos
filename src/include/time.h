@@ -38,6 +38,10 @@
 #ifndef TIME_H
 #define TIME_H
 
+#ifndef osapi
+#define osapi __declspec(dllimport)
+#endif
+
 #ifndef NULL
 #define NULL ((void *) 0)
 #endif
@@ -99,7 +103,6 @@ struct timezone
 
 #endif
 
-// TODO: libc implement
 extern int _daylight;     // Non-zero if daylight savings time is used
 extern long _dstbias;     // Offset for Daylight Saving Time
 extern long _timezone;    // difference in seconds between GMT and local time
@@ -117,20 +120,14 @@ time_t mktime(struct tm *tmbuf);
 
 size_t strftime(char *s, size_t maxsize, const char *format, const struct tm *t);
 
-#if 0
-// TODO: libc implement
-clock_t clock(void);
-time_t mktime(struct tm *tp);
-time_t time(time_t *tp);
+osapi clock_t clock();
+osapi time_t time(time_t *timeptr);
+
 char *asctime(const struct tm *tp);
 char *ctime(const time_t *tp);
-struct tm *gmtime(const time_t *tp);
-struct tm *localtime(const time_t *tp);
-size_t strftime(char *string, size_t smax, const char *fmt, const struct tm *tp);
-char *_strdate(char *string);
-char *_strtime(char *string);
-void _tzset(void);
-#endif
+char *_strdate(char *s);
+char *_strtime(char *s);
+void _tzset();
 
 #endif
 

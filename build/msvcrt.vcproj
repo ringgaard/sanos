@@ -171,7 +171,7 @@
 				RelativePath="..\src\lib\ctype.c">
 			</File>
 			<File
-				RelativePath="..\src\lib\fp.c">
+				RelativePath="..\src\lib\fcvt.c">
 			</File>
 			<File
 				RelativePath="..\src\lib\inifile.c">
@@ -181,6 +181,9 @@
 			</File>
 			<File
 				RelativePath="..\src\lib\setjmp.c">
+			</File>
+			<File
+				RelativePath="..\src\lib\strftime.c">
 			</File>
 			<File
 				RelativePath="..\src\lib\string.c">
@@ -205,7 +208,70 @@
 			RelativePath="..\src\win32\msvcrt\float.c">
 		</File>
 		<File
+			RelativePath="..\src\lib\math\floor.asm">
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\src\lib\math\ftol.asm">
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+		</File>
+		<File
 			RelativePath="..\src\win32\msvcrt\malloc.c">
+		</File>
+		<File
+			RelativePath="..\src\lib\math\modf.asm">
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="..\src\win32\msvcrt\msvcrt.c">

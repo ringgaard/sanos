@@ -240,13 +240,6 @@ time_t _time(time_t *timer)
   return t;
 }
 
-char *asctime(const struct tm *timeptr)
-{
-  TRACE("asctime");
-  panic("asctime not implemented");
-  return NULL;
-}
-
 int printf(const char *fmt, ...)
 {
   va_list args;

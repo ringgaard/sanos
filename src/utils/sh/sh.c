@@ -37,6 +37,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 #include <os/version.h>
 
 #include <inifile.h>
@@ -1371,17 +1372,34 @@ static void nop()
   printf("syscall(0,0) with sysenter: min/avg/max %d/%d/%d cycles\n", min, sum / 1000, max);
 }
 
-static void divtesthandler(int signum, struct siginfo *info)
+static void divtesthandler(int signum)
 {
+  struct siginfo *info = getsiginfo();
+
   printf("in handler\n");
   info->ctxt.ecx = 10;
 }
 
-static void test(int argc, char **argv)
+static void divtest(int argc, char **argv)
 {
   signal(SIGFPE, divtesthandler);
   printf("100/0=%d\n", 100 / atoi(argv[1]));
   signal(SIGFPE, SIG_DFL);
+}
+
+static void test(int argc, char **argv)
+{
+  double x = atof(argv[1]);
+  double a, b;
+
+  a = modf(x, &b);
+  printf("modf(%f) = (%f,%f)\n", x, a, b);
+
+  //printf("sin(%g)=%g\n", x, sin(x));
+  //printf("cos(%g)=%g\n", x, cos(x));
+  //printf("log(%g)=%g\n", x, log(x));
+  //printf("exp(%g)=%g\n", x, exp(x));
+  //printf("sin*sin+cos*cos=%g\n", sin(x) * sin(x) + cos(x) * cos(x));
 }
 
 static void set_kprint(int enabled)
@@ -1667,8 +1685,13 @@ void __stdcall telnetd(void *arg)
 
 int main(int argc, char *argv[])
 {
+  if (sizeof(struct tib) != PAGESIZE) printf("warning: tib is %d bytes (%d expected)\n", sizeof(struct tib), PAGESIZE);
+
   //beginthread(ttyd, 0, "/dev/com4", 0, NULL);
+
   if (peb->ipaddr.s_addr != INADDR_ANY) beginthread(telnetd, 0, NULL, 0, NULL);
+
   shell();
+
   return 0;
 }
