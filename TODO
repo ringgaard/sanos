@@ -1,6 +1,8 @@
 TODO for sanos
 --------------
 
+- Keyboard locks up when pressing CAPSLOCK
+
 - Floppy driver not initialized if no floppy inserted
 
 - Return error in tcp_rexmit_seg() to signal error in retransmit (reset rtime)
