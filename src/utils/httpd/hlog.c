@@ -118,7 +118,7 @@ int write_log(struct httpd_server *server, char *data, int len, struct tm *tm)
       write(server->logfd, logfieldnames[server->logcoumns[n]], strlen(logfieldnames[server->logcoumns[n]]));
     }
     write(server->logfd, "\r\n", 2);
-    sprintf(buf, "#Date: %04d-%02d-%02 %02:%02:%02\r\n", year, mon, day, tm->tm_hour, tm->tm_min, tm->tm_sec);
+    sprintf(buf, "#Date: %04d-%02d-%02d %02d:%02d:%02d\r\n", year, mon, day, tm->tm_hour, tm->tm_min, tm->tm_sec);
     write(server->logfd, buf, strlen(buf));
 
     server->logyear = year;
