@@ -197,8 +197,8 @@ struct servent services[] =
   {"https",            salias + 55,  443, "udp"},
   {"microsoft-ds",     salias,       445, "tcp"},
   {"microsoft-ds",     salias,       445, "udp"},
-  {"kpasswd",          salias,       464, "tcp"},  //  Kerberos (v5)
-  {"kpasswd",          salias,       464, "udp"},  //  Kerberos (v5)
+  {"kpasswd",          salias,       464, "tcp"},  // Kerberos (v5)
+  {"kpasswd",          salias,       464, "udp"},  // Kerberos (v5)
   {"isakmp",           salias + 57,  500, "udp"},  // Internet Key Exchange
   {"exec",             salias,       512, "tcp"},  // Remote Process Execution
   {"biff",             salias + 59,  512, "udp"},

@@ -424,7 +424,7 @@ int main(int argc, char *argv[])
 
   // Read master boot record
   rc = read_mbr();
-  if (rc < 0 && errno != -EINVAL)
+  if (rc < 0 && errno != EINVAL)
   {
     printf("%s: error %d reading master boot record\n", devname, errno);
     close(hdev);

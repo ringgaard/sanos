@@ -610,3 +610,9 @@ CHANGES
 - Fixed bug in password encoding for smbfs
 
 - Added new API routines to wsock32 and kernel32 to better support nio
+
+- Added /proc/screen to capture the contents of the console screen buffer
+
+- Script execution at startup and exec command in shell
+
+- Hostname can now be queried using DNS

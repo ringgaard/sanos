@@ -46,10 +46,13 @@
 #include <httpd.h>
 
 int telnetd_started = 0;
+int initcmds_executed = 0;
 
 #define BUFSIZE 4096
 
 int cmd_ping(int argc, char *argv[]);
+
+int execute_script(char *cmdfile);
 
 typedef int (*cmdproc_t)(int argc, char *argv[]);
 
@@ -384,6 +387,20 @@ int cmd_df(int argc, char *argv[])
 
   free(buf);
   return 0;
+}
+
+int cmd_exec(int argc, char *argv[])
+{
+  char *filename;
+
+  if (argc != 2)
+  {
+    printf("usage: dump <file>\n");
+    return -EINVAL;
+  }
+  
+  filename = argv[1];
+  return execute_script(filename);
 }
 
 int cmd_dump(int argc, char *argv[])
@@ -1344,6 +1361,64 @@ int cmd_write(int argc, char *argv[])
   return 0;
 }
 
+struct command cmdtab[] =
+{
+  {"?",        cmd_help,     "This help"},
+  {"beep",     cmd_beep,     "Play beep in speaker"},
+  {"break",    cmd_break,    "Debug breakpoint"},
+  {"cat",      cmd_cat,      "Display file"},
+  {"cd",       cmd_chdir,    "Change current directory"},
+  {"chdir",    cmd_chdir,    "Change current directory"},
+  {"copy",     cmd_cp,       "Copy file"},
+  {"cls",      cmd_cls,      "Clear screen"},
+  {"cp",       cmd_cp,       "Copy file"},
+  {"date",     cmd_date,     "Display date"},
+  {"del",      cmd_rm,       "Delete file"},
+  {"df",       cmd_df,       "Display file system usage"},
+  {"dir",      cmd_ls,       "List directory"},
+  {"dump",     cmd_dump,     "Display file in hex format"},
+  {"exec",     cmd_exec,     "Execute shell script"},
+  {"exit",     NULL,         "Exit shell"},
+  {"grabcon",  cmd_grabcon,  "Grab the main console file descriptors"},
+  {"ifconfig", cmd_ifconfig, "Display network interface configuration"},
+  {"ipconfig", cmd_ifconfig, "Display network interface configuration"},
+  {"heapstat", cmd_heapstat, "Display heap statistics"},
+  {"help",     cmd_help,     "This help"},
+  {"httpget",  cmd_httpget,  "Retrieve file via http"},
+  {"jobs",     cmd_jobs,     "Display job list"},
+  {"kbd",      cmd_kbd,      "Keyboard test"},
+  {"kill",     cmd_kill,     "Send signal"},
+  {"klog",     cmd_klog,     "Enable/disable kernel log messages"},
+  {"less",     cmd_more,     "Display file paginated"},
+  {"load",     cmd_load,     "Load module"},
+  {"loglevel", cmd_loglevel, "Set syslog tracing mask and level"},
+  {"lookup",   cmd_nslookup, "Lookup hostname or IP address using DNS"},
+  {"ls",       cmd_ls,       "List directory"},
+  {"md",       cmd_mkdir,    "Make new directory"},
+  {"mkdir",    cmd_mkdir,    "Make new directory"},
+  {"mkfs",     cmd_mkfs,     "Format device for new file system"},
+  {"more",     cmd_more,     "Display file paginated"},
+  {"mount",    cmd_mount,    "Mount file system"},
+  {"move",     cmd_mv,       "Move file"},
+  {"mv",       cmd_mv,       "Move file"},
+  {"nslookup", cmd_nslookup, "Lookup hostname or IP address using DNS"},
+  {"ping",     cmd_ping,     "Send ICMP echo request to network host"},
+  {"play",     cmd_play,     "Play RTTTL file in speaker"},
+  {"read",     cmd_read,     "Read file from disk"},
+  {"reboot",   cmd_reboot,   "Reboot computer"},
+  {"rm",       cmd_rm,       "Delete file"},
+  {"rd",       cmd_rmdir,    "Remove directory"},
+  {"rmdir",    cmd_rmdir,    "Remove directory"},
+  {"sound",    cmd_sound,    "Play sound in speaker"},
+  {"sysinfo",  cmd_sysinfo,  "Display system info"},
+  {"test",     cmd_test,     "Dummy command for misc. tests"},
+  {"type",     cmd_cat,      "Display file"},
+  {"uname",    cmd_uname,    "Print system information"},
+  {"umount",   cmd_umount,   "Unmount file system"},
+  {"write",    cmd_write,    "Write zero filled file to disk"},
+  {NULL, NULL, NULL}
+};
+
 static void exec_program(char *args)
 {
   char pgm[MAXPATH];
@@ -1395,7 +1470,7 @@ static void launch_program(char *args)
   if (!dotseen && strlen(pgm) + 5 < MAXPATH) strcat(pgm, ".exe");
 
   h = spawn(P_NOWAIT, pgm, args, NULL);
-  if (h < 0) 
+  if (h < 0)
     printf("%s: %s\n", pgm, strerror(errno));
   else
   {
@@ -1404,101 +1479,80 @@ static void launch_program(char *args)
   }
 }
 
-struct command cmdtab[] =
+static int exec_command(char *cmdline)
 {
-  {"?",        cmd_help,     "This help"},
-  {"beep",     cmd_beep,     "Play beep in speaker"},
-  {"break",    cmd_break,    "Debug breakpoint"},
-  {"cat",      cmd_cat,      "Display file"},
-  {"cd",       cmd_chdir,    "Change current directory"},
-  {"chdir",    cmd_chdir,    "Change current directory"},
-  {"copy",     cmd_cp,       "Copy file"},
-  {"cls",      cmd_cls,      "Clear screen"},
-  {"cp",       cmd_cp,       "Copy file"},
-  {"date",     cmd_date,     "Display date"},
-  {"del",      cmd_rm,       "Delete file"},
-  {"df",       cmd_df,       "Display file system usage"},
-  {"dir",      cmd_ls,       "List directory"},
-  {"dump",     cmd_dump,     "Display file in hex format"},
-  {"exit",     NULL,         "Exit shell"},
-  {"grabcon",  cmd_grabcon,  "Grab the main console file descriptors"},
-  {"ifconfig", cmd_ifconfig, "Display network interface configuration"},
-  {"ipconfig", cmd_ifconfig, "Display network interface configuration"},
-  {"heapstat", cmd_heapstat, "Display heap statistics"},
-  {"help",     cmd_help,     "This help"},
-  {"httpget",  cmd_httpget,  "Retrieve file via http"},
-  {"jobs",     cmd_jobs,     "Display job list"},
-  {"kbd",      cmd_kbd,      "Keyboard test"},
-  {"kill",     cmd_kill,     "Send signal"},
-  {"klog",     cmd_klog,     "Enable/disable kernel log messages"},
-  {"less",     cmd_more,     "Display file paginated"},
-  {"load",     cmd_load,     "Load module"},
-  {"loglevel", cmd_loglevel, "Set syslog tracing mask and level"},
-  {"lookup",   cmd_nslookup, "Lookup hostname or IP address using DNS"},
-  {"ls",       cmd_ls,       "List directory"},
-  {"md",       cmd_mkdir,    "Make new directory"},
-  {"mkdir",    cmd_mkdir,    "Make new directory"},
-  {"mkfs",     cmd_mkfs,     "Format device for new file system"},
-  {"more",     cmd_more,     "Display file paginated"},
-  {"mount",    cmd_mount,    "Mount file system"},
-  {"move",     cmd_mv,       "Move file"},
-  {"mv",       cmd_mv,       "Move file"},
-  {"nslookup", cmd_nslookup, "Lookup hostname or IP address using DNS"},
-  {"ping",     cmd_ping,     "Send ICMP echo request to network host"},
-  {"play",     cmd_play,     "Play RTTTL file in speaker"},
-  {"read",     cmd_read,     "Read file from disk"},
-  {"reboot",   cmd_reboot,   "Reboot computer"},
-  {"rm",       cmd_rm,       "Delete file"},
-  {"rd",       cmd_rmdir,    "Remove directory"},
-  {"rmdir",    cmd_rmdir,    "Remove directory"},
-  {"sound",    cmd_sound,    "Play sound in speaker"},
-  {"sysinfo",  cmd_sysinfo,  "Display system info"},
-  {"test",     cmd_test,     "Dummy command for misc. tests"},
-  {"type",     cmd_cat,      "Display file"},
-  {"uname",    cmd_uname,    "Print system information"},
-  {"umount",   cmd_umount,   "Unmount file system"},
-  {"write",    cmd_write,    "Write zero filled file to disk"},
-  {NULL, NULL, NULL}
-};
+  int argc;
+  char **argv;
+  struct command *command;
+
+  argc = parse_args(cmdline, NULL);
+  if (!argc) return 0;
+
+  argv = (char **) malloc(argc * sizeof(char *));
+  parse_args(cmdline, argv);
+
+  for (command = cmdtab; command->cmdname; command++)
+    if (strcmp(argv[0], command->cmdname) == 0) break;
+
+  if (command->cmdname)
+  {
+    if (!command->proc) 
+    {
+      free_args(argc, argv);
+      return -ENOSYS;
+    }
+    command->proc(argc, argv);
+  }
+  else if (strcmp(argv[0], "start") == 0)
+    launch_program(cmdline);
+  else
+    exec_program(cmdline);
+
+  free_args(argc, argv);
+  return 0;
+}
 
 void shell()
 {
   char curdir[MAXPATH];
   char cmdline[256];
-  int argc;
-  char **argv;
-  struct command *command;
 
   while (1)
   {
     printf("%s$ ", getcwd(curdir, sizeof curdir));
     if (readline(fdin, cmdline, sizeof cmdline) < 0) break;
-
-    argc = parse_args(cmdline, NULL);
-    if (!argc) continue;
-
-    argv = (char **) malloc(argc * sizeof(char *));
-    parse_args(cmdline, argv);
-
-    for (command = cmdtab; command->cmdname; command++)
-      if (strcmp(argv[0], command->cmdname) == 0) break;
-
-    if (command->cmdname)
-    {
-      if (!command->proc) 
-      {
-	free_args(argc, argv);
-	break;
-      }
-      command->proc(argc, argv);
-    }
-    else if (strcmp(argv[0], "start") == 0)
-      launch_program(cmdline);
-    else
-      exec_program(cmdline);
-
-    free_args(argc, argv);
+    if (exec_command(cmdline) < 0) break;
   }
+}
+
+int execute_script(char *cmdfile)
+{
+  FILE *f;
+  char cmdline[256];
+  int echo;
+
+  echo = get_numeric_property(osconfig, "shell", "echo", 0);
+
+  f = fopen(cmdfile, "r");
+  if (!f)
+  {
+    perror(cmdfile);
+    return -errno;
+  }
+
+  while (fgets(cmdline, 256, f))
+  {
+    if (*cmdline == ';' || *cmdline == '#') continue;
+    if (echo) write(fdout, cmdline, strlen(cmdline));
+
+    if (strchr(cmdline, '\r')) *strchr(cmdline, '\r') = 0;
+    if (strchr(cmdline, '\n')) *strchr(cmdline, '\n') = 0;
+
+    if (exec_command(cmdline) < 0) break;
+  }
+
+  fclose(f);
+  return 0;
 }
 
 void redirect(handle_t h, int termtype)
@@ -1621,6 +1675,8 @@ void __stdcall telnetd(void *arg)
 
 int main(int argc, char *argv[])
 {
+  char *initcmds;
+
   if (sizeof(struct tib) != PAGESIZE) printf("warning: tib is %d bytes (%d expected)\n", sizeof(struct tib), PAGESIZE);
 
   if (peb->ipaddr.s_addr != INADDR_ANY) 
@@ -1630,6 +1686,13 @@ int main(int argc, char *argv[])
       beginthread(telnetd, 0, NULL, 0, NULL);
       telnetd_started = 1;
     }
+  }
+
+  initcmds = get_property(osconfig, "shell", "initcmds", NULL);
+  if (initcmds && !initcmds_executed)
+  {
+    execute_script(initcmds);
+    initcmds_executed = 1;
   }
 
   shell();

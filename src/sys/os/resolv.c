@@ -665,7 +665,6 @@ int res_init()
   }
 
   res.dnsrch[0] = res.defdname;
-
   return 0;
 }
 

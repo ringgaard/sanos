@@ -1,5 +1,5 @@
 //
-// tcp_output.c
+// tcp_input.c
 //
 // Transmission Control Protocol (TCP)
 //
@@ -206,7 +206,7 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
       {
 	if (pcb->flags & TF_RESET) 
 	{
-	  if (pcb->errf != NULL)  pcb->errf(pcb->callback_arg, -ERST);
+	  if (pcb->errf != NULL) pcb->errf(pcb->callback_arg, -ERST);
 
 	  if (pcb->state == TIME_WAIT) 
 	    tcp_pcb_remove(&tcp_tw_pcbs, pcb);

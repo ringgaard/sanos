@@ -45,5 +45,6 @@ void hide_cursor();
 void set_cursor(int col, int line);
 
 void clear_screen();
+int screen_proc(struct proc_file *pf, void *arg);
 
 #endif

@@ -762,6 +762,47 @@ void init_net()
   close(sock);
 }
 
+void init_hostname()
+{
+  struct hostent *hp;
+  char *dot;
+  int len;
+
+  // Get hostname and domain from os config
+  if (!*peb->hostname)
+  {
+    char *host = get_property(osconfig, "os", "hostname", NULL);
+    if (host) strcpy(peb->hostname, host);
+  }
+
+  if (!*peb->default_domain)
+  {
+    char *domain = get_property(osconfig, "dns", "domain", NULL);
+    if (domain) strcpy(peb->default_domain, domain);
+  }
+
+  // Check for hostname already set by configuration or DHCP
+  if (*peb->hostname) return;
+
+  // Check for any IP address configured
+  if (peb->ipaddr.s_addr == INADDR_ANY) return;
+
+  // Try to lookup hostname from the ip address using DNS
+  hp = gethostbyaddr((char *) &peb->ipaddr, sizeof(struct in_addr), AF_INET);
+  if (!hp || !hp->h_name || !*hp->h_name) return;
+
+  // Check that domain name matches
+  dot = strchr(hp->h_name, '.');
+  if (!dot) return;
+  if (strcmp(dot + 1, peb->default_domain) != 0) return;
+
+  // Copy hostname from DNS to PEB
+  len = dot - hp->h_name;
+  if (len >= sizeof(peb->hostname)) return;
+  memcpy(peb->hostname, hp->h_name, len);
+  peb->hostname[len] = 0;
+}
+
 void init_mount()
 {
   struct section *sect;
@@ -895,6 +936,9 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 
   // Initialize resolver
   res_init();
+
+  // Determine hostname
+  init_hostname();
 
   // Initialize NTP daemon
   init_sntpd();

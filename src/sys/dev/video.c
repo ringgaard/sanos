@@ -461,3 +461,23 @@ void clear_screen()
   cursor_pos = 0;
   show_cursor();
 }
+
+int screen_proc(struct proc_file *pf, void *arg)
+{
+  int i, j;
+  unsigned char *p;
+
+  // Dump screen to proc files
+  p = (unsigned char *) vidmem;
+  for (i = 0; i < LINES; i++)
+  {
+    for (j = 0; j < COLS; j++) 
+    {
+      proc_write(pf, p, 1);
+      p += 2;
+    }
+    proc_write(pf, "\r\n", 2);
+  }
+
+  return 0;
+}

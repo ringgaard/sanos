@@ -304,6 +304,7 @@ int __declspec(dllexport) console(struct unit *unit, char *opts)
   dev_make("console", &console_driver, NULL, NULL);
   dev_make("syslog", &syslog_driver, NULL, NULL);
   consdev = dev_open("console");
+  register_proc_inode("screen", screen_proc, NULL);
 
   return 0;
 }
