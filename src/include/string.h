@@ -15,6 +15,8 @@ int stricmp(const char *s1, const char *s2);
 int vsprintf(char *buf, const char *fmt, va_list args);
 int sprintf(char *buf, const char *fmt, ...);
 
+void *memmove(void *dst, const void *src, size_t count);
+
 // Intrinsic functions
 
 void *memcpy(void *, const void *, size_t);

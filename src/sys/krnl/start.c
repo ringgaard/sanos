@@ -173,6 +173,7 @@ void main(void *arg)
   unsigned long stack_reserve;
   unsigned long stack_commit;
   struct image_header *imghdr;
+  struct peb *peb;
 
   char bootdevname[8];
   int rc;
@@ -234,6 +235,11 @@ void main(void *arg)
   if (halloc(&stdin->object) != 0) panic("unexpected stdin handle");
   if (halloc(&stdout->object) != 1) panic("unexpected stdout handle");
   if (halloc(&stderr->object) != 2) panic("unexpected stderr handle");
+
+  // Allocate and initialize PEB
+  peb = mmap((void *) PEB_ADDRESS, PAGESIZE, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+  if (!peb) panic("unable to allocate PEB");
+  memset(peb, 0, PAGESIZE);
 
   // Load os.dll in user address space
   imgbase = load_image_file("/os/os.dll", 1);

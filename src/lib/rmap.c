@@ -52,7 +52,7 @@ static int makespace(struct rmap *rmap, struct rmap *r)
   // If inserting in middle, slide up entries
   if (r <= rlim) 
   {
-    memcpy(r + 1, r, sizeof(struct rmap) * ((rlim - r) + 1));
+    memmove(r + 1, r, sizeof(struct rmap) * ((rlim - r) + 1));
     return 0;
   }
 
@@ -68,7 +68,7 @@ static void collapse(struct rmap *rmap, struct rmap *r)
   struct rmap *rlim = &rmap[rmap->offset];
 
   rmap->offset -= 1;
-  if (r < rlim) memcpy(r, r + 1, sizeof(struct rmap) * (rlim - r));
+  if (r < rlim) memmove(r, r + 1, sizeof(struct rmap) * (rlim - r));
 }
 
 //
@@ -167,7 +167,7 @@ void rmap_free(struct rmap *rmap, unsigned int offset, unsigned int size)
 	r->size += r[1].size;
 	rmap->offset -= 1;
 	r++;
-	if (r < rlim) memcpy(r, r + 1, sizeof(struct rmap) * (rlim - r));
+	if (r < rlim) memmove(r, r + 1, sizeof(struct rmap) * (rlim - r));
       }
 
       return;

@@ -29,6 +29,8 @@
 #define krnlapi __declspec(dllimport)
 #endif
 
+struct section;
+
 //#define TRACEAPI
 
 //
@@ -313,6 +315,17 @@ struct critsect
 typedef struct critsect *critsect_t;
 
 //
+// Process Environment Block
+//
+
+#define PEB_ADDRESS 0x7FFDF000
+
+struct peb
+{
+  struct moddb *usermods;
+};
+
+//
 // Thread Information Block
 //
 
@@ -467,9 +480,8 @@ osapi void tlsfree(tls_t index);
 osapi void *tlsget(tls_t index);
 osapi void tlsset(tls_t index, void *value);
 
-struct section;
 osapi extern struct section *config;
-
+osapi extern struct peb *peb;
 osapi extern unsigned long loglevel;
 
 #endif

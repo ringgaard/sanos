@@ -22,6 +22,7 @@ struct critsect heap_lock;
 struct critsect mod_lock;
 struct section *config;
 struct moddb usermods;
+struct peb *peb;
 
 unsigned long loglevel = LOG_DEBUG | LOG_APITRACE | LOG_AUX;
 int logfile = -1;
@@ -269,6 +270,9 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
     mov	es, ax
   }
 
+  // Setup pointer to process environment block (PEB)
+  peb = (struct peb *) PEB_ADDRESS;
+
   // Initialize heap and module locks
   mkcs(&heap_lock);
   mkcs(&mod_lock);
@@ -290,6 +294,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   }
 
   // Initialize user module database
+  peb->usermods = &usermods;
   usermods.load_image = load_image;
   usermods.unload_image = unload_image;
   usermods.protect_region = protect_region;

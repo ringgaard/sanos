@@ -136,13 +136,14 @@ void dumpregs(struct context *ctxt)
   kprintf("EIP  = %08X EFLG = %08X TRAP = %08X ERR  = %08X\n", ctxt->eip, ctxt->eflags, ctxt->traptype, ctxt->errcode);
 }
 
+void shell();
+
 void dbg_enter(struct context *ctxt, void *addr)
 {
-  kprintf("enter kernel debugger\n");
   kprintf("trap %d (%p)\n", ctxt->traptype, addr);
+  kprintf("enter kernel debugger\n");
   dumpregs(ctxt);
-  if (ctxt->traptype == INTR_BPT) return;
-  panic("system halted\n");
+  shell();
 }
 
 void dbg_notify_create_thread(struct thread *t)
