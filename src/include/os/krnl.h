@@ -82,6 +82,10 @@ void stop(int restart);
 
 void init_syscall();
 
+// smbfs.c
+
+void init_smbfs();
+
 // cons.c
 
 extern devno_t consdev;

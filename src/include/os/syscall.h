@@ -81,7 +81,9 @@
 #define SYSCALL_SOCKET       69
 #define SYSCALL_WAITALL      70
 #define SYSCALL_WAITANY      71
+#define SYSCALL_READV        72
+#define SYSCALL_WRITEV       73
 
-#define SYSCALL_MAX          71
+#define SYSCALL_MAX          73
 
 #endif

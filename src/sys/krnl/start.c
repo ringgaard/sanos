@@ -183,51 +183,6 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
   idle_task();
 }
 
-void init_mount()
-{
-  struct section *sect;
-  struct property *prop;
-  char devname[256];
-  char *type;
-  char *opts;
-  int rc;
-
-  sect = find_section(krnlcfg, "mount");
-  if (!sect) return;
-
-  prop = sect->properties;
-  while (prop)
-  {
-    strcpy(devname, prop->value ? prop->value : "");
-    type = strchr(devname, ',');
-    if (type)
-    {
-      *type++ = 0;
-      while (*type == ' ') type++;
-      opts = strchr(type, ',');
-      if (opts)
-      {
-	*opts++ = 0;
-	while (*opts == ' ') opts++;
-      }
-      else
-	opts = NULL;
-    }
-    else
-    {
-      type = "dfs";
-      opts = NULL;
-    }
-
-    //kprintf("mount %s on %s type %s opts %s\n", devname, prop->name, type, opts);
-
-    rc = mount(type, prop->name, devname, opts);
-    if (rc < 0) kprintf("%s: error %d mounting device %s\n", prop->name, rc, devname);
-
-    prop = prop->next;
-  }
-}
-
 void init_net()
 {
   struct ip_addr ipaddr;
@@ -294,6 +249,7 @@ void main(void *arg)
   init_dfs();
   init_devfs();
   init_procfs();
+  init_smbfs();
  
   // Open boot device
   if (syspage->bootparams.bootdrv & 0x80)
@@ -330,9 +286,6 @@ void main(void *arg)
 
   // Initialize network
   init_net();
-
-  // Mount devices
-  init_mount();
 
   // Install /proc/version handler
   register_proc_inode("version", version_proc, NULL);

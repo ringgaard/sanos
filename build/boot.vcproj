@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding = "Windows-1252"?>
+<VisualStudioProject
+	ProjectType="Visual C++"
+	Version="7.00"
+	Name="boot"
+	SccProjectName="boot"
+	SccAuxPath=""
+	SccLocalPath=".."
+	SccProvider="MSSCCI:Jalindi Igloo"
+	Keyword="MakeFileProj">
+	<Platforms>
+		<Platform
+			Name="Win32"/>
+	</Platforms>
+	<Configurations>
+		<Configuration
+			Name="SanOSDebug|Win32"
+			OutputDirectory=".\..\dbg\bin"
+			IntermediateDirectory=".\..\dbg\obj\boot"
+			ConfigurationType="10"
+			UseOfMFC="0">
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+		</Configuration>
+		<Configuration
+			Name="SanOS|Win32"
+			OutputDirectory=".\..\bin"
+			IntermediateDirectory=".\..\obj\boot"
+			ConfigurationType="10"
+			UseOfMFC="0">
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+		</Configuration>
+	</Configurations>
+	<Files>
+		<File
+			RelativePath="..\src\sys\boot\boot.asm">
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Assemble boot.asm"
+					CommandLine="if not exist ..\dbg\obj\boot mkdir ..\dbg\obj\boot
+..\tools\nasmw.exe -f bin ..\src\sys\boot\boot.asm -o ..\dbg\bin\boot  -l ..\dbg\obj\boot\boot.lst
+"
+					AdditionalDependencies="..\src\sys\boot\boot.asm;"
+					Outputs="..\dbg\bin\boot"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Assemble boot.asm"
+					CommandLine="if not exist ..\obj\boot mkdir ..\obj\boot
+..\tools\nasmw.exe -f bin ..\src\sys\boot\boot.asm -o ..\bin\boot  -l ..\obj\boot\boot.lst
+"
+					AdditionalDependencies="..\src\sys\boot\boot.asm;"
+					Outputs="..\bin\boot"/>
+			</FileConfiguration>
+		</File>
+	</Files>
+	<Globals>
+	</Globals>
+</VisualStudioProject>

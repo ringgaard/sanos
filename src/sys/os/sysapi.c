@@ -7,6 +7,7 @@
 //
 
 #include <os.h>
+#include <string.h>
 #include <os/syscall.h>
 #include <os/cpu.h>
 
@@ -50,9 +51,44 @@ int format(const char *devname, const char *type, const char *opts)
   return syscall(SYSCALL_FORMAT, (void *) &devname);
 }
 
-int mount(const char *type, const char *mntto, const char *mntfrom, const char *opts)
+static int _mount(const char *type, const char *mntto, const char *mntfrom, const char *opts)
 {
   return syscall(SYSCALL_MOUNT, (void *) &type);
+}
+
+int mount(const char *type, const char *mntto, const char *mntfrom, const char *opts)
+{
+  if (type && strcmp(type, "smbfs") == 0)
+  {
+    char addr[256];
+    char *p, *q;
+    char *newopts;
+    struct hostent *hp;
+    int rc;
+
+    if (mntfrom[0] != '\\' && mntfrom[1] != '\\') return -EINVAL;
+    p = (char *) mntfrom + 2;
+    q = strchr(p, '\\');
+    if (!q) return -EINVAL;
+    if (q - p > sizeof(addr) - 1) return -EINVAL;
+    memcpy(addr, p, q - p);
+    addr[q - p] = 0;
+    hp = gethostbyname(addr);
+    if (!hp) return errno;
+    newopts = malloc((opts ? strlen(opts) : 0) + 32);
+    if (!newopts) return -ENOMEM;
+    if (opts)
+      sprintf(newopts, "%s,addr=%08X", opts, hp->h_addr_list[0]);
+    else
+      sprintf(newopts, "addr=%08X", hp->h_addr_list[0]);
+
+    rc = _mount(type, mntto, mntfrom, newopts);
+    
+    free(newopts);
+    return rc;
+  }
+  else
+    return _mount(type, mntto, mntfrom, opts);
 }
 
 int unmount(const char *path)
@@ -103,6 +139,16 @@ int write(handle_t f, const void *data, size_t size)
 int ioctl(handle_t f, int cmd, const void *data, size_t size)
 {
   return syscall(SYSCALL_IOCTL, &f);
+}
+
+int readv(handle_t f , const struct iovec *iov, int count)
+{
+  return syscall(SYSCALL_READV, &f);
+}
+
+int writev(handle_t f , const struct iovec *iov, int count)
+{
+  return syscall(SYSCALL_WRITEV, &f);
 }
 
 loff_t tell(handle_t f)

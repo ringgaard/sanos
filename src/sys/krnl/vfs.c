@@ -501,6 +501,16 @@ int ioctl(struct file *filp, int cmd, void *data, size_t size)
   return rc;
 }
 
+int readv(struct file *filp, struct iovec *iov, int count)
+{
+  return -ENOSYS;
+}
+
+int writev(struct file *filp, struct iovec *iov, int count)
+{
+  return -ENOSYS;
+}
+
 loff_t tell(struct file *filp)
 {
   int rc;

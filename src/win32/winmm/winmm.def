@@ -1,5 +1,4 @@
 LIBRARY WINMM
-DESCRIPTION 'WINMM'
 
 EXPORTS
   timeBeginPeriod

@@ -1,0 +1,280 @@
+Microsoft Visual Studio Solution File, Format Version 7.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3c905c", "3c905c.vcproj", "{9AA0FC52-6240-44DF-B311-839AB52F2077}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "advapi32", "advapi32.vcproj", "{CCF426A4-F154-4DD6-9D80-1CCB31F0E94D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "boot", "boot.vcproj", "{99C58AB4-3197-4FBF-BE97-9044FEDBB9E2}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fdisk", "fdisk.vcproj", "{4AFE492C-72D3-47A2-8586-2CA919155B55}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "image", "image.vcproj", "{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jinit", "jinit.vcproj", "{32A01BA9-C729-41AE-8CB2-B52538BD043B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kernel32", "kernel32.vcproj", "{9DFCEBA0-177E-42CA-916B-FBF9458BC8AC}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "krnl", "krnl.vcproj", "{0D4FF29D-611A-414D-B5FE-B0E174A26D45}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libc", "libc.vcproj", "{39F33C74-5FB9-4BB9-A245-196282092E5B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "msvcrt", "msvcrt.vcproj", "{AEA01E9F-E595-4BAF-879A-68767E78A608}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ne2000", "ne2000.vcproj", "{0AD1D8FA-86A5-43FB-A09C-6C40D5B207C0}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "os", "os.vcproj", "{817CD14E-3CB8-4BEC-80B0-B25CB1B17DF8}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "osldr", "osldr.vcproj", "{743EDA51-53B2-4B57-A137-B8AA1506FB64}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pcnet32", "pcnet32.vcproj", "{5A6D1833-E156-4FFD-BD50-A58207B4A174}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "setup", "setup.vcproj", "{C728386C-C892-4D98-BE45-217344040145}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sh", "sh.vcproj", "{771F12A1-9B9A-4B5F-BA9D-F45670167BCE}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "user32", "user32.vcproj", "{DF425D9C-5B3F-43C9-A020-56E3F4E2958E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "winmm", "winmm.vcproj", "{D40C0A10-1075-47B2-AFB4-5F54D9A634C5}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wsock32", "wsock32.vcproj", "{78FFF77E-81A0-4244-B67D-8177AA18D6D3}"
+EndProject
+Global
+	GlobalSection(SourceCodeControl) = preSolution
+		SccNumberOfProjects = 19
+		SccProjectUniqueName0 = 3c905c.vcproj
+		SccProjectName0 = 3c905c
+		SccLocalPath0 = ..
+		SccProvider0 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection0 = build\\
+		SccProjectUniqueName1 = advapi32.vcproj
+		SccProjectName1 = advapi32
+		SccLocalPath1 = ..
+		SccProvider1 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection1 = build\\
+		SccProjectUniqueName2 = boot.vcproj
+		SccProjectName2 = boot
+		SccLocalPath2 = ..
+		SccProvider2 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection2 = build\\
+		SccProjectUniqueName3 = fdisk.vcproj
+		SccProjectName3 = fdisk
+		SccLocalPath3 = ..
+		SccProvider3 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection3 = build\\
+		SccProjectUniqueName4 = image.vcproj
+		SccProjectName4 = image
+		SccLocalPath4 = .
+		SccProvider4 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectUniqueName5 = jinit.vcproj
+		SccProjectName5 = jinit
+		SccLocalPath5 = ..
+		SccProvider5 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection5 = build\\
+		SccProjectUniqueName6 = kernel32.vcproj
+		SccProjectName6 = kernel32
+		SccLocalPath6 = ..
+		SccProvider6 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection6 = build\\
+		SccProjectUniqueName7 = krnl.vcproj
+		SccProjectName7 = krnl
+		SccLocalPath7 = ..
+		SccProvider7 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection7 = build\\
+		SccProjectUniqueName8 = libc.vcproj
+		SccProjectName8 = libc
+		SccLocalPath8 = ..
+		SccProvider8 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection8 = build\\
+		SccProjectUniqueName9 = msvcrt.vcproj
+		SccProjectName9 = msvcrt
+		SccLocalPath9 = ..
+		SccProvider9 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection9 = build\\
+		SccProjectUniqueName10 = ne2000.vcproj
+		SccProjectName10 = ne2000
+		SccLocalPath10 = ..
+		SccProvider10 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection10 = build\\
+		SccProjectUniqueName11 = os.vcproj
+		SccProjectName11 = os
+		SccLocalPath11 = ..
+		SccProvider11 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection11 = build\\
+		SccProjectUniqueName12 = osldr.vcproj
+		SccProjectName12 = osldr
+		SccLocalPath12 = ..
+		SccProvider12 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection12 = build\\
+		SccProjectUniqueName13 = pcnet32.vcproj
+		SccProjectName13 = pcnet32
+		SccLocalPath13 = ..
+		SccProvider13 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection13 = build\\
+		SccProjectUniqueName14 = setup.vcproj
+		SccProjectName14 = setup
+		SccLocalPath14 = ..
+		SccProvider14 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection14 = build\\
+		SccProjectUniqueName15 = sh.vcproj
+		SccProjectName15 = sh
+		SccLocalPath15 = ..
+		SccProvider15 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection15 = build\\
+		SccProjectUniqueName16 = user32.vcproj
+		SccProjectName16 = user32
+		SccLocalPath16 = ..
+		SccProvider16 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection16 = build\\
+		SccProjectUniqueName17 = winmm.vcproj
+		SccProjectName17 = winmm
+		SccLocalPath17 = ..
+		SccProvider17 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection17 = build\\
+		SccProjectUniqueName18 = wsock32.vcproj
+		SccProjectName18 = wsock32
+		SccLocalPath18 = ..
+		SccProvider18 = MSSCCI:Jalindi\u0020Igloo
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection18 = build\\
+	EndGlobalSection
+	GlobalSection(SolutionConfiguration) = preSolution
+		ConfigName.0 = SanOS
+		ConfigName.1 = SanOSDebug
+	EndGlobalSection
+	GlobalSection(ProjectDependencies) = postSolution
+		{9AA0FC52-6240-44DF-B311-839AB52F2077}.0 = {0D4FF29D-611A-414D-B5FE-B0E174A26D45}
+		{CCF426A4-F154-4DD6-9D80-1CCB31F0E94D}.0 = {39F33C74-5FB9-4BB9-A245-196282092E5B}
+		{CCF426A4-F154-4DD6-9D80-1CCB31F0E94D}.1 = {817CD14E-3CB8-4BEC-80B0-B25CB1B17DF8}
+		{4AFE492C-72D3-47A2-8586-2CA919155B55}.0 = {39F33C74-5FB9-4BB9-A245-196282092E5B}
+		{4AFE492C-72D3-47A2-8586-2CA919155B55}.1 = {817CD14E-3CB8-4BEC-80B0-B25CB1B17DF8}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.0 = {78FFF77E-81A0-4244-B67D-8177AA18D6D3}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.1 = {9AA0FC52-6240-44DF-B311-839AB52F2077}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.2 = {D40C0A10-1075-47B2-AFB4-5F54D9A634C5}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.3 = {DF425D9C-5B3F-43C9-A020-56E3F4E2958E}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.4 = {C728386C-C892-4D98-BE45-217344040145}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.5 = {5A6D1833-E156-4FFD-BD50-A58207B4A174}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.6 = {743EDA51-53B2-4B57-A137-B8AA1506FB64}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.7 = {0AD1D8FA-86A5-43FB-A09C-6C40D5B207C0}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.8 = {AEA01E9F-E595-4BAF-879A-68767E78A608}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.9 = {9DFCEBA0-177E-42CA-916B-FBF9458BC8AC}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.10 = {32A01BA9-C729-41AE-8CB2-B52538BD043B}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.11 = {4AFE492C-72D3-47A2-8586-2CA919155B55}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.12 = {CCF426A4-F154-4DD6-9D80-1CCB31F0E94D}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.13 = {99C58AB4-3197-4FBF-BE97-9044FEDBB9E2}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.14 = {771F12A1-9B9A-4B5F-BA9D-F45670167BCE}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.15 = {817CD14E-3CB8-4BEC-80B0-B25CB1B17DF8}
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.16 = {0D4FF29D-611A-414D-B5FE-B0E174A26D45}
+		{32A01BA9-C729-41AE-8CB2-B52538BD043B}.0 = {39F33C74-5FB9-4BB9-A245-196282092E5B}
+		{32A01BA9-C729-41AE-8CB2-B52538BD043B}.1 = {817CD14E-3CB8-4BEC-80B0-B25CB1B17DF8}
+		{9DFCEBA0-177E-42CA-916B-FBF9458BC8AC}.0 = {39F33C74-5FB9-4BB9-A245-196282092E5B}
+		{9DFCEBA0-177E-42CA-916B-FBF9458BC8AC}.1 = {817CD14E-3CB8-4BEC-80B0-B25CB1B17DF8}
+		{AEA01E9F-E595-4BAF-879A-68767E78A608}.0 = {817CD14E-3CB8-4BEC-80B0-B25CB1B17DF8}
+		{0AD1D8FA-86A5-43FB-A09C-6C40D5B207C0}.0 = {0D4FF29D-611A-414D-B5FE-B0E174A26D45}
+		{5A6D1833-E156-4FFD-BD50-A58207B4A174}.0 = {0D4FF29D-611A-414D-B5FE-B0E174A26D45}
+		{C728386C-C892-4D98-BE45-217344040145}.0 = {39F33C74-5FB9-4BB9-A245-196282092E5B}
+		{C728386C-C892-4D98-BE45-217344040145}.1 = {817CD14E-3CB8-4BEC-80B0-B25CB1B17DF8}
+		{771F12A1-9B9A-4B5F-BA9D-F45670167BCE}.0 = {39F33C74-5FB9-4BB9-A245-196282092E5B}
+		{771F12A1-9B9A-4B5F-BA9D-F45670167BCE}.1 = {817CD14E-3CB8-4BEC-80B0-B25CB1B17DF8}
+		{DF425D9C-5B3F-43C9-A020-56E3F4E2958E}.0 = {817CD14E-3CB8-4BEC-80B0-B25CB1B17DF8}
+		{D40C0A10-1075-47B2-AFB4-5F54D9A634C5}.0 = {817CD14E-3CB8-4BEC-80B0-B25CB1B17DF8}
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{9AA0FC52-6240-44DF-B311-839AB52F2077}.SanOS.ActiveCfg = SanOS|Win32
+		{9AA0FC52-6240-44DF-B311-839AB52F2077}.SanOS.Build.0 = SanOS|Win32
+		{9AA0FC52-6240-44DF-B311-839AB52F2077}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{9AA0FC52-6240-44DF-B311-839AB52F2077}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{CCF426A4-F154-4DD6-9D80-1CCB31F0E94D}.SanOS.ActiveCfg = SanOS|Win32
+		{CCF426A4-F154-4DD6-9D80-1CCB31F0E94D}.SanOS.Build.0 = SanOS|Win32
+		{CCF426A4-F154-4DD6-9D80-1CCB31F0E94D}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{CCF426A4-F154-4DD6-9D80-1CCB31F0E94D}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{99C58AB4-3197-4FBF-BE97-9044FEDBB9E2}.SanOS.ActiveCfg = SanOS|Win32
+		{99C58AB4-3197-4FBF-BE97-9044FEDBB9E2}.SanOS.Build.0 = SanOS|Win32
+		{99C58AB4-3197-4FBF-BE97-9044FEDBB9E2}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{99C58AB4-3197-4FBF-BE97-9044FEDBB9E2}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{4AFE492C-72D3-47A2-8586-2CA919155B55}.SanOS.ActiveCfg = SanOS|Win32
+		{4AFE492C-72D3-47A2-8586-2CA919155B55}.SanOS.Build.0 = SanOS|Win32
+		{4AFE492C-72D3-47A2-8586-2CA919155B55}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{4AFE492C-72D3-47A2-8586-2CA919155B55}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.SanOS.ActiveCfg = SanOS|Win32
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.SanOS.Build.0 = SanOS|Win32
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{32A01BA9-C729-41AE-8CB2-B52538BD043B}.SanOS.ActiveCfg = SanOS|Win32
+		{32A01BA9-C729-41AE-8CB2-B52538BD043B}.SanOS.Build.0 = SanOS|Win32
+		{32A01BA9-C729-41AE-8CB2-B52538BD043B}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{32A01BA9-C729-41AE-8CB2-B52538BD043B}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{9DFCEBA0-177E-42CA-916B-FBF9458BC8AC}.SanOS.ActiveCfg = SanOS|Win32
+		{9DFCEBA0-177E-42CA-916B-FBF9458BC8AC}.SanOS.Build.0 = SanOS|Win32
+		{9DFCEBA0-177E-42CA-916B-FBF9458BC8AC}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{9DFCEBA0-177E-42CA-916B-FBF9458BC8AC}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{0D4FF29D-611A-414D-B5FE-B0E174A26D45}.SanOS.ActiveCfg = SanOS|Win32
+		{0D4FF29D-611A-414D-B5FE-B0E174A26D45}.SanOS.Build.0 = SanOS|Win32
+		{0D4FF29D-611A-414D-B5FE-B0E174A26D45}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{0D4FF29D-611A-414D-B5FE-B0E174A26D45}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{39F33C74-5FB9-4BB9-A245-196282092E5B}.SanOS.ActiveCfg = SanOS|Win32
+		{39F33C74-5FB9-4BB9-A245-196282092E5B}.SanOS.Build.0 = SanOS|Win32
+		{39F33C74-5FB9-4BB9-A245-196282092E5B}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{39F33C74-5FB9-4BB9-A245-196282092E5B}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{AEA01E9F-E595-4BAF-879A-68767E78A608}.SanOS.ActiveCfg = SanOS|Win32
+		{AEA01E9F-E595-4BAF-879A-68767E78A608}.SanOS.Build.0 = SanOS|Win32
+		{AEA01E9F-E595-4BAF-879A-68767E78A608}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{AEA01E9F-E595-4BAF-879A-68767E78A608}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{0AD1D8FA-86A5-43FB-A09C-6C40D5B207C0}.SanOS.ActiveCfg = SanOS|Win32
+		{0AD1D8FA-86A5-43FB-A09C-6C40D5B207C0}.SanOS.Build.0 = SanOS|Win32
+		{0AD1D8FA-86A5-43FB-A09C-6C40D5B207C0}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{0AD1D8FA-86A5-43FB-A09C-6C40D5B207C0}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{817CD14E-3CB8-4BEC-80B0-B25CB1B17DF8}.SanOS.ActiveCfg = SanOS|Win32
+		{817CD14E-3CB8-4BEC-80B0-B25CB1B17DF8}.SanOS.Build.0 = SanOS|Win32
+		{817CD14E-3CB8-4BEC-80B0-B25CB1B17DF8}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{817CD14E-3CB8-4BEC-80B0-B25CB1B17DF8}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{743EDA51-53B2-4B57-A137-B8AA1506FB64}.SanOS.ActiveCfg = SanOS|Win32
+		{743EDA51-53B2-4B57-A137-B8AA1506FB64}.SanOS.Build.0 = SanOS|Win32
+		{743EDA51-53B2-4B57-A137-B8AA1506FB64}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{743EDA51-53B2-4B57-A137-B8AA1506FB64}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{5A6D1833-E156-4FFD-BD50-A58207B4A174}.SanOS.ActiveCfg = SanOS|Win32
+		{5A6D1833-E156-4FFD-BD50-A58207B4A174}.SanOS.Build.0 = SanOS|Win32
+		{5A6D1833-E156-4FFD-BD50-A58207B4A174}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{5A6D1833-E156-4FFD-BD50-A58207B4A174}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{C728386C-C892-4D98-BE45-217344040145}.SanOS.ActiveCfg = SanOS|Win32
+		{C728386C-C892-4D98-BE45-217344040145}.SanOS.Build.0 = SanOS|Win32
+		{C728386C-C892-4D98-BE45-217344040145}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{C728386C-C892-4D98-BE45-217344040145}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{771F12A1-9B9A-4B5F-BA9D-F45670167BCE}.SanOS.ActiveCfg = SanOS|Win32
+		{771F12A1-9B9A-4B5F-BA9D-F45670167BCE}.SanOS.Build.0 = SanOS|Win32
+		{771F12A1-9B9A-4B5F-BA9D-F45670167BCE}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{771F12A1-9B9A-4B5F-BA9D-F45670167BCE}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{DF425D9C-5B3F-43C9-A020-56E3F4E2958E}.SanOS.ActiveCfg = SanOS|Win32
+		{DF425D9C-5B3F-43C9-A020-56E3F4E2958E}.SanOS.Build.0 = SanOS|Win32
+		{DF425D9C-5B3F-43C9-A020-56E3F4E2958E}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{DF425D9C-5B3F-43C9-A020-56E3F4E2958E}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{D40C0A10-1075-47B2-AFB4-5F54D9A634C5}.SanOS.ActiveCfg = SanOS|Win32
+		{D40C0A10-1075-47B2-AFB4-5F54D9A634C5}.SanOS.Build.0 = SanOS|Win32
+		{D40C0A10-1075-47B2-AFB4-5F54D9A634C5}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{D40C0A10-1075-47B2-AFB4-5F54D9A634C5}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{78FFF77E-81A0-4244-B67D-8177AA18D6D3}.SanOS.ActiveCfg = SanOS|Win32
+		{78FFF77E-81A0-4244-B67D-8177AA18D6D3}.SanOS.Build.0 = SanOS|Win32
+		{78FFF77E-81A0-4244-B67D-8177AA18D6D3}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{78FFF77E-81A0-4244-B67D-8177AA18D6D3}.SanOSDebug.Build.0 = SanOSDebug|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

@@ -270,6 +270,12 @@ struct utimbuf
   time_t atime;
 };
 
+struct iovec 
+{ 
+  void *iov_base;
+  size_t iov_len;
+};
+
 //
 // Serial I/O
 //
@@ -555,6 +561,9 @@ osapi handle_t dup(handle_t h);
 osapi int read(handle_t f, void *data, size_t size);
 osapi int write(handle_t f, const void *data, size_t size);
 osapi int ioctl(handle_t f, int cmd, const void *data, size_t size);
+
+osapi int readv(handle_t f , const struct iovec *iov, int count);
+osapi int writev(handle_t f , const struct iovec *iov, int count);
 
 osapi loff_t tell(handle_t f);
 osapi loff_t lseek(handle_t f, loff_t offset, int origin);

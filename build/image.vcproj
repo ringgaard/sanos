@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding = "Windows-1252"?>
+<VisualStudioProject
+	ProjectType="Visual C++"
+	Version="7.00"
+	Name="image"
+	SccProjectName="image"
+	SccAuxPath=""
+	SccLocalPath="."
+	SccProvider="MSSCCI:Jalindi Igloo"
+	Keyword="MakeFileProj">
+	<Platforms>
+		<Platform
+			Name="Win32"/>
+	</Platforms>
+	<Configurations>
+		<Configuration
+			Name="SanOS|Win32"
+			OutputDirectory=".\..\img"
+			IntermediateDirectory=".\..\bin"
+			ConfigurationType="10"
+			UseOfMFC="0">
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+		</Configuration>
+		<Configuration
+			Name="SanOSDebug|Win32"
+			OutputDirectory=".\..\img"
+			IntermediateDirectory=".\..\dbg\bin"
+			ConfigurationType="10"
+			UseOfMFC="0">
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+		</Configuration>
+	</Configurations>
+	<Files>
+		<File
+			RelativePath=".\krnl.ini">
+		</File>
+		<File
+			RelativePath=".\mkbootdisk.cmd">
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Create boot disk"
+					CommandLine="mkbootdisk bin img\bootdisk img\bootdisk.img
+"
+					AdditionalDependencies="..\bin\boot;..\bin\osldr.dll;..\bin\krnl.dll;..\bin\pcnet32.sys;..\bin\ne2000.sys;..\bin\3c905c.sys;..\bin\os.dll;..\bin\sh.exe;..\bin\fdisk.exe;..\bin\setup.exe;..\bin\msvcrt.dll;..\bin\kernel32.dll;..\bin\user32.dll;..\bin\advapi32.dll;..\bin\winmm.dll;..\bin\jinit.exe;krnl.ini;os.ini;setup.ini;"
+					Outputs="..\img\bootdisk.img"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Create boot disk"
+					CommandLine="mkbootdisk dbg\bin img\bootdisk img\bootdisk.img
+"
+					AdditionalDependencies="$(IntDir)\boot;$(IntDir)\osldr.dll;$(IntDir)\krnl.dll;$(IntDir)\3c905c.sys;$(IntDir)\pcnet32.sys;$(IntDir)\ne2000.sys;$(IntDir)\os.dll;$(IntDir)\sh.exe;$(IntDir)\fdisk.exe;$(IntDir)\setup.exe;$(IntDir)\msvcrt.dll;$(IntDir)\kernel32.dll;$(IntDir)\user32.dll;$(IntDir)\advapi32.dll;$(IntDir)\winmm.dll;$(IntDir)\wsock32.dll;$(IntDir)\jinit.exe;krnl.ini;os.ini;setup.ini;"
+					Outputs="..\img\bootdisk.img"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath=".\os.ini">
+		</File>
+		<File
+			RelativePath=".\setup.ini">
+		</File>
+	</Files>
+	<Globals>
+	</Globals>
+</VisualStudioProject>

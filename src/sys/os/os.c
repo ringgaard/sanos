@@ -153,7 +153,7 @@ static void *load_image(char *filename)
   }
 
   // Check alignment
-  if (imghdr->optional.file_alignment != PAGESIZE || imghdr->optional.section_alignment != PAGESIZE) panic("image not page aligned");
+  //if (imghdr->optional.file_alignment != PAGESIZE || imghdr->optional.section_alignment != PAGESIZE) panic("image not page aligned");
 
   // Allocate memory for module
   imgbase = (char *) mmap(NULL, imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
@@ -269,6 +269,51 @@ void dbgbreak()
   __asm { int 3 };
 }
 
+void init_mount()
+{
+  struct section *sect;
+  struct property *prop;
+  char devname[256];
+  char *type;
+  char *opts;
+  int rc;
+
+  sect = find_section(config, "mount");
+  if (!sect) return;
+
+  prop = sect->properties;
+  while (prop)
+  {
+    strcpy(devname, prop->value ? prop->value : "");
+    type = strchr(devname, ',');
+    if (type)
+    {
+      *type++ = 0;
+      while (*type == ' ') type++;
+      opts = strchr(type, ',');
+      if (opts)
+      {
+	*opts++ = 0;
+	while (*opts == ' ') opts++;
+      }
+      else
+	opts = NULL;
+    }
+    else
+    {
+      type = "dfs";
+      opts = NULL;
+    }
+
+    //kprintf("mount %s on %s type %s opts %s\n", devname, prop->name, type, opts);
+
+    rc = mount(type, prop->name, devname, opts);
+    if (rc < 0) syslog(LOG_ERR, "%s: error %d mounting device %s\n", prop->name, rc, devname);
+
+    prop = prop->next;
+  }
+}
+
 int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 {
   char *initpgm;
@@ -321,6 +366,9 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   usermods.protect_region = protect_region;
 
   init_module_database(&usermods, "os.dll", hmod, get_property(config, "os", "libpath", "/os"), 0);
+
+  // Mount devices
+  init_mount();
 
   // Load and execute init program
   initpgm = get_property(config, "os", "initpgm", "/os/init.exe");

@@ -127,6 +127,12 @@ int recv(struct socket *s, void *data, int size, unsigned int flags)
   return sockops[s->type]->recv(s, data, size, flags);
 }
 
+int recvv(struct socket *s, struct iovec *iov, int count)
+{
+  // TODO: implement recvv
+  return -ENOSYS;
+}
+
 int recvfrom(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen)
 {
   return sockops[s->type]->recvfrom(s, data, size, flags, from, fromlen);
@@ -140,6 +146,12 @@ int send(struct socket *s, void *data, int size, unsigned int flags)
 int sendto(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *to, int tolen)
 {
   return sockops[s->type]->sendto(s, data, size, flags, to, tolen);
+}
+
+int sendv(struct socket *s, struct iovec *iov, int count)
+{
+  // TODO: implement sendv
+  return -ENOSYS;
 }
 
 int setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen)

@@ -83,7 +83,7 @@ static int open_always(struct filsys *fs, char *name, int len, struct inode **re
   return 0;
 }
 
-static int create_new(struct filsys *fs, char *name, int len, struct inode **retval)
+static int create_always(struct filsys *fs, char *name, int len, struct inode **retval)
 {
   struct inode *dir;
   struct inode *inode;
@@ -162,7 +162,7 @@ static int truncate_existing(struct filsys *fs, char *name, int len, struct inod
   return 0;
 }
 
-static int create_always(struct filsys *fs, char *name, int len, ino_t ino, struct inode **retval)
+static int create_new(struct filsys *fs, char *name, int len, ino_t ino, struct inode **retval)
 {
   struct inode *dir;
   struct inode *inode;
@@ -234,7 +234,7 @@ int dfs_open(struct file *filp, char *name)
     case O_CREAT | O_EXCL:
     case O_CREAT | O_TRUNC | O_EXCL:
       // Create new file, fail if it exists
-      rc = create_always(fs, name, len, NOINODE, &inode);
+      rc = create_new(fs, name, len, NOINODE, &inode);
       filp->flags |= F_MODIFIED;
       break;
 
@@ -247,13 +247,13 @@ int dfs_open(struct file *filp, char *name)
 
     case O_CREAT | O_TRUNC:
       // Create new file, unlink existing file if it exists
-      rc = create_new(fs, name, len, &inode);
+      rc = create_always(fs, name, len, &inode);
       filp->flags |= F_MODIFIED;
       break;
 
     case O_SPECIAL:
       // Create new file with special inode number
-      rc = create_always(fs, name, len, filp->flags >> 24, &inode);
+      rc = create_new(fs, name, len, filp->flags >> 24, &inode);
       filp->flags |= F_MODIFIED;
       break;
 

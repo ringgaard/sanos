@@ -60,6 +60,41 @@ static __inline void unlock_string(char *s)
 {
 }
 
+static __inline int lock_iovec(struct iovec *iov, int count)
+{
+  int n;
+
+  if (iov)
+  {
+    if (count < 0) return -EINVAL;
+    if (KERNELSPACE(iov)) return -EFAULT;
+    if (!mem_mapped(iov, count * sizeof(struct iovec))) return -EFAULT;
+    for (n = 0; n < count; n++)
+    {
+      if (iov[n].iov_len < 0) return -EINVAL;
+      if (iov[n].iov_base)
+      {
+	if (KERNELSPACE(iov[n].iov_base)) return -EFAULT;
+	if (!mem_mapped(iov[n].iov_base, iov[n].iov_len)) return -EFAULT;
+      }
+      else
+      {
+	if (iov[n].iov_len != 0) return -EFAULT;
+      }
+    }
+  }
+  else
+  {
+    if (count != 0) return -EFAULT;
+  }
+
+  return 0;
+}
+
+static __inline void unlock_iovec(struct iovec *iov, int count)
+{
+}
+
 static int sys_null(char *params)
 {
   return 0;
@@ -388,6 +423,7 @@ static int sys_read(char *params)
     rc = -EBADF;
 
   orel(o);
+  unlock_buffer(data, size);
   unlock_buffer(params, 12);
 
   return rc;
@@ -429,6 +465,7 @@ static int sys_write(char *params)
     rc = -EBADF;
   
   orel(o);
+  unlock_buffer(data, size);
   unlock_buffer(params, 12);
 
   return rc;
@@ -2218,6 +2255,88 @@ static int sys_socket(char *params)
   return rc;
 }
 
+static int sys_readv(char *params)
+{
+  handle_t h;
+  struct object *o;
+  int rc;
+  struct iovec *iov;
+  int count;
+
+  if (lock_buffer(params, 12) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  iov = *(struct iovec **) (params + 4);
+  count = *(int *) (params + 8);
+
+  o = olock(h, OBJECT_ANY);
+  if (!o) 
+  {
+    unlock_buffer(params, 12);
+    return -EBADF;
+  }
+  
+  if (lock_iovec(iov, count) < 0)
+  {
+    orel(o);
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+
+  if (o->type == OBJECT_FILE)
+    rc = readv((struct file *) o, iov, count);
+  else if (o->type == OBJECT_SOCKET)
+    rc = recvv((struct socket *) o, iov, count);
+  else
+    rc = -EBADF;
+
+  orel(o);
+  unlock_buffer(params, 12);
+
+  return rc;
+}
+
+static int sys_writev(char *params)
+{
+  handle_t h;
+  struct object *o;
+  int rc;
+  struct iovec *iov;
+  int count;
+
+  if (lock_buffer(params, 12) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  iov = *(struct iovec **) (params + 4);
+  count = *(int *) (params + 8);
+
+  o = olock(h, OBJECT_ANY);
+  if (!o) 
+  {
+    unlock_buffer(params, 12);
+    return -EBADF;
+  }
+  
+  if (lock_iovec(iov, count) < 0)
+  {
+    orel(o);
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+
+  if (o->type == OBJECT_FILE)
+    rc = writev((struct file *) o, iov, count);
+  else if (o->type == OBJECT_SOCKET)
+    rc = sendv((struct socket *) o, iov, count);
+  else
+    rc = -EBADF;
+
+  orel(o);
+  unlock_buffer(params, 12);
+
+  return rc;
+}
+
 struct syscall_entry syscalltab[] =
 {
   {"null","", sys_null},
@@ -2291,7 +2410,9 @@ struct syscall_entry syscalltab[] =
   {"shutdown", "%d,%d", sys_shutdown},
   {"socket", "%d,%d,%d", sys_socket},
   {"waitall", "%p,%d,%d", sys_waitall},
-  {"waitany", "%p,%d,%d", sys_waitany}
+  {"waitany", "%p,%d,%d", sys_waitany},
+  {"readv", "%d,%p,%d", sys_readv},
+  {"writev", "%d,%p,%d", sys_writev}
 };
 
 int syscall(int syscallno, char *params)
@@ -2312,7 +2433,7 @@ int syscall(int syscallno, char *params)
     kprintf("<-%s(%s)\n", syscalltab[syscallno].name, buf);
   }
 #endif
-  
+
 #ifdef SYSCALL_PROFILE
   sccnt[syscallno]++;
 #endif

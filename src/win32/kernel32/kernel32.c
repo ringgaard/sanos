@@ -700,7 +700,7 @@ VOID WINAPI GetSystemTime
   lpSystemTime->wHour = tm.tm_hour; 
   lpSystemTime->wMinute = tm.tm_min; 
   lpSystemTime->wSecond = tm.tm_sec; 
-  lpSystemTime->wMilliseconds = tv.tv_usec / 1000;
+  lpSystemTime->wMilliseconds = (WORD) (tv.tv_usec / 1000);
 }
 
 VOID GetSystemTimeAsFileTime

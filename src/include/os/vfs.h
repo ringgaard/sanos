@@ -129,6 +129,9 @@ krnlapi int read(struct file *filp, void *data, size_t size);
 krnlapi int write(struct file *filp, void *data, size_t size);
 krnlapi int ioctl(struct file *filp, int cmd, void *data, size_t size);
 
+krnlapi int readv(struct file *filp, struct iovec *iov, int count);
+krnlapi int writev(struct file *filp, struct iovec *iov, int count);
+
 krnlapi loff_t tell(struct file *filp);
 krnlapi loff_t lseek(struct file *filp, loff_t offset, int origin);
 krnlapi int chsize(struct file *filp, loff_t size);

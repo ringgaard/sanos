@@ -50,64 +50,12 @@ static void dfs_sync(void *arg)
 
 static int parse_options(char *opts, struct fsoptions *fsopts)
 {
-  char *value;
-  char *p;
-  char endch;
-
-  fsopts->cache = 0;
-  fsopts->blocksize = DEFAULT_BLOCKSIZE;
-  fsopts->inode_ratio = DEFAULT_INODE_RATIO;
-  fsopts->quick = 0;
-  fsopts->reserved_blocks = DEFAULT_RESERVED_BLOCKS;
-  fsopts->reserved_inodes = DEFAULT_RESERVED_INODES;
-
-  if (!opts) return 0;
-  while (*opts)
-  {
-    p = opts;
-    while (*p != 0 && *p != ',') p++;
-    endch = *p;
-    *p = 0;
-
-    value = opts;
-    while (*value != 0 && *value != '=') value++;
-    if (*value) 
-      *value++ = 0;
-    else
-      value = NULL;
-
-    if (strcmp(opts, "blocksize") == 0)
-    {
-      if (value && atoi(value) != -1) fsopts->blocksize = atoi(value);
-    }
-    else if (strcmp(opts, "cache") == 0)
-    {
-      if (value && atoi(value) != -1) fsopts->cache = atoi(value);
-    }
-    else if (strcmp(opts, "inoderatio") == 0)
-    {
-      if (value && atoi(value) != -1) fsopts->inode_ratio = atoi(value);
-    }
-    else if (strcmp(opts, "resvblks") == 0)
-    {
-      if (value && atoi(value) != -1) fsopts->reserved_blocks = atoi(value);
-    }
-    else if (strcmp(opts, "resvinodes") == 0)
-    {
-      if (value && atoi(value) != -1) fsopts->reserved_inodes = atoi(value);
-    }
-    else if (strcmp(opts, "quick") == 0)
-    {
-      fsopts->quick = 1;
-    }
-    else
-      return -EINVAL;
-
-    if (value) *(value - 1) = '=';
-    *p = endch;
-    opts = p;
-    if (*opts == ',') opts++;
-  }
+  fsopts->cache = get_num_option(opts, "cache", 0);
+  fsopts->blocksize = get_num_option(opts, "blocksize", DEFAULT_BLOCKSIZE);
+  fsopts->inode_ratio = get_num_option(opts, "inoderatio", DEFAULT_INODE_RATIO);
+  fsopts->quick = get_option(opts, "quick", NULL, 0, NULL) != NULL;
+  fsopts->reserved_blocks = get_num_option(opts, "resvblks", DEFAULT_RESERVED_BLOCKS);
+  fsopts->reserved_inodes = get_num_option(opts, "resvinodes", DEFAULT_RESERVED_INODES);
 
   return 0;
 }

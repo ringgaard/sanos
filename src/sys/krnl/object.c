@@ -454,7 +454,7 @@ int close_object(struct object *o)
     case OBJECT_TIMER:
       cancel_waitable_timer((struct waitable_timer *) o);
       kfree(o);
-      break;
+      return 0;
 
     case OBJECT_MUTEX:
       kfree(o);

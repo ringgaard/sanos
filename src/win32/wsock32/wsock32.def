@@ -1,5 +1,4 @@
 LIBRARY WSOCK32
-DESCRIPTION 'WSOCK32'
 
 EXPORTS
   WSAStartup                                @115

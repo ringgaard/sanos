@@ -36,7 +36,7 @@ void map_page(void *vaddr, unsigned long pfn, unsigned long flags)
   // Allocate page table if not already done
   if ((pdir[PDEIDX(vaddr)] & PT_PRESENT) == 0)
   {
-    if (vaddr < (void *) OSBASE)
+    if (USERSPACE(vaddr))
       pdir[PDEIDX(vaddr)] = PTOB(alloc_pageframe(PFT_SYS)) | PT_PRESENT | PT_WRITABLE | PT_USER;
     else
       pdir[PDEIDX(vaddr)] = PTOB(alloc_pageframe(PFT_SYS)) | PT_PRESENT | PT_WRITABLE;

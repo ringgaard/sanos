@@ -223,7 +223,7 @@ void pagefault_handler(struct context *ctxt, void *arg)
 
 __inline static int usermode(struct context *ctxt)
 {
-  return (ctxt->eip < OSBASE);
+  return USERSPACE(ctxt->eip);
 }
 
 //

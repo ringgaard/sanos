@@ -262,7 +262,6 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
     return NULL;
   }
 
-
   n = dn_expand(answer, eom, cp, bp, buflen);
   if (n < 0) 
   {
@@ -552,7 +551,7 @@ struct hostent *gethostbyname(const char *name)
   {
     for (cp = name;; ++cp) 
     {
-      if (!*cp) 
+      if (!*cp)
       {
 	struct in_addr addr;
 

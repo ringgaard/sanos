@@ -234,7 +234,7 @@ static void dbg_get_thread_context(struct dbg_hdr *hdr, union dbg_body *body)
     body->ctx.ctxt.es &= 0xFFFF;
 
     // Kernel mode contexts does not have ss:esp in context, fixup
-    if (body->ctx.ctxt.eip >= OSBASE)
+    if (KERNELSPACE(body->ctx.ctxt.eip))
     {
       body->ctx.ctxt.ess = SEL_KDATA;
       body->ctx.ctxt.esp = (unsigned long) &t->ctxt + sizeof(struct context) - 8;
@@ -283,7 +283,7 @@ static void dbg_set_thread_context(struct dbg_hdr *hdr, union dbg_body *body)
   }
 
   // Kernel mode contexts does not have ss:esp in context
-  if (body->ctx.ctxt.eip >= OSBASE)
+  if (KERNELSPACE(body->ctx.ctxt.eip))
     memcpy(t->ctxt, &body->ctx.ctxt, sizeof(struct context) - 8);
   else
     memcpy(t->ctxt, &body->ctx.ctxt, sizeof(struct context));

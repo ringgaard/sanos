@@ -8,6 +8,8 @@
 
 #include <os/krnl.h>
 
+#pragma warning(disable: 4731)
+
 struct fullptr
 {
   unsigned long offset;

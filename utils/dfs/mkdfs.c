@@ -43,6 +43,7 @@ char *target = "";
 int part = -1;
 int part_start = 0;
 int part_offset = 0;
+int ldrsize;
 
 int get_tick_count()
 {
@@ -164,6 +165,7 @@ void install_loader()
 
   fs = (struct filsys *) (mountlist->data); // assume first mounted device
   blocks = size / fs->blocksize;
+  ldrsize = size / SECTORSIZE;
   if (blocks > fs->super->reserved_blocks) panic("not enough space for os loader");
 
   for (i = 0; i < blocks; i++)
@@ -694,17 +696,6 @@ int main(int argc, char **argv)
     clear_device(hdev, devsize);
   }
 
-  // Write boot sector
-  if (bootfile) 
-  {
-    struct boot_sector *bsect = (struct boot_sector *) bootsect;
-
-    printf("Writing boot sector %s\n", bootfile);
-    read_boot_sector(bootfile);
-    bsect->ldrstart += part_start;
-    dev_write((devno_t) hdev, bootsect, SECTORSIZE, 0);
-  }
-
   // Create filesystem
   if (doformat)
   {
@@ -731,6 +722,18 @@ int main(int argc, char **argv)
   {
     printf("Writing kernel %s\n", krnlfile);
     install_kernel();
+  }
+
+  // Write boot sector
+  if (bootfile) 
+  {
+    struct boot_sector *bsect = (struct boot_sector *) bootsect;
+
+    printf("Writing boot sector %s\n", bootfile);
+    read_boot_sector(bootfile);
+    bsect->ldrstart += part_start;
+    bsect->ldrsize = ldrsize;
+    dev_write((devno_t) hdev, bootsect, SECTORSIZE, 0);
   }
 
   // Copy files to device

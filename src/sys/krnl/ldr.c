@@ -58,7 +58,7 @@ void *load_image_file(char *filename, int userspace)
   if (imghdr->signature != IMAGE_PE_SIGNATURE)  panic("invalid PE signature");
 
   // Check alignment
-  if (imghdr->optional.file_alignment != PAGESIZE || imghdr->optional.section_alignment != PAGESIZE) panic("image not page aligned");
+  //if (imghdr->optional.file_alignment != PAGESIZE || imghdr->optional.section_alignment != PAGESIZE) panic("image not page aligned");
 
   // Allocate memory for module
   if (userspace)

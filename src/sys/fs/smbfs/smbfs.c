@@ -3,167 +3,199 @@
 //
 // Copyright (c) 2001 Michael Ringgaard. All rights reserved.
 //
-// SMB filesystem routines
+// SMB filesystem
 //
 
 #include <os/krnl.h>
 
-int smbfs_format(char *devname, char *opts)
+int smb_format(char *devname, char *opts);
+int smb_mount(struct fs *fs, char *opts);
+int smb_unmount(struct fs *fs);
+int smb_statfs(struct fs *fs, struct statfs *buf);
+int smb_open(struct file *filp, char *name);
+int smb_close(struct file *filp);
+int smb_flush(struct file *filp);
+int smb_read(struct file *filp, void *data, size_t size);
+int smb_write(struct file *filp, void *data, size_t size);
+int smb_ioctl(struct file *filp, int cmd, void *data, size_t size);
+loff_t smb_tell(struct file *filp);
+loff_t smb_lseek(struct file *filp, loff_t offset, int origin);
+int smb_chsize(struct file *filp, loff_t size);
+int smb_futime(struct file *filp, struct utimbuf *times);
+int smb_utime(struct fs *fs, char *name, struct utimbuf *times);
+int smb_fstat(struct file *filp, struct stat *buffer);
+int smb_stat(struct fs *fs, char *name, struct stat *buffer);
+int smb_mkdir(struct fs *fs, char *name);
+int smb_rmdir(struct fs *fs, char *name);
+int smb_rename(struct fs *fs, char *oldname, char *newname);
+int smb_link(struct fs *fs, char *oldname, char *newname);
+int smb_unlink(struct fs *fs, char *name);
+int smb_opendir(struct file *filp, char *name);
+int smb_readdir(struct file *filp, struct dirent *dirp, int count);
+
+struct fsops smbfsops =
 {
-  return -ENOSYS;
-}
+  FSOP_FORMAT | FSOP_MOUNT | FSOP_UNMOUNT | FSOP_STATFS | FSOP_OPEN | FSOP_CLOSE |
+  FSOP_FLUSH | FSOP_READ | FSOP_WRITE | FSOP_IOCTL | FSOP_TELL | FSOP_LSEEK | 
+  FSOP_CHSIZE | FSOP_FUTIME | FSOP_UTIME | FSOP_FSTAT | FSOP_STAT | FSOP_MKDIR |
+  FSOP_RMDIR | FSOP_RENAME | FSOP_LINK | FSOP_UNLINK | FSOP_OPENDIR | FSOP_READDIR,
 
-int smbfs_mount(struct fs *fs, char *opts)
-{
-  return -ENOSYS;
-}
+  smb_format,
+  smb_mount,
+  smb_unmount,
 
-int smbfs_unmount(struct fs *fs)
-{
-  return -ENOSYS;
-}
+  smb_statfs,
 
-int smbfs_statfs(struct fs *fs, struct statfs *buf)
-{
-  return -ENOSYS;
-}
+  smb_open,
+  smb_close,
+  smb_flush,
 
-int smbfs_open(struct file *filp, char *name)
-{
-  return -ENOSYS;
-}
+  smb_read,
+  smb_write,
+  smb_ioctl,
 
-int smbfs_close(struct file *filp)
-{
-  return -ENOSYS;
-}
+  smb_tell,
+  smb_lseek,
+  smb_chsize,
 
-int smbfs_flush(struct file *filp)
-{
-  return -ENOSYS;
-}
+  smb_futime,
+  smb_utime,
 
-int smbfs_read(struct file *filp, void *data, size_t size)
-{
-  return -ENOSYS;
-}
+  smb_fstat,
+  smb_stat,
 
-int smbfs_write(struct file *filp, void *data, size_t size)
-{
-  return -ENOSYS;
-}
+  smb_mkdir,
+  smb_rmdir,
 
-int smbfs_ioctl(struct file *filp, int cmd, void *data, size_t size)
-{
-  return -ENOSYS;
-}
+  smb_rename,
+  smb_link,
+  smb_unlink,
 
-loff_t smbfs_tell(struct file *filp)
-{
-  return -ENOSYS;
-}
-
-int smbfs_chsize(struct file *filp, loff_t size)
-{
-  return -ENOSYS;
-}
-
-int smbfs_futime(struct file *filp, struct utimbuf *times)
-{
-  return -ENOSYS;
-}
-
-int smbfs_fstat(struct file *filp, struct stat *buffer)
-{
-  return -ENOSYS;
-}
-
-int smbfs_utime(struct fs *fs, char *name, struct utimbuf *times)
-{
-  return -ENOSYS;
-}
-
-int smbfs_stat(struct fs *fs, char *name, struct stat *buffer)
-{
-  return -ENOSYS;
-}
-
-int smbfs_mkdir(struct fs *fs, char *name)
-{
-  return -ENOSYS;
-}
-
-int smbfs_rmdir(struct fs *fs, char *name)
-{
-  return -ENOSYS;
-}
-
-int smbfs_rename(struct fs *fs, char *oldname, char *newname)
-{
-  return -ENOSYS;
-}
-
-int smbfs_link(struct fs *fs, char *oldname, char *newname)
-{
-  return -ENOSYS;
-}
-
-int smbfs_unlink(struct fs *fs, char *name)
-{
-  return -ENOSYS;
-}
-
-int smbfs_opendir(struct file *filp, char *name)
-{
-  return -ENOSYS;
-}
-
-int smbfs_readdir(struct file *filp, struct dirent *dirp, int count)
-{
-  return -ENOSYS;
-}
-
-struct fsops smbfsfsops =
-{
-  FSOP_READ | FSOP_WRITE | FSOP_IOCTL | FSOP_TELL | FSOP_LSEEK | FSOP_CHSIZE | 
-  FSOP_FUTIME | FSOP_FSTAT,
-
-  smbfs_format,
-  smbfs_mount,
-  smbfs_unmount,
-
-  smbfs_statfs,
-
-  smbfs_open,
-  smbfs_close,
-  smbfs_flush,
-
-  smbfs_read,
-  smbfs_write,
-  smbfs_ioctl,
-
-  smbfs_tell,
-  smbfs_lseek,
-  smbfs_chsize,
-
-  smbfs_futime,
-  smbfs_utime,
-
-  smbfs_fstat,
-  smbfs_stat,
-
-  smbfs_mkdir,
-  smbfs_rmdir,
-
-  smbfs_rename,
-  smbfs_link,
-  smbfs_unlink,
-
-  smbfs_opendir,
-  smbfs_readdir
+  smb_opendir,
+  smb_readdir
 };
 
-void init_smbfsfs()
+void init_smbfs()
 {
   register_filesystem("smbfs", &smbfsops);
+}
+
+int smb_format(char *devname, char *opts)
+{
+  return -ENOSYS;
+}
+
+int smb_mount(struct fs *fs, char *opts)
+{
+  return -ENOSYS;
+}
+
+int smb_unmount(struct fs *fs)
+{
+  return -ENOSYS;
+}
+
+int smb_statfs(struct fs *fs, struct statfs *buf)
+{
+  return -ENOSYS;
+}
+
+int smb_open(struct file *filp, char *name)
+{
+  return -ENOSYS;
+}
+
+int smb_close(struct file *filp)
+{
+  return -ENOSYS;
+}
+
+int smb_flush(struct file *filp)
+{
+  return -ENOSYS;
+}
+
+int smb_read(struct file *filp, void *data, size_t size)
+{
+  return -ENOSYS;
+}
+
+int smb_write(struct file *filp, void *data, size_t size)
+{
+  return -ENOSYS;
+}
+
+int smb_ioctl(struct file *filp, int cmd, void *data, size_t size)
+{
+  return -ENOSYS;
+}
+
+loff_t smb_tell(struct file *filp)
+{
+  return -ENOSYS;
+}
+
+loff_t smb_lseek(struct file *filp, loff_t offset, int origin)
+{
+  return -ENOSYS;
+}
+
+int smb_chsize(struct file *filp, loff_t size)
+{
+  return -ENOSYS;
+}
+
+int smb_futime(struct file *filp, struct utimbuf *times)
+{
+  return -ENOSYS;
+}
+
+int smb_utime(struct fs *fs, char *name, struct utimbuf *times)
+{
+  return -ENOSYS;
+}
+
+int smb_fstat(struct file *filp, struct stat *buffer)
+{
+  return -ENOSYS;
+}
+
+int smb_stat(struct fs *fs, char *name, struct stat *buffer)
+{
+  return -ENOSYS;
+}
+
+int smb_mkdir(struct fs *fs, char *name)
+{
+  return -ENOSYS;
+}
+
+int smb_rmdir(struct fs *fs, char *name)
+{
+  return -ENOSYS;
+}
+
+int smb_rename(struct fs *fs, char *oldname, char *newname)
+{
+  return -ENOSYS;
+}
+
+int smb_link(struct fs *fs, char *oldname, char *newname)
+{
+  return -ENOSYS;
+}
+
+int smb_unlink(struct fs *fs, char *name)
+{
+  return -ENOSYS;
+}
+
+int smb_opendir(struct file *filp, char *name)
+{
+  return -ENOSYS;
+}
+
+int smb_readdir(struct file *filp, struct dirent *dirp, int count)
+{
+  return -ENOSYS;
 }

@@ -87,4 +87,7 @@ krnlapi extern struct syspage *syspage;
 
 #define TSS_ESP0 (SYSPAGE_ADDRESS + 4)
 
+#define USERSPACE(addr) ((unsigned long)(addr) < OSBASE)
+#define KERNELSPACE(addr) ((unsigned long)(addr) >= OSBASE)
+
 #endif

@@ -84,7 +84,7 @@ void timer_handler(struct context *ctxt, void *arg)
     dpc_time++;
   else
   {
-    if (ctxt->eip < OSBASE)
+    if (USERSPACE(ctxt->eip))
       t->utime++;
     else
       t->stime++;

@@ -18,7 +18,7 @@ static int valid_range(void *addr, int size)
   int pages = PAGES(size);
 
   if ((unsigned long) addr < VMEM_START) return 0;
-  if ((unsigned long) addr + pages * PAGESIZE >= OSBASE) return 0;
+  if (KERNELSPACE((unsigned long) addr + pages * PAGESIZE)) return 0;
   if (rmap_status(vmap, BTOP(addr), pages) != 1) return 0;
   return 1;
 }

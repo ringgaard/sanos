@@ -136,6 +136,8 @@ int atoi(const char *nptr)
 // intrinsic functions
 //
 
+#ifdef DEBUG
+
 void *memset(void *p, int c, size_t n)
 {
   char *pb = (char *) p;
@@ -185,14 +187,6 @@ size_t strlen(const char *s)
   return (int) (eos - s - 1);
 }
 
-char *strcat(char *dst, const char *src)
-{
-  char *cp = dst;
-  while(*cp) cp++;
-  while (*cp++ = *src++);
-  return dst;
-}
-
 int strcmp(const char *src, const char *dst)
 {
   int ret = 0 ;
@@ -206,3 +200,12 @@ int strcmp(const char *src, const char *dst)
   return ret;
 }
 
+char *strcat(char *dst, const char *src)
+{
+  char *cp = dst;
+  while(*cp) cp++;
+  while (*cp++ = *src++);
+  return dst;
+}
+
+#endif
