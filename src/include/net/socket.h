@@ -50,6 +50,7 @@
 #define SOCK_NBIO             1
 #define SOCK_NODELAY          2
 #define SOCK_BCAST            4
+#define SOCK_LINGER           8
 
 //
 // Socket state
@@ -102,6 +103,7 @@ struct tcpsocket
 
   int backlog;
   int numpending;
+  unsigned int lingertime;
   struct socket **pending;
 
   struct pbuf *recvhead;

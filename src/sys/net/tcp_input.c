@@ -191,7 +191,7 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
 
     err = tcp_process(&seg, pcb);
 
-    // A return value of EABORT means that tcp_abort() was called  and that the pcb has been freed.
+    // A return value of EABORT means that tcp_abort() was called and that the pcb has been freed.
     if (err != -EABORT)
     {
       if (pcb->state != LISTEN) 

@@ -722,7 +722,31 @@ static int tcpsock_setsockopt(struct socket *s, int level, int optname, const ch
 {
   if (level == SOL_SOCKET)
   {
-    return -ENOSYS;
+    struct linger *l;
+
+    switch (optname)
+    {
+      case SO_LINGER:
+	if (!optval || optlen != sizeof(struct linger)) return -EFAULT;
+	l = (struct linger *) optval;
+	s->tcp.lingertime = l->l_linger * HZ;
+	if (l->l_onoff)
+	  s->flags |= SOCK_LINGER;
+	else
+	  s->flags &= ~SOCK_LINGER;
+	break;
+
+      case SO_DONTLINGER:
+	if (!optval || optlen != 4) return -EFAULT;
+	if (*(int *) optval)
+	  s->flags &= ~SOCK_LINGER;
+	else
+	  s->flags |= SOCK_LINGER;
+	break;
+
+      default:
+        return -ENOPROTOOPT;
+    }
   }
   else if (level == IPPROTO_TCP)
   {

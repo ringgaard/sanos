@@ -549,6 +549,12 @@ struct ifcfg
   struct sockaddr broadcast;
 };
 
+struct linger
+{
+  unsigned short l_onoff;
+  unsigned short l_linger;
+};
+
 struct msghdr
 {
   struct sockaddr *name;
@@ -607,8 +613,15 @@ struct servent
 #define SO_BROADCAST    0x0020
 #define SO_SNDTIMEO     0x1005
 #define SO_RCVTIMEO     0x1006
+#define SO_LINGER       0x0080
+
+#define SO_DONTLINGER   ((unsigned int) (~SO_LINGER))
 
 #define TCP_NODELAY     0x0001
+
+#define SD_RECEIVE      0x00
+#define SD_SEND         0x01
+#define SD_BOTH         0x02
 
 __inline unsigned short htons(unsigned short n)
 {
