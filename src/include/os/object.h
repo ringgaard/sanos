@@ -156,7 +156,6 @@ krnlapi void cancel_waitable_timer(struct waitable_timer *t);
 krnlapi int wait_for_object(object_t hobj, unsigned int timeout);
 krnlapi int wait_for_all_objects(struct object **objs, int count, unsigned int timeout);
 krnlapi int wait_for_any_object(struct object **objs, int count, unsigned int timeout);
-krnlapi int sleep(unsigned int millisecs);
 
 krnlapi handle_t halloc(struct object *o);
 krnlapi int hfree(handle_t h);

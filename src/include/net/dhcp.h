@@ -85,6 +85,8 @@ struct dhcp_state
   struct ip_addr offered_bc_addr;
   struct ip_addr offered_dns1_addr;
   struct ip_addr offered_dns2_addr;
+  struct ip_addr offered_ntpserv1_addr;
+  struct ip_addr offered_ntpserv2_addr;
   char offered_domain_name[256];
 
   unsigned long offered_t0_lease;	  // Lease period (in seconds)

@@ -30,7 +30,6 @@
 #define UART_MSR	6	// Modem Status Register
 #define UART_SCR	7	// Scratch Register
 
-
 //
 // Interrupt Enable Register
 //

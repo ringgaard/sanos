@@ -832,36 +832,6 @@ void cancel_waitable_timer(struct waitable_timer *t)
 }
 
 //
-// tmr_sleep
-//
-// End sleep state for thread
-//
-
-static void tmr_sleep(void *arg)
-{
-  struct thread *t = arg;
-  mark_thread_ready(t);
-}
-
-//
-// sleep
-//
-// Sleep for a number of milliseconds
-//
-
-int sleep(unsigned int millisecs)
-{
-  struct timer timer;
-
-  init_timer(&timer, tmr_sleep, self());
-  timer.expires = ticks + millisecs / MSECS_PER_TICK;
-  add_timer(&timer);
-  enter_wait(THREAD_WAIT_SLEEP);
-  del_timer(&timer);
-  return 0;
-}
-
-//
 // halloc
 //
 // Allocate handle

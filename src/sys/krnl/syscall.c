@@ -1526,6 +1526,7 @@ static int sys_gettimeofday(char *params)
 
   unlock_buffer(tv, sizeof(struct timeval));
   unlock_buffer(params, 4);
+  
   return 0;
 }
 
@@ -1544,11 +1545,11 @@ static int sys_settimeofday(char *params)
     return -EFAULT;
   }
 
-  systemclock.tv_usec = tv->tv_usec;
-  systemclock.tv_sec = tv->tv_sec;
+  set_time(tv);
 
   unlock_buffer(tv, sizeof(struct timeval));
   unlock_buffer(params, 4);
+
   return 0;
 }
 

@@ -257,3 +257,41 @@ void run_timer_list()
     tv1.index = (tv1.index + 1) & TVR_MASK;
   }
 }
+
+//
+// tmr_sleep
+//
+// End sleep state for thread
+//
+
+static void tmr_sleep(void *arg)
+{
+  struct thread *t = arg;
+  mark_thread_ready(t);
+}
+
+//
+// sleep
+//
+// Sleep for a number of milliseconds
+//
+
+int sleep(unsigned int millisecs)
+{
+  struct timer timer;
+
+  if (millisecs == 0)
+  {
+    yield();
+  }
+  else
+  {
+    init_timer(&timer, tmr_sleep, self());
+    timer.expires = ticks + millisecs / MSECS_PER_TICK;
+    add_timer(&timer);
+    enter_wait(THREAD_WAIT_SLEEP);
+    del_timer(&timer);
+  }
+
+  return 0;
+}

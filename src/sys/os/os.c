@@ -28,6 +28,8 @@ struct peb *peb;
 unsigned long loglevel = LOG_DEBUG | LOG_APITRACE | LOG_AUX;
 int logfile = -1;
 
+void init_sntpd();
+
 void panic(const char *msg)
 {
   write(2, msg, strlen(msg));
@@ -308,6 +310,9 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 
   // Initialize resolver
   res_init();
+
+  // Initialize NTP daemon
+  init_sntpd();
 
   // Initialize user module database
   peb->usermods = &usermods;

@@ -325,6 +325,13 @@ static void dhcp_handle_ack(struct dhcp_state *state)
     if (option_ptr[1] >= 8) state->offered_dns2_addr.addr = htonl(dhcp_get_option_long(option_ptr + 6));
   }
 
+  option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_NTP_SERVERS);
+  if (option_ptr != NULL)
+  {
+    if (option_ptr[1] >= 4) state->offered_ntpserv1_addr.addr = htonl(dhcp_get_option_long(option_ptr + 2));
+    if (option_ptr[1] >= 8) state->offered_ntpserv2_addr.addr = htonl(dhcp_get_option_long(option_ptr + 6));
+  }
+
   option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_DOMAIN_NAME);
   if (option_ptr != NULL)
   {
@@ -546,6 +553,7 @@ static err_t dhcp_discover(struct dhcp_state *state)
     dhcp_option_byte(state, DHCP_OPTION_BROADCAST_ADDRESS);
     dhcp_option_byte(state, DHCP_OPTION_DOMAIN_NAME_SERVERS);
     dhcp_option_byte(state, DHCP_OPTION_DOMAIN_NAME);
+    dhcp_option_byte(state, DHCP_OPTION_NTP_SERVERS);
 #endif
 
     dhcp_option_trailer(state);
@@ -570,7 +578,6 @@ static err_t dhcp_discover(struct dhcp_state *state)
   dhcp_set_state(state, DHCP_SELECTING);
   return result;
 }
-
 
 //
 // dhcp_bind
@@ -648,6 +655,8 @@ static void dhcp_bind(struct dhcp_state *state)
     peb->primary_dns.s_addr = state->offered_dns1_addr.addr;
     peb->secondary_dns.s_addr = state->offered_dns2_addr.addr;
     memcpy(peb->default_domain, state->offered_domain_name, 256);
+    peb->ntp_server1.s_addr = state->offered_ntpserv1_addr.addr;
+    peb->ntp_server2.s_addr = state->offered_ntpserv2_addr.addr;
   }
 
   set_event(&state->binding_complete);

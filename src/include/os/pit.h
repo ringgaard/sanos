@@ -39,5 +39,6 @@ void calibrate_delay();
 krnlapi time_t get_time();
 
 time_t time(time_t *time);
+void set_time(struct timeval *tv);
 
 #endif

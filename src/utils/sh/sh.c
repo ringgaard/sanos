@@ -1289,8 +1289,8 @@ void __stdcall telnetd(void *arg)
 
 int __stdcall main(hmodule_t hmod, char *cmdline, void *env)
 {
-  //beginthread(shelltask, 0, "/dev/com1", 0, NULL);
-  beginthread(telnetd, 0, NULL, 0, NULL);
+  beginthread(shelltask, 0, "/dev/com4", 0, NULL);
+  //beginthread(telnetd, 0, NULL, 0, NULL);
   shell();
   return 0;
 }

@@ -139,15 +139,6 @@ SOURCE=..\src\sys\krnl\pci.c
 # Begin Source File
 
 SOURCE=..\src\sys\krnl\pdir.c
-
-!IF  "$(CFG)" == "krnl - Win32 SanOS"
-
-!ELSEIF  "$(CFG)" == "krnl - Win32 SanOSDebug"
-
-# SUBTRACT CPP /FA<none>
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -172,6 +163,15 @@ SOURCE=..\src\sys\krnl\queue.c
 # Begin Source File
 
 SOURCE=..\src\sys\krnl\sched.c
+
+!IF  "$(CFG)" == "krnl - Win32 SanOS"
+
+# SUBTRACT CPP /FA<none>
+
+!ELSEIF  "$(CFG)" == "krnl - Win32 SanOSDebug"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -184,15 +184,6 @@ SOURCE=..\src\sys\krnl\syscall.c
 # Begin Source File
 
 SOURCE=..\src\sys\krnl\test.c
-
-!IF  "$(CFG)" == "krnl - Win32 SanOS"
-
-!ELSEIF  "$(CFG)" == "krnl - Win32 SanOSDebug"
-
-# SUBTRACT CPP /FA<none>
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 

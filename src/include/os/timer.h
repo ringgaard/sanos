@@ -37,8 +37,10 @@ void init_timers();
 void init_timer(struct timer *timer, void (*handler)(void *arg), void *arg);
 void run_timer_list();
 
-void add_timer(struct timer *timer);
-int del_timer(struct timer *timer);
-int mod_timer(struct timer *timer, unsigned int expires);
+krnlapi void add_timer(struct timer *timer);
+krnlapi int del_timer(struct timer *timer);
+krnlapi int mod_timer(struct timer *timer, unsigned int expires);
+
+krnlapi int sleep(unsigned int millisecs);
 
 #endif

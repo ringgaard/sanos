@@ -124,6 +124,10 @@ SOURCE=..\src\sys\os\resolv.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\sys\os\sntp.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\sys\os\sysapi.c
 
 !IF  "$(CFG)" == "os - Win32 SanOS"

@@ -449,6 +449,8 @@ struct peb
   struct in_addr primary_dns;
   struct in_addr secondary_dns;
   char default_domain[256];
+  struct in_addr ntp_server1;
+  struct in_addr ntp_server2;
 };
 
 //

@@ -233,7 +233,7 @@ static int read_buffer(struct bufpool *pool, struct buf *buf)
   change_state(pool, buf, BUF_STATE_READING);
   pool->ioactive = 1;
   rc = dev_read(pool->devno, buf->data, pool->bufsize, buf->blkno * pool->blks_per_buffer);
-  if (rc < 0) 
+  if (rc != pool->bufsize)
   {
     // Set buffer in error state and release all waiters
     kprintf("bufpool: error %d reading block %d from %s\n", rc, buf->blkno, device(pool->devno)->name);
@@ -277,7 +277,7 @@ static int write_buffer(struct bufpool *pool, struct buf *buf, int flush)
   else
     rc = pool->bufsize;
 
-  if (rc < 0)
+  if (rc != pool->bufsize)
   {
     // Set buffer in error state and release all waiters
     kprintf("bufpool: error %d writing block %d to %s\n", rc, buf->blkno, device(pool->devno)->name);

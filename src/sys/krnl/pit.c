@@ -109,6 +109,11 @@ static int read_bcd_cmos_reg(int reg)
   return (val >> 4) * 10 + (val & 0x0F);
 }
 
+static void write_bcd_cmos_reg(int reg, unsigned char val)
+{
+  write_cmos_reg(reg, (unsigned char) (((val / 10) << 4) + (val % 10)));
+}
+
 static void get_cmos_time(struct tm *tm)
 {
   tm->tm_year = read_bcd_cmos_reg(0x09) + (read_bcd_cmos_reg(0x32) * 100) - 1900;
@@ -123,6 +128,16 @@ static void get_cmos_time(struct tm *tm)
   tm->tm_isdst = 0;
 }
 
+static void set_cmos_time(struct tm *tm)
+{
+  write_bcd_cmos_reg(0x09, (unsigned char) (tm->tm_year % 100));
+  write_bcd_cmos_reg(0x32, (unsigned char) ((tm->tm_year + 1900) / 100));
+  write_bcd_cmos_reg(0x08, (unsigned char) (tm->tm_mon + 1));
+  write_bcd_cmos_reg(0x07, (unsigned char) (tm->tm_mday));
+  write_bcd_cmos_reg(0x04, (unsigned char) (tm->tm_hour));
+  write_bcd_cmos_reg(0x02, (unsigned char) (tm->tm_min));
+  write_bcd_cmos_reg(0x00, (unsigned char) (tm->tm_sec));
+}
 __inline static long __declspec(naked) rdtscl()
 {
   __asm { rdtsc }
@@ -282,4 +297,14 @@ time_t time(time_t *time)
   }
   else
     return get_time();
+}
+
+void set_time(struct timeval *tv)
+{
+  struct tm tm;
+
+  systemclock.tv_usec = tv->tv_usec;
+  systemclock.tv_sec = tv->tv_sec;
+  gmtime(&tv->tv_sec, &tm);
+  set_cmos_time(&tm);
 }
