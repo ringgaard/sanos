@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<VisualStudioProject ProjectType="Visual C++" Version="7.00">
+	<Platform Name="Win32"/>
+	<Configuration Name="Debug|Win32"></Configuration>
+	<Configuration Name="Release|Win32"></Configuration>
+</VisualStudioProject>
+

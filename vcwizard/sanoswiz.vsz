@@ -1,0 +1,6 @@
+VSWIZARD 7.0
+Wizard=VsWizard.VsWizardEngine
+
+Param="WIZARD_NAME = sanoswiz"
+Param="ABSOLUTE_PATH = c:\sanos\vcwizard"
+Param="FALLBACK_LCID = 1033"
