@@ -115,6 +115,15 @@ SOURCE=..\src\sys\krnl\fpu.c
 # Begin Source File
 
 SOURCE=..\src\sys\krnl\intr.c
+
+!IF  "$(CFG)" == "krnl - Win32 SanOS"
+
+# ADD CPP /FA
+
+!ELSEIF  "$(CFG)" == "krnl - Win32 SanOSDebug"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 

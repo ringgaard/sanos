@@ -49,7 +49,7 @@ static void __declspec(naked) isr()
 }
 
 //
-// Common entry points (slow and fast) for all system routines
+// Kernel entry point for int 48 syscall
 //
 
 int syscall(int syscallno, char *params);
@@ -72,6 +72,10 @@ static void __declspec(naked) systrap(void)
     iretd
   }
 }
+
+//
+// Kernel entry point for sysenter syscall
+//
 
 static void __declspec(naked) sysentry(void)
 {
