@@ -3,6 +3,7 @@ FILES                          List of files in sanos project (this file)
 COPYING                        License
 TODO                           TODO list and change log
 build.cmd                      Command file for building all components
+Makefile                       Makefile for building all components with NMAKE
 build\                         Build files for sanos
   3c905c.vcproj                Project file for 3Com 3C905 network driver (3905c.sys)
   advapi32.vcproj              Project file for win32 wrapper for advapi32.dll
@@ -204,7 +205,11 @@ src\                           Souce files
       tanh.asm                 Floating point hyperbolic tangent
   sys\                         OS and kernel source files
     boot\                      Boot loader
-      boot.asm                 Boot sector
+      boot.asm                 Boot sector for floppy and hardisk
+      cdboot.asm               Boot sector for CD-ROM (No Emulation Mode)
+      cdemboot.asm             Boot sector for CD-ROM (1.44 MB Floppy Emulation Mode)
+      netboot.asm              Boot sector for PXE boot image
+      ldrinit.asm              Real mode initialization for os loader
     dev\                       Device drivers
       3c905c.c                 3Com 3C905C NIC network driver
       3c905c.h                 3Com 3C905C NIC network driver definitions

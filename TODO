@@ -469,8 +469,8 @@ CHANGES
 
 - Enabled cursor on console when kbhit() is called.
 
-- Real mode os loader startup implemented as DOS stub for osldr.dll. Not the boot sector
-  calls the real mode entry point in real mode. The real mode startup initializes
-  the system, enters 32-bit protected mode and calls the protected mode startup
-  routine in osldr.dll. This simplifies the boot loaders and removes the 512 byte
+- Real mode os loader initialization implemented as DOS stub for osldr.dll.  Now the 
+  boot sector calls the real mode entry point in real mode. The real mode startup 
+  initializes the system, enters 32-bit protected mode and calls the protected mode 
+  startup routine in osldr.dll. This simplifies the boot loaders and removes the 512 byte
   limitation on real mode initialization code.

@@ -13,6 +13,7 @@ copy README %1
 copy COPYING %1
 copy FILES %1
 copy build.cmd %1
+copy Makefile %1
 
 copy build\*.vcproj %1\build
 copy build\sanos.sln %1\build

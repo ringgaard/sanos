@@ -53,6 +53,9 @@
 			RelativePath="..\FILES">
 		</File>
 		<File
+			RelativePath="..\Makefile">
+		</File>
+		<File
 			RelativePath="..\README">
 		</File>
 		<File

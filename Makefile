@@ -153,14 +153,13 @@ $(BIN)/cdemboot: $(SRC)/sys/boot/cdemboot.asm
 $(BIN)/netboot: $(SRC)/sys/boot/netboot.asm
     $(NASM) -f bin $** -o $@
 
-$(BIN)/osldr.dll: \
-  $(SRC)\sys\osldr\video.c \
-  $(SRC)\sys\osldr\osldr.c \
-  $(SRC)\sys\osldr\loadkrnl.c \
-  $(SRC)\sys\osldr\boothd.c \
-  $(SRC)\sys\osldr\bootfd.c \
-  $(SRC)\lib\vsprintf.c
-    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/osldr/ $** /D KERNEL /D OSLDR /link /DLL /NODEFAULTLIB /OPT:WIN98 /ENTRY:start /BASE:0x00090000 /FIXED
+$(OBJ)/boot/ldrinit.exe: $(SRC)/sys/boot/ldrinit.asm
+    $(NASM) -f bin $** -o $@
+
+OSLDRSRC=$(SRC)\sys\osldr\video.c $(SRC)\sys\osldr\osldr.c $(SRC)\sys\osldr\loadkrnl.c $(SRC)\sys\osldr\boothd.c $(SRC)\sys\osldr\bootfd.c $(SRC)\lib\vsprintf.c 
+
+$(BIN)/osldr.dll: $(OSLDRSRC) $(OBJ)\boot\ldrinit.exe
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/osldr/ $(OSLDRSRC) /D KERNEL /D OSLDR /link /DLL /NODEFAULTLIB /OPT:WIN98 /ENTRY:start /BASE:0x00090000 /FIXED /STUB:$(OBJ)\boot\ldrinit.exe
 
 $(OBJ)/krnl/lldiv.obj: $(SRC)/lib/lldiv.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
