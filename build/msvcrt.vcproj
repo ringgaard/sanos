@@ -3,69 +3,54 @@
 	ProjectType="Visual C++"
 	Version="7.00"
 	Name="msvcrt"
-	SccProjectName="msvcrt"
-	SccAuxPath=""
-	SccLocalPath=".."
-	SccProvider="MSSCCI:Jalindi Igloo">
+	ProjectGUID="{271B15E9-498E-49E0-957D-431EA23B5766}">
 	<Platforms>
 		<Platform
 			Name="Win32"/>
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="SanOSDebug|Win32"
-			OutputDirectory=".\..\dbg\bin"
-			IntermediateDirectory=".\..\dbg\obj\msvcrt"
-			ConfigurationType="2"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			Name="Debug|Win32"
+			OutputDirectory="..\dbg\bin"
+			IntermediateDirectory="..\dbg\obj\msvcrt"
+			ConfigurationType="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="DEBUG;MSVCRT_LIB;NO_CTYPE_MACROS"
+				PreprocessorDefinitions="MSVCRT_LIB;DEBUG;SANOS"
 				IgnoreStandardIncludePath="TRUE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough=""
-				PrecompiledHeaderFile=".\..\dbg\obj\msvcrt/msvcrt.pch"
-				AssemblerListingLocation=".\..\dbg\obj\msvcrt/"
-				ObjectFile=".\..\dbg\obj\msvcrt/"
-				ProgramDataBaseFileName=".\..\dbg\obj\msvcrt/"
+				PrecompiledHeaderFile="$(IntDir)\msvcrt.pch"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="3"
 				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="FALSE"/>
+				UndefinePreprocessorDefinitions="_WIN32"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				IgnoreImportLibrary="TRUE"
-				AdditionalOptions="/MACHINE:I386"
+				AdditionalOptions="/MACHINE:I386 /FIXED:NO"
 				AdditionalDependencies="os.lib kernel32.lib $(NOINHERIT)"
-				OutputFile=".\..\dbg\bin/msvcrt.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\dbg\lib"
 				IgnoreAllDefaultLibraries="TRUE"
-				ModuleDefinitionFile="..\src\win32\msvcrt\msvcrt.def"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="..\dbg\symbols\msvcrt.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\dbg\obj\msvcrt/msvcrt.map"
+				ProgramDatabaseFile="..\dbg\symbols\$(ProjectName).pdb"
+				GenerateMapFile="FALSE"
+				SubSystem="1"
 				OptimizeReferences="1"
 				EntryPointSymbol="dllmain"
-				ImportLibrary="..\dbg\lib/msvcrt.lib"/>
+				ImportLibrary="..\dbg\lib\$(ProjectName).lib"/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\dbg\bin/msvcrt.tlb"/>
+				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -73,21 +58,17 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
 				Name="VCWebDeploymentTool"/>
 		</Configuration>
 		<Configuration
-			Name="SanOS|Win32"
-			OutputDirectory=".\..\bin"
-			IntermediateDirectory=".\..\obj\msvcrt"
-			ConfigurationType="2"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			Name="Release|Win32"
+			OutputDirectory="..\bin"
+			IntermediateDirectory="..\obj\msvcrt"
+			ConfigurationType="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
@@ -96,51 +77,41 @@
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
-				OptimizeForProcessor="0"
 				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="MSVCRT_LIB;NO_CTYPE_MACROS"
+				PreprocessorDefinitions="MSVCRT_LIB;NDEBUG;SANOS"
 				IgnoreStandardIncludePath="TRUE"
 				StringPooling="TRUE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
-				RuntimeTypeInfo="TRUE"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough=""
-				PrecompiledHeaderFile=".\..\obj\msvcrt/msvcrt.pch"
-				AssemblerListingLocation=".\..\obj\msvcrt/"
-				ObjectFile=".\..\obj\msvcrt/"
-				ProgramDataBaseFileName=".\..\obj\msvcrt/"
+				PrecompiledHeaderFile="$(IntDir)\msvcrt.pch"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				CompileAs="0"
+				UndefinePreprocessorDefinitions="_WIN32"
 				UndefineAllPreprocessorDefinitions="FALSE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				IgnoreImportLibrary="TRUE"
-				AdditionalOptions="/MACHINE:I386"
+				AdditionalOptions="/MACHINE:I386 /FIXED:NO"
 				AdditionalDependencies="os.lib kernel32.lib $(NOINHERIT)"
-				OutputFile=".\..\bin/msvcrt.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\lib"
 				IgnoreAllDefaultLibraries="TRUE"
-				ModuleDefinitionFile="..\src\win32\msvcrt\msvcrt.def"
-				ProgramDatabaseFile=".\..\bin/msvcrt.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\obj\msvcrt/msvcrt.map"
+				GenerateDebugInformation="FALSE"
+				GenerateMapFile="FALSE"
+				SubSystem="1"
 				OptimizeReferences="1"
 				EntryPointSymbol="dllmain"
-				ImportLibrary="..\lib/msvcrt.lib"/>
+				ImportLibrary="..\lib\$(ProjectName).lib"/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\bin/msvcrt.tlb"/>
+				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -148,9 +119,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -186,7 +155,7 @@
 			<File
 				RelativePath="..\src\lib\math\floor.asm">
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -195,7 +164,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -207,7 +176,7 @@
 			<File
 				RelativePath="..\src\lib\math\fmod.asm">
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -216,7 +185,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -228,7 +197,7 @@
 			<File
 				RelativePath="..\src\lib\math\ftol.asm">
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -237,7 +206,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -252,7 +221,7 @@
 			<File
 				RelativePath="..\src\lib\math\modf.asm">
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -261,7 +230,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -303,12 +272,6 @@
 		</Filter>
 		<File
 			RelativePath="..\src\win32\msvcrt\except.c">
-			<FileConfiguration
-				Name="SanOS|Win32">
-				<Tool
-					Name="VCCLCompilerTool"
-					AssemblerOutput="0"/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="..\src\win32\msvcrt\file.c">

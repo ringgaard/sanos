@@ -3,22 +3,73 @@
 	ProjectType="Visual C++"
 	Version="7.00"
 	Name="krnl"
-	SccProjectName="krnl"
-	SccAuxPath=""
-	SccLocalPath=".."
-	SccProvider="MSSCCI:Jalindi Igloo">
+	ProjectGUID="{052FD498-9FC5-4EAB-BA27-C07AA8CEDAC9}">
 	<Platforms>
 		<Platform
 			Name="Win32"/>
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="SanOS|Win32"
-			OutputDirectory=".\..\bin"
-			IntermediateDirectory=".\..\obj\krnl"
-			ConfigurationType="2"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			Name="Debug|Win32"
+			OutputDirectory="..\dbg\bin"
+			IntermediateDirectory="..\dbg\obj\krnl"
+			ConfigurationType="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\src\include"
+				PreprocessorDefinitions="KRNL_LIB;KERNEL;DEBUG;SANOS"
+				IgnoreStandardIncludePath="TRUE"
+				ExceptionHandling="FALSE"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
+				UsePrecompiledHeader="2"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\krnl.pch"
+				WarningLevel="3"
+				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="3"
+				CompileAs="0"
+				UndefinePreprocessorDefinitions="_WIN32"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MACHINE:I386 /FIXED"
+				AdditionalDependencies="$(NOINHERIT)"
+				LinkIncremental="1"
+				SuppressStartupBanner="TRUE"
+				AdditionalLibraryDirectories="..\dbg\lib"
+				IgnoreAllDefaultLibraries="TRUE"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="..\dbg\symbols\$(ProjectName).pdb"
+				GenerateMapFile="FALSE"
+				SubSystem="1"
+				LargeAddressAware="2"
+				EntryPointSymbol="start"
+				BaseAddress="0x80000000"
+				ImportLibrary="..\dbg\lib\$(ProjectName).lib"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="..\bin"
+			IntermediateDirectory="..\obj\krnl"
+			ConfigurationType="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
@@ -27,23 +78,22 @@
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
-				OptimizeForProcessor="0"
 				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="KERNEL;KRNL_LIB"
+				PreprocessorDefinitions="KRNL_LIB;KERNEL;NDEBUG;SANOS"
 				IgnoreStandardIncludePath="TRUE"
 				StringPooling="TRUE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="krnl.h"
-				PrecompiledHeaderFile=".\..\obj\krnl/krnl.pch"
-				AssemblerListingLocation=".\..\obj\krnl/"
-				ObjectFile=".\..\obj\krnl/"
-				ProgramDataBaseFileName=".\..\obj\krnl/"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\krnl.pch"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				CompileAs="0"
+				UndefinePreprocessorDefinitions="_WIN32"
 				UndefineAllPreprocessorDefinitions="FALSE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
@@ -51,24 +101,19 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386 /FIXED"
 				AdditionalDependencies="$(NOINHERIT)"
-				OutputFile=".\..\bin/krnl.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
+				AdditionalLibraryDirectories="..\lib"
 				IgnoreAllDefaultLibraries="TRUE"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\obj\krnl/krnl.map"
+				GenerateDebugInformation="FALSE"
+				GenerateMapFile="FALSE"
+				SubSystem="1"
 				LargeAddressAware="2"
-				OptimizeForWindows98="2"
 				EntryPointSymbol="start"
 				BaseAddress="0x80000000"
-				ImportLibrary="..\lib/krnl.lib"/>
+				ImportLibrary="..\lib\$(ProjectName).lib"/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\bin/krnl.tlb"/>
+				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -76,78 +121,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-		</Configuration>
-		<Configuration
-			Name="SanOSDebug|Win32"
-			OutputDirectory=".\..\dbg\bin"
-			IntermediateDirectory=".\..\dbg\obj\krnl"
-			ConfigurationType="2"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="KERNEL;KRNL_LIB;DEBUG"
-				IgnoreStandardIncludePath="TRUE"
-				ExceptionHandling="FALSE"
-				BasicRuntimeChecks="0"
-				RuntimeLibrary="0"
-				BufferSecurityCheck="FALSE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="krnl.h"
-				PrecompiledHeaderFile=".\..\dbg\obj\krnl/krnl.pch"
-				AssemblerListingLocation=".\..\dbg\obj\krnl/"
-				ObjectFile=".\..\dbg\obj\krnl/"
-				ProgramDataBaseFileName=".\..\dbg\obj\krnl/"
-				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="3"
-				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="FALSE"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /FIXED"
-				AdditionalDependencies="$(NOINHERIT)"
-				OutputFile=".\..\dbg\bin/krnl.dll"
-				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
-				IgnoreAllDefaultLibraries="TRUE"
-				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="..\dbg\symbols\krnl.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\dbg\obj\krnl/krnl.map"
-				LargeAddressAware="2"
-				OptimizeForWindows98="2"
-				EntryPointSymbol="start"
-				BaseAddress="0x80000000"
-				ImportLibrary="..\dbg\lib/krnl.lib"/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\dbg\bin/krnl.tlb"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -199,12 +173,6 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\object.c">
-				<FileConfiguration
-					Name="SanOS|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						AssemblerOutput="0"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\pci.c">
@@ -238,12 +206,6 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\timer.c">
-				<FileConfiguration
-					Name="SanOS|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						AssemblerOutput="1"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\trap.c">
@@ -270,7 +232,7 @@
 			<File
 				RelativePath="..\src\lib\lldiv.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -279,7 +241,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -291,7 +253,7 @@
 			<File
 				RelativePath="..\src\lib\llmul.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -300,7 +262,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -500,6 +462,9 @@
 				</File>
 				<File
 					RelativePath="..\src\include\os\fpu.h">
+				</File>
+				<File
+					RelativePath="..\src\include\os\iop.h">
 				</File>
 				<File
 					RelativePath="..\src\include\os\iovec.h">

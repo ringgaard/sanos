@@ -32,7 +32,9 @@
 // 
 
 #include <os.h>
+#include <string.h>
 #include <sys/types.h>
+#include <os/iop.h>
 
 void kprintf(const char *fmt,...);
 

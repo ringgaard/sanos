@@ -32,6 +32,7 @@
 // 
 
 #include <os.h>
+#include <string.h>
 #include <sys/types.h>
 
 #include <os/pdir.h>

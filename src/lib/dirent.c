@@ -32,6 +32,7 @@
 // 
 
 #include <os.h>
+#include <string.h>
 #include <dirent.h>
 
 DIR *opendir(const char *name)

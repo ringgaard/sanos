@@ -3,61 +3,51 @@
 	ProjectType="Visual C++"
 	Version="7.00"
 	Name="sh"
-	SccProjectName="sh"
-	SccAuxPath=""
-	SccLocalPath=".."
-	SccProvider="MSSCCI:Jalindi Igloo">
+	ProjectGUID="{6AED4C48-0CBD-456B-867E-CE9079837A38}">
 	<Platforms>
 		<Platform
 			Name="Win32"/>
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="SanOSDebug|Win32"
-			OutputDirectory=".\..\dbg\bin"
-			IntermediateDirectory=".\..\dbg\obj\sh"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			Name="Debug|Win32"
+			OutputDirectory="..\dbg\bin"
+			IntermediateDirectory="..\dbg\obj\sh"
+			ConfigurationType="1">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="SHELL,DEBUG"
+				PreprocessorDefinitions="SH;DEBUG;SANOS"
 				IgnoreStandardIncludePath="TRUE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile=".\..\dbg\obj\sh/sh.pch"
-				AssemblerListingLocation=".\..\dbg\obj\sh/"
-				ObjectFile=".\..\dbg\obj\sh/"
-				ProgramDataBaseFileName=".\..\dbg\obj\sh/"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\sh.pch"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="3"
 				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="FALSE"/>
+				UndefinePreprocessorDefinitions="_WIN32"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386 /FIXED:NO"
 				AdditionalDependencies="os.lib libc.lib $(NOINHERIT)"
-				OutputFile=".\..\dbg\bin/sh.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\dbg\lib"
 				IgnoreAllDefaultLibraries="TRUE"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="..\dbg\symbols\sh.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\dbg\obj\sh/sh.map"
-				SubSystem="1"
-				EntryPointSymbol=""/>
+				ProgramDatabaseFile="..\dbg\symbols\$(ProjectName).pdb"
+				GenerateMapFile="FALSE"
+				SubSystem="1"/>
 			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName=".\..\dbg\bin/sh.tlb"/>
+				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -65,21 +55,17 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
 				Name="VCWebDeploymentTool"/>
 		</Configuration>
 		<Configuration
-			Name="SanOS|Win32"
-			OutputDirectory=".\..\bin"
-			IntermediateDirectory=".\..\obj\sh"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			Name="Release|Win32"
+			OutputDirectory="..\bin"
+			IntermediateDirectory="..\obj\sh"
+			ConfigurationType="1">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
@@ -88,22 +74,22 @@
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
-				OptimizeForProcessor="0"
 				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="SHELL"
+				PreprocessorDefinitions="SH;NDEBUG;SANOS"
 				IgnoreStandardIncludePath="TRUE"
 				StringPooling="TRUE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile=".\..\obj\sh/sh.pch"
-				AssemblerListingLocation=".\..\obj\sh/"
-				ObjectFile=".\..\obj\sh/"
-				ProgramDataBaseFileName=".\..\obj\sh/"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\sh.pch"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				CompileAs="0"
+				UndefinePreprocessorDefinitions="_WIN32"
 				UndefineAllPreprocessorDefinitions="FALSE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
@@ -111,19 +97,15 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386 /FIXED:NO"
 				AdditionalDependencies="os.lib libc.lib $(NOINHERIT)"
-				OutputFile=".\..\bin/sh.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\lib"
 				IgnoreAllDefaultLibraries="TRUE"
-				ProgramDatabaseFile=".\..\bin/sh.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\obj\sh/sh.map"
-				SubSystem="1"
-				EntryPointSymbol=""/>
+				GenerateDebugInformation="FALSE"
+				GenerateMapFile="FALSE"
+				SubSystem="1"/>
 			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName=".\..\bin/sh.tlb"/>
+				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -131,9 +113,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -153,18 +133,6 @@
 		</File>
 		<File
 			RelativePath="..\src\utils\sh\sh.c">
-			<FileConfiguration
-				Name="SanOSDebug|Win32">
-				<Tool
-					Name="VCCLCompilerTool"
-					AssemblerOutput="0"/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="SanOS|Win32">
-				<Tool
-					Name="VCCLCompilerTool"
-					AssemblerOutput="4"/>
-			</FileConfiguration>
 		</File>
 	</Files>
 	<Globals>

@@ -3,22 +3,71 @@
 	ProjectType="Visual C++"
 	Version="7.00"
 	Name="advapi32"
-	SccProjectName="advapi32"
-	SccAuxPath=""
-	SccLocalPath=".."
-	SccProvider="MSSCCI:Jalindi Igloo">
+	ProjectGUID="{C31B9153-CAA0-4A40-AB88-B5D89B22CAF9}">
 	<Platforms>
 		<Platform
 			Name="Win32"/>
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="SanOS|Win32"
-			OutputDirectory=".\..\bin"
-			IntermediateDirectory=".\..\obj\advapi32"
-			ConfigurationType="2"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			Name="Debug|Win32"
+			OutputDirectory="..\dbg\bin"
+			IntermediateDirectory="..\dbg\obj\advapi32"
+			ConfigurationType="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\src\include"
+				PreprocessorDefinitions="ADVAPI32_LIB;DEBUG;SANOS"
+				IgnoreStandardIncludePath="TRUE"
+				ExceptionHandling="FALSE"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
+				UsePrecompiledHeader="2"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\advapi32.pch"
+				WarningLevel="3"
+				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="3"
+				CompileAs="0"
+				UndefinePreprocessorDefinitions="_WIN32"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MACHINE:I386 /FIXED:NO"
+				AdditionalDependencies="os.lib libc.lib $(NOINHERIT)"
+				LinkIncremental="1"
+				SuppressStartupBanner="TRUE"
+				AdditionalLibraryDirectories="..\dbg\lib"
+				IgnoreAllDefaultLibraries="TRUE"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="..\dbg\symbols\$(ProjectName).pdb"
+				GenerateMapFile="FALSE"
+				SubSystem="1"
+				EntryPointSymbol="DllMain"
+				ImportLibrary="..\dbg\lib\$(ProjectName).lib"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="..\bin"
+			IntermediateDirectory="..\obj\advapi32"
+			ConfigurationType="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
@@ -27,49 +76,40 @@
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
-				OptimizeForProcessor="0"
 				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="ADVAPI32_LIB"
+				PreprocessorDefinitions="ADVAPI32_LIB;NDEBUG;SANOS"
 				IgnoreStandardIncludePath="TRUE"
 				StringPooling="TRUE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="os.h"
-				PrecompiledHeaderFile=".\..\obj\advapi32/advapi32.pch"
-				AssemblerListingLocation=".\..\obj\advapi32/"
-				ObjectFile=".\..\obj\advapi32/"
-				ProgramDataBaseFileName=".\..\obj\advapi32/"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\advapi32.pch"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				CompileAs="0"
+				UndefinePreprocessorDefinitions="_WIN32"
 				UndefineAllPreprocessorDefinitions="FALSE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				IgnoreImportLibrary="TRUE"
-				AdditionalOptions="/MACHINE:I386"
+				AdditionalOptions="/MACHINE:I386 /FIXED:NO"
 				AdditionalDependencies="os.lib libc.lib $(NOINHERIT)"
-				OutputFile=".\..\bin/advapi32.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\lib"
 				IgnoreAllDefaultLibraries="TRUE"
-				ModuleDefinitionFile="..\src\win32\advapi32\advapi32.def"
-				ProgramDatabaseFile=".\..\bin/advapi32.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\obj\advapi32/advapi32.map"
+				GenerateDebugInformation="FALSE"
+				GenerateMapFile="FALSE"
+				SubSystem="1"
 				EntryPointSymbol="DllMain"
-				ImportLibrary="..\lib/advapi32.lib"/>
+				ImportLibrary="..\lib\$(ProjectName).lib"/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\bin/advapi32.tlb"/>
+				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -77,77 +117,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-		</Configuration>
-		<Configuration
-			Name="SanOSDebug|Win32"
-			OutputDirectory=".\..\dbg\bin"
-			IntermediateDirectory=".\..\dbg\obj\advapi32"
-			ConfigurationType="2"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="ADVAPI32_LIB;DEBUG"
-				IgnoreStandardIncludePath="TRUE"
-				ExceptionHandling="FALSE"
-				RuntimeLibrary="0"
-				BufferSecurityCheck="FALSE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="os.h"
-				PrecompiledHeaderFile=".\..\dbg\obj\advapi32/advapi32.pch"
-				AssemblerListingLocation=".\..\dbg\obj\advapi32/"
-				ObjectFile=".\..\dbg\obj\advapi32/"
-				ProgramDataBaseFileName=".\..\dbg\obj\advapi32/"
-				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="3"
-				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="FALSE"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				IgnoreImportLibrary="TRUE"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="os.lib libc.lib $(NOINHERIT)"
-				OutputFile=".\..\dbg\bin/advapi32.dll"
-				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="..\dbg\lib"
-				IgnoreAllDefaultLibraries="TRUE"
-				ModuleDefinitionFile="..\src\win32\advapi32\advapi32.def"
-				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="..\dbg\symbols\advapi32.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\dbg\obj\advapi32/advapi32.map"
-				EntryPointSymbol="DllMain"
-				ImportLibrary="..\dbg\lib/advapi32.lib"/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\dbg\bin/advapi32.tlb"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool

@@ -3,22 +3,69 @@
 	ProjectType="Visual C++"
 	Version="7.00"
 	Name="setup"
-	SccProjectName="setup"
-	SccAuxPath=""
-	SccLocalPath=".."
-	SccProvider="MSSCCI:Jalindi Igloo">
+	ProjectGUID="{ABE062EE-C968-45B9-A7E3-A3D783A8AFFD}">
 	<Platforms>
 		<Platform
 			Name="Win32"/>
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="SanOS|Win32"
-			OutputDirectory=".\..\bin"
-			IntermediateDirectory=".\..\obj\setup"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			Name="Debug|Win32"
+			OutputDirectory="..\dbg\bin"
+			IntermediateDirectory="..\dbg\obj\setup"
+			ConfigurationType="1">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\src\include"
+				PreprocessorDefinitions="SETUP;DEBUG;SANOS"
+				IgnoreStandardIncludePath="TRUE"
+				ExceptionHandling="FALSE"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
+				UsePrecompiledHeader="2"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\setup.pch"
+				WarningLevel="3"
+				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="3"
+				CompileAs="0"
+				UndefinePreprocessorDefinitions="_WIN32"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MACHINE:I386 /FIXED:NO"
+				AdditionalDependencies="os.lib libc.lib $(NOINHERIT)"
+				LinkIncremental="1"
+				SuppressStartupBanner="TRUE"
+				AdditionalLibraryDirectories="..\dbg\lib"
+				IgnoreAllDefaultLibraries="TRUE"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="..\dbg\symbols\$(ProjectName).pdb"
+				GenerateMapFile="FALSE"
+				SubSystem="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="..\bin"
+			IntermediateDirectory="..\obj\setup"
+			ConfigurationType="1">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
@@ -27,22 +74,22 @@
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
-				OptimizeForProcessor="0"
 				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="SETUP"
+				PreprocessorDefinitions="SETUP;NDEBUG;SANOS"
 				IgnoreStandardIncludePath="TRUE"
 				StringPooling="TRUE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile=".\..\obj\setup/setup.pch"
-				AssemblerListingLocation=".\..\obj\setup/"
-				ObjectFile=".\..\obj\setup/"
-				ProgramDataBaseFileName=".\..\obj\setup/"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\setup.pch"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				CompileAs="0"
+				UndefinePreprocessorDefinitions="_WIN32"
 				UndefineAllPreprocessorDefinitions="FALSE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
@@ -50,19 +97,15 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386 /FIXED:NO"
 				AdditionalDependencies="os.lib libc.lib $(NOINHERIT)"
-				OutputFile=".\..\bin/setup.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\lib"
 				IgnoreAllDefaultLibraries="TRUE"
-				ProgramDatabaseFile=".\..\bin/setup.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\obj\setup/setup.map"
-				SubSystem="1"
-				EntryPointSymbol=""/>
+				GenerateDebugInformation="FALSE"
+				GenerateMapFile="FALSE"
+				SubSystem="1"/>
 			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName=".\..\bin/setup.tlb"/>
+				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -70,70 +113,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-		</Configuration>
-		<Configuration
-			Name="SanOSDebug|Win32"
-			OutputDirectory=".\..\dbg\bin"
-			IntermediateDirectory=".\..\dbg\obj\setup"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="SETUP,DEBUG"
-				IgnoreStandardIncludePath="TRUE"
-				ExceptionHandling="FALSE"
-				RuntimeLibrary="0"
-				BufferSecurityCheck="FALSE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile=".\..\dbg\obj\setup/setup.pch"
-				AssemblerListingLocation=".\..\dbg\obj\setup/"
-				ObjectFile=".\..\dbg\obj\setup/"
-				ProgramDataBaseFileName=".\..\dbg\obj\setup/"
-				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="3"
-				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="FALSE"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /FIXED:NO"
-				AdditionalDependencies="os.lib libc.lib"
-				OutputFile=".\..\dbg\bin/setup.exe"
-				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="..\dbg\lib"
-				IgnoreAllDefaultLibraries="TRUE"
-				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="..\dbg\symbols\setup.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\dbg\obj\setup/setup.map"
-				SubSystem="1"
-				EntryPointSymbol=""/>
-			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName=".\..\dbg\bin/setup.tlb"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool

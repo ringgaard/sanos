@@ -150,7 +150,9 @@ function AddConfig(proj, strProjectName)
     CLTool.SuppressStartupBanner = true;
     CLTool.CompileAs = 0; 
     CLTool.Detect64BitPortabilityProblems = false;
-    
+    CLTool.DebugInformationFormat = 3;
+    CLTool.UndefinePreprocessorDefinitions= '_WIN32';
+
     if (islib)
     {
       var LibTool = config.Tools('VCLibrarianTool');
@@ -169,6 +171,7 @@ function AddConfig(proj, strProjectName)
       else
         LinkTool.AdditionalDependencies = 'os.lib $(NOINHERIT)';
       if (isdrv) LinkTool.OutputFile = '$(OutDir)\\$(ProjectName).sys';
+
       LinkTool.LinkIncremental = 1;
       LinkTool.SuppressStartupBanner = true;
       LinkTool.AdditionalLibraryDirectories = sdkpath + "\\dbg\\lib";
@@ -184,6 +187,7 @@ function AddConfig(proj, strProjectName)
       LinkTool.SubSystem = 1;
       if (isdll)
       {
+      	LinkTool.ImportLibrary = '..\\dbg\\lib\\$(ProjectName).lib'
         if (wizard.FindSymbol('APP_TYPE_USERDLL'))
           LinkTool.EntryPointSymbol = 'DllMain';
         else
@@ -224,12 +228,12 @@ function AddConfig(proj, strProjectName)
     if (isdll || islib)
     {
       if (iskrnl)
-        CLTool.PreprocessorDefinitions = prjname.toUpperCase() + '_LIB;KERNEL;SANOS';
+        CLTool.PreprocessorDefinitions = prjname.toUpperCase() + '_LIB;KERNEL;NDEBUG;SANOS';
       else
-        CLTool.PreprocessorDefinitions = prjname.toUpperCase() + '_LIB;SANOS';
+        CLTool.PreprocessorDefinitions = prjname.toUpperCase() + '_LIB;NDEBUG;SANOS';
     }
     else
-      CLTool.PreprocessorDefinitions = prjname.toUpperCase() + ';SANOS';
+      CLTool.PreprocessorDefinitions = prjname.toUpperCase() + ';NDEBUG;SANOS';
 
     if (defines != '')
     {
@@ -240,6 +244,7 @@ function AddConfig(proj, strProjectName)
     CLTool.StringPooling = true;
     CLTool.ExceptionHandling = false;
     CLTool.RuntimeLibrary = 0;
+    CLTool.BufferSecurityCheck = false;
     CLTool.EnableFunctionLevelLinking = true;
     CLTool.UsePrecompiledHeader = 2;
     CLTool.PrecompiledHeaderThrough = '';
@@ -249,6 +254,7 @@ function AddConfig(proj, strProjectName)
     CLTool.CompileAs = 0; 
     CLTool.UndefineAllPreprocessorDefinitions = false;
     CLTool.Detect64BitPortabilityProblems = false;
+    CLTool.UndefinePreprocessorDefinitions= '_WIN32';
 
     if (islib)
     {
@@ -277,6 +283,7 @@ function AddConfig(proj, strProjectName)
       LinkTool.SubSystem = 1;
       if (isdll)
       {
+      	LinkTool.ImportLibrary = '..\\lib\\$(ProjectName).lib'
         if (wizard.FindSymbol('APP_TYPE_USERDLL'))
           LinkTool.EntryPointSymbol = 'DllMain';
         else

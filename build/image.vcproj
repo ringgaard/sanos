@@ -3,11 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.00"
 	Name="image"
-	ProjectGUID="{B4FF6307-3148-449B-B9BE-7FD53B7FC3BB}"
-	SccProjectName="image"
-	SccAuxPath=""
-	SccLocalPath="."
-	SccProvider="MSSCCI:Jalindi Igloo"
+	ProjectGUID="{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}"
 	Keyword="MakeFileProj">
 	<Platforms>
 		<Platform
@@ -15,7 +11,7 @@
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="SanOS|Win32"
+			Name="Release|Win32"
 			OutputDirectory=".\..\img"
 			IntermediateDirectory=".\..\bin"
 			ConfigurationType="10"
@@ -30,7 +26,7 @@
 				Name="VCPreBuildEventTool"/>
 		</Configuration>
 		<Configuration
-			Name="SanOSDebug|Win32"
+			Name="Debug|Win32"
 			OutputDirectory=".\..\img"
 			IntermediateDirectory=".\..\dbg\bin"
 			ConfigurationType="10"
@@ -73,7 +69,7 @@
 		<File
 			RelativePath=".\mkbootdisk.cmd">
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Create boot disk"
@@ -83,7 +79,7 @@
 					Outputs="..\img\bootdisk.img"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Create boot disk"

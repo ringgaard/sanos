@@ -32,6 +32,9 @@
 // 
 
 #include <os.h>
+#include <string.h>
+#include <sys/types.h>
+#include <os/iop.h>
 #include <os/seg.h>
 #include <os/tss.h>
 #include <os/syspage.h>

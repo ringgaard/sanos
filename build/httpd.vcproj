@@ -3,69 +3,53 @@
 	ProjectType="Visual C++"
 	Version="7.00"
 	Name="httpd"
-	ProjectGUID="{8BC406B5-1C14-4659-BEA5-EA8C9B8D57DD}"
-	SccProjectName="httpd"
-	SccAuxPath=""
-	SccLocalPath=".."
-	SccProvider="MSSCCI:Jalindi Igloo">
+	ProjectGUID="{B3F3D6CA-D977-4FE6-97CC-AFA424878E2A}">
 	<Platforms>
 		<Platform
 			Name="Win32"/>
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="SanOSDebug|Win32"
-			OutputDirectory=".\..\dbg\bin"
-			IntermediateDirectory=".\..\dbg\obj\httpd"
-			ConfigurationType="2"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			Name="Debug|Win32"
+			OutputDirectory="..\dbg\bin"
+			IntermediateDirectory="..\dbg\obj\httpd"
+			ConfigurationType="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="HTTPD_LIB;DEBUG"
+				PreprocessorDefinitions="HTTPD_LIB;DEBUG;SANOS"
 				IgnoreStandardIncludePath="TRUE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="os.h"
-				PrecompiledHeaderFile=".\..\dbg\obj\httpd/httpd.pch"
-				AssemblerListingLocation=".\..\dbg\obj\httpd/"
-				ObjectFile=".\..\dbg\obj\httpd/"
-				ProgramDataBaseFileName=".\..\dbg\obj\httpd/"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\httpd.pch"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="3"
 				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="FALSE"/>
+				UndefinePreprocessorDefinitions="_WIN32"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				IgnoreImportLibrary="TRUE"
-				AdditionalOptions="/MACHINE:I386"
+				AdditionalOptions="/MACHINE:I386 /FIXED:NO"
 				AdditionalDependencies="os.lib libc.lib $(NOINHERIT)"
-				OutputFile=".\..\dbg\bin/httpd.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\dbg\lib"
 				IgnoreAllDefaultLibraries="TRUE"
-				ModuleDefinitionFile=""
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="..\dbg\symbols\httpd.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\dbg\obj\httpd/httpd.map"
+				ProgramDatabaseFile="..\dbg\symbols\$(ProjectName).pdb"
+				GenerateMapFile="FALSE"
+				SubSystem="1"
 				EntryPointSymbol="DllMain"
-				ImportLibrary="..\dbg\lib/httpd.lib"/>
+				ImportLibrary="..\dbg\lib\$(ProjectName).lib"/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\dbg\bin/httpd.tlb"/>
+				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -73,21 +57,17 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
 				Name="VCWebDeploymentTool"/>
 		</Configuration>
 		<Configuration
-			Name="SanOS|Win32"
-			OutputDirectory=".\..\bin"
-			IntermediateDirectory=".\..\obj\httpd"
-			ConfigurationType="2"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			Name="Release|Win32"
+			OutputDirectory="..\bin"
+			IntermediateDirectory="..\obj\httpd"
+			ConfigurationType="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
@@ -96,49 +76,40 @@
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
-				OptimizeForProcessor="0"
 				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="HTTPD_LIB"
+				PreprocessorDefinitions="HTTPD_LIB;NDEBUG;SANOS"
 				IgnoreStandardIncludePath="TRUE"
 				StringPooling="TRUE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="os.h"
-				PrecompiledHeaderFile=".\..\obj\httpd/httpd.pch"
-				AssemblerListingLocation=".\..\obj\httpd/"
-				ObjectFile=".\..\obj\httpd/"
-				ProgramDataBaseFileName=".\..\obj\httpd/"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\httpd.pch"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				CompileAs="0"
+				UndefinePreprocessorDefinitions="_WIN32"
 				UndefineAllPreprocessorDefinitions="FALSE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				IgnoreImportLibrary="TRUE"
-				AdditionalOptions="/MACHINE:I386"
+				AdditionalOptions="/MACHINE:I386 /FIXED:NO"
 				AdditionalDependencies="os.lib libc.lib $(NOINHERIT)"
-				OutputFile=".\..\bin/httpd.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\lib"
 				IgnoreAllDefaultLibraries="TRUE"
-				ModuleDefinitionFile=""
-				ProgramDatabaseFile=".\..\bin/httpd.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\obj\httpd/httpd.map"
+				GenerateDebugInformation="FALSE"
+				GenerateMapFile="FALSE"
+				SubSystem="1"
 				EntryPointSymbol="DllMain"
-				ImportLibrary="..\lib/httpd.lib"/>
+				ImportLibrary="..\lib\$(ProjectName).lib"/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\bin/httpd.tlb"/>
+				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -146,9 +117,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool

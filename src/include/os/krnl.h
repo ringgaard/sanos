@@ -51,6 +51,7 @@
 #include <os/seg.h>
 #include <os/fpu.h>
 #include <os/cpu.h>
+#include <os/iop.h>
 
 #include <os/pdir.h>
 #include <os/pframe.h>
@@ -152,13 +153,6 @@ void init_fd();
 
 void init_apm();
 
-// iop.c
-
-void insw(int port, void *buf, int count);
-void outsw(int port, void *buf, int count);
-void insd(int port, void *buf, int count);
-void outsd(int port, void *buf, int count);
-
 // opts.c
 
 char *get_option(char *opts, char *name, char *buffer, int size, char *defval);
@@ -172,26 +166,5 @@ unsigned long strtoul(const char *nptr, char **endptr, int ibase);
 
 int vsprintf(char *buf, const char *fmt, va_list args);
 int sprintf(char *buf, const char *fmt, ...);
-
-// Intrinsic i/o functions
-
-int __cdecl _inp(port_t);
-unsigned short __cdecl _inpw(port_t);
-unsigned long __cdecl _inpd(port_t);
-
-int __cdecl _outp(port_t, int);
-unsigned short __cdecl _outpw(port_t, unsigned short);
-unsigned long __cdecl _outpd(port_t, unsigned long);
-
-#ifdef DEBUG
-
-#define inp _inp
-#define inpw _inpw
-#define inpd _inpd
-#define outp _outp
-#define outpw _outpw
-#define outpd _outpd
-
-#endif
 
 #endif

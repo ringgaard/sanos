@@ -3,22 +3,60 @@
 	ProjectType="Visual C++"
 	Version="7.00"
 	Name="libc"
-	SccProjectName="libc"
-	SccAuxPath=""
-	SccLocalPath=".."
-	SccProvider="MSSCCI:Jalindi Igloo">
+	ProjectGUID="{D32F7F96-E7EE-4109-97E6-B06BBF475BA5}">
 	<Platforms>
 		<Platform
 			Name="Win32"/>
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="SanOS|Win32"
-			OutputDirectory=".\..\bin"
-			IntermediateDirectory=".\..\obj\libc"
-			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			Name="Debug|Win32"
+			OutputDirectory="..\dbg\lib"
+			IntermediateDirectory="..\dbg\obj\libc"
+			ConfigurationType="4">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\src\include"
+				PreprocessorDefinitions="LIBC_LIB;DEBUG;SANOS"
+				IgnoreStandardIncludePath="TRUE"
+				ExceptionHandling="FALSE"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
+				UsePrecompiledHeader="2"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\libc.pch"
+				WarningLevel="3"
+				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="3"
+				CompileAs="0"
+				UndefinePreprocessorDefinitions="_WIN32"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\$(ProjectName).lib"
+				SuppressStartupBanner="TRUE"
+				IgnoreAllDefaultLibraries="TRUE"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="..\lib"
+			IntermediateDirectory="..\obj\libc"
+			ConfigurationType="4">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
@@ -27,28 +65,28 @@
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
-				OptimizeForProcessor="0"
 				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="LIBC"
+				PreprocessorDefinitions="LIBC_LIB;NDEBUG;SANOS"
 				IgnoreStandardIncludePath="TRUE"
 				StringPooling="TRUE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile=".\..\obj\libc/libc.pch"
-				AssemblerListingLocation=".\..\obj\libc/"
-				ObjectFile=".\..\obj\libc/"
-				ProgramDataBaseFileName=".\..\obj\libc/"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\libc.pch"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				CompileAs="0"
+				UndefinePreprocessorDefinitions="_WIN32"
 				UndefineAllPreprocessorDefinitions="FALSE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="..\lib\libc.lib"
+				OutputFile="$(OutDir)\$(ProjectName).lib"
 				SuppressStartupBanner="TRUE"
 				IgnoreAllDefaultLibraries="TRUE"/>
 			<Tool
@@ -60,57 +98,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="SanOSDebug|Win32"
-			OutputDirectory=".\..\dbg\bin"
-			IntermediateDirectory=".\..\dbg\obj\libc"
-			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="LIBC,DEBUG"
-				IgnoreStandardIncludePath="TRUE"
-				ExceptionHandling="FALSE"
-				RuntimeLibrary="0"
-				BufferSecurityCheck="FALSE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile=".\..\dbg\obj\libc/libc.pch"
-				AssemblerListingLocation=".\..\dbg\obj\libc/"
-				ObjectFile=".\..\dbg\obj\libc/"
-				ProgramDataBaseFileName=".\..\dbg\obj\libc/"
-				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="3"
-				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="FALSE"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="..\dbg\lib\libc.lib"
-				SuppressStartupBanner="TRUE"
-				IgnoreAllDefaultLibraries="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 		</Configuration>
@@ -270,7 +258,7 @@
 			<File
 				RelativePath="..\src\lib\math\acos.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -279,7 +267,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -291,7 +279,7 @@
 			<File
 				RelativePath="..\src\lib\math\asin.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -300,7 +288,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -312,7 +300,7 @@
 			<File
 				RelativePath="..\src\lib\math\atan.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -321,7 +309,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -333,7 +321,7 @@
 			<File
 				RelativePath="..\src\lib\math\atan2.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -342,7 +330,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -354,7 +342,7 @@
 			<File
 				RelativePath="..\src\lib\math\ceil.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -363,7 +351,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -375,7 +363,7 @@
 			<File
 				RelativePath="..\src\lib\math\cos.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -384,7 +372,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -396,7 +384,7 @@
 			<File
 				RelativePath="..\src\lib\math\cosh.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -405,7 +393,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -417,7 +405,7 @@
 			<File
 				RelativePath="..\src\lib\math\exp.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -426,7 +414,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -438,7 +426,7 @@
 			<File
 				RelativePath="..\src\lib\math\fabs.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -447,7 +435,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -459,7 +447,7 @@
 			<File
 				RelativePath="..\src\lib\math\floor.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -468,7 +456,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -480,7 +468,7 @@
 			<File
 				RelativePath="..\src\lib\math\fmod.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -489,7 +477,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -501,7 +489,7 @@
 			<File
 				RelativePath="..\src\lib\math\fpconst.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -510,7 +498,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -522,7 +510,7 @@
 			<File
 				RelativePath="..\src\lib\math\fpreset.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -531,7 +519,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -543,7 +531,7 @@
 			<File
 				RelativePath="..\src\lib\math\frexp.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -552,7 +540,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -564,7 +552,7 @@
 			<File
 				RelativePath="..\src\lib\math\ftol.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -573,7 +561,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -585,7 +573,7 @@
 			<File
 				RelativePath="..\src\lib\math\ldexp.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -594,7 +582,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -606,7 +594,7 @@
 			<File
 				RelativePath="..\src\lib\math\log.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -615,7 +603,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -627,7 +615,7 @@
 			<File
 				RelativePath="..\src\lib\math\log10.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -636,7 +624,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -648,7 +636,7 @@
 			<File
 				RelativePath="..\src\lib\math\modf.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -657,7 +645,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -669,7 +657,7 @@
 			<File
 				RelativePath="..\src\lib\math\pow.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -678,7 +666,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -690,7 +678,7 @@
 			<File
 				RelativePath="..\src\lib\math\sin.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -699,7 +687,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -711,7 +699,7 @@
 			<File
 				RelativePath="..\src\lib\math\sinh.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -720,7 +708,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -732,7 +720,7 @@
 			<File
 				RelativePath="..\src\lib\math\sqrt.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -741,7 +729,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -753,7 +741,7 @@
 			<File
 				RelativePath="..\src\lib\math\tan.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -762,7 +750,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -774,7 +762,7 @@
 			<File
 				RelativePath="..\src\lib\math\tanh.asm">
 				<FileConfiguration
-					Name="SanOS|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -783,7 +771,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="SanOSDebug|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -805,7 +793,7 @@
 		<File
 			RelativePath="..\src\lib\chkstk.asm">
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -814,7 +802,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -850,7 +838,7 @@
 		<File
 			RelativePath="..\src\lib\lldiv.asm">
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -859,7 +847,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -871,7 +859,7 @@
 		<File
 			RelativePath="..\src\lib\lldvrm.asm">
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -880,7 +868,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -892,7 +880,7 @@
 		<File
 			RelativePath="..\src\lib\llmul.asm">
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -901,7 +889,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -913,7 +901,7 @@
 		<File
 			RelativePath="..\src\lib\llrem.asm">
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -922,7 +910,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -934,7 +922,7 @@
 		<File
 			RelativePath="..\src\lib\llshl.asm">
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -943,7 +931,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -955,7 +943,7 @@
 		<File
 			RelativePath="..\src\lib\llshr.asm">
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -964,7 +952,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1011,12 +999,6 @@
 		</File>
 		<File
 			RelativePath="..\src\lib\string.c">
-			<FileConfiguration
-				Name="SanOS|Win32">
-				<Tool
-					Name="VCCLCompilerTool"
-					AssemblerOutput="0"/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="..\src\lib\strtod.c">
@@ -1033,7 +1015,7 @@
 		<File
 			RelativePath="..\src\lib\ulldiv.asm">
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1042,7 +1024,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1054,7 +1036,7 @@
 		<File
 			RelativePath="..\src\lib\ulldvrm.asm">
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1063,7 +1045,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1075,7 +1057,7 @@
 		<File
 			RelativePath="..\src\lib\ullrem.asm">
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1084,7 +1066,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1096,7 +1078,7 @@
 		<File
 			RelativePath="..\src\lib\ullshr.asm">
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
@@ -1105,7 +1087,7 @@
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""

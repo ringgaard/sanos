@@ -3,68 +3,53 @@
 	ProjectType="Visual C++"
 	Version="7.00"
 	Name="user32"
-	SccProjectName="user32"
-	SccAuxPath=""
-	SccLocalPath=".."
-	SccProvider="MSSCCI:Jalindi Igloo">
+	ProjectGUID="{52C4B66D-8D74-4A87-8A91-118DE80CD79E}">
 	<Platforms>
 		<Platform
 			Name="Win32"/>
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="SanOSDebug|Win32"
-			OutputDirectory=".\..\dbg\bin"
-			IntermediateDirectory=".\..\dbg\obj\user32"
-			ConfigurationType="2"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			Name="Debug|Win32"
+			OutputDirectory="..\dbg\bin"
+			IntermediateDirectory="..\dbg\obj\user32"
+			ConfigurationType="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="USER32_LIB;DEBUG"
+				PreprocessorDefinitions="USER32_LIB;DEBUG;SANOS"
 				IgnoreStandardIncludePath="TRUE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="os.h"
-				PrecompiledHeaderFile=".\..\dbg\obj\user32/user32.pch"
-				AssemblerListingLocation=".\..\dbg\obj\user32/"
-				ObjectFile=".\..\dbg\obj\user32/"
-				ProgramDataBaseFileName=".\..\dbg\obj\user32/"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\user32.pch"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="3"
 				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="FALSE"/>
+				UndefinePreprocessorDefinitions="_WIN32"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				IgnoreImportLibrary="TRUE"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="os.lib $(NOINHERIT)"
-				OutputFile=".\..\dbg\bin/user32.dll"
+				AdditionalOptions="/MACHINE:I386 /FIXED:NO"
+				AdditionalDependencies="os.lib libc.lib $(NOINHERIT)"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\dbg\lib"
 				IgnoreAllDefaultLibraries="TRUE"
-				ModuleDefinitionFile="..\src\win32\user32\user32.def"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="..\dbg\symbols\user32.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\dbg\obj\user32/user32.map"
+				ProgramDatabaseFile="..\dbg\symbols\$(ProjectName).pdb"
+				GenerateMapFile="FALSE"
+				SubSystem="1"
 				EntryPointSymbol="DllMain"
-				ImportLibrary="..\dbg\lib/user32.lib"/>
+				ImportLibrary="..\dbg\lib\$(ProjectName).lib"/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\dbg\bin/user32.tlb"/>
+				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -72,21 +57,17 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
 				Name="VCWebDeploymentTool"/>
 		</Configuration>
 		<Configuration
-			Name="SanOS|Win32"
-			OutputDirectory=".\..\bin"
-			IntermediateDirectory=".\..\obj\user32"
-			ConfigurationType="2"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			Name="Release|Win32"
+			OutputDirectory="..\bin"
+			IntermediateDirectory="..\obj\user32"
+			ConfigurationType="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
@@ -95,49 +76,40 @@
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
-				OptimizeForProcessor="0"
 				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="USER32_LIB"
+				PreprocessorDefinitions="USER32_LIB;NDEBUG;SANOS"
 				IgnoreStandardIncludePath="TRUE"
 				StringPooling="TRUE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="os.h"
-				PrecompiledHeaderFile=".\..\obj\user32/user32.pch"
-				AssemblerListingLocation=".\..\obj\user32/"
-				ObjectFile=".\..\obj\user32/"
-				ProgramDataBaseFileName=".\..\obj\user32/"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\user32.pch"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				CompileAs="0"
+				UndefinePreprocessorDefinitions="_WIN32"
 				UndefineAllPreprocessorDefinitions="FALSE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				IgnoreImportLibrary="TRUE"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="os.lib $(NOINHERIT)"
-				OutputFile=".\..\bin/user32.dll"
+				AdditionalOptions="/MACHINE:I386 /FIXED:NO"
+				AdditionalDependencies="os.lib libc.lib $(NOINHERIT)"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\lib"
 				IgnoreAllDefaultLibraries="TRUE"
-				ModuleDefinitionFile="..\src\win32\user32\user32.def"
-				ProgramDatabaseFile=".\..\bin/user32.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\obj\user32/user32.map"
+				GenerateDebugInformation="FALSE"
+				GenerateMapFile="FALSE"
+				SubSystem="1"
 				EntryPointSymbol="DllMain"
-				ImportLibrary="..\lib/user32.lib"/>
+				ImportLibrary="..\lib\$(ProjectName).lib"/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\bin/user32.tlb"/>
+				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -145,9 +117,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool

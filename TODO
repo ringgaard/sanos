@@ -578,3 +578,8 @@ CHANGES
 - Added realpath() to stdlib.c.
 
 - The Visual Studio now supports extended project directory structure
+
+- Project files now uses Release and Debug as configuration instead of SanOS and
+  SanOSDebug.
+  
+- Port I/O definitions moved from krnl.h to iop.h

@@ -3,68 +3,54 @@
 	ProjectType="Visual C++"
 	Version="7.00"
 	Name="3c905c"
-	SccProjectName="3c905c"
-	SccAuxPath=""
-	SccLocalPath=".."
-	SccProvider="MSSCCI:Jalindi Igloo">
+	ProjectGUID="{52042733-E2D2-41BD-927C-6CD4661D94D6}">
 	<Platforms>
 		<Platform
 			Name="Win32"/>
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="SanOSDebug|Win32"
-			OutputDirectory=".\..\dbg\bin"
-			IntermediateDirectory=".\..\dbg\obj\3c905c"
-			ConfigurationType="2"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			Name="Debug|Win32"
+			OutputDirectory="..\dbg\bin"
+			IntermediateDirectory="..\dbg\obj\3c905c"
+			ConfigurationType="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="3C905C_LIB;KERNEL;DEBUG"
+				PreprocessorDefinitions="3C905C_LIB;KERNEL;DEBUG;SANOS"
 				IgnoreStandardIncludePath="TRUE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="os/krnl.h"
-				PrecompiledHeaderFile=".\..\dbg\obj\3c905c/3c905c.pch"
-				AssemblerListingLocation=".\..\dbg\obj\3c905c/"
-				ObjectFile=".\..\dbg\obj\3c905c/"
-				ProgramDataBaseFileName=".\..\dbg\obj\3c905c/"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\3c905c.pch"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="3"
 				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="FALSE"/>
+				UndefinePreprocessorDefinitions="_WIN32"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				IgnoreImportLibrary="TRUE"
-				AdditionalOptions="/MACHINE:I386"
+				AdditionalOptions="/MACHINE:I386 /FIXED:NO"
 				AdditionalDependencies="krnl.lib $(NOINHERIT)"
-				OutputFile="..\dbg\bin\3c905c.sys"
+				OutputFile="$(OutDir)\$(ProjectName).sys"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\dbg\lib"
 				IgnoreAllDefaultLibraries="TRUE"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="..\dbg\symbols\3c905c.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\dbg\obj\3c905c/3c905c.map"
+				ProgramDatabaseFile="..\dbg\symbols\$(ProjectName).pdb"
+				GenerateMapFile="FALSE"
+				SubSystem="1"
 				EntryPointSymbol="start"
-				BaseAddress=""
-				ImportLibrary="..\lib/3c905c.lib"/>
+				ImportLibrary="..\dbg\lib\$(ProjectName).lib"/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\dbg\bin/3c905c.tlb"/>
+				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -72,21 +58,17 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
 				Name="VCWebDeploymentTool"/>
 		</Configuration>
 		<Configuration
-			Name="SanOS|Win32"
-			OutputDirectory=".\..\bin"
-			IntermediateDirectory=".\..\obj\3c905c"
-			ConfigurationType="2"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			Name="Release|Win32"
+			OutputDirectory="..\bin"
+			IntermediateDirectory="..\obj\3c905c"
+			ConfigurationType="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
@@ -95,49 +77,41 @@
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
-				OptimizeForProcessor="0"
 				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="3C905C_LIB;KERNEL"
+				PreprocessorDefinitions="3C905C_LIB;KERNEL;NDEBUG;SANOS"
 				IgnoreStandardIncludePath="TRUE"
 				StringPooling="TRUE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="os/krnl.h"
-				PrecompiledHeaderFile=".\..\obj\3c905c/3c905c.pch"
-				AssemblerListingLocation=".\..\obj\3c905c/"
-				ObjectFile=".\..\obj\3c905c/"
-				ProgramDataBaseFileName=".\..\obj\3c905c/"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\3c905c.pch"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				CompileAs="0"
+				UndefinePreprocessorDefinitions="_WIN32"
 				UndefineAllPreprocessorDefinitions="FALSE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				IgnoreImportLibrary="TRUE"
-				AdditionalOptions="/MACHINE:I386"
+				AdditionalOptions="/MACHINE:I386 /FIXED:NO"
 				AdditionalDependencies="krnl.lib $(NOINHERIT)"
-				OutputFile="..\bin/3c905c.sys"
+				OutputFile="$(OutDir)\$(ProjectName).sys"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="..\lib"
 				IgnoreAllDefaultLibraries="TRUE"
-				ProgramDatabaseFile=".\..\bin/3c905c.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\obj\3c905c/3c905c.map"
+				GenerateDebugInformation="FALSE"
+				GenerateMapFile="FALSE"
+				SubSystem="1"
 				EntryPointSymbol="start"
-				BaseAddress=""
-				ImportLibrary="..\lib/3c905c.lib"/>
+				ImportLibrary="..\lib\$(ProjectName).lib"/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\bin/3c905c.tlb"/>
+				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -145,9 +119,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool

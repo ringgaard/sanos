@@ -3,22 +3,75 @@
 	ProjectType="Visual C++"
 	Version="7.00"
 	Name="osldr"
-	SccProjectName="osldr"
-	SccAuxPath=""
-	SccLocalPath=".."
-	SccProvider="MSSCCI:Jalindi Igloo">
+	ProjectGUID="{BFE02D06-87F3-49CD-BBE0-713E4BC6200F}">
 	<Platforms>
 		<Platform
 			Name="Win32"/>
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="SanOS|Win32"
-			OutputDirectory=".\..\bin"
-			IntermediateDirectory=".\..\obj\osldr"
-			ConfigurationType="2"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			Name="Debug|Win32"
+			OutputDirectory="..\dbg\bin"
+			IntermediateDirectory="..\dbg\obj\osldr"
+			ConfigurationType="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				InlineFunctionExpansion="1"
+				EnableIntrinsicFunctions="TRUE"
+				AdditionalIncludeDirectories="..\src\include"
+				PreprocessorDefinitions="OSLDR;OSLDR_LIB;KERNEL;SANOS"
+				IgnoreStandardIncludePath="TRUE"
+				ExceptionHandling="FALSE"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
+				UsePrecompiledHeader="2"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\osldr.pch"
+				WarningLevel="3"
+				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="3"
+				CompileAs="0"
+				UndefinePreprocessorDefinitions="_WIN32"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MACHINE:I386 /FIXED /STUB:.\..\dbg\obj\boot\ldrinit.exe"
+				AdditionalDependencies="$(NOINHERIT)"
+				LinkIncremental="1"
+				SuppressStartupBanner="TRUE"
+				AdditionalLibraryDirectories="..\dbg\lib"
+				IgnoreAllDefaultLibraries="TRUE"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="..\dbg\symbols\$(ProjectName).pdb"
+				GenerateMapFile="FALSE"
+				SubSystem="1"
+				OptimizeForWindows98="2"
+				EntryPointSymbol="start"
+				BaseAddress="0x00090000"
+				ImportLibrary="..\dbg\lib\$(ProjectName).lib"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="..\bin"
+			IntermediateDirectory="..\obj\osldr"
+			ConfigurationType="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
@@ -27,75 +80,8 @@
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
-				OptimizeForProcessor="0"
 				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="KERNEL;OSLDR"
-				IgnoreStandardIncludePath="TRUE"
-				StringPooling="TRUE"
-				ExceptionHandling="FALSE"
-				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="krnl.h"
-				PrecompiledHeaderFile=".\..\obj\osldr/osldr.pch"
-				AssemblerListingLocation=".\..\obj\osldr/"
-				ObjectFile=".\..\obj\osldr/"
-				ProgramDataBaseFileName=".\..\obj\osldr/"
-				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="FALSE"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /FIXED /STUB:.\..\obj\boot\ldrinit.exe"
-				AdditionalDependencies="$(NOINHERIT)"
-				OutputFile=".\..\bin/osldr.dll"
-				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
-				IgnoreAllDefaultLibraries="TRUE"
-				ProgramDatabaseFile=".\..\bin/osldr.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\obj\osldr/osldr.map"
-				OptimizeForWindows98="2"
-				EntryPointSymbol="start"
-				BaseAddress="0x00090000"
-				ImportLibrary=".\..\bin/osldr.lib"/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\bin/osldr.tlb"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-		</Configuration>
-		<Configuration
-			Name="SanOSDebug|Win32"
-			OutputDirectory=".\..\dbg\bin"
-			IntermediateDirectory=".\..\dbg\obj\osldr"
-			ConfigurationType="2"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\src\include"
-				PreprocessorDefinitions="KERNEL;OSLDR"
+				PreprocessorDefinitions="OSLDR;OSLDR_LIB;KERNEL;SANOS"
 				IgnoreStandardIncludePath="TRUE"
 				StringPooling="TRUE"
 				ExceptionHandling="FALSE"
@@ -103,38 +89,33 @@
 				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="krnl.h"
-				PrecompiledHeaderFile=".\..\dbg\obj\osldr/osldr.pch"
-				AssemblerListingLocation=".\..\dbg\obj\osldr/"
-				ObjectFile=".\..\dbg\obj\osldr/"
-				ProgramDataBaseFileName=".\..\dbg\obj\osldr/"
+				PrecompiledHeaderThrough=""
+				PrecompiledHeaderFile="$(IntDir)\osldr.pch"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				CompileAs="0"
+				UndefinePreprocessorDefinitions="_WIN32"
 				UndefineAllPreprocessorDefinitions="FALSE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /FIXED /STUB:.\..\dbg\obj\boot\ldrinit.exe"
-				AdditionalDependencies="odbc32.lib odbccp32.lib"
-				OutputFile=".\..\dbg\bin/osldr.dll"
+				AdditionalOptions="/MACHINE:I386 /FIXED /STUB:.\..\obj\boot\ldrinit.exe"
+				AdditionalDependencies="$(NOINHERIT)"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
+				AdditionalLibraryDirectories="..\lib"
 				IgnoreAllDefaultLibraries="TRUE"
-				GenerateMapFile="TRUE"
-				MapFileName=".\..\dbg\obj\osldr/osldr.map"
+				GenerateDebugInformation="FALSE"
+				GenerateMapFile="FALSE"
+				SubSystem="1"
 				OptimizeForWindows98="2"
 				EntryPointSymbol="start"
 				BaseAddress="0x00090000"
-				ImportLibrary=".\..\dbg\bin/osldr.lib"/>
+				ImportLibrary="..\lib\$(ProjectName).lib"/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\dbg\bin/osldr.tlb"/>
+				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -142,9 +123,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1030"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -169,11 +148,6 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\osldr\unzip.c">
-				<FileConfiguration
-					Name="SanOS|Win32">
-					<Tool
-						Name="VCCLCompilerTool"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\sys\osldr\video.c">

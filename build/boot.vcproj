@@ -3,10 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.00"
 	Name="boot"
-	SccProjectName="boot"
-	SccAuxPath=""
-	SccLocalPath=".."
-	SccProvider="MSSCCI:Jalindi Igloo"
+        ProjectGUID="{99C58AB4-3197-4FBF-BE97-9044FEDBB9E2}"
 	Keyword="MakeFileProj">
 	<Platforms>
 		<Platform
@@ -14,7 +11,7 @@
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="SanOSDebug|Win32"
+			Name="Debug|Win32"
 			OutputDirectory=".\..\dbg\bin"
 			IntermediateDirectory=".\..\dbg\obj\boot"
 			ConfigurationType="10"
@@ -29,7 +26,7 @@
 				Name="VCPreBuildEventTool"/>
 		</Configuration>
 		<Configuration
-			Name="SanOS|Win32"
+			Name="Release|Win32"
 			OutputDirectory=".\..\bin"
 			IntermediateDirectory=".\..\obj\boot"
 			ConfigurationType="10"
@@ -48,7 +45,7 @@
 		<File
 			RelativePath="..\src\sys\boot\boot.asm">
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Assemble boot.asm"
@@ -59,7 +56,7 @@
 					Outputs="..\dbg\bin\boot"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Assemble boot.asm"
@@ -73,7 +70,7 @@
 		<File
 			RelativePath="..\src\sys\boot\cdboot.asm">
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Assemble cdboot.asm"
@@ -84,7 +81,7 @@
 					Outputs="..\dbg\bin\cdboot"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Assemble cdboot.asm"
@@ -98,7 +95,7 @@
 		<File
 			RelativePath="..\src\sys\boot\cdemboot.asm">
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Assemble cdemboot.asm"
@@ -109,7 +106,7 @@
 					Outputs="..\dbg\bin\cdemboot"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Assemble cdemboot.asm"
@@ -123,7 +120,7 @@
 		<File
 			RelativePath="..\src\sys\boot\ldrinit.asm">
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Assemble ldrinit.asm"
@@ -134,7 +131,7 @@ if exist ..\dbg\bin\osldr.dll del ..\dbg\bin\osldr.dll"
 					Outputs="..\dbg\obj\boot\ldrinit.exe"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Assemble ldrinit.asm"
@@ -148,7 +145,7 @@ if exist ..\bin\osldr.dll del ..\bin\osldr.dll"
 		<File
 			RelativePath="..\src\sys\boot\netboot.asm">
 			<FileConfiguration
-				Name="SanOSDebug|Win32">
+				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Assemble netboot.asm"
@@ -159,7 +156,7 @@ if exist ..\bin\osldr.dll del ..\bin\osldr.dll"
 					Outputs="..\dbg\bin\netboot"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="SanOS|Win32">
+				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Assemble netboot.asm"

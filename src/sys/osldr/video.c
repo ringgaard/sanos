@@ -33,8 +33,11 @@
 
 #include <os.h>
 #include <stdarg.h>
+#include <string.h>
+#include <sys/types.h>
+#include <os/iop.h>
 
-vsprintf(buffer, fmt, args);
+int vsprintf(char *buf, const char *fmt, va_list args);
 
 #define VIDEO_BASE           0xB8000
 
