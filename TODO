@@ -130,3 +130,11 @@ CHANGES
 - Buffer leak in devfs set_inode_block() fixed.
 
 - Support for lseek() beyond end of file in dfs and smbfs.
+
+- Bug in register_interrupt_handler() caused kernel to hang on startup. This
+  problem has been fixed.
+  
+- Support for lba mode for hd boot in osldr
+
+- Keyboard interrupt handling has been made more robust (failed on xpc).
+

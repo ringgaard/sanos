@@ -191,7 +191,7 @@ static int fd_command(unsigned char cmd)
   int msr;
   unsigned int tmo;
 
-  tmo = ticks + 5*HZ;
+  tmo = ticks + 1*HZ;
   while (1)
   {
     msr = _inp(FDC_MSR);
@@ -654,6 +654,7 @@ void init_fd()
   second_floppy = fdtypes & 0x0F;
   if (!first_floppy && !second_floppy) return;
 
+  // FIXME: the version command times out when not floppy is inserted
   fd_init = 1;
   if (fd_command(CMD_VERSION) < 0) return;
   version = fd_data();

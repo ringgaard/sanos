@@ -88,7 +88,7 @@ void load_kernel(int bootdrv)
     mbr = (struct master_boot_record *) bsect;
     if (boot_read(mbr, SECTORSIZE, 0) != SECTORSIZE)
     {
-      panic("unable to master boot record");
+      panic("unable to read master boot record");
     }
 
     if (mbr->signature != MBR_SIGNATURE) panic("invalid boot signature");
