@@ -591,7 +591,7 @@ static int huft_free(struct huft *t)
 // tl       literal/length decoder table
 // td       distance decoder table
 // bl       number of bits decoded by tl[]
-// bl       number of bits decoded by td[]
+// bd       number of bits decoded by td[]
 //
 
 static int inflate_codes(struct huft *tl, struct huft *td, int bl, int bd)
