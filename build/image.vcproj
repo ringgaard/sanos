@@ -46,9 +46,6 @@
 	</Configurations>
 	<Files>
 		<File
-			RelativePath="..\TODO">
-		</File>
-		<File
 			RelativePath=".\krnl.ini">
 		</File>
 		<File
