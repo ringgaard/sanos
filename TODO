@@ -7,13 +7,6 @@ TODO for sanos
 
 - Implement ICMP messages host unreachable, net unreachable and port unreachable
 
-- Map network errors with winsock errors.
-    - Add all winsock errors to error table
-    - Add error strings to strerror()
-    - Update error codes in network code
-    - Map winsock errors in wsock32.c
-    - Go through each Winsock error and check net code for compliance
-
 - Move netif binding to os.c
     - Read netif parameters from [netif] in os.ini
     - Allow static configuration of ip address and dns servers
@@ -56,6 +49,8 @@ IDEAS for new features
 ----------------------
 
 - Simple httpd server in C for static contents (and isapi interface)
+
+- Implement SOCK_RAW socket type
 
 - Use type object in struct object
 
@@ -106,3 +101,10 @@ CHANGES
 - Rename /os to /bin
 
 - SO_BROADCAST implemented
+
+- Map network errors with winsock errors.
+    - Add all winsock errors to error table
+    - Add error strings to strerror()
+    - Update error codes in network code
+    - Map winsock errors in wsock32.c
+    - Go through each Winsock error and check net code for compliance

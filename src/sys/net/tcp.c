@@ -87,6 +87,39 @@ static int tcpstat_proc(struct proc_file *pf, void *arg)
 }
 
 //
+// tcp_new_port
+//
+// A nastly hack featuring 'goto' statements that allocates a
+// new TCP local port.
+//
+
+static unsigned short tcp_new_port()
+{
+  struct tcp_pcb *pcb;
+  static unsigned short port = 4096;
+  
+again:
+  if (++port > 0x7FFF) port = 4096;
+  
+  for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next)
+  {
+    if (pcb->local_port == port) goto again;
+  }
+
+  for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next)
+  {
+    if (pcb->local_port == port) goto again;
+  }
+
+  for (pcb = (struct tcp_pcb *)tcp_listen_pcbs; pcb != NULL; pcb = pcb->next)
+  {
+    if (pcb->local_port == port) goto again;
+  }
+
+  return port;
+}
+
+//
 // tcp_close
 //
 // Closes the connection held by the PCB.
@@ -233,7 +266,9 @@ err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
     if (!ip_ownaddr(ipaddr)) return -EADDRNOTAVAIL;
     pcb->local_ip = *ipaddr;
   }
+
   pcb->local_port = port;
+  if (pcb->local_port == 0) pcb->local_port = tcp_new_port();
   
   //kprintf("tcp_bind: bind to port %d\n", port);
   return 0;
@@ -277,39 +312,6 @@ void tcp_recved(struct tcp_pcb *pcb, int len)
   if (!(pcb->flags & TF_IN_RECV)) pcb->flags |= TF_ACK_DELAY;
 
   //kprintf("tcp_recved: received %d bytes, wnd %u (%u).\n", len, pcb->rcv_wnd, TCP_WND - pcb->rcv_wnd);
-}
-
-//
-// tcp_new_port
-//
-// A nastly hack featuring 'goto' statements that allocates a
-// new TCP local port.
-//
-
-static unsigned short tcp_new_port()
-{
-  struct tcp_pcb *pcb;
-  static unsigned short port = 4096;
-  
-again:
-  if (++port > 0x7FFF) port = 4096;
-  
-  for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next)
-  {
-    if (pcb->local_port == port) goto again;
-  }
-
-  for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next)
-  {
-    if (pcb->local_port == port) goto again;
-  }
-
-  for (pcb = (struct tcp_pcb *)tcp_listen_pcbs; pcb != NULL; pcb = pcb->next)
-  {
-    if (pcb->local_port == port) goto again;
-  }
-
-  return port;
 }
 
 //

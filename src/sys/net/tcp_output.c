@@ -77,7 +77,7 @@ err_t tcp_write(struct tcp_pcb *pcb, const void *data, int len, int opt)
     return 0;
   } 
   else
-    return -ECONN;
+    return -ENOTCONN;
 }
 
 err_t tcp_enqueue(struct tcp_pcb *pcb, void *data, int len, int flags, unsigned char *optdata, int optlen)

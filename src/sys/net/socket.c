@@ -281,7 +281,7 @@ int socket(int domain, int type, int protocol, struct socket **retval)
   int socktype;
   int rc;
 
-  if (domain != AF_INET) return -EPROTONOSUPPORT;
+  if (domain != AF_INET) return -EAFNOSUPPORT;
   switch (type)
   {
     case SOCK_STREAM:

@@ -186,7 +186,9 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
   struct udp_hdr *udphdr;
   struct ip_addr *src_ip;
   err_t err;
-  
+
+  if (ip_addr_isany(&pcb->remote_ip)) return -EDESTADDRREQ;
+
   if (pbuf_header(p, UDP_HLEN)) 
   {
     kprintf("udp_send: not enough room for UDP header in pbuf\n");
@@ -241,8 +243,10 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
 err_t udp_bind(struct udp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
 {
   struct udp_pcb *ipcb;
-  
+
+  if (!ip_addr_isany(ipaddr) && !ip_ownaddr(ipaddr)) return -EADDRNOTAVAIL;
   ip_addr_set(&pcb->local_ip, ipaddr);
+
   if (port != 0)
     pcb->local_port = port;
   else
