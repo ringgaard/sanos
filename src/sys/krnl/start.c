@@ -36,6 +36,35 @@
 
 #define KERNEL_CONFIG  "/etc/krnl.ini"
 
+char *copyright = 
+OSNAME " version " OSVERSION "\n"
+COPYRIGHT "\n"
+"\n"
+"Redistribution and use in source and binary forms, with or without\n"
+"modification, are permitted provided that the following conditions\n"
+"are met:\n"
+"\n"
+"1. Redistributions of source code must retain the above copyright\n"
+"   notice, this list of conditions and the following disclaimer.\n" 
+"2. Redistributions in binary form must reproduce the above copyright\n"
+"   notice, this list of conditions and the following disclaimer in the\n"
+"   documentation and/or other materials provided with the distribution.\n"
+"3. Neither the name of the project nor the names of its contributors\n"
+"   may be used to endorse or promote products derived from this software\n"
+"   without specific prior written permission.\n"
+"\n"
+"THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND\n"
+"ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE\n"
+"IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE\n"
+"ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE\n"
+"LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR\n"
+"CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE\n"
+"GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)\n"
+"HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT\n"
+"LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY\n"
+"OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF\n"
+"SUCH DAMAGE.\n";
+
 struct thread *mainthread;
 struct section *krnlcfg;
 
@@ -139,6 +168,12 @@ static int version_proc(struct proc_file *pf, void *arg)
 #endif
   pprintf(pf, COPYRIGHT "\n");
 
+  return 0;
+}
+
+static int copyright_proc(struct proc_file *pf, void *arg)
+{
+  proc_write(pf, copyright, strlen(copyright));
   return 0;
 }
 
@@ -313,8 +348,9 @@ void main(void *arg)
   // Initialize network
   init_net();
 
-  // Install /proc/version handler
+  // Install /proc/version and /proc/copyright handler
   register_proc_inode("version", version_proc, NULL);
+  register_proc_inode("copyright", copyright_proc, NULL);
 
   // Allocate handles for stdin, stdout and stderr
   open("/dev/console", O_RDONLY, &stdin);
