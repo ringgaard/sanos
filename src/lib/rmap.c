@@ -339,19 +339,3 @@ int rmap_status(struct rmap *rmap, unsigned int offset, unsigned int size)
   // Resource region is allocated
   return 1;
 }
-
-#if 0
-//
-// Pretty-print a resource map
-//
-
-void rmap_dump(struct rmap *rmap)
-{
-  struct rmap *r, *rlim;
-
-  kprintf("rmap@0x%x has %d of %d elements, lost %d\n", rmap, rmap->offset, rmap->size, lost_elems);
-  rlim = &rmap[rmap->offset];
-  for (r = &rmap[1]; r <= rlim; r++) kprintf(" [%p..%p]", r->offset, (r->offset + r->size) - 1);
-  kprintf("\n");
-}
-#endif

@@ -51,9 +51,11 @@ typedef void (*taskproc_t)(void *arg);
 
 #define DPC_QUEUED_BIT        0
 #define DPC_EXECUTING_BIT     1
+#define DPC_NORAND_BIT        2
 
 #define DPC_QUEUED            (1 << DPC_QUEUED_BIT)
 #define DPC_EXECUTING         (1 << DPC_EXECUTING_BIT)
+#define DPC_NORAND            (1 << DPC_NORAND_BIT)
 
 #define TASK_QUEUE_ACTIVE              1
 #define TASK_QUEUE_ACTIVE_TASK_INVALID 2

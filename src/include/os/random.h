@@ -1,9 +1,10 @@
 //
-// rmap.h
+// random.h
 //
-// Routines for working with a resource map
+// A strong random number generator
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
+// Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999 Theodore Ts'o.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -31,20 +32,10 @@
 // SUCH DAMAGE.
 // 
 
-#ifndef RMAP_H
-#define RMAP_H
+#ifndef RANDOM_H
+#define RANDOM_H
 
-struct rmap
-{
-  unsigned int offset;
-  unsigned int size;
-};
-
-void rmap_init(struct rmap *r, unsigned int size);
-unsigned int rmap_alloc(struct rmap *rmap, unsigned int size);
-unsigned int rmap_alloc_align(struct rmap *rmap, unsigned int size, unsigned int align);
-void rmap_free(struct rmap *rmap, unsigned int offset, unsigned int size);
-int rmap_reserve(struct rmap *rmap, unsigned int offset, unsigned int size);
-int rmap_status(struct rmap *rmap, unsigned int offset, unsigned int size);
+krnlapi void get_random_bytes(void *buf, int nbytes);
+void add_dpc_randomness(void *dpc);
 
 #endif

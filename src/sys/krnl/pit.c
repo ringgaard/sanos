@@ -340,6 +340,7 @@ void init_pit()
   upsince = systemclock.tv_sec;
 
   init_dpc(&timerdpc);
+  timerdpc.flags |= DPC_NORAND; // Timer tick is a bad source for randomness
   register_interrupt(&timerintr, INTR_TMR, timer_handler, NULL);
   enable_irq(IRQ_TMR);
 

@@ -696,6 +696,9 @@ void dispatch_dpc_queue()
     proc = dpc->proc;
     arg = dpc->arg;
     clear_bit(&dpc->flags, DPC_QUEUED_BIT);
+ 
+    if ((dpc->flags & DPC_NORAND) == 0) add_dpc_randomness(dpc);
+
     if ((dpc->flags & DPC_EXECUTING) == 0)
     {
       set_bit(&dpc->flags, DPC_EXECUTING_BIT);

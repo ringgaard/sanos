@@ -80,6 +80,7 @@
 
 #include <os/video.h>
 #include <os/kbd.h>
+#include <os/random.h>
 
 #include <os/iovec.h>
 #include <os/vfs.h>

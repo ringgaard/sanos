@@ -348,6 +348,9 @@
 				RelativePath="..\src\sys\dev\ramdisk.c">
 			</File>
 			<File
+				RelativePath="..\src\sys\dev\random.c">
+			</File>
+			<File
 				RelativePath="..\src\sys\dev\serial.c">
 			</File>
 			<File
@@ -521,6 +524,9 @@
 				</File>
 				<File
 					RelativePath="..\src\include\os\queue.h">
+				</File>
+				<File
+					RelativePath="..\src\include\os\random.h">
 				</File>
 				<File
 					RelativePath="..\src\include\os\sched.h">

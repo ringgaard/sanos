@@ -684,12 +684,65 @@ void init_mount()
   }
 }
 
+int seed_random_device(char *rndfn)
+{
+  int rndfile;
+  int rnddev;
+  char buf[512];
+  int n;
+
+  rnddev = open("/dev/random", O_WRONLY | O_BINARY);
+  if (rnddev < 0) return rnddev;
+
+  rndfile = open(rndfn, O_BINARY);
+  if (rndfile < 0)
+  {
+    close(rnddev);
+    return rndfile;
+  }
+
+  n = read(rndfile, buf, sizeof buf);
+  if (n > 0) write(rnddev, buf, n);
+
+  close(rndfile);
+  close(rnddev);
+
+  return 0;
+}
+
+int save_random_device(char *rndfn)
+{
+  int rndfile;
+  int rnddev;
+  char buf[512];
+  int n;
+
+  rnddev = open("/dev/urandom", O_BINARY);
+  if (rnddev < 0) return rnddev;
+
+  rndfile = open(rndfn, O_CREAT | O_BINARY);
+  if (rndfile < 0)
+  {
+    close(rnddev);
+    return rndfile;
+  }
+
+  n = read(rnddev, buf, sizeof buf);
+  if (n > 0) write(rndfile, buf, n);
+
+  close(rndfile);
+  close(rnddev);
+
+  return 0;
+}
+
 int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 {
   char *initpgm;
   char *initargs;
   int rc;
   char *logfn;
+  char *rndfn;
 
   // Set usermode segment selectors
   __asm
@@ -745,6 +798,10 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
     if (logfile >= 0) lseek(logfile, 0, SEEK_END);
   }
 
+  // Initialize random device with seed
+  rndfn = get_property(config, "os", "rndfile", NULL);
+  if (rndfn) seed_random_device(rndfn);
+
   // Load and execute init program
   initpgm = get_property(config, "os", "initpgm", "/bin/init.exe");
   initargs = get_property(config, "os", "initargs", "");
@@ -754,6 +811,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   rc = spawn(P_WAIT, initpgm, initargs, NULL);
   if (rc != 0) syslog(LOG_DEBUG, "Exitcode: %d\n", rc);
 
+  if (rndfn) save_random_device(rndfn);
   if (logfile > 0) close(logfile);
   exitos(0);
 }

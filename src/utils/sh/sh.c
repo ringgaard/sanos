@@ -1492,6 +1492,34 @@ static void kbdtest()
   printf("\n");
 }
 
+static void rndtest(int argc, char *argv[])
+{
+  int f;
+  unsigned char buf[16];
+  int bytes;
+  int n;
+  int m;
+
+  f = open("/dev/random", 0);
+  if (f < 0)
+  {
+    perror("/dev/random");
+    return;
+  }
+
+  for (m = 0; m < 10; m++)
+  {
+    bytes = read(f, buf, sizeof buf);
+    
+    printf("random: ");
+    for (n = 0; n < bytes; n++) printf("%02x", buf[n]);
+    printf("\n");
+    sleep(1000);
+  }
+
+  close(f);
+}
+
 void shell()
 {
   char cmd[256];
@@ -1585,6 +1613,8 @@ void shell()
 	test(argc, argv);
       else if (strcmp(argv[0], "kbd") == 0)
 	kbdtest();
+      else if (strcmp(argv[0], "rnd") == 0)
+	rndtest(argc, argv);
       else if (strcmp(argv[0], "cstest") == 0)
 	cstest();
       else if (strcmp(argv[0], "httpd") == 0)
