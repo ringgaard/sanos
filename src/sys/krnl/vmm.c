@@ -215,3 +215,8 @@ int guard_page_handler(void *addr)
   memset(addr, 0, PAGESIZE);
   return 0;
 }
+
+int vmem_proc(struct proc_file *pf, void *arg)
+{
+  return list_memmap(pf, vmap, BTOP(64 * K));
+}

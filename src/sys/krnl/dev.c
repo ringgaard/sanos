@@ -17,6 +17,9 @@ int num_bindings;
 struct dev *devtab[MAX_DEVS];
 unsigned int num_devs = 0;
 
+static int units_proc(struct proc_file *pf, void *arg);
+static int devs_proc(struct proc_file *pf, void *arg);
+
 struct bus *add_bus(struct unit *self, unsigned long bustype, unsigned long busno)
 {
   struct bus *bus;
@@ -434,6 +437,9 @@ static void install_legacy_drivers()
 
 void install_drivers()
 {
+  // Register /proc/units
+  register_proc_inode("units", units_proc, NULL);
+
   // Parse driver binding database
   parse_bindings();
 
@@ -611,4 +617,79 @@ int dev_receive(devno_t devno, struct pbuf *p)
   if (!dev->receive) return -ENOSYS;
 
   return dev->receive(dev->netif, p);
+}
+
+static int units_proc(struct proc_file *pf, void *arg)
+{
+  static char *busnames[] = {"HOST", "PCI", "ISA", "?", "?"};
+
+  struct unit *unit;
+  struct resource *res;
+  int bustype;
+  int busno;
+
+  unit = units;
+  while (unit)
+  {
+    if (unit->bus)
+    {
+      bustype = unit->bus->bustype;
+      busno = unit->bus->busno;
+    }
+    else
+    {
+      bustype = BUSTYPE_HOST;
+      busno = 0;
+    }
+    
+    pprintf(pf, "%s unit %x.%x class %08X code %08X %s:\n", busnames[bustype], busno, unit->unitno,unit->classcode, unit->unitcode, get_unit_name(unit));
+
+    res = unit->resources;
+    while (res)
+    {
+      switch (res->type)
+      {
+	case RESOURCE_IO: 
+	  if (res->len == 1) 
+	    pprintf(pf, "  io: 0x%03x", res->start);
+	  else
+	    pprintf(pf, "  io: 0x%03x-0x%03x", res->start, res->start + res->len - 1);
+	  break;
+
+	case RESOURCE_MEM:
+	  if (res->len == 1) 
+	    pprintf(pf, "  mem: 0x%08x", res->start);
+	  else
+	    pprintf(pf, "  mem: 0x%08x-0x%08x", res->start, res->start + res->len - 1);
+	  break;
+
+	case RESOURCE_IRQ:
+	  if (res->len == 1) 
+	    pprintf(pf, "  irq: %d", res->start);
+	  else
+	    pprintf(pf, "  irq: %d-%d", res->start, res->start + res->len - 1);
+	  break;
+
+	case RESOURCE_DMA:
+	  if (res->len == 1) 
+	    pprintf(pf, "  dma: %d", res->start);
+	  else
+	    pprintf(pf, "  dma: %d-%d", res->start, res->start + res->len - 1);
+	  break;
+      }
+
+      pprintf(pf, "\n");
+
+      res = res->next;
+    }
+
+    unit = unit->next;
+  }
+
+  return 0;
+}
+
+static int devs_proc(struct proc_file *pf, void *arg)
+{
+
 }

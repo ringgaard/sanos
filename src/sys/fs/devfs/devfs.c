@@ -79,7 +79,7 @@ int devfs_open(struct file *filp, char *name)
 
   if (*name == PS1 || *name == PS2) name++;
   devno = dev_open(name);
-  if (devno == NODEV) return -1;
+  if (devno == NODEV) return -ENOENT;
 
   filp->data = (void *) devno;
   return 0;
@@ -153,7 +153,7 @@ loff_t devfs_lseek(struct file *filp, loff_t offset, int origin)
       offset += filp->pos;
   }
 
-  if (offset < 0 || offset > (loff_t) (devsize * blksize)) return -1;
+  if (offset < 0 || offset > (loff_t) (devsize * blksize)) return -EINVAL;
 
   filp->pos = offset;
   return offset;
@@ -169,7 +169,7 @@ int devfs_fstat(struct file *filp, struct stat *buffer)
 
   devno = (devno_t) filp->data;
   dev = device(devno);
-  if (!dev) return -1;
+  if (!dev) return -ENOENT;
 
   devsize = dev_ioctl(devno, IOCTL_GETDEVSIZE, NULL, 0);
   blksize = dev_ioctl(devno, IOCTL_GETBLKSIZE, NULL, 0);
@@ -224,9 +224,9 @@ int devfs_stat(struct fs *fs, char *name, struct stat *buffer)
   }
 
   devno = dev_open(name);
-  if (devno == NODEV) return -1;
+  if (devno == NODEV) return -ENOENT;
   dev = device(devno);
-  if (!dev) return -1;
+  if (!dev) return -ENOENT;
 
   devsize = dev_ioctl(devno, IOCTL_GETDEVSIZE, NULL, 0);
   blksize = dev_ioctl(devno, IOCTL_GETBLKSIZE, NULL, 0);
@@ -256,7 +256,7 @@ int devfs_stat(struct fs *fs, char *name, struct stat *buffer)
 int devfs_opendir(struct file *filp, char *name)
 {
   if (*name == PS1 || *name == PS2) name++;
-  if (*name) return -1;
+  if (*name) return -ENOENT;
 
   filp->data = (void *) NODEV;
   return 0;
@@ -268,11 +268,11 @@ int devfs_readdir(struct file *filp, struct dirent *dirp, int count)
   struct dev *dev;
 
   if (filp->pos == num_devs) return 0;
-  if (filp->pos < 0 || filp->pos > num_devs) return -1;
+  if (filp->pos < 0 || filp->pos > num_devs) return -EINVAL;
 
   devno = (devno_t) filp->pos;
   dev = device(devno);
-  if (!dev) return -1;
+  if (!dev) return -ENOENT;
 
   dirp->ino = (ino_t) devno;
   dirp->namelen = strlen(dev->name);

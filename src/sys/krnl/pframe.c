@@ -43,6 +43,58 @@ void free_pageframe(unsigned long pfn)
   freemem++;
 }
 
+int memstat_proc(struct proc_file *pf, void *arg)
+{
+  pprintf(pf, "Memory %dMB total, %dKB used, %dKB free, %dKB reserved\n", 
+	  maxmem * PAGESIZE / M, 
+	  (totalmem - freemem) * PAGESIZE / K, 
+	  freemem * PAGESIZE / K, (maxmem - totalmem) * PAGESIZE / K);
+  
+  return 0;
+}
+
+int physmem_proc(struct proc_file *pf, void *arg)
+{
+  unsigned int n;
+
+  pprintf(pf, ".=free *=user page X=locked user page, #=kernel page -=reserved page\n");
+  for (n = 0; n < maxmem; n++)
+  {
+    if (n % 64 == 0)
+    {
+      if (n > 0) pprintf(pf, "\n");
+      pprintf(pf, "%08X ", PTOB(n));
+    }
+
+    switch (pfdb[n].type)
+    {
+      case PFT_FREE:
+	pprintf(pf, ".");
+	break;
+
+      case PFT_USED:
+	pprintf(pf, pfdb[n].locks ? "X" : "*");
+	break;
+
+      case PFT_SYS:
+	if (pfdb[n].size == 0 || pfdb[n].size >= PAGESHIFT)
+	  pprintf(pf, "#");
+	else
+	  pprintf(pf, "%c", '0' + (PAGESHIFT - pfdb[n].size));
+	break;
+
+      case PFT_BAD:
+	pprintf(pf, "-");
+	break;
+
+      default:
+	pprintf(pf, "?");
+    }
+  }
+  pprintf(pf, "\n");
+  return 0;
+}
+
 void init_pfdb()
 {
   unsigned long heap;

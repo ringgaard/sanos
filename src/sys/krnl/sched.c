@@ -566,6 +566,26 @@ void idle_task()
   }
 }
 
+static int threads_proc(struct proc_file *pf, void *arg)
+{
+  static char *threadstatename[] = {"init", "ready", "run", "wait", "term"};
+  struct thread *t = threadlist;
+
+  pprintf(pf, "tid tcb      self state prio tib      suspend entry    handles name\n");
+  pprintf(pf, "--- -------- ---- ----- ---- -------- ------- -------- ------- ----------------\n");
+  while (1)
+  {
+    pprintf(pf,"%3d %p %4d %-5s %3d  %p  %4d   %p   %2d    %s\n",
+            t->id, t, t->self, threadstatename[t->state], t->priority, t->tib, 
+	    t->suspend_count, t->entrypoint, t->object.handle_count, t->name ? t->name : "");
+
+    t = t->next;
+    if (t == threadlist) break;
+  }
+
+  return 0;
+}
+
 void init_sched()
 {
   // Initialize scheduler
@@ -589,4 +609,7 @@ void init_sched()
 
   // Initialize system task queue
   init_task_queue(&sys_task_queue, PRIORITY_SYSTEM, INFINITE, "systask");
+
+  // Register /proc/threads
+  register_proc_inode("threads", threads_proc, NULL);
 }

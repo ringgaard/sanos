@@ -147,3 +147,36 @@ void init_kmem()
   rmap_free(kmodmap, BTOP(OSBASE), BTOP(KMODSIZE));
   rmap_reserve(kmodmap, BTOP(OSBASE), BTOP(imghdr->optional.size_of_image));
 }
+
+int list_memmap(struct proc_file *pf, struct rmap *rmap, unsigned int startpos)
+{
+  struct rmap *r;
+  struct rmap *rlim;
+  unsigned int pos = startpos;
+  unsigned int total = 0;
+
+  rlim = &rmap[rmap->offset];
+  for (r = &rmap[1]; r <= rlim; r++) 
+  {
+    unsigned int size = r->offset - pos;
+
+    if (size > 0)
+    {
+      pprintf(pf, "[%08X..%08X] %6d KB\n", pos * PAGESIZE, r->offset * PAGESIZE - 1, size * PAGESIZE / K);
+      total += size;
+    }
+    pos = r->offset + r->size;
+  }
+  pprintf(pf, "Total: %d KB\n", total * PAGESIZE / K);
+  return 0;
+}
+
+int kmem_proc(struct proc_file *pf, void *arg)
+{
+  return list_memmap(pf, osvmap, BTOP(KHEAPBASE));
+}
+
+int kmodmem_proc(struct proc_file *pf, void *arg)
+{
+  return list_memmap(pf, kmodmap, BTOP(OSBASE));
+}

@@ -321,6 +321,14 @@ SOURCE=..\src\sys\fs\dfs\super.c
 SOURCE=..\src\sys\fs\devfs\devfs.c
 # End Source File
 # End Group
+# Begin Group "procfs"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\src\sys\fs\procfs\procfs.c
+# End Source File
+# End Group
 # End Group
 # Begin Group "include"
 
@@ -411,6 +419,10 @@ SOURCE=..\src\include\os\pit.h
 # Begin Source File
 
 SOURCE=..\src\include\os\pnpbios.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\procfs.h
 # End Source File
 # Begin Source File
 

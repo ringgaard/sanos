@@ -53,6 +53,6 @@ krnlapi int page_mapped(void *vaddr);
 krnlapi int mem_mapped(void *vaddr, int size);
 
 void init_pdir();
-
+int pdir_proc(struct proc_file *pf, void *arg);
 
 #endif

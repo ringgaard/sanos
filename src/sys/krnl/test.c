@@ -454,7 +454,7 @@ static void handle_list()
   kprintf("\n");
 }
 
-static void list_memmap(struct rmap *rmap, unsigned int startpos)
+void list_memmapx(struct rmap *rmap, unsigned int startpos)
 {
   struct rmap *r;
   struct rmap *rlim;
@@ -478,18 +478,18 @@ static void list_memmap(struct rmap *rmap, unsigned int startpos)
 
 static void vmem_list()
 {
-  list_memmap(vmap, BTOP(64 * K));
+  list_memmapx(vmap, BTOP(64 * K));
 }
 
 static void kmem_list()
 {
-  list_memmap(osvmap, BTOP(KHEAPBASE));
+  list_memmapx(osvmap, BTOP(KHEAPBASE));
 }
 
 
 static void mmem_list()
 {
-  list_memmap(kmodmap, BTOP(OSBASE));
+  list_memmapx(kmodmap, BTOP(OSBASE));
 }
 
 static void pmem_list()

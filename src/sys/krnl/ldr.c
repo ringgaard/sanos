@@ -167,6 +167,46 @@ int unload(hmodule_t hmod)
   return rc;
 }
 
+static int dump_mods(struct proc_file *pf, struct moddb *moddb)
+{
+  struct module *mod = moddb->modules;
+
+  pprintf(pf, "handle   module           refs entry      size   text   data    bss\n");
+  pprintf(pf, "-------- ---------------- ---- --------  -----  -----  -----  -----\n");
+
+  while (1)
+  {
+    struct image_header *imghdr = get_image_header(mod->hmod);
+
+    pprintf(pf, "%08X %-16s %4d %08X %5dK %5dK %5dK %5dK\n", 
+            mod->hmod, mod->name, mod->refcnt, 
+	    get_entrypoint(mod->hmod),
+	    imghdr->optional.size_of_image / K,
+	    imghdr->optional.size_of_code / K,
+	    imghdr->optional.size_of_initialized_data / K,
+	    imghdr->optional.size_of_uninitialized_data / K
+	    );
+
+    mod = mod->next;
+    if (mod == moddb->modules) break;
+  }
+
+  return 0;
+}
+
+static int kmods_proc(struct proc_file *pf, void *arg)
+{
+  return dump_mods(pf, &kmods);
+}
+
+static int umods_proc(struct proc_file *pf, void *arg)
+{
+  if (!page_mapped((void *) PEB_ADDRESS)) return -EFAULT;
+  if (!((struct peb *) PEB_ADDRESS)->usermods) return -EFAULT;
+
+  return dump_mods(pf, ((struct peb *) PEB_ADDRESS)->usermods);
+}
+
 void init_kernel_modules()
 {
   init_mutex(&ldr_lock, 0);
@@ -179,4 +219,7 @@ void init_kernel_modules()
 
   init_module_database(&kmods, "krnl.dll", (hmodule_t) OSBASE, get_property(krnlcfg, "kernel", "libpath", "/os"), 0);
   kmods.execmod = kmods.modules;
+
+  register_proc_inode("kmods", kmods_proc, NULL);
+  register_proc_inode("umods", umods_proc, NULL);
 }

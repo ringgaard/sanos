@@ -690,3 +690,49 @@ struct object *hlock(handle_t h, int type)
   o->handle_count++;
   return o;
 }
+
+//
+// handles_proc
+//
+
+#define FRAQ 2310
+
+static int handles_proc(struct proc_file *pf, void *arg)
+{
+  static char *objtype[] = {"TASK", "EVNT", "TIMR", "MUTX", "SEMA", "FILE", "SOCK"};
+
+  int h;
+  int i;
+  struct object *o;
+  int objcount[7];
+
+  for (i = 0; i < 7; i++) objcount[i] = 0;
+
+  pprintf(pf, "handle addr     s type count\n");
+  pprintf(pf, "------ -------- - ---- -----\n");
+  for (h = 0; h < htabsize; h++)
+  {
+    o = htab[h];
+
+    if (o < (struct object *) OSBASE) continue;
+    if (o == (struct object *) NOHANDLE) continue;
+    
+    pprintf(pf, "%6d %8X %d %4s %5d\n", h, o, o->signaled, objtype[o->type], o->handle_count);
+    objcount[o->type] += FRAQ / o->handle_count;
+  }
+
+  pprintf(pf, "\n");
+  for (i = 0; i < 7; i++) pprintf(pf, "%s:%d ", objtype[i], objcount[i] / FRAQ);
+  pprintf(pf, "\n");
+
+  return 0;
+}
+
+//
+// init_objects
+//
+
+void init_objects()
+{
+  register_proc_inode("handles", handles_proc, NULL);
+}

@@ -56,6 +56,8 @@
 
 #include <os/vfs.h>
 #include <os/dfs.h>
+#include <os/devfs.h>
+#include <os/procfs.h>
 
 #include <os/mbr.h>
 
@@ -88,10 +90,6 @@ void init_hd();
 // fd.c
 
 void init_fd();
-
-// devfs.c
-
-void init_devfs();
 
 // iop.c
 

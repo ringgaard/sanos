@@ -26,11 +26,35 @@ void dump_pool_stat(struct bufpool *pool)
 {
   int i;
 
-    kprintf("pool %s: %dx%d, %dK total (", device(pool->devno)->name, pool->poolsize, pool->bufsize, pool->poolsize * pool->bufsize / K);
+  kprintf("pool %s: %dx%d, %dK total (", device(pool->devno)->name, pool->poolsize, pool->bufsize, pool->poolsize * pool->bufsize / K);
   for (i = 0; i < BUF_STATES; i++) 
     if (pool->bufcount[i] != 0)
       kprintf("%s:%d ", statename[i], pool->bufcount[i]);
   kprintf(")\n");
+}
+
+//
+// bufpools_proc
+//
+
+static int bufpools_proc(struct proc_file *pf, void *arg)
+{
+  struct bufpool *pool;
+  int i;
+
+  pprintf(pf, "device   bufsize   size  free clean dirty  read write  lock   upd  invl   err\n");
+  pprintf(pf, "-------- ------- ------ ----- ----- ----- ----- ----- ----- ----- ----- -----\n");
+
+  pool = bufpools;
+  while (pool)
+  {
+    pprintf(pf, "%-8s %7d %5dK", device(pool->devno)->name, pool->poolsize, pool->poolsize * pool->bufsize / K);
+    for (i = 0; i < BUF_STATES; i++) pprintf(pf, "%6d", pool->bufcount[i]);
+    pprintf(pf, "\n");
+    pool = pool->next;
+  }
+
+  return 0;
 }
 
 //
@@ -471,6 +495,8 @@ struct bufpool *init_buffer_pool(devno_t devno, int poolsize, int bufsize, void 
     init_event(&dirty_buffers, 0, 0);
     lazywriter_thread = create_kernel_thread(lazywriter_task, NULL, PRIORITY_BELOW_NORMAL, "lazywriter");
     lazywriter_started = 1;
+
+    register_proc_inode("bufpools", bufpools_proc, NULL);
   }
 
   return pool;

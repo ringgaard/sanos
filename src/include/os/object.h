@@ -121,6 +121,8 @@ struct thread
 extern struct object **htab;
 extern int htabsize;
 
+void init_objects();
+
 void init_object(struct object *o, int type);
 int close_object(struct object *o);
 

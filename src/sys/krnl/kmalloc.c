@@ -165,6 +165,43 @@ void kfree(void *addr)
   b->mem = addr;
 }
 
+int kheapstat_proc(struct proc_file *pf, void *arg)
+{
+  int i;
+  int elems;
+  struct bucket *b;
+  void *addr;
+  unsigned long heapsize = 0;
+  unsigned long heapavail = 0;
+
+  pprintf(pf, "bucket size pages allocated      free\n");
+  pprintf(pf, "------ ---- ----- --------- ---------\n");
+
+  for (i = 0; i < PAGESHIFT; i++)
+  {
+    b = &buckets[i];
+
+    if (b->pages > 0)
+    {
+      elems = 0;
+      addr = b->mem;
+      while (addr)
+      {
+        addr = *(void **) addr;
+	elems++;
+      }
+
+      heapsize += b->pages * PAGESIZE;
+      heapavail += b->size * elems;
+
+      pprintf(pf, "%6d %4d %5d %9d %9d\n", i, b->size, b->pages, (b->pages * PAGESIZE / b->size) - elems, elems);
+    }
+  }
+
+  pprintf(pf, "Kernel Heap Summary: %dKB allocated %dKB available\n", heapsize / K, heapavail / K);
+  return 0;
+}
+
 void init_malloc()
 {
   int i;

@@ -570,7 +570,7 @@ static void http(int argc, char **argv)
   int s;
   int rc;
   int n;
-  //int f;
+  int f;
   int total;
 
   server = "192.168.12.1";
@@ -581,12 +581,12 @@ static void http(int argc, char **argv)
   if (argc >= 3) path = argv[2];
   if (argc >= 4) filename = argv[2];
 
-  //f = open(filename, O_CREAT);
-  //if (f < 0)
-  //{
-  //  printf("%s: error %d creating file\n", filename, f);
-  //  return;
-  //}
+  f = open(filename, O_CREAT);
+  if (f < 0)
+  {
+    printf("%s: error %d creating file\n", filename, f);
+    return;
+  }
 
   hp = gethostbyname(server);
   if (!hp)
@@ -633,7 +633,7 @@ static void http(int argc, char **argv)
   while ((n = recv(s, buffer, 4096, 0)) > 0)
   {
     total += n;
-    //write(f, buf, n);
+    write(f, buffer, n);
     //write(stdout, buffer, n);
     //printf("[%d]", n);
   }
@@ -647,7 +647,7 @@ static void http(int argc, char **argv)
 
   printf("closing\n");
   close(s);
-  //close(f);
+  close(f);
 }
 
 static void test(int argc, char **argv)

@@ -2,6 +2,7 @@ cd ..
 if not exist img mkdir img
 if not exist %2 mkdir %2
 if not exist %2\dev mkdir %2\dev
+if not exist %2\proc mkdir %2\proc
 if not exist %2\etc mkdir %2\etc
 if not exist %2\os mkdir %2\os
 if not exist %2\setup mkdir %2\setup

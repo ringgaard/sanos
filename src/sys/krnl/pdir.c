@@ -117,3 +117,64 @@ void init_pdir()
   // Clear identity mapping of the first 4 MB made by the os loader
   for (i = 0; i < PTES_PER_PAGE; i++) ptab[i] = 0;
 }
+
+int pdir_proc(struct proc_file *pf, void *arg)
+{
+  char *vaddr;
+  pte_t pte;
+  int lines = 0;
+
+  int ma = 0;
+  int us = 0;
+  int su = 0;
+  int ro = 0;
+  int rw = 0;
+  int ac = 0;
+  int dt = 0;
+
+  pprintf(pf, "virtaddr physaddr flags\n");
+  pprintf(pf, "-------- -------- ----- \n");
+
+  vaddr = NULL;
+  while (1)
+  {
+    if ((pdir[PDEIDX(vaddr)] & PT_PRESENT) == 0)
+      vaddr += PTES_PER_PAGE * PAGESIZE;
+    else
+    {
+      pte = ptab[PTABIDX(vaddr)];
+      if (pte & PT_PRESENT) 
+      {
+	ma++;
+	
+	if (pte & PT_WRITABLE)
+	  rw++;
+	else
+	  ro++;
+
+	if (pte & PT_USER) 
+	  us++;
+	else
+	  su++;
+
+	if (pte & PT_ACCESSED) ac++;
+	if (pte & PT_DIRTY) dt++;
+
+	pprintf(pf, "%08x %08x %c%c%c%c\n", 
+	        vaddr, PAGEADDR(pte), 
+		(pte & PT_WRITABLE) ? 'w' : 'r',
+		(pte & PT_USER) ? 'u' : 's',
+		(pte & PT_ACCESSED) ? 'a' : ' ',
+		(pte & PT_DIRTY) ? 'd' : ' ');
+
+      }
+
+      vaddr += PAGESIZE;
+    }
+
+    if (!vaddr) break;
+  }
+
+  pprintf(pf, "\ntotal: %d user: %d sys: %d r/w: %d r/o: %d accessed: %d dirty: %d\n", ma, us, su, rw, ro, ac, dt);
+  return 0;
+}

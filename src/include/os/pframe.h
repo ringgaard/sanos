@@ -38,6 +38,9 @@ extern unsigned long maxmem;
 krnlapi unsigned long alloc_pageframe(int type);
 krnlapi void free_pageframe(unsigned long pfn);
 
+int memstat_proc(struct proc_file *pf, void *arg);
+int physmem_proc(struct proc_file *pf, void *arg);
+
 void init_pfdb();
 
 #endif

@@ -119,8 +119,17 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
   // Initialize virtual memory manager
   init_vmm();
 
-  // flush tlb
+  // Flush tlb
   flushtlb();
+
+  // Register memory management procs
+  register_proc_inode("memstat", memstat_proc, NULL);
+  register_proc_inode("physmem", physmem_proc, NULL);
+  register_proc_inode("pdir", pdir_proc, NULL);
+  register_proc_inode("kmem", kmem_proc, NULL);
+  register_proc_inode("kmodmem", kmodmem_proc, NULL);
+  register_proc_inode("kheap", kheapstat_proc, NULL);
+  register_proc_inode("vmem", vmem_proc, NULL);
 
   // Initialize interrupts, floating-point support, and real-time clock
   init_pic();
@@ -128,9 +137,10 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
   init_fpu();
   init_pit();
   
-  // Initialize timers and scheduler
+  // Initialize timers, scheduler, and object manager
   init_timers();
   init_sched();
+  init_objects();
 
   // Enable interrupts and calibrate delay
   __asm { sti };
@@ -267,6 +277,7 @@ void main(void *arg)
   // Initialize built-in file systems
   init_dfs();
   init_devfs();
+  init_procfs();
  
   // Open boot device
   if (syspage->bootparams.bootdrv & 0x80)
@@ -286,6 +297,7 @@ void main(void *arg)
   // Mount root and device file systems
   mount("dfs", "/", bootdev, "");
   mount("devfs", "/dev", NODEV, NULL);
+  mount("procfs", "/proc", NODEV, NULL);
 
   // Load kernel configuration
   rc = load_kernel_config();

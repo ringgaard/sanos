@@ -11,9 +11,29 @@
 static struct udp_pcb *udp_pcbs = NULL;
 
 int udp_debug_print(struct udp_hdr *udphdr);
-	  
+
+static int udpstat_proc(struct proc_file *pf, void *arg)
+{
+  struct udp_pcb *pcb;
+
+  pprintf(pf, "local port  remote port local ip        remote ip\n");
+  pprintf(pf, "----------- ----------- --------------- ---------------\n");
+
+  for (pcb = udp_pcbs; pcb != NULL; pcb = pcb->next) 
+  {
+    pprintf(pf, "%8d    %8d    %-15a %-15a %s\n", pcb->local_port, pcb->remote_port, &pcb->local_ip, &pcb->remote_ip);
+  }
+
+  return 0;
+}
+
+//
+// udp_init
+//
+
 void udp_init()
 {
+  register_proc_inode("udpstat", udpstat_proc, NULL);
 }
 
 //

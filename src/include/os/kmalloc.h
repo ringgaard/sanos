@@ -24,6 +24,7 @@ krnlapi void *krealloc(void *addr, int newsize);
 krnlapi void kfree(void *addr);
 
 void init_malloc();
+int kheapstat_proc(struct proc_file *pf, void *arg);
 
 void dump_malloc();
 

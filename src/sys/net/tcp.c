@@ -30,6 +30,36 @@ struct tcp_pcb *tcp_tmp_pcb;
 #define MIN(x,y) ((x) < (y) ? (x): (y))
 
 //
+// tcpstat_proc
+//
+
+static int tcpstat_proc(struct proc_file *pf, void *arg)
+{
+  static char *statename[] = {"CLOSED", "LISTEN", "SYN_SENT", "SYN_RCVD", "ESTABLISHED", "FIN_WAIT_1", "FIN_WAIT_2", "CLOSE_WAIT", "CLOSING", "LAST_ACK", "TIME_WAIT"};
+  struct tcp_pcb *pcb;
+
+  pprintf(pf, "local port  remote port local ip        remote ip       state\n");
+  pprintf(pf, "----------- ----------- --------------- --------------- -----------\n");
+
+  for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) 
+  {
+    pprintf(pf, "%8d    %8d    %-15a %-15a %s\n", pcb->local_port, pcb->remote_port, &pcb->local_ip, &pcb->remote_ip, statename[pcb->state]);
+  }
+
+  for (pcb = (struct tcp_pcb *) tcp_listen_pcbs; pcb != NULL; pcb = pcb->next)
+  {
+    pprintf(pf, "%8d    %8d    %-15a %-15a %s\n", pcb->local_port, pcb->remote_port, &pcb->local_ip, &pcb->remote_ip, statename[pcb->state]);
+  }    
+
+  for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next) 
+  {
+    pprintf(pf, "%8d    %8d    %-15a %-15a %s\n", pcb->local_port, pcb->remote_port, &pcb->local_ip, &pcb->remote_ip, statename[pcb->state]);
+  }    
+
+  return 0;
+}
+
+//
 // tcp_close
 //
 // Closes the connection held by the PCB.
@@ -626,6 +656,7 @@ void tcp_init()
   init_timer(&tcpfast_timer, tcp_fast_handler, NULL);
   mod_timer(&tcpslow_timer, ticks + TCP_SLOW_INTERVAL / MSECS_PER_TICK);
   mod_timer(&tcpfast_timer, ticks + TCP_FAST_INTERVAL / MSECS_PER_TICK);
+  register_proc_inode("tcpstat", tcpstat_proc, NULL);
 }
 
 //
@@ -755,6 +786,7 @@ unsigned long tcp_next_iss()
   iss += tcp_ticks;
   return iss;
 }
+
 
 void tcp_debug_print(struct tcp_hdr *tcphdr)
 {

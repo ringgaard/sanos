@@ -21,5 +21,6 @@ krnlapi int mlock(void *addr, unsigned long size);
 krnlapi int munlock(void *addr, unsigned long size);
 
 int guard_page_handler(void *addr);
+int vmem_proc(struct proc_file *pf, void *arg);
 
 #endif
