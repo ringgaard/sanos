@@ -968,19 +968,19 @@ void main(int argc, char *argv[])
   rc = WSAStartup(MAKEWORD(2, 2), &wsadata);
   if (rc != 0) panic("error in WSAStartup");
 
-  //sess = smb_open_session("192.168.123.190", "c", "", "mri", "remote");
-  sess = smb_open_session("192.168.123.118", "c", "", "mri", "remote");
+  sess = smb_open_session("192.168.123.190", "c", "", "mri", "remote");
+  //sess = smb_open_session("192.168.123.118", "c", "", "mri", "remote");
   //sess = smb_open_session("127.0.0.1", "c", "", "mri", "remote");
   //sess = smb_open_session("pcmringgaa", "d", "ebu", "mri", "remote");
   if (!sess) panic("unable to connect to server");
 
   //smb_rename(sess, "yyy.txt", "def\\yyy.txt");
   //smb_statfs(sess);
-  //smb_listdir(sess, "staabi");
+  smb_listdir(sess, "\\apps\\VPN");
   //smb_delete(sess, "hello.txt");
   //smb_mkdir(sess, "testing");
   //smb_rmdir(sess, "testing");
-  smb_copy(sess, "hello.txt", "hello2.txt");
+  //smb_copy(sess, "hello.txt", "hello2.txt");
 
 #if 0
   file = smb_open_file(sess, "hello.txt", SMB_OPEN_EXISTING, SMB_ACCESS_GENERIC_READ);
@@ -992,7 +992,7 @@ void main(int argc, char *argv[])
   smb_close_file(file);
 #endif
 
-#if 1
+#if 0
   file = smb_open_file(sess, "staabi\\3b2_output.txt", SMB_OPEN_EXISTING, SMB_ACCESS_GENERIC_READ);
   if (!file) panic("unable to open file");
 

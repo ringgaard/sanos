@@ -163,18 +163,21 @@ static time_t ft2time(smb_time filetime)
   return (time_t) ((filetime - EPOC) / SECTIMESCALE);
 }
 
+static int convert_filename(char *name)
+{
+  char *p;
+
+  for (p = name; *p; p++)  if (*p == '/') *p = '\\';
+  return 0;
+}
+
 static void add_to_cache(struct smb_session *sess, char *path, char *filename, struct stat *statbuf)
 {
   int idx = sess->next_cacheidx;
 
-  if (*path)
-  {
-    strcpy(sess->dircache[idx].path, path);
-    strcat(sess->dircache[idx].path, "\\");
-    strcat(sess->dircache[idx].path, filename);
-  }
-  else
-    strcpy(sess->dircache[idx].path, filename);
+  strcpy(sess->dircache[idx].path, path);
+  strcat(sess->dircache[idx].path, "\\");
+  strcat(sess->dircache[idx].path, filename);
 
   memcpy(&sess->dircache[idx].statbuf, statbuf, sizeof(struct stat));
 
@@ -687,7 +690,7 @@ int smb_open(struct file *filp, char *name)
 int smb_close(struct file *filp)
 {
   //if (filp->flags & F_DIR) return smb_closedir(filp);
-  return -ENOSYS;
+  return 0;
 }
 
 int smb_flush(struct file *filp)
@@ -742,7 +745,37 @@ int smb_fstat(struct file *filp, struct stat *buffer)
 
 int smb_stat(struct fs *fs, char *name, struct stat *buffer)
 {
-  return -ENOSYS;
+  struct smb_session *sess = (struct smb_session *) fs->data;
+  int rc;
+#if 0
+  struct smb_fileinfo_request req;
+  struct smb_file_all_info rsp;
+  int rsplen;
+#endif
+
+  struct smb_dentry *dentry;
+  rc = convert_filename(name);
+  if (rc < 0) return rc;
+
+  if (!*name)
+  {
+    if (buffer)
+    {
+      memset(buffer, 0, sizeof(struct stat));
+      buffer->atime = time(0);
+      buffer->ctime = sess->mounttime;
+      buffer->mtime = sess->mounttime;
+      buffer->mode = FS_DIRECTORY;;
+      buffer->nlink = 1;
+      return 0;
+    }
+  }
+
+  dentry = find_in_cache(sess, name);
+  if (dentry == NULL) return -ENOSYS; // TODO: query if nit in cache
+
+  if (buffer) memcpy(buffer, &dentry->statbuf, sizeof(struct stat));
+  return dentry->statbuf.quad.size_low;
 }
 
 int smb_mkdir(struct fs *fs, char *name)
@@ -783,7 +816,7 @@ int smb_opendir(struct file *filp, char *name)
   rc = convert_filename(name);
   if (rc < 0) return rc;
 
-  dir = (struct smb_directory *) kmalloc(sizeof(struct smb_sirectory));
+  dir = (struct smb_directory *) kmalloc(sizeof(struct smb_directory));
   if (!dir) return -ENOMEM;
 
   memset(&req, 0, sizeof(req));
@@ -815,7 +848,65 @@ int smb_opendir(struct file *filp, char *name)
 
 int smb_readdir(struct file *filp, struct dirent *dirp, int count)
 {
+  struct smb_session *sess = (struct smb_session *) filp->fs->data;
+  struct smb_directory *dir = (struct smb_directory *) filp->data;
+  struct stat statbuf;
+
   if (count != 1) return -1;
 
-  return -ENOSYS;
+again:
+  if (dir->entries_left == 0)
+  {
+    struct smb_findnext_request req;
+    struct smb_findnext_response rsp;
+    int rsplen;
+    int buflen;
+    int rc;
+
+    if (dir->eos) return 0;
+
+    memset(&req, 0, sizeof(req));
+    req.sid = dir->sid;
+    req.flags = SMB_CONTINUE_BIT | SMB_CLOSE_IF_END;
+    req.infolevel = 0x101;
+    req.search_count = 512;
+
+    rsplen = sizeof(rsp);
+    buflen = SMB_DIRBUF_SIZE;
+    rc = smb_trans(sess, TRANS2_FIND_NEXT2, &req, sizeof(req), NULL, 0, &rsp, &rsplen, dir->buffer, &buflen);
+    if (rc < 0) return rc;
+
+    dir->eos = rsp.end_of_search;
+    dir->entries_left = rsp.search_count;
+    dir->fi = (struct smb_file_directory_info *) dir->buffer;
+
+    if (dir->entries_left == 0) return 0;
+  }
+
+  if (dir->fi->filename[0] == '.' && (dir->fi->filename[1] == 0 || (dir->fi->filename[1] == '.' && dir->fi->filename[2] == 0))) 
+  {
+    dir->entries_left--;
+    dir->fi = (struct smb_file_directory_info *) ((char *) dir->fi + dir->fi->next_entry_offset);
+    goto again;
+  }
+
+  memset(&statbuf, 0, sizeof(struct stat));
+  statbuf.nlink = 1;
+  statbuf.ctime = ft2time(dir->fi->creation_time);
+  statbuf.mtime = ft2time(dir->fi->last_write_time);
+  statbuf.atime = ft2time(dir->fi->last_access_time);
+  statbuf.size = dir->fi->end_of_file;
+  if (dir->fi->ext_file_attributes & SMB_FILE_ATTR_DIRECTORY) statbuf.mode |= FS_DIRECTORY;
+
+  add_to_cache(sess, dir->path, dir->fi->filename, &statbuf);
+
+  dirp->ino = 0;
+  dirp->namelen = strlen(dir->fi->filename);
+  dirp->reclen = sizeof(struct dirent) - MAXPATH + dirp->namelen + 1;
+  strcpy(dirp->name, dir->fi->filename);
+
+  dir->entries_left--;
+  dir->fi = (struct smb_file_directory_info *) ((char *) dir->fi + dir->fi->next_entry_offset);
+
+  return 1;
 }

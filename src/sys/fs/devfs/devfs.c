@@ -276,7 +276,7 @@ int devfs_readdir(struct file *filp, struct dirent *dirp, int count)
 
   dirp->ino = (ino_t) devno;
   dirp->namelen = strlen(dev->name);
-  dirp->reclen = sizeof(struct dirent) + dirp->namelen + 1;
+  dirp->reclen = sizeof(struct dirent) - MAXPATH + dirp->namelen + 1;
   strcpy(dirp->name, dev->name);
 
   filp->pos++;
