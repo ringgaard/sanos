@@ -187,7 +187,7 @@ int main(int argc, char **argv)
     readmode = 0;
   else
   {
-    printf("mkpart: specify -r for read or -e for write partition\n");
+    printf("mkpart: specify -r for read or -w for write partition\n");
     return 1;
   }
 
