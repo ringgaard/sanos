@@ -162,6 +162,14 @@ $(SRC)/lib/rmap.c: \
 $(SRC)/lib/rtttl.c: \
   $(SRC)/include/os.h
 
+$(SRC)/lib/sched.c: \
+  $(SRC)/include/sched.h \
+  $(SRC)/include/os.h
+
+$(SRC)/lib/semaphore.c: \
+  $(SRC)/include/semaphore.h \
+  $(SRC)/include/os.h
+
 $(SRC)/lib/setjmp.c: \
   $(SRC)/include/setjmp.h
 
@@ -214,6 +222,37 @@ $(SRC)/lib/vsprintf.c: \
   $(SRC)/include/sys/types.h \
   $(SRC)/include/stdarg.h \
   $(SRC)/include/string.h
+
+$(SRC)/lib/pthread/barrier.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/pthread.h \
+  $(SRC)/include/atomic.h
+
+$(SRC)/lib/pthread/condvar.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/pthread.h \
+  $(SRC)/include/atomic.h
+
+$(SRC)/lib/pthread/mutex.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/pthread.h \
+  $(SRC)/include/atomic.h
+
+$(SRC)/lib/pthread/pthread.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/pthread.h \
+  $(SRC)/include/sched.h \
+  $(SRC)/include/atomic.h \
+  $(SRC)/include/string.h
+
+$(SRC)/lib/pthread/rwlock.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/pthread.h
+
+$(SRC)/lib/pthread/spinlock.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/pthread.h \
+  $(SRC)/include/atomic.h
 
 # sys/dev
 
@@ -437,6 +476,12 @@ $(SRC)/sys/net/netif.c: \
 $(SRC)/sys/net/pbuf.c: \
   $(SRC)/include/net/net.h
 
+$(SRC)/sys/net/raw.c: \
+  $(SRC)/include/net/net.h
+
+$(SRC)/sys/net/rawsock.c: \
+  $(SRC)/include/net/net.h
+
 $(SRC)/sys/net/socket.c: \
   $(SRC)/include/net/net.h
 
@@ -655,6 +700,12 @@ $(SRC)/utils/sh/sh.c: \
   $(SRC)/include/crtbase.h \
   $(SRC)/include/inifile.h \
   $(SRC)/include/httpd.h
+
+$(SRC)/utils/sh/ping.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/string.h
 
 # win32
 

@@ -557,7 +557,37 @@ $(OBJ)/libc/bitops.obj: $(SRC)/lib/bitops.c
 $(OBJ)/libc/assert.obj: $(SRC)/lib/assert.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
+$(OBJ)/libc/sched.obj: $(SRC)/lib/sched.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
+$(OBJ)/libc/semaphore.obj: $(SRC)/lib/semaphore.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
+$(OBJ)/libc/barrier.obj: $(SRC)/lib/pthread/barrier.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
+$(OBJ)/libc/condvar.obj: $(SRC)/lib/pthread/condvar.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
+$(OBJ)/libc/mutex.obj: $(SRC)/lib/pthread/mutex.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
+$(OBJ)/libc/pthread.obj: $(SRC)/lib/pthread/pthread.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
+$(OBJ)/libc/rwlock.obj: $(SRC)/lib/pthread/rwlock.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
+$(OBJ)/libc/spinlock.obj: $(SRC)/lib/pthread/spinlock.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
 $(LIBS)/libc.lib: \
+  $(OBJ)/libc/spinlock.obj \
+  $(OBJ)/libc/rwlock.obj \
+  $(OBJ)/libc/pthread.obj \
+  $(OBJ)/libc/mutex.obj \
+  $(OBJ)/libc/condvar.obj \
+  $(OBJ)/libc/barrier.obj \
   $(OBJ)/libc/xtoa.obj \
   $(OBJ)/libc/time.obj \
   $(OBJ)/libc/syserr.obj \
@@ -568,6 +598,8 @@ $(LIBS)/libc.lib: \
   $(OBJ)/libc/stdlib.obj \
   $(OBJ)/libc/stdio.obj \
   $(OBJ)/libc/setjmp.obj \
+  $(OBJ)/libc/semaphore.obj \
+  $(OBJ)/libc/sched.obj \
   $(OBJ)/libc/rtttl.obj \
   $(OBJ)/libc/rmap.obj \
   $(OBJ)/libc/readline.obj \
@@ -720,6 +752,7 @@ utils: dirs $(BIN)/sh.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/jinit.exe $(B
 
 $(BIN)/sh.exe: \
   $(SRC)/utils/sh/sh.c \
+  $(SRC)/utils/sh/ping.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/sh/ $** /link /NODEFAULTLIB /FIXED:NO
