@@ -151,7 +151,7 @@
 
 struct pcnet32_rx_head
 {
-  void *buffer;
+  unsigned long buffer;
   short length;
   unsigned short status;
   unsigned long msg_length;
@@ -160,7 +160,7 @@ struct pcnet32_rx_head
 	
 struct pcnet32_tx_head
 {
-  void *buffer;
+  unsigned long buffer;
   short length;
   unsigned short status;
   unsigned long misc;
@@ -610,7 +610,7 @@ int __declspec(dllexport) install(struct unit *unit)
   pcnet32 = (struct pcnet32 *) kmalloc(sizeof(struct pcnet32));
   if (!pcnet32) return -ENOMEM;
   memset(pcnet32, 0, sizeof(struct pcnet32));
-  pcnet32->phys_addr = (unsigned long) virt2phys(pcnet32);
+  pcnet32->phys_addr = virt2phys(pcnet32);
 
   // Setup NIC configuration
   pcnet32->iobase = (unsigned short) get_unit_iobase(unit);
@@ -743,7 +743,7 @@ int __declspec(dllexport) install(struct unit *unit)
   for (i = 0; i < TX_RING_SIZE; i++)
   {
     pcnet32->tx_buffer[i] = NULL;
-    pcnet32->tx_ring[i].buffer = NULL;
+    pcnet32->tx_ring[i].buffer = 0;
     pcnet32->tx_ring[i].status = 0;
   }
   init_sem(&pcnet32->sem_tx, TX_RING_SIZE);

@@ -79,9 +79,9 @@ void unmap_page(void *vaddr)
   invlpage(vaddr);
 }
 
-void *virt2phys(void *vaddr)
+unsigned long virt2phys(void *vaddr)
 {
-  return (void *) ((ptab[PTABIDX(vaddr)] & PT_PFNMASK) + PGOFF(vaddr));
+  return ((ptab[PTABIDX(vaddr)] & PT_PFNMASK) + PGOFF(vaddr));
 }
 
 pte_t get_page_flags(void *vaddr)

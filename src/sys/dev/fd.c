@@ -305,11 +305,14 @@ static void fd_motor_on(struct fd *fd)
     //kprintf("fd: motor on\n");
     fd->fdc->dor |= 0x10 << fd->drive;
     _outp(FDC_DOR, fd->fdc->dor);
+    fd->motor_status = FD_MOTOR_ON;
     sleep(FD_MOTOR_SPINUP_TIME);
     //kprintf("fd: motor spinned up\n");
   }
-
-  fd->motor_status = FD_MOTOR_ON;
+  else
+  {
+    fd->motor_status = FD_MOTOR_ON;
+  }
 }
 
 //

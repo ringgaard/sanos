@@ -337,7 +337,7 @@ unsigned short ndisapi READ_PORT_USHORT(unsigned short *port)
 void ndisapi KeStallExecutionProcessor(unsigned long microseconds)
 {
   NDISTRACE("KeStallExecutionProcessor");
-  usleep(microseconds);
+  udelay(microseconds);
 }
 
 //

@@ -55,7 +55,7 @@ __inline unsigned int get_tick_count()
   return ticks;
 }
 
-krnlapi void usleep(unsigned long us);
+krnlapi void udelay(unsigned long us);
 
 krnlapi unsigned char read_cmos_reg(int reg);
 krnlapi void write_cmos_reg(int reg, unsigned char val);

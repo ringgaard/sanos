@@ -340,7 +340,7 @@ void init_pit()
   register_proc_inode("uptime", uptime_proc, NULL);
 }
 
-void usleep(unsigned long us)
+void udelay(unsigned long us)
 {
   if (cpu.features & CPU_FEATURE_TSC)
     tsc_delay(us * (cycles_per_tick / (1000000 / TIMER_FREQ)));

@@ -192,7 +192,7 @@ int execute_command_wait(struct nic *nic, int cmd, int param)
   for (i = 0; i < 100000; i++)
   {
     if (!(_inpw(nic->iobase + STATUS) & INTSTATUS_CMD_IN_PROGRESS)) return 0;
-    usleep(10);
+    udelay(10);
   }
 
   for (i = 0; i < 200; i++)
@@ -330,10 +330,10 @@ int nic_find_mii_phy(struct nic *nic)
 
     for (i = 0; i < 32; i++) 
     {
-      usleep(1);
+      udelay(1);
       _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
 
-      usleep(1);
+      udelay(1);
       _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
 
     }
@@ -361,9 +361,9 @@ void nic_send_mii_phy_preamble(struct nic *nic)
   {
     _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1);
     _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1 | PHY_CLOCK);
-    usleep(1);
+    udelay(1);
     _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
-    usleep(1);
+    udelay(1);
   }
 }
 
@@ -398,9 +398,9 @@ void nic_write_mii_phy(struct nic *nic, unsigned short reg, unsigned short value
         _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
         _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_CLOCK);
       }
-      usleep(1);
+      udelay(1);
       _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
-      usleep(1);
+      udelay(1);
     }
   }
 
@@ -409,9 +409,9 @@ void nic_write_mii_phy(struct nic *nic, unsigned short reg, unsigned short value
   for (i = 0; i < 2; i++) 
   {
     _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
-    usleep(1);
+    udelay(1);
     _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
-    usleep(1);
+    udelay(1);
   }
 }
 
@@ -444,17 +444,17 @@ int nic_read_mii_phy(struct nic *nic, unsigned short reg)
       _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_CLOCK);
     }
 
-    usleep(1);
+    udelay(1);
     _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
-    usleep(1);
+    udelay(1);
   }
 
   // Now run one clock with nobody driving
   _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
   _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
-  usleep(1);
+  udelay(1);
   _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
-  usleep(1);
+  udelay(1);
 
   // Now run one clock, expecting the PHY to be driving a 0 on the data
   // line.  If we read a 1, it has to be just his pull-up, and he's not
@@ -470,9 +470,9 @@ int nic_read_mii_phy(struct nic *nic, unsigned short reg)
   {
     // Shift input up one to make room
     _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
-    usleep(1);
+    udelay(1);
     _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
-    usleep(1);
+    udelay(1);
 
     phy_mgmt = _inpw(nic->iobase + PHYSICAL_MANAGEMENT);
 
@@ -484,9 +484,9 @@ int nic_read_mii_phy(struct nic *nic, unsigned short reg)
   for (i = 0; i < 2; i++) 
   {
     _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
-    usleep(1);
+    udelay(1);
     _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
-    usleep(1);
+    udelay(1);
   }
 
   return value;
@@ -508,7 +508,7 @@ int nic_eeprom_busy(struct nic *nic)
       return -ETIMEOUT;
     }
 
-    usleep(10);
+    udelay(10);
   }
 }
 
@@ -562,7 +562,7 @@ int nic_transmit(struct dev *dev, struct pbuf *p)
   entry = nic->next_tx;
   for (q = p, i = 0; q != NULL; q = q->next, i++) 
   {
-    entry->sglist[i].addr = (unsigned long) virt2phys(q->payload);
+    entry->sglist[i].addr = virt2phys(q->payload);
     if (!q->next) 
       entry->sglist[i].length = q->len | LAST_FRAG;
     else
@@ -709,7 +709,7 @@ void nic_up_complete(struct nic *nic)
     }
     else
     {
-      // Allocate new full sized pbuf and existing replace pbuf in rx ring
+      // Allocate new full sized pbuf and replace existing pbuf in rx ring
       q = pbuf_alloc(PBUF_RAW, ETHER_FRAME_LEN, PBUF_RW);
       if (q)
       {
@@ -717,7 +717,7 @@ void nic_up_complete(struct nic *nic)
 	pbuf_realloc(p, length);
 
 	nic->curr_rx->pkt = q;
-	nic->curr_rx->sglist[0].addr = (unsigned long) virt2phys(q->payload);
+	nic->curr_rx->sglist[0].addr = virt2phys(q->payload);
       }
       else
       {
@@ -1198,7 +1198,7 @@ int nic_restart_transmitter(struct nic *nic)
   select_window(nic, 4);
 
   media_status = _inpw(nic->iobase + MEDIA_STATUS);
-  usleep(10);
+  udelay(10);
 
   if (media_status & MEDIA_STATUS_TX_IN_PROGRESS)
   {
@@ -1218,7 +1218,7 @@ int nic_restart_transmitter(struct nic *nic)
 
   // Wait for download engine to stop
   dma_control = _inpd(nic->iobase + DMA_CONTROL);
-  usleep(10);
+  udelay(10);
 
   if (dma_control & DMA_CONTROL_DOWN_IN_PROGRESS)
   {
@@ -1328,7 +1328,7 @@ int nic_configure_mii(struct nic *nic, unsigned short media_options)
   // Wait for auto-negotiation to finish.
   phy_status = nic_read_mii_phy(nic, MII_PHY_STATUS);
   if (phy_status < 0) return phy_status;
-  usleep(1000);
+  udelay(1000);
 
   if (!(phy_status & MII_STATUS_AUTO_DONE))
   {
@@ -1481,7 +1481,7 @@ int nic_check_dc_converter(struct nic *nic, int enabled)
   nictrace("enter nic_check_dc_converter\n");
 
   media_status = _inpw(nic->iobase + MEDIA_STATUS);
-  usleep(1000);
+  udelay(1000);
 
   if (enabled && !(media_status & MEDIA_STATUS_DC_CONVERTER_ENABLED) ||
       !enabled && (media_status & MEDIA_STATUS_DC_CONVERTER_ENABLED))
@@ -1764,8 +1764,8 @@ int nic_setup_buffers(struct nic *nic)
     nic->rx_ring[i].pkt = pbuf_alloc(PBUF_RAW, ETHER_FRAME_LEN, PBUF_RW);
     if (!nic->rx_ring[i].pkt) return -ENOMEM;
 
-    nic->rx_ring[i].phys_next = (unsigned long) virt2phys(nic->rx_ring[i].next);
-    nic->rx_ring[i].sglist[0].addr = (unsigned long) virt2phys(nic->rx_ring[i].pkt->payload);
+    nic->rx_ring[i].phys_next = virt2phys(nic->rx_ring[i].next);
+    nic->rx_ring[i].sglist[0].addr = virt2phys(nic->rx_ring[i].pkt->payload);
     nic->rx_ring[i].sglist[0].length = ETHER_FRAME_LEN | LAST_FRAG;
   }
   nic->curr_rx = &nic->rx_ring[0];
@@ -1783,7 +1783,7 @@ int nic_setup_buffers(struct nic *nic)
     else
       nic->tx_ring[i].prev = &nic->tx_ring[i - 1];
 
-    nic->tx_ring[i].phys_addr = (unsigned long) virt2phys(&nic->tx_ring[i]);
+    nic->tx_ring[i].phys_addr = virt2phys(&nic->tx_ring[i]);
   }
 
   nic->next_tx = &nic->tx_ring[0];
@@ -1817,7 +1817,7 @@ int nic_start_adapter(struct nic *nic)
 
   // Give receive ring to upload engine
   execute_command_wait(nic, CMD_UP_STALL, 0);
-  _outpd(nic->iobase + UP_LIST_POINTER, (unsigned long) virt2phys(nic->curr_rx));
+  _outpd(nic->iobase + UP_LIST_POINTER, virt2phys(nic->curr_rx));
   execute_command(nic, CMD_UP_UNSTALL, 0);
 
   // Give transmit ring to download engine

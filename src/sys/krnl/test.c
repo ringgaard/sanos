@@ -801,7 +801,7 @@ static void sleeptest(int times, int time)
   int n;
 
   t = clocks;
-  for (n = 0; n < times; n++) usleep(time);
+  for (n = 0; n < times; n++) udelay(time);
   t = clocks - t;
 
   kprintf("%d ms for %dx%d us\n", t, times, time);

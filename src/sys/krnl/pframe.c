@@ -126,7 +126,7 @@ void set_pageframe_tag(void *addr, unsigned int len, unsigned long tag)
 
   while (vaddr < vend)
   {
-    unsigned long pfn = (unsigned long) virt2phys(vaddr) >> PAGESHIFT;
+    unsigned long pfn = virt2phys(vaddr) >> PAGESHIFT;
     pfdb[pfn].tag = tag;
     vaddr += PAGESIZE;
   }

@@ -274,7 +274,7 @@ struct hd;
 
 struct prd
 {
-  void *addr;
+  unsigned long addr;
   int len;
 };
 
@@ -1115,7 +1115,7 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase)
   {
     // Allocate one page for PRD list
     hdc->prds = (struct prd *) kmalloc(PAGESIZE);
-    hdc->prds_phys = (unsigned long) virt2phys(hdc->prds);
+    hdc->prds_phys = virt2phys(hdc->prds);
   }
 
   init_dpc(&hdc->xfer_dpc);

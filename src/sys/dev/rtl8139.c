@@ -92,8 +92,8 @@ enum board_capability_flags
   HAS_DESC        = 0x08
 };
 
-#define RTL8129_CAPS  HAS_MII_XCVR
-#define RTL8139_CAPS  HAS_CHIP_XCVR | HAS_LNK_CHNG
+#define RTL8129_CAPS   HAS_MII_XCVR
+#define RTL8139_CAPS   HAS_CHIP_XCVR | HAS_LNK_CHNG
 #define RTL8139D_CAPS  HAS_CHIP_XCVR | HAS_LNK_CHNG | HAS_DESC
 
 struct board_info
@@ -116,8 +116,8 @@ static struct board_info board_tbl[] =
   {"RealTek", "RealTek RTL8129 Fast Ethernet", PCI_UNITCODE(0x10ec, 0x8129), 0xffffffff, 0, 0, 0, 0, RTL8129_CAPS},
   {"RealTek", "RealTek RTL8139 Fast Ethernet", PCI_UNITCODE(0x10ec, 0x8139), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
   {"RealTek", "RealTek RTL8139B PCI",  PCI_UNITCODE(0x10ec, 0x8138), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
+  {"Accton", "Accton EN-1207D Fast Ethernet Adapter", PCI_UNITCODE(0x1113, 0x1211), 0xffffffff, PCI_UNITCODE(0x1113, 0x9211), 0xffffffff, 0, 0, RTL8139_CAPS},
   {"SMC", "SMC1211TX EZCard 10/100 (RealTek RTL8139)", PCI_UNITCODE(0x1113, 0x1211), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
-  {"Accton", "Accton MPX5030 (RTL8139)", PCI_UNITCODE(0x1113, 0x1211), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
   {"D-Link", "D-Link DFE-538TX (RTL8139)", PCI_UNITCODE(0x1186, 0x1300), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
   {"LevelOne", "LevelOne FPC-0106Tx (RTL8139)", PCI_UNITCODE(0x018a, 0x0106), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
   {"Compaq", "Compaq HNE-300 (RTL8139c)", PCI_UNITCODE(0x021b, 0x8139), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
@@ -704,7 +704,7 @@ static void rtl_hw_start(struct dev *dev)
   }
   outp(ioaddr + Cfg9346, 0x00);
 
-  outpd(ioaddr + RxBuf, (unsigned long) virt2phys(tp->rx_ring));
+  outpd(ioaddr + RxBuf, virt2phys(tp->rx_ring));
 
   // Start the chip's Tx and Rx process
   outpd(ioaddr + RxMissed, 0);
@@ -805,7 +805,7 @@ static int rtl8139_transmit(struct dev *dev, struct pbuf *p)
   long ioaddr = tp->iobase;
   int entry;
 
-  // Wait for free entries in transmit ring
+  // Wait for free entry in transmit ring
   if (wait_for_object(&tp->tx_sem, TX_TIMEOUT) < 0)
   {
     kprintf("%s: transmit timeout, drop packet\n", dev->name);
@@ -1381,7 +1381,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   ioaddr = (unsigned short) get_unit_iobase(unit);
   irq = irq = (unsigned short) get_unit_irq(unit);
 
-  // Allocate private memory (must be 16 byte aligned)
+  // Allocate private memory
   np = kmalloc(sizeof(struct nic));
   if (np == NULL) return -ENOMEM;
   memset(np, 0, sizeof(struct nic));
