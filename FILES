@@ -2,6 +2,7 @@ README                         README file for sanos project
 FILES                          List of files in sanos project (this file)
 COPYING                        License
 TODO                           TODO list and change log
+build.cmd                      Command file for building all components
 build\                         Build files for sanos
   3c905c.vcproj                Project file for 3Com 3C905 network driver (3905c.sys)
   advapi32.vcproj              Project file for win32 wrapper for advapi32.dll

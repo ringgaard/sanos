@@ -17,7 +17,8 @@ TODO for sanos
     x implement _r methods for reentrant version that does not use static buffers
 
 - Keyboard locks up when pressing CAPSLOCK
-
+    - Check ext flags in processing modifier keys (shift, alt, etc.)
+ 
 - Return error in tcp_rexmit_seg() to signal error in retransmit (reset rtime)
 
 - Implement ICMP messages host unreachable, net unreachable and port unreachable
@@ -364,7 +365,7 @@ CHANGES
 
 *** version 1.2.8 released ***
 
-- new mkfloppy utility for writing raw floppy disks.
+- New mkfloppy utility for writing raw floppy disks.
 
 - TCP connections are now reset before kernel shutdown or reboot.
 
@@ -385,12 +386,12 @@ CHANGES
     - User mode code not allowed to change priority for kernel threads
     - Dynamic and base priority for threads implemented
     - Priority boosting implemented
-    - Quantum units are now changed efter restarting waiting thread
+    - Quantum units are now charged after restarting waiting thread
     - Preemption when threads with higher priority than running thread implemented
  
  - TCP port numbers initialized to random range 4096-5120.
 
- - /proc/loadavg implemented.
+ - Processor load information (/proc/loadavg) implemented.
  
  - Shell code cleaned up. Help texts added. Better argument checking.
 
