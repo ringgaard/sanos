@@ -1208,8 +1208,7 @@ static void test(int argc, char **argv)
 }
 #endif
 
-#if 0
-static void test(int argc, char **argv)
+static void fpprinttest(int argc, char **argv)
 {
   char *fmt = "test %%f=[%f] %%g=[%g] %%e=[%e]";
 
@@ -1217,7 +1216,6 @@ static void test(int argc, char **argv)
   printf(fmt, -1.2345, 12345.6789, 0.0987654321, -123456);
   printf("\n");
 }
-#endif
 
 void __stdcall pipereader(void *arg)
 {
@@ -1636,6 +1634,8 @@ void shell()
 	rndtest(argc, argv);
       else if (strcmp(argv[0], "cstest") == 0)
 	cstest();
+      else if (strcmp(argv[0], "fpprint") == 0)
+	fpprinttest(argc, argv);
       else if (strcmp(argv[0], "httpd") == 0)
 	httpinit();
       else

@@ -154,13 +154,13 @@
 				Name="SanOSDebug|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
-					AssemblerOutput="4"/>
+					AssemblerOutput="0"/>
 			</FileConfiguration>
 			<FileConfiguration
 				Name="SanOS|Win32">
 				<Tool
 					Name="VCCLCompilerTool"
-					AssemblerOutput="4"/>
+					AssemblerOutput="0"/>
 			</FileConfiguration>
 		</File>
 	</Files>
