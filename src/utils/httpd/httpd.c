@@ -123,6 +123,7 @@ struct mimetype mimetypes[] =
   {"wrl",  "model/vrml"},
   {"vrml", "model/vrml"},
   {"mime", "message/rfc822"},
+  {"ini",  "text/plain"},
 
   {"wml",  "text/vnd.wap.wml"},
   {"wmlc", "application/vnd.wap.wmlc"},
@@ -174,6 +175,11 @@ struct httpd_server *httpd_initialize(struct section *cfg)
   server->rspbufsiz = getnumconfig(cfg, "responsebuffer", 4*K);
   server->backlog = getnumconfig(cfg, "backlog", 5);
   server->indexname = getstrconfig(cfg, "indexname", "index.htm");
+  server->swname = getstrconfig(cfg, "swname", HTTPD_SOFTWARE);
+  server->allowdirbrowse = getnumconfig(cfg, "allowdirbrowse", 1);
+
+  parse_log_columns(server, getstrconfig(cfg, "logcolumns", "date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status"));
+  server->logfd = 1; // TODO: For now just log to stdout, implement date based log files
 
   if (cfg)
   {
@@ -193,6 +199,8 @@ char *httpd_get_mimetype(struct httpd_server *server, char *ext)
 {
   struct property *prop;
   struct mimetype *m;
+
+  if (!ext) return NULL;
 
   // Find MIME type in servers mime map
   if (server && server->mimemap)
@@ -247,7 +255,7 @@ void httpd_accept(struct httpd_server *server)
   addrlen = sizeof(addr);
   sock = accept(server->sock, &addr.sa, &addrlen);
   if (sock < 0) return;
-    
+
   //printf("connect %a port %d\n", &addr.sa_in.sin_addr.s_addr, ntohs(addr.sa_in.sin_port));
 
   conn = (struct httpd_connection *) malloc(sizeof(struct httpd_connection));
@@ -257,7 +265,10 @@ void httpd_accept(struct httpd_server *server)
   conn->server = server;
   memcpy(&conn->client_addr, &addr, sizeof(httpd_sockaddr));
   conn->sock = sock;
-  
+
+  addrlen = sizeof(conn->server_addr);
+  getsockname(conn->sock, &conn->server_addr.sa, &addrlen);
+
   enter(&srvlock);
   if (server->connections) server->connections->prev = conn;
   conn->next = server->connections;
@@ -274,6 +285,7 @@ void httpd_finish_processing(struct httpd_connection *conn)
   {
     if (conn->req->decoded_url) free(conn->req->decoded_url);
     if (conn->req->path_translated) free(conn->req->path_translated);
+    if (conn->req->username) free(conn->req->username);
 
     conn->req = NULL;
   }
@@ -390,7 +402,7 @@ int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *
 
   sprintf(buf, "HTTP/%s %d %s\r\nServer: %s\r\nDate: %s\r\n", 
     rsp->conn->req->http11 ? "1.1" : "1.0",
-    state, title, HTTPD_SOFTWARE,
+    state, title, rsp->conn->server->swname,
     rfctime(time(0), datebuf));
 
   rc = bufcat(&rsp->conn->rsphdr, buf);
@@ -459,12 +471,35 @@ int httpd_send_error(struct httpd_response *rsp, int state, char *title, char *m
   return 0;
 }
 
+int httpd_redirect(struct httpd_response *rsp, char *newloc)
+{
+  char *hdrs;
+  int rc;
+
+  hdrs = (char *) malloc(3 * strlen(newloc) + 16);
+  if (!hdrs) return -ENOMEM;
+
+  strcpy(hdrs, "Location: ");
+  encode_url(newloc, hdrs + 10);
+  strcat(hdrs, "\r\n");
+
+  sprintf(hdrs, "Location: %s\r\n", newloc);
+  rsp->content_length = 0;
+
+  rc = httpd_send_header(rsp, 302, "Moved", hdrs);
+  free(hdrs);
+
+  return rc;
+}
+
 int httpd_send(struct httpd_response *rsp, char *data, int len)
 {
   struct httpd_buffer *buf = &rsp->conn->rspbody;
   int rc;
   int left;
   int n;
+
+  if (len == -1) len = strlen(data);
 
   // Send directly if data larger than buffer
   if (len > rsp->conn->server->rspbufsiz)
@@ -846,16 +881,9 @@ int httpd_find_context(struct httpd_request *req)
     if (strncmp(context->alias, pathinfo, n) == 0 && (*s == '/' || *s == 0))
     {
       if (*s)
-      {
-	*s++ = 0;
-	req->pathinfo = s;
-	req->contextpath = pathinfo;
-      }
+	req->pathinfo = s + 1;
       else
-      {
-	req->contextpath = pathinfo;
 	req->pathinfo = "";
-      }
 
       req->context = context;
       return 0;
@@ -912,7 +940,7 @@ int httpd_translate_path(struct httpd_request *req)
     p++;
   }
 
-  if (strnicmp(req->context->location, path, loclen) != 0)
+  if (loclen > 0 && strnicmp(req->context->location, path, loclen) != 0)
   {
     rc = httpd_send_error(req->conn->rsp, 400, "Bad Request", "Illegal URL");
     if (rc < 0) return rc;
@@ -923,15 +951,6 @@ int httpd_translate_path(struct httpd_request *req)
   if (!req) return -ENOMEM;
 
   return 1;
-}
-
-int httpd_log(struct httpd_connection *conn)
-{
-  char datebuf[32];
-
-  printf("%s - %s %s %d\n", rfctime(time(0), datebuf), conn->req->method, conn->req->encoded_url, conn->rsp->status);
-
-  return 0;
 }
 
 int httpd_write(struct httpd_connection *conn)
@@ -1060,7 +1079,8 @@ int httpd_process(struct httpd_connection *conn)
   }
 
   // Log request
-  httpd_log(conn);
+  rc = log_request(&req);
+  if (rc < 0) goto errorexit;
 
   // Prepare for sending back response
   rc = ioctl(conn->sock, FIONBIO, &on, sizeof(on));
@@ -1241,6 +1261,7 @@ int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
     mkcs(&srvlock);
     server = httpd_initialize(find_section(config, "httpd"));
     httpd_add_context(server, find_section(config, "webroot"), httpd_file_handler);
+    httpd_add_context(server, find_section(config, "webfs"), httpd_file_handler);
     httpd_start(server);
   }
 

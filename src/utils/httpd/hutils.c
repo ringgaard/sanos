@@ -36,6 +36,8 @@
 #include <string.h>
 #include <inifile.h>
 
+static const char hex[] = "0123456789abcdef";
+
 char *getstrconfig(struct section *cfg, char *name, char *defval)
 {
   char *val;
@@ -73,6 +75,7 @@ int decode_url(char *from, char *to)
       if (!isxdigit(x1)) return -EINVAL;
       x2 = *from++;
       if (!isxdigit(x2)) return -EINVAL;
+      if (x1 == 0 && x2 == 0) return -EINVAL;
       *to++ = (hexdigit(x1) << 4) + hexdigit(x2);
     } 
     else
@@ -81,6 +84,32 @@ int decode_url(char *from, char *to)
 
   *to = 0;
   return 0;
+}
+
+void encode_url(const char *from, char *to)
+{
+  char c;
+
+  while ((c = *from++) != 0) 
+  {
+    switch (c) 
+    {
+      case '%':
+      case ' ':
+      case '?':
+      case '+':
+      case '&':
+	*to++ = '%';
+	*to++ = hex[(c >> 4) & 15];
+	*to++ = hex[c & 15];
+	break;
+
+      default:
+	*to++ = c;
+	break;
+    }
+  }
+  *to = 0;
 }
 
 time_t timerfc(char *s)

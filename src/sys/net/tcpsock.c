@@ -552,7 +552,7 @@ static int tcpsock_getpeername(struct socket *s, struct sockaddr *name, int *nam
   sin->sin_len = sizeof(struct sockaddr_in);
   sin->sin_family = AF_INET;
   sin->sin_port = htons(s->tcp.pcb->remote_port);
-  sin->sin_addr.s_addr = s->udp.pcb->remote_ip.addr;
+  sin->sin_addr.s_addr = s->tcp.pcb->remote_ip.addr;
 
   *namelen = sizeof(struct sockaddr_in);
   return 0;
@@ -570,8 +570,8 @@ static int tcpsock_getsockname(struct socket *s, struct sockaddr *name, int *nam
   sin = (struct sockaddr_in *) name;
   sin->sin_len = sizeof(struct sockaddr_in);
   sin->sin_family = AF_INET;
-  sin->sin_port = htons(s->udp.pcb->local_port);
-  sin->sin_addr.s_addr = s->udp.pcb->local_ip.addr;
+  sin->sin_port = htons(s->tcp.pcb->local_port);
+  sin->sin_addr.s_addr = s->tcp.pcb->local_ip.addr;
 
   *namelen = sizeof(struct sockaddr_in);
   return 0;

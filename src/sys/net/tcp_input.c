@@ -332,10 +332,8 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       pcb->flags |= TF_RESET;
       pcb->flags &= ~TF_ACK_DELAY;
     } 
-    else 
-    {
-      kprintf("tcp_process: unacceptable reset seqno %lu rcv_nxt %lu\n", seqno, pcb->rcv_nxt);
-    }
+    //else 
+    //  kprintf("tcp_process: unacceptable reset seqno %lu rcv_nxt %lu\n", seqno, pcb->rcv_nxt);
 
     return -ERST;
   }

@@ -68,6 +68,30 @@
 #define HDR_STATE_CRLFCR      9
 #define HDR_STATE_BOGUS       10
 
+// HTTP Logging
+
+#define HTTP_LOG_DATE          0
+#define HTTP_LOG_TIME          1
+#define HTTP_LOG_TIME_TAKEN    2
+#define HTTP_LOG_C_IP          3
+#define HTTP_LOG_S_IP          4
+#define HTTP_LOG_S_PORT        5
+#define HTTP_LOG_CS_URI        6
+#define HTTP_LOG_CS_URI_STEM   7
+#define HTTP_LOG_CS_URI_QUERY  8
+#define HTTP_LOG_CS_METHOD     9
+#define HTTP_LOG_CS_BYTES      10
+#define HTTP_LOG_CS_USER_AGENT 11
+#define HTTP_LOG_CS_REFERER    12
+#define HTTP_LOG_CS_COOKIE     13
+#define HTTP_LOG_CS_HOST       14
+#define HTTP_LOG_CS_USERNAME   15
+#define HTTP_LOG_CS_PROTOCOL   16
+#define HTTP_LOG_SC_BYTES      17
+#define HTTP_LOG_SC_STATUS     18
+
+#define HTTP_NLOGCOLUMNS       32
+
 struct httpd_context;
 struct httpd_request;
 struct httpd_response;
@@ -110,6 +134,7 @@ struct httpd_server
   int port;
   int sock;
   int iomux;
+  int logfd;
   struct httpd_context *contexts;
   struct httpd_connection *connections;
 
@@ -120,6 +145,10 @@ struct httpd_server
   int rspbufsiz;
   int backlog;
   char *indexname;
+  char *swname;
+  int allowdirbrowse;
+  int nlogcolumns;
+  int logcoumns[HTTP_NLOGCOLUMNS];
 };
 
 // HTTP context
@@ -146,7 +175,6 @@ struct httpd_request
   char *decoded_url;
 
   char *method;
-  char *contextpath;
   char *pathinfo;
   char *query;
   char *protocol;
@@ -163,6 +191,8 @@ struct httpd_request
   char *host;
   time_t if_modified_since;
   int keep_alive;
+
+  char *username;
 
   int nheaders;
   struct httpd_header headers[MAX_HTTP_HEADERS];
@@ -191,6 +221,7 @@ struct httpd_connection
   struct httpd_connection *prev;
   int sock;
   httpd_sockaddr client_addr;
+  httpd_sockaddr server_addr;
 
   struct httpd_request *req;
   struct httpd_response *rsp;
@@ -220,15 +251,23 @@ httpdapi int httpd_send(struct httpd_response *rsp, char *data, int len);
 httpdapi int httpd_send_file(struct httpd_response *rsp, int fd);
 httpdapi int httpd_flush(struct httpd_response *rsp);
 
+httpdapi int httpd_redirect(struct httpd_response *rsp, char *newloc);
+
 httpdapi int httpd_file_handler(struct httpd_connection *conn);
 
 #ifdef HTTPD_LIB
+
+// hloc.c
+
+int parse_log_columns(struct httpd_server *server, char *fields);
+int log_request(struct httpd_request *req);
 
 // hutils.c
 
 char *getstrconfig(struct section *cfg, char *name, char *defval);
 int getnumconfig(struct section *cfg, char *name, int defval);
 int decode_url(char *from, char *to);
+void encode_url(const char *from, char *to);
 time_t timerfc(char *s);
 char *rfctime(time_t t, char *buf);
 
