@@ -12,9 +12,12 @@ struct dev *devtab[MAX_DEVS];
 unsigned int num_devs = 0;
 
 struct device *devicetab[MAX_DEVICES];
-unsigned int num_devices = 0;
+int num_devices = 0;
 
-struct device *register_device(int type)
+struct binding *bindtab;
+int num_bindings;
+
+struct device *register_device(int type, unsigned long classcode, unsigned long devicecode)
 {
   struct device *dv;
 
@@ -24,6 +27,8 @@ struct device *register_device(int type)
   devicetab[num_devices++] = dv;
 
   dv->type = type;
+  dv->classcode = classcode;
+  dv->devicecode = devicecode;
 
   return dv;
 }
@@ -39,13 +44,115 @@ int add_resource(struct device *dv, int type, int flags, unsigned long start, un
   return 0;
 }
 
+static void parse_bindings()
+{
+  struct section *sect;
+  struct property *prop;
+  struct binding *bind;
+  char *s;
+  int n;
+
+  // Parse driver bindings
+  sect = find_section(krnlcfg, "bindings");
+  if (!sect) return;
+  num_bindings = get_section_size(sect);
+  if (!num_bindings) return;
+
+  bindtab = (struct binding *) kmalloc(num_bindings * sizeof(struct binding));
+  memset(bindtab, 0, num_bindings * sizeof(struct binding));
+
+  n = 0;
+  prop = sect->properties;
+  while (prop)
+  {
+    bind = &bindtab[n++];
+    s = prop->name;
+    bind->type = *s++;
+    bind->module = prop->value;
+
+    while (*s)
+    {
+      unsigned long digit;
+      unsigned long mask;
+
+      mask = 0xF;
+      if (*s >= '0' && *s <= '9')
+	digit = *s - '0';
+      else if (*s >= 'A' && *s <= 'F')
+	digit = *s - 'A' + 10;
+      else if (*s >= 'a' && *s <= 'f')
+	digit = *s - 'a' + 10;
+      else
+      {
+	digit = 0;
+	mask = 0;
+      }
+
+      bind->code = (bind->code << 4) | digit;
+      bind->mask = (bind->mask << 4) | mask;
+      s++;
+    }
+
+    //kprintf("binding %c %08X %08X %s\n", bind->type, bind->code, bind->mask, bind->module);
+    prop = prop->next;
+  }
+}
+
+static struct binding *find_binding(struct device *dv)
+{
+  int n;
+
+  if (dv->type == DEVICE_TYPE_PCI)
+  {
+    for (n = 0; n < num_bindings; n++)
+    {
+      struct binding *bind = &bindtab[n];
+
+      if (bind->type == BIND_PCI_CLASS && (dv->classcode & bind->mask) == bind->code) return bind;
+      if (bind->type == BIND_PCI_DEVICE && (dv->devicecode & bind->mask) == bind->code) return bind;
+    }
+  }
+  else if (dv->type == DEVICE_TYPE_PNP)
+  {
+    for (n = 0; n < num_bindings; n++)
+    {
+      struct binding *bind = &bindtab[n];
+
+      if (bind->type == BIND_PNP_TYPECODE && (dv->classcode & bind->mask) == bind->code) return bind;
+      if (bind->type == BIND_PNP_EISAID && (dv->devicecode & bind->mask) == bind->code) return bind;
+    }
+  }
+
+  return NULL;
+}
+
+void bind_devices()
+{
+  int n;
+
+  // Parse driver binding database
+  parse_bindings();
+
+  // Match bindings to devices
+  for (n = 0; n < num_devices; n++)
+  {
+    struct device *dv = devicetab[n];
+    struct binding *bind = find_binding(dv);
+
+    if (bind)
+    {
+      kprintf("dev %s bind to %s\n", dv->name, bind->module);
+    }
+  }
+}
+
 struct dev *device(devno_t devno)
 {
   if (devno < 0 || devno >= num_devs) return NULL;
   return devtab[devno];
 }
 
-devno_t dev_make(char *name, struct driver *driver, void *privdata)
+devno_t dev_make(char *name, struct driver *driver, struct device *device, void *privdata)
 {
   struct dev *dev;
   devno_t devno;
@@ -56,11 +163,14 @@ devno_t dev_make(char *name, struct driver *driver, void *privdata)
   dev = (struct dev *) kmalloc(sizeof(struct dev));
   devtab[devno] = dev;
 
-  dev->name = name;
+  dev->name = kmalloc(strlen(name) + 1);
+  strcpy(dev->name, name);
   dev->driver = driver;
+  dev->device = device;
   dev->privdata = privdata;
   dev->refcnt = 0;
 
+  if (device) device->dev = dev;
   return devno;
 }
 

@@ -661,7 +661,7 @@ static void init_serial_port(char *devname, int iobase, int irq)
   _outp(sp->iobase + UART_MCR, sp->mcr);
 
   // Create device
-  dev_make(devname, &serial_driver, sp);
+  dev_make(devname, &serial_driver, NULL, sp);
 
   // Enable interrupts
   set_interrupt_handler(IRQ2INTR(sp->irq), serial_handler, sp);

@@ -179,7 +179,7 @@ void main(void *arg)
   char bootdevname[8];
   int rc;
 
-  // Enumerate Plug-and-Play devices
+  // Enumerate Plug-n-Play devices
   pnpbios_init();
 
   // Enumerate PCI devices
@@ -218,6 +218,9 @@ void main(void *arg)
 
   // Initialize module loader
   init_kernel_modules();
+
+  // Bind devices
+  bind_devices();
 
   // Initialize devices
   init_null();

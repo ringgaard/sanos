@@ -1056,10 +1056,10 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
     return;
   }
 
-  if (hdc->bmregbase)
-    devno = dev_make(devname, &harddisk_dma_driver, hd);
+  if (hdc->bmregbase && strcmp(hd->param.model, "VMware Virtual IDE Hard Drive") != 0)
+    devno = dev_make(devname, &harddisk_dma_driver, NULL, hd);
   else
-    devno = dev_make(devname, &harddisk_intr_driver, hd);
+    devno = dev_make(devname, &harddisk_intr_driver, NULL, hd);
 
   if (hd->lba)
     kprintf("%s: %s (%d MB) %u blks (%d bits, %s, %d bufs)\n", devname, hd->param.model, hd->size, hd->blks, hd->use32bits ? 32 : 16, hdc->bmregbase ? "dma" : "intr", hd->param.buffersize);
@@ -1084,7 +1084,7 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
 	hd->parts[i].start = mbr.parttab[i].relsect;
 	hd->parts[i].len = mbr.parttab[i].numsect;
 
-	partdevno = dev_make(partnames[i], &partition_driver, &hd->parts[i]);
+	partdevno = dev_make(partnames[i], &partition_driver, NULL, &hd->parts[i]);
  
 	kprintf("%s: partition %d on %s, %dMB (type %02x)\n", partnames[i], i, devname, mbr.parttab[i].numsect / (M / SECTORSIZE), mbr.parttab[i].systid);
       }
@@ -1100,6 +1100,7 @@ void init_hd()
   numhd = syspage->biosdata[0x75];
 
   idedev = lookup_pci_device_class(PCI_CLASS_STORAGE_IDE, PCI_SUBCLASS_MASK);
+  idedev = NULL;
   if (idedev)
   {
     bmiba = pci_config_read(idedev->bus->busno, idedev->devno, idedev->funcno, PCI_CONFIG_BASE_ADDR_4) & 0xFFF0;

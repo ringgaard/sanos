@@ -88,7 +88,7 @@ struct driver console_driver =
 
 void init_cons()
 {
-  dev_make("console", &console_driver, NULL);
+  dev_make("console", &console_driver, NULL, NULL);
   consdev = dev_open("console");
 }
 

@@ -17,6 +17,7 @@ struct pnp_dev;
 
 #define DEV_TYPE_STREAM		1
 #define DEV_TYPE_BLOCK		2
+#define DEV_TYPE_PACKET		3
 
 #define IOCTL_GETBLKSIZE        1
 #define IOCTL_GETDEVSIZE        2
@@ -36,6 +37,11 @@ struct pnp_dev;
 #define RESOURCE_IRQ	        3
 #define RESOURCE_DMA	        4
 
+#define BIND_PCI_CLASS          'C'
+#define BIND_PCI_DEVICE         'D'
+#define BIND_PNP_TYPECODE       'T'
+#define BIND_PNP_EISAID         'E'
+
 struct resource
 {
   int type;
@@ -52,12 +58,15 @@ struct driver
   int (*ioctl)(struct dev *dev, int cmd, void *args, size_t size);
   int (*read)(struct dev *dev, void *buffer, size_t count, blkno_t blkno);
   int (*write)(struct dev *dev, void *buffer, size_t count, blkno_t blkno);
+  int (*attach)(struct dev *dev, struct netif *netif);
+  int (*detach)(struct dev *dev, struct netif *netif);
 };
 
 struct dev 
 {
   char *name;
   struct driver *driver;
+  struct device *device;
   void *privdata;
   int refcnt;
 };
@@ -67,13 +76,26 @@ struct device
   int type;
   char *name;
   struct dev *dev;
+  
+  unsigned long classcode;
+  unsigned long devicecode;
+
   int numres;
   struct resource res[MAX_RESOURCES];
+  
   union
   {
     struct pci_dev *pci;
     struct pnp_dev *pnp;
   };
+};
+
+struct binding
+{
+  int type;
+  unsigned long code;
+  unsigned long mask;
+  char *module;
 };
 
 struct geometry
@@ -89,16 +111,19 @@ extern struct dev *devtab[];
 extern unsigned int num_devs;
 
 extern struct device *devicetab[];
-extern unsigned int num_devices;
+extern int num_devices;
 
-krnlapi struct device *register_device(int type);
+void bind_devices();
+
+krnlapi struct device *register_device(int type, unsigned long classcode, unsigned long devicecode);
 krnlapi int add_resource(struct device *dv, int type, int flags, unsigned long start, unsigned long len);
 
 krnlapi struct dev *device(devno_t devno);
-krnlapi devno_t dev_make(char *name, struct driver *driver, void *privdata);
+krnlapi devno_t dev_make(char *name, struct driver *driver, struct device *device, void *privdata);
 krnlapi devno_t dev_open(char *name);
 krnlapi int dev_close(devno_t devno);
 krnlapi int dev_ioctl(devno_t devno, int cmd, void *args, size_t size);
 krnlapi int dev_read(devno_t devno, void *buffer, size_t count, blkno_t blkno);
 krnlapi int dev_write(devno_t devno, void *buffer, size_t count, blkno_t blkno);
+
 #endif

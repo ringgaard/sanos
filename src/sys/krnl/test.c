@@ -483,7 +483,8 @@ static void handle_list()
 
   for (i = 0; i < 6; i++) objcount[i] = 0;
 
-  kprintf("Handle Addr     S Type Count\n");
+  kprintf("handle addr     s type count\n");
+  kprintf("------ -------- - ---- -----\n");
   for (h = 0; h < htabsize; h++)
   {
     o = htab[h];
@@ -496,6 +497,7 @@ static void handle_list()
     if (++lines % 24 == 0) pause();
   }
 
+  kprintf("\n");
   for (i = 0; i < 6; i++) kprintf("%s:%d ", objtype[i], objcount[i] / FRAQ);
   kprintf("\n");
 }
@@ -604,6 +606,8 @@ static void dump_devices()
   {
     dv = devicetab[i];
 
+    kprintf("%08X %08X ", dv->classcode, dv->devicecode);
+
     switch (dv->type)
     {
       case DEVICE_TYPE_LEGACY:
@@ -686,6 +690,41 @@ static void cmos_dump()
 
   for (i = 0; i < 128; i++) buffer[i] = read_cmos_reg(i);
   dump_memory(0, buffer, 128);
+}
+
+static void dump_mods(struct moddb *moddb)
+{
+  struct module *mod = moddb->modules;
+
+  kprintf("handle   module           refs entry      size   text   data    bss\n");
+  kprintf("-------- ---------------- ---- --------  -----  -----  -----  -----\n");
+
+  while (1)
+  {
+    struct image_header *imghdr = get_image_header(mod->hmod);
+
+    kprintf("%08X %-16s %4d %08X %5dK %5dK %5dK %5dK\n", 
+            mod->hmod, mod->name, mod->refcnt, 
+	    get_entrypoint(mod->hmod),
+	    imghdr->optional.size_of_image / K,
+	    imghdr->optional.size_of_code / K,
+	    imghdr->optional.size_of_initialized_data / K,
+	    imghdr->optional.size_of_uninitialized_data / K
+	    );
+
+    mod = mod->next;
+    if (mod == moddb->modules) break;
+  }
+}
+
+static void dump_kmods()
+{
+  dump_mods(&kmods);
+}
+
+static void dump_umods()
+{
+  dump_mods(((struct peb *) PEB_ADDRESS)->usermods);
 }
 
 static void test(char *arg)
@@ -786,6 +825,10 @@ void shell()
       thread_list();
     else if (strcmp(cmd, "cmos") == 0)
       cmos_dump();
+    else if (strcmp(cmd, "kmods") == 0)
+      dump_kmods();
+    else if (strcmp(cmd, "umods") == 0)
+      dump_umods();
     else if (strcmp(cmd, "test") == 0)
       test(arg);
     else if (*cmd)

@@ -68,6 +68,6 @@ void init_ramdisk(char *devname, int size)
   rd = kmalloc(sizeof(struct ramdisk));
   rd->blks = size / SECTORSIZE;
   rd->data = kmalloc(size);
-  dev_make(devname, &ramdisk_driver, rd);
+  dev_make(devname, &ramdisk_driver, NULL, rd);
   kprintf("%s: ramdisk (%d MB)\n", devname, size / M);
 }

@@ -143,6 +143,7 @@ void dbg_enter(struct context *ctxt, void *addr)
   kprintf("trap %d (%p)\n", ctxt->traptype, addr);
   kprintf("enter kernel debugger\n");
   dumpregs(ctxt);
+  if (ctxt->traptype != 3) panic("system halted");
   shell();
 }
 

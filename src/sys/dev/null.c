@@ -45,6 +45,6 @@ struct driver null_driver =
 
 void init_null()
 {
-  dev_make("null", &null_driver, NULL);
+  dev_make("null", &null_driver, NULL, NULL);
   nulldev = dev_open("null");
 }

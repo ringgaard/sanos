@@ -57,5 +57,5 @@ struct driver cmos_driver =
 
 void init_cmos()
 {
-  dev_make("cmos", &cmos_driver, NULL);
+  dev_make("cmos", &cmos_driver, NULL, NULL);
 }

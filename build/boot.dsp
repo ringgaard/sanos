@@ -46,8 +46,9 @@ SOURCE=..\src\sys\boot\boot.asm
 InputPath=..\src\sys\boot\boot.asm
 
 "..\bin\boot" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	..\tools\nasmw.exe -f bin ..\src\sys\boot\boot.asm -o ..\bin\boot  -l ..\obj\boot\boot.lst
-
+	if not exist ..\obj\boot mkdir ..\obj\boot 
+	..\tools\nasmw.exe -f bin ..\src\sys\boot\boot.asm -o ..\bin\boot  -l ..\obj\boot\boot.lst 
+	
 # End Custom Build
 # End Source File
 # End Target

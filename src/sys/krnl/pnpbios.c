@@ -207,7 +207,7 @@ static void pnpid32_to_pnpid(unsigned long id, char *str)
   str[7] = '\0';
 
   return;
-}                                              
+}
 
 static char *get_device_type_name(unsigned char type_code[3])
 {
@@ -248,7 +248,6 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct device
 	  int addr = *(short *) &p[4];
 	  int len = *(short *) &p[10];
 	  add_resource(dv, RESOURCE_MEM, 0, addr, len);
-	  //kprintf("mem:%x-%x ", addr, addr + len - 1);
 	  break;
 	}
 	
@@ -258,7 +257,6 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct device
 	  if (len > 79) len = 79;
 	  memcpy(dv->pnp->name, p + 3, len);
 	  dv->pnp->name[len] = 0;
-	  //kprintf("name:%s ", dv->pnp->name);
 	  break;
 	}
 
@@ -267,7 +265,6 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct device
 	  int addr = *(int *) &p[4];
 	  int len = *(int *) &p[16];
 	  add_resource(dv, RESOURCE_MEM, 0, addr, len);
-	  //kprintf("mem:%x-%x ", addr, addr + len - 1);
 	  break;
 	}
 
@@ -276,7 +273,6 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct device
 	  int addr = *(int *) &p[4];
 	  int len = *(int *) &p[8];
 	  add_resource(dv, RESOURCE_MEM, 0, addr, len);
-	  //kprintf("fmem:%x-%x ", addr, addr + len - 1);
 	  break;
 	}
 
@@ -294,50 +290,37 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct device
                   
     switch (p[0] >> 3)
     {
-      case 0x04: // irq
+      case 0x04: // IRQ
       {
 	int i, mask, irq = -1;
 	mask = p[1] + (p[2] << 8);
 	for (i = 0; i < 16; i++, mask = mask >> 1) if (mask & 0x01) irq = i;
-	if (irq != -1)
-	{ 
-	  add_resource(dv, RESOURCE_IRQ, 0, irq, 1);
-	  //kprintf("irq:%d ", irq);
-	}
+	if (irq != -1) add_resource(dv, RESOURCE_IRQ, 0, irq, 1);
 	break;
       }
 
-      case 0x05: // dma
+      case 0x05: // DMA
       {
 	int i, mask, dma = -1;
 	mask = p[1];
 	for (i = 0; i < 8;i++, mask = mask>>1) if (mask & 0x01) dma = i;
-	if (dma != -1)
-	{
-	  add_resource(dv, RESOURCE_DMA, 0, dma, 1);
-	  //kprintf("dma:%d ", dma);
-	}
+	if (dma != -1) add_resource(dv, RESOURCE_DMA, 0, dma, 1);
 	break;
       }
 
-      case 0x08: // io
+      case 0x08: // I/O
       {
 	int io = p[2] + (p[3] << 8);
 	int len = p[7];
-	if (len != 0)
-	{
-	  add_resource(dv, RESOURCE_IO, 0, io, len);
-	  //kprintf("io:%x-%x ", io, io + len - 1);
-	}
+	if (len != 0) add_resource(dv, RESOURCE_IO, 0, io, len);
 	break;
       }
 
-      case 0x09: // fixed location io
+      case 0x09: // Fixed location io
       {
 	int io = p[1] + (p[2] << 8);
 	int len = p[3];
 	add_resource(dv, RESOURCE_IO, 0, io, len);
-	//kprintf("fio:%x-%x ", io, io + len - 1);
 	break;
       }
 
@@ -359,6 +342,8 @@ static void build_devlist()
   int nodes_fetched = 0;
   struct pnp_bios_node *node;
   struct device *dv;
+  unsigned long classcode;
+  unsigned long devicecode;
 
   status = pnp_bios_dev_node_info(&info);
   if (status != 0) return;
@@ -385,7 +370,9 @@ static void build_devlist()
     
     nodes_fetched++;
 
-    dv = register_device(DEVICE_TYPE_PNP);
+    classcode = (node->type_code[0] << 16) + (node->type_code[1] << 8) + node->type_code[0];
+    devicecode = node->eisa_id;
+    dv = register_device(DEVICE_TYPE_PNP, classcode, devicecode);
     dv->name = get_device_type_name(node->type_code);
     dv->pnp = (struct pnp_dev *) kmalloc(sizeof(struct pnp_dev));
     pnpid32_to_pnpid(node->eisa_id, dv->pnp->name);
@@ -393,14 +380,10 @@ static void build_devlist()
     dv->pnp->type_code[1] = node->type_code[1];
     dv->pnp->type_code[2] = node->type_code[2];
 
-    //kprintf("** %s %s: ", get_device_type_name(node->type_code), dv->pnp->name, node->size);
     extract_node_resource_data(node, dv);
-    //kprintf("\n");
 
   }
   kfree(node);
-
-  //kprintf("pnpbios: %i node%s reported by PnP BIOS.\n", nodes_fetched, nodes_fetched != 1 ? "s" : "");
 }
 
 int pnpbios_init()

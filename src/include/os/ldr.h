@@ -9,6 +9,8 @@
 #ifndef LDR_H
 #define LDR_H
 
+extern struct moddb kmods;
+
 void *load_image_file(char *filename, int userspace);
 
 krnlapi void *resolve(hmodule_t hmod, char *procname);

@@ -503,7 +503,7 @@ static void init_drive(char *devname, struct fd *fd, struct fdc *fdc, int drive,
   fd->drive = drive;
   fd->curtrack = 0xFF;
 
-  dev_make(devname, &floppy_driver, fd);
+  dev_make(devname, &floppy_driver, NULL, fd);
 
   kprintf("%s: %u blks (%d KB) THS=%u/%u/%u\n", devname, 
     fd->geom->tracks * fd->geom->heads * fd->geom->spt, 

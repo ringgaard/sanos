@@ -208,13 +208,9 @@ static void scan_pci_bus(struct pci_bus *bus)
       {
 	if (funcno == 0 || devtail == NULL || devtail->devno != devno || devtail->deviceid != deviceid)
 	{
-	  // Register new device
-	  dv = register_device(DEVICE_TYPE_PCI);
-
 	  // Allocate and initialize new PCI device
 	  dev = (struct pci_dev *) kmalloc(sizeof(struct pci_dev));
 	  memset(dev, 0, sizeof(struct pci_dev));
-	  dv->pci = dev;
 
 	  dev->bus = bus;
 	  dev->devno = devno;
@@ -231,7 +227,11 @@ static void scan_pci_bus(struct pci_bus *bus)
 	  // Function class code
 	  value = pci_config_read(bus->busno, devno, funcno, PCI_CONFIG_CLASS_REV);
 	  dev->classcode = value >> 8;
+
+	  // Register new device
+	  dv = register_device(DEVICE_TYPE_PCI, dev->classcode, (dev->vendorid << 16) + dev->deviceid);
 	  dv->name = get_pci_class_name(dev->classcode);
+	  dv->pci = dev;
 
 	  if (dev->classcode == PCI_BRIDGE)
 	  {
