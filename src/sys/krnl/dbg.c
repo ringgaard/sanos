@@ -38,6 +38,8 @@
 
 #define MAX_DBG_PACKETLEN (MAX_DBG_CHUNKSIZE + sizeof(union dbg_body))
 
+extern char *trapnames[]; // Defined in trap.c
+
 int debugging = 0;
 int debugger_active = 0;
 int debug_nointr = 0;
@@ -498,13 +500,11 @@ void dumpregs(struct context *ctxt)
   kprintf("EIP  = %08X EFLG = %08X TRAP = %08X ERR  = %08X\n", ctxt->eip, ctxt->eflags, ctxt->traptype, ctxt->errcode);
 }
 
-void shell();
-
 void dbg_enter(struct context *ctxt, void *addr)
 {
   if (!debugging)
   {
-    kprintf("dbg: trap %d thread %d, addr %p\n", ctxt->traptype, self()->id, addr);
+    kprintf("dbg: trap %d (%s) thread %d, addr %p\n", ctxt->traptype, trapnames[ctxt->traptype], self()->id, addr);
     dumpregs(ctxt);
   }
 

@@ -50,6 +50,7 @@ struct unit;
 #define IOCTL_GETBLKSIZE        1
 #define IOCTL_GETDEVSIZE        2
 #define IOCTL_GETGEOMETRY       3
+#define IOCTL_REVALIDATE        4
 
 #define RESOURCE_IO	        1
 #define RESOURCE_MEM	        2

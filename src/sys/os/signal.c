@@ -35,10 +35,11 @@
 
 sighandler_t sighandlers[NSIG];
 
-static void sigexit(struct siginfo *info)
+static void sigexit(struct siginfo *info, int action)
 {
   __asm
   {
+    mov eax, [action]
     mov ebx, [info]
     int 49
   }
@@ -46,9 +47,29 @@ static void sigexit(struct siginfo *info)
 
 sighandler_t signal(int signum, sighandler_t handler)
 {
-  return SIG_ERR;
+  sighandler_t prev;
+
+  if (signum < 0 || signum >= NSIG) return SIG_ERR;
+  prev = sighandlers[signum];
+  sighandlers[signum] = handler;
+  return prev;
 }
 
 void raise(int signum, struct siginfo *info)
 {
+  sighandler_t handler;
+
+  if (signum < 0 || signum >= NSIG) return;
+  handler = sighandlers[signum];
+  if (handler == SIG_IGN) return;
+  if (handler == SIG_DFL) dbgbreak();
+  handler(signum, info);
+}
+
+void globalhandler(int signum, struct siginfo *info)
+{
+  //syslog(LOG_DEBUG, "signal %d received (trap 0x%x)\n", signum, info->ctxt.traptype);
+  if (sighandlers[signum] == SIG_DFL) sigexit(info, 1);
+  raise(signum, info);
+  sigexit(info, 0);
 }

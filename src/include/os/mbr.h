@@ -36,7 +36,7 @@
 
 #define MBR_SIGNATURE            0xAA55
 
-#define SANOS_BOOT_PARTITION_ID  6
+#define SANOS_BOOT_PARTITION_ID  0xCC
 
 #pragma pack(push)
 #pragma pack(1)

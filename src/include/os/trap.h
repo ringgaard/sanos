@@ -74,6 +74,7 @@
 #define INTR_PGFLT		14
 #define INTR_RESVD1		15
 #define INTR_NPX		16
+#define INTR_ALIGN		17
 
 //
 // PC ISA interrupts (32-47)
@@ -154,6 +155,15 @@ __inline __declspec(naked) unsigned long eflags()
   {
     pushfd
     pop eax
+    ret
+  }
+}
+
+__inline __declspec(naked) unsigned long cr2()
+{
+  __asm
+  {
+    mov eax, cr2;
     ret
   }
 }

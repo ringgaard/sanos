@@ -38,7 +38,18 @@
 struct syspage *syspage = (struct syspage *) SYSPAGE_ADDRESS;
 struct interrupt *intrhndlr[INTRS];
 int intrcount[INTRS];
-struct interrupt pgfintr;
+
+static struct interrupt divintr;
+static struct interrupt overflowintr;
+static struct interrupt boundsintr;
+static struct interrupt illopintr;
+static struct interrupt segintr;
+static struct interrupt stackintr;
+static struct interrupt genprointr;
+static struct interrupt pgfintr;
+static struct interrupt alignintr;
+
+static struct interrupt sigexitintr;
 
 char *trapnames[INTRS] = 
 {
@@ -93,7 +104,7 @@ char *trapnames[INTRS] =
   "IRQ15 (hdc2)",
 
   "System call",
-  "(unused)",
+  "Signal exit",
   "(unused)",
   "(unused)",
   "(unused)",
@@ -239,7 +250,6 @@ static void __declspec(naked) isr##n(void)    \
   __asm { jmp isr }                           \
 }
 
-
 ISR(0)  ISR(1)  ISR(2)   ISR(3)   ISR(4)   ISR(5)   ISR(6)   ISR(7)
 ISRE(8) ISR(9)  ISRE(10) ISRE(11) ISRE(12) ISRE(13) ISRE(14) ISR(15)
 ISR(16) ISR(17) ISR(18)  ISR(19)  ISR(20)  ISR(21)  ISR(22)  ISR(23)
@@ -248,6 +258,34 @@ ISR(32) ISR(33) ISR(34)  ISR(35)  ISR(36)  ISR(37)  ISR(38)  ISR(39)
 ISR(40) ISR(41) ISR(42)  ISR(43)  ISR(44)  ISR(45)  ISR(46)  ISR(47)
         ISR(49) ISR(50)  ISR(51)  ISR(52)  ISR(53)  ISR(54)  ISR(55)
 ISR(56) ISR(57) ISR(58)  ISR(59)  ISR(60)  ISR(61)  ISR(62)  ISR(63)
+
+//
+// usermode
+//
+// Tests if context is a user mode context
+//
+
+__inline static int usermode(struct context *ctxt)
+{
+  return USERSPACE(ctxt->eip);
+}
+
+//
+// wrmsr
+//
+// Write MSR
+//
+
+void wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh)
+{
+  __asm
+  {
+    mov ecx, reg
+    mov eax, valuelow
+    mov edx, valuehigh
+    wrmsr
+  }
+}
 
 //
 // init_idt_gate
@@ -278,57 +316,194 @@ static void init_trap_gate(int intrno, void *handler)
 }
 
 //
+// send_signal
+//
+// Setup user stack to execute global signal handler
+//
+
+void send_signal(struct context *ctxt, int signum, void *addr)
+{
+  unsigned long esp;
+  struct siginfo *info;
+
+  // Check for global handler
+  if (!peb || !peb->globalhandler) panic("no global signal handler");
+
+  // Get copy of user stack pointer 
+  esp = ctxt->esp;
+
+  // Push context onto stack
+  esp -= sizeof(struct siginfo);
+  info = (struct siginfo *) esp;
+  memcpy(&info->ctxt, ctxt, sizeof(struct context));
+  info->addr = addr;
+
+  // Push pointer to signal info to stack
+  esp -= sizeof(struct siginfo *);
+  *((struct siginfo **) esp) = info;
+
+  // Push signal number to stack
+  esp -= sizeof(int);
+  *((int *) esp) = signum;
+
+  // Push dummy return address to stack
+  esp -= sizeof(void *);
+  *((void **) esp) = NULL;
+
+  // Set new stack pointer in user context
+  ctxt->esp = esp;
+
+  // Set instruction pointer to global signal handler routine
+  ctxt->eip = (unsigned long) peb->globalhandler;
+}
+
+//
+// sigexit_handler
+//
+// Signal exit handler
+//
+
+static int sigexit_handler(struct context *ctxt, void *arg)
+{
+  struct siginfo *info;
+  int debug;
+
+  debug = ctxt->eax;
+  info = (struct siginfo *) ctxt->ebx;
+
+  memcpy(ctxt, &info->ctxt, sizeof(struct context));
+
+  if (debug) dbg_enter(ctxt, info->addr);
+
+  return 1;
+}
+
+//
+// div_handler
+//
+
+static int div_handler(struct context *ctxt, void *arg)
+{
+  if (usermode(ctxt))
+    send_signal(ctxt, SIGFPE, (void *) ctxt->eip);
+  else
+    panic("division by zero in kernel mode");
+  return 0;
+}
+
+//
+// overflow_handler
+//
+
+static int overflow_handler(struct context *ctxt, void *arg)
+{
+  if (usermode(ctxt))
+    send_signal(ctxt, SIGSEGV, NULL);
+  else
+    panic("overflow exception in kernel mode");
+  return 0;
+}
+
+//
+// bounds_handler
+//
+
+static int bounds_handler(struct context *ctxt, void *arg)
+{
+  if (usermode(ctxt))
+    send_signal(ctxt, SIGSEGV, NULL);
+  else
+    panic("bounds exception in kernel mode");
+  return 0;
+}
+
+//
+// illop_handler
+//
+
+static int illop_handler(struct context *ctxt, void *arg)
+{
+  if (usermode(ctxt))
+    send_signal(ctxt, SIGILL, (void *) ctxt->eip);
+  else
+    panic("illegal instruction exception in kernel mode");
+  return 0;
+}
+
+//
+// seg_handler
+//
+
+static int seg_handler(struct context *ctxt, void *arg)
+{
+  if (usermode(ctxt))
+    send_signal(ctxt, SIGBUS, NULL);
+  else
+    panic("sement not present exception in kernel mode");
+  return 0;
+}
+
+//
+// stack_handler
+//
+
+static int stack_handler(struct context *ctxt, void *arg)
+{
+  if (usermode(ctxt))
+    send_signal(ctxt, SIGBUS, NULL);
+  else
+    panic("stack segment exception in kernel mode");
+  return 0;
+}
+
+//
+// genpro_handler
+//
+
+static int genpro_handler(struct context *ctxt, void *arg)
+{
+  if (usermode(ctxt))
+    send_signal(ctxt, SIGSEGV, NULL);
+  else
+    panic("general protection exception in kernel mode");
+  return 0;
+}
+
+//
 // pagefault_handler
 //
-// Page fault handler
-//
 
-int pagefault_handler(struct context *ctxt, void *arg)
+static int pagefault_handler(struct context *ctxt, void *arg)
 {
-  unsigned long addr;
+  void *addr;
   void *pageaddr;
 
-  __asm { mov eax, cr2 };
-  __asm { mov addr, eax };
-
-  pageaddr = (void *) (addr & ~(PAGESIZE - 1));
+  addr = (void *) cr2();
+  pageaddr = (void *) ((unsigned long) addr & ~(PAGESIZE - 1));
 
   if (page_guarded(pageaddr))
   {
-    if (guard_page_handler(pageaddr) < 0) dbg_enter(ctxt, (void *) addr);
+    if (guard_page_handler(pageaddr) < 0) send_signal(ctxt, SIGSEGV, addr);
   }
+  else if (usermode(ctxt))
+    send_signal(ctxt, SIGSEGV, addr);
   else
-    dbg_enter(ctxt, (void *) addr);
+    panic("page fault in kernel mode");
 
   return 0;
 }
 
 //
-// usermode
-//
-// Tests if context is a user mode context
+// alignment_handler
 //
 
-__inline static int usermode(struct context *ctxt)
+static int alignment_handler(struct context *ctxt, void *arg)
 {
-  return USERSPACE(ctxt->eip);
-}
-
-//
-// wrmsr
-//
-// Write MSR
-//
-
-void wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh)
-{
-  __asm
-  {
-    mov ecx, reg
-    mov eax, valuelow
-    mov edx, valuehigh
-    wrmsr
-  }
+  if (usermode(ctxt))
+    send_signal(ctxt, SIGBUS, (void *) cr2());
+  else
+    panic("alignment exception in kernel mode");
+  return 0;
 }
 
 //
@@ -422,7 +597,7 @@ void init_trap()
   init_idt_gate(46, isr46);
   init_idt_gate(47, isr47);
   init_trap_gate(48, systrap);
-  init_idt_gate(49, isr49);
+  init_trap_gate(49, isr49);
   init_idt_gate(50, isr50);
   init_idt_gate(51, isr51);
   init_idt_gate(52, isr52);
@@ -438,8 +613,17 @@ void init_trap()
   init_idt_gate(62, isr62);
   init_idt_gate(63, isr63);
 
-  // Set system page fault handler
+  // Set system trap handlers
+  register_interrupt(&divintr, INTR_DIV, div_handler, NULL);
+  register_interrupt(&overflowintr, INTR_OVFL, overflow_handler, NULL);
+  register_interrupt(&boundsintr, INTR_BOUND, bounds_handler, NULL);
+  register_interrupt(&illopintr, INTR_INSTR, illop_handler, NULL);
+  register_interrupt(&segintr, INTR_SEG, seg_handler, NULL);
+  register_interrupt(&stackintr, INTR_STACK, stack_handler, NULL);
+  register_interrupt(&genprointr, INTR_GENPRO, genpro_handler, NULL);
   register_interrupt(&pgfintr, INTR_PGFLT, pagefault_handler, NULL);
+  register_interrupt(&alignintr, INTR_ALIGN, alignment_handler, NULL);
+  register_interrupt(&sigexitintr, INTR_SIGEXIT, sigexit_handler, NULL);
 
   // Initialize fast syscall
   if (cpu.features & CPU_FEATURE_SEP)

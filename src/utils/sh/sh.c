@@ -177,16 +177,14 @@ static void list_dir(int argc, char **argv)
 	  printf("         ");
 	else
 	{
-	  int size;
-
-	  if (buf.quad.size_low >= K)
-	    size = buf.quad.size_low / K;
-	  else if (buf.quad.size_low > 0)
-	    size = 1;
+	  if (buf.quad.size_high == 0 && buf.quad.size_low < 4*K)
+	    printf("%6d B ", buf.quad.size_low);
+	  else if (buf.quad.size_high == 0 && buf.quad.size_low < 4*M)
+	    printf("%6dKB ", buf.quad.size_low / K);
+	  else if (buf.quad.size_high == 0)
+	    printf("%6dMB ", buf.quad.size_low / M);
 	  else
-	    size = 0;
-
-	  printf("%6dKB ", size);
+	    printf("%6dGB ", (buf.quad.size_high << 12) | (buf.quad.size_low >> 20));
 	}
       }
 
@@ -1165,7 +1163,7 @@ void __stdcall pipereader(void *arg)
   close(f);
 }
 
-static void test(int argc, char **argv)
+static void pipetest(int argc, char **argv)
 {
   int fildes[2];
   int hthread;
@@ -1311,6 +1309,19 @@ static void nop()
   }
 
   printf("syscall(0,0) with sysenter: min/avg/max %d/%d/%d cycles\n", min, sum / 1000, max);
+}
+
+static void divtesthandler(int signum, struct siginfo *info)
+{
+  printf("in handler\n");
+  info->ctxt.ecx = 10;
+}
+
+static void test(int argc, char **argv)
+{
+  signal(SIGFPE, divtesthandler);
+  printf("100/0=%d\n", 100 / atoi(argv[1]));
+  signal(SIGFPE, SIG_DFL);
 }
 
 static void set_kprint(int enabled)

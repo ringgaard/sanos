@@ -9,7 +9,7 @@ if not exist %2\setup mkdir %2\setup
 if not exist %2\mnt mkdir %2\mnt
 if not exist %2\usr mkdir %2\usr
 copy %1\os.dll %2\bin > nul
-copy %1\ndis.sys %2\bin > nul
+rem copy %1\ndis.sys %2\bin > nul
 copy %1\sh.exe %2\bin > nul
 copy %1\setup.exe %2\bin > nul
 copy %1\fdisk.exe %2\bin > nul

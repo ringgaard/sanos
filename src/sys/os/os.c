@@ -55,6 +55,7 @@ unsigned long loglevel = LOG_DEBUG | LOG_APITRACE | LOG_AUX | LOG_MODULE;
 int logfile = -1;
 
 void init_sntpd();
+void globalhandler(int signum, struct siginfo *info);
 
 void panic(const char *msg)
 {
@@ -577,6 +578,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 
   // Setup pointer to process environment block (PEB)
   peb = (struct peb *) PEB_ADDRESS;
+  peb->globalhandler = globalhandler;
 
   // Initialize heap and module locks
   mkcs(&heap_lock);

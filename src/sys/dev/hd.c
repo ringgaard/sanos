@@ -320,6 +320,7 @@ struct hd
   int lba;                              // Use LBA mode
   int multsect;                         // Sectors per interrupt
   int udmamode;                         // UltraDMA mode
+  devno_t devno;                        // Device number
 
   // Geometry
   unsigned int blks;		        // Number of blocks on drive
@@ -335,10 +336,7 @@ struct hd
 static struct hdc hdctab[HD_CONTROLLERS];
 static struct hd hdtab[HD_DRIVES];
 
-static char *hd0parts[HD_PARTITIONS] = {"hd0a", "hd0b", "hd0c", "hd0d"};
-static char *hd1parts[HD_PARTITIONS] = {"hd1a", "hd1b", "hd1c", "hd1d"};
-static char *hd2parts[HD_PARTITIONS] = {"hd2a", "hd2b", "hd2c", "hd2d"};
-static char *hd3parts[HD_PARTITIONS] = {"hd3a", "hd3b", "hd3c", "hd3d"};
+static int create_partitions(struct hd *hd);
 
 static void hd_fixstring(unsigned char *s, int len)
 {
@@ -572,6 +570,9 @@ static int hd_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       geom->sectors = hd->blks;
 
       return 0;
+
+    case IOCTL_REVALIDATE:
+      return create_partitions(hd);
   }
 
   return -ENOSYS;
@@ -1155,14 +1156,58 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase)
   return 0;
 }
 
-static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, char *partnames[HD_PARTITIONS])
+static int create_partitions(struct hd *hd)
+{
+  struct master_boot_record mbr;
+  devno_t devno;
+  int rc;
+  int i;
+  char devname[DEVNAMELEN];
+
+  // Read partition table
+  rc = dev_read(hd->devno, &mbr, SECTORSIZE, 0);
+  if (rc < 0)
+  {
+    kprintf("%s: error %d reading partition table\n", device(hd->devno)->name, rc);
+    return rc;
+  }
+
+  // Create partition devices
+  if (mbr.signature != MBR_SIGNATURE)
+  {
+    kprintf("%s: illegal boot sector signature\n", device(hd->devno)->name);
+    return -EIO;
+  }
+
+  for (i = 0; i < HD_PARTITIONS; i++)
+  {
+    hd->parts[i].dev = hd->devno;
+    hd->parts[i].bootid = mbr.parttab[i].bootid;
+    hd->parts[i].systid = mbr.parttab[i].systid;
+    hd->parts[i].start = mbr.parttab[i].relsect;
+    hd->parts[i].len = mbr.parttab[i].numsect;
+
+    if (mbr.parttab[i].systid != 0)
+    {
+      sprintf(devname, "%s%c", device(hd->devno)->name, 'a' + i);
+      devno = dev_open(devname);
+      if (devno == NODEV)
+      {
+        devno = dev_make(devname, &partition_driver, NULL, &hd->parts[i]);
+        kprintf("%s: partition %d on %s, %dMB (type %02x)\n", devname, i, device(hd->devno)->name, mbr.parttab[i].numsect / (M / SECTORSIZE), mbr.parttab[i].systid);
+      }
+      else
+	dev_close(devno);
+    }
+  }
+
+  return 0;
+}
+
+static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel)
 {
   static int udma_speed[] = {16, 25, 33, 44, 66, 100};
 
-  int i;
-  struct master_boot_record mbr;
-  devno_t devno;
-  devno_t partdevno;
   int rc;
 
   memset(hd, 0, sizeof(struct hd));
@@ -1209,9 +1254,9 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
 
   // Make new device
   if (hd->udmamode != -1)
-    devno = dev_make(devname, &harddisk_dma_driver, NULL, hd);
+    hd->devno = dev_make(devname, &harddisk_dma_driver, NULL, hd);
   else
-    devno = dev_make(devname, &harddisk_intr_driver, NULL, hd);
+    hd->devno = dev_make(devname, &harddisk_intr_driver, NULL, hd);
 
   kprintf("%s: %s (%d MB)", devname, hd->param.model, hd->size);
   if (hd->lba) kprintf(", LBA");
@@ -1221,36 +1266,7 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
   if (hd->udmamode == -1 && hd->multsect > 1) kprintf(", %d sects/intr", hd->multsect);
   kprintf("\n");
 
-  // Read partition table
-  rc = dev_read(devno, &mbr, SECTORSIZE, 0);
-  if (rc < 0)
-  {
-    kprintf("%s: error %d reading partition table\n", devname, rc);
-    return;
-  }
-
-  // Create partition devices
-  if (mbr.signature != MBR_SIGNATURE)
-  {
-    kprintf("%s: illegal boot sector signature\n", devname);
-    return;
-  }
-
-  for (i = 0; i < HD_PARTITIONS; i++)
-  {
-    if (mbr.parttab[i].systid != 0)
-    {
-      hd->parts[i].dev = devno;
-      hd->parts[i].bootid = mbr.parttab[i].bootid;
-      hd->parts[i].systid = mbr.parttab[i].systid;
-      hd->parts[i].start = mbr.parttab[i].relsect;
-      hd->parts[i].len = mbr.parttab[i].numsect;
-
-      partdevno = dev_make(partnames[i], &partition_driver, NULL, &hd->parts[i]);
-
-      kprintf("%s: partition %d on %s, %dMB (type %02x)\n", partnames[i], i, devname, mbr.parttab[i].numsect / (M / SECTORSIZE), mbr.parttab[i].systid);
-    }
-  }
+  create_partitions(hd);
 }
 
 void init_hd()
@@ -1275,8 +1291,8 @@ void init_hd()
       kprintf("hd: error %d initializing primary ide controller\n", rc);
     else
     {
-      if (numhd >= 1) setup_hd(&hdtab[0], &hdctab[0], "hd0", HD0_DRVSEL, hd0parts);
-      if (numhd >= 2) setup_hd(&hdtab[1], &hdctab[0], "hd1", HD1_DRVSEL, hd1parts);
+      if (numhd >= 1) setup_hd(&hdtab[0], &hdctab[0], "hd0", HD0_DRVSEL);
+      if (numhd >= 2) setup_hd(&hdtab[1], &hdctab[0], "hd1", HD1_DRVSEL);
     }
   }
 
@@ -1287,8 +1303,8 @@ void init_hd()
       kprintf("hd: error %d initializing secondary ide controller\n", rc);
     else
     {
-      if (numhd >= 3) setup_hd(&hdtab[2], &hdctab[1], "hd2", HD0_DRVSEL, hd2parts);
-      if (numhd >= 4) setup_hd(&hdtab[3], &hdctab[1], "hd3", HD1_DRVSEL, hd3parts);
+      if (numhd >= 3) setup_hd(&hdtab[2], &hdctab[1], "hd2", HD0_DRVSEL);
+      if (numhd >= 4) setup_hd(&hdtab[3], &hdctab[1], "hd3", HD1_DRVSEL);
     }
   }
 }

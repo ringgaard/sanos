@@ -248,17 +248,18 @@ int guard_page_handler(void *addr)
   unsigned long pfn;
   struct thread *t = self();
 
-  flags = get_page_flags(addr);
-  pfn = alloc_pageframe('STK');
-  map_page(addr, pfn, (flags & ~PT_GUARD) | PT_PRESENT);
-  memset(addr, 0, PAGESIZE);
-
   if (t->tib && addr >= t->tib->stackbase && addr < t->tib->stacktop)
   {
-    t->tib->stacklimit = (void *) PAGEADDR(addr);
-  }
+    flags = get_page_flags(addr);
+    pfn = alloc_pageframe('STK');
+    map_page(addr, pfn, (flags & ~PT_GUARD) | PT_PRESENT);
+    memset(addr, 0, PAGESIZE);
 
-  return 0;
+    t->tib->stacklimit = (void *) PAGEADDR(addr);
+    return 0;
+  }
+  else
+    return -EFAULT;
 }
 
 int vmem_proc(struct proc_file *pf, void *arg)

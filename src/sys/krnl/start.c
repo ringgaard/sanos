@@ -76,8 +76,6 @@ struct file *stderr;
 
 struct peb *peb;
 
-void shell();
-
 void main(void *arg);
 
 void panic(char *msg)
@@ -90,8 +88,6 @@ void panic(char *msg)
 void exit(int status)
 {
   if (status != 0) kprintf("exit code = %d\n", status);
-
-  //shell();
 
   kprintf("syncing filesystems...\n");
   umount_all();

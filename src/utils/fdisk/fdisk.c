@@ -167,9 +167,9 @@ void add_partition()
   size = *str == '*' ? -1 : atoi(str) * K / geom.sectorsize;
 
   // Get partition type
-  printf("partition type? ");
+  printf("partition type (default %x)? ", SANOS_BOOT_PARTITION_ID);
   gets(str);
-  type = atoi(str);
+  type = *str ? strtol(str, NULL, 16) : SANOS_BOOT_PARTITION_ID;
 
   // Adjust size to be a multiple of the sectors per track
   if (size > 0)
@@ -189,15 +189,9 @@ void add_partition()
   }
 
   if (i >= 4) 
-  {
-    //printf("no next partition\n");
-    noff = (-1);
-  } 
+    noff = -1;
   else 
-  {
-    //printf("next partition %d\n", i);
     noff = mbr.parttab[i].relsect;
-  }
 
   // Search for the previous partition in the table
   for (i = partno - 1; i >= 0; i--)
@@ -207,12 +201,10 @@ void add_partition()
 
   if (i < 0) 
   {
-    //printf("no previous partition\n");
     poff = -1;
   } 
   else 
   {
-    //printf("previous partition %d\n", i);
     poff = mbr.parttab[i].relsect;
     psize = mbr.parttab[i].numsect;
   }
@@ -324,7 +316,7 @@ void list_partitions()
 	   i, 
 	   p->begcyl + ((p->begsect >> 6) << 8), p->beghead, p->begsect & 0x3F, 
 	   p->endcyl + ((p->endsect >> 6) << 8), p->endhead, p->endsect & 0x3F, 
-	   p->relsect, p->numsect / 2, p->systid);
+	   p->relsect, p->numsect / (K / geom.sectorsize), p->systid);
   }
 }
 
@@ -343,7 +335,16 @@ void commit_mbr()
     if (rc < 0)
     {
       printf("%s: error %d writing master boot record\n", devname, rc);
+      return;
     }
+
+    rc = ioctl(hdev, IOCTL_REVALIDATE, NULL, 0);
+    if (rc < 0)
+    {
+      printf("%s: error %d revalidating partitions\n", devname, rc);
+      return;
+    }
+
     printf("partition tables saved\n");
   }
 }
@@ -388,12 +389,15 @@ int main(int argc, char *argv[])
   int done = 0;
 
   // Check arguments
-  if (argc != 2)
+  if (argc == 1)
+    devname = "/dev/hd0";
+  else if (argc == 2)
+    devname = argv[1];
+  else
   {
     printf("usage: fdisk <device>\n");
     return 1;
   }
-  devname = argv[1];
 
   // Open device
   hdev = open(devname, O_RDWR);

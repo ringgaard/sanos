@@ -295,9 +295,15 @@ struct section;
 
 #define NSIG 32
 
+#define SIGINT          2               // Interrupt
 #define SIGILL          4               // Illegal instruction
 #define SIGFPE          8               // Floating point exception
 #define SIGSEGV         11              // Segment violation
+#define SIGTERM         15              // Software termination signal
+#define SIGBREAK        21              // Ctrl-Break sequence
+#define SIGABRT         22              // Abnormal termination
+#define SIGBUS          23              // Bus error
+#define SIGTRAP         24              // Debug trap
 
 struct context
 {
@@ -317,7 +323,7 @@ struct siginfo
   void *addr;
 };
 
-typedef int (*sighandler_t)(int signum, struct siginfo *info);
+typedef void (*sighandler_t)(int signum, struct siginfo *info);
 
 #define SIG_DFL ((sighandler_t) 0)      // Default signal action
 #define SIG_IGN ((sighandler_t) 1)      // Ignore signal

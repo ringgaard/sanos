@@ -18,13 +18,8 @@ TODO for sanos
 - Implement mremap() and use it in heap.c for realloc() of large blocks
 
 - Implement krealloc() in kmalloc.c
- 
-- Revalidate partition drivers after fdisk
 
 - Handle reopening of files in smbfs after reconnect
-
-- Implement exceptions with signal() and raise()
-
  
 IDEAS for new features
 ----------------------
@@ -134,10 +129,14 @@ CHANGES
 
 *** version 1.2.4 released ***
 
-- iomux kernel syncronization object implemented
+- iomux kernel syncronization objects implemented
 
 - select() implemented
 
 - Support for building with Visual Studio 6.
 
 - setjmp/longjmp moved from msvcrt to libc
+
+- Exceptions with signal() and raise() implemented
+
+- Revalidate partition drivers after fdisk
