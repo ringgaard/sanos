@@ -1025,8 +1025,9 @@ struct tib
   char *nexttoken;                 // For strtok()
   char cvtbuf[CVTBUFSIZE];         // For ecvt() and fcvt()
   char ascbuf[ASCBUFSIZE];         // For asctime()
+  char tmpnambuf[MAXPATH];         // For tmpnam()
 
-  char reserved1[1776];
+  char reserved1[1520];
 
   void *tls[MAX_TLS];              // Thread local storage
   char reserved2[240];

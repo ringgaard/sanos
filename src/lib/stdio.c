@@ -35,11 +35,13 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <crtbase.h>
 
 int output(FILE *stream, const char *format, va_list args);
+int input(FILE *stream, const unsigned char *format, va_list arglist);
 
 #define bigbuf(s) ((s)->flag & (_IOOWNBUF | _IOEXTBUF | _IOTMPBUF))
 #define anybuf(s) ((s)->flag & (_IOOWNBUF | _IOEXTBUF | _IOTMPBUF | _IONBF))
@@ -939,18 +941,84 @@ int remove(const char *filename)
   return unlink(filename);
 }
 
+static int gentmpfn(char *path, char *prefix, int unique, char *tempfn)
+{
+  const char *format = "%s%c%s%4.4x.tmp";
+  int len;
+  int rc;
+
+  len = strlen(path);
+  if (len > 0 && (path[len - 1] == PS1 || path[len - 1] == PS2)) len--;
+
+  if (unique == 0) unique = clock();
+  
+  sprintf(tempfn, format, path, PS1, prefix, unique);
+  while ((rc = stat64(tempfn, NULL)) < 0)
+  {
+    if (rc != -EEXIST) return rc;
+    unique++;
+    sprintf(tempfn, format, path, PS1, prefix, unique);
+  }
+
+  return unique;
+}
+
 FILE *tmpfile()
 {
-  // TODO: implement
-  panic("tmpfile() not implemented");
-  return NULL;
+  FILE *stream;
+  char *path;
+  char tempfn[MAXPATH];
+  int unique = 0;
+  int rc;
+
+  path = getenv("tmp");
+  if (!path) path = "/tmp";
+
+  stream = malloc(sizeof(FILE));
+  if (!stream)
+  {
+    errno = ENFILE;
+    return NULL;
+  }
+
+  while (1)
+  {
+    rc = gentmpfn(path, "t", unique, tempfn);
+    if (rc < 0) return NULL;
+    unique = rc;
+
+    rc = open_file(stream, tempfn, "wb+TD");
+    if (rc == 0) break;
+
+    if (rc < 0 && rc != -EEXIST)
+    {
+      free(stream);
+      errno = -rc;
+      return NULL;
+    }
+  }
+
+  return stream;
 }
 
 char *tmpnam(char *string)
 {
-  // TODO: implement
-  panic("tmpnam() not implemented");
-  return NULL;
+  char *path;
+  char *tempfn;
+  int rc;
+
+  if (string)
+    tempfn = string;
+  else
+    tempfn = gettib()->tmpnambuf;
+  
+  path = getenv("tmp");
+  if (!path) path = "/tmp";
+
+  rc = gentmpfn(path, "s", 0, tempfn);
+  if (rc < 0) return NULL;
+
+  return tempfn;
 }
 
 int vfprintf(FILE *stream, const char *fmt, va_list args)
@@ -1073,15 +1141,40 @@ int snprintf(char *buf, size_t count, const char *fmt, ...)
 
 int fscanf(FILE *stream, const char *fmt, ...)
 {
-  return -ENOSYS;
+  int rc;
+  va_list args;
+
+  va_start(args, fmt);
+
+  rc = input(stream, fmt, args);
+
+  return rc;
 }
 
 int scanf(const char *fmt, ...)
 {
-  return -ENOSYS;
+  int rc;
+  va_list args;
+
+  va_start(args, fmt);
+
+  rc = input(stdin, fmt, args);
+
+  return rc;
 }
 
 int sscanf(const char *buffer, const char *fmt, ...)
 {
-  return -ENOSYS;
+  int rc;
+  va_list args;
+  FILE str;
+
+  va_start(args, fmt);
+
+  str.flag = _IORD | _IOSTR | _IOOWNBUF;
+  str.ptr = str.base = (char *) buffer;
+  str.cnt = strlen(buffer);
+  rc = input(&str, fmt, args);
+
+  return rc;
 }
