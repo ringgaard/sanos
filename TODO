@@ -11,7 +11,7 @@ TODO for sanos
 
 - Implement UDMA mode for ATAPI devices
 
-- Implement stack guard page handling to user mode signal handler
+- Implement stack guard page handling in user mode signal handler
 
 - Handle guard pages in mmap(), munmap() and mprotect()
 
