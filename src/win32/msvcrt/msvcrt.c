@@ -39,6 +39,13 @@
 crtapi int _adjust_fdiv = 0;
 crtapi int __mb_cur_max = 1;
 
+int _app_type = _UNKNOWN_APP;
+int _error_mode;
+
+char **__initenv = NULL;
+int _commode = _IOCOMMIT;
+int _fmode = _O_BINARY;
+
 static long holdrand = 1L;
 
 int _fltused = 0x9875;
@@ -53,6 +60,60 @@ void _initterm(_PVFV *begin, _PVFV *end)
   }
 }
 
+char ***__p___initenv()
+{
+  TRACE("__p___initenv");
+  return &__initenv;
+}
+
+int *__p__commode()
+{
+  TRACE("__p__commode");
+  return &_commode;
+}
+
+int *__p__fmode()
+{
+  TRACE("__p__fmode");
+  return &_fmode;
+}
+
+void __set_app_type(int type)
+{
+  TRACE("__set_app_type");
+  _app_type = type;
+}
+
+void __setusermatherr(int (*errhandler)(struct _exception *))
+{
+  TRACE("__setusermatherr");
+  syslog(LOG_DEBUG, "warning: __setusermatherr not implemented, ignored\n");
+}
+
+int _XcptFilter(unsigned long xcptnum, void *pxcptinfoptrs)
+{
+  syslog(LOG_ERR, "Exception %d catched in MSVCRT\n", xcptnum);
+  return 0;
+}
+
+void _cexit()
+{
+  TRACE("_cexit");
+  syslog(LOG_DEBUG, "warning: _cexit not implemented, ignored\n");
+}
+
+void _c_exit()
+{
+  TRACE("_c_exit");
+  syslog(LOG_DEBUG, "warning: _c_exit not implemented, ignored\n");
+}
+
+void _amsg_exit(int rterrnum)
+{
+  TRACE("_amsg_exit");
+  syslog(LOG_DEBUG, "warning: _amsg_exit(%d) not implemented, ignored\n", rterrnum);
+}
+
 _onexit_t __dllonexit(_onexit_t func, _PVFV **pbegin, _PVFV **pend)
 {
   TRACE("__dllonexit");
@@ -63,8 +124,111 @@ _onexit_t __dllonexit(_onexit_t func, _PVFV **pbegin, _PVFV **pend)
 _onexit_t _cdecl _onexit(_onexit_t func)
 {
   TRACE("_onexit");
-  panic("_onexit not implemented");
-  return NULL;
+  syslog(LOG_DEBUG, "warning: _onexit not implemented, ignored\n");
+  return func;
+}
+
+static int parse_args(char *args, char **argv)
+{
+  char *p;
+  int argc;
+  char *start;
+  char *end;
+  char *buf;
+  int delim;
+
+  p = args;
+  argc = 0;
+  while (*p)
+  {
+    while (*p == ' ') p++;
+    if (!*p) break;
+
+    if (*p == '"' || *p == '\'')
+    {
+      delim = *p++;
+      start = p;
+      while (*p && *p != delim) p++;
+      end = p;
+      if (*p == delim) p++;
+    }
+    else
+    {
+      start = p;
+      while (*p && *p != ' ') p++;
+      end = p;
+    }
+
+    if (argv)
+    {
+      buf = (char *) malloc(end - start + 1);
+      if (!buf) break;
+      memcpy(buf, start, end - start);
+      buf[end - start] = 0;
+      argv[argc] = buf;
+    }
+    
+    argc++;
+  }
+
+  return argc;
+}
+
+static char **build_env_block()
+{
+  struct section *env = find_section(config, "env");
+  struct property *prop;
+  int num = 0;
+  char **envp;
+
+  if (env)
+  {
+    prop = env->properties;
+    while (prop)
+    {
+      num++;
+      prop = prop->next;
+    }
+  }
+
+  envp = malloc(sizeof(char *) * (num + 1));
+  if (!envp) return NULL;
+
+  if (env)
+  {
+    num = 0;
+    prop = env->properties;
+    while (prop)
+    {
+      int len = strlen(prop->name);
+      if (prop->value) len += strlen(prop->value) + 1;
+      envp[num] = malloc(len + 1);
+      if (!envp[num]) return NULL;
+      strcpy(envp[num], prop->name);
+      if (prop->value)
+      {
+	strcpy(envp[num] + strlen(envp[num]), "=");
+	strcpy(envp[num] + strlen(envp[num]), prop->value);
+      }
+      num++;
+      prop = prop->next;
+    }
+  }
+
+  envp[num] = NULL;
+
+  return envp;
+}
+
+void __getmainargs(int *pargc, char ***pargv, char ***penvp, int dowildcard, _startupinfo *startinfo)
+{
+  TRACE("__getmainargs");
+
+  // TODO: argv and envp should be freed on termination
+  *pargc = parse_args(gettib()->args, NULL);
+  *pargv = malloc(sizeof(char *) * *pargc);
+  if (*pargv) parse_args(gettib()->args, *pargv);
+  *penvp = build_env_block();
 }
 
 int printf(const char *fmt, ...)

@@ -805,6 +805,19 @@ DWORD WINAPI GetModuleFileNameA
   return rc;
 }
 
+HMODULE WINAPI GetModuleHandleA
+(
+  LPCTSTR lpModuleName
+)
+{
+  hmodule_t hmod;
+
+  TRACE("GetModuleHandleA");
+  hmod = getmodule(lpModuleName);
+  //syslog(LOG_DEBUG, "GetModuleHandleA(%s) returned %p\n", lpModuleName, hmod);
+  return (HMODULE) hmod;
+}
+
 BOOL WINAPI GetNumberOfConsoleInputEvents
 (
   HANDLE hConsoleInput,

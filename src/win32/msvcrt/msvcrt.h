@@ -47,8 +47,51 @@
 #define S_IWRITE       0000200         // write permission, owner
 #define S_IEXEC        0000100         // execute/search permission, owner
 
+// Application types
+
+#define _UNKNOWN_APP    0
+#define _CONSOLE_APP    1
+#define _GUI_APP        2
+
+// I/O stream flags
+
+#define _IOYOURBUF      0x0100
+#define _IOSETVBUF      0x0400
+#define _IOFEOF         0x0800
+#define _IOFLRTN        0x1000
+#define _IOCTRLZ        0x2000
+#define _IOCOMMIT       0x4000
+
+// File modes (fmode)
+
+#define _O_TEXT         0x4000  // File mode is text (translated)
+#define _O_BINARY       0x8000  // File mode is binary (untranslated)
+
+// Math exceptions
+
+#define _DOMAIN     1   // Argument domain error
+#define _SING       2   // Argument singularity
+#define _OVERFLOW   3   // Overflow range error
+#define _UNDERFLOW  4   // Underflow range error
+#define _TLOSS      5   // Total loss of precision
+#define _PLOSS      6   // Partial loss of precision
+
 typedef unsigned int size_t;
 typedef long fpos_t;
+
+struct _exception 
+{
+  int type;       // Exception type - see below
+  char *name;     // Name of function where error occured
+  double arg1;    // First argument to function
+  double arg2;    // Second argument (if any) to function
+  double retval;  // Value to be returned by function
+};
+
+typedef struct
+{
+  int newmode;
+} _startupinfo;
 
 struct _stat
 {
@@ -92,6 +135,8 @@ struct _iobuf
   char *tmpfname;
 };
 
+typedef struct _iobuf FILE;
+
 typedef struct 
 {
   unsigned long ebp;
@@ -101,8 +146,6 @@ typedef struct
   unsigned long esp;
   unsigned long eip;
 } jmp_buf[1];
-
-typedef struct _iobuf FILE;
 
 typedef void (__cdecl *_PVFV)(void);
 typedef int (__cdecl * _onexit_t)(void);
@@ -196,6 +239,17 @@ crtapi int vfprintf(FILE *stream, const char *fmt, va_list args);
 crtapi int putchar(int c);
 crtapi int _fileno(FILE *stream);
 crtapi void _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext);
+
+crtapi char ***__p___initenv();
+crtapi int *__p__commode();
+crtapi int *__p__fmode();
+crtapi void __set_app_type(int type);
+crtapi void __setusermatherr(int (*errhandler)(struct _exception *));
+crtapi int _XcptFilter(unsigned long xcptnum, void *pxcptinfoptrs);
+crtapi void _cexit();
+crtapi void _c_exit();
+crtapi void _amsg_exit(int rterrnum);
+crtapi void __getmainargs(int *pargc, char ***pargv, char ***penvp, int dowildcard, _startupinfo *startinfo);
 
 crtapi void _initterm(_PVFV *begin, _PVFV *end);
 crtapi _onexit_t __dllonexit(_onexit_t func, _PVFV **pbegin, _PVFV **pend);

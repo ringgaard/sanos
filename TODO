@@ -81,4 +81,6 @@ CHANGES
 - Add readline() with command line editing
     - Add command history
     - Add filename completion
+
+- Support for .exe applications in msvcrt.dll
  

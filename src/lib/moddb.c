@@ -109,7 +109,7 @@ static void *get_image_directory(hmodule_t hmod, int dir)
   return (void *) addr ? RVA(hmod, addr) : 0;
 }
 
-static struct module *get_module_for_handle(struct moddb *db, hmodule_t hmod)
+struct module *get_module_for_handle(struct moddb *db, hmodule_t hmod)
 {
   struct module *m;
 

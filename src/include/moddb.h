@@ -82,6 +82,7 @@ struct module
   int flags;
 };
 
+struct module *get_module_for_handle(struct moddb *db, hmodule_t hmod);
 struct image_header *get_image_header(hmodule_t hmod);
 void *get_proc_address(hmodule_t hmod, char *procname);
 hmodule_t get_module_handle(struct moddb *db, char *name);

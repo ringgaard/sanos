@@ -621,6 +621,7 @@ struct tib
   int errnum;                      // Per thread last error
   void *startaddr;                 // Start address for thread
   void *startarg;                  // Argument to thread start routine
+  char *args;                      // Command line arguments
 
   handle_t in;                     // Thread specific stdin handle
   handle_t out;                    // Thread specific stdout handle
@@ -634,7 +635,7 @@ struct tib
 
   struct tm tmbuf;                 // For gmtime() and localtime()
 
-  char reserved1[2156];
+  char reserved1[2152];
 
   void *tls[MAX_TLS];              // Thread local storage
   char reserved2[240];
@@ -769,7 +770,7 @@ osapi void free(void *p);
 osapi struct mallinfo mallinfo();
 
 osapi void *resolve(hmodule_t hmod, const char *procname);
-osapi hmodule_t getmodule(char *name);
+osapi hmodule_t getmodule(const char *name);
 osapi int getmodpath(hmodule_t hmod, char *buffer, int size);
 osapi hmodule_t load(const char *name);
 osapi int unload(hmodule_t hmod);

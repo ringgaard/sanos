@@ -35,6 +35,7 @@ EXPORTS
   GetLastError
   GetLogicalDrives
   GetModuleFileNameA
+  GetModuleHandleA
   GetNumberOfConsoleInputEvents
   GetProcAddress
   GetProcessHeap

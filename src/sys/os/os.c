@@ -364,12 +364,12 @@ void *resolve(hmodule_t hmod, const char *procname)
   return addr;
 }
 
-hmodule_t getmodule(char *name)
+hmodule_t getmodule(const char *name)
 {
   hmodule_t hmod;
 
   enter(&mod_lock);
-  hmod = get_module_handle(&usermods, name);
+  hmod = get_module_handle(&usermods, (char *) name);
   leave(&mod_lock);
   return hmod;
 }
@@ -406,7 +406,22 @@ int unload(hmodule_t hmod)
 
 int exec(hmodule_t hmod, char *args)
 {
-  return ((int (__stdcall *)(hmodule_t, char *, int)) get_entrypoint(hmod))(hmod, args, 0);
+  struct module *prev_execmod;
+  char *prev_args;
+  int rc;
+
+  prev_execmod = usermods.execmod;
+  prev_args = gettib()->args;
+
+  usermods.execmod = get_module_for_handle(&usermods, hmod);
+  gettib()->args = args;
+
+  rc = ((int (__stdcall *)(hmodule_t, char *, int)) get_entrypoint(hmod))(hmod, args, 0);
+  
+  usermods.execmod = prev_execmod;
+  gettib()->args = prev_args;
+
+  return rc;
 }
 
 void dbgbreak()
