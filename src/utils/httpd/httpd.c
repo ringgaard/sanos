@@ -228,9 +228,36 @@ int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *
   rc = bufcat(&rsp->conn->rsphdr, buf);
   if (rc < 0) return rc;
 
+  if (rsp->lastmodified)
+  {
+    sprintf(buf, "Last-Modified: %s\r\n", rfctime(rsp->lastmodified, datebuf));
+    rc = bufcat(&rsp->conn->rsphdr, buf);
+    if (rc < 0) return rc;
+  }
+
+  if (rsp->contenttype)
+  {
+    sprintf(buf, "Content-Type: %s\r\n", rsp->contenttype);
+    rc = bufcat(&rsp->conn->rsphdr, buf);
+    if (rc < 0) return rc;
+  }
+
+  if (rsp->contentlength != -1)
+  {
+    sprintf(buf, "Content-Length: %d\r\n", rsp->contentlength);
+    rc = bufcat(&rsp->conn->rsphdr, buf);
+    if (rc < 0) return rc;
+  }
+
   if (headers)
   {
     rc = bufcat(&rsp->conn->rsphdr, headers);
+    if (rc < 0) return rc;
+  }
+
+  if (rsp->conn->req->keep_alive && rsp->contentlength != -1)
+  {
+    rc = bufcat(&rsp->conn->rsphdr, "Connection: Keep-Alive\r\n");
     if (rc < 0) return rc;
   }
 
@@ -240,11 +267,22 @@ int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *
   return 0;
 }
 
-int httpd_send_error(struct httpd_response *rsp, int state, char *title)
+int httpd_send_error(struct httpd_response *rsp, int state, char *title, char *msg)
 {
   int rc;
+  char buf[2048];
+
+  if (!msg) msg = "";
+  sprintf(buf, "<HTML><HEAD><TITLE>%d %s</TITLE></HEAD>\n<BODY><H1>%d %s</H1>\n%s\n</BODY></HTML>\n",
+          state, title, state, title, msg);
+
+  rsp->contenttype = "text/html";
+  rsp->contentlength = strlen(buf);
 
   rc = httpd_send_header(rsp, state, title ? title : statustitle(state), NULL);
+  if (rc < 0) return rc;
+
+  rc = httpd_send(rsp, buf, strlen(buf));
   if (rc < 0) return rc;
 
   return 0;
@@ -254,6 +292,8 @@ int httpd_send(struct httpd_response *rsp, char *data, int len)
 {
   struct httpd_buffer *buf = &rsp->conn->rspbody;
   int rc;
+  int left;
+  int n;
 
   // Send directly if data larger than buffer
   if (len > rsp->conn->server->rspbufsiz)
@@ -261,6 +301,7 @@ int httpd_send(struct httpd_response *rsp, char *data, int len)
     rc = httpd_flush(rsp);
     if (rc < 0) return rc;
 
+    write(1, buf->start, buf->end - buf->start);
     rc = send(rsp->conn->sock, data, len, 0);
     return rc;
   }
@@ -272,12 +313,56 @@ int httpd_send(struct httpd_response *rsp, char *data, int len)
     if (rc < 0) return rc;
   }
 
-  return -ENOSYS;
+  left = len;
+  while (left > 0)
+  {
+    // Send buffer if full
+    if (buf->ceil == buf->end)
+    {
+      rc = httpd_flush(rsp);
+      if (rc < 0) return rc;
+    }
+
+    // Copy data to buffer
+    n = left;
+    if (n > buf->ceil - buf->end) n = buf->ceil - buf->end;
+    memcpy(buf->end, data, n);
+    buf->end += n;
+    left -= n;
+    data += n;
+  }
+
+  return len;
 }
 
 int httpd_flush(struct httpd_response *rsp)
 {
-  return -ENOSYS;
+  struct httpd_buffer *buf;
+  int rc;
+
+  // Send response header if not already done
+  buf = &rsp->conn->rsphdr;
+  if (buf->end != buf->start)
+  {
+    write(1, buf->start, buf->end - buf->start);
+    rc = send(rsp->conn->sock, buf->start, buf->end - buf->start, 0);
+    if (rc < 0) return rc;
+
+    buf->start = buf->end;
+  }
+
+  // Send response body
+  buf = &rsp->conn->rspbody;
+  if (buf->end != buf->start)
+  {
+    write(1, buf->start, buf->end - buf->start);
+    rc = send(rsp->conn->sock, buf->start, buf->end - buf->start, 0);
+    if (rc < 0) return rc;
+
+    buf->start = buf->end = buf->floor;
+  }
+
+  return 0;
 }
 
 int httpd_send_file(struct httpd_response *rsp, int fd)
@@ -605,25 +690,49 @@ int httpd_process(struct httpd_connection *conn)
 
   memset(&req, 0, sizeof(struct httpd_request));
   memset(&rsp, 0, sizeof(struct httpd_response));
+  rsp.contentlength = -1;
 
   req.conn = conn;
   rsp.conn = conn;
   conn->req = &req;
   conn->rsp = &rsp;
 
+  printf("parse request\n");
   rc = httpd_parse_request(&req);
-  if (rc < 0) goto errorexit;
+  if (rc < 0) 
+  {
+    printf("httpd: error %d in parse request\n", rc);
+    goto errorexit;
+  }
 
+#if 0
   rc = httpd_find_context(&req);
   if (rc < 0)
   {
-    httpd_send_error(&rsp, 404, "Not Found");
+    httpd_send_error(&rsp, 404, "Not Found", NULL);
   }
   else
   {
+    httpd_send_error(&rsp, 501, "Not Implemented", NULL);
+  }
+#endif
+  {
+    char *buf;
+
+    buf = "<html><head><title>This is a test</title></head><body>This is a test</body></html>";
+    rsp.contenttype = "text/html";
+    rsp.contentlength = strlen(buf);
+    rsp.lastmodified = time(0);
+
+    httpd_send_header(&rsp, 200, "OK", NULL);
+    httpd_send(&rsp, buf, strlen(buf));
+  
+    httpd_flush(&rsp);
   }
 
   httpd_clear_connection(conn);
+  //close(conn->sock);
+
   return 0;
 
 errorexit:

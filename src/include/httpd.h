@@ -169,6 +169,10 @@ struct httpd_request
 struct httpd_response
 {
   struct httpd_connection *conn;
+
+  char *contenttype;
+  int contentlength;
+  time_t lastmodified;
 };
 
 // HTTP connection
@@ -199,7 +203,7 @@ httpdapi int httpd_start(struct httpd_server *server);
 httpdapi int httpd_recv(struct httpd_response *req, char *data, int len);
 
 httpdapi int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *headers);
-httpdapi int httpd_send_error(struct httpd_response *rsp, int state, char *title);
+httpdapi int httpd_send_error(struct httpd_response *rsp, int state, char *title, char *msg);
 httpdapi int httpd_send(struct httpd_response *rsp, char *data, int len);
 httpdapi int httpd_send_file(struct httpd_response *rsp, int fd);
 httpdapi int httpd_flush(struct httpd_response *rsp);
