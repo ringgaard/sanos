@@ -26,7 +26,8 @@ void invlpage(void *addr)
   }
   else
   {
-    __asm { invlpg addr }
+    __asm { mov eax, addr }
+    __asm { invlpg [eax] }
   }
 }
 
@@ -50,7 +51,7 @@ void map_page(void *vaddr, unsigned long pfn, unsigned long flags)
 void unmap_page(void *vaddr)
 {
   ptab[PTABIDX(vaddr)] = 0;
-  flushtlb(); //invlpage(vaddr);
+  invlpage(vaddr);
 }
 
 void *virt2phys(void *vaddr)
@@ -84,12 +85,10 @@ int page_mapped(void *vaddr)
 
 int mem_mapped(void *vaddr, int size)
 {
-  int i;
   int len;
   unsigned long addr;
   unsigned long next;
 
-  i = 0;
   addr = (unsigned long) vaddr;
   next = (addr & ~PAGESIZE) + PAGESIZE;
   while (1)
@@ -108,6 +107,22 @@ int mem_mapped(void *vaddr, int size)
   }
 
   return 1;
+}
+
+int str_mapped(char *s)
+{
+  while (1)
+  {
+    if ((pdir[PDEIDX(s)] & PT_PRESENT) == 0) return 0;
+    if ((ptab[PTABIDX(s)] & PT_PRESENT) == 0) return 0;
+
+    while (1)
+    {
+      if (!*s) return 1;
+      s++;
+      if (PGOFF(s) == 0) break;
+    }
+  }
 }
 
 void init_pdir()

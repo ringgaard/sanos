@@ -139,6 +139,15 @@ SOURCE=..\src\sys\krnl\pci.c
 # Begin Source File
 
 SOURCE=..\src\sys\krnl\pdir.c
+
+!IF  "$(CFG)" == "krnl - Win32 SanOS"
+
+!ELSEIF  "$(CFG)" == "krnl - Win32 SanOSDebug"
+
+# SUBTRACT CPP /FA<none>
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -180,7 +189,7 @@ SOURCE=..\src\sys\krnl\test.c
 
 !ELSEIF  "$(CFG)" == "krnl - Win32 SanOSDebug"
 
-# ADD CPP /FAs
+# SUBTRACT CPP /FA<none>
 
 !ENDIF 
 

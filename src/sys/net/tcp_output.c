@@ -106,6 +106,7 @@ err_t tcp_enqueue(struct tcp_pcb *pcb, void *data, int len, int flags, unsigned 
 	p->len += buflen;
 	useg->p->tot_len += buflen;
 	useg->len += buflen;
+        seqno += buflen;
 	left -= buflen;
 	ptr = (void *) ((char *) ptr + buflen);
       }
@@ -113,6 +114,8 @@ err_t tcp_enqueue(struct tcp_pcb *pcb, void *data, int len, int flags, unsigned 
   }
 
   // Split rest of data into segments
+  seg = NULL;
+  seglen = 0;
   if (left > 0 || optlen > 0 || flags)
   {
     while (queue == NULL || left > 0) 
@@ -245,7 +248,7 @@ err_t tcp_enqueue(struct tcp_pcb *pcb, void *data, int len, int flags, unsigned 
       useg->len += queue->len;
       useg->next = queue->next;
     
-      kprintf("tcp_output: chaining, new len %u\n", useg->len);
+      //kprintf("tcp_output: chaining, new len %u\n", useg->len);
 
       if (seg == queue) seg = NULL;
       kfree(queue);
@@ -373,6 +376,12 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
 {
   struct netif *netif;
 
+  if (seg->p->ref > 1) 
+  {
+    kprintf("tcp_output_segment: packet not transmitted, already in tx queue\n");
+    return;
+  }
+
   // The TCP header has already been constructed, but the ackno and wnd fields remain
   seg->tcphdr->ackno = htonl(pcb->rcv_nxt);
 
@@ -405,7 +414,9 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
     pcb->rtseq = ntohl(seg->tcphdr->seqno);
   }
 
-  //kprintf("tcp_output_segment: %lu:%lu\n", htonl(seg->tcphdr->seqno), htonl(seg->tcphdr->seqno) + seg->len);
+  pbuf_header(seg->p, (char *) seg->p->payload - (char *) seg->tcphdr);
+
+  //kprintf("tcp_output_segment: %lu:%lu (ack %lu)\n", htonl(seg->tcphdr->seqno), htonl(seg->tcphdr->seqno) + seg->len, htonl(seg->tcphdr->ackno));
 
   seg->tcphdr->chksum = 0;
   if ((netif->flags & NETIF_TCP_TX_CHECKSUM_OFFLOAD) == 0)
@@ -420,7 +431,6 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
   pbuf_ref(seg->p);
   if (ip_output_if(seg->p, &pcb->local_ip, &pcb->remote_ip, TCP_TTL, IP_PROTO_TCP, netif) < 0) pbuf_free(seg->p);
 }
-
 
 void tcp_rexmit_seg(struct tcp_pcb *pcb, struct tcp_seg *seg)
 {

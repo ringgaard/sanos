@@ -367,7 +367,7 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
       break;
 
     case SYN_SENT:
-      kprintf("SYN-SENT: ackno %lu pcb->snd_nxt %lu unacked %lu\n", ackno, pcb->snd_nxt, pcb->unacked ? ntohl(pcb->unacked->tcphdr->seqno) : 0);
+      //kprintf("SYN-SENT: ackno %lu pcb->snd_nxt %lu unacked %lu\n", ackno, pcb->snd_nxt, pcb->unacked ? ntohl(pcb->unacked->tcphdr->seqno) : 0);
       if (flags & TCP_ACK && flags & TCP_SYN && pcb->unacked && ackno == ntohl(pcb->unacked->tcphdr->seqno) + 1) 
       {
 	pcb->rcv_nxt = seqno + 1;
@@ -556,7 +556,7 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
     if (pcb->lastack == ackno) 
     {
       pcb->dupacks++;
-      if (pcb->dupacks >= 3 && pcb->unacked != NULL) 
+      if (pcb->dupacks >= 3 && pcb->unacked != NULL && pcb->state == ESTABLISHED) 
       {
         if (!(pcb->flags & TF_INFR)) 
 	{

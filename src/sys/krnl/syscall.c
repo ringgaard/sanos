@@ -17,6 +17,12 @@ struct syscall_entry
 
 static int lock_buffer(void *buffer, int size)
 {
+  if (buffer)
+  {
+    if (buffer >= (void *) OSBASE) return -EFAULT;
+    if (!mem_mapped(buffer, size)) return -EFAULT;
+  }
+
   return 0;
 }
 
@@ -27,6 +33,12 @@ static int unlock_buffer(void *buffer, int size)
 
 static int lock_string(char *s)
 {
+  if (s)
+  {
+    if (s >= (char *) OSBASE) return -EFAULT;
+    if (!str_mapped(s)) return -EFAULT;
+  }
+
   return 0;
 }
 

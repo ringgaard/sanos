@@ -267,6 +267,7 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
     {
       kprintf("ip_output: not enough room for IP header in pbuf\n");
       stats.ip.err++;
+      dbg_break();
       return -EBUF;
     }
 

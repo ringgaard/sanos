@@ -579,7 +579,7 @@ static void http(int argc, char **argv)
 
   if (argc >= 2) server = argv[1];
   if (argc >= 3) path = argv[2];
-  if (argc >= 4) filename = argv[2];
+  if (argc >= 4) filename = argv[3];
 
   //f = open(filename, O_CREAT);
   //if (f < 0)
@@ -650,17 +650,20 @@ static void http(int argc, char **argv)
   //close(f);
 }
 
-void __stdcall test_task(void *arg)
-{
-  printf("hello from thread\n");
-}
-
 static void test(int argc, char **argv)
 {
-  int hthread;
+  int bufs = 10;
+  int buflen = 512;
+  char *buf;
+  int n;
 
-  hthread = beginthread(test_task, 0, NULL, 0, NULL);
-  close(hthread);
+  if (argc >= 2) bufs = atoi(argv[1]);
+  if (argc >= 3) buflen = atoi(argv[2]);
+
+  buf = malloc(buflen);
+  for (n = 0; n < buflen; n++) buf[n] = (n % 10) + '0';
+  for (n = 0; n < bufs; n++) write(stdout, buf, buflen);
+  free(buf);
 }
 
 static void test1(int argc, char **argv)

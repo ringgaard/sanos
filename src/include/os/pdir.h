@@ -51,6 +51,7 @@ krnlapi void set_page_flags(void *vaddr, unsigned long flags);
 krnlapi int page_guarded(void *vaddr);
 krnlapi int page_mapped(void *vaddr);
 krnlapi int mem_mapped(void *vaddr, int size);
+krnlapi int str_mapped(char *s);
 
 void init_pdir();
 int pdir_proc(struct proc_file *pf, void *arg);
