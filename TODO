@@ -1,6 +1,10 @@
 TODO for sanos
 --------------
 
+- Update TCP implementation with changes from lwIP 0.5.3 to 0.6.4
+   - While loop in line 678 has been moved to after while loop in line 697 in lwIP 0.6.4 in tcp_receive()
+   - Revisit fast retransmit in tcp_receive() according to lwIP 0.6.4
+
 - Add IOEVT_ERROR to readfds in select() and checkfds() to trigger event for read sockets when connection has been reset
 
 - Try other interface type (HDIF_ATA <-> HDIF_ATAPI) if hd_identify() fails in hd.c
@@ -383,3 +387,10 @@ CHANGES
   correct values.
 
 - Code cleanup in msvcrt.h. All exports moved to msvcrt.def.
+
+- TCP keep-alive packets was not acknowledged correctly. This could lead to connections 
+  where the peer had KEEPALIVE enabled to be terminated after long periods of no activity. 
+  This problem has been fixed by also sending an acknowledge for TCP segments that fall 
+  outside the current window.
+
+- In tcp_abort() the unsent and unacked segments are now freed.

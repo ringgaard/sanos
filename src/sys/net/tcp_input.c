@@ -100,9 +100,9 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
   tcphdr->ackno = ntohl(tcphdr->ackno);
   tcphdr->wnd = ntohs(tcphdr->wnd);
   
-  //kprintf("tcp_input: size %d seqno %lu ackno %lu wnd %d flags: ", p->tot_len, tcphdr->seqno, tcphdr->ackno, tcphdr->wnd);
-  //tcp_debug_print_flags(TCPH_FLAGS(tcphdr));
-  //kprintf("\n");
+  kprintf("tcp_input: size %d seqno %lu ackno %lu wnd %d flags: ", p->tot_len, tcphdr->seqno, tcphdr->ackno, tcphdr->wnd);
+  tcp_debug_print_flags(TCPH_FLAGS(tcphdr));
+  kprintf("\n");
 
   // Demultiplex an incoming segment. First, we check if it is destined for an active connection
   prev = NULL;  
@@ -770,47 +770,58 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
 
     //kprintf("tcp_receive: seqno %lu rcv_nxt %lu tcplen %d\n", seqno, pcb->rcv_nxt, TCP_TCPLEN(seg));
 
-    if (TCP_SEQ_LT(seqno, pcb->rcv_nxt) && TCP_SEQ_LT(pcb->rcv_nxt, seqno + seg->len)) 
+    if (TCP_SEQ_LT(seqno, pcb->rcv_nxt))
     {
-      // Trimming the first edge is done by pushing the payload
-      // pointer in the pbuf downwards. This is somewhat tricky since
-      // we do not want to discard the full contents of the pbuf up to
-      // the new starting point of the data since we have to keep the
-      // TCP header which is present in the first pbuf in the chain.
-      //
-      // What is done is really quite a nasty hack: the first pbuf in
-      // the pbuf chain is pointed to by seg->p. Since we need to be
-      // able to deallocate the whole pbuf, we cannot change this
-      // seg->p pointer to point to any of the later pbufs in the
-      // chain. Instead, we point the ->payload pointer in the first
-      // pbuf to data in one of the later pbufs. We also set the
-      // seg->data pointer to point to the right place. This way, the
-      // ->p pointer will still point to the first pbuf, but the
-      // ->p->payload pointer will point to data in another pbuf.
-      //
-      // After we are done with adjusting the pbuf pointers we must
-      // adjust the ->data pointer in the seg and the segment
-      // length.
-
-      off = pcb->rcv_nxt - seqno;
-      if (seg->p->len < off) 
+      if (TCP_SEQ_LT(pcb->rcv_nxt, seqno + seg->len)) // TODO: should seg->len be TCP_TCPLEN(seg)
       {
-	p = seg->p;
-	while (p->len < off) 
-	{
-	  off -= p->len;
-	  seg->p->tot_len -= p->len;
-	  p->len = 0;
-	  p = p->next;
-	}
-	pbuf_header(p, -off);
-      } 
-      else 
-	pbuf_header(seg->p, -off);
+	// Trimming the first edge is done by pushing the payload
+	// pointer in the pbuf downwards. This is somewhat tricky since
+	// we do not want to discard the full contents of the pbuf up to
+	// the new starting point of the data since we have to keep the
+	// TCP header which is present in the first pbuf in the chain.
+	//
+	// What is done is really quite a nasty hack: the first pbuf in
+	// the pbuf chain is pointed to by seg->p. Since we need to be
+	// able to deallocate the whole pbuf, we cannot change this
+	// seg->p pointer to point to any of the later pbufs in the
+	// chain. Instead, we point the ->payload pointer in the first
+	// pbuf to data in one of the later pbufs. We also set the
+	// seg->data pointer to point to the right place. This way, the
+	// ->p pointer will still point to the first pbuf, but the
+	// ->p->payload pointer will point to data in another pbuf.
+	//
+	// After we are done with adjusting the pbuf pointers we must
+	// adjust the ->data pointer in the seg and the segment
+	// length.
 
-      seg->dataptr = seg->p->payload;
-      seg->len -= pcb->rcv_nxt - seqno;
-      seg->tcphdr->seqno = seqno = pcb->rcv_nxt;
+	off = pcb->rcv_nxt - seqno;
+	if (seg->p->len < off) 
+	{
+	  p = seg->p;
+	  while (p->len < off) 
+	  {
+	    off -= p->len;
+	    seg->p->tot_len -= p->len;
+	    p->len = 0;
+	    p = p->next;
+	  }
+	  pbuf_header(p, -off);
+	} 
+	else 
+	  pbuf_header(seg->p, -off);
+
+	seg->dataptr = seg->p->payload;
+	seg->len -= pcb->rcv_nxt - seqno;
+	seg->tcphdr->seqno = seqno = pcb->rcv_nxt;
+      }
+      else
+      {
+        // The whole segment is < rcv_nxt
+        // Must be a duplicate of a packet that has already been correctly handled
+	// or a keep-alive packet
+        kprintf("tcp_receive: duplicate seqno %lu\n", seqno);
+	pcb->flags |= TF_ACK_NOW;
+      }
     }
 
     // The sequence number must be within the window (above rcv_nxt

@@ -1124,25 +1124,32 @@ int cmd_sysinfo(int argc, char *argv[])
   return 0;
 }
 
-#include <setjmp.h>
-
-jmp_buf save_env;
-
 int cmd_test(int argc, char *argv[])
 {
-  int val;
+  struct hostent *hp;
+  struct sockaddr_in sin;
+  int s;
+  int rc;
 
-  val = setjmp(save_env);
-  if (val != 0)
+  hp = gethostbyname(argv[1] ? argv[1] : "192.168.174.2");
+  if (!hp) return errno;
+
+  s = socket(AF_INET, SOCK_STREAM, 0);
+  if (s < 0) return s;
+
+  memset(&sin, 0, sizeof(sin));
+  sin.sin_family = AF_INET;
+  memcpy(&sin.sin_addr, hp->h_addr_list[0], hp->h_length);
+  sin.sin_port = htons(2000);
+
+  rc = connect(s, (struct sockaddr *) &sin, sizeof(sin));
+  if (rc  < 0)
   {
-    printf("longjmp returned %d\n", val);
-    return 0;
+    close(s);
+    return rc;
   }
 
-  printf("do longjump\n");
-  longjmp(save_env, 10);
-  printf("after longjump\n");
-
+  printf("connected socket %d\n", s);
   return 0;
 }
 

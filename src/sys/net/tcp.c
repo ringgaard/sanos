@@ -211,8 +211,12 @@ void tcp_abort(struct tcp_pcb *pcb)
     remote_port = pcb->remote_port;
     errf = pcb->errf;
     errf_arg = pcb->callback_arg;
+
     tcp_pcb_remove(&tcp_active_pcbs, pcb);
+    if (pcb->unacked) tcp_segs_free(pcb->unacked);
+    if (pcb->unsent) tcp_segs_free(pcb->unsent);
     kfree(pcb);
+
     if (errf != NULL) errf(errf_arg, -EABORT);
 
     //kprintf("tcp_abort: sending RST\n");
@@ -231,6 +235,9 @@ void tcp_abort(struct tcp_pcb *pcb)
 err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
 {
   struct tcp_pcb *cpcb;
+
+  // Assign new port if port number is zero
+  if (port == 0) port = tcp_new_port();
 
   // Check if the address already is in use
   for (cpcb = (struct tcp_pcb *) tcp_listen_pcbs; cpcb != NULL; cpcb = cpcb->next) 
@@ -266,7 +273,6 @@ err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
   }
 
   pcb->local_port = port;
-  if (pcb->local_port == 0) pcb->local_port = tcp_new_port();
   
   //kprintf("tcp_bind: bind to port %d\n", port);
   return 0;
