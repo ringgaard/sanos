@@ -330,6 +330,56 @@ struct peb
 };
 
 //
+// Sockets
+//
+
+struct in_addr 
+{
+  unsigned long s_addr;
+};
+
+struct sockaddr_in
+{
+  unsigned char sin_len;
+  unsigned char sin_family;
+  unsigned short sin_port;
+  struct in_addr sin_addr;
+  char sin_zero[8];
+};
+
+struct sockaddr 
+{
+  unsigned char sa_len;
+  unsigned char sa_family;
+  char sa_data[14];
+};
+
+struct  hostent 
+{
+  char    *h_name;       // Official name of host
+  char    **h_aliases;   // Alias list
+  short   h_addrtype;    // Host address type
+  short   h_length;      // Length of address
+  char    **h_addr_list; // List of addresses
+};
+
+#define SOCK_STREAM      1
+#define SOCK_DGRAM       2
+#define SOCK_RAW         3
+
+#define AF_INET          2
+#define PF_INET          AF_INET
+
+#define IPPROTO_IP       0
+#define IPPROTO_ICMP     1
+#define IPPROTO_TCP      6
+#define IPPROTO_UDP      17
+
+#define INADDR_ANY       0
+#define INADDR_BROADCAST 0xffffffff
+#define INADDR_LOOPBACK  0x7f000001
+
+//
 // Thread Information Block
 //
 
@@ -337,6 +387,10 @@ struct peb
 
 #define MAX_TLS           64
 #define INVALID_TLS_INDEX 0xFFFFFFFF
+
+#define	MAX_HOST_ALIASES  35
+#define	MAX_HOST_ADDRS	  35
+#define HOSTBUF_SIZE      1024
 
 struct xcptrec
 {
@@ -373,52 +427,17 @@ struct tib
   handle_t out;                    // Thread specific stdout
   handle_t err;                    // Thread specific stderr
 
-  char reserved1[3520];
+  struct hostent host;             // Per-thread hostent buffer
+  unsigned char host_addr[sizeof(struct in_addr)];
+  char *h_addr_ptrs[MAX_HOST_ADDRS + 1];
+  char *host_aliases[MAX_HOST_ALIASES];
+  char hostbuf[HOSTBUF_SIZE];
+
+  char reserved1[2192];
 
   void *tls[MAX_TLS];              // Thread local storage
   char reserved2[240];
 };
-
-//
-// Sockets
-//
-
-struct in_addr 
-{
-  unsigned long s_addr;
-};
-
-struct sockaddr_in
-{
-  unsigned char sin_len;
-  unsigned char sin_family;
-  unsigned short sin_port;
-  struct in_addr sin_addr;
-  char sin_zero[8];
-};
-
-struct sockaddr 
-{
-  unsigned char sa_len;
-  unsigned char sa_family;
-  char sa_data[14];
-};
-
-#define SOCK_STREAM      1
-#define SOCK_DGRAM       2
-#define SOCK_RAW         3
-
-#define AF_INET          2
-#define PF_INET          AF_INET
-
-#define IPPROTO_IP       0
-#define IPPROTO_ICMP     1
-#define IPPROTO_TCP      6
-#define IPPROTO_UDP      17
-
-#define INADDR_ANY       0
-#define INADDR_BROADCAST 0xffffffff
-#define INADDR_LOOPBACK  0x7f000001
 
 // OS API functions
 

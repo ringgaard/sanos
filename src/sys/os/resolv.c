@@ -7,10 +7,19 @@
 //
 
 #include <os.h>
+#include <string.h>
+
 #include "resolv.h"
 
-#define NS_MAXCDNAME	255	// Maximum compressed domain name
-#define NS_CMPRSFLGS	0xc0	// Flag bits indicating name compression
+#define NS_MAXCDNAME	255	        // Maximum compressed domain name
+#define NS_MAXDNAME	255 /*1025*/	// Maximum domain name
+#define NS_CMPRSFLGS	0xc0	        // Flag bits indicating name compression
+#define NS_HFIXEDSZ	12		// #/bytes of fixed data in header
+#define NS_QFIXEDSZ	4		// #/bytes of fixed data in query
+
+#define MAXHOSTNAMELEN 256
+
+#define QUERYBUF_SIZE   1024            // Size of query buffer
 
 //
 // mklower
@@ -50,6 +59,53 @@ static int special(int ch)
 static int printable(int ch) 
 {
   return (ch > 0x20 && ch < 0x7f);
+}
+
+//
+// inet_pton
+//
+// Convert from presentation format (which usually means ASCII printable)
+// to network format (which is usually some kind of binary format).
+// Return:
+//   1 if the address was valid
+//   0 if the address wasn't valid (`dst' is untouched in this case)
+//
+
+static int inet_pton(const char *src, unsigned char *dst)
+{
+  int saw_digit, octets, ch;
+  unsigned char buf[sizeof(struct in_addr)], *p;
+
+  saw_digit = 0;
+  octets = 0;
+  *(p = buf) = 0;
+  while ((ch = *src++) != '\0') 
+  {
+    if (ch >= '0' && ch <= '9') 
+    {
+      unsigned int newval = *p * 10 + (ch - '0');
+      if (newval > 255) return 0;
+      *p = newval;
+      
+      if (!saw_digit) 
+      {
+        if (++octets > sizeof(struct in_addr)) return 0;
+        saw_digit = 1;
+      }
+    } 
+    else if (ch == '.' && saw_digit) 
+    {
+      if (octets == sizeof(struct in_addr)) return 0;
+      *++p = 0;
+      saw_digit = 0;
+    } 
+    else
+      return 0;
+  }
+
+  if (octets < sizeof(struct in_addr)) return 0;
+  memcpy(dst, p, sizeof(struct in_addr));
+  return 1;
 }
 
 //
@@ -405,7 +461,7 @@ static int ns_name_unpack(const unsigned char *msg, const unsigned char *eom,
       case NS_CMPRSFLGS:
 	if (srcp >= eom) return -EMSGSIZE;
 	if (len < 0) len = srcp - src + 1;
-	srcp = msg + (((n & 0x3f) << 8) | (*srcp & 0xff));
+	srcp = msg + (((n & 0x3F) << 8) | (*srcp & 0xFF));
 	if (srcp < msg || srcp >= eom) return -EMSGSIZE;
 	checked += 2;
 
@@ -512,4 +568,390 @@ int dn_expand(const unsigned char *msg, const unsigned char *eom, const unsigned
 
   if (rc > 0 && dst[0] == '.') dst[0] = '\0';
   return rc;
+}
+
+//
+// getanswer
+//
+
+static struct hostent *getanswer(const char *answer, int anslen, const char *qname, int qtype)
+{
+#if 0
+  struct tib *tib = gettib();
+  const struct dns_hdr *hp;
+  const unsigned char *cp;
+  int n;
+  const unsigned char *eom, *erdata;
+  char *bp, **ap, **hap;
+  int type, class, buflen, ancount, qdcount;
+  int haveanswer, had_error;
+  int toobig = 0;
+  char tbuf[NS_MAXDNAME];
+  const char *tname;
+  int (*name_ok)(const char *));
+
+  tname = qname;
+  tib->host.h_name = NULL;
+  eom = answer->buf + anslen;
+  switch (qtype) 
+  {
+    case DNS_TYPE_A:
+      name_ok = res_hnok;
+      break;
+
+    case DNS_TYPE_A:
+      name_ok = res_dnok;
+      break;
+
+    default:
+      return NULL;
+  }
+
+  // Find first satisfactory answer
+  hp = (const struct dns_hdr *) answer;
+  ancount = ntohs(hp->ancount);
+  qdcount = ntohs(hp->qdcount);
+  bp = tib->hhostbuf;
+  buflen = sizeof tib->hostbuf;
+  cp = answer;
+
+  cp += NS_HFIXEDSZ;
+  if (cp > eom) return NULL;
+
+  if (qdcount != 1) return NULL;
+
+  n = dn_expand(answer, eom, cp, bp, buflen);
+  if (n < 0 || !name_ok(bp)) return NULL;
+
+  cp += n + NS_QFIXEDSZ;
+  if (cp > eom) return NULL;
+
+  if (qtype == DNS_TYPE_A)
+  {
+    // res_send() has already verified that the query name is the
+    // same as the one we sent; this just gets the expanded name
+    // (i.e., with the succeeding search-domain tacked on).
+
+    n = strlen(bp) + 1;
+    if (n >= MAXHOSTNAMELEN) return NULL;
+    tib->host.h_name = bp;
+    bp += n;
+    buflen -= n;
+  
+    // The qname can be abbreviated, but h_name is now absolute
+    qname = tib->host.h_name;
+  }
+
+  ap = tib->host_aliases;
+  *ap = NULL;
+  tib->host.h_aliases = tib->host_aliases;
+  hap = h_addr_ptrs;
+  *hap = NULL;
+  tib->host.h_addr_list = tib->h_addr_ptrs;
+  
+  haveanswer = 0;
+  had_error = 0;
+  while (ancount-- > 0 && cp < eom && !had_error) 
+  {
+    n = dn_expand(answer->buf, eom, cp, bp, buflen);
+    if ((n < 0) || !name_ok(bp))
+    {
+      had_error++;
+      continue;
+    }
+
+    cp += n;			/* name */
+
+    if (cp + 3 * sizeof(short) * sizeof(long) > eom) return NULL;
+
+    type = ns_get16(cp);
+    cp += INT16SZ;			/* type */
+    class = ns_get16(cp);
+    cp += INT16SZ + INT32SZ;	/* class, TTL */
+    n = ns_get16(cp);
+    cp += INT16SZ;			/* len */
+    BOUNDS_CHECK(cp, n);
+    erdata = cp + n;
+    if (class != C_IN) 
+    {
+      /* XXX - debug? syslog? */
+      cp += n;
+      continue;		/* XXX - had_error++ ? */
+    }
+    if ((qtype == T_A || qtype == T_AAAA) && type == T_CNAME) 
+    {
+      if (ap >= &host_aliases[MAXALIASES-1])
+	      continue;
+      n = dn_expand(answer->buf, eom, cp, tbuf, sizeof tbuf);
+      if ((n < 0) || !(*name_ok)(tbuf)) 
+      {
+	had_error++;
+	continue;
+      }
+      cp += n;
+      if (cp != erdata) 
+      {
+	__set_h_errno (NO_RECOVERY);
+	return (NULL);
+      }
+      
+      // Store alias
+      *ap++ = bp;
+      n = strlen(bp) + 1;	// for the \0
+      if (n >= MAXHOSTNAMELEN) 
+      {
+	had_error++;
+	continue;
+      }
+      bp += n;
+      buflen -= n;
+      /* Get canonical name. */
+      n = strlen(tbuf) + 1;	/* for the \0 */
+      if (n > buflen || n >= MAXHOSTNAMELEN) 
+      {
+	had_error++;
+	continue;
+      }
+      strcpy(bp, tbuf);
+      host.h_name = bp;
+      bp += n;
+      buflen -= n;
+      continue;
+    }
+
+    if (qtype == T_PTR && type == T_CNAME) 
+    {
+      n = dn_expand(answer->buf, eom, cp, tbuf, sizeof tbuf);
+      if (n < 0 || !res_dnok(tbuf)) 
+      {
+	had_error++;
+	continue;
+      }
+      cp += n;
+      if (cp != erdata) 
+      {
+	__set_h_errno (NO_RECOVERY);
+	return (NULL);
+      }
+      /* Get canonical name. */
+      n = strlen(tbuf) + 1;	/* for the \0 */
+      if (n > buflen || n >= MAXHOSTNAMELEN) 
+      {
+	had_error++;
+	continue;
+      }
+      strcpy(bp, tbuf);
+      tname = bp;
+      bp += n;
+      buflen -= n;
+      continue;
+    }
+
+    if ((type == T_SIG) || (type == T_KEY) || (type == T_NXT)) 
+    {
+      /* We don't support DNSSEC yet.  For now, ignore
+       * the record and send a low priority message
+       * to syslog.
+       */
+      syslog(LOG_DEBUG|LOG_AUTH, "gethostby*.getanswer: asked for \"%s %s %s\", got type \"%s\"", qname, p_class(C_IN), p_type(qtype), p_type(type));
+      cp += n;
+      continue;
+    }
+
+    if (type != qtype)
+    {
+      syslog(LOG_NOTICE|LOG_AUTH, "gethostby*.getanswer: asked for \"%s %s %s\", got type \"%s\"", qname, p_class(C_IN), p_type(qtype), p_type(type));
+      cp += n;
+      continue;		/* XXX - had_error++ ? */
+    }
+
+    switch (type) 
+    {
+      case T_PTR:
+	if (strcasecmp(tname, bp) != 0) 
+	{
+	  syslog(LOG_NOTICE|LOG_AUTH, AskedForGot, qname, bp);
+	  cp += n;
+	  continue;	/* XXX - had_error++ ? */
+	}
+	n = dn_expand(answer->buf, eom, cp, bp, buflen);
+	if ((n < 0) || !res_hnok(bp)) 
+	{
+	  had_error++;
+	  break;
+	}
+	host.h_name = bp;
+	__set_h_errno (NETDB_SUCCESS);
+	return (&host);
+
+      case T_A:
+      case T_AAAA:
+	if (strcasecmp(host.h_name, bp) != 0) 
+	{
+	  syslog(LOG_NOTICE|LOG_AUTH, AskedForGot, host.h_name, bp);
+	  cp += n;
+	  continue;	/* XXX - had_error++ ? */
+	}
+	if (n != host.h_length) 
+	{
+	  cp += n;
+	  continue;
+	}
+	if (!haveanswer) 
+	{
+	  int nn;
+
+	  host.h_name = bp;
+	  nn = strlen(bp) + 1;	/* for the \0 */
+	  bp += nn;
+	  buflen -= nn;
+	}
+
+	/* XXX: when incrementing bp, we have to decrement
+	 * buflen by the same amount --okir */
+	buflen -= sizeof(align) - ((u_long)bp % sizeof(align));
+
+	bp += sizeof(align) - ((u_long)bp % sizeof(align));
+
+	if (bp + n >= &hostbuf[sizeof hostbuf]) 
+	{
+	  dprintf("size (%d) too big\n", n);
+	  had_error++;
+	  continue;
+	}
+	if (hap >= &h_addr_ptrs[MAXADDRS-1]) 
+	{
+	  if (!toobig++) 
+	  {
+	    dprintf("Too many addresses (%d)\n", MAXADDRS);
+	  }
+	  cp += n;
+	  continue;
+	}
+	memmove(*hap++ = bp, cp, n);
+	bp += n;
+	buflen -= n;
+	cp += n;
+	if (cp != erdata) 
+	{
+	  __set_h_errno (NO_RECOVERY);
+	  return (NULL);
+	}
+	break;
+
+      default:
+        return NULL;
+    }
+    if (!had_error) haveanswer++;
+  }
+
+  if (haveanswer) 
+  {
+    *ap = NULL;
+    *hap = NULL;
+    if (!host.h_name) 
+    {
+      n = strlen(qname) + 1;	/* for the \0 */
+      if (n > buflen || n >= MAXHOSTNAMELEN) goto no_recovery;
+      strcpy(bp, qname);
+      host.h_name = bp;
+      bp += n;
+      buflen -= n;
+    }
+
+    __set_h_errno (NETDB_SUCCESS);
+    return &host;
+  }
+
+no_recovery:
+  //__set_h_errno (NO_RECOVERY);
+#endif
+  return NULL;
+}
+
+//
+// gethostbyname
+//
+
+struct hostent *gethostbyname(const char *name)
+{
+  char buf[QUERYBUF_SIZE];
+  const char *cp;
+  char *bp;
+  int n, len;
+  struct tib *tib = gettib();
+
+  tib->host.h_addrtype = AF_INET;
+  tib->host.h_length = sizeof(struct in_addr);
+
+  // Disallow names consisting only of digits/dots, unless they end in a dot
+  if (*name >= '0' && *name <= '9')
+  {
+    for (cp = name;; ++cp) 
+    {
+      if (!*cp) 
+      {
+	if (*--cp == '.') break;
+
+	// All-numeric, no dot at the end. Fake up a hostent as if we'd actually done a lookup.
+	if (inet_pton(name, tib->host_addr) <= 0) return NULL;
+
+	strncpy(tib->hostbuf, name, NS_MAXDNAME);
+	tib->hostbuf[NS_MAXDNAME] = '\0';
+	bp = tib->hostbuf + NS_MAXDNAME;
+	len = sizeof tib->hostbuf - NS_MAXDNAME;
+	tib->host.h_name = tib->hostbuf;
+	tib->host.h_aliases = tib->host_aliases;
+	tib->host_aliases[0] = NULL;
+	tib->h_addr_ptrs[0] = (char *) tib->host_addr;
+	tib->h_addr_ptrs[1] = NULL;
+	tib->host.h_addr_list = tib->h_addr_ptrs;
+
+	return &tib->host;
+      }
+
+      if (*cp < '0' && *cp > '9' && *cp != '.') break;
+    }
+  }
+
+  n = res_search(name, DNS_CLASS_IN, DNS_TYPE_A, buf, sizeof(buf));
+  if (n < 0) return NULL;
+  return getanswer(buf, n, name, DNS_TYPE_A);
+}
+
+//
+// gethostbyaddr
+//
+
+struct hostent *gethostbyaddr(const char *addr, int len, int type)
+{
+  const unsigned char *uaddr = (const unsigned char *) addr;
+  int n;
+  char buf[QUERYBUF_SIZE];
+  struct hostent *hp;
+  char qbuf[NS_MAXDNAME + 1];
+
+  if (type != AF_INET) return NULL;
+  if (len != sizeof(struct in_addr)) return NULL;
+
+  sprintf(qbuf, "%u.%u.%u.%u.in-addr.arpa", uaddr[3], addr[2], uaddr[1], uaddr[0]);
+
+  n = res_query(qbuf, DNS_CLASS_IN, DNS_TYPE_PTR, buf, sizeof buf);
+  if (n < 0)
+  {
+    //if (errno == ECONNREFUSED) return (_gethtbyaddr(addr, len, af));
+    return NULL;
+  }
+
+  hp = getanswer(buf, n, qbuf, DNS_TYPE_PTR);
+  if (!hp) return NULL;
+
+  hp->h_addrtype = AF_INET;
+  hp->h_length = len;
+  
+  //memmove(host_addr, addr, len);
+  //h_addr_ptrs[0] = (char *) host_addr;
+  //h_addr_ptrs[1] = NULL;
+
+  return hp;
 }

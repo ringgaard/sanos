@@ -372,17 +372,19 @@ void main(int argc, char *argv[])
   rc = WSAStartup(MAKEWORD(2, 2), &wsadata);
   if (rc != 0) panic("error in WSAStartup");
 
-  sess = smb_open_session("192.168.123.117", "c", "", "mri", "remote");
+  //sess = smb_open_session("192.168.123.117", "c", "", "mri", "remote");
+  sess = smb_open_session("grisling", "apps", "ebu", "mri", "remote");
   if (!sess) panic("unable to connect to server");
 
-  file = smb_open_file(sess, "os\\download\\dbg_x86_4.0.18.0.exe", SMB_OPEN_EXISTING, SMB_ACCESS_GENERIC_READ);
+  //file = smb_open_file(sess, "os\\download\\dbg_x86_4.0.18.0.exe", SMB_OPEN_EXISTING, SMB_ACCESS_GENERIC_READ);
+  file = smb_open_file(sess, "windows\\Acrobat Reader\\ar40eng.exe", SMB_OPEN_EXISTING, SMB_ACCESS_GENERIC_READ);
   if (!file) panic("unable to open file");
 
-  f = fopen("dbg_x86_4.0.18.0.exe", "wb");
+  f = fopen("ar40eng.exe", "wb");
 
   while ((len = smb_file_read(file, buf, 4096)) > 0)
   {
-    fwrite(buf, len, 1, f);
+    //fwrite(buf, len, 1, f);
     printf(".");
   }
   printf("\n");

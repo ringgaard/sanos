@@ -93,20 +93,20 @@
 // DNS classes
 //
 
-#define DNS_C_INVALID	  0	// Cookie
-#define DNS_C_IN	  1	// Internet
-#define DNS_C_2		  2	// Unallocated/unsupported
-#define DNS_C_CHAOS	  3	// MIT Chaos-net
-#define DNS_C_HS	  4	// MIT Hesiod
+#define DNS_CLASS_INVALID  0	// Cookie
+#define DNS_CLASS_IN	   1	// Internet
+#define DNS_CLASS_2	   2	// Unallocated/unsupported
+#define DNS_CLASS_CHAOS	   3	// MIT Chaos-net
+#define DNS_CLASS_HS	   4	// MIT Hesiod
 
-#define DNS_C_NONE	  254	// For prereq. sections in update request
-#define DNS_C_ANY	  255	// Wildcard match
+#define DNS_CLASS_NONE	   254	// For prereq. sections in update request
+#define DNS_CLASS_ANY	   255	// Wildcard match
 
 //
 // DNS message header
 //
 
-typedef struct dns_hdr
+struct dns_hdr
 {
   unsigned	id : 16;	// Query identification number
 
@@ -148,5 +148,9 @@ int res_send(const char *msg, int msglen, char *answer, int anslen);
 int dn_comp(const char *src, unsigned char *dst, int dstsiz, unsigned char **dnptrs, unsigned char **lastdnptr);
 
 int dn_expand(const unsigned char *msg, const unsigned char *eom, const unsigned char *src,  char *dst, int dstsiz);
+
+struct hostent *gethostbyname(const char *name);
+
+struct hostent *gethostbyaddr(const char *addr, int len, int type);
 
 #endif
