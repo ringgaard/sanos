@@ -171,6 +171,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   struct ip_addr *queryaddr;
   err_t err;
   int i;
+  int loopback = 0;
 
   //kprintf("ether: xmit %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
 
@@ -201,6 +202,11 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
     mcastaddr.addr[4] = ip4_addr3(ipaddr);
     mcastaddr.addr[5] = ip4_addr4(ipaddr);
     dest = &mcastaddr;
+  }
+  else if (ip_addr_cmp(ipaddr, &netif->ipaddr))
+  {
+    dest = &netif->hwaddr;
+    loopback = 1;
   }
   else 
   {
@@ -256,11 +262,28 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   }
   ethhdr->type = htons(ETHTYPE_IP);
   
-  err = dev_transmit((devno_t) netif->state, p);
-  if (err < 0)
+  if (loopback)
   {
-    kprintf("ether: error %d sending packet\n", err);
-    return err;
+    struct pbuf *q;
+
+    q = pbuf_dup(PBUF_RAW, p);
+    if (!q) return -ENOMEM;
+
+    err = ether_input(netif, q);
+    if (err < 0)
+    {
+      pbuf_free(q);
+      return err;
+    }
+  }
+  else
+  {
+    err = dev_transmit((devno_t) netif->state, p);
+    if (err < 0)
+    {
+      kprintf("ether: error %d sending packet\n", err);
+      return err;
+    }
   }
 
   return 0;

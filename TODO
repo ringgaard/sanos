@@ -203,3 +203,5 @@ CHANGES
 - Added queue to loopback adapter
 
 - The yield() routine now discards the remaining quantum for the thread before yielding.
+
+- Loopback packets to own address are now redirected in ether_output().

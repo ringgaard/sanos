@@ -168,15 +168,15 @@ void preempt_thread()
   // Enable interrupt in case we have been called in interupt context
   sti();
 
-  // Count number of preemptions
+  // Count number of preempted context switches
   t->preempts++;
 
   // Thread is ready to run 
   t->state = THREAD_STATE_READY;
 
   // Assign a new quantum
-  t->quantum = DEFAULT_QUANTUM;
-    
+  if (t->quantum <= 0) t->quantum = DEFAULT_QUANTUM;
+
   // Insert thread at the end of the ready queue for its priority.
   t->next_ready = NULL;
   if (ready_queue_tail[prio] != NULL) ready_queue_tail[prio]->next_ready = t;
@@ -514,7 +514,6 @@ int set_thread_priority(struct thread *t, int priority)
 
   return 0;
 }
-
 
 static void task_queue_task(void *tqarg)
 {

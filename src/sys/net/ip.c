@@ -72,13 +72,19 @@ int ip_ownaddr(struct ip_addr *addr)
 // Finds the appropriate network interface for a given IP address. It
 // searches the list of network interfaces linearly. A match is found
 // if the masked IP address of the network interface equals the masked
-// IP address given to the function.
+// IP address given to the function. The routine also detects if the
+// address is the IP address of one of the interfaces.
 //
 
 struct netif *ip_route(struct ip_addr *dest)
 {
   struct netif *netif;
   
+  for (netif = netif_list; netif != NULL; netif = netif->next)
+  {
+    if (ip_addr_cmp(dest, &netif->ipaddr)) return netif;
+  }
+
   for (netif = netif_list; netif != NULL; netif = netif->next)
   {
     if (ip_addr_maskcmp(dest, &netif->ipaddr, &netif->netmask)) 
