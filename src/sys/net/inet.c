@@ -55,7 +55,7 @@ static unsigned long chksum(void *dataptr, int len)
   if (len == 1) acc += *(unsigned char *) dataptr;
 
   acc = (acc >> 16) + (acc & 0xFFFF);
-  acc += (acc >> 16);
+  if ((acc & 0xFFFF0000) != 0) acc = (acc >> 16) + (acc & 0xFFFF);
 
   return acc;
 }
