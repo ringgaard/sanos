@@ -1059,6 +1059,43 @@ struct mallinfo
 };
 
 //
+// sysinfo
+//
+
+#define SYSINFO_CPU  0
+#define SYSINFO_MEM  1
+#define SYSINFO_LOAD 2
+
+struct cpuinfo
+{
+  int cpu_vendor;
+  int cpu_family;
+  int cpu_model;
+  int cpu_stepping;
+  int cpu_mhz;
+  unsigned long cpu_features;
+  int pagesize;
+};
+
+struct meminfo
+{    
+  unsigned int physmem_total;
+  unsigned int physmem_avail;
+  unsigned int virtmem_total;
+  unsigned int virtmem_avail;
+  unsigned int pagesize;
+};
+
+struct loadinfo
+{
+  long uptime;
+  int load_user;
+  int load_system;
+  int load_intr;
+  int load_idle;
+};
+
+//
 // OS API functions
 //
 
@@ -1149,6 +1186,7 @@ osapi int semrel(handle_t h, int count);
 osapi handle_t mkiomux(int flags);
 osapi int dispatch(handle_t iomux, handle_t h, int events, int context);
 
+osapi int sysinfo(int cmd, void *data, size_t size);
 osapi handle_t self();
 osapi void exitos(int status);
 osapi void dbgbreak();

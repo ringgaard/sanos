@@ -67,5 +67,6 @@ krnlapi time_t get_time();
 
 time_t time(time_t *time);
 void set_time(struct timeval *tv);
+int load_sysinfo(struct loadinfo *info);
 
 #endif

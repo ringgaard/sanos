@@ -1082,7 +1082,6 @@ int cmd_rmdir(int argc, char *argv[])
   return 0;
 }
 
-
 int cmd_sound(int argc, char *argv[])
 {
   int freq;
@@ -1095,6 +1094,34 @@ int cmd_sound(int argc, char *argv[])
   freq = atoi(argv[1]);
 
   return ioctl(1, IOCTL_SOUND, &freq, 4);
+}
+
+int cmd_sysinfo(int argc, char *argv[])
+{
+  int rc;
+  struct cpuinfo cpu;
+  struct meminfo mem;
+  struct loadinfo load;
+
+  rc = sysinfo(SYSINFO_CPU, &cpu, sizeof(cpu));
+  if (rc < 0) return rc;
+
+  rc = sysinfo(SYSINFO_MEM, &mem, sizeof(mem));
+  if (rc < 0) return rc;
+
+  rc = sysinfo(SYSINFO_LOAD, &load, sizeof(load));
+  if (rc < 0) return rc;
+
+  printf("cpu vendor: %d family: %d model: %d stepping: %d mhz: %d feat: %08X pagesize: %d\n", 
+         cpu.cpu_vendor, cpu.cpu_family, cpu.cpu_model, cpu.cpu_stepping, cpu.cpu_mhz, cpu.cpu_features, cpu.pagesize);
+
+  printf("mem phys total: %d K avail: %d K virt total: %d K avail: %d K pagesize: %d\n", 
+         mem.physmem_total / K, mem.physmem_avail / K, mem.virtmem_total / K, mem.virtmem_avail / K, mem.pagesize);
+
+  printf("load uptime: %d s user: %d%% sys: %d%% intr: %d%% idle: %d%%\n", 
+         load.uptime, load.load_user, load.load_system, load.load_intr, load.load_idle);
+
+  return 0;
 }
 
 #include <setjmp.h>
@@ -1293,6 +1320,7 @@ struct command cmdtab[] =
   {"rd",       cmd_rmdir,    "Remove directory"},
   {"rmdir",    cmd_rmdir,    "Remove directory"},
   {"sound",    cmd_sound,    "Play sound in speaker"},
+  {"sysinfo",  cmd_sysinfo,  "Display system info"},
   {"test",     cmd_test,     "Dummy command for misc. tests"},
   {"type",     cmd_cat,      "Display file"},
   {"umount",   cmd_umount,   "Unmount file system"},

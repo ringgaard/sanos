@@ -119,7 +119,8 @@
 #define SYSCALL_SETMODE      82
 #define SYSCALL_CHMOD        83
 #define SYSCALL_FCHMOD       84
+#define SYSCALL_SYSINFO      85
 
-#define SYSCALL_MAX          84
+#define SYSCALL_MAX          85
 
 #endif

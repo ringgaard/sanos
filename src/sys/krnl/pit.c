@@ -127,7 +127,7 @@ int timer_handler(struct context *ctxt, void *arg)
     if (USERSPACE(ctxt->eip))
     {
       t->utime++;
-      *loadptr = LOADTYPE_DPC;
+      *loadptr = LOADTYPE_USER;
     }
     else
     {
@@ -427,4 +427,22 @@ void set_time(struct timeval *tv)
   systemclock.tv_sec = tv->tv_sec;
   _gmtime(&tv->tv_sec, &tm);
   set_cmos_time(&tm);
+}
+
+int load_sysinfo(struct loadinfo *info)
+{
+  int loadavg[4];
+  unsigned char *p;
+
+  memset(loadavg, 0, sizeof loadavg);
+  p = loadtab;
+  while (p < loadend) loadavg[*p++]++;
+
+  info->uptime = get_time() - upsince;
+  info->load_user = loadavg[LOADTYPE_USER];
+  info->load_system = loadavg[LOADTYPE_KERNEL];
+  info->load_intr = loadavg[LOADTYPE_DPC];
+  info->load_idle = loadavg[LOADTYPE_IDLE];
+
+  return 0;
 }

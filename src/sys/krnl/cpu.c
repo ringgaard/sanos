@@ -265,3 +265,16 @@ void init_cpu()
 
   kprintf("cpu: %s family %d model %d stepping %d\n", cpu.modelid, cpu.family, cpu.model, cpu.stepping);
 }
+
+int cpu_sysinfo(struct cpuinfo *info)
+{
+  info->cpu_vendor = cpu.vendor;
+  info->cpu_family = cpu.family;
+  info->cpu_model = cpu.model;
+  info->cpu_stepping = cpu.stepping;
+  info->cpu_mhz = cpu.mhz;
+  info->cpu_features = cpu.features;
+  info->pagesize = PAGESIZE;
+
+  return 0;
+}

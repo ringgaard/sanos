@@ -38,6 +38,7 @@ EXPORTS
   GetModuleHandleA
   GetNumberOfConsoleInputEvents
   GetProcAddress
+  GetProcessAffinityMask
   GetProcessHeap
   GetStdHandle
   GetSystemDirectoryA
@@ -52,6 +53,7 @@ EXPORTS
   GetTimeZoneInformation
   GetVersionExA
   GetWindowsDirectoryA
+  GlobalMemoryStatus
   HeapAlloc
   HeapFree
   InitializeCriticalSection
@@ -95,6 +97,7 @@ EXPORTS
   TryEnterCriticalSection
   VirtualAlloc
   VirtualFree
+  VirtualProtect
   VirtualQuery
   WaitForMultipleObjects
   WaitForSingleObject

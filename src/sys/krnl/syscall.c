@@ -2824,6 +2824,58 @@ static int sys_fchmod(char *params)
   return rc;
 }
 
+static int sys_sysinfo(char *params)
+{
+  int rc;
+  int cmd;
+  void *data;
+  int size;
+
+  if (lock_buffer(params, 12) < 0) return -EFAULT;
+
+  cmd = *(int *) params;
+  data = *(void **) (params + 4);
+  size = *(int *) (params + 8);
+
+  if (lock_buffer(data, size) < 0)
+  {
+    unlock_buffer(params, 12);
+    return -EFAULT;
+  }
+
+  switch (cmd)
+  {
+    case SYSINFO_CPU:
+      if (!data || size < sizeof(struct cpuinfo))
+	rc = -EFAULT;
+      else
+        rc = cpu_sysinfo((struct cpuinfo *) data);
+      break;
+
+    case SYSINFO_MEM:
+      if (!data || size < sizeof(struct meminfo))
+	rc = -EFAULT;
+      else
+        rc = mem_sysinfo((struct meminfo *) data);
+      break;
+
+    case SYSINFO_LOAD:
+      if (!data || size < sizeof(struct loadinfo))
+	rc = -EFAULT;
+      else
+        rc = load_sysinfo((struct loadinfo *) data);
+      break;
+
+    default:
+      rc = -EINVAL;
+  }
+
+  unlock_buffer(data, size);
+  unlock_buffer(params, 12);
+
+  return rc;
+}
+
 struct syscall_entry syscalltab[] =
 {
   {"null","", sys_null},
@@ -2911,6 +2963,7 @@ struct syscall_entry syscalltab[] =
   {"setmode", "%d,%d", sys_setmode},
   {"chmod", "%s,%d", sys_chmod},
   {"fchmod", "%d,%d", sys_fchmod},
+  {"sysinfo", "%d,%p,%d", sys_sysinfo},
 };
 
 int syscall(int syscallno, char *params)

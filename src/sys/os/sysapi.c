@@ -102,7 +102,7 @@ int mount(const char *type, const char *mntto, const char *mntfrom, const char *
     memcpy(addr, p, q - p);
     addr[q - p] = 0;
     hp = gethostbyname(addr);
-    if (!hp) return errno;
+    if (!hp) return -errno;
     memcpy(&ipaddr, hp->h_addr_list[0], hp->h_length);
     newopts = malloc((opts ? strlen(opts) : 0) + 32);
     if (!newopts) return -ENOMEM;
@@ -570,4 +570,9 @@ handle_t dup2(handle_t h1, handle_t h2)
 int setmode(handle_t f, int mode)
 {
   return syscall(SYSCALL_SETMODE, (void *) &f);
+}
+
+int sysinfo(int cmd, void *data, size_t size)
+{
+  return syscall(SYSCALL_SYSINFO, (void *) &cmd);
 }

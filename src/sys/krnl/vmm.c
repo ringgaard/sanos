@@ -264,5 +264,23 @@ int guard_page_handler(void *addr)
 
 int vmem_proc(struct proc_file *pf, void *arg)
 {
-  return list_memmap(pf, vmap, BTOP(64 * K));
+  return list_memmap(pf, vmap, BTOP(VMEM_START));
+}
+
+int mem_sysinfo(struct meminfo *info)
+{
+  struct rmap *r;
+  struct rmap *rlim;
+  unsigned int free = 0;
+
+  rlim = &vmap[vmap->offset];
+  for (r = &vmap[1]; r <= rlim; r++) free += r->size;
+
+  info->physmem_total = totalmem * PAGESIZE;
+  info->physmem_avail = freemem * PAGESIZE;
+  info->virtmem_total = OSBASE - VMEM_START;
+  info->virtmem_avail = free * PAGESIZE;
+  info->pagesize = PAGESIZE;
+
+  return 0;
 }

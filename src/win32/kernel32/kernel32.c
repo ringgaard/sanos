@@ -199,9 +199,9 @@ static EXCEPTION_DISPOSITION call_handler
   newframe.frame.handler = nested_handler;
   newframe.prev = frame;
   push_frame(&newframe.frame);
-  syslog(LOG_DEBUG, "calling handler at %p code=%x flags=%x\n", handler, record->ExceptionCode, record->ExceptionFlags);
+  //syslog(LOG_DEBUG, "calling handler at %p code=%x flags=%x\n", handler, record->ExceptionCode, record->ExceptionFlags);
   rc = handler(record, frame, ctxt, dispatcher);
-  syslog(LOG_DEBUG, "handler returned %x\n", rc);
+  //syslog(LOG_DEBUG, "handler returned %x\n", rc);
   pop_frame(&newframe.frame);
 
   return rc;
@@ -214,13 +214,13 @@ void raise_exception(EXCEPTION_RECORD *rec, CONTEXT *ctxt)
   EXCEPTION_DISPOSITION rc;
   struct tib *tib = gettib();
 
-  syslog(LOG_DEBUG, "raise_exception: code=%lx flags=%lx addr=%p\n", rec->ExceptionCode, rec->ExceptionFlags, rec->ExceptionAddress);
+  //syslog(LOG_DEBUG, "raise_exception: code=%lx flags=%lx addr=%p\n", rec->ExceptionCode, rec->ExceptionFlags, rec->ExceptionAddress);
 
   frame = (EXCEPTION_FRAME *) tib->except;
   nested_frame = NULL;
   while (frame != (PEXCEPTION_FRAME) 0xFFFFFFFF)
   {
-    syslog(LOG_DEBUG, "frame: %p handler: %p\n", frame, frame->handler);
+    //syslog(LOG_DEBUG, "frame: %p handler: %p\n", frame, frame->handler);
     
     // Check frame address
     if ((void *) frame < tib->stacklimit || (void *)(frame + 1) > tib->stacktop || (int) frame & 3)
@@ -296,7 +296,7 @@ void unwind(PEXCEPTION_FRAME endframe, LPVOID eip, PEXCEPTION_RECORD rec, DWORD 
 
   rec->ExceptionFlags |= EH_UNWINDING | (endframe ? 0 : EH_EXIT_UNWIND);
 
-  syslog(LOG_DEBUG, "code=%lx flags=%lx\n", rec->ExceptionCode, rec->ExceptionFlags);
+  //syslog(LOG_DEBUG, "code=%lx flags=%lx\n", rec->ExceptionCode, rec->ExceptionFlags);
 
   // Get chain of exception frames
   frame = (EXCEPTION_FRAME *) tib->except;
@@ -354,7 +354,7 @@ void win32_globalhandler(int signum, struct siginfo *info)
   EXCEPTION_RECORD rec;
   EXCEPTION_POINTERS ep;
 
-  syslog(LOG_DEBUG, "kernel32: caught signal %d\n", signum);
+  //syslog(LOG_DEBUG, "kernel32: caught signal %d\n", signum);
 
   ep.ContextRecord = &ctxt;
   ep.ExceptionRecord = &rec;
@@ -406,7 +406,7 @@ void win32_globalhandler(int signum, struct siginfo *info)
 
   convert_from_win32_context(&info->ctxt, &ctxt);
 
-  syslog(LOG_DEBUG, "kernel32: sigexit\n", signum);
+  //syslog(LOG_DEBUG, "kernel32: sigexit\n", signum);
   sigexit(info, 0);
 }
 
@@ -1208,6 +1208,18 @@ FARPROC WINAPI GetProcAddress
   return resolve((hmodule_t) hModule, (char *) lpProcName);
 }
 
+BOOL WINAPI GetProcessAffinityMask
+(
+  HANDLE hProcess,
+  LPDWORD lpProcessAffinityMask,
+  LPDWORD lpSystemAffinityMask
+)
+{
+  TRACE("GetProcessAffinityMask");
+  panic("GetProcessAffinityMask not implemented");
+  return TRUE;
+}
+
 HANDLE WINAPI GetProcessHeap()
 {
   TRACE("GetProcessHeap");
@@ -1240,11 +1252,36 @@ VOID WINAPI GetSystemInfo
   LPSYSTEM_INFO lpSystemInfo
 )
 {
+  struct cpuinfo cpu;
+
   TRACE("GetSystemInfo");
+  
+  sysinfo(SYSINFO_CPU, &cpu, sizeof(cpu));
   memset(lpSystemInfo, 0, sizeof(SYSTEM_INFO));
   lpSystemInfo->dwNumberOfProcessors = 1;
-  lpSystemInfo->dwPageSize = PAGESIZE;
-  lpSystemInfo->dwProcessorType = 586;
+
+  lpSystemInfo->wProcessorLevel = cpu.cpu_family;
+
+  if (cpu.cpu_family == 3)
+  {
+    lpSystemInfo->dwProcessorType = 386;
+    lpSystemInfo->wProcessorRevision = 0xFFA0;
+  }
+  else if (cpu.cpu_family == 4)
+  {
+    lpSystemInfo->dwProcessorType = 486;
+    lpSystemInfo->wProcessorRevision = 0xFFA0;
+  }
+  else
+  {
+    lpSystemInfo->dwProcessorType = 586;
+    lpSystemInfo->wProcessorRevision = (cpu.cpu_model << 16) | cpu.cpu_stepping;
+  }
+
+  lpSystemInfo->dwPageSize = cpu.pagesize;
+  lpSystemInfo->dwAllocationGranularity = cpu.pagesize;
+  lpSystemInfo->lpMinimumApplicationAddress = (void *) 0x10000;
+  lpSystemInfo->lpMaximumApplicationAddress = (void *) 0x7FFFFFFF;
 }
 
 VOID WINAPI GetSystemTime
@@ -1401,6 +1438,27 @@ UINT WINAPI GetWindowsDirectoryA
   TRACE("GetWindowsDirectoryA");
   strcpy(lpBuffer, get_property(config, "win32", "windir", "c:\\bin"));
   return strlen(lpBuffer);
+}
+
+VOID WINAPI GlobalMemoryStatus
+(
+  LPMEMORYSTATUS lpBuffer
+)
+{
+  struct meminfo mem;
+
+  TRACE("GlobalMemoryStatus");
+
+  sysinfo(SYSINFO_MEM, &mem, sizeof(mem));
+
+  lpBuffer->dwLength = sizeof(MEMORYSTATUS);
+  lpBuffer->dwMemoryLoad = ((mem.physmem_total - mem.physmem_avail) / mem.pagesize) / (mem.physmem_total / mem.pagesize);
+  lpBuffer->dwTotalPhys = mem.physmem_total;
+  lpBuffer->dwAvailPhys = mem.physmem_avail;
+  lpBuffer->dwTotalPageFile = mem.physmem_total;
+  lpBuffer->dwAvailPageFile = mem.physmem_avail;
+  lpBuffer->dwTotalVirtual = mem.virtmem_total;
+  lpBuffer->dwAvailVirtual = mem.virtmem_avail;
 }
 
 LPVOID WINAPI HeapAlloc
@@ -2059,6 +2117,25 @@ BOOL WINAPI VirtualFree
   //syslog(LOG_DEBUG, "VirtualFree %p %d bytes (%p) -> %d\n", lpAddress, dwSize, dwFreeType, rc);
 
   return rc == 0;
+}
+
+BOOL WINAPI VirtualProtect
+(
+  LPVOID lpAddress,
+  SIZE_T dwSize,
+  DWORD flNewProtect,
+  LPDWORD lpflOldProtect
+)
+{
+  int rc;
+
+  TRACE("VirtualProtect");
+
+  rc = mprotect(lpAddress, dwSize, flNewProtect);
+  if (rc < 0) return FALSE;
+
+  if (lpflOldProtect) *lpflOldProtect = rc;
+  return TRUE;
 }
 
 DWORD WINAPI VirtualQuery

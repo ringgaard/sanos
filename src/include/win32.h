@@ -354,6 +354,18 @@ typedef struct _MEMORY_BASIC_INFORMATION
   DWORD Type; 
 } MEMORY_BASIC_INFORMATION, *PMEMORY_BASIC_INFORMATION; 
 
+typedef struct _MEMORYSTATUS
+{
+  DWORD dwLength; 
+  DWORD dwMemoryLoad; 
+  SIZE_T dwTotalPhys; 
+  SIZE_T dwAvailPhys; 
+  SIZE_T dwTotalPageFile; 
+  SIZE_T dwAvailPageFile; 
+  SIZE_T dwTotalVirtual; 
+  SIZE_T dwAvailVirtual; 
+} MEMORYSTATUS, *LPMEMORYSTATUS; 
+
 #define FILE_ATTRIBUTE_DIRECTORY            0x00000010
 #define FILE_ATTRIBUTE_NORMAL               0x00000080
 
