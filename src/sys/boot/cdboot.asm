@@ -55,6 +55,8 @@ ldrstrt  dd	OSLDRSTART
 
 start:
 	; Setup initial environment
+	jmp	0:start1
+start1:
 	mov	ax, cs
 	mov	ds, ax
 
@@ -73,7 +75,7 @@ start:
 
 	mov	eax, [ldrstrt]	    ; ds = loader start segment
 	shl	eax, 5		    ; convert from sectors to segments
-	add	eax, 0x7c00
+	add	eax, 0x7c0
 	mov	ds, ax
 
 	mov	ax, OSLDRSEG	    ; es = loader segment
@@ -81,19 +83,15 @@ start:
 
 	xor	di, di
 	xor	si, si
-	cld
+
+	cld			    ; copy os loader from boot image
 	rep movsb
 	pop	ds
-
-;xxx:
-;	mov	al, '.'
-;	call	printchar
-;	jmp	xxx
 
 	; Move system into 32-bit protected mode
 	cli			    ; no interrupts allowed
 
-	; enable A20
+	; Enable A20
 	call	empty8042
 	mov	al, 0xd1	    ; command write
 	out	0x64, al
@@ -135,12 +133,9 @@ start32:
 	mov	eax, [eax + OSLDRBASE + 0x28]
 	add	eax, OSLDRBASE
 
-	; Set boot drive to 0xFF to signal boot from CD
-	mov	ebx, 0xFF
-
-	; Push os loader load address, boot drive and initial ram disk image
+	; Push os loader load address, boot drive (0xFF for CD) and initial ram disk image
 	push	dword 0x7C00
-	push	ebx
+	push	dword 0xFF
 	push	dword OSLDRBASE
 
 	; Call startup code in os loader
@@ -236,7 +231,7 @@ bootdrv	db	0
 
 	; Message strings
 bootmsg:
-	db	10, 13, 'Booting system from CD', 0
+	db	10, 13, 'Booting system from CD-ROM', 0
 
 	; Boot signature
 	times 	510-($-$$) db 0

@@ -83,7 +83,7 @@ void load_kernel(int bootdrv)
   kprintf("Loading kernel");
 
   // Determine active boot partition if booting from harddisk
-  if (bootdrv & 0x80)
+  if (bootdrv & 0x80 && !(bootdrv & 0xF0))
   {
     mbr = (struct master_boot_record *) bsect;
     if (boot_read(mbr, SECTORSIZE, 0) != SECTORSIZE)

@@ -72,15 +72,15 @@ void load_kernel();
 
 void init_bootfd(int bootdrv);
 void uninit_bootfd();
-int boothd_read(void *buffer, size_t count, blkno_t blkno);
+int bootfd_read(void *buffer, size_t count, blkno_t blkno);
 
 void init_boothd(int bootdrv);
 void uninit_boothd();
-int bootfd_read(void *buffer, size_t count, blkno_t blkno);
+int boothd_read(void *buffer, size_t count, blkno_t blkno);
 
 int bootrd_read(void *buffer, size_t count, blkno_t blkno)
 {
-  memcpy(buffer, (char *) initrd + blkno * 512, count * 512);
+  memcpy(buffer, (char *) initrd + blkno * 512, count);
   return count;
 }
 
@@ -96,7 +96,7 @@ int boot_read(void *buffer, size_t count, blkno_t blkno)
 
 void panic(char *msg)
 {
-  kprintf("Panic: %s\n", msg);
+  kprintf("panic: %s\n", msg);
   while (1);
 }
 
@@ -168,7 +168,6 @@ void setup_descriptors()
 {
   struct syspage *syspage;
   struct tss *tss;
-  //struct segment *seg;
 
   // Get syspage virtual address
   syspage = (struct syspage *) SYSPAGE_ADDRESS;
@@ -231,6 +230,8 @@ void copy_ramdisk(void *bootimg)
   initrd_size = (1 << super->log_block_size) * super->block_count;
   initrd = alloc_heap(PAGES(initrd_size));
   memcpy(initrd, bootimg, initrd_size);
+
+  kprintf("%d KB boot image found\n", initrd_size / K);
 }
 
 void __stdcall start(void *hmod, int bootdrv, void *bootimg)
@@ -245,7 +246,7 @@ void __stdcall start(void *hmod, int bootdrv, void *bootimg)
 
   // Determine size of RAM
   mem_end = memsize();
-  //kprintf("Memory size %d MB\n", mem_end / M);
+  kprintf("%d MB RAM\n", mem_end / M);
 
   // Page allocation starts at 1MB
   heap = (char *) HEAP_START;
@@ -287,7 +288,8 @@ void __stdcall start(void *hmod, int bootdrv, void *bootimg)
   if (bootdrv & 0xF0)
   {
     copy_ramdisk(bootimg);
-    init_boothd(bootdrv);
+    load_kernel(bootdrv);
+    panic("stopped");
   }
   else if (bootdrv & 0x80)
   {

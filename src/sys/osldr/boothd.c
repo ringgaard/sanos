@@ -417,7 +417,7 @@ void init_boothd(int bootdrv)
 
   _outp((unsigned short) (hd.iobase + HDC_CONTROL), HDDC_HD15 | HDDC_NIEN);
 
-  kprintf("%d: %u blks (%d MB) CHS=%u/%u/%u\n", hd.drvsel, hd.blks, hd.size, hd.cyls, hd.heads, hd.sectors);
+  //kprintf("%d: %u blks (%d MB) CHS=%u/%u/%u\n", hd.drvsel, hd.blks, hd.size, hd.cyls, hd.heads, hd.sectors);
 }
 
 void uninit_boothd()

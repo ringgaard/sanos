@@ -55,6 +55,8 @@ ldrstrt  dd	OSLDRSTART
 
 start:
 	; Setup initial environment
+	jmp	0:start1
+start1:
 	mov	ax, cs
 	mov	ds, ax
 
@@ -127,7 +129,7 @@ killmotor:
 	; Move system into 32-bit protected mode
 	cli			    ; no interrupts allowed
 
-	; enable A20
+	; Enable A20
 	call	empty8042
 	mov	al, 0xd1	    ; command write
 	out	0x64, al
