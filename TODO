@@ -357,4 +357,5 @@ CHANGES
 
 - Garbage was outputted when printing negative numbers using printf. This problem has been fixed.
 
-- lseek() failed with -EINVAL when seeking on a device larger than 2GB. This problem has been fixed.
+- lseek() failed with -EINVAL when seeking on a device larger than 2GB. This prevented fdisk from working on
+  disks larger than 2GB. This problem has been fixed.
