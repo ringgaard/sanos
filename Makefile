@@ -522,6 +522,9 @@ $(OBJ)/libc/output.obj: $(SRC)/lib/output.c
 $(OBJ)/libc/opts.obj: $(SRC)/lib/opts.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
+$(OBJ)/libc/new.obj: $(SRC)/lib/new.cpp
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
 $(OBJ)/libc/input.obj: $(SRC)/lib/input.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
@@ -598,6 +601,7 @@ $(LIBS)/libc.lib: \
   $(OBJ)/libc/sin.obj \
   $(OBJ)/libc/pow.obj \
   $(OBJ)/libc/modf.obj \
+  $(OBJ)/libc/new.obj \
   $(OBJ)/libc/log10.obj \
   $(OBJ)/libc/log.obj \
   $(OBJ)/libc/ldexp.obj \
@@ -678,12 +682,12 @@ $(OBJ)/msvcrt/floor.obj: $(SRC)/lib/math/floor.asm
 
 $(BIN)/msvcrt.dll: \
   $(SRC)/win32/msvcrt/msvcrt.def \
-  $(SRC)/win32/msvcrt/new.cpp \
   $(SRC)/win32/msvcrt/msvcrt.c \
   $(SRC)/win32/msvcrt/malloc.c \
   $(SRC)/win32/msvcrt/float.c \
   $(SRC)/win32/msvcrt/file.c \
   $(SRC)/win32/msvcrt/except.c \
+  $(SRC)/lib/new.cpp \
   $(SRC)/lib/vsprintf.c \
   $(SRC)/lib/time.c \
   $(SRC)/lib/syserr.c \
@@ -696,12 +700,12 @@ $(BIN)/msvcrt.dll: \
   $(SRC)/lib/fcvt.c \
   $(SRC)/lib/ctype.c \
   $(SRC)/lib/bsearch.c \
+  $(SRC)/lib/readline.c \
   $(OBJ)/msvcrt/modf.obj \
   $(OBJ)/msvcrt/ftol.obj \
   $(OBJ)/msvcrt/fmod.obj \
   $(OBJ)/msvcrt/floor.obj \
   $(LIBS)/os.lib \
-  $(LIBS)/libc.lib \
   $(LIBS)/kernel32.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/msvcrt/ $** /D MSVCRT_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:dllmain /IMPLIB:$(LIBS)/msvcrt.lib

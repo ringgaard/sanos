@@ -235,7 +235,8 @@ $(SRC)/sys/dev/hd.c: \
 $(SRC)/sys/dev/kbd.c: \
   $(SRC)/include/os/krnl.h \
   $(SRC)/sys/dev/kbdus.h \
-  $(SRC)/sys/dev/kbddk.h
+  $(SRC)/sys/dev/kbddk.h \
+  $(SRC)/sys/dev/kbduk.h
 
 $(SRC)/sys/dev/ne2000.c: \
   $(SRC)/include/os/krnl.h
@@ -514,7 +515,8 @@ $(SRC)/sys/os/thread.c: \
   $(SRC)/include/os/syscall.h \
   $(SRC)/include/os/seg.h \
   $(SRC)/include/os/tss.h \
-  $(SRC)/include/os/syspage.h
+  $(SRC)/include/os/syspage.h \
+  $(SRC)/include/atomic.h
 
 $(SRC)/sys/os/tls.c: \
   $(SRC)/include/os.h \

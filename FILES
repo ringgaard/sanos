@@ -137,6 +137,7 @@ src\                           Souce files
     sys\                       Standard system include files
       stat.h                   Defines structure used by stat() and fstat()
       types.h                  Basic type definitions
+      utime.h                  Definitions/declarations for utime()
   lib\                         Library routines
     assert.c                   Assertion helper routine
     bitops.c                   Bitmap manipulation routines
@@ -156,6 +157,7 @@ src\                           Souce files
     llshl.asm                  Long shift left
     llshr.asm                  Long shift right
     moddb.c                    Module loader
+    new.cpp                    Object new and delete operators
     opts.c                     Option string parsing
     output.c                   Print formating routines
     qsort.c                    Quick sort
@@ -362,7 +364,6 @@ src\                           Souce files
       msvcrt.c                 MSVCRT C runtime library
       msvcrt.def               MSVCRT api entry definitions
       msvcrt.h                 MSVCRT definitions
-      new.cpp                  MSVCRT new and delete operators
     user32\                    Source files for user32
       user32.c                 Win32 USER32 emulation
       user32.def               USER32 api entry definitions
