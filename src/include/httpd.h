@@ -170,6 +170,7 @@ struct httpd_response
 {
   struct httpd_connection *conn;
 
+  int hdrsent;
   char *contenttype;
   int contentlength;
   time_t lastmodified;
@@ -181,6 +182,7 @@ struct httpd_connection
 {
   struct httpd_server *server;
   struct httpd_connection *next;
+  struct httpd_connection *prev;
   int sock;
   httpd_sockaddr client_addr;
 

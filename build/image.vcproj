@@ -3,6 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.00"
 	Name="image"
+	ProjectGUID="{B4FF6307-3148-449B-B9BE-7FD53B7FC3BB}"
 	SccProjectName="image"
 	SccAuxPath=""
 	SccLocalPath="."
@@ -55,7 +56,8 @@
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Create boot disk"
-					CommandLine="mkbootdisk bin img\bootdisk img\bootdisk.img"
+					CommandLine="mkbootdisk bin img\bootdisk img\bootdisk.img
+"
 					AdditionalDependencies="$(IntDir)\boot;$(IntDir)\osldr.dll;$(IntDir)\krnl.dll;$(IntDir)\ndis.sys;$(IntDir)\eepro100.sys;$(IntDir)\rtl8139.sys;$(IntDir)\3c905c.sys;$(IntDir)\pcnet32.sys;$(IntDir)\ne2000.sys;$(IntDir)\os.dll;$(IntDir)\httpd.dll;$(IntDir)\sh.exe;$(IntDir)\fdisk.exe;$(IntDir)\setup.exe;$(IntDir)\msvcrt.dll;$(IntDir)\kernel32.dll;$(IntDir)\user32.dll;$(IntDir)\advapi32.dll;$(IntDir)\winmm.dll;$(IntDir)\wsock32.dll;$(IntDir)\jinit.exe;krnl.ini;os.ini;setup.ini"
 					Outputs="..\img\bootdisk.img"/>
 			</FileConfiguration>
@@ -64,7 +66,8 @@
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Create boot disk"
-					CommandLine="mkbootdisk dbg\bin img\bootdisk img\bootdisk.img"
+					CommandLine="mkbootdisk dbg\bin img\bootdisk img\bootdisk.img
+"
 					AdditionalDependencies="$(IntDir)\boot;$(IntDir)\osldr.dll;$(IntDir)\krnl.dll;$(IntDir)\ndis.sys;$(IntDir)\eepro100.sys;$(IntDir)\rtl8139.sys;$(IntDir)\3c905c.sys;$(IntDir)\pcnet32.sys;$(IntDir)\ne2000.sys;$(IntDir)\os.dll;$(IntDir)\httpd.dll;$(IntDir)\sh.exe;$(IntDir)\fdisk.exe;$(IntDir)\setup.exe;$(IntDir)\msvcrt.dll;$(IntDir)\kernel32.dll;$(IntDir)\user32.dll;$(IntDir)\advapi32.dll;$(IntDir)\winmm.dll;$(IntDir)\wsock32.dll;$(IntDir)\jinit.exe;krnl.ini;os.ini;setup.ini"
 					Outputs="..\img\bootdisk.img"/>
 			</FileConfiguration>

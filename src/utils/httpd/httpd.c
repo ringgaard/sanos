@@ -136,7 +136,9 @@ void httpd_accept(struct httpd_server *server)
   conn->sock = sock;
   
   enter(&srvlock);
+  if (server->connections) server->connections->prev = conn;
   conn->next = server->connections;
+  conn->prev = NULL;
   server->connections = conn;
   leave(&srvlock);
 
@@ -166,8 +168,14 @@ void httpd_close_connection(struct httpd_connection *conn)
   free_buffer(&conn->reqbody);
   free_buffer(&conn->rsphdr);
   free_buffer(&conn->rspbody);
+
+  enter(&srvlock);
+  if (conn->next) conn->next->prev = conn->prev;
+  if (conn->prev) conn->prev->next = conn->next;
+  if (conn == conn->server->connections) conn->server->connections = conn->next;
+  leave(&srvlock);
+
   free(conn);
-  // TODO: remove connection from server
 }
 
 int httpd_recv(struct httpd_response *req, char *data, int len)
@@ -341,14 +349,29 @@ int httpd_flush(struct httpd_response *rsp)
   int rc;
 
   // Send response header if not already done
-  buf = &rsp->conn->rsphdr;
-  if (buf->end != buf->start)
+  if (!rsp->hdrsent)
   {
-    write(1, buf->start, buf->end - buf->start);
-    rc = send(rsp->conn->sock, buf->start, buf->end - buf->start, 0);
-    if (rc < 0) return rc;
+    buf = &rsp->conn->rsphdr;
 
-    buf->start = buf->end;
+    // Generate standard header
+    if (buf->start == buf->end)
+    {
+      rc = httpd_send_header(rsp, 200, "OK", NULL);
+      if (rc < 0) return rc;
+    }
+
+    // Send header
+    if (buf->end != buf->start)
+    {
+      write(1, buf->start, buf->end - buf->start);
+      
+      rc = send(rsp->conn->sock, buf->start, buf->end - buf->start, 0);
+      if (rc < 0) return rc;
+
+      buf->start = buf->end;
+    }
+
+    rsp->hdrsent = 1;
   }
 
   // Send response body
@@ -696,6 +719,7 @@ int httpd_process(struct httpd_connection *conn)
   rsp.conn = conn;
   conn->req = &req;
   conn->rsp = &rsp;
+  conn->state = HTTP_STATE_PROCESSING;
 
   printf("parse request\n");
   rc = httpd_parse_request(&req);
@@ -724,9 +748,7 @@ int httpd_process(struct httpd_connection *conn)
     rsp.contentlength = strlen(buf);
     rsp.lastmodified = time(0);
 
-    httpd_send_header(&rsp, 200, "OK", NULL);
     httpd_send(&rsp, buf, strlen(buf));
-  
     httpd_flush(&rsp);
   }
 

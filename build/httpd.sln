@@ -1,0 +1,28 @@
+Microsoft Visual Studio Solution File, Format Version 7.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "httpd", "httpd.vcproj", "{8BC406B5-1C14-4659-BEA5-EA8C9B8D57DD}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "image", "image.vcproj", "{B4FF6307-3148-449B-B9BE-7FD53B7FC3BB}"
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		ConfigName.0 = SanOS
+		ConfigName.1 = SanOSDebug
+	EndGlobalSection
+	GlobalSection(ProjectDependencies) = postSolution
+		{B4FF6307-3148-449B-B9BE-7FD53B7FC3BB}.0 = {8BC406B5-1C14-4659-BEA5-EA8C9B8D57DD}
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{8BC406B5-1C14-4659-BEA5-EA8C9B8D57DD}.SanOS.ActiveCfg = SanOS|Win32
+		{8BC406B5-1C14-4659-BEA5-EA8C9B8D57DD}.SanOS.Build.0 = SanOS|Win32
+		{8BC406B5-1C14-4659-BEA5-EA8C9B8D57DD}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{8BC406B5-1C14-4659-BEA5-EA8C9B8D57DD}.SanOSDebug.Build.0 = SanOSDebug|Win32
+		{B4FF6307-3148-449B-B9BE-7FD53B7FC3BB}.SanOS.ActiveCfg = SanOS|Win32
+		{B4FF6307-3148-449B-B9BE-7FD53B7FC3BB}.SanOS.Build.0 = SanOS|Win32
+		{B4FF6307-3148-449B-B9BE-7FD53B7FC3BB}.SanOSDebug.ActiveCfg = SanOSDebug|Win32
+		{B4FF6307-3148-449B-B9BE-7FD53B7FC3BB}.SanOSDebug.Build.0 = SanOSDebug|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal
