@@ -499,3 +499,5 @@ CHANGES
 - Atomic operations added in atomic.h.
 
 - Instance counting added in crt0.c to properly initialize/terminate the crt.
+
+- Guard pages implemented

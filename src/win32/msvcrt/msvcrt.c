@@ -488,6 +488,28 @@ int wcscmp(const wchar_t *s1, const wchar_t *s2)
   return ret;
 }
 
+int _wcsicmp(const wchar_t *s1, const wchar_t *s2)
+{
+  wchar_t f, l;
+
+  do 
+  {
+    f = ((*s1 <= 'Z') && (*s1 >= 'A')) ? *s1 + 'a' - 'A' : *s1;
+    l = ((*s2 <= 'Z') && (*s2 >= 'A')) ? *s2 + 'a' - 'A' : *s2;
+    s1++;
+    s2++;
+  } while ((f) && (f == l));
+
+  return (int) (f - l);
+}
+
+wchar_t *wcschr(const wchar_t *s, wchar_t ch)
+{
+  while (*s && *s != (wchar_t) ch) s++;
+  if (*s == (wchar_t) ch) return (wchar_t *) s;
+  return NULL;
+}
+
 int towlower(wint_t c)
 {
   if (c < 256)

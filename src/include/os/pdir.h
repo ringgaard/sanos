@@ -48,7 +48,8 @@ typedef unsigned long pte_t;
 
 #define PT_GUARD     0x200
 
-#define PT_FLAGMASK  (PT_PRESENT | PT_WRITABLE | PT_USER | PT_ACCESSED | PT_DIRTY)
+#define PT_FLAGMASK     (PT_PRESENT | PT_WRITABLE | PT_USER | PT_ACCESSED | PT_DIRTY | PT_GUARD)
+#define PT_PROTECTMASK  (PT_WRITABLE | PT_USER | PT_GUARD)
 
 #define PT_PFNMASK   0xFFFFF000
 #define PT_PFNSHIFT  12
@@ -86,6 +87,7 @@ krnlapi pte_t get_page_flags(void *vaddr);
 krnlapi void set_page_flags(void *vaddr, unsigned long flags);
 krnlapi int page_guarded(void *vaddr);
 krnlapi int page_mapped(void *vaddr);
+krnlapi void unguard_page(void *vaddr);
 krnlapi int mem_mapped(void *vaddr, int size);
 krnlapi int str_mapped(char *s);
 

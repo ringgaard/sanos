@@ -516,14 +516,18 @@ static int pagefault_handler(struct context *ctxt, void *arg)
   void *pageaddr;
 
   addr = (void *) cr2();
-  pageaddr = (void *) ((unsigned long) addr & ~(PAGESIZE - 1));
+  pageaddr = (void *) PAGEADDR(addr);
 
-  if (page_guarded(pageaddr))
+  if (usermode(ctxt))
   {
-    if (guard_page_handler(pageaddr) < 0) send_signal(ctxt, SIGSEGV, addr);
+    if (page_guarded(pageaddr))
+    {
+      unguard_page(pageaddr);
+      if (guard_page_handler(pageaddr) < 0) send_signal(ctxt, SIGGUARD, addr);
+    }
+    else
+      send_signal(ctxt, SIGSEGV, addr);
   }
-  else if (usermode(ctxt))
-    send_signal(ctxt, SIGSEGV, addr);
   else
   {
     kprintf("trap: page fault in kernel mode\n");

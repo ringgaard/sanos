@@ -111,7 +111,8 @@ handle_t halloc(struct object *o)
 //
 // hassign
 //
-// Assign handle to object. If the handle is in use the handle os closed before beeing assigned
+// Assign handle to object. If the handle is in use the handle is closed 
+// before beeing assigned
 //
 
 int hassign(struct object *o, handle_t h)

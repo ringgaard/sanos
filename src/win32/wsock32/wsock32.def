@@ -47,3 +47,4 @@ EXPORTS
   WSARecvFrom                               @69
   WSASendTo                                 @74
   WSAIoctl                                  @50
+  WSASendDisconnect                         @54

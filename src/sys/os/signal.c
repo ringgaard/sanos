@@ -32,6 +32,7 @@
 // 
 
 #include <os.h>
+#include <os/pdir.h>
 
 sighandler_t sighandlers[NSIG];
 
@@ -99,7 +100,7 @@ struct siginfo *getsiginfo()
 
 void globalhandler(int signum, struct siginfo *info)
 {
-  //syslog(LOG_DEBUG, "signal %d received (trap 0x%x)\n", signum, info->ctxt.traptype);
+  syslog(LOG_DEBUG, "signal %d received (trap 0x%x at %p)\n", signum, info->ctxt.traptype, info->ctxt.eip);
   if (sighandlers[signum] == SIG_DFL) sigexit(info, 1);
   sendsig(signum, info);
   sigexit(info, 0);

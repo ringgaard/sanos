@@ -92,6 +92,7 @@ pte_t get_page_flags(void *vaddr)
 void set_page_flags(void *vaddr, unsigned long flags)
 {
   ptab[PTABIDX(vaddr)] = (ptab[PTABIDX(vaddr)] & PT_PFNMASK) | flags;
+  invlpage(vaddr);
 }
 
 int page_guarded(void *vaddr)
@@ -106,6 +107,12 @@ int page_mapped(void *vaddr)
   if ((pdir[PDEIDX(vaddr)] & PT_PRESENT) == 0) return 0;
   if ((ptab[PTABIDX(vaddr)] & PT_PRESENT) == 0) return 0;
   return 1;
+}
+
+void unguard_page(void *vaddr)
+{
+  ptab[PTABIDX(vaddr)] = (ptab[PTABIDX(vaddr)] & ~PT_GUARD) | PT_USER;
+  invlpage(vaddr);
 }
 
 int mem_mapped(void *vaddr, int size)

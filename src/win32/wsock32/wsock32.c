@@ -595,6 +595,17 @@ sockapi int __stdcall WSAIoctl
   return 0;
 }
 
+sockapi int __stdcall WSASendDisconnect
+(
+  SOCKET s,
+  LPWSABUF lpOutboundDisconnectData
+)
+{
+  TRACE("WSASendDisconnect");
+  panic("WSASendDisconnect not implemented");
+  return -1;
+}
+
 int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
 {
   return TRUE;

@@ -676,7 +676,7 @@ int smb_stat(struct fs *fs, char *name, struct stat64 *buffer)
       buffer->st_atime = time(0);
       buffer->st_ctime = share->mounttime;
       buffer->st_mtime = share->mounttime;
-      buffer->st_mode = S_IFDIR | S_IREAD;
+      buffer->st_mode = S_IFDIR | S_IREAD | S_IWRITE;
       buffer->st_nlink = 1;
       return 0;
     }
@@ -717,7 +717,7 @@ int smb_stat(struct fs *fs, char *name, struct stat64 *buffer)
     memset(buffer, 0, sizeof(struct stat64));
 
     if (rspb.attributes & SMB_FILE_ATTR_DIRECTORY) 
-      buffer->st_mode = S_IFDIR | S_IREAD;
+      buffer->st_mode = S_IFDIR | S_IREAD | S_IWRITE;
     else if (rspb.attributes & SMB_FILE_ATTR_READONLY)
       buffer->st_mode = S_IFREG | S_IREAD | S_IEXEC;
     else

@@ -441,6 +441,15 @@ int cmd_dump(int argc, char *argv[])
   return 0;
 }
 
+int cmd_grabcon(int argc, char *argv[])
+{
+  dup2(fdin, 0);
+  dup2(fdout, 1);
+  dup2(fderr, 2);
+
+  return 0;
+}
+
 int cmd_heapstat(int argc, char *argv[])
 {
   struct mallinfo m;
@@ -1180,12 +1189,10 @@ int cmd_test(int argc, char *argv[])
   printf("connected socket %d\n", s);
   return 0;
 #endif
-#if 0
-  int col = atoi(argv[1]);
-  int line = atoi(argv[2]);
-  printf("goto(%d,%d)\033[%d;%dH(X)", col, line, line, col);
-  return 0;
-#endif
+
+  char buffer[64000];
+  memset(buffer, 0, sizeof buffer);
+  return buffer[0];
 }
 
 int cmd_umount(int argc, char *argv[])
@@ -1337,6 +1344,7 @@ struct command cmdtab[] =
   {"dir",      cmd_ls,       "List directory"},
   {"dump",     cmd_dump,     "Display file in hex format"},
   {"exit",     NULL,         "Exit shell"},
+  {"grabcon",  cmd_grabcon,  "Grab the main console file descriptors"},
   {"heapstat", cmd_heapstat, "Display heap statistics"},
   {"help",     cmd_help,     "This help"},
   {"httpget",  cmd_httpget,  "Retrieve file via http"},

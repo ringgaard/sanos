@@ -809,8 +809,25 @@ int putchar(int c)
 
   TRACEX("putchar");
   ch = c;
-  write(1, &ch, 1);
+  write(stdout->file, &ch, 1);
   return c;
+}
+
+int puts(const char *string)
+{
+  int len;
+  int rc;
+
+  TRACE("puts");
+
+  len = strlen(string);
+  rc = write(stdout->file, string, len);
+  if (rc < 0) return EOF;
+
+  rc = write(stdout->file, "\n", 1);
+  if (rc < 0) return EOF;
+
+  return 0;
 }
 
 void _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext)
@@ -1046,10 +1063,10 @@ void init_fileio()
     _iob[i].flag = _IOFREE;
   }
 
-  stdin->file = 0;
+  stdin->file = fdin;
   stdin->flag = 0;
-  stdout->file = 1;
+  stdout->file = fdout;
   stdout->flag = 0;
-  stderr->file = 2;
+  stderr->file = fderr;
   stderr->flag = 0;
 }

@@ -48,6 +48,35 @@ static int valid_range(void *addr, int size)
   return 1;
 }
 
+static unsigned long pte_flags_from_protect(int protect)
+{
+  switch (protect)
+  {
+    case PAGE_NOACCESS: 
+      return 0;
+
+    case PAGE_READONLY:
+    case PAGE_EXECUTE:
+    case PAGE_EXECUTE_READ:
+      return PT_USER;
+
+    case PAGE_READWRITE:
+    case PAGE_EXECUTE_READWRITE:
+      return PT_USER | PT_WRITABLE;
+
+    case PAGE_READONLY | PAGE_GUARD:
+    case PAGE_EXECUTE | PAGE_GUARD:
+    case PAGE_EXECUTE_READ | PAGE_GUARD:
+      return PT_GUARD;
+
+    case PAGE_READWRITE | PAGE_GUARD:
+    case PAGE_EXECUTE_READWRITE | PAGE_GUARD:
+      return PT_GUARD | PT_WRITABLE;
+  }
+
+  return 0xFFFFFFFF;
+}
+
 void init_vmm()
 {
   vmap = (struct rmap *) kmalloc(VMAP_ENTRIES * sizeof(struct rmap));
@@ -58,11 +87,13 @@ void init_vmm()
 void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long tag)
 {
   int pages = PAGES(size);
+  unsigned long flags = pte_flags_from_protect(protect);
   int i;
 
   //kprintf("mmap(%p,%d,%x,%x)\n", addr, size, type, protect);
 
   if (size == 0) return NULL;
+  if ((type & MEM_COMMIT) != 0 && flags == 0xFFFFFFFF) return NULL;
   addr = (void *) PAGEADDR(addr);
   if (!addr && (type & MEM_COMMIT) != 0) type |= MEM_RESERVE;
   if (!tag) tag = 'MMAP';
@@ -93,49 +124,22 @@ void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long 
   if (type & MEM_COMMIT)
   {
     char *vaddr;
-    unsigned long flags;
     unsigned long pfn;
 
     //if (!(protect & PAGE_GUARD)) kprintf("mmap: commit %dKB (%d KB free)\n", pages * (PAGESIZE / K), freemem * (PAGESIZE / K));
 
-    switch (protect & ~PAGE_GUARD)
-    {
-      case PAGE_NOACCESS:
-	flags = 0;
-	break;
-
-      case PAGE_READONLY:
-      case PAGE_EXECUTE:
-      case PAGE_EXECUTE_READ:
-	flags = PT_USER;
-	break;
-
-      case PAGE_READWRITE:
-      case PAGE_EXECUTE_READWRITE:
-	flags = PT_USER | PT_WRITABLE;
-	break;
-
-      default:
-	return NULL;
-    }
-
     vaddr = (char *) addr;
     for (i = 0; i < pages; i++)
     {
-      if (!page_mapped(vaddr))
+      if (page_mapped(vaddr))
+	set_page_flags(vaddr, flags | PT_PRESENT);
+      else
       {
-	if (protect & PAGE_GUARD)
-	{
-          map_page(vaddr, 0, flags | PT_GUARD);
-	}
-	else
-	{
-	  pfn = alloc_pageframe(tag);
-	  if (pfn == 0xFFFFFFFF) return NULL;
+	pfn = alloc_pageframe(tag);
+	if (pfn == 0xFFFFFFFF) return NULL;
 
-	  map_page(vaddr, pfn, flags | PT_PRESENT);
-	  memset(vaddr, 0, PAGESIZE);
-	}
+	map_page(vaddr, pfn, flags | PT_PRESENT);
+	memset(vaddr, 0, PAGESIZE);
       }
       vaddr += PAGESIZE;
     }
@@ -195,39 +199,19 @@ int mprotect(void *addr, unsigned long size, int protect)
   if (size == 0) return 0;
   addr = (void *) PAGEADDR(addr);
   if (!valid_range(addr, size)) return -EINVAL;
-
-  switch (protect & ~PAGE_GUARD)
-  {
-    case PAGE_NOACCESS:
-      flags = 0;
-      break;
-
-    case PAGE_READONLY:
-    case PAGE_EXECUTE:
-    case PAGE_EXECUTE_READ:
-      flags = PT_USER;
-      break;
-
-    case PAGE_READWRITE:
-    case PAGE_EXECUTE_READWRITE:
-      flags = PT_USER | PT_WRITABLE;
-      break;
-
-    default:
-      return -EINVAL;
-  }
+  flags = pte_flags_from_protect(protect);
+  if (flags == 0xFFFFFFFF) return -EINVAL;
 
   vaddr = (char *) addr;
   for (i = 0; i < pages; i++)
   {
-    if (page_mapped(vaddr))
+    if (page_mapped(vaddr)) 
     {
-      ptab[PTABIDX(vaddr)] &= ~(PT_USER | PT_WRITABLE);
-      ptab[PTABIDX(vaddr)] |= flags;
+      set_page_flags(vaddr, (get_page_flags(vaddr) & ~PT_PROTECTMASK) | flags);
     }
     vaddr += PAGESIZE;
   }
-  flushtlb();
+  //flushtlb();
 
   return 0;
 }
@@ -244,22 +228,26 @@ int munlock(void *addr, unsigned long size)
 
 int guard_page_handler(void *addr)
 {
-  unsigned long flags;
   unsigned long pfn;
+  void *stackguard;
+  void *newguard;
   struct thread *t = self();
 
-  if (t->tib && addr >= t->tib->stackbase && addr < t->tib->stacktop)
-  {
-    flags = get_page_flags(addr);
-    pfn = alloc_pageframe('STK');
-    map_page(addr, pfn, (flags & ~PT_GUARD) | PT_PRESENT);
-    memset(addr, 0, PAGESIZE);
+  if (!t->tib) return -EFAULT;
+  
+  stackguard = (char *) t->tib->stacklimit - PAGESIZE;
+  if (addr < stackguard || addr >= t->tib->stacklimit) return -EFAULT;
+  if (t->tib->stacklimit <= t->tib->stackbase) return -EFAULT;
+  t->tib->stacklimit = stackguard;
+  if (t->tib->stacklimit <= t->tib->stackbase) return 0;
 
-    t->tib->stacklimit = (void *) PAGEADDR(addr);
-    return 0;
-  }
-  else
-    return -EFAULT;
+  newguard = (char *) stackguard - PAGESIZE;
+  pfn = alloc_pageframe('STK');
+  if (pfn == 0xFFFFFFFF) return -ENOMEM;
+  map_page(newguard, pfn, PT_GUARD | PT_WRITABLE | PT_PRESENT);
+  memset(newguard, 0, PAGESIZE);
+
+  return 0;
 }
 
 int vmem_proc(struct proc_file *pf, void *arg)

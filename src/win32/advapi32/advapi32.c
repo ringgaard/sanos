@@ -380,6 +380,147 @@ SERVICE_STATUS_HANDLE WINAPI RegisterServiceCtrlHandlerA
   return 0;
 }
 
+BOOL WINAPI AllocateAndInitializeSid
+(
+  PSID_IDENTIFIER_AUTHORITY pIdentifierAuthority,
+  BYTE nSubAuthorityCount,
+  DWORD dwSubAuthority0,
+  DWORD dwSubAuthority1,
+  DWORD dwSubAuthority2,
+  DWORD dwSubAuthority3,
+  DWORD dwSubAuthority4,
+  DWORD dwSubAuthority5,
+  DWORD dwSubAuthority6,
+  DWORD dwSubAuthority7,
+  PSID *pSid
+)
+{
+  TRACE("AllocateAndInitializeSid");
+  panic("AllocateAndInitializeSid not implemented");
+  return FALSE;
+}
+
+
+BOOL WINAPI AddAccessAllowedAce
+(
+  PACL pAcl,
+  DWORD dwAceRevision,
+  DWORD AccessMask,
+  PSID pSid
+)
+{
+  TRACE("AddAccessAllowedAce");
+  panic("AddAccessAllowedAce not implemented");
+  return FALSE;
+}
+
+BOOL WINAPI CopySid
+(
+  DWORD nDestinationSidLength,
+  PSID pDestinationSid,
+  PSID pSourceSid
+)
+{
+  TRACE("CopySid");
+  panic("CopySid not implemented");
+  return FALSE;
+}
+
+PVOID WINAPI FreeSid
+(
+  PSID pSid
+)
+{
+  TRACE("FreeSid");
+  panic("FreeSid not implemented");
+  return NULL;
+}
+
+DWORD WINAPI GetLengthSid
+(
+  PSID pSid
+)
+{
+  TRACE("GetLengthSid");
+  panic("GetLengthSid not implemented");
+  return 0;
+}
+
+BOOL WINAPI GetSecurityDescriptorDacl
+(
+  PSECURITY_DESCRIPTOR pSecurityDescriptor,
+  LPBOOL lpbDaclPresent,
+  PACL *pDacl,
+  LPBOOL lpbDaclDefaulted
+)
+{
+  TRACE("GetSecurityDescriptorDacl");
+  panic("GetSecurityDescriptorDacl not implemented");
+  return FALSE;
+}
+
+BOOL WINAPI OpenProcessToken
+(
+  HANDLE ProcessHandle,
+  DWORD DesiredAccess,
+  PHANDLE TokenHandle
+)
+{
+  TRACE("OpenProcessToken");
+  panic("OpenProcessToken not implemented");
+  return FALSE;
+}
+
+BOOL WINAPI GetTokenInformation
+(
+  HANDLE TokenHandle,
+  TOKEN_INFORMATION_CLASS TokenInformationClass,
+  LPVOID TokenInformation,
+  DWORD TokenInformationLength,
+  PDWORD ReturnLength
+)
+{
+  TRACE("GetTokenInformation");
+  panic("GetTokenInformation not implemented");
+  return FALSE;
+}
+
+BOOL WINAPI InitializeAcl
+(
+  PACL pAcl,
+  DWORD nAclLength,
+  DWORD dwAclRevision
+)
+{
+  TRACE("InitializeAcl");
+  panic("InitializeAcl not implemented");
+  return FALSE;
+}
+
+BOOL WINAPI InitializeSecurityDescriptor
+(
+  PSECURITY_DESCRIPTOR pSecurityDescriptor,
+  DWORD dwRevision
+)
+{
+  TRACE("InitializeSecurityDescriptor");
+  panic("InitializeSecurityDescriptor not implemented");
+  return FALSE;
+}
+
+BOOL WINAPI SetSecurityDescriptorDacl
+(
+  PSECURITY_DESCRIPTOR pSecurityDescriptor,
+  BOOL bDaclPresent,
+  PACL pDacl,
+  BOOL bDaclDefaulted
+)
+{
+  TRACE("SetSecurityDescriptorDacl");
+  panic("SetSecurityDescriptorDacl not implemented");
+  return FALSE;
+}
+
 int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
 {
   return TRUE;

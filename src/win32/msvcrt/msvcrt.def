@@ -77,6 +77,7 @@ EXPORTS
   _unlink
   _vsnprintf
   _waccess
+  _wcsicmp
   _wfullpath
   _wgetdcwd
   _wmkdir
@@ -133,6 +134,7 @@ EXPORTS
   memset
   printf
   putchar
+  puts
   qsort
   raise=crt_raise
   rand
@@ -163,6 +165,7 @@ EXPORTS
   vsprintf
   vsprintf
   wcscat
+  wcschr
   wcscmp
   wcscpy
   wcslen

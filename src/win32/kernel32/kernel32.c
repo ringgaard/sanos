@@ -416,7 +416,10 @@ void win32_globalhandler(int signum, struct siginfo *info)
       break;
 
     case INTR_PGFLT:
-      rec.ExceptionCode = EXCEPTION_ACCESS_VIOLATION;
+      if (signum == SIGGUARD)
+        rec.ExceptionCode = STATUS_GUARD_PAGE_VIOLATION;
+      else
+	rec.ExceptionCode = EXCEPTION_ACCESS_VIOLATION;
       rec.NumberParameters = 2;
       rec.ExceptionInformation[0] = (void *) ((info->ctxt.errcode & 2) ? 1 : 0);
       rec.ExceptionInformation[1] = info->addr;
@@ -466,6 +469,42 @@ LONG WINAPI CompareFileTime(
     return -1;
   else
     return 0;
+}
+
+BOOL WINAPI CreateDirectoryA
+(
+  LPCTSTR lpPathName,
+  LPSECURITY_ATTRIBUTES lpSecurityAttributes
+)
+{
+  int rc;
+
+  TRACE("CreateDirectoryA");
+  rc = mkdir(lpPathName, 0666);
+  if (rc < 0) return FALSE;
+
+  return TRUE;
+}
+
+BOOL WINAPI CreateDirectoryW
+(
+  LPCWSTR lpPathName,
+  LPSECURITY_ATTRIBUTES lpSecurityAttributes
+)
+{
+  char fn[MAXPATH];
+  int rc;
+
+  TRACE("CreateDirectoryW");
+  
+  rc = convert_filename_from_unicode(lpPathName, fn, MAXPATH);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return FALSE;
+  }
+
+  return CreateDirectoryA(fn, lpSecurityAttributes);
 }
 
 HANDLE WINAPI CreateEventA
@@ -568,6 +607,21 @@ HANDLE WINAPI CreateFileA
   if (h < 0) return INVALID_HANDLE_VALUE;
 
   return (HANDLE) h;
+}
+
+HANDLE WINAPI CreateFileMappingA
+(
+  HANDLE hFile,
+  LPSECURITY_ATTRIBUTES lpAttributes,
+  DWORD flProtect,
+  DWORD dwMaximumSizeHigh,
+  DWORD dwMaximumSizeLow,
+  LPCTSTR lpName
+)
+{
+  TRACE("CreateFileMappingA");
+  panic("CreateFileMappingA not implemented");
+  return INVALID_HANDLE_VALUE;
 }
 
 HANDLE WINAPI CreateFileW
@@ -1340,6 +1394,19 @@ BOOL WINAPI GetNumberOfConsoleInputEvents
   return FALSE;
 }
 
+BOOL WINAPI GetOverlappedResult
+(
+  HANDLE hFile,
+  LPOVERLAPPED lpOverlapped,
+  LPDWORD lpNumberOfBytesTransferred,
+  BOOL bWait
+)
+{
+  TRACE("GetOverlappedResult");
+  panic("GetOverlappedResult not implemented");
+  return FALSE;
+}
+
 FARPROC WINAPI GetProcAddress
 (
   HMODULE hModule,
@@ -1548,6 +1615,12 @@ BOOL WINAPI GetThreadTimes
   return FALSE;
 }
 
+DWORD WINAPI GetTickCount(VOID)
+{
+  TRACE("GetTickCount");
+  return clock();
+}
+
 DWORD WINAPI GetTimeZoneInformation
 (
   LPTIME_ZONE_INFORMATION lpTimeZoneInformation
@@ -1568,6 +1641,29 @@ BOOL WINAPI GetVersionExA
   lpVersionInfo->dwMinorVersion = 0;
   lpVersionInfo->dwPlatformId = 2; // VER_PLATFORM_WIN32_NT
   strcpy(lpVersionInfo->szCSDVersion, "sanos");
+
+  return TRUE;
+}
+
+BOOL WINAPI GetVolumeInformationA
+(
+  LPCTSTR lpRootPathName,
+  LPTSTR lpVolumeNameBuffer,
+  DWORD nVolumeNameSize,
+  LPDWORD lpVolumeSerialNumber,
+  LPDWORD lpMaximumComponentLength,
+  LPDWORD lpFileSystemFlags,
+  LPTSTR lpFileSystemNameBuffer,
+  DWORD nFileSystemNameSize
+)
+{
+  TRACE("GetVolumeInformationA");
+
+  if (lpVolumeNameBuffer) *lpVolumeNameBuffer = 0;
+  if (lpVolumeSerialNumber) *lpVolumeSerialNumber = 0;
+  if (lpMaximumComponentLength) *lpMaximumComponentLength = MAXPATH - 1;
+  if (lpFileSystemFlags) *lpFileSystemFlags = 0;
+  if (lpFileSystemNameBuffer) *lpFileSystemNameBuffer = 0;
 
   return TRUE;
 }
@@ -1710,6 +1806,16 @@ BOOL WINAPI IsDBCSLeadByte
   return FALSE;
 }
 
+BOOL WINAPI IsValidCodePage
+(
+  UINT CodePage
+)
+{
+  TRACE("IsValidCodePage");
+  panic("IsValidCodePage not implemented");
+  return FALSE;
+}
+
 VOID WINAPI LeaveCriticalSection
 (
   LPCRITICAL_SECTION lpCriticalSection
@@ -1726,6 +1832,20 @@ HMODULE WINAPI LoadLibraryA
 {
   TRACE("LoadLibraryA");
   return (HMODULE) load((char *) lpFileName);
+}
+
+LPVOID WINAPI MapViewOfFile
+(
+  HANDLE hFileMappingObject,
+  DWORD dwDesiredAccess,
+  DWORD dwFileOffsetHigh,
+  DWORD dwFileOffsetLow,
+  SIZE_T dwNumberOfBytesToMap
+)
+{
+  TRACE("MapViewOfFile");
+  panic("MapViewOfFile not implemented");
+  return NULL;
 }
 
 BOOL WINAPI MoveFileA
@@ -1753,6 +1873,18 @@ int WINAPI MultiByteToWideChar
   TRACE("MultiByteToWideChar");
   panic("MultiByteToWideChar not implemented");
   return 0;
+}
+
+HANDLE WINAPI OpenFileMappingA
+(
+  DWORD dwDesiredAccess,
+  BOOL bInheritHandle,
+  LPCTSTR lpName
+)
+{
+  TRACE("OpenFileMappingA");
+  panic("OpenFileMappingA not implemented");
+  return INVALID_HANDLE_VALUE;
 }
 
 HANDLE WINAPI OpenProcess
@@ -2255,6 +2387,16 @@ BOOL WINAPI TryEnterCriticalSection
   TRACE("TryEnterCriticalSection");
   panic("TryEnterCriticalSection not implemented");
   return TRUE;
+}
+
+BOOL WINAPI UnmapViewOfFile
+(
+  LPCVOID lpBaseAddress
+)
+{
+  TRACE("UnmapViewOfFile");
+  panic("UnmapViewOfFile not implemented");
+  return FALSE;
 }
 
 LPVOID WINAPI VirtualAlloc

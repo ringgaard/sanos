@@ -53,6 +53,7 @@
 #define SIGABRT         22              // Abnormal termination
 #define SIGBUS          23              // Bus error
 #define SIGTRAP         24              // Debug trap
+#define SIGGUARD        25              // Guard page trap
 
 #endif
 

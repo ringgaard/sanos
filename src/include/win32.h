@@ -93,6 +93,7 @@ typedef LONG *LPLONG;
 typedef LONG *PLONG;
 typedef INT *LPINT;
 typedef DWORD *LPDWORD;
+typedef DWORD *PDWORD;
 typedef BOOL *LPBOOL;
 typedef void *LPVOID;
 typedef hmodule_t HMODULE;
@@ -103,6 +104,7 @@ typedef HKEY *PHKEY;
 typedef int REGSAM;
 typedef int HWND;
 typedef int MMRESULT;
+typedef int TOKEN_INFORMATION_CLASS;
 
 typedef void *LPCRITICAL_SECTION;
 typedef void *LPSECURITY_ATTRIBUTES;
@@ -114,9 +116,13 @@ typedef void *PHANDLER_ROUTINE;
 typedef void *LPWSAOVERLAPPED;
 typedef void *LPWSAOVERLAPPED_COMPLETION_ROUTINE;
 typedef void *PSID;
+typedef void *PSID_IDENTIFIER_AUTHORITY;
+typedef void *PACL;
+typedef void *PSECURITY_DESCRIPTOR;
 typedef void *LPSERVICE_TABLE_ENTRY;
 typedef void *LPSERVICE_STATUS;
 typedef void *HCRYPTPROV;
+typedef void *LPOVERLAPPED;
 
 typedef int SERVICE_STATUS_HANDLE;
 
@@ -212,6 +218,7 @@ typedef CONTEXT *LPCONTEXT;
 #define STATUS_BAD_STACK                    0xC0000028
 #define STATUS_INVALID_UNWIND_TARGET        0xC0000029
 
+#define STATUS_GUARD_PAGE_VIOLATION         0x80000001
 #define EXCEPTION_DATATYPE_MISALIGNMENT     0x80000002
 #define EXCEPTION_ACCESS_VIOLATION          0xC0000005
 #define EXCEPTION_ILLEGAL_INSTRUCTION       0xC000001D

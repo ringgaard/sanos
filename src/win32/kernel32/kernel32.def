@@ -3,8 +3,11 @@ LIBRARY KERNEL32
 EXPORTS
   CloseHandle
   CompareFileTime
+  CreateDirectoryA
+  CreateDirectoryW
   CreateEventA
   CreateFileA
+  CreateFileMappingA
   CreateFileW
   CreatePipe
   CreateProcessA
@@ -42,6 +45,7 @@ EXPORTS
   GetModuleFileNameA
   GetModuleHandleA
   GetNumberOfConsoleInputEvents
+  GetOverlappedResult
   GetProcAddress
   GetProcessAffinityMask
   GetProcessHeap
@@ -55,8 +59,10 @@ EXPORTS
   GetThreadLocale
   GetThreadPriority
   GetThreadTimes
+  GetTickCount
   GetTimeZoneInformation
   GetVersionExA
+  GetVolumeInformationA
   GetWindowsDirectoryA
   GlobalMemoryStatus
   HeapAlloc
@@ -66,10 +72,13 @@ EXPORTS
   InterlockedExchange
   InterlockedIncrement
   IsDBCSLeadByte
+  IsValidCodePage
   LeaveCriticalSection
   LoadLibraryA
+  MapViewOfFile
   MoveFileA
   MultiByteToWideChar
+  OpenFileMappingA
   OpenProcess
   PeekConsoleInputA
   QueryPerformanceCounter
@@ -103,6 +112,7 @@ EXPORTS
   TlsGetValue
   TlsSetValue
   TryEnterCriticalSection
+  UnmapViewOfFile
   VirtualAlloc
   VirtualFree
   VirtualProtect

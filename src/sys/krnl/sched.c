@@ -33,7 +33,8 @@
 
 #include <os/krnl.h>
 
-#define DEFAULT_STACK_SIZE (1 * M)
+#define DEFAULT_STACK_SIZE           (1 * M)
+#define DEFAULT_INITIAL_STACK_COMMIT (64 * K)
 
 int preempt = 0;
 int in_dpc = 0;
@@ -395,8 +396,8 @@ int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread 
   rc = init_user_thread(t, entrypoint);
   if (rc < 0) return rc;
 
-  // Allocate user stack with one committed page
-  rc = allocate_user_stack(t, stacksize, PAGESIZE);
+  // Allocate user stack
+  rc = allocate_user_stack(t, stacksize, DEFAULT_INITIAL_STACK_COMMIT);
   if (rc < 0) return rc;
 
   // Allocate self handle
@@ -443,7 +444,10 @@ int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned 
   tib->stacklimit = stack + (stack_reserve - stack_commit);
 
   if (!mmap(tib->stacklimit, stack_commit, MEM_COMMIT, PAGE_READWRITE, 'STK')) return -ENOMEM;
-  if (!mmap(tib->stackbase, stack_reserve - stack_commit, MEM_COMMIT, PAGE_READWRITE | PAGE_GUARD, 'STK')) return -ENOMEM;
+  if (tib->stacklimit > tib->stackbase)
+  {
+    if (!mmap((char *) tib->stacklimit - PAGESIZE, PAGESIZE, MEM_COMMIT, PAGE_READWRITE | PAGE_GUARD, 'STK')) return -ENOMEM;
+  }
 
   return 0;
 }
