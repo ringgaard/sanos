@@ -996,6 +996,37 @@ void _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext
   }
 }
 
+int _wopen(const wchar_t *filename, int oflag)
+{
+  char buf[MAXPATH];
+  return _open(w2a(buf, filename, MAXPATH), oflag);
+}
+
+int _waccess(const wchar_t *path, int mode)
+{
+  char buf[MAXPATH];
+  return _access(w2a(buf, path, MAXPATH), mode);
+}
+
+__int64 _wstati64(const wchar_t *path, struct _stati64 *buffer)
+{
+  char buf[MAXPATH];
+  return _stati64(w2a(buf, path, MAXPATH), buffer);
+}
+
+int _wmkdir(const wchar_t *dirname)
+{
+  char buf[MAXPATH];
+  return _mkdir(w2a(buf, dirname, MAXPATH));
+}
+
+int _wrename(const wchar_t *oldname, const wchar_t *newname)
+{
+  char buf1[MAXPATH];
+  char buf2[MAXPATH];
+  return _rename(w2a(buf1, oldname, MAXPATH), w2a(buf2, newname, MAXPATH));
+}
+
 void init_fileio()
 {
   int i;

@@ -1,6 +1,10 @@
 TODO for sanos
 --------------
 
+- Add read-only attribute to dfs
+
+- Rename format() syscall to mkfs()
+
 - Improve sysalloc() in heap.c to enable dynamic expansion of vilderness region.
 
 - Add IOEVT_ERROR to readfds in select() and checkfds() to trigger event for read sockets when connection has been reset
@@ -18,8 +22,6 @@ TODO for sanos
 - Keyboard locks up when pressing CAPSLOCK
     - Check ext flags in processing modifier keys (shift, alt, etc.)
  
-- Return error in tcp_rexmit_seg() to signal error in retransmit (reset rtime)
-
 - Implement ICMP messages host unreachable, net unreachable and port unreachable
 
 - Finish implementation of NDIS subsystem
@@ -42,6 +44,8 @@ TODO for sanos
 
 IDEAS for new features
 ----------------------
+
+- Vulnerability test with Nessus
 
 - dfs version 2
     - Large file support
@@ -412,7 +416,7 @@ CHANGES
   for a bootable image. The setup utility has been updated to allow kernel options to
   be specified in the sysprep section.
 
-- The ide device driver not supports the ideprobe kernel option to disable probing of
+- The ide device driver now supports the ideprobe kernel option to disable probing of
   ide devices. When ideprobe=0 the BIOS settings are used to determine the number of
   disks.
 

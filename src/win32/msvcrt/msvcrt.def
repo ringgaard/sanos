@@ -76,7 +76,12 @@ EXPORTS
   _time
   _unlink
   _vsnprintf
+  _waccess
+  _wmkdir
+  _wopen
+  _wrename
   _write
+  _wstati64
   _XcptFilter
   abort
   asctime

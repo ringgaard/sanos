@@ -175,4 +175,7 @@ int strcmp(const char *s1, const char *s2);
 int vsprintf(char *buffer, const char *fmt, va_list args);
 int atoi(const char *string);
 
+char *w2a(char *dst, const wchar_t *src, int maxlen);
+wchar_t *a2w(wchar_t *dst, const char *src, int maxlen);
+
 #endif

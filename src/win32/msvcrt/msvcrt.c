@@ -399,6 +399,20 @@ int rand()
   return (((holdrand = holdrand * 214013L + 2531011L) >> 16) & 0x7fff);
 }
 
+char *w2a(char *dst, const wchar_t *src, int maxlen)
+{
+  char *cp = dst;
+  while (*cp++ = (char) (unsigned char) *src++);
+  return dst;
+}
+
+wchar_t *a2w(wchar_t *dst, const char *src, int maxlen)
+{
+  wchar_t *cp = dst;
+  while (*cp++ = (unsigned char) *src++);
+  return dst;
+}
+
 size_t wcslen(const wchar_t *s)
 {
   const wchar_t *eos = s;
