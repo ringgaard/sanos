@@ -35,9 +35,9 @@ struct smb_file
 {
   unsigned short fid;
   size_t size;
-  time_t atime;
-  time_t mtime;
   time_t ctime;
+  time_t mtime;
+  time_t atime;
 };
 
 //
@@ -188,6 +188,8 @@ static struct smb_dentry *find_in_cache(struct smb_session *sess, char *path)
 {
   int idx;
 
+  if (sess->dircache[sess->next_cacheidx].path[0] && strcmp(sess->dircache[sess->next_cacheidx].path, path) == 0) return &sess->dircache[sess->next_cacheidx].path[0];
+
   for (idx = 0; idx < SMB_DENTRY_CACHESIZE; idx++)
   {
     if (sess->dircache[idx].path[0] && strcmp(sess->dircache[idx].path, path) == 0)
@@ -297,6 +299,7 @@ int send_smb(struct smb_session *sess, struct smb *smb, unsigned char cmd, int p
   smb->tid = sess->tid;
   smb->uid = sess->uid;
   smb->wordcount = (unsigned char) params;
+  smb->flags = (1 << 3);
   smb->flags2 = 1;
 
   p = (char *) smb->params.words + params * 2;
@@ -380,6 +383,7 @@ int smb_trans_send(struct smb_session *sess, unsigned short cmd,
   smb->tid = sess->tid;
   smb->uid = sess->uid;
   smb->wordcount = wordcount;
+  smb->flags = (1 << 3);
   smb->flags2 = 1;
 
   smb->params.req.trans.total_parameter_count = paramlen;
@@ -684,22 +688,221 @@ int smb_statfs(struct fs *fs, struct statfs *buf)
 
 int smb_open(struct file *filp, char *name)
 {
-  return -ENOSYS;
+  struct smb_session *sess = (struct smb_session *) filp->fs->data;
+  struct smb *smb = sess->packet;
+  struct smb_file *file;
+  unsigned long mode;
+  unsigned long access;
+  int rc;
+
+  // Convert filename
+  rc = convert_filename(name);
+  if (rc < 0) return rc;
+
+  // Determine open mode
+  switch (filp->flags & (O_CREAT | O_EXCL | O_TRUNC))
+  {
+    case 0:
+    case O_EXCL:
+      // Open existing file
+      mode = SMB_OPEN_EXISTING;
+      break;
+
+    case O_CREAT:
+      // Open file, create new file if it does not exists
+      mode = SMB_OPEN_ALWAYS;
+      break;
+
+    case O_CREAT | O_EXCL:
+    case O_CREAT | O_TRUNC | O_EXCL:
+      // Create new file, fail if it exists
+      mode = SMB_CREATE_NEW;
+      filp->flags |= F_MODIFIED;
+      break;
+
+    case O_TRUNC:
+    case O_TRUNC | O_EXCL:
+      // Open and truncate existing file
+      mode = SMB_TRUNCATE_EXISTING;
+      break;
+
+    case O_CREAT | O_TRUNC:
+      // Create new file, trunc existing file if it exists
+      mode = SMB_CREATE_ALWAYS;
+      break;
+
+    default:
+      return -EINVAL;
+  }
+
+  // Determine file access
+  if (mode & O_RDWR)
+    access = SMB_ACCESS_GENERIC_READ | SMB_ACCESS_GENERIC_WRITE;
+  else if (mode & O_WRONLY)
+    access = SMB_ACCESS_GENERIC_WRITE;
+  else
+    access = SMB_ACCESS_GENERIC_READ;
+
+  // Open/create file
+  memset(smb, 0, sizeof(struct smb));
+  smb->params.req.create.andx.cmd = 0xFF;
+  smb->params.req.create.name_length = strlen(name) + 1;
+  smb->params.req.create.desired_access = access;
+  smb->params.req.create.ext_file_attributes = SMB_FILE_ATTR_NORMAL;
+  smb->params.req.create.create_disposition = mode;
+  smb->params.req.create.impersonation_level = 0x02;
+
+  rc = send_smb(sess, smb, SMB_COM_NT_CREATE_ANDX, 24, filename, strlen(filename) + 1);
+  if (rc < 0) return rc;
+
+  rc = recv_smb(sess);
+  if (rc < 0) return rc;
+
+  file = (struct smb_file *) kmalloc(sizeof(struct smb_file));
+  if (!file) return -ENOMEM;
+
+  file->fid = smb->params.rsp.create.fid;
+  file->size = smb->params.rsp.create.end_of_file;
+  file->ctime = ft2time(smb->params.rsp.create.creation_time);
+  file->mtime = ft2time(smb->params.rsp.create.last_write_time);
+  file->atime = ft2time(smb->params.rsp.create.last_access_time);
+
+  if (filp->flags & O_APPEND) 
+    filp->pos = file->size;
+  else
+    filp->pos = 0;
+
+  filp->data = file;
+
+  return 0;
 }
 
 int smb_close(struct file *filp)
 {
-  //if (filp->flags & F_DIR) return smb_closedir(filp);
+  struct smb_session *sess = (struct smb_session *) filp->fs->data;
+  struct smb *smb = sess->packet;
+  int rc;
+
+  if (filp->flags & F_DIR)
+  {
+    struct smb_directory *dir = (struct smb_directory *) filp->data;
+
+    if (!dir->eos)
+    {
+      memset(smb, 0, sizeof(struct smb));
+      smb->params.req.findclose.sid = dir->sid;
+
+      rc = send_smb(sess, smb, SMB_COM_FIND_CLOSE2, 1, NULL, 0);
+      if (rc < 0) return rc;
+
+      rc = recv_smb(sess);
+      if (rc < 0) return rc;
+    }
+
+    kfree(dir);
+    filp->data = NULL;
+  }
+  else
+  {
+    struct smb_file *file = (struct smb_file *) filp->data;
+
+    memset(smb, 0, sizeof(struct smb));
+    smb->params.req.close.fid = file->fid;
+
+    rc = send_smb(sess, smb, SMB_COM_CLOSE, 3, NULL, 0);
+    if (rc < 0) return rc;
+
+    rc = recv_smb(sess);
+    if (rc < 0) return rc;
+
+    kfree(file);
+    filp->data = NULL;
+  }
+
   return 0;
 }
 
 int smb_flush(struct file *filp)
 {
-  return -ENOSYS;
+  struct smb_session *sess = (struct smb_session *) filp->fs->data;
+  struct smb *smb = sess->packet;
+  struct smb_file *file = (struct smb_file *) filp->data;
+  int rc;
+
+  if (filp->flags & F_DIR) return -EBADF;
+
+  memset(smb, 0, sizeof(struct smb));
+  smb->params.req.flush.fid = file->fid;
+
+  rc = send_smb(sess, smb, SMB_COM_FLUSH, 1, NULL, 0);
+  if (rc < 0) return rc;
+
+  rc = recv_smb(sess);
+  if (rc < 0) return rc;
+
+  return 0;
+}
+
+static int smb_read_raw(struct smb_session *sess, struct smb_file *file, void *data, size_t size)
+{
+  struct smb *smb = sess->packet;
+  unsigned char hdr[4];
+  int len;
+  int rc;
+
+  memset(smb, 0, sizeof(struct smb));
+  smb->params.req.readraw.fid = file->fid;
+  smb->params.req.readraw.offset = file->pos;
+  smb->params.req.readraw.max_count = size;
+
+  rc = send_smb(file->sess, smb, SMB_COM_READ_RAW, 8, NULL, 0);
+  if (rc < 0) return rc;
+  
+  rc = recv_fully(sess->s, (char *) &hdr, 4, 0);
+  if (rc < 0) return rc;
+
+  len = hdr[3] | (hdr[2] << 8) | (hdr[1] << 16) | (hdr[0] << 24);
+  if (len == 0) return 0;
+
+  rc = recv_fully(sess->s, data, size, 0);
+  if (rc < 0) return rc;
+
+  return rc;
+}
+
+static int smb_read_normal(struct smb_session *sess, struct smb_file *file, void *data, size_t size)
+{
+  struct smb *smb = sess->packet;
+  int len;
+  int rc;
+
+  // Read from file
+  memset(smb, 0, sizeof(struct smb));
+  smb->params.req.read.andx.cmd = 0xFF;
+  smb->params.req.read.fid = file->fid;
+  smb->params.req.read.offset = file->pos;
+  smb->params.req.read.max_count = size;
+
+  rc = send_smb(file->sess, smb, SMB_COM_READ_ANDX, 12, NULL, 0);
+  if (rc < 0) return rc;
+
+  rc = recv_smb(sess);
+  if (rc < 0) return rc;
+
+  len = smb->params.rsp.read.data_length;
+  if (len) memcpy(data, (char *) smb + smb->params.rsp.read.data_offset + 4, len);
+
+  return len;
 }
 
 int smb_read(struct file *filp, void *data, size_t size)
 {
+  struct smb_session *sess = (struct smb_session *) filp->fs->data;
+  struct smb_file *file = (struct smb_file *) filp->data;
+
+  if (filp->flags & F_DIR) return -EBADF;
+  if (size == 0) return 0;
+
   return -ENOSYS;
 }
 

@@ -477,6 +477,15 @@ struct smb_close_file_request
 };
 
 //
+// SMB FLUSH FILE request parameters
+//
+
+struct smb_flush_file_request
+{
+  unsigned short fid;			  // File handle
+};
+
+//
 // SMB READ FILE request parameters
 //
 
@@ -597,6 +606,15 @@ struct smb_copy_response
 };
 
 //
+// SMB FINDCLOSE2 request parameters
+//
+
+struct smb_findclose_request
+{
+  unsigned short sid;			// Search handle
+};
+
+//
 // SMB TRANSACTION request parameters
 //
 
@@ -672,6 +690,7 @@ struct smb
       struct smb_tree_connect_request connect;
       struct smb_create_file_request create;
       struct smb_close_file_request close;
+      struct smb_flush_file_request flush;
       struct smb_read_file_request read;
       struct smb_read_raw_request readraw;
       struct smb_write_file_request write;
@@ -679,6 +698,7 @@ struct smb
       struct smb_rename_request rename;
       struct smb_delete_request del;
       struct smb_copy_request copy;
+      struct smb_findclose_request findclose;
     } req;
     union
     {
