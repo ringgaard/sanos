@@ -231,6 +231,22 @@ void __getmainargs(int *pargc, char ***pargv, char ***penvp, int dowildcard, _st
   *penvp = build_env_block();
 }
 
+time_t _time(time_t *timer)
+{
+  time_t t;
+
+  TRACE("_time");
+  t = time(timer);
+  return t;
+}
+
+char *asctime(const struct tm *timeptr)
+{
+  TRACE("asctime");
+  panic("asctime not implemented");
+  return NULL;
+}
+
 int printf(const char *fmt, ...)
 {
   va_list args;

@@ -96,6 +96,11 @@
 
 #include <net/net.h>
 
+
+#if _MSC_VER < 1300
+#pragma warning(disable : 4761)
+#endif
+
 // start.c
 
 krnlapi extern devno_t bootdev;

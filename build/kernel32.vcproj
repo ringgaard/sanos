@@ -22,10 +22,12 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
+				EnableIntrinsicFunctions="TRUE"
 				AdditionalIncludeDirectories="..\src\include"
 				PreprocessorDefinitions="KERNEL32_LIB"
 				IgnoreStandardIncludePath="TRUE"
 				StringPooling="TRUE"
+				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
@@ -37,7 +39,7 @@
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
 				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="TRUE"/>
+				UndefineAllPreprocessorDefinitions="FALSE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
@@ -91,6 +93,7 @@
 				AdditionalIncludeDirectories="..\src\include"
 				PreprocessorDefinitions="KERNEL32_LIB;DEBUG"
 				IgnoreStandardIncludePath="TRUE"
+				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="2"
@@ -103,7 +106,7 @@
 				SuppressStartupBanner="TRUE"
 				DebugInformationFormat="3"
 				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="TRUE"/>
+				UndefineAllPreprocessorDefinitions="FALSE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool

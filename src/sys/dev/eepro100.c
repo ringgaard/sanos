@@ -375,7 +375,7 @@ struct nic
 // There are so many options that it would be difficult to document each bit.
 // We mostly use the default or recommended settings
 
-const char i82557_config_cmd[22] = 
+const unsigned char i82557_config_cmd[22] = 
 {
   22, 0x08, 0, 0,  0, 0, 0x32, 0x03,  1, // 1=Use MII  0=Use AUI
   0, 0x2E, 0,  0x60, 0,
@@ -383,7 +383,7 @@ const char i82557_config_cmd[22] =
   0x3f, 0x05, 
 };
 
-const char i82558_config_cmd[22] = 
+const unsigned char i82558_config_cmd[22] = 
 {
   22, 0x08, 0, 1,  0, 0, 0x22, 0x03,  1, // 1=Use MII  0=Use AUI
   0, 0x2E, 0,  0x60, 0x08, 0x88,
@@ -557,7 +557,7 @@ static void speedo_show_state(struct dev *dev)
   struct nic *sp = (struct nic *) dev->privdata;
   long ioaddr = sp->iobase;
   int phy_num = sp->phy[0] & 0x1f;
-  int i;
+  unsigned int i;
 
   // Print a few items for debugging
   kprintf("%s: Tx ring dump,  Tx queue %d / %d:\n", dev->name, sp->cur_tx, sp->dirty_tx);

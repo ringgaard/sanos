@@ -137,3 +137,5 @@ CHANGES
 - iomux kernel syncronization object implemented
 
 - select() implemented
+
+- Support for building with Visual Studio 6.

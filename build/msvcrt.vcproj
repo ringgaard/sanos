@@ -25,6 +25,7 @@
 				AdditionalIncludeDirectories="..\src\include"
 				PreprocessorDefinitions="DEBUG;MSVCRT_LIB;NO_CTYPE_MACROS"
 				IgnoreStandardIncludePath="TRUE"
+				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="2"
@@ -37,7 +38,7 @@
 				SuppressStartupBanner="TRUE"
 				DebugInformationFormat="3"
 				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="TRUE"/>
+				UndefineAllPreprocessorDefinitions="FALSE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
@@ -89,10 +90,12 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
+				EnableIntrinsicFunctions="TRUE"
 				AdditionalIncludeDirectories="..\src\include"
 				PreprocessorDefinitions="MSVCRT_LIB;NO_CTYPE_MACROS"
 				IgnoreStandardIncludePath="TRUE"
 				StringPooling="TRUE"
+				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="TRUE"
 				RuntimeTypeInfo="TRUE"
@@ -105,7 +108,7 @@
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
 				CompileAs="0"
-				UndefineAllPreprocessorDefinitions="TRUE"/>
+				UndefineAllPreprocessorDefinitions="FALSE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
@@ -187,18 +190,6 @@
 			</File>
 			<File
 				RelativePath="..\src\lib\time.c">
-				<FileConfiguration
-					Name="SanOSDebug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="SanOS|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\lib\vsprintf.c">
@@ -209,18 +200,6 @@
 		</File>
 		<File
 			RelativePath="..\src\win32\msvcrt\float.c">
-			<FileConfiguration
-				Name="SanOSDebug|Win32">
-				<Tool
-					Name="VCCLCompilerTool"
-					AssemblerOutput="0"/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="SanOS|Win32">
-				<Tool
-					Name="VCCLCompilerTool"
-					AssemblerOutput="0"/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="..\src\win32\msvcrt\malloc.c">
@@ -239,9 +218,6 @@
 		</File>
 		<File
 			RelativePath="..\src\win32\msvcrt\setjmp.c">
-		</File>
-		<File
-			RelativePath="..\src\win32\msvcrt\time.c">
 		</File>
 	</Files>
 	<Globals>

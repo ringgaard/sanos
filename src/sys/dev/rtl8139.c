@@ -960,7 +960,8 @@ static void rtl8139_tx_timeout(struct dev *dev)
   struct nic *tp = (struct nic *) dev->privdata;
   long ioaddr = tp->iobase;
   int status = inpw(ioaddr + IntrStatus);
-  int mii_reg, i;
+  int mii_reg;
+  unsigned int i;
 
   kprintf("%s: Transmit timeout, status %2.2x %4.4x media %2.2x\n",
     dev->name, inp(ioaddr + ChipCmd), status, inp(ioaddr + GPPinData));

@@ -24,6 +24,7 @@ copy tools\dbggw.exe %1\tools
 copy tools\diskio.dll %1\tools
 copy tools\rawwritewin.exe %1\tools
 copy tools\nasmw.exe %1\tools
+copy tools\prjconverter.exe %1\tools
 
 xcopy utils\dfs %1\utils\dfs /exclude:build\exclrel.lst
 xcopy utils\dbggw %1\utils\dbggw /exclude:build\exclrel.lst
