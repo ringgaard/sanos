@@ -362,7 +362,7 @@ int dounmount(struct section *sect)
   path = get_property(inst, sect->name, "path", "/mnt");
 
   // Unmount file system
-  printf("Unounting filesystem %s\n", path);
+  printf("Unmounting filesystem %s\n", path);
   rc = umount(path);
 
   return rc;

@@ -4,16 +4,18 @@ Sanos Operating System Kernel
 Sanos is an OS kernel for use in PC based server appliances. The kernel
 was developed as part of an experiment on investigating the feasibility
 of running java server applications without a traditional operating 
-system but only using a simple kernel.
+system only using a simple kernel.
 
 Sanos is open source under a BSD style license. Please see the COPYING
 file for details. Sanos can be downloaded from www.jbox.dk.
 
 
+  -- Michael Ringgaard <mri@jbox.dk>
+
 Features
 --------
 
- - No nonsense modern application server operating system kernel.
+ - Minimalistic no nonsense application server operating system kernel.
  - Open Source (BSD style license).
  - Runs on standard PC hardware.
  - Simple installation.
@@ -36,33 +38,97 @@ Features
  - Development using Microsoft Visual C.
  - Remote source level debugging support (windbg)
 
-  -- Michael Ringgaard <mri@jbox.dk>
-
 
 Supported hardware
 ------------------
 
-- Standard PC architecture
-- Minimum 2MB RAM (Maximum 4GB RAM)
-- Intel IA-32 and compatible processors (486 and Pentium)
-- IDE disks (PIO and UDMA mode)
-- Floppy disks (3½" 1.44MB)
-- Keyboard (US and DK)
-- Text mode video
-- Serial ports (8250, 16450, 16550 and 16550A)
-- Supported network interface cards:
+ - Standard PC architecture
+ - Minimum 2MB RAM (Maximum 4GB RAM)
+ - Intel IA-32 and compatible processors (486 and Pentium)
+ - IDE disks (PIO and UDMA mode)
+ - Floppy disks (3½" 1.44MB)
+ - Keyboard (US and DK)
+ - Text mode video
+ - Serial ports (8250, 16450, 16550 and 16550A)
+ - Supported network interface cards:
     - 3Com 3C905
     - Intel EtherExpress Pro/100 (i82557/558/559 based boards)
     - RealTek 8139 and compatible
     - AMD PCNET32 and compatible
     - Novell NE2000 (DP8390) and compatible
 
+Installing sanos
+----------------
+
+In order to install sanos you first need to make a boot disk. Either 
+download the sanos-bin-x.x.x.zip file from www.jbox.dk or build the
+source code from sanos-src.x.x.x.zip (see below). Unzip the files into 
+a directory (e.g. c:\sanos) and go to the build directory and execute 
+the mkbootdisk batch script:
+
+  c:\sanos\build> mkbootdisk bin img\bootdisk img\bootdisk.img
+
+This makes a bootdisk.img file in the img directory. This file can be
+written to a blank floppy disk using the rawwritewin utility found in 
+the tools directory.
+
+Boot your computer using the disk. Remember to set Floppy Disk as your
+first boot device in your BIOS setup.
+
+The default installation is set up to use DHCP to obtain TCP/IP settings
+from a DHCP server. If you do not have a DHCP server on your network you
+can either boot without network or manually configure network.
+
+To boot without network remove the following section from os.ini before
+building the bootdisk:
+
+  [netif]
+  eth0
+
+To configure your network manually change the [netif] section to something
+like:
+
+  [netif]
+  eth0:ip=192.168.123.5,gw=192.168.123.1,mask=255.255.255.0
+
+Booting sanos from floppy will not install any files on your harddisk. 
+
+  *************************************************************
+  * WARNING: Running the setup program will destroy all files *
+  * on the first partition of the primary disk.               *
+  * DO NOT DO THIS UNLESS YOU KNOW WHAT YOU ARE DOING !!!     *
+  *************************************************************
+
+If you want to install sanos on the harddisk type:
+
+  \$ setup
+
+at the shell prompt after sanos has started. This will install sanos on the first 
+partition of the primary harddisk. After the setup program completes remove the
+floppy and boot the computer. Now sanos will boot from the harddisk.
+
+
+Building sanos from source
+--------------------------
+
+To build sanos from source you first need to download sanos-src-x.x.x.zip from 
+www.jbox.dk and unzip it into a directory (e.g. c:\sanos). You will need Microsoft
+Visual C version 7 in order to compile the source code. 
+
+Goto to the build directory and double click sanos.sln. After Visual Studio has 
+started right click the image project and select 'Set as Startup Project'.
+
+Right click the sanos solution in the project pane and select 'Build Solution'.
+This will compile and link all the code and create a floppy image (bootdisk.img)
+in the img subdirectory. See above for booting and installing this image.
+
+
 Contributions to sanos
 ----------------------
 
-The sanos kernel was written by Michael Ringgaard <mri@jbox.dk>
+The sanos kernel is written by Michael Ringgaard <mri@jbox.dk>
 
-The pcnet32 driver was written by Søren Gjesse.
+The pcnet32 driver is written by Søren Gjesse <stg@jbox.dk>.
 
 The heap allocator is a port of dlmalloc by Doug Lea <dl@cs.oswego.edu>
 
