@@ -6,7 +6,7 @@ if not exist %2\proc mkdir %2\proc
 if not exist %2\etc mkdir %2\etc
 if not exist %2\os mkdir %2\os
 if not exist %2\setup mkdir %2\setup
-if not exist %2\target mkdir %2\target
+if not exist %2\mnt mkdir %2\mnt
 if not exist %2\usr mkdir %2\usr
 copy %1\os.dll %2\os > nul
 copy %1\sh.exe %2\os > nul

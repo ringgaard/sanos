@@ -218,3 +218,47 @@ int pdir_proc(struct proc_file *pf, void *arg)
   pprintf(pf, "\ntotal: %d user: %d sys: %d r/w: %d r/o: %d accessed: %d dirty: %d\n", ma, us, su, rw, ro, ac, dt);
   return 0;
 }
+
+int pdir_stat(void *addr, int len, struct pdirstat *buf)
+{
+  char *vaddr;
+  char *end;
+  pte_t pte;
+
+  memset(buf, 0, sizeof(struct pdirstat));
+  vaddr = (char *) addr;
+  end = vaddr + len;
+  while (vaddr < end)
+  {
+    if ((pdir[PDEIDX(vaddr)] & PT_PRESENT) == 0)
+    {
+      vaddr += PTES_PER_PAGE * PAGESIZE;
+      vaddr = (char *) ((unsigned long) vaddr & ~(PTES_PER_PAGE * PAGESIZE - 1));
+    }
+    else
+    {
+      pte = ptab[PTABIDX(vaddr)];
+      if (pte & PT_PRESENT) 
+      {
+	buf->present++;
+	
+	if (pte & PT_WRITABLE)
+	  buf->readwrite++;
+	else
+	  buf->readonly++;
+
+	if (pte & PT_USER) 
+	  buf->user++;
+	else
+	  buf->kernel++;
+
+	if (pte & PT_ACCESSED) buf->accessed++;
+	if (pte & PT_DIRTY) buf->dirty++;
+      }
+
+      vaddr += PAGESIZE;
+    }
+  }
+
+  return 0;
+}

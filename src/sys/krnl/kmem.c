@@ -187,9 +187,10 @@ int list_memmap(struct proc_file *pf, struct rmap *rmap, unsigned int startpos)
   struct rmap *rlim;
   unsigned int pos = startpos;
   unsigned int total = 0;
+  struct pdirstat stat;
 
-  pprintf(pf, "   start      end      size       gap\n");
-  pprintf(pf, "-------- -------- --------- ---------\n");
+  pprintf(pf, "   start      end      size committed  readonly       gap\n");
+  pprintf(pf, "-------- -------- --------- --------- --------- ---------\n");
 
   rlim = &rmap[rmap->offset];
   
@@ -199,7 +200,15 @@ int list_memmap(struct proc_file *pf, struct rmap *rmap, unsigned int startpos)
 
     if (size > 0)
     {
-      pprintf(pf, "%08X %08X %8dK %8dK\n", pos * PAGESIZE, r->offset * PAGESIZE - 1, size * PAGESIZE / K, r->size * PAGESIZE / K);
+      pdir_stat((void *) (pos * PAGESIZE), size * PAGESIZE, &stat);
+      pprintf(pf, "%08X %08X %8dK %8dK %8dK %8dK\n", 
+	      pos * PAGESIZE, 
+	      r->offset * PAGESIZE - 1, 
+	      size * (PAGESIZE / K), 
+	      stat.present * (PAGESIZE / K), 
+	      stat.readonly * (PAGESIZE / K), 
+	      r->size * (PAGESIZE / K));
+
       total += size;
     }
     pos = r->offset + r->size;

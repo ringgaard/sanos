@@ -58,11 +58,12 @@ char block[4096];
 char str[128];
 
 //
-// format_target
+// doformat
 //
 
-int format_target()
+int doformat(struct section *sect)
 {
+  char *devname;
   char *fstype;
   int blocksize;
   int quick;
@@ -71,10 +72,11 @@ int format_target()
   int rc;
 
   // Get formatting properties
-  fstype = get_property(inst, "format", "fstype", "dfs");
-  blocksize = get_numeric_property(inst, "format", "blocksize", 4096);
-  quick = get_numeric_property(inst, "format", "quick", 0);
-  cache = get_numeric_property(inst, "format", "cache", 0);
+  devname = get_property(inst, sect->name, "device", "<none>");
+  fstype = get_property(inst, sect->name, "fstype", "dfs");
+  blocksize = get_numeric_property(inst, sect->name, "blocksize", 4096);
+  quick = get_numeric_property(inst, sect->name, "quick", 0);
+  cache = get_numeric_property(inst, sect->name, "cache", 0);
 
   sprintf(options, "blocksize=%d,cache=%d%s", blocksize, cache, quick ? ",quick" : "");
   printf("Formatting device %s (%s)...\n", devname, options);
@@ -90,18 +92,14 @@ int format_target()
 // install_loader
 //
 
-int install_loader()
+int install_loader(char *devname, char *loader)
 {
-  char *loader;
   int n;
   int dev;
   int ldr;
   int rc;
   int blocksize;
   int size;
-
-  // Get properties
-  loader = get_property(inst, "install", "loader", "/setup/osldr.dll");
 
   sprintf(str, "/dev/%s", devname);
   printf("Installing loader %s on %s\n", loader, str);
@@ -115,6 +113,7 @@ int install_loader()
   if (ldr < 0) return ldr;
 
   size = fstat(ldr, NULL);
+
   // Read super block from device
   rc = lseek(dev, 1 * SECTORSIZE, SEEK_SET);
   if (rc < 0) return rc;
@@ -128,7 +127,11 @@ int install_loader()
   // Calculate loader start and size in sectors (used by bootstrap)
   ldr_start = super->first_reserved_block * (blocksize / SECTORSIZE);
   ldr_size = size / SECTORSIZE;
-  if (size > (int) super->reserved_blocks * blocksize) panic("loader too big");
+  if (size > (int) super->reserved_blocks * blocksize) 
+  {
+    printf("Loader too big\n");
+    return -EIO;
+  }
 
   // Install loader
   rc = lseek(dev, super->first_reserved_block * blocksize, SEEK_SET);
@@ -153,9 +156,8 @@ int install_loader()
 // install_boot_sector
 //
 
-int install_boot_sector()
+int install_boot_sector(char *devname, char *bootstrap)
 {
-  char *bootstrap;
   int dev;
   int boot;
   int disk;
@@ -163,9 +165,6 @@ int install_boot_sector()
   int partno;
   int partofs;
   char diskname[16];
-
-  // Get properties
-  bootstrap = get_property(inst, "install", "bootstrap", "/setup/boot");
 
   sprintf(str, "/dev/%s", devname);
   printf("Installing boot sector %s on %s\n", bootstrap, str);
@@ -183,7 +182,11 @@ int install_boot_sector()
   if (strlen(devname) == 4)
   {
     partno = devname[3] - 'a';
-    if (partno < 0 || partno > 3) panic("invaid partition");
+    if (partno < 0 || partno > 3) 
+    {
+      printf("Invaid partition\n");
+      return -EINVAL;
+    }
 
     // Read master boot record and get partition offset
     sprintf(diskname, "/dev/%c%c%c", devname[0], devname[1], devname[2]);
@@ -196,7 +199,11 @@ int install_boot_sector()
     close(disk);
 
     mbr = (struct master_boot_record *) msect;
-    if (mbr->signature != MBR_SIGNATURE) panic("invalid signature in master boot record");
+    if (mbr->signature != MBR_SIGNATURE) 
+    {
+      printf("Invalid signature in master boot record\n");
+      return -EIO;
+    }
 
     partofs = mbr->parttab[partno].relsect;
     //printf("Installing on partition %d offset %d\n", partno, partofs);
@@ -206,7 +213,11 @@ int install_boot_sector()
 
   // Set boot sector parameters
   bootsect = (struct boot_sector *) bsect;
-  if (bootsect->signature != MBR_SIGNATURE) panic("invalid signature in bootstrap");
+  if (bootsect->signature != MBR_SIGNATURE) 
+  {
+    printf("Invalid signature in bootstrap");
+    return -EINVAL;
+  }
   
   bootsect->ldrstart = ldr_start + partofs;
   bootsect->ldrsize = ldr_size;
@@ -227,21 +238,51 @@ int install_boot_sector()
 }
 
 //
-// install_kernel
+// dosysprep
 //
 
-int install_kernel()
+int dosysprep(struct section *sect)
+{
+  char *devname;
+  char *bootstrap;
+  char *loader;
+  int rc;
+
+  // Get properties
+  devname = get_property(inst, sect->name, "device", "<none>");
+  bootstrap = get_property(inst, sect->name, "bootstrap", "/setup/boot");
+  loader = get_property(inst, sect->name, "loader", "/setup/osldr.dll");
+
+  // Install loader
+  rc = install_loader(devname, loader);
+  if (rc < 0) return rc;
+
+  // Install boot sector
+  rc = install_boot_sector(devname, bootstrap);
+  if (rc < 0) return rc;
+
+  return 0;
+}
+
+//
+// dokernel
+//
+
+int dokernel(struct section *sect)
 {
   char *kernel;
+  char *target;
   int fin;
   int fout;
   int rc;
   int size;
   int left;
   int bytes;
+  char targetfn[MAXPATH];
 
   // Get properties
-  kernel = get_property(inst, "install", "kernel", "/setup/krnl.dll");
+  kernel = get_property(inst, sect->name, "kernel", "/setup/krnl.dll");
+  target = get_property(inst, sect->name, "target", "/mnt/os");
 
   printf("Installing kernel %s\n", kernel);
 
@@ -252,14 +293,15 @@ int install_kernel()
   size = fstat(fin, NULL);
 
   // Make sure os directory extist on target
-  if (stat("/target/os", NULL) < 0)
+  if (stat(target, NULL) < 0)
   {
-    rc = mkdir("/target/os");
+    rc = mkdir(target);
     if (rc < 0) return rc;
   }
 
   // Install kernel on target using reserved inode
-  fout = open("/target/os/krnl.dll", O_SPECIAL | (DFS_INODE_KRNL << 24));
+  sprintf(targetfn, "%s/krnl.dll", target);
+  fout = open(targetfn, O_SPECIAL | (DFS_INODE_KRNL << 24));
   if (fout < 0) return rc;
 
   left = size;
@@ -282,80 +324,291 @@ int install_kernel()
 }
 
 //
-// create_directories
+// domount
 //
 
-int create_directories()
+int domount(struct section *sect)
 {
-  struct section *dirsect;
+  char *mntfrom;
+  char *mntto;
+  char *fstype;
+  char *opts;
+  int rc;
+
+  // Get properties
+  mntfrom = get_property(inst, sect->name, "mntfrom", "hd0a");
+  mntto = get_property(inst, sect->name, "mntto", "/mnt");
+  fstype = get_property(inst, sect->name, "fstype", "dfs");
+  opts = get_property(inst, sect->name, "opts", NULL);
+
+  // Mount file system
+  printf("Mounting filesystem %s on %s\n", mntfrom, mntto);
+  rc = mount(fstype, mntto, mntfrom, opts);
+
+  return rc;
+}
+
+//
+// dounmount
+//
+
+int dounmount(struct section *sect)
+{
+  char *path;
+  int rc;
+
+  // Get properties
+  path = get_property(inst, sect->name, "path", "/mnt");
+
+  // Unmount file system
+  printf("Unounting filesystem %s\n", path);
+  rc = umount(path);
+
+  return rc;
+}
+
+//
+// domkdirs
+//
+
+int domkdirs(struct section *sect)
+{
   struct property *prop;
   char *dirname;
   int rc;
 
-  dirsect = find_section(inst, "dirs");
-  if (dirsect != NULL)
+  prop = sect->properties;
+  while (prop)
   {
-    prop = dirsect->properties;
-    while (prop)
+    if (strcmp(prop->name, "action") != 0)
     {
       dirname = prop->name;
       printf("Creating directory %s\n", dirname);
 
       rc = mkdir(dirname);
       if (rc < 0) return rc;
-
-      prop = prop->next;
     }
+    prop = prop->next;
   }
 
   return 0;
 }
 
 //
-// install_files
+// copy_file
 //
 
-int install_files()
+int copy_file(char *srcfn, char *dstfn)
 {
-  struct section *filesect;
-  struct property *prop;
-  char *srcfn;
-  char *dstfn;
   int fin;
   int fout;
   int bytes;
   int rc;
 
-  filesect = find_section(inst, "files");
-  if (filesect != NULL)
+  fin = open(srcfn, 0);
+  if (fin < 0) return fin;
+
+  fout = open(dstfn,  O_CREAT | O_EXCL);
+  if (fout < 0) return fout;
+
+  while ((bytes = read(fin , block, 4096)) > 0)
   {
-    prop = filesect->properties;
-    while (prop)
+    rc = write(fout, block, bytes);
+    if (rc < 0) return rc;
+  }
+
+  if (bytes < 0) return bytes;
+
+  close(fin);
+  close(fout);
+
+  return 0;
+}
+
+//
+// copy_dir
+//
+
+int copy_dir(char *srcdir, char *dstdir)
+{
+  struct copyitem
+  {
+    char srcdir[MAXPATH];
+    char dstdir[MAXPATH];
+    struct copyitem *next;
+  };
+
+  struct copyitem *head;
+  struct copyitem *tail;
+  struct copyitem *next;
+  int dir;
+  struct dirent dirp;
+  struct stat buf;
+  char srcfn[MAXPATH];
+  char dstfn[MAXPATH];
+  int rc;
+
+  head = tail = (struct copyitem *) malloc(sizeof(struct copyitem));
+  if (!head) return -ENOMEM;
+  strcpy(head->srcdir, srcdir);
+  strcpy(head->dstdir, dstdir);
+  head->next = NULL;
+  
+  while (head)
+  {
+    dir = opendir(head->srcdir);
+    if (dir < 0) return dir;
+
+    while (readdir(dir, &dirp, 1) > 0)
+    {
+      sprintf(srcfn, "%s/%s", head->srcdir, dirp.name);
+      sprintf(dstfn, "%s/%s", head->dstdir, dirp.name);
+
+      rc = stat(srcfn, &buf);
+      if (rc < 0) return rc;
+
+      if (buf.mode & FS_DIRECTORY)
+      {
+        printf("Creating directory %s\n", dstfn);
+	rc = mkdir(dstfn);
+	if (rc < 0) return rc;
+
+	tail->next = (struct copyitem *) malloc(sizeof(struct copyitem));
+	if (!tail->next) return -ENOMEM;
+	tail = tail->next;
+	strcpy(tail->srcdir, srcfn);
+	strcpy(tail->dstdir, dstfn);
+	tail->next = NULL;
+      }
+      else
+      {
+        printf("Copying %s to %s\n", srcfn, dstfn);
+        rc = copy_file(srcfn, dstfn);
+        if (rc < 0) return rc;
+      }
+    }
+
+    close(dir);
+
+    next = head->next;
+    free(head);
+    head = next;
+  }
+
+  return 0;
+}
+
+//
+// docopy
+//
+
+int docopy(struct section *sect)
+{
+  struct property *prop;
+  char *srcfn;
+  char *dstfn;
+  struct stat buf;
+  int rc;
+
+  prop = sect->properties;
+  while (prop)
+  {
+    if (strcmp(prop->name, "action") != 0)
     {
       dstfn = prop->name;
       srcfn = prop->value;
 
       printf("Copying %s to %s\n", srcfn, dstfn);
+      
+      rc = stat(srcfn, &buf);
+      if (rc < 0) return rc;
 
-      fin = open(srcfn, 0);
-      if (fin < 0) return rc;
-
-      fout = open(dstfn,  O_CREAT | O_EXCL);
-      if (fout < 0) return rc;
-
-      while ((bytes = read(fin , block, 4096)) > 0)
+      if (buf.mode & FS_DIRECTORY)
       {
-	rc = write(fout, block, bytes);
+        printf("Creating directory %s\n", dstfn);
+	rc = mkdir(dstfn);
 	if (rc < 0) return rc;
+
+        rc = copy_dir(srcfn, dstfn);
+        if (rc < 0) return rc;
       }
-
-      if (bytes < 0) return bytes;
-
-      close(fin);
-      close(fout);
-
-      prop = prop->next;
+      else
+      {
+        rc = copy_file(srcfn, dstfn);
+        if (rc < 0) return rc;
+      }
     }
+
+    prop = prop->next;
+  }
+
+  return 0;
+}
+
+//
+// runscript
+//
+
+int runscript(char *scriptname)
+{
+  struct section *scriptsect;
+  struct property *prop;
+
+  scriptsect = find_section(inst, scriptname);
+  if (!scriptsect)
+  {
+    printf("Unable to find script section %s\n", scriptname);
+    return -EINVAL;
+  }
+
+  prop = scriptsect->properties;
+  while (prop)
+  {
+    char *action;
+    int rc;
+    struct section *scriptblock;
+    
+    scriptblock = find_section(inst, prop->name);
+    if (!scriptblock)
+    {
+      printf("Unable to find script block %s\n", prop->name);
+      return -EINVAL;
+    }
+    
+    action = find_property(scriptblock, "action");
+    if (!action)
+    {
+      printf("Action property missing in script block %s\n", prop->name);
+      return -EINVAL;
+    }
+
+    if (strcmp(action, "format") == 0)
+      rc = doformat(scriptblock);
+    else if (strcmp(action, "sysprep") == 0)
+      rc = dosysprep(scriptblock);
+    else if (strcmp(action, "mount") == 0)
+      rc = domount(scriptblock);
+    else if (strcmp(action, "kernel") == 0)
+      rc = dokernel(scriptblock);
+    else if (strcmp(action, "mkdirs") == 0)
+      rc = domkdirs(scriptblock);
+    else if (strcmp(action, "copy") == 0)
+      rc = docopy(scriptblock);
+    else if (strcmp(action, "unmount") == 0)
+      rc = dounmount(scriptblock);
+    else
+    {
+      printf("Unknown action '%s' in script block %s\n", action, prop->name);
+      return -EINVAL;
+    }
+
+    if (rc < 0)
+    {
+      printf("Error %d (%s) performing %s\n", -rc, strerror(rc), prop->name);
+      return rc;
+    }
+    
+    prop = prop->next;
   }
 
   return 0;
@@ -370,6 +623,7 @@ int __stdcall main(hmodule_t hmod, char *cmdline, void *env)
   char *instfn;
   char *prodname;
   char *prodvers;
+  char *scriptname;
   int rc;
 
   if (cmdline && *cmdline)
@@ -387,77 +641,22 @@ int __stdcall main(hmodule_t hmod, char *cmdline, void *env)
 
   prodname = get_property(inst, "setup", "product", "sanos");
   prodvers = get_property(inst, "setup", "version", "1.0");
-  devname = get_property(inst, "format", "device", "unknown");
+  scriptname = get_property(inst, "setup", "actions", "actions");
 
   printf("Installing %s version %s\n", prodname, prodvers);
 
-  // Format target
-  rc = format_target();
+  // Perform install script
+  rc = runscript(scriptname);
   if (rc < 0)
   {
-    printf("Error %d formatting device\n", rc);
-    return rc;
-  }
-
-  // Install loader
-  rc = install_loader();
-  if (rc < 0)
-  {
-    printf("Error %d installing loader\n", rc);
-    return rc;
-  }
-
-  // Install boot sector
-  rc = install_boot_sector();
-  if (rc < 0)
-  {
-    printf("Error %d installing boot sector\n", rc);
-    return rc;
-  }
-
-  // Mount target
-  printf("Mounting %s on /target\n", devname);
-  rc = mount("dfs", "/target", devname, NULL);
-  if (rc < 0)
-  {
-    printf("Error %d mounting target\n", rc);
-    return rc;
-  }
-
-  // Install kernel
-  rc = install_kernel();
-  if (rc < 0)
-  {
-    printf("Error %d installing kernel\n", rc);
-    return rc;
-  }
-
-  // Create directories
-  rc = create_directories();
-  if (rc < 0)
-  {
-    printf("Error %d creating directories\n", rc);
-    return rc;
-  }
-
-  // Install files
-  rc = install_files();
-  if (rc < 0)
-  {
-    printf("Error %d installing files\n", rc);
-    return rc;
-  }
-
-  // Unmount target
-  rc = umount("/target");
-  if (rc < 0)
-  {
-    printf("Error %d unmounting target\n", rc);
+    printf("Installation failed\n");
+    free_properties(inst);
     return rc;
   }
 
   // Installation successfull
   printf("%s installed\n", prodname);
   free_properties(inst);
+
   return 0;
 }

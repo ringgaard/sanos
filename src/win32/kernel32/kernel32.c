@@ -614,8 +614,10 @@ DWORD WINAPI GetCurrentDirectoryA
 {
   TRACE("GetCurrentDirectoryA");
   
-  if (nBufferLength < strlen(peb->curdir) + 1) return strlen(peb->curdir) + 1;
-  strcpy(lpBuffer, peb->curdir);
+  if (nBufferLength < strlen(peb->curdir) + 3) return strlen(peb->curdir) + 3;
+  lpBuffer[0] = 'C';
+  lpBuffer[1] = ':';
+  strcpy(lpBuffer + 2, peb->curdir);
   return strlen(lpBuffer);
 }
 
@@ -917,7 +919,12 @@ BOOL WINAPI GetThreadContext
   struct context ctxt;
 
   TRACE("GetThreadContext");
-  if (getcontext((handle_t) hThread, &ctxt) < 0) return FALSE;
+  if (getcontext((handle_t) hThread, &ctxt) < 0) 
+  {
+    syslog(LOG_DEBUG, "GetThreadContext(%d) failed, ignored\n", hThread);
+    return TRUE;
+  }
+
   convert_to_win32_context(&ctxt, lpContext);
   return TRUE;
 }
@@ -1277,7 +1284,7 @@ BOOL WINAPI SetFileAttributesA
 )
 {
   TRACE("SetFileAttributesA");
-  panic("SetFileAttributesA not implemented");
+  syslog(LOG_DEBUG, "warning: SetFileAttributesA not implemented\n");
   return FALSE;
 }
 
@@ -1505,7 +1512,7 @@ LPVOID WINAPI VirtualAlloc
   TRACE("VirtualAlloc");
   addr = mmap(lpAddress, dwSize, flAllocationType | MEM_ALIGN64K, flProtect);
   
-  syslog(LOG_DEBUG, "VirtualAlloc %p %dKB (%p,%p) -> %p\n", lpAddress, dwSize / K, flAllocationType, flProtect, addr);
+  //syslog(LOG_DEBUG, "VirtualAlloc %p %dKB (%p,%p) -> %p\n", lpAddress, dwSize / K, flAllocationType, flProtect, addr);
 
   if (addr != NULL && (flAllocationType & MEM_RESERVE) != 0)
   {

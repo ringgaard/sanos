@@ -460,24 +460,24 @@ static void busy_loop(int ms)
 
 static void start_program(int argc, char **argv)
 {
-  char *pgm;
+  char pgm[MAXPATH];
   char *args = "";
   hmodule_t hmod;
   int rc;
 
-  if (argc < 2)
+  if (argc < 1)
   {
     printf("usage: start <pgm> [<args>]\n");
     return;
   }
-  pgm = argv[1];
-
-  if (argc > 2) args = argv[2];
+  
+  sprintf(pgm, "%s.exe", argv[0]);
+  if (argc > 1) args = argv[1];
 
   hmod = load(pgm);
   if (hmod == NULL)
   {
-    printf("%s: unable to load module\n", pgm);
+    printf("%s: program not found\n", pgm);
     return;
   }
 
@@ -1275,7 +1275,7 @@ void shell()
       else if (strcmp(argv[0], "kp") == 0)
 	set_kprint(atoi(argv[1]));
       else if (strcmp(argv[0], "start") == 0)
-	start_program(argc, argv);
+	start_program(argc - 1, argv + 1);
       else if (strcmp(argv[0], "load") == 0)
 	load_module(argc, argv);
       else if (strcmp(argv[0], "break") == 0)
@@ -1303,7 +1303,7 @@ void shell()
       else if (strcmp(argv[0], "kbd") == 0)
 	kbdtest();
       else
-	printf("%s: unknown command\n", argv[0]);
+	start_program(argc, argv);
 
       free_args(argc, argv);
     }

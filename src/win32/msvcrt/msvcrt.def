@@ -20,6 +20,7 @@ EXPORTS
   strrchr
   strstr
   _strdup
+  atoi
   strtol
   strtoul
   qsort

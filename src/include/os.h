@@ -61,6 +61,7 @@
 struct section;
 
 //#define TRACEAPI
+//#define TRACEAPIX
 
 //
 // Module initialization

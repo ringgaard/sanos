@@ -67,6 +67,17 @@ typedef unsigned long pte_t;
 extern pte_t *pdir;
 extern pte_t *ptab;
 
+struct pdirstat
+{
+  int present;
+  int user;
+  int kernel;
+  int readonly;
+  int readwrite;
+  int accessed;
+  int dirty;
+};
+
 krnlapi void flushtlb();
 krnlapi void map_page(void *vaddr, unsigned long pfn, unsigned long flags);
 krnlapi void unmap_page(void *vaddr);
@@ -80,5 +91,6 @@ krnlapi int str_mapped(char *s);
 
 void init_pdir();
 int pdir_proc(struct proc_file *pf, void *arg);
+int pdir_stat(void *addr, int len, struct pdirstat *buf);
 
 #endif
