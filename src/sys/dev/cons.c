@@ -277,7 +277,8 @@ static int syslog_read(struct dev *dev, void *buffer, size_t count, blkno_t blkn
 
 static int syslog_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno)
 {
-  return -ENOSYS;
+  add_to_syslog(buffer, count);
+  return count;
 }
 
 struct driver syslog_driver =

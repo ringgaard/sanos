@@ -77,22 +77,24 @@ struct section;
 
 #define PAGESIZE  4096
 
-#define PAGE_NOACCESS           0x01     
-#define PAGE_READONLY           0x02     
-#define PAGE_READWRITE          0x04     
-#define PAGE_EXECUTE            0x10     
-#define PAGE_EXECUTE_READ       0x20     
-#define PAGE_EXECUTE_READWRITE  0x40     
-#define PAGE_GUARD              0x100     
+#define PAGE_NOACCESS           0x01
+#define PAGE_READONLY           0x02
+#define PAGE_READWRITE          0x04
+#define PAGE_EXECUTE            0x10
+#define PAGE_EXECUTE_READ       0x20
+#define PAGE_EXECUTE_READWRITE  0x40
+#define PAGE_GUARD              0x100
 
 //
 // Allocation types
 //
 
-#define MEM_COMMIT              0x1000     
-#define MEM_RESERVE             0x2000     
-#define MEM_DECOMMIT            0x4000     
-#define MEM_RELEASE             0x8000     
+#define MEM_COMMIT              0x00001000
+#define MEM_RESERVE             0x00002000
+#define MEM_DECOMMIT            0x00004000
+#define MEM_RELEASE             0x00008000
+
+#define MEM_ALIGN64K            0x10000000
 
 //
 // Thread priorities

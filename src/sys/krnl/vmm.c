@@ -70,11 +70,10 @@ void *mmap(void *addr, unsigned long size, int type, int protect)
   {
     if (addr == NULL)
     {
-      
-      if (pages < 64 * K / PAGESIZE)
-        addr = (void *) PTOB(rmap_alloc(vmap, pages));
-      else
+      if (type & MEM_ALIGN64K)
         addr = (void *) PTOB(rmap_alloc_align(vmap, pages, 64 * K / PAGESIZE));
+      else
+        addr = (void *) PTOB(rmap_alloc(vmap, pages));
 
       if (addr == NULL) return NULL;
     }
@@ -141,7 +140,7 @@ void *mmap(void *addr, unsigned long size, int type, int protect)
     }
   }
 
-//kprintf("mmap returned %p\n", addr);
+  //kprintf("mmap returned %p\n", addr);
   return addr;
 }
 
@@ -155,7 +154,7 @@ int munmap(void *addr, unsigned long size, int type)
   addr = (void *) PAGEADDR(addr);
   if (!valid_range(addr, size)) return -EINVAL;
 
-  if (type == MEM_DECOMMIT || type == MEM_RELEASE)
+  if (type & (MEM_DECOMMIT | MEM_RELEASE))
   {
     vaddr = (char *) addr;
     for (i = 0; i < pages; i++)
@@ -172,7 +171,7 @@ int munmap(void *addr, unsigned long size, int type)
     }
   }
   
-  if (type == MEM_RELEASE)
+  if (type & MEM_RELEASE)
   {
     rmap_free(vmap, BTOP(addr), pages);
   }

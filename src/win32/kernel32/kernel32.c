@@ -613,7 +613,9 @@ DWORD WINAPI GetCurrentDirectoryA
 )
 {
   TRACE("GetCurrentDirectoryA");
-  strcpy(lpBuffer, get_property(config, "win32", "curdir", "c:\\"));
+  
+  if (nBufferLength < strlen(peb->curdir) + 1) return strlen(peb->curdir) + 1;
+  strcpy(lpBuffer, peb->curdir);
   return strlen(lpBuffer);
 }
 
@@ -1501,9 +1503,9 @@ LPVOID WINAPI VirtualAlloc
   int n;
 
   TRACE("VirtualAlloc");
-  addr = mmap(lpAddress, dwSize, flAllocationType, flProtect);
+  addr = mmap(lpAddress, dwSize, flAllocationType | MEM_ALIGN64K, flProtect);
   
-  //syslog(LOG_DEBUG, "VirtualAlloc %p %d bytes (%p,%p)\n", addr, dwSize, flAllocationType, flProtect);
+  syslog(LOG_DEBUG, "VirtualAlloc %p %dKB (%p,%p) -> %p\n", lpAddress, dwSize / K, flAllocationType, flProtect, addr);
 
   if (addr != NULL && (flAllocationType & MEM_RESERVE) != 0)
   {
@@ -1514,7 +1516,7 @@ LPVOID WINAPI VirtualAlloc
       vads[n].size = dwSize;
     }
     else
-      syslog(LOG_WARNING, "warning: no vad for VirtualAlloc\n");
+      panic("no vad for VirtualAlloc");
   }
 
   return addr;
@@ -1528,6 +1530,7 @@ BOOL WINAPI VirtualFree
 )
 {
   int n;
+  int rc;
 
   TRACE("VirtualFree");
   if (lpAddress != NULL && (dwFreeType & MEM_RELEASE) != 0 && dwSize == 0)
@@ -1542,9 +1545,11 @@ BOOL WINAPI VirtualFree
       syslog(LOG_WARNING, "warning: vad not found for VitualFree\n");
   }
 
-  //syslog(LOG_DEBUG, "VirtualFree  %p %d bytes (%p)\n", lpAddress, dwSize, dwFreeType);
-  munmap(lpAddress, dwSize, dwFreeType);
-  return TRUE;
+  rc = munmap(lpAddress, dwSize, dwFreeType);
+
+  syslog(LOG_DEBUG, "VirtualFree %p %d bytes (%p) -> %d\n", lpAddress, dwSize, dwFreeType, rc);
+
+  return rc == 0;
 }
 
 DWORD WINAPI VirtualQuery

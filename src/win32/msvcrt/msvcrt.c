@@ -88,6 +88,7 @@ int _vsnprintf(char *buffer, size_t size, const char *fmt, va_list args)
   // TODO: check buffer length
   n = vsprintf(buffer, fmt, args);
   if (n >= (int) size) panic("vsnprintf: overflow");
+
   return n;
 }
 
