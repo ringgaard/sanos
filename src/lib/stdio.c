@@ -87,11 +87,14 @@ char *gets(char *buf)
 	p--;
       }
     }
-    else if (ch == '\r' || ch =='\n' || ch >= ' ')
+    else if (ch == '\r' || ch =='\n' || (unsigned char) ch >= ' ')
     {
       write(stdout, &ch, 1);
-      if (ch == '\n') break;
-      if (ch != '\r') *p++ = ch;
+      if (ch == '\r') write(stdout, "\n", 1);
+      //if (ch == '\n') break;
+      //if (ch != '\r') *p++ = ch;
+      if (ch == '\n' || ch == '\r') break;
+      *p++ = ch;
     }
   }
 

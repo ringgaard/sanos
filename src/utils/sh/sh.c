@@ -1062,6 +1062,34 @@ static void reboot()
   ioctl(1, IOCTL_REBOOT, NULL, 0);
 }
 
+static void kbdtest()
+{
+  int escs;
+  unsigned char ch;
+  int rc;
+
+  escs = 0;
+  while (1)
+  {
+    rc = read(gettib()->in, &ch, 1);
+    if (rc != 1)
+    {
+      printf("Error %d in read\n", rc);
+      break;
+    }
+
+    if (ch == 0x1B) 
+      escs++;
+    else
+      escs = 0;
+
+    if (escs == 3) break;
+
+    printf("[0x%02X]", ch);
+  }
+  printf("\n");
+}
+
 void shell()
 {
   char cmd[256];
@@ -1143,6 +1171,8 @@ void shell()
 	sound(atoi(argv[1]));
       else if (strcmp(argv[0], "test") == 0)
 	test(argc, argv);
+      else if (strcmp(argv[0], "kbd") == 0)
+	kbdtest();
       else
 	printf("%s: unknown command\n", argv[0]);
 

@@ -163,15 +163,6 @@ SOURCE=..\src\sys\krnl\queue.c
 # Begin Source File
 
 SOURCE=..\src\sys\krnl\sched.c
-
-!IF  "$(CFG)" == "krnl - Win32 SanOS"
-
-# SUBTRACT CPP /FA<none>
-
-!ELSEIF  "$(CFG)" == "krnl - Win32 SanOSDebug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -264,6 +255,14 @@ SOURCE=..\src\sys\dev\hd.c
 # Begin Source File
 
 SOURCE=..\src\sys\dev\kbd.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\sys\dev\kbddk.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\sys\dev\kbdus.h
 # End Source File
 # Begin Source File
 
