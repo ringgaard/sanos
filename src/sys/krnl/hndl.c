@@ -92,12 +92,12 @@ int hfree(handle_t h)
   if (o == (struct object *) NOHANDLE) return -EBADF;
   if (o < (struct object *) OSBASE) return -EBADF;
 
+  htab[h] = (struct object *) hfreelist;
+  hfreelist = h;
+
   if (--o->handle_count > 0) return 0;
   
   rc = close_object(o);
-
-  htab[h] = (struct object *) hfreelist;
-  hfreelist = h;
 
   if (o->lock_count == 0) destroy_object(o);
 

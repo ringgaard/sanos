@@ -187,3 +187,7 @@ CHANGES
 
 - When a file or socket object was closed the kernel object was accessed in hfree() after being freed. 
   The file and socket objects are now freed in destroy_object() to avoid this problem.
+
+- Handles to objects was not removed from the handle table if the handle count was greater than one.
+  This problem has been fixed.
+
