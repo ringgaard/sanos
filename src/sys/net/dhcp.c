@@ -35,7 +35,6 @@
 
 #include <net/net.h>
 
-static unsigned long xid = 0;
 static struct dhcp_state *dhcp_client_list = NULL;
 int dhcp_arp_check = 0;
 
@@ -87,10 +86,52 @@ struct dhcp_state *dhcp_find_client(struct netif *netif);
 static void dhcp_dump_options(struct dhcp_state *state);
 
 //
+// dhcpstat_proc
+//
+
+static int dhcpstat_proc(struct proc_file *pf, void *arg)
+{
+  struct dhcp_state *state;
+  static char *statename[] = 
+  {
+    "<none>", "REQUESTING", "INIT", "REBOOTING", "REBINDING",
+    "RENEWING", "SELECTING", "INFORMING", "CHECKING", "PERMANENT",
+    "BOUND", "BACKING OFF", "OFF"
+  };
+
+  state = dhcp_client_list;
+  while (state)
+  {
+    time_t lease_age = time(NULL) - state->bind_time;
+
+    pprintf(pf, "DHCP configuration for %s:\n", state->netif->name);
+    pprintf(pf, "  State .................. : %s\n", statename[state->state]);
+    pprintf(pf, "  DHCP Server ............ : %a\n", &state->server_ip_addr);
+    pprintf(pf, "  IP Adress .............. : %a\n", &state->offered_ip_addr);
+    pprintf(pf, "  Subnet Mask ............ : %a\n", &state->offered_sn_mask);
+    pprintf(pf, "  Gateway Adress ......... : %a\n", &state->offered_gw_addr);
+    pprintf(pf, "  Broadcast Address ...... : %a\n", &state->offered_bc_addr);
+    pprintf(pf, "  Primary DNS Server ..... : %a\n", &state->offered_dns1_addr);
+    pprintf(pf, "  Secondary DNS Server ... : %a\n", &state->offered_dns2_addr);
+    pprintf(pf, "  Primary NTP Server ..... : %a\n", &state->offered_ntpserv1_addr);
+    pprintf(pf, "  Secondary NTP Server ... : %a\n", &state->offered_ntpserv2_addr);
+    pprintf(pf, "  Domain Name ............ : %s\n", state->offered_domain_name);
+    pprintf(pf, "  Lease Period ........... : %d seconds (%d left)\n", state->offered_t0_lease, state->offered_t0_lease - lease_age);
+    pprintf(pf, "  Renew Period ........... : %d seconds (%d left)\n", state->offered_t1_renew, state->offered_t1_renew - lease_age);
+    pprintf(pf, "  Rebind Period .......... : %d seconds (%d left)\n", state->offered_t2_rebind, state->offered_t2_rebind - lease_age);
+
+    if (state->next) pprintf(pf, "\n");
+    state = state->next;
+  }
+
+  return 0;
+}
+
+//
 // dhcp_handle_nak
 //
 
-static void dhcp_handle_nak(struct dhcp_state *state) 
+static void dhcp_handle_nak(struct dhcp_state *state)
 {
   int msecs = 10 * 1000;  
   mod_timer(&state->request_timeout_timer, ticks + msecs / MSECS_PER_TICK);
@@ -304,6 +345,7 @@ static void dhcp_handle_ack(struct dhcp_state *state)
   state->offered_bc_addr.addr = 0;
   state->offered_dns1_addr.addr = 0;
   state->offered_dns2_addr.addr = 0;
+  state->bind_time = time(NULL);
 
   option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_DHCP_LEASE_TIME);
   if (option_ptr != NULL)
@@ -373,6 +415,7 @@ static void dhcp_handle_ack(struct dhcp_state *state)
 
 void dhcp_init()
 {
+  register_proc_inode("dhcpstat", dhcpstat_proc, NULL);
 }
 
 //
@@ -687,7 +730,6 @@ err_t dhcp_renew(struct dhcp_state *state)
   result = dhcp_create_request(state);
   if (result == 0)
   {
-
     dhcp_option(state, DHCP_OPTION_DHCP_MESSAGE_TYPE, 1);
     dhcp_option_byte(state, DHCP_REQUEST);
 

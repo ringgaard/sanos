@@ -116,6 +116,7 @@ struct dhcp_state
   struct ip_addr offered_ntpserv2_addr;
   char offered_domain_name[256];
 
+  time_t bind_time;                       // Timestamp for start of lease
   unsigned long offered_t0_lease;	  // Lease period (in seconds)
   unsigned long offered_t1_renew;	  // Recommended renew time (usually 50% of lease period)
   unsigned long offered_t2_rebind;	  // Recommended rebind time (usually 66% of lease period)

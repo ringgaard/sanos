@@ -60,6 +60,7 @@ struct netif *netif_add(char *name, struct ip_addr *ipaddr, struct ip_addr *netm
   
   netif = kmalloc(sizeof(struct netif));
   if (!netif) return NULL;
+  memset(netif, 0, sizeof(struct netif));
 
   strcpy(netif->name, name);
   netif->input = ip_input;

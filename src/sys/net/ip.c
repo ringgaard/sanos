@@ -125,7 +125,6 @@ static err_t ip_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
   // Find route for packet
   if ((netif = ip_route(&iphdr->dest)) == NULL) 
   {
-
     kprintf("ip_forward: no forwarding route for %a found\n", &iphdr->dest);
     return -EROUTE;
   }

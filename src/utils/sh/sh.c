@@ -456,9 +456,37 @@ int cmd_ifconfig(int argc, char *argv[])
   struct ifcfg iflist[16];
   int n, i;
 
-  if (peb->hostname)       printf("Host Name .... : %s\n", peb->hostname);
-  if (peb->default_domain) printf("Domain Name .. : %s\n", peb->default_domain);
+  if (*peb->hostname)
+  {
+    printf("Host Name ............... : %s\n", peb->hostname);
+  }
 
+  if (*peb->default_domain) 
+  {
+    printf("Domain Name ............. : %s\n", peb->default_domain);
+  }
+
+  if (peb->primary_dns.s_addr != INADDR_ANY)
+  {
+    printf("Primary DNS Server ...... : %s\n", inet_ntoa(peb->primary_dns));
+  }
+
+  if (peb->secondary_dns.s_addr != INADDR_ANY)
+  {
+    printf("Secondary DNS Server .... : %s\n", inet_ntoa(peb->secondary_dns));
+  }
+
+  if (peb->ntp_server1.s_addr != INADDR_ANY)
+  {
+    printf("Primary NTP Server ...... : %s\n", inet_ntoa(peb->ntp_server1));
+  }
+
+  if (peb->ntp_server2.s_addr != INADDR_ANY)
+  {
+    printf("Secondary NTP Server .... : %s\n", inet_ntoa(peb->ntp_server2));
+  }
+
+  if (peb->primary_dns.s_addr != INADDR_ANY)
   sock = socket(AF_INET, SOCK_DGRAM, 0);
   if (sock < 0) sock;
 
@@ -469,19 +497,25 @@ int cmd_ifconfig(int argc, char *argv[])
     return n;
   }
 
-  for (i = 0; i < n; i++)
+  for (i = 0; i < n / (int) sizeof(struct ifcfg); i++)
   {
     struct sockaddr_in *addr = ((struct sockaddr_in *) &iflist[i].addr);
     struct sockaddr_in *gw = ((struct sockaddr_in *) &iflist[i].gw);
     struct sockaddr_in *mask = ((struct sockaddr_in *) &iflist[i].netmask);
     struct sockaddr_in *bcast = ((struct sockaddr_in *) &iflist[i].broadcast);
+    unsigned char *hwaddr = (unsigned char *) iflist[i].hwaddr;
 
-    printf("Network interface %s\n", iflist[i].name);
-    printf("  IP Address ......... : %a\n", inet_ntoa(addr->sin_addr));
-    printf("  Subnet Mask ........ : %a\n", inet_ntoa(mask->sin_addr));
-    printf("  Default Gateway .... : %a\n", inet_ntoa(gw->sin_addr));
-    printf("  Broadcast Address .. : %a\n", inet_ntoa(bcast->sin_addr));
-    //printf("  Physical Address ... : %a\n");
+    printf("\n");
+    printf("Network interface %s:\n", iflist[i].name);
+    printf("  IP Address ......... : %s\n", inet_ntoa(addr->sin_addr));
+    printf("  Subnet Mask ........ : %s\n", inet_ntoa(mask->sin_addr));
+    printf("  Default Gateway .... : %s\n", inet_ntoa(gw->sin_addr));
+    printf("  Broadcast Address .. : %s\n", inet_ntoa(bcast->sin_addr));
+
+    printf("  Physical Address ... : %02x:%02x:%02x:%02x:%02x:%02x\n",
+      hwaddr[0], hwaddr[1], hwaddr[2], 
+      hwaddr[3], hwaddr[4], hwaddr[5]);
+
     printf("  Flags .............. :");
     if (iflist[i].flags & IFCFG_UP) printf(" UP");
     if (iflist[i].flags & IFCFG_DHCP) printf(" DHCP");
