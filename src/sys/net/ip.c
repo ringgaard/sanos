@@ -239,7 +239,7 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
   // DHCP replies are sent to the IP adress that will be given to this
   // node (as recommended by RFC 1542 section 3.1.1, referred by RFC 2131).
 
-  if (IPH_PROTO(iphdr) == IP_PROTO_UDP &&
+  if (!netif && IPH_PROTO(iphdr) == IP_PROTO_UDP &&
       ((struct udp_hdr *)((char *) iphdr + IPH_HL(iphdr) * 4))->src == DHCP_SERVER_PORT) 
   {
     netif = inp;

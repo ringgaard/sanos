@@ -808,7 +808,6 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   initargs = get_property(config, "os", "initargs", "");
 
   //syslog(LOG_DEBUG, "exec %s(%s)\n", initpgm, initargs);
-
   rc = spawn(P_WAIT, initpgm, initargs, NULL);
   if (rc != 0) syslog(LOG_DEBUG, "Exitcode: %d\n", rc);
 

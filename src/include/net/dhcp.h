@@ -55,7 +55,7 @@
 struct dhcp_msg
 {
   unsigned char op;			  // Message opcode/type
-  unsigned char htype;			  // Hardware addr type (net/if_types.h)
+  unsigned char htype;			  // Hardware addr type
   unsigned char hlen;			  // Hardware addr length
   unsigned char hops;			  // Number of relay agent hops from client
   unsigned long xid;			  // Transaction ID

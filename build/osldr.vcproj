@@ -168,6 +168,15 @@
 				RelativePath="..\src\sys\osldr\osldr.c">
 			</File>
 			<File
+				RelativePath="..\src\sys\osldr\unzip.c">
+				<FileConfiguration
+					Name="SanOS|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCLCompilerTool"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\sys\osldr\video.c">
 			</File>
 			<File

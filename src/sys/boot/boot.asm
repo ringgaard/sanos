@@ -239,7 +239,7 @@ bootdrv	db	0
 ;
 
 bootmsg:
-	db	10, 13, 'Loading system', 0
+	db	13, 10, 'Loading system', 13, 10, 0
 
 ;
 ; Boot signature

@@ -1,0 +1,30 @@
+;
+; File list for sanos cd boot image
+;
+
+; Directories
+
+/bin
+/dev
+/proc
+/etc
+/mnt
+/usr
+
+; System files
+
+/bin/os.dll       \bin\os.dll
+
+; Drivers
+
+/bin/pcnet32.sys  \bin\pcnet32.sys
+/bin/ne2000.sys   \bin\ne2000.sys
+/bin/3c905c.sys   \bin\3c905c.sys
+/bin/rtl8139.sys  \bin\rtl8139.sys
+/bin/eepro100.sys \bin\eepro100.sys
+/bin/sis900.sys   \bin\sis900.sys
+
+; Configuration files
+
+/etc/krnl.ini     build\krnl.ini
+/etc/os.ini       build\oscd.ini

@@ -78,6 +78,8 @@ struct superblock
   blkno_t first_reserved_block;
   unsigned int reserved_blocks;
   unsigned int cache_buffers;
+  unsigned int compress_offset;
+  unsigned int compress_size;
 };
 
 struct groupdesc

@@ -324,6 +324,7 @@ src\                           Souce files
       boothd.c                 Boot Harddisk driver
       loadkrnl.c               Kernel loader
       osldr.c                  Operating system loader
+      unzip.c                  Decompression routines
       video.c                  Video functions
   utils\                       Utility application source files
     fdisk\                     Disk partitioning utility source files

@@ -119,7 +119,7 @@ printchar:
 
 	; Message strings
 bootmsg:
-	db	10, 13, 'Booting system from network', 0
+	db	10, 13, 'Booting system from network', 13, 10, 0
 
 	; Boot signature
 	times 	510-($-$$) db 0

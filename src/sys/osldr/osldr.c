@@ -68,6 +68,7 @@ char *krnlopts;                 // Kernel options
 char *initrd;                   // Initial RAM disk location in heap
 int initrd_size;                // Initial RAM disk size (in bytes)
 
+int unzip(void *src, unsigned long srclen, void *dst, unsigned long dstlen, char *heap, int heapsize);
 void load_kernel();
 
 void init_bootfd(int bootdrv);
@@ -100,13 +101,16 @@ void panic(char *msg)
   while (1);
 }
 
-char *alloc_heap(int numpages)
+char *check_heap(int numpages)
 {
-  char *p;
-
   // Check for out of memory
   if ((unsigned long) heap + numpages * PAGESIZE >= mem_end) panic("out of memory");
-  p = heap;
+  return heap;
+}
+
+char *alloc_heap(int numpages)
+{
+  char *p = check_heap(numpages);
 
   // Zero allocated pages
   memset(p, 0, numpages * PAGESIZE);
@@ -234,7 +238,29 @@ void copy_ramdisk(char *bootimg)
   initrd_size = (1 << super->log_block_size) * super->block_count;
   rdpages = PAGES(initrd_size);
   initrd = alloc_heap(rdpages);
-  memcpy(initrd, bootimg, initrd_size);
+
+  if (super->compress_size != 0)
+  {
+    char *zheap;
+    unsigned int zofs;
+    unsigned int zsize;
+
+    kprintf("Uncompressing boot image\n");
+
+    // Copy uncompressed part of image
+    memcpy(initrd, bootimg, super->compress_offset);
+
+    // Uncompress compressed part of image
+    zheap = check_heap(64 * K / PAGESIZE);
+    zofs = super->compress_offset;
+    zsize = super->compress_size;
+    panic("no unzip");
+    //unzip(bootimg + zofs, zsize, initrd + zofs, initrd_size - zofs, zheap, 64 * K / PAGESIZE);
+  }
+  else
+  {
+    memcpy(initrd, bootimg, initrd_size);
+  }
 
   // Map initial initial ram disk into syspages
   for (i = 0; i < rdpages; i++)
@@ -254,11 +280,11 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
   // Initialize video 
   init_video();
   //clear_screen();
-  //kprintf("OSLDR\n\n");
+  kprintf("OSLDR\n");
 
   // Determine size of RAM
   mem_end = memsize();
-  //kprintf("%d MB RAM\n", mem_end / M);
+  kprintf("%d MB RAM\n", mem_end / M);
 
   // Page allocation starts at 1MB
   heap = (char *) HEAP_START;

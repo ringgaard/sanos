@@ -206,8 +206,16 @@ static void __declspec(naked) sysentry(void)
 
     push    INTR_SYSENTER
 
+    // This is a hack to get around a bug in the vmware implementation of
+    // systenter. The es register is not preserved by sysenter. We just
+    // push the user mode data selector. This works because sysenter is
+    // always called from user mode.
     push    ds
+#if 0
     push    es
+#else
+    push    SEL_UDATA
+#endif
 
     push    edx
     push    eax
