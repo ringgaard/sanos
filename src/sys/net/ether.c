@@ -148,8 +148,9 @@ unsigned long ether_crc(int length, unsigned char *data)
     unsigned char current_octet = *data++;
     int bit;
     for (bit = 0; bit < 8; bit++, current_octet >>= 1)
-      crc = (crc << 1) ^
-        ((crc < 0) ^ (current_octet & 1) ? ETHERNET_POLYNOMIAL : 0);
+    {
+      crc = (crc << 1) ^ ((crc < 0) ^ (current_octet & 1) ? ETHERNET_POLYNOMIAL : 0);
+    }
   }
 
   return crc;
@@ -200,7 +201,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
     mcastaddr.addr[4] = ip4_addr3(ipaddr);
     mcastaddr.addr[5] = ip4_addr4(ipaddr);
     dest = &mcastaddr;
-  } 
+  }
   else 
   {
     if (ip_addr_maskcmp(ipaddr, &netif->ipaddr, &netif->netmask))
@@ -256,7 +257,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   ethhdr->type = htons(ETHTYPE_IP);
   
   err = dev_transmit((devno_t) netif->state, p);
-  if (err < 0) 
+  if (err < 0)
   {
     kprintf("ether: error %d sending packet\n", err);
     return err;

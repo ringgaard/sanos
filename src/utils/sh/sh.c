@@ -1106,11 +1106,18 @@ static void httpinit()
 {
   struct httpd_server *server;
   
-  hmodule_t hmod = load("httpd");
+  hmodule_t hmod;
   struct httpd_server *(*_httpd_initialize)(struct section *cfg); 
   struct httpd_context *(*_httpd_add_file_context)(struct httpd_server *server, char *alias, char *location, struct section *cfg);
   struct httpd_context *(*_httpd_add_resource_context)(struct httpd_server *server, char *alias, hmodule_t hmod, struct section *cfg);
   int (*_httpd_start)(struct httpd_server *server);
+
+  hmod = load("httpd");
+  if (!hmod)
+  {
+    printf("httpd not found\n");
+    return;
+  }
 
   _httpd_initialize = resolve(hmod, "httpd_initialize");
   _httpd_add_file_context = resolve(hmod, "httpd_add_file_context");

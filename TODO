@@ -197,7 +197,9 @@ CHANGES
 - File was marked as modified when using futime() with dfs. This was overwriting the mtime 
   for the inode when the file was closed. Now the inode is just marked dirty.
 
-- Floppy drive was not detected unless floppy disk was inserted. This problem has been fixed by
-  not probing for fdc version on driver init.
+- Floppy device was not detected unless floppy disk was inserted. This problem has been fixed
+  by delaying initialization of fdc until first use.
+
+- Added queue to loopback adapter
 
 
