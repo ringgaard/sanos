@@ -157,7 +157,7 @@ void *kmalloc(int size)
   b->mem = *(void **) addr;
   //b->elems--;
 
-  //  Return allocated chunk
+  // Return allocated chunk
   return addr;
 }
 

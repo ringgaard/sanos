@@ -219,8 +219,8 @@ void install_kernel()
   hfile = CreateFile(krnlfile, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
   size = GetFileSize(hfile, NULL);
 
-  mkdir("/os");
-  file = open("/os/krnl.dll", O_SPECIAL | (DFS_INODE_KERNEL << 24) | O_WRONLY);
+  mkdir("/bin");
+  file = open("/bin/krnl.dll", O_SPECIAL | (DFS_INODE_KERNEL << 24) | O_WRONLY);
   if (file == NULL) panic("error creating kernel file");
 
   ReadFile(hfile, buf, 4096, &count, NULL);

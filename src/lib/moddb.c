@@ -485,13 +485,14 @@ static int relocate_module(struct module *mod)
   offset = (unsigned long) mod->hmod - get_image_header(mod->hmod)->optional.image_base;
   if (offset == 0) return 0;
 
-  reloc = (struct image_base_relocation *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_BASERELOC);
-  if (!reloc) return 0;
   if (get_image_header(mod->hmod)->header.characteristics & IMAGE_FILE_RELOCS_STRIPPED) 
   {
     logmsg(mod->db, "relocation info missing for %s", mod->name);
     return -ENOEXEC;
   }
+
+  reloc = (struct image_base_relocation *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_BASERELOC);
+  if (!reloc) return 0;
 
   while (reloc->virtual_address != 0 || reloc->size_of_block != 0)
   {

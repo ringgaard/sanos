@@ -526,13 +526,13 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   usermods.protect_region = protect_region;
   usermods.log = logldr;
 
-  init_module_database(&usermods, "os.dll", hmod, get_property(config, "os", "libpath", "/os"), find_section(config, "modaliases"), 0);
+  init_module_database(&usermods, "os.dll", hmod, get_property(config, "os", "libpath", "/bin"), find_section(config, "modaliases"), 0);
 
   // Mount devices
   init_mount();
 
   // Load and execute init program
-  initpgm = get_property(config, "os", "initpgm", "/os/init.exe");
+  initpgm = get_property(config, "os", "initpgm", "/bin/init.exe");
   initargs = get_property(config, "os", "initargs", "");
 
   //syslog(LOG_DEBUG, "exec %s(%s)\n", initpgm, initargs);

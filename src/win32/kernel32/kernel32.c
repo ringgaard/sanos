@@ -863,7 +863,7 @@ UINT WINAPI GetSystemDirectoryA
 )
 {
   TRACE("GetSystemDirectoryA");
-  strcpy(lpBuffer, get_property(config, "win32", "sysdir", "c:\\os"));
+  strcpy(lpBuffer, get_property(config, "win32", "sysdir", "c:\\bin"));
   return strlen(lpBuffer);
 }
 
@@ -1029,7 +1029,7 @@ UINT WINAPI GetWindowsDirectoryA
 )
 {
   TRACE("GetWindowsDirectoryA");
-  strcpy(lpBuffer, get_property(config, "win32", "windir", "c:\\os"));
+  strcpy(lpBuffer, get_property(config, "win32", "windir", "c:\\bin"));
   return strlen(lpBuffer);
 }
 

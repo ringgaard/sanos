@@ -282,7 +282,7 @@ int dokernel(struct section *sect)
 
   // Get properties
   kernel = get_property(inst, sect->name, "kernel", "/setup/krnl.dll");
-  target = get_property(inst, sect->name, "target", "/mnt/os");
+  target = get_property(inst, sect->name, "target", "/mnt/bin");
 
   printf("Installing kernel %s\n", kernel);
 
@@ -380,14 +380,12 @@ int domkdirs(struct section *sect)
   prop = sect->properties;
   while (prop)
   {
-    if (strcmp(prop->name, "action") != 0)
-    {
-      dirname = prop->name;
-      printf("Creating directory %s\n", dirname);
+    dirname = prop->name;
+    printf("Creating directory %s\n", dirname);
 
-      rc = mkdir(dirname);
-      if (rc < 0) return rc;
-    }
+    rc = mkdir(dirname);
+    if (rc < 0) return rc;
+
     prop = prop->next;
   }
 
@@ -513,30 +511,27 @@ int docopy(struct section *sect)
   prop = sect->properties;
   while (prop)
   {
-    if (strcmp(prop->name, "action") != 0)
-    {
-      dstfn = prop->name;
-      srcfn = prop->value;
+    dstfn = prop->name;
+    srcfn = prop->value;
 
-      printf("Copying %s to %s\n", srcfn, dstfn);
-      
-      rc = stat(srcfn, &buf);
+    printf("Copying %s to %s\n", srcfn, dstfn);
+    
+    rc = stat(srcfn, &buf);
+    if (rc < 0) return rc;
+
+    if (buf.mode & FS_DIRECTORY)
+    {
+      printf("Creating directory %s\n", dstfn);
+      rc = mkdir(dstfn);
       if (rc < 0) return rc;
 
-      if (buf.mode & FS_DIRECTORY)
-      {
-        printf("Creating directory %s\n", dstfn);
-	rc = mkdir(dstfn);
-	if (rc < 0) return rc;
-
-        rc = copy_dir(srcfn, dstfn);
-        if (rc < 0) return rc;
-      }
-      else
-      {
-        rc = copy_file(srcfn, dstfn);
-        if (rc < 0) return rc;
-      }
+      rc = copy_dir(srcfn, dstfn);
+      if (rc < 0) return rc;
+    }
+    else
+    {
+      rc = copy_file(srcfn, dstfn);
+      if (rc < 0) return rc;
     }
 
     prop = prop->next;
@@ -565,20 +560,17 @@ int runscript(char *scriptname)
   while (prop)
   {
     char *action;
+    char *scriptname;
     int rc;
     struct section *scriptblock;
     
-    scriptblock = find_section(inst, prop->name);
+    action = prop->name;
+    scriptname = prop->value ? prop->value : prop->name;
+
+    scriptblock = find_section(inst, scriptname);
     if (!scriptblock)
     {
-      printf("Unable to find script block %s\n", prop->name);
-      return -EINVAL;
-    }
-    
-    action = find_property(scriptblock, "action");
-    if (!action)
-    {
-      printf("Action property missing in script block %s\n", prop->name);
+      printf("Unable to find script block %s\n", scriptname);
       return -EINVAL;
     }
 

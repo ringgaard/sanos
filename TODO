@@ -1,6 +1,11 @@
 TODO for sanos
 --------------
 
+- Add tags to page frame database to identify memory usage
+    - Replace flags and type with char *tag.
+
+- Remove safety pool code in pframe.c
+
 - Implement refcnt on objects
     - close objects when handle count reaches zero (close_object).
     - free objects when handle count and refcnt reaches zero (free_object).
@@ -32,6 +37,10 @@ TODO for sanos
 - Multicast filtering support in network drivers
 
 - Add sendmsg() and recvmsg() syscalls
+
+- Implement mremap() and use it in heap.c for realloc() of large blocks
+
+- Implement krealloc() in kmalloc.c
 
 - Implement iomux kernel syncronization object
     - Add struct ioobject to object.h
@@ -83,4 +92,5 @@ CHANGES
     - Add filename completion
 
 - Support for .exe applications in msvcrt.dll
- 
+
+- Script action moved to script section in setup.exe

@@ -361,7 +361,7 @@ void main(void *arg)
   if (halloc(&stderr->object) != 2) panic("unexpected stderr handle");
 
   // Load os.dll in user address space
-  imgbase = load_image_file("/os/os.dll", 1);
+  imgbase = load_image_file("/bin/os.dll", 1);
   if (!imgbase) panic("unable to load os.dll");
   imghdr = get_image_header(imgbase);
   stack_reserve = imghdr->optional.size_of_stack_reserve;
