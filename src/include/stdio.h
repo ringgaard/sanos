@@ -90,9 +90,9 @@ struct _iobuf
 
 typedef struct _iobuf FILE;
 
-#define stdin  ((FILE *) (gettib()->job->iob[0]))
-#define stdout ((FILE *) (gettib()->job->iob[1]))
-#define stderr ((FILE *) (gettib()->job->iob[2]))
+#define stdin   (&((FILE *) (gettib()->job->crtbase))[0])
+#define stdout  (&((FILE *) (gettib()->job->crtbase))[1])
+#define stderr  (&((FILE *) (gettib()->job->crtbase))[2])
 
 #define _IORD           0x0001
 #define _IOWR           0x0002

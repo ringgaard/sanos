@@ -124,6 +124,9 @@
 				RelativePath="..\src\include\conio.h">
 			</File>
 			<File
+				RelativePath="..\src\include\crtbase.h">
+			</File>
+			<File
 				RelativePath="..\src\include\ctype.h">
 			</File>
 			<File

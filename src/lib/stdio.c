@@ -37,23 +37,9 @@
 #include <string.h>
 #include <limits.h>
 #include <stdarg.h>
+#include <crtbase.h>
 
 int output(FILE *stream, const char *format, va_list args);
-
-char stdinbuf[BUFSIZ];
-
-FILE iob[3] = 
-{
-  // stdin
-  {stdinbuf, 0, stdinbuf, _IORD | _IOEXTBUF, 0, 0, BUFSIZ},
-  
-  // stdout
-  {NULL, 0, NULL, _IOWR | _IONBF, 1, 0, 0},
-  
-  // stderr
-  {NULL, 0, NULL, _IOWR | _IONBF, 2, 0, 0},
-};
-
 
 #if 0
 int vfprintf(handle_t f, const char *fmt, va_list args)
@@ -155,14 +141,18 @@ char *gets(char *buf)
 void init_stdio()
 {
   struct job *job = gettib()->job;
+  struct crtbase *crtbase = (struct crtbase *) job->crtbase;
 
-  iob[0].file = job->in;
-  iob[1].file = job->out;
-  iob[2].file = job->err;
+  crtbase->iob[0].file = job->in;
+  crtbase->iob[0].base = crtbase->iob[0].ptr = crtbase->stdinbuf;
+  crtbase->iob[0].flag = _IORD | _IOEXTBUF;
+  crtbase->iob[0].cnt = BUFSIZ;
 
-  job->iob[0] = &iob[0];
-  job->iob[1] = &iob[1];
-  job->iob[2] = &iob[2];
+  crtbase->iob[1].file = job->out;
+  crtbase->iob[1].flag = _IOWR | _IONBF;
+
+  crtbase->iob[2].file = job->err;
+  crtbase->iob[2].flag = _IOWR | _IONBF;
 }
 
 static void getbuf(FILE *stream)

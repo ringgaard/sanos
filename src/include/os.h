@@ -945,6 +945,8 @@ struct peb
 #define TERM_CONSOLE   1
 #define TERM_VT100     2
 
+#define CRTBASESIZE    (3 * 8 + 512)
+
 struct job
 {
   int threadcnt;        // Number of threads in job
@@ -959,7 +961,7 @@ struct job
   handle_t err;         // Standard error device
   int termtype;         // Terminal type
 
-  void *iob[3];         // Pointers to stdio std streams
+  char crtbase[CRTBASESIZE];
 };
 
 //

@@ -40,6 +40,7 @@
 #include <math.h>
 #include <limits.h>
 #include <os/version.h>
+#include <crtbase.h>
 
 #include <inifile.h>
 #include <httpd.h>
@@ -1596,12 +1597,33 @@ void shell()
   }
 }
 
+void redirect(handle_t h, int termtype)
+{
+  struct job *job = gettib()->job;
+  struct crtbase *crtbase = (struct crtbase *) job->crtbase;
+
+  job->in = h;
+  job->out = dup(h);
+  job->err = dup(h);
+  job->termtype = termtype;
+
+  crtbase->iob[0].file = job->in;
+  crtbase->iob[0].base = crtbase->iob[0].ptr = crtbase->stdinbuf;
+  crtbase->iob[0].flag = _IORD | _IOEXTBUF;
+  crtbase->iob[0].cnt = BUFSIZ;
+
+  crtbase->iob[1].file = job->out;
+  crtbase->iob[1].flag = _IOWR | _IONBF;
+
+  crtbase->iob[2].file = job->err;
+  crtbase->iob[2].flag = _IOWR | _IONBF;
+}
+
 void __stdcall ttyd(void *arg)
 {
   char *devname = (char *) arg;
   handle_t f;
   struct serial_config cfg;
-  struct job *job = gettib()->job;
 
   f = open(devname, O_RDWR | O_BINARY);
   if (f < 0) 
@@ -1619,12 +1641,9 @@ void __stdcall ttyd(void *arg)
 
   ioctl(f, IOCTL_SERIAL_SETCONFIG, &cfg, sizeof(struct serial_config));
 
-  syslog(LOG_INFO, "sh: starting shell on device %s\n", devname);
+  redirect(f, TERM_VT100);
 
-  job->in = f;
-  job->out = dup(f);
-  job->err = dup(f);
-  job->termtype = TERM_VT100;
+  syslog(LOG_INFO, "sh: starting shell on device %s\n", devname);
 
   shell();
 }
@@ -1632,12 +1651,8 @@ void __stdcall ttyd(void *arg)
 void __stdcall telnet_task(void *arg)
 {
   int s = (int) arg;
-  struct job *job = gettib()->job;
 
-  job->in = s;
-  job->out = dup(s);
-  job->err = dup(s);
-  job->termtype = TERM_VT100;
+  redirect(s, TERM_VT100);
 
 #ifdef DEBUG
   printf("%s version %s (Debug Build %s %s)\n", OSNAME, OSVERSION, __DATE__, __TIME__);
