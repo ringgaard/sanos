@@ -98,6 +98,58 @@ struct nic
   unsigned short eeprom[EEPROM_SIZE];   // EEPROM contents
 };
 
+void clear_statistics(struct nic *nic);
+void update_statistics(struct nic *nic);
+void update_statistics(struct nic *nic);
+int nicstat_proc(struct proc_file *pf, void *arg);
+
+int nic_find_mii_phy(struct nic *nic);
+void nic_send_mii_phy_preamble(struct nic *nic);
+void nic_write_mii_phy(struct nic *nic, unsigned short reg, unsigned short value);
+int nic_read_mii_phy(struct nic *nic, unsigned short reg);
+
+int nic_eeprom_busy(struct nic *nic);
+int nic_read_eeprom(struct nic *nic, unsigned short addr);
+
+int nic_transmit(struct dev *dev, struct pbuf *p);
+int nic_ioctl(struct dev *dev, int cmd, void *args, size_t size);
+int nic_attach(struct dev *dev, struct eth_addr *hwaddr);
+int nic_detach(struct dev *dev);
+void nic_up_complete(struct nic *nic);
+void nic_down_complete(struct nic *nic);
+void nic_host_error(struct nic *nic);
+void nic_tx_complete(struct nic *nic);
+void nic_dpc(void *arg);
+void nic_handler(struct context *ctxt, void *arg);
+
+int nic_try_mii(struct nic *nic, unsigned short options);
+int nic_negotiate_link(struct nic *nic, unsigned short options);
+int nic_program_mii(struct nic *nic, int connector);
+int nic_initialize_adapter(struct nic *nic);
+int nic_get_link_speed(struct nic *nic);
+int nic_restart_receiver(struct nic *nic);
+int nic_restart_transmitter(struct nic *nic);
+int nic_flow_control(struct nic *nic);
+int nic_configure_mii(struct nic *nic, unsigned short media_options);
+int nic_check_mii_configuration(struct nic *nic, unsigned short media_options);
+int nic_check_mii_auto_negotiation_status(struct nic *nic);
+int nic_check_dc_converter(struct nic *nic, int enabled);
+int nic_setup_connector(struct nic *nic, int connector);
+int nic_setup_media(struct nic *nic);
+int nic_setup_buffers(struct nic *nic);
+
+struct driver nic_driver =
+{
+  "3c905c",
+  DEV_TYPE_PACKET,
+  nic_ioctl,
+  NULL,
+  NULL,
+  nic_attach,
+  nic_detach,
+  nic_transmit
+};
+
 static void dump_dump_status(unsigned short status)
 {
   kprintf("nic: Status: ");
@@ -238,6 +290,49 @@ int nicstat_proc(struct proc_file *pf, void *arg)
   pprintf(pf, "Allignment errors.... : %ul\n", nic->stat.rx_alignment_error);
   pprintf(pf, "CRC errors........... : %ul\n", nic->stat.rx_bad_crc_error);
   pprintf(pf, "Oversized frames..... : %ul\n", nic->stat.rx_oversize_error);
+
+  return 0;
+}
+
+int nic_find_mii_phy(struct nic *nic)
+{
+  unsigned short media_options;
+  unsigned short phy_management;
+  int i;
+
+  // Read the MEDIA OPTIONS to see what connectors are available
+  select_window(nic, 3);
+  media_options = _inpw(nic->iobase + MEDIA_OPTIONS);
+
+  if ((media_options & MEDIA_OPTIONS_MII_AVAILABLE) ||
+      (media_options & MEDIA_OPTIONS_100BASET4_AVAILABLE))
+  {  
+    //
+    // Drop everything, so we are not driving the data, and run the
+    // clock through 32 cycles in case the PHY is trying to tell us
+    // something. Then read the data line, since the PHY's pull-up
+    // will read as a 1 if it's present.
+    //
+    select_window(nic, 4);
+    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+
+    for (i = 0; i < 32; i++) 
+    {
+      usleep(1);
+      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
+
+      usleep(1);
+      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+
+    }
+
+    phy_management = _inpw(nic->iobase + PHYSICAL_MANAGEMENT);
+
+    if (phy_management & PHY_DATA1)
+      return 0;
+    else
+      return -EIO;
+  }
 
   return 0;
 }
@@ -793,122 +888,161 @@ void nic_handler(struct context *ctxt, void *arg)
   queue_irq_dpc(&nic->dpc, nic_dpc, nic);
 }
 
-struct driver nic_driver =
+int nic_try_mii(struct nic *nic, unsigned short options)
 {
-  "3c905c",
-  DEV_TYPE_PACKET,
-  nic_ioctl,
-  NULL,
-  NULL,
-  nic_attach,
-  nic_detach,
-  nic_transmit
-};
+  int phy_status;
 
-int nic_negotiate_link(struct nic *nic, unsigned short options_available)
-{
-  unsigned long internal_config;
-  int connector;
-  int control;
-  int status;
-  int anar;
-  int anlpar;
-  int i;
-  unsigned short mac_control;
+  // First see if there's anything connected to the MII
+  if (nic_find_mii_phy(nic) < 0) return -ENODEV;
 
-  select_window(nic, 3);
-  internal_config = _inpd(nic->iobase + INTERNAL_CONFIG);
-  connector = (internal_config & INTERNAL_CONFIG_TRANSCEIVER_MASK) >> INTERNAL_CONFIG_TRANSCEIVER_SHIFT;
+  // Now we can read the status and try to figure out what's out there.
+  phy_status = nic_read_mii_phy(nic, MII_PHY_STATUS);
+  if (phy_status < 0) return phy_status;
 
-  if (connector != CONNECTOR_AUTONEGOTIATION)
+  if ((phy_status & MII_STATUS_AUTO) && (phy_status & MII_STATUS_EXTENDED)) 
   {
-    kprintf("nic: not configured for auto-negotiate, connector %d\n", connector);
+    //  If it is capable of auto negotiation, see if it has been done already.
+    kprintf("nic: capable of autonegotiation\n");
+
+    // Check the current MII auto-negotiation state and see if we need to
+    // start auto-neg over.
+ 
+    if (nic_check_mii_configuration(nic, options) < 0) return -ENODEV;
+
+    // See if link is up...
+    phy_status = nic_read_mii_phy(nic, MII_PHY_STATUS);
+    if (phy_status < 0) return phy_status;
+
+    if (phy_status & MII_STATUS_LINK_UP) 
+    {
+      if (nic_get_link_speed(nic) < 0) return -ENODEV;
+      return 0;
+    } 
+    else 
+    {
+      if (phy_status & MII_STATUS_100MB_MASK) 
+	nic->linkspeed = 100;
+      else
+	nic->linkspeed = 10;
+
+      return 0;
+    }
+  }
+
+  return -ENODEV;
+}
+
+int nic_negotiate_link(struct nic *nic, unsigned short options)
+{
+  nic->connector = CONNECTOR_UNKNOWN;
+
+  // Try 100MB Connectors
+  if ((options & MEDIA_OPTIONS_100BASETX_AVAILABLE) ||
+      (options & MEDIA_OPTIONS_10BASET_AVAILABLE) ||
+      (options & MEDIA_OPTIONS_MII_AVAILABLE)) 
+  {
+    // For 10Base-T and 100Base-TX, select autonegotiation instead of autoselect before calling trymii
+    if ((options & MEDIA_OPTIONS_100BASETX_AVAILABLE) || (options & MEDIA_OPTIONS_10BASET_AVAILABLE))
+      nic->connector = CONNECTOR_AUTONEGOTIATION;
+    else
+      nic->connector = CONNECTOR_MII;
+
+    if (nic_try_mii(nic, options) < 0) nic->connector = CONNECTOR_UNKNOWN;
+  }
+
+  // Transceiver available is 100Base-FX
+  if ((options & MEDIA_OPTIONS_100BASEFX_AVAILABLE) && nic->connector == CONNECTOR_UNKNOWN) 
+  {
+    //TODO: try linkbeat
+    nic->connector = CONNECTOR_100BASEFX;
+    nic->linkspeed = 100;
+  }
+
+  // Transceiver available is 10AUI
+  if ((options & MEDIA_OPTIONS_10AUI_AVAILABLE) && nic->connector == CONNECTOR_UNKNOWN)
+  {
+    nic_setup_connector(nic, CONNECTOR_10AUI);
+    //TODO: try test packet
+  }
+
+  // Transceiver available is 10Base-2
+  if ((options & MEDIA_OPTIONS_10BASE2_AVAILABLE) && nic->connector == CONNECTOR_UNKNOWN)
+  {
+    nic_setup_connector(nic, CONNECTOR_10BASE2);
+    //TODO: try loopback packet
+    execute_command(nic, CMD_DISABLE_DC_CONVERTER, 0);
+    nic_check_dc_converter(nic, 0);
+  }
+
+  // Nothing left to try!
+  if (nic->connector == CONNECTOR_UNKNOWN) 
+  {
+    kprintf("nic: no connector found\n");
     nic->connector = CONNECTOR_10BASET;
-    nic->fullduplex = 0;
+    nic->linkspeed = 10;
+    return -ENODEV;
+  }
+
+  nic_setup_connector(nic, nic->connector);
+  return 0;
+}
+
+int nic_program_mii(struct nic *nic, int connector)
+{
+  int phy_control;
+  int phy_status;
+  unsigned short mii_type;
+
+  // First see if there's anything connected to the MII
+  if (!nic_find_mii_phy(nic) < 0) return -ENODEV;
+
+  phy_control = nic_read_mii_phy(nic, MII_PHY_CONTROL);
+  if (phy_control < 0) return phy_control;
+
+  phy_status = nic_read_mii_phy(nic, MII_PHY_STATUS);
+  if (phy_status < 0) return phy_status;
+
+  // Reads the miiSelect field in EEPROM. Program MII as the default.
+  mii_type = nic->eeprom[EEPROM_SOFTWARE_INFO3];
+
+  // If an override is present AND the transceiver type is available
+  // on the card, that type will be used.
+  //rc = nic_mii_media_override(nic, phy_status, &mii_type);
+  //if (rc < 0) return rc;
+
+  // If full duplex selected, set it in PhyControl.
+  if (nic->fullduplex)
+    phy_control |= MII_CONTROL_FULL_DUPLEX;
+  else
+    phy_control &= ~MII_CONTROL_FULL_DUPLEX;
+
+  phy_control &= ~MII_CONTROL_ENABLE_AUTO;
+
+  if (((mii_type & MIITXTYPE_MASK) == MIISELECT_100BTX) ||
+      ((mii_type & MIITXTYPE_MASK) == MIISELECT_100BTX_ANE)) 
+  {
+    phy_control |= MII_CONTROL_100MB;
+    nic_write_mii_phy(nic, MII_PHY_CONTROL, (unsigned short) phy_control);
+    sleep(600);
+    nic->linkspeed = 100;
+    return 0;
+  }
+  else if (((mii_type & MIITXTYPE_MASK ) == MIISELECT_10BT) ||
+           ((mii_type & MIITXTYPE_MASK ) == MIISELECT_10BT_ANE)) 
+  {
+    phy_control &= ~MII_CONTROL_100MB;
+    nic_write_mii_phy(nic, MII_PHY_CONTROL, (unsigned short) phy_control);
+    sleep(600);
     nic->linkspeed = 10;
     return 0;
   }
 
-  status = nic_read_mii_phy(nic, MII_PHY_STATUS);
-  if (status < 0)
-  {
-    kprintf("nic: mii not responding\n");
-    return -EIO;
-  }
-
-  control = nic_read_mii_phy(nic, MII_PHY_CONTROL);
-  anar = nic_read_mii_phy(nic, MII_PHY_ANAR);
-
-  control |= MII_CONTROL_ENABLE_AUTO | MII_CONTROL_START_AUTO;
-
-  nic_write_mii_phy(nic, MII_PHY_ANAR, (unsigned short) anar);
-  nic_write_mii_phy(nic, MII_PHY_CONTROL, (unsigned short) control);
-
-  status = nic_read_mii_phy(nic, MII_PHY_STATUS);
-  if (!(status & MII_STATUS_AUTO_DONE))
-  {
-    for (i = 0; i < 30; i++)
-    {
-      sleep(100);
-      status = nic_read_mii_phy(nic, MII_PHY_STATUS);
-      if (status & MII_STATUS_AUTO_DONE) break;
-    }
-
-    if (!(status & MII_STATUS_AUTO_DONE))
-    {
-      kprintf("nic: timeout wait for auto-negotiation to complete\n");
-      return -ETIMEOUT;
-    }
-  }
-
-  anar = nic_read_mii_phy(nic, MII_PHY_ANAR);
-  anlpar = nic_read_mii_phy(nic, MII_PHY_ANLPAR);
-
-  if ((anar & MII_ANAR_100TXFD) && (anlpar & MII_ANLPAR_100TXFD))
-  {
-    nic->connector = CONNECTOR_100BASETX;
-    nic->fullduplex = 1;
-    nic->linkspeed = 100;
-  }
-  else if ((anar & MII_ANAR_100TX) && (anlpar & MII_ANLPAR_100TX))
-  {
-    nic->connector = CONNECTOR_100BASETX;
-    nic->fullduplex = 0;
-    nic->linkspeed = 100;
-  }
-  else if ((anar & MII_ANAR_10TFD) && (anlpar & MII_ANLPAR_10TFD))
-  {
-    nic->connector = CONNECTOR_10BASET;
-    nic->fullduplex = 1;
-    nic->linkspeed = 10;
-  }
-  else if ((anar & MII_ANAR_10T) && (anlpar & MII_ANLPAR_10T))
-  {
-    nic->connector = CONNECTOR_10BASET;
-    nic->fullduplex = 0;
-    nic->linkspeed = 10;
-  }
-  else
-  {
-    kprintf("nic: unable to determine negotiated link\n");
-    return -EIO;
-  }
-
-  if (nic->fullduplex)
-  {
-    select_window(nic, 3);
-    mac_control = _inpw(nic->iobase + MAC_CONTROL);
-    mac_control |= MAC_CONTROL_FULL_DUPLEX_ENABLE;
-    //mac_control |=  MAC_CONTROL_FLOW_CONTROL_ENABLE;
-    _outpw(nic->iobase + MAC_CONTROL, mac_control);
-  }
+  phy_control &= ~MII_CONTROL_100MB;
+  nic_write_mii_phy(nic, MII_PHY_CONTROL, (unsigned short) phy_control);
+  sleep(600);
+  nic->linkspeed = 10;
 
   return 0;
-}
-
-int nic_program_mmi(struct nic *nic, int connector)
-{
-  return -ENOSYS;
 }
 
 int nic_initialize_adapter(struct nic *nic)
@@ -979,33 +1113,27 @@ int nic_get_link_speed(struct nic *nic)
 
   if ((phy_anar & MII_ANAR_100TXFD) && (phy_anlpar & MII_ANLPAR_100TXFD)) 
   {
-    //pAdapter->Hardware.MIIPhyUsed = MII_100TXFD;
     nic->linkspeed = 100;
     nic->fullduplex = 1;
   }
   else if ((phy_anar & MII_ANAR_100TX) && (phy_anlpar & MII_ANLPAR_100TX)) 
   {
-    //pAdapter->Hardware.MIIPhyUsed = MII_100TX ;
     nic->linkspeed = 100;
     nic->fullduplex = 0;
   }
   else if ((phy_anar & MII_ANAR_10TFD) && (phy_anlpar & MII_ANLPAR_10TFD)) 
   {
-    //pAdapter->Hardware.MIIPhyUsed = MII_10TFD ;
     nic->linkspeed = 10;
     nic->fullduplex = 1;
   }
   else if ((phy_anar & MII_ANAR_10T) && (phy_anlpar & MII_ANLPAR_10T)) 
   {
-    //pAdapter->Hardware.MIIPhyUsed = MII_10T;
     nic->linkspeed = 10;
     nic->fullduplex = 0;
   }
   else if (!(phy_aner & MII_ANER_LPANABLE))
   {
     // Link partner is not capable of auto-negotiation. Fall back to 10HD.
-    
-    //pAdapter->Hardware.MIIPhyUsed = MII_10T ;
     nic->linkspeed = 10;
     nic->fullduplex = 0;
   }
@@ -1100,23 +1228,100 @@ int nic_flow_control(struct nic *nic)
 
 int nic_configure_mii(struct nic *nic, unsigned short media_options)
 {
-  return -ENOSYS;
+  int phy_control;
+  int phy_anar;
+  int phy_status;
+  unsigned long timeout;
+
+  phy_control = nic_read_mii_phy(nic, MII_PHY_CONTROL);
+  if (phy_control < 0) return phy_control;
+
+  phy_anar = nic_read_mii_phy(nic, MII_PHY_ANAR);
+  if (phy_anar < 0) return phy_anar;
+
+  // Set up speed and duplex settings in MII Control and ANAR register.
+  phy_anar &= ~(MII_ANAR_100TXFD | MII_ANAR_100TX  | MII_ANAR_10TFD  | MII_ANAR_10T);
+
+  // Set up duplex.
+  if (nic->fullduplex)
+    phy_control |= MII_CONTROL_FULL_DUPLEX;
+  else
+    phy_control &= ~(MII_CONTROL_FULL_DUPLEX);
+
+  // Set up flow control.
+  if (nic->flowcontrol)
+    phy_anar |= MII_ANAR_FLOWCONTROL;
+  else
+    phy_anar &= ~(MII_ANAR_FLOWCONTROL);
+
+  //
+  // Set up the media options. For duplex settings, if we're set to auto-select
+  // then enable both half and full-duplex settings. Otherwise, go by what's
+  // been enabled for duplex mode.
+  //
+  
+  if (media_options & MEDIA_OPTIONS_100BASETX_AVAILABLE)
+  {
+    if (nic->autoselect)
+      phy_anar |= (MII_ANAR_100TXFD | MII_ANAR_100TX);
+    else if (nic->fullduplex)
+      phy_anar |= MII_ANAR_100TXFD;
+    else
+      phy_anar |= MII_ANAR_100TX;
+  }
+
+  if (media_options & MEDIA_OPTIONS_10BASET_AVAILABLE)
+  {
+    if (nic->autoselect)
+      phy_anar |= (MII_ANAR_10TFD | MII_ANAR_10T);
+    else if (nic->fullduplex)
+      phy_anar |= MII_ANAR_10TFD;
+    else
+      phy_anar |= MII_ANAR_10T;
+
+  }
+
+  // Enable and start auto-negotiation
+  phy_control |= (MII_CONTROL_ENABLE_AUTO | MII_CONTROL_START_AUTO);
+
+  // Write the MII registers back.
+  nic_write_mii_phy(nic, MII_PHY_ANAR, (unsigned short) phy_anar); 
+  nic_write_mii_phy(nic, MII_PHY_CONTROL, (unsigned short) phy_control); 
+
+  // Wait for auto-negotiation to finish.
+  phy_status = nic_read_mii_phy(nic, MII_PHY_STATUS);
+  if (phy_status < 0) return phy_status;
+  usleep(1000);
+
+  if (!(phy_status & MII_STATUS_AUTO_DONE))
+  {
+    timeout = ticks + 3 * TICKS_PER_SEC;
+    while (1)
+    {
+      phy_status = nic_read_mii_phy(nic, MII_PHY_STATUS);
+      if (phy_status & MII_STATUS_AUTO_DONE) break;
+      if (time_after(ticks, timeout))
+      {
+	kprintf("nic: timeout waiting for auto-negotiation to finish\n");
+	return -ETIMEOUT;
+      }
+      sleep(10);
+    }
+
+  }
+
+  return 0;
 }
 
 int nic_check_mii_configuration(struct nic *nic, unsigned short media_options)
 {
-#if 0
   int phy_control;
   int phy_status;
   int phy_anar;
-  int temp_anar;
+  int new_anar;
   int rc;
 
-  //
-  // Check to see if auto-negotiation has completed. Check the results
-  // in the control and status registers.
-  //
-
+  // Check to see if auto-negotiation has completed.
   phy_control = nic_read_mii_phy(nic, MII_PHY_CONTROL);
   if (phy_control < 0) return phy_control;
 
@@ -1143,79 +1348,122 @@ int nic_check_mii_configuration(struct nic *nic, unsigned short media_options)
   // sure that the ANAR is set properly based on the media options defined.
   //
   
-  temp_anar = 0;
+  new_anar = 0;
   if (media_options & MEDIA_OPTIONS_100BASETX_AVAILABLE) 
   {
-    if (pAdapter->Hardware.AutoSelect) 
-    {
-	    tempAnar |= MII_ANAR_100TXFD | MII_ANAR_100TX;
-    }
-    else 
-    {
-	    if (pAdapter->Hardware.FullDuplexEnable)
-		    tempAnar |= MII_ANAR_100TXFD;
-	    else
-		    tempAnar |= MII_ANAR_100TX;
-    }
+    if (nic->autoselect) 
+      new_anar |= MII_ANAR_10TFD | MII_ANAR_10T;
+    else if (nic->fullduplex)
+      new_anar |= MII_ANAR_100TXFD;
+    else
+      new_anar |= MII_ANAR_100TX;
   }
 
-  if (MediaOptions & MEDIA_OPTIONS_10BASET_AVAILABLE) 
+  if (media_options & MEDIA_OPTIONS_10BASET_AVAILABLE) 
   {
-    if (pAdapter->Hardware.AutoSelect)
-	    tempAnar |= MII_ANAR_10TFD | MII_ANAR_10T;
-    else 
-    {
-	    if (pAdapter->Hardware.FullDuplexEnable)
-		    tempAnar |= MII_ANAR_10TFD;
-	    else
-		    tempAnar |= MII_ANAR_10T;
-    }
+    if (nic->autoselect) 
+      new_anar |= MII_ANAR_100TXFD | MII_ANAR_100TX;
+    else if (nic->fullduplex)
+      new_anar |= MII_ANAR_10TFD;
+    else
+      new_anar |= MII_ANAR_10T;
   }
 
-  if ( pAdapter->Hardware.FullDuplexEnable && pAdapter->Hardware.FlowControlSupported ) tempAnar |= MII_ANAR_FLOWCONTROL;
+  if (nic->fullduplex && nic->flowcontrol) new_anar |= MII_ANAR_FLOWCONTROL;
 
-  if ((PhyAnar & MII_ANAR_MEDIA_MASK) == tempAnar) 
-  {
-    //
-    // The negotiated configuration hasn't changed.
-    // So, return and don't restart auto-negotiation.
-    //
-    return TRUE;
-  }
+  // If the negotiated configuration hasn't changed return and don't restart auto-negotiation.
+  if ((phy_anar & MII_ANAR_MEDIA_MASK) == new_anar) return 0;
 
-  //
   // Check the media settings.
-  //
-  if (MediaOptions & MEDIA_OPTIONS_100BASETX_AVAILABLE) 
+  if (media_options & MEDIA_OPTIONS_100BASETX_AVAILABLE) 
   {
-    //
     // Check 100BaseTX settings.
-    //
-    if ((PhyAnar & MII_ANAR_MEDIA_100_MASK) != (tempAnar & MII_ANAR_MEDIA_100_MASK)) {
-    DBGPRINT_INITIALIZE(("CheckMIIConfiguration: Re-Initiating autonegotiation...\n"));
-	    return ConfigureMII(pAdapter,MediaOptions);
+    if ((phy_anar & MII_ANAR_MEDIA_100_MASK) != (new_anar & MII_ANAR_MEDIA_100_MASK)) 
+    {
+      return nic_configure_mii(nic, media_options);
     }
   }
   
-  if (MediaOptions & MEDIA_OPTIONS_10BASET_AVAILABLE) 
+  if (media_options & MEDIA_OPTIONS_10BASET_AVAILABLE) 
   {
-    //
     // Check 10BaseT settings.
-    //
-    if ((PhyAnar & MII_ANAR_MEDIA_10_MASK) != (tempAnar & MII_ANAR_MEDIA_10_MASK)) {
-    DBGPRINT_INITIALIZE(("CheckMIIConfiguration: Re-Initiating autonegotiation...\n"));
-	    return ConfigureMII(pAdapter,MediaOptions);
+    if ((phy_anar & MII_ANAR_MEDIA_10_MASK) != (new_anar & MII_ANAR_MEDIA_10_MASK)) 
+    {
+      return nic_configure_mii(nic, media_options);
     }
   }
 
-  return TRUE;
-#endif
-  return -ENOSYS;
+  return 0;
+}
+
+int nic_check_mii_auto_negotiation_status(struct nic *nic)
+{
+  int phy_status;
+  int phy_anar;
+  int phy_anlpar;
+
+  // Check to see if auto-negotiation has completed.
+  phy_status = nic_read_mii_phy(nic, MII_PHY_STATUS);
+  if (phy_status < 0) return phy_status;
+
+  // If we have a valid link, so get out!
+  if (phy_status & MII_STATUS_LINK_UP) return 0;
+
+  //
+  // Check to see why auto-negotiation or parallel detection has failed. We'll do this
+  // by comparing the advertisement registers between the NIC and the link partner.
+  //
+
+  phy_anar = nic_read_mii_phy(nic, MII_PHY_ANAR);
+  if (phy_anar < 0) return phy_anar;
+
+  phy_anlpar = nic_read_mii_phy(nic, MII_PHY_ANLPAR);
+  if (phy_anlpar < 0) return phy_anlpar;
+
+  //
+  // Now, compare what was advertised between the NIC and it's link partner.
+  // If the media bits don't match, then write an error log entry.
+  //
+  if ((phy_anar & MII_ANAR_MEDIA_MASK) != (phy_anlpar & MII_ANAR_MEDIA_MASK))
+  {
+    kprintf("nic: incompatible configuration\n");
+    return -EINVAL;
+  }
+
+  return 0;
+}
+
+int nic_check_dc_converter(struct nic *nic, int enabled)
+{
+  unsigned long timeout;
+  unsigned short media_status;
+
+  media_status = _inpw(nic->iobase + MEDIA_STATUS);
+  usleep(1000);
+
+  if (enabled && !(media_status & MEDIA_STATUS_DC_CONVERTER_ENABLED) ||
+      !enabled && (media_status & MEDIA_STATUS_DC_CONVERTER_ENABLED))
+  {
+    timeout = ticks + 3; // 30 ms
+    while (1)
+    {
+      media_status = _inpw(nic->iobase + MEDIA_STATUS);
+      if (enabled && (media_status & MEDIA_STATUS_DC_CONVERTER_ENABLED)) break;
+      if (!enabled && !(media_status & MEDIA_STATUS_DC_CONVERTER_ENABLED)) break;
+      if (time_after(ticks, timeout))
+      {
+	kprintf("nic: timeout waiting for dc converter to go %s\n", enabled ? "on" : "off");
+	return -ETIMEOUT;
+      }
+      sleep(10);
+    }
+  }
+
+  return 0;
 }
 
 int nic_setup_connector(struct nic *nic, int connector)
 {
-#if 0
   unsigned long internal_config;
   unsigned long old_internal_config;
   unsigned short media_status;
@@ -1226,7 +1474,7 @@ int nic_setup_connector(struct nic *nic, int connector)
   old_internal_config = internal_config;
 
   // Program the MII registers if forcing the configuration to 10/100BaseT.
-  if (connector == CONNECTOR_10BASET) || connector == CONNECTOR_100BASETX)
+  if (connector == CONNECTOR_10BASET || connector == CONNECTOR_100BASETX)
   {
     // Clear transceiver type and change to new transceiver type.
     internal_config &= ~(INTERNAL_CONFIG_TRANSCEIVER_MASK);
@@ -1240,11 +1488,10 @@ int nic_setup_connector(struct nic *nic, int connector)
     }
 
     // Force the MII registers to the correct settings.
-    if (nic_check_mii_configuration(nic, (unsigned short) (connector == CONNECTOR_100BASETX ? MEDIA_OPTIONS_100BASETX_AVAILABLE : MEDIA_OPTIONS_10BASET_AVAILABLE) < 0) 
+    if (nic_check_mii_configuration(nic, (unsigned short) (connector == CONNECTOR_100BASETX ? MEDIA_OPTIONS_100BASETX_AVAILABLE : MEDIA_OPTIONS_10BASET_AVAILABLE)) < 0) 
     {
       // If the forced configuration didn't work, check the results and see why.
-      nic_check_mii__auto_negotiation_status(nic);
-      return 0;
+      return nic_check_mii_auto_negotiation_status(nic);
     }
   }
   else 
@@ -1274,40 +1521,36 @@ int nic_setup_connector(struct nic *nic, int connector)
   if (connector == CONNECTOR_10AUI) media_status |= MEDIA_STATUS_SQE_STATISTICS_ENABLE;
 
   if (connector == CONNECTOR_AUTONEGOTIATION)
-    MediaStatus |= MEDIA_STATUS_LINK_BEAT_ENABLE;
+    media_status |= MEDIA_STATUS_LINK_BEAT_ENABLE;
   else 
   {
     if (connector == CONNECTOR_10BASET || connector == CONNECTOR_100BASETX || connector == CONNECTOR_100BASEFX)
     {
-      if (nic->eeprom[EEPROM_SOFTWARE_INFO1] & 
-	    if (!pAdapter->Hardware.LinkBeatDisable)
-		    MediaStatus |= MEDIA_STATUS_LINK_BEAT_ENABLE;
+      if (!(nic->eeprom[EEPROM_SOFTWARE_INFO1] & LINK_BEAT_DISABLE))
+      {
+        media_status |= MEDIA_STATUS_LINK_BEAT_ENABLE;
+      }
     }
   }
-  NIC_WRITE_PORT_USHORT(pAdapter, MEDIA_STATUS_REGISTER, MediaStatus);
 
-  DBGPRINT_INITIALIZE((
-	  "tc90x_SetupConnector: MediaStatus = %x \n",MediaStatus));
+  _outpw(nic->iobase + MEDIA_STATUS, media_status);
+
   //
   // If configured for coax we must start the internal transceiver.
   // If not, we stop it (in case the configuration changed across a
   // warm boot).
   //
-  if (NewConnector == CONNECTOR_10BASE2) {
-	  NIC_COMMAND(pAdapter, COMMAND_ENABLE_DC_CONVERTER);
-	  //
-	  // Check if DC converter has been enabled
-	  //
-	  tc90x_CheckDCConverter(pAdapter, TRUE);
+  if (connector == CONNECTOR_10BASE2) 
+  {
+    execute_command(nic, CMD_ENABLE_DC_CONVERTER, 0);
+    nic_check_dc_converter(nic, 1);
   }
-  else {
-	  NIC_COMMAND(pAdapter, COMMAND_DISABLE_DC_CONVERTER);
-	  //
-	  // Check if DC converter has been disabled
-	  //
-	  tc90x_CheckDCConverter(pAdapter, FALSE);
+  else 
+  {
+    execute_command(nic, CMD_DISABLE_DC_CONVERTER, 0);
+    nic_check_dc_converter(nic, 0);
   }
-#endif
+
   return 0;
 }
 
@@ -1367,7 +1610,7 @@ int nic_setup_media(struct nic *nic)
     // set up even in the non-autoselect case
     if (nic->connector == CONNECTOR_MII)
     {
-      nic_program_mmi(nic, CONNECTOR_MII);
+      nic_program_mii(nic, CONNECTOR_MII);
     }
     else 
     {
@@ -1430,6 +1673,129 @@ int nic_setup_media(struct nic *nic)
   return 0;
 }
 
+int nic_software_work(struct nic *nic)
+{
+  unsigned long dma_control;
+  unsigned short net_diag;
+  int phy_reg;
+
+  if (!(nic->eeprom[EEPROM_SOFTWARE_INFO2] & ENABLE_MWI_WORK)) 
+  {
+    dma_control = _inpd(nic->iobase + DMA_CONTROL);
+    _outpd(nic->iobase + DMA_CONTROL, dma_control | DMA_CONTROL_DEFEAT_MWI);
+  }
+
+  select_window(nic, 4);
+  net_diag = _inpw(nic->iobase + NETWORK_DIAGNOSTICS);
+
+  if ((((net_diag & NETWORK_DIAGNOSTICS_ASIC_REVISION) >> 4) == 1) &&
+      (((net_diag & NETWORK_DIAGNOSTICS_ASIC_REVISION_LOW) >> 1) < 4)) 
+  {
+    phy_reg = nic_read_mii_phy(nic, 24);
+    phy_reg |= 1;
+    nic_write_mii_phy(nic, 24, (unsigned short) phy_reg);
+  }
+
+  return 0;
+}
+
+int nic_setup_buffers(struct nic *nic)
+{
+  int i;
+
+  // Setup the receive ring
+  for (i = 0; i < RX_RING_SIZE; i++)
+  {
+    if (i == RX_RING_SIZE - 1)
+      nic->rx_ring[i].next = &nic->rx_ring[0];
+    else
+      nic->rx_ring[i].next = &nic->rx_ring[i + 1];
+
+    nic->rx_ring[i].pkt = pbuf_alloc(PBUF_RAW, ETHER_FRAME_LEN, PBUF_RW);
+    if (!nic->rx_ring[i].pkt) return -ENOMEM;
+
+    nic->rx_ring[i].phys_next = (unsigned long) virt2phys(nic->rx_ring[i].next);
+    nic->rx_ring[i].sglist[0].addr = (unsigned long) virt2phys(nic->rx_ring[i].pkt->payload);
+    nic->rx_ring[i].sglist[0].length = ETHER_FRAME_LEN | LAST_FRAG;
+  }
+  nic->curr_rx = &nic->rx_ring[0];
+
+  // Setup the transmit ring
+  for (i = 0; i < TX_RING_SIZE; i++)
+  {
+    if (i == TX_RING_SIZE - 1)
+      nic->tx_ring[i].next = &nic->tx_ring[0];
+    else
+      nic->tx_ring[i].next = &nic->tx_ring[i + 1];
+
+    if (i == 0)
+      nic->tx_ring[i].prev = &nic->tx_ring[TX_RING_SIZE - 1];
+    else
+      nic->tx_ring[i].prev = &nic->tx_ring[i - 1];
+
+    nic->tx_ring[i].phys_addr = (unsigned long) virt2phys(&nic->tx_ring[i]);
+  }
+
+  nic->next_tx = &nic->tx_ring[0];
+  nic->next_tx->header |= FSH_DPD_EMPTY;
+
+  nic->tx_size = 0;
+  nic->curr_tx = &nic->tx_ring[0];
+
+  return 0;
+}
+
+int nic_start_adapter(struct nic *nic)
+{
+
+  unsigned short diagnostics;
+  unsigned long dma_control;
+
+  // Enable upper bytes counting in diagnostics register.
+  select_window(nic, 4);
+
+  diagnostics = _inpw(nic->iobase + NETWORK_DIAGNOSTICS);
+  diagnostics |= NETWORK_DIAGNOSTICS_UPPER_BYTES_ENABLE;
+  _outpw(nic->iobase + NETWORK_DIAGNOSTICS, diagnostics);
+
+  // Enable counter speed in DMA control.
+  dma_control = _inpd(nic->iobase + DMA_CONTROL);
+  if (nic->linkspeed == 100) dma_control |= DMA_CONTROL_COUNTER_SPEED;
+  _outpd(nic->iobase + DMA_CONTROL, dma_control);
+
+  // Give receive ring to upload engine
+  execute_command_wait(nic, CMD_UP_STALL, 0);
+  _outpd(nic->iobase + UP_LIST_POINTER, (unsigned long) virt2phys(nic->curr_rx));
+  execute_command(nic, CMD_UP_UNSTALL, 0);
+
+  // Give transmit ring to download engine
+  init_sem(&nic->tx_sem, TX_RING_SIZE);
+  execute_command_wait(nic, CMD_DOWN_STALL, 0);
+  _outpd(nic->iobase + DOWN_LIST_POINTER, 0);
+  execute_command(nic, CMD_DOWN_UNSTALL, 0);
+
+  // Enable the statistics back.
+  execute_command(nic, CMD_STATISTICS_ENABLE, 0);
+
+  // Acknowledge any pending interrupts.
+  execute_command(nic, CMD_ACKNOWLEDGE_INTERRUPT, ALL_ACK);
+
+  // Enable indication for all interrupts.
+  execute_command(nic, CMD_SET_INDICATION_ENABLE, ALL_INTERRUPTS);
+
+  // Enable all interrupts to the host.
+  execute_command(nic, CMD_SET_INTERRUPT_ENABLE, ALL_INTERRUPTS);
+
+  // Enable the transmit and receive engines.
+  execute_command(nic, CMD_RX_ENABLE, 0);
+  execute_command(nic, CMD_TX_ENABLE, 0);
+
+  // Delay three seconds, only some switches need this
+  sleep(3000);
+
+  return 0;
+}
+
 int __declspec(dllexport) install(struct unit *unit)
 {
   struct nic *nic;
@@ -1481,6 +1847,10 @@ int __declspec(dllexport) install(struct unit *unit)
   set_interrupt_handler(IRQ2INTR(nic->irq), nic_handler, nic);
   enable_irq(nic->irq);
 
+  // Setup buffers
+  rc = nic_setup_buffers(nic);
+  if (rc < 0) return rc;
+
   // Global reset
   rc = execute_command_wait(nic, CMD_RESET, 
          GLOBAL_RESET_MASK_TP_AUI_RESET | 
@@ -1507,57 +1877,32 @@ int __declspec(dllexport) install(struct unit *unit)
   rc = nic_initialize_adapter(nic);
   if (rc < 0) return rc;
 
-  // Setup the receive ring
-  for (i = 0; i < RX_RING_SIZE; i++)
-  {
-    if (i == RX_RING_SIZE - 1)
-      nic->rx_ring[i].next = &nic->rx_ring[0];
-    else
-      nic->rx_ring[i].next = &nic->rx_ring[i + 1];
+  // Setup media
+  rc = nic_setup_media(nic);
+  if (rc < 0) return rc;
 
-    nic->rx_ring[i].pkt = pbuf_alloc(PBUF_RAW, ETHER_FRAME_LEN, PBUF_RW);
-    if (!nic->rx_ring[i].pkt) return -ENOMEM;
+  // Software work
+  rc = nic_software_work(nic);
+  if (rc < 0) return rc;
 
-    nic->rx_ring[i].phys_next = (unsigned long) virt2phys(nic->rx_ring[i].next);
-    nic->rx_ring[i].sglist[0].addr = (unsigned long) virt2phys(nic->rx_ring[i].pkt->payload);
-    nic->rx_ring[i].sglist[0].length = ETHER_FRAME_LEN | LAST_FRAG;
-  }
-  nic->curr_rx = &nic->rx_ring[0];
+  // Start adapter
+  rc = nic_start_adapter(nic);
+  if (rc < 0) return rc;
 
+#if 0
+  // Auto-negotiate link
+  rc = nic_negotiate_link(nic, 0);
+  if (rc < 0) return rc;
+
+  // Set buffers
   execute_command_wait(nic, CMD_UP_STALL, 0);
   _outpd(nic->iobase + UP_LIST_POINTER, (unsigned long) virt2phys(nic->curr_rx));
   execute_command(nic, CMD_UP_UNSTALL, 0);
-
-  // Setup the transmit ring
-  for (i = 0; i < TX_RING_SIZE; i++)
-  {
-    if (i == TX_RING_SIZE - 1)
-      nic->tx_ring[i].next = &nic->tx_ring[0];
-    else
-      nic->tx_ring[i].next = &nic->tx_ring[i + 1];
-
-    if (i == 0)
-      nic->tx_ring[i].prev = &nic->tx_ring[TX_RING_SIZE - 1];
-    else
-      nic->tx_ring[i].prev = &nic->tx_ring[i - 1];
-
-    nic->tx_ring[i].phys_addr = (unsigned long) virt2phys(&nic->tx_ring[i]);
-  }
-
-  nic->next_tx = &nic->tx_ring[0];
-  nic->next_tx->header |= FSH_DPD_EMPTY;
-
-  nic->tx_size = 0;
-  nic->curr_tx = &nic->tx_ring[0];
 
   init_sem(&nic->tx_sem, TX_RING_SIZE);
   execute_command_wait(nic, CMD_DOWN_STALL, 0);
   _outpd(nic->iobase + DOWN_LIST_POINTER, 0);
   execute_command(nic, CMD_DOWN_UNSTALL, 0);
-
-  // Auto-negotiate link
-  rc = nic_negotiate_link(nic, 0);
-  if (rc < 0) return rc;
 
   // Set receive filter
   execute_command(nic, CMD_SET_RX_FILTER, RECEIVE_INDIVIDUAL | RECEIVE_MULTICAST | RECEIVE_BROADCAST);
@@ -1576,6 +1921,7 @@ int __declspec(dllexport) install(struct unit *unit)
   // Enable the transmit and receive engines.
   execute_command(nic, CMD_RX_ENABLE, 0);
   execute_command(nic, CMD_TX_ENABLE, 0);
+#endif
 
   nic->devno = dev_make("nic#", &nic_driver, unit, nic);
   register_proc_inode(device(nic->devno)->name, nicstat_proc, nic);

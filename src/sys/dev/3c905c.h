@@ -14,6 +14,14 @@
 #define RX_COPYBREAK            128
 #define TX_TIMEOUT              5000
 
+#define TX_RING_SIZE	          16
+#define RX_RING_SIZE	          32
+#define TX_MAX_FRAGS              16
+
+#define LAST_FRAG 	          0x80000000  // Last entry in descriptor
+#define DN_COMPLETE	          0x00010000  // This packet has been downloaded
+#define UP_COMPLETE               0x00008000  // This packet has been uploaded
+
 //
 // PCI IDs
 //
@@ -28,11 +36,12 @@
 
 #define CMD_RESET                  0x0000
 #define CMD_SELECT_WINDOW          0x0800
-#define CMD_RX_DISABLE             0x1000
+#define CMD_ENABLE_DC_CONVERTER    0x1000
+#define CMD_RX_DISABLE             0x1800
 #define CMD_RX_RESET               0x2800
+#define CMD_UP_STALL		   0x3000
 #define CMD_TX_RESET               0x5800
 #define CMD_RX_ENABLE              0x2000
-#define CMD_UP_STALL		   0x3000
 #define CMD_UP_UNSTALL		   0x3001
 #define CMD_DOWN_STALL		   0x3002
 #define CMD_DOWN_UNSTALL	   0x3003
@@ -45,6 +54,7 @@
 #define CMD_SET_INTERRUPT_ENABLE   0x7000
 #define CMD_STATISTICS_ENABLE      0xA800
 #define CMD_STATISTICS_DISABLE     0xB000
+#define CMD_DISABLE_DC_CONVERTER   0xB800
 
 //
 // Non-windowed registers
@@ -363,6 +373,14 @@
 #define MAC_CONTROL_FLOW_CONTROL_ENABLE 	(1 << 8)
 
 //
+// Network diagnostics
+//
+
+#define NETWORK_DIAGNOSTICS_ASIC_REVISION	0x003E
+#define NETWORK_DIAGNOSTICS_ASIC_REVISION_LOW  	0x000E 
+#define NETWORK_DIAGNOSTICS_UPPER_BYTES_ENABLE 	(1 << 6)
+
+//
 // MII Registers
 //
 
@@ -423,6 +441,10 @@
 #define MII_ANAR_10T		0x0020  // Support 10BT half duplex
 #define MII_ANAR_FLOWCONTROL	0x0400  // Support Flow Control
 
+#define MII_ANAR_MEDIA_MASK     0x07E0	// Mask the media selection bits
+#define MII_ANAR_MEDIA_100_MASK	(MII_ANAR_100TXFD | MII_ANAR_100TX)
+#define MII_ANAR_MEDIA_10_MASK	(MII_ANAR_10TFD | MII_ANAR_10T)
+
 //
 // EEPROM contents
 //
@@ -461,12 +483,27 @@
 #define EEPROM_RESERVED_1F        0x1F
 #define EEPROM_CHECKSUM1          0x20
 
-#define TX_RING_SIZE	          16
-#define RX_RING_SIZE	          32
-#define TX_MAX_FRAGS              16
+//
+// EEPROM software information 1
+//
 
-#define LAST_FRAG 	          0x80000000  // Last entry in descriptor
-#define DN_COMPLETE	          0x00010000  // This packet has been downloaded
-#define UP_COMPLETE               0x00008000  // This packet has been uploaded
+#define LINK_BEAT_DISABLE         (1 << 14)
+
+//
+// EEPROM software information 2
+//
+
+#define ENABLE_MWI_WORK	           0x0020
+
+//
+// MII Transceiver Type store in miiSelect
+//
+#define MIISELECT_GENERIC	0x0000
+#define MIISELECT_100BT4	0x0001
+#define MIISELECT_10BT		0x0002
+#define MIISELECT_100BTX	0x0003
+#define MIISELECT_10BT_ANE	0x0004
+#define MIISELECT_100BTX_ANE	0x0005
+#define MIITXTYPE_MASK		0x000F
 
 #endif
