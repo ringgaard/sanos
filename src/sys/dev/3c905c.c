@@ -11,6 +11,7 @@
 #define ETHER_FRAME_LEN         1544
 #define EEPROM_SIZE             0x21
 #define RX_COPYBREAK            128
+#define TX_TIMEOUT              5000
 
 //
 // PCI IDs
@@ -146,6 +147,20 @@
 //
 
 //
+// Global reset flags
+//
+
+#define GLOBAL_RESET_MASK_TP_AUI_RESET	(1 << 0)
+#define GLOBAL_RESET_MASK_ENDEC_RESET   (1 << 1)
+#define GLOBAL_RESET_MASK_NETWORK_RESET	(1 << 2)
+#define GLOBAL_RESET_MASK_FIFO_RESET    (1 << 3)
+#define GLOBAL_RESET_MASK_AISM_RESET    (1 << 4)
+#define GLOBAL_RESET_MASK_HOST_RESET	(1 << 5)
+#define GLOBAL_RESET_MASK_SMB_RESET     (1 << 6)
+#define GLOBAL_RESET_MASK_VCO_RESET     (1 << 7)
+#define GLOBAL_RESET_MASK_UP_DOWN_RESET (1 << 8)
+
+//
 // IntStatus flags
 //
 
@@ -208,6 +223,20 @@
 #define UP_PACKET_STATUS_TCP_CHECKSUM_CHECKED	(1 << 30)
 #define UP_PACKET_STATUS_UDP_CHECKSUM_CHECKED	(1 << 31)
 #define UP_PACKET_STATUS_ERROR_MASK		0x1F0000
+
+//
+// Frame Start Header
+//
+#define FSH_CRC_APPEND_DISABLE		        (1 << 13)
+#define FSH_TX_INDICATE			        (1 << 15)
+#define FSH_DOWN_COMPLETE		        (1 << 16)
+#define FSH_LAST_KEEP_ALIVE_PACKET	        (1 << 24)
+#define FSH_ADD_IP_CHECKSUM		        (1 << 25)
+#define FSH_ADD_TCP_CHECKSUM		        (1 << 26)
+#define FSH_ADD_UDP_CHECKSUM		        (1 << 27)
+#define FSH_ROUND_UP_DEFEAT		        (1 << 28)
+#define FSH_DPD_EMPTY			        (1 << 29)
+#define FSH_DOWN_INDICATE		        (1 << 31)
 
 //
 // EEPROM contents
@@ -273,18 +302,24 @@ struct rx_desc
 struct tx_desc
 {
   unsigned long phys_next;
-  unsigned long framehdr;
+  unsigned long header;
   struct sg_entry sglist[TX_MAX_FRAGS];
   struct tx_desc *next;
+  struct tx_desc *prev;
   struct pbuf *pkt;
+  unsigned long phys_addr;
 };
 
 struct nic
 {
   struct rx_desc rx_ring[RX_RING_SIZE];
   struct tx_desc tx_ring[TX_RING_SIZE];
-  struct rx_desc *curr_rx;
-  struct tx_desc *curr_tx;
+  struct rx_desc *curr_rx;              // Next entry to receive from rx ring
+  struct tx_desc *curr_tx;              // Next entry to reclaim from tx ring
+  struct tx_desc *next_tx;              // Next entry to add in tx ring
+
+  struct sem tx_sem;                    // Semaphore for tx ring
+  int tx_size;                          // Number of active entries in transmit list
 
   devno_t devno;                        // Device number
 
@@ -495,6 +530,57 @@ void update_statistics(struct nic *nic)
 
 int nic_transmit(struct dev *dev, struct pbuf *p)
 {
+  struct nic *nic = dev->privdata;
+  struct pbuf *q;
+  unsigned long dnlistptr;
+  int i;
+  struct tx_desc *entry;
+
+  kprintf("nic: transmit packet, %d bytes, %d fragments\n", p->tot_len, pbuf_clen(p));
+
+  // Wait for free entry in transmit ring
+  if (wait_for_object(&nic->tx_sem, TX_TIMEOUT) < 0)
+  {
+    kprintf("nic: transmit timeout, drop packet\n");
+    stats.link.drop++;
+    return -ETIMEOUT;
+  }
+
+  // Check for over-fragmented packets
+  if (pbuf_clen(p) > TX_MAX_FRAGS)
+  {
+    p = pbuf_linearize(PBUF_RAW, p);
+    if (!p) return -ENOMEM;
+  }
+
+  // Fill tx entry
+  entry = nic->next_tx;
+  for (q = p, i = 0; q != NULL; q = q->next, i++) 
+  {
+    entry->sglist[i].addr = (unsigned long) virt2phys(q->payload);
+    if (!q->next) 
+      entry->sglist[i].length = q->len | LAST_FRAG;
+    else
+      entry->sglist[i].length = q->len;
+  }
+
+  entry->header = FSH_ROUND_UP_DEFEAT | FSH_DOWN_INDICATE;
+  entry->phys_next = 0;
+  entry->pkt = p;
+
+  // Update download list
+  execute_command_wait(nic, CMD_DOWN_STALL, 0);
+  dnlistptr = _inpd(nic->iobase + DOWN_LIST_POINTER);
+  if (dnlistptr == 0)
+    _outpd(nic->iobase + DOWN_LIST_POINTER, entry->phys_addr);
+  else
+    entry->prev->phys_next = entry->phys_addr;
+  execute_command(nic, CMD_DOWN_UNSTALL, 0);
+
+  // Move to next entry in tx_ring
+  nic->next_tx = entry->next;
+  nic->tx_size++;
+
   return 0;
 }
 
@@ -586,12 +672,46 @@ void nic_up_complete(struct nic *nic)
   execute_command(nic, CMD_UP_UNSTALL, 0);
 }
 
+void nic_down_complete(struct nic *nic)
+{
+  int freed = 0;
+
+  while (nic->tx_size > 0 && (nic->curr_tx->header & FSH_DOWN_COMPLETE))
+  {
+    if (nic->curr_tx->pkt)
+    {
+      pbuf_free(nic->curr_tx->pkt);
+      nic->curr_tx->pkt = NULL;
+    }
+    nic->curr_tx->prev->phys_next = 0;
+
+    freed++;
+    nic->tx_size--;
+    nic->curr_tx = nic->curr_tx->next;
+  }
+
+  kprintf("nic: release %d tx entries\n", freed);
+
+  release_sem(&nic->tx_sem, freed);
+}
+
+void nic_host_error(struct nic *nic)
+{
+  execute_command_wait(nic, CMD_RESET, 
+    GLOBAL_RESET_MASK_NETWORK_RESET |
+    GLOBAL_RESET_MASK_TP_AUI_RESET |
+    GLOBAL_RESET_MASK_ENDEC_RESET |
+    GLOBAL_RESET_MASK_AISM_RESET |
+    GLOBAL_RESET_MASK_SMB_RESET |
+    GLOBAL_RESET_MASK_VCO_RESET |
+    GLOBAL_RESET_MASK_UP_DOWN_RESET);
+}
+
 void nic_dpc(void *arg)
 {
   struct nic *nic = (struct nic *) arg;
   unsigned short status;
 
-  kprintf("nic: dpc\n");
   // Read the status
   status = _inpw(nic->iobase + STATUS);
 
@@ -600,7 +720,7 @@ void nic_dpc(void *arg)
 
   while (1)
   {
-    dump_dump_status(status);
+    //dump_dump_status(status);
 
     status &= ALL_INTERRUPTS;
     if (!status) break;
@@ -608,7 +728,10 @@ void nic_dpc(void *arg)
     // Handle host error event
     if (status & INTSTATUS_HOST_ERROR)
     {
-      kprintf("nic: host error\n");
+      static int host_errors = 0;
+
+      if (host_errors++ == 0) kprintf("nic: host error\n");
+      nic_host_error(nic);
     }
 
     // Handle tx complete event
@@ -653,7 +776,7 @@ void nic_dpc(void *arg)
     // Handle download complete event
     if (status & INTSTATUS_DN_COMPLETE)
     {
-      kprintf("nic: download complete\n");
+      nic_down_complete(nic);
       execute_command(nic, CMD_ACKNOWLEDGE_INTERRUPT, DN_COMPLETE_ACK);
     }
 
@@ -674,12 +797,11 @@ void nic_dpc(void *arg)
   eoi(nic->irq);
 }
 
-void handler(struct context *ctxt, void *arg)
+void nic_handler(struct context *ctxt, void *arg)
 {
   struct nic *nic = (struct nic *) arg;
 
   // Queue DPC to service interrupt
-  kprintf("nic: intr\n");
   queue_irq_dpc(&nic->dpc, nic_dpc, nic);
 }
 
@@ -727,7 +849,6 @@ int __declspec(dllexport) install(struct unit *unit)
   nic = (struct nic *) kmalloc(sizeof(struct nic));
   if (!nic) return -ENOMEM;
   memset(nic, 0, sizeof(struct nic));
-  //nic->phys_addr = (unsigned long) virt2phys(nic);
 
   // Setup NIC configuration
   nic->iobase = (unsigned short) get_unit_iobase(unit);
@@ -737,7 +858,7 @@ int __declspec(dllexport) install(struct unit *unit)
   pci_enable_busmastering(unit);
 
   // Install interrupt handler
-  set_interrupt_handler(IRQ2INTR(nic->irq), handler, nic);
+  set_interrupt_handler(IRQ2INTR(nic->irq), nic_handler, nic);
   enable_irq(nic->irq);
 
   // Reset NIC
@@ -798,9 +919,32 @@ int __declspec(dllexport) install(struct unit *unit)
   _outpd(nic->iobase + UP_LIST_POINTER, (unsigned long) virt2phys(nic->curr_rx));
   execute_command(nic, CMD_UP_UNSTALL, 0);
 
-  // Select 10BASE-T 
-  //select_window(nic, 3);
-  //_outpd(nic->iobase + INTERNAL_CONFIG, _inpd(nic->iobase + INTERNAL_CONFIG) & 0xFFF0FFFF);
+  // Setup the transmit ring
+  for (i = 0; i < TX_RING_SIZE; i++)
+  {
+    if (i == TX_RING_SIZE - 1)
+      nic->tx_ring[i].next = &nic->tx_ring[0];
+    else
+      nic->tx_ring[i].next = &nic->tx_ring[i + 1];
+
+    if (i == 0)
+      nic->tx_ring[i].prev = &nic->tx_ring[TX_RING_SIZE - 1];
+    else
+      nic->tx_ring[i].prev = &nic->tx_ring[i - 1];
+
+    nic->tx_ring[i].phys_addr = (unsigned long) virt2phys(&nic->tx_ring[i]);
+  }
+
+  nic->next_tx = &nic->tx_ring[0];
+  nic->next_tx->header |= FSH_DPD_EMPTY;
+
+  nic->tx_size = 0;
+  nic->curr_tx = &nic->tx_ring[0];
+
+  init_sem(&nic->tx_sem, TX_RING_SIZE);
+  execute_command_wait(nic, CMD_DOWN_STALL, 0);
+  _outpd(nic->iobase + DOWN_LIST_POINTER, 0);
+  execute_command(nic, CMD_DOWN_UNSTALL, 0);
 
   // Set receive filter
   execute_command(nic, CMD_SET_RX_FILTER, RECEIVE_INDIVIDUAL | RECEIVE_MULTICAST | RECEIVE_BROADCAST);

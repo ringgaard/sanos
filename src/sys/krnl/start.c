@@ -220,13 +220,13 @@ void init_net()
   tcp_init();
   socket_init();
 
-  //IP4_ADDR(&ipaddr, 0, 0, 0, 0);
-  //IP4_ADDR(&netmask, 0, 0, 0, 0);
-  //IP4_ADDR(&gw, 0, 0, 0, 0);
+  IP4_ADDR(&ipaddr, 0, 0, 0, 0);
+  IP4_ADDR(&netmask, 0, 0, 0, 0);
+  IP4_ADDR(&gw, 0, 0, 0, 0);
 
-  IP4_ADDR(&ipaddr, 192, 168, 123, 200);
-  IP4_ADDR(&netmask, 255, 255, 255, 0);
-  IP4_ADDR(&gw, 192, 168, 123, 1);
+  //IP4_ADDR(&ipaddr, 192, 168, 123, 200);
+  //IP4_ADDR(&netmask, 255, 255, 255, 0);
+  //IP4_ADDR(&gw, 192, 168, 123, 1);
 
   nic = ether_netif_add("eth0", "nic0", &ipaddr, &netmask, &gw);
   if (nic == NULL) return;
