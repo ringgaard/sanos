@@ -112,7 +112,7 @@ int closesocket(struct socket *s)
   int rc;
 
   rc = sockops[s->type]->close(s);
-  close_ioobject(&s->iob);
+  detach_ioobject(&s->iob);
   kfree(s);
   return rc;
 }

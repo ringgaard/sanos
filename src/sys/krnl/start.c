@@ -228,10 +228,10 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
   init_fpu();
   init_pit();
   
-  // Initialize timers, scheduler, and object manager
+  // Initialize timers, scheduler, and handle manager
   init_timers();
   init_sched();
-  init_objects();
+  init_handles();
   init_syscall();
 
   // Enable interrupts and calibrate delay

@@ -36,14 +36,6 @@
 struct waitable_timer *timer_list = NULL;
 int nexttid = 1;
 
-#define HANDLES_PER_PAGE (PAGESIZE / sizeof(struct object *))
-
-struct object **htab = (struct object **) HTABBASE;
-handle_t hfreelist = NOHANDLE;
-int htabsize = 0;
-
-int close_iomux(struct iomux *iomux);
-
 //
 // insert_in_waitlist
 //
@@ -86,7 +78,7 @@ static void remove_from_waitlist(struct waitblock *wb)
 // This routine also sets the waitkey for the thread from the waitblock.
 //
 
-static int thread_ready_to_run(struct thread *t)
+int thread_ready_to_run(struct thread *t)
 {
   int any = 0;
   int all = 1;
@@ -124,7 +116,7 @@ static int thread_ready_to_run(struct thread *t)
 // Release thread and mark is as ready to run
 //
 
-static void release_thread(struct thread *t)
+void release_thread(struct thread *t)
 {
   // Remove thread from wait lists
   struct waitblock *wb = t->waitlist;
@@ -146,6 +138,8 @@ static void release_thread(struct thread *t)
 
 int enter_object(struct object *obj)
 {
+  int rc = 0;
+
   switch (obj->type)
   {
     case OBJECT_THREAD:
@@ -182,11 +176,11 @@ int enter_object(struct object *obj)
       break;
 
     case OBJECT_IOMUX:
-      //TODO: remove first waiter from iomux and return context for io object 
+      rc = dequeue_event_from_iomux((struct iomux *) obj);
       break;
   }
 
-  return 0;
+  return rc;
 }
 
 //
@@ -927,277 +921,4 @@ void modify_waitable_timer(struct waitable_timer *t, unsigned int expires)
 void cancel_waitable_timer(struct waitable_timer *t)
 {
   if (t->timer.active) del_timer(&t->timer);
-}
-
-//
-// init_iomux
-//
-// Initialize iomux
-//
-
-void init_iomux(struct iomux *iomux, int flags)
-{
-  init_object(&iomux->object, OBJECT_IOMUX);
-  iomux->flags = flags;
-  iomux->ready_head = iomux->ready_tail = NULL;
-  iomux->waiting_head = iomux->waiting_tail = NULL;
-}
-
-//
-// close_iomux
-//
-// Detach all objects from iomux
-//
-
-int close_iomux(struct iomux *iomux)
-{
-  struct ioobject *iob;
-  struct ioobject *next;
-
-  iob = iomux->ready_head;
-  while (iob)
-  {
-    next = iob->next;
-    iob->iomux = NULL;
-    iob->next = NULL;
-    iob->prev = NULL;
-    iob = next;
-  }
-
-  iob = iomux->waiting_head;
-  while (iob)
-  {
-    next = iob->next;
-    iob->iomux = NULL;
-    iob->next = NULL;
-    iob->prev = NULL;
-    iob = next;
-  }
-
-  return 0;
-}
-
-//
-// iodispatch
-//
-// Add object to iomux for I/O dispatching
-//
-
-int iodispatch(struct iomux *iomux, object_t hobj, int events, int context)
-{
-  return -ENOSYS;
-}
-
-//
-// init_ioobject
-//
-// Initialize ioobject
-//
-
-void init_ioobject(struct ioobject *iob, int type)
-{
-  init_object(&iob->object, type);
-  iob->iomux = NULL;
-  iob->context = 0;
-  iob->next = iob->prev = NULL;
-  iob->events_signaled = iob->events_monitored = 0;
-}
-
-//
-// close_ioobject
-//
-// Remove ioobject from iomux
-//
-
-void close_ioobject(struct ioobject *iob)
-{
-  if (iob->iomux)
-  {
-    if (iob->next) iob->next->prev = iob->prev;
-    if (iob->prev) iob->prev->next = iob->next;
-
-    if (iob->events_monitored & iob->events_signaled)
-    {
-      if (iob->iomux->ready_head == iob) iob->iomux->ready_head = iob->next; 
-      if (iob->iomux->ready_tail == iob) iob->iomux->ready_tail = iob->prev; 
-    }
-    else
-    {
-      if (iob->iomux->waiting_head == iob) iob->iomux->waiting_head = iob->next; 
-      if (iob->iomux->waiting_tail == iob) iob->iomux->waiting_tail = iob->prev; 
-    }
-
-    iob->iomux = NULL;
-    iob->next = iob->prev = NULL;
-  }
-}
-
-//
-// set_io_event
-//
-// Set I/O event(s) for object
-//
-
-void set_io_event(struct ioobject *iob, int events)
-{
-  iob->events_signaled |= events;
-}
-
-//
-// clear_io_event
-//
-// Clear I/O event(s) for object
-//
-
-void clear_io_event(struct ioobject *iob, int events)
-{
-  iob->events_signaled &= ~events;
-}
-
-//
-// halloc
-//
-// Allocate handle
-//
-
-handle_t halloc(struct object *o)
-{
-  handle_t h;
-
-  // Expand handle table if full
-  if (hfreelist == NOHANDLE)
-  {
-    unsigned long pfn;
-
-    if (htabsize == HTABSIZE / sizeof(struct object *)) return -ENFILE;
-    pfn = alloc_pageframe('HTAB');
-    map_page(htab + htabsize, pfn, PT_WRITABLE | PT_PRESENT);
-
-    for (h = htabsize + HANDLES_PER_PAGE - 1; h >= htabsize; h--)
-    {
-      htab[h] = (struct object *) hfreelist;
-      hfreelist = h;
-    }
-
-    htabsize += HANDLES_PER_PAGE;
-  }
-
-  h = hfreelist;
-  hfreelist = (handle_t) htab[h];
-  htab[h] = o;
-  o->handle_count++;
-
-  return h;
-}
-
-//
-// hfree
-//
-// Free handle
-//
-
-int hfree(handle_t h)
-{
-  struct object *o;
-  int rc;
-
-  if (h < 0 || h >= htabsize) return -EBADF;
-  o = htab[h];
-
-  if (o == (struct object *) NOHANDLE) return -EBADF;
-  if (o < (struct object *) OSBASE) return -EBADF;
-
-  if (--o->handle_count > 0) return 0;
-  
-  rc = close_object(o);
-
-  htab[h] = (struct object *) hfreelist;
-  hfreelist = h;
-
-  if (o->lock_count == 0) destroy_object(o);
-
-  return rc;
-}
-
-//
-// olock
-//
-// Lock object
-//
-
-struct object *olock(handle_t h, int type)
-{
-  struct object *o;
-
-  if (h < 0 || h >= htabsize) return NULL;
-  o = htab[h];
-
-  if (o == (struct object *) NOHANDLE) return NULL;
-  if (o < (struct object *) OSBASE) return NULL;
-  if (o->type != type && type != OBJECT_ANY) return NULL;
-  if (o->handle_count == 0) return NULL;
-  o->lock_count++;
-  return o;
-}
-
-//
-// orel
-//
-// Release lock on object
-//
-
-int orel(object_t hobj)
-{
-  struct object *o = (struct object *) hobj;
-
-  if (--o->lock_count == 0 && o->handle_count == 0) 
-    return destroy_object(o);
-  else
-    return 0;
-}
-
-//
-// handles_proc
-//
-
-#define FRAQ 2310
-
-static int handles_proc(struct proc_file *pf, void *arg)
-{
-  static char *objtype[] = {"THREAD", "EVENT", "TIMER", "MUTEX", "SEM", "FILE", "SOCKET", "IOMUX"};
-
-  int h;
-  int i;
-  struct object *o;
-  int objcount[8];
-
-  for (i = 0; i < 8; i++) objcount[i] = 0;
-
-  pprintf(pf, "handle addr     s type   count locks\n");
-  pprintf(pf, "------ -------- - ------ ----- -----\n");
-  for (h = 0; h < htabsize; h++)
-  {
-    o = htab[h];
-
-    if (o < (struct object *) OSBASE) continue;
-    if (o == (struct object *) NOHANDLE) continue;
-    
-    pprintf(pf, "%6d %8X %d %-6s %5d %5d\n", h, o, o->signaled, objtype[o->type], o->handle_count, o->lock_count);
-    if (o->handle_count != 0) objcount[o->type] += FRAQ / o->handle_count;
-  }
-
-  pprintf(pf, "\n");
-  for (i = 0; i < 8; i++) pprintf(pf, "%s:%d ", objtype[i], objcount[i] / FRAQ);
-  pprintf(pf, "\n");
-
-  return 0;
-}
-
-//
-// init_objects
-//
-
-void init_objects()
-{
-  register_proc_inode("handles", handles_proc, NULL);
 }

@@ -188,10 +188,14 @@ struct thread
 extern struct object **htab;
 extern int htabsize;
 
-void init_objects();
+// object.c
 
 void init_object(struct object *o, int type);
 int close_object(struct object *o);
+int destroy_object(struct object *o);
+
+int thread_ready_to_run(struct thread *t);
+void release_thread(struct thread *t);
 
 void init_thread(struct thread *t, int priority);
 
@@ -211,16 +215,25 @@ krnlapi void init_waitable_timer(struct waitable_timer *t, unsigned int expires)
 krnlapi void modify_waitable_timer(struct waitable_timer *t, unsigned int expires);
 krnlapi void cancel_waitable_timer(struct waitable_timer *t);
 
-krnlapi void init_iomux(struct iomux *iomux, int flags);
-krnlapi int iodispatch(struct iomux *iomux, object_t hobj, int events, int context);
-krnlapi void init_ioobject(struct ioobject *iob, int type);
-krnlapi void close_ioobject(struct ioobject *iob);
-krnlapi void set_io_event(struct ioobject *iob, int events);
-krnlapi void clear_io_event(struct ioobject *iob, int events);
-
 krnlapi int wait_for_object(object_t hobj, unsigned int timeout);
 krnlapi int wait_for_all_objects(struct object **objs, int count, unsigned int timeout);
 krnlapi int wait_for_any_object(struct object **objs, int count, unsigned int timeout);
+
+// iomux.c
+
+krnlapi void init_iomux(struct iomux *iomux, int flags);
+int close_iomux(struct iomux *iomux);
+krnlapi int queue_ioobject(struct iomux *iomux, object_t hobj, int events, int context);
+krnlapi void init_ioobject(struct ioobject *iob, int type);
+krnlapi void detach_ioobject(struct ioobject *iob);
+krnlapi void set_io_event(struct ioobject *iob, int events);
+krnlapi void clear_io_event(struct ioobject *iob, int events);
+int dequeue_event_from_iomux(struct iomux *iomux);
+int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+
+// hndl.c
+
+void init_handles();
 
 krnlapi handle_t halloc(struct object *o);
 krnlapi int hfree(handle_t h);

@@ -2440,7 +2440,7 @@ static int sys_dispatch(char *params)
     return -EBADF;
   }
 
-  rc = iodispatch(iomux, o, events, context);
+  rc = queue_ioobject(iomux, o, events, context);
 
   orel(o);
   orel(iomux);

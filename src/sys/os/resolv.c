@@ -771,7 +771,7 @@ static int res_nsend(struct res_state *statp, const char *buf, int buflen, char 
   gotsomewhere = 0;
   terrno = -ETIMEOUT;
 
-  //FIXME: add dns cache lookup here
+  // FIXME: add dns cache lookup here
 
   // Some resolvers want to even out the load on their nameservers.
   if ((statp->options & RES_ROTATE) != 0)
