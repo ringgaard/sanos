@@ -275,7 +275,7 @@ void main(void *arg)
   install_drivers();
 
   // Initialize network
-  init_net();
+  //init_net();
 
   // Mount devices
   init_mount();

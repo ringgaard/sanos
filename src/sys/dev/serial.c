@@ -132,6 +132,8 @@
 
 static char *uart_name[] = {"(unknown)", "8250", "16450", "16550", "16550A"};
 
+int next_serial_portno = 1;
+
 struct fifo
 {
   unsigned char queue[QUEUE_SIZE];
@@ -677,6 +679,7 @@ int __declspec(dllexport) install_serial(struct device *dv)
   int n;
   int iobase = -1;
   int irq = -1;
+  char devname[8];
 
   for (n = 0; n < dv->numres; n++)
   {
@@ -684,7 +687,12 @@ int __declspec(dllexport) install_serial(struct device *dv)
     if (dv->res[n].type == RESOURCE_IRQ) irq = dv->res[n].start;
   }
 
-  if (iobase > 0 && irq > 0) init_serial_port("com#", iobase, irq, dv);
+  if (iobase > 0 && irq > 0) 
+  {
+    sprintf(devname, "com%d", next_serial_portno++);
+    init_serial_port(devname, iobase, irq, dv);
+  }
+
   return 0;
 }
 

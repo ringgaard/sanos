@@ -248,11 +248,15 @@ devno_t dev_make(char *name, struct driver *driver, struct device *dv, void *pri
       exists = 0;
       for (m = 0; m < num_devs; m++) 
       {
-	if (strcmp(devtab[m]->name, dev->name) == 0) exists = 1;
-	break;
+	if (strcmp(devtab[m]->name, dev->name) == 0) 
+	{
+	  exists = 1;
+	  break;
+	}
       }
 
       if (!exists) break;
+      n++;
     }
   }
 

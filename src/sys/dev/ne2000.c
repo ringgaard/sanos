@@ -688,12 +688,12 @@ int __declspec(dllexport) install(struct device *dv)
 
   for (n = 0; n < dv->numres; n++)
   {
-    if (dv->res[n].type == RESOURCE_IO) iobase = dv->res[n].start;
-    if (dv->res[n].type == RESOURCE_IRQ) irq = dv->res[n].start;
+    if (dv->res[n].type == RESOURCE_IO) iobase = (unsigned short) dv->res[n].start;
+    if (dv->res[n].type == RESOURCE_IRQ) irq = (unsigned short) dv->res[n].start;
     if (dv->res[n].type == RESOURCE_MEM) 
     {
-      membase = dv->res[n].start;
-      memsize = dv->res[n].len;
+      membase = (unsigned short) dv->res[n].start;
+      memsize = (unsigned short) dv->res[n].len;
     }
   }
 

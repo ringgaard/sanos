@@ -8,6 +8,7 @@
 
 #include <os.h>
 
+#include <string.h>
 #include <stdlib.h>
 #include <inifile.h>
 
