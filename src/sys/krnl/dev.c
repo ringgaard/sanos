@@ -8,40 +8,245 @@
 
 #include <os/krnl.h>
 
-struct dev *devtab[MAX_DEVS];
-unsigned int num_devs = 0;
-
-struct device *devicetab[MAX_DEVICES];
-int num_devices = 0;
+struct unit *units;
+struct bus *buses;
 
 struct binding *bindtab;
 int num_bindings;
 
-struct device *register_device(int type, unsigned long classcode, unsigned long devicecode)
+struct dev *devtab[MAX_DEVS];
+unsigned int num_devs = 0;
+
+struct bus *add_bus(struct unit *self, unsigned long bustype, unsigned long busno)
 {
-  struct device *dv;
+  struct bus *bus;
+  struct bus *b;
 
-  if (num_devices == MAX_DEVICES) panic("too many physical devices");
-  dv = (struct device *) kmalloc(sizeof(struct device));
-  memset(dv, 0, sizeof(struct device));
-  devicetab[num_devices++] = dv;
+  // Create new bus
+  bus = (struct bus *) kmalloc(sizeof(struct bus));
+  if (!bus) return NULL;
+  memset(bus, 0, sizeof(struct bus));
 
-  dv->type = type;
-  dv->classcode = classcode;
-  dv->devicecode = devicecode;
+  bus->self = self;
+  if (self) bus->parent = self->bus;
+  bus->bustype = bustype;
+  bus->busno = busno;
 
-  return dv;
+  // Add bus as a bridge on the parent bus
+  if (bus->parent)
+  {
+    if (bus->parent->bridges)
+    {
+      b = bus->parent->bridges;
+      while (b->sibling) b = b->sibling;
+      b->sibling = bus;
+    }
+    else
+      bus->parent->bridges = bus;
+  }
+
+  // Add bus to bus list
+  if (buses)
+  {
+    b = buses;
+    while (b->next) b = b->next;
+    b->next = bus;
+  }
+  else
+    buses = bus;
+
+  return bus;
 }
 
-int add_resource(struct device *dv, int type, int flags, unsigned long start, unsigned long len)
+struct unit *add_unit(struct bus *bus, unsigned long classcode, unsigned long unitcode, unsigned long unitno)
 {
-  if (dv->numres == MAX_RESOURCES) return -ENOMEM;
-  dv->res[dv->numres].type = type;
-  dv->res[dv->numres].flags = flags;
-  dv->res[dv->numres].start = start;
-  dv->res[dv->numres].len = len;
-  dv->numres++;
-  return 0;
+  struct unit *unit;
+  struct unit *u;
+
+  // Create new unit
+  unit = (struct unit *) kmalloc(sizeof(struct unit));
+  if (!unit) return NULL;
+  memset(unit, 0, sizeof(struct unit));
+
+  unit->bus = bus;
+  unit->classcode = classcode;
+  unit->unitcode = unitcode;
+  unit->unitno = unitno;
+
+  unit->classname = "";
+  unit->vendorname = "";
+  unit->productname = "";
+
+  // Add unit to bus
+  if (bus)
+  {
+    if (bus->units)
+    {
+      u = bus->units;
+      while (u->sibling) u = u->sibling;
+      u->sibling = unit;
+    }
+    else
+      bus->units = unit;
+  }
+
+  // Add unit to unit list
+  if (units)
+  {
+    u = units;
+    while (u->next) u = u->next;
+    u->next = unit;
+  }
+  else
+    units = unit;
+
+  return unit;
+}
+
+struct resource *add_resource(struct unit *unit, unsigned short type, unsigned short flags, unsigned long start, unsigned long len)
+{
+  struct resource *res;
+  struct resource *r;
+
+  // Create new resource
+  res = (struct resource *) kmalloc(sizeof(struct resource));
+  if (!res) return NULL;
+  memset(res, 0, sizeof(struct resource));
+
+  res->type = type;
+  res->flags = flags;
+  res->start = start;
+  res->len = len;
+
+  // Add resource to unit resource list
+  if (unit->resources)
+  {
+    r = unit->resources;
+    while (r->next) r = r->next;
+    r->next = res;
+  }
+  else
+    unit->resources = res;
+
+  return res;
+}
+
+struct resource *get_unit_resource(struct unit *unit, int type, int num)
+{
+  struct resource *res = unit->resources;
+
+  while (res)
+  {
+    if (res->type == type)
+    {
+      if (num == 0)
+	return res;
+      else
+	num--;
+    }
+
+    res = res->next;
+  }
+
+  return NULL;
+}
+
+int get_unit_irq(struct unit *unit)
+{
+  struct resource *res = get_unit_resource(unit, RESOURCE_IRQ, 0);
+  
+  if (res) return res->start;
+  return -1;
+}
+
+int get_unit_iobase(struct unit *unit)
+{
+  struct resource *res = get_unit_resource(unit, RESOURCE_IO, 0);
+  
+  if (res) return res->start;
+  return -1;
+}
+
+void *get_unit_membase(struct unit *unit)
+{
+  struct resource *res = get_unit_resource(unit, RESOURCE_MEM, 0);
+  
+  if (res) return (void *) (res->start);
+  return NULL;
+}
+
+char *get_unit_name(struct unit *unit)
+{
+  if (unit->productname && *unit->productname) return unit->productname;
+  if (unit->classname && *unit->classname) return unit->classname;
+  return "unknown";
+}
+
+struct unit *lookup_unit(struct unit *start, unsigned long unitcode, unsigned long unitmask)
+{
+  struct unit *unit;
+  
+  if (start)
+    unit = start->next;
+  else
+    unit = units;
+
+  while (unit)
+  {
+    if ((unit->unitcode & unitmask) == unitcode) return unit;
+    unit = unit->next;
+  }
+
+  return NULL;
+}
+
+struct unit *lookup_unit_by_class(struct unit *start, unsigned long classcode, unsigned long classmask)
+{
+  struct unit *unit;
+  
+  if (start)
+    unit = start->next;
+  else
+    unit = units;
+
+  while (unit)
+  {
+    if ((unit->classcode & classmask) == classcode) return unit;
+    unit = unit->next;
+  }
+
+  return NULL;
+}
+
+void enum_host_bus()
+{
+  struct bus *host_bus;
+  struct unit *pci_host_bridge;
+  unsigned long unitcode;
+  struct bus *pci_root_bus;
+  struct unit *isa_bridge;
+  struct bus *isa_bus;
+
+  // Create host bus
+  host_bus = add_bus(NULL, BUSTYPE_HOST, 0);
+
+  unitcode = get_pci_hostbus_unitcode();
+  if (unitcode)
+  {
+    // Enumerate PCI buses
+    pci_host_bridge = add_unit(host_bus, PCI_HOST_BRIDGE, unitcode, 0);
+    pci_root_bus = add_bus(pci_host_bridge, BUSTYPE_PCI, 0);
+
+    enum_pci_bus(pci_root_bus);
+  }
+  else
+  {
+    // Enumerate ISA bus using PnP
+    isa_bridge = add_unit(host_bus, PCI_ISA_BRIDGE, 0, 0);
+    isa_bus = add_bus(isa_bridge, BUSTYPE_ISA, 0);
+
+    enum_isapnp(isa_bus);
+  }
 }
 
 static void parse_bindings()
@@ -49,7 +254,9 @@ static void parse_bindings()
   struct section *sect;
   struct property *prop;
   struct binding *bind;
-  char *s;
+  char buf[128];
+  char *p;
+  char *q;
   int n;
 
   // Parse driver bindings
@@ -65,23 +272,45 @@ static void parse_bindings()
   prop = sect->properties;
   while (prop)
   {
-    bind = &bindtab[n++];
-    s = prop->name;
-    bind->type = *s++;
-    bind->module = prop->value;
+    bind = &bindtab[n];
 
-    while (*s)
+    strcpy(buf, prop->name);
+    
+    p = q = buf;
+    while (*q && *q != ' ') q++;
+    if (!*q) continue;
+    *q++ = 0;
+
+    if (strcmp(p, "pci") == 0)
+      bind->bustype = BUSTYPE_PCI;
+    else if (strcmp(p, "isa") == 0)
+      bind->bustype = BUSTYPE_ISA;
+
+    while (*q == ' ') q++;
+    p = q;
+    while (*q && *q != ' ') q++;
+    if (!*q) continue;
+    *q++ = 0;
+
+    if (strcmp(p, "class") == 0)
+      bind->bindtype = BIND_BY_CLASSCODE;
+    else if (strcmp(p, "unit") == 0)
+      bind->bindtype = BIND_BY_UNITCODE;
+
+    while (*q == ' ') q++;
+
+    while (*q)
     {
       unsigned long digit;
       unsigned long mask;
 
       mask = 0xF;
-      if (*s >= '0' && *s <= '9')
-	digit = *s - '0';
-      else if (*s >= 'A' && *s <= 'F')
-	digit = *s - 'A' + 10;
-      else if (*s >= 'a' && *s <= 'f')
-	digit = *s - 'a' + 10;
+      if (*q >= '0' && *q <= '9')
+	digit = *q - '0';
+      else if (*q >= 'A' && *q <= 'F')
+	digit = *q - 'A' + 10;
+      else if (*q >= 'a' && *q <= 'f')
+	digit = *q - 'a' + 10;
       else
       {
 	digit = 0;
@@ -90,36 +319,36 @@ static void parse_bindings()
 
       bind->code = (bind->code << 4) | digit;
       bind->mask = (bind->mask << 4) | mask;
-      s++;
+      q++;
     }
+
+    bind->module = prop->value;
 
     //kprintf("binding %c %08X %08X %s\n", bind->type, bind->code, bind->mask, bind->module);
     prop = prop->next;
+    n++;
   }
 }
 
-static struct binding *find_binding(struct device *dv)
+static struct binding *find_binding(struct unit *unit)
 {
   int n;
 
-  if (dv->type == DEVICE_TYPE_PCI)
+  for (n = 0; n < num_bindings; n++)
   {
-    for (n = 0; n < num_bindings; n++)
-    {
-      struct binding *bind = &bindtab[n];
+    struct binding *bind = &bindtab[n];
 
-      if (bind->type == BIND_PCI_CLASS && (dv->classcode & bind->mask) == bind->code) return bind;
-      if (bind->type == BIND_PCI_DEVICE && (dv->devicecode & bind->mask) == bind->code) return bind;
-    }
-  }
-  else if (dv->type == DEVICE_TYPE_PNP)
-  {
-    for (n = 0; n < num_bindings; n++)
+    if (bind->bustype == unit->bus->bustype)
     {
-      struct binding *bind = &bindtab[n];
+      if (bind->bindtype == BIND_BY_CLASSCODE)
+      {
+	if ((unit->classcode & bind->mask) == bind->code) return bind;
+      }
 
-      if (bind->type == BIND_PNP_TYPECODE && (dv->classcode & bind->mask) == bind->code) return bind;
-      if (bind->type == BIND_PNP_EISAID && (dv->devicecode & bind->mask) == bind->code) return bind;
+      if (bind->bindtype == BIND_BY_UNITCODE)
+      {
+	if ((unit->unitcode & bind->mask) == bind->code) return bind;
+      }
     }
   }
 
@@ -145,39 +374,39 @@ static void *get_driver_entry(char *module, char *defentry)
   return resolve(hmod, entryname);
 }
 
-static void bind_devices()
+static void install_driver(struct unit *unit, struct binding *bind)
 {
-  int n;
-  int (*entry)(struct device *dv);
+  int (*entry)(struct unit *unit);
   int rc;
 
-  for (n = 0; n < num_devices; n++)
+  entry = get_driver_entry(bind->module, "install");
+  if (!entry)
   {
-    struct device *dv = devicetab[n];
-    struct binding *bind = find_binding(dv);
+    kprintf("warning: unable to load driver %s for unit '%s'\n", bind->module, get_unit_name(unit));
+    return;
+  }
 
-    // Install driver
-    if (bind)
-    {
-      entry = get_driver_entry(bind->module, "install");
-      if (!entry)
-      {
-	kprintf("warning: unable to load driver %s for device '%s'\n", bind->module, dv->name);
-	continue;
-      }
-
-      //kprintf("install driver %s for device '%s' (entry %p)\n", modfn, dv->name, entry);
-      rc = entry(dv);
-      if (rc < 0)
-      {
-	kprintf("warning: error %d installing driver %s for device '%s'\n", rc, bind->module, dv->name);
-	continue;
-      }
-    }
+  rc = entry(unit);
+  if (rc < 0)
+  {
+    kprintf("warning: error %d installing driver %s for unit '%s'\n", rc, bind->module, get_unit_name(unit));
+    return;
   }
 }
 
-static void install_nonpnp_drivers()
+static void bind_units()
+{
+  struct unit *unit = units;
+
+  while (unit)
+  {
+    struct binding *bind = find_binding(unit);
+    if (bind) install_driver(unit, bind);
+    unit = unit->next;
+  }
+}
+
+static void install_legacy_drivers()
 {
   struct section *sect;
   struct property *prop;
@@ -208,11 +437,11 @@ void install_drivers()
   // Parse driver binding database
   parse_bindings();
 
-  // Match bindings to devices
-  bind_devices();
+  // Match bindings to units
+  bind_units();
 
-  // Install non-PnP drivers
-  install_nonpnp_drivers();
+  // Install legacy drivers
+  install_legacy_drivers();
 }
 
 struct dev *device(devno_t devno)
@@ -221,7 +450,7 @@ struct dev *device(devno_t devno)
   return devtab[devno];
 }
 
-devno_t dev_make(char *name, struct driver *driver, struct device *dv, void *privdata)
+devno_t dev_make(char *name, struct driver *driver, struct unit *unit, void *privdata)
 {
   struct dev *dev;
   devno_t devno;
@@ -261,11 +490,11 @@ devno_t dev_make(char *name, struct driver *driver, struct device *dv, void *pri
   }
 
   dev->driver = driver;
-  dev->device = dv;
+  dev->unit = unit;
   dev->privdata = privdata;
   dev->refcnt = 0;
 
-  if (dv) dv->dev = dev;
+  if (unit) unit->dev = dev;
 
   devno = num_devs++;
   devtab[devno] = dev;

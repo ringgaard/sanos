@@ -46,9 +46,9 @@
 #include <os/pic.h>
 #include <os/pit.h>
 
+#include <os/dev.h>
 #include <os/pci.h>
 #include <os/pnpbios.h>
-#include <os/dev.h>
 
 #include <os/video.h>
 #include <os/kbd.h>

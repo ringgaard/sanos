@@ -233,11 +233,8 @@ void main(void *arg)
   char bootdevname[8];
   int rc;
 
-  // Enumerate Plug-n-Play devices
-  pnpbios_init();
-
-  // Enumerate PCI devices
-  init_pci();
+  // Enumerate root host buses and units
+  enum_host_bus();
 
   // Initialize boot device drivers
   init_hd();

@@ -92,12 +92,6 @@ struct pnp_bios_node
 
 #pragma pack(pop)
 
-struct pnp_dev
-{
-  char name[80];
-  unsigned char type_code[3];
-};
-
-krnlapi int pnp_bios_present();
+int enum_isapnp(struct bus *bus);
 
 #endif

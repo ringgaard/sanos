@@ -269,30 +269,6 @@ static void remove_dir(char *filename)
   }
 }
 
-static void disk_usage(char *filename)
-{
-  struct fs *fs;
-  struct filsys *filsys;
-
-  fs = fslookup(filename, NULL);
-  if (!fs)
-  {
-    kprintf("%s: unknown file system\n", filename);
-  }
-
-  filsys = (struct filsys *) fs->data;
-  kprintf("block size %d\n", filsys->blocksize);
-  kprintf("blocks %d\n", filsys->super->block_count);
-  kprintf("inodes %d\n", filsys->super->inode_count);
-  kprintf("free blocks %d\n", filsys->super->free_block_count);
-  kprintf("free inodes %d\n", filsys->super->free_inode_count);
-
-  kprintf("%dKB used, %dKB free, %dKB total\n", 
-    filsys->blocksize * (filsys->super->block_count - filsys->super->free_block_count) / 1024, 
-    filsys->blocksize * filsys->super->free_block_count / 1024, 
-    filsys->blocksize * filsys->super->block_count / 1024);
-}
-
 static void show_date()
 {
   time_t time;
@@ -639,75 +615,74 @@ static void fs_list()
   }
 }
 
-static void dump_devices()
+static void dump_units()
 {
-  int i, j;
-  struct device *dv;
+  static char *busnames[] = {"HOST", "PCI", "ISA", "?", "?"};
+
+  struct unit *unit;
+  struct resource *res;
   int lines = 0;
+  int bustype;
+  int busno;
 
-  for (i = 0; i < (int) num_devices; i++)
+  unit = units;
+  while (unit)
   {
-    dv = devicetab[i];
-
-    kprintf("%08X %08X ", dv->classcode, dv->devicecode);
-
-    switch (dv->type)
+    if (unit->bus)
     {
-      case DEVICE_TYPE_LEGACY:
-	kprintf("%s:", dv->name);
-	break;
-
-      case DEVICE_TYPE_PCI:
-	if (strcmp(dv->name, "Unknown") == 0)
-	  kprintf("PCI %04X:%04X (%X):", dv->pci->vendorid, dv->pci->deviceid, dv->pci->classcode);
-	else
-	  kprintf("PCI %04X:%04X (%s):", dv->pci->vendorid, dv->pci->deviceid, dv->name);
-	break;
-
-      case DEVICE_TYPE_PNP:
-	if (strcmp(dv->name, "Unknown") == 0)
-	  kprintf("PnP %s (%02X %02X %02X):", dv->pnp->name, dv->pnp->type_code[0], dv->pnp->type_code[1], dv->pnp->type_code[2]);
-	else
-	  kprintf("PnP %s (%s):", dv->pnp->name, dv->name);
-	break;
+      bustype = unit->bus->bustype;
+      busno = unit->bus->busno;
     }
-
-    for (j = 0; j < dv->numres; j++)
+    else
     {
-      switch (dv->res[j].type)
+      bustype = BUSTYPE_HOST;
+      busno = 0;
+    }
+    
+    kprintf("%s unit %x.%x class %08X code %08X %s:\n", busnames[bustype], busno, unit->unitno,unit->classcode, unit->unitcode, get_unit_name(unit));
+    if (++lines % 10 == 0) pause();
+
+    res = unit->resources;
+    while (res)
+    {
+      switch (res->type)
       {
 	case RESOURCE_IO: 
-	  if (dv->res[j].len == 1) 
-	    kprintf(" io:%03x", dv->res[j].start);
+	  if (res->len == 1) 
+	    kprintf("  io: 0x%03x", res->start);
 	  else
-	    kprintf(" io:%03x-%03x", dv->res[j].start, dv->res[j].start + dv->res[j].len - 1);
+	    kprintf("  io: 0x%03x-0x%03x", res->start, res->start + res->len - 1);
 	  break;
 
 	case RESOURCE_MEM:
-	  if (dv->res[j].len == 1) 
-	    kprintf(" mem:%08x", dv->res[j].start);
+	  if (res->len == 1) 
+	    kprintf("  mem: 0x%08x", res->start);
 	  else
-	    kprintf(" mem:%08x-%08x", dv->res[j].start, dv->res[j].start + dv->res[j].len - 1);
+	    kprintf("  mem: 0x%08x-0x%08x", res->start, res->start + res->len - 1);
 	  break;
 
 	case RESOURCE_IRQ:
-	  if (dv->res[j].len == 1) 
-	    kprintf(" irq:%d", dv->res[j].start);
+	  if (res->len == 1) 
+	    kprintf("  irq: %d", res->start);
 	  else
-	    kprintf(" irq:%d-%d", dv->res[j].start, dv->res[j].start + dv->res[j].len - 1);
+	    kprintf("  irq: %d-%d", res->start, res->start + res->len - 1);
 	  break;
 
 	case RESOURCE_DMA:
-	  if (dv->res[j].len == 1) 
-	    kprintf(" dma:%d", dv->res[j].start);
+	  if (res->len == 1) 
+	    kprintf("  dma: %d", res->start);
 	  else
-	    kprintf(" dma:%d-%d", dv->res[j].start, dv->res[j].start + dv->res[j].len - 1);
+	    kprintf("  dma: %d-%d", res->start, res->start + res->len - 1);
 	  break;
       }
+
+      kprintf("\n");
+      if (++lines % 10 == 0) pause();
+
+      res = res->next;
     }
 
-    kprintf("\n");
-    if (++lines % 10 == 0) pause();
+    unit = unit->next;
   }
 }
 
@@ -913,8 +888,6 @@ void shell()
       make_dir(arg);
     else if (strcmp(cmd, "rmdir") == 0)
       remove_dir(arg);
-    else if (strcmp(cmd, "du") == 0)
-      disk_usage(arg);
     else if (strcmp(cmd, "mem") == 0)
       mem_usage();
     else if (strcmp(cmd, "d") == 0)
@@ -923,10 +896,8 @@ void shell()
       dump_disk(arg, atoi(arg2));
     else if (strcmp(cmd, "date") == 0)
       show_date();
-    else if (strcmp(cmd, "pcidump") == 0)
-      dump_pci_devices();
-    else if (strcmp(cmd, "devices") == 0)
-      dump_devices();
+    else if (strcmp(cmd, "units") == 0)
+      dump_units();
     else if (strcmp(cmd, "mbr") == 0)
       dump_mbr(arg);
     else if (strcmp(cmd, "mount") == 0)

@@ -43,52 +43,25 @@
 #define PCI_CLASS_MASK  	0xFF0000
 #define PCI_SUBCLASS_MASK  	0xFFFF00
 
+#define PCI_HOST_BRIDGE         0x060000
+#define PCI_BRIDGE              0x060400
+#define PCI_ISA_BRIDGE          0x060100
+
 #define PCI_CLASS_STORAGE_IDE	0x010100
 
-struct pci_bus;
+#define PCI_UNITCODE(vendorid, deviceid) ((vendorid) << 16 | (deviceid))
+#define PCI_UNITNO(devno, funcno) ((devno) << 3 | (funcno))
 
-struct pci_dev
-{
-  struct pci_bus *bus;
-  struct pci_dev *next;
-
-  int devno;
-  int funcno;
-
-  unsigned short vendorid;
-  unsigned short deviceid;
-
-  int classcode;
-
-  unsigned long membase;
-  unsigned long iobase;
-  
-  int intrpin;
-  int irq;
-};
-
-struct pci_bus
-{
-  struct pci_bus *parent;
-  struct pci_bus *next;
-  struct pci_dev *self;
-
-  int busno;
-  struct pci_dev *devices;
-  struct pci_bus *bridges;
-};
-
-extern struct pci_bus *pci_root;
+#define PCI_DEVNO(unitno) ((unitno) >> 3)
+#define PCI_FUNCNO(unitno) ((unitno) & 7)
 
 krnlapi unsigned long pci_config_read(int busno, int devno, int funcno, int addr);
 krnlapi void pci_config_write(int busno, int devno, int funcno, int addr, unsigned long value);
 
-krnlapi char *get_pci_class_name(int classcode);
+krnlapi unsigned long pci_unit_read(struct unit *unit, int addr);
+krnlapi void pci_unit_write(struct unit *unit, int addr, unsigned long value);
 
-krnlapi struct pci_dev *lookup_pci_device(unsigned short vendorid, unsigned short deviceid);
-krnlapi struct pci_dev *lookup_pci_device_class(int classcode, int mask);
-
-void init_pci();
-void dump_pci_devices();
+void enum_pci_bus(struct bus *bus);
+unsigned long get_pci_hostbus_unitcode();
 
 #endif

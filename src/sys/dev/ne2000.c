@@ -556,7 +556,7 @@ struct driver ne_driver =
   ne_transmit
 };
 
-int ne_setup(unsigned short iobase, int irq, unsigned short membase, unsigned short memsize, struct device *dv)
+int ne_setup(unsigned short iobase, int irq, unsigned short membase, unsigned short memsize, struct unit *unit)
 {
   struct ne *ne;
   unsigned char romdata[16];
@@ -650,32 +650,27 @@ int ne_setup(unsigned short iobase, int irq, unsigned short membase, unsigned sh
   _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
 
   // Create packet device
-  devno = dev_make("nic#", &ne_driver, dv, ne);
+  devno = dev_make("nic#", &ne_driver, unit, ne);
 
   kprintf("%s: NE2000 iobase 0x%x irq %d hwaddr %s\n", device(devno)->name, ne->iobase, ne->irq, ether2str(&ne->hwaddr, str));
   return 0;
 }
 
-int __declspec(dllexport) install(struct device *dv)
+int __declspec(dllexport) install(struct unit *unit)
 {
-  int n;
   unsigned short iobase;
   int irq;
+  struct resource *memres;
   unsigned short membase;
   unsigned short memsize;
 
-  for (n = 0; n < dv->numres; n++)
-  {
-    if (dv->res[n].type == RESOURCE_IO) iobase = (unsigned short) dv->res[n].start;
-    if (dv->res[n].type == RESOURCE_IRQ) irq = (unsigned short) dv->res[n].start;
-    if (dv->res[n].type == RESOURCE_MEM) 
-    {
-      membase = (unsigned short) dv->res[n].start;
-      memsize = (unsigned short) dv->res[n].len;
-    }
-  }
+  iobase = (unsigned short) get_unit_iobase(unit);
+  irq = get_unit_irq(unit);
+  memres = get_unit_resource(unit, RESOURCE_MEM, 0);
+  membase = (unsigned short) memres->start;
+  memsize = (unsigned short) memres->len;
 
-  return ne_setup(iobase, irq, membase, memsize, dv);
+  return ne_setup(iobase, irq, membase, memsize, unit);
 }
 
 int __declspec(dllexport) install_ne2000(char *opts)

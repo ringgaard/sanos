@@ -10,14 +10,12 @@
 #define DEV_H
 
 struct dev;
-struct pci_dev;
-struct pnp_dev;
+struct bus;
+struct unit;
 
 #define NODEV (-1)
 
 #define DEVNAMELEN              32
-#define MAX_DEVICES             64
-#define MAX_RESOURCES           32
 #define MAX_DEVS                64
 
 #define DEV_TYPE_STREAM		1
@@ -28,20 +26,62 @@ struct pnp_dev;
 #define IOCTL_GETDEVSIZE        2
 #define IOCTL_GETGEOMETRY       3
 
-#define DEVICE_TYPE_LEGACY      0
-#define DEVICE_TYPE_PCI         1
-#define DEVICE_TYPE_PNP         2
-
-#define RESOURCE_UNUSED	        0
 #define RESOURCE_IO	        1
 #define RESOURCE_MEM	        2
 #define RESOURCE_IRQ	        3
 #define RESOURCE_DMA	        4
 
-#define BIND_PCI_CLASS          'C'
-#define BIND_PCI_DEVICE         'D'
-#define BIND_PNP_TYPECODE       'T'
-#define BIND_PNP_EISAID         'E'
+#define BUSTYPE_HOST            0
+#define BUSTYPE_PCI             1
+#define BUSTYPE_ISA             2
+
+#define BIND_BY_CLASSCODE       1
+#define BIND_BY_UNITCODE        2
+
+//
+// Bus
+//
+
+struct bus
+{
+  struct bus *next;
+  struct bus *sibling;
+  struct bus *parent;
+
+  struct unit *self;
+
+  unsigned long bustype;
+  unsigned long busno;
+
+  struct unit *units;
+  struct bus *bridges;
+};
+
+//
+// Unit
+//
+
+struct unit
+{
+  struct unit *next;
+  struct unit *sibling;
+  struct bus *bus;
+  struct dev *dev;
+
+  unsigned long classcode;
+  unsigned long unitcode;
+  unsigned long unitno;
+
+  char *classname;
+  char *vendorname;
+  char *productname;
+
+  struct resource *resources;
+};
+
+//
+// Resource
+//
 
 struct resource
 {
@@ -51,6 +91,23 @@ struct resource
   unsigned long start;
   unsigned long len;
 };
+
+//
+// Binding
+//
+
+struct binding
+{
+  int bindtype;
+  unsigned long bustype;
+  unsigned long code;
+  unsigned long mask;
+  char *module;
+};
+
+//
+// Driver
+//
 
 struct driver
 {
@@ -66,12 +123,15 @@ struct driver
   int (*transmit)(struct dev *dev, struct pbuf *p);
 };
 
+//
+// Device
+//
+
 struct dev 
 {
   char name[DEVNAMELEN];
   struct driver *driver;
-  struct device *device;
-  //struct unit *unit;
+  struct unit *unit;
   void *privdata;
   int refcnt;
 
@@ -79,76 +139,9 @@ struct dev
   int (*receive)(struct netif *netif, struct pbuf *p);
 };
 
-struct device
-{
-  int type;
-  char *name;
-  struct dev *dev;
-  
-  unsigned long classcode;
-  unsigned long devicecode;
-
-  int numres;
-  struct resource res[MAX_RESOURCES];
-  
-  union
-  {
-    struct pci_dev *pci;
-    struct pnp_dev *pnp;
-  };
-};
-
-///////////////
-
-struct bus;
-
-struct unit
-{
-  struct bus *bus;
-  struct unit *sibling;
-  struct unit *next;
-  struct dev *dev;
-
-  char *typename;
-  char *vendorname;
-  char *productname;
-
-  unsigned long unitno;
-
-  unsigned long typecode;
-  unsigned long unitcode;
-
-  struct resource *resources;
-};
-
-struct bus
-{
-  struct bus *parent;
-  struct bus *sibling;
-  struct bus *next;
-
-  struct unit *self;
-
-  char *typename;
-  char *vendorname;
-  char *productname;
-
-  unsigned long bustype;
-  unsigned long busno;
-
-  struct unit *units;
-  struct bus *bridges;
-};
-
-//////////////
-
-struct binding
-{
-  int type;
-  unsigned long code;
-  unsigned long mask;
-  char *module;
-};
+//
+// Geometry
+//
 
 struct geometry
 {
@@ -162,17 +155,28 @@ struct geometry
 extern struct dev *devtab[];
 extern unsigned int num_devs;
 
-extern struct device *devicetab[];
-extern int num_devices;
+extern struct unit *units;
+extern struct bus *buses;
 
+void enum_host_bus();
 void install_drivers();
 
-krnlapi struct device *register_device(int type, unsigned long classcode, unsigned long devicecode);
-krnlapi int add_resource(struct device *dv, int type, int flags, unsigned long start, unsigned long len);
+krnlapi struct bus *add_bus(struct unit *self, unsigned long bustype, unsigned long busno);
+krnlapi struct unit *add_unit(struct bus *bus, unsigned long classcode, unsigned long unitcode, unsigned long unitno);
+krnlapi struct resource *add_resource(struct unit *unit, unsigned short type, unsigned short flags, unsigned long start, unsigned long len);
+
+krnlapi struct resource *get_unit_resource(struct unit *unit, int type, int num);
+krnlapi int get_unit_irq(struct unit *unit);
+krnlapi int get_unit_iobase(struct unit *unit);
+krnlapi void *get_unit_membase(struct unit *unit);
+krnlapi char *get_unit_name(struct unit *unit);
+
+krnlapi struct unit *lookup_unit(struct unit *start, unsigned long unitcode, unsigned long unitmask);
+krnlapi struct unit *lookup_unit_by_class(struct unit *start, unsigned long classcode, unsigned long classmask);
 
 krnlapi struct dev *device(devno_t devno);
 
-krnlapi devno_t dev_make(char *name, struct driver *driver, struct device *dv, void *privdata);
+krnlapi devno_t dev_make(char *name, struct driver *driver, struct unit *unit, void *privdata);
 krnlapi devno_t dev_open(char *name);
 krnlapi int dev_close(devno_t devno);
 

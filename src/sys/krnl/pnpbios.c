@@ -228,7 +228,7 @@ static char *get_device_type_name(unsigned char type_code[3])
   return "Unknown";
 }
 
-static void extract_node_resource_data(struct pnp_bios_node *node, struct device *dv)
+static void extract_node_resource_data(struct pnp_bios_node *node, struct unit *unit)
 {
   unsigned char *p = node->data;
   unsigned char *end = node->data + node->size;
@@ -247,16 +247,16 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct device
 	{
 	  int addr = *(short *) &p[4];
 	  int len = *(short *) &p[10];
-	  add_resource(dv, RESOURCE_MEM, 0, addr, len);
+	  add_resource(unit, RESOURCE_MEM, 0, addr, len);
 	  break;
 	}
 	
 	case 0x02: // Device name
 	{
 	  int len = *(short *) &p[1];
-	  if (len > 79) len = 79;
-	  memcpy(dv->pnp->name, p + 3, len);
-	  dv->pnp->name[len] = 0;
+	  unit->productname = (char *) kmalloc(len + 1);
+	  memcpy(unit->productname, p + 3, len);
+	  unit->productname[len] = 0;
 	  break;
 	}
 
@@ -264,7 +264,7 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct device
 	{
 	  int addr = *(int *) &p[4];
 	  int len = *(int *) &p[16];
-	  add_resource(dv, RESOURCE_MEM, 0, addr, len);
+	  add_resource(unit, RESOURCE_MEM, 0, addr, len);
 	  break;
 	}
 
@@ -272,7 +272,7 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct device
 	{
 	  int addr = *(int *) &p[4];
 	  int len = *(int *) &p[8];
-	  add_resource(dv, RESOURCE_MEM, 0, addr, len);
+	  add_resource(unit, RESOURCE_MEM, 0, addr, len);
 	  break;
 	}
 
@@ -295,7 +295,7 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct device
 	int i, mask, irq = -1;
 	mask = p[1] + (p[2] << 8);
 	for (i = 0; i < 16; i++, mask = mask >> 1) if (mask & 0x01) irq = i;
-	if (irq != -1) add_resource(dv, RESOURCE_IRQ, 0, irq, 1);
+	if (irq != -1) add_resource(unit, RESOURCE_IRQ, 0, irq, 1);
 	break;
       }
 
@@ -304,7 +304,7 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct device
 	int i, mask, dma = -1;
 	mask = p[1];
 	for (i = 0; i < 8;i++, mask = mask>>1) if (mask & 0x01) dma = i;
-	if (dma != -1) add_resource(dv, RESOURCE_DMA, 0, dma, 1);
+	if (dma != -1) add_resource(unit, RESOURCE_DMA, 0, dma, 1);
 	break;
       }
 
@@ -312,7 +312,7 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct device
       {
 	int io = p[2] + (p[3] << 8);
 	int len = p[7];
-	if (len != 0) add_resource(dv, RESOURCE_IO, 0, io, len);
+	if (len != 0) add_resource(unit, RESOURCE_IO, 0, io, len);
 	break;
       }
 
@@ -320,7 +320,7 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct device
       {
 	int io = p[1] + (p[2] << 8);
 	int len = p[3];
-	add_resource(dv, RESOURCE_IO, 0, io, len);
+	add_resource(unit, RESOURCE_IO, 0, io, len);
 	break;
       }
 
@@ -333,7 +333,7 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct device
   }
 }
 
-static void build_devlist()
+static void build_devlist(struct bus *bus)
 {
   struct pnp_dev_node_info info;
   int status;
@@ -341,9 +341,9 @@ static void build_devlist()
   int nodenum = 0;
   int nodes_fetched = 0;
   struct pnp_bios_node *node;
-  struct device *dv;
+  struct unit *unit;
   unsigned long classcode;
-  unsigned long devicecode;
+  unsigned long unitcode;
 
   status = pnp_bios_dev_node_info(&info);
   if (status != 0) return;
@@ -371,22 +371,17 @@ static void build_devlist()
     nodes_fetched++;
 
     classcode = (node->type_code[0] << 16) + (node->type_code[1] << 8) + node->type_code[0];
-    devicecode = node->eisa_id;
-    dv = register_device(DEVICE_TYPE_PNP, classcode, devicecode);
-    dv->name = get_device_type_name(node->type_code);
-    dv->pnp = (struct pnp_dev *) kmalloc(sizeof(struct pnp_dev));
-    pnpid32_to_pnpid(node->eisa_id, dv->pnp->name);
-    dv->pnp->type_code[0] = node->type_code[0];
-    dv->pnp->type_code[1] = node->type_code[1];
-    dv->pnp->type_code[2] = node->type_code[2];
+    unitcode = node->eisa_id;
+    unit = add_unit(bus, classcode, unitcode, nodenum);
+    unit->classname = get_device_type_name(node->type_code);
 
-    extract_node_resource_data(node, dv);
-
+    extract_node_resource_data(node, unit);
   }
+
   kfree(node);
 }
 
-int pnpbios_init()
+int enum_isapnp(struct bus *bus)
 {
   int ofs;
   struct pnp_bios_expansion_header *hdr;
@@ -411,7 +406,7 @@ int pnpbios_init()
     for (i = 0; i < length; i++) checksum += ((unsigned char *) hdr)[i];
     if (checksum) continue;
 
-    kprintf("pnpbios: PnP BIOS version %d.%d\n", hdr->version >> 4, hdr->version & 0x0F);
+    //kprintf("pnpbios: PnP BIOS version %d.%d\n", hdr->version >> 4, hdr->version & 0x0F);
     
     memcpy(&pnpbios, hdr, sizeof(struct pnp_bios_expansion_header));
 
@@ -425,7 +420,7 @@ int pnpbios_init()
     pnp_thunk_entrypoint.segment = SEL_PNPTHUNK;
     pnp_thunk_entrypoint.offset = 0;
 
-    build_devlist();
+    build_devlist(bus);
 
     seginit(&syspage->gdt[GDT_PNPTEXT], 0, 0, 0, 0);
     seginit(&syspage->gdt[GDT_PNPDATA], 0, 0, 0, 0);
@@ -439,7 +434,10 @@ int pnpbios_init()
   return 0;
 }
 
-int pnp_bios_present()
+int __declspec(dllexport) install_isapnp(struct unit *unit)
 {
-  return pnpbios.signature == PNP_SIGNATURE;
+  struct bus *isabus;
+
+  isabus = add_bus(unit, BUSTYPE_ISA, 0);
+  return enum_isapnp(isabus);
 }

@@ -1148,20 +1148,20 @@ void init_hd()
 {
   int bmiba;
   int numhd;
-  struct pci_dev *idedev;
+  struct unit *ide;
   int rc;
 
   numhd = syspage->biosdata[0x75];
 
-  idedev = lookup_pci_device_class(PCI_CLASS_STORAGE_IDE, PCI_SUBCLASS_MASK);
-  if (idedev)
+  ide = lookup_unit_by_class(NULL, PCI_CLASS_STORAGE_IDE, PCI_SUBCLASS_MASK);
+  if (ide)
   {
-    bmiba = pci_config_read(idedev->bus->busno, idedev->devno, idedev->funcno, PCI_CONFIG_BASE_ADDR_4) & 0xFFF0;
+    bmiba = pci_unit_read(ide, PCI_CONFIG_BASE_ADDR_4) & 0xFFF0;
   }
 
   if (numhd >= 1) 
   {
-    rc = setup_hdc(&hdctab[0], HDC0_IOBASE, HDC0_IRQ, idedev ? bmiba : 0);
+    rc = setup_hdc(&hdctab[0], HDC0_IOBASE, HDC0_IRQ, ide ? bmiba : 0);
     if (rc < 0)
       kprintf("hd: error %d initializing primary ide controller\n", rc);
     else
@@ -1173,7 +1173,7 @@ void init_hd()
 
   if (numhd >= 3) 
   {
-    rc = setup_hdc(&hdctab[1], HDC1_IOBASE, HDC1_IRQ, idedev ? bmiba + 8: 0);
+    rc = setup_hdc(&hdctab[1], HDC1_IOBASE, HDC1_IRQ, ide ? bmiba + 8: 0);
     if (rc < 0)
       kprintf("hd: error %d initializing secondary ide controller\n", rc);
     else

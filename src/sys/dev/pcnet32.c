@@ -535,7 +535,7 @@ struct driver pcnet32_driver =
   pcnet32_transmit
 };
 
-int __declspec(dllexport) install(struct device *dv)
+int __declspec(dllexport) install(struct unit *unit)
 {
   struct pcnet32 *pcnet32;
   int version;
@@ -547,7 +547,7 @@ int __declspec(dllexport) install(struct device *dv)
   unsigned long value;
 
   // Check for PCI device
-  if (dv->type != DEVICE_TYPE_PCI) return -EINVAL;
+  if (unit->bus->bustype != BUSTYPE_PCI) return -EINVAL;
 
   // Allocate device structure
   pcnet32 = (struct pcnet32 *) kmalloc(sizeof(struct pcnet32));
@@ -556,14 +556,14 @@ int __declspec(dllexport) install(struct device *dv)
   pcnet32->phys_addr = (unsigned long) virt2phys(pcnet32);
 
   // Setup NIC configuration
-  pcnet32->iobase = (unsigned short) dv->pci->iobase;
-  pcnet32->irq = (unsigned short) dv->pci->irq;
-  pcnet32->membase = (unsigned short) dv->pci->membase;
+  pcnet32->iobase = (unsigned short) get_unit_iobase(unit);
+  pcnet32->irq = (unsigned short) get_unit_irq(unit);
+  pcnet32->membase = (unsigned short) get_unit_membase(unit);
 
   // Enable bus mastering
-  value = pci_config_read(dv->pci->bus->busno, dv->pci->devno, dv->pci->funcno, PCI_CONFIG_CMD_STAT);
+  value = pci_unit_read(unit, PCI_CONFIG_CMD_STAT);
   value |= 0x00000004;
-  pci_config_write(dv->pci->bus->busno, dv->pci->devno, dv->pci->funcno, PCI_CONFIG_CMD_STAT, value);
+  pci_unit_write(unit, PCI_CONFIG_CMD_STAT, value);
   
   // Reset the chip
   pcnet32_dwio_reset(pcnet32->iobase);
@@ -722,7 +722,7 @@ int __declspec(dllexport) install(struct device *dv)
   //       dev->name, i, (u32) (lp->dma_addr + offsetof(struct pcnet32_private, init_block)),
   //       lp->a.read_csr (ioaddr, 0));
 
-  pcnet32->devno = dev_make("nic#", &pcnet32_driver, dv, pcnet32);
+  pcnet32->devno = dev_make("nic#", &pcnet32_driver, unit, pcnet32);
 
   kprintf("%s: AMD %s iobase 0x%x irq %d hwaddr %s\n", device(pcnet32->devno)->name, chipname, pcnet32->iobase, pcnet32->irq, ether2str(&pcnet32->hwaddr, str));
 

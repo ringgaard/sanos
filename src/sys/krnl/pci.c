@@ -3,19 +3,10 @@
 //
 // Copyright (c) 2001 Michael Ringgaard. All rights reserved.
 //
-// PCI bus interface
+// PCI bus driver
 //
 
 #include <os/krnl.h>
-
-#define MAX_PCI_BUSSES 8
-
-#define PCI_BRIDGE 0x60400
-
-struct pci_bus *pci_root;
-struct pci_bus *pci_busses[MAX_PCI_BUSSES];
-int num_pci_busses;
-int num_pci_devices;
 
 struct
 {
@@ -124,7 +115,17 @@ void pci_config_write(int busno, int devno, int funcno, int addr, unsigned long 
   _outpd(PCI_CONFIG_DATA, value);
 }
 
-char *get_pci_class_name(int classcode)
+unsigned long pci_unit_read(struct unit *unit, int addr)
+{
+  return pci_config_read(unit->bus->busno, PCI_DEVNO(unit->unitno), PCI_FUNCNO(unit->unitno), addr); 
+}
+
+void pci_unit_write(struct unit *unit, int addr, unsigned long value)
+{
+  pci_config_write(unit->bus->busno, PCI_DEVNO(unit->unitno), PCI_FUNCNO(unit->unitno), addr, value); 
+}
+
+static char *get_pci_class_name(int classcode)
 {
   int i = 0;
 
@@ -138,214 +139,103 @@ char *get_pci_class_name(int classcode)
   return "Unknown";
 }
 
-struct pci_dev *lookup_pci_device(unsigned short vendorid, unsigned short deviceid)
-{
-  int i;
-  struct pci_bus *bus;
-  struct pci_dev *dev;
-
-  for (i = 0; i < num_pci_busses; i++)
-  {
-    bus = pci_busses[i];
-    dev = bus->devices;
-
-    while (dev)
-    {
-      if (dev->vendorid == vendorid && dev->deviceid == deviceid) return dev;
-      dev = dev->next;
-    }
-  }
-
-  return NULL;
-}
-
-struct pci_dev *lookup_pci_device_class(int classcode, int mask)
-{
-  int i;
-  struct pci_bus *bus;
-  struct pci_dev *dev;
-
-  for (i = 0; i < num_pci_busses; i++)
-  {
-    bus = pci_busses[i];
-    dev = bus->devices;
-
-    while (dev)
-    {
-      if ((dev->classcode & mask) == classcode) return dev;
-      dev = dev->next;
-    }
-  }
-
-  return NULL;
-}
-
-static void scan_pci_bus(struct pci_bus *bus)
+void enum_pci_bus(struct bus *bus)
 {
   int devno;
   int funcno;
+  int busno;
   int bar;
+  int intrpin;
+  int irq;
   unsigned long value;
-  unsigned short vendorid;
-  unsigned short deviceid;
-  struct pci_dev *dev;
-  struct pci_dev *devtail;
-  struct pci_bus *bustail;
-  struct device *dv;
-
-  devtail = NULL;
-  bustail = NULL;
+  unsigned long vendorid;
+  unsigned long deviceid;
+  unsigned long classcode;
+  struct unit *unit;
+  unsigned long prev_deviceid;
 
   for (devno = 0; devno < 32; devno++)
   {
+    prev_deviceid = 0;
+
     for (funcno = 0; funcno < 8; funcno++)
     {
       // Vendor and device ids
       value = pci_config_read(bus->busno, devno, funcno, PCI_CONFIG_VENDOR);
-      vendorid = (unsigned short) (value & 0xFFFF);
-      deviceid = (unsigned short) (value >> 16);
+      vendorid = value & 0xFFFF;
+      deviceid = value >> 16;
 
-      if (vendorid != 0xFFFF && vendorid != 0)
+      if (vendorid == 0xFFFF || vendorid == 0) continue;
+      if (deviceid == prev_deviceid) continue;
+
+      // Function class code
+      value = pci_config_read(bus->busno, devno, funcno, PCI_CONFIG_CLASS_REV);
+      classcode = value >> 8;
+
+      // Register new unit, host bridge is a special case
+      if (bus->busno == 0 && devno == 0 && funcno == 0 && bus->self)
+	unit = bus->self;
+      else
+        unit = add_unit(bus, classcode, PCI_UNITCODE(vendorid, deviceid), PCI_UNITNO(devno, funcno));
+      
+      unit->classname = get_pci_class_name(classcode);
+
+      if (classcode == PCI_BRIDGE)
       {
-	if (funcno == 0 || devtail == NULL || devtail->devno != devno || devtail->deviceid != deviceid)
+	struct bus *bridge;
+
+	// Get secondary bus number for bridge
+        value = pci_config_read(bus->busno, devno, funcno, PCI_CONFIG_BASE_ADDR_2);
+	busno = (value >> 8) & 0xFF;
+
+        // Allocate and initialize new PCI bus
+	bridge = add_bus(unit, BUSTYPE_PCI, busno);
+
+	// Scan for devices on secondary bus
+	enum_pci_bus(bridge);
+      }
+      else
+      {
+	// Function I/O and memory base addresses
+	for (bar = 0; bar < 6; bar++)
 	{
-	  // Allocate and initialize new PCI device
-	  dev = (struct pci_dev *) kmalloc(sizeof(struct pci_dev));
-	  memset(dev, 0, sizeof(struct pci_dev));
-
-	  dev->bus = bus;
-	  dev->devno = devno;
-	  dev->funcno = funcno;
-	  dev->vendorid = vendorid;
-	  dev->deviceid = deviceid;
-
-	  if (devtail) 
-	    devtail->next = dev;
-	  else
-	    bus->devices = dev;
-	  devtail = dev;
-
-	  // Function class code
-	  value = pci_config_read(bus->busno, devno, funcno, PCI_CONFIG_CLASS_REV);
-	  dev->classcode = value >> 8;
-
-	  // Register new device
-	  dv = register_device(DEVICE_TYPE_PCI, dev->classcode, (dev->vendorid << 16) + dev->deviceid);
-	  dv->name = get_pci_class_name(dev->classcode);
-	  dv->pci = dev;
-          num_pci_devices++;
-
-	  if (dev->classcode == PCI_BRIDGE)
+  	  value = pci_config_read(bus->busno, devno, funcno, PCI_CONFIG_BASE_ADDR_0 + bar);
+	  if (value != 0)
 	  {
-	    struct pci_bus *bridge;
+	    unsigned long res = value & 0xFFFFFFFC;
 
-	    // PCI-PCI bridge
-	    if (num_pci_busses == MAX_PCI_BUSSES) panic("too many pci busses");
-
-            // Allocate and initialize new PCI bus
-	    bridge = (struct pci_bus *) kmalloc(sizeof(struct pci_bus));
-            memset(bridge, 0, sizeof(struct pci_bus));
-	    pci_busses[num_pci_busses++] = bridge;
-
-	    bridge->parent = bus;
-	    bridge->self = dev;
-
-	    if (bustail)
-	      bustail->next = bridge;
+	    if (value & 1)
+	      add_resource(unit, RESOURCE_IO, 0, res, 1);
 	    else
-	      bus->bridges = bridge;
-	    bustail = bridge;
-
-	    // Get secondary bus number for bridge
-            value = pci_config_read(bus->busno, devno, funcno, PCI_CONFIG_BASE_ADDR_2);
-	    bridge->busno = (value >> 8) & 0xFF;
-
-	    // Scan for devices on secondary bus
-	    scan_pci_bus(bridge);
+	      add_resource(unit, RESOURCE_MEM, 0, res, 1);
 	  }
-	  else
-	  {
-	    // Function i/o and memory base addresses
-	    for (bar = 0; bar < 6; bar++)
-	    {
-  	      value = pci_config_read(bus->busno, devno, funcno, PCI_CONFIG_BASE_ADDR_0 + bar);
-	      if (value != 0)
-	      {
-		unsigned long res = value & 0xFFFFFFFC;
+	}
 
-		if (value & 1)
-		{
-		  add_resource(dv, RESOURCE_IO, 0, res, 1);
-		  if (dev->iobase == 0) dev->iobase = res;
-		}
-		else
-		{
-		  add_resource(dv, RESOURCE_MEM, 0, res, 1);
-		  if (dev->membase == 0) dev->membase = res;
-		}
-	      }
-
-	    }
-
-	    // Function interrupt line
-	    value = pci_config_read(bus->busno, devno, funcno, PCI_CONFIG_INTR);
-	    if ((value & 0xFF) > 0 && (value & 0xFF) < 32)
-	    {
-	      dev->intrpin = (value >> 8) & 0xFF;
-	      dev->irq = value & 0xFF;
-	      add_resource(dv, RESOURCE_IRQ, 0, dev->irq, 1);
-	    }
-	  }
+	// Function interrupt line
+	value = pci_config_read(bus->busno, devno, funcno, PCI_CONFIG_INTR);
+	if ((value & 0xFF) > 0 && (value & 0xFF) < 32)
+	{
+	  intrpin = (value >> 8) & 0xFF;
+	  irq = value & 0xFF;
+	  add_resource(unit, RESOURCE_IRQ, 0, irq, 1);
 	}
       }
     }
   }
 }
 
-void init_pci()
+unsigned long get_pci_hostbus_unitcode()
 {
-  pci_root = (struct pci_bus *) kmalloc(sizeof(struct pci_bus));
-  memset(pci_root, 0, sizeof(struct pci_bus));
- 
-  pci_busses[0] = pci_root;
-  num_pci_busses = 1;
+  unsigned long value;
+  unsigned long vendorid;
+  unsigned long deviceid;
 
-  scan_pci_bus(pci_root);
+  // Try to read bus 0 device 0 function 0 vendor
+  value = pci_config_read(0, 0, 0, PCI_CONFIG_VENDOR);
+  vendorid = value & 0xFFFF;
+  deviceid = value >> 16;
 
-  if (num_pci_devices > 0)
-  {
-    kprintf("pci: %d pci bus%s, %d pci device%s\n", num_pci_busses, num_pci_busses != 1 ? "es" : "", num_pci_devices, num_pci_devices != 1 ? "s" : "");
-  }
-}
+  if (vendorid == 0 || vendorid == 0xFFFF) return 0;
 
-void dump_pci_devices()
-{
-  int i;
-  struct pci_bus *bus;
-  struct pci_dev *dev;
-
-  for (i = 0; i < num_pci_busses; i++)
-  {
-    bus = pci_busses[i];
-    dev = bus->devices;
-
-    while (dev)
-    {
-      kprintf("dev %d.%d.%d vendor %X device %X class %X", dev->bus->busno, dev->devno, dev->funcno, dev->vendorid, dev->deviceid, dev->classcode);
-
-      if (dev->classcode == PCI_BRIDGE)
-      {
-	kprintf(" bridge\n");
-      }
-      else
-      {
-	if (dev->membase != 0) kprintf(" mem %X", dev->membase);
-	if (dev->iobase != 0) kprintf(" io %X", dev->iobase);
-	if (dev->irq != 0) kprintf(" irq %d", dev->irq);
-	kprintf("\n");
-      }
-
-      dev = dev->next;
-    }
-  }
+  return PCI_UNITCODE(vendorid, deviceid);
 }

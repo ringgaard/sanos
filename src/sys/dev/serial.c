@@ -620,7 +620,7 @@ struct driver serial_driver =
   serial_write
 };
 
-static void init_serial_port(char *devname, int iobase, int irq, struct device *dv)
+static void init_serial_port(char *devname, int iobase, int irq, struct unit *unit)
 {
   struct serial_port *sp;
   devno_t devno;
@@ -666,7 +666,7 @@ static void init_serial_port(char *devname, int iobase, int irq, struct device *
   sp->mcr = MCR_DTR | MCR_RTS | MCR_IENABLE;  _outp(sp->iobase + UART_MCR, sp->mcr);
 
   // Create device
-  devno = dev_make(devname, &serial_driver, dv, sp);
+  devno = dev_make(devname, &serial_driver, unit, sp);
 
   // Enable interrupts
   set_interrupt_handler(IRQ2INTR(sp->irq), serial_handler, sp);
@@ -676,24 +676,20 @@ static void init_serial_port(char *devname, int iobase, int irq, struct device *
   kprintf("%s: %s iobase=0x%x irq=%d\n", device(devno)->name, uart_name[sp->type], sp->iobase, sp->irq);
 }
 
-int __declspec(dllexport) install_serial(struct device *dv)
+int __declspec(dllexport) install_serial(struct unit *unit)
 {
-  int n;
-  int iobase = -1;
-  int irq = -1;
+  int iobase;
+  int irq;
   char devname[8];
 
-  for (n = 0; n < dv->numres; n++)
-  {
-    if (dv->res[n].type == RESOURCE_IO) iobase = dv->res[n].start;
-    if (dv->res[n].type == RESOURCE_IRQ) irq = dv->res[n].start;
-  }
+  iobase = get_unit_iobase(unit);
+  irq = get_unit_irq(unit);
 
   if (iobase < 0) iobase = serial_default_iobase[next_serial_portno - 1];
   if (irq < 0) irq = serial_default_irq[next_serial_portno - 1];
 
   sprintf(devname, "com%d", next_serial_portno++);
-  init_serial_port(devname, iobase, irq, dv);
+  init_serial_port(devname, iobase, irq, unit);
 
   return 0;
 }
@@ -704,7 +700,7 @@ void init_serial()
   int iobase;
 
   // Fallback to BIOS settings if PnP BIOS not present
-  if (!pnp_bios_present())
+  if (next_serial_portno == 1)
   {
     for (port = 0; port < 4; port++)
     {
