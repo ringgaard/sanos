@@ -51,7 +51,7 @@ TODO for sanos
     - Charge one quantum unit each time a thread is restarted after a wait
     - Preempt thread (with preempt flag) when higher priority thread gets ready to run in mark_thread_ready()
       to force context switch when thread leaves kernel
-    - Implement find_ready_thread() in sched.c
+    x Implement find_ready_thread() in sched.c
     - use preempt flag instead of dispatch in set_thread_priority()
     - check for preemption when threads are resumed
     - check for preemption when new threads are created
@@ -308,3 +308,10 @@ CHANGES
 - setcontext() implemented.
 
 - Added more complete ANSI Standard C Library
+
+- The thread ready queues could become corrupted if a thread that was already ready was marked
+  ready again. This could lead to kernel traps in the object manager because of faulty dispatching
+  of threads. This problem has been fixed, by linking the threads on the ready queues in double
+  linked lists and introducing new thread states. Now only threads in ready state are in the
+  ready queues.
+ 

@@ -44,7 +44,6 @@ int nexttid = 1;
 
 static void insert_in_waitlist(struct object *obj, struct waitblock *wb)
 {
-  //if (!debugging) kprintf("waitlist: add %d to %p\n", wb->thread->id, obj);
   wb->next_wait = NULL;
   wb->prev_wait = obj->waitlist_tail;
   if (obj->waitlist_tail) obj->waitlist_tail->next_wait = wb;
@@ -60,7 +59,6 @@ static void insert_in_waitlist(struct object *obj, struct waitblock *wb)
 
 static void remove_from_waitlist(struct waitblock *wb)
 {
-  //if (!debugging) kprintf("waitlist: remove %d from %p\n", wb->thread->id, wb->object);
   if (wb->next_wait) wb->next_wait->prev_wait = wb->prev_wait;
   if (wb->prev_wait) wb->prev_wait->next_wait = wb->next_wait;
   if (wb == wb->object->waitlist_head) wb->object->waitlist_head = wb->next_wait;
@@ -126,7 +124,7 @@ void release_thread(struct thread *t)
   }
 
   // Clear wait list for thread
-  //t->waitlist = NULL;
+  t->waitlist = NULL;
 
   // Mark thread as ready
   mark_thread_ready(t);
@@ -186,22 +184,6 @@ int enter_object(struct object *obj)
 }
 
 //
-// clear_thread_waitlist
-//
-
-void clear_thread_waitlist(struct thread *t)
-{
-  struct waitblock *wb = t->waitlist;
-  while (wb)
-  {
-    if (wb->next_wait != NULL || wb->prev_wait != NULL) panic("waitlist not empty");
-    wb = wb->next;
-  }
-
-  t->waitlist = NULL;
-}
-
-//
 // wait_for_object
 //
 // Wait for object to become signaled.
@@ -240,9 +222,6 @@ int wait_for_object(object_t hobj, unsigned int timeout)
     // Wait for object to become signaled
     enter_wait(THREAD_WAIT_OBJECT);
 
-    // Clear waitlist
-    clear_thread_waitlist(t);
-
     // Return waitkey
     return t->waitkey;
   }
@@ -268,9 +247,6 @@ int wait_for_object(object_t hobj, unsigned int timeout)
 
     // Stop timer
     cancel_waitable_timer(&timer);
-
-    // Clear wait list
-    clear_thread_waitlist(t);
 
     // Return wait key
     return t->waitkey;
@@ -384,9 +360,6 @@ int wait_for_all_objects(struct object **objs, int count, unsigned int timeout)
   // Stop timer
   if (timeout != INFINITE) cancel_waitable_timer(&timer);
 
-  // Clear wait list
-  clear_thread_waitlist(t);
-
   // Return wait key
   return t->waitkey;
 }
@@ -470,9 +443,6 @@ int wait_for_any_object(struct object **objs, int count, unsigned int timeout)
 
   // Stop timer
   if (timeout != INFINITE) cancel_waitable_timer(&timer);
-
-  // Clear wait list
-  clear_thread_waitlist(t);
 
   // Return wait key
   return t->waitkey;

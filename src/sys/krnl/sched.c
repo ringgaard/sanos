@@ -106,6 +106,46 @@ static void remove(struct thread *t)
   t->prev->next = t->next;
 }
 
+static void insert_ready_head(struct thread *t)
+{
+  if (!ready_queue_head[t->priority])
+  {
+    t->next_ready = t->prev_ready = NULL;
+    ready_queue_head[t->priority] = ready_queue_tail[t->priority] = t;
+  }
+  else
+  {
+    t->next_ready = ready_queue_head[t->priority];
+    t->prev_ready = NULL;
+    t->next_ready->prev_ready = t;
+    ready_queue_head[t->priority] = t;
+  }
+}
+
+static void insert_ready_tail(struct thread *t)
+{
+  if (!ready_queue_tail[t->priority])
+  {
+    t->next_ready = t->prev_ready = NULL;
+    ready_queue_head[t->priority] = ready_queue_tail[t->priority] = t;
+  }
+  else
+  {
+    t->next_ready = NULL;
+    t->prev_ready = ready_queue_tail[t->priority];
+    t->prev_ready->next_ready = t;
+    ready_queue_tail[t->priority] = t;
+  }
+}
+
+static void remove_from_ready_queue(struct thread *t)
+{
+  if (t->next_ready) t->next_ready->prev_ready = t->prev_ready;
+  if (t->prev_ready) t->prev_ready->next_ready = t->next_ready;
+  if (t == ready_queue_head[t->priority]) ready_queue_head[t->priority] = t->next_ready;
+  if (t == ready_queue_tail[t->priority]) ready_queue_tail[t->priority] = t->prev_ready;
+}
+
 static void init_thread_stack(struct thread *t, void *startaddr, void *arg)
 {
   struct tcb *tcb = (struct tcb *) t;
@@ -134,30 +174,29 @@ void mark_thread_ready(struct thread *t)
 {
   int prio = t->priority;
 
+  // Check for suspended thread that is now ready to run 
+  if (t->suspend_count > 0)
+  {
+    t->state = THREAD_STATE_SUSPENDED;
+    return;
+  }
+
   // Set thread state to ready
-  //if (t->state == THREAD_STATE_READY) panic("thread already ready");
+  if (t->state == THREAD_STATE_READY) panic("thread already ready");
   t->state = THREAD_STATE_READY;
 
   if (t->quantum > 0)
   {
     // Thread has some quantum left. Insert it at the head of the
     // ready queue for its priority.
-
-    t->next_ready = ready_queue_head[prio];
-    if (ready_queue_tail[prio] == NULL) ready_queue_tail[prio] = t;
-    ready_queue_head[prio] = t;
+    insert_ready_head(t);
   }
   else
   {
     // The thread has exhausted its CPU quantum. Assign a new quantum 
     // and insert it at the end of the ready queue for its priority.
-    
     t->quantum = DEFAULT_QUANTUM;
-    
-    t->next_ready = NULL;
-    if (ready_queue_tail[prio] != NULL) ready_queue_tail[prio]->next_ready = t;
-    if (ready_queue_head[prio] == NULL) ready_queue_head[prio] = t;
-    ready_queue_tail[prio] = t;
+    insert_ready_tail(t);
   }
 }
 
@@ -172,17 +211,14 @@ void preempt_thread()
   // Count number of preempted context switches
   t->preempts++;
 
-  // Thread is ready to run 
-  t->state = THREAD_STATE_READY;
-
   // Assign a new quantum
   if (t->quantum <= 0) t->quantum = DEFAULT_QUANTUM;
 
+  // Thread is ready to run 
+  t->state = THREAD_STATE_READY;
+
   // Insert thread at the end of the ready queue for its priority.
-  t->next_ready = NULL;
-  if (ready_queue_tail[prio] != NULL) ready_queue_tail[prio]->next_ready = t;
-  if (ready_queue_head[prio] == NULL) ready_queue_head[prio] = t;
-  ready_queue_tail[prio] = t;
+  insert_ready_tail(t);
 
   // Relinquish CPU
   dispatch();
@@ -216,32 +252,6 @@ void mark_thread_running()
       mov fs, ax
     }
   }
-}
-
-static void remove_ready_thread(struct thread *t)
-{
-  int prio = t->priority;
-  struct thread *rq;
-
-  if (ready_queue_head[prio] == t) 
-  {
-    ready_queue_head[prio] = t->next_ready;
-    if (ready_queue_tail[prio] == t) ready_queue_tail[prio] = NULL;
-  }
-  else 
-  {
-    for (rq = ready_queue_head[prio]; rq != NULL; rq = rq->next_ready)
-    {
-      if (rq->next_ready == t)
-      {
-	rq->next_ready = t->next_ready;
-	if (ready_queue_tail[prio] == t) ready_queue_tail[prio] = rq;
-	break;
-      }
-    }
-  }
-
-  t->next_ready = NULL;
 }
 
 void threadstart(void *arg)
@@ -448,9 +458,22 @@ struct thread *get_thread(tid_t tid)
 
 int suspend_thread(struct thread *t)
 {
-  int prevcount = t->suspend_count;
+  int prevcount = t->suspend_count++;
 
-  t->suspend_count++;
+  if (prevcount == 0)
+  {
+    if (t->state == THREAD_STATE_READY)
+    {
+      remove_from_ready_queue(t);
+      t->state = THREAD_STATE_SUSPENDED;
+    }
+    else if (t->state == THREAD_STATE_RUNNING)
+    {
+      t->state = THREAD_STATE_SUSPENDED;
+      dispatch();
+    }
+  }
+
   return prevcount;
 }
 
@@ -462,7 +485,7 @@ int resume_thread(struct thread *t)
   {
     if (--t->suspend_count == 0) 
     {
-      if (t->state == THREAD_STATE_READY || t->state == THREAD_STATE_INITIALIZED) mark_thread_ready(t);
+      if (t->state == THREAD_STATE_SUSPENDED || t->state == THREAD_STATE_INITIALIZED) mark_thread_ready(t);
     }
   }
 
@@ -494,6 +517,7 @@ int set_thread_priority(struct thread *t, int priority)
     if (priority < t->priority) 
     {
       t->priority = priority;
+      mark_thread_ready(t);
       dispatch();
     }
     else
@@ -505,7 +529,7 @@ int set_thread_priority(struct thread *t, int priority)
     // and insert the ready queue for the new priority
     if (t->state == THREAD_STATE_READY)
     {
-      remove_ready_thread(t);
+      remove_from_ready_queue(t);
       t->priority = priority;
       t->state = THREAD_STATE_TRANSITION;
       mark_thread_ready(t);
@@ -684,9 +708,35 @@ void dispatch_dpc_queue()
   in_dpc = 0;
 }
 
-void dispatch()
+static struct thread *find_ready_thread()
 {
   int prio;
+  struct thread *t;
+
+  prio = THREAD_PRIORITY_LEVELS - 1;
+  t = NULL;
+  while ((t = ready_queue_head[prio]) == NULL && prio > 0) prio--;
+  if (!t) return NULL;
+
+  // Remove thread from ready queue
+  if (!t->next_ready) 
+  {
+    ready_queue_head[prio] = ready_queue_tail[prio] = NULL;
+  }
+  else
+  {
+    t->next_ready->prev_ready = NULL;
+    ready_queue_head[prio] = t->next_ready;
+  }
+
+  t->next_ready = NULL;
+  t->prev_ready = NULL;
+
+  return t;
+}
+
+void dispatch()
+{
   struct thread *curthread = self();
   struct thread *t;
 
@@ -697,24 +747,15 @@ void dispatch()
   check_dpc_queue();
 
   // Find next thread to run
-  while (1)
-  {
-    prio = THREAD_PRIORITY_LEVELS - 1;
-    t = NULL;
-    while ((t = ready_queue_head[prio]) == NULL && prio > 0) prio--;
-    if (t == NULL) panic("No thread ready to run");
-
-    // Remove thread from ready queue
-    ready_queue_head[prio] = t->next_ready;
-    if (t->next_ready == NULL) ready_queue_tail[prio] = NULL;
-    t->next_ready = NULL;
-
-    // Check for suspended thread
-    if (t->suspend_count == 0) break;
-  }
+  t = find_ready_thread();
+  if (!t) panic("No thread ready to run");
 
   // If current thread has been selected to run again then just return
-  if (t == curthread) return;
+  if (t == curthread) 
+  {
+    t->state = THREAD_STATE_RUNNING;
+    return;
+  }
 
   // Save fpu state if fpu has been used
   if (curthread->flags & THREAD_FPU_ENABLED)
@@ -746,9 +787,11 @@ void yield()
 
 void idle_task()
 {
+  struct thread *t = self();
+
   while (1) 
   {
-    mark_thread_ready(self());
+    mark_thread_ready(t);
     dispatch();
 
     //if ((eflags() & EFLAG_IF) == 0) panic("sched: interrupts disabled in idle loop");

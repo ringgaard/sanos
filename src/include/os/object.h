@@ -181,6 +181,8 @@ struct thread
   struct thread *prev;
 
   struct thread *next_ready;
+  struct thread *prev_ready;
+
   struct waitblock *waitlist;
   int waitkey;
 

@@ -1172,7 +1172,10 @@ static int sys_waitall(char *params)
     }
   }
 
-  rc = wait_for_all_objects(o, count, timeout);
+  if (count == 1)
+    rc = wait_for_object(o[0], timeout);
+  else
+    rc = wait_for_all_objects(o, count, timeout);
 
   for (n = 0; n < count; n++) orel(o[n]);
   unlock_buffer(params, 12);
@@ -1213,7 +1216,10 @@ static int sys_waitany(char *params)
     }
   }
 
-  rc = wait_for_any_object(o, count, timeout);
+  if (count == 1)
+    rc = wait_for_object(o[0], timeout);
+  else
+    rc = wait_for_any_object(o, count, timeout);
 
   for (n = 0; n < count; n++) orel(o[n]);
   unlock_buffer(params, 12);
