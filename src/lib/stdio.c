@@ -267,6 +267,7 @@ FILE *fdopen(int fd, const char *mode)
 FILE *freopen(const char *filename, const char *mode, FILE *stream)
 {
   // TODO: implement
+  panic("freopen() not implemented");
   return NULL;
 }
 
@@ -789,7 +790,7 @@ int fseek(FILE *stream, long offset, int whence)
   if (stream->flag & _IORW) stream->flag &= ~(_IOWR | _IORD);
 
   // Seek to the desired location and return
-  return lseek(fileno(stream), offset, whence) == -1L ? -1 : 0;
+  return lseek(fileno(stream), offset, whence) < 0 ? -1 : 0;
 }
 
 long ftell(FILE *stream)
@@ -816,14 +817,17 @@ void rewind(FILE *stream)
 
 int fsetpos(FILE *stream, const fpos_t *pos)
 {
-  // TODO: implement
-  return -ENOSYS;
+  return fseek(stream, *pos, SEEK_SET);
 }
 
 int fgetpos(FILE *stream, fpos_t *pos)
 {
-  // TODO: implement
-  return -ENOSYS;
+  long n;
+
+  n = ftell(stream);
+  if (n < 0) return n;
+  *pos = n;
+  return 0;
 }
 
 void perror(const char *message)
@@ -912,12 +916,14 @@ int remove(const char *filename)
 FILE *tmpfile()
 {
   // TODO: implement
+  panic("tmpfile() not implemented");
   return NULL;
 }
 
 char *tmpnam(char *string)
 {
   // TODO: implement
+  panic("tmpnam() not implemented");
   return NULL;
 }
 

@@ -240,7 +240,7 @@ void init_pfdb()
 
   // Initialize page frame database
   maxmem = syspage->bootparams.memend / PAGESIZE;
-  totalmem = maxmem - (1024 - 640) * K / PAGESIZE - DMA_BUFFER_PAGES;
+  totalmem = maxmem - (1024 - 640) * K / PAGESIZE;
   freemem = 0;
 
   pfdb = (struct pageframe *) PFDBBASE;
