@@ -36,7 +36,9 @@ TODO for sanos
       to force context switch when thread leaves kernel
     - Implement find_ready_thread() in sched.c
     - use preempt flag instead of dispatch in set_thread_priority()
-
+    - check for preemption when threads are resumed
+    - check for preemption when new threads are created
+  
     - 3 quantum units per tick (10 ms)
     - Timeslice is 36 quantum units
     - Priority numbers from 1 to 31 (0 is idle thread)
@@ -44,9 +46,10 @@ TODO for sanos
     - Priorities 1-15 is dynamic priority range
     - Boosting never moves threads to the realtime range
     - Boosting is applied to the base priority
-    - Dynamic priority is decreased (decayed) at each quantum expiry until it reaches base priority (in preempt_thread()) 
+    - Dynamic priority is decreased (decayed) at each quantum expiry until it reaches base priority 
+      (in preempt_thread() if the quantum has expired)
 
-    - In win32 priority class and relative priority is mapped to priority
+    - In win32 priority class and relative priority are mapped to priority
       
        time critical 15 (31 if realtime)
        highest       +2
@@ -55,6 +58,8 @@ TODO for sanos
        below normal  -1
        lowest        -2
        idle           1 (16 if real time)
+       
+       On windows 2000 and xp the relative priority can be in the range [-7;6]
 
  
 IDEAS for new features
