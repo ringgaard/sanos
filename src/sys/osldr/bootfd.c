@@ -11,7 +11,7 @@
 #include <os/tss.h>
 #include <os/syspage.h>
 #include <os/pic.h>
-#include <os/intr.h>
+#include <os/trap.h>
 
 void panic(char *msg);
 
