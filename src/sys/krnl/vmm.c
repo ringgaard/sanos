@@ -196,7 +196,7 @@ int mprotect(void *addr, unsigned long size, int protect)
   addr = (void *) PAGEADDR(addr);
   if (!valid_range(addr, size)) return -EINVAL;
 
-  switch (protect)
+  switch (protect & ~PAGE_GUARD)
   {
     case PAGE_NOACCESS:
       flags = 0;

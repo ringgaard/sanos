@@ -434,3 +434,8 @@ CHANGES
 - Boot from network using PXE implemented.
 
 - Escape character changed from '\' to '%' in .ini files.
+
+- The hd driver failed to read multiple sectors per read command. This problem has been
+  fixed. The status register is now read before the next sector is read in the dpc
+  handler. This reenables interrupts from the IDE controller before the last byte of
+  the current sector is read.

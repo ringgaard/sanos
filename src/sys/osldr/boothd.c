@@ -370,9 +370,6 @@ int boothd_read(void *buffer, size_t count, blkno_t blkno)
       }
     }
 
-    // Read sector data
-    insw(hd.iobase + HDC_DATA, hdbuf, SECTORSIZE / 2);
-
     // Check status
     hd.status = _inp((unsigned short) (hd.iobase + HDC_STATUS));
     if (hd.status & HDCS_ERR)
@@ -381,6 +378,8 @@ int boothd_read(void *buffer, size_t count, blkno_t blkno)
       return -1;
     }
 
+    // Read sector data
+    insw(hd.iobase + HDC_DATA, hdbuf, SECTORSIZE / 2);
     hdbuf += SECTORSIZE;
   }
 

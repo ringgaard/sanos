@@ -736,12 +736,14 @@ static int hd_read_pio(struct dev *dev, void *buffer, size_t count, blkno_t blkn
     }
 
     // Calculate maximum number of sectors we can transfer
+//kprintf("%d sects left\n", sectsleft);
     if (sectsleft > 256)
       nsects = 256;
     else
       nsects = sectsleft;
 
     // Prepare transfer
+//kprintf("read %d sects\n", nsects);
     hdc->bufp = bufp;
     hdc->nsects = nsects;
     hdc->result = 0;
@@ -765,6 +767,8 @@ static int hd_read_pio(struct dev *dev, void *buffer, size_t count, blkno_t blkn
     sectsleft -= nsects;
     bufp += nsects * SECTORSIZE;
   }
+
+//kprintf("finito\n");
 
   // Cleanup
   hdc->dir = HD_XFER_IDLE;
@@ -1129,15 +1133,6 @@ void hd_dpc(void *arg)
   switch (hdc->dir)
   {
     case HD_XFER_READ:
-      // Read sector data
-      nsects = hdc->active->multsect;
-      if (nsects > hdc->nsects) nsects = hdc->nsects;
-      for (n = 0; n < nsects; n++)
-      {
-        pio_read_buffer(hdc->active, hdc->bufp, SECTORSIZE);
-        hdc->bufp += SECTORSIZE;
-      }
-
       // Check status
       hdc->status = _inp(hdc->iobase + HDC_STATUS);
       if (hdc->status & HDCS_ERR)
@@ -1151,10 +1146,21 @@ void hd_dpc(void *arg)
 	hdc->result = -EIO;
 	set_event(&hdc->ready);
       }
+      else
+      {
+	// Read sector data
+	nsects = hdc->active->multsect;
+	if (nsects > hdc->nsects) nsects = hdc->nsects;
+	for (n = 0; n < nsects; n++)
+	{
+	  pio_read_buffer(hdc->active, hdc->bufp, SECTORSIZE);
+	  hdc->bufp += SECTORSIZE;
+	}
 
-      // Signal event if we have read all sectors
-      hdc->nsects -= nsects;
-      if (hdc->nsects == 0) set_event(&hdc->ready);
+	// Signal event if we have read all sectors
+	hdc->nsects -= nsects;
+	if (hdc->nsects == 0) set_event(&hdc->ready);
+      }
       
       break;
 
@@ -1172,25 +1178,27 @@ void hd_dpc(void *arg)
 	hdc->result = -EIO;
 	set_event(&hdc->ready);
       }
-
-      // Transfer next sector(s) or signal end of transfer
-      nsects = hdc->active->multsect;
-      if (nsects > hdc->nsects) nsects = hdc->nsects;
-      hdc->nsects -= nsects;
-
-      if (hdc->nsects > 0)
-      {
-	nsects = hdc->active->multsect;
-        if (nsects > hdc->nsects) nsects = hdc->nsects;
-
-	for (n = 0; n < nsects; n++)
-	{
-  	  pio_write_buffer(hdc->active, hdc->bufp, SECTORSIZE);
-	  hdc->bufp += SECTORSIZE;
-	}
-      }
       else
-	set_event(&hdc->ready);
+      {
+	// Transfer next sector(s) or signal end of transfer
+	nsects = hdc->active->multsect;
+	if (nsects > hdc->nsects) nsects = hdc->nsects;
+	hdc->nsects -= nsects;
+
+	if (hdc->nsects > 0)
+	{
+	  nsects = hdc->active->multsect;
+	  if (nsects > hdc->nsects) nsects = hdc->nsects;
+
+	  for (n = 0; n < nsects; n++)
+	  {
+  	    pio_write_buffer(hdc->active, hdc->bufp, SECTORSIZE);
+	    hdc->bufp += SECTORSIZE;
+	  }
+	}
+	else
+	  set_event(&hdc->ready);
+      }
 
       break;
 
@@ -1573,6 +1581,7 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
   if (hd->param.csfo & 2) kprintf(", read ahead");
   if (hd->param.csfo & 1) kprintf(", write cache");
   if (hd->udmamode == -1 && hd->multsect > 1) kprintf(", %d sects/intr", hd->multsect);
+  if (!hd->use32bits) kprintf(", word I/O");
   kprintf("\n");
 
   if (hd->media == IDE_DISK) create_partitions(hd);

@@ -366,7 +366,7 @@ void main(void *arg)
   init_cdfs();
  
   // Open boot device
-  if (syspage->bootparams.bootdrv & 0xF0)
+  if ((syspage->bootparams.bootdrv & 0xF0) == 0xF0)
   {
     create_initrd();
     strcpy(bootdev, "initrd");

@@ -86,7 +86,7 @@ int bootrd_read(void *buffer, size_t count, blkno_t blkno)
 
 int boot_read(void *buffer, size_t count, blkno_t blkno)
 {
-  if (bootdrive & 0xF0)
+  if ((bootdrive & 0xF0) == 0xF0)
     return bootrd_read(buffer, count, blkno);
   else if (bootdrive & 0x80)
     return boothd_read(buffer, count, blkno);
@@ -296,7 +296,7 @@ void __stdcall start(void *hmod, int bootdrv, char *bootimg)
 
   // Copy kernel from boot device
   bootdrive = bootdrv;
-  if (bootdrv & 0xF0)
+  if ((bootdrv & 0xF0) == 0xF0)
   {
     copy_ramdisk(bootimg);
     load_kernel(bootdrv);

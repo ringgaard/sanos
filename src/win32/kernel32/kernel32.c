@@ -2267,10 +2267,15 @@ LPVOID WINAPI VirtualAlloc
 {
   void *addr;
   int n;
+  //struct tib *tib = gettib();
 
   TRACE("VirtualAlloc");
+
+  // Do not allow JVM to mess with the stack (this is a hack!)
+  //if (lpAddress >= tib->stackbase && lpAddress < tib->stacktop) return lpAddress;
+
   addr = mmap(lpAddress, dwSize, flAllocationType | MEM_ALIGN64K, flProtect, 'VALO');
-  
+
   //syslog(LOG_DEBUG, "VirtualAlloc %p %dKB (%p,%p) -> %p\n", lpAddress, dwSize / K, flAllocationType, flProtect, addr);
 
   if (addr != NULL && (flAllocationType & MEM_RESERVE) != 0)
@@ -2327,10 +2332,15 @@ BOOL WINAPI VirtualProtect
 )
 {
   int rc;
+  //struct tib *tib = gettib();
 
   TRACE("VirtualProtect");
 
+  // Do not allow JVM to mess with the stack (this is a hack!)
+  //if (lpAddress >= tib->stackbase && lpAddress < tib->stacktop) return TRUE;
+
   rc = mprotect(lpAddress, dwSize, flNewProtect);
+  //syslog(LOG_DEBUG, "VirtualProtect %p %dKB %d %d\n", lpAddress, dwSize / K, flNewProtect, rc);
   if (rc < 0) return FALSE;
 
   if (lpflOldProtect) *lpflOldProtect = rc;
@@ -2344,10 +2354,29 @@ DWORD WINAPI VirtualQuery
   SIZE_T dwLength
 )
 {
+  struct tib *tib = gettib();
+
   TRACE("VirtualQuery");
-  // Only used in win32\hpi\src\threads_md.c to check for stack guard pages
-  lpBuffer->BaseAddress = (void *) ((unsigned long) lpAddress & ~(PAGESIZE - 1));
-  lpBuffer->Protect = PAGE_READWRITE;
+
+  // Used in win32\hpi\src\threads_md.c to check for stack guard pages
+  // In JVM 1.4 also used for checking stack size in hotspot\src\os\win32\vm\os_win32.cpp
+  if (lpAddress >= tib->stackbase && lpAddress < tib->stacktop)
+  {
+    // Handle stack case
+    //syslog(LOG_DEBUG, "VirtualQuery %p (in stack %p %p %p)\n", lpAddress, tib->stackbase, tib->stacklimit, tib->stacktop);
+    lpBuffer->BaseAddress = tib->stackbase;
+    lpBuffer->RegionSize = (char *) tib->stacktop - (char *) tib->stackbase;
+    lpBuffer->AllocationBase = tib->stacklimit;
+    lpBuffer->Protect = PAGE_READWRITE;
+  }
+  else
+  {
+    //syslog(LOG_DEBUG, "VirtualQuery %p (not in stack!!!!)\n", lpAddress);
+  
+    // Return dummy result
+    lpBuffer->BaseAddress = (void *) ((unsigned long) lpAddress & ~(PAGESIZE - 1));
+    lpBuffer->Protect = PAGE_READWRITE;
+  }
 
   return dwLength;
 }

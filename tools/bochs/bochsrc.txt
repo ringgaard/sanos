@@ -52,6 +52,7 @@ vgaromimage: VGABIOS-elpin-2.40
 
 #floppya: 1_44=..\..\bin\boot.img, status=inserted
 floppya: 1_44=..\..\img\bootdisk.img, status=inserted
+#floppya: 1_44=sanos-1.2.0.img, status=inserted
 #floppya: 1_44=\zignx\zxlog\img\zxlog.img, status=inserted
 
 #=======================================================================
@@ -75,7 +76,7 @@ floppya: 1_44=..\..\img\bootdisk.img, status=inserted
 #=======================================================================
 #diskc: file="30M.sample", cyl=615, heads=6, spt=17
 #diskc: file=hd10meg.img, cyl=306, heads=4, spt=17
-#diskc: file=c.img, cyl=20, heads=16, spt=63
+diskc: file=c.img, cyl=20, heads=16, spt=63
 
 #diskc: file="sanos.img", cyl=81, heads=16, spt=63
 #diskc: file="..\..\img\hd16.img", cyl=496, heads=2, spt=32

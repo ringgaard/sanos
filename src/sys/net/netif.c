@@ -1,5 +1,5 @@
 //
-// netif.h
+// netif.c
 //
 // Network interface
 //
@@ -189,7 +189,7 @@ int netif_ioctl_cfg(void *data, size_t size)
   ifcfg = (struct ifcfg *) data;
 
   netif = netif_find(ifcfg->name);
-  if (!netif) return -ENOENT;
+  if (!netif) return -ENXIO;
 
   // Check for interface down
   if ((ifcfg->flags & IFCFG_UP) == 0 && (netif->flags & NETIF_UP) == 1)
