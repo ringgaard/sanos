@@ -22,9 +22,9 @@ CFG=clib - Win32 SanOS
 
 # Begin Project
 # PROP AllowPerConfigDependencies 0
-# PROP Scc_ProjName ""
-# PROP Scc_LocalPath ""
-CPP=cl.exe
+# PROP Scc_ProjName "clib"
+# PROP Scc_LocalPath ".."
+CPP=xicl6.exe
 RSC=rc.exe
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
@@ -37,13 +37,13 @@ RSC=rc.exe
 # PROP Intermediate_Dir "..\obj\clib"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GX- /O2 /X /I "..\src\include" /u /D "CLIB" /YX /FD /c
+# ADD CPP /nologo /MT /W3 /O2 /X /I "..\src\include" /u /D "CLIB" /YX /FD /c
 # ADD BASE RSC /l 0x406 /d "NDEBUG"
 # ADD RSC /l 0x406 /d "NDEBUG"
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
-LIB32=link.exe -lib
+LIB32=xilink6.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo /out:"..\lib\clib.lib"
 # Begin Target
