@@ -781,9 +781,6 @@
 			RelativePath="..\src\lib\ctype.c">
 		</File>
 		<File
-			RelativePath="..\src\lib\entry.cpp">
-		</File>
-		<File
 			RelativePath="..\src\lib\fcvt.c">
 		</File>
 		<File
