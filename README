@@ -146,3 +146,5 @@ The rtl8139 and eepro100 network drivers are ported from Linux (Donald Becker)
 The win32 exception handling has been ported from WINE (Turchanov Sergey, Alexandre Julliard, and Jon Griffiths)
 
 The math assembler routines have been ported from Al Maromaty's free C Runtime Library
+
+The random device driver has been ported from Linux (Theodore Ts'o)
