@@ -196,7 +196,7 @@ static void fd_motor_task(void *arg)
     {
       for (i = 0; i < NUMDRIVES; i++)
       {
-	if (fddrives[i].motor_status == FD_MOTOR_DELAY && fddrives[i].motor_timeout < get_tick_count())
+	if (fddrives[i].motor_status == FD_MOTOR_DELAY && time_before(fddrives[i].motor_timeout, get_tick_count()))
 	{
 	  fdc.dor &= ~(0x10 << i);
           _outp(FDC_DOR, fdc.dor);

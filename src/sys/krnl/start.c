@@ -104,6 +104,9 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
 #endif
   print_string(COPYRIGHT "\n\n");
 
+  // Initialize CPU
+  init_cpu();
+
   // Initialize page frame database
   init_pfdb();
 
@@ -131,8 +134,9 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
   // Initialize scheduler
   init_sched();
 
-  // Enable interrupts
+  // Enable interrupts and calibrate delay
   __asm { sti };
+  calibrate_delay();
 
   // Start main task and dispatch to idle task
   mainthread = create_kernel_thread(main, 0, PRIORITY_NORMAL);
@@ -299,6 +303,8 @@ void main(void *arg)
   peb = mmap((void *) PEB_ADDRESS, PAGESIZE, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
   if (!peb) panic("unable to allocate PEB");
   memset(peb, 0, PAGESIZE);
+  //peb->fast_syscalls_supported = (cpu.features & CPU_FEATURE_SEP) != 0;
+  peb->fast_syscalls_supported = 0;
 
   // Load os.dll in user address space
   imgbase = load_image_file("/os/os.dll", 1);

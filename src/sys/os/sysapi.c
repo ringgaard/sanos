@@ -8,11 +8,30 @@
 
 #include <os.h>
 #include <os/syscall.h>
+#include <os/cpu.h>
 
 __declspec(naked) int syscall(int syscallno, void *params)
 {
   __asm
   {
+    mov   eax, dword ptr ds:[PEB_ADDRESS + 4]
+    test  eax, eax
+    jz    slow_syscall
+
+    push  ebp
+    mov	  ebp, esp
+
+    mov	  eax, 8[ebp]
+    mov	  edx, 12[ebp]
+    mov   ecx, offset sys_return
+
+    sysenter
+
+sys_return:
+    pop   ebp
+    ret
+
+slow_syscall:
     push  ebp
     mov	  ebp, esp
 

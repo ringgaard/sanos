@@ -15,4 +15,6 @@ void free_args(int argc, char **argv);
 char *get_option(char *opts, char *name, char *buffer, int size, char *defval);
 int get_num_option(char *opts, char *name, int defval);
 
+int abs(int number);
+
 #endif

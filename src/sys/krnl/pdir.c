@@ -19,8 +19,15 @@ void flushtlb()
 
 void invlpage(void *addr)
 {
-  __asm { mov eax, cr3 }
-  __asm { mov cr3, eax }
+  if (cpu.family < CPU_FAMILY_486)
+  {
+    __asm { mov eax, cr3 }
+    __asm { mov cr3, eax }
+  }
+  else
+  {
+    __asm { invlpg addr }
+  }
 }
 
 void map_page(void *vaddr, unsigned long pfn, unsigned long flags)

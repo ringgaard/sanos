@@ -157,10 +157,10 @@
 
 //
 // Parameters returned by read drive parameters command
+//
 
 struct hdparam 
 {
-  // Drive information
   unsigned short config;	       // General configuration bits
   unsigned short cylinders;	       // Cylinders
   unsigned short reserved;
@@ -169,8 +169,6 @@ struct hdparam
   unsigned short unfbytes;	       // Unformatted bytes/sector
   unsigned short sectors;	       // Sectors per track
   unsigned short vendorunique[3];
-
-  // Controller information
   char serial[20];		       // Serial number
   unsigned short buffertype;	       // Buffer type
   unsigned short buffersize;	       // Buffer size, in 512-byte units
@@ -181,8 +179,8 @@ struct hdparam
   unsigned short usedmovsd;	       // Can use double word read/write?
   unsigned short caps;                 // Capabilities
   unsigned short resv1;                // Reserved
-  unsigned short pio;                  // PIO data transfer cycle timing
-  unsigned short resv2;                // Reserved
+  unsigned short pio;                  // PIO data transfer cycle timing (0=slow, 1=medium, 2=fast)
+  unsigned short dma;                  // DMA data transfer cycle timing (0=slow, 1=medium, 2=fast)
   unsigned short valid;                // Flag valid fields to follow
   unsigned short logcyl;               // Logical cylinders
   unsigned short loghead;              // Logical heads
@@ -192,19 +190,56 @@ struct hdparam
   unsigned short multisec;             // Multiple sector values
   unsigned short totalsec0;            // Total number of user sectors
   unsigned short totalsec1;            //  (LBA; 32-bit value)
-  unsigned short resv3;                // Reserved
-  unsigned short multimode;            // Multiword DMA
+  unsigned short dmasingle;            // Single-word DMA info
+  unsigned short dmamulti;             // Multi-word DMA info
   unsigned short piomode;              // Advanced PIO modes
   unsigned short minmulti;             // Minimum multiword xfer
   unsigned short multitime;            // Recommended cycle time
   unsigned short minpio;               // Min PIO without flow ctl
   unsigned short miniodry;             // Min with IORDY flow
-  unsigned short resv4[10];            // Reserved
-  unsigned short ver;                  // Major version number
+  unsigned short resv2[6];             // Reserved
+  unsigned short queue_depth;          // Queue depth
+  unsigned short resv3[4];             // Reserved
+  unsigned short vermajor;             // Major version number
   unsigned short verminor;             // Minor version number
-  unsigned short cmdset;               // Command set supported
+  unsigned short cmdset1;              // Command set supported
   unsigned short cmdset2;
-  char pad[346];
+  unsigned short cfsse;		       // Command set-feature supported extensions
+  unsigned short cfs_enable_1;	       // Command set-feature enabled
+  unsigned short cfs_enable_2;	       // Command set-feature enabled
+  unsigned short csf_default;	       // Command set-feature default
+  unsigned short dmaultra;	       // UltraDMA mode (0:5 = supported mode, 8:13 = selected mode)
+
+  unsigned short word89;	       // Reserved (word 89)
+  unsigned short word90;	       // Reserved (word 90)
+  unsigned short curapmvalues;	       // Current APM values
+  unsigned short word92;	       // Reserved (word 92)
+  unsigned short hw_config;	       // Hardware config
+  unsigned short words94_125[32];      // Reserved words 94-125
+  unsigned short last_lun; 	       // Reserved (word 126)
+  unsigned short word127;	       // Reserved (word 127)
+  unsigned short dlf;		       // Device lock function
+				       // 15:9	reserved
+				       // 8	security level 1:max 0:high
+				       // 7:6	reserved
+				       // 5	enhanced erase
+				       // 4	expire
+				       // 3	frozen
+				       // 2	locked
+				       // 1	en/disabled
+				       // 0	capability
+					
+  unsigned short csfo;		       // Current set features options
+				       // 15:4 reserved
+				       // 3	 auto reassign
+				       // 2	 reverting
+				       // 1	 read-look-ahead
+				       // 0	 write cache
+					 
+  unsigned short words130_155[26];     // Reserved vendor words 130-155
+  unsigned short word156;
+  unsigned short words157_159[3];      // Reserved vendor words 157-159
+  unsigned short words160_255[96];     // Reserved words 160-255
 };
 
 struct hd;
@@ -254,6 +289,7 @@ struct hd
   int use32bits;                        // Use 32 bit transfers
   int sectbufs;                         // Number of sector buffers
   int lba;                              // Use LBA mode
+  int udmamode;                         // UltraDMA mode
 
   // Geometry
   unsigned int blks;		        // Number of blocks on drive
@@ -282,8 +318,7 @@ static void hd_fixstring(unsigned char *s, int len)
   // Convert from big-endian to host byte order
   for (p = end ; p != s;) 
   {
-    
-    unsigned short *pp = (unsigned short *) (p -= 2);
+     unsigned short *pp = (unsigned short *) (p -= 2);
     *pp = ((*pp & 0x00FF) << 8) | ((*pp & 0xFF00) >> 8);
   }
 
@@ -293,7 +328,7 @@ static void hd_fixstring(unsigned char *s, int len)
   // Compress internal blanks and strip trailing blanks
   while (s != end && *s) 
   {
-    if (*s++ != ' ' || (s != end && *s && *s != ' ')) *p++ = *(s-1);
+    if (*s++ != ' ' || (s != end && *s && *s != ' ')) *p++ = *(s - 1);
   }
 
   // Wipe out trailing garbage
@@ -334,7 +369,7 @@ static int hd_wait(struct hdc *hdc, unsigned char mask, unsigned int timeout)
     }
 
     if (!(status & HDCS_BSY) && ((status & mask) == mask)) return 0;
-    if (get_tick_count() - start >= timeout) return -ETIMEOUT;
+    if (time_before(start + timeout, get_tick_count())) return -ETIMEOUT;
 
     yield();
   }
@@ -428,10 +463,7 @@ static int hd_identify(struct hd *hd)
   _outp(hd->hdc->iobase + HDC_COMMAND, HDCMD_IDENTIFY);
 
   // Wait for data ready
-  if (wait_for_object(&hd->hdc->ready, HDTIMEOUT_CMD) < 0) 
-  {
-    return -ETIMEOUT;
-  }
+  if (wait_for_object(&hd->hdc->ready, HDTIMEOUT_CMD) < 0) return -ETIMEOUT;
 
   // Read parameter data
   insw(hd->hdc->iobase + HDC_DATA, &(hd->param), SECTORSIZE / 2);
@@ -1033,6 +1065,8 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase)
 
 static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, char *partnames[HD_PARTITIONS])
 {
+  static int udma_speed[] = {16, 25, 33, 44, 66, 100};
+
   int i;
   struct master_boot_record mbr;
   devno_t devno;
@@ -1048,16 +1082,42 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
     return;
   }
 
-  if (hdc->bmregbase)
+  // Determine UDMA mode
+  if (!hdc->bmregbase)
+    hd->udmamode = -1;
+  else if ((hd->param.valid & 4) &&  (hd->param.dmaultra & (hd->param.dmaultra >> 8) & 0x3F))
+  {
+    if ((hd->param.dmaultra >> 13) & 1)
+      hd->udmamode = 5; // UDMA 100
+    else if ((hd->param.dmaultra>> 12) & 1)
+      hd->udmamode = 4; // UDMA 66
+    else if ((hd->param.dmaultra>> 11) & 1)
+      hd->udmamode = 3; // UDMA 44
+    else if ((hd->param.dmaultra >> 10) & 1)
+      hd->udmamode = 2; // UDMA 33
+    else if ((hd->param.dmaultra >> 9) & 1)
+      hd->udmamode = 1; // UDMA 25
+    else
+      hd->udmamode = 0; // UDMA 16
+  }
+  else
+    hd->udmamode = -1;
+
+  // Make new device
+  if (hd->udmamode != -1)
     devno = dev_make(devname, &harddisk_dma_driver, NULL, hd);
   else
     devno = dev_make(devname, &harddisk_intr_driver, NULL, hd);
 
-  if (hd->lba)
-    kprintf("%s: %s (%d MB) %u blks (%d bits, %s, %d bufs)\n", devname, hd->param.model, hd->size, hd->blks, hd->use32bits ? 32 : 16, hdc->bmregbase ? "dma" : "intr", hd->param.buffersize);
-  else
-    kprintf("%s: %s (%d MB) CHS=%u/%u/%u (%d bits, %s, %d bufs)\n", devname, hd->param.model, hd->size, hd->cyls, hd->heads, hd->sectors, hd->use32bits ? 32 : 16, hdc->bmregbase ? "dma" : "intr", hd->param.buffersize);
-  
+
+  kprintf("%s: %s (%d MB)", devname, hd->param.model, hd->size);
+  if (hd->lba) kprintf(", LBA");
+  if (hd->udmamode != -1) kprintf(", UDMA%d", udma_speed[hd->udmamode]);
+  if (hd->param.csfo & 2) kprintf(", read ahead");
+  if (hd->param.csfo & 1) kprintf(", write cache");
+  kprintf("\n");
+
+  // Create partitions
   dev_read(devno, &mbr, SECTORSIZE, 0);
 
   if (mbr.signature != MBR_SIGNATURE)

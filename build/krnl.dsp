@@ -98,6 +98,10 @@ SOURCE=..\src\sys\krnl\buf.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\sys\krnl\cpu.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\sys\krnl\dbg.c
 # End Source File
 # Begin Source File
@@ -175,6 +179,15 @@ SOURCE=..\src\sys\krnl\syscall.c
 # Begin Source File
 
 SOURCE=..\src\sys\krnl\test.c
+
+!IF  "$(CFG)" == "krnl - Win32 SanOS"
+
+!ELSEIF  "$(CFG)" == "krnl - Win32 SanOSDebug"
+
+# ADD CPP /FAs
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -314,6 +327,10 @@ SOURCE=..\src\sys\fs\devfs\devfs.c
 # Begin Source File
 
 SOURCE=..\src\include\os\buf.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\cpu.h
 # End Source File
 # Begin Source File
 

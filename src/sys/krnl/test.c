@@ -792,27 +792,6 @@ static void load_mod(char *fn)
   kprintf("hmodule: %08X\n", hmod);
 }
 
-static void test(char *arg)
-{
-  devno_t dev;
-  int i;
-  int rc;
-
-  dev = dev_open(arg);
-  if (dev == NODEV)
-  {
-    kprintf("%s: unable to open device\n", arg);
-    return;
-  }
-
-  for (i = 0; i < 512; i++) buffer[i] = i & 0xFF;
-
-  rc = dev_write(dev, buffer, 512, 10);
-  kprintf("rc=%d\n", rc);
-
-  dev_close(dev);
-}
-
 static void disktest(char *devname, int blocks)
 {
   devno_t dev;
@@ -878,6 +857,25 @@ static void disktest(char *devname, int blocks)
   kprintf("\n");
 
   dev_close(dev);
+}
+
+__inline __int64 __declspec(naked) rdtsc()
+{
+  __asm { rdtsc }
+  __asm { ret }
+}
+
+static void test(char *arg)
+{
+  __int64 tsc;
+
+  if (cpu.features & CPU_FEATURE_TSC)
+  {
+    tsc = rdtsc();
+    kprintf("tsc=%08x %08x\n", ((unsigned long *) &tsc)[1], ((unsigned long *) &tsc)[0]);
+  }
+  else
+    kprintf("error: time stamp counter not supported by processor\n");
 }
 
 void shell()

@@ -15,6 +15,7 @@
 struct pci_bus *pci_root;
 struct pci_bus *pci_busses[MAX_PCI_BUSSES];
 int num_pci_busses;
+int num_pci_devices;
 
 struct
 {
@@ -232,6 +233,7 @@ static void scan_pci_bus(struct pci_bus *bus)
 	  dv = register_device(DEVICE_TYPE_PCI, dev->classcode, (dev->vendorid << 16) + dev->deviceid);
 	  dv->name = get_pci_class_name(dev->classcode);
 	  dv->pci = dev;
+          num_pci_devices++;
 
 	  if (dev->classcode == PCI_BRIDGE)
 	  {
@@ -309,6 +311,11 @@ void init_pci()
   num_pci_busses = 1;
 
   scan_pci_bus(pci_root);
+
+  if (num_pci_devices > 0)
+  {
+    kprintf("pci: %d busses, %d devices\n", num_pci_busses, num_pci_devices);
+  }
 }
 
 void dump_pci_devices()

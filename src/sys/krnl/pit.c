@@ -43,19 +43,20 @@
 #define PIT_CLOCK       1193180
 #define TIMER_FREQ      100
 
-#define USECS_PER_TICK  (1000000 / TIMER_FREQ);
-#define MSECS_PER_TICK  (1000 / TIMER_FREQ);
+#define USECS_PER_TICK  (1000000 / TIMER_FREQ)
+#define MSECS_PER_TICK  (1000 / TIMER_FREQ)
 
-unsigned int ticks = 0;
+volatile unsigned int ticks = 0;
 struct timeval systemclock = { 0, 0 };
+time_t upsince;
+unsigned long cycles_per_tick;
+unsigned long loops_per_tick;
 
 struct dpc timerdpc;
-int timer_dpc_pending = 0;
 
 void timer_dpc(void *arg)
 {
   handle_timer_expiry(ticks);
-  timer_dpc_pending = 0;
 }
 
 void timer_handler(struct context *ctxt, void *arg)
@@ -72,11 +73,7 @@ void timer_handler(struct context *ctxt, void *arg)
   }
 
   // Queue timer DPC
-  if (!timer_dpc_pending)
-  {
-    timer_dpc_pending = 1;
-    queue_irq_dpc(&timerdpc, timer_dpc, NULL);
-  }
+  queue_irq_dpc(&timerdpc, timer_dpc, NULL);
 
   eoi(IRQ_TMR);
 }
@@ -119,6 +116,125 @@ static void get_cmos_time(struct tm *tm)
   tm->tm_isdst = 0;
 }
 
+__inline long __declspec(naked) rdtscl()
+{
+  __asm { rdtsc }
+  __asm { ret }
+}
+
+static void tsc_delay(unsigned long cycles)
+{
+  long start, now;
+    
+  start = rdtscl();
+  do 
+  {
+    __asm { nop };
+    now = rdtscl();
+  } while ((start + cycles) - now < 0);
+}
+
+static void timed_delay(unsigned long loops)
+{
+  __asm
+  {
+    delay_loop:
+      dec loops
+      jns delay_loop; 
+  }
+}
+
+void calibrate_delay()
+{
+  static int cpu_speeds[] = 
+  {
+    16, 20, 25, 33, 40, 50, 60, 66, 75, 80, 90, 
+    100, 110, 120, 133, 150, 166, 180, 188,
+    200, 233, 250, 266,
+    300, 333, 350, 366, 
+    400, 433, 450, 466, 
+    500, 533, 550, 566, 
+    600, 633, 650, 667, 
+    700, 733, 750, 766, 
+    800, 833, 850, 866,
+    900, 933, 950, 966,
+    1000, 1130, 1200, 1260
+  };
+
+  unsigned long mhz;
+  unsigned long t, bit;
+  int precision;
+
+  if (cpu.features & CPU_FEATURE_TSC)
+  {
+    unsigned long start;
+    unsigned long end;
+
+    t = ticks;
+    while (t == ticks);
+    start = rdtscl();
+
+    t = ticks;
+    while (t == ticks);
+    end = rdtscl();
+
+    cycles_per_tick = end - start;
+  }
+  else
+  {
+    // Determine magnitude of loops_per_tick
+    loops_per_tick = 1 << 12;
+    while (loops_per_tick <<= 1)
+    {
+      t = ticks;
+      while (t == ticks);
+    
+      t = ticks;
+      timed_delay(loops_per_tick);
+      if (t != ticks) break;
+    }
+
+    // Do a binary approximation of cycles_per_tick
+    precision = 8;
+    loops_per_tick >>= 1;
+    bit = loops_per_tick;
+    while (precision-- && (bit >>= 1))
+    {
+      loops_per_tick |= bit;
+      t = ticks;
+      while (t == ticks);
+      t = ticks;
+      timed_delay(loops_per_tick);
+      if (ticks != t) loops_per_tick &= ~bit; // Longer than 1 tick
+    }
+
+    // Each loop takes 10 cycles
+    cycles_per_tick = 10 * loops_per_tick;
+  }
+
+  mhz = cycles_per_tick * TIMER_FREQ / 1000000;
+
+  if (mhz > 1275)
+    mhz = ((mhz + 25) / 50) * 50;
+  else if (mhz > 14)
+  {
+    int *speed = cpu_speeds;
+    int i;
+    unsigned long bestmhz = 0;
+
+    for (i = 0; i < sizeof(cpu_speeds) / sizeof(int); i++)
+    {
+      if (abs(mhz - bestmhz) > abs(mhz - *speed)) bestmhz = *speed;
+      speed++;
+    }
+
+    mhz = bestmhz;
+  }
+
+  kprintf("speed: %d cycles/tick, %d MHz processor\n", cycles_per_tick, mhz);
+  cpu.mhz = mhz;
+}
+
 void init_pit()
 {
   struct tm tm;
@@ -130,10 +246,19 @@ void init_pit()
 
   get_cmos_time(&tm);
   systemclock.tv_sec = mktime(&tm);
+  upsince = systemclock.tv_sec;
 
   init_dpc(&timerdpc);
   set_interrupt_handler(INTR_TMR, timer_handler, NULL);
   enable_irq(IRQ_TMR);
+}
+
+void usleep(unsigned long us)
+{
+  if (cpu.features & CPU_FEATURE_TSC)
+    tsc_delay(us * cycles_per_tick / (1000000 / TIMER_FREQ));
+  else
+    timed_delay(us * loops_per_tick / (1000000 / TIMER_FREQ));
 }
 
 unsigned int get_tick_count()

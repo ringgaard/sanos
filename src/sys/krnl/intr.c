@@ -49,7 +49,7 @@ static void __declspec(naked) isr()
 }
 
 //
-// Common entry point for all system routines
+// Common entry points (slow and fast) for all system routines
 //
 
 int syscall(int syscallno, char *params);
@@ -70,6 +70,38 @@ static void __declspec(naked) systrap(void)
     pop	    es
     pop	    ds
     iretd
+  }
+}
+
+static void __declspec(naked) sysentry(void)
+{
+  __asm
+  {
+    mov     esp, [esp]
+    sti
+
+    push    ecx
+    push    ebp
+    
+    push    ds
+    push    es
+
+    push    edx
+    push    eax
+
+    mov	    ax, SEL_KDATA
+    mov	    ds, ax
+    mov	    es, ax
+
+    call    syscall
+    add	    esp, 8
+
+    pop	    es
+    pop	    ds
+
+    pop     ecx
+    pop     edx
+    sysexit
   }
 }
 
@@ -135,11 +167,6 @@ static void init_trap_gate(int intrno, void *handler)
 
 void default_interrupt_handler(struct context *ctxt, void *arg)
 {
-#if 0
-  kprintf("Panic: unexpected trap %d\n", ctxt->traptype);
-  dumpregs(ctxt);
-  __asm { hlt };
-#endif
   dbg_enter(ctxt, NULL);
 }
 
@@ -159,25 +186,10 @@ void pagefault_handler(struct context *ctxt, void *arg)
 
   if (page_guarded(pageaddr))
   {
-    if (guard_page_handler(pageaddr) < 0)
-    {
-#if 0
-      kprintf("Panic: unexpected guard page fault at address %08X\n", addr);
-      dumpregs(ctxt);
-      __asm { hlt };
-#endif
-      dbg_enter(ctxt, (void *) addr);
-    }
+    if (guard_page_handler(pageaddr) < 0) dbg_enter(ctxt, (void *) addr);
   }
   else
-  {
-#if 0
-    kprintf("Panic: page fault at address %08X\n", addr);
-    dumpregs(ctxt);
-    __asm { hlt };
-#endif
     dbg_enter(ctxt, (void *) addr);
-  }
 }
 
 //
@@ -187,6 +199,21 @@ void pagefault_handler(struct context *ctxt, void *arg)
 __inline static int usermode(struct context *ctxt)
 {
   return (ctxt->eip < OSBASE);
+}
+
+//
+// Write MSR
+//
+
+void wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh)
+{
+  __asm
+  {
+    mov ecx, reg
+    mov eax, valuelow
+    mov edx, valuehigh
+    wrmsr
+  }
 }
 
 //
@@ -270,7 +297,16 @@ void init_intr()
   init_idt_gate(62, isr62);
   init_idt_gate(63, isr63);
 
+  // Set system page fault handler
   set_interrupt_handler(INTR_PGFLT, pagefault_handler, NULL);
+
+  // Initialize fast syscall
+  if (cpu.features & CPU_FEATURE_SEP)
+  {
+    wrmsr(MSR_SYSENTER_CS, SEL_KDATA, 0);
+    wrmsr(MSR_SYSENTER_ESP, TSS_ESP0, 0);
+    wrmsr(MSR_SYSENTER_EIP, (unsigned long) sysentry, 0);
+  }
 }
 
 //

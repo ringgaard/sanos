@@ -23,6 +23,8 @@
 #include <os/tss.h>
 #include <os/seg.h>
 #include <os/fpu.h>
+#include <os/cpu.h>
+
 #include <os/pdir.h>
 #include <os/pframe.h>
 #include <os/kmem.h>

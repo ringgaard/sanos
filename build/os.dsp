@@ -113,6 +113,15 @@ SOURCE=..\src\sys\os\os.c
 # Begin Source File
 
 SOURCE=..\src\sys\os\sysapi.c
+
+!IF  "$(CFG)" == "os - Win32 SanOS"
+
+# ADD CPP /FAs
+
+!ELSEIF  "$(CFG)" == "os - Win32 SanOSDebug"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -129,6 +138,10 @@ SOURCE=..\src\sys\os\tls.c
 # Begin Source File
 
 SOURCE=..\src\include\bitops.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\cpu.h
 # End Source File
 # Begin Source File
 

@@ -206,6 +206,12 @@ static void keyb_dpc(void *arg)
     insert_key((unsigned char) key);
   }
 
+  // Ctrl-Alt-SysRq
+  if ((control_keys & (CK_CTRL | CK_ALT)) && key == 0xD4) 
+  {
+    dbg_break();
+  }
+
   // Ctrl-Alt-Del
   if ((control_keys & (CK_CTRL | CK_ALT)) && key == 0x53) 
   {

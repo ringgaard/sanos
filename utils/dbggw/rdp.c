@@ -302,7 +302,7 @@ void dbg_close_session(struct dbg_session *s)
 }
 
 //
-// dbg_close_session
+// dbg_next_event
 //
 
 struct dbg_event *dbg_next_event(struct dbg_session *s)

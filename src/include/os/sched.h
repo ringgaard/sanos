@@ -35,16 +35,33 @@ struct dpc
   int active;
 };
 
+struct kernel_context
+{
+  unsigned long esi, edi;
+  unsigned long ebx, ebp;
+  unsigned long eip;
+  char stack[0];
+};
+
 extern int resched;
 extern int idle;
 extern struct thread *idlethread;
 extern struct thread *threadlist;
 
+__inline __declspec(naked) struct thread *current_thread()
+{
+  __asm
+  {
+    mov eax, esp;
+    and eax, TCBMASK
+    ret
+  }
+}
+
 void mark_thread_running();
 
 krnlapi void mark_thread_ready(struct thread *t);
 
-krnlapi struct thread *current_thread();
 krnlapi struct thread *create_kernel_thread(taskproc_t task, void *arg, int priority);
 
 int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread **retval);

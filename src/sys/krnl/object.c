@@ -582,7 +582,7 @@ void handle_timer_expiry(unsigned int ticks)
   while (t)
   {
     struct timer *t_next = t->next_timer;
-    if (t->expires <= ticks) expire_timer(t);
+    if (time_before_eq(t->expires, ticks)) expire_timer(t);
     t = t_next;
   }
 }
@@ -596,7 +596,7 @@ void init_timer(struct timer *t, unsigned int expires)
   init_object(&t->object, OBJECT_TIMER);
   t->expires = expires;
   
-  if (expires <= get_tick_count())
+  if (time_before_eq(expires, get_tick_count()))
   {
     // Set timer to signaled state immediately
     t->object.signaled = 1;
@@ -615,7 +615,7 @@ void init_timer(struct timer *t, unsigned int expires)
 void modify_timer(struct timer *t, unsigned int expires)
 {
   t->expires = expires;
-  if (expires <= get_tick_count())
+  if (time_before_eq(expires, get_tick_count()))
   {
     // Remove timer from timer list if timer is active
     if (!t->object.signaled) expire_timer(t);
@@ -648,14 +648,14 @@ void cancel_timer(struct timer *t)
 }
 
 //
-// Sleep for a number of ticks
+// Sleep for a number of milliseconds
 //
 
-void sleep(unsigned int ticks)
+void sleep(unsigned int millisecs)
 {
   struct timer timer;
 
-  init_timer(&timer, get_tick_count() + ticks);
+  init_timer(&timer, get_tick_count() + (millisecs * TICKS_PER_SEC / 1000));
   wait_for_object(&timer, INFINITE);
 }
 

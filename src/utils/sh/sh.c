@@ -519,6 +519,37 @@ static void test(int argc, char **argv)
   close(dev);
 }
 
+__inline long __declspec(naked) rdtscl()
+{
+  __asm { rdtsc }
+  __asm { ret }
+}
+
+static void nop()
+{
+  long before;
+  long after;
+  long cycles;
+  int i;
+  long min = 0x7FFFFFFF;
+  long max = 0;
+  long sum = 0;
+
+  for (i = 0; i < 1000; i++)
+  {
+    before = rdtscl();
+    syscall(0,0);
+    after = rdtscl();
+
+    cycles = after - before;
+    if (cycles < min) min = cycles;
+    if (cycles > max) max = cycles;
+    sum += cycles;
+  }
+
+  printf("syscall(0,0): min/avg/max %d/%d/%d cycles\n", min, sum / 1000, max);
+}
+
 void shell()
 {
   char cmd[256];
@@ -574,6 +605,8 @@ void shell()
 	start_program(argc, argv);
       else if (strcmp(argv[0], "break") == 0)
 	dbgbreak();
+      else if (strcmp(argv[0], "nop") == 0)
+	nop();
       else if (strcmp(argv[0], "test") == 0)
 	test(argc, argv);
       else

@@ -489,7 +489,7 @@ void get_debug_event(struct drpc_packet *pkt, char *buf)
         evt->u.Exception.ExceptionRecord.ExceptionInformation[0] = (e->evt.trap.errcode & 2) != 0;
         evt->u.Exception.ExceptionRecord.ExceptionInformation[1] = (unsigned long) e->evt.trap.addr;
       }
-      return;
+      break;
 
     case DBGEVT_CREATE_THREAD:
       printf("EVENT CreateThread tid %d tib %08X entry %08X\n", e->evt.create.tid, e->evt.create.tib, e->evt.create.startaddr);

@@ -115,3 +115,11 @@ void free_args(int argc, char **argv)
   if (argv) free(argv);
 }
 
+#ifdef DEBUG
+
+int abs(int number)
+{
+  return number >= 0 ? number : -number;
+}
+
+#endif

@@ -20,6 +20,7 @@ copy %1\krnl.dll %2\setup > nul
 copy %1\os.dll %2\setup > nul
 copy %1\sh.exe %2\setup > nul
 copy %1\ne2000.sys %2\setup > nul
+copy %1\pcnet32.sys %2\setup > nul
 copy build\krnl.ini %2\setup > nul
 copy build\os.ini %2\setup > nul
 copy build\setup.ini %2\setup > nul

@@ -1546,5 +1546,7 @@ int syscall(int syscallno, char *params)
   }
 #endif
 
+  dispatch_dpc_queue();
+
   return rc;
 }

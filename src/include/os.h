@@ -324,6 +324,7 @@ typedef struct critsect *critsect_t;
 struct peb
 {
   struct moddb *usermods;
+  int fast_syscalls_supported;
 };
 
 //

@@ -53,16 +53,6 @@ __declspec(naked) void context_switch(struct thread *t)
   }
 }
 
-__declspec(naked) struct thread *current_thread()
-{
-  __asm
-  {
-    mov eax, esp;
-    and eax, TCBMASK
-    ret
-  }
-}
-
 static void insert_before(struct thread *t1, struct thread *t2)
 {
   t2->next = t1;
@@ -490,11 +480,6 @@ void idle_task()
   }
 }
 
-void debug_intr_handler(struct context *ctxt, void *arg)
-{
-  kprintf("debug intr\n");
-}
-
 void init_sched()
 {
   // Initialize scheduler
@@ -515,6 +500,4 @@ void init_sched()
   idle_thread->state = THREAD_STATE_RUNNING;
   idle_thread->next = idle_thread;
   idle_thread->prev = idle_thread;
-
-  //set_interrupt_handler(INTR_DEBUG, debug_intr_handler, NULL);
 }

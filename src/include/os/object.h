@@ -145,7 +145,7 @@ krnlapi void modify_timer(struct timer *t, unsigned int expires);
 krnlapi void cancel_timer(struct timer *t);
 
 krnlapi int wait_for_object(object_t hobj, unsigned int timeout);
-krnlapi void sleep(unsigned int ticks);
+krnlapi void sleep(unsigned int millisecs);
 
 krnlapi handle_t halloc(struct object *o);
 krnlapi int hfree(handle_t h);

@@ -163,68 +163,6 @@ void setup_descriptors()
   // Setup TIB segment
   seginit(&syspage->gdt[GDT_TIB], 0, PAGESIZE, D_DATA | D_DPL3 | D_WRITE | D_PRESENT, 0);
 
-#if 0
-  // Setup kernel text segment (4GB read and execute, ring 0)
-  seg = &syspage->gdt[GDT_KTEXT];
-  seg->base_low = 0;
-  seg->base_med = 0;
-  seg->base_high = 0;
-  seg->limit_low = 0xFFFF;
-  seg->limit_high = 0xF;
-  seg->access = D_CODE | D_DPL0 | D_READ | D_PRESENT;
-  seg->granularity = D_BIG | D_BIG_LIM;
-
-  // Setup kernel data segment (4GB read and write, ring 0)
-  seg = &syspage->gdt[GDT_KDATA];
-  seg->base_low = 0;
-  seg->base_med = 0;
-  seg->base_high = 0;
-  seg->limit_low = 0xFFFF;
-  seg->limit_high = 0xF;
-  seg->access = D_DATA | D_DPL0 | D_WRITE | D_PRESENT;
-  seg->granularity = D_BIG | D_BIG_LIM;
-
-  // Setup user text segment (2GB read and execute, ring 3)
-  seg = &syspage->gdt[GDT_UTEXT];
-  seg->base_low = 0;
-  seg->base_med = 0;
-  seg->base_high = 0;
-  seg->limit_low = ((OSBASE - 1) >> PAGESHIFT) & 0xFFFF;
-  seg->limit_high = ((OSBASE - 1) >> (PAGESHIFT + 16)) & 0xF;
-  seg->access = D_CODE | D_DPL3 | D_READ | D_PRESENT;
-  seg->granularity = D_BIG | D_BIG_LIM;
-
-  // Setup user data segment (2GB read and write, ring 3)
-  seg = &syspage->gdt[GDT_UDATA];
-  seg->base_low = 0;
-  seg->base_med = 0;
-  seg->base_high = 0;
-  seg->limit_low = ((OSBASE - 1) >> PAGESHIFT) & 0xFFFF;
-  seg->limit_high = ((OSBASE - 1) >> (PAGESHIFT + 16)) & 0xF;
-  seg->access = D_DATA | D_DPL3 | D_WRITE | D_PRESENT;
-  seg->granularity = D_BIG | D_BIG_LIM;
-
-  // Setup tss segment
-  seg = &syspage->gdt[GDT_TSS];
-  seg->base_low = (unsigned short)((unsigned long) &syspage->tss & 0xFFFF);
-  seg->base_med = (unsigned char)(((unsigned long) &syspage->tss >> 16) & 0xFF);
-  seg->base_high = (unsigned char)(((unsigned long) &syspage->tss >> 24) & 0xFF);
-  seg->limit_low = sizeof(struct tss) - 1;
-  seg->limit_high = 0;
-  seg->access = D_TSS | D_DPL0 | D_PRESENT;
-  seg->granularity = 0;
-
-  // Setup tib segment
-  seg = &syspage->gdt[GDT_TIB];
-  seg->base_low = (unsigned short) 0;
-  seg->base_med = (unsigned char) 0;
-  seg->base_high = (unsigned char) 0;
-  seg->limit_low = PAGESIZE - 1;
-  seg->limit_high = 0;
-  seg->access = D_DATA | D_DPL3 | D_WRITE | D_PRESENT;
-  seg->granularity = 0;
-#endif
-
   // Set GDT to the new segment descriptors
   gdtsel.limit = (sizeof(struct segment) * MAXGDT) - 1;
   gdtsel.dt = syspage->gdt;

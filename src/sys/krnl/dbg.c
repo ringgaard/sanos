@@ -235,15 +235,15 @@ static void dbg_get_thread_context(struct dbg_hdr *hdr, union dbg_body *body)
   {
     // Build kernel mini context
     struct tcb *tcb= (struct tcb *) t;
-    unsigned long *stktop = (unsigned long *) tcb->esp;
+    struct kernel_context *kctxt = (struct kernel_context *) tcb->esp;
 
     memset(&body->ctx.ctxt, 0, sizeof(struct context));
-    body->ctx.ctxt.esi = stktop[0];
-    body->ctx.ctxt.edi = stktop[1];
-    body->ctx.ctxt.ebx = stktop[2];
-    body->ctx.ctxt.ebp = stktop[3];
-    body->ctx.ctxt.eip = stktop[4];
-    body->ctx.ctxt.esp = (unsigned long) (stktop + 5);
+    body->ctx.ctxt.esi = kctxt->esi;
+    body->ctx.ctxt.edi = kctxt->edi;
+    body->ctx.ctxt.ebx = kctxt->ebx;
+    body->ctx.ctxt.ebp = kctxt->ebp;
+    body->ctx.ctxt.eip = kctxt->eip;
+    body->ctx.ctxt.esp = (unsigned long) kctxt->stack;
 
     body->ctx.ctxt.ds = SEL_KDATA;
     body->ctx.ctxt.es = SEL_KDATA;
@@ -395,6 +395,7 @@ static void dbg_main()
     {
       case DBGCMD_CONNECT:
 	dbg_connect(&hdr, body);
+        print_string("dbg: remote debugger connected\n");
 	break;
 
       case DBGCMD_CONTINUE:
