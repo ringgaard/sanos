@@ -271,6 +271,7 @@ void convert_to_sanos_context(struct context *ctxt, CONTEXT *ctx)
 
 void convert_from_sanos_context(struct context *ctxt, CONTEXT *ctx)
 {
+  memset(ctx, 0, sizeof(CONTEXT));
   ctx->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS;
 
   ctx->SegSs = ctxt->ess;
@@ -411,6 +412,7 @@ void get_debug_event(struct drpc_packet *pkt, char *buf)
   int evtlen;
   struct dbg_event *e;
   DEBUG_EVENT *evt;
+  int rc;
 
   evtlen = *(int *) (buf + 4);
   evt = (DEBUG_EVENT *) buf;
@@ -429,7 +431,12 @@ void get_debug_event(struct drpc_packet *pkt, char *buf)
     evt->u.CreateProcessInfo.lpBaseOfImage = session->conn.mod.hmod;
     evt->u.CreateProcessInfo.dwDebugInfoFileOffset = 0;
     evt->u.CreateProcessInfo.nDebugInfoSize = 0;
-    evt->u.CreateProcessInfo.lpThreadLocalBase = session->conn.thr.tib;
+
+    if (session->conn.thr.tib)
+      evt->u.CreateProcessInfo.lpThreadLocalBase = session->conn.thr.tib;
+    else
+      evt->u.CreateProcessInfo.lpThreadLocalBase = (void *) 0xFFFF0000;
+
     evt->u.CreateProcessInfo.lpStartAddress = session->conn.thr.startaddr;
     evt->u.CreateProcessInfo.lpImageName = session->conn.mod.name;
     evt->u.CreateProcessInfo.fUnicode = 0;
@@ -441,12 +448,23 @@ void get_debug_event(struct drpc_packet *pkt, char *buf)
   e = dbg_next_event(session);
   if (!e)
   {
-    pkt->result = E_FAIL;
-    return;
+    rc = dbg_continue(session);
+    if (rc < 0)
+    {
+      pkt->result = E_FAIL;
+      return;
+    }
+
+    e = dbg_next_event(session);
+    if (!e)
+    {
+      pkt->result = E_FAIL;
+      return;
+    }
   }
 
   evt->dwProcessId = GLOBAL_PROCID;
-  evt->dwThreadId = session->conn.trap.tid;
+  evt->dwThreadId = e->tid;
 
   switch (e->type)
   {
@@ -460,6 +478,7 @@ void get_debug_event(struct drpc_packet *pkt, char *buf)
 
       evt->dwDebugEventCode = EXCEPTION_DEBUG_EVENT;
       evt->dwThreadId = e->evt.trap.tid;
+      evt->u.Exception.dwFirstChance = 1;
       evt->u.Exception.ExceptionRecord.ExceptionCode = convert_trap_number(e->evt.trap.traptype);
       evt->u.Exception.ExceptionRecord.ExceptionAddress = (void *) e->evt.trap.eip;
       evt->u.Exception.ExceptionRecord.ExceptionFlags = 0;
@@ -470,7 +489,6 @@ void get_debug_event(struct drpc_packet *pkt, char *buf)
         evt->u.Exception.ExceptionRecord.ExceptionInformation[0] = (e->evt.trap.errcode & 2) != 0;
         evt->u.Exception.ExceptionRecord.ExceptionInformation[1] = (unsigned long) e->evt.trap.addr;
       }
-
       return;
 
     case DBGEVT_CREATE_THREAD:
@@ -478,7 +496,12 @@ void get_debug_event(struct drpc_packet *pkt, char *buf)
 
       evt->dwDebugEventCode = CREATE_THREAD_DEBUG_EVENT;
       evt->u.CreateThread.hThread = (HANDLE) e->evt.create.tid;
-      evt->u.CreateThread.lpThreadLocalBase = e->evt.create.tib;
+      
+      if (e->evt.create.tib)
+	evt->u.CreateThread.lpThreadLocalBase = e->evt.create.tib;
+      else
+	evt->u.CreateThread.lpThreadLocalBase = (void *) 0xFFFF0000;
+
       evt->u.CreateThread.lpStartAddress = e->evt.create.startaddr;
       break;
 
@@ -540,7 +563,7 @@ void read_memory(struct drpc_packet *pkt, char *buf)
 
   rc = dbg_read_memory(session, addr, size, buf);
   if (rc < 0) pkt->result = E_FAIL;
-  *(int *) (buf + size) = size;
+  *(int *) (buf + ((size + 3) / 4) * 4) = size;
 }
 
 //
@@ -642,7 +665,24 @@ void set_context(struct drpc_packet *pkt, char *buf)
 
 void get_peb_address(struct drpc_packet *pkt, char *buf)
 {
-  *(unsigned long *) (buf) = 0x7FFDF000;
+  //*(unsigned long *) (buf) = 0x7FFDF000;
+  *(unsigned long *) (buf) = 0xFFFF0000;
+}
+
+//
+// get_thread_selector
+//
+
+void get_thread_selector(struct drpc_packet *pkt, char *buf)
+{
+  int rc;
+  int sel;
+
+  sel = *(int *) (buf + 8); 
+
+  rc = dbg_get_selector(session, sel, (struct segment *) buf);
+  if (rc < 0) pkt->result = E_FAIL;
+  *(int *) (buf + 8) = 8;
 }
 
 //
@@ -787,7 +827,7 @@ void handle_command(struct drpc_packet *pkt, char *buf)
       sel = *(unsigned long *) (buf + 8);
       len = *(unsigned long *) (buf + 12);
       logmsg("COMMAND GetThreadSelector hthread=%08X selector=%08x len=%08x:\n", tid, sel, len);
-      pkt->result = E_FAIL;
+      get_thread_selector(pkt, buf);
       break;
 
     case DRPC_GET_DEBUG_EVENT:

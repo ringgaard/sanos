@@ -90,6 +90,13 @@ void init_fd();
 
 void init_devfs();
 
+// iop.c
+
+void insw(int port, void *buf, int count);
+void outsw(int port, void *buf, int count);
+void insd(int port, void *buf, int count);
+void outsd(int port, void *buf, int count);
+
 // Intrinsic i/o functions
 
 int __cdecl _inp(port_t);

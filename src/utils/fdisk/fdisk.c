@@ -165,12 +165,12 @@ void add_partition()
 
   if (i >= 4) 
   {
-    printf("no next partition\n");
+    //printf("no next partition\n");
     noff = (-1);
   } 
   else 
   {
-    printf("next partition %d\n", i);
+    //printf("next partition %d\n", i);
     noff = mbr.parttab[i].relsect;
   }
 
@@ -182,12 +182,12 @@ void add_partition()
 
   if (i < 0) 
   {
-    printf("no previous partition\n");
+    //printf("no previous partition\n");
     poff = -1;
   } 
   else 
   {
-    printf("previous partition %d\n", i);
+    //printf("previous partition %d\n", i);
     poff = mbr.parttab[i].relsect;
     psize = mbr.parttab[i].numsect;
   }

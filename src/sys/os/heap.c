@@ -8,6 +8,7 @@
 //
 
 #include <os.h>
+#include <string.h>
 
 #define assert(x)
 

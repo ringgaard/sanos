@@ -58,6 +58,7 @@
 #define HDCMD_NULL		0x00
 #define HDCMD_IDENTIFY		0xEC
 #define HDCMD_RESET		0x10
+#define HDCMD_DIAG		0x90
 #define HDCMD_READ		0x20
 #define HDCMD_WRITE		0x30
 #define HDCMD_READ_DMA          0xC8
@@ -80,7 +81,7 @@
 // Device control 
 //
 
-#define HDDC_HD15               0x08  // Bit should always be set to one
+#define HDDC_HD15               0x08  // Use 4 bits for head
 #define HDDC_SRST               0x04  // Soft reset
 #define HDDC_NIEN               0x02  // Disable interrupts
 
@@ -129,8 +130,10 @@
 
 #define BM_COMMAND_REG    0            // Offset to command reg
 #define BM_STATUS_REG     2            // Offset to status reg
-#define BM_PRD_ADDR_LOW   4            // Offset to PRD addr reg low 16 bits
-#define BM_PRD_ADDR_HIGH  6            // Offset to PRD addr reg high 16 bits
+#define BM_PRD_ADDR       4            // Offset to PRD addr reg
+
+//#define BM_PRD_ADDR_LOW   4            // Offset to PRD addr reg low 16 bits
+//#define BM_PRD_ADDR_HIGH  6            // Offset to PRD addr reg high 16 bits
 
 //
 // Bus master command register flags
@@ -219,7 +222,6 @@ struct hdc
   struct dpc xfer_dpc;                 // DPC for data transfer
   
   int status;                          // Controller status
-  int bmstat;                          // Busmaster status
 
   int iobase;	                       // I/O port registers base address
   int irq;                             // IRQ for controller
@@ -272,50 +274,6 @@ static char *hd1parts[HD_PARTITIONS] = {"hd1a", "hd1b", "hd1c", "hd1d"};
 static char *hd2parts[HD_PARTITIONS] = {"hd2a", "hd2b", "hd2c", "hd2d"};
 static char *hd3parts[HD_PARTITIONS] = {"hd3a", "hd3b", "hd3c", "hd3d"};
 
-static void insw(int port, void *buf, int count)
-{
-  __asm
-  {
-    mov edx, port
-    mov edi, buf
-    mov ecx, count
-    rep insw
-  }
-}
-
-static void outsw(int port, void *buf, int count)
-{
-  __asm
-  {
-    mov edx, port
-    mov esi, buf
-    mov ecx, count
-    rep outsw
-  }
-}
-
-static void insd(int port, void *buf, int count)
-{
-  __asm
-  {
-    mov edx, port
-    mov edi, buf
-    mov ecx, count
-    rep insd
-  }
-}
-
-static void outsd(int port, void *buf, int count)
-{
-  __asm
-  {
-    mov edx, port
-    mov esi, buf
-    mov ecx, count
-    rep outsd
-  }
-}
-
 static void hd_fixstring(unsigned char *s, int len)
 {
   unsigned char *p = s;
@@ -364,12 +322,12 @@ static int hd_wait(struct hdc *hdc, unsigned char mask, unsigned int timeout)
   start = get_tick_count();
   while (1)
   {
-    status = _inp((unsigned short) (hdc->iobase + HDC_ALT_STATUS));
+    status = _inp(hdc->iobase + HDC_ALT_STATUS);
     if (status & HDCS_ERR) 
     {
       unsigned char error;
  
-      error = _inp((unsigned short) (hdc->iobase + HDC_ERR));
+      error = _inp(hdc->iobase + HDC_ERR);
       hd_error("hdwait", error);
 
       return error;
@@ -401,11 +359,11 @@ static void hd_setup_transfer(struct hd *hd, blkno_t blkno, int nsects)
     sector = blkno % hd->sectors + 1;
   }
 
-  _outp((unsigned short) (hd->hdc->iobase + HDC_SECTORCNT), nsects);
-  _outp((unsigned short) (hd->hdc->iobase + HDC_SECTOR), (unsigned char) sector);
-  _outp((unsigned short) (hd->hdc->iobase + HDC_TRACKLSB), (unsigned char) track);
-  _outp((unsigned short) (hd->hdc->iobase + HDC_TRACKMSB), (unsigned char) (track >> 8));
-  _outp((unsigned short) (hd->hdc->iobase + HDC_DRVHD), (unsigned char) (head & 0xFF | hd->drvsel));
+  _outp(hd->hdc->iobase + HDC_SECTORCNT, nsects);
+  _outp(hd->hdc->iobase + HDC_SECTOR, (unsigned char) sector);
+  _outp(hd->hdc->iobase + HDC_TRACKLSB, (unsigned char) track);
+  _outp(hd->hdc->iobase + HDC_TRACKMSB, (unsigned char) (track >> 8));
+  _outp(hd->hdc->iobase + HDC_DRVHD, (unsigned char) (head & 0xFF | hd->drvsel));
 }
 
 static void pio_read_sect(struct hd *hd, char *buffer)
@@ -457,8 +415,7 @@ static void setup_dma_transfer(struct hdc *hdc, char *buffer, int count)
     }
   }
 
-  _outpw((unsigned short) (hdc->bmregbase + BM_PRD_ADDR_LOW), (unsigned short) (hdc->prds_phys & 0xFFFF));
-  _outpw((unsigned short) (hdc->bmregbase + BM_PRD_ADDR_HIGH), (unsigned short) (hdc->prds_phys >> 16));
+  _outpd(hdc->bmregbase + BM_PRD_ADDR, hdc->prds_phys);
 }
 
 static int hd_identify(struct hd *hd)
@@ -480,7 +437,7 @@ static int hd_identify(struct hd *hd)
   insw(hd->hdc->iobase + HDC_DATA, &(hd->param), SECTORSIZE / 2);
 
   // Read status
-  hd->hdc->status = _inp((unsigned short) (hd->hdc->iobase + HDC_STATUS));
+  hd->hdc->status = _inp(hd->hdc->iobase + HDC_STATUS);
 
   // Fill in drive parameters
   hd->cyls = hd->param.cylinders;
@@ -564,7 +521,7 @@ static int hd_read_intr(struct dev *dev, void *buffer, size_t count, blkno_t blk
     result = hd_wait(hdc, HDCS_DRDY, HDTIMEOUT_DRDY);
     if (result != 0) 
     {
-      kprintf("hd_read: no drdy (%d)\n", result);
+      kprintf("hd_read: no drdy (0x%02x)\n", result);
       hdc->result = -EIO;
       break;
     }
@@ -584,7 +541,7 @@ static int hd_read_intr(struct dev *dev, void *buffer, size_t count, blkno_t blk
     reset_event(&hdc->ready);
 
     hd_setup_transfer(hd, blkno, nsects);
-    _outp((unsigned short) (hdc->iobase + HDC_COMMAND), HDCMD_READ);
+    _outp(hdc->iobase + HDC_COMMAND, HDCMD_READ);
 
     // Wait until data read
     wait_for_object(&hdc->ready, INFINITE);
@@ -629,7 +586,7 @@ static int hd_write_intr(struct dev *dev, void *buffer, size_t count, blkno_t bl
     result = hd_wait(hdc, HDCS_DRDY, HDTIMEOUT_DRDY);
     if (result != 0) 
     {
-      kprintf("hd_write: no drdy (%d)\n", result);
+      kprintf("hd_write: no drdy (0x%02x)\n", result);
       hdc->result = -EIO;
       break;
     }
@@ -651,15 +608,15 @@ static int hd_write_intr(struct dev *dev, void *buffer, size_t count, blkno_t bl
     reset_event(&hdc->ready);
 
     hd_setup_transfer(hd, blkno, nsects);
-    _outp((unsigned short) (hdc->iobase + HDC_COMMAND), HDCMD_WRITE);
+    _outp(hdc->iobase + HDC_COMMAND, HDCMD_WRITE);
 
     // Wait for data ready
-    if (!(_inp((unsigned short)(hdc->iobase + HDC_ALT_STATUS)) & HDCS_DRQ))
+    if (!(_inp(hdc->iobase + HDC_ALT_STATUS) & HDCS_DRQ))
     {
       result = hd_wait(hdc, HDCS_DRQ, HDTIMEOUT_DRQ);
       if (result != 0)
       {
-	kprintf("hd_write: no drq (%d)\n", result);
+	kprintf("hd_write: no drq (0x%02x)\n", result);
 	hdc->result = -EIO;
 	break;
       }
@@ -697,6 +654,7 @@ static int hd_read_dma(struct dev *dev, void *buffer, size_t count, blkno_t blkn
   int nsects;
   int result;
   char *bufp;
+  unsigned char bmstat;
 
   if (count == 0) return 0;
   bufp = (char *) buffer;
@@ -706,13 +664,15 @@ static int hd_read_dma(struct dev *dev, void *buffer, size_t count, blkno_t blkn
   sectsleft = count / SECTORSIZE;
   wait_for_object(&hdc->lock, INFINITE);
 
+  //kprintf("hdread block %d size %d buffer %p\n", blkno, count, buffer);
+
   while (sectsleft > 0)
   {
     // Wait for controller ready
     result = hd_wait(hdc, HDCS_DRDY, HDTIMEOUT_DRDY);
     if (result != 0) 
     {
-      kprintf("hd_read_dma: no drdy (%d)\n", result);
+      kprintf("hd_read: no drdy (0x%02x)\n", result);
       result = -EIO;
       break;
     }
@@ -725,12 +685,6 @@ static int hd_read_dma(struct dev *dev, void *buffer, size_t count, blkno_t blkn
 
     if (nsects > MAX_DMA_XFER_SIZE / SECTORSIZE) nsects = MAX_DMA_XFER_SIZE / SECTORSIZE;
 
-    // Setup DMA
-    _outp((unsigned short) (hdc->bmregbase + BM_STATUS_REG), hdc->bmstat | BM_SR_MASK_INT | BM_SR_MASK_ERR);
-    _outp((unsigned short) (hdc->bmregbase + BM_COMMAND_REG), BM_CR_MASK_STOP);
-    setup_dma_transfer(hdc, bufp, nsects * SECTORSIZE);
-    _outp((unsigned short) (hdc->bmregbase + BM_COMMAND_REG), BM_CR_MASK_WRITE);
-
     // Prepare transfer
     result = 0;
     hdc->dir = HD_XFER_DMA;
@@ -738,34 +692,42 @@ static int hd_read_dma(struct dev *dev, void *buffer, size_t count, blkno_t blkn
     reset_event(&hdc->ready);
 
     hd_setup_transfer(hd, blkno, nsects);
-    _outp((unsigned short) (hdc->iobase + HDC_COMMAND), HDCMD_READ_DMA);
-    _outp((unsigned short) (hdc->bmregbase + BM_COMMAND_REG), BM_CR_MASK_WRITE | BM_CR_MASK_START);
+    
+    // Setup DMA
+    setup_dma_transfer(hdc, bufp, nsects * SECTORSIZE);
+    _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_WRITE | BM_CR_MASK_STOP);
+    _outp(hdc->bmregbase + BM_STATUS_REG, _inp(hdc->bmregbase + BM_STATUS_REG) | BM_SR_MASK_INT | BM_SR_MASK_ERR);
+
+    // Start read
+    _outp(hdc->iobase + HDC_COMMAND, HDCMD_READ_DMA);
+    _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_WRITE | BM_CR_MASK_START);
 
     // Wait for interrupt
     wait_for_object(&hdc->ready, INFINITE);
 
-    // Now wait for the PCI BM DMA channel to flush the data
-    while (1)
+    // Stop DMA channel and check DMA status
+    _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_WRITE | BM_CR_MASK_STOP);
+    bmstat = _inp(hdc->bmregbase + BM_STATUS_REG);
+    _outp(hdc->bmregbase + BM_STATUS_REG, bmstat | BM_SR_MASK_INT | BM_SR_MASK_ERR);
+    if ((bmstat & (BM_SR_MASK_INT | BM_SR_MASK_ERR | BM_SR_MASK_ACT)) != BM_SR_MASK_INT)
     {
-      if (_inp((unsigned short) (hdc->bmregbase + BM_STATUS_REG)) & BM_SR_MASK_INT) break;
-    }
-
-    // Check status
-    hdc->status = _inp((unsigned short) (hdc->iobase + HDC_STATUS));
-    if (hdc->status & HDCS_ERR)
-    {
-      unsigned char error;
-
-      error = _inp((unsigned short) (hdc->iobase + HDC_ERR));
-      hd_error("hdread", error);
-
-      kprintf("hd: dma read error (%d)\n", hdc->status);
+      kprintf("hd: dma error %02X\n", bmstat);
       result = -EIO;
       break;
     }
 
-    // Stop DMA channel
-    _outp((unsigned short) (hdc->bmregbase + BM_COMMAND_REG), BM_CR_MASK_STOP);
+    // Check controller status
+    if (hdc->status & HDCS_ERR)
+    {
+      unsigned char error;
+
+      error = _inp(hdc->iobase + HDC_ERR);
+      hd_error("hdread", error);
+
+      kprintf("hd: read error (0x%02x)\n", hdc->status);
+      result = -EIO;
+      break;
+    }
 
     // Advance to next
     sectsleft -= nsects;
@@ -787,6 +749,7 @@ static int hd_write_dma(struct dev *dev, void *buffer, size_t count, blkno_t blk
   int nsects;
   int result;
   char *bufp;
+  unsigned char bmstat;
 
   if (count == 0) return 0;
   bufp = (char *) buffer;
@@ -796,13 +759,15 @@ static int hd_write_dma(struct dev *dev, void *buffer, size_t count, blkno_t blk
   sectsleft = count / SECTORSIZE;
   wait_for_object(&hdc->lock, INFINITE);
 
+  //kprintf("hdwrite block %d size %d buffer %p\n", blkno, count, buffer);
+
   while (sectsleft > 0)
   {
     // Wait for controller ready
     result = hd_wait(hdc, HDCS_DRDY, HDTIMEOUT_DRDY);
     if (result != 0) 
     {
-      kprintf("hd_write_dma: no drdy (%d)\n", result);
+      kprintf("hd_write: no drdy (0x%02x)\n", result);
       result = -EIO;
       break;
     }
@@ -815,12 +780,6 @@ static int hd_write_dma(struct dev *dev, void *buffer, size_t count, blkno_t blk
 
     if (nsects > MAX_DMA_XFER_SIZE / SECTORSIZE) nsects = MAX_DMA_XFER_SIZE / SECTORSIZE;
 
-    // Setup DMA
-    _outp((unsigned short) (hdc->bmregbase + BM_STATUS_REG), hdc->bmstat | BM_SR_MASK_INT | BM_SR_MASK_ERR);
-    _outp((unsigned short) (hdc->bmregbase + BM_COMMAND_REG), BM_CR_MASK_STOP);
-    setup_dma_transfer(hdc, bufp, nsects * SECTORSIZE);
-    _outp((unsigned short) (hdc->bmregbase + BM_COMMAND_REG), BM_CR_MASK_READ);
-
     // Prepare transfer
     result = 0;
     hdc->dir = HD_XFER_DMA;
@@ -828,34 +787,43 @@ static int hd_write_dma(struct dev *dev, void *buffer, size_t count, blkno_t blk
     reset_event(&hdc->ready);
 
     hd_setup_transfer(hd, blkno, nsects);
-    _outp((unsigned short) (hdc->iobase + HDC_COMMAND), HDCMD_WRITE_DMA);
-    _outp((unsigned short) (hdc->bmregbase + BM_COMMAND_REG), BM_CR_MASK_READ | BM_CR_MASK_START);
+
+    // Setup DMA
+    setup_dma_transfer(hdc, bufp, nsects * SECTORSIZE);
+    _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_READ | BM_CR_MASK_STOP);
+    _outp(hdc->bmregbase + BM_STATUS_REG, _inp(hdc->bmregbase + BM_STATUS_REG) | BM_SR_MASK_INT | BM_SR_MASK_ERR);
+    
+    // Start write
+    _outp(hdc->iobase + HDC_COMMAND, HDCMD_WRITE_DMA);
+    _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_READ | BM_CR_MASK_START);
 
     // Wait for interrupt
     wait_for_object(&hdc->ready, INFINITE);
 
-    // Now wait for the PCI BM DMA channel to flush the data
-    while (1)
+    // Stop DMA channel and check DMA status
+    _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_READ | BM_CR_MASK_STOP);
+    bmstat = _inp(hdc->bmregbase + BM_STATUS_REG);
+    _outp(hdc->bmregbase + BM_STATUS_REG, bmstat | BM_SR_MASK_INT | BM_SR_MASK_ERR);
+    if ((bmstat & (BM_SR_MASK_INT | BM_SR_MASK_ERR | BM_SR_MASK_ACT)) != BM_SR_MASK_INT)
     {
-      if (_inp((unsigned short) (hdc->bmregbase + BM_STATUS_REG)) & BM_SR_MASK_INT) break;
-    }
-
-    // Check status
-    hdc->status = _inp((unsigned short) (hdc->iobase + HDC_STATUS));
-    if (hdc->status & HDCS_ERR)
-    {
-      unsigned char error;
-
-      error = _inp((unsigned short) (hdc->iobase + HDC_ERR));
-      hd_error("hdwrite", error);
-
-      kprintf("hd: dma write error (%d)\n", hdc->status);
+      kprintf("hd: dma error %02X\n", bmstat);
       result = -EIO;
       break;
     }
 
-    // Stop DMA channel
-    _outp((unsigned short) (hdc->bmregbase + BM_COMMAND_REG), BM_CR_MASK_STOP);
+    // Check controller status
+    if (hdc->status & HDCS_ERR)
+    {
+      unsigned char error;
+
+      error = _inp(hdc->iobase + HDC_ERR);
+      hd_error("hdwrite", error);
+
+      kprintf("hd: write error (0x%02x)\n", hdc->status);
+      dbg_break();
+      result = -EIO;
+      break;
+    }
 
     // Advance to next
     sectsleft -= nsects;
@@ -873,7 +841,7 @@ void hd_dpc(void *arg)
 {
   struct hdc *hdc = (struct hdc *) arg;
 
-//kprintf("[hddpc]");
+  //kprintf("[hddpc]");
   switch (hdc->dir)
   {
     case HD_XFER_READ:
@@ -881,15 +849,15 @@ void hd_dpc(void *arg)
       pio_read_sect(hdc->active, hdc->bufp);
 
       // Check status
-      hdc->status = _inp((unsigned short) (hdc->iobase + HDC_STATUS));
+      hdc->status = _inp(hdc->iobase + HDC_STATUS);
       if (hdc->status & HDCS_ERR)
       {
         unsigned char error;
 
-        error = _inp((unsigned short) (hdc->iobase + HDC_ERR));
+        error = _inp(hdc->iobase + HDC_ERR);
         hd_error("hdread", error);
 
-	kprintf("hd: read error (%d)\n", hdc->status);
+	kprintf("hd: read error (0x%02x)\n", hdc->status);
 	hdc->result = -EIO;
 	set_event(&hdc->ready);
       }
@@ -903,15 +871,15 @@ void hd_dpc(void *arg)
 
     case HD_XFER_WRITE:
       // Check status
-      hdc->status = _inp((unsigned short) (hdc->iobase + HDC_STATUS));
+      hdc->status = _inp(hdc->iobase + HDC_STATUS);
       if (hdc->status & HDCS_ERR)
       {
         unsigned char error;
 
-        error = _inp((unsigned short) (hdc->iobase + HDC_ERR));
+        error = _inp(hdc->iobase + HDC_ERR);
         hd_error("hdwrite", error);
 
-	kprintf("hd: write error (%d)\n", hdc->status);
+	kprintf("hd: write error (0x%02x)\n", hdc->status);
 	hdc->result = -EIO;
 	set_event(&hdc->ready);
       }
@@ -927,19 +895,20 @@ void hd_dpc(void *arg)
       break;
 
     case HD_XFER_DMA:
+      hdc->status = _inp(hdc->iobase + HDC_STATUS);
       set_event(&hdc->ready);
       break;
 
     case HD_XFER_IGNORE:
       // Read status to acknowledge interrupt
-      hdc->status = _inp((unsigned short) (hdc->iobase + HDC_STATUS));
+      hdc->status = _inp(hdc->iobase + HDC_STATUS);
       set_event(&hdc->ready);
       break;
 
     case HD_XFER_IDLE:
     default:
       // Read status to acknowledge interrupt
-      hdc->status = _inp((unsigned short) (hdc->iobase + HDC_STATUS));
+      hdc->status = _inp(hdc->iobase + HDC_STATUS);
       kprintf("unexpected intr from hdc\n");
   }
 }
@@ -948,6 +917,7 @@ void hdc_handler(struct context *ctxt, void *arg)
 {
   struct hdc *hdc = (struct hdc *) arg;
 
+  //kprintf("[hdintr]");
   queue_irq_dpc(&hdc->xfer_dpc, hd_dpc, hdc);
   eoi(hdc->irq);
 }
@@ -1009,7 +979,7 @@ struct driver partition_driver =
   part_write
 };
 
-static void setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase)
+static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase)
 {
   memset(hdc, 0, sizeof(struct hdc));
   hdc->iobase = iobase;
@@ -1019,9 +989,6 @@ static void setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase)
 
   if (hdc->bmregbase)
   {
-    // Save upper three bits of bus master status
-    hdc->bmstat = _inp((unsigned short) (hdc->bmregbase + BM_STATUS_REG)) & 0xE0;
-
     // Allocate one page for PRD list
     hdc->prds = (struct prd *) kmalloc(PAGESIZE);
     hdc->prds_phys = (unsigned long) virt2phys(hdc->prds);
@@ -1031,10 +998,37 @@ static void setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase)
   init_mutex(&hdc->lock, 0);
   init_event(&hdc->ready, 0, 0);
 
+#if 0 
+  // Reset controller
+  _outp(hdc->iobase + HDC_CONTROL, HDDC_SRST | HDDC_NIEN);
+  sleep(10);
+  _outp(hdc->iobase + HDC_CONTROL, HDDC_NIEN);
+  sleep(10);
+#endif
+
   // Enable interrupts
   set_interrupt_handler(IRQ2INTR(irq), hdc_handler, hdc);
   enable_irq(irq);
-  _outp((unsigned short) (iobase + HDC_CONTROL), HDDC_HD15);
+  _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15);
+
+#if 0
+  // Performs internal diagnostic tests implemented by the drive
+  _outp(hdc->iobase + HDC_COMMAND, HDCMD_DIAG);
+  if (wait_for_object(&hdc->ready, HDTIMEOUT_CMD) >= 0)
+  {
+    hdc->status = _inp(hdc->iobase + HDC_STATUS);
+    if (hdc->status & HDCS_ERR)
+    {
+      unsigned char error;
+
+      error = _inp(hdc->iobase + HDC_ERR);
+      hd_error("hddiag", error);
+      return -EIO;
+    }
+  }
+#endif
+
+  return 0;
 }
 
 static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, char *partnames[HD_PARTITIONS])
@@ -1095,6 +1089,7 @@ void init_hd()
   int bmiba;
   int numhd;
   struct pci_dev *idedev;
+  int rc;
 
   numhd = syspage->biosdata[0x75];
 
@@ -1104,11 +1099,27 @@ void init_hd()
     bmiba = pci_config_read(idedev->bus->busno, idedev->devno, idedev->funcno, PCI_CONFIG_BASE_ADDR_4) & 0xFFF0;
   }
 
-  if (numhd >= 1) setup_hdc(&hdctab[0], HDC0_IOBASE, HDC0_IRQ, idedev ? bmiba : 0);
-  if (numhd >= 3) setup_hdc(&hdctab[1], HDC1_IOBASE, HDC1_IRQ, idedev ? bmiba + 8: 0);
+  if (numhd >= 1) 
+  {
+    rc = setup_hdc(&hdctab[0], HDC0_IOBASE, HDC0_IRQ, idedev ? bmiba : 0);
+    if (rc < 0)
+      kprintf("hd: error %d initializing primary ide controller\n", rc);
+    else
+    {
+      if (numhd >= 1) setup_hd(&hdtab[0], &hdctab[0], "hd0", HD0_DRVSEL, hd0parts);
+      if (numhd >= 2) setup_hd(&hdtab[1], &hdctab[0], "hd1", HD1_DRVSEL, hd1parts);
+    }
+  }
 
-  if (numhd >= 1) setup_hd(&hdtab[0], &hdctab[0], "hd0", HD0_DRVSEL, hd0parts);
-  if (numhd >= 2) setup_hd(&hdtab[1], &hdctab[0], "hd1", HD1_DRVSEL, hd1parts);
-  if (numhd >= 3) setup_hd(&hdtab[2], &hdctab[1], "hd2", HD0_DRVSEL, hd2parts);
-  if (numhd >= 4) setup_hd(&hdtab[3], &hdctab[1], "hd3", HD1_DRVSEL, hd3parts);
+  if (numhd >= 3) 
+  {
+    rc = setup_hdc(&hdctab[1], HDC1_IOBASE, HDC1_IRQ, idedev ? bmiba + 8: 0);
+    if (rc < 0)
+      kprintf("hd: error %d initializing secondary ide controller\n", rc);
+    else
+    {
+      if (numhd >= 3) setup_hd(&hdtab[2], &hdctab[1], "hd2", HD0_DRVSEL, hd2parts);
+      if (numhd >= 4) setup_hd(&hdtab[3], &hdctab[1], "hd3", HD1_DRVSEL, hd3parts);
+    }
+  }
 }

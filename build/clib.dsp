@@ -18,6 +18,7 @@ CFG=clib - Win32 SanOS
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
 !MESSAGE "clib - Win32 SanOS" (based on "Win32 (x86) Static Library")
+!MESSAGE "clib - Win32 SanOSDebug" (based on "Win32 (x86) Static Library")
 !MESSAGE 
 
 # Begin Project
@@ -26,6 +27,9 @@ CFG=clib - Win32 SanOS
 # PROP Scc_LocalPath ".."
 CPP=cl.exe
 RSC=rc.exe
+
+!IF  "$(CFG)" == "clib - Win32 SanOS"
+
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
 # PROP BASE Output_Dir "SanOS"
@@ -46,9 +50,36 @@ BSC32=bscmake.exe
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo /out:"..\lib\clib.lib"
+
+!ELSEIF  "$(CFG)" == "clib - Win32 SanOSDebug"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "clib___Win32_SanOSDebug"
+# PROP BASE Intermediate_Dir "clib___Win32_SanOSDebug"
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "..\dbg\bin"
+# PROP Intermediate_Dir "..\dbg\obj\clib"
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /MT /W3 /O2 /X /I "..\src\include" /u /D "CLIB" /YX /FD /c
+# ADD CPP /nologo /MT /W3 /Zi /Od /X /I "..\src\include" /u /D "CLIB" /D "DEBUG" /YX /FD /c
+# ADD BASE RSC /l 0x406 /d "NDEBUG"
+# ADD RSC /l 0x406 /d "NDEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo
+# ADD BSC32 /nologo
+LIB32=link.exe -lib
+# ADD BASE LIB32 /nologo /out:"..\lib\clib.lib"
+# ADD LIB32 /nologo /out:"..\dbg\lib\clib.lib"
+
+!ENDIF 
+
 # Begin Target
 
 # Name "clib - Win32 SanOS"
+# Name "clib - Win32 SanOSDebug"
 # Begin Group "include"
 
 # PROP Default_Filter ".h"

@@ -8,6 +8,7 @@
 
 #include <os.h>
 #include <java/jni.h>
+#include <string.h>
 #include <inifile.h>
 #include <stdlib.h>
 

@@ -262,7 +262,7 @@ struct dbg_session *dbg_create_session(char *port)
     if (s->body->thl.threads[n].tid != s->conn.thr.tid)
     {
       e = add_event(s);
-      e->tid = s->conn.trap.tid;
+      e->tid = s->body->thl.threads[n].tid;
       e->type = DBGEVT_CREATE_THREAD;
       e->evt.create.tid = s->body->thl.threads[n].tid;
       e->evt.create.tib = s->body->thl.threads[n].tib;
@@ -320,6 +320,69 @@ void dbg_release_event(struct dbg_event *e)
 }
 
 //
+// dbg_continue
+//
+
+int dbg_continue(struct dbg_session *s)
+{
+  int rc;
+  struct dbg_event *e;
+
+  rc = dbg_xact(s, DBGCMD_CONTINUE, NULL, 0, s->body);
+  if (rc < 0) return rc;
+
+  rc = dbg_recv_packet(s, &s->hdr, s->body); 
+  if (rc < 0) return rc;
+
+  e = add_event(s);
+  e->type = s->hdr.cmd;
+  switch (s->hdr.cmd)
+  {
+    case DBGEVT_TRAP:
+      printf("break: thread %d trap %d eip %08X addr %08X\n", s->body->trap.tid, s->body->trap.traptype, s->body->trap.eip, s->body->trap.addr);
+      e->tid = s->body->trap.tid;
+      e->evt.trap = s->body->trap;
+      break;
+
+    case DBGEVT_CREATE_THREAD:
+      printf("create: thread %04X tib %08X entry %08X\n", s->body->create.tid, s->body->create.tib, s->body->create.startaddr);
+      e->tid = 1; // FIXME
+      e->evt.create = s->body->create;
+      break;
+
+    case DBGEVT_EXIT_THREAD:
+      printf("exit: thread %04X exitcode %d\n", s->body->exit.tid, s->body->exit.exitcode);
+      e->tid = 1; // FIXME
+      e->evt.exit = s->body->exit;
+      break;
+
+    case DBGEVT_LOAD_MODULE:
+      printf("load: module %08X\n", s->body->load.hmod);
+      e->tid = 1; // FIXME
+      e->evt.load = s->body->load;
+      break;
+
+    case DBGEVT_UNLOAD_MODULE:
+      printf("unload: module %08X\n", s->body->unload.hmod);
+      e->tid = 1; // FIXME
+      e->evt.unload = s->body->unload;
+      break;
+
+    case DBGEVT_OUTPUT:
+      printf("output: msgptr %08X msglen %d\n", s->body->output.msgptr, s->body->output.msglen);
+      e->tid = 1; // FIXME
+      e->evt.output = s->body->output;
+      break;
+
+    default:
+      printf("unknown: cmd %d\n", s->hdr.cmd);
+      return -1;
+  }
+
+  return 0;
+}
+
+//
 // dbg_read_memory
 //
 
@@ -328,7 +391,7 @@ int dbg_read_memory(struct dbg_session *s, void *addr, int size, void *buffer)
   struct dbg_memory mem;
   int rc;
 
-  if (size <= 0 || size >= 4096) 
+  if (size <= 0 || size > 4096) 
   {
     printf("rdp: read memory size is %d bytes, truncated\n", size);
     size = 4096;
@@ -348,7 +411,7 @@ int dbg_write_memory(struct dbg_session *s, void *addr, int size, void *buffer)
 {
   int rc;
 
-  if (size <= 0 || size >= 4096) 
+  if (size <= 0 || size > 4096) 
   {
     printf("rdp: write memory size is %d bytes, truncated\n", size);
     size = 4096;
@@ -439,4 +502,20 @@ int dbg_resume_threads(struct dbg_session *s, tid_t *threadids, int count)
   }
 
   return rc;
+}
+
+//
+// dbg_get_selector
+//
+
+int dbg_get_selector(struct dbg_session *s, int sel, struct segment *seg)
+{
+  int rc;
+
+  s->body->sel.sel = sel;
+  rc = dbg_xact(s, DBGCMD_GET_SELECTOR, s->body, 4, s->body);
+  if (rc < 0) return rc;
+
+  memcpy(seg, &s->body->sel.seg, sizeof(struct segment));
+  return 0;
 }

@@ -22,15 +22,15 @@ static char *statename[] = {"free", "clean", "dirty", "read", "write", "lock", "
 // dump_pool_stat
 //
 
-static void dump_pool_stat(struct bufpool *pool)
+void dump_pool_stat(struct bufpool *pool)
 {
   int i;
 
-  kprintf("%s: ", device(pool->devno)->name);
+    kprintf("pool %s: %dx%d, %dK total (", device(pool->devno)->name, pool->poolsize, pool->bufsize, pool->poolsize * pool->bufsize / K);
   for (i = 0; i < BUF_STATES; i++) 
     if (pool->bufcount[i] != 0)
       kprintf("%s:%d ", statename[i], pool->bufcount[i]);
-  kprintf("\n");
+  kprintf(")\n");
 }
 
 //
@@ -374,7 +374,7 @@ static void lazywriter_task(void *arg)
     {
       for (pool = bufpools; pool; pool = pool->next)
       {
-	// Wait until we get one sencond with no activity
+	// Wait until we get one second with no activity
 	while (pool->ioactive)
 	{
 	  pool->ioactive = 0;
@@ -687,6 +687,9 @@ int flush_buffers(struct bufpool *pool, int interruptable)
   struct buf *buf;
   int rc;
 
+  // Do not flush if nosync flag is set
+  if (pool->nosync) return 0;
+
   pool->ioactive = 0;
   while (pool->dirty.head)
   {
@@ -730,10 +733,13 @@ int sync_buffers(struct bufpool *pool, int interruptable)
   int i;
   int rc;
 
+  // Do not sync if nosync flag is set
+  if (pool->nosync) return 0;
+
   // Call user sync function
   if (pool->sync) pool->sync(pool->syncarg);
 
-  // If there are no updated buffer then there is nothing to do
+  // If there are no updated buffers then there is nothing to do
   if (pool->bufcount[BUF_STATE_UPDATED] == 0) 
   {
     pool->last_sync = time(NULL);

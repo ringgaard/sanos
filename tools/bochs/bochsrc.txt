@@ -225,7 +225,8 @@ keyboard_serial_delay: 250
 # Examples:
 #   floppy_command_delay: 50000
 #=======================================================================
-floppy_command_delay: 500
+#floppy_command_delay: 500
+#floppy_command_delay: 1
 
 #=======================================================================
 # IPS:

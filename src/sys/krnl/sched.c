@@ -317,8 +317,7 @@ int suspend_thread(struct thread *t)
 {
   int prevcount = t->suspend_count;
 
-  // Never suspend idle thread
-  if (t->id != 0) t->suspend_count++;
+  t->suspend_count++;
   return prevcount;
 }
 

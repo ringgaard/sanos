@@ -55,14 +55,11 @@ char *gets(char *buf)
 	  p--;
 	}
       }
-      else 
+      else if (ch == '\r' || ch =='\n' || ch >= ' ')
       {
 	write(stdout, &ch, 1);
-	if (ch != 13)
-	{
-	  if (ch == 10) break;
-	  *p++ = ch;
-	}
+        if (ch == '\n') break;
+	if (ch != '\r') *p++ = ch;
       }
     }
   }

@@ -51,8 +51,8 @@ int format_target()
   quick = get_numeric_property(inst, "format", "quick", 0);
   cache = get_numeric_property(inst, "format", "cache", 0);
 
-  sprintf(options, "blocksize=%d,cache=%d,%s", blocksize, cache, quick ? ",quick" : "");
-  printf("Formatting device %s (%s)...\n", devname);
+  sprintf(options, "blocksize=%d,cache=%d%s", blocksize, cache, quick ? ",quick" : "");
+  printf("Formatting device %s (%s)...\n", devname, options);
 
   // Format device
   rc = format(devname, fstype, options);

@@ -16,6 +16,8 @@
 #define DEFAULT_RESERVED_BLOCKS 16
 #define DEFAULT_RESERVED_INODES 16
 
+#define FORMAT_BLOCKSIZE        (128 * K)
+
 static void mark_group_desc_dirty(struct filsys *fs, int group)
 {
   mark_buffer_updated(fs->cache, fs->groupdesc_buffers[group / fs->groupdescs_per_block]);
@@ -200,32 +202,36 @@ static struct filsys *create_filesystem(devno_t devno, struct fsoptions *fsopts)
   // Initialize buffer cache
   fs->cache = init_buffer_pool(devno, fs->super->cache_buffers, fs->blocksize, dfs_sync, fs);
   if (!fs->cache) return NULL;
+  fs->cache->nosync = 1;
 
   // Zero all blocks on disk
   if (!fsopts->quick)
   {
     int percent;
     int prev_percent;
+    int blocks_per_io;
 
-    buffer = (char *) kmalloc(fs->blocksize);
-    memset(buffer, 0, fs->blocksize);
+    blocks_per_io = FORMAT_BLOCKSIZE / fs->blocksize;
+    buffer = (char *) kmalloc(FORMAT_BLOCKSIZE);
+    memset(buffer, 0, FORMAT_BLOCKSIZE);
 
     prev_percent = -1;
-    for (i = fs->super->groupdesc_table_block + fs->groupdesc_blocks; i < fs->super->block_count; i++)
+    for (i = fs->super->groupdesc_table_block + fs->groupdesc_blocks; i < fs->super->block_count; i += blocks_per_io)
     {
-      if (i % 100) 
-      {
-	percent = (i / 100) * 100 / (fs->super->block_count / 100);
-	if (percent != prev_percent) kprintf("%d%% complete\r", percent);
-	prev_percent = percent;
-      }
+      percent = (i / 100) * 100 / (fs->super->block_count / 100);
+      if (percent != prev_percent) kprintf("%d%% complete\r", percent);
+      prev_percent = percent;
       
-      dev_write(fs->devno, buffer, fs->blocksize, i);
+      if (i + blocks_per_io > fs->super->block_count)
+        dev_write(fs->devno, buffer, (fs->super->block_count - i) * fs->blocksize, i);
+      else
+        dev_write(fs->devno, buffer, FORMAT_BLOCKSIZE, i);
     }
-    kprintf("100%% complete\n");
+    kprintf("100%% complete\r");
 
     kfree(buffer);
   }
+
   // Allocate group descriptors
   fs->groupdesc_buffers = (struct buf **) kmalloc(sizeof(struct buf *) * fs->groupdesc_blocks);
   fs->groups = (struct group *) kmalloc(sizeof(struct group) * fs->super->group_count);
@@ -335,6 +341,9 @@ static struct filsys *create_filesystem(devno_t devno, struct fsoptions *fsopts)
   root->desc->linkcount = 1;
   mark_buffer_updated(fs->cache, root->buf);
   release_inode(root);
+
+  // Reenable buffer cache sync
+  fs->cache->nosync = 0;
 
   return fs;
 }

@@ -18,6 +18,7 @@ CFG=kernel32 - Win32 SanOS
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
 !MESSAGE "kernel32 - Win32 SanOS" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "kernel32 - Win32 SanOSDebug" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 
 # Begin Project
@@ -27,6 +28,9 @@ CFG=kernel32 - Win32 SanOS
 CPP=cl.exe
 MTL=midl.exe
 RSC=rc.exe
+
+!IF  "$(CFG)" == "kernel32 - Win32 SanOS"
+
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
 # PROP BASE Output_Dir "SanOS"
@@ -36,7 +40,7 @@ RSC=rc.exe
 # PROP Use_Debug_Libraries 0
 # PROP Output_Dir "..\bin"
 # PROP Intermediate_Dir "..\obj\kernel32"
-# PROP Ignore_Export_Lib 0
+# PROP Ignore_Export_Lib 1
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "KERNEL32_EXPORTS" /YX /FD /c
 # ADD CPP /nologo /MT /W3 /O2 /X /I "..\src\include" /u /D "KERNEL32_LIB" /YX"os.h" /FD /c
@@ -51,9 +55,42 @@ LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
 # ADD LINK32 os.lib clib.lib /nologo /entry:"DllMain" /dll /map /machine:I386 /nodefaultlib /implib:"..\lib/kernel32.lib" /libpath:"..\lib"
 # SUBTRACT LINK32 /pdb:none
+
+!ELSEIF  "$(CFG)" == "kernel32 - Win32 SanOSDebug"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "kernel32___Win32_SanOSDebug"
+# PROP BASE Intermediate_Dir "kernel32___Win32_SanOSDebug"
+# PROP BASE Ignore_Export_Lib 0
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "..\dbg\bin"
+# PROP Intermediate_Dir "..\dbg\obj\kernel32"
+# PROP Ignore_Export_Lib 1
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /MT /W3 /O2 /X /I "..\src\include" /u /D "KERNEL32_LIB" /YX"os.h" /FD /c
+# ADD CPP /nologo /MT /W3 /Zi /Od /X /I "..\src\include" /u /D "KERNEL32_LIB" /D "DEBUG" /YX"os.h" /FD /c
+# ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD BASE RSC /l 0x406 /d "NDEBUG"
+# ADD RSC /l 0x406 /d "NDEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo
+# ADD BSC32 /nologo
+LINK32=link.exe
+# ADD BASE LINK32 os.lib clib.lib /nologo /entry:"DllMain" /dll /map /machine:I386 /nodefaultlib /implib:"..\lib/kernel32.lib" /libpath:"..\lib"
+# SUBTRACT BASE LINK32 /pdb:none
+# ADD LINK32 os.lib clib.lib /nologo /entry:"DllMain" /dll /pdb:"..\dbg\symbols\kernel32.pdb" /map /debug /machine:I386 /nodefaultlib /implib:"..\lib/kernel32.lib" /libpath:"..\dbg\lib"
+# SUBTRACT LINK32 /pdb:none
+
+!ENDIF 
+
 # Begin Target
 
 # Name "kernel32 - Win32 SanOS"
+# Name "kernel32 - Win32 SanOSDebug"
 # Begin Group "include"
 
 # PROP Default_Filter ""

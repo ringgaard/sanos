@@ -1,26 +1,26 @@
 cd ..
 if not exist img mkdir img
-if not exist img\bootdisk mkdir img\bootdisk
-if not exist img\bootdisk\dev mkdir img\bootdisk\dev
-if not exist img\bootdisk\etc mkdir img\bootdisk\etc
-if not exist img\bootdisk\os mkdir img\bootdisk\os
-if not exist img\bootdisk\setup mkdir img\bootdisk\setup
-if not exist img\bootdisk\target mkdir img\bootdisk\target
-copy bin\os.dll img\bootdisk\os > nul
-copy bin\sh.exe img\bootdisk\os > nul
-copy bin\setup.exe img\bootdisk\os > nul
-copy bin\fdisk.exe img\bootdisk\os > nul
-copy bin\pcnet32.sys img\bootdisk\os > nul
-copy bin\ne2000.sys img\bootdisk\os > nul
-copy build\krnl.ini img\bootdisk\etc > nul
-copy build\os.ini img\bootdisk\etc > nul
-copy bin\boot img\bootdisk\setup > nul
-copy bin\osldr.dll img\bootdisk\setup > nul
-copy bin\krnl.dll img\bootdisk\setup > nul
-copy bin\os.dll img\bootdisk\setup > nul
-copy bin\sh.exe img\bootdisk\setup > nul
-copy bin\ne2000.sys img\bootdisk\setup > nul
-copy build\krnl.ini img\bootdisk\setup > nul
-copy build\os.ini img\bootdisk\setup > nul
-copy build\setup.ini img\bootdisk\setup > nul
-tools\mkdfs -d img\bootdisk.img -b bin\boot -l bin\osldr.dll -k bin\krnl.dll -c 1440 -i -f -S img\bootdisk\
+if not exist %2 mkdir %2
+if not exist %2\dev mkdir %2\dev
+if not exist %2\etc mkdir %2\etc
+if not exist %2\os mkdir %2\os
+if not exist %2\setup mkdir %2\setup
+if not exist %2\target mkdir %2\target
+copy %1\os.dll %2\os > nul
+copy %1\sh.exe %2\os > nul
+copy %1\setup.exe %2\os > nul
+copy %1\fdisk.exe %2\os > nul
+copy %1\pcnet32.sys %2\os > nul
+copy %1\ne2000.sys %2\os > nul
+copy build\krnl.ini %2\etc > nul
+copy build\os.ini %2\etc > nul
+copy %1\boot %2\setup > nul
+copy %1\osldr.dll %2\setup > nul
+copy %1\krnl.dll %2\setup > nul
+copy %1\os.dll %2\setup > nul
+copy %1\sh.exe %2\setup > nul
+copy %1\ne2000.sys %2\setup > nul
+copy build\krnl.ini %2\setup > nul
+copy build\os.ini %2\setup > nul
+copy build\setup.ini %2\setup > nul
+tools\mkdfs -d %3 -b %1\boot -l %1\osldr.dll -k %1\krnl.dll -c 1440 -i -f -S %2\

@@ -97,7 +97,11 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
   clear_screen();
 
   // Display banner
+#ifdef DEBUG
+  print_string(OSNAME " version " OSVERSION " (Debug Build " __DATE__ " " __TIME__ ")\n");
+#else
   print_string(OSNAME " version " OSVERSION " (Build " __DATE__ " " __TIME__ ")\n");
+#endif
   print_string(COPYRIGHT "\n\n");
 
   // Initialize page frame database

@@ -1208,7 +1208,7 @@ static int sys_suspend(char *params)
   h = *(handle_t *) params;
 
   t = (struct thread *) hlock(h, OBJECT_THREAD);
-  if (!t) 
+  if (!t || t->id == 0) 
   {
     unlock_buffer(params, 4);
     return -EBADF;

@@ -93,3 +93,56 @@ char *_strdup(const char *string)
 
   return NULL;
 }
+
+#ifdef DEBUG
+
+void *memset(void *p, int c, size_t n)
+{
+  char *pb = (char *) p;
+  char *pbend = pb + n;
+  while (pb != pbend) *pb++ = c;
+  return p;
+}
+
+void *memcpy(void *dst, const void *src, size_t n)
+{
+  void *ret = dst;
+
+  while (n--)
+  {
+    *(char *)dst = *(char *)src;
+    dst = (char *) dst + 1;
+    src = (char *) src + 1;
+  }
+
+  return ret;
+}
+
+char *strcpy(char *dst, const char *src)
+{
+  char *cp = dst;
+  while (*cp++ = *src++);
+  return dst;
+}
+
+size_t strlen(const char *s)
+{
+  const char *eos = s;
+  while (*eos++);
+  return (int) (eos - s - 1);
+}
+
+int strcmp(const char *src, const char *dst)
+{
+  int ret = 0 ;
+  while (!(ret = *(unsigned char *) src - *(unsigned char *) dst) && *dst) ++src, ++dst;
+
+  if (ret < 0)
+    ret = -1 ;
+  else if (ret > 0)
+    ret = 1 ;
+
+  return ret;
+}
+
+#endif

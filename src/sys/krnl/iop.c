@@ -8,6 +8,50 @@
 
 #include <os/krnl.h>
 
+void insw(int port, void *buf, int count)
+{
+  __asm
+  {
+    mov edx, port
+    mov edi, buf
+    mov ecx, count
+    rep insw
+  }
+}
+
+void outsw(int port, void *buf, int count)
+{
+  __asm
+  {
+    mov edx, port
+    mov esi, buf
+    mov ecx, count
+    rep outsw
+  }
+}
+
+void insd(int port, void *buf, int count)
+{
+  __asm
+  {
+    mov edx, port
+    mov edi, buf
+    mov ecx, count
+    rep insd
+  }
+}
+
+void outsd(int port, void *buf, int count)
+{
+  __asm
+  {
+    mov edx, port
+    mov esi, buf
+    mov ecx, count
+    rep outsd
+  }
+}
+
 #ifdef DEBUG
 
 int __declspec(naked) _outp(port_t port, int databyte)

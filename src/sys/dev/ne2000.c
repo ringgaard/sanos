@@ -246,28 +246,6 @@ struct ne
   struct event ptx;                     // packet transmitted event
 };
 
-static void insw(int port, void *buf, int count)
-{
-  __asm
-  {
-    mov edx, port
-    mov edi, buf
-    mov ecx, count
-    rep insw
-  }
-}
-
-static void outsw(int port, void *buf, int count)
-{
-  __asm
-  {
-    mov edx, port
-    mov esi, buf
-    mov ecx, count
-    rep outsw
-  }
-}
-
 static void ne_readmem(struct ne *ne, unsigned short src, void *dst, unsigned short len)
 {
   // Word align length

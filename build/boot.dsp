@@ -18,6 +18,7 @@ CFG=boot - Win32 SanOS
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
 !MESSAGE "boot - Win32 SanOS" (based on "Win32 (x86) Generic Project")
+!MESSAGE "boot - Win32 SanOSDebug" (based on "Win32 (x86) Generic Project")
 !MESSAGE 
 
 # Begin Project
@@ -25,6 +26,9 @@ CFG=boot - Win32 SanOS
 # PROP Scc_ProjName "boot"
 # PROP Scc_LocalPath ".."
 MTL=midl.exe
+
+!IF  "$(CFG)" == "boot - Win32 SanOS"
+
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
 # PROP BASE Output_Dir "SanOS"
@@ -35,13 +39,34 @@ MTL=midl.exe
 # PROP Output_Dir "..\bin"
 # PROP Intermediate_Dir "..\obj\boot"
 # PROP Target_Dir ""
+
+!ELSEIF  "$(CFG)" == "boot - Win32 SanOSDebug"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "boot___Win32_SanOSDebug"
+# PROP BASE Intermediate_Dir "boot___Win32_SanOSDebug"
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "..\dbg\bin"
+# PROP Intermediate_Dir "..\dbg\obj\boot"
+# PROP Target_Dir ""
+
+!ENDIF 
+
 # Begin Target
 
 # Name "boot - Win32 SanOS"
+# Name "boot - Win32 SanOSDebug"
 # Begin Source File
 
 SOURCE=..\src\sys\boot\boot.asm
+
+!IF  "$(CFG)" == "boot - Win32 SanOS"
+
 # PROP Ignore_Default_Tool 1
+USERDEP__BOOT_="..\src\sys\boot\boot.asm"	
 # Begin Custom Build - Assemble boot.asm
 InputPath=..\src\sys\boot\boot.asm
 
@@ -50,6 +75,23 @@ InputPath=..\src\sys\boot\boot.asm
 	..\tools\nasmw.exe -f bin ..\src\sys\boot\boot.asm -o ..\bin\boot  -l ..\obj\boot\boot.lst 
 	
 # End Custom Build
+
+!ELSEIF  "$(CFG)" == "boot - Win32 SanOSDebug"
+
+# PROP BASE Ignore_Default_Tool 1
+# PROP Ignore_Default_Tool 1
+USERDEP__BOOT_="..\src\sys\boot\boot.asm"	
+# Begin Custom Build - Assemble boot.asm
+InputPath=..\src\sys\boot\boot.asm
+
+"..\dbg\bin\boot" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	if not exist ..\dbg\obj\boot mkdir ..\dbg\obj\boot 
+	..\tools\nasmw.exe -f bin ..\src\sys\boot\boot.asm -o ..\dbg\bin\boot  -l ..\dbg\obj\boot\boot.lst 
+	
+# End Custom Build
+
+!ENDIF 
+
 # End Source File
 # End Target
 # End Project

@@ -43,6 +43,8 @@ void dbg_close_session(struct dbg_session *s);
 struct dbg_event *dbg_next_event(struct dbg_session *s);
 void dbg_release_event(struct dbg_event *e);
 
+int dbg_continue(struct dbg_session *s);
+
 int dbg_read_memory(struct dbg_session *s, void *addr, int size, void *buffer);
 int dbg_write_memory(struct dbg_session *s, void *addr, int size, void *buffer);
 
@@ -51,5 +53,7 @@ int dbg_set_context(struct dbg_session *s, tid_t tid, struct context *ctxt);
 
 int dbg_suspend_threads(struct dbg_session *s, tid_t *threadids, int count);
 int dbg_resume_threads(struct dbg_session *s, tid_t *threadids, int count);
+
+int dbg_get_selector(struct dbg_session *s, int sel, struct segment *seg);
 
 #endif

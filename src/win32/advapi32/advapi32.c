@@ -8,6 +8,7 @@
 
 #include <os.h>
 #include <win32.h>
+#include <string.h>
 #include <inifile.h>
 
 BOOL WINAPI GetUserNameA

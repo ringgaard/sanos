@@ -93,6 +93,12 @@ typedef int (__cdecl * _onexit_t)(void);
 
 #define EOF     (-1)
 
+void *memset(void *p, int c, size_t n);
+void *memcpy(void *, const void *, size_t);
+char *strcpy(char *, const char *);
+size_t strlen(const char *);
+int strcmp(const char *src, const char *dst);
+
 #define crtapi __declspec(dllexport)
 
 crtapi void *bsearch(const void *key, const void *base, size_t num, size_t width, int (__cdecl *compare)(const void *, const void *));

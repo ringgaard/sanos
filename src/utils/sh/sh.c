@@ -458,7 +458,7 @@ static void disk_usage(int argc, char **argv)
     printf("\n");
   }
 
-  free(statfs);
+  free(buf);
 }
 
 static void test(int argc, char **argv)

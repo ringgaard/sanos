@@ -60,6 +60,7 @@ struct bufpool
   void (*sync)(void *arg);
   void *syncarg;
   time_t last_sync;
+  int nosync;
 
   struct bufpool *next;
   struct bufpool *prev;

@@ -18,6 +18,7 @@ CFG=osldr - Win32 SanOS
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
 !MESSAGE "osldr - Win32 SanOS" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "osldr - Win32 SanOSDebug" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 
 # Begin Project
@@ -27,6 +28,9 @@ CFG=osldr - Win32 SanOS
 CPP=cl.exe
 MTL=midl.exe
 RSC=rc.exe
+
+!IF  "$(CFG)" == "osldr - Win32 SanOS"
+
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
 # PROP BASE Output_Dir "SanOS"
@@ -51,9 +55,42 @@ LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
 # ADD LINK32 /nologo /base:"0x00010000" /entry:"start" /dll /map /machine:I386 /nodefaultlib /fixed
 # SUBTRACT LINK32 /pdb:none
+
+!ELSEIF  "$(CFG)" == "osldr - Win32 SanOSDebug"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "osldr___Win32_SanOSDebug"
+# PROP BASE Intermediate_Dir "osldr___Win32_SanOSDebug"
+# PROP BASE Ignore_Export_Lib 1
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "..\dbg\bin"
+# PROP Intermediate_Dir "..\dbg\obj\osldr"
+# PROP Ignore_Export_Lib 0
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /MT /W3 /O2 /X /I "..\src\include" /u /D "KERNEL" /D "OSLDR" /YX"krnl.h" /FD /c
+# ADD CPP /nologo /MT /W3 /O2 /X /I "..\src\include" /u /D "KERNEL" /D "OSLDR" /YX"krnl.h" /FD /c
+# ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD BASE RSC /l 0x406 /d "NDEBUG"
+# ADD RSC /l 0x406 /d "NDEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo
+# ADD BSC32 /nologo
+LINK32=link.exe
+# ADD BASE LINK32 /nologo /base:"0x00010000" /entry:"start" /dll /map /machine:I386 /nodefaultlib /fixed
+# SUBTRACT BASE LINK32 /pdb:none
+# ADD LINK32 /nologo /base:"0x00010000" /entry:"start" /dll /pdb:none /map /machine:I386 /nodefaultlib /fixed
+# SUBTRACT LINK32 /debug
+
+!ENDIF 
+
 # Begin Target
 
 # Name "osldr - Win32 SanOS"
+# Name "osldr - Win32 SanOSDebug"
 # Begin Group "osldr"
 
 # PROP Default_Filter ""

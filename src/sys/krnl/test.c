@@ -9,8 +9,11 @@
 #include <os/krnl.h>
 
 extern struct fs *mountlist;
+struct bufpool *bufpools;
 
 unsigned char buffer[4096];
+
+void dump_pool_stat(struct bufpool *pool);
 
 static void pause()
 {
@@ -102,6 +105,7 @@ void dump_memory(unsigned long addr, unsigned char *p, int len)
 static void dump_disk(char *devname, blkno_t blkno)
 {
   devno_t dev;
+  int rc;
 
   dev = dev_open(devname);
   if (dev == NODEV)
@@ -118,8 +122,12 @@ static void dump_disk(char *devname, blkno_t blkno)
   }
 
   kprintf("block %d:\n", blkno);
-  dev_read(dev, buffer, 512, blkno);
-  dump_memory(0, buffer, 512);
+  rc = dev_read(dev, buffer, 512, blkno);
+  if (rc < 0)
+    kprintf("%s: read error %d\n", devname, rc);
+  else
+    dump_memory(0, buffer, 512);
+
   dev_close(dev);
 }
 
@@ -705,14 +713,15 @@ static void dump_devices()
 
 static void thread_list()
 {
+  static char *threadstatename[] = {"init", "ready", "run", "wait", "term"};
   struct thread *t = threadlist;
   kprintf("tid tcb      self state prio tib      suspend entry    handles\n");
-  kprintf("--- -------- ---- ----- ---- -------  ------- -------- -------\n");
+  kprintf("--- -------- ---- ----- ---- -------- ------- -------- -------\n");
   while (1)
   {
-    kprintf("%3d %p %4d %3d   %3d  %p  %4d   %p   %2d\n",
-            t->id, t, t->self, t->state, t->priority, t->tib, t->suspend_count,
-	    t->entrypoint, t->object.handle_count);
+    kprintf("%3d %p %4d %-5s %3d  %p  %4d   %p   %2d\n",
+            t->id, t, t->self, threadstatename[t->state], t->priority, t->tib, 
+	    t->suspend_count, t->entrypoint, t->object.handle_count);
 
     t = t->next;
     if (t == threadlist) break;
@@ -762,6 +771,19 @@ static void dump_umods()
   dump_mods(((struct peb *) PEB_ADDRESS)->usermods);
 }
 
+static void dump_bufpools()
+{
+  struct bufpool *pool;
+
+  pool = bufpools;
+  while (pool)
+  {
+    dump_pool_stat(pool);
+    kprintf("\n");
+    pool = pool->next;
+  }
+}
+
 static void load_mod(char *fn)
 {
   hmodule_t hmod;
@@ -787,6 +809,73 @@ static void test(char *arg)
 
   rc = dev_write(dev, buffer, 512, 10);
   kprintf("rc=%d\n", rc);
+
+  dev_close(dev);
+}
+
+static void disktest(char *devname, int blocks)
+{
+  devno_t dev;
+  int rc;
+  int n, m;
+  int ok;
+
+  dev = dev_open(devname);
+  if (dev == NODEV)
+  {
+    kprintf("%s: unable to open device\n", devname);
+    return;
+  }
+
+  for (n = 0; n < blocks; n++)
+  {
+    kprintf("write %5d\r", n);
+    memset(buffer, ((unsigned char) n) & 0xFF, 512);
+  
+    rc = dev_write(dev, buffer, 512, n);
+    if (rc < 0) 
+    { 
+      kprintf("%s: write error %d block %d\n", devname, rc, n);
+      break;
+    }
+
+    rc = dev_write(dev, buffer, 512, n + 2048);
+    if (rc < 0) 
+    { 
+      kprintf("%s: write error %d block %d\n", devname, rc, n);
+      break;
+    }
+  }
+
+  for (n = 0; n < blocks; n++)
+  {
+    kprintf("read  %5d\r", n);
+    memset(buffer, 0, 512);
+  
+    rc = dev_read(dev, buffer, 512, n);
+    if (rc < 0) 
+    { 
+      kprintf("%s: read error %d block %d\n", devname, rc, n);
+      break;
+    }
+
+    ok = 1;
+    for (m = 0; m < 512; m++)
+    {
+      if (buffer[m] != (((unsigned char) n) & 0xFF))
+      {
+	ok = 0;
+	break;
+      }
+    }
+
+    if (!ok)
+    {
+      kprintf("%s: verify error at %d block %d\n", devname, m, n);
+      break;
+    }
+  }
+  kprintf("\n");
 
   dev_close(dev);
 }
@@ -866,6 +955,8 @@ void shell()
       pmem_list();
     else if (strcmp(cmd, "pdir") == 0)
       dump_pdir();
+    else if (strcmp(cmd, "bufpools") == 0)
+      dump_bufpools();
     else if (strcmp(cmd, "fs") == 0)
       fs_list();
     else if (strcmp(cmd, "threads") == 0)
@@ -882,6 +973,8 @@ void shell()
       load_mod(arg);
     else if (strcmp(cmd, "break") == 0)
       dbg_break();
+    else if (strcmp(cmd, "disktest") == 0)
+      disktest(arg, atoi(arg2));
     else if (*cmd)
       kprintf("%s: unknown command\n", cmd);
   }
