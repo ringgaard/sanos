@@ -40,6 +40,8 @@ struct netif
 extern struct netif *netif_list;
 extern struct netif *netif_default;
 
+void netif_init();
+
 struct netif *netif_add(char *name, struct ip_addr *ipaddr, struct ip_addr *netmask, struct ip_addr *gw);
 struct netif *netif_find(char *name);
 

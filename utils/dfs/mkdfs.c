@@ -42,6 +42,7 @@ char *source = NULL;
 char *target = "";
 int part = -1;
 int part_start = 0;
+int part_offset = 0;
 
 int get_tick_count()
 {
@@ -60,7 +61,7 @@ int dev_read(devno_t devno, void *buffer, size_t count, blkno_t blkno)
 
   //printf("read block %d, %d bytes\n", blkno, count);
 
-  if (SetFilePointer((HANDLE) devno, (blkno + part_start) * SECTORSIZE, NULL, FILE_BEGIN) == -1) panic("unable to set file pointer");
+  if (SetFilePointer((HANDLE) devno, (blkno + part_offset) * SECTORSIZE, NULL, FILE_BEGIN) == -1) panic("unable to set file pointer");
   if (!ReadFile((HANDLE) devno, buffer, count, &bytes, NULL)) panic("error reading from device");
   return count;
 }
@@ -71,7 +72,7 @@ int dev_write(devno_t devno, void *buffer, size_t count, blkno_t blkno)
 
   //printf("write block %d, %d bytes\n", blkno, count);
 
-  if (SetFilePointer((HANDLE) devno, (blkno + part_start) * SECTORSIZE, NULL, FILE_BEGIN) == -1) panic("unable to set file pointer");
+  if (SetFilePointer((HANDLE) devno, (blkno + part_offset) * SECTORSIZE, NULL, FILE_BEGIN) == -1) panic("unable to set file pointer");
   if (!WriteFile((HANDLE) devno, buffer, count, &bytes, NULL)) panic("error writing to device");
   return count;
 }
@@ -140,7 +141,7 @@ void read_mbr(HANDLE hdev)
   if (!ReadFile(hdev, &mbr, sizeof mbr, &bytes, NULL)) panic("error reading mbr from device");
   if (mbr.signature != MBR_SIGNATURE) panic("invalid master boot record");
 
-  part_start = mbr.parttab[part].relsect;
+  part_start = part_offset = mbr.parttab[part].relsect;
   devsize = mbr.parttab[part].numsect;
 
   printf("using partition %d, offset %d, %dK\n", part, part_start, devsize / 2);
@@ -541,6 +542,7 @@ void usage()
   fprintf(stderr, "  -s (shell)\n");
   fprintf(stderr, "  -w (wipe out device, i.e. zero all sectors first)\n");
   fprintf(stderr, "  -p <partition>\n");
+  fprintf(stderr, "  -P <partition start sector>\n");
   fprintf(stderr, "  -q (quick format device)\n");
   fprintf(stderr, "  -B <block size> (default 4096)\n");
   fprintf(stderr, "  -I <inode ratio> (default 1 inode per 4K)\n");
@@ -554,7 +556,7 @@ int main(int argc, char **argv)
   int c;
 
   // Parse command line options
-  while ((c = getopt(argc, argv, "d:b:c:ifk:l:swp:qB:I:S:T:?")) != EOF)
+  while ((c = getopt(argc, argv, "d:b:c:ifk:l:swp:qB:I:P:S:T:?")) != EOF)
   {
     switch (c)
     {
@@ -608,6 +610,10 @@ int main(int argc, char **argv)
 
       case 'I':
 	inoderatio = atoi(optarg);
+	break;
+
+      case 'P':
+	part_start = atoi(optarg);
 	break;
 
       case 'S':

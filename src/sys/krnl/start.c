@@ -105,6 +105,18 @@ static int load_kernel_config()
   return 0;
 }
 
+static int version_proc(struct proc_file *pf, void *arg)
+{
+#ifdef DEBUG
+  pprintf(pf, OSNAME " version " OSVERSION " (Debug Build " __DATE__ " " __TIME__ ")\n");
+#else
+  pprintf(pf, OSNAME " version " OSVERSION " (Build " __DATE__ " " __TIME__ ")\n");
+#endif
+  pprintf(pf, COPYRIGHT "\n");
+
+  return 0;
+}
+
 void __stdcall start(void *hmod, int reserved1, int reserved2)
 {
   // Initialize screen
@@ -222,6 +234,7 @@ void init_net()
   struct ip_addr gw;
 
   stats_init();
+  netif_init();
   ether_init();
   pbuf_init();
   arp_init();
@@ -319,6 +332,9 @@ void main(void *arg)
 
   // Mount devices
   init_mount();
+
+  // Install /proc/version handler
+  register_proc_inode("version", version_proc, NULL);
 
   // Allocate handles for stdin, stdout and stderr
   open("/dev/console", O_RDONLY, &stdin);

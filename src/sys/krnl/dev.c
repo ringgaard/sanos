@@ -18,7 +18,10 @@ struct dev *devtab[MAX_DEVS];
 unsigned int num_devs = 0;
 
 static int units_proc(struct proc_file *pf, void *arg);
-static int devs_proc(struct proc_file *pf, void *arg);
+static int devices_proc(struct proc_file *pf, void *arg);
+
+static char *busnames[] = {"HOST", "PCI", "ISA", "?", "?"};
+static char *devtypenames[] = {"?", "stream", "block", "packet"};
 
 struct bus *add_bus(struct unit *self, unsigned long bustype, unsigned long busno)
 {
@@ -439,6 +442,7 @@ void install_drivers()
 {
   // Register /proc/units
   register_proc_inode("units", units_proc, NULL);
+  register_proc_inode("devices", devices_proc, NULL);
 
   // Parse driver binding database
   parse_bindings();
@@ -621,8 +625,6 @@ int dev_receive(devno_t devno, struct pbuf *p)
 
 static int units_proc(struct proc_file *pf, void *arg)
 {
-  static char *busnames[] = {"HOST", "PCI", "ISA", "?", "?"};
-
   struct unit *unit;
   struct resource *res;
   int bustype;
@@ -689,7 +691,24 @@ static int units_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-static int devs_proc(struct proc_file *pf, void *arg)
+static int devices_proc(struct proc_file *pf, void *arg)
 {
+  devno_t devno;
+  struct dev *dev;
+
+  pprintf(pf, "devno name     driver           type   unit\n");
+  pprintf(pf, "----- -------- ---------------- ------ ------------------------------\n");
+
+  for (devno = 0; devno < num_devs; devno++)
+  {
+    dev = devtab[devno];
+    pprintf(pf, "%5d %-8s %-16s %-6s ", devno, dev->name, dev->driver->name, devtypenames[dev->driver->type]);
+    if (dev->unit)
+      pprintf(pf, "%s unit %d.%d\n", busnames[dev->unit->bus->bustype], dev->unit->bus->busno, dev->unit->unitno);
+    else
+      pprintf(pf, "<none>\n");
+  }
+
+  return 0;
 
 }

@@ -195,7 +195,7 @@ void __stdcall start(void *hmod, int bootdrv, int reserved2)
 
   // Determine size of RAM
   mem_end = memsize();
-  kprintf("Memory size is %d MB\n", mem_end / M);
+  //kprintf("Memory size %d MB\n", mem_end / M);
 
   // Page allocation starts at 1MB
   heap = (char *) HEAP_START;

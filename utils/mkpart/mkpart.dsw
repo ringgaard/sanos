@@ -7,6 +7,10 @@ Project: "mkpart"=.\mkpart.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
+    begin source code control
+    mkpart
+    .
+    end source code control
 }}}
 
 Package=<4>

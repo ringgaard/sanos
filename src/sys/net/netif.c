@@ -11,6 +11,23 @@
 struct netif *netif_list = NULL;
 struct netif *netif_default = NULL;
 
+static int netif_proc(struct proc_file *pf, void *arg)
+{
+  struct netif *netif;
+  
+  for (netif = netif_list; netif != NULL; netif = netif->next) 
+  {
+    pprintf(pf, "%s: device %s addr %a mask %a gw %a\n", netif->name, device((devno_t) netif->state)->name, &netif->ipaddr, &netif->netmask, &netif->gw);
+  }
+
+  return 0;
+}
+
+void netif_init()
+{
+  register_proc_inode("netif", netif_proc, NULL);
+}
+
 struct netif *netif_add(char *name, struct ip_addr *ipaddr, struct ip_addr *netmask, struct ip_addr *gw)
 {
   struct netif *netif;
@@ -33,6 +50,7 @@ struct netif *netif_add(char *name, struct ip_addr *ipaddr, struct ip_addr *netm
 
   return netif;
 }
+
 
 struct netif *netif_find(char *name)
 {

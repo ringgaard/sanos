@@ -108,7 +108,7 @@ int generate_partition_info(char *fn)
   mbr = (struct master_boot_record *) bootsect;
   for (i = 0; i < 4; i++)
   {
-    p = &mbr[i].parttab[i];
+    p = &mbr->parttab[i];
 
     fprintf(f, "%d %d (%d/%d/%d) (%d/%d/%d) %lu %lu\n", 
       p->bootid, p->systid,
@@ -127,8 +127,9 @@ int set_partition_info(char *fn)
   int i;
   struct master_boot_record *mbr;
   struct disk_partition *p;
-  int begcyl;
-  int endcyl;
+  int bootid, systid;
+  int begcyl, beghead, begsect;
+  int endcyl, endhead, endsect;
 
   f = fopen(fn, "r");
   if (!f) return -1;
@@ -136,19 +137,24 @@ int set_partition_info(char *fn)
   mbr = (struct master_boot_record *) bootsect;
   for (i = 0; i < 4; i++)
   {
-    p = &mbr[i].parttab[i];
+    p = &mbr->parttab[i];
 
     fscanf(f, "%d %d (%d/%d/%d) (%d/%d/%d) %lu %lu\n",
-      &p->bootid, &p->systid,
-      &begcyl, &p->beghead, &p->begsect,
-      &endcyl, &p->endhead, &p->endsect,
+      &bootid, &systid,
+      &begcyl, &beghead, &begsect,
+      &endcyl, &endhead, &endsect,
       &p->relsect, &p->numsect);
 
+    p->bootid = bootid;
+    p->systid = systid;
+
     p->begcyl = begcyl & 0xFF;
-    p->begsect |= ((begcyl >> 8) << 6);
+    p->beghead = beghead;
+    p->begsect = begsect | ((begcyl >> 8) << 6);
 
     p->endcyl = endcyl & 0xFF;
-    p->endsect |= ((endcyl >> 8) << 6);
+    p->endhead = endhead;
+    p->endsect = endsect | ((endcyl >> 8) << 6);
 
     //printf("%d %d (%d/%d/%d) (%d/%d/%d) %lu %lu\n",
     //  p->bootid, p->systid,
@@ -213,6 +219,8 @@ int main(int argc, char **argv)
   }
   else
   {
+    memcpy(bootsect, bootrecord, 512);
+
     if (set_partition_info(partinf) < 0)
     {
       printf("mkpart: error reading partition info from %s\n", partinf);

@@ -55,6 +55,8 @@ void load_kernel(int bootdrv)
   char *label;
   struct boot_sector *bootsect;
 
+  kprintf("Loading kernel");
+
   // Determine active boot partition if booting from harddisk
   if (bootdrv & 0x80)
   {
@@ -127,7 +129,7 @@ void load_kernel(int bootdrv)
   // Calculate kernel size
   kernelsize = inode->size;
   kernelpages = PAGES(kernelsize);
-  kprintf("Kernel size %d KB\n", kernelsize / K);
+  //kprintf("Kernel size %d KB\n", kernelsize / K);
 
   // Allocate page table for kernel
   if (kernelpages > PTES_PER_PAGE) panic("kernel too big");
@@ -143,12 +145,14 @@ void load_kernel(int bootdrv)
     addr = kerneladdr;
     for (i = 0; i < (int) inode->blocks; i++)
     {
+      kprintf(".");
       if (boot_read(addr, blocksize, inode->blockdir[i] * blks_per_sect + start) != blocksize)
       {
         panic("error reading kernel from boot device");
       }
       addr += blocksize;
     }
+    kprintf("\n");
   }
   else if (inode->depth == 1)
   {
@@ -163,6 +167,7 @@ void load_kernel(int bootdrv)
 
       for (j = 0; j < (int) (blocksize / sizeof(blkno_t)); j++)
       {
+        kprintf(".");
         if (boot_read(addr, blocksize, blockdir[j] * blks_per_sect + start) != blocksize)
         {
           panic("error reading kernel inode dir from boot device");
@@ -176,6 +181,7 @@ void load_kernel(int bootdrv)
 
       if (blkno == inode->blocks) break;
     }
+    kprintf("\n");
   }
   else
     panic("unsupported inode depth");
