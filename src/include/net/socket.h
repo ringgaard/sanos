@@ -112,8 +112,8 @@ struct sockreq
   struct tcp_pcb *pcb;
 };
 
-err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, char *data, int len);
-void release_socket_request(struct sockreq *req);
+err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, char *data, int len, unsigned int timeout);
+void release_socket_request(struct sockreq *req, int err);
 void socket_init();
 
 int accept(struct socket *s, struct sockaddr *addr, int *addrlen, struct socket **retval);

@@ -47,6 +47,7 @@
 #define MSECS_PER_TICK  (1000 / TIMER_FREQ)
 
 volatile unsigned int ticks = 0;
+volatile unsigned int clocks = 0;
 struct timeval systemclock = { 0, 0 };
 time_t upsince;
 unsigned long cycles_per_tick;
@@ -56,14 +57,16 @@ struct dpc timerdpc;
 
 void timer_dpc(void *arg)
 {
-  handle_timer_expiry(ticks);
-  tcp_tmr();
+  run_timer_list();
 }
 
 void timer_handler(struct context *ctxt, void *arg)
 {
-  // Update timer tick count
-  ticks += MSECS_PER_TICK;
+  // Update timer clock
+  clocks += CLOCKS_PER_TICK;
+
+  // Update tick counter
+  ticks++;
 
   // Update system clock
   systemclock.tv_usec += USECS_PER_TICK;
@@ -260,11 +263,6 @@ void usleep(unsigned long us)
     tsc_delay(us * cycles_per_tick / (1000000 / TIMER_FREQ));
   else
     timed_delay(us * loops_per_tick / (1000000 / TIMER_FREQ));
-}
-
-unsigned int get_tick_count()
-{
-  return ticks;
 }
 
 time_t get_time()

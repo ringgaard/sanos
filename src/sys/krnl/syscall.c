@@ -1415,7 +1415,7 @@ static int sys_settimeofday(char *params)
 
 static int sys_clock(char *params)
 {
-  return get_tick_count() * (1000 / TICKS_PER_SEC);
+  return clocks;
 }
 
 static int sys_mksem(char *params)

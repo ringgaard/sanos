@@ -223,7 +223,7 @@ static void cascade_timers(struct timer_vec *tv)
 
 void run_timer_list()
 {
-  while ((long) (get_tick_count() - timer_ticks) >= 0) 
+  while ((long) (ticks - timer_ticks) >= 0) 
   {
     struct timer_link *head, *curr;
 

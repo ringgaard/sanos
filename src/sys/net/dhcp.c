@@ -11,6 +11,8 @@
 static unsigned long xid = 0;
 static struct dhcp_state *dhcp_client_list = NULL;
 int dhcp_arp_check = 0;
+struct timer dhcp_slow_timer;
+struct timer dhcp_fast_timer;
 
 //
 // DHCP client state machine functions
@@ -172,7 +174,7 @@ static err_t dhcp_select(struct dhcp_state *state)
 // dhcp_slowtmr
 //
 
-void dhcp_slowtmr()
+static void dhcp_slowtmr(void *arg)
 {
   struct dhcp_state *state = dhcp_client_list;
 
@@ -202,13 +204,15 @@ void dhcp_slowtmr()
 
     state = state->next;
   }
+
+  mod_timer(&dhcp_slow_timer, ticks + DHCP_SLOW_TIMER_SECS * TICKS_PER_SEC);
 }
 
 //
 // dhcp_fasttmr
 //
 
-void dhcp_fasttmr()
+void dhcp_fasttmr(void *arg)
 {
   struct dhcp_state *state = dhcp_client_list;
 
@@ -229,6 +233,8 @@ void dhcp_fasttmr()
 
     state = state->next;
   }
+
+  mod_timer(&dhcp_fast_timer, ticks + DHCP_FAST_TIMER_MSECS / MSECS_PER_TICK);
 }
 
 //
@@ -388,6 +394,10 @@ static void dhcp_handle_ack(struct dhcp_state *state)
 
 void dhcp_init()
 {
+  init_timer(&dhcp_slow_timer, dhcp_slowtmr, NULL);
+  init_timer(&dhcp_fast_timer, dhcp_fasttmr, NULL);
+  mod_timer(&dhcp_slow_timer, ticks + DHCP_SLOW_TIMER_SECS * TICKS_PER_SEC);
+  mod_timer(&dhcp_fast_timer, ticks + DHCP_FAST_TIMER_MSECS / MSECS_PER_TICK);
 }
 
 //

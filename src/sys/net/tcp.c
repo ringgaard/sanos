@@ -12,9 +12,10 @@
 
 #include <net/net.h>
 
-int tcp_initialized;
 unsigned long tcp_ticks;
 unsigned long tcp_timer_expire;
+struct timer tcpslow_timer;
+struct timer tcpfast_timer;
 unsigned char tcp_backoff[13] = {1, 2, 4, 8, 16, 32, 64, 64, 64, 64, 64, 64, 64};
 
 // TCP PCB lists
@@ -306,12 +307,14 @@ err_t tcp_connect(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short po
 // various timers such as the inactivity timer in each PCB.
 //
 
-void tcp_slowtmr()
+void tcp_slowtmr(void *arg)
 {
   struct tcp_pcb *pcb, *pcb2, *prev;
   struct tcp_seg *seg, *useg;
   unsigned long eff_wnd;
   int pcb_remove;      // flag if a PCB should be removed
+
+  tcp_ticks++;
 
   // Steps through all of the active PCBs.
   prev = NULL;
@@ -455,6 +458,8 @@ void tcp_slowtmr()
       pcb = pcb->next;
     }
   }
+
+  mod_timer(&tcpslow_timer, ticks + TCP_SLOW_INTERVAL / MSECS_PER_TICK);
 }
 
 //
@@ -464,7 +469,7 @@ void tcp_slowtmr()
 // Is called every 100 ms and sends delayed ACKs
 //
 
-void tcp_fasttmr()
+void tcp_fasttmr(void *arg)
 {
   struct tcp_pcb *pcb;
 
@@ -478,39 +483,8 @@ void tcp_fasttmr()
       pcb->flags &= ~(TF_ACK_DELAY | TF_ACK_NOW);
     }
   }
-}
 
-//
-//
-// tcp_tmr
-//
-// Is called by timer DPC every 10 ms
-// FIXME: move network timer processing to other module
-//
-
-void tcp_tmr()
-{
-  unsigned long ticks = get_tick_count();
-
-  if (!tcp_initialized) return;
-  if (time_before_eq(tcp_timer_expire, ticks))
-  {
-    tcp_timer_expire = ticks + 100;
-
-    tcp_ticks++;
-    tcp_fasttmr();
-
-    if (tcp_ticks % 5 == 0) 
-    {
-      tcp_slowtmr();
-      dhcp_fasttmr();
-      if (tcp_ticks % 100 == 0) 
-      {
-	arp_tmr();
-	if (tcp_ticks % 600 == 0) dhcp_slowtmr();
-      }
-    }
-  }
+  mod_timer(&tcpfast_timer, ticks + TCP_FAST_INTERVAL / MSECS_PER_TICK);
 }
 
 //
@@ -629,8 +603,10 @@ void tcp_init()
 {
   // Initialize timer
   tcp_ticks = 0;
-  tcp_timer_expire = get_tick_count();
-  tcp_initialized = 1;
+  init_timer(&tcpslow_timer, tcp_slowtmr, NULL);
+  init_timer(&tcpfast_timer, tcp_fasttmr, NULL);
+  mod_timer(&tcpslow_timer, ticks + TCP_SLOW_INTERVAL / MSECS_PER_TICK);
+  mod_timer(&tcpfast_timer, ticks + TCP_FAST_INTERVAL / MSECS_PER_TICK);
 }
 
 //

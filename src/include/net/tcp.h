@@ -13,10 +13,9 @@ struct tcp_pcb;
 
 // Lower layer interface to TCP
 
-void tcp_init();         // Must be called first to initialize TCP
-void tcp_slowtmr();      // Must be called every 500 ms.
-void tcp_fasttmr();      // Must be called every 100 ms.
-void tcp_tmr();          // Called from timer DPC every 10 ms
+void tcp_init();              // Must be called first to initialize TCP
+void tcp_slowtmr(void *arg);  // Must be called every 500 ms.
+void tcp_fasttmr(void *arg);  // Must be called every 100 ms.
 
 void tcp_input(struct pbuf *p, struct netif *inp); // Called by IP to deliver TCP segment to TCP
 
@@ -28,7 +27,7 @@ void tcp_accept(struct tcp_pcb *pcb, err_t (*accept)(void *arg, struct tcp_pcb *
 void tcp_recv(struct tcp_pcb *pcb, err_t (*recv)(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err));
 void tcp_sent(struct tcp_pcb *pcb, err_t (*sent)(void *arg, struct tcp_pcb *tpcb, unsigned short len));
 void tcp_poll(struct tcp_pcb *pcb, err_t (*poll)(void *arg, struct tcp_pcb *tpcb), int interval);
-void tcp_err(struct tcp_pcb *pcb, void (* err)(void *arg, err_t err));
+void tcp_err(struct tcp_pcb *pcb, void (*err)(void *arg, err_t err));
 
 #define tcp_sndbuf(pcb)   ((pcb)->snd_buf)
 

@@ -83,10 +83,7 @@ struct mutex
 struct waitable_timer
 {
   struct object object;
-  unsigned int expires;
-
-  struct waitable_timer *next_timer;
-  struct waitable_timer *prev_timer;
+  struct timer timer;
 };
 
 struct thread
@@ -140,7 +137,6 @@ krnlapi unsigned int set_sem(struct sem *s, unsigned int count);
 krnlapi void init_mutex(struct mutex *m, int owned);
 krnlapi void release_mutex(struct mutex *m);
 
-void handle_timer_expiry(unsigned int ticks);
 krnlapi void init_waitable_timer(struct waitable_timer *t, unsigned int expires);
 krnlapi void modify_waitable_timer(struct waitable_timer *t, unsigned int expires);
 krnlapi void cancel_waitable_timer(struct waitable_timer *t);

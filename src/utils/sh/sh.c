@@ -337,6 +337,26 @@ static void set_loglevel(char *arg, int level)
   loglevel = ll | level;
 }
 
+static void idle_sleep(int ms)
+{
+  time_t t;
+  struct tm tm;
+  clock_t c;
+
+  t = time();
+  c = clock();
+  gmtime(&t, &tm);
+  printf("Time is %04d/%02d/%02d %02d:%02d:%02d Clock is %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, c);
+
+  printf("Sleep %d ms\n", ms);
+  sleep(ms);
+
+  t = time();
+  c = clock();
+  gmtime(&t, &tm);
+  printf("Time is %04d/%02d/%02d %02d:%02d:%02d Clock is %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, c);
+}
+
 static void start_program(int argc, char **argv)
 {
   char *pgm;
@@ -637,6 +657,8 @@ void shell()
 	dbgbreak();
       else if (strcmp(argv[0], "nop") == 0)
 	nop();
+      else if (strcmp(argv[0], "sleep") == 0)
+	idle_sleep(atoi(argv[1]));
       else if (strcmp(argv[0], "test") == 0)
 	test(argc, argv);
       else

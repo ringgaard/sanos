@@ -22,7 +22,6 @@ static void recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
       len = p->len;
 
     memcpy(req->data, p->payload, len);
-    req->err = len;
 
     req->addr.sin_len = sizeof(struct sockaddr_in);
     req->addr.sin_family = AF_INET;
@@ -31,7 +30,7 @@ static void recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
 
     pbuf_free(p);
 
-    release_socket_request(req);
+    release_socket_request(req, len);
   }
   else if (s->udp.recvtail)
   {
@@ -82,8 +81,7 @@ static int udpsock_close(struct socket *s)
   req = s->waithead;
   while (req)
   {
-    req->err = EABORT;
-    release_socket_request(req);
+    release_socket_request(req, -EABORT);
     req = req->next;
   }
 
@@ -218,7 +216,7 @@ static int udpsock_recvfrom(struct socket *s, void *data, int size, unsigned int
   }
   else
   {
-    len = submit_socket_request(s, &req, SOCKREQ_RECV, data, size);
+    len = submit_socket_request(s, &req, SOCKREQ_RECV, data, size, INFINITE);
 
     if (len >= 0)
     {

@@ -31,6 +31,8 @@ void udp_input(struct pbuf *p, struct netif *inp)
 
   udphdr = (struct udp_hdr *)((char *) p->payload - UDP_HLEN);
   
+  //udp_debug_print(udphdr);
+
   src = NTOHS(udphdr->src);
   dest = NTOHS(udphdr->dest);
 

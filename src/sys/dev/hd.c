@@ -354,7 +354,7 @@ static int hd_wait(struct hdc *hdc, unsigned char mask, unsigned int timeout)
   unsigned int start;
   unsigned char status;
 
-  start = get_tick_count();
+  start = clocks;
   while (1)
   {
     status = _inp(hdc->iobase + HDC_ALT_STATUS);
@@ -369,7 +369,7 @@ static int hd_wait(struct hdc *hdc, unsigned char mask, unsigned int timeout)
     }
 
     if (!(status & HDCS_BSY) && ((status & mask) == mask)) return 0;
-    if (time_before(start + timeout, get_tick_count())) return -ETIMEOUT;
+    if (time_before(start + timeout, clocks)) return -ETIMEOUT;
 
     yield();
   }

@@ -37,12 +37,12 @@
 
 #include <os/buf.h>
 
+#include <os/timer.h>
 #include <os/object.h>
 #include <os/queue.h>
 #include <os/sched.h>
 #include <os/trap.h>
 #include <os/dbg.h>
-#include <os/timer.h>
 
 #include <os/pic.h>
 #include <os/pit.h>

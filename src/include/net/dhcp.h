@@ -99,9 +99,6 @@ err_t dhcp_inform(struct netif *netif);
 
 void dhcp_arp_reply(struct ip_addr *addr);
 
-void dhcp_slowtmr();
-void dhcp_fasttmr();
- 
 #define DHCP_COOKIE_OFS (DHCP_MSG_OFS + DHCP_MSG_LEN)
 #define DHCP_OPTIONS_OFS (DHCP_MSG_OFS + DHCP_MSG_LEN + 4)
 

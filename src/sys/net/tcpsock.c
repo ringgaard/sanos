@@ -18,8 +18,7 @@ static err_t accept_tcp(void *arg, struct tcp_pcb *newpcb, err_t err)
     if (req->type == SOCKREQ_ACCEPT)
     {
       req->pcb = newpcb;
-      req->err = err;
-      release_socket_request(req);
+      release_socket_request(req, err);
       return 0;
     }
 
@@ -47,8 +46,7 @@ static err_t connected_tcp(void *arg, struct tcp_pcb *pcb, err_t err)
     {
       s->state = SOCKSTATE_CONNECTED;
       req->pcb = pcb;
-      req->err = err;
-      release_socket_request(req);
+      release_socket_request(req, err);
       return 0;
     }
 
@@ -83,7 +81,7 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
     req = s->waithead;
     while (req)
     {
-      if (req->type == SOCKREQ_RECV) release_socket_request(req);
+      if (req->type == SOCKREQ_RECV) release_socket_request(req, 0);
       req = req->next;
     }
 
@@ -114,7 +112,7 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 
     tcp_recved(pcb, (unsigned short) bytes);
 
-    if (req->len == 0) release_socket_request(req);
+    if (req->len == 0) release_socket_request(req, req->err);
 
     pbuf_header(p, -bytes);
     if (p->len == 0)
@@ -158,8 +156,7 @@ static err_t sent_tcp(void *arg, struct tcp_pcb *pcb, unsigned short len)
     rc = tcp_write(pcb, req->data, (unsigned short) bytes, 1);
     if (rc < 0)
     {
-      req->err = rc;
-      release_socket_request(req);
+      release_socket_request(req, rc);
       return rc;
     }
 
@@ -167,7 +164,7 @@ static err_t sent_tcp(void *arg, struct tcp_pcb *pcb, unsigned short len)
     req->len -= bytes;
     req->err += bytes;
 
-    if (req->len == 0) release_socket_request(req);
+    if (req->len == 0) release_socket_request(req, req->err);
   }
 }
 
@@ -178,8 +175,7 @@ static void err_tcp(void *arg, err_t err)
 
   while (req)
   {
-    req->err = err;
-    release_socket_request(req);
+    release_socket_request(req, err);
     req = req->next;
   }
 }
@@ -210,7 +206,7 @@ static int tcpsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen,
 
   if (s->tcp.numpending == 0)
   {
-    rc = submit_socket_request(s, &req, SOCKREQ_ACCEPT, NULL, 0);
+    rc = submit_socket_request(s, &req, SOCKREQ_ACCEPT, NULL, 0, INFINITE);
     if (rc < 0) return rc;
     pcb = req.pcb;
   }
@@ -283,8 +279,7 @@ static int tcpsock_close(struct socket *s)
   req = s->waithead;
   while (req)
   {
-    req->err = EABORT;
-    release_socket_request(req);
+    release_socket_request(req, -EABORT);
     req = req->next;
   }
 
@@ -341,7 +336,7 @@ static int tcpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
 
   s->state = SOCKSTATE_CONNECTING;
   
-  rc = submit_socket_request(s, &req, SOCKREQ_CONNECT, NULL, 0);
+  rc = submit_socket_request(s, &req, SOCKREQ_CONNECT, NULL, 0, INFINITE);
   if (rc < 0) return rc;
 
   return 0;
@@ -455,7 +450,7 @@ static int tcpsock_recv(struct socket *s, void *data, int size, unsigned int fla
   len = size - left;
   if (len > 0) return len;
 
-  rc = submit_socket_request(s, &req, SOCKREQ_RECV, bufp, left);
+  rc = submit_socket_request(s, &req, SOCKREQ_RECV, bufp, left, INFINITE);
   if (rc < 0) return rc;
 
   return len + rc; 
@@ -507,7 +502,7 @@ static int tcpsock_send(struct socket *s, void *data, int size, unsigned int fla
       if (rc < 0) return rc;
     }
 
-    rc = submit_socket_request(s, &req, SOCKREQ_SEND, ((char *) data) + len, size - len);
+    rc = submit_socket_request(s, &req, SOCKREQ_SEND, ((char *) data) + len, size - len, INFINITE);
     if (rc < 0) return rc;
 
     return rc + len;

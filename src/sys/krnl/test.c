@@ -360,12 +360,12 @@ static void test_read_file(char *filename)
   data = kmalloc(64 * K);
 
   bytes = 0;
-  start = get_tick_count();
+  start = clocks;
   while ((count = read(file, data, 64 * K)) > 0)
   {
     bytes += count;
   }
-  time = get_tick_count() - start;
+  time = clocks - start;
   kprintf("%s: read %dKB in %d ms, %dKB/s\n", filename, bytes / K, time, bytes / time);
   
   kfree(data);
@@ -393,7 +393,7 @@ static void test_write_file(char *filename, int size)
   data = kmalloc(64 * K);
 
   bytes = 0;
-  start = get_tick_count();
+  start = clocks;
   while (bytes < size)
   {
     if ((count = write(file, data, 64 * K)) <= 0)
@@ -404,7 +404,7 @@ static void test_write_file(char *filename, int size)
 
     bytes += count;
   }
-  time = get_tick_count() - start;
+  time = clocks - start;
   kprintf("%s: wrote %dKB in %d ms, %dKB/s\n", filename, bytes / K, time, bytes / time);
   
   kfree(data);

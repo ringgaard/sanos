@@ -178,7 +178,7 @@ int wait_for_object(object_t hobj, unsigned int timeout)
     else
     {
       // Initialize timer
-      init_waitable_timer(&t->auxtimer, get_tick_count() + timeout);
+      init_waitable_timer(&t->auxtimer, ticks + timeout / MSECS_PER_TICK);
       t->auxwb0.waittype = WAIT_ANY;
       t->auxwb0.next = &t->auxwb1;
       t->auxwb1.thread = t;
@@ -526,34 +526,12 @@ void release_mutex(struct mutex *m)
 }
 
 //
-// Insert timer in active timer list
+// Expire waitable timer
 //
 
-static void insert_waitable_timer(struct waitable_timer *t)
+static void expire_waitable_timer(void *arg)
 {
-  t->next_timer = timer_list;
-  t->prev_timer = NULL;
-  if (timer_list) timer_list->prev_timer = t;
-  timer_list = t;
-}
-
-//
-// Remove timer from active timer list
-//
-
-static void remove_waitable_timer(struct waitable_timer *t)
-{
-  if (t->next_timer) t->next_timer->prev_timer = t->prev_timer;
-  if (t->prev_timer) t->prev_timer->next_timer = t->next_timer;
-  if (timer_list == t) timer_list = t->next_timer;
-}
-
-//
-// Expire timer
-//
-
-static void expire_waitable_timer(struct waitable_timer *t)
-{
+  struct waitable_timer *t = arg;
   struct waitblock *wb;
   struct waitblock *wb_next;
 
@@ -568,26 +546,6 @@ static void expire_waitable_timer(struct waitable_timer *t)
     if (thread_ready_to_run(wb->thread)) release_thread(wb->thread);
     wb = wb_next;
   }
-
-  // Remove timer from timer list
-  remove_waitable_timer(t);
-}
-
-//
-// Handle expiration of active timers.
-// Called by timer DPC.
-//
-
-void handle_timer_expiry(unsigned int ticks)
-{
-  struct waitable_timer *t = timer_list;
-
-  while (t)
-  {
-    struct waitable_timer *next = t->next_timer;
-    if (time_before_eq(t->expires, ticks)) expire_waitable_timer(t);
-    t = next;
-  }
 }
 
 //
@@ -597,17 +555,18 @@ void handle_timer_expiry(unsigned int ticks)
 void init_waitable_timer(struct waitable_timer *t, unsigned int expires)
 {
   init_object(&t->object, OBJECT_TIMER);
-  t->expires = expires;
+  init_timer(&t->timer, expire_waitable_timer, t);
+  t->timer.expires = expires;
   
-  if (time_before_eq(expires, get_tick_count()))
+  if (time_before_eq(expires, ticks))
   {
     // Set timer to signaled state immediately
     t->object.signaled = 1;
   }
   else
   {
-    // Insert timer in timer list
-    insert_waitable_timer(t);
+    // Start timer
+    add_timer(&t->timer);
   }
 }
 
@@ -617,21 +576,7 @@ void init_waitable_timer(struct waitable_timer *t, unsigned int expires)
 
 void modify_waitable_timer(struct waitable_timer *t, unsigned int expires)
 {
-  t->expires = expires;
-  if (time_before_eq(expires, get_tick_count()))
-  {
-    // Remove timer from timer list if timer is active
-    if (!t->object.signaled) expire_waitable_timer(t);
-  }
-  else
-  {
-    // Insert timer in timer list if it is not active
-    if (t->object.signaled) 
-    {
-      t->object.signaled = 0;
-      insert_waitable_timer(t);
-    }
-  }
+  mod_timer(&t->timer, expires);
 }
 
 //
@@ -640,14 +585,7 @@ void modify_waitable_timer(struct waitable_timer *t, unsigned int expires)
 
 void cancel_waitable_timer(struct waitable_timer *t)
 {
-  t->expires = 0;
-
-  // Remove timer from timer list if timer is active
-  if (!t->object.signaled)
-  {
-    t->object.signaled = 1;
-    remove_waitable_timer(t);
-  }
+  if (t->timer.active) del_timer(&t->timer);
 }
 
 //
@@ -658,7 +596,7 @@ void sleep(unsigned int millisecs)
 {
   struct waitable_timer timer;
 
-  init_waitable_timer(&timer, get_tick_count() + (millisecs * TICKS_PER_SEC / 1000));
+  init_waitable_timer(&timer, ticks + millisecs / MSECS_PER_TICK);
   wait_for_object(&timer, INFINITE);
 }
 

@@ -8,12 +8,13 @@
 
 #include <net/net.h>
 
-#define HWTYPE_ETHERNET 1
+#define HWTYPE_ETHERNET    1
 
-#define ARP_REQUEST     1
-#define ARP_REPLY       2
+#define ARP_REQUEST        1
+#define ARP_REPLY          2
 
-#define ARP_MAXAGE      120         // 120 * 10 seconds = 20 minutes
+#define ARP_MAXAGE         120         // 120 * 10 seconds = 20 minutes
+#define ARP_TIMER_INTERVAL 10000       // The ARP cache is checked every 10 seconds
 
 #pragma pack(push)
 #pragma pack(1)
@@ -53,16 +54,11 @@ struct arp_entry
 };
 
 static struct arp_entry arp_table[ARP_TABLE_SIZE];
+
+struct timer arp_timer;
 int ctime;
 
-void arp_init()
-{
-  int i;
-  
-  for (i = 0; i < ARP_TABLE_SIZE; ++i) ip_addr_set(&(arp_table[i].ipaddr), IP_ADDR_ANY);
-}
-
-void arp_tmr()
+static void arp_tmr(void *arg)
 {
   int i;
   
@@ -75,6 +71,17 @@ void arp_tmr()
       ip_addr_set(&(arp_table[i].ipaddr), IP_ADDR_ANY);
     }
   }  
+
+  mod_timer(&arp_timer, ticks + ARP_TIMER_INTERVAL / MSECS_PER_TICK);
+}
+
+void arp_init()
+{
+  int i;
+  
+  for (i = 0; i < ARP_TABLE_SIZE; ++i) ip_addr_set(&(arp_table[i].ipaddr), IP_ADDR_ANY);
+  init_timer(&arp_timer, arp_tmr, NULL);
+  mod_timer(&arp_timer, ticks + ARP_TIMER_INTERVAL / MSECS_PER_TICK);
 }
 
 static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)

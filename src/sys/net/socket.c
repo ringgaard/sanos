@@ -19,8 +19,32 @@ void socket_init()
   sockops[SOCKTYPE_UDP] = &udpops;
 }
 
-err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, char *data, int len)
+void release_socket_request(struct sockreq *req, int err)
 {
+  req->err = err;
+
+  if (req->next) req->next->prev = req->prev;
+  if (req->prev) req->prev->next = req->next;
+  if (req->socket)
+  {
+    if (req == req->socket->waithead) req->socket->waithead = req->next;
+    if (req == req->socket->waittail) req->socket->waittail = req->prev;
+  }
+
+  mark_thread_ready(req->thread);
+}
+
+static void socket_timeout(void *arg)
+{
+  struct sockreq *req = arg;
+
+  release_socket_request(req, req->err > 0 ? req->err : -ETIMEOUT);
+}
+
+err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, char *data, int len, unsigned int timeout)
+{
+  struct timer timer;
+
   req->socket = s;
   req->thread = current_thread();
   req->type = type;
@@ -33,23 +57,20 @@ err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, cha
   if (s->waittail) s->waittail->next = req;
   s->waittail = req;
   if (!s->waithead) s->waithead = req;
-  
-  req->thread->state = THREAD_STATE_WAITING;
-  dispatch();
-  return req->err;
-}
 
-void release_socket_request(struct sockreq *req)
-{
-  if (req->next) req->next->prev = req->prev;
-  if (req->prev) req->prev->next = req->next;
-  if (req->socket)
+  if (timeout != INFINITE)
   {
-    if (req == req->socket->waithead) req->socket->waithead = req->next;
-    if (req == req->socket->waittail) req->socket->waittail = req->prev;
+    init_timer(&timer, socket_timeout, req);
+    timer.expires = ticks + timeout / MSECS_PER_TICK;
+    add_timer(&timer);
   }
 
-  mark_thread_ready(req->thread);
+  req->thread->state = THREAD_STATE_WAITING;
+  dispatch();
+
+  if (timeout != INFINITE) del_timer(&timer);
+
+  return req->err;
 }
 
 int accept(struct socket *s, struct sockaddr *addr, int *addrlen, struct socket **retval)

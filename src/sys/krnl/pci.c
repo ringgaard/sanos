@@ -176,6 +176,7 @@ void enum_pci_bus(struct bus *bus)
 
       if (vendorid == 0xFFFF || vendorid == 0) continue;
       if (deviceid == prev_deviceid) continue;
+      prev_deviceid = deviceid;
 
       // Function class code
       value = pci_config_read(bus->busno, devno, funcno, PCI_CONFIG_CLASS_REV);

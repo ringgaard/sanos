@@ -12,6 +12,7 @@
 #include <os/tss.h>
 #include <os/seg.h>
 #include <os/syspage.h>
+#include <os/timer.h>
 #include <os/object.h>
 #include <os/sched.h>
 

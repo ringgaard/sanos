@@ -128,10 +128,6 @@ SOURCE=..\src\include\os\dfs.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\include\os\intr.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\include\os\mbr.h
 # End Source File
 # Begin Source File
@@ -165,6 +161,14 @@ SOURCE=..\src\include\os\seg.h
 # Begin Source File
 
 SOURCE=..\src\include\os\syspage.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\timer.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\include\os\trap.h
 # End Source File
 # End Group
 # End Target
