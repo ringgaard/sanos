@@ -204,6 +204,9 @@
 			RelativePath="..\src\lib\stdlib.c">
 		</File>
 		<File
+			RelativePath="..\src\lib\strftime.c">
+		</File>
+		<File
 			RelativePath="..\src\lib\string.c">
 		</File>
 		<File

@@ -327,14 +327,23 @@ static void display_file(char *filename)
   close(file);
 }
 
-static void show_date()
+static void show_date(int argc, char *argv[])
 {
   time_t t;
   struct tm tm;
 
   t = time(NULL);
   _gmtime(&t, &tm);
-  printf("Time is %04d/%02d/%02d %02d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+  if (argc > 1)
+  {
+    char buffer[256];
+
+    strftime(buffer, 256, argv[1], &tm);
+    printf("%s\n", buffer);
+  }
+  else
+    printf("Time is %04d/%02d/%02d %02d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
 
 static void test_read_file(char *filename)
@@ -1440,7 +1449,7 @@ void shell()
       else if (strcmp(argv[0], "du") == 0)
 	disk_usage(argc, argv);
       else if (strcmp(argv[0], "date") == 0)
-	show_date();
+	show_date(argc, argv);
       else if (strcmp(argv[0], "read") == 0)
 	test_read_file(argv[1]);
       else if (strcmp(argv[0], "more") == 0)

@@ -57,6 +57,12 @@ const char *_days[] =
   "Thursday", "Friday", "Saturday"
 };
 
+const char *_days_abbrev[] = 
+{
+  "Sun", "Mon", "Tue", "Wed", 
+  "Thu", "Fri", "Sat"
+};
+
 const char *_months[] = 
 {
   "January", "February", "March",
@@ -65,10 +71,18 @@ const char *_months[] =
   "October", "November", "December"
 };
 
+const char *_months_abbrev[] = 
+{
+  "Jan", "Feb", "Mar",
+  "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep",
+  "Oct", "Nov", "Dec"
+};
+
 const int _ytab[2][12] = 
 {
-  { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
-  { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
+  {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
+  {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
 };
 
 struct tm *_gmtime(const time_t *timer, struct tm *tmbuf)

@@ -66,7 +66,7 @@ typedef struct WSAData
 #define IFF_UP           0x00000001    // Interface is up
 #define IFF_BROADCAST    0x00000002    // Broadcast is  supported
 #define IFF_LOOPBACK     0x00000004    // Loopback interface
-#define IFF_POINTTOPOINT 0x00000008    // Point-to-point interface*/
+#define IFF_POINTTOPOINT 0x00000008    // Point-to-point interface
 #define IFF_MULTICAST    0x00000010    // Multicast is supported
 
 typedef struct _INTERFACE_INFO

@@ -157,7 +157,7 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
     
     if (!ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) && !ip_addr_ismulticast(&iphdr->dest))
     {	
-      // Adjust pbuf pointer */
+      // Adjust pbuf pointer
       p->payload = iphdr;
       icmp_dest_unreach(p, ICMP_DUR_PORT);
     }

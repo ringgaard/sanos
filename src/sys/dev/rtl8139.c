@@ -243,7 +243,7 @@ enum CSCRBits
 // Completely undocumented, but required to tune bad links.
 
 #define PARA78_default  0x78fa8388
-#define PARA7c_default  0xcb38de43      /* param[0][3] */
+#define PARA7c_default  0xcb38de43
 #define PARA7c_xxx      0xcb38de43
 
 unsigned long param[4][4] = 
@@ -511,7 +511,7 @@ static void mdio_write(struct dev *dev, int phy_id, int location, int value)
 
   if (phy_id > 31) 
   {  
-    /* Really a 8139.  Use internal registers. */
+    // Really a 8139.  Use internal registers.
     long ioaddr = np->iobase;
     if (location == 0) 
     {
@@ -837,7 +837,7 @@ static int rtl8139_transmit(struct dev *dev, struct pbuf *p)
   else
     outpd(ioaddr + TxAddr0 + entry * 4, virt2phys(p->payload));
   
-  // Note: the chip doesn't have auto-pad! */
+  // Note: the chip doesn't have auto-pad!
   outpd(ioaddr + TxStatus0 + entry * 4, tp->tx_flag | (p->tot_len >= ETH_ZLEN ? p->tot_len : ETH_ZLEN));
 
   tp->trans_start = ticks;
