@@ -389,11 +389,12 @@ CHANGES
     - Quantum units are now charged after restarting waiting thread
     - Preemption when threads with higher priority than running thread implemented
  
- - TCP port numbers initialized to random range 4096-5120.
+- TCP port numbers initialized to random range 4096-5120.
 
- - Processor load information (/proc/loadavg) implemented.
+- Processor load information (/proc/loadavg) implemented.
  
- - Shell code cleaned up. Help texts added. Better argument checking.
+- Shell code cleaned up. Help texts added. Better argument checking.
 
- - Buffer overflows fixed in module loader
+- Buffer overflows fixed in module loader
  
+- Send and receive timeouts (SO_SNDTIMEO and SO_RCVTIMEO in setsockopt()) implemented for TCP sockets.

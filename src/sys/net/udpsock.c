@@ -282,7 +282,7 @@ static int udpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   else if (s->flags & SOCK_NBIO)
     rc = -EAGAIN;
   else
-    rc = submit_socket_request(s, &req, SOCKREQ_RECV, msg, s->udp.rcvtimeo);
+    rc = submit_socket_request(s, &req, SOCKREQ_RECV, msg, s->rcvtimeo);
 
   return rc;
 }
@@ -341,12 +341,12 @@ static int udpsock_setsockopt(struct socket *s, int level, int optname, const ch
 
       case SO_SNDTIMEO:
 	if (optlen != 4) return -EINVAL;
-	s->udp.sndtimeo = *(unsigned int *) optval;
+	s->sndtimeo = *(unsigned int *) optval;
 	break;
 
       case SO_RCVTIMEO:
 	if (optlen != 4) return -EINVAL;
-	s->udp.rcvtimeo = *(unsigned int *) optval;
+	s->rcvtimeo = *(unsigned int *) optval;
 	break;
 
       default:
@@ -366,8 +366,6 @@ static int udpsock_shutdown(struct socket *s, int how)
 
 static int udpsock_socket(struct socket *s, int domain, int type, int protocol)
 {
-  s->udp.sndtimeo = INFINITE;
-  s->udp.rcvtimeo = INFINITE;
   set_io_event(&s->iob, IOEVT_WRITE);
 
   return 0;

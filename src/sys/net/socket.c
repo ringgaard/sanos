@@ -71,6 +71,8 @@ err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, str
 {
   struct timer timer;
 
+  if (timeout == 0) return -ETIMEOUT;
+
   req->socket = s;
   req->thread = self();
   req->type = type;
@@ -353,6 +355,8 @@ int socket(int domain, int type, int protocol, struct socket **retval)
   init_ioobject(&s->iob, OBJECT_SOCKET);
   s->type = socktype;
   s->state = SOCKSTATE_UNBOUND;
+  s->sndtimeo = INFINITE;
+  s->rcvtimeo = INFINITE;
 
   rc = sockops[socktype]->socket(s, domain, type, protocol);
   if (rc < 0) return rc;

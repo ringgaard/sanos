@@ -115,8 +115,6 @@ struct udpsocket
   struct udp_pcb *pcb;
   struct pbuf *recvhead;
   struct pbuf *recvtail;
-  unsigned int sndtimeo;
-  unsigned int rcvtimeo;
 };
 
 struct socket
@@ -129,6 +127,9 @@ struct socket
 
   struct sockreq *waithead;
   struct sockreq *waittail;
+
+  unsigned int sndtimeo;
+  unsigned int rcvtimeo;
 
   union 
   {

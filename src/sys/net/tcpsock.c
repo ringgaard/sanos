@@ -688,7 +688,7 @@ static int tcpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   if (s->state == SOCKSTATE_CLOSING) return 0;
   if (s->flags & SOCK_NBIO) return -EAGAIN;
 
-  rc = submit_socket_request(s, &req, SOCKREQ_RECV, msg, INFINITE);
+  rc = submit_socket_request(s, &req, SOCKREQ_RECV, msg, s->rcvtimeo);
   if (rc < 0) return rc;
 
   return rc; 
@@ -715,7 +715,7 @@ static int tcpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
 
   if (bytes < size && (s->flags & SOCK_NBIO) == 0)
   {
-    rc = submit_socket_request(s, &req, SOCKREQ_SEND, msg, INFINITE);
+    rc = submit_socket_request(s, &req, SOCKREQ_SEND, msg, s->sndtimeo);
     if (rc < 0) return rc;
 
     bytes += rc;
@@ -748,6 +748,16 @@ static int tcpsock_setsockopt(struct socket *s, int level, int optname, const ch
 	  s->flags &= ~SOCK_LINGER;
 	else
 	  s->flags |= SOCK_LINGER;
+	break;
+
+      case SO_SNDTIMEO:
+	if (optlen != 4) return -EINVAL;
+	s->sndtimeo = *(unsigned int *) optval;
+	break;
+
+      case SO_RCVTIMEO:
+	if (optlen != 4) return -EINVAL;
+	s->rcvtimeo = *(unsigned int *) optval;
 	break;
 
       default:
