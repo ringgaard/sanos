@@ -40,36 +40,56 @@
 #define httpdapi __declspec(dllimport)
 #endif
 
+#define MAX_HTTP_HEADERS 32
+
 // Methods
 
 #define METHOD_GET   1
 #define METHOD_HEAD  2
 #define METHOD_POST  3
 
-// HTTP Request states
+// HTTP connection states
 
-#define HRS_IDLE           0
+#define HTTP_STATE_IDLE       0
+#define HTTP_STATE_HEADER     1
+#define HTTP_STATE_PROCESSING 2
 
-#define HRS_HDR_FIRSTWORD  1
-#define HRS_HDR_FIRSTWS    2
-#define HRS_HDR_SECONDWORD 3
-#define HRS_HDR_SECONDWS   4
-#define HRS_HDR_THIRDWORD  5
-#define HRS_HDR_LINE       6
-#define HRS_HDR_LF         7
-#define HRS_HDR_CR         8
-#define HRS_HDR_CRLF       9
-#define HRS_HDR_CRLFCR     10
-
-#define HRS_PROCESSING     11
-#define HRS_RESPONSE       12
-
-#define HRS_HDR_BOGUS      13
+#define HDR_STATE_FIRSTWORD   0
+#define HDR_STATE_FIRSTWS     1
+#define HDR_STATE_SECONDWORD  2
+#define HDR_STATE_SECONDWS    3
+#define HDR_STATE_THIRDWORD   4
+#define HDR_STATE_LINE        5
+#define HDR_STATE_LF          6
+#define HDR_STATE_CR          7
+#define HDR_STATE_CRLF        8
+#define HDR_STATE_CRLFCR      9
+#define HDR_STATE_BOGUS       10
 
 struct httpd_context;
 struct httpd_request;
+struct httpd_response;
+struct httpd_connection;
 
-typedef int (*httpd_handler)(struct httpd_request *req);
+typedef int (*httpd_handler)(struct httpd_connection *conn);
+
+// HTTP buffer
+
+struct httpd_buffer
+{
+  char *floor;
+  char *ceil;
+  char *start;
+  char *end;
+};
+
+// HTTP header
+
+struct httpd_header
+{
+  char *name;
+  char *value;
+};
 
 // HTTP socket address
 
@@ -89,7 +109,7 @@ struct httpd_server
   int num_workers;
   int iomux;
   struct httpd_context *contexts;
-  struct httpd_request *requests;
+  struct httpd_connection *connections;
 };
 
 // HTTP context
@@ -107,20 +127,17 @@ struct httpd_context
 
 struct httpd_request
 {
-  struct httpd_server *server;
-  struct httpd_context *context;
-  struct httpd_request *next;
-  int sock;
-  httpd_sockaddr client_addr;
-  
+  struct httpd_connection *conn;
+
   int http11;
   char *encoded_url;
   char *decoded_url;
-  
+
   char *method;
-  char *protocol;
+  char *contextpath;
   char *pathinfo;
   char *query;
+  char *protocol;
 
   char *realpath;
 
@@ -134,9 +151,38 @@ struct httpd_request
   char *host;
   time_t if_modified_since;
   int keep_alive;
+
+  int nheaders;
+  struct httpd_header headers[MAX_HTTP_HEADERS];
+};
+
+// HTTP response
+
+struct httpd_response
+{
+  struct httpd_connection *conn;
+};
+
+// HTTP connection
+
+struct httpd_connection
+{
+  struct httpd_server *server;
+  struct httpd_context *context;
+  struct httpd_connection *next;
+  int sock;
+  httpd_sockaddr client_addr;
+
+  struct httpd_buffer reqhdr;
+  struct httpd_buffer reqbody;
+  struct httpd_buffer rsphdr;
+  struct httpd_buffer rspbody;
+  int state;
+  int hdrstate;
 };
 
 httpdapi struct httpd_server *httpd_initialize(struct section *cfg); 
+httpdapi int httpd_terminate(struct httpd_server *server);
 httpdapi struct httpd_context *httpd_add_context(struct httpd_server *server, struct section *cfg, httpd_handler handler); 
 httpdapi int httpd_start(struct httpd_server *server);
 
