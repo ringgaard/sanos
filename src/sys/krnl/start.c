@@ -65,8 +65,13 @@ COPYRIGHT "\n"
 "OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF\n"
 "SUCH DAMAGE.\n";
 
+#define ONPANIC_HALT   0
+#define ONPANIC_REBOOT 1
+#define ONPANIC_DEBUG  2
+
 struct thread *mainthread;
 struct section *krnlcfg;
+int onpanic = ONPANIC_HALT;
 
 struct netif *nic;
 
@@ -77,13 +82,6 @@ struct file *stderr;
 struct peb *peb;
 
 void main(void *arg);
-
-void panic(char *msg)
-{
-  kprintf("panic: %s\n", msg);
-  if (debugging) dbg_output(msg);
-  dbg_break();
-}
 
 void stop(int restart)
 {
@@ -112,6 +110,38 @@ void exit(int status)
 {
   if (status != 0) kprintf("kernel: exit code = %d\n", status);
   stop(0);
+}
+
+void panic(char *msg)
+{
+  static int inpanic = 0;
+
+  inpanic = 1;
+  kprintf("panic: %s\n", msg);
+  switch (onpanic)
+  {
+    case ONPANIC_HALT:
+      if (inpanic)
+      {
+	cli();
+	halt();
+      }
+      else
+	stop(0);
+      break;
+
+    case ONPANIC_REBOOT:
+      if (inpanic)
+	reboot();
+      else
+	stop(1);
+      break;
+
+    case ONPANIC_DEBUG:
+      if (debugging) dbg_output(msg);
+      dbg_break();
+      break;
+  }
 }
 
 // Date string Mmm dd YYYY
@@ -305,6 +335,7 @@ void main(void *arg)
 
   char bootdev[8];
   int rc;
+  char *str;
 
   // Allocate and initialize PEB
   peb = mmap((void *) PEB_ADDRESS, PAGESIZE, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'PEB');
@@ -353,6 +384,13 @@ void main(void *arg)
   // Load kernel configuration
   rc = load_kernel_config();
   if (rc < 0) kprintf("%s: error %d loading kernel configuration\n", KERNEL_CONFIG, rc);
+  str = get_property(krnlcfg, "krnl", "onpanic", "halt");
+  if (strcmp(str, "halt") == 0)
+    onpanic = ONPANIC_HALT;
+  else if (strcmp(str, "reboot") == 0)
+    onpanic = ONPANIC_REBOOT;
+  else if (strcmp(str, "debug") == 0)
+    onpanic = ONPANIC_DEBUG;
 
   // Initialize module loader
   init_kernel_modules();
