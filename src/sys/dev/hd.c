@@ -562,7 +562,6 @@ static int hd_read_intr(struct dev *dev, void *buffer, size_t count, blkno_t blk
   char *bufp;
 
 //kprintf("hdread: block %d\n", blkno);
-//kprintf("R");
 
   if (count == 0) return 0;
   bufp = (char *) buffer;
@@ -597,7 +596,7 @@ static int hd_read_intr(struct dev *dev, void *buffer, size_t count, blkno_t blk
     reset_event(&hdc->ready);
 
     hd_setup_transfer(hd, blkno, nsects);
-    _outp(hdc->iobase + HDC_COMMAND, hd->multsect ? HDCMD_MULTREAD : HDCMD_READ);
+    _outp(hdc->iobase + HDC_COMMAND, hd->multsect > 1 ? HDCMD_MULTREAD : HDCMD_READ);
 
     // Wait until data read
     wait_for_object(&hdc->ready, INFINITE);
@@ -627,7 +626,6 @@ static int hd_write_intr(struct dev *dev, void *buffer, size_t count, blkno_t bl
   char *bufp;
 
 //kprintf("hdwrite: block %d\n", blkno);
-//kprintf("W");
 
   if (count == 0) return 0;
   bufp = (char *) buffer;
@@ -664,7 +662,7 @@ static int hd_write_intr(struct dev *dev, void *buffer, size_t count, blkno_t bl
     reset_event(&hdc->ready);
 
     hd_setup_transfer(hd, blkno, nsects);
-    _outp(hdc->iobase + HDC_COMMAND, hd->multsect ? HDCMD_MULTWRITE : HDCMD_WRITE);
+    _outp(hdc->iobase + HDC_COMMAND, hd->multsect > 1 ? HDCMD_MULTWRITE : HDCMD_WRITE);
 
     // Wait for data ready
     if (!(_inp(hdc->iobase + HDC_ALT_STATUS) & HDCS_DRQ))
@@ -701,6 +699,7 @@ static int hd_write_intr(struct dev *dev, void *buffer, size_t count, blkno_t bl
   }
 
 //kprintf("finito\n");
+
   // Cleanup
   hdc->dir = HD_XFER_IDLE;
   hdc->active = NULL;

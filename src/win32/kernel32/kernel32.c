@@ -1202,7 +1202,7 @@ LPVOID WINAPI VirtualAlloc
   TRACE("VirtualAlloc");
   addr = mmap(lpAddress, dwSize, flAllocationType, flProtect);
   
-  syslog(LOG_DEBUG, "VirtualAlloc %p %d bytes (%p,%p)\n", addr, dwSize, flAllocationType, flProtect);
+  //syslog(LOG_DEBUG, "VirtualAlloc %p %d bytes (%p,%p)\n", addr, dwSize, flAllocationType, flProtect);
 
   if (addr != NULL && (flAllocationType & MEM_RESERVE) != 0)
   {
@@ -1241,7 +1241,7 @@ BOOL WINAPI VirtualFree
       syslog(LOG_WARNING, "warning: vad not found for VitualFree\n");
   }
 
-  syslog(LOG_DEBUG, "VirtualFree  %p %d bytes (%p)\n", lpAddress, dwSize, dwFreeType);
+  //syslog(LOG_DEBUG, "VirtualFree  %p %d bytes (%p)\n", lpAddress, dwSize, dwFreeType);
   munmap(lpAddress, dwSize, dwFreeType);
   return TRUE;
 }

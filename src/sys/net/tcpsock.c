@@ -229,6 +229,7 @@ static void err_tcp(void *arg, err_t err)
   {
     next = req->next;
     release_socket_request(req, err);
+    req->socket->tcp.pcb = NULL;
     req = next;
   }
 }
@@ -395,6 +396,7 @@ static int tcpsock_getpeername(struct socket *s, struct sockaddr *name, int *nam
   if (!namelen) return -EINVAL;
   if (*namelen < sizeof(struct sockaddr_in)) return -EINVAL;
   if (s->state != SOCKSTATE_CONNECTED) return -ECONN;
+  if (!s->tcp.pcb) return -ECONN;
 
   sin = (struct sockaddr_in *) name;
   sin->sin_len = sizeof(struct sockaddr_in);
@@ -413,6 +415,7 @@ static int tcpsock_getsockname(struct socket *s, struct sockaddr *name, int *nam
   if (!namelen) return -EINVAL;
   if (*namelen < sizeof(struct sockaddr_in)) return -EINVAL;
   if (s->state != SOCKSTATE_CONNECTED) return -ECONN;
+  if (!s->tcp.pcb) return -ECONN;
 
   sin = (struct sockaddr_in *) name;
   sin->sin_len = sizeof(struct sockaddr_in);
@@ -441,10 +444,15 @@ static int tcpsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
       if (!data || size != 4) return -EFAULT;
       timeout = *(unsigned int *) data;
       if (s->state != SOCKSTATE_CONNECTED) return -ECONN;
+      if (!s->tcp.pcb) return -ECONN;
       if (s->tcp.recvhead != NULL) return 0;
 
       rc = submit_socket_request(s, &req, SOCKREQ_WAITRECV, NULL, 0, timeout);
-      if (rc < 0) return rc;
+      if (rc < 0) 
+      {
+        kprintf("tcpsock_ioctl: error %d\n", rc);
+	return rc;
+      }
 
       break;
 
@@ -487,6 +495,7 @@ static int tcpsock_recv(struct socket *s, void *data, int size, unsigned int fla
 
   if (!data) return -EFAULT;
   if (s->state != SOCKSTATE_CONNECTED && s->state != SOCKSTATE_CLOSING) return -ECONN;
+  if (!s->tcp.pcb) return -ECONN;
   if (size < 0) return -EINVAL;
   if (size == 0) return 0;
 
@@ -526,7 +535,11 @@ static int tcpsock_recv(struct socket *s, void *data, int size, unsigned int fla
   if (s->state == SOCKSTATE_CLOSING) return 0;
 
   rc = submit_socket_request(s, &req, SOCKREQ_RECV, bufp, size, INFINITE);
-  if (rc < 0) return rc;
+  if (rc < 0) 
+  {
+    kprintf("tcpsock_recv: error %d\n", rc);
+    return rc;
+  }
 
   return rc; 
 }
@@ -560,6 +573,7 @@ static int tcpsock_send(struct socket *s, void *data, int size, unsigned int fla
 
   if (!data) return -EFAULT;
   if (s->state != SOCKSTATE_CONNECTED) return -ECONN;
+  if (!s->tcp.pcb) return -ECONN;
   if (size < 0) return -EINVAL;
   if (size == 0) return 0;
 
