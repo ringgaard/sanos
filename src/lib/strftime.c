@@ -31,9 +31,8 @@
 // SUCH DAMAGE.
 // 
 
-#include <sys/types.h>
-#include <time.h>
 #include <string.h>
+#include <time.h>
 
 extern long _timezone;
 extern const char *_days[];

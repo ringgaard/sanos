@@ -1,7 +1,7 @@
 //
-// bsearch.c
+// xtoa.c
 //
-// Binary search
+// Convert integers to ASCII strings
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -31,39 +31,69 @@
 // SUCH DAMAGE.
 // 
 
-#include <sys/types.h>
-
-void *bsearch(const void *key, const void *base, size_t num, size_t width, int (*compare)(const void *, const void *))
+static void xtoa(unsigned long val, char *buf, unsigned radix, int negative)
 {
-  char *lo = (char *) base;
-  char *hi = (char *) base + (num - 1) * width;
-  char *mid;
-  unsigned int half;
-  int result;
+  char *p;
+  char *firstdig;
+  char temp;
+  unsigned digval;
 
-  while (lo <= hi)
+  p = buf;
+
+  if (negative) 
   {
-    if (half = num / 2)
-    {
-      mid = lo + (num & 1 ? half : (half - 1)) * width;
-      if (!(result = (*compare)(key,mid)))
-        return mid;
-      else if (result < 0)
-      {
-	hi = mid - width;
-	num = num & 1 ? half : half-1;
-      }
-      else    
-      {
-	lo = mid + width;
-	num = half;
-      }
-    }
-    else if (num)
-      return ((*compare)(key,lo) ? NULL : lo);
-    else
-      break;
+    // Negative, so output '-' and negate
+    *p++ = '-';
+    val = (unsigned long)(-(long) val);
   }
 
-  return NULL;
+  // Save pointer to first digit
+  firstdig = p;
+
+  do 
+  {
+    digval = (unsigned) (val % radix);
+    val /= radix;
+
+    // Convert to ascii and store
+    if (digval > 9)
+      *p++ = (char) (digval - 10 + 'a');
+    else
+      *p++ = (char) (digval + '0');
+  } while (val > 0);
+
+  // We now have the digit of the number in the buffer, but in reverse
+  // order.  Thus we reverse them now.
+
+  *p-- = '\0';
+  do 
+  {
+    temp = *p;
+    *p = *firstdig;
+    *firstdig = temp;
+    p--;
+    firstdig++;
+  } while (firstdig < p);
+}
+
+char *itoa(int val, char *buf, int radix)
+{
+  if (radix == 10 && val < 0)
+    xtoa((unsigned long) val, buf, radix, 1);
+  else
+    xtoa((unsigned long)(unsigned int) val, buf, radix, 0);
+
+  return buf;
+}
+
+char *ltoa(long val, char *buf, int radix)
+{
+  xtoa((unsigned long) val, buf, radix, (radix == 10 && val < 0));
+  return buf;
+}
+
+char *ultoa(unsigned long val, char *buf, int radix)
+{
+  xtoa(val, buf, radix, 0);
+  return buf;
 }

@@ -79,4 +79,6 @@ double sqrt(double x);
 double tan(double x);
 double tanh(double x);
 
+double atof(const char *str);
+
 #endif

@@ -288,7 +288,13 @@ void calibrate_delay()
 
     for (i = 0; i < sizeof(cpu_speeds) / sizeof(int); i++)
     {
-      if (abs(mhz - bestmhz) > abs(mhz - *speed)) bestmhz = *speed;
+      int curdiff = mhz - bestmhz;
+      int newdiff = mhz - *speed;
+
+      if (curdiff < 0) curdiff = -curdiff;
+      if (newdiff < 0) newdiff = -newdiff;
+
+      if (newdiff < curdiff) bestmhz = *speed;
       speed++;
     }
 

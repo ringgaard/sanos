@@ -435,7 +435,7 @@ HANDLE WINAPI FindFirstFileA
     finddata = (struct winfinddata *) malloc(sizeof(struct winfinddata));
     if (!finddata) 
     {
-      errno = -ENOMEM;
+      errno = ENOMEM;
       return INVALID_HANDLE_VALUE;
     }
 
@@ -449,7 +449,7 @@ HANDLE WINAPI FindFirstFileA
     }
     if (!base)
     {
-      errno = -ENOTDIR;
+      errno = ENOTDIR;
       free(finddata);
       return INVALID_HANDLE_VALUE;
     }
@@ -464,7 +464,7 @@ HANDLE WINAPI FindFirstFileA
     finddata->fhandle = opendir(finddata->dir);
     if (finddata->fhandle < 0)
     {
-      errno = -ENOTDIR;
+      errno = ENOTDIR;
       free(finddata);
       return INVALID_HANDLE_VALUE;
     }
@@ -480,7 +480,7 @@ HANDLE WINAPI FindFirstFileA
 
         if (stat(fn, &statbuf) < 0) 
 	{
-	  errno = -ENOENT;
+	  errno = ENOENT;
           free(finddata);
 	  return INVALID_HANDLE_VALUE;
 	}
@@ -495,7 +495,7 @@ HANDLE WINAPI FindFirstFileA
     free(finddata);
     if (stat(finddata->dir, &statbuf) < 0) 
     {
-      errno = -ENOENT;
+      errno = ENOENT;
       return INVALID_HANDLE_VALUE;
     }
 
@@ -506,7 +506,7 @@ HANDLE WINAPI FindFirstFileA
   {
     if (stat((char *) lpFileName, &statbuf) < 0) 
     {
-      errno = -ENOENT;
+      errno = ENOENT;
       return INVALID_HANDLE_VALUE;
     }
 
@@ -539,7 +539,7 @@ BOOL WINAPI FindNextFileA
 
   if (hFindFile == NOFINDHANDLE)
   {
-    errno = -ESRCH;
+    errno = ESRCH;
     return FALSE;
   }
   else
@@ -557,7 +557,7 @@ BOOL WINAPI FindNextFileA
 
         if (stat(fn, &statbuf) < 0) 
 	{
-	  errno = -ENOENT;
+	  errno = ENOENT;
 	  return FALSE;
 	}
 
@@ -566,7 +566,7 @@ BOOL WINAPI FindNextFileA
       }
     }
 
-    errno = -ESRCH;
+    errno = ESRCH;
     return FALSE;
   }
 }
@@ -602,7 +602,7 @@ DWORD WINAPI FormatMessageA
     buf = malloc(nSize > 256 ? nSize : 256);
     if (!buf) 
     {
-      errno = -ENOMEM;
+      errno = ENOMEM;
       return 0;
     }
 
@@ -774,7 +774,7 @@ DWORD WINAPI GetFullPathNameA
   rc = canonicalize(lpFileName, fn, MAXPATH);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return 0;
   }
 
@@ -799,9 +799,9 @@ DWORD WINAPI GetLastError(VOID)
   TRACE("GetLastError");
   // TODO: implement better error reporting
   if (errno == 0) return 0;
-  if (errno == -ENOENT) return ERROR_FILE_NOT_FOUND;
-  if (errno == -ESRCH) return ERROR_NO_MORE_FILES;
-  return 0x80040000 | -errno;
+  if (errno == ENOENT) return ERROR_FILE_NOT_FOUND;
+  if (errno == ESRCH) return ERROR_NO_MORE_FILES;
+  return 0x80040000 | errno;
 }
 
 DWORD WINAPI GetLogicalDrives(VOID)

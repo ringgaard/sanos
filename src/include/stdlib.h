@@ -38,6 +38,10 @@
 #ifndef STDLIB_H
 #define STDLIB_H
 
+#ifndef osapi
+#define osapi __declspec(dllimport)
+#endif
+
 #ifndef NULL
 #define NULL ((void *) 0)
 #endif
@@ -64,13 +68,38 @@ typedef struct _ldiv_t
   long rem;
 } ldiv_t;
 
-typedef struct _uldiv_t 
-{
-  unsigned long quot;
-  unsigned long rem;
-} uldiv_t;
-
 #endif
+
+void abort();
+int abs(int n);
+double atof(const char *str);
+int atoi(const char *string);
+long atol(const char *string);
+int atexit(void(*func)(void));
+void *bsearch(const void *key, const void *base, size_t num, size_t width, int (*compare)(const void *, const void *));
+osapi void *calloc(size_t num, size_t size);
+div_t div(int numer, int denom);
+osapi void exit(int status);
+osapi void free(void *p);
+char *getenv(const char *option);
+char *itoa(int val, char *buf, int radix);
+long labs(long n);
+ldiv_t ldiv(long numer, long denom);
+char *ltoa(long val, char *buf, int radix);
+osapi void *malloc(size_t size);
+int putenv(const char *option);
+void qsort(void *base, unsigned num, unsigned width, int (*comp)(const void *, const void *));
+int rand();
+osapi void *realloc(void *mem, size_t size);
+void srand(unsigned int seed);
+double strtod(const char *str, char **endptr);
+long strtol(const char *nptr, char **endptr, int ibase);
+unsigned long strtoul(const char *nptr, char **endptr, int ibase);
+int system(const char *command);
+char *ultoa(unsigned long val, char *buf, int radix);
+
+#define max(a,b) (((a) > (b)) ? (a) : (b))
+#define min(a,b) (((a) < (b)) ? (a) : (b))
 
 int parse_args(char *args, char **argv);
 void free_args(int argc, char **argv);
@@ -80,59 +109,9 @@ int get_num_option(char *opts, char *name, int defval);
 
 int readline(int f, char *buf, int size);
 
-int abs(int number);
-
-double modf(double x, double *iptr);
 char *ecvt(double arg, int ndigits, int *decpt, int *sign);
 char *ecvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf);
 char *fcvt(double arg, int ndigits, int *decpt, int *sign);
 char *fcvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf);
-
-char *strerror(int errnum);
-
-void *bsearch(const void *key, const void *base, size_t num, size_t width, int (__cdecl *compare)(const void *, const void *));
-void qsort(void *base, unsigned num, unsigned width, int (__cdecl *comp)(const void *, const void *));
-
-long strtol(const char *nptr, char **endptr, int ibase);
-unsigned long strtoul(const char *nptr, char **endptr, int ibase);
-
-char *getenv(const char *option);
-
-void abort();
-
-#if 0
-// TODO: libc implement
-int abs(int n);
-double atof(const char *string);
-int atoi(const char *string);
-long atol(const char *string);
-int atexit(void(*func)(void));
-void *bsearch(const void *keyval, const void *base, size_t num, size_t width, int(*cmp) (const void *keyval, const void *elem));
-void  *calloc(size_t num, size_t size);
-div_t div(int numer, int denom);
-void exit(int status);
-void free(void *memblock);
-char *_getcmd(void);
-char *getenv(const char *varname);
-char *itoa(int value, char *string, int radix);
-long labs(long n);
-ldiv_t ldiv(long numer, long denom);
-char *ltoa(long value, char *string, int radix);
-void *malloc(size_t size);
-int putenv(const char *envptr);
-void qsort(void *base, size_t num, size_t width, int(*cmp) (const void *elem1, const void *elem2));
-int rand(void);
-void *realloc(void *memblock, size_t size);
-void srand(unsigned int seed);
-double strtod(const char *string, char **endptr);
-long strtol(const char *nptr, char **endptr, int base);
-unsigned long strtoul(const char *nptr, char **endptr, int base);
-int system(const char *command);
-uldiv_t uldiv(unsigned long numer, unsigned long denom);
-char *ultoa(unsigned long value, char *string, int radix);
-#endif
-
-#define max(a,b) (((a) > (b)) ? (a) : (b))
-#define min(a,b) (((a) < (b)) ? (a) : (b))
 
 #endif

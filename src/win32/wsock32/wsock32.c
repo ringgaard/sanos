@@ -107,7 +107,7 @@ sockapi int __stdcall winsock_recv(SOCKET s,char *buf, int len, int flags)
   rc = recv(s, buf, len, flags);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -123,7 +123,7 @@ sockapi int __stdcall winsock_send(SOCKET s, const char *buf, int len, int flags
 
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -138,7 +138,7 @@ sockapi int __stdcall winsock_listen(SOCKET s, int backlog)
   rc = listen(s, backlog);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -153,7 +153,7 @@ sockapi int __stdcall winsock_bind(SOCKET s, const struct sockaddr *name, int na
   rc = bind(s, name, namelen);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -168,7 +168,7 @@ sockapi SOCKET __stdcall winsock_accept(SOCKET s, struct sockaddr *addr, int *ad
   rc = accept(s, addr, addrlen);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -184,7 +184,7 @@ sockapi int __stdcall winsock_recvfrom(SOCKET s, char *buf, int len, int flags, 
   rc = recvfrom(s, buf, len, flags, from, fromlen);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -199,7 +199,7 @@ sockapi int __stdcall winsock_sendto(SOCKET s, const char *buf, int len, int fla
   rc = sendto(s, buf, len, flags, to, tolen);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -234,7 +234,7 @@ sockapi int __stdcall winsock_select(int nfds, fd_set *readfds, fd_set *writefds
   if (rc < 0)
   {
     if (rc == -ETIMEOUT) return 0;
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -249,7 +249,7 @@ sockapi int __stdcall winsock_connect(SOCKET s, const struct sockaddr *name, int
   rc = connect(s, name, namelen);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -264,7 +264,7 @@ sockapi int __stdcall winsock_closesocket(SOCKET s)
   rc = close(s);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -279,7 +279,7 @@ sockapi int __stdcall winsock_shutdown(SOCKET s, int how)
   rc = shutdown(s, how);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -294,7 +294,7 @@ sockapi int __stdcall winsock_gethostname(char *name, int namelen)
   rc = gethostname(name, namelen);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -345,7 +345,7 @@ sockapi int __stdcall winsock_getsockopt(SOCKET s, int level, int optname, char 
   rc = getsockopt(s, level, optname, optval, optlen);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -367,7 +367,7 @@ sockapi int __stdcall winsock_setsockopt(SOCKET s, int level, int optname, const
   rc = setsockopt(s, level, optname, optval, optlen);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     syslog(LOG_DEBUG, "setsockopt level %d optname %d failed: %d\n", level, optname, rc);
     return -1;
   }
@@ -389,7 +389,7 @@ sockapi int __stdcall winsock_getsockname(SOCKET s, struct sockaddr *name, int *
   rc = getsockname(s, name, namelen);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -404,7 +404,7 @@ sockapi SOCKET __stdcall winsock_socket(int af, int type, int protocol)
   rc = socket(af, type, protocol);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -419,7 +419,7 @@ sockapi int __stdcall winsock_ioctlsocket(SOCKET s, long cmd, unsigned long *arg
   rc = ioctl(s, cmd, argp, 4);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -435,19 +435,19 @@ sockapi int __stdcall  __WSAFDIsSet(SOCKET s, fd_set *fd)
 
 sockapi int __stdcall WSAGetLastError()
 {
-  int err = gettib()->err;
+  int err = gettib()->errnum;
 
   TRACE("WSAGetLastError");
   
-  if (err >= 0) return 0;
-  if (err == -EAGAIN) return EWOULDBLOCK + WSAERRBASE;
-  if (err == -EBADF) return ENOTSOCK + WSAERRBASE;
-  if (err > 45) return -err + WSAERRBASE;
-  if (err > 82) return -err - 10 + WSAERRBASE;
-  if (err == -EHOSTNOTFOUND) return 1001 + WSAERRBASE;
-  if (err == -ETRYAGAIN) return 1002 + WSAERRBASE;
-  if (err == -ENORECOVERY) return 1003 + WSAERRBASE;
-  if (err == -ENODATA) return 1004 + WSAERRBASE;
+  if (err == 0) return 0;
+  if (err == EAGAIN) return EWOULDBLOCK + WSAERRBASE;
+  if (err == EBADF) return ENOTSOCK + WSAERRBASE;
+  if (err < 45) return err + WSAERRBASE;
+  if (err < 82) return (err - 10) + WSAERRBASE;
+  if (err == EHOSTNOTFOUND) return 1001 + WSAERRBASE;
+  if (err == ETRYAGAIN) return 1002 + WSAERRBASE;
+  if (err == ENORECOVERY) return 1003 + WSAERRBASE;
+  if (err == ENODATA) return 1004 + WSAERRBASE;
 
   return EIO;
 }
@@ -487,7 +487,7 @@ sockapi int __stdcall WSARecvFrom
   rc = recvmsg(s, &msg, lpFlags ? *lpFlags : 0);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -526,7 +526,7 @@ sockapi int __stdcall WSASendTo
   rc = sendmsg(s, &msg, dwFlags);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -561,13 +561,13 @@ sockapi int __stdcall WSAIoctl
     if (rc < 0)
     {
       free(iflist);
-      errno = rc;
+      errno = -rc;
       return -1;
     }
 
     if (rc > bufsize)
     {
-      errno = -ENOBUFS;
+      errno = ENOBUFS;
       free(iflist);
       return -1;
     }

@@ -31,9 +31,8 @@
 // SUCH DAMAGE.
 // 
 
-#include <sys/types.h>
-#include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
 
 char *get_option(char *opts, char *name, char *buffer, int size, char *defval)
 {

@@ -296,3 +296,15 @@ void free(void *addr)
 {
   kfree(addr);
 }
+
+char *strdup(const char *s)
+{
+  char *t;
+  int len;
+
+  if (!s) return NULL;
+  len = strlen(s);
+  t = (char *) kmalloc(len + 1);
+  memcpy(t, s, len + 1);
+  return t;
+}

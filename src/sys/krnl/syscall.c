@@ -2793,7 +2793,7 @@ int syscall(int syscallno, char *params)
   if (rc < 0)
   {
     struct tib *tib = self()->tib;
-    if (tib) tib->err = rc;
+    if (tib) tib->errnum = -rc;
   }
 
 #ifdef SYSCALL_PROFILE

@@ -228,7 +228,7 @@ char *getcwd(char *buf, size_t size)
   {
     if (len >= size)
     {
-      errno = -ERANGE;
+      errno = ERANGE;
       return NULL;
     }
   }
@@ -240,7 +240,7 @@ char *getcwd(char *buf, size_t size)
     {
       if (len >= size)
       {
-	errno = -ERANGE;
+	errno = ERANGE;
 	return NULL;
       }
 
@@ -249,7 +249,7 @@ char *getcwd(char *buf, size_t size)
 
     if (!buf) 
     {
-      errno = -ENOMEM;
+      errno = ENOMEM;
       return NULL;
     }
   }
@@ -440,7 +440,7 @@ void *getresdata(hmodule_t hmod, int type, char *name, int lang)
   rc = get_resource_data(&usermods, hmod, INTRES(type), name, INTRES(lang), &data);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return NULL;
   }
 
@@ -455,7 +455,7 @@ int getreslen(hmodule_t hmod, int type, char *name, int lang)
   rc = get_resource_data(&usermods, hmod, INTRES(type), name, INTRES(lang), &data);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return rc;
   }
 

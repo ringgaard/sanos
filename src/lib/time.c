@@ -35,7 +35,6 @@
 #include <os.h>
 #endif
 
-#include <sys/types.h>
 #include <time.h>
 
 #define	YEAR0		        1900
@@ -246,7 +245,7 @@ time_t mktime(struct tm *tmbuf)
   if (dst > seconds) overflow++;	// dst is always non-negative
   seconds -= dst;
 
-  if (overflow) return (time_t)-1;
+  if (overflow) return (time_t) -1;
 
   if ((time_t) seconds != seconds) return (time_t) -1;
   return (time_t) seconds;

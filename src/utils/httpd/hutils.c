@@ -34,6 +34,7 @@
 #include <os.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 #include <time.h>
 #include <inifile.h>
 

@@ -33,10 +33,10 @@
 
 #define CUTOFF 8
 
-static void shortsort(char *lo, char *hi, unsigned width, int (__cdecl *comp)(const void *, const void *));
+static void shortsort(char *lo, char *hi, unsigned width, int (*comp)(const void *, const void *));
 static void swap(char *p, char *q, unsigned int width);
 
-void qsort(void *base, unsigned num, unsigned width, int (__cdecl *comp)(const void *, const void *))
+void qsort(void *base, unsigned num, unsigned width, int (*comp)(const void *, const void *))
 {
   char *lo, *hi;
   char *mid;
@@ -119,7 +119,7 @@ recurse:
     return;
 }
 
-static void shortsort(char *lo, char *hi, unsigned width, int (__cdecl *comp)(const void *, const void *))
+static void shortsort(char *lo, char *hi, unsigned width, int (*comp)(const void *, const void *))
 {
   char *p, *max;
 

@@ -279,27 +279,27 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
   cp += NS_HFIXEDSZ;
   if (cp > eom) 
   {
-    errno = -EMSGSIZE;
+    errno = EMSGSIZE;
     return NULL;
   }
 
   if (qdcount != 1)
   {
-    errno = -EIO;
+    errno = EIO;
     return NULL;
   }
 
   n = dn_expand(answer, eom, cp, bp, buflen);
   if (n < 0) 
   {
-    errno = n;
+    errno = -n;
     return NULL;
   }
 
   cp += n + NS_QFIXEDSZ;
   if (cp > eom) 
   {
-    errno = -EMSGSIZE;
+    errno = EMSGSIZE;
     return NULL;
   }
 
@@ -312,7 +312,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
     n = strlen(bp) + 1;
     if (n >= MAXHOSTNAMELEN)
     {
-      errno = -EMSGSIZE;
+      errno = EMSGSIZE;
       return NULL;
     }
     tib->host.h_name = bp;
@@ -346,7 +346,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
 
     if (cp + 3 * sizeof(short) + sizeof(long) > eom)
     {
-      errno = -EMSGSIZE;
+      errno = EMSGSIZE;
       return NULL;
     }
 
@@ -364,7 +364,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
 
     if (cp + n > eom)
     {
-      errno = -EMSGSIZE;
+      errno = EMSGSIZE;
       return NULL;
     }
     
@@ -388,7 +388,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       cp += n;
       if (cp != erdata) 
       {
-	errno = -EIO;
+	errno = EIO;
 	return NULL;
       }
       
@@ -433,7 +433,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       cp += n;
       if (cp != erdata) 
       {
-	errno = -EIO;
+	errno = EIO;
 	return NULL; 
       }
 
@@ -521,13 +521,13 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
 	cp += n;
 	if (cp != erdata) 
 	{
-	  errno = -EIO;
+	  errno = EIO;
 	  return NULL;
 	}
 	break;
 
       default:
-	errno = -EIO;
+	errno = EIO;
         return NULL;
     }
 
@@ -543,7 +543,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       n = strlen(qname) + 1;
       if (n > buflen || n >= MAXHOSTNAMELEN) 
       {
-	errno = -EMSGSIZE;
+	errno = EMSGSIZE;
 	return NULL;
       }
       strcpy(bp, qname);
@@ -555,7 +555,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
     return &tib->host;
   }
 
-  errno = rc;
+  errno = -rc;
   return NULL;
 }
 
@@ -625,7 +625,7 @@ struct hostent *gethostbyname(const char *name)
   n = res_search(name, DNS_CLASS_IN, DNS_TYPE_A, buf, sizeof(buf));
   if (n < 0)
   {
-    errno = n;
+    errno = -n;
     return NULL;
   }
 
@@ -647,13 +647,13 @@ struct hostent *gethostbyaddr(const char *addr, int len, int type)
 
   if (type != AF_INET)
   {
-    errno = -EPROTONOSUPPORT;
+    errno = EPROTONOSUPPORT;
     return NULL;
   }
 
   if (len != sizeof(struct in_addr))
   {
-    errno = -EMSGSIZE;
+    errno = EMSGSIZE;
     return NULL;
   }
 
@@ -662,7 +662,7 @@ struct hostent *gethostbyaddr(const char *addr, int len, int type)
   n = res_query(qbuf, DNS_CLASS_IN, DNS_TYPE_PTR, buf, sizeof buf);
   if (n < 0)
   {
-    errno = n;
+    errno = -n;
     return NULL;
   }
 
@@ -718,7 +718,7 @@ unsigned long inet_addr(const char *cp)
 
     if (c < '0' || c > '9') 
     {
-      errno = -EINVAL;
+      errno = EINVAL;
       return INADDR_NONE;
     }
 
@@ -741,7 +741,7 @@ unsigned long inet_addr(const char *cp)
       {
 	if (base == 8 && (c == '8' || c == '9')) 
 	{
-	  errno = -EINVAL;
+	  errno = EINVAL;
 	  return INADDR_NONE;
 	}
 	val = (val * base) + (c - '0');
@@ -773,7 +773,7 @@ unsigned long inet_addr(const char *cp)
 
       if (pp > res.bytes + 2 || val > 0xFF) 
       {
-	errno = -EINVAL;
+	errno = EINVAL;
 	return INADDR_NONE;
       }
       *pp++ = (unsigned char) val;
@@ -786,14 +786,14 @@ unsigned long inet_addr(const char *cp)
   // Check for trailing characters.
   if (c > ' ') 
   {
-    errno = -EINVAL;
+    errno = EINVAL;
     return INADDR_NONE;
   }
 
   // Did we get a valid digit?
   if (!digit) 
   {
-    errno = -EINVAL;
+    errno = EINVAL;
     return INADDR_NONE;
   }
 
@@ -801,7 +801,7 @@ unsigned long inet_addr(const char *cp)
   // the number of parts in total.
   if (val > max[pp - res.bytes]) 
   {
-    errno = -EINVAL;
+    errno = EINVAL;
     return INADDR_NONE;
   }
 
@@ -852,7 +852,7 @@ struct protoent *getprotobyname(const char *name)
 
   if (!name)
   {
-    errno = -EFAULT;
+    errno = EFAULT;
     return NULL;
   }
 
@@ -870,7 +870,7 @@ struct protoent *getprotobyname(const char *name)
     p++;
   }
 
-  errno = -ENOENT;
+  errno = ENOENT;
   return NULL;
 }
 
@@ -889,7 +889,7 @@ struct protoent *getprotobynumber(int proto)
     pp++;
   }
 
-  errno = -ENOENT;
+  errno = ENOENT;
   return NULL;
 }
 
@@ -904,7 +904,7 @@ struct servent *getservbyname(const char *name, const char *proto)
 
   if (!name)
   {
-    errno = -EFAULT;
+    errno = EFAULT;
     return NULL;
   }
 
@@ -929,7 +929,7 @@ struct servent *getservbyname(const char *name, const char *proto)
     sp++;
   }
 
-  errno = -ENOENT;
+  errno = ENOENT;
   return NULL;
 }
 
@@ -951,6 +951,6 @@ struct servent *getservbyport(int port, const char *proto)
     sp++;
   }
 
-  errno = -ENOENT;
+  errno = ENOENT;
   return NULL;
 }

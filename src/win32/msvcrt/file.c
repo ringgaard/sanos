@@ -81,7 +81,7 @@ int _pipe(int *phandles, unsigned int psize, int textmode)
   rc = pipe(phandles);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -97,7 +97,7 @@ int _open(const char *filename, int oflag)
   rc = open(filename, oflag);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -112,14 +112,14 @@ int _close(int handle)
 
   if (handle == -1)
   {
-    errno = -EBADF;
+    errno = EBADF;
     return -1;
   }
 
   rc = close(handle);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -134,7 +134,7 @@ int _commit(int handle)
   rc = flush(handle);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -149,7 +149,7 @@ int _read(int handle, void *buffer, unsigned int count)
   rc = read(handle, buffer, count);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -165,7 +165,7 @@ int _write(int handle, const void *buffer, unsigned int count)
   rc = write(handle, buffer, count);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -190,7 +190,7 @@ int _stat(const char *path, struct _stat *buffer)
   rc = stat(path, &fs);
   if (rc < 0) 
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -223,7 +223,7 @@ __int64 _stati64(const char *path, struct _stati64 *buffer)
   rc = stat(path, &fs);
   if (rc < 0) 
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -254,7 +254,7 @@ int _fstat(int handle, struct _stat *buffer)
   rc = fstat(handle, &fs);
   if (rc < 0) 
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -284,7 +284,7 @@ __int64 _fstati64(int handle, struct _stati64 *buffer)
   rc = fstat(handle, &fs);
   if (rc < 0) 
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -313,7 +313,7 @@ __int64 _lseeki64(int handle, __int64 offset, int origin)
   rc = lseek(handle, (int) offset, origin);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -328,7 +328,7 @@ int _open_osfhandle(long osfhandle, int flags)
   rc = dup(osfhandle);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -338,7 +338,7 @@ int _open_osfhandle(long osfhandle, int flags)
 int _dup2(int handle1, int handle2)
 {
   syslog(LOG_WARNING, "dup2(%d,%d) not implemented\n", handle1, handle2);
-  errno = -EMFILE;
+  errno = EMFILE;
   return -1;
 }
 
@@ -369,7 +369,7 @@ char *_fullpath(char *abspath, const char *relpath, size_t maxlen)
 
   if (maxlen < 3) 
   {
-    errno = -ERANGE;
+    errno = ERANGE;
     return NULL;
   }
 
@@ -379,7 +379,7 @@ char *_fullpath(char *abspath, const char *relpath, size_t maxlen)
   rc = canonicalize(relpath, abspath + 2, maxlen - 2);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return NULL;
   }
 
@@ -394,7 +394,7 @@ int _unlink(const char *filename)
   rc = unlink(filename);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -409,7 +409,7 @@ int remove(const char *path)
   rc = unlink(path);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -424,7 +424,7 @@ int _rename(const char *oldname, const char *newname)
   rc = rename(oldname, newname);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -440,7 +440,7 @@ int _access(const char *path, int mode)
   rc = stat(path, NULL);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -457,7 +457,7 @@ int _chmod(const char *filename, int pmode)
   rc = stat(filename, NULL);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -472,7 +472,7 @@ int _mkdir(const char *dirname)
   rc = mkdir(dirname);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -549,7 +549,7 @@ FILE *fopen(const char *filename, const char *mode)
   handle = open(filename, oflag);
   if (handle < 0) 
   {
-    errno = handle;
+    errno = -handle;
     return NULL;
   }
 
@@ -594,7 +594,7 @@ FILE *freopen(const char *path, const char *mode, FILE *stream)
   handle = open(path, oflag);
   if (handle < 0) 
   {
-    errno = handle;
+    errno = -handle;
     return NULL;
   }
 
@@ -612,7 +612,7 @@ int fclose(FILE *stream)
   free_stream(stream);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -628,7 +628,7 @@ int fflush(FILE *stream)
   if (rc < 0)
   {
     stream->flag |= _IOERR;
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -648,7 +648,7 @@ size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
   if (rc < 0)
   {
     stream->flag |= _IOERR;
-    errno = rc;
+    errno = -rc;
     return 0;
   }
 
@@ -670,7 +670,7 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
   if (rc < 0)
   {
     stream->flag |= _IOERR;
-    errno = rc;
+    errno = -rc;
     return 0;
   }
 
@@ -699,7 +699,7 @@ int fseek(FILE *stream, long offset, int whence)
   rc = lseek(stream->file, offset, whence);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -715,7 +715,7 @@ int fgetpos(FILE *stream, fpos_t *pos)
   rc = tell(stream->file);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 

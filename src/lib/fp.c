@@ -31,14 +31,12 @@
 // SUCH DAMAGE.
 // 
 
-#define	NDIG	80
+#include <os.h>
 
 #define HI(x)    (*(1 + (int *) &x))
 #define LO(x)    (*(int *) &x)
 #define HIPTR(x) *(1 + (int *) x)
 #define LOPTR(x) (*(int *) x)
-
-static char cvtbuf[NDIG];
 
 #define ANSI_FTOL 1
 
@@ -149,7 +147,7 @@ static char *cvt(double arg, int ndigits, int *decpt, int *sign, char *buf, int 
   double modf();
 
   if (ndigits < 0) ndigits = 0;
-  if (ndigits >= NDIG - 1) ndigits = NDIG - 2;
+  if (ndigits >= CVTBUFSIZE - 1) ndigits = CVTBUFSIZE - 2;
   r2 = 0;
   *sign = 0;
   p = &buf[0];
@@ -159,18 +157,18 @@ static char *cvt(double arg, int ndigits, int *decpt, int *sign, char *buf, int 
     arg = -arg;
   }
   arg = modf(arg, &fi);
-  p1 = &buf[NDIG];
+  p1 = &buf[CVTBUFSIZE];
 
   if (fi != 0) 
   {
-    p1 = &buf[NDIG];
+    p1 = &buf[CVTBUFSIZE];
     while (fi != 0) 
     {
       fj = modf(fi / 10, &fi);
       *--p1 = (int)((fj + .03) * 10) + '0';
       r2++;
     }
-    while (p1 < &buf[NDIG]) *p++ = *p1++;
+    while (p1 < &buf[CVTBUFSIZE]) *p++ = *p1++;
   } 
   else if (arg > 0)
   {
@@ -188,15 +186,15 @@ static char *cvt(double arg, int ndigits, int *decpt, int *sign, char *buf, int 
     buf[0] = '\0';
     return buf;
   }
-  while (p <= p1 && p < &buf[NDIG])
+  while (p <= p1 && p < &buf[CVTBUFSIZE])
   {
     arg *= 10;
     arg = modf(arg, &fj);
     *p++ = (int) fj + '0';
   }
-  if (p1 >= &buf[NDIG]) 
+  if (p1 >= &buf[CVTBUFSIZE]) 
   {
-    buf[NDIG - 1] = '\0';
+    buf[CVTBUFSIZE - 1] = '\0';
     return buf;
   }
   p = p1;
@@ -223,7 +221,7 @@ static char *cvt(double arg, int ndigits, int *decpt, int *sign, char *buf, int 
 
 char *ecvt(double arg, int ndigits, int *decpt, int *sign)
 {
-  return cvt(arg, ndigits, decpt, sign, cvtbuf, 1);
+  return cvt(arg, ndigits, decpt, sign, gettib()->cvtbuf, 1);
 }
 
 char *ecvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf)
@@ -233,7 +231,7 @@ char *ecvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf)
 
 char *fcvt(double arg, int ndigits, int *decpt, int *sign)
 {
-  return cvt(arg, ndigits, decpt, sign, cvtbuf, 0);
+  return cvt(arg, ndigits, decpt, sign, gettib()->cvtbuf, 0);
 }
 
 char *fcvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf)

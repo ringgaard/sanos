@@ -58,7 +58,7 @@ FILE *fopen(const char *filename, const char *mode)
       break;
   
     default:
-      errno = -EINVAL;
+      errno = EINVAL;
       return NULL;
   }
 
@@ -76,7 +76,7 @@ FILE *fopen(const char *filename, const char *mode)
   fd = open(filename, oflag);
   if (fd < 0) 
   {
-    errno = fd;
+    errno = -fd;
     return NULL;
   }
 
@@ -90,7 +90,7 @@ int fflush(FILE *stream)
   rc = flush(fileno(stream));
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return EOF;
   }
 
@@ -104,7 +104,7 @@ int fclose(FILE *stream)
   rc = close(fileno(stream));
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return EOF;
   }
 
@@ -118,7 +118,7 @@ int fseek(FILE *stream, long offset, int whence)
   rc = lseek(fileno(stream), offset, whence);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -132,7 +132,7 @@ long ftell(FILE *stream)
   rc = tell(fileno(stream));
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return -1;
   }
 
@@ -211,7 +211,7 @@ size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
   rc = read(fileno(stream), buffer, size * num);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return 0;
   }
 
@@ -228,7 +228,7 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
   rc = write(fileno(stream), buffer, size * num);
   if (rc < 0)
   {
-    errno = rc;
+    errno = -rc;
     return 0;
   }
 

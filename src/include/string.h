@@ -64,14 +64,24 @@ size_t strspn(const char *string, const char *control);
 size_t strcspn(const char *string, const char *control);
 char *strpbrk(const char *string, const char *control);
 
-long atol(const char *s);
-int atoi(const char *s);
+char *strdup(const char *s);
 
-int vsprintf(char *buf, const char *fmt, va_list args);
-int sprintf(char *buf, const char *fmt, ...);
+char *strlwr(char *s);
+char *strupr(char *s);
+
+char *strncat(char *s1, const char *s2, size_t count);
+char *strnset(char *s, int c, size_t count);
+char *strset(char *s, int c);
+char *strrev(char *s);
+char *strtok(char *string, const char *control);
+
+char *strerror(int errnum);
 
 void *memmove(void *dst, const void *src, size_t count);
 void *memchr(const void *buf, int ch, size_t count);
+
+void *memccpy(void *dst, const void *src, int c, size_t count);
+int memicmp(const void *buf1, const void *buf2, size_t count);
 
 // Intrinsic functions
 
@@ -84,38 +94,9 @@ char *strcat(char *, const char *);
 int strcmp(const char *, const char *);
 size_t strlen(const char *);
 
-#if 0
-// TODO: libc implement
-void *memccpy(void *dest, const void *src, int c, unsigned int count);
-void *memchr(const void *buf, int c, size_t count);
-int memcmp(const void *buf1, const void *buf2, size_t count);
-int memicmp(const void *buf1, const void *buf2, unsigned int count);
-void *memcpy(void *dest, const void *src, size_t count);
-void *memmove(void *dest, const void *src, size_t count);
-void *memset(void *dest, int c, size_t count);
-char *strcat(char *string1, const char *string2);
-char *strchr(const char *string, int c);
-int strcmp(const char *string1, const char *string2);
-int stricmp(const char *string1, const char *string2);
-char *strcpy(char *string1, const char *string2);
-size_t strcspn(const char *string1, const char *string2);
-char *strdup(const char *string);
-char *strerror(int errnum);
-size_t strlen(const char *string);
-char *strlwr(char *string);
-char *strncat(char *string1, const char *string2, size_t count);
-int strncmp(const char *string1, const char *string2, size_t count);
-int strnicmp(const char *string1, const char *string2, size_t count);
-char *strncpy(char *string1, const char *string2, size_t count);
-char *strnset(char *string, int c, size_t count);
-char *strpbrk(const char *string1, const char *string2);
-char *strrchr(const char *string, int c);
-char *strrev(char *string);
-char *strset(char *string, int c);
-size_t strspn(const char *string1, const char *string2);
-char *strstr(const char *string1, const char *string2);
-char *strtok(char *string1, const char *string2);
-char *strupr(char *string);
-#endif
+////////
+
+int vsprintf(char *buf, const char *fmt, va_list args);
+int sprintf(char *buf, const char *fmt, ...);
 
 #endif

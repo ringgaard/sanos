@@ -38,7 +38,6 @@
 #ifndef PROCESS_H
 #define PROCESS_H
 
-// TODO: libc implement
 void abort(void);
 
 #endif

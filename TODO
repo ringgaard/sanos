@@ -1,6 +1,8 @@
 TODO for sanos
 --------------
 
+- errno should contain positive error code, check all uses of errno
+
 - Keyboard locks up when pressing CAPSLOCK
 
 - Floppy driver not initialized if no floppy inserted
@@ -254,3 +256,9 @@ CHANGES
 - The yield() routine now discards the remaining quantum for the thread before yielding.
 
 - Loopback packets to own address are now redirected in ether_output().
+
+- In syscall() in kernel the error code from system calls was set in the err field in the tib. This
+  overwrote the stderr handle for the thread. Now the errnum field is correctly set in the tib.
+
+- Garbage returned by WSAGetLastError() because tib->err was mistakenly used instead of tib->errnum. This
+  problem has been fixed.

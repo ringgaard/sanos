@@ -50,7 +50,6 @@ void *memset(void *, int, size_t);
 void *memmove(void *dst, const void *src, size_t count);
 void *memchr(const void *buf, int ch, size_t count);
 
-// TODO: libc implement
 void *memccpy(void *dst, const void *src, int c, size_t count);
 int memicmp(const void *buf1, const void *buf2, size_t count);
 

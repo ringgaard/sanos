@@ -860,6 +860,8 @@ struct peb
 #define	MAX_HOST_ADDRS	  35
 #define HOSTBUF_SIZE      1024
 
+#define CVTBUFSIZE        (309 + 40)
+
 struct xcptrec
 {
   struct xcptrec *next;
@@ -903,8 +905,10 @@ struct tib
   char hostbuf[HOSTBUF_SIZE];
 
   struct tm tmbuf;                 // For gmtime() and localtime()
+  char *nexttoken;                 // For strtok()
+  char cvtbuf[CVTBUFSIZE];         // For ecvt() and fcvt()
 
-  char reserved1[2152];
+  char reserved1[1799];
 
   void *tls[MAX_TLS];              // Thread local storage
   char reserved2[240];

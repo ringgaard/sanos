@@ -216,6 +216,25 @@
 			RelativePath="..\src\lib\bsearch.c">
 		</File>
 		<File
+			RelativePath="..\src\lib\chkstk.asm">
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+		</File>
+		<File
 			RelativePath="..\src\lib\conio.c">
 		</File>
 		<File
@@ -235,6 +254,44 @@
 		</File>
 		<File
 			RelativePath="..\src\lib\inifile.c">
+		</File>
+		<File
+			RelativePath="..\src\lib\lldiv.asm">
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\src\lib\llmul.asm">
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="..\src\lib\opts.c">
@@ -265,6 +322,15 @@
 		</File>
 		<File
 			RelativePath="..\src\lib\string.c">
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					AssemblerOutput="0"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\src\lib\strtod.c">
 		</File>
 		<File
 			RelativePath="..\src\lib\strtol.c">
@@ -277,6 +343,9 @@
 		</File>
 		<File
 			RelativePath="..\src\lib\vsprintf.c">
+		</File>
+		<File
+			RelativePath="..\src\lib\xtoa.c">
 		</File>
 	</Files>
 	<Globals>

@@ -248,6 +248,44 @@
 				RelativePath="..\src\lib\inifile.c">
 			</File>
 			<File
+				RelativePath="..\src\lib\lldiv.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\llmul.asm">
+				<FileConfiguration
+					Name="SanOS|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="SanOSDebug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\lib\moddb.c">
 			</File>
 			<File
@@ -255,9 +293,6 @@
 			</File>
 			<File
 				RelativePath="..\src\lib\rmap.c">
-			</File>
-			<File
-				RelativePath="..\src\lib\stdlib.c">
 			</File>
 			<File
 				RelativePath="..\src\lib\string.c">

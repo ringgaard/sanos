@@ -31,8 +31,8 @@
 // SUCH DAMAGE.
 // 
 
-#include <sys/types.h>
-#include <stdarg.h>
+#include <os.h>
+#include <ctype.h>
 #include <string.h>
 
 char *strncpy(char *dest, const char *source, size_t count)
@@ -262,6 +262,145 @@ void *memchr(const void *buf, int ch, size_t count)
   return (count ? (void *) buf : NULL);
 }
 
+#ifndef KERNEL
+
+char *strdup(const char *s)
+{
+  char *t;
+  int len;
+
+  if (!s) return NULL;
+  len = strlen(s);
+  t = (char *) malloc(len + 1);
+  memcpy(t, s, len + 1);
+  return t;
+}
+
+#endif
+
+char *strlwr(char *s)
+{
+  char *p = s;
+
+  while(*p)
+  {
+    *p = (char) tolower(*p);
+    p++;
+  }
+
+  return s;
+}
+
+char *strupr(char *s)
+{
+  char *p = s;
+
+  while(*p)
+  {
+    *p = (char) toupper(*p);
+    p++;
+  }
+
+  return s;
+}
+
+char *strncat(char *s1, const char *s2, size_t count)
+{
+  char *start = s1;
+
+  while (*s1++);
+  s1--;
+
+  while (count--)
+  {
+    if (!(*s1++ = *s2++)) return start;
+  }
+
+  *s1 = '\0';
+  return start;
+}
+
+char *strnset(char *s, int c, size_t count)
+{
+  char *start = s;
+  while (count-- && *s) *s++ = (char) c;
+  return s;
+}
+
+char *strrev(char *s)
+{
+  char *start = s;
+  char *left = s;
+  char ch;
+
+  while (*s++);
+  s -= 2;
+
+  while (left < s)
+  {
+    ch = *left;
+    *left++ = *s;
+    *s-- = ch;
+  }
+
+  return start;
+}
+
+#ifndef KERNEL
+
+char *strtok(char *string, const char *control)
+{
+  unsigned char *str;
+  const unsigned char *ctrl = control;
+
+  unsigned char map[32];
+  int count;
+
+  // Clear control map
+  for (count = 0; count < 32; count++) map[count] = 0;
+
+  // Set bits in delimiter table
+  do { map[*ctrl >> 3] |= (1 << (*ctrl & 7)); } while (*ctrl++);
+
+  // Initialize str. If string is NULL, set str to the saved
+  // pointer (i.e., continue breaking tokens out of the string
+  // from the last strtok call)
+  if (string)
+    str = string;
+  else
+    str = gettib()->nexttoken;
+
+  // Find beginning of token (skip over leading delimiters). Note that
+  // there is no token iff this loop sets str to point to the terminal
+  // null (*str == '\0')
+
+  while ((map[*str >> 3] & (1 << (*str & 7))) && *str) str++;
+
+  string = str;
+
+  // Find the end of the token. If it is not the end of the string,
+  // put a null there
+  for ( ; *str ; str++)
+  {
+    if (map[*str >> 3] & (1 << (*str & 7)))
+    {
+      *str++ = '\0';
+      break;
+    }
+  }
+
+  // Update nexttoken
+  gettib()->nexttoken = str;
+
+  // Determine if a token has been found.
+  if (string == str)
+    return NULL;
+  else
+    return string;
+}
+
+#endif
+
 /////////////////////////////////////////////////////////////////////
 //
 // intrinsic functions
@@ -275,6 +414,7 @@ void *memchr(const void *buf, int ch, size_t count)
 #pragma function(strlen)
 #pragma function(strcat)
 #pragma function(strcmp)
+#pragma function(strset)
 
 void *memset(void *p, int c, size_t n)
 {
@@ -311,6 +451,29 @@ void *memcpy(void *dst, const void *src, size_t n)
   return ret;
 }
 
+void *memccpy(void *dst, const void *src, int c, size_t count)
+{
+  while (count && (*((char *) (dst = (char *) dst + 1) - 1) =
+         *((char *)(src = (char *) src + 1) - 1)) != (char) c)
+    count--;
+
+  return count ? dst : NULL;
+}
+
+int memicmp(const void *buf1, const void *buf2, size_t count)
+{
+  int f = 0, l = 0;
+  const unsigned char *dst = buf1, *src = buf2;
+
+  while (count-- && f == l)
+  {
+    f = tolower(*dst++);
+    l = tolower(*src++);
+  }
+
+  return f - l;
+}
+
 char *strcpy(char *dst, const char *src)
 {
   char *cp = dst;
@@ -345,3 +508,11 @@ char *strcat(char *dst, const char *src)
   while (*cp++ = *src++);
   return dst;
 }
+
+char *strset(char *s, int c)
+{
+  char *start = s;
+  while (*s) *s++ = (char) c;
+  return start;
+}
+
