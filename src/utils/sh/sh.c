@@ -531,9 +531,20 @@ static void nop()
   long after;
   long cycles;
   int i;
-  long min = 0x7FFFFFFF;
-  long max = 0;
-  long sum = 0;
+  long min;
+  long max;
+  long sum;
+
+  if (!peb->fast_syscalls_supported)
+  {
+    printf("error: processor does not support sysenter/sysexit\n");
+    return;
+  }
+
+  peb->fast_syscalls_supported = 0;
+  min = 0x7FFFFFFF;
+  max = 0;
+  sum = 0;
 
   for (i = 0; i < 1000; i++)
   {
@@ -547,7 +558,26 @@ static void nop()
     sum += cycles;
   }
 
-  printf("syscall(0,0): min/avg/max %d/%d/%d cycles\n", min, sum / 1000, max);
+  printf("syscall(0,0) with int 48: min/avg/max %d/%d/%d cycles\n", min, sum / 1000, max);
+
+  peb->fast_syscalls_supported = 1;
+  min = 0x7FFFFFFF;
+  max = 0;
+  sum = 0;
+
+  for (i = 0; i < 1000; i++)
+  {
+    before = rdtscl();
+    syscall(0,0);
+    after = rdtscl();
+
+    cycles = after - before;
+    if (cycles < min) min = cycles;
+    if (cycles > max) max = cycles;
+    sum += cycles;
+  }
+
+  printf("syscall(0,0) with sysenter: min/avg/max %d/%d/%d cycles\n", min, sum / 1000, max);
 }
 
 void shell()

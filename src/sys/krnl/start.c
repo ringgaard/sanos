@@ -304,7 +304,6 @@ void main(void *arg)
   if (!peb) panic("unable to allocate PEB");
   memset(peb, 0, PAGESIZE);
   peb->fast_syscalls_supported = (cpu.features & CPU_FEATURE_SEP) != 0;
-  //peb->fast_syscalls_supported = 0;
 
   // Load os.dll in user address space
   imgbase = load_image_file("/os/os.dll", 1);

@@ -81,7 +81,7 @@ static void __declspec(naked) sysentry(void)
 {
   __asm
   {
-    mov     esp, [esp]
+    mov     esp, ss:[esp]
     sti
 
     push    ecx
@@ -105,6 +105,7 @@ static void __declspec(naked) sysentry(void)
 
     pop     ecx
     pop     edx
+
     sysexit
   }
 }
@@ -307,7 +308,7 @@ void init_intr()
   // Initialize fast syscall
   if (cpu.features & CPU_FEATURE_SEP)
   {
-    wrmsr(MSR_SYSENTER_CS, SEL_KDATA, 0);
+    wrmsr(MSR_SYSENTER_CS, SEL_KTEXT, 0);
     wrmsr(MSR_SYSENTER_ESP, TSS_ESP0, 0);
     wrmsr(MSR_SYSENTER_EIP, (unsigned long) sysentry, 0);
   }
