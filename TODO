@@ -609,10 +609,11 @@ CHANGES
 
 - Fixed bug in password encoding for smbfs
 
-- Added new API routines to wsock32 and kernel32 to better support nio
+- Added new API routines to wsock32 and kernel32 to better support java nio
 
 - Added /proc/screen to capture the contents of the console screen buffer
 
 - Script execution at startup and exec command in shell
 
-- Hostname can now be queried using DNS
+- If no hostname has been configured, the network initialization code now tries to find the hostname for the 
+  computer by making a DNS query on the assigned IP address.
