@@ -189,7 +189,7 @@ int httpd_terminate(struct httpd_server *server)
   return -ENOSYS;
 }
 
-char *gttpd_get_mimetype(struct httpd_server *server, char *ext)
+char *httpd_get_mimetype(struct httpd_server *server, char *ext)
 {
   struct property *prop;
   struct mimetype *m;
@@ -248,7 +248,7 @@ void httpd_accept(struct httpd_server *server)
   sock = accept(server->sock, &addr.sa, &addrlen);
   if (sock < 0) return;
     
-  printf("connect %a port %d\n", &addr.sa_in.sin_addr.s_addr, ntohs(addr.sa_in.sin_port));
+  //printf("connect %a port %d\n", &addr.sa_in.sin_addr.s_addr, ntohs(addr.sa_in.sin_port));
 
   conn = (struct httpd_connection *) malloc(sizeof(struct httpd_connection));
   if (!conn) return;
@@ -298,6 +298,8 @@ int httpd_terminate_request(struct httpd_connection *conn)
 
   ioctl(conn->sock, FIONBIO, &off, sizeof(off));
 
+  //printf("terminate request, %d bytes in reqhdr\n", buffer_size(&conn->reqhdr));
+
   free_buffer(&conn->reqhdr);
   free_buffer(&conn->reqbody);
   free_buffer(&conn->rsphdr);
@@ -305,12 +307,13 @@ int httpd_terminate_request(struct httpd_connection *conn)
 
   conn->keep = 0;
   conn->hdrsent = 0;
+
   return 1;
 }
 
 void httpd_close_connection(struct httpd_connection *conn)
 {
-  printf("close %a port %d\n", &conn->client_addr.sa_in.sin_addr.s_addr, ntohs(conn->client_addr.sa_in.sin_port));
+  //printf("close %a port %d\n", &conn->client_addr.sa_in.sin_addr.s_addr, ntohs(conn->client_addr.sa_in.sin_port));
 
   close(conn->sock);
   if (conn->fd >= 0)
@@ -421,7 +424,7 @@ int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *
   }
 
   if (rsp->content_length < 0) rsp->keep_alive = 0;
-  if (state >= 400) rsp->keep_alive = 0;
+  if (state >= 500) rsp->keep_alive = 0;
 
   if (rsp->keep_alive)
   {
@@ -524,7 +527,6 @@ int httpd_flush(struct httpd_response *rsp)
     if (buf->end != buf->start)
     {
       write(1, buf->start, buf->end - buf->start);
-      
       rc = send(rsp->conn->sock, buf->start, buf->end - buf->start, 0);
       if (rc < 0) return rc;
 
@@ -538,7 +540,7 @@ int httpd_flush(struct httpd_response *rsp)
   buf = &rsp->conn->rspbody;
   if (buf->end != buf->start)
   {
-    write(1, buf->start, buf->end - buf->start);
+    //write(1, buf->start, buf->end - buf->start);
     rc = send(rsp->conn->sock, buf->start, buf->end - buf->start, 0);
     if (rc < 0) return rc;
 
@@ -817,6 +819,8 @@ int httpd_parse_request(struct httpd_request *req)
     else if (stricmp(l, "Connection") == 0)
       req->keep_alive = stricmp(s, "keep-alive") == 0;
 
+    //printf("hdr: %s: %s\n", l, s);
+
     if (req->nheaders < MAX_HTTP_HEADERS)
     {
       req->headers[req->nheaders].name = l;
@@ -921,6 +925,15 @@ int httpd_translate_path(struct httpd_request *req)
   return 1;
 }
 
+int httpd_log(struct httpd_connection *conn)
+{
+  char datebuf[32];
+
+  printf("%s - %s %s %d\n", rfctime(time(0), datebuf), conn->req->method, conn->req->encoded_url, conn->rsp->status);
+
+  return 0;
+}
+
 int httpd_write(struct httpd_connection *conn)
 {
   int left;
@@ -931,6 +944,7 @@ int httpd_write(struct httpd_connection *conn)
   left = conn->rsphdr.end - conn->rsphdr.start;
   if (left > 0)
   {
+    //write(1, conn->rsphdr.start, left);
     bytes = send(conn->sock, conn->rsphdr.start, left, 0);
     if (bytes < 0) return bytes;
     conn->rsphdr.start += bytes;
@@ -944,6 +958,7 @@ int httpd_write(struct httpd_connection *conn)
     left = conn->rspbody.end - conn->rspbody.start;
     if (left > 0)
     {
+      //write(1, conn->rspbody.start, left);
       bytes = send(conn->sock, conn->rspbody.start, left, 0);
       if (bytes < 0) return bytes;
       conn->rspbody.start += bytes;
@@ -964,6 +979,9 @@ int httpd_write(struct httpd_connection *conn)
       bytes = read(conn->fd, conn->rspbody.floor, buffer_capacity(&conn->rspbody));
       if (bytes < 0) return bytes;
       if (bytes == 0) return 0;
+
+      conn->rspbody.start = conn->rspbody.floor;
+      conn->rspbody.end = conn->rspbody.floor + bytes;
     }
     else
       return 0;
@@ -1022,7 +1040,7 @@ int httpd_process(struct httpd_connection *conn)
       }
 
       // Build HTTP header if not already done
-      if (!conn->hdrsent)
+      if (!conn->hdrsent && buffer_empty(&conn->rsphdr))
       {
 	if (rsp.content_length < 0)
 	{
@@ -1040,6 +1058,9 @@ int httpd_process(struct httpd_connection *conn)
       }
     }
   }
+
+  // Log request
+  httpd_log(conn);
 
   // Prepare for sending back response
   rc = ioctl(conn->sock, FIONBIO, &on, sizeof(on));
@@ -1128,9 +1149,8 @@ int httpd_io(struct httpd_connection *conn)
 	  conn->state = HTTP_STATE_TERMINATED;
 	  httpd_close_connection(conn);
 	}
-
-        return 1;
       }
+      return 1;
 
     case HTTP_STATE_TERMINATED:
       return 1;
@@ -1219,7 +1239,7 @@ int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
   if (reason == DLL_PROCESS_ATTACH)
   {
     mkcs(&srvlock);
-    server = httpd_initialize(NULL);
+    server = httpd_initialize(find_section(config, "httpd"));
     httpd_add_context(server, find_section(config, "webroot"), httpd_file_handler);
     httpd_start(server);
   }

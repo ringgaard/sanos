@@ -210,7 +210,7 @@ httpdapi struct httpd_server *httpd_initialize(struct section *cfg);
 httpdapi int httpd_terminate(struct httpd_server *server);
 httpdapi struct httpd_context *httpd_add_context(struct httpd_server *server, struct section *cfg, httpd_handler handler); 
 httpdapi int httpd_start(struct httpd_server *server);
-httpdapi char *gttpd_get_mimetype(struct httpd_server *server, char *ext);
+httpdapi char *httpd_get_mimetype(struct httpd_server *server, char *ext);
 
 httpdapi int httpd_recv(struct httpd_request *req, char *data, int len);
 

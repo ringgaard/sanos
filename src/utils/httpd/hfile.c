@@ -33,21 +33,78 @@
 
 #include <os.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <httpd.h>
 
+char *get_extension(char *path)
+{
+  char *ext;
+
+  ext = NULL;
+  while (*path)
+  {
+    if (*path == PS1 || *path == PS2)
+      ext = NULL;
+    else if (*path == '.')
+      ext = path + 1;
+
+    path++;
+  }
+
+  return ext;
+}
+
+int httpd_return_file_error(struct httpd_connection *conn, int err)
+{
+  switch (err)
+  {
+    case -EACCES: 
+      return httpd_send_error(conn->rsp, 403, "Forbidden", NULL);
+
+    case -ENOENT:
+      return httpd_send_error(conn->rsp, 404, "Not Found", NULL);
+
+    default:
+      return httpd_send_error(conn->rsp, 500, "Internal Server Error", strerror(err));
+  }
+}
+
 int httpd_file_handler(struct httpd_connection *conn)
 {
-  char *buf;
+  int rc;
+  int fd;
+  struct stat statbuf;
 
-  buf = "<html><head><title>This is a test</title></head><body>This is a test</body></html>";
-  conn->rsp->content_type = "text/html";
-  conn->rsp->content_length = strlen(buf);
-  conn->rsp->last_modified = time(0);
+  if (strcmp(conn->req->method, "GET") != 0 && strcmp(conn->req->method, "HEAD") != 0)
+  {
+    return httpd_send_error(conn->rsp, 405, "Method Not Allowed", NULL);
+  }
 
-  httpd_send(conn->rsp, buf, strlen(buf));
+  rc = stat(conn->req->path_translated, &statbuf);
+  if (rc < 0) return httpd_return_file_error(conn, rc);
 
-  printf("path translated: [%s]\n", conn->req->path_translated);
+  if (statbuf.mode & FS_DIRECTORY)
+  {
+    return httpd_send_error(conn->rsp, 501, "Not Implemented", "Directory browsing not supported");
+  }
+
+  conn->rsp->content_length = statbuf.quad.size_low;
+  conn->rsp->last_modified = statbuf.mtime;
+  conn->rsp->content_type = httpd_get_mimetype(conn->server, get_extension(conn->req->path_translated));
+
+  if (conn->rsp->last_modified <= conn->req->if_modified_since)
+  {
+    return httpd_send_header(conn->rsp, 304, "Not Modified", NULL);
+  }
+
+  if (strcmp(conn->req->method, "HEAD") == 0) return 0;
+
+  fd = open(conn->req->path_translated, O_RDONLY);
+  if (fd < 0) return httpd_return_file_error(conn, fd);
+
+  rc = httpd_send_file(conn->rsp, fd);
+  if (rc < 0) return rc;
 
   return 0;
-};
+}

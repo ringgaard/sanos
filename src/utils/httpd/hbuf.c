@@ -42,7 +42,7 @@ int buffer_size(struct httpd_buffer *buf)
 
 int buffer_capacity(struct httpd_buffer *buf)
 {
-  return buf->ceil < buf->floor;
+  return buf->ceil - buf->floor;
 }
 
 int buffer_left(struct httpd_buffer *buf)
