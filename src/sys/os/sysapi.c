@@ -78,7 +78,7 @@ int mkfs(const char *devname, const char *type, const char *opts)
   return syscall(SYSCALL_MKFS, (void *) &devname);
 }
 
-static int _mount(const char *type, const char *mntto, const char *mntfrom, const char *opts)
+/*static*/ int _mount(const char *type, const char *mntto, const char *mntfrom, const char *opts)
 {
   return syscall(SYSCALL_MOUNT, (void *) &type);
 }
@@ -180,7 +180,7 @@ int writev(handle_t f, const struct iovec *iov, int count)
   return syscall(SYSCALL_WRITEV, &f);
 }
 
-static loff_t _tell(handle_t f, off64_t *retval)
+/*static*/ loff_t _tell(handle_t f, off64_t *retval)
 {
   return syscall(SYSCALL_TELL, &f);
 }
@@ -198,7 +198,7 @@ off64_t tell64(handle_t f)
   return rc;
 }
 
-static int _lseek(handle_t f, off64_t offset, int origin, off64_t *retval)
+/*static*/ int _lseek(handle_t f, off64_t offset, int origin, off64_t *retval)
 {
   return syscall(SYSCALL_LSEEK, &f);
 }

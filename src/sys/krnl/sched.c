@@ -912,6 +912,8 @@ void idle_task()
       task = task->next;
     }
 
+    if (system_idle()) halt();
+
     mark_thread_ready(t, 0, 0);
     dispatch();
 

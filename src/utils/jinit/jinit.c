@@ -127,9 +127,9 @@ void init_jvm_args()
   int len;
   int first;
 
-  cpsect = find_section(config, get_property(config, cfgname, "classpaths", "java.classpaths"));
-  optsect = find_section(config, get_property(config, cfgname, "options", "java.options"));
-  propsect = find_section(config, get_property(config, cfgname, "properties", "java.properties"));
+  cpsect = find_section(osconfig, get_property(osconfig, cfgname, "classpaths", "java.classpaths"));
+  optsect = find_section(osconfig, get_property(osconfig, cfgname, "options", "java.options"));
+  propsect = find_section(osconfig, get_property(osconfig, cfgname, "properties", "java.properties"));
 
   nopts = get_section_size(optsect) + get_section_size(propsect) + (cpsect ? 1 : 0);
 
@@ -249,7 +249,7 @@ int init_jvm()
   // Load VM
   if (hjvm == NULL)
   {
-    char *jvmname = get_property(config, cfgname, "jvm", "jvm.dll");
+    char *jvmname = get_property(osconfig, cfgname, "jvm", "jvm.dll");
 
     hjvm = load(jvmname);
     if (hjvm == NULL) 
@@ -360,8 +360,8 @@ int main(int argc, char *argv[])
   if (init_jvm() != 0) return 1;
 
   // Get main class and arguments
-  mainclsname = get_property(config, cfgname, "mainclass", "sanos.os.Shell");
-  mainclsargs = get_property(config, cfgname, "mainargs", "");
+  mainclsname = get_property(osconfig, cfgname, "mainclass", "sanos.os.Shell");
+  mainclsargs = get_property(osconfig, cfgname, "mainargs", "");
 
   // Call main method
   execute_main_method(mainclsname, mainclsargs);

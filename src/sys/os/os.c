@@ -48,7 +48,7 @@
 
 struct critsect heap_lock;
 struct critsect mod_lock;
-struct section *config;
+struct section *osconfig;
 struct moddb usermods;
 struct peb *peb;
 
@@ -68,16 +68,16 @@ void start_syslog()
   char *logfn;
   char *loghost;
 
-  loglevel = get_numeric_property(config, "os", "loglevel", loglevel);
+  loglevel = get_numeric_property(osconfig, "os", "loglevel", loglevel);
 
-  logfn = get_property(config, "os", "logfile", NULL);
+  logfn = get_property(osconfig, "os", "logfile", NULL);
   if (logfn != NULL) 
   {
     syslogfd = open(logfn, O_CREAT, S_IREAD | S_IWRITE);
     if (syslogfd >= 0) lseek(syslogfd, 0, SEEK_END);
   }
 
-  loghost = get_property(config, "os", "syslogsrv", NULL);
+  loghost = get_property(osconfig, "os", "syslogsrv", NULL);
   if (loghost != NULL)
   {
     struct sockaddr_in sin;
@@ -613,7 +613,7 @@ void init_net()
   sock = socket(AF_INET, SOCK_DGRAM, 0);
   if (sock < 0) return;
 
-  sect = find_section(config, "netif");
+  sect = find_section(osconfig, "netif");
   if (!sect) return;
 
   first = 1;
@@ -692,7 +692,7 @@ void init_mount()
   char *opts;
   int rc;
 
-  sect = find_section(config, "mount");
+  sect = find_section(osconfig, "mount");
   if (!sect) return;
 
   prop = sect->properties;
@@ -808,8 +808,8 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   init_threads(hmod);
 
   // Load configuration file
-  config = read_properties("/etc/os.ini");
-  if (!config) panic("error reading /etc/os.ini");
+  osconfig = read_properties("/etc/os.ini");
+  if (!osconfig) panic("error reading /etc/os.ini");
 
   // Initialize network interfaces
   init_net();
@@ -827,7 +827,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   usermods.protect_region = protect_region;
   usermods.log = logldr;
 
-  init_module_database(&usermods, "os.dll", hmod, get_property(config, "os", "libpath", "/bin"), find_section(config, "modaliases"), 0);
+  init_module_database(&usermods, "os.dll", hmod, get_property(osconfig, "os", "libpath", "/bin"), find_section(osconfig, "modaliases"), 0);
 
   // Mount devices
   init_mount();
@@ -836,12 +836,12 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   start_syslog();
 
   // Initialize random device with seed
-  rndfn = get_property(config, "os", "rndfile", NULL);
+  rndfn = get_property(osconfig, "os", "rndfile", NULL);
   if (rndfn) seed_random_device(rndfn);
 
   // Load and execute init program
-  initpgm = get_property(config, "os", "initpgm", "/bin/init.exe");
-  initargs = get_property(config, "os", "initargs", "");
+  initpgm = get_property(osconfig, "os", "initpgm", "/bin/init.exe");
+  initargs = get_property(osconfig, "os", "initargs", "");
 
   //syslog(LOG_DEBUG, "exec %s(%s)\n", initpgm, initargs);
   rc = spawn(P_WAIT, initpgm, initargs, NULL);

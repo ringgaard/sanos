@@ -1140,7 +1140,7 @@ DWORD WINAPI GetEnvironmentVariableA
   TRACE("GetEnvironmentVariableA");
   //syslog(LOG_DEBUG, "GetEnvironmentVariable(%s)\n", lpName);
   
-  value = get_property(config, "env", (char *) lpName, NULL);
+  value = get_property(osconfig, "env", (char *) lpName, NULL);
   if (value)
   {
     strcpy(lpBuffer, value);
@@ -1386,7 +1386,7 @@ UINT WINAPI GetSystemDirectoryA
 )
 {
   TRACE("GetSystemDirectoryA");
-  strcpy(lpBuffer, get_property(config, "win32", "sysdir", "c:\\bin"));
+  strcpy(lpBuffer, get_property(osconfig, "win32", "sysdir", "c:\\bin"));
   return strlen(lpBuffer);
 }
 
@@ -1468,7 +1468,7 @@ DWORD WINAPI GetTempPathA
 )
 {
   TRACE("GetTempPathA");
-  strcpy(lpBuffer, get_property(config, "win32", "tmpdir", "c:\\tmp"));
+  strcpy(lpBuffer, get_property(osconfig, "win32", "tmpdir", "c:\\tmp"));
   return strlen(lpBuffer);
 }
 
@@ -1503,7 +1503,7 @@ BOOL WINAPI GetThreadContext
 LCID WINAPI GetThreadLocale(void)
 {
   TRACE("GetThreadLocale");
-  return get_numeric_property(config, "win32", "locale", 0x0406);
+  return get_numeric_property(osconfig, "win32", "locale", 0x0406);
 }
 
 int WINAPI GetThreadPriority
@@ -1579,7 +1579,7 @@ UINT WINAPI GetWindowsDirectoryA
 )
 {
   TRACE("GetWindowsDirectoryA");
-  strcpy(lpBuffer, get_property(config, "win32", "windir", "c:\\bin"));
+  strcpy(lpBuffer, get_property(osconfig, "win32", "windir", "c:\\bin"));
   return strlen(lpBuffer);
 }
 

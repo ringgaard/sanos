@@ -44,7 +44,7 @@ BOOL WINAPI GetUserNameA
 )
 {
   TRACE("GetUserNameA");
-  strcpy(lpBuffer, get_property(config, "os", "user", "root"));
+  strcpy(lpBuffer, get_property(osconfig, "os", "user", "root"));
   return TRUE;
 }
 

@@ -823,12 +823,12 @@ int gethostname(char *name, int namelen)
   if (*peb->hostname)
     host = peb->hostname;
   else
-    host = get_property(config, "os", "hostname", NULL);
+    host = get_property(osconfig, "os", "hostname", NULL);
 
   if (*peb->default_domain)
     domain = peb->default_domain;
   else
-    host = get_property(config, "dns", "domain", NULL);
+    host = get_property(osconfig, "dns", "domain", NULL);
 
   if (!host)
     strncpy(name, "localhost", namelen);

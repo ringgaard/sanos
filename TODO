@@ -476,3 +476,17 @@ CHANGES
   limitation on real mode initialization code.
 
 - Support for compressed boot image for initial RAM disk.
+
+*** version 1.3.0 released (04/08/08) ***
+
+- Added hlt to idle task to decrese CPU usage when running under VMWare (TSU).
+
+- Added uk keyboard bindings (TSU).
+
+- The static modifier removed from internal routines in sysapi.c to prevent
+  "over-optimization" of the stack frames (TSU).
+
+- The configuration from /etc/os.ini has been renamed from config to osconfig.
+
+- The add_to_history() function in readline.c has is no longer static and now
+  has a prototype in stdlib.h.

@@ -204,7 +204,7 @@ void init_sntpd()
     idx++;
   }
 
-  sect = find_section(config, "ntp");
+  sect = find_section(osconfig, "ntp");
   if (sect)
   {
     prop = sect->properties;

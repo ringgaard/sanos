@@ -344,6 +344,9 @@
 				RelativePath="..\src\sys\dev\kbddk.h">
 			</File>
 			<File
+				RelativePath="..\src\sys\dev\kbduk.h">
+			</File>
+			<File
 				RelativePath="..\src\sys\dev\kbdus.h">
 			</File>
 			<File

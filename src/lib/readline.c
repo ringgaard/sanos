@@ -57,7 +57,7 @@ int insmode = 1;
 int history_len = 0;
 char *history[MAX_HISTORY];
 
-static void add_to_history(char *line)
+void add_to_history(char *line)
 {
   int i;
 

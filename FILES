@@ -219,6 +219,7 @@ src\                           Souce files
       hd.c                     Harddisk driver
       kbd.c                    Keyboard driver
       kbddk.h                  Keyboard tables for danish keyboard
+      kbduk.h                  Keyboard tables for UK keyboard
       kbdus.h                  Keyboard tables for US keyboard
       ne2000.c                 NE2000 network card driver
       null.c                   Null device driver

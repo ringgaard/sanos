@@ -517,7 +517,7 @@ int res_init()
     res.nscount++;
   }
 
-  addr = get_property(config, "dns", "primary", NULL);
+  addr = get_property(osconfig, "dns", "primary", NULL);
   if (addr != NULL)
   {
     res.nsaddr_list[res.nscount].sin_addr.s_addr = inet_addr(addr);
@@ -526,7 +526,7 @@ int res_init()
     res.nscount++;
   }
 
-  addr = get_property(config, "dns", "secondary", NULL);
+  addr = get_property(osconfig, "dns", "secondary", NULL);
   if (addr != NULL)
   {
     res.nsaddr_list[res.nscount].sin_addr.s_addr = inet_addr(addr);
@@ -546,7 +546,7 @@ int res_init()
   strcpy(res.defdname, peb->default_domain);
   if (!*res.defdname) 
   {
-    strcpy(res.defdname, get_property(config, "dns", "domain", "local.domain"));
+    strcpy(res.defdname, get_property(osconfig, "dns", "domain", "local.domain"));
   }
 
   res.dnsrch[0] = res.defdname;

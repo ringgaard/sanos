@@ -172,7 +172,7 @@ static int parse_args(char *args, char **argv)
 
 static char **build_env_block()
 {
-  struct section *env = find_section(config, "env");
+  struct section *env = find_section(osconfig, "env");
   struct property *prop;
   int num = 0;
   char **envp;
@@ -298,7 +298,7 @@ int sscanf(const char *buffer, const char *fmt, ...)
 char *getenv(const char *option)
 {
   TRACE("getenv");
-  return get_property(config, "env", (char *) option, NULL);
+  return get_property(osconfig, "env", (char *) option, NULL);
 }
 
 double atof(const char *nptr)

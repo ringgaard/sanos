@@ -1523,7 +1523,7 @@ int main(int argc, char *argv[])
 
   if (peb->ipaddr.s_addr != INADDR_ANY) 
   {
-    if (get_numeric_property(config, "shell", "telnetd", 0) && !telnetd_started)
+    if (get_numeric_property(osconfig, "shell", "telnetd", 0) && !telnetd_started)
     {
       beginthread(telnetd, 0, NULL, 0, NULL);
       telnetd_started = 1;

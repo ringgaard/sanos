@@ -124,7 +124,7 @@ div_t div(int numer, int denom)
 
 char *getenv(const char *option)
 {
-  return get_property(config, "env", (char *) option, NULL);
+  return get_property(osconfig, "env", (char *) option, NULL);
 }
 
 long labs(long n)
