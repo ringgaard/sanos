@@ -86,15 +86,7 @@ crtapi void qsort(void *base, unsigned num, unsigned width, int (__cdecl *comp)(
 
 crtapi void *memmove(void *dst, const void *src, size_t count);
 
-crtapi char *strchr(const char *string, int ch);
-crtapi int strncmp(const char *first, const char *last, size_t count);
-crtapi char *strncpy(char *dest, const char *source, size_t count);
-crtapi char *strrchr(const char *string, int ch);
-crtapi char *strstr(const char * str1, const char *str2);
 crtapi char *_strdup(const char *string);
-
-crtapi long strtol(const char *nptr, char **endptr, int ibase);
-crtapi unsigned long strtoul(const char *nptr, char **endptr, int ibase);
 
 crtapi int _isctype(int c, int mask);
 crtapi int isspace(int c);

@@ -450,6 +450,26 @@ static void start_program(int argc, char **argv)
   //unload(hmod);
 }
 
+static void load_module(int argc, char **argv)
+{
+  char *pgm;
+  hmodule_t hmod;
+
+  if (argc < 2)
+  {
+    printf("usage: load <module>\n");
+    return;
+  }
+  pgm = argv[1];
+
+  hmod = load(pgm);
+  if (hmod == NULL)
+  {
+    printf("%s: unable to load module\n", pgm);
+    return;
+  }
+}
+
 static void mount_device(int argc, char **argv)
 {
   char *devname;
@@ -1160,6 +1180,8 @@ void shell()
 	set_kprint(atoi(argv[1]));
       else if (strcmp(argv[0], "start") == 0)
 	start_program(argc, argv);
+      else if (strcmp(argv[0], "load") == 0)
+	load_module(argc, argv);
       else if (strcmp(argv[0], "break") == 0)
 	dbgbreak();
       else if (strcmp(argv[0], "nop") == 0)

@@ -149,6 +149,18 @@ void _assert(void *expr, void *filename, unsigned lineno)
   abort();
 }
 
+char *_strdup(const char *s)
+{
+  char *t;
+  int len;
+
+  if (!s) return NULL;
+  len = strlen(s);
+  t = (char *) malloc(len + 1);
+  memcpy(t, s, len + 1);
+  return t;
+}
+
 void init_fileio();
 
 int __stdcall dllmain(handle_t hmod, int reason, void *reserved)

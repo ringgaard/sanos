@@ -22,6 +22,8 @@ int strncmp(const char *s1, const char *s2, size_t count);
 char *strdup(char *s);
 int stricmp(const char *s1, const char *s2);
 char *strchr(const char *s, int ch);
+char *strrchr(const char *s, int ch);
+char *strstr(const char *s1, const char *s2);
 
 long atol(const char *s);
 int atoi(const char *s);

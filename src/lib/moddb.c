@@ -338,7 +338,7 @@ static struct module *resolve_imports(struct module *mod)
       newmod->db = mod->db;
       newmod->name = strdup(name);
       newmod->path = strdup(path);
-      newmod->refcnt = 1;
+      newmod->refcnt = 0;
       newmod->flags = MODULE_LOADED;
       insert_before(mod, newmod);
 
@@ -357,6 +357,7 @@ static struct module *resolve_imports(struct module *mod)
 static int bind_imports(struct module *mod)
 {
   struct image_import_descriptor *imp;
+  int errs = 0;
 
   // Find import directory in image
   imp = (struct image_import_descriptor *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_IMPORT);
@@ -395,8 +396,8 @@ static int bind_imports(struct module *mod)
 	*thunks = (unsigned long) get_proc_by_ordinal(expmod->hmod, ordinal);
 	if (*thunks == 0) 
         {
-          logmsg(mod->db, "unable to resolve %s.#%d in %s", name, ordinal, mod->name);
-          return -ENOEXEC;
+	  logmsg(mod->db, "unable to resolve %s:#%d in %s", name, ordinal, mod->name);
+	  errs++;
         }
       }
       else
@@ -406,8 +407,8 @@ static int bind_imports(struct module *mod)
 	*thunks = (unsigned long) get_proc_by_name(expmod->hmod, ibn->hint, ibn->name);
 	if (*thunks == 0)
         {
-	  logmsg(mod->db, "unable to resolve %s.%s in %s\n", name, ibn->name, mod->name);
-          return -ENOEXEC;
+	  logmsg(mod->db, "unable to resolve %s:%s in %s", name, ibn->name, mod->name);
+	  errs++;
         }
       }
 
@@ -417,8 +418,9 @@ static int bind_imports(struct module *mod)
     imp++;
   }
 
-  mod->flags |= MODULE_BOUND;
+  if (errs) return -ENOEXEC;
 
+  mod->flags |= MODULE_BOUND;
   return 0;
 }
 
@@ -657,7 +659,7 @@ hmodule_t load_module(struct moddb *db, char *name)
   mod->db = db;
   mod->name = strdup(basename);
   mod->path = strdup(buffer);
-  mod->refcnt = 1;
+  mod->refcnt = 0;
   mod->flags = MODULE_LOADED;
   insert_before(db->modules, mod);
 
@@ -724,6 +726,7 @@ hmodule_t load_module(struct moddb *db, char *name)
   }
 
   // Update ref counts on depend module
+  mod->refcnt++;
   m = modlist;
   while (1)
   {

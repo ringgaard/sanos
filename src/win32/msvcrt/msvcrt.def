@@ -12,4 +12,29 @@ EXPORTS
   time=_time
   sprintf
   vsprintf
-
+  strchr
+  strncmp
+  strncpy
+  strrchr
+  strstr
+  _strdup
+  strtol
+  strtoul
+  qsort
+  bsearch
+  memmove
+  _pctype
+  _isctype
+  isspace
+  isupper
+  islower
+  isdigit
+  isxdigit
+  ispunct
+  isalpha
+  isalnum
+  isprint
+  isgraph
+  iscntrl
+  toupper
+  tolower

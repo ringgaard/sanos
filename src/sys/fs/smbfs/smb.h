@@ -790,6 +790,7 @@ struct smb_file_basic_info
   smb_time last_write_time;		// Time of last write to the file
   smb_time change_time;			// Time when file was last changed
   unsigned long attributes;		// File Attributes
+  unsigned long reserved;
 };
 
 struct smb_file_standard_info

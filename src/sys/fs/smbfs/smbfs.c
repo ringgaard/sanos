@@ -572,6 +572,8 @@ int smb_stat(struct fs *fs, char *name, struct stat *buffer)
   struct smb_file_standard_info rsps;
   struct smb_dentry *dentry;
   int rsplen;
+  short dummy;
+  int dummylen;
   int rc;
 
   rc = smb_convert_filename(name);
@@ -608,7 +610,8 @@ int smb_stat(struct fs *fs, char *name, struct stat *buffer)
     strcpy(req.filename, name);
 
     rsplen = sizeof(rspb);
-    rc = smb_trans(share, TRANS2_QUERY_FILE_INFORMATION, &req, sizeof(req), NULL, 0, NULL, NULL, &rspb, &rsplen);
+    dummylen = sizeof(dummy);
+    rc = smb_trans(share, TRANS2_QUERY_PATH_INFORMATION, &req, sizeof(req) - MAXPATH + strlen(name) + 1, NULL, 0, &dummy, &dummylen, &rspb, &rsplen);
     if (rc < 0) return rc;
   }
 
@@ -617,7 +620,8 @@ int smb_stat(struct fs *fs, char *name, struct stat *buffer)
   strcpy(req.filename, name);
 
   rsplen = sizeof(rsps);
-  rc = smb_trans(share, TRANS2_QUERY_FILE_INFORMATION, &req, sizeof(req), NULL, 0, NULL, NULL, &rsps, &rsplen);
+  dummylen = sizeof(dummy);
+  rc = smb_trans(share, TRANS2_QUERY_PATH_INFORMATION, &req, sizeof(req) - MAXPATH + strlen(name) + 1, NULL, 0, &dummy, &dummylen, &rsps, &rsplen);
   if (rc < 0) return rc;
 
   if (buffer)

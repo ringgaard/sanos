@@ -1,6 +1,8 @@
 #ifndef SMB_H
 #define SMB_H
 
+#define MAXPATH 256
+
 #define SMB_HEADER_LEN 35
 #define SMB_MAX_BUFFER 4356
 #define SMB_BLK_SIZE   4096
@@ -744,7 +746,7 @@ struct smb_file_basic_info
   smb_time last_write_time;		// Time of last write to the file
   smb_time change_time;			// Time when file was last changed
   unsigned long attributes;		// File Attributes
-  unsigned long pad;
+  unsigned long reserved;
 };
 
 struct smb_file_standard_info
@@ -831,6 +833,13 @@ struct smb_file_directory_info
   unsigned long ext_file_attributes;	// Extended file attributes (see section 3.12)
   unsigned long filename_length;	// Length of filename in bytes
   char filename[0];			// Name of the file
+};
+
+struct smb_pathinfo_request
+{
+  unsigned short infolevel;             // Information level
+  unsigned long reserved;
+  char filename[MAXPATH];
 };
 
 #pragma pack(pop)

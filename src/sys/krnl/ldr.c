@@ -30,6 +30,7 @@ void *load_image_file(char *filename, int userspace)
   struct dos_header *doshdr;
   struct image_header *imghdr;
   int i;
+  unsigned int bytes;
 
   //kprintf("ldr: loading module %s\n", filename);
 
@@ -45,7 +46,7 @@ void *load_image_file(char *filename, int userspace)
   }
 
   // Read headers
-  if (read(f, buffer, PAGESIZE) < 0)
+  if ((bytes = read(f, buffer, PAGESIZE)) < 0)
   {
     close(f);
     kfree(buffer);
@@ -55,7 +56,7 @@ void *load_image_file(char *filename, int userspace)
   imghdr = (struct image_header *) (buffer + doshdr->e_lfanew);
 
   // Check PE file signature
-  if (imghdr->signature != IMAGE_PE_SIGNATURE)  panic("invalid PE signature");
+  if (doshdr->e_lfanew > bytes || imghdr->signature != IMAGE_PE_SIGNATURE)  panic("invalid PE signature");
 
   // Check alignment
   //if (imghdr->optional.file_alignment != PAGESIZE || imghdr->optional.section_alignment != PAGESIZE) panic("image not page aligned");

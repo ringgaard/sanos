@@ -25,7 +25,7 @@ struct section *config;
 struct moddb usermods;
 struct peb *peb;
 
-unsigned long loglevel = LOG_DEBUG | LOG_APITRACE | LOG_AUX;
+unsigned long loglevel = LOG_DEBUG | LOG_APITRACE | LOG_AUX | LOG_MODULE;
 int logfile = -1;
 
 void init_sntpd();
@@ -121,10 +121,12 @@ static void *load_image(char *filename)
   struct dos_header *doshdr;
   struct image_header *imghdr;
   int i;
+  unsigned int bytes;
 
   // Allocate header buffer
   buffer = malloc(PAGESIZE);
   if (!buffer) return NULL;
+  memset(buffer, 0, PAGESIZE);
 
   // Open file
   f = open(filename, O_RDONLY);
@@ -135,17 +137,18 @@ static void *load_image(char *filename)
   }
 
   // Read headers
-  if (read(f, buffer, PAGESIZE) != PAGESIZE)
+  if ((bytes = read(f, buffer, PAGESIZE)) < 0)
   {
     close(f);
     free(buffer);
     return NULL;
   }
+  
   doshdr = (struct dos_header *) buffer;
   imghdr = (struct image_header *) (buffer + doshdr->e_lfanew);
 
   // Check PE file signature
-  if (imghdr->signature != IMAGE_PE_SIGNATURE) 
+  if (doshdr->e_lfanew > bytes || imghdr->signature != IMAGE_PE_SIGNATURE) 
   {
     close(f);
     free(buffer);

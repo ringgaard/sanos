@@ -63,6 +63,8 @@ int smb_errno(struct smb *smb)
   int errcls = smb->error_class;
   int error  = smb->error;
 
+  kprintf("smb: error %d class: %d\n", error, errcls);
+
   if (errcls == SMB_ERRDOS)
   {
     switch (error)

@@ -339,8 +339,11 @@ int smb_trans_recv(struct smb_session *sess,
     // Receive next block
     smb = recv_smb(sess);
     if (!smb) return -1; // -EIO
-    if (smb->error != 0) 
+    if (smb->error != 0)
+    {
+      printf("smb: error %d class %d\n", smb->error, smb->error_class);
       return -2; // -EPROTO
+    }
 
     // Copy parameters
     paramofs = smb->params.rsp.trans.parameter_offset;
@@ -711,6 +714,45 @@ int smb_fstat(struct smb_file *file)
   return 0;
 }
 
+int smb_stat(struct smb_session *sess, char *name)
+{
+  struct smb_pathinfo_request req;
+  struct smb_file_basic_info rspb;
+  struct smb_file_standard_info rsps;
+  int rsplen;
+  int rc;
+  short dummy;
+  int dummylen;
+
+  req.infolevel = SMB_QUERY_FILE_BASIC_INFO;
+  req.reserved = 0;
+  strcpy(req.filename, name);
+
+  rsplen = sizeof(rspb);
+  dummylen = sizeof(dummy);
+  rc = smb_trans(sess, TRANS2_QUERY_PATH_INFORMATION, &req, 6 + strlen(name) + 1, NULL, 0, &dummy, &dummylen, &rspb, &rsplen);
+  if (rc < 0) 
+  {
+    printf("smb: stat %s basic rc=%d\n", name, rc);
+    return rc;
+  }
+
+  req.infolevel = SMB_QUERY_FILE_STANDARD_INFO;
+  req.reserved = 0;
+  strcpy(req.filename, name);
+
+  rsplen = sizeof(rsps);
+  dummylen = sizeof(dummy);
+  rc = smb_trans(sess, TRANS2_QUERY_PATH_INFORMATION, &req, 6 + strlen(name) + 1, NULL, 0, &dummy, &dummylen, &rsps, &rsplen);
+  if (rc < 0) 
+  {
+    printf("smb: stat %s standard rc=%d\n", name, rc);
+    return rc;
+  }
+
+  return 0;
+}
+
 int smb_delete(struct smb_session *sess, char *filename)
 {
   struct smb *smb;
@@ -976,11 +1018,13 @@ void main(int argc, char *argv[])
 
   //smb_rename(sess, "yyy.txt", "def\\yyy.txt");
   //smb_statfs(sess);
-  smb_listdir(sess, "\\apps\\VPN");
+  //smb_listdir(sess, "\\apps\\VPN");
   //smb_delete(sess, "hello.txt");
   //smb_mkdir(sess, "testing");
   //smb_rmdir(sess, "testing");
   //smb_copy(sess, "hello.txt", "hello2.txt");
+  //smb_stat(sess, "\\share\\usr\\java\\lib\\rt.jar");
+  smb_stat(sess, "\\share\\usr\\java\\lib");
 
 #if 0
   file = smb_open_file(sess, "hello.txt", SMB_OPEN_EXISTING, SMB_ACCESS_GENERIC_READ);

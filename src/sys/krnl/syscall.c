@@ -11,6 +11,7 @@
 //#define SYSCALL_PROFILE
 //#define SYSCALL_LOGENTER
 //#define SYSCALL_LOGEXIT
+#define SYSCALL_LOGERRORS
 #define SYSCALL_CHECKBUFFER
 
 struct syscall_entry
@@ -2450,7 +2451,10 @@ int syscall(int syscallno, char *params)
   if (rc < 0) scerr[syscallno]++;
 #endif
 
-#if SYSCALL_LOGEXIT
+#if defined(SYSCALL_LOGEXIT) || defined(SYSCALL_LOGERRORS)
+#ifdef SYSCALL_LOGERRORS
+  if (rc < 0)
+#endif
   {
     char buf[1024];
 
