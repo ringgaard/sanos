@@ -46,6 +46,8 @@ IDEAS for new features
 
 - Rename /os to /bin
 
+- Simple httpd server in C for static contents (and isapi interface)
+
 - Use type object in struct object
 
 - Add support for select()
