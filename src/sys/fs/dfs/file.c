@@ -307,6 +307,8 @@ int dfs_close(struct file *filp)
 
   release_inode(inode);
 
+  if (filp->flags & O_TEMPORARY) unlink(filp->path);
+
   return 0;
 }
 
