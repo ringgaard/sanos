@@ -1,18 +1,18 @@
 ;-----------------------------------------------------------------------------
-; lldiv.asm - signed long divide
+; lldvrm.asm - signed long divide and remainder
 ;-----------------------------------------------------------------------------
                 .386
 _TEXT           segment use32 para public 'CODE'
-                public  __alldiv
+                public  __alldvrm
 
 LOWORD  equ     [0]
 HIWORD  equ     [4]
 
 ;
-; lldiv - signed long divide
+; lldvrm - signed long divide and remainder
 ;
 ; Purpose:
-;       Does a signed long divide of the arguments.  Arguments are
+;       Does a signed long divide and remainder of the arguments.  Arguments are
 ;       not changed.
 ;
 ; Entry:
@@ -22,22 +22,23 @@ HIWORD  equ     [4]
 ;
 ; Exit:
 ;       EDX:EAX contains the quotient (dividend/divisor)
+;       EBX:ECX contains the remainder (divided % divisor)
 ;       NOTE: this routine removes the parameters from the stack.
 ;
 ; Uses:
 ;       ECX
 ;
 
-__alldiv        proc    near
+__alldvrm       proc    near
                 assume  cs:_TEXT
 
         push    edi
         push    esi
-        push    ebx
+        push    ebp
 
 ; Set up the local stack and save the index registers.  When this is done
 ; the stack frame will look as follows (assuming that the expression a/b will
-; generate a call to lldiv(a, b)):
+; generate a call to alldvrm(a, b)):
 ;
 ;               -----------------
 ;               |               |
@@ -56,7 +57,7 @@ __alldiv        proc    near
 ;               |---------------|
 ;               |      ESI      |
 ;               |---------------|
-;       ESP---->|      EBX      |
+;       ESP---->|      EBP      |
 ;               -----------------
 ;
 
@@ -64,15 +65,18 @@ DVND    equ     [esp + 16]      ; stack address of dividend (a)
 DVSR    equ     [esp + 24]      ; stack address of divisor (b)
 
 
-; Determine sign of the result (edi = 0 if result is positive, non-zero
+; Determine sign of the quotient (edi = 0 if result is positive, non-zero
 ; otherwise) and make operands positive.
+; Sign of the remainder is kept in ebp.
 
         xor     edi,edi         ; result sign assumed positive
+        xor     ebp,ebp         ; result sign assumed positive
 
         mov     eax,HIWORD(DVND) ; hi word of a
         or      eax,eax         ; test to see if signed
         jge     short L1        ; skip rest if a is already positive
         inc     edi             ; complement result sign flag
+        inc     ebp             ; complement result sign flag
         mov     edx,LOWORD(DVND) ; lo word of a
         neg     eax             ; make a positive
         neg     edx
@@ -109,8 +113,17 @@ L2:
         mov     ebx,eax         ; save high bits of quotient
         mov     eax,LOWORD(DVND) ; edx:eax <- remainder:lo word of dividend
         div     ecx             ; eax <- low order bits of quotient
-        mov     edx,ebx         ; edx:eax <- quotient
-        jmp     short L4        ; set sign, restore stack and return
+        mov     esi,eax         ; ebx:esi <- quotient
+;
+; Now we need to do a multiply so that we can compute the remainder.
+;
+        mov     eax,ebx         ; set up high word of quotient
+        mul     dword ptr LOWORD(DVSR) ; HIWORD(QUOT) * DVSR
+        mov     ecx,eax         ; save the result in ecx
+        mov     eax,esi         ; set up low word of quotient
+        mul     dword ptr LOWORD(DVSR) ; LOWORD(QUOT) * DVSR
+        add     edx,ecx         ; EDX:EAX = QUOT * DVSR
+        jmp     short L4        ; complete remainder calculation
 
 ;
 ; Here we do it the hard way.  Remember, eax contains the high word of DVSR
@@ -158,8 +171,42 @@ L5:
         jbe     short L7        ; if less or equal we are ok, else subtract
 L6:
         dec     esi             ; subtract 1 from quotient
+        sub     eax,LOWORD(DVSR) ; subtract divisor from result
+        sbb     edx,HIWORD(DVSR)
 L7:
-        xor     edx,edx         ; edx:eax <- quotient
+        xor     ebx,ebx         ; ebx:esi <- quotient
+
+L4:
+;
+; Calculate remainder by subtracting the result from the original dividend.
+; Since the result is already in a register, we will do the subtract in the
+; opposite direction and negate the result if necessary.
+;
+
+        sub     eax,LOWORD(DVND) ; subtract dividend from result
+        sbb     edx,HIWORD(DVND)
+
+;
+; Now check the result sign flag to see if the result is supposed to be positive
+; or negative.  It is currently negated (because we subtracted in the 'wrong'
+; direction), so if the sign flag is set we are done, otherwise we must negate
+; the result to make it positive again.
+;
+
+        dec     ebp             ; check result sign flag
+        jns     short L9        ; result is ok, set up the quotient
+        neg     edx             ; otherwise, negate the result
+        neg     eax
+        sbb     edx,0
+
+;
+; Now we need to get the quotient into edx:eax and the remainder into ebx:ecx.
+;
+L9:
+        mov     ecx,edx
+        mov     edx,ebx
+        mov     ebx,ecx
+        mov     ecx,eax
         mov     eax,esi
 
 ;
@@ -167,7 +214,6 @@ L7:
 ; according to the save value, cleanup the stack, and return.
 ;
 
-L4:
         dec     edi             ; check to see if result is negative
         jnz     short L8        ; if EDI == 0, result should be negative
         neg     edx             ; otherwise, negate the result
@@ -179,13 +225,13 @@ L4:
 ;
 
 L8:
-        pop     ebx
+        pop     ebp
         pop     esi
         pop     edi
 
         ret     16
 
-__alldiv        endp
+__alldvrm       endp
 
 _TEXT           ends
                 end

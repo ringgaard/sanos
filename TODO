@@ -294,3 +294,5 @@ CHANGES
 - Modified signal() and raise to conform to ANSI standard. Signal info can be obtained
   in signal handler by using getsiginfo().
  
+- Support for 64 bit integer arithmetic. All compiler support routines for 64 bit
+  integer operations implemented in libc.

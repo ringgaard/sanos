@@ -219,8 +219,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -228,8 +227,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -240,8 +238,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -249,8 +246,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -261,8 +257,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -270,8 +265,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -282,8 +276,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -291,8 +284,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -303,8 +295,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -312,8 +303,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -324,8 +314,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -333,8 +322,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -345,8 +333,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -354,8 +341,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -366,8 +352,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -375,8 +360,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -387,8 +371,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -396,8 +379,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -408,8 +390,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -417,8 +398,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -429,8 +409,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -438,8 +417,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -450,8 +428,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -459,8 +436,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -471,8 +447,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -480,8 +455,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -492,8 +466,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -501,8 +474,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -513,8 +485,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -522,8 +493,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -534,8 +504,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -543,8 +512,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -555,8 +523,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -564,8 +531,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -576,8 +542,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -585,8 +550,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -597,8 +561,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -606,8 +569,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -618,8 +580,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -627,8 +588,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -639,8 +599,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -648,8 +607,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -660,8 +618,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -669,8 +626,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -681,8 +637,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -690,8 +645,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -702,8 +656,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -711,8 +664,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -723,8 +675,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -732,8 +683,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -796,8 +746,7 @@
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
-					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
@@ -805,8 +754,7 @@
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
-					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 		</File>
@@ -817,8 +765,7 @@
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
-					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 			<FileConfiguration
@@ -826,8 +773,159 @@
 				<Tool
 					Name="VCCustomBuildTool"
 					Description=""
-					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\src\lib\lldvrm.asm">
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\src\lib\llrem.asm">
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\src\lib\llshl.asm">
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\src\lib\llshr.asm">
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\src\lib\ulldiv.asm">
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\src\lib\ulldvrm.asm">
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\src\lib\ullrem.asm">
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\src\lib\ullshr.asm">
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+					Outputs="$(IntDir)\$(InputName).obj"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description=""
+					CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 					Outputs="$(IntDir)\$(InputName).obj"/>
 			</FileConfiguration>
 		</File>
