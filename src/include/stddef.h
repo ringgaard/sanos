@@ -47,6 +47,11 @@
 typedef unsigned int size_t;
 #endif
 
+#ifndef _PTRDIFF_T_DEFINED
+#define _PTRDIFF_T_DEFINED
+typedef int ptrdiff_t;
+#endif
+
 #ifndef NULL
 #define NULL ((void *) 0)
 #endif

@@ -153,11 +153,6 @@ ldiv_t ldiv(long numer, long denom)
   return result;
 }
 
-int putenv(const char *option)
-{
-  return -1; // TODO: implement
-}
-
 void srand(unsigned int seed)
 {
   holdrand = (long) seed;

@@ -263,7 +263,7 @@ CHANGES
 - Floppy device was not detected unless floppy disk was inserted. This problem has been fixed
   by delaying initialization of fdc until first use.
 
-- Added queue to loopback adapter
+- Added queue to loopback adapter.
 
 - The yield() routine now discards the remaining quantum for the thread before yielding.
 
@@ -273,18 +273,18 @@ CHANGES
   overwrote the stderr handle for the thread. Now the errnum field is correctly set in the tib.
 
 - Garbage returned by WSAGetLastError() because tib->err was mistakenly used instead of tib->errnum. This
-  problem has been fixed.
+  has been fixed.
 
 - The value of errno is now the positive version of the error number instead of the negative.
 
-- dup2(), creat(), sopen(), umask(), eof(), and access() added
+- dup2(), creat(), sopen(), umask(), eof(), and access() added.
 
 - File sharing, permission mode and additional open flags (O_TEMPORARY, O_SHORT_LIVED, O_DIRECT,
   O_SEQUENTIAL, O_RANDOM) implemented for smbfs.
 
-- tell() did not correctly return the file position. It just flushed the file. This problem
-  has been fixed.
+- tell() did not correctly return the file position. It just flushed the file. This has been fixed and
+  tell() now returns the file position.
 
-- vfs and smbfs now supports large files (>2GB)
+- vfs and smbfs now supports large files (>2GB).
 
-- stat64(), fstat64(), tell64(), lseek64() and chsize64() added to os interface
+- stat64(), fstat64(), tell64(), lseek64() and chsize64() added to os interface.

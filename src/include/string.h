@@ -94,7 +94,7 @@ char *strcat(char *, const char *);
 int strcmp(const char *, const char *);
 size_t strlen(const char *);
 
-////////
+// TODO: move to stdio.h
 
 int vsprintf(char *buf, const char *fmt, va_list args);
 int sprintf(char *buf, const char *fmt, ...);
