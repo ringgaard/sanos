@@ -450,6 +450,50 @@ int cmd_grabcon(int argc, char *argv[])
   return 0;
 }
 
+int cmd_ifconfig(int argc, char *argv[])
+{
+  int sock;
+  struct ifcfg iflist[16];
+  int n, i;
+
+  if (peb->hostname)       printf("Host Name .... : %s\n", peb->hostname);
+  if (peb->default_domain) printf("Domain Name .. : %s\n", peb->default_domain);
+
+  sock = socket(AF_INET, SOCK_DGRAM, 0);
+  if (sock < 0) sock;
+
+  n = ioctl(sock, SIOIFLIST, iflist, sizeof iflist);
+  if (n < 0)
+  {
+    close(sock);
+    return n;
+  }
+
+  for (i = 0; i < n; i++)
+  {
+    struct sockaddr_in *addr = ((struct sockaddr_in *) &iflist[i].addr);
+    struct sockaddr_in *gw = ((struct sockaddr_in *) &iflist[i].gw);
+    struct sockaddr_in *mask = ((struct sockaddr_in *) &iflist[i].netmask);
+    struct sockaddr_in *bcast = ((struct sockaddr_in *) &iflist[i].broadcast);
+
+    printf("Network interface %s\n", iflist[i].name);
+    printf("  IP Address ......... : %a\n", inet_ntoa(addr->sin_addr));
+    printf("  Subnet Mask ........ : %a\n", inet_ntoa(mask->sin_addr));
+    printf("  Default Gateway .... : %a\n", inet_ntoa(gw->sin_addr));
+    printf("  Broadcast Address .. : %a\n", inet_ntoa(bcast->sin_addr));
+    //printf("  Physical Address ... : %a\n");
+    printf("  Flags .............. :");
+    if (iflist[i].flags & IFCFG_UP) printf(" UP");
+    if (iflist[i].flags & IFCFG_DHCP) printf(" DHCP");
+    if (iflist[i].flags & IFCFG_DEFAULT) printf(" DEFAULT");
+    if (iflist[i].flags & IFCFG_LOOPBACK) printf(" LOOPBACK");
+    printf("\n");
+  }
+
+  close(sock);
+  return 0;
+}
+
 int cmd_heapstat(int argc, char *argv[])
 {
   struct mallinfo m;
@@ -1345,6 +1389,7 @@ struct command cmdtab[] =
   {"dump",     cmd_dump,     "Display file in hex format"},
   {"exit",     NULL,         "Exit shell"},
   {"grabcon",  cmd_grabcon,  "Grab the main console file descriptors"},
+  {"ifconfig", cmd_ifconfig, "Display network interface configuration"},
   {"heapstat", cmd_heapstat, "Display heap statistics"},
   {"help",     cmd_help,     "This help"},
   {"httpget",  cmd_httpget,  "Retrieve file via http"},
