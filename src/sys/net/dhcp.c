@@ -1035,7 +1035,7 @@ static err_t dhcp_create_request(struct dhcp_state *state)
   state->msg_out->htype = DHCP_HTYPE_ETHER;
   state->msg_out->hlen = ETHER_ADDR_LEN;
   state->msg_out->xid = htonl(state->xid);
-  state->msg_out->ciaddr.s_addr = state->netif->ip_addr.addr;
+  state->msg_out->ciaddr.s_addr = state->netif->ipaddr.addr;
   for (i = 0; i < ETHER_ADDR_LEN; i++) state->msg_out->chaddr[i] = state->netif->hwaddr.addr[i];
   state->msg_out->cookie = htonl(0x63825363);
   state->options_out_len = 0;

@@ -360,8 +360,13 @@ static void __cdecl trap(unsigned long args)
   h = &intrhndlr[ctxt->traptype];
   h->handler(ctxt, h->arg);
 
-  // If we interrupted a user mode context, dispatch DPC's now
-  if (usermode(ctxt)) dispatch_dpc_queue();
+  // If we interrupted a user mode context, dispatch DPC's now 
+  // and check for quantum expiry.
+  if (usermode(ctxt)) 
+  {
+    check_dpc_queue();
+    check_preempt();
+  }
 
   // Restore context
   t->ctxt = prevctxt;

@@ -33,7 +33,7 @@ int ip_ownaddr(struct ip_addr *addr)
   
   for (netif = netif_list; netif != NULL; netif = netif->next)
   {
-    if (!ip_addr_isany(addr) && ip_addr_cmp(addr, &netif->ip_addr)) 
+    if (!ip_addr_isany(addr) && ip_addr_cmp(addr, &netif->ipaddr)) 
       return 1;
   }
 
@@ -55,7 +55,7 @@ struct netif *ip_route(struct ip_addr *dest)
   
   for (netif = netif_list; netif != NULL; netif = netif->next)
   {
-    if (ip_addr_maskcmp(dest, &netif->ip_addr, &netif->netmask)) 
+    if (ip_addr_maskcmp(dest, &netif->ipaddr, &netif->netmask)) 
       return netif;
   }
 
@@ -173,10 +173,10 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
   // Is this packet for us?
   for (netif = netif_list; netif != NULL; netif = netif->next) 
   {
-    if (ip_addr_isany(&netif->ip_addr) ||
-        ip_addr_cmp(&iphdr->dest, &netif->ip_addr) ||
+    if (ip_addr_isany(&netif->ipaddr) ||
+        ip_addr_cmp(&iphdr->dest, &netif->ipaddr) ||
        (ip_addr_isbroadcast(&iphdr->dest, &netif->netmask) &&
-	ip_addr_maskcmp(&iphdr->dest, &netif->ip_addr, &netif->netmask)) ||
+	ip_addr_maskcmp(&iphdr->dest, &netif->ipaddr, &netif->netmask)) ||
         ip_addr_cmp(&iphdr->dest, IP_ADDR_BROADCAST)) 
           break;
   }
@@ -285,7 +285,7 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
     IPH_ID_SET(iphdr, htons(ip_id));
 
     if (ip_addr_isany(src))
-      ip_addr_set(&iphdr->src, &netif->ip_addr);
+      ip_addr_set(&iphdr->src, &netif->ipaddr);
     else
       ip_addr_set(&iphdr->src, src);
 

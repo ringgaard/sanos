@@ -10,8 +10,7 @@
 
 #define DEFAULT_STACK_SIZE (1 * M)
 
-int resched = 0;
-int idle = 0;
+int preempt = 0;
 int in_dpc = 0;
 unsigned long dpc_time = 0;
 unsigned long dpc_total = 0;
@@ -19,13 +18,14 @@ unsigned long dpc_total = 0;
 struct thread *idle_thread;
 struct thread *ready_queue_head[THREAD_PRIORITY_LEVELS];
 struct thread *ready_queue_tail[THREAD_PRIORITY_LEVELS];
-
 struct thread *threadlist;
-struct dpc *dpc_queue;
+
+struct dpc *dpc_queue_head;
+struct dpc *dpc_queue_tail;
 
 struct task_queue sys_task_queue;
 
-__declspec(naked) void context_switch(struct thread *t)
+__declspec(naked) void switch_context(struct thread *t)
 {
   __asm
   {
@@ -106,13 +106,61 @@ void enter_wait(int reason)
 
 void mark_thread_ready(struct thread *t)
 {
-  t->state = THREAD_STATE_READY;
-  t->next_ready = NULL;
+  int prio = t->priority;
 
-  if (ready_queue_tail[t->priority] != NULL) ready_queue_tail[t->priority]->next_ready = t;
-  if (ready_queue_head[t->priority] == NULL) ready_queue_head[t->priority] = t;
-  ready_queue_tail[t->priority] = t;
-  resched = 1;
+  // Set thread state to ready
+  t->state = THREAD_STATE_READY;
+
+  if (t->quantum > 0)
+  {
+    // Thread has some quantum left. Insert it at the head of the
+    // ready queue for its priority.
+
+    t->next_ready = ready_queue_head[prio];
+    if (ready_queue_tail[prio] == NULL) ready_queue_tail[prio] = t;
+    ready_queue_head[prio] = t;
+  }
+  else
+  {
+    // The thread has exhausted its CPU quantum. Assign a new quantum 
+    // and insert it at the end of the ready queue for its priority.
+    
+    t->quantum = DEFAULT_QUANTUM;
+    
+    t->next_ready = NULL;
+    if (ready_queue_tail[prio] != NULL) ready_queue_tail[prio]->next_ready = t;
+    if (ready_queue_head[prio] == NULL) ready_queue_head[prio] = t;
+    ready_queue_tail[prio] = t;
+  }
+}
+
+void preempt_thread()
+{
+  struct thread *t = self();
+  int prio = t->priority;
+
+kprintf("sched: preempt thread %d\n", t->id);
+
+  // Enable interrupt in case we have been called in interupt context
+  sti();
+
+  // Count number of preemptions
+  t->preempts++;
+
+  // Thread is ready to run 
+  t->state = THREAD_STATE_READY;
+
+  // Assign a new quantum
+  t->quantum = DEFAULT_QUANTUM;
+    
+  // Insert thread at the end of the ready queue for its priority.
+  t->next_ready = NULL;
+  if (ready_queue_tail[prio] != NULL) ready_queue_tail[prio]->next_ready = t;
+  if (ready_queue_head[prio] == NULL) ready_queue_head[prio] = t;
+  ready_queue_tail[prio] = t;
+
+  // Relinquish CPU
+  dispatch();
 }
 
 void mark_thread_running()
@@ -128,16 +176,20 @@ void mark_thread_running()
 
   // Set FS register to point to current TIB
   tib = t->tib;
-  seg = &syspage->gdt[GDT_TIB];
-  seg->base_low = (unsigned short)((unsigned long) tib & 0xFFFF);
-  seg->base_med = (unsigned char)(((unsigned long) tib >> 16) & 0xFF);
-  seg->base_high = (unsigned char)(((unsigned long) tib >> 24) & 0xFF);
-
-  // Reload FS register
-  __asm
+  if (tib)
   {
-    mov ax, SEL_TIB + SEL_RPL3
-    mov fs, ax
+    // Update descriptor
+    seg = &syspage->gdt[GDT_TIB];
+    seg->base_low = (unsigned short)((unsigned long) tib & 0xFFFF);
+    seg->base_med = (unsigned char)(((unsigned long) tib >> 16) & 0xFF);
+    seg->base_high = (unsigned char)(((unsigned long) tib >> 24) & 0xFF);
+
+    // Reload FS register
+    __asm
+    {
+      mov ax, SEL_TIB + SEL_RPL3
+      mov fs, ax
+    }
   }
 }
 
@@ -472,8 +524,10 @@ void queue_irq_dpc(struct dpc *dpc, dpcproc_t proc, void *arg)
 
   dpc->proc = proc;
   dpc->arg = arg;
-  dpc->next = dpc_queue;
-  dpc_queue = dpc;
+  dpc->next = NULL;
+  if (dpc_queue_tail) dpc_queue_tail->next = dpc;
+  dpc_queue_tail = dpc;
+  if (!dpc_queue_head) dpc_queue_head = dpc;
   dpc->flags |= DPC_QUEUED;
 }
 
@@ -496,10 +550,11 @@ void dispatch_dpc_queue()
   {
     // Get next deferred procedure call
     cli();
-    if (dpc_queue)
+    if (dpc_queue_head)
     {
-      dpc = dpc_queue;
-      dpc_queue = dpc->next;
+      dpc = dpc_queue_head;
+      dpc_queue_head = dpc->next;
+      if (dpc_queue_tail == dpc) dpc_queue_tail = NULL;
     }
     else
       dpc = NULL;
@@ -527,20 +582,21 @@ void dispatch_dpc_queue()
 void dispatch()
 {
   int prio;
+  struct thread *curthread = self();
   struct thread *t;
 
-  // Clear rescheduling flag
-  resched = 0;
+  // Clear preemption flag
+  preempt = 0;
 
   // Execute all queued DPC's
-  dispatch_dpc_queue();
+  check_dpc_queue();
 
   // Find next thread to run
   while (1)
   {
     prio = THREAD_PRIORITY_LEVELS - 1;
-    while (ready_queue_head[prio] == 0 && prio > 0) prio--;
-    t = ready_queue_head[prio];
+    t = NULL;
+    while ((t = ready_queue_head[prio]) == NULL && prio > 0) prio--;
     if (t == NULL) panic("No thread ready to run");
 
     // Remove thread from ready queue
@@ -553,17 +609,17 @@ void dispatch()
   }
 
   // If current thread has been selected to run again then just return
-  if (t == self()) return;
+  if (t == curthread) return;
 
   // Save fpu state if fpu has been used
-  if (self()->flags & THREAD_FPU_ENABLED)
+  if (curthread->flags & THREAD_FPU_ENABLED)
   {
-    fpu_disable(self()->fpustate);
+    fpu_disable(curthread->fpustate);
     t->flags &= ~THREAD_FPU_ENABLED;
   }
 
   // Switch to new thread
-  context_switch(t);
+  switch_context(t);
 
   // Mark new thread as running
   mark_thread_running();
@@ -582,33 +638,12 @@ void idle_task()
 {
   while (1) 
   {
-    //idle = 1;
+    mark_thread_ready(self());
+    dispatch();
+
+    //check_dpc_queue();
+    //sti();
     //halt();
-    //idle = 0;
-
-    if (resched)
-    {
-      mark_thread_ready(self());
-      dispatch();
-    }
-
-    dispatch_dpc_queue();
-  }
-}
-
-void update_thread_times(struct context *ctxt)
-{
-  struct thread *t;
-
-  if (in_dpc)
-    dpc_time++;
-  else
-  {
-    t = self();
-    if (ctxt->eip < OSBASE)
-      t->utime++;
-    else
-      t->stime++;
   }
 }
 
@@ -628,9 +663,9 @@ static int threads_proc(struct proc_file *pf, void *arg)
     else
       state = threadstatename[t->state];
 
-    pprintf(pf,"%3d %p %4d %-6s %3d  %p %1d %2d%7d%7d%7d %s\n",
+    pprintf(pf,"%3d %p %4d %-6s %3d  %p %1d %2d%7d%7d%7d/%d %s\n",
             t->id, t, t->hndl, state, t->priority, t->tib, 
-	    t->suspend_count, t->object.handle_count, t->utime, t->stime, t->context_switches, t->name ? t->name : "");
+	    t->suspend_count, t->object.handle_count, t->utime, t->stime, t->context_switches, t->preempts, t->name ? t->name : "");
 
     t = t->next;
     if (t == threadlist) break;
@@ -649,8 +684,7 @@ static int dpcs_proc(struct proc_file *pf, void *arg)
 void init_sched()
 {
   // Initialize scheduler
-  resched = 0;
-  dpc_queue = NULL;
+  dpc_queue_head = dpc_queue_tail = NULL;
   memset(ready_queue_head, 0, sizeof(ready_queue_head));
   memset(ready_queue_tail, 0, sizeof(ready_queue_tail));
 

@@ -429,7 +429,7 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
   // If we don't have a local IP address, we get it from netif
   if (ip_addr_isany(&pcb->local_ip)) 
   {
-    ip_addr_set(&pcb->local_ip, &netif->ip_addr);
+    ip_addr_set(&pcb->local_ip, &netif->ipaddr);
   }
 
   pcb->rtime = 0;

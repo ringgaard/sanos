@@ -201,7 +201,7 @@ void arp_ip_input(struct netif *netif, struct pbuf *p)
   
   // Only insert/update an entry if the source IP address of the
   // incoming IP packet comes from a host on the local network.
-  if (!ip_addr_maskcmp(&hdr->ip.src, &netif->ip_addr, &netif->netmask)) return;
+  if (!ip_addr_maskcmp(&hdr->ip.src, &netif->ipaddr, &netif->netmask)) return;
 
   add_arp_entry(&hdr->ip.src, &hdr->eth.src);
 }
@@ -223,12 +223,12 @@ struct pbuf *arp_arp_input(struct netif *netif, struct eth_addr *ethaddr, struct
   {
     case ARP_REQUEST:
       // ARP request. If it asked for our address, we send out a reply
-      if (ip_addr_cmp(&hdr->dipaddr, &netif->ip_addr)) 
+      if (ip_addr_cmp(&hdr->dipaddr, &netif->ipaddr)) 
       {
 	hdr->opcode = htons(ARP_REPLY);
 
 	ip_addr_set(&hdr->dipaddr, &hdr->sipaddr);
-	ip_addr_set(&hdr->sipaddr, &netif->ip_addr);
+	ip_addr_set(&hdr->sipaddr, &netif->ipaddr);
 
 	for (i = 0; i < 6; i++)
 	{
@@ -251,7 +251,7 @@ struct pbuf *arp_arp_input(struct netif *netif, struct eth_addr *ethaddr, struct
 
     case ARP_REPLY:    
       // ARP reply. We insert or update the ARP table.
-      if (ip_addr_cmp(&hdr->dipaddr, &netif->ip_addr)) 
+      if (ip_addr_cmp(&hdr->dipaddr, &netif->ipaddr)) 
       {
 	add_arp_entry(&hdr->sipaddr, &hdr->shwaddr);
 	dhcp_arp_reply(&hdr->sipaddr);
@@ -296,7 +296,7 @@ struct pbuf *arp_query(struct netif *netif, struct eth_addr *ethaddr, struct ip_
   }
   
   ip_addr_set(&hdr->dipaddr, ipaddr);
-  ip_addr_set(&hdr->sipaddr, &netif->ip_addr);
+  ip_addr_set(&hdr->sipaddr, &netif->ipaddr);
 
   hdr->hwtype = htons(HWTYPE_ETHERNET);
   ARPH_HWLEN_SET(hdr, 6);

@@ -62,6 +62,8 @@ void timer_dpc(void *arg)
 
 void timer_handler(struct context *ctxt, void *arg)
 {
+  struct thread *t;
+
   // Update timer clock
   clocks += CLOCKS_PER_TICK;
 
@@ -77,7 +79,20 @@ void timer_handler(struct context *ctxt, void *arg)
   }
 
   // Update thread times
-  update_thread_times(ctxt);
+  t = self();
+  if (in_dpc)
+    dpc_time++;
+  else
+  {
+    if (ctxt->eip < OSBASE)
+      t->utime++;
+    else
+      t->stime++;
+  }
+
+  // Adjust thread quantum
+  t->quantum--;
+  if (t->quantum <= 0) preempt = 1;
 
   // Queue timer DPC
   queue_irq_dpc(&timerdpc, timer_dpc, NULL);

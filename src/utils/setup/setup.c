@@ -105,7 +105,6 @@ int install_loader()
   ldr_size = size / SECTORSIZE;
   if (size > (int) super->reserved_blocks * blocksize) panic("loader too big");
 
-
   // Install loader
   rc = lseek(dev, super->first_reserved_block * blocksize, SEEK_SET);
   if (rc < 0) return rc;

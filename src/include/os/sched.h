@@ -13,6 +13,7 @@ typedef void (*threadproc_t)(void *arg);
 typedef void (*dpcproc_t)(void *arg);
 typedef void (*taskproc_t)(void *arg);
 
+#define DEFAULT_QUANTUM          12
 #define THREAD_PRIORITY_LEVELS   8
 
 #define PAGES_PER_TCB     2
@@ -71,12 +72,19 @@ struct kernel_context
   char stack[0];
 };
 
-extern int resched;
-extern int idle;
 extern struct thread *idlethread;
 extern struct thread *threadlist;
 extern struct task_queue sys_task_queue;
 
+extern struct dpc *dpc_queue_head;
+extern struct dpc *dpc_queue_tail;
+
+extern int in_dpc;
+extern int preempt;
+extern unsigned long dpc_time;
+extern unsigned long dpc_total;
+
+#if 0
 __inline __declspec(naked) struct thread *self()
 {
   __asm
@@ -85,6 +93,13 @@ __inline __declspec(naked) struct thread *self()
     and eax, TCBMASK
     ret
   }
+}
+#endif
+
+__inline struct thread *self()
+{
+  unsigned long stkvar;
+  return (struct thread *) (((unsigned long) &stkvar) & TCBMASK);
 }
 
 void mark_thread_running();
@@ -116,10 +131,19 @@ krnlapi void queue_irq_dpc(struct dpc *dpc, dpcproc_t proc, void *arg);
 void idle_task();
 krnlapi void yield();
 void dispatch_dpc_queue();
+void preempt_thread();
 krnlapi void dispatch();
 
-void update_thread_times(struct context *ctxt);
-
 void init_sched();
+
+__inline void check_dpc_queue()
+{
+  if (dpc_queue_head) dispatch_dpc_queue();
+}
+
+__inline void check_preempt()
+{
+  if (preempt) preempt_thread();
+}
 
 #endif

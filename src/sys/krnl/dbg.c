@@ -39,7 +39,7 @@ static void dbg_send(void *buffer, int count)
 
   while (count-- > 0)
   {
-    while ((_inp(DEBUGPORT + 5) & 0x20) == 0) dispatch_dpc_queue();
+    while ((_inp(DEBUGPORT + 5) & 0x20) == 0) check_dpc_queue();
     _outp(DEBUGPORT, *p++);
   }
 }
@@ -50,7 +50,7 @@ static void dbg_recv(void *buffer, int count)
 
   while (count-- > 0)
   {
-    while ((_inp(DEBUGPORT + 5) & 0x01) == 0) dispatch_dpc_queue();
+    while ((_inp(DEBUGPORT + 5) & 0x01) == 0) check_dpc_queue();
     *p++ = _inp(DEBUGPORT) & 0xFF;
   }
 }

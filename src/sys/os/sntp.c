@@ -161,6 +161,8 @@ void init_sntpd()
   struct section *sect;
   struct property *prop;
   
+  if (peb->ipaddr.s_addr == INADDR_ANY) return;
+
   idx = 0;
   if (peb->ntp_server1.s_addr != INADDR_ANY)
   {

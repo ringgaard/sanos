@@ -585,7 +585,7 @@ static void serial_handler(struct context *ctxt, void *arg)
 
     case IIR_RXTOUT:
     case IIR_RXRDY:
-      // Receiver ready, drain FIDO
+      // Receiver ready, drain FIFO
       serial_receive(sp);
       break;
 

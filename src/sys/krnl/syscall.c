@@ -2265,9 +2265,11 @@ struct syscall_entry syscalltab[] =
 int syscall(int syscallno, char *params)
 {
   int rc;
+  struct thread *t = self();
+
   struct syscall_context *sysctxt = (struct syscall_context *) &syscallno;
 
-  self()->uctxt = (char *) sysctxt + offsetof(struct syscall_context, traptype);
+  t->uctxt = (char *) sysctxt + offsetof(struct syscall_context, traptype);
 
 #if 0
   {
@@ -2290,9 +2292,10 @@ int syscall(int syscallno, char *params)
   }
 #endif
 
-  dispatch_dpc_queue();
+  check_dpc_queue();
+  check_preempt();
 
-  self()->uctxt = NULL;
+  t->uctxt = NULL;
 
   return rc;
 }

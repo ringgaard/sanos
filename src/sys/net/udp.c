@@ -184,7 +184,7 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
   }
 
   if (ip_addr_isany(&pcb->local_ip)) 
-    src_ip = &netif->ip_addr;
+    src_ip = &netif->ipaddr;
   else 
     src_ip = &pcb->local_ip;
   

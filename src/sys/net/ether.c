@@ -48,7 +48,7 @@ struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr,
     if (state) wait_for_object(&state->binding_complete, 10000);
   }
 
-  kprintf("%s: device %s addr %a mask %a gw %a\n", name, devname, &netif->ip_addr, &netif->netmask, &netif->gw);
+  kprintf("%s: device %s addr %a mask %a gw %a\n", name, devname, &netif->ipaddr, &netif->netmask, &netif->gw);
 
   return netif;
 }
@@ -113,7 +113,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   } 
   else 
   {
-    if (ip_addr_maskcmp(ipaddr, &netif->ip_addr, &netif->netmask))
+    if (ip_addr_maskcmp(ipaddr, &netif->ipaddr, &netif->netmask))
     {
       // Use destination IP address if the destination is on the same subnet as we are.
       queryaddr = ipaddr;

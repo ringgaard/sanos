@@ -303,7 +303,7 @@ static int fd_recalibrate(struct fd *fd)
 {
   struct fdresult result;
 
-  //kprintf("fd: recalibrate\n");
+  kprintf("fd: recalibrate\n");
   reset_event(&fd->fdc->intr);
   fd_command(CMD_RECAL);
   fd_command(0x00);

@@ -398,6 +398,25 @@ static void idle_sleep(int ms)
   printf("Time is %04d/%02d/%02d %02d:%02d:%02d Clock is %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, c);
 }
 
+static void busy_loop(int ms)
+{
+  time_t t;
+  struct tm tm;
+  clock_t c;
+
+  t = time();
+  c = clock();
+  gmtime(&t, &tm);
+  printf("Time is %04d/%02d/%02d %02d:%02d:%02d Clock is %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, c);
+
+  while (clock() < c + ms);
+
+  t = time();
+  c = clock();
+  gmtime(&t, &tm);
+  printf("Time is %04d/%02d/%02d %02d:%02d:%02d Clock is %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, c);
+}
+
 static void start_program(int argc, char **argv)
 {
   char *pgm;
@@ -878,109 +897,6 @@ static void download(int argc, char **argv)
   free(files);
 }
 
-#if 0
-static void http(int argc, char **argv)
-{
-  char *server;
-  char *path;
-  char *filename;
-
-  struct hostent *hp;
-  struct sockaddr_in sin;
-  int s;
-  int rc;
-  int n;
-  //int f;
-  int total;
-  clock_t t;
-  char buf[1024];
-
-  server = "192.168.12.1";
-  path = "/";
-  filename = "http.txt";
-  
-  if (argc >= 2) server = argv[1];
-  if (argc >= 3) path = argv[2];
-  if (argc >= 4) filename = argv[3];
-
-  //f = open(filename, O_CREAT);
-  //if (f < 0)
-  //{
-  //  printf("%s: error %d creating file\n", filename, f);
-  //  return;
-  //}
-
-  hp = gethostbyname(server);
-  if (!hp)
-  {
-    printf("%s: host not found\n", server);
-    return;
-  }
-
-  printf("address: %s\n", inet_ntoa(*(struct in_addr *) hp->h_addr_list[0]));
-
-  s = socket(AF_INET, SOCK_STREAM, 0);
-  if (s < 0)
-  {
-    printf("socket: error %d\n", s);
-    return;
-  }
-
-  memset(&sin, 0, sizeof(sin));
-  sin.sin_family = AF_INET;
-  memcpy(&sin.sin_addr, hp->h_addr_list[0], hp->h_length);
-  sin.sin_port = htons(80);
-
-  printf("connect to %s port %d\n", inet_ntoa(sin.sin_addr), ntohs(sin.sin_port));
-  rc = connect(s, (struct sockaddr *) &sin, sizeof(sin));
-  if (rc  < 0)
-  {
-    printf("connect: error %d\n", rc);
-    return;
-  }
-
-  printf("connected\n");
-
-  sprintf(buffer, "GET %s HTTP/1.0\r\n\r\n", path);
-  rc = send(s, buffer, strlen(buffer), 0);
-  if (rc < 0)
-  {
-    printf("send: error %d\n", rc);
-    return;
-  }
-
-  while (readline(s, buf) >= 0)
-  {
-    if (!*buf) break;
-    printf("HDR: %s\n", buf);
-  }
-
-  printf("receive data\n");
-  memset(buffer, 0, sizeof buffer);
-  total = 0;
-  t = clock();
-  while ((n = recv(s, buffer, 4096, 0)) > 0)
-  {
-    total += n;
-    //write(f, buffer, n);
-    //write(stdout, buffer, n);
-    //printf("[%d]", n);
-  }
-  t = clock() - t;
-  printf("\n");
-
-  if (rc < 0)
-  {
-    printf("recv: error %d\n", n);
-  }
-  printf("received %d bytes, %d ms\n", total, t);
-
-  printf("closing\n");
-  close(s);
-  //close(f);
-}
-#endif
-
 static void test(int argc, char **argv)
 {
   struct servent *sp;
@@ -1192,6 +1108,8 @@ void shell()
 	nop();
       else if (strcmp(argv[0], "sleep") == 0)
 	idle_sleep(atoi(argv[1]));
+      else if (strcmp(argv[0], "loop") == 0)
+	busy_loop(atoi(argv[1]));
       else if (strcmp(argv[0], "lookup") == 0 || strcmp(argv[0], "nslookup") == 0)
 	lookup(argv[1]);
       else if (strcmp(argv[0], "http") == 0)
@@ -1302,7 +1220,7 @@ void __stdcall telnetd(void *arg)
 int __stdcall main(hmodule_t hmod, char *cmdline, void *env)
 {
   //beginthread(shelltask, 0, "/dev/com4", 0, NULL);
-  beginthread(telnetd, 0, NULL, 0, NULL);
+  if (peb->ipaddr.s_addr != INADDR_ANY) beginthread(telnetd, 0, NULL, 0, NULL);
   shell();
   return 0;
 }

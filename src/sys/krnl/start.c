@@ -220,7 +220,7 @@ void init_net()
   if (nic == NULL) return;
 
   netif_set_default(nic);
-
+  peb->ipaddr.s_addr = nic->ipaddr.addr;
   if (peb->primary_dns.s_addr != INADDR_ANY)
   {
     kprintf("dns: primary %a", &peb->primary_dns);

@@ -99,6 +99,7 @@ struct thread
   struct object object;
 
   int state;
+  int quantum;
   int wait_reason;
   int flags;
   int priority;
@@ -109,9 +110,11 @@ struct thread
   void *entrypoint;
   int exitcode;
   char *name;
+  
   unsigned long utime;
   unsigned long stime;
   unsigned long context_switches;
+  unsigned long preempts;
 
   struct thread *next;
   struct thread *prev;
