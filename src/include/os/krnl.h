@@ -36,7 +36,8 @@
 
 #include <os.h>
 
-#include <types.h>
+#include <sys/types.h>
+#include <stddef.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
@@ -95,7 +96,6 @@
 #include <os/syscall.h>
 
 #include <net/net.h>
-
 
 #if _MSC_VER < 1300
 #pragma warning(disable : 4761)

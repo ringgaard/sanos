@@ -32,6 +32,7 @@
 // 
 
 #include <os.h>
+#include <sys/types.h>
 #include <win32.h>
 #include <string.h>
 #include <inifile.h>

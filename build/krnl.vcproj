@@ -405,9 +405,6 @@
 			<File
 				RelativePath="..\src\include\time.h">
 			</File>
-			<File
-				RelativePath="..\src\include\types.h">
-			</File>
 			<Filter
 				Name="include/os"
 				Filter="">
@@ -564,6 +561,13 @@
 				</File>
 				<File
 					RelativePath="..\src\include\net\udp.h">
+				</File>
+			</Filter>
+			<Filter
+				Name="include/sys"
+				Filter="">
+				<File
+					RelativePath="..\src\include\sys\types.h">
 				</File>
 			</Filter>
 		</Filter>

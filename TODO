@@ -71,6 +71,7 @@ IDEAS for new features
 
 - Implement more complete ANSI C runtime library
     - use tib for all static buffers to provide reentrant library
+    - implement _r methods for reentrant version that does not use static buffers
 
 - Thread groups
 

@@ -31,13 +31,36 @@
 // SUCH DAMAGE.
 // 
 
+#if _MSC_VER > 1000
+#pragma once
+#endif
+
 #ifndef TIME_H
 #define TIME_H
 
-#ifndef SANOS
+#ifndef NULL
+#define NULL ((void *) 0)
+#endif
+
+#ifndef _TIME_T_DEFINED
+#define _TIME_T_DEFINED
 typedef long time_t;
+#endif
+
+#ifndef _CLOCK_T_DEFINED
+#define _CLOCK_T_DEFINED
+typedef long clock_t;
+#endif
+
+#ifndef _SIZE_T_DEFINED
+#define _SIZE_T_DEFINED
 typedef unsigned int size_t;
 #endif
+
+#define CLOCKS_PER_SEC  1000
+
+#ifndef _TM_DEFINED
+#define _TM_DEFINED
 
 struct tm
 {
@@ -52,17 +75,37 @@ struct tm
   int tm_isdst;			// Daylight Saving Time flag
 };
 
+#endif
+
+#ifndef _TIMEVAL_DEFINED
+#define _TIMEVAL_DEFINED
+
 struct timeval 
 {
   long tv_sec;		        // Seconds
   long tv_usec;		        // Microseconds
 };
 
+#endif
+
+#ifndef _TIMEZONE_DEFINED
+#define _TIMEZONE_DEFINED
+
 struct timezone 
 {
   int tz_minuteswest;	        // Minutes west of Greenwich
   int tz_dsttime;	        // Type of daylight saving correction
 };
+
+#endif
+
+// TODO: libc implement
+extern int _daylight;     // Non-zero if daylight savings time is used
+extern long _dstbias;     // Offset for Daylight Saving Time
+extern long _timezone;    // difference in seconds between GMT and local time
+extern char *_tzname[2];  // Standard/daylight savings time zone names
+
+#define difftime(time2, time1) ((double)((time2) - (time1)))
 
 struct tm *_gmtime(const time_t *timer, struct tm *tmbuf);
 struct tm *_localtime(const time_t *timer, struct tm *tmbuf);
@@ -73,6 +116,21 @@ struct tm *localtime(const time_t *timer);
 time_t mktime(struct tm *tmbuf);
 
 size_t strftime(char *s, size_t maxsize, const char *format, const struct tm *t);
+
+#if 0
+// TODO: libc implement
+clock_t clock(void);
+time_t mktime(struct tm *tp);
+time_t time(time_t *tp);
+char *asctime(const struct tm *tp);
+char *ctime(const time_t *tp);
+struct tm *gmtime(const time_t *tp);
+struct tm *localtime(const time_t *tp);
+size_t strftime(char *string, size_t smax, const char *fmt, const struct tm *tp);
+char *_strdate(char *string);
+char *_strtime(char *string);
+void _tzset(void);
+#endif
 
 #endif
 

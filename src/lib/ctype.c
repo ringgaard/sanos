@@ -31,6 +31,7 @@
 // SUCH DAMAGE.
 // 
 
+#define _CTYPE_DISABLE_MACROS
 #include "ctype.h"
 
 unsigned short _ctype[257] = 
@@ -177,8 +178,6 @@ int _isctype(int c, int mask)
     return 0;
 }
 
-#ifdef NO_CTYPE_MACROS
-
 int isalpha(int c)
 {
   return _pctype[c] & (_UPPER | _LOWER);
@@ -249,5 +248,3 @@ int tolower(int c)
   else
     return c;
 }
-
-#endif

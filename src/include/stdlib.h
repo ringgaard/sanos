@@ -31,14 +31,46 @@
 // SUCH DAMAGE.
 // 
 
+#if _MSC_VER > 1000
+#pragma once
+#endif
+
 #ifndef STDLIB_H
 #define STDLIB_H
 
-#ifndef TYPES_H
-#include <types.h>
+#ifndef NULL
+#define NULL ((void *) 0)
 #endif
 
-#define offsetof(s, m) ((size_t)&(((s *) 0)->m))
+#define RAND_MAX     0x7fff
+
+#ifndef _SIZE_T_DEFINED
+#define _SIZE_T_DEFINED
+typedef unsigned int size_t;
+#endif
+
+#ifndef _DIV_T_DEFINED
+#define _DIV_T_DEFINED
+
+typedef struct _div_t 
+{
+  int quot;
+  int rem;
+} div_t;
+
+typedef struct _ldiv_t 
+{
+  long quot;
+  long rem;
+} ldiv_t;
+
+typedef struct _uldiv_t 
+{
+  unsigned long quot;
+  unsigned long rem;
+} uldiv_t;
+
+#endif
 
 int parse_args(char *args, char **argv);
 void free_args(int argc, char **argv);
@@ -67,5 +99,40 @@ unsigned long strtoul(const char *nptr, char **endptr, int ibase);
 char *getenv(const char *option);
 
 void abort();
+
+#if 0
+// TODO: libc implement
+int abs(int n);
+double atof(const char *string);
+int atoi(const char *string);
+long atol(const char *string);
+int atexit(void(*func)(void));
+void *bsearch(const void *keyval, const void *base, size_t num, size_t width, int(*cmp) (const void *keyval, const void *elem));
+void  *calloc(size_t num, size_t size);
+div_t div(int numer, int denom);
+void exit(int status);
+void free(void *memblock);
+char *_getcmd(void);
+char *getenv(const char *varname);
+char *itoa(int value, char *string, int radix);
+long labs(long n);
+ldiv_t ldiv(long numer, long denom);
+char *ltoa(long value, char *string, int radix);
+void *malloc(size_t size);
+int putenv(const char *envptr);
+void qsort(void *base, size_t num, size_t width, int(*cmp) (const void *elem1, const void *elem2));
+int rand(void);
+void *realloc(void *memblock, size_t size);
+void srand(unsigned int seed);
+double strtod(const char *string, char **endptr);
+long strtol(const char *nptr, char **endptr, int base);
+unsigned long strtoul(const char *nptr, char **endptr, int base);
+int system(const char *command);
+uldiv_t uldiv(unsigned long numer, unsigned long denom);
+char *ultoa(unsigned long value, char *string, int radix);
+#endif
+
+#define max(a,b) (((a) > (b)) ? (a) : (b))
+#define min(a,b) (((a) < (b)) ? (a) : (b))
 
 #endif

@@ -32,10 +32,12 @@
 // 
 
 #include <os.h>
+#include <sys/types.h>
 #include <os/trap.h>
-#include <win32.h>
 #include <string.h>
+#include <time.h>
 #include <inifile.h>
+#include <win32.h>
 
 #define MAX_VADS        256
 

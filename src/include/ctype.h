@@ -31,6 +31,10 @@
 // SUCH DAMAGE.
 // 
 
+#if _MSC_VER > 1000
+#pragma once
+#endif
+
 #ifndef CTYPE_H
 #define CTYPE_H
 
@@ -48,14 +52,12 @@
 #define _HEX            0x80    // Hexadecimal digit
 
 #define _LEADBYTE       0x8000                      // Multibyte leadbyte
-#define _ALPHA          (0x0100 | _UPPER| _LOWER)  // Alphabetic character
+#define _ALPHA          (0x0100 | _UPPER| _LOWER)   // Alphabetic character
 
 
 extern unsigned short *_pctype; // pointer to table for char's
 
 int _isctype(int c, int mask);
-
-#ifdef NO_CTYPE_MACROS
 
 int isspace(int c);
 int isupper(int c);
@@ -72,7 +74,7 @@ int iscntrl(int c);
 int toupper(int c);
 int tolower(int c);
 
-#else
+#ifndef _CTYPE_DISABLE_MACROS
 
 #define isalpha(c)     (_pctype[c] & (_UPPER | _LOWER))
 #define isupper(c)     (_pctype[c] & _UPPER)

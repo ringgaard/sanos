@@ -34,6 +34,7 @@
 #include <os.h>
 #include <ctype.h>
 #include <string.h>
+#include <time.h>
 #include <inifile.h>
 
 static const char hex[] = "0123456789abcdef";

@@ -31,7 +31,7 @@
 // SUCH DAMAGE.
 // 
 
-#include <types.h>
+#include <sys/types.h>
 
 void *bsearch(const void *key, const void *base, size_t num, size_t width, int (__cdecl *compare)(const void *, const void *))
 {

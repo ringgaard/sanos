@@ -32,6 +32,7 @@
 // 
 
 #include <os.h>
+#include <stdarg.h>
 
 vsprintf(buffer, fmt, args);
 

@@ -1,7 +1,7 @@
 //
-// float.h
+// stddef.h
 //
-// Constants for floating point values
+// Definitions/declarations for common constants, types, variables
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -35,27 +35,36 @@
 #pragma once
 #endif
 
-#ifndef FLOAT_H
-#define FLOAT_H
+#ifndef STDDEF_H
+#define STDDEF_H
 
-#define FLT_RADIX     2
-#define FLT_ROUNDS    1
-#define FLT_DIG       6
-#define FLT_EPSILON   1.192092896e-07F
-#define FLT_MANT_DIG  24
-#define FLT_MAX       3.402823466e+38F
-#define FLT_MAX_EXP   38
-#define FLT_MIN       1.175494351e-38F
-#define FLT_MIN_EXP   (-37)
+#ifndef osapi
+#define osapi __declspec(dllimport)
+#endif
 
-#define DBL_DIG        15
-#define DBL_EPSILON    2.2204460492503131e-016
-#define DBL_MANT_DIG   53
-#define DBL_MAX        1.7976931348623158e+308
-#define DBL_MAX_EXP    308
-#define DBL_MIN        2.2250738585072014e-308
-#define DBL_MIN_EXP    (-307)
+#ifndef _SIZE_T_DEFINED
+#define _SIZE_T_DEFINED
+typedef unsigned int size_t;
+#endif
 
-void _fpreset();
+#ifndef NULL
+#define NULL ((void *) 0)
+#endif
+
+#ifndef KERNEL
+#ifndef errno
+osapi int *_errno();
+#define errno (*_errno())
+#endif
+#endif
+
+#ifndef _WCHAR_T_DEFINED
+typedef unsigned short wchar_t;
+#define _WCHAR_T_DEFINED
+#endif
+
+#ifndef offsetof
+#define offsetof(s, m) ((size_t)&(((s *) 0)->m))
+#endif
 
 #endif

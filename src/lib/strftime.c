@@ -31,7 +31,7 @@
 // SUCH DAMAGE.
 // 
 
-#include <types.h>
+#include <sys/types.h>
 #include <time.h>
 #include <string.h>
 

@@ -1,7 +1,7 @@
 //
-// float.h
+// signal.h
 //
-// Constants for floating point values
+// Signal handling
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -35,27 +35,27 @@
 #pragma once
 #endif
 
-#ifndef FLOAT_H
-#define FLOAT_H
+#ifndef SIGNAL_H
+#define SIGNAL_H
 
-#define FLT_RADIX     2
-#define FLT_ROUNDS    1
-#define FLT_DIG       6
-#define FLT_EPSILON   1.192092896e-07F
-#define FLT_MANT_DIG  24
-#define FLT_MAX       3.402823466e+38F
-#define FLT_MAX_EXP   38
-#define FLT_MIN       1.175494351e-38F
-#define FLT_MIN_EXP   (-37)
+// TODO: libc implement
+#if 0
+#define SIGINT          1
+#define SIGILL          2
+#define SIGFPE          3
+#define SIGSEGV         4
+#define SIGTERM         5
+#define SIGBREAK        6
+#define SIGABRT         7
 
-#define DBL_DIG        15
-#define DBL_EPSILON    2.2204460492503131e-016
-#define DBL_MANT_DIG   53
-#define DBL_MAX        1.7976931348623158e+308
-#define DBL_MAX_EXP    308
-#define DBL_MIN        2.2250738585072014e-308
-#define DBL_MIN_EXP    (-307)
+typedef void (*PFSIG)(int);
 
-void _fpreset();
+#define SIG_DFL ((PFSIG)0)
+#define SIG_IGN ((PFSIG)1)
+#define SIG_ERR ((PFSIG)-1)
+
+int raise(int sig);
+PFSIG signal(int, PFSIG);
+#endif
 
 #endif

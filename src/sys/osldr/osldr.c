@@ -32,6 +32,7 @@
 // 
 
 #include <os.h>
+#include <sys/types.h>
 
 #include <os/pdir.h>
 #include <os/tss.h>

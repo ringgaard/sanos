@@ -31,6 +31,10 @@
 // SUCH DAMAGE.
 // 
 
+#if _MSC_VER > 1000
+#pragma once
+#endif
+
 #ifndef OS_H
 #define OS_H
 
@@ -38,10 +42,7 @@
 #define SANOS
 #endif
 
-#include <types.h>
-#include <stdarg.h>
-#include <time.h>
-
+#ifndef osapi
 #ifdef OS_LIB
 #define osapi __declspec(dllexport)
 #else
@@ -51,11 +52,113 @@
 #define osapi __declspec(dllimport)
 #endif
 #endif
+#endif
 
 #ifdef KRNL_LIB
 #define krnlapi __declspec(dllexport)
 #else
 #define krnlapi __declspec(dllimport)
+#endif
+
+//
+// Basic types
+//
+
+#ifndef _TIME_T_DEFINED
+#define _TIME_T_DEFINED
+typedef long time_t;
+#endif
+
+#ifndef _CLOCK_T_DEFINED
+#define _CLOCK_T_DEFINED
+typedef long clock_t;
+#endif
+
+#ifndef _SIZE_T_DEFINED
+#define _SIZE_T_DEFINED
+typedef unsigned int size_t;
+#endif
+
+#ifndef _HANDLE_T_DEFINED
+#define _HANDLE_T_DEFINED
+typedef int handle_t;
+#endif
+
+#ifndef _TID_T_DEFINED
+#define _TID_T_DEFINED
+typedef unsigned long tid_t;
+#endif
+
+#ifndef _PID_T_DEFINED
+#define _PID_T_DEFINED
+typedef unsigned long pid_t;
+#endif
+
+#ifndef _TLS_T_DEFINED
+#define _TLS_T_DEFINED
+typedef unsigned long tls_t;
+#endif
+
+#ifndef _HMODULE_T_DEFINED
+#define _HMODULE_T_DEFINED
+typedef void *hmodule_t;
+#endif
+
+#ifndef _INO_T_DEFINED
+#define _INO_T_DEFINED
+typedef unsigned int ino_t;
+#endif
+
+#ifndef _DEVNO_T_DEFINED
+#define _DEVNO_T_DEFINED
+typedef unsigned int devno_t;
+#endif
+
+#ifndef _LOFF_T_DEFINED
+#define _LOFF_T_DEFINED
+typedef unsigned int loff_t;
+#endif
+
+#ifndef _BLKNO_T_DEFINED
+#define _BLKNO_T_DEFINED
+typedef unsigned int blkno_t;
+#endif
+
+#ifndef NOHANDLE
+#define NOHANDLE ((handle_t) -1)
+#endif
+
+#ifndef NULL
+#define NULL ((void *) 0)
+#endif
+
+#ifndef _TM_DEFINED
+#define _TM_DEFINED
+
+struct tm
+{
+  int tm_sec;			// Seconds after the minute [0, 59]
+  int tm_min;			// Minutes after the hour [0, 59]
+  int tm_hour;			// Hours since midnight [0, 23]
+  int tm_mday;			// Day of the month [1, 31]
+  int tm_mon;			// Months since January [0, 11]
+  int tm_year;			// Years since 1900
+  int tm_wday;			// Days since Sunday [0, 6]
+  int tm_yday;			// Days since January 1 [0, 365]
+  int tm_isdst;			// Daylight Saving Time flag
+};
+
+#endif
+
+#ifndef _TIMEVAL_DEFINED
+#define _TIMEVAL_DEFINED
+
+struct timeval 
+{
+  long tv_sec;		        // Seconds
+  long tv_usec;		        // Microseconds
+};
+
 #endif
 
 struct section;
@@ -114,6 +217,8 @@ struct section;
 // File open modes
 //
 
+#ifndef O_RDONLY
+
 #define O_RDONLY                0x0000  // Open for reading only
 #define O_WRONLY                0x0001  // Open for writing only
 #define O_RDWR                  0x0002  // Open for reading and writing
@@ -125,6 +230,11 @@ struct section;
 #define O_TRUNC                 0x0200  // Truncate file
 #define O_EXCL                  0x0400  // Open only if file doesn't already exist
 #define O_DIRECT                0x0800  // Do not use cache for reads and writes
+
+#define O_TEXT                  0x0040  // Enable CR/LF translation
+#define O_BINARY                0x0080  // Disable CR/LF translation
+
+#endif
 
 //
 // Seek types
@@ -176,6 +286,9 @@ struct section;
 // Standard C runtime libarry error codes
 //
 
+#ifndef _ERRORS_DEFINED
+#define _ERRORS_DEFINED
+
 #define EPERM           1                // Operation not permitted
 #define ENOENT          2                // No such file or directory
 #define ESRCH           3                // No such process
@@ -218,6 +331,8 @@ struct section;
 #define ENOSYS          40               // Function not implemented
 #define ENOTEMPTY       41               // Directory not empty
 //#define EILSEQ          42               // Invalid multibyte sequence
+
+#endif
 
 //
 // Sockets errors
@@ -795,8 +910,6 @@ struct tib
   char reserved2[240];
 };
 
-#define errno (gettib()->errnum)
-
 #define fdin  (gettib()->in)
 #define fdout (gettib()->out)
 #define fderr (gettib()->err)
@@ -985,6 +1098,11 @@ osapi struct servent *getservbyport(int port, const char *proto);
 osapi extern struct section *config;
 osapi extern struct peb *peb;
 osapi extern unsigned long loglevel;
+
+#ifndef errno
+osapi int *_errno();
+#define errno (*_errno())
+#endif
 
 #endif
 

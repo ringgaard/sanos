@@ -44,7 +44,8 @@
 			<Tool
 				Name="VCLibrarianTool"
 				OutputFile="..\lib\libc.lib"
-				SuppressStartupBanner="TRUE"/>
+				SuppressStartupBanner="TRUE"
+				IgnoreAllDefaultLibraries="TRUE"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -91,7 +92,8 @@
 			<Tool
 				Name="VCLibrarianTool"
 				OutputFile="..\dbg\lib\libc.lib"
-				SuppressStartupBanner="TRUE"/>
+				SuppressStartupBanner="TRUE"
+				IgnoreAllDefaultLibraries="TRUE"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -113,10 +115,25 @@
 			Name="include"
 			Filter=".h">
 			<File
+				RelativePath="..\src\include\assert.h">
+			</File>
+			<File
 				RelativePath="..\src\include\bitops.h">
 			</File>
 			<File
+				RelativePath="..\src\include\conio.h">
+			</File>
+			<File
 				RelativePath="..\src\include\ctype.h">
+			</File>
+			<File
+				RelativePath="..\src\include\errno.h">
+			</File>
+			<File
+				RelativePath="..\src\include\fcntl.h">
+			</File>
+			<File
+				RelativePath="..\src\include\float.h">
 			</File>
 			<File
 				RelativePath="..\src\include\hash.h">
@@ -125,10 +142,31 @@
 				RelativePath="..\src\include\inifile.h">
 			</File>
 			<File
+				RelativePath="..\src\include\io.h">
+			</File>
+			<File
+				RelativePath="..\src\include\limits.h">
+			</File>
+			<File
+				RelativePath="..\src\include\locale.h">
+			</File>
+			<File
+				RelativePath="..\src\include\malloc.h">
+			</File>
+			<File
+				RelativePath="..\src\include\math.h">
+			</File>
+			<File
+				RelativePath="..\src\include\memory.h">
+			</File>
+			<File
 				RelativePath="..\src\include\moddb.h">
 			</File>
 			<File
 				RelativePath="..\src\include\os.h">
+			</File>
+			<File
+				RelativePath="..\src\include\process.h">
 			</File>
 			<File
 				RelativePath="..\src\include\rmap.h">
@@ -137,7 +175,16 @@
 				RelativePath="..\src\include\setjmp.h">
 			</File>
 			<File
+				RelativePath="..\src\include\share.h">
+			</File>
+			<File
+				RelativePath="..\src\include\signal.h">
+			</File>
+			<File
 				RelativePath="..\src\include\stdarg.h">
+			</File>
+			<File
+				RelativePath="..\src\include\stddef.h">
 			</File>
 			<File
 				RelativePath="..\src\include\stdio.h">
@@ -151,15 +198,22 @@
 			<File
 				RelativePath="..\src\include\time.h">
 			</File>
-			<File
-				RelativePath="..\src\include\types.h">
-			</File>
+			<Filter
+				Name="include/sys"
+				Filter="">
+				<File
+					RelativePath="..\src\include\sys\types.h">
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath="..\src\lib\bitops.c">
 		</File>
 		<File
 			RelativePath="..\src\lib\bsearch.c">
+		</File>
+		<File
+			RelativePath="..\src\lib\conio.c">
 		</File>
 		<File
 			RelativePath="..\src\lib\crt0.c">

@@ -62,7 +62,7 @@ void mkcs(critsect_t cs)
 {
   cs->count = -1;
   cs->recursion = 0;
-  cs->owner = 0xFFFFFFFF;
+  cs->owner = NOHANDLE;
   cs->event = mkevent(0, 0);
 }
 

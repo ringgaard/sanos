@@ -33,6 +33,7 @@
 
 #include <os.h>
 #include <ctype.h>
+#include <limits.h>
 
 #define FL_UNSIGNED   1
 #define FL_NEG        2

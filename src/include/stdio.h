@@ -31,12 +31,24 @@
 // SUCH DAMAGE.
 // 
 
+#if _MSC_VER > 1000
+#pragma once
+#endif
+
 #ifndef STDIO_H
 #define STDIO_H
 
-#ifndef OS_H
-#include <os.h>
+#ifndef _VA_LIST_DEFINED
+#define _VA_LIST_DEFINED
+typedef char *va_list;
 #endif
+
+#ifndef _SIZE_T_DEFINED
+#define _SIZE_T_DEFINED
+typedef unsigned int size_t;
+#endif
+
+// TODO: libc implement: implement new stdio with buffering
 
 typedef void FILE;
 

@@ -35,6 +35,7 @@
 #define MSVCRT_H
 
 #include <os.h>
+#include <stdarg.h>
 
 // File attributes
 
@@ -301,6 +302,6 @@ crtapi int rand();
 crtapi time_t _time(time_t *timer);
 crtapi char *asctime(const struct tm *timeptr);
 
-crtapi int *_errno();
+crtapi int *__errno();
 
 #endif

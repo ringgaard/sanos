@@ -35,7 +35,7 @@
 #include <os.h>
 #endif
 
-#include <types.h>
+#include <sys/types.h>
 #include <time.h>
 
 #define	YEAR0		        1900

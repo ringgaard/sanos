@@ -36,6 +36,7 @@
 #include <inifile.h>
 #include <moddb.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include <os/seg.h>
 #include <os/tss.h>
@@ -81,6 +82,11 @@ void syslog(int priority, const char *fmt,...)
     write(1, buffer, strlen(buffer));
     if (logfile >= 0) write(logfile, buffer, strlen(buffer));
   }
+}
+
+int *_errno()
+{
+  return &(gettib()->errnum);
 }
 
 void *malloc(size_t size)

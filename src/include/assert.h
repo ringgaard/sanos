@@ -31,10 +31,14 @@
 // SUCH DAMAGE.
 // 
 
+#if _MSC_VER > 1000
+#pragma once
+#endif
+
 #ifndef ASSERT_H
 #define ASSERT_H
 
-#ifdef  DEBUG
+#ifdef NDEBUG
 
 void _assert(void *expr, void *filename, unsigned lineno);
 

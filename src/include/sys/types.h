@@ -1,7 +1,7 @@
 //
-// float.h
+// types.h
 //
-// Constants for floating point values
+// Basic type definitions
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -35,27 +35,91 @@
 #pragma once
 #endif
 
-#ifndef FLOAT_H
-#define FLOAT_H
+#ifndef TYPES_H
+#define TYPES_H
 
-#define FLT_RADIX     2
-#define FLT_ROUNDS    1
-#define FLT_DIG       6
-#define FLT_EPSILON   1.192092896e-07F
-#define FLT_MANT_DIG  24
-#define FLT_MAX       3.402823466e+38F
-#define FLT_MAX_EXP   38
-#define FLT_MIN       1.175494351e-38F
-#define FLT_MIN_EXP   (-37)
+#ifndef _SIZE_T_DEFINED
+#define _SIZE_T_DEFINED
+typedef unsigned int size_t;
+#endif
 
-#define DBL_DIG        15
-#define DBL_EPSILON    2.2204460492503131e-016
-#define DBL_MANT_DIG   53
-#define DBL_MAX        1.7976931348623158e+308
-#define DBL_MAX_EXP    308
-#define DBL_MIN        2.2250738585072014e-308
-#define DBL_MIN_EXP    (-307)
+#ifndef _TIME_T_DEFINED
+#define _TIME_T_DEFINED
+typedef long time_t;
+#endif
 
-void _fpreset();
+#ifndef _CLOCK_T_DEFINED
+#define _CLOCK_T_DEFINED
+typedef long clock_t;
+#endif
+
+#ifndef _INO_T_DEFINED
+#define _INO_T_DEFINED
+typedef unsigned int ino_t;
+#endif
+
+#ifndef _DEVNO_T_DEFINED
+#define _DEVNO_T_DEFINED
+typedef unsigned int devno_t;
+#endif
+
+#ifndef _BLKNO_T_DEFINED
+#define _BLKNO_T_DEFINED
+typedef unsigned int blkno_t;
+#endif
+
+#ifndef _LOFF_T_DEFINED
+#define _LOFF_T_DEFINED
+typedef unsigned int loff_t;
+#endif
+
+#ifndef _HANDLE_T_DEFINED
+#define _HANDLE_T_DEFINED
+typedef int handle_t;
+#endif
+
+#ifndef _TID_T_DEFINED
+#define _TID_T_DEFINED
+typedef unsigned long tid_t;
+#endif
+
+#ifndef _PID_T_DEFINED
+#define _PID_T_DEFINED
+typedef unsigned long pid_t;
+#endif
+
+#ifndef _HMODULE_T_DEFINED
+#define _HMODULE_T_DEFINED
+typedef void *hmodule_t;
+#endif
+
+#ifndef _TLS_T_DEFINED
+#define _TLS_T_DEFINED
+typedef unsigned long tls_t;
+#endif
+
+typedef int port_t;
+typedef int err_t;
+
+typedef __int64 systime_t;
+
+#ifndef NULL
+#define NULL ((void *) 0)
+#endif
+
+#define K 1024
+#define M (K * K)
+
+#define FALSE 0
+#define TRUE  1
+
+#ifndef NOHANDLE
+#define NOHANDLE ((handle_t) -1)
+#endif
+
+typedef unsigned char BYTE;
+typedef unsigned short WORD;
+typedef unsigned long DWORD;
+typedef unsigned __int64 QWORD;
 
 #endif

@@ -34,6 +34,7 @@
 #include <os.h>
 #include <os/pe.h>
 #include <string.h>
+#include <stdarg.h>
 #include <inifile.h>
 
 #include <moddb.h>

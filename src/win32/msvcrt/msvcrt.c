@@ -319,7 +319,7 @@ double atof(const char *nptr)
   return 0;
 }
 
-int *_errno()
+int *__errno()
 {
   TRACE("_errno");
   return &(gettib()->errnum);

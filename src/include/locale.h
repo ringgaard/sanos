@@ -1,7 +1,7 @@
 //
-// types.h
+// locale.h
 //
-// Basic type definitions
+// Localization routines
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -31,48 +31,52 @@
 // SUCH DAMAGE.
 // 
 
-#ifndef TYPES_H
-#define TYPES_H
-
-typedef unsigned char BYTE;
-typedef unsigned short WORD;
-typedef unsigned long DWORD;
-typedef unsigned __int64 QWORD;
-
-typedef long time_t;
-typedef unsigned int size_t;
-typedef unsigned int ino_t;
-typedef unsigned int devno_t;
-typedef unsigned int blkno_t;
-typedef unsigned int loff_t;
-
-typedef int port_t;
-typedef int err_t;
-
-typedef int handle_t;
-typedef void *hmodule_t;
-typedef unsigned long tls_t;
-
-typedef __int64 systime_t;
-typedef unsigned long clock_t;
-
-typedef unsigned long tid_t;
-typedef unsigned long pid_t;
-
-#ifndef NULL
-#define NULL ((void *) 0)
+#if _MSC_VER > 1000
+#pragma once
 #endif
 
-#define K 1024
-#define M (K * K)
+#ifndef LOCALE_H
+#define LOCALE_H
 
-#define FALSE 0
-#define TRUE  1
+#define LC_ALL        0
+#define LC_COLLATE    1
+#define LC_CTYPE      2
+#define LC_NUMERIC    3
+#define LC_MONETARY   4
+#define LC_TIME       5
 
-#define NOHANDLE ((handle_t) -1)
+#define LC_MIN        LC_ALL
+#define LC_MAX        LC_TIME
 
-#define ULONG_MAX   0xFFFFFFFFUL
-#define LONG_MIN    (-2147483647L - 1)
-#define LONG_MAX    2147483647L
+#ifndef _LCONV_DEFINED
+#define _LCONV_DEFINED
+
+struct lconv 
+{
+  char *decimal_point;
+  char *thousands_sep;
+  char *grouping;
+  char *int_curr_symbol;
+  char *currency_symbol;
+  char *mon_decimal_point;
+  char *mon_thousands_sep;
+  char *mon_grouping;
+  char *positive_sign;
+  char *negative_sign;
+  char int_frac_digits;
+  char frac_digits;
+  char p_cs_precedes;
+  char p_sep_by_space;
+  char n_cs_precedes;
+  char n_sep_by_space;
+  char p_sign_posn;
+  char n_sign_posn;
+};
+
+#endif
+
+// TODO: libc implement
+char *setlocale(int category, const char *locale);
+struct lconv *localeconv(void);
 
 #endif

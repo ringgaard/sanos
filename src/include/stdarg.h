@@ -31,10 +31,21 @@
 // SUCH DAMAGE.
 // 
 
+#if _MSC_VER > 1000
+#pragma once
+#endif
+
 #ifndef STDARG_H
 #define STDARG_H
 
+#ifndef NULL
+#define NULL ((void *) 0)
+#endif
+
+#ifndef _VA_LIST_DEFINED
+#define _VA_LIST_DEFINED
 typedef char *va_list;
+#endif
 
 #define _INTSIZEOF(n)    ((sizeof(n) + sizeof(int) - 1) & ~(sizeof(int) - 1))
 

@@ -1,7 +1,7 @@
 //
-// float.h
+// fcntl.h
 //
-// Constants for floating point values
+// File Control
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -35,27 +35,26 @@
 #pragma once
 #endif
 
-#ifndef FLOAT_H
-#define FLOAT_H
+#ifndef FCNTL_H
+#define FCNTL_H
 
-#define FLT_RADIX     2
-#define FLT_ROUNDS    1
-#define FLT_DIG       6
-#define FLT_EPSILON   1.192092896e-07F
-#define FLT_MANT_DIG  24
-#define FLT_MAX       3.402823466e+38F
-#define FLT_MAX_EXP   38
-#define FLT_MIN       1.175494351e-38F
-#define FLT_MIN_EXP   (-37)
+#ifndef O_RDONLY
 
-#define DBL_DIG        15
-#define DBL_EPSILON    2.2204460492503131e-016
-#define DBL_MANT_DIG   53
-#define DBL_MAX        1.7976931348623158e+308
-#define DBL_MAX_EXP    308
-#define DBL_MIN        2.2250738585072014e-308
-#define DBL_MIN_EXP    (-307)
+#define O_RDONLY                0x0000  // Open for reading only
+#define O_WRONLY                0x0001  // Open for writing only
+#define O_RDWR                  0x0002  // Open for reading and writing
+#define O_APPEND                0x0008  // Writes done at EOF
 
-void _fpreset();
+#define O_SPECIAL               0x0010
+
+#define O_CREAT                 0x0100  // Create and open file
+#define O_TRUNC                 0x0200  // Truncate file
+#define O_EXCL                  0x0400  // Open only if file doesn't already exist
+#define O_DIRECT                0x0800  // Do not use cache for reads and writes
+
+#define O_TEXT                  0x0040  // Enable CR/LF translation
+#define O_BINARY                0x0080  // Disable CR/LF translation
+
+#endif
 
 #endif

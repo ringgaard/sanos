@@ -31,6 +31,10 @@
 // SUCH DAMAGE.
 // 
 
+#if _MSC_VER > 1000
+#pragma once
+#endif
+
 #ifndef SETJMP_H
 #define SETJMP_H
 
