@@ -92,20 +92,67 @@ void init_jvm_args()
   JavaVMOption *options;
   struct section *optsect;
   struct section *propsect;
+  struct section *cpsect;
   int nopts;
   int n;
   struct property *prop;
   char *buf;
+  char *p;
   int len;
+  int first;
 
+  cpsect = find_section(config, "java.classpaths");
   optsect = find_section(config, "java.options");
   propsect = find_section(config, "java.properties");
-  nopts = get_section_size(optsect) + get_section_size(propsect);
+  nopts = get_section_size(optsect) + get_section_size(propsect) + (cpsect ? 1 : 0);
 
   options = (JavaVMOption *) malloc(nopts * sizeof(JavaVMOption));
   memset(options, 0, nopts * sizeof(JavaVMOption));
 
   n = 0;
+
+  if (cpsect)
+  {
+    len = strlen("-Djava.class.path=") + 1;
+    prop = cpsect->properties;
+    while (prop)
+    {
+      if (prop->name) len += strlen(prop->name) + 1;
+      if (prop->value) len += strlen(prop->value) + 1;
+      prop = prop->next;
+    }
+
+    buf = (char *) malloc(len);
+    strcpy(buf, "-Djava.class.path=");
+    p = buf + strlen(buf);
+    first = 1;
+    prop = cpsect->properties;
+    while (prop)
+    {
+      if (!first) *p++ = ';';
+      first = 0;
+
+      if (prop->name)
+      {
+	len = strlen(prop->name);
+	memcpy(p, prop->name, len + 1);
+	p += len;
+      }
+
+      if (prop->value)
+      {
+	*p++ = ':';
+	len = strlen(prop->value);
+	memcpy(p, prop->value, len + 1);
+	p += len;
+      }
+
+      prop = prop->next;
+    }
+
+    options[n++].optionString = buf;
+  }
+
   if (optsect)
   {
     prop = optsect->properties;

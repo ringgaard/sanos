@@ -14,7 +14,7 @@ static err_t loopif_output(struct netif *netif, struct pbuf *p, struct ip_addr *
   char *ptr;
 
   r = pbuf_alloc(PBUF_RAW, p->tot_len, PBUF_RW);
-  if(r != NULL) 
+  if (r != NULL) 
   {
     ptr = r->payload;
     

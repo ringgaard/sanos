@@ -201,6 +201,7 @@ int smb_open(struct file *filp, char *name)
   smb->params.req.create.name_length = strlen(name) + 1;
   smb->params.req.create.desired_access = access;
   smb->params.req.create.ext_file_attributes = SMB_FILE_ATTR_NORMAL;
+  smb->params.req.create.share_access = SMB_FILE_SHARE_READ | SMB_FILE_SHARE_WRITE;
   smb->params.req.create.create_disposition = mode;
   smb->params.req.create.impersonation_level = 0x02;
 
@@ -408,7 +409,6 @@ static int smb_write_normal(struct smb_share *share, struct smb_file *file, void
   smb->params.req.write.offset_high = 0;
 
   rc = smb_request(share, smb, SMB_COM_WRITE_ANDX, 14, data, size, 0);
-  kprintf("smb_write: %d/%d bytes, rc=%d\n", smb->params.rsp.write.count, size, rc);
   if (rc < 0) return rc;
 
   return smb->params.rsp.write.count;
@@ -857,10 +857,7 @@ again:
 
 struct fsops smbfsops =
 {
-  FSOP_FORMAT | FSOP_MOUNT | FSOP_UMOUNT | FSOP_STATFS | FSOP_OPEN | FSOP_CLOSE |
-  FSOP_FLUSH | FSOP_READ | FSOP_WRITE | FSOP_IOCTL | FSOP_TELL | FSOP_LSEEK | 
-  FSOP_CHSIZE | FSOP_FUTIME | FSOP_UTIME | FSOP_FSTAT | FSOP_STAT | FSOP_MKDIR |
-  FSOP_RMDIR | FSOP_RENAME | FSOP_LINK | FSOP_UNLINK | FSOP_OPENDIR | FSOP_READDIR,
+  0,
 
   smb_lockfs,
   smb_unlockfs,
