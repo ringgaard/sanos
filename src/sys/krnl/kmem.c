@@ -78,6 +78,27 @@ void *alloc_pages_align(int pages, int align, unsigned long tag)
   return vaddr;
 }
 
+void *alloc_pages_linear(int pages, unsigned long tag)
+{
+  char *vaddr;
+  int i;
+  unsigned long pfn;
+
+  if (tag == 0) tag = 'KMEM';
+  pfn = alloc_linear_pageframes(pages, tag);
+  if (pfn == 0xFFFFFFFF) return 0;
+  vaddr = (char *) PTOB(rmap_alloc(osvmap, pages));
+  for (i = 0; i < pages; i++)
+  {
+    map_page(vaddr + PTOB(i), pfn, PT_WRITABLE | PT_PRESENT);
+    pfn++;
+  }
+
+  //kprintf("alloc kmem linear %dK @ %p (%d KB free)\n", pages * (PAGESIZE / K), vaddr, freemem * (PAGESIZE / K));
+
+  return vaddr;
+}
+
 void free_pages(void *addr, int pages)
 {
   int i;

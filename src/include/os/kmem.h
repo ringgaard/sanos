@@ -39,6 +39,7 @@ extern struct rmap *kmodmap;
 
 krnlapi void *alloc_pages(int pages, unsigned long tag);
 krnlapi void *alloc_pages_align(int pages, int align, unsigned long tag);
+krnlapi void *alloc_pages_linear(int pages, unsigned long tag);
 krnlapi void free_pages(void *addr, int pages);
 
 krnlapi void *iomap(unsigned long addr, int size);

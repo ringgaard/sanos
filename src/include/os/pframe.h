@@ -55,6 +55,7 @@ extern unsigned long totalmem;
 extern unsigned long maxmem;
 
 krnlapi unsigned long alloc_pageframe(unsigned long tag);
+krnlapi unsigned long alloc_linear_pageframes(int pages, unsigned long tag);
 krnlapi void free_pageframe(unsigned long pfn);
 krnlapi void set_pageframe_tag(void *addr, unsigned int len, unsigned long tag);
 

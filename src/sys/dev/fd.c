@@ -189,9 +189,10 @@ struct fd fddrives[NUMDRIVES];
 static int fd_command(unsigned char cmd)
 {
   int msr;
-  int tmo;
+  unsigned int tmo;
 
-  for (tmo = 0;tmo < 10000; tmo++) 
+  tmo = ticks + 5*HZ;
+  while (1)
   {
     msr = _inp(FDC_MSR);
     if ((msr & 0xc0) == 0x80)
@@ -200,6 +201,7 @@ static int fd_command(unsigned char cmd)
       return 0;
     }
     
+    if (time_before(tmo, ticks)) break;
     yield(); // delay
   }
 
@@ -214,16 +216,17 @@ static int fd_command(unsigned char cmd)
 static int fd_data()
 {
   int msr;
-  int tmo;
+  unsigned int tmo;
 
-  for (tmo = 0;tmo < 10000; tmo++) 
+  tmo = ticks + 5*HZ;
+  while (1)
   {
     msr = _inp(FDC_MSR);
     if ((msr & 0xd0) == 0xd0) return _inp(FDC_DATA) & 0xFF;
+    if (time_before(tmo, ticks)) break;
     yield(); // delay
   }
 
-  // Read timeout
   if (!fd_init) kprintf("fd: data timeout\n");
   return -ETIMEOUT;
 }

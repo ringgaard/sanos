@@ -131,7 +131,7 @@ static struct board_info board_tbl[] =
 
 // Symbolic offsets to registers
 
-enum RTL8129_registers 
+enum RTL8139_registers 
 {
   MAC0             = 0x00,       // Ethernet hardware address
   MAR0             = 0x08,       // Multicast filter
@@ -174,32 +174,32 @@ enum RTL8129_registers
 
 enum ChipCmdBits 
 {
-  CmdReset   = 0x10,
-  CmdRxEnb   = 0x08,
-  CmdTxEnb   = 0x04,
   RxBufEmpty = 0x01,
+  CmdTxEnb   = 0x04,
+  CmdRxEnb   = 0x08,
+  CmdReset   = 0x10,
 };
 
 // Interrupt register bits
 
 enum IntrStatusBits 
 {
-  PCIErr     = 0x8000, 
+  RxOK       = 0x0001,
+  RxErr      = 0x0002, 
+  TxOK       = 0x0004, 
+  TxErr      = 0x0008,
+  RxOverflow = 0x0010,
+  RxUnderrun = 0x0020, 
+  RxFIFOOver = 0x0040, 
   PCSTimeout = 0x4000,
-  RxFIFOOver = 0x40, 
-  RxUnderrun = 0x20, 
-  RxOverflow = 0x10,
-  TxErr      = 0x08,
-  TxOK       = 0x04, 
-  RxErr      = 0x02, 
-  RxOK       = 0x01,
+  PCIErr     = 0x8000, 
 };
 
 enum TxStatusBits 
 {
-  TxHostOwns    = 0x2000,
-  TxUnderrun    = 0x4000,
-  TxStatOK      = 0x8000,
+  TxHostOwns    = 0x00002000,
+  TxUnderrun    = 0x00004000,
+  TxStatOK      = 0x00008000,
   TxOutOfWindow = 0x20000000,
   TxAborted     = 0x40000000,
   TxCarrierLost = 0x80000000,
@@ -207,35 +207,35 @@ enum TxStatusBits
 
 enum RxStatusBits 
 {
-  RxMulticast = 0x8000, 
-  RxPhysical  = 0x4000, 
-  RxBroadcast = 0x2000,
-  RxBadSymbol = 0x0020, 
-  RxRunt      = 0x0010, 
-  RxTooLong   = 0x0008, 
-  RxCRCErr    = 0x0004,
-  RxBadAlign  = 0x0002, 
   RxStatusOK  = 0x0001,
+  RxBadAlign  = 0x0002, 
+  RxCRCErr    = 0x0004,
+  RxTooLong   = 0x0008, 
+  RxRunt      = 0x0010, 
+  RxBadSymbol = 0x0020, 
+  RxBroadcast = 0x2000,
+  RxPhysical  = 0x4000, 
+  RxMulticast = 0x8000, 
 };
 
 // Bits in RxConfig
 
 enum RxConfigBits
 {
-  AcceptErr       = 0x20, 
-  AcceptRunt      = 0x10, 
-  AcceptBroadcast = 0x08,
-  AcceptMulticast = 0x04, 
-  AcceptMyPhys    = 0x02, 
   AcceptAllPhys   = 0x01,
+  AcceptMyPhys    = 0x02, 
+  AcceptMulticast = 0x04, 
+  AcceptRunt      = 0x10, 
+  AcceptErr       = 0x20, 
+  AcceptBroadcast = 0x08,
 };
 
 enum CSCRBits 
 {
-  CSCR_LinkOKBit      = 0x0400, 
-  CSCR_LinkChangeBit  = 0x0800,
-  CSCR_LinkStatusBits = 0x0f000, 
+  CSCR_LinkOKBit      = 0x00400, 
   CSCR_LinkDownOffCmd = 0x003c0,
+  CSCR_LinkChangeBit  = 0x00800,
+  CSCR_LinkStatusBits = 0x0f000, 
   CSCR_LinkDownCmd    = 0x0f3c0,
 };
 
@@ -345,23 +345,23 @@ static int read_eeprom(long ioaddr, int location, int addr_len);
 static int mdio_read(struct dev *dev, int phy_id, int location);
 static void mdio_write(struct dev *dev, int phy_id, int location, int val);
 
-static int rtl8129_open(struct dev *dev);
-static int rtl8129_close(struct dev *dev);
+static int rtl8139_open(struct dev *dev);
+static int rtl8139_close(struct dev *dev);
 
-static void rtl8129_init_ring(struct dev *dev);
+static void rtl8139_init_ring(struct dev *dev);
 static void rtl_hw_start(struct dev *dev);
 
 static void rtl8139_timer(void *arg);
 
-static struct stats_nic *rtl8129_get_stats(struct dev *dev);
+static struct stats_nic *rtl8139_get_stats(struct dev *dev);
 static unsigned long ether_crc(int length, unsigned char *data);
 static void set_rx_mode(struct dev *dev);
 static int rtl8139_transmit(struct dev *dev, struct pbuf *p);
 
-static void rtl8129_timer(unsigned long data);
-static void rtl8129_tx_timeout(struct dev *dev);
-static int rtl8129_rx(struct dev *dev);
-static void rtl8129_interrupt(int irq, void *dev_instance, struct pt_regs *regs);
+static void rtl8139_timer(void *arg);
+static void rtl8139_tx_timeout(struct dev *dev);
+static int rtl8139_rx(struct dev *dev);
+static void rtl8139_interrupt(int irq, void *dev_instance, struct pt_regs *regs);
 static void rtl_error(struct dev *dev, int status, int link_status);
 
 //
@@ -549,7 +549,7 @@ static void mdio_write(struct dev *dev, int phy_id, int location, int value)
   }
 }
 
-static struct stats_nic *rtl8129_get_stats(struct dev *dev)
+static struct stats_nic *rtl8139_get_stats(struct dev *dev)
 {
   struct nic *tp = (struct nic *) dev->privdata;
   long ioaddr = tp->iobase;
@@ -632,7 +632,7 @@ static void set_rx_mode(struct dev *dev)
 
 // Initialize the Rx and Tx rings
 
-static void rtl8129_init_ring(struct dev *dev)
+static void rtl8139_init_ring(struct dev *dev)
 {
   struct nic *tp = (struct nic *) dev->privdata;
   int i;
@@ -715,7 +715,7 @@ static void rtl_hw_start(struct dev *dev)
   outpw(ioaddr + IntrMask, PCIErr | PCSTimeout | RxUnderrun | RxOverflow | RxFIFOOver | TxErr | TxOK | RxErr | RxOK);
 }
 
-static int rtl8129_open(struct dev *dev)
+static int rtl8139_open(struct dev *dev)
 {
   struct nic *tp = (struct nic *) dev->privdata;
   long ioaddr = tp->iobase;
@@ -734,13 +734,13 @@ static int rtl8129_open(struct dev *dev)
   do 
   {
     tp->rx_buf_len = 8192 << rx_buf_len_idx;
-    tp->rx_ring = kmalloc(tp->rx_buf_len + 16 + (TX_BUF_SIZE * NUM_TX_DESC));
+    tp->rx_ring = alloc_pages_linear(PAGES(tp->rx_buf_len + 16 + (TX_BUF_SIZE * NUM_TX_DESC)), 'NIC');
   } while (tp->rx_ring == NULL && --rx_buf_len_idx >= 0);
 
   if (tp->rx_ring == NULL) return -ENOMEM;
   tp->tx_bufs = tp->rx_ring + tp->rx_buf_len + 16;
 
-  rtl8129_init_ring(dev);
+  rtl8139_init_ring(dev);
   tp->full_duplex = tp->duplex_lock;
   tp->tx_flag = (TX_FIFO_THRESH << 11) & 0x003f0000;
   tp->rx_config = (RX_FIFO_THRESH << 13) | (rx_buf_len_idx << 11) | (RX_DMA_BURST << 8);
@@ -748,9 +748,9 @@ static int rtl8129_open(struct dev *dev)
   rtl_hw_start(dev);
   //netif_start_tx_queue(dev);
 
-  kprintf("%s: rtl8129_open() ioaddr %#lx IRQ %d GP Pins %2.2x %s-duplex\n",
-        dev->name, ioaddr, tp->irq, inp(ioaddr + GPPinData),
-        tp->full_duplex ? "full" : "half");
+  //kprintf("%s: rtl8139_open() ioaddr %#lx IRQ %d GP Pins %2.2x %s-duplex\n",
+  //      dev->name, ioaddr, tp->irq, inp(ioaddr + GPPinData),
+  //      tp->full_duplex ? "full" : "half");
 
   // Set the timer to switch to check for link beat and perhaps switch
   // to an alternate media type
@@ -760,7 +760,7 @@ static int rtl8129_open(struct dev *dev)
   return 0;
 }
 
-static int rtl8129_close(struct dev *dev)
+static int rtl8139_close(struct dev *dev)
 {
   struct nic *tp = (struct nic *) dev->privdata;
   long ioaddr = tp->iobase;
@@ -841,24 +841,25 @@ static int rtl8139_transmit(struct dev *dev, struct pbuf *p)
   outpd(ioaddr + TxStatus0 + entry * 4, tp->tx_flag | (p->tot_len >= ETH_ZLEN ? p->tot_len : ETH_ZLEN));
 
   tp->trans_start = ticks;
+  tp->cur_tx++;
 
-  kprintf("%s: Queued Tx packet at %p size %d to slot %d\n", dev->name, p->payload, p->tot_len, entry);
+  //kprintf("%s: Queued Tx packet at %p size %d to slot %d\n", dev->name, p->payload, p->tot_len, entry);
 
   return 0;
 }
 
 // Receive packet from nic
 
-static int rtl8129_rx(struct dev *dev)
+static int rtl8139_rx(struct dev *dev)
 {
   struct nic *tp = (struct nic *) dev->privdata;
   long ioaddr = tp->iobase;
   unsigned char *rx_ring = tp->rx_ring;
   unsigned short cur_rx = tp->cur_rx;
 
-  kprintf("%s: In rtl8129_rx(), current %4.4x BufAddr %4.4x, free to %4.4x, Cmd %2.2x\n",
-    dev->name, cur_rx, inpw(ioaddr + RxBufAddr),
-    inpw(ioaddr + RxBufPtr), inp(ioaddr + ChipCmd));
+  //kprintf("%s: In rtl8139_rx(), current %4.4x BufAddr %4.4x, free to %4.4x, Cmd %2.2x\n",
+  //  dev->name, cur_rx, inpw(ioaddr + RxBufAddr),
+  //  inpw(ioaddr + RxBufPtr), inp(ioaddr + ChipCmd));
 
   while ((inp(ioaddr + ChipCmd) & RxBufEmpty) == 0) 
   {
@@ -866,13 +867,13 @@ static int rtl8129_rx(struct dev *dev)
     unsigned long rx_status = *(unsigned long *)(rx_ring + ring_offset);
     unsigned int rx_size = rx_status >> 16;        // Includes the CRC
 
-    {
-      int i;
-      kprintf("%s:  rtl8129_rx() status %4.4x, size %4.4x, cur %4.4x\n", dev->name, rx_status, rx_size, cur_rx);
-      kprintf("%s: Frame contents ", dev->name);
-      for (i = 0; i < 70; i++) kprintf(" %2.2x", rx_ring[ring_offset + i]);
-      kprintf("\n");
-    }
+    //{
+    //  int i;
+    //  kprintf("%s:  rtl8139_rx() status %4.4x, size %4.4x, cur %4.4x\n", dev->name, rx_status, rx_size, cur_rx);
+    //  kprintf("%s: Frame contents ", dev->name);
+    //  for (i = 0; i < 70; i++) kprintf(" %2.2x", rx_ring[ring_offset + i]);
+    //  kprintf("\n");
+    //}
 
     if (rx_status & (RxBadSymbol | RxRunt | RxTooLong | RxCRCErr | RxBadAlign)) 
     {
@@ -946,15 +947,15 @@ static int rtl8129_rx(struct dev *dev)
     outpw(ioaddr + RxBufPtr, cur_rx - 16);
   }
 
-  kprintf("%s: Done rtl8129_rx(), current %4.4x BufAddr %4.4x, free to %4.4x, Cmd %2.2x\n",
-    dev->name, cur_rx, inpw(ioaddr + RxBufAddr),
-    inpw(ioaddr + RxBufPtr), inp(ioaddr + ChipCmd));
+  //kprintf("%s: Done rtl8139_rx(), current %4.4x BufAddr %4.4x, free to %4.4x, Cmd %2.2x\n",
+  //  dev->name, cur_rx, inpw(ioaddr + RxBufAddr),
+  //  inpw(ioaddr + RxBufPtr), inp(ioaddr + ChipCmd));
 
   tp->cur_rx = cur_rx;
   return 0;
 }
 
-static void rtl8129_tx_timeout(struct dev *dev)
+static void rtl8139_tx_timeout(struct dev *dev)
 {
   struct nic *tp = (struct nic *) dev->privdata;
   long ioaddr = tp->iobase;
@@ -1088,22 +1089,22 @@ static void rtl8139_dpc(void *arg)
     if (status & RxUnderrun) link_changed = inpw(ioaddr + CSCR) & CSCR_LinkChangeBit;
     outpw(ioaddr + IntrStatus, status);
 
-    kprintf("%s: interrupt status=%#4.4x new intstat=%#4.4x\n", dev->name, status, inpw(ioaddr + IntrStatus));
+    //kprintf("%s: dpc status=%#4.4x new intstat=%#4.4x\n", dev->name, status, inpw(ioaddr + IntrStatus));
 
     if ((status & (PCIErr | PCSTimeout | RxUnderrun | RxOverflow | RxFIFOOver | TxErr | TxOK | RxErr | RxOK)) == 0) break;
 
     if (status & (RxOK | RxUnderrun | RxOverflow | RxFIFOOver))
     {
       // Rx interrupt
-      rtl8129_rx(dev);
+      rtl8139_rx(dev);
     }
 
-    if (status & (TxOK | TxErr)) 
+    if (status & (TxOK | TxErr))
     {
       unsigned int dirty_tx = tp->dirty_tx;
       int entries_freed = 0;
 
-      while (tp->cur_tx - dirty_tx > 0) 
+      while (tp->cur_tx - dirty_tx > 0)
       {
         int entry = dirty_tx % NUM_TX_DESC;
         int txstatus = inpd(ioaddr + TxStatus0 + entry * 4);
@@ -1126,7 +1127,7 @@ static void rtl8139_dpc(void *arg)
         }
 	else 
 	{
-          kprintf("%s: Transmit done, Tx status %8.8x\n", dev->name, txstatus);
+          //kprintf("%s: Transmit done, Tx status %8.8x\n", dev->name, txstatus);
 
           if (txstatus & TxUnderrun) 
 	  {
@@ -1168,7 +1169,8 @@ static void rtl8139_dpc(void *arg)
     }
   }
 
-  kprintf("%s: exiting interrupt, intr_status=%#4.4x\n", dev->name, inpw(ioaddr + IntrStatus));
+  //kprintf("%s: exiting dpc, intr_status=%#4.4x\n", dev->name, inpw(ioaddr + IntrStatus));
+  eoi(np->irq);
 }
 
 
@@ -1178,9 +1180,8 @@ static int rtl8139_handler(struct context *ctxt, void *arg)
   struct nic *np = (struct nic *) dev->privdata;
 
   // Queue DPC to service interrupt
+  //kprintf("%s: interrupt\n", dev->name);
   queue_irq_dpc(&np->dpc, rtl8139_dpc, dev);
-
-  eoi(np->irq);
 
   return 0;
 }
@@ -1214,7 +1215,7 @@ static void rtl8139_timer(void *arg)
 
   if (np->cur_tx - np->dirty_tx > 1  && (ticks - np->trans_start) > TX_TIMEOUT) 
   {
-    rtl8129_tx_timeout(dev);
+    rtl8139_tx_timeout(dev);
   }
 
 #if defined(RTL_TUNE_TWISTER)
@@ -1305,15 +1306,15 @@ static void rtl8139_timer(void *arg)
   }
 #endif
 
-  if (np->flags & HAS_MII_XCVR)
-    kprintf("%s: Media selection tick, GP pins %2.2x\n", dev->name, inp(ioaddr + GPPinData));
-  else
-    kprintf("%s: Media selection tick, Link partner %4.4x\n", dev->name, inpw(ioaddr + NWayLPAR));
+  //if (np->flags & HAS_MII_XCVR)
+  //  kprintf("%s: Media selection tick, GP pins %2.2x\n", dev->name, inp(ioaddr + GPPinData));
+  //else
+  //  kprintf("%s: Media selection tick, Link partner %4.4x\n", dev->name, inpw(ioaddr + NWayLPAR));
 
-  kprintf("%s:  Other registers are IntMask %4.4x IntStatus %4.4x RxStatus %4.4x\n",
-        dev->name, inpw(ioaddr + IntrMask), inpw(ioaddr + IntrStatus), (int) inpd(ioaddr + RxEarlyStatus));
+  //kprintf("%s:  Other registers are IntMask %4.4x IntStatus %4.4x RxStatus %4.4x\n",
+  //      dev->name, inpw(ioaddr + IntrMask), inpw(ioaddr + IntrStatus), (int) inpd(ioaddr + RxEarlyStatus));
 
-  kprintf("%s:  Chip config %2.2x %2.2x\n", dev->name, inp(ioaddr + Config0), inp(ioaddr + Config1));
+  //kprintf("%s:  Chip config %2.2x %2.2x\n", dev->name, inp(ioaddr + Config0), inp(ioaddr + Config1));
 
   mod_timer(&np->timer, ticks + next_tick);
 }
@@ -1412,7 +1413,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
     }
   }
 
-  kprintf("%s: %s iobase 0x%x irq %d hwaddr %la\n", np->dev->name, unit->productname, ioaddr, irq, &np->hwaddr);
+  kprintf("%s: %s iobase 0x%x irq %d hwaddr %la\n", dev->name, unit->productname, ioaddr, irq, &np->hwaddr);
 
   np->dev = dev;
   np->iobase = ioaddr;
@@ -1484,7 +1485,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
            (np->full_duplex ? 0x0100 : 0));  // Full duplex?
   }
 
-  return rtl8129_open(dev);
+  return rtl8139_open(dev);
 }
 
 int __stdcall start(hmodule_t hmod, int reason, void *reserved2)

@@ -59,6 +59,55 @@ unsigned long alloc_pageframe(unsigned long tag)
   return pf - pfdb;
 }
 
+unsigned long alloc_linear_pageframes(int pages, unsigned long tag)
+{
+  struct pageframe *pf;
+  struct pageframe *prevpf;
+
+  if (pages == 1) return alloc_pageframe(tag);
+
+  if ((int) freemem < pages) return 0xFFFFFFFF;
+
+  prevpf = NULL;
+  pf = freelist;
+  while (pf)
+  {
+    if (pf - pfdb + pages < (int) maxmem)
+    {
+      int n;
+
+      for (n = 0; n < pages; n++)
+      {
+	if (pf[n].tag != 'FREE') break;
+	if (n != 0 && pf[n - 1].next != &pf[n]) break;
+      }
+
+      if (n == pages)
+      {
+	if (prevpf)
+	  prevpf->next = pf[pages - 1].next;
+	else
+	  freelist = pf[pages - 1].next;
+
+        for (n = 0; n < pages; n++)
+	{
+	  pf[n].tag = tag;
+	  pf[n].next = NULL;
+	}
+
+	freemem -= pages;
+
+	return pf - pfdb;
+      }
+    }
+
+    prevpf = pf;
+    pf = pf->next;
+  }
+
+  return 0xFFFFFFFF;
+}
+
 void free_pageframe(unsigned long pfn)
 {
   struct pageframe *pf;

@@ -116,3 +116,8 @@ CHANGES
     - Allow static configuration of ip address and dns servers
     - Add disabled netif for all packet devices on startup
     - Add ioctl() support for changing netif parameters
+
+- Added alloc_linear_pageframes() and alloc_pages_linear() for
+  allocating linear physical memory blocks
+  
+- RTL8139 network driver implemented (rtl8139.sys)
