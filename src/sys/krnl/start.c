@@ -210,8 +210,9 @@ void init_net()
   IP4_ADDR(&gw, 192, 168, 85, 1);
 #endif
 
-  nic = netif_add("eth0", &ipaddr, &netmask, &gw);
+  nic = ether_netif_add("eth0", "nic0", &ipaddr, &netmask, &gw);
   netif_set_default(nic);
+
   //init_ne2000(nic);
   //init_pcnet32(nic);
 }
@@ -256,7 +257,7 @@ void main(void *arg)
   else
     sprintf(bootdevname, "fd%c", '0' + (syspage->bootparams.bootdrv & 0x7F));
 
-  kprintf("Mounting root on device %s\n", bootdevname);
+  kprintf("mount: root on device %s\n", bootdevname);
   bootdev = dev_open(bootdevname);
   if (bootdev == NODEV) panic("unable to find boot device");
 
@@ -275,7 +276,7 @@ void main(void *arg)
   install_drivers();
 
   // Initialize network
-  //init_net();
+  init_net();
 
   // Mount devices
   init_mount();

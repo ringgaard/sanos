@@ -28,6 +28,7 @@
 #define DBGCMD_GET_SELECTOR       8
 #define DBGCMD_GET_DEBUG_EVENT    9
 #define DBGCMD_GET_MODULES        10
+#define DBGCMD_GET_THREADS        11
 
 #define DBGERR_VERSION            128
 
@@ -271,7 +272,7 @@ void dbg_enter(struct context *ctxt, void *addr)
   kprintf("trap %d (%p)\n", ctxt->traptype, addr);
   kprintf("enter kernel debugger\n");
   dumpregs(ctxt);
-  if (ctxt->traptype != 3) panic("system halted");
+  //if (ctxt->traptype != 3) panic("system halted");
   shell();
 }
 

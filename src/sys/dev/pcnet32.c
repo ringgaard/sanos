@@ -355,7 +355,7 @@ void pcnet32_receive(struct pcnet32 *pcnet32)
   int entry = pcnet32->next_rx;
   struct pbuf *p, *q;
 
-  //kprintf("receive entry %d, 0x%04X\n", entry, pcnet32->rx_ring[entry].status);
+  kprintf("pcnet32: receive entry %d, 0x%04X\n", entry, pcnet32->rx_ring[entry].status);
   while (!(pcnet32->rx_ring[entry].status & 0x8000))
   {
     int status = pcnet32->rx_ring[entry].status >> 8;
@@ -415,7 +415,6 @@ void pcnet32_dpc(void *arg)
   {
     // Acknowledge all of the current interrupt sources
     pcnet32->write_csr(iobase, CSR, (unsigned short) (csr & ~(CSR_IENA | CSR_TDMD | CSR_STOP | CSR_STRT | CSR_INIT)));
-
     dump_csr(csr);
 
     if (csr & CSR_RINT) pcnet32_receive(pcnet32);
@@ -437,6 +436,8 @@ void pcnet32_handler(struct context *ctxt, void *arg)
 {
   struct pcnet32 *pcnet32 = (struct pcnet32 *) arg;
 
+  kprintf("pcnet32: intr %p\n", pcnet32);
+  
   // Queue DPC to service interrupt
   queue_irq_dpc(&pcnet32->dpc, pcnet32_dpc, pcnet32);
 }
@@ -483,6 +484,9 @@ int __declspec(dllexport) install(struct device *dv)
   unsigned long init_block;
   unsigned long value;
 
+  // Check for PCI device
+  if (dv->type != DEVICE_TYPE_PCI) return -EINVAL;
+
   // Allocate device structure
   pcnet32 = (struct pcnet32 *) kmalloc(sizeof(struct pcnet32));
   if (!pcnet32) return -ENOMEM;
@@ -516,9 +520,7 @@ int __declspec(dllexport) install(struct device *dv)
       pcnet32->func = &pcnet32_dwio;
     }
     else
-    {
-      return 0;
-    }
+      return -EIO;
   }
 
   // Setup access functions
@@ -581,7 +583,7 @@ int __declspec(dllexport) install(struct device *dv)
   }
 
   // Install interrupt handler
-  set_interrupt_handler(IRQ2INTR(pcnet32->irq), pcnet32_handler, &pcnet32);
+  set_interrupt_handler(IRQ2INTR(pcnet32->irq), pcnet32_handler, pcnet32);
   enable_irq(pcnet32->irq);
 
   // Read MAC address from PROM
@@ -662,7 +664,7 @@ int __declspec(dllexport) install(struct device *dv)
 
   pcnet32->devno = dev_make("nic#", &pcnet32_driver, dv, pcnet32);
 
-  kprintf("pcnet32: AMD %s iobase 0x%x irq %d hwaddr %s\n", chipname, pcnet32->iobase, pcnet32->irq, ether2str(&pcnet32->hwaddr, str));
+  kprintf("%s: AMD %s iobase 0x%x irq %d hwaddr %s\n", device(pcnet32->devno)->name, chipname, pcnet32->iobase, pcnet32->irq, ether2str(&pcnet32->hwaddr, str));
 
   return 0;
 }

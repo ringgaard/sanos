@@ -40,6 +40,14 @@ struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr,
 
   dev_attach(devno, netif, ether_input);
 
+  kprintf("%s: device %s addr ", name, devname);
+  ip_addr_debug_print(ipaddr);
+  kprintf(" mask ");
+  ip_addr_debug_print(netmask);
+  kprintf(" gw ");
+  ip_addr_debug_print(gw);
+  kprintf("\n");
+  
   return netif;
 }
 

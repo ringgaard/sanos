@@ -411,10 +411,7 @@ int pnpbios_init()
     for (i = 0; i < length; i++) checksum += ((unsigned char *) hdr)[i];
     if (checksum) continue;
 
-    kprintf("pnpbios: PnP BIOS version %d.%d, entry 0x%x:0x%x, dseg 0x%x.\n",
-	    hdr->version >> 4, hdr->version & 0x0F, 
-	    hdr->pm16cseg, hdr->pm16offset, hdr->pm16dseg);
-
+    kprintf("pnpbios: PnP BIOS version %d.%d\n", hdr->version >> 4, hdr->version & 0x0F);
     
     memcpy(&pnpbios, hdr, sizeof(struct pnp_bios_expansion_header));
 
