@@ -174,8 +174,16 @@ int _write(int handle, const void *buffer, unsigned int count)
 
 int _setmode(int handle, int mode)
 {
+  int rc;
+
   TRACE("_setmode");
-  // TODO: check that mode is O_BINARY
+  rc = setmode(handle, mode);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return -1;
+  }
+
   return 0;
 }
 
@@ -514,7 +522,7 @@ FILE *fopen(const char *filename, const char *mode)
   TRACE("fopen");
   //syslog(LOG_DEBUG, "fopen(%s,%s)\n", filename, mode);
 
-  switch (mode[0])
+  switch (*mode)
   {
     case 'r':
       oflag = O_RDONLY;
@@ -529,13 +537,53 @@ FILE *fopen(const char *filename, const char *mode)
       break;
   
     default:
+      errno = EINVAL;
       return NULL;
   }
 
-  if (mode[1] == '+')
+  while (*++mode)
   {
-    oflag |= O_RDWR;
-    oflag &= ~(O_RDONLY | O_WRONLY);
+    switch (*mode)
+    {
+      case '+':
+	oflag &= ~(O_RDONLY | O_WRONLY);
+	oflag |= O_RDWR;
+	break;
+
+      case 't':
+	oflag &= ~(O_TEXT | O_BINARY);
+	oflag |= O_TEXT;
+	break;
+
+      case 'b':
+	oflag &= ~(O_TEXT | O_BINARY);
+	oflag |= O_BINARY;
+	break;
+
+      case 'c':
+      case 'n':
+	break;
+
+      case 'S':
+	oflag |= O_SEQUENTIAL;
+	break;
+
+      case 'R':
+	oflag |= O_RANDOM;
+	break;
+
+      case 'T':
+	oflag |= O_SHORT_LIVED;
+	break;
+
+      case 'D':
+	oflag |= O_TEMPORARY;
+	break;
+
+      default:
+	errno = EINVAL;
+	return NULL;
+    }
   }
 
   handle = open(filename, oflag, S_IREAD | S_IWRITE);
@@ -559,7 +607,7 @@ FILE *freopen(const char *path, const char *mode, FILE *stream)
 
   TRACE("freopen");
 
-  switch (mode[0])
+  switch (*mode)
   {
     case 'r':
       oflag = O_RDONLY;
@@ -574,13 +622,53 @@ FILE *freopen(const char *path, const char *mode, FILE *stream)
       break;
   
     default:
+      errno = EINVAL;
       return NULL;
   }
 
-  if (mode[1] == '+')
+  while (*++mode)
   {
-    oflag |= O_RDWR;
-    oflag &= ~(O_RDONLY | O_WRONLY);
+    switch (*mode)
+    {
+      case '+':
+	oflag &= ~(O_RDONLY | O_WRONLY);
+	oflag |= O_RDWR;
+	break;
+
+      case 't':
+	oflag &= ~(O_TEXT | O_BINARY);
+	oflag |= O_TEXT;
+	break;
+
+      case 'b':
+	oflag &= ~(O_TEXT | O_BINARY);
+	oflag |= O_BINARY;
+	break;
+
+      case 'c':
+      case 'n':
+	break;
+
+      case 'S':
+	oflag |= O_SEQUENTIAL;
+	break;
+
+      case 'R':
+	oflag |= O_RANDOM;
+	break;
+
+      case 'T':
+	oflag |= O_SHORT_LIVED;
+	break;
+
+      case 'D':
+	oflag |= O_TEMPORARY;
+	break;
+
+      default:
+	errno = EINVAL;
+	return NULL;
+    }
   }
 
   handle = open(path, oflag, S_IREAD | S_IWRITE);

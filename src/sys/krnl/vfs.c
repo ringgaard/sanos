@@ -37,6 +37,10 @@ struct filesystem *fslist = NULL;
 struct fs *mountlist = NULL;
 char curdir[MAXPATH];
 
+#define LFBUFSIZ 1025
+#define CR '\r'
+#define LF '\n'
+
 int canonicalize(char *path, char *buffer)
 {
   char *p;
@@ -231,12 +235,20 @@ struct filesystem *register_filesystem(char *name, struct fsops *ops)
 struct file *newfile(struct fs *fs, char *path, int flags, int mode)
 {
   struct file *filp;
-  int umaskval = peb ? peb->umaskval : 0;
+  int umaskval = 0;
+  int fmodeval = 0;
+
+  if (peb)
+  {
+    umaskval = peb->umaskval;
+    fmodeval = peb->fmodeval;
+  }
 
   filp = (struct file *) kmalloc(sizeof(struct file));
   if (!filp) return NULL;
   init_object(&filp->object, OBJECT_FILE);
   
+  if ((flags & (O_TEXT | O_BINARY)) == 0) flags |= fmodeval;
 
   filp->fs = fs;
   filp->flags = flags;
@@ -244,6 +256,7 @@ struct file *newfile(struct fs *fs, char *path, int flags, int mode)
   filp->pos = 0;
   filp->data = NULL;
   filp->path = strdup(path);
+  filp->chbuf = LF;
 
   return filp;
 }
@@ -562,6 +575,97 @@ int flush(struct file *filp)
   return rc;
 }
 
+int setmode(struct file *filp, int mode)
+{
+  int oldmode;
+
+  if (mode != O_TEXT || mode != O_BINARY) return -EINVAL;
+  oldmode = filp->mode & (O_TEXT | O_BINARY);
+  filp->mode = (filp->mode & ~(O_TEXT | O_BINARY)) | mode;
+  return oldmode;
+}
+
+int read_translated(struct file *filp, void *data, size_t size)
+{
+  char *buf = (char *) data;
+  char *p = buf;
+  char *q = buf;
+  int bytes = 0;
+  int rc;
+  char peekch;
+
+  if (size == 0) return 0;
+  p = q = buf;
+
+  // Read data including lookahead char if present
+  if (filp->chbuf != LF)
+  {
+    buf[0] = filp->chbuf;
+    filp->chbuf = LF;
+    if (size == 1) return 1;
+
+    rc = filp->fs->ops->read(filp, buf + 1, size - 1);
+    if (rc < 0) return rc;
+    bytes = rc + 1;
+  }
+  else
+  {
+    rc = filp->fs->ops->read(filp, buf, size);
+    if (rc < 0) return rc;
+    bytes = rc;
+  }
+
+  // Translate CR/LF to LF in the buffer
+  while (p < buf + bytes) 
+  {
+    if (*p != CR)
+      *q++ = *p++;
+    else 
+    {
+      // *p is CR, so must check next char for LF
+      if (p < buf + bytes - 1) 
+      {
+	if (*(p + 1) == LF) 
+	{
+	  // convert CR/LF to LF
+	  p += 2;
+	  *q++ = LF;
+	}
+	else
+	  *q++ = *p++;
+      }
+      else 
+      {
+	// We found a CR at end of buffer. 
+	// We must peek ahead to see if next char is an LF.
+	p++;
+
+	rc = filp->fs->ops->read(filp, &peekch, 1);
+	if (rc <= 0) 
+	{
+	  // Couldn't read ahead, store CR
+	  *q++ = CR;
+	}
+	else 
+	{
+	  // peekch now has the extra character. If char is LF store LF
+	  // else store CR and put char in lookahead buffer.
+	  if (peekch == LF)
+	    *q++ = LF;
+	  else 
+	  {
+	    *q++ = CR;
+	    filp->chbuf = peekch;
+	  }
+	}
+      }
+    }
+  }
+
+  // Return number of bytes in buffer
+  return q - buf;
+}
+
 int read(struct file *filp, void *data, size_t size)
 {
   int rc;
@@ -572,9 +676,51 @@ int read(struct file *filp, void *data, size_t size)
   
   if (!filp->fs->ops->read) return -ENOSYS;
   if (lock_fs(filp->fs, FSOP_READ) < 0) return -ETIMEOUT;
-  rc = filp->fs->ops->read(filp, data, size);
+  if (filp->flags & O_TEXT)
+    rc = read_translated(filp, data, size);
+  else
+    rc = filp->fs->ops->read(filp, data, size);
   unlock_fs(filp->fs, FSOP_READ);
   return rc;
+}
+
+static int write_translated(struct file *filp, void *data, size_t size)
+{
+  char *buf;
+  char *p, *q;
+  int rc;
+  int lfcnt;
+  int bytes;
+  char lfbuf[LFBUFSIZ];
+
+  // Translate LF to CR/LF on output
+  buf = (char *) data;
+  p = buf;
+  bytes = lfcnt = 0;
+
+  while ((unsigned) (p - buf) < size)
+  {
+    // Fill the buffer, except maybe last char
+    q = lfbuf;
+    while ((unsigned) (q - lfbuf) < LFBUFSIZ - 1 && (unsigned) (p - buf) < size)
+    {
+      char ch = *p++;
+      if (ch == LF) 
+      {
+	lfcnt++;
+	*q++ = CR;
+      }
+      *q++ = ch;
+    }
+
+    // Write the buffer and update total
+    rc = filp->fs->ops->write(filp, lfbuf, q - lfbuf);
+    if (rc < 0) return rc;
+    bytes += rc;
+    if (rc < q - lfbuf) break;
+  }
+
+  return bytes - lfcnt;
 }
 
 int write(struct file *filp, void *data, size_t size)
@@ -587,7 +733,10 @@ int write(struct file *filp, void *data, size_t size)
 
   if (!filp->fs->ops->write) return -ENOSYS;
   if (lock_fs(filp->fs, FSOP_WRITE) < 0) return -ETIMEOUT;
-  rc = filp->fs->ops->write(filp, data, size);
+  if (filp->flags & O_TEXT)
+    rc = write_translated(filp, data, size);
+  else
+    rc = filp->fs->ops->write(filp, data, size);
   unlock_fs(filp->fs, FSOP_WRITE);
   return rc;
 }

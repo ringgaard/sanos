@@ -116,7 +116,8 @@
 #define SYSCALL_SELECT       79
 #define SYSCALL_PIPE         80
 #define SYSCALL_DUP2         81
+#define SYSCALL_SETMODE      82
 
-#define SYSCALL_MAX          81
+#define SYSCALL_MAX          82
 
 #endif

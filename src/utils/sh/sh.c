@@ -54,7 +54,7 @@ static void list_file(char *filename)
   int count;
   int file;
 
-  if ((file = open(filename, 0)) < 0)
+  if ((file = open(filename, O_BINARY)) < 0)
   {
     printf("%s: %s\n", filename, strerror(file));
     return;
@@ -75,13 +75,13 @@ static void copy_file(char *srcfn, char *dstfn)
   int f1;
   int f2;
 
-  if ((f1 = open(srcfn, 0)) < 0)
+  if ((f1 = open(srcfn, O_BINARY)) < 0)
   {
     printf("%s: %s\n", srcfn, strerror(f1));
     return;
   }
 
-  if ((f2 = open(dstfn, O_CREAT, S_IREAD | S_IWRITE)) < 0)
+  if ((f2 = open(dstfn, O_CREAT | O_BINARY, S_IREAD | S_IWRITE)) < 0)
   {
     close(f1);
     printf("%s: %s\n", dstfn, strerror(f2));
@@ -302,7 +302,7 @@ static void display_file(char *filename)
   char *end;
   char ch;
 
-  if ((file = open(filename, 0)) < 0)
+  if ((file = open(filename, O_BINARY)) < 0)
   {
     printf("%s: %s\n", filename, strerror(file));
     return;
@@ -397,7 +397,7 @@ static void test_write_file(char *filename, int size)
   clock_t time;
   int bytes;
 
-  if ((file = open(filename, O_CREAT, S_IREAD | S_IWRITE)) < 0)
+  if ((file = open(filename, O_CREAT | O_BINARY, S_IREAD | S_IWRITE)) < 0)
   {
     printf("%s: %s\n", filename, strerror(file));
     return;
@@ -861,7 +861,7 @@ static int httpget(char *server, char *path, char *filename)
 
   if (rc < 0) return rc;
 
-  f = open(filename, O_CREAT, S_IREAD | S_IWRITE);
+  f = open(filename, O_CREAT | O_BINARY, S_IREAD | S_IWRITE);
   if (f < 0)
   {
     close(s);
@@ -1260,7 +1260,7 @@ static void disktest(int argc, char **argv)
   int n;
   int rc;
 
-  dev = open(argv[1], O_RDWR | O_DIRECT);
+  dev = open(argv[1], O_RDWR | O_DIRECT | O_BINARY);
   if (dev < 0) 
   {
     printf("Error %d opening device\n", dev);
@@ -1592,7 +1592,7 @@ void __stdcall ttyd(void *arg)
   handle_t f;
   struct serial_config cfg;
 
-  f = open(devname, O_RDWR);
+  f = open(devname, O_RDWR | O_BINARY);
   if (f < 0) 
   {
     syslog(LOG_INFO, "Error %d starting shell on device %s\n", f, devname);

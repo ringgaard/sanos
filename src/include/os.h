@@ -920,6 +920,7 @@ struct peb
 
   void (*globalhandler)(int, struct siginfo *);
   int umaskval;
+  int fmodeval;
 };
 
 //
@@ -1062,6 +1063,7 @@ osapi int stat64(const char *name, struct stat64 *buffer);
 osapi int access(const char *name, int mode);
 osapi int eof(handle_t f);
 osapi int umask(int mode);
+osapi int setmode(handle_t f, int mode);
 
 osapi int chdir(const char *name);
 osapi char *getcwd(char *buf, size_t size);
@@ -1199,6 +1201,11 @@ osapi extern unsigned long loglevel;
 #ifndef errno
 osapi int *_errno();
 #define errno (*_errno())
+#endif
+
+#ifndef fmode
+osapi int *_fmode();
+#define fmode (*_fmode())
 #endif
 
 #endif

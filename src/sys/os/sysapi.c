@@ -554,3 +554,8 @@ handle_t dup2(handle_t h1, handle_t h2)
 {
   return syscall(SYSCALL_DUP2, (void *) &h1);
 }
+
+int setmode(handle_t f, int mode)
+{
+  return syscall(SYSCALL_SETMODE, (void *) &f);
+}

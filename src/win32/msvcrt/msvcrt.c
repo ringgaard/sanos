@@ -44,7 +44,6 @@ int _error_mode;
 
 char **__initenv = NULL;
 int _commode = _IOCOMMIT;
-int _fmode = _O_BINARY;
 
 static long holdrand = 1L;
 
@@ -75,7 +74,7 @@ int *__p__commode()
 int *__p__fmode()
 {
   TRACE("__p__fmode");
-  return &_fmode;
+  return &fmode;
 }
 
 void __set_app_type(int type)

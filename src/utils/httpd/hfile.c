@@ -239,7 +239,7 @@ int httpd_file_handler(struct httpd_connection *conn)
 
   if (strcmp(conn->req->method, "HEAD") == 0) return 0;
 
-  fd = open(filename, O_RDONLY);
+  fd = open(filename, O_RDONLY | O_BINARY);
   if (fd < 0) return httpd_return_file_error(conn, fd);
 
   rc = httpd_send_file(conn->rsp, fd);

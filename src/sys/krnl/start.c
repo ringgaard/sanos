@@ -162,7 +162,7 @@ static int load_kernel_config()
   struct stat64 buffer;
   char *props;
 
-  rc = open(KERNEL_CONFIG, 0, 0, &f);
+  rc = open(KERNEL_CONFIG, O_RDONLY | O_BINARY, 0, &f);
   if (rc < 0) return rc;
 
   fstat(f, &buffer);

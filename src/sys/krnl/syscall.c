@@ -2729,6 +2729,33 @@ static int sys_pipe(char *params)
   return rc;
 }
 
+static int sys_setmode(char *params)
+{
+  handle_t h;
+  struct file *f;
+  int rc;
+  int mode;
+
+  if (lock_buffer(params, 8) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  mode = *(int *) (params + 4);
+
+  f = (struct file *) olock(h, OBJECT_FILE);
+  if (!f) 
+  {
+    unlock_buffer(params, 8);
+    return -EBADF;
+  }
+  
+  rc = setmode(f, mode);
+
+  orel(f);
+  unlock_buffer(params, 8);
+
+  return rc;
+}
+
 struct syscall_entry syscalltab[] =
 {
   {"null","", sys_null},
@@ -2813,6 +2840,7 @@ struct syscall_entry syscalltab[] =
   {"select", "%d,%p,%p,%p,%p", sys_select},
   {"pipe", "%p", sys_pipe},
   {"dup2", "%d,%d", sys_dup2},
+  {"setmode", "%d,%d", sys_setmode},
 };
 
 int syscall(int syscallno, char *params)

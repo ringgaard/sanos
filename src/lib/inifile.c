@@ -352,7 +352,7 @@ struct section *read_properties(char *filename)
   char *props;
   struct section *sect;
 
-  f = open(filename, 0);
+  f = open(filename, O_BINARY);
   if (f < 0) return NULL;
 
   fstat64(f, &buffer);

@@ -107,11 +107,11 @@ int install_loader(char *devname, char *loader)
   printf("Installing loader %s on %s\n", loader, str);
 
   // Open device
-  dev = open(str, O_RDWR);
+  dev = open(str, O_RDWR | O_BINARY);
   if (dev < 0) return dev;
 
   // Open loader and get loader size
-  ldr = open(loader, 0);
+  ldr = open(loader, O_BINARY);
   if (ldr < 0) return ldr;
 
   size = fstat(ldr, NULL);
@@ -172,7 +172,7 @@ int install_boot_sector(char *devname, char *bootstrap)
   printf("Installing boot sector %s on %s\n", bootstrap, str);
 
   // Read bootstrap
-  boot = open(bootstrap, 0);
+  boot = open(bootstrap, O_BINARY);
   if (boot < 0) return boot;
 
   rc = read(boot, bsect, SECTORSIZE);
@@ -192,7 +192,7 @@ int install_boot_sector(char *devname, char *bootstrap)
 
     // Read master boot record and get partition offset
     sprintf(diskname, "/dev/%c%c%c", devname[0], devname[1], devname[2]);
-    disk = open(diskname, 0);
+    disk = open(diskname, O_BINARY);
     if (disk < 0) return disk;
 
     rc = read(disk, msect, SECTORSIZE);
@@ -225,7 +225,7 @@ int install_boot_sector(char *devname, char *bootstrap)
   bootsect->ldrsize = ldr_size;
 
   // Write boot sector to target device
-  dev = open(str, O_RDWR);
+  dev = open(str, O_RDWR | O_BINARY);
   if (dev < 0) return dev;
 
   rc = lseek(dev, 0 * SECTORSIZE, SEEK_SET);
@@ -289,7 +289,7 @@ int dokernel(struct section *sect)
   printf("Installing kernel %s\n", kernel);
 
   // Open source kernel file
-  fin = open(kernel, 0);
+  fin = open(kernel, O_BINARY);
   if (fin < 0) return fin;
 
   size = fstat(fin, NULL);
@@ -405,10 +405,10 @@ int copy_file(char *srcfn, char *dstfn)
   int bytes;
   int rc;
 
-  fin = open(srcfn, 0);
+  fin = open(srcfn, O_BINARY);
   if (fin < 0) return fin;
 
-  fout = open(dstfn,  O_CREAT | O_EXCL, S_IREAD | S_IWRITE);
+  fout = open(dstfn,  O_CREAT | O_EXCL | O_BINARY, S_IREAD | S_IWRITE);
   if (fout < 0) return fout;
 
   while ((bytes = read(fin , block, 4096)) > 0)

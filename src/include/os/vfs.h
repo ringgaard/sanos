@@ -95,6 +95,7 @@ struct file
   off64_t pos;
   void *data;
   char *path;
+  char chbuf;
 };
 
 struct fsops
@@ -163,6 +164,7 @@ krnlapi int statfs(char *name, struct statfs *buf);
 krnlapi int open(char *name, int flags, int mode, struct file **retval);
 krnlapi int close(struct file *filp);
 krnlapi int flush(struct file *filp);
+krnlapi int setmode(struct file *filp, int mode);
 
 krnlapi int read(struct file *filp, void *data, size_t size);
 krnlapi int write(struct file *filp, void *data, size_t size);

@@ -89,6 +89,11 @@ int *_errno()
   return &(gettib()->errnum);
 }
 
+int *_fmode()
+{
+  return &peb->fmodeval;
+}
+
 handle_t creat(const char *name, int mode)
 {
   return open(name, O_CREAT | O_TRUNC, mode);
@@ -356,7 +361,7 @@ static void *load_image(char *filename)
   memset(buffer, 0, PAGESIZE);
 
   // Open file
-  f = open(filename, O_RDONLY);
+  f = open(filename, O_RDONLY | O_BINARY);
   if (f < 0) 
   {
     free(buffer);
@@ -697,6 +702,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   // Setup pointer to process environment block (PEB)
   peb = (struct peb *) PEB_ADDRESS;
   peb->globalhandler = globalhandler;
+  peb->fmodeval = O_TEXT;
 
   // Initialize heap and module locks
   mkcs(&heap_lock);

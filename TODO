@@ -2,11 +2,11 @@ TODO for sanos
 --------------
 
 - Implement more complete ANSI C runtime library
-    x Modify signal() and raise to conform to ANSI standard (remove siginfo parameter)
+    x Modify signal() and raise() to conform to ANSI standard (remove siginfo parameter)
     x Modify io.h to call os routines (stat() and S_IFDIR and S_IFREG flags)
     x Implement remaining time.h routines
     - Add new stdio.h implementation with buffering and new output() and input() routines
-    - Add support for O_TEXT and O_BINARY flags in read() and write()
+    x Add support for O_TEXT and O_BINARY flags in read() and write()
     x Rename stat fields to standard names (st_*)
     x Implement pmode for creat()
     x Implement sharing flags and sopen()
@@ -288,3 +288,9 @@ CHANGES
 - vfs and smbfs now supports large files (>2GB).
 
 - stat64(), fstat64(), tell64(), lseek64() and chsize64() added to os interface.
+
+- stat() and fstat() changed to conform to ANSI standard.
+
+- Modified signal() and raise to conform to ANSI standard. Signal info can be obtained
+  in signal handler by using getsiginfo().
+ 

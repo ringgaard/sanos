@@ -401,7 +401,7 @@ int main(int argc, char *argv[])
   }
 
   // Open device
-  hdev = open(devname, O_RDWR);
+  hdev = open(devname, O_RDWR | O_BINARY);
   if (hdev < 0)
   {
     printf("%s: error %d opening device\n", devname, hdev);
