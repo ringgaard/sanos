@@ -67,6 +67,64 @@ Package=<4>
 
 ###############################################################################
 
+Project: "image"=.\image.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+    begin source code control
+    image
+    .
+    end source code control
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name advapi32
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name boot
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name clib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fdisk
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name jinit
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name kernel32
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name krnl
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name msvcrt
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name os
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name osldr
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name setup
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name sh
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name user32
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name winmm
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "jinit"=.\jinit.dsp - Package Owner=<4>
 
 Package=<5>
@@ -217,22 +275,6 @@ Package=<5>
 {{{
     begin source code control
     winmm
-    ..
-    end source code control
-}}}
-
-Package=<4>
-{{{
-}}}
-
-###############################################################################
-
-Project: "zxlog"=.\zxlog.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-    begin source code control
-    zxlog
     ..
     end source code control
 }}}
