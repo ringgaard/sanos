@@ -89,6 +89,9 @@ struct fsops devfsops =
 
   NULL,
   NULL,
+
+  NULL,
+  NULL,
   NULL,
 
   devfs_opendir,
@@ -215,9 +218,9 @@ int devfs_fstat(struct file *filp, struct stat64 *buffer)
     else
       buffer->st_mode = S_IREAD | S_IWRITE;
 
-    buffer->st_ino = 0;
+    buffer->st_ino = devno;
     buffer->st_nlink = 1;
-    buffer->st_dev = devno;
+    buffer->st_dev = NODEV;
 
     buffer->st_atime = mounttime;
     buffer->st_mtime = mounttime;
@@ -275,9 +278,9 @@ int devfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
     else
       buffer->st_mode = S_IREAD | S_IWRITE;
 
-    buffer->st_ino = 0;
+    buffer->st_ino = devno;
     buffer->st_nlink = 1;
-    buffer->st_dev = devno;
+    buffer->st_dev = NODEV;
 
     buffer->st_atime = mounttime;
     buffer->st_mtime = mounttime;

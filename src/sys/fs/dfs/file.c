@@ -572,7 +572,7 @@ int dfs_fstat(struct file *filp, struct stat64 *buffer)
 
     buffer->st_ino = inode->ino;
     buffer->st_nlink = inode->desc->linkcount;
-    buffer->st_dev = NODEV;
+    buffer->st_dev = inode->fs->devno;
     buffer->st_atime = time(NULL);
     buffer->st_mtime = inode->desc->mtime;
     buffer->st_ctime = inode->desc->ctime;

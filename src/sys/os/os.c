@@ -174,14 +174,14 @@ int eof(handle_t f)
   return tell64(f) == fstat64(f, NULL);
 }
 
-int umask(int mode)
+int umask(int mask)
 {
-  int oldmode;
+  int oldmask;
 
-  mode &= 0777;
-  oldmode = peb->umaskval;
-  peb->umaskval = mode;
-  return oldmode;
+  mask &= 0777;
+  oldmask = peb->umaskval;
+  peb->umaskval = mask;
+  return oldmask;
 }
 
 void *malloc(size_t size)

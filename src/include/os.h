@@ -1106,13 +1106,16 @@ osapi int stat64(const char *name, struct stat64 *buffer);
 
 osapi int access(const char *name, int mode);
 osapi int eof(handle_t f);
-osapi int umask(int mode);
+osapi int umask(int mask);
 osapi int setmode(handle_t f, int mode);
+
+osapi int chmod(const char *name, int mode);
+osapi int fchmod(handle_t f, int mode);
 
 osapi int chdir(const char *name);
 osapi char *getcwd(char *buf, size_t size);
 
-osapi int mkdir(const char *name);
+osapi int mkdir(const char *name, int mode);
 osapi int rmdir(const char *name);
 
 osapi int rename(const char *oldname, const char *newname);

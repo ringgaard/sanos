@@ -65,6 +65,9 @@ struct fsops dfsops =
   dfs_fstat,
   dfs_stat,
 
+  NULL,
+  NULL,
+
   dfs_mkdir,
   dfs_rmdir,
 
@@ -125,7 +128,7 @@ int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
 
     buffer->st_ino = ino;
     buffer->st_nlink = inode->desc->linkcount;
-    buffer->st_dev = NODEV;
+    buffer->st_dev = ((struct filsys *) fs->data)->devno;
 
     buffer->st_atime = time(NULL);
     buffer->st_mtime = inode->desc->mtime;
@@ -138,7 +141,7 @@ int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
   return size;
 }
 
-int dfs_mkdir(struct fs *fs, char *name)
+int dfs_mkdir(struct fs *fs, char *name, int mode)
 {
   struct inode *parent;
   struct inode *dir;

@@ -469,7 +469,7 @@ int _mkdir(const char *dirname)
   int rc;
 
   TRACE("_mkdir");
-  rc = mkdir(dirname);
+  rc = mkdir(dirname, 0666);
   if (rc < 0)
   {
     errno = -rc;

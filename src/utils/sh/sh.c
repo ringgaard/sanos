@@ -778,7 +778,7 @@ int cmd_mkdir(int argc, char *argv[])
   }
   path = argv[1];
 
-  rc = mkdir(path); 
+  rc = mkdir(path, 0666); 
   if (rc < 0)
   {
     printf("%s: %s\n", path, strerror(rc));

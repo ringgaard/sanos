@@ -57,13 +57,15 @@
 #define FSOP_UTIME      0x00004000
 #define FSOP_FSTAT      0x00008000
 #define FSOP_STAT       0x00010000
-#define FSOP_MKDIR      0x00020000
-#define FSOP_RMDIR      0x00040000
-#define FSOP_RENAME     0x00080000
-#define FSOP_LINK       0x00100000
-#define FSOP_UNLINK     0x00200000
-#define FSOP_OPENDIR    0x00400000
-#define FSOP_READDIR    0x00800000
+#define FSOP_FCHMOD     0x00020000
+#define FSOP_CHMOD      0x00040000
+#define FSOP_MKDIR      0x00080000
+#define FSOP_RMDIR      0x00100000
+#define FSOP_RENAME     0x00200000
+#define FSOP_LINK       0x00400000
+#define FSOP_UNLINK     0x01000000
+#define FSOP_OPENDIR    0x02000000
+#define FSOP_READDIR    0x04000000
 
 struct filesystem
 {
@@ -129,7 +131,10 @@ struct fsops
   int (*fstat)(struct file *filp, struct stat64 *buffer);
   int (*stat)(struct fs *fs, char *name, struct stat64 *buffer);
 
-  int (*mkdir)(struct fs *fs, char *name);
+  int (*fchmod)(struct file *filp, int mode);
+  int (*chmod)(struct fs *fs, char *name, int mode);
+
+  int (*mkdir)(struct fs *fs, char *name, int mode);
   int (*rmdir)(struct fs *fs, char *name);
 
   int (*rename)(struct fs *fs, char *oldname, char *newname);
@@ -183,8 +188,11 @@ krnlapi int utime(char *name, struct utimbuf *times);
 krnlapi int fstat(struct file *filp, struct stat64 *buffer);
 krnlapi int stat(char *name, struct stat64 *buffer);
 
+krnlapi int fchmod(struct file *filp, int mode);
+krnlapi int chmod(char *name, int mode);
+
 krnlapi int chdir(char *name);
-krnlapi int mkdir(char *name);
+krnlapi int mkdir(char *name, int mode);
 krnlapi int rmdir(char *name);
 
 krnlapi int rename(char *oldname, char *newname);

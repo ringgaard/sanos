@@ -768,6 +768,9 @@ struct fsops cdfsops =
 
   NULL,
   NULL,
+
+  NULL,
+  NULL,
   NULL,
 
   cdfs_opendir,

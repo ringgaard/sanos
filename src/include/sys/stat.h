@@ -142,6 +142,9 @@ osapi int fstat64(handle_t f, struct stat64 *buffer);
 osapi int stat(const char *name, struct stat *buffer);
 osapi int stat64(const char *name, struct stat64 *buffer);
 
-osapi int mkdir(const char *name);
+osapi int chmod(const char *name, int mode);
+osapi int fchmod(handle_t f, int mode);
+
+osapi int mkdir(const char *name, int mode);
 
 #endif

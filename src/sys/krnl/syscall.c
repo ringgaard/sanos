@@ -789,22 +789,24 @@ static int sys_stat(char *params)
 static int sys_mkdir(char *params)
 {
   char *name;
+  int mode;
   int rc;
 
-  if (lock_buffer(params, 4) < 0) return -EFAULT;
+  if (lock_buffer(params, 8) < 0) return -EFAULT;
 
   name = *(char **) params;
+  mode = *(int *) (params + 4);
 
   if (lock_string(name) < 0) 
   {
-    unlock_buffer(params, 4);
+    unlock_buffer(params, 8);
     return -EFAULT;
   }
 
-  rc = mkdir(name);
+  rc = mkdir(name, mode);
 
   unlock_string(name);
-  unlock_buffer(params, 4);
+  unlock_buffer(params, 8);
 
   return rc;
 }
@@ -2770,6 +2772,58 @@ static int sys_setmode(char *params)
   return rc;
 }
 
+static int sys_chmod(char *params)
+{
+  char *name;
+  int mode;
+  int rc;
+
+  if (lock_buffer(params, 8) < 0) return -EFAULT;
+
+  name = *(char **) params;
+  mode = *(int *) (params + 4);
+
+  if (lock_string(name) < 0) 
+  {
+    unlock_buffer(params, 8);
+    return -EFAULT;
+  }
+
+  rc = chmod(name, mode);
+
+  unlock_string(name);
+  unlock_buffer(params, 8);
+
+  return rc;
+}
+
+static int sys_fchmod(char *params)
+{
+  handle_t h;
+  struct file *f;
+  int rc;
+  int mode;
+
+  if (lock_buffer(params, 8) < 0) return -EFAULT;
+
+  h = *(handle_t *) params;
+  mode = *(int *) (params + 4);
+
+  f = (struct file *) olock(h, OBJECT_FILE);
+  if (!f) 
+  {
+    unlock_buffer(params, 8);
+    return -EBADF;
+  }
+  
+  rc = fchmod(f, mode);
+
+  orel(f);
+  unlock_buffer(params, 8);
+
+  return rc;
+}
+
 struct syscall_entry syscalltab[] =
 {
   {"null","", sys_null},
@@ -2786,7 +2840,7 @@ struct syscall_entry syscalltab[] =
   {"chsize", "%d,%d-%d", sys_chsize},
   {"fstat", "%d,%p", sys_fstat},
   {"stat", "'%s',%p", sys_stat},
-  {"mkdir", "'%s'", sys_mkdir},
+  {"mkdir", "'%s',%d", sys_mkdir},
   {"rmdir", "'%s'", sys_rmdir},
   {"rename", "'%s','%s'", sys_rename},
   {"link", "'%s','%s'", sys_link},
@@ -2855,6 +2909,8 @@ struct syscall_entry syscalltab[] =
   {"pipe", "%p", sys_pipe},
   {"dup2", "%d,%d", sys_dup2},
   {"setmode", "%d,%d", sys_setmode},
+  {"chmod", "%s,%d", sys_chmod},
+  {"fchmod", "%d,%d", sys_fchmod},
 };
 
 int syscall(int syscallno, char *params)

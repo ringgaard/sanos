@@ -407,8 +407,12 @@ CHANGES
 
 - setjmp() did not return the correct value from longjmp(). This problem has been fixed.
 
-- The C intrinsic fmod function (_CIfmod) implemented.
+- Intrinsic fmod function (_CIfmod) implemented.
 
 - The stdin, stdout and stderr macros in stdio.h required os.h to be included to define
   the job structure. This is no longer needed. The standard files are now resolved using
   the __stdhndl() function in the stdio library.
+
+- mode parameter added to mkdir() for ANSI conformance.
+
+- chmod() and fchmod() system calls implemented. No file systems yet implement these.

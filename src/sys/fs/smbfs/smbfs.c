@@ -299,6 +299,7 @@ int smb_open(struct file *filp, char *name)
     file->statbuf.st_mode |= S_IREAD | S_IWRITE | S_IEXEC;
 
   file->statbuf.st_dev = NODEV;
+  file->statbuf.st_ino = file->fid;
   file->statbuf.st_nlink = 1;
   file->statbuf.st_ctime = ft2time(smb->params.rsp.create.creation_time);
   file->statbuf.st_mtime = ft2time(smb->params.rsp.create.last_write_time);
@@ -734,7 +735,7 @@ int smb_stat(struct fs *fs, char *name, struct stat64 *buffer)
   return (int) rsps.end_of_file;
 }
 
-int smb_mkdir(struct fs *fs, char *name)
+int smb_mkdir(struct fs *fs, char *name, int mode)
 {
   struct smb_share *share = (struct smb_share *) fs->data;
   struct smb *smb;
@@ -985,6 +986,9 @@ struct fsops smbfsops =
 
   smb_fstat,
   smb_stat,
+
+  NULL,
+  NULL,
 
   smb_mkdir,
   smb_rmdir,

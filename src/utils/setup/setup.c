@@ -297,7 +297,7 @@ int dokernel(struct section *sect)
   // Make sure os directory extist on target
   if (stat(target, NULL) < 0)
   {
-    rc = mkdir(target);
+    rc = mkdir(target, 0666);
     if (rc < 0) return rc;
   }
 
@@ -385,7 +385,7 @@ int domkdirs(struct section *sect)
     dirname = prop->name;
     printf("Creating directory %s\n", dirname);
 
-    rc = mkdir(dirname);
+    rc = mkdir(dirname, 0666);
     if (rc < 0) return rc;
 
     prop = prop->next;
@@ -470,7 +470,7 @@ int copy_dir(char *srcdir, char *dstdir)
       if ((buf.st_mode & S_IFMT) == S_IFDIR)
       {
         printf("Creating directory %s\n", dstfn);
-	rc = mkdir(dstfn);
+	rc = mkdir(dstfn, 0666);
 	if (rc < 0) return rc;
 
 	tail->next = (struct copyitem *) malloc(sizeof(struct copyitem));
@@ -524,7 +524,7 @@ int docopy(struct section *sect)
     if ((buf.st_mode & S_IFMT) == S_IFDIR)
     {
       printf("Creating directory %s\n", dstfn);
-      rc = mkdir(dstfn);
+      rc = mkdir(dstfn, 0666);
       if (rc < 0) return rc;
 
       rc = copy_dir(srcfn, dstfn);

@@ -302,7 +302,17 @@ int stat(const char *name, struct stat *buffer)
     return stat64(name, NULL);
 }
 
-int mkdir(const char *name)
+int chmod(const char *name, int mode)
+{
+  return syscall(SYSCALL_CHMOD, (void *) &name);
+}
+
+int fchmod(handle_t f, int mode)
+{
+  return syscall(SYSCALL_FCHMOD, (void *) &f);
+}
+
+int mkdir(const char *name, int mode)
 {
   return syscall(SYSCALL_MKDIR, (void *) &name);
 }

@@ -887,6 +887,46 @@ int stat(char *name, struct stat64 *buffer)
   return rc;
 }
 
+int fchmod(struct file *filp, int mode)
+{
+  int rc;
+
+  if (!filp) return -EINVAL;
+  if (filp->flags & O_RDONLY) return -EACCES;
+ 
+  if (!filp->fs->ops->fchmod) return -ENOSYS;
+  if (lock_fs(filp->fs, FSOP_FCHMOD) < 0) return -ETIMEOUT;
+  rc = filp->fs->ops->fchmod(filp, mode);
+  unlock_fs(filp->fs, FSOP_FCHMOD);
+  return rc;
+}
+
+int chmod(char *name, int mode)
+{
+  struct fs *fs;
+  char *rest;
+  int rc;
+  char path[MAXPATH];
+
+  rc = canonicalize(name, path);
+  if (rc < 0) return rc;
+
+  fs = fslookup(path, &rest);
+  if (!fs) return -ENOENT;
+
+  if (!fs->ops->chmod) return -ENOSYS;
+  fs->locks++;
+  if (lock_fs(fs, FSOP_CHMOD) < 0) 
+  {
+    fs->locks--;
+    return -ETIMEOUT;
+  }
+  rc = fs->ops->chmod(fs, rest, mode);
+  unlock_fs(fs, FSOP_CHMOD);
+  fs->locks--;
+  return rc;
+}
+
 int chdir(char *name)
 {
   struct fs *fs;
@@ -925,7 +965,7 @@ int chdir(char *name)
   return 0;
 }
 
-int mkdir(char *name)
+int mkdir(char *name, int mode)
 {
   struct fs *fs;
   char *rest;
@@ -945,7 +985,7 @@ int mkdir(char *name)
     fs->locks--;
     return -ETIMEOUT;
   }
-  rc = fs->ops->mkdir(fs, rest);
+  rc = fs->ops->mkdir(fs, rest, mode);
   unlock_fs(fs, FSOP_MKDIR);
   fs->locks--;
   return rc;

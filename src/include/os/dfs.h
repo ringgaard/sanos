@@ -149,7 +149,7 @@ typedef int (*filldir_t)(char *name, int len, ino_t ino, void *data);
 
 // dfs.c
 void init_dfs();
-int dfs_mkdir(struct fs *fs, char *name);
+int dfs_mkdir(struct fs *fs, char *name, int mode);
 int dfs_rmdir(struct fs *fs, char *name);
 int dfs_rename(struct fs *fs, char *oldname, char *newname);
 int dfs_link(struct fs *fs, char *oldname, char *newname);
