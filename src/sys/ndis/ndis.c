@@ -118,9 +118,15 @@ static struct ndis_configuration_parameter *read_config(struct ndis_config *cfg,
   np = cfg->propcache;
   while (np)
   {
-    if (stricmp(np->name, name) == 0) 
+    if (stricmp(np->name, name) == 0)
     {
-      if (np->value.parameter_type != type) return NULL;
+      if (np->value.parameter_type != type)
+      {
+	kprintf("ndis: wrong type for parameter %s\n", name);
+	return NULL;
+      }
+
+      kprintf("ndis: cached parameter %s\n", name);
       return &np->value;
     }
     np = np->next;
@@ -134,7 +140,11 @@ static struct ndis_configuration_parameter *read_config(struct ndis_config *cfg,
     prop = prop->next;
   }
 
-  if (!prop) return NULL;
+  if (!prop) 
+  {
+    kprintf("ndis: parameter %s not found\n", name);
+    return NULL;
+  }
 
   if (prop->value)
     value = prop->value;
@@ -146,7 +156,7 @@ static struct ndis_configuration_parameter *read_config(struct ndis_config *cfg,
   if (!np) return NULL;
   memset(np, 0, sizeof(struct ndis_property));
 
-  np->name = name;
+  np->name = prop->name;
   np->value.parameter_type = type;
 
   switch (np->value.parameter_type)
@@ -166,8 +176,8 @@ static struct ndis_configuration_parameter *read_config(struct ndis_config *cfg,
       for (i = 0; i < len; i++) buf[i] = value[i];
       buf[len] = 0;
       np->value.parameter_data.string_data.buffer = buf;
-      np->value.parameter_data.string_data.length = len;
-      np->value.parameter_data.string_data.maxlength = len + sizeof(wchar_t);
+      np->value.parameter_data.string_data.length = len * sizeof(wchar_t);
+      np->value.parameter_data.string_data.maxlength = (len + 1) * sizeof(wchar_t);
       break;
 
     case NDIS_PARAMETER_MULTISTRING:
@@ -230,34 +240,59 @@ static struct section *get_config_section(struct ndis_adapter *adapter)
 // NTOSKRNL functions
 //
 
-boolean ndisapi RtlEqualUnicodeString(const wchar_t *string1, const wchar_t *string2, boolean case_insensitive)
+boolean ndisapi RtlEqualUnicodeString(const struct ndis_string *string1, const struct ndis_string *string2, boolean case_insensitive)
 {
+  wchar_t *s1, *s2;
+  wchar_t f, l;
+  unsigned int n;
+
   NDISTRACE("RtlEqualUnicodeString");
   
-  if (case_insensitive)
   {
-    wchar_t f, l;
+    char buf[256];
+    wchar_t *p;
+    char *q;
 
-    while (1)
-    {
-      f = ((*string1 <= 'Z') && (*string1 >= 'A')) ? *string1 + 'a' - 'A' : *string1;
-      l = ((*string2 <= 'Z') && (*string2 >= 'A')) ? *string2 + 'a' - 'A' : *string2;
-      if (f != l) return 0;
-      if (!*string1 && !*string2) return 1;
-      string1++;
-      string2++;
-    }
+    p = string1->buffer;
+    q = buf;
+    while (*p) *q++ = (char) *p++;
+    *q = 0;
+
+    kprintf("string1='%s'\n", buf);
+
+    p = string2->buffer;
+    q = buf;
+    while (*p) *q++ = (char) *p++;
+    *q = 0;
+
+    kprintf("string2='%s'\n", buf);
   }
-  else
+
+  kprintf("len=%d %d\n", string1->length, string2->length);
+  if (string1->length != string2->length) return 0;
+
+  s1 = string1->buffer;
+  s2 = string2->buffer;
+  for (n = 0; n < string1->length / sizeof(wchar_t); n++)
   {
-    while (*string1 == *string2)
+    if (case_insensitive)
     {
-      string1++;
-      string2++;
+      f = ((*s1 <= 'Z') && (*s1 >= 'A')) ? *s1 + 'a' - 'A' : *s1;
+      l = ((*s2 <= 'Z') && (*s2 >= 'A')) ? *s2 + 'a' - 'A' : *s2;
+    }
+    else
+    {
+      f = *s1;
+      l = *s2;
     }
 
-    return *string1 == 0 && *string2 == 0;
+    if (f != l) return 0;
+    s1++;
+    s2++;
   }
+
+  kprintf("match\n");
+  return 1;
 }
 
 unsigned long __cdecl DbgPrint(char *format, ...)
@@ -394,6 +429,7 @@ void ndisapi NdisReadConfiguration
   len = keyword->length / sizeof(wchar_t);
   if (len > sizeof(buf) - 1)
   {
+    kprintf("ndis: parameter name too long\n");
     *status = NDIS_STATUS_RESOURCES;
     return;
   }
@@ -405,12 +441,14 @@ void ndisapi NdisReadConfiguration
   kprintf("ndis: read config %s len %d type %d\n", buf, len, parameter_type);
 
   // Read property from configuration
-  *parameter_value = read_config(cfg, buf,  parameter_type);
+  *parameter_value = read_config(cfg, buf, parameter_type);
   if (!*parameter_value)
   {
     *status = NDIS_STATUS_FAILURE;
     return;
   }
+
+  kprintf("ndis: value: %d\n", (*parameter_value)->parameter_data.integer_data);
 
   *status = 0;
 }
@@ -500,7 +538,7 @@ void ndisapi NdisMQueryAdapterResources
   }
 
   resource_list->version = 1;
-  resource_list->revision = 0;
+  resource_list->revision = 1;
   
   res = adapter->unit->resources;
   desc = resource_list->descriptors;
@@ -534,7 +572,7 @@ void ndisapi NdisMQueryAdapterResources
 	desc->flags = 0;
 	desc->u.interrupt.level = res->start;
 	desc->u.interrupt.vector = res->start;
-	desc->u.interrupt.affinity = 1;
+	desc->u.interrupt.affinity = -1;
 	break;
 
       case RESOURCE_DMA:
@@ -553,6 +591,12 @@ void ndisapi NdisMQueryAdapterResources
     res = res->next;
   }
   
+  // TEST
+  //buflen += sizeof(struct ndis_resource_descriptor);
+  //desc->type = RESOURCE_DMA;
+  //desc->u.dma.channel = 0x0F;
+  //resno++;
+
   kprintf("ndis: returned %d resource descriptors\n", resno);
 
   resource_list->count = resno;
@@ -573,8 +617,14 @@ unsigned long ndisapi NdisReadPciSlotInformation
   unsigned long length
 )
 {
+  struct ndis_adapter *adapter = (struct ndis_adapter *) ndis_adapter_handle;
+
   NDISTRACE("NdisReadPciSlotInformation");
-  return NDIS_STATUS_FAILURE;
+  kprintf("ndis: read pci slot %d offset %d length %d\n", slot_number, offset, length);
+
+  pci_read_buffer(adapter->unit, offset, buffer, length);
+
+  return 0;
 }
 
 unsigned long ndisapi NdisWritePciSlotInformation
@@ -586,8 +636,14 @@ unsigned long ndisapi NdisWritePciSlotInformation
   unsigned long length
 )
 {
+  struct ndis_adapter *adapter = (struct ndis_adapter *) ndis_adapter_handle;
+
   NDISTRACE("NdisWritePciSlotInformation");
-  return NDIS_STATUS_FAILURE;
+  kprintf("ndis: write pci slot %d offset %d length %d\n", slot_number, offset, length);
+
+  pci_write_buffer(adapter->unit, offset, buffer, length);
+
+  return 0;
 }
 
 //
@@ -603,6 +659,8 @@ ndis_status ndisapi NdisMRegisterIoPortRange
 )
 {
   NDISTRACE("NdisMRegisterIoPortRange");
+  kprintf("ndis: register io ports start=0x%x len=%d\n", initial_port, number_of_ports);
+  *port_offset = (void *) initial_port;
   return 0;
 }
 
