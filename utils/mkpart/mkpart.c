@@ -234,7 +234,7 @@ void write_image(HANDLE hdev, unsigned int startsect, unsigned int numsect, char
 
     if (!WriteFile(hdev, buf, bytes, &bytes, NULL))
     {
-      printf("mkpart: error %d writing to volume\n", , GetLastError());
+      printf("mkpart: error %d writing to volume\n", GetLastError());
       return;
     }
 

@@ -16,10 +16,20 @@
 __int64 get_device_size(HANDLE hdev)
 {
   GET_LENGTH_INFORMATION li;
+  DISK_GEOMETRY geom;
   DWORD len;
 
-  if (!DeviceIoControl(hdev, IOCTL_DISK_GET_LENGTH_INFO, NULL, 0, &li, sizeof(li), &len, NULL)) return -1;
-  return li.Length.QuadPart;
+  if (DeviceIoControl(hdev, IOCTL_DISK_GET_LENGTH_INFO, NULL, 0, &li, sizeof(li), &len, NULL)) 
+  {
+    return li.Length.QuadPart;
+  }
+
+  if (DeviceIoControl(hdev, IOCTL_DISK_GET_DRIVE_GEOMETRY, NULL, 0, &geom, sizeof(geom), &len, NULL)) 
+  {
+    return geom.Cylinders.QuadPart * geom.TracksPerCylinder * geom.SectorsPerTrack * geom.BytesPerSector;
+  }
+
+  return -1;
 }
 
 int main(int argc, char *argv[])
@@ -31,6 +41,7 @@ int main(int argc, char *argv[])
   __int64 devsize;
   DWORD bytes;
   char buffer[BUFFER_SIZE];
+  int total;
 
   if (argc != 3)
   {
@@ -42,7 +53,7 @@ int main(int argc, char *argv[])
   strcat(devname, argv[1]);
   imgname = argv[2];
 
-  hdev = CreateFile(devname, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_WRITE_THROUGH | FILE_FLAG_NO_BUFFERING, NULL);
+  hdev = CreateFile(devname, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0 /*FILE_FLAG_WRITE_THROUGH | FILE_FLAG_NO_BUFFERING*/, NULL);
   if (hdev == INVALID_HANDLE_VALUE) 
   {
     printf("mkfloppy: error %d opening device %s\n", GetLastError(), devname);
@@ -69,22 +80,28 @@ int main(int argc, char *argv[])
     return 3;
   }
 
+  total = 0;
   while (1)
   {
     if (!ReadFile(himg, buffer, BUFFER_SIZE, &bytes, NULL))
     {
       printf("mkfloppy: error %d reading from image file\n", GetLastError());
-      break;
+      return 3;
     }
 
     if (bytes == 0) break;
 
-    if (!WriteFile(himg, buffer, bytes, &bytes, NULL))
+    if (!WriteFile(hdev, buffer, bytes, &bytes, NULL))
     {
       printf("mkpart: error %d writing to device\n", GetLastError());
-      break;
+      return 3;
     }
+    
+    total += bytes;
+    printf("%3d%% complete\r", total * 100 / FLOPPY_SIZE);
   }
+
+  printf("Floppy disk successfully written\n");
 
   CloseHandle(himg);
   CloseHandle(hdev);

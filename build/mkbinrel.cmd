@@ -14,6 +14,4 @@ copy build\setuprel.ini %1\build\setup.ini
 xcopy bin %1\bin
 
 copy tools\mkdfs.exe %1\tools
-copy tools\dbggw.exe %1\tools
-copy tools\diskio.dll %1\tools
-copy tools\rawwritewin.exe %1\tools
+copy tools\mkfloppy.exe %1\tools
