@@ -441,34 +441,6 @@ int cmd_dump(int argc, char *argv[])
   return 0;
 }
 
-int cmd_mkfs(int argc, char *argv[])
-{
-  char *devname;
-  char *type = "dfs";
-  char *opts = NULL;
-  int rc;
-
-  if (argc < 2)
-  {
-    printf("usage: mkfs <device> [<type> [<options>]]\n");
-    return -EINVAL;
-  }
-
-  devname = argv[1];
-  if (argc > 2) type = argv[2];
-  if (argc > 3) opts = argv[3];
-
-  rc = mkfs(devname, type, opts); 
-  printf("\n");
-  if (rc < 0)
-  {
-    printf("%s: %s\n", devname, strerror(rc));
-    return rc;
-  }
-
-  return 0;
-}
-
 int cmd_heapstat(int argc, char *argv[])
 {
   struct mallinfo m;
@@ -561,6 +533,33 @@ int cmd_httpget(int argc, char *argv[])
   t = clock() - t;
   if (t == 0) t = 1;
   printf("Received %d bytes in %d ms (%d KB/s)\n", rc, t, rc / t);
+
+  return 0;
+}
+
+int cmd_jobs(int argc, char *argv[])
+{
+  struct job *job = peb->firstjob;
+
+  printf("hmod     threads in  out err name\n");
+  printf("-------- ------- --- --- --- ------------------------------------------------\n");
+
+  while (job)
+  {
+    char *name;
+    char modname[MAXPATH];
+
+    if (!job->cmdline || !*job->cmdline)
+    {
+      getmodpath(job->hmod, modname, MAXPATH);
+      name = modname;
+    }
+    else
+      name = job->cmdline;
+
+    printf("%08x%8d%4d%4d%4d %s\n", job->hmod, job->threadcnt, job->in, job->out, job->err, name);
+    job = job->nextjob;
+  }
 
   return 0;
 }
@@ -782,6 +781,34 @@ int cmd_mkdir(int argc, char *argv[])
   if (rc < 0)
   {
     printf("%s: %s\n", path, strerror(rc));
+    return rc;
+  }
+
+  return 0;
+}
+
+int cmd_mkfs(int argc, char *argv[])
+{
+  char *devname;
+  char *type = "dfs";
+  char *opts = NULL;
+  int rc;
+
+  if (argc < 2)
+  {
+    printf("usage: mkfs <device> [<type> [<options>]]\n");
+    return -EINVAL;
+  }
+
+  devname = argv[1];
+  if (argc > 2) type = argv[2];
+  if (argc > 3) opts = argv[3];
+
+  rc = mkfs(devname, type, opts); 
+  printf("\n");
+  if (rc < 0)
+  {
+    printf("%s: %s\n", devname, strerror(rc));
     return rc;
   }
 
@@ -1305,6 +1332,7 @@ struct command cmdtab[] =
   {"heapstat", cmd_heapstat, "Display heap statistics"},
   {"help",     cmd_help,     "This help"},
   {"httpget",  cmd_httpget,  "Retrieve file via http"},
+  {"jobs",     cmd_jobs,     "Display job list"},
   {"kbd",      cmd_kbd,      "Keyboard test"},
   {"klog",     cmd_klog,     "Enable/disable kernel log messages"},
   {"less",     cmd_more,     "Display file paginated"},

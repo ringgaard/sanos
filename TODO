@@ -455,3 +455,6 @@ CHANGES
 - Support for select() and non-blocking I/O for pipe file system.
 
 - O_NONBLOCK added to flags in open() and ioctl() support for FIONBIO for file objects.
+
+- Added job list to PEB. The jobs command in the shell can now be used to display
+  all running jobs.

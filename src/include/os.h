@@ -920,6 +920,8 @@ struct pollfd
 // Process Environment Block
 //
 
+struct job;
+
 #define PEB_ADDRESS 0x7FFDF000
 
 struct peb
@@ -939,6 +941,9 @@ struct peb
   void (*globalhandler)(int, struct siginfo *);
   int umaskval;
   int fmodeval;
+
+  struct job *firstjob;
+  struct job *lastjob;
 };
 
 //
@@ -954,6 +959,8 @@ struct peb
 struct job
 {
   int threadcnt;        // Number of threads in job
+  struct job *nextjob;  // Next job in global job list
+  struct job *prevjob;  // Previous job in global job list
   hmodule_t hmod;       // Module handle for exec module
   char *cmdline;        // Command line arguments
   handle_t terminated;  // Terminate event

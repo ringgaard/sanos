@@ -39,6 +39,8 @@
 #include <os/tss.h>
 #include <os/syspage.h>
 
+struct critsect job_lock;
+
 __inline long atomic_add(long *dest, long add_value)
 {
   __asm 
@@ -56,6 +58,8 @@ void init_threads(hmodule_t hmod)
   struct tib *tib = gettib();
   struct job *job;
 
+  mkcs(&job_lock);
+
   job = malloc(sizeof(struct job));
   if (!job) panic("unable to allocate initial job");
   memset(job, 0, sizeof(struct job));
@@ -70,6 +74,7 @@ void init_threads(hmodule_t hmod)
   job->cmdline = NULL;
 
   tib->job = job;
+  peb->firstjob = peb->lastjob = job;
 }
 
 handle_t mkthread(void (__stdcall *startaddr)(struct tib *), unsigned long stacksize, struct tib **ptib)
@@ -125,6 +130,13 @@ handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, vo
     }
 
     job->terminated = mkevent(1, 0);
+
+    enter(&job_lock);
+    job->prevjob = peb->lastjob;
+    if (!peb->firstjob) peb->firstjob = job;
+    if (peb->lastjob) peb->lastjob->nextjob = job;
+    peb->lastjob = job;
+    leave(&job_lock);
   }
   else
     job = gettib()->job;
@@ -155,6 +167,13 @@ void endthread(int retval)
   job = gettib()->job;
   if (atomic_add(&job->threadcnt, -1) == 0)
   {
+    enter(&job_lock);
+    if (job->nextjob) job->nextjob->prevjob = job->prevjob;
+    if (job->prevjob) job->prevjob->nextjob = job->nextjob;
+    if (job == peb->firstjob) peb->firstjob = job->nextjob;
+    if (job == peb->lastjob) peb->lastjob = job->prevjob;
+    leave(&job_lock);
+
     if (job->in >= 0) close(job->in);
     if (job->out >= 0) close(job->out);
     if (job->err >= 0) close(job->err);
@@ -164,6 +183,7 @@ void endthread(int retval)
 
     eset(job->terminated);
     close(job->terminated);
+
     free(job);
   }
 
