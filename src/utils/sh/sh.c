@@ -528,21 +528,25 @@ static void busy_loop(int ms)
   printf("Time is %04d/%02d/%02d %02d:%02d:%02d Clock is %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, c);
 }
 
-static void start_program(int argc, char **argv)
+static void exec_program(char *args)
 {
   char pgm[MAXPATH];
-  char *args = "";
+  char *p;
+  char *q;
   hmodule_t hmod;
   int rc;
+  int dotseen = 0;
 
-  if (argc < 1)
+  p = args;
+  q = pgm;
+  while (*p != 0 && *p != ' ')
   {
-    printf("usage: start <pgm> [<args>]\n");
-    return;
+    if (*p == '.') dotseen = 1;
+    if (*p == PS1 || *p == PS2) dotseen = 0;
+    *q++ = *p++;
   }
-  
-  sprintf(pgm, "%s.exe", argv[0]);
-  if (argc > 1) args = argv[1];
+  *q++ = 0;
+  if (!dotseen) strcat(pgm, ".exe");
 
   hmod = load(pgm);
   if (hmod == NULL)
@@ -555,6 +559,21 @@ static void start_program(int argc, char **argv)
 
   if (rc != 0) printf("Exitcode: %d\n", rc);
   //unload(hmod);
+}
+
+static void __stdcall spawn_program(void *args)
+{
+  exec_program(args);
+  printf("%s: terminated\n", args);
+  free(args);
+}
+
+static void launch_program(char *args)
+{
+  while (*args != 0 && *args != ' ') args++;
+  while (*args == ' ') args++;
+
+  beginthread(spawn_program, 0, args, 0, NULL);
 }
 
 static void load_module(int argc, char **argv)
@@ -1356,7 +1375,7 @@ void shell()
       else if (strcmp(argv[0], "kp") == 0)
 	set_kprint(atoi(argv[1]));
       else if (strcmp(argv[0], "start") == 0)
-	start_program(argc - 1, argv + 1);
+        launch_program(cmd);
       else if (strcmp(argv[0], "load") == 0)
 	load_module(argc, argv);
       else if (strcmp(argv[0], "break") == 0)
@@ -1386,7 +1405,7 @@ void shell()
       else if (strcmp(argv[0], "cstest") == 0)
 	cstest();
       else
-	start_program(argc, argv);
+	exec_program(cmd);
 
       free_args(argc, argv);
     }

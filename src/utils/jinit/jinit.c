@@ -281,14 +281,12 @@ int init_jvm()
   }
   else
   {
-#if 0
-    rc = (*vm)->AttachCurrentThread(vm); 
+    rc = (*vm)->AttachCurrentThread(vm, (void **) &env, &args);
     if (rc != JNI_OK) 
     {
-      syslog(LOG_ERROR, "Error %d attaching to vm\n", rc);
+      syslog(LOG_ERR, "Error %d attaching to vm\n", rc);
       return 1;
     }
-#endif
   }
 
   return 0;
@@ -307,6 +305,8 @@ int __stdcall main(hmodule_t hmod, char *cmdline, int reserved)
 
   // Determine configuration
   cfgname = cmdline;
+  while (*cfgname != 0 && *cfgname != ' ') cfgname++;
+  while (*cfgname == ' ') cfgname++;
   if (!cfgname || !*cfgname) cfgname = "java";
 
   // Initialize Java VM
@@ -357,15 +357,13 @@ int __stdcall main(hmodule_t hmod, char *cmdline, int reserved)
   //syslog(LOG_DEBUG, "return from main\n");
   if ((*env)->ExceptionOccurred(env)) (*env)->ExceptionDescribe(env);
 
-#if 0
   if ((*vm)->DetachCurrentThread(vm) != 0) 
   {
     syslog(LOG_ERR, "Could not detach main thread\n");
     return 1;
   }
-#endif
 
-  //(*vm)->DestroyJavaVM(vm);
+  (*vm)->DestroyJavaVM(vm);
   free_args(argc, argv);
   return 0;
 }

@@ -91,12 +91,12 @@ void exit(int status)
 {
   if (status != 0) kprintf("exit code = %d\n", status);
 
-  shell();
+  //shell();
 
   kprintf("syncing filesystems...\n");
   umount_all();
   kprintf("system stopped\n");
-  sleep(100);
+  sleep(1000);
   cli();
   halt();
 }
