@@ -24,9 +24,6 @@ struct file *stderr;
 struct peb *peb;
 
 void shell();
-int init_ne2000(struct netif *netif);
-int init_pcnet32(struct netif *netif);
-int pnpbios_init();
 
 void main(void *arg);
 
