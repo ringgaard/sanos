@@ -170,8 +170,7 @@
 			<File
 				RelativePath="..\src\sys\osldr\unzip.c">
 				<FileConfiguration
-					Name="SanOS|Win32"
-					ExcludedFromBuild="TRUE">
+					Name="SanOS|Win32">
 					<Tool
 						Name="VCCLCompilerTool"/>
 				</FileConfiguration>

@@ -91,8 +91,8 @@ start:
 	mov	[bootimg], ebx
 
 	; Display boot message
-	mov	si, osldrmsg
-	call	print
+	;mov	si, osldrmsg
+	;call	print
 
 	; Try to get system memory map from BIOS
 	call	getmemmap

@@ -311,6 +311,20 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
     //kprintf("apm: entry 0x%04x\n", apm->entry);
   }
 
+  if (syspage->bootparams.memmap.count != 0)
+  {
+    //struct memmap *memmap = &syspage->bootparams.memmap;
+    //int n;
+
+    //for (n = 0; n < memmap->count; n++)
+    //{
+    //  unsigned long addr = (unsigned long) memmap->entry[n].addr;
+    //  unsigned long size = (unsigned long) memmap->entry[n].size;
+    //  unsigned long type = memmap->entry[n].type;
+    //  kprintf("%p %p %d\n", addr, size, type);
+    //}
+  }
+
   // Enable interrupts and calibrate delay
   __asm { sti };
   calibrate_delay();

@@ -254,8 +254,7 @@ void copy_ramdisk(char *bootimg)
     zheap = check_heap(64 * K / PAGESIZE);
     zofs = super->compress_offset;
     zsize = super->compress_size;
-    panic("no unzip");
-    //unzip(bootimg + zofs, zsize, initrd + zofs, initrd_size - zofs, zheap, 64 * K / PAGESIZE);
+    unzip(bootimg + zofs, zsize, initrd + zofs, initrd_size - zofs, zheap, 64 * K);
   }
   else
   {
@@ -277,46 +276,14 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
   int i;
   char *bootimg = bootparams->bootimg;
 
-  int ofs;
-  int diffs;
-  int difloc[8];
-
-  // TEST
-  int n;
-  unsigned char *src = ((unsigned char *) 0x7C00) + 4096;
-  unsigned char *dst = (unsigned char *) hmod;
-  diffs = 0;
-  for (ofs = 4096; ofs < 24 * 1024; ofs++) 
-  {
-    if (src[ofs] != dst[ofs]) diffs++; //difloc[diffs++] = ofs;
-  }
-
-  memcpy((char *) 0x00090000 + 4096, (char *) 0x7C00 + 4096 + 4096, 20 * 1024);
-
   // Initialize video 
   init_video();
   //clear_screen();
-  kprintf("OSLDR\n");
-
-  kprintf("diffs %d\n", diffs);
-  //for (n = 0; n < diffs; n++) kprintf("diff %p\n", difloc[n]);
-
-#if 0
-      num = ((unsigned char *) hmod)[difloc[n]];
-      for (i = 0; i < 8; i++)
-      {
-	char digit = (num >> 28);
-	msg[i] = digit < 10 ? digit + '0' : digit - 10 + 'A';
-	num <<= 4;
-      }
-      msg[8] = '\n';
-      msg[9] = 0;
-      print_string(msg);
-#endif
+  //kprintf("OSLDR\n");
 
   // Determine size of RAM
   mem_end = memsize();
-  kprintf("%d MB RAM\n", mem_end / M);
+  //kprintf("%d MB RAM\n", mem_end / M);
 
   // Page allocation starts at 1MB
   heap = (char *) HEAP_START;

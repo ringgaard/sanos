@@ -57,6 +57,10 @@ start:
 start1:
 	mov	ax, cs
 	mov	ds, ax
+	
+	mov	ax, 0x9000
+	mov	ss, ax
+	mov	sp, 0xF800
 
 	; Display boot message
 	mov	si, bootmsg

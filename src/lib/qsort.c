@@ -49,10 +49,10 @@ void qsort(void *base, unsigned num, unsigned width, int (*comp)(const void *, c
   stkptr = 0;
 
   lo = base;
-  hi = (char *) base + width * (num-1);
+  hi = (char *) base + width * (num - 1);
 
 recurse:
-  size = (hi - lo) / width + 1;        // number of el's to sort
+  size = (hi - lo) / width + 1;
 
   if (size <= CUTOFF) 
   {
@@ -68,15 +68,15 @@ recurse:
 
     for (;;) 
     {
-      do  { loguy += width; } while (loguy <= hi && comp(loguy, lo) <= 0);
-      do  { higuy -= width; } while (higuy > lo && comp(higuy, lo) >= 0);
+      do { loguy += width; } while (loguy <= hi && comp(loguy, lo) <= 0);
+      do { higuy -= width; } while (higuy > lo && comp(higuy, lo) >= 0);
       if (higuy < loguy) break;
       swap(loguy, higuy, width);
     }
 
     swap(lo, higuy, width);
 
-    if ( higuy - 1 - lo >= hi - loguy ) 
+    if (higuy - 1 - lo >= hi - loguy) 
     {
       if (lo + width < higuy) 
       {
