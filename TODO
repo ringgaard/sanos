@@ -1,6 +1,32 @@
 TODO for sanos
 --------------
 
+- New APIs
+    advapi32.dll
+      RegCreateKeyExA
+      RegEnumValueA
+      RegDeleteValueA
+      RegSetValueExA
+      RegFlushKey
+      RegDeleteKeyA
+      RegQueryValueExW
+      RegOpenKeyExW
+
+    msvcrt:
+      iswctype
+      _wfullpath
+      _wgetdcwd
+
+    kernel32:
+      FindFirstFileW
+      FindNextFileW
+      SetFileAttributesW
+      RemoveDirectoryW
+      DeleteFileW
+      CreateFileW
+      GetFileAttributesW
+      SearchPathA
+
 - Add read-only attribute to dfs
 
 - Rename format() syscall to mkfs()
