@@ -72,9 +72,9 @@ err_t tcp_input(struct pbuf *p, struct netif *inp)
   tcphdr->ackno = ntohl(tcphdr->ackno);
   tcphdr->wnd = ntohs(tcphdr->wnd);
   
-  kprintf("tcp_input: size %d seqno %lu ackno %lu wnd %d flags: ", p->tot_len, tcphdr->seqno, tcphdr->ackno, tcphdr->wnd);
-  tcp_debug_print_flags(TCPH_FLAGS(tcphdr));
-  kprintf("\n");
+  //kprintf("tcp_input: size %d seqno %lu ackno %lu wnd %d flags: ", p->tot_len, tcphdr->seqno, tcphdr->ackno, tcphdr->wnd);
+  //tcp_debug_print_flags(TCPH_FLAGS(tcphdr));
+  //kprintf("\n");
 
   // Demultiplex an incoming segment. First, we check if it is destined for an active connection
   prev = NULL;  

@@ -34,8 +34,8 @@
 #define CMD_SET_INDICATION_ENABLE  0x7800
 #define CMD_SET_INTERRUPT_ENABLE   0x7000
 #define CMD_SELECT_WINDOW          0x0800
-#define CMD_STATISTICS_ENABLE      0xB000
-#define CMD_STATISTICS_DISABLE     0xA800
+#define CMD_STATISTICS_ENABLE      0xA800
+#define CMD_STATISTICS_DISABLE     0xB000
 #define CMD_ACKNOWLEDGE_INTERRUPT  0x6800
 #define CMD_UP_STALL		   0x3000
 #define CMD_UP_UNSTALL		   0x3001
@@ -133,7 +133,7 @@
 #define LATE_COLLISIONS       0x04
 #define RX_OVERRUNS           0x05
 #define FRAMES_XMITTED_OK     0x06
-#define FRAMES_RCVD_OK        0x07
+#define FRAMES_RECEIVED_OK    0x07
 #define FRAMES_DEFERRED       0x08
 #define UPPER_FRAMES_OK       0x09
 #define BYTES_RECEIVED_OK     0x0A
@@ -249,6 +249,33 @@
 #define FSH_DOWN_INDICATE		        (1 << 31)
 
 //
+// Internal Config
+//
+
+#define INTERNAL_CONFIG_DISABLE_BAD_SSD		(1 << 8)
+#define INTERNAL_CONFIG_ENABLE_TX_LARGE		(1 << 14)
+#define INTERNAL_CONFIG_ENABLE_RX_LARGE		(1 << 15)
+#define INTERNAL_CONFIG_AUTO_SELECT		(1 << 24)
+#define INTERNAL_CONFIG_DISABLE_ROM		(1 << 25)
+
+#define INTERNAL_CONFIG_TRANSCEIVER_MASK	0x00F00000
+#define INTERNAL_CONFIG_TRANSCEIVER_SHIFT	20
+
+//
+// Connector types
+//
+
+#define CONNECTOR_10BASET         0
+#define CONNECTOR_10AUI           1
+#define CONNECTOR_10BASE2         3
+#define CONNECTOR_100BASETX       4
+#define CONNECTOR_100BASEFX       5
+#define CONNECTOR_MII             6
+#define CONNECTOR_AUTONEGOTIATION 8
+#define CONNECTOR_EXTERNAL_MII    9
+#define CONNECTOR_UNKNOWN         0xFF
+
+//
 // Physical Management
 //
 
@@ -292,6 +319,54 @@
 #define MII_PHY_ANAR                	4   // Auto negotiate advertisement reg
 #define MII_PHY_ANLPAR              	5   // Auto negotiate link partner reg
 #define MII_PHY_ANER                	6   // Auto negotiate expansion reg
+
+//
+// MII control register
+//
+
+#define MII_CONTROL_RESET		0x8000  // Reset bit in control reg
+#define MII_CONTROL_100MB		0x2000  // 100Mbit or 10 Mbit flag
+#define MII_CONTROL_ENABLE_AUTO		0x1000  // Autonegotiate enable
+#define MII_CONTROL_ISOLATE		0x0400  // Islolate bit
+#define MII_CONTROL_START_AUTO		0x0200  // Restart autonegotiate
+#define MII_CONTROL_FULL_DUPLEX		0x0100  // Full duplex
+
+//
+// MII status register
+//
+
+#define MII_STATUS_100MB_MASK	0xE000  // Any of these indicate 100 Mbit
+#define MII_STATUS_10MB_MASK	0x1800  // Either of these indicate 10 Mbit
+#define MII_STATUS_AUTO_DONE	0x0020  // Auto negotiation complete
+#define MII_STATUS_AUTO		0x0008  // Auto negotiation is available
+#define MII_STATUS_LINK_UP	0x0004  // Link status bit
+#define MII_STATUS_EXTENDED	0x0001  // Extended regs exist
+#define MII_STATUS_100T4	0x8000  // Capable of 100BT4
+#define MII_STATUS_100TXFD	0x4000  // Capable of 100BTX full duplex
+#define MII_STATUS_100TX	0x2000  // Capable of 100BTX
+#define MII_STATUS_10TFD	0x1000  // Capable of 10BT full duplex
+#define MII_STATUS_10T		0x0800  // Capable of 10BT
+
+//
+// MII Auto-Negotiation Link Partner Ability
+//
+
+#define MII_ANLPAR_100T4	0x0200  // Support 100BT4
+#define MII_ANLPAR_100TXFD	0x0100  // Support 100BTX full duplex
+#define MII_ANLPAR_100TX	0x0080  // Support 100BTX half duplex
+#define MII_ANLPAR_10TFD	0x0040  // Support 10BT full duplex
+#define MII_ANLPAR_10T		0x0020  // Support 10BT half duplex
+
+//
+// MII Auto-Negotiation Advertisement
+//
+
+#define MII_ANAR_100T4		0x0200  // Support 100BT4
+#define MII_ANAR_100TXFD	0x0100  // Support 100BTX full duplex
+#define MII_ANAR_100TX		0x0080  // Support 100BTX half duplex
+#define MII_ANAR_10TFD		0x0040  // Support 10BT full duplex
+#define MII_ANAR_10T		0x0020  // Support 10BT half duplex
+#define MII_ANAR_FLOWCONTROL	0x0400  // Support Flow Control
 
 //
 // EEPROM contents
@@ -338,6 +413,8 @@
 #define LAST_FRAG 	          0x80000000  // Last entry in descriptor
 #define DN_COMPLETE	          0x00010000  // This packet has been downloaded
 #define UP_COMPLETE               0x00008000  // This packet has been uploaded
+
+char *connectorname[] = {"10Base-T", "AUI", "n/a", "BNC", "100Base-TX", "100Base-FX", "MII", "n/a", "Auto", "Ext-MII"};
 
 struct sg_entry
 {
@@ -413,6 +490,7 @@ struct nic
 
   int connector;                        // Active connector
   int linkspeed;                        // Link speed in mbits/s
+  int fullduplex;                       // Full duplex link
 
   struct eth_addr hwaddr;               // MAC address for NIC
 
@@ -496,10 +574,18 @@ void update_statistics(struct nic *nic)
   // Read statistics from window 6
   select_window(nic, 6);
 
+  nic->stat.tx_sqe_errors += _inp(nic->iobase + SQE_ERRORS);
+  nic->stat.tx_multiple_collisions += _inp(nic->iobase + MULTIPLE_COLLISIONS);
+  nic->stat.tx_single_collisions += _inp(nic->iobase + SINGLE_COLLISIONS);
+  nic->stat.rx_overruns += _inp(nic->iobase + RX_OVERRUNS);
+  nic->stat.tx_carrier_lost += _inp(nic->iobase + CARRIER_LOST);
+  nic->stat.tx_late_collisions += _inp(nic->iobase + LATE_COLLISIONS);
+  nic->stat.tx_frames_deferred += _inp(nic->iobase + FRAMES_DEFERRED);
+
   // Frames received/transmitted
+  rx_frames = _inp(nic->iobase + FRAMES_RECEIVED_OK);
+  tx_frames = _inp(nic->iobase + FRAMES_XMITTED_OK);
   upper = _inp(nic->iobase + UPPER_FRAMES_OK);
-  rx_frames = _inpw(nic->iobase + FRAMES_RCVD_OK);
-  tx_frames = _inpw(nic->iobase + FRAMES_XMITTED_OK);
   rx_frames += (upper & 0x0F) << 8;
   tx_frames += (upper & 0xF0) << 4;
 
@@ -509,14 +595,6 @@ void update_statistics(struct nic *nic)
   // Bytes received/transmitted - upper part added below from window 4
   rx_bytes = _inpw(nic->iobase + BYTES_RECEIVED_OK);
   tx_bytes = _inpw(nic->iobase + BYTES_XMITTED_OK);
-
-  nic->stat.tx_carrier_lost += _inp(nic->iobase + CARRIER_LOST);
-  nic->stat.tx_sqe_errors += _inp(nic->iobase + SQE_ERRORS);
-  nic->stat.tx_multiple_collisions += _inp(nic->iobase + MULTIPLE_COLLISIONS);
-  nic->stat.tx_single_collisions += _inp(nic->iobase + SINGLE_COLLISIONS);
-  nic->stat.tx_late_collisions += _inp(nic->iobase + LATE_COLLISIONS);
-  nic->stat.rx_overruns += _inp(nic->iobase + RX_OVERRUNS);
-  nic->stat.tx_frames_deferred += _inp(nic->iobase + FRAMES_DEFERRED);
 
   // Read final statistics from window 4
   select_window(nic, 4);
@@ -531,10 +609,6 @@ void update_statistics(struct nic *nic)
 
   nic->stat.rx_bad_ssd += _inp(nic->iobase + BAD_SSD);
 
-  // Update global statistics
-  stats.link.recv += rx_frames;
-  stats.link.xmit += tx_frames;
-
   // Set the window to its previous value
   select_window(nic, current_window);
 }
@@ -545,65 +619,25 @@ int nicstat_proc(struct proc_file *pf, void *arg)
 
   update_statistics(nic);
 
-  pprintf(pf, "Frames transmitted... : %10lu\n", nic->stat.tx_frames_ok);
-  pprintf(pf, "Bytes transmitted.... : %10lu\n", nic->stat.tx_bytes_ok);
-  pprintf(pf, "Frames deferred...... : %10lu\n", nic->stat.tx_frames_deferred);
-  pprintf(pf, "Single collisions.... : %10lu\n", nic->stat.tx_single_collisions);
-  pprintf(pf, "Multiple collisions.. : %10lu\n", nic->stat.tx_multiple_collisions);
-  pprintf(pf, "Late collisions...... : %10lu\n", nic->stat.tx_late_collisions);
-  pprintf(pf, "Carrier lost......... : %10lu\n", nic->stat.tx_carrier_lost);
-  pprintf(pf, "Maximum collisions .. : %10lu\n", nic->stat.tx_maximum_collisions);
-  pprintf(pf, "SQE errors........... : %10lu\n", nic->stat.tx_sqe_errors);
-  pprintf(pf, "HW errors............ : %10lu\n", nic->stat.tx_hw_errors);
-  pprintf(pf, "Jabber errors........ : %10lu\n", nic->stat.tx_jabber_error);
-  pprintf(pf, "Unknown errors....... : %10lu\n", nic->stat.tx_unknown_error);
-  pprintf(pf, "Frames received...... : %10lu\n", nic->stat.rx_frames_ok);
-  pprintf(pf, "Bytes received....... : %10lu\n", nic->stat.rx_bytes_ok);
-  pprintf(pf, "Overruns............. : %10lu\n", nic->stat.rx_overruns);
-  pprintf(pf, "Bad SSD.............. : %10lu\n", nic->stat.rx_bad_ssd);
-  pprintf(pf, "Allignment errors.... : %10lu\n", nic->stat.rx_alignment_error);
-  pprintf(pf, "CRC errors........... : %10lu\n", nic->stat.rx_bad_crc_error);
-  pprintf(pf, "Oversized frames..... : %10lu\n", nic->stat.rx_oversize_error);
-
-  return 0;
-}
-
-int nic_find_mii_phy(struct nic *nic)
-{
-  unsigned short media_options = 0;
-  unsigned short phy_mgmt = 0;
-  int i;
-
-  // Read the MEDIA OPTIONS to see what connectors are available
-  select_window(nic, 3);
-  media_options = _inpw(nic->iobase + MEDIA_OPTIONS);
-
-  if ((media_options & MEDIA_OPTIONS_MII_AVAILABLE) ||
-      (media_options & MEDIA_OPTIONS_100BASET4_AVAILABLE)) 
-  {
-    // Drop everything, so we are not driving the data, and run the
-    // clock through 32 cycles in case the PHY is trying to tell us
-    // something. Then read the data line, since the PHY's pull-up
-    // will read as a 1 if it's present.
-
-    select_window(nic, 4);
-    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
-
-    for (i = 0; i < 32; i++) 
-    {
-      usleep(1);
-      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
-      usleep(1);
-      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
-    }
-
-    phy_mgmt = _inpw(nic->iobase + PHYSICAL_MANAGEMENT);
-
-    if (phy_mgmt & PHY_DATA1)
-      return 0;
-    else 
-      return -ENODEV;
-  }
+  pprintf(pf, "Frames transmitted... : %d\n", nic->stat.tx_frames_ok);
+  pprintf(pf, "Bytes transmitted.... : %d\n", nic->stat.tx_bytes_ok);
+  pprintf(pf, "Frames deferred...... : %d\n", nic->stat.tx_frames_deferred);
+  pprintf(pf, "Single collisions.... : %d\n", nic->stat.tx_single_collisions);
+  pprintf(pf, "Multiple collisions.. : %d\n", nic->stat.tx_multiple_collisions);
+  pprintf(pf, "Late collisions...... : %d\n", nic->stat.tx_late_collisions);
+  pprintf(pf, "Carrier lost......... : %d\n", nic->stat.tx_carrier_lost);
+  pprintf(pf, "Maximum collisions .. : %d\n", nic->stat.tx_maximum_collisions);
+  pprintf(pf, "SQE errors........... : %d\n", nic->stat.tx_sqe_errors);
+  pprintf(pf, "HW errors............ : %d\n", nic->stat.tx_hw_errors);
+  pprintf(pf, "Jabber errors........ : %d\n", nic->stat.tx_jabber_error);
+  pprintf(pf, "Unknown errors....... : %d\n", nic->stat.tx_unknown_error);
+  pprintf(pf, "Frames received...... : %d\n", nic->stat.rx_frames_ok);
+  pprintf(pf, "Bytes received....... : %d\n", nic->stat.rx_bytes_ok);
+  pprintf(pf, "Overruns............. : %d\n", nic->stat.rx_overruns);
+  pprintf(pf, "Bad SSD.............. : %d\n", nic->stat.rx_bad_ssd);
+  pprintf(pf, "Allignment errors.... : %d\n", nic->stat.rx_alignment_error);
+  pprintf(pf, "CRC errors........... : %d\n", nic->stat.rx_bad_crc_error);
+  pprintf(pf, "Oversized frames..... : %d\n", nic->stat.rx_oversize_error);
 
   return 0;
 }
@@ -773,6 +807,8 @@ int nic_transmit(struct dev *dev, struct pbuf *p)
   if (pbuf_clen(p) > TX_MAX_FRAGS)
   {
     p = pbuf_linearize(PBUF_RAW, p);
+    stats.link.memerr++;
+    stats.link.drop++;
     if (!p) return -ENOMEM;
   }
 
@@ -803,6 +839,8 @@ int nic_transmit(struct dev *dev, struct pbuf *p)
   else
     entry->prev->phys_next = entry->phys_addr;
   execute_command(nic, CMD_DOWN_UNSTALL, 0);
+
+  stats.link.xmit++;
   return 0;
 }
 
@@ -940,6 +978,7 @@ void nic_up_complete(struct nic *nic)
     // Send packet to upper layer
     if (p)
     {
+      stats.link.recv++;
       if (dev_receive(nic->devno, p) < 0) pbuf_free(p);
     }
 
@@ -1074,7 +1113,6 @@ void nic_dpc(void *arg)
     // Handle update statistics event
     if (status & INTSTATUS_UPDATE_STATS)
     {
-      kprintf("nic: update stats\n");
       update_statistics(nic);
     }
 
@@ -1128,12 +1166,111 @@ struct driver nic_driver =
   nic_transmit
 };
 
+int nic_negotiate_link(struct nic *nic)
+{
+  unsigned long internal_config;
+  int connector;
+  int control;
+  int status;
+  int anar;
+  int anlpar;
+  int i;
+  unsigned short mac_control;
+
+  select_window(nic, 3);
+  internal_config = _inpd(nic->iobase + INTERNAL_CONFIG);
+  connector = (internal_config & INTERNAL_CONFIG_TRANSCEIVER_MASK) >> INTERNAL_CONFIG_TRANSCEIVER_SHIFT;
+
+  if (connector != CONNECTOR_AUTONEGOTIATION)
+  {
+    kprintf("nic: not configured for auto-negotiate\n");
+    return -EINVAL;
+  }
+
+  status = nic_read_mii_phy(nic, MII_PHY_STATUS);
+  if (status < 0)
+  {
+    kprintf("nic: mii not responding\n");
+    return -EIO;
+  }
+
+  control = nic_read_mii_phy(nic, MII_PHY_CONTROL);
+  anar = nic_read_mii_phy(nic, MII_PHY_ANAR);
+
+  control |= MII_CONTROL_ENABLE_AUTO | MII_CONTROL_START_AUTO;
+
+  nic_write_mii_phy(nic, MII_PHY_ANAR, (unsigned short) anar);
+  nic_write_mii_phy(nic, MII_PHY_CONTROL, (unsigned short) control);
+
+  status = nic_read_mii_phy(nic, MII_PHY_STATUS);
+  if (!(status & MII_STATUS_AUTO_DONE))
+  {
+    for (i = 0; i < 30; i++)
+    {
+      sleep(100);
+      status = nic_read_mii_phy(nic, MII_PHY_STATUS);
+      if (status & MII_STATUS_AUTO_DONE) break;
+    }
+
+    if (!(status & MII_STATUS_AUTO_DONE))
+    {
+      kprintf("nic: timeout wait for auto-negotiation to complete\n");
+      return -ETIMEOUT;
+    }
+  }
+
+  anar = nic_read_mii_phy(nic, MII_PHY_ANAR);
+  anlpar = nic_read_mii_phy(nic, MII_PHY_ANLPAR);
+
+  if ((anar & MII_ANAR_100TXFD) && (anlpar & MII_ANLPAR_100TXFD))
+  {
+    nic->connector = CONNECTOR_100BASETX;
+    nic->fullduplex = 1;
+    nic->linkspeed = 100;
+  }
+  else if ((anar & MII_ANAR_100TX) && (anlpar & MII_ANLPAR_100TX))
+  {
+    nic->connector = CONNECTOR_100BASETX;
+    nic->fullduplex = 0;
+    nic->linkspeed = 100;
+  }
+  else if ((anar & MII_ANAR_10TFD) && (anlpar & MII_ANLPAR_10TFD))
+  {
+    nic->connector = CONNECTOR_10BASET;
+    nic->fullduplex = 1;
+    nic->linkspeed = 10;
+  }
+  else if ((anar & MII_ANAR_10T) && (anlpar & MII_ANLPAR_10T))
+  {
+    nic->connector = CONNECTOR_10BASET;
+    nic->fullduplex = 0;
+    nic->linkspeed = 10;
+  }
+  else
+  {
+    kprintf("nic: unable to determine negotiated link\n");
+    return -EIO;
+  }
+
+  if (nic->fullduplex)
+  {
+    select_window(nic, 3);
+    mac_control = _inpw(nic->iobase + MAC_CONTROL);
+    mac_control |= MAC_CONTROL_FULL_DUPLEX_ENABLE;
+    //mac_control |=  MAC_CONTROL_FLOW_CONTROL_ENABLE;
+    _outpw(nic->iobase + MAC_CONTROL, mac_control);
+  }
+
+  return 0;
+}
+
 int __declspec(dllexport) install(struct unit *unit)
 {
   struct nic *nic;
   unsigned short eeprom_checksum = 0;
   int eeprom_busy = 0;
   int i, j;
+  int rc;
 
   // Check for PCI device
   if (unit->bus->bustype != BUSTYPE_PCI) return -EINVAL;
@@ -1258,6 +1395,10 @@ int __declspec(dllexport) install(struct unit *unit)
   _outpd(nic->iobase + DOWN_LIST_POINTER, 0);
   execute_command(nic, CMD_DOWN_UNSTALL, 0);
 
+  // Auto-negotiate link
+  rc = nic_negotiate_link(nic);
+  if (rc < 0) return rc;
+
   // Set receive filter
   execute_command(nic, CMD_SET_RX_FILTER, RECEIVE_INDIVIDUAL | RECEIVE_MULTICAST | RECEIVE_BROADCAST);
 
@@ -1271,6 +1412,10 @@ int __declspec(dllexport) install(struct unit *unit)
   execute_command(nic, CMD_SET_INTERRUPT_ENABLE, ALL_INTERRUPTS);
   _inpw(nic->iobase + STATUS);
 
+  // Enable statistics
+  clear_statistics(nic);
+  execute_command(nic, CMD_STATISTICS_ENABLE, 0);
+
   // Enable the transmit and receive engines.
   execute_command(nic, CMD_RX_ENABLE, 0);
   execute_command(nic, CMD_TX_ENABLE, 0);
@@ -1278,7 +1423,8 @@ int __declspec(dllexport) install(struct unit *unit)
   nic->devno = dev_make("nic#", &nic_driver, unit, nic);
   register_proc_inode(device(nic->devno)->name, nicstat_proc, nic);
 
-  kprintf("%s: %s iobase 0x%x irq %d hwaddr %la\n", device(nic->devno)->name, unit->productname, nic->iobase, nic->irq, &nic->hwaddr);
+  kprintf("%s: %s, iobase 0x%x irq %d hwaddr %la\n", device(nic->devno)->name, unit->productname, nic->iobase, nic->irq, &nic->hwaddr);
+  kprintf("%s: %d MBits/s, %s-duplex, %s\n", device(nic->devno)->name, nic->linkspeed, nic->fullduplex ? "full" : "half", connectorname[nic->connector]);
 
   return 0;
 }

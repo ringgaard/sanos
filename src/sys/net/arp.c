@@ -183,8 +183,6 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
       }
       ethhdr->type = htons(ETHTYPE_IP);
 
-      stats.link.xmit++;
-
       err = dev_transmit((devno_t) entry->netif->state, p);
       if (err < 0)
       {

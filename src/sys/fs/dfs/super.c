@@ -16,7 +16,7 @@
 #define DEFAULT_RESERVED_BLOCKS 16
 #define DEFAULT_RESERVED_INODES 16
 
-#define FORMAT_BLOCKSIZE        (128 * K)
+#define FORMAT_BLOCKSIZE        (64 * K)
 
 static void mark_group_desc_dirty(struct filsys *fs, int group)
 {
@@ -218,14 +218,22 @@ static struct filsys *create_filesystem(devno_t devno, struct fsoptions *fsopts)
     prev_percent = -1;
     for (i = fs->super->groupdesc_table_block + fs->groupdesc_blocks; i < fs->super->block_count; i += blocks_per_io)
     {
+      int rc;
+
       percent = (i / 100) * 100 / (fs->super->block_count / 100);
       if (percent != prev_percent) kprintf("%d%% complete\r", percent);
       prev_percent = percent;
       
       if (i + blocks_per_io > fs->super->block_count)
-        dev_write(fs->devno, buffer, (fs->super->block_count - i) * fs->blocksize, i);
+        rc = dev_write(fs->devno, buffer, (fs->super->block_count - i) * fs->blocksize, i);
       else
-        dev_write(fs->devno, buffer, FORMAT_BLOCKSIZE, i);
+        rc = dev_write(fs->devno, buffer, FORMAT_BLOCKSIZE, i);
+
+      if (rc < 0)
+      {
+	kprintf("dfs: error %d in format\n", rc);
+	return NULL;
+      }
     }
     kprintf("100%% complete\r");
 

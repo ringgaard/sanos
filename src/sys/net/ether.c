@@ -165,7 +165,6 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   }
   ethhdr->type = htons(ETHTYPE_IP);
   
-  stats.link.xmit++;
   err = dev_transmit((devno_t) netif->state, p);
   if (err < 0) 
   {
@@ -212,27 +211,17 @@ err_t ether_input(struct netif *netif, struct pbuf *p)
 // to the TCP/IP stack. 
 //
 
-__inline static long __declspec(naked) rdtscl()
-{
-  __asm { rdtsc }
-  __asm { ret }
-}
-
 void ether_dispatcher(void *arg)
 {
   struct ether_msg *msg;
   struct pbuf *p;
   struct netif *netif;
   struct eth_hdr *ethhdr;
-  long a, b, c, d;
 
   while (1)
   {
-    a = rdtscl();
     msg = dequeue(ether_queue, INFINITE);
     if (!msg) panic("error retrieving message from ethernet packet queue\n");
-    b = rdtscl();
-    if (b > a + 200000) kprintf("ether: %d in queue, %d ms wait\n", ether_queue->notempty.count, b - a);
 
     p = msg->p;
     netif = msg->netif;
@@ -240,7 +229,6 @@ void ether_dispatcher(void *arg)
 
     if (p != NULL) 
     {
-      stats.link.recv++;
       ethhdr = p->payload;
 
       //if (!eth_addr_isbroadcast(&ethhdr->dest)) kprintf("ether: recv src=%la dst=%la type=%04X len=%d\n", &ethhdr->src, &ethhdr->dest, htons(ethhdr->type), p->tot_len);
@@ -267,12 +255,7 @@ void ether_dispatcher(void *arg)
       }
     }
 
-    c = rdtscl();
-
     yield();
-    d = rdtscl();
-
-    //kprintf("ether: %d in queue, %d ms wait, %d ms process, %d ms yield\n", ether_queue->notempty.count, b - a, c - b, d - c);
   }
 }
 
