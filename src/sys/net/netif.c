@@ -69,6 +69,7 @@ struct netif *netif_add(char *name, struct ip_addr *ipaddr, struct ip_addr *netm
   ip_addr_set(&netif->ipaddr, ipaddr);
   ip_addr_set(&netif->netmask, netmask);
   ip_addr_set(&netif->gw, gw);
+  netif->broadcast.addr = (ipaddr->addr & netmask->addr) | ~netmask->addr;
 
   netif->next = netif_list;
   netif_list = netif;
@@ -155,10 +156,16 @@ int netif_ioctl_list(void *data, size_t size)
       sin->sin_family = AF_INET;
       sin->sin_addr.s_addr = netif->netmask.addr;
 
+      sin = (struct sockaddr_in *) &ifcfg->broadcast;
+      sin->sin_len = sizeof(struct sockaddr_in);
+      sin->sin_family = AF_INET;
+      sin->sin_addr.s_addr = netif->broadcast.addr;
+
       memcpy(ifcfg->hwaddr, &netif->hwaddr, sizeof(struct eth_addr));
 
       if (netif->flags & NETIF_UP) ifcfg->flags |= IFCFG_UP;
       if (netif->flags & NETIF_DHCP) ifcfg->flags |= IFCFG_DHCP;
+      if (netif->flags & NETIF_LOOPBACK) ifcfg->flags |= IFCFG_LOOPBACK;
       if (netif == netif_default) ifcfg->flags |= IFCFG_DEFAULT;
 
       netif = netif->next;
@@ -199,6 +206,12 @@ int netif_ioctl_cfg(void *data, size_t size)
   netif->ipaddr.addr = ((struct sockaddr_in *) &ifcfg->addr)->sin_addr.s_addr;
   netif->netmask.addr = ((struct sockaddr_in *) &ifcfg->netmask)->sin_addr.s_addr;
   netif->gw.addr = ((struct sockaddr_in *) &ifcfg->gw)->sin_addr.s_addr;
+  netif->broadcast.addr = ((struct sockaddr_in *) &ifcfg->broadcast)->sin_addr.s_addr;
+
+  if (netif->broadcast.addr == IP_ADDR_ANY)
+  {
+    netif->broadcast.addr = (netif->ipaddr.addr & netif->netmask.addr) | ~(netif->netmask.addr);
+  }
 
   if (ifcfg->flags & IFCFG_DEFAULT)
     netif_default = netif;
@@ -224,6 +237,7 @@ int netif_ioctl_cfg(void *data, size_t size)
 	((struct sockaddr_in *) &ifcfg->addr)->sin_addr.s_addr = netif->ipaddr.addr;
 	((struct sockaddr_in *) &ifcfg->netmask)->sin_addr.s_addr = netif->netmask.addr;
 	((struct sockaddr_in *) &ifcfg->gw)->sin_addr.s_addr = netif->gw.addr;
+	((struct sockaddr_in *) &ifcfg->broadcast)->sin_addr.s_addr = netif->broadcast.addr;
       }
     }
   }

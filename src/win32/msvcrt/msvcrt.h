@@ -55,12 +55,29 @@
 
 // I/O stream flags
 
+#define _IOREAD         0x0001
+#define _IOWRT          0x0002
+
+#define _IOFBF          0x0000
+#define _IOLBF          0x0040
+#define _IONBF          0x0004
+
+#define _IOMYBUF        0x0008
+#define _IOEOF          0x0010
+#define _IOERR          0x0020
+#define _IOSTRG         0x0040
+#define _IORW           0x0080
+
+#define _IOAPPEND       0x0200
+
 #define _IOYOURBUF      0x0100
 #define _IOSETVBUF      0x0400
 #define _IOFEOF         0x0800
 #define _IOFLRTN        0x1000
 #define _IOCTRLZ        0x2000
 #define _IOCOMMIT       0x4000
+
+#define _IOFREE         0x10000
 
 // File modes (fmode)
 

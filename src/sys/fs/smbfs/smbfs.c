@@ -402,7 +402,7 @@ int smb_read(struct file *filp, void *data, size_t size)
   }
 
   // Read rest using normal mode
-  while (left > 0)
+  while (filp->pos < file->statbuf.quad.size_low && left > 0)
   {
     count = left;
     if (count > SMB_NORMAL_CHUNKSIZE) count = SMB_NORMAL_CHUNKSIZE;
@@ -416,7 +416,7 @@ int smb_read(struct file *filp, void *data, size_t size)
     p += rc;
   }
 
-  return size;
+  return size - left;
 }
 
 static int smb_write_normal(struct smb_share *share, struct smb_file *file, void *data, size_t size, loff_t pos)

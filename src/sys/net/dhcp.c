@@ -656,6 +656,9 @@ static void dhcp_bind(struct dhcp_state *state)
   netif_set_netmask(state->netif, &sn_mask);
   netif_set_gw(state->netif, &gw_addr);
 
+  // Determine broadcast address
+  state->netif->broadcast.addr = (state->netif->ipaddr.addr & state->netif->netmask.addr) | ~(state->netif->netmask.addr);
+
   //dhcp_dump_options(state);
 
   if (peb)

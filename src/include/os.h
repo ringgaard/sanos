@@ -493,6 +493,7 @@ struct sockaddr
 #define IFCFG_UP         1
 #define IFCFG_DHCP       2
 #define IFCFG_DEFAULT    4
+#define IFCFG_LOOPBACK   8
 
 #define NET_NAME_MAX 16
 
@@ -504,6 +505,7 @@ struct ifcfg
   struct sockaddr addr;
   struct sockaddr gw;
   struct sockaddr netmask;
+  struct sockaddr broadcast;
 };
 
 struct msghdr

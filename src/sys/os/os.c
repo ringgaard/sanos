@@ -481,6 +481,14 @@ void init_net()
       sin->sin_addr.s_addr = inet_addr(str);
     }
 
+    if (get_option(prop->value, "broadcast", str, sizeof str, NULL))
+    {
+      sin = (struct sockaddr_in *) &ifcfg.broadcast;
+      sin->sin_len = sizeof(struct sockaddr_in);
+      sin->sin_family = AF_INET;
+      sin->sin_addr.s_addr = inet_addr(str);
+    }
+
     ifcfg.flags |= IFCFG_UP;
     if (first) ifcfg.flags |= IFCFG_DEFAULT;
 
@@ -492,8 +500,9 @@ void init_net()
       unsigned long addr = ((struct sockaddr_in *) &ifcfg.addr)->sin_addr.s_addr;
       unsigned long gw = ((struct sockaddr_in *) &ifcfg.gw)->sin_addr.s_addr;
       unsigned long mask = ((struct sockaddr_in *) &ifcfg.netmask)->sin_addr.s_addr;
+      unsigned long bcast = ((struct sockaddr_in *) &ifcfg.broadcast)->sin_addr.s_addr;
 
-      syslog(LOG_INFO, "%s: addr %a mask %a gw %a\n", ifcfg.name, &addr, &mask, &gw, ifcfg.hwaddr);
+      syslog(LOG_INFO, "%s: addr %a mask %a gw %a bcast %a\n", ifcfg.name, &addr, &mask, &gw, &bcast);
 
       if (first) peb->ipaddr.s_addr = addr;
     }

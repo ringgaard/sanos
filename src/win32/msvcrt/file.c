@@ -53,9 +53,9 @@ static FILE *alloc_stream()
   stream = _iob;
   while (stream < _iob + _NSTREAM_) 
   {
-    if (stream->flag == 0)
+    if (stream->flag & _IOFREE)
     {
-      stream->flag = -1;
+      stream->flag = 0;
       leave(&iob_lock);
       return stream;
     }
@@ -69,7 +69,7 @@ static FILE *alloc_stream()
 
 static void free_stream(FILE *stream)
 {
-  stream->flag = 0;
+  stream->flag = _IOFREE;
 }
 
 int _pipe(int *phandles, unsigned int psize, int textmode)
@@ -620,6 +620,7 @@ int fflush(FILE *stream)
   rc = flush(stream->file);
   if (rc < 0)
   {
+    stream->flag |= _IOERR;
     errno = rc;
     return -1;
   }
@@ -639,9 +640,12 @@ size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
   rc = read(stream->file, buffer, size * num);
   if (rc < 0)
   {
+    stream->flag |= _IOERR;
     errno = rc;
     return 0;
   }
+
+  if (rc == 0) stream->flag |= _IOEOF;
 
   return rc / size;
 }
@@ -658,6 +662,7 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
   rc = write(stream->file, buffer, size * num);
   if (rc < 0)
   {
+    stream->flag |= _IOERR;
     errno = rc;
     return 0;
   }
@@ -714,17 +719,27 @@ int fgetpos(FILE *stream, fpos_t *pos)
 void clearerr(FILE *stream)
 {
   TRACE("clearerr");
+  stream->flag &= ~(_IOERR | _IOEOF);
 }
 
 int getc(FILE *stream)
 {
-  char ch;
+  unsigned char ch;
   int rc;
 
   TRACE("getc");
 
   rc = read(stream->file, &ch, 1);
-  if (rc <= 0) return EOF;
+  if (rc <= 0)
+  {
+    if (rc == 0) 
+      stream->flag |= _IOEOF;
+    else
+      stream->flag |= _IOERR;
+
+    return EOF;
+  }
+
   return ch;
 }
 
@@ -736,7 +751,15 @@ int fgetc(FILE *stream)
   TRACE("fgetc");
 
   rc = read(stream->file, &ch, 1);
-  if (rc <= 0) return EOF;
+  if (rc <= 0) 
+  {
+    if (rc == 0) 
+      stream->flag |= _IOEOF;
+    else
+      stream->flag |= _IOERR;
+
+    return EOF;
+  }
 
   return ch;
 }
@@ -799,13 +822,13 @@ void _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext
 
   if (strlen(path) >= 1 && path[1] == ':')
   {
-      if (drive) 
-      {
-	drive[0] = path[0];
-	drive[1] = '\0';
-      }
+    if (drive) 
+    {
+      drive[0] = path[0];
+      drive[1] = '\0';
+    }
 
-      path += 2;
+    path += 2;
   }
   else if (drive) 
   {
@@ -878,12 +901,16 @@ void init_fileio()
   mkcs(&iob_lock);
 
   memset(_iob, 0, sizeof(struct _iobuf) * _NSTREAM_);
-  for (i = 0; i < _NSTREAM_; i++) _iob[i].file = NOHANDLE;
+  for (i = 0; i < _NSTREAM_; i++) 
+  {
+    _iob[i].file = NOHANDLE;
+    _iob[i].flag = _IOFREE;
+  }
 
   stdin->file = 0;
-  stdin->flag = -1;
+  stdin->flag = 0;
   stdout->file = 1;
-  stdout->flag = -1;
+  stdout->flag = 0;
   stderr->file = 2;
-  stderr->flag = -1;
+  stderr->flag = 0;
 }

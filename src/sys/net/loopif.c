@@ -61,11 +61,12 @@ void loopif_init()
   struct netif *netif;
 
   loip.addr = htonl(INADDR_LOOPBACK);
-  lomask.addr = htonl(INADDR_NONE);
+  lomask.addr = htonl(INADDR_BROADCAST);
   logw.addr = htonl(INADDR_ANY);
 
   netif = netif_add("lo", &loip, &lomask, &logw);
   if (!netif) return;
 
   netif->output = loopif_output;
+  netif->flags |= NETIF_LOOPBACK;
 }

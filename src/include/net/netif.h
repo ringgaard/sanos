@@ -37,6 +37,7 @@
 
 #define NETIF_UP                      0x00000001
 #define NETIF_DHCP                    0x00000002
+#define NETIF_LOOPBACK                0x00000004
 
 #define NETIF_IP_TX_CHECKSUM_OFFLOAD  0x00010000
 #define NETIF_IP_RX_CHECKSUM_OFFLOAD  0x00020000
@@ -51,6 +52,7 @@ struct netif
   struct ip_addr ipaddr;
   struct ip_addr netmask;
   struct ip_addr gw;
+  struct ip_addr broadcast;
   struct eth_addr hwaddr;
   int flags;
   char name[NET_NAME_MAX];

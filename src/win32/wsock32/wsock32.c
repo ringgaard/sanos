@@ -41,6 +41,8 @@
 //#define sockapi __declspec(dllexport)
 #define sockapi
 
+#define SIO_GET_INTERFACE_LIST  _IOR('t', 127, unsigned long)
+
 #define WSADESCRIPTION_LEN      256
 #define WSASYS_STATUS_LEN       128
 
@@ -60,6 +62,20 @@ typedef struct WSAData
   unsigned short iMaxUdpDg;
   char *lpVendorInfo;
 } WSADATA, *LPWSADATA; 
+
+#define IFF_UP           0x00000001    // Interface is up
+#define IFF_BROADCAST    0x00000002    // Broadcast is  supported
+#define IFF_LOOPBACK     0x00000004    // Loopback interface
+#define IFF_POINTTOPOINT 0x00000008    // Point-to-point interface*/
+#define IFF_MULTICAST    0x00000010    // Multicast is supported
+
+typedef struct _INTERFACE_INFO
+{
+  unsigned long iiFlags;               // Type and status of the interface
+  struct sockaddr iiAddress;           // Interface address
+  struct sockaddr iiBroadcastAddress;  // Broadcast address
+  struct sockaddr iiNetmask;           // Network mask
+} INTERFACE_INFO;
 
 #ifdef DEBUG
 char *strcpy(char *dst, const char *src)
@@ -519,7 +535,54 @@ sockapi int __stdcall WSAIoctl
 )
 {
   TRACE("WSAIoctl");
-  panic("WSAIoctl not implemented");
+
+  if (dwIoControlCode == SIO_GET_INTERFACE_LIST)
+  {
+    int i;
+    INTERFACE_INFO *ifinfo = lpvOutBuffer;
+    int numifs = cbOutBuffer / sizeof(INTERFACE_INFO);
+    int bufsize = numifs * sizeof(struct ifcfg);
+    struct ifcfg *iflist = malloc(bufsize);
+    int rc = ioctl(s, SIOIFLIST, iflist, bufsize);
+    if (rc < 0)
+    {
+      free(iflist);
+      errno = rc;
+      return -1;
+    }
+
+    if (rc > bufsize)
+    {
+      errno = -ENOBUFS;
+      free(iflist);
+      return -1;
+    }
+
+    numifs = rc / sizeof(struct ifcfg);
+    for (i = 0; i < numifs; i++)
+    {
+      ifinfo[i].iiFlags = IFF_BROADCAST;
+      if (iflist[i].flags & IFCFG_UP) ifinfo[i].iiFlags |= IFF_UP;
+      if (iflist[i].flags & IFCFG_LOOPBACK) ifinfo[i].iiFlags |= IFF_LOOPBACK;
+      memcpy(&ifinfo[i].iiAddress, &iflist[i].addr, sizeof(struct sockaddr));
+      memcpy(&ifinfo[i].iiNetmask, &iflist[i].netmask, sizeof(struct sockaddr));
+      memcpy(&ifinfo[i].iiBroadcastAddress, &iflist[i].broadcast, sizeof(struct sockaddr));
+
+      syslog(LOG_DEBUG, "%s: addr %a gw %a mask %a bcast %a\n", 
+        iflist[i].name,
+	&((struct sockaddr_in *) &iflist[i].addr)->sin_addr, 
+	&((struct sockaddr_in *) &iflist[i].gw)->sin_addr, 
+	&((struct sockaddr_in *) &iflist[i].netmask)->sin_addr, 
+	&((struct sockaddr_in *) &iflist[i].broadcast)->sin_addr);
+    }
+
+    if (lpcbBytesReturned) *lpcbBytesReturned = numifs * sizeof(INTERFACE_INFO);
+    free(iflist);
+    return 0;
+  }
+  else
+    panic("WSAIoctl not implemented");
+
   return 0;
 }
 
