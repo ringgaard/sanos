@@ -7,6 +7,7 @@ copy README %1
 copy COPYING %1
 
 copy build\mkbootdisk.cmd %1\build
+copy build\bootdisk.lst %1\build
 copy build\krnlrel.ini %1\build\krnl.ini
 copy build\osrel.ini %1\build\os.ini
 copy build\setuprel.ini %1\build\setup.ini
