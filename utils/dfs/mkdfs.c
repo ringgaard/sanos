@@ -175,6 +175,36 @@ void install_loader()
   CloseHandle(hfile);
 }
 
+unsigned int ft2time(FILETIME *ft)
+{
+  SYSTEMTIME st;
+  struct tm tm;
+
+  FileTimeToSystemTime(ft, &st);
+  tm.tm_year = st.wYear - 1900;
+  tm.tm_mon = st.wMonth - 1;
+  tm.tm_mday = st.wDay;
+  tm.tm_hour = st.wHour;
+  tm.tm_min = st.wMinute;
+  tm.tm_sec = st.wSecond;
+  tm.tm_isdst = 0;
+
+  return mktime(&tm);
+}
+
+void set_time(HANDLE hfile, struct file *f)
+{
+  FILETIME ctime, atime, mtime;
+  struct utimbuf t;
+
+  GetFileTime(hfile, &ctime, &atime, &mtime);
+  t.atime = ft2time(&atime);
+  t.ctime = ft2time(&ctime);
+  t.mtime = ft2time(&mtime);
+
+  if (futime(f, &t) < 0) panic("error setting file time");
+}
+
 void install_kernel()
 {
   HANDLE hfile;
@@ -198,6 +228,7 @@ void install_kernel()
     ReadFile(hfile, buf, 4096, &count, NULL);
   }
   
+  set_time(hfile, file);
   close(file);
   CloseHandle(hfile);
 }
@@ -230,6 +261,7 @@ void transfer_file(char *dstfn, char *srcfn)
     ReadFile(hfile, buf, 4096, &count, NULL);
   }
   
+  set_time(hfile, file);
   close(file);
   CloseHandle(hfile);
 }

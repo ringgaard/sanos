@@ -1155,6 +1155,7 @@ void __stdcall ttyd(void *arg)
 {
   char *devname = (char *) arg;
   handle_t f;
+  struct serial_config cfg;
 
   f = open(devname, O_RDWR);
   if (f < 0) 
@@ -1162,6 +1163,15 @@ void __stdcall ttyd(void *arg)
     syslog(LOG_INFO, "Error %d starting shell on device %s\n", f, devname);
     endthread(1);
   }
+
+  cfg.speed = 115200;
+  cfg.databits = 8;
+  cfg.stopbits = 1;
+  cfg.rx_timeout = INFINITE;
+  cfg.tx_timeout = INFINITE;
+  cfg.parity = PARITY_NONE;
+
+  ioctl(f, IOCTL_SERIAL_SETCONFIG, &cfg, sizeof(struct serial_config));
 
   syslog(LOG_INFO, "sh: starting shell on device %s\n", devname);
 
@@ -1244,7 +1254,7 @@ void __stdcall telnetd(void *arg)
 
 int __stdcall main(hmodule_t hmod, char *cmdline, void *env)
 {
-  beginthread(ttyd, 0, "/dev/com1", 0, NULL);
+  //beginthread(ttyd, 0, "/dev/com4", 0, NULL);
   if (peb->ipaddr.s_addr != INADDR_ANY) beginthread(telnetd, 0, NULL, 0, NULL);
   shell();
   return 0;

@@ -26,6 +26,13 @@
 #define PS1                     '/'    // Primary path separator
 #define PS2                     '\\'   // Alternate path separator
 
+struct utimbuf 
+{
+  time_t ctime;
+  time_t mtime;
+  time_t atime;
+};
+
 struct stat
 {
   int mode;
@@ -95,6 +102,8 @@ struct fsops
   loff_t (*lseek)(struct file *filp, loff_t offset, int origin);
   int (*chsize)(struct file *filp, loff_t size);
 
+  int (*futime)(struct file *filp, struct utimbuf *times);
+
   int (*fstat)(struct file *filp, struct stat *buffer);
   int (*stat)(struct fs *fs, char *name, struct stat *buffer);
 
@@ -127,6 +136,8 @@ int write(struct file *filp, void *data, size_t size);
 loff_t tell(struct file *filp);
 loff_t lseek(struct file *filp, loff_t offset, int origin);
 int chsize(struct file *filp, loff_t size);
+
+int futime(struct file *filp, struct utimbuf *times);
 
 int fstat(struct file *filp, struct stat *buffer);
 int stat(char *name, struct stat *buffer);

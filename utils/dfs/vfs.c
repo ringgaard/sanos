@@ -305,6 +305,16 @@ int chsize(struct file *filp, loff_t size)
   return filp->fs->ops->chsize(filp, size);
 }
 
+int futime(struct file *filp, struct utimbuf *times)
+{
+  if (!filp) return -1;
+  if (!times) return -1;
+  if (filp->flags & O_RDONLY) return -1;
+ 
+  if (!filp->fs->ops->futime) return -1;
+  return filp->fs->ops->futime(filp, times);
+}
+
 int fstat(struct file *filp, struct stat *buffer)
 {
   if (!filp) return -1;

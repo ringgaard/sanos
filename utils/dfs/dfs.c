@@ -20,6 +20,8 @@ loff_t dfs_tell(struct file *filp);
 loff_t dfs_lseek(struct file *filp, loff_t offset, int origin);
 int dfs_chsize(struct file *filp, loff_t size);
 
+int dfs_futime(struct file *filp, struct utimbuf *times);
+
 int dfs_fstat(struct file *filp, struct stat *buffer);
 int dfs_stat(struct fs *fs, char *name, struct stat *buffer);
 
@@ -49,6 +51,8 @@ struct fsops dfsops =
   dfs_tell,
   dfs_lseek,
   dfs_chsize,
+  
+  dfs_futime,
 
   dfs_fstat,
   dfs_stat,

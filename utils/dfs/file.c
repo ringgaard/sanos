@@ -425,6 +425,19 @@ int dfs_chsize(struct file *filp, loff_t size)
   return 0;
 }
 
+int dfs_futime(struct file *filp, struct utimbuf *times)
+{
+  struct inode *inode;
+
+  inode = (struct inode *) filp->data;
+  if (times->ctime != -1) inode->desc->ctime = times->ctime;
+  if (times->mtime != -1) inode->desc->mtime = times->mtime;
+  mark_inode_dirty(inode);
+  filp->flags &= ~F_MODIFIED;
+
+  return 0;
+}
+
 int dfs_fstat(struct file *filp, struct stat *buffer)
 {
   struct inode *inode;

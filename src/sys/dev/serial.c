@@ -404,8 +404,11 @@ static int serial_read(struct dev *dev, void *buffer, size_t count, blkno_t blkn
     if (wait_for_object(&sp->rx_sem, n == 0 ? sp->cfg.rx_timeout : 0) < 0) break;
 
     // Remove next char from receive queue
+    cli();
     *bufp++ = fifo_get(&sp->rxq);
-//kprintf("serial: read %02X\n", bufp[-1]);
+    sti();
+
+    //kprintf("serial: read %02X\n", bufp[-1]);
   }
 
   release_mutex(&sp->rx_lock);
@@ -427,8 +430,12 @@ static int serial_write(struct dev *dev, void *buffer, size_t count, blkno_t blk
     if (wait_for_object(&sp->tx_sem, sp->cfg.tx_timeout) < 0) break;
 
     // Insert next char in transmit queue
+    cli();
     fifo_put(&sp->txq, *bufp++);
-//kprintf("serial: write %02X\n", bufp[-1]);
+    sti();
+
+    //kprintf("serial: write %02X\n", bufp[-1]);
+    //kprintf("fifo put: h:%d t:%d c:%d\n", sp->txq.head, sp->txq.tail, sp->txq.count);
 
     // If transmitter idle then queue a DPC to restart transmission
     if (!sp->tx_busy) queue_dpc(&sp->dpc, serial_dpc, sp);
@@ -450,7 +457,8 @@ static void drain_tx_queue(struct serial_port *sp)
     // Is UART ready to transmit next byte
     lsr = _inp((unsigned short) (sp->iobase + UART_LSR));
     sp->linestatus |= (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI));
-//kprintf("drain_tx_queue: lsr=%02X\n", lsr);
+    //kprintf("drain_tx_queue: lsr=%02X\n", lsr);
+
     //if (!(lsr & LSR_TSRE) || !(lsr & LSR_TXRDY)) break;
     if (!(lsr & LSR_TXRDY)) break;
 
@@ -464,9 +472,10 @@ static void drain_tx_queue(struct serial_port *sp)
 
     // Get next byte from queue
     b = fifo_get(&sp->txq);
+    //kprintf("fifo get: h:%d t:%d c:%d\n", sp->txq.head, sp->txq.tail, sp->txq.count);
     sti();
 
-//kprintf("serial: xmit %02X (drain)\n", b);
+    //kprintf("serial: xmit %02X (drain)\n", b);
     _outp(sp->iobase + UART_TX, b);
     sp->tx_busy = 1;
     count++;
@@ -484,7 +493,7 @@ static void serial_dpc(void *arg)
   int rls;
   struct serial_port *sp = (struct serial_port *) arg;
 
-//kprintf("[sdpc]");
+  //kprintf("[sdpc]");
 
   // Release transmitter and receiver queue resources and
   // signal line or modem status change
@@ -517,7 +526,8 @@ static void serial_transmit(struct serial_port *sp)
     // Is UART ready to transmit next byte
     lsr = _inp((unsigned short) (sp->iobase + UART_LSR));
     sp->linestatus |= (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI));
-//kprintf("serial_transmit: lsr=%02X\n", lsr);
+    //kprintf("serial_transmit: lsr=%02X\n", lsr);
+
     //if (!(lsr & LSR_TSRE) || !(lsr & LSR_TXRDY)) break;
     if (!(lsr & LSR_TXRDY)) break;
 
@@ -530,7 +540,8 @@ static void serial_transmit(struct serial_port *sp)
 
     // Get next byte from queue
     b = fifo_get(&sp->txq);
-//kprintf("serial: xmit %02X\n", b);
+    //kprintf("fifo get: h:%d t:%d c:%d\n", sp->txq.head, sp->txq.tail, sp->txq.count);
+    //kprintf("serial: xmit %02X\n", b);
     _outp(sp->iobase + UART_TX, b);
     sp->tx_busy = 1;
     sp->tx_queue_rel++;
@@ -547,12 +558,12 @@ static void serial_receive(struct serial_port *sp)
     // Is there any data ready in the UART
     lsr = _inp((unsigned short) (sp->iobase + UART_LSR));
     sp->linestatus |= (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI));
-//kprintf("serial_receive: lsr=%02X\n", lsr);
+    //kprintf("serial_receive: lsr=%02X\n", lsr);
     if (!(lsr & LSR_RXRDY)) break;
 
     // Get next byte from UART and insert in rx queue
     b = _inp((unsigned short) (sp->iobase + UART_RX));
-//kprintf("serial: receive %02X\n", b);
+    //kprintf("serial: receive %02X\n", b);
     if (fifo_put(&sp->rxq, b) < 0)
     {
       kprintf("serial: rx queue overflow\n");
@@ -570,7 +581,7 @@ static void serial_handler(struct context *ctxt, void *arg)
   unsigned char lsr;
 
   iir = _inp((unsigned short) (sp->iobase + UART_IIR));
-//kprintf("[sisr %d %x]", sp->irq, iir);
+  //kprintf("[sisr %d %x]", sp->irq, iir);
   switch (iir & IIR_IMASK)
   {
     case IIR_MLSC:
@@ -601,7 +612,7 @@ static void serial_handler(struct context *ctxt, void *arg)
   // Get line status
   lsr = _inp((unsigned short) (sp->iobase + UART_LSR));
   sp->linestatus |= (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI));
-//kprintf("serial_handler: lsr=%02X\n", lsr);
+  //kprintf("serial_handler: lsr=%02X\n", lsr);
 
   // Set OUT2 to enable interrupts
   _outp(sp->iobase + UART_MCR, sp->mcr);
