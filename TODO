@@ -15,7 +15,6 @@ TODO for sanos
     msvcrt:
       iswctype
       _wfullpath
-      _wgetdcwd
 
     kernel32:
       FindFirstFileW

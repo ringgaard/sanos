@@ -399,18 +399,33 @@ int rand()
   return (((holdrand = holdrand * 214013L + 2531011L) >> 16) & 0x7fff);
 }
 
-char *w2a(char *dst, const wchar_t *src, int maxlen)
+int convert_filename_to_unicode(const char *src, wchar_t *dst)
 {
-  char *cp = dst;
-  while (*cp++ = (char) (unsigned char) *src++);
-  return dst;
+  wchar_t *end = dst + MAXPATH;
+  while (*src)
+  {
+    if (dst == end) return -ENAMETOOLONG;
+    *dst++ = (unsigned char) *src++;
+  }
+  
+  if (dst == end) return -ENAMETOOLONG;
+  *dst = 0;
+  return 0;
 }
 
-wchar_t *a2w(wchar_t *dst, const char *src, int maxlen)
+int convert_filename_from_unicode(const wchar_t *src, char *dst)
 {
-  wchar_t *cp = dst;
-  while (*cp++ = (unsigned char) *src++);
-  return dst;
+  char *end = dst + MAXPATH;
+  while (*src)
+  {
+    if (dst == end) return -ENAMETOOLONG;
+    if (*dst & 0xFF00) return -EINVAL;
+    *dst++ = (unsigned char) *src++;
+  }
+  
+  if (dst == end) return -ENAMETOOLONG;
+  *dst = 0;
+  return 0;
 }
 
 size_t wcslen(const wchar_t *s)

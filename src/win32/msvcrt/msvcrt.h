@@ -175,7 +175,7 @@ int strcmp(const char *s1, const char *s2);
 int vsprintf(char *buffer, const char *fmt, va_list args);
 int atoi(const char *string);
 
-char *w2a(char *dst, const wchar_t *src, int maxlen);
-wchar_t *a2w(wchar_t *dst, const char *src, int maxlen);
+int convert_filename_to_unicode(const char *src, wchar_t *dst);
+int convert_filename_from_unicode(const wchar_t *src, char *dst);
 
 #endif

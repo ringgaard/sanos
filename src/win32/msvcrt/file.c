@@ -999,32 +999,123 @@ void _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext
 int _wopen(const wchar_t *filename, int oflag)
 {
   char buf[MAXPATH];
-  return _open(w2a(buf, filename, MAXPATH), oflag);
+  int rc;
+
+  rc = convert_filename_from_unicode(filename, buf);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return -1;
+  }
+
+  return _open(buf, oflag);
 }
 
 int _waccess(const wchar_t *path, int mode)
 {
   char buf[MAXPATH];
-  return _access(w2a(buf, path, MAXPATH), mode);
+  int rc;
+
+  rc = convert_filename_from_unicode(path, buf);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return -1;
+  }
+
+  return _access(buf, mode);
 }
 
 __int64 _wstati64(const wchar_t *path, struct _stati64 *buffer)
 {
   char buf[MAXPATH];
-  return _stati64(w2a(buf, path, MAXPATH), buffer);
+  int rc;
+
+  rc = convert_filename_from_unicode(path, buf);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return -1;
+  }
+
+  return _stati64(buf, buffer);
 }
 
 int _wmkdir(const wchar_t *dirname)
 {
   char buf[MAXPATH];
-  return _mkdir(w2a(buf, dirname, MAXPATH));
+  int rc;
+
+  rc = convert_filename_from_unicode(dirname, buf);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return -1;
+  }
+
+  return _mkdir(buf);
 }
 
 int _wrename(const wchar_t *oldname, const wchar_t *newname)
 {
   char buf1[MAXPATH];
   char buf2[MAXPATH];
-  return _rename(w2a(buf1, oldname, MAXPATH), w2a(buf2, newname, MAXPATH));
+  int rc;
+
+  rc = convert_filename_from_unicode(oldname, buf1);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return -1;
+  }
+
+  rc = convert_filename_from_unicode(newname, buf2);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return -1;
+  }
+
+  return _rename(buf1, buf2);
+}
+
+wchar_t *_wgetdcwd(int drive, wchar_t *buffer, int maxlen)
+{
+  int len = strlen(peb->curdir);
+  int n;
+
+  if (buffer)
+  {
+    if (len >= maxlen)
+    {
+      errno = ERANGE;
+      return NULL;
+    }
+  }
+  else
+  {
+    if (maxlen == 0)
+      buffer = malloc((len + 1) * sizeof(wchar_t));
+    else
+    {
+      if (len >= maxlen)
+      {
+	errno = ERANGE;
+	return NULL;
+      }
+
+      buffer = malloc(maxlen * sizeof(wchar_t));
+    }
+
+    if (!buffer) 
+    {
+      errno = ENOMEM;
+      return NULL;
+    }
+  }
+
+  for (n = 0; n < len + 1; n++) buffer[n] = (unsigned char) peb->curdir[n];
+  return buffer;
 }
 
 void init_fileio()
