@@ -49,8 +49,8 @@
 
 #define is_digit(c) ((c) >= '0' && (c) <= '9')
 
-static char *digits="0123456789abcdefghijklmnopqrstuvwxyz";
-static char *upper_digits="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+static char *digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+static char *upper_digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 static size_t strnlen(const char *s, size_t count)
 {

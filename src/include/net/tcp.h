@@ -63,7 +63,13 @@ err_t tcp_connect (struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short p
 struct tcp_pcb *tcp_listen(struct tcp_pcb *pcb);
 void tcp_abort(struct tcp_pcb *pcb);
 err_t tcp_close(struct tcp_pcb *pcb);
-err_t tcp_write(struct tcp_pcb *pcb, const void *data, int len);
+err_t tcp_write(struct tcp_pcb *pcb, const void *data, int len, int opt);
+
+// Options for tcp_write
+
+#define TCP_WRITE_FLUSH          0
+#define TCP_WRITE_NAGLE          1
+#define TCP_WRITE_NOFLUSH        2
 
 // Used within the TCP code only
 

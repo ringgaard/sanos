@@ -48,7 +48,7 @@ err_t tcp_send_ctrl(struct tcp_pcb *pcb, int flags)
   return tcp_enqueue(pcb, NULL, 0, flags, NULL, 0);
 }
 
-err_t tcp_write(struct tcp_pcb *pcb, const void *data, int len)
+err_t tcp_write(struct tcp_pcb *pcb, const void *data, int len, int opt)
 {
   int rc;
 
@@ -58,7 +58,14 @@ err_t tcp_write(struct tcp_pcb *pcb, const void *data, int len)
     {
       rc = tcp_enqueue(pcb, (void *) data, len, 0, NULL, 0);
       if (rc < 0) return rc;
+    }
 
+    if (opt == TCP_WRITE_FLUSH)
+    {
+      tcp_output(pcb);
+    }
+    else if (opt == TCP_WRITE_NAGLE)
+    {
       // This is the Nagle algorithm (RFC 896): inhibit the sending of new TCP
       // segments when new outgoing data arrives from the user if any
       // previously transmitted data on the connection remains

@@ -395,9 +395,9 @@ typedef struct critsect *critsect_t;
 #define IOC_IN          0x80000000      // Copy in parameters
 #define IOC_INOUT       (IOC_IN | IOC_OUT)
 
-#define _IO(x,y)        (IOC_VOID | ((x) << 8) | (y))
-#define _IOR(x,y,t)     (IOC_OUT | (((long) sizeof(t) & IOCPARM_MASK) << 16) | ((x) << 8) | (y))
-#define _IOW(x,y,t)     (IOC_IN |(((long) sizeof(t) & IOCPARM_MASK) << 16) | ((x) << 8)| (y))
+#define _IO(x, y)       (IOC_VOID | ((x) << 8) | (y))
+#define _IOR(x, y, t)   (IOC_OUT | (((long) sizeof(t) & IOCPARM_MASK) << 16) | ((x) << 8) | (y))
+#define _IOW(x, y, t)   (IOC_IN |(((long) sizeof(t) & IOCPARM_MASK) << 16) | ((x) << 8)| (y))
 
 //
 // Sockets
@@ -482,6 +482,8 @@ struct servent
 
 #define SO_SNDTIMEO     0x1005
 #define SO_RCVTIMEO     0x1006
+
+#define TCP_NODELAY     0x0001
 
 __inline unsigned short htons(unsigned short n)
 {

@@ -45,29 +45,51 @@ static int fill_sndbuf(struct socket *s, struct iovec *iov, int iovlen)
   int rc;
 
   left = tcp_sndbuf(s->tcp.pcb);
-  bytes = 0;
-  while (left > 0 && iovlen > 0)
+
+  if (iovlen == 1)
   {
-    if (iov->iov_len > 0)
+    if (iov->iov_len == 0) return 0;
+
+    len = iov->iov_len;
+    if (len > left) len = left;
+
+    rc = tcp_write(s->tcp.pcb, iov->iov_base, len, (s->flags & SOCK_NODELAY) ? TCP_WRITE_FLUSH : TCP_WRITE_NAGLE);
+    if (rc < 0) return rc;
+
+    (char *) iov->iov_base += len;
+    iov->iov_len -= len;
+
+    return len;
+  }
+  else
+  {
+    bytes = 0;
+    while (left > 0 && iovlen > 0)
     {
-      len = iov->iov_len;
-      if (len > left) len = left;
+      if (iov->iov_len > 0)
+      {
+	len = iov->iov_len;
+	if (len > left) len = left;
 
-      rc = tcp_write(s->tcp.pcb, iov->iov_base, (unsigned short) len);
-      if (rc < 0) return rc;
+	rc = tcp_write(s->tcp.pcb, iov->iov_base, len, TCP_WRITE_NOFLUSH);
+	if (rc < 0) return rc;
 
-      (char *) iov->iov_base += len;
-      iov->iov_len -= len;
+	(char *) iov->iov_base += len;
+	iov->iov_len -= len;
 
-      left -= len;
-      bytes += len;
+	left -= len;
+	bytes += len;
+      }
+
+      iov++;
+      iovlen--;
     }
 
-    iov++;
-    iovlen--;
-  }
+    rc = tcp_write(s->tcp.pcb, NULL, 0, (s->flags & SOCK_NODELAY) ? TCP_WRITE_FLUSH : TCP_WRITE_NAGLE);
+    if (rc < 0) return rc;
 
-  return bytes;
+    return bytes;
+  }
 }
 
 static int fetch_rcvbuf(struct socket *s, struct iovec *iov, int iovlen)
@@ -675,7 +697,30 @@ static int tcpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
 
 static int tcpsock_setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen)
 {
-  return -ENOSYS;
+  if (level == SOL_SOCKET)
+  {
+    return -ENOSYS;
+  }
+  else if (level == IPPROTO_TCP)
+  {
+    switch (optname)
+    {
+      case TCP_NODELAY:
+	if (!optval || optlen != 4) return -EFAULT;
+	if (*(int *) optval)
+	  s->flags |= SOCK_NODELAY;
+	else
+	  s->flags &= ~SOCK_NODELAY;
+	break;
+
+      default:
+        return -EINVAL;
+    }
+  }
+  else
+    return -EINVAL;
+
+  return 0;
 }
 
 static int tcpsock_shutdown(struct socket *s, int how)

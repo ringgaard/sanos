@@ -373,7 +373,7 @@ void ne_receive(struct ne *ne)
     else
     {
       // Drop packet
-      kprintf("ne200: packet dropped\n");
+      kprintf("ne2000: packet dropped\n");
       stats.link.memerr++;
       stats.link.drop++;
     }
@@ -720,7 +720,7 @@ int __declspec(dllexport) install(struct unit *unit)
   return ne_setup(iobase, irq, membase, memsize, unit);
 }
 
-int __declspec(dllexport) install_ne2000(char *opts)
+int __declspec(dllexport) install_ne2000(struct unit *unit, char *opts)
 {
   unsigned short iobase;
   int irq;

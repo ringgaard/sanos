@@ -1,0 +1,45 @@
+TODO for sanos
+--------------
+
+- Implement refcnt on objects
+    - close objects when handle count reaches zero.
+    - free objects when handle count and refcnt reaches zero.
+
+- Implement ICMP messages host unreachable, net unreachable and port unreachable
+
+- Map network errors with winsock errors.
+    - Add all winsock errors to error table
+    - Add error strings to strerror()
+    - Update error codes in network code
+    - Map winsock errors in wsock32.c
+
+- Make ne2000 driver work with WAFER.
+
+- Add PCI subsystem identifier to driver binding code
+
+- Finish implementation of NDIS subsystem
+
+- Add support for shared interrupts to driver isr handlers
+
+- Fix bug in TCP retransmission
+
+- Use bitmap for port number handling
+
+IDEAS for new features
+----------------------
+
+- Test sanos with Tomcat 4
+
+- ANSI/VT100 handler in console device
+
+- Multiple consoles (switch consoles with ALT-<num>)
+
+- CD-ROM atapi driver
+
+- CDFS filesystem
+
+- DOS boot loader
+
+- FATFS support
+
+- Memory paging support

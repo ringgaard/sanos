@@ -310,13 +310,6 @@ sockapi int __stdcall winsock_setsockopt(SOCKET s, int level, int optname, const
 
   TRACE("setsockopt");
 
-  //TEST: ignore NODELAY option
-  if (level == 6 && optname == 1) 
-  {
-    syslog(LOG_DEBUG, "setsockopt TCP_NODELAY ignored\n");
-    return 0;
-  }
-
   rc = setsockopt(s, level, optname, optval, optlen);
   if (rc < 0)
   {

@@ -48,6 +48,7 @@
 //
 
 #define SOCK_NBIO             1
+#define SOCK_NODELAY          2
 
 //
 // Socket state
