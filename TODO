@@ -389,4 +389,6 @@ CHANGES
     - Preemption when threads with higher priority than running thread implemented
  
  - TCP port numbers initialized to random range 4096-5120.
+
+ - /proc/loadavg implemented.
  

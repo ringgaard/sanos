@@ -71,12 +71,23 @@
 #define USECS_PER_TICK  (1000000 / TIMER_FREQ)
 #define MSECS_PER_TICK  (1000 / TIMER_FREQ)
 
+#define LOADTAB_SIZE        TIMER_FREQ
+
+#define LOADTYPE_IDLE       0
+#define LOADTYPE_USER       1
+#define LOADTYPE_KERNEL     2
+#define LOADTYPE_DPC        3
+
 volatile unsigned int ticks = 0;
 volatile unsigned int clocks = 0;
 struct timeval systemclock = { 0, 0 };
 time_t upsince;
 unsigned long cycles_per_tick;
 unsigned long loops_per_tick;
+
+unsigned char loadtab[LOADTAB_SIZE];
+unsigned char *loadptr;
+unsigned char *loadend;
 
 struct interrupt timerintr;
 struct dpc timerdpc;
@@ -104,17 +115,31 @@ int timer_handler(struct context *ctxt, void *arg)
     systemclock.tv_usec -= 1000000;
   }
 
-  // Update thread times
+  // Update thread times and load average
   t = self();
   if (in_dpc)
+  {
     dpc_time++;
+    *loadptr = LOADTYPE_DPC;
+  }
   else
   {
     if (USERSPACE(ctxt->eip))
+    {
       t->utime++;
+      *loadptr = LOADTYPE_DPC;
+    }
     else
+    {
       t->stime++;
+      if (t->base_priority == PRIORITY_SYSIDLE)
+        *loadptr = LOADTYPE_IDLE;
+      else
+	*loadptr = LOADTYPE_KERNEL;
+    }
   }
+
+  if (++loadptr == loadend) loadptr = loadtab;
 
   // Adjust thread quantum
   t->quantum -= QUANTUM_UNITS_PER_TICK;
@@ -326,6 +351,24 @@ static int uptime_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
+static int loadavg_proc(struct proc_file *pf, void *arg)
+{
+  int loadavg[4];
+  unsigned char *p;
+
+  memset(loadavg, 0, sizeof loadavg);
+  p = loadtab;
+  while (p < loadend) loadavg[*p++]++;
+
+  pprintf(pf, "Load kernel: %d%% user: %d%% dpc: %d%% idle: %d%%\n",
+    loadavg[LOADTYPE_KERNEL],
+    loadavg[LOADTYPE_USER],
+    loadavg[LOADTYPE_DPC],
+    loadavg[LOADTYPE_IDLE]);
+
+  return 0;
+}
+
 void init_pit()
 {
   struct tm tm;
@@ -334,6 +377,9 @@ void init_pit()
   _outp(TMR_CTRL, TMR_CH0 + TMR_BOTH + TMR_MD3);
   _outp(TMR_CNT0, (unsigned char) (cnt & 0xFF));
   _outp(TMR_CNT0, (unsigned char) (cnt >> 8));
+
+  loadptr = loadtab;
+  loadend = loadtab + LOADTAB_SIZE;
 
   get_cmos_time(&tm);
   systemclock.tv_sec = mktime(&tm);
@@ -345,6 +391,7 @@ void init_pit()
   enable_irq(IRQ_TMR);
 
   register_proc_inode("uptime", uptime_proc, NULL);
+  register_proc_inode("loadavg", loadavg_proc, NULL);
 }
 
 void udelay(unsigned long us)
