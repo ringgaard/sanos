@@ -569,11 +569,12 @@ static int send_vc(struct res_state *statp,
   int resplen, n;
   unsigned short len;
   unsigned char *cp;
+  struct iovec iov[2];
   int s;
   int rc;
 
   // Connect to name server
-  s = socket(PF_INET, SOCK_STREAM, 0);
+  s = socket(AF_INET, SOCK_STREAM, 0);
   if (s < 0) 
   {
     *terrno = s;
@@ -588,18 +589,15 @@ static int send_vc(struct res_state *statp,
     return 0;
   }
 
-  // Send length & message (FIXME: send len and buf using writev)
+  // Send length & message
   len = htons((unsigned short) buflen);
-  rc = send(s, &len, sizeof(unsigned short), 0);
-  if (rc != sizeof(unsigned short))
-  {
-    *terrno = rc;
-    close(s);
-    return 0;
-  }
+  iov[0].iov_base = &len;
+  iov[0].iov_len = sizeof(unsigned short);
+  iov[1].iov_base = (char *) buf;
+  iov[1].iov_len = buflen;
 
-  rc = send(s, buf, buflen, 0);
-  if (rc != sizeof(unsigned short))
+  rc = writev(s, iov, 2);
+  if (rc != sizeof(unsigned short) + buflen)
   {
     *terrno = rc;
     close(s);
@@ -670,20 +668,20 @@ static int send_dg(struct res_state *statp,
   struct dns_hdr *anhp = (struct dns_hdr *) answer;
   const struct sockaddr_in *nsap = &statp->nsaddr_list[ns];
   struct sockaddr_in from;
-  struct sockaddr_in local;
+  //struct sockaddr_in local;
   int fromlen, resplen, timeout, s;
 
-  s = socket(PF_INET, SOCK_DGRAM, 0);
+  s = socket(AF_INET, SOCK_DGRAM, 0);
   if (s < 0) 
   {
     *terrno = s;
     return -1;
   }
 
-  local.sin_family = AF_INET;
-  local.sin_len = sizeof(struct sockaddr_in);
-  local.sin_port = htons(1024);
-  local.sin_addr.s_addr = INADDR_ANY;
+  //local.sin_family = AF_INET;
+  //local.sin_len = sizeof(struct sockaddr_in);
+  //local.sin_port = htons(1024);
+  //local.sin_addr.s_addr = INADDR_ANY;
 
   if (connect(s, (struct sockaddr *) nsap, sizeof *nsap) < 0)
   {

@@ -33,6 +33,8 @@
 
 #include <os/krnl.h>
 
+#define DEVROOT ((struct devfile *) NODEV)
+
 static time_t mounttime;
 
 int devfs_open(struct file *filp, char *name);
@@ -138,7 +140,7 @@ int devfs_close(struct file *filp)
 {
   struct devfile *df = (struct devfile *) filp->data;
 
-  if (filp->data == (void *) NODEV) return 0;
+  if (filp->data == DEVROOT) return 0;
 
   if (df->next) df->next->prev = df->prev;
   if (df->prev) df->prev->next = df->next;
@@ -162,7 +164,7 @@ int devfs_read(struct file *filp, void *data, size_t size)
   int read;
   int flags = 0;
 
-  if (df == (void *) NODEV) return -EBADF;
+  if (df == DEVROOT) return -EBADF;
   if (filp->flags & O_NONBLOCK) flags |= DEVFLAG_NBIO;
   
   read = dev_read(df->devno, data, size, (blkno_t) (filp->pos / df->blksize), flags);
@@ -176,7 +178,7 @@ int devfs_write(struct file *filp, void *data, size_t size)
   int written;
   int flags = 0;
 
-  if (df == (void *) NODEV) return -EBADF;
+  if (df == DEVROOT) return -EBADF;
   if (filp->flags & O_NONBLOCK) flags |= DEVFLAG_NBIO;
   
   written = dev_write(df->devno, data, size, (blkno_t) (filp->pos / df->blksize), flags);
@@ -189,7 +191,7 @@ int devfs_ioctl(struct file *filp, int cmd, void *data, size_t size)
   struct devfile *df = (struct devfile *) filp->data;
   int rc;
 
-  if (df == (void *) NODEV) return -EBADF;
+  if (df == DEVROOT) return -EBADF;
 
   rc = dev_ioctl(df->devno, cmd, data, size);
   return rc;
@@ -205,8 +207,8 @@ off64_t devfs_lseek(struct file *filp, off64_t offset, int origin)
   struct devfile *df = (struct devfile *) filp->data;
   off64_t size;
 
-  if (df == (void *) NODEV) return -EBADF;
-  size = df->devsize * df->blksize;
+  if (df == DEVROOT) return -EBADF;
+  size = (off64_t) df->devsize * (off64_t) df->blksize;
 
   switch (origin)
   {
@@ -227,14 +229,14 @@ off64_t devfs_lseek(struct file *filp, off64_t offset, int origin)
 int devfs_fstat(struct file *filp, struct stat64 *buffer)
 {
   struct devfile *df = (struct devfile *) filp->data;
-  __int64 size;
+  off64_t size;
   struct dev *dev;
 
-  if (df == (void *) NODEV) return -EBADF;
+  if (df == DEVROOT) return -EBADF;
 
   dev = device(df->devno);
   if (!dev) return -ENOENT;
-  size = (__int64) df->devsize * (__int64) df->blksize;
+  size = (off64_t) df->devsize * (off64_t) df->blksize;
 
   if (buffer)
   {
@@ -326,7 +328,7 @@ int devfs_opendir(struct file *filp, char *name)
   if (*name == PS1 || *name == PS2) name++;
   if (*name) return -ENOENT;
 
-  filp->data = (void *) NODEV;
+  filp->data = DEVROOT;
   return 0;
 }
 
@@ -335,7 +337,7 @@ int devfs_readdir(struct file *filp, struct dirent *dirp, int count)
   dev_t devno;
   struct dev *dev;
 
-  if (filp->data != (void *) NODEV) return -EBADF;
+  if (filp->data != DEVROOT) return -EBADF;
   if (filp->pos == num_devs) return 0;
   if (filp->pos < 0 || filp->pos > num_devs) return -EINVAL;
 
