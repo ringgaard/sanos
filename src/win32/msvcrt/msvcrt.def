@@ -42,4 +42,5 @@ EXPORTS
   toupper
   tolower
   strerror
+  localtime
   _sys_nerr=sys_nerr

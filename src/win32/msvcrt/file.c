@@ -470,6 +470,13 @@ char *_getcwd(char *buffer, int maxlen)
   return getcwd(buffer, maxlen);
 }
 
+int _fileno(FILE *stream)
+{
+  TRACE("_fileno");
+
+  return stream->file;
+}
+
 FILE *_fdopen(int handle, const char *mode)
 {
   FILE *stream; 
@@ -766,6 +773,86 @@ int putchar(int c)
   ch = c;
   write(1, &ch, 1);
   return c;
+}
+
+void _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext)
+{
+  char *p;
+  char *last_slash = NULL, *dot = NULL;
+  int len;
+
+  if (strlen(path) >= 1 && path[1] == ':')
+  {
+      if (drive) 
+      {
+	drive[0] = path[0];
+	drive[1] = '\0';
+      }
+
+      path += 2;
+  }
+  else if (drive) 
+  {
+    *drive = '\0';
+  }
+
+  for (last_slash = NULL, p = (char *) path; *p; p++) 
+  {
+    if (*p == '/' || *p == '\\')
+     last_slash = p + 1;
+    else if (*p == '.')
+      dot = p;
+  }
+
+  if (last_slash) 
+  {
+    if (dir) 
+    {
+      len = last_slash - path;
+      if (len > MAXPATH - 1) len = MAXPATH - 1;
+      memcpy(dir, path, len);
+      dir[len] = '\0';
+    }
+
+    path = last_slash;
+  }
+  else if (dir) 
+  {
+    *dir = '\0';
+  }
+
+  if (dot && dot >= path)
+  {
+    if (fname) 
+    {
+      len = dot - path;
+      if (len > MAXPATH - 1) len = MAXPATH - 1;
+      memcpy(fname, path, len);
+      fname[len] = '\0';
+    }
+
+    if (ext) 
+    {
+      len = p - dot;
+      if (len > MAXPATH - 1) len = MAXPATH - 1;
+      memcpy(ext, dot, len);
+      ext[len] = '\0';
+    }
+  }
+  else 
+  {
+    if (fname) 
+    {
+      len = p - path;
+      if (len > MAXPATH - 1) len = MAXPATH - 1;
+      memcpy(fname, path, len);
+      fname[len] = '\0';
+    }
+    if (ext) 
+    {
+      *ext = '\0';
+    }
+  }
 }
 
 void init_fileio()

@@ -41,3 +41,10 @@ time_t _time(time_t *timer)
   t = time(timer);
   return t;
 }
+
+char *asctime(const struct tm *timeptr)
+{
+  TRACE("asctime");
+  panic("asctime not implemented");
+  return NULL;
+}

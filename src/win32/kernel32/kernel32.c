@@ -46,6 +46,7 @@
 #define SECTIMESCALE    10000000               // 1 sec resolution
 
 #define NOFINDHANDLE ((HANDLE) (-2))
+#define PROCESSHEAP  ((HANDLE) (-3))
 
 struct winfinddata
 {
@@ -821,6 +822,12 @@ FARPROC WINAPI GetProcAddress
   return resolve((hmodule_t) hModule, (char *) lpProcName);
 }
 
+HANDLE WINAPI GetProcessHeap()
+{
+  TRACE("GetProcessHeap");
+  return PROCESSHEAP;
+}
+
 HANDLE WINAPI GetStdHandle
 (
   DWORD nStdHandle
@@ -994,6 +1001,42 @@ UINT WINAPI GetWindowsDirectoryA
   return strlen(lpBuffer);
 }
 
+LPVOID WINAPI HeapAlloc
+(
+  HANDLE hHeap,
+  DWORD dwFlags,
+  SIZE_T dwBytes
+)
+{
+  TRACE("HeapAlloc");
+  if (hHeap != PROCESSHEAP)
+  {
+    syslog(LOG_DEBUG, "warning: HeapAlloc only supported for process heap\n");
+    return NULL;
+  }
+
+  return malloc(dwBytes);
+}
+
+BOOL WINAPI HeapFree
+(
+  HANDLE hHeap,
+  DWORD dwFlags,
+  LPVOID lpMem
+)
+{
+  TRACE("HeapFree");
+  if (hHeap != PROCESSHEAP)
+  {
+    syslog(LOG_DEBUG, "warning: HeapFree only supported for process heap\n");
+    return FALSE;
+  }
+
+  free(lpMem);
+  return TRUE;
+}
+
+
 VOID WINAPI InitializeCriticalSection
 (
   LPCRITICAL_SECTION lpCriticalSection
@@ -1074,6 +1117,18 @@ BOOL WINAPI MoveFileA
   if (rename(lpExistingFileName, lpNewFileName) < 0) return FALSE;
 
   return TRUE;
+}
+
+HANDLE WINAPI OpenProcess
+(
+  DWORD dwDesiredAccess,
+  BOOL bInheritHandle,
+  DWORD dwProcessId
+)
+{
+  TRACE("OpenProcess");
+  panic("OpenProcess not implemented");
+  return NULL;
 }
 
 BOOL WINAPI PeekConsoleInputA
@@ -1392,6 +1447,16 @@ DWORD WINAPI TlsAlloc(VOID)
 {
   TRACE("TlsAlloc");
   return tlsalloc();
+}
+
+BOOL WINAPI TlsFree
+(
+  DWORD dwTlsIndex
+)
+{
+  TRACE("TlsFree");
+  tlsfree(dwTlsIndex);
+  return TRUE;
 }
 
 LPVOID WINAPI TlsGetValue

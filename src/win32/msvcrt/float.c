@@ -117,10 +117,11 @@ __declspec(naked) void _finite()
   }
 }
 
-__declspec(naked) void _floor()
+__declspec(naked) void floor()
 {
   __asm 
   {
+_floor:
     push        ebp
     mov         ebp,esp
     push        ecx

@@ -184,6 +184,8 @@ crtapi char *fgets(char *string, int n, FILE *stream);
 crtapi int fprintf(FILE *stream, const char *fmt, ...);
 crtapi int vfprintf(FILE *stream, const char *fmt, va_list args);
 crtapi int putchar(int c);
+crtapi int _fileno(FILE *stream);
+crtapi void _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext);
 
 crtapi void _initterm(_PVFV *begin, _PVFV *end);
 crtapi _onexit_t __dllonexit(_onexit_t func, _PVFV **pbegin, _PVFV **pend);
@@ -202,7 +204,7 @@ crtapi void _ftol();
 crtapi void _isnan();
 crtapi double _copysign(double a, double b);
 crtapi void _finite();
-crtapi void _floor();
+crtapi void floor();
 crtapi void _CIfmod();
 crtapi unsigned int _control87(unsigned int newflags, unsigned int mask);
 crtapi unsigned int _controlfp(unsigned int newflags, unsigned int mask);
@@ -220,8 +222,8 @@ crtapi void _except_handler3();
 crtapi void srand(unsigned int seed);
 crtapi int rand();
 
-
 crtapi time_t _time(time_t *timer);
+crtapi char *asctime(const struct tm *timeptr);
 
 crtapi int *_errno();
 
