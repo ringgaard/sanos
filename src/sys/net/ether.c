@@ -310,7 +310,7 @@ err_t ether_input(struct netif *netif, struct pbuf *p)
 
   if (enqueue(ether_queue, msg, 0) < 0)
   {
-    kprintf("ether: drop (queue full)\n");
+    if (!debugging) kprintf("ether: drop (queue full)\n");
     kfree(msg);
     stats.link.memerr++;
     stats.link.drop++;

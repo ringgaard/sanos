@@ -36,6 +36,9 @@
 struct waitable_timer *timer_list = NULL;
 int nexttid = 1;
 
+static int wbadds = 0;
+static int wbrems = 0;
+
 //
 // insert_in_waitlist
 //
@@ -44,6 +47,8 @@ int nexttid = 1;
 
 static void insert_in_waitlist(struct object *obj, struct waitblock *wb)
 {
+  wbadds++;
+  if (!debugging) kprintf("waitlist: add %d to %p\n", wb->thread->id, obj);
   wb->next_wait = NULL;
   wb->prev_wait = obj->waitlist_tail;
   if (obj->waitlist_tail) obj->waitlist_tail->next_wait = wb;
@@ -59,14 +64,13 @@ static void insert_in_waitlist(struct object *obj, struct waitblock *wb)
 
 static void remove_from_waitlist(struct waitblock *wb)
 {
+  wbrems++;
+  if (!debugging) kprintf("waitlist: remove %d from %p\n", wb->thread->id, wb->object);
   if (wb->next_wait) wb->next_wait->prev_wait = wb->prev_wait;
   if (wb->prev_wait) wb->prev_wait->next_wait = wb->next_wait;
-  if (wb->object)
-  {
-    if (wb == wb->object->waitlist_head) wb->object->waitlist_head = wb->next_wait;
-    if (wb == wb->object->waitlist_tail) wb->object->waitlist_tail = wb->prev_wait;
-  }
-
+  if (wb == wb->object->waitlist_head) wb->object->waitlist_head = wb->next_wait;
+  if (wb == wb->object->waitlist_tail) wb->object->waitlist_tail = wb->prev_wait;
+  wb->object = NULL;
   wb->next_wait = wb->prev_wait = NULL;
 }
 
@@ -90,18 +94,18 @@ int thread_ready_to_run(struct thread *t)
     
     if (wb->waittype == WAIT_ANY)
     {
-      if (!wb->object || wb->object->signaled) 
+      if (wb->object->signaled)
       {
-	any = 1;
-	t->waitkey = wb->waitkey;
+        any = 1;
+        t->waitkey = wb->waitkey;
       }
     }
     else
     {
-      if (wb->object && !wb->object->signaled) 
-	all = 0;
+      if (!wb->object->signaled) 
+        all = 0;
       else
-	t->waitkey = wb->waitkey;
+        t->waitkey = wb->waitkey;
     }
 
     wb = wb->next;
@@ -125,6 +129,9 @@ void release_thread(struct thread *t)
     remove_from_waitlist(wb);
     wb = wb->next;
   }
+
+  // Clear wait list for thread
+  t->waitlist = NULL;
 
   // Mark thread as ready
   mark_thread_ready(t);
@@ -196,7 +203,7 @@ void clear_thread_waitlist(struct thread *t)
     wb = wb->next;
   }
 
-  t->waitlist = NULL;
+  //xxx t->waitlist = NULL;
 }
 
 //
@@ -238,8 +245,10 @@ int wait_for_object(object_t hobj, unsigned int timeout)
     // Wait for object to become signaled
     enter_wait(THREAD_WAIT_OBJECT);
 
-    // Clear waitlist and return waitkey
-    t->waitlist = NULL;
+    // Clear waitlist
+    clear_thread_waitlist(t);
+
+    // Return waitkey
     return t->waitkey;
   }
   else
