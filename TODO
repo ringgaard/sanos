@@ -182,3 +182,6 @@ CHANGES
 - Proper handling of kernel traps. Now enters debugger with correct exception.
 
 *** version 1.2.6 released ***
+
+- When a file or socket object was closed the kernel object was accessed in hfree() after being freed. 
+  The file and socket objects are now freed in destroy_object() to avoid this problem.
