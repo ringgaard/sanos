@@ -27,6 +27,7 @@ EXPORTS
   FindNextFileA
   FindNextFileW
   FlushFileBuffers
+  FlushViewOfFile
   FormatMessageA
   FreeLibrary
   GetCurrentDirectoryA
@@ -38,6 +39,7 @@ EXPORTS
   GetExitCodeThread
   GetFileAttributesA
   GetFileAttributesW
+  GetFileSize
   GetFileTime
   GetFullPathNameA
   GetLastError
@@ -75,6 +77,8 @@ EXPORTS
   IsValidCodePage
   LeaveCriticalSection
   LoadLibraryA
+  LockFile
+  LockFileEx
   MapViewOfFile
   MoveFileA
   MultiByteToWideChar
@@ -84,6 +88,7 @@ EXPORTS
   QueryPerformanceCounter
   QueryPerformanceFrequency
   PeekNamedPipe
+  ReadFile
   ReleaseSemaphore
   RemoveDirectoryA
   RemoveDirectoryW
@@ -112,6 +117,8 @@ EXPORTS
   TlsGetValue
   TlsSetValue
   TryEnterCriticalSection
+  UnlockFile
+  UnlockFileEx
   UnmapViewOfFile
   VirtualAlloc
   VirtualFree
@@ -120,3 +127,4 @@ EXPORTS
   WaitForMultipleObjects
   WaitForSingleObject
   WideCharToMultiByte
+  WriteFile

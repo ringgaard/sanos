@@ -50,6 +50,7 @@
 #define WSAERRBASE              10000
 
 typedef handle_t SOCKET;
+typedef handle_t WSAEVENT;
 typedef struct iovec WSABUF;
 typedef struct iovec *LPWSABUF;
 
@@ -435,6 +436,73 @@ sockapi int __stdcall WSASendDisconnect
   TRACE("WSASendDisconnect");
   panic("WSASendDisconnect not implemented");
   return -1;
+}
+
+sockapi int __stdcall WSAEventSelect
+(
+  SOCKET s,
+  WSAEVENT hEventObject,
+  long lNetworkEvents
+)
+{
+  TRACE("WSAEventSelect");
+
+  // Just ignore call if it is an unregistration
+  // Used by nio when setting a socket to blocking mode
+  if (hEventObject == 0 && lNetworkEvents == 0) return 0;
+
+  panic("WSAEventSelect not implemented");
+  return -1;
+}
+
+sockapi int __stdcall WSARecv
+(
+  SOCKET s,
+  LPWSABUF lpBuffers,
+  DWORD dwBufferCount,
+  LPDWORD lpNumberOfBytesRecvd,
+  LPDWORD lpFlags,
+  LPWSAOVERLAPPED lpOverlapped,
+  LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+)
+{
+  int rc;
+
+  TRACE("WSARecv");
+
+  if (lpOverlapped != NULL) panic("Overlapped I/O not implemented in WSARecv");
+  if (lpCompletionRoutine != NULL) panic("Completion routines not implemented in WSARecv");
+
+  rc = readv(s, lpBuffers, dwBufferCount);
+  if (rc < 0) return -1;
+
+  if (lpNumberOfBytesRecvd) *lpNumberOfBytesRecvd = rc;
+  return 0;
+}
+
+sockapi int __stdcall WSASend
+(
+  SOCKET s,
+  LPWSABUF lpBuffers,
+  DWORD dwBufferCount,
+  LPDWORD lpNumberOfBytesSent,
+  DWORD dwFlags,
+  LPWSAOVERLAPPED lpOverlapped,
+  LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+)
+{
+  int rc;
+
+  TRACE("WSASend");
+
+  if (lpOverlapped != NULL) panic("Overlapped I/O not implemented in WSASend");
+  if (lpCompletionRoutine != NULL) panic("Completion routines not implemented in WSASend");
+
+  rc = writev(s, lpBuffers, dwBufferCount);
+  if (rc < 0) return -1;
+
+  if (lpNumberOfBytesSent) *lpNumberOfBytesSent = rc;
+  return 0;
 }
 
 int __stdcall DllMain(handle_t hmod, int reason, void *reserved)

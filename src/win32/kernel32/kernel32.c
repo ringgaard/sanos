@@ -1107,6 +1107,16 @@ BOOL WINAPI FlushFileBuffers
   return TRUE;
 }
 
+BOOL WINAPI FlushViewOfFile
+(
+  LPCVOID lpBaseAddress,
+  SIZE_T dwNumberOfBytesToFlush
+)
+{
+  panic("FlushViewOfFile not implemented");
+  return FALSE;
+}
+
 DWORD WINAPI FormatMessageA
 (
   DWORD dwFlags,
@@ -1290,6 +1300,22 @@ DWORD WINAPI GetFileAttributesW
   rc = GetFileAttributesA(fn);
   //syslog(LOG_DEBUG, "GetFileAttributesW(%s)=%08X\n", fn, rc);
   return rc;
+}
+
+DWORD WINAPI GetFileSize
+(
+  HANDLE hFile,
+  LPDWORD lpFileSizeHigh
+)
+{
+  LARGE_INTEGER size;
+
+  TRACE("GetFileSize");
+
+  size.QuadPart = fstat64((handle_t) hFile, NULL);
+  if (size.QuadPart < 0) return INVALID_FILE_SIZE;
+  if (lpFileSizeHigh) *lpFileSizeHigh = size.HighPart;
+  return size.LowPart;
 }
 
 BOOL WINAPI GetFileTime
@@ -1871,6 +1897,33 @@ HMODULE WINAPI LoadLibraryA
   return (HMODULE) dlopen((char *) lpFileName, 0);
 }
 
+BOOL WINAPI LockFile
+(
+  HANDLE hFile,
+  DWORD dwFileOffsetLow,
+  DWORD dwFileOffsetHigh,
+  DWORD nNumberOfBytesToLockLow,
+  DWORD nNumberOfBytesToLockHigh
+)
+{
+  panic("LockFile not implemented");
+  return FALSE;
+}
+
+BOOL WINAPI LockFileEx
+(
+  HANDLE hFile,
+  DWORD dwFlags,
+  DWORD dwReserved,
+  DWORD nNumberOfBytesToLockLow,
+  DWORD nNumberOfBytesToLockHigh,
+  LPOVERLAPPED lpOverlapped
+)
+{
+  panic("LockFileEx not implemented");
+  return FALSE;
+}
+
 LPVOID WINAPI MapViewOfFile
 (
   HANDLE hFileMappingObject,
@@ -2006,6 +2059,27 @@ BOOL WINAPI QueryPerformanceFrequency
   lpFrequency->HighPart = 0;
   lpFrequency->LowPart = 1000;
 
+  return TRUE;
+}
+
+BOOL WINAPI ReadFile
+(
+  HANDLE hFile,
+  LPVOID lpBuffer,
+  DWORD nNumberOfBytesToRead,
+  LPDWORD lpNumberOfBytesRead,
+  LPOVERLAPPED lpOverlapped
+)
+{
+  int rc;
+
+  TRACE("ReadFile");
+  if (lpOverlapped) panic("Overlapped I/O not implemented in ReadFile");
+
+  rc = read((handle_t) hFile, lpBuffer, nNumberOfBytesToRead);
+  if (rc < 0) return FALSE;
+
+  *lpNumberOfBytesRead = rc;
   return TRUE;
 }
 
@@ -2436,6 +2510,32 @@ BOOL WINAPI TryEnterCriticalSection
   return TRUE;
 }
 
+BOOL WINAPI UnlockFile
+(
+  HANDLE hFile,
+  DWORD dwFileOffsetLow,
+  DWORD dwFileOffsetHigh,
+  DWORD nNumberOfBytesToUnlockLow,
+  DWORD nNumberOfBytesToUnlockHigh
+)
+{
+  panic("UnlockFile not implemented");
+  return FALSE;
+}
+
+BOOL WINAPI UnlockFileEx
+(
+  HANDLE hFile,
+  DWORD dwReserved,
+  DWORD nNumberOfBytesToUnlockLow,
+  DWORD nNumberOfBytesToUnlockHigh,
+  LPOVERLAPPED lpOverlapped
+)
+{
+  panic("UnlockFileEx not implemented");
+  return FALSE;
+}
+
 BOOL WINAPI UnmapViewOfFile
 (
   LPCVOID lpBaseAddress
@@ -2635,6 +2735,27 @@ int WINAPI WideCharToMultiByte
   TRACE("WideCharToMultiByte");
   panic("WideCharToMultiByte not implemented");
   return 0;
+}
+
+BOOL WINAPI WriteFile
+(
+  HANDLE hFile,
+  LPCVOID lpBuffer,
+  DWORD nNumberOfBytesToWrite,
+  LPDWORD lpNumberOfBytesWritten,
+  LPOVERLAPPED lpOverlapped
+)
+{
+  int rc;
+
+  TRACE("WriteFile");
+  if (lpOverlapped) panic("Overlapped I/O not implemented in WriteFile");
+
+  rc = write((handle_t) hFile, lpBuffer, nNumberOfBytesToWrite);
+  if (rc < 0) return FALSE;
+
+  *lpNumberOfBytesWritten = rc;
+  return TRUE;
 }
 
 int __stdcall DllMain(handle_t hmod, int reason, void *reserved)

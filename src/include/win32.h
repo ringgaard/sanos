@@ -43,6 +43,7 @@
 
 #define MAX_PATH             260
 #define INVALID_HANDLE_VALUE ((HANDLE) -1)
+#define INVALID_FILE_SIZE    ((DWORD)0xFFFFFFFF)
 
 #define WAIT_TIMEOUT         0x00000102L
 #define WAIT_FAILED          0xFFFFFFFFL

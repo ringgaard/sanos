@@ -599,7 +599,7 @@ CHANGES
 
 - utime.h header moved from include/sys to include.
 
-- uname() implemendted and utsname.h header added. uname command implemented in shell.
+- uname() implemented and utsname.h header added. uname command implemented in shell.
 
 - chsize{64} renamed to ftruncate{64} and added to unistd.h
 
@@ -608,3 +608,5 @@ CHANGES
 - Added strtok_r()
 
 - Fixed bug in password encoding for smbfs
+
+- Added new API routines to wsock32 and kernel32 to better support nio

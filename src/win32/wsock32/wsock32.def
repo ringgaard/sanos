@@ -44,7 +44,10 @@ EXPORTS
   __WSAFDIsSet                              @151
   WSAGetLastError                           @111
   WSACleanup	                            @116
-  WSARecvFrom                               @69
-  WSASendTo                                 @74
-  WSAIoctl                                  @50
-  WSASendDisconnect                         @54
+  WSARecvFrom                               @73
+  WSASendTo                                 @78
+  WSAIoctl                                  @60
+  WSASendDisconnect                         @77
+  WSAEventSelect                            @42
+  WSARecv                                   @71
+  WSASend                                   @76
