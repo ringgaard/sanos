@@ -322,7 +322,7 @@ BOOL WINAPI FileTimeToSystemTime
 
   TRACEX("FileTimeToSystemTime");
 
-  t = (time_t) ((*(__int64 *) lpFileTime) - EPOC) / SECTIMESCALE;
+  t = (time_t) ((*(unsigned __int64 *) lpFileTime) - EPOC) / SECTIMESCALE;
 
   _gmtime(&t, &tm);
 
@@ -351,9 +351,9 @@ static void fill_find_data(LPWIN32_FIND_DATA fd, char *filename, struct stat *st
   fd->nFileSizeLow = statbuf->quad.size_low;
   fd->nFileSizeHigh = statbuf->quad.size_high;
 
-  *(__int64 *) &(fd->ftCreationTime) = (__int64) statbuf->ctime * SECTIMESCALE + EPOC;
-  *(__int64 *) &(fd->ftLastAccessTime) = (__int64) statbuf->mtime * SECTIMESCALE + EPOC;
-  *(__int64 *) &(fd->ftLastWriteTime) = (__int64) statbuf->mtime * SECTIMESCALE + EPOC;
+  *(unsigned __int64 *) &(fd->ftCreationTime) = (unsigned __int64) statbuf->ctime * SECTIMESCALE + EPOC;
+  *(unsigned __int64 *) &(fd->ftLastAccessTime) = (unsigned __int64) statbuf->mtime * SECTIMESCALE + EPOC;
+  *(unsigned __int64 *) &(fd->ftLastWriteTime) = (unsigned __int64) statbuf->mtime * SECTIMESCALE + EPOC;
 }
 
 static int like(char *str, char *mask)
@@ -719,17 +719,17 @@ BOOL WINAPI GetFileTime
 
   if (lpCreationTime)
   {
-    *(__int64 *) lpCreationTime = (__int64) times.ctime * SECTIMESCALE + EPOC;
+    *(unsigned __int64 *) lpCreationTime = (unsigned __int64) times.ctime * SECTIMESCALE + EPOC;
   }
 
   if (lpLastAccessTime)
   {
-    *(__int64 *) lpLastAccessTime = (__int64) times.atime * SECTIMESCALE + EPOC;
+    *(unsigned __int64 *) lpLastAccessTime = (unsigned __int64) times.atime * SECTIMESCALE + EPOC;
   }
 
   if (lpLastWriteTime)
   {
-    *(__int64 *) lpLastWriteTime = (__int64) times.mtime * SECTIMESCALE + EPOC;
+    *(unsigned __int64 *) lpLastWriteTime = (unsigned __int64) times.mtime * SECTIMESCALE + EPOC;
   }
 
   return TRUE;
@@ -896,7 +896,7 @@ VOID GetSystemTimeAsFileTime
 
   TRACE("GetSystemTimeAsFileTime");
   gettimeofday(&tv);
-  *(unsigned __int64 *) lpSystemTimeAsFileTime = ((__int64) (tv.tv_sec) * 1000000 + (__int64) (tv.tv_usec)) * MICROTIMESCALE + EPOC;
+  *(unsigned __int64 *) lpSystemTimeAsFileTime = ((unsigned __int64) (tv.tv_sec) * 1000000 + (unsigned __int64) (tv.tv_usec)) * MICROTIMESCALE + EPOC;
 }
 
 DWORD WINAPI GetTempPathA
@@ -1437,7 +1437,7 @@ BOOL WINAPI SystemTimeToFileTime
 
   TRACE("SystemTimeToFileTime");
   memset(&tm, 0, sizeof(tm));
-  tm.tm_yday = lpSystemTime->wYear - 1900;
+  tm.tm_year = lpSystemTime->wYear - 1900;
   tm.tm_mon = lpSystemTime->wMonth - 1;
   tm.tm_mday = lpSystemTime->wDay;
   tm.tm_hour = lpSystemTime->wHour;
@@ -1446,7 +1446,7 @@ BOOL WINAPI SystemTimeToFileTime
 
   time = mktime(&tm);
     
-  *(unsigned __int64 *) lpFileTime = ((__int64) time * 1000000 + (__int64) (lpSystemTime->wMilliseconds) * 1000) * MICROTIMESCALE + EPOC;
+  *(unsigned __int64 *) lpFileTime = ((unsigned __int64) time * 1000000 + (unsigned __int64) (lpSystemTime->wMilliseconds) * 1000) * MICROTIMESCALE + EPOC;
   return TRUE;
 }
 

@@ -72,6 +72,8 @@ static void remove_from_waitlist(struct waitblock *wb)
     if (wb == wb->object->waitlist_head) wb->object->waitlist_head = wb->next_wait;
     if (wb == wb->object->waitlist_tail) wb->object->waitlist_tail = wb->prev_wait;
   }
+
+  wb->next_wait = wb->prev_wait = NULL;
 }
 
 //
@@ -175,6 +177,22 @@ void enter_object(struct object *obj)
 }
 
 //
+// clear_thread_waitlist
+//
+
+void clear_thread_waitlist(struct thread *t)
+{
+  struct waitblock *wb = t->waitlist;
+  while (wb)
+  {
+    if (wb->next_wait != NULL || wb->prev_wait != NULL) panic("waitlist not empty");
+    wb = wb->next;
+  }
+
+  t->waitlist = NULL;
+}
+
+//
 // wait_for_object
 //
 // Wait for object to become signaled.
@@ -226,6 +244,7 @@ int wait_for_object(object_t hobj, unsigned int timeout)
       struct waitblock wbtmo;
 
       // Initialize timer
+      if (timeout < MSECS_PER_TICK) panic("timeout too small");
       init_waitable_timer(&timer, ticks + timeout / MSECS_PER_TICK);
       wb.waittype = WAIT_ANY;
       wb.next = &wbtmo;
@@ -244,7 +263,7 @@ int wait_for_object(object_t hobj, unsigned int timeout)
       cancel_waitable_timer(&timer);
 
       // Clear wait list
-      t->waitlist = NULL;
+      clear_thread_waitlist(t);
 
       // Return wait key
       return t->waitkey;
@@ -281,16 +300,21 @@ int wait_for_all_objects(struct object **objs, int count, unsigned int timeout)
   all = 1;
   for (n = 0; n < count; n++)
   {
-    if (!objs[n]->signaled)
+    if (objs[n]->type == OBJECT_MUTEX)
     {
-      all = 0;
-      break;
+      if (!objs[n]->signaled || ((struct mutex *) objs[n])->owner != self())
+      {
+	all = 0;
+	break;
+      }
     }
-
-    if (objs[n]->type != OBJECT_MUTEX || ((struct mutex *) objs[n])->owner != self())
+    else
     {
-      all = 0;
-      break;
+      if (!objs[n]->signaled)
+      {
+	all = 0;
+	break;
+      }
     }
   }
 
@@ -336,6 +360,7 @@ int wait_for_all_objects(struct object **objs, int count, unsigned int timeout)
   // Add waitable timer for timeout
   if (timeout != INFINITE)
   {
+    if (timeout < MSECS_PER_TICK) panic("timeout too small");
     init_waitable_timer(&timer, ticks + timeout / MSECS_PER_TICK);
     wb[count - 1].next = &wbtmo;
     wbtmo.thread = t;
@@ -354,7 +379,7 @@ int wait_for_all_objects(struct object **objs, int count, unsigned int timeout)
   if (timeout != INFINITE) cancel_waitable_timer(&timer);
 
   // Clear wait list
-  t->waitlist = NULL;
+  clear_thread_waitlist(t);
 
   // Return wait key
   return t->waitkey;
@@ -422,6 +447,7 @@ int wait_for_any_object(struct object **objs, int count, unsigned int timeout)
   // Add waitable timer for timeout
   if (timeout != INFINITE)
   {
+    if (timeout < MSECS_PER_TICK) panic("timeout too small");
     init_waitable_timer(&timer, ticks + timeout / MSECS_PER_TICK);
     wb[count - 1].next = &wbtmo;
     wbtmo.thread = t;
@@ -440,7 +466,7 @@ int wait_for_any_object(struct object **objs, int count, unsigned int timeout)
   if (timeout != INFINITE) cancel_waitable_timer(&timer);
 
   // Clear wait list
-  t->waitlist = NULL;
+  clear_thread_waitlist(t);
 
   // Return wait key
   return t->waitkey;

@@ -1587,8 +1587,8 @@ static int sys_gettimeofday(char *params)
     return -EFAULT;
   }
 
-  tv->tv_usec = systemclock.tv_usec;
   tv->tv_sec = systemclock.tv_sec;
+  tv->tv_usec = systemclock.tv_usec;
 
   unlock_buffer(tv, sizeof(struct timeval));
   unlock_buffer(params, 4);
