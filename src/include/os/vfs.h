@@ -34,11 +34,11 @@
 #ifndef VFS_H
 #define VFS_H
 
-#define VFS_LOCK_TIMEOUT       60000    // Timeout for file system locks
+#define VFS_LOCK_TIMEOUT        60000     // Timeout for file system locks
 
-#define F_MODIFIED              0x1000  // File has been modified since it was opened
-#define F_DIR                   0x2000  // File is a directory
-#define F_CLOSED                0x4000  // File is closed
+#define F_MODIFIED              0x100000  // File has been modified since it was opened
+#define F_DIR                   0x200000  // File is a directory
+#define F_CLOSED                0x400000  // File is closed
 
 #define FSOP_MKFS       0x00000001
 #define FSOP_MOUNT      0x00000002

@@ -74,6 +74,7 @@ void *load_image_file(char *filename, int userspace)
   if ((bytes = read(f, buffer, PAGESIZE)) < 0)
   {
     close(f);
+    destroy(f);
     kfree(buffer);
     return NULL;
   }
@@ -81,7 +82,7 @@ void *load_image_file(char *filename, int userspace)
   imghdr = (struct image_header *) (buffer + doshdr->e_lfanew);
 
   // Check PE file signature
-  if (doshdr->e_lfanew > bytes || imghdr->signature != IMAGE_PE_SIGNATURE)  panic("invalid PE signature");
+  if (doshdr->e_lfanew > bytes || imghdr->signature != IMAGE_PE_SIGNATURE) panic("invalid PE signature");
 
   // Check alignment
   //if (imghdr->optional.file_alignment != PAGESIZE || imghdr->optional.section_alignment != PAGESIZE) panic("image not page aligned");
@@ -107,6 +108,7 @@ void *load_image_file(char *filename, int userspace)
   if (imgbase == NULL)
   {
     close(f);
+    destroy(f);
     kfree(buffer);
     return NULL;
   }
@@ -128,6 +130,7 @@ void *load_image_file(char *filename, int userspace)
 	  free_module_mem(imgbase, imghdr->optional.size_of_image);
 
 	close(f);
+        destroy(f);
         kfree(buffer);
 	return NULL;
       }
@@ -138,6 +141,7 @@ void *load_image_file(char *filename, int userspace)
 
   // Close file
   close(f);
+  destroy(f);
   kfree(buffer);
 
   return imgbase;

@@ -79,6 +79,9 @@ void main(void *arg);
 
 void stop(int restart)
 {
+  kprintf("kernel: suspending all user threads...\n");
+  suspend_all_user_threads();
+
   kprintf("kernel: syncing filesystems...\n");
   umount_all();
 
@@ -193,6 +196,7 @@ static int load_kernel_config()
   if (!props) 
   {
     close(f);
+    destroy(f);
     return -ENOMEM;
   }
 
@@ -201,10 +205,12 @@ static int load_kernel_config()
   {
     free(props);
     close(f);
+    destroy(f);
     return rc;
   }
 
   close(f);
+  destroy(f);
 
   props[size] = 0;
 

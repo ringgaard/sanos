@@ -152,6 +152,7 @@ struct thread *get_thread(tid_t tid);
 int suspend_thread(struct thread *t);
 int resume_thread(struct thread *t);
 void terminate_thread(int exitcode);
+void suspend_all_user_threads();
 
 int get_thread_priority(struct thread *t);
 int set_thread_priority(struct thread *t, int priority);

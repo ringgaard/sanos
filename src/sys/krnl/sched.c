@@ -545,6 +545,17 @@ int resume_thread(struct thread *t)
   return prevcount;
 }
 
+void suspend_all_user_threads()
+{
+  struct thread *t = threadlist;
+  while (1)
+  {
+    if (t->tib && t != self()) suspend_thread(t);
+    t = t->next;
+    if (t == threadlist) break;
+  }
+}
+
 void terminate_thread(int exitcode)
 {
   struct thread *t = self();

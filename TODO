@@ -7,9 +7,6 @@ TODO for sanos
   computer on shutdown. Eventually, shutdown could be implemented only
   enabling APM just before shutdown.
  
-- Suspend all user threads when shutting down. Remember not to suspend the
-  running thread.
-
 - Move signal handler table to job object to make signal handlers job specific. 
     - Add job number to kill. 
     - Implement int kill(int pid, int signum)
@@ -558,3 +555,5 @@ CHANGES
 - Changed err_tcp() in tcpsock.c to set IOEVT_CLOSE if the error code is ERST. This will
   trigger a socket in readfds in select() when the connection has been reset by the
   peer.
+
+- Suspending all user threads when shutting down.

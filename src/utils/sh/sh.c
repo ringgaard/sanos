@@ -285,7 +285,7 @@ int cmd_cp(int argc, char *argv[])
   {
     if (write(fd2, data, count) != count)
     {
-      printf("%s: error writing data\n", dstfn);
+      printf("%s: error writing data (%s)\n", dstfn, strerror(errno));
       break;
     }
   }
@@ -1247,12 +1247,14 @@ int cmd_sysinfo(int argc, char *argv[])
 
 int cmd_test(int argc, char *argv[])
 {
-  char *fn;
-  
-  printf("find temp name\n");
-  fn = tempnam(NULL, "XXX");
-  printf("tempname=%s\n", fn);
-  free(fn);
+  FILE *f;
+  int rc;
+
+  fmode = O_TEXT;
+  f = fopen(argv[1], "w");
+  rc = fprintf(f, "hello world, line 1\n");
+  rc = fprintf(f, "hello world, line 2\n");
+  fclose(f);
   return 0;
 }
 
