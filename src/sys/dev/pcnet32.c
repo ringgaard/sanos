@@ -189,8 +189,6 @@ struct pcnet32
   void (*reset)(unsigned short);
 };
 
-//struct pcnet32 pcnet32;
-
 static void dump_csr(unsigned short csr)
 {
   kprintf("CRS: ");
@@ -485,7 +483,7 @@ void pcnet32_dpc(void *arg)
     //dump_csr(csr);
 
     if (csr & CSR_RINT) pcnet32_receive(pcnet32);
-    //if (csr & CSR_TINT) kprintf("Transmit\n");
+    if (csr & CSR_TINT) kprintf("Transmit\n");
   }
 
   //dump_csr(csr);
