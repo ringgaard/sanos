@@ -44,13 +44,22 @@ TODO for sanos
     - Replace struct object with struct ioobject in socket.h
     - Add dispatch(iomux,h,mask,context) syscall
     - Add synchronization on iomuxes...
+ 
+ - Revalidate partition drivers after fdisk
 
+ - Implement main entry in libc with parseargs
+ 
+ - Handle reopening of files in smbfs after reconnect
+ 
 IDEAS for new features
 ----------------------
 
 - Simple httpd server in C for static contents (and isapi interface)
 
 - Use type object in struct object
+
+- String substitution in inf files
+    - Replace all %key% with value in [strings] section
 
 - Add support for select()
 

@@ -71,7 +71,7 @@ typedef unsigned long pid_t;
 
 #define NOHANDLE ((handle_t) -1)
 
-#define ULONG_MAX   0xffffffffUL
+#define ULONG_MAX   0xFFFFFFFFUL
 #define LONG_MIN    (-2147483647L - 1)
 #define LONG_MAX    2147483647L
 

@@ -618,6 +618,12 @@ int __stdcall main(hmodule_t hmod, char *cmdline, void *env)
   char *scriptname;
   int rc;
 
+  if (cmdline)
+  {
+    while (*cmdline != 0 && *cmdline != ' ') cmdline++;
+    while (*cmdline == ' ') cmdline++;
+  }
+
   if (cmdline && *cmdline)
     instfn = cmdline;
   else

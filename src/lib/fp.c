@@ -35,7 +35,7 @@
 
 #define HI(x)    (*(1 + (int *) &x))
 #define LO(x)    (*(int *) &x)
-#define HIPTR(x) *(1+(int *) x)
+#define HIPTR(x) *(1 + (int *) x)
 #define LOPTR(x) (*(int *) x)
 
 static char cvtbuf[NDIG];

@@ -388,6 +388,12 @@ int __stdcall main(hmodule_t hmod, char *cmdline, void *env)
   int done = 0;
 
   // Check arguments
+  if (cmdline)
+  {
+    while (*cmdline != 0 && *cmdline != ' ') cmdline++;
+    while (*cmdline == ' ') cmdline++;
+  }
+
   if (!cmdline || !*cmdline)
   {
     printf("usage: fdisk <device>\n");
