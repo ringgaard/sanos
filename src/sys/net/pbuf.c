@@ -497,6 +497,7 @@ void pbuf_chain(struct pbuf *h, struct pbuf *t)
 {
   struct pbuf *p;
 
+  if (t == NULL) return;
   for (p = h; p->next != NULL; p = p->next);
   p->next = t;
   h->tot_len += t->tot_len;

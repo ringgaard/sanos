@@ -242,7 +242,7 @@ void tcp_recved(struct tcp_pcb *pcb, int len)
 {
   pcb->rcv_wnd += len;
   if (pcb->rcv_wnd > TCP_WND) pcb->rcv_wnd = TCP_WND;
-  if (!(pcb->flags & TF_ACK_DELAY) ||!(pcb->flags & TF_ACK_NOW)) tcp_ack(pcb);
+  if (!(pcb->flags & TF_ACK_DELAY) && !(pcb->flags & TF_ACK_NOW)) tcp_ack(pcb);
 
   //kprintf("tcp_recved: received %d bytes, wnd %u (%u).\n", len, pcb->rcv_wnd, TCP_WND - pcb->rcv_wnd);
 }

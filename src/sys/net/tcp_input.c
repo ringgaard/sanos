@@ -372,11 +372,11 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 
     case SYN_SENT:
       //kprintf("SYN-SENT: ackno %lu pcb->snd_nxt %lu unacked %lu\n", ackno, pcb->snd_nxt, pcb->unacked ? ntohl(pcb->unacked->tcphdr->seqno) : 0);
-      if (flags & TCP_ACK && flags & TCP_SYN && pcb->unacked && ackno == ntohl(pcb->unacked->tcphdr->seqno) + 1) 
+      if (flags & (TCP_ACK | TCP_SYN) && pcb->unacked && ackno == ntohl(pcb->unacked->tcphdr->seqno) + 1) 
       {
 	pcb->rcv_nxt = seqno + 1;
 	pcb->lastack = ackno;
-	pcb->rcv_wnd = tcphdr->wnd;
+	pcb->snd_wnd = tcphdr->wnd;
 	pcb->state = ESTABLISHED;
 	pcb->cwnd = pcb->mss;
 	pcb->snd_queuelen--;
