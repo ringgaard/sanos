@@ -657,7 +657,7 @@ int cdfs_opendir(struct file *filp, char *name)
   return 0;
 }
 
-int cdfs_readdir(struct file *filp, struct dirent *dirp, int count)
+int cdfs_readdir(struct file *filp, struct direntry *dirp, int count)
 {
   struct cdfs_file *cdfile = (struct cdfs_file *) filp->data;
   struct cdfs *cdfs = (struct cdfs *) filp->fs->data;
@@ -700,7 +700,7 @@ recagain:
 
   // Get info from directory record
   dirp->ino = isonum_733(rec->extent);
-  dirp->reclen = sizeof(struct dirent) - MAXPATH + namelen + 1;
+  dirp->reclen = sizeof(struct direntry) - MAXPATH + namelen + 1;
   if (cdfs->joliet)
   {
     int n;

@@ -340,7 +340,7 @@ int canonicalize(const char *filename, char *buffer, int size)
       errno = ENAMETOOLONG;
       return -1;
     }
-    *p++ = PS1;
+    *p++ = peb->pathsep;
 
     // Parse next name part in path
     len = 0;
@@ -379,7 +379,7 @@ int canonicalize(const char *filename, char *buffer, int size)
   }
 
   // Convert empty filename to /
-  if (p == buffer) *p++ = PS1;
+  if (p == buffer) *p++ = peb->pathsep;
 
   // Terminate string
   if (p == end) 

@@ -1,7 +1,7 @@
 //
-// malloc.h
+// uio.h
 //
-// Heap allocation routines
+// Defines for vector I/O functions
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -35,29 +35,35 @@
 #pragma once
 #endif
 
-#ifndef MALLOC_H
-#define MALLOC_H
+#ifndef UIO_H
+#define UIO_H
 
 #ifndef osapi
 #define osapi __declspec(dllimport)
 #endif
 
-#ifndef _SIZE_T_DEFINED
-#define _SIZE_T_DEFINED
-typedef unsigned int size_t;
+#ifndef _HANDLE_T_DEFINED
+#define _HANDLE_T_DEFINED
+typedef int handle_t;
+#endif
+
+#ifndef _IOVEC_DEFINED
+#define _IOVEC_DEFINED
+
+struct iovec 
+{ 
+  void *iov_base;
+  size_t iov_len;
+};
+
 #endif
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
-osapi void *malloc(size_t size);
-osapi void *realloc(void *mem, size_t size);
-osapi void *calloc(size_t num, size_t size);
-osapi void free(void *p);
-
-void  *_alloca(size_t size);
-#define alloca _alloca
+osapi int readv(handle_t f, const struct iovec *iov, int count);
+osapi int writev(handle_t f, const struct iovec *iov, int count);
 
 #ifdef  __cplusplus
 }

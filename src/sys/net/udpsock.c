@@ -42,23 +42,23 @@ static err_t recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
 
   if (req)
   {
-    rc = write_iovec(req->msg->iov, req->msg->iovlen, p->payload, p->len);
+    rc = write_iovec(req->msg->msg_iov, req->msg->msg_iovlen, p->payload, p->len);
     if (rc < p->len) rc = -EMSGSIZE;
 
-    if (req->msg->name)
+    if (req->msg->msg_name)
     {
-      if (req->msg->namelen < sizeof(struct sockaddr_in))
+      if (req->msg->msg_namelen < sizeof(struct sockaddr_in))
 	rc = -EFAULT;
       else
       {
-	sin = (struct sockaddr_in *) req->msg->name;
+	sin = (struct sockaddr_in *) req->msg->msg_name;
 	sin->sin_len = sizeof(struct sockaddr_in);
 	sin->sin_family = AF_INET;
 	sin->sin_port = htons(port);
 	sin->sin_addr.s_addr = addr->addr;
       }
     }
-    req->msg->namelen = sizeof(struct sockaddr_in);
+    req->msg->msg_namelen = sizeof(struct sockaddr_in);
 
     pbuf_free(p);
 
@@ -263,19 +263,19 @@ static int udpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
     pbuf_header(p, IP_HLEN); 
     iphdr = p->payload;
 
-    rc = write_iovec(msg->iov, msg->iovlen, buf, len);
+    rc = write_iovec(msg->msg_iov, msg->msg_iovlen, buf, len);
     if (rc < len) rc = -EMSGSIZE;
 
-    if (msg->name)
+    if (msg->msg_name)
     {
-      if (msg->namelen < sizeof(struct sockaddr_in)) return -EFAULT;
-      sin = (struct sockaddr_in *) msg->name;
+      if (msg->msg_namelen < sizeof(struct sockaddr_in)) return -EFAULT;
+      sin = (struct sockaddr_in *) msg->msg_name;
       sin->sin_len = sizeof(struct sockaddr_in);
       sin->sin_family = AF_INET;
       sin->sin_port = htons(udphdr->src);
       sin->sin_addr.s_addr = iphdr->src.addr;
     }
-    msg->namelen = sizeof(struct sockaddr_in);
+    msg->msg_namelen = sizeof(struct sockaddr_in);
 
     pbuf_free(p);
   }
@@ -293,11 +293,11 @@ static int udpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   int size;
   int rc;
 
-  size = get_iovec_size(msg->iov, msg->iovlen);
+  size = get_iovec_size(msg->msg_iov, msg->msg_iovlen);
 
-  if (msg->name)
+  if (msg->msg_name)
   {
-    rc = udpsock_connect(s, msg->name, msg->namelen);
+    rc = udpsock_connect(s, msg->msg_name, msg->msg_namelen);
     if (rc < 0) return rc;
   }
 
@@ -306,7 +306,7 @@ static int udpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   p = pbuf_alloc(PBUF_TRANSPORT, size, PBUF_RW);
   if (!p) return -ENOMEM;
 
-  rc = read_iovec(msg->iov, msg->iovlen, p->payload, size);
+  rc = read_iovec(msg->msg_iov, msg->msg_iovlen, p->payload, size);
   if (rc < 0) return rc;
   
   rc = udp_send(s->udp.pcb, p, NULL);

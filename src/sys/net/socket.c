@@ -164,10 +164,10 @@ int recv(struct socket *s, void *data, int size, unsigned int flags)
   if (!data) return -EFAULT;
   if (size < 0) return -EINVAL;
 
-  msg.name = NULL;
-  msg.namelen = 0;
-  msg.iov = &iov;
-  msg.iovlen = 1;
+  msg.msg_name = NULL;
+  msg.msg_namelen = 0;
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
   iov.iov_base = data;
   iov.iov_len = size;
 
@@ -181,15 +181,15 @@ int recvmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
   struct msghdr m;
   int rc;
 
-  m.name = msg->name;
-  m.namelen = msg->namelen;
-  m.iov = dup_iovec(msg->iov, msg->iovlen);
-  m.iovlen = msg->iovlen;
-  if (!m.iov) return -ENOMEM;
+  m.msg_name = msg->msg_name;
+  m.msg_namelen = msg->msg_namelen;
+  m.msg_iov = dup_iovec(msg->msg_iov, msg->msg_iovlen);
+  m.msg_iovlen = msg->msg_iovlen;
+  if (!m.msg_iov) return -ENOMEM;
 
   rc = sockops[s->type]->recvmsg(s, &m, flags);
-  msg->namelen = m.namelen;
-  kfree(m.iov);
+  msg->msg_namelen = m.msg_namelen;
+  kfree(m.msg_iov);
 
   return rc;
 }
@@ -199,14 +199,14 @@ int recvv(struct socket *s, struct iovec *iov, int count)
   struct msghdr msg;
   int rc;
 
-  msg.name = NULL;
-  msg.namelen = 0;
-  msg.iov = dup_iovec(iov, count);
-  msg.iovlen = count;
-  if (!msg.iov) return -ENOMEM;
+  msg.msg_name = NULL;
+  msg.msg_namelen = 0;
+  msg.msg_iov = dup_iovec(iov, count);
+  msg.msg_iovlen = count;
+  if (!msg.msg_iov) return -ENOMEM;
 
   rc = sockops[s->type]->recvmsg(s, &msg, 0);
-  kfree(msg.iov);
+  kfree(msg.msg_iov);
 
   return rc;
 }
@@ -220,15 +220,15 @@ int recvfrom(struct socket *s, void *data, int size, unsigned int flags, struct 
   if (!data) return -EFAULT;
   if (size < 0) return -EINVAL;
 
-  msg.name = from;
-  msg.namelen = fromlen ? *fromlen : 0;
-  msg.iov = &iov;
-  msg.iovlen = 1;
+  msg.msg_name = from;
+  msg.msg_namelen = fromlen ? *fromlen : 0;
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
   iov.iov_base = data;
   iov.iov_len = size;
 
   rc = sockops[s->type]->recvmsg(s, &msg, flags);
-  if (fromlen) *fromlen = msg.namelen;
+  if (fromlen) *fromlen = msg.msg_namelen;
 
   return rc;
 }
@@ -242,10 +242,10 @@ int send(struct socket *s, void *data, int size, unsigned int flags)
   if (!data) return -EFAULT;
   if (size < 0) return -EINVAL;
 
-  msg.name = NULL;
-  msg.namelen = 0;
-  msg.iov = &iov;
-  msg.iovlen = 1;
+  msg.msg_name = NULL;
+  msg.msg_namelen = 0;
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
   iov.iov_base = data;
   iov.iov_len = size;
 
@@ -259,14 +259,14 @@ int sendmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
   struct msghdr m;
   int rc;
 
-  m.name = msg->name;
-  m.namelen = msg->namelen;
-  m.iov = dup_iovec(msg->iov, msg->iovlen);
-  m.iovlen = msg->iovlen;
-  if (!m.iov) return -ENOMEM;
+  m.msg_name = msg->msg_name;
+  m.msg_namelen = msg->msg_namelen;
+  m.msg_iov = dup_iovec(msg->msg_iov, msg->msg_iovlen);
+  m.msg_iovlen = msg->msg_iovlen;
+  if (!m.msg_iov) return -ENOMEM;
 
   rc = sockops[s->type]->sendmsg(s, &m, flags);
-  kfree(m.iov);
+  kfree(m.msg_iov);
 
   return rc;
 }
@@ -280,10 +280,10 @@ int sendto(struct socket *s, void *data, int size, unsigned int flags, struct so
   if (!data) return -EFAULT;
   if (size < 0) return -EINVAL;
 
-  msg.name = to;
-  msg.namelen = tolen;
-  msg.iov = &iov;
-  msg.iovlen = 1;
+  msg.msg_name = to;
+  msg.msg_namelen = tolen;
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
   iov.iov_base = data;
   iov.iov_len = size;
 
@@ -297,14 +297,14 @@ int sendv(struct socket *s, struct iovec *iov, int count)
   struct msghdr msg;
   int rc;
 
-  msg.name = NULL;
-  msg.namelen = 0;
-  msg.iov = dup_iovec(iov, count);
-  msg.iovlen = count;
-  if (!msg.iov) return -ENOMEM;
+  msg.msg_name = NULL;
+  msg.msg_namelen = 0;
+  msg.msg_iov = dup_iovec(iov, count);
+  msg.msg_iovlen = count;
+  if (!msg.msg_iov) return -ENOMEM;
 
   rc = sockops[s->type]->sendmsg(s, &msg, 0);
-  kfree(msg.iov);
+  kfree(msg.msg_iov);
 
   return rc;
 }

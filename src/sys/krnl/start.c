@@ -419,13 +419,23 @@ void main(void *arg)
   // Load kernel configuration
   rc = load_kernel_config();
   if (rc < 0) kprintf("%s: error %d loading kernel configuration\n", KERNEL_CONFIG, rc);
-  str = get_property(krnlcfg, "krnl", "onpanic", "halt");
+
+  // Determine kernel panic action
+  str = get_property(krnlcfg, "kernel", "onpanic", "halt");
   if (strcmp(str, "halt") == 0)
     onpanic = ONPANIC_HALT;
   else if (strcmp(str, "reboot") == 0)
     onpanic = ONPANIC_REBOOT;
   else if (strcmp(str, "debug") == 0)
     onpanic = ONPANIC_DEBUG;
+
+  // Set path separator
+  pathsep = *get_property(krnlcfg, "kernel", "pathsep", "");
+  if (pathsep != PS1 && pathsep != PS2) pathsep = PS1;
+  curdir[0] = pathsep;
+  curdir[1] = 0;
+  strcpy(peb->curdir, curdir);
+  peb->pathsep = pathsep;
 
   // Initialize module loader
   init_kernel_modules();

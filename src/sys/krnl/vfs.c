@@ -36,6 +36,7 @@
 struct filesystem *fslist = NULL;
 struct fs *mountlist = NULL;
 char curdir[MAXPATH];
+char pathsep;
 
 #define LFBUFSIZ 1025
 #define CR '\r'
@@ -74,7 +75,7 @@ int canonicalize(char *path, char *buffer)
     // Parse path separator
     if (*path == PS1 || *path == PS2) path++;
     if (p == end) return -ENAMETOOLONG;
-    *p++ = PS1;
+    *p++ = pathsep;
 
     // Parse next name part in path
     len = 0;
@@ -102,7 +103,7 @@ int canonicalize(char *path, char *buffer)
   }
 
   // Convert empty filename to /
-  if (p == buffer) *p++ = PS1;
+  if (p == buffer) *p++ = pathsep;
 
   // Terminate string
   if (p == end) return -ENAMETOOLONG;
@@ -208,11 +209,13 @@ static int files_proc(struct proc_file *pf, void *arg)
 
 int init_vfs()
 {
+  pathsep = PS1;
   curdir[0] = PS1;
   curdir[1] = 0;
+
   if (!peb) panic("peb not initialized in vfs");
   strcpy(peb->curdir, curdir);
-
+  peb->pathsep = pathsep;
   register_proc_inode("files", files_proc, NULL);
   return 0;
 }
@@ -926,7 +929,7 @@ int fstat(struct file *filp, struct stat64 *buffer)
   if (lock_fs(filp->fs, FSOP_FSTAT) < 0) return -ETIMEOUT;
   rc = filp->fs->ops->fstat(filp, buffer);
   unlock_fs(filp->fs, FSOP_FSTAT);
-  return rc;
+  return rc;  
 }
 
 int stat(char *name, struct stat64 *buffer)
@@ -1232,7 +1235,7 @@ int opendir(char *name, struct file **retval)
   return 0;
 }
 
-int readdir(struct file *filp, struct dirent *dirp, int count)
+int readdir(struct file *filp, struct direntry *dirp, int count)
 {
   int rc;
 

@@ -478,7 +478,7 @@ int copy_dir(char *srcdir, char *dstdir)
   struct copyitem *tail;
   struct copyitem *next;
   int dir;
-  struct dirent dirp;
+  struct direntry dirp;
   struct stat64 buf;
   char srcfn[MAXPATH];
   char dstfn[MAXPATH];
@@ -492,10 +492,10 @@ int copy_dir(char *srcdir, char *dstdir)
   
   while (head)
   {
-    dir = opendir(head->srcdir);
+    dir = _opendir(head->srcdir);
     if (dir < 0) return -1;
 
-    while (readdir(dir, &dirp, 1) > 0)
+    while (_readdir(dir, &dirp, 1) > 0)
     {
       sprintf(srcfn, "%s/%s", head->srcdir, dirp.name);
       sprintf(dstfn, "%s/%s", head->dstdir, dirp.name);

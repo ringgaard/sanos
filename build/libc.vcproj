@@ -120,6 +120,9 @@
 			Name="include"
 			Filter=".h">
 			<File
+				RelativePath="..\src\include\alloca.h">
+			</File>
+			<File
 				RelativePath="..\src\include\assert.h">
 			</File>
 			<File
@@ -136,6 +139,9 @@
 			</File>
 			<File
 				RelativePath="..\src\include\ctype.h">
+			</File>
+			<File
+				RelativePath="..\src\include\dirent.h">
 			</File>
 			<File
 				RelativePath="..\src\include\errno.h">
@@ -174,6 +180,9 @@
 				RelativePath="..\src\include\moddb.h">
 			</File>
 			<File
+				RelativePath="..\src\include\netdb.h">
+			</File>
+			<File
 				RelativePath="..\src\include\os.h">
 			</File>
 			<File
@@ -198,6 +207,9 @@
 				RelativePath="..\src\include\stddef.h">
 			</File>
 			<File
+				RelativePath="..\src\include\stdint.h">
+			</File>
+			<File
 				RelativePath="..\src\include\stdio.h">
 			</File>
 			<File
@@ -210,11 +222,20 @@
 				RelativePath="..\src\include\time.h">
 			</File>
 			<File
+				RelativePath="..\src\include\uio.h">
+			</File>
+			<File
 				RelativePath="..\src\include\unistd.h">
 			</File>
 			<Filter
 				Name="include/sys"
 				Filter="">
+				<File
+					RelativePath="..\src\include\sys\select.h">
+				</File>
+				<File
+					RelativePath="..\src\include\sys\socket.h">
+				</File>
 				<File
 					RelativePath="..\src\include\sys\stat.h">
 				</File>
@@ -223,6 +244,23 @@
 				</File>
 				<File
 					RelativePath="..\src\include\sys\utime.h">
+				</File>
+			</Filter>
+			<Filter
+				Name="include/arpa"
+				Filter="">
+				<File
+					RelativePath="..\src\include\arpa\inet.h">
+				</File>
+			</Filter>
+			<Filter
+				Name="include/netinet"
+				Filter="">
+				<File
+					RelativePath="..\src\include\netinet\in.h">
+				</File>
+				<File
+					RelativePath="..\src\include\netinet\tcp.h">
 				</File>
 			</Filter>
 		</Filter>
@@ -793,6 +831,9 @@
 		</File>
 		<File
 			RelativePath="..\src\lib\ctype.c">
+		</File>
+		<File
+			RelativePath="..\src\lib\dirent.c">
 		</File>
 		<File
 			RelativePath="..\src\lib\fcvt.c">

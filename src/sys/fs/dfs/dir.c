@@ -423,7 +423,7 @@ int dfs_opendir(struct file *filp, char *name)
   return 0;
 }
 
-int dfs_readdir(struct file *filp, struct dirent *dirp, int count)
+int dfs_readdir(struct file *filp, struct direntry *dirp, int count)
 {
   unsigned int iblock;
   unsigned int start;

@@ -1,7 +1,7 @@
 //
-// malloc.h
+// tcp.h
 //
-// Heap allocation routines
+// Definitions for the Internet Transmission Control Protocol (TCP)
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -35,32 +35,9 @@
 #pragma once
 #endif
 
-#ifndef MALLOC_H
-#define MALLOC_H
+#ifndef NETINET_TCP_H
+#define NETINET_TCP_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
-
-#ifndef _SIZE_T_DEFINED
-#define _SIZE_T_DEFINED
-typedef unsigned int size_t;
-#endif
-
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
-osapi void *malloc(size_t size);
-osapi void *realloc(void *mem, size_t size);
-osapi void *calloc(size_t num, size_t size);
-osapi void free(void *p);
-
-void  *_alloca(size_t size);
-#define alloca _alloca
-
-#ifdef  __cplusplus
-}
-#endif
+#define TCP_NODELAY     0x0001
 
 #endif

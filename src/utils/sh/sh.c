@@ -761,7 +761,7 @@ int cmd_ls(int argc, char *argv[])
   int verbose;
   int i;
   int dir;
-  struct dirent dirp;
+  struct direntry dirp;
   struct stat64 buf;
   struct tm tm;
   char path[MAXPATH];
@@ -786,14 +786,14 @@ int cmd_ls(int argc, char *argv[])
       dirname = arg;
   }
 
-  if ((dir = opendir(dirname)) < 0)
+  if ((dir = _opendir(dirname)) < 0)
   {
     printf("%s: %s\n", dirname, strerror(errno));
     return dir;
   }
 
   col = 0;
-  while (readdir(dir, &dirp, 1) > 0)
+  while (_readdir(dir, &dirp, 1) > 0)
   {
     strcpy(path, dirname);
     strcat(path, "/");
@@ -1247,16 +1247,15 @@ int cmd_sysinfo(int argc, char *argv[])
   return 0;
 }
 
+#include <alloca.h>
+
 int cmd_test(int argc, char *argv[])
 {
-  FILE *f;
-  int rc;
+  char *buf;
+  int n;
 
-  fmode = O_TEXT;
-  f = fopen(argv[1], "w");
-  rc = fprintf(f, "hello world, line 1\n");
-  rc = fprintf(f, "hello world, line 2\n");
-  fclose(f);
+  buf = (char *) alloca(128);
+  for (n = 0; n < 128; n++) buf[n] = (char) n;
   return 0;
 }
 

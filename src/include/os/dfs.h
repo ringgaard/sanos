@@ -199,7 +199,7 @@ ino_t modify_dir_entry(struct inode *dir, char *name, int len, ino_t ino);
 int delete_dir_entry(struct inode *dir, char *name, int len);
 int iterate_dir(struct inode *dir, filldir_t filldir, void *data);
 int dfs_opendir(struct file *filp, char *name);
-int dfs_readdir(struct file *filp, struct dirent *dirp, int count);
+int dfs_readdir(struct file *filp, struct direntry *dirp, int count);
 
 // file.c
 int dfs_open(struct file *filp, char *name);

@@ -79,12 +79,12 @@ int ls(struct httpd_connection *conn)
   int rc;
   int urllen;
   struct stat64 statbuf;
-  struct dirent dirp;
+  struct direntry dirp;
   char path[MAXPATH];
   char buf[32];
   struct tm *tm;
 
-  dir = opendir(conn->req->path_translated);
+  dir = _opendir(conn->req->path_translated);
   if (dir < 0) return httpd_return_file_error(conn, errno);
 
   urllen = strlen(conn->req->decoded_url);
@@ -104,7 +104,7 @@ int ls(struct httpd_connection *conn)
 
   if (urllen > 1) httpd_send(conn->rsp, "<IMG SRC=\"/icons/folder.gif\"> <A HREF=\"..\">..</A>\r\n", -1);
 
-  while (readdir(dir, &dirp, 1) > 0)
+  while (_readdir(dir, &dirp, 1) > 0)
   {
     strcpy(path, conn->req->path_translated);
     strcat(path, "/");

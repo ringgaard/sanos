@@ -359,12 +359,12 @@ int unlink(const char *name)
   return syscall(SYSCALL_UNLINK, (void *) &name);
 }
 
-handle_t opendir(const char *name)
+handle_t _opendir(const char *name)
 {
   return syscall(SYSCALL_OPENDIR, (void *) &name);
 }
 
-int readdir(handle_t f, struct dirent *dirp, int count)
+int _readdir(handle_t f, struct direntry *dirp, int count)
 {
   return syscall(SYSCALL_READDIR, &f);
 }

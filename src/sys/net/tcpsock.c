@@ -298,7 +298,7 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
       break;
     }
 
-    bytes = fetch_rcvbuf(s, req->msg->iov, req->msg->iovlen);
+    bytes = fetch_rcvbuf(s, req->msg->msg_iov, req->msg->msg_iovlen);
     if (bytes > 0)
     {
       bytesrecv += bytes;
@@ -342,7 +342,7 @@ static err_t sent_tcp(void *arg, struct tcp_pcb *pcb, unsigned short len)
 
     if (!req) break;
 
-    rc = fill_sndbuf(s, req->msg->iov, req->msg->iovlen);
+    rc = fill_sndbuf(s, req->msg->msg_iov, req->msg->msg_iovlen);
     if (rc < 0)
     {
       release_socket_request(req, rc);
@@ -351,7 +351,7 @@ static err_t sent_tcp(void *arg, struct tcp_pcb *pcb, unsigned short len)
 
     req->rc += rc;
 
-    if (get_iovec_size(req->msg->iov, req->msg->iovlen) == 0) release_socket_request(req, req->rc);
+    if (get_iovec_size(req->msg->msg_iov, req->msg->msg_iovlen) == 0) release_socket_request(req, req->rc);
   }
 
   if (tcp_sndbuf(pcb) > 0)
@@ -658,22 +658,22 @@ static int tcpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   if (s->state != SOCKSTATE_CONNECTED && s->state != SOCKSTATE_CLOSING) return -ENOTCONN;
   if (!s->tcp.pcb) return -ERST;
 
-  if (s->tcp.pcb && msg->name)
+  if (s->tcp.pcb && msg->msg_name)
   {
-    if (msg->namelen < sizeof(struct sockaddr_in)) return -EFAULT;
-    sin = (struct sockaddr_in *) msg->name;
+    if (msg->msg_namelen < sizeof(struct sockaddr_in)) return -EFAULT;
+    sin = (struct sockaddr_in *) msg->msg_name;
     sin->sin_len = sizeof(struct sockaddr_in);
     sin->sin_family = AF_INET;
     sin->sin_port = htons(s->tcp.pcb->remote_port);
     sin->sin_addr.s_addr = s->tcp.pcb->remote_ip.addr;
   }
-  msg->namelen = sizeof(struct sockaddr_in);
+  msg->msg_namelen = sizeof(struct sockaddr_in);
 
-  size = get_iovec_size(msg->iov, msg->iovlen);
+  size = get_iovec_size(msg->msg_iov, msg->msg_iovlen);
   if (size < 0) return -EINVAL;
   if (size == 0) return 0;
 
-  rc = fetch_rcvbuf(s, msg->iov, msg->iovlen);
+  rc = fetch_rcvbuf(s, msg->msg_iov, msg->msg_iovlen);
   if (rc < 0) return rc;
 
   if (!s->tcp.recvhead) clear_io_event(&s->iob, IOEVT_READ);
@@ -703,10 +703,10 @@ static int tcpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   if (s->state != SOCKSTATE_CONNECTED) return -ENOTCONN;
   if (!s->tcp.pcb) return -ERST;
 
-  size = get_iovec_size(msg->iov, msg->iovlen);
+  size = get_iovec_size(msg->msg_iov, msg->msg_iovlen);
   if (size == 0) return 0;
 
-  rc = fill_sndbuf(s, msg->iov, msg->iovlen);
+  rc = fill_sndbuf(s, msg->msg_iov, msg->msg_iovlen);
   if (rc < 0) return rc;
   bytes = rc;
 

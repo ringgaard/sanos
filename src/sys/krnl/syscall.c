@@ -751,6 +751,7 @@ static int sys_fstat(char *params)
   orel(f);
   unlock_buffer(params, 8);
 
+  if (buffer && rc > 0) rc = 0;
   return rc;
 }
 
@@ -784,6 +785,7 @@ static int sys_stat(char *params)
   unlock_string(name);
   unlock_buffer(params, 8);
 
+  if (buffer && rc > 0) rc = 0;
   return rc;
 }
 
@@ -958,13 +960,13 @@ static int sys_readdir(char *params)
   handle_t h;
   struct file *f;
   int rc;
-  struct dirent *dirp;
+  struct direntry *dirp;
   int count;
 
   if (lock_buffer(params, 12) < 0) return -EFAULT;
 
   h = *(handle_t *) params;
-  dirp = *(struct dirent **) (params + 4);
+  dirp = *(struct direntry **) (params + 4);
   count = *(int *) (params + 8);
 
   f = (struct file *) olock(h, OBJECT_FILE);
@@ -974,7 +976,7 @@ static int sys_readdir(char *params)
     return -EBADF;
   }
 
-  if (lock_buffer(dirp, count * sizeof(struct dirent)) < 0)
+  if (lock_buffer(dirp, count * sizeof(struct direntry)) < 0)
   {
     orel(f);
     unlock_buffer(params, 12);
@@ -2565,7 +2567,7 @@ static int sys_recvmsg(char *params)
     return -EFAULT;
   }
   
-  if (lock_iovec(msg->iov, msg->iovlen) < 0)
+  if (lock_iovec(msg->msg_iov, msg->msg_iovlen) < 0)
   {
     unlock_buffer(msg, sizeof(struct msghdr));
     orel(s);
@@ -2573,9 +2575,9 @@ static int sys_recvmsg(char *params)
     return -EFAULT;
   }
 
-  if (lock_buffer(msg->name, msg->namelen) < 0)
+  if (lock_buffer(msg->msg_name, msg->msg_namelen) < 0)
   {
-    unlock_iovec(msg->iov, msg->iovlen);
+    unlock_iovec(msg->msg_iov, msg->msg_iovlen);
     unlock_buffer(msg, sizeof(struct msghdr));
     orel(s);
     unlock_buffer(params, 12);
@@ -2584,7 +2586,7 @@ static int sys_recvmsg(char *params)
 
   rc = recvmsg(s, msg, flags);
 
-  unlock_iovec(msg->iov, msg->iovlen);
+  unlock_iovec(msg->msg_iov, msg->msg_iovlen);
   unlock_buffer(msg, sizeof(struct msghdr));
   orel(s);
   unlock_buffer(params, 12);
@@ -2620,7 +2622,7 @@ static int sys_sendmsg(char *params)
     return -EFAULT;
   }
   
-  if (lock_iovec(msg->iov, msg->iovlen) < 0)
+  if (lock_iovec(msg->msg_iov, msg->msg_iovlen) < 0)
   {
     unlock_buffer(msg, sizeof(struct msghdr));
     orel(s);
@@ -2628,9 +2630,9 @@ static int sys_sendmsg(char *params)
     return -EFAULT;
   }
 
-  if (lock_buffer(msg->name, msg->namelen) < 0)
+  if (lock_buffer(msg->msg_name, msg->msg_namelen) < 0)
   {
-    unlock_iovec(msg->iov, msg->iovlen);
+    unlock_iovec(msg->msg_iov, msg->msg_iovlen);
     unlock_buffer(msg, sizeof(struct msghdr));
     orel(s);
     unlock_buffer(params, 12);
@@ -2639,7 +2641,7 @@ static int sys_sendmsg(char *params)
 
   rc = sendmsg(s, msg, flags);
 
-  unlock_iovec(msg->iov, msg->iovlen);
+  unlock_iovec(msg->msg_iov, msg->msg_iovlen);
   unlock_buffer(msg, sizeof(struct msghdr));
   orel(s);
   unlock_buffer(params, 12);

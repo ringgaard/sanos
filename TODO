@@ -556,6 +556,25 @@ CHANGES
 
 - Suspending all user threads when shutting down.
 
-- Raw socket implemented.
+- Raw sockets implemented.
 
 - Ping command added to shell
+
+- Header files added for ANSI/POSIX compliance: netdb.h, stdint.h, uio.h, arpa/inet.h,
+  netinet/in.h, netinet/tcp.h, sys/select.h, sys/socket.h
+
+- Now stat() and fstat() only returns the length of the file if the second argument is NULL.
+  Else, stat() and fstat() returns 0 on success to comply with POSIX.
+
+- The dirent struct renamed to direntry to avoid name clash with POSIX standard. Also, the
+  opendir has been renamed to _opendir, and readdir has been renamed to _readdir.
+
+- Implemented opendir(), readdir(), rewinddir(), and closedir() according to POSIX.
+
+- Implemented alloca() and added alloca.h header file.
+
+- Primary path separator can now be configured in krnl.ini.
+
+- Added realpath() to stdlib.c.
+
+- The Visual Studio now supports extended project directory structure

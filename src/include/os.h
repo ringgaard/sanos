@@ -603,7 +603,7 @@ struct statfs
   char mntfrom[MAXPATH];     // Mounted file system
 };
 
-struct dirent
+struct direntry
 {
   ino_t ino;
   unsigned int reclen;
@@ -623,11 +623,16 @@ struct utimbuf
 
 #endif
 
+#ifndef _IOVEC_DEFINED
+#define _IOVEC_DEFINED
+
 struct iovec 
 { 
   void *iov_base;
   size_t iov_len;
 };
+
+#endif
 
 //
 // Serial I/O
@@ -722,6 +727,9 @@ struct serial_status
 #define SIOIFLIST     _IOCRW('i', 20, void *)           // Get netif list
 #define SIOIFCFG      _IOCRW('i', 21, void *)           // Configure netif
 
+#ifndef _IN_ADDR_DEFINED
+#define _IN_ADDR_DEFINED
+
 struct in_addr 
 {
   union 
@@ -732,6 +740,11 @@ struct in_addr
   };
 };
 
+#endif
+
+#ifndef _SOCKADDR_IN_DEFINED
+#define _SOCKADDR_IN_DEFINED
+
 struct sockaddr_in
 {
   unsigned char sin_len;
@@ -741,12 +754,19 @@ struct sockaddr_in
   char sin_zero[8];
 };
 
+#endif
+
+#ifndef _SOCKADDR_DEFINED
+#define _SOCKADDR_DEFINED
+
 struct sockaddr 
 {
   unsigned char sa_len;
   unsigned char sa_family;
   char sa_data[14];
 };
+
+#endif
 
 #define IFCFG_UP         1
 #define IFCFG_DHCP       2
@@ -766,19 +786,32 @@ struct ifcfg
   struct sockaddr broadcast;
 };
 
+#ifndef _LINGER_DEFINED
+#define _LINGER_DEFINED
+
 struct linger
 {
   unsigned short l_onoff;
   unsigned short l_linger;
 };
 
+#endif
+
+#ifndef _MSGHDR_DEFINED
+#define _MSGHDR_DEFINED
+
 struct msghdr
 {
-  struct sockaddr *name;
-  int namelen;
-  struct iovec *iov;
-  int iovlen;
+  struct sockaddr *msg_name;
+  int msg_namelen;
+  struct iovec *msg_iov;
+  int msg_iovlen;
 };
+
+#endif
+
+#ifndef _HOSTENT_DEFINED
+#define _HOSTENT_DEFINED
 
 struct hostent 
 {
@@ -791,12 +824,22 @@ struct hostent
 
 #define h_addr h_addr_list[0]
 
+#endif
+
+#ifndef _PROTOENT_DEFINED
+#define _PROTOENT_DEFINED
+
 struct protoent
 {
   char *p_name;
   char **p_aliases;
   short p_proto;
 };
+
+#endif
+
+#ifndef _SERVENT_DEFINED
+#define _SERVENT_DEFINED
 
 struct servent 
 {
@@ -805,6 +848,8 @@ struct servent
   short s_port;
   char *s_proto;
 };
+
+#endif
 
 #define SOCK_STREAM      1
 #define SOCK_DGRAM       2
@@ -838,9 +883,12 @@ struct servent
 
 #define TCP_NODELAY     0x0001
 
-#define SD_RECEIVE      0x00
-#define SD_SEND         0x01
-#define SD_BOTH         0x02
+#define SHUT_RD         0x00
+#define SHUT_WR         0x01
+#define SHUT_RDWR       0x02
+
+#ifndef _XTONX_DEFINED
+#define _XTONX_DEFINED
 
 __inline unsigned short htons(unsigned short n)
 {
@@ -862,9 +910,14 @@ __inline unsigned long ntohl(unsigned long n)
   return ((n & 0xFF) << 24) | ((n & 0xFF00) << 8) | ((n & 0xFF0000) >> 8) | ((n & 0xFF000000) >> 24);
 }
 
+#endif
+
 #ifndef FD_SETSIZE
 #define FD_SETSIZE 64
 #endif
+
+#ifndef _FD_SET_DEFINED
+#define _FD_SET_DEFINED
 
 typedef struct fd_set 
 {
@@ -872,10 +925,15 @@ typedef struct fd_set
   int fd[FD_SETSIZE];
 } fd_set;
 
+#endif
+
 #define FD_ZERO(set) _fd_zero(set)
 #define FD_ISSET(fd, set) _fd_isset(fd, set)
 #define FD_SET(fd, set) _fd_set(fd, set)
 #define FD_CLR(fd, set) _fd_clr(fd, set)
+
+#ifndef _FD_FUNCS_DEFINED
+#define _FD_FUNCS_DEFINED
 
 __inline void _fd_zero(fd_set *set)
 {
@@ -913,6 +971,8 @@ __inline void _fd_clr(int fd, fd_set *set)
     }
   }
 }
+
+#endif
 
 struct pollfd 
 {
@@ -953,6 +1013,7 @@ struct peb
   void (*globalhandler)(int, struct siginfo *);
   int umaskval;
   int fmodeval;
+  char pathsep;
 
   struct job *firstjob;
   struct job *lastjob;
@@ -1186,8 +1247,8 @@ osapi int rename(const char *oldname, const char *newname);
 osapi int link(const char *oldname, const char *newname);
 osapi int unlink(const char *name);
 
-osapi handle_t opendir(const char *name);
-osapi int readdir(handle_t f, struct dirent *dirp, int count);
+osapi handle_t _opendir(const char *name);
+osapi int _readdir(handle_t f, struct direntry *dirp, int count);
 
 osapi int pipe(handle_t fildes[2]);
 

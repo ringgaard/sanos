@@ -5,18 +5,35 @@ function OnFinish(selProj, selObj)
   {
     var strProjectPath = wizard.FindSymbol('PROJECT_PATH');
     var strProjectName = wizard.FindSymbol('PROJECT_NAME');
+    var emptyProject = wizard.FindSymbol('EMPTY_PROJ');
+    var extendedProject = wizard.FindSymbol('EXT_PROJ');
+    
+    if (extendedProject)
+    {
+      // Remove project name from project path
+      strProjectPath = strProjectPath.substr(0, strProjectPath.length - strProjectName.length - 1);
+      selProj = CreateCustomProject(strProjectName, strProjectPath + "\\build");
+    }
+    else
+    {
+      selProj = CreateCustomProject(strProjectName, strProjectPath);
+    }
 
-    selProj = CreateCustomProject(strProjectName, strProjectPath);
     AddConfig(selProj, strProjectName);
+    
+    if (!emptyProject)
+    {
+      var InfFile = CreateCustomInfFile();
 
-    var InfFile = CreateCustomInfFile();
-    AddFilesToCustomProj(selProj, strProjectName, strProjectPath, InfFile);
-    //PchSettings(selProj);
-    InfFile.Delete();
+      if (extendedProject)
+        AddFilesToCustomProj(selProj, strProjectName, strProjectPath + '\\src\\' + strProjectName, InfFile);
+      else
+        AddFilesToCustomProj(selProj, strProjectName, strProjectPath, InfFile);
 
-    //DTE.Solution.SolutionBuild.SolutionConfigurations.Item('Debug').Delete();
-    //DTE.Solution.SolutionBuild.SolutionConfigurations.Item('Release').Delete();
-
+      //PchSettings(selProj);
+      InfFile.Delete();
+    }
+    
     selProj.Object.Save();
   }
   catch(e)
@@ -52,7 +69,7 @@ function CreateCustomProject(strProjectName, strProjectPath)
 
     var oTarget = wizard.FindSymbol("TARGET");
     var prj;
-    if (wizard.FindSymbol("WIZARD_TYPE") == vsWizardAddSubProject)  // vsWizardAddSubProject
+    if (wizard.FindSymbol("WIZARD_TYPE") == vsWizardAddSubProject)
     {
       var prjItem = oTarget.AddFromTemplate(strProjTemplate, strProjectNameWithExt);
       prj = prjItem.SubProject;
@@ -80,17 +97,25 @@ function AddConfig(proj, strProjectName)
     var isdrv = wizard.FindSymbol('APP_TYPE_KRNLDRV');
     var iskrnl = wizard.FindSymbol('APP_TYPE_KRNLDRV') || wizard.FindSymbol('APP_TYPE_KRNLMOD');
     var useclib = wizard.FindSymbol('USE_CLIB');
+    var defines = wizard.FindSymbol('DEFINES');
+    var extendedProject = wizard.FindSymbol('EXT_PROJ');
     
-    //proj.Object.RemoveConfiguration(proj.Object.Configurations('Release'));
-    //proj.Object.RemoveConfiguration(proj.Object.Configurations('Debug'));
-
-    //proj.Object.AddConfiguration('Sanos');
-    //proj.Object.AddConfiguration('SanosDebug');
-    
-    //var config = proj.Object.Configurations('SanosDebug');
     var config = proj.Object.Configurations('Debug');
-    config.IntermediateDirectory = 'debug';
-    config.OutputDirectory = 'debug';
+
+    if (!extendedProject)
+    {
+      config.IntermediateDirectory = 'debug';
+      config.OutputDirectory = 'debug';
+    }
+    else
+    {
+      config.IntermediateDirectory = '..\\dbg\\obj\\' + strProjectName;
+      if (islib)
+        config.OutputDirectory = '..\\dbg\\lib';
+      else
+        config.OutputDirectory = '..\\dbg\\bin';
+    }
+    
     if (isdll) 
       config.ConfigurationType = 2;
     else if (islib)
@@ -108,12 +133,19 @@ function AddConfig(proj, strProjectName)
     }
     else
       CLTool.PreprocessorDefinitions = prjname.toUpperCase() + ';DEBUG;SANOS';
+
+    if (defines != '')
+    {
+      CLTool.PreprocessorDefinitions = CLTool.PreprocessorDefinitions + ';' + defines;
+    }
+      
     CLTool.IgnoreStandardIncludePath = true;
     CLTool.ExceptionHandling = false;
     CLTool.RuntimeLibrary = 0;
     CLTool.BufferSecurityCheck = false;
     CLTool.UsePrecompiledHeader = 2;
-    CLTool.PrecompiledHeaderFile = 'debug\\' + prjname + '.pch';
+    CLTool.PrecompiledHeaderThrough = '';
+    CLTool.PrecompiledHeaderFile = '$(IntDir)\\' + prjname + '.pch';
     CLTool.WarningLevel = 3;
     CLTool.SuppressStartupBanner = true;
     CLTool.CompileAs = 0; 
@@ -122,7 +154,7 @@ function AddConfig(proj, strProjectName)
     if (islib)
     {
       var LibTool = config.Tools('VCLibrarianTool');
-      LibTool.OutputFile = '$(OutDir)/$(ProjectName).lib';
+      LibTool.OutputFile = '$(OutDir)\\$(ProjectName).lib';
       LibTool.SuppressStartupBanner = true;
       LibTool.IgnoreAllDefaultLibraries = true;
     }
@@ -136,12 +168,18 @@ function AddConfig(proj, strProjectName)
         LinkTool.AdditionalDependencies = 'krnl.lib $(NOINHERIT)';
       else
         LinkTool.AdditionalDependencies = 'os.lib $(NOINHERIT)';
-      if (isdrv) LinkTool.OutputFile = '$(OutDir)/$(ProjectName).sys';
+      if (isdrv) LinkTool.OutputFile = '$(OutDir)\\$(ProjectName).sys';
       LinkTool.LinkIncremental = 1;
       LinkTool.SuppressStartupBanner = true;
       LinkTool.AdditionalLibraryDirectories = sdkpath + "\\dbg\\lib";
       LinkTool.IgnoreAllDefaultLibraries = true;
       LinkTool.GenerateDebugInformation = true;
+      
+      if (!extendedProject)
+        LinkTool.ProgramDatabaseFile = '$(OutDir)\\$(ProjectName).pdb';
+      else
+        LinkTool.ProgramDatabaseFile = '..\\dbg\\symbols\\$(ProjectName).pdb';
+        
       LinkTool.GenerateMapFile = false;
       LinkTool.SubSystem = 1;
       if (isdll)
@@ -153,11 +191,22 @@ function AddConfig(proj, strProjectName)
       }
     }
 
-    //config = proj.Object.Configurations('Sanos');
     config = proj.Object.Configurations('Release');
 
-    config.IntermediateDirectory = 'release';
-    config.OutputDirectory = 'release';
+    if (!extendedProject)
+    {
+      config.IntermediateDirectory = 'release';
+      config.OutputDirectory = 'release';
+    }
+    else
+    {
+      config.IntermediateDirectory = '..\\obj\\' + strProjectName;
+      if (islib)
+        config.OutputDirectory = '..\\lib';
+      else
+        config.OutputDirectory = '..\\bin';
+    }
+
     if (isdll) 
       config.ConfigurationType = 2;
     else if (islib)
@@ -181,13 +230,20 @@ function AddConfig(proj, strProjectName)
     }
     else
       CLTool.PreprocessorDefinitions = prjname.toUpperCase() + ';SANOS';
+
+    if (defines != '')
+    {
+      CLTool.PreprocessorDefinitions = CLTool.PreprocessorDefinitions + ';' + defines;
+    }
+
     CLTool.IgnoreStandardIncludePath = true;
     CLTool.StringPooling = true;
     CLTool.ExceptionHandling = false;
     CLTool.RuntimeLibrary = 0;
     CLTool.EnableFunctionLevelLinking = true;
     CLTool.UsePrecompiledHeader = 2;
-    CLTool.PrecompiledHeaderFile = 'release\\' + prjname + '.pch';
+    CLTool.PrecompiledHeaderThrough = '';
+    CLTool.PrecompiledHeaderFile = '$(IntDir)\\' + prjname + '.pch';
     CLTool.WarningLevel = 3;
     CLTool.SuppressStartupBanner = true;
     CLTool.CompileAs = 0; 
@@ -197,7 +253,7 @@ function AddConfig(proj, strProjectName)
     if (islib)
     {
       var LibTool = config.Tools('VCLibrarianTool');
-      LibTool.OutputFile = '$(OutDir)/$(ProjectName).lib';
+      LibTool.OutputFile = '$(OutDir)\\$(ProjectName).lib';
       LibTool.SuppressStartupBanner = true;
       LibTool.IgnoreAllDefaultLibraries = true;
     }
@@ -211,12 +267,12 @@ function AddConfig(proj, strProjectName)
         LinkTool.AdditionalDependencies = 'krnl.lib $(NOINHERIT)';
       else
         LinkTool.AdditionalDependencies = 'os.lib $(NOINHERIT)';
-      if (isdrv) LinkTool.OutputFile = '$(OutDir)/$(ProjectName).sys';
+      if (isdrv) LinkTool.OutputFile = '$(OutDir)\\$(ProjectName).sys';
       LinkTool.LinkIncremental = 1;
       LinkTool.SuppressStartupBanner = true;
       LinkTool.AdditionalLibraryDirectories = sdkpath + "\\lib";
       LinkTool.IgnoreAllDefaultLibraries = true;
-      LinkTool.GenerateDebugInformation = true;
+      LinkTool.GenerateDebugInformation = false;
       LinkTool.GenerateMapFile = false;
       LinkTool.SubSystem = 1;
       if (isdll)

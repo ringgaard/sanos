@@ -133,7 +133,7 @@ static int find_dir(char *buf, int start, int end, int split, char *mask)
     path[split - start] = 0;
   }
 
-  dir = opendir(path);
+  dir = _opendir(path);
   if (dir < 0) return dir;
 
   if (split == end)
@@ -269,7 +269,7 @@ int readline(int f, char *buf, int size)
       int end;
       int split;
       char mask[MAXPATH];
-      struct dirent dirent;
+      struct direntry dirent;
 
       start = idx;
       while (start > 0 && !delimchar(buf[start - 1])) start--;
@@ -283,7 +283,7 @@ int readline(int f, char *buf, int size)
       dir = find_dir(buf, start, end, split, mask);
       if (dir >= 0)
       {
-	while (readdir(dir, &dirent, 1) > 0)
+	while (_readdir(dir, &dirent, 1) > 0)
 	{
 	  int newlen = len - (end - split) + dirent.namelen;
 	  

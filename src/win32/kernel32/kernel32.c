@@ -903,7 +903,7 @@ HANDLE WINAPI FindFirstFileA
 )
 {
   struct winfinddata *finddata;
-  struct dirent dirent;
+  struct direntry dirent;
   struct stat64 statbuf;
   char *p;
   char *base;
@@ -946,14 +946,14 @@ HANDLE WINAPI FindFirstFileA
       finddata->mask[1] = 0;
     }
 
-    finddata->fhandle = opendir(finddata->dir);
+    finddata->fhandle = _opendir(finddata->dir);
     if (finddata->fhandle < 0)
     {
       free(finddata);
       return INVALID_HANDLE_VALUE;
     }
 
-    while (readdir(finddata->fhandle, &dirent, 1) > 0)
+    while (_readdir(finddata->fhandle, &dirent, 1) > 0)
     {
       //syslog(LOG_DEBUG | LOG_AUX, "match %s with %s\n", dirent.name, finddata->mask);
       if (like(dirent.name, finddata->mask))
@@ -1037,7 +1037,7 @@ BOOL WINAPI FindNextFileA
 )
 {
   struct winfinddata *finddata;
-  struct dirent dirent;
+  struct direntry dirent;
   struct stat64 statbuf;
   char fn[MAXPATH];
 
@@ -1052,7 +1052,7 @@ BOOL WINAPI FindNextFileA
   {
     finddata = (struct winfinddata *) hFindFile;
 
-    while (readdir(finddata->fhandle, &dirent, 1) > 0)
+    while (_readdir(finddata->fhandle, &dirent, 1) > 0)
     {
       //syslog(LOG_DEBUG | LOG_AUX, "match next %s with %s\n", dirent.name, finddata->mask);
       if (like(dirent.name, finddata->mask))

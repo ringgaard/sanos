@@ -35,12 +35,17 @@
 #pragma once
 #endif
 
-#ifndef TYPES_H
-#define TYPES_H
+#ifndef SYS_TYPES_H
+#define SYS_TYPES_H
 
 #ifndef _SIZE_T_DEFINED
 #define _SIZE_T_DEFINED
 typedef unsigned int size_t;
+#endif
+
+#ifndef _SSIZE_T_DEFINED
+#define _SSIZE_T_DEFINED
+typedef int ssize_t;
 #endif
 
 #ifndef _TIME_T_DEFINED

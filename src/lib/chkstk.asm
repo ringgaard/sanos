@@ -4,18 +4,32 @@
                 .386
 _TEXT           segment use32 para public 'CODE'
                 public  __chkstk
+		public __alloca_probe
          
 PAGESIZE        equ     4096
 
 __chkstk        proc    near
                 assume  cs:_TEXT
 
+__alloca_probe  =  __chkstk
+
+		cmp     eax, PAGESIZE           ; more than one page?
+		jae     short probesetup        ;   yes, go setup probe loop
+						;   no
+		neg     eax                     ; compute new stack pointer in eax
+		add     eax,esp
+		add     eax,4
+		test    dword ptr [eax],eax     ; probe it
+		xchg    eax,esp
+		mov     eax,dword ptr [eax]
+		push    eax
+		ret
+
+probesetup:
 		push    ecx                     ; save ecx
-		cmp     eax,PAGESIZE            ; more than one page requested?
-		lea     ecx,[esp] + 8           ;   compute new stack pointer in ecx
-						;   correct for return address and
-						;   saved ecx
-		jb      short lastpage          ; no
+		lea     ecx,[esp] + 8           ; compute new stack pointer in ecx
+			                        ; correct for return address and
+				                ; saved ecx
 
 probepages:
 		sub     ecx,PAGESIZE            ; yes, move down a page
@@ -38,7 +52,7 @@ lastpage:
 		mov     eax,dword ptr [eax + 4] ; recover return address
 
 		push    eax                     ; prepare return address
-						; ...probe in case a page was crossed
+			                        ; ...probe in case a page was crossed
 		ret
 
 __chkstk        endp

@@ -889,7 +889,7 @@ int smb_opendir(struct file *filp, char *name)
   return 0;
 }
 
-int smb_readdir(struct file *filp, struct dirent *dirp, int count)
+int smb_readdir(struct file *filp, struct direntry *dirp, int count)
 {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb_directory *dir = (struct smb_directory *) filp->data;
@@ -952,7 +952,7 @@ again:
 
   dirp->ino = 0;
   dirp->namelen = strlen(dir->fi->filename);
-  dirp->reclen = sizeof(struct dirent) - MAXPATH + dirp->namelen + 1;
+  dirp->reclen = sizeof(struct direntry) - MAXPATH + dirp->namelen + 1;
   strcpy(dirp->name, dir->fi->filename);
 
   dir->entries_left--;

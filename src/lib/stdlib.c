@@ -178,3 +178,12 @@ int system(const char *command)
 
   return spawn(P_WAIT, pgm, command, NULL);
 }
+
+char *realpath(char *path, char *buffer)
+{
+  int rc;
+
+  rc = canonicalize(path, buffer, MAXPATH);
+  if (rc < 0) return NULL;
+  return buffer;
+}

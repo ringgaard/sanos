@@ -143,12 +143,13 @@ struct fsops
   int (*unlink)(struct fs *fs, char *name);
   
   int (*opendir)(struct file *filp, char *name);
-  int (*readdir)(struct file *filp, struct dirent *dirp, int count);
+  int (*readdir)(struct file *filp, struct direntry *dirp, int count);
 };
 
 #ifdef KERNEL
 
 extern char curdir[MAXPATH];
+extern char pathsep;
 
 int init_vfs();
 int fnmatch(char *fn1, int len1, char *fn2, int len2);
@@ -204,7 +205,7 @@ krnlapi int link(char *oldname, char *newname);
 krnlapi int unlink(char *name);
 
 krnlapi int opendir(char *name, struct file **retval);
-krnlapi int readdir(struct file *filp, struct dirent *dirp, int count);
+krnlapi int readdir(struct file *filp, struct direntry *dirp, int count);
 
 #endif
 

@@ -52,7 +52,7 @@ int devfs_fstat(struct file *filp, struct stat64 *buffer);
 int devfs_stat(struct fs *fs, char *name, struct stat64 *buffer);
 
 int devfs_opendir(struct file *filp, char *name);
-int devfs_readdir(struct file *filp, struct dirent *dirp, int count);
+int devfs_readdir(struct file *filp, struct direntry *dirp, int count);
 
 struct fsops devfsops =
 {
@@ -331,7 +331,7 @@ int devfs_opendir(struct file *filp, char *name)
   return 0;
 }
 
-int devfs_readdir(struct file *filp, struct dirent *dirp, int count)
+int devfs_readdir(struct file *filp, struct direntry *dirp, int count)
 {
   dev_t devno;
   struct dev *dev;
@@ -346,7 +346,7 @@ int devfs_readdir(struct file *filp, struct dirent *dirp, int count)
 
   dirp->ino = (ino_t) devno;
   dirp->namelen = strlen(dev->name);
-  dirp->reclen = sizeof(struct dirent) - MAXPATH + dirp->namelen + 1;
+  dirp->reclen = sizeof(struct direntry) - MAXPATH + dirp->namelen + 1;
   strcpy(dirp->name, dev->name);
 
   filp->pos++;

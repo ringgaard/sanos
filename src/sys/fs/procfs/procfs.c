@@ -49,7 +49,7 @@ int procfs_fstat(struct file *filp, struct stat64 *buffer);
 int procfs_stat(struct fs *fs, char *name, struct stat64 *buffer);
 
 int procfs_opendir(struct file *filp, char *name);
-int procfs_readdir(struct file *filp, struct dirent *dirp, int count);
+int procfs_readdir(struct file *filp, struct direntry *dirp, int count);
 
 struct fsops procfsops =
 {
@@ -421,7 +421,7 @@ int procfs_opendir(struct file *filp, char *name)
   return 0;
 }
 
-int procfs_readdir(struct file *filp, struct dirent *dirp, int count)
+int procfs_readdir(struct file *filp, struct direntry *dirp, int count)
 {
   struct proc_inode *inode = filp->data;
 
@@ -429,7 +429,7 @@ int procfs_readdir(struct file *filp, struct dirent *dirp, int count)
 
   dirp->ino = inode->ino;
   dirp->namelen = inode->namelen;
-  dirp->reclen = sizeof(struct dirent) + dirp->namelen + 1;
+  dirp->reclen = sizeof(struct direntry) + dirp->namelen + 1;
   memcpy(dirp->name, inode->name, inode->namelen + 1);
 
   filp->pos++;

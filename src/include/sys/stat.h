@@ -35,8 +35,8 @@
 #pragma once
 #endif
 
-#ifndef STAT_H
-#define STAT_H
+#ifndef SYS_STAT_H
+#define SYS_STAT_H
 
 #ifndef osapi
 #define osapi __declspec(dllimport)
