@@ -39,6 +39,8 @@
 #define ndisapi __declspec(dllexport) __stdcall
 //#define ndisapi
 
+static void ndis_setup_callbacks(struct ndis_miniport_block *nmpb);
+
 //
 // NTOSKRNL functions
 //
@@ -135,9 +137,17 @@ void ndisapi NdisTerminateWrapper(ndis_handle_t ndis_wrapper_handle, void *syste
 
 ndis_status ndisapi NdisMRegisterMiniport(ndis_handle_t ndis_wrapper_handle, struct ndis_miniport_characteristics *miniport_characteristics, unsigned int characteristics_length)
 {
+  struct ndis_miniport *mp;
+
   NDISTRACE("NdisMRegisterMiniport");
   kprintf("ndis_wrapper_handle %s\n", ndis_wrapper_handle);
   //dbg_break();
+
+  mp = kmalloc(sizeof(struct ndis_miniport));
+  if (!mp) return NDIS_STATUS_RESOURCES;
+  memset(mp, 0, sizeof(struct ndis_miniport));
+
+  ndis_setup_callbacks(&mp->ndis_handlers);
 
   return 0;
 }
@@ -393,13 +403,179 @@ void ndisapi NdisReleaseSpinLock(struct ndis_spin_lock *spin_lock)
 // NDIS Query and Set Completion Functions
 //
 
+void __stdcall NdisMQueryInformationComplete
+(
+  ndis_handle_t miniport_adapter_handle,
+  ndis_status status
+)
+{
+  NDISTRACE("NdisMQueryInformationComplete");
+}
+
+void __stdcall NdisMSetInformationComplete
+(
+  ndis_handle_t miniport_adapter_handle,
+  ndis_status status
+)
+{
+  NDISTRACE("NdisMSetInformationComplete");
+}
+
 //
-// NDIS Status Indication Functions
+// NDIS Status and Reset Indication Functions
 //
+
+void __stdcall NdisMIndicateStatus
+(
+  ndis_handle_t miniport_handle,
+  ndis_status general_status,
+  void *status_buffer,
+  unsigned int status_buffer_size
+)
+{
+  NDISTRACE("NdisMIndicateStatus");
+}
+
+
+void __stdcall NdisMIndicateStatusComplete(ndis_handle_t miniport_adapter_handle)
+{
+  NDISTRACE("NdisMIndicateStatusComplete");
+}
+
+void __stdcall NdisMResetComplete(ndis_handle_t miniport_adapter_handle, ndis_status status, boolean addressing_reset)
+{
+  NDISTRACE("NdisMResetComplete");
+}
 
 //
 // NDIS Send and Receive Functions for Connectionless Miniport Drivers
 //
+
+void __stdcall NdisMIndicateReceivePacket
+(
+  ndis_handle_t miniport,
+  struct ndis_packet **packet_array,
+  unsigned int number_of_packets
+)
+{
+  NDISTRACE("NdisMIndicateReceivePacket");
+}
+
+void __stdcall NdisMEthIndicateReceive
+(
+  void *filter,
+  ndis_handle_t mac_receive_context,
+  char *address,
+  void *header_buffer,
+  unsigned int header_buffer_size,
+  void *lookahead_buffer,
+  unsigned int lookahead_buffer_size,
+  unsigned int packet_size
+)
+{
+  NDISTRACE("NdisMEthIndicateReceive");
+}
+
+void __stdcall NdisMTrIndicateReceive
+(
+  void *filter,
+  ndis_handle_t mac_receive_context,
+  void *header_buffer,
+  unsigned int header_buffer_size,
+  void *lookahead_buffer,
+  unsigned int lookahead_buffer_size,
+  unsigned int packet_size
+)
+{
+  NDISTRACE("NdisMTrIndicateReceive");
+}
+
+void __stdcall NdisMFddiIndicateReceive
+(
+  void *filter,
+  ndis_handle_t mac_receive_context,
+  char *address,
+  unsigned int address_length,
+  void *header_buffer,
+  unsigned int header_buffer_size,
+  void *lookahead_buffer,
+  unsigned int lookahead_buffer_size,
+  unsigned int packet_size
+)
+{
+  NDISTRACE("NdisMFddiIndicateReceive");
+}
+
+void __stdcall NdisMEthIndicateReceiveComplete(void *filter)
+{
+  NDISTRACE("NdisMEthIndicateReceiveComplete");
+}
+
+void __stdcall NdisMTrIndicateReceiveComplete(void *filter)
+{
+  NDISTRACE("NdisMTrIndicateReceiveComplete");
+}
+
+void __stdcall NdisMFddiIndicateReceiveComplete(void *filter)
+{
+  NDISTRACE("NdisMFddiIndicateReceiveComplete");
+}
+
+void __stdcall NdisMSendComplete(ndis_handle_t miniport_adapter_handle, struct ndis_packet *packet, ndis_status status)
+{
+  NDISTRACE("NdisMSendComplete");
+}
+
+void __stdcall NdisMSendResourcesAvailable(ndis_handle_t miniport_adapter_handle)
+{
+  NDISTRACE("NdisMSendResourcesAvailable");
+}
+
+void __stdcall NdisMTransferDataComplete
+(
+  ndis_handle_t miniport_adapter_handle,
+  struct ndis_packet *packet,
+  ndis_status status,
+  unsigned int bytes_transferred
+)
+{
+  NDISTRACE("NdisMTransferDataComplete");
+}
+
+//
+// NDIS Send and Receive Functions for WAN Miniport Drivers
+//
+
+void __stdcall NdisMWanSendComplete
+(
+  ndis_handle_t miniport_adapter_handle,
+  void *packet,
+  ndis_status status
+)
+{
+  NDISTRACE("NdisMWanSendComplete");
+}
+
+void __stdcall NdisMWanIndicateReceive
+(
+  ndis_status *status,
+  ndis_handle_t miniport_adapter_handle,
+  ndis_handle_t ndis_link_context,
+  unsigned char *packet,
+  unsigned long packet_size
+)
+{
+  NDISTRACE("NdisMWanIndicateReceive");
+}
+
+void __stdcall NdisMWanIndicateReceiveComplete
+(
+  ndis_handle_t miniport_adapter_handle,
+  ndis_handle_t ndis_link_context
+)
+{
+  NDISTRACE("NdisMWanIndicateReceiveComplete");
+}
 
 //
 // NDIS Send and Receive Functions for Connection-Oriented Miniport Drivers
@@ -515,6 +691,36 @@ void ndisapi NdisFreeMemory(void *virtual_address, unsigned int length, unsigned
 void ndisapi NdisWriteErrorLogEntry(ndis_handle_t ndis_adapter_handle, unsigned long error_code, unsigned long errvals, ...)
 {
   NDISTRACE("NdisWriteErrorLogEntry");
+}
+
+//
+// Setup callbacks
+//
+
+static void ndis_setup_callbacks(struct ndis_miniport_block *nmpb)
+{
+  nmpb->packet_indicate_handler = NdisMIndicateReceivePacket;
+  nmpb->send_complete_handler = NdisMSendComplete;
+  nmpb->send_resources_handler = NdisMSendResourcesAvailable;
+  nmpb->reset_complete_handler = NdisMResetComplete;
+
+  nmpb->eth_rx_indicate_handler = NdisMEthIndicateReceive;
+  nmpb->tr_rx_indicate_handler = NdisMTrIndicateReceive;
+  nmpb->fddi_rx_indicate_handler = NdisMFddiIndicateReceive;
+
+  nmpb->eth_rx_complete_handler = NdisMEthIndicateReceiveComplete;
+  nmpb->tr_rx_complete_handler = NdisMTrIndicateReceiveComplete;
+  nmpb->fddi_rx_complete_handler = NdisMFddiIndicateReceiveComplete;
+
+  nmpb->status_handler = NdisMIndicateStatus;
+  nmpb->status_complete_handler = NdisMIndicateStatusComplete;
+  nmpb->td_complete_handler = NdisMTransferDataComplete;
+  nmpb->query_complete_handler = NdisMQueryInformationComplete;
+  nmpb->set_complete_handler = NdisMSetInformationComplete;
+
+  nmpb->wan_send_complete_handler = NdisMWanSendComplete;
+  nmpb->wan_rcv_handler = NdisMWanIndicateReceive;
+  nmpb->wan_rcv_complete_handler = NdisMWanIndicateReceiveComplete;
 }
 
 //

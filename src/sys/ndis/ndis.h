@@ -42,6 +42,14 @@ typedef unsigned long ndis_oid_t;
 typedef __int64 ndis_physical_address_t;
 
 //
+// NDIS status codes
+//
+
+#define NDIS_STATUS_SUCCESS                0x00000000L
+#define NDIS_STATUS_RESOURCES              0xC000009AL
+#define NDIS_STATUS_FAILURE                0xC0000001L
+
+//
 // NDIS buffer alias Memory Descriptor List (MDL)
 //
 // An MDL describes pages in a virtual buffer in terms of physical pages.  The
@@ -179,7 +187,7 @@ struct ndis_configuration_parameter
 // NDIS Timers
 //
 
-typedef void (*ndis_timer_func_t)(void *system_specific1, void *function_context, void *system_specific2, void *system_specific3);
+typedef void (__stdcall *ndis_timer_func_t)(void *system_specific1, void *function_context, void *system_specific2, void *system_specific3);
 
 struct ndis_miniport_timer
 {
@@ -259,7 +267,7 @@ enum ndis_device_pnp_event
 // NDIS shutdown handler
 //
 
-typedef void (*adapter_shutdown_handler)(void *shutdown_context);
+typedef void (__stdcall *adapter_shutdown_handler)(void *shutdown_context);
 
 //
 // NDIS Resource list
@@ -381,32 +389,32 @@ struct ndis_resource_list
 // NDIS miniport characteristics
 //
 
-typedef boolean (*w_check_for_hang_handler)
+typedef boolean (__stdcall *w_check_for_hang_handler)
 (
   ndis_handle_t miniport_adapter_context
 );
 
-typedef void (*w_disable_interrupt_handler)
+typedef void (__stdcall *w_disable_interrupt_handler)
 (
   ndis_handle_t miniport_adapter_context
 );
 
-typedef void (*w_enable_interrupt_handler)
+typedef void (__stdcall *w_enable_interrupt_handler)
 (
   ndis_handle_t miniport_adapter_context
 );
 
-typedef void (*w_halt_handler)
+typedef void (__stdcall *w_halt_handler)
 (
   ndis_handle_t miniport_adapter_context
 );
 
-typedef void (*w_handle_interrupt_handler)
+typedef void (__stdcall *w_handle_interrupt_handler)
 (
   ndis_handle_t miniport_adapter_context
 );
 
-typedef ndis_status (*w_initialize_handler)
+typedef ndis_status (__stdcall *w_initialize_handler)
 (
   ndis_status *open_error_status,
   unsigned int *selected_medium_index,
@@ -416,14 +424,14 @@ typedef ndis_status (*w_initialize_handler)
   ndis_handle_t wrapper_configuration_context
 );
 
-typedef void (*w_isr_handler)
+typedef void (__stdcall *w_isr_handler)
 (
   boolean *interrupt_recognized, 
   boolean *queue_miniport_handle_interrupt, 
   ndis_handle_t miniport_adapter_context
 );
 
-typedef ndis_status (*w_query_information_handler)
+typedef ndis_status (__stdcall *w_query_information_handler)
 (
   ndis_handle_t miniport_adapter_context,
   ndis_oid_t oid,
@@ -433,27 +441,27 @@ typedef ndis_status (*w_query_information_handler)
   unsigned long *bytes_needed
 );
 
-typedef ndis_status (*w_reconfigure_handler)
+typedef ndis_status (__stdcall *w_reconfigure_handler)
 (
   ndis_status *open_error_status,
   ndis_handle_t miniport_adapter_context,
   ndis_handle_t wrapper_configuration_context
 );
 
-typedef ndis_status (*w_reset_handler)
+typedef ndis_status (__stdcall *w_reset_handler)
 (
   boolean *addressing_reset,
   ndis_handle_t miniport_adapter_context
 );
 
-typedef ndis_status (*w_send_handler)
+typedef ndis_status (__stdcall *w_send_handler)
 (
   ndis_handle_t miniport_adapter_context,
   struct ndis_packet *packet,
   unsigned int flags
 );
 
-typedef ndis_status (*w_set_information_handler)
+typedef ndis_status (__stdcall *w_set_information_handler)
 (
   ndis_handle_t miniport_adapter_context,
   ndis_oid_t oid,
@@ -463,7 +471,7 @@ typedef ndis_status (*w_set_information_handler)
   unsigned long *bytes_needed
 );
 
-typedef ndis_status (*w_transfer_data_handler)
+typedef ndis_status (__stdcall *w_transfer_data_handler)
 (
   struct ndis_packet *packet,
   unsigned int *bytes_transferred,
@@ -473,20 +481,20 @@ typedef ndis_status (*w_transfer_data_handler)
   unsigned int bytes_to_transfer
 );
 
-typedef void (*w_return_packet_handler)
+typedef void (__stdcall *w_return_packet_handler)
 (
   ndis_handle_t miniport_adapter_context,
   struct ndis_packet *packet
 );
 
-typedef void (*w_send_packets_handler)
+typedef void (__stdcall *w_send_packets_handler)
 (
   ndis_handle_t miniport_adapter_context,
   struct ndis_packet **packet_array,
   unsigned int number_of_packets
 );
 
-typedef void (*w_allocate_complete_handler)
+typedef void (__stdcall *w_allocate_complete_handler)
 (
   ndis_handle_t miniport_adapter_context,
   void *virtual_address,
@@ -495,50 +503,50 @@ typedef void (*w_allocate_complete_handler)
   void *context
 );
 
-typedef ndis_status (*w_co_create_vc_handler)
+typedef ndis_status (__stdcall *w_co_create_vc_handler)
 (
   ndis_handle_t miniport_adapter_context,
   ndis_handle_t ndis_vc_handle,
   ndis_handle_t *miniport_vc_context
 );
 
-typedef ndis_status (*w_co_delete_vc_handler)
+typedef ndis_status (__stdcall *w_co_delete_vc_handler)
 (
   ndis_handle_t miniport_vc_context
 );
 
-typedef ndis_status (*w_co_activate_vc_handler)
+typedef ndis_status (__stdcall *w_co_activate_vc_handler)
 (
   ndis_handle_t miniport_vc_context,
   void *call_parameters // CO_CALL_PARAMETERS
 );
 
-typedef ndis_status (*w_co_deactivate_vc_handler)
+typedef ndis_status (__stdcall *w_co_deactivate_vc_handler)
 (
   ndis_handle_t miniport_vc_context
 );
 
-typedef void (*w_co_send_packets_handler)
+typedef void (__stdcall *w_co_send_packets_handler)
 (
   ndis_handle_t miniport_vc_context,
   struct ndis_packet **packet_array,
   unsigned int number_of_packets
 );
 
-typedef ndis_status (*w_co_request_handler)
+typedef ndis_status (__stdcall *w_co_request_handler)
 (
   ndis_handle_t miniport_adapter_context,
   ndis_handle_t ndis_vc_handle,
   void *ndis_request // NDIS_REQUEST
 );
 
-typedef void (*w_cancel_send_packets_handler)
+typedef void (__stdcall *w_cancel_send_packets_handler)
 (
   ndis_handle_t miniport_adapter_context,
   void *cancel_id
 );
 
-typedef void (*w_pnp_event_notify_handler)
+typedef void (__stdcall *w_pnp_event_notify_handler)
 (
   ndis_handle_t miniport_adapter_context,
   enum ndis_device_pnp_event device_pnp_event,
@@ -546,12 +554,12 @@ typedef void (*w_pnp_event_notify_handler)
   unsigned long information_buffer_length
 );
 
-typedef void (*w_miniport_shutdown_handler) 
+typedef void (__stdcall *w_miniport_shutdown_handler) 
 (
   ndis_handle_t miniport_adapter_context
 );
 
-typedef struct ndis_miniport_characteristics
+struct ndis_miniport_characteristics
 {
   unsigned char major_ndis_version;
   unsigned char minor_ndis_version;
@@ -616,7 +624,7 @@ enum ndis_interrupt_mode
   NDIS_INTR_LATCHED
 };
 
-typedef struct ndis_miniport_interrupt
+struct ndis_miniport_interrupt
 {
   //TODO PKINTERRUPT                 InterruptObject;
   //TODO KSPIN_LOCK                  DpcCountLock;
@@ -652,18 +660,121 @@ struct ndis_spin_lock
 // NDIS mini-port
 //
 
-#if 0
-struct ndis_filter
-{
-  int todo;
-};
+typedef void (__stdcall *filter_packet_indication_handler)
+(
+  ndis_handle_t miniport,
+  struct ndis_packet **packet_array,
+  unsigned int number_of_packets
+);
+
+typedef void (__stdcall *ndis_m_send_complete_handler)
+(
+  ndis_handle_t miniport_adapter_handle,
+  struct ndis_packet *packet,
+  ndis_status status
+);
+
+typedef void (__stdcall *ndis_m_send_resources_handler)(ndis_handle_t miniport_adapter_handle);
+
+typedef void (__stdcall *ndis_m_reset_complete_handler)
+(
+  ndis_handle_t miniport_adapter_handle,
+  ndis_status status,
+  boolean addressing_reset
+);
+
+typedef void (__stdcall *eth_rcv_indicate_handler)
+(
+  void *filter,
+  ndis_handle_t mac_receive_context,
+  char *address,
+  void *header_buffer,
+  unsigned int header_buffer_size,
+  void *lookahead_buffer,
+  unsigned int lookahead_buffer_size,
+  unsigned int packet_size
+);
+
+typedef void (__stdcall *tr_rcv_indicate_handler)
+(
+  void *filter,
+  ndis_handle_t mac_receive_context,
+  void *header_buffer,
+  unsigned int header_buffer_size,
+  void *lookahead_buffer,
+  unsigned int lookahead_buffer_size,
+  unsigned int packet_size
+);
+
+typedef void (__stdcall *fddi_rcv_indicate_handler)
+(
+  void *filter,
+  ndis_handle_t mac_receive_context,
+  char *address,
+  unsigned int address_length,
+  void *header_buffer,
+  unsigned int header_buffer_size,
+  void *lookahead_buffer,
+  unsigned int lookahead_buffer_size,
+  unsigned int packet_size
+);
+
+typedef void (__stdcall *eth_rcv_complete_handler)(void *filter);
+typedef void (__stdcall *tr_rcv_complete_handler)(void *filter);
+typedef void (__stdcall *fddi_rcv_complete_handler)(void *filter);
+
+typedef void (__stdcall *ndis_m_status_handler)
+(
+  ndis_handle_t miniport_handle,
+  ndis_status general_status,
+  void *status_buffer,
+  unsigned int status_buffer_size
+);
+
+typedef void (__stdcall *ndis_m_sts_complete_handler)(ndis_handle_t miniport_adapter_handle);
+
+typedef void (__stdcall *ndis_m_td_complete_handler)
+(
+  ndis_handle_t miniport_adapter_handle,
+  struct ndis_packet *packet,
+  ndis_status status,
+  unsigned int bytes_transferred
+);
+
+typedef void (__stdcall *ndis_m_req_complete_handler)
+(
+  ndis_handle_t miniport_adapter_handle,
+  ndis_status status
+);
+
+typedef void (__stdcall *ndis_wm_send_complete_handler)
+(
+  ndis_handle_t miniport_adapter_handle,
+  void *packet,
+  ndis_status status
+);
+
+typedef void (__stdcall *wan_rcv_handler)
+(
+  ndis_status *status,
+  ndis_handle_t miniport_adapter_handle,
+  ndis_handle_t ndis_link_context,
+  unsigned char *packet,
+  unsigned long packet_size
+);
+
+typedef void (__stdcall *wan_rcv_complete_handler)
+(
+  ndis_handle_t miniport_adapter_handle,
+  ndis_handle_t ndis_link_context
+);
 
 struct ndis_filter_db
 {
-  struct ndis_filter *ethdb;
-  struct ndis_filter *trdb;
-  struct ndis_filter *fddidb;
-  struct ndis_filter *arcdb;
+  void *ethdb;
+  void *trdb;
+  void *fddidb;
+  void *arcdb;
 };
 
 struct ndis_miniport_block
@@ -671,36 +782,36 @@ struct ndis_miniport_block
   char reserved1[216];
   struct ndis_filter_db filterdb;
 
-  FILTER_PACKET_INDICATION_HANDLER packet_indicate_handler;
-  NDIS_M_SEND_COMPLETE_HANDLER send_complete_handler;
-  NDIS_M_SEND_RESOURCES_HANDLER send_resources_handler;
-  NDIS_M_RESET_COMPLETE_HANDLER reset_complete_handler;
+  filter_packet_indication_handler packet_indicate_handler;
+  ndis_m_send_complete_handler send_complete_handler;
+  ndis_m_send_resources_handler send_resources_handler;
+  ndis_m_reset_complete_handler reset_complete_handler;
 
   char reserved2[108];
 
-  ETH_RCV_INDICATE_HANDLER eth_rx_indicate_handler;
-  TR_RCV_INDICATE_HANDLER tr_rx_indicate_handler;
-  FDDI_RCV_INDICATE_HANDLER fddi_rx_indicate_handler;
+  eth_rcv_indicate_handler eth_rx_indicate_handler;
+  tr_rcv_indicate_handler tr_rx_indicate_handler;
+  fddi_rcv_indicate_handler fddi_rx_indicate_handler;
 
-  ETH_RCV_COMPLETE_HANDLER eth_rx_complete_handler;
-  TR_RCV_COMPLETE_HANDLER tr_rx_complete_handler;
-  FDDI_RCV_COMPLETE_HANDLER fddi_rx_complete_handler;
+  eth_rcv_complete_handler eth_rx_complete_handler;
+  tr_rcv_complete_handler tr_rx_complete_handler;
+  fddi_rcv_complete_handler fddi_rx_complete_handler;
 
-  NDIS_M_STATUS_HANDLER status_handler;
-  NDIS_M_STS_COMPLETE_HANDLER status_complete_handler;
-  NDIS_M_TD_COMPLETE_HANDLER td_complete_handler;
-  NDIS_M_REQ_COMPLETE_HANDLER query_complete_handler;
-  NDIS_M_REQ_COMPLETE_HANDLER set_complete_handler;
+  ndis_m_status_handler status_handler;
+  ndis_m_sts_complete_handler status_complete_handler;
+  ndis_m_td_complete_handler td_complete_handler;
+  ndis_m_req_complete_handler query_complete_handler;
+  ndis_m_req_complete_handler set_complete_handler;
 
-  NDIS_WM_SEND_COMPLETE_HANDLER wan_send_complete_handler;
-  WAN_RCV_HANDLER wan_rcv_handler;
-  WAN_RCV_COMPLETE_HANDLER wan_rcv_complete_handler;
+  ndis_wm_send_complete_handler wan_send_complete_handler;
+  wan_rcv_handler wan_rcv_handler;
+  wan_rcv_complete_handler wan_rcv_complete_handler;
 };
 
 struct ndis_miniport
 {
-  struct ndis_miniport_block block;
+  struct ndis_miniport_block ndis_handlers;
+  struct ndis_miniport_characteristics miniport_handlers;
 };
-#endif
 
 #endif
