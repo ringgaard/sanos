@@ -193,7 +193,7 @@ static void *load_image(char *filename)
     }
   }
 
-  syslog(LOG_MODULE | LOG_DEBUG, "image %s loaded at %p (%d KB)\n", filename, imgbase, imghdr->optional.size_of_image / 1024);
+  //syslog(LOG_MODULE | LOG_DEBUG, "image %s loaded at %p (%d KB)\n", filename, imgbase, imghdr->optional.size_of_image / 1024);
 
   // Close file
   close(f);

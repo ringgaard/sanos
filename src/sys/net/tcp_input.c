@@ -575,7 +575,7 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
         if (!(pcb->flags & TF_INFR)) 
 	{
           // This is fast retransmit. Retransmit the first unacked segment          
-	  kprintf("tcp_receive: dupacks %d (%lu), fast retransmit %lu\n", pcb->dupacks, pcb->lastack, ntohl(pcb->unacked->tcphdr->seqno));
+	  //kprintf("tcp_receive: dupacks %d (%lu), fast retransmit %lu\n", pcb->dupacks, pcb->lastack, ntohl(pcb->unacked->tcphdr->seqno));
           tcp_rexmit_seg(pcb, pcb->unacked);
 
           // Set ssthresh to MAX(FlightSize / 2, 2 * SMSS)

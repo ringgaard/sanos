@@ -11,7 +11,9 @@
 //#define SYSCALL_PROFILE
 //#define SYSCALL_LOGENTER
 //#define SYSCALL_LOGEXIT
-#define SYSCALL_LOGERRORS
+//#define SYSCALL_LOGERRORS
+//#define SYSCALL_LOGTIMEOUTS
+
 #define SYSCALL_CHECKBUFFER
 
 struct syscall_entry
@@ -63,6 +65,7 @@ static __inline void unlock_string(char *s)
 
 static __inline int lock_iovec(struct iovec *iov, int count)
 {
+#ifdef SYSCALL_CHECKBUFFER
   int n;
 
   if (iov)
@@ -89,6 +92,7 @@ static __inline int lock_iovec(struct iovec *iov, int count)
     if (count != 0) return -EFAULT;
   }
 
+#endif
   return 0;
 }
 
@@ -2453,7 +2457,11 @@ int syscall(int syscallno, char *params)
 
 #if defined(SYSCALL_LOGEXIT) || defined(SYSCALL_LOGERRORS)
 #ifdef SYSCALL_LOGERRORS
+#ifdef SYSCALL_LOGTIMEOUTS
   if (rc < 0)
+#else
+  if (rc < 0 && rc != -ETIMEOUT)
+#endif
 #endif
   {
     char buf[1024];

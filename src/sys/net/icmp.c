@@ -27,7 +27,7 @@ err_t icmp_input(struct pbuf *p, struct netif *inp)
 
   type = *((unsigned char *) p->payload);
 
-  kprintf("icmp: recv type %d\n", type);
+  //kprintf("icmp: recv type %d\n", type);
 
   switch (type) 
   {
@@ -44,7 +44,7 @@ err_t icmp_input(struct pbuf *p, struct netif *inp)
 	return -EPROTO;
       }
 
-      kprintf("icmp_input: ping src %a dest %a\n", &iphdr->src, &iphdr->dest);
+      //kprintf("icmp_input: ping src %a dest %a\n", &iphdr->src, &iphdr->dest);
 
       if (p->tot_len < sizeof(struct icmp_echo_hdr)) 
       {

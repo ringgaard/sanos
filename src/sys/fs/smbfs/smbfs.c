@@ -633,8 +633,8 @@ int smb_stat(struct fs *fs, char *name, struct stat *buffer)
     buffer->atime = ft2time(rspb.last_access_time);
     buffer->mtime = ft2time(rspb.last_write_time);
     buffer->ctime = ft2time(rspb.creation_time);
-  
     buffer->size = rsps.end_of_file;
+    if (rspb.attributes & SMB_FILE_ATTR_DIRECTORY) buffer->mode |= FS_DIRECTORY;
   }
 
   return (int) rsps.end_of_file;
