@@ -458,8 +458,7 @@ int resume_thread(struct thread *t)
 
   if (t->suspend_count > 0)
   {
-    t->suspend_count--;
-    if (t->suspend_count == 0) 
+    if (--t->suspend_count == 0) 
     {
       if (t->state == THREAD_STATE_READY || t->state == THREAD_STATE_INITIALIZED) mark_thread_ready(t);
     }

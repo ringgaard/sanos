@@ -161,6 +161,7 @@ struct thread
   int wait_reason;
   int flags;
   int priority;
+  int base_priority;
   tid_t id;
   handle_t hndl;
   struct tib *tib;
