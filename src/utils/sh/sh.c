@@ -585,6 +585,282 @@ static void lookup(char *name)
   }
 }
 
+static int readline(int f, char *buf)
+{
+  char c;
+  int rc;
+  int count;
+
+  count = 0;
+  while ((rc = read(f, &c, 1)) > 0)
+  {
+    if (c == '\r') continue;
+    if (c == '\n')
+    {
+      *buf++ = 0;
+      return count;
+    }
+    *buf++ = c;
+    count++;
+  }
+
+  *buf = 0;
+  return rc;
+}
+
+static int httpget(char *server, char *path, char *filename)
+{
+  struct hostent *hp;
+  struct sockaddr_in sin;
+  int s;
+  int rc;
+  int n;
+  int count;
+  int f;
+  char *buf;
+
+  hp = gethostbyname(server);
+  if (!hp) return errno;
+
+  s = socket(AF_INET, SOCK_STREAM, 0);
+  if (s < 0) return s;
+
+  memset(&sin, 0, sizeof(sin));
+  sin.sin_family = AF_INET;
+  memcpy(&sin.sin_addr, hp->h_addr_list[0], hp->h_length);
+  sin.sin_port = htons(80);
+
+  rc = connect(s, (struct sockaddr *) &sin, sizeof(sin));
+  if (rc  < 0)
+  {
+    close(s);
+    return rc;
+  }
+
+  buf = malloc(4096);
+  if (!buf) return -ENOMEM;
+
+  sprintf(buf, "GET %s HTTP/1.0\r\n\r\n", path);
+  rc = send(s, buf, strlen(buf), 0);
+  if (rc < 0)
+  {
+    close(s);
+    return rc;
+  }
+
+  while ((rc = readline(s, buf)) > 0)
+  {
+    //printf("hdr %s\n", buf);
+  }
+
+  if (rc < 0) return rc;
+
+  f = open(filename, O_CREAT);
+  if (f < 0)
+  {
+    close(s);
+    free(buf);
+    return f;
+  }
+
+  count = 0;
+  while ((n = recv(s, buf, 4096, 0)) > 0)
+  {
+    write(f, buf, n);
+    count += n;
+    //printf("count %d\n", count);
+  }
+
+  if (rc < 0)
+  {
+    close(s);
+    close(f);
+    free(buf);
+    return n;
+  }
+
+  close(s);
+  close(f);
+  free(buf);
+
+  return count;
+}
+
+static char *httpgetbuf(char *server, char *path)
+{
+  struct hostent *hp;
+  struct sockaddr_in sin;
+  int s;
+  int rc;
+  int n;
+  int len;
+  int left;
+  char *buf;
+  char *p;
+
+  hp = gethostbyname(server);
+  if (!hp) return NULL;
+
+  s = socket(AF_INET, SOCK_STREAM, 0);
+  if (s < 0) return NULL;
+
+  memset(&sin, 0, sizeof(sin));
+  sin.sin_family = AF_INET;
+  memcpy(&sin.sin_addr, hp->h_addr_list[0], hp->h_length);
+  sin.sin_port = htons(80);
+
+  rc = connect(s, (struct sockaddr *) &sin, sizeof(sin));
+  if (rc  < 0)
+  {
+    close(s);
+    return NULL;
+  }
+
+  buf = malloc(4096);
+  if (!buf) return NULL;
+
+  sprintf(buf, "GET %s HTTP/1.0\r\n\r\n", path);
+  rc = send(s, buf, strlen(buf), 0);
+  if (rc < 0)
+  {
+    close(s);
+    return NULL;
+  }
+
+  len = 0;
+  while ((rc = readline(s, buf)) > 0)
+  {
+    p = strchr(buf, ':');
+    if (p)
+    {
+      *p++ = 0;
+      while (*p == ' ') p++;
+      if (strcmp(buf, "Content-Length") == 0) len = atoi(p);
+    }
+  }
+
+  if (rc < 0) return NULL;
+
+  printf("length is %d\n", len);
+  buf = realloc(buf, len + 1);
+
+  p = buf;
+  left = len;
+  while (left > 0 && (n = recv(s, p, left, 0)) > 0)
+  {
+    p += n;
+    left -= n;
+  }
+
+  *p = 0;
+
+  if (rc < 0)
+  {
+    close(s);
+    free(buf);
+    return NULL;
+  }
+
+  close(s);
+  return buf;
+}
+
+static void http(int argc, char **argv)
+{
+  char *server;
+  char *path;
+  char *filename;
+  int rc;
+
+  server = "192.168.12.1";
+  path = "/";
+  filename = "/dev/null";
+  
+  if (argc >= 2) server = argv[1];
+  if (argc >= 3) path = argv[2];
+  if (argc >= 4) filename = argv[3];
+  
+  rc = httpget(server, path, filename);
+  if (rc < 0)
+    printf("error %d retrieving %s from %s\n", rc, path, server);
+  else
+    printf("received %d bytes\n", rc);
+}
+
+static void download(int argc, char **argv)
+{
+  char *server;
+  char *src;
+  char *dst;
+  char fn[256];
+  char path[256];
+  char *files;
+  char *p, *q;
+  int dir;
+  int rc;
+
+  server = "192.168.12.1";
+  src = "/sanos";
+  dst = "/usr";
+  
+  if (argc >= 2) server = argv[1];
+  if (argc >= 3) src = argv[2];
+  if (argc >= 4) dst = argv[3];
+
+  sprintf(path, "%s/FILES", src);
+
+  files = httpgetbuf(server, path);
+  if (!files)
+  {
+    printf("error retrieving file list from %s\n", server);
+    return;
+  }
+
+  p = files;
+  while (*p)
+  {
+    q = p;
+    while (*q)
+    {
+      if (q[0] == '\r') break;
+      if (q[0] == '/' && q[1] == '\r') break;
+      q++;
+    }
+
+    if (*q == '/')
+    {
+      dir = 1;
+      *q++ = 0;
+    }
+    else
+      dir = 0;
+
+    *q++ = 0;
+
+    if (dir)
+    {
+      printf("create directory %s\n", p);
+      sprintf(fn, "%s/%s", dst, p);
+      rc = mkdir(fn);
+      if (rc < 0) printf("%s: error %d creating directory\n", fn, rc);
+    }
+    else
+    {
+      printf("download file %s\n", p);
+      sprintf(fn, "%s/%s", dst, p);
+      sprintf(path, "%s/%s", src, p);
+      rc = httpget(server, path, fn);
+      if (rc < 0) printf("%s: error %d downloading file\n", fn, rc);
+    }
+
+    if (*q == '\n') *q++ = 0;
+    p = q;
+  }
+
+  free(files);
+}
+
+#if 0
 static void http(int argc, char **argv)
 {
   char *server;
@@ -598,11 +874,13 @@ static void http(int argc, char **argv)
   int n;
   //int f;
   int total;
+  clock_t t;
+  char buf[1024];
 
   server = "192.168.12.1";
   path = "/";
   filename = "http.txt";
-
+  
   if (argc >= 2) server = argv[1];
   if (argc >= 3) path = argv[2];
   if (argc >= 4) filename = argv[3];
@@ -653,28 +931,37 @@ static void http(int argc, char **argv)
     return;
   }
 
+  while (readline(s, buf) >= 0)
+  {
+    if (!*buf) break;
+    printf("HDR: %s\n", buf);
+  }
+
   printf("receive data\n");
   memset(buffer, 0, sizeof buffer);
   total = 0;
+  t = clock();
   while ((n = recv(s, buffer, 4096, 0)) > 0)
   {
     total += n;
     //write(f, buffer, n);
     //write(stdout, buffer, n);
-    printf("[%d]", n);
+    //printf("[%d]", n);
   }
+  t = clock() - t;
   printf("\n");
 
   if (rc < 0)
   {
     printf("recv: error %d\n", n);
   }
-  printf("received %d bytes\n", total);
+  printf("received %d bytes, %d ms\n", total, t);
 
   printf("closing\n");
   close(s);
   //close(f);
 }
+#endif
 
 static void test(int argc, char **argv)
 {
@@ -891,6 +1178,8 @@ void shell()
 	lookup(argv[1]);
       else if (strcmp(argv[0], "http") == 0)
 	http(argc, argv);
+      else if (strcmp(argv[0], "download") == 0)
+	download(argc, argv);
       else if (strcmp(argv[0], "test") == 0)
 	test(argc, argv);
       else

@@ -1,9 +1,9 @@
 //
-// os.h
+// kernel32.c
 //
 // Copyright (c) 2001 Michael Ringgaard. All rights reserved.
 //
-// Operating system API
+// Win32 KERNEL32 emulation
 //
 
 #include <os.h>
@@ -407,7 +407,7 @@ DWORD WINAPI GetCurrentDirectoryA
 )
 {
   TRACE("GetCurrentDirectoryA");
-  strcpy(lpBuffer, get_property(config, "win32", "curdir", "\\"));
+  strcpy(lpBuffer, get_property(config, "win32", "curdir", "c:\\"));
   return strlen(lpBuffer);
 }
 
@@ -549,7 +549,7 @@ UINT WINAPI GetSystemDirectoryA
 )
 {
   TRACE("GetSystemDirectoryA");
-  strcpy(lpBuffer, get_property(config, "win32", "sysdir", "\\os"));
+  strcpy(lpBuffer, get_property(config, "win32", "sysdir", "c:\\os"));
   return strlen(lpBuffer);
 }
 
@@ -606,7 +606,7 @@ DWORD WINAPI GetTempPathA
 )
 {
   TRACE("GetTempPathA");
-  strcpy(lpBuffer, get_property(config, "win32", "tmpdir", "\\tmp"));
+  strcpy(lpBuffer, get_property(config, "win32", "tmpdir", "c:\\tmp"));
   return strlen(lpBuffer);
 }
 
@@ -617,9 +617,7 @@ BOOL WINAPI GetThreadContext
 )
 {
   TRACE("GetThreadContext");
-  panic("GetThreadContext not implemented");
-  //if (get_thread_context((handle_t) hThread, lpContext) < 0) return FALSE;
-  return TRUE;
+  if (getcontext((handle_t) hThread, lpContext) < 0) return FALSE;
 }
 
 LCID WINAPI GetThreadLocale(void)
@@ -699,7 +697,7 @@ UINT WINAPI GetWindowsDirectoryA
 )
 {
   TRACE("GetWindowsDirectoryA");
-  strcpy(lpBuffer, get_property(config, "win32", "windir", "\\os\\win32"));
+  strcpy(lpBuffer, get_property(config, "win32", "windir", "c:\\os"));
   return strlen(lpBuffer);
 }
 

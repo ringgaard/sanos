@@ -7,7 +7,7 @@ if not exist %2\etc mkdir %2\etc
 if not exist %2\os mkdir %2\os
 if not exist %2\setup mkdir %2\setup
 if not exist %2\target mkdir %2\target
-if not exist %2\target mkdir %2\usr
+if not exist %2\usr mkdir %2\usr
 copy %1\os.dll %2\os > nul
 copy %1\sh.exe %2\os > nul
 copy %1\setup.exe %2\os > nul
@@ -15,16 +15,18 @@ copy %1\fdisk.exe %2\os > nul
 copy %1\pcnet32.sys %2\os > nul
 copy %1\ne2000.sys %2\os > nul
 copy %1\3c905c.sys %2\os > nul
+copy %1\msvcrt.dll %2\os > nul
+copy %1\kernel32.dll %2\os > nul
+copy %1\user32.dll %2\os > nul
+copy %1\advapi32.dll %2\os > nul
+copy %1\winmm.dll %2\os > nul
+copy %1\wsock32.dll %2\os > nul
+copy %1\jinit.exe %2\os > nul
 copy build\krnl.ini %2\etc > nul
 copy build\os.ini %2\etc > nul
 copy %1\boot %2\setup > nul
 copy %1\osldr.dll %2\setup > nul
 copy %1\krnl.dll %2\setup > nul
-copy %1\os.dll %2\setup > nul
-copy %1\sh.exe %2\setup > nul
-copy %1\ne2000.sys %2\setup > nul
-copy %1\pcnet32.sys %2\setup > nul
-copy %1\3c905c.sys %2\setup > nul
 copy build\krnl.ini %2\setup > nul
 copy build\os.ini %2\setup > nul
 copy build\setup.ini %2\setup > nul

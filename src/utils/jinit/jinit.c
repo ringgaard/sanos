@@ -116,7 +116,7 @@ void init_jvm_args()
 	len = strlen(prop->name) + 1 + strlen(prop->value);
 	buf = (char *) malloc(len + 1);
 	strcpy(buf, prop->name);
-	strcpy(buf + strlen(buf), "=");
+	strcpy(buf + strlen(buf), ":");
 	strcpy(buf + strlen(buf), prop->value);
       }
       else

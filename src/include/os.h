@@ -210,8 +210,8 @@ struct section;
 #define MAXPATH                 256     // Maximum filename length (including trailing zero)
 #define MFSNAMELEN              16      // Length of fs type name
 
-#define PS1                     '/'     // Primary path separator
-#define PS2                     '\\'    // Alternate path separator
+#define PS1                     '\\'    // Primary path separator
+#define PS2                     '/'     // Alternate path separator
 
 struct stat
 {
