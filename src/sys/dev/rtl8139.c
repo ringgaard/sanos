@@ -313,7 +313,7 @@ struct nic
   unsigned int rx_buf_len;              // Size (8K 16K 32K or 64KB) of the Rx ring
 
   // Transmit state
-  struct sem tx_sem;                    // Semaphore for Tx ring full
+  struct sem tx_sem;                    // Semaphore for Tx ring not full
   unsigned int cur_tx;
   unsigned int dirty_tx;
   unsigned int tx_flag;

@@ -73,7 +73,7 @@ static int multicast_filter_limit = 64;
 
 // Operational parameters that usually are not changed
 
-// Time in jiffies before concluding the transmitter is hung
+// Time in ticks before concluding the transmitter is hung
 
 #define TX_TIMEOUT  (2*HZ)
 
@@ -158,8 +158,6 @@ enum commands
   CmdSuspend       = 0x40000000,   // Suspend after completion
 };
 
-#define clear_suspend(cmd)   ((char *)(&(cmd)->cmd_status))[3] &= ~0x40
-
 enum SCBCmdBits 
 {
   SCBMaskCmdDone      = 0x8000, 
@@ -198,8 +196,12 @@ enum intr_status_bits
   IntrAllNormal = 0xfc00,
 };
 
-enum SCBPort_cmds {
-  PortReset=0, PortSelfTest=1, PortPartialReset=2, PortDump=3,
+enum SCBPort_cmds 
+{
+  PortReset        = 0, 
+  PortSelfTest     = 1, 
+  PortPartialReset = 2, 
+  PortDump         = 3,
 };
 
 // The Speedo3 Rx and Tx frame/buffer descriptors
@@ -317,48 +319,52 @@ struct stats_nic
 // Do not change the position (alignment) of the first few elements!
 // The later elements are grouped for cache locality.
 
-struct speedo_private 
+struct nic
 {
   struct TxFD tx_ring[TX_RING_SIZE];       // Commands (usually CmdTxPacket)
   struct RxFD *rx_ringp[RX_RING_SIZE];     // Rx descriptor, used as ring
   
   // The addresses of a Tx/Rx-in-place packets/buffers.
-  struct sk_buff *tx_skbuff[TX_RING_SIZE];
-  struct sk_buff *rx_skbuff[RX_RING_SIZE];
+  struct pbuf *tx_pbuf[TX_RING_SIZE];
+  struct pbuf *rx_pbuf[RX_RING_SIZE];
   struct descriptor *last_cmd;             // Last command sent
   unsigned int cur_tx, dirty_tx;           // The ring entries to be free()ed
   unsigned long tx_threshold;              // The value for txdesc.count
   unsigned long last_cmd_time;
+  struct sem tx_sem;                       // Semaphore for Tx ring not full
   
   // Rx control, one cache line.
   struct RxFD *last_rxf;                   // Most recent Rx frame
   unsigned int cur_rx, dirty_rx;           // The next free ring entry
   long last_rx_time;                       // Last Rx, in ticks, to handle Rx hang
-  int msg_level;
-  struct net_device *next_module;
-  void *priv_addr;                         // Unaligned address for kfree
+
+  devno_t devno;                           // Device number
+  struct dev *dev;                         // Device block
+  unsigned short iobase;		   // Configured I/O base
+  unsigned short irq;		           // Configured IRQ
+  struct interrupt intr;                   // Interrupt object for driver
+  struct dpc dpc;                          // DPC for driver
+  struct timer timer;                      // Media selection timer
+  struct eth_addr hwaddr;                  // MAC address for NIC
+
   struct stats_nic stats;
   struct speedo_stats lstats;
   int alloc_failures;
-  int chip_id;
-  int drv_flags;
-  struct pci_dev *pci_dev;
-  unsigned char acpi_pwr;
-  struct timer timer;                      // Media selection timer
+  int board_id;
+  int flags;
   int mc_setup_frm_len;                    // The length of an allocated...
   struct descriptor *mc_setup_frm;         // ... multicast setup frame
   int mc_setup_busy;                       // Avoid double-use of setup frame
   int in_interrupt;                        // Word-aligned dev->interrupt
   char rx_mode;                            // Current PROMISC/ALLMULTI setting
-  unsigned int tx_full:1;                  // The Tx queue is full
-  unsigned int full_duplex:1;              // Full-duplex operation requested
-  unsigned int flow_ctrl:1;                // Use 802.3x flow control
-  unsigned int rx_bug:1;                   // Work around receiver hang errata
-  unsigned int rx_bug10:1;                 // Receiver might hang at 10mbps
-  unsigned int rx_bug100:1;                // Receiver might hang at 100mbps
-  unsigned int polling:1;                  // Hardware blocked interrupt line
-  unsigned int medialock:1;                // The media speed/duplex is fixed
-  unsigned char default_port:8;            // Last dev->if_port value
+  int tx_full;                             // The Tx queue is full
+  int full_duplex;                         // Full-duplex operation requested
+  int flow_ctrl;                           // Use 802.3x flow control
+  int rx_bug;                              // Work around receiver hang errata
+  int rx_bug10;                            // Receiver might hang at 10mbps
+  int rx_bug100;                           // Receiver might hang at 100mbps
+  int polling;                             // Hardware blocked interrupt line
+  int medialock;                           // The media speed/duplex is fixed
   unsigned short phy[2];                   // PHY media interfaces available
   unsigned short advertising;              // Current PHY advertised caps
   unsigned short partner;                  // Link partner caps
@@ -402,7 +408,110 @@ enum phy_chips
 
 static const char is_mii[] = { 0, 1, 1, 0, 1, 1, 0, 1 };
 
+#define clear_suspend(cmd)   ((char *)(&(cmd)->cmd_status))[3] &= ~0x40
+
 #define EE_READ_CMD   (6)
+
+// How to wait for the command unit to accept a command.
+// Typically this takes 0 ticks
+
+__inline static void wait_for_cmd_done(long cmd_ioaddr)
+{
+  int wait = 0;
+  int delayed_cmd;
+  
+  while (++wait <= 100)
+  {
+    if (inp(cmd_ioaddr) == 0) return;
+  }
+
+  delayed_cmd = inp(cmd_ioaddr);
+  
+  while (++wait <= 10000)
+  {
+    if (inp(cmd_ioaddr) == 0) break;
+  }
+
+  kprintf("eepro100: Command %2.2x was not immediately accepted, %d ticks!\n", delayed_cmd, wait);
+}
+
+// Serial EEPROM section.
+// A "bit" grungy, but we work our way through bit-by-bit :->.
+
+//  EEPROM_Ctrl bits
+
+#define EE_SHIFT_CLK  0x01  // EEPROM shift clock.
+#define EE_CS         0x02  // EEPROM chip select.
+#define EE_DATA_WRITE 0x04  // EEPROM chip data in.
+#define EE_DATA_READ  0x08  // EEPROM chip data out.
+#define EE_ENB        (0x4800 | EE_CS)
+#define EE_WRITE_0    0x4802
+#define EE_WRITE_1    0x4806
+#define EE_OFFSET     SCBeeprom
+
+// Delay between EEPROM clock transitions.
+// The code works with no delay on 33Mhz PCI
+
+#define eeprom_delay(ee_addr) inpw(ee_addr)
+
+static int do_eeprom_cmd(long ioaddr, int cmd, int cmd_len)
+{
+  unsigned retval = 0;
+  long ee_addr = ioaddr + SCBeeprom;
+
+  outpw(ee_addr, EE_ENB | EE_SHIFT_CLK);
+
+  // Shift the command bits out
+  do 
+  {
+    short dataval = (cmd & (1 << cmd_len)) ? EE_WRITE_1 : EE_WRITE_0;
+    outpw(ee_addr, dataval);
+    eeprom_delay(ee_addr);
+    outpw(ee_addr, dataval | EE_SHIFT_CLK);
+    eeprom_delay(ee_addr);
+    retval = (retval << 1) | ((inpw(ee_addr) & EE_DATA_READ) ? 1 : 0);
+  } while (--cmd_len >= 0);
+  outpw(ee_addr, EE_ENB);
+
+  // Terminate the EEPROM access.
+  outpw(ee_addr, EE_ENB & ~EE_CS);
+
+  return retval;
+}
+
+static int mdio_read(long ioaddr, int phy_id, int location)
+{
+  int val, boguscnt = 64 * 10;    // <64 usec. to complete, typ 27 ticks
+  outpd(ioaddr + SCBCtrlMDI, 0x08000000 | (location << 16) | (phy_id << 21));
+  do 
+  {
+    val = inpd(ioaddr + SCBCtrlMDI);
+    if (--boguscnt < 0) 
+    {
+      kprintf("eepro100: mdio_read() timed out with val = %8.8x\n", val);
+      break;
+    }
+  } while (!(val & 0x10000000));
+  
+  return val & 0xffff;
+}
+
+static int mdio_write(long ioaddr, int phy_id, int location, int value)
+{
+  int val, boguscnt = 64 * 10;    // <64 usec. to complete, typ 27 ticks
+  outpd(ioaddr + SCBCtrlMDI, 0x04000000 | (location << 16) | (phy_id << 21) | value);
+  do 
+  {
+    val = inpd(ioaddr + SCBCtrlMDI);
+    if (--boguscnt < 0)
+    {
+      kprintf("eepro100: mdio_write() timed out with val = %8.8x\n", val);
+      break;
+    }
+  } while (!(val & 0x10000000));
+
+  return val & 0xffff;
+}
 
 #ifdef xxx
 
@@ -422,34 +531,12 @@ static struct net_device_stats *speedo_get_stats(struct net_device *dev);
 static int speedo_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
 static void set_rx_mode(struct net_device *dev);
 
-// How to wait for the command unit to accept a command.
-// Typically this takes 0 ticks
-
-__inline static void wait_for_cmd_done(long cmd_ioaddr)
-{
-  int wait = 0;
-  int delayed_cmd;
-  
-  do
-  {
-    if (inp(cmd_ioaddr) == 0) return;
-  } while(++wait <= 100);
-
-  delayed_cmd = inb(cmd_ioaddr);
-  do
-  {
-    if (inp(cmd_ioaddr) == 0) break;
-  } while(++wait <= 10000);
-
-  kprintf("eepro100: Command %2.2x was not immediately accepted, %d ticks!\n", delayed_cmd, wait);
-}
-
 static void *speedo_found1(struct pci_dev *pdev, void *init_dev, long ioaddr, int irq, int chip_idx, int card_idx)
 {
   struct net_device *dev;
   struct speedo_private *sp;
   int i, option;
-  u16 eeprom[0x100];
+  unsigned short eeprom[0x100];
   int acpi_idle_state = 0;
 
   dev = init_etherdev(init_dev, sizeof(struct speedo_private));
@@ -469,7 +556,7 @@ static void *speedo_found1(struct pci_dev *pdev, void *init_dev, long ioaddr, in
   // The size test is for 6 bit vs. 8 bit address serial EEPROMs.
  
   {
-    u16 sum = 0;
+    unsigned short sum = 0;
     int j;
     int read_cmd, ee_size;
 
@@ -496,13 +583,7 @@ static void *speedo_found1(struct pci_dev *pdev, void *init_dev, long ioaddr, in
       }
     }
 
-    if (sum != 0xBABA)
-    {
-      kprintf("%s: Invalid EEPROM checksum %#4.4x, check settings before activating this device!\n", dev->name, sum);
-    }
-
-    // Don't  unregister_netdev(dev);  as the EEPro may actually be
-    // usable, especially if the MAC address is set later.
+    if (sum != 0xBABA) kprintf("%s: Invalid EEPROM checksum %#4.4x!\n", dev->name, sum);
   }
 
   // Reset the chip: stop Tx and Rx processes and clear counters.
@@ -540,7 +621,6 @@ static void *speedo_found1(struct pci_dev *pdev, void *init_dev, long ioaddr, in
   sp->chip_id = chip_idx;
   sp->drv_flags = pci_id_tbl[chip_idx].drv_flags;
   sp->acpi_pwr = acpi_idle_state;
-  sp->msg_level = (1 << debug) - 1;
 
   sp->full_duplex = option >= 0 && (option & 0x220) ? 1 : 0;
   if (card_idx >= 0) 
@@ -597,84 +677,6 @@ static void do_slow_command(struct net_device *dev, int cmd)
   }
 
   kprintf("eepro100: Command %4.4x was not accepted after %d polls!  Current status %8.8x\n", cmd, wait, inpd(dev->base_addr + SCBStatus));
-}
-
-// Serial EEPROM section.
-// A "bit" grungy, but we work our way through bit-by-bit :->.
-
-//  EEPROM_Ctrl bits
-
-#define EE_SHIFT_CLK  0x01  // EEPROM shift clock.
-#define EE_CS         0x02  // EEPROM chip select.
-#define EE_DATA_WRITE 0x04  // EEPROM chip data in.
-#define EE_DATA_READ  0x08  // EEPROM chip data out.
-#define EE_ENB        (0x4800 | EE_CS)
-#define EE_WRITE_0    0x4802
-#define EE_WRITE_1    0x4806
-#define EE_OFFSET     SCBeeprom
-
-// Delay between EEPROM clock transitions.
-// The code works with no delay on 33Mhz PCI
-
-#define eeprom_delay(ee_addr) inpw(ee_addr)
-
-static int do_eeprom_cmd(long ioaddr, int cmd, int cmd_len)
-{
-  unsigned retval = 0;
-  long ee_addr = ioaddr + SCBeeprom;
-
-  outpw(ee_addr, EE_ENB | EE_SHIFT_CLK);
-
-  // Shift the command bits out
-  do 
-  {
-    short dataval = (cmd & (1 << cmd_len)) ? EE_WRITE_1 : EE_WRITE_0;
-    outw(ee_addr, dataval);
-    eeprom_delay(ee_addr);
-    outpw(ee_addr, dataval | EE_SHIFT_CLK);
-    eeprom_delay(ee_addr);
-    retval = (retval << 1) | ((inpw(ee_addr) & EE_DATA_READ) ? 1 : 0);
-  } while (--cmd_len >= 0);
-  outpw(ee_addr, EE_ENB);
-
-  // Terminate the EEPROM access.
-  outpw(ee_addr, EE_ENB & ~EE_CS);
-
-  return retval;
-}
-
-static int mdio_read(long ioaddr, int phy_id, int location)
-{
-  int val, boguscnt = 64 * 10;    // <64 usec. to complete, typ 27 ticks
-  outpd(ioaddr + SCBCtrlMDI, 0x08000000 | (location << 16) | (phy_id << 21));
-  do 
-  {
-    val = inpd(ioaddr + SCBCtrlMDI);
-    if (--boguscnt < 0) 
-    {
-      kprintf("eepro100: mdio_read() timed out with val = %8.8x\n", val);
-      break;
-    }
-  } while (!(val & 0x10000000));
-  
-  return val & 0xffff;
-}
-
-static int mdio_write(long ioaddr, int phy_id, int location, int value)
-{
-  int val, boguscnt = 64*10;    // <64 usec. to complete, typ 27 ticks
-  outpd(ioaddr + SCBCtrlMDI, 0x04000000 | (location << 16) | (phy_id << 21) | value);
-  do 
-  {
-    val = inpd(ioaddr + SCBCtrlMDI);
-    if (--boguscnt < 0) 
-    {
-      kprintf("eepro100: mdio_write() timed out with val = %8.8x\n", val);
-      break;
-    }
-  } while (! (val & 0x10000000));
-
-  return val & 0xffff;
 }
 
 static int speedo_open(struct net_device *dev)
@@ -743,9 +745,9 @@ static int speedo_open(struct net_device *dev)
   //    hangs.
 
   init_timer(&sp->timer);
-  sp->timer.expires = jiffies + 3*HZ;
-  sp->timer.data = (unsigned long)dev;
-  sp->timer.function = &speedo_timer;         // timer handler
+  sp->timer.expires = ticks + 3*HZ;
+  sp->timer.data = (unsigned long) dev;
+  sp->timer.function = &speedo_timer;
   add_timer(&sp->timer);
 
   // No need to wait for the command unit to accept here.
@@ -826,7 +828,7 @@ static void speedo_timer(unsigned long data)
   kprintf("%s: Interface monitor tick, chip status %4.4x\n", dev->name, status);
 
   // Normally we check every two seconds.
-  sp->timer.expires = jiffies + 2*HZ;
+  sp->timer.expires = ticks + 2*HZ;
 
   if (sp->polling) 
   {
@@ -921,7 +923,7 @@ static void speedo_show_state(struct net_device *dev)
   int phy_num = sp->phy[0] & 0x1f;
   int i;
 
-  // Print a few items for debugging.
+  // Print a few items for debugging
   int i;
   kprintf("%s: Tx ring dump,  Tx queue %d / %d:\n", dev->name, sp->cur_tx, sp->dirty_tx);
   for (i = 0; i < TX_RING_SIZE; i++)
@@ -1509,7 +1511,7 @@ static void set_rx_mode(struct net_device *dev)
     sp->last_cmd_time = ticks;
   }
 
-  if (new_rx_mode == 0  &&  dev->mc_count < 4) 
+  if (new_rx_mode == 0 && dev->mc_count < 4) 
   {
     // The simple case of 0-3 multicast list entries occurs often, and
     // fits within one tx_ring[] entry.
@@ -1625,6 +1627,41 @@ static void set_rx_mode(struct net_device *dev)
 }
 
 #endif
+
+static int speedo_transmit(struct dev *dev, struct pbuf *p)
+{
+  return -ENOSYS;
+}
+
+static int speedo_ioctl(struct dev *dev, int cmd, void *args, size_t size)
+{
+  return -ENOSYS;
+}
+
+static int speedo_attach(struct dev *dev, struct eth_addr *hwaddr)
+{
+  struct nic *np = dev->privdata;
+  *hwaddr = np->hwaddr;
+
+  return -ENOSYS;
+}
+
+static int speedo_detach(struct dev *dev)
+{
+  return 0;
+}
+
+struct driver speedo_driver =
+{
+  "eepro100",
+  DEV_TYPE_PACKET,
+  speedo_ioctl,
+  NULL,
+  NULL,
+  speedo_attach,
+  speedo_detach,
+  speedo_transmit
+};
 
 int __declspec(dllexport) install(struct unit *unit, char *opts)
 {
