@@ -149,6 +149,7 @@ struct driver
   int (*attach)(struct dev *dev, struct eth_addr *hwaddr);
   int (*detach)(struct dev *dev);
   int (*transmit)(struct dev *dev, struct pbuf *p);
+  int (*set_rx_mode)(struct dev *dev);
 };
 
 //
@@ -180,6 +181,24 @@ struct geometry
   int sectors;
 };
 
+//
+// PCI board info
+//
+
+struct board
+{
+  char *vendorname;
+  char *productname;
+  unsigned long bustype;
+  unsigned long unitcode;
+  unsigned long unitmask;
+  unsigned long subsystemcode;
+  unsigned long subsystemmask;
+  unsigned long revisioncode;
+  unsigned long revisionmask;
+  int flags;
+};
+
 extern struct dev *devtab[];
 extern unsigned int num_devs;
 
@@ -201,6 +220,8 @@ krnlapi char *get_unit_name(struct unit *unit);
 
 krnlapi struct unit *lookup_unit(struct unit *start, unsigned long unitcode, unsigned long unitmask);
 krnlapi struct unit *lookup_unit_by_class(struct unit *start, unsigned long classcode, unsigned long classmask);
+
+krnlapi struct board *lookup_board(struct board *board_tbl, struct unit *unit);
 
 krnlapi struct dev *device(devno_t devno);
 

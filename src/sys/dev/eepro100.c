@@ -94,34 +94,21 @@ enum chip_capability_flags
   HasChksum = 2
 };
 
-struct board_info
+static struct board board_tbl[] = 
 {
-  char *vendorname;
-  char *productname;
-  unsigned long unitcode;
-  unsigned long unitmask;
-  unsigned long subsystemcode;
-  unsigned long subsystemmask;
-  unsigned long revisioncode;
-  unsigned long revisionmask;
-  int flags;
-};
-
-static struct board_info board_tbl[] = 
-{
-  {"Intel", "Intel i82559 rev 8", PCI_UNITCODE(0x8086, 0x1229), 0xffffffff, 0, 0, 8, 0xff, HasChksum},
-  {"Intel", "Intel PCI EtherExpress Pro100", PCI_UNITCODE(0x8086, 0x1229), 0xffffffff, 0, 0, 0, 0, 0},
-  {"Intel", "Intel EtherExpress Pro/100+ i82559ER", PCI_UNITCODE(0x8086, 0x1209), 0xffffffff, 0, 0, 0, 0, ResetMII},
-  {"Intel", "Intel EtherExpress Pro/100 type 1029", PCI_UNITCODE(0x8086, 0x1029), 0xffffffff, 0, 0, 0, 0, 0},
-  {"Intel", "Intel EtherExpress Pro/100 type 1030", PCI_UNITCODE(0x8086, 0x1030), 0xffffffff, 0, 0, 0, 0, 0},
-  {"Intel", "Intel Pro/100 V Network", PCI_UNITCODE(0x8086, 0x2449), 0xffffffff, 0, 0, 0, 0, 0},
-  {"Intel", "Intel Pro/100 VE (type 1031)", PCI_UNITCODE(0x8086, 0x1031), 0xffffffff, 0, 0, 0, 0, 0},
-  {"Intel", "Intel Pro/100 VM (type 1038)", PCI_UNITCODE(0x8086, 0x1038), 0xffffffff, 0, 0, 0, 0, 0},
-  {"Intel", "Intel Pro/100 VM (type 1039)", PCI_UNITCODE(0x8086, 0x1039), 0xffffffff, 0, 0, 0, 0, 0},
-  {"Intel", "Intel Pro/100 VM (type 103a)", PCI_UNITCODE(0x8086, 0x103a), 0xffffffff, 0, 0, 0, 0, 0},
-  {"HP", "HP/Compaq D510 Intel Pro/100 VM", PCI_UNITCODE(0x8086, 0x103b), 0xffffffff, PCI_UNITCODE(0x0e11, 0x0012), 0, 0, 0, 0},
-  {"Intel", "Intel Pro/100 VM (type 103b)", PCI_UNITCODE(0x8086, 0x103b), 0xffffffff, 0, 0, 0, 0, 0},
-  {"Intel", "Intel Pro/100 VM (unknown type series 1030)", PCI_UNITCODE(0x8086, 0x1030), 0xfffffff0, 0, 0, 0, 0, 0},
+  {"Intel", "Intel i82559 rev 8", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x1229), 0xffffffff, 0, 0, 8, 0xff, HasChksum},
+  {"Intel", "Intel PCI EtherExpress Pro100", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x1229), 0xffffffff, 0, 0, 0, 0, 0},
+  {"Intel", "Intel EtherExpress Pro/100+ i82559ER", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x1209), 0xffffffff, 0, 0, 0, 0, ResetMII},
+  {"Intel", "Intel EtherExpress Pro/100 type 1029", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x1029), 0xffffffff, 0, 0, 0, 0, 0},
+  {"Intel", "Intel EtherExpress Pro/100 type 1030", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x1030), 0xffffffff, 0, 0, 0, 0, 0},
+  {"Intel", "Intel Pro/100 V Network", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x2449), 0xffffffff, 0, 0, 0, 0, 0},
+  {"Intel", "Intel Pro/100 VE (type 1031)", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x1031), 0xffffffff, 0, 0, 0, 0, 0},
+  {"Intel", "Intel Pro/100 VM (type 1038)", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x1038), 0xffffffff, 0, 0, 0, 0, 0},
+  {"Intel", "Intel Pro/100 VM (type 1039)", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x1039), 0xffffffff, 0, 0, 0, 0, 0},
+  {"Intel", "Intel Pro/100 VM (type 103a)", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x103a), 0xffffffff, 0, 0, 0, 0, 0},
+  {"HP", "HP/Compaq D510 Intel Pro/100 VM", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x103b), 0xffffffff, PCI_UNITCODE(0x0e11, 0x0012), 0, 0, 0, 0},
+  {"Intel", "Intel Pro/100 VM (type 103b)", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x103b), 0xffffffff, 0, 0, 0, 0, 0},
+  {"Intel", "Intel Pro/100 VM (unknown type series 1030)", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x1030), 0xfffffff0, 0, 0, 0, 0, 0},
   {NULL,},
 };
 
@@ -260,7 +247,7 @@ struct TxFD
   long tx_buf_size1;            // Length of second data buffer (0).
 };
 
-// Elements of the dump_statistics block. This block must be lword aligned.
+// Elements of the dump_statistics block. This block must be dword aligned.
 
 struct speedo_stats 
 {
@@ -281,39 +268,6 @@ struct speedo_stats
   unsigned long rx_colls_errs;
   unsigned long rx_runt_errs;
   unsigned long done_marker;
-};
-
-struct stats_nic
-{
-  unsigned long rx_packets;             // Total packets received
-  unsigned long tx_packets;             // Total packets transmitted
-  unsigned long rx_bytes;               // Total bytes received
-  unsigned long tx_bytes;               // Total bytes transmitted
-  unsigned long rx_errors;              // Bad packets received
-  unsigned long tx_errors;              // Packet transmit problems
-  unsigned long rx_dropped;             // Received packets dropped
-  unsigned long tx_dropped;             // Transmitted packets dropped
-  unsigned long multicast;              // Multicast packets received
-  unsigned long collisions;
-
-  // Detailed rx errors
-  unsigned long rx_length_errors;
-  unsigned long rx_over_errors;         // Receiver ring buff overflow
-  unsigned long rx_crc_errors;          // Recved pkt with crc error
-  unsigned long rx_frame_errors;        // Recv'd frame alignment error
-  unsigned long rx_fifo_errors;         // Recv'r fifo overrun
-  unsigned long rx_missed_errors;       // Receiver missed packet
-
-  // Detailed tx errors
-  unsigned long tx_aborted_errors;
-  unsigned long tx_carrier_errors;
-  unsigned long tx_fifo_errors;
-  unsigned long tx_heartbeat_errors;
-  unsigned long tx_window_errors;
-
-  // Compression
-  unsigned long rx_compressed;
-  unsigned long tx_compressed;
 };
 
 // Do not change the position (alignment) of the first few elements!
@@ -351,7 +305,7 @@ struct nic
   struct stats_nic stats;
   struct speedo_stats lstats;
   int alloc_failures;
-  int board_id;
+  struct board *board;
   int flags;
   int mc_setup_frm_len;                    // The length of an allocated...
   struct descriptor *mc_setup_frm;         // ... multicast setup frame
@@ -1523,7 +1477,7 @@ struct driver speedo_driver =
 int __declspec(dllexport) install(struct unit *unit, char *opts)
 {
   int i;
-  int board_idx;
+  struct board *board;
   struct nic *sp;
   struct dev *dev;
   unsigned short ioaddr;
@@ -1531,22 +1485,11 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   unsigned short eeprom[0x100];
 
   // Determine NIC type
-  i = 0;
-  while (board_tbl[i].vendorname != NULL)
-  {
-    if ((unit->unitcode & board_tbl[i].unitmask) == board_tbl[i].unitcode &&
-        (unit->subunitcode & board_tbl[i].subsystemmask) == board_tbl[i].subsystemcode &&
-        (unit->revision & board_tbl[i].revisionmask) == board_tbl[i].revisioncode)
-      break;
+  board = lookup_board(board_tbl, unit);
+  if (!board) return -EIO;
 
-    i++;
-  }
-
-  if (board_tbl[i].vendorname == NULL) return -EIO;
-  board_idx = i;
-
-  unit->vendorname = board_tbl[board_idx].vendorname;
-  unit->productname = board_tbl[board_idx].productname;
+  unit->vendorname = board->vendorname;
+  unit->productname = board->productname;
 
   // Get NIC PCI configuration
   ioaddr = (unsigned short) get_unit_iobase(unit);
@@ -1612,8 +1555,8 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   sp->dev = dev;
   sp->iobase = ioaddr;
   sp->irq = irq;
-  sp->board_id = board_idx;
-  sp->flags = board_tbl[board_idx].flags;
+  sp->board = board;
+  sp->flags = board->flags;
 
   // Set options
   if (opts) 

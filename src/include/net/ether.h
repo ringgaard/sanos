@@ -64,6 +64,8 @@ __inline int eth_addr_isbroadcast(struct eth_addr *addr)
 }
 
 krnlapi char *ether2str(struct eth_addr *hwaddr, char *s);
+krnlapi unsigned long ether_crc(int length, unsigned char *data);
+
 krnlapi struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr, struct ip_addr *netmask, struct ip_addr *gw);
 
 krnlapi err_t ether_input(struct netif *netif, struct pbuf *p);

@@ -77,6 +77,8 @@
 
 #define PCI_CLASS_STORAGE_IDE	0x010100
 
+#define PCI_ID_ANY              0xFFFFFFFF
+
 #define PCI_UNITCODE(vendorid, deviceid) ((vendorid) << 16 | (deviceid))
 #define PCI_UNITNO(devno, funcno) ((devno) << 3 | (funcno))
 

@@ -81,9 +81,6 @@ static int multicast_filter_limit = 32;
 
 #define PKT_BUF_SZ    1536
 
-static void *rtl8139_probe1(struct pci_dev *pdev, void *init_dev, long ioaddr, int irq, int board_idx, int find_cnt);
-static int rtl_pwr_event(void *dev_instance, int event);
-
 enum board_capability_flags 
 {
   HAS_MII_XCVR    = 0x01, 
@@ -96,32 +93,19 @@ enum board_capability_flags
 #define RTL8139_CAPS   HAS_CHIP_XCVR | HAS_LNK_CHNG
 #define RTL8139D_CAPS  HAS_CHIP_XCVR | HAS_LNK_CHNG | HAS_DESC
 
-struct board_info
+static struct board board_tbl[] = 
 {
-  char *vendorname;
-  char *productname;
-  unsigned long unitcode;
-  unsigned long unitmask;
-  unsigned long subsystemcode;
-  unsigned long subsystemmask;
-  unsigned long revisioncode;
-  unsigned long revisionmask;
-  int flags;
-};
-
-static struct board_info board_tbl[] = 
-{
-  {"RealTek", "RealTek RTL8139+", PCI_UNITCODE(0x10ec, 0x8139), 0xffffffff, 0, 0, 0x20, 0xff, RTL8139D_CAPS},
-  {"RealTek", "RealTek RTL8139C Fast Ethernet", PCI_UNITCODE(0x10ec, 0x8139), 0xffffffff, 0, 0, 0x10, 0xff, RTL8139_CAPS},
-  {"RealTek", "RealTek RTL8129 Fast Ethernet", PCI_UNITCODE(0x10ec, 0x8129), 0xffffffff, 0, 0, 0, 0, RTL8129_CAPS},
-  {"RealTek", "RealTek RTL8139 Fast Ethernet", PCI_UNITCODE(0x10ec, 0x8139), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
-  {"RealTek", "RealTek RTL8139B PCI",  PCI_UNITCODE(0x10ec, 0x8138), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
-  {"Accton", "Accton EN-1207D Fast Ethernet Adapter", PCI_UNITCODE(0x1113, 0x1211), 0xffffffff, PCI_UNITCODE(0x1113, 0x9211), 0xffffffff, 0, 0, RTL8139_CAPS},
-  {"SMC", "SMC1211TX EZCard 10/100 (RealTek RTL8139)", PCI_UNITCODE(0x1113, 0x1211), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
-  {"D-Link", "D-Link DFE-538TX (RTL8139)", PCI_UNITCODE(0x1186, 0x1300), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
-  {"LevelOne", "LevelOne FPC-0106Tx (RTL8139)", PCI_UNITCODE(0x018a, 0x0106), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
-  {"Compaq", "Compaq HNE-300 (RTL8139c)", PCI_UNITCODE(0x021b, 0x8139), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
-  {"Generic", "Generic RTL8139", 0, 0, 0, 0, 0, 0, RTL8139_CAPS},
+  {"RealTek", "RealTek RTL8139+", BUSTYPE_PCI, PCI_UNITCODE(0x10ec, 0x8139), 0xffffffff, 0, 0, 0x20, 0xff, RTL8139D_CAPS},
+  {"RealTek", "RealTek RTL8139C Fast Ethernet", BUSTYPE_PCI, PCI_UNITCODE(0x10ec, 0x8139), 0xffffffff, 0, 0, 0x10, 0xff, RTL8139_CAPS},
+  {"RealTek", "RealTek RTL8129 Fast Ethernet", BUSTYPE_PCI, PCI_UNITCODE(0x10ec, 0x8129), 0xffffffff, 0, 0, 0, 0, RTL8129_CAPS},
+  {"RealTek", "RealTek RTL8139 Fast Ethernet", BUSTYPE_PCI, PCI_UNITCODE(0x10ec, 0x8139), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
+  {"RealTek", "RealTek RTL8139B PCI",  BUSTYPE_PCI, PCI_UNITCODE(0x10ec, 0x8138), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
+  {"Accton", "Accton EN-1207D Fast Ethernet Adapter", BUSTYPE_PCI, PCI_UNITCODE(0x1113, 0x1211), 0xffffffff, PCI_UNITCODE(0x1113, 0x9211), 0xffffffff, 0, 0, RTL8139_CAPS},
+  {"SMC", "SMC1211TX EZCard 10/100 (RealTek RTL8139)", BUSTYPE_PCI, PCI_UNITCODE(0x1113, 0x1211), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
+  {"D-Link", "D-Link DFE-538TX (RTL8139)", BUSTYPE_PCI, PCI_UNITCODE(0x1186, 0x1300), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
+  {"LevelOne", "LevelOne FPC-0106Tx (RTL8139)", BUSTYPE_PCI, PCI_UNITCODE(0x018a, 0x0106), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
+  {"Compaq", "Compaq HNE-300 (RTL8139c)", BUSTYPE_PCI, PCI_UNITCODE(0x021b, 0x8139), 0xffffffff, 0, 0, 0, 0, RTL8139_CAPS},
+  {"Generic", "Generic RTL8139", BUSTYPE_PCI, 0, 0, 0, 0, 0, 0, RTL8139_CAPS},
   {NULL,},
 };
 
@@ -254,39 +238,6 @@ unsigned long param[4][4] =
   {0xbb39de43, 0xbb39ce43, 0xbb39ce83, 0xbb39ce83}
 };
 
-struct stats_nic
-{
-  unsigned long rx_packets;             // Total packets received
-  unsigned long tx_packets;             // Total packets transmitted
-  unsigned long rx_bytes;               // Total bytes received
-  unsigned long tx_bytes;               // Total bytes transmitted
-  unsigned long rx_errors;              // Bad packets received
-  unsigned long tx_errors;              // Packet transmit problems
-  unsigned long rx_dropped;             // Received packets dropped
-  unsigned long tx_dropped;             // Transmitted packets dropped
-  unsigned long multicast;              // Multicast packets received
-  unsigned long collisions;
-
-  // Detailed rx errors
-  unsigned long rx_length_errors;
-  unsigned long rx_over_errors;         // Receiver ring buff overflow
-  unsigned long rx_crc_errors;          // Recved pkt with crc error
-  unsigned long rx_frame_errors;        // Recv'd frame alignment error
-  unsigned long rx_fifo_errors;         // Recv'r fifo overrun
-  unsigned long rx_missed_errors;       // Receiver missed packet
-
-  // Detailed tx errors
-  unsigned long tx_aborted_errors;
-  unsigned long tx_carrier_errors;
-  unsigned long tx_fifo_errors;
-  unsigned long tx_heartbeat_errors;
-  unsigned long tx_window_errors;
-
-  // Compression
-  unsigned long rx_compressed;
-  unsigned long tx_compressed;
-};
-
 struct nic 
 {
   devno_t devno;                        // Device number
@@ -301,7 +252,7 @@ struct nic
 
   struct eth_addr hwaddr;               // MAC address for NIC
 
-  int board_id;
+  struct board *board;
   int flags;
   struct stats_nic stats;
   int msg_level;
@@ -354,7 +305,6 @@ static void rtl_hw_start(struct dev *dev);
 static void rtl8139_timer(void *arg);
 
 static struct stats_nic *rtl8139_get_stats(struct dev *dev);
-static unsigned long ether_crc(int length, unsigned char *data);
 static void set_rx_mode(struct dev *dev);
 static int rtl8139_transmit(struct dev *dev, struct pbuf *p);
 
@@ -561,24 +511,6 @@ static struct stats_nic *rtl8139_get_stats(struct dev *dev)
 }
 
 // Set or clear the multicast filter
-
-#define ETHERNET_POLYNOMIAL 0x04c11db7U
-
-static unsigned long ether_crc(int length, unsigned char *data)
-{
-  int crc = -1;
-
-  while (--length >= 0) 
-  {
-    unsigned char current_octet = *data++;
-    int bit;
-    for (bit = 0; bit < 8; bit++, current_octet >>= 1)
-      crc = (crc << 1) ^
-        ((crc < 0) ^ (current_octet & 1) ? ETHERNET_POLYNOMIAL : 0);
-  }
-
-  return crc;
-}
 
 static void set_rx_mode(struct dev *dev)
 {
@@ -1352,7 +1284,7 @@ struct driver rtl8139_driver =
 
 int __declspec(dllexport) install(struct unit *unit, char *opts)
 {
-  int board_idx;
+  struct board *board;
   unsigned short ioaddr;
   unsigned short irq;
   struct dev *dev;
@@ -1361,22 +1293,11 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   int config1;
 
   // Determine NIC type
-  i = 0;
-  while (board_tbl[i].vendorname != NULL)
-  {
-    if ((unit->unitcode & board_tbl[i].unitmask) == board_tbl[i].unitcode &&
-        (unit->subunitcode & board_tbl[i].subsystemmask) == board_tbl[i].subsystemcode &&
-        (unit->revision & board_tbl[i].revisionmask) == board_tbl[i].revisioncode)
-      break;
+  board = lookup_board(board_tbl, unit);
+  if (!board) return -EIO;
 
-    i++;
-  }
-
-  if (board_tbl[i].vendorname == NULL) return -EIO;
-  board_idx = i;
-
-  unit->vendorname = board_tbl[board_idx].vendorname;
-  unit->productname = board_tbl[board_idx].productname;
+  unit->vendorname = board->vendorname;
+  unit->productname = board->productname;
 
   // Get NIC PCI configuration
   ioaddr = (unsigned short) get_unit_iobase(unit);
@@ -1400,7 +1321,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
 
   // Bring the chip out of low-power mode
   config1 = inp(ioaddr + Config1);
-  if (board_tbl[board_idx].flags & HAS_MII_XCVR)
+  if (board->flags & HAS_MII_XCVR)
   {
     // RTL8129 chip
     outp(ioaddr + Config1, config1 & ~0x03);
@@ -1419,8 +1340,8 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   np->dev = dev;
   np->iobase = ioaddr;
   np->irq = irq;
-  np->board_id = board_idx;
-  np->flags = board_tbl[board_idx].flags;
+  np->board = board;
+  np->flags = board->flags;
   np->max_interrupt_work = max_interrupt_work;
   np->multicast_filter_limit = multicast_filter_limit;
   np->config1 = 0;

@@ -64,19 +64,21 @@ struct netif *netif_add(char *name, struct ip_addr *ipaddr, struct ip_addr *netm
   strcpy(netif->name, name);
   netif->input = ip_input;
   netif->output = NULL;
-  netif->flags = 0;
+  netif->flags = NETIF_ALLMULTI;
 
   ip_addr_set(&netif->ipaddr, ipaddr);
   ip_addr_set(&netif->netmask, netmask);
   ip_addr_set(&netif->gw, gw);
   netif->broadcast.addr = (ipaddr->addr & netmask->addr) | ~netmask->addr;
 
+  netif->mclist = NULL;
+  netif->mccount = 0;
+
   netif->next = netif_list;
   netif_list = netif;
 
   return netif;
 }
-
 
 struct netif *netif_find(char *name)
 {

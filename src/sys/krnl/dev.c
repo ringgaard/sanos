@@ -249,6 +249,25 @@ struct unit *lookup_unit_by_class(struct unit *start, unsigned long classcode, u
   return NULL;
 }
 
+struct board *lookup_board(struct board *board_tbl, struct unit *unit)
+{
+  int i = 0;
+
+  while (board_tbl[i].vendorname != NULL)
+  {
+    if (unit->bus->bustype == board_tbl[i].bustype &&
+        (unit->unitcode & board_tbl[i].unitmask) == board_tbl[i].unitcode &&
+        (unit->subunitcode & board_tbl[i].subsystemmask) == board_tbl[i].subsystemcode &&
+        (unit->revision & board_tbl[i].revisionmask) == board_tbl[i].revisioncode)
+      break;
+
+    i++;
+  }
+
+  if (board_tbl[i].vendorname == NULL) return NULL;
+  return &board_tbl[i];
+}
+
 void enum_host_bus()
 {
   struct bus *host_bus;

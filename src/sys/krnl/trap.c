@@ -387,7 +387,11 @@ static int div_handler(struct context *ctxt, void *arg)
   if (usermode(ctxt))
     send_signal(ctxt, SIGFPE, (void *) ctxt->eip);
   else
-    panic("division by zero in kernel mode");
+  {
+    kprintf("trap: division by zero in kernel mode\n");
+    dbg_enter(ctxt, 0);
+  }
+
   return 0;
 }
 
@@ -400,7 +404,11 @@ static int overflow_handler(struct context *ctxt, void *arg)
   if (usermode(ctxt))
     send_signal(ctxt, SIGSEGV, NULL);
   else
-    panic("overflow exception in kernel mode");
+  {
+    kprintf("trap: overflow exception in kernel mode\n");
+    dbg_enter(ctxt, 0);
+  }
+
   return 0;
 }
 
@@ -413,7 +421,11 @@ static int bounds_handler(struct context *ctxt, void *arg)
   if (usermode(ctxt))
     send_signal(ctxt, SIGSEGV, NULL);
   else
-    panic("bounds exception in kernel mode");
+  {
+    kprintf("trap: bounds exception in kernel mode\n");
+    dbg_enter(ctxt, 0);
+  }
+
   return 0;
 }
 
@@ -426,7 +438,11 @@ static int illop_handler(struct context *ctxt, void *arg)
   if (usermode(ctxt))
     send_signal(ctxt, SIGILL, (void *) ctxt->eip);
   else
-    panic("illegal instruction exception in kernel mode");
+  {
+    kprintf("trap: illegal instruction exception in kernel mode\n");
+    dbg_enter(ctxt, 0);
+  }
+
   return 0;
 }
 
@@ -439,7 +455,11 @@ static int seg_handler(struct context *ctxt, void *arg)
   if (usermode(ctxt))
     send_signal(ctxt, SIGBUS, NULL);
   else
-    panic("sement not present exception in kernel mode");
+  {
+    kprintf("trap: sement not present exception in kernel mode\n");
+    dbg_enter(ctxt, 0);
+  }
+
   return 0;
 }
 
@@ -452,7 +472,11 @@ static int stack_handler(struct context *ctxt, void *arg)
   if (usermode(ctxt))
     send_signal(ctxt, SIGBUS, NULL);
   else
-    panic("stack segment exception in kernel mode");
+  {
+    kprintf("trap: stack segment exception in kernel mode\n");
+    dbg_enter(ctxt, 0);
+  }
+
   return 0;
 }
 
@@ -465,7 +489,11 @@ static int genpro_handler(struct context *ctxt, void *arg)
   if (usermode(ctxt))
     send_signal(ctxt, SIGSEGV, NULL);
   else
-    panic("general protection exception in kernel mode");
+  {
+    kprintf("trap: general protection exception in kernel mode\n");
+    dbg_enter(ctxt, 0);
+  }
+
   return 0;
 }
 
@@ -488,7 +516,10 @@ static int pagefault_handler(struct context *ctxt, void *arg)
   else if (usermode(ctxt))
     send_signal(ctxt, SIGSEGV, addr);
   else
-    panic("page fault in kernel mode");
+  {
+    kprintf("trap: page fault in kernel mode\n");
+    dbg_enter(ctxt, addr);
+  }
 
   return 0;
 }
@@ -502,7 +533,11 @@ static int alignment_handler(struct context *ctxt, void *arg)
   if (usermode(ctxt))
     send_signal(ctxt, SIGBUS, (void *) cr2());
   else
-    panic("alignment exception in kernel mode");
+  {
+    kprintf("trap: alignment exception in kernel mode\n");
+    dbg_enter(ctxt, 0);
+  }
+
   return 0;
 }
 

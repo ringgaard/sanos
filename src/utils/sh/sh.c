@@ -184,7 +184,7 @@ static void list_dir(int argc, char **argv)
 	  else if (buf.quad.size_high == 0)
 	    printf("%6dMB ", buf.quad.size_low / M);
 	  else
-	    printf("%6dGB ", (buf.quad.size_high << 12) | (buf.quad.size_low >> 20));
+	    printf("%6dGB ", (buf.quad.size_high << 2) | (buf.quad.size_low >> 30));
 	}
       }
 
