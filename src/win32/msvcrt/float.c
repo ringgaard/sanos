@@ -33,33 +33,10 @@
 
 #include "msvcrt.h"
 
-#define HI(x) (*(1 + (int *) &x))
-#define LO(x) (*(int *) &x)
-
-#define ANSI_FTOL 1
-
-__declspec(naked) void _ftol() 
-{
-  __asm    
-  {
-#if ANSI_FTOL
-    fnstcw   word ptr [esp-2]
-    mov      ax, word ptr [esp-2]
-    or       ax, 0C00h
-    mov      word ptr [esp-4], ax
-    fldcw    word ptr [esp-4]
-    fistp    qword ptr [esp-12]
-    fldcw    word ptr [esp-2]
-    mov      eax, dword ptr [esp-12]
-    mov      edx, dword ptr [esp-8]
-#else
-    fistp    dword ptr [esp-12]
-    mov	     eax, dword ptr [esp-12]
-    mov	     ecx, dword ptr [esp-8]
-#endif
-    ret
-  }
-}
+#define HI(x)    (*(1 + (int *) &x))
+#define LO(x)    (*(int *) &x)
+#define HIPTR(x) *(1+(int *) x)
+#define LOPTR(x) (*(int *) x)
 
 int _isnan(double x)
 {
@@ -95,8 +72,13 @@ void _CIfmod()
 
 unsigned int _control87(unsigned int new, unsigned int mask)
 {
-  syslog(LOG_WARNING, "_control87 not implemented, ignored\n");
-  return 0;
+  unsigned int fpcw;
+
+  __asm fnstcw fpcw;
+  fpcw = ((fpcw & ~mask) | (new & mask));
+  __asm fldcw fpcw;
+
+  return fpcw;
 }
 
 unsigned int _controlfp(unsigned int new, unsigned int mask)
@@ -104,39 +86,3 @@ unsigned int _controlfp(unsigned int new, unsigned int mask)
   syslog(LOG_WARNING, "_controlcp not implemented, ignored\n");
   return 0;
 }
-
-#if 0
-__declspec(naked) unsigned int _control87(unsigned int new, unsigned int mask)
-{
-  __asm
-  {
-    push        ebp
-    mov         ebp,esp
-    push        ecx
-    push        esi
-    wait
-    fnstcw      word ptr [ebp-4]
-    push        dword ptr [ebp-4]
-    call        _control87_1
-  _control87_1:
-    mov         esi,eax
-    mov         eax,dword ptr [ebp+0Ch]
-    not         eax
-    and         esi,eax
-    mov         eax,dword ptr [ebp+8]
-    and         eax,dword ptr [ebp+0Ch]
-    or          esi,eax
-    push        esi
-    call        _control87_2
-  _control87_2:
-    pop         ecx
-    mov         dword ptr [ebp+0Ch],eax
-    pop         ecx
-    fldcw       word ptr [ebp+0Ch]
-    mov         eax,esi
-    pop         esi
-    leave
-    ret
-  }
-}
-#endif

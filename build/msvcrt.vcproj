@@ -167,6 +167,9 @@
 				RelativePath="..\src\lib\ctype.c">
 			</File>
 			<File
+				RelativePath="..\src\lib\fp.c">
+			</File>
+			<File
 				RelativePath="..\src\lib\inifile.c">
 			</File>
 			<File
@@ -205,6 +208,18 @@
 		</File>
 		<File
 			RelativePath="..\src\win32\msvcrt\float.c">
+			<FileConfiguration
+				Name="SanOSDebug|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					AssemblerOutput="0"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="SanOS|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					AssemblerOutput="0"/>
+			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="..\src\win32\msvcrt\malloc.c">

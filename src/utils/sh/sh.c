@@ -1063,6 +1063,7 @@ static void test1(int argc, char **argv)
   }
 }
 
+#if 0
 static void test(int argc, char **argv)
 {
   char *server;
@@ -1098,6 +1099,15 @@ static void test(int argc, char **argv)
   }
 
   close(sock);
+}
+#endif
+
+static void test(int argc, char **argv)
+{
+  char *fmt = "test %%f=[%f] %%g=[%g] %%e=[%e]\n";
+
+  if (argc > 1) fmt = argv[1];
+  printf(fmt, -1.2345, 12345.6789, 0.0987654321);
 }
 
 static void disktest(int argc, char **argv)

@@ -45,3 +45,4 @@ EXPORTS
   strerror
   localtime
   _sys_nerr=sys_nerr
+  _ftol

@@ -159,6 +159,9 @@
 			RelativePath="..\src\lib\ctype.c">
 		</File>
 		<File
+			RelativePath="..\src\lib\fp.c">
+		</File>
+		<File
 			RelativePath="..\src\lib\hash.c">
 		</File>
 		<File

@@ -48,6 +48,12 @@ int get_num_option(char *opts, char *name, int defval);
 
 int abs(int number);
 
+double modf(double x, double *iptr);
+char *ecvt(double arg, int ndigits, int *decpt, int *sign);
+char *ecvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf);
+char *fcvt(double arg, int ndigits, int *decpt, int *sign);
+char *fcvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf);
+
 char *strerror(int errnum);
 
 void *bsearch(const void *key, const void *base, size_t num, size_t width, int (__cdecl *compare)(const void *, const void *));
