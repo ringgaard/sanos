@@ -68,6 +68,9 @@
 #define SEL_RPL0    0
 #define SEL_RPL3    3
 
+#define KRNLOPTS_POS         0x0E00
+#define KRNLOPTS_LEN         0x0200
+
 struct bootparams
 {
   unsigned long heapstart;

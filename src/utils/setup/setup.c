@@ -40,6 +40,9 @@
 
 #include <os/mbr.h>
 #include <os/dfs.h>
+#include <os/seg.h>
+#include <os/tss.h>
+#include <os/syspage.h>
 #include <os/version.h>
 
 #define SECTORSIZE 512
@@ -94,7 +97,7 @@ int doformat(struct section *sect)
 // install_loader
 //
 
-int install_loader(char *devname, char *loader)
+int install_loader(char *devname, char *loader, char *krnlopts)
 {
   int n;
   int dev;
@@ -143,6 +146,11 @@ int install_loader(char *devname, char *loader)
   {
     rc = read(ldr, block, blocksize);
     if (rc < 0) return rc;
+
+    if (n * blocksize <= KRNLOPTS_POS && (n + 1) * blocksize > KRNLOPTS_POS)
+    {
+      memcpy(block + (KRNLOPTS_POS - n * blocksize), krnlopts, strlen(krnlopts));
+    }
 
     rc = write(dev, block, blocksize);
     if (rc < 0) return rc;
@@ -248,15 +256,17 @@ int dosysprep(struct section *sect)
   char *devname;
   char *bootstrap;
   char *loader;
+  char *krnlopts;
   int rc;
 
   // Get properties
   devname = get_property(inst, sect->name, "device", "<none>");
   bootstrap = get_property(inst, sect->name, "bootstrap", "/setup/boot");
   loader = get_property(inst, sect->name, "loader", "/setup/osldr.dll");
+  krnlopts = get_property(inst, sect->name, "options", "");
 
   // Install loader
-  rc = install_loader(devname, loader);
+  rc = install_loader(devname, loader, krnlopts);
   if (rc < 0) return rc;
 
   // Install boot sector

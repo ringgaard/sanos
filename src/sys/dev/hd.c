@@ -33,8 +33,6 @@
 
 #include <os/krnl.h>
 
-#define NOIDERESET
-
 #define SECTORSIZE              512
 #define CDSECTORSIZE            2048
 
@@ -355,6 +353,7 @@ struct hd
   struct partition parts[HD_PARTITIONS]; // Partition info
 };
 
+int ideprobe = 0;
 static struct hdc hdctab[HD_CONTROLLERS];
 static struct hd hdtab[HD_DRIVES];
 
@@ -1426,53 +1425,56 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase, int *m
   init_mutex(&hdc->lock, 0);
   init_event(&hdc->ready, 0, 0);
 
-#ifdef NOIDERESET
-  // Assume both devices connected to force selection by BIOS settings
-  *masterif = HDIF_ATA;
-  *slaveif = HDIF_ATA;
-#else
-  // Assume no devices connected to controller
-  *masterif = HDIF_NONE;
-  *slaveif = HDIF_NONE;
-
-  // Setup device control register
-  _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_NIEN);
-
-  // Probe for master and slave device on controller
-  if (probe_device(hdc, HD0_DRVSEL) >= 0) *masterif = HDIF_PRESENT;
-  if (probe_device(hdc, HD1_DRVSEL) >= 0) *slaveif = HDIF_PRESENT;
-
-  // Reset controller
-  _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_SRST | HDDC_NIEN);
-  idedelay();
-  _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_NIEN);
-  idedelay();
-
-  // Wait for reset to finish on all present devices
-  if (*masterif != HDIF_NONE) 
+  if (ideprobe)
   {
-    int rc = wait_reset_done(hdc, HD0_DRVSEL);
-    if (rc < 0)
-    {
-      kprintf("hd: error %d waiting for reset to complete on master device\n");
-      *masterif = HDIF_NONE;
-    }
-  }
+    // Assume no devices connected to controller
+    *masterif = HDIF_NONE;
+    *slaveif = HDIF_NONE;
 
-  if (*slaveif != HDIF_NONE) 
+    // Setup device control register
+    _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_NIEN);
+
+    // Probe for master and slave device on controller
+    if (probe_device(hdc, HD0_DRVSEL) >= 0) *masterif = HDIF_PRESENT;
+    if (probe_device(hdc, HD1_DRVSEL) >= 0) *slaveif = HDIF_PRESENT;
+
+    // Reset controller
+    _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_SRST | HDDC_NIEN);
+    idedelay();
+    _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_NIEN);
+    idedelay();
+
+    // Wait for reset to finish on all present devices
+    if (*masterif != HDIF_NONE) 
+    {
+      int rc = wait_reset_done(hdc, HD0_DRVSEL);
+      if (rc < 0)
+      {
+	kprintf("hd: error %d waiting for reset to complete on master device\n");
+	*masterif = HDIF_NONE;
+      }
+    }
+
+    if (*slaveif != HDIF_NONE) 
+    {
+      int rc = wait_reset_done(hdc, HD1_DRVSEL);
+      if (rc < 0)
+      {
+	kprintf("hd: error %d waiting for reset to complete on slave device\n");
+	*slaveif = HDIF_NONE;
+      }
+    }
+
+    // Determine interface types
+    if (*masterif != HDIF_NONE) *masterif = get_interface_type(hdc, HD0_DRVSEL);
+    if (*slaveif != HDIF_NONE) *slaveif = get_interface_type(hdc, HD1_DRVSEL);
+  }
+  else
   {
-    int rc = wait_reset_done(hdc, HD1_DRVSEL);
-    if (rc < 0)
-    {
-      kprintf("hd: error %d waiting for reset to complete on slave device\n");
-      *slaveif = HDIF_NONE;
-    }
+    // No IDE probing, assume both devices connected to force selection by BIOS settings
+    *masterif = HDIF_ATA;
+    *slaveif = HDIF_ATA;
   }
-
-  // Determine interface types
-  if (*masterif != HDIF_NONE) *masterif = get_interface_type(hdc, HD0_DRVSEL);
-  if (*slaveif != HDIF_NONE) *slaveif = get_interface_type(hdc, HD1_DRVSEL);
-#endif
 
   // Enable interrupts
   register_interrupt(&hdc->intr, IRQ2INTR(irq), hdc_handler, hdc);
@@ -1586,11 +1588,13 @@ void init_hd()
   int slaveif;
 
   numhd = 4;
+  ideprobe = get_num_option(krnlopts, "ideprobe", 1);
 
-#ifdef NOIDERESET
-  numhd = syspage->biosdata[0x75];
-  kprintf("hd: %d IDE devices reported by BIOS\n", numhd);
-#endif
+  if (!ideprobe)
+  {
+    numhd = syspage->biosdata[0x75];
+    kprintf("hd: %d IDE device(s) reported by BIOS\n", numhd);
+  }
 
   ide = lookup_unit_by_class(NULL, PCI_CLASS_STORAGE_IDE, PCI_SUBCLASS_MASK);
   if (ide)

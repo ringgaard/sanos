@@ -63,6 +63,7 @@ struct selector gdtsel;         // GDT selector
 struct selector idtsel;         // IDT selector
 int bootdrive;                  // Boot drive
 int bootpart;                   // Boot partition
+char *krnlopts;                 // Kernel options
 
 void load_kernel();
 
@@ -295,6 +296,9 @@ void __stdcall start(void *hmod, int bootdrv, int reserved2)
   syspage->bootparams.bootpart = bootpart;
   memcpy(syspage->biosdata, (void *) 0x0400, 256);
 
+  // Kernel options are located in the header of the osldr image
+  krnlopts = (char *) hmod + KRNLOPTS_POS;
+
   // Reload segment registers
   __asm
   {
@@ -315,7 +319,7 @@ void __stdcall start(void *hmod, int bootdrv, int reserved2)
   {
     mov esp, INITTCB_ADDRESS + TCBESP
     push 0
-    push 0
+    push krnlopts
     push OSBASE
     call [krnlentry]
     cli

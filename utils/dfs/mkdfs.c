@@ -21,6 +21,9 @@ extern struct fs *mountlist;
 #define BLOCKSIZE        4096
 #define INODE_RATIO      4096
 
+#define KRNLOPTS_POS     0x0E00
+#define KRNLOPTS_LEN     0x0200
+
 char bootsect[SECTORSIZE];
 
 char *command;
@@ -45,6 +48,7 @@ int part = -1;
 int part_start = 0;
 int part_offset = 0;
 int ldrsize;
+char *krnlopts = "";
 
 int get_tick_count()
 {
@@ -172,6 +176,10 @@ void install_loader()
   for (i = 0; i < blocks; i++)
   {
     ReadFile(hfile, buf, fs->blocksize, &count, NULL);
+    if (i * fs->blocksize <= KRNLOPTS_POS && (i + 1) * fs->blocksize > KRNLOPTS_POS)
+    {
+      memcpy(buf + (KRNLOPTS_POS - i * fs->blocksize), krnlopts, strlen(krnlopts));
+    }
     dev_write(fs->devno, buf, fs->blocksize, (fs->super->first_reserved_block + i) * (fs->blocksize / SECTORSIZE));
   }
 
@@ -637,6 +645,7 @@ void usage()
   fprintf(stderr, "  -B <block size> (default 4096)\n");
   fprintf(stderr, "  -F <file list file>\n");
   fprintf(stderr, "  -I <inode ratio> (default 1 inode per 4K)\n");
+  fprintf(stderr, "  -K <kernel options>\n");
   fprintf(stderr, "  -S <source directory or file>\n");
   fprintf(stderr, "  -T <target directory or file>\n");
 }
@@ -647,7 +656,7 @@ int main(int argc, char **argv)
   int c;
 
   // Parse command line options
-  while ((c = getopt(argc, argv, "d:b:c:ifk:l:swp:qB:F:I:P:S:T:?")) != EOF)
+  while ((c = getopt(argc, argv, "d:b:c:ifk:l:swp:qB:F:I:K:P:S:T:?")) != EOF)
   {
     switch (c)
     {
@@ -705,6 +714,10 @@ int main(int argc, char **argv)
 
       case 'I':
 	inoderatio = atoi(optarg);
+	break;
+
+      case 'K':
+	krnlopts = optarg;
 	break;
 
       case 'P':

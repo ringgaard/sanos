@@ -81,6 +81,8 @@ struct file *stderr;
 
 struct peb *peb;
 
+char krnlopts[KRNLOPTS_LEN];
+
 void main(void *arg);
 
 void stop(int restart)
@@ -238,8 +240,11 @@ static int copyright_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-void __stdcall start(void *hmod, int reserved1, int reserved2)
+void __stdcall start(void *hmod, char *opts, int reserved2)
 {
+  // Copy kernel options
+  strcpy(krnlopts, opts);
+
   // Initialize screen
   init_video();
   clear_screen();
@@ -251,6 +256,7 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
   kprintf("%s version %s Build %d (%s %s)\n", OSNAME, OSVERSION, buildno(), __DATE__, __TIME__);
 #endif
   kprintf("%s\n", COPYRIGHT);
+  if (*krnlopts) kprintf("options: %s\n", krnlopts);
 
   // Initialize CPU
   init_cpu();

@@ -405,4 +405,15 @@ CHANGES
   - Only direct UDP packets which does not match perfectly to unconnected pcbs.
   - Check for short packets in udp.
 
-*** version 1.2.9.1 released ***
+*** version 1.2.9.1 released (03/11/11) ***
+
+- Support for kernel options supplied by the loader added. The kernel options are 
+  embedded in the loader. The mkdfs utility now have a -K option to set kernel options 
+  for a bootable image. The setup utility has been updated to allow kernel options to
+  be specified in the sysprep section.
+
+- The ide device driver not supports the ideprobe kernel option to disable probing of
+  ide devices. When ideprobe=0 the BIOS settings are used to determine the number of
+  disks.
+
+*** version 1.2.9.2 released (03/11/12) ***

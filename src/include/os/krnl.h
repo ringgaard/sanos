@@ -104,6 +104,7 @@
 // start.c
 
 krnlapi extern dev_t bootdev;
+krnlapi extern char krnlopts[KRNLOPTS_LEN];
 krnlapi extern struct section *krnlcfg;
 krnlapi extern struct peb *peb;
 
