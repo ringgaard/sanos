@@ -30,6 +30,9 @@
 // DHCP message
 //
 
+#pragma pack(push)
+#pragma pack(1)
+
 struct dhcp_msg
 {
   unsigned char op;			  // Message opcode/type
@@ -49,6 +52,8 @@ struct dhcp_msg
   unsigned long cookie;                   // DHCP option cookie
   unsigned char options[0];   		  // 212: Optional parameters (actual length dependent on MTU).
 };
+
+#pragma pack(pop)
 
 //
 // DHCP per interface state
@@ -83,6 +88,7 @@ struct dhcp_state
   struct ip_addr offered_bc_addr;
   struct ip_addr offered_dns1_addr;
   struct ip_addr offered_dns2_addr;
+  char offered_domain_name[256];
 
   unsigned long offered_t0_lease;	  // Lease period (in seconds)
   unsigned long offered_t1_renew;	  // Recommended renew time (usually 50% of lease period)

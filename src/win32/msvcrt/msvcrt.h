@@ -89,8 +89,6 @@ typedef struct _iobuf FILE;
 typedef void (__cdecl *_PVFV)(void);
 typedef int (__cdecl * _onexit_t)(void);
 
-#define errno   (*_errno())
-
 #define EOF     (-1)
 
 void *memset(void *p, int c, size_t n);

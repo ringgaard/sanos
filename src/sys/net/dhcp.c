@@ -184,7 +184,7 @@ static void dhcp_slowtmr(void *arg)
     {
       if (--state->t2_timeout == 0)
       {
-	kprintf("dhcp_slowtmr(): t2 timeout\n");
+	//kprintf("dhcp_slowtmr(): t2 timeout\n");
       
 	// This clients' rebind timeout triggered
 	dhcp_t2_timeout(state);
@@ -195,7 +195,7 @@ static void dhcp_slowtmr(void *arg)
     {
       if (--state->t1_timeout == 0)
       {
-	kprintf("dhcp_slowtmr(): t1 timeout\n");
+	//kprintf("dhcp_slowtmr(): t1 timeout\n");
 
 	// This clients' renewal timeout triggered
 	dhcp_t1_timeout(state);
@@ -224,7 +224,7 @@ void dhcp_fasttmr(void *arg)
 
       if (--state->request_timeout == 0)
       {
-	kprintf("dhcp_fasttmr(): request timeout\n");
+	//kprintf("dhcp_fasttmr(): request timeout\n");
 
 	// This clients' request timeout triggered
 	dhcp_timeout(state);
@@ -386,6 +386,13 @@ static void dhcp_handle_ack(struct dhcp_state *state)
     if (option_ptr[1] >= 4) state->offered_dns1_addr.addr = htonl(dhcp_get_option_long(option_ptr + 2));
     if (option_ptr[1] >= 8) state->offered_dns2_addr.addr = htonl(dhcp_get_option_long(option_ptr + 6));
   }
+
+  option_ptr = dhcp_get_option_ptr(state, DHCP_OPTION_DOMAIN_NAME);
+  if (option_ptr != NULL)
+  {
+    memcpy(state->offered_domain_name, option_ptr + 2, option_ptr[1]);
+    state->offered_domain_name[option_ptr[1]] = 0;
+  }
 }
 
 //
@@ -422,7 +429,7 @@ struct dhcp_state *dhcp_start(struct netif *netif)
     if (result < 0) return NULL;
   }
 
-  kprintf("dhcp_start(): starting new DHCP client\n");
+  //kprintf("dhcp_start(): starting new DHCP client\n");
   state = kmalloc(sizeof(struct dhcp_state));
   if (!state) return NULL;
   memset(state, 0, sizeof(struct dhcp_state));
@@ -692,7 +699,17 @@ static void dhcp_bind(struct dhcp_state *state)
   //ip_addr_debug_print(&state->offered_dns2_addr);
   //kprintf("\n");
 
+  //kprintf("domain: %s\n", state->offered_domain_name);
+  //kprintf("timeout: t1 %dm, t2 %dm, lease %ds, renew %ds, rebind %ds\n", state->t1_timeout, state->t2_timeout, state->offered_t0_lease, state->offered_t1_renew, state->offered_t2_rebind);
+  
   //dhcp_dump_options(state);
+
+  if (peb)
+  {
+    peb->primary_dns.s_addr = state->offered_dns1_addr.addr;
+    peb->secondary_dns.s_addr = state->offered_dns2_addr.addr;
+    memcpy(peb->default_domain, state->offered_domain_name, 256);
+  }
 
   set_event(&state->binding_complete);
   dhcp_set_state(state, DHCP_BOUND);
@@ -1016,7 +1033,7 @@ static void dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
 
             if (msg_type == DHCP_ACK)
             {
-              kprintf("DHCP_ACK received\n");
+              //kprintf("DHCP_ACK received\n");
               dhcp_handle_ack(state);
               if (state->state == DHCP_REQUESTING)
               {
@@ -1041,7 +1058,7 @@ static void dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
             else if (msg_type == DHCP_OFFER && state->state == DHCP_SELECTING)
             {
               // Received a DHCP_OFFER in DHCP_SELECTING state
-              kprintf("DHCP_OFFER received in DHCP_SELECTING state\n");
+              //kprintf("DHCP_OFFER received in DHCP_SELECTING state\n");
               dhcp_handle_offer(state);
             }
           }

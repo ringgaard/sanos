@@ -38,6 +38,7 @@ static void socket_timeout(void *arg)
 {
   struct sockreq *req = arg;
 
+  if (req->thread->state == THREAD_STATE_READY) return;
   release_socket_request(req, req->err > 0 ? req->err : -ETIMEOUT);
 }
 

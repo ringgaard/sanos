@@ -16,6 +16,8 @@
 #define ARP_MAXAGE         120         // 120 * 10 seconds = 20 minutes
 #define ARP_TIMER_INTERVAL 10000       // The ARP cache is checked every 10 seconds
 
+#define MAX_XMIT_DELAY     1000        // Maximum delay for packets in millisecs     
+
 #pragma pack(push)
 #pragma pack(1)
 
@@ -53,7 +55,16 @@ struct arp_entry
   int ctime;
 };
 
+struct xmit_queue_entry
+{
+  struct netif *netif;
+  struct pbuf *p;
+  struct ip_addr ipaddr;
+  unsigned int expires;
+};
+
 static struct arp_entry arp_table[ARP_TABLE_SIZE];
+static struct xmit_queue_entry xmit_queue_table[ARP_XMIT_QUEUE_SIZE];
 
 struct timer arp_timer;
 int ctime;
@@ -70,7 +81,19 @@ static void arp_tmr(void *arg)
       kprintf("arp_timer: expired entry %d\n", i);
       ip_addr_set(&(arp_table[i].ipaddr), IP_ADDR_ANY);
     }
-  }  
+  }
+  
+  for (i = 0; i < ARP_XMIT_QUEUE_SIZE; i++)
+  {
+    struct xmit_queue_entry *entry = xmit_queue_table + i;
+    if (entry->p && time_before(entry->expires, ticks))
+    {
+      kprintf("arp: xmit queue entry %d expired\n", i);
+      pbuf_free(entry->p);
+      entry->p = NULL;
+      stats.link.drop++;
+    }
+  }
 
   mod_timer(&arp_timer, ticks + ARP_TIMER_INTERVAL / MSECS_PER_TICK);
 }
@@ -80,6 +103,7 @@ void arp_init()
   int i;
   
   for (i = 0; i < ARP_TABLE_SIZE; ++i) ip_addr_set(&(arp_table[i].ipaddr), IP_ADDR_ANY);
+  memset(xmit_queue_table, 0, sizeof(xmit_queue_table));
   init_timer(&arp_timer, arp_tmr, NULL);
   mod_timer(&arp_timer, ticks + ARP_TIMER_INTERVAL / MSECS_PER_TICK);
 }
@@ -89,6 +113,8 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
   int i, j, k;
   int maxtime;
   
+  //kprintf("add arp for %d.%d.%d.%d\n", ((unsigned char *) ipaddr)[0], ((unsigned char *) ipaddr)[1], ((unsigned char *) ipaddr)[2], ((unsigned char *) ipaddr)[3]);
+
   // Walk through the ARP mapping table and try to find an entry to
   // update. If none is found, the IP -> MAC address mapping is
   // inserted in the ARP table.
@@ -103,14 +129,14 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
       {
 	// An old entry found, update this and return.
 	for (k = 0; k < 6; ++k) arp_table[i].ethaddr.addr[k] = ethaddr->addr[k];
-	arp_table[i].ctime = 0;
+	arp_table[i].ctime = ctime;
 	return;
       }
     }
   }
 
   // If we get here, no existing ARP table entry was found, so we create one.
-  /// First, we try to find an unused entry in the ARP table.
+  // First, we try to find an unused entry in the ARP table.
   for (i = 0; i < ARP_TABLE_SIZE; i++)
   {
     if (ip_addr_isany(&arp_table[i].ipaddr)) break;
@@ -134,8 +160,34 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
 
   // Now, i is the ARP table entry which we will fill with the new information.
   ip_addr_set(&arp_table[i].ipaddr, ipaddr);
-  for(k = 0; k < 6; ++k) arp_table[i].ethaddr.addr[k] = ethaddr->addr[k];
+  for(k = 0; k < 6; k++) arp_table[i].ethaddr.addr[k] = ethaddr->addr[k];
   arp_table[i].ctime = ctime;
+
+  // Check for delayed transmissions
+  for (i = 0; i < ARP_XMIT_QUEUE_SIZE; i++)
+  {
+    struct xmit_queue_entry *entry = xmit_queue_table + i;
+
+    if (entry->p && ip_addr_cmp(&entry->ipaddr, ipaddr))
+    {
+      struct pbuf *p = entry->p;
+      struct eth_hdr *ethhdr = p->payload;
+
+      entry->p = NULL;
+
+      for (i = 0; i < 6; i++)
+      {
+	ethhdr->dest.addr[i] = ethaddr->addr[i];
+	ethhdr->src.addr[i] = entry->netif->hwaddr.addr[i];
+      }
+      ethhdr->type = htons(ETHTYPE_IP);
+
+      stats.link.xmit++;
+
+      //kprintf("arp: delayed transmit %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
+      dev_transmit((devno_t) entry->netif->state, p);
+    }
+  }
 }
 
 void arp_ip_input(struct netif *netif, struct pbuf *p)
@@ -257,4 +309,58 @@ struct pbuf *arp_query(struct netif *netif, struct eth_addr *ethaddr, struct ip_
   
   hdr->ethhdr.type = htons(ETHTYPE_ARP);      
   return p;
+}
+
+int arp_queue(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
+{
+  int i;
+  struct xmit_queue_entry *entry = NULL;
+
+  // Find empty entry
+  for (i = 0; i < ARP_XMIT_QUEUE_SIZE; i++)
+  {
+    if (xmit_queue_table[i].p == NULL) 
+    {
+      entry = &xmit_queue_table[i];
+      break;
+    }
+  }
+
+  // If no entry entry found, try to find an expired entry
+  if (entry == NULL)
+  {
+    for (i = 0; i < ARP_XMIT_QUEUE_SIZE; i++)
+    {
+      if (time_before(xmit_queue_table[i].expires, ticks))
+      {
+	entry = &xmit_queue_table[i];
+	break;
+      }
+    }
+  }
+
+  // If there are no room in the xmit queue, we have to drop the packet
+  if (!entry)
+  {
+    stats.link.drop++;
+    pbuf_free(p);
+    return -ENOMEM;
+  }
+
+  // Expire entry if it is not empty
+  if (entry->p)
+  {
+    pbuf_free(entry->p);
+    stats.link.drop++;
+  }
+
+  // Fill xmit queue entry
+  pbuf_ref(p);
+  entry->netif = netif;
+  entry->p = p;
+  ip_addr_set(&entry->ipaddr, ipaddr);
+  entry->expires = ticks + MAX_XMIT_DELAY / MSECS_PER_TICK;
+  
+  //kprintf("arp: packet queued, %d bytes\n", p->tot_len);
+  return 0;
 }

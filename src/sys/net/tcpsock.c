@@ -236,7 +236,7 @@ static int tcpsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen,
     sin = (struct sockaddr_in *) addr;
     sin->sin_len = sizeof(struct sockaddr_in);
     sin->sin_family = AF_INET;
-    sin->sin_port = pcb->remote_port;
+    sin->sin_port = htons(pcb->remote_port);
     sin->sin_addr.s_addr = pcb->remote_ip.addr;
   }
   if (addrlen) *addrlen = sizeof(struct sockaddr_in);
@@ -263,7 +263,7 @@ static int tcpsock_bind(struct socket *s, struct sockaddr *name, int namelen)
     if (rc < 0) return rc;
   }
 
-  rc = tcp_bind(s->tcp.pcb, (struct ip_addr *) &sin->sin_addr, sin->sin_port);
+  rc = tcp_bind(s->tcp.pcb, (struct ip_addr *) &sin->sin_addr, ntohs(sin->sin_port));
   if (rc < 0) return rc;
 
   s->state = SOCKSTATE_BOUND;
@@ -331,13 +331,15 @@ static int tcpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
     if (rc < 0) return rc;
   }
 
-  rc = tcp_connect(s->tcp.pcb, (struct ip_addr *) &sin->sin_addr, sin->sin_port, connected_tcp);
+  rc = tcp_connect(s->tcp.pcb, (struct ip_addr *) &sin->sin_addr, ntohs(sin->sin_port), connected_tcp);
   if (rc < 0) return rc;
 
   s->state = SOCKSTATE_CONNECTING;
   
   rc = submit_socket_request(s, &req, SOCKREQ_CONNECT, NULL, 0, INFINITE);
   if (rc < 0) return rc;
+
+  kprintf("connect: local %d remote %d\n", s->tcp.pcb->local_port, s->tcp.pcb->remote_port);
 
   return 0;
 }
@@ -353,7 +355,7 @@ static int tcpsock_getpeername(struct socket *s, struct sockaddr *name, int *nam
   sin = (struct sockaddr_in *) name;
   sin->sin_len = sizeof(struct sockaddr_in);
   sin->sin_family = AF_INET;
-  sin->sin_port = s->tcp.pcb->remote_port;
+  sin->sin_port = htons(s->tcp.pcb->remote_port);
   sin->sin_addr.s_addr = s->udp.pcb->remote_ip.addr;
 
   *namelen = sizeof(struct sockaddr_in);
@@ -371,7 +373,7 @@ static int tcpsock_getsockname(struct socket *s, struct sockaddr *name, int *nam
   sin = (struct sockaddr_in *) name;
   sin->sin_len = sizeof(struct sockaddr_in);
   sin->sin_family = AF_INET;
-  sin->sin_port = s->udp.pcb->local_port;
+  sin->sin_port = htons(s->udp.pcb->local_port);
   sin->sin_addr.s_addr = s->udp.pcb->local_ip.addr;
 
   *namelen = sizeof(struct sockaddr_in);
@@ -469,7 +471,7 @@ static int tcpsock_recvfrom(struct socket *s, void *data, int size, unsigned int
     sin = (struct sockaddr_in *) from;
     sin->sin_len = sizeof(struct sockaddr_in);
     sin->sin_family = AF_INET;
-    sin->sin_port = s->tcp.pcb->remote_port;
+    sin->sin_port = htons(s->tcp.pcb->remote_port);
     sin->sin_addr.s_addr = s->tcp.pcb->remote_ip.addr;
   }
   if (fromlen) *fromlen = sizeof(struct sockaddr_in);

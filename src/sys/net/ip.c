@@ -130,6 +130,8 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
 
   stats.ip.recv++;
   
+  //ip_debug_print(p);
+
   // Identify the IP header
   iphdr = p->payload;
   if (IPH_V(iphdr) != 4) 
@@ -281,7 +283,7 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
     ip_id++;
 
     IPH_VHLTOS_SET(iphdr, 4, IP_HLEN / 4, 0);
-    IPH_LEN_SET(iphdr, htons(p->tot_len));
+    IPH_LEN_SET(iphdr, htons((unsigned short) p->tot_len));
     IPH_OFFSET_SET(iphdr, htons(IP_DF));
     IPH_ID_SET(iphdr, htons(ip_id));
 
@@ -305,6 +307,7 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
 
   stats.ip.xmit++;
 
+  //ip_debug_print(p);
   return netif->output(netif, p, dest);
 }
 
@@ -353,7 +356,7 @@ void ip_debug_print(struct pbuf *p)
 	     ntohs(IPH_OFFSET(iphdr)) >> 13 & 1,
 	     ntohs(IPH_OFFSET(iphdr)) & IP_OFFMASK);
   kprintf("+-------------------------------+\n");
-  kprintf("|   %2d  |   %2d  |    0x%04x     | (ttl, proto, chksum)\n",
+  kprintf("|  %3d  |   %2d  |    0x%04x     | (ttl, proto, chksum)\n",
 	     IPH_TTL(iphdr),
 	     IPH_PROTO(iphdr),
 	     ntohs(IPH_CHKSUM(iphdr)));

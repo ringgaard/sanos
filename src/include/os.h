@@ -141,7 +141,7 @@ struct section;
 
 #define EPERM           1                // Operation not permitted
 #define ENOENT          2                // No such file or directory
-//#define ESRCH           3                // No such process
+#define ESRCH           3                // No such process
 #define EINTR           4                // Interrupted system call
 #define EIO             5                // Input/output error
 //#define ENXIO           6                // Device not configured
@@ -149,7 +149,7 @@ struct section;
 #define ENOEXEC         8                // Exec format error
 #define EBADF           9                // Bad file number
 //#define ECHILD          10               // No spawned processes
-//#define EAGAIN          11               // Resource temporarily unavailable
+#define EAGAIN          11               // Resource temporarily unavailable
 #define ENOMEM          12               // Cannot allocate memory
 #define EACCES          13               // Access denied
 #define EFAULT          14               // Bad address
@@ -191,6 +191,10 @@ struct section;
 #define EUSED           49               // Address in use
 #define EPROTONOSUPPORT 50               // Protocol not supported
 #define EMSGSIZE        51               // Message too long
+#define ECONNREFUSED    52               // Connection refused
+#define EHOSTUNREACH    53               // Host unreachable
+#define ENETUNREACH     54               // Network unrechable
+#define EHOST           55               // Host not found
 
 //
 // File system
@@ -318,24 +322,17 @@ struct critsect
 typedef struct critsect *critsect_t;
 
 //
-// Process Environment Block
-//
-
-#define PEB_ADDRESS 0x7FFDF000
-
-struct peb
-{
-  struct moddb *usermods;
-  int fast_syscalls_supported;
-};
-
-//
 // Sockets
 //
 
 struct in_addr 
 {
-  unsigned long s_addr;
+  union 
+  {
+    struct { unsigned char s_b1, s_b2, s_b3, s_b4; } s_un_b;
+    struct { unsigned short s_w1, s_w2; } s_un_w;
+    unsigned long s_addr;
+  };
 };
 
 struct sockaddr_in
@@ -354,13 +351,13 @@ struct sockaddr
   char sa_data[14];
 };
 
-struct  hostent 
+struct hostent 
 {
-  char    *h_name;       // Official name of host
-  char    **h_aliases;   // Alias list
-  short   h_addrtype;    // Host address type
-  short   h_length;      // Length of address
-  char    **h_addr_list; // List of addresses
+  char *h_name;        // Official name of host
+  char **h_aliases;    // Alias list
+  short h_addrtype;    // Host address type
+  short h_length;      // Length of address
+  char **h_addr_list;  // List of addresses
 };
 
 #define SOCK_STREAM      1
@@ -378,6 +375,49 @@ struct  hostent
 #define INADDR_ANY       0
 #define INADDR_BROADCAST 0xffffffff
 #define INADDR_LOOPBACK  0x7f000001
+#define INADDR_NONE      0xffffffff
+
+#define SOL_SOCKET      0xffff
+
+#define SO_SNDTIMEO     0x1005
+#define SO_RCVTIMEO     0x1006
+
+__inline unsigned short htons(unsigned short n)
+{
+  return ((n & 0xFF) << 8) | ((n & 0xFF00) >> 8);
+}
+
+__inline unsigned short ntohs(unsigned short n)
+{
+  return ((n & 0xFF) << 8) | ((n & 0xFF00) >> 8);
+}
+
+__inline unsigned long htonl(unsigned long n)
+{
+  return ((n & 0xFF) << 24) | ((n & 0xFF00) << 8) | ((n & 0xFF0000) >> 8) | ((n & 0xFF000000) >> 24);
+}
+
+__inline unsigned long ntohl(unsigned long n)
+{
+  return ((n & 0xFF) << 24) | ((n & 0xFF00) << 8) | ((n & 0xFF0000) >> 8) | ((n & 0xFF000000) >> 24);
+}
+
+//
+// Process Environment Block
+//
+
+#define PEB_ADDRESS 0x7FFDF000
+
+struct peb
+{
+  struct moddb *usermods;
+  int fast_syscalls_supported;
+
+  char hostname[256];
+  struct in_addr primary_dns;
+  struct in_addr secondary_dns;
+  char default_domain[256];
+};
 
 //
 // Thread Information Block
@@ -438,6 +478,8 @@ struct tib
   void *tls[MAX_TLS];              // Thread local storage
   char reserved2[240];
 };
+
+#define errno (gettib()->errnum)
 
 // OS API functions
 
@@ -559,6 +601,18 @@ osapi int sendto(int s, const void *data, int size, unsigned int flags, const st
 osapi int setsockopt(int s, int level, int optname, const char *optval, int optlen);
 osapi int shutdown(int s, int how);
 osapi int socket(int domain, int type, int protocol);
+
+osapi int res_send(const char *buf, int buflen, char *answer, int anslen);
+osapi int res_query(const char *dname, int cls, int type, unsigned char *answer, int anslen);
+osapi int res_search(const char *name, int cls, int type, unsigned char *answer, int anslen);
+osapi int res_querydomain(const char *name, const char *domain, int cls, int type, unsigned char *answer, int anslen); 
+osapi int res_mkquery(int op, const char *dname, int cls, int type, char *data, int datalen, unsigned char *newrr, char *buf, int buflen);
+osapi int dn_comp(const char *src, unsigned char *dst, int dstsiz, unsigned char **dnptrs, unsigned char **lastdnptr);
+osapi int dn_expand(const unsigned char *msg, const unsigned char *eom, const unsigned char *src,  char *dst, int dstsiz);
+osapi struct hostent *gethostbyname(const char *name);
+osapi struct hostent *gethostbyaddr(const char *addr, int len, int type);
+osapi char *inet_ntoa(struct in_addr in);
+osapi unsigned long inet_addr(const char *cp);
 
 osapi extern struct section *config;
 osapi extern struct peb *peb;

@@ -55,7 +55,7 @@ struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr,
   kprintf(" gw ");
   ip_addr_debug_print(&netif->gw);
   kprintf("\n");
-  
+
   return netif;
 }
 
@@ -149,14 +149,26 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
     {
       err = dev_transmit((devno_t) netif->state, q);
       pbuf_free(q);
-      return err;
+      if (err < 0)
+      {
+        stats.link.drop++;
+	pbuf_free(p);
+	return err;
+      }
     }
 
-    stats.link.drop++;
-    stats.link.memerr++;
+    // Queue packet for transmission, when the ARP reply returns
+    if (arp_queue(netif, p, queryaddr) < 0)
+    {
+      stats.link.drop++;
+      stats.link.memerr++;
+      return -ENOMEM;
+    }
 
-    return -ENOMEM;
+    kprintf("ether: queue %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
+    return 0;
   }
+
   ethhdr = p->payload;
 
   for (i = 0; i < 6; i++)
@@ -167,6 +179,8 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   ethhdr->type = htons(ETHTYPE_IP);
   
   stats.link.xmit++;
+
+  kprintf("ether: xmit %d bytes, %d bufs\n", p->tot_len, pbuf_clen(p));
   return dev_transmit((devno_t) netif->state, p);
 }
 
@@ -228,12 +242,14 @@ void ether_dispatcher(void *arg)
       stats.link.recv++;
       ethhdr = p->payload;
 
-      //{
-      //char s[20];
-      //char d[20];
-      //kprintf("packet: src=%s dst=%s type=%04X len=%d\n", ether2str(&ethhdr->src, s), ether2str(&ethhdr->dest, d), htons(ethhdr->type), p->tot_len);
-      //}
-    
+#if 1
+      {
+        char s[20];
+        char d[20];
+        kprintf("ether: recv src=%s dst=%s type=%04X len=%d\n", ether2str(&ethhdr->src, s), ether2str(&ethhdr->dest, d), htons(ethhdr->type), p->tot_len);
+      }
+#endif
+      
       switch (htons(ethhdr->type))
       {
 	case ETHTYPE_IP:

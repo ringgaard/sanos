@@ -17,6 +17,7 @@
 #include <os/pe.h>
 
 #include "heap.h"
+#include "resolv.h"
 
 struct critsect heap_lock;
 struct critsect mod_lock;
@@ -292,6 +293,9 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
     logfile = open(logfn, O_CREAT);
     if (logfile > 0) lseek(logfile, 0, SEEK_END);
   }
+
+  // Initialize resolver
+  res_init();
 
   // Initialize user module database
   peb->usermods = &usermods;

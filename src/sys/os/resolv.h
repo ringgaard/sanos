@@ -106,51 +106,71 @@
 // DNS message header
 //
 
+#pragma pack(push)
+#pragma pack(1)
+
 struct dns_hdr
 {
-  unsigned	id : 16;	// Query identification number
+  unsigned short id;		// Query identification number
 
   // Fields in third byte
-  unsigned	rd : 1;		// Recursion desired
-  unsigned	tc : 1;		// Truncated message
-  unsigned	aa : 1;		// Authoritive answer
-  unsigned	opcode : 4;	// Purpose of message
-  unsigned	qr : 1;		// Response flag
+  unsigned char rd : 1;		// Recursion desired
+  unsigned char tc : 1;		// Truncated message
+  unsigned char aa : 1;		// Authoritive answer
+  unsigned char opcode : 4;	// Purpose of message
+  unsigned char vqr : 1;	// Response flag
 
   // Fields in fourth byte
-  unsigned	rcode : 4;	// Response code
-  unsigned	cd: 1;		// Checking disabled by resolver
-  unsigned	ad: 1;		// Authentic data from named
-  unsigned	unused : 1;	// Unused bits (MBZ as of 4.9.3a3)
-  unsigned	ra : 1;		// Recursion available
+  unsigned char rcode : 4;	// Response code
+  unsigned char cd: 1;		// Checking disabled by resolver
+  unsigned char ad: 1;		// Authentic data from named
+  unsigned char unused : 1;	// Unused bits (MBZ as of 4.9.3a3)
+  unsigned char ra : 1;		// Recursion available
 
   // Remaining bytes
-  unsigned	qdcount : 16;	// Number of question entries
-  unsigned	ancount : 16;	// Number of answer entries
-  unsigned	nscount : 16;	// Number of authority entries
-  unsigned	arcount : 16;	// Number of resource entries
+  unsigned short qdcount;	// Number of question entries
+  unsigned short ancount;	// Number of answer entries
+  unsigned short nscount;	// Number of authority entries
+  unsigned short arcount;	// Number of resource entries
 };
 
+#pragma pack(pop)
+
+//
+// DNS resolver state
+//
+
+#define	MAXDNSRCH		6	// Max # domains in search path
+#define	MAXNS			3	// Max # name servers we'll track
+#define	RES_TIMEOUT		5	// Min. seconds between retries
+#define	RES_DFLRETRY		2	// Default #/tries
+
+struct res_state
+{
+  unsigned long options;		  // Option flags - see below
+  int retry;				  // Number of times to retransmit
+  int retrans;	 			  // Retransmition time interval
+  int nscount;				  // Number of name servers
+  struct sockaddr_in nsaddr_list[MAXNS];  // Address of name server
+  unsigned short id;			  // Current message id
+  int ndots;  				  // Threshold for initial abs. query
+  char *dnsrch[MAXDNSRCH + 1];		  // Components of domain to search
+  char defdname[256];			  // Default domain
+};
+
+//
+// Resolver options
+//
+
+#define RES_USEVC	0x00000008	// Use virtual circuit
+#define RES_IGNTC	0x00000020	// Ignore trucation errors
+#define RES_RECURSE	0x00000040	// Recursion desired
+#define RES_DEFNAMES	0x00000080	// Use default domain name
+#define RES_DNSRCH	0x00000200	// Search up local domain tree
+#define RES_ROTATE	0x00004000	// Rotate ns list after each query
+
+#define RES_DEFAULT	(RES_RECURSE | RES_DEFNAMES | RES_DNSRCH)
+  
 int res_init(); 
-
-int res_query(const char *dname, int class, int type, unsigned char *answer, int anslen); 
-
-int res_search(const char *dname, int class, int type, unsigned char *answer, int anslen); 
-
-int res_querydomain(const char *name, const char *domain, int class, int type, 
-		    unsigned char *answer, int anslen); 
-
-int res_mkquery(int op, const char *dname, int class, int type, char *data, int datalen, 
-		struct rrec *newrr, char *buf, int buflen); 
-
-int res_send(const char *msg, int msglen, char *answer, int anslen); 
-
-int dn_comp(const char *src, unsigned char *dst, int dstsiz, unsigned char **dnptrs, unsigned char **lastdnptr);
-
-int dn_expand(const unsigned char *msg, const unsigned char *eom, const unsigned char *src,  char *dst, int dstsiz);
-
-struct hostent *gethostbyname(const char *name);
-
-struct hostent *gethostbyaddr(const char *addr, int len, int type);
 
 #endif

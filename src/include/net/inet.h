@@ -38,17 +38,19 @@ unsigned short inet_chksum_pseudo(struct pbuf *p, struct ip_addr *src, struct ip
 #endif
 
 #if 0
+
 unsigned short htons(unsigned short n);
 unsigned short ntohs(unsigned short n);
 unsigned long htonl(unsigned long n);
 unsigned long ntohl(unsigned long n);
-#endif
 
 #define htons(n) HTONS(n)
 #define ntohs(n) NTOHS(n)
 
 #define htonl(n) HTONL(n)
 #define ntohl(n) NTOHL(n)
+
+#endif
 
 #endif
 

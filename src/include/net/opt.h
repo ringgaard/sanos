@@ -15,6 +15,7 @@
 #define BYTEORDER               LITTLE_ENDIAN
 
 #define ARP_TABLE_SIZE          32
+#define ARP_XMIT_QUEUE_SIZE     4
 
 #define MTU                     1500
 
@@ -32,6 +33,6 @@
 #define MEM_ALIGNMENT           4
 #define PBUF_POOL_SIZE          128
 #define PBUF_POOL_BUFSIZE       128
-#define PBUF_LINK_HLEN          0
+#define PBUF_LINK_HLEN          14
 
 #endif

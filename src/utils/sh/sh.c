@@ -481,6 +481,125 @@ static void disk_usage(int argc, char **argv)
   free(buf);
 }
 
+static void lookup(char *name)
+{
+  struct hostent *hp;
+  int i;
+
+  if (!name || !*name) return;
+
+  if (*name >= '0' && *name <= '9')
+  {
+    struct in_addr addr;
+    addr.s_addr = inet_addr(name);
+    if (addr.s_addr == INADDR_NONE)
+    {
+      printf("%s: invalid address\n", name);
+      return;
+    }
+
+    hp = gethostbyaddr((char *) &addr, sizeof(struct in_addr), AF_INET);
+  }
+  else
+    hp = gethostbyname(name);
+
+  if (!hp)
+  {
+    printf("%s: error %d resolving name\n", name, errno);
+    return;
+  }
+
+  if (hp->h_addrtype != AF_INET)
+  {
+    printf("unknown address type %d\n", hp->h_addrtype);
+    return;
+  }
+
+  if (hp->h_length != sizeof(struct in_addr))
+  {
+    printf("unknown address length %d\n", hp->h_length);
+    return;
+  }
+
+  printf("name: %s\n", hp->h_name);
+  for (i = 0; hp->h_aliases[i] != NULL; i++) printf("alias: %s\n", hp->h_aliases[i]);
+  for (i = 0; hp->h_addr_list[i] != NULL; i++) 
+  {
+    struct in_addr *addr = (struct in_addr *) (hp->h_addr_list[i]);
+    printf("address: %s\n", inet_ntoa(*addr));
+  }
+}
+
+static void http(int argc, char **argv)
+{
+  char *server;
+  char *path;
+  struct hostent *hp;
+  struct sockaddr_in sin;
+  int s;
+  int rc;
+  int n;
+  char buf[256];
+
+  server = "192.168.123.1";
+  path = "/";
+  if (argc >= 2) server = argv[1];
+  if (argc >= 3) path = argv[2];
+
+  hp = gethostbyname(server);
+  if (!hp)
+  {
+    printf("%s: host not found\n", server);
+    return;
+  }
+
+  s = socket(AF_INET, SOCK_STREAM, 0);
+  if (s < 0)
+  {
+    printf("socket: error %d\n", s);
+    return;
+  }
+
+  memset(&sin, 0, sizeof(sin));
+  sin.sin_family = AF_INET;
+  memcpy(&sin.sin_addr, hp->h_addr_list[0], hp->h_length);
+  sin.sin_port = htons(80);
+  
+  rc = connect(s, (struct sockaddr *) &sin, sizeof(sin));
+  if (rc  < 0)
+  {
+    printf("connect: error %d\n", rc);
+  }
+
+  printf("connected\n");
+
+#if 0
+  sprintf(buf, "GET %s HTTP/1.1\r\n\r\n", path);
+  rc = send(s, buf, strlen(buf), 0);
+  if (rc < 0)
+  {
+    printf("send: error %d\n", rc);
+    return;
+  }
+
+  printf("receive data\n");
+
+  while ((n = recv(s, buf, 128, 0)) > 0)
+  {
+    printf("reveived %d bytes\n", n);
+  }
+
+  if (rc < 0)
+  {
+    printf("recv: error %d\n", n);
+  }
+#endif
+  sleep(10000);
+
+  printf("closing\n");
+  close(s);
+}
+
 static void test(int argc, char **argv)
 {
   int dev;
@@ -659,6 +778,10 @@ void shell()
 	nop();
       else if (strcmp(argv[0], "sleep") == 0)
 	idle_sleep(atoi(argv[1]));
+      else if (strcmp(argv[0], "lookup") == 0 || strcmp(argv[0], "nslookup") == 0)
+	lookup(argv[1]);
+      else if (strcmp(argv[0], "http") == 0)
+	http(argc, argv);
       else if (strcmp(argv[0], "test") == 0)
 	test(argc, argv);
       else

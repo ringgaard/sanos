@@ -16,6 +16,29 @@ void udp_init()
 {
 }
 
+//
+// udp_new_port
+//
+// A nastly hack featuring 'goto' statements that allocates a
+// new UDP local port.
+//
+
+static unsigned short udp_new_port()
+{
+  struct udp_pcb *pcb;
+  static unsigned short port = 4096;
+  
+again:
+  if(++port > 0x7FFF) port = 4096;
+  
+  for (pcb = udp_pcbs; pcb != NULL; pcb = pcb->next) 
+  {
+    if (pcb->local_port == port) goto again;
+  }
+
+  return port;
+}
+
 void udp_input(struct pbuf *p, struct netif *inp)
 {
   struct udp_hdr *udphdr;  
@@ -164,11 +187,11 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
   else 
     src_ip = &(pcb->local_ip);
   
-  kprintf("udp_send: sending datagram of length %d\n", p->tot_len);
+  //kprintf("udp_send: sending datagram of length %d\n", p->tot_len);
   
   if (pcb->flags & UDP_FLAGS_UDPLITE) 
   {
-    udphdr->len = htons(pcb->chksum_len);
+    udphdr->len = htons((unsigned short) pcb->chksum_len);
     
     // Calculate checksum
     if ((netif->flags & NETIF_UDP_TX_CHECKSUM_OFFLOAD) == 0)
@@ -180,7 +203,7 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
   } 
   else 
   {
-    udphdr->len = htons(p->tot_len);
+    udphdr->len = htons((unsigned short) p->tot_len);
     
     // Calculate checksum
     if ((netif->flags & NETIF_UDP_TX_CHECKSUM_OFFLOAD) == 0)
@@ -192,6 +215,7 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
       }
     }
 
+    //udp_debug_print(udphdr);
     err = ip_output_if(p, src_ip, &pcb->remote_ip, UDP_TTL, IP_PROTO_UDP, netif);
   }
   
@@ -205,7 +229,10 @@ err_t udp_bind(struct udp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
   struct udp_pcb *ipcb;
   
   ip_addr_set(&pcb->local_ip, ipaddr);
-  pcb->local_port = port;
+  if (port != 0)
+    pcb->local_port = port;
+  else
+    pcb->local_port = udp_new_port();
 
   // Insert UDP PCB into the list of active UDP PCBs
   for (ipcb = udp_pcbs; ipcb != NULL; ipcb = ipcb->next) 
@@ -218,7 +245,7 @@ err_t udp_bind(struct udp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
   pcb->next = udp_pcbs;
   udp_pcbs = pcb;
 
-  kprintf("udp_bind: bound to port %d\n", port);
+  //kprintf("udp_bind: bound to port %d\n", port);
 
   return 0;
 }
@@ -229,6 +256,7 @@ err_t udp_connect(struct udp_pcb *pcb, struct ip_addr *ipaddr, unsigned short po
   
   ip_addr_set(&pcb->remote_ip, ipaddr);
   pcb->remote_port = port;
+  if (pcb->local_port == 0) pcb->local_port = udp_new_port();
 
   // Insert UDP PCB into the list of active UDP PCBs
   for (ipcb = udp_pcbs; ipcb != NULL; ipcb = ipcb->next) 

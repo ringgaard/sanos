@@ -16,7 +16,7 @@ static void recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
 
   if (req)
   {
-    if (req->len > p->len)
+    if (p->len > req->len)
       len = req->len;
     else
       len = p->len;
@@ -25,7 +25,7 @@ static void recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
 
     req->addr.sin_len = sizeof(struct sockaddr_in);
     req->addr.sin_family = AF_INET;
-    req->addr.sin_port = port;
+    req->addr.sin_port = htons(port);
     req->addr.sin_addr.s_addr = addr->addr;
 
     pbuf_free(p);
@@ -66,7 +66,7 @@ static int udpsock_bind(struct socket *s, struct sockaddr *name, int namelen)
     udp_recv(s->udp.pcb, recv_udp, s);
   }
 
-  rc = udp_bind(s->udp.pcb, (struct ip_addr *) &sin->sin_addr, sin->sin_port);
+  rc = udp_bind(s->udp.pcb, (struct ip_addr *) &sin->sin_addr, ntohs(sin->sin_port));
   if (rc < 0) return rc;
 
   s->state = SOCKSTATE_BOUND;
@@ -114,7 +114,7 @@ static int udpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
     udp_recv(s->udp.pcb, recv_udp, s);
   }
 
-  rc = udp_connect(s->udp.pcb, (struct ip_addr *) &sin->sin_addr, sin->sin_port);
+  rc = udp_connect(s->udp.pcb, (struct ip_addr *) &sin->sin_addr, ntohs(sin->sin_port));
   if (rc < 0) return rc;
 
   s->state = SOCKSTATE_CONNECTED;
@@ -132,7 +132,7 @@ static int udpsock_getpeername(struct socket *s, struct sockaddr *name, int *nam
   sin = (struct sockaddr_in *) name;
   sin->sin_len = sizeof(struct sockaddr_in);
   sin->sin_family = AF_INET;
-  sin->sin_port = s->udp.pcb->remote_port;
+  sin->sin_port = htons(s->udp.pcb->remote_port);
   sin->sin_addr.s_addr = s->udp.pcb->remote_ip.addr;
 
   *namelen = sizeof(struct sockaddr_in);
@@ -150,7 +150,7 @@ static int udpsock_getsockname(struct socket *s, struct sockaddr *name, int *nam
   sin = (struct sockaddr_in *) name;
   sin->sin_len = sizeof(struct sockaddr_in);
   sin->sin_family = AF_INET;
-  sin->sin_port = s->udp.pcb->local_port;
+  sin->sin_port = htons(s->udp.pcb->local_port);
   sin->sin_addr.s_addr = s->udp.pcb->local_ip.addr;
 
   *namelen = sizeof(struct sockaddr_in);
@@ -205,7 +205,7 @@ static int udpsock_recvfrom(struct socket *s, void *data, int size, unsigned int
       sin = (struct sockaddr_in *) from;
       sin->sin_len = sizeof(struct sockaddr_in);
       sin->sin_family = AF_INET;
-      sin->sin_port = udphdr->src;
+      sin->sin_port = htons(udphdr->src);
       sin->sin_addr.s_addr = iphdr->src.addr;
     }
     if (fromlen) *fromlen = sizeof(struct sockaddr_in);
@@ -216,7 +216,7 @@ static int udpsock_recvfrom(struct socket *s, void *data, int size, unsigned int
   }
   else
   {
-    len = submit_socket_request(s, &req, SOCKREQ_RECV, data, size, INFINITE);
+    len = submit_socket_request(s, &req, SOCKREQ_RECV, data, size, s->udp.rcvtimeo);
 
     if (len >= 0)
     {
@@ -252,6 +252,7 @@ static int udpsock_send(struct socket *s, void *data, int size, unsigned int fla
   rc = udp_send(s->udp.pcb, p, NULL);
   if (rc < 0)
   {
+kprintf("udp: send error %d\n", rc);
     pbuf_free(p);
     return rc;
   }
@@ -276,7 +277,28 @@ static int udpsock_sendto(struct socket *s, void *data, int size, unsigned int f
 
 static int udpsock_setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen)
 {
-  return -ENOSYS;
+  if (level == SOL_SOCKET)
+  {
+    switch (optname)
+    {
+      case SO_SNDTIMEO:
+	if (optlen != 4) return -EINVAL;
+	s->udp.sndtimeo = *(unsigned int *) optval;
+	break;
+
+      case SO_RCVTIMEO:
+	if (optlen != 4) return -EINVAL;
+	s->udp.rcvtimeo = *(unsigned int *) optval;
+	break;
+
+      default:
+        return -EINVAL;
+    }
+  }
+  else
+    return -EINVAL;
+
+  return 0;
 }
 
 static int udpsock_shutdown(struct socket *s, int how)
@@ -286,6 +308,8 @@ static int udpsock_shutdown(struct socket *s, int how)
 
 static int udpsock_socket(struct socket *s, int domain, int type, int protocol)
 {
+  s->udp.sndtimeo = INFINITE;
+  s->udp.rcvtimeo = INFINITE;
   return 0;
 }
 

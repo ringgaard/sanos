@@ -396,7 +396,7 @@ void tcp_rexmit_seg(struct tcp_pcb *pcb, struct tcp_seg *seg)
   unsigned short len, tot_len;
   struct netif *netif;
   
-  kprintf("tcp_rexmit_seg: skickar %ld:%ld\n", ntohl(seg->tcphdr->seqno), ntohl(seg->tcphdr->seqno) + TCP_TCPLEN(seg));
+  kprintf("tcp_rexmit_seg: sending %ld:%ld\n", ntohl(seg->tcphdr->seqno), ntohl(seg->tcphdr->seqno) + TCP_TCPLEN(seg));
   
   wnd = MIN(pcb->snd_wnd, pcb->cwnd);
   if (ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len <= wnd)

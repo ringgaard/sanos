@@ -11,15 +11,38 @@
 
 #include "resolv.h"
 
+#define NS_PACKETSZ	512		// Maximum packet size
 #define NS_MAXCDNAME	255	        // Maximum compressed domain name
 #define NS_MAXDNAME	255 /*1025*/	// Maximum domain name
 #define NS_CMPRSFLGS	0xc0	        // Flag bits indicating name compression
 #define NS_HFIXEDSZ	12		// #/bytes of fixed data in header
 #define NS_QFIXEDSZ	4		// #/bytes of fixed data in query
+#define NS_RRFIXEDSZ	10	        // #/bytes of fixed data in r record
+#define NS_DEFAULTPORT	53	        // For both TCP and UDP
 
-#define MAXHOSTNAMELEN 256
+#define MAXHOSTNAMELEN  256
 
 #define QUERYBUF_SIZE   1024            // Size of query buffer
+
+struct res_state res;
+
+static int res_nsend(struct res_state *statp, const char *buf, int buflen, char *answer, int anslen);
+
+static int res_nquery(struct res_state *statp, const char *dname, 
+		      int class, int type, unsigned char *answer, int anslen);
+
+static int res_nsearch(struct res_state *statp, const char *name, int class, int type, 
+  		       unsigned char *answer, int anslen);
+
+static int res_nquerydomain(struct res_state *statp, const char *name, const char *domain,
+		     int class, int type, unsigned char *answer, int anslen);
+
+
+static int res_nmkquery(struct res_state *statp, int op, const char *dname,
+		        int class, int type,
+		        const unsigned char *data, int datalen,
+		        unsigned char *newrr,
+		        unsigned char *buf, int buflen);
 
 //
 // mklower
@@ -481,12 +504,389 @@ static int ns_name_unpack(const unsigned char *msg, const unsigned char *eom,
 }
 
 //
+// res_randomid
+//
+
+static unsigned int res_randomid() 
+{
+  struct timeval now;
+
+  gettimeofday(&now);
+  return (now.tv_sec ^ now.tv_usec ^ gettid()) & 0xFFFF;
+}
+
+//
 // res_init
 //
 
 int res_init()
 {
-  return -ENOSYS;
+  memset(&res, 0, sizeof(struct res_state));
+  res.options = RES_DEFAULT;
+  res.retry = RES_DFLRETRY;
+  res.retrans = RES_TIMEOUT;
+  res.id = res_randomid();
+  res.ndots = 1;
+  res.nscount = 0;
+
+  if (peb->primary_dns.s_addr != INADDR_ANY)
+  {
+    res.nsaddr_list[res.nscount].sin_addr.s_addr = peb->primary_dns.s_addr;    
+    res.nsaddr_list[res.nscount].sin_family = AF_INET;
+    res.nsaddr_list[res.nscount].sin_port = htons(NS_DEFAULTPORT);
+    res.nscount++;
+  }
+
+  if (peb->secondary_dns.s_addr != INADDR_ANY)
+  {
+    res.nsaddr_list[res.nscount].sin_addr.s_addr = peb->secondary_dns.s_addr;
+    res.nsaddr_list[res.nscount].sin_family = AF_INET;
+    res.nsaddr_list[res.nscount].sin_port = htons(NS_DEFAULTPORT);
+    res.nscount++;
+  }
+
+  if (res.nscount == 0)
+  {
+    res.nsaddr_list[res.nscount].sin_addr.s_addr = INADDR_LOOPBACK;
+    res.nsaddr_list[res.nscount].sin_family = AF_INET;
+    res.nsaddr_list[res.nscount].sin_port = htons(NS_DEFAULTPORT);
+    res.nscount++;
+  }
+
+  strcpy(res.defdname, peb->default_domain);
+  if (!*res.defdname) strcpy(res.defdname, "local.domain");
+  res.dnsrch[0] = res.defdname;
+
+  return 0;
+}
+
+//
+// send_vc
+//
+
+static int send_vc(struct res_state *statp,
+	           const unsigned char *buf, int buflen, 
+		   unsigned char *answer, int anslen,
+	           int *terrno, int ns)
+{
+  const struct dns_hdr *hp = (const struct dns_hdr *) buf;
+  struct dns_hdr *anhp = (struct dns_hdr *) answer;
+  struct sockaddr_in *nsap = &statp->nsaddr_list[ns];
+  int resplen, n;
+  unsigned short len;
+  unsigned char *cp;
+  int s;
+  int rc;
+
+  // Connect to name server
+  s = socket(PF_INET, SOCK_STREAM, 0);
+  if (s < 0) 
+  {
+    *terrno = s;
+    return -1;
+  }
+
+  rc = connect(s, (struct sockaddr *) nsap, sizeof *nsap); 
+  if (rc < 0) 
+  {
+    *terrno = rc;
+    close(s);
+    return 0;
+  }
+
+  // Send length & message (FIXME: send len and buf using writev)
+  len = htons((unsigned short) buflen);
+  rc = send(s, &len, sizeof(unsigned short), 0);
+  if (rc != sizeof(unsigned short))
+  {
+    *terrno = rc;
+    close(s);
+    return 0;
+  }
+
+  rc = send(s, buf, buflen, 0);
+  if (rc != sizeof(unsigned short))
+  {
+    *terrno = rc;
+    close(s);
+    return 0;
+  }
+
+  // Receive length & response
+  cp = answer;
+  len = sizeof(unsigned short);
+  while ((n = recv(s, cp, len, 0)) > 0)
+  {
+    cp += n;
+    if ((len -= n) <= 0) break;
+  }
+
+  if (n <= 0) 
+  {
+    *terrno = n;
+    close(s);
+    return 0;
+  }
+
+  resplen = ntohs(*(unsigned short *) answer);
+  if (resplen > anslen) 
+    len = anslen;
+  else
+    len = resplen;
+
+  if (len < NS_HFIXEDSZ) 
+  {
+    // Undersized message.
+    *terrno = -EMSGSIZE;
+    close(s);
+    return 0;
+  }
+  
+  cp = answer;
+  while (len != 0 && (n = recv(s, cp, len, 0)) > 0)
+  {
+    cp += n;
+    len -= n;
+  }
+
+  if (n <= 0) 
+  {
+    *terrno = n;
+    close(s);
+    return 0;
+  }
+
+  // All is well, or the error is fatal.
+  // Signal that the next nameserver ought not be tried.
+
+  close(s);
+  return resplen;
+}
+
+//
+// send_dg
+//
+
+static int send_dg(struct res_state *statp,
+   	           const unsigned char *buf, int buflen, 
+		   unsigned char *answer, int anslen,
+	           int *terrno, int ns, int *v_circuit, int *gotsomewhere)
+{
+  const struct dns_hdr *hp = (const struct dns_hdr *) buf;
+  struct dns_hdr *anhp = (struct dns_hdr *) answer;
+  const struct sockaddr_in *nsap = &statp->nsaddr_list[ns];
+  struct sockaddr_in from;
+  struct sockaddr_in local;
+  int fromlen, resplen, timeout, s;
+
+  s = socket(PF_INET, SOCK_DGRAM, 0);
+  if (s < 0) 
+  {
+    *terrno = s;
+    return -1;
+  }
+
+  local.sin_family = AF_INET;
+  local.sin_len = sizeof(struct sockaddr_in);
+  local.sin_port = htons(1024);
+  local.sin_addr.s_addr = INADDR_ANY;
+
+  if (connect(s, (struct sockaddr *) nsap, sizeof *nsap) < 0)
+  {
+    close(s);
+    return 0;
+  }
+
+  if (send(s, (char *) buf, buflen, 0) != buflen) 
+  {
+    close(s);
+    return 0;
+  }
+
+  // Wait for reply.
+  timeout = (statp->retrans << ns);
+  if (ns > 0) timeout /= statp->nscount;
+  if (timeout <= 0) timeout = 1;
+  timeout = timeout * 1000;
+  setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof(int)); 
+
+wait:
+  fromlen = sizeof(struct sockaddr_in);
+  resplen = recvfrom(s, (char *) answer, anslen,0, (struct sockaddr *) &from, &fromlen);
+
+  if (resplen == 0) 
+  {
+    *gotsomewhere = 1;
+    close(s);
+    return 0;
+  }
+
+  if (resplen < 0) 
+  {
+    if (resplen == -ETIMEOUT) 
+    {
+      *gotsomewhere = 1;
+      close(s);
+      return 0;
+    }
+
+    close(s);
+    return 0;
+  }
+
+  *gotsomewhere = 1;
+  
+  if (resplen < NS_HFIXEDSZ)
+  {
+    // Undersized message.
+    *terrno = -EMSGSIZE;
+    close(s);
+    return 0;
+  }
+
+  if (hp->id != anhp->id) 
+  {
+    // Response from old query, ignore it.
+    goto wait;
+  }
+
+  if (!(statp->options & RES_IGNTC) && anhp->tc)
+  {
+    // To get the rest of answer, TCP with same server.
+    *v_circuit = 1;
+    close(s);
+    return 1;
+  }
+
+  // All is well, or the error is fatal.  
+  // Signal that the next nameserver ought not be tried.
+  close(s);
+  return resplen;
+}
+
+//
+// res_nsend
+//
+
+static int res_nsend(struct res_state *statp, const char *buf, int buflen, char *answer, int anslen)
+{
+  int gotsomewhere, try, v_circuit, resplen, ns, n, terrno;
+
+  if (statp->nscount == 0) return -ESRCH;
+  if (anslen < NS_HFIXEDSZ) return -EINVAL;
+
+  v_circuit = (statp->options & RES_USEVC) || buflen > NS_PACKETSZ;
+  gotsomewhere = 0;
+  terrno = -ETIMEOUT;
+
+  //FIXME: add dns cache lookup here
+
+  // Some resolvers want to even out the load on their nameservers.
+  if ((statp->options & RES_ROTATE) != 0)
+  {
+    struct sockaddr_in ina;
+    int lastns = statp->nscount - 1;
+
+    ina = statp->nsaddr_list[0];
+    for (ns = 0; ns < lastns; ns++)
+    {
+      statp->nsaddr_list[ns] = statp->nsaddr_list[ns + 1];
+    }
+    statp->nsaddr_list[lastns] = ina;
+  }
+
+  // Send request, RETRY times, or until successful.
+  for (try = 0; try < statp->retry; try++) 
+  {
+    for (ns = 0; ns < statp->nscount; ns++)
+    {
+      struct sockaddr_in *nsap = &statp->nsaddr_list[ns];
+  
+same_ns:
+      if (v_circuit) 
+      {
+	// Use VC; at most one attempt per server.
+	try = statp->retry;
+	n = send_vc(statp, buf, buflen, answer, anslen, &terrno, ns);
+	if (n < 0) return n;
+	if (n == 0) break;
+	resplen = n;
+      } 
+      else 
+      {
+	// Use datagrams.
+	n = send_dg(statp, buf, buflen, answer, anslen, &terrno, ns, &v_circuit, &gotsomewhere);
+	if (n < 0) return n;
+	if (n == 0) break;
+	if (v_circuit) goto same_ns;
+	resplen = n;
+      }
+
+      return resplen;
+    }
+  }
+
+  if (!v_circuit) 
+  {
+    if (!gotsomewhere)
+      return -ECONNREFUSED; // No nameservers found
+    else
+      return -ETIMEOUT;     // No answer obtained
+  }
+  else
+    return terrno;
+}
+
+//
+// res_send
+//
+
+int res_send(const char *buf, int buflen, char *answer, int anslen)
+{
+  return res_nsend(&res, buf, buflen, answer, anslen);
+}
+
+//
+// res_nquery
+//
+
+static int res_nquery(struct res_state *statp, const char *dname, 
+		      int class, int type, unsigned char *answer, int anslen)
+{
+  unsigned char buf[QUERYBUF_SIZE];
+  struct dns_hdr *hp = (struct dns_hdr *) answer;
+  int n;
+
+  hp->rcode = 0;
+
+  n = res_nmkquery(statp, DNS_OP_QUERY, dname, class, type, NULL, 0, NULL, buf, sizeof(buf));
+  if (n <= 0) return n;
+
+  n = res_nsend(statp, buf, n, answer, anslen);
+  if (n < 0) return n;
+
+  if (hp->rcode != 0 || ntohs(hp->ancount) == 0) 
+  {
+    switch (hp->rcode) 
+    {
+      case DNS_ERR_NXDOMAIN:
+	return -EHOST;
+
+      case DNS_ERR_SERVFAIL:
+	return -EAGAIN;
+
+      case DNS_ERR_NOERROR:
+	return -ENOENT;
+
+      case DNS_ERR_FORMERR:
+      case DNS_ERR_NOTIMPL:
+      case DNS_ERR_REFUSED:
+      default:
+	return -EIO;
+    }
+  }
+
+  return n;
 }
 
 //
@@ -495,16 +895,170 @@ int res_init()
 
 int res_query(const char *dname, int class, int type, unsigned char *answer, int anslen)
 {
-  return -ENOSYS;
+  return res_nquery(&res, dname, class, type, answer, anslen);
+}
+
+//
+// res_nsearch
+//
+
+static int res_nsearch(struct res_state *statp, const char *name, int class, int type, 
+  		       unsigned char *answer, int anslen)
+{
+  const char *cp;
+  char **domain;
+  struct dns_hdr *hp = (struct dns_hdr *) answer;
+  int dots;
+  int trailing_dot, rc, saved_rc;
+  int got_nodata = 0, got_servfail = 0, root_on_list = 0;
+  int tried_as_is = 0;
+
+  dots = 0;
+  for (cp = name; *cp != '\0'; cp++) dots += (*cp == '.');
+  trailing_dot = 0;
+  if (cp > name && *--cp == '.') trailing_dot++;
+
+  // If there are enough dots in the name, let's just give it a
+  // try 'as is'. The threshold can be set with the "ndots" option.
+  // Also, query 'as is', if there is a trailing dot in the name.
+
+  saved_rc = 0;
+  if (dots >= statp->ndots || trailing_dot) 
+  {
+    rc = res_nquerydomain(statp, name, NULL, class, type, answer, anslen);
+    if (rc > 0 || trailing_dot) return rc;
+    saved_rc = rc;
+    tried_as_is++;
+  }
+
+  // We do at least one level of search if
+  // - there is no dot and RES_DEFNAME is set, or
+  // - there is at least one dot, there is no trailing dot,
+  //   and RES_DNSRCH is set.
+
+  if ((!dots && (statp->options & RES_DEFNAMES) != 0) ||
+      (dots && !trailing_dot && (statp->options & RES_DNSRCH) != 0))
+  {
+    int done = 0;
+
+    for (domain = statp->dnsrch; *domain && !done; domain++) 
+    {
+
+      if (domain[0][0] == '\0' || (domain[0][0] == '.' && domain[0][1] == '\0'))
+      {
+	root_on_list++;
+      }
+
+      rc = res_nquerydomain(statp, name, (const char *) *domain, class, type, answer, anslen);
+      if (rc > 0) return rc;
+
+      if (rc == -ECONNREFUSED) return rc;
+
+      switch (rc) 
+      {
+	case -ETIMEOUT:
+	  got_nodata++;
+	  // FALLTHROUGH
+
+	case -EHOSTUNREACH:
+	case -ENETUNREACH:
+	  // Keep trying
+	  break;
+
+	case -EAGAIN:
+	  if (hp->rcode == DNS_ERR_SERVFAIL) 
+	  {
+	    // Try next search element, if any
+	    got_servfail++;
+	    break;
+	  }
+	  // FALLTHROUGH
+
+	default:
+	  // Anything else implies that we're done
+	  done++;
+      }
+
+      // If we got here for some reason other than DNSRCH,
+      // we only wanted one iteration of the loop, so stop.
+
+      if ((statp->options & RES_DNSRCH) == 0) done++;
+    }
+  }
+
+  // If the name has any dots at all, and no earlier 'as-is' query
+  // for the name, and "." is not on the search list, then try an as-is
+  // query now.
+
+  if (statp->ndots && !(tried_as_is || root_on_list)) 
+  {
+    rc = res_nquerydomain(statp, name, NULL, class, type, answer, anslen);
+    if (rc > 0) return rc;
+  }
+
+  // If we got here, we didn't satisfy the search.
+  // If we did an initial full query, return that query's return code
+  // (note that we wouldn't be here if that query had succeeded).
+  // else if we ever got a nodata, send that back as the reason.
+  // else send back meaningless error code, that being the one from
+  // the last DNSRCH we did.
+
+  if (saved_rc != 0)
+    return saved_rc;
+  else if (got_nodata)
+    return -ETIMEOUT;
+  else if (got_servfail)
+    return -EAGAIN;
+  else
+    return -EIO; // ???
 }
 
 //
 // res_search
 //
 
-int res_search(const char *dname, int class, int type, unsigned char *answer, int anslen)
+int res_search(const char *name, int class, int type, unsigned char *answer, int anslen)
 {
-  return -ENOSYS;
+  return res_nsearch(&res, name, class, type, answer, anslen);
+}
+
+//
+// res_nquerydomain
+//
+// Perform a call on res_query on the concatenation of name and domain,
+// removing a trailing dot from name if domain is NULL.
+//
+
+static int res_nquerydomain(struct res_state *statp, const char *name, const char *domain,
+ 		            int class, int type, unsigned char *answer, int anslen)
+{
+  char nbuf[NS_MAXDNAME];
+  const char *longname = nbuf;
+  int n, d;
+
+  if (domain == NULL) 
+  {
+    // Check for trailing '.'; copy without '.' if present.
+    n = strlen(name);
+    if (n >= NS_MAXDNAME) return -EMSGSIZE;
+    n--;
+    if (n >= 0 && name[n] == '.') 
+    {
+      strncpy(nbuf, name, n);
+      nbuf[n] = '\0';
+    } 
+    else
+      longname = name;
+  } 
+  else 
+  {
+    n = strlen(name);
+    d = strlen(domain);
+    if (n + d + 1 >= NS_MAXDNAME) return -EMSGSIZE;
+    sprintf(nbuf, "%s.%s", name, domain);
+  }
+
+  return res_nquery(statp, longname, class, type, answer, anslen);
 }
 
 //
@@ -514,7 +1068,111 @@ int res_search(const char *dname, int class, int type, unsigned char *answer, in
 int res_querydomain(const char *name, const char *domain, int class, int type, 
 		    unsigned char *answer, int anslen)
 {
-  return -ENOSYS;
+  return res_nquerydomain(&res, name, domain, class, type, answer, anslen);
+}
+
+//
+// res_nmkquery
+//
+
+static int res_nmkquery(struct res_state *statp, int op, const char *dname,
+		        int class, int type,
+		        const unsigned char *data, int datalen,
+		        unsigned char *newrr,
+		        unsigned char *buf, int buflen)
+{
+  struct dns_hdr *hp;
+  unsigned char *cp;
+  int n;
+  unsigned char *dnptrs[20], **dpp, **lastdnptr;
+
+  // Initialize header fields.
+  if (buf == NULL || buflen < NS_HFIXEDSZ) return -EINVAL;
+  memset(buf, 0, NS_HFIXEDSZ);
+  hp = (struct dns_hdr *) buf;
+  hp->id = htons(++statp->id);
+  hp->opcode = op;
+  hp->rd = (statp->options & RES_RECURSE) != 0;
+  hp->rcode = 0;
+  cp = ((unsigned char *) buf) + NS_HFIXEDSZ;
+  buflen -= NS_HFIXEDSZ;
+  dpp = dnptrs;
+  *dpp++ = (unsigned char *) buf;
+  *dpp++ = NULL;
+  lastdnptr = dnptrs + sizeof dnptrs / sizeof dnptrs[0];
+
+  // Perform opcode specific processing
+  switch (op) 
+  {
+    case DNS_OP_QUERY:
+    case DNS_OP_NOTIFY:
+      if ((buflen -= NS_QFIXEDSZ) < 0) return -EMSGSIZE;
+      if ((n = dn_comp(dname, cp, buflen, dnptrs, lastdnptr)) < 0) return -EMSGSIZE;
+      cp += n;
+      buflen -= n;
+
+      *(unsigned short *) cp = htons((unsigned short) type);
+      cp += sizeof(unsigned short);
+      
+      *(unsigned short *) cp = htons((unsigned short) class);
+      cp += sizeof(unsigned short);
+      
+      hp->qdcount = htons(1);
+      if (op == DNS_OP_QUERY || data == NULL) break;
+
+      // Make an additional record for completion domain
+      buflen -= NS_RRFIXEDSZ;
+      n = dn_comp((const char *) data, cp, buflen, dnptrs, lastdnptr);
+      if (n < 0) return -EMSGSIZE;
+      cp += n;
+      buflen -= n;
+      
+      *(unsigned short *) cp = htons(DNS_TYPE_NULL);
+      cp += sizeof(unsigned short);
+      
+      *(unsigned short *) cp = htons((unsigned short) class);
+      cp += sizeof(unsigned short);
+
+      *(unsigned long *) cp = 0;
+      cp += sizeof(unsigned long);
+      
+      *(unsigned short *) cp = 0;
+      cp += sizeof(unsigned short);
+      
+      hp->arcount = htons(1);
+      break;
+
+    case DNS_OP_IQUERY:
+      // Initialize answer section
+      if (buflen < 1 + NS_RRFIXEDSZ + datalen) return -EMSGSIZE;
+      *cp++ = '\0'; // No domain name
+ 
+      *(unsigned short *) cp = htons((unsigned short) type);
+      cp += sizeof(unsigned short);
+
+      *(unsigned short *) cp = htons((unsigned short) class);
+      cp += sizeof(unsigned short);
+
+      *(unsigned long *) cp = 0;
+      cp += sizeof(unsigned long);
+     
+      *(unsigned short *) cp = htons((unsigned short) datalen);
+      cp += sizeof(unsigned short);
+      
+      if (datalen) 
+      {
+	memcpy(cp, data, datalen);
+	cp += datalen;
+      }
+
+      hp->ancount = htons(1);
+      break;
+
+    default:
+      return -ENOSYS;
+  }
+
+  return cp - buf;
 }
 
 //
@@ -522,18 +1180,9 @@ int res_querydomain(const char *name, const char *domain, int class, int type,
 //
 
 int res_mkquery(int op, const char *dname, int class, int type, char *data, int datalen, 
-		struct rrec *newrr, char *buf, int buflen)
+		unsigned char *newrr, char *buf, int buflen)
 {
-  return -ENOSYS;
-}
-
-//
-// res_send
-//
-
-int res_send(const char *msg, int msglen, char *answer, int anslen)
-{
-  return -ENOSYS;
+  return res_nmkquery(&res, op, dname, class, type, data, datalen, newrr, buf, buflen);
 }
 
 //
@@ -558,16 +1207,17 @@ int dn_comp(const char *src, unsigned char *dst, int dstsiz, unsigned char **dnp
 int dn_expand(const unsigned char *msg, const unsigned char *eom, const unsigned char *src,  char *dst, int dstsiz)
 {
   unsigned char tmp[NS_MAXCDNAME];
+  int n;
   int rc;
 
-  rc = ns_name_unpack(msg, eom, src, tmp, sizeof tmp);
-  if (rc < 0) return rc;
+  n = ns_name_unpack(msg, eom, src, tmp, sizeof tmp);
+  if (n < 0) return n;
 
   rc = ns_name_ntop(tmp, dst, dstsiz);
   if (rc < 0) return rc;
 
-  if (rc > 0 && dst[0] == '.') dst[0] = '\0';
-  return rc;
+  if (n > 0 && dst[0] == '.') dst[0] = '\0';
+  return n;
 }
 
 //
@@ -576,55 +1226,56 @@ int dn_expand(const unsigned char *msg, const unsigned char *eom, const unsigned
 
 static struct hostent *getanswer(const char *answer, int anslen, const char *qname, int qtype)
 {
-#if 0
   struct tib *tib = gettib();
   const struct dns_hdr *hp;
   const unsigned char *cp;
-  int n;
+  int n, rc;
   const unsigned char *eom, *erdata;
   char *bp, **ap, **hap;
-  int type, class, buflen, ancount, qdcount;
+  int type, class, ttl, buflen, ancount, qdcount;
   int haveanswer, had_error;
-  int toobig = 0;
   char tbuf[NS_MAXDNAME];
   const char *tname;
-  int (*name_ok)(const char *));
 
   tname = qname;
   tib->host.h_name = NULL;
-  eom = answer->buf + anslen;
-  switch (qtype) 
-  {
-    case DNS_TYPE_A:
-      name_ok = res_hnok;
-      break;
-
-    case DNS_TYPE_A:
-      name_ok = res_dnok;
-      break;
-
-    default:
-      return NULL;
-  }
+  eom = answer + anslen;
 
   // Find first satisfactory answer
   hp = (const struct dns_hdr *) answer;
   ancount = ntohs(hp->ancount);
   qdcount = ntohs(hp->qdcount);
-  bp = tib->hhostbuf;
+  bp = tib->hostbuf;
   buflen = sizeof tib->hostbuf;
   cp = answer;
 
   cp += NS_HFIXEDSZ;
-  if (cp > eom) return NULL;
+  if (cp > eom) 
+  {
+    errno = -EMSGSIZE;
+    return NULL;
+  }
 
-  if (qdcount != 1) return NULL;
+  if (qdcount != 1)
+  {
+    errno = -EIO;
+    return NULL;
+  }
+
 
   n = dn_expand(answer, eom, cp, bp, buflen);
-  if (n < 0 || !name_ok(bp)) return NULL;
+  if (n < 0) 
+  {
+    errno = n;
+    return NULL;
+  }
 
   cp += n + NS_QFIXEDSZ;
-  if (cp > eom) return NULL;
+  if (cp > eom) 
+  {
+    errno = -EMSGSIZE;
+    return NULL;
+  }
 
   if (qtype == DNS_TYPE_A)
   {
@@ -633,7 +1284,11 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
     // (i.e., with the succeeding search-domain tacked on).
 
     n = strlen(bp) + 1;
-    if (n >= MAXHOSTNAMELEN) return NULL;
+    if (n >= MAXHOSTNAMELEN)
+    {
+      errno = -EMSGSIZE;
+      return NULL;
+    }
     tib->host.h_name = bp;
     bp += n;
     buflen -= n;
@@ -645,7 +1300,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
   ap = tib->host_aliases;
   *ap = NULL;
   tib->host.h_aliases = tib->host_aliases;
-  hap = h_addr_ptrs;
+  hap = tib->h_addr_ptrs;
   *hap = NULL;
   tib->host.h_addr_list = tib->h_addr_ptrs;
   
@@ -653,90 +1308,114 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
   had_error = 0;
   while (ancount-- > 0 && cp < eom && !had_error) 
   {
-    n = dn_expand(answer->buf, eom, cp, bp, buflen);
-    if ((n < 0) || !name_ok(bp))
+    n = dn_expand(answer, eom, cp, bp, buflen);
+    if (n < 0)
     {
+      rc = n;
       had_error++;
       continue;
     }
 
-    cp += n;			/* name */
+    cp += n; // name
 
-    if (cp + 3 * sizeof(short) * sizeof(long) > eom) return NULL;
-
-    type = ns_get16(cp);
-    cp += INT16SZ;			/* type */
-    class = ns_get16(cp);
-    cp += INT16SZ + INT32SZ;	/* class, TTL */
-    n = ns_get16(cp);
-    cp += INT16SZ;			/* len */
-    BOUNDS_CHECK(cp, n);
-    erdata = cp + n;
-    if (class != C_IN) 
+    if (cp + 3 * sizeof(short) + sizeof(long) > eom)
     {
-      /* XXX - debug? syslog? */
-      cp += n;
-      continue;		/* XXX - had_error++ ? */
+      errno = -EMSGSIZE;
+      return NULL;
     }
-    if ((qtype == T_A || qtype == T_AAAA) && type == T_CNAME) 
+
+    type = ntohs(*(unsigned short *) cp);
+    cp += sizeof(unsigned short); // type
+
+    class = ntohs(*(unsigned short *) cp);
+    cp += sizeof(unsigned short); // class
+
+    ttl = ntohl(*(unsigned long *) cp);
+    cp += sizeof(unsigned long); // ttl
+
+    n = ntohs(*(unsigned short *) cp);
+    cp += sizeof(unsigned short); // len
+
+    if (cp + n > eom)
     {
-      if (ap >= &host_aliases[MAXALIASES-1])
-	      continue;
-      n = dn_expand(answer->buf, eom, cp, tbuf, sizeof tbuf);
-      if ((n < 0) || !(*name_ok)(tbuf)) 
+      errno = -EMSGSIZE;
+      return NULL;
+    }
+    
+    erdata = cp + n;
+    if (class != DNS_CLASS_IN) 
+    {
+      cp += n;
+      continue;
+    }
+
+    if (qtype == DNS_TYPE_A && type == DNS_TYPE_CNAME) 
+    {
+      if (ap >= &tib->host_aliases[MAX_HOST_ALIASES - 1]) continue;
+      n = dn_expand(answer, eom, cp, tbuf, sizeof tbuf);
+      if (n < 0) 
       {
+	rc = n;
 	had_error++;
 	continue;
       }
       cp += n;
       if (cp != erdata) 
       {
-	__set_h_errno (NO_RECOVERY);
-	return (NULL);
+	errno = -EIO;
+	return NULL;
       }
       
       // Store alias
       *ap++ = bp;
-      n = strlen(bp) + 1;	// for the \0
+      n = strlen(bp) + 1;
       if (n >= MAXHOSTNAMELEN) 
       {
+	rc = -EMSGSIZE;
 	had_error++;
 	continue;
       }
+      
       bp += n;
       buflen -= n;
-      /* Get canonical name. */
-      n = strlen(tbuf) + 1;	/* for the \0 */
+      
+      // Get canonical name
+      n = strlen(tbuf) + 1;
       if (n > buflen || n >= MAXHOSTNAMELEN) 
       {
+	rc = -EMSGSIZE;
 	had_error++;
 	continue;
       }
+      
       strcpy(bp, tbuf);
-      host.h_name = bp;
+      tib->host.h_name = bp;
       bp += n;
       buflen -= n;
       continue;
     }
 
-    if (qtype == T_PTR && type == T_CNAME) 
+    if (qtype == DNS_TYPE_PTR && type == DNS_TYPE_CNAME) 
     {
-      n = dn_expand(answer->buf, eom, cp, tbuf, sizeof tbuf);
-      if (n < 0 || !res_dnok(tbuf)) 
+      n = dn_expand(answer, eom, cp, tbuf, sizeof tbuf);
+      if (n < 0) 
       {
+	rc = n;
 	had_error++;
 	continue;
       }
       cp += n;
       if (cp != erdata) 
       {
-	__set_h_errno (NO_RECOVERY);
-	return (NULL);
+	errno = -EIO;
+	return NULL; 
       }
-      /* Get canonical name. */
-      n = strlen(tbuf) + 1;	/* for the \0 */
+
+      // Get canonical name
+      n = strlen(tbuf) + 1;
       if (n > buflen || n >= MAXHOSTNAMELEN) 
       {
+	rc = -EMSGSIZE;
 	had_error++;
 	continue;
       }
@@ -747,52 +1426,38 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       continue;
     }
 
-    if ((type == T_SIG) || (type == T_KEY) || (type == T_NXT)) 
+    if (type != qtype)
     {
-      /* We don't support DNSSEC yet.  For now, ignore
-       * the record and send a low priority message
-       * to syslog.
-       */
-      syslog(LOG_DEBUG|LOG_AUTH, "gethostby*.getanswer: asked for \"%s %s %s\", got type \"%s\"", qname, p_class(C_IN), p_type(qtype), p_type(type));
       cp += n;
       continue;
     }
 
-    if (type != qtype)
-    {
-      syslog(LOG_NOTICE|LOG_AUTH, "gethostby*.getanswer: asked for \"%s %s %s\", got type \"%s\"", qname, p_class(C_IN), p_type(qtype), p_type(type));
-      cp += n;
-      continue;		/* XXX - had_error++ ? */
-    }
-
     switch (type) 
     {
-      case T_PTR:
-	if (strcasecmp(tname, bp) != 0) 
+      case DNS_TYPE_PTR:
+	if (stricmp(tname, bp) != 0) 
 	{
-	  syslog(LOG_NOTICE|LOG_AUTH, AskedForGot, qname, bp);
 	  cp += n;
-	  continue;	/* XXX - had_error++ ? */
+	  continue;
 	}
-	n = dn_expand(answer->buf, eom, cp, bp, buflen);
-	if ((n < 0) || !res_hnok(bp)) 
+
+	n = dn_expand(answer, eom, cp, bp, buflen);
+	if (n < 0) 
 	{
+	  rc = n;
 	  had_error++;
 	  break;
 	}
-	host.h_name = bp;
-	__set_h_errno (NETDB_SUCCESS);
-	return (&host);
+	tib->host.h_name = bp;
+	return &tib->host;
 
-      case T_A:
-      case T_AAAA:
-	if (strcasecmp(host.h_name, bp) != 0) 
+      case DNS_TYPE_A:
+	if (stricmp(tib->host.h_name, bp) != 0) 
 	{
-	  syslog(LOG_NOTICE|LOG_AUTH, AskedForGot, host.h_name, bp);
 	  cp += n;
-	  continue;	/* XXX - had_error++ ? */
+	  continue;
 	}
-	if (n != host.h_length) 
+	if (n != tib->host.h_length) 
 	{
 	  cp += n;
 	  continue;
@@ -801,47 +1466,45 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
 	{
 	  int nn;
 
-	  host.h_name = bp;
-	  nn = strlen(bp) + 1;	/* for the \0 */
+	  tib->host.h_name = bp;
+	  nn = strlen(bp) + 1;
 	  bp += nn;
 	  buflen -= nn;
 	}
 
-	/* XXX: when incrementing bp, we have to decrement
-	 * buflen by the same amount --okir */
-	buflen -= sizeof(align) - ((u_long)bp % sizeof(align));
+	// Align next buffer entry
+	buflen -= sizeof(int) - ((unsigned long) bp % sizeof(int));
+	bp += sizeof(int) - ((unsigned long) bp % sizeof(int));
 
-	bp += sizeof(align) - ((u_long)bp % sizeof(align));
-
-	if (bp + n >= &hostbuf[sizeof hostbuf]) 
+	if (bp + n >= &tib->hostbuf[sizeof tib->hostbuf]) 
 	{
-	  dprintf("size (%d) too big\n", n);
+	  rc = -EMSGSIZE;
 	  had_error++;
 	  continue;
 	}
-	if (hap >= &h_addr_ptrs[MAXADDRS-1]) 
+
+	if (hap >= &tib->h_addr_ptrs[MAX_HOST_ADDRS - 1]) 
 	{
-	  if (!toobig++) 
-	  {
-	    dprintf("Too many addresses (%d)\n", MAXADDRS);
-	  }
 	  cp += n;
 	  continue;
 	}
+
 	memmove(*hap++ = bp, cp, n);
 	bp += n;
 	buflen -= n;
 	cp += n;
 	if (cp != erdata) 
 	{
-	  __set_h_errno (NO_RECOVERY);
-	  return (NULL);
+	  errno = -EIO;
+	  return NULL;
 	}
 	break;
 
       default:
+	errno = -EIO;
         return NULL;
     }
+
     if (!had_error) haveanswer++;
   }
 
@@ -849,23 +1512,24 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
   {
     *ap = NULL;
     *hap = NULL;
-    if (!host.h_name) 
+    if (!tib->host.h_name) 
     {
-      n = strlen(qname) + 1;	/* for the \0 */
-      if (n > buflen || n >= MAXHOSTNAMELEN) goto no_recovery;
+      n = strlen(qname) + 1;
+      if (n > buflen || n >= MAXHOSTNAMELEN) 
+      {
+	errno = -EMSGSIZE;
+	return NULL;
+      }
       strcpy(bp, qname);
-      host.h_name = bp;
+      tib->host.h_name = bp;
       bp += n;
       buflen -= n;
     }
 
-    __set_h_errno (NETDB_SUCCESS);
-    return &host;
+    return &tib->host;
   }
 
-no_recovery:
-  //__set_h_errno (NO_RECOVERY);
-#endif
+  errno = rc;
   return NULL;
 }
 
@@ -878,7 +1542,7 @@ struct hostent *gethostbyname(const char *name)
   char buf[QUERYBUF_SIZE];
   const char *cp;
   char *bp;
-  int n, len;
+  int n, len, rc;
   struct tib *tib = gettib();
 
   tib->host.h_addrtype = AF_INET;
@@ -894,7 +1558,12 @@ struct hostent *gethostbyname(const char *name)
 	if (*--cp == '.') break;
 
 	// All-numeric, no dot at the end. Fake up a hostent as if we'd actually done a lookup.
-	if (inet_pton(name, tib->host_addr) <= 0) return NULL;
+        rc = inet_pton(name, tib->host_addr); 
+	if (rc <= 0) 
+	{
+	  errno = rc;
+	  return NULL;
+	}
 
 	strncpy(tib->hostbuf, name, NS_MAXDNAME);
 	tib->hostbuf[NS_MAXDNAME] = '\0';
@@ -915,7 +1584,12 @@ struct hostent *gethostbyname(const char *name)
   }
 
   n = res_search(name, DNS_CLASS_IN, DNS_TYPE_A, buf, sizeof(buf));
-  if (n < 0) return NULL;
+  if (n < 0)
+  {
+    errno = n;
+    return NULL;
+  }
+
   return getanswer(buf, n, name, DNS_TYPE_A);
 }
 
@@ -925,21 +1599,31 @@ struct hostent *gethostbyname(const char *name)
 
 struct hostent *gethostbyaddr(const char *addr, int len, int type)
 {
+  struct tib *tib = gettib();
   const unsigned char *uaddr = (const unsigned char *) addr;
   int n;
   char buf[QUERYBUF_SIZE];
   struct hostent *hp;
   char qbuf[NS_MAXDNAME + 1];
 
-  if (type != AF_INET) return NULL;
-  if (len != sizeof(struct in_addr)) return NULL;
+  if (type != AF_INET)
+  {
+    errno = -EPROTONOSUPPORT;
+    return NULL;
+  }
+
+  if (len != sizeof(struct in_addr))
+  {
+    errno = -EMSGSIZE;
+    return NULL;
+  }
 
   sprintf(qbuf, "%u.%u.%u.%u.in-addr.arpa", uaddr[3], addr[2], uaddr[1], uaddr[0]);
 
   n = res_query(qbuf, DNS_CLASS_IN, DNS_TYPE_PTR, buf, sizeof buf);
   if (n < 0)
   {
-    //if (errno == ECONNREFUSED) return (_gethtbyaddr(addr, len, af));
+    errno = n;
     return NULL;
   }
 
@@ -949,9 +1633,138 @@ struct hostent *gethostbyaddr(const char *addr, int len, int type)
   hp->h_addrtype = AF_INET;
   hp->h_length = len;
   
-  //memmove(host_addr, addr, len);
-  //h_addr_ptrs[0] = (char *) host_addr;
-  //h_addr_ptrs[1] = NULL;
+  memmove(tib->host_addr, addr, len);
+  tib->h_addr_ptrs[0] = (char *) tib->host_addr;
+  tib->h_addr_ptrs[1] = NULL;
 
   return hp;
+}
+
+//
+// inet_ntoa
+//
+
+char *inet_ntoa(struct in_addr in)
+{
+  char *buf = gettib()->hostbuf;
+  sprintf(buf, "%d.%d.%d.%d", in.s_un_b.s_b1, in.s_un_b.s_b2, in.s_un_b.s_b3, in.s_un_b.s_b4);
+  return buf;
+}
+
+//
+// inet_addr
+//
+
+unsigned long inet_addr(const char *cp)
+{
+  static const unsigned long max[4] = {0xFFFFFFFF, 0xFFFFFF, 0xFFFF, 0xFF};
+  unsigned long val;
+  char c;
+  union iaddr 
+  {
+    unsigned char bytes[4];
+    unsigned long word;
+  } res;
+  unsigned char *pp = res.bytes;
+  int digit;
+  int base;
+
+  res.word = 0;
+
+  c = *cp;
+  for (;;) 
+  {
+    // Collect number up to ``.''.
+    // Values are specified as for C: 0x=hex, 0=octal, isdigit=decimal.
+
+    if (c < '0' || c >= '9') 
+    {
+      errno = -EINVAL;
+      return INADDR_NONE;
+    }
+
+    val = 0; base = 10; digit = 0;
+    if (c == '0') 
+    {
+      c = *++cp;
+      if (c == 'x' || c == 'X')
+        base = 16, c = *++cp;
+      else 
+      {
+	base = 8;
+	digit = 1;
+      }
+    }
+
+    for (;;) 
+    {
+      if (c >= '0' && c <= '9') 
+      {
+	if (base == 8 && (c == '8' || c == '9')) 
+	{
+	  errno = -EINVAL;
+	  return INADDR_NONE;
+	}
+	val = (val * base) + (c - '0');
+	c = *++cp;
+	digit = 1;
+      } 
+      else if (base == 16 && c >= 'a' && c <= 'f') 
+      {
+	val = (val << 4) | (c + 10 - 'a');
+	c = *++cp;
+	digit = 1;
+      } 
+      else if (base == 16 && c >= 'A' && c <= 'F') 
+      {
+	val = (val << 4) | (c + 10 - 'A');
+	c = *++cp;
+	digit = 1;
+      } 
+      else
+        break;
+    }
+
+    if (c == '.') 
+    {
+      // Internet format:
+      //   a.b.c.d
+      //   a.b.c	(with c treated as 16 bits)
+      //   a.b		(with b treated as 24 bits)
+
+      if (pp > res.bytes + 2 || val > 0xFF) 
+      {
+	errno = -EINVAL;
+	return INADDR_NONE;
+      }
+      *pp++ = (unsigned char) val;
+      c = *++cp;
+    } 
+    else
+      break;
+  }
+
+  // Check for trailing characters.
+  if (c > ' ') 
+  {
+    errno = -EINVAL;
+    return INADDR_NONE;
+  }
+
+  // Did we get a valid digit?
+  if (!digit) 
+  {
+    errno = -EINVAL;
+    return INADDR_NONE;
+  }
+
+  // Check whether the last part is in its limits depending on 
+  // the number of parts in total.
+  if (val > max[pp - res.bytes]) 
+  {
+    errno = -EINVAL;
+    return INADDR_NONE;
+  }
+
+  return res.word | htonl(val);
 }

@@ -216,6 +216,25 @@ void init_net()
 
   nic = ether_netif_add("eth0", "nic0", &ipaddr, &netmask, &gw);
   netif_set_default(nic);
+
+  if (peb->primary_dns.s_addr != INADDR_ANY)
+  {
+    kprintf("dns: primary ");
+    ip_addr_debug_print((struct ip_addr *) &peb->primary_dns);
+
+    if (peb->secondary_dns.s_addr != INADDR_ANY)
+    {
+      kprintf("secondary ");
+      ip_addr_debug_print((struct ip_addr *) &peb->secondary_dns);
+    }
+
+    if (*peb->default_domain)
+    {
+      kprintf(" domain %s", peb->default_domain);
+    }
+
+    kprintf("\n");
+  }
 }
 
 void main(void *arg)
@@ -231,6 +250,12 @@ void main(void *arg)
 
   char bootdevname[8];
   int rc;
+
+  // Allocate and initialize PEB
+  peb = mmap((void *) PEB_ADDRESS, PAGESIZE, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+  if (!peb) panic("unable to allocate PEB");
+  memset(peb, 0, PAGESIZE);
+  peb->fast_syscalls_supported = (cpu.features & CPU_FEATURE_SEP) != 0;
 
   // Enumerate root host buses and units
   enum_host_bus();
@@ -286,12 +311,6 @@ void main(void *arg)
   if (halloc(&stdin->object) != 0) panic("unexpected stdin handle");
   if (halloc(&stdout->object) != 1) panic("unexpected stdout handle");
   if (halloc(&stderr->object) != 2) panic("unexpected stderr handle");
-
-  // Allocate and initialize PEB
-  peb = mmap((void *) PEB_ADDRESS, PAGESIZE, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-  if (!peb) panic("unable to allocate PEB");
-  memset(peb, 0, PAGESIZE);
-  peb->fast_syscalls_supported = (cpu.features & CPU_FEATURE_SEP) != 0;
 
   // Load os.dll in user address space
   imgbase = load_image_file("/os/os.dll", 1);

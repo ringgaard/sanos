@@ -258,7 +258,7 @@ again:
 //
 
 err_t tcp_connect(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port,
-	    err_t (*connected)(void *arg, struct tcp_pcb *tpcb, err_t err))
+	          err_t (*connected)(void *arg, struct tcp_pcb *tpcb, err_t err))
 {
   unsigned long optdata;
   err_t ret;
