@@ -45,9 +45,9 @@ void mark_thread_running();
 krnlapi void mark_thread_ready(struct thread *t);
 
 krnlapi struct thread *current_thread();
-krnlapi struct thread *create_task(taskproc_t task, void *arg, int priority);
+krnlapi struct thread *create_kernel_thread(taskproc_t task, void *arg, int priority);
 
-int create_thread(void *entrypoint, unsigned long stacksize, struct thread **retval);
+int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread **retval);
 int init_user_thread(struct thread *t, void *entrypoint);
 int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned long stack_commit);
 int destroy_thread(struct thread *t);

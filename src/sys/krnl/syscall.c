@@ -1176,7 +1176,7 @@ static int sys_mkthread(char *params)
   stacksize = *(unsigned long *) (params + 4);
   ptib = *(struct tib ***) (params + 8);
 
-  rc = create_thread(entrypoint, stacksize, &t);
+  rc = create_user_thread(entrypoint, stacksize, &t);
   if (rc < 0)
   {
     unlock_buffer(params, 12);

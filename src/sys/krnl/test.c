@@ -10,8 +10,6 @@
 
 extern struct fs *mountlist;
 
-struct sem ping;
-unsigned int ping_interval = 100;
 unsigned char buffer[4096];
 
 static void pause()
@@ -74,36 +72,6 @@ static void alloc_test()
 	  maxmem * PAGESIZE / M, 
 	  (totalmem - freemem) * PAGESIZE / K, 
 	  freemem * PAGESIZE / K, (maxmem - totalmem) * PAGESIZE / K);
-}
-
-static void pingtask(void *arg)
-{
-  struct timer timer;
-
-  init_timer(&timer, get_tick_count() + ping_interval);
-  while (1)
-  {
-    wait_for_object(&timer, INFINITE);
-    if (ping_interval == 0) yield();
-    release_sem(&ping, 1);
-    modify_timer(&timer, get_tick_count() + ping_interval);
-  }
-}
-
-static void printtask(void *arg)
-{
-  while (1)
-  {
-    wait_for_object(&ping, INFINITE);
-    kprintf("%s", arg);
-  }
-}
-
-static void thread_sync_test()
-{
-  init_sem(&ping, 0);
-  create_task(printtask, "#", PRIORITY_NORMAL);
-  create_task(printtask, "**", PRIORITY_NORMAL);
 }
 
 void dump_memory(unsigned long addr, unsigned char *p, int len)

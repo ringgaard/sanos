@@ -129,8 +129,7 @@ void __stdcall start(void *hmod, int reserved1, int reserved2)
   __asm { sti };
 
   // Start main task and dispatch to idle task
-  mainthread = create_task(main, 0, PRIORITY_NORMAL);
-  mark_thread_ready(mainthread);
+  mainthread = create_kernel_thread(main, 0, PRIORITY_NORMAL);
   
   idle_task();
 }

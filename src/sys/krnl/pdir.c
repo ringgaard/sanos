@@ -73,6 +73,34 @@ int page_mapped(void *vaddr)
   return 1;
 }
 
+int mem_mapped(void *vaddr, int size)
+{
+  int i;
+  int len;
+  unsigned long addr;
+  unsigned long next;
+
+  i = 0;
+  addr = (unsigned long) vaddr;
+  next = (addr & ~PAGESIZE) + PAGESIZE;
+  while (1)
+  {
+    if ((pdir[PDEIDX(addr)] & PT_PRESENT) == 0) return 0;
+    if ((ptab[PTABIDX(addr)] & PT_PRESENT) == 0) return 0;
+    len = next - addr;
+    if (size > len)
+    {
+      size -= len;
+      addr = next;
+      next += PAGESIZE;
+    }
+    else
+      break;
+  }
+
+  return 1;
+}
+
 void init_pdir()
 {
   unsigned long i;

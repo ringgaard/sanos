@@ -8,10 +8,10 @@
 
 #include <os/krnl.h>
 
-#define DEBUGPORT  0x3F8 // COM1
-#define DBG_SIGNATURE 0xDB
-#define MAX_DBG_PACKETLEN 4096
-#define DRPC_VERSION 1
+#define DEBUGPORT         0x3F8 // COM1
+#define DBG_SIGNATURE     0xDB
+#define MAX_DBG_CHUNKSIZE PAGESIZE
+#define DRPC_VERSION      1
 
 //
 // Debugger commands
@@ -26,16 +26,20 @@
 #define DBGCMD_GET_THREAD_CONTEXT 6
 #define DBGCMD_SET_THREAD_CONTEXT 7
 #define DBGCMD_GET_SELECTOR       8
-#define DBGCMD_GET_DEBUG_EVENT    9
-#define DBGCMD_GET_MODULES        10
-#define DBGCMD_GET_THREADS        11
+#define DBGCMD_GET_MODULES        9
+#define DBGCMD_GET_THREADS        10
+
+#define DBGCMD_EVENT_XXX          32
+
+
+#define DBGCMD_REPLY              64
 
 #define DBGERR_VERSION            128
+#define DBGERR_INVALIDCMD         129
+#define DBGERR_INVALIDADDR        130
+#define DBGERR_TOOBIG             130
 
-static int debug_initialized = 0;
-static char dbgdata[MAX_DBG_PACKETLEN];
-
-struct dbghdr
+struct dbg_hdr
 {
   unsigned char signature;
   unsigned char cmd;
@@ -43,6 +47,38 @@ struct dbghdr
   unsigned char checksum;
   unsigned int len;
 };
+
+struct dbg_version
+{
+  int vesion;
+};
+
+struct dbg_readmem
+{
+  void *addr;
+  unsigned long size;
+};
+
+struct dbg_writemem
+{
+  void *addr;
+  unsigned long size;
+  unsigned char data[0];
+};
+
+union dbg_body
+{
+  unsigned char *data;
+  char *string;
+  struct dbg_version version;
+  struct dbg_readmem readmem;
+  struct dbg_writemem writemem;
+};
+
+#define MAX_DBG_PACKETLEN (MAX_DBG_CHUNKSIZE + sizeof(union dbg_body))
+
+static int debugging = 0;
+static char dbgdata[MAX_DBG_PACKETLEN];
 
 void init_debug_port()
 {
@@ -83,7 +119,7 @@ static void dbg_recv(void *buffer, int count)
 static void dbg_send_packet(unsigned char cmd, unsigned char id, void *data, unsigned int len)
 {
   unsigned int n;
-  struct dbghdr hdr;
+  struct dbg_hdr hdr;
   unsigned char checksum;
   unsigned char *p;
 
@@ -95,12 +131,12 @@ static void dbg_send_packet(unsigned char cmd, unsigned char id, void *data, uns
 
   checksum = 0;
   p = (unsigned char *) &hdr;
-  for (n = 0; n < sizeof(struct dbghdr); n++) checksum += *p++;
+  for (n = 0; n < sizeof(struct dbg_hdr); n++) checksum += *p++;
   p = (unsigned char *) data;
   for (n = 0; n < len; n++) checksum += *p++;
   hdr.checksum = -checksum;
 
-  dbg_send(&hdr, sizeof(struct dbghdr));
+  dbg_send(&hdr, sizeof(struct dbg_hdr));
   dbg_send(data, len);
 }
 
@@ -109,7 +145,7 @@ static void dbg_send_error(unsigned char errcode, unsigned char id)
   dbg_send_packet(errcode, id, NULL, 0);
 }
 
-static int dbg_recv_packet(struct dbghdr *hdr, void *data)
+static int dbg_recv_packet(struct dbg_hdr *hdr, void *data)
 {
   unsigned int n;
   unsigned char checksum;
@@ -130,7 +166,7 @@ static int dbg_recv_packet(struct dbghdr *hdr, void *data)
 
   checksum = 0;
   p = (unsigned char *) &hdr;
-  for (n = 0; n < sizeof(struct dbghdr); n++) checksum += *p++;
+  for (n = 0; n < sizeof(struct dbg_hdr); n++) checksum += *p++;
   p = (unsigned char *) data;
   for (n = 0; n < hdr->len; n++) checksum += *p++;
   if (checksum != 0) return -EIO;
@@ -138,64 +174,68 @@ static int dbg_recv_packet(struct dbghdr *hdr, void *data)
   return hdr->len;
 }
 
-static void dbg_connect(struct dbghdr *hdr, char *data)
+static void dbg_connect(struct dbg_hdr *hdr, union dbg_body *body)
 {
-  int version = *(int *) data;
-
-  if (version != DRPC_VERSION)
+  if (body->version.vesion != DRPC_VERSION)
     dbg_send_error(DBGERR_VERSION, hdr->id);
   else
   {
-    version = DRPC_VERSION;
-    dbg_send_packet(DBGCMD_CONNECT, hdr->id, &version, 4);
+    body->version.vesion = DRPC_VERSION;
+    dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_version));
   }
 }
 
-static void dbg_read_memory(struct dbghdr *hdr, char *data)
+static void dbg_read_memory(struct dbg_hdr *hdr, union dbg_body *body)
+{
+  if (!mem_mapped(body->readmem.addr, body->readmem.size))
+    dbg_send_error(DBGERR_INVALIDADDR, hdr->id);
+  else
+    dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body->readmem.addr, body->readmem.size);
+}
+
+static void dbg_write_memory(struct dbg_hdr *hdr, union dbg_body *body)
 {
 }
 
-static void dbg_write_memory(struct dbghdr *hdr, char *data)
+static void dbg_suspend_thread(struct dbg_hdr *hdr, union dbg_body *body)
 {
 }
 
-static void dbg_suspend_thread(struct dbghdr *hdr, char *data)
+static void dbg_resume_thread(struct dbg_hdr *hdr, union dbg_body *body)
 {
 }
 
-static void dbg_resume_thread(struct dbghdr *hdr, char *data)
+static void dbg_get_thread_context(struct dbg_hdr *hdr, union dbg_body *body)
 {
 }
 
-static void dbg_get_thread_context(struct dbghdr *hdr, char *data)
+static void dbg_set_thread_context(struct dbg_hdr *hdr, union dbg_body *body)
 {
 }
 
-static void dbg_set_thread_context(struct dbghdr *hdr, char *data)
+static void dbg_get_selector(struct dbg_hdr *hdr, union dbg_body *body)
 {
 }
 
-static void dbg_get_selector(struct dbghdr *hdr, char *data)
+static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
 {
 }
 
-static void dbg_get_debug_event(struct dbghdr *hdr, char *data)
-{
-}
-
-static void dbg_get_modules(struct dbghdr *hdr, char *data)
+static void dbg_get_threads(struct dbg_hdr *hdr, union dbg_body *body)
 {
 }
 
 static void handle_drpc()
 {
-  struct dbghdr hdr;
+  struct dbg_hdr hdr;
+  union dbg_body *body = (union dbg_body *) dbgdata;
+
   int rc;
 
-  if (!debug_initialized)
+  if (!debugging)
   {
     init_debug_port();
-    debug_initialized = 1;
+    debugging = 1;
     kprintf("dbg: waiting for remote debugger...\n");
   }
 
@@ -211,48 +251,51 @@ static void handle_drpc()
     switch (hdr.cmd)
     {
       case DBGCMD_CONNECT:
-	dbg_connect(&hdr, dbgdata);
+	dbg_connect(&hdr, body);
 	break;
 
       case DBGCMD_CONTINUE:
-        dbg_send_packet(DBGCMD_CONTINUE, hdr.id, NULL, 0);
+        dbg_send_packet(DBGCMD_CONTINUE | DBGCMD_REPLY, hdr.id, NULL, 0);
 	return;
 
       case DBGCMD_READ_MEMORY:
-	dbg_read_memory(&hdr, dbgdata);
+	dbg_read_memory(&hdr, body);
 	break;
 
       case DBGCMD_WRITE_MEMORY:
-	dbg_write_memory(&hdr, dbgdata);
+	dbg_write_memory(&hdr, body);
 	break;
 
       case DBGCMD_SUSPEND_THREAD:
-	dbg_suspend_thread(&hdr, dbgdata);
+	dbg_suspend_thread(&hdr, body);
 	break;
 
       case DBGCMD_RESUME_THREAD:
-	dbg_resume_thread(&hdr, dbgdata);
+	dbg_resume_thread(&hdr, body);
 	break;
 
       case DBGCMD_GET_THREAD_CONTEXT:
-	dbg_get_thread_context(&hdr, dbgdata);
+	dbg_get_thread_context(&hdr, body);
 	break;
 
       case DBGCMD_SET_THREAD_CONTEXT:
-	dbg_set_thread_context(&hdr, dbgdata);
+	dbg_set_thread_context(&hdr, body);
 	break;
 
       case DBGCMD_GET_SELECTOR:
-	dbg_get_selector(&hdr, dbgdata);
-	break;
-
-      case DBGCMD_GET_DEBUG_EVENT:
-	dbg_get_debug_event(&hdr, dbgdata);
+	dbg_get_selector(&hdr, body);
 	break;
 
       case DBGCMD_GET_MODULES:
-	dbg_get_modules(&hdr, dbgdata);
+	dbg_get_modules(&hdr, body);
 	break;
+
+      case DBGCMD_GET_THREADS:
+	dbg_get_threads(&hdr, body);
+	break;
+
+      default:
+	dbg_send_error(DBGERR_INVALIDCMD, hdr.id);
     }
   }
 }
@@ -271,12 +314,19 @@ void dbg_enter(struct context *ctxt, void *addr)
 {
   kprintf("trap %d (%p)\n", ctxt->traptype, addr);
   kprintf("enter kernel debugger\n");
+  current_thread()->ctxt = ctxt;
   dumpregs(ctxt);
+
   //if (ctxt->traptype != 3) panic("system halted");
   shell();
+
+  if (current_thread()->suspend_count > 0)
+    dispatch();
+  else
+    current_thread()->ctxt = NULL;
 }
 
-void dbg_notify_create_thread(struct thread *t)
+void dbg_notify_create_thread(struct thread *t, void *startaddr)
 {
 }
 

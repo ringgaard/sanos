@@ -172,6 +172,8 @@ void init_kernel_modules()
   kmods.load_image = load_image;
   kmods.unload_image = unload_image;
   kmods.protect_region = NULL;
+  kmods.notify_load = dbg_notify_load_module;
+  kmods.notify_unload = dbg_notify_unload_module;
 
   init_module_database(&kmods, "krnl.dll", (hmodule_t) OSBASE, get_property(krnlcfg, "kernel", "libpath", "/os"), 0);
 }

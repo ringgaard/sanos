@@ -17,6 +17,8 @@ struct moddb
   void *(*load_image)(char *name);
   int (*unload_image)(hmodule_t hmod, size_t size);
   int (*protect_region)(void *mem, size_t size, int protect);
+  void (*notify_load)(hmodule_t hmod);
+  void (*notify_unload)(hmodule_t hmod);
 
   struct module *modules;
   struct module *execmod;

@@ -50,6 +50,8 @@ krnlapi pte_t get_page_flags(void *vaddr);
 krnlapi void set_page_flags(void *vaddr, unsigned long flags);
 krnlapi int page_guarded(void *vaddr);
 krnlapi int page_mapped(void *vaddr);
+krnlapi int mem_mapped(void *vaddr, int size);
+
 void init_pdir();
 
 

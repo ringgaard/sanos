@@ -119,6 +119,7 @@ void mark_thread_running()
 
   // Set thread state to running
   self->state = THREAD_STATE_RUNNING;
+  self->ctxt = NULL;
 
   // Set FS register to point to current TIB
   seg = &syspage->gdt[GDT_TIB];
@@ -167,7 +168,7 @@ void threadstart(void *arg)
   }
 }
 
-struct thread *create_task(taskproc_t task, void *arg, int priority)
+static struct thread *create_task(taskproc_t task, void *arg, int priority)
 {
   // Allocate a new aligned thread control block
   struct thread *t = (struct thread *) alloc_pages_align(PAGES_PER_TCB, PAGES_PER_TCB);
@@ -184,7 +185,24 @@ struct thread *create_task(taskproc_t task, void *arg, int priority)
   return t;
 }
 
-int create_thread(void *entrypoint, unsigned long stacksize, struct thread **retval)
+struct thread *create_kernel_thread(taskproc_t task, void *arg, int priority)
+{
+  struct thread *t;
+
+  // Create new thread object
+  t = create_task(task, arg, priority);
+  if (!t) return NULL;
+
+  // Mark thread as ready to run
+  mark_thread_ready(t);
+
+  // Notify debugger
+  dbg_notify_create_thread(t, task);
+
+  return t;
+}
+
+int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread **retval)
 {
   struct thread *t;
   int rc;
@@ -210,6 +228,9 @@ int create_thread(void *entrypoint, unsigned long stacksize, struct thread **ret
 
   // Allocate self handle
   t->self = halloc(&t->object);
+
+  // Notify debugger
+  dbg_notify_create_thread(t, entrypoint);
 
   *retval = t;
   return 0;
@@ -268,6 +289,9 @@ int destroy_thread(struct thread *t)
     munmap(t->tib, sizeof(struct tib), MEM_RELEASE);
     t->tib = NULL;
   }
+
+  // Notify debugger
+  dbg_notify_exit_thread(t);
 
   // Insert the TCB in the dead tcb queue to be destroyed later by the idle thread
   t->next_ready = dead_tcb_queue;

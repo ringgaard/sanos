@@ -116,6 +116,7 @@ struct thread
   struct waitblock auxwb1;
 
   struct fpu *fpustate;
+  struct context *ctxt;
 };
 
 extern struct object **htab;

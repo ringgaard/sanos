@@ -131,6 +131,8 @@
 #define UART_16550A	4
 
 static char *uart_name[] = {"(unknown)", "8250", "16450", "16550", "16550A"};
+static int serial_default_irq[4] = {4, 3, 11, 10};
+static int serial_default_iobase[4] = {0x3F8, 0x2F8, 0x3E8, 0x2E8};
 
 int next_serial_portno = 1;
 
@@ -671,7 +673,7 @@ static void init_serial_port(char *devname, int iobase, int irq, struct device *
   enable_irq(sp->irq);
   _outp((unsigned short) (sp->iobase + UART_IER), IER_ERXRDY | IER_ETXRDY | IER_ERLS | IER_EMSC);
 
-  kprintf("%s: iobase=%x irq=%d type=%s\n", device(devno)->name, sp->iobase, sp->irq, uart_name[sp->type]);
+  kprintf("%s: %s iobase=0x%x irq=%d\n", device(devno)->name, uart_name[sp->type], sp->iobase, sp->irq);
 }
 
 int __declspec(dllexport) install_serial(struct device *dv)
@@ -687,11 +689,11 @@ int __declspec(dllexport) install_serial(struct device *dv)
     if (dv->res[n].type == RESOURCE_IRQ) irq = dv->res[n].start;
   }
 
-  if (iobase > 0 && irq > 0) 
-  {
-    sprintf(devname, "com%d", next_serial_portno++);
-    init_serial_port(devname, iobase, irq, dv);
-  }
+  if (iobase < 0) iobase = serial_default_iobase[next_serial_portno - 1];
+  if (irq < 0) irq = serial_default_irq[next_serial_portno - 1];
+
+  sprintf(devname, "com%d", next_serial_portno++);
+  init_serial_port(devname, iobase, irq, dv);
 
   return 0;
 }
@@ -712,10 +714,10 @@ void init_serial()
       {
 	switch (port)
 	{
-	  case 0: init_serial_port("com1", iobase, 4, NULL); break;
-	  case 1: init_serial_port("com2", iobase, 3, NULL); break;
-	  case 2: init_serial_port("com3", iobase, 11, NULL); break;
-	  case 3: init_serial_port("com4", iobase, 10, NULL); break;
+	  case 0: init_serial_port("com1", iobase, serial_default_irq[0], NULL); break;
+	  case 1: init_serial_port("com2", iobase, serial_default_irq[1], NULL); break;
+	  case 2: init_serial_port("com3", iobase, serial_default_irq[2], NULL); break;
+	  case 3: init_serial_port("com4", iobase, serial_default_irq[3], NULL); break;
 	}
       }
     }

@@ -541,6 +541,9 @@ hmodule_t load_module(struct moddb *db, char *name)
     else if (db->execmod == NULL)
       db->execmod = m;
 
+    // Notify
+    if (db->notify_load) db->notify_load(m->hmod);
+
     if (m == mod) break;
     m = m->next;
   }
@@ -595,6 +598,9 @@ int unload_module(struct moddb *db, hmodule_t hmod)
   remove(mod);
   free(mod->name);
   free(mod);
+
+  // Notify
+  if (db->notify_unload) db->notify_unload(hmod);
 
   return 0;
 }
