@@ -44,13 +44,15 @@
 
 #ifndef SIGINT
 
-#define SIGINT          1
-#define SIGILL          2
-#define SIGFPE          3
-#define SIGSEGV         4
-#define SIGTERM         5
-#define SIGBREAK        6
-#define SIGABRT         7
+#define SIGINT          2               // Interrupt
+#define SIGILL          4               // Illegal instruction
+#define SIGFPE          8               // Floating point exception
+#define SIGSEGV         11              // Segment violation
+#define SIGTERM         15              // Software termination signal
+#define SIGBREAK        21              // Ctrl-Break sequence
+#define SIGABRT         22              // Abnormal termination
+#define SIGBUS          23              // Bus error
+#define SIGTRAP         24              // Debug trap
 
 #endif
 

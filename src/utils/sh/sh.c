@@ -118,7 +118,7 @@ static int httpget(char *server, char *path, char *filename)
   char *buf;
 
   hp = gethostbyname(server);
-  if (!hp) return errno;
+  if (!hp) return -errno;
 
   s = socket(AF_INET, SOCK_STREAM, 0);
   if (s < 0) return s;
