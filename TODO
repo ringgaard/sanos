@@ -363,3 +363,7 @@ CHANGES
 - The fddone flag in bootfd.c has been marked volatile to prevent optimization of interrupt wait loop.
 
 *** version 1.2.8 released ***
+
+- new mkfloppy utility for writing raw floppy disks.
+
+- TCP connections are now reset before kernel shutdown or reboot.

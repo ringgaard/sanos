@@ -40,6 +40,7 @@ struct tcp_pcb;
 // Lower layer interface to TCP
 
 void tcp_init();              // Must be called first to initialize TCP
+void tcp_shutdown();          // Must be called before shutdown to clear connections
 void tcp_slowtmr(void *arg);  // Must be called every 500 ms.
 void tcp_fasttmr(void *arg);  // Must be called every 100 ms.
 

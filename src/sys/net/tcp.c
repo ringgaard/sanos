@@ -312,7 +312,7 @@ void tcp_recved(struct tcp_pcb *pcb, int len)
 }
 
 //
-// tcp_connect():
+// tcp_connect()
 //
 // Connects to another host. The function given as the "connected"
 // argument will be called when the connection has been established.
@@ -687,6 +687,24 @@ void tcp_init()
   mod_timer(&tcpfast_timer, ticks + TCP_FAST_INTERVAL / MSECS_PER_TICK);
   register_proc_inode("tcpstat", tcpstat_proc, NULL);
 }
+//
+// tcp_shutdown
+//
+// Shutdown TCP layer by resetting all active connections
+//
+
+void tcp_shutdown()
+{
+  struct tcp_pcb *pcb;
+
+  // Send RST for all active connections  
+  for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next)
+  {
+    tcp_rst(pcb->snd_nxt, pcb->rcv_nxt, 
+            &pcb->local_ip, &pcb->remote_ip, 
+	    pcb->local_port, pcb->remote_port);
+  }
+}
 
 //
 // tcp_arg
@@ -813,7 +831,6 @@ unsigned long tcp_next_iss()
   iss += tcp_ticks;
   return iss;
 }
-
 
 void tcp_debug_print(struct tcp_hdr *tcphdr)
 {

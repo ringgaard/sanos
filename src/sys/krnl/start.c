@@ -85,37 +85,34 @@ void panic(char *msg)
   dbg_break();
 }
 
-void exit(int status)
-{
-  if (status != 0) kprintf("exit code = %d\n", status);
-
-  kprintf("syncing filesystems...\n");
-  umount_all();
-  kprintf("system stopped\n");
-  sleep(1000);
-  cli();
-  halt();
-}
-
 void stop(int restart)
 {
-  kprintf("syncing filesystems...\n");
+  kprintf("kernel: syncing filesystems...\n");
   umount_all();
+
+  kprintf("kernel: clearing connections...\n");
+  tcp_shutdown();
+  
+  sleep(200);
 
   if (restart)
   {
-    kprintf("rebooting\n");
+    kprintf("kernel: rebooting...\n");
     reboot();
   }
   else
   {
-    kprintf("system stopped\n");
-    sleep(100);
+    kprintf("kernel: system stopped\n");
     cli();
     halt();
   }
 }
 
+void exit(int status)
+{
+  if (status != 0) kprintf("kernel: exit code = %d\n", status);
+  stop(0);
+}
 
 // Date string Mmm dd YYYY
 //             01234567890
