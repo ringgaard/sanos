@@ -114,7 +114,7 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
   int maxtime;
   int err;
   
-  //kprintf("add arp for %d.%d.%d.%d\n", ((unsigned char *) ipaddr)[0], ((unsigned char *) ipaddr)[1], ((unsigned char *) ipaddr)[2], ((unsigned char *) ipaddr)[3]);
+  kprintf("arp: add %la -> %a\n", ethaddr, ipaddr);
 
   // Walk through the ARP mapping table and try to find an entry to
   // update. If none is found, the IP -> MAC address mapping is
@@ -249,7 +249,7 @@ struct pbuf *arp_arp_input(struct netif *netif, struct eth_addr *ethaddr, struct
       }
       break;
 
-    case ARP_REPLY:    
+    case ARP_REPLY:
       // ARP reply. We insert or update the ARP table.
       if (ip_addr_cmp(&hdr->dipaddr, &netif->ipaddr)) 
       {

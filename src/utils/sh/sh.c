@@ -409,7 +409,11 @@ static void busy_loop(int ms)
   gmtime(&t, &tm);
   printf("Time is %04d/%02d/%02d %02d:%02d:%02d Clock is %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, c);
 
-  while (clock() < c + ms);
+  //while (clock() < c + ms);
+  {
+    int n;
+    for (n = 0; n < 100000000; n++) c += n;
+  }
 
   t = time();
   c = clock();

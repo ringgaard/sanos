@@ -27,6 +27,8 @@ err_t icmp_input(struct pbuf *p, struct netif *inp)
 
   type = *((unsigned char *) p->payload);
 
+  kprintf("icmp: recv type %d\n", type);
+
   switch (type) 
   {
     case ICMP_ECHO:

@@ -131,8 +131,8 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
 
   stats.ip.recv++;
   
-  //kprintf("receiving IP datagram:\n");
-  //ip_debug_print(p);
+  kprintf("receiving IP datagram:\n");
+  ip_debug_print(p);
 
   // Identify the IP header
   iphdr = p->payload;
@@ -304,8 +304,8 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
 
   stats.ip.xmit++;
 
-  //kprintf("sending IP datagram:\n");
-  //ip_debug_print(p);
+  kprintf("sending IP datagram:\n");
+  ip_debug_print(p);
 
   return netif->output(netif, p, dest);
 }

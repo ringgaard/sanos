@@ -1110,30 +1110,35 @@ int nic_get_link_speed(struct nic *nic)
 
   if ((phy_anar & MII_ANAR_100TXFD) && (phy_anlpar & MII_ANLPAR_100TXFD)) 
   {
+    kprintf("nic: connector is 100BaseTX full duplex\n");
     //nic->connector = CONNECTOR_100BASETX;
     nic->linkspeed = 100;
     nic->fullduplex = 1;
   }
   else if ((phy_anar & MII_ANAR_100TX) && (phy_anlpar & MII_ANLPAR_100TX)) 
   {
+    kprintf("nic: connector is 100BaseTX\n");
     //nic->connector = CONNECTOR_100BASETX;
     nic->linkspeed = 100;
     nic->fullduplex = 0;
   }
   else if ((phy_anar & MII_ANAR_10TFD) && (phy_anlpar & MII_ANLPAR_10TFD)) 
   {
+    kprintf("nic: connector is 10BaseT full duplex\n");
     //nic->connector = CONNECTOR_10BASET;
     nic->linkspeed = 10;
     nic->fullduplex = 1;
   }
   else if ((phy_anar & MII_ANAR_10T) && (phy_anlpar & MII_ANLPAR_10T)) 
   {
+    kprintf("nic: connector is 10BaseT\n");
     //nic->connector = CONNECTOR_10BASET;
     nic->linkspeed = 10;
     nic->fullduplex = 0;
   }
   else if (!(phy_aner & MII_ANER_LPANABLE))
   {
+    kprintf("nic: link partner is not capable of auto-negotiation\n");
     // Link partner is not capable of auto-negotiation. Fall back to 10HD.
     //nic->connector = CONNECTOR_10BASET;
     nic->linkspeed = 10;
@@ -1799,7 +1804,7 @@ int nic_start_adapter(struct nic *nic)
   execute_command(nic, CMD_DOWN_UNSTALL, 0);
 
   // Set receive filter
-  execute_command(nic, CMD_SET_RX_FILTER, RECEIVE_INDIVIDUAL | RECEIVE_MULTICAST | RECEIVE_BROADCAST);
+  execute_command(nic, CMD_SET_RX_FILTER, RECEIVE_INDIVIDUAL /*| RECEIVE_MULTICAST*/ | RECEIVE_BROADCAST);
 
   // Enable the statistics back.
   execute_command(nic, CMD_STATISTICS_ENABLE, 0);

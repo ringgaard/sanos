@@ -67,7 +67,7 @@ static void dhcp_handle_nak(struct dhcp_state *state)
 {
   int msecs = 10 * 1000;  
   mod_timer(&state->request_timeout_timer, ticks + msecs / MSECS_PER_TICK);
-  kprintf("dhcp_handle_nak(): request timeout %u msecs\n", msecs);
+  kprintf("dhcp_handle_nak: request timeout %u msecs\n", msecs);
   dhcp_set_state(state, DHCP_BACKING_OFF);
 }
 
@@ -87,7 +87,7 @@ static void dhcp_check(struct dhcp_state *state)
   p = arp_query(state->netif, (struct eth_addr *) &state->netif->hwaddr, &state->offered_ip_addr);
   if (p != NULL)
   {
-    kprintf("dhcp_check(): sending ARP request len %u\n", p->tot_len);
+    kprintf("dhcp_check: sending ARP request len %u\n", p->tot_len);
     result = dev_transmit((devno_t) state->netif->state, p);
     pbuf_free(p);
     //return result;
@@ -109,9 +109,9 @@ static void dhcp_handle_offer(struct dhcp_state *state)
   if (option_ptr != NULL)
   {
     state->server_ip_addr.addr = htonl(dhcp_get_option_long(&option_ptr[2]));
-    //kprintf("dhcp_handle_offer(): server 0x%08lx\n", state->server_ip_addr.addr);
+    //kprintf("dhcp_handle_offer: server 0x%08lx\n", state->server_ip_addr.addr);
     ip_addr_set(&state->offered_ip_addr, (struct ip_addr *) &state->msg_in->yiaddr);
-    //kprintf("dhcp_handle_offer(): offer for 0x%08lx\n", state->offered_ip_addr.addr);
+    //kprintf("dhcp_handle_offer: offer for 0x%08lx\n", state->offered_ip_addr.addr);
     dhcp_select(state);
   }
 }
@@ -175,12 +175,12 @@ static void dhcp_timeout_handler(struct dhcp_state *state)
 {
   if (state->state == DHCP_BACKING_OFF || state->state == DHCP_SELECTING)
   {
-    kprintf("dhcp_timeout(): restarting discovery\n");
+    kprintf("dhcp_timeout: restarting discovery\n");
     dhcp_discover(state);
   }
   else if (state->state == DHCP_REQUESTING)
   {
-    kprintf("dhcp_timeout(): REQUESTING, DHCP request timed out\n");
+    kprintf("dhcp_timeout: REQUESTING, DHCP request timed out\n");
     if (state->tries <= 5)
     {
       dhcp_select(state);
@@ -188,14 +188,14 @@ static void dhcp_timeout_handler(struct dhcp_state *state)
     else
     {
       struct netif *netif = state->netif;
-      kprintf("dhcp_timeout(): REQUESTING, releasing, restarting\n");
+      kprintf("dhcp_timeout: REQUESTING, releasing, restarting\n");
       dhcp_release(state);
       dhcp_discover(state);
     }
   }
   else if (state->state == DHCP_CHECKING)
   {
-    kprintf("dhcp_timeout(): CHECKING, ARP request timed out\n");
+    kprintf("dhcp_timeout: CHECKING, ARP request timed out\n");
     if (state->tries <= 1)
     {
       dhcp_check(state);
@@ -208,12 +208,12 @@ static void dhcp_timeout_handler(struct dhcp_state *state)
   }
   else if (state->state == DHCP_RENEWING)
   {
-    kprintf("dhcp_timeout(): RENEWING, DHCP request timed out\n");
+    kprintf("dhcp_timeout: RENEWING, DHCP request timed out\n");
     dhcp_renew(state);
   }
   else if (state->state == DHCP_REBINDING)
   {
-    kprintf("dhcp_timeout(): REBINDING, DHCP request timed out\n");
+    kprintf("dhcp_timeout: REBINDING, DHCP request timed out\n");
     if (state->tries <= 8)
     {
       dhcp_rebind(state);
@@ -221,7 +221,7 @@ static void dhcp_timeout_handler(struct dhcp_state *state)
     else
     {
       struct netif *netif = state->netif;
-      kprintf("dhcp_timeout(): REBINDING, release, restart\n");
+      kprintf("dhcp_timeout: REBINDING, release, restart\n");
       dhcp_release(state);
       dhcp_discover(state);
     }
@@ -236,7 +236,7 @@ static void dhcp_timeout(void *arg)
 {
   struct dhcp_state *state = arg;
 
-  queue_task(&sys_task_queue, &state->request_timeout_task, (taskproc_t) dhcp_timeout, state);
+  queue_task(&sys_task_queue, &state->request_timeout_task, (taskproc_t) dhcp_timeout_handler, state);
 }
 
 //
@@ -247,7 +247,7 @@ static void dhcp_t1_timeout(struct dhcp_state *state)
 {
   if (state->state == DHCP_REQUESTING || state->state == DHCP_BOUND || state->state == DHCP_RENEWING)
   {
-    kprintf("dhcp_t1_timeout(): must renew\n");
+    kprintf("dhcp_t1_timeout: must renew\n");
     queue_task(&sys_task_queue, &state->t1_timeout_task, (taskproc_t) dhcp_renew, state);
   }
 }
@@ -260,7 +260,7 @@ static void dhcp_t2_timeout(struct dhcp_state *state)
 {
   if (state->state == DHCP_REQUESTING || state->state == DHCP_BOUND || state->state == DHCP_RENEWING)
   {
-    kprintf("dhcp_t2_timeout(): must rebind\n");
+    kprintf("dhcp_t2_timeout: must rebind\n");
     queue_task(&sys_task_queue, &state->t2_timeout_task, (taskproc_t) dhcp_rebind, state);
   }
 }
@@ -363,14 +363,14 @@ struct dhcp_state *dhcp_start(struct netif *netif)
   state = dhcp_find_client(netif);
   if (state != NULL)
   {
-    kprintf("dhcp_start(): already active on interface\n");
+    kprintf("dhcp_start: already active on interface\n");
     
     // Just restart the DHCP negotiation
     result = dhcp_discover(state);
     if (result < 0) return NULL;
   }
 
-  //kprintf("dhcp_start(): starting new DHCP client\n");
+  //kprintf("dhcp_start: starting new DHCP client\n");
   state = kmalloc(sizeof(struct dhcp_state));
   if (!state) return NULL;
   memset(state, 0, sizeof(struct dhcp_state));
@@ -470,13 +470,13 @@ void dhcp_arp_reply(struct ip_addr *addr)
     // Is this DHCP client doing an ARP check?
     if (state->state == DHCP_CHECKING)
     {
-      kprintf("dhcp_arp_reply(): CHECKING, arp reply for 0x%08lx\n", addr->addr);
+      kprintf("dhcp_arp_reply: CHECKING, arp reply for 0x%08lx\n", addr->addr);
 
       // Does a host respond with the address we were offered by the DHCP server?
       if (ip_addr_cmp(addr, &state->offered_ip_addr))
       {
         // We will not accept the offered address
-        kprintf("dhcp_arp_reply(): arp reply matched with offered address, declining\n");
+        kprintf("dhcp_arp_reply: arp reply matched with offered address, declining\n");
         dhcp_decline(state);
       }
     }
@@ -575,6 +575,8 @@ static err_t dhcp_discover(struct dhcp_state *state)
   msecs = state->tries < 4 ? (state->tries + 1) * 1000 : 10 * 1000;
   mod_timer(&state->request_timeout_timer, ticks + msecs / MSECS_PER_TICK);
 
+  kprintf("dhcp: sending discover, timeout %d ms\n", msecs);
+
   dhcp_set_state(state, DHCP_SELECTING);
   return result;
 }
@@ -627,19 +629,19 @@ static void dhcp_bind(struct dhcp_state *state)
   netif_set_netmask(state->netif, &sn_mask);
   netif_set_gw(state->netif, &gw_addr);
 
-  //kprintf("dhcp_bind(): IP: 0x%08lx ", state->offered_ip_addr.addr);
+  //kprintf("dhcp_bind: IP: 0x%08lx ", state->offered_ip_addr.addr);
   //ip_addr_debug_print(&state->offered_ip_addr);
   //kprintf("\n");
 
-  //kprintf("dhcp_bind(): GW: 0x%08lx ", gw_addr.addr);
+  //kprintf("dhcp_bind: GW: 0x%08lx ", gw_addr.addr);
   //ip_addr_debug_print(&gw_addr);
   //kprintf("\n");
 
-  //kprintf("dhcp_bind(): SN: 0x%08lx ", sn_mask.addr);
+  //kprintf("dhcp_bind: SN: 0x%08lx ", sn_mask.addr);
   //ip_addr_debug_print(&sn_mask);
   //kprintf("\n");
 
-  //kprintf("dhcp_bind(): DNS: ");
+  //kprintf("dhcp_bind: DNS: ");
   //ip_addr_debug_print(&state->offered_dns1_addr);
   //kprintf(" ");
   //ip_addr_debug_print(&state->offered_dns2_addr);
