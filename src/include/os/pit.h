@@ -3,7 +3,7 @@
 //
 // Copyright (c) 2001 Michael Ringgaard. All rights reserved.
 //
-// i8259 Programmable Interrupt Controller functions
+// Programmable Interval Timer functions (PIT i8253)
 //
 
 #ifndef PIT_H
@@ -25,6 +25,5 @@ krnlapi unsigned int get_tick_count();
 krnlapi time_t get_time();
 
 time_t time(time_t *time);
-
 
 #endif

@@ -15,20 +15,30 @@
 #define time_after_eq(a, b)  ((long) (a) - (long) (b) >= 0)
 #define time_before_eq(a ,b) time_after_eq(b, a)
 
+struct timer;
+
+struct timer_link
+{
+  struct timer_link *next;
+  struct timer_link *prev;
+};
+
 struct timer
 {
-  struct timer *next;
-  struct timer *prev;
+  struct timer_link link;
   unsigned int expires;
   int active;
   void (*handler)(void *arg);
   void *arg;
 };
 
-void init_timer(struct timer *timer, void (*handler)(void *arg), void *arg);
+void init_timers();
 
-void add_timer(struct timer_list * timer);
-int del_timer(struct timer_list * timer);
+void init_timer(struct timer *timer, void (*handler)(void *arg), void *arg);
+void run_timer_list();
+
+void add_timer(struct timer *timer);
+int del_timer(struct timer *timer);
 int mod_timer(struct timer *timer, unsigned int expires);
 
 #endif

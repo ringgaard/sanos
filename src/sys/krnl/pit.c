@@ -3,7 +3,7 @@
 //
 // Copyright (c) 2001 Michael Ringgaard. All rights reserved.
 //
-// i8253 Programmable Interval Timer functions
+// Programmable Interval Timer functions (PIT i8253)
 //
 
 #include <os/krnl.h>
