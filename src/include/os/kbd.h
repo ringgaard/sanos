@@ -33,6 +33,8 @@ struct keytable
 extern int ctrl_alt_del_enabled;
 extern int keymap;
 
+krnlapi struct keytable *keytables[MAX_KEYTABLES];
+
 void init_keyboard();
 
 int getch(unsigned int timeout);

@@ -39,7 +39,7 @@ struct keytable *keytables[MAX_KEYTABLES];
 
 unsigned char led_status = 0;
 unsigned char control_keys = 0;
-unsigned int last_key = -1;
+unsigned int last_scancode = -1;
 int ctrl_alt_del_enabled = 1;
 int keymap = 0;
 int ext;
@@ -98,61 +98,65 @@ static void insert_key(unsigned char ch)
 
 static void keyb_dpc(void *arg)
 {
-  unsigned int key = last_key;
-  unsigned int key_ascii = 0;
+  unsigned int scancode;
+  unsigned int keycode = 0;
   struct keytable *kt;
   int state;
 
-  last_key = -1;
+  // Get scancode
+  scancode = last_scancode;
+  last_scancode = -1;
+  if (scancode == -1) return;
 
   // In scancode mode just insert scancode
   if (keymap == -1)
   {
-    insert_key((unsigned char) key);
+    insert_key((unsigned char) scancode);
     return;
   }
 
   // Get keytable
   kt = keytables[keymap];
+  if (!kt) return;
 
   // Extended scancode
-  if (key == 0xE0)
+  if (scancode == 0xE0)
   {
     ext = 1;
     return;
   }
 
-  //kprintf("scancode %02X %s%s\n", key & 0x7F, key & 0x80 ? "break" : "make", ext ? " ext" : "");
+  //kprintf("scancode %02X %s%s\n", scancode & 0x7F, scancode & 0x80 ? "break" : "make", ext ? " ext" : "");
 
   // Ctrl-Alt-SysRq
-  if ((control_keys & (CK_LCTRL | CK_LALT)) && key == 0xD4) 
+  if ((control_keys & (CK_LCTRL | CK_LALT)) && scancode == 0xD4) 
   {
     dbg_break();
     return;
   }
 
   // Ctrl-Alt-Del
-  if ((control_keys & (CK_LCTRL | CK_LALT)) && key == 0x53) 
+  if ((control_keys & (CK_LCTRL | CK_LALT)) && scancode == 0x53) 
   {
     if (ctrl_alt_del_enabled) reboot();
   }
 
   // LED keys, i.e. scroll lock, num lock, and caps lock
-  if (key == 0x3A)
+  if (scancode == 0x3A)
   {
     // Caps lock
     led_status ^= LED_CAPS_LOCK;
     setleds();
   }
 
-  if (key == 0x45)
+  if (scancode == 0x45)
   {
     // Num lock
     led_status ^= LED_NUM_LOCK;
     setleds();
   }
 
-  if (key == 0x46)
+  if (scancode == 0x46)
   {
     // Scroll lock
     led_status ^= LED_SCROLL_LOCK;
@@ -160,28 +164,28 @@ static void keyb_dpc(void *arg)
   }
 
   // Ctrl keys
-  if (!ext && key == 0x1D) control_keys |= CK_LCTRL;
-  if (!ext && key == (0x1D | 0x80)) control_keys &= ~CK_LCTRL;
+  if (!ext && scancode == 0x1D) control_keys |= CK_LCTRL;
+  if (!ext && scancode == (0x1D | 0x80)) control_keys &= ~CK_LCTRL;
 
-  if (ext && key == 0x1D) control_keys |= CK_RCTRL;
-  if (ext && key == (0x1D | 0x80)) control_keys &= ~CK_RCTRL;
+  if (ext && scancode == 0x1D) control_keys |= CK_RCTRL;
+  if (ext && scancode == (0x1D | 0x80)) control_keys &= ~CK_RCTRL;
 
   // Shift keys
-  if (key == 0x2A) control_keys |= CK_LSHIFT;
-  if (key == (0x2A | 0x80)) control_keys &= ~CK_LSHIFT;
+  if (scancode == 0x2A) control_keys |= CK_LSHIFT;
+  if (scancode == (0x2A | 0x80)) control_keys &= ~CK_LSHIFT;
 
-  if (key == 0x36) control_keys |= CK_RSHIFT;
-  if (key == (0x36 | 0x80)) control_keys &= ~CK_RSHIFT;
+  if (scancode == 0x36) control_keys |= CK_RSHIFT;
+  if (scancode == (0x36 | 0x80)) control_keys &= ~CK_RSHIFT;
 
   // Alt key
-  if (!ext && key == 0x38) control_keys |= CK_LALT;
-  if (!ext && key == 0x80 + 0x38) control_keys &= ~CK_LALT;
+  if (!ext && scancode == 0x38) control_keys |= CK_LALT;
+  if (!ext && scancode == 0x80 + 0x38) control_keys &= ~CK_LALT;
 	  
   // AltGr key
-  if (ext && key == 0x38) control_keys |= CK_RALT;
-  if (ext && key == (0x38 | 0x80)) control_keys &= ~CK_RALT;
+  if (ext && scancode == 0x38) control_keys |= CK_RALT;
+  if (ext && scancode == (0x38 | 0x80)) control_keys &= ~CK_RALT;
 
-  if (key < MAX_SCANCODES)
+  if (scancode < MAX_SCANCODES)
   {
     if ((control_keys & (CK_LSHIFT | CK_RSHIFT)) && (led_status & LED_CAPS_LOCK))
       state = KBSTATE_SHIFTCAPS;
@@ -205,20 +209,20 @@ static void keyb_dpc(void *arg)
     //kprintf("(%d,%x)", state, control_keys);
 
     if (ext)
-      key_ascii = kt->extended[key][state];
+      keycode = kt->extended[scancode][state];
     else
-      key_ascii = kt->normal[key][state];
+      keycode = kt->normal[scancode][state];
 
-    if (key_ascii != 0)
+    if (keycode != 0)
     {
-      if (key_ascii <= 0xFF)
+      if (keycode <= 0xFF)
       {
-	insert_key((unsigned char) key_ascii);
+	insert_key((unsigned char) keycode);
       }
       else
       {
-	insert_key((unsigned char) (key_ascii & 0xFF));
-	insert_key((unsigned char) (key_ascii >> 8));
+	insert_key((unsigned char) (keycode & 0xFF));
+	insert_key((unsigned char) (keycode >> 8));
       }
     }
   }
@@ -232,18 +236,18 @@ static void keyb_dpc(void *arg)
 
 void keyboard_handler(struct context *ctxt, void *arg)
 {
-  if (last_key == -1) 
+  if (last_scancode == -1) 
   {
     // Record scan code
-    last_key = _inp(KB_DATA) & 0xFF;
+    last_scancode = _inp(KB_DATA) & 0xFF;
     queue_irq_dpc(&kbddpc, keyb_dpc, NULL);
-    //kprintf("key %d\n", last_key);
+    //kprintf("key %d\n", last_scancode);
   }
   else
   {
     // Keyboard overflow, ignore
-    unsigned int lost_key = _inp(KB_DATA) & 0xFF;
-    //kprintf("key overflow %d\n", lost_key);
+    unsigned int lost_scancode = _inp(KB_DATA) & 0xFF;
+    //kprintf("key overflow %d\n", lost_scancode);
   }
 
   eoi(IRQ_KBD);
@@ -298,30 +302,6 @@ void init_keyboard()
       break;
     }
   }
-
-#if 0
-  {
-    char x[256];
-    unsigned short *arr; 
-
-    memset(x, 0, 256);
-    arr = (unsigned short *) &(keytables[keymap]->normal[0]);
-    for (i = 0; i < 0x80 * 9; i++)
-    {
-      if (*arr > 0xFF) x[*arr >> 8] = 1;
-      arr++;
-    }
-
-    arr = (unsigned short *) &(keytables[keymap]->extended[0]);
-    for (i = 0; i < 0x80 * 9; i++)
-    {
-      if (*arr > 0xFF) x[*arr >> 8] = 1;
-      arr++;
-    }
-
-    for (i = 0; i < 256; i++) if (x[i] == 0) kprintf("code %02X unused\n", i);
-  }
-#endif
 
   // Set all keyboard LEDs off
   led_status = 0; 
