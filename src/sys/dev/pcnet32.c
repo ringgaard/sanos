@@ -544,7 +544,6 @@ int __declspec(dllexport) install(struct unit *unit)
   char str[20];
   unsigned short val;
   unsigned long init_block;
-  unsigned long value;
 
   // Check for PCI device
   if (unit->bus->bustype != BUSTYPE_PCI) return -EINVAL;
@@ -561,9 +560,7 @@ int __declspec(dllexport) install(struct unit *unit)
   pcnet32->membase = (unsigned short) get_unit_membase(unit);
 
   // Enable bus mastering
-  value = pci_unit_read(unit, PCI_CONFIG_CMD_STAT);
-  value |= 0x00000004;
-  pci_unit_write(unit, PCI_CONFIG_CMD_STAT, value);
+  pci_enable_busmastering(unit);
   
   // Reset the chip
   pcnet32_dwio_reset(pcnet32->iobase);

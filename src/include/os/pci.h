@@ -61,6 +61,8 @@ krnlapi void pci_config_write(int busno, int devno, int funcno, int addr, unsign
 krnlapi unsigned long pci_unit_read(struct unit *unit, int addr);
 krnlapi void pci_unit_write(struct unit *unit, int addr, unsigned long value);
 
+krnlapi void pci_enable_busmastering(struct unit *unit);
+
 void enum_pci_bus(struct bus *bus);
 unsigned long get_pci_hostbus_unitcode();
 

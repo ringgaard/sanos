@@ -3,6 +3,25 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
+Project: "3c905c"=.\3c905c.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+    begin source code control
+    3c905c
+    ..
+    end source code control
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name krnl
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "advapi32"=.\advapi32.dsp - Package Owner=<4>
 
 Package=<5>
@@ -135,6 +154,9 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name winmm
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name 3c905c
     End Project Dependency
 }}}
 

@@ -125,6 +125,15 @@ void pci_unit_write(struct unit *unit, int addr, unsigned long value)
   pci_config_write(unit->bus->busno, PCI_DEVNO(unit->unitno), PCI_FUNCNO(unit->unitno), addr, value); 
 }
 
+void pci_enable_busmastering(struct unit *unit)
+{
+  unsigned long value;
+
+  value = pci_unit_read(unit, PCI_CONFIG_CMD_STAT);
+  value |= 0x00000004;
+  pci_unit_write(unit, PCI_CONFIG_CMD_STAT, value);
+}
+
 static char *get_pci_class_name(int classcode)
 {
   int i = 0;

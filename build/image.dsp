@@ -70,7 +70,7 @@ SOURCE=.\mkbootdisk.cmd
 !IF  "$(CFG)" == "image - Win32 SanOS"
 
 # PROP Intermediate_Dir "..\bin"
-USERDEP__MKBOO="..\bin\boot"	"..\bin\osldr.dll"	"..\bin\krnl.dll"	"..\bin\pcnet32.sys"	"..\bin\ne2000.sys"	"..\bin\os.dll"	"..\bin\sh.exe"	"..\bin\fdisk.exe"	"..\bin\setup.exe"	"..\bin\msvcrt.dll"	"..\bin\kernel32.dll"	"..\bin\user32.dll"	"..\bin\advapi32.dll"	"..\bin\winmm.dll"	"..\bin\jinit.exe"	"krnl.ini"	"os.ini"	"setup.ini"	
+USERDEP__MKBOO="..\bin\boot"	"..\bin\osldr.dll"	"..\bin\krnl.dll"	"..\bin\pcnet32.sys"	"..\bin\ne2000.sys"	"..\bin\3c905c.sys"	"..\bin\os.dll"	"..\bin\sh.exe"	"..\bin\fdisk.exe"	"..\bin\setup.exe"	"..\bin\msvcrt.dll"	"..\bin\kernel32.dll"	"..\bin\user32.dll"	"..\bin\advapi32.dll"	"..\bin\winmm.dll"	"..\bin\jinit.exe"	"krnl.ini"	"os.ini"	"setup.ini"	
 # Begin Custom Build - Create boot disk
 InputPath=.\mkbootdisk.cmd
 

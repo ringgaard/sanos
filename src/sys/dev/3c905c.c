@@ -140,7 +140,7 @@ struct driver card_driver =
 
 #define EEPROM_SIZE 0x21
 
-int __declspec(dllexport) install(struct device *dv)
+int __declspec(dllexport) install(struct unit *unit)
 {
   struct card *card;
   unsigned short eeprom[EEPROM_SIZE];
@@ -148,12 +148,11 @@ int __declspec(dllexport) install(struct device *dv)
   char *chipname = "3c905c";
   int i, j;
   char str[20];
-  unsigned long value;
 
   kprintf("Hello from 3c905c\n");
 
   // Check for PCI device
-  if (dv->type != DEVICE_TYPE_PCI) return -EINVAL;
+  if (unit->bus->bustype != BUSTYPE_PCI) return -EINVAL;
 
   // Allocate device structure
   card = (struct card *) kmalloc(sizeof(struct card));
@@ -162,14 +161,12 @@ int __declspec(dllexport) install(struct device *dv)
   card->phys_addr = (unsigned long) virt2phys(card);
 
   // Setup NIC configuration
-  card->iobase = (unsigned short) dv->pci->iobase;
-  card->irq = (unsigned short) dv->pci->irq;
-  card->membase = (unsigned short) dv->pci->membase;
+  card->iobase = (unsigned short) get_unit_iobase(unit);
+  card->irq = (unsigned short) get_unit_irq(unit);
+  card->membase = (unsigned short) get_unit_membase(unit);
 
   // Enable bus mastering
-  value = pci_config_read(dv->pci->bus->busno, dv->pci->devno, dv->pci->funcno, PCI_CONFIG_CMD_STAT);
-  value |= 0x00000004;
-  pci_config_write(dv->pci->bus->busno, dv->pci->devno, dv->pci->funcno, PCI_CONFIG_CMD_STAT, value);
+  pci_enable_busmastering(unit);
 
   // Read the EEPROM
   select_window(card->iobase, 0);
@@ -202,7 +199,7 @@ int __declspec(dllexport) install(struct device *dv)
   select_window(card->iobase, 2);
   for (i = 0; i < ETHER_ADDR_LEN; i++) _outp((unsigned short) (card->iobase + i), card->hwaddr.addr[i]);
 
-  card->devno = dev_make("nic#", &card_driver, dv, card);
+  card->devno = dev_make("nic#", &card_driver, unit, card);
 
   kprintf("%s: 3com %s iobase 0x%x irq %d hwaddr %s\n", device(card->devno)->name, chipname, card->iobase, card->irq, ether2str(&card->hwaddr, str));
 
