@@ -989,7 +989,7 @@ int smb_trans(struct smb_share *share,
 	      void *rspparams, int *rspparamlen,
 	      void *rspdata, int *rspdatalen);
 
-int smb_connect_tree(struct smb_share *share, int retry);
+int smb_connect_tree(struct smb_share *share);
 int smb_disconnect_tree(struct smb_share *share);
 
 int smb_connect(struct smb_share *share);

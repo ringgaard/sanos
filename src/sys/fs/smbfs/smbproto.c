@@ -266,7 +266,7 @@ int smb_trans(struct smb_share *share,
   return 0;
 }
 
-int smb_connect_tree(struct smb_share *share, int retry)
+int smb_connect_tree(struct smb_share *share)
 {
   struct smb *smb;
   int rc;
@@ -274,7 +274,7 @@ int smb_connect_tree(struct smb_share *share, int retry)
   char buf[SMB_NAMELEN];
 
   // Connect to share
-  smb = smb_init(share, retry ? 0 : 1);
+  smb = smb_init(share, 1);
   smb->params.req.connect.andx.cmd = 0xFF;
   smb->params.req.connect.password_length = strlen(share->server->password) + 1;
 
@@ -283,7 +283,7 @@ int smb_connect_tree(struct smb_share *share, int retry)
   p = addstrz(p, share->sharename);
   p = addstrz(p, SMB_SERVICE_DISK);
 
-  rc = smb_request(share, smb, SMB_COM_TREE_CONNECT_ANDX, 4, buf, p - buf, retry);
+  rc = smb_request(share, smb, SMB_COM_TREE_CONNECT_ANDX, 4, buf, p - buf, 0);
   if (rc < 0) return rc;
 
   share->tid = smb->tid;
@@ -430,6 +430,7 @@ int smb_get_connection(struct smb_share *share, struct ip_addr *ipaddr, char *do
   strcpy(server->username, username); 
   strcpy(server->password, password);
   server->uid = 0xFFFF;
+  init_mutex(&server->lock, 0);
 
   // Add share to server
   share->tid = 0xFFFF;
@@ -524,7 +525,7 @@ int smb_check_connection(struct smb_share *share)
   if (share->tid == 0xFFFF)
   {
     // Reconnect share
-    rc = smb_connect_tree(share, 1);
+    rc = smb_connect_tree(share);
     if (rc < 0) return rc;
   }
 
@@ -550,7 +551,7 @@ int smb_reconnect(struct smb_share *share)
   rc = smb_connect(share);
   if (rc < 0) return rc;
 
-  rc = smb_connect_tree(share, 1);
+  rc = smb_connect_tree(share);
   if (rc < 0) return rc;
 
   return 0;

@@ -77,7 +77,8 @@ int smb_mount(struct fs *fs, char *opts)
   }
 
   // Connect to share
-  rc = smb_connect_tree(share, 1);
+  rc = smb_connect_tree(share);
+  if (rc == -ECONN) rc = smb_reconnect(share);
   if (rc < 0)
   {
     smb_release_connection(share);
@@ -354,21 +355,24 @@ int smb_read(struct file *filp, void *data, size_t size)
   left = size;
   p = (char *) data;
 
-  // Read data using raw mode
-  while (1)
+  if (filp->pos < file->statbuf.quad.size_low)
   {
-    count = left;
-    if (count > SMB_RAW_CHUNKSIZE) count = SMB_RAW_CHUNKSIZE;
+    // Read data using raw mode
+    while (1)
+    {
+      count = left;
+      if (count > SMB_RAW_CHUNKSIZE) count = SMB_RAW_CHUNKSIZE;
 
-    rc = smb_read_raw(share, file, p, count, filp->pos);
-    if (rc < 0) return rc;
-    if (rc == 0) break;
+      rc = smb_read_raw(share, file, p, count, filp->pos);
+      if (rc < 0) return rc;
+      if (rc == 0) break;
 
-    filp->pos += rc;
-    left -= rc;
-    p += rc;
+      filp->pos += rc;
+      left -= rc;
+      p += rc;
 
-    if (left == 0) return size;
+      if (left == 0) return size;
+    }
   }
 
   // Read rest using normal mode
