@@ -39,13 +39,14 @@ void *mmap(void *addr, unsigned long size, int type, int protect)
 
   if (size == 0) return NULL;
   addr = (void *) PAGEADDR(addr);
-  if (!addr && (type & MEM_COMMIT)) type |= MEM_RESERVE;
+  if (!addr && (type & MEM_COMMIT) != 0) type |= MEM_RESERVE;
 
   if (type & MEM_RESERVE)
   {
     if (addr == NULL)
     {
-      addr = (void *) PTOB(rmap_alloc(vmap, pages));
+      //addr = (void *) PTOB(rmap_alloc(vmap, pages));
+      addr = (void *) PTOB(rmap_alloc_align(vmap, pages, 64 * K / PAGESIZE));
       if (addr == NULL) return NULL;
     }
     else

@@ -293,7 +293,7 @@ static err_t tcp_process(struct tcp_seg *seg, struct tcp_pcb *pcb)
 
     if (acceptable) 
     {
-      kprintf("tcp_process: Connection RESET\n");
+      //kprintf("tcp_process: Connection RESET\n");
       pcb->flags |= TF_RESET;
       pcb->flags &= ~TF_ACK_DELAY;
     } 
@@ -825,7 +825,7 @@ static void tcp_receive(struct tcp_seg *seg, struct tcp_pcb *pcb)
 
 	if (TCPH_FLAGS(seg->tcphdr) & TCP_FIN) 
 	{
-	  kprintf("tcp_receive: received FIN.\n");
+	  //kprintf("tcp_receive: received FIN.\n");
 	  pcb->flags |= TF_GOT_FIN;
 	}
 	

@@ -50,7 +50,7 @@ static void free_stream(FILE *stream)
 int _open(const char *filename, int oflag)
 {
   TRACE("_open");
-  syslog(LOG_DEBUG, "_open(%s,%p)\n", filename, oflag);
+  //syslog(LOG_DEBUG, "_open(%s,%p)\n", filename, oflag);
   return open(filename, oflag);
 }
 
@@ -246,7 +246,7 @@ FILE *fopen(const char *filename, const char *mode)
   handle_t handle;
 
   TRACE("fopen");
-  syslog(LOG_DEBUG, "fopen(%s,%s)\n", filename, mode);
+  //syslog(LOG_DEBUG, "fopen(%s,%s)\n", filename, mode);
 
   switch (mode[0])
   {

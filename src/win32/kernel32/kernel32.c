@@ -12,6 +12,8 @@
 #include <string.h>
 #include <inifile.h>
 
+#define MAX_VADS        256
+
 #define EPOC            116444736000000000     // 00:00:00 GMT on January 1, 1970
 
 #define MICROTIMESCALE  10                     // 1 us resolution
@@ -26,6 +28,14 @@ struct winfinddata
   char dir[MAXPATH];
   char *mask;
 };
+
+struct vad
+{
+  void *addr;
+  unsigned long size;
+};
+
+struct vad vads[MAX_VADS];
 
 void convert_from_win32_context(struct context *ctxt, CONTEXT *ctx)
 {
@@ -513,7 +523,7 @@ DWORD WINAPI GetEnvironmentVariableA
   char *value;
 
   TRACE("GetEnvironmentVariableA");
-  syslog(LOG_DEBUG, "GetEnvironmentVariable(%s)\n", lpName);
+  //syslog(LOG_DEBUG, "GetEnvironmentVariable(%s)\n", lpName);
   
   value = get_property(config, "env", (char *) lpName, NULL);
   if (value)
@@ -1186,9 +1196,27 @@ LPVOID WINAPI VirtualAlloc
   DWORD flProtect
 )
 {
+  void *addr;
+  int n;
+
   TRACE("VirtualAlloc");
-  //syslog(LOG_DEBUG, "VirtualAlloc %d bytes (%p,%p)\n", dwSize, flAllocationType, flProtect);
-  return mmap(lpAddress, dwSize, flAllocationType, flProtect);
+  addr = mmap(lpAddress, dwSize, flAllocationType, flProtect);
+  
+  syslog(LOG_DEBUG, "VirtualAlloc %p %d bytes (%p,%p)\n", addr, dwSize, flAllocationType, flProtect);
+
+  if (addr != NULL && (flAllocationType & MEM_RESERVE) != 0)
+  {
+    for (n = 0; n < MAX_VADS; n++) if (vads[n].addr == NULL) break;
+    if (n != MAX_VADS)
+    {
+      vads[n].addr = addr;
+      vads[n].size = dwSize;
+    }
+    else
+      syslog(LOG_WARNING, "warning: no vad for VirtualAlloc\n");
+  }
+
+  return addr;
 }
 
 BOOL WINAPI VirtualFree
@@ -1198,8 +1226,22 @@ BOOL WINAPI VirtualFree
   DWORD dwFreeType
 )
 {
+  int n;
+
   TRACE("VirtualFree");
-  syslog(LOG_DEBUG, "VirtualFree %d bytes (%p)\n", dwSize, dwFreeType);
+  if (lpAddress != NULL && (dwFreeType & MEM_RELEASE) != 0 && dwSize == 0)
+  {
+    for (n = 0; n < MAX_VADS; n++) if (vads[n].addr == lpAddress) break;
+    if (n != MAX_VADS)
+    {
+      vads[n].addr = NULL;
+      dwSize = vads[n].size;
+    }
+    else
+      syslog(LOG_WARNING, "warning: vad not found for VitualFree\n");
+  }
+
+  syslog(LOG_DEBUG, "VirtualFree  %p %d bytes (%p)\n", lpAddress, dwSize, dwFreeType);
   munmap(lpAddress, dwSize, dwFreeType);
   return TRUE;
 }
