@@ -127,7 +127,7 @@ void release_thread(struct thread *t)
   t->waitlist = NULL;
 
   // Mark thread as ready
-  mark_thread_ready(t);
+  mark_thread_ready(t, 1, 1);
 }
 
 //
@@ -549,7 +549,7 @@ void init_thread(struct thread *t, int priority)
   memset(t, 0, sizeof(struct thread));
   init_object(&t->object, OBJECT_THREAD);
 
-  t->priority = priority;
+  t->priority = t->base_priority = priority;
   t->state = THREAD_STATE_INITIALIZED;
   t->id = nexttid++;
 }

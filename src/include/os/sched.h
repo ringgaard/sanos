@@ -41,8 +41,9 @@ typedef void (*taskproc_t)(void *arg);
 //#define NOPREEMPTION
 #define SCHEDMAP
 
-#define DEFAULT_QUANTUM          12
-#define THREAD_PRIORITY_LEVELS   8
+#define DEFAULT_QUANTUM          36
+#define QUANTUM_UNITS_PER_TICK   3
+#define THREAD_PRIORITY_LEVELS   32
 
 #define PAGES_PER_TCB     2
 
@@ -136,7 +137,7 @@ __inline struct thread *self()
 
 void mark_thread_running();
 
-krnlapi void mark_thread_ready(struct thread *t);
+krnlapi void mark_thread_ready(struct thread *t, int charge, int boost);
 krnlapi void enter_wait(int reason);
 
 krnlapi struct thread *create_kernel_thread(threadproc_t startaddr, void *arg, int priority, char *name);
@@ -163,11 +164,14 @@ krnlapi void init_dpc(struct dpc *dpc);
 krnlapi void queue_dpc(struct dpc *dpc, dpcproc_t proc, void *arg);
 krnlapi void queue_irq_dpc(struct dpc *dpc, dpcproc_t proc, void *arg);
 
+krnlapi void add_idle_task(struct task *task, taskproc_t proc, void *arg);
+
 void idle_task();
 krnlapi void yield();
 void dispatch_dpc_queue();
 void preempt_thread();
 krnlapi void dispatch();
+krnlapi int system_idle();
 
 void init_sched();
 

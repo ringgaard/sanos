@@ -798,26 +798,23 @@ static struct stats_nic *speedo_get_stats(struct dev *dev)
 
 static int speedo_set_rx_mode(struct dev *dev)
 {
-  // TODO: Implement multicast filtering
-  return 0;
-}
-
-#ifdef xxx
-static void set_rx_mode(struct net_device *dev)
-{
   struct nic *sp = (struct nic *) dev->privdata;
   long ioaddr = sp->iobase;
   struct descriptor *last_cmd;
   char new_rx_mode;
-  unsigned long flags;
   int entry, i;
 
-  if (dev->flags & IFF_PROMISC) 
+  if (!dev->netif)
+  {
+    // Network interface not attached yet -- accept all multicasts
+    new_rx_mode = 1;
+  }
+  else if (dev->netif->flags & NETIF_PROMISC) 
   {     
     // Set promiscuous.
     new_rx_mode = 3;
   }
-  else if ((dev->flags & IFF_ALLMULTI) || dev->mc_count > multicast_filter_limit) 
+  else if ((dev->netif->flags & NETIF_ALLMULTI) || dev->netif->mccount > multicast_filter_limit) 
   {
     new_rx_mode = 1;
   } 
@@ -830,22 +827,22 @@ static void set_rx_mode(struct net_device *dev)
     // is in config_cmd_data and will be added anyway, otherwise we wait
     // for a timer tick or the mode to change again.
     sp->rx_mode = -1;
-    return;
+    return -EBUSY;
   }
 
   if (new_rx_mode != sp->rx_mode) 
   {
     unsigned char *config_cmd_data;
 
-    spin_lock_irqsave(&sp->lock, flags);
+    cli();
     entry = sp->cur_tx % TX_RING_SIZE;
     last_cmd = sp->last_cmd;
     sp->last_cmd = (struct descriptor *)&sp->tx_ring[entry];
 
-    sp->tx_skbuff[entry] = 0;     // Redundant
-    sp->tx_ring[entry].status = cpu_to_le32(CmdSuspend | CmdConfigure);
+    sp->tx_pbuf[entry] = 0;     // Redundant
+    sp->tx_ring[entry].status = CmdSuspend | CmdConfigure;
     sp->cur_tx++;
-    sp->tx_ring[entry].link = virt_to_le32desc(&sp->tx_ring[(entry + 1) % TX_RING_SIZE]);
+    sp->tx_ring[entry].link = virt2phys(&sp->tx_ring[(entry + 1) % TX_RING_SIZE]);
     // We may nominally release the lock here
 
     config_cmd_data = (void *)&sp->tx_ring[entry].tx_desc_addr;
@@ -854,7 +851,7 @@ static void set_rx_mode(struct net_device *dev)
     config_cmd_data[1] = (txfifo << 4) | rxfifo;
     config_cmd_data[4] = rxdmacount;
     config_cmd_data[5] = txdmacount + 0x80;
-    if (sp->drv_flags & HasChksum) config_cmd_data[9] |= 1;
+    if (sp->flags & HasChksum) config_cmd_data[9] |= 1;
     config_cmd_data[15] |= (new_rx_mode & 2) ? 1 : 0;
     config_cmd_data[19] = sp->flow_ctrl ? 0xBD : 0x80;
     config_cmd_data[19] |= sp->full_duplex ? 0x40 : 0;
@@ -869,35 +866,35 @@ static void set_rx_mode(struct net_device *dev)
     wait_for_cmd_done(ioaddr + SCBCmd);
     clear_suspend(last_cmd);
     outp(ioaddr + SCBCmd, CUResume);
-    spin_unlock_irqrestore(&sp->lock, flags);
+    sti();
     sp->last_cmd_time = ticks;
   }
 
-  if (new_rx_mode == 0 && dev->mc_count < 4) 
+  if (new_rx_mode == 0 && dev->netif->mccount < 4) 
   {
     // The simple case of 0-3 multicast list entries occurs often, and
     // fits within one tx_ring[] entry.
-    struct dev_mc_list *mclist;
+    struct mclist *mclist;
     unsigned short *setup_params, *eaddrs;
 
-    spin_lock_irqsave(&sp->lock, flags);
+    cli();
     entry = sp->cur_tx % TX_RING_SIZE;
     last_cmd = sp->last_cmd;
     sp->last_cmd = (struct descriptor *)&sp->tx_ring[entry];
 
-    sp->tx_skbuff[entry] = 0;
-    sp->tx_ring[entry].status = cpu_to_le32(CmdSuspend | CmdMulticastList);
+    sp->tx_pbuf[entry] = 0;
+    sp->tx_ring[entry].status = CmdSuspend | CmdMulticastList;
     sp->cur_tx++;
-    sp->tx_ring[entry].link = virt_to_le32desc(&sp->tx_ring[(entry + 1) % TX_RING_SIZE]);
+    sp->tx_ring[entry].link = virt2phys(&sp->tx_ring[(entry + 1) % TX_RING_SIZE]);
     // We may nominally release the lock here
     sp->tx_ring[entry].tx_desc_addr = 0; // Really MC list count
-    setup_params = (unsigned short *)&sp->tx_ring[entry].tx_desc_addr;
-    *setup_params++ = cpu_to_le16(dev->mc_count*6);
+    setup_params = (unsigned short *) &sp->tx_ring[entry].tx_desc_addr;
+    *setup_params++ = dev->netif->mccount * 6;
     
     // Fill in the multicast addresses.
-    for (i = 0, mclist = dev->mc_list; i < dev->mc_count; i++, mclist = mclist->next) 
+    for (i = 0, mclist = dev->netif->mclist; i < dev->netif->mccount; i++, mclist = mclist->next) 
     {
-      eaddrs = (unsigned short *) mclist->dmi_addr;
+      eaddrs = (unsigned short *) &mclist->hwaddr;
       *setup_params++ = *eaddrs++;
       *setup_params++ = *eaddrs++;
       *setup_params++ = *eaddrs++;
@@ -907,17 +904,17 @@ static void set_rx_mode(struct net_device *dev)
     clear_suspend(last_cmd);
     // Immediately trigger the command unit resume
     outp(ioaddr + SCBCmd, CUResume);
-    spin_unlock_irqrestore(&sp->lock, flags);
+    sti();
     sp->last_cmd_time = ticks;
   } 
   else if (new_rx_mode == 0) 
   {
-    struct dev_mc_list *mclist;
-    u16 *setup_params, *eaddrs;
+    struct mclist *mclist;
+    unsigned short *setup_params, *eaddrs;
     struct descriptor *mc_setup_frm = sp->mc_setup_frm;
     int i;
 
-    if (sp->mc_setup_frm_len < 10 + dev->mc_count * 6 || sp->mc_setup_frm == NULL) 
+    if (sp->mc_setup_frm_len < 10 + dev->netif->mccount * 6 || sp->mc_setup_frm == NULL) 
     {
       // Allocate a full setup frame, 10bytes + <max addrs>.
       if (sp->mc_setup_frm) kfree(sp->mc_setup_frm);
@@ -928,7 +925,7 @@ static void set_rx_mode(struct net_device *dev)
       {
         kprintf("%s: Failed to allocate a setup frame\n", dev->name);
         sp->rx_mode = -1; // We failed, try again.
-        return;
+        return -ENOMEM;
       }
     }
 
@@ -937,58 +934,57 @@ static void set_rx_mode(struct net_device *dev)
     if (sp->mc_setup_busy) 
     {
       sp->rx_mode = -1;
-      return;
+      return -EBUSY;
     }
     mc_setup_frm = sp->mc_setup_frm;
 
     // Fill the setup frame
-    printk(KERN_DEBUG "%s: Constructing a setup frame at %p, %d bytes\n", dev->name, sp->mc_setup_frm, sp->mc_setup_frm_len);
-    mc_setup_frm->cmd_status =  cpu_to_le32(CmdSuspend | CmdIntr | CmdMulticastList);
+    kprintf("%s: Constructing a setup frame at %p, %d bytes\n", dev->name, sp->mc_setup_frm, sp->mc_setup_frm_len);
+    mc_setup_frm->cmd_status =  CmdSuspend | CmdIntr | CmdMulticastList;
     
     // Link set below
-    setup_params = (unsigned short *)&mc_setup_frm->params;
-    *setup_params++ = cpu_to_le16(dev->mc_count * 6);
+    setup_params = (unsigned short *) &mc_setup_frm->params;
+    *setup_params++ = dev->netif->mccount * 6;
     
     // Fill in the multicast addresses
-    for (i = 0, mclist = dev->mc_list; i < dev->mc_count; i++, mclist = mclist->next) 
+    for (i = 0, mclist = dev->netif->mclist; i < dev->netif->mccount; i++, mclist = mclist->next) 
     {
-      eaddrs = (unsigned short *)mclist->dmi_addr;
+      eaddrs = (unsigned short *) &mclist->hwaddr;
       *setup_params++ = *eaddrs++;
       *setup_params++ = *eaddrs++;
       *setup_params++ = *eaddrs++;
     }
 
     // Disable interrupts while playing with the Tx Cmd list
-    spin_lock_irqsave(&sp->lock, flags);
+    cli();
     entry = sp->cur_tx % TX_RING_SIZE;
     last_cmd = sp->last_cmd;
     sp->last_cmd = mc_setup_frm;
     sp->mc_setup_busy++;
 
     // Change the command to a NoOp, pointing to the CmdMulti command
-    sp->tx_skbuff[entry] = 0;
-    sp->tx_ring[entry].status = cpu_to_le32(CmdNOp);
+    sp->tx_pbuf[entry] = 0;
+    sp->tx_ring[entry].status = CmdNOp;
     sp->cur_tx++;
-    sp->tx_ring[entry].link = virt_to_le32desc(mc_setup_frm);
+    sp->tx_ring[entry].link = virt2phys(mc_setup_frm);
     // We may nominally release the lock here
 
     // Set the link in the setup frame.
-    mc_setup_frm->link = virt_to_le32desc(&(sp->tx_ring[(entry+1) % TX_RING_SIZE]));
+    mc_setup_frm->link = virt2phys(&(sp->tx_ring[(entry+1) % TX_RING_SIZE]));
 
     wait_for_cmd_done(ioaddr + SCBCmd);
     clear_suspend(last_cmd);
 
     // Immediately trigger the command unit resume
     outp(ioaddr + SCBCmd, CUResume);
-    spin_unlock_irqrestore(&sp->lock, flags);
+    sti();
     sp->last_cmd_time = ticks;
-    kprintf("%s: CmdMCSetup frame length %d in entry %d\n", dev->name, dev->mc_count, entry);
+    kprintf("%s: CmdMCSetup frame length %d in entry %d\n", dev->name, dev->netif->mccount, entry);
   }
 
   sp->rx_mode = new_rx_mode;
+  return 0;
 }
-
-#endif
 
 // Media monitoring and control
 
@@ -1471,7 +1467,8 @@ struct driver speedo_driver =
   NULL,
   speedo_attach,
   speedo_detach,
-  speedo_transmit
+  speedo_transmit,
+  speedo_set_rx_mode,
 };
 
 int __declspec(dllexport) install(struct unit *unit, char *opts)

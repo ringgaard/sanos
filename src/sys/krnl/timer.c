@@ -293,7 +293,7 @@ void run_timer_list()
 static void tmr_sleep(void *arg)
 {
   struct thread *t = arg;
-  mark_thread_ready(t);
+  mark_thread_ready(t, 1, 0);
 }
 
 //

@@ -1338,15 +1338,17 @@ int WINAPI GetThreadPriority
   prio = getprio((handle_t) hThread);
   if (prio < 0) return 0x7FFFFFFF;
 
+
+  // Return priority based on win32 normal priority class scheme
   switch (prio)
   {
-    case PRIORITY_IDLE: return THREAD_PRIORITY_IDLE;
-    case PRIORITY_LOWEST: return THREAD_PRIORITY_LOWEST;
-    case PRIORITY_BELOW_NORMAL: return THREAD_PRIORITY_BELOW_NORMAL;
-    case PRIORITY_NORMAL: return THREAD_PRIORITY_NORMAL;
-    case PRIORITY_ABOVE_NORMAL: return THREAD_PRIORITY_ABOVE_NORMAL;
-    case PRIORITY_HIGHEST: return THREAD_PRIORITY_HIGHEST;
-    case PRIORITY_TIME_CRITICAL: return THREAD_PRIORITY_TIME_CRITICAL;
+    case 1: return THREAD_PRIORITY_IDLE;
+    case 6: return THREAD_PRIORITY_LOWEST;
+    case 7: return THREAD_PRIORITY_BELOW_NORMAL;
+    case 8: return THREAD_PRIORITY_NORMAL;
+    case 9: return THREAD_PRIORITY_ABOVE_NORMAL;
+    case 10: return THREAD_PRIORITY_HIGHEST;
+    case 15: return THREAD_PRIORITY_TIME_CRITICAL;
   }
 
   return 0x7FFFFFFF;
@@ -1819,34 +1821,35 @@ BOOL WINAPI SetThreadPriority
 
   TRACE("SetThreadPriority");
 
+  // Set new thread priority based on win32 normal priority class scheme
   switch (nPriority)
   {
     case THREAD_PRIORITY_IDLE:
-      prio = PRIORITY_IDLE;
+      prio = 1;
       break;
 
     case THREAD_PRIORITY_LOWEST:
-      prio = PRIORITY_LOWEST;
+      prio = 6;
       break;
 
     case THREAD_PRIORITY_BELOW_NORMAL:
-      prio = PRIORITY_BELOW_NORMAL;
+      prio = 7;
       break;
 
     case THREAD_PRIORITY_NORMAL:
-      prio = PRIORITY_NORMAL;
+      prio = 8;
       break;
 
     case THREAD_PRIORITY_ABOVE_NORMAL:
-      prio = PRIORITY_ABOVE_NORMAL;
+      prio = 9;
       break;
 
     case THREAD_PRIORITY_HIGHEST:
-      prio = PRIORITY_HIGHEST;
+      prio = 10;
       break;
 
     case THREAD_PRIORITY_TIME_CRITICAL:
-      prio = PRIORITY_TIME_CRITICAL;
+      prio = 15;
       break;
 
     default:

@@ -40,6 +40,7 @@ int in_dpc = 0;
 unsigned long dpc_time = 0;
 unsigned long dpc_total = 0;
 unsigned long dpc_lost = 0;
+unsigned long thread_ready_summary = 0;
 
 struct thread *idle_thread;
 struct thread *ready_queue_head[THREAD_PRIORITY_LEVELS];
@@ -48,6 +49,9 @@ struct thread *threadlist;
 
 struct dpc *dpc_queue_head;
 struct dpc *dpc_queue_tail;
+
+struct task *idle_tasks_head;
+struct task *idle_tasks_tail;
 
 struct task_queue sys_task_queue;
 
@@ -117,6 +121,7 @@ static void insert_ready_head(struct thread *t)
   {
     t->next_ready = t->prev_ready = NULL;
     ready_queue_head[t->priority] = ready_queue_tail[t->priority] = t;
+    thread_ready_summary |= (1 << t->priority);
   }
   else
   {
@@ -133,6 +138,7 @@ static void insert_ready_tail(struct thread *t)
   {
     t->next_ready = t->prev_ready = NULL;
     ready_queue_head[t->priority] = ready_queue_tail[t->priority] = t;
+    thread_ready_summary |= (1 << t->priority);
   }
   else
   {
@@ -149,6 +155,7 @@ static void remove_from_ready_queue(struct thread *t)
   if (t->prev_ready) t->prev_ready->next_ready = t->next_ready;
   if (t == ready_queue_head[t->priority]) ready_queue_head[t->priority] = t->next_ready;
   if (t == ready_queue_tail[t->priority]) ready_queue_tail[t->priority] = t->prev_ready;
+  if (!ready_queue_tail[t->priority]) thread_ready_summary &= ~(1 << t->priority);
 }
 
 static void init_thread_stack(struct thread *t, void *startaddr, void *arg)
@@ -175,9 +182,10 @@ void enter_wait(int reason)
   dispatch();
 }
 
-void mark_thread_ready(struct thread *t)
+void mark_thread_ready(struct thread *t, int charge, int boost)
 {
   int prio = t->priority;
+  int newprio;
 
   // Check for suspended thread that is now ready to run 
   if (t->suspend_count > 0)
@@ -186,10 +194,22 @@ void mark_thread_ready(struct thread *t)
     return;
   }
 
+  // Charge quantums units each time a thread is restarted
+  t->quantum -= charge;
+
+  // Add boost to threads dynamic priority
+  // Boosting is applied to the threads base priority
+  // Boosting must never move threads to the realtime range
+  // Boosting must never decrease the dynamic priority
+  newprio = t->base_priority + boost;
+  if (newprio > PRIORITY_TIME_CRITICAL) newprio = PRIORITY_TIME_CRITICAL;
+  if (newprio > t->priority) t->priority = newprio;
+
   // Set thread state to ready
   if (t->state == THREAD_STATE_READY) panic("thread already ready");
   t->state = THREAD_STATE_READY;
 
+  // Insert thread in ready queue
   if (t->quantum > 0)
   {
     // Thread has some quantum left. Insert it at the head of the
@@ -199,16 +219,22 @@ void mark_thread_ready(struct thread *t)
   else
   {
     // The thread has exhausted its CPU quantum. Assign a new quantum 
-    // and insert it at the end of the ready queue for its priority.
     t->quantum = DEFAULT_QUANTUM;
+    
+    // Let priority decay towards base priority
+    if (t->priority > t->base_priority) t->priority--;
+
+    // Insert it at the end of the ready queue for its priority.
     insert_ready_tail(t);
   }
+
+  // Signal preemption if new ready thread has priority over the running thread
+  if (t->priority > self()->priority) preempt = 1;
 }
 
 void preempt_thread()
 {
   struct thread *t = self();
-  int prio = t->priority;
 
   // Enable interrupt in case we have been called in interupt context
   sti();
@@ -216,8 +242,14 @@ void preempt_thread()
   // Count number of preempted context switches
   t->preempts++;
 
-  // Assign a new quantum
-  if (t->quantum <= 0) t->quantum = DEFAULT_QUANTUM;
+  // Assign a new quantum if quantum expired
+  if (t->quantum <= 0) 
+  {
+    t->quantum = DEFAULT_QUANTUM;
+
+    // Let priority decay towards base priority
+    if (t->priority > t->base_priority) t->priority--;
+  }
 
   // Thread is ready to run 
   t->state = THREAD_STATE_READY;
@@ -317,6 +349,9 @@ static struct thread *create_thread(threadproc_t startaddr, void *arg, int prior
   // Add thread to thread list
   insert_before(threadlist, t);
 
+  // Signal preemption if new ready thread has priority over the running thread
+  if (t->priority > self()->priority) preempt = 1;
+
   return t;
 }
 
@@ -331,7 +366,7 @@ struct thread *create_kernel_thread(threadproc_t startaddr, void *arg, int prior
   t->entrypoint = startaddr;
 
   // Mark thread as ready to run
-  mark_thread_ready(t);
+  mark_thread_ready(t, 0, 0);
 
   // Notify debugger
   dbg_notify_create_thread(t, startaddr);
@@ -502,7 +537,7 @@ int resume_thread(struct thread *t)
   {
     if (--t->suspend_count == 0) 
     {
-      if (t->state == THREAD_STATE_SUSPENDED || t->state == THREAD_STATE_INITIALIZED) mark_thread_ready(t);
+      if (t->state == THREAD_STATE_SUSPENDED || t->state == THREAD_STATE_INITIALIZED) mark_thread_ready(t, 0, 0);
     }
   }
 
@@ -526,19 +561,19 @@ int get_thread_priority(struct thread *t)
 int set_thread_priority(struct thread *t, int priority)
 {
   if (priority < 0 || priority >= THREAD_PRIORITY_LEVELS) return -EINVAL;
-  if (t->priority == priority) return 0;
+  if (t->base_priority == priority) return 0;
 
   if (t == self())
   {
     // Thread changed priority for it self, reschedule if new priority lower
     if (priority < t->priority) 
     {
-      t->priority = priority;
-      mark_thread_ready(t);
+      t->base_priority = t->priority = priority;
+      mark_thread_ready(t, 0, 0);
       dispatch();
     }
     else
-      t->priority = priority;
+      t->base_priority = t->priority = priority;
   }
   else
   {
@@ -547,12 +582,12 @@ int set_thread_priority(struct thread *t, int priority)
     if (t->state == THREAD_STATE_READY)
     {
       remove_from_ready_queue(t);
-      t->priority = priority;
+      t->base_priority = t->priority = priority;
       t->state = THREAD_STATE_TRANSITION;
-      mark_thread_ready(t);
+      mark_thread_ready(t, 0, 0);
     }
     else
-      t->priority = priority;
+      t->base_priority = t->priority = priority;
   }
 
   return 0;
@@ -637,7 +672,7 @@ int queue_task(struct task_queue *tq, struct task *task, taskproc_t proc, void *
 
   if ((tq->flags & TASK_QUEUE_ACTIVE) == 0 && tq->thread->state == THREAD_STATE_WAITING)
   {
-    mark_thread_ready(tq->thread);
+    mark_thread_ready(tq->thread, 0, 0);
   }
 
   return 0;
@@ -730,20 +765,50 @@ void dispatch_dpc_queue()
   in_dpc = 0;
 }
 
+
+static int find_highest_bit(unsigned mask)
+{
+  int n;
+
+  __asm
+  {
+    bsr eax, mask
+    mov n, eax
+  }
+
+  return n;
+}
+
+#if 0
+static int find_highest_bit(unsigned mask)
+{
+  int n = 31;
+
+  while (n > 0 && !(mask & 0x80000000))
+  {
+    mask <<= 1;
+    n--;
+  }
+
+  return n;
+}
+#endif
+
 static struct thread *find_ready_thread()
 {
   int prio;
   struct thread *t;
 
-  prio = THREAD_PRIORITY_LEVELS - 1;
-  t = NULL;
-  while ((t = ready_queue_head[prio]) == NULL && prio > 0) prio--;
-  if (!t) return NULL;
+  // Find highest priority non-empty ready queue
+  if (thread_ready_summary == 0) return NULL;
+  prio = find_highest_bit(thread_ready_summary);
 
   // Remove thread from ready queue
+  t = ready_queue_head[prio];
   if (!t->next_ready) 
   {
     ready_queue_head[prio] = ready_queue_tail[prio] = NULL;
+    thread_ready_summary &= ~(1 << prio);
   }
   else
   {
@@ -803,10 +868,33 @@ void yield()
   t->quantum = 0;
 
   // Mark thread as ready to run
-  mark_thread_ready(t);
+  mark_thread_ready(t, 0, 0);
 
   // Dispatch next thread
   dispatch();
+}
+
+int system_idle()
+{
+  if (thread_ready_summary != 0) return 0;
+  if (dpc_queue_head != NULL) return 0;
+  return 1;
+}
+
+void add_idle_task(struct task *task, taskproc_t proc, void *arg)
+{
+  task->proc = proc;
+  task->arg = arg;
+  task->next = NULL;
+  task->flags |= TASK_QUEUED;
+
+  if (idle_tasks_tail)
+  {
+    idle_tasks_tail->next = task;
+    idle_tasks_tail = task;
+  }
+  else
+    idle_tasks_head = idle_tasks_tail = task;
 }
 
 void idle_task()
@@ -815,7 +903,17 @@ void idle_task()
 
   while (1) 
   {
-    mark_thread_ready(t);
+    struct task *task = idle_tasks_head;
+    while (task)
+    {
+      if (!system_idle()) break;
+      task->flags |= TASK_EXECUTING;
+      task->proc(task->arg);
+      task->flags &= ~TASK_EXECUTING;
+      task = task->next;
+    }
+
+    mark_thread_ready(t, 0, 0);
     dispatch();
 
     //if ((eflags() & EFLAG_IF) == 0) panic("sched: interrupts disabled in idle loop");
@@ -844,8 +942,8 @@ static int threads_proc(struct proc_file *pf, void *arg)
     else
       stksiz = 0;
 
-    pprintf(pf,"%3d %p %4d %-6s %3d  %1d %2d%7d%7d%7d%6dK %s\n",
-            t->id, t, t->hndl, state, t->priority, 
+    pprintf(pf,"%3d %p %4d %-6s %2d%+2d %1d %2d%7d%7d%7d%6dK %s\n",
+            t->id, t, t->hndl, state, t->base_priority, t->priority - t->base_priority, 
 	    t->suspend_count, t->object.handle_count, 
 	    t->utime, t->stime, t->context_switches,
 	    stksiz / K,
@@ -893,11 +991,12 @@ void init_sched()
   // The idle thread is always ready to run
   memset(idle_thread, 0, sizeof(struct thread));
   idle_thread->object.type = OBJECT_THREAD;
-  idle_thread->priority = PRIORITY_IDLE;
+  idle_thread->priority = PRIORITY_SYSIDLE;
   idle_thread->state = THREAD_STATE_RUNNING;
   idle_thread->next = idle_thread;
   idle_thread->prev = idle_thread;
   idle_thread->name = "idle";
+  thread_ready_summary = (1 << PRIORITY_SYSIDLE);
 
   // Initialize system task queue
   init_task_queue(&sys_task_queue, PRIORITY_NORMAL /*PRIORITY_SYSTEM*/, INFINITE, "systask");

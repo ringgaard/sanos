@@ -1608,7 +1608,15 @@ static int sys_setprio(char *params)
     return -EBADF;
   }
 
-  rc = set_thread_priority(t, priority);
+  if (priority < 1 || priority > 15)
+    // User mode code can only set priority levels 1-15
+    rc = -EINVAL;
+  else if (!t->tib)
+    // User mode code not allowed to set priority for kernel threads
+    rc = -EPERM;
+  else
+    // Change thread priority
+    rc = set_thread_priority(t, priority);
 
   orel(t);
   unlock_buffer(params, 8);

@@ -301,6 +301,8 @@ static int batch_entropy_init(int size)
   batch_head = batch_tail = 0;
   batch_max = size;
 
+  add_idle_task(&batch_task, batch_entropy_process, NULL);
+
   return 0;
 }
 
@@ -317,9 +319,9 @@ void batch_entropy_store(unsigned long a, unsigned long b, int num)
   batch_entropy_credit[batch_head] = num;
 
   batch_new = (batch_head + 1) & (batch_max - 1);
+
   if (batch_new != batch_tail) 
   {
-    //SCHEDEVT('!');
     //queue_task(NULL, &batch_task, batch_entropy_process, NULL);
     batch_head = batch_new;
   } 
@@ -337,11 +339,14 @@ static void batch_entropy_process(void *arg)
   struct entropy_store *p;
 
   if (!batch_max) return;
+  if (batch_head == batch_tail) return;
+
   //kprintf("batch entropy task start\n");
 
   max_entropy = r->poolinfo.poolwords * 32;
   while (batch_head != batch_tail)
   {
+    if (!system_idle()) break;
     add_entropy_words(r, batch_entropy_pool + 2 * batch_tail, 2);
     p = r;
     if (r->entropy_count > max_entropy && (num & 1)) r = sec_random_state;

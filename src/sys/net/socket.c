@@ -56,7 +56,7 @@ void release_socket_request(struct sockreq *req, int rc)
     if (req == req->socket->waittail) req->socket->waittail = req->prev;
   }
 
-  mark_thread_ready(req->thread);
+  mark_thread_ready(req->thread, 1, 2);
 }
 
 static void socket_timeout(void *arg)

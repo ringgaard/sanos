@@ -41,32 +41,33 @@ TODO for sanos
 - What happens if a tcp pcb is freed in tcp_input() while sending segments on another socket in tcp_output()?
 
 - Scheduler enhancements
-    - Change from 8 to 32 priority levels
-    - Change win32 mapping to sanos priority levels
+    x Change from 8 to 32 priority levels
+    x Change win32 mapping to sanos priority levels
     - Remove yields in task processing and process kernel task queues at higher priority
-    - Implement priority boost in mark_thread_ready()
-    - Implement ready summary for thread ready queues
-    - Use NT quantum units in scheduler
-    - Implement dynamic and base priority for threads
-    - Charge one quantum unit each time a thread is restarted after a wait
-    - Preempt thread (with preempt flag) when higher priority thread gets ready to run in mark_thread_ready()
+    x Implement priority boost in mark_thread_ready()
+    x Implement ready summary for thread ready queues
+    x Use NT quantum units in scheduler
+    x Implement dynamic and base priority for threads
+    x Charge one quantum unit each time a thread is restarted after a wait
+    x Preempt thread (with preempt flag) when higher priority thread gets ready to run in mark_thread_ready()
       to force context switch when thread leaves kernel
     x Implement find_ready_thread() in sched.c
     - use preempt flag instead of dispatch in set_thread_priority()
-    - check for preemption when threads are resumed
-    - check for preemption when new threads are created
-  
-    - 3 quantum units per tick (10 ms)
-    - Timeslice is 36 quantum units
-    - Priority numbers from 1 to 31 (0 is idle thread)
-    - Priorities 16-31 is real time priority range
-    - Priorities 1-15 is dynamic priority range
-    - Boosting never moves threads to the realtime range
-    - Boosting is applied to the base priority
-    - Dynamic priority is decreased (decayed) at each quantum expiry until it reaches base priority 
+    x check for preemption when threads are resumed
+    x check for preemption when new threads are created
+    - add boost parameter in set_event and release_sem
+    
+    x 3 quantum units per tick (10 ms)
+    x Timeslice is 36 quantum units
+    x Priority numbers from 1 to 31 (0 is idle thread)
+    x Priorities 16-31 is real time priority range
+    x Priorities 1-15 is dynamic priority range
+    x Boosting never moves threads to the realtime range
+    x Boosting is applied to the base priority
+    x Dynamic priority is decreased (decayed) at each quantum expiry until it reaches base priority 
       (in preempt_thread() if the quantum has expired)
 
-    - In win32 priority class and relative priority are mapped to priority
+    x In win32 priority class and relative priority are mapped to priority
       
        time critical 15 (31 if realtime)
        highest       +2
@@ -78,7 +79,6 @@ TODO for sanos
        
        On windows 2000 and xp the relative priority can be in the range [-7;6]
 
- 
 IDEAS for new features
 ----------------------
 
@@ -375,3 +375,16 @@ CHANGES
   interrupt.
 
 - Visual Studio wizard for creating sanos application projects
+
+- Scheduler enhancements
+    - Number of thread priorities changed from 8 to 32
+    - Scheduler now uses a thread ready summary to determine next thead to run
+    - Win32 thread priority mapping changed to new 32 level priority system based
+      of normal priority class mapping.
+    - User mode code only allowed to set priority levels 1-15
+    - User mode code not allowed to change priority for kernel threads
+    - Dynamic and base priority for threads implemented
+    - Priority boosting implemented
+    - Quantum units are now changed efter restarting waiting thread
+    - Preemption when threads with higher priority than running thread implemented
+ 

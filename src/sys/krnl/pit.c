@@ -117,7 +117,7 @@ int timer_handler(struct context *ctxt, void *arg)
   }
 
   // Adjust thread quantum
-  t->quantum--;
+  t->quantum -= QUANTUM_UNITS_PER_TICK;
   if (t->quantum <= 0) preempt = 1;
 
   // Queue timer DPC

@@ -41,7 +41,7 @@
 
 #define NETIF_MULTICAST               0x00000010   // Supports multicast
 #define NETIF_ALLMULTI                0x00000020   // Receive all multicast packets
-#define NETIF_PROMISC                 0x00000040   // Receive add packets
+#define NETIF_PROMISC                 0x00000040   // Receive all packets
 
 #define NETIF_IP_TX_CHECKSUM_OFFLOAD  0x00010000
 #define NETIF_IP_RX_CHECKSUM_OFFLOAD  0x00020000

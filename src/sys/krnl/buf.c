@@ -34,6 +34,7 @@
 #include <os/krnl.h>
 
 #define SYNC_INTERVAL  10      // Sync interval in seconds
+#define BUFWAIT_BOOST  1
 
 struct bufpool *bufpools = NULL;
 struct event dirty_buffers;
@@ -164,7 +165,7 @@ static void release_buffer_waiters(struct buf *buf, int waitkey)
     thread->next_waiter = NULL;
     thread->waitkey = waitkey;
     
-    mark_thread_ready(thread);
+    mark_thread_ready(thread, 1, BUFWAIT_BOOST);
     thread = next;
   }
   buf->waiters = NULL;

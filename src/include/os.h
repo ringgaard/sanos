@@ -209,14 +209,16 @@ struct section;
 // Thread priorities
 //
 
-#define PRIORITY_IDLE            0
-#define PRIORITY_LOWEST          1
-#define PRIORITY_BELOW_NORMAL    2
-#define PRIORITY_NORMAL          3
-#define PRIORITY_ABOVE_NORMAL    4
-#define PRIORITY_HIGHEST         5
-#define PRIORITY_TIME_CRITICAL   6
-#define PRIORITY_SYSTEM          7
+#define PRIORITY_SYSIDLE         0
+#define PRIORITY_IDLE            1
+#define PRIORITY_LOWEST          2
+#define PRIORITY_BELOW_NORMAL    7
+#define PRIORITY_NORMAL          8
+#define PRIORITY_ABOVE_NORMAL    9
+#define PRIORITY_HIGHEST         14
+#define PRIORITY_TIME_CRITICAL   15
+#define PRIORITY_LOW_REALTIME    16
+#define PRIORITY_HIGH_REALTIME   31
 
 //
 // Thread creation flags

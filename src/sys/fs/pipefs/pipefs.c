@@ -111,7 +111,7 @@ static void release_all_waiters(struct pipe *pipe, int retcode)
   {
     next = req->next;
     req->rc = retcode;
-    mark_thread_ready(req->thread);
+    mark_thread_ready(req->thread, 1, 2);
     req = next;
   }
 
@@ -224,7 +224,7 @@ int pipefs_read(struct file *filp, void *data, size_t size)
       pipe->peer->waithead = req->next;
       if (pipe->peer->waithead == NULL) pipe->peer->waittail = NULL;
       req->rc = 0;
-      mark_thread_ready(req->thread);
+      mark_thread_ready(req->thread, 1, 2);
     }
   }
 
@@ -280,7 +280,7 @@ int pipefs_write(struct file *filp, void *data, size_t size)
 
     pipe->peer->waithead = req->next;
     if (pipe->peer->waithead == NULL) pipe->peer->waittail = NULL;
-    mark_thread_ready(req->thread);
+    mark_thread_ready(req->thread, 1, 2);
   }
 
   if (left > 0)
