@@ -77,7 +77,7 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 os.lib clib.lib /nologo /entry:"main" /subsystem:console /map /machine:I386 /nodefaultlib /libpath:"..\lib" /fixed:no
 # SUBTRACT BASE LINK32 /pdb:none
-# ADD LINK32 os.lib clib.lib /nologo /entry:"main" /subsystem:console /pdb:"..\dbg\,KERNELfdisk.pdb" /map /debug /machine:I386 /nodefaultlib /libpath:"..\dbg\lib" /fixed:no
+# ADD LINK32 os.lib clib.lib /nologo /entry:"main" /subsystem:console /pdb:"..\dbg\symbols\fdisk.pdb" /map /debug /machine:I386 /nodefaultlib /libpath:"..\dbg\lib" /fixed:no
 # SUBTRACT LINK32 /pdb:none
 
 !ENDIF 

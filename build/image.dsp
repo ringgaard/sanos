@@ -61,6 +61,10 @@ MTL=midl.exe
 # Name "image - Win32 SanOSDebug"
 # Begin Source File
 
+SOURCE=.\krnl.ini
+# End Source File
+# Begin Source File
+
 SOURCE=.\mkbootdisk.cmd
 
 !IF  "$(CFG)" == "image - Win32 SanOS"
@@ -71,7 +75,7 @@ USERDEP__MKBOO="..\bin\boot"	"..\bin\osldr.dll"	"..\bin\krnl.dll"	"..\bin\pcnet3
 InputPath=.\mkbootdisk.cmd
 
 "..\img\bootdisk.img" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	mkbootdisk
+	mkbootdisk bin img\bootdisk img\bootdisk.img
 
 # End Custom Build
 
@@ -83,12 +87,20 @@ IntDir=.\..\dbg\bin
 InputPath=.\mkbootdisk.cmd
 
 "..\img\bootdisk.img" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	mkbootdisk $(IntDir) img\bootdisk
+	mkbootdisk dbg\bin img\bootdisk img\bootdisk.img
 
 # End Custom Build
 
 !ENDIF 
 
+# End Source File
+# Begin Source File
+
+SOURCE=.\os.ini
+# End Source File
+# Begin Source File
+
+SOURCE=.\setup.ini
 # End Source File
 # End Target
 # End Project
