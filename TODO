@@ -359,3 +359,7 @@ CHANGES
 
 - lseek() failed with -EINVAL when seeking on a device larger than 2GB. This prevented fdisk from working on
   disks larger than 2GB. This problem has been fixed.
+
+- The fddone flag in bootfd.c has been marked volatile to prevent optimization of interrupt wait loop.
+
+*** version 1.2.8 released ***
