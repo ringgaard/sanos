@@ -91,7 +91,17 @@
 // Receive Descriptor (RMD) Status
 
 #define RMD_OWN                 0x8000
-
+#define RMD_ERR                 0x4000
+#define RMD_FRAM                0x2000
+#define RMD_OFLO                0x1000
+#define RMD_CRC                 0x0800
+#define RMD_BUFF                0x0400
+#define RMD_STP                 0x0200
+#define RMD_ENP                 0x0100
+#define RMD_BPE                 0x0080
+#define RMD_PAM                 0x0040
+#define RMD_LAFM                0x0020
+#define RMD_BAM                 0x0010
 
 // Size of Tx and Rx rings
 
