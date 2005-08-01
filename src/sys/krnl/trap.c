@@ -335,7 +335,11 @@ void send_signal(struct context *ctxt, int signum, void *addr)
   struct siginfo *info;
 
   // Check for global handler
-  if (!peb || !peb->globalhandler) panic("no global signal handler");
+  if (!peb || !peb->globalhandler)
+  {
+    //panic("no global signal handler");
+    dbg_enter(ctxt, addr);
+  }
 
   // Get copy of user stack pointer 
   esp = ctxt->esp;

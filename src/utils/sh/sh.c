@@ -502,7 +502,6 @@ int cmd_ifconfig(int argc, char *argv[])
     printf("Secondary NTP Server .... : %s\n", inet_ntoa(peb->ntp_server2));
   }
 
-  if (peb->primary_dns.s_addr != INADDR_ANY)
   sock = socket(AF_INET, SOCK_DGRAM, 0);
   if (sock < 0) return -1;
 

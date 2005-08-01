@@ -37,6 +37,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
+			OutputDirectory="Release"
 			IntermediateDirectory="Release"
 			ConfigurationType="1">
 			<Tool
@@ -66,7 +67,16 @@
 			Name="Template Files"
 			Filter="txt">
 			<File
+				RelativePath="templates\1033\bootdisk.lst">
+			</File>
+			<File
+				RelativePath="templates\1033\krnl.ini">
+			</File>
+			<File
 				RelativePath="templates\1033\main.c">
+			</File>
+			<File
+				RelativePath="templates\1033\os.ini">
 			</File>
 		</Filter>
 		<Filter
@@ -92,7 +102,7 @@
 			Name="Miscellaneous Files"
 			Filter="vsz;vsdir;ico;vcproj;csproj;css;inf">
 			<File
-				RelativePath="Templates\1033\Templates.inf">
+				RelativePath="templates\1033\bootdsktmpl.inf">
 			</File>
 			<File
 				RelativePath="default.vcproj">
@@ -108,6 +118,9 @@
 			</File>
 			<File
 				RelativePath="1033\styles.css">
+			</File>
+			<File
+				RelativePath="templates\1033\templates.inf">
 			</File>
 		</Filter>
 		<File

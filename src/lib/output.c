@@ -1,7 +1,7 @@
 //
 // output.c
 //
-// Print formating routines 
+// Print formatting routines 
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //

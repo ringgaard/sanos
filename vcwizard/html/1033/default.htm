@@ -17,6 +17,8 @@
     <SYMBOL NAME='USE_CLIB' TYPE="checkbox" VALUE="true"></SYMBOL>
     <SYMBOL NAME='EMPTY_PROJ' TYPE="checkbox" VALUE="false"></SYMBOL>
     <SYMBOL NAME='EXT_PROJ' TYPE="checkbox" VALUE="false"></SYMBOL>
+    <SYMBOL NAME='BOOTDISK' TYPE="checkbox" VALUE="false"></SYMBOL>
+    <SYMBOL NAME='NETWORK' TYPE="checkbox" VALUE="false"></SYMBOL>
     <SYMBOL NAME='APP_TYPE_USEREXE' TYPE="checkbox" VALUE="true"></SYMBOL>
     <SYMBOL NAME='APP_TYPE_USERDLL' TYPE="checkbox" VALUE="false"></SYMBOL>
     <SYMBOL NAME='APP_TYPE_USERLIB' TYPE="checkbox" VALUE="false"></SYMBOL>
@@ -95,14 +97,23 @@
 	      <TD>
 		<SPAN CLASS="itemText">Additional options:</SPAN>
 		<BR>
-		<INPUT CLASS="CheckBox" TYPE="checkbox" ID="USE_CLIB" ACCESSKEY="C" TITLE="Use Standard C library">
-		<DIV CLASS="itemTextCheckboxB">Use Standard <U>C</U> library</DIV>
+		<INPUT CLASS="CheckBox" TYPE="checkbox" ID="USE_CLIB" TITLE="Use Standard C library">
+		<DIV CLASS="itemTextCheckboxB">Use Standard C library</DIV>
 		<BR>
-		<INPUT CLASS="CheckBox" TYPE="checkbox" ID="EMPTY_PROJ" ACCESSKEY="E" TITLE="Empty project">
-		<DIV CLASS="itemTextCheckboxB"><U>E</U>mpty project</DIV>
+		<INPUT CLASS="CheckBox" TYPE="checkbox" ID="EMPTY_PROJ" TITLE="Empty project">
+		<DIV CLASS="itemTextCheckboxB">Empty project</DIV>
 		<BR>
-		<INPUT CLASS="CheckBox" TYPE="checkbox" ID="EXT_PROJ" ACCESSKEY="X" TITLE="Extended Project">
-		<DIV CLASS="itemTextCheckboxB">E<U>x</U>tended project directory structure</DIV>
+		<INPUT CLASS="CheckBox" TYPE="checkbox" ID="EXT_PROJ" TITLE="Extended Project">
+		<DIV CLASS="itemTextCheckboxB">Extended project directory structure</DIV>
+		<BR>
+		<BR>
+		<SPAN CLASS="itemText">Installation images:</SPAN>
+		<BR>
+		<INPUT CLASS="CheckBox" TYPE="checkbox" ID="BOOTDISK" TITLE="Create floppy disk boot image">
+		<DIV CLASS="itemTextCheckboxB">Create floppy disk boot image</DIV>
+		<BR>
+		<INPUT CLASS="CheckBox" TYPE="checkbox" ID="NETWORK" TITLE="Enable network support">
+		<DIV CLASS="itemTextCheckboxB">Enable network support</DIV>
 	      </TD>
 	    </TR>
 	  </TABLE>

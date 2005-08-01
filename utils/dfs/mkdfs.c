@@ -50,6 +50,7 @@ int part_start = 0;
 int part_offset = 0;
 int ldrsize;
 char *krnlopts = "";
+int altfile = 0;
 
 int get_tick_count()
 {
@@ -342,6 +343,7 @@ void process_filelist(char *filelist)
   char *p;
   char *src;
   char *dst;
+  char *altsrc;
 
   f = fopen(filelist, "r");
   if (!f)
@@ -364,10 +366,23 @@ void process_filelist(char *filelist)
     {
       *p++ = 0;
       while (*p && isspace(*p)) p++;
-      src = p;
+      src = altsrc = p;
       while (*p && !isspace(*p)) p++;
-      *p = 0;
+      
+      if (*p)
+      {
+	*p++ = 0;
+	while (*p && isspace(*p)) p++;
+	if (*p)
+	{
+	  altsrc = p;
+	  while (*p && !isspace(*p)) p++;
+	  *p++ = 0;
+	}
+      }
     }
+
+    if (altfile && altsrc && *altsrc) src = altsrc;
 
     if (!src || !*src)
     {
@@ -646,6 +661,7 @@ void shell()
 void usage()
 {
   fprintf(stderr, "usage: mkdfs [options]\n\n");
+  fprintf(stderr, "  -a (use alternative filenames from file list)\n");
   fprintf(stderr, "  -d <devname>\n");
   fprintf(stderr, "  -b <bootfile>\n");
   fprintf(stderr, "  -c <device capacity> (capacity in kilobytes)\n");
@@ -673,10 +689,14 @@ int main(int argc, char **argv)
   int c;
 
   // Parse command line options
-  while ((c = getopt(argc, argv, "d:b:c:ifk:l:swp:qB:C:F:I:K:P:S:T:?")) != EOF)
+  while ((c = getopt(argc, argv, "ad:b:c:ifk:l:swp:qB:C:F:I:K:P:S:T:?")) != EOF)
   {
     switch (c)
     {
+      case 'a':
+	altfile = !altfile;
+	break;
+
       case 'd':
 	devname = optarg;
 	break;

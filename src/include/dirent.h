@@ -1,7 +1,7 @@
 //
 // dirent.h
 //
-// List diretory entries
+// List directory entries
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //

@@ -1,7 +1,7 @@
 //
 // syspage.h
 //
-// System page defintions
+// System page definitions
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //

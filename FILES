@@ -46,12 +46,15 @@ build\                         Build files for sanos
   wsock32.vcproj               Project file for win32 wrapper for wsock32.dll
 src\                           Souce files
   include\                     Include files
+    alloca.h                   Allocate memory on the stack
     assert.h                   Assert macro
     atomic.h                   Atomic operations
     bitops.h                   Bitmap manipulation routines
     conio.h                    Console I/O
     crtbase.h                  Internal definitions for C runtime library
     ctype.h                    Character types
+    dirent.h                   List diretory entries
+    dlfcn.h                    Dynamic linking
     errno.h                    Error codes
     fcntl.h                    File control
     float.h                    Constants for floating point values
@@ -65,20 +68,28 @@ src\                           Souce files
     math.h                     Math library
     memory.h                   Buffer (memory) manipulation routines
     moddb.h                    Module loader
+    netdb.h                    Definitions for network database operations
     os.h                       Operating system API
     process.h                  Process control functions
+    pthread.h                  POSIX threads library
     rmap.h                     Routines for working with a resource map
+    sched.h                    POSIX scheduling library
+    semaphore.h                POSIX semaphore library
     setjmp.h                   Non-local goto
     share.h                    File sharing modes for sopen
     signal.h                   Signal handling
     stdarg.h                   Variable length argument lists
     stddef.h                   Definitions/declarations for common constants, types, variables
+    stdint.h                   Defines integer types
     stdio.h                    Standard I/O routines
     stdlib.h                   Standard library routines
     string.h                   String routines
     time.h                     Time routines
     unistd.h                   Standard symbolic constants and types
+    utime.h                    Definitions/declarations for utime()
     win32.h                    Win32 definitions
+    arpa\                      ARPA network include files
+      inet.h                   Definitions for internet operations
     java\                      Java JNI include files
       jni.h                    Java Runtime Interface
       jni_md.h                 Java Runtime Interface (machine dependent definitions)
@@ -99,6 +110,10 @@ src\                           Souce files
       stats.h                  Network statistics
       tcp.h                    Transmission Control Protocol (TCP)
       udp.h                    User Datagram Protocol (UDP)
+    netinet\                   Internet include files
+      in.h                     Internet address family
+      in_systm.h               System specific network type definitions
+      tcp.h                    Definitions for the Internet Transmission Control Protocol (TCP)
     os\                        Include files for os and kernel
       buf.h                    I/O buffer cache
       cpu.h                    CPU information
@@ -107,6 +122,7 @@ src\                           Souce files
       devfs.h                  Device file system
       dfs.h                    Disk file system
       fpu.h                    Floating point unit
+      iop.h                    Port input/output
       iovec.h                  Scatter/gather utility routines
       kbd.h                    Keyboard driver
       kmalloc.h                Kernel heap allocator
@@ -137,9 +153,12 @@ src\                           Souce files
       video.h                  Video funtions
       vmm.h                    Virtual memory manager
     sys\                       Standard system include files
+      select.h                 Select from file descriptor set
+      socket.h                 Socket definitions
       stat.h                   Defines structure used by stat() and fstat()
       types.h                  Basic type definitions
-      utime.h                  Definitions/declarations for utime()
+      uio.h                    Defines for vector I/O functions
+      utsname.h                System name
   lib\                         Library routines
     assert.c                   Assertion helper routine
     bitops.c                   Bitmap manipulation routines
@@ -148,6 +167,7 @@ src\                           Souce files
     conio.c                    Console I/O
     crt0.c                     C runtime library entry point
     ctype.c                    Character types
+    dirent.c                   List diretory entries
     fcvt.c                     Floating point to string conversion routines
     hash.c                     A hashed lookup mechanism
     inifile.c                  Property files
@@ -167,6 +187,8 @@ src\                           Souce files
     readline.c                 Read line with editing
     rmap.c                     Routines for working with a resource map
     rtttl.c                    Ringing Tones Text Transfer Language (RTTTL) player
+    sched.c                    POSIX scheduling library
+    semaphore.c                POSIX semaphore library
     setjmp.c                   Non-local goto
     stdio.c                    Standard I/O routines
     stdlib.c                   Standard library functions
@@ -208,6 +230,13 @@ src\                           Souce files
       sqrt.asm                 Floating point square root
       tan.asm                  Floating point tangent
       tanh.asm                 Floating point hyperbolic tangent
+    pthread\                   POSIX threads
+      barrier.c                POSIX barriers
+      condvar.c                POSIX condition variables
+      mutex.c                  POSIX mutexes
+      pthread.c                POSIX threads library
+      rwlock.c                 POSIX read-write locks
+      spinlock.c               POSIX spin locks
   sys\                         OS and kernel source files
     boot\                      Boot loader
       boot.asm                 Boot sector for floppy and hardisk

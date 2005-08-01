@@ -67,11 +67,12 @@ static int apm_bios_call(unsigned long func, unsigned long ebx_in, unsigned long
 {
   __asm
   {
-    cli
-
     push ebp
     push edi
     push esi
+
+    push ebx
+    push ecx
 
     push ds
     push es
@@ -82,9 +83,11 @@ static int apm_bios_call(unsigned long func, unsigned long ebx_in, unsigned long
     mov eax, [func]
     mov ebx, [ebx_in]
     mov ecx, [ecx_in]
-
+    
+    cli
     call fword ptr [apm_entrypoint]
     setc al
+    sti
 
     popf
     pop gs
@@ -97,6 +100,9 @@ static int apm_bios_call(unsigned long func, unsigned long ebx_in, unsigned long
     mov [ecx_out], ecx
     mov [edx_out], edx
     mov [esi_out], esi
+
+    pop ecx
+    pop ebx
 
     pop esi
     pop edi
@@ -111,8 +117,7 @@ static int apm_bios_call_simple(unsigned long func, unsigned long ebx_in, unsign
 {
   __asm
   {
-    cli
-
+    push ebp
     push edi
     push esi
 
@@ -125,9 +130,12 @@ static int apm_bios_call_simple(unsigned long func, unsigned long ebx_in, unsign
     mov eax, [func]
     mov ebx, [ebx_in]
     mov ecx, [ecx_in]
+    xor	edx, edx
 
+    cli
     call fword ptr [apm_entrypoint]
     setc al
+    sti
 
     popf
     pop gs
@@ -139,8 +147,7 @@ static int apm_bios_call_simple(unsigned long func, unsigned long ebx_in, unsign
 
     pop esi
     pop edi
-
-    sti
+    pop ebp
   }
 
   return *eax_out & 0xFF;
@@ -149,8 +156,12 @@ static int apm_bios_call_simple(unsigned long func, unsigned long ebx_in, unsign
 static int apm_driver_version(unsigned short *ver)
 {
   unsigned long eax;
+  int rc;
 
-  if (apm_bios_call_simple(APM_FUNC_VERSION, 0, *ver, &eax)) return (eax >> 8) & 0xFF;
+  kprintf("call apm_bios_call(APM_FUNC_VERSION) sp=%08x\n", &eax);
+  rc = apm_bios_call_simple(APM_FUNC_VERSION, 0, *ver, &eax);
+  kprintf("apm_bios_call(APM_FUNC_VERSION) returned %08x\n", eax);
+  if (rc != 0) return (eax >> 8) & 0xFF;
   *ver = (unsigned short) (eax & 0xFFFF);
   return 0;
 }
@@ -158,26 +169,26 @@ static int apm_driver_version(unsigned short *ver)
 void init_apm()
 {
   struct apmparams *apm = &syspage->bootparams.apm;
-  //unsigned short ver;
-  //int rc;
+  unsigned short ver;
+  int rc;
+  unsigned long vaddr;
 
   // Skip if no APM BIOS detected in ldrinit
   if (apm->version == 0) return;
 
-  //kprintf("apm: BIOS version %d.%d Flags 0x%02x\n", ((apm->version >> 8) & 0xff), (apm->version & 0xff), apm->flags);
-  //kprintf("apm: cseg32 0x%04x %d bytes\n", apm->cseg32, apm->cseg32len);
-  //kprintf("apm: cseg16 0x%04x %d bytes\n", apm->cseg16, apm->cseg16len);
-  //kprintf("apm: dseg 0x%04x %d bytes\n", apm->dseg, apm->dseglen);
-  //kprintf("apm: entry 0x%04x\n", apm->entry);
-
-  // TODO: This code does not yet work. The memory for the selectors needs to
-  // be mapped before the APM BIOS can be used
+  kprintf("apm: BIOS version %d.%d Flags 0x%02x\n", ((apm->version >> 8) & 0xff), (apm->version & 0xff), apm->flags);
+  kprintf("apm: cseg32 0x%04x %d bytes\n", apm->cseg32, apm->cseg32len);
+  kprintf("apm: cseg16 0x%04x %d bytes\n", apm->cseg16, apm->cseg16len);
+  kprintf("apm: dseg 0x%04x %d bytes\n", apm->dseg, apm->dseglen);
+  kprintf("apm: entry 0x%04x\n", apm->entry);
 
   // Setup APM selectors in GDT
-  seginit(&syspage->gdt[GDT_APMCS], apm->cseg32, apm->cseg32len, D_CODE | D_DPL0 | D_READ | D_PRESENT, D_BIG | D_BIG_LIM);
-  seginit(&syspage->gdt[GDT_APMCS16], apm->cseg16, apm->cseg16len, D_CODE | D_DPL0 | D_READ | D_PRESENT, D_BIG | D_BIG_LIM);
-  seginit(&syspage->gdt[GDT_APMDS], apm->dseg, apm->dseglen, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, D_BIG | D_BIG_LIM);
-  seginit(&syspage->gdt[GDT_APM40], 0x40, 4095 - 0x40 * 16, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, D_BIG | D_BIG_LIM);
+  vaddr = (unsigned long) iomap(apm->cseg32 << 4, apm->cseg32len + 1);
+  kprintf("GDT_APMCS = %08x\n", vaddr);
+  seginit(&syspage->gdt[GDT_APMCS],  vaddr, apm->cseg32len + 1, D_CODE | D_DPL0 | D_READ | D_PRESENT, D_BIG);
+  seginit(&syspage->gdt[GDT_APMCS16], (unsigned long) iomap(apm->cseg16 << 4, apm->cseg16len + 1), apm->cseg16len + 1, D_CODE | D_DPL0 | D_READ | D_PRESENT, D_BIG);
+  seginit(&syspage->gdt[GDT_APMDS], (unsigned long) iomap(apm->dseg << 4, apm->dseglen + 1), apm->dseglen + 1, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, D_BIG);
+  //seginit(&syspage->gdt[GDT_APM40], (unsigned long) iomap(0x400, 4096), 4096 - 0x40 * 16, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, D_BIG | D_BIG_LIM);
 
   // Setup APM entry point
   apm_entrypoint.segment = SEL_APMCS;
@@ -185,10 +196,10 @@ void init_apm()
 
   apm_enabled = 1;
 
-  //ver = apm->version;
-  //rc = apm_driver_version(&ver);
-  //if (rc != 0) 
-  //  kprintf("apm: error %d in apm_driver_version()\n", rc);
-  //else
-  //  kprintf("apm: apm_driver_version() reports %04x\n", ver);
+  ver = apm->version;
+  rc = apm_driver_version(&ver);
+  if (rc != 0) 
+    kprintf("apm: error %d in apm_driver_version()\n", rc);
+  else
+    kprintf("apm: apm_driver_version() reports %04x\n", ver);
 }

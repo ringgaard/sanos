@@ -617,3 +617,16 @@ CHANGES
 
 - If no hostname has been configured, the network initialization code now tries to find the hostname for the 
   computer by making a DNS query on the assigned IP address.
+
+*** version 1.3.2 released (05/04/03) ***
+
+- GetLogicalDrives() in kernel32 implemented.
+
+- A bug in cmd_ipconfig() in sh.c prevented proper display of network configration if no
+  DNS servers was configured. (FGA)
+
+- A new -a option added to mkdfs to support file lists with alternative files names. This
+  simplifies configurations with both debug and release builds.
+
+- The Visual Studio wizard can now generate a floppy disk boot image configured for the
+  applications.

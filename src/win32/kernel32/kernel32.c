@@ -1397,8 +1397,7 @@ DWORD WINAPI GetLastError(VOID)
 DWORD WINAPI GetLogicalDrives(VOID)
 {
   TRACE("GetLogicalDrives");
-  panic("GetLogicalDrives not implemented");
-  return 0;
+  return 4; // Drive C:
 }
 
 DWORD WINAPI GetModuleFileNameA

@@ -68,7 +68,7 @@ source code from sanos-src.x.x.x.zip (see below). Unzip the files into
 a directory (e.g. c:\sanos) and go to the build directory and execute 
 the mkbootdisk batch script:
 
-  c:\sanos\build> mkbootdisk . img\bootdisk.img bootdisk.lst
+  c:\sanos\build> mkbootdisk . img\bootdisk.img build\bootdisk.lst
 
 This makes a bootdisk.img file in the img directory. This file can be
 written to a blank floppy disk using the mkfloppy utility found in 
