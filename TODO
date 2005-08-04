@@ -3,10 +3,6 @@ TODO for sanos
 
 - Use the BIOS memory map from osldr to initialize memory subsystem.
 
-- Finish implementation of APM support. This would allow sanos to turn off the
-  computer on shutdown. Eventually, shutdown could be implemented only
-  enabling APM just before shutdown.
- 
 - Move signal handler table to job object to make signal handlers job specific. 
     - Add job number to kill. 
     - Implement int kill(int pid, int signum)
@@ -75,7 +71,7 @@ IDEAS for new features
 
 - FATFS support
 
-- ACPI/APM support for shutdown
+- ACPI support
 
 - Memory paging support
 
@@ -623,10 +619,26 @@ CHANGES
 - GetLogicalDrives() in kernel32 implemented.
 
 - A bug in cmd_ipconfig() in sh.c prevented proper display of network configration if no
-  DNS servers was configured. (FGA)
+  DNS servers was configured. This problem has been fixed. (FGA)
 
 - A new -a option added to mkdfs to support file lists with alternative files names. This
   simplifies configurations with both debug and release builds.
 
 - The Visual Studio wizard can now generate a floppy disk boot image configured for the
   applications.
+
+- Shell prompt can be configured by setting the prompt property in the [shell] section
+  of the os.ini file.
+
+- If command line arguments are given to the shell it now executes the built-in command
+  and exits the shell.
+
+- The floppy motor timeout routine now aquires the floppy mutex before turning off the 
+  motor in order to prevent race conditions.
+
+- Advanced Power Management (APM) support implemented. The computer can now be
+  powered off after os shutdown. The mode parameter for exitos() can be used to specify 
+  the shutdown mode (halt, reboot, poweroff, debug). A shutdown command has been added 
+  to the shell. The power status can be retrieved using /proc/apm. 
+  
+- Added /proc/cpu for CPU information.

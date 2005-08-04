@@ -1195,6 +1195,15 @@ struct utsname
 #endif
 
 //
+// OS exit mode
+//
+
+#define EXITOS_HALT      0
+#define EXITOS_POWEROFF  1
+#define EXITOS_REBOOT    2
+#define EXITOS_DEBUG     3
+
+//
 // OS API functions
 //
 
@@ -1297,7 +1306,7 @@ osapi int dispatch(handle_t iomux, handle_t h, int events, int context);
 osapi int sysinfo(int cmd, void *data, size_t size);
 osapi int uname(struct utsname *buf);
 osapi handle_t self();
-osapi void exitos(int status);
+osapi void exitos(int mode);
 osapi void dbgbreak();
 
 osapi handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize, void *arg, int flags, struct tib **ptib);

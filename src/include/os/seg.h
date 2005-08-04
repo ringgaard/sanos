@@ -57,7 +57,7 @@
 
 // Segment descriptors (not gates) may include:
 
-#define D_ACCESSED 0x1     // Accessed (data or code)
+#define D_ACCESSED 0x1  // Accessed (data or code)
 
 #define D_WRITE    0x2  // Writable (data segments only)
 #define D_EXDOWN   0x4  // Expand down (data segments only)

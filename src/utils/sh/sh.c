@@ -1173,7 +1173,8 @@ int cmd_read(int argc, char *argv[])
 
 int cmd_reboot(int argc, char *argv[])
 {
-  return ioctl(1, IOCTL_REBOOT, NULL, 0);  
+  exitos(EXITOS_REBOOT);
+  return 0;
 }
 
 int cmd_rm(int argc, char *argv[])
@@ -1232,6 +1233,12 @@ int cmd_sound(int argc, char *argv[])
   freq = atoi(argv[1]);
 
   return ioctl(1, IOCTL_SOUND, &freq, 4);
+}
+
+int cmd_shutdown(int argc, char *argv[])
+{
+  exitos(EXITOS_POWEROFF);
+  return 0;
 }
 
 int cmd_sysinfo(int argc, char *argv[])
@@ -1409,6 +1416,7 @@ struct command cmdtab[] =
   {"rd",       cmd_rmdir,    "Remove directory"},
   {"rmdir",    cmd_rmdir,    "Remove directory"},
   {"sound",    cmd_sound,    "Play sound in speaker"},
+  {"shutdown", cmd_shutdown, "Shutdown computer and power off"},
   {"sysinfo",  cmd_sysinfo,  "Display system info"},
   {"test",     cmd_test,     "Dummy command for misc. tests"},
   {"type",     cmd_cat,      "Display file"},
@@ -1453,9 +1461,6 @@ static void launch_program(char *args)
   int h;
   int dotseen = 0;
 
-  while (*args != 0 && *args != ' ') args++;
-  while (*args == ' ') args++;
-
   p = args;
   q = pgm;
   while (*p != 0 && *p != ' ')
@@ -1478,11 +1483,30 @@ static void launch_program(char *args)
   }
 }
 
+static int exec_builtin(int argc, char *argv[], int *found)
+{
+  struct command *command;
+
+  for (command = cmdtab; command->cmdname; command++)
+    if (strcmp(argv[0], command->cmdname) == 0) break;
+
+  if (!command->cmdname)
+  {
+    if (found) *found = 0;
+    return -ENOENT;
+  }
+
+  if (found) *found = 1;
+  if (!command->proc) return -ENOSYS;
+  return command->proc(argc, argv);
+}
+
 static int exec_command(char *cmdline)
 {
   int argc;
   char **argv;
-  struct command *command;
+  int found;
+  int rc;
 
   argc = parse_args(cmdline, NULL);
   if (!argc) return 0;
@@ -1490,20 +1514,27 @@ static int exec_command(char *cmdline)
   argv = (char **) malloc(argc * sizeof(char *));
   parse_args(cmdline, argv);
 
-  for (command = cmdtab; command->cmdname; command++)
-    if (strcmp(argv[0], command->cmdname) == 0) break;
-
-  if (command->cmdname)
+  rc = exec_builtin(argc, argv, &found);
+  if (found) 
   {
-    if (!command->proc) 
-    {
-      free_args(argc, argv);
-      return -ENOSYS;
-    }
-    command->proc(argc, argv);
+    free_args(argc, argv);
+    return rc;
   }
-  else if (strcmp(argv[0], "start") == 0)
-    launch_program(cmdline);
+  
+  if (strcmp(argv[0], "start") == 0)
+  {
+    char *args = cmdline;
+    while (*args != 0 && *args != ' ') args++;
+    while (*args == ' ') args++;
+    launch_program(args);
+  }
+  else if (strcmp(argv[argc - 1], "&") == 0)
+  {
+    char *buf = strdup(cmdline);
+    buf[strlen(buf) - 1] = 0;
+    launch_program(buf);
+    free(buf);
+  }
   else
     exec_program(cmdline);
 
@@ -1515,10 +1546,11 @@ void shell()
 {
   char curdir[MAXPATH];
   char cmdline[256];
+  char *prompt = get_property(osconfig, "shell", "prompt", "%s$ ");
 
   while (1)
   {
-    printf("%s$ ", getcwd(curdir, sizeof curdir));
+    printf(prompt, getcwd(curdir, sizeof curdir));
     if (readline(fdin, cmdline, sizeof cmdline) < 0) break;
     if (exec_command(cmdline) < 0) break;
   }
@@ -1539,7 +1571,7 @@ int execute_script(char *cmdfile)
     return -errno;
   }
 
-  while (fgets(cmdline, 256, f))
+  while (fgets(cmdline, sizeof cmdline, f))
   {
     if (*cmdline == ';' || *cmdline == '#') continue;
     if (echo) write(fdout, cmdline, strlen(cmdline));
@@ -1678,15 +1710,6 @@ int main(int argc, char *argv[])
 
   if (sizeof(struct tib) != PAGESIZE) printf("warning: tib is %d bytes (%d expected)\n", sizeof(struct tib), PAGESIZE);
 
-  if (peb->ipaddr.s_addr != INADDR_ANY) 
-  {
-    if (get_numeric_property(osconfig, "shell", "telnetd", 0) && !telnetd_started)
-    {
-      beginthread(telnetd, 0, NULL, 0, NULL);
-      telnetd_started = 1;
-    }
-  }
-
   initcmds = get_property(osconfig, "shell", "initcmds", NULL);
   if (initcmds && !initcmds_executed)
   {
@@ -1694,7 +1717,23 @@ int main(int argc, char *argv[])
     initcmds_executed = 1;
   }
 
-  shell();
+  if (argc > 1)
+  {
+    exec_builtin(argc - 1, argv + 1, NULL);
+  }
+  else
+  {
+    if (peb->ipaddr.s_addr != INADDR_ANY) 
+    {
+      if (get_numeric_property(osconfig, "shell", "telnetd", 0) && !telnetd_started)
+      {
+	beginthread(telnetd, 0, NULL, 0, NULL);
+	telnetd_started = 1;
+      }
+    }
+
+    shell();
+  }
 
   return 0;
 }

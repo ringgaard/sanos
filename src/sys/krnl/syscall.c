@@ -1360,13 +1360,13 @@ static int sys_getthreadblock(char *params)
 
 static int sys_exitos(char *params)
 {
-  int status;
+  int mode;
 
   if (lock_buffer(params, 4) < 0) return -EFAULT;
 
-  status = *(int *) params;
+  mode = *(int *) params;
 
-  exit(status);
+  stop(mode);
 
   unlock_buffer(params, 4);
   return 0;

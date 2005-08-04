@@ -434,9 +434,9 @@ int ereset(handle_t h)
   return syscall(SYSCALL_ERESET, &h);
 }
 
-void exitos(int status)
+void exitos(int mode)
 {
-  syscall(SYSCALL_EXITOS, &status);
+  syscall(SYSCALL_EXITOS, &mode);
 }
 
 handle_t dup(handle_t h)

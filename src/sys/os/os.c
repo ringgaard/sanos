@@ -972,5 +972,5 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 
   if (rndfn) save_random_device(rndfn);
   stop_syslog();
-  exitos(0);
+  exitos(EXITOS_POWEROFF);
 }

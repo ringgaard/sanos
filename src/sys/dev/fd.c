@@ -273,9 +273,11 @@ static void fd_motor_timeout(void *arg)
   struct fd *fd = (struct fd *) arg;
 
   //kprintf("fd: motor off\n");
+  if (wait_for_object(&fd->fdc->lock, 0) < 0) return;
   fd->fdc->dor &= ~(0x10 << fd->drive);
   _outp(FDC_DOR, fd->fdc->dor);
   fd->motor_status = FD_MOTOR_OFF;
+  release_mutex(&fd->fdc->lock);
 }
 
 //

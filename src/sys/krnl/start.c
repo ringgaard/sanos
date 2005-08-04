@@ -85,9 +85,10 @@ COPYRIGHT "\n"
 "Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA\n";
 #endif
 
-#define ONPANIC_HALT   0
-#define ONPANIC_REBOOT 1
-#define ONPANIC_DEBUG  2
+#define ONPANIC_HALT      EXITOS_HALT
+#define ONPANIC_REBOOT    EXITOS_REBOOT
+#define ONPANIC_DEBUG     EXITOS_DEBUG
+#define ONPANIC_POWEROFF EXITOS_POWEROFF
 
 struct thread *mainthread;
 struct section *krnlcfg;
@@ -103,68 +104,65 @@ int license()
   return LICENSE;
 }
 
-void stop(int restart)
+void stop(int mode)
 {
-  kprintf("kernel: suspending all user threads...\n");
+  //kprintf("kernel: suspending all user threads...\n");
   suspend_all_user_threads();
 
-  kprintf("kernel: syncing filesystems...\n");
+  //kprintf("kernel: syncing filesystems...\n");
   umount_all();
 
-  kprintf("kernel: clearing connections...\n");
+  //kprintf("kernel: clearing connections...\n");
   tcp_shutdown();
   
   sleep(200);
 
-  if (restart)
+  switch (mode)
   {
-    kprintf("kernel: rebooting...\n");
-    reboot();
-  }
-  else
-  {
-    kprintf("kernel: system stopped\n");
-    cli();
-    halt();
-  }
-}
+    case EXITOS_HALT:
+      kprintf("kernel: system stopped\n");
+      break;
 
-void exit(int status)
-{
-  if (status != 0) kprintf("kernel: exit code = %d\n", status);
-  stop(0);
+    case EXITOS_POWEROFF:
+      kprintf("kernel: power down...\n");
+      apm_power_off();
+      break;
+
+    case EXITOS_REBOOT:
+      kprintf("kernel: rebooting...\n");
+      reboot();
+      break;
+
+    case EXITOS_DEBUG:
+      dbg_break();
+      break;
+  }
+
+  cli();
+  halt();
 }
 
 void panic(char *msg)
 {
   static int inpanic = 0;
 
+  if (inpanic)
+  {
+    kprintf("double panic: %s, halting\n", msg);
+    cli();
+    halt();
+  }
+
   inpanic = 1;
   kprintf("panic: %s\n", msg);
-  switch (onpanic)
+
+  if (onpanic == ONPANIC_DEBUG)
   {
-    case ONPANIC_HALT:
-      if (inpanic)
-      {
-	cli();
-	halt();
-      }
-      else
-	stop(0);
-      break;
-
-    case ONPANIC_REBOOT:
-      if (inpanic)
-	reboot();
-      else
-	stop(1);
-      break;
-
-    case ONPANIC_DEBUG:
-      if (debugging) dbg_output(msg);
-      dbg_break();
-      break;
+    if (debugging) dbg_output(msg);
+    dbg_break();
   }
+  else
+    stop(onpanic);
 }
 
 // Date string Mmm dd YYYY
@@ -319,6 +317,8 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
   register_proc_inode("kheap", kheapstat_proc, NULL);
   register_proc_inode("vmem", vmem_proc, NULL);
 
+  register_proc_inode("cpu", cpu_proc, NULL);
+
   // Initialize interrupts, floating-point support, and real-time clock
   init_pic();
   init_trap();
@@ -330,20 +330,6 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
   init_sched();
   init_handles();
   init_syscall();
-
-  //if (syspage->bootparams.memmap.count != 0)
-  //{
-  //  struct memmap *memmap = &syspage->bootparams.memmap;
-  //  int n;
-
-  //  for (n = 0; n < memmap->count; n++)
-  //  {
-  //    unsigned long addr = (unsigned long) memmap->entry[n].addr;
-  //    unsigned long size = (unsigned long) memmap->entry[n].size;
-  //    unsigned long type = memmap->entry[n].type;
-  //    kprintf("%p %p %d\n", addr, size, type);
-  //  }
-  //}
 
   // Enable interrupts and calibrate delay
   __asm { sti };
@@ -396,7 +382,7 @@ void main(void *arg)
   peb->fast_syscalls_supported = (cpu.features & CPU_FEATURE_SEP) != 0;
 
   // Initialize APM BIOS
-  //init_apm();
+  init_apm();
 
   // Enumerate root host buses and units
   enum_host_bus();
@@ -454,6 +440,8 @@ void main(void *arg)
     onpanic = ONPANIC_REBOOT;
   else if (strcmp(str, "debug") == 0)
     onpanic = ONPANIC_DEBUG;
+  else if (strcmp(str, "poweroff") == 0)
+    onpanic = ONPANIC_POWEROFF;
 
   // Set path separator
   pathsep = *get_property(krnlcfg, "kernel", "pathsep", "");

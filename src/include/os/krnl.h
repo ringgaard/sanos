@@ -127,12 +127,15 @@ krnlapi extern struct peb *peb;
 krnlapi void panic(char *msg);
 krnlapi int license();
 
-void exit();
-void stop(int restart);
+krnlapi void stop(int mode);
 
 // syscall.c
 
 void init_syscall();
+
+// cpu.c
+
+int cpu_proc(struct proc_file *pf, void *arg);
 
 // smbfs.c
 
@@ -168,6 +171,7 @@ void init_fd();
 // apm.c
 
 void init_apm();
+void apm_power_off();
 
 // opts.c
 

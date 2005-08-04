@@ -135,7 +135,7 @@ static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       return 0;
 
     case IOCTL_REBOOT:
-      stop(1);
+      stop(EXITOS_REBOOT);
       return 0;
 
     case IOCTL_KBHIT:

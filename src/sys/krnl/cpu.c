@@ -266,6 +266,12 @@ void init_cpu()
   kprintf("cpu: %s family %d model %d stepping %d\n", cpu.modelid, cpu.family, cpu.model, cpu.stepping);
 }
 
+int cpu_proc(struct proc_file *pf, void *arg)
+{
+  pprintf(pf, "%s family %d model %d stepping %d\n", cpu.modelid, cpu.family, cpu.model, cpu.stepping);
+  return 0;
+}
+
 int cpu_sysinfo(struct cpuinfo *info)
 {
   info->cpu_vendor = cpu.vendor;

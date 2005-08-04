@@ -463,5 +463,9 @@ vcwizard\                      Visual Studio sanos project wizard
       default.js               Script for sanos wizard
   templates\                   Templates for sanos wizard
     1033\                      English localized templates for sanos wizard
+      bootdisk.lst             Template for floppy disk boot image file list
+      bootdsktmpl.inf          Template list for boot disk project
+      krnl.ini                 Sample kernel configuration file 
       main.c                   Sample main C template
+      os.ini                   Sample os configuration file 
       templates.inf            Template list
