@@ -263,7 +263,7 @@ void init_cpu()
     }
   }
 
-  kprintf("cpu: %s family %d model %d stepping %d\n", cpu.modelid, cpu.family, cpu.model, cpu.stepping);
+  kprintf(KERN_INFO "cpu: %s family %d model %d stepping %d\n", cpu.modelid, cpu.family, cpu.model, cpu.stepping);
 }
 
 int cpu_proc(struct proc_file *pf, void *arg)

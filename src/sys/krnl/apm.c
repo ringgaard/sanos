@@ -334,7 +334,7 @@ void init_apm()
   rc = apm_engage_power_management(APM_DEVICE_ALL, 1);
   if (rc != 0) 
   {
-    kprintf("apm: error %d in apm_engage_power_management()\n", rc);
+    kprintf(KERN_ERR "apm: error %d in apm_engage_power_management()\n", rc);
     return;
   }
 

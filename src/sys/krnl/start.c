@@ -106,15 +106,9 @@ int license()
 
 void stop(int mode)
 {
-  //kprintf("kernel: suspending all user threads...\n");
   suspend_all_user_threads();
-
-  //kprintf("kernel: syncing filesystems...\n");
   umount_all();
-
-  //kprintf("kernel: clearing connections...\n");
   tcp_shutdown();
-  
   sleep(200);
 
   switch (mode)
@@ -148,13 +142,13 @@ void panic(char *msg)
 
   if (inpanic)
   {
-    kprintf("double panic: %s, halting\n", msg);
+    kprintf(KERN_EMERG "double panic: %s, halting\n", msg);
     cli();
     halt();
   }
 
   inpanic = 1;
-  kprintf("panic: %s\n", msg);
+  kprintf(KERN_EMERG "panic: %s\n", msg);
 
   if (onpanic == ONPANIC_DEBUG)
   {
@@ -266,11 +260,7 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
 {
   // Copy kernel options
   strcpy(krnlopts, opts);
-  if (get_option(opts, "silent", NULL, 0, NULL) != NULL) 
-  {
-    extern int kprint_enabled; // from cons.c
-    kprint_enabled = 0;
-  }
+  if (get_option(opts, "silent", NULL, 0, NULL) != NULL) kprint_enabled = 0;
 
   // Initialize screen
   init_video();
@@ -278,12 +268,12 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
 
   // Display banner
 #ifdef DEBUG
-  kprintf("%s version %s Debug Build %d (%s %s)\n", OSNAME, OSVERSION, buildno(), __DATE__, __TIME__);
+  kprintf(KERN_INFO "starting %s version %s Debug Build %d (%s %s)\n", OSNAME, OSVERSION, buildno(), __DATE__, __TIME__);
 #else
-  kprintf("%s version %s Build %d (%s %s)\n", OSNAME, OSVERSION, buildno(), __DATE__, __TIME__);
+  kprintf(KERN_INFO "starting %s version %s Build %d (%s %s)\n", OSNAME, OSVERSION, buildno(), __DATE__, __TIME__);
 #endif
-  kprintf("%s\n", COPYRIGHT);
-  if (*krnlopts) kprintf("options: %s\n", krnlopts);
+  //kprintf("%s\n", COPYRIGHT);
+  if (*krnlopts) kprintf(KERN_INFO "options: %s\n", krnlopts);
 
   // Initialize CPU
   init_cpu();
@@ -416,7 +406,7 @@ void main(void *arg)
   else
     sprintf(bootdev, "fd%c", '0' + (syspage->ldrparams.bootdrv & 0x7F));
 
-  kprintf("mount: root on device %s\n", bootdev);
+  kprintf(KERN_INFO "mount: root on device %s\n", bootdev);
 
   // Mount file systems
   rc = mount("dfs", "/", bootdev, "", NULL);
@@ -430,7 +420,7 @@ void main(void *arg)
 
   // Load kernel configuration
   rc = load_kernel_config();
-  if (rc < 0) kprintf("%s: error %d loading kernel configuration\n", KERNEL_CONFIG, rc);
+  if (rc < 0) kprintf(KERN_ERR "%s: error %d loading kernel configuration\n", KERNEL_CONFIG, rc);
 
   // Determine kernel panic action
   str = get_property(krnlcfg, "kernel", "onpanic", "halt");
@@ -485,7 +475,7 @@ void main(void *arg)
   t->hndl = halloc(&t->object);
   mark_thread_running();
 
-  kprintf("mem: %dMB total, %dKB used, %dKB free, %dKB reserved\n", 
+  kprintf(KERN_INFO "mem: %dMB total, %dKB used, %dKB free, %dKB reserved\n", 
 	  maxmem * PAGESIZE / M, 
 	  (totalmem - freemem) * PAGESIZE / K, 
 	  freemem * PAGESIZE / K, (maxmem - totalmem) * PAGESIZE / K);

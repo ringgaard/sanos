@@ -387,7 +387,7 @@ static void hd_fixstring(unsigned char *s, int len)
 
 static void hd_error(char *func, unsigned char error)
 {
-  kprintf("%s: ", func);
+  kprintf(KERN_ERR "%s: ", func);
   if (error & HDCE_BBK)   kprintf("bad block  ");
   if (error & HDCE_UNC)   kprintf("uncorrectable data  ");
   if (error & HDCE_MC)    kprintf("media change  ");
@@ -606,7 +606,7 @@ static int atapi_packet_read(struct hd *hd, unsigned char *pkt, int pktlen, void
   result = hd_wait(hdc, HDCS_DRDY, HDTIMEOUT_DRDY);
   if (result != 0) 
   {
-    kprintf("atapi_packet_read: busy waiting for packet ready (0x%02x)\n", result);
+    kprintf(KERN_WARNING "atapi_packet_read: busy waiting for packet ready (0x%02x)\n", result);
 
     hdc->dir = HD_XFER_IDLE;
     hdc->active = NULL;
@@ -625,7 +625,7 @@ static int atapi_packet_read(struct hd *hd, unsigned char *pkt, int pktlen, void
     //kprintf("wait for data\n");
     if (wait_for_object(&hdc->ready, HDTIMEOUT_XFER) < 0)
     {
-      kprintf("hd_read: timeout waiting for interrupt\n");
+      kprintf(KERN_WARNING "hd_read: timeout waiting for interrupt\n");
       hdc->result = -EIO;
       break;
     }
@@ -637,7 +637,7 @@ static int atapi_packet_read(struct hd *hd, unsigned char *pkt, int pktlen, void
       unsigned char error;
 
       error = _inp(hdc->iobase + HDC_ERR);
-      kprintf("hd: atapi packet read error (status=0x%02x,error=0x%02x)\n", hdc->status, error);
+      kprintf(KERN_ERR "hd: atapi packet read error (status=0x%02x,error=0x%02x)\n", hdc->status, error);
 
       hdc->result = -EIO;
       break;
@@ -653,7 +653,7 @@ static int atapi_packet_read(struct hd *hd, unsigned char *pkt, int pktlen, void
     if (bytes == 0) break;
     if (bytes > bufleft)
     {
-      kprintf("%s: buffer overrun\n", device(hd->devno)->name);
+      kprintf(KERN_ERR "%s: buffer overrun\n", device(hd->devno)->name);
       hdc->result = -EBUF;
       break;
     }
@@ -764,7 +764,7 @@ static int hd_read_pio(struct dev *dev, void *buffer, size_t count, blkno_t blkn
     result = hd_wait(hdc, HDCS_DRDY, HDTIMEOUT_DRDY);
     if (result != 0) 
     {
-      kprintf("hd_read: no drdy (0x%02x)\n", result);
+      kprintf(KERN_ERR "hd_read: no drdy (0x%02x)\n", result);
       hdc->result = -EIO;
       break;
     }
@@ -791,7 +791,7 @@ static int hd_read_pio(struct dev *dev, void *buffer, size_t count, blkno_t blkn
     // Wait until data read
     if (wait_for_object(&hdc->ready, HDTIMEOUT_XFER) < 0)
     {
-      kprintf("hd_read: timeout waiting for interrupt\n");
+      kprintf(KERN_WARNING "hd_read: timeout waiting for interrupt\n");
       hdc->result = -EIO;
       break;
     }
@@ -838,7 +838,7 @@ static int hd_write_pio(struct dev *dev, void *buffer, size_t count, blkno_t blk
     result = hd_wait(hdc, HDCS_DRDY, HDTIMEOUT_DRDY);
     if (result != 0) 
     {
-      kprintf("hd_write: no drdy (0x%02x)\n", result);
+      kprintf(KERN_ERR "hd_write: no drdy (0x%02x)\n", result);
       hdc->result = -EIO;
       break;
     }
@@ -886,7 +886,7 @@ static int hd_write_pio(struct dev *dev, void *buffer, size_t count, blkno_t blk
     // Wait until data written
     if (wait_for_object(&hdc->ready, HDTIMEOUT_XFER) < 0)
     {
-      kprintf("hd_write: timeout waiting for interrupt\n");
+      kprintf(KERN_ERR "hd_write: timeout waiting for interrupt\n");
       hdc->result = -EIO;
       break;
     }
@@ -935,7 +935,7 @@ static int hd_read_udma(struct dev *dev, void *buffer, size_t count, blkno_t blk
     result = hd_wait(hdc, HDCS_DRDY, HDTIMEOUT_DRDY);
     if (result != 0) 
     {
-      kprintf("hd_read: no drdy (0x%02x)\n", result);
+      kprintf(KERN_ERR "hd_read: no drdy (0x%02x)\n", result);
       result = -EIO;
       break;
     }
@@ -968,7 +968,7 @@ static int hd_read_udma(struct dev *dev, void *buffer, size_t count, blkno_t blk
     // Wait for interrupt
     if (wait_for_object(&hdc->ready, HDTIMEOUT_XFER) < 0)
     {
-      kprintf("hd: timeout waiting for read to complete\n");
+      kprintf(KERN_WARNING "hd: timeout waiting for read to complete\n");
       result = -EIO;
       break;
     }
@@ -979,7 +979,7 @@ static int hd_read_udma(struct dev *dev, void *buffer, size_t count, blkno_t blk
     _outp(hdc->bmregbase + BM_STATUS_REG, bmstat | BM_SR_MASK_INT | BM_SR_MASK_ERR);
     if ((bmstat & (BM_SR_MASK_INT | BM_SR_MASK_ERR | BM_SR_MASK_ACT)) != BM_SR_MASK_INT)
     {
-      kprintf("hd: dma error %02X\n", bmstat);
+      kprintf(KERN_ERR "hd: dma error %02X\n", bmstat);
       result = -EIO;
       break;
     }
@@ -992,7 +992,7 @@ static int hd_read_udma(struct dev *dev, void *buffer, size_t count, blkno_t blk
       error = _inp(hdc->iobase + HDC_ERR);
       hd_error("hdread", error);
 
-      kprintf("hd: read error (0x%02x)\n", hdc->status);
+      kprintf(KERN_ERR "hd: read error (0x%02x)\n", hdc->status);
       result = -EIO;
       break;
     }
@@ -1035,7 +1035,7 @@ static int hd_write_udma(struct dev *dev, void *buffer, size_t count, blkno_t bl
     result = hd_wait(hdc, HDCS_DRDY, HDTIMEOUT_DRDY);
     if (result != 0) 
     {
-      kprintf("hd_write: no drdy (0x%02x)\n", result);
+      kprintf(KERN_ERR "hd_write: no drdy (0x%02x)\n", result);
       result = -EIO;
       break;
     }
@@ -1068,7 +1068,7 @@ static int hd_write_udma(struct dev *dev, void *buffer, size_t count, blkno_t bl
     // Wait for interrupt
     if (wait_for_object(&hdc->ready, HDTIMEOUT_XFER) < 0)
     {
-      kprintf("hd: timeout waiting for write to complete\n");
+      kprintf(KERN_WARNING "hd: timeout waiting for write to complete\n");
       result = -EIO;
       break;
     }
@@ -1079,7 +1079,7 @@ static int hd_write_udma(struct dev *dev, void *buffer, size_t count, blkno_t bl
     _outp(hdc->bmregbase + BM_STATUS_REG, bmstat | BM_SR_MASK_INT | BM_SR_MASK_ERR);
     if ((bmstat & (BM_SR_MASK_INT | BM_SR_MASK_ERR | BM_SR_MASK_ACT)) != BM_SR_MASK_INT)
     {
-      kprintf("hd: dma error %02X\n", bmstat);
+      kprintf(KERN_ERR "hd: dma error %02X\n", bmstat);
       result = -EIO;
       break;
     }
@@ -1092,7 +1092,7 @@ static int hd_write_udma(struct dev *dev, void *buffer, size_t count, blkno_t bl
       error = _inp(hdc->iobase + HDC_ERR);
       hd_error("hdwrite", error);
 
-      kprintf("hd: write error (0x%02x)\n", hdc->status);
+      kprintf(KERN_ERR "hd: write error (0x%02x)\n", hdc->status);
       result = -EIO;
       break;
     }
@@ -1181,7 +1181,7 @@ void hd_dpc(void *arg)
         error = _inp(hdc->iobase + HDC_ERR);
         hd_error("hdread", error);
 
-	kprintf("hd: read error (0x%02x)\n", hdc->status);
+	kprintf(KERN_ERR "hd: read error (0x%02x)\n", hdc->status);
 	hdc->result = -EIO;
 	set_event(&hdc->ready);
       }
@@ -1213,7 +1213,7 @@ void hd_dpc(void *arg)
         error = _inp(hdc->iobase + HDC_ERR);
         hd_error("hdwrite", error);
 
-	kprintf("hd: write error (0x%02x)\n", hdc->status);
+	kprintf(KERN_ERR "hd: write error (0x%02x)\n", hdc->status);
 	hdc->result = -EIO;
 	set_event(&hdc->ready);
       }
@@ -1348,14 +1348,14 @@ static int create_partitions(struct hd *hd)
   rc = dev_read(hd->devno, &mbr, SECTORSIZE, 0, 0);
   if (rc < 0)
   {
-    kprintf("%s: error %d reading partition table\n", device(hd->devno)->name, rc);
+    kprintf(KERN_ERR "%s: error %d reading partition table\n", device(hd->devno)->name, rc);
     return rc;
   }
 
   // Create partition devices
   if (mbr.signature != MBR_SIGNATURE)
   {
-    kprintf("%s: illegal boot sector signature\n", device(hd->devno)->name);
+    kprintf(KERN_ERR "%s: illegal boot sector signature\n", device(hd->devno)->name);
     return -EIO;
   }
 
@@ -1374,7 +1374,7 @@ static int create_partitions(struct hd *hd)
       if (devno == NODEV)
       {
         devno = dev_make(devname, &partition_driver, NULL, &hd->parts[i]);
-        kprintf("%s: partition %d on %s, %dMB (type %02x)\n", devname, i, device(hd->devno)->name, mbr.parttab[i].numsect / (M / SECTORSIZE), mbr.parttab[i].systid);
+        kprintf(KERN_INFO "%s: partition %d on %s, %dMB (type %02x)\n", devname, i, device(hd->devno)->name, mbr.parttab[i].numsect / (M / SECTORSIZE), mbr.parttab[i].systid);
       }
       else
 	dev_close(devno);
@@ -1497,7 +1497,7 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase, int *m
       int rc = wait_reset_done(hdc, HD0_DRVSEL);
       if (rc < 0)
       {
-	kprintf("hd: error %d waiting for reset to complete on master device\n");
+	kprintf(KERN_ERR "hd: error %d waiting for reset to complete on master device\n");
 	*masterif = HDIF_NONE;
       }
     }
@@ -1507,7 +1507,7 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase, int *m
       int rc = wait_reset_done(hdc, HD1_DRVSEL);
       if (rc < 0)
       {
-	kprintf("hd: error %d waiting for reset to complete on slave device\n");
+	kprintf(KERN_ERR "hd: error %d waiting for reset to complete on slave device\n");
 	*slaveif = HDIF_NONE;
       }
     }
@@ -1595,7 +1595,7 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
     rc = hd_cmd(hd, HDCMD_SETMULT, hd->multsect);
     if (rc < 0)
     {
-      kprintf("hd: unable to set multi sector mode\n");
+      kprintf(KERN_WARNING "hd: unable to set multi sector mode\n");
       hd->multsect = 1;
     }
   }
@@ -1614,11 +1614,11 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
   }
   else
   {
-    kprintf("%s: unknown media type 0x%02x (iftype %d, config 0x%04x)\n", devname, hd->media, hd->iftype, hd->param.config);
+    kprintf(KERN_ERR "%s: unknown media type 0x%02x (iftype %d, config 0x%04x)\n", devname, hd->media, hd->iftype, hd->param.config);
     return;
   }
 
-  kprintf("%s: %s", device(hd->devno)->name, hd->param.model);
+  kprintf(KERN_INFO "%s: %s", device(hd->devno)->name, hd->param.model);
   if (hd->size > 0) kprintf(" (%d MB)", hd->size);
   if (hd->lba) kprintf(", LBA");
   if (hd->udmamode != -1) kprintf(", UDMA%d", udma_speed[hd->udmamode]);
@@ -1659,7 +1659,7 @@ void init_hd()
   {
     rc = setup_hdc(&hdctab[0], HDC0_IOBASE, HDC0_IRQ, ide ? bmiba : 0, &masterif, &slaveif);
     if (rc < 0)
-      kprintf("hd: error %d initializing primary IDE controller\n", rc);
+      kprintf(KERN_ERR "hd: error %d initializing primary IDE controller\n", rc);
     else
     {
       if (numhd >= 1 && masterif > HDIF_UNKNOWN) setup_hd(&hdtab[0], &hdctab[0], "hd0", HD0_DRVSEL, masterif);
@@ -1671,7 +1671,7 @@ void init_hd()
   {
     rc = setup_hdc(&hdctab[1], HDC1_IOBASE, HDC1_IRQ, ide ? bmiba + 8: 0, &masterif, &slaveif);
     if (rc < 0)
-      kprintf("hd: error %d initializing secondary IDE controller\n", rc);
+      kprintf(KERN_ERR "hd: error %d initializing secondary IDE controller\n", rc);
     else
     {
       if (numhd >= 3 && masterif > HDIF_UNKNOWN) setup_hd(&hdtab[2], &hdctab[1], "hd2", HD0_DRVSEL, masterif);

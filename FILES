@@ -84,6 +84,7 @@ src\                           Souce files
     stdio.h                    Standard I/O routines
     stdlib.h                   Standard library routines
     string.h                   String routines
+    syslog.h                   System error logging
     time.h                     Time routines
     unistd.h                   Standard symbolic constants and types
     utime.h                    Definitions/declarations for utime()
@@ -125,6 +126,7 @@ src\                           Souce files
       iop.h                    Port input/output
       iovec.h                  Scatter/gather utility routines
       kbd.h                    Keyboard driver
+      klog.h                   Kernel logging
       kmalloc.h                Kernel heap allocator
       kmem.h                   Kernel memory page allocator
       krnl.h                   Main kernel include file
@@ -255,6 +257,7 @@ src\                           Souce files
       kbddk.h                  Keyboard tables for danish keyboard
       kbduk.h                  Keyboard tables for UK keyboard
       kbdus.h                  Keyboard tables for US keyboard
+      klog.c                   Kernel logging
       ne2000.c                 NE2000 network card driver
       null.c                   Null device driver
       nvram.c                  NVRAM driver
@@ -355,6 +358,7 @@ src\                           Souce files
       signal.c                 Signal and exception handling
       sntp.c                   Simple Network Time Protocol
       sysapi.c                 Stub routines for system calls
+      syslog.c                 System error logging
       thread.c                 Thread routines
       tls.c                    Thread local storage
     osldr\                     OS loader source files

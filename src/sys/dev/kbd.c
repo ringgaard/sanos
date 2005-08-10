@@ -475,7 +475,7 @@ int reset_keyboard()
   kbd_write_command(KBD_CCMD_SELF_TEST);
   if (kbd_wait_for_data() != 0x55)
   {
-    kprintf("kbd: Keyboard failed self test\n");
+    kprintf(KERN_WARNING "kbd: Keyboard failed self test\n");
     return -EIO;
   }
   
@@ -485,7 +485,7 @@ int reset_keyboard()
   kbd_write_command(KBD_CCMD_KBD_TEST);
   if (kbd_wait_for_data() != 0x00)
   {
-    kprintf("kbd: Keyboard interface failed self test\n");
+    kprintf(KERN_WARNING "kbd: Keyboard interface failed self test\n");
     return -EIO;
   }
 
@@ -503,14 +503,14 @@ int reset_keyboard()
     if (status == KBD_REPLY_ACK) break;
     if (status != KBD_REPLY_RESEND)
     {
-      kprintf("kbd: Keyboard reset failed, no ACK\n");
+      kprintf(KERN_ERR  "kbd: Keyboard reset failed, no ACK\n");
       return -EIO;
     }
   }
 
   if ((status = kbd_wait_for_data()) != KBD_REPLY_POR)
   {
-    kprintf("kbd: Keyboard reset failed, no POR (%d)\n", status);
+    kprintf(KERN_ERR  "kbd: Keyboard reset failed, no POR (%d)\n", status);
     return -EIO;
   }
 
@@ -524,7 +524,7 @@ int reset_keyboard()
     if (status == KBD_REPLY_ACK) break;
     if (status != KBD_REPLY_RESEND)
     {
-      kprintf("kbd: Disable keyboard: no ACK\n");
+      kprintf(KERN_ERR  "kbd: Disable keyboard: no ACK\n");
       return -EIO;
     }
   }
@@ -548,7 +548,7 @@ int reset_keyboard()
   kbd_write_data(KBD_CMD_SET_RATE);
   if (kbd_wait_for_data() != KBD_REPLY_ACK)
   {
-    kprintf("kbd: Set rate: no ACK\n");
+    kprintf(KERN_ERR "kbd: Set rate: no ACK\n");
     return -EIO;
   }
   
@@ -556,7 +556,7 @@ int reset_keyboard()
   kbd_write_data(0x00);
   if (kbd_wait_for_data() != KBD_REPLY_ACK)
   {
-    kprintf("kbd: Set rate: no ACK\n");
+    kprintf(KERN_ERR "kbd: Set rate: no ACK\n");
     return -EIO;
   }
 

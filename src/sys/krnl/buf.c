@@ -294,7 +294,7 @@ static int read_buffer(struct bufpool *pool, struct buf *buf)
   if (rc != pool->bufsize)
   {
     // Set buffer in error state and release all waiters
-    kprintf("bufpool: error %d reading block %d from %s\n", rc, buf->blkno, device(pool->devno)->name);
+    kprintf(KERN_ERR "bufpool: error %d reading block %d from %s\n", rc, buf->blkno, device(pool->devno)->name);
     change_state(pool, buf, BUF_STATE_ERROR);
     release_buffer_waiters(buf, rc);
   }
@@ -340,7 +340,7 @@ static int write_buffer(struct bufpool *pool, struct buf *buf, int flush)
   if (rc != pool->bufsize)
   {
     // Set buffer in error state and release all waiters
-    kprintf("bufpool: error %d writing block %d to %s\n", rc, buf->blkno, device(pool->devno)->name);
+    kprintf(KERN_ERR "bufpool: error %d writing block %d to %s\n", rc, buf->blkno, device(pool->devno)->name);
     change_state(pool, buf, BUF_STATE_ERROR);
     release_buffer_waiters(buf, rc);
   }

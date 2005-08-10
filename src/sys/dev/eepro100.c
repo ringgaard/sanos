@@ -373,7 +373,7 @@ __inline static void wait_for_cmd_done(long cmd_ioaddr)
     if (inp(cmd_ioaddr) == 0) break;
   }
 
-  kprintf("eepro100: Command %2.2x was not immediately accepted, %d ticks!\n", delayed_cmd, wait);
+  kprintf(KERN_WARNING "eepro100: Command %2.2x was not immediately accepted, %d ticks!\n", delayed_cmd, wait);
 }
 
 // Serial EEPROM section.
@@ -429,7 +429,7 @@ static int mdio_read(long ioaddr, int phy_id, int location)
     val = inpd(ioaddr + SCBCtrlMDI);
     if (--boguscnt < 0) 
     {
-      kprintf("eepro100: mdio_read() timed out with val = %8.8x\n", val);
+      kprintf(KERN_WARNING "eepro100: mdio_read() timed out with val = %8.8x\n", val);
       break;
     }
   } while (!(val & 0x10000000));
@@ -446,7 +446,7 @@ static int mdio_write(long ioaddr, int phy_id, int location, int value)
     val = inpd(ioaddr + SCBCtrlMDI);
     if (--boguscnt < 0)
     {
-      kprintf("eepro100: mdio_write() timed out with val = %8.8x\n", val);
+      kprintf(KERN_WARNING "eepro100: mdio_write() timed out with val = %8.8x\n", val);
       break;
     }
   } while (!(val & 0x10000000));
@@ -468,7 +468,7 @@ static void do_slow_command(struct dev *dev, int cmd)
     if (inp(cmd_ioaddr) == 0) break;
   }
 
-  if (wait > 100)  kprintf("%s: Command %4.4x was never accepted (%d polls)!\n", dev->name, inp(cmd_ioaddr), wait);
+  if (wait > 100)  kprintf(KERN_WARNING "%s: Command %4.4x was never accepted (%d polls)!\n", dev->name, inp(cmd_ioaddr), wait);
   outp(cmd_ioaddr, cmd);
 
   for (wait = 0; wait <= 100; wait++)
@@ -484,7 +484,7 @@ static void do_slow_command(struct dev *dev, int cmd)
       udelay(1);
   }
 
-  kprintf("%s: Command %4.4x was not accepted after %d polls!  Current status %8.8x\n", dev->name, cmd, wait, inpd(sp->iobase + SCBStatus));
+  kprintf(KERN_WARNING "%s: Command %4.4x was not accepted after %d polls!  Current status %8.8x\n", dev->name, cmd, wait, inpd(sp->iobase + SCBStatus));
 }
 
 static int speedo_set_rx_mode(struct dev *dev);
@@ -910,7 +910,7 @@ static int speedo_set_rx_mode(struct dev *dev)
       sp->mc_setup_frm = kmalloc(sp->mc_setup_frm_len);
       if (sp->mc_setup_frm == NULL) 
       {
-        kprintf("%s: Failed to allocate a setup frame\n", dev->name);
+        kprintf(KERN_WARNING "%s: Failed to allocate a setup frame\n", dev->name);
         sp->rx_mode = -1; // We failed, try again.
         return -ENOMEM;
       }
@@ -997,7 +997,7 @@ static void speedo_timer(void *arg)
       speedo_interrupt(dev);
       if (ticks - sp->last_reset > 10*HZ) 
       {
-        kprintf("%s: IRQ %d is still blocked!\n", dev->name, sp->irq);
+        kprintf(KERN_WARNING "%s: IRQ %d is still blocked!\n", dev->name, sp->irq);
         sp->last_reset = ticks;
       }
     } 
@@ -1040,7 +1040,7 @@ static void speedo_timer(void *arg)
       if (ticks - sp->last_reset > 10*HZ) 
       {
         sp->last_reset = ticks;
-        kprintf("%s: The EEPro100 chip is missing!\n", dev->name);
+        kprintf(KERN_WARNING "%s: The EEPro100 chip is missing!\n", dev->name);
       }
     } 
     else if (status & 0xfc00) 
@@ -1050,7 +1050,7 @@ static void speedo_timer(void *arg)
       {
         if (ticks - sp->last_reset > 10*HZ) 
 	{
-          kprintf("%s: IRQ %d is physically blocked! (%4.4x) Failing back to low-rate polling\n", dev->name, sp->irq, status);
+          kprintf(KERN_WARNING "%s: IRQ %d is physically blocked! (%4.4x) Failing back to low-rate polling\n", dev->name, sp->irq, status);
           sp->last_reset = ticks;
         }
 
@@ -1083,7 +1083,7 @@ static void speedo_tx_timeout(struct dev *dev)
   long ioaddr = sp->iobase;
   int status = inpw(ioaddr + SCBStatus);
 
-  kprintf("%s: Transmit timed out: status %4.4x  %4.4x at %d/%d commands %8.8x %8.8x %8.8x\n",
+  kprintf(KERN_WARNING "%s: Transmit timed out: status %4.4x  %4.4x at %d/%d commands %8.8x %8.8x %8.8x\n",
        dev->name, status, inpw(ioaddr + SCBCmd),
        sp->dirty_tx, sp->cur_tx,
        sp->tx_ring[(sp->dirty_tx+0) % TX_RING_SIZE].status,
@@ -1095,7 +1095,7 @@ static void speedo_tx_timeout(struct dev *dev)
 
   speedo_show_state(dev);
 
-  kprintf("%s: Restarting the chip...\n", dev->name);
+  kprintf(KERN_INFO "%s: Restarting the chip...\n", dev->name);
 
   // Reset the Tx and Rx units.
   outpd(ioaddr + SCBPort, PortReset);
@@ -1137,7 +1137,7 @@ static void speedo_intr_error(struct dev *dev, int intr_status)
     else if ((intr_status & 0x003c) == 0x0008) 
     { 
       // No resources (why?!)
-      kprintf("%s: Unknown receiver error, status=%#4.4x\n", dev->name, intr_status);
+      kprintf(KERN_ERR "%s: Unknown receiver error, status=%#4.4x\n", dev->name, intr_status);
 
       // No idea of what went wrong.  Restart the receiver
       outpd(ioaddr + SCBPointer, virt2phys(sp->rx_ringp[sp->cur_rx % RX_RING_SIZE]));
@@ -1170,12 +1170,12 @@ static int speedo_rx(struct dev *dev)
     if ((status & (RxErrTooBig | RxOK | 0x0f90)) != RxOK)
     {
       if (status & RxErrTooBig)
-        kprintf("%s: Ethernet frame overran the Rx buffer, status %8.8x!\n", dev->name, status);
+        kprintf("KERN_WARNING %s: Ethernet frame overran the Rx buffer, status %8.8x!\n", dev->name, status);
       else if (!(status & RxOK)) 
       {
         // There was a fatal error.  This *should* be impossible.
         sp->stats.rx_errors++;
-        kprintf("%s: Anomalous event in speedo_rx(), status %8.8x\n", dev->name, status);
+        kprintf(KERN_WARNING "%s: Anomalous event in speedo_rx(), status %8.8x\n", dev->name, status);
       }
     } 
     else 
@@ -1197,7 +1197,7 @@ static int speedo_rx(struct dev *dev)
         p = sp->rx_pbuf[entry];
         if (p == NULL) 
 	{
-          kprintf("%s: Inconsistent Rx descriptor chain\n", dev->name);
+          kprintf(KERN_WARNING "%s: Inconsistent Rx descriptor chain\n", dev->name);
           break;
         }
 
@@ -1302,7 +1302,7 @@ static void speedo_interrupt(struct dev *dev)
           // Special case error check: look for descriptor that the chip skipped(?)
           if (sp->cur_tx - dirty_tx > 2  && (sp->tx_ring[(dirty_tx + 1) % TX_RING_SIZE].status & StatusComplete)) 
 	  {
-            kprintf("%s: Command unit failed to mark command %8.8x as complete at %d\n", dev->name, status, dirty_tx);
+            kprintf(KERN_ERR "%s: Command unit failed to mark command %8.8x as complete at %d\n", dev->name, status, dirty_tx);
           } 
 	  else
 	    // It still hasn't been processed
@@ -1468,7 +1468,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   unsigned short eeprom[0x100];
 
   // Check license
-  if (license() != LICENSE_GPL) kprintf("warning: license violation, eepro100 driver may only be used under GPL\n");
+  if (license() != LICENSE_GPL) kprintf(KERN_WARNING "warning: license violation, eepro100 driver may only be used under GPL\n");
 
   // Determine NIC type
   board = lookup_board(board_tbl, unit);
@@ -1522,7 +1522,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
       }
     }
 
-    if (sum != 0xBABA) kprintf("eepro100: Invalid EEPROM checksum %#4.4x!\n", sum);
+    if (sum != 0xBABA) kprintf(KERN_WARNING "eepro100: Invalid EEPROM checksum %#4.4x!\n", sum);
   }
 
   // Reset the chip: stop Tx and Rx processes and clear counters.
@@ -1557,9 +1557,9 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   sp->rx_bug = (eeprom[3] & 0x03) == 3 ? 0 : 1;
 
 
-  if (sp->rx_bug) kprintf("%s: Receiver lock-up workaround activated\n", dev->name);
+  if (sp->rx_bug) kprintf(KERN_INFO "%s: Receiver lock-up workaround activated\n", dev->name);
 
-  kprintf("%s: %s%s iobase 0x%x irq %d hwaddr %la\n", dev->name, eeprom[3] & 0x0100 ? "OEM " : "", unit->productname, ioaddr, irq, &sp->hwaddr);
+  kprintf(KERN_INFO "%s: %s%s iobase 0x%x irq %d hwaddr %la\n", dev->name, eeprom[3] & 0x0100 ? "OEM " : "", unit->productname, ioaddr, irq, &sp->hwaddr);
 
   return speedo_open(dev);
 }

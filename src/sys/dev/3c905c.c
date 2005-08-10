@@ -184,7 +184,7 @@ int execute_command_wait(struct nic *nic, int cmd, int param)
     sleep(10);
   }
 
-  kprintf("nic: command did not complete\n");
+  kprintf(KERN_ERR "nic: command did not complete\n");
   return -ETIMEOUT;
 }
 
@@ -487,7 +487,7 @@ int nic_eeprom_busy(struct nic *nic)
     if (!(status & EEPROM_BUSY)) return 0;
     if (time_after(ticks, timeout))
     {
-      kprintf("nic: timeout reading eeprom\n");
+      kprintf(KERN_ERR "nic: timeout reading eeprom\n");
       return -ETIMEOUT;
     }
 
@@ -527,7 +527,7 @@ int nic_transmit(struct dev *dev, struct pbuf *p)
   // Wait for free entry in transmit ring
   if (wait_for_object(&nic->tx_sem, TX_TIMEOUT) < 0)
   {
-    kprintf("nic: transmit timeout, drop packet\n");
+    kprintf(KERN_ERR "nic: transmit timeout, drop packet\n");
     stats.link.drop++;
     return -ETIMEOUT;
   }
@@ -620,21 +620,21 @@ void nic_up_complete(struct nic *nic)
 
       if (status & UP_PACKET_STATUS_RUNT_FRAME) 
       {
-	kprintf("nic: runt frame\n");
+	kprintf(KERN_WARNING "nic: runt frame\n");
       }
       if (status & UP_PACKET_STATUS_ALIGNMENT_ERROR) 
       {
-	kprintf("nic: alignment error\n");
+	kprintf(KERN_WARNING "nic: alignment error\n");
 	nic->stat.rx_alignment_error++;
       }
       if (status & UP_PACKET_STATUS_CRC_ERROR) 
       {
-	kprintf("nic: crc error\n");
+	kprintf(KERN_WARNING "nic: crc error\n");
 	nic->stat.rx_bad_crc_error++;
       }
       if (status & UP_PACKET_STATUS_OVERSIZE_FRAME)
       {
-	kprintf("nic: oversize frame\n");
+	kprintf(KERN_WARNING "nic: oversize frame\n");
 	nic->stat.rx_oversize_error++;
       }
 
@@ -770,25 +770,25 @@ void nic_tx_complete(struct nic *nic)
 
   if (txstatus & TX_STATUS_HWERROR) 
   {
-    kprintf("nic: hw error\n");
+    kprintf(KERN_ERR "nic: hw error\n");
     nic->stat.tx_hw_errors++;
     nic_restart_transmitter(nic);
   }
   else if (txstatus & TX_STATUS_JABBER) 
   {
-    kprintf("nic: jabber error\n");
+    kprintf(KERN_ERR "nic: jabber error\n");
     nic->stat.tx_jabber_error++;
     nic_restart_transmitter(nic);
   }
   else if (txstatus & TX_STATUS_MAXIMUM_COLLISION)
   {
-    kprintf("nic: maximum collisions\n");
+    kprintf(KERN_ERR "nic: maximum collisions\n");
     nic->stat.tx_maximum_collisions++;
     execute_command(nic, CMD_TX_ENABLE, 0);
   }
   else if (txstatus & 0x3F)
   {
-    kprintf("nic: unknown errror in 0x%02X tx complete\n", txstatus);
+    kprintf(KERN_ERR "nic: unknown errror in 0x%02X tx complete\n", txstatus);
     nic->stat.tx_unknown_error++;
     execute_command(nic, CMD_TX_ENABLE, 0);
   }
@@ -813,7 +813,7 @@ void nic_dpc(void *arg)
     // Handle host error event
     if (status & INTSTATUS_HOST_ERROR)
     {
-      kprintf("nic: host error\n");
+      kprintf(KERN_ERR "nic: host error\n");
       nic_host_error(nic);
     }
 
@@ -979,7 +979,7 @@ int nic_negotiate_link(struct nic *nic, unsigned short options)
   // Nothing left to try!
   if (nic->connector == CONNECTOR_UNKNOWN) 
   {
-    kprintf("nic: no connector found\n");
+    kprintf(KERN_WARNING, "nic: no connector found\n");
     nic->connector = CONNECTOR_10BASET;
     nic->linkspeed = 10;
     return -ENODEV;
@@ -1192,7 +1192,7 @@ int nic_restart_transmitter(struct nic *nic)
       if (!(media_status & MEDIA_STATUS_TX_IN_PROGRESS)) break;
       if (time_after(ticks, timeout))
       {
-	kprintf("nic: timeout waiting for transmitter to go quiet\n");
+	kprintf(KERN_WARNING "nic: timeout waiting for transmitter to go quiet\n");
 	return -ETIMEOUT;
       }
       sleep(10);
@@ -1212,7 +1212,7 @@ int nic_restart_transmitter(struct nic *nic)
       if (!(dma_control & DMA_CONTROL_DOWN_IN_PROGRESS)) break;
       if (time_after(ticks, timeout))
       {
-	kprintf("nic: timeout waiting for download engine to stop\n");
+	kprintf(KERN_WARNING "nic: timeout waiting for download engine to stop\n");
 	return -ETIMEOUT;
       }
       sleep(10);
@@ -1322,7 +1322,7 @@ int nic_configure_mii(struct nic *nic, unsigned short media_options)
       if (phy_status & MII_STATUS_AUTO_DONE) break;
       if (time_after(ticks, timeout))
       {
-	kprintf("nic: timeout waiting for auto-negotiation to finish\n");
+	kprintf(KERN_WARNING "nic: timeout waiting for auto-negotiation to finish\n");
 	return -ETIMEOUT;
       }
       sleep(10);
@@ -1449,7 +1449,7 @@ int nic_check_mii_auto_negotiation_status(struct nic *nic)
   //
   if ((phy_anar & MII_ANAR_MEDIA_MASK) != (phy_anlpar & MII_ANAR_MEDIA_MASK))
   {
-    kprintf("nic: incompatible configuration\n");
+    kprintf(KERN_ERR "nic: incompatible configuration\n");
     return -EINVAL;
   }
 
@@ -1477,7 +1477,7 @@ int nic_check_dc_converter(struct nic *nic, int enabled)
       if (!enabled && !(media_status & MEDIA_STATUS_DC_CONVERTER_ENABLED)) break;
       if (time_after(ticks, timeout))
       {
-	kprintf("nic: timeout waiting for dc converter to go %s\n", enabled ? "on" : "off");
+	kprintf(KERN_ERR "nic: timeout waiting for dc converter to go %s\n", enabled ? "on" : "off");
 	return -ETIMEOUT;
       }
       sleep(10);
@@ -1902,7 +1902,7 @@ int __declspec(dllexport) install(struct unit *unit)
 
   if (rc < 0)
   {
-    kprintf("nic: wait asic ready timeout\n");
+    kprintf(KERN_ERR, "nic: wait asic ready timeout\n");
     return -EIO;
   }
 
@@ -1932,8 +1932,8 @@ int __declspec(dllexport) install(struct unit *unit)
 
   register_proc_inode(device(nic->devno)->name, nicstat_proc, nic);
 
-  kprintf("%s: %s, iobase 0x%x irq %d hwaddr %la\n", device(nic->devno)->name, unit->productname, nic->iobase, nic->irq, &nic->hwaddr);
-  kprintf("%s: %d MBits/s, %s-duplex, %s\n", device(nic->devno)->name, nic->linkspeed, nic->fullduplex ? "full" : "half", connectorname[nic->connector]);
+  kprintf(KERN_INFO "%s: %s, iobase 0x%x irq %d hwaddr %la\n", device(nic->devno)->name, unit->productname, nic->iobase, nic->irq, &nic->hwaddr);
+  kprintf(KERN_INFO "%s: %d MBits/s, %s-duplex, %s\n", device(nic->devno)->name, nic->linkspeed, nic->fullduplex ? "full" : "half", connectorname[nic->connector]);
 
   return 0;
 }

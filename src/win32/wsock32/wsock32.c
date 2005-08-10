@@ -232,14 +232,14 @@ sockapi int __stdcall winsock_setsockopt(SOCKET s, int level, int optname, const
 
   if (level == SOL_SOCKET && optname == SO_REUSEADDR)
   {
-    syslog(LOG_DEBUG, "setsockopt: SO_REUSEADDR ignored\n");
+    syslog(LOG_DEBUG, "setsockopt: SO_REUSEADDR ignored");
     return 0;
   }
 
   rc = setsockopt(s, level, optname, optval, optlen);
   if (rc < 0)
   {
-    syslog(LOG_DEBUG, "setsockopt level %d optname %d failed: %d\n", level, optname, rc);
+    syslog(LOG_DEBUG, "setsockopt level %d optname %d failed: %d", level, optname, rc);
     return -1;
   }
 

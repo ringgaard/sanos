@@ -79,6 +79,6 @@ unsigned int _control87(unsigned int new, unsigned int mask)
 
 unsigned int _controlfp(unsigned int new, unsigned int mask)
 {
-  syslog(LOG_WARNING, "_controlcp not implemented, ignored\n");
+  syslog(LOG_WARNING, "_controlcp not implemented, ignored");
   return 0;
 }

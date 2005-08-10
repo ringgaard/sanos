@@ -742,7 +742,7 @@ static void *sysalloc(size_t nb, struct heap *av)
     {
       p = (mchunkptr) mem;
       set_head(p, size | IS_MMAPPED);
-      syslog(LOG_DEBUG | LOG_HEAP, "Big allocation %dK\n", size / 1024);
+      //syslog(LOG_DEBUG | LOG_HEAP, "Big allocation %dK", size / 1024);
 
       // Update statistics
       av->n_mmaps++;
@@ -759,7 +759,7 @@ static void *sysalloc(size_t nb, struct heap *av)
   {
     region = (char *) mmap(NULL, REGION_SIZE, MEM_RESERVE, 0, 'MALL');
     if (!region) panic("unable to reserve heap region");
-    syslog(LOG_HEAP | LOG_DEBUG, "Reserve heap %p\n", region);
+    //syslog(LOG_HEAP | LOG_DEBUG, "Reserve heap %p", region);
     wilderness = region;
     heapend = region + REGION_SIZE;
   }
@@ -769,7 +769,7 @@ static void *sysalloc(size_t nb, struct heap *av)
 
   // Commit one or more groups from region
   expand = (nb + MINSIZE - size + GROUP_SIZE - 1)  & ~(GROUP_SIZE - 1);
-  syslog(LOG_HEAP | LOG_DEBUG, "Expand heap: request = %d, remaining = %d, expansion = %d\n", nb, size, expand);
+  //syslog(LOG_HEAP | LOG_DEBUG, "Expand heap: request = %d, remaining = %d, expansion = %d", nb, size, expand);
   if (wilderness + expand > heapend) panic("out of memory");
 
   if (mmap(wilderness, expand, MEM_COMMIT, PAGE_READWRITE, 'MALL') == 0) panic("unable to expand heap");
@@ -777,7 +777,7 @@ static void *sysalloc(size_t nb, struct heap *av)
 
   if (size == 0)
   {
-    syslog(LOG_HEAP | LOG_DEBUG, "Reserve heap region\n");
+    //syslog(LOG_HEAP | LOG_DEBUG, "Reserve heap region");
     av->top = (mchunkptr) region;
     newsize = expand;
   }
@@ -791,7 +791,7 @@ static void *sysalloc(size_t nb, struct heap *av)
   if (av->sbrked_mem > av->max_sbrked_mem) av->max_sbrked_mem = av->sbrked_mem;
   if (av->sbrked_mem + av->mmapped_mem > av->max_total_mem) av->max_total_mem = av->sbrked_mem + av->mmapped_mem;
 
-  syslog(LOG_HEAP | LOG_DEBUG, "Expand heap to %d KB (%d)\n", (wilderness - region) / 1024, expand);
+  //syslog(LOG_HEAP | LOG_DEBUG, "Expand heap to %d KB (%d)", (wilderness - region) / 1024, expand);
 
   // Do the allocation
   p = av->top;
@@ -817,7 +817,7 @@ static void *sysalloc(size_t nb, struct heap *av)
 
 static int systrim(size_t pad, struct heap *av)
 {
-  syslog(LOG_HEAP | LOG_DEBUG, "Heap Trim called: top remaining = %d\n", chunksize(av->top));
+  //syslog(LOG_HEAP | LOG_DEBUG, "Heap Trim called: top remaining = %d", chunksize(av->top));
   return 0;
 }
 
@@ -1287,7 +1287,7 @@ void heap_free(void *mem)
       av->n_mmaps--;
       av->mmapped_mem -= (size + offset);
 
-      syslog(LOG_DEBUG | LOG_HEAP, "Free big chunk %dK (%d)\n", size / 1024, offset);
+      //syslog(LOG_DEBUG | LOG_HEAP, "Free big chunk %dK (%d)", size / 1024, offset);
       ret = munmap(p - offset, size + offset, MEM_RELEASE);
       // munmap returns non-zero on failure
       assert(ret == 0);

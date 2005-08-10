@@ -136,7 +136,7 @@ static void dhcp_handle_nak(struct dhcp_state *state)
 {
   int msecs = 10 * 1000;  
   mod_timer(&state->request_timeout_timer, ticks + msecs / MSECS_PER_TICK);
-  kprintf("dhcp_handle_nak: request timeout %u msecs\n", msecs);
+  kprintf(KERN_WARNING "dhcp_handle_nak: request timeout %u msecs\n", msecs);
   dhcp_set_state(state, DHCP_BACKING_OFF);
 }
 
@@ -244,12 +244,12 @@ static void dhcp_timeout_handler(struct dhcp_state *state)
 {
   if (state->state == DHCP_BACKING_OFF || state->state == DHCP_SELECTING)
   {
-    kprintf("dhcp_timeout: restarting discovery\n");
+    kprintf(KERN_WARNING "dhcp_timeout: restarting discovery\n");
     dhcp_discover(state);
   }
   else if (state->state == DHCP_REQUESTING)
   {
-    kprintf("dhcp_timeout: REQUESTING, DHCP request timed out\n");
+    kprintf(KERN_WARNING "dhcp_timeout: REQUESTING, DHCP request timed out\n");
     if (state->tries <= 5)
     {
       dhcp_select(state);
@@ -257,14 +257,14 @@ static void dhcp_timeout_handler(struct dhcp_state *state)
     else
     {
       struct netif *netif = state->netif;
-      kprintf("dhcp_timeout: REQUESTING, releasing, restarting\n");
+      kprintf(KERN_WARNING "dhcp_timeout: REQUESTING, releasing, restarting\n");
       dhcp_release(state);
       dhcp_discover(state);
     }
   }
   else if (state->state == DHCP_CHECKING)
   {
-    kprintf("dhcp_timeout: CHECKING, ARP request timed out\n");
+    kprintf(KERN_WARNING "dhcp_timeout: CHECKING, ARP request timed out\n");
     if (state->tries <= 1)
     {
       dhcp_check(state);
@@ -277,12 +277,12 @@ static void dhcp_timeout_handler(struct dhcp_state *state)
   }
   else if (state->state == DHCP_RENEWING)
   {
-    kprintf("dhcp_timeout: RENEWING, DHCP request timed out\n");
+    kprintf(KERN_WARNING "dhcp_timeout: RENEWING, DHCP request timed out\n");
     dhcp_renew(state);
   }
   else if (state->state == DHCP_REBINDING)
   {
-    kprintf("dhcp_timeout: REBINDING, DHCP request timed out\n");
+    kprintf(KERN_WARNING "dhcp_timeout: REBINDING, DHCP request timed out\n");
     if (state->tries <= 8)
     {
       dhcp_rebind(state);
@@ -290,7 +290,7 @@ static void dhcp_timeout_handler(struct dhcp_state *state)
     else
     {
       struct netif *netif = state->netif;
-      kprintf("dhcp_timeout: REBINDING, release, restart\n");
+      kprintf(KERN_WARNING "dhcp_timeout: REBINDING, release, restart\n");
       dhcp_release(state);
       dhcp_discover(state);
     }
@@ -316,7 +316,7 @@ static void dhcp_t1_timeout(struct dhcp_state *state)
 {
   if (state->state == DHCP_REQUESTING || state->state == DHCP_BOUND || state->state == DHCP_RENEWING)
   {
-    kprintf("dhcp_t1_timeout: must renew\n");
+    kprintf(KERN_WARNING "dhcp_t1_timeout: must renew\n");
     queue_task(&sys_task_queue, &state->t1_timeout_task, (taskproc_t) dhcp_renew, state);
   }
 }
@@ -329,7 +329,7 @@ static void dhcp_t2_timeout(struct dhcp_state *state)
 {
   if (state->state == DHCP_REQUESTING || state->state == DHCP_BOUND || state->state == DHCP_RENEWING)
   {
-    kprintf("dhcp_t2_timeout: must rebind\n");
+    kprintf(KERN_WARNING "dhcp_t2_timeout: must rebind\n");
     queue_task(&sys_task_queue, &state->t2_timeout_task, (taskproc_t) dhcp_rebind, state);
   }
 }

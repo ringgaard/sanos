@@ -43,6 +43,7 @@
 #include <os/syspage.h>
 #include <os/pe.h>
 #include <os/version.h>
+#include <os/syscall.h>
 
 #include "heap.h"
 #include "resolv.h"
@@ -53,87 +54,18 @@ struct section *osconfig;
 struct moddb usermods;
 struct peb *peb;
 
-unsigned long loglevel = LOG_DEBUG | LOG_APITRACE | LOG_AUX | LOG_MODULE;
-handle_t syslogfd = -1;
-int syslogsock = -1;
-
-int vsprintf(char *buf, const char *fmt, va_list args);
-
 void init_sntpd();
 void init_threads(hmodule_t hmod);
 
+void start_syslog();
+void stop_syslog();
+
 void globalhandler(int signum, struct siginfo *info);
-
-void start_syslog()
-{
-  char *logfn;
-  char *loghost;
-
-  loglevel = get_numeric_property(osconfig, "os", "loglevel", loglevel);
-
-  logfn = get_property(osconfig, "os", "logfile", NULL);
-  if (logfn != NULL) 
-  {
-    syslogfd = open(logfn, O_CREAT, S_IREAD | S_IWRITE);
-    if (syslogfd >= 0) lseek(syslogfd, 0, SEEK_END);
-  }
-
-  loghost = get_property(osconfig, "os", "syslogsrv", NULL);
-  if (loghost != NULL)
-  {
-    struct sockaddr_in sin;
-
-    memset(&sin, 0, sizeof(sin));
-    sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = inet_addr(loghost);
-    sin.sin_port = htons(514);
-
-    syslogsock = socket(AF_INET, SOCK_DGRAM, 0);
-    connect(syslogsock, (struct sockaddr *) &sin, sizeof(sin));
-  }
-}
-
-void stop_syslog()
-{
-  if (syslogfd >= 0) 
-  {
-    close(syslogfd);
-    syslogfd = -1;
-  }
-
-  if (syslogsock > 0)
-  {
-    close(syslogsock);
-    syslogsock = -1;
-  }
-}
-
-void syslog(int priority, const char *fmt,...)
-{
-  va_list args;
-  char buffer[1024];
-
-  if (!(priority & LOG_SUBSYS_MASK)) priority |= LOG_AUX;
-
-  if (((unsigned) priority & LOG_LEVEL_MASK) <= (loglevel & LOG_LEVEL_MASK) && (priority & loglevel & LOG_SUBSYS_MASK) != 0)
-  {
-    va_start(args, fmt);
-    vsprintf(buffer, fmt, args);
-    va_end(args);
-
-    write(1, buffer, strlen(buffer));
-    if (syslogsock >= 0) write(syslogsock, buffer, strlen(buffer)); // TODO: add <n> Mmm dd hh:mm:ss host proc[n]: to message
-    if (syslogfd >= 0) write(syslogfd, buffer, strlen(buffer));
-  }
-}
 
 void panic(const char *msg)
 {
-  write(2, msg, strlen(msg));
-  write(2, "\n", 1);
-  stop_syslog();
-  dbgbreak();
-  //exit(3);
+  syslog(LOG_CRIT, "panic: %s", msg);
+  exit(3);
 }
 
 int *_errno()
@@ -241,7 +173,7 @@ void *malloc(size_t size)
 {
   void *p;
 
-  //syslog(LOG_MODULE | LOG_DEBUG, "malloc %d bytes\n", size);
+  //syslog(LOG_MODULE | LOG_DEBUG, "malloc %d bytes", size);
 
   enter(&heap_lock);
   p = heap_alloc(size);
@@ -249,7 +181,7 @@ void *malloc(size_t size)
 
   if (size && !p) panic("malloc: out of memory");
   //if (size && !p) errno = ENOMEM;
-  //syslog(LOG_MODULE | LOG_DEBUG, "malloced %d bytes at %p\n", size, p);
+  //syslog(LOG_MODULE | LOG_DEBUG, "malloced %d bytes at %p", size, p);
 
   return p;
 }
@@ -510,7 +442,7 @@ static void *load_image(char *filename)
     }
   }
 
-  //syslog(LOG_MODULE | LOG_DEBUG, "image %s loaded at %p (%d KB)\n", filename, imgbase, imghdr->optional.size_of_image / 1024);
+  //syslog(LOG_MODULE | LOG_DEBUG, "image %s loaded at %p (%d KB)", filename, imgbase, imghdr->optional.size_of_image / 1024);
 
   // Close file
   close(f);
@@ -531,7 +463,7 @@ static int protect_region(void *mem, size_t size, int protect)
 
 static void logldr(char *msg)
 {
-  syslog(LOG_MODULE | LOG_DEBUG, "mod: %s\n", msg);
+  syslog(LOG_MODULE | LOG_DEBUG, "mod: %s", msg);
 }
 
 void *dlsym(hmodule_t hmod, const char *procname)
@@ -742,7 +674,7 @@ void init_net()
 
     rc = ioctl(sock, SIOIFCFG, &ifcfg, sizeof(struct ifcfg));
     if (rc < 0)
-      syslog(LOG_ERR, "%s: unable to configure net interface, %s\n", ifcfg.name, strerror(errno));
+      syslog(LOG_ERR, "%s: unable to configure net interface, %s", ifcfg.name, strerror(errno));
     else
     {
       unsigned long addr = ((struct sockaddr_in *) &ifcfg.addr)->sin_addr.s_addr;
@@ -750,7 +682,7 @@ void init_net()
       unsigned long mask = ((struct sockaddr_in *) &ifcfg.netmask)->sin_addr.s_addr;
       unsigned long bcast = ((struct sockaddr_in *) &ifcfg.broadcast)->sin_addr.s_addr;
 
-      //syslog(LOG_INFO, "%s: addr %a mask %a gw %a bcast %a\n", ifcfg.name, &addr, &mask, &gw, &bcast);
+      //syslog(LOG_INFO, "%s: addr %a mask %a gw %a bcast %a", ifcfg.name, &addr, &mask, &gw, &bcast);
 
       if (first) peb->ipaddr.s_addr = addr;
     }
@@ -839,10 +771,10 @@ void init_mount()
       opts = NULL;
     }
 
-    //syslog(LOG_DEBUG, "mount %s on %s type %s opts %s\n", devname, prop->name, type, opts);
+    //syslog(LOG_DEBUG, "mount %s on %s type %s opts %s", devname, prop->name, type, opts);
 
     rc = mount(type, prop->name, devname, opts);
-    if (rc < 0) syslog(LOG_ERR, "%s: error %d mounting %s %s\n", prop->name, errno, type, devname);
+    if (rc < 0) syslog(LOG_ERR, "%s: error %d mounting %s %s", prop->name, errno, type, devname);
 
     prop = prop->next;
   }
@@ -919,6 +851,9 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   peb = (struct peb *) PEB_ADDRESS;
   peb->globalhandler = globalhandler;
   peb->fmodeval = O_BINARY; //O_TEXT;
+#if DEBUG
+  peb->debug = 1;
+#endif
 
   // Initialize heap and module locks
   mkcs(&heap_lock);
@@ -930,6 +865,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   // Load configuration file
   osconfig = read_properties("/etc/os.ini");
   if (!osconfig) panic("error reading /etc/os.ini");
+  peb->debug = get_numeric_property(osconfig, "os", "debug", peb->debug);
 
   // Initialize network interfaces
   init_net();
@@ -966,11 +902,13 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   initpgm = get_property(osconfig, "os", "initpgm", "/bin/init.exe");
   initargs = get_property(osconfig, "os", "initargs", "");
 
-  //syslog(LOG_DEBUG, "exec %s(%s)\n", initpgm, initargs);
+  //syslog(LOG_DEBUG, "exec %s(%s)", initpgm, initargs);
   rc = spawn(P_WAIT, initpgm, initargs, NULL);
-  if (rc != 0) syslog(LOG_DEBUG, "Exitcode: %d\n", rc);
+  if (rc != 0) syslog(LOG_DEBUG, "Exitcode: %d", rc);
 
   if (rndfn) save_random_device(rndfn);
+
+  syslog(LOG_INFO | LOG_SYSLOG, "shutdown");
   stop_syslog();
   exitos(EXITOS_POWEROFF);
 }

@@ -249,9 +249,9 @@ static EXCEPTION_DISPOSITION call_handler
   newframe.frame.handler = nested_handler;
   newframe.prev = frame;
   push_frame(&newframe.frame);
-  //syslog(LOG_DEBUG, "calling handler at %p code=%x flags=%x\n", handler, record->ExceptionCode, record->ExceptionFlags);
+  //syslog(LOG_DEBUG, "calling handler at %p code=%x flags=%x", handler, record->ExceptionCode, record->ExceptionFlags);
   rc = handler(record, frame, ctxt, dispatcher);
-  //syslog(LOG_DEBUG, "handler returned %x\n", rc);
+  //syslog(LOG_DEBUG, "handler returned %x", rc);
   pop_frame(&newframe.frame);
 
   return rc;
@@ -264,13 +264,13 @@ void raise_exception(EXCEPTION_RECORD *rec, CONTEXT *ctxt)
   EXCEPTION_DISPOSITION rc;
   struct tib *tib = gettib();
 
-  //syslog(LOG_DEBUG, "raise_exception: code=%lx flags=%lx addr=%p\n", rec->ExceptionCode, rec->ExceptionFlags, rec->ExceptionAddress);
+  //syslog(LOG_DEBUG, "raise_exception: code=%lx flags=%lx addr=%p", rec->ExceptionCode, rec->ExceptionFlags, rec->ExceptionAddress);
 
   frame = (EXCEPTION_FRAME *) tib->except;
   nested_frame = NULL;
   while (frame != (PEXCEPTION_FRAME) 0xFFFFFFFF)
   {
-    //syslog(LOG_DEBUG, "frame: %p handler: %p\n", frame, frame->handler);
+    //syslog(LOG_DEBUG, "frame: %p handler: %p", frame, frame->handler);
     
     // Check frame address
     if ((void *) frame < tib->stacklimit || (void *)(frame + 1) > tib->stacktop || (int) frame & 3)
@@ -346,7 +346,7 @@ void unwind(PEXCEPTION_FRAME endframe, LPVOID eip, PEXCEPTION_RECORD rec, DWORD 
 
   rec->ExceptionFlags |= EH_UNWINDING | (endframe ? 0 : EH_EXIT_UNWIND);
 
-  //syslog(LOG_DEBUG, "code=%lx flags=%lx\n", rec->ExceptionCode, rec->ExceptionFlags);
+  //syslog(LOG_DEBUG, "code=%lx flags=%lx", rec->ExceptionCode, rec->ExceptionFlags);
 
   // Get chain of exception frames
   frame = (EXCEPTION_FRAME *) tib->except;
@@ -404,7 +404,7 @@ void win32_globalhandler(int signum, struct siginfo *info)
   EXCEPTION_RECORD rec;
   EXCEPTION_POINTERS ep;
 
-  //syslog(LOG_DEBUG, "kernel32: caught signal %d\n", signum);
+  //syslog(LOG_DEBUG, "kernel32: caught signal %d", signum);
 
   ep.ContextRecord = &ctxt;
   ep.ExceptionRecord = &rec;
@@ -459,7 +459,7 @@ void win32_globalhandler(int signum, struct siginfo *info)
 
   convert_from_win32_context(&info->ctxt, &ctxt);
 
-  //syslog(LOG_DEBUG, "kernel32: sigexit\n", signum);
+  //syslog(LOG_DEBUG, "kernel32: sigexit", signum);
   sigexit(info, 0);
 }
 
@@ -609,7 +609,7 @@ HANDLE WINAPI CreateFileA
 
   if (dwFlagsAndAttributes & FILE_FLAG_OVERLAPPED)
   {
-    syslog(LOG_WARNING, "CreateFile(%s): overlapped operation not supported\n", lpFileName);
+    syslog(LOG_WARNING, "CreateFile(%s): overlapped operation not supported", lpFileName);
     errno = EINVAL;
     return INVALID_HANDLE_VALUE;
   }
@@ -910,7 +910,7 @@ HANDLE WINAPI FindFirstFileA
   char fn[MAXPATH];
 
   TRACE("FindFirstFileA");
-  //syslog(LOG_DEBUG | LOG_AUX, "FindFirstFile %s\n", lpFileName);
+  //syslog(LOG_DEBUG | LOG_AUX, "FindFirstFile %s", lpFileName);
 
   p = (char *) lpFileName;
   while (*p != 0 && *p != '*' && *p != '?') p++;
@@ -955,7 +955,7 @@ HANDLE WINAPI FindFirstFileA
 
     while (_readdir(finddata->fhandle, &dirent, 1) > 0)
     {
-      //syslog(LOG_DEBUG | LOG_AUX, "match %s with %s\n", dirent.name, finddata->mask);
+      //syslog(LOG_DEBUG | LOG_AUX, "match %s with %s", dirent.name, finddata->mask);
       if (like(dirent.name, finddata->mask))
       {
 	strcpy(fn, finddata->dir);
@@ -1054,7 +1054,7 @@ BOOL WINAPI FindNextFileA
 
     while (_readdir(finddata->fhandle, &dirent, 1) > 0)
     {
-      //syslog(LOG_DEBUG | LOG_AUX, "match next %s with %s\n", dirent.name, finddata->mask);
+      //syslog(LOG_DEBUG | LOG_AUX, "match next %s with %s", dirent.name, finddata->mask);
       if (like(dirent.name, finddata->mask))
       {
 	strcpy(fn, finddata->dir);
@@ -1206,7 +1206,7 @@ DWORD WINAPI GetEnvironmentVariableA
   char *value;
 
   TRACE("GetEnvironmentVariableA");
-  //syslog(LOG_DEBUG, "GetEnvironmentVariable(%s)\n", lpName);
+  //syslog(LOG_DEBUG, "GetEnvironmentVariable(%s)", lpName);
   
   value = get_property(osconfig, "env", (char *) lpName, NULL);
   if (value)
@@ -1298,7 +1298,7 @@ DWORD WINAPI GetFileAttributesW
   if (rc < 0) return -1;
 
   rc = GetFileAttributesA(fn);
-  //syslog(LOG_DEBUG, "GetFileAttributesW(%s)=%08X\n", fn, rc);
+  //syslog(LOG_DEBUG, "GetFileAttributesW(%s)=%08X", fn, rc);
   return rc;
 }
 
@@ -1411,7 +1411,7 @@ DWORD WINAPI GetModuleFileNameA
 
   TRACE("GetModuleFileNameA");
   rc = getmodpath((hmodule_t) hModule, lpFilename, nSize);
-  //syslog(LOG_DEBUG, "Module filename for %p is %s\n", hModule, lpFilename);
+  //syslog(LOG_DEBUG, "Module filename for %p is %s", hModule, lpFilename);
   return rc;
 }
 
@@ -1424,7 +1424,7 @@ HMODULE WINAPI GetModuleHandleA
 
   TRACE("GetModuleHandleA");
   hmod = getmodule(lpModuleName);
-  //syslog(LOG_DEBUG, "GetModuleHandleA(%s) returned %p\n", lpModuleName, hmod);
+  //syslog(LOG_DEBUG, "GetModuleHandleA(%s) returned %p", lpModuleName, hmod);
   return (HMODULE) hmod;
 }
 
@@ -1469,7 +1469,7 @@ FARPROC WINAPI GetProcAddress
 )
 {
   TRACE("GetProcAddress");
-  //syslog(LOG_DEBUG, "GetProcAddress name: %s hmod: %08X\n", lpProcName, hModule);
+  //syslog(LOG_DEBUG, "GetProcAddress name: %s hmod: %08X", lpProcName, hModule);
   return dlsym((hmodule_t) hModule, (char *) lpProcName);
 }
 
@@ -1621,7 +1621,7 @@ BOOL WINAPI GetThreadContext
       return TRUE;
     }
 
-    syslog(LOG_DEBUG, "GetThreadContext(%d) failed\n", hThread);
+    syslog(LOG_DEBUG, "GetThreadContext(%d) failed", hThread);
     return FALSE;
   }
 
@@ -1772,7 +1772,7 @@ LPVOID WINAPI HeapAlloc
   TRACE("HeapAlloc");
   if (hHeap != PROCESSHEAP)
   {
-    syslog(LOG_DEBUG, "warning: HeapAlloc only supported for process heap\n");
+    syslog(LOG_DEBUG, "warning: HeapAlloc only supported for process heap");
     return NULL;
   }
 
@@ -1789,7 +1789,7 @@ BOOL WINAPI HeapFree
   TRACE("HeapFree");
   if (hHeap != PROCESSHEAP)
   {
-    syslog(LOG_DEBUG, "warning: HeapFree only supported for process heap\n");
+    syslog(LOG_DEBUG, "warning: HeapFree only supported for process heap");
     return FALSE;
   }
 
@@ -2179,7 +2179,7 @@ BOOL WINAPI SetConsoleCtrlHandler
 )
 {
   TRACE("SetConsoleCtrlHandler");
-  //syslog(LOG_DEBUG, "warning: SetConsoleCtrlHandler not implemented, ignored\n");
+  //syslog(LOG_DEBUG, "warning: SetConsoleCtrlHandler not implemented, ignored");
   return TRUE;
 }
 
@@ -2219,7 +2219,7 @@ BOOL WINAPI SetFileAttributesA
 )
 {
   TRACE("SetFileAttributesA");
-  if (dwFileAttributes != 0) syslog(LOG_DEBUG, "warning: SetFileAttributesA(%s,%08x) not implemented, ignored\n", lpFileName, dwFileAttributes);
+  if (dwFileAttributes != 0) syslog(LOG_DEBUG, "warning: SetFileAttributesA(%s,%08x) not implemented, ignored", lpFileName, dwFileAttributes);
   return TRUE;
 }
 
@@ -2322,7 +2322,7 @@ BOOL WINAPI SetHandleInformation
 {
   TRACE("SetHandleInformation");
   // Ignored, only used for setting handle inheritance
-  //syslog(LOG_DEBUG, "warning: SetHandleInformation ignored\n");
+  //syslog(LOG_DEBUG, "warning: SetHandleInformation ignored");
   return TRUE;
 }
 
@@ -2338,7 +2338,7 @@ BOOL WINAPI SetThreadContext
 
   if (lpContext->ContextFlags != (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS))
   {
-    syslog(LOG_WARNING, "kernel32: incomplete context in SetContext, flags %lx\n", lpContext->ContextFlags); 
+    syslog(LOG_WARNING, "kernel32: incomplete context in SetContext, flags %lx", lpContext->ContextFlags); 
   }
 
   memset(&ctxt, 0, sizeof(struct context));
@@ -2564,7 +2564,7 @@ LPVOID WINAPI VirtualAlloc
 
   addr = mmap(lpAddress, dwSize, flAllocationType | MEM_ALIGN64K, flProtect, 'VALO');
 
-  //syslog(LOG_DEBUG, "VirtualAlloc %p %dKB (%p,%p) -> %p\n", lpAddress, dwSize / K, flAllocationType, flProtect, addr);
+  //syslog(LOG_DEBUG, "VirtualAlloc %p %dKB (%p,%p) -> %p", lpAddress, dwSize / K, flAllocationType, flProtect, addr);
 
   if (addr != NULL && (flAllocationType & MEM_RESERVE) != 0)
   {
@@ -2601,12 +2601,12 @@ BOOL WINAPI VirtualFree
       dwSize = vads[n].size;
     }
     else
-      syslog(LOG_WARNING, "warning: vad not found for VitualFree\n");
+      syslog(LOG_WARNING, "warning: vad not found for VitualFree");
   }
 
   rc = munmap(lpAddress, dwSize, dwFreeType);
 
-  //syslog(LOG_DEBUG, "VirtualFree %p %d bytes (%p) -> %d\n", lpAddress, dwSize, dwFreeType, rc);
+  //syslog(LOG_DEBUG, "VirtualFree %p %d bytes (%p) -> %d", lpAddress, dwSize, dwFreeType, rc);
 
   return rc == 0;
 }
@@ -2628,7 +2628,7 @@ BOOL WINAPI VirtualProtect
   //if (lpAddress >= tib->stackbase && lpAddress < tib->stacktop) return TRUE;
 
   rc = mprotect(lpAddress, dwSize, flNewProtect);
-  //syslog(LOG_DEBUG, "VirtualProtect %p %dKB %d %d\n", lpAddress, dwSize / K, flNewProtect, rc);
+  //syslog(LOG_DEBUG, "VirtualProtect %p %dKB %d %d", lpAddress, dwSize / K, flNewProtect, rc);
   if (rc < 0) return FALSE;
 
   if (lpflOldProtect) *lpflOldProtect = rc;
@@ -2651,7 +2651,7 @@ DWORD WINAPI VirtualQuery
   if (lpAddress >= tib->stacklimit && lpAddress < tib->stacktop)
   {
     // Handle stack case
-    //syslog(LOG_DEBUG, "VirtualQuery %p (in stack %p %p %p)\n", lpAddress, tib->stackbase, tib->stacklimit, tib->stacktop);
+    //syslog(LOG_DEBUG, "VirtualQuery %p (in stack %p %p %p)", lpAddress, tib->stackbase, tib->stacklimit, tib->stacktop);
     lpBuffer->BaseAddress = tib->stacklimit;
     lpBuffer->RegionSize = (char *) tib->stacktop - (char *) tib->stacklimit;
     lpBuffer->AllocationBase = tib->stackbase;
@@ -2659,7 +2659,7 @@ DWORD WINAPI VirtualQuery
   }
   else
   {
-    //syslog(LOG_DEBUG, "VirtualQuery %p (not in stack!!!!)\n", lpAddress);
+    //syslog(LOG_DEBUG, "VirtualQuery %p (not in stack!!!!)", lpAddress);
   
     // Return dummy result
     lpBuffer->BaseAddress = (void *) ((unsigned long) lpAddress & ~(PAGESIZE - 1));

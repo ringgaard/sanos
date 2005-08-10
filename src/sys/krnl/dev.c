@@ -439,7 +439,7 @@ static int initialize_driver(struct unit *unit, char *driverstr)
   hmod = load(modname, 0);
   if (!hmod)
   {
-    kprintf("dev: unable to load module %s\n", modname);
+    kprintf(KERN_ERR "dev: unable to load module %s\n", modname);
     kfree(buf);
     return -ENOEXEC;
   }
@@ -447,7 +447,7 @@ static int initialize_driver(struct unit *unit, char *driverstr)
   entry = resolve(hmod, entryname);
   if (!entry)
   {
-    kprintf("dev: unable to find entry %s in module %s\n", entryname, modname);
+    kprintf(KERN_ERR "dev: unable to find entry %s in module %s\n", entryname, modname);
     unload(hmod);
     kfree(buf);
     return -ENOEXEC;
@@ -456,7 +456,7 @@ static int initialize_driver(struct unit *unit, char *driverstr)
   rc = entry(unit, opts);
   if (rc < 0)
   {
-    kprintf("dev: initialization of %s!%s failed with error %d\n", modname, entryname, rc);
+    kprintf(KERN_ERR "dev: initialization of %s!%s failed with error %d\n", modname, entryname, rc);
     unload(hmod);
     kfree(buf);
     return rc;
@@ -473,7 +473,7 @@ static void install_driver(struct unit *unit, struct binding *bind)
   rc = initialize_driver(unit, bind->module);
   if (rc < 0)
   {
-    kprintf("dev: driver '%s' failed with error %d for unit %08X '%s'\n", bind->module, rc, unit->unitcode, get_unit_name(unit));
+    kprintf(KERN_ERR "dev: driver '%s' failed with error %d for unit %08X '%s'\n", bind->module, rc, unit->unitcode, get_unit_name(unit));
   }
 }
 
@@ -519,7 +519,7 @@ static void install_legacy_drivers()
       rc = initialize_driver(NULL, buf);
       if (rc < 0)
       {
-	kprintf("dev: error %d initializing driver %s\n", rc, prop->name);
+	kprintf(KERN_ERR "dev: error %d initializing driver %s\n", rc, prop->name);
       }
 
       kfree(buf);

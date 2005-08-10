@@ -97,7 +97,7 @@ err_t tcp_enqueue(struct tcp_pcb *pcb, void *data, int len, int flags, unsigned 
   
   if (len > pcb->snd_buf) 
   {
-    kprintf("tcp_enqueue: too much data %d\n", len);
+    kprintf(KERN_ERR "tcp_enqueue: too much data %d\n", len);
     return -ENOMEM;
   }
 
@@ -107,7 +107,7 @@ err_t tcp_enqueue(struct tcp_pcb *pcb, void *data, int len, int flags, unsigned 
   queuelen = pcb->snd_queuelen;
   if (queuelen >= TCP_SND_QUEUELEN)
   {
-    kprintf("tcp_enqueue: too long queue %d (max %d)\n", queuelen, TCP_SND_QUEUELEN);
+    kprintf(KERN_ERR "tcp_enqueue: too long queue %d (max %d)\n", queuelen, TCP_SND_QUEUELEN);
     goto memerr;
   }
   
@@ -160,7 +160,7 @@ err_t tcp_enqueue(struct tcp_pcb *pcb, void *data, int len, int flags, unsigned 
       seg = (struct tcp_seg *) kmalloc(sizeof(struct tcp_seg));
       if (seg == NULL) 
       {
-	kprintf("tcp_enqueue: could not allocate memory for tcp_seg\n");
+	kprintf(KERN_ERR "tcp_enqueue: could not allocate memory for tcp_seg\n");
 	goto memerr;
       }
       seg->next = NULL;
@@ -200,7 +200,7 @@ err_t tcp_enqueue(struct tcp_pcb *pcb, void *data, int len, int flags, unsigned 
 
 	if ((seg->p = pbuf_alloc(PBUF_TRANSPORT, size, PBUF_RW)) == NULL) 
 	{
-	  kprintf("tcp_enqueue: could not allocate memory for pbuf copy\n");
+	  kprintf(KERN_ERR "tcp_enqueue: could not allocate memory for pbuf copy\n");
 	  goto memerr;
 	}
 	pbuf_realloc(seg->p, seglen);
@@ -213,7 +213,7 @@ err_t tcp_enqueue(struct tcp_pcb *pcb, void *data, int len, int flags, unsigned 
 
       if (queuelen > TCP_SND_QUEUELEN) 
       {
-	kprintf("tcp_enqueue: queue too long %d (%d)\n", queuelen, TCP_SND_QUEUELEN);
+	kprintf(KERN_ERR "tcp_enqueue: queue too long %d (%d)\n", queuelen, TCP_SND_QUEUELEN);
 	goto memerr;
       }
     
@@ -222,7 +222,7 @@ err_t tcp_enqueue(struct tcp_pcb *pcb, void *data, int len, int flags, unsigned 
       // Build TCP header
       if (pbuf_header(seg->p, TCP_HLEN) < 0) 
       {
-	kprintf("tcp_enqueue: no room for TCP header in pbuf.\n");
+	kprintf(KERN_ERR "tcp_enqueue: no room for TCP header in pbuf.\n");
       
 	stats.tcp.err++;
 	goto memerr;
@@ -387,7 +387,7 @@ static err_t tcp_send_ack(struct tcp_pcb *pcb)
   netif = ip_route(&pcb->remote_ip);
   if (netif == NULL) 
   {
-    kprintf("tcp_send_ack: No route to %a\n", &pcb->remote_ip);
+    kprintf(KERN_ERR "tcp_send_ack: No route to %a\n", &pcb->remote_ip);
     stats.ip.rterr++;
     return -EROUTE;
   }
@@ -435,7 +435,7 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
 
   if (seg->p->ref > 1) 
   {
-    kprintf("tcp_output_segment: packet not transmitted, already in tx queue\n");
+    kprintf(KERN_ERR "tcp_output_segment: packet not transmitted, already in tx queue\n");
     return;
   }
 
@@ -453,7 +453,7 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
   // packet is still on the transmission queue.
   if (seg->p->ref > 1) 
   {
-    kprintf("tcp_output_segment: packet not retransmitted, still in tx queue\n");
+    kprintf(KERN_ERR "tcp_output_segment: packet not retransmitted, still in tx queue\n");
     return;
   }
 
@@ -461,7 +461,7 @@ static void tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
   netif = ip_route(&pcb->remote_ip);
   if (netif == NULL) 
   {
-    kprintf("tcp_output_segment: No route to %a\n", &pcb->remote_ip);
+    kprintf(KERN_ERR "tcp_output_segment: No route to %a\n", &pcb->remote_ip);
     stats.ip.rterr++;
     return;
   }
@@ -532,7 +532,7 @@ void tcp_rst(unsigned long seqno, unsigned long ackno, struct ip_addr *local_ip,
 
   if ((netif = ip_route(remote_ip)) == NULL) 
   {
-    kprintf("tcp_rst: No route to %a\n", &remote_ip);
+    kprintf(KERN_ERR "tcp_rst: No route to %a\n", &remote_ip);
     stats.tcp.rterr++;
     return;
   }
@@ -541,7 +541,7 @@ void tcp_rst(unsigned long seqno, unsigned long ackno, struct ip_addr *local_ip,
   if (p == NULL) 
   {
     // Reclaim memory here
-    kprintf("tcp_rst: could not allocate memory for pbuf\n");
+    kprintf(KERN_ERR "tcp_rst: could not allocate memory for pbuf\n");
     stats.tcp.memerr++;
     return;
   }

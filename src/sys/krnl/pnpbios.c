@@ -422,7 +422,7 @@ static void build_sys_devlist(struct bus *bus)
 
     if (pnp_bios_get_dev_node((unsigned char *) &nodenum, (char) 0 /*1*/, node))
     {
-      kprintf("pnpbios: PnP BIOS reported error on attempt to get dev node.\n");
+      kprintf(KERN_ERR  "pnpbios: PnP BIOS reported error on attempt to get dev node.\n");
       break;
     }
 
@@ -615,7 +615,7 @@ static void parse_escd(struct bus *bus, unsigned char *b, int maxlen)
 
   if (memcmp("ACFG", &b[2], 4) != 0) 
   {
-    kprintf("escd: signature does not match ACFG, is: %4s\n", &b[2]);
+    kprintf(KERN_WARNING "escd: signature does not match ACFG, is: %4s\n", &b[2]);
     return;
   }
 
@@ -633,7 +633,7 @@ static void parse_escd(struct bus *bus, unsigned char *b, int maxlen)
     off += len;
     if (off > size)
     {
-      kprintf("escd: offset exceeded size (%d)\n", off);
+      kprintf(KERN_WARNING "escd: offset exceeded size (%d)\n", off);
       break;
     }
   }

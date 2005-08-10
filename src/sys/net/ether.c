@@ -75,12 +75,12 @@ struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr,
     {
       if (wait_for_object(&state->binding_complete, 30000)  < 0)
       {
-	kprintf("ether: timeout waiting for dhcp to complete on %s\n", name);
+	kprintf(KERN_WARNING "ether: timeout waiting for dhcp to complete on %s\n", name);
       }
     }
   }
 
-  kprintf("%s: device %s addr %a mask %a gw %a\n", name, devname, &netif->ipaddr, &netif->netmask, &netif->gw);
+  kprintf(KERN_INFO "%s: device %s addr %a mask %a gw %a\n", name, devname, &netif->ipaddr, &netif->netmask, &netif->gw);
 
   return netif;
 }
@@ -113,7 +113,7 @@ int register_ether_netifs()
     netif->state = (void *) devno;
 
     rc = dev_attach(devno, netif, ether_input);
-    if (rc < 0) kprintf("ether: unable to attach to device %s (error %d)\n", dev->name, rc);
+    if (rc < 0) kprintf(KERN_ERR "ether: unable to attach to device %s (error %d)\n", dev->name, rc);
   }
 
   return 0;
@@ -179,7 +179,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
 
   if (pbuf_header(p, ETHER_HLEN))
   {
-    kprintf("ether_output: not enough room for Ethernet header in pbuf\n");
+    kprintf(KERN_ERR "ether_output: not enough room for Ethernet header in pbuf\n");
     stats.link.err++;
     return -EBUF;
   }
@@ -233,7 +233,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
       err = dev_transmit((dev_t) netif->state, q);
       if (err < 0)
       {
-        kprintf("ether: error %d sending arp packet\n", err);
+        kprintf(KERN_ERR "ether: error %d sending arp packet\n", err);
         pbuf_free(q);
         stats.link.drop++;
 	return err;
@@ -244,7 +244,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
     err = arp_queue(netif, p, queryaddr);
     if (err < 0)
     {
-      kprintf("ether: error %d queueing packet\n", err);
+      kprintf(KERN_ERR "ether: error %d queueing packet\n", err);
       stats.link.drop++;
       stats.link.memerr++;
       return err;
@@ -281,7 +281,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
     err = dev_transmit((dev_t) netif->state, p);
     if (err < 0)
     {
-      kprintf("ether: error %d sending packet\n", err);
+      kprintf(KERN_ERR "ether: error %d sending packet\n", err);
       return err;
     }
   }

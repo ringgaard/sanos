@@ -326,7 +326,7 @@ void calibrate_delay()
     mhz = bestmhz;
   }
 
-  kprintf("speed: %d cycles/tick, %d MHz processor\n", cycles_per_tick, mhz);
+  kprintf(KERN_INFO "speed: %d cycles/tick, %d MHz processor\n", cycles_per_tick, mhz);
   cpu.mhz = mhz;
 }
 

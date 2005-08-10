@@ -476,7 +476,7 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   // Get transmit lock
   if (wait_for_object(&ne->txlock, NE_TXTIMEOUT) < 0)
   {
-    kprintf("ne2000: timeout waiting for tx lock\n");
+    kprintf(KERN_WARNING "ne2000: timeout waiting for tx lock\n");
     return -ETIMEOUT;
   }
 
@@ -550,7 +550,7 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   // Wait for remote DMA complete
   if (wait_for_object(&ne->rdc, NE_TIMEOUT) < 0)
   {
-    kprintf("ne2000: timeout waiting for remote dma to complete\n");
+    kprintf(KERN_WARNING "ne2000: timeout waiting for remote dma to complete\n");
     release_mutex(&ne->txlock);
     return -EIO;
   }
@@ -576,7 +576,7 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   // Wait for packet transmitted
   if (wait_for_object(&ne->ptx, NE_TIMEOUT) < 0)
   {
-    kprintf("ne2000: timeout waiting for packet transmit\n");
+    kprintf(KERN_WARNING "ne2000: timeout waiting for packet transmit\n");
     release_mutex(&ne->txlock);
     return -EIO;
   }
@@ -714,7 +714,7 @@ int ne_setup(unsigned short iobase, int irq, unsigned short membase, unsigned sh
   // Create packet device
   ne->devno = dev_make("eth#", &ne_driver, unit, ne);
 
-  kprintf("%s: NE2000 iobase 0x%x irq %d hwaddr %s\n", device(ne->devno)->name, ne->iobase, ne->irq, ether2str(&ne->hwaddr, str));
+  kprintf(KERN_INFO "%s: NE2000 iobase 0x%x irq %d hwaddr %s\n", device(ne->devno)->name, ne->iobase, ne->irq, ether2str(&ne->hwaddr, str));
   return 0;
 }
 

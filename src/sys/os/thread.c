@@ -61,6 +61,8 @@ void init_threads(hmodule_t hmod)
   job->termtype = TERM_CONSOLE;
   job->hmod = hmod;
   job->cmdline = NULL;
+  job->facility = LOG_DAEMON;
+  job->ident = strdup("os");
 
   tib->job = job;
   peb->firstjob = peb->lastjob = job;
@@ -93,8 +95,42 @@ void __stdcall threadstart(struct tib *tib)
   }
 }
 
+static struct job *mkjob(struct job *parent, int detached)
+{
+  struct job *job;
+
+  job = malloc(sizeof(struct job));
+  if (!job) return NULL;
+  memset(job, 0, sizeof(struct job));
+
+  if (detached)
+  {
+    job->in = job->out = job->err = -EBADF;
+  }
+  else
+  {
+    job->in = dup(parent->in);
+    job->out = dup(parent->out);
+    job->err = dup(parent->err);
+    job->termtype = parent->termtype;
+  }
+
+  job->terminated = mkevent(1, 0);
+  job->facility = LOG_USER;
+
+  enter(&job_lock);
+  job->prevjob = peb->lastjob;
+  if (!peb->firstjob) peb->firstjob = job;
+  if (peb->lastjob) peb->lastjob->nextjob = job;
+  peb->lastjob = job;
+  leave(&job_lock);
+
+  return job;
+}
+
 handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize, void *arg, int flags, struct tib **ptib)
 {
+  struct job *parent = gettib()->job;
   struct tib *tib;
   struct job *job;
   handle_t h;
@@ -108,39 +144,15 @@ handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize
 
   if (flags & CREATE_NEW_JOB)
   {
-    job = malloc(sizeof(struct job));
+    job = mkjob(parent, flags & CREATE_DETACHED);
     if (!job) 
     {
       errno = ENOMEM;
       return -1;
     }
-    memset(job, 0, sizeof(struct job));
-
-    if (flags & CREATE_DETACHED)
-    {
-      job->in = job->out = job->err = -EBADF;
-    }
-    else
-    {
-      struct job *parent = gettib()->job;
-
-      job->in = dup(parent->in);
-      job->out = dup(parent->out);
-      job->err = dup(parent->err);
-      job->termtype = parent->termtype;
-    }
-
-    job->terminated = mkevent(1, 0);
-
-    enter(&job_lock);
-    job->prevjob = peb->lastjob;
-    if (!peb->firstjob) peb->firstjob = job;
-    if (peb->lastjob) peb->lastjob->nextjob = job;
-    peb->lastjob = job;
-    leave(&job_lock);
   }
   else
-    job = gettib()->job;
+    job = parent;
 
   atomic_add(&job->threadcnt, 1);
   tib->job = job;
@@ -175,32 +187,35 @@ int resume(handle_t thread)
   return syscall(SYSCALL_RESUME, &thread);
 }
 
+void endjob(struct job *job)
+{
+  enter(&job_lock);
+  if (job->nextjob) job->nextjob->prevjob = job->prevjob;
+  if (job->prevjob) job->prevjob->nextjob = job->nextjob;
+  if (job == peb->firstjob) peb->firstjob = job->nextjob;
+  if (job == peb->lastjob) peb->lastjob = job->prevjob;
+  leave(&job_lock);
+
+  if (job->in >= 0) close(job->in);
+  if (job->out >= 0) close(job->out);
+  if (job->err >= 0) close(job->err);
+
+  if (job->hmod) dlclose(job->hmod);
+  if (job->cmdline) free(job->cmdline);
+  if (job->ident) free(job->ident);
+
+  eset(job->terminated);
+  close(job->terminated);
+
+  free(job);
+}
+
 void endthread(int retval)
 {
   struct job *job;
 
   job = gettib()->job;
-  if (atomic_add(&job->threadcnt, -1) == 0)
-  {
-    enter(&job_lock);
-    if (job->nextjob) job->nextjob->prevjob = job->prevjob;
-    if (job->prevjob) job->prevjob->nextjob = job->nextjob;
-    if (job == peb->firstjob) peb->firstjob = job->nextjob;
-    if (job == peb->lastjob) peb->lastjob = job->prevjob;
-    leave(&job_lock);
-
-    if (job->in >= 0) close(job->in);
-    if (job->out >= 0) close(job->out);
-    if (job->err >= 0) close(job->err);
-
-    if (job->hmod) dlclose(job->hmod);
-    if (job->cmdline) free(job->cmdline);
-
-    eset(job->terminated);
-    close(job->terminated);
-
-    free(job);
-  }
+  if (atomic_add(&job->threadcnt, -1) == 0) endjob(job);
 
   syscall(SYSCALL_ENDTHREAD, &retval);
 }
@@ -288,6 +303,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
   job = tib->job;
   job->hmod = hmod;
   job->cmdline = strdup(cmdline);
+  job->ident = strdup(pgm);
 
   if (mode & P_NOWAIT)
   {

@@ -1,7 +1,7 @@
 //
-// signal.c
+// klog.h
 //
-// Signal and exception handling
+// Kernel logging
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -31,73 +31,20 @@
 // SUCH DAMAGE.
 // 
 
-#include <os.h>
-#include <os/pdir.h>
+#ifndef KLOG_H
+#define KLOG_H
 
-sighandler_t sighandlers[NSIG];
+#define KERN_EMERG       "<0>"       // System is unusable
+#define KERN_ALERT       "<1>"       // Action must be taken immediately
+#define KERN_CRIT        "<2>"       // Critical conditions
+#define KERN_ERR         "<3>"       // Error conditions
+#define KERN_WARNING     "<4>"       // Warning conditions
+#define KERN_NOTICE      "<5>"       // Normal but significant condition
+#define KERN_INFO        "<6>"       // Informational
+#define KERN_DEBUG       "<7>"       // Debug-level messages
 
-void sigexit(struct siginfo *info, int action)
-{
-  __asm
-  {
-    mov eax, [action]
-    mov ebx, [info]
-    int 49
-  }
-}
+extern int kprint_enabled;
 
-sighandler_t signal(int signum, sighandler_t handler)
-{
-  sighandler_t prev;
+krnlapi void kprintf(const char *fmt, ...);
 
-  if (signum < 0 || signum >= NSIG) return SIG_ERR;
-  prev = sighandlers[signum];
-  sighandlers[signum] = handler;
-  return prev;
-}
-
-int sendsig(int signum, struct siginfo *info)
-{
-  struct tib *tib;
-  sighandler_t handler;
-  struct siginfo *prevsig;
-
-  if (signum < 0 || signum >= NSIG) return EINVAL;
-
-  tib = gettib();
-  prevsig = tib->cursig;
-  tib->cursig = info;
-
-  handler = sighandlers[signum];
-
-  if (handler == SIG_DFL)
-  {
-    if (peb->debug)
-      dbgbreak();
-    else
-      exit(signum);
-  }
-  else if (handler != SIG_IGN)
-    handler(signum);
-
-  tib->cursig = prevsig;
-  return 0;
-}
-
-int raise(int signum)
-{
-  return sendsig(signum, NULL);
-}
-
-struct siginfo *getsiginfo()
-{
-  return gettib()->cursig;
-}
-
-void globalhandler(int signum, struct siginfo *info)
-{
-  //syslog(LOG_DEBUG, "signal %d received (trap 0x%x at %p)", signum, info->ctxt.traptype, info->ctxt.eip);
-  if (sighandlers[signum] == SIG_DFL && peb->debug) sigexit(info, 1);
-  sendsig(signum, info);
-  sigexit(info, 0);
-}
+#endif

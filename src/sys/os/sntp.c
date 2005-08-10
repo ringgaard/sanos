@@ -79,7 +79,7 @@ int sntp_get(struct ntp_server *srv, struct timeval *tv)
   int rc;
   int timeout;
 
-  //syslog(LOG_AUX, "sntp_get: retrieving time from %a\n", &srv->sa.sin_addr);
+  //syslog(LOG_AUX, "sntp_get: retrieving time from %a", &srv->sa.sin_addr);
 
   s = socket(AF_INET, SOCK_DGRAM, 0);
   if (s < 0) return s;
@@ -128,7 +128,7 @@ void __stdcall sntpd(void *arg)
   int success;
   struct timeval tv;
 
-  //syslog(LOG_AUX, "sntpd: started\n");
+  //syslog(LOG_AUX, "sntpd: started");
   while (1)
   {
     success = 0;
@@ -166,12 +166,12 @@ void __stdcall sntpd(void *arg)
       //struct timeval now;
       //gettimeofday(&now);
       settimeofday(&tv);
-      //syslog(LOG_AUX, "sntpd: adjusting %d %d %a\n", tv.tv_sec - now.tv_sec, tv.tv_usec - now.tv_usec, &srv->sa.sin_addr);
+      //syslog(LOG_AUX, "sntpd: adjusting %d %d %a", tv.tv_sec - now.tv_sec, tv.tv_usec - now.tv_usec, &srv->sa.sin_addr);
       sleep(TIME_ADJUST_INTERVAL);
     }
     else
     {
-      syslog(LOG_AUX, "sntpd: error obtaining time from time server\n");
+      syslog(LOG_AUX, "sntpd: error obtaining time from time server");
       sleep(TIME_ADJUST_RETRY);
     }
   }

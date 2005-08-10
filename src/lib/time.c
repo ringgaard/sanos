@@ -253,7 +253,7 @@ time_t mktime(struct tm *tmbuf)
   return (time_t) seconds;
 }
 
-#ifndef KERNEL
+#if !defined(KERNEL) && !defined(OS_LIB)
 
 char *asctime(const struct tm *tp)
 {

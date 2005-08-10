@@ -828,12 +828,38 @@ int ioctl(struct file *filp, int cmd, void *data, size_t size)
 
 int readv(struct file *filp, struct iovec *iov, int count)
 {
-  return -ENOSYS;
+  int i;
+  int rc;
+  int total = 0;
+
+  for (i = 0; i < count; i++)
+  {
+    rc = read(filp, iov[i].iov_base, iov[i].iov_len);
+    if (rc < 0) return rc;
+
+    total += rc;
+    if (rc < (int) iov[i].iov_len) return total;
+  }
+
+  return total;
 }
 
 int writev(struct file *filp, struct iovec *iov, int count)
 {
-  return -ENOSYS;
+  int i;
+  int rc;
+  int total = 0;
+
+  for (i = 0; i < count; i++)
+  {
+    rc = write(filp, iov[i].iov_base, iov[i].iov_len);
+    if (rc < 0) return rc;
+
+    total += rc;
+    if (rc < (int) iov[i].iov_len) return total;
+  }
+
+  return total;
 }
 
 off64_t tell(struct file *filp)

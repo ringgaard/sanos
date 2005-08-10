@@ -205,7 +205,7 @@ static int fd_command(unsigned char cmd)
     yield(); // delay
   }
 
-  if (!fd_init) kprintf("fd: command timeout\n");
+  if (!fd_init) kprintf(KERN_WARNING "fd: command timeout\n");
   return -ETIMEOUT;
 }
 
@@ -227,7 +227,7 @@ static int fd_data()
     yield(); // delay
   }
 
-  if (!fd_init) kprintf("fd: data timeout\n");
+  if (!fd_init) kprintf(KERN_WARNING "fd: data timeout\n");
   return -ETIMEOUT;
 }
 
@@ -340,7 +340,7 @@ static int fd_recalibrate(struct fd *fd)
 
   if (wait_for_object(&fd->fdc->done, FD_RECAL_TIMEOUT) < 0) 
   {
-    kprintf("fd: timeout waiting for calibrate to complete\n");
+    kprintf(KERN_WARNING "fd: timeout waiting for calibrate to complete\n");
     return -ETIMEOUT;
   }
 
@@ -400,7 +400,7 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
     
       if (wait_for_object(&fd->fdc->done, FD_SEEK_TIMEOUT) < 0) 
       {
-	kprintf("fd: timeout waiting for seek to complete\n");
+	kprintf(KERN_WARNING "fd: timeout waiting for seek to complete\n");
 	fd_recalibrate(fd);
 	continue;
       }
@@ -408,7 +408,7 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
       fd_result(fd, &result, 1);
       if ((fd->st0 &0xE0) != 0x20 || fd->curtrack != track)
       {
-	kprintf("fd: seek failed, st0 0x%02x, current %d, target %d\n", fd->st0, fd->curtrack, track);
+	kprintf(KERN_ERR "fd: seek failed, st0 0x%02x, current %d, target %d\n", fd->st0, fd->curtrack, track);
 	continue;
       }
 
@@ -462,7 +462,7 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
     
     if (wait_for_object(&fd->fdc->done, FD_XFER_TIMEOUT) < 0) 
     {
-      kprintf("fd: timeout waiting for transfer to complete\n");
+      kprintf(KERN_WARNING "fd: timeout waiting for transfer to complete\n");
       fd_recalibrate(fd);
       continue;
     }
@@ -481,7 +481,7 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
     //}
     else
     {
-      kprintf("fd: xfer error, st0 %02X st1 %02X st2 %02X THS=%d/%d/%d\n", result.st0, result.st1, result.st2, result.track, result.head, result.sector);
+      kprintf(KERN_ERR "fd: xfer error, st0 %02X st1 %02X st2 %02X THS=%d/%d/%d\n", result.st0, result.st1, result.st2, result.track, result.head, result.sector);
 
       // Recalibrate before retrying.
       fd_recalibrate(fd);
@@ -533,7 +533,7 @@ static int fd_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, i
     result = fd_transfer(fd, FD_MODE_READ, buf, left, blkno);
     if (result <= 0)
     {
-      kprintf("fd: error %d reading from floppy\n", result);
+      kprintf(KERN_ERR "fd: error %d reading from floppy\n", result);
       fd_motor_off(fd);
       release_mutex(&fd->fdc->lock);
       return result;
@@ -572,7 +572,7 @@ static int fd_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, 
     result = fd_transfer(fd, FD_MODE_WRITE, buf, left, blkno);
     if (result <= 0)
     {
-      kprintf("fd: error %d writing to floppy\n", result);
+      kprintf(KERN_ERR "fd: error %d writing to floppy\n", result);
       fd_motor_off(fd);
       release_mutex(&fd->fdc->lock);
       return result;
@@ -634,7 +634,7 @@ static void init_drive(char *devname, struct fd *fd, struct fdc *fdc, int drive,
 
   dev_make(devname, &floppy_driver, NULL, fd);
 
-  kprintf("%s: %s, %d KB, THS=%u/%u/%u\n", devname, fd->geom->name,
+  kprintf(KERN_INFO "%s: %s, %d KB, THS=%u/%u/%u\n", devname, fd->geom->name,
     fd->geom->tracks * fd->geom->heads * fd->geom->spt * SECTORSIZE / K,
     fd->geom->tracks, fd->geom->heads, fd->geom->spt);
 }

@@ -54,7 +54,7 @@ LONG WINAPI RegCloseKey
 )
 {
   TRACE("RegCloseKey");
-  syslog(LOG_DEBUG, "warning: RegCloseKey not implemented, ignored\n");
+  syslog(LOG_DEBUG, "warning: RegCloseKey not implemented, ignored");
   return -1;
 }
 
@@ -71,7 +71,7 @@ LONG WINAPI RegEnumKeyExA
 )
 {
   TRACE("RegEnumKeyExA");
-  syslog(LOG_DEBUG, "warning: RegEnumKeyExA ignored\n");
+  syslog(LOG_DEBUG, "warning: RegEnumKeyExA ignored");
   return -1;
 }
 
@@ -85,7 +85,7 @@ LONG WINAPI RegOpenKeyExA
 )
 {
   TRACE("RegOpenKeyExA");
-  //syslog(LOG_DEBUG, "warning: RegOpenKeyEx(%p,%s) ignored\n", hKey, lpSubKey);
+  //syslog(LOG_DEBUG, "warning: RegOpenKeyEx(%p,%s) ignored", hKey, lpSubKey);
   return -1;
 }
 
@@ -103,7 +103,7 @@ LONG WINAPI RegCreateKeyExA
 )
 {
   TRACE("RegCreateKeyExA");
-  syslog(LOG_DEBUG, "warning: RegCreateKeyExA(%p,%s) ignored\n", hKey, lpSubKey);
+  syslog(LOG_DEBUG, "warning: RegCreateKeyExA(%p,%s) ignored", hKey, lpSubKey);
   return -1;
 }
 
@@ -120,7 +120,7 @@ LONG WINAPI RegEnumValueA
 )
 {
   TRACE("RegEnumValueA");
-  syslog(LOG_DEBUG, "warning: RegEnumValueA ignored\n");
+  syslog(LOG_DEBUG, "warning: RegEnumValueA ignored");
   return -1;
 }
 
@@ -131,7 +131,7 @@ LONG WINAPI RegDeleteValueA
 )
 {
   TRACE("RegDeleteValueA");
-  syslog(LOG_DEBUG, "warning: RegDeleteValueA(%p,%s) ignored\n", hKey, lpValueName);
+  syslog(LOG_DEBUG, "warning: RegDeleteValueA(%p,%s) ignored", hKey, lpValueName);
   return -1;
 }
 
@@ -146,7 +146,7 @@ LONG WINAPI RegSetValueExA
 )
 {
   TRACE("RegSetValueExA");
-  syslog(LOG_DEBUG, "warning: RegSetValueExA(%p,%s) ignored\n", hKey, lpValueName);
+  syslog(LOG_DEBUG, "warning: RegSetValueExA(%p,%s) ignored", hKey, lpValueName);
   return -1;
 }
 
@@ -156,7 +156,7 @@ LONG WINAPI RegFlushKey
 )
 {
   TRACE("RegFlushKey");
-  syslog(LOG_DEBUG, "warning: RegFlushKey ignored\n");
+  syslog(LOG_DEBUG, "warning: RegFlushKey ignored");
   return -1;
 }
 
@@ -167,7 +167,7 @@ LONG WINAPI RegDeleteKeyA
 )
 {
   TRACE("RegDeleteKeyA");
-  syslog(LOG_DEBUG, "warning: RegDeleteKeyA(%p,%s) ignored\n", hKey, lpSubKey);
+  syslog(LOG_DEBUG, "warning: RegDeleteKeyA(%p,%s) ignored", hKey, lpSubKey);
   return -1;
 }
 
@@ -188,7 +188,7 @@ LONG WINAPI RegQueryInfoKeyA
 )
 {
   TRACE("RegQueryInfoKeyA");
-  syslog(LOG_DEBUG, "warning: RegQueryInfoKeyA ignored\n");
+  syslog(LOG_DEBUG, "warning: RegQueryInfoKeyA ignored");
   return -1;
 }
 
@@ -203,7 +203,7 @@ LONG WINAPI RegQueryValueExA
 )
 {
   TRACE("RegQueryValueExA");
-  syslog(LOG_DEBUG, "warning: RegQueryValueExA ignored\n");
+  syslog(LOG_DEBUG, "warning: RegQueryValueExA ignored");
   return -1;
 }
 
@@ -218,7 +218,7 @@ LONG WINAPI RegQueryValueExW
 )
 {
   TRACE("RegQueryValueExW");
-  syslog(LOG_DEBUG, "warning: RegQueryValueExW ignored\n");
+  syslog(LOG_DEBUG, "warning: RegQueryValueExW ignored");
   return -1;
 }
 
@@ -232,7 +232,7 @@ LONG WINAPI RegOpenKeyExW
 )
 {
   TRACE("RegOpenKeyExW");
-  syslog(LOG_DEBUG, "warning: RegOpenKeyExW ignored\n");
+  syslog(LOG_DEBUG, "warning: RegOpenKeyExW ignored");
   return -1;
 }
 
@@ -304,9 +304,9 @@ BOOL WINAPI ReportEventA
   }
 
   if (wNumStrings > 0)
-    syslog(level, "%s: %s\n", hEventLog, lpStrings[0]);
+    syslog(level, "%s: %s", hEventLog, lpStrings[0]);
   else
-    syslog(level, "%s: message #%d\n", hEventLog, dwEventID);
+    syslog(level, "%s: message #%d", hEventLog, dwEventID);
 
   return TRUE;
 }

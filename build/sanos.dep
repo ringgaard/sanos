@@ -58,6 +58,7 @@ $(SRC)/include/os/krnl.h: \
   $(SRC)/include/os/pe.h \
   $(SRC)/include/os/ldr.h \
   $(SRC)/include/os/syscall.h \
+  $(SRC)/include/os/klog.h \
   $(SRC)/include/net/net.h
 
 $(SRC)/include/net/net.h: \
@@ -261,6 +262,9 @@ $(SRC)/sys/dev/3c905c.c: \
   $(SRC)/sys/dev/3c905c.h
 
 $(SRC)/sys/dev/cons.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/dev/klog.c: \
   $(SRC)/include/os/krnl.h
 
 $(SRC)/sys/dev/eepro100.c: \
@@ -567,6 +571,10 @@ $(SRC)/sys/os/thread.c: \
 $(SRC)/sys/os/tls.c: \
   $(SRC)/include/os.h \
   $(SRC)/include/bitops.h
+
+$(SRC)/sys/os/syslog.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/syslog.h
 
 # sys/osldr
 

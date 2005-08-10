@@ -41,7 +41,7 @@ MMRESULT WINAPI timeBeginPeriod
 )
 {
   TRACE("timeBeginPeriod");
-  syslog(LOG_DEBUG, "timeBeginPeriod: timer resolution is %d\n", uPeriod);
+  syslog(LOG_DEBUG, "timeBeginPeriod: timer resolution is %d", uPeriod);
   return 0;
 }
 
@@ -51,7 +51,7 @@ MMRESULT WINAPI timeEndPeriod
 )
 {
   TRACE("timeEndPeriod");
-  syslog(LOG_DEBUG, "timeEndPeriod: timer resolution is %d\n", uPeriod);
+  syslog(LOG_DEBUG, "timeEndPeriod: timer resolution is %d", uPeriod);
   return 0;
 }
 

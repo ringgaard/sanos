@@ -106,7 +106,6 @@
 				AdditionalLibraryDirectories="..\lib"
 				IgnoreAllDefaultLibraries="TRUE"
 				GenerateDebugInformation="FALSE"
-				GenerateMapFile="FALSE"
 				SubSystem="1"
 				LargeAddressAware="2"
 				EntryPointSymbol="start"
@@ -318,6 +317,9 @@
 				RelativePath="..\src\sys\dev\kbdus.h">
 			</File>
 			<File
+				RelativePath="..\src\sys\dev\klog.c">
+			</File>
+			<File
 				RelativePath="..\src\sys\dev\null.c">
 			</File>
 			<File
@@ -471,6 +473,9 @@
 				</File>
 				<File
 					RelativePath="..\src\include\os\kbd.h">
+				</File>
+				<File
+					RelativePath="..\src\include\os\klog.h">
 				</File>
 				<File
 					RelativePath="..\src\include\os\kmalloc.h">

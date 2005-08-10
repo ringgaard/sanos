@@ -639,6 +639,30 @@ CHANGES
 - Advanced Power Management (APM) support implemented. The computer can now be
   powered off after os shutdown. The mode parameter for exitos() can be used to specify 
   the shutdown mode (halt, reboot, poweroff, debug). A shutdown command has been added 
-  to the shell. The power status can be retrieved using /proc/apm. 
+  to the shell. The power status can be retrieved using /proc/apm.
   
 - Added /proc/cpu for CPU information.
+
+- The raise() function now returns an error if the signal number is invalid.
+
+- Breakpoint traps are now sent the user mode signal handler. This allows breakpoints
+  to be handled by user mode code.
+  
+- Signals now exits the currently executing job with the signal number as exit code. 
+  However, the debug flag in the PEB is set the debugger is entered if an unhandled 
+  signal is encountered. The debug flag can be set using the debug command in the shell.
+  The debug flag can be configured using the debug property in the [os] section of
+  os.ini. The default value of the debug flag is 0, unless the system is build in
+  debug configuration.
+
+- readv() and writev() implemented in vfs.
+
+- The kernel log now is implemented by the device driver /dev/klog. The kernel log now
+  support ioctl for waiting for new log entries in the kernel log. The kprintf has been
+  extended to support different log levels.
+
+- The syslog interface has been redesigned in to comply with POSIX. The syslog now supports
+  logging to a syslog server by setting the loghost property in the [os] section of os.ini.
+
+- New klog daemon to read entries from the kernel log (/dev/klog) and add them to the
+  system log.

@@ -174,7 +174,7 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
   if (blocks > 0 && blocks < fs->inode_blocks_per_group + 2) fs->super->group_count--;
   if (fs->super->group_count == 0) 
   {
-    kprintf("dfs: filesystem too small\n");
+    kprintf(KERN_ERR "dfs: filesystem too small\n");
     return NULL;
   }
 
@@ -318,7 +318,7 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
     ino = new_inode(fs, 0, 0);
     if (ino != i) 
     {
-      kprintf("dfs: format expected inode %d, got %d\n", i, ino);
+      kprintf(KERN_ERR "dfs: format expected inode %d, got %d\n", i, ino);
       return NULL;
     }
   }
@@ -360,7 +360,7 @@ static struct filsys *open_filesystem(char *devname, struct fsoptions *fsopts)
   memset(fs->super, 0, SECTORSIZE);
   if (dev_read(devno, fs->super, SECTORSIZE, 1, 0) != SECTORSIZE) 
   {
-    kprintf("dfs: unable to read superblock on device %s\n", device(devno)->name);
+    kprintf(KERN_ERR "dfs: unable to read superblock on device %s\n", device(devno)->name);
     free(fs->super);
     free(fs);
     return NULL;
@@ -370,7 +370,7 @@ static struct filsys *open_filesystem(char *devname, struct fsoptions *fsopts)
   // Check signature and version
   if (fs->super->signature != DFS_SIGNATURE)
   {
-    kprintf("dfs: invalid DFS signature on device %s\n", device(devno)->name);
+    kprintf(KERN_ERR "dfs: invalid DFS signature on device %s\n", device(devno)->name);
     free(fs->super);
     free(fs);
     return NULL;
@@ -378,7 +378,7 @@ static struct filsys *open_filesystem(char *devname, struct fsoptions *fsopts)
 
   if (fs->super->version != DFS_VERSION) 
   {
-    kprintf("dfs: invalid DFS version on device %s\n", device(devno)->name);
+    kprintf(KERN_ERR "dfs: invalid DFS version on device %s\n", device(devno)->name);
     free(fs->super);
     free(fs);
     return NULL;

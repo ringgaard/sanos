@@ -162,7 +162,7 @@ static sis900_get_mac_addr(struct dev *dev)
   signature = (unsigned short) read_eeprom(ioaddr, EEPROMSignature);    
   if (signature == 0xffff || signature == 0x0000) 
   {
-    kprintf("%s: Error EEPROM read %x\n", dev->name, signature);
+    kprintf(KERN_ERR "%s: Error EEPROM read %x\n", dev->name, signature);
     return 0;
   }
 
@@ -385,7 +385,7 @@ static int sis900_mii_probe(struct dev *dev)
       poll_bit ^= (mdio_read(dev, sp->cur_phy, MII_STATUS) & poll_bit);
       if (ticks >= timeout) 
       {
-        kprintf("%s: reset phy and link down now\n", dev->name);
+        kprintf(KERN_WARNING "%s: reset phy and link down now\n", dev->name);
         return -ETIMEOUT;
       }
     }
@@ -978,7 +978,7 @@ look_for_link:
     if (!(status & MII_STAT_LINK))
     {
       sp->carrier_ok = 0;
-      kprintf("%s: Media Link Off\n", dev->name);
+      kprintf(KERN_WARNING "%s: Media Link Off\n", dev->name);
 
       // Change mode issue
       if ((mii_phy->phy_id0 == 0x001D) && ((mii_phy->phy_id1 & 0xFFF0) == 0x8000))
@@ -1092,7 +1092,7 @@ static void sis900_auto_negotiate(struct dev *dev, int phy_addr)
 
   if (!(status & MII_STAT_LINK))
   {
-    kprintf("%s: Media Link Off\n", dev->name);
+    kprintf(KERN_WARNING "%s: Media Link Off\n", dev->name);
     sp->autong_complete = 1;
     sp->carrier_ok = 0;
     return;
@@ -1144,7 +1144,7 @@ static void sis900_read_mode(struct dev *dev, int *speed, int *duplex)
     if (mdio_read(dev, phy_addr, 0x0019) & 0x01) *speed = HW_SPEED_100_MBPS;
   }
 
-  kprintf("%s: Media Link On %s %s-duplex \n", dev->name, *speed == HW_SPEED_100_MBPS ? "100mbps" : "10mbps", *duplex == FDX_CAPABLE_FULL_SELECTED ? "full" : "half");
+  kprintf(KERN_INFO "%s: Media Link On %s %s-duplex \n", dev->name, *speed == HW_SPEED_100_MBPS ? "100mbps" : "10mbps", *duplex == FDX_CAPABLE_FULL_SELECTED ? "full" : "half");
 
   // Signal autonegotiate complete and link up
   set_event(&sp->link_up);
@@ -1163,7 +1163,7 @@ static void sis900_tx_timeout(struct dev *dev)
   long ioaddr = sp->iobase;
   int i;
 
-  kprintf("%s: Transmit timeout, status %8.8x %8.8x \n", dev->name, inpd(ioaddr + cr), inpd(ioaddr + isr));
+  kprintf(KERN_WARNING "%s: Transmit timeout, status %8.8x %8.8x \n", dev->name, inpd(ioaddr + cr), inpd(ioaddr + isr));
 
   // Disable interrupts by clearing the interrupt mask.
   outpd(ioaddr + imr, 0x0000);
@@ -1214,7 +1214,7 @@ static int sis900_transmit(struct dev *dev, struct pbuf *p)
   // Wait for free entry in transmit ring
   if (wait_for_object(&sp->tx_sem, TX_TIMEOUT) < 0)
   {
-    kprintf("%s: transmit timeout, drop packet\n", dev->name);
+    kprintf(KERN_WARNING "%s: transmit timeout, drop packet\n", dev->name);
     sp->stats.tx_dropped++;
     return -ETIMEOUT;
   }
@@ -1802,7 +1802,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   if (sis900_mii_probe(dev) == 0) return -ENODEV;
 
   // Print some information about our NIC
-  kprintf("%s: %s iobase %#lx irq %d hwaddr %la\n", dev->name, board->productname, ioaddr, irq, &sp->hwaddr);
+  kprintf(KERN_INFO "%s: %s iobase %#lx irq %d hwaddr %la\n", dev->name, board->productname, ioaddr, irq, &sp->hwaddr);
 
   // Initialize NIC
   rc = sis900_open(dev);

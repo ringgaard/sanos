@@ -44,7 +44,7 @@ int WINAPI MessageBoxA
 )
 {
   TRACE("MessageBoxA");
-  syslog(LOG_INFO, "Messagebox %s: %s\n", lpCaption, lpText);
+  syslog(LOG_INFO, "Messagebox %s: %s", lpCaption, lpText);
   panic("MessageBoxA not implemented");
   return 0;
 }

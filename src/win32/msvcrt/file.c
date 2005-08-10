@@ -85,7 +85,7 @@ int _pipe(int *phandles, unsigned int psize, int textmode)
 int _open(const char *filename, int oflag)
 {
   TRACE("_open");
-  //syslog(LOG_DEBUG, "_open(%s,%p)\n", filename, oflag);
+  //syslog(LOG_DEBUG, "_open(%s,%p)", filename, oflag);
   return open(filename, oflag, S_IREAD | S_IWRITE);
 }
 
@@ -165,7 +165,7 @@ int _stat(const char *path, struct _stat *buffer)
   struct stat64 fs;
 
   TRACE("_stat");
-  //syslog(LOG_DEBUG, "stat on %s\n", path);
+  //syslog(LOG_DEBUG, "stat on %s", path);
 
   if (stat64(path, &fs) < 0) return -1;
 
@@ -179,7 +179,7 @@ int _stat(const char *path, struct _stat *buffer)
     buffer->st_mode = fs.st_mode;
   }
 
-  //syslog(LOG_DEBUG, "%s: mode=%d size=%d\n", path, buffer->st_mode, buffer->st_size);
+  //syslog(LOG_DEBUG, "%s: mode=%d size=%d", path, buffer->st_mode, buffer->st_size);
   return 0;
 }
 
@@ -188,7 +188,7 @@ __int64 _stati64(const char *path, struct _stati64 *buffer)
   struct stat64 fs;
 
   TRACE("_stati64");
-  //syslog(LOG_DEBUG, "stat on %s\n", path);
+  //syslog(LOG_DEBUG, "stat on %s", path);
 
   if (stat64(path, &fs) < 0) return -1;
 
@@ -202,7 +202,7 @@ __int64 _stati64(const char *path, struct _stati64 *buffer)
     buffer->st_mode = fs.st_mode;
   }
 
-  //syslog(LOG_DEBUG, "%s: mode=%d size=%d\n", path, buffer->st_mode, buffer->st_size);
+  //syslog(LOG_DEBUG, "%s: mode=%d size=%d", path, buffer->st_mode, buffer->st_size);
   return 0;
 }
 
@@ -392,7 +392,7 @@ FILE *fopen(const char *filename, const char *mode)
   handle_t handle;
 
   TRACE("fopen");
-  //syslog(LOG_DEBUG, "fopen(%s,%s)\n", filename, mode);
+  //syslog(LOG_DEBUG, "fopen(%s,%s)", filename, mode);
 
   switch (*mode)
   {

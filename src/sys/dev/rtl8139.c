@@ -614,7 +614,7 @@ static void rtl_hw_start(struct dev *dev)
       }
     }
 
-    kprintf("%s: Setting %s%s-duplex based on auto-negotiated partner ability %4.4x\n", 
+    kprintf(KERN_INFO "%s: Setting %s%s-duplex based on auto-negotiated partner ability %4.4x\n", 
       dev->name, 
       mii_reg5 == 0 ? "" : (mii_reg5 & 0x0180) ? "100mbps " : "10mbps ",
       tp->full_duplex ? "full" : "half", mii_reg5);
@@ -731,7 +731,7 @@ static int rtl8139_transmit(struct dev *dev, struct pbuf *p)
   // Wait for free entry in transmit ring
   if (wait_for_object(&tp->tx_sem, TX_TIMEOUT) < 0)
   {
-    kprintf("%s: transmit timeout, drop packet\n", dev->name);
+    kprintf(KERN_WARNING "%s: transmit timeout, drop packet\n", dev->name);
     tp->stats.tx_dropped++;
     return -ETIMEOUT;
   }
@@ -989,7 +989,7 @@ static void rtl_error(struct dev *dev, int status, int link_changed)
   {
     unsigned long pci_cmd_status;
     pci_cmd_status = pci_read_config_dword(dev->unit, PCI_CONFIG_CMD_STAT);
-    kprintf("%s: PCI Bus error %4.4x.\n", dev->name, pci_cmd_status);
+    kprintf(KERN_ERR "%s: PCI Bus error %4.4x.\n", dev->name, pci_cmd_status);
   }
 }
 
@@ -1125,7 +1125,7 @@ static void rtl8139_timer(void *arg)
     {
       np->full_duplex = duplex;
       
-      kprintf("%s: Using %s-duplex based on MII #%d link partner ability of %4.4x\n", 
+      kprintf(KERN_INFO "%s: Using %s-duplex based on MII #%d link partner ability of %4.4x\n", 
 	dev->name, np->full_duplex ? "full" : "half", np->phys[0], mii_reg5);
 
       if (np->flags & HAS_MII_XCVR) 
@@ -1285,7 +1285,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   int config1;
 
   // Check license
-  if (license() != LICENSE_GPL) kprintf("warning: license violation, rtl8139 driver may only be used under GPL\n");
+  if (license() != LICENSE_GPL) kprintf(KERN_WARNING "warning: license violation, rtl8139 driver may only be used under GPL\n");
 
   // Determine NIC type
   board = lookup_board(board_tbl, unit);
@@ -1330,7 +1330,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
     }
   }
 
-  kprintf("%s: %s iobase 0x%x irq %d hwaddr %la\n", dev->name, unit->productname, ioaddr, irq, &np->hwaddr);
+  kprintf(KERN_INFO "%s: %s iobase 0x%x irq %d hwaddr %la\n", dev->name, unit->productname, ioaddr, irq, &np->hwaddr);
 
   np->dev = dev;
   np->iobase = ioaddr;

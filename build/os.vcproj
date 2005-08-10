@@ -71,8 +71,8 @@
 			ConfigurationType="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="2"
 				AdditionalOptions="/Oi /Ob1 /Gy /GF"
+				Optimization="2"
 				GlobalOptimizations="TRUE"
 				InlineFunctionExpansion="1"
 				EnableIntrinsicFunctions="TRUE"
@@ -106,7 +106,6 @@
 				AdditionalLibraryDirectories="..\lib"
 				IgnoreAllDefaultLibraries="TRUE"
 				GenerateDebugInformation="FALSE"
-				GenerateMapFile="FALSE"
 				SubSystem="1"
 				EntryPointSymbol="start"
 				BaseAddress="0x7FF00000"
@@ -162,6 +161,9 @@
 				RelativePath="..\src\sys\os\sysapi.c">
 			</File>
 			<File
+				RelativePath="..\src\sys\os\syslog.c">
+			</File>
+			<File
 				RelativePath="..\src\sys\os\thread.c">
 			</File>
 			<File
@@ -199,6 +201,9 @@
 				RelativePath="..\src\include\os\syscall.h">
 			</File>
 			<File
+				RelativePath="..\src\include\syslog.h">
+			</File>
+			<File
 				RelativePath="..\src\include\os\syspage.h">
 			</File>
 		</Filter>
@@ -217,7 +222,7 @@
 			<File
 				RelativePath="..\src\lib\math\fpconst.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -226,7 +231,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -238,7 +243,7 @@
 			<File
 				RelativePath="..\src\lib\math\ftol.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -247,7 +252,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -265,7 +270,7 @@
 			<File
 				RelativePath="..\src\lib\math\modf.asm">
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -274,7 +279,7 @@
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						Description=""
@@ -297,6 +302,9 @@
 			</File>
 			<File
 				RelativePath="..\src\lib\syserr.c">
+			</File>
+			<File
+				RelativePath="..\src\lib\time.c">
 			</File>
 			<File
 				RelativePath="..\src\lib\vsprintf.c">

@@ -108,7 +108,7 @@ int __declspec(dllexport) ramdisk(struct unit *unit, char *opts)
 
   devno = dev_make(devname, &ramdisk_driver, NULL, rd);
   
-  kprintf("%s: ramdisk (%d KB)\n", device(devno)->name, size / K);
+  kprintf(KERN_INFO "%s: ramdisk (%d KB)\n", device(devno)->name, size / K);
   return 0;
 }
 
@@ -129,6 +129,6 @@ int create_initrd()
 
   devno = dev_make("initrd", &ramdisk_driver, NULL, rd);
   
-  kprintf("%s: ramdisk (%d KB)\n", device(devno)->name, size / K);
+  kprintf(KERN_INFO "%s: ramdisk (%d KB)\n", device(devno)->name, size / K);
   return 0;
 }

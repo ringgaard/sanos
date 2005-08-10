@@ -255,7 +255,7 @@ int init_jvm()
     hjvm = dlopen(jvmname, 0);
     if (hjvm == NULL) 
     {
-      syslog(LOG_ERR, "Error loading JVM %s\n", jvmname);
+      syslog(LOG_ERR, "Error loading JVM %s", jvmname);
       return -1;
     }
   }
@@ -265,7 +265,7 @@ int init_jvm()
     CreateJavaVM = (jint (JNICALL *)(JavaVM **pvm, void **env, void *args)) dlsym(hjvm, "JNI_CreateJavaVM");
     if (!CreateJavaVM) 
     {
-      syslog(LOG_ERR, "Unable to find CreateJavaVM\n");
+      syslog(LOG_ERR, "Unable to find CreateJavaVM");
       return -1;
     }
   }
@@ -276,7 +276,7 @@ int init_jvm()
     rc = CreateJavaVM(&vm, (void **) &env, &args);
     if (rc != JNI_OK) 
     {
-      syslog(LOG_ERR, "Error %d creating java vm\n", rc);
+      syslog(LOG_ERR, "Error %d creating java vm", rc);
       return -1;
     }
   }
@@ -285,7 +285,7 @@ int init_jvm()
     rc = (*vm)->AttachCurrentThread(vm, (void **) &env, &args);
     if (rc != JNI_OK) 
     {
-      syslog(LOG_ERR, "Error %d attaching to vm\n", rc);
+      syslog(LOG_ERR, "Error %d attaching to vm", rc);
       return -1;
     }
   }
@@ -305,7 +305,7 @@ int execute_main_method(char *mainclsname, char *mainclsargs)
   mainclass = load_class(env, mainclsname);
   if (mainclass == NULL) 
   {
-    syslog(LOG_ERR, "Unable to find main class %s\n", mainclsname);
+    syslog(LOG_ERR, "Unable to find main class %s", mainclsname);
     return -1;
   }
 
@@ -313,7 +313,7 @@ int execute_main_method(char *mainclsname, char *mainclsargs)
   mainid = (*env)->GetStaticMethodID(env, mainclass, "main", "([Ljava/lang/String;)V");
   if (mainid == NULL) 
   {
-    syslog(LOG_ERR, "Class %s does not have a main method\n", mainclsname);
+    syslog(LOG_ERR, "Class %s does not have a main method", mainclsname);
     return -1;
   }
 
@@ -330,7 +330,7 @@ int execute_main_method(char *mainclsname, char *mainclsargs)
   mainargs = new_string_array(env, argc, argv);
   if (mainargs == NULL)
   {
-    syslog(LOG_ERR, "Error creating command arguments\n");
+    syslog(LOG_ERR, "Error creating command arguments");
     return -1;
   }
 
@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
     cfg = read_properties(argv[2]);
     if (cfg == NULL)
     {
-      syslog(LOG_ERR, "Unable to read JVM configuration from %s\n", argv[2]);
+      syslog(LOG_ERR, "Unable to read JVM configuration from %s", argv[2]);
       return 1;
     }
   }
@@ -382,7 +382,7 @@ int main(int argc, char *argv[])
   // Detach main thread from jvm
   if ((*vm)->DetachCurrentThread(vm) != 0) 
   {
-    syslog(LOG_ERR, "Could not detach main thread\n");
+    syslog(LOG_ERR, "Could not detach main thread");
     return 1;
   }
 

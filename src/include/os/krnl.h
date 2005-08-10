@@ -86,6 +86,7 @@
 #include <os/sched.h>
 #include <os/trap.h>
 #include <os/dbg.h>
+#include <os/klog.h>
 
 #include <os/pic.h>
 #include <os/pit.h>
@@ -153,8 +154,6 @@ void init_cdfs();
 // cons.c
 
 extern dev_t consdev;
-
-krnlapi void kprintf(const char *fmt, ...);
 
 // ramdisk.c
 

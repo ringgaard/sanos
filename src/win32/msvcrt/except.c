@@ -118,7 +118,7 @@ void _local_unwind2(MSVCRT_EXCEPTION_FRAME* frame, int trylevel)
   MSVCRT_EXCEPTION_FRAME *curframe = frame;
   EXCEPTION_FRAME reg;
 
-  //syslog(LOG_DEBUG, "_local_unwind2(%p,%d,%d)\n",frame, frame->trylevel, trylevel);
+  //syslog(LOG_DEBUG, "_local_unwind2(%p,%d,%d)",frame, frame->trylevel, trylevel);
 
   // Register a handler in case of a nested exception
   reg.handler = (PEXCEPTION_HANDLER) msvcrt_nested_handler;
@@ -132,7 +132,7 @@ void _local_unwind2(MSVCRT_EXCEPTION_FRAME* frame, int trylevel)
     curframe->trylevel = curtrylevel;
     if (!frame->scopetable[curtrylevel].lpfnFilter)
     {
-      syslog(LOG_WARNING, "warning: __try block cleanup not implemented - expect crash!\n");
+      syslog(LOG_WARNING, "warning: __try block cleanup not implemented - expect crash!");
       // TODO: Remove current frame, set ebp, call frame->scopetable[curtrylevel].lpfnHandler()
     }
   }
@@ -146,7 +146,7 @@ int _except_handler3(PEXCEPTION_RECORD rec, MSVCRT_EXCEPTION_FRAME* frame, PCONT
   EXCEPTION_POINTERS exceptPtrs;
   PSCOPETABLE pScopeTable;
 
-  //syslog(LOG_DEBUG, "msvcrt: exception %lx flags=%lx at %p handler=%p %p %p semi-stub\n",
+  //syslog(LOG_DEBUG, "msvcrt: exception %lx flags=%lx at %p handler=%p %p %p semi-stub",
   //       rec->ExceptionCode, rec->ExceptionFlags, rec->ExceptionAddress,
   //       frame->handler, context, dispatcher);
 
@@ -171,11 +171,11 @@ int _except_handler3(PEXCEPTION_RECORD rec, MSVCRT_EXCEPTION_FRAME* frame, PCONT
     {
       if (pScopeTable[trylevel].lpfnFilter)
       {
-        //syslog(LOG_DEBUG, "filter = %p\n", pScopeTable[trylevel].lpfnFilter);
+        //syslog(LOG_DEBUG, "filter = %p", pScopeTable[trylevel].lpfnFilter);
 
 	retval = call_filter(pScopeTable[trylevel].lpfnFilter, &exceptPtrs, &frame->_ebp);
 
-        //syslog(LOG_DEBUG, "filter returned %s\n", retval == EXCEPTION_CONTINUE_EXECUTION ?
+        //syslog(LOG_DEBUG, "filter returned %s", retval == EXCEPTION_CONTINUE_EXECUTION ?
         //      "CONTINUE_EXECUTION" : retval == EXCEPTION_EXECUTE_HANDLER ?
         //      "EXECUTE_HANDLER" : "CONTINUE_SEARCH");
 
@@ -189,7 +189,7 @@ int _except_handler3(PEXCEPTION_RECORD rec, MSVCRT_EXCEPTION_FRAME* frame, PCONT
 
           // Set our trylevel to the enclosing block, and call the __finally code, which won't return
           frame->trylevel = pScopeTable->previousTryLevel;
-          //syslog(LOG_DEBUG, "__finally block %p\n",pScopeTable[trylevel].lpfnHandler);
+          //syslog(LOG_DEBUG, "__finally block %p",pScopeTable[trylevel].lpfnHandler);
           call_finally_block(pScopeTable[trylevel].lpfnHandler, &frame->_ebp);
           panic("Returned from __finally block");
        }

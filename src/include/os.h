@@ -133,6 +133,11 @@ typedef unsigned int blkno_t;
 #define NOHANDLE ((handle_t) -1)
 #endif
 
+#ifndef _VA_LIST_DEFINED
+#define _VA_LIST_DEFINED
+typedef char *va_list;
+#endif
+
 #ifndef NULL
 #ifdef __cplusplus
 #define NULL    0
@@ -171,6 +176,10 @@ struct timeval
 #endif
 
 struct section;
+
+#define INFINITE  0xFFFFFFFF
+
+#define INTRES(x) ((char *)((unsigned long)((unsigned short)(x))))
 
 //#define TRACEAPI
 //#define TRACEAPIX
@@ -319,8 +328,7 @@ struct section;
 // Logging
 //
 
-#define LOG_LEVEL_MASK          0x0000000F
-#define LOG_SUBSYS_MASK         0xFFFFFFF0
+#ifndef LOG_EMERG
 
 #define LOG_EMERG	0
 #define LOG_ALERT	1
@@ -332,26 +340,50 @@ struct section;
 #define LOG_DEBUG	7
 #define LOG_TRACE       8
 
-#define LOG_MODULE              0x80000000
-#define LOG_HEAP                0x40000000
-#define LOG_APITRACE            0x20000000
-#define LOG_AUX                 0x10000000
+#endif
+
+#ifndef LOG_KERN
+
+#define LOG_KERN        (0<<3)
+#define LOG_USER        (1<<3)
+#define LOG_MAIL        (2<<3)
+#define LOG_DAEMON      (3<<3)
+#define LOG_AUTH        (4<<3)
+#define LOG_SYSLOG      (5<<3)
+#define LOG_LPR         (6<<3)
+#define LOG_NEWS        (7<<3)
+#define LOG_UUCP        (8<<3)
+#define LOG_CRON        (9<<3)
+#define LOG_AUTHPRIV    (10<<3)
+#define LOG_FTP         (11<<3)
+
+#define LOG_LOCAL0      (16<<3)
+#define LOG_LOCAL1      (17<<3)
+#define LOG_LOCAL2      (18<<3)
+#define LOG_LOCAL3      (19<<3)
+#define LOG_LOCAL4      (20<<3)
+#define LOG_LOCAL5      (21<<3)
+#define LOG_LOCAL6      (22<<3)
+#define LOG_LOCAL7      (23<<3)
+
+#endif
+
+#define LOG_AUX                 (12<<3)
+#define LOG_MODULE              (13<<3)
+#define LOG_HEAP                (14<<3)
+#define LOG_APITRACE            (15<<3)
 
 #ifdef TRACEAPI
-#define TRACE(s) syslog(LOG_APITRACE, "%s called\n", s);
+#define TRACE(s) syslog(LOG_APITRACE, "%s called", s);
 #else
 #define TRACE(s)
 #endif
 
 #ifdef TRACEAPIX
-#define TRACEX(s) syslog(LOG_APITRACE, "%s called\n", s);
+#define TRACEX(s) syslog(LOG_APITRACE, "%s called", s);
 #else
 #define TRACEX(s)
 #endif
-
-#define INFINITE  0xFFFFFFFF
-
-#define INTRES(x) ((char *)((unsigned long)((unsigned short)(x))))
 
 //
 // Standard C runtime libarry error codes
@@ -690,11 +722,13 @@ struct serial_status
 #define IOCTL_SET_KEYTIMEOUT     1024
 #define IOCTL_CTRLALTDEL_ENABLED 1025
 #define IOCTL_SET_KEYMAP         1026
-#define IOCTL_KPRINT_ENABLED     1027
-#define IOCTL_BEEP               1028
-#define IOCTL_SOUND              1029
-#define IOCTL_REBOOT             1030
-#define IOCTL_KBHIT              1031
+#define IOCTL_BEEP               1027
+#define IOCTL_SOUND              1028
+#define IOCTL_REBOOT             1029
+#define IOCTL_KBHIT              1030
+
+#define IOCTL_KPRINT_ENABLED     1031
+#define IOCTL_KLOG_WAIT          1032
 
 //
 // I/O control codes
@@ -1013,6 +1047,7 @@ struct peb
   struct in_addr ntp_server2;
 
   void (*globalhandler)(int, struct siginfo *);
+  int debug;
   int umaskval;
   int fmodeval;
   char pathsep;
@@ -1046,6 +1081,9 @@ struct job
   handle_t out;         // Standard output device
   handle_t err;         // Standard error device
   int termtype;         // Terminal type
+
+  char *ident;          // Job identifier for syslog
+  int facility;         // Default facility for syslog
 
   char crtbase[CRTBASESIZE];
 };
@@ -1325,8 +1363,8 @@ osapi int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tib
 osapi void exit(int status);
 
 osapi sighandler_t signal(int signum, sighandler_t handler);
-osapi void raise(int signum);
-osapi void sendsig(int signum, struct siginfo *info);
+osapi int raise(int signum);
+osapi int sendsig(int signum, struct siginfo *info);
 osapi struct siginfo *getsiginfo();
 osapi void sigexit(struct siginfo *info, int action);
 
@@ -1335,8 +1373,13 @@ osapi int gettimeofday(struct timeval *tv);
 osapi int settimeofday(struct timeval *tv);
 osapi clock_t clock();
 
+osapi void openlog(char *ident, int option, int facility);
+osapi void closelog();
+osapi int setlogmask(int mask);
+osapi void syslog(int pri, const char *fmt, ...);
+osapi void vsyslog(int pri, const char *fmt, va_list args);
+
 osapi void panic(const char *msg);
-osapi void syslog(int priority, const char *fmt,...);
 osapi int canonicalize(const char *filename, char *buffer, int size);
 
 osapi void mkcs(critsect_t cs);
@@ -1404,8 +1447,9 @@ osapi struct servent *getservbyport(int port, const char *proto);
 
 osapi extern struct section *osconfig;
 osapi extern struct peb *peb;
-osapi extern unsigned long loglevel;
-osapi extern handle_t syslogfd;
+
+//osapi extern unsigned long loglevel;
+//osapi extern handle_t syslogfd;
 
 #ifndef errno
 osapi int *_errno();

@@ -330,6 +330,25 @@ int cmd_date(int argc, char *argv[])
   return 0;
 }
 
+int cmd_debug(int argc, char *argv[])
+{
+  if (argc > 1)
+  {
+    if (strcmp(argv[1], "on") == 0)
+      peb->debug = 1;
+    else if (strcmp(argv[1], "off") == 0)
+      peb->debug = 0;
+    else
+    {
+      printf("usage: debug [on|off]\n");
+      return -EINVAL;
+    }
+  }
+
+  printf("debug %s\n", peb->debug ? "on" : "off");
+  return 0;
+}
+
 int cmd_df(int argc, char *argv[])
 {
   int count;
@@ -709,6 +728,8 @@ int cmd_kill(int argc, char *argv[])
 int cmd_klog(int argc, char *argv[])
 {
   int enabled;
+  int klog;
+  int rc;
 
   if (argc != 2)
   {
@@ -717,7 +738,12 @@ int cmd_klog(int argc, char *argv[])
   }
 
   enabled = strcmp(argv[1], "on") == 0;
-  return ioctl(1, IOCTL_KPRINT_ENABLED, &enabled, 4);
+
+  klog = open("/dev/klog", 0);
+  rc = ioctl(klog, IOCTL_KPRINT_ENABLED, &enabled, 4);
+  close(klog);
+
+  return rc;
 }
 
 int cmd_load(int argc, char *argv[])
@@ -744,30 +770,17 @@ int cmd_load(int argc, char *argv[])
 
 int cmd_loglevel(int argc, char *argv[])
 {
-  char *arg; 
   int level;
   int ll = 0;
 
-  if (argc != 3)
+  if (argc != 2)
   {
-    printf("usage: logevel [m|h|t|a|*]+ <loglevel>\n");
+    printf("usage: logevel [<loglevel>]\n");
     return -EINVAL;
   }
-  arg = argv[1];
-  level = atoi(argv[2]);
 
-  while (*arg)
-  {
-    if (*arg == 'm') ll |= LOG_MODULE;
-    if (*arg == 'h') ll |= LOG_HEAP;
-    if (*arg == 't') ll |= LOG_APITRACE;
-    if (*arg == 'a') ll |= LOG_AUX;
-    if (*arg == '*') ll |= LOG_SUBSYS_MASK;
-
-    arg++;
-  }
-
-  loglevel = ll | level;
+  level = atoi(argv[1]);
+  setlogmask((1 << (level + 1)) - 1);
   return 0;
 }
 
@@ -1269,15 +1282,10 @@ int cmd_sysinfo(int argc, char *argv[])
   return 0;
 }
 
-#include <alloca.h>
-
 int cmd_test(int argc, char *argv[])
 {
-  char *buf;
-  int n;
-
-  buf = (char *) alloca(128);
-  for (n = 0; n < 128; n++) buf[n] = (char) n;
+  char *ptr = NULL;
+  *ptr = 0;
   return 0;
 }
 
@@ -1379,6 +1387,7 @@ struct command cmdtab[] =
   {"cls",      cmd_cls,      "Clear screen"},
   {"cp",       cmd_cp,       "Copy file"},
   {"date",     cmd_date,     "Display date"},
+  {"debug",    cmd_debug,    "Enable/disable debug mode"},
   {"del",      cmd_rm,       "Delete file"},
   {"df",       cmd_df,       "Display file system usage"},
   {"dir",      cmd_ls,       "List directory"},
@@ -1552,7 +1561,8 @@ void shell()
   {
     printf(prompt, getcwd(curdir, sizeof curdir));
     if (readline(fdin, cmdline, sizeof cmdline) < 0) break;
-    if (exec_command(cmdline) < 0) break;
+    if (stricmp(cmdline, "exit") == 0) break;
+    exec_command(cmdline);
   }
 }
 
@@ -1617,7 +1627,7 @@ void __stdcall ttyd(void *arg)
   f = open(devname, O_RDWR | O_BINARY);
   if (f < 0) 
   {
-    syslog(LOG_INFO, "Error %d starting shell on device %s\n", errno, devname);
+    syslog(LOG_INFO, "Error %d starting shell on device %s", errno, devname);
     exit(1);
   }
 
@@ -1632,7 +1642,7 @@ void __stdcall ttyd(void *arg)
 
   redirect(f, TERM_VT100);
 
-  syslog(LOG_INFO, "sh: starting shell on device %s\n", devname);
+  syslog(LOG_INFO, "sh: starting shell on device %s", devname);
 
   shell();
 }
@@ -1697,7 +1707,7 @@ void __stdcall telnetd(void *arg)
       return;
     }
 
-    syslog(LOG_INFO, "telnetd: client connected from %a\n", &sin.sin_addr);
+    syslog(LOG_INFO, "telnetd: client connected from %a", &sin.sin_addr);
 
     hthread = beginthread(telnet_task, 0, (void *) client, CREATE_NEW_JOB | CREATE_DETACHED, NULL);
     close(hthread);

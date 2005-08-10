@@ -83,44 +83,44 @@ void __set_app_type(int type)
 void __setusermatherr(int (*errhandler)(struct _exception *))
 {
   TRACE("__setusermatherr");
-  syslog(LOG_DEBUG, "warning: __setusermatherr not implemented, ignored\n");
+  syslog(LOG_DEBUG, "warning: __setusermatherr not implemented, ignored");
 }
 
 int _XcptFilter(unsigned long xcptnum, void *pxcptinfoptrs)
 {
-  syslog(LOG_ERR, "Exception %d catched in MSVCRT\n", xcptnum);
+  syslog(LOG_ERR, "Exception %d catched in MSVCRT", xcptnum);
   return 0;
 }
 
 void _cexit()
 {
   TRACE("_cexit");
-  syslog(LOG_DEBUG, "warning: _cexit not implemented, ignored\n");
+  syslog(LOG_DEBUG, "warning: _cexit not implemented, ignored");
 }
 
 void _c_exit()
 {
   TRACE("_c_exit");
-  syslog(LOG_DEBUG, "warning: _c_exit not implemented, ignored\n");
+  syslog(LOG_DEBUG, "warning: _c_exit not implemented, ignored");
 }
 
 void _amsg_exit(int rterrnum)
 {
   TRACE("_amsg_exit");
-  syslog(LOG_DEBUG, "warning: _amsg_exit(%d) not implemented, ignored\n", rterrnum);
+  syslog(LOG_DEBUG, "warning: _amsg_exit(%d) not implemented, ignored", rterrnum);
 }
 
 _onexit_t __dllonexit(_onexit_t func, _PVFV **pbegin, _PVFV **pend)
 {
   TRACE("__dllonexit");
-  //syslog(LOG_DEBUG, "warning: __dllonexit not implemented, ignored\n");
+  //syslog(LOG_DEBUG, "warning: __dllonexit not implemented, ignored");
   return func;
 }
 
 _onexit_t _cdecl _onexit(_onexit_t func)
 {
   TRACE("_onexit");
-  syslog(LOG_DEBUG, "warning: _onexit not implemented, ignored\n");
+  syslog(LOG_DEBUG, "warning: _onexit not implemented, ignored");
   return func;
 }
 
@@ -290,7 +290,7 @@ int sscanf(const char *buffer, const char *fmt, ...)
     return 1;
   }
 
-  syslog(LOG_DEBUG, "sscanf '%s' format '%s'\n", buffer, fmt);
+  syslog(LOG_DEBUG, "sscanf '%s' format '%s'", buffer, fmt);
   panic("sscanf not implemented");
   return 0;
 }

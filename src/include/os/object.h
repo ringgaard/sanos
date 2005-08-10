@@ -64,6 +64,7 @@
 #define THREAD_WAIT_SOCKET       3
 #define THREAD_WAIT_SLEEP        4
 #define THREAD_WAIT_PIPE         5
+#define THREAD_WAIT_DEVIO        6
 
 #define THREAD_FPU_USED          1
 #define THREAD_FPU_ENABLED       2

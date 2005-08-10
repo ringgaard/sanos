@@ -97,7 +97,7 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
   iphdr = p->payload;
   if (pbuf_header(p, -(IPH_HL(iphdr) * 4)) < 0 || p->tot_len < sizeof(struct udp_hdr)) 
   {
-    kprintf("udp_input: short packet (%u bytes) discarded\n", p->tot_len);
+    kprintf(KERN_WARNING "udp_input: short packet (%u bytes) discarded\n", p->tot_len);
     stats.udp.lenerr++;
     stats.udp.drop++;
     return -EPROTO;
@@ -114,7 +114,7 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
     {
       if (inet_chksum_pseudo(p, &iphdr->src, &iphdr->dest, IP_PROTO_UDP, p->tot_len) != 0) 
       {
-	kprintf("udp_input: UDP datagram discarded due to failing checksum\n");
+	kprintf(KERN_WARNING "udp_input: UDP datagram discarded due to failing checksum\n");
 
 	stats.udp.chkerr++;
 	stats.udp.drop++;
@@ -185,7 +185,7 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
 
   if (pbuf_header(p, UDP_HLEN) < 0)
   {
-    kprintf("udp_send: not enough room for UDP header in pbuf\n");
+    kprintf(KERN_ERR "udp_send: not enough room for UDP header in pbuf\n");
     stats.udp.err++;
     return -EBUF;
   }
@@ -199,7 +199,7 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
   {
     if ((netif = ip_route(&pcb->remote_ip)) == NULL)
     {
-      kprintf("udp_send: No route to %a\n", &pcb->remote_ip);
+      kprintf(KERN_ERR "udp_send: No route to %a\n", &pcb->remote_ip);
       stats.udp.rterr++;
       return -EROUTE;
     }

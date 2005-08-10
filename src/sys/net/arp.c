@@ -228,7 +228,7 @@ static void add_arp_entry(struct ip_addr *ipaddr, struct eth_addr *ethaddr)
       err = dev_transmit((dev_t) entry->netif->state, p);
       if (err < 0)
       {
-	kprintf("arp: error %d in delayed transmit\n", err);
+	kprintf(KERN_ERR "arp: error %d in delayed transmit\n", err);
 	pbuf_free(p);
       }
     }

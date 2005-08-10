@@ -203,6 +203,7 @@ $(LIBS)/krnl.lib $(BIN)/krnl.dll: \
   $(SRC)\sys\dev\ramdisk.c \
   $(SRC)\sys\dev\nvram.c \
   $(SRC)\sys\dev\null.c \
+  $(SRC)\sys\dev\klog.c \
   $(SRC)\sys\dev\kbd.c \
   $(SRC)\sys\dev\hd.c \
   $(SRC)\sys\dev\fd.c \
@@ -270,6 +271,7 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
   $(SRC)/sys/os/tls.c \
   $(SRC)/sys/os/thread.c \
   $(SRC)/sys/os/sysapi.c \
+  $(SRC)/sys/os/syslog.c \
   $(SRC)/sys/os/sntp.c \
   $(SRC)/sys/os/signal.c \
   $(SRC)/sys/os/resolv.c \
@@ -282,6 +284,7 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
   $(SRC)/lib/strtol.c \
   $(SRC)/lib/string.c \
   $(SRC)/lib/stdlib.c \
+  $(SRC)/lib/time.c \
   $(SRC)/lib/opts.c \
   $(SRC)/lib/moddb.c \
   $(SRC)/lib/inifile.c \

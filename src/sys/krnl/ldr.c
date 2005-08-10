@@ -149,7 +149,7 @@ void *load_image_file(char *filename, int userspace)
 
 static void logldr(char *msg)
 {
-  kprintf("ldr: %s\n", msg);
+  kprintf(KERN_WARNING "ldr: %s\n", msg);
 }
 
 void *resolve(hmodule_t hmod, char *procname)
