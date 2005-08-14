@@ -662,8 +662,8 @@ int cmd_jobs(int argc, char *argv[])
 {
   struct job *job = peb->firstjob;
 
-  printf("hmod     threads in  out err name\n");
-  printf("-------- ------- --- --- --- ------------------------------------------------\n");
+  printf("name         hmod     threads in  out err command line\n");
+  printf("------------ -------- ------- --- --- --- -------------------------------------\n");
 
   while (job)
   {
@@ -678,7 +678,7 @@ int cmd_jobs(int argc, char *argv[])
     else
       name = job->cmdline;
 
-    printf("%08x%8d%4d%4d%4d %s\n", job->hmod, job->threadcnt, job->in, job->out, job->err, name);
+    printf("%-13s%08x%8d%4d%4d%4d %s\n", job->ident, job->hmod, job->threadcnt, job->in, job->out, job->err, name);
     job = job->nextjob;
   }
 

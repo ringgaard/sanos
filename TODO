@@ -618,14 +618,14 @@ CHANGES
 
 - GetLogicalDrives() in kernel32 implemented.
 
-- A bug in cmd_ipconfig() in sh.c prevented proper display of network configration if no
+- A bug in cmd_ipconfig() in sh.c prevented proper display of network configuration if no
   DNS servers was configured. This problem has been fixed. (FGA)
 
 - A new -a option added to mkdfs to support file lists with alternative files names. This
   simplifies configurations with both debug and release builds.
 
 - The Visual Studio wizard can now generate a floppy disk boot image configured for the
-  applications.
+  application.
 
 - Shell prompt can be configured by setting the prompt property in the [shell] section
   of the os.ini file.
@@ -649,7 +649,7 @@ CHANGES
   to be handled by user mode code.
   
 - Signals now exits the currently executing job with the signal number as exit code. 
-  However, the debug flag in the PEB is set the debugger is entered if an unhandled 
+  However, if the debug flag in the PEB is set the debugger is entered if an unhandled 
   signal is encountered. The debug flag can be set using the debug command in the shell.
   The debug flag can be configured using the debug property in the [os] section of
   os.ini. The default value of the debug flag is 0, unless the system is build in

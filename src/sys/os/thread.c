@@ -282,6 +282,29 @@ static void __stdcall spawn_program(void *args)
   exit(rc);
 }
 
+static char *procname(const char *name)
+{
+  char *procname;
+  char *p = (char *) name;
+  char *start = p;
+  char *end = NULL;
+
+  while (*p)
+  {
+    if (*p == PS1 || *p == PS2) start = p + 1;
+    if (*p == '.') end = p;
+    p++;
+  }
+  if (!end || end < start) end = p;
+
+  procname = malloc(end - start + 1);
+  if (!procname) return NULL;
+  memcpy(procname, start, end - start);
+  procname[end - start] = 0;
+
+  return procname;
+}
+
 int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
 {
   hmodule_t hmod;
@@ -303,7 +326,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
   job = tib->job;
   job->hmod = hmod;
   job->cmdline = strdup(cmdline);
-  job->ident = strdup(pgm);
+  job->ident = procname(pgm);
 
   if (mode & P_NOWAIT)
   {
