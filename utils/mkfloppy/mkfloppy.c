@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
   devsize = get_device_size(hdev);
   if (devsize < 0) 
   {
-    printf("mkpart: error %d obtaining device size for %s\n", GetLastError(), devname);
+    printf("mkfloppy: error %d obtaining device size for %s\n", GetLastError(), devname);
     return 3;
   }
 
