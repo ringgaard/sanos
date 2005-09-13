@@ -596,7 +596,7 @@ static unsigned int res_randomid()
 {
   struct timeval now;
 
-  gettimeofday(&now);
+  gettimeofday(&now, NULL);
   return (now.tv_sec ^ now.tv_usec ^ gettid()) & 0xFFFF;
 }
 
@@ -793,7 +793,6 @@ static int send_dg(struct res_state *statp,
   }
 
   //local.sin_family = AF_INET;
-  //local.sin_len = sizeof(struct sockaddr_in);
   //local.sin_port = htons(1024);
   //local.sin_addr.s_addr = INADDR_ANY;
 

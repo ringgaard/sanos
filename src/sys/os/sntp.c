@@ -167,12 +167,12 @@ void __stdcall sntpd(void *arg)
       //gettimeofday(&now);
       settimeofday(&tv);
       //syslog(LOG_AUX, "sntpd: adjusting %d %d %a", tv.tv_sec - now.tv_sec, tv.tv_usec - now.tv_usec, &srv->sa.sin_addr);
-      sleep(TIME_ADJUST_INTERVAL);
+      msleep(TIME_ADJUST_INTERVAL);
     }
     else
     {
       syslog(LOG_AUX, "sntpd: error obtaining time from time server");
-      sleep(TIME_ADJUST_RETRY);
+      msleep(TIME_ADJUST_RETRY);
     }
   }
 }

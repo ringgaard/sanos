@@ -52,7 +52,6 @@ static err_t recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
       else
       {
 	sin = (struct sockaddr_in *) req->msg->msg_name;
-	sin->sin_len = sizeof(struct sockaddr_in);
 	sin->sin_family = AF_INET;
 	sin->sin_port = htons(port);
 	sin->sin_addr.s_addr = addr->addr;
@@ -179,7 +178,6 @@ static int udpsock_getpeername(struct socket *s, struct sockaddr *name, int *nam
   if (s->state != SOCKSTATE_CONNECTED) return -EINVAL;
 
   sin = (struct sockaddr_in *) name;
-  sin->sin_len = sizeof(struct sockaddr_in);
   sin->sin_family = AF_INET;
   sin->sin_port = htons(s->udp.pcb->remote_port);
   sin->sin_addr.s_addr = s->udp.pcb->remote_ip.addr;
@@ -197,7 +195,6 @@ static int udpsock_getsockname(struct socket *s, struct sockaddr *name, int *nam
   if (s->state != SOCKSTATE_BOUND && s->state != SOCKSTATE_CONNECTED) return -EINVAL;
 
   sin = (struct sockaddr_in *) name;
-  sin->sin_len = sizeof(struct sockaddr_in);
   sin->sin_family = AF_INET;
   sin->sin_port = htons(s->udp.pcb->local_port);
   sin->sin_addr.s_addr = s->udp.pcb->local_ip.addr;
@@ -270,7 +267,6 @@ static int udpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
     {
       if (msg->msg_namelen < sizeof(struct sockaddr_in)) return -EFAULT;
       sin = (struct sockaddr_in *) msg->msg_name;
-      sin->sin_len = sizeof(struct sockaddr_in);
       sin->sin_family = AF_INET;
       sin->sin_port = htons(udphdr->src);
       sin->sin_addr.s_addr = iphdr->src.addr;

@@ -20,6 +20,7 @@
 /bin/httpd.dll    bin\httpd.dll
 /bin/setup.exe    bin\setup.exe
 /bin/fdisk.exe    bin\fdisk.exe
+/bin/edit.exe     bin\edit.exe
 
 ; Drivers
 
@@ -47,6 +48,7 @@
 
 /etc/krnl.ini     build\krnl.ini
 /etc/os.ini       build\os.ini
+/etc/init         build\init
 
 ; Setup files for hard disk install
 

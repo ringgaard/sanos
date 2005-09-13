@@ -1678,7 +1678,6 @@ void __stdcall telnetd(void *arg)
     return;
   }
 
-  sin.sin_len = sizeof(struct sockaddr_in);
   sin.sin_family = AF_INET;
   sin.sin_addr.s_addr = INADDR_ANY;
   sin.sin_port = htons(23);

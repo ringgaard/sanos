@@ -36,7 +36,7 @@
 
 int sched_yield(void)
 {
-  sleep(0);
+  msleep(0);
   return 0;
 }
 

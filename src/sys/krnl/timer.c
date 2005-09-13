@@ -297,12 +297,12 @@ static void tmr_sleep(void *arg)
 }
 
 //
-// sleep
+// msleep
 //
 // Sleep for a number of milliseconds
 //
 
-int sleep(unsigned int millisecs)
+int msleep(unsigned int millisecs)
 {
   struct timer timer;
 

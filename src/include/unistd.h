@@ -117,7 +117,7 @@ extern "C" {
 #endif
 
 #ifdef LARGEFILES
-#define lseek(f, offset, origin) lseek((f), (offset), (origin))
+#define lseek(f, offset, origin) lseek64((f), (offset), (origin))
 #define ftruncate(f, size) ftruncate64((f), (size))
 #else
 osapi loff_t lseek(handle_t f, loff_t offset, int origin);
@@ -146,6 +146,7 @@ osapi int unlink(const char *name);
 osapi int mkdir(const char *name, int mode);
 osapi int rmdir(const char *name);
 osapi int gethostname(char *name, int namelen);
+osapi unsigned sleep(unsigned seconds);
 
 #ifdef  __cplusplus
 }

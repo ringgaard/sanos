@@ -47,7 +47,7 @@ long __abstime2timeout(const struct timespec *abstime)
   long timeout;
 
   if (abstime == NULL) return INFINITE;
-  if (gettimeofday(&curtime) < 0) return -1;
+  if (gettimeofday(&curtime, NULL) < 0) return -1;
   timeout = ((long) (abstime->tv_sec - curtime.tv_sec) * 1000L +
              (long)((abstime->tv_nsec / 1000) - curtime.tv_usec) / 1000L);
   if (timeout < 0) timeout = 0L;
@@ -320,7 +320,7 @@ int pthread_once(pthread_once_t *once_control, void (*init_routine)(void))
     else
     {
       // Block until other thread finishes executing the once routine
-      while (!once_control->done) sleep(0);
+      while (!once_control->done) msleep(0);
     }
   }
 

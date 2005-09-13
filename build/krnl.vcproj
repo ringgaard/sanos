@@ -44,7 +44,7 @@
 				IgnoreAllDefaultLibraries="TRUE"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="..\dbg\symbols\$(ProjectName).pdb"
-				GenerateMapFile="FALSE"
+				GenerateMapFile="TRUE"
 				SubSystem="1"
 				LargeAddressAware="2"
 				EntryPointSymbol="start"
@@ -99,7 +99,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /FIXED"
+				AdditionalOptions="/MACHINE:I386 /FIXED /MAP:..\obj\krnl\krnl.map"
 				AdditionalDependencies="$(NOINHERIT)"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
@@ -133,6 +133,12 @@
 			Filter="">
 			<File
 				RelativePath="..\src\sys\krnl\apm.c">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="2"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\buf.c">

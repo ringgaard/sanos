@@ -160,11 +160,11 @@ void play(char *song)
     if (freq)
     {
       ioctl(1, IOCTL_SOUND, &freq, 4);
-      sleep(ms * 7 / 8);
+      msleep(ms * 7 / 8);
       ioctl(1, IOCTL_SOUND, &silence, 4);
-      sleep(ms / 8);
+      msleep(ms / 8);
     }
     else
-      sleep(ms);
+      msleep(ms);
   }
 }

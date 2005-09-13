@@ -462,7 +462,7 @@ static void lazywriter_task(void *arg)
 	while (pool->ioactive)
 	{
 	  pool->ioactive = 0;
-  	  sleep(1000);
+  	  msleep(1000);
 	  check_sync();
 	}
 
@@ -570,7 +570,7 @@ struct bufpool *init_buffer_pool(dev_t devno, int poolsize, int bufsize, void (*
 void free_buffer_pool(struct bufpool *pool)
 {
   // Wait until sync idle, need to sleep to allow low priority job to finish
-  while (sync_active) sleep(100);
+  while (sync_active) msleep(100);
 
   // Remove from buffer pool list
   if (pool->next) pool->next->prev = pool->prev;

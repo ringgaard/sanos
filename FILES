@@ -158,6 +158,7 @@ src\                           Souce files
       select.h                 Select from file descriptor set
       socket.h                 Socket definitions
       stat.h                   Defines structure used by stat() and fstat()
+      time.h                   Time types
       types.h                  Basic type definitions
       uio.h                    Defines for vector I/O functions
       utsname.h                System name

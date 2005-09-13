@@ -211,10 +211,10 @@ struct section;
 // Allocation types
 //
 
-#define MEM_COMMIT              0x00001000
-#define MEM_RESERVE             0x00002000
-#define MEM_DECOMMIT            0x00004000
-#define MEM_RELEASE             0x00008000
+#define MEM_COMMIT              0x1000
+#define MEM_RESERVE             0x2000
+#define MEM_DECOMMIT            0x4000
+#define MEM_RELEASE             0x8000
 
 #define MEM_ALIGN64K            0x10000000
 
@@ -237,10 +237,10 @@ struct section;
 // Thread creation flags
 //
 
-#define CREATE_SUSPENDED        0x04
-#define CREATE_NEW_JOB          0x10
-#define CREATE_DETACHED         0x20
-#define CREATE_POSIX            0x40
+#define CREATE_SUSPENDED        0x00000004
+#define CREATE_NEW_JOB          0x00000010
+#define CREATE_DETACHED         0x00000020
+#define CREATE_POSIX            0x00000040
 
 // Spawn flags
 
@@ -435,8 +435,6 @@ struct section;
 #define ENOTEMPTY       41               // Directory not empty
 //#define EILSEQ          42               // Invalid multibyte sequence
 
-#endif
-
 //
 // Sockets errors
 //
@@ -507,6 +505,8 @@ struct section;
 #define ECONN           ENOTCONN
 #define ERST            ECONNRESET
 #define EABORT          ECONNABORTED
+
+#endif
 
 //
 // Signals
@@ -782,8 +782,7 @@ struct in_addr
 
 struct sockaddr_in
 {
-  unsigned char sin_len;
-  unsigned char sin_family;
+  unsigned short sin_family;
   unsigned short sin_port;
   struct in_addr sin_addr;
   char sin_zero[8];
@@ -796,8 +795,7 @@ struct sockaddr_in
 
 struct sockaddr 
 {
-  unsigned char sa_len;
-  unsigned char sa_family;
+  unsigned short sa_family;
   char sa_data[14];
 };
 
@@ -1357,7 +1355,8 @@ osapi int setcontext(handle_t thread, void *context);
 osapi int getcontext(handle_t thread, void *context);
 osapi int getprio(handle_t thread);
 osapi int setprio(handle_t thread, int priority);
-osapi void sleep(int millisecs);
+osapi void msleep(int millisecs);
+osapi unsigned sleep(unsigned seconds);
 osapi struct tib *gettib();
 osapi int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr);
 osapi void exit(int status);
@@ -1369,7 +1368,7 @@ osapi struct siginfo *getsiginfo();
 osapi void sigexit(struct siginfo *info, int action);
 
 osapi time_t time(time_t *timeptr);
-osapi int gettimeofday(struct timeval *tv);
+osapi int gettimeofday(struct timeval *tv, void *tzp);
 osapi int settimeofday(struct timeval *tv);
 osapi clock_t clock();
 

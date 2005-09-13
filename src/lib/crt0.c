@@ -177,15 +177,16 @@ static void termcrt()
   free_args(crtbase->argc, crtbase->argv);
 }
 
-int mainCRTStartup(hmodule_t hmod, char *cmdline, void *env)
+int mainCRTStartup()
 {
   int rc;
-  struct job *job = gettib()->job;
+  struct tib *tib = gettib();
+  struct job *job = tib->job;
   struct crtbase *crtbase = (struct crtbase *) job->crtbase;
 
-  crtbase->argc = parse_args(cmdline, NULL);
+  crtbase->argc = parse_args(job->cmdline, NULL);
   crtbase->argv = (char **) malloc(crtbase->argc * sizeof(char *));
-  parse_args(cmdline, crtbase->argv);
+  parse_args(job->cmdline, crtbase->argv);
 
   rc = initcrt();
   if (rc == 0) 

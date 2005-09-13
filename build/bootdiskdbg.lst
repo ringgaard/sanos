@@ -20,6 +20,7 @@
 /bin/httpd.dll    bin\httpd.dll
 /bin/setup.exe    bin\setup.exe
 /bin/fdisk.exe    bin\fdisk.exe
+/bin/edit.exe     bin\edit.exe
 
 ; Drivers
 

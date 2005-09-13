@@ -271,7 +271,7 @@ int wait_for_all_objects(struct object **objs, int count, unsigned int timeout)
   if (count == 0)
   {
     if (timeout == INFINITE) return -EINVAL;
-    return sleep(timeout);
+    return msleep(timeout);
   }
 
   if (count > MAX_WAIT_OBJECTS) return -EINVAL;
@@ -298,7 +298,7 @@ int wait_for_all_objects(struct object **objs, int count, unsigned int timeout)
     }
   }
 
-  // If all object are signaled enter all objects and return
+  // If all objects are signaled enter all objects and return
   if (all)
   {
     int rc;
@@ -381,7 +381,7 @@ int wait_for_any_object(struct object **objs, int count, unsigned int timeout)
   if (count == 0)
   {
     if (timeout == INFINITE) return -EINVAL;
-    return sleep(timeout);
+    return msleep(timeout);
   }
 
   if (count > MAX_WAIT_OBJECTS) return -EINVAL;

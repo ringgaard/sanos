@@ -52,7 +52,6 @@ static err_t recv_raw(void *arg, struct raw_pcb *pcb, struct pbuf *p, struct ip_
       else
       {
 	sin = (struct sockaddr_in *) req->msg->msg_name;
-	sin->sin_len = sizeof(struct sockaddr_in);
 	sin->sin_family = AF_INET;
 	sin->sin_port = 0;
 	sin->sin_addr.s_addr = addr->addr;
@@ -163,7 +162,6 @@ static int rawsock_getpeername(struct socket *s, struct sockaddr *name, int *nam
   if (s->state != SOCKSTATE_CONNECTED) return -EINVAL;
 
   sin = (struct sockaddr_in *) name;
-  sin->sin_len = sizeof(struct sockaddr_in);
   sin->sin_family = AF_INET;
   sin->sin_port = 0;
   sin->sin_addr.s_addr = s->raw.pcb->remote_ip.addr;
@@ -181,7 +179,6 @@ static int rawsock_getsockname(struct socket *s, struct sockaddr *name, int *nam
   if (s->state != SOCKSTATE_BOUND && s->state != SOCKSTATE_CONNECTED) return -EINVAL;
 
   sin = (struct sockaddr_in *) name;
-  sin->sin_len = sizeof(struct sockaddr_in);
   sin->sin_family = AF_INET;
   sin->sin_port = 0;
   sin->sin_addr.s_addr = s->raw.pcb->local_ip.addr;
@@ -243,7 +240,6 @@ static int rawsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
     {
       if (msg->msg_namelen < sizeof(struct sockaddr_in)) return -EFAULT;
       sin = (struct sockaddr_in *) msg->msg_name;
-      sin->sin_len = sizeof(struct sockaddr_in);
       sin->sin_family = AF_INET;
       sin->sin_port = 0;
       sin->sin_addr.s_addr = iphdr->src.addr;

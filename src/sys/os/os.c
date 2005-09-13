@@ -610,6 +610,12 @@ void dbgbreak()
   __asm { int 3 };
 }
 
+unsigned sleep(unsigned seconds)
+{
+  msleep(seconds * 1000);
+  return 0;
+}
+
 void init_net()
 {
   struct section *sect;
@@ -638,7 +644,6 @@ void init_net()
     if (get_option(prop->value, "ip", str, sizeof str, NULL))
     {
       sin = (struct sockaddr_in *) &ifcfg.addr;
-      sin->sin_len = sizeof(struct sockaddr_in);
       sin->sin_family = AF_INET;
       sin->sin_addr.s_addr = inet_addr(str);
     }
@@ -648,7 +653,6 @@ void init_net()
     if (get_option(prop->value, "gw", str, sizeof str, NULL))
     {
       sin = (struct sockaddr_in *) &ifcfg.gw;
-      sin->sin_len = sizeof(struct sockaddr_in);
       sin->sin_family = AF_INET;
       sin->sin_addr.s_addr = inet_addr(str);
     }
@@ -656,7 +660,6 @@ void init_net()
     if (get_option(prop->value, "mask", str, sizeof str, NULL))
     {
       sin = (struct sockaddr_in *) &ifcfg.netmask;
-      sin->sin_len = sizeof(struct sockaddr_in);
       sin->sin_family = AF_INET;
       sin->sin_addr.s_addr = inet_addr(str);
     }
@@ -664,7 +667,6 @@ void init_net()
     if (get_option(prop->value, "broadcast", str, sizeof str, NULL))
     {
       sin = (struct sockaddr_in *) &ifcfg.broadcast;
-      sin->sin_len = sizeof(struct sockaddr_in);
       sin->sin_family = AF_INET;
       sin->sin_addr.s_addr = inet_addr(str);
     }

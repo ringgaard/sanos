@@ -263,7 +263,7 @@ void srandomdev()
   {
     struct timeval tv;
 
-    gettimeofday(&tv);
+    gettimeofday(&tv, NULL);
     srandom(tv.tv_sec ^ tv.tv_usec);
     return;
   }

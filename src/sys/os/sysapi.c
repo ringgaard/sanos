@@ -449,7 +449,7 @@ time_t time(time_t *timeptr)
   return syscall(SYSCALL_TIME, &timeptr);
 }
 
-int gettimeofday(struct timeval *tv)
+int gettimeofday(struct timeval *tv, void *tzp)
 {
   return syscall(SYSCALL_GETTIMEOFDAY, &tv);
 }

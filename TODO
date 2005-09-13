@@ -645,7 +645,7 @@ CHANGES
 
 - The raise() function now returns an error if the signal number is invalid.
 
-- Breakpoint traps are now sent the user mode signal handler. This allows breakpoints
+- Breakpoint traps are now sent to the user mode signal handler. This allows breakpoints
   to be handled by user mode code.
   
 - Signals now exits the currently executing job with the signal number as exit code. 
@@ -657,7 +657,7 @@ CHANGES
 
 - readv() and writev() implemented in vfs.
 
-- The kernel log now is implemented by the device driver /dev/klog. The kernel log now
+- The kernel log is now implemented by the device driver /dev/klog. The kernel log now
   support ioctl for waiting for new log entries in the kernel log. The kprintf has been
   extended to support different log levels.
 
@@ -666,3 +666,11 @@ CHANGES
 
 - New klog daemon to read entries from the kernel log (/dev/klog) and add them to the
   system log.
+
+- The sockaddr and sockaddr_in structures has been change to conform to winsock
+  definitions.
+  
+- The sleep() function has been renamed to msleep(). A new POSIX conformant sleep function 
+  has been added to unistd.h.
+
+- Added sys/time.h header file. Also added tzp paramter to gettimeofday() for POSIX compliance.

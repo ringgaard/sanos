@@ -77,7 +77,7 @@
 #define SYSCALL_GETCONTEXT     40
 #define SYSCALL_GETPRIO        41
 #define SYSCALL_SETPRIO        42
-#define SYSCALL_SLEEP          43
+#define SYSCALL_MSLEEP         43
 #define SYSCALL_TIME           44
 #define SYSCALL_GETTIMEOFDAY   45
 #define SYSCALL_CLOCK          46

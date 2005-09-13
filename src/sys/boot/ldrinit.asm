@@ -216,10 +216,13 @@ apmbioscheck:
 
         cmp     bx, 0x504d          ; Check for "PM" signature
         jne	apmdone
-        
+
         and	cx, 0x02	    ; Is 32-bit supported?
         jz	apmdone
 	
+	mov	[apmversion], ax    ; Record the APM BIOS version
+	mov	[apmflags], cx	    ; and flags
+
 	mov	ax, 0x5304	    ; Disconnect first just in case
 	xor	bx, bx
 	int	0x15		    ; Ignore return code
@@ -248,11 +251,11 @@ apmbioscheck:
 	int	0x15
 	jc	apmdisconnect
 
-	cmp	bx, 0x504d	    ; Check for "PM" signature
-	jne	apmdisconnect
+;	cmp	bx, 0x504d	    ; Check for "PM" signature
+;	jne	apmdisconnect
 
-	mov	[apmversion], ax    ; Record the APM BIOS version
-	mov	[apmflags], cx	    ; and flags
+;	mov	[apmversion], ax    ; Record the APM BIOS version
+;	mov	[apmflags], cx	    ; and flags
 
 	jmp	apmdone
 

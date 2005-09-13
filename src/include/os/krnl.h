@@ -169,8 +169,8 @@ void init_fd();
 
 // apm.c
 
-void init_apm();
 void apm_power_off();
+extern int apm_enabled;
 
 // opts.c
 

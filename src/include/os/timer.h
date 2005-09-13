@@ -65,6 +65,6 @@ krnlapi void add_timer(struct timer *timer);
 krnlapi int del_timer(struct timer *timer);
 krnlapi int mod_timer(struct timer *timer, unsigned int expires);
 
-krnlapi int sleep(unsigned int millisecs);
+krnlapi int msleep(unsigned int millisecs);
 
 #endif

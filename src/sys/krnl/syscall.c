@@ -1647,7 +1647,7 @@ static int sys_setprio(char *params)
   return rc;
 }
 
-static int sys_sleep(char *params)
+static int sys_msleep(char *params)
 {
   int millisecs;
   int rc;
@@ -1656,7 +1656,7 @@ static int sys_sleep(char *params)
 
   millisecs = *(int *) params;
 
-  rc = sleep(millisecs);
+  rc = msleep(millisecs);
 
   unlock_buffer(params, 4);
   return rc;
@@ -1689,15 +1689,17 @@ static int sys_time(char *params)
 static int sys_gettimeofday(char *params)
 {
   struct timeval *tv;
+  void *tzp;
 
-  if (lock_buffer(params, 4) < 0) return -EFAULT;
+  if (lock_buffer(params, 8) < 0) return -EFAULT;
 
   tv = *(struct timeval **) params;
+  tzp = *(void **) (params + 4);
 
   if (!tv) return -EINVAL;
   if (lock_buffer(tv, sizeof(struct timeval)) < 0)
   {
-    unlock_buffer(params, 4);
+    unlock_buffer(params, 8);
     return -EFAULT;
   }
 
@@ -1705,7 +1707,7 @@ static int sys_gettimeofday(char *params)
   tv->tv_usec = systemclock.tv_usec;
 
   unlock_buffer(tv, sizeof(struct timeval));
-  unlock_buffer(params, 4);
+  unlock_buffer(params, 8);
   
   return 0;
 }
@@ -3077,7 +3079,7 @@ struct syscall_entry syscalltab[] =
   {"getcontext", "%d,%p", sys_getcontext},
   {"getprio", "%d", sys_getprio},
   {"setprio", "%d,%d", sys_setprio},
-  {"sleep", "%d", sys_sleep},
+  {"msleep", "%d", sys_msleep},
   {"time", "", sys_time},
   {"gettimeofday", "%p", sys_gettimeofday},
   {"clock", "", sys_clock},

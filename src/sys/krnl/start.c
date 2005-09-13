@@ -88,7 +88,7 @@ COPYRIGHT "\n"
 #define ONPANIC_HALT      EXITOS_HALT
 #define ONPANIC_REBOOT    EXITOS_REBOOT
 #define ONPANIC_DEBUG     EXITOS_DEBUG
-#define ONPANIC_POWEROFF EXITOS_POWEROFF
+#define ONPANIC_POWEROFF  EXITOS_POWEROFF
 
 struct thread *mainthread;
 struct section *krnlcfg;
@@ -109,7 +109,7 @@ void stop(int mode)
   suspend_all_user_threads();
   umount_all();
   tcp_shutdown();
-  sleep(200);
+  msleep(200);
 
   switch (mode)
   {
@@ -118,8 +118,13 @@ void stop(int mode)
       break;
 
     case EXITOS_POWEROFF:
-      kprintf("kernel: power down...\n");
-      apm_power_off();
+      if (apm_enabled)
+      {
+        kprintf("kernel: power down...\n");
+        apm_power_off();
+      }
+      else
+        kprintf("kernel: power management not enabled, system stopped...\n");
       break;
 
     case EXITOS_REBOOT:
@@ -132,8 +137,11 @@ void stop(int mode)
       break;
   }
 
-  cli();
-  halt();
+  while (1)
+  {
+    cli();
+    halt();
+  }
 }
 
 void panic(char *msg)
@@ -370,9 +378,6 @@ void main(void *arg)
   if (!peb) panic("unable to allocate PEB");
   memset(peb, 0, PAGESIZE);
   peb->fast_syscalls_supported = (cpu.features & CPU_FEATURE_SEP) != 0;
-
-  // Initialize APM BIOS
-  init_apm();
 
   // Enumerate root host buses and units
   enum_host_bus();

@@ -198,7 +198,7 @@ int cmd_ping(int argc, char *argv[])
     int bwrote;
     struct icmphdr *icmphdr = (struct icmphdr *) &icmp_data;
 
-    sleep(100);
+    msleep(100);
     icmphdr->i_cksum = 0; 
     icmphdr->timestamp = clock(); 
     icmphdr->i_seq = seq_no++; 
@@ -236,7 +236,7 @@ int cmd_ping(int argc, char *argv[])
     }
 
     decode_resp(recvbuf, bread, &from, &stat); 
-    sleep(1000); 
+    msleep(1000); 
   } 
 
   printf("----%s PING Statistics----\n", hostname);

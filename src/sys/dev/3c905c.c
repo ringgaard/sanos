@@ -181,7 +181,7 @@ int execute_command_wait(struct nic *nic, int cmd, int param)
   for (i = 0; i < 200; i++)
   {
     if (!(_inpw(nic->iobase + STATUS) & INTSTATUS_CMD_IN_PROGRESS)) return 0;
-    sleep(10);
+    msleep(10);
   }
 
   kprintf(KERN_ERR "nic: command did not complete\n");
@@ -1027,7 +1027,7 @@ int nic_program_mii(struct nic *nic, int connector)
   {
     phy_control |= MII_CONTROL_100MB;
     nic_write_mii_phy(nic, MII_PHY_CONTROL, (unsigned short) phy_control);
-    sleep(600);
+    msleep(600);
     nic->linkspeed = 100;
     return 0;
   }
@@ -1036,14 +1036,14 @@ int nic_program_mii(struct nic *nic, int connector)
   {
     phy_control &= ~MII_CONTROL_100MB;
     nic_write_mii_phy(nic, MII_PHY_CONTROL, (unsigned short) phy_control);
-    sleep(600);
+    msleep(600);
     nic->linkspeed = 10;
     return 0;
   }
 
   phy_control &= ~MII_CONTROL_100MB;
   nic_write_mii_phy(nic, MII_PHY_CONTROL, (unsigned short) phy_control);
-  sleep(600);
+  msleep(600);
   nic->linkspeed = 10;
 
   return 0;
@@ -1195,7 +1195,7 @@ int nic_restart_transmitter(struct nic *nic)
 	kprintf(KERN_WARNING "nic: timeout waiting for transmitter to go quiet\n");
 	return -ETIMEOUT;
       }
-      sleep(10);
+      msleep(10);
     }
   }
 
@@ -1215,7 +1215,7 @@ int nic_restart_transmitter(struct nic *nic)
 	kprintf(KERN_WARNING "nic: timeout waiting for download engine to stop\n");
 	return -ETIMEOUT;
       }
-      sleep(10);
+      msleep(10);
     }
   }
 
@@ -1325,7 +1325,7 @@ int nic_configure_mii(struct nic *nic, unsigned short media_options)
 	kprintf(KERN_WARNING "nic: timeout waiting for auto-negotiation to finish\n");
 	return -ETIMEOUT;
       }
-      sleep(10);
+      msleep(10);
     }
   }
 
@@ -1480,7 +1480,7 @@ int nic_check_dc_converter(struct nic *nic, int enabled)
 	kprintf(KERN_ERR "nic: timeout waiting for dc converter to go %s\n", enabled ? "on" : "off");
 	return -ETIMEOUT;
       }
-      sleep(10);
+      msleep(10);
     }
   }
 
@@ -1828,7 +1828,7 @@ int nic_start_adapter(struct nic *nic)
   execute_command(nic, CMD_TX_ENABLE, 0);
 
   // Delay three seconds, only some switches need this
-  //sleep(3000);
+  //msleep(3000);
 
   nictrace("exit nic_start_adapter\n");
 

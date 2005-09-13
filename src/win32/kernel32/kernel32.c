@@ -1565,7 +1565,7 @@ VOID WINAPI GetSystemTime
   struct tm tm;
 
   TRACE("GetSystemTime");
-  gettimeofday(&tv);
+  gettimeofday(&tv, NULL);
   gmtime_r(&tv.tv_sec, &tm);
 
   lpSystemTime->wYear = tm.tm_year + 1900; 
@@ -1586,7 +1586,7 @@ VOID WINAPI GetSystemTimeAsFileTime
   struct timeval tv;
 
   TRACE("GetSystemTimeAsFileTime");
-  gettimeofday(&tv);
+  gettimeofday(&tv, NULL);
   *(unsigned __int64 *) lpSystemTimeAsFileTime = ((unsigned __int64) (tv.tv_sec) * 1000000 + (unsigned __int64) (tv.tv_usec)) * MICROTIMESCALE + EPOC;
 }
 
@@ -2416,7 +2416,7 @@ VOID WINAPI Sleep
 )
 {
   TRACEX("Sleep");
-  sleep(dwMilliseconds);
+  msleep(dwMilliseconds);
 }
 
 DWORD WINAPI SuspendThread

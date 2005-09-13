@@ -145,22 +145,18 @@ int netif_ioctl_list(void *data, size_t size)
       strcpy(ifcfg->name, netif->name);
 
       sin = (struct sockaddr_in *) &ifcfg->addr;
-      sin->sin_len = sizeof(struct sockaddr_in);
       sin->sin_family = AF_INET;
       sin->sin_addr.s_addr = netif->ipaddr.addr;
 
       sin = (struct sockaddr_in *) &ifcfg->gw;
-      sin->sin_len = sizeof(struct sockaddr_in);
       sin->sin_family = AF_INET;
       sin->sin_addr.s_addr = netif->gw.addr;
 
       sin = (struct sockaddr_in *) &ifcfg->netmask;
-      sin->sin_len = sizeof(struct sockaddr_in);
       sin->sin_family = AF_INET;
       sin->sin_addr.s_addr = netif->netmask.addr;
 
       sin = (struct sockaddr_in *) &ifcfg->broadcast;
-      sin->sin_len = sizeof(struct sockaddr_in);
       sin->sin_family = AF_INET;
       sin->sin_addr.s_addr = netif->broadcast.addr;
 

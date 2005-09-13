@@ -308,8 +308,8 @@ static int ne_probe(struct ne *ne)
   _outp(ne->asic_addr + NE_NOVELL_RESET, byte);
   _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STP);
 
-  //sleep(5000);
-  sleep(100);
+  //msleep(5000);
+  msleep(100);
 
   // Test for a generic DP8390 NIC
   byte = _inp(ne->nic_addr + NE_P0_CR);

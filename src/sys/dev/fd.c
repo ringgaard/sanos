@@ -292,7 +292,7 @@ static void fd_motor_on(struct fd *fd)
     fd->fdc->dor |= 0x10 << fd->drive;
     _outp(FDC_DOR, fd->fdc->dor);
     fd->motor_status = FD_MOTOR_ON;
-    sleep(FD_MOTOR_SPINUP_TIME);
+    msleep(FD_MOTOR_SPINUP_TIME);
     //kprintf("fd: motor spinned up\n");
   }
   else
@@ -415,7 +415,7 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
       //kprintf("fd: set curtrack to %d\n", fd->curtrack);
 
       // Let head settle for 15ms
-      sleep(15);
+      msleep(15);
     }
 
     // Program data rate (500K/s)

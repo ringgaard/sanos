@@ -91,12 +91,23 @@
 #define APM_DEVICE_NETWORK	0x0500
 #define APM_DEVICE_PCMCIA	0x0600
 #define APM_DEVICE_BATTERY	0x8000
-#define APM_DEVICE_OEM		0xe000
-#define APM_DEVICE_OLD_ALL	0xffff
-#define APM_DEVICE_CLASS	0x00ff
-#define APM_DEVICE_MASK		0xff00
+#define APM_DEVICE_OEM		0xE000
+#define APM_DEVICE_OLD_ALL	0xFFFF
+#define APM_DEVICE_CLASS	0x00FF
+#define APM_DEVICE_MASK		0xFF00
 
-static int apm_enabled = 0;
+//
+// APM BIOS Installation Check Flags
+//
+
+#define APM_16_BIT_SUPPORT	0x0001
+#define APM_32_BIT_SUPPORT	0x0002
+#define APM_IDLE_SLOWS_CLOCK	0x0004
+#define APM_BIOS_DISABLED      	0x0008
+#define APM_BIOS_DISENGAGED     0x0010
+
+int apm_enabled = 0;
+static unsigned long apm_conn_ver = 0;
 static struct fullptr apm_entrypoint;
 
 #pragma warning(disable: 4731) // C4731: frame pointer register 'ebp' modified by inline assembly code
@@ -203,18 +214,18 @@ static int apm_bios_call_simple(unsigned long func, unsigned long ebx_in, unsign
   return *eax_out & 0xFF;
 }
 
-int apm_driver_version(unsigned short *ver)
+int apm_driver_version(unsigned long *ver)
 {
   unsigned long eax;
   int rc;
 
   rc = apm_bios_call_simple(APM_FUNC_VERSION, 0, *ver, &eax);
   if (rc != 0) return (eax >> 8) & 0xFF;
-  *ver = (unsigned short) (eax & 0xFFFF);
+  *ver = (eax & 0xFFFF);
   return 0;
 }
 
-int apm_set_power_state(unsigned short device, unsigned short state)
+int apm_set_power_state(unsigned long device, unsigned long state)
 {
   unsigned long eax;
   int rc;
@@ -224,14 +235,23 @@ int apm_set_power_state(unsigned short device, unsigned short state)
   return 0;
 }
 
-int apm_set_system_power_state(unsigned short state)
+int apm_set_system_power_state(unsigned long state)
 {
   return apm_set_power_state(APM_DEVICE_ALL, state);
 }
 
 void apm_power_off()
 {
-  if (apm_enabled) apm_set_system_power_state(APM_STATE_OFF);
+  int rc;
+
+  if (apm_enabled) 
+  {
+    rc = apm_set_system_power_state(APM_STATE_OFF);
+    if (rc != 0) 
+    {
+      kprintf(KERN_ERR "apm: error %d in apm_set_system_power_state()\n", rc);
+    }
+  }
 }
 
 int apm_get_power_status(unsigned long *status, unsigned long *battery, unsigned long *life)
@@ -252,7 +272,17 @@ int apm_get_power_status(unsigned long *status, unsigned long *battery, unsigned
   return 0;
 }
 
-int apm_engage_power_management(unsigned short device, int enable)
+int apm_enable_power_management(unsigned long enable)
+{
+  unsigned long eax;
+  int rc;
+  
+  rc = apm_bios_call_simple(APM_FUNC_ENABLE_PM, apm_conn_ver > 0x0100 ? APM_DEVICE_ALL : APM_DEVICE_OLD_ALL, enable, &eax);
+  if (rc != 0) return (eax >> 8) & 0xFF;
+  return 0;
+}
+
+int apm_engage_power_management(unsigned long device, unsigned long enable)
 {
   unsigned long eax;
   int rc;
@@ -306,24 +336,56 @@ int apm_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-void init_apm()
+int __declspec(dllexport) apm(struct unit *unit, char *opts)
 {
   struct apmparams *apm = &syspage->bootparams.apm;
   int rc;
   unsigned long vaddr;
+  unsigned long cseg16len;
+  unsigned long cseg32len;
+  unsigned long dseglen;
+
+  int engage = get_num_option(opts, "engage", 2);
+  int enable = get_num_option(opts, "enable", 2);
 
   // Skip if no APM BIOS detected in ldrinit
-  if (apm->version == 0) return;
+  if (apm->version == 0) return 0;
+
+  cseg16len = apm->cseg16len;
+  cseg32len = apm->cseg32len;
+  dseglen = apm->dseglen;
+
+  switch (apm->version)
+  {
+    case 0x0100:
+      cseg16len = 0x10000;
+      cseg32len = 0x10000;
+      dseglen = 0x10000;
+      break;
+
+    case 0x0101:
+      cseg16len = cseg32len;
+      break;
+    
+    case 0x0102:
+    default:
+      if (cseg16len == 0) cseg16len = 0x10000;
+      if (cseg32len == 0) cseg32len = 0x10000;
+      if (dseglen == 0) dseglen = 0x10000;
+  }
+
+  //kprintf("apm: version 0x%x flags 0x%x entry %x\n", apm->version, apm->flags, apm->entry);
+  //kprintf("apm: cseg16 %x (%d bytes) cseg32 %x (%d bytes) dseg %x (%d bytes)\n", apm->cseg16, cseg16len, apm->cseg32, cseg32len, apm->dseg, dseglen);
 
   // Setup APM selectors in GDT
-  vaddr = (unsigned long) iomap(apm->cseg32 << 4, apm->cseg32len + 1);
-  seginit(&syspage->gdt[GDT_APMCS],  vaddr, apm->cseg32len + 1, D_CODE | D_DPL0 | D_READ | D_PRESENT, D_BIG);
+  vaddr = (unsigned long) iomap(apm->cseg32 << 4, cseg32len);
+  seginit(&syspage->gdt[GDT_APMCS],  vaddr, cseg32len, D_CODE | D_DPL0 | D_READ | D_PRESENT, D_BIG);
 
-  vaddr = (unsigned long) iomap(apm->cseg16 << 4, apm->cseg16len + 1);
-  seginit(&syspage->gdt[GDT_APMCS16], vaddr, apm->cseg16len + 1, D_CODE | D_DPL0 | D_READ | D_PRESENT, 0);
+  vaddr = (unsigned long) iomap(apm->cseg16 << 4, cseg16len);
+  seginit(&syspage->gdt[GDT_APMCS16], vaddr, cseg16len, D_CODE | D_DPL0 | D_READ | D_PRESENT, 0);
 
-  vaddr = (unsigned long) iomap(apm->dseg << 4, apm->dseglen + 1);
-  seginit(&syspage->gdt[GDT_APMDS], vaddr, apm->dseglen + 1, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, D_BIG);
+  vaddr = (unsigned long) iomap(apm->dseg << 4, dseglen);
+  seginit(&syspage->gdt[GDT_APMDS], vaddr, dseglen, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, D_BIG);
   
   seginit(&syspage->gdt[GDT_APM40], (unsigned long) iomap(0x400, 4096), 4096 - 0x40 * 16, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, D_BIG);
 
@@ -331,13 +393,42 @@ void init_apm()
   apm_entrypoint.segment = SEL_APMCS;
   apm_entrypoint.offset = apm->entry;
 
-  rc = apm_engage_power_management(APM_DEVICE_ALL, 1);
-  if (rc != 0) 
+  // Initialize APM
+  apm_conn_ver = apm->version;
+  if (apm_conn_ver > 0x0100)
   {
-    kprintf(KERN_ERR "apm: error %d in apm_engage_power_management()\n", rc);
-    return;
+    if (apm_conn_ver > 0x0102) apm_conn_ver = 0x0102;
+    rc = apm_driver_version(&apm_conn_ver);
+    if (rc != 0)
+    {
+      //kprintf(KERN_DEBUG "apm: error %d in apm_driver_version()\n", rc);
+      apm_conn_ver = 0x0100;
+    }
+  }
+
+  //kprintf(KERN_DEBUG "apm: connection version %04x\n", apm_conn_ver);
+
+  if (enable == 1 || enable == 2 && (apm->flags & APM_BIOS_DISABLED) != 0) 
+  {
+    rc = apm_enable_power_management(1);
+    if (rc != 0) 
+    {
+      kprintf(KERN_ERR "apm: error %d in apm_enable_power_management()\n", rc);
+      return -EIO;
+    }
+  }
+
+  if (engage == 1 || engage == 2 && (apm->flags & APM_BIOS_DISENGAGED) != 0) 
+  {
+    rc = apm_engage_power_management(APM_DEVICE_ALL, 1);
+    if (rc != 0) 
+    {
+      kprintf(KERN_ERR "apm: error %d in apm_engage_power_management()\n", rc);
+      return -EIO;
+    }
   }
 
   apm_enabled = 1;
   register_proc_inode("apm", apm_proc, NULL);
+  return 0;
 }
