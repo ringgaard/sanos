@@ -622,6 +622,11 @@ $(SRC)/sys/osldr/video.c: \
 
 # utils
 
+$(SRC)/utils/edit/edit.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/string.h
+
 $(SRC)/utils/fdisk/fdisk.c: \
   $(SRC)/include/os.h \
   $(SRC)/include/sys/types.h \

@@ -11,6 +11,7 @@ build\                         Build files for sanos
   bootdisk.lst                 Control file for mkdfs to make bootdisk.img
   bootdiskdbg.lst              Control file for mkdfs to make debug bootdisk.img
   eepro100.vcproj              Project file for Intel EtherExpress Pro/100 network driver (eepro100.sys)
+  edit.vcproj                  Project file for text editor (edit.txt)
   exclrel.lst                  List of files excluded from release build
   fdisk.vcproj                 Project file for partition utility (fdisk.exe)
   httpd.sln                    Solution file file standalone build of HTTP server (httpd.dll)
@@ -370,6 +371,8 @@ src\                           Souce files
       unzip.c                  Decompression routines
       video.c                  Video functions
   utils\                       Utility application source files
+    edit\                      Text editor
+      edit.c                   Text editor
     fdisk\                     Disk partitioning utility source files
       fdisk.c                  Disk partitioning utility
     httpd\                     HTTP server source files

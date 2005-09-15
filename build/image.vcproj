@@ -96,6 +96,9 @@
 			RelativePath=".\os.ini">
 		</File>
 		<File
+			RelativePath="sanos.dep">
+		</File>
+		<File
 			RelativePath=".\setup.ini">
 		</File>
 	</Files>

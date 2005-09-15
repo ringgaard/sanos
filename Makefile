@@ -60,6 +60,7 @@ dirs:
     -@if not exist $(OBJ)\advapi32 mkdir $(OBJ)\advapi32
     -@if not exist $(OBJ)\boot mkdir $(OBJ)\boot
     -@if not exist $(OBJ)\eepro100 mkdir $(OBJ)\eepro100
+    -@if not exist $(OBJ)\edit mkdir $(OBJ)\edit
     -@if not exist $(OBJ)\fdisk mkdir $(OBJ)\fdisk
     -@if not exist $(OBJ)\httpd mkdir $(OBJ)\httpd
     -@if not exist $(OBJ)\jinit mkdir $(OBJ)\jinit
@@ -751,7 +752,7 @@ $(BIN)/msvcrt.dll: \
 # utils
 #
 
-utils: dirs $(BIN)/sh.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/jinit.exe $(BIN)/httpd.dll
+utils: dirs $(BIN)/sh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/jinit.exe $(BIN)/httpd.dll
 
 $(BIN)/sh.exe: \
   $(SRC)/utils/sh/sh.c \
@@ -759,6 +760,12 @@ $(BIN)/sh.exe: \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/sh/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(BIN)/edit.exe: \
+  $(SRC)/utils/edit/edit.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/fdisk/ $** /link /NODEFAULTLIB /FIXED:NO
 
 $(BIN)/fdisk.exe: \
   $(SRC)/utils/fdisk/fdisk.c \
@@ -821,6 +828,7 @@ $(IMG)/sanos.iso: dirs sanos tools $(BUILD)/bootcd.lst
     copy $(BIN)\sh.exe       $(IMG)\usr\bin\sh.exe
     copy $(BIN)\httpd.dll    $(IMG)\usr\bin\httpd.dll
     copy $(BIN)\setup.exe    $(IMG)\usr\bin\setup.exe
+    copy $(BIN)\edit.exe     $(IMG)\usr\bin\edit.exe
     copy $(BIN)\fdisk.exe    $(IMG)\usr\bin\fdisk.exe
     copy $(BIN)\jinit.exe    $(IMG)\usr\bin\jinit.exe
     copy $(BIN)\msvcrt.dll   $(IMG)\usr\bin\msvcrt.dll

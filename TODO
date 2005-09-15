@@ -674,3 +674,5 @@ CHANGES
   has been added to unistd.h.
 
 - Added sys/time.h header file. Also added tzp paramter to gettimeofday() for POSIX compliance.
+
+- New simple text editor utility (edit.exe) added.
