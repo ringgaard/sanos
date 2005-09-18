@@ -274,7 +274,7 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
   $(SRC)/sys/os/thread.c \
   $(SRC)/sys/os/sysapi.c \
   $(SRC)/sys/os/syslog.c \
-  $(SRC)/lib/syserr.c \
+  $(SRC)/sys/os/syserr.c \
   $(SRC)/sys/os/sntp.c \
   $(SRC)/sys/os/signal.c \
   $(SRC)/sys/os/resolv.c \
