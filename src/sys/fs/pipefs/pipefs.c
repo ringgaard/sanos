@@ -240,17 +240,14 @@ int pipefs_read(struct file *filp, void *data, size_t size, off64_t pos)
     }
   }
 
-  if (pipe->peer->waithead == NULL)
-  {
-    clear_io_event(&filp->iob, IOEVT_READ);
-    set_io_event(&pipe->peer->filp->iob, IOEVT_WRITE);
-  }
+  if (pipe->peer->waithead == NULL) clear_io_event(&filp->iob, IOEVT_READ);
 
   if (count == 0)
   {
     struct pipereq req;
 
-    if (filp->mode & O_NONBLOCK) return -EAGAIN;
+    if (filp->flags & O_NONBLOCK) return -EAGAIN;
+    set_io_event(&pipe->peer->filp->iob, IOEVT_WRITE);
 
     req.pipe = pipe;
     req.thread = self();
@@ -280,6 +277,7 @@ int pipefs_write(struct file *filp, void *data, size_t size, off64_t pos)
   char *p;
   size_t left;
 
+
   if (size == 0) return 0;
   if (!pipe->peer) return -EPIPE;
 
@@ -303,17 +301,14 @@ int pipefs_write(struct file *filp, void *data, size_t size, off64_t pos)
     mark_thread_ready(req->thread, 1, 2);
   }
 
-  if (pipe->peer->waithead == NULL)
-  {
-    clear_io_event(&filp->iob, IOEVT_WRITE);
-    set_io_event(&pipe->peer->filp->iob, IOEVT_READ);
-  }
+  if (pipe->peer->waithead == NULL) clear_io_event(&filp->iob, IOEVT_WRITE);
 
   if (left > 0)
   {
     struct pipereq req;
 
-    if (filp->mode & O_NONBLOCK) return size - left;
+    if (filp->flags & O_NONBLOCK) return size - left;
+    set_io_event(&pipe->peer->filp->iob, IOEVT_READ);
 
     req.pipe = pipe;
     req.thread = self();

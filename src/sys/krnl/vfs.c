@@ -772,7 +772,7 @@ int write(struct file *filp, void *data, size_t size)
 
   if (!filp) return -EINVAL;
   if (!data && size > 0) return -EINVAL;
-  if (filp->flags & O_RDONLY) return -EACCES;
+  if ((filp->flags & (O_WRONLY | O_RDWR)) == 0) return -EACCES;
 
   if (!filp->fs->ops->write) return -ENOSYS;
   if (lock_fs(filp->fs, FSOP_WRITE) < 0) return -ETIMEOUT;
@@ -793,7 +793,7 @@ int pwrite(struct file *filp, void *data, size_t size, off64_t offset)
 
   if (!filp) return -EINVAL;
   if (!data && size > 0 || offset < 0) return -EINVAL;
-  if (filp->flags & O_RDONLY) return -EACCES;
+  if ((filp->flags & (O_WRONLY | O_RDWR)) == 0) return -EACCES;
   if (filp->flags & O_TEXT) return -ENXIO;
 
   if (!filp->fs->ops->write) return -ENOSYS;

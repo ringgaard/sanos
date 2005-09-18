@@ -47,6 +47,7 @@ unsigned long logmask = LOG_UPTO(LOG_DEBUG);
 
 static handle_t syslogfd = -1;
 static int syslogsock = -1;
+static int syslogcons = -1;
 
 void openlog(char *ident, int option, int facility)
 {
@@ -129,7 +130,7 @@ static void add_to_syslog(int pri, char *msg, int msglen, char *ident, int id, i
   iov[3].iov_base = "\n";
   iov[3].iov_len = 1;
 
-  if (display) writev(1, iov + 1, 3);
+  if (display) writev(syslogcons, iov + 1, 3);
   if (syslogfd >= 0) writev(syslogfd, iov, 4);
   if (syslogsock >= 0) writev(syslogsock, iov, 3);
 }
@@ -242,6 +243,7 @@ void start_syslog()
   char *loghost;
 
   logmask = LOG_UPTO(get_numeric_property(osconfig, "os", "loglevel", LOG_DEBUG));
+  syslogcons = fderr;
 
   logfn = get_property(osconfig, "os", "logfile", NULL);
   if (logfn != NULL) 

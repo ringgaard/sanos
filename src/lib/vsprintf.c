@@ -430,7 +430,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
   int precision;	// Min. # of digits for integers; max number of chars for from string
   int qualifier;	// 'h', 'l', or 'L' for integer fields
 
-  for (str = buf ; *fmt ; fmt++)
+  for (str = buf; *fmt; fmt++)
   {
     if (*fmt != '%')
     {

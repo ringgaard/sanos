@@ -46,6 +46,8 @@ static long holdrand = 1L;
 
 int _fltused = 0x9875;
 
+int _sys_nerr = 90;
+
 void _initterm(_PVFV *begin, _PVFV *end)
 {
   TRACE("_initterm");
@@ -312,6 +314,11 @@ int *__errno()
 {
   TRACE("_errno");
   return &(gettib()->errnum);
+}
+
+char *_strerror(int errnum)
+{
+  return strerror(errnum);
 }
 
 unsigned long _beginthreadex(void *security, unsigned stack_size, unsigned (__stdcall *start_address)(void * ), void *arglist, unsigned initflag, unsigned *thrdaddr)

@@ -38,6 +38,10 @@
 #ifndef STRING_H
 #define STRING_H
 
+#ifndef osapi
+#define osapi __declspec(dllimport)
+#endif
+
 #ifndef _SIZE_T_DEFINED
 #define _SIZE_T_DEFINED
 typedef unsigned int size_t;
@@ -84,7 +88,7 @@ char *strrev(char *s);
 char *strtok(char *string, const char *control);
 char *strtok_r(char *string, const char *control, char **lasts);
 
-char *strerror(int errnum);
+osapi char *strerror(int errnum);
 
 void *memmove(void *dst, const void *src, size_t count);
 void *memchr(const void *buf, int ch, size_t count);

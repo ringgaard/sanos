@@ -1064,6 +1064,13 @@ struct peb
 
 #define CRTBASESIZE    (8 + 3 * 32 + 512)
 
+struct term
+{
+  int type;
+  int cols;
+  int lines;
+};
+
 struct job
 {
   int threadcnt;        // Number of threads in job
@@ -1078,7 +1085,7 @@ struct job
   handle_t in;          // Standard input device
   handle_t out;         // Standard output device
   handle_t err;         // Standard error device
-  int termtype;         // Terminal type
+  struct term *term;    // Terminal type
 
   char *ident;          // Job identifier for syslog
   int facility;         // Default facility for syslog
@@ -1266,26 +1273,21 @@ osapi int close(handle_t h);
 osapi int fsync(handle_t f);
 osapi handle_t dup(handle_t h);
 osapi handle_t dup2(handle_t h1, handle_t h2);
-
 osapi int read(handle_t f, void *data, size_t size);
 osapi int write(handle_t f, const void *data, size_t size);
 osapi int pread(handle_t f, void *data, size_t size, off64_t offset);
 osapi int pwrite(handle_t f, const void *data, size_t size, off64_t offset);
 osapi int ioctl(handle_t f, int cmd, const void *data, size_t size);
-
 osapi int readv(handle_t f, const struct iovec *iov, int count);
 osapi int writev(handle_t f, const struct iovec *iov, int count);
-
 osapi loff_t tell(handle_t f);
 osapi off64_t tell64(handle_t f);
 osapi loff_t lseek(handle_t f, loff_t offset, int origin);
 osapi off64_t lseek64(handle_t f, off64_t offset, int origin);
 osapi int ftruncate(handle_t f, loff_t size);
 osapi int ftruncate64(handle_t f, off64_t size);
-
 osapi int futime(handle_t f, struct utimbuf *times);
 osapi int utime(const char *name, struct utimbuf *times);
-
 osapi int fstat(handle_t f, struct stat *buffer);
 osapi int fstat64(handle_t f, struct stat64 *buffer);
 osapi int stat(const char *name, struct stat *buffer);
@@ -1344,6 +1346,7 @@ osapi int uname(struct utsname *buf);
 osapi handle_t self();
 osapi void exitos(int mode);
 osapi void dbgbreak();
+osapi char *strerror(int errnum);
 
 osapi handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize, void *arg, int flags, struct tib **ptib);
 osapi int suspend(handle_t thread);
@@ -1446,9 +1449,6 @@ osapi struct servent *getservbyport(int port, const char *proto);
 
 osapi extern struct section *osconfig;
 osapi extern struct peb *peb;
-
-//osapi extern unsigned long loglevel;
-//osapi extern handle_t syslogfd;
 
 #ifndef errno
 osapi int *_errno();

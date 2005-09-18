@@ -47,7 +47,7 @@ struct critsect iob_lock;
 #define stderr (&_iob[2])
 
 int vsprintf(char *buf, const char *fmt, va_list args);
-int readline(int f, char *buf, int size);
+int readline(char *buf, int size);
 
 static FILE *alloc_stream()
 {
@@ -112,6 +112,7 @@ int _read(int handle, void *buffer, unsigned int count)
 {
   TRACE("_read");
 
+#if 0
   if (handle == 0) 
   {
     char *buf;
@@ -122,7 +123,7 @@ int _read(int handle, void *buffer, unsigned int count)
     {
       int len;
 
-      len = readline(handle, stdinbuf, sizeof(stdinbuf) - 3);
+      len = readline(stdinbuf, sizeof(stdinbuf) - 3);
       if (len < 0) return -1;
 
       stdinbuf[len++] = '\r';
@@ -145,6 +146,9 @@ int _read(int handle, void *buffer, unsigned int count)
   {
     return read(handle, buffer, count);
   }
+#else
+  return read(handle, buffer, count);
+#endif
 }
 
 int _write(int handle, const void *buffer, unsigned int count)

@@ -18,6 +18,7 @@
 /bin/os.dll       bin\os.dll
 /bin/sh.exe       bin\sh.exe
 /bin/httpd.dll    bin\httpd.dll
+/bin/telnetd.exe  bin\telnetd.exe
 /bin/setup.exe    bin\setup.exe
 /bin/fdisk.exe    bin\fdisk.exe
 /bin/edit.exe     bin\edit.exe
@@ -48,6 +49,7 @@
 
 /etc/krnl.ini     ..\build\krnl.ini
 /etc/os.ini       ..\build\os.ini
+/etc/init         ..\build\init
 
 ; Setup files for hard disk install
 

@@ -72,7 +72,7 @@ EXPORTS
   _strdup
   _stricmp=stricmp
   _strnicmp=strnicmp
-  _sys_nerr=sys_nerr
+  _sys_nerr
   _time
   _unlink
   _vsnprintf
@@ -148,7 +148,7 @@ EXPORTS
   strchr
   strcmp
   strcspn
-  strerror
+  strerror = _strerror
   strlen
   strncmp
   strncpy

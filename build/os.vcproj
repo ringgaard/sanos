@@ -161,6 +161,21 @@
 				RelativePath="..\src\sys\os\sysapi.c">
 			</File>
 			<File
+				RelativePath="..\src\sys\os\syserr.c">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\sys\os\syslog.c">
 			</File>
 			<File
@@ -299,9 +314,6 @@
 			</File>
 			<File
 				RelativePath="..\src\lib\strtol.c">
-			</File>
-			<File
-				RelativePath="..\src\lib\syserr.c">
 			</File>
 			<File
 				RelativePath="..\src\lib\time.c">

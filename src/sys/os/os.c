@@ -54,8 +54,10 @@ struct section *osconfig;
 struct moddb usermods;
 struct peb *peb;
 
+struct term console = {TERM_CONSOLE, 80, 25};
+
 void init_sntpd();
-void init_threads(hmodule_t hmod);
+void init_threads(hmodule_t hmod, struct term *initterm);
 
 void start_syslog();
 void stop_syslog();
@@ -480,6 +482,8 @@ hmodule_t getmodule(const char *name)
 {
   hmodule_t hmod;
 
+  if (name == NULL) return gettib()->job->hmod;
+
   enter(&mod_lock);
   hmod = get_module_handle(&usermods, (char *) name);
   leave(&mod_lock);
@@ -862,7 +866,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   mkcs(&mod_lock);
 
   // Initialize initial job
-  init_threads(hmod);
+  init_threads(hmod, &console);
 
   // Load configuration file
   osconfig = read_properties("/etc/os.ini");

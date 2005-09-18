@@ -34,6 +34,42 @@
 #include <os.h>
 #include <os/pdir.h>
 
+char *signame[NSIG] =
+{
+  NULL,
+  NULL,
+  "interrupt",
+  NULL,
+  "illegal instruction",
+  NULL,
+  NULL,
+  NULL,
+  "floating point exception",
+  NULL,
+  NULL,
+  "segment violation",
+  NULL,
+  NULL,
+  NULL,
+  "term",
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  "break",
+  "abort",
+  "bus error",
+  "debug trap",
+  "guard trap",
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL
+};
+
 sighandler_t sighandlers[NSIG];
 
 void sigexit(struct siginfo *info, int action)
@@ -75,7 +111,10 @@ int sendsig(int signum, struct siginfo *info)
     if (peb->debug)
       dbgbreak();
     else
+    {
+      syslog(LOG_ERR, "terminating with signal %d (%s)", signum, signame[signum] ? signame[signum] : "unknown");
       exit(signum);
+    }
   }
   else if (handler != SIG_IGN)
     handler(signum);

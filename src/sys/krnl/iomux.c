@@ -33,6 +33,35 @@
 
 #include <os/krnl.h>
 
+static void dump_iomux(struct iomux *iomux)
+{
+  struct ioobject *iob;
+
+  kprintf("iomux %c", iomux->object.signaled ? '+' : '-');
+  if (iomux->ready_head)
+  {
+    kprintf(" r:");
+    iob = iomux->ready_head;
+    while (iob)
+    {
+      kprintf("%d(%x,%x) ", ((((unsigned long) iob) >> 2) & 0xFF), iob->events_monitored, iob->events_signaled);
+      iob = iob->next;
+    }
+  }
+
+  if (iomux->waiting_head)
+  {
+    kprintf(" w:");
+    iob = iomux->waiting_head;
+    while (iob)
+    {
+      kprintf("%d(%x,%x) ", ((((unsigned long) iob) >> 2) & 0xFF), iob->events_monitored, iob->events_signaled);
+      iob = iob->next;
+    }
+  }
+  kprintf("\n");
+}
+
 static void release_waiting_threads(struct iomux *iomux)
 {
   struct waitblock *wb;
@@ -219,8 +248,8 @@ void set_io_event(struct ioobject *iob, int events)
     iomux->ready_tail = iob;
     if (!iomux->ready_head) iomux->ready_head = iob;
 
-    // Signal object
-    iob->object.signaled = 1;
+    // Signal iomux
+    iomux->object.signaled = 1;
 
     // Try to dispatch ready objects to waiting threads
     release_waiting_threads(iomux);

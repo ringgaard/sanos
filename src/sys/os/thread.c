@@ -42,7 +42,7 @@
 
 struct critsect job_lock;
 
-void init_threads(hmodule_t hmod)
+void init_threads(hmodule_t hmod, struct term *initterm)
 {
   struct tib *tib = gettib();
   struct job *job;
@@ -58,7 +58,7 @@ void init_threads(hmodule_t hmod)
   job->in = 0;
   job->out = 1;
   job->err = 2;
-  job->termtype = TERM_CONSOLE;
+  job->term = initterm;
   job->hmod = hmod;
   job->cmdline = NULL;
   job->facility = LOG_DAEMON;
@@ -105,14 +105,14 @@ static struct job *mkjob(struct job *parent, int detached)
 
   if (detached)
   {
-    job->in = job->out = job->err = -EBADF;
+    job->in = job->out = job->err = NOHANDLE;
   }
   else
   {
     job->in = dup(parent->in);
     job->out = dup(parent->out);
     job->err = dup(parent->err);
-    job->termtype = parent->termtype;
+    job->term = parent->term;
   }
 
   job->terminated = mkevent(1, 0);

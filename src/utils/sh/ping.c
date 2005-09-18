@@ -221,6 +221,8 @@ int cmd_ping(int argc, char *argv[])
       fprintf(stdout, "Wrote %d bytes\n", bwrote); 
     }
 
+    fflush(stdout);
+
     stat.ntransmitted++;
 
     bread = recvfrom(sockraw ,recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen); 

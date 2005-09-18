@@ -248,9 +248,6 @@
 				RelativePath="..\src\lib\qsort.c">
 			</File>
 			<File
-				RelativePath="..\src\lib\readline.c">
-			</File>
-			<File
 				RelativePath="..\src\lib\setjmp.c">
 			</File>
 			<File
@@ -261,9 +258,6 @@
 			</File>
 			<File
 				RelativePath="..\src\lib\strtol.c">
-			</File>
-			<File
-				RelativePath="..\src\lib\syserr.c">
 			</File>
 			<File
 				RelativePath="..\src\lib\time.c">

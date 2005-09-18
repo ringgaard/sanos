@@ -76,6 +76,7 @@ dirs:
     -@if not exist $(OBJ)\setup mkdir $(OBJ)\setup
     -@if not exist $(OBJ)\sh mkdir $(OBJ)\sh
     -@if not exist $(OBJ)\sis900 mkdir $(OBJ)\sis900
+    -@if not exist $(OBJ)\telnetd mkdir $(OBJ)\telnetd
     -@if not exist $(OBJ)\user32 mkdir $(OBJ)\user32
     -@if not exist $(OBJ)\winmm mkdir $(OBJ)\winmm
     -@if not exist $(OBJ)\wsock32 mkdir $(OBJ)\wsock32
@@ -273,6 +274,7 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
   $(SRC)/sys/os/thread.c \
   $(SRC)/sys/os/sysapi.c \
   $(SRC)/sys/os/syslog.c \
+  $(SRC)/lib/syserr.c \
   $(SRC)/sys/os/sntp.c \
   $(SRC)/sys/os/signal.c \
   $(SRC)/sys/os/resolv.c \
@@ -281,7 +283,6 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
   $(SRC)/sys/os/heap.c \
   $(SRC)/sys/os/critsect.c \
   $(SRC)/lib/vsprintf.c \
-  $(SRC)/lib/syserr.c \
   $(SRC)/lib/strtol.c \
   $(SRC)/lib/string.c \
   $(SRC)/lib/stdlib.c \
@@ -483,9 +484,6 @@ $(OBJ)/libc/xtoa.obj: $(SRC)/lib/xtoa.c
 $(OBJ)/libc/time.obj: $(SRC)/lib/time.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
-$(OBJ)/libc/syserr.obj: $(SRC)/lib/syserr.c
-    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
-
 $(OBJ)/libc/strtol.obj: $(SRC)/lib/strtol.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
@@ -594,7 +592,6 @@ $(LIBS)/libc.lib: \
   $(OBJ)/libc/barrier.obj \
   $(OBJ)/libc/xtoa.obj \
   $(OBJ)/libc/time.obj \
-  $(OBJ)/libc/syserr.obj \
   $(OBJ)/libc/strtol.obj \
   $(OBJ)/libc/strtod.obj \
   $(OBJ)/libc/string.obj \
@@ -728,7 +725,6 @@ $(BIN)/msvcrt.dll: \
   $(SRC)/lib/new.cpp \
   $(SRC)/lib/vsprintf.c \
   $(SRC)/lib/time.c \
-  $(SRC)/lib/syserr.c \
   $(SRC)/lib/strtol.c \
   $(SRC)/lib/string.c \
   $(SRC)/lib/strftime.c \
@@ -738,7 +734,6 @@ $(BIN)/msvcrt.dll: \
   $(SRC)/lib/fcvt.c \
   $(SRC)/lib/ctype.c \
   $(SRC)/lib/bsearch.c \
-  $(SRC)/lib/readline.c \
   $(OBJ)/msvcrt/modf.obj \
   $(OBJ)/msvcrt/ftol.obj \
   $(OBJ)/msvcrt/fmod.obj \
@@ -752,7 +747,7 @@ $(BIN)/msvcrt.dll: \
 # utils
 #
 
-utils: dirs $(BIN)/sh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/jinit.exe $(BIN)/httpd.dll
+utils: dirs $(BIN)/sh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/jinit.exe $(BIN)/telnetd.exe $(BIN)/httpd.dll
 
 $(BIN)/sh.exe: \
   $(SRC)/utils/sh/sh.c \
@@ -784,6 +779,12 @@ $(BIN)/jinit.exe: \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/jinit/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(BIN)/telnetd.exe: \
+  $(SRC)/utils/telnetd/telnetd.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/fdisk/ $** /link /NODEFAULTLIB /FIXED:NO
 
 $(OBJ)/httpd/httpd.res: $(SRC)/utils/httpd/httpd.rc
   $(RC) /d "NDEBUG" /l 0x406 /fo$@ $**

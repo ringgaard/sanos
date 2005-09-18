@@ -117,7 +117,7 @@ char *get_option(char *opts, char *name, char *buffer, int size, char *defval);
 int get_num_option(char *opts, char *name, int defval);
 
 void add_to_history(char *line);
-int readline(int f, char *buf, int size);
+int readline(char *buf, int size);
 
 void srandom(unsigned long x);
 void srandomdev();

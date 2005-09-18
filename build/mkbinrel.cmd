@@ -5,6 +5,7 @@ if not exist %1\tools mkdir %1\tools
 
 copy README %1
 copy COPYING %1
+copy CHANGES %1
 
 copy build\mkbootdisk.cmd %1\build
 copy build\bootdisk.lst %1\build

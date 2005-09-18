@@ -35,9 +35,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define COLS 80
-#define LINES 24
-
 #define MINEXTEND 32768
 
 //
@@ -101,6 +98,9 @@ struct editor
   int minihelp;             // Flag to control mini help in status line
   int newfile;              // File is a new file
 
+  int cols;
+  int lines;
+  char *linebuf;
   char filename[MAXPATH];
 };
 
@@ -182,6 +182,7 @@ err:
 void delete_editor(struct editor *ed)
 {
   if (ed->start) free(ed->start);
+  if (ed->linebuf) free(ed->linebuf);
 }
 
 void move_gap(struct editor *ed, int pos, int minsize)
@@ -404,8 +405,8 @@ int getkey()
     case 0x08: return KEY_BACKSPACE;
     case 0x09: return KEY_TAB;
 #ifdef SANOS
-    case 0x0D: return gettib()->job->termtype == TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
-    case 0x0A: return gettib()->job->termtype != TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
+    case 0x0D: return gettib()->job->term->type == TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
+    case 0x0A: return gettib()->job->term->type != TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
 #else
     case 0x0D: return KEY_ENTER;
 #endif
@@ -452,7 +453,7 @@ int getkey()
       }
       break;
 
-    case 0x7F: return KEY_DEL;
+    case 0x7F: return KEY_BACKSPACE;
 
     default: return ch;
   }
@@ -494,9 +495,9 @@ void gotoxy(int col, int line)
 // Display functions
 //
 
-void display_message(char *msg)
+void display_message(struct editor *ed, char *msg)
 {
-  gotoxy(0, LINES);
+  gotoxy(0, ed->lines);
   outstr("\033[1m");
   outstr(msg);
   outstr("\033[K\033[0m");
@@ -507,7 +508,7 @@ void draw_full_statusline(struct editor *ed)
 {
   char buf[128];
 
-  gotoxy(0, LINES);
+  gotoxy(0, ed->lines);
   if (ed->minihelp)
   {
     sprintf(buf, "\033[1m%-44.44s Ctrl-S=Save Ctrl-Q=Quit %s\033[K\033[0m", ed->filename, ed->newfile ? "(NEW)" : "");
@@ -522,38 +523,36 @@ void draw_statusline(struct editor *ed)
 {
   char buf[128];
 
-  gotoxy(44, LINES);
+  gotoxy(44, ed->lines);
   sprintf(buf, "\033[1m%c Ln %-6d Col %-4d Pos %-10d\033[K\033[0m", ed->dirty ? '*' : ' ', ed->line + 1, ed->col + 1, ed->linepos + ed->col + 1);
   outstr(buf);
 }
 
 void update_line(struct editor *ed, int col)
 {
-  unsigned char buf[COLS];
   int len;
 
-  len = copy_line(ed, buf, ed->linepos, ed->margin + col, COLS);
+  len = copy_line(ed, ed->linebuf, ed->linepos, ed->margin + col, ed->cols);
   gotoxy(col, ed->line - ed->topline);
-  outbuf(buf, len);
-  if (len + col < COLS) outstr("\033[K");
+  outbuf(ed->linebuf, len);
+  if (len + col < ed->cols) outstr("\033[K");
 }
 
 void draw_screen(struct editor *ed)
 {
-  unsigned char buf[COLS];
   int pos;
   int i;
 
   clear_screen();
   pos = ed->toppos;
-  for (i = 0; i < LINES; i++)
+  for (i = 0; i < ed->lines; i++)
   {
     int len;
 
     if (pos < 0) break;
-    len = copy_line(ed, buf, pos, ed->margin, COLS);
-    outbuf(buf, len);
-    if (len < COLS) outstr("\r\n");
+    len = copy_line(ed, ed->linebuf, pos, ed->margin, ed->cols);
+    outbuf(ed->linebuf, len);
+    if (len < ed->cols) outstr("\r\n");
     pos = next_line(ed, pos);
   }
 }
@@ -580,7 +579,7 @@ void adjust(struct editor *ed)
     ed->refresh = 1;
   }
 
-  while (ed->col - ed->margin >= COLS) 
+  while (ed->col - ed->margin >= ed->cols) 
   {
     ed->margin += 4;
     ed->refresh = 1;
@@ -612,7 +611,7 @@ void down(struct editor *ed)
   ed->linepos = newpos;
   ed->line++;
 
-  if (ed->line >= ed->topline + LINES)
+  if (ed->line >= ed->topline + ed->lines)
   {
     ed->toppos = next_line(ed, ed->toppos);
     ed->topline++;
@@ -659,7 +658,7 @@ void right(struct editor *ed)
     ed->linepos = newpos;
     ed->line++;
 
-    if (ed->line >= ed->topline + LINES)
+    if (ed->line >= ed->topline + ed->lines)
     {
       ed->toppos = next_line(ed, ed->toppos);
       ed->topline++;
@@ -687,14 +686,14 @@ void pageup(struct editor *ed)
 {
   int i;
 
-  if (ed->line < LINES)
+  if (ed->line < ed->lines)
   {
     ed->linepos = ed->toppos = 0;
     ed->line = ed->topline = 0;
   }
   else
   {
-    for (i = 0; i < LINES; i++)
+    for (i = 0; i < ed->lines; i++)
     {
       int newpos = prev_line(ed, ed->linepos);
       if (newpos < 0) return;
@@ -718,7 +717,7 @@ void pagedown(struct editor *ed)
 {
   int i;
 
-  for (i = 0; i < LINES; i++)
+  for (i = 0; i < ed->lines; i++)
   {
     int newpos = next_line(ed, ed->linepos);
     if (newpos < 0) break;
@@ -756,7 +755,7 @@ void newline(struct editor *ed)
   ed->lastcol = ed->col;
   ed->refresh = 1;
 
-  if (ed->line >= ed->topline + LINES)
+  if (ed->line >= ed->topline + ed->lines)
   {
     ed->toppos = next_line(ed, ed->toppos);
     ed->topline++;
@@ -831,7 +830,7 @@ void save(struct editor *ed)
     char msg[128];
 
     sprintf(msg, "Error %d saving document (%s)", errno, strerror(errno));
-    display_message(msg);
+    display_message(ed, msg);
     sleep(5);
   }
 
@@ -843,7 +842,7 @@ int quit(struct editor *ed)
   int ch;
 
   if (!ed->dirty) return 1;
-  display_message("Quit without saving changes (y/n)? ");
+  display_message(ed, "Quit without saving changes (y/n)? ");
   ch = getchar();
   if (ch == 'y' || ch == 'Y') return 1;
   ed->refresh = 1;
@@ -861,6 +860,7 @@ int main(int argc, char *argv[])
   int rc;
   int key;
   int done;
+  struct term *term;
 
   if (argc != 2)
   {
@@ -877,6 +877,11 @@ int main(int argc, char *argv[])
   }
 
   setvbuf(stdout, NULL, 0, 8192);
+
+  term = gettib()->job->term;
+  ed->cols = term->cols;
+  ed->lines = term->lines - 1;
+  ed->linebuf = malloc(ed->cols);
 
   ed->refresh = 1;
   ed->minihelp = 1;
@@ -916,9 +921,15 @@ int main(int argc, char *argv[])
       case KEY_ENTER: newline(ed); break;
       case KEY_BACKSPACE: backspace(ed); break;
       case KEY_DEL: del(ed); break;
-      case CTRL('l'): draw_screen(ed); break;
       case CTRL('s'): save(ed); break;
       case CTRL('q'): if (quit(ed)) done = 1; break;
+      case CTRL('l'): 
+	ed->cols = term->cols;
+	ed->lines = term->lines - 1;
+	ed->linebuf = realloc(ed->linebuf, ed->cols);
+	draw_screen(ed);
+	break;
+
       default: 
 	if (key >= ' ' && key <= 0xFF) insert_char(ed, (unsigned char) key);
     }
@@ -926,7 +937,7 @@ int main(int argc, char *argv[])
 
   delete_editor(ed);
 
-  gotoxy(0, LINES + 1);
+  gotoxy(0, term->lines);
   outstr("\033[K");
   setbuf(stdout, NULL);
   return 0;

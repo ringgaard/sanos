@@ -41,6 +41,7 @@ build\                         Build files for sanos
   setuprel.ini                 Configuration file for sanos harddisk setup in release build
   sh.vcproj                    Project file for shell (sh.exe)
   sis900.vcproj                Project file for SiS 900/7016 network driver (sis900.sys)
+  telnetd.vcproj               Project file for telnet daemon (telnetd.exe)
   tulip.vcproj                 Project file for Digital "Tulip" DEC 21*4* network driver (tulip.sys)
   user32.vcproj                Project file for win32 wrapper for user32.dll
   winmm.vcproj                 Project file for win32 wrapper for winmm.dll
@@ -200,7 +201,6 @@ src\                           Souce files
     string.c                   String routines
     strtod.c                   Convert string to double 
     strtol.c                   String to number conversion
-    syserr.c                   System error messages
     time.c                     Time routines
     ulldiv.asm                 Unsigned long divide routine
     ulldvrm.asm                Unsigned long divide and remainder routine
@@ -361,6 +361,7 @@ src\                           Souce files
       sntp.c                   Simple Network Time Protocol
       sysapi.c                 Stub routines for system calls
       syslog.c                 System error logging
+      syserr.c                 System error messages
       thread.c                 Thread routines
       tls.c                    Thread local storage
     osldr\                     OS loader source files
@@ -371,7 +372,7 @@ src\                           Souce files
       unzip.c                  Decompression routines
       video.c                  Video functions
   utils\                       Utility application source files
-    edit\                      Text editor
+    edit\                      Text editor source files
       edit.c                   Text editor
     fdisk\                     Disk partitioning utility source files
       fdisk.c                  Disk partitioning utility
@@ -391,6 +392,8 @@ src\                           Souce files
     sh\                        Shell source files
       sh.c                     Shell
       ping.c                   Send ICMP echo request to network host
+    telnetd\                   Telnet daemon source files
+      telnetd.c                Telnet daemon
   win32\                       Win32 API wrapper source files
     advapi32\                  Source files for advapi32
       advapi32.c               Win32 ADVAPI32 emulation

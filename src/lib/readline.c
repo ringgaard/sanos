@@ -32,6 +32,7 @@
 // 
 
 #include <os.h>
+#include <stdio.h>
 #include <string.h>
 
 #define MAX_HISTORY     64
@@ -157,43 +158,27 @@ static int find_dir(char *buf, int start, int end, int split, char *mask)
   return dir;
 }
 
-static int getch(int f)
-{
-  unsigned char ch;
-  int rc;
-
-  rc = read(f, &ch, 1);
-  if (rc < 0) return rc;
-  if (rc == 0) return -EIO;
-  return ch;
-}
-
-static int putch(int f, unsigned char ch)
-{
-  return write(f, &ch, 1);
-}
-
-static int getkey(int f)
+static int getkey()
 {
   int ch;
 
-  ch = getch(f);
+  ch = getchar();
   if (ch < 0) return ch;
 
   switch (ch)
   {
     case 0x08: return KEY_BACKSPACE;
     case 0x09: return KEY_TAB;
-    case 0x0D: return gettib()->job->termtype == TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
-    case 0x0A: return gettib()->job->termtype != TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
+    case 0x0D: return gettib()->job->term->type == TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
+    case 0x0A: return gettib()->job->term->type != TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
 
     case 0x1B:
-      ch = getch(f);
+      ch = getchar();
       switch (ch)
       {
 	case 0x1B: return KEY_ESC;
 	case 0x5B:
-	  ch = getch(f);
+	  ch = getchar();
 	  switch (ch)
 	  {
 	    case 0x41: return KEY_UP;
@@ -211,7 +196,7 @@ static int getkey(int f)
 
     case 0x00:
     case 0xE0:
-      ch = getch(f);
+      ch = getchar();
       switch (ch)
       {
 	case 0x47: return KEY_HOME;
@@ -228,13 +213,13 @@ static int getkey(int f)
       }
       break;
 
-    case 0x7F: return KEY_DEL;
+    case 0x7F: return KEY_BACKSPACE;
 
     default: return ch;
   }
 }
 
-int readline(int f, char *buf, int size)
+int readline(char *buf, int size)
 {
   int idx;
   int len;
@@ -256,7 +241,8 @@ int readline(int f, char *buf, int size)
   hist_idx = history_len;
   while (!done)
   {
-    key = getkey(f);
+    fflush(stdout);
+    key = getkey();
     if (key < 0) 
     {
       errno = -key;
@@ -292,27 +278,28 @@ int readline(int f, char *buf, int size)
 	    memmove(buf + split + dirent.namelen, buf + end, len - end);
 	    memcpy(buf + split, dirent.name, dirent.namelen);
 
-	    while (idx < split) putch(f, buf[idx++]);
+	    while (idx < split) putchar(buf[idx++]);
 	    while (idx > split) 
 	    {
-	      putch(f, '\b');
+	      putchar('\b');
 	      idx--;
 	    }
 
-	    for (i = split; i < newlen; i++) putch(f, buf[i]);
+	    for (i = split; i < newlen; i++) putchar(buf[i]);
 	    if (newlen < len)
 	    {
-	      for (i = newlen; i < len; i++) putch(f, ' ');
-	      for (i = newlen; i < len; i++) putch(f, '\b');
+	      for (i = newlen; i < len; i++) putchar(' ');
+	      for (i = newlen; i < len; i++) putchar('\b');
 	    }
 
 	    end = split + dirent.namelen;
 	    len = newlen;
 	    idx = end;
 
-	    for (i = end; i < len; i++) putch(f, '\b');
+	    for (i = end; i < len; i++) putchar('\b');
 
-	    key = getkey(f);
+	    fflush(stdout);
+	    key = getkey();
 	    if (key < 0) break;
 	    if (key != KEY_TAB) break;
 	  }
@@ -327,7 +314,7 @@ int readline(int f, char *buf, int size)
       case KEY_LEFT:
 	if (idx > 0)
 	{
-	  putch(f, '\b');
+	  putchar('\b');
 	  idx--;
 	}
 	break;
@@ -335,7 +322,7 @@ int readline(int f, char *buf, int size)
       case KEY_RIGHT:
 	if (idx < len)
 	{
-	  putch(f, buf[idx]);
+	  putchar(buf[idx]);
 	  idx++;
 	}
 	break;
@@ -343,12 +330,12 @@ int readline(int f, char *buf, int size)
       case KEY_CTRL_LEFT:
 	if (idx > 0)
 	{
-	  putch(f, '\b');
+	  putchar('\b');
 	  idx--;
 	}
 	while (idx > 0 && buf[idx - 1] != ' ')
 	{
-	  putch(f, '\b');
+	  putchar('\b');
 	  idx--;
 	}
 	break;
@@ -356,12 +343,12 @@ int readline(int f, char *buf, int size)
       case KEY_CTRL_RIGHT:
 	while (idx < len && buf[idx] != ' ')
 	{
-	  putch(f, buf[idx]);
+	  putchar(buf[idx]);
 	  idx++;
 	}
 	if (idx < len)
 	{
-	  putch(f, buf[idx]);
+	  putchar(buf[idx]);
 	  idx++;
 	}
 	break;
@@ -369,7 +356,7 @@ int readline(int f, char *buf, int size)
       case KEY_HOME:
 	while (idx > 0)
 	{
-	  putch(f, '\b');
+	  putchar('\b');
 	  idx--;
 	}
 	break;
@@ -377,7 +364,7 @@ int readline(int f, char *buf, int size)
       case KEY_END:
 	while (idx < len)
 	{
-	  putch(f, buf[idx]);
+	  putchar(buf[idx]);
 	  idx++;
 	}
 	break;
@@ -387,10 +374,10 @@ int readline(int f, char *buf, int size)
 	{
       	  len--;
 	  memmove(buf + idx, buf + idx + 1, len - idx);
-	  for (i = idx; i < len; i++) putch(f, buf[i]);
-	  putch(f, ' ');
-	  putch(f, '\b');
-	  for (i = idx; i < len; i++) putch(f, '\b');
+	  for (i = idx; i < len; i++) putchar(buf[i]);
+	  putchar(' ');
+	  putchar('\b');
+	  for (i = idx; i < len; i++) putchar('\b');
 	}
 	break;
 
@@ -401,27 +388,27 @@ int readline(int f, char *buf, int size)
       case KEY_BACKSPACE:
 	if (idx > 0)
 	{
-	  putch(f, '\b');
+	  putchar('\b');
 	  idx--;
       	  len--;
 	  memmove(buf + idx, buf + idx + 1, len - idx);
-	  for (i = idx; i < len; i++) putch(f, buf[i]);
-	  putch(f, ' ');
-	  putch(f, '\b');
-	  for (i = idx; i < len; i++) putch(f, '\b');
+	  for (i = idx; i < len; i++) putchar(buf[i]);
+	  putchar(' ');
+	  putchar('\b');
+	  for (i = idx; i < len; i++) putchar('\b');
 	}
 	break;
 
       case KEY_ESC:
-	for (i = 0; i < idx; i++) putch(f, '\b');
-	for (i = 0; i < len; i++) putch(f, ' ');
-	for (i = 0; i < len; i++) putch(f, '\b');
+	for (i = 0; i < idx; i++) putchar('\b');
+	for (i = 0; i < len; i++) putchar(' ');
+	for (i = 0; i < len; i++) putchar('\b');
 	idx = len = 0;
 	break;
 
       case KEY_ENTER:
-	putch(f, '\r');
-	putch(f, '\n');
+	putchar('\r');
+	putchar('\n');
 	done = 1;
 	break;
 
@@ -429,14 +416,14 @@ int readline(int f, char *buf, int size)
 	if (hist_idx > 0)
 	{
 	  hist_idx--;
-	  for (i = 0; i < idx; i++) putch(f, '\b');
-	  for (i = 0; i < len; i++) putch(f, ' ');
-	  for (i = 0; i < len; i++) putch(f, '\b');
+	  for (i = 0; i < idx; i++) putchar('\b');
+	  for (i = 0; i < len; i++) putchar(' ');
+	  for (i = 0; i < len; i++) putchar('\b');
 	  len = strlen(history[hist_idx]);
 	  if (len > size - 1) len = size - 1;
 	  idx = len;
 	  memcpy(buf, history[hist_idx], len);
-	  for (i = 0; i < len; i++) putch(f, buf[i]);
+	  for (i = 0; i < len; i++) putchar(buf[i]);
 	}
 	break;
 
@@ -444,14 +431,14 @@ int readline(int f, char *buf, int size)
 	if (hist_idx < history_len - 1)
 	{
 	  hist_idx++;
-	  for (i = 0; i < idx; i++) putch(f, '\b');
-	  for (i = 0; i < len; i++) putch(f, ' ');
-	  for (i = 0; i < len; i++) putch(f, '\b');
+	  for (i = 0; i < idx; i++) putchar('\b');
+	  for (i = 0; i < len; i++) putchar(' ');
+	  for (i = 0; i < len; i++) putchar('\b');
 	  len = strlen(history[hist_idx]);
 	  if (len > size - 1) len = size - 1;
 	  idx = len;
 	  memcpy(buf, history[hist_idx], len);
-	  for (i = 0; i < len; i++) putch(f, buf[i]);
+	  for (i = 0; i < len; i++) putchar(buf[i]);
 	}
 	break;
 
@@ -468,9 +455,9 @@ int readline(int f, char *buf, int size)
   	      if (idx < len) memmove(buf + idx + 1, buf + idx, len - idx);
 	      buf[idx] = key;
 	      len++;
-	      for (i = idx; i < len; i++) putch(f, buf[i]);
+	      for (i = idx; i < len; i++) putchar(buf[i]);
 	      idx++;
-  	      for (i = idx; i < len; i++) putch(f, '\b');
+  	      for (i = idx; i < len; i++) putchar('\b');
 	    }
 	  }
 	  else
@@ -478,7 +465,7 @@ int readline(int f, char *buf, int size)
 	    if (idx < size - 1)
 	    {
 	      buf[idx] = key;
-	      putch(f, buf[idx]);
+	      putchar(buf[idx]);
 	      if (idx == len) len++;
 	      idx++;
 	    }

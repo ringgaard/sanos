@@ -37,15 +37,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include <math.h>
-#include <limits.h>
 #include <os/version.h>
-#include <crtbase.h>
-
 #include <inifile.h>
-#include <httpd.h>
 
-int telnetd_started = 0;
 int initcmds_executed = 0;
 
 #define BUFSIZE 4096
@@ -65,7 +59,7 @@ struct command
 
 struct command cmdtab[];
 
-static void display_buffer(int f, char *buffer, int size)
+static void display_buffer(FILE *f, char *buffer, int size)
 {
   char *p;
   char *q;
@@ -78,10 +72,10 @@ static void display_buffer(int f, char *buffer, int size)
     q = p;
     while (q < end && *q != '\n') q++;
 
-    if (p != q) write(f, p, q - p);
+    if (p != q) fwrite(p, q - p, 1, f);
     if (q < end) 
     {
-      write(f, "\r\n", 2);
+      fwrite("\r\n", 2, 1, f);
       q++;
     }
     p = q;
@@ -222,7 +216,7 @@ int cmd_cat(int argc, char *argv[])
 
   while ((count = read(fd, buffer, sizeof buffer)) > 0)
   {
-    write(fdout, buffer, count);
+    fwrite(buffer, 1, count, stdout);
   }
 
   close(fd);
@@ -431,7 +425,7 @@ int cmd_dump(int argc, char *argv[])
   int count;
   int line;
   int i;
-  char ch;
+  int ch;
 
   if (argc != 2)
   {
@@ -458,7 +452,8 @@ int cmd_dump(int argc, char *argv[])
 
     if (line == 23)
     {
-      while (read(fdin, &ch, 1) <= 0);
+      fflush(stdout);
+      ch = getchar();
       if (ch == 'x')
       {
 	close(fd);
@@ -612,6 +607,7 @@ int cmd_help(int argc, char *argv[])
       printf("%-10.10s %s\n", command->cmdname, command->help);
       if (++lineno == 24)
       {
+	fflush(stdout);
 	getchar();
 	lineno = 0;
       }
@@ -667,18 +663,7 @@ int cmd_jobs(int argc, char *argv[])
 
   while (job)
   {
-    char *name;
-    char modname[MAXPATH];
-
-    if (!job->cmdline || !*job->cmdline)
-    {
-      getmodpath(job->hmod, modname, MAXPATH);
-      name = modname;
-    }
-    else
-      name = job->cmdline;
-
-    printf("%-13s%08x%8d%4d%4d%4d %s\n", job->ident, job->hmod, job->threadcnt, job->in, job->out, job->err, name);
+    printf("%-13s%08x%8d%4d%4d%4d %s\n", job->ident, job->hmod, job->threadcnt, job->in, job->out, job->err, job->cmdline ? job->cmdline : "");
     job = job->nextjob;
   }
 
@@ -688,20 +673,15 @@ int cmd_jobs(int argc, char *argv[])
 int cmd_kbd(int argc, char *argv[])
 {
   int escs;
-  unsigned char ch;
-  int rc;
+  int ch;
 
   printf("(press esc three times to exit)\n");
 
   escs = 0;
   while (1)
   {
-    rc = read(fdin, &ch, 1);
-    if (rc != 1)
-    {
-      printf("Error %d in read\n", errno);
-      break;
-    }
+    fflush(stdout);
+    ch = getchar();
 
     if (ch == 0x1B) 
       escs++;
@@ -971,8 +951,9 @@ int cmd_more(int argc, char *argv[])
     {
       if (line == 24)
       {
-	display_buffer(fdout, start, end - start);
-	while (read(fdin, &ch, 1) <= 0);
+	display_buffer(stdout, start, end - start);
+	fflush(stdout);
+	ch = getchar();
 	if (ch == 'x')
 	{
 	  close(fd);
@@ -983,7 +964,7 @@ int cmd_more(int argc, char *argv[])
       }
       if (*end++ == '\n') line++;
     }
-    display_buffer(fdout, start, end - start);
+    display_buffer(stdout, start, end - start);
   }
 
   close(fd);
@@ -1560,8 +1541,9 @@ void shell()
   while (1)
   {
     printf(prompt, getcwd(curdir, sizeof curdir));
-    if (readline(fdin, cmdline, sizeof cmdline) < 0) break;
+    if (readline(cmdline, sizeof cmdline) < 0) break;
     if (stricmp(cmdline, "exit") == 0) break;
+    fflush(stdout);
     exec_command(cmdline);
   }
 }
@@ -1584,7 +1566,7 @@ int execute_script(char *cmdfile)
   while (fgets(cmdline, sizeof cmdline, f))
   {
     if (*cmdline == ';' || *cmdline == '#') continue;
-    if (echo) write(fdout, cmdline, strlen(cmdline));
+    if (echo) fwrite(cmdline, strlen(cmdline), 1, stdout);
 
     if (strchr(cmdline, '\r')) *strchr(cmdline, '\r') = 0;
     if (strchr(cmdline, '\n')) *strchr(cmdline, '\n') = 0;
@@ -1596,128 +1578,12 @@ int execute_script(char *cmdfile)
   return 0;
 }
 
-void redirect(handle_t h, int termtype)
-{
-  struct job *job = gettib()->job;
-  struct crtbase *crtbase = (struct crtbase *) job->crtbase;
-
-  job->in = h;
-  job->out = dup(h);
-  job->err = dup(h);
-  job->termtype = termtype;
-
-  crtbase->iob[0].file = job->in;
-  crtbase->iob[0].base = crtbase->iob[0].ptr = crtbase->stdinbuf;
-  crtbase->iob[0].flag = _IORD | _IOEXTBUF;
-  crtbase->iob[0].cnt = BUFSIZ;
-
-  crtbase->iob[1].file = job->out;
-  crtbase->iob[1].flag = _IOWR | _IONBF | _IOCRLF;
-
-  crtbase->iob[2].file = job->err;
-  crtbase->iob[2].flag = _IOWR | _IONBF | _IOCRLF;
-}
-
-void __stdcall ttyd(void *arg)
-{
-  char *devname = (char *) arg;
-  handle_t f;
-  struct serial_config cfg;
-
-  f = open(devname, O_RDWR | O_BINARY);
-  if (f < 0) 
-  {
-    syslog(LOG_INFO, "Error %d starting shell on device %s", errno, devname);
-    exit(1);
-  }
-
-  cfg.speed = 115200;
-  cfg.databits = 8;
-  cfg.stopbits = 1;
-  cfg.rx_timeout = INFINITE;
-  cfg.tx_timeout = INFINITE;
-  cfg.parity = PARITY_NONE;
-
-  ioctl(f, IOCTL_SERIAL_SETCONFIG, &cfg, sizeof(struct serial_config));
-
-  redirect(f, TERM_VT100);
-
-  syslog(LOG_INFO, "sh: starting shell on device %s", devname);
-
-  shell();
-}
-
-void __stdcall telnet_task(void *arg)
-{
-  int s = (int) arg;
-
-  redirect(s, TERM_VT100);
-
-#ifdef DEBUG
-  printf("%s version %s (Debug Build %s %s)\n", OSNAME, OSVERSION, __DATE__, __TIME__);
-#else
-  printf("%s version %s (Build %s %s)\n", OSNAME, OSVERSION, __DATE__, __TIME__);
-#endif
-  printf("%s\n\n", COPYRIGHT);
-
-  shell();
-}
-
-void __stdcall telnetd(void *arg)
-{
-  int s;
-  int client;
-  int rc;
-  struct sockaddr_in sin;
-  int hthread;
-
-  s = socket(AF_INET, SOCK_STREAM, 0);
-  if (s < 0)
-  {
-    printf("telnetd: error %d in socket\n", errno);
-    return;
-  }
-
-  sin.sin_family = AF_INET;
-  sin.sin_addr.s_addr = INADDR_ANY;
-  sin.sin_port = htons(23);
-  rc = bind(s, (struct sockaddr *) &sin, sizeof sin);
-  if (rc < 0)
-  {
-    printf("telnetd: error %d in bind\n", errno);
-    return;
-  }
-
-  rc = listen(s, 5);
-  if (rc < 0)
-  {
-    printf("telnetd: error %d in listen\n", errno);
-    return;
-  }
-
-  while (1)
-  {
-    struct sockaddr_in sin;
-
-    client = accept(s, (struct sockaddr *) &sin, NULL);
-    if (client < 0)
-    {
-      printf("telnetd: error %d in accept\n", errno);
-      return;
-    }
-
-    syslog(LOG_INFO, "telnetd: client connected from %a", &sin.sin_addr);
-
-    hthread = beginthread(telnet_task, 0, (void *) client, CREATE_NEW_JOB | CREATE_DETACHED, NULL);
-    close(hthread);
-  }
-}
-
 int main(int argc, char *argv[])
 {
   char *initcmds;
 
   if (sizeof(struct tib) != PAGESIZE) printf("warning: tib is %d bytes (%d expected)\n", sizeof(struct tib), PAGESIZE);
+  setvbuf(stdout, NULL, 0, 8192);
 
   initcmds = get_property(osconfig, "shell", "initcmds", NULL);
   if (initcmds && !initcmds_executed)
@@ -1727,22 +1593,11 @@ int main(int argc, char *argv[])
   }
 
   if (argc > 1)
-  {
     exec_builtin(argc - 1, argv + 1, NULL);
-  }
   else
-  {
-    if (peb->ipaddr.s_addr != INADDR_ANY) 
-    {
-      if (get_numeric_property(osconfig, "shell", "telnetd", 0) && !telnetd_started)
-      {
-	beginthread(telnetd, 0, NULL, 0, NULL);
-	telnetd_started = 1;
-      }
-    }
-
     shell();
-  }
+
+  setbuf(stdout, NULL);
 
   return 0;
 }
