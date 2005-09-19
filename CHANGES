@@ -73,6 +73,9 @@ CHANGE LOG FOR SANOS
 
     * Bug in iomux fixed. Now a monitored event signals the iomux and not the 
       associated object.
+      
+    * Telnet daemon moved from the shell to separate server (telnetd.exe). The
+      new telnet daemon has a more robust handlig of the telnet protocol.
 
 
 Version 1.3.2
