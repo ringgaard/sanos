@@ -417,8 +417,16 @@ int getkey()
 	case 0x1B: return KEY_ESC;
 	case 0x5B:
 	  ch = getchar();
+
 	  switch (ch)
 	  {
+	    case 0x31: return getchar() == 0x7E ? KEY_HOME : KEY_UNKNOWN;
+	    case 0x32: return getchar() == 0x7E ? KEY_INS : KEY_UNKNOWN;
+	    case 0x33: return getchar() == 0x7E ? KEY_DEL : KEY_UNKNOWN;
+	    case 0x34: return getchar() == 0x7E ? KEY_END : KEY_UNKNOWN;
+	    case 0x35: return getchar() == 0x7E ? KEY_PGUP : KEY_UNKNOWN;
+	    case 0x36: return getchar() == 0x7E ? KEY_PGDN : KEY_UNKNOWN;
+
 	    case 0x41: return KEY_UP;
 	    case 0x42: return KEY_DOWN;
 	    case 0x43: return KEY_RIGHT;
@@ -532,7 +540,7 @@ void update_line(struct editor *ed, int col)
 {
   int len;
 
-  len = copy_line(ed, ed->linebuf, ed->linepos, ed->margin + col, ed->cols);
+  len = copy_line(ed, ed->linebuf, ed->linepos, ed->margin + col, ed->cols - col);
   gotoxy(col, ed->line - ed->topline);
   outbuf(ed->linebuf, len);
   if (len + col < ed->cols) outstr("\033[K");
@@ -543,17 +551,23 @@ void draw_screen(struct editor *ed)
   int pos;
   int i;
 
-  clear_screen();
+  gotoxy(0, 0);
   pos = ed->toppos;
   for (i = 0; i < ed->lines; i++)
   {
     int len;
 
-    if (pos < 0) break;
-    len = copy_line(ed, ed->linebuf, pos, ed->margin, ed->cols);
-    outbuf(ed->linebuf, len);
-    if (len < ed->cols) outstr("\r\n");
-    pos = next_line(ed, pos);
+    if (pos < 0) 
+    {
+      outstr("\033[K\r\n");
+    }
+    else
+    {
+      len = copy_line(ed, ed->linebuf, pos, ed->margin, ed->cols);
+      outbuf(ed->linebuf, len);
+      if (len < ed->cols) outstr("\033[K\r\n");
+      pos = next_line(ed, pos);
+    }
   }
 }
 

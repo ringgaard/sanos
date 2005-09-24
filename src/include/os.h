@@ -247,6 +247,7 @@ struct section;
 #define P_WAIT      0
 #define P_NOWAIT    1
 #define P_DETACH    4
+#define P_SUSPEND   8
 
 //
 // File open modes

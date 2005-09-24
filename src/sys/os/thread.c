@@ -328,10 +328,10 @@ int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
   job->cmdline = strdup(cmdline);
   job->ident = procname(pgm);
 
-  if (mode & P_NOWAIT)
+  if (mode & (P_NOWAIT | P_SUSPEND))
   {
     if (tibptr) *tibptr = tib;
-    resume(hthread);
+    if ((mode & P_SUSPEND) == 0) resume(hthread);
     return hthread;
   }
   else

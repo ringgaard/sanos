@@ -75,7 +75,10 @@ CHANGE LOG FOR SANOS
       associated object.
       
     * Telnet daemon moved from the shell to separate server (telnetd.exe). The
-      new telnet daemon has a more robust handlig of the telnet protocol.
+      new telnet daemon has a more robust handling of the telnet protocol.
+      
+    * Implemented popen() and pclose(). Also added a P_SUSPEND parameter to spawn() to
+      allow new jobs to be started suspended.
 
 
 Version 1.3.2

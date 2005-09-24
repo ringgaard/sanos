@@ -1265,8 +1265,17 @@ int cmd_sysinfo(int argc, char *argv[])
 
 int cmd_test(int argc, char *argv[])
 {
-  char *ptr = NULL;
-  *ptr = 0;
+  int ch;
+  FILE *f = popen("ls", "r");
+  if (!f)
+  {
+    perror("popen(ls)");
+    return -1;
+  }
+
+  while ((ch = getc(f)) != EOF) putchar(ch);
+  pclose(f);
+
   return 0;
 }
 
@@ -1593,7 +1602,17 @@ int main(int argc, char *argv[])
   }
 
   if (argc > 1)
-    exec_builtin(argc - 1, argv + 1, NULL);
+  {
+    char *cmdline = gettib()->job->cmdline;
+    while (*cmdline != ' ')
+    {
+      if (!*cmdline) return 0;
+      cmdline++;
+    }
+    while (*cmdline == ' ') cmdline++;
+
+    return exec_command(cmdline);
+  }
   else
     shell();
 

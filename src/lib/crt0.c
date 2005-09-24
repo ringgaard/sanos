@@ -37,6 +37,7 @@
 #include <crtbase.h>
 
 void init_stdio();
+void exit_stdio();
 
 typedef void (__cdecl *proc_t)(void);
 typedef int (__cdecl *func_t)(void);
@@ -172,6 +173,10 @@ static void termcrt()
     // Execute C terminators
     initterm(__xt_a, __xt_z);
   }
+
+  // Flush stdout and stderr
+  fflush(stdout);
+  fflush(stderr);
 
   // Deallocate arguments
   free_args(crtbase->argc, crtbase->argv);

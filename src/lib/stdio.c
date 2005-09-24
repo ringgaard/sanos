@@ -40,6 +40,8 @@
 #include <stdarg.h>
 #include <crtbase.h>
 
+#define SHELL "sh.exe"
+
 int output(FILE *stream, const char *format, va_list args);
 int input(FILE *stream, const unsigned char *format, va_list arglist);
 
@@ -308,8 +310,9 @@ static int open_file(FILE *stream, const char *filename, const char *mode)
 
   stream->flag = streamflag;
   stream->cnt = 0;
-  stream->tmpfname = stream->base = stream->ptr = NULL;
+  stream->base = stream->ptr = NULL;
   stream->file = handle;
+  stream->phndl = NOHANDLE;
 
   return 0;
 }
@@ -327,14 +330,7 @@ static int close_file(FILE *stream)
   rc = fflush(stream);
   freebuf(stream);
 
-  if (close(fileno(stream)) < 0)
-    rc = EOF;
-  else if (stream->tmpfname != NULL) 
-  {
-    if (unlink(stream->tmpfname) < 0) rc = EOF;
-    free(stream->tmpfname);
-    stream->tmpfname = NULL;
-  }
+  if (close(fileno(stream)) < 0) rc = EOF;
 
   return rc;
 }
@@ -383,8 +379,9 @@ FILE *fdopen(int fd, const char *mode)
 
   stream->flag = streamflag;
   stream->cnt = 0;
-  stream->tmpfname = stream->base = stream->ptr = NULL;
+  stream->base = stream->ptr = NULL;
   stream->file = fd;
+  stream->phndl = NOHANDLE;
 
   return stream;
 }
@@ -419,6 +416,80 @@ FILE *fopen(const char *filename, const char *mode)
   }
 
   return stream;
+}
+
+FILE *popen(const char *command, const char *mode)
+{
+  char cmdline[1024];
+  int rc;
+  int hndl[2];
+  int phndl;
+  struct tib *tib;
+  struct job *job;
+  FILE *f;
+
+  if (!command)
+  {
+    errno = EINVAL;
+    return NULL;
+  }
+
+  if (strlen(command) + strlen(SHELL) + 1 >= sizeof(cmdline))
+  {
+    errno = E2BIG;
+    return NULL;
+  }
+
+  strcpy(cmdline, SHELL);
+  strcat(cmdline, " ");
+  strcat(cmdline, command);
+
+  phndl = spawn(P_SUSPEND, SHELL, cmdline, &tib);
+  if (phndl < 0) return NULL;
+  job = tib->job;
+
+  rc = pipe(hndl);
+  if (rc < 0) return NULL;
+
+  if (*mode == 'w')
+  {
+    if (job->in != NOHANDLE) close(job->in);
+    job->in = hndl[0];
+    f = fdopen(hndl[1], mode);
+  }
+  else
+  {
+    if (job->out != NOHANDLE) close(job->out);
+    job->out = hndl[1];
+    f = fdopen(hndl[0], mode);
+  }
+
+  if (f == NULL) return NULL;
+  f->phndl = phndl;
+  resume(phndl);
+
+  return f;
+}
+
+int pclose(FILE *stream)
+{
+  int rc;
+
+  if (stream->flag & _IORD)
+  {
+    wait(stream->phndl, INFINITE);
+    close(stream->phndl);
+    rc = close_file(stream);
+  }
+  else
+  {
+    int phndl = stream->phndl;
+    rc = close_file(stream);
+    wait(phndl, INFINITE);
+    close(phndl);
+  }
+
+  return rc;
 }
 
 void clearerr(FILE *stream)
@@ -515,28 +586,6 @@ int fputs(const char *string, FILE *stream)
 
   return written == len ? 0 : EOF;
 }
-
-#if 0
-char *gets(char *buf)
-{
-  int ch;
-  char *ptr = buf;
-
-  while ((ch = getchar()) != '\n')
-  {
-    if (ch == EOF)
-    {
-      if (ptr == buf) return NULL;
-      break;
-    }
-
-    *ptr++ = (char) ch;
-  }
-
-  *ptr = '\0';
-  return buf;
-}
-#endif
 
 char *gets(char *buf)
 {

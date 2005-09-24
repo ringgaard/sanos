@@ -89,7 +89,7 @@ struct _iobuf
   handle_t file;
   int charbuf;
   int bufsiz;
-  char *tmpfname;
+  int phndl;
 };
 
 typedef struct _iobuf FILE;
@@ -97,10 +97,6 @@ typedef struct _iobuf FILE;
 #define stdin   __getstdhndl(0)
 #define stdout  __getstdhndl(1)
 #define stderr  __getstdhndl(2)
-
-//#define stdin   (&((FILE *) (gettib()->job->crtbase))[0])
-//#define stdout  (&((FILE *) (gettib()->job->crtbase))[1])
-//#define stderr  (&((FILE *) (gettib()->job->crtbase))[2])
 
 #define _IORD           0x0001
 #define _IOWR           0x0002
@@ -130,6 +126,9 @@ int flsbuf(int, FILE *stream);
 FILE *fdopen(int fd, const char *mode);
 FILE *freopen(const char *filename, const char *mode, FILE *stream);
 FILE *fopen(const char *filename, const char *mode);
+
+FILE *popen(const char *command, const char *mode);
+int pclose(FILE *stream);
 
 void clearerr(FILE *stream);
 int fclose(FILE *stream);
