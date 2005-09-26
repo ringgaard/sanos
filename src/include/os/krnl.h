@@ -61,6 +61,7 @@
 #include <rmap.h>
 #include <inifile.h>
 #include <moddb.h>
+#include <verinfo.h>
 
 #include <os/tss.h>
 #include <os/seg.h>

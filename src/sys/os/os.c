@@ -37,12 +37,13 @@
 #include <moddb.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <time.h>
+#include <verinfo.h>
 
 #include <os/seg.h>
 #include <os/tss.h>
 #include <os/syspage.h>
 #include <os/pe.h>
-#include <os/version.h>
 #include <os/syscall.h>
 
 #include "heap.h"
@@ -55,6 +56,8 @@ struct moddb usermods;
 struct peb *peb;
 
 struct term console = {TERM_CONSOLE, 80, 25};
+
+int sprintf(char *buf, const char *fmt, ...);
 
 void init_sntpd();
 void init_threads(hmodule_t hmod, struct term *initterm);
@@ -553,14 +556,14 @@ void *getresdata(hmodule_t hmod, int type, char *name, int lang, int *len)
 
   if (hmod == NULL) hmod = gettib()->job->hmod;
 
-  rc = get_resource_data(&usermods, hmod, INTRES(type), name, INTRES(lang), &data);
+  rc = get_resource_data(hmod, INTRES(type), name, INTRES(lang), &data);
   if (rc < 0)
   {
     errno = -rc;
     return NULL;
   }
 
-  if (*len) *len = rc;
+  if (len) *len = rc;
   return data;
 }
 
@@ -571,7 +574,7 @@ int getreslen(hmodule_t hmod, int type, char *name, int lang)
 
   if (hmod == NULL) hmod = gettib()->job->hmod;
 
-  rc = get_resource_data(&usermods, hmod, INTRES(type), name, INTRES(lang), &data);
+  rc = get_resource_data(hmod, INTRES(type), name, INTRES(lang), &data);
   if (rc < 0)
   {
     errno = -rc;
@@ -581,10 +584,39 @@ int getreslen(hmodule_t hmod, int type, char *name, int lang)
   return rc;
 }
 
+struct verinfo *getverinfo(hmodule_t hmod)
+{
+  struct verinfo *ver;
+
+  if (hmod == NULL) hmod = gettib()->job->hmod;
+  ver = get_version_info(hmod);
+  if (ver == NULL) errno = ENOENT;
+  return ver;
+}
+
+int getvervalue(hmodule_t hmod, char *name, char *buf, int size)
+{
+  int rc;
+
+  if (hmod == NULL) hmod = gettib()->job->hmod;
+  rc = get_version_value(hmod, name, buf, size);
+  if (rc < 0)
+  {
+    errno = -rc;
+    return -1;
+  }
+
+  return rc;
+}
+
 int uname(struct utsname *buf)
 {
   struct cpuinfo cpu;
   char machine[8];
+  struct verinfo *ver;
+  int osflags;
+  char *build;
+  struct tm tm;
 
   if (!buf)
   {
@@ -599,11 +631,26 @@ int uname(struct utsname *buf)
   machine[3] = '6';
   machine[4] = 0;
 
+  osflags = peb->osversion.file_flags;
+  if (osflags & VER_FLAG_PRERELEASE) 
+    build = "prerelease ";
+  else if (osflags & VER_FLAG_PATCHED) 
+    build = "patch ";
+  else if (osflags & VER_FLAG_PRIVATEBUILD) 
+    build = "private ";
+  else if (osflags & VER_FLAG_DEBUG) 
+    build = "debug ";
+  else
+    build = "";
+
+  gmtime_r(&peb->ostimestamp, &tm);
+  ver = &peb->osversion;
+
   memset(buf, 0, sizeof(struct utsname));
-  strncpy(buf->sysname, OSNAME, UTSNAMELEN);
+  strncpy(buf->sysname, peb->osname, UTSNAMELEN);
   gethostname(buf->nodename, UTSNAMELEN);
-  strncpy(buf->release, OSVERSION, UTSNAMELEN);
-  strncpy(buf->version, RELEASE_DATE, UTSNAMELEN);
+  sprintf(buf->release, "%d.%d.%d.%d", ver->file_major_version, ver->file_minor_version, ver->file_release_number, ver->file_build_number);
+  sprintf(buf->version, "%s%04d-%02d-%02d %02d:%02d:%02d", build, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
   strncpy(buf->machine, machine, UTSNAMELEN);
 
   return 0;

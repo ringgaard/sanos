@@ -23,8 +23,16 @@ DBGGW=$(TOOLS)\dbggw.exe
 
 AR=lib
 
+DEFS=
+
+!IFDEF PRERELEASE
+DEFS=$(DEFS) /D PRERELEASE
+!ELSEIFDEF RELEASE
+DEFS=$(DEFS) /D RELEASE
+!ENDIF
+
 AFLAGS=/nologo
-CFLAGS=/nologo /O2 /Og /Ob1 /Oi /Ot /Oy /X /GF /Gy /W3 /I $(SRC)/include
+CFLAGS=/nologo /O2 /Og /Ob1 /Oi /Ot /Oy /X /GF /Gy /W3 /I $(SRC)/include $(DEFS)
 
 #
 # /nologo               Suppress copyright message
@@ -41,9 +49,9 @@ CFLAGS=/nologo /O2 /Og /Ob1 /Oi /Ot /Oy /X /GF /Gy /W3 /I $(SRC)/include
 # /I $(SRC)/include     Include search path
 #
 
-!INCLUDE $(BUILD)/sanos.dep
-
 all: dirs tools sanos bootdisk netbootimg bootcd
+
+!INCLUDE $(BUILD)/sanos.dep
 
 sanos: dirs kernel drivers libc win32 utils
 
@@ -170,6 +178,9 @@ $(OBJ)/krnl/lldiv.obj: $(SRC)/lib/lldiv.asm
 $(OBJ)/krnl/llmul.obj: $(SRC)/lib/llmul.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
 
+$(OBJ)/krnl/krnl.res: $(SRC)/sys/krnl/krnl.rc
+  $(RC) /d "NDEBUG" /l 0x406 /I $(SRC)/include $(DEFS) /fo$@ $**
+
 $(LIBS)/krnl.lib $(BIN)/krnl.dll: \
   $(SRC)\sys\krnl\vmm.c \
   $(SRC)\sys\krnl\vfs.c \
@@ -254,8 +265,10 @@ $(LIBS)/krnl.lib $(BIN)/krnl.dll: \
   $(SRC)\lib\inifile.c \
   $(SRC)\lib\ctype.c \
   $(SRC)\lib\bitops.c \
+  $(SRC)\lib\verinfo.c \
   $(OBJ)/krnl/lldiv.obj \
-  $(OBJ)/krnl/llmul.obj
+  $(OBJ)/krnl/llmul.obj \
+  $(OBJ)/krnl/krnl.res
     $(CC) $(CFLAGS) /Fe$(BIN)/krnl.dll /Fo$(OBJ)/krnl/ $** /D KERNEL /D KRNL_LIB \
       /link /DLL /LARGEADDRESSAWARE /NODEFAULTLIB /OPT:WIN98 /ENTRY:start \
       /BASE:0x80000000 /FIXED /IMPLIB:$(LIBS)/krnl.lib
@@ -293,6 +306,7 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
   $(SRC)/lib/fcvt.c \
   $(SRC)/lib/ctype.c \
   $(SRC)/lib/bitops.c \
+  $(SRC)\lib\verinfo.c \
   $(OBJ)/os/modf.obj \
   $(OBJ)/os/ftol.obj \
   $(OBJ)/os/fpconst.obj

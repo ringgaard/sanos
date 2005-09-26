@@ -221,6 +221,15 @@ void load_kernel(int bootdrv)
   imgpages = PAGES(imghdr->optional.size_of_image);
   alloc_heap(imgpages - kernelpages);
 
+  // Relocate resource data and clear uninitialized data
+  if (imghdr->header.number_of_sections == 4)
+  {
+    struct image_section_header *data = &imghdr->sections[2];
+    struct image_section_header *rsrc = &imghdr->sections[3];
+    memcpy(kerneladdr + rsrc->virtual_address, kerneladdr + rsrc->pointer_to_raw_data, rsrc->size_of_raw_data);
+    memset(kerneladdr + data->virtual_address + data->size_of_raw_data, 0, data->virtual_size - data->size_of_raw_data);
+  }
+
   // Map kernel into vitual address space
   for (i = 0; i < imgpages; i++) pt[i] = (unsigned long) (kerneladdr + i * PAGESIZE) | PT_PRESENT | PT_WRITABLE;
 }

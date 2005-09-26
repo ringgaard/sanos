@@ -80,6 +80,13 @@ CHANGE LOG FOR SANOS
     * Implemented popen() and pclose(). Also added a P_SUSPEND parameter to spawn() to
       allow new jobs to be started suspended.
 
+    * The kernel version information is now kept in a version resource in krnl.dll. The
+      version information is retrieved using the new module version information functions
+      in verinfo.c. 
+      
+    * The build type can now be controlled by compile time switches. The kernel version 
+      can be displayed in the Windows Explorer by viewing Properties for krnl.dll and 
+      selecting the Version tab.
 
 Version 1.3.2
 

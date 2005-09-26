@@ -1265,16 +1265,25 @@ int cmd_sysinfo(int argc, char *argv[])
 
 int cmd_test(int argc, char *argv[])
 {
-  int ch;
-  FILE *f = popen("ls", "r");
-  if (!f)
-  {
-    perror("popen(ls)");
-    return -1;
-  }
+  static char *verfld[] = {"FileDescription", "OriginalFilename", "FileVersion", "ProductName", "ProductVersion", "Home Page", "Author", "License", "LegalCopyright"};
+  struct verinfo *ver;
+  char buf[128];
+  int rc;
+  int i;
+  printf("OS Version %d.%d.%d.%d date %s\n", peb->osversion.file_major_version, peb->osversion.file_minor_version, peb->osversion.file_release_number, peb->osversion.file_build_number, asctime(gmtime(&peb->ostimestamp)));
 
-  while ((ch = getc(f)) != EOF) putchar(ch);
-  pclose(f);
+  ver = getverinfo(NULL);
+  if (ver == NULL) printf("No version info\n");
+  printf("Version %d.%d.%d.%d\n", ver->file_major_version, ver->file_minor_version, ver->file_release_number, ver->file_build_number);
+
+  for (i = 0; i < 9; i++)
+  {
+    rc = getvervalue(NULL, verfld[i], buf, sizeof(buf));
+    if (rc > 0) 
+      printf("%s: %s\n", verfld[i], buf);
+    else
+      perror(verfld[i]);
+  }
 
   return 0;
 }
@@ -1592,7 +1601,7 @@ int main(int argc, char *argv[])
   char *initcmds;
 
   if (sizeof(struct tib) != PAGESIZE) printf("warning: tib is %d bytes (%d expected)\n", sizeof(struct tib), PAGESIZE);
-  setvbuf(stdout, NULL, 0, 8192);
+  if (gettib()->job->term->type == TERM_VT100) setvbuf(stdout, NULL, 0, 8192);
 
   initcmds = get_property(osconfig, "shell", "initcmds", NULL);
   if (initcmds && !initcmds_executed)

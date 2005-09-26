@@ -1,0 +1,67 @@
+#include <os/version.h>
+
+#define VERS(a,b,c,d) a+0x30,0x2E,b+0x30,0x2E,c+0x30,0x2E,d+0x30,0
+
+LANGUAGE 0, 0
+
+1 VERSIONINFO
+  FILEVERSION OS_MAJ_VERS,OS_MIN_VERS,OS_RELEASE,OS_BUILD
+  PRODUCTVERSION OS_MAJ_VERS,OS_MIN_VERS,OS_RELEASE,OS_BUILD
+  FILEFLAGSMASK 0x3FL
+#if defined(RELEASE)
+#if OS_BUILD == 0
+  FILEFLAGS 0x00L
+#else
+  FILEFLAGS 0x04L
+#endif
+#elif defined(DEBUG)
+  FILEFLAGS 0x01L
+#elif defined(PRERELEASE)
+  FILEFLAGS 0x02L
+#else
+  FILEFLAGS 0x08L
+#endif
+  FILEOS 0x80000L
+  FILETYPE 0x10L
+  FILESUBTYPE 0x0L
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "00000000"
+    BEGIN
+      VALUE "FileDescription", OS_NAME " Operating System Kernel"
+      VALUE "OriginalFilename", "krnl.dll"
+      VALUE "FileVersion", VERS(OS_MAJ_VERS,OS_MIN_VERS,OS_RELEASE,OS_BUILD)
+      VALUE "ProductName", OS_NAME
+      VALUE "ProductVersion", VERS(OS_MAJ_VERS,OS_MIN_VERS,OS_RELEASE,OS_BUILD)
+      VALUE "Home Page", "http://www.jbox.dk/sanos"
+      VALUE "Author", "Michael Ringgaard <mri@jbox.dk>"
+      VALUE "LegalCopyright", OS_COPYRIGHT
+      VALUE "LegalTrademarks", OS_LEGAL
+
+#if LICENSE == 1
+      VALUE "License", "GPL"
+#else
+      VALUE "License", "BSD"
+#endif
+
+#if defined(RELEASE)
+#if OS_BUILD == 0
+      VALUE "Build", "Release"
+#else
+      VALUE "Build", "Patch"
+#endif
+#elif defined(DEBUG)
+      VALUE "Build", "Debug"
+#elif defined(PRERELEASE)
+      VALUE "Build", "Pre-release"
+#else
+      VALUE "Build", "Private"
+#endif
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x0, 0
+  END
+END

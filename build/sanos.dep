@@ -428,7 +428,6 @@ $(SRC)/sys/krnl/sched.c: \
 
 $(SRC)/sys/krnl/start.c: \
   $(SRC)/include/os/krnl.h \
-  $(SRC)/include/os/version.h
 
 $(SRC)/sys/krnl/syscall.c: \
   $(SRC)/include/os/krnl.h
@@ -444,6 +443,9 @@ $(SRC)/sys/krnl/vfs.c: \
 
 $(SRC)/sys/krnl/vmm.c: \
   $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/krnl.rc: \
+  $(SRC)/include/os/version.h
 
 # sys/net
 
@@ -668,7 +670,6 @@ $(SRC)/utils/httpd/httpd.c: \
   $(SRC)/include/inifile.h \
   $(SRC)/include/ctype.h \
   $(SRC)/include/time.h \
-  $(SRC)/include/os/version.h \
   $(SRC)/include/httpd.h
 
 $(SRC)/utils/httpd/hutils.c: \
@@ -698,7 +699,6 @@ $(SRC)/utils/setup/setup.c: \
   $(SRC)/include/os/seg.h \
   $(SRC)/include/os/tss.h \
   $(SRC)/include/os/syspage.h \
-  $(SRC)/include/os/version.h
 
 $(SRC)/utils/sh/sh.c: \
   $(SRC)/include/os.h \
@@ -709,7 +709,6 @@ $(SRC)/utils/sh/sh.c: \
   $(SRC)/include/time.h \
   $(SRC)/include/math.h \
   $(SRC)/include/limits.h \
-  $(SRC)/include/os/version.h \
   $(SRC)/include/crtbase.h \
   $(SRC)/include/inifile.h \
   $(SRC)/include/httpd.h

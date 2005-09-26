@@ -39,11 +39,8 @@
 #include <inifile.h>
 #include <ctype.h>
 #include <time.h>
-#include <os/version.h>
 
 #include <httpd.h>
-
-#define HTTPD_SOFTWARE (OSNAME "/" OSVERSION)
 
 struct mimetype
 {
@@ -175,7 +172,7 @@ struct httpd_server *httpd_initialize(struct section *cfg)
   server->rspbufsiz = getnumconfig(cfg, "responsebuffer", 4*K);
   server->backlog = getnumconfig(cfg, "backlog", 5);
   server->indexname = getstrconfig(cfg, "indexname", "index.htm");
-  server->swname = getstrconfig(cfg, "swname", HTTPD_SOFTWARE);
+  server->swname = getstrconfig(cfg, "swname", peb->osname);
   server->allowdirbrowse = getnumconfig(cfg, "allowdirbrowse", 1);
 
   parse_log_columns(server, getstrconfig(cfg, "logcolumns", "date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status cs(user-agent)"));

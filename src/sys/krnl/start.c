@@ -32,15 +32,11 @@
 // 
 
 #include <os/krnl.h>
-#include <os/version.h>
 
 #define KERNEL_CONFIG  "/etc/krnl.ini"
 
 #ifdef BSD
 char *copyright = 
-OSNAME " version " OSVERSION "\n"
-COPYRIGHT "\n"
-"\n"
 "Redistribution and use in source and binary forms, with or without\n"
 "modification, are permitted provided that the following conditions\n"
 "are met:\n"
@@ -68,9 +64,6 @@ COPYRIGHT "\n"
 
 #ifdef GPL
 char *copyright = 
-OSNAME " version " OSVERSION "\n"
-COPYRIGHT "\n"
-"\n"
 "This program is free software; you can redistribute it and/or modify it under\n"
 "the terms of the GNU General Public License as published by the Free Software\n"
 "Foundation; either version 2 of the License, or (at your option) any later\n"
@@ -167,43 +160,6 @@ void panic(char *msg)
     stop(onpanic);
 }
 
-// Date string Mmm dd YYYY
-//             01234567890
-
-static int daynumber(char *datestr)
-{
-  struct tm tm;
-
-  memset(&tm, 0, sizeof(struct tm));
-
-  switch (datestr[0])
-  {
-    case 'J': tm.tm_mon = (datestr[1] == 'a') ? 0 : ((datestr[2] == 'n') ? 5 : 6); break;
-    case 'F': tm.tm_mon = 1; break;
-    case 'M': tm.tm_mon = (datestr[2] == 'r') ? 2 : 4; break;
-    case 'A': tm.tm_mon = (datestr[1] == 'p') ? 3 : 7; break;
-    case 'S': tm.tm_mon = 8; break;
-    case 'O': tm.tm_mon = 9; break;
-    case 'N': tm.tm_mon = 10; break;
-    case 'D': tm.tm_mon = 11; break;
-  }
-
-  tm.tm_mday = datestr[5] - '0';
-  if (datestr[4] != ' ') tm.tm_mday += (datestr[4] - '0') * 10;
-
-  tm.tm_year += (datestr[7] - '0') * 1000;
-  tm.tm_year += (datestr[8] - '0') * 100;
-  tm.tm_year += (datestr[9] - '0') * 10;
-  tm.tm_year += (datestr[10] - '0') - 1900;
-
-  return mktime(&tm) / (24 * 60 * 60);
-}
-
-int buildno()
-{
-  return daynumber(__DATE__) - daynumber(RELEASE_DATE) + 1;
-}
-
 static int load_kernel_config()
 {
   struct file *f;
@@ -248,18 +204,43 @@ static int load_kernel_config()
 
 static int version_proc(struct proc_file *pf, void *arg)
 {
-#ifdef DEBUG
-  pprintf(pf, "%s version %s Debug Build %d (%s %s)\n", OSNAME, OSVERSION, buildno(), __DATE__, __TIME__);
-#else
-  pprintf(pf, "%s version %s Build %d (%s %s)\n", OSNAME, OSVERSION, buildno(), __DATE__, __TIME__);
-#endif
-  pprintf(pf, "%s\n", COPYRIGHT);
+  hmodule_t krnl = (hmodule_t) OSBASE;
+  struct verinfo *ver;
+  time_t ostimestamp;
+  char osname[32];
+  struct tm tm;
+
+  ostimestamp = get_image_header(krnl)->header.timestamp;
+  gmtime_r(&ostimestamp, &tm);
+
+  ver = get_version_info(krnl);
+  if (!ver) return -ENOENT;
+  if (get_version_value(krnl, "ProductName", osname, sizeof(osname)) < 0) strcpy(osname, "Sanos");
+
+  pprintf(pf, "%s version %d.%d.%d.%d", osname, ver->file_major_version, ver->file_minor_version, ver->file_release_number, ver->file_build_number);
+
+  if (ver->file_flags & VER_FLAG_PRERELEASE) pprintf(pf, " prerelease");
+  if (ver->file_flags & VER_FLAG_PATCHED) pprintf(pf, " patch");
+  if (ver->file_flags & VER_FLAG_PRIVATEBUILD) pprintf(pf, " private");
+  if (ver->file_flags & VER_FLAG_DEBUG) pprintf(pf, " debug");
+
+  pprintf(pf, " (%04d-%02d-%02d %02d:%02d:%02d)", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+  pprintf(pf, "\n");
 
   return 0;
 }
 
 static int copyright_proc(struct proc_file *pf, void *arg)
 {
+  hmodule_t krnl = (hmodule_t) OSBASE;
+  char copy[128];
+  char legal[128];
+
+  if (get_version_value(krnl, "LegalCopyright", copy, sizeof(copy)) < 0) *copy = 0;
+  if (get_version_value(krnl, "LegalTrademarks", legal, sizeof(legal)) < 0) *legal = 0;
+
+  version_proc(pf, arg);
+  pprintf(pf, "%s %s\n\n", copy, legal);
   proc_write(pf, copyright, strlen(copyright));
   return 0;
 }
@@ -275,12 +256,7 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
   //clear_screen();
 
   // Display banner
-#ifdef DEBUG
-  kprintf(KERN_INFO "starting %s version %s Debug Build %d (%s %s)\n", OSNAME, OSVERSION, buildno(), __DATE__, __TIME__);
-#else
-  kprintf(KERN_INFO "starting %s version %s Build %d (%s %s)\n", OSNAME, OSVERSION, buildno(), __DATE__, __TIME__);
-#endif
-  //kprintf("%s\n", COPYRIGHT);
+  kprintf(KERN_INFO "boot: starting kernel\n");
   if (*krnlopts) kprintf(KERN_INFO "options: %s\n", krnlopts);
 
   // Initialize CPU
@@ -367,7 +343,7 @@ void main(void *arg)
   unsigned long stack_reserve;
   unsigned long stack_commit;
   struct image_header *imghdr;
-
+  struct verinfo *ver;
   char bootdev[8];
   int rc;
   char *str;
@@ -448,6 +424,11 @@ void main(void *arg)
 
   // Initialize module loader
   init_kernel_modules();
+
+  get_version_value((hmodule_t) OSBASE, "ProductName", peb->osname, sizeof peb->osname);
+  peb->ostimestamp = get_image_header((hmodule_t) OSBASE)->header.timestamp;
+  ver = get_version_info((hmodule_t) OSBASE);
+  if (ver) memcpy(&peb->osversion, ver, sizeof(struct verinfo));
 
   // Install device drivers
   install_drivers();

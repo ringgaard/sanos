@@ -873,17 +873,12 @@ static struct image_resource_directory_entry *find_resource(char *resbase, struc
   return NULL;
 }
 
-int get_resource_data(struct moddb *db, hmodule_t hmod, char *id1, char *id2, char *id3, void **data)
+int get_resource_data(hmodule_t hmod, char *id1, char *id2, char *id3, void **data)
 {
-  struct module *mod;
   char *resbase;
   struct image_resource_directory *dir;
   struct image_resource_directory_entry *direntry;
   struct image_resource_data_entry *dataentry;
-
-  // Find module
-  mod = get_module_for_handle(db, hmod);
-  if (mod == NULL) return -EINVAL;
 
   // Find resource root directory
   resbase = get_image_directory(hmod, IMAGE_DIRECTORY_ENTRY_RESOURCE);

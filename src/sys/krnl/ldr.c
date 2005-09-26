@@ -35,6 +35,7 @@
 
 struct moddb kmods;
 struct mutex ldr_lock;
+unsigned long ostimestamp;
 
 static void *load_image(char *filename)
 {

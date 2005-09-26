@@ -90,6 +90,7 @@ src\                           Souce files
     time.h                     Time routines
     unistd.h                   Standard symbolic constants and types
     utime.h                    Definitions/declarations for utime()
+    verinfo.h                  Module version information
     win32.h                    Win32 definitions
     arpa\                      ARPA network include files
       inet.h                   Definitions for internet operations
@@ -206,6 +207,7 @@ src\                           Souce files
     ulldvrm.asm                Unsigned long divide and remainder routine
     ullrem.asm                 Unsigned long remainder routine
     ullshr.asm                 Long shift right
+    verinfo.c                  Module version information
     vsprintf.c                 Print formating routines
     xtoa.c                     Convert integers to strings
     math\                      Math routines
@@ -307,6 +309,7 @@ src\                           Souce files
       iop.c                    Port input/output
       iovec.c                  Scatter/gather utility routines
       kmalloc.c                Kernel heap allocator
+      krnl.rc                  Kernel resource file with version infomation
       kmem.c                   Kernel memory page allocator
       ldr.c                    Kernel module loader
       object.c                 Object manager

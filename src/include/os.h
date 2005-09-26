@@ -242,7 +242,9 @@ struct section;
 #define CREATE_DETACHED         0x00000020
 #define CREATE_POSIX            0x00000040
 
+//
 // Spawn flags
+//
 
 #define P_WAIT      0
 #define P_NOWAIT    1
@@ -1024,6 +1026,39 @@ struct pollfd
 #define IOEVT_CLOSE    0x0020
 
 //
+// Module version info
+//
+
+#pragma pack(push)
+#pragma pack(1)
+
+struct verinfo 
+{ 
+  unsigned long signature;
+  unsigned long format;
+
+  unsigned short file_minor_version;
+  unsigned short file_major_version;
+  unsigned short file_build_number;
+  unsigned short file_release_number;
+
+  unsigned short product_minor_version;
+  unsigned short product_major_version;
+  unsigned short product_build_number;
+  unsigned short product_release_number;
+
+  unsigned long file_flags_mask;
+  unsigned long file_flags;
+
+  unsigned long file_os;
+  unsigned long file_type;
+  unsigned long file_subtype;
+  unsigned __int64 file_date;
+};
+
+#pragma pack(pop)
+
+//
 // Process Environment Block
 //
 
@@ -1053,6 +1088,10 @@ struct peb
 
   struct job *firstjob;
   struct job *lastjob;
+
+  char osname[16];
+  time_t ostimestamp;
+  struct verinfo osversion;
 };
 
 //
@@ -1405,6 +1444,8 @@ osapi int getmodpath(hmodule_t hmod, char *buffer, int size);
 osapi int exec(hmodule_t hmod, const char *args);
 osapi void *getresdata(hmodule_t hmod, int type, char *name, int lang, int *len);
 osapi int getreslen(hmodule_t hmod, int type, char *name, int lang);
+osapi struct verinfo *getverinfo(hmodule_t hmod);
+osapi int getvervalue(hmodule_t hmod, char *name, char *buf, int size);
 
 osapi tls_t tlsalloc();
 osapi void tlsfree(tls_t index);

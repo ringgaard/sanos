@@ -184,6 +184,9 @@
 			<File
 				RelativePath="..\src\sys\os\tls.c">
 			</File>
+			<File
+				RelativePath="..\src\lib\verinfo.c">
+			</File>
 		</Filter>
 		<Filter
 			Name="include"
@@ -220,6 +223,9 @@
 			</File>
 			<File
 				RelativePath="..\src\include\os\syspage.h">
+			</File>
+			<File
+				RelativePath="..\src\include\verinfo.h">
 			</File>
 		</Filter>
 		<Filter

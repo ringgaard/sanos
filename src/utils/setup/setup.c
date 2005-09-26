@@ -43,7 +43,6 @@
 #include <os/seg.h>
 #include <os/tss.h>
 #include <os/syspage.h>
-#include <os/version.h>
 
 #define SECTORSIZE 512
 
@@ -671,8 +670,8 @@ int main(int argc, char *argv[])
     return 2;
   }
 
-  prodname = get_property(inst, "setup", "product", OSNAME);
-  prodvers = get_property(inst, "setup", "version", OSVERSION);
+  prodname = get_property(inst, "setup", "product", peb->osname);
+  prodvers = get_property(inst, "setup", "version", "1.0");
   scriptname = get_property(inst, "setup", "actions", "actions");
 
   printf("Installing %s version %s\n", prodname, prodvers);

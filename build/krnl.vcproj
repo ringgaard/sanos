@@ -59,7 +59,10 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="DEBUG"
+				AdditionalIncludeDirectories="..\src\include"
+				IgnoreStandardIncludePath="TRUE"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -120,7 +123,10 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				AdditionalIncludeDirectories="..\src\include"
+				IgnoreStandardIncludePath="TRUE"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -172,6 +178,9 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\kmem.c">
+			</File>
+			<File
+				RelativePath="..\src\sys\krnl\krnl.rc">
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\ldr.c">
@@ -293,6 +302,9 @@
 			</File>
 			<File
 				RelativePath="..\src\lib\time.c">
+			</File>
+			<File
+				RelativePath="..\src\lib\verinfo.c">
 			</File>
 			<File
 				RelativePath="..\src\lib\vsprintf.c">
@@ -446,6 +458,9 @@
 			</File>
 			<File
 				RelativePath="..\src\include\time.h">
+			</File>
+			<File
+				RelativePath="..\src\include\verinfo.h">
 			</File>
 			<Filter
 				Name="include/os"
