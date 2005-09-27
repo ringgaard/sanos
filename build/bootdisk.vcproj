@@ -2,20 +2,18 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="image"
-	ProjectGUID="{68C6D436-F009-4A49-BF48-E2BB9DF5B2B3}"
-	Keyword="MakeFileProj">
+	Name="bootdisk"
+	ProjectGUID="{117AA060-51D2-4A8F-8769-5029AA5FFE9D}">
 	<Platforms>
 		<Platform
 			Name="Win32"/>
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="Release|Win32"
+			Name="Debug|Win32"
 			OutputDirectory=".\..\img"
-			IntermediateDirectory=".\..\bin"
-			ConfigurationType="10"
-			UseOfMFC="0">
+			IntermediateDirectory=".\..\dbg\bin"
+			ConfigurationType="10">
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
@@ -26,11 +24,10 @@
 				Name="VCPreBuildEventTool"/>
 		</Configuration>
 		<Configuration
-			Name="Debug|Win32"
+			Name="Release|Win32"
 			OutputDirectory=".\..\img"
-			IntermediateDirectory=".\..\dbg\bin"
-			ConfigurationType="10"
-			UseOfMFC="0">
+			IntermediateDirectory=".\..\bin"
+			ConfigurationType="10">
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
@@ -62,44 +59,38 @@
 		</File>
 		<File
 			RelativePath="bootdisk.lst">
+			<FileConfiguration
+				Name="Debug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Make floppy disk boot image"
+					CommandLine="..\tools\mkdfs -d $(OutDir)\sanos.flp -b $(IntDir)\boot -l $(IntDir)\osldr.dll -k $(IntDir)\krnl.dll -c 1440 -i -f -F -S .. bootdisk.lst -a
+"
+					AdditionalDependencies="$(IntDir)\boot;$(IntDir)\osldr.dll;$(IntDir)\krnl.dll;$(IntDir)\ndis.sys;$(IntDir)\eepro100.sys;$(IntDir)\rtl8139.sys;$(IntDir)\3c905c.sys;$(IntDir)\pcnet32.sys;$(IntDir)\ne2000.sys;$(IntDir)\sis900.sys;$(IntDir)\os.dll;$(IntDir)\httpd.dll;$(IntDir)\sh.exe;$(IntDir)\fdisk.exe;$(IntDir)\setup.exe;$(IntDir)\msvcrt.dll;$(IntDir)\kernel32.dll;$(IntDir)\user32.dll;$(IntDir)\advapi32.dll;$(IntDir)\winmm.dll;$(IntDir)\wsock32.dll;$(IntDir)\jinit.exe;$(IntDir)\edit.exe;$(IntDir)\telnetd.exe;krnl.ini;os.ini;setup.ini"
+					Outputs="$(OutDir)\sanos.flp"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Make floppy disk boot image"
+					CommandLine="..\tools\mkdfs -d $(OutDir)\sanos.flp -b $(IntDir)\boot -l $(IntDir)\osldr.dll -k $(IntDir)\krnl.dll -c 1440 -i -f -S .. -F bootdisk.lst
+"
+					AdditionalDependencies="$(IntDir)\boot;$(IntDir)\osldr.dll;$(IntDir)\krnl.dll;$(IntDir)\ndis.sys;$(IntDir)\eepro100.sys;$(IntDir)\rtl8139.sys;$(IntDir)\3c905c.sys;$(IntDir)\pcnet32.sys;$(IntDir)\ne2000.sys;$(IntDir)\sis900.sys;$(IntDir)\os.dll;$(IntDir)\httpd.dll;$(IntDir)\sh.exe;$(IntDir)\fdisk.exe;$(IntDir)\setup.exe;$(IntDir)\msvcrt.dll;$(IntDir)\kernel32.dll;$(IntDir)\user32.dll;$(IntDir)\advapi32.dll;$(IntDir)\winmm.dll;$(IntDir)\wsock32.dll;$(IntDir)\jinit.exe;$(IntDir)\edit.exe;$(IntDir)\telnetd.exe;krnl.ini;os.ini;setup.ini"
+					Outputs="$(OutDir)\sanos.flp"/>
+			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="bootdiskdbg.lst">
-		</File>
-		<File
-			RelativePath="init">
+			RelativePath=".\init">
 		</File>
 		<File
 			RelativePath=".\krnl.ini">
 		</File>
 		<File
-			RelativePath=".\mkbootdisk.cmd">
-			<FileConfiguration
-				Name="Release|Win32">
-				<Tool
-					Name="VCCustomBuildTool"
-					Description="Create boot disk"
-					CommandLine="mkbootdisk . img\bootdisk.img build\bootdisk.lst
-"
-					AdditionalDependencies="$(IntDir)\boot;$(IntDir)\osldr.dll;$(IntDir)\krnl.dll;$(IntDir)\ndis.sys;$(IntDir)\eepro100.sys;$(IntDir)\rtl8139.sys;$(IntDir)\3c905c.sys;$(IntDir)\pcnet32.sys;$(IntDir)\ne2000.sys;$(IntDir)\sis900.sys;$(IntDir)\os.dll;$(IntDir)\httpd.dll;$(IntDir)\sh.exe;$(IntDir)\fdisk.exe;$(IntDir)\setup.exe;$(IntDir)\msvcrt.dll;$(IntDir)\kernel32.dll;$(IntDir)\user32.dll;$(IntDir)\advapi32.dll;$(IntDir)\winmm.dll;$(IntDir)\wsock32.dll;$(IntDir)\jinit.exe;$(IntDir)\edit.exe;$(IntDir)\telnetd.exe;krnl.ini;os.ini;setup.ini"
-					Outputs="..\img\bootdisk.img"/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32">
-				<Tool
-					Name="VCCustomBuildTool"
-					Description="Create boot disk"
-					CommandLine="mkbootdisk dbg img\bootdisk.img ..\build\bootdiskdbg.lst
-"
-					AdditionalDependencies="$(IntDir)\boot;$(IntDir)\osldr.dll;$(IntDir)\krnl.dll;$(IntDir)\ndis.sys;$(IntDir)\eepro100.sys;$(IntDir)\rtl8139.sys;$(IntDir)\3c905c.sys;$(IntDir)\pcnet32.sys;$(IntDir)\ne2000.sys;$(IntDir)\sis900.sys;$(IntDir)\os.dll;$(IntDir)\httpd.dll;$(IntDir)\sh.exe;$(IntDir)\fdisk.exe;$(IntDir)\setup.exe;$(IntDir)\msvcrt.dll;$(IntDir)\kernel32.dll;$(IntDir)\user32.dll;$(IntDir)\advapi32.dll;$(IntDir)\winmm.dll;$(IntDir)\wsock32.dll;$(IntDir)\jinit.exe;$(IntDir)\edit.exe;$(IntDir)\telnetd.exe;krnl.ini;os.ini;setup.ini"
-					Outputs="..\img\bootdisk.img"/>
-			</FileConfiguration>
-		</File>
-		<File
 			RelativePath=".\os.ini">
 		</File>
 		<File
-			RelativePath="sanos.dep">
+			RelativePath=".\sanos.dep">
 		</File>
 		<File
 			RelativePath=".\setup.ini">

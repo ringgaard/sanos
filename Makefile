@@ -819,14 +819,18 @@ $(BIN)/httpd.dll: \
 # bootdisk
 #
 
-bootdisk: dirs sanos $(MKDFS) $(BUILD)/bootdisk.lst
-    $(MKDFS) -d $(IMG)/bootdisk.img -b $(BIN)\boot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 1440 -i -f -S $(TOPDIR) -F $(BUILD)\bootdisk.lst
+bootdisk: $(IMG)/sanos.flp
+
+$(IMG)/sanos.flp: dirs sanos $(MKDFS) $(BUILD)/bootdisk.lst
+    $(MKDFS) -d $(IMG)/sanos.flp -b $(BIN)\boot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 1440 -i -f -S $(TOPDIR) -F $(BUILD)\bootdisk.lst
 
 #
 # netbootimg
 #
 
-netbootimg: dirs sanos $(MKDFS) $(BUILD)/bootnet.lst
+netbootimg: $(IMG)/sanos.0
+
+$(IMG)/sanos.0: dirs sanos $(MKDFS) $(BUILD)/bootnet.lst
     $(MKDFS) -d $(IMG)/sanos.0 -b $(BIN)\netboot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 512 -I 8192 -i -f -S $(TOPDIR) -F $(BUILD)\bootnet.lst
 
 #

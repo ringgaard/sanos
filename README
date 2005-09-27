@@ -68,13 +68,13 @@ source code from sanos-src.x.x.x.zip (see below). Unzip the files into
 a directory (e.g. c:\sanos) and go to the build directory and execute 
 the mkbootdisk batch script:
 
-  c:\sanos\build> mkbootdisk . img\bootdisk.img build\bootdisk.lst
+  c:\sanos\build> mkbootdisk
 
-This makes a bootdisk.img file in the img directory. This file can be
+This makes a sanos.flp file in the img directory. This file can be
 written to a blank floppy disk using the mkfloppy utility found in 
 the tools directory:
 
-  c:\sanos\img> ..\tools\mkfloppy a: bootdisk.img
+  c:\sanos\img> ..\tools\mkfloppy a: sanos.flp
 
 Boot your computer using the disk. Remember to set Floppy Disk as your
 first boot device in your BIOS setup.
@@ -120,10 +120,10 @@ www.jbox.dk and unzip it into a directory (e.g. c:\sanos). You will need Microso
 Visual C version 7 in order to compile the source code. 
 
 Goto to the build directory and double click sanos.sln. After Visual Studio has 
-started right click the image project and select 'Set as Startup Project'.
+started right click the bootdisk project and select 'Set as Startup Project'.
 
 Right click the sanos solution in the project pane and select 'Build Solution'.
-This will compile and link all the code and create a floppy image (bootdisk.img)
+This will compile and link all the code and create a floppy image (sanos.flp)
 in the img subdirectory. See above for booting and installing this image.
 
 

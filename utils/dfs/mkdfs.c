@@ -336,21 +336,13 @@ void transfer_files(char *dstdir, char *srcdir)
   FindClose(hfind);
 }
 
-void process_filelist(char *filelist)
+void process_filelist(FILE *f)
 {
-  FILE *f;
   char line[1024];
   char *p;
   char *src;
   char *dst;
   char *altsrc;
-
-  f = fopen(filelist, "r");
-  if (!f)
-  {
-    perror(filelist);
-    return;
-  }
 
   while (fgets(line, sizeof line, f))
   {
@@ -399,8 +391,6 @@ void process_filelist(char *filelist)
 	transfer_file(dst, src);
     }
   }
-
-  fclose(f);
 }
 
 void list_file(char *filename)
@@ -854,9 +844,22 @@ int main(int argc, char **argv)
   // Copy files to device
   if (filelist)
   {
+    FILE *f;
+
     printf("Transfering files from %s to device\n", filelist);
-    if (source) SetCurrentDirectory(source);
-    process_filelist(filelist);
+
+    f = fopen(filelist, "r");
+    if (!f)
+    {
+      perror(filelist);
+      return;
+    }
+    else
+    {
+      if (source) SetCurrentDirectory(source);
+      process_filelist(f);
+      fclose(f);
+    }
   }
   else if (source)
   {
