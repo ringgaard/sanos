@@ -51,7 +51,7 @@ vgaromimage: VGABIOS-elpin-2.40
 #floppya: 1_2=../1_2, status=ejected
 
 #floppya: 1_44=..\..\bin\boot.img, status=inserted
-floppya: 1_44=..\..\img\bootdisk.img, status=inserted
+floppya: 1_44=..\..\img\sanos.flp, status=inserted
 #floppya: 1_44=sanos-1.2.0.img, status=inserted
 #floppya: 1_44=\zignx\zxlog\img\zxlog.img, status=inserted
 
