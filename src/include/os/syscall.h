@@ -124,7 +124,11 @@
 #define SYSCALL_MUTEXREL       87
 #define SYSCALL_PREAD          88
 #define SYSCALL_PWRITE         89
+#define SYSCALL_GETUID         90
+#define SYSCALL_GETGID         91
+#define SYSCALL_SETUID         92
+#define SYSCALL_SETGID         93
 
-#define SYSCALL_MAX            89
+#define SYSCALL_MAX            93
 
 #endif

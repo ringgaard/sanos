@@ -38,32 +38,7 @@
 #ifndef TIME_H
 #define TIME_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
-
-#ifndef NULL
-#ifdef __cplusplus
-#define NULL    0
-#else
-#define NULL    ((void *)0)
-#endif
-#endif
-
-#ifndef _TIME_T_DEFINED
-#define _TIME_T_DEFINED
-typedef long time_t;
-#endif
-
-#ifndef _CLOCK_T_DEFINED
-#define _CLOCK_T_DEFINED
-typedef long clock_t;
-#endif
-
-#ifndef _SIZE_T_DEFINED
-#define _SIZE_T_DEFINED
-typedef unsigned int size_t;
-#endif
+#include <sys/types.h>
 
 #define CLOCKS_PER_SEC  1000
 

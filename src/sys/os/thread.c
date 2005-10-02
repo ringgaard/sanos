@@ -312,6 +312,31 @@ int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
   struct tib *tib;
   struct job *job;
   int rc;
+  char pgmbuf[MAXPATH];
+
+  if (!pgm)
+  {
+    char *p = (char *) cmdline;
+    char *q = pgmbuf;
+    int dotseen = 0;
+
+    if (!cmdline)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+    while (*p != 0 && *p != ' ')
+    {
+      if (*p == '.') dotseen = 1;
+      if (*p == PS1 || *p == PS2) dotseen = 0;
+      if (q - pgmbuf == MAXPATH - 1) break;
+      *q++ = *p++;
+    }
+    *q++ = 0;
+    if (!dotseen && strlen(pgmbuf) + 5 < MAXPATH) strcat(pgmbuf, ".exe");
+    pgm = pgmbuf;
+  }
 
   hmod = dlopen(pgm, 0);
   if (!hmod) return -1;

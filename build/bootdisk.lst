@@ -49,7 +49,9 @@
 
 /etc/krnl.ini     build\krnl.ini
 /etc/os.ini       build\os.ini
-/etc/init         build\init
+/etc/rc           build\rc
+/etc/passwd       build\passwd
+/etc/group        build\group
 
 ; Setup files for hard disk install
 

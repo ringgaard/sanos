@@ -108,7 +108,7 @@ int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
 {
   ino_t ino;
   struct inode *inode;
-  size_t size;
+  off64_t size;
 
   ino = lookup_name((struct filsys *) fs->data, DFS_INODE_ROOT, name, strlen(name));
   if (ino == NOINODE) return -ENOENT;
@@ -122,11 +122,9 @@ int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
   {
     memset(buffer, 0, sizeof(struct stat64));
 
-    if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY) 
-      buffer->st_mode = S_IFDIR | S_IREAD;
-    else
-      buffer->st_mode = S_IFREG | S_IREAD | S_IWRITE | S_IEXEC;
-
+    buffer->st_mode = inode->desc->mode;
+    buffer->st_uid = inode->desc->uid;
+    buffer->st_gid = inode->desc->gid;
     buffer->st_ino = ino;
     buffer->st_nlink = inode->desc->linkcount;
     buffer->st_dev = ((struct filsys *) fs->data)->devno;
@@ -139,7 +137,7 @@ int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
 
   release_inode(inode);
 
-  return size;
+  return (int) size;
 }
 
 int dfs_mkdir(struct fs *fs, char *name, int mode)
@@ -159,13 +157,14 @@ int dfs_mkdir(struct fs *fs, char *name, int mode)
     return -EEXIST;
   }
 
-  dir = alloc_inode(parent, DFS_INODE_FLAG_DIRECTORY);
+  dir = alloc_inode(parent, mode);
   if (!dir)
   {
     release_inode(parent);
     return -ENOSPC;
   }
 
+  dir->desc->mode = (mode & 0777) | S_IFDIR;
   dir->desc->linkcount++;
   mark_inode_dirty(dir);
 
@@ -209,7 +208,7 @@ int dfs_rmdir(struct fs *fs, char *name)
     return -EIO;
   }
 
-  if (!(dir->desc->flags & DFS_INODE_FLAG_DIRECTORY))
+  if (!S_ISDIR(dir->desc->mode))
   {
     release_inode(dir);
     release_inode(parent);
@@ -385,7 +384,7 @@ int dfs_unlink(struct fs *fs, char *name)
     return -EIO;
   }
 
-  if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY)
+  if (S_ISDIR(inode->desc->mode))
   {
     release_inode(inode);
     release_inode(dir);

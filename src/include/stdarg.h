@@ -38,14 +38,6 @@
 #ifndef STDARG_H
 #define STDARG_H
 
-#ifndef NULL
-#ifdef __cplusplus
-#define NULL    0
-#else
-#define NULL    ((void *)0)
-#endif
-#endif
-
 #ifndef _VA_LIST_DEFINED
 #define _VA_LIST_DEFINED
 typedef char *va_list;

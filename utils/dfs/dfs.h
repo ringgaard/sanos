@@ -2,12 +2,10 @@
 #define DFS_H
 
 #define DFS_SIGNATURE              0x00534644
-#define DFS_VERSION                1
+#define DFS_VERSION                2
 
 #define DFS_TOPBLOCKDIR_SIZE       16
-#define DFS_MAX_DEPTH              6
-
-#define DFS_INODE_FLAG_DIRECTORY   1
+#define DFS_MAX_DEPTH              16
 
 #define DFS_INODE_ROOT             0
 #define DFS_INODE_KERNEL           1
@@ -46,14 +44,18 @@ struct groupdesc
 
 struct inodedesc
 {
-  unsigned int flags;
+  unsigned short mode;
+  unsigned short uid;
+  unsigned short gid;
+  unsigned short resv;
+  time_t atime;
   time_t ctime;
   time_t mtime;
-  loff_t size;
-  int linkcount;
   unsigned int blocks;
+  unsigned __int64 size;
+  int linkcount;
   int depth;
-  char reserved[36];
+  char reserved[24];
   blkno_t blockdir[DFS_TOPBLOCKDIR_SIZE];
 };
 

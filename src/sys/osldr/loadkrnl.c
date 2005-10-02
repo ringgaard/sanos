@@ -152,7 +152,7 @@ void load_kernel(int bootdrv)
   inode += DFS_INODE_KRNL;
 
   // Calculate kernel size
-  kernelsize = inode->size;
+  kernelsize = (int) inode->size;
   kernelpages = PAGES(kernelsize);
   //kprintf("Kernel size %d KB\n", kernelsize / 1024);
 

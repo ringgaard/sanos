@@ -1,7 +1,7 @@
 //
-// dlfcn.h
+// pwd.h
 //
-// Dynamic linking
+// User database
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -35,26 +35,33 @@
 #pragma once
 #endif
 
-#ifndef DLFCN_H
-#define DLFCN_H
+#ifndef PWD_H
+#define PWD_H
 
 #include <sys/types.h>
 
-#define RTLD_LAZY   0x0001
-#define RTLD_NOW    0x0002
-#define RTLD_GLOBAL 0x0100
-#define RTLD_LOCAL  0x0000
+#ifndef _PASSWD_DEFINED
+#define _PASSWD_DEFINED
 
-#define RTLD_DEFAULT ((void *) 0)
+struct passwd
+{
+  char *pw_name;    // User name
+  char *pw_passwd;  // User password
+  uid_t pw_uid;     // User id
+  gid_t pw_gid;     // Group id
+  char *pw_gecos;   // Real name
+  char *pw_dir;     // Home directory
+  char *pw_shell;   // Shell program
+};
+
+#endif
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
-osapi hmodule_t dlopen(const char *name, int mode);
-osapi int dlclose(hmodule_t hmod);
-osapi void *dlsym(hmodule_t hmod, const char *procname);
-osapi char *dlerror();
+osapi struct passwd *getpwnam(const char *name);
+osapi struct passwd *getpwuid(uid_t uid);
 
 #ifdef  __cplusplus
 }

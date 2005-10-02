@@ -38,24 +38,11 @@
 #ifndef PTHREAD_H
 #define PTHREAD_H
 
+#include <sys/types.h>
+
 //
 // Basic types
 //
-
-#ifndef _SIZE_T_DEFINED
-#define _SIZE_T_DEFINED
-typedef unsigned int size_t;
-#endif
-
-#ifndef _TLS_T_DEFINED
-#define _TLS_T_DEFINED
-typedef unsigned long tls_t;
-#endif
-
-#ifndef _HANDLE_T_DEFINED
-#define _HANDLE_T_DEFINED
-typedef int handle_t;
-#endif
 
 #ifndef _TIMESPEC_DEFINED
 #define _TIMESPEC_DEFINED

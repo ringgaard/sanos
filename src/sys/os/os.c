@@ -61,6 +61,7 @@ int sprintf(char *buf, const char *fmt, ...);
 
 void init_sntpd();
 void init_threads(hmodule_t hmod, struct term *initterm);
+void init_userdb();
 
 void start_syslog();
 void stop_syslog();
@@ -667,6 +668,11 @@ unsigned sleep(unsigned seconds)
   return 0;
 }
 
+char *crypt(const char *key, const char *salt)
+{
+  return crypt_r(key, salt, gettib()->cryptbuf);
+}
+
 void init_net()
 {
   struct section *sect;
@@ -887,8 +893,7 @@ int save_random_device(char *rndfn)
 
 int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 {
-  char *initpgm;
-  char *initargs;
+  char *init;
   int rc;
   char *rndfn;
 
@@ -941,6 +946,9 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 
   init_module_database(&usermods, "os.dll", hmod, get_property(osconfig, "os", "libpath", "/bin"), find_section(osconfig, "modaliases"), 0);
 
+  // Load user database
+  init_userdb();
+
   // Mount devices
   init_mount();
 
@@ -952,16 +960,19 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   if (rndfn) seed_random_device(rndfn);
 
   // Load and execute init program
-  initpgm = get_property(osconfig, "os", "initpgm", "/bin/init.exe");
-  initargs = get_property(osconfig, "os", "initargs", "");
+  init = get_property(osconfig, "os", "init", "/bin/sh");
+  while (1)
+  {
+    rc = spawn(P_WAIT, NULL, init, NULL);
+    if (rc != 0) 
+    {
+      syslog(LOG_DEBUG, "Init returned exit code %d: %s", rc, init);
+      sleep(1);
+    }
+  }
 
-  //syslog(LOG_DEBUG, "exec %s(%s)", initpgm, initargs);
-  rc = spawn(P_WAIT, initpgm, initargs, NULL);
-  if (rc != 0) syslog(LOG_DEBUG, "Exitcode: %d", rc);
-
-  if (rndfn) save_random_device(rndfn);
-
-  syslog(LOG_INFO | LOG_SYSLOG, "shutdown");
-  stop_syslog();
-  exitos(EXITOS_POWEROFF);
+  //if (rndfn) save_random_device(rndfn);
+  //syslog(LOG_INFO | LOG_SYSLOG, "shutdown");
+  //stop_syslog();
+  //exitos(EXITOS_POWEROFF);
 }

@@ -38,19 +38,7 @@
 #ifndef UTIME_H
 #define UTIME_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
-
-#ifndef _TIME_T_DEFINED
-#define _TIME_T_DEFINED
-typedef long time_t;
-#endif
-
-#ifndef _HANDLE_T_DEFINED
-#define _HANDLE_T_DEFINED
-typedef int handle_t;
-#endif
+#include <sys/types.h>
 
 #ifndef _UTIMBUF_DEFINED
 #define _UTIMBUF_DEFINED

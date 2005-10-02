@@ -84,15 +84,13 @@ int dfs_stat(struct fs *fs, char *name, struct stat *buffer)
   inode = get_inode((struct filsys *) fs->data, ino);
   if (!inode) return -1;
 
-  buffer->mode = 0;
-  if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY) buffer->mode |= FS_DIRECTORY;
-
+  buffer->mode = inode->desc->mode;
   buffer->ino = ino;
   buffer->atime = time(NULL);
   buffer->mtime = inode->desc->mtime;
   buffer->ctime = inode->desc->ctime;
   
-  buffer->quad.size_low = inode->desc->size;
+  buffer->quad.size_low = (int) inode->desc->size;
   buffer->quad.size_high = 0;
 
   release_inode(inode);
@@ -116,7 +114,7 @@ int dfs_mkdir(struct fs *fs, char *name)
     return -1;
   }
 
-  dir = alloc_inode(parent, DFS_INODE_FLAG_DIRECTORY);
+  dir = alloc_inode(parent, S_IFDIR | 0644);
   if (!dir)
   {
     release_inode(parent);
@@ -164,7 +162,7 @@ int dfs_rmdir(struct fs *fs, char *name)
     return -1;
   }
 
-  if (!(dir->desc->flags & DFS_INODE_FLAG_DIRECTORY) || dir->desc->size > 0)
+  if (!S_ISDIR(dir->desc->mode) || dir->desc->size > 0)
   {
     release_inode(dir);
     release_inode(parent);
@@ -317,7 +315,7 @@ int dfs_unlink(struct fs *fs, char *name)
     return -1;
   }
 
-  if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY)
+  if (S_ISDIR(inode->desc->mode))
   {
     release_inode(inode);
     release_inode(dir);

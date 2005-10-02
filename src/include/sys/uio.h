@@ -38,14 +38,7 @@
 #ifndef SYS_UIO_H
 #define SYS_UIO_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
-
-#ifndef _HANDLE_T_DEFINED
-#define _HANDLE_T_DEFINED
-typedef int handle_t;
-#endif
+#include <sys/types.h>
 
 #ifndef _IOVEC_DEFINED
 #define _IOVEC_DEFINED

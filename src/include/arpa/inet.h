@@ -38,14 +38,7 @@
 #ifndef ARPA_INET_H
 #define ARPA_INET_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
-
-#ifndef _HANDLE_T_DEFINED
-#define _HANDLE_T_DEFINED
-typedef int handle_t;
-#endif
+#include <sys/types.h>
 
 #ifndef _IN_PORT_T_DEFINED
 #define _IN_PORT_T_DEFINED

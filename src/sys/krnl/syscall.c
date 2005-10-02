@@ -3034,6 +3034,46 @@ static int sys_pwrite(char *params)
   return rc;
 }
 
+static int sys_getuid(char *params)
+{
+  return self()->uid;
+}
+
+static int sys_getgid(char *params)
+{
+  return self()->gid;
+}
+
+static int sys_setuid(char *params)
+{
+  uid_t uid;
+  struct thread *thread = self();
+
+  lock_buffer(params, sizeof(uid_t));
+  uid = *(uid_t *) params;
+  unlock_buffer(params, sizeof(uid_t));
+
+  if (thread->uid != 0 && thread->uid != uid) return -EPERM;
+  thread->uid = uid;
+
+  return 0;
+}
+
+static int sys_setgid(char *params)
+{
+  gid_t gid;
+  struct thread *thread = self();
+
+  lock_buffer(params, sizeof(gid_t));
+  gid = *(gid_t *) params;
+  unlock_buffer(params, sizeof(gid_t));
+
+  if (thread->gid != 0 && thread->gid != gid) return -EPERM;
+  thread->gid = gid;
+
+  return 0;
+}
+
 struct syscall_entry syscalltab[] =
 {
   {"null","", sys_null},
@@ -3126,6 +3166,10 @@ struct syscall_entry syscalltab[] =
   {"mutexrel", "%p", sys_mutexrel},
   {"pread", "%d,%p,%d,%d-%d", sys_pread},
   {"pwrite", "%d,%p,%d,%d-%d", sys_pwrite},
+  {"getuid", "", sys_getuid},
+  {"getgid", "", sys_getgid},
+  {"setuid", "%d", sys_setuid},
+  {"setgid", "", sys_setgid},
 };
 
 int syscall(int syscallno, char *params)

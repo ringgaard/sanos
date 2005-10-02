@@ -45,7 +45,7 @@ ino_t find_dir_entry(struct inode *dir, char *name, int len)
   ino_t ino;
 
   if (len <= 0 || len >= MAXPATH) return NOINODE;
-  if (!(dir->desc->flags & DFS_INODE_FLAG_DIRECTORY)) return NOINODE;
+  if (!S_ISDIR(dir->desc->mode)) return NOINODE;
 
   for (block = 0; block < dir->desc->blocks; block++)
   {
@@ -147,7 +147,7 @@ struct inode *parse_name(struct filsys *fs, char **name, int *len)
   dir = get_inode(fs, ino);
   if (!dir) return NULL;
 
-  if (!(dir->desc->flags & DFS_INODE_FLAG_DIRECTORY))
+  if (!S_ISDIR(dir->desc->mode))
   {
     release_inode(dir);
     return NULL;
@@ -169,7 +169,7 @@ int add_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
   int minlen;
 
   if (len <= 0 || len >= MAXPATH) return -ENAMETOOLONG;
-  if (!(dir->desc->flags & DFS_INODE_FLAG_DIRECTORY)) return -ENOTDIR;
+  if (!S_ISDIR(dir->desc->mode)) return -ENOTDIR;
 
   for (block = 0; block < dir->desc->blocks; block++)
   {
@@ -243,7 +243,7 @@ ino_t modify_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
   ino_t oldino;
 
   if (len <= 0 || len >= MAXPATH) return NOINODE;
-  if (!(dir->desc->flags & DFS_INODE_FLAG_DIRECTORY)) return NOINODE;
+  if (!S_ISDIR(dir->desc->mode)) return NOINODE;
 
   for (block = 0; block < dir->desc->blocks; block++)
   {
@@ -288,7 +288,7 @@ int delete_dir_entry(struct inode *dir, char *name, int len)
   struct dentry *nextde;
 
   if (len <= 0 || len >= MAXPATH) return -ENAMETOOLONG;
-  if (!(dir->desc->flags & DFS_INODE_FLAG_DIRECTORY)) return -ENOTDIR;
+  if (!S_ISDIR(dir->desc->mode)) return -ENOTDIR;
 
   for (block = 0; block < dir->desc->blocks; block++)
   {
@@ -366,7 +366,7 @@ int iterate_dir(struct inode *dir, filldir_t filldir, void *data)
   struct dentry *de;
   int rc;
 
-  if (!(dir->desc->flags & DFS_INODE_FLAG_DIRECTORY)) return -ENOTDIR;
+  if (!S_ISDIR(dir->desc->mode)) return -ENOTDIR;
 
   for (block = 0; block < dir->desc->blocks; block++)
   {
@@ -413,7 +413,7 @@ int dfs_opendir(struct file *filp, char *name)
   inode = get_inode(fs, ino);
   if (!inode) return -EIO;
 
-  if (!(inode->desc->flags & DFS_INODE_FLAG_DIRECTORY))
+  if (!S_ISDIR(inode->desc->mode))
   {
     release_inode(inode);
     return -ENOTDIR;

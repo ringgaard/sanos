@@ -144,6 +144,9 @@
 				RelativePath="..\src\include\float.h">
 			</File>
 			<File
+				RelativePath="..\src\include\grp.h">
+			</File>
+			<File
 				RelativePath="..\src\include\hash.h">
 			</File>
 			<File
@@ -183,6 +186,9 @@
 				RelativePath="..\src\include\pthread.h">
 			</File>
 			<File
+				RelativePath="..\src\include\pwd.h">
+			</File>
+			<File
 				RelativePath="..\src\include\rmap.h">
 			</File>
 			<File
@@ -217,6 +223,9 @@
 			</File>
 			<File
 				RelativePath="..\src\include\string.h">
+			</File>
+			<File
+				RelativePath="..\src\include\syslog.h">
 			</File>
 			<File
 				RelativePath="..\src\include\time.h">

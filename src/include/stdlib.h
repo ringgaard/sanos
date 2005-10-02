@@ -38,24 +38,9 @@
 #ifndef STDLIB_H
 #define STDLIB_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
-
-#ifndef NULL
-#ifdef __cplusplus
-#define NULL    0
-#else
-#define NULL    ((void *)0)
-#endif
-#endif
+#include <sys/types.h>
 
 #define RAND_MAX     0x7fff
-
-#ifndef _SIZE_T_DEFINED
-#define _SIZE_T_DEFINED
-typedef unsigned int size_t;
-#endif
 
 #ifndef _DIV_T_DEFINED
 #define _DIV_T_DEFINED

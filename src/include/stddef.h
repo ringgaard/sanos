@@ -38,15 +38,6 @@
 #ifndef STDDEF_H
 #define STDDEF_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
-
-#ifndef _SIZE_T_DEFINED
-#define _SIZE_T_DEFINED
-typedef unsigned int size_t;
-#endif
-
 #ifndef _PTRDIFF_T_DEFINED
 #define _PTRDIFF_T_DEFINED
 typedef int ptrdiff_t;
@@ -75,11 +66,6 @@ osapi int *_errno();
 #endif
 
 #endif
-#endif
-
-#ifndef _WCHAR_T_DEFINED
-typedef unsigned short wchar_t;
-#define _WCHAR_T_DEFINED
 #endif
 
 #ifndef offsetof

@@ -38,9 +38,7 @@
 #ifndef SYS_SOCKET_H
 #define SYS_SOCKET_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
+#include <sys/types.h>
 
 #ifndef _IOVEC_DEFINED
 #define _IOVEC_DEFINED

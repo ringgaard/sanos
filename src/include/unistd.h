@@ -38,46 +38,7 @@
 #ifndef UNISTD_H
 #define UNISTD_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
-
-#ifndef NULL
-#ifdef __cplusplus
-#define NULL    0
-#else
-#define NULL    ((void *)0)
-#endif
-#endif
-
-#ifndef _SIZE_T_DEFINED
-#define _SIZE_T_DEFINED
-typedef unsigned int size_t;
-#endif
-
-#ifndef _LOFF_T_DEFINED
-#define _LOFF_T_DEFINED
-typedef long loff_t;
-#endif
-
-#ifndef _OFF64_T_DEFINED
-#define _OFF64_T_DEFINED
-typedef __int64 off64_t;
-#endif
-
-#ifndef _OFF_T_DEFINED
-#define _OFF_T_DEFINED
-#ifdef LARGEFILES
-typedef off64_t off_t;
-#else
-typedef loff_t off_t;
-#endif
-#endif
-
-#ifndef _HANDLE_T_DEFINED
-#define _HANDLE_T_DEFINED
-typedef int handle_t;
-#endif
+#include <sys/types.h>
 
 //
 // Standard file descriptors
@@ -147,6 +108,11 @@ osapi int mkdir(const char *name, int mode);
 osapi int rmdir(const char *name);
 osapi int gethostname(char *name, int namelen);
 osapi unsigned sleep(unsigned seconds);
+osapi char *crypt(const char *key, const char *salt);
+osapi int getuid();
+osapi int getgid();
+osapi int setuid(uid_t uid);
+osapi int setgid(gid_t gid);
 
 #ifdef  __cplusplus
 }

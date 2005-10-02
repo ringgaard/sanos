@@ -38,20 +38,10 @@
 #ifndef OS_H
 #define OS_H
 
+#include <sys/types.h>
+
 #ifndef SANOS
 #define SANOS
-#endif
-
-#ifndef osapi
-#ifdef OS_LIB
-#define osapi __declspec(dllexport)
-#else
-#ifdef KERNEL
-#define osapi
-#else
-#define osapi __declspec(dllimport)
-#endif
-#endif
 #endif
 
 #ifdef KRNL_LIB
@@ -63,88 +53,6 @@
 //
 // Basic types
 //
-
-#ifndef _TIME_T_DEFINED
-#define _TIME_T_DEFINED
-typedef long time_t;
-#endif
-
-#ifndef _CLOCK_T_DEFINED
-#define _CLOCK_T_DEFINED
-typedef long clock_t;
-#endif
-
-#ifndef _SIZE_T_DEFINED
-#define _SIZE_T_DEFINED
-typedef unsigned int size_t;
-#endif
-
-#ifndef _HANDLE_T_DEFINED
-#define _HANDLE_T_DEFINED
-typedef int handle_t;
-#endif
-
-#ifndef _TID_T_DEFINED
-#define _TID_T_DEFINED
-typedef unsigned long tid_t;
-#endif
-
-#ifndef _PID_T_DEFINED
-#define _PID_T_DEFINED
-typedef unsigned long pid_t;
-#endif
-
-#ifndef _TLS_T_DEFINED
-#define _TLS_T_DEFINED
-typedef unsigned long tls_t;
-#endif
-
-#ifndef _HMODULE_T_DEFINED
-#define _HMODULE_T_DEFINED
-typedef void *hmodule_t;
-#endif
-
-#ifndef _INO_T_DEFINED
-#define _INO_T_DEFINED
-typedef unsigned int ino_t;
-#endif
-
-#ifndef _DEV_T_DEFINED
-#define _DEV_T_DEFINED
-typedef unsigned int dev_t;
-#endif
-
-#ifndef _LOFF_T_DEFINED
-#define _LOFF_T_DEFINED
-typedef long loff_t;
-#endif
-
-#ifndef _OFF64_T_DEFINED
-#define _OFF64_T_DEFINED
-typedef __int64 off64_t;
-#endif
-
-#ifndef _BLKNO_T_DEFINED
-#define _BLKNO_T_DEFINED
-typedef unsigned int blkno_t;
-#endif
-
-#ifndef NOHANDLE
-#define NOHANDLE ((handle_t) -1)
-#endif
-
-#ifndef _VA_LIST_DEFINED
-#define _VA_LIST_DEFINED
-typedef char *va_list;
-#endif
-
-#ifndef NULL
-#ifdef __cplusplus
-#define NULL    0
-#else
-#define NULL    ((void *)0)
-#endif
-#endif
 
 #ifndef _TM_DEFINED
 #define _TM_DEFINED
@@ -298,6 +206,29 @@ struct section;
 #define S_IREAD        0000400         // Read permission, owner
 #define S_IWRITE       0000200         // Write permission, owner
 #define S_IEXEC        0000100         // Execute/search permission, owner
+
+#define S_ISLNK(m)	(((m) & S_IFMT) == S_IFLNK)
+#define S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)
+#define S_ISDIR(m)	(((m) & S_IFMT) == S_IFDIR)
+#define S_ISCHR(m)	(((m) & S_IFMT) == S_IFCHR)
+#define S_ISBLK(m)	(((m) & S_IFMT) == S_IFBLK)
+#define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
+#define S_ISSOCK(m)	(((m) & S_IFMT) == S_IFSOCK)
+
+#define S_IRWXU 00700
+#define S_IRUSR 00400
+#define S_IWUSR 00200
+#define S_IXUSR 00100
+
+#define S_IRWXG 00070
+#define S_IRGRP 00040
+#define S_IWGRP 00020
+#define S_IXGRP 00010
+
+#define S_IRWXO 00007
+#define S_IROTH 00004
+#define S_IWOTH 00002
+#define S_IXOTH 00001
 
 #endif
 
@@ -597,10 +528,10 @@ struct stat
 {
   dev_t st_dev;
   ino_t st_ino;
-  unsigned short st_mode;
-  short st_nlink;
-  short st_uid;
-  short st_gid;
+  mode_t st_mode;
+  nlink_t st_nlink;
+  uid_t st_uid;
+  gid_t st_gid;
   dev_t st_rdev;
   loff_t st_size;
   time_t st_atime;
@@ -612,10 +543,10 @@ struct stat64
 {
   dev_t st_dev;
   ino_t st_ino;
-  unsigned short st_mode;
-  short st_nlink;
-  short st_uid;
-  short st_gid;
+  mode_t st_mode;
+  nlink_t st_nlink;
+  uid_t st_uid;
+  gid_t st_gid;
   dev_t st_rdev;
   off64_t st_size;
   time_t st_atime;
@@ -1059,6 +990,39 @@ struct verinfo
 #pragma pack(pop)
 
 //
+// User database
+//
+
+#ifndef _PASSWD_DEFINED
+#define _PASSWD_DEFINED
+
+struct passwd
+{
+  char *pw_name;    // User name
+  char *pw_passwd;  // User password
+  uid_t pw_uid;     // User id
+  gid_t pw_gid;     // Group id
+  char *pw_gecos;   // Real name
+  char *pw_dir;     // Home directory
+  char *pw_shell;   // Shell program
+};
+
+#endif
+
+#ifndef _GROUP_DEFINED
+#define _GROUP_DEFINED
+
+struct group
+{
+  char *gr_name;    // Group name
+  char *gr_passwd;  // Group password
+  gid_t gr_gid;     // Group id
+  char **gr_mem;    // Group members
+};
+
+#endif
+
+//
 // Process Environment Block
 //
 
@@ -1148,6 +1112,7 @@ struct job
 
 #define CVTBUFSIZE        (309 + 43)
 #define ASCBUFSIZE        (26 + 2)
+#define CRYPTBUFSIZE      14
 
 struct xcptrec
 {
@@ -1197,8 +1162,9 @@ struct tib
   char cvtbuf[CVTBUFSIZE];         // For ecvt() and fcvt()
   char ascbuf[ASCBUFSIZE];         // For asctime()
   char tmpnambuf[MAXPATH];         // For tmpnam()
+  char cryptbuf[CRYPTBUFSIZE];     // For crypt()
 
-  char reserved1[1512];
+  char reserved1[1498];
 
   void *tls[MAX_TLS];              // Thread local storage
   char reserved2[240];
@@ -1387,6 +1353,19 @@ osapi handle_t self();
 osapi void exitos(int mode);
 osapi void dbgbreak();
 osapi char *strerror(int errnum);
+
+osapi char *crypt(const char *key, const char *salt);
+osapi char *crypt_r(const char *key, const char *salt, char *buf);
+
+osapi struct passwd *getpwnam(const char *name);
+osapi struct passwd *getpwuid(uid_t uid);
+osapi struct group *getgrnam(const char *name);
+osapi struct group *getgrgid(uid_t uid);
+
+osapi uid_t getuid();
+osapi gid_t getgid();
+osapi int setuid(uid_t uid);
+osapi int setgid(gid_t gid);
 
 osapi handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize, void *arg, int flags, struct tib **ptib);
 osapi int suspend(handle_t thread);

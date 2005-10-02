@@ -68,6 +68,26 @@ typedef unsigned int ino_t;
 typedef unsigned int dev_t;
 #endif
 
+#ifndef _MODE_T_DEFINED
+#define _MODE_T_DEFINED
+typedef unsigned short mode_t;
+#endif
+
+#ifndef _NLINK_T_DEFINED
+#define _NLINK_T_DEFINED
+typedef unsigned short nlink_t;
+#endif
+
+#ifndef _UID_T_DEFINED
+#define _UID_T_DEFINED
+typedef unsigned short uid_t;
+#endif
+
+#ifndef _GID_T_DEFINED
+#define _GID_T_DEFINED
+typedef unsigned short gid_t;
+#endif
+
 #ifndef _BLKNO_T_DEFINED
 #define _BLKNO_T_DEFINED
 typedef unsigned int blkno_t;
@@ -122,13 +142,15 @@ typedef unsigned long tls_t;
 typedef unsigned short wchar_t;
 #endif
 
+#ifndef _VA_LIST_DEFINED
+#define _VA_LIST_DEFINED
+typedef char *va_list;
+#endif
+
 typedef int port_t;
 typedef int err_t;
 
 typedef __int64 systime_t;
-typedef int mode_t;
-typedef int uid_t;
-typedef int gid_t;
 
 #ifndef NULL
 #ifdef __cplusplus
@@ -139,6 +161,19 @@ typedef int gid_t;
 #endif
 
 #ifndef _ONLY_STD_TYPES
+
+#ifndef osapi
+#ifdef OS_LIB
+#define osapi __declspec(dllexport)
+#else
+#ifdef KERNEL
+#define osapi
+#else
+#define osapi __declspec(dllimport)
+#endif
+#endif
+#endif
+
 #define K 1024
 #define M (K * K)
 #endif

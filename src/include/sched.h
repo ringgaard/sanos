@@ -38,10 +38,7 @@
 #ifndef SCHED_H
 #define SCHED_H
 
-#ifndef _PID_T_DEFINED
-#define _PID_T_DEFINED
-typedef unsigned long pid_t;
-#endif
+#include <sys/types.h>
 
 #define SCHED_OTHER 0
 #define SCHED_FIFO  1

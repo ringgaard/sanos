@@ -38,24 +38,7 @@
 #ifndef IO_H
 #define IO_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
-
-#ifndef _SIZE_T_DEFINED
-#define _SIZE_T_DEFINED
-typedef unsigned int size_t;
-#endif
-
-#ifndef _HANDLE_T_DEFINED
-#define _HANDLE_T_DEFINED
-typedef int handle_t;
-#endif
-
-#ifndef _LOFF_T_DEFINED
-#define _LOFF_T_DEFINED
-typedef unsigned int loff_t;
-#endif
+#include <sys/types.h>
 
 #ifdef  __cplusplus
 extern "C" {

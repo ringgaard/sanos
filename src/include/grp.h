@@ -1,7 +1,7 @@
 //
-// dlfcn.h
+// grp.h
 //
-// Dynamic linking
+// User group database
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -35,26 +35,30 @@
 #pragma once
 #endif
 
-#ifndef DLFCN_H
-#define DLFCN_H
+#ifndef GRP_H
+#define GRP_H
 
 #include <sys/types.h>
 
-#define RTLD_LAZY   0x0001
-#define RTLD_NOW    0x0002
-#define RTLD_GLOBAL 0x0100
-#define RTLD_LOCAL  0x0000
+#ifndef _GROUP_DEFINED
+#define _GROUP_DEFINED
 
-#define RTLD_DEFAULT ((void *) 0)
+struct group
+{
+  char *gr_name;    // Group name
+  char *gr_passwd;  // Group password
+  gid_t gr_gid;     // Group id
+  char **gr_mem;    // Group members
+};
+
+#endif
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
-osapi hmodule_t dlopen(const char *name, int mode);
-osapi int dlclose(hmodule_t hmod);
-osapi void *dlsym(hmodule_t hmod, const char *procname);
-osapi char *dlerror();
+osapi struct group *getgrnam(const char *name);
+osapi struct group *getgrgid(uid_t uid);
 
 #ifdef  __cplusplus
 }

@@ -270,7 +270,7 @@ static struct filsys *create_filesystem(devno_t devno, int blocksize, int inode_
 
   // Create root directory
   root = get_inode(fs, DFS_INODE_ROOT);
-  root->desc->flags = DFS_INODE_FLAG_DIRECTORY;
+  root->desc->mode = S_IFDIR | S_IRWXU | S_IRWXG | S_IRWXO;
   root->desc->ctime = root->desc->mtime = time(NULL);
   root->desc->linkcount = 1;
   mark_buffer_updated(root->buf);

@@ -38,10 +38,7 @@
 #ifndef DIRENT_H
 #define DIRENT_H
 
-#ifndef _INO_T_DEFINED
-#define _INO_T_DEFINED
-typedef unsigned int ino_t;
-#endif
+#include <sys/types.h>
 
 #define NAME_MAX   255
 

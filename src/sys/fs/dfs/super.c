@@ -224,7 +224,7 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
 
   // Allocate group descriptors
   fs->groupdesc_buffers = (struct buf **) kmalloc(sizeof(struct buf *) * fs->groupdesc_blocks);
-  fs->groups = (struct group *) kmalloc(sizeof(struct group) * fs->super->group_count);
+  fs->groups = (struct blkgroup *) kmalloc(sizeof(struct group) * fs->super->group_count);
 
   for (i = 0; i < fs->groupdesc_blocks; i++)
   {
@@ -326,7 +326,7 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
   // Create root directory
   root = get_inode(fs, DFS_INODE_ROOT);
   if (!root) return NULL;
-  root->desc->flags = DFS_INODE_FLAG_DIRECTORY;
+  root->desc->mode = S_IFDIR | S_IRWXU | S_IRWXG | S_IRWXO;
   root->desc->ctime = root->desc->mtime = time(NULL);
   root->desc->linkcount = 1;
   mark_buffer_updated(fs->cache, root->buf);
@@ -406,7 +406,7 @@ static struct filsys *open_filesystem(char *devname, struct fsoptions *fsopts)
 
   // Read group descriptors
   fs->groupdesc_buffers = (struct buf **) kmalloc(sizeof(struct buf *) * fs->groupdesc_blocks);
-  fs->groups = (struct group *) kmalloc(sizeof(struct group) * fs->super->group_count);
+  fs->groups = (struct blkgroup *) kmalloc(sizeof(struct group) * fs->super->group_count);
   for (i = 0; i < fs->groupdesc_blocks; i++)
   {
     fs->groupdesc_buffers[i] = get_buffer(fs->cache, fs->super->groupdesc_table_block + i);

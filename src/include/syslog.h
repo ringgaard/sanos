@@ -38,14 +38,7 @@
 #ifndef SYSLOG_H
 #define SYSLOG_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
-
-#ifndef _VA_LIST_DEFINED
-#define _VA_LIST_DEFINED
-typedef char *va_list;
-#endif
+#include <sys/types.h>
 
 //
 // Option flags for openlog

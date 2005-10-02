@@ -268,6 +268,7 @@ $(LIBS)/krnl.lib $(BIN)/krnl.dll: \
   $(SRC)\lib\verinfo.c \
   $(OBJ)/krnl/lldiv.obj \
   $(OBJ)/krnl/llmul.obj \
+  $(OBJ)/krnl/lldvrm.obj \
   $(OBJ)/krnl/krnl.res
     $(CC) $(CFLAGS) /Fe$(BIN)/krnl.dll /Fo$(OBJ)/krnl/ $** /D KERNEL /D KRNL_LIB \
       /link /DLL /LARGEADDRESSAWARE /NODEFAULTLIB /OPT:WIN98 /ENTRY:start \
@@ -307,6 +308,7 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
   $(SRC)/lib/ctype.c \
   $(SRC)/lib/bitops.c \
   $(SRC)\lib\verinfo.c \
+  $(SRC)\lib\crypt.c \
   $(OBJ)/os/modf.obj \
   $(OBJ)/os/ftol.obj \
   $(OBJ)/os/fpconst.obj

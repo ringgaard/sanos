@@ -140,14 +140,14 @@ blkno_t set_inode_block(struct inode *inode, unsigned int iblock, blkno_t block)
   return block;
 }
 
-struct inode *alloc_inode(struct inode *parent, int flags)
+struct inode *alloc_inode(struct inode *parent, int mode)
 {
   ino_t ino;
   struct inode *inode;
   unsigned int group;
   unsigned int block;
 
-  ino = new_inode(parent->fs, parent->ino, flags);
+  ino = new_inode(parent->fs, parent->ino, S_ISDIR(mode));
   if (ino == -1) return NULL; 
 
   inode = (struct inode *) malloc(sizeof(struct inode));
@@ -163,7 +163,7 @@ struct inode *alloc_inode(struct inode *parent, int flags)
   inode->desc = (struct inodedesc *) (inode->buf->data) + (ino % inode->fs->inodes_per_block);
 
   memset(inode->desc, 0, sizeof(struct inodedesc));
-  inode->desc->flags = flags;
+  inode->desc->mode = mode;
   inode->desc->ctime = inode->desc->mtime = time(NULL);
 
   mark_inode_dirty(inode);

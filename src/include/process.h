@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 
-void abort(void);
+void abort();
 
 #ifdef  __cplusplus
 }

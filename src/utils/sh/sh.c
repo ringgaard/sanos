@@ -40,6 +40,9 @@
 #include <os/version.h>
 #include <inifile.h>
 
+#include <pwd.h>
+#include <grp.h>
+
 int initcmds_executed = 0;
 
 #define BUFSIZE 4096
@@ -300,6 +303,38 @@ int cmd_cp(int argc, char *argv[])
   
   close(fd1);
   close(fd2);
+  return 0;
+}
+
+int cmd_crypt(int argc, char *argv[])
+{
+  char *pw;
+  char *salt;
+  char saltc[3];
+
+  if (argc != 2 && argc != 3)
+  {
+    printf("usage: crypt <pw> [<salt>]\n");
+    return -EINVAL;
+  }
+
+  pw = argv[1];
+  if (argc == 3)
+    salt = argv[2];
+  else
+  {
+    int i;
+    salt = saltc;
+    for (i = 0; i < 2; i++)
+    {
+      saltc[i] = (char) (random() & 077) + '.';
+      if (saltc[i] > '9') saltc[i] += 7;
+      if (saltc[i] > 'Z') saltc[i] += 6;
+    }
+    saltc[2] = 0;
+  }
+
+  printf("%s\n", crypt(pw, salt));
   return 0;
 }
 
@@ -776,6 +811,7 @@ int cmd_ls(int argc, char *argv[])
   char path[MAXPATH];
   char *arg;
   int col;
+  char perm[11];
 
   verbose = 0;
   dirname = ".";
@@ -839,6 +875,33 @@ int cmd_ls(int argc, char *argv[])
       }
       else
       {
+	strcpy(perm, " ---------");
+	switch (buf.st_mode & S_IFMT) 
+	{
+	  case S_IFREG:
+	    perm[0] = '-';
+	    break;
+
+	  case S_IFLNK:
+	    perm[0] = 'l';
+	    break;
+
+	  case S_IFDIR:
+	    perm[0] = 'd';
+	    break;
+	}
+
+	if (buf.st_mode & 0400) perm[1] = 'r';
+	if (buf.st_mode & 0200) perm[2] = 'w';
+	if (buf.st_mode & 0100) perm[3] = 'x';
+	if (buf.st_mode & 0040) perm[4] = 'r';
+	if (buf.st_mode & 0020) perm[5] = 'w';
+	if (buf.st_mode & 0010) perm[6] = 'x';
+	if (buf.st_mode & 0004) perm[7] = 'r';
+	if (buf.st_mode & 0002) perm[8] = 'w';
+	if (buf.st_mode & 0001) perm[9] = 'x';
+	printf("%s ", perm);
+
 	if ((buf.st_mode & S_IFMT) == S_IFDIR)
 	  printf("         ");
 	else
@@ -1265,25 +1328,28 @@ int cmd_sysinfo(int argc, char *argv[])
 
 int cmd_test(int argc, char *argv[])
 {
-  static char *verfld[] = {"FileDescription", "OriginalFilename", "FileVersion", "ProductName", "ProductVersion", "Home Page", "Author", "License", "LegalCopyright"};
-  struct verinfo *ver;
-  char buf[128];
-  int rc;
-  int i;
-  printf("OS Version %d.%d.%d.%d date %s\n", peb->osversion.file_major_version, peb->osversion.file_minor_version, peb->osversion.file_release_number, peb->osversion.file_build_number, asctime(gmtime(&peb->ostimestamp)));
+  struct passwd *pwd;
+  struct group *grp;
+  char **members;
 
-  ver = getverinfo(NULL);
-  if (ver == NULL) printf("No version info\n");
-  printf("Version %d.%d.%d.%d\n", ver->file_major_version, ver->file_minor_version, ver->file_release_number, ver->file_build_number);
+  pwd = getpwuid(100);
+  if (!pwd) return -1;
 
-  for (i = 0; i < 9; i++)
-  {
-    rc = getvervalue(NULL, verfld[i], buf, sizeof(buf));
-    if (rc > 0) 
-      printf("%s: %s\n", verfld[i], buf);
-    else
-      perror(verfld[i]);
-  }
+  printf("Username: %s\n", pwd->pw_name);
+  printf("Password: %s\n", pwd->pw_passwd);
+  printf("User id: %d\n", pwd->pw_uid);
+  printf("Group id: %d\n", pwd->pw_gid);
+  printf("Real name: %s\n", pwd->pw_gecos);
+  printf("Home dir: %s\n", pwd->pw_dir);
+  printf("Shell: %s\n", pwd->pw_shell);
+
+  grp = getgrnam("users");
+  if (!grp) return -1;
+  printf("Group name: %s\n", grp->gr_name);
+  printf("Group password: %s\n", grp->gr_passwd);
+  printf("Group id: %d\n", grp->gr_gid);
+  members = grp->gr_mem;
+  while (*members) printf("Member: %s\n", *members++);
 
   return 0;
 }
@@ -1320,6 +1386,19 @@ int cmd_umount(int argc, char *argv[])
     printf("%s: %s\n", path, strerror(errno));
     return -1;
   }
+
+  return 0;
+}
+
+int cmd_whoami(int argc, char *argv[])
+{
+  struct passwd *pwd;
+
+  pwd = getpwuid(getuid());
+  if (pwd)
+    printf("%s\n", pwd->pw_name);
+  else
+    printf("uid%d\n", getuid);
 
   return 0;
 }
@@ -1385,6 +1464,7 @@ struct command cmdtab[] =
   {"copy",     cmd_cp,       "Copy file"},
   {"cls",      cmd_cls,      "Clear screen"},
   {"cp",       cmd_cp,       "Copy file"},
+  {"crypt",    cmd_crypt,    "Encrypt password"},
   {"date",     cmd_date,     "Display date"},
   {"debug",    cmd_debug,    "Enable/disable debug mode"},
   {"del",      cmd_rm,       "Delete file"},
@@ -1430,60 +1510,29 @@ struct command cmdtab[] =
   {"type",     cmd_cat,      "Display file"},
   {"uname",    cmd_uname,    "Print system information"},
   {"umount",   cmd_umount,   "Unmount file system"},
+  {"whoami",   cmd_whoami,   "Display logged in user"},
   {"write",    cmd_write,    "Write zero filled file to disk"},
   {NULL, NULL, NULL}
 };
 
 static void exec_program(char *args)
 {
-  char pgm[MAXPATH];
-  char *p;
-  char *q;
   int rc;
-  int dotseen = 0;
 
-  p = args;
-  q = pgm;
-  while (*p != 0 && *p != ' ')
-  {
-    if (*p == '.') dotseen = 1;
-    if (*p == PS1 || *p == PS2) dotseen = 0;
-    if (q - pgm == MAXPATH - 1) break;
-    *q++ = *p++;
-  }
-  *q++ = 0;
-  if (!dotseen && strlen(pgm) + 5 < MAXPATH) strcat(pgm, ".exe");
-
-  rc = spawn(P_WAIT, pgm, args, NULL);
+  rc = spawn(P_WAIT, NULL, args, NULL);
   if (rc < 0)
-    printf("%s: %s\n", pgm, strerror(errno));
+    perror("error");
   else if (rc > 0)
     printf("Exitcode: %d\n", rc);
 }
 
 static void launch_program(char *args)
 {
-  char pgm[MAXPATH];
-  char *p;
-  char *q;
   int h;
-  int dotseen = 0;
 
-  p = args;
-  q = pgm;
-  while (*p != 0 && *p != ' ')
-  {
-    if (*p == '.') dotseen = 1;
-    if (*p == PS1 || *p == PS2) dotseen = 0;
-    if (q - pgm == MAXPATH - 1) break;
-    *q++ = *p++;
-  }
-  *q++ = 0;
-  if (!dotseen && strlen(pgm) + 5 < MAXPATH) strcat(pgm, ".exe");
-
-  h = spawn(P_NOWAIT, pgm, args, NULL);
+  h = spawn(P_NOWAIT, NULL, args, NULL);
   if (h < 0)
-    printf("%s: %s\n", pgm, strerror(errno));
+    perror("error");
   else
   {
     printf("[job %d started]\n", h);

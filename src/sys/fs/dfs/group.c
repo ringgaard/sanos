@@ -148,7 +148,7 @@ void free_blocks(struct filsys *fs, blkno_t *blocks, int count)
   if (buf) release_buffer(fs->cache, buf);
 }
 
-ino_t new_inode(struct filsys *fs, ino_t parent, int flags)
+ino_t new_inode(struct filsys *fs, ino_t parent, int dir)
 {
   unsigned int group;
   unsigned int i;
@@ -156,7 +156,7 @@ ino_t new_inode(struct filsys *fs, ino_t parent, int flags)
   struct buf *buf;
   ino_t ino;
 
-  if (flags & DFS_INODE_FLAG_DIRECTORY)
+  if (dir)
   {
     // Find group with above average free inodes with most free blocks
     avefreei = fs->super->free_inode_count / fs->super->group_count;

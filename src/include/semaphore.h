@@ -38,10 +38,7 @@
 #ifndef SEMAPHORE_H
 #define SEMAPHORE_H
 
-#ifndef _HANDLE_T_DEFINED
-#define _HANDLE_T_DEFINED
-typedef int handle_t;
-#endif
+#include <sys/types.h>
 
 #ifndef _TIMESPEC_DEFINED
 #define _TIMESPEC_DEFINED

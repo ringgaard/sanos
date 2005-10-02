@@ -38,9 +38,7 @@
 #ifndef SIGNAL_H
 #define SIGNAL_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
+#include <sys/types.h>
 
 #ifndef SIGINT
 

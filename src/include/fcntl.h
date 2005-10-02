@@ -38,14 +38,7 @@
 #ifndef FCNTL_H
 #define FCNTL_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
-
-#ifndef _HANDLE_T_DEFINED
-#define _HANDLE_T_DEFINED
-typedef int handle_t;
-#endif
+#include <sys/types.h>
 
 #ifndef O_RDONLY
 

@@ -172,6 +172,7 @@ src\                           Souce files
     chkstk.asm                 Check stack upon procedure entry
     conio.c                    Console I/O
     crt0.c                     C runtime library entry point
+    crypt.c                    DES based implementation of crypt()
     ctype.c                    Character types
     dirent.c                   List diretory entries
     fcvt.c                     Floating point to string conversion routines

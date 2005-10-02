@@ -38,9 +38,7 @@
 #ifndef SYS_SELECT_H
 #define SYS_SELECT_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
+#include <sys/types.h>
 
 #ifndef _TIMEVAL_DEFINED
 #define _TIMEVAL_DEFINED
@@ -52,6 +50,7 @@ struct timeval
 };
 
 #endif
+
 #ifndef FD_SETSIZE
 #define FD_SETSIZE 64
 #endif

@@ -43,8 +43,12 @@ BOOL WINAPI GetUserNameA
   LPDWORD nSize
 )
 {
+  struct passwd *pwd;
+
   TRACE("GetUserNameA");
-  strcpy(lpBuffer, get_property(osconfig, "os", "user", "root"));
+  pwd = getpwuid(getuid());
+  if (!pwd) return FALSE;
+  strncpy(lpBuffer, pwd->pw_name, *nSize);
   return TRUE;
 }
 

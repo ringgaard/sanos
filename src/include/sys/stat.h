@@ -38,48 +38,7 @@
 #ifndef SYS_STAT_H
 #define SYS_STAT_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
-
-#ifndef _TIME_T_DEFINED
-#define _TIME_T_DEFINED
-typedef long time_t;
-#endif
-
-#ifndef _INO_T_DEFINED
-#define _INO_T_DEFINED
-typedef unsigned int ino_t;
-#endif
-
-#ifndef _DEV_T_DEFINED
-#define _DEV_T_DEFINED
-typedef unsigned int dev_t;
-#endif
-
-#ifndef _HANDLE_T_DEFINED
-#define _HANDLE_T_DEFINED
-typedef int handle_t;
-#endif
-
-#ifndef _LOFF_T_DEFINED
-#define _LOFF_T_DEFINED
-typedef long loff_t;
-#endif
-
-#ifndef _OFF64_T_DEFINED
-#define _OFF64_T_DEFINED
-typedef __int64 off64_t;
-#endif
-
-#ifndef _OFF_T_DEFINED
-#define _OFF_T_DEFINED
-#ifdef LARGEFILES
-typedef off64_t off_t;
-#else
-typedef loff_t off_t;
-#endif
-#endif
+#include <sys/types.h>
 
 #ifndef _STAT_DEFINED
 #define _STAT_DEFINED
@@ -88,10 +47,10 @@ struct stat
 {
   dev_t st_dev;
   ino_t st_ino;
-  unsigned short st_mode;
-  short st_nlink;
-  short st_uid;
-  short st_gid;
+  mode_t st_mode;
+  nlink_t st_nlink;
+  uid_t st_uid;
+  gid_t st_gid;
   dev_t st_rdev;
   loff_t st_size;
   time_t st_atime;
@@ -103,10 +62,10 @@ struct stat64
 {
   dev_t st_dev;
   ino_t st_ino;
-  unsigned short st_mode;
-  short st_nlink;
-  short st_uid;
-  short st_gid;
+  mode_t st_mode;
+  nlink_t st_nlink;
+  uid_t st_uid;
+  gid_t st_gid;
   dev_t st_rdev;
   off64_t st_size;
   time_t st_atime;
@@ -131,8 +90,6 @@ struct stat64
 #define S_IWRITE       0000200         // Write permission, owner
 #define S_IEXEC        0000100         // Execute/search permission, owner
 
-#endif
-
 #define S_ISLNK(m)	(((m) & S_IFMT) == S_IFLNK)
 #define S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)
 #define S_ISDIR(m)	(((m) & S_IFMT) == S_IFDIR)
@@ -155,6 +112,8 @@ struct stat64
 #define S_IROTH 00004
 #define S_IWOTH 00002
 #define S_IXOTH 00001
+
+#endif
 
 #ifdef  __cplusplus
 extern "C" {

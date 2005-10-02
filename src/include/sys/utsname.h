@@ -38,9 +38,7 @@
 #ifndef SYS_UTSNAME_H
 #define SYS_UTSNAME_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
+#include <sys/types.h>
 
 #define UTSNAMELEN 65
 

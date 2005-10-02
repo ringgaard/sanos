@@ -38,10 +38,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#ifndef _SIZE_T_DEFINED
-#define _SIZE_T_DEFINED
-typedef unsigned int size_t;
-#endif
+#include <sys/types.h>
 
 #ifdef  __cplusplus
 extern "C" {

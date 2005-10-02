@@ -377,6 +377,7 @@ struct thread *create_kernel_thread(threadproc_t startaddr, void *arg, int prior
 
 int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread **retval)
 {
+  struct thread *creator = self();
   struct thread *t;
   int rc;
 
@@ -391,6 +392,10 @@ int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread 
   if (!t) return -ENOMEM;
   t->name = "user";
   t->suspend_count++;
+
+  // Inherit user and group from creator thread
+  t->uid = creator->uid;
+  t->gid = creator->gid;
 
   // Create and initialize new TIB
   rc = init_user_thread(t, entrypoint);
@@ -790,21 +795,6 @@ static __inline int find_highest_bit(unsigned mask)
 
   return n;
 }
-
-#if 0
-static int find_highest_bit(unsigned mask)
-{
-  int n = 31;
-
-  while (n > 0 && !(mask & 0x80000000))
-  {
-    mask <<= 1;
-    n--;
-  }
-
-  return n;
-}
-#endif
 
 static struct thread *find_ready_thread()
 {

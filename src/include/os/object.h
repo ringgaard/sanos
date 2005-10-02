@@ -172,7 +172,9 @@ struct thread
   void *entrypoint;
   int exitcode;
   char *name;
-  
+  uid_t uid;
+  gid_t gid;
+
   unsigned long utime;
   unsigned long stime;
   unsigned long context_switches;

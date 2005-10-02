@@ -61,7 +61,7 @@ static int open_always(struct filsys *fs, char *name, int len, struct inode **re
   ino = find_dir_entry(dir, name, len);
   if (ino == NOINODE)
   {
-    inode = alloc_inode(dir, 0);
+    inode = alloc_inode(dir, 0644);
     if (!inode) 
     {
       release_inode(dir);
@@ -106,7 +106,7 @@ static int create_always(struct filsys *fs, char *name, int len, struct inode **
   dir = parse_name(fs, &name, &len);
   if (!dir) return -ENOENT;
 
-  inode = alloc_inode(dir, 0);
+  inode = alloc_inode(dir, 0644);
   if (!inode)
   {
     release_inode(dir);
@@ -155,7 +155,7 @@ static int truncate_existing(struct filsys *fs, char *name, int len, struct inod
   inode = get_inode(fs, ino);
   if (!inode) return -EIO;
 
-  if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY)
+  if (S_ISDIR(inode->desc->mode))
   {
     release_inode(inode);
     return -EISDIR;
@@ -190,7 +190,7 @@ static int create_new(struct filsys *fs, char *name, int len, ino_t ino, struct 
   }
 
   if (ino == NOINODE)
-    inode = alloc_inode(dir, 0);
+    inode = alloc_inode(dir, 0644);
   else
   {
     inode = get_inode(fs, ino);
@@ -328,7 +328,7 @@ int dfs_read(struct file *filp, void *data, size_t size, off64_t pos)
   struct inode *inode;
   size_t read;
   size_t count;
-  size_t left;
+  off64_t left;
   char *p;
   unsigned int iblock;
   unsigned int start;
@@ -342,14 +342,14 @@ int dfs_read(struct file *filp, void *data, size_t size, off64_t pos)
   {
     if (filp->flags & F_CLOSED) return -EINTR;
 
-    iblock = (unsigned int) pos / inode->fs->blocksize;
-    start = (unsigned int) pos % inode->fs->blocksize;
+    iblock = (unsigned int) (pos / inode->fs->blocksize);
+    start = (unsigned int) (pos % inode->fs->blocksize);
 
     count = inode->fs->blocksize - start;
     if (count > size) count = size;
 
     left = inode->desc->size - (size_t) pos;
-    if (count > left) count = left;
+    if (count > left) count = (size_t) left;
     if (count <= 0) break;
 
     blk = get_inode_block(inode, iblock);
@@ -393,7 +393,7 @@ int dfs_write(struct file *filp, void *data, size_t size, off64_t pos)
 
   if (filp->flags & O_APPEND) pos = inode->desc->size;
   if (pos + size > DFS_MAXFILESIZE) return -EFBIG;
-  if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY) return -EISDIR;
+  if (S_ISDIR(inode->desc->mode)) return -EISDIR;
 
   if (pos > inode->desc->size)
   {
@@ -505,7 +505,7 @@ int dfs_ftruncate(struct file *filp, off64_t size)
   if (size > DFS_MAXFILESIZE) return -EFBIG;
 
   inode = (struct inode *) filp->data;
-  if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY) return -EISDIR;
+  if (S_ISDIR(inode->desc->mode)) return -EISDIR;
 
   if (size < 0) return -EINVAL;
   if (size == inode->desc->size) return 0;
@@ -558,7 +558,7 @@ int dfs_futime(struct file *filp, struct utimbuf *times)
 int dfs_fstat(struct file *filp, struct stat64 *buffer)
 {
   struct inode *inode;
-  size_t size;
+  off64_t size;
 
   inode = (struct inode *) filp->data;
   size = inode->desc->size;
@@ -567,11 +567,9 @@ int dfs_fstat(struct file *filp, struct stat64 *buffer)
   {
     memset(buffer, 0, sizeof(struct stat64));
 
-    if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY) 
-      buffer->st_mode = S_IFDIR | S_IREAD;
-    else
-      buffer->st_mode = S_IFREG | S_IREAD | S_IWRITE | S_IEXEC;
-
+    buffer->st_mode = inode->desc->mode;
+    buffer->st_uid = inode->desc->uid;
+    buffer->st_gid = inode->desc->gid;
     buffer->st_ino = inode->ino;
     buffer->st_nlink = inode->desc->linkcount;
     buffer->st_dev = inode->fs->devno;
@@ -581,5 +579,5 @@ int dfs_fstat(struct file *filp, struct stat64 *buffer)
     buffer->st_size = inode->desc->size;
   }
 
-  return size;
+  return (int) size;
 }

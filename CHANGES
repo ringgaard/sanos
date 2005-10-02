@@ -87,7 +87,26 @@ CHANGE LOG FOR SANOS
     * The build type can now be controlled by compile time switches. The kernel version 
       can be displayed in the Windows Explorer by viewing Properties for krnl.dll and 
       selecting the Version tab.
-
+      
+    * User and group id added to TCB. Added functions to query /etc/passwd and /etc/group
+      file. New functions: getuid(), getgid(), setuid(), setgid(), getpwnam(), getpwuid(),
+      getgrnam(), getgrgid().
+    
+    * New file system version for DFS. The new version supports user and group owner
+      for files and directories as well as permission bits. The new DFS version also
+      supports files larger than 2GB.
+      
+    * DES-based crypt() implementation added.
+    
+    * The spawn() function now computes the pgm parater from the cmdline paramter if
+      the pgm paramter is NULL. The initpgm and initargs properties in the [os] section
+      of /etc/os.ini has been replaced with a single property named init. The default
+      for init has been changed to /bin/sh.
+      
+    * The behaviour of the initial application has been changed. Previously the os shut
+      down after the initial application exited. Now the initial application is executed 
+      again if it exits.
+      
 Version 1.3.2
 
     * The fdmotor task in the floppy driver has been replaced by a timer.

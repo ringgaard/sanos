@@ -38,9 +38,7 @@
 #ifndef SYS_TIME_H
 #define SYS_TIME_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
+#include <sys/time.h>
 
 #ifndef _TIMEVAL_DEFINED
 #define _TIMEVAL_DEFINED

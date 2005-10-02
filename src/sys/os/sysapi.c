@@ -603,3 +603,23 @@ int mutexrel(handle_t h)
 {
   return syscall(SYSCALL_MUTEXREL, (void *) &h);
 }
+
+uid_t getuid()
+{
+  return syscall(SYSCALL_GETUID, NULL);
+}
+
+gid_t getgid()
+{
+  return syscall(SYSCALL_GETGID, NULL);
+}
+
+int setuid(uid_t uid)
+{
+  return syscall(SYSCALL_SETUID, (void *) &uid);
+}
+
+int setgid(gid_t gid)
+{
+  return syscall(SYSCALL_SETGID, (void *) &gid);
+}

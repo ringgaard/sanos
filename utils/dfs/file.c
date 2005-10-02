@@ -17,7 +17,7 @@ static struct inode *open_existing(struct filsys *fs, char *name, int len)
   inode = get_inode(fs, ino);
   if (!inode) return NULL;
 
-  if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY)
+  if (S_ISDIR(inode->desc->mode))
   {
     release_inode(inode);
     return NULL;
@@ -38,7 +38,7 @@ static struct inode *open_always(struct filsys *fs, char *name, int len)
   ino = find_dir_entry(dir, name, len);
   if (ino == -1)
   {
-    inode = alloc_inode(dir, 0);
+    inode = alloc_inode(dir, S_IFREG | 0644);
     if (!inode) 
     {
       release_inode(dir);
@@ -65,7 +65,7 @@ static struct inode *open_always(struct filsys *fs, char *name, int len)
       return NULL;
     }
 
-    if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY)
+    if (S_ISDIR(inode->desc->mode))
     {
       release_inode(dir);
       release_inode(inode);
@@ -87,7 +87,7 @@ static struct inode *create_new(struct filsys *fs, char *name, int len)
   dir = parse_name(fs, &name, &len);
   if (!dir) return NULL;
 
-  inode = alloc_inode(dir, 0);
+  inode = alloc_inode(dir, S_IFREG | 0644);
   if (!inode)
   {
     release_inode(dir);
@@ -133,7 +133,7 @@ static struct inode *truncate_existing(struct filsys *fs, char *name, int len)
   inode = get_inode(fs, ino);
   if (!inode) return NULL;
 
-  if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY)
+  if (S_ISDIR(inode->desc->mode))
   {
     release_inode(inode);
     return NULL;
@@ -165,7 +165,7 @@ static struct inode *create_always(struct filsys *fs, char *name, int len, ino_t
   }
 
   if (ino == -1)
-    inode = alloc_inode(dir, 0);
+    inode = alloc_inode(dir, S_IFREG | 0644);
   else
   {
     inode = get_inode(fs, ino);
@@ -244,7 +244,7 @@ int dfs_open(struct file *filp, char *name)
 
   if (!inode) return -1;
 
-  if (filp->flags & O_APPEND) filp->pos = inode->desc->size;
+  if (filp->flags & O_APPEND) filp->pos = (int) inode->desc->size;
   filp->data = inode;
 
   return 0;
@@ -294,7 +294,7 @@ int dfs_read(struct file *filp, void *data, size_t size)
     count = inode->fs->blocksize - start;
     if (count > size) count = size;
 
-    left = inode->desc->size - filp->pos;
+    left = (int) inode->desc->size - filp->pos;
     if (count > left) count = left;
 
     blk = get_inode_block(inode, iblock);
@@ -389,7 +389,7 @@ loff_t dfs_lseek(struct file *filp, loff_t offset, int origin)
   switch (origin)
   {
     case SEEK_END:
-      offset += inode->desc->size;
+      offset += (int) inode->desc->size;
       break;
 
     case SEEK_CUR:
@@ -444,15 +444,13 @@ int dfs_fstat(struct file *filp, struct stat *buffer)
 
   inode = (struct inode *) filp->data;
   
-  buffer->mode = 0;
-  if (inode->desc->flags & DFS_INODE_FLAG_DIRECTORY) buffer->mode |= FS_DIRECTORY;
-
+  buffer->mode = inode->desc->mode;
   buffer->ino = inode->ino;
   buffer->atime = time(NULL);
   buffer->mtime = inode->desc->mtime;
   buffer->ctime = inode->desc->ctime;
   
-  buffer->quad.size_low = inode->desc->size;
+  buffer->quad.size_low = (int) inode->desc->size;
   buffer->quad.size_high = 0;
 
   return 0;

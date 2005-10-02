@@ -35,12 +35,10 @@
 #define DFS_H
 
 #define DFS_SIGNATURE              0x00534644
-#define DFS_VERSION                1
+#define DFS_VERSION                2
 
 #define DFS_TOPBLOCKDIR_SIZE       16
-#define DFS_MAX_DEPTH              6
-
-#define DFS_INODE_FLAG_DIRECTORY   1
+#define DFS_MAX_DEPTH              10
 
 #define DFS_INODE_ROOT             0
 #define DFS_INODE_KRNL             1
@@ -99,14 +97,18 @@ struct groupdesc
 
 struct inodedesc
 {
-  unsigned int flags;
+  mode_t mode;
+  uid_t uid;
+  gid_t gid;
+  unsigned short resv;
+  time_t atime;
   time_t ctime;
   time_t mtime;
-  loff_t size;
-  int linkcount;
   unsigned int blocks;
+  off64_t size;
+  int linkcount;
   int depth;
-  char reserved[36];
+  char reserved[24];
   blkno_t blockdir[DFS_TOPBLOCKDIR_SIZE];
 };
 
@@ -118,7 +120,7 @@ struct dentry
   char name[0];
 };
 
-struct group
+struct blkgroup
 {
   struct groupdesc *desc;
   unsigned int first_free_block; // relative to group
@@ -148,7 +150,7 @@ struct filsys
   struct superblock *super;
   struct bufpool *cache;
   struct buf **groupdesc_buffers;
-  struct group *groups;
+  struct blkgroup *groups;
 };
 
 typedef int (*filldir_t)(char *name, int len, ino_t ino, void *data);
@@ -176,14 +178,14 @@ int dfs_statfs(struct fs *fs, struct statfs *buf);
 blkno_t new_block(struct filsys *fs, blkno_t goal);
 void free_blocks(struct filsys *fs, blkno_t *blocks, int count);
 
-ino_t new_inode(struct filsys *fs, ino_t parent, int flags);
+ino_t new_inode(struct filsys *fs, ino_t parent, int dir);
 void free_inode(struct filsys *fs, ino_t ino);
 
 // inode.c
 void mark_inode_dirty(struct inode *inode);
 blkno_t get_inode_block(struct inode *inode, unsigned int iblock);
 blkno_t set_inode_block(struct inode *inode, unsigned int iblock, blkno_t block);
-struct inode *alloc_inode(struct inode *parent, int flags);
+struct inode *alloc_inode(struct inode *parent, mode_t mode);
 int unlink_inode(struct inode *inode);
 struct inode *get_inode(struct filsys *fs, ino_t ino);
 void release_inode(struct inode *inode);

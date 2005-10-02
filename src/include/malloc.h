@@ -38,14 +38,7 @@
 #ifndef MALLOC_H
 #define MALLOC_H
 
-#ifndef osapi
-#define osapi __declspec(dllimport)
-#endif
-
-#ifndef _SIZE_T_DEFINED
-#define _SIZE_T_DEFINED
-typedef unsigned int size_t;
-#endif
+#include <sys/types.h>
 
 #ifdef  __cplusplus
 extern "C" {
