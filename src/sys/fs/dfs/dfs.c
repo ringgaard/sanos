@@ -91,14 +91,18 @@ void init_dfs()
 
 int dfs_utime(struct fs *fs, char *name, struct utimbuf *times)
 {
-  ino_t ino;
   struct inode *inode;
+  int rc;
 
-  ino = lookup_name((struct filsys *) fs->data, DFS_INODE_ROOT, name, strlen(name));
-  if (ino == NOINODE) return -ENOENT;
+  rc = namei((struct filsys *) fs->data, name, &inode);
+  if (rc < 0) return rc;
 
-  inode = get_inode((struct filsys *) fs->data, ino);
-  if (!inode) return -EIO;
+  rc = checki(inode, S_IWRITE);
+  if (rc < 0)
+  {
+    release_inode(inode);
+    return rc;
+  }
 
   if (times->ctime != -1) inode->desc->ctime = times->ctime;
   if (times->modtime != -1) inode->desc->mtime = times->modtime;
@@ -110,15 +114,12 @@ int dfs_utime(struct fs *fs, char *name, struct utimbuf *times)
 
 int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
 {
-  ino_t ino;
   struct inode *inode;
   off64_t size;
+  int rc;
 
-  ino = lookup_name((struct filsys *) fs->data, DFS_INODE_ROOT, name, strlen(name));
-  if (ino == NOINODE) return -ENOENT;
-
-  inode = get_inode((struct filsys *) fs->data, ino);
-  if (!inode) return -EIO;
+  rc = namei((struct filsys *) fs->data, name, &inode);
+  if (rc < 0) return rc;
 
   size = inode->desc->size;
 
@@ -129,7 +130,7 @@ int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
     buffer->st_mode = inode->desc->mode;
     buffer->st_uid = inode->desc->uid;
     buffer->st_gid = inode->desc->gid;
-    buffer->st_ino = ino;
+    buffer->st_ino = inode->ino;
     buffer->st_nlink = inode->desc->linkcount;
     buffer->st_dev = ((struct filsys *) fs->data)->devno;
 
@@ -147,15 +148,11 @@ int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
 int dfs_access(struct fs *fs, char *name, int mode)
 {
   struct thread *thread = self();
-  ino_t ino;
   struct inode *inode;
-  int rc = 0;
+  int rc;
 
-  ino = lookup_name((struct filsys *) fs->data, DFS_INODE_ROOT, name, strlen(name));
-  if (ino == NOINODE) return -ENOENT;
-
-  inode = get_inode((struct filsys *) fs->data, ino);
-  if (!inode) return -EIO;
+  rc = namei((struct filsys *) fs->data, name, &inode);
+  if (rc < 0) return rc;
 
   if (mode != 0 && thread->euid != 0) 
   {
@@ -176,18 +173,20 @@ int dfs_access(struct fs *fs, char *name, int mode)
 int dfs_mkdir(struct fs *fs, char *name, int mode)
 {
   struct inode *parent;
+  ino_t ino;
   struct inode *dir;
   int len;
   int rc;
 
   len = strlen(name);
-  parent = parse_name((struct filsys *) fs->data, &name, &len);
-  if (!parent) return -ENOENT;
+  rc = diri((struct filsys *) fs->data, &name, &len, &parent);
+  if (rc < 0) return rc;
 
-  if (find_dir_entry(parent, name, len) != NOINODE)
+  rc = find_dir_entry(parent, name, len, &ino);
+  if (rc != -ENOENT)
   {
     release_inode(parent);
-    return -EEXIST;
+    return rc >= 0 ? -EEXIST : rc;
   }
 
   dir = alloc_inode(parent, mode);
@@ -197,7 +196,7 @@ int dfs_mkdir(struct fs *fs, char *name, int mode)
     return -ENOSPC;
   }
 
-  dir->desc->mode = (mode & S_IRWXUGO) | S_IFDIR;
+  dir->desc->mode = S_IFDIR | (mode & S_IRWXUGO);
   dir->desc->linkcount++;
   mark_inode_dirty(dir);
 
@@ -224,21 +223,27 @@ int dfs_rmdir(struct fs *fs, char *name)
   int rc;
 
   len = strlen(name);
-  parent = parse_name((struct filsys *) fs->data, &name, &len);
-  if (!parent) return -ENOENT;
+  rc = diri((struct filsys *) fs->data, &name, &len, &parent);
+  if (rc < 0) return rc;
 
-  ino = find_dir_entry(parent, name, len);
-  if (ino == NOINODE || ino == DFS_INODE_ROOT)
+  rc = find_dir_entry(parent, name, len, &ino);
+  if (rc < 0) 
   {
     release_inode(parent);
-    return ino == DFS_INODE_ROOT ? -EPERM : -ENOENT;
+    return rc;
   }
 
-  dir = get_inode(parent->fs, ino);
-  if (!dir)
+  if (ino == DFS_INODE_ROOT)
   {
     release_inode(parent);
-    return -EIO;
+    return -EPERM;
+  }
+
+  rc = get_inode(parent->fs, ino, &dir);
+  if (rc < 0)
+  {
+    release_inode(parent);
+    return rc;
   }
 
   if (!S_ISDIR(dir->desc->mode))
@@ -287,38 +292,47 @@ int dfs_rename(struct fs *fs, char *oldname, char *newname)
   int rc;
 
   oldlen = strlen(oldname);
-  oldparent = parse_name((struct filsys *) fs->data, &oldname, &oldlen);
-  if (!oldparent) return -ENOENT;
+  rc = diri((struct filsys *) fs->data, &oldname, &oldlen, &oldparent);
+  if (rc < 0) return rc;
 
-  ino = find_dir_entry(oldparent, oldname, oldlen);
-  if (ino == NOINODE) 
+  rc = find_dir_entry(oldparent, oldname, oldlen, &ino);
+  if (rc < 0) 
   {
     release_inode(oldparent);
-    return -ENOENT;
+    return rc;
   }
 
-  inode = get_inode(oldparent->fs, ino);
-  if (!inode)
+  rc = get_inode(oldparent->fs, ino, &inode);
+  if (rc < 0)
   {
     release_inode(oldparent);
-    return -EIO;
+    return rc;
   }
 
   newlen = strlen(newname);
-  newparent = parse_name((struct filsys *) fs->data, &newname, &newlen);
-  if (!newparent) 
+  rc = diri((struct filsys *) fs->data, &newname, &newlen, &newparent);
+  if (rc < 0) 
   {
     release_inode(inode);
     release_inode(oldparent);
-    return -ENOENT;
+    return rc;
   }
 
-  if (find_dir_entry(newparent, newname, newlen) != NOINODE)
+  rc = find_dir_entry(newparent, newname, newlen, NULL);
+  if (rc != -ENOENT)
   {
     release_inode(inode);
     release_inode(oldparent);
     release_inode(newparent);
-    return -EEXIST;
+    return rc >= 0 ? -EEXIST : rc;
+  }
+
+  if (checki(oldparent, S_IWRITE) < 0 || checki(newparent, S_IWRITE) < 0)
+  {
+    release_inode(inode);
+    release_inode(oldparent);
+    release_inode(newparent);
+    return -EACCES;
   }
 
   rc = add_dir_entry(newparent, newname, newlen, inode->ino); 
@@ -349,29 +363,26 @@ int dfs_link(struct fs *fs, char *oldname, char *newname)
 {
   struct inode *inode;
   struct inode *parent;
-  ino_t ino;
   int len;
   int rc;
 
-  ino = lookup_name((struct filsys *) fs->data, DFS_INODE_ROOT, oldname, strlen(oldname));
-  if (ino == NOINODE) return -ENOENT;
-
-  inode = get_inode((struct filsys *) fs->data, ino);
-  if (!inode) return -EIO;
+  rc = namei((struct filsys *) fs->data, oldname, &inode);
+  if (rc < 0) return rc;
 
   len = strlen(newname);
-  parent = parse_name((struct filsys *) fs->data, &newname, &len);
-  if (!parent) 
+  rc = diri((struct filsys *) fs->data, &newname, &len, &parent);
+  if (rc < 0) 
   {
     release_inode(inode);
-    return -ENOENT;
+    return rc;
   }
 
-  if (find_dir_entry(parent, newname, len) != NOINODE)
+  rc = find_dir_entry(parent, newname, len, NULL);
+  if (rc != -ENOENT)
   {
     release_inode(inode);
     release_inode(parent);
-    return -EEXIST;
+    return rc >= 0 ? -EEXIST : rc;
   }
 
   inode->desc->linkcount++;
@@ -400,21 +411,21 @@ int dfs_unlink(struct fs *fs, char *name)
   int rc;
 
   len = strlen(name);
-  dir = parse_name((struct filsys *) fs->data, &name, &len);
-  if (!dir) return -ENOENT;
+  rc = diri((struct filsys *) fs->data, &name, &len, &dir);
+  if (rc < 0) return rc;
 
-  ino = find_dir_entry(dir, name, len);
-  if (ino == NOINODE)
+  rc = find_dir_entry(dir, name, len, &ino);
+  if (rc < 0)
   {
     release_inode(dir);
-    return -ENOENT;
+    return rc;
   }
 
-  inode = get_inode(dir->fs, ino);
-  if (!dir)
+  rc = get_inode(dir->fs, ino, &inode);
+  if (rc < 0)
   {
     release_inode(dir);
-    return -EIO;
+    return rc;
   }
 
   if (S_ISDIR(inode->desc->mode))
@@ -448,14 +459,11 @@ int dfs_unlink(struct fs *fs, char *name)
 int dfs_chmod(struct fs *fs, char *name, int mode)
 {
   struct thread *thread = self();
-  ino_t ino;
   struct inode *inode;
+  int rc;
 
-  ino = lookup_name((struct filsys *) fs->data, DFS_INODE_ROOT, name, strlen(name));
-  if (ino == NOINODE) return -ENOENT;
-
-  inode = get_inode((struct filsys *) fs->data, ino);
-  if (!inode) return -EIO;
+  rc = namei((struct filsys *) fs->data, name, &inode);
+  if (rc < 0) return rc;
 
   if (thread->euid != 0 && thread->euid != inode->desc->uid)
   {
@@ -474,14 +482,11 @@ int dfs_chmod(struct fs *fs, char *name, int mode)
 int dfs_chown(struct fs *fs, char *name, int owner, int group)
 {
   struct thread *thread = self();
-  ino_t ino;
   struct inode *inode;
+  int rc;
 
-  ino = lookup_name((struct filsys *) fs->data, DFS_INODE_ROOT, name, strlen(name));
-  if (ino == NOINODE) return -ENOENT;
-
-  inode = get_inode((struct filsys *) fs->data, ino);
-  if (!inode) return -EIO;
+  rc = namei((struct filsys *) fs->data, name, &inode);
+  if (rc < 0) return rc;
 
   if (thread->euid != 0)
   {

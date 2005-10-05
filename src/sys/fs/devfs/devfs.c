@@ -50,6 +50,12 @@ off64_t devfs_lseek(struct file *filp, off64_t offset, int origin);
 
 int devfs_fstat(struct file *filp, struct stat64 *buffer);
 int devfs_stat(struct fs *fs, char *name, struct stat64 *buffer);
+int devfs_access(struct fs *fs, char *name, int mode);
+
+int devfs_fchmod(struct file *filp, int mode);
+int devfs_chmod(struct fs *fs, char *name, int mode);
+int devfs_fchown(struct file *filp, int owner, int group);
+int devfs_chown(struct fs *fs, char *name, int owner, int group);
 
 int devfs_opendir(struct file *filp, char *name);
 int devfs_readdir(struct file *filp, struct direntry *dirp, int count);
@@ -87,12 +93,12 @@ struct fsops devfsops =
   devfs_fstat,
   devfs_stat,
 
-  NULL,
+  devfs_access,
 
-  NULL,
-  NULL,
-  NULL,
-  NULL,
+  devfs_fchmod,
+  devfs_chmod,
+  devfs_fchown,
+  devfs_chown,
 
   NULL,
   NULL,
@@ -114,6 +120,7 @@ void init_devfs()
 int devfs_open(struct file *filp, char *name)
 {
   dev_t devno;
+  struct dev *dev;
   struct devfile *df;
 
   if (*name == PS1 || *name == PS2) name++;
@@ -133,11 +140,17 @@ int devfs_open(struct file *filp, char *name)
   df->blksize = dev_ioctl(devno, IOCTL_GETBLKSIZE, NULL, 0);
   if (df->blksize <= 0) df->blksize = 1;
 
+  dev = device(devno);
+
   df->next = NULL;
-  df->prev = device(devno)->files;
-  device(devno)->files = df;
+  df->prev = dev->files;
+  dev->files = df;
 
   filp->data = df;
+  filp->mode = dev->mode;
+  filp->owner = dev->uid;
+  filp->group = dev->gid;
+
   return 0;
 }
 
@@ -316,6 +329,114 @@ int devfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
 
   dev_close(devno);
   return size > 0x7FFFFFFF ? 0x7FFFFFFF : (int) size;
+}
+
+int devfs_access(struct fs *fs, char *name, int mode)
+{
+  struct thread *thread = self();
+  dev_t devno;
+  struct dev *dev;
+  int rc = 0;
+
+  if (*name == PS1 || *name == PS2) name++;
+  devno = dev_open(name);
+  if (devno == NODEV) return -ENOENT;
+  dev = device(devno);
+  if (!dev) return -ENOENT;
+
+  if (mode != 0 && thread->euid != 0) 
+  {
+    if (thread->euid != dev->uid) 
+    {
+      mode >>= 3;
+      if (thread->egid != dev->gid) mode >>= 3;
+    }
+
+    if ((mode & dev->mode) == 0) rc = -EACCES;
+  }
+
+  dev_close(devno);
+  return rc;
+}
+
+int devfs_fchmod(struct file *filp, int mode)
+{
+  struct thread *thread = self();
+  struct devfile *df = (struct devfile *) filp->data;
+  struct dev *dev;
+
+  if (df == DEVROOT) return -EBADF;
+  dev = device(df->devno);
+  if (!dev) return -ENOENT;
+
+  if (thread->euid != 0 && thread->euid != dev->uid) return -EPERM;
+  dev->mode = (dev->mode & ~S_IRWXUGO) | (mode & S_IRWXUGO);
+
+  return 0;
+}
+
+int devfs_chmod(struct fs *fs, char *name, int mode)
+{
+  struct thread *thread = self();
+  dev_t devno;
+  struct dev *dev;
+  int rc = 0;
+
+  if (*name == PS1 || *name == PS2) name++;
+  devno = dev_open(name);
+  if (devno == NODEV) return -ENOENT;
+  dev = device(devno);
+  if (!dev) return -ENOENT;
+
+  if (thread->euid == 0 || thread->euid == dev->uid) 
+    dev->mode = (dev->mode & ~S_IRWXUGO) | (mode & S_IRWXUGO);
+  else
+    rc = -EPERM;
+
+  dev_close(devno);
+  return rc;
+}
+
+int devfs_fchown(struct file *filp, int owner, int group)
+{
+  struct thread *thread = self();
+  struct devfile *df = (struct devfile *) filp->data;
+  struct dev *dev;
+
+  if (df == DEVROOT) return -EBADF;
+  dev = device(df->devno);
+  if (!dev) return -ENOENT;
+
+  if (thread->euid != 0) return -EPERM;
+  if (owner != -1) dev->uid = owner;
+  if (group != -1) dev->gid = group;
+
+  return 0;
+}
+
+int devfs_chown(struct fs *fs, char *name, int owner, int group)
+{
+  struct thread *thread = self();
+  dev_t devno;
+  struct dev *dev;
+  int rc = 0;
+
+  if (*name == PS1 || *name == PS2) name++;
+  devno = dev_open(name);
+  if (devno == NODEV) return -ENOENT;
+  dev = device(devno);
+  if (!dev) return -ENOENT;
+
+  if (thread->euid == 0)
+  {
+    if (owner != -1) dev->uid = owner;
+    if (group != -1) dev->gid = group;
+  }
+  else
+    rc = -EPERM;
+
+  dev_close(devno);
+  return rc;
 }
 
 int devfs_opendir(struct file *filp, char *name)

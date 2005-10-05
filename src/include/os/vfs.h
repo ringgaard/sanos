@@ -100,6 +100,8 @@ struct file
   struct fs *fs;
   int flags;
   int mode;
+  uid_t owner;
+  gid_t group;
   off64_t pos;
   void *data;
   char *path;
@@ -165,7 +167,7 @@ int init_vfs();
 int fnmatch(char *fn1, int len1, char *fn2, int len2);
 
 krnlapi struct filesystem *register_filesystem(char *name, struct fsops *ops);
-krnlapi int fslookup(char *name, int all, struct fs **mntfs, char **rest);
+krnlapi int fslookup(char *name, int full, struct fs **mntfs, char **rest);
 krnlapi struct file *newfile(struct fs *fs, char *path, int flags, int mode);
 
 krnlapi int mkfs(char *devname, char *type, char *opts);

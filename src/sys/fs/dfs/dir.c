@@ -35,7 +35,7 @@
 
 #define NAME_ALIGN_LEN(l) (((l) + 3) & ~3)
 
-ino_t find_dir_entry(struct inode *dir, char *name, int len)
+int find_dir_entry(struct inode *dir, char *name, int len, ino_t *retval)
 {
   unsigned int block;
   blkno_t blk;
@@ -44,8 +44,10 @@ ino_t find_dir_entry(struct inode *dir, char *name, int len)
   struct dentry *de;
   ino_t ino;
 
-  if (len <= 0 || len >= MAXPATH) return NOINODE;
-  if (!S_ISDIR(dir->desc->mode)) return NOINODE;
+  if (len <= 0) return -EINVAL;
+  if (len >= MAXPATH) return -ENAMETOOLONG;
+  if (!S_ISDIR(dir->desc->mode)) return -ENOTDIR;
+  if (checki(dir, S_IEXEC) < 0) return -EACCES;
 
   for (block = 0; block < dir->desc->blocks; block++)
   {
@@ -64,7 +66,9 @@ ino_t find_dir_entry(struct inode *dir, char *name, int len)
       {
 	ino = de->ino;
         release_buffer(dir->fs->cache, buf);
-	return ino;
+
+	if (retval) *retval = ino;
+	return 0;
       }
 
       p += de->reclen;
@@ -73,89 +77,7 @@ ino_t find_dir_entry(struct inode *dir, char *name, int len)
     release_buffer(dir->fs->cache, buf);
   }
 
-  return NOINODE;
-}
-
-ino_t lookup_name(struct filsys *fs, ino_t ino, char *name, int len)
-{
-  char *p;
-  int l;
-  struct inode *inode;
-
-  while (1)
-  {
-    // Skip path separator
-    if (*name == PS1 || *name == PS2)
-    {
-      name++;
-      len--;
-    }
-    if (len == 0) return ino;
-
-    // Find next part of name
-    p = name;
-    l = 0;
-    while (l < len && *p != PS1 && *p != PS2)
-    {
-      l++;
-      p++;
-    }
-
-    // Find inode for next name part
-    inode = get_inode(fs, ino);
-    if (!inode) return NOINODE;
-    ino = find_dir_entry(inode, name, l);
-    release_inode(inode);
-    if (ino == -1) return NOINODE;
-
-    // If we have parsed the whole name return the inode number
-    if (l == len) return ino;
-
-    // Prepare for next name part
-    name = p;
-    len -= l;
-  }
-}
-
-struct inode *parse_name(struct filsys *fs, char **name, int *len)
-{
-  char *start;
-  char *p;
-  ino_t ino;
-  struct inode *dir;
-
-  if (*len == 0) return get_inode(fs, DFS_INODE_ROOT);
-
-  start = *name;
-  p = start + *len - 1;
-  while (p > start && *p != PS1 && *p != PS2) p--;
-
-  if (p == start)
-  {
-    if (*p == PS1 || *p == PS2)
-    {
-      (*name)++;
-      (*len)--;
-    }
-
-    return get_inode(fs, DFS_INODE_ROOT);
-  }
-
-  ino = lookup_name(fs, DFS_INODE_ROOT, start, p - start);
-  if (ino == NOINODE) return NULL;
-
-  dir = get_inode(fs, ino);
-  if (!dir) return NULL;
-
-  if (!S_ISDIR(dir->desc->mode))
-  {
-    release_inode(dir);
-    return NULL;
-  }
-
-  *name = p + 1;
-  *len -= p - start + 1;
-  return dir;
+  return -ENOENT;
 }
 
 int add_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
@@ -168,8 +90,10 @@ int add_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
   struct dentry *newde;
   int minlen;
 
-  if (len <= 0 || len >= MAXPATH) return -ENAMETOOLONG;
+  if (len <= 0) return -EINVAL;
+  if (len >= MAXPATH) return -ENAMETOOLONG;
   if (!S_ISDIR(dir->desc->mode)) return -ENOTDIR;
+  if (checki(dir, S_IWRITE) < 0) return -EACCES;
 
   for (block = 0; block < dir->desc->blocks; block++)
   {
@@ -233,25 +157,26 @@ int add_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
   return 0;
 }
 
-ino_t modify_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
+int modify_dir_entry(struct inode *dir, char *name, int len, ino_t ino, ino_t *oldino)
 {
   unsigned int block;
   blkno_t blk;
   struct buf *buf;
   char *p;
   struct dentry *de;
-  ino_t oldino;
 
-  if (len <= 0 || len >= MAXPATH) return NOINODE;
-  if (!S_ISDIR(dir->desc->mode)) return NOINODE;
+  if (len <= 0) return -EINVAL;
+  if (len >= MAXPATH) return -ENAMETOOLONG;
+  if (!S_ISDIR(dir->desc->mode)) return -ENOTDIR;
+  if (checki(dir, S_IWRITE) < 0) return -EACCES;
 
   for (block = 0; block < dir->desc->blocks; block++)
   {
     blk = get_inode_block(dir, block);
-    if (blk == NOBLOCK) return NOINODE;
+    if (blk == NOBLOCK) return -EIO;
 
     buf = get_buffer(dir->fs->cache, blk);
-    if (!buf) return NOINODE;
+    if (!buf) return -EIO;
 
     p = buf->data;
     while (p < buf->data + dir->fs->blocksize)
@@ -260,11 +185,12 @@ ino_t modify_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
 
       if (fnmatch(name, len, de->name, de->namelen))
       {
-	oldino = de->ino;
+	if (oldino) *oldino = de->ino;
 	de->ino = ino;
 	mark_buffer_updated(dir->fs->cache, buf);
         release_buffer(dir->fs->cache, buf);
-	return oldino;
+
+	return 0;
       }
 
       p += de->reclen;
@@ -273,7 +199,7 @@ ino_t modify_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
     release_buffer(dir->fs->cache, buf);
   }
 
-  return NOINODE;
+  return -ENOENT;
 }
 
 int delete_dir_entry(struct inode *dir, char *name, int len)
@@ -289,6 +215,7 @@ int delete_dir_entry(struct inode *dir, char *name, int len)
 
   if (len <= 0 || len >= MAXPATH) return -ENAMETOOLONG;
   if (!S_ISDIR(dir->desc->mode)) return -ENOTDIR;
+  if (checki(dir, S_IWRITE) < 0) return -EACCES;
 
   for (block = 0; block < dir->desc->blocks; block++)
   {
@@ -357,61 +284,123 @@ int delete_dir_entry(struct inode *dir, char *name, int len)
   return -ENOENT;
 }
 
-int iterate_dir(struct inode *dir, filldir_t filldir, void *data)
+static int lookup_name(struct filsys *fs, ino_t ino, char *name, int len, ino_t *retval)
 {
-  unsigned int block;
-  blkno_t blk;
-  struct buf *buf;
   char *p;
-  struct dentry *de;
+  int l;
+  struct inode *inode;
   int rc;
 
-  if (!S_ISDIR(dir->desc->mode)) return -ENOTDIR;
-
-  for (block = 0; block < dir->desc->blocks; block++)
+  while (1)
   {
-    blk = get_inode_block(dir, block);
-    if (blk == NOBLOCK) return -EIO;
-
-    buf = get_buffer(dir->fs->cache, blk);
-    if (!buf) return -EIO;
-
-    p = buf->data;
-    while (p < buf->data + dir->fs->blocksize)
+    // Skip path separator
+    if (*name == PS1 || *name == PS2)
     {
-      de = (struct dentry *) p;
-
-      rc = filldir(de->name, de->namelen, de->ino, data);
-      if (rc != 0)
-      {
-        release_buffer(dir->fs->cache, buf);
-	return rc;
-      }
-
-      p += de->reclen;
+      name++;
+      len--;
+    }
+    
+    if (len == 0)
+    {
+      *retval = ino;
+      return 0;
     }
 
-    release_buffer(dir->fs->cache, buf);
+    // Find next part of name
+    p = name;
+    l = 0;
+    while (l < len && *p != PS1 && *p != PS2)
+    {
+      l++;
+      p++;
+    }
+
+    // Find inode for next name part
+    rc = get_inode(fs, ino, &inode);
+    if (rc < 0) return rc;
+    
+    rc = find_dir_entry(inode, name, l, &ino);
+    release_inode(inode);
+    if (rc < 0) return rc;
+
+    // If we have parsed the whole name return the inode number
+    if (l == len) 
+    {
+      *retval = ino;
+      return 0;
+    }
+
+    // Prepare for next name part
+    name = p;
+    len -= l;
   }
+}
+
+int diri(struct filsys *fs, char **name, int *len, struct inode **inode)
+{
+  char *start;
+  char *p;
+  ino_t ino;
+  struct inode *dir;
+  int rc;
+
+  if (*len == 0) return get_inode(fs, DFS_INODE_ROOT, inode);
+
+  start = *name;
+  p = start + *len - 1;
+  while (p > start && *p != PS1 && *p != PS2) p--;
+
+  if (p == start)
+  {
+    if (*p == PS1 || *p == PS2)
+    {
+      (*name)++;
+      (*len)--;
+    }
+
+    return get_inode(fs, DFS_INODE_ROOT, inode);
+  }
+
+  rc = lookup_name(fs, DFS_INODE_ROOT, start, p - start, &ino);
+  if (rc < 0) return rc;
+
+  rc = get_inode(fs, ino, &dir);
+  if (rc < 0) return rc;
+
+  if (!S_ISDIR(dir->desc->mode))
+  {
+    release_inode(dir);
+    return -ENOTDIR;
+  }
+
+  *name = p + 1;
+  *len -= p - start + 1;
+  *inode = dir;
+
+  return 0;
+}
+
+int namei(struct filsys *fs, char *name, struct inode **inode)
+{
+  ino_t ino;
+  int rc;
+  
+  rc = lookup_name(fs, DFS_INODE_ROOT, name, strlen(name), &ino);
+  if (rc < 0) return rc;
+
+  rc = get_inode(fs, ino, inode);
+  if (rc < 0) return rc;
 
   return 0;
 }
 
 int dfs_opendir(struct file *filp, char *name)
 {
-  struct filsys *fs;
-  int len;
-  ino_t ino;
   struct inode *inode;
+  int rc;
 
-  fs = (struct filsys *) filp->fs->data;
-  len = strlen(name);
-
-  ino = lookup_name(fs, DFS_INODE_ROOT, name, len);
-  if (ino == NOINODE) return -ENOENT;
-  
-  inode = get_inode(fs, ino);
-  if (!inode) return -EIO;
+  rc = namei((struct filsys *) filp->fs->data, name, &inode);
+  if (rc < 0) return rc;
 
   if (!S_ISDIR(inode->desc->mode))
   {
@@ -420,6 +409,10 @@ int dfs_opendir(struct file *filp, char *name)
   }
 
   filp->data = inode;
+  filp->mode = inode->desc->mode;
+  filp->owner = inode->desc->uid;
+  filp->group = inode->desc->gid;
+
   return 0;
 }
 

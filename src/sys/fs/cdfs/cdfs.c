@@ -473,6 +473,7 @@ int cdfs_open(struct file *filp, char *name)
   if (flags & 2) filp->flags |= F_DIR;
 
   filp->data = cdfile;
+  filp->mode = S_IFREG | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;;
   return 0;
 }
 
@@ -607,9 +608,9 @@ int cdfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
     memset(buffer, 0, sizeof(struct stat64));
 
     if (rec->flags[0] & 2) 
-      buffer->st_mode = S_IFDIR | S_IREAD | S_IEXEC;
+      buffer->st_mode = S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
     else
-      buffer->st_mode = S_IFREG | S_IREAD | S_IEXEC;
+      buffer->st_mode = S_IFREG | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
 
     buffer->st_ino = isonum_733(rec->extent);
     buffer->st_nlink = 1;
@@ -654,6 +655,7 @@ int cdfs_opendir(struct file *filp, char *name)
   cdfile->size = size;
 
   filp->data = cdfile;
+  filp->mode = S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
   return 0;
 }
 

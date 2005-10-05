@@ -119,7 +119,7 @@ int fnmatch(char *fn1, int len1, char *fn2, int len2)
   return 1;
 }
 
-int fslookup(char *name, int all, struct fs **mntfs, char **rest)
+int fslookup(char *name, int full, struct fs **mntfs, char **rest)
 {
   struct fs *fs;
   char *p;
@@ -155,7 +155,7 @@ int fslookup(char *name, int all, struct fs **mntfs, char **rest)
       }
 
       m = strlen(q);
-      if (n >= m && fnmatch(p, m, q, m) && (p[m] == PS1 || p[m] == PS2 || all && p[m] == 0))
+      if (n >= m && fnmatch(p, m, q, m) && (p[m] == PS1 || p[m] == PS2 || full && p[m] == 0))
       {
 	rc = check(fs->mode, fs->uid, fs->gid, S_IEXEC);
 	if (rc < 0) return rc;
@@ -196,9 +196,10 @@ static int files_proc(struct proc_file *pf, void *arg)
   int h;
   struct object *o;
   struct file *filp;
+  char perm[11];
 
-  pprintf(pf, "handle    flags     mode        pos path\n");
-  pprintf(pf, "------ -------- -------- ---------- -------------------------------------------\n");
+  pprintf(pf, "handle    flags mode       uid gid path\n");
+  pprintf(pf, "------ -------- ---------- --- --- -------------------------------------------\n");
   for (h = 0; h < htabsize; h++)
   {
     o = htab[h];
@@ -208,7 +209,29 @@ static int files_proc(struct proc_file *pf, void *arg)
     if (o->type != OBJECT_FILE) continue;
 
     filp = (struct file *) o;
-    pprintf(pf, "%6d %08X %08o %10d %s\n", h, filp->flags, filp->mode, (int) filp->pos, filp->path ? filp->path : "<no name>");
+
+    strcpy(perm, " ---------");
+    switch (filp->mode & S_IFMT) 
+    {
+      case S_IFREG: perm[0] = '-'; break;
+      case S_IFLNK: perm[0] = 'l'; break;
+      case S_IFDIR: perm[0] = 'd'; break;
+      case S_IFBLK: perm[0] = 'b'; break;
+      case S_IFCHR: perm[0] = 'c'; break;
+      case S_IFPKT: perm[0] = 'p'; break;
+    }
+
+    if (filp->mode & 0400) perm[1] = 'r';
+    if (filp->mode & 0200) perm[2] = 'w';
+    if (filp->mode & 0100) perm[3] = 'x';
+    if (filp->mode & 0040) perm[4] = 'r';
+    if (filp->mode & 0020) perm[5] = 'w';
+    if (filp->mode & 0010) perm[6] = 'x';
+    if (filp->mode & 0004) perm[7] = 'r';
+    if (filp->mode & 0002) perm[8] = 'w';
+    if (filp->mode & 0001) perm[9] = 'x';
+
+    pprintf(pf, "%6d %08X %s %3d %3d %s\n", h, filp->flags, perm, filp->owner, filp->group, filp->path ? filp->path : "<no name>");
   }
 
   return 0;
@@ -563,6 +586,19 @@ int open(char *name, int flags, int mode, struct file **retval)
     }
 
     rc = fs->ops->open(filp, rest);
+    if (rc == 0)
+    {
+      int access;
+
+      if (filp->flags & O_RDWR)
+	access = S_IREAD | S_IWRITE;
+      else if (filp->flags & O_WRONLY)
+	access = S_IWRITE;
+      else
+	access = S_IREAD;
+
+      rc = check(filp->mode, filp->owner, filp->group, access);
+    }
 
     unlock_fs(fs, FSOP_OPEN);
 

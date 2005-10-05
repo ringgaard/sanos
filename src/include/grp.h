@@ -59,6 +59,7 @@ extern "C" {
 
 osapi struct group *getgrnam(const char *name);
 osapi struct group *getgrgid(uid_t uid);
+osapi int setgroups(int size, const gid_t list[]);
 osapi int initgroups(const char *user, gid_t basegid);
 
 #ifdef  __cplusplus

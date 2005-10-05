@@ -138,7 +138,7 @@ int check(int mode, uid_t uid, gid_t gid, int access)
     if (thread->egid != gid) access >>= 3;
   }
 
-  if (mode & access) return 0;
+  if ((mode & access) == access) return 0;
 
   return -EACCES;
 }

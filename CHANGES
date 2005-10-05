@@ -73,11 +73,7 @@ CHANGE LOG FOR SANOS
 
     * Bug in iomux fixed. Now a monitored event signals the iomux and not the 
       associated object.
-      
-    * Telnet daemon moved from the shell to separate server (telnetd.exe). The
-      new telnet daemon has a more robust handling of the telnet protocol. The telnet
-      daemon invokes the login application in order to log on user.
-      
+            
     * Implemented popen() and pclose(). Also added a P_SUSPEND parameter to spawn() to
       allow new jobs to be started suspended.
 
@@ -89,13 +85,21 @@ CHANGE LOG FOR SANOS
       can be displayed in the Windows Explorer by viewing Properties for krnl.dll and 
       selecting the Version tab.
       
-    * User and group id added to TCB. Added functions to query /etc/passwd and /etc/group
-      file. New functions: getuid(), getgid(), setuid(), setgid(), getpwnam(), getpwuid(),
-      getgrnam(), getgrgid(), chown(), fchown().
+    * User management added to kernel. Each thread is now assigned to a user and a group.
+      A thread has both a real and an effective user and group owner. The {get|set}[e]{uid|gid}()
+      functions can be used to change the effective and real user and group for a thread.
+      When a new thread is created the effective user and group are inherited from the
+      creator thread. 
+      
+    * Added functions to query /etc/passwd and /etc/group files.
+    
+    * New whoami, id, chmod, and chown commands added to shell. The format of the output
+      from ls has been changed to display the file permission info.
     
     * New file system version for DFS. The new version supports user and group owner
       for files and directories as well as permission bits. The new DFS version also
-      supports files larger than 2GB.
+      supports files larger than 2GB. The fchown() and chown() functions has been
+      added to vfs.
       
     * DES-based crypt() implementation added.
     
@@ -107,6 +111,10 @@ CHANGE LOG FOR SANOS
     * The behaviour of the initial application has been changed. Previously the os shut
       down after the initial application exited. Now the initial application is executed 
       again if it exits.
+
+    * Telnet daemon moved from the shell to separate server (telnetd.exe). The
+      new telnet daemon has a more robust handling of the telnet protocol. The telnet
+      daemon invokes the new login utlity in order to log on user.
             
 Version 1.3.2
 

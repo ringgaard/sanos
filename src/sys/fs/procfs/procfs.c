@@ -241,6 +241,7 @@ int procfs_open(struct file *filp, char *name)
 
   inode->size = pf->size;
   filp->data = pf;
+  filp->mode = S_IFCHR | S_IRUSR | S_IRGRP | S_IROTH;
   return 0;
 }
 

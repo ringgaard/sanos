@@ -232,14 +232,14 @@ int unlink_inode(struct inode *inode)
   return 0;
 }
 
-struct inode *get_inode(struct filsys *fs, ino_t ino)
+int get_inode(struct filsys *fs, ino_t ino, struct inode **retval)
 {
   struct inode *inode;
   unsigned int group;
   unsigned int block;
 
   inode = (struct inode *) kmalloc(sizeof(struct inode));
-  if (!inode) return NULL;
+  if (!inode) return -ENOMEM;
 
   inode->fs = fs;
   inode->ino = ino;
@@ -251,11 +251,12 @@ struct inode *get_inode(struct filsys *fs, ino_t ino)
   if (!inode->buf)
   {
     kfree(inode);
-    return NULL;
+    return -EIO;
   }
   inode->desc = (struct inodedesc *) (inode->buf->data) + (ino % fs->inodes_per_block);
 
-  return inode;  
+  *retval = inode;
+  return 0;
 }
 
 void release_inode(struct inode *inode)

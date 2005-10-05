@@ -118,6 +118,8 @@ osapi int getegid();
 osapi int seteuid(uid_t uid);
 osapi int setegid(gid_t gid);
 osapi int getgroups(int size, gid_t list[]);
+osapi int chown(const char *name, int owner, int group);
+osapi int fchown(handle_t f, int owner, int group);
 
 #ifdef  __cplusplus
 }

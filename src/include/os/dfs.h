@@ -153,10 +153,8 @@ struct filsys
   struct blkgroup *groups;
 };
 
-typedef int (*filldir_t)(char *name, int len, ino_t ino, void *data);
-
-#ifdef KRNL
-__inline int icheck(struct inode *inode, int access)
+#ifdef KRNL_LIB
+__inline int checki(struct inode *inode, int access)
 {
   return check(inode->desc->mode, inode->desc->uid, inode->desc->gid, access);
 }
@@ -197,19 +195,20 @@ blkno_t get_inode_block(struct inode *inode, unsigned int iblock);
 blkno_t set_inode_block(struct inode *inode, unsigned int iblock, blkno_t block);
 struct inode *alloc_inode(struct inode *parent, mode_t mode);
 int unlink_inode(struct inode *inode);
-struct inode *get_inode(struct filsys *fs, ino_t ino);
+int get_inode(struct filsys *fs, ino_t ino, struct inode **retval);
 void release_inode(struct inode *inode);
 blkno_t expand_inode(struct inode *inode);
 int truncate_inode(struct inode *inode, unsigned int blocks);
 
 // dir.c
-ino_t find_dir_entry(struct inode *dir, char *name, int len);
-ino_t lookup_name(struct filsys *fs, ino_t ino, char *name, int len);
-struct inode *parse_name(struct filsys *fs, char **name, int *len);
+int find_dir_entry(struct inode *dir, char *name, int len, ino_t *retval);
 int add_dir_entry(struct inode *dir, char *name, int len, ino_t ino);
-ino_t modify_dir_entry(struct inode *dir, char *name, int len, ino_t ino);
+int modify_dir_entry(struct inode *dir, char *name, int len, ino_t ino, ino_t *oldino);
 int delete_dir_entry(struct inode *dir, char *name, int len);
-int iterate_dir(struct inode *dir, filldir_t filldir, void *data);
+
+int diri(struct filsys *fs, char **name, int *len, struct inode **inode);
+int namei(struct filsys *fs, char *name, struct inode **inode);
+
 int dfs_opendir(struct file *filp, char *name);
 int dfs_readdir(struct file *filp, struct direntry *dirp, int count);
 
