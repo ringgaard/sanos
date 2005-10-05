@@ -61,6 +61,12 @@ char schedmap[SCHEDMAPSIZE];
 unsigned long schedmapidx;
 #endif
 
+struct thread *self()
+{
+  unsigned long stkvar;
+  return (struct thread *) (((unsigned long) &stkvar) & TCBMASK);
+}
+
 __declspec(naked) void switch_context(struct thread *t)
 {
   __asm
@@ -393,9 +399,11 @@ int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread 
   t->name = "user";
   t->suspend_count++;
 
-  // Inherit user and group from creator thread
-  t->uid = creator->uid;
-  t->gid = creator->gid;
+  // Inherit effective user and group from creator thread
+  t->ruid = t->euid = creator->euid;
+  t->rgid = t->egid = creator->egid;
+  t->ngroups = creator->ngroups;
+  memcpy(t->groups, creator->groups, creator->ngroups * sizeof(gid_t)); 
 
   // Create and initialize new TIB
   rc = init_user_thread(t, entrypoint);

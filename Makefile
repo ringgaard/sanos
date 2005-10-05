@@ -178,6 +178,12 @@ $(OBJ)/krnl/lldiv.obj: $(SRC)/lib/lldiv.asm
 $(OBJ)/krnl/llmul.obj: $(SRC)/lib/llmul.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
 
+$(OBJ)/krnl/lldvrm.obj: $(SRC)/lib/lldvrm.asm
+    $(AS) $(AFLAGS) /c /Fo$@ $**
+
+$(OBJ)/krnl/llrem.obj: $(SRC)/lib/llrem.asm
+    $(AS) $(AFLAGS) /c /Fo$@ $**
+
 $(OBJ)/krnl/krnl.res: $(SRC)/sys/krnl/krnl.rc
   $(RC) /d "NDEBUG" /l 0x406 /I $(SRC)/include $(DEFS) /fo$@ $**
 
@@ -210,6 +216,7 @@ $(LIBS)/krnl.lib $(BIN)/krnl.dll: \
   $(SRC)\sys\krnl\cpu.c \
   $(SRC)\sys\krnl\buf.c \
   $(SRC)\sys\krnl\apm.c \
+  $(SRC)\sys\krnl\user.c \
   $(SRC)\sys\dev\video.c \
   $(SRC)\sys\dev\serial.c \
   $(SRC)\sys\dev\rnd.c \
@@ -268,6 +275,7 @@ $(LIBS)/krnl.lib $(BIN)/krnl.dll: \
   $(SRC)\lib\verinfo.c \
   $(OBJ)/krnl/lldiv.obj \
   $(OBJ)/krnl/llmul.obj \
+  $(OBJ)/krnl/llrem.obj \
   $(OBJ)/krnl/lldvrm.obj \
   $(OBJ)/krnl/krnl.res
     $(CC) $(CFLAGS) /Fe$(BIN)/krnl.dll /Fo$(OBJ)/krnl/ $** /D KERNEL /D KRNL_LIB \
@@ -296,6 +304,7 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
   $(SRC)/sys/os/netdb.c \
   $(SRC)/sys/os/heap.c \
   $(SRC)/sys/os/critsect.c \
+  $(SRC)/sys/os/userdb.c \
   $(SRC)/lib/vsprintf.c \
   $(SRC)/lib/strtol.c \
   $(SRC)/lib/string.c \
@@ -763,7 +772,7 @@ $(BIN)/msvcrt.dll: \
 # utils
 #
 
-utils: dirs $(BIN)/sh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/jinit.exe $(BIN)/telnetd.exe $(BIN)/httpd.dll
+utils: dirs $(BIN)/sh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/jinit.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/httpd.dll
 
 $(BIN)/sh.exe: \
   $(SRC)/utils/sh/sh.c \
@@ -800,7 +809,13 @@ $(BIN)/telnetd.exe: \
   $(SRC)/utils/telnetd/telnetd.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
-    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/fdisk/ $** /link /NODEFAULTLIB /FIXED:NO
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/telnetd/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(BIN)/login.exe: \
+  $(SRC)/utils/login/login.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/login/ $** /link /NODEFAULTLIB /FIXED:NO
 
 $(OBJ)/httpd/httpd.res: $(SRC)/utils/httpd/httpd.rc
   $(RC) /d "NDEBUG" /l 0x406 /fo$@ $**

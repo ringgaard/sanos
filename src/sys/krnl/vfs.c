@@ -36,7 +36,7 @@
 struct filesystem *fslist = NULL;
 struct fs *mountlist = NULL;
 char curdir[MAXPATH];
-char pathsep;
+char pathsep = '/';
 
 #define LFBUFSIZ 1025
 #define CR '\r'
@@ -115,24 +115,21 @@ int canonicalize(char *path, char *buffer)
 int fnmatch(char *fn1, int len1, char *fn2, int len2)
 {
   if (len1 != len2) return 0;
-  while (len1--)
-  {
-    if (*fn1++ != *fn2++) return 0;
-  }
-
+  while (len1--) if (*fn1++ != *fn2++) return 0;
   return 1;
 }
 
-struct fs *fslookup(char *name, char **rest)
+int fslookup(char *name, int all, struct fs **mntfs, char **rest)
 {
   struct fs *fs;
   char *p;
   char *q;
   int n;
   int m;
+  int rc;
 
   // Remove initial path separator from filename
-  if (!name) return NULL;
+  if (!name) return -EINVAL;
   p = name;
   if (*p == PS1 || *p == PS2) p++;
   n = strlen(p);
@@ -148,22 +145,32 @@ struct fs *fslookup(char *name, char **rest)
 
       if (!*q)
       {
+	rc = check(fs->mode, fs->uid, fs->gid, S_IEXEC);
+	if (rc < 0) return rc;
+
 	if (rest) *rest = p;
-	return fs;
+	*mntfs = fs;
+
+	return 0;
       }
 
       m = strlen(q);
-      if (n >= m && fnmatch(p, m, q, m) && (p[m] == 0 || p[m] == PS1 || p[m] == PS2))
+      if (n >= m && fnmatch(p, m, q, m) && (p[m] == PS1 || p[m] == PS2 || all && p[m] == 0))
       {
+	rc = check(fs->mode, fs->uid, fs->gid, S_IEXEC);
+	if (rc < 0) return rc;
+
 	if (rest) *rest = p + m;
-	return fs;
+	*mntfs = fs;
+
+	return 0;
       }
     }
 
     fs = fs->next;
   }
 
-  return NULL;
+  return -ENOENT;
 }
 
 int __inline lock_fs(struct fs *fs, int fsop)
@@ -293,19 +300,42 @@ int mount(char *type, char *mntto, char *mntfrom, char *opts, struct fs **newfs)
   struct fs *fs;
   struct fs *prevfs;
   int rc;
-
+  char path[MAXPATH];
+  struct stat64 st;
+  
   // Check parameters
   if (!type) return -EINVAL;
   if (!mntto) return -EINVAL;
+
+  if (*mntto)
+  {
+    rc = canonicalize(mntto, path);
+    if (rc < 0) return rc;
+  }
+  else
+    *path = 0;
 
   // Check for file system already mounted
   fs = mountlist;
   prevfs = NULL;
   while (fs)
   {
-    if (fnmatch(mntto, strlen(mntto), fs->mntto, strlen(fs->mntto))) return -EEXIST;
-    if (strlen(mntto) < strlen(fs->mntto)) prevfs = fs;
+    if (fnmatch(path, strlen(path), fs->mntto, strlen(fs->mntto))) return -EEXIST;
+    if (strlen(path) < strlen(fs->mntto)) prevfs = fs;
     fs = fs->next;
+  }
+
+  // Check that mount point exists
+  if (path[0] == 0 || (path[0] == PS1 || path[0] == PS2) &&  path[1] == 0)
+  {
+    st.st_uid = 0;
+    st.st_gid = 0;
+    st.st_mode = 0755;
+  }
+  else
+  {
+    rc = stat(path, &st);
+    if (rc < 0) return rc;
   }
 
   // Find file system type
@@ -322,10 +352,16 @@ int mount(char *type, char *mntto, char *mntfrom, char *opts, struct fs **newfs)
   if (!fs) return -ENOMEM;
   memset(fs, 0, sizeof(struct fs));
 
-  strcpy(fs->mntto, mntto);
+  strcpy(fs->mntto, path);
   strcpy(fs->mntfrom, mntfrom ? mntfrom : "");
+
   fs->fsys = fsys;
   fs->ops = fsys->ops;
+
+  fs->uid = st.st_uid;
+  fs->gid = st.st_gid;
+  fs->mode = st.st_mode;
+
   init_mutex(&fs->exclusive, 0);
 
   // Initialize filesystem on device
@@ -360,13 +396,17 @@ int mount(char *type, char *mntto, char *mntfrom, char *opts, struct fs **newfs)
   return 0;
 }
 
-int umount(char *path)
+int umount(char *name)
 {
   struct fs *fs;
   int rc;
+  char path[MAXPATH];
 
   // Check parameters
-  if (!path) return -EINVAL;
+  if (!name) return -EINVAL;
+
+  rc = canonicalize(name, path);
+  if (rc < 0) return rc;
 
   // Find mounted filesystem
   fs = mountlist;
@@ -488,8 +528,8 @@ int statfs(char *name, struct statfs *buf)
   rc = canonicalize(name, path);
   if (rc < 0) return rc;
 
-  fs = fslookup(path, &rest);
-  if (!fs) return -ENOENT;
+  rc = fslookup(path, 1, &fs, &rest);
+  if (rc < 0) return rc;
 
   return get_fsstat(fs, buf);
 }
@@ -505,8 +545,8 @@ int open(char *name, int flags, int mode, struct file **retval)
   rc = canonicalize(name, path);
   if (rc < 0) return rc;
 
-  fs = fslookup(path, &rest);
-  if (!fs) return -ENOENT;
+  rc = fslookup(path, 0, &fs, &rest);
+  if (rc < 0) return rc;
 
   filp = newfile(fs, path, flags, mode);
   if (!filp) return -EMFILE;
@@ -927,8 +967,8 @@ int utime(char *name, struct utimbuf *times)
   rc = canonicalize(name, path);
   if (rc < 0) return rc;
 
-  fs = fslookup(path, &rest);
-  if (!fs) return -ENOENT;
+  rc = fslookup(path, 0, &fs, &rest);
+  if (rc < 0) return rc;
   
   if (!times) return -EINVAL;
 
@@ -968,8 +1008,8 @@ int stat(char *name, struct stat64 *buffer)
   rc = canonicalize(name, path);
   if (rc < 0) return rc;
 
-  fs = fslookup(path, &rest);
-  if (!fs) return -ENOENT;
+  rc = fslookup(path, 0, &fs, &rest);
+  if (rc < 0) return rc;
   
   if (!fs->ops->stat) return -ENOSYS;
   fs->locks++;
@@ -980,6 +1020,51 @@ int stat(char *name, struct stat64 *buffer)
   }
   rc = fs->ops->stat(fs, rest, buffer);
   unlock_fs(fs, FSOP_STAT);
+  fs->locks--;
+  return rc;
+}
+
+int access(char *name, int mode)
+{
+  struct fs *fs;
+  char *rest;
+  int rc;
+  char path[MAXPATH];
+
+  rc = canonicalize(name, path);
+  if (rc < 0) return rc;
+
+  rc = fslookup(path, 0, &fs, &rest);
+  if (rc < 0) return rc;
+
+  if (!fs->ops->access) 
+  {
+    struct thread *thread = self();
+    struct stat64 buf;
+
+    rc = stat(name, &buf);
+    if (rc < 0) return rc;
+    if (mode == 0) return 0;
+
+    if (thread->euid == 0) return 0;
+
+    if (thread->euid == buf.st_uid)
+      mode <<= 6;
+    else if (thread->egid == buf.st_gid)
+      mode <<= 3;
+
+    if ((mode && buf.st_mode) == 0) return -EACCES;
+    return 0;
+  }
+
+  fs->locks++;
+  if (lock_fs(fs, FSOP_ACCESS) < 0) 
+  {
+    fs->locks--;
+    return -ETIMEOUT;
+  }
+  rc = fs->ops->access(fs, rest, mode);
+  unlock_fs(fs, FSOP_ACCESS);
   fs->locks--;
   return rc;
 }
@@ -1008,8 +1093,8 @@ int chmod(char *name, int mode)
   rc = canonicalize(name, path);
   if (rc < 0) return rc;
 
-  fs = fslookup(path, &rest);
-  if (!fs) return -ENOENT;
+  rc = fslookup(path, 0, &fs, &rest);
+  if (rc < 0) return rc;
 
   if (!fs->ops->chmod) return -ENOSYS;
   fs->locks++;
@@ -1020,6 +1105,46 @@ int chmod(char *name, int mode)
   }
   rc = fs->ops->chmod(fs, rest, mode);
   unlock_fs(fs, FSOP_CHMOD);
+  fs->locks--;
+  return rc;
+}
+
+int fchown(struct file *filp, int owner, int group)
+{
+  int rc;
+
+  if (!filp) return -EINVAL;
+  if (filp->flags & O_RDONLY) return -EACCES;
+ 
+  if (!filp->fs->ops->fchown) return -ENOSYS;
+  if (lock_fs(filp->fs, FSOP_FCHOWN) < 0) return -ETIMEOUT;
+  rc = filp->fs->ops->fchown(filp, owner, group);
+  unlock_fs(filp->fs, FSOP_FCHOWN);
+  return rc;
+}
+
+int chown(char *name, int owner, int group)
+{
+  struct fs *fs;
+  char *rest;
+  int rc;
+  char path[MAXPATH];
+
+  rc = canonicalize(name, path);
+  if (rc < 0) return rc;
+
+  rc = fslookup(path, 0, &fs, &rest);
+  if (rc < 0) return rc;
+
+  if (!fs->ops->chmod) return -ENOSYS;
+  fs->locks++;
+  if (lock_fs(fs, FSOP_CHOWN) < 0) 
+  {
+    fs->locks--;
+    return -ETIMEOUT;
+  }
+  rc = fs->ops->chown(fs, rest, owner, group);
+  unlock_fs(fs, FSOP_CHOWN);
   fs->locks--;
   return rc;
 }
@@ -1037,8 +1162,8 @@ int chdir(char *name)
   if (rc < 0) return rc;
   strcpy(newdir, path);
 
-  fs = fslookup(path, &rest);
-  if (!fs) return -ENOENT;
+  rc = fslookup(path, 0, &fs, &rest);
+  if (rc < 0) return rc;
   
   if (fs->ops->stat)
   {
@@ -1072,8 +1197,8 @@ int mkdir(char *name, int mode)
   rc = canonicalize(name, path);
   if (rc < 0) return rc;
 
-  fs = fslookup(path, &rest);
-  if (!fs) return -ENOENT;
+  rc = fslookup(path, 0, &fs, &rest);
+  if (rc < 0) return rc;
 
   if (!fs->ops->mkdir) return -ENOSYS;
   fs->locks++;
@@ -1098,8 +1223,8 @@ int rmdir(char *name)
   rc = canonicalize(name, path);
   if (rc < 0) return rc;
 
-  fs = fslookup(path, &rest);
-  if (!fs) return -ENOENT;
+  rc = fslookup(path, 0, &fs, &rest);
+  if (rc < 0) return rc;
   
   if (!fs->ops->rmdir) return -ENOSYS;
   fs->locks++;
@@ -1127,14 +1252,14 @@ int rename(char *oldname, char *newname)
   rc = canonicalize(oldname, oldpath);
   if (rc < 0) return rc;
 
-  oldfs = fslookup(oldpath, &oldrest);
-  if (!oldfs) return -ENOENT;
+  rc = fslookup(oldpath, 0, &oldfs, &oldrest);
+  if (rc < 0) return rc;
 
   rc = canonicalize(newname, newpath);
   if (rc < 0) return rc;
 
-  newfs = fslookup(newpath, &newrest);
-  if (!newfs) return -ENOENT;
+  rc = fslookup(newpath, 0, &newfs, &newrest);
+  if (rc < 0) return rc;
 
   if (oldfs != newfs) return -EXDEV;
 
@@ -1164,14 +1289,14 @@ int link(char *oldname, char *newname)
   rc = canonicalize(oldname, oldpath);
   if (rc < 0) return rc;
 
-  oldfs = fslookup(oldpath, &oldrest);
-  if (!oldfs) return -ENOENT;
+  rc = fslookup(oldpath, 0, &oldfs, &oldrest);
+  if (rc < 0) return rc;
 
   rc = canonicalize(newname, newpath);
   if (rc < 0) return rc;
 
-  newfs = fslookup(newpath, &newrest);
-  if (!newfs) return -ENOENT;
+  rc = fslookup(newpath, 0, &newfs, &newrest);
+  if (rc < 0) return rc;
 
   if (oldfs != newfs) return -EXDEV;
 
@@ -1198,8 +1323,8 @@ int unlink(char *name)
   rc = canonicalize(name, path);
   if (rc < 0) return rc;
 
-  fs = fslookup(path, &rest);
-  if (!fs) return -ENOENT;
+  rc = fslookup(path, 0, &fs, &rest);
+  if (rc < 0) return rc;
 
   if (!fs->ops->unlink) return -ENOSYS;
   fs->locks++;
@@ -1225,8 +1350,9 @@ int opendir(char *name, struct file **retval)
   rc = canonicalize(name, path);
   if (rc < 0) return rc;
 
-  fs = fslookup(path, &rest);
-  if (!fs) return -ENOENT;
+  rc = fslookup(path, 1, &fs, &rest);
+  if (rc < 0) return rc;
+
   if (!fs->ops->opendir) return -ENOSYS;
 
   filp = (struct file *) kmalloc(sizeof(struct file));

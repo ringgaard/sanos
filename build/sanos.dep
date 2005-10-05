@@ -37,6 +37,7 @@ $(SRC)/include/os/krnl.h: \
   $(SRC)/include/os/buf.h \
   $(SRC)/include/os/timer.h \
   $(SRC)/include/os/object.h \
+  $(SRC)/include/os/user.h \
   $(SRC)/include/os/queue.h \
   $(SRC)/include/os/sched.h \
   $(SRC)/include/os/trap.h \
@@ -723,6 +724,10 @@ $(SRC)/utils/telnetd/telnetd.c: \
   $(SRC)/include/os.h \
   $(SRC)/include/inifile.h \
   $(SRC)/include/stdio.h \
+  $(SRC)/include/string.h
+
+$(SRC)/utils/telnetd/login.c: \
+  $(SRC)/include/os.h \
   $(SRC)/include/string.h
 
 # win32

@@ -172,8 +172,13 @@ struct thread
   void *entrypoint;
   int exitcode;
   char *name;
-  uid_t uid;
-  gid_t gid;
+
+  uid_t ruid;
+  uid_t rgid;
+  uid_t euid;
+  gid_t egid;
+  int ngroups;
+  gid_t groups[NGROUPS_MAX];
 
   unsigned long utime;
   unsigned long stime;

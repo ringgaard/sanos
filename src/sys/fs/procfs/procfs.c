@@ -84,6 +84,10 @@ struct fsops procfsops =
   procfs_stat,
 
   NULL,
+
+  NULL,
+  NULL,
+  NULL,
   NULL,
 
   NULL,
@@ -344,7 +348,7 @@ int procfs_fstat(struct file *filp, struct stat64 *buffer)
     if (buffer)
     {
       memset(buffer, 0, sizeof(struct stat64));
-      buffer->st_mode = S_IFDIR | S_IREAD | S_IEXEC;
+      buffer->st_mode = S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
       buffer->st_ino = PROC_ROOT_INODE;
       buffer->st_nlink = 1;
       buffer->st_dev = NODEV;
@@ -358,7 +362,7 @@ int procfs_fstat(struct file *filp, struct stat64 *buffer)
   if (buffer)
   {
     memset(buffer, 0, sizeof(struct stat64));
-    buffer->st_mode = S_IFCHR | S_IREAD;
+    buffer->st_mode = S_IFCHR | S_IRUSR | S_IRGRP | S_IROTH;
 
     buffer->st_ino = pf->inode->ino;
     buffer->st_nlink = 1;
@@ -382,7 +386,7 @@ int procfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
     if (buffer)
     {
       memset(buffer, 0, sizeof(struct stat64));
-      buffer->st_mode = S_IFDIR | S_IREAD | S_IEXEC;
+      buffer->st_mode = S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
       buffer->st_ino = PROC_ROOT_INODE;
       buffer->st_nlink = 1;
       buffer->st_dev = NODEV;
@@ -399,7 +403,7 @@ int procfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
   if (buffer)
   {
     memset(buffer, 0, sizeof(struct stat64));
-    buffer->st_mode = S_IFCHR | S_IREAD;
+    buffer->st_mode = S_IFCHR | S_IRUSR | S_IRGRP | S_IROTH;
 
     buffer->st_ino = inode->ino;
     buffer->st_nlink = 1;

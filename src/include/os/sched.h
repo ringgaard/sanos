@@ -129,11 +129,15 @@ __inline __declspec(naked) struct thread *self()
 }
 #endif
 
+#if 0
 __inline struct thread *self()
 {
   unsigned long stkvar;
   return (struct thread *) (((unsigned long) &stkvar) & TCBMASK);
 }
+#endif
+
+struct thread *self();
 
 void mark_thread_running();
 

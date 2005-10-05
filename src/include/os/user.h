@@ -1,7 +1,7 @@
 //
-// grp.h
+// user.h
 //
-// User group database
+// User management
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -31,38 +31,24 @@
 // SUCH DAMAGE.
 // 
 
-#if _MSC_VER > 1000
-#pragma once
-#endif
+#ifndef USER_H
+#define USER_H
 
-#ifndef GRP_H
-#define GRP_H
+int getuid();
+int setuid(uid_t uid);
 
-#include <sys/types.h>
+int getgid();
+int setgid(gid_t gid);
 
-#ifndef _GROUP_DEFINED
-#define _GROUP_DEFINED
+int geteuid();
+int seteuid(uid_t uid);
 
-struct group
-{
-  char *gr_name;    // Group name
-  char *gr_passwd;  // Group password
-  gid_t gr_gid;     // Group id
-  char **gr_mem;    // Group members
-};
+int getegid();
+int setegid(gid_t gid);
 
-#endif
+int setgroups(int size, gid_t *list);
+int getgroups(int size, gid_t *list);
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
-osapi struct group *getgrnam(const char *name);
-osapi struct group *getgrgid(uid_t uid);
-osapi int initgroups(const char *user, gid_t basegid);
-
-#ifdef  __cplusplus
-}
-#endif
+int check(int mode, uid_t uid, gid_t gid, int access);
 
 #endif

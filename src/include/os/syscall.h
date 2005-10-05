@@ -125,10 +125,19 @@
 #define SYSCALL_PREAD          88
 #define SYSCALL_PWRITE         89
 #define SYSCALL_GETUID         90
-#define SYSCALL_GETGID         91
-#define SYSCALL_SETUID         92
+#define SYSCALL_SETUID         91
+#define SYSCALL_GETGID         92
 #define SYSCALL_SETGID         93
+#define SYSCALL_GETEUID        94
+#define SYSCALL_SETEUID        95
+#define SYSCALL_GETEGID        96
+#define SYSCALL_SETEGID        97
+#define SYSCALL_GETGROUPS      98
+#define SYSCALL_SETGROUPS      99
+#define SYSCALL_CHOWN         100
+#define SYSCALL_FCHOWN        101
+#define SYSCALL_ACCESS        102
 
-#define SYSCALL_MAX            93
+#define SYSCALL_MAX           102
 
 #endif

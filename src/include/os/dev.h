@@ -167,6 +167,9 @@ struct dev
   struct unit *unit;
   void *privdata;
   int refcnt;
+  uid_t uid;
+  gid_t gid;
+  int mode;
   struct devfile *files;
 
   struct netif *netif;

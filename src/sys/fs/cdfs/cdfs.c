@@ -575,9 +575,9 @@ int cdfs_fstat(struct file *filp, struct stat64 *buffer)
     memset(buffer, 0, sizeof(struct stat64));
 
     if (filp->flags & F_DIR) 
-      buffer->st_mode = S_IFDIR | S_IREAD;
+      buffer->st_mode = S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
     else
-      buffer->st_mode = S_IFREG | S_IREAD | S_IEXEC;
+      buffer->st_mode = S_IFREG | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
 
     buffer->st_ino = cdfile->extent;
     buffer->st_nlink = 1;
@@ -607,7 +607,7 @@ int cdfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
     memset(buffer, 0, sizeof(struct stat64));
 
     if (rec->flags[0] & 2) 
-      buffer->st_mode = S_IFDIR | S_IREAD;
+      buffer->st_mode = S_IFDIR | S_IREAD | S_IEXEC;
     else
       buffer->st_mode = S_IFREG | S_IREAD | S_IEXEC;
 
@@ -764,6 +764,10 @@ struct fsops cdfsops =
   cdfs_fstat,
   cdfs_stat,
 
+  NULL,
+
+  NULL,
+  NULL,
   NULL,
   NULL,
 

@@ -43,8 +43,6 @@
 #include <pwd.h>
 #include <grp.h>
 
-int initcmds_executed = 0;
-
 #define BUFSIZE 4096
 
 int cmd_ping(int argc, char *argv[]);
@@ -242,6 +240,80 @@ int cmd_chdir(int argc, char *argv[])
     printf("%s: %s\n", path, strerror(errno));
     return -1;
   }
+
+  return 0;
+}
+
+int cmd_chmod(int argc, char *argv[])
+{
+  int mode;
+  char *path;
+  char *p;
+
+  if (argc != 3)
+  {
+    printf("usage: chmod <mode> <path>\n");
+    return -EINVAL;
+  }
+
+  path = argv[2];
+
+  mode = 0;
+  p = argv[1];
+  while (*p)
+  {
+    if (*p < '0' || *p > '7')
+    {
+      printf("Illegal mode\n");
+      return -EINVAL;
+    }
+    mode = (mode << 3) + (*p++ - '0');
+  }
+
+  if (chmod(path, mode) < 0) perror(path);
+
+  return 0;
+}
+
+int cmd_chown(int argc, char *argv[])
+{
+  struct passwd *pwd = NULL;
+  struct group *grp = NULL;
+  char *path;
+  char *p;
+
+  if (argc != 3)
+  {
+    printf("usage: chown <owner>:<group> <path>\n");
+    return -EINVAL;
+  }
+
+  path = argv[2];
+
+  p = strchr(argv[1], ':');
+  if (p)
+  {
+    *p++ = 0;
+    pwd = getpwnam(argv[1]);
+    grp = getgrnam(p);
+
+    if (!pwd && !grp)
+    {
+      printf("Unknown user/group\n");
+      return -EINVAL;
+    }
+  }
+  else
+  {
+    pwd = getpwnam(argv[1]);
+    if (!pwd)
+    {
+      printf("Unknown user\n");
+      return -EINVAL;
+    }
+  }
+
+  if (chown(path, pwd ? pwd->pw_uid : -1, grp ? grp->gr_gid : -1) < 0) perror(path);
 
   return 0;
 }
@@ -511,6 +583,41 @@ int cmd_grabcon(int argc, char *argv[])
   dup2(fdin, 0);
   dup2(fdout, 1);
   dup2(fderr, 2);
+
+  return 0;
+}
+
+int cmd_id(int argc, char *argv[])
+{
+  gid_t groups[NGROUPS_MAX];
+  int ngroups;
+  struct passwd *pwd = getpwuid(getuid());
+  struct group *grp = getgrgid(getgid());
+
+  if (!pwd || !grp)
+  {
+    perror("id");
+    return -1;
+  }
+
+  printf("uid=%d(%s) gid=%d(%s)", pwd->pw_uid, pwd->pw_name, grp->gr_gid, grp->gr_name);
+
+  ngroups = getgroups(NGROUPS_MAX, groups);
+  if (ngroups > 0)
+  {
+    int i;
+
+    printf(" groups");
+    for (i = 0; i < ngroups; i++)
+    {
+      grp = getgrgid(groups[i]);
+      printf("%c%d(%s)", (i == 0 ? '=' : ','), groups[i], grp->gr_name);
+    }
+  }
+
+  printf("\n");
+  return 0;
+
 
   return 0;
 }
@@ -812,6 +919,8 @@ int cmd_ls(int argc, char *argv[])
   char *arg;
   int col;
   char perm[11];
+  struct passwd *pwd;
+  struct group *grp;
 
   verbose = 0;
   dirname = ".";
@@ -878,17 +987,12 @@ int cmd_ls(int argc, char *argv[])
 	strcpy(perm, " ---------");
 	switch (buf.st_mode & S_IFMT) 
 	{
-	  case S_IFREG:
-	    perm[0] = '-';
-	    break;
-
-	  case S_IFLNK:
-	    perm[0] = 'l';
-	    break;
-
-	  case S_IFDIR:
-	    perm[0] = 'd';
-	    break;
+	  case S_IFREG: perm[0] = '-'; break;
+	  case S_IFLNK: perm[0] = 'l'; break;
+	  case S_IFDIR: perm[0] = 'd'; break;
+	  case S_IFBLK: perm[0] = 'b'; break;
+	  case S_IFCHR: perm[0] = 'c'; break;
+	  case S_IFPKT: perm[0] = 'p'; break;
 	}
 
 	if (buf.st_mode & 0400) perm[1] = 'r';
@@ -901,6 +1005,10 @@ int cmd_ls(int argc, char *argv[])
 	if (buf.st_mode & 0002) perm[8] = 'w';
 	if (buf.st_mode & 0001) perm[9] = 'x';
 	printf("%s ", perm);
+
+	pwd = getpwuid(buf.st_uid);
+	grp = getgrgid(buf.st_gid);
+	printf("%-8s %-8s", pwd ? pwd->pw_name : "?", grp ? grp->gr_name : "?");
 
 	if ((buf.st_mode & S_IFMT) == S_IFDIR)
 	  printf("         ");
@@ -945,7 +1053,7 @@ int cmd_mkdir(int argc, char *argv[])
   }
   path = argv[1];
 
-  rc = mkdir(path, 0666); 
+  rc = mkdir(path, 0755); 
   if (rc < 0)
   {
     printf("%s: %s\n", path, strerror(errno));
@@ -1461,6 +1569,8 @@ struct command cmdtab[] =
   {"cat",      cmd_cat,      "Display file"},
   {"cd",       cmd_chdir,    "Change current directory"},
   {"chdir",    cmd_chdir,    "Change current directory"},
+  {"chmod",    cmd_chmod,    "Change file permissions"},
+  {"chown",    cmd_chown,    "Change file owner"},
   {"copy",     cmd_cp,       "Copy file"},
   {"cls",      cmd_cls,      "Clear screen"},
   {"cp",       cmd_cp,       "Copy file"},
@@ -1474,6 +1584,7 @@ struct command cmdtab[] =
   {"exec",     cmd_exec,     "Execute shell script"},
   {"exit",     NULL,         "Exit shell"},
   {"grabcon",  cmd_grabcon,  "Grab the main console file descriptors"},
+  {"id",       cmd_id,       "Display real and effective user and group ids"},
   {"ifconfig", cmd_ifconfig, "Display network interface configuration"},
   {"ipconfig", cmd_ifconfig, "Display network interface configuration"},
   {"heapstat", cmd_heapstat, "Display heap statistics"},
@@ -1653,10 +1764,10 @@ int main(int argc, char *argv[])
   if (gettib()->job->term->type == TERM_VT100) setvbuf(stdout, NULL, 0, 8192);
 
   initcmds = get_property(osconfig, "shell", "initcmds", NULL);
-  if (initcmds && !initcmds_executed)
+  if (initcmds && !peb->rcdone)
   {
     execute_script(initcmds);
-    initcmds_executed = 1;
+    peb->rcdone = 1;
   }
 
   if (argc > 1)

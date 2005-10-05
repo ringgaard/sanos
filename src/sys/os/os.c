@@ -84,6 +84,26 @@ int *_fmode()
   return &peb->fmodeval;
 }
 
+static int check_access(struct stat64 *st, int mode)
+{
+  int uid = getuid();
+  
+  if (uid == 0) return 0;
+
+  if (uid == st->st_uid)
+    mode <<= 6;
+  else if (getgid() == st->st_gid)
+    mode <<= 3;
+
+  if ((mode && st->st_mode) == 0)
+  {
+    errno = EACCES;
+    return -1;
+  }
+
+  return 0;
+}
+
 handle_t creat(const char *name, int mode)
 {
   return open(name, O_CREAT | O_TRUNC | O_WRONLY, mode);
@@ -104,62 +124,6 @@ handle_t sopen(const char *name, int flags, int shflags, ...)
   return open(name, FILE_FLAGS(flags, shflags), mode);
 }
 
-int access(const char *name, int mode)
-{
-  int rc;
-  struct stat64 buf;
-
-  rc = stat64(name, &buf);
-  if (rc < 0) return rc;
-
-  switch (mode)
-  {
-    case 0:
-      // Existence
-      rc = 0; 
-      break;
-
-    case 2:
-      // Write permission
-      if (buf.st_mode & S_IWRITE)
-        rc = 0;
-      else
-      {
-	errno = EACCES;
-	rc = -1;
-      }
-      break; 
-
-    case 4: 
-      // Read permission
-      if (buf.st_mode & S_IREAD)
-        rc = 0;
-      else
-      {
-	errno = EACCES;
-	rc = -1;
-      }
-      break; 
-
-    case 6:
-      // Read and write permission
-      if ((buf.st_mode & (S_IREAD | S_IWRITE)) ==  (S_IREAD | S_IWRITE))
-        rc = 0;
-      else
-      {
-	errno = EACCES;
-	rc = -1;
-      }
-      break;
-
-    default:
-      errno = EINVAL;
-      rc = -1;
-  }
-
-  return rc;
-}
-
 int eof(handle_t f)
 {
   return tell64(f) == fstat64(f, NULL);
@@ -169,7 +133,7 @@ int umask(int mask)
 {
   int oldmask;
 
-  mask &= 0777;
+  mask &= S_IRWXUGO;
   oldmask = peb->umaskval;
   peb->umaskval = mask;
   return oldmask;
@@ -948,6 +912,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 
   // Load user database
   init_userdb();
+  initgroups("root", 0);
 
   // Mount devices
   init_mount();

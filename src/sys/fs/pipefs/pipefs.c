@@ -75,6 +75,11 @@ struct fsops pipefsops =
   NULL,
 
   NULL,
+
+  NULL,
+  NULL,
+
+  NULL,
   NULL,
 
   NULL,
@@ -133,6 +138,8 @@ int pipe(struct file **readpipe, struct file **writepipe)
   struct file *wr;
   struct pipe *rdp;
   struct pipe *wrp;
+
+  if (!pipefs) return -ENOENT;
 
   rd = newfile(pipefs, NULL, O_RDONLY, S_IREAD);
   wr = newfile(pipefs, NULL, O_WRONLY, S_IWRITE);

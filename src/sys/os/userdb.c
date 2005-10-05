@@ -33,6 +33,7 @@
 
 #include <os.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <pwd.h>
 #include <grp.h>
@@ -282,4 +283,23 @@ struct group *getgrgid(gid_t gid)
       return &grouptab[i];
 
   return NULL;
+}
+
+int initgroups(const char *user, gid_t basegid)
+{
+  gid_t groups[NGROUPS_MAX];
+  int ngroups = 0;
+  int i;
+  char **mem;
+
+  groups[ngroups++] = basegid;
+  for (i = 0; i < group_cnt; i++)
+  {
+    if (grouptab[i].gr_gid == basegid) continue;
+    mem = grouptab[i].gr_mem;
+    while (*mem && strcmp(*mem, user) != 0) mem++;
+    if (*mem && ngroups < NGROUPS_MAX) groups[ngroups++] = grouptab[i].gr_gid;
+  }
+
+  return setgroups(ngroups, groups);
 }

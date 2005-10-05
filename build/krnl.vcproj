@@ -225,6 +225,9 @@
 				RelativePath="..\src\sys\krnl\trap.c">
 			</File>
 			<File
+				RelativePath="..\src\sys\krnl\user.c">
+			</File>
+			<File
 				RelativePath="..\src\sys\krnl\vfs.c">
 			</File>
 			<File
@@ -270,14 +273,16 @@
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -299,6 +304,23 @@
 						Description=""
 						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
 "
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\llrem.asm">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>
@@ -585,6 +607,9 @@
 					RelativePath="..\src\include\os\tss.h">
 				</File>
 				<File
+					RelativePath="..\src\include\os\user.h">
+				</File>
+				<File
 					RelativePath="..\src\include\os\version.h">
 				</File>
 				<File
@@ -652,6 +677,9 @@
 			<Filter
 				Name="include/sys"
 				Filter="">
+				<File
+					RelativePath="..\src\include\sys\stat.h">
+				</File>
 				<File
 					RelativePath="..\src\include\sys\types.h">
 				</File>

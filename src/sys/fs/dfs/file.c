@@ -48,7 +48,7 @@ static int open_existing(struct filsys *fs, char *name, int len, struct inode **
   return 0;
 }
 
-static int open_always(struct filsys *fs, char *name, int len, struct inode **retval)
+static int open_always(struct filsys *fs, char *name, int len, int mode, struct inode **retval)
 {
   struct inode *dir;
   struct inode *inode;
@@ -61,7 +61,7 @@ static int open_always(struct filsys *fs, char *name, int len, struct inode **re
   ino = find_dir_entry(dir, name, len);
   if (ino == NOINODE)
   {
-    inode = alloc_inode(dir, 0644);
+    inode = alloc_inode(dir, S_IFREG | (mode & S_IRWXUGO));
     if (!inode) 
     {
       release_inode(dir);
@@ -95,7 +95,7 @@ static int open_always(struct filsys *fs, char *name, int len, struct inode **re
   return 0;
 }
 
-static int create_always(struct filsys *fs, char *name, int len, struct inode **retval)
+static int create_always(struct filsys *fs, char *name, int len, int mode, struct inode **retval)
 {
   struct inode *dir;
   struct inode *inode;
@@ -106,7 +106,7 @@ static int create_always(struct filsys *fs, char *name, int len, struct inode **
   dir = parse_name(fs, &name, &len);
   if (!dir) return -ENOENT;
 
-  inode = alloc_inode(dir, 0644);
+  inode = alloc_inode(dir, S_IFREG | (mode & S_IRWXUGO));
   if (!inode)
   {
     release_inode(dir);
@@ -174,7 +174,7 @@ static int truncate_existing(struct filsys *fs, char *name, int len, struct inod
   return 0;
 }
 
-static int create_new(struct filsys *fs, char *name, int len, ino_t ino, struct inode **retval)
+static int create_new(struct filsys *fs, char *name, int len, ino_t ino, int mode, struct inode **retval)
 {
   struct inode *dir;
   struct inode *inode;
@@ -190,7 +190,7 @@ static int create_new(struct filsys *fs, char *name, int len, ino_t ino, struct 
   }
 
   if (ino == NOINODE)
-    inode = alloc_inode(dir, 0644);
+    inode = alloc_inode(dir, S_IFREG | (mode & S_IRWXUGO));
   else
   {
     inode = get_inode(fs, ino);
@@ -241,13 +241,13 @@ int dfs_open(struct file *filp, char *name)
 
     case O_CREAT:
       // Open file, create new file if it does not exists
-      rc = open_always(fs, name, len, &inode);
+      rc = open_always(fs, name, len, filp->mode, &inode);
       break;
 
     case O_CREAT | O_EXCL:
     case O_CREAT | O_TRUNC | O_EXCL:
       // Create new file, fail if it exists
-      rc = create_new(fs, name, len, NOINODE, &inode);
+      rc = create_new(fs, name, len, NOINODE, filp->mode, &inode);
       filp->flags |= F_MODIFIED;
       break;
 
@@ -260,13 +260,13 @@ int dfs_open(struct file *filp, char *name)
 
     case O_CREAT | O_TRUNC:
       // Create new file, unlink existing file if it exists
-      rc = create_always(fs, name, len, &inode);
+      rc = create_always(fs, name, len, filp->mode, &inode);
       filp->flags |= F_MODIFIED;
       break;
 
     case O_SPECIAL:
       // Create new file with special inode number
-      rc = create_new(fs, name, len, filp->flags >> 24, &inode);
+      rc = create_new(fs, name, len, filp->flags >> 24, filp->mode, &inode);
       filp->flags |= F_MODIFIED;
       break;
 
@@ -580,4 +580,31 @@ int dfs_fstat(struct file *filp, struct stat64 *buffer)
   }
 
   return (int) size;
+}
+
+int dfs_fchmod(struct file *filp, int mode)
+{
+  struct thread *thread = self();
+  struct inode *inode;
+
+  inode = (struct inode *) filp->data;
+  if (thread->euid != 0 && thread->euid != inode->desc->uid) return -EPERM;
+  inode->desc->mode = (inode->desc->mode & ~S_IRWXUGO) | (mode & S_IRWXUGO);
+  mark_inode_dirty(inode);
+
+  return 0;
+}
+
+int dfs_fchown(struct file *filp, int owner, int group)
+{
+  struct thread *thread = self();
+  struct inode *inode;
+
+  inode = (struct inode *) filp->data;
+  if (thread->euid != 0) return -EPERM;
+  if (owner != -1) inode->desc->uid = owner;
+  if (group != -1) inode->desc->gid = group;
+  mark_inode_dirty(inode);
+
+  return 0;
 }

@@ -153,6 +153,7 @@ src\                           Souce files
       timer.h		       Timer functions
       trap.h                   Interrupt and trap handling
       tss.h                    Task state segment
+      user.h                   User management
       version.h                Version information
       vfs.h                    Virtual file system
       video.h                  Video funtions
@@ -326,6 +327,7 @@ src\                           Souce files
       syscall.c                System call interface
       timer.c                  Timer functions
       trap.c                   Interrupt and trap handling
+      user.c                   User management
       vfs.c                    Virtual file system
       vmm.c                    Virtual memory manager
     ndis\                      NDIS source files
@@ -368,6 +370,7 @@ src\                           Souce files
       syserr.c                 System error messages
       thread.c                 Thread routines
       tls.c                    Thread local storage
+      userdb.c                 User database functions
     osldr\                     OS loader source files
       bootfd.c                 Boot floppy disk driver
       boothd.c                 Boot Harddisk driver
@@ -398,6 +401,8 @@ src\                           Souce files
       ping.c                   Send ICMP echo request to network host
     telnetd\                   Telnet daemon source files
       telnetd.c                Telnet daemon
+    login\                     Login source files
+      telnetd.c                Sign on user
   win32\                       Win32 API wrapper source files
     advapi32\                  Source files for advapi32
       advapi32.c               Win32 ADVAPI32 emulation

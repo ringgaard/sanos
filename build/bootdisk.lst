@@ -22,6 +22,7 @@
 /bin/setup.exe    bin\setup.exe      dbg\bin\setup.exe
 /bin/fdisk.exe    bin\fdisk.exe      dbg\bin\fdisk.exe
 /bin/edit.exe     bin\edit.exe       dbg\bin\edit.exe
+/bin/login.exe    bin\login.exe      dbg\bin\login.exe
 
 ; Drivers
 

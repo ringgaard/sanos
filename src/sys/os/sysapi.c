@@ -604,14 +604,9 @@ int mutexrel(handle_t h)
   return syscall(SYSCALL_MUTEXREL, (void *) &h);
 }
 
-uid_t getuid()
+int getuid()
 {
   return syscall(SYSCALL_GETUID, NULL);
-}
-
-gid_t getgid()
-{
-  return syscall(SYSCALL_GETGID, NULL);
 }
 
 int setuid(uid_t uid)
@@ -619,7 +614,57 @@ int setuid(uid_t uid)
   return syscall(SYSCALL_SETUID, (void *) &uid);
 }
 
+int getgid()
+{
+  return syscall(SYSCALL_GETGID, NULL);
+}
+
 int setgid(gid_t gid)
 {
   return syscall(SYSCALL_SETGID, (void *) &gid);
+}
+
+int geteuid()
+{
+  return syscall(SYSCALL_GETEUID, NULL);
+}
+
+int seteuid(uid_t uid)
+{
+  return syscall(SYSCALL_SETEUID, (void *) &uid);
+}
+
+int getegid()
+{
+  return syscall(SYSCALL_GETEGID, NULL);
+}
+
+int setegid(gid_t gid)
+{
+  return syscall(SYSCALL_SETEGID, (void *) &gid);
+}
+
+int getgroups(int size, gid_t list[])
+{
+  return syscall(SYSCALL_GETGROUPS, (void *) &size);
+}
+
+int setgroups(int size, const gid_t list[])
+{
+  return syscall(SYSCALL_SETGROUPS, (void *) &size);
+}
+
+int chown(const char *name, int owner, int group)
+{
+  return syscall(SYSCALL_CHOWN, (void *) &name);
+}
+
+int fchown(handle_t f, int owner, int group)
+{
+  return syscall(SYSCALL_FCHOWN, (void *) &f);
+}
+
+int access(const char *name, int mode)
+{
+  return syscall(SYSCALL_ACCESS, (void *) &name);
 }

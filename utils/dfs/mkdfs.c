@@ -247,8 +247,8 @@ void install_kernel()
   hfile = CreateFile(krnlfile, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
   size = GetFileSize(hfile, NULL);
 
-  mkdir("/bin");
-  file = open("/bin/krnl.dll", O_SPECIAL | (DFS_INODE_KERNEL << 24) | O_WRONLY);
+  mkdir("/bin", 0755);
+  file = open("/bin/krnl.dll", O_SPECIAL | (DFS_INODE_KERNEL << 24) | O_WRONLY, 0644);
   if (file == NULL) panic("error creating kernel file");
 
   ReadFile(hfile, buf, 4096, &count, NULL);
@@ -265,7 +265,7 @@ void install_kernel()
 
 void make_directory(char *dirname)
 {
-  mkdir(dirname);
+  mkdir(dirname, 0755);
 }
 
 void transfer_file(char *dstfn, char *srcfn)
@@ -276,11 +276,17 @@ void transfer_file(char *dstfn, char *srcfn)
 
   struct file *file;
   char buf[4096];
+  char *ext;
+  int executable = 0;
 
   hfile = CreateFile(srcfn, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
   size = GetFileSize(hfile, NULL);
 
-  file = open(dstfn, O_CREAT);
+  ext = dstfn + strlen(dstfn) - 1;
+  while (ext > dstfn && *ext != '.' && *ext != PS1 && *ext != PS2) ext--;
+  if (strcmp(ext, ".dll") == 0 || strcmp(ext, ".exe") == 0) executable = 1;
+
+  file = open(dstfn, O_CREAT, executable ? 0755 : 0644);
 
   printf("%s -> %s (%d bytes)\n", srcfn, dstfn, size);
 
@@ -399,7 +405,7 @@ void list_file(char *filename)
   char buf[4096];
   struct file *file;
 
-  file = open(filename, 0);
+  file = open(filename, 0, 0);
   if (!file)
   {
     printf("%s: file not found\n", filename);
@@ -421,14 +427,14 @@ void copy_file(char *srcfn, char *dstfn)
   struct file *f1;
   struct file *f2;
 
-  f1 = open(srcfn, 0);
+  f1 = open(srcfn, 0, 0);
   if (!f1)
   {
     printf("%s: file not found\n", srcfn);
     return;
   }
 
-  f2 = open(dstfn, O_CREAT);
+  f2 = open(dstfn, O_CREAT, 0);
   if (!f2)
   {
     close(f1);
@@ -492,7 +498,7 @@ void remove_file(char *filename)
 
 void make_dir(char *filename)
 {
-  if (mkdir(filename) < 0)
+  if (mkdir(filename, 0755) < 0)
   {
     printf("%s: cannot make directory\n", filename);
     return;
@@ -541,7 +547,7 @@ static void test_read_file(char *filename)
   int time;
   int bytes;
 
-  file = open(filename, 0);
+  file = open(filename, 0, 0);
   if (!file)
   {
     printf("%s: file not found\n", filename);
@@ -575,7 +581,7 @@ static void test_write_file(char *filename, int size)
   int time;
   int bytes;
 
-  file = open(filename, O_CREAT);
+  file = open(filename, O_CREAT, 0644);
   if (!file)
   {
     printf("%s: error creating file\n", filename);

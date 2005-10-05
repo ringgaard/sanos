@@ -88,6 +88,10 @@ struct fsops devfsops =
   devfs_stat,
 
   NULL,
+
+  NULL,
+  NULL,
+  NULL,
   NULL,
 
   NULL,
@@ -240,13 +244,9 @@ int devfs_fstat(struct file *filp, struct stat64 *buffer)
   if (buffer)
   {
     memset(buffer, 0, sizeof(struct stat64));
-    if (dev->driver->type == DEV_TYPE_BLOCK) 
-      buffer->st_mode = S_IFBLK | S_IREAD | S_IWRITE;
-    else if (dev->driver->type == DEV_TYPE_STREAM) 
-      buffer->st_mode = S_IFCHR | S_IREAD | S_IWRITE;
-    else
-      buffer->st_mode = S_IREAD | S_IWRITE;
-
+    buffer->st_mode = dev->mode;
+    buffer->st_uid = dev->uid;
+    buffer->st_gid = dev->gid;
     buffer->st_ino = df->devno;
     buffer->st_nlink = 1;
     buffer->st_dev = NODEV;
@@ -274,7 +274,7 @@ int devfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
   if (!*name)
   {
     memset(buffer, 0, sizeof(struct stat64));
-    buffer->st_mode = S_IFDIR | S_IREAD | S_IWRITE;
+    buffer->st_mode = S_IFDIR | S_IRUSR | S_IXUSR;
 
     buffer->st_ino = 0;
     buffer->st_nlink = 1;
@@ -300,13 +300,9 @@ int devfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
   if (buffer)
   {
     memset(buffer, 0, sizeof(struct stat64));
-    if (dev->driver->type == DEV_TYPE_BLOCK) 
-      buffer->st_mode = S_IFBLK | S_IREAD | S_IWRITE;
-    else if (dev->driver->type == DEV_TYPE_STREAM) 
-      buffer->st_mode = S_IFCHR | S_IREAD | S_IWRITE;
-    else
-      buffer->st_mode = S_IREAD | S_IWRITE;
-
+    buffer->st_mode = dev->mode;
+    buffer->st_uid = dev->uid;
+    buffer->st_gid = dev->gid;
     buffer->st_ino = devno;
     buffer->st_nlink = 1;
     buffer->st_dev = NODEV;

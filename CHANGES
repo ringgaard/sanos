@@ -75,7 +75,8 @@ CHANGE LOG FOR SANOS
       associated object.
       
     * Telnet daemon moved from the shell to separate server (telnetd.exe). The
-      new telnet daemon has a more robust handling of the telnet protocol.
+      new telnet daemon has a more robust handling of the telnet protocol. The telnet
+      daemon invokes the login application in order to log on user.
       
     * Implemented popen() and pclose(). Also added a P_SUSPEND parameter to spawn() to
       allow new jobs to be started suspended.
@@ -90,7 +91,7 @@ CHANGE LOG FOR SANOS
       
     * User and group id added to TCB. Added functions to query /etc/passwd and /etc/group
       file. New functions: getuid(), getgid(), setuid(), setgid(), getpwnam(), getpwuid(),
-      getgrnam(), getgrgid().
+      getgrnam(), getgrgid(), chown(), fchown().
     
     * New file system version for DFS. The new version supports user and group owner
       for files and directories as well as permission bits. The new DFS version also
@@ -106,7 +107,7 @@ CHANGE LOG FOR SANOS
     * The behaviour of the initial application has been changed. Previously the os shut
       down after the initial application exited. Now the initial application is executed 
       again if it exits.
-      
+            
 Version 1.3.2
 
     * The fdmotor task in the floppy driver has been replaced by a timer.

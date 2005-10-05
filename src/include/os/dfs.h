@@ -155,6 +155,13 @@ struct filsys
 
 typedef int (*filldir_t)(char *name, int len, ino_t ino, void *data);
 
+#ifdef KRNL
+__inline int icheck(struct inode *inode, int access)
+{
+  return check(inode->desc->mode, inode->desc->uid, inode->desc->gid, access);
+}
+#endif
+
 // dfs.c
 void init_dfs();
 int dfs_mkdir(struct fs *fs, char *name, int mode);
@@ -164,6 +171,9 @@ int dfs_link(struct fs *fs, char *oldname, char *newname);
 int dfs_unlink(struct fs *fs, char *name);
 int dfs_utime(struct fs *fs, char *name, struct utimbuf *times);
 int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer);
+int dfs_access(struct fs *fs, char *name, int mode);
+int dfs_chmod(struct fs *fs, char *name, int mode);
+int dfs_chown(struct fs *fs, char *name, int owner, int group);
 
 // super.c
 struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts);
@@ -216,5 +226,7 @@ off64_t dfs_lseek(struct file *filp, off64_t offset, int origin);
 int dfs_ftruncate(struct file *filp, off64_t size);
 int dfs_futime(struct file *filp, struct utimbuf *times);
 int dfs_fstat(struct file *filp, struct stat64 *buffer);
+int dfs_fchmod(struct file *filp, int mode);
+int dfs_fchown(struct file *filp, int owner, int group);
 
 #endif

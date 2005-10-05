@@ -113,6 +113,11 @@ osapi int getuid();
 osapi int getgid();
 osapi int setuid(uid_t uid);
 osapi int setgid(gid_t gid);
+osapi int geteuid();
+osapi int getegid();
+osapi int seteuid(uid_t uid);
+osapi int setegid(gid_t gid);
+osapi int getgroups(int size, gid_t list[]);
 
 #ifdef  __cplusplus
 }

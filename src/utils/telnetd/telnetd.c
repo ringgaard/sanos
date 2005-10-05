@@ -334,7 +334,7 @@ void __stdcall telnet_task(void *arg)
   job->term = &ts.term;
   
   // Spawn initial telnet application
-  app = spawn(P_NOWAIT, pgm, "", NULL);
+  app = spawn(P_NOWAIT, NULL, pgm, NULL);
   if (app < 0) return;
   
   // The spawned application has duped the handles, now close our copy
@@ -466,7 +466,7 @@ int main(int argc, char *argv[])
   }
 
   port = get_numeric_property(osconfig, "telnetd", "port", 23);
-  pgm = get_property(osconfig, "telnetd", "pgm", "sh.exe");
+  pgm = get_property(osconfig, "telnetd", "pgm", "login");
 
   sock = socket(AF_INET, SOCK_STREAM, 0);
   if (sock < 0)

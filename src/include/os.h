@@ -195,6 +195,7 @@ struct section;
 #ifndef S_IFMT
 
 #define S_IFMT         0170000         // File type mask
+#define S_IFPKT        0160000         // Packet device
 #define S_IFSOCK       0140000         // Socket
 #define S_IFLNK	       0120000         // Symbolic link
 #define S_IFREG        0100000         // Regular file
@@ -214,6 +215,7 @@ struct section;
 #define S_ISBLK(m)	(((m) & S_IFMT) == S_IFBLK)
 #define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
 #define S_ISSOCK(m)	(((m) & S_IFMT) == S_IFSOCK)
+#define S_ISPKT(m)	(((m) & S_IFMT) == S_IFPKT)
 
 #define S_IRWXU 00700
 #define S_IRUSR 00400
@@ -229,6 +231,8 @@ struct section;
 #define S_IROTH 00004
 #define S_IWOTH 00002
 #define S_IXOTH 00001
+
+#define S_IRWXUGO 00777
 
 #endif
 
@@ -993,6 +997,8 @@ struct verinfo
 // User database
 //
 
+#define NGROUPS_MAX 8
+
 #ifndef _PASSWD_DEFINED
 #define _PASSWD_DEFINED
 
@@ -1046,6 +1052,7 @@ struct peb
 
   void (*globalhandler)(int, struct siginfo *);
   int debug;
+  int rcdone;
   int umaskval;
   int fmodeval;
   char pathsep;
@@ -1298,14 +1305,16 @@ osapi int fstat(handle_t f, struct stat *buffer);
 osapi int fstat64(handle_t f, struct stat64 *buffer);
 osapi int stat(const char *name, struct stat *buffer);
 osapi int stat64(const char *name, struct stat64 *buffer);
-
 osapi int access(const char *name, int mode);
+
 osapi int eof(handle_t f);
 osapi int umask(int mask);
 osapi int setmode(handle_t f, int mode);
 
 osapi int chmod(const char *name, int mode);
 osapi int fchmod(handle_t f, int mode);
+osapi int chown(const char *name, int owner, int group);
+osapi int fchown(handle_t f, int owner, int group);
 
 osapi int chdir(const char *name);
 osapi char *getcwd(char *buf, size_t size);
@@ -1361,11 +1370,18 @@ osapi struct passwd *getpwnam(const char *name);
 osapi struct passwd *getpwuid(uid_t uid);
 osapi struct group *getgrnam(const char *name);
 osapi struct group *getgrgid(uid_t uid);
+osapi int initgroups(const char *user, gid_t basegid);
 
-osapi uid_t getuid();
-osapi gid_t getgid();
+osapi int getuid();
+osapi int getgid();
 osapi int setuid(uid_t uid);
 osapi int setgid(gid_t gid);
+osapi int geteuid();
+osapi int getegid();
+osapi int seteuid(uid_t uid);
+osapi int setegid(gid_t gid);
+osapi int getgroups(int size, gid_t list[]);
+osapi int setgroups(int size, const gid_t list[]);
 
 osapi handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize, void *arg, int flags, struct tib **ptib);
 osapi int suspend(handle_t thread);

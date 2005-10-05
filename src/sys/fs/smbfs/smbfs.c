@@ -996,6 +996,10 @@ struct fsops smbfsops =
   smb_stat,
 
   NULL,
+
+  NULL,
+  NULL,
+  NULL,
   NULL,
 
   smb_mkdir,

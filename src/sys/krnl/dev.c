@@ -594,6 +594,14 @@ dev_t dev_make(char *name, struct driver *driver, struct unit *unit, void *privd
   dev->unit = unit;
   dev->privdata = privdata;
   dev->refcnt = 0;
+  dev->mode = 0600;
+
+  switch (dev->driver->type)
+  {
+    case DEV_TYPE_STREAM: dev->mode |= S_IFCHR; break;
+    case DEV_TYPE_BLOCK: dev->mode |= S_IFBLK; break;
+    case DEV_TYPE_PACKET: dev->mode |= S_IFPKT; break;
+  }
 
   if (unit) unit->dev = dev;
 

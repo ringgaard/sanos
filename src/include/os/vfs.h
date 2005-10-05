@@ -57,15 +57,18 @@
 #define FSOP_UTIME      0x00004000
 #define FSOP_FSTAT      0x00008000
 #define FSOP_STAT       0x00010000
-#define FSOP_FCHMOD     0x00020000
-#define FSOP_CHMOD      0x00040000
-#define FSOP_MKDIR      0x00080000
-#define FSOP_RMDIR      0x00100000
-#define FSOP_RENAME     0x00200000
-#define FSOP_LINK       0x00400000
-#define FSOP_UNLINK     0x01000000
-#define FSOP_OPENDIR    0x02000000
-#define FSOP_READDIR    0x04000000
+#define FSOP_ACCESS     0x00020000
+#define FSOP_FCHMOD     0x00040000
+#define FSOP_CHMOD      0x00080000
+#define FSOP_FCHOWN     0x00100000
+#define FSOP_CHOWN      0x00200000
+#define FSOP_MKDIR      0x00400000
+#define FSOP_RMDIR      0x00800000
+#define FSOP_RENAME     0x01000000
+#define FSOP_LINK       0x02000000
+#define FSOP_UNLINK     0x04000000
+#define FSOP_OPENDIR    0x08000000
+#define FSOP_READDIR    0x10000000
 
 struct filesystem
 {
@@ -83,6 +86,9 @@ struct fs
   struct fsops *ops;
   struct fs *next;
   struct fs *prev;
+  mode_t mode;
+  uid_t uid;
+  gid_t gid;
   void *data;
   struct filesystem *fsys;
 };
@@ -132,8 +138,12 @@ struct fsops
   int (*fstat)(struct file *filp, struct stat64 *buffer);
   int (*stat)(struct fs *fs, char *name, struct stat64 *buffer);
 
+  int (*access)(struct fs *fs, char *name, int mode);
+
   int (*fchmod)(struct file *filp, int mode);
   int (*chmod)(struct fs *fs, char *name, int mode);
+  int (*fchown)(struct file *filp, int owner, int group);
+  int (*chown)(struct fs *fs, char *name, int owner, int group);
 
   int (*mkdir)(struct fs *fs, char *name, int mode);
   int (*rmdir)(struct fs *fs, char *name);
@@ -155,7 +165,7 @@ int init_vfs();
 int fnmatch(char *fn1, int len1, char *fn2, int len2);
 
 krnlapi struct filesystem *register_filesystem(char *name, struct fsops *ops);
-krnlapi struct fs *fslookup(char *name, char **rest);
+krnlapi int fslookup(char *name, int all, struct fs **mntfs, char **rest);
 krnlapi struct file *newfile(struct fs *fs, char *path, int flags, int mode);
 
 krnlapi int mkfs(char *devname, char *type, char *opts);
@@ -193,8 +203,12 @@ krnlapi int utime(char *name, struct utimbuf *times);
 krnlapi int fstat(struct file *filp, struct stat64 *buffer);
 krnlapi int stat(char *name, struct stat64 *buffer);
 
+krnlapi int access(char *name, int mode);
+
 krnlapi int fchmod(struct file *filp, int mode);
 krnlapi int chmod(char *name, int mode);
+krnlapi int fchown(struct file *filp, int owner, int group);
+krnlapi int chown(char *name, int owner, int group);
 
 krnlapi int chdir(char *name);
 krnlapi int mkdir(char *name, int mode);

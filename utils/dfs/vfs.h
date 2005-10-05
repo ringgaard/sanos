@@ -91,7 +91,7 @@ struct fsops
   int (*mount)(struct fs *fs, char *opts);
   int (*unmount)(struct fs *fs);
 
-  int (*open)(struct file *filp, char *name);
+  int (*open)(struct file *filp, char *name, int mode);
   int (*close)(struct file *filp);
   int (*flush)(struct file *filp);
 
@@ -107,7 +107,7 @@ struct fsops
   int (*fstat)(struct file *filp, struct stat *buffer);
   int (*stat)(struct fs *fs, char *name, struct stat *buffer);
 
-  int (*mkdir)(struct fs *fs, char *name);
+  int (*mkdir)(struct fs *fs, char *name, int mode);
   int (*rmdir)(struct fs *fs, char *name);
 
   int (*rename)(struct fs *fs, char *oldname, char *newname);
@@ -126,7 +126,7 @@ int format(devno_t devno, char *type, char *opts);
 int mount(char *type, char *path, devno_t devno, char *opts);
 int unmount_all();
 
-struct file *open(char *name, int mode);
+struct file *open(char *name, int flags, int mode);
 int close(struct file *filp);
 int flush(struct file *filp);
 
@@ -142,7 +142,7 @@ int futime(struct file *filp, struct utimbuf *times);
 int fstat(struct file *filp, struct stat *buffer);
 int stat(char *name, struct stat *buffer);
 
-int mkdir(char *name);
+int mkdir(char *name, int mode);
 int rmdir(char *name);
 
 int xrename(char *oldname, char *newname);

@@ -209,7 +209,7 @@ int unmount_all()
   return 0;
 }
 
-struct file *open(char *name, int mode)
+struct file *open(char *name, int flags, int mode)
 {
   struct fs *fs;
   struct file *filp;
@@ -227,11 +227,11 @@ struct file *open(char *name, int mode)
   if (!filp) return NULL;
   
   filp->fs = fs;
-  filp->flags = mode;
+  filp->flags = flags;
   filp->pos = 0;
   filp->data = NULL;
 
-  rc = fs->ops->open(filp, rest);
+  rc = fs->ops->open(filp, rest, mode);
   if (rc != 0)
   {
     free(filp);
@@ -343,7 +343,7 @@ int stat(char *name, struct stat *buffer)
   return fs->ops->stat(fs, rest, buffer);
 }
 
-int mkdir(char *name)
+int mkdir(char *name, int mode)
 {
   struct fs *fs;
   char *rest;
@@ -357,7 +357,7 @@ int mkdir(char *name)
   if (!fs) return -1;
 
   if (!fs->ops->mkdir) return -1;
-  return fs->ops->mkdir(fs, rest);
+  return fs->ops->mkdir(fs, rest, mode);
 }
 
 int rmdir(char *name)

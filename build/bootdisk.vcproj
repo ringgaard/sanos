@@ -64,9 +64,9 @@
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Make floppy disk boot image"
-					CommandLine="..\tools\mkdfs -d $(OutDir)\sanos.flp -b $(IntDir)\boot -l $(IntDir)\osldr.dll -k $(IntDir)\krnl.dll -c 1440 -i -f -F -S .. bootdisk.lst -a
+					CommandLine="..\tools\mkdfs -d $(OutDir)\sanos.flp -b $(IntDir)\boot -l $(IntDir)\osldr.dll -k $(IntDir)\krnl.dll -c 1440 -i -f -S .. -F bootdisk.lst -a
 "
-					AdditionalDependencies="$(IntDir)\boot;$(IntDir)\osldr.dll;$(IntDir)\krnl.dll;$(IntDir)\ndis.sys;$(IntDir)\eepro100.sys;$(IntDir)\rtl8139.sys;$(IntDir)\3c905c.sys;$(IntDir)\pcnet32.sys;$(IntDir)\ne2000.sys;$(IntDir)\sis900.sys;$(IntDir)\os.dll;$(IntDir)\httpd.dll;$(IntDir)\sh.exe;$(IntDir)\fdisk.exe;$(IntDir)\setup.exe;$(IntDir)\msvcrt.dll;$(IntDir)\kernel32.dll;$(IntDir)\user32.dll;$(IntDir)\advapi32.dll;$(IntDir)\winmm.dll;$(IntDir)\wsock32.dll;$(IntDir)\jinit.exe;$(IntDir)\edit.exe;$(IntDir)\telnetd.exe;krnl.ini;os.ini;setup.ini"
+					AdditionalDependencies="$(IntDir)\boot;$(IntDir)\osldr.dll;$(IntDir)\krnl.dll;$(IntDir)\ndis.sys;$(IntDir)\eepro100.sys;$(IntDir)\rtl8139.sys;$(IntDir)\3c905c.sys;$(IntDir)\pcnet32.sys;$(IntDir)\ne2000.sys;$(IntDir)\sis900.sys;$(IntDir)\os.dll;$(IntDir)\httpd.dll;$(IntDir)\sh.exe;$(IntDir)\fdisk.exe;$(IntDir)\setup.exe;$(IntDir)\msvcrt.dll;$(IntDir)\kernel32.dll;$(IntDir)\user32.dll;$(IntDir)\advapi32.dll;$(IntDir)\winmm.dll;$(IntDir)\wsock32.dll;$(IntDir)\jinit.exe;$(IntDir)\edit.exe;$(IntDir)\telnetd.exe;$(IntDir)\login.exe;krnl.ini;os.ini;setup.ini"
 					Outputs="$(OutDir)\sanos.flp"/>
 			</FileConfiguration>
 			<FileConfiguration
@@ -76,7 +76,7 @@
 					Description="Make floppy disk boot image"
 					CommandLine="..\tools\mkdfs -d $(OutDir)\sanos.flp -b $(IntDir)\boot -l $(IntDir)\osldr.dll -k $(IntDir)\krnl.dll -c 1440 -i -f -S .. -F bootdisk.lst
 "
-					AdditionalDependencies="$(IntDir)\boot;$(IntDir)\osldr.dll;$(IntDir)\krnl.dll;$(IntDir)\ndis.sys;$(IntDir)\eepro100.sys;$(IntDir)\rtl8139.sys;$(IntDir)\3c905c.sys;$(IntDir)\pcnet32.sys;$(IntDir)\ne2000.sys;$(IntDir)\sis900.sys;$(IntDir)\os.dll;$(IntDir)\httpd.dll;$(IntDir)\sh.exe;$(IntDir)\fdisk.exe;$(IntDir)\setup.exe;$(IntDir)\msvcrt.dll;$(IntDir)\kernel32.dll;$(IntDir)\user32.dll;$(IntDir)\advapi32.dll;$(IntDir)\winmm.dll;$(IntDir)\wsock32.dll;$(IntDir)\jinit.exe;$(IntDir)\edit.exe;$(IntDir)\telnetd.exe;krnl.ini;os.ini;setup.ini"
+					AdditionalDependencies="$(IntDir)\boot;$(IntDir)\osldr.dll;$(IntDir)\krnl.dll;$(IntDir)\ndis.sys;$(IntDir)\eepro100.sys;$(IntDir)\rtl8139.sys;$(IntDir)\3c905c.sys;$(IntDir)\pcnet32.sys;$(IntDir)\ne2000.sys;$(IntDir)\sis900.sys;$(IntDir)\os.dll;$(IntDir)\httpd.dll;$(IntDir)\sh.exe;$(IntDir)\fdisk.exe;$(IntDir)\setup.exe;$(IntDir)\msvcrt.dll;$(IntDir)\kernel32.dll;$(IntDir)\user32.dll;$(IntDir)\advapi32.dll;$(IntDir)\winmm.dll;$(IntDir)\wsock32.dll;$(IntDir)\jinit.exe;$(IntDir)\edit.exe;$(IntDir)\telnetd.exe;$(IntDir)\login.exe;krnl.ini;os.ini;setup.ini"
 					Outputs="$(OutDir)\sanos.flp"/>
 			</FileConfiguration>
 		</File>

@@ -9,7 +9,7 @@ int dfs_format(devno_t devno, char *opts);
 int dfs_mount(struct fs *fs, char *opts);
 int dfs_unmount(struct fs *fs);
 
-int dfs_open(struct file *filp, char *name);
+int dfs_open(struct file *filp, char *name, int mode);
 int dfs_close(struct file *filp);
 int dfs_flush(struct file *filp);
 
@@ -25,7 +25,7 @@ int dfs_futime(struct file *filp, struct utimbuf *times);
 int dfs_fstat(struct file *filp, struct stat *buffer);
 int dfs_stat(struct fs *fs, char *name, struct stat *buffer);
 
-int dfs_mkdir(struct fs *fs, char *name);
+int dfs_mkdir(struct fs *fs, char *name, int mode);
 int dfs_rmdir(struct fs *fs, char *name);
 
 int dfs_rename(struct fs *fs, char *oldname, char *newname);
@@ -98,7 +98,7 @@ int dfs_stat(struct fs *fs, char *name, struct stat *buffer)
   return 0;
 }
 
-int dfs_mkdir(struct fs *fs, char *name)
+int dfs_mkdir(struct fs *fs, char *name, int mode)
 {
   struct inode *parent;
   struct inode *dir;
@@ -114,7 +114,7 @@ int dfs_mkdir(struct fs *fs, char *name)
     return -1;
   }
 
-  dir = alloc_inode(parent, S_IFDIR | 0644);
+  dir = alloc_inode(parent, S_IFDIR | mode);
   if (!dir)
   {
     release_inode(parent);

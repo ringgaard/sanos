@@ -26,7 +26,7 @@ static struct inode *open_existing(struct filsys *fs, char *name, int len)
   return inode;
 }
 
-static struct inode *open_always(struct filsys *fs, char *name, int len)
+static struct inode *open_always(struct filsys *fs, char *name, int len, int mode)
 {
   struct inode *dir;
   struct inode *inode;
@@ -38,7 +38,7 @@ static struct inode *open_always(struct filsys *fs, char *name, int len)
   ino = find_dir_entry(dir, name, len);
   if (ino == -1)
   {
-    inode = alloc_inode(dir, S_IFREG | 0644);
+    inode = alloc_inode(dir, S_IFREG | mode);
     if (!inode) 
     {
       release_inode(dir);
@@ -77,7 +77,7 @@ static struct inode *open_always(struct filsys *fs, char *name, int len)
   return inode;
 }
 
-static struct inode *create_new(struct filsys *fs, char *name, int len)
+static struct inode *create_new(struct filsys *fs, char *name, int len, int mode)
 {
   struct inode *dir;
   struct inode *inode;
@@ -87,7 +87,7 @@ static struct inode *create_new(struct filsys *fs, char *name, int len)
   dir = parse_name(fs, &name, &len);
   if (!dir) return NULL;
 
-  inode = alloc_inode(dir, S_IFREG | 0644);
+  inode = alloc_inode(dir, S_IFREG | mode);
   if (!inode)
   {
     release_inode(dir);
@@ -150,7 +150,7 @@ static struct inode *truncate_existing(struct filsys *fs, char *name, int len)
   return inode;
 }
 
-static struct inode *create_always(struct filsys *fs, char *name, int len, ino_t ino)
+static struct inode *create_always(struct filsys *fs, char *name, int len, ino_t ino, int mode)
 {
   struct inode *dir;
   struct inode *inode;
@@ -165,11 +165,12 @@ static struct inode *create_always(struct filsys *fs, char *name, int len, ino_t
   }
 
   if (ino == -1)
-    inode = alloc_inode(dir, S_IFREG | 0644);
+    inode = alloc_inode(dir, S_IFREG | mode);
   else
   {
     inode = get_inode(fs, ino);
     if (inode->desc->ctime == 0) inode->desc->ctime = time(NULL);
+    inode->desc->mode = S_IFREG | mode;
   }
 
   if (!inode)
@@ -193,7 +194,7 @@ static struct inode *create_always(struct filsys *fs, char *name, int len, ino_t
   return inode;
 }
 
-int dfs_open(struct file *filp, char *name)
+int dfs_open(struct file *filp, char *name, int mode)
 {
   struct filsys *fs;
   struct inode *inode;
@@ -212,13 +213,13 @@ int dfs_open(struct file *filp, char *name)
 
     case O_CREAT:
       // Open file, create new file if it does not exists
-      inode = open_always(fs, name, len);
+      inode = open_always(fs, name, len, mode);
       break;
 
     case O_CREAT | O_EXCL:
     case O_CREAT | O_TRUNC | O_EXCL:
       // Create new file, unlink existing file if it exists
-      inode = create_new(fs, name, len);
+      inode = create_new(fs, name, len, mode);
       break;
 
     case O_TRUNC:
@@ -230,12 +231,12 @@ int dfs_open(struct file *filp, char *name)
 
     case O_CREAT | O_TRUNC:
       // Create new file, fail if it exists
-      inode = create_always(fs, name, len, -1);
+      inode = create_always(fs, name, len, -1, mode);
       break;
 
     case O_SPECIAL:
       // Create new file with special inode number
-      inode = create_always(fs, name, len, filp->flags >> 24);
+      inode = create_always(fs, name, len, filp->flags >> 24, mode);
       break;
 
     default:

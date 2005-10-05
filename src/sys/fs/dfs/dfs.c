@@ -66,8 +66,12 @@ struct fsops dfsops =
   dfs_fstat,
   dfs_stat,
 
-  NULL,
-  NULL,
+  dfs_access,
+
+  dfs_fchmod,
+  dfs_chmod,
+  dfs_fchown,
+  dfs_chown,
 
   dfs_mkdir,
   dfs_rmdir,
@@ -140,6 +144,35 @@ int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
   return (int) size;
 }
 
+int dfs_access(struct fs *fs, char *name, int mode)
+{
+  struct thread *thread = self();
+  ino_t ino;
+  struct inode *inode;
+  int rc = 0;
+
+  ino = lookup_name((struct filsys *) fs->data, DFS_INODE_ROOT, name, strlen(name));
+  if (ino == NOINODE) return -ENOENT;
+
+  inode = get_inode((struct filsys *) fs->data, ino);
+  if (!inode) return -EIO;
+
+  if (mode != 0 && thread->euid != 0) 
+  {
+    if (thread->euid != inode->desc->uid) 
+    {
+      mode >>= 3;
+      if (thread->egid != inode->desc->gid) mode >>= 3;
+    }
+
+    if ((mode & inode->desc->mode) == 0) rc = -EACCES;
+  }
+
+  release_inode(inode);
+
+  return rc;
+}
+
 int dfs_mkdir(struct fs *fs, char *name, int mode)
 {
   struct inode *parent;
@@ -164,7 +197,7 @@ int dfs_mkdir(struct fs *fs, char *name, int mode)
     return -ENOSPC;
   }
 
-  dir->desc->mode = (mode & 0777) | S_IFDIR;
+  dir->desc->mode = (mode & S_IRWXUGO) | S_IFDIR;
   dir->desc->linkcount++;
   mark_inode_dirty(dir);
 
@@ -409,5 +442,58 @@ int dfs_unlink(struct fs *fs, char *name)
 
   release_inode(inode);
   release_inode(dir);
+  return 0;
+}
+
+int dfs_chmod(struct fs *fs, char *name, int mode)
+{
+  struct thread *thread = self();
+  ino_t ino;
+  struct inode *inode;
+
+  ino = lookup_name((struct filsys *) fs->data, DFS_INODE_ROOT, name, strlen(name));
+  if (ino == NOINODE) return -ENOENT;
+
+  inode = get_inode((struct filsys *) fs->data, ino);
+  if (!inode) return -EIO;
+
+  if (thread->euid != 0 && thread->euid != inode->desc->uid)
+  {
+    release_inode(inode);
+    return -EPERM;
+  }
+
+  inode->desc->mode = (inode->desc->mode & ~S_IRWXUGO) | (mode & S_IRWXUGO);
+
+  mark_inode_dirty(inode);
+
+  release_inode(inode);
+  return 0;
+}
+
+int dfs_chown(struct fs *fs, char *name, int owner, int group)
+{
+  struct thread *thread = self();
+  ino_t ino;
+  struct inode *inode;
+
+  ino = lookup_name((struct filsys *) fs->data, DFS_INODE_ROOT, name, strlen(name));
+  if (ino == NOINODE) return -ENOENT;
+
+  inode = get_inode((struct filsys *) fs->data, ino);
+  if (!inode) return -EIO;
+
+  if (thread->euid != 0)
+  {
+    release_inode(inode);
+    return -EPERM;
+  }
+
+  if (owner != -1) inode->desc->uid = owner;
+  if (group != -1) inode->desc->gid = group;
+
+  mark_inode_dirty(inode);
+
+  release_inode(inode);
   return 0;
 }

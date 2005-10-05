@@ -78,6 +78,7 @@ struct stat64
 #ifndef S_IFMT
 
 #define S_IFMT         0170000         // File type mask
+#define S_IFPKT        0160000         // Packet device
 #define S_IFSOCK       0140000         // Socket
 #define S_IFLNK	       0120000         // Symbolic link
 #define S_IFREG        0100000         // Regular file
@@ -97,6 +98,7 @@ struct stat64
 #define S_ISBLK(m)	(((m) & S_IFMT) == S_IFBLK)
 #define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
 #define S_ISSOCK(m)	(((m) & S_IFMT) == S_IFSOCK)
+#define S_ISPKT(m)	(((m) & S_IFMT) == S_IFPKT)
 
 #define S_IRWXU 00700
 #define S_IRUSR 00400
@@ -112,6 +114,8 @@ struct stat64
 #define S_IROTH 00004
 #define S_IWOTH 00002
 #define S_IXOTH 00001
+
+#define S_IRWXUGO 00777
 
 #endif
 

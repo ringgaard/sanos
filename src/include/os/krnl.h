@@ -82,6 +82,7 @@
 #include <os/buf.h>
 
 #include <os/timer.h>
+#include <os/user.h>
 #include <os/object.h>
 #include <os/queue.h>
 #include <os/sched.h>

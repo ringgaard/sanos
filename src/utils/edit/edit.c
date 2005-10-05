@@ -164,7 +164,7 @@ int save_file(struct editor *ed, char *filename)
 
   if (!filename) filename = ed->filename;
 
-  f = open(filename, O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
+  f = open(filename, O_CREAT | O_TRUNC, 0644);
   if (f < 0) return -1;
 
   if (write(f, ed->start, ed->gap - ed->start) != ed->gap - ed->start) goto err;
