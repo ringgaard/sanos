@@ -84,7 +84,9 @@ dirs:
     -@if not exist $(OBJ)\setup mkdir $(OBJ)\setup
     -@if not exist $(OBJ)\sh mkdir $(OBJ)\sh
     -@if not exist $(OBJ)\sis900 mkdir $(OBJ)\sis900
+    -@if not exist $(OBJ)\telnetd mkdir $(OBJ)\edit
     -@if not exist $(OBJ)\telnetd mkdir $(OBJ)\telnetd
+    -@if not exist $(OBJ)\login mkdir $(OBJ)\login
     -@if not exist $(OBJ)\user32 mkdir $(OBJ)\user32
     -@if not exist $(OBJ)\winmm mkdir $(OBJ)\winmm
     -@if not exist $(OBJ)\wsock32 mkdir $(OBJ)\wsock32
@@ -785,7 +787,7 @@ $(BIN)/edit.exe: \
   $(SRC)/utils/edit/edit.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
-    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/fdisk/ $** /link /NODEFAULTLIB /FIXED:NO
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/edit/ $** /link /NODEFAULTLIB /FIXED:NO
 
 $(BIN)/fdisk.exe: \
   $(SRC)/utils/fdisk/fdisk.c \
