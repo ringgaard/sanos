@@ -115,6 +115,8 @@ CHANGE LOG FOR SANOS
     * Telnet daemon moved from the shell to separate server (telnetd.exe). The
       new telnet daemon has a more robust handling of the telnet protocol. The telnet
       daemon invokes the new login utlity in order to log on user.
+      
+    * FTP daemon implemented.
             
 Version 1.3.2
 

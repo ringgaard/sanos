@@ -1,3 +1,4 @@
 root:*:0:root
 users:*:100:root,mri
+ftp:*:50:ftp
 guests:*:200:guest

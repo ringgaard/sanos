@@ -19,6 +19,7 @@
 /bin/sh.exe       bin\sh.exe         dbg\bin\sh.exe
 /bin/httpd.dll    bin\httpd.dll      dbg\bin\httpd.dll
 /bin/telnetd.exe  bin\telnetd.exe    dbg\bin\telnetd.exe
+/bin/ftpd.exe     bin\ftpd.exe       dbg\bin\ftpd.exe
 /bin/setup.exe    bin\setup.exe      dbg\bin\setup.exe
 /bin/fdisk.exe    bin\fdisk.exe      dbg\bin\fdisk.exe
 /bin/edit.exe     bin\edit.exe       dbg\bin\edit.exe

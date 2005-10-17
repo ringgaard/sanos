@@ -720,13 +720,25 @@ $(SRC)/utils/sh/ping.c: \
   $(SRC)/include/stdlib.h \
   $(SRC)/include/string.h
 
+$(SRC)/utils/ftpd/ftpd.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/inifile.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/stdarg.h \
+  $(SRC)/include/ctype.h \
+  $(SRC)/include/dirent.h \
+  $(SRC)/include/time.h \
+  $(SRC)/include/pwd.h
+
 $(SRC)/utils/telnetd/telnetd.c: \
   $(SRC)/include/os.h \
   $(SRC)/include/inifile.h \
   $(SRC)/include/stdio.h \
   $(SRC)/include/string.h
 
-$(SRC)/utils/telnetd/login.c: \
+$(SRC)/utils/login/login.c: \
   $(SRC)/include/os.h \
   $(SRC)/include/string.h
 

@@ -323,10 +323,10 @@ int dokernel(struct section *sect)
 
   size = fstat(fin, NULL);
 
-  // Make sure os directory extist on target
+  // Make sure /bin directory exists on target
   if (stat(target, NULL) < 0)
   {
-    rc = mkdir(target, 0666);
+    rc = mkdir(target, 0755);
     if (rc < 0) return -1;
   }
 
@@ -334,6 +334,7 @@ int dokernel(struct section *sect)
   sprintf(targetfn, "%s/krnl.dll", target);
   fout = open(targetfn, O_SPECIAL | (DFS_INODE_KRNL << 24));
   if (fout < 0) return -1;
+  fchmod(fout, 0644);
 
   left = size;
   while (left > 0)
@@ -420,7 +421,7 @@ int domkdirs(struct section *sect)
     dirname = prop->name;
     printf("Creating directory %s\n", dirname);
 
-    rc = mkdir(dirname, 0666);
+    rc = mkdir(dirname, 0755);
     if (rc < 0) return -1;
 
     prop = prop->next;
@@ -439,12 +440,25 @@ int copy_file(char *srcfn, char *dstfn)
   int fout;
   int bytes;
   int rc;
+  struct stat st;
+  struct utimbuf ut;
 
   fin = open(srcfn, O_BINARY);
   if (fin < 0) return fin;
 
+  rc = fstat(fin, &st);
+  if (rc < 0) return -1;
+
   fout = open(dstfn,  O_CREAT | O_EXCL | O_BINARY, S_IREAD | S_IWRITE);
   if (fout < 0) return -1;
+
+  fchmod(fout, st.st_mode);
+  fchown(fout, st.st_uid, st.st_gid);
+  
+  ut.modtime = st.st_mtime;
+  ut.ctime = st.st_ctime;
+  ut.actime = st.st_atime;
+  futime(fout, &ut);
 
   while ((bytes = read(fin , block, sizeof block)) > 0)
   {
@@ -505,7 +519,7 @@ int copy_dir(char *srcdir, char *dstdir)
       if ((buf.st_mode & S_IFMT) == S_IFDIR)
       {
         printf("Creating directory %s\n", dstfn);
-	rc = mkdir(dstfn, 0666);
+	rc = mkdir(dstfn, 0755);
 	if (rc < 0) return -1;
 
 	tail->next = (struct copyitem *) malloc(sizeof(struct copyitem));
@@ -559,7 +573,7 @@ int docopy(struct section *sect)
     if ((buf.st_mode & S_IFMT) == S_IFDIR)
     {
       printf("Creating directory %s\n", dstfn);
-      rc = mkdir(dstfn, 0666);
+      rc = mkdir(dstfn, 0755);
       if (rc < 0) return -1;
 
       rc = copy_dir(srcfn, dstfn);

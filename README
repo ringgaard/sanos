@@ -154,4 +154,6 @@ The random device driver has been ported from Linux (Theodore Ts'o)
 
 The inflate decompression routines has been ported from zlib (Jean-loup Gailly and Mark Adler)
 
+The FTP daemon is derived from Troll FTP server (Arnt Gulbrandsen)
+
 Bug fixes and uk key binding by Thierry Supplisson

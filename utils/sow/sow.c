@@ -8,6 +8,7 @@
 
 #define handle_t oshandle_t
 #define STRING_H
+#define strerror win32_strerror
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -20,8 +21,10 @@
 
 #undef handle_t
 #undef STRING_H
+#undef strerror
 
 #define OS_LIB
+#include "../../src/include/sys/types.h"
 #include "../../src/include/os.h"
 #include "../../src/include/inifile.h"
 #include "../../src/include/atomic.h"
@@ -123,6 +126,7 @@ struct handle htab[MAXHANDLES];
 struct job *mainjob;
 DWORD tibtls;
 
+struct term console;
 struct peb *peb;
 struct section *osconfig;
 unsigned long loglevel;
@@ -297,6 +301,10 @@ void init()
   memset(peb, 0, 4096);
 
   // Allocate initial job
+  console.cols = 80;
+  console.lines = 25;
+  console.type = TERM_CONSOLE;
+
   job = malloc(sizeof(struct job));
   memset(job, 0, sizeof(struct job));
 
@@ -305,7 +313,7 @@ void init()
   job->in = 0;
   job->out = 1;
   job->err = 2;
-  job->termtype = TERM_CONSOLE;
+  job->term = &console;
   job->hmod = GetModuleHandle(NULL);
   job->cmdline = GetCommandLine();
   job->facility = LOG_DAEMON;
@@ -1452,7 +1460,7 @@ int setprio(handle_t thread, int priority)
   return 0;
 }
 
-void sleep(int millisecs)
+void msleep(int millisecs)
 {
   Sleep(millisecs);
 }
@@ -1509,7 +1517,7 @@ time_t time(time_t *timeptr)
   return t;
 }
 
-int gettimeofday(struct timeval *tv)
+int gettimeofday(struct timeval *tv, void *tzp)
 {
   FILETIME ft;
 
@@ -1569,6 +1577,11 @@ void panic(const char *msg)
   WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), msg, strlen(msg), &written, NULL);
   WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), "\n", 1, &written, NULL);
   ExitProcess(1);
+}
+
+char *strerror(int errnum)
+{
+  return "Error";
 }
 
 int canonicalize(const char *filename, char *buffer, int size)

@@ -14,6 +14,7 @@ build\                         Build files for sanos
   edit.vcproj                  Project file for text editor (edit.txt)
   exclrel.lst                  List of files excluded from release build
   fdisk.vcproj                 Project file for partition utility (fdisk.exe)
+  ftpd.vcproj                  Project file for FTP server (ftpd.exe)
   httpd.sln                    Solution file file standalone build of HTTP server (httpd.dll)
   httpd.vcproj                 Project file for HTTP server (httpd.dll)
   image.vcproj                 Project file for building floppy boot disk (bootdisk.img)
@@ -403,6 +404,8 @@ src\                           Souce files
       telnetd.c                Telnet daemon
     login\                     Login source files
       telnetd.c                Sign on user
+    ftpd\                      FTP daemon source files
+      ftpd.c                   FTP daemon
   win32\                       Win32 API wrapper source files
     advapi32\                  Source files for advapi32
       advapi32.c               Win32 ADVAPI32 emulation

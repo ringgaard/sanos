@@ -74,7 +74,7 @@ static int skipws(int *counter, FILE *stream)
   {
     ch = inc(stream);
     *counter++;
-    if (isspace(ch)) return ch;
+    if (!isspace(ch)) return ch;
   }
 }
 

@@ -84,8 +84,9 @@ dirs:
     -@if not exist $(OBJ)\setup mkdir $(OBJ)\setup
     -@if not exist $(OBJ)\sh mkdir $(OBJ)\sh
     -@if not exist $(OBJ)\sis900 mkdir $(OBJ)\sis900
-    -@if not exist $(OBJ)\telnetd mkdir $(OBJ)\edit
+    -@if not exist $(OBJ)\edit mkdir $(OBJ)\edit
     -@if not exist $(OBJ)\telnetd mkdir $(OBJ)\telnetd
+    -@if not exist $(OBJ)\ftpd mkdir $(OBJ)\ftpd
     -@if not exist $(OBJ)\login mkdir $(OBJ)\login
     -@if not exist $(OBJ)\user32 mkdir $(OBJ)\user32
     -@if not exist $(OBJ)\winmm mkdir $(OBJ)\winmm
@@ -774,7 +775,7 @@ $(BIN)/msvcrt.dll: \
 # utils
 #
 
-utils: dirs $(BIN)/sh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/jinit.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/httpd.dll
+utils: dirs $(BIN)/sh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/httpd.dll
 
 $(BIN)/sh.exe: \
   $(SRC)/utils/sh/sh.c \
@@ -806,6 +807,12 @@ $(BIN)/jinit.exe: \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/jinit/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(BIN)/ftpd.exe: \
+  $(SRC)/utils/ftpd/ftpd.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/ftpd/ $** /link /NODEFAULTLIB /FIXED:NO
 
 $(BIN)/telnetd.exe: \
   $(SRC)/utils/telnetd/telnetd.c \
@@ -869,6 +876,9 @@ $(IMG)/sanos.iso: dirs sanos tools $(BUILD)/bootcd.lst
     copy $(BIN)\edit.exe     $(IMG)\usr\bin\edit.exe
     copy $(BIN)\fdisk.exe    $(IMG)\usr\bin\fdisk.exe
     copy $(BIN)\jinit.exe    $(IMG)\usr\bin\jinit.exe
+    copy $(BIN)\telnetd.exe  $(IMG)\usr\bin\telnetd.exe
+    copy $(BIN)\ftpd.exe     $(IMG)\usr\bin\ftpd.exe
+    copy $(BIN)\login.exe    $(IMG)\usr\bin\login.exe
     copy $(BIN)\msvcrt.dll   $(IMG)\usr\bin\msvcrt.dll
     copy $(BIN)\kernel32.dll $(IMG)\usr\bin\kernel32.dll
     copy $(BIN)\user32.dll   $(IMG)\usr\bin\user32.dll
