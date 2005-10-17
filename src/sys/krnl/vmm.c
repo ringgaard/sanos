@@ -34,7 +34,7 @@
 #include <os/krnl.h>
 
 #define VMAP_ENTRIES 1024
-#define VMEM_START (64 * K)
+#define VMEM_START (64 * 1024)
 
 struct rmap *vmap;
 
@@ -103,7 +103,7 @@ void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long 
     if (addr == NULL)
     {
       if (type & MEM_ALIGN64K)
-        addr = (void *) PTOB(rmap_alloc_align(vmap, pages, 64 * K / PAGESIZE));
+        addr = (void *) PTOB(rmap_alloc_align(vmap, pages, 64 * 1024 / PAGESIZE));
       else
         addr = (void *) PTOB(rmap_alloc(vmap, pages));
 

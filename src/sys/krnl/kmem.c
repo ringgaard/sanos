@@ -227,16 +227,16 @@ int list_memmap(struct proc_file *pf, struct rmap *rmap, unsigned int startpos)
       pprintf(pf, "%08X %08X %8dK %8dK %8dK %8dK\n", 
 	      pos * PAGESIZE, 
 	      r->offset * PAGESIZE - 1, 
-	      size * (PAGESIZE / K), 
-	      stat.present * (PAGESIZE / K), 
-	      stat.readonly * (PAGESIZE / K), 
-	      r->size * (PAGESIZE / K));
+	      size * (PAGESIZE / 1024), 
+	      stat.present * (PAGESIZE / 1024), 
+	      stat.readonly * (PAGESIZE / 1024), 
+	      r->size * (PAGESIZE / 1024));
 
       total += size;
     }
     pos = r->offset + r->size;
   }
-  pprintf(pf, "Total: %dK\n", total * PAGESIZE / K);
+  pprintf(pf, "Total: %dK\n", total * PAGESIZE / 1024);
   return 0;
 }
 

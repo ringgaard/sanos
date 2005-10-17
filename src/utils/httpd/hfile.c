@@ -138,12 +138,12 @@ int ls(struct httpd_connection *conn)
 
     if ((statbuf.st_mode & S_IFMT) != S_IFDIR)
     {
-      if (statbuf.st_size < 1*K)
+      if (statbuf.st_size < 1024)
 	sprintf(buf, "%8d B", (int) statbuf.st_size);
-      else if (statbuf.st_size < 1*M)
-	sprintf(buf, "%8d KB", (int) (statbuf.st_size / K));
+      else if (statbuf.st_size < 1024 * 1024)
+	sprintf(buf, "%8d KB", (int) (statbuf.st_size / 1024));
       else if (statbuf.st_size < 1073741824i64)
-	sprintf(buf, "%8d MB", (int) (statbuf.st_size / M));
+	sprintf(buf, "%8d MB", (int) (statbuf.st_size / (1024 * 1024)));
       else
 	sprintf(buf, "%8d GB", (int) (statbuf.st_size / 1073741824i64));
 

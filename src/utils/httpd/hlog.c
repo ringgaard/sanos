@@ -39,7 +39,7 @@
 
 #include <httpd.h>
 
-#define MAX_LOGLINE_SIZE 32*K
+#define MAX_LOGLINE_SIZE (32 * 1024)
 
 char *logfieldnames[] = 
 {

@@ -33,8 +33,8 @@
 
 #include <os/krnl.h>
 
-#define DEFAULT_STACK_SIZE           (1 * M)
-#define DEFAULT_INITIAL_STACK_COMMIT (8 * K)
+#define DEFAULT_STACK_SIZE           (1 * 1024 * 1024)
+#define DEFAULT_INITIAL_STACK_COMMIT (8 * 1024)
 
 int preempt = 0;
 int in_dpc = 0;
@@ -961,7 +961,7 @@ static int threads_proc(struct proc_file *pf, void *arg)
             t->id, t, t->hndl, state, t->base_priority, t->priority - t->base_priority, 
 	    t->suspend_count, t->object.handle_count, 
 	    t->utime, t->stime, t->context_switches,
-	    stksiz / K,
+	    stksiz / 1024,
 	    t->name ? t->name : "");
 
     t = t->next;

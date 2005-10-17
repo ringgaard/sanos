@@ -166,10 +166,10 @@ struct httpd_server *httpd_initialize(struct section *cfg)
   server->cfg = cfg;
   server->port = getnumconfig(cfg, "port", 80);
   server->num_workers = getnumconfig(cfg, "workerthreads", 1);
-  server->min_hdrbufsiz = getnumconfig(cfg, "minhdrsize", 1*K);
-  server->max_hdrbufsiz = getnumconfig(cfg, "maxhdrsize", 16*K);
-  server->reqbufsiz = getnumconfig(cfg, "requestbuffer", 4*K);
-  server->rspbufsiz = getnumconfig(cfg, "responsebuffer", 4*K);
+  server->min_hdrbufsiz = getnumconfig(cfg, "minhdrsize", 1024);
+  server->max_hdrbufsiz = getnumconfig(cfg, "maxhdrsize", 16 * 1024);
+  server->reqbufsiz = getnumconfig(cfg, "requestbuffer", 4096);
+  server->rspbufsiz = getnumconfig(cfg, "responsebuffer", 4096);
   server->backlog = getnumconfig(cfg, "backlog", 5);
   server->indexname = getstrconfig(cfg, "indexname", "index.htm");
   server->swname = getstrconfig(cfg, "swname", peb->osname);

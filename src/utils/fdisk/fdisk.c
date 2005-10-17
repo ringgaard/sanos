@@ -170,7 +170,7 @@ void add_partition()
   // Get partition size
   printf("partition size (KB) (*=max size)? ");
   gets(str);
-  size = *str == '*' ? -1 : atoi(str) * K / geom.sectorsize;
+  size = *str == '*' ? -1 : atoi(str) * 1024 / geom.sectorsize;
 
   // Get partition type
   printf("partition type (default %x)? ", SANOS_BOOT_PARTITION_ID);
@@ -234,7 +234,7 @@ void add_partition()
       return;
     }
   }
-  printf("add partition %d offset %d size %d KB\n", partno, off, size / (K / geom.sectorsize));
+  printf("add partition %d offset %d size %d KB\n", partno, off, size / (1024 / geom.sectorsize));
 
   mbr.parttab[partno].relsect = off;
   mbr.parttab[partno].numsect = size;
@@ -308,7 +308,7 @@ void list_partitions()
 {
   int i;
 
-  printf("device %s: %d KB CHS=%d/%d/%d\n\n", devname, geom.sectors / (K / geom.sectorsize), geom.cyls, geom.heads, geom.spt);
+  printf("device %s: %d KB CHS=%d/%d/%d\n\n", devname, geom.sectors / (1024 / geom.sectorsize), geom.cyls, geom.heads, geom.spt);
 
   printf("     ------start------ -------end-------\n");
   printf("part   cyl head sector   cyl head sector   offset         size type\n");
@@ -322,7 +322,7 @@ void list_partitions()
 	   i, 
 	   p->begcyl + ((p->begsect >> 6) << 8), p->beghead, p->begsect & 0x3F, 
 	   p->endcyl + ((p->endsect >> 6) << 8), p->endhead, p->endsect & 0x3F, 
-	   p->relsect, p->numsect / (K / geom.sectorsize), p->systid);
+	   p->relsect, p->numsect / (1024 / geom.sectorsize), p->systid);
   }
 }
 

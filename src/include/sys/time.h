@@ -38,7 +38,7 @@
 #ifndef SYS_TIME_H
 #define SYS_TIME_H
 
-#include <sys/time.h>
+#include <sys/types.h>
 
 #ifndef _TIMEVAL_DEFINED
 #define _TIMEVAL_DEFINED

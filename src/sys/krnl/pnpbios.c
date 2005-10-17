@@ -207,7 +207,7 @@ static int pnp_bios_get_dev_node(unsigned char *nodenum, char boot, struct pnp_b
   int status;
 
   seginit(&syspage->gdt[GDT_AUX1], (unsigned long) nodenum, sizeof(char), D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
-  seginit(&syspage->gdt[GDT_AUX2], (unsigned long) data, 64 * K, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
+  seginit(&syspage->gdt[GDT_AUX2], (unsigned long) data, 64 * 1024, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
 
   status = pnp_bios_call(PNP_GET_SYS_DEV_NODE, 0, SEL_AUX1, 0, SEL_AUX2, boot ? 2 : 1, SEL_PNPDATA, 0);
   return status;
@@ -250,8 +250,8 @@ static int pnp_bios_read_escd(void *data, void *nvram_base)
 {
   int status;
 
-  seginit(&syspage->gdt[GDT_AUX1], (unsigned long) data, 64 * K, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
-  seginit(&syspage->gdt[GDT_AUX2], (unsigned long) nvram_base, 64 * K, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
+  seginit(&syspage->gdt[GDT_AUX1], (unsigned long) data, 64 * 1024, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
+  seginit(&syspage->gdt[GDT_AUX2], (unsigned long) nvram_base, 64 * 1024, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
 
   status = pnp_bios_call(PNP_READ_ESCD, 0, SEL_AUX1, SEL_AUX2, SEL_PNPDATA, 0, 0, 0);
   return status;
@@ -471,8 +471,8 @@ int enum_pnp_mem(struct unit *unit, unsigned char *b)
     // bit 4-7: reserved
 
     start = (b[i + 2] + b[i + 3] * 256 + b[i + 4] * 256 * 256) * 256;
-    len = (b[i + 5] + b[i + 6] * 256) * K;
-    if (len == 0) len = 64 * M;
+    len = (b[i + 5] + b[i + 6] * 256) * 1024;
+    if (len == 0) len = 64 * 1024 * 1024;
 
     add_resource(unit, RESOURCE_MEM, 0, start, len);
  
@@ -656,7 +656,7 @@ static int build_isa_devlist(struct bus *bus)
   escd = kmalloc(escdinfo.escd_size);
   if (!escd) return -ENOMEM;
 
-  nvbase = iomap(escdinfo.nv_storage_base, 64 * K);
+  nvbase = iomap(escdinfo.nv_storage_base, 64 * 1024);
   if (!nvbase) return -EINVAL;
 
   rc = pnp_bios_read_escd(escd, nvbase);
@@ -664,7 +664,7 @@ static int build_isa_devlist(struct bus *bus)
 
   parse_escd(bus, escd, escdinfo.escd_size);
 
-  iounmap(nvbase, 64 * K);
+  iounmap(nvbase, 64 * 1024);
   kfree(escd);
 
   return 0;
@@ -699,8 +699,8 @@ int enum_isapnp(struct bus *bus)
     
     memcpy(&pnpbios, hdr, sizeof(struct pnp_bios_expansion_header));
 
-    seginit(&syspage->gdt[GDT_PNPTEXT], pnpbios.pm16cseg, 64 * K, D_CODE | D_DPL0 | D_READ | D_PRESENT, 0);
-    seginit(&syspage->gdt[GDT_PNPDATA], pnpbios.pm16dseg, 64 * K, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
+    seginit(&syspage->gdt[GDT_PNPTEXT], pnpbios.pm16cseg, 64 * 1024, D_CODE | D_DPL0 | D_READ | D_PRESENT, 0);
+    seginit(&syspage->gdt[GDT_PNPDATA], pnpbios.pm16dseg, 64 * 1024, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
     seginit(&syspage->gdt[GDT_PNPTHUNK], (unsigned long) pnp_bios_thunk, 1, D_CODE | D_DPL0 | D_READ | D_PRESENT, D_BIG | D_BIG_LIM);
     
     *((unsigned short *)(pnp_bios_thunk + 6)) = pnpbios.pm16offset;

@@ -635,7 +635,7 @@ static void init_drive(char *devname, struct fd *fd, struct fdc *fdc, int drive,
   dev_make(devname, &floppy_driver, NULL, fd);
 
   kprintf(KERN_INFO "%s: %s, %d KB, THS=%u/%u/%u\n", devname, fd->geom->name,
-    fd->geom->tracks * fd->geom->heads * fd->geom->spt * SECTORSIZE / K,
+    fd->geom->tracks * fd->geom->heads * fd->geom->spt * SECTORSIZE / 1024,
     fd->geom->tracks, fd->geom->heads, fd->geom->spt);
 }
 

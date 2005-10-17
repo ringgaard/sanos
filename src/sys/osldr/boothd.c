@@ -329,7 +329,7 @@ static int boothd_identify()
     hd.lba = 1;
     hd.blks = (hd.param.totalsec1 << 16) | hd.param.totalsec0;
   }
-  hd.size = hd.blks / (M / SECTORSIZE);
+  hd.size = hd.blks / ((1024 * 1024) / SECTORSIZE);
 
   // Read status
   hd.status = _inp((unsigned short) (hd.iobase + HDC_STATUS));

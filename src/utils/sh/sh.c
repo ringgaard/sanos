@@ -135,7 +135,7 @@ static int httpget(char *server, char *path, char *filename)
     return rc;
   }
 
-  buf = malloc(8*K);
+  buf = malloc(8 * 1024);
   if (!buf) return -ENOMEM;
 
   sprintf(buf, "GET %s HTTP/1.0\r\nHost: %s\r\n\r\n", path, server);
@@ -162,7 +162,7 @@ static int httpget(char *server, char *path, char *filename)
   }
 
   count = 0;
-  while ((n = recv(s, buf, 8*K, 0)) > 0)
+  while ((n = recv(s, buf, 8 * 1024, 0)) > 0)
   {
     write(f, buf, n);
     count += n;
@@ -354,8 +354,8 @@ int cmd_cp(int argc, char *argv[])
     return -1;
   }
 
-  data = malloc(64 * K);
-  while ((count = read(fd1, data, 64 * K)) > 0)
+  data = malloc(64 * 1024);
+  while ((count = read(fd1, data, 64 * 1024)) > 0)
   {
     if (write(fd2, data, count) != count)
     {
@@ -483,7 +483,7 @@ int cmd_df(int argc, char *argv[])
     printf("%-7s%-11s%-20s", b->fstype, b->mntto, b->mntfrom);
     if (b->blocks != -1)
     {
-      printf("%6dK", b->cachesize / K);
+      printf("%6dK", b->cachesize / 1024);
       if (b->blocks * (b->bsize / 512) / 2 > 10000)
 	printf("%8dM", b->blocks * (b->bsize / 512) / 2000);
       else
@@ -1014,12 +1014,12 @@ int cmd_ls(int argc, char *argv[])
 	  printf("         ");
 	else
 	{
-	  if (buf.st_size < 1*K)
+	  if (buf.st_size < 1024)
 	    printf("%6dB  ", (int) buf.st_size);
-	  else if (buf.st_size < 1*M)
-	    printf("%6dKB ", (int) (buf.st_size / K));
+	  else if (buf.st_size < 1024 * 1024)
+	    printf("%6dKB ", (int) (buf.st_size / 1024));
 	  else if (buf.st_size < 1073741824i64)
-	    printf("%6dMB ", (int) (buf.st_size / M));
+	    printf("%6dMB ", (int) (buf.st_size / (1024 * 1024)));
 	  else
 	    printf("%6dGB ", (int) (buf.st_size / 1073741824i64));
 	}
@@ -1315,18 +1315,18 @@ int cmd_read(int argc, char *argv[])
     return fd;
   }
 
-  data = malloc(64 * K);
+  data = malloc(64 * 1024);
 
   bytes = 0;
   start = clock();
-  while ((count = read(fd, data, 64 * K)) > 0)
+  while ((count = read(fd, data, 64 * 1024)) > 0)
   {
     bytes += count;
   }
   time = clock() - start;
   if (time == 0) time = 1;
 
-  printf("%s: read %dKB in %d ms, %dKB/s\n", filename, bytes / K, time, bytes / time);
+  printf("%s: read %dKB in %d ms, %dKB/s\n", filename, bytes / 1024, time, bytes / time);
   
   free(data);
 
@@ -1426,7 +1426,7 @@ int cmd_sysinfo(int argc, char *argv[])
          cpu.cpu_vendor, cpu.cpu_family, cpu.cpu_model, cpu.cpu_stepping, cpu.cpu_mhz, cpu.cpu_features, cpu.pagesize);
 
   printf("mem phys total: %d K avail: %d K virt total: %d K avail: %d K pagesize: %d\n", 
-         mem.physmem_total / K, mem.physmem_avail / K, mem.virtmem_total / K, mem.virtmem_avail / K, mem.pagesize);
+         mem.physmem_total / 1024, mem.physmem_avail / 1024, mem.virtmem_total / 1024, mem.virtmem_avail / 1024, mem.pagesize);
 
   printf("load uptime: %d s user: %d%% sys: %d%% intr: %d%% idle: %d%%\n", 
          load.uptime, load.load_user, load.load_system, load.load_intr, load.load_idle);
@@ -1536,13 +1536,13 @@ int cmd_write(int argc, char *argv[])
     return -1;
   }
 
-  data = malloc(64 * K);
+  data = malloc(64 * 1024);
 
   bytes = 0;
   start = clock();
   while (bytes < size)
   {
-    if ((count = write(fd, data, 64 * K)) <= 0)
+    if ((count = write(fd, data, 64 * 1024)) <= 0)
     {
       printf("%s: error writing file\n", filename);
       break;
@@ -1553,7 +1553,7 @@ int cmd_write(int argc, char *argv[])
   time = clock() - start;
   if (time == 0) time = 1;
 
-  printf("%s: wrote %dKB in %d ms, %dKB/s\n", filename, bytes / K, time, bytes / time);
+  printf("%s: wrote %dKB in %d ms, %dKB/s\n", filename, bytes / 1024, time, bytes / time);
   
   free(data);
 

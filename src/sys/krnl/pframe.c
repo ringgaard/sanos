@@ -198,7 +198,7 @@ int memusage_proc(struct proc_file *pf, void *arg)
   {
     char tagname[5];
     tag2str(memtype[n].tag, tagname);
-    pprintf(pf, "%-4s    %8d KB\n", tagname, memtype[n].pages * (PAGESIZE / K));
+    pprintf(pf, "%-4s    %8d KB\n", tagname, memtype[n].pages * (PAGESIZE / 1024));
   }
 
   return 0;
@@ -207,9 +207,9 @@ int memusage_proc(struct proc_file *pf, void *arg)
 int memstat_proc(struct proc_file *pf, void *arg)
 {
   pprintf(pf, "Memory %dMB total, %dKB used, %dKB free, %dKB reserved\n", 
-	  maxmem * PAGESIZE / M, 
-	  (totalmem - freemem) * PAGESIZE / K, 
-	  freemem * PAGESIZE / K, (maxmem - totalmem) * PAGESIZE / K);
+	  maxmem * PAGESIZE / (1024 * 1024), 
+	  (totalmem - freemem) * PAGESIZE / 1024, 
+	  freemem * PAGESIZE / 1024, (maxmem - totalmem) * PAGESIZE / 1024);
   
   return 0;
 }
@@ -275,7 +275,7 @@ void init_pfdb()
 
   // Initialize page frame database
   maxmem = syspage->ldrparams.memend / PAGESIZE;
-  totalmem = maxmem - (1024 - 640 + 4) * K / PAGESIZE;
+  totalmem = maxmem - (1024 - 640 + 4) * 1024 / PAGESIZE;
   freemem = 0;
 
   pfdb = (struct pageframe *) PFDBBASE;
@@ -285,10 +285,10 @@ void init_pfdb()
   pfdb[0].tag = 'RESV';
 
   // Add interval [4K:640K] as free pages
-  for (i = 4 * K / PAGESIZE; i < 640 * K / PAGESIZE; i++) pfdb[i].tag = 'FREE';
+  for (i = 4 * 1024 / PAGESIZE; i < 640 * 1024 / PAGESIZE; i++) pfdb[i].tag = 'FREE';
 
   // Add interval [640K:1MB] as reserved pages
-  for (i = 640 * K / PAGESIZE; i < syspage->ldrparams.heapstart / PAGESIZE; i++) pfdb[i].tag = 'RESV';
+  for (i = 640 * 1024 / PAGESIZE; i < syspage->ldrparams.heapstart / PAGESIZE; i++) pfdb[i].tag = 'RESV';
 
   // Add interval [heapstart:heap] to pfdb as page table pages
   for (i = syspage->ldrparams.heapstart / PAGESIZE; i < heap / PAGESIZE; i++) pfdb[i].tag = 'PTAB';

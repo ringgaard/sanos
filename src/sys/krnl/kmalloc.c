@@ -226,7 +226,7 @@ int kheapstat_proc(struct proc_file *pf, void *arg)
     }
   }
 
-  pprintf(pf, "Kernel Heap Summary: %dKB allocated %dKB unused\n", heapsize / K, heapavail / K);
+  pprintf(pf, "Kernel Heap Summary: %dKB allocated %dKB unused\n", heapsize / 1024, heapavail / 1024);
   return 0;
 }
 

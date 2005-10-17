@@ -222,10 +222,10 @@ static int dump_mods(struct proc_file *pf, struct moddb *moddb)
     pprintf(pf, "%08X %-16s %4d %08X %5dK %5dK %5dK %5dK\n", 
             mod->hmod, mod->name, mod->refcnt, 
 	    get_entrypoint(mod->hmod),
-	    imghdr->optional.size_of_image / K,
-	    imghdr->optional.size_of_code / K,
-	    imghdr->optional.size_of_initialized_data / K,
-	    imghdr->optional.size_of_uninitialized_data / K
+	    imghdr->optional.size_of_image / 1024,
+	    imghdr->optional.size_of_code / 1024,
+	    imghdr->optional.size_of_initialized_data / 1024,
+	    imghdr->optional.size_of_uninitialized_data / 1024
 	    );
 
     mod = mod->next;

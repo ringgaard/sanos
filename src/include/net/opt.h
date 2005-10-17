@@ -59,7 +59,7 @@
 #define TCP_SYNMAXRTX           6                // Maximum number of SYN retransmissions 
 #define TCP_MSL                 60000            // The maximum segment lifetime in milliseconds
 
-#define TCP_SND_BUF             (32 * K)         // TCP send buffer size
+#define TCP_SND_BUF             (32 * 1024)      // TCP send buffer size
 
 //#define TCP_SND_QUEUELEN        (2 * TCP_SND_BUF / TCP_MSS)
 #define TCP_SND_QUEUELEN        (2 * TCP_SND_BUF / TCP_MIN_SEGLEN)

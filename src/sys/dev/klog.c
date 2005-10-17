@@ -33,7 +33,7 @@
 
 #include <os/krnl.h>
 
-#define KLOG_SIZE (64 * K)
+#define KLOG_SIZE (64 * 1024)
 
 struct klogreq
 {

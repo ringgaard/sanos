@@ -40,8 +40,8 @@
 #define SMB_DENTRY_CACHESIZE    16
 #define SMB_DIRBUF_SIZE         4096
 
-#define SMB_RAW_CHUNKSIZE       (32 * K)
-#define SMB_NORMAL_CHUNKSIZE    (4 * K)
+#define SMB_RAW_CHUNKSIZE       (32 * 1024)
+#define SMB_NORMAL_CHUNKSIZE    (4 * 1024)
 
 #define EPOC                    116444736000000000     // 00:00:00 GMT on January 1, 1970
 #define SECTIMESCALE            10000000               // 1 sec resolution

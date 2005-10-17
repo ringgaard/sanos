@@ -551,7 +551,7 @@ static int hd_identify(struct hd *hd)
     hd->blks = (hd->param.totalsec1 << 16) | hd->param.totalsec0;
     if (hd->media == IDE_DISK && (hd->blks == 0 || hd->blks == 0xFFFFFFFF)) return -EIO;
   }
-  hd->size = hd->blks / (M / SECTORSIZE);
+  hd->size = hd->blks / (1024 * 1024 / SECTORSIZE);
 
   return 0;
 }
@@ -1374,7 +1374,7 @@ static int create_partitions(struct hd *hd)
       if (devno == NODEV)
       {
         devno = dev_make(devname, &partition_driver, NULL, &hd->parts[i]);
-        kprintf(KERN_INFO "%s: partition %d on %s, %dMB (type %02x)\n", devname, i, device(hd->devno)->name, mbr.parttab[i].numsect / (M / SECTORSIZE), mbr.parttab[i].systid);
+        kprintf(KERN_INFO "%s: partition %d on %s, %dMB (type %02x)\n", devname, i, device(hd->devno)->name, mbr.parttab[i].numsect / ((1024 * 1024) / SECTORSIZE), mbr.parttab[i].systid);
       }
       else
 	dev_close(devno);

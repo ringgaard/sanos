@@ -73,7 +73,7 @@ extern "C" {
 #endif
 
 osapi sighandler_t signal(int signum, sighandler_t handler);
-osapi void raise(int signum);
+osapi int raise(int signum);
 
 #ifdef  __cplusplus
 }

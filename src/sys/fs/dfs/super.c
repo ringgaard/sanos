@@ -41,7 +41,7 @@
 #define DEFAULT_RESERVED_BLOCKS 16
 #define DEFAULT_RESERVED_INODES 16
 
-#define FORMAT_BLOCKSIZE        (64 * K)
+#define FORMAT_BLOCKSIZE        (64 * 1024)
 
 static void mark_group_desc_dirty(struct filsys *fs, int group)
 {

@@ -38,6 +38,8 @@
 #ifndef STDDEF_H
 #define STDDEF_H
 
+#include <sys/types.h>
+
 #ifndef _PTRDIFF_T_DEFINED
 #define _PTRDIFF_T_DEFINED
 typedef int ptrdiff_t;

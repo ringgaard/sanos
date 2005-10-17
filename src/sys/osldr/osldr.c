@@ -50,7 +50,7 @@ void clear_screen();
 void init_video();
 
 #define VIDEO_BASE           0xB8000
-#define HEAP_START           (1 * M)
+#define HEAP_START           (1024 * 1024)
 
 unsigned long mem_end;          // Size of memory
 char *heap;                     // Heap pointer point to next free page in memory
@@ -131,7 +131,7 @@ unsigned long memsize()
   unsigned long cr0new;
 
   // Start at 1MB
-  addr = 1 * M;
+  addr = 1024 * 1024;
 
   // Save a copy of CR0
   __asm { mov eax, cr0 };
@@ -148,7 +148,7 @@ unsigned long memsize()
   // Probe for each megabyte
   while (addr < 0xFFF0000000000)
   {
-    addr += 1 * M;
+    addr += 1024 * 1024;
     mem= (unsigned long *) addr;
 
     value = *mem;
@@ -252,10 +252,10 @@ void copy_ramdisk(char *bootimg)
     memcpy(initrd, bootimg, super->compress_offset);
 
     // Uncompress compressed part of image
-    zheap = check_heap(64 * K / PAGESIZE);
+    zheap = check_heap(64 * 1024 / PAGESIZE);
     zofs = super->compress_offset;
     zsize = super->compress_size;
-    unzip(bootimg + zofs, zsize, initrd + zofs, initrd_size - zofs, zheap, 64 * K);
+    unzip(bootimg + zofs, zsize, initrd + zofs, initrd_size - zofs, zheap, 64 * 1024);
   }
   else
   {
@@ -268,7 +268,7 @@ void copy_ramdisk(char *bootimg)
     syspagetable[PTEIDX(INITRD_ADDRESS) + i] = ((unsigned long) initrd + i * PAGESIZE) | PT_PRESENT | PT_WRITABLE;
   }
 
-  kprintf("%d KB boot image found\n", initrd_size / K);
+  kprintf("%d KB boot image found\n", initrd_size / 1024);
 }
 
 void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
@@ -284,7 +284,7 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
 
   // Determine size of RAM
   mem_end = memsize();
-  //kprintf("%d MB RAM\n", mem_end / M);
+  //kprintf("%d MB RAM\n", mem_end / (1024 * 1024));
 
   // Page allocation starts at 1MB
   heap = (char *) HEAP_START;

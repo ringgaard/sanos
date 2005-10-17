@@ -174,10 +174,6 @@ typedef __int64 systime_t;
 #endif
 #endif
 
-#define K 1024
-#define M (K * K)
-#endif
-
 #ifndef FALSE
 #define FALSE 0
 #endif
@@ -194,5 +190,7 @@ typedef unsigned char BYTE;
 typedef unsigned short WORD;
 typedef unsigned long DWORD;
 typedef unsigned __int64 QWORD;
+
+#endif
 
 #endif

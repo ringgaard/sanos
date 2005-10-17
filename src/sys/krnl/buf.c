@@ -52,7 +52,7 @@ void dump_pool_stat(struct bufpool *pool)
 {
   int i;
 
-  kprintf("pool %s: %dx%d, %dK total (", device(pool->devno)->name, pool->poolsize, pool->bufsize, pool->poolsize * pool->bufsize / K);
+  kprintf("pool %s: %dx%d, %dK total (", device(pool->devno)->name, pool->poolsize, pool->bufsize, pool->poolsize * pool->bufsize / 1024);
   for (i = 0; i < BUF_STATES; i++) 
     if (pool->bufcount[i] != 0)
       kprintf("%s:%d ", statename[i], pool->bufcount[i]);
@@ -74,7 +74,7 @@ static int bufpools_proc(struct proc_file *pf, void *arg)
   pool = bufpools;
   while (pool)
   {
-    pprintf(pf, "%-8s %7d %5dK", device(pool->devno)->name, pool->bufsize, pool->poolsize * pool->bufsize / K);
+    pprintf(pf, "%-8s %7d %5dK", device(pool->devno)->name, pool->bufsize, pool->poolsize * pool->bufsize / 1024);
     for (i = 0; i < BUF_STATES; i++) pprintf(pf, "%6d", pool->bufcount[i]);
     pprintf(pf, "\n");
     pool = pool->next;

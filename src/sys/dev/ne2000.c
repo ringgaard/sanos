@@ -722,8 +722,8 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
 {
   unsigned short iobase = 0x280;
   int irq = 9;
-  unsigned short membase = 16 * K;
-  unsigned short memsize = 16 * K;
+  unsigned short membase = 16 * 1024;
+  unsigned short memsize = 16 * 1024;
   struct resource *memres;
 
   if (unit)
