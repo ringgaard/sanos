@@ -611,9 +611,6 @@ $(OBJ)/libc/rwlock.obj: $(SRC)/lib/pthread/rwlock.c
 $(OBJ)/libc/spinlock.obj: $(SRC)/lib/pthread/spinlock.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
-$(OBJ)/libc/crypt.obj: $(SRC)/lib/crypt.c
-    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
-
 $(OBJ)/libc/dirent.obj: $(SRC)/lib/dirent.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
@@ -689,7 +686,6 @@ $(LIBS)/libc.lib: \
   $(OBJ)/libc/atan.obj \
   $(OBJ)/libc/asin.obj \
   $(OBJ)/libc/acos.obj \
-  $(OBJ)/libc/crypt.obj \
   $(OBJ)/libc/dirent.obj
     $(AR) /NOLOGO /NODEFAULTLIB /OUT:$(LIBS)/libc.lib $**
 
