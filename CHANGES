@@ -1,6 +1,8 @@
 CHANGE LOG FOR SANOS
 ====================
 
+Version 1.3.2
+
     * GetLogicalDrives() in kernel32 implemented.
 
     * A bug in cmd_ipconfig() in sh.c prevented proper display of network 
