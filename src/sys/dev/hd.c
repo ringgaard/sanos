@@ -583,6 +583,8 @@ static int atapi_packet_read(struct hd *hd, unsigned char *pkt, int pktlen, void
   int bufleft;
   unsigned short bytes;
   
+  //kprintf("atapi_read_packet(0x%x) %d bytes, buflen=%d\n", pkt[0], pktlen, bufsize);
+
   hdc = hd->hdc;
   if (wait_for_object(&hdc->lock, HDTIMEOUT_BUSY) < 0) return -EBUSY;
 
@@ -1114,6 +1116,8 @@ static int cd_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, i
   struct hd *hd = (struct hd *) dev->privdata;
   unsigned char pkt[12];
   unsigned int blks;
+
+  //kprintf("cd_read: blk %d %d bytes\n", blkno, count);
 
   blks = count / CDSECTORSIZE;
   if (blks > 0xFFFF) return -EINVAL;

@@ -1,6 +1,16 @@
 CHANGE LOG FOR SANOS
 ====================
 
+    * Qemu does not seem to respond correctly to a REQUEST SENSE atapi command. The
+      final interrupt is missing. This prevented mounting of cdrom drives under
+      Qemu. The cdfs now only revalidates the cdrom drive if the revalidate option
+      is given in the mount command. This allows successful mounting of cdrom
+      drives when running sanos under Qemu.
+      
+    * The stack is now moved to 0:7c00 before boot image is read in the cdemboot boot
+      sector. This prevents overwriting the stack when reading the boot image.
+      Now booting from cdrom under Qemu works correctly.
+
 Version 1.3.2
 
     * GetLogicalDrives() in kernel32 implemented.
@@ -21,7 +31,7 @@ Version 1.3.2
     * If command line arguments are given to the shell it now executes the built-
       in command and exits the shell.
 
-    * The floppy motor timeout routine now aquires the floppy mutex before 
+    * The floppy motor timeout routine now acquires the floppy mutex before 
       turning off the motor in order to prevent race conditions.
 
     * Advanced Power Management (APM) support implemented. The computer can now 
@@ -63,7 +73,7 @@ Version 1.3.2
     * The sleep() function has been renamed to msleep(). A new POSIX conformant 
       sleep function has been added to unistd.h.
 
-    * Added sys/time.h header file. Also added tzp paramter to gettimeofday() 
+    * Added sys/time.h header file. Also added tzp parameter to gettimeofday() 
       for POSIX compliance.
 
     * New simple text editor utility (edit.exe) added.
@@ -105,8 +115,8 @@ Version 1.3.2
       
     * DES-based crypt() implementation added.
     
-    * The spawn() function now computes the pgm parater from the cmdline paramter if
-      the pgm paramter is NULL. The initpgm and initargs properties in the [os] section
+    * The spawn() function now computes the pgm parameter from the cmdline parameter if
+      the pgm parameter is NULL. The initpgm and initargs properties in the [os] section
       of /etc/os.ini has been replaced with a single property named init. The default
       for init has been changed to /bin/sh.
       

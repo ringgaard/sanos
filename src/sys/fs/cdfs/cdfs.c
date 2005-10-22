@@ -334,8 +334,12 @@ int cdfs_mount(struct fs *fs, char *opts)
   if (device(devno)->driver->type != DEV_TYPE_BLOCK) return -ENOTBLK;
 
   // Revalidate device and check block size
-  rc = dev_ioctl(devno, IOCTL_REVALIDATE, NULL, 0);
-  if (rc < 0) return rc;
+  if (get_option(opts, "revalidate", NULL, 0, NULL))
+  {
+    rc = dev_ioctl(devno, IOCTL_REVALIDATE, NULL, 0);
+    if (rc < 0) return rc;
+  }
+
   if (dev_ioctl(devno, IOCTL_GETBLKSIZE, NULL, 0) != CDFS_BLOCKSIZE) return -ENXIO;
 
   // Allocate file system

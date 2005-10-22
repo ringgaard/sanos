@@ -62,8 +62,12 @@ start:
 	; Setup initial environment
 	jmp	0:start1
 start1:
+	cli
 	mov	ax, cs
 	mov	ds, ax
+	mov	ss, ax
+	mov	sp, 0x7c00
+	sti
 
 	; Save boot drive
 	mov	[bootdrv], dl
@@ -120,6 +124,11 @@ loadnext1:
 
 	cmp	ax, IMGSIZE
 	jnz	loadnext
+
+	mov	al, 10
+	call	printchar
+	mov	al, 13
+	call	printchar
 
 	; Copy os loader from ram boot image 
 	push	ds
@@ -247,7 +256,7 @@ bootdrv	db	0
 
 	; Message strings
 bootmsg:
-	db	13, 10, 'Loading boot image from CD-ROM', 13, 10, 0
+	db	13, 10, 'Loading boot image from CD-ROM', 0
 
 	; Boot signature
 	times 	510-($-$$) db 0

@@ -889,5 +889,7 @@ $(IMG)/sanos.iso: dirs sanos tools $(BUILD)/bootcd.lst
     copy $(BIN)\advapi32.dll $(IMG)\usr\bin\advapi32.dll
     copy $(BIN)\winmm.dll    $(IMG)\usr\bin\winmm.dll
     copy $(BIN)\wsock32.dll  $(IMG)\usr\bin\wsock32.dll
-    $(MKDFS) -d $(IMG)\usr\BOOTIMG.BIN -b $(BIN)\cdboot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 512 -I 8192 -i -f -S $(TOPDIR) -F $(BUILD)\bootcd.lst
-    $(MKISOFS) -no-emul-boot -J -c BOOTCAT.BIN -b BOOTIMG.BIN -o $(IMG)\sanos.iso $(IMG)\usr
+    $(MKDFS) -d $(IMG)\usr\BOOTIMG.BIN -b $(BIN)\cdemboot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 512 -C 1440 -I 8192 -i -f -S $(TOPDIR) -F $(BUILD)\bootcd.lst
+    $(MKISOFS) -J -c BOOTCAT.BIN -b BOOTIMG.BIN -o $(IMG)\sanos.iso $(IMG)\usr
+#    $(MKDFS) -d $(IMG)\usr\BOOTIMG.BIN -b $(BIN)\cdboot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 512 -I 8192 -i -f -S $(TOPDIR) -F $(BUILD)\bootcd.lst
+#    $(MKISOFS) -no-emul-boot -J -c BOOTCAT.BIN -b BOOTIMG.BIN -o $(IMG)\sanos.iso $(IMG)\usr
