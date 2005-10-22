@@ -40,12 +40,22 @@
 
 #include <stdio.h>
 
+struct opt
+{
+  int err;
+  int ind;
+  int opt;
+  char *arg;
+  int sp;
+};
+
 struct crtbase
 {
   int argc;
   char **argv;
   FILE iob[3];
   char stdinbuf[BUFSIZ];
+  struct opt opt;
 };
 
 #endif

@@ -614,6 +614,9 @@ $(OBJ)/libc/spinlock.obj: $(SRC)/lib/pthread/spinlock.c
 $(OBJ)/libc/dirent.obj: $(SRC)/lib/dirent.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
+$(OBJ)/libc/getopt.obj: $(SRC)/lib/getopt.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
 $(LIBS)/libc.lib: \
   $(OBJ)/libc/spinlock.obj \
   $(OBJ)/libc/rwlock.obj \
@@ -686,7 +689,8 @@ $(LIBS)/libc.lib: \
   $(OBJ)/libc/atan.obj \
   $(OBJ)/libc/asin.obj \
   $(OBJ)/libc/acos.obj \
-  $(OBJ)/libc/dirent.obj
+  $(OBJ)/libc/dirent.obj \
+  $(OBJ)/libc/getopt.obj
     $(AR) /NOLOGO /NODEFAULTLIB /OUT:$(LIBS)/libc.lib $**
 
 #

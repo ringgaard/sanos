@@ -64,6 +64,10 @@ void init_stdio()
 
   crtbase->iob[2].file = job->err;
   crtbase->iob[2].flag = _IOWR | _IONBF | _IOCRLF;
+
+  crtbase->opt.err = 1;
+  crtbase->opt.ind = 1;
+  crtbase->opt.sp = 1;
 }
 
 FILE *__getstdhndl(int n)

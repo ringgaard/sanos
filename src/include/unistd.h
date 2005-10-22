@@ -121,6 +121,18 @@ osapi int getgroups(int size, gid_t list[]);
 osapi int chown(const char *name, int owner, int group);
 osapi int fchown(handle_t f, int owner, int group);
 
+int *_opterr();
+int *_optind();
+int *_optopt();
+char **_optarg();
+
+#define opterr (*_opterr())
+#define optind (*_optind())
+#define optopt (*_optopt())
+#define optarg (*_optarg())
+
+int getopt(int argc, char **argv, char *opts);
+
 #ifdef  __cplusplus
 }
 #endif

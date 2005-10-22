@@ -106,6 +106,12 @@ $(SRC)/lib/fcvt.c: \
   $(SRC)/include/os.h \
   $(SRC)/include/math.h
 
+$(SRC)/lib/getopt.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/crtbase.h
+
 $(SRC)/lib/hash.c: \
   $(SRC)/include/stdlib.h \
   $(SRC)/include/string.h \

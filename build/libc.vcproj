@@ -879,6 +879,9 @@
 			RelativePath="..\src\lib\fcvt.c">
 		</File>
 		<File
+			RelativePath="..\src\lib\getopt.c">
+		</File>
+		<File
 			RelativePath="..\src\lib\hash.c">
 		</File>
 		<File

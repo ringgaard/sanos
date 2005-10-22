@@ -136,7 +136,6 @@ static int initcrt()
 {
   int rc;
 
-  // Initialize stdio
   init_stdio();
 
   if (atomic_increment(&__instcount) == 1)

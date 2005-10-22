@@ -178,6 +178,7 @@ src\                           Souce files
     ctype.c                    Character types
     dirent.c                   List diretory entries
     fcvt.c                     Floating point to string conversion routines
+    getopt.c                   Parse command options
     hash.c                     A hashed lookup mechanism
     inifile.c                  Property files
     input.c                    C formatted input, used by scanf, etc.
