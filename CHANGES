@@ -1,6 +1,8 @@
 CHANGE LOG FOR SANOS
 ====================
 
+    * Fixed bug in dfs files system that could corrupt a directory when adding entries.
+
     * Qemu does not seem to respond correctly to a REQUEST SENSE atapi command. The
       final interrupt is missing. This prevented mounting of cdrom drives under
       Qemu. The cdfs now only revalidates the cdrom drive if the revalidate option

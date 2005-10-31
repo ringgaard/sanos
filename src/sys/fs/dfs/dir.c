@@ -88,13 +88,15 @@ int add_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
   char *p;
   struct dentry *de;
   struct dentry *newde;
-  int minlen;
+  unsigned int minlen;
+  unsigned int newlen;
 
   if (len <= 0) return -EINVAL;
   if (len >= MAXPATH) return -ENAMETOOLONG;
   if (!S_ISDIR(dir->desc->mode)) return -ENOTDIR;
   if (checki(dir, S_IWRITE) < 0) return -EACCES;
 
+  newlen = sizeof(struct dentry) + NAME_ALIGN_LEN(len);
   for (block = 0; block < dir->desc->blocks; block++)
   {
     blk = get_inode_block(dir, block);
@@ -109,7 +111,7 @@ int add_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
       de = (struct dentry *) p;
       minlen = sizeof(struct dentry) + NAME_ALIGN_LEN(de->namelen);
 
-      if (de->reclen >= minlen + sizeof(struct dentry) + NAME_ALIGN_LEN(de->namelen))
+      if (de->reclen >= minlen + newlen)
       {
 	newde = (struct dentry *) (p + minlen);
 
@@ -237,7 +239,7 @@ int delete_dir_entry(struct inode *dir, char *name, int len)
 	{
 	  // Merge entry with previous entry
 	  prevde->reclen += de->reclen;
-	  memset(de, 0, sizeof(struct dentry) + NAME_ALIGN_LEN(de->namelen));
+	  memset(de, 0, de->reclen);
           mark_buffer_updated(dir->fs->cache, buf);
 	}
 	else if (de->reclen == dir->fs->blocksize)
@@ -262,7 +264,7 @@ int delete_dir_entry(struct inode *dir, char *name, int len)
 	  de->ino = nextde->ino;
 	  de->reclen += nextde->reclen;
 	  de->namelen = nextde->namelen;
-	  memcpy(de->name, nextde->name, nextde->namelen); // TODO: should be memmove?
+	  memmove(de->name, nextde->name, nextde->namelen);
   	  mark_buffer_updated(dir->fs->cache, buf);
 	}
 

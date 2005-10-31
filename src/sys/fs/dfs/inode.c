@@ -184,7 +184,7 @@ struct inode *alloc_inode(struct inode *parent, unsigned short mode)
   unsigned int block;
 
   ino = new_inode(parent->fs, parent->ino, mode & S_IFDIR);
-  if (ino == -1) return NULL; 
+  if (ino == NOINODE) return NULL; 
 
   inode = (struct inode *) kmalloc(sizeof(struct inode));
   if (!inode) return NULL;
@@ -237,6 +237,8 @@ int get_inode(struct filsys *fs, ino_t ino, struct inode **retval)
   struct inode *inode;
   unsigned int group;
   unsigned int block;
+
+  if (ino >= fs->super->inode_count) return -EINVAL;
 
   inode = (struct inode *) kmalloc(sizeof(struct inode));
   if (!inode) return -ENOMEM;

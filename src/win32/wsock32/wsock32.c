@@ -434,7 +434,7 @@ sockapi int __stdcall WSASendDisconnect
 )
 {
   TRACE("WSASendDisconnect");
-  panic("WSASendDisconnect not implemented");
+  syslog(LOG_WARNING, "WSASendDisconnect not implemented");
   return -1;
 }
 

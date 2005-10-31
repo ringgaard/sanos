@@ -38,7 +38,7 @@
 
 #define ERR(s, c) { if (opt->err) fprintf(stderr, "%s%s%c\n", argv[0], s, c); }
 
-struct opt *_getoptvars()
+static struct opt *getoptvars()
 {
   struct job *job = gettib()->job;
   struct crtbase *crtbase = (struct crtbase *) job->crtbase;
@@ -48,38 +48,38 @@ struct opt *_getoptvars()
 
 int *_opterr()
 {
-  return &_getoptvars()->err;
+  return &getoptvars()->err;
 }
 
 int *_optind()
 {
-  return &_getoptvars()->ind;
+  return &getoptvars()->ind;
 }
 
 int *_optopt()
 {
-  return &_getoptvars()->opt;
+  return &getoptvars()->opt;
 }
 
 char **_optarg()
 {
-  return &_getoptvars()->arg;
+  return &getoptvars()->arg;
 }
 
 int getopt(int argc, char **argv, char *opts)
 {
   int c;
   char *cp;
-  struct opt *opt = _getoptvars();
+  struct opt *opt = getoptvars();
 
   if (opt->sp == 1)
   {
     if (opt->ind >= argc || argv[opt->ind][0] != '-' || argv[opt->ind][1] == '\0')
-      return EOF;
+      return -1;
     else if (strcmp(argv[opt->ind], "--") == 0)
     {
       opt->ind++;
-      return EOF;
+      return -1;
     }
   }
 

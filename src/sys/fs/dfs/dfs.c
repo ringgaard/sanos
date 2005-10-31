@@ -283,7 +283,6 @@ int dfs_rmdir(struct fs *fs, char *name)
 
 int dfs_rename(struct fs *fs, char *oldname, char *newname)
 {
-  struct inode *inode;
   struct inode *oldparent;
   struct inode *newparent;
   int oldlen;
@@ -302,18 +301,10 @@ int dfs_rename(struct fs *fs, char *oldname, char *newname)
     return rc;
   }
 
-  rc = get_inode(oldparent->fs, ino, &inode);
-  if (rc < 0)
-  {
-    release_inode(oldparent);
-    return rc;
-  }
-
   newlen = strlen(newname);
   rc = diri((struct filsys *) fs->data, &newname, &newlen, &newparent);
   if (rc < 0) 
   {
-    release_inode(inode);
     release_inode(oldparent);
     return rc;
   }
@@ -321,24 +312,22 @@ int dfs_rename(struct fs *fs, char *oldname, char *newname)
   rc = find_dir_entry(newparent, newname, newlen, NULL);
   if (rc != -ENOENT)
   {
-    release_inode(inode);
     release_inode(oldparent);
     release_inode(newparent);
+    if (strcmp(oldname, newname) == 0) return 0;
     return rc >= 0 ? -EEXIST : rc;
   }
 
   if (checki(oldparent, S_IWRITE) < 0 || checki(newparent, S_IWRITE) < 0)
   {
-    release_inode(inode);
     release_inode(oldparent);
     release_inode(newparent);
     return -EACCES;
   }
 
-  rc = add_dir_entry(newparent, newname, newlen, inode->ino); 
+  rc = add_dir_entry(newparent, newname, newlen, ino); 
   if (rc < 0)
   {
-    release_inode(inode);
     release_inode(oldparent);
     release_inode(newparent);
     return rc;
@@ -347,13 +336,11 @@ int dfs_rename(struct fs *fs, char *oldname, char *newname)
   rc = delete_dir_entry(oldparent, oldname, oldlen);
   if (rc < 0)
   {
-    release_inode(inode);
     release_inode(oldparent);
     release_inode(newparent);
     return rc;
   }
 
-  release_inode(inode);
   release_inode(oldparent);
   release_inode(newparent);
   return 0;
