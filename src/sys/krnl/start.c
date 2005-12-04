@@ -401,7 +401,7 @@ void main(void *arg)
 
   // Load kernel configuration
   rc = load_kernel_config();
-  if (rc < 0) kprintf(KERN_ERR "%s: error %d loading kernel configuration\n", KERNEL_CONFIG, rc);
+  //if (rc < 0) kprintf(KERN_INFO "%s: error %d loading kernel configuration\n", KERNEL_CONFIG, rc);
 
   // Determine kernel panic action
   str = get_property(krnlcfg, "kernel", "onpanic", "halt");
@@ -441,7 +441,8 @@ void main(void *arg)
   register_proc_inode("copyright", copyright_proc, NULL);
 
   // Allocate handles for stdin, stdout and stderr
-  open("/dev/console", O_RDWR, S_IREAD | S_IWRITE, &cons);
+  rc = open("/dev/console", O_RDWR, S_IREAD | S_IWRITE, &cons);
+  if (rc < 0) panic("no console");
   if (halloc(&cons->iob.object) != 0) panic("unexpected stdin handle");
   if (halloc(&cons->iob.object) != 1) panic("unexpected stdout handle");
   if (halloc(&cons->iob.object) != 2) panic("unexpected stderr handle");

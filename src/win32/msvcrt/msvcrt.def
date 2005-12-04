@@ -108,6 +108,7 @@ EXPORTS
   fread
   free=_free
   freopen
+  frexp
   fseek
   fwrite
   getc

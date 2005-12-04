@@ -857,8 +857,8 @@ int save_random_device(char *rndfn)
 
 int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 {
-  char *init;
   int rc;
+  char *init;
   char *rndfn;
 
   // Set usermode segment selectors
@@ -886,7 +886,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 
   // Load configuration file
   osconfig = read_properties("/etc/os.ini");
-  if (!osconfig) panic("error reading /etc/os.ini");
+  //if (!osconfig) syslog(LOG_INFO, "Unable to read /etc/os.ini");
   peb->debug = get_numeric_property(osconfig, "os", "debug", peb->debug);
 
   // Initialize network interfaces

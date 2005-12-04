@@ -47,7 +47,7 @@ unsigned long logmask = LOG_UPTO(LOG_DEBUG);
 
 static handle_t syslogfd = -1;
 static int syslogsock = -1;
-static int syslogcons = -1;
+static int syslogcons = 1;
 
 void openlog(char *ident, int option, int facility)
 {
@@ -274,7 +274,7 @@ void start_syslog()
       syslog(LOG_ERR | LOG_SYSLOG, "unknown syslog server %s", loghost);
   }
 
-  beginthread(klogd, 0, NULL, 0, NULL);
+  close(beginthread(klogd, 0, NULL, 0, NULL));
 }
 
 void stop_syslog()

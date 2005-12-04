@@ -457,7 +457,8 @@ static int initialize_driver(struct unit *unit, char *driverstr)
   if (rc < 0)
   {
     kprintf(KERN_ERR "dev: initialization of %s!%s failed with error %d\n", modname, entryname, rc);
-    unload(hmod);
+    // NB: it is not always safe to unload the driver module after failure
+    //unload(hmod);
     kfree(buf);
     return rc;
   }
@@ -531,6 +532,8 @@ static void install_legacy_drivers()
 
 void install_drivers()
 {
+  dev_t console;
+
   // Register /proc/units
   register_proc_inode("units", units_proc, NULL);
   register_proc_inode("devices", devices_proc, NULL);
@@ -543,6 +546,13 @@ void install_drivers()
 
   // Install legacy drivers
   install_legacy_drivers();
+
+  // Make sure we have a console device
+  console = dev_open("console");
+  if (console == NODEV)
+    initialize_driver(NULL, "krnl.dll!console");
+  else
+    dev_close(console);
 }
 
 struct dev *device(dev_t devno)

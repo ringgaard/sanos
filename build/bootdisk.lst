@@ -15,50 +15,50 @@
 
 ; System files
 
-/bin/os.dll       bin\os.dll         dbg\bin\os.dll
-/bin/sh.exe       bin\sh.exe         dbg\bin\sh.exe
-/bin/httpd.dll    bin\httpd.dll      dbg\bin\httpd.dll
-/bin/telnetd.exe  bin\telnetd.exe    dbg\bin\telnetd.exe
-/bin/ftpd.exe     bin\ftpd.exe       dbg\bin\ftpd.exe
-/bin/setup.exe    bin\setup.exe      dbg\bin\setup.exe
-/bin/fdisk.exe    bin\fdisk.exe      dbg\bin\fdisk.exe
-/bin/edit.exe     bin\edit.exe       dbg\bin\edit.exe
-/bin/login.exe    bin\login.exe      dbg\bin\login.exe
+/bin/os.dll        bin\os.dll         dbg\bin\os.dll
+/bin/sh.exe        bin\sh.exe         dbg\bin\sh.exe
+/bin/httpd.dll     bin\httpd.dll      dbg\bin\httpd.dll
+/bin/telnetd.exe   bin\telnetd.exe    dbg\bin\telnetd.exe
+/bin/ftpd.exe      bin\ftpd.exe       dbg\bin\ftpd.exe
+/bin/setup.exe     bin\setup.exe      dbg\bin\setup.exe
+/bin/fdisk.exe     bin\fdisk.exe      dbg\bin\fdisk.exe
+/bin/edit.exe      bin\edit.exe       dbg\bin\edit.exe
+/bin/login.exe     bin\login.exe      dbg\bin\login.exe
 
 ; Drivers
 
-/bin/pcnet32.sys  bin\pcnet32.sys    dbg\bin\pcnet32.sys
-/bin/ne2000.sys   bin\ne2000.sys     dbg\bin\ne2000.sys
-/bin/3c905c.sys   bin\3c905c.sys     dbg\bin\3c905c.sys
-/bin/rtl8139.sys  bin\rtl8139.sys    dbg\bin\rtl8139.sys
-/bin/eepro100.sys bin\eepro100.sys   dbg\bin\eepro100.sys
-/bin/sis900.sys   bin\sis900.sys     dbg\bin\sis900.sys
+/bin/pcnet32.sys   bin\pcnet32.sys    dbg\bin\pcnet32.sys
+/bin/ne2000.sys    bin\ne2000.sys     dbg\bin\ne2000.sys
+/bin/3c905c.sys    bin\3c905c.sys     dbg\bin\3c905c.sys
+/bin/rtl8139.sys   bin\rtl8139.sys    dbg\bin\rtl8139.sys
+/bin/eepro100.sys  bin\eepro100.sys   dbg\bin\eepro100.sys
+/bin/sis900.sys    bin\sis900.sys     dbg\bin\sis900.sys
 
 ; Win32 wrapper DLLs
 
-/bin/msvcrt.dll   bin\msvcrt.dll     dbg\bin\msvcrt.dll
-/bin/kernel32.dll bin\kernel32.dll   dbg\bin\kernel32.dll
-/bin/user32.dll   bin\user32.dll     dbg\bin\user32.dll
-/bin/advapi32.dll bin\advapi32.dll   dbg\bin\advapi32.dll
-/bin/winmm.dll    bin\winmm.dll      dbg\bin\winmm.dll
-/bin/wsock32.dll  bin\wsock32.dll    dbg\bin\wsock32.dll
+/bin/msvcrt.dll    bin\msvcrt.dll     dbg\bin\msvcrt.dll
+/bin/kernel32.dll  bin\kernel32.dll   dbg\bin\kernel32.dll
+/bin/user32.dll    bin\user32.dll     dbg\bin\user32.dll
+/bin/advapi32.dll  bin\advapi32.dll   dbg\bin\advapi32.dll
+/bin/winmm.dll     bin\winmm.dll      dbg\bin\winmm.dll
+/bin/wsock32.dll   bin\wsock32.dll    dbg\bin\wsock32.dll
 
 ; Java launcher
 
-/bin/jinit.exe    bin\jinit.exe      dbg\bin\jinit.exe
+/bin/jinit.exe     bin\jinit.exe      dbg\bin\jinit.exe
 
 ; Configuration files
 
-/etc/krnl.ini     build\krnl.ini
-/etc/os.ini       build\os.ini
-/etc/rc           build\rc
-/etc/passwd       build\passwd
-/etc/group        build\group
+/etc/krnl.ini      build\krnl.ini
+/etc/os.ini        build\os.ini
+/etc/rc            build\rc
+/etc/passwd        build\passwd
+/etc/group         build\group
 
 ; Setup files for hard disk install
 
-/setup/boot       bin\boot           dbg\bin\boot
-/setup/osldr.dll  bin\osldr.dll      dbg\bin\osldr.dll
-/setup/krnl.ini   build\krnl.ini
-/setup/os.ini     build\os.ini
-/setup/setup.ini  build\setup.ini
+/setup/boot        bin\boot           dbg\bin\boot
+/setup/osldr.dll   bin\osldr.dll      dbg\bin\osldr.dll
+/setup/krnl.ini    build\krnl.ini
+/setup/os.ini      build\os.ini
+/setup/setup.ini   build\setup.ini

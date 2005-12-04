@@ -1,6 +1,11 @@
 CHANGE LOG FOR SANOS
 ====================
 
+    * Fixed parsing of IP headers in ping command.
+    
+    * Sanos can now boot without the /etc/krnl.ini and /etc/os.ini using only
+      default values.
+      
     * Fixed bug in dfs files system that could corrupt a directory when adding entries.
 
     * Qemu does not seem to respond correctly to a REQUEST SENSE atapi command. The
@@ -14,6 +19,8 @@ CHANGE LOG FOR SANOS
       Now booting from cdrom under Qemu works correctly.
       
     * Added getopt() function.
+    
+    * Added frexp() function to msvcrt to enable Hotspot Server JVM to load.
 
 Version 1.3.2
 

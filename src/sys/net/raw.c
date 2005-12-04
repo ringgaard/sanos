@@ -156,8 +156,7 @@ err_t raw_recv(struct raw_pcb *pcb, int (*recv)(void *arg, struct raw_pcb *upcb,
 // Send the raw IP packet to the given address. Note that actually you cannot
 // modify the IP headers (this is inconsistent with the receive callback where
 // you actually get the IP headers), you can only specify the IP payload here.
-// It requires some more changes in lwIP. (there will be a raw_send() function
-// then.)
+//
 
 err_t raw_sendto(struct raw_pcb *pcb, struct pbuf *p, struct ip_addr *ipaddr)
 {
