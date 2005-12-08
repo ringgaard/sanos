@@ -1,10 +1,16 @@
 CHANGE LOG FOR SANOS
 ====================
 
+    * Added /proc/virtmem to display an overview of all mapped virtual memory.
+    
     * Fixed parsing of IP headers in ping command.
     
     * Sanos can now boot without the /etc/krnl.ini and /etc/os.ini using only
       default values.
+      
+    * When a driver fails initialization the driver module is no longer unloaded. 
+      This is to prevent kernel crashes when drivers fail without proper cleaning 
+      up of aquired resources.
       
     * Fixed bug in dfs files system that could corrupt a directory when adding entries.
 

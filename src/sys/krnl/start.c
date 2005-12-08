@@ -286,6 +286,7 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
   register_proc_inode("memstat", memstat_proc, NULL);
   register_proc_inode("physmem", physmem_proc, NULL);
   register_proc_inode("pdir", pdir_proc, NULL);
+  register_proc_inode("virtmem", virtmem_proc, NULL);
   register_proc_inode("kmem", kmem_proc, NULL);
   register_proc_inode("kmodmem", kmodmem_proc, NULL);
   register_proc_inode("kheap", kheapstat_proc, NULL);

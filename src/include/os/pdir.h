@@ -93,6 +93,7 @@ krnlapi int str_mapped(char *s);
 
 void init_pdir();
 int pdir_proc(struct proc_file *pf, void *arg);
+int virtmem_proc(struct proc_file *pf, void *arg);
 int pdir_stat(void *addr, int len, struct pdirstat *buf);
 
 #endif

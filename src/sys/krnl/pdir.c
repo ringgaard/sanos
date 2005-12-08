@@ -213,7 +213,6 @@ int pdir_proc(struct proc_file *pf, void *arg)
 		(pte & PT_USER) ? 'u' : 's',
 		(pte & PT_ACCESSED) ? 'a' : ' ',
 		(pte & PT_DIRTY) ? 'd' : ' ');
-
       }
 
       vaddr += PAGESIZE;
@@ -223,6 +222,80 @@ int pdir_proc(struct proc_file *pf, void *arg)
   }
 
   pprintf(pf, "\ntotal: %d user: %d sys: %d r/w: %d r/o: %d accessed: %d dirty: %d\n", ma, us, su, rw, ro, ac, dt);
+  return 0;
+}
+
+static print_virtmem(struct proc_file *pf, char *start, char *end, unsigned long tag)
+{
+  char tagname[5];
+  tag2str(tag, tagname);
+
+  pprintf(pf, "%08x %08x %8dK %-4s\n", start, end - 1, (end - start) / 1024, tagname);
+}
+
+int virtmem_proc(struct proc_file *pf, void *arg)
+{
+  char *vaddr;
+  char *start;
+  unsigned long curtag;
+  int total = 0;
+
+  pprintf(pf, "start    end           size type\n");
+  pprintf(pf, "-------- -------- --------- ----\n");
+
+  start = vaddr = NULL;
+  curtag = 0;
+  while (1)
+  {
+    if ((pdir[PDEIDX(vaddr)] & PT_PRESENT) == 0)
+    {
+      if (start != NULL)
+      {
+	print_virtmem(pf, start, vaddr, curtag);
+	start = NULL;
+      }
+
+      vaddr += PTES_PER_PAGE * PAGESIZE;
+    }
+    else
+    {
+      pte_t pte = ptab[PTABIDX(vaddr)];
+      unsigned long tag = pfdb[pte >> PT_PFNSHIFT].tag;
+
+      if (pte & PT_PRESENT)
+      {
+	if (start == NULL) 
+	{
+	  start = vaddr;
+	  curtag = tag;
+	}
+	else if (tag != curtag)
+	{
+  	  print_virtmem(pf, start, vaddr, curtag);
+	  start = vaddr;
+	  curtag = tag;
+	}
+
+	total += PAGESIZE;
+      }
+      else
+      {
+	if (start != NULL)
+	{
+  	  print_virtmem(pf, start, vaddr, curtag);
+	  start = NULL;
+	}
+      }
+
+      vaddr += PAGESIZE;
+    }
+
+    if (!vaddr) break;
+  }
+
+  if (start) print_virtmem(pf, start, vaddr, curtag);
+  pprintf(pf, "total             %8dK\n", total / 1024);
+
   return 0;
 }
 
