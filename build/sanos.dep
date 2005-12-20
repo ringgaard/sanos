@@ -148,6 +148,7 @@ $(SRC)/lib/opts.c: \
   $(SRC)/include/stdlib.h
 
 $(SRC)/lib/output.c: \
+  $(SRC)/include/os.h \
   $(SRC)/include/stdio.h \
   $(SRC)/include/stdlib.h \
   $(SRC)/include/string.h \

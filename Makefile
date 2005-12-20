@@ -748,6 +748,9 @@ $(OBJ)/msvcrt/ftol.obj: $(SRC)/lib/math/ftol.asm
 $(OBJ)/msvcrt/fmod.obj: $(SRC)/lib/math/fmod.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
 
+$(OBJ)/msvcrt/frexp.obj: $(SRC)/lib/math/frexp.asm
+    $(AS) $(AFLAGS) /c /Fo$@ $**
+
 $(OBJ)/msvcrt/floor.obj: $(SRC)/lib/math/floor.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
 
@@ -773,6 +776,7 @@ $(BIN)/msvcrt.dll: \
   $(OBJ)/msvcrt/modf.obj \
   $(OBJ)/msvcrt/ftol.obj \
   $(OBJ)/msvcrt/fmod.obj \
+  $(OBJ)/msvcrt/frexp.obj \
   $(OBJ)/msvcrt/floor.obj \
   $(LIBS)/os.lib \
   $(LIBS)/kernel32.lib
