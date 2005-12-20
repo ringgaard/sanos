@@ -31,6 +31,7 @@
 // SUCH DAMAGE.
 // 
 
+#include <os.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,7 +57,7 @@ static void cfltcvt(double value, char *buffer, char fmt, int precision, int cap
 {
   int decpt, sign, exp, pos;
   char *digits = NULL;
-  char cvtbuf[80];
+  char cvtbuf[CVTBUFSIZE];
   int magnitude;
 
   if (fmt == 'g')

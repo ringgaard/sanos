@@ -364,7 +364,7 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
   syspage->ldrparams.initrd_size = initrd_size;
   memcpy(syspage->biosdata, (void *) 0x0400, 256);
 
-  // Kernel options are located boot parameter block
+  // Kernel options are located in the boot parameter block
   krnlopts = syspage->bootparams.krnlopts;
 
   // Reload segment registers
