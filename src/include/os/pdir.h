@@ -65,9 +65,6 @@ typedef unsigned long pte_t;
 #define PTOB(x) ((unsigned long)(x) << PAGESHIFT)
 #define BTOP(x) ((unsigned long)(x) >> PAGESHIFT)
 
-extern pte_t *pdir;
-extern pte_t *ptab;
-
 struct pdirstat
 {
   int present;
@@ -78,6 +75,11 @@ struct pdirstat
   int accessed;
   int dirty;
 };
+
+#ifdef KERNEL
+
+extern pte_t *pdir;
+extern pte_t *ptab;
 
 krnlapi void flushtlb();
 krnlapi void map_page(void *vaddr, unsigned long pfn, unsigned long flags);
@@ -95,5 +97,7 @@ void init_pdir();
 int pdir_proc(struct proc_file *pf, void *arg);
 int virtmem_proc(struct proc_file *pf, void *arg);
 int pdir_stat(void *addr, int len, struct pdirstat *buf);
+
+#endif
 
 #endif

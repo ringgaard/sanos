@@ -90,6 +90,80 @@ static void dbg_recv(void *buffer, int count)
   }
 }
 
+static void dbg_send_rle(void *data, unsigned int len)
+{
+  unsigned char *p = (unsigned char *) data;
+  unsigned char *q = p;
+  unsigned int left = len;
+
+  while (left > 0)
+  {
+    if (p[0] == DBG_RLE_ESCAPE || (left > 3 && p[0] == p[1] && p[0] == p[2]))
+    {
+      unsigned char buf[3];
+
+      if (p > q)
+      {
+	dbg_send(q, p - q);
+	q = p;
+      }
+
+      while (left > 0 && q - p < 256 && q[0] == *p)
+      {
+	q++;
+	left--;
+      }
+
+      buf[0] = DBG_RLE_ESCAPE;
+      buf[1] = *p;
+      buf[2] = (unsigned char) (q - p);
+      dbg_send(buf, 3);
+      p = q;
+    }
+    else
+    {
+      p++;
+      left--;
+    }
+  }
+
+  if (p > q) dbg_send(q, p - q);
+}
+
+static void dbg_recv_rle(void *data, unsigned int len)
+{
+  unsigned char *p = (unsigned char *) data;
+  unsigned int left = len;
+  while (left > 0)
+  {
+    unsigned char ch;
+
+    dbg_recv(&ch, 1);
+    if (ch == DBG_RLE_ESCAPE)
+    {
+      unsigned char value;
+      unsigned char count;
+      int n;
+  
+      dbg_recv(&value, 1);
+      dbg_recv(&count, 1);
+      n = (count == 0) ? 256 : count;
+
+      while (n > 0)
+      {
+	*p++ = value;
+	left--;
+	n--;
+      }
+    }
+    else
+    {
+      *p++ = ch;
+      left--;
+    }
+  }
+}
+
 static void dbg_send_packet(int cmd, unsigned char id, void *data, unsigned int len)
 {
   unsigned int n;
@@ -111,7 +185,7 @@ static void dbg_send_packet(int cmd, unsigned char id, void *data, unsigned int 
   hdr.checksum = -checksum;
 
   dbg_send(&hdr, sizeof(struct dbg_hdr));
-  dbg_send(data, len);
+  dbg_send_rle(data, len);
 }
 
 static void dbg_send_error(unsigned char errcode, unsigned char id)
@@ -136,7 +210,7 @@ static int dbg_recv_packet(struct dbg_hdr *hdr, void *data)
   dbg_recv(&hdr->checksum, 1);
   dbg_recv((unsigned char *) &hdr->len, 4);
   if (hdr->len > MAX_DBG_PACKETLEN) return -EBUF;
-  dbg_recv(data, hdr->len);
+  dbg_recv_rle(data, hdr->len);
 
   checksum = 0;
   p = (unsigned char *) hdr;
@@ -164,7 +238,9 @@ static void dbg_connect(struct dbg_hdr *hdr, union dbg_body *body)
     body->conn.mod.name = &krnlname;
     body->conn.thr.tid = t->id;
     body->conn.thr.tib = t->tib;
+    body->conn.thr.tcb = t;
     body->conn.thr.startaddr = t->entrypoint;
+    body->conn.cpu = cpu;
 
     dbg_send_packet(hdr->cmd + DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_connect));
   }
@@ -347,8 +423,8 @@ static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
   {
     while (1)
     {
-      body->mod.mods[n].hmod = mod->hmod;
-      body->mod.mods[n].name = &mod->name;
+      body->modl.mods[n].hmod = mod->hmod;
+      body->modl.mods[n].name = &mod->name;
       n++;
 
       mod = mod->next;
@@ -361,8 +437,8 @@ static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
     mod = peb->usermods->modules;
     while (1)
     {
-      body->mod.mods[n].hmod = mod->hmod;
-      body->mod.mods[n].name = &mod->name;
+      body->modl.mods[n].hmod = mod->hmod;
+      body->modl.mods[n].name = &mod->name;
       n++;
 
       mod = mod->next;
@@ -372,13 +448,13 @@ static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
 
   if (n == 0) 
   {
-    body->mod.mods[n].hmod = (hmodule_t) OSBASE;
-    body->mod.mods[n].name = &krnlname;
+    body->modl.mods[n].hmod = (hmodule_t) OSBASE;
+    body->modl.mods[n].name = &krnlname;
     n++;
   }
 
-  body->mod.count = n;
-  dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_module) + n * 8);
+  body->modl.count = n;
+  dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_modulelist) + n * sizeof(struct dbg_moduleinfo));
 }
 
 static void dbg_get_threads(struct dbg_hdr *hdr, union dbg_body *body)
@@ -393,13 +469,14 @@ static void dbg_get_threads(struct dbg_hdr *hdr, union dbg_body *body)
     body->thl.threads[n].tid = t->id;
     body->thl.threads[n].tib = t->tib;
     body->thl.threads[n].startaddr = t->entrypoint;
+    body->thl.threads[n].tcb = t;
     n++;
 
     t = t->next;
     if (t == threadlist) break;
   }
   body->thl.count = n;
-  dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_threadlist) + n * 12);
+  dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_threadlist) + n * sizeof(struct dbg_threadinfo));
 }
 
 static void dbg_main()
@@ -535,6 +612,7 @@ void dbg_notify_create_thread(struct thread *t, void *startaddr)
     create.tid = t->id;
     create.tib = t->tib;
     create.startaddr = startaddr;
+    create.tcb = t;
 
     dbg_send_packet(DBGEVT_CREATE_THREAD, 0, &create, sizeof(struct dbg_evt_create_thread));
     dbg_main();

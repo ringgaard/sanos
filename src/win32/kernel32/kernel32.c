@@ -1647,7 +1647,6 @@ int WINAPI GetThreadPriority
   prio = getprio((handle_t) hThread);
   if (prio < 0) return 0x7FFFFFFF;
 
-
   // Return priority based on win32 normal priority class scheme
   switch (prio)
   {

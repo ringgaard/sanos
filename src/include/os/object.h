@@ -202,6 +202,8 @@ struct thread
   struct fpu fpustate;
 };
 
+#ifdef KERNEL
+
 extern struct object **htab;
 extern int htabsize;
 
@@ -259,5 +261,7 @@ krnlapi int hfree(handle_t h);
 
 krnlapi struct object *olock(handle_t h, int type);
 krnlapi int orel(object_t hobj);
+
+#endif
 
 #endif

@@ -30,6 +30,10 @@ CHANGE LOG FOR SANOS
     
     * The size of the buffer in cfltcvt() output.c was only 80 bytes long. This has
       been changed to CVTBUFSIZE to prevent buffer overflow in ecvtbuf() (YBO).
+      
+    * The remote debugging protocol has been changed to include more information on
+      connect and now uses run length compression of data blocks to speed up transfer
+      over serial lines.
 
 Version 1.3.2
 

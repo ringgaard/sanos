@@ -35,7 +35,8 @@
 #define DBG_H
 
 #define DBG_SIGNATURE     0xDB
-#define DRPC_VERSION      1
+#define DRPC_VERSION      2
+#define DBG_RLE_ESCAPE    0xA5
 
 //
 // Debugger commands
@@ -92,10 +93,18 @@ struct dbg_thread
   tid_t threadids[0];
 };
 
+struct dbg_threadinfo
+{
+  tid_t tid; 
+  void *tib; 
+  void *startaddr; 
+  void *tcb;
+};
+
 struct dbg_threadlist
 {
   int count;
-  struct { tid_t tid; void *tib; void *startaddr; } threads[0];
+  struct dbg_threadinfo threads[0];
 };
 
 struct dbg_context
@@ -110,10 +119,16 @@ struct dbg_selector
   struct segment seg;
 };
 
-struct dbg_module
+struct dbg_moduleinfo
+{
+  hmodule_t hmod; 
+  char **name;
+};
+
+struct dbg_modulelist
 {
   int count;
-  struct { hmodule_t hmod; char **name; } mods[0];
+  struct dbg_moduleinfo mods[0];
 };
 
 struct dbg_evt_trap
@@ -130,6 +145,7 @@ struct dbg_evt_create_thread
   tid_t tid;
   void *tib;
   void *startaddr;
+  void *tcb;
 };
 
 struct dbg_evt_exit_thread
@@ -162,6 +178,7 @@ struct dbg_connect
   struct dbg_evt_trap trap;
   struct dbg_evt_load_module mod;
   struct dbg_evt_create_thread thr;
+  struct cpu cpu;
 };
 
 union dbg_body
@@ -174,7 +191,7 @@ union dbg_body
   struct dbg_threadlist thl;
   struct dbg_context ctx;
   struct dbg_selector sel;
-  struct dbg_module mod;
+  struct dbg_modulelist modl;
 
   struct dbg_evt_trap trap;
   struct dbg_evt_create_thread create;

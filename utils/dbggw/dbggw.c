@@ -968,7 +968,7 @@ void handle_session()
   if (buf) free(buf);
   if (session)
   {
-    dbg_close_session(session);
+    dbg_close_session(session, 0);
     session = NULL;
   }
 }

@@ -175,9 +175,13 @@ struct cpu
   char modelid[64];
 };
 
+#ifdef KERNEL
+
 extern struct cpu cpu;
 
 void init_cpu();
 int cpu_sysinfo(struct cpuinfo *info);
+
+#endif
 
 #endif

@@ -169,8 +169,10 @@ struct syspage
   unsigned char biosdata[256];	// Copy of BIOS data area
 };
 
+#ifdef KERNEL
 #ifndef OSLDR
 krnlapi extern struct syspage *syspage;
+#endif
 #endif
 
 #define OSBASE      0x80000000
