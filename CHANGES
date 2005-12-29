@@ -1,6 +1,9 @@
 CHANGE LOG FOR SANOS
 ====================
 
+Changes since last release
+--------------------------
+
     * Added /proc/virtmem to display an overview of all mapped virtual memory.
     
     * Fixed parsing of IP headers in ping command.
@@ -35,7 +38,8 @@ CHANGE LOG FOR SANOS
       connect and now uses run length compression of data blocks to speed up transfer
       over serial lines.
 
-Version 1.3.2
+Version 1.3.3
+-------------
 
     * GetLogicalDrives() in kernel32 implemented.
 
@@ -155,6 +159,7 @@ Version 1.3.2
     * FTP daemon implemented.
             
 Version 1.3.2
+-------------
 
     * The fdmotor task in the floppy driver has been replaced by a timer.
 
@@ -259,6 +264,7 @@ Version 1.3.2
 
 
 Version 1.3.1
+-------------
 
     * Added hlt to idle task to decrease CPU usage when running under VMWare
       (TSU).
@@ -321,6 +327,7 @@ Version 1.3.1
 
 
 Version 1.3.0
+-------------
 
     * cd support added to ide driver.
 
@@ -448,6 +455,7 @@ Version 1.3.0
 
 
 Version 1.2.9
+-------------
 
     * New mkfloppy utility for writing raw floppy disks.
 
@@ -489,6 +497,7 @@ Version 1.2.9
 
 
 Version 1.2.8
+-------------
 
     * Garbage was outputted when printing negative numbers using printf. This 
       problem has been fixed.
@@ -502,6 +511,7 @@ Version 1.2.8
 
 
 Version 1.2.7
+-------------
 
     * When a file or socket object was closed the kernel object was accessed in 
       hfree() after being freed. The file and socket objects are now freed in 
@@ -629,6 +639,7 @@ Version 1.2.7
 
 
 Version 1.2.6
+-------------
 
     * iomux did not work with IOEVT_WRITE. This problem has been fixed.
 
@@ -667,6 +678,7 @@ Version 1.2.6
 
 
 Version 1.2.5
+-------------
 
     * iomux kernel synchronization objects implemented.
 
@@ -691,6 +703,7 @@ Version 1.2.5
 
 
 Version 1.2.4
+-------------
 
     * Implemented /proc/uptime to display time since boot up.
 
