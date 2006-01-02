@@ -250,6 +250,7 @@ krnlapi void set_io_event(struct ioobject *iob, int events);
 krnlapi void clear_io_event(struct ioobject *iob, int events);
 int dequeue_event_from_iomux(struct iomux *iomux);
 int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+int poll(struct pollfd fds[], unsigned int nfds, int timeout);
 
 // hndl.c
 

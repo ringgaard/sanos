@@ -421,3 +421,112 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struc
   close_iomux(&iomux);
   return rc;
 }
+
+static int check_poll(struct pollfd fds[], unsigned int nfds)
+{
+  struct ioobject *iob;
+  unsigned int n;
+  int ready;
+  int revents;
+  int mask;
+
+  ready = 0;
+  for (n = 0; n < nfds; n++)
+  {
+    revents = 0;
+    if (fds[n].fd >= 0)
+    {
+      iob = (struct ioobject *) olock(fds[n].fd, OBJECT_ANY);
+      if (!iob || !ISIOOBJECT(iob))
+      {
+	revents = POLLNVAL;
+	if (iob) orel(iob);
+      }
+      else
+      {
+	mask = IOEVT_ERROR | IOEVT_CLOSE;
+	if (fds[n].events & POLLIN) mask |= IOEVT_READ | IOEVT_ACCEPT;
+	if (fds[n].events & POLLOUT) mask |= IOEVT_WRITE | IOEVT_CONNECT;
+
+	mask &= iob->events_signaled;
+	if (mask != 0)
+	{
+          if (mask & (IOEVT_READ | IOEVT_ACCEPT)) revents |= POLLIN;
+          if (mask & (IOEVT_WRITE | IOEVT_CONNECT)) revents |= POLLOUT;
+	  if (mask & IOEVT_ERROR) revents |= POLLERR;
+	  if (mask & IOEVT_CLOSE) revents |= POLLHUP;
+	}
+      }
+
+      orel(iob);
+    }
+    fds[n].revents = revents;
+    if (revents != 0) ready++;
+  }
+
+  return ready;
+}
+
+static int add_fd_to_iomux(struct iomux *iomux, int fd, int events)
+{
+  struct ioobject *iob;
+  int rc;
+  int mask;
+
+  if (fd < 0) return 0;
+  iob = (struct ioobject *) olock(fd, OBJECT_ANY);
+  if (!iob) return -EBADF;
+  if (!ISIOOBJECT(iob))
+  {
+    orel(iob);
+    return -EBADF;
+  }
+
+  mask = IOEVT_ERROR | IOEVT_CLOSE;
+  if (events & POLLIN) mask |= IOEVT_READ | IOEVT_ACCEPT;
+  if (events & POLLOUT) mask |= IOEVT_WRITE | IOEVT_CONNECT;
+
+  rc = queue_ioobject(iomux, iob, mask, 0);
+  if (rc < 0) return rc;
+
+  orel(iob);
+  return 0;
+}
+
+int poll(struct pollfd fds[], unsigned int nfds, int timeout)
+{
+  struct iomux iomux;
+  int rc;
+  unsigned int n;
+
+  if (nfds == 0) return msleep(timeout);
+  if (!fds) return -EINVAL;
+
+  rc = check_poll(fds, nfds);
+  if (rc > 0) return rc;
+  if (timeout == 0) return 0;
+
+  init_iomux(&iomux, 0);
+
+  for (n = 0; n < nfds; n++)
+  {
+    rc = add_fd_to_iomux(&iomux, fds[n].fd, fds[n].events);
+    if (rc < 0)
+    {
+      close_iomux(&iomux);
+      return rc;
+    }
+  }
+
+  rc = wait_for_object(&iomux, timeout);
+  if (rc < 0)
+  {
+    close_iomux(&iomux);
+    if (rc == -ETIMEOUT) rc = 0;
+    return rc;
+  }
+
+  rc = check_poll(fds, nfds);
+  close_iomux(&iomux);
+  return rc;
+}

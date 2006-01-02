@@ -137,7 +137,8 @@
 #define SYSCALL_CHOWN         100
 #define SYSCALL_FCHOWN        101
 #define SYSCALL_ACCESS        102
+#define SYSCALL_POLL          103
 
-#define SYSCALL_MAX           102
+#define SYSCALL_MAX           103
 
 #endif

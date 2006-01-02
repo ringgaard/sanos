@@ -1,0 +1,14 @@
+;
+; File list for minimal sanos boot floppy
+;
+
+; Directories
+
+/bin
+/dev
+/proc
+
+; System files
+
+/bin/os.dll        bin\os.dll         dbg\bin\os.dll
+/bin/sh.exe        bin\sh.exe         dbg\bin\sh.exe

@@ -948,12 +948,32 @@ __inline void _fd_clr(int fd, fd_set *set)
 
 #endif
 
-struct pollfd 
+//
+// Poll
+//
+
+#ifndef _POLL_FD_DEFINED
+#define _POLL_FD_DEFINED
+
+struct pollfd
 {
-  int fd;           // File descriptor
-  short events;     // Requested events
-  short revents;    // Returned events
+  int fd;                     // File descriptor
+  short events;               // Requested events
+  short revents;              // Returned events
 };
+
+#define POLLIN      0x0001    // Data may be read without blocking
+#define POLLPRI     0x0002    // High priority data may be read without blocking
+#define POLLOUT     0x0004    // Data may be written without blocking
+#define POLLERR     0x0008    // An error has occurred (revents only)
+#define POLLHUP     0x0010    // Device has been disconnected (revents only)
+#define POLLNVAL    0x0020    // Invalid fd member (revents only)
+
+#endif
+
+//
+// I/O multiplexer events
+//
 
 #define IOEVT_READ     0x0001
 #define IOEVT_WRITE    0x0002
@@ -1357,6 +1377,8 @@ osapi int mutexrel(handle_t h);
 
 osapi handle_t mkiomux(int flags);
 osapi int dispatch(handle_t iomux, handle_t h, int events, int context);
+osapi int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timeval *timeout);
+osapi int poll(struct pollfd fds[], unsigned int nfds, int timeout);
 
 osapi int sysinfo(int cmd, void *data, size_t size);
 osapi int uname(struct utsname *buf);
@@ -1465,7 +1487,6 @@ osapi int sendmsg(int s, struct msghdr *hdr, unsigned int flags);
 osapi int setsockopt(int s, int level, int optname, const char *optval, int optlen);
 osapi int shutdown(int s, int how);
 osapi int socket(int domain, int type, int protocol);
-osapi int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timeval *timeout);
 
 osapi int res_send(const char *buf, int buflen, char *answer, int anslen);
 osapi int res_query(const char *dname, int cls, int type, unsigned char *answer, int anslen);

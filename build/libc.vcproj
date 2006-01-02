@@ -240,6 +240,9 @@
 				Name="include/sys"
 				Filter="">
 				<File
+					RelativePath="..\src\include\sys\poll.h">
+				</File>
+				<File
 					RelativePath="..\src\include\sys\select.h">
 				</File>
 				<File

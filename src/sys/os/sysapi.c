@@ -668,3 +668,8 @@ int access(const char *name, int mode)
 {
   return syscall(SYSCALL_ACCESS, (void *) &name);
 }
+
+int poll(struct pollfd fds[], unsigned int nfds, int timeout)
+{
+  return syscall(SYSCALL_POLL, (void *) &fds);
+}

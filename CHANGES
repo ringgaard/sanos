@@ -4,6 +4,9 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * The poll() function for waiting for events on a set of file descriptor has
+      been implemented. The sys/poll.h header file has been added.
+      
     * Added /proc/virtmem to display an overview of all mapped virtual memory.
     
     * Fixed parsing of IP headers in ping command.

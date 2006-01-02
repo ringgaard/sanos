@@ -160,6 +160,7 @@ src\                           Souce files
       video.h                  Video funtions
       vmm.h                    Virtual memory manager
     sys\                       Standard system include files
+      poll.h                   Wait for events on set of file descriptors
       select.h                 Select from file descriptor set
       socket.h                 Socket definitions
       stat.h                   Defines structure used by stat() and fstat()

@@ -2545,6 +2545,26 @@ static int sys_access(char *params)
   return rc;
 }
 
+static int sys_poll(char *params)
+{
+  struct pollfd *fds;
+  unsigned int nfds;
+  int timeout;
+  int rc;
+
+  fds = *(struct pollfd **) params;
+  nfds = *(unsigned int *) (params + 4);
+  timeout = *(int *) (params + 8);
+
+  if (lock_buffer(fds, nfds * sizeof(struct pollfd)) < 0) return -EFAULT;
+  
+  rc = poll(fds, nfds, timeout);
+
+  unlock_buffer(fds, nfds * sizeof(struct pollfd));
+
+  return rc;
+}
+
 struct syscall_entry syscalltab[] =
 {
   {"null",0, "", sys_null},
@@ -2650,6 +2670,7 @@ struct syscall_entry syscalltab[] =
   {"chown", 12, "'%s',%d,%d", sys_chown},
   {"fchown", 12, "%d,%d,%d", sys_fchown},
   {"access", 8, "'%s',%d", sys_access},
+  {"poll", 12, "%p,%d,%d", sys_poll},
 };
 
 int syscall(int syscallno, char *params)
