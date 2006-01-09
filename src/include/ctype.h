@@ -85,21 +85,21 @@ int tolower(int c);
 
 #ifndef _CTYPE_DISABLE_MACROS
 
-#define isalpha(c)     (_pctype[(c)] & (_UPPER | _LOWER))
-#define isupper(c)     (_pctype[(c)] & _UPPER)
-#define islower(c)     (_pctype[(c)] & _LOWER)
-#define isdigit(c)     (_pctype[(c)] & _DIGIT)
-#define isxdigit(c)    (_pctype[(c)] & _HEX)
-#define isspace(c)     (_pctype[(c)] & _SPACE)
-#define ispunct(c)     (_pctype[(c)] & _PUNCT)
-#define isalnum(c)     (_pctype[(c)] & (_UPPER | _LOWER | _DIGIT))
-#define isprint(c)     (_pctype[(c)] & (_BLANK | _PUNCT | _UPPER | _LOWER | _DIGIT))
-#define isgraph(c)     (_pctype[(c)] & (_PUNCT | _UPPER | _LOWER | _DIGIT))
-#define iscntrl(c)     (_pctype[(c)] & _CONTROL)
+#define isalpha(c)     (_pctype[(unsigned char)(c)] & (_UPPER | _LOWER))
+#define isupper(c)     (_pctype[(unsigned char)(c)] & _UPPER)
+#define islower(c)     (_pctype[(unsigned char)(c)] & _LOWER)
+#define isdigit(c)     (_pctype[(unsigned char)(c)] & _DIGIT)
+#define isxdigit(c)    (_pctype[(unsigned char)(c)] & _HEX)
+#define isspace(c)     (_pctype[(unsigned char)(c)] & _SPACE)
+#define ispunct(c)     (_pctype[(unsigned char)(c)] & _PUNCT)
+#define isalnum(c)     (_pctype[(unsigned char)(c)] & (_UPPER | _LOWER | _DIGIT))
+#define isprint(c)     (_pctype[(unsigned char)(c)] & (_BLANK | _PUNCT | _UPPER | _LOWER | _DIGIT))
+#define isgraph(c)     (_pctype[(unsigned char)(c)] & (_PUNCT | _UPPER | _LOWER | _DIGIT))
+#define iscntrl(c)     (_pctype[(unsigned char)(c)] & _CONTROL)
 #define isleadbyte(c)  (_pctype[(unsigned char)(c)] & _LEADBYTE)
 
-#define tolower(c)     ((c) - 'A' + 'a')
-#define toupper(c)     ((c) - 'a' + 'A')
+#define tolower(c)     (isupper(c) ? ((c) - 'A' + 'a') : (c))
+#define toupper(c)     (islower(c) ? ((c) - 'a' + 'A') : (c))
 
 #endif
 

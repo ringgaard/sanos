@@ -37,6 +37,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <ctype.h> // TODO remove after cmd_test revised
 #include <os/version.h>
 #include <inifile.h>
 
@@ -1436,28 +1437,14 @@ int cmd_sysinfo(int argc, char *argv[])
 
 int cmd_test(int argc, char *argv[])
 {
-  struct passwd *pwd;
-  struct group *grp;
-  char **members;
+  int c;
 
-  pwd = getpwuid(100);
-  if (!pwd) return -1;
-
-  printf("Username: %s\n", pwd->pw_name);
-  printf("Password: %s\n", pwd->pw_passwd);
-  printf("User id: %d\n", pwd->pw_uid);
-  printf("Group id: %d\n", pwd->pw_gid);
-  printf("Real name: %s\n", pwd->pw_gecos);
-  printf("Home dir: %s\n", pwd->pw_dir);
-  printf("Shell: %s\n", pwd->pw_shell);
-
-  grp = getgrnam("users");
-  if (!grp) return -1;
-  printf("Group name: %s\n", grp->gr_name);
-  printf("Group password: %s\n", grp->gr_passwd);
-  printf("Group id: %d\n", grp->gr_gid);
-  members = grp->gr_mem;
-  while (*members) printf("Member: %s\n", *members++);
+  printf("toupper(): ");
+  for (c = ' '; c <= 127; c++) printf("%c%c", c, toupper(c));
+  printf("\n");
+  printf("tolower(): ");
+  for (c = ' '; c <= 127; c++) printf("%c%c", c, tolower(c));
+  printf("\n");
 
   return 0;
 }

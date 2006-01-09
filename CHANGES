@@ -3,6 +3,9 @@ CHANGE LOG FOR SANOS
 
 Changes since last release
 --------------------------
+    
+    * The toupper() and tolower() macroes did not properly check the character type
+      before conversion. This problem has been fixed (SMC). 
 
     * The poll() function for waiting for events on a set of file descriptor has
       been implemented. The sys/poll.h header file has been added.

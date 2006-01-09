@@ -32,8 +32,11 @@
 // 
 
 #include <os.h>
-#include <ctype.h>
 #include <string.h>
+
+#ifndef KERNEL
+#include <ctype.h>
+#endif
 
 char *strncpy(char *dest, const char *source, size_t count)
 {
@@ -276,8 +279,6 @@ char *strdup(const char *s)
   return t;
 }
 
-#endif
-
 char *strlwr(char *s)
 {
   char *p = s;
@@ -303,6 +304,8 @@ char *strupr(char *s)
 
   return s;
 }
+
+#endif
 
 char *strncat(char *s1, const char *s2, size_t count)
 {
@@ -465,6 +468,8 @@ void *memccpy(void *dst, const void *src, int c, size_t count)
   return count ? dst : NULL;
 }
 
+#ifndef KERNEL
+
 int memicmp(const void *buf1, const void *buf2, size_t count)
 {
   int f = 0, l = 0;
@@ -478,6 +483,8 @@ int memicmp(const void *buf1, const void *buf2, size_t count)
 
   return f - l;
 }
+
+#endif
 
 char *strcpy(char *dst, const char *src)
 {
