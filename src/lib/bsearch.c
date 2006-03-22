@@ -51,7 +51,7 @@ void *bsearch(const void *key, const void *base, size_t num, size_t width, int (
       else if (result < 0)
       {
 	hi = mid - width;
-	num = num & 1 ? half : half-1;
+	num = num & 1 ? half : half - 1;
       }
       else    
       {
