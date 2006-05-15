@@ -33,6 +33,7 @@
 /bin/rtl8139.sys   bin\rtl8139.sys    dbg\bin\rtl8139.sys
 /bin/eepro100.sys  bin\eepro100.sys   dbg\bin\eepro100.sys
 /bin/sis900.sys    bin\sis900.sys     dbg\bin\sis900.sys
+/bin/tulip.sys     bin\tulip.sys      dbg\bin\tulip.sys
 
 ; Win32 wrapper DLLs
 

@@ -82,22 +82,26 @@ int pthread_cond_destroy(pthread_cond_t *cond)
 
 int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
+  int rc = 0;
+
   atomic_increment(&cond->waiting);
   pthread_mutex_unlock(mutex);
-  if (wait(cond->semaphore, INFINITE) < 0) return errno;
+  if (wait(cond->semaphore, INFINITE) < 0) rc = errno;
   atomic_decrement(&cond->waiting);
   pthread_mutex_lock(mutex);
-  return 0;
+  return errno;
 }
 
 int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime)
 {
+  int rc = 0;
+
   atomic_increment(&cond->waiting);
   pthread_mutex_unlock(mutex);
-  if (wait(cond->semaphore, __abstime2timeout(abstime)) < 0) return errno;
+  if (wait(cond->semaphore, __abstime2timeout(abstime)) < 0) rc = errno;
   atomic_decrement(&cond->waiting);
   pthread_mutex_lock(mutex);
-  return 0;
+  return rc;
 }
 
 int pthread_cond_signal(pthread_cond_t *cond)

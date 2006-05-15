@@ -84,6 +84,7 @@ dirs:
     -@if not exist $(OBJ)\setup mkdir $(OBJ)\setup
     -@if not exist $(OBJ)\sh mkdir $(OBJ)\sh
     -@if not exist $(OBJ)\sis900 mkdir $(OBJ)\sis900
+    -@if not exist $(OBJ)\tulip mkdir $(OBJ)\tulip
     -@if not exist $(OBJ)\edit mkdir $(OBJ)\edit
     -@if not exist $(OBJ)\telnetd mkdir $(OBJ)\telnetd
     -@if not exist $(OBJ)\ftpd mkdir $(OBJ)\ftpd
@@ -378,7 +379,7 @@ $(BIN)/rtl8139.sys: \
   $(SRC)/lib/string.c \
   $(SRC)/lib/ctype.c \
   $(LIBS)/krnl.lib
-    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/pcnet32/ $** /D KERNEL /D RTL8139_LIB \
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/rtl8139/ $** /D KERNEL /D RTL8139_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:start /IMPLIB:$(LIBS)/rtl8139.lib
 
 $(BIN)/sis900.sys: \
@@ -389,8 +390,19 @@ $(BIN)/sis900.sys: \
   $(SRC)/lib/string.c \
   $(SRC)/lib/ctype.c \
   $(LIBS)/krnl.lib
-    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/pcnet32/ $** /D KERNEL /D SIS900_LIB \
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/sis900/ $** /D KERNEL /D SIS900_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:start /IMPLIB:$(LIBS)/sis900.lib
+
+$(BIN)/tulip.sys: \
+  $(SRC)/sys/dev/tulip.c \
+  $(SRC)/sys/krnl/iop.c \
+  $(SRC)/lib/opts.c \
+  $(SRC)/lib/strtol.c \
+  $(SRC)/lib/string.c \
+  $(SRC)/lib/ctype.c \
+  $(LIBS)/krnl.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/tulip/ $** /D KERNEL /D TULIP_LIB \
+      /link /DLL /NODEFAULTLIB /ENTRY:start /IMPLIB:$(LIBS)/tulip.lib
 
 #
 # libc

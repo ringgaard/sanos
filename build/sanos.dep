@@ -317,6 +317,9 @@ $(SRC)/sys/dev/sis900.c: \
   $(SRC)/include/bitops.h \
   $(SRC)/sys/dev/sis900.h
 
+$(SRC)/sys/dev/tulip.c: \
+  $(SRC)/include/os/krnl.h
+
 $(SRC)/sys/dev/video.c: \
   $(SRC)/include/os/krnl.h
 
