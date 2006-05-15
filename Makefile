@@ -332,7 +332,7 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
 # drivers
 #
 
-drivers: dirs $(BIN)/3c905c.sys $(BIN)/eepro100.sys $(BIN)/ne2000.sys $(BIN)/pcnet32.sys $(BIN)/rtl8139.sys $(BIN)/sis900.sys
+drivers: dirs $(BIN)/3c905c.sys $(BIN)/eepro100.sys $(BIN)/ne2000.sys $(BIN)/pcnet32.sys $(BIN)/rtl8139.sys $(BIN)/sis900.sys $(BIN)/tulip.sys
 
 $(BIN)/3c905c.sys: \
   $(SRC)/sys/dev/3c905c.c \
