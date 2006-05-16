@@ -25,8 +25,6 @@
 
 #include <os/krnl.h>
 
-static int debug = 2;     // Message enable: 0..31 = no..all messages.
-
 // Maximum events (Rx packets, etc.) to handle at each interrupt
 
 static int max_interrupt_work = 25;
@@ -526,7 +524,6 @@ struct tulip_private
   struct unit *pci_dev;
   int chip_id, revision;
   int flags;
-  int msg_level;
   int iobase;                         // Configured I/O base
   int irq;		              // Configured IRQ
   struct timer timer;                 // Media selection timer
@@ -919,7 +916,7 @@ subsequent_board:
     mtable->has_nonmii = mtable->has_mii = mtable->has_reset = 0;
     mtable->csr15dir = mtable->csr15val = 0;
 
-    kprintf(KERN_INFO "%s:  EEPROM default media type %s.\n", dev->name, media & 0x0800 ? "Autosense" : medianame[media & MEDIA_MASK]);
+    kprintf(KERN_INFO "%s: EEPROM default media type %s.\n", dev->name, media & 0x0800 ? "Autosense" : medianame[media & MEDIA_MASK]);
     for (i = 0; i < count; i++) 
     {
       struct medialeaf *leaf = &mtable->mleaf[i];
@@ -1230,12 +1227,13 @@ static void select_media(struct dev *dev, int startup)
   {
     struct medialeaf *mleaf = &mtable->mleaf[tp->cur_index];
     unsigned char *p = mleaf->leafdata;
-    kprintf(KERN_DEBUG "%s:  Media table type %d.\n", dev->name, mleaf->type);
+    
+    //kprintf(KERN_DEBUG "%s:  Media table type %d.\n", dev->name, mleaf->type);
 
     switch (mleaf->type) 
     {
       case 0: // 21140 non-MII xcvr
-	kprintf(KERN_DEBUG "%s: Using a 21140 non-MII transceiver with control setting %2.2x.\n", dev->name, p[1]);
+	//kprintf(KERN_DEBUG "%s: Using a 21140 non-MII transceiver with control setting %2.2x.\n", dev->name, p[1]);
 	tp->if_port = p[0];
 	if (startup) writel(mtable->csr12dir | 0x100, ioaddr + CSR12);
 	writel(p[1], ioaddr + CSR12);
@@ -1350,7 +1348,7 @@ static void select_media(struct dev *dev, int startup)
 	new_csr6 = 0x020E0000;
     }
 
-    kprintf(KERN_DEBUG "%s: Using media type %s, CSR12 is %2.2x.\n", dev->name, medianame[tp->if_port], readl(ioaddr + CSR12) & 0xff);
+    //kprintf(KERN_DEBUG "%s: Using media type %s, CSR12 is %2.2x.\n", dev->name, medianame[tp->if_port], readl(ioaddr + CSR12) & 0xff);
   } 
   else if (tp->chip_id == DC21041) 
   {
@@ -2405,7 +2403,7 @@ static int tulip_transmit(struct dev *dev, struct pbuf *p)
   // Make sure the packet buffer is not fragmented
   p = pbuf_linearize(PBUF_RAW, p);
 
-  kprintf(KERN_DEBUG "%s: Transmit packet, %d bytes\n", dev->name, p->len);
+  //kprintf(KERN_DEBUG "%s: Transmit packet, %d bytes\n", dev->name, p->len);
 
   // Caution: the write order is important here, set the field with the ownership bits last
 
@@ -2470,14 +2468,14 @@ static int tulip_rx(struct dev *dev)
   int rx_work_limit = tp->dirty_rx + RX_RING_SIZE - tp->cur_rx;
   int work_done = 0;
 
-  kprintf(KERN_DEBUG " In tulip_rx(), entry %d %8.8x.\n", entry, tp->rx_ring[entry].status);
+  //kprintf(KERN_DEBUG " In tulip_rx(), entry %d %8.8x.\n", entry, tp->rx_ring[entry].status);
 
   // If we own the next entry, it is a new packet. Send it up
   while (!(tp->rx_ring[entry].status & DescOwned)) 
   {
     long status = tp->rx_ring[entry].status;
 
-    kprintf(KERN_DEBUG "%s: In tulip_rx(), entry %d %8.8x.\n", dev->name, entry, status);
+    //kprintf(KERN_DEBUG "%s: In tulip_rx(), entry %d %8.8x.\n", dev->name, entry, status);
 
     if (--rx_work_limit < 0) break;
 
@@ -2523,7 +2521,7 @@ static int tulip_rx(struct dev *dev)
         tp->rx_pbuf[entry] = NULL;
       }
 
-      kprintf(KERN_DEBUG "%s: Received packet, %d bytes\n", dev->name, pkt_len);
+      //kprintf(KERN_DEBUG "%s: Received packet, %d bytes\n", dev->name, pkt_len);
 
       // Resize packet buffer
       pbuf_realloc(p, pkt_len);
@@ -2626,7 +2624,6 @@ static struct stats_nic *tulip_get_stats(struct dev *dev)
   return &tp->stats;
 }
 
-#if 0
 //
 // Set or clear the multicast filter for this adaptor.
 // Note that we only use exclusion around actually queueing the
@@ -2661,14 +2658,20 @@ static unsigned long ether_crc_le(int length, unsigned char *data)
   return crc;
 }
 
-static void tulip_set_rx_mode(struct dev *dev)
+static int tulip_set_rx_mode(struct dev *dev)
 {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
   int csr6 = readl(ioaddr + CSR6) & ~0x00D5;
 
   tp->csr6 &= ~0x00D5;
-  if (dev->flags & IFF_PROMISC) 
+  if (!dev->netif)
+  {
+    // Network interface not attached yet -- accept all multicasts
+    tp->csr6 |= AcceptAllMulticast;
+    csr6 |= AcceptAllMulticast;
+  }
+  else if (dev->netif->flags & NETIF_PROMISC) 
   {     
     // Set promiscuous
     tp->csr6 |= AcceptAllMulticast | AcceptAllPhys;
@@ -2676,7 +2679,7 @@ static void tulip_set_rx_mode(struct dev *dev)
     // Unconditionally log net taps
     kprintf(KERN_INFO "%s: Promiscuous mode enabled.\n", dev->name);
   } 
-  else if ((dev->mc_count > 1000) || (dev->flags & IFF_ALLMULTI)) 
+  else if (dev->netif->mccount > 1000 || (dev->netif->flags & NETIF_ALLMULTI)) 
   {
     // Too many to filter well -- accept all multicasts
     tp->csr6 |= AcceptAllMulticast;
@@ -2685,9 +2688,9 @@ static void tulip_set_rx_mode(struct dev *dev)
   else  if (tp->flags & MC_HASH_ONLY) 
   {
     // Some work-alikes have only a 64-entry hash filter table
-    struct dev_mc_list *mclist;
+    struct mclist *mclist;
     int i;
-    if (dev->mc_count > multicast_filter_limit) 
+    if (dev->netif->mccount > multicast_filter_limit) 
     {
       tp->csr6 |= AcceptAllMulticast;
       csr6 |= AcceptAllMulticast;
@@ -2696,14 +2699,14 @@ static void tulip_set_rx_mode(struct dev *dev)
     {
       unsigned long mc_filter[2] = {0, 0};     // Multicast hash filter
       int filterbit;
-      for (i = 0, mclist = dev->mc_list; mclist && i < dev->mc_count; i++, mclist = mclist->next) 
+      for (i = 0, mclist = dev->netif->mclist; mclist && i < dev->netif->mccount; i++, mclist = mclist->next) 
       {
         if (tp->flags & COMET_MAC_ADDR)
-          filterbit = ether_crc_le(ETH_ALEN, mclist->dmi_addr);
+          filterbit = ether_crc_le(ETHER_ADDR_LEN, mclist->hwaddr.addr);
         else
-          filterbit = ether_crc(ETH_ALEN, mclist->dmi_addr) >> 26;
+          filterbit = ether_crc(ETHER_ADDR_LEN, mclist->hwaddr.addr) >> 26;
         filterbit &= 0x3f;
-        set_bit(filterbit, mc_filter);
+        set_bit(mc_filter, filterbit);
       }
 
       if (mc_filter[0] == tp->mc_filter[0] && mc_filter[1] == tp->mc_filter[1])
@@ -2729,23 +2732,23 @@ static void tulip_set_rx_mode(struct dev *dev)
   else 
   {
     unsigned short *eaddrs, *setup_frm = tp->setup_frame;
-    struct dev_mc_list *mclist;
+    struct mclist *mclist;
     unsigned long tx_flags = 0x08000000 | 192;
     int i;
 
     // Note that only the low-address shortword of setup_frame is valid!
     // The values are doubled for big-endian architectures
-    if (dev->mc_count > 14) 
+    if (dev->netif->mccount > 14) 
     { 
       // Must use a multicast hash table
       unsigned short hash_table[32];
       tx_flags = 0x08400000 | 192;    // Use hash filter
       memset(hash_table, 0, sizeof(hash_table));
-      set_bit(255, hash_table);      // Broadcast entry
+      set_bit(hash_table, 255);      // Broadcast entry
 
-      for (i = 0, mclist = dev->mc_list; mclist && i < dev->mc_count; i++, mclist = mclist->next)
+      for (i = 0, mclist = dev->netif->mclist; mclist && i < dev->netif->mccount; i++, mclist = mclist->next)
       {
-        set_bit(ether_crc_le(ETH_ALEN, mclist->dmi_addr) & 0x1ff, hash_table);
+        set_bit(hash_table, ether_crc_le(ETHER_ADDR_LEN, mclist->hwaddr.addr) & 0x1ff);
       }
 
       for (i = 0; i < 32; i++) 
@@ -2761,9 +2764,9 @@ static void tulip_set_rx_mode(struct dev *dev)
       // We have <= 14 addresses so we can use the wonderful
       // 16 address perfect filtering of the Tulip
 
-      for (i = 0, mclist = dev->mc_list; i < dev->mc_count; i++, mclist = mclist->next) 
+      for (i = 0, mclist = dev->netif->mclist; i < dev->netif->mccount; i++, mclist = mclist->next) 
       {
-        eaddrs = (unsigned short *)mclist->dmi_addr;
+        eaddrs = (unsigned short *) mclist->hwaddr.addr;
         *setup_frm++ = *eaddrs; *setup_frm++ = *eaddrs++;
         *setup_frm++ = *eaddrs; *setup_frm++ = *eaddrs++;
         *setup_frm++ = *eaddrs; *setup_frm++ = *eaddrs++;
@@ -2775,7 +2778,7 @@ static void tulip_set_rx_mode(struct dev *dev)
     }
 
     // Fill the final entry with our physical address
-    eaddrs = (unsigned short *) dev->dev_addr;
+    eaddrs = (unsigned short *) tp->hwaddr.addr;
     *setup_frm++ = eaddrs[0]; *setup_frm++ = eaddrs[0];
     *setup_frm++ = eaddrs[1]; *setup_frm++ = eaddrs[1];
     *setup_frm++ = eaddrs[2]; *setup_frm++ = eaddrs[2];
@@ -2787,35 +2790,35 @@ static void tulip_set_rx_mode(struct dev *dev)
     } 
     else 
     {
-      unsigned long flags;
+      //unsigned long flags;
       unsigned int entry;
 
-      spin_lock_irqsave(&tp->mii_lock, flags);
+      //spin_lock_irqsave(&tp->mii_lock, flags);
       entry = tp->cur_tx++ % TX_RING_SIZE;
 
       if (entry != 0) 
       {
         // Avoid a chip errata by prefixing a dummy entry
-        tp->tx_skbuff[entry] = 0;
-        tp->tx_ring[entry].length = (entry == TX_RING_SIZE-1) ? cpu_to_le32(DESC_RING_WRAP) : 0;
+        tp->tx_pbuf[entry] = 0;
+        tp->tx_ring[entry].length = (entry == TX_RING_SIZE-1) ? DESC_RING_WRAP : 0;
         tp->tx_ring[entry].buffer1 = 0;
-        tp->tx_ring[entry].status = cpu_to_le32(DescOwned);
+        tp->tx_ring[entry].status = DescOwned;
         entry = tp->cur_tx++ % TX_RING_SIZE;
       }
 
-      tp->tx_skbuff[entry] = 0;
+      tp->tx_pbuf[entry] = 0;
 
       // Put the setup frame on the Tx list
       if (entry == TX_RING_SIZE - 1) tx_flags |= DESC_RING_WRAP;   // Wrap ring
-      tp->tx_ring[entry].length = cpu_to_le32(tx_flags);
-      tp->tx_ring[entry].buffer1 = virt_to_le32desc(tp->setup_frame);
-      tp->tx_ring[entry].status = cpu_to_le32(DescOwned);
+      tp->tx_ring[entry].length = tx_flags;
+      tp->tx_ring[entry].buffer1 = virt2phys(tp->setup_frame);
+      tp->tx_ring[entry].status = DescOwned;
       if (tp->cur_tx - tp->dirty_tx >= TX_RING_SIZE - 2) 
       {
-        netif_stop_tx_queue(dev);
+        //netif_stop_tx_queue(dev);
         tp->tx_full = 1;
       }
-      spin_unlock_irqrestore(&tp->mii_lock, flags);
+      //spin_unlock_irqrestore(&tp->mii_lock, flags);
       
       // Trigger an immediate transmit demand
       writel(0, ioaddr + CSR1);
@@ -2823,9 +2826,8 @@ static void tulip_set_rx_mode(struct dev *dev)
   }
 
   writel(csr6, ioaddr + CSR6);
+  return 0;
 }
-
-#endif
 
 // The interrupt handler does all of the Rx thread work and cleans up
 // after the Tx thread
@@ -2842,7 +2844,7 @@ static void tulip_dpc(void *arg)
     csr5 = readl(ioaddr + CSR5);
     if ((csr5 & (NormalIntr | AbnormalIntr)) == 0) break;
 
-    kprintf(KERN_DEBUG "%s: interrupt  csr5=%#8.8x new csr5=%#8.8x.\n", dev->name, csr5, readl(tp->iobase + CSR5));
+    //kprintf(KERN_DEBUG "%s: interrupt  csr5=%#8.8x new csr5=%#8.8x.\n", dev->name, csr5, readl(tp->iobase + CSR5));
 
     // Acknowledge all of the current interrupt sources ASAP
     writel(csr5 & 0x0001ffff, ioaddr + CSR5);
@@ -2877,7 +2879,7 @@ static void tulip_dpc(void *arg)
         } 
 	else 
 	{
-          kprintf(KERN_DEBUG "%s: Transmit complete, status %8.8x.\n", dev->name, status);
+          //kprintf(KERN_DEBUG "%s: Transmit complete, status %8.8x.\n", dev->name, status);
           //if (status & 0x0001) tp->stats.tx_deferred++;
           tp->stats.tx_bytes += tp->tx_pbuf[entry]->len;
           tp->stats.collisions += (status >> 3) & 15;
@@ -2994,7 +2996,7 @@ static void tulip_dpc(void *arg)
     }
   }
 
-  kprintf(KERN_DEBUG "%s: exiting interrupt, csr5=%#4.4x.\n", dev->name, readl(ioaddr + CSR5));
+  //kprintf(KERN_DEBUG "%s: exiting interrupt, csr5=%#4.4x.\n", dev->name, readl(ioaddr + CSR5));
   eoi(tp->irq);
 }
 
@@ -3008,11 +3010,6 @@ static int tulip_handler(struct context *ctxt, void *arg)
   queue_irq_dpc(&tp->dpc, tulip_dpc, dev);
 
   return 0;
-}
-
-static int tulip_set_rx_mode(struct dev *dev)
-{
-  return -ENOSYS;
 }
 
 static int tulip_ioctl(struct dev *dev, int cmd, void *args, size_t size)
@@ -3212,7 +3209,6 @@ static struct dev *tulip_probe(struct unit *pdev, struct board *board, int ioadd
   tp->irq = irq;
 
   tp->pci_dev = pdev;
-  tp->msg_level = (1 << debug) - 1;
   tp->chip_id = chip_idx;
   tp->revision = chip_rev;
   tp->flags = tulip_tbl[chip_idx].flags | (board->flags & 0xffffff00);
@@ -3312,7 +3308,7 @@ static int tulip_open(struct dev *dev)
   // Tx and Rx queues and the address filter list
   writel(tp->csr0, ioaddr + CSR0);
 
-  kprintf(KERN_DEBUG "%s: tulip_open() irq %d.\n", dev->name, tp->irq);
+  //kprintf(KERN_DEBUG "%s: tulip_open() irq %d.\n", dev->name, tp->irq);
 
   tulip_init_ring(dev);
   init_sem(&tp->tx_sem, TX_RING_SIZE);

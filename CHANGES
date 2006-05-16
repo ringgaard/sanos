@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
     
+    * Added tulip network driver.
+    
     * The toupper() and tolower() macroes did not properly check the character type
       before conversion. This problem has been fixed (SMC). 
 
