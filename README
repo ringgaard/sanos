@@ -56,6 +56,7 @@ Supported hardware
     - Intel EtherExpress Pro/100 (i82557/558/559 based boards)
     - RealTek 8139 and compatible
     - SiS 900 and compatible
+    - Digital "Tulip" Ethernet card (DEC 21*4*-based chips)
     - AMD PCNET32 and compatible
     - Novell NE2000 (DP8390) and compatible
 
@@ -144,7 +145,7 @@ The DNS resolver is a port of ISC BIND lwres (http://www.isc.org/products/BIND)
 
 The kernel timer implementation is a port of Finn Arne Gangstads kernel timer implementation
 
-The rtl8139, eepro100 and sis900 network drivers are ported from Linux (Donald Becker)
+The rtl8139, eepro100, sis900, and tulip network drivers are ported from Linux (Donald Becker)
 
 The win32 exception handling has been ported from WINE (Turchanov Sergey, Alexandre Julliard, and Jon Griffiths)
 
