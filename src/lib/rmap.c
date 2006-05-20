@@ -3,13 +3,6 @@
 //
 // Routines for working with a resource map
 //
-// The first entry in a resource map is interpreted as a header.
-// The r_size field tells how many slots the overall data structure
-// has; r_off tells how many non-empty elements exist.
-//
-// The list is kept in ascending order with all non-empty elements
-// first.
-//
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -37,6 +30,15 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
 // SUCH DAMAGE.
 // 
+
+//
+// The first entry in a resource map is interpreted as a header.
+// The r_size field tells how many slots the overall data structure
+// has; r_off tells how many non-empty elements exist.
+//
+// The list is kept in ascending order with all non-empty elements
+// first.
+//
 
 #include <stdarg.h>
 #include <sys/types.h>

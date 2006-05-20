@@ -313,14 +313,16 @@
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)"
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
 						Outputs="$(IntDir)\$(InputName).obj"/>
 				</FileConfiguration>
 			</File>

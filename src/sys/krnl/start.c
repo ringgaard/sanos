@@ -426,6 +426,7 @@ void main(void *arg)
   // Initialize module loader
   init_kernel_modules();
 
+  // Get os version info from kernel version resource
   get_version_value((hmodule_t) OSBASE, "ProductName", peb->osname, sizeof peb->osname);
   peb->ostimestamp = get_image_header((hmodule_t) OSBASE)->header.timestamp;
   ver = get_version_info((hmodule_t) OSBASE);
