@@ -67,14 +67,14 @@ struct udp_pcb
   void *recv_arg;  
 };
 
-// Application layer interface to the UDP code
+// Socket layer interface to the UDP code
 
 struct udp_pcb *udp_new();
 void udp_remove (struct udp_pcb *pcb);
 err_t udp_bind(struct udp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port);
 err_t udp_connect(struct udp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port);
 void udp_recv(struct udp_pcb *pcb, err_t (*recv)(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct ip_addr *addr, unsigned short port), void *recv_arg);
-err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif);
+err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *dst_ip, unsigned short dst_port, struct netif *netif);
 
 #define udp_flags(pcb) ((pcb)->flags)
 #define udp_setflags(pcb, f) ((pcb)->flags = (f))

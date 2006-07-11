@@ -243,6 +243,9 @@ static int udpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   struct sockaddr_in *sin;
   struct sockreq req;
 
+  if (msg->msg_name && msg->msg_namelen < sizeof(struct sockaddr_in)) return -EFAULT;
+  if (!s->udp.pcb || s->udp.pcb->local_port == 0) return -EINVAL;
+
   p = s->udp.recvhead;
   if (p)
   {
@@ -253,8 +256,8 @@ static int udpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
     buf = p->payload;
     len = p->len;
 
-    udphdr = p->payload;
     pbuf_header(p, UDP_HLEN);
+    udphdr = p->payload;
 
     //FIXME: this does not work if there are options in the ip header
     pbuf_header(p, IP_HLEN); 
@@ -265,7 +268,6 @@ static int udpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
 
     if (msg->msg_name)
     {
-      if (msg->msg_namelen < sizeof(struct sockaddr_in)) return -EFAULT;
       sin = (struct sockaddr_in *) msg->msg_name;
       sin->sin_family = AF_INET;
       sin->sin_port = htons(udphdr->src);
@@ -289,23 +291,34 @@ static int udpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   int size;
   int rc;
 
-  size = get_iovec_size(msg->msg_iov, msg->msg_iovlen);
+  if (msg->msg_name && msg->msg_namelen < sizeof(struct sockaddr_in)) return -EFAULT;
 
-  if (msg->msg_name)
+  if (!s->udp.pcb || s->udp.pcb->local_port == 0)
   {
-    rc = udpsock_connect(s, msg->msg_name, msg->msg_namelen);
+    struct sockaddr_in sin;
+
+    memset(&sin, 0, sizeof(sin));
+    sin.sin_family = AF_INET;
+    rc = udpsock_bind(s, (struct sockaddr *) &sin, sizeof(sin));
     if (rc < 0) return rc;
   }
 
-  if (s->state != SOCKSTATE_CONNECTED) return -ENOTCONN;
+  size = get_iovec_size(msg->msg_iov, msg->msg_iovlen);
 
   p = pbuf_alloc(PBUF_TRANSPORT, size, PBUF_RW);
   if (!p) return -ENOMEM;
 
   rc = read_iovec(msg->msg_iov, msg->msg_iovlen, p->payload, size);
   if (rc < 0) return rc;
-  
-  rc = udp_send(s->udp.pcb, p, NULL);
+
+  if (msg->msg_name)
+  {
+    struct sockaddr_in *sin = (struct sockaddr_in *) msg->msg_name;
+    rc = udp_send(s->udp.pcb, p, (struct ip_addr *) &sin->sin_addr, ntohs(sin->sin_port), NULL);
+  }
+  else
+    rc = udp_send(s->udp.pcb, p, NULL, 0, NULL);
+
   if (rc < 0)
   {
     pbuf_free(p);

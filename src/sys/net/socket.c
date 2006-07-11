@@ -181,6 +181,7 @@ int recvmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
   struct msghdr m;
   int rc;
 
+  if (!msg) return -EINVAL;
   m.msg_name = msg->msg_name;
   m.msg_namelen = msg->msg_namelen;
   m.msg_iov = dup_iovec(msg->msg_iov, msg->msg_iovlen);
@@ -259,6 +260,7 @@ int sendmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
   struct msghdr m;
   int rc;
 
+  if (!msg) return -EINVAL;
   m.msg_name = msg->msg_name;
   m.msg_namelen = msg->msg_namelen;
   m.msg_iov = dup_iovec(msg->msg_iov, msg->msg_iovlen);

@@ -175,13 +175,17 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
   return pcb->recv(pcb->recv_arg, pcb, p, &iphdr->src, src);
 }
 
-err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
+err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *dst_ip, unsigned short dst_port, struct netif *netif)
 {
   struct udp_hdr *udphdr;
   struct ip_addr *src_ip;
   err_t err;
 
-  if (ip_addr_isany(&pcb->remote_ip)) return -EDESTADDRREQ;
+  if (!dst_ip) dst_ip = &pcb->remote_ip;
+  if (ip_addr_isany(dst_ip)) return -EDESTADDRREQ;
+
+  if (dst_port == 0) dst_port = pcb->remote_port;
+  if (dst_port == 0) return -ENOTCONN;
 
   if (pbuf_header(p, UDP_HLEN) < 0)
   {
@@ -192,20 +196,20 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
 
   udphdr = p->payload;
   udphdr->src = htons(pcb->local_port);
-  udphdr->dest = htons(pcb->remote_port);
+  udphdr->dest = htons(dst_port);
   udphdr->chksum = 0x0000;
 
   if (netif == NULL)
   {
-    if ((netif = ip_route(&pcb->remote_ip)) == NULL)
+    if ((netif = ip_route(dst_ip)) == NULL)
     {
-      kprintf(KERN_ERR "udp_send: No route to %a\n", &pcb->remote_ip);
+      kprintf(KERN_ERR "udp_send: No route to %a\n", dst_ip);
       stats.udp.rterr++;
       return -EROUTE;
     }
   }
 
-  if (ip_addr_isbroadcast(&pcb->remote_ip, &netif->netmask) && (pcb->flags & UDP_FLAGS_BROADCAST) == 0) return -EACCES;
+  if (ip_addr_isbroadcast(dst_ip, &netif->netmask) && (pcb->flags & UDP_FLAGS_BROADCAST) == 0) return -EACCES;
 
   if (ip_addr_isany(&pcb->local_ip)) 
     src_ip = &netif->ipaddr;
@@ -221,13 +225,13 @@ err_t udp_send(struct udp_pcb *pcb, struct pbuf *p, struct netif *netif)
   {
     if ((pcb->flags & UDP_FLAGS_NOCHKSUM) == 0) 
     {
-      udphdr->chksum = inet_chksum_pseudo(p, src_ip, &pcb->remote_ip, IP_PROTO_UDP, p->tot_len);
+      udphdr->chksum = inet_chksum_pseudo(p, src_ip, dst_ip, IP_PROTO_UDP, p->tot_len);
       if (udphdr->chksum == 0x0000) udphdr->chksum = 0xFFFF;
     }
   }
 
   //udp_debug_print(udphdr);
-  err = ip_output_if(p, src_ip, &pcb->remote_ip, UDP_TTL, IP_PROTO_UDP, netif);
+  err = ip_output_if(p, src_ip, dst_ip, UDP_TTL, IP_PROTO_UDP, netif);
   
   stats.udp.xmit++;
 

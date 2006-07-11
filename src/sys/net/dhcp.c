@@ -219,7 +219,7 @@ static err_t dhcp_select(struct dhcp_state *state)
 
     udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
     udp_connect(state->pcb, IP_ADDR_BROADCAST, DHCP_SERVER_PORT);
-    if (udp_send(state->pcb, state->p_out, state->netif) >= 0) state->p_out = NULL;
+    if (udp_send(state->pcb, state->p_out, NULL, 0, state->netif) >= 0) state->p_out = NULL;
 
     // reconnect to any (or to server here?!)
     udp_connect(state->pcb, IP_ADDR_ANY, DHCP_SERVER_PORT);
@@ -520,7 +520,7 @@ err_t dhcp_inform(struct netif *netif)
   udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
   udp_connect(state->pcb, IP_ADDR_BROADCAST, DHCP_SERVER_PORT);
 
-  if (udp_send(state->pcb, state->p_out, state->netif) >= 0) state->p_out = NULL;
+  if (udp_send(state->pcb, state->p_out, NULL, 0, state->netif) >= 0) state->p_out = NULL;
   udp_connect(state->pcb, IP_ADDR_ANY, DHCP_SERVER_PORT);
   dhcp_delete_request(state);
 
@@ -583,7 +583,7 @@ static err_t dhcp_decline(struct dhcp_state *state)
 
     udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
     udp_connect(state->pcb, &state->server_ip_addr, DHCP_SERVER_PORT);
-    if (udp_send(state->pcb, state->p_out, state->netif) >= 0) state->p_out = NULL;
+    if (udp_send(state->pcb, state->p_out, NULL, 0, state->netif) >= 0) state->p_out = NULL;
     dhcp_delete_request(state);
   }
 
@@ -637,7 +637,7 @@ static err_t dhcp_discover(struct dhcp_state *state)
     udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
     udp_connect(state->pcb, IP_ADDR_BROADCAST, DHCP_SERVER_PORT);
 
-    if (udp_send(state->pcb, state->p_out, state->netif) >= 0) state->p_out = NULL;
+    if (udp_send(state->pcb, state->p_out, NULL, 0, state->netif) >= 0) state->p_out = NULL;
     udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
     udp_connect(state->pcb, IP_ADDR_ANY, DHCP_SERVER_PORT);
 
@@ -749,7 +749,7 @@ err_t dhcp_renew(struct dhcp_state *state)
 
     udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
     udp_connect(state->pcb, &state->server_ip_addr, DHCP_SERVER_PORT);
-    if (udp_send(state->pcb, state->p_out, state->netif) >= 0) state->p_out = NULL;
+    if (udp_send(state->pcb, state->p_out, NULL, 0, state->netif) >= 0) state->p_out = NULL;
     dhcp_delete_request(state);
   }
   state->tries++;
@@ -792,7 +792,7 @@ static err_t dhcp_rebind(struct dhcp_state *state)
 
     udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
     udp_connect(state->pcb, IP_ADDR_BROADCAST, DHCP_SERVER_PORT);
-    if (udp_send(state->pcb, state->p_out, state->netif) >= 0) state->p_out = NULL;
+    if (udp_send(state->pcb, state->p_out, NULL, 0, state->netif) >= 0) state->p_out = NULL;
     udp_connect(state->pcb, IP_ADDR_ANY, DHCP_SERVER_PORT);
     dhcp_delete_request(state);
   }
@@ -827,7 +827,7 @@ static err_t dhcp_release(struct dhcp_state *state)
 
     udp_bind(state->pcb, IP_ADDR_ANY, DHCP_CLIENT_PORT);
     udp_connect(state->pcb, &state->server_ip_addr, DHCP_SERVER_PORT);
-    if (udp_send(state->pcb, state->p_out, state->netif) >= 0) state->p_out = NULL;
+    if (udp_send(state->pcb, state->p_out, NULL, 0, state->netif) >= 0) state->p_out = NULL;
     dhcp_delete_request(state);
   }
 

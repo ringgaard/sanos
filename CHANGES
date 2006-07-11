@@ -4,6 +4,13 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
     
+    * Fixed various bugs in UDP socket module (DSA):
+        o The source ip and port could be garbled in recvmsg().
+        o Socket was not implicitly bound on sendmsg().
+        o After message was sent with sendto() the socket was permanently
+          connected to the destination.
+        o Additional checks on input parameters.
+    
     * Added tulip network driver.
     
     * The toupper() and tolower() macroes did not properly check the character type
