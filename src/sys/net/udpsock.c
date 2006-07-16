@@ -270,7 +270,7 @@ static int udpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
     {
       sin = (struct sockaddr_in *) msg->msg_name;
       sin->sin_family = AF_INET;
-      sin->sin_port = htons(udphdr->src);
+      sin->sin_port = udphdr->src;
       sin->sin_addr.s_addr = iphdr->src.addr;
     }
     msg->msg_namelen = sizeof(struct sockaddr_in);
