@@ -705,6 +705,17 @@ struct serial_status
 #ifndef _IN_ADDR_DEFINED
 #define _IN_ADDR_DEFINED
 
+#ifdef __TINYC__
+struct in_addr 
+{
+  union 
+  {
+    struct { unsigned char s_b1, s_b2, s_b3, s_b4; } s_un_b;
+    struct { unsigned short s_w1, s_w2; } s_un_w;
+    unsigned long s_addr;
+  } u;
+};
+#else
 struct in_addr 
 {
   union 
@@ -714,6 +725,7 @@ struct in_addr
     unsigned long s_addr;
   };
 };
+#endif
 
 #endif
 
@@ -986,8 +998,10 @@ struct pollfd
 // Module version info
 //
 
+#ifndef __TINYC__
 #pragma pack(push)
 #pragma pack(1)
+#endif
 
 struct verinfo 
 { 
@@ -1013,7 +1027,9 @@ struct verinfo
   unsigned __int64 file_date;
 };
 
+#ifndef __TINYC__
 #pragma pack(pop)
+#endif
 
 //
 // User database

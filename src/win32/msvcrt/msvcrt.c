@@ -44,7 +44,7 @@ int _commode = _IOCOMMIT;
 
 static long holdrand = 1L;
 
-int _fltused = 0x9875;
+//int _fltused = 0x9875;
 
 int _sys_nerr = 90;
 
@@ -303,13 +303,6 @@ char *getenv(const char *option)
   return get_property(osconfig, "env", (char *) option, NULL);
 }
 
-double atof(const char *nptr)
-{
-  TRACE("atof");
-  panic("atof not implemented");
-  return 0;
-}
-
 int *__errno()
 {
   TRACE("_errno");
@@ -375,6 +368,17 @@ void _assert(void *expr, void *filename, unsigned lineno)
 int _getpid()
 {
   return gettib()->pid;
+}
+
+void _ftime(struct timeb *timeptr)
+{
+  struct timeval tv;
+
+  gettimeofday(&tv, NULL);
+  timeptr->dstflag = 0;
+  timeptr->timezone = 0;
+  timeptr->time = tv.tv_sec;
+  timeptr->millitm = (unsigned short) (tv.tv_usec / 1000);
 }
 
 char *_strdup(const char *s)

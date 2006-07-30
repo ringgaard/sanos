@@ -483,6 +483,7 @@ hmodule_t dlopen(const char *name, int mode)
 
   enter(&mod_lock);
   hmod = load_module(&usermods, (char *) name, 0);
+  if (hmod == NULL) errno = ENOEXEC;
   leave(&mod_lock);
 
   return hmod;

@@ -33,8 +33,10 @@
 
 #include <os.h>
 #include <stdlib.h>
-#include <atomic.h>
 #include <crtbase.h>
+#ifndef __TINYC__
+#include <atomic.h>
+#endif
 
 void init_stdio();
 void exit_stdio();
@@ -47,6 +49,8 @@ int __instcount;
 proc_t *atexit_begin = NULL;
 proc_t *atexit_end = NULL;
 proc_t *atexit_last = NULL;
+
+#ifndef __TINYC__
 
 //
 // Pointers to initialization/termination functions
@@ -91,6 +95,8 @@ proc_t __xt_z[] = { NULL };
 #pragma data_seg()  // reset
 
 #pragma comment(linker, "/merge:.CRT=.data")
+
+#endif
 
 int main(int argc, char *argv[]);
 
@@ -138,6 +144,7 @@ static int initcrt()
 
   init_stdio();
 
+#ifndef __TINYC__
   if (atomic_increment(&__instcount) == 1)
   {
     // Execute C initializers
@@ -147,6 +154,7 @@ static int initcrt()
     // Execute C++ initializers
     initterm(__xc_a, __xc_z);
   }
+#endif
 
   return 0;
 }
@@ -156,6 +164,7 @@ static void termcrt()
   struct job *job = gettib()->job;
   struct crtbase *crtbase = (struct crtbase *) job->crtbase;
 
+#ifndef __TINYC__
   if (atomic_decrement(&__instcount) == 0)
   {
     // Execute atexit handlers
@@ -172,6 +181,7 @@ static void termcrt()
     // Execute C terminators
     initterm(__xt_a, __xt_z);
   }
+#endif
 
   // Flush stdout and stderr
   fflush(stdout);

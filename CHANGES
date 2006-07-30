@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
     
+    * The C runtime library can now be used with the Tiny C compiler.
+    
     * Fixed various bugs in UDP socket module (DSA):
         o The source ip and port could be garbled in recvmsg().
         o Socket was not implicitly bound on sendmsg().

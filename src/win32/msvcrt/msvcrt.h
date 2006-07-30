@@ -162,6 +162,14 @@ struct _iobuf
 
 typedef struct _iobuf FILE;
 
+struct timeb
+{
+  time_t time;
+  unsigned short millitm;
+  short timezone;
+  short dstflag;
+};
+
 typedef void (__cdecl *_PVFV)(void);
 typedef int (__cdecl * _onexit_t)(void);
 

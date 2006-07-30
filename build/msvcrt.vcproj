@@ -155,6 +155,27 @@
 				RelativePath="..\src\lib\fcvt.c">
 			</File>
 			<File
+				RelativePath="..\src\lib\math\fpconst.asm">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\lib\math\floor.asm">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -242,6 +263,27 @@
 				RelativePath="..\src\lib\inifile.c">
 			</File>
 			<File
+				RelativePath="..\src\lib\math\ldexp.asm">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\lib\math\modf.asm">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -276,6 +318,9 @@
 			</File>
 			<File
 				RelativePath="..\src\lib\string.c">
+			</File>
+			<File
+				RelativePath="..\src\lib\strtod.c">
 			</File>
 			<File
 				RelativePath="..\src\lib\strtol.c">

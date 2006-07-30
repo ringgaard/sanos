@@ -173,6 +173,7 @@ src\                           Souce files
     bitops.c                   Bitmap manipulation routines
     bsearch.c                  Binary search
     chkstk.asm                 Check stack upon procedure entry
+    chkstk.s                   TCC stack check routine
     conio.c                    Console I/O
     crt0.c                     C runtime library entry point
     crypt.c                    DES based implementation of crypt()
@@ -207,6 +208,7 @@ src\                           Souce files
     string.c                   String routines
     strtod.c                   Convert string to double 
     strtol.c                   String to number conversion
+    tcccrt.c                   TCC runtime library
     time.c                     Time routines
     ulldiv.asm                 Unsigned long divide routine
     ulldvrm.asm                Unsigned long divide and remainder routine

@@ -1650,7 +1650,7 @@ void *malloc(size_t size)
 
 void *realloc(void *mem, size_t size)
 {
-  return HeapReAlloc(GetProcessHeap(), 0, mem, size);
+  return mem ? HeapReAlloc(GetProcessHeap(), 0, mem, size) : HeapAlloc(GetProcessHeap(), 0, size);
 }
 
 void *calloc(size_t num, size_t size)

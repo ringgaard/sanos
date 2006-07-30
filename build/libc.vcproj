@@ -867,6 +867,9 @@
 			</FileConfiguration>
 		</File>
 		<File
+			RelativePath="..\src\lib\chkstk.s">
+		</File>
+		<File
 			RelativePath="..\src\lib\conio.c">
 		</File>
 		<File
@@ -1075,6 +1078,9 @@
 		</File>
 		<File
 			RelativePath="..\src\lib\strtol.c">
+		</File>
+		<File
+			RelativePath="..\src\lib\tcccrt.c">
 		</File>
 		<File
 			RelativePath="..\src\lib\time.c">

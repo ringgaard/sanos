@@ -38,6 +38,14 @@
 #ifndef SYS_TYPES_H
 #define SYS_TYPES_H
 
+#ifdef __TINYC__
+#define __int64 long long
+#define __stdcall
+#define __cdecl
+#define __inline static inline
+#define osapi
+#endif
+
 #ifndef _SIZE_T_DEFINED
 #define _SIZE_T_DEFINED
 typedef unsigned int size_t;

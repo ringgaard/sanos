@@ -42,6 +42,10 @@
 extern "C" {
 #endif
 
+#ifdef __TINYC__
+
+#else
+
 // On uniprocessors, the 'lock' prefixes are not necessary (and expensive). 
 // Since sanos does not (yet) support SMP the 'lock' prefix is disabled for now.
 
@@ -103,6 +107,8 @@ __inline int atomic_compare_and_exchange(int *dest, int exchange, int comperand)
 }
 
 #pragma warning(default: 4035)
+
+#endif
 
 #ifdef  __cplusplus
 }

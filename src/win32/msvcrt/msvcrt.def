@@ -39,6 +39,7 @@ EXPORTS
   _free
   _fstat
   _fstati64
+  _ftime
   _ftol
   _fullpath
   _get_osfhandle
@@ -63,6 +64,7 @@ EXPORTS
   _read
   _realloc
   _rename
+  _setjmp=setjmp
   _setjmp3=setjmp
   _setmode
   _snprintf
@@ -71,6 +73,7 @@ EXPORTS
   _stati64
   _strdup
   _stricmp=stricmp
+  _strlwr=strlwr
   _strnicmp=strnicmp
   _sys_nerr
   _time
@@ -110,6 +113,7 @@ EXPORTS
   freopen
   frexp
   fseek
+  ftell
   fwrite
   getc
   getenv
@@ -125,6 +129,7 @@ EXPORTS
   isupper
   iswctype
   isxdigit
+  ldexp
   localtime
   longjmp
   malloc=_malloc
@@ -148,13 +153,15 @@ EXPORTS
   sscanf
   strchr
   strcmp
+  strcpy
   strcspn
-  strerror = _strerror
+  strerror=_strerror
   strlen
   strncmp
   strncpy
   strrchr
   strstr
+  strtod
   strtol
   strtoul
   time=_time

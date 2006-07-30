@@ -40,7 +40,7 @@
 #define FL_OVERFLOW   4
 #define FL_READDIGIT  8
 
-static unsigned long strtoxl(const char *nptr, const char **endptr, int ibase, int flags)
+static unsigned long strtoxl(const char *nptr, char **endptr, int ibase, int flags)
 {
   const char *p;
   char c;
@@ -64,7 +64,7 @@ static unsigned long strtoxl(const char *nptr, const char **endptr, int ibase, i
 
   if (ibase < 0 || ibase == 1 || ibase > 36) 
   {
-    if (endptr) *endptr = nptr;
+    if (endptr) *endptr = (char *) nptr;
     return 0L;
   }
   else if (ibase == 0)
@@ -130,7 +130,7 @@ static unsigned long strtoxl(const char *nptr, const char **endptr, int ibase, i
       number = LONG_MAX;
   }
 
-  if (endptr != NULL) *endptr = p;
+  if (endptr != NULL) *endptr = (char *) p;
 
   if (flags & FL_NEG) number = (unsigned long) (-(long) number);
 

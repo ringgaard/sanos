@@ -40,6 +40,21 @@
 #define OFS_ESP   16
 #define OFS_EIP   20
 
+#ifdef __TINYC__
+
+// TODO implement setjmp and longjmp for TCC
+
+int setjmp(jmp_buf env)
+{
+  return 0;
+}
+
+void longjmp(jmp_buf env, int value)
+{
+}
+
+#else
+
 __declspec(naked) int setjmp(jmp_buf env)
 {
   __asm
@@ -76,3 +91,5 @@ __declspec(naked) void longjmp(jmp_buf env, int value)
     ret
   }
 }
+
+#endif

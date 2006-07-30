@@ -1,5 +1,5 @@
 //
-// bitops.h
+// bitops.c
 //
 // Bitmap manipulation routines
 //
