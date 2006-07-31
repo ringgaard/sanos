@@ -751,10 +751,10 @@ $(BIN)/winmm.dll: \
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/winmm/ $** /D WINMM_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:DllMain /IMPLIB:$(LIBS)/winmm.lib
 
-$(OBJ)/msvcrt/modf.obj: $(SRC)/lib/math/modf.asm
+$(OBJ)/msvcrt/fpconst.obj: $(SRC)/lib/math/fpconst.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
 
-$(OBJ)/msvcrt/ftol.obj: $(SRC)/lib/math/ftol.asm
+$(OBJ)/msvcrt/floor.obj: $(SRC)/lib/math/floor.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
 
 $(OBJ)/msvcrt/fmod.obj: $(SRC)/lib/math/fmod.asm
@@ -763,7 +763,13 @@ $(OBJ)/msvcrt/fmod.obj: $(SRC)/lib/math/fmod.asm
 $(OBJ)/msvcrt/frexp.obj: $(SRC)/lib/math/frexp.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
 
-$(OBJ)/msvcrt/floor.obj: $(SRC)/lib/math/floor.asm
+$(OBJ)/msvcrt/ftol.obj: $(SRC)/lib/math/ftol.asm
+    $(AS) $(AFLAGS) /c /Fo$@ $**
+
+$(OBJ)/msvcrt/ldexp.obj: $(SRC)/lib/math/ldexp.asm
+    $(AS) $(AFLAGS) /c /Fo$@ $**
+
+$(OBJ)/msvcrt/modf.obj: $(SRC)/lib/math/modf.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
 
 $(BIN)/msvcrt.dll: \
@@ -776,6 +782,7 @@ $(BIN)/msvcrt.dll: \
   $(SRC)/lib/new.cpp \
   $(SRC)/lib/vsprintf.c \
   $(SRC)/lib/time.c \
+  $(SRC)/lib/strtod.c \
   $(SRC)/lib/strtol.c \
   $(SRC)/lib/string.c \
   $(SRC)/lib/strftime.c \
@@ -785,11 +792,13 @@ $(BIN)/msvcrt.dll: \
   $(SRC)/lib/fcvt.c \
   $(SRC)/lib/ctype.c \
   $(SRC)/lib/bsearch.c \
-  $(OBJ)/msvcrt/modf.obj \
-  $(OBJ)/msvcrt/ftol.obj \
+  $(OBJ)/msvcrt/fpconst.obj \
+  $(OBJ)/msvcrt/floor.obj \
   $(OBJ)/msvcrt/fmod.obj \
   $(OBJ)/msvcrt/frexp.obj \
-  $(OBJ)/msvcrt/floor.obj \
+  $(OBJ)/msvcrt/ftol.obj \
+  $(OBJ)/msvcrt/ldexp.obj \
+  $(OBJ)/msvcrt/modf.obj \
   $(LIBS)/os.lib \
   $(LIBS)/kernel32.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/msvcrt/ $** /D MSVCRT_LIB \
