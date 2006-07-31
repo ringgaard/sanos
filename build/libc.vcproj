@@ -1062,6 +1062,9 @@
 			RelativePath="..\src\lib\setjmp.c">
 		</File>
 		<File
+			RelativePath="..\src\lib\setjmp.s">
+		</File>
+		<File
 			RelativePath="..\src\lib\stdio.c">
 		</File>
 		<File

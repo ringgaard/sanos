@@ -604,18 +604,4 @@ unsigned long long __fixunsxfdi(long double a1)
     return 0;
 }
 
-// Stub routines for unimplemented sanos libc routines
-
-double _infinity = 0.0;
-
-double modf(double x, double *y)
-{
-  return 0;
-}
-
-double ldexp(double x, int n)
-{
-  return 0;
-}
-
 #endif

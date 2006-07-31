@@ -34,9 +34,7 @@
 #include <os.h>
 #include <stdlib.h>
 #include <crtbase.h>
-#ifndef __TINYC__
 #include <atomic.h>
-#endif
 
 void init_stdio();
 void exit_stdio();
@@ -144,17 +142,17 @@ static int initcrt()
 
   init_stdio();
 
-#ifndef __TINYC__
   if (atomic_increment(&__instcount) == 1)
   {
+#ifndef __TINYC__
     // Execute C initializers
     rc = inittermi(__xi_a, __xi_z);
     if (rc != 0) return rc;
 
     // Execute C++ initializers
     initterm(__xc_a, __xc_z);
-  }
 #endif
+  }
 
   return 0;
 }
@@ -164,7 +162,6 @@ static void termcrt()
   struct job *job = gettib()->job;
   struct crtbase *crtbase = (struct crtbase *) job->crtbase;
 
-#ifndef __TINYC__
   if (atomic_decrement(&__instcount) == 0)
   {
     // Execute atexit handlers
@@ -175,13 +172,14 @@ static void termcrt()
       atexit_begin = atexit_end = atexit_last = NULL;
     }
 
+#ifndef __TINYC__
     // Execute C pre-terminators
     initterm(__xp_a, __xp_z);
 
     // Execute C terminators
     initterm(__xt_a, __xt_z);
-  }
 #endif
+  }
 
   // Flush stdout and stderr
   fflush(stdout);

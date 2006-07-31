@@ -202,6 +202,7 @@ src\                           Souce files
     sched.c                    POSIX scheduling library
     semaphore.c                POSIX semaphore library
     setjmp.c                   Non-local goto
+    setjmp.s                   TCC Non-local goto
     stdio.c                    Standard I/O routines
     stdlib.c                   Standard library functions
     strftime.c                 Date to string conversion

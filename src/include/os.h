@@ -708,12 +708,7 @@ struct serial_status
 #ifdef __TINYC__
 struct in_addr 
 {
-  union 
-  {
-    struct { unsigned char s_b1, s_b2, s_b3, s_b4; } s_un_b;
-    struct { unsigned short s_w1, s_w2; } s_un_w;
-    unsigned long s_addr;
-  } u;
+  unsigned long s_addr;
 };
 #else
 struct in_addr 

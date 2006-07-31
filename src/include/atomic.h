@@ -42,12 +42,67 @@
 extern "C" {
 #endif
 
-#ifdef __TINYC__
-
-#else
-
 // On uniprocessors, the 'lock' prefixes are not necessary (and expensive). 
 // Since sanos does not (yet) support SMP the 'lock' prefix is disabled for now.
+
+#ifdef __TINYC__
+
+__inline void atomic_add(int *dest, int value)
+{
+  __asm__ __volatile__ (
+    "xaddl %1, %0"
+    : "=m" (*dest)
+    : "ir" (value), "m" (*dest));
+}
+
+__inline int atomic_increment(int *dest) 
+{
+  int tmp;
+
+  __asm__ __volatile__ (
+    "xaddl %0, %1"
+    : "=r" (tmp), "=m" (*dest)
+    : "0" (1), "m" (*dest));
+
+  return tmp + 1;
+}
+
+__inline int atomic_decrement(int *dest)
+{
+  int tmp;
+
+  __asm__ __volatile__ (
+    "xaddl %0, %1"
+    : "=r" (tmp), "=m" (*dest)
+    : "0" (-1), "m" (*dest));
+
+  return tmp + 1;
+}
+
+__inline int atomic_exchange(int *dest, int value) 
+{
+  __asm__ __volatile__ (
+    "xchgl %0, %1"
+    : "=r" (value)
+    : "m" (*dest), "0" (value)
+    : "memory");
+
+  return value;
+}
+
+__inline int atomic_compare_and_exchange(int *dest, int exchange, int comperand) 
+{
+  int old;
+
+  __asm__ __volatile__ (
+    "cmpxchgl %2, %0"
+    : "=m" (*dest), "=a" (old)
+    : "r" (exchange), "m" (*dest), "a" (comperand));	
+  
+  return old;
+}
+
+#else
 
 #pragma warning(disable: 4035) // Disables warnings reporting missing return statement
 
