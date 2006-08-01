@@ -80,6 +80,7 @@ long labs(long n);
 ldiv_t ldiv(long numer, long denom);
 char *ltoa(long val, char *buf, int radix);
 osapi void *malloc(size_t size);
+osapi int malloc_usable_size(void *p);
 void qsort(void *base, unsigned num, unsigned width, int (*comp)(const void *, const void *));
 int rand();
 osapi void *realloc(void *mem, size_t size);

@@ -202,6 +202,12 @@ struct mallinfo mallinfo()
   return m;
 }
 
+int malloc_usable_size(void *p)
+{
+  return heap_malloc_usable_size(p);
+}
+
+
 int canonicalize(const char *filename, char *buffer, int size)
 {
   char *p;

@@ -1464,6 +1464,7 @@ osapi void *realloc(void *mem, size_t size);
 osapi void *calloc(size_t num, size_t size);
 osapi void free(void *p);
 osapi struct mallinfo mallinfo();
+osapi int malloc_usable_size(void *p);
 
 osapi hmodule_t dlopen(const char *name, int mode);
 osapi int dlclose(hmodule_t hmod);

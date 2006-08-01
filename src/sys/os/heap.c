@@ -1543,3 +1543,22 @@ struct mallinfo heap_mallinfo()
 
   return mi;
 }
+
+//
+// heap_malloc_usable_size
+//
+
+int heap_malloc_usable_size(void *mem)
+{
+  mchunkptr p;
+
+  if (mem) 
+  {
+    p = mem2chunk(mem);
+    if (chunk_is_mmapped(p))
+      return chunksize(p) - 2 * sizeof(size_t);
+    else if (inuse(p))
+      return chunksize(p) - sizeof(size_t);
+  }
+  return 0;
+}

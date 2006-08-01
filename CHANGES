@@ -3,7 +3,13 @@ CHANGE LOG FOR SANOS
 
 Changes since last release
 --------------------------
-    
+
+    * Added malloc_usable_size() function to memory allocator. This returns the usable
+      size of an allocation.
+          
+    * Bug in ftpd fixed that could cause a connection to loop with the last command
+      when connection was broken (TTA).
+      
     * The C runtime library can now be used with the Tiny C compiler.
     
     * Fixed various bugs in UDP socket module (DSA):
