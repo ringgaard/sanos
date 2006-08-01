@@ -13,8 +13,8 @@ OFS_EIP=20
 
 .text
 
-.globl	_setjmp
-_setjmp:
+.globl	setjmp
+setjmp:
     movl  4(%esp),%edx         /* Get jmp_buf pointer */
     movl  (%esp),%eax          /* Save EIP */
     movl  %eax, OFS_EIP(%edx)
@@ -26,8 +26,8 @@ _setjmp:
     xorl  %eax, %eax           /* Return 0 */
     ret
 
-.globl	_longjmp
-_longjmp:
+.globl	longjmp
+longjmp:
     movl  4(%esp), %edx          /* Get jmp_buf pointer */
     movl  8(%esp), %eax          /* Get return value (eax) */
 

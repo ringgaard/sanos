@@ -1025,9 +1025,9 @@ int docmd(struct ftpstate *fs)
   int cmdsize;
   int n = 0;
 
-  if (fgets(fs->cmd, sizeof(fs->cmd), fs->in) < 0) 
+  if (!fgets(fs->cmd, sizeof(fs->cmd), fs->in)) 
   {
-    addreply(fs, 421, "Timeout (%d seconds).", fs->idletime / 1000);
+    if (errno == ETIMEOUT) addreply(fs, 421, "Timeout (%d seconds).", fs->idletime / 1000);
     return -1;
   }
   cmd = fs->cmd;
