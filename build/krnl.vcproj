@@ -213,9 +213,6 @@
 				RelativePath="..\src\sys\krnl\sched.c">
 			</File>
 			<File
-				RelativePath="..\src\sys\krnl\smbios.c">
-			</File>
-			<File
 				RelativePath="..\src\sys\krnl\start.c">
 			</File>
 			<File
@@ -395,6 +392,9 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\dev\serial.c">
+			</File>
+			<File
+				RelativePath="..\src\sys\dev\smbios.c">
 			</File>
 			<File
 				RelativePath="..\src\sys\dev\video.c">
