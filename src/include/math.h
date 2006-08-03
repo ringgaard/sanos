@@ -39,6 +39,8 @@
 #define MATH_H
 
 #define HUGE_VAL _infinity
+#define INFINITY _infinity
+#define NAN _nan
 
 #define M_E        2.71828182845904523536     // e
 #define M_LOG2E    1.44269504088896340736     // log2(e)
@@ -59,6 +61,7 @@ extern "C" {
 #endif
 
 extern const double _infinity;
+extern const double _nan;
 
 double acos(double x);
 double asin(double x);
@@ -84,6 +87,10 @@ double tan(double x);
 double tanh(double x);
 
 double atof(const char *str);
+
+int isinf(double x); 
+int isnan(double x);
+int isfinite(double x);
 
 #ifdef  __cplusplus
 }

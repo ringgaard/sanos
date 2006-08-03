@@ -192,7 +192,7 @@ static int pnp_bios_dev_node_info(struct pnp_dev_node_info *data)
 }
 
 // 
-// Call PnP BIOS with function 0x01, "get system device node"
+// Call PnP BIOS with function 0x01, "Get system device node"
 //
 // Input:
 //  *nodenum = desired node, 
@@ -214,7 +214,7 @@ static int pnp_bios_get_dev_node(unsigned char *nodenum, char boot, struct pnp_b
 }
 
 //
-// Call PnP BIOS with function 0x40, "get isa pnp configuration structure"
+// Call PnP BIOS with function 0x40, "Get isa pnp configuration structure"
 //
 
 static int pnp_bios_isapnp_config(struct pnp_isa_config_struc *data)
@@ -228,7 +228,7 @@ static int pnp_bios_isapnp_config(struct pnp_isa_config_struc *data)
 }
 
 //
-// Call PnP BIOS with function 0x41, "get ESCD info"
+// Call PnP BIOS with function 0x41, "Get ESCD info"
 //
 
 static int pnp_bios_escd_info(struct escd_info_struc *data)

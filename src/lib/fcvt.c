@@ -132,3 +132,22 @@ char *fcvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf)
 {
   return cvt(arg, ndigits, decpt, sign, buf, 0);
 }
+
+int isinf(double x) 
+{
+  unsigned __int64 *val = (unsigned __int64 *) &x;
+
+  return *val == 0x7ff0000000000000 ? 1 : *val == 0xfff0000000000000 ? -1 : 0;
+}
+
+int isnan(double x)
+{
+  return x != x;
+}
+
+int isfinite(double x)
+{
+  unsigned short *val = (unsigned short *) &x;
+
+  return (val[3] & 0x7ff0) != 0x7ff0;
+}

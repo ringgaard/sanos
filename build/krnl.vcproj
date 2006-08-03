@@ -213,6 +213,9 @@
 				RelativePath="..\src\sys\krnl\sched.c">
 			</File>
 			<File
+				RelativePath="..\src\sys\krnl\smbios.c">
+			</File>
+			<File
 				RelativePath="..\src\sys\krnl\start.c">
 			</File>
 			<File

@@ -37,6 +37,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <limits.h>
+#include <math.h>
 
 #define MAXBUFFER 512
 
@@ -198,6 +199,7 @@ int output(FILE *stream, const char *format, va_list args)
   int ch;
   int cnt;
   int radix, hexadd, padding;
+  double fltval;
   char buffer[MAXBUFFER];
   char *fmt = (char *) format;
 
@@ -498,20 +500,34 @@ int output(FILE *stream, const char *format, va_list args)
         flags |= FL_SIGNED; // Floating point is signed conversion
         text = buffer;      // Put result in buffer
 
-        // Compute the precision value
-        if (precision < 0)
-          precision = 6; // Default precision: 6
-        else if (precision == 0 && ch == 'g')
-          precision = 1; // ANSI specified
+	// Get floating point value
+	fltval = va_arg(args, double);
 
-	// Convert floating point number to text
-        cfltcvt(va_arg(args, double), text, ch, precision, capexp);
+	if (isfinite(fltval))
+	{
+	  // Compute the precision value
+	  if (precision < 0)
+	    precision = 6; // Default precision: 6
+	  else if (precision == 0 && ch == 'g')
+	    precision = 1; // ANSI specified
 
-        // '#' and precision == 0 means force a decimal point
-        if ((flags & FL_ALTERNATE) && precision == 0) forcdecpt(text);
+	  // Convert floating point number to text
+	  cfltcvt(fltval, text, ch, precision, capexp);
 
-        // 'g' format means crop zero unless '#' given
-        if (ch == 'g' && !(flags & FL_ALTERNATE)) cropzeros(text);
+	  // '#' and precision == 0 means force a decimal point
+	  if ((flags & FL_ALTERNATE) && precision == 0) forcdecpt(text);
+
+	  // 'g' format means crop zero unless '#' given
+	  if (ch == 'g' && !(flags & FL_ALTERNATE)) cropzeros(text);
+	}
+	else if (isnan(fltval))
+          strcpy(buffer, "NaN");
+        else if (fltval == HUGE_VAL)
+          strcpy(buffer, "+INF");
+        else if (fltval == -HUGE_VAL)
+          strcpy(buffer, "-INF");
+	else
+	  strcpy(buffer, "?FLT?");
 
         // Check if result was negative, save '-' for later and point to positive part (this is for '0' padding)
         if (*text == '-')

@@ -225,6 +225,7 @@ $(LIBS)/krnl.lib $(BIN)/krnl.dll: \
   $(SRC)\sys\dev\serial.c \
   $(SRC)\sys\dev\rnd.c \
   $(SRC)\sys\dev\ramdisk.c \
+  $(SRC)\sys\dev\smbios.c \
   $(SRC)\sys\dev\nvram.c \
   $(SRC)\sys\dev\null.c \
   $(SRC)\sys\dev\klog.c \

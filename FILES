@@ -280,6 +280,7 @@ src\                           Souce files
       serial.c                 RS-232 serial driver
       sis900.c                 SiS 900/7016 PCI Fast Ethernet driver
       sis900.h                 SiS 900/7016 PCI Fast Ethernet driver definitions
+      smbios.c                 System Management BIOS (SMBIOS) driver
       tulip.c                  Digital "Tulip" Ethernet network driver for DEC 21*4*-based chips/ethercards
       video.c                  6845 Video Controller
     fs\                        File system source files
