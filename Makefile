@@ -885,6 +885,15 @@ $(IMG)/sanos.flp: dirs sanos $(MKDFS) $(BUILD)/bootdisk.lst
     $(MKDFS) -d $(IMG)/sanos.flp -b $(BIN)\boot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 1440 -i -f -S $(TOPDIR) -F $(BUILD)\bootdisk.lst
 
 #
+# boothd
+#
+
+boothd: $(IMG)/sanos.vmdk
+
+$(IMG)/sanos.vmdk: dirs sanos $(MKDFS) $(BUILD)/bootdisk.lst
+    $(MKDFS) -d $(IMG)/sanos.vmdk -t vmdk -b $(BIN)\boot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 100M -i -f -S $(TOPDIR) -F $(BUILD)\bootdisk.lst
+
+#
 # netbootimg
 #
 
