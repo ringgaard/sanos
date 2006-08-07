@@ -26,6 +26,7 @@
 /bin/rtl8139.sys  [!output SANOS_SDKPATH]\bin\rtl8139.sys [!output SANOS_SDKPATH]\dbg\bin\rtl8139.sys
 /bin/eepro100.sys [!output SANOS_SDKPATH]\bin\eepro100.sys [!output SANOS_SDKPATH]\dbg\bin\eepro100.sys
 /bin/sis900.sys   [!output SANOS_SDKPATH]\bin\sis900.sys [!output SANOS_SDKPATH]\dbg\bin\sis900.sys
+/bin/tulip.sys    [!output SANOS_SDKPATH]\bin\tulip.sys [!output SANOS_SDKPATH]\dbg\bin\tulip.sys
 [!endif]
 
 ; Configuration files
