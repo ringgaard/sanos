@@ -4,6 +4,7 @@
 #include <time.h>
 
 #include "getopt.h"
+#include "blockdev.h"
 
 #include "types.h"
 #include "bitops.h"
@@ -34,11 +35,11 @@ char *bootfile = NULL;
 char *ldrfile = NULL;
 char *krnlfile = NULL;
 char *filelist = NULL;
-int devsize = 1440 * 2;
-int devcap = 1440 * 2;
+char *devtype = "raw";
+int devsize = 1440 * 2; // in sectors
+int devcap = 1440 * 2; // in sectors
 int blocksize = 4096;
 int inoderatio = 4096;
-int doshell = 0;
 int doinit = 0;
 int dowipe = 0;
 int doformat = 0;
@@ -52,11 +53,6 @@ int ldrsize;
 char *krnlopts = "";
 int altfile = 0;
 
-int get_tick_count()
-{
-  return (int) GetTickCount();
-}
-
 void panic(char *reason)
 {
   printf("panic: %s\n", reason);
@@ -65,23 +61,15 @@ void panic(char *reason)
 
 int dev_read(devno_t devno, void *buffer, size_t count, blkno_t blkno)
 {
-  DWORD bytes;
-
-  //printf("read block %d, %d bytes\n", blkno, count);
-
-  if (SetFilePointer((HANDLE) devno, (blkno + part_offset) * SECTORSIZE, NULL, FILE_BEGIN) == -1) panic("unable to set file pointer");
-  if (!ReadFile((HANDLE) devno, buffer, count, &bytes, NULL)) panic("error reading from device");
+  struct blockdevice *blkdev = (struct blockdevice *) devno;
+  if (bdrv_read(blkdev, blkno + part_offset, buffer, count / SECTORSIZE) < 0) panic("error reading from device"); 
   return count;
 }
 
 int dev_write(devno_t devno, void *buffer, size_t count, blkno_t blkno)
 {
-  DWORD bytes;
-
-  //printf("write block %d, %d bytes\n", blkno, count);
-
-  if (SetFilePointer((HANDLE) devno, (blkno + part_offset) * SECTORSIZE, NULL, FILE_BEGIN) == -1) panic("unable to set file pointer");
-  if (!WriteFile((HANDLE) devno, buffer, count, &bytes, NULL)) panic("error writing to device");
+  struct blockdevice *blkdev = (struct blockdevice *) devno;
+  if (bdrv_write(blkdev, blkno + part_offset, buffer, count / SECTORSIZE) < 0) panic("error reading from device"); 
   return count;
 }
 
@@ -89,7 +77,6 @@ unsigned int dev_getsize(devno_t devno)
 {
   unsigned int size;
 
-  //size = GetFileSize((HANDLE) devno, NULL) / SECTORSIZE;
   size = devsize;
   printf("device size is %d sectors (%dMB)\n", size, size / 2048);
   return size;
@@ -97,33 +84,18 @@ unsigned int dev_getsize(devno_t devno)
 
 void create_device(char *devname, int devsize)
 {
-  DWORD bytes;
-  HANDLE hdev;
-  char sector[SECTORSIZE];
-  int i;
-
-  hdev = CreateFile(devname, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
-  if (hdev == INVALID_HANDLE_VALUE) panic("unable to create device file");
-
-  memset(sector, 0, SECTORSIZE);
-  for (i = 0; i < devsize; i++)
-  {
-    if (!WriteFile(hdev, sector, SECTORSIZE, &bytes, NULL)) panic("error writing to device");
-  }
-
-  CloseHandle(hdev);
+  if (bdrv_create(devtype, devname, devsize, 0) < 0) panic("unable to create device file");
 }
 
-void clear_device(HANDLE hdev, int devsize)
+void clear_device(struct blockdevice *bs, int devsize)
 {
-  DWORD bytes;
   char sector[SECTORSIZE];
   int i;
 
   memset(sector, 0, SECTORSIZE);
   for (i = 0; i < devsize; i++)
   {
-    if (!WriteFile(hdev, sector, SECTORSIZE, &bytes, NULL)) panic("error writing to device");
+    if (bdrv_write(bs, i, sector, 1) < 0) panic("error writing to device");
   }
 }
 
@@ -140,13 +112,12 @@ void read_boot_sector(char *name)
   CloseHandle(hfile);
 }
 
-void read_mbr(HANDLE hdev)
+void read_mbr(struct blockdevice *bs)
 {
   struct master_boot_record mbr;
-  DWORD bytes;
 
-  if (SetFilePointer(hdev, 0, NULL, FILE_BEGIN) == -1) panic("unable to set file pointer");
-  if (!ReadFile(hdev, &mbr, sizeof mbr, &bytes, NULL)) panic("error reading mbr from device");
+  if (bdrv_read(bs, 0, (unsigned char *) &mbr, 1) < 0) panic("error reading mbr from device");
+
   if (mbr.signature != MBR_SIGNATURE) panic("invalid master boot record");
 
   part_start = part_offset = mbr.parttab[part].relsect;
@@ -420,258 +391,24 @@ void list_file(char *filename)
   close(file);
 }
 
-void copy_file(char *srcfn, char *dstfn)
-{
-  size_t count;
-  char buf[4096];
-  struct file *f1;
-  struct file *f2;
-
-  f1 = open(srcfn, 0, 0);
-  if (!f1)
-  {
-    printf("%s: file not found\n", srcfn);
-    return;
-  }
-
-  f2 = open(dstfn, O_CREAT, 0);
-  if (!f2)
-  {
-    close(f1);
-    printf("%s: unable to create file\n", dstfn);
-    return;
-  }
-
-  while ((count = read(f1, buf, 4096)) > 0)
-  {
-    write(f2, buf, count);
-  }
-
-  close(f1);
-  close(f2);
-}
-
-void list_dir(char *dirname)
-{
-  struct file *dir;
-  struct dirent dirp;
-  struct stat buf;
-  struct tm *tm;
-  char path[MAXPATH];
-
-  dir = opendir(dirname);
-  if (!dir)
-  {
-    printf("%s: directory not found\n", dirname);
-    return;
-  }
-
-  while (readdir(dir, &dirp, 1) > 0)
-  {
-    strcpy(path, dirname);
-    strcat(path, "/");
-    strcat(path, dirp.name);
-
-    stat(path, &buf);
-    tm = gmtime(&buf.ctime);
-
-    printf("%8d %8d %02d/%02d/%04d %02d:%02d:%02d ", buf.ino, buf.quad.size_low, tm->tm_mday, tm->tm_mon, tm->tm_year + 1900, tm->tm_hour, tm->tm_min, tm->tm_sec);
-    if (buf.mode & FS_DIRECTORY) 
-      printf("[%s]", dirp.name);
-    else
-      printf("%s", dirp.name);
-
-    printf("\n");
-  }
-
-  close(dir);
-}
-
-void remove_file(char *filename)
-{
-  if (xunlink(filename) < 0)
-  {
-    printf("%s: file not found\n", filename);
-    return;
-  }
-}
-
-void make_dir(char *filename)
-{
-  if (mkdir(filename, 0755) < 0)
-  {
-    printf("%s: cannot make directory\n", filename);
-    return;
-  }
-}
-
-void remove_dir(char *filename)
-{
-  if (rmdir(filename) < 0)
-  {
-    printf("%s: cannot delete directory\n", filename);
-    return;
-  }
-}
-
-void disk_usage(char *filename)
-{
-  struct fs *fs;
-  struct filsys *filsys;
-
-  fs = fslookup(filename, NULL);
-  if (!fs)
-  {
-    printf("%s: unknown file system\n", filename);
-  }
-
-  filsys = (struct filsys *) fs->data;
-  printf("block size %d\n", filsys->blocksize);
-  printf("blocks %d\n", filsys->super->block_count);
-  printf("inodes %d\n", filsys->super->inode_count);
-  printf("free blocks %d\n", filsys->super->free_block_count);
-  printf("free inodes %d\n", filsys->super->free_inode_count);
-
-  printf("%dKB used, %dKB free, %dKB total\n", 
-    filsys->blocksize * (filsys->super->block_count - filsys->super->free_block_count) / 1024, 
-    filsys->blocksize * filsys->super->free_block_count / 1024, 
-    filsys->blocksize * filsys->super->block_count / 1024);
-}
-
-static void test_read_file(char *filename)
-{
-  int count;
-  struct file *file;
-  char *data;
-  int start;
-  int time;
-  int bytes;
-
-  file = open(filename, 0, 0);
-  if (!file)
-  {
-    printf("%s: file not found\n", filename);
-    return;
-  }
-
-  data = malloc(64 * K);
-
-  bytes = 0;
-  start = get_tick_count();
-  while ((count = read(file, data, 64 * K)) > 0)
-  {
-    bytes += count;
-  }
-  time = (get_tick_count() - start) * 10;
-  printf("%s: read %dKB in %d ms, %dKB/s\n", filename, bytes / K, time, bytes / time);
-  
-  free(data);
-
-  if (count < 0) printf("%s: error reading file\n", filename);
-
-  close(file);
-}
-
-static void test_write_file(char *filename, int size)
-{
-  int count;
-  struct file *file;
-  char *data;
-  int start;
-  int time;
-  int bytes;
-
-  file = open(filename, O_CREAT, 0644);
-  if (!file)
-  {
-    printf("%s: error creating file\n", filename);
-    return;
-  }
-
-  data = malloc(64 * K);
-
-  bytes = 0;
-  start = get_tick_count();
-  while (bytes < size)
-  {
-    if ((count = write(file, data, 64 * K)) <= 0)
-    {
-      printf("%s: error writing file\n", filename);
-      break;
-    }
-
-    bytes += count;
-  }
-  time = (get_tick_count() - start) * 10;
-  printf("%s: wrote %dKB in %d ms, %dKB/s\n", filename, bytes / K, time, bytes / time);
-  
-  free(data);
-
-  close(file);
-}
-
-void shell()
-{
-  char cmd[256];
-  char *arg;
-  char *arg2;
-
-  while (1)
-  {
-    printf("> ");
-    gets(cmd);
-
-    arg = cmd;
-    while (*arg && *arg != ' ') arg++;
-    while (*arg == ' ') *arg++ = 0;
-
-    arg2 = arg;
-    while (*arg2 && *arg2 != ' ') arg2++;
-    while (*arg2 == ' ') *arg2++ = 0;
-
-    if (strcmp(cmd, "exit") == 0) 
-      break;
-    else if (strcmp(cmd, "ls") == 0)
-      list_dir(arg);
-    else if (strcmp(cmd, "cat") == 0)
-      list_file(arg);
-    else if (strcmp(cmd, "cp") == 0)
-      copy_file(arg, arg2);
-    else if (strcmp(cmd, "rm") == 0)
-      remove_file(arg);
-    else if (strcmp(cmd, "mkdir") == 0)
-      make_dir(arg);
-    else if (strcmp(cmd, "rmdir") == 0)
-      remove_dir(arg);
-    else if (strcmp(cmd, "du") == 0)
-      disk_usage(arg);
-    else if (strcmp(cmd, "read") == 0)
-      test_read_file(arg);
-    else if (strcmp(cmd, "write") == 0)
-      test_write_file(arg, atoi(arg2) * K);
-    else if (*cmd)
-      printf("%s: unknown command\n", cmd);
-  }
-}
-
 void usage()
 {
   fprintf(stderr, "usage: mkdfs [options]\n\n");
   fprintf(stderr, "  -a (use alternative filenames from file list)\n");
   fprintf(stderr, "  -d <devname>\n");
   fprintf(stderr, "  -b <bootfile>\n");
-  fprintf(stderr, "  -c <device capacity> (capacity in kilobytes)\n");
-  fprintf(stderr, "  -i (initialize device)\n");
-  fprintf(stderr, "  -f (format device)\n");
+  fprintf(stderr, "  -c <filesystem capacity> (capacity in kilobytes)\n");
+  fprintf(stderr, "  -i (create new device)\n");
+  fprintf(stderr, "  -f (format filesystem)\n");
   fprintf(stderr, "  -k <kernel image>\n");
   fprintf(stderr, "  -l <loader image>\n");
-  fprintf(stderr, "  -s (shell)\n");
+  fprintf(stderr, "  -t <device type> (raw or vmdk)\n");
   fprintf(stderr, "  -w (wipe out device, i.e. zero all sectors first)\n");
   fprintf(stderr, "  -p <partition>\n");
   fprintf(stderr, "  -P <partition start sector>\n");
-  fprintf(stderr, "  -q (quick format device)\n");
+  fprintf(stderr, "  -q (quick format)\n");
   fprintf(stderr, "  -B <block size> (default 4096)\n");
-  fprintf(stderr, "  -C <capacity> (capacity in kilobytes used for creating new device file)\n");
+  fprintf(stderr, "  -C <device capacity> (capacity in kilobytes)\n");
   fprintf(stderr, "  -F <file list file>\n");
   fprintf(stderr, "  -I <inode ratio> (default 1 inode per 4K)\n");
   fprintf(stderr, "  -K <kernel options>\n");
@@ -679,13 +416,31 @@ void usage()
   fprintf(stderr, "  -T <target directory or file>\n");
 }
 
+int str2sectors(char *str)
+{
+  int size = 0;
+
+  while (*str >= '0' && *str <= '9') size = size * 10 + (*str++ - '0');
+  
+  if (*str == 'K' || *str == 'k')
+    size *= K / SECTORSIZE;
+  else if (*str == 'M' || *str == 'm')
+    size *= K * K / SECTORSIZE;
+  else if (*str == 'G' || *str == 'g')
+    size *= K * K * K / SECTORSIZE;
+  else
+    size *= K / SECTORSIZE;
+
+  return size;
+}
+
 int main(int argc, char **argv)
 {
-  HANDLE hdev;
+  struct blockdevice blkdev;
   int c;
 
   // Parse command line options
-  while ((c = getopt(argc, argv, "ad:b:c:ifk:l:swp:qB:C:F:I:K:P:S:T:?")) != EOF)
+  while ((c = getopt(argc, argv, "ad:b:c:ifk:l:t:wp:qB:C:F:I:K:P:S:T:?")) != EOF)
   {
     switch (c)
     {
@@ -702,7 +457,7 @@ int main(int argc, char **argv)
 	break;
 
       case 'c':
-	devsize = devcap = atoi(optarg) * 2;
+	devsize = devcap = str2sectors(optarg);
 	break;
 
       case 'p':
@@ -725,10 +480,6 @@ int main(int argc, char **argv)
 	ldrfile = optarg;
 	break;
 
-      case 's':
-	doshell = !doshell;
-	break;
-
       case 'w':
 	dowipe = !dowipe;
 	break;
@@ -737,12 +488,16 @@ int main(int argc, char **argv)
 	quick = !quick;
 	break;
 
+      case 't':
+	devtype = optarg;
+	break;
+
       case 'B':
 	blocksize = atoi(optarg);
 	break;
 
       case 'C':
-	devcap = atoi(optarg) * 2;
+	devcap = str2sectors(optarg);
 	break;
 
       case 'F':
@@ -782,29 +537,24 @@ int main(int argc, char **argv)
   // Create device file
   if (doinit) 
   {
-    printf("Creating device file %s %dKB\n", devname, devcap / 2);
+    printf("Creating %s device file %s %dKB\n", devtype, devname, devcap / 2);
     create_device(devname, devcap);
   }
 
   // Open device file
-  hdev = CreateFile(devname, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_WRITE_THROUGH | FILE_FLAG_NO_BUFFERING, NULL);
-  if (hdev == INVALID_HANDLE_VALUE) 
-  {
-    printf("Error %d opening device %s\n", GetLastError(), devname);
-    panic("unable to open device");
-  }
+  if (bdrv_open(&blkdev, devname, NULL) < 0) panic("unable to open device");
 
   // Read master boot record
   if (part != -1)
   {
-    read_mbr(hdev);
+    read_mbr(&blkdev);
   }
 
   // Clear device
   if (dowipe) 
   {
     printf("Clearing device %s\n", devname);
-    clear_device(hdev, devsize);
+    clear_device(&blkdev, devsize);
   }
 
   // Create filesystem
@@ -814,12 +564,12 @@ int main(int argc, char **argv)
 
     sprintf(options, "blocksize=%d,inoderatio=%d%s", blocksize, inoderatio, quick ? ",quick" : "");
     printf("Formating device (%s)...\n", options);
-    if (format((devno_t) hdev, "dfs", options) < 0) panic("error formatting device");
+    if (format((devno_t) &blkdev, "dfs", options) < 0) panic("error formatting device");
   }
 
   // Initialize the file system
   printf("Mounting device\n");
-  if (mount("dfs", "/", (devno_t) hdev, NULL) < 0) panic("error mounting device");
+  if (mount("dfs", "/", (devno_t) &blkdev, NULL) < 0) panic("error mounting device");
 
   // Install os loader
   if (ldrfile) 
@@ -844,7 +594,7 @@ int main(int argc, char **argv)
     read_boot_sector(bootfile);
     bsect->ldrstart += part_start;
     bsect->ldrsize = ldrsize;
-    dev_write((devno_t) hdev, bootsect, SECTORSIZE, 0);
+    dev_write((devno_t) &blkdev, bootsect, SECTORSIZE, 0);
   }
 
   // Copy files to device
@@ -878,20 +628,13 @@ int main(int argc, char **argv)
       transfer_file(target, source);
   }
 
-  // Execute shell
-  if (doshell)
-  {
-    printf("Executing shell\n");
-    shell();
-  }
-
   // Close file system
   printf("Unmounting device\n");
   unmount_all();
 
   // Close device file
   printf("Closing device\n");
-  CloseHandle(hdev);
+  bdrv_close(&blkdev);
 
   return 0;
 }

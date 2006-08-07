@@ -3,7 +3,12 @@ CHANGE LOG FOR SANOS
 
 Changes since last release
 --------------------------
-    
+
+    * Support for VMDK virtual disk image format used by VMware and Qemu. The mkdfs tool can 
+      now generate vmdk images directly using the -t option. This enables creation of disk
+      images for PC emulators in the build process. By using 'nmake boothd' a bootable harddisk
+      image can be built.
+      
     * Implemented isinf(), isnan(), and isfinite(). The printf() now handles
       denormal (INF and NaN) float values correctly.
       

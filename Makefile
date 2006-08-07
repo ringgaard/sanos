@@ -49,7 +49,7 @@ CFLAGS=/nologo /O2 /Og /Ob1 /Oi /Ot /Oy /X /GF /Gy /W3 /I $(SRC)/include $(DEFS)
 # /I $(SRC)/include     Include search path
 #
 
-all: dirs tools sanos bootdisk netbootimg bootcd
+all: dirs tools sanos bootdisk boothd netbootimg bootcd
 
 !INCLUDE $(BUILD)/sanos.dep
 
@@ -135,6 +135,8 @@ $(DBGGW): $(TOOLSRC)/dbggw/dbggw.c $(TOOLSRC)/dbggw/rdp.c
     $(CC) $(WIN32CFLAGS) /I$(SRC)/include/os /Fe$@ /Fo$(TOOLSRC)/dbggw/release/ $** /link wsock32.lib
 
 $(MKDFS): \
+  $(TOOLSRC)/dfs/blockdev.c \
+  $(TOOLSRC)/dfs/vmdk.c \
   $(TOOLSRC)/dfs/bitops.c \
   $(TOOLSRC)/dfs/buf.c \
   $(TOOLSRC)/dfs/dfs.c \

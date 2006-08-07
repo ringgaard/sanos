@@ -877,3 +877,9 @@ $(TOOLSRC)/dfs/super.c: \
 $(TOOLSRC)/dfs/vfs.c: \
   $(TOOLSRC)/dfs/types.h \
   $(TOOLSRC)/dfs/vfs.h
+
+$(TOOLSRC)/dfs/blockdev.c: \
+  $(TOOLSRC)/dfs/blockdev.h
+
+$(TOOLSRC)/dfs/vmdk.c: \
+  $(TOOLSRC)/dfs/blockdev.h

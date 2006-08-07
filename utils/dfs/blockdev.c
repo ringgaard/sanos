@@ -1,0 +1,222 @@
+#include <windows.h>
+#include <string.h>
+#include <stdlib.h>
+
+#include "blockdev.h"
+
+extern struct blockdriver bdrv_vmdk;
+
+//
+// RAW block device driver
+//
+
+struct rawdev
+{
+  HANDLE hdev;
+};
+
+static int raw_probe(const uint8_t *buf, int buf_size, const char *filename)
+{
+  return 1; // maybe
+}
+
+static int raw_open(struct blockdevice *bs, const char *filename)
+{
+  struct rawdev *s = bs->opaque;
+  HANDLE hdev;
+  int64_t size;
+
+  hdev = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  if (hdev == INVALID_HANDLE_VALUE) return -1;
+
+  if (!GetFileSizeEx(hdev, (LARGE_INTEGER *) &size))
+  {
+    CloseHandle(hdev);
+    return -1;
+  }
+
+  bs->total_sectors = size / 512;
+  s->hdev = hdev;
+
+  return 0;
+}
+
+static int raw_read(struct blockdevice *bs, int64_t sector_num,  uint8_t *buf, int nb_sectors)
+{
+  struct rawdev *s = bs->opaque;
+  DWORD bytes;
+  int64_t pos = sector_num * 512;
+  if (SetFilePointerEx(s->hdev, *(LARGE_INTEGER*) &pos, NULL, FILE_BEGIN) == -1) return -1;
+  if (!ReadFile(s->hdev, buf, nb_sectors * 512, &bytes, NULL)) return -1;
+  if (bytes != nb_sectors * 512) return -1;
+  return 0;
+}
+
+static int raw_write(struct blockdevice *bs, int64_t sector_num,  const uint8_t *buf, int nb_sectors)
+{
+  struct rawdev *s = bs->opaque;
+  DWORD bytes;
+  int64_t pos = sector_num * 512;
+  if (SetFilePointerEx(s->hdev, *(LARGE_INTEGER*) &pos, NULL, FILE_BEGIN) == -1) return -1;
+  if (!WriteFile(s->hdev, buf, nb_sectors * 512, &bytes, NULL)) return -1;
+  if (bytes != nb_sectors * 512) return -1;
+  return 0;
+}
+
+static void raw_close(struct blockdevice *bs)
+{
+  struct rawdev *s = bs->opaque;
+  CloseHandle(s->hdev);
+}
+
+static int raw_create(const char *filename, int64_t total_size, int flags)
+{
+  HANDLE hdev;
+  int64_t size;
+
+  if (flags) return -1;
+
+  hdev = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+  if (hdev == INVALID_HANDLE_VALUE) return -1;
+
+  size = total_size * 512;
+  SetFilePointerEx(hdev, *(LARGE_INTEGER*) &size, NULL, FILE_BEGIN);
+  SetEndOfFile(hdev);
+  CloseHandle(hdev);
+
+  return 0;
+}
+
+struct blockdriver bdrv_raw = 
+{
+  "raw",
+  sizeof(struct rawdev),
+  raw_probe,
+  raw_open,
+  raw_read,
+  raw_write,
+  raw_close,
+  raw_create,
+};
+
+//
+// Block device functions
+//
+
+struct blockdriver *drivers[] = {&bdrv_raw, &bdrv_vmdk, NULL};
+
+static struct blockdriver *find_image_format(const char *filename)
+{
+  int ret, score, score_max;
+  struct blockdriver *drv1, *drv;
+  uint8_t *buf;
+  size_t bufsize = 1024;
+  HANDLE hdev;
+  DWORD bytes;
+  int i;
+
+  hdev = CreateFile(filename, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+  if (hdev == INVALID_HANDLE_VALUE)
+  {
+    buf = NULL;
+    ret = 0;
+  } 
+  else 
+  {
+    buf = malloc(bufsize);
+    if (!buf) return NULL;
+    if (!ReadFile(hdev, buf, bufsize, &bytes, NULL))
+    {
+      CloseHandle(hdev);
+      free(buf);
+      return NULL;
+    }
+    CloseHandle(hdev);
+  }
+  
+  drv = NULL;
+  score_max = 0;
+  for (i = 0; drivers[i]; i++)
+  {
+    drv1 = drivers[i];
+    score = drv1->bdrv_probe(buf, ret, filename);
+    if (score > score_max) 
+    {
+      score_max = score;
+      drv = drv1;
+    }
+    drv1++;
+  }
+
+  free(buf);
+  return drv;
+}
+
+static struct blockdriver *get_driver(char *type)
+{
+  int i;
+
+  for (i = 0; drivers[i]; i++)
+  {
+    if (strcmp(drivers[i]->format_name, type) == 0) return drivers[i];
+  }
+  return NULL;
+}
+
+int bdrv_create(char *type, const char *filename, int64_t size_in_sectors, int flags)
+{
+  struct blockdriver *drv;
+
+  drv = get_driver(type);
+  if (!drv) return -1;
+
+  if (!drv->bdrv_create) return -1;
+  return drv->bdrv_create(filename, size_in_sectors, flags);
+}
+
+int bdrv_open(struct blockdevice *bs, const char *filename, struct blockdriver *drv)
+{
+  int ret;
+  
+  strncpy(bs->filename, filename, sizeof(bs->filename));
+  if (!drv) 
+  {
+    drv = find_image_format(filename);
+    if (!drv) return -1;
+  }
+
+  bs->drv = drv;
+  bs->opaque = malloc(drv->instance_size);
+  if (drv->instance_size > 0)
+  {
+    if (bs->opaque == NULL) return -1;
+    memset(bs->opaque, 0, drv->instance_size);
+  }
+    
+  ret = drv->bdrv_open(bs, filename);
+  if (ret < 0) 
+  {
+    if (bs->opaque) free(bs->opaque);
+    return -1;
+  }
+
+  return 0;
+}
+
+void bdrv_close(struct blockdevice *bs)
+{
+  bs->drv->bdrv_close(bs);
+  free(bs->opaque);
+  bs->opaque = NULL;
+  bs->drv = NULL;
+}
+
+int bdrv_read(struct blockdevice *bs, int64_t sector_num, uint8_t *buf, int nb_sectors)
+{
+  return bs->drv->bdrv_read(bs, sector_num, buf, nb_sectors);
+}
+
+int bdrv_write(struct blockdevice *bs, int64_t sector_num, uint8_t *buf, int nb_sectors)
+{
+  return bs->drv->bdrv_write(bs, sector_num, buf, nb_sectors);
+}

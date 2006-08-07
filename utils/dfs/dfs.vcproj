@@ -124,6 +124,12 @@
 			RelativePath=".\bitops.h">
 		</File>
 		<File
+			RelativePath="blockdev.c">
+		</File>
+		<File
+			RelativePath="blockdev.h">
+		</File>
+		<File
 			RelativePath=".\buf.c">
 		</File>
 		<File
@@ -182,6 +188,9 @@
 		</File>
 		<File
 			RelativePath=".\vfs.h">
+		</File>
+		<File
+			RelativePath="vmdk.c">
 		</File>
 	</Files>
 	<Globals>
