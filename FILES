@@ -168,6 +168,7 @@ src\                           Souce files
       types.h                  Basic type definitions
       uio.h                    Defines for vector I/O functions
       utsname.h                System name
+      wait.h                   Declarations for waiting
   lib\                         Library routines
     assert.c                   Assertion helper routine
     bitops.c                   Bitmap manipulation routines
@@ -180,6 +181,7 @@ src\                           Souce files
     ctype.c                    Character types
     dirent.c                   List diretory entries
     fcvt.c                     Floating point to string conversion routines
+    fork.c                     Unix process creation routines
     getopt.c                   Parse command options
     hash.c                     A hashed lookup mechanism
     inifile.c                  Property files

@@ -37,7 +37,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include <ctype.h> // TODO remove after cmd_test revised
 #include <os/version.h>
 #include <inifile.h>
 
@@ -1435,18 +1434,28 @@ int cmd_sysinfo(int argc, char *argv[])
   return 0;
 }
 
+#include <unistd.h>
+#include <sys/wait.h>
+
 int cmd_test(int argc, char *argv[])
 {
-  int c;
+  int pid, rc;
 
-  printf("toupper(): ");
-  for (c = ' '; c <= 127; c++) printf("%c%c", c, toupper(c));
-  printf("\n");
-  printf("tolower(): ");
-  for (c = ' '; c <= 127; c++) printf("%c%c", c, tolower(c));
-  printf("\n");
+  printf("vfork\n");
+  pid = vfork();
+  if (pid == 0)
+  {
+    printf("exec\n");
+    execl("/bin/sh.exe", "sh", "ls");
+    //printf("exit\n");
+    //exit(5);
+    printf("done\n");
+  }
 
-  return 0;
+  printf("wait pid=%d\n", pid);
+  pid = waitpid(pid, &rc, 0);
+  printf("done pid=%d rc=%d\n", pid, rc);
+  return rc;
 }
 
 int cmd_uname(int argc, char *argv[])

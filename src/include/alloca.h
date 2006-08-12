@@ -44,8 +44,13 @@
 extern "C" {
 #endif
 
+#ifdef __TINYC__
+// TCC doesn't yet support alloca
+#define alloca malloc
+#else
 void  *_alloca(size_t size);
 #define alloca _alloca
+#endif
 
 #ifdef  __cplusplus
 }

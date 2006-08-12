@@ -143,7 +143,8 @@ int enter_object(struct object *obj)
   switch (obj->type)
   {
     case OBJECT_THREAD:
-      // Do nothing
+      // Set thread exit code as wait key
+      rc = ((struct thread *) obj)->exitcode;
       break;
 
     case OBJECT_EVENT:
@@ -195,7 +196,7 @@ int wait_for_object(object_t hobj, unsigned int timeout)
   struct thread *t = self();
   struct waitblock wb;
 
-  // If object is signaled we does not have to wait
+  // If object is signaled we do not have to wait
   if (obj->signaled) return enter_object(obj);
 
   if (obj->type == OBJECT_MUTEX && ((struct mutex *) obj)->owner == self())

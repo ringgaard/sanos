@@ -263,6 +263,9 @@
 				<File
 					RelativePath="..\src\include\sys\utsname.h">
 				</File>
+				<File
+					RelativePath="..\src\include\sys\wait.h">
+				</File>
 			</Filter>
 			<Filter
 				Name="include/arpa"
@@ -883,6 +886,9 @@
 		</File>
 		<File
 			RelativePath="..\src\lib\fcvt.c">
+		</File>
+		<File
+			RelativePath="..\src\lib\fork.c">
 		</File>
 		<File
 			RelativePath="..\src\lib\getopt.c">

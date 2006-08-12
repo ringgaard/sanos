@@ -79,6 +79,10 @@ $(SRC)/include/net/net.h: \
   $(SRC)/include/net/socket.h \
   $(SRC)/include/net/dhcp.h
 
+$(SRC)/include/unistd.h: \
+  $(SRC)/include/setjmp.h \
+  $(SRC)/include/alloca.h
+
 # lib
 
 $(SRC)/lib/assert.c: \
@@ -105,6 +109,12 @@ $(SRC)/lib/ctype.c: \
 $(SRC)/lib/fcvt.c: \
   $(SRC)/include/os.h \
   $(SRC)/include/math.h
+
+$(SRC)/lib/fork.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/unistd.h \
+  $(SRC)/include/sys/wait.h
 
 $(SRC)/lib/getopt.c: \
   $(SRC)/include/os.h \

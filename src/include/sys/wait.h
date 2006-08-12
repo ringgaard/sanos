@@ -1,7 +1,7 @@
 //
-// crtbase.h
+// wait.h
 //
-// Internal definitions for C runtime library
+// Declarations for waiting
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -35,28 +35,21 @@
 #pragma once
 #endif
 
-#ifndef CRTBASE_H
-#define CRTBASE_H
+#ifndef SYS_WAIT_H
+#define SYS_WAIT_H
 
-#include <stdio.h>
-#include <setjmp.h>
+#include <sys/types.h>
 
-struct opt
-{
-  int err;
-  int ind;
-  int opt;
-  char *arg;
-  int sp;
-};
+#define WNOHANG 1
 
-struct crtbase
-{
-  int argc;
-  char **argv;
-  FILE iob[3];
-  char stdinbuf[BUFSIZ];
-  struct opt opt;
-};
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
+int waitpid(int pid, int *stat_loc, int options);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

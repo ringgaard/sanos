@@ -38,6 +38,7 @@
 
 void init_stdio();
 void exit_stdio();
+void fork_exit(int status);
 
 typedef void (__cdecl *proc_t)(void);
 typedef int (__cdecl *func_t)(void);
@@ -157,11 +158,15 @@ static int initcrt()
   return 0;
 }
 
-static void termcrt()
+static void termcrt(int status)
 {
   struct job *job = gettib()->job;
   struct crtbase *crtbase = (struct crtbase *) job->crtbase;
 
+  // Check for vfork() exit
+  fork_exit(status);
+
+  // Call termination handlers when last instance exits
   if (atomic_decrement(&__instcount) == 0)
   {
     // Execute atexit handlers

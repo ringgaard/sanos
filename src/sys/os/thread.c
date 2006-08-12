@@ -267,7 +267,7 @@ void exit(int status)
 {
   struct job *job = gettib()->job;
 
-  if (job->atexit) job->atexit();
+  if (job->atexit) job->atexit(status);
   if (job->exitcodeptr) *job->exitcodeptr = status;
   eset(job->terminated);
   endthread(status);

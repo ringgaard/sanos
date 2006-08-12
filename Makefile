@@ -602,6 +602,9 @@ $(OBJ)/libc/bitops.obj: $(SRC)/lib/bitops.c
 $(OBJ)/libc/assert.obj: $(SRC)/lib/assert.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
+$(OBJ)/libc/fork.obj: $(SRC)/lib/fork.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
 $(OBJ)/libc/sched.obj: $(SRC)/lib/sched.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
@@ -705,7 +708,8 @@ $(LIBS)/libc.lib: \
   $(OBJ)/libc/asin.obj \
   $(OBJ)/libc/acos.obj \
   $(OBJ)/libc/dirent.obj \
-  $(OBJ)/libc/getopt.obj
+  $(OBJ)/libc/getopt.obj \
+  $(OBJ)/libc/fork.obj
     $(AR) /NOLOGO /NODEFAULTLIB /OUT:$(LIBS)/libc.lib $**
 
 #

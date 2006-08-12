@@ -1124,7 +1124,7 @@ struct job
   char *cmdline;        // Command line arguments
   handle_t terminated;  // Terminate event
   int *exitcodeptr;     // Pointer to location to store job exit code
-  void (*atexit)();     // Exit handler (used by libc)
+  void (*atexit)(int);  // Exit handler (used by libc)
 
   handle_t in;          // Standard input device
   handle_t out;         // Standard output device
@@ -1203,8 +1203,9 @@ struct tib
   char ascbuf[ASCBUFSIZE];         // For asctime()
   char tmpnambuf[MAXPATH];         // For tmpnam()
   char cryptbuf[CRYPTBUFSIZE];     // For crypt()
+  void *forkctx;                   // For vfork()
 
-  char reserved1[1498];
+  char reserved1[1490];
 
   void *tls[MAX_TLS];              // Thread local storage
   char reserved2[240];

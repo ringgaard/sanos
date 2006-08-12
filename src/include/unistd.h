@@ -40,6 +40,11 @@
 
 #include <sys/types.h>
 
+#ifndef NOVFORK
+#include <setjmp.h>
+#include <alloca.h>
+#endif
+
 //
 // Standard file descriptors
 //
@@ -70,6 +75,21 @@
 #define SEEK_SET                0       // Seek relative to begining of file
 #define SEEK_CUR                1       // Seek relative to current file position
 #define SEEK_END                2       // Seek relative to end of file
+
+#endif
+
+//
+// Context for vfork()
+//
+
+#ifndef NOVFORK
+
+struct _forkctx
+{
+  struct _forkctx *prev;
+  jmp_buf jmp;
+  int fd[3];
+};
 
 #endif
 
@@ -132,6 +152,16 @@ char **_optarg();
 #define optarg (*_optarg())
 
 int getopt(int argc, char **argv, char *opts);
+
+#ifndef NOVFORK
+
+struct _forkctx *_vfork(struct _forkctx *fc);
+int execv(const char *path, char *argv[]);
+int execl(const char *path, char *arg0, ...);
+
+#define vfork() (setjmp(_vfork((struct _forkctx *) alloca(sizeof(struct _forkctx)))->jmp))
+
+#endif
 
 #ifdef  __cplusplus
 }

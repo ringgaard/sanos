@@ -86,7 +86,6 @@ char *copyright =
 struct thread *mainthread;
 struct section *krnlcfg;
 int onpanic = ONPANIC_HALT;
-struct netif *nic;
 struct peb *peb;
 char krnlopts[KRNLOPTS_LEN];
 
