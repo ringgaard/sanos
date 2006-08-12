@@ -89,6 +89,7 @@ struct _forkctx
   struct _forkctx *prev;
   jmp_buf jmp;
   int fd[3];
+  char **env;
 };
 
 #endif
@@ -156,6 +157,7 @@ int getopt(int argc, char **argv, char *opts);
 #ifndef NOVFORK
 
 struct _forkctx *_vfork(struct _forkctx *fc);
+int execve(const char *path, char *argv[], char *env[]);
 int execv(const char *path, char *argv[]);
 int execl(const char *path, char *arg0, ...);
 

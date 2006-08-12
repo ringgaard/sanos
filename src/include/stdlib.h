@@ -74,7 +74,6 @@ osapi void *calloc(size_t num, size_t size);
 div_t div(int numer, int denom);
 osapi void exit(int status);
 osapi void free(void *p);
-char *getenv(const char *option);
 char *itoa(int val, char *buf, int radix);
 long labs(long n);
 ldiv_t ldiv(long numer, long denom);
@@ -112,6 +111,11 @@ char *setstate(char *arg_state);
 long random();
 
 char *realpath(const char *path, char *buffer);
+
+osapi char *getenv(const char *name);
+osapi int setenv(const char *name, const char *value, int rewrite);
+osapi void unsetenv(const char *name);
+osapi int putenv(const char *str);
 
 #ifdef  __cplusplus
 }

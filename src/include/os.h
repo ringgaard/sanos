@@ -151,6 +151,7 @@ struct section;
 #define CREATE_NEW_JOB          0x00000010
 #define CREATE_DETACHED         0x00000020
 #define CREATE_POSIX            0x00000040
+#define CREATE_NO_ENV           0x00000080
 
 //
 // Spawn flags
@@ -1122,6 +1123,8 @@ struct job
   struct job *prevjob;  // Previous job in global job list
   hmodule_t hmod;       // Module handle for exec module
   char *cmdline;        // Command line arguments
+  char **env;           // Environment variables
+
   handle_t terminated;  // Terminate event
   int *exitcodeptr;     // Pointer to location to store job exit code
   void (*atexit)(int);  // Exit handler (used by libc)
@@ -1432,7 +1435,7 @@ osapi int setprio(handle_t thread, int priority);
 osapi void msleep(int millisecs);
 osapi unsigned sleep(unsigned seconds);
 osapi struct tib *gettib();
-osapi int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr);
+osapi int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib **tibptr);
 osapi void exit(int status);
 
 osapi sighandler_t signal(int signum, sighandler_t handler);
@@ -1473,7 +1476,7 @@ osapi void *dlsym(hmodule_t hmod, const char *procname);
 osapi char *dlerror();
 osapi hmodule_t getmodule(const char *name);
 osapi int getmodpath(hmodule_t hmod, char *buffer, int size);
-osapi int exec(hmodule_t hmod, const char *args);
+osapi int exec(hmodule_t hmod, const char *args, char **env);
 osapi void *getresdata(hmodule_t hmod, int type, char *name, int lang, int *len);
 osapi int getreslen(hmodule_t hmod, int type, char *name, int lang);
 osapi struct verinfo *getverinfo(hmodule_t hmod);
@@ -1520,6 +1523,11 @@ osapi struct protoent *getprotobynumber(int proto);
 osapi struct servent *getservbyname(const char *name, const char *proto);
 osapi struct servent *getservbyport(int port, const char *proto);
 
+osapi char *getenv(const char *name);
+osapi int setenv(const char *name, const char *value, int rewrite);
+osapi void unsetenv(const char *name);
+osapi int putenv(const char *str);
+
 osapi extern struct section *osconfig;
 osapi extern struct peb *peb;
 
@@ -1531,6 +1539,11 @@ osapi int *_errno();
 #ifndef fmode
 osapi int *_fmode();
 #define fmode (*_fmode())
+#endif
+
+#ifndef environ
+osapi char ***_environ();
+#define environ (*_environ())
 #endif
 
 #ifdef  __cplusplus

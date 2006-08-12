@@ -116,7 +116,7 @@ EXPORTS
   ftell
   fwrite
   getc
-  getenv
+  getenv=_getenv
   isalnum
   isalpha
   iscntrl

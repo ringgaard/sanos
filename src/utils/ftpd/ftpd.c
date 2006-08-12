@@ -1330,7 +1330,7 @@ int main(int argc, char *argv[])
       char path[MAXPATH];
       
       getmodpath(NULL, path, MAXPATH);
-      hthread = spawn(P_NOWAIT | P_DETACH, path, "", NULL);
+      hthread = spawn(P_NOWAIT | P_DETACH, path, "", NULL, NULL);
       if (hthread < 0) syslog(LOG_ERR, "error %d (%s) in spawn", errno, strerror(errno));
       close(hthread);
       return 0;

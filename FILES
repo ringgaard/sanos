@@ -366,6 +366,7 @@ src\                           Souce files
       udpsock.c                UDP socket interface
     os\                        OS api interface source files
       critsect.c               Critical sections
+      environ.c                Environment variables
       heap.c                   Heap memory management routines
       heap.h                   Heap memory management definitions
       netdb.c                  Network database library

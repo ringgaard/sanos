@@ -122,11 +122,6 @@ div_t div(int numer, int denom)
   return result;
 }
 
-char *getenv(const char *option)
-{
-  return get_property(osconfig, "env", (char *) option, NULL);
-}
-
 long labs(long n)
 {
   return  n >= 0L ? n : -n;
@@ -176,7 +171,7 @@ int system(const char *command)
   *q++ = 0;
   if (!dotseen) strcat(pgm, ".exe");
 
-  return spawn(P_WAIT, pgm, command, NULL);
+  return spawn(P_WAIT, pgm, command, NULL, NULL);
 }
 
 char *realpath(const char *path, char *buffer)

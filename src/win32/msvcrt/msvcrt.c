@@ -297,10 +297,10 @@ int sscanf(const char *buffer, const char *fmt, ...)
   return 0;
 }
 
-char *getenv(const char *option)
+char *_getenv(const char *option)
 {
   TRACE("getenv");
-  return get_property(osconfig, "env", (char *) option, NULL);
+  return getenv(option);
 }
 
 int *__errno()

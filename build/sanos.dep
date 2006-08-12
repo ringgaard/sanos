@@ -541,7 +541,7 @@ $(SRC)/sys/os/critsect.c: \
 $(SRC)/sys/os/environ.c: \
   $(SRC)/include/os.h \
   $(SRC)/include/string.h \
-  $(SRC)/include/inffile.h
+  $(SRC)/include/inifile.h
 
 $(SRC)/sys/os/heap.c: \
   $(SRC)/include/os.h \

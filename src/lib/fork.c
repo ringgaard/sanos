@@ -42,6 +42,32 @@
 // setjmp()/longjmp() to emulate the behaviour of vfork()/exec().
 //
 
+static char **copyenv(char **env)
+{
+  int n;
+  char **newenv;
+
+  if (!env) return NULL;
+  for (n = 0; env[n]; n++);
+  newenv = (char **) malloc((n + 1) * sizeof(char *));
+  if (newenv)
+  {
+    newenv[n] = NULL;
+    for (n = 0; env[n]; n++) newenv[n] = strdup(env[n]);
+  }
+
+  return newenv;
+}
+
+static void freeenv(char **env)
+{
+  int n;
+  
+  if (!env) return;
+  for (n = 0; env[n]; n++) free(env[n]);
+  free(env);
+}
+
 static resume_fork(struct tib *tib, int pid)
 {
   struct job *job = tib->job;
@@ -55,6 +81,10 @@ static resume_fork(struct tib *tib, int pid)
   job->in = fc->fd[0];
   job->out = fc->fd[1];
   job->err = fc->fd[2];
+
+  // Restore environment variables
+  freeenv(job->env);
+  job->env = fc->env;
 
   // Unlink fork context from chain
   tib->forkctx = fc->prev;
@@ -76,6 +106,10 @@ struct _forkctx *_vfork(struct _forkctx *fc)
   job->in = dup(job->in);
   job->out = dup(job->out);
   job->err = dup(job->err);
+
+  // Save and duplicate environment variables
+  fc->env = job->env;
+  job->env = copyenv(job->env);
 
   // Link fork context into chain
   fc->prev = tib->forkctx;
@@ -118,7 +152,7 @@ int waitpid(int pid, int *stat_loc, int options)
   return pid;
 }
  
-int execv(const char *path, char *argv[])
+int execve(const char *path, char *argv[], char *env[])
 {
   struct tib *tib = gettib();
   struct job *job = tib->job;
@@ -163,7 +197,7 @@ int execv(const char *path, char *argv[])
   *q = 0;
 
   // Spawn new job
-  pid = spawn(P_NOWAIT, path, cmdline, NULL);
+  pid = spawn(P_NOWAIT, path, cmdline, env, NULL);
   free(cmdline);
   if (pid < 0) return -1;
 
@@ -172,7 +206,12 @@ int execv(const char *path, char *argv[])
   return 0;
 }
 
+int execv(const char *path, char *argv[])
+{
+  return execve(path, argv, NULL);
+}
+
 int execl(const char *path, char *arg0, ...)
 {
-  return execv(path, &arg0);
+  return execve(path, &arg0, NULL);
 }

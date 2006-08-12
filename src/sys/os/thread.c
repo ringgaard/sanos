@@ -34,11 +34,17 @@
 #include <os.h>
 #include <string.h>
 #include <atomic.h>
+#include <inifile.h>
 
 #include <os/syscall.h>
 #include <os/seg.h>
 #include <os/tss.h>
 #include <os/syspage.h>
+
+// environ.c
+char **initenv(struct section *sect);
+char **copyenv(char **env);
+void freeenv(char **env);
 
 struct critsect job_lock;
 
@@ -61,6 +67,7 @@ void init_threads(hmodule_t hmod, struct term *initterm)
   job->term = initterm;
   job->hmod = hmod;
   job->cmdline = NULL;
+  job->env = initenv(find_section(osconfig, "env"));
   job->facility = LOG_DAEMON;
   job->ident = strdup("os");
 
@@ -95,7 +102,7 @@ void __stdcall threadstart(struct tib *tib)
   }
 }
 
-static struct job *mkjob(struct job *parent, int detached)
+static struct job *mkjob(struct job *parent, int detached, int noenv)
 {
   struct job *job;
 
@@ -117,6 +124,7 @@ static struct job *mkjob(struct job *parent, int detached)
 
   job->terminated = mkevent(1, 0);
   job->facility = LOG_USER;
+  if (!noenv) job->env = copyenv(parent->env);
 
   enter(&job_lock);
   job->prevjob = peb->lastjob;
@@ -144,7 +152,7 @@ handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize
 
   if (flags & CREATE_NEW_JOB)
   {
-    job = mkjob(parent, flags & CREATE_DETACHED);
+    job = mkjob(parent, flags & CREATE_DETACHED, flags & CREATE_NO_ENV);
     if (!job) 
     {
       errno = ENOMEM;
@@ -203,6 +211,7 @@ void endjob(struct job *job)
   if (job->hmod) dlclose(job->hmod);
   if (job->cmdline) free(job->cmdline);
   if (job->ident) free(job->ident);
+  if (job->env) freeenv(job->env);
 
   eset(job->terminated);
   close(job->terminated);
@@ -278,7 +287,7 @@ static void __stdcall spawn_program(void *args)
   struct job *job = gettib()->job;
   int rc;
 
-  rc = exec(job->hmod, job->cmdline);
+  rc = exec(job->hmod, job->cmdline, job->env);
   exit(rc);
 }
 
@@ -305,12 +314,13 @@ static char *procname(const char *name)
   return procname;
 }
 
-int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
+int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib **tibptr)
 {
   hmodule_t hmod;
   handle_t hthread;
   struct tib *tib;
   struct job *job;
+  int flags;
   int rc;
   char pgmbuf[MAXPATH];
 
@@ -341,7 +351,11 @@ int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
   hmod = dlopen(pgm, 0);
   if (!hmod) return -1;
 
-  hthread = beginthread(spawn_program, 0, NULL, CREATE_SUSPENDED | CREATE_NEW_JOB | ((mode & P_DETACH) ? CREATE_DETACHED : 0), &tib);
+  flags = CREATE_SUSPENDED | CREATE_NEW_JOB;
+  if (mode & P_DETACH) flags |= CREATE_DETACHED;
+  if (env) flags |= CREATE_NO_ENV;
+
+  hthread = beginthread(spawn_program, 0, NULL, flags, &tib);
   if (hthread < 0)
   {
     dlclose(hmod);
@@ -352,6 +366,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
   job->hmod = hmod;
   job->cmdline = strdup(cmdline);
   job->ident = procname(pgm);
+  if (env) job->env = copyenv(env);
 
   if (mode & (P_NOWAIT | P_SUSPEND))
   {

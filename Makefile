@@ -312,6 +312,7 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
   $(SRC)/sys/os/heap.c \
   $(SRC)/sys/os/critsect.c \
   $(SRC)/sys/os/userdb.c \
+  $(SRC)/sys/os/environ.c \
   $(SRC)/lib/vsprintf.c \
   $(SRC)/lib/strtol.c \
   $(SRC)/lib/string.c \

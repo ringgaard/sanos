@@ -448,7 +448,7 @@ FILE *popen(const char *command, const char *mode)
   strcat(cmdline, " ");
   strcat(cmdline, command);
 
-  phndl = spawn(P_SUSPEND, SHELL, cmdline, &tib);
+  phndl = spawn(P_SUSPEND, SHELL, cmdline, NULL, &tib);
   if (phndl < 0) return NULL;
   job = tib->job;
 

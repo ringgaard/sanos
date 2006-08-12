@@ -51,6 +51,8 @@
 
 struct critsect heap_lock;
 struct critsect mod_lock;
+struct critsect env_lock;
+
 struct section *osconfig;
 struct moddb usermods;
 struct peb *peb;
@@ -511,13 +513,13 @@ char *dlerror()
   return strerror(errno);
 }
 
-int exec(hmodule_t hmod, const char *args)
+int exec(hmodule_t hmod, const char *args, char **env)
 {
   int rc;
 
   if (get_image_header(hmod)->header.characteristics & IMAGE_FILE_DLL) return -ENOEXEC;
 
-  rc = ((int (*)(hmodule_t, char *, int)) get_entrypoint(hmod))(hmod, (char *) args, 0);
+  rc = ((int (*)(hmodule_t, char *, char **)) get_entrypoint(hmod))(hmod, (char *) args, env);
 
   return rc;
 }
@@ -885,17 +887,18 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   peb->debug = 1;
 #endif
 
-  // Initialize heap and module locks
+  // Initialize locks
   mkcs(&heap_lock);
   mkcs(&mod_lock);
-
-  // Initialize initial job
-  init_threads(hmod, &console);
+  mkcs(&env_lock);
 
   // Load configuration file
   osconfig = read_properties("/etc/os.ini");
   //if (!osconfig) syslog(LOG_INFO, "Unable to read /etc/os.ini");
   peb->debug = get_numeric_property(osconfig, "os", "debug", peb->debug);
+
+  // Initialize initial job
+  init_threads(hmod, &console);
 
   // Initialize network interfaces
   init_net();
@@ -936,7 +939,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   init = get_property(osconfig, "os", "init", "/bin/sh");
   while (1)
   {
-    rc = spawn(P_WAIT, NULL, init, NULL);
+    rc = spawn(P_WAIT, NULL, init, NULL, NULL);
     if (rc != 0) 
     {
       syslog(LOG_DEBUG, "Init returned exit code %d: %s", rc, init);

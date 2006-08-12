@@ -334,7 +334,7 @@ void __stdcall telnet_task(void *arg)
   job->term = &ts.term;
   
   // Spawn initial telnet application
-  app = spawn(P_NOWAIT, NULL, pgm, NULL);
+  app = spawn(P_NOWAIT, NULL, pgm, NULL, NULL);
   if (app < 0) return;
   
   // The spawned application has duped the handles, now close our copy
@@ -452,7 +452,7 @@ int main(int argc, char *argv[])
       char path[MAXPATH];
       
       getmodpath(NULL, path, MAXPATH);
-      hthread = spawn(P_NOWAIT | P_DETACH, path, "", NULL);
+      hthread = spawn(P_NOWAIT | P_DETACH, path, "", NULL, NULL);
       if (hthread < 0) syslog(LOG_ERR, "error %d (%s) in spawn", errno, strerror(errno));
       close(hthread);
       return 0;

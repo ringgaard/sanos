@@ -134,6 +134,9 @@
 				RelativePath="..\src\sys\os\critsect.c">
 			</File>
 			<File
+				RelativePath="..\src\sys\os\environ.c">
+			</File>
+			<File
 				RelativePath="..\src\sys\os\heap.c">
 			</File>
 			<File

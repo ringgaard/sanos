@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
   // Launch shell
   shell = pwd->pw_shell;
   if (!shell || !*shell) shell = "/bin/sh";
-  if (spawn(P_WAIT, NULL, shell, NULL) < 0) 
+  if (spawn(P_WAIT, NULL, shell, NULL, NULL) < 0) 
   {
     write(fdout, "No shell\r\n", 10);
     sleep(2);

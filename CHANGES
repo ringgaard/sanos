@@ -4,6 +4,12 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Environment variables has been implemented. Now each job has its own copy of
+      environment variables which are inherited by the jobs they spawn. The setenv(),
+      putenv() and unsetenv() functions has been implemented. The spawn() function
+      now takes an env parameter which can override the default environment. A
+      set command has been added to the shell to display and set environment variables.
+      
     * Implemented vfork() and exec(). It uses setjmp()/longjmp() to emulate the behaviour 
       of vfork()/exec(). The exit() also resumes active vforks. Also waitpid() has been
       implemented.

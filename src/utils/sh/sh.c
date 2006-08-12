@@ -1386,6 +1386,23 @@ int cmd_rmdir(int argc, char *argv[])
   return 0;
 }
 
+int cmd_set(int argc, char *argv[])
+{
+  char **env = environ;
+  int n;
+
+  if (argc <= 1)
+  {
+    for (n = 0; env[n]; n++) printf("%s\n", env[n]);
+  }
+  else
+  {
+    for (n = 1; n < argc; n++) putenv(argv[n]);
+  }
+
+  return 0;
+}
+
 int cmd_sound(int argc, char *argv[])
 {
   int freq;
@@ -1442,14 +1459,12 @@ int cmd_test(int argc, char *argv[])
   int pid, rc;
 
   printf("vfork\n");
-  pid = vfork();
-  if (pid == 0)
+  if ((pid = vfork()) == 0)
   {
     printf("exec\n");
-    execl("/bin/sh.exe", "sh", "ls");
-    //printf("exit\n");
-    //exit(5);
-    printf("done\n");
+    putenv("TEST=abc123");
+    execl("/bin/sh.exe", "sh", "set", NULL);
+    exit(5);
   }
 
   printf("wait pid=%d\n", pid);
@@ -1610,6 +1625,7 @@ struct command cmdtab[] =
   {"rm",       cmd_rm,       "Delete file"},
   {"rd",       cmd_rmdir,    "Remove directory"},
   {"rmdir",    cmd_rmdir,    "Remove directory"},
+  {"set",      cmd_set,      "Set or display environment variables"},
   {"sound",    cmd_sound,    "Play sound in speaker"},
   {"shutdown", cmd_shutdown, "Shutdown computer and power off"},
   {"sysinfo",  cmd_sysinfo,  "Display system info"},
@@ -1626,7 +1642,7 @@ static void exec_program(char *args)
 {
   int rc;
 
-  rc = spawn(P_WAIT, NULL, args, NULL);
+  rc = spawn(P_WAIT, NULL, args, NULL, NULL);
   if (rc < 0)
     perror("error");
   else if (rc > 0)
@@ -1637,7 +1653,7 @@ static void launch_program(char *args)
 {
   int h;
 
-  h = spawn(P_NOWAIT, NULL, args, NULL);
+  h = spawn(P_NOWAIT, NULL, args, NULL, NULL);
   if (h < 0)
     perror("error");
   else
