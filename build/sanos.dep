@@ -538,6 +538,11 @@ $(SRC)/sys/net/udpsock.c: \
 $(SRC)/sys/os/critsect.c: \
   $(SRC)/include/os.h
 
+$(SRC)/sys/os/environ.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/inffile.h
+
 $(SRC)/sys/os/heap.c: \
   $(SRC)/include/os.h \
   $(SRC)/include/string.h
@@ -588,6 +593,7 @@ $(SRC)/lib/syserr.c: \
 $(SRC)/sys/os/thread.c: \
   $(SRC)/include/os.h \
   $(SRC)/include/string.h \
+  $(SRC)/include/inifile.h \
   $(SRC)/include/os/syscall.h \
   $(SRC)/include/os/seg.h \
   $(SRC)/include/os/tss.h \
