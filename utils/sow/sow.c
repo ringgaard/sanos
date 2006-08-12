@@ -338,7 +338,7 @@ void init()
 
 void term()
 {
-  if (mainjob && mainjob->atexit) mainjob->atexit();
+  if (mainjob && mainjob->atexit) mainjob->atexit(0);
 }
 
 //
@@ -1470,7 +1470,7 @@ struct tib *gettib()
   return (struct tib *) TlsGetValue(tibtls);
 }
 
-int spawn(int mode, const char *pgm, const char *cmdline, struct tib **tibptr)
+int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib **tibptr)
 {
   return notimpl("spawn");
 }
@@ -1714,7 +1714,7 @@ int getmodpath(hmodule_t hmod, char *buffer, int size)
   return 0;
 }
 
-int exec(hmodule_t hmod, const char *args)
+int exec(hmodule_t hmod, const char *args, char **env)
 {
   IMAGE_DOS_HEADER *doshdr;
   IMAGE_HEADER *imghdr;
@@ -1724,7 +1724,7 @@ int exec(hmodule_t hmod, const char *args)
   imghdr = (IMAGE_HEADER *) (((char *) hmod) + doshdr->e_lfanew);
   entrypoint = ((char *) hmod) + imghdr->optional.AddressOfEntryPoint;
 
-  return ((int (*)(hmodule_t, char *, int)) entrypoint)(hmod, (char *) args, 0);
+  return ((int (*)(hmodule_t, char *, char **)) entrypoint)(hmod, (char *) args, env);
 }
 
 void *getresdata(hmodule_t hmod, int type, char *name, int lang, int *len)

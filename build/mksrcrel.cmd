@@ -8,6 +8,7 @@ if not exist %1\utils\dfs mkdir %1\utils\dfs
 if not exist %1\utils\dbggw mkdir %1\utils\dbggw
 if not exist %1\utils\mkpart mkdir %1\utils\mkpart
 if not exist %1\utils\mkfloppy mkdir %1\utils\mkfloppy
+if not exist %1\utils\sow mkdir %1\utils\sow
 
 copy README %1
 copy COPYING %1
@@ -39,3 +40,4 @@ xcopy utils\dfs %1\utils\dfs /exclude:build\exclrel.lst
 xcopy utils\dbggw %1\utils\dbggw /exclude:build\exclrel.lst
 xcopy utils\mkpart %1\utils\mkpart /exclude:build\exclrel.lst
 xcopy utils\mkfloppy %1\utils\mkfloppy /exclude:build\exclrel.lst
+xcopy utils\sow %1\utils\sow /exclude:build\exclrel.lst
