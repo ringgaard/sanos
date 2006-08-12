@@ -1506,6 +1506,12 @@ void sigexit(struct siginfo *info, int action)
   notimpl("sigexit");
 }
 
+char *getenv(const char *name)
+{
+  notimpl("getenv");
+  return NULL;
+}
+
 time_t time(time_t *timeptr)
 {
   FILETIME ft;

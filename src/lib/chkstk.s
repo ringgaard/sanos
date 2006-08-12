@@ -6,6 +6,7 @@
 
 .text
 .globl __chkstk
+.globl _alloca
 
 __chkstk:
 	xchg    (%esp), %ebp   // store ebp, get ret.addr
@@ -30,3 +31,16 @@ P0:
 	push    %eax
 	ret
 
+_alloca:
+        popl    %edx            // pop return addr
+        popl    %eax            // pop amount to allocate
+        movl    %esp,%ecx
+        addl    $3,%eax         // round up to next word
+        andl    $0xfffffffc,%eax
+        subl    %eax,%esp
+        movl    %esp,%eax       // base of newly allocated space
+        pushl   8(%ecx)         // copy possible saved registers */
+        pushl   4(%ecx)
+        pushl   0(%ecx)
+        pushl   %eax            // dummy to pop at callsite
+        jmp     *%edx           // "return"
