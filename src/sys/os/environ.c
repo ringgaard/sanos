@@ -184,7 +184,7 @@ int setenv(const char *name, const char *value, int rewrite)
   {
     int n;
 
-    for (n = 0; env[n]; n++);
+    for (n = 0; env && env[n]; n++);
     env = (char **) realloc(env, (n + 2) * sizeof(char *));
     if (!env)
     {

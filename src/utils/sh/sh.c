@@ -1393,7 +1393,7 @@ int cmd_set(int argc, char *argv[])
 
   if (argc <= 1)
   {
-    for (n = 0; env[n]; n++) printf("%s\n", env[n]);
+    if (env) for (n = 0; env[n]; n++) printf("%s\n", env[n]);
   }
   else
   {
