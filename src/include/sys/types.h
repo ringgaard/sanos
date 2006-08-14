@@ -155,6 +155,11 @@ typedef unsigned short wchar_t;
 typedef char *va_list;
 #endif
 
+#ifndef _SIGSET_T_DEFINED
+#define _SIGSET_T_DEFINED
+typedef unsigned int sigset_t;
+#endif
+
 typedef int port_t;
 typedef int err_t;
 

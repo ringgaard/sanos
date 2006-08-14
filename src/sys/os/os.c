@@ -68,7 +68,7 @@ void init_userdb();
 void start_syslog();
 void stop_syslog();
 
-void globalhandler(int signum, struct siginfo *info);
+void globalhandler(struct siginfo *info);
 
 void panic(const char *msg)
 {

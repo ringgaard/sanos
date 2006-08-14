@@ -34,43 +34,51 @@
 #include <os.h>
 #include <os/pdir.h>
 
-char *signame[NSIG] =
+char *signame[_NSIG] =
 {
   NULL,
-  NULL,
-  "interrupt",
-  NULL,
-  "illegal instruction",
-  NULL,
-  NULL,
-  NULL,
-  "floating point exception",
-  NULL,
-  NULL,
-  "segment violation",
-  NULL,
-  NULL,
-  NULL,
-  "term",
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  "break",
-  "abort",
-  "bus error",
-  "debug trap",
-  "guard trap",
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL
+  "Hangup",
+  "Interrupt",
+  "Quit",
+  "Illegal instruction",
+  "Trace trap",
+  "Abort",
+  "BUS error",
+  "Floating-point exception",
+  "Kill",
+  "User-defined signal 1",
+  "Segmentation violation",
+  "User-defined signal 2",
+  "Broken pipe",
+  "Alarm clock",
+  "Termination",
+  "Stack fault",
+  "Child status has changed",
+  "Continue",
+  "Stop, unblockable",
+  "Keyboard stop",
+  "Background read from tty",
+  "Background write to tty",
+  "Urgent condition on socket",
+  "CPU limit exceeded",
+  "File size limit exceeded",
+  "Virtual alarm clock",
+  "Profiling alarm clock",
+  "Window size change",
+  "I/O now possible",
+  "Power failure restart",
+  "Bad system call"
 };
 
-sighandler_t sighandlers[NSIG];
+sighandler_t sighandlers[_NSIG];
+
+char *strsignal(int signum)
+{
+  if (signum >= 0 && signum < _NSIG && signame[signum]) 
+    return signame[signum];
+  else
+    return "Unknown";
+}
 
 void sigexit(struct siginfo *info, int action)
 {
@@ -86,19 +94,20 @@ sighandler_t signal(int signum, sighandler_t handler)
 {
   sighandler_t prev;
 
-  if (signum < 0 || signum >= NSIG) return SIG_ERR;
+  if (signum < 0 || signum >= _NSIG) return SIG_ERR;
   prev = sighandlers[signum];
   sighandlers[signum] = handler;
   return prev;
 }
 
-int sendsig(int signum, struct siginfo *info)
+int sendsig(struct siginfo *info)
 {
   struct tib *tib;
   sighandler_t handler;
   struct siginfo *prevsig;
+  int signum = info->si_signo;
 
-  if (signum < 0 || signum >= NSIG) return EINVAL;
+  if (signum < 0 || signum >= _NSIG) return EINVAL;
 
   tib = gettib();
   prevsig = tib->cursig;
@@ -112,7 +121,7 @@ int sendsig(int signum, struct siginfo *info)
       dbgbreak();
     else
     {
-      syslog(LOG_ERR, "terminating with signal %d (%s)", signum, signame[signum] ? signame[signum] : "unknown");
+      syslog(LOG_ERR, "terminating with signal %d (%s)", signum, strsignal(signum));
       exit(signum);
     }
   }
@@ -125,7 +134,10 @@ int sendsig(int signum, struct siginfo *info)
 
 int raise(int signum)
 {
-  return sendsig(signum, NULL);
+  struct siginfo info;
+  memset(&info, 0, sizeof(struct siginfo));
+  info.si_signo = signum;
+  return sendsig(&info);
 }
 
 struct siginfo *getsiginfo()
@@ -133,10 +145,111 @@ struct siginfo *getsiginfo()
   return gettib()->cursig;
 }
 
-void globalhandler(int signum, struct siginfo *info)
+int sigemptyset(sigset_t *set)
+{
+  if (!set)
+  {
+    errno = EFAULT;
+    return -1;
+  }
+
+  *set = 0;
+  return 0;
+}
+
+int sigfillset(sigset_t *set)
+{
+  if (!set)
+  {
+    errno = EFAULT;
+    return -1;
+  }
+
+  *set = 0xFFFFFFFF;
+  return 0;
+}
+
+int sigaddset(sigset_t *set, int signum)
+{
+  if (!set)
+  {
+    errno = EFAULT;
+    return -1;
+  }
+
+  if (signum < 0 || signum >= _NSIG)
+  {
+    errno = EINVAL;
+    return -1;
+  }
+
+  *set |= (1 << signum);
+  return 0;
+}
+
+int sigdelset(sigset_t *set, int signum)
+{
+  if (!set)
+  {
+    errno = EFAULT;
+    return -1;
+  }
+
+  if (signum < 0 || signum >= _NSIG)
+  {
+    errno = EINVAL;
+    return -1;
+  }
+
+  *set &= ~(1 << signum);
+  return 0;
+}
+
+int sigismember(sigset_t *set, int signum)
+{
+  if (!set)
+  {
+    errno = EFAULT;
+    return -1;
+  }
+
+  if (signum < 0 || signum >= _NSIG)
+  {
+    errno = EINVAL;
+    return -1;
+  }
+
+  return (*set & (1 << signum)) != 0;
+}
+
+int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
+{
+  errno = ENOSYS;
+  return -1;
+}
+
+int sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
+{
+  errno = ENOSYS;
+  return -1;
+}
+
+int sigpending(sigset_t *set)
+{
+  errno = ENOSYS;
+  return -1;
+}
+
+int sigsuspend(const sigset_t *mask)
+{
+  errno = ENOSYS;
+  return -1;
+}
+
+void globalhandler(struct siginfo *info)
 {
   //syslog(LOG_DEBUG, "signal %d received (trap 0x%x at %p)", signum, info->ctxt.traptype, info->ctxt.eip);
-  if (sighandlers[signum] == SIG_DFL && peb->debug) sigexit(info, 1);
-  sendsig(signum, info);
+  if (sighandlers[info->si_signo] == SIG_DFL && peb->debug) sigexit(info, 1);
+  sendsig(info);
   sigexit(info, 0);
 }

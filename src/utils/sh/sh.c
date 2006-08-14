@@ -699,6 +699,37 @@ int cmd_ifconfig(int argc, char *argv[])
   return 0;
 }
 
+int cmd_keyb(int argc, char *argv[])
+{
+  char *keybname;
+  int keymap;
+  int rc;
+
+  if (argc != 2)
+  {
+    printf("usage: keyb [us|uk|dk]\n");
+    return -EINVAL;
+  }
+  keybname = argv[1];
+
+  if (strcmp(keybname, "us") == 0)
+    keymap = 0;
+  else if (strcmp(keybname, "dk") == 0)
+    keymap = 1;
+  else if (strcmp(keybname, "uk") == 0)
+    keymap = 2;
+  else
+  {
+    printf("keyb: unknown keymap '%s'\n", keybname);
+    return -EINVAL;
+  }
+
+  rc = ioctl(0, IOCTL_SET_KEYMAP, &keymap, sizeof(int));
+  return rc;
+
+}
+
+
 int cmd_heapstat(int argc, char *argv[])
 {
   struct mallinfo m;
@@ -843,7 +874,7 @@ int cmd_kill(int argc, char *argv[])
   int signum = SIGINT;
   
   if (argc > 1) signum = atoi(argv[1]);
-  sendsig(signum, NULL);
+  raise(signum);
   return 0;
 }
 
@@ -1598,6 +1629,7 @@ struct command cmdtab[] =
   {"id",       cmd_id,       "Display real and effective user and group ids"},
   {"ifconfig", cmd_ifconfig, "Display network interface configuration"},
   {"ipconfig", cmd_ifconfig, "Display network interface configuration"},
+  {"keyb",     cmd_keyb,     "Change keyboard map"},
   {"heapstat", cmd_heapstat, "Display heap statistics"},
   {"help",     cmd_help,     "This help"},
   {"httpget",  cmd_httpget,  "Retrieve file via http"},

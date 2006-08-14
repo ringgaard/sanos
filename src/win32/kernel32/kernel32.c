@@ -69,7 +69,7 @@ struct vad
 
 struct vad vads[MAX_VADS];
 PTOP_LEVEL_EXCEPTION_FILTER topexcptfilter = NULL;
-void (*old_globalhandler)(int signum, struct siginfo *info);
+void (*old_globalhandler)(struct siginfo *info);
 
 int convert_filename_to_unicode(const char *src, wchar_t *dst, int maxlen)
 {
@@ -398,7 +398,7 @@ void unwind(PEXCEPTION_FRAME endframe, LPVOID eip, PEXCEPTION_RECORD rec, DWORD 
   }
 }
 
-void win32_globalhandler(int signum, struct siginfo *info)
+void win32_globalhandler(struct siginfo *info)
 {
   CONTEXT ctxt;
   EXCEPTION_RECORD rec;
@@ -410,11 +410,11 @@ void win32_globalhandler(int signum, struct siginfo *info)
   ep.ExceptionRecord = &rec;
 
   memset(&rec, 0, sizeof(EXCEPTION_RECORD));
-  rec.ExceptionAddress = (void *) info->ctxt.eip;
+  rec.ExceptionAddress = (void *) info->si_ctxt.eip;
 
-  convert_to_win32_context(&info->ctxt, &ctxt);
+  convert_to_win32_context(&info->si_ctxt, &ctxt);
   
-  switch (info->ctxt.traptype)
+  switch (info->si_ctxt.traptype)
   {
     case INTR_DIV:
       rec.ExceptionCode = EXCEPTION_INT_DIVIDE_BY_ZERO;
@@ -437,13 +437,13 @@ void win32_globalhandler(int signum, struct siginfo *info)
       break;
 
     case INTR_PGFLT:
-      if (signum == SIGGUARD)
+      if (info->si_signo == SIGSTKFLT)
         rec.ExceptionCode = STATUS_GUARD_PAGE_VIOLATION;
       else
 	rec.ExceptionCode = EXCEPTION_ACCESS_VIOLATION;
       rec.NumberParameters = 2;
-      rec.ExceptionInformation[0] = (void *) ((info->ctxt.errcode & 2) ? 1 : 0);
-      rec.ExceptionInformation[1] = info->addr;
+      rec.ExceptionInformation[0] = (void *) ((info->si_ctxt.errcode & 2) ? 1 : 0);
+      rec.ExceptionInformation[1] = info->si_addr;
       break;
 
     case INTR_ALIGN:
@@ -452,12 +452,12 @@ void win32_globalhandler(int signum, struct siginfo *info)
 
     default:
       // Unknown exception, dispatch signal to native handler
-      old_globalhandler(signum, info);
+      old_globalhandler(info);
   }
 
   raise_exception(&rec, &ctxt);
 
-  convert_from_win32_context(&info->ctxt, &ctxt);
+  convert_from_win32_context(&info->si_ctxt, &ctxt);
 
   //syslog(LOG_DEBUG, "kernel32: sigexit", signum);
   sigexit(info, 0);

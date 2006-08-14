@@ -103,8 +103,7 @@ static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size)
 
     case IOCTL_SET_KEYMAP:
       if (!args || size != 4) return -EINVAL;
-      keymap = *(int *) args;
-      return 0;
+      return change_keyboard_map_id(*(int *) args);
 
     case IOCTL_BEEP:
       beep();

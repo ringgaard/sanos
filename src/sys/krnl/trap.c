@@ -348,16 +348,15 @@ void send_signal(struct context *ctxt, int signum, void *addr)
   // Push context onto stack
   esp -= sizeof(struct siginfo);
   info = (struct siginfo *) esp;
-  memcpy(&info->ctxt, ctxt, sizeof(struct context));
-  info->addr = addr;
+
+  info->si_signo = signum;
+  info->si_code = ctxt->traptype;
+  info->si_addr = addr;
+  memcpy(&info->si_ctxt, ctxt, sizeof(struct context));
 
   // Push pointer to signal info to stack
   esp -= sizeof(struct siginfo *);
   *((struct siginfo **) esp) = info;
-
-  // Push signal number to stack
-  esp -= sizeof(int);
-  *((int *) esp) = signum;
 
   // Push dummy return address to stack
   esp -= sizeof(void *);
@@ -385,9 +384,9 @@ static int sigexit_handler(struct context *ctxt, void *arg)
   info = (struct siginfo *) ctxt->ebx;
 
   // TODO: make sanity check on new context
-  memcpy(ctxt, &info->ctxt, sizeof(struct context));
+  memcpy(ctxt, &info->si_ctxt, sizeof(struct context));
 
-  if (debug) dbg_enter(ctxt, info->addr);
+  if (debug) dbg_enter(ctxt, info->si_addr);
 
   return 1;
 }
@@ -545,7 +544,7 @@ static int pagefault_handler(struct context *ctxt, void *arg)
     if (page_guarded(pageaddr))
     {
       unguard_page(pageaddr);
-      if (guard_page_handler(pageaddr) < 0) send_signal(ctxt, SIGGUARD, addr);
+      if (guard_page_handler(pageaddr) < 0) send_signal(ctxt, SIGSTKFLT, addr);
     }
     else
       send_signal(ctxt, SIGSEGV, addr);

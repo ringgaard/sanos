@@ -568,13 +568,40 @@ int reset_keyboard()
 }
 
 //
+// Change keyboard map
+//
+
+int change_keyboard_map(char *kbdname)
+{
+  int i;
+
+  for (i = 0; i < MAX_KEYTABLES; i++)
+  {
+    if (keytables[i] && strcmp(keytables[i]->name, kbdname) == 0) 
+    {
+      keymap = i;
+      return 0;
+    }
+  }
+
+  keymap = 0;
+  return -1;
+}
+
+int change_keyboard_map_id(int id)
+{
+  if (id < -1 || id >= MAX_KEYTABLES || id != -1 && !keytables[id]) return -EINVAL;
+  keymap = id;
+  return 0;
+}
+
+//
 // Initialize keyboard
 //
 
 void init_keyboard(int reset)
 {
   char *kbdname;
-  int i;
 
   // Initialize keyboard tables
   keytables[0] = &uskeys;
@@ -583,14 +610,7 @@ void init_keyboard(int reset)
 
   // Select keyboard table
   kbdname = get_property(krnlcfg, "kernel", "keyboard", "us");
-  for (i = 0; i < MAX_KEYTABLES; i++)
-  {
-    if (keytables[i] && strcmp(keytables[i]->name, kbdname) == 0) 
-    {
-      keymap = i;
-      break;
-    }
-  }
+  change_keyboard_map(kbdname);
 
   // Reset keyboard
   if (reset) reset_keyboard();

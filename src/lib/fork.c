@@ -73,10 +73,10 @@ static resume_fork(struct tib *tib, int pid)
   struct job *job = tib->job;
   struct _forkctx *fc = (struct _forkctx *) tib->forkctx;
 
-  // Close cloned standard handles restore original
+  // Restore standard handles
   close(job->in);
   close(job->out);
-  close(job->out);
+  close(job->err);
 
   job->in = fc->fd[0];
   job->out = fc->fd[1];
