@@ -1482,26 +1482,15 @@ int cmd_sysinfo(int argc, char *argv[])
   return 0;
 }
 
-#include <unistd.h>
-#include <sys/wait.h>
-
 int cmd_test(int argc, char *argv[])
 {
-  int pid, rc;
+  int fd = -1;
+  int rc;
 
-  printf("vfork\n");
-  if ((pid = vfork()) == 0)
-  {
-    printf("exec\n");
-    putenv("TEST=abc123");
-    execl("/bin/sh.exe", "sh", "set", NULL);
-    exit(5);
-  }
-
-  printf("wait pid=%d\n", pid);
-  pid = waitpid(pid, &rc, 0);
-  printf("done pid=%d rc=%d\n", pid, rc);
-  return rc;
+  if (argc >= 1) fd = atoi(argv[1]);
+  rc = close(fd);
+  printf("close(%d) returned %d (errno=%d) %s\n", fd, rc, errno, strerror(errno));
+  return 0;
 }
 
 int cmd_uname(int argc, char *argv[])

@@ -461,6 +461,7 @@ void main(void *arg)
   if (init_user_thread(t, entrypoint) < 0) panic("unable to initialize initial user thread");
   if (allocate_user_stack(t, stack_reserve, stack_commit) < 0) panic("unable to allocate stack for initial user thread");
   t->hndl = halloc(&t->object);
+  hprotect(t->hndl);
   mark_thread_running();
 
   kprintf(KERN_INFO "mem: %dMB total, %dKB used, %dKB free, %dKB reserved\n", 

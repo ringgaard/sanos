@@ -416,6 +416,9 @@ int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread 
   // Allocate self handle (it is also stored in the tib for fast access)
   t->hndl = t->tib->hndl = halloc(&t->object);
 
+  // Protect handle from being closed
+  hprotect(t->hndl);
+
   // Notify debugger
   dbg_notify_create_thread(t, entrypoint);
 
@@ -575,6 +578,7 @@ void terminate_thread(int exitcode)
   t->state = THREAD_STATE_TERMINATED;
   t->exitcode = exitcode;
   exit_thread(t);
+  hunprotect(t->hndl);
   hfree(t->hndl);
   dispatch();
 }

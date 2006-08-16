@@ -4,6 +4,9 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Kernel thread handles are now protected from being closed from
+      user mode applications.
+      
     * POSIX signal definitions added. These are not yet implemented.
     
     * New shell command keybd for changing keyboard layout.

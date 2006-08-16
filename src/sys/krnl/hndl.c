@@ -33,6 +33,11 @@
 
 #include <os/krnl.h>
 
+// Low bit of address in handle table used to indicate protected handle
+#define HPROTECT      1
+#define HPROTECTED(o) (((unsigned long) (o)) & HPROTECT)
+#define HOBJECT(o)    ((struct object *) (((unsigned long) (o)) & ~HPROTECT))
+
 #define HANDLES_PER_PAGE (PAGESIZE / sizeof(struct object *))
 
 struct object **htab = (struct object **) HTABBASE;
@@ -80,6 +85,17 @@ static int remove_from_freelist(handle_t h)
 
     return -EBADF;
   }
+}
+
+static struct object *hlookup(handle_t h)
+{
+  struct object *o;
+
+  if (h < 0 || h >= htabsize) return NULL;
+  o = htab[h];
+  if (o == (struct object *) NOHANDLE) return NULL;
+  if (o < (struct object *) OSBASE) return NULL;
+  return HOBJECT(o);
 }
 
 //
@@ -136,10 +152,12 @@ int hassign(struct object *o, handle_t h)
   else
   {
     // Handle already allocated, free handle
-    if (--o->handle_count == 0)
+    struct object *oo = HOBJECT(htab[h]);
+    if (HPROTECTED(htab[h])) return -EACCES;
+    if (--oo->handle_count == 0)
     {
-      rc = close_object(htab[h]);
-      if (htab[h]->lock_count == 0) destroy_object(htab[h]);
+      rc = close_object(oo);
+      if (oo->lock_count == 0) destroy_object(oo);
       if (rc < 0) return rc;
     }
   }
@@ -162,11 +180,9 @@ int hfree(handle_t h)
   struct object *o;
   int rc;
 
-  if (h < 0 || h >= htabsize) return -EBADF;
-  o = htab[h];
-
-  if (o == (struct object *) NOHANDLE) return -EBADF;
-  if (o < (struct object *) OSBASE) return -EBADF;
+  o = hlookup(h);
+  if (!o) return -EBADF;
+  if (HPROTECTED(htab[h])) return -EACCES;
 
   htab[h] = (struct object *) hfreelist;
   hfreelist = h;
@@ -181,6 +197,32 @@ int hfree(handle_t h)
 }
 
 //
+// hprotect
+//
+// Protect handle from being closed
+//
+
+int hprotect(handle_t h)
+{
+  if (!hlookup(h)) return -EBADF;
+  *((unsigned long *) (htab + h)) |= HPROTECT;
+  return 0;
+}
+
+//
+// hunprotect
+//
+// Remove protection handle
+//
+
+int hunprotect(handle_t h)
+{
+  if (!hlookup(h)) return -EBADF;
+  *((unsigned long *) (htab + h)) &= ~HPROTECT;
+  return 0;
+}
+
+//
 // olock
 //
 // Lock object
@@ -190,11 +232,8 @@ struct object *olock(handle_t h, int type)
 {
   struct object *o;
 
-  if (h < 0 || h >= htabsize) return NULL;
-  o = htab[h];
-
-  if (o == (struct object *) NOHANDLE) return NULL;
-  if (o < (struct object *) OSBASE) return NULL;
+  o = hlookup(h);
+  if (!o) return NULL;
   if (o->type != type && type != OBJECT_ANY) return NULL;
   if (o->handle_count == 0) return NULL;
   o->lock_count++;
@@ -234,16 +273,20 @@ static int handles_proc(struct proc_file *pf, void *arg)
 
   for (i = 0; i < 8; i++) objcount[i] = 0;
 
-  pprintf(pf, "handle addr     s type   count locks\n");
-  pprintf(pf, "------ -------- - ------ ----- -----\n");
+  pprintf(pf, "handle addr     s p type   count locks\n");
+  pprintf(pf, "------ -------- - - ------ ----- -----\n");
   for (h = 0; h < htabsize; h++)
   {
     o = htab[h];
 
     if (o < (struct object *) OSBASE) continue;
     if (o == (struct object *) NOHANDLE) continue;
+    o = HOBJECT(o);
     
-    pprintf(pf, "%6d %8X %d %-6s %5d %5d\n", h, o, o->signaled, objtype[o->type], o->handle_count, o->lock_count);
+    pprintf(pf, "%6d %8X %d %d %-6s %5d %5d\n", 
+      h, o, o->signaled,  HPROTECTED(htab[h]), objtype[o->type], 
+      o->handle_count, o->lock_count);
+
     if (o->handle_count != 0) objcount[o->type] += FRAQ / o->handle_count;
   }
 

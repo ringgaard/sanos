@@ -259,6 +259,8 @@ void init_handles();
 krnlapi handle_t halloc(struct object *o);
 krnlapi int hassign(struct object *o, handle_t h);
 krnlapi int hfree(handle_t h);
+krnlapi int hprotect(handle_t h);
+krnlapi int hunprotect(handle_t h);
 
 krnlapi struct object *olock(handle_t h, int type);
 krnlapi int orel(object_t hobj);
