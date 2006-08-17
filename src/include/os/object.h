@@ -204,7 +204,14 @@ struct thread
 
 #ifdef KERNEL
 
-extern struct object **htab;
+// Low bit of address in handle table used to indicate protected handle
+#define HPROTECT  1
+
+#define HOBJ(x)  ((struct object *) ((x) & ~HPROTECT))
+#define HPROT(x) ((x) & HPROTECT)
+#define HUSED(x) ((x) & OSBASE)
+
+extern handle_t *htab;
 extern int htabsize;
 
 // object.c

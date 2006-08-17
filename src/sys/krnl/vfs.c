@@ -202,11 +202,9 @@ static int files_proc(struct proc_file *pf, void *arg)
   pprintf(pf, "------ -------- ---------- --- --- -------------------------------------------\n");
   for (h = 0; h < htabsize; h++)
   {
-    o = htab[h];
-
-    if (o < (struct object *) OSBASE) continue;
-    if (o == (struct object *) NOHANDLE) continue;
-    if (o->type != OBJECT_FILE) continue;
+    if (!HUSED(htab[h])) continue;
+    if (htab[h] == NOHANDLE) continue;
+    o = HOBJ(htab[h]);
 
     filp = (struct file *) o;
 

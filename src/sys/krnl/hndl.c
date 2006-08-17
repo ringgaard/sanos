@@ -33,14 +33,9 @@
 
 #include <os/krnl.h>
 
-// Low bit of address in handle table used to indicate protected handle
-#define HPROTECT      1
-#define HPROTECTED(o) (((unsigned long) (o)) & HPROTECT)
-#define HOBJECT(o)    ((struct object *) (((unsigned long) (o)) & ~HPROTECT))
+#define HANDLES_PER_PAGE (PAGESIZE / sizeof(handle_t))
 
-#define HANDLES_PER_PAGE (PAGESIZE / sizeof(struct object *))
-
-struct object **htab = (struct object **) HTABBASE;
+handle_t *htab = (handle_t *) HTABBASE;
 handle_t hfreelist = NOHANDLE;
 int htabsize = 0;
 
@@ -55,7 +50,7 @@ static int expand_htab()
 
   for (h = htabsize + HANDLES_PER_PAGE - 1; h >= htabsize; h--)
   {
-    htab[h] = (struct object *) hfreelist;
+    htab[h] = hfreelist;
     hfreelist = h;
   }
 
@@ -67,7 +62,7 @@ static int remove_from_freelist(handle_t h)
 {
   if (h == hfreelist)
   {
-    hfreelist = ((handle_t) htab[h]);
+    hfreelist = htab[h];
     return 0;
   }
   else 
@@ -76,7 +71,7 @@ static int remove_from_freelist(handle_t h)
 
     while (fl != NOHANDLE)
     {
-      if (h == ((handle_t) htab[fl]))
+      if (h == htab[fl])
       {
 	htab[fl] = htab[h];
 	return 0;
@@ -89,13 +84,11 @@ static int remove_from_freelist(handle_t h)
 
 static struct object *hlookup(handle_t h)
 {
-  struct object *o;
 
   if (h < 0 || h >= htabsize) return NULL;
-  o = htab[h];
-  if (o == (struct object *) NOHANDLE) return NULL;
-  if (o < (struct object *) OSBASE) return NULL;
-  return HOBJECT(o);
+  if (htab[h] == NOHANDLE) return NULL;
+  if (HUSED(htab[h]) < OSBASE) return NULL;
+  return HOBJ(htab[h]);
 }
 
 //
@@ -117,8 +110,8 @@ handle_t halloc(struct object *o)
   }
 
   h = hfreelist;
-  hfreelist = (handle_t) htab[h];
-  htab[h] = o;
+  hfreelist = htab[h];
+  htab[h] = (handle_t) o;
   o->handle_count++;
 
   return h;
@@ -143,7 +136,7 @@ int hassign(struct object *o, handle_t h)
     if (rc < 0) return rc;
   }
 
-  if (htab[h] < (struct object *) OSBASE)
+  if (!HUSED(htab[h]))
   {
     // Not allocated, remove from freelist
     rc = remove_from_freelist(h);
@@ -152,8 +145,8 @@ int hassign(struct object *o, handle_t h)
   else
   {
     // Handle already allocated, free handle
-    struct object *oo = HOBJECT(htab[h]);
-    if (HPROTECTED(htab[h])) return -EACCES;
+    struct object *oo = HOBJ(htab[h]);
+    if (HPROT(htab[h])) return -EACCES;
     if (--oo->handle_count == 0)
     {
       rc = close_object(oo);
@@ -163,7 +156,7 @@ int hassign(struct object *o, handle_t h)
   }
 
   // Assign handle to object
-  htab[h] = o;
+  htab[h] = (handle_t) o;
   o->handle_count++;
 
   return 0;
@@ -180,11 +173,12 @@ int hfree(handle_t h)
   struct object *o;
   int rc;
 
+  if (HPROT(htab[h])) return -EACCES;
+
   o = hlookup(h);
   if (!o) return -EBADF;
-  if (HPROTECTED(htab[h])) return -EACCES;
 
-  htab[h] = (struct object *) hfreelist;
+  htab[h] = hfreelist;
   hfreelist = h;
 
   if (--o->handle_count > 0) return 0;
@@ -205,7 +199,7 @@ int hfree(handle_t h)
 int hprotect(handle_t h)
 {
   if (!hlookup(h)) return -EBADF;
-  *((unsigned long *) (htab + h)) |= HPROTECT;
+  htab[h] |= HPROTECT;
   return 0;
 }
 
@@ -218,7 +212,7 @@ int hprotect(handle_t h)
 int hunprotect(handle_t h)
 {
   if (!hlookup(h)) return -EBADF;
-  *((unsigned long *) (htab + h)) &= ~HPROTECT;
+  htab[h] &= ~HPROTECT;
   return 0;
 }
 
@@ -277,14 +271,12 @@ static int handles_proc(struct proc_file *pf, void *arg)
   pprintf(pf, "------ -------- - - ------ ----- -----\n");
   for (h = 0; h < htabsize; h++)
   {
-    o = htab[h];
-
-    if (o < (struct object *) OSBASE) continue;
-    if (o == (struct object *) NOHANDLE) continue;
-    o = HOBJECT(o);
+    if (!HUSED(htab[h])) continue;
+    if (htab[h] == NOHANDLE) continue;
+    o = HOBJ(htab[h]);
     
     pprintf(pf, "%6d %8X %d %d %-6s %5d %5d\n", 
-      h, o, o->signaled,  HPROTECTED(htab[h]), objtype[o->type], 
+      h, o, o->signaled,  HPROT(htab[h]), objtype[o->type], 
       o->handle_count, o->lock_count);
 
     if (o->handle_count != 0) objcount[o->type] += FRAQ / o->handle_count;
