@@ -203,8 +203,8 @@ static int files_proc(struct proc_file *pf, void *arg)
   for (h = 0; h < htabsize; h++)
   {
     if (!HUSED(htab[h])) continue;
-    if (htab[h] == NOHANDLE) continue;
     o = HOBJ(htab[h]);
+    if (o->type != OBJECT_FILE) continue;
 
     filp = (struct file *) o;
 

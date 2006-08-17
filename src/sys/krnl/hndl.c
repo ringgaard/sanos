@@ -36,7 +36,7 @@
 #define HANDLES_PER_PAGE (PAGESIZE / sizeof(handle_t))
 
 handle_t *htab = (handle_t *) HTABBASE;
-handle_t hfreelist = NOHANDLE;
+handle_t hfreelist = HEND;
 int htabsize = 0;
 
 static int expand_htab()
@@ -69,7 +69,7 @@ static int remove_from_freelist(handle_t h)
   {
     handle_t fl = hfreelist;
 
-    while (fl != NOHANDLE)
+    while (fl != HEND)
     {
       if (h == htab[fl])
       {
@@ -84,10 +84,8 @@ static int remove_from_freelist(handle_t h)
 
 static struct object *hlookup(handle_t h)
 {
-
   if (h < 0 || h >= htabsize) return NULL;
-  if (htab[h] == NOHANDLE) return NULL;
-  if (HUSED(htab[h]) < OSBASE) return NULL;
+  if (!HUSED(htab[h])) return NULL;
   return HOBJ(htab[h]);
 }
 
@@ -103,7 +101,7 @@ handle_t halloc(struct object *o)
   int rc;
 
   // Expand handle table if full
-  if (hfreelist == NOHANDLE)
+  if (hfreelist == HEND)
   {
     rc = expand_htab();
     if (rc < 0) return rc;
@@ -272,7 +270,6 @@ static int handles_proc(struct proc_file *pf, void *arg)
   for (h = 0; h < htabsize; h++)
   {
     if (!HUSED(htab[h])) continue;
-    if (htab[h] == NOHANDLE) continue;
     o = HOBJ(htab[h]);
     
     pprintf(pf, "%6d %8X %d %d %-6s %5d %5d\n", 

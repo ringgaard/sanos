@@ -204,8 +204,8 @@ struct thread
 
 #ifdef KERNEL
 
-// Low bit of address in handle table used to indicate protected handle
 #define HPROTECT  1
+#define HEND      0x7FFFFFFF
 
 #define HOBJ(x)  ((struct object *) ((x) & ~HPROTECT))
 #define HPROT(x) ((x) & HPROTECT)
