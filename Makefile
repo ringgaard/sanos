@@ -330,7 +330,7 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
   $(OBJ)/os/ftol.obj \
   $(OBJ)/os/fpconst.obj
     $(CC) $(CFLAGS) /Fe$(BIN)/os.dll /Fo$(OBJ)/os/ $** /D OS_LIB \
-      /link /DLL /NODEFAULTLIB /OPT:WIN98 /ENTRY:start /BASE:0x7FF00000 /FIXED /IMPLIB:$(LIBS)/os.lib
+      /link /DLL /NODEFAULTLIB /OPT:WIN98 /ENTRY:start /BASE:0x7FF00000 /HEAP:33554432,131072 /FIXED /IMPLIB:$(LIBS)/os.lib
 
 #
 # drivers

@@ -46,6 +46,8 @@
 				ProgramDatabaseFile="..\dbg\symbols\$(ProjectName).pdb"
 				GenerateMapFile="FALSE"
 				SubSystem="1"
+				HeapReserveSize="33554432"
+				HeapCommitSize="131072"
 				EntryPointSymbol="start"
 				BaseAddress="0x7FF00000"
 				ImportLibrary="..\dbg\lib\$(ProjectName).lib"/>
@@ -107,6 +109,8 @@
 				IgnoreAllDefaultLibraries="TRUE"
 				GenerateDebugInformation="FALSE"
 				SubSystem="1"
+				HeapReserveSize="33554432"
+				HeapCommitSize="131072"
 				EntryPointSymbol="start"
 				BaseAddress="0x7FF00000"
 				ImportLibrary="..\lib\$(ProjectName).lib"/>

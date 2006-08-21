@@ -4,6 +4,14 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Heap size and commit increment are now initialized from the PE header
+      of os.dll. Use the EDITBIN tool to change the defaults.
+      
+    * Jobs now has ids that can be used to simulate process ids. Each job also has
+      a parent job and a handle to the main thread. The getjobhandle() function 
+      returns a new handle to the main thread of the job. The getpid() and getppid()
+      functions has been implemented.
+    
     * Kernel thread handles are now protected from being closed from
       user mode applications.
       

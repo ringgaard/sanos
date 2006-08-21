@@ -133,7 +133,7 @@ typedef struct pthread_attr pthread_attr_t;
 struct pthread_once
 {
   volatile int done;        // Indicates if user function executed
-  long started;             // First thread to increment this value 
+  int started;              // First thread to increment this value 
                             // to zero executes the user function
 };
 
@@ -160,12 +160,12 @@ typedef struct pthread_mutexattr pthread_mutexattr_t;
 
 struct pthread_mutex
 {
-  long lock;                // Exclusive access to mutex state:
+  int lock;                 // Exclusive access to mutex state:
                             //  0: unlocked/free
                             //  1: locked - no other waiters
                             // -1: locked - with possible other waiters
 
-  long recursion;           // Number of unlocks a thread needs to perform
+  int recursion;            // Number of unlocks a thread needs to perform
                             // before the lock is released (recursive mutexes only)
   int kind;                 // Mutex type
   pthread_t owner;          // Thread owning the mutex

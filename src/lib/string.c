@@ -393,8 +393,8 @@ char *strtok_r(char *string, const char *control, char **lasts)
   // Update nexttoken
   *lasts = str;
 
-  // Determine if a token has been found.
-  if (string == str)
+  // Determine if a token has been found
+  if (string == (char *) str)
     return NULL;
   else
     return string;

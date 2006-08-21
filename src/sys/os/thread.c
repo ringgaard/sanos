@@ -47,6 +47,7 @@ char **copyenv(char **env);
 void freeenv(char **env);
 
 struct critsect job_lock;
+int nextjobid = 1;
 
 void init_threads(hmodule_t hmod, struct term *initterm)
 {
@@ -59,8 +60,10 @@ void init_threads(hmodule_t hmod, struct term *initterm)
   if (!job) panic("unable to allocate initial job");
   memset(job, 0, sizeof(struct job));
 
+  job->id = nextjobid++;
   job->threadcnt = 1;
-  job->terminated = mkevent(1, 0);
+  job->hndl = dup(self());
+  job->parent = job;
   job->in = 0;
   job->out = 1;
   job->err = 2;
@@ -102,7 +105,7 @@ void __stdcall threadstart(struct tib *tib)
   }
 }
 
-static struct job *mkjob(struct job *parent, int detached, int noenv)
+static struct job *mkjob(struct job *parent, int hndl, int detached, int noenv)
 {
   struct job *job;
 
@@ -122,11 +125,13 @@ static struct job *mkjob(struct job *parent, int detached, int noenv)
     job->term = parent->term;
   }
 
-  job->terminated = mkevent(1, 0);
+  job->hndl = dup(hndl);
   job->facility = LOG_USER;
   if (!noenv) job->env = copyenv(parent->env);
 
   enter(&job_lock);
+  job->id = nextjobid++;
+  job->parent = parent;
   job->prevjob = peb->lastjob;
   if (!peb->firstjob) peb->firstjob = job;
   if (peb->lastjob) peb->lastjob->nextjob = job;
@@ -152,7 +157,7 @@ handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize
 
   if (flags & CREATE_NEW_JOB)
   {
-    job = mkjob(parent, flags & CREATE_DETACHED, flags & CREATE_NO_ENV);
+    job = mkjob(parent, h, flags & CREATE_DETACHED, flags & CREATE_NO_ENV);
     if (!job) 
     {
       errno = ENOMEM;
@@ -164,6 +169,7 @@ handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize
 
   atomic_add(&job->threadcnt, 1);
   tib->job = job;
+  tib->pid = job->id;
 
   if (!(flags & CREATE_SUSPENDED)) resume(h);
 
@@ -197,11 +203,14 @@ int resume(handle_t thread)
 
 void endjob(struct job *job)
 {
+  struct job *j;
+
   enter(&job_lock);
   if (job->nextjob) job->nextjob->prevjob = job->prevjob;
   if (job->prevjob) job->prevjob->nextjob = job->nextjob;
   if (job == peb->firstjob) peb->firstjob = job->nextjob;
   if (job == peb->lastjob) peb->lastjob = job->prevjob;
+  for (j = peb->firstjob; j; j = j->nextjob) if (j->parent == job) j->parent = peb->firstjob;
   leave(&job_lock);
 
   if (job->in >= 0) close(job->in);
@@ -213,8 +222,7 @@ void endjob(struct job *job)
   if (job->ident) free(job->ident);
   if (job->env) freeenv(job->env);
 
-  eset(job->terminated);
-  close(job->terminated);
+  close(job->hndl);
 
   free(job);
 }
@@ -232,6 +240,41 @@ void endthread(int retval)
 tid_t gettid()
 {
   return gettib()->tid;
+}
+
+pid_t getpid()
+{
+  return gettib()->pid;
+}
+
+pid_t getppid()
+{
+  int id;
+
+  enter(&job_lock);
+  id = gettib()->job->parent->id;
+  leave(&job_lock);
+
+  return id;
+}
+
+handle_t getjobhandle(pid_t pid)
+{
+  handle_t h = NOHANDLE;
+  struct job *j;
+
+  enter(&job_lock);
+  for (j = peb->firstjob; j; j = j->nextjob) 
+  {
+    if (j->id == pid)
+    {
+      h = dup(j->hndl);
+      break;
+    }
+  }
+  leave(&job_lock);
+
+  return h;
 }
 
 int getcontext(handle_t thread, void *context)
@@ -277,8 +320,6 @@ void exit(int status)
   struct job *job = gettib()->job;
 
   if (job->atexit) job->atexit(status);
-  if (job->exitcodeptr) *job->exitcodeptr = status;
-  eset(job->terminated);
   endthread(status);
 }
 
@@ -376,23 +417,13 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
   }
   else
   {
-    int exitcode;
-    handle_t terminated;
-    
-    terminated = dup(job->terminated);
-    if (terminated < 0) return -1;
-
-    job->exitcodeptr = &exitcode;
-    
     rc = resume(hthread);
-    if (rc < 0) return rc;
+    if (rc >= 0)
+    {
+      rc = wait(hthread, INFINITE);
+      close(hthread);
+    }
 
-    rc = wait(terminated, INFINITE);
-    if (rc < 0) return -1;
-
-    close(terminated);
-    close(hthread);
-
-    return exitcode;
+    return rc;
   }
 }

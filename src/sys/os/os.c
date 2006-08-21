@@ -887,6 +887,10 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   peb->debug = 1;
 #endif
 
+  // Determine heap size from PE header of os.dll
+  peb->heap_reserve = get_image_header(hmod)->optional.size_of_heap_reserve & ~(PAGESIZE - 1);
+  peb->heap_commit = get_image_header(hmod)->optional.size_of_heap_commit & ~(PAGESIZE - 1);
+
   // Initialize locks
   mkcs(&heap_lock);
   mkcs(&mod_lock);

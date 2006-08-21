@@ -187,7 +187,7 @@ long random();
 // October 1988, p. 1195.
 //
 
-__inline static long good_rand(long x)
+__inline long good_rand(long x)
 {
   long hi, lo;
 

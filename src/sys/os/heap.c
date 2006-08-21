@@ -729,6 +729,7 @@ static void *sysalloc(size_t nb, struct heap *av)
   mchunkptr remainder;          // Remainder from allocation
   unsigned long remainder_size; // Its size
   size_t expand;
+  size_t groupsize;
 
   // Allocate big chunks directly from system
   if (nb >= av->mmap_threshold && av->n_mmaps < av->n_mmaps_max) 
@@ -757,18 +758,20 @@ static void *sysalloc(size_t nb, struct heap *av)
   // Allocate memory from the system
   if (region == NULL)
   {
-    region = (char *) mmap(NULL, REGION_SIZE, MEM_RESERVE, 0, 'MALL');
+    size_t regionsize = peb->heap_reserve ? peb->heap_reserve : REGION_SIZE;
+    region = (char *) mmap(NULL, regionsize, MEM_RESERVE, 0, 'MALL');
     if (!region) panic("unable to reserve heap region");
     //syslog(LOG_HEAP | LOG_DEBUG, "Reserve heap %p", region);
     wilderness = region;
-    heapend = region + REGION_SIZE;
+    heapend = region + regionsize;
   }
 
   top = av->top;
   size = chunksize(top);
 
   // Commit one or more groups from region
-  expand = (nb + MINSIZE - size + GROUP_SIZE - 1)  & ~(GROUP_SIZE - 1);
+  groupsize = peb->heap_commit ? peb->heap_commit : GROUP_SIZE;
+  expand = (nb + MINSIZE - size + groupsize - 1)  & ~(groupsize - 1);
   //syslog(LOG_HEAP | LOG_DEBUG, "Expand heap: request = %d, remaining = %d, expansion = %d", nb, size, expand);
   if (wilderness + expand > heapend) panic("out of memory");
 

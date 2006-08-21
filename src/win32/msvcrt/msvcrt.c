@@ -367,7 +367,7 @@ void _assert(void *expr, void *filename, unsigned lineno)
 
 int _getpid()
 {
-  return gettib()->pid;
+  return getpid();
 }
 
 void _ftime(struct timeb *timeptr)

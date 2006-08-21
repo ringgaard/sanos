@@ -342,7 +342,7 @@ struct section;
 #define E2BIG           7                // Argument list too long
 #define ENOEXEC         8                // Exec format error
 #define EBADF           9                // Bad file number
-//#define ECHILD          10               // No spawned processes
+#define ECHILD          10               // No spawned processes
 #define EAGAIN          11               // Resource temporarily unavailable
 #define ENOMEM          12               // Cannot allocate memory
 #define EACCES          13               // Access denied
@@ -1081,7 +1081,7 @@ struct pollfd
 // Module version info
 //
 
-#ifndef __TINYC__
+#if !defined(__TINYC__) && !defined(__GNUC__)
 #pragma pack(push)
 #pragma pack(1)
 #endif
@@ -1110,7 +1110,7 @@ struct verinfo
   unsigned __int64 file_date;
 };
 
-#ifndef __TINYC__
+#if !defined(__TINYC__) && !defined(__GNUC__)
 #pragma pack(pop)
 #endif
 
@@ -1184,6 +1184,9 @@ struct peb
   char osname[16];
   time_t ostimestamp;
   struct verinfo osversion;
+
+  size_t heap_reserve;
+  size_t heap_commit;
 };
 
 //
@@ -1205,15 +1208,16 @@ struct term
 
 struct job
 {
+  int id;               // Job id
   int threadcnt;        // Number of threads in job
+  struct job *parent;   // Parent job
   struct job *nextjob;  // Next job in global job list
   struct job *prevjob;  // Previous job in global job list
   hmodule_t hmod;       // Module handle for exec module
   char *cmdline;        // Command line arguments
   char **env;           // Environment variables
 
-  handle_t terminated;  // Terminate event
-  int *exitcodeptr;     // Pointer to location to store job exit code
+  handle_t hndl;        // Handle for main thead in job
   void (*atexit)(int);  // Exit handler (used by libc)
 
   handle_t in;          // Standard input device
@@ -1513,8 +1517,11 @@ osapi handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int sta
 osapi int suspend(handle_t thread);
 osapi int resume(handle_t thread);
 osapi struct tib *getthreadblock(handle_t thread);
+osapi handle_t getjobhandle(pid_t pid);
 osapi void endthread(int retval);
 osapi tid_t gettid();
+osapi pid_t getpid();
+osapi pid_t getppid();
 osapi int setcontext(handle_t thread, void *context);
 osapi int getcontext(handle_t thread, void *context);
 osapi int getprio(handle_t thread);

@@ -309,7 +309,8 @@ void init()
   memset(job, 0, sizeof(struct job));
 
   job->threadcnt = 1;
-  job->terminated = NOHANDLE;
+  job->id = 1;
+  job->parent = job;
   job->in = 0;
   job->out = 1;
   job->err = 2;
@@ -1395,6 +1396,11 @@ handle_t self()
   return gettib()->hndl;
 }
 
+handle_t getjobhandle(pid_t pid)
+{
+  return notimpl("getjobhandle");
+}
+
 void exitos(int mode)
 {
   ExitProcess(0);
@@ -1490,7 +1496,7 @@ int raise(int signum)
   return notimpl("raise");
 }
 
-int sendsig(int signum, struct siginfo *info)
+int sendsig(struct siginfo *info)
 {
   return notimpl("sendsig");
 }

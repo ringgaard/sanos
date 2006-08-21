@@ -130,6 +130,8 @@ osapi int rmdir(const char *name);
 osapi int gethostname(char *name, int namelen);
 osapi unsigned sleep(unsigned seconds);
 osapi char *crypt(const char *key, const char *salt);
+osapi pid_t getpid();
+osapi pid_t getppid();
 osapi int getuid();
 osapi int getgid();
 osapi int setuid(uid_t uid);

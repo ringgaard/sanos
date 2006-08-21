@@ -49,7 +49,7 @@ proc_t *atexit_begin = NULL;
 proc_t *atexit_end = NULL;
 proc_t *atexit_last = NULL;
 
-#ifndef __TINYC__
+#if !defined(__GNUC__) && !defined(__TINYC__)
 
 //
 // Pointers to initialization/termination functions
@@ -145,7 +145,7 @@ static int initcrt()
 
   if (atomic_increment(&__instcount) == 1)
   {
-#ifndef __TINYC__
+#if !defined(__GNUC__) && !defined(__TINYC__)
     // Execute C initializers
     rc = inittermi(__xi_a, __xi_z);
     if (rc != 0) return rc;
@@ -177,7 +177,7 @@ static void termcrt(int status)
       atexit_begin = atexit_end = atexit_last = NULL;
     }
 
-#ifndef __TINYC__
+#if !defined(__GNUC__) && !defined(__TINYC__)
     // Execute C pre-terminators
     initterm(__xp_a, __xp_z);
 
@@ -193,6 +193,21 @@ static void termcrt(int status)
   // Deallocate arguments
   free_args(crtbase->argc, crtbase->argv);
 }
+
+#ifdef __GNUC__
+
+// Dummy __main and __alloca and routine for GCC
+// TODO: implement proper constructor handling
+
+void __main()
+{
+}
+
+void _alloca()
+{
+}
+
+#endif
 
 int mainCRTStartup()
 {

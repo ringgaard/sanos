@@ -42,7 +42,7 @@
 // Convert key into hash value
 //
 
-static __inline unsigned int hashidx(unsigned long key, unsigned int mask)
+__inline unsigned int hashidx(unsigned long key, unsigned int mask)
 {
   return (key ^ (key >> 2) ^ (key >> 6)) & mask;
 }

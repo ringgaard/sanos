@@ -46,6 +46,11 @@
 #define osapi
 #endif
 
+#ifdef __GNUC__
+#define __int64 long long
+#define __inline static inline
+#endif
+
 #ifndef _SIZE_T_DEFINED
 #define _SIZE_T_DEFINED
 typedef unsigned int size_t;

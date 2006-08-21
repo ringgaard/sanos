@@ -45,7 +45,7 @@ extern "C" {
 // On uniprocessors, the 'lock' prefixes are not necessary (and expensive). 
 // Since sanos does not (yet) support SMP the 'lock' prefix is disabled for now.
 
-#ifdef __TINYC__
+#if defined(__GNUC__) || defined(__TINYC__)
 
 __inline void atomic_add(int *dest, int value)
 {

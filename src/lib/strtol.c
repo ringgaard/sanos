@@ -116,7 +116,7 @@ static unsigned long strtoxl(const char *nptr, char **endptr, int ibase, int fla
     if (endptr) p = nptr;
     number = 0L;
   }
-  else if ((flags & FL_OVERFLOW) || (!(flags & FL_UNSIGNED) && (((flags & FL_NEG) && (number > -LONG_MIN)) || (!(flags & FL_NEG) && (number > LONG_MAX)))))
+  else if ((flags & FL_OVERFLOW) || (!(flags & FL_UNSIGNED) && (((flags & FL_NEG) && (number < LONG_MIN)) || (!(flags & FL_NEG) && (number > LONG_MAX)))))
   {
 #ifndef KERNEL
     errno = ERANGE;
@@ -125,7 +125,7 @@ static unsigned long strtoxl(const char *nptr, char **endptr, int ibase, int fla
     if (flags & FL_UNSIGNED)
       number = ULONG_MAX;
     else if (flags & FL_NEG)
-      number = (unsigned long) (-LONG_MIN);
+      number = LONG_MIN;
     else
       number = LONG_MAX;
   }

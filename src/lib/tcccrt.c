@@ -32,7 +32,7 @@
 // Boston, MA 02111-1307, USA.  
 //
 
-#ifdef __TINYC__
+#if defined(__GNUC__) || defined(__TINYC__)
 
 #define W_TYPE_SIZE   32
 #define BITS_PER_UNIT 8

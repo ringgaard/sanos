@@ -134,6 +134,14 @@ void fork_exit(int status)
 int waitpid(int pid, int *stat_loc, int options)
 {
   int rc;
+  handle_t h;
+
+  // We can only wait for specific pids
+  if (pid == -1)
+  {
+    errno = ENOSYS;
+    return -1;
+  }
 
   // Handle synthetic status encoded handles from exit()
   if (pid & 0x40000000)
@@ -142,12 +150,20 @@ int waitpid(int pid, int *stat_loc, int options)
     return pid;
   }
 
-  // Wait for main thread in job to terminate
-  rc = wait(pid, (options & WNOHANG) ? 0 : INFINITE);
-  if (rc < 0) return errno == ETIMEOUT ? 0 : -1;
+  // Get handle for job from pid
+  h = getjobhandle(pid);
+  if (h == NOHANDLE)
+  {
+    errno = ECHILD;
+    return -1;
+  }
 
-  // Termination, close handle and return status
-  close(pid);
+  // Wait for main thread in job to terminate
+  rc = wait(h, (options & WNOHANG) ? 0 : INFINITE);
+  close(h);
+  if (rc < 0) return 0;
+
+  // Termination, return status
   if (stat_loc) *stat_loc = rc & 0xFF;
   return pid;
 }
@@ -159,6 +175,8 @@ int execve(const char *path, char *argv[], char *env[])
   char *cmdline;
   char *p, *q;
   int i, len, pid;
+  handle_t child;
+  struct tib *ctib;
 
   // If no vfork() is in progress return error
   struct _forkctx *fc = (struct _forkctx *) tib->forkctx;
@@ -197,9 +215,12 @@ int execve(const char *path, char *argv[], char *env[])
   *q = 0;
 
   // Spawn new job
-  pid = spawn(P_NOWAIT, path, cmdline, env, NULL);
+  child = spawn(P_SUSPEND, path, cmdline, env, &ctib);
   free(cmdline);
-  if (pid < 0) return -1;
+  if (child < 0) return -1;
+  pid = ctib->job->id;
+  resume(child);
+  close(child);
 
   // Return control to the parent process path with pid
   resume_fork(tib, pid);

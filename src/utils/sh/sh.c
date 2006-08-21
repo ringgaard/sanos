@@ -831,12 +831,12 @@ int cmd_jobs(int argc, char *argv[])
 {
   struct job *job = peb->firstjob;
 
-  printf("name         hmod     threads in  out err command line\n");
-  printf("------------ -------- ------- --- --- --- -------------------------------------\n");
+  printf("  id parent name         hmod     threads in  out err command line\n");
+  printf("---- ------ ------------ -------- ------- --- --- --- -------------------------\n");
 
   while (job)
   {
-    printf("%-13s%08x%8d%4d%4d%4d %s\n", job->ident, job->hmod, job->threadcnt, job->in, job->out, job->err, job->cmdline ? job->cmdline : "");
+    printf("%4d %6d %-13s%08x%8d%4d%4d%4d %s\n", job->id, job->parent->id, job->ident, job->hmod, job->threadcnt, job->in, job->out, job->err, job->cmdline ? job->cmdline : "");
     job = job->nextjob;
   }
 
@@ -1484,12 +1484,7 @@ int cmd_sysinfo(int argc, char *argv[])
 
 int cmd_test(int argc, char *argv[])
 {
-  int fd = -1;
-  int rc;
-
-  if (argc >= 1) fd = atoi(argv[1]);
-  rc = close(fd);
-  printf("close(%d) returned %d (errno=%d) %s\n", fd, rc, errno, strerror(errno));
+  printf("heap reserve=%dK commit=%dK\n", peb->heap_reserve / 1024, peb->heap_commit / 1024);
   return 0;
 }
 

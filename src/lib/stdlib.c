@@ -99,6 +99,9 @@ void free_args(int argc, char **argv)
 void abort()
 {
   raise(SIGABRT);
+#ifdef __GNUC__
+  while (1);
+#endif
 }
 
 int abs(int number)
