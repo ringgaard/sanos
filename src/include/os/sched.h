@@ -143,6 +143,8 @@ void mark_thread_running();
 
 krnlapi void mark_thread_ready(struct thread *t, int charge, int boost);
 krnlapi void enter_wait(int reason);
+krnlapi int enter_alertable_wait(int reason);
+krnlapi int interrupt_thread(struct thread *t);
 
 krnlapi struct thread *create_kernel_thread(threadproc_t startaddr, void *arg, int priority, char *name);
 
@@ -157,6 +159,7 @@ int suspend_thread(struct thread *t);
 int resume_thread(struct thread *t);
 void terminate_thread(int exitcode);
 void suspend_all_user_threads();
+int schedule_alarm(unsigned int seconds);
 
 int get_thread_priority(struct thread *t);
 int set_thread_priority(struct thread *t, int priority);
@@ -190,6 +193,11 @@ __inline void check_preempt()
 #ifndef NOPREEMPTION
   if (preempt) preempt_thread();
 #endif
+}
+
+__inline int signals_ready(struct thread *t)
+{
+  return t->pending_signals & ~t->blocked_signals;
 }
 
 #ifdef SCHEDMAP

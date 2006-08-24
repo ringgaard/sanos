@@ -42,7 +42,7 @@ static long holdrand = 1L;
 #pragma function(abs)
 #pragma function(labs)
 
-int parse_args(char *args, char **argv)
+static int __parse_args(char *args, char **argv, int local)
 {
   char *p;
   int argc;
@@ -75,7 +75,11 @@ int parse_args(char *args, char **argv)
 
     if (argv)
     {
-      buf = (char *) malloc(end - start + 1);
+      if (local)
+        buf = (char *) _lmalloc(end - start + 1);
+      else
+        buf = (char *) malloc(end - start + 1);
+
       if (!buf) break;
       memcpy(buf, start, end - start);
       buf[end - start] = 0;
@@ -88,12 +92,30 @@ int parse_args(char *args, char **argv)
   return argc;
 }
 
+int parse_args(char *args, char **argv)
+{
+  return __parse_args(args, argv, 0);
+}
+
+int _lparse_args(char *args, char **argv)
+{
+  return __parse_args(args, argv, 1);
+}
+
 void free_args(int argc, char **argv)
 {
   int i;
 
   for (i = 0; i < argc; i++) free(argv[i]);
   if (argv) free(argv);
+}
+
+void _lfree_args(int argc, char **argv)
+{
+  int i;
+
+  for (i = 0; i < argc; i++) _lfree(argv[i]);
+  if (argv) _lfree(argv);
 }
 
 void abort()

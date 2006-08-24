@@ -68,6 +68,8 @@
 
 #define THREAD_FPU_USED          1
 #define THREAD_FPU_ENABLED       2
+#define THREAD_ALERTABLE         4
+#define THREAD_INTERRUPTED       8
 
 #define ISIOOBJECT(o) ((o)->object.type == OBJECT_SOCKET || (o)->object.type == OBJECT_FILE)
 
@@ -179,6 +181,11 @@ struct thread
   gid_t egid;
   int ngroups;
   gid_t groups[NGROUPS_MAX];
+  char curdir[MAXPATH];
+
+  sigset_t blocked_signals;
+  sigset_t pending_signals;
+  struct timer alarm;
 
   unsigned long utime;
   unsigned long stime;
@@ -197,7 +204,6 @@ struct thread
   struct thread *next_waiter;
 
   struct context *ctxt;
-  void *uctxt;
 
   struct fpu fpustate;
 };
@@ -243,8 +249,9 @@ krnlapi void modify_waitable_timer(struct waitable_timer *t, unsigned int expire
 krnlapi void cancel_waitable_timer(struct waitable_timer *t);
 
 krnlapi int wait_for_object(object_t hobj, unsigned int timeout);
-krnlapi int wait_for_all_objects(struct object **objs, int count, unsigned int timeout);
-krnlapi int wait_for_any_object(struct object **objs, int count, unsigned int timeout);
+krnlapi int wait_for_one_object(object_t hobj, unsigned int timeout, int alertable);
+krnlapi int wait_for_all_objects(struct object **objs, int count, unsigned int timeout, int alertable);
+krnlapi int wait_for_any_object(struct object **objs, int count, unsigned int timeout, int alertable);
 
 // iomux.c
 

@@ -211,7 +211,8 @@ $(SRC)/lib/stdlib.c: \
 $(SRC)/lib/strftime.c: \
   $(SRC)/include/stdio.h \
   $(SRC)/include/string.h \
-  $(SRC)/include/time.h
+  $(SRC)/include/time.h \
+  $(SRC)/include/sys/times.h
 
 $(SRC)/lib/string.c: \
   $(SRC)/include/os.h \
@@ -574,7 +575,8 @@ $(SRC)/sys/os/resolv.c: \
   $(SRC)/sys/os/resolv.h
 
 $(SRC)/sys/os/signal.c: \
-  $(SRC)/include/os.h
+  $(SRC)/include/os.h \
+  $(SRC)/include/os/syscall.h
 
 $(SRC)/sys/os/sntp.c: \
   $(SRC)/include/os.h \

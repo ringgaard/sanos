@@ -158,7 +158,7 @@ int pthread_rwlock_timedrdlock(pthread_rwlock_t *lock, const struct timespec *ab
 
       lock->num_shared_waiters++;
       pthread_mutex_unlock(&lock->mutex);
-      if (wait(lock->shared_waiters, __abstime2timeout(abstime)) < 0) return errno;
+      if (waitone(lock->shared_waiters, __abstime2timeout(abstime)) < 0) return errno;
       pthread_mutex_lock(&lock->mutex);
     }
     else
@@ -203,7 +203,7 @@ int pthread_rwlock_timedwrlock(pthread_rwlock_t *lock, const struct timespec *ab
     // Wait for lock to be released
     lock->exclusive_waiters++;
     pthread_mutex_unlock(&lock->mutex);
-    if (wait(lock->exclusive_waiters, __abstime2timeout(abstime)) < 0) return errno;
+    if (waitone(lock->exclusive_waiters, __abstime2timeout(abstime)) < 0) return errno;
     pthread_mutex_lock(&lock->mutex);
   }
 

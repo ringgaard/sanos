@@ -128,14 +128,14 @@ char *trapnames[INTRS] =
 // Common entry point for all interrupt service routines
 //
 
-static void __cdecl trap(unsigned long args);
+static void trap(unsigned long args);
 
 static void __declspec(naked) isr()
 {
   __asm
   {
     cld
-    push    eax
+    push    eax                     // Save registers
     push    ecx
     push    edx
     push    ebx
@@ -144,11 +144,11 @@ static void __declspec(naked) isr()
     push    edi
     push    ds
     push    es
-    mov	    ax, SEL_KDATA
+    mov	    ax, SEL_KDATA           // Setup kernel data segment
     mov	    ds, ax
     mov	    es, ax
-    call    trap
-    pop	    es
+    call    trap                    // Call trap handler
+    pop	    es                      // Restore registers
     pop	    ds
     pop	    edi
     pop	    esi
@@ -158,7 +158,7 @@ static void __declspec(naked) isr()
     pop	    ecx
     pop	    eax
     add	    esp, 8
-    iretd
+    iretd                           // Return
   }
 }
 
@@ -168,24 +168,49 @@ static void __declspec(naked) isr()
 // Kernel entry point for int 48 syscall
 //
 
-int syscall(int syscallno, char *params);
+int syscall(int syscallno, char *params, struct context *ctxt);
 
 static void __declspec(naked) systrap(void)
 {
   __asm
   {
+    push    0                       // Push dummy errcode
+    push    INTR_SYSCALL            // Push traptype
+
+    push    eax                     // Save registers
+    push    ecx
+    push    edx
+    push    ebx
+    push    ebp
+    push    esi
+    push    edi
     push    ds
     push    es
-    push    edx
-    push    eax
-    mov	    ax, SEL_KDATA
-    mov	    ds, ax
-    mov	    es, ax
-    call    syscall
-    add	    esp, 8
-    pop	    es
+
+    mov	    bx, SEL_KDATA           // Setup kernel data segment
+    mov	    ds, bx
+    mov	    es, bx
+
+    mov     ebx, esp                // ebx = context
+    push    ebx                     // Push context
+    push    edx                     // Push params
+    push    eax                     // Push syscallno
+
+    call    syscall                 // Call syscall
+    add	    esp, 12
+
+    pop	    es                      // Restore registers
     pop	    ds
-    iretd
+    pop	    edi
+    pop	    esi
+    pop	    ebp
+    pop	    ebx
+    pop	    edx
+    pop	    ecx
+
+    add	    esp, 12                 // Skip eax, errcode, and traptype
+
+    iretd                           // Return
   }
 }
 
@@ -199,44 +224,51 @@ static void __declspec(naked) sysentry(void)
 {
   __asm
   {
-    mov     esp, ss:[esp]
-    sti
+    mov     esp, ss:[esp]           // Get kernel stack pointer from TSS
+    sti                             // Sysenter disables interrupts, re-enable now
 
+    push    SEL_UDATA + SEL_RPL3    // Push ss (fixed)
+    push    ebp                     // Push esp (ebp set to esp by caller)
+    pushfd                          // Push eflg
+    push    SEL_UTEXT + SEL_RPL3    // Push cs (fixed)
+    push    ecx                     // Push eip (return address set by caller)
+    push    0                       // Push errcode
+    push    INTR_SYSENTER           // Push traptype (always sysenter)
+
+    push    eax                     // Push registers
     push    ecx
-    push    ebp
-
-    push    INTR_SYSENTER
-
-    // This is a hack to get around a bug in the vmware implementation of
-    // systenter. The es register is not preserved by sysenter. We just
-    // push the user mode data selector. This works because sysenter is
-    // always called from user mode.
-    push    ds
-#if 0
-    push    es
-#else
-    push    SEL_UDATA
-#endif
-
     push    edx
-    push    eax
+    push    ebx
+    push    ebp
+    push    esi
+    push    edi
 
-    mov	    ax, SEL_KDATA
-    mov	    ds, ax
-    mov	    es, ax
+    push    SEL_UDATA + SEL_RPL3    // Push ds (fixed)
+    push    SEL_UDATA + SEL_RPL3    // Push es (fixed)
 
-    call    syscall
-    add	    esp, 8
+    mov     ebx, esp                // ebx = context
+    push    ebx                     // Push context
+    push    edx                     // Push params
+    push    eax                     // Push syscallno
 
-    pop	    es
+    call    syscall                 // Call syscall
+    add	    esp, 12
+
+    pop	    es                      // Restore registers
     pop	    ds
+    pop	    edi
+    pop	    esi
+    pop	    ebp
+    pop	    ebx
 
-    add     esp, 4
+    add     esp, 20                 // Skip edx, ecx, eax, errcode, traptype
+    pop     edx                     // Put eip into edx for sysexit
+    add     esp, 4                  // Skip cs
+    popfd                           // Restore flags
+    pop     ecx                     // Put esp into ecx for sysexit
+    add     esp, 4                  // Skip ss
 
-    pop     ecx
-    pop     edx
-
-    sysexit
+    sysexit                         // Return
   }
 }
 
@@ -325,6 +357,37 @@ static void init_trap_gate(int intrno, void *handler)
 }
 
 //
+// setup_signal_frame
+//
+// Setup a call frame for invoking the global signal handler
+//
+
+static struct siginfo *setup_signal_frame(unsigned long *esp)
+{
+  struct context *ctxt;
+  struct siginfo *info;
+
+  // Push context onto stack
+  *esp -= sizeof(struct context);
+  ctxt = (struct context *) *esp;
+
+  // Push siginfo onto stack
+  *esp -= sizeof(struct siginfo);
+  info = (struct siginfo *) *esp;
+  info->si_ctxt = ctxt;
+
+  // Push pointer to signal info to stack
+  *esp -= sizeof(struct siginfo *);
+  *((struct siginfo **) *esp) = info;
+
+  // Push dummy return address to stack
+  *esp -= sizeof(void *);
+  *((void **) *esp) = NULL;
+
+  return info;
+}
+
+//
 // send_signal
 //
 // Setup user stack to execute global signal handler
@@ -345,28 +408,193 @@ void send_signal(struct context *ctxt, int signum, void *addr)
   // Get copy of user stack pointer 
   esp = ctxt->esp;
 
-  // Push context onto stack
-  esp -= sizeof(struct siginfo);
-  info = (struct siginfo *) esp;
+  // Create a signal call frame
+  info = setup_signal_frame(&esp);
 
+  // Initialize signal info
   info->si_signo = signum;
   info->si_code = ctxt->traptype;
+  memcpy(info->si_ctxt, ctxt, sizeof(struct context));
   info->si_addr = addr;
-  memcpy(&info->si_ctxt, ctxt, sizeof(struct context));
-
-  // Push pointer to signal info to stack
-  esp -= sizeof(struct siginfo *);
-  *((struct siginfo **) esp) = info;
-
-  // Push dummy return address to stack
-  esp -= sizeof(void *);
-  *((void **) esp) = NULL;
 
   // Set new stack pointer in user context
   ctxt->esp = esp;
 
   // Set instruction pointer to global signal handler routine
   ctxt->eip = (unsigned long) peb->globalhandler;
+}
+
+//
+// send_user_signal
+//
+// Queue a signal for execution on thread. The signal will be delivered
+// by different mechanisms based on the thread state:
+//
+// THREAD_STATE_INITIALIZED:
+//   No signals can be delivered while the thread is initializing.
+//
+// THREAD_STATE_READY:
+//   The pending signals is delivered when the thread is scheduled
+//   to run again.
+//
+// THREAD_STATE_RUNNING:
+//   The thread (self) is running. Pending signals will be handled before
+//   kernel exit.
+//
+// THREAD_STATE_WAITING:
+//   Interrupt thread if it is in an alertable wait.
+//
+// THREAD_STATE_TERMINATED:
+//   Cannot deliver signals to a terminated thread.
+//
+// THREAD_STATE_SUSPENDED:
+//   Signals cannot awaken suspended threads. They remain pending until the 
+//   thread resumes execution.
+//
+// THREAD_STATE_TRANSITION:
+//   Signals are never sent in this intermediate state.
+//
+
+int send_user_signal(struct thread *t, int signum)
+{
+  // Add signal to the pending signal mask for thread
+  t->pending_signals |= (1 << signum);
+
+  // Resume thread if signal is SIGCONT
+  if (signum == SIGCONT) resume_thread(t);
+
+  // If not signals are ready for delivery just return
+  if (!signals_ready(t)) return 0;
+
+  // Interrupt thread if it is in an alertable wait
+  if (t->state == THREAD_STATE_WAITING) interrupt_thread(t);
+
+  return 0;
+}
+
+//
+// set_signal_mask
+//
+// Examine and change blocked signals
+//
+
+int set_signal_mask(int how, sigset_t *set, sigset_t *oldset)
+{
+  struct thread *t = self();
+
+  if (oldset) *oldset = t->blocked_signals;
+
+  if (set)
+  {
+    switch (how)
+    {
+      case SIG_BLOCK:
+	t->blocked_signals |= *set;
+	break;
+
+      case SIG_UNBLOCK:
+	t->blocked_signals &= ~*set;
+	break;
+
+      case SIG_SETMASK:
+	t->blocked_signals = *set;
+	break;
+
+      default:
+	return -EINVAL;
+    }
+
+    if (signals_ready(t) && t->state == THREAD_STATE_WAITING) interrupt_thread(t);
+  }
+
+  return 0;
+}
+
+//
+// get_pending_signals
+//
+// Examine pending signals
+//
+
+int get_pending_signals(sigset_t *set)
+{
+  struct thread *t = self();
+
+  if (!set) return -EINVAL;
+  *set = t->pending_signals;
+
+  return 0;
+}
+
+//
+// deliver_pending_signals
+//
+// Deliver unblocked pending signals for current thread
+//
+
+int deliver_pending_signals(int retcode)
+{
+  struct thread *t = self();
+  struct context *ctxt;
+  int sigmask;
+  int signum;
+  struct siginfo *info;
+  unsigned long esp;
+
+  // Find highest priority unblocked pending signal 
+  sigmask = signals_ready(t);
+  if (sigmask == 0) return 0;
+  signum = find_lowest_bit(sigmask);
+  t->pending_signals &= ~(1 << signum);
+
+  //
+  // Now we must deliver the signal to the global signal handler. 
+  //
+  // We must build a context that can be used by the sigexit handler for resuming 
+  // normal operation after the signal has been handled. This context is allocated
+  // on the user stack for the thread together with the siginfo structure. A
+  // stack frame for calling the global signal handler with the siginfo structure
+  // as argument is put on the stack. The instruction pointer (eip) and stack
+  // pointer (esp) is adjusted such that when the thread returns from the kernel
+  // the global signal handler is called with the siginfo structure.
+  //
+  // When the global handler has handled the signal it calls sigexit() with the
+  // siginfo structure. The sigexit handler uses the context in the siginfo
+  // structure to resume normal operation.
+  //
+
+  // Get call context
+  ctxt = t->ctxt;
+
+  // Setup signal frame
+  esp = ctxt->esp;
+  info = setup_signal_frame(&esp);
+
+  // Setup signal info
+  info->si_signo = signum;
+  info->si_code = 0;
+  memcpy(info->si_ctxt, ctxt, sizeof(struct context));
+  info->si_addr = NULL;
+
+  // Setup return code in eax of context
+  if (ctxt->traptype == INTR_SYSENTER || ctxt->traptype == INTR_SYSCALL)
+  {
+    if (retcode < 0)
+    {
+      info->si_ctxt->errcode = retcode;
+      info->si_ctxt->eax = -1;
+    }
+    else
+      info->si_ctxt->eax = retcode;
+  }
+
+  // Set new stack pointer in user context
+  ctxt->esp = esp;
+
+  // Set instruction pointer to global signal handler routine
+  ctxt->eip = (unsigned long) peb->globalhandler;
+
+  return 0;
 }
 
 //
@@ -377,14 +605,27 @@ void send_signal(struct context *ctxt, int signum, void *addr)
 
 static int sigexit_handler(struct context *ctxt, void *arg)
 {
+  struct thread *t = self();
   struct siginfo *info;
   int debug;
 
+  // Get parameters from sysexit() call
   debug = ctxt->eax;
   info = (struct siginfo *) ctxt->ebx;
 
-  // TODO: make sanity check on new context
-  memcpy(ctxt, &info->si_ctxt, sizeof(struct context));
+  // Restore processor context
+  //memcpy(ctxt, info->si_ctxt, sizeof(struct context));
+  set_context(t, info->si_ctxt);
+
+  // Do not allow interrupts to be disabled
+  t->ctxt->eflags |= EFLAG_IF;
+
+  // Restore errno to errcode in context
+  if (ctxt->traptype == INTR_SYSENTER || ctxt->traptype == INTR_SYSCALL)
+  {
+    struct tib *tib = t->tib;
+    if (tib) tib->errnum = -((int) ctxt->errcode);
+  }
 
   if (debug) dbg_enter(ctxt, info->si_addr);
 
@@ -713,7 +954,7 @@ void init_trap()
 // Trap dispatcher
 //
 
-static void __cdecl trap(unsigned long args)
+static void trap(unsigned long args)
 {
   struct context *ctxt = (struct context *) &args;
   struct thread *t = self();
@@ -724,7 +965,6 @@ static void __cdecl trap(unsigned long args)
   // Save context
   prevctxt = t->ctxt;
   t->ctxt = ctxt;
-  if (usermode(ctxt)) t->uctxt = (char *) ctxt + offsetof(struct context, traptype);
 
   // Statistics
   intrcount[ctxt->traptype]++;
@@ -746,17 +986,17 @@ static void __cdecl trap(unsigned long args)
     }
   }
 
-  // If we interrupted a user mode context, dispatch DPC's now 
-  // and check for quantum expiry.
+  // If we interrupted a user mode context, dispatch DPCs,
+  // check for quantum expiry, and deliver signals.
   if (usermode(ctxt)) 
   {
     check_dpc_queue();
     check_preempt();
+    if (signals_ready(t)) deliver_pending_signals(0);
   }
 
   // Restore context
   t->ctxt = prevctxt;
-  if (usermode(ctxt)) t->uctxt = NULL;
 }
 
 //
@@ -810,47 +1050,7 @@ void unregister_interrupt(struct interrupt *intr, int intrno)
 
 int get_context(struct thread *t, struct context *ctxt)
 {
-  unsigned long *uctxt = (unsigned long *) t->uctxt;
-
-  if (!ctxt) return -EINVAL;
-  if (uctxt == NULL) return -EPERM;
-
-  if (*uctxt == INTR_SYSCALL)
-  {
-    struct syscall_context *sysctxt = (struct syscall_context *) ((char *) uctxt - offsetof(struct syscall_context, traptype));
-
-    memset(ctxt, 0, sizeof(struct context));
-    ctxt->eip = sysctxt->softint.eip;
-    ctxt->ecs = sysctxt->softint.ecs;
-    ctxt->eflags = sysctxt->softint.eflags;
-    ctxt->esp = sysctxt->softint.esp;
-    ctxt->ess = sysctxt->softint.ess;
-
-    ctxt->ds = sysctxt->ds;
-    ctxt->es = sysctxt->es;
-    ctxt->ebp = ctxt->esp;
-    ctxt->traptype = INTR_SYSCALL;
-  }
-  else if (*uctxt == INTR_SYSENTER)
-  {
-    struct syscall_context *sysctxt = (struct syscall_context *) ((char *) uctxt - offsetof(struct syscall_context, traptype));
-
-    memset(ctxt, 0, sizeof(struct context));
-    ctxt->eip = sysctxt->sysentry.eip;
-    ctxt->esp = sysctxt->sysentry.esp;
-    ctxt->ds = sysctxt->ds;
-    ctxt->es = sysctxt->es;
-    ctxt->ebp = ctxt->esp;
-
-    ctxt->traptype = INTR_SYSENTER;
-    ctxt->ecs = SEL_UTEXT + SEL_RPL3;
-    ctxt->ess = SEL_UDATA + SEL_RPL3;
-  }
-  else
-  {
-    memcpy(ctxt, (char *) uctxt - offsetof(struct context, traptype), sizeof(struct context));
-  }
-
+  memcpy(ctxt, t->ctxt, sizeof(struct context));
   return 0;
 }
 
@@ -862,42 +1062,17 @@ int get_context(struct thread *t, struct context *ctxt)
 
 int set_context(struct thread *t, struct context *ctxt)
 {
-  unsigned long *uctxt = (unsigned long *) t->uctxt;
+  t->ctxt->esp = ctxt->esp;
+  t->ctxt->eip = ctxt->eip;
+  t->ctxt->eflags = ctxt->eflags;
+  t->ctxt->ebp = ctxt->ebp;
 
-  if (!ctxt) return -EINVAL;
-  if (uctxt == NULL) return -EPERM;
-
-  if (*uctxt == INTR_SYSCALL)
-  {
-    struct syscall_context *sysctxt = (struct syscall_context *) ((char *) uctxt - offsetof(struct syscall_context, traptype));
-
-    sysctxt->softint.eip = ctxt->eip;
-    sysctxt->softint.eflags = ctxt->eflags;
-    sysctxt->softint.esp = ctxt->esp;
-  }
-  else if (*uctxt == INTR_SYSENTER)
-  {
-    struct syscall_context *sysctxt = (struct syscall_context *) ((char *) uctxt - offsetof(struct syscall_context, traptype));
-
-    sysctxt->sysentry.eip = ctxt->eip;
-    sysctxt->sysentry.esp = ctxt->esp;
-  }
-  else
-  {
-    struct context *trapctxt = (struct context *) ((char *) uctxt - offsetof(struct context, traptype));
-
-    trapctxt->esp = ctxt->esp;
-    trapctxt->eip = ctxt->eip;
-    trapctxt->eflags = ctxt->eflags;
-    trapctxt->ebp = ctxt->ebp;
-
-    trapctxt->eax = ctxt->eax;
-    trapctxt->ebx = ctxt->ebx;
-    trapctxt->ecx = ctxt->ecx;
-    trapctxt->edx = ctxt->edx;
-    trapctxt->esi = ctxt->esi;
-    trapctxt->edi = ctxt->edi;
-  }
+  t->ctxt->eax = ctxt->eax;
+  t->ctxt->ebx = ctxt->ebx;
+  t->ctxt->ecx = ctxt->ecx;
+  t->ctxt->edx = ctxt->edx;
+  t->ctxt->esi = ctxt->esi;
+  t->ctxt->edi = ctxt->edi;
 
   return 0;
 }

@@ -108,12 +108,12 @@ int thread_ready_to_run(struct thread *t)
 }
 
 //
-// release_thread
+// cancel_wait
 //
-// Release thread and mark is as ready to run
+// Remove thread from all wait blocks
 //
 
-void release_thread(struct thread *t)
+void cancel_wait(struct thread *t)
 {
   // Remove thread from wait lists
   struct waitblock *wb = t->waitlist;
@@ -125,6 +125,18 @@ void release_thread(struct thread *t)
 
   // Clear wait list for thread
   t->waitlist = NULL;
+}
+
+//
+// release_thread
+//
+// Release thread and mark is as ready to run
+//
+
+void release_thread(struct thread *t)
+{
+  // Remove thread from wait lists
+  cancel_wait(t);
 
   // Mark thread as ready
   mark_thread_ready(t, 1, 1);
@@ -192,6 +204,17 @@ int enter_object(struct object *obj)
 
 int wait_for_object(object_t hobj, unsigned int timeout)
 {
+  return wait_for_one_object(hobj, timeout, 0);
+}
+
+//
+// wait_for_one_object
+//
+// Wait for object to become signaled.
+//
+
+int wait_for_one_object(object_t hobj, unsigned int timeout, int alertable)
+{
   struct object *obj = (struct object *) hobj;
   struct thread *t = self();
   struct waitblock wb;
@@ -221,7 +244,17 @@ int wait_for_object(object_t hobj, unsigned int timeout)
   if (timeout == INFINITE)
   {
     // Wait for object to become signaled
-    enter_wait(THREAD_WAIT_OBJECT);
+    if (alertable)
+    {
+      int rc = enter_alertable_wait(THREAD_WAIT_OBJECT);
+      if (rc < 0)
+      {
+	cancel_wait(t);
+	t->waitkey = rc;
+      }
+    }
+    else
+      enter_wait(THREAD_WAIT_OBJECT);
 
     // Return waitkey
     return t->waitkey;
@@ -244,7 +277,17 @@ int wait_for_object(object_t hobj, unsigned int timeout)
     insert_in_waitlist(&timer.object, &wbtmo);
 
     // Wait for object to become signaled or time out
-    enter_wait(THREAD_WAIT_OBJECT);
+    if (alertable)
+    {
+      int rc = enter_alertable_wait(THREAD_WAIT_OBJECT);
+      if (rc < 0)
+      {
+	cancel_wait(t);
+	t->waitkey = rc;
+      }
+    }
+    else
+      enter_wait(THREAD_WAIT_OBJECT);
 
     // Stop timer
     cancel_waitable_timer(&timer);
@@ -260,7 +303,7 @@ int wait_for_object(object_t hobj, unsigned int timeout)
 // Wait for all objects to become signaled
 //
 
-int wait_for_all_objects(struct object **objs, int count, unsigned int timeout)
+int wait_for_all_objects(struct object **objs, int count, unsigned int timeout, int alertable)
 {
   int n;
   struct thread *t = self();
@@ -356,7 +399,17 @@ int wait_for_all_objects(struct object **objs, int count, unsigned int timeout)
   }
 
   // Wait for all objects to become signaled or time out
-  enter_wait(THREAD_WAIT_OBJECT);
+  if (alertable)
+  {
+    int rc = enter_alertable_wait(THREAD_WAIT_OBJECT);
+    if (rc < 0)
+    {
+      cancel_wait(t);
+      t->waitkey = rc;
+    }
+  }
+  else
+    enter_wait(THREAD_WAIT_OBJECT);
 
   // Stop timer
   if (timeout != INFINITE) cancel_waitable_timer(&timer);
@@ -371,7 +424,7 @@ int wait_for_all_objects(struct object **objs, int count, unsigned int timeout)
 // Wait for some object to become signaled
 //
 
-int wait_for_any_object(struct object **objs, int count, unsigned int timeout)
+int wait_for_any_object(struct object **objs, int count, unsigned int timeout, int alertable)
 {
   int n;
   struct thread *t = self();
@@ -440,7 +493,17 @@ int wait_for_any_object(struct object **objs, int count, unsigned int timeout)
   }
 
   // Wait for any object to become signaled or time out
-  enter_wait(THREAD_WAIT_OBJECT);
+  if (alertable)
+  {
+    int rc = enter_alertable_wait(THREAD_WAIT_OBJECT);
+    if (rc < 0)
+    {
+      cancel_wait(t);
+      t->waitkey = rc;
+    }
+  }
+  else
+    enter_wait(THREAD_WAIT_OBJECT);
 
   // Stop timer
   if (timeout != INFINITE) cancel_waitable_timer(&timer);

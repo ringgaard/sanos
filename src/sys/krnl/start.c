@@ -336,7 +336,7 @@ void init_net()
 void main(void *arg)
 {
   unsigned long *stacktop;
-  struct thread *t;
+  struct thread *t = self();
 
   void *imgbase;
   void *entrypoint;
@@ -417,9 +417,8 @@ void main(void *arg)
   // Set path separator
   pathsep = *get_property(krnlcfg, "kernel", "pathsep", "");
   if (pathsep != PS1 && pathsep != PS2) pathsep = PS1;
-  curdir[0] = pathsep;
-  curdir[1] = 0;
-  strcpy(peb->curdir, curdir);
+  t->curdir[0] = pathsep;
+  t->curdir[1] = 0;
   peb->pathsep = pathsep;
 
   // Initialize module loader
@@ -457,7 +456,6 @@ void main(void *arg)
   entrypoint = get_entrypoint(imgbase);
 
   // Initialize initial user thread
-  t = self();
   if (init_user_thread(t, entrypoint) < 0) panic("unable to initialize initial user thread");
   if (allocate_user_stack(t, stack_reserve, stack_commit) < 0) panic("unable to allocate stack for initial user thread");
   t->hndl = halloc(&t->object);

@@ -160,7 +160,6 @@ struct fsops
 
 #ifdef KERNEL
 
-extern char curdir[MAXPATH];
 extern char pathsep;
 
 int init_vfs();
@@ -213,6 +212,7 @@ krnlapi int fchown(struct file *filp, int owner, int group);
 krnlapi int chown(char *name, int owner, int group);
 
 krnlapi int chdir(char *name);
+krnlapi int getcwd(char *buf, size_t size);
 krnlapi int mkdir(char *name, int mode);
 krnlapi int rmdir(char *name);
 

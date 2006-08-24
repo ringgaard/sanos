@@ -155,27 +155,6 @@
 				RelativePath="..\src\lib\fcvt.c">
 			</File>
 			<File
-				RelativePath="..\src\lib\math\fpconst.asm">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
-						Outputs="$(IntDir)\$(InputName).obj"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						Description=""
-						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
-"
-						Outputs="$(IntDir)\$(InputName).obj"/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="..\src\lib\math\floor.asm">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -198,6 +177,27 @@
 			</File>
 			<File
 				RelativePath="..\src\lib\math\fmod.asm">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine="ml /nologo /Fo$(IntDir)\$(InputName).obj /c $(InputPath)
+"
+						Outputs="$(IntDir)\$(InputName).obj"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\lib\math\fpconst.asm">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
@@ -306,6 +306,18 @@
 			</File>
 			<File
 				RelativePath="..\src\lib\new.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\lib\qsort.c">

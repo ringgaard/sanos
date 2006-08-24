@@ -1,7 +1,7 @@
 //
-// critsect.c
+// param.h
 //
-// Critical sections
+// System parameters
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -31,60 +31,20 @@
 // SUCH DAMAGE.
 // 
 
-#include <os.h>
-#include <atomic.h>
+#if _MSC_VER > 1000
+#pragma once
+#endif
 
-__inline tid_t threadid()
-{
-  struct tib *tib;
+#ifndef SYS_PARAM_H
+#define SYS_PARAM_H
 
-  __asm
-  {
-    mov eax, fs:[TIB_SELF_OFFSET]
-    mov [tib], eax
-  }
+#include <sys/types.h>
+#include <limits.h>
 
-  return tib->tid;
-}
+#define BIG_ENDIAN	4321
+#define LITTLE_ENDIAN	1234
+#define BYTE_ORDER	LITTLE_ENDIAN
 
-void mkcs(critsect_t cs)
-{
-  cs->count = -1;
-  cs->recursion = 0;
-  cs->owner = NOHANDLE;
-  cs->event = mkevent(0, 0);
-}
+#define MAXPATHLEN 256
 
-void csfree(critsect_t cs)
-{
-  close(cs->event);
-}
-
-void enter(critsect_t cs)
-{
-  tid_t tid = threadid();
-
-  if (cs->owner == tid)
-  {
-    cs->recursion++;
-  }
-  else 
-  {    
-    if (atomic_add(&cs->count, 1) > 0) while (waitone(cs->event, INFINITE) != 0);
-    cs->owner = tid;
-  }
-}
-
-void leave(critsect_t cs)
-{
-  if (cs->owner != threadid()) return;
-  if (cs->recursion > 0)
-  {
-    cs->recursion--;
-  }
-  else
-  {
-    cs->owner = NOHANDLE;
-    if (atomic_add(&cs->count, -1) >= 0) eset(cs->event);
-  }
-}
+#endif

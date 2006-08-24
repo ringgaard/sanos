@@ -32,50 +32,62 @@
 // 
 
 #include <os.h>
-#include <os/pdir.h>
+#include <os/syscall.h>
 
-char *signame[_NSIG] =
+struct sigentry
 {
-  NULL,
-  "Hangup",
-  "Interrupt",
-  "Quit",
-  "Illegal instruction",
-  "Trace trap",
-  "Abort",
-  "BUS error",
-  "Floating-point exception",
-  "Kill",
-  "User-defined signal 1",
-  "Segmentation violation",
-  "User-defined signal 2",
-  "Broken pipe",
-  "Alarm clock",
-  "Termination",
-  "Stack fault",
-  "Child status has changed",
-  "Continue",
-  "Stop, unblockable",
-  "Keyboard stop",
-  "Background read from tty",
-  "Background write to tty",
-  "Urgent condition on socket",
-  "CPU limit exceeded",
-  "File size limit exceeded",
-  "Virtual alarm clock",
-  "Profiling alarm clock",
-  "Window size change",
-  "I/O now possible",
-  "Power failure restart",
-  "Bad system call"
+  char *label;
+  char *name;
+  int flags;
+  int defaction;
 };
 
-sighandler_t sighandlers[_NSIG];
+#define SIGACT_TERM      0
+#define SIGACT_ABORT     1
+#define SIGACT_IGN       2
+#define SIGACT_STOP      3
+#define SIGACT_CONT      4
+
+struct sigentry sigtab[_NSIG] =
+{
+  {"SIGNUL",    "Null", 0, SIGACT_IGN},
+  {"SIGHUP",    "Hangup", 0, SIGACT_TERM},
+  {"SIGINT",    "Interrupt", 0, SIGACT_TERM},
+  {"SIGQUIT",   "Quit", 0, SIGACT_ABORT},
+  {"SIGILL",    "Illegal instruction", 0, SIGACT_ABORT},
+  {"SIGTRAP",   "Trace trap", 0, SIGACT_ABORT},
+  {"SIGABRT",   "Abort", 0, SIGACT_ABORT},
+  {"SIGBUS",    "BUS error", 0, SIGACT_TERM},
+  {"SIGFPE",    "Floating-point exception", 0, SIGACT_ABORT},
+  {"SIGKILL",   "Kill", 0, SIGACT_TERM},
+  {"SIGUSR1",   "User-defined signal 1", 0, SIGACT_TERM},
+  {"SIGSEGV",   "Segmentation violation", 0, SIGACT_ABORT},
+  {"SIGUSR2",   "User-defined signal 2", 0, SIGACT_TERM},
+  {"SIGPIPE",   "Broken pipe", 0, SIGACT_TERM},
+  {"SIGALRM",   "Alarm clock", 0, SIGACT_TERM},
+  {"SIGTERM",   "Termination", 0, SIGACT_TERM},
+  {"SIGSTKFLT", "Stack fault", 0, SIGACT_IGN},
+  {"SIGCHLD",   "Child status has changed", 0, SIGACT_IGN},
+  {"SIGCONT",   "Continue", 0, SIGACT_CONT},
+  {"SIGSTOP",   "Stop", 0, SIGACT_STOP},
+  {"SIGTSTP",   "Keyboard stop", 0, SIGACT_STOP},
+  {"SIGTTIN",   "Background read from tty", 0, SIGACT_STOP},
+  {"SIGTTOU",   "Background write to tty", 0, SIGACT_STOP},
+  {"SIGURG",    "Urgent condition on socket", 0, SIGACT_IGN},
+  {"SIGXCPU",   "CPU limit exceeded", 0, SIGACT_ABORT},
+  {"SIGXFSZ",   "File size limit exceeded", 0, SIGACT_ABORT},
+  {"SIGVTALRM", "Virtual alarm clock", 0, SIGACT_TERM},
+  {"SIGPROF",   "Profiling alarm clock", 0, SIGACT_TERM},
+  {"SIGWINCH",  "Window size change", 0, SIGACT_IGN},
+  {"SIGIO",     "I/O now possible", 0, SIGACT_IGN},
+  {"SIGPWR",    "Power failure restart", 0, SIGACT_IGN},
+  {"SIGSYS",    "Bad system call", 0, SIGACT_ABORT}
+};
 
 char *strsignal(int signum)
 {
-  if (signum >= 0 && signum < _NSIG && signame[signum]) 
-    return signame[signum];
+  if (signum >= 0 && signum < _NSIG) 
+    return sigtab[signum].name;
   else
     return "Unknown";
 }
@@ -88,61 +100,6 @@ void sigexit(struct siginfo *info, int action)
     mov ebx, [info]
     int 49
   }
-}
-
-sighandler_t signal(int signum, sighandler_t handler)
-{
-  sighandler_t prev;
-
-  if (signum < 0 || signum >= _NSIG) return SIG_ERR;
-  prev = sighandlers[signum];
-  sighandlers[signum] = handler;
-  return prev;
-}
-
-int sendsig(struct siginfo *info)
-{
-  struct tib *tib;
-  sighandler_t handler;
-  struct siginfo *prevsig;
-  int signum = info->si_signo;
-
-  if (signum < 0 || signum >= _NSIG) return EINVAL;
-
-  tib = gettib();
-  prevsig = tib->cursig;
-  tib->cursig = info;
-
-  handler = sighandlers[signum];
-
-  if (handler == SIG_DFL)
-  {
-    if (peb->debug)
-      dbgbreak();
-    else
-    {
-      syslog(LOG_ERR, "terminating with signal %d (%s)", signum, strsignal(signum));
-      exit(signum);
-    }
-  }
-  else if (handler != SIG_IGN)
-    handler(signum);
-
-  tib->cursig = prevsig;
-  return 0;
-}
-
-int raise(int signum)
-{
-  struct siginfo info;
-  memset(&info, 0, sizeof(struct siginfo));
-  info.si_signo = signum;
-  return sendsig(&info);
-}
-
-struct siginfo *getsiginfo()
-{
-  return gettib()->cursig;
 }
 
 int sigemptyset(sigset_t *set)
@@ -224,20 +181,41 @@ int sigismember(sigset_t *set, int signum)
 
 int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
 {
-  errno = ENOSYS;
-  return -1;
+  struct job *job = gettib()->job;
+
+  if (signum < 0 || signum >= _NSIG)
+  {
+    errno = EINVAL;
+    return -1;
+  }
+
+  if (oldact) memcpy(oldact, job->handlers + signum, sizeof(struct sigaction));
+  memcpy(job->handlers + signum, act, sizeof(struct sigaction));
+
+  return 0;
+}
+
+sighandler_t signal(int signum, sighandler_t handler)
+{
+  struct sigaction act;
+  struct sigaction oldact;
+
+  act.sa_handler = handler;
+  act.sa_mask = 0;
+  act.sa_flags = 0;
+
+  if (sigaction(signum, &act, &oldact) < 0) return SIG_ERR;
+  return oldact.sa_handler;
 }
 
 int sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
 {
-  errno = ENOSYS;
-  return -1;
+  return syscall(SYSCALL_SIGPROCMASK, &how);
 }
 
 int sigpending(sigset_t *set)
 {
-  errno = ENOSYS;
-  return -1;
+  return syscall(SYSCALL_SIGPENDING, &set);
 }
 
 int sigsuspend(const sigset_t *mask)
@@ -246,10 +224,89 @@ int sigsuspend(const sigset_t *mask)
   return -1;
 }
 
+int sendsig(handle_t thread, int signum)
+{
+  return syscall(SYSCALL_SENDSIG, &thread);
+}
+
+int kill(pid_t pid, int signum)
+{
+  handle_t h;
+  int rc;
+
+  h = getjobhandle(pid);
+  if (h < 0) return h;
+
+  rc = sendsig(h, signum);
+  close(h);
+
+  return rc;
+}
+
+int raise(int signum)
+{
+  return sendsig(self(), signum);
+}
+
+unsigned alarm(unsigned seconds)
+{
+  return syscall(SYSCALL_ALARM, &seconds);
+}
+
 void globalhandler(struct siginfo *info)
 {
-  //syslog(LOG_DEBUG, "signal %d received (trap 0x%x at %p)", signum, info->ctxt.traptype, info->ctxt.eip);
-  if (sighandlers[info->si_signo] == SIG_DFL && peb->debug) sigexit(info, 1);
-  sendsig(info);
+  struct sigaction *act;
+  struct sigaction oldact;
+  int signum = info->si_signo;
+
+  if (signum < 0 || signum >= _NSIG) return;
+
+  act = gettib()->job->handlers + signum;
+  memcpy(&oldact, act, sizeof(struct sigaction));
+
+  if (oldact.sa_handler == SIG_DFL)
+  {
+    if (peb->debug) sigexit(info, 1);
+
+    switch (sigtab[signum].defaction)
+    {
+      case SIGACT_TERM:
+	syslog(LOG_ERR, "terminating with signal %d (%s)", signum, strsignal(signum));
+	exit(signum);
+
+      case SIGACT_ABORT:
+	syslog(LOG_ERR, "aborting with signal %d (%s)", signum, strsignal(signum));
+	exit(3);
+
+      case SIGACT_IGN:
+	break;
+
+      case SIGACT_STOP:
+	syslog(LOG_INFO, "stopped");
+	suspend(self());
+	break;
+
+      case SIGACT_CONT:
+	break;
+    }
+  }
+  else if (oldact.sa_handler != SIG_IGN)
+  {
+    if (oldact.sa_flags & SA_RESETHAND)
+    {
+      act->sa_handler = SIG_IGN;
+      act->sa_flags &= ~SA_SIGINFO;
+    }
+
+    if (oldact.sa_mask) sigprocmask(SIG_BLOCK, &oldact.sa_mask, NULL);
+
+    if (oldact.sa_flags & SA_SIGINFO)
+      oldact.sa_sigaction(signum, info, info->si_ctxt);
+    else
+      oldact.sa_handler(signum);
+
+    if (oldact.sa_mask) sigprocmask(SIG_UNBLOCK, &oldact.sa_mask, NULL);
+  }
+
   sigexit(info, 0);
 }

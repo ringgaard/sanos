@@ -186,14 +186,14 @@ struct image_section_header
     unsigned long physical_address;
     unsigned long virtual_size;
   };
-  unsigned long  virtual_address;
-  unsigned long  size_of_raw_data;
-  unsigned long  pointer_to_raw_data;
-  unsigned long  pointer_to_relocations;
-  unsigned long  pointer_to_linenumbers;
+  unsigned long virtual_address;
+  unsigned long size_of_raw_data;
+  unsigned long pointer_to_raw_data;
+  unsigned long pointer_to_relocations;
+  unsigned long pointer_to_linenumbers;
   unsigned short number_of_relocations;
   unsigned short number_of_linenumbers;
-  unsigned long  characteristics;
+  unsigned long characteristics;
 };
 
 //
@@ -392,6 +392,20 @@ struct image_resource_data_entry
   unsigned long size;
   unsigned long codepage;
   unsigned long reserved;
+};
+
+//
+// TLS Directory
+//
+
+struct image_tls_directory
+{
+  unsigned long start_address_of_raw_data;
+  unsigned long end_address_of_raw_data;
+  unsigned long address_of_index;
+  unsigned long address_of_callbacks;
+  unsigned long size_of_zero_fill;
+  unsigned long characteristics;
 };
 
 #endif

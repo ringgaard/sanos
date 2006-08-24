@@ -41,6 +41,8 @@
 #include <os/tss.h>
 #include <os/syspage.h>
 
+#include "heap.h"
+
 // environ.c
 char **initenv(struct section *sect);
 char **copyenv(char **env);
@@ -221,6 +223,7 @@ void endjob(struct job *job)
   if (job->cmdline) free(job->cmdline);
   if (job->ident) free(job->ident);
   if (job->env) freeenv(job->env);
+  if (job->heap) heap_destroy(job->heap);
 
   close(job->hndl);
 
@@ -274,6 +277,7 @@ handle_t getjobhandle(pid_t pid)
   }
   leave(&job_lock);
 
+  if (h == NOHANDLE) errno = ESRCH;
   return h;
 }
 
@@ -389,7 +393,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
     pgm = pgmbuf;
   }
 
-  hmod = dlopen(pgm, 0);
+  hmod = dlopen(pgm, RTLD_NOSHARE);
   if (!hmod) return -1;
 
   flags = CREATE_SUSPENDED | CREATE_NEW_JOB;
@@ -420,7 +424,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
     rc = resume(hthread);
     if (rc >= 0)
     {
-      rc = wait(hthread, INFINITE);
+      rc = waitone(hthread, INFINITE);
       close(hthread);
     }
 

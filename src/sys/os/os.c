@@ -61,6 +61,8 @@ struct term console = {TERM_CONSOLE, 80, 25};
 
 int sprintf(char *buf, const char *fmt, ...);
 
+void init_syscall();
+
 void init_sntpd();
 void init_threads(hmodule_t hmod, struct term *initterm);
 void init_userdb();
@@ -141,6 +143,20 @@ int umask(int mask)
   return oldmask;
 }
 
+
+struct heap *create_module_heap(hmodule_t hmod)
+{
+  size_t region_size;
+  size_t group_size;
+
+  region_size = get_image_header(hmod)->optional.size_of_heap_reserve & ~(PAGESIZE - 1);
+  group_size = get_image_header(hmod)->optional.size_of_heap_commit & ~(PAGESIZE - 1);
+  if (region_size == 0) region_size = 32 * 1024 * 1024;
+  if (group_size < 128 * 1024) group_size = 128 * 1024;
+
+  return heap_create(region_size, group_size);
+}
+
 void *malloc(size_t size)
 {
   void *p;
@@ -148,7 +164,7 @@ void *malloc(size_t size)
   //syslog(LOG_MODULE | LOG_DEBUG, "malloc %d bytes", size);
 
   enter(&heap_lock);
-  p = heap_alloc(size);
+  p = heap_alloc(peb->heap, size);
   leave(&heap_lock);
 
   if (size && !p) panic("malloc: out of memory");
@@ -163,7 +179,7 @@ void *realloc(void *mem, size_t size)
   void *p;
 
   enter(&heap_lock);
-  p = heap_realloc(mem, size);
+  p = heap_realloc(peb->heap, mem, size);
   leave(&heap_lock);
 
   if (size && !p) panic("realloc: out of memory");
@@ -177,7 +193,7 @@ void *calloc(size_t num, size_t size)
   void *p;
 
   enter(&heap_lock);
-  p = heap_calloc(num, size);
+  p = heap_calloc(peb->heap, num, size);
   leave(&heap_lock);
 
   if (size * num != 0 && !p) panic("calloc: out of memory");
@@ -189,7 +205,7 @@ void *calloc(size_t num, size_t size)
 void free(void *p)
 {
   enter(&heap_lock);
-  heap_free(p);
+  heap_free(peb->heap, p);
   leave(&heap_lock);
 }
 
@@ -198,7 +214,7 @@ struct mallinfo mallinfo()
   struct mallinfo m;
 
   enter(&heap_lock);
-  m = heap_mallinfo();
+  m = heap_mallinfo(peb->heap);
   leave(&heap_lock);
 
   return m;
@@ -209,6 +225,32 @@ int malloc_usable_size(void *p)
   return heap_malloc_usable_size(p);
 }
 
+struct heap *get_local_heap()
+{
+  struct job *job = gettib()->job;
+  if (!job->heap) job->heap = create_module_heap(job->hmod);
+  return job->heap;
+}
+
+void *_lmalloc(size_t size)
+{
+  return heap_alloc(get_local_heap(), size);
+}
+
+void *_lrealloc(void *mem, size_t size)
+{
+  return heap_realloc(get_local_heap(), mem, size);
+}
+
+void *_lcalloc(size_t num, size_t size)
+{
+  return heap_calloc(get_local_heap(), num, size);
+}
+
+void _lfree(void *p)
+{
+  heap_free(get_local_heap(), p);
+}
 
 int canonicalize(const char *filename, char *buffer, int size)
 {
@@ -233,11 +275,14 @@ int canonicalize(const char *filename, char *buffer, int size)
   // Add current directory to filename if relative path
   if (*filename != PS1 && *filename != PS2)
   {
+    char curdir[MAXPATH];
+
     // Do not add current directory if it is root directory
-    len = strlen(peb->curdir);
+    if (!getcwd(curdir, MAXPATH)) return -1;
+    len = strlen(curdir);
     if (len > 1)
     {
-      memcpy(p, peb->curdir, len);
+      memcpy(p, curdir, len);
       p += len;
     }
   }
@@ -302,42 +347,6 @@ int canonicalize(const char *filename, char *buffer, int size)
   *p = 0;
 
   return p - buffer;
-}
-
-char *getcwd(char *buf, size_t size)
-{
-  size_t len;
-
-  len = strlen(peb->curdir);
-
-  if (buf)
-  {
-    if (len >= size)
-    {
-      errno = ERANGE;
-      return NULL;
-    }
-  }
-  else
-  {
-    if (size == 0)
-      size = len + 1;
-    else if (len >= size)
-    {
-      errno = ERANGE;
-      return NULL;
-    }
-
-    buf = malloc(size);
-    if (!buf) 
-    {
-      errno = ENOMEM;
-      return NULL;
-    }
-  }
-
-  memcpy(buf, peb->curdir, len + 1);
-  return buf;
 }
 
 static void *load_image(char *filename)
@@ -488,10 +497,13 @@ int getmodpath(hmodule_t hmod, char *buffer, int size)
 hmodule_t dlopen(const char *name, int mode)
 {
   hmodule_t hmod;
+  int flags = 0;
+
+  if (mode & RTLD_NOSHARE) flags |= MODLOAD_NOSHARE;
 
   enter(&mod_lock);
   errno = 0;
-  hmod = load_module(&usermods, (char *) name, 0);
+  hmod = load_module(&usermods, (char *) name, flags);
   if (hmod == NULL && errno == 0) errno = ENOEXEC;
   leave(&mod_lock);
 
@@ -887,9 +899,12 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   peb->debug = 1;
 #endif
 
-  // Determine heap size from PE header of os.dll
-  peb->heap_reserve = get_image_header(hmod)->optional.size_of_heap_reserve & ~(PAGESIZE - 1);
-  peb->heap_commit = get_image_header(hmod)->optional.size_of_heap_commit & ~(PAGESIZE - 1);
+  // Initialize syscall handler
+  init_syscall();
+
+  // Initialize global heap
+  peb->heap = create_module_heap(hmod);
+  if (!peb->heap) panic("unable to create global heap");
 
   // Initialize locks
   mkcs(&heap_lock);
@@ -922,7 +937,6 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   usermods.unload_image = unload_image;
   usermods.protect_region = protect_region;
   usermods.log = logldr;
-
   init_module_database(&usermods, "os.dll", hmod, get_property(osconfig, "os", "libpath", "/bin"), find_section(osconfig, "modaliases"), 0);
 
   // Load user database

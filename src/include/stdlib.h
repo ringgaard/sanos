@@ -70,19 +70,14 @@ int atoi(const char *string);
 long atol(const char *string);
 int atexit(void (*func)(void));
 void *bsearch(const void *key, const void *base, size_t num, size_t width, int (*compare)(const void *, const void *));
-osapi void *calloc(size_t num, size_t size);
 div_t div(int numer, int denom);
 osapi void exit(int status);
-osapi void free(void *p);
 char *itoa(int val, char *buf, int radix);
 long labs(long n);
 ldiv_t ldiv(long numer, long denom);
 char *ltoa(long val, char *buf, int radix);
-osapi void *malloc(size_t size);
-osapi int malloc_usable_size(void *p);
 void qsort(void *base, unsigned num, unsigned width, int (*comp)(const void *, const void *));
 int rand();
-osapi void *realloc(void *mem, size_t size);
 void srand(unsigned int seed);
 double strtod(const char *str, char **endptr);
 long strtol(const char *nptr, char **endptr, int ibase);
@@ -95,8 +90,37 @@ char *ecvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf);
 char *fcvt(double arg, int ndigits, int *decpt, int *sign);
 char *fcvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf);
 
+#ifdef USE_LOCAL_HEAP
+osapi void *_lmalloc(size_t size);
+osapi void *_lrealloc(void *mem, size_t size);
+osapi void *_lcalloc(size_t num, size_t size);
+osapi void _lfree(void *p);
+
+#define malloc(n) _lmalloc(n)
+#define realloc(p, n) _lrealloc((p), (n))
+#define calloc(n, s) _lcalloc((n), (s))
+#define free(p) _lfree(p)
+
+#else
+osapi void *malloc(size_t size);
+osapi void *realloc(void *mem, size_t size);
+osapi void *calloc(size_t num, size_t size);
+osapi void free(void *p);
+#endif
+
+osapi int malloc_usable_size(void *p);
+
+#ifdef USE_LOCAL_HEAP
+
+int _lparse_args(char *args, char **argv);
+void _lfree_args(int argc, char **argv);
+#define parse_args(argc, argv) _lparse_args((argc), (argv))
+#define free_args(argc, argv) _lfree_args((argc), (argv))
+
+#else
 int parse_args(char *args, char **argv);
 void free_args(int argc, char **argv);
+#endif
 
 char *get_option(char *opts, char *name, char *buffer, int size, char *defval);
 int get_num_option(char *opts, char *name, int defval);

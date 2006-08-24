@@ -4,6 +4,23 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * POSIX signals implemented. The following functions has been implemented:
+      alarm(), kill(), sigaction(), sigprocmask(), sigpending(), sigismember(),
+      sigdelset(), sigaddset(), sigfillset(), sigemptyset(), sendsig().
+
+    * Current directory per thread implemented.
+    
+    * New MODLOAD_NOSHARE flag for load_module() to prevent sharing when
+      loading an executable file. This can be used for preventing aliasing
+      of global variables for executable files.
+       
+    * The wait() function has been renamed to waitone() to avoid
+      clash with POSIX wait().
+      
+    * Added header files: sys/param.h, sys/times.h, inttypes.h
+    
+    * Support for local heaps by defining USE_LOCAL_HEAP.
+    
     * Heap size and commit increment are now initialized from the PE header
       of os.dll. Use the EDITBIN tool to change the defaults.
       
@@ -15,8 +32,6 @@ Changes since last release
     * Kernel thread handles are now protected from being closed from
       user mode applications.
       
-    * POSIX signal definitions added. These are not yet implemented.
-    
     * New shell command keybd for changing keyboard layout.
     
     * Environment variables has been implemented. Now each job has its own copy of

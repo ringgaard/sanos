@@ -70,6 +70,7 @@ typedef unsigned long uintptr_t;
 //
 
 #ifndef _INTMAX_T_DEFINED
+#define _INTMAX_T_DEFINED
 typedef __int64	intmax_t;
 typedef unsigned __int64 uintmax_t;
 #endif

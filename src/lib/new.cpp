@@ -31,7 +31,7 @@
 // SUCH DAMAGE.
 // 
 
-#include "os.h"
+#include <os.h>
 
 extern "C"
 {

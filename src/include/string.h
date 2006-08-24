@@ -46,7 +46,6 @@ extern "C" {
 
 char *strncpy(char *dest, const char *source, size_t count);
 int strncmp(const char *s1, const char *s2, size_t count);
-char *strdup(const char *s);
 int stricmp(const char *s1, const char *s2);
 int strnicmp(const char *s1, const char *s2, size_t count);
 char *strchr(const char *s, int ch);
@@ -56,7 +55,12 @@ size_t strspn(const char *string, const char *control);
 size_t strcspn(const char *string, const char *control);
 char *strpbrk(const char *string, const char *control);
 
+#ifdef USE_LOCAL_HEAP
+char *_lstrdup(const char *s);
+#define strdup(s) _lstrdup(s);
+#else
 char *strdup(const char *s);
+#endif
 
 char *strlwr(char *s);
 char *strupr(char *s);
@@ -69,6 +73,7 @@ char *strtok(char *string, const char *control);
 char *strtok_r(char *string, const char *control, char **lasts);
 
 osapi char *strerror(int errnum);
+osapi char *strsignal(int signum);
 
 void *memmove(void *dst, const void *src, size_t count);
 void *memchr(const void *buf, int ch, size_t count);

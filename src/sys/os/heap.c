@@ -544,6 +544,13 @@ struct heap
   int n_mmaps_max;
   int max_n_mmaps;
 
+  // System memory allocation
+  char *region;
+  char *wilderness;
+  char *heapend;
+  size_t region_size;
+  size_t group_size;
+
   // Statistics
   size_t mmapped_mem;
   size_t sbrked_mem;
@@ -552,27 +559,8 @@ struct heap
   size_t max_total_mem;
 };
 
-// 
-// There is exactly one instance of this struct in this malloc.
-// If you are adapting this malloc in a way that does NOT use a static
-// malloc_state, you MUST explicitly zero-fill it before using. This
-// malloc relies on the property that malloc_state is initialized to
-// all zeroes (as is true of C statics).
-// 
-
-static struct heap mainheap;  // never directly referenced
-
-// 
-// All uses of mainheap are via get_malloc_state().
-// At most one "call" to get_malloc_state is made per invocation of
-// the public versions of malloc and free, but other routines
-// that in turn invoke malloc and/or free may call more then once. 
-// 
-
-#define get_malloc_state() (&(mainheap))
-
 //
-// Initialize a malloc_state struct.
+// Initialize a heap struct.
 // 
 // This is called only from within heap_consolidate, which needs
 // be called in the same contexts anyway.  It is never called directly
@@ -713,13 +701,6 @@ static void heap_consolidate(struct heap *av)
 // be extended or replaced.
 // 
 
-#define REGION_SIZE (32 * 1024 * 1024)
-#define GROUP_SIZE  (128 * 1024)
-
-static char *region = NULL;
-static char *wilderness = NULL;
-static char *heapend = NULL;
-
 static void *sysalloc(size_t nb, struct heap *av)
 {
   mchunkptr top;                // Incoming value of av->top
@@ -729,7 +710,6 @@ static void *sysalloc(size_t nb, struct heap *av)
   mchunkptr remainder;          // Remainder from allocation
   unsigned long remainder_size; // Its size
   size_t expand;
-  size_t groupsize;
 
   // Allocate big chunks directly from system
   if (nb >= av->mmap_threshold && av->n_mmaps < av->n_mmaps_max) 
@@ -756,32 +736,30 @@ static void *sysalloc(size_t nb, struct heap *av)
   }
 
   // Allocate memory from the system
-  if (region == NULL)
+  if (av->region == NULL)
   {
-    size_t regionsize = peb->heap_reserve ? peb->heap_reserve : REGION_SIZE;
-    region = (char *) mmap(NULL, regionsize, MEM_RESERVE, 0, 'MALL');
-    if (!region) panic("unable to reserve heap region");
+    av->region = (char *) mmap(NULL, av->region_size, MEM_RESERVE, 0, 'MALL');
+    if (!av->region) panic("unable to reserve heap region");
     //syslog(LOG_HEAP | LOG_DEBUG, "Reserve heap %p", region);
-    wilderness = region;
-    heapend = region + regionsize;
+    av->wilderness = av->region;
+    av->heapend = av->region + av->region_size;
   }
 
   top = av->top;
   size = chunksize(top);
 
   // Commit one or more groups from region
-  groupsize = peb->heap_commit ? peb->heap_commit : GROUP_SIZE;
-  expand = (nb + MINSIZE - size + groupsize - 1)  & ~(groupsize - 1);
+  expand = (nb + MINSIZE - size + av->group_size - 1)  & ~(av->group_size - 1);
   //syslog(LOG_HEAP | LOG_DEBUG, "Expand heap: request = %d, remaining = %d, expansion = %d", nb, size, expand);
-  if (wilderness + expand > heapend) panic("out of memory");
+  if (av->wilderness + expand > av->heapend) panic("out of memory");
 
-  if (mmap(wilderness, expand, MEM_COMMIT, PAGE_READWRITE, 'MALL') == 0) panic("unable to expand heap");
-  wilderness += expand;
+  if (mmap(av->wilderness, expand, MEM_COMMIT, PAGE_READWRITE, 'MALL') == 0) panic("unable to expand heap");
+  av->wilderness += expand;
 
   if (size == 0)
   {
     //syslog(LOG_HEAP | LOG_DEBUG, "Reserve heap region");
-    av->top = (mchunkptr) region;
+    av->top = (mchunkptr) av->region;
     newsize = expand;
   }
   else
@@ -828,10 +806,8 @@ static int systrim(size_t pad, struct heap *av)
 // heap_alloc
 //
 
-void *heap_alloc(size_t bytes)
+void *heap_alloc(struct heap *av, size_t bytes)
 {
-  struct heap *av = get_malloc_state();
-
   size_t nb;                    // Normalized request size
   unsigned int idx;             // Associated bin index
   mbinptr bin;                  // Associated bin
@@ -898,18 +874,17 @@ void *heap_alloc(size_t bytes)
       }
     }
   }
-
-  // If this is a large request, consolidate fastbins before continuing.
-  // While it might look excessive to kill all fastbins before
-  // even seeing if there is space available, this avoids
-  // fragmentation problems normally associated with fastbins.
-  // Also, in practice, programs tend to have runs of either small or
-  // large requests, but less often mixtures, so consolidation is not 
-  // invoked all that often in most programs. And the programs that
-  // it is called frequently in otherwise tend to fragment.
-
   else 
   {
+    // If this is a large request, consolidate fastbins before continuing.
+    // While it might look excessive to kill all fastbins before
+    // even seeing if there is space available, this avoids
+    // fragmentation problems normally associated with fastbins.
+    // Also, in practice, programs tend to have runs of either small or
+    // large requests, but less often mixtures, so consolidation is not 
+    // invoked all that often in most programs. And the programs that
+    // it is called frequently in otherwise tend to fragment.
+
     idx = largebin_index(nb);
     if (have_fastchunks(av)) heap_consolidate(av);
   }
@@ -1151,13 +1126,12 @@ void *heap_alloc(size_t bytes)
 
       return chunk2mem(victim);
     }
-
-    // If there is space available in fastbins, consolidate and retry,
-    // to possibly avoid expanding memory. This can occur only if nb is
-    // in smallbin range so we didn't consolidate upon entry.
-
     else if (have_fastchunks(av)) 
     {
+      // If there is space available in fastbins, consolidate and retry,
+      // to possibly avoid expanding memory. This can occur only if nb is
+      // in smallbin range so we didn't consolidate upon entry.
+
       assert(in_smallbin_range(nb));
       heap_consolidate(av);
       idx = smallbin_index(nb); // Restore original bin index
@@ -1172,10 +1146,8 @@ void *heap_alloc(size_t bytes)
 // heap_free
 //
 
-void heap_free(void *mem)
+void heap_free(struct heap *av, void *mem)
 {
-  struct heap *av = get_malloc_state();
-
   mchunkptr p;         // Chunk corresponding to mem
   size_t size;         // Its size
   mfastbinptr *fb;     // Associated fastbin
@@ -1302,10 +1274,8 @@ void heap_free(void *mem)
 // heap_realloc
 //
 
-void *heap_realloc(void *oldmem, size_t bytes)
+void *heap_realloc(struct heap *av, void *oldmem, size_t bytes)
 {
-  struct heap *av = get_malloc_state();
-
   size_t nb;                   // Padded request size
 
   mchunkptr oldp;               // Chunk corresponding to oldmem
@@ -1325,12 +1295,12 @@ void *heap_realloc(void *oldmem, size_t bytes)
 
   if (bytes == 0)
   {
-    heap_free(oldmem);
+    heap_free(av, oldmem);
     return 0;
   }
 
   // Realloc of null is supposed to be same as malloc
-  if (oldmem == 0) return heap_alloc(bytes);
+  if (oldmem == 0) return heap_alloc(av, bytes);
 
   nb = request2size(bytes);
 
@@ -1367,7 +1337,7 @@ void *heap_realloc(void *oldmem, size_t bytes)
       else 
       {
         // Allocate, copy, free
-        newmem = heap_alloc(nb - ALIGNMASK);
+        newmem = heap_alloc(av, nb - ALIGNMASK);
         if (newmem == 0) return 0; // Propagate failure
       
         newp = mem2chunk(newmem);
@@ -1382,7 +1352,7 @@ void *heap_realloc(void *oldmem, size_t bytes)
         else 
 	{
           memcpy(newmem, oldmem, oldsize - sizeof(size_t));
-          heap_free(oldmem);
+          heap_free(av, oldmem);
           return chunk2mem(newp);
         }
       }
@@ -1407,7 +1377,7 @@ void *heap_realloc(void *oldmem, size_t bytes)
       
       // Mark remainder as inuse so free() won't complain
       set_inuse_bit_at_offset(remainder, remainder_size);
-      heap_free(chunk2mem(remainder)); 
+      heap_free(av, chunk2mem(remainder)); 
     }
 
     return chunk2mem(newp);
@@ -1451,11 +1421,11 @@ void *heap_realloc(void *oldmem, size_t bytes)
     else 
     {
       // Must alloc, copy, free.
-      newmem = heap_alloc(nb - ALIGNMASK);
+      newmem = heap_alloc(av, nb - ALIGNMASK);
       if (newmem != 0) 
       {
         memcpy(newmem, oldmem, oldsize - 2 * sizeof(size_t));
-        heap_free(oldmem);
+        heap_free(av, oldmem);
       }
     }
     return newmem;
@@ -1466,11 +1436,11 @@ void *heap_realloc(void *oldmem, size_t bytes)
 // heap_calloc
 //
 
-void *heap_calloc(size_t n_elements, size_t elem_size)
+void *heap_calloc(struct heap *av, size_t n_elements, size_t elem_size)
 {
   mchunkptr p;
 
-  void *mem = heap_alloc(n_elements * elem_size);
+  void *mem = heap_alloc(av, n_elements * elem_size);
 
   if (mem != 0) 
   {
@@ -1487,10 +1457,8 @@ void *heap_calloc(size_t n_elements, size_t elem_size)
 // heap_mallinfo
 //
 
-struct mallinfo heap_mallinfo()
+struct mallinfo heap_mallinfo(struct heap *av)
 {
-  struct heap *av = get_malloc_state();
-
   struct mallinfo mi;
   int i;
   mbinptr b;
@@ -1563,5 +1531,34 @@ int heap_malloc_usable_size(void *mem)
     else if (inuse(p))
       return chunksize(p) - sizeof(size_t);
   }
+  return 0;
+}
+
+//
+// heap_create
+//
+
+struct heap *heap_create(size_t region_size, size_t group_size)
+{
+  struct heap *av;
+
+  av = (struct heap *) mmap(NULL, sizeof(struct heap), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'HBLK');
+  if (!av) return NULL;
+
+  av->region_size = region_size;
+  av->group_size = group_size;
+
+  return av;
+}
+
+//
+// heap_destroy
+//
+
+int heap_destroy(struct heap *av)
+{
+  if (av->region) munmap(av->region, av->heapend - av->region, MEM_RELEASE);
+  // TODO release big chunks allocated directly from system
+  munmap(av, sizeof(struct heap), MEM_RELEASE);
   return 0;
 }

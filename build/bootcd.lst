@@ -22,7 +22,7 @@
 /bin/ne2000.sys   bin\ne2000.sys
 /bin/3c905c.sys   bin\3c905c.sys
 /bin/rtl8139.sys  bin\rtl8139.sys
-/bin/eepro100.sys bin\eepro100.sys
+;/bin/eepro100.sys bin\eepro100.sys
 /bin/sis900.sys   bin\sis900.sys
 /bin/tulip.sys    bin\tulip.sys
 

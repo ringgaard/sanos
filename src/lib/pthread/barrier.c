@@ -107,7 +107,7 @@ int pthread_barrier_wait(pthread_barrier_t *barrier)
       rc = 0;
   }
   else
-    rc = wait(barrier->breeched[step], INFINITE);
+    rc = waitone(barrier->breeched[step], INFINITE);
 
   if (rc == 0)
   {

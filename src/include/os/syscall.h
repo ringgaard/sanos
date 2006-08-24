@@ -61,7 +61,7 @@
 #define SYSCALL_MPROTECT       24
 #define SYSCALL_MLOCK          25
 #define SYSCALL_MUNLOCK        26
-#define SYSCALL_WAIT           27
+#define SYSCALL_WAITONE        27
 #define SYSCALL_MKEVENT        28
 #define SYSCALL_EPULSE         29
 #define SYSCALL_ESET           30
@@ -138,7 +138,12 @@
 #define SYSCALL_FCHOWN        101
 #define SYSCALL_ACCESS        102
 #define SYSCALL_POLL          103
+#define SYSCALL_GETCWD        104
+#define SYSCALL_SENDSIG       105
+#define SYSCALL_SIGPROCMASK   106
+#define SYSCALL_SIGPENDING    107
+#define SYSCALL_ALARM         108
 
-#define SYSCALL_MAX           103
+#define SYSCALL_MAX           108
 
 #endif

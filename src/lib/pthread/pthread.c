@@ -236,7 +236,7 @@ int pthread_join(pthread_t thread, void **value_ptr)
   int rc;
 
   if (pthread_equal(thread, pthread_self())) return EDEADLK;
-  rc = wait(thread, INFINITE);
+  rc = waitone(thread, INFINITE);
   if (rc < 0) return errno;
   if (*value_ptr) *value_ptr = (void *) rc;
   return 0;

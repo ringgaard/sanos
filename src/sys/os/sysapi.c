@@ -42,10 +42,6 @@ __declspec(naked) int syscall(int syscallno, void *params)
 {
   __asm
   {
-    mov   eax, dword ptr ds:[PEB_ADDRESS + 4]
-    test  eax, eax
-    jz    slow_syscall
-
     push  ebp
     mov	  ebp, esp
 
@@ -58,8 +54,13 @@ __declspec(naked) int syscall(int syscallno, void *params)
 sys_return:
     pop   ebp
     ret
+  }
+}
 
-slow_syscall:
+__declspec(naked) int syscall_int48(int syscallno, void *params)
+{
+  __asm
+  {
     push  ebp
     mov	  ebp, esp
 
@@ -70,6 +71,21 @@ slow_syscall:
 
     leave
     ret
+  }
+}
+
+void init_syscall()
+{
+  // If the processor does not support sysenter patch the 
+  // syscall routine with a jump to syscall_int48
+
+  if (!peb->fast_syscalls_supported)
+  {
+    // Inject a 'JMP syscall_int48' at the entry of syscall
+    char *sc = (char *) syscall;
+    char *sc48 = (char *) syscall_int48;
+    sc[0] = 0xEB;
+    sc[1] = (sc48 - sc - 2);
   }
 }
 
@@ -399,9 +415,9 @@ int munlock(void *addr, unsigned long size)
   return syscall(SYSCALL_MUNLOCK, &addr);
 }
 
-int wait(handle_t h, int timeout)
+int waitone(handle_t h, int timeout)
 {
-  return syscall(SYSCALL_WAIT, &h);
+  return syscall(SYSCALL_WAITONE, &h);
 }
 
 int waitall(handle_t *h, int count, int timeout)
@@ -672,4 +688,46 @@ int access(const char *name, int mode)
 int poll(struct pollfd fds[], unsigned int nfds, int timeout)
 {
   return syscall(SYSCALL_POLL, (void *) &fds);
+}
+
+int _getcwd(char *buf, size_t size)
+{
+  return syscall(SYSCALL_GETCWD, (void *) &buf);
+}
+
+char *getcwd(char *buf, size_t size)
+{
+  if (buf)
+  {
+    if (_getcwd(buf, size) < 0)
+      return NULL;
+    else
+      return buf;
+  }
+  else
+  {
+    char curdir[MAXPATH];
+    size_t len;
+
+    if (_getcwd(curdir, MAXPATH) < 0) return NULL;
+    len = strlen(curdir);
+
+    if (size == 0)
+      size = len + 1;
+    else if (len >= size)
+    {
+      errno = ERANGE;
+      return NULL;
+    }
+
+    buf = malloc(size);
+    if (!buf) 
+    {
+      errno = ENOMEM;
+      return NULL;
+    }
+
+    memcpy(buf, curdir, len + 1);
+    return buf;
+  }
 }

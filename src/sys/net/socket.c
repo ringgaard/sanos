@@ -46,10 +46,8 @@ void socket_init()
   sockops[SOCKTYPE_RAW] = &rawops;
 }
 
-void release_socket_request(struct sockreq *req, int rc)
+void cancel_socket_request(struct sockreq *req)
 {
-  req->rc = rc;
-
   if (req->next) req->next->prev = req->prev;
   if (req->prev) req->prev->next = req->next;
   if (req->socket)
@@ -57,7 +55,12 @@ void release_socket_request(struct sockreq *req, int rc)
     if (req == req->socket->waithead) req->socket->waithead = req->next;
     if (req == req->socket->waittail) req->socket->waittail = req->prev;
   }
+}
 
+void release_socket_request(struct sockreq *req, int rc)
+{
+  cancel_socket_request(req);
+  req->rc = rc;
   mark_thread_ready(req->thread, 1, 2);
 }
 
@@ -72,6 +75,7 @@ static void socket_timeout(void *arg)
 err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, struct msghdr *msg, unsigned int timeout)
 {
   struct timer timer;
+  int rc;
 
   if (timeout == 0) return -ETIMEOUT;
 
@@ -94,7 +98,12 @@ err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, str
     add_timer(&timer);
   }
 
-  enter_wait(THREAD_WAIT_SOCKET);
+  rc = enter_alertable_wait(THREAD_WAIT_SOCKET);
+  if (rc < 0)
+  {
+    cancel_socket_request(req);
+    req->rc = rc;
+  }
 
   if (timeout != INFINITE) del_timer(&timer);
 

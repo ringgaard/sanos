@@ -99,32 +99,6 @@
 #define INTR_SIGEXIT            49
 #define INTR_SYSENTER           0xFFFF
 
-//
-// syscall context
-//
-
-struct syscall_context
-{
-  int syscallno;
-  char *params;
-  unsigned long es, ds;
-  unsigned long traptype;
-  union
-  {
-    struct
-    {
-      unsigned long eip, ecs;
-      unsigned long eflags;
-      unsigned long esp, ess;
-    } softint;
-    struct
-    {
-      unsigned long esp;
-      unsigned long eip;
-    } sysentry;
-  };
-};
-
 typedef int (*intrproc_t)(struct context *ctxt, void *arg);
 
 struct interrupt
@@ -140,6 +114,11 @@ struct interrupt
 void init_trap();
 krnlapi void register_interrupt(struct interrupt *intr, int intrno, intrproc_t f, void *arg);
 krnlapi void unregister_interrupt(struct interrupt *intr, int intrno);
+
+krnlapi int send_user_signal(struct thread *t, int signum);
+int deliver_pending_signals(int retcode);
+int set_signal_mask(int how, sigset_t *set, sigset_t *oldset);
+int get_pending_signals(sigset_t *set);
 
 int get_context(struct thread *t, struct context *ctxt);
 int set_context(struct thread *t, struct context *ctxt);

@@ -126,6 +126,29 @@ static void release_all_waiters(struct pipe *pipe, int retcode)
   pipe->waithead = pipe->waittail = NULL;
 }
 
+static void cancel_request(struct pipe *pipe, struct pipereq *req)
+{
+  if (pipe->waithead == req)
+  {
+    pipe->waithead = req->next;
+    if (pipe->waittail == req) pipe->waittail = NULL;
+  }
+  else if (pipe->waithead)
+  {
+    struct pipereq *r = pipe->waithead;
+    while (r->next)
+    {
+      if (r->next == req)
+      {
+	r->next = req->next;
+	if (pipe->waittail == req) pipe->waittail = r;
+	return;
+      }
+      r = r->next;
+    }
+  }
+}
+
 void init_pipefs()
 {
   register_filesystem("pipefs", &pipefsops);
@@ -252,6 +275,7 @@ int pipefs_read(struct file *filp, void *data, size_t size, off64_t pos)
   if (count == 0)
   {
     struct pipereq req;
+    int rc;
 
     if (filp->flags & O_NONBLOCK) return -EAGAIN;
     set_io_event(&pipe->peer->filp->iob, IOEVT_WRITE);
@@ -270,7 +294,13 @@ int pipefs_read(struct file *filp, void *data, size_t size, off64_t pos)
 
     if (!pipe->waithead) pipe->waithead = &req;
 
-    enter_wait(THREAD_WAIT_PIPE);
+    rc = enter_alertable_wait(THREAD_WAIT_PIPE);
+    if (rc < 0)
+    {
+      cancel_request(pipe, &req);
+      req.rc = rc;
+    }
+
     if (req.rc < 0) return req.rc;
     count += req.rc;
   }
@@ -313,6 +343,7 @@ int pipefs_write(struct file *filp, void *data, size_t size, off64_t pos)
   if (left > 0)
   {
     struct pipereq req;
+    int rc;
 
     if (filp->flags & O_NONBLOCK) return size - left;
     set_io_event(&pipe->peer->filp->iob, IOEVT_READ);
@@ -331,7 +362,13 @@ int pipefs_write(struct file *filp, void *data, size_t size, off64_t pos)
 
     if (!pipe->waithead) pipe->waithead = &req;
 
-    enter_wait(THREAD_WAIT_PIPE);
+    rc = enter_alertable_wait(THREAD_WAIT_PIPE);
+    if (rc < 0)
+    {
+      cancel_request(pipe, &req);
+      req.rc = rc;
+    }
+
     if (req.rc < 0) return req.rc;
   }
 

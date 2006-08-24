@@ -481,7 +481,7 @@ int pclose(FILE *stream)
 
   if (stream->flag & _IORD)
   {
-    wait(stream->phndl, INFINITE);
+    waitone(stream->phndl, INFINITE);
     close(stream->phndl);
     rc = close_file(stream);
   }
@@ -489,7 +489,7 @@ int pclose(FILE *stream)
   {
     int phndl = stream->phndl;
     rc = close_file(stream);
-    wait(phndl, INFINITE);
+    waitone(phndl, INFINITE);
     close(phndl);
   }
 

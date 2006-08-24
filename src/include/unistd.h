@@ -127,9 +127,15 @@ osapi int link(const char *oldname, const char *newname);
 osapi int unlink(const char *name);
 osapi int mkdir(const char *name, int mode);
 osapi int rmdir(const char *name);
+osapi int chown(const char *name, int owner, int group);
+osapi int fchown(handle_t f, int owner, int group);
+
 osapi int gethostname(char *name, int namelen);
+
 osapi unsigned sleep(unsigned seconds);
+osapi unsigned alarm(unsigned seconds);
 osapi char *crypt(const char *key, const char *salt);
+
 osapi pid_t getpid();
 osapi pid_t getppid();
 osapi int getuid();
@@ -141,8 +147,8 @@ osapi int getegid();
 osapi int seteuid(uid_t uid);
 osapi int setegid(gid_t gid);
 osapi int getgroups(int size, gid_t list[]);
-osapi int chown(const char *name, int owner, int group);
-osapi int fchown(handle_t f, int owner, int group);
+
+#ifndef NOGETOPT
 
 int *_opterr();
 int *_optind();
@@ -155,6 +161,8 @@ char **_optarg();
 #define optarg (*_optarg())
 
 int getopt(int argc, char **argv, char *opts);
+
+#endif
 
 #ifndef NOVFORK
 

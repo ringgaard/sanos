@@ -700,12 +700,15 @@ hmodule_t load_module(struct moddb *db, char *name, int flags)
   struct module *m;
   int rc;
 
-  // Return existing handle if module already loaded
-  mod = get_module(db, name);
-  if (mod != NULL)
+  if ((flags & MODLOAD_NOSHARE) == 0)
   {
-    mod->refcnt++;
-    return mod->hmod;
+    // Return existing handle if module already loaded
+    mod = get_module(db, name);
+    if (mod != NULL)
+    {
+      mod->refcnt++;
+      return mod->hmod;
+    }
   }
 
   // Get canonical name

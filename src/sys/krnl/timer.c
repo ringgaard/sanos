@@ -305,19 +305,21 @@ static void tmr_sleep(void *arg)
 int msleep(unsigned int millisecs)
 {
   struct timer timer;
+  int rc;
 
   if (millisecs == 0)
   {
     yield();
+    rc = 0;
   }
   else
   {
     init_timer(&timer, tmr_sleep, self());
     timer.expires = ticks + millisecs / MSECS_PER_TICK;
     add_timer(&timer);
-    enter_wait(THREAD_WAIT_SLEEP);
+    rc = enter_alertable_wait(THREAD_WAIT_SLEEP);
     del_timer(&timer);
   }
 
-  return 0;
+  return rc;
 }

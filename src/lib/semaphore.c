@@ -78,7 +78,7 @@ int sem_trywait(sem_t *sem)
     return -1;
   }
 
-  if (wait(*sem, 0) < 0)
+  if (waitone(*sem, 0) < 0)
   {
     errno = EAGAIN;
     return -1;
@@ -95,7 +95,7 @@ int sem_wait(sem_t * sem)
     return -1;
   }
 
-  if (wait(*sem, INFINITE) < 0) return -1;
+  if (waitone(*sem, INFINITE) < 0) return -1;
   return 0;
 }
 
@@ -115,7 +115,7 @@ int sem_timedwait(sem_t *sem, const struct timespec *abstime)
              (long)((abstime->tv_nsec / 1000) - curtime.tv_usec) / 1000L);
   if (timeout < 0) timeout = 0L;
 
-  if (wait(*sem, timeout) < 0) return -1;
+  if (waitone(*sem, timeout) < 0) return -1;
   return 0;
 }
 

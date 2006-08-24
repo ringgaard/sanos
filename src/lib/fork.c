@@ -159,7 +159,7 @@ int waitpid(int pid, int *stat_loc, int options)
   }
 
   // Wait for main thread in job to terminate
-  rc = wait(h, (options & WNOHANG) ? 0 : INFINITE);
+  rc = waitone(h, (options & WNOHANG) ? 0 : INFINITE);
   close(h);
   if (rc < 0) return 0;
 

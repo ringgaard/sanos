@@ -102,22 +102,7 @@ typedef void (*sighandler_t)(int signum);
 
 #endif
 
-#ifndef _CONTEXT_DEFINED
-#define _CONTEXT_DEFINED
-
-struct context
-{
-  unsigned long es, ds;
-  unsigned long edi, esi, ebp, ebx, edx, ecx, eax;
-  unsigned long traptype;
-  unsigned long errcode;
-
-  unsigned long eip, ecs;
-  unsigned long eflags;
-  unsigned long esp, ess;
-};
-
-#endif
+struct context;
 
 #ifndef _SIGINFO_T_DEFINED
 #define _SIGINFO_T_DEFINED
@@ -127,7 +112,7 @@ struct siginfo
   int si_signo;
   int si_code;
 
-  struct context si_ctxt;
+  struct context *si_ctxt;
   void *si_addr;
 };
 
@@ -189,6 +174,7 @@ extern "C" {
 
 osapi sighandler_t signal(int signum, sighandler_t handler);
 osapi int raise(int signum);
+osapi int kill(pid_t pid, int signum);
 osapi char *strsignal(int signum);
 
 osapi int sigemptyset(sigset_t *set);

@@ -1252,7 +1252,7 @@ void __stdcall httpd_worker(void *arg)
 
   while (1)
   {
-    rc = wait(server->iomux, INFINITE);
+    rc = waitone(server->iomux, INFINITE);
     if (rc < 0) break;
 
     conn = (struct httpd_connection *) rc;

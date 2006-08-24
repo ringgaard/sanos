@@ -443,8 +443,10 @@ int keyboard_handler(struct context *ctxt, void *arg)
 int getch(unsigned int timeout)
 {
   unsigned char ch;
+  int rc;
 
-  if (wait_for_object(&kbdsem, timeout) < 0) return -ETIMEOUT;
+  rc = wait_for_one_object(&kbdsem, timeout, 1);
+  if (rc < 0) return rc;
 
   ch = keyboard_buffer[keyboard_buffer_out];
   keyboard_buffer_out = (keyboard_buffer_out + 1) & (KEYBOARD_BUFFER_SIZE - 1);

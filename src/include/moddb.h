@@ -37,6 +37,7 @@
 #define RVA(hmod, rva) (((char *) (hmod)) + (rva))
 
 #define MODLOAD_NOINIT          1
+#define MODLOAD_NOSHARE         2
 
 #define MODULE_LOADED           0x0001
 #define MODULE_IMPORTS_REFED    0x0002

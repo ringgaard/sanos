@@ -64,6 +64,7 @@ src\                           Souce files
     hash.h                     A hashed lookup mechanism
     httpd.h                    HTTP server
     inifile.h                  Property files
+    inttypes.h                 Format conversion of integer types
     io.h                       Low-level file handling and I/O functions
     limits.h                   Implementation dependent limits
     locale.h                   Localization routines
@@ -160,11 +161,13 @@ src\                           Souce files
       video.h                  Video funtions
       vmm.h                    Virtual memory manager
     sys\                       Standard system include files
+      param.h                  System parameters
       poll.h                   Wait for events on set of file descriptors
       select.h                 Select from file descriptor set
       socket.h                 Socket definitions
       stat.h                   Defines structure used by stat() and fstat()
       time.h                   Time types
+      times.h                  Process times
       types.h                  Basic type definitions
       uio.h                    Defines for vector I/O functions
       utsname.h                System name
@@ -449,6 +452,8 @@ utils\                         Build utilities
   dfs\                         Disk file system utility files
     bitops.c                   Bitmap manipulation routines
     bitops.h                   Bitmap manipulation definitions
+    blockdev.c                 Block device interface
+    blockdev.h                 Block device manager
     buf.c                      I/O buffer management
     buf.h                      I/O buffer management definitions
     dfs.c                      Disk file system routines
@@ -467,6 +472,7 @@ utils\                         Build utilities
     types.h                    Type definitions
     vfs.c                      Virtual file system
     vfs.h                      Virtual file system definitions
+    vmdk.c                     VMDK block driver
   mkfloppy\                    Raw floppy writer utility
     mkfloppy.c                 Raw floppy writer
     mkfloppy.sln               Solution file for raw floppy writer utility (mkfloppy)

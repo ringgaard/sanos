@@ -33,6 +33,8 @@
 
 #include <os/krnl.h>
 
+#define CTRL(c) ((c) - 'A' + 1)
+
 dev_t consdev = NODEV;
 static int cursoff = 0;
 static unsigned int kbd_timeout = INFINITE;
@@ -152,7 +154,14 @@ static int console_read(struct dev *dev, void *buffer, size_t count, blkno_t blk
     }
 
     ch = getch(n ? 0 : kbd_timeout);
-    if (ch < 0) return n;
+    if (ch < 0) return n ? n : ch;
+    
+    if (ch < ' ')
+    {
+      if (ch == CTRL('C')) send_user_signal(self(), SIGINT);
+      if (ch == CTRL('Z')) send_user_signal(self(), SIGTSTP);
+      if (ch == CTRL('\\')) send_user_signal(self(), SIGABRT);
+    }
     
     *p++ = ch;
   }

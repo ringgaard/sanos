@@ -12,8 +12,6 @@ TODO for sanos
 
 - Implement 48-bit LBA support in IDE driver
 
-- Add read-only attribute to dfs
-
 - Improve sysalloc() in heap.c to enable dynamic expansion of wilderness region.
 
 - Implement UDMA mode for ATAPI devices
@@ -47,11 +45,6 @@ IDEAS for new features
 ----------------------
 
 - Vulnerability test with Nessus
-
-- dfs version 2
-    - Large file support
-    - Support for mode flags (drwxrwxrwx)
-    - Support for owner and group
 
 - Use type object in struct object
 

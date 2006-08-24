@@ -86,7 +86,7 @@ int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 
   atomic_increment(&cond->waiting);
   pthread_mutex_unlock(mutex);
-  if (wait(cond->semaphore, INFINITE) < 0) rc = errno;
+  if (waitone(cond->semaphore, INFINITE) < 0) rc = errno;
   atomic_decrement(&cond->waiting);
   pthread_mutex_lock(mutex);
   return errno;
@@ -98,7 +98,7 @@ int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const s
 
   atomic_increment(&cond->waiting);
   pthread_mutex_unlock(mutex);
-  if (wait(cond->semaphore, __abstime2timeout(abstime)) < 0) rc = errno;
+  if (waitone(cond->semaphore, __abstime2timeout(abstime)) < 0) rc = errno;
   atomic_decrement(&cond->waiting);
   pthread_mutex_lock(mutex);
   return rc;

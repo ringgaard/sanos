@@ -871,10 +871,16 @@ int cmd_kbd(int argc, char *argv[])
 
 int cmd_kill(int argc, char *argv[])
 {
+  int pid = getpid();
   int signum = SIGINT;
+  int rc;
   
-  if (argc > 1) signum = atoi(argv[1]);
-  raise(signum);
+  if (argc > 1) pid = atoi(argv[1]);
+  if (argc > 2) signum = atoi(argv[2]);
+
+  rc = kill(pid, signum);
+  if (rc < 0) perror("kill");
+
   return 0;
 }
 
@@ -1482,9 +1488,42 @@ int cmd_sysinfo(int argc, char *argv[])
   return 0;
 }
 
+void ctrlc_handler(int signum)
+{
+  printf("Ctrl-C pressed\n");
+}
+
+char vp;
+volatile char *p;
+
+void sigsegv_handler(int signum)
+{
+  printf("SIGSEGV, setting p\n");
+  p = &vp;
+  signal(SIGSEGV, SIG_DFL);
+}
+
+void alarm_handler(int signum)
+{
+  printf("alarm\n");
+}
+
 int cmd_test(int argc, char *argv[])
 {
-  printf("heap reserve=%dK commit=%dK\n", peb->heap_reserve / 1024, peb->heap_commit / 1024);
+#if 0
+  signal(SIGSEGV, sigsegv_handler);
+  printf("Generate SIGSEGV\n");
+  fflush(stdout);
+  p = NULL;
+  *p = 'x';
+  printf("new value: %c\n", *p);
+#endif
+
+//  signal(SIGINT, ctrlc_handler);
+
+  signal(SIGALRM, alarm_handler);
+  alarm(argc > 1 ? atoi(argv[1]) : 0);
+
   return 0;
 }
 

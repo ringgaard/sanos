@@ -410,11 +410,11 @@ void win32_globalhandler(struct siginfo *info)
   ep.ExceptionRecord = &rec;
 
   memset(&rec, 0, sizeof(EXCEPTION_RECORD));
-  rec.ExceptionAddress = (void *) info->si_ctxt.eip;
+  rec.ExceptionAddress = (void *) info->si_ctxt->eip;
 
-  convert_to_win32_context(&info->si_ctxt, &ctxt);
+  convert_to_win32_context(info->si_ctxt, &ctxt);
   
-  switch (info->si_ctxt.traptype)
+  switch (info->si_ctxt->traptype)
   {
     case INTR_DIV:
       rec.ExceptionCode = EXCEPTION_INT_DIVIDE_BY_ZERO;
@@ -442,7 +442,7 @@ void win32_globalhandler(struct siginfo *info)
       else
 	rec.ExceptionCode = EXCEPTION_ACCESS_VIOLATION;
       rec.NumberParameters = 2;
-      rec.ExceptionInformation[0] = (void *) ((info->si_ctxt.errcode & 2) ? 1 : 0);
+      rec.ExceptionInformation[0] = (void *) ((info->si_ctxt->errcode & 2) ? 1 : 0);
       rec.ExceptionInformation[1] = info->si_addr;
       break;
 
@@ -457,7 +457,7 @@ void win32_globalhandler(struct siginfo *info)
 
   raise_exception(&rec, &ctxt);
 
-  convert_from_win32_context(&info->si_ctxt, &ctxt);
+  convert_from_win32_context(info->si_ctxt, &ctxt);
 
   //syslog(LOG_DEBUG, "kernel32: sigexit", signum);
   sigexit(info, 0);
@@ -1169,12 +1169,15 @@ DWORD WINAPI GetCurrentDirectoryA
   LPTSTR lpBuffer
 )
 {
+  char curdir[MAXPATH];
+
   TRACE("GetCurrentDirectoryA");
   
-  if (nBufferLength < strlen(peb->curdir) + 3) return strlen(peb->curdir) + 3;
+  if (!getcwd(curdir, MAXPATH)) return 0;
+  if (nBufferLength < strlen(curdir) + 3) return strlen(curdir) + 3;
   lpBuffer[0] = 'c';
   lpBuffer[1] = ':';
-  strcpy(lpBuffer + 2, peb->curdir);
+  strcpy(lpBuffer + 2, curdir);
   return strlen(lpBuffer);
 }
 
@@ -2705,7 +2708,7 @@ DWORD WINAPI WaitForSingleObject
   int rc;
 
   TRACEX("WaitForSingleObject");
-  rc = wait((handle_t) hHandle, dwMilliseconds);
+  rc = waitone((handle_t) hHandle, dwMilliseconds);
 
   if (rc < 0)
   {

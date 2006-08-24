@@ -104,6 +104,22 @@ struct section;
 #define DLL_PROCESS_DETACH      0
 
 //
+// Flags for dlopen()
+//
+
+#ifndef RTLD_LAZY
+
+#define RTLD_LAZY     0x0001
+#define RTLD_NOW      0x0002
+#define RTLD_GLOBAL   0x0100
+#define RTLD_LOCAL    0x0000
+#define RTLD_NOSHARE  0x1000
+
+#define RTLD_DEFAULT ((void *) 0)
+
+#endif
+
+//
 // Page protection
 //
 
@@ -532,7 +548,7 @@ struct siginfo
   int si_signo;
   int si_code;
 
-  struct context si_ctxt;
+  struct context *si_ctxt;
   void *si_addr;
 };
 
@@ -1154,6 +1170,7 @@ struct group
 //
 
 struct job;
+struct heap;
 
 #define PEB_ADDRESS 0x7FFDF000
 
@@ -1161,7 +1178,6 @@ struct peb
 {
   struct moddb *usermods;
   int fast_syscalls_supported;
-  char curdir[MAXPATH];
 
   char hostname[256];
   struct in_addr ipaddr;
@@ -1184,9 +1200,7 @@ struct peb
   char osname[16];
   time_t ostimestamp;
   struct verinfo osversion;
-
-  size_t heap_reserve;
-  size_t heap_commit;
+  struct heap *heap;
 };
 
 //
@@ -1208,27 +1222,30 @@ struct term
 
 struct job
 {
-  int id;               // Job id
-  int threadcnt;        // Number of threads in job
-  struct job *parent;   // Parent job
-  struct job *nextjob;  // Next job in global job list
-  struct job *prevjob;  // Previous job in global job list
-  hmodule_t hmod;       // Module handle for exec module
-  char *cmdline;        // Command line arguments
-  char **env;           // Environment variables
+  int id;                           // Job id
+  int threadcnt;                    // Number of threads in job
+  struct job *parent;               // Parent job
+  struct job *nextjob;              // Next job in global job list
+  struct job *prevjob;              // Previous job in global job list
+  hmodule_t hmod;                   // Module handle for exec module
+  char *cmdline;                    // Command line arguments
+  char **env;                       // Environment variables
 
-  handle_t hndl;        // Handle for main thead in job
-  void (*atexit)(int);  // Exit handler (used by libc)
+  handle_t hndl;                    // Handle for main thead in job
+  void (*atexit)(int);              // Exit handler (used by libc)
 
-  handle_t in;          // Standard input device
-  handle_t out;         // Standard output device
-  handle_t err;         // Standard error device
-  struct term *term;    // Terminal type
+  handle_t in;                      // Standard input device
+  handle_t out;                     // Standard output device
+  handle_t err;                     // Standard error device
+  struct term *term;                // Terminal type
+  struct heap *heap;                // Local heap
 
-  char *ident;          // Job identifier for syslog
-  int facility;         // Default facility for syslog
+  struct sigaction handlers[_NSIG]; // Signal handlers
 
-  char crtbase[CRTBASESIZE];
+  char *ident;                      // Job identifier for syslog
+  int facility;                     // Default facility for syslog
+
+  char crtbase[CRTBASESIZE];        // Used by C runtime library 
 };
 
 //
@@ -1283,8 +1300,6 @@ struct tib
   handle_t hndl;                   // Handle for thread
   struct job *job;                 // Job object for thread
 
-  struct siginfo *cursig;          // Current signal used by getsiginfo()
-
   struct hostent host;             // Per-thread hostent buffer
   unsigned char host_addr[sizeof(struct in_addr)];
   char *h_addr_ptrs[MAX_HOST_ADDRS + 1];
@@ -1299,7 +1314,7 @@ struct tib
   char cryptbuf[CRYPTBUFSIZE];     // For crypt()
   void *forkctx;                   // For vfork()
 
-  char reserved1[1490];
+  char reserved1[1494];
 
   void *tls[MAX_TLS];              // Thread local storage
   char reserved2[240];
@@ -1466,7 +1481,7 @@ osapi int mprotect(void *addr, unsigned long size, int protect);
 osapi int mlock(void *addr, unsigned long size);
 osapi int munlock(void *addr, unsigned long size);
 
-osapi int wait(handle_t h, int timeout);
+osapi int waitone(handle_t h, int timeout);
 osapi int waitall(handle_t *h, int count, int timeout);
 osapi int waitany(handle_t *h, int count, int timeout);
 
@@ -1534,8 +1549,8 @@ osapi void exit(int status);
 
 osapi sighandler_t signal(int signum, sighandler_t handler);
 osapi int raise(int signum);
-osapi int sendsig(struct siginfo *info);
-osapi struct siginfo *getsiginfo();
+osapi int kill(pid_t pid, int signum);
+osapi int sendsig(handle_t thread, int signum);
 osapi void sigexit(struct siginfo *info, int action);
 osapi char *strsignal(int signum);
 
@@ -1549,6 +1564,7 @@ osapi int sigaction(int signum, const struct sigaction *act, struct sigaction *o
 osapi int sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
 osapi int sigpending(sigset_t *set);
 osapi int sigsuspend(const sigset_t *mask);
+osapi unsigned alarm(unsigned seconds);
 
 osapi time_t time(time_t *timeptr);
 osapi int gettimeofday(struct timeval *tv, void *tzp);
@@ -1569,10 +1585,25 @@ osapi void csfree(critsect_t cs);
 osapi void enter(critsect_t cs);
 osapi void leave(critsect_t cs);
 
+osapi void *_lmalloc(size_t size);
+osapi void *_lrealloc(void *mem, size_t size);
+osapi void *_lcalloc(size_t num, size_t size);
+osapi void _lfree(void *p);
+
+#ifdef USE_LOCAL_HEAP
+
+#define malloc(n) _lmalloc(n)
+#define realloc(p, n) _lrealloc((p), (n))
+#define calloc(n, s) _lcalloc((n), (s))
+#define free(p) _lfree(p)
+
+#else
 osapi void *malloc(size_t size);
 osapi void *realloc(void *mem, size_t size);
 osapi void *calloc(size_t num, size_t size);
 osapi void free(void *p);
+#endif
+
 osapi struct mallinfo mallinfo();
 osapi int malloc_usable_size(void *p);
 

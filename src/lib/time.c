@@ -36,6 +36,7 @@
 #endif
 
 #include <time.h>
+#include <sys/times.h>
 
 #define	YEAR0		        1900
 #define	EPOCH_YR	        1970
@@ -287,6 +288,13 @@ char *_strtime(char *s)
 
 void _tzset()
 {
+}
+
+clock_t times(struct tms *tms)
+{
+  // TODO implement
+  tms->tms_cstime = tms->tms_cutime = tms->tms_stime = tms->tms_utime = 1;
+  return clock();
 }
 
 #endif

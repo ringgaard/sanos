@@ -61,6 +61,8 @@ char schedmap[SCHEDMAPSIZE];
 unsigned long schedmapidx;
 #endif
 
+static void tmr_alarm(void *arg);
+
 struct thread *self()
 {
   unsigned long stkvar;
@@ -187,6 +189,38 @@ void enter_wait(int reason)
   t->state = THREAD_STATE_WAITING;
   t->wait_reason = reason;
   dispatch();
+}
+
+int enter_alertable_wait(int reason)
+{
+  struct thread *t = self();
+
+  if (signals_ready(t)) return -EINTR;
+
+  t->state = THREAD_STATE_WAITING;
+  t->wait_reason = reason;
+  t->flags &= ~THREAD_INTERRUPTED;
+
+  t->flags |= THREAD_ALERTABLE;
+  dispatch();
+  t->flags &= ~THREAD_ALERTABLE;
+
+  if (t->flags & THREAD_INTERRUPTED)
+  {
+    t->flags &= ~THREAD_INTERRUPTED;
+    return -EINTR;
+  }
+
+  return 0;
+}
+
+int interrupt_thread(struct thread *t)
+{
+  if (t->state != THREAD_STATE_WAITING) return -EBUSY;
+  if ((t->flags & THREAD_ALERTABLE) == 0) return -EPERM;
+  t->flags |= THREAD_INTERRUPTED;
+  mark_thread_ready(t, 1, 1);
+  return 0;
 }
 
 void mark_thread_ready(struct thread *t, int charge, int boost)
@@ -403,7 +437,8 @@ int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread 
   t->ruid = t->euid = creator->euid;
   t->rgid = t->egid = creator->egid;
   t->ngroups = creator->ngroups;
-  memcpy(t->groups, creator->groups, creator->ngroups * sizeof(gid_t)); 
+  memcpy(t->groups, creator->groups, creator->ngroups * sizeof(gid_t));
+  strcpy(t->curdir, creator->curdir);
 
   // Create and initialize new TIB
   rc = init_user_thread(t, entrypoint);
@@ -418,6 +453,9 @@ int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread 
 
   // Protect handle from being closed
   hprotect(t->hndl);
+
+  // Initialize signal alarm timer
+  init_timer(&t->alarm, tmr_alarm, t);
 
   // Notify debugger
   dbg_notify_create_thread(t, entrypoint);
@@ -572,11 +610,32 @@ void suspend_all_user_threads()
   }
 }
 
+static void tmr_alarm(void *arg)
+{
+  struct thread *t = arg;
+  send_user_signal(t, SIGALRM);
+}
+
+int schedule_alarm(unsigned int seconds)
+{
+  struct thread *t = self();
+  int rc = 0;
+
+  if (t->alarm.active) rc = (t->alarm.expires - ticks) / HZ;
+  if (seconds == 0)
+    del_timer(&t->alarm);
+  else
+    mod_timer(&t->alarm, ticks + seconds * HZ);
+
+  return rc;
+}
+
 void terminate_thread(int exitcode)
 {
   struct thread *t = self();
   t->state = THREAD_STATE_TERMINATED;
   t->exitcode = exitcode;
+  del_timer(&t->alarm);
   exit_thread(t);
   hunprotect(t->hndl);
   hfree(t->hndl);
@@ -795,19 +854,6 @@ void dispatch_dpc_queue()
   in_dpc = 0;
 }
 
-static __inline int find_highest_bit(unsigned mask)
-{
-  int n;
-
-  __asm
-  {
-    bsr eax, mask
-    mov n, eax
-  }
-
-  return n;
-}
-
 static struct thread *find_ready_thread()
 {
   int prio;
@@ -844,7 +890,7 @@ void dispatch()
   // Clear preemption flag
   preempt = 0;
 
-  // Execute all queued DPC's
+  // Execute all queued DPCs
   check_dpc_queue();
 
   // Find next thread to run

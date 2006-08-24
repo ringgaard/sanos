@@ -279,6 +279,18 @@ char *strdup(const char *s)
   return t;
 }
 
+char *_lstrdup(const char *s)
+{
+  char *t;
+  int len;
+
+  if (!s) return NULL;
+  len = strlen(s);
+  t = (char *) _lmalloc(len + 1);
+  memcpy(t, s, len + 1);
+  return t;
+}
+
 char *strlwr(char *s)
 {
   char *p = s;

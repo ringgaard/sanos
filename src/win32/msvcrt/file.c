@@ -915,9 +915,13 @@ int _wrename(const wchar_t *oldname, const wchar_t *newname)
 
 wchar_t *_wgetdcwd(int drive, wchar_t *buffer, int maxlen)
 {
-  int len = strlen(peb->curdir);
+  char curdir[MAXPATH];
+  int len;
 
   TRACE("_wgetdcwd");
+  if (getcwd(curdir, MAXPATH) == 0) return NULL;
+  len = strlen(curdir);
+
   if (buffer)
   {
     if (len >= maxlen)
@@ -945,7 +949,7 @@ wchar_t *_wgetdcwd(int drive, wchar_t *buffer, int maxlen)
     }
   }
 
-  convert_filename_to_unicode(peb->curdir, buffer, maxlen);
+  convert_filename_to_unicode(curdir, buffer, maxlen);
   return buffer;
 }
 

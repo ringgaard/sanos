@@ -1,7 +1,7 @@
 //
-// critsect.c
+// times.h
 //
-// Critical sections
+// Process times
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -31,60 +31,31 @@
 // SUCH DAMAGE.
 // 
 
-#include <os.h>
-#include <atomic.h>
+#if _MSC_VER > 1000
+#pragma once
+#endif
 
-__inline tid_t threadid()
+#ifndef SYS_TIMES_H
+#define SYS_TIMES_H
+
+#include <sys/types.h>
+
+struct tms
 {
-  struct tib *tib;
+  clock_t tms_utime;  // User CPU time
+  clock_t tms_stime;  // System CPU time
+  clock_t tms_cutime; // User CPU time of terminated child processes
+  clock_t tms_cstime; // System CPU time of terminated child processes
+};
 
-  __asm
-  {
-    mov eax, fs:[TIB_SELF_OFFSET]
-    mov [tib], eax
-  }
+#ifdef  __cplusplus
+extern "C" {
+#endif
 
-  return tib->tid;
+clock_t times(struct tms *tms);
+
+#ifdef  __cplusplus
 }
+#endif
 
-void mkcs(critsect_t cs)
-{
-  cs->count = -1;
-  cs->recursion = 0;
-  cs->owner = NOHANDLE;
-  cs->event = mkevent(0, 0);
-}
-
-void csfree(critsect_t cs)
-{
-  close(cs->event);
-}
-
-void enter(critsect_t cs)
-{
-  tid_t tid = threadid();
-
-  if (cs->owner == tid)
-  {
-    cs->recursion++;
-  }
-  else 
-  {    
-    if (atomic_add(&cs->count, 1) > 0) while (waitone(cs->event, INFINITE) != 0);
-    cs->owner = tid;
-  }
-}
-
-void leave(critsect_t cs)
-{
-  if (cs->owner != threadid()) return;
-  if (cs->recursion > 0)
-  {
-    cs->recursion--;
-  }
-  else
-  {
-    cs->owner = NOHANDLE;
-    if (atomic_add(&cs->count, -1) >= 0) eset(cs->event);
-  }
-}
+#endif

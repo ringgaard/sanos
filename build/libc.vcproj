@@ -153,6 +153,9 @@
 				RelativePath="..\src\include\inifile.h">
 			</File>
 			<File
+				RelativePath="..\src\include\inttypes.h">
+			</File>
+			<File
 				RelativePath="..\src\include\io.h">
 			</File>
 			<File
@@ -240,6 +243,9 @@
 				Name="include/sys"
 				Filter="">
 				<File
+					RelativePath="..\src\include\sys\param.h">
+				</File>
+				<File
 					RelativePath="..\src\include\sys\poll.h">
 				</File>
 				<File
@@ -253,6 +259,9 @@
 				</File>
 				<File
 					RelativePath="..\src\include\sys\time.h">
+				</File>
+				<File
+					RelativePath="..\src\include\sys\times.h">
 				</File>
 				<File
 					RelativePath="..\src\include\sys\types.h">
@@ -1036,6 +1045,18 @@
 		</File>
 		<File
 			RelativePath="..\src\lib\new.cpp">
+			<FileConfiguration
+				Name="Debug|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					UsePrecompiledHeader="0"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					UsePrecompiledHeader="0"/>
+			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="..\src\lib\opts.c">

@@ -35,7 +35,6 @@
 
 struct filesystem *fslist = NULL;
 struct fs *mountlist = NULL;
-char curdir[MAXPATH];
 char pathsep = '/';
 
 #define LFBUFSIZ 1025
@@ -61,11 +60,13 @@ int canonicalize(char *path, char *buffer)
   // Add current directory to filename if relative path
   if (*path != PS1 && *path != PS2)
   {
+    struct thread *t = self();
+
     // Do not add current directory if it is root directory
-    len = strlen(curdir);
+    len = strlen(t->curdir);
     if (len > 1)
     {
-      memcpy(p, curdir, len);
+      memcpy(p, t->curdir, len);
       p += len;
     }
   }
@@ -238,11 +239,10 @@ static int files_proc(struct proc_file *pf, void *arg)
 int init_vfs()
 {
   pathsep = PS1;
-  curdir[0] = PS1;
-  curdir[1] = 0;
+  self()->curdir[0] = PS1;
+  self()->curdir[1] = 0;
 
   if (!peb) panic("peb not initialized in vfs");
-  strcpy(peb->curdir, curdir);
   peb->pathsep = pathsep;
   register_proc_inode("files", files_proc, NULL);
   return 0;
@@ -1215,8 +1215,16 @@ int chdir(char *name)
     if ((buffer.st_mode & S_IFMT) != S_IFDIR) return -ENOTDIR;
   }
 
-  strcpy(curdir, newdir);
-  if (peb) strcpy(peb->curdir, newdir);
+  strcpy(self()->curdir, newdir);
+
+  return 0;
+}
+
+int getcwd(char *buf, size_t size)
+{
+  if (!buf || size == 0) return -EINVAL;
+  if (size <= strlen(self()->curdir)) return -ERANGE;
+  strcpy(buf, self()->curdir);
 
   return 0;
 }

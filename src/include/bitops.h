@@ -74,6 +74,32 @@ __inline int test_bit(void *bitmap, int pos)
   return result;
 }
 
+static __inline int find_lowest_bit(unsigned mask)
+{
+  int n;
+
+  __asm
+  {
+    bsf eax, mask
+    mov n, eax
+  }
+
+  return n;
+}
+
+static __inline int find_highest_bit(unsigned mask)
+{
+  int n;
+
+  __asm
+  {
+    bsr eax, mask
+    mov n, eax
+  }
+
+  return n;
+}
+
 __inline void set_bits(void *bitmap, int pos, int len)
 {
   while (len-- > 0) set_bit(bitmap, pos++);

@@ -17,7 +17,7 @@
 
 /bin/os.dll        bin\os.dll         dbg\bin\os.dll
 /bin/sh.exe        bin\sh.exe         dbg\bin\sh.exe
-/bin/httpd.dll     bin\httpd.dll      dbg\bin\httpd.dll
+;/bin/httpd.dll     bin\httpd.dll      dbg\bin\httpd.dll
 /bin/telnetd.exe   bin\telnetd.exe    dbg\bin\telnetd.exe
 /bin/ftpd.exe      bin\ftpd.exe       dbg\bin\ftpd.exe
 /bin/setup.exe     bin\setup.exe      dbg\bin\setup.exe
@@ -29,10 +29,10 @@
 
 /bin/pcnet32.sys   bin\pcnet32.sys    dbg\bin\pcnet32.sys
 /bin/ne2000.sys    bin\ne2000.sys     dbg\bin\ne2000.sys
-/bin/3c905c.sys    bin\3c905c.sys     dbg\bin\3c905c.sys
-/bin/rtl8139.sys   bin\rtl8139.sys    dbg\bin\rtl8139.sys
-/bin/eepro100.sys  bin\eepro100.sys   dbg\bin\eepro100.sys
-/bin/sis900.sys    bin\sis900.sys     dbg\bin\sis900.sys
+;/bin/3c905c.sys    bin\3c905c.sys     dbg\bin\3c905c.sys
+;/bin/rtl8139.sys   bin\rtl8139.sys    dbg\bin\rtl8139.sys
+;/bin/eepro100.sys  bin\eepro100.sys   dbg\bin\eepro100.sys
+;/bin/sis900.sys    bin\sis900.sys     dbg\bin\sis900.sys
 /bin/tulip.sys     bin\tulip.sys      dbg\bin\tulip.sys
 
 ; Win32 wrapper DLLs

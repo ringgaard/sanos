@@ -110,7 +110,7 @@ int pthread_mutex_lock(pthread_mutex_t *mutex)
     {
       while (atomic_exchange(&mutex->lock, -1) != 0)
       {
-	if (wait(mutex->event, INFINITE) != 0) return EINVAL;
+	if (waitone(mutex->event, INFINITE) != 0) return EINVAL;
       }
     }
   }
@@ -136,7 +136,7 @@ int pthread_mutex_lock(pthread_mutex_t *mutex)
       {
 	while (atomic_exchange(&mutex->lock, -1) != 0)
 	{
-	  if (wait(mutex->event, INFINITE) != 0) return EINVAL;
+	  if (waitone(mutex->event, INFINITE) != 0) return EINVAL;
 	  mutex->recursion = 1;
 	  mutex->owner = self;
 	}
@@ -155,7 +155,7 @@ int pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *absti
     {
       while (atomic_exchange(&mutex->lock, -1) != 0)
       {
-	if (wait(mutex->event, __abstime2timeout(abstime)) != 0) return EINVAL;
+	if (waitone(mutex->event, __abstime2timeout(abstime)) != 0) return EINVAL;
       }
     }
   }
@@ -181,7 +181,7 @@ int pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *absti
       {
 	while (atomic_exchange(&mutex->lock, -1) != 0)
 	{
-	  if (wait(mutex->event, __abstime2timeout(abstime)) != 0) return EINVAL;
+	  if (waitone(mutex->event, __abstime2timeout(abstime)) != 0) return EINVAL;
 	  mutex->recursion = 1;
 	  mutex->owner = self;
 	}

@@ -33,7 +33,6 @@
 
 #include <os/krnl.h>
 
-//#define SYSCALL_RETURNERRNO
 #define SYSCALL_PROFILE
 //#define SYSCALL_LOGENTER
 //#define SYSCALL_LOGEXIT
@@ -895,7 +894,7 @@ static int sys_munlock(char *params)
   return rc;
 }
 
-static int sys_wait(char *params)
+static int sys_waitone(char *params)
 {
   handle_t h;
   struct object *o;
@@ -908,7 +907,7 @@ static int sys_wait(char *params)
   o = (struct object *) olock(h, OBJECT_ANY);
   if (!o) return -EBADF;
 
-  rc = wait_for_object(o, timeout);
+  rc = wait_for_one_object(o, timeout, 1);
 
   orel(o);
   return rc;
@@ -942,9 +941,9 @@ static int sys_waitall(char *params)
   }
 
   if (count == 1)
-    rc = wait_for_object(o[0], timeout);
+    rc = wait_for_one_object(o[0], timeout, 1);
   else
-    rc = wait_for_all_objects(o, count, timeout);
+    rc = wait_for_all_objects(o, count, timeout, 1);
 
   for (n = 0; n < count; n++) orel(o[n]);
   return rc;
@@ -978,9 +977,9 @@ static int sys_waitany(char *params)
   }
 
   if (count == 1)
-    rc = wait_for_object(o[0], timeout);
+    rc = wait_for_one_object(o[0], timeout, 1);
   else
-    rc = wait_for_any_object(o, count, timeout);
+    rc = wait_for_any_object(o, count, timeout, 1);
 
   for (n = 0; n < count; n++) orel(o[n]);
   return rc;
@@ -2565,6 +2564,98 @@ static int sys_poll(char *params)
   return rc;
 }
 
+static int sys_getcwd(char *params)
+{
+  char *buf;
+  int size;
+  int rc;
+
+  buf = *(char **) params;
+  size = *(unsigned int *) (params + 4);
+
+  if (lock_buffer(buf, size) < 0) return -EFAULT;
+  
+  rc = getcwd(buf, size);
+
+  unlock_buffer(buf, size);
+
+  return rc;
+}
+
+static int sys_sendsig(char *params)
+{
+  handle_t h;
+  int signum;
+  struct thread *t;
+  int rc;
+
+  h = *(handle_t *) params;
+  signum = *(int *) (params + 4);
+
+  t = (struct thread *) olock(h, OBJECT_THREAD);
+  if (!t) return -EBADF;
+  
+  rc = send_user_signal(t, signum);
+
+  orel(t);
+
+  return rc;
+}
+
+static int sys_sigprocmask(char *params)
+{
+  int how;
+  sigset_t *set;
+  sigset_t *oldset;
+  int rc;
+
+  how = *(int *) params;
+  set = *(sigset_t **) (params + 4);
+  oldset = *(sigset_t **) (params + 8);
+
+  if (lock_buffer(set, sizeof(sigset_t)) < 0) return -EFAULT;
+  if (lock_buffer(oldset, sizeof(sigset_t)) < 0)
+  {
+    unlock_buffer(set, sizeof(sigset_t));
+    return -EFAULT;
+  }
+
+  rc = set_signal_mask(how, set, oldset);
+
+  unlock_buffer(set, sizeof(sigset_t));
+  unlock_buffer(oldset, sizeof(sigset_t));
+
+  return rc;
+}
+
+static int sys_sigpending(char *params)
+{
+  sigset_t *set;
+  int rc;
+
+  set = *(sigset_t **) params;
+
+  if (lock_buffer(set, sizeof(sigset_t)) < 0) return -EFAULT;
+
+  rc = get_pending_signals(set);
+
+  unlock_buffer(set, sizeof(sigset_t));
+
+  return rc;
+}
+
+static int sys_alarm(char *params)
+{
+  unsigned int seconds;
+  int rc;
+
+  seconds = *(unsigned int *) params;
+
+  rc = schedule_alarm(seconds);
+
+  return rc;
+}
+
 struct syscall_entry syscalltab[] =
 {
   {"null",0, "", sys_null},
@@ -2594,7 +2685,7 @@ struct syscall_entry syscalltab[] =
   {"mprotect", 12, "%p,%d,%x", sys_mprotect},
   {"mlock", 8, "%p,%d", sys_mlock},
   {"munlock", 8, "%p,%d", sys_munlock},
-  {"wait", 8, "%d,%d", sys_wait},
+  {"waitone", 8, "%d,%d", sys_waitone},
   {"mkevent", 8, "%d,%d", sys_mkevent},
   {"epulse", 4, "%d", sys_epulse},
   {"eset", 4, "%d", sys_eset},
@@ -2671,16 +2762,19 @@ struct syscall_entry syscalltab[] =
   {"fchown", 12, "%d,%d,%d", sys_fchown},
   {"access", 8, "'%s',%d", sys_access},
   {"poll", 12, "%p,%d,%d", sys_poll},
+  {"getcwd", 8, "%p,%d", sys_getcwd},
+  {"sendsig", 8, "%d,%d", sys_sendsig},
+  {"sigprocmask", 12, "%d,%p,%p", sys_sigprocmask},
+  {"sigpending", 4, "%p", sys_sigpending},
+  {"alarm", 4, "%d", sys_alarm},
 };
 
-int syscall(int syscallno, char *params)
+int syscall(int syscallno, char *params, struct context *ctxt)
 {
   int rc;
   struct thread *t = self();
 
-  struct syscall_context *sysctxt = (struct syscall_context *) &syscallno;
-
-  t->uctxt = (char *) sysctxt + offsetof(struct syscall_context, traptype);
+  t->ctxt = ctxt;
   if (syscallno < 0 || syscallno > SYSCALL_MAX) return -ENOSYS;
 
 #ifdef SYSCALL_LOGENTER
@@ -2756,15 +2850,12 @@ int syscall(int syscallno, char *params)
 
   check_dpc_queue();
   check_preempt();
+  if (signals_ready(t)) deliver_pending_signals(rc);
 
-  t->uctxt = NULL;
+  t->ctxt = NULL;
 
-#ifdef SYSCALL_RETURNERRNO
-  return rc;
-#else
   if (rc < 0) return -1;
   return rc;
-#endif
 }
 
 #ifdef SYSCALL_PROFILE
