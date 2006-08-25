@@ -168,15 +168,17 @@ struct section;
 #define CREATE_DETACHED         0x00000020
 #define CREATE_POSIX            0x00000040
 #define CREATE_NO_ENV           0x00000080
+#define CREATE_CHILD            0x00000100
 
 //
 // Spawn flags
 //
 
-#define P_WAIT      0
+#define P_WAIT      0        
 #define P_NOWAIT    1
 #define P_DETACH    4
 #define P_SUSPEND   8
+#define P_CHILD     16
 
 //
 // File open modes
@@ -1220,6 +1222,13 @@ struct term
   int lines;
 };
 
+struct zombie
+{
+  pid_t pid;
+  int status;
+  struct zombie *next;
+};
+
 struct job
 {
   int id;                           // Job id
@@ -1234,13 +1243,12 @@ struct job
   handle_t hndl;                    // Handle for main thead in job
   void (*atexit)(int);              // Exit handler (used by libc)
 
-  handle_t in;                      // Standard input device
-  handle_t out;                     // Standard output device
-  handle_t err;                     // Standard error device
+  handle_t iob[3];                  // Standard input, output, and error handle
   struct term *term;                // Terminal type
   struct heap *heap;                // Local heap
 
   struct sigaction handlers[_NSIG]; // Signal handlers
+  struct zombie *zombies;           // List of terminated childs
 
   char *ident;                      // Job identifier for syslog
   int facility;                     // Default facility for syslog
@@ -1320,9 +1328,9 @@ struct tib
   char reserved2[240];
 };
 
-#define fdin  (gettib()->job->in)
-#define fdout (gettib()->job->out)
-#define fderr (gettib()->job->err)
+#define fdin  __getstdhndl(0)
+#define fdout __getstdhndl(1)
+#define fderr __getstdhndl(2)
 
 //
 // SVID2/XPG mallinfo structure
@@ -1533,10 +1541,12 @@ osapi int suspend(handle_t thread);
 osapi int resume(handle_t thread);
 osapi struct tib *getthreadblock(handle_t thread);
 osapi handle_t getjobhandle(pid_t pid);
-osapi void endthread(int retval);
+osapi void endthread(int status);
 osapi tid_t gettid();
 osapi pid_t getpid();
 osapi pid_t getppid();
+osapi int getchildstat(pid_t pid, int *status);
+osapi int setchildstat(pid_t pid, int status);
 osapi int setcontext(handle_t thread, void *context);
 osapi int getcontext(handle_t thread, void *context);
 osapi int getprio(handle_t thread);
@@ -1667,6 +1677,8 @@ osapi int putenv(const char *str);
 
 osapi extern struct section *osconfig;
 osapi extern struct peb *peb;
+
+osapi int __getstdhndl(int n);
 
 #ifndef errno
 osapi int *_errno();

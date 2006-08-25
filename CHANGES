@@ -4,9 +4,19 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
-    * POSIX signals implemented. The following functions has been implemented:
-      alarm(), kill(), sigaction(), sigprocmask(), sigpending(), sigismember(),
-      sigdelset(), sigaddset(), sigfillset(), sigemptyset(), sendsig().
+    * Implemented vfork() and exec(). It uses setjmp()/longjmp() to emulate the behaviour 
+      of vfork()/exec(). The exit() also resumes active vforks. Also waitpid() and
+      wait() has been implemented. The new getchildstat() and setchildstat() are
+      used for tracking zombie child jobs. A SIGCHLD is generated when a child
+      terminates.
+      
+    * STDIN_FILENO, STDOUT_FILENO, and STDERR_FILENO added to unistd.h.
+
+    * Basic POSIX signal handling implemented. The following functions has been 
+      implemented:
+        alarm(), kill(), sigaction(), sigprocmask(), sigpending(), sigsuspend(),
+        sigismember(), sigdelset(), sigaddset(), sigfillset(), sigemptyset(), 
+        sendsig().
 
     * Current directory per thread implemented.
     
@@ -19,15 +29,15 @@ Changes since last release
       
     * Added header files: sys/param.h, sys/times.h, inttypes.h
     
-    * Support for local heaps by defining USE_LOCAL_HEAP.
-    
-    * Heap size and commit increment are now initialized from the PE header
-      of os.dll. Use the EDITBIN tool to change the defaults.
+    * Support for local heaps by defining USE_LOCAL_HEAP. The heap size and 
+      commit increment are now initialized from the PE header
+      of the executable. The global heap uses os.dll for heap parameters.
       
     * Jobs now has ids that can be used to simulate process ids. Each job also has
       a parent job and a handle to the main thread. The getjobhandle() function 
       returns a new handle to the main thread of the job. The getpid() and getppid()
-      functions has been implemented.
+      functions has been implemented. The P_CHILD flag for spawn() can be set
+      to create a child job.
     
     * Kernel thread handles are now protected from being closed from
       user mode applications.
@@ -39,10 +49,6 @@ Changes since last release
       putenv() and unsetenv() functions has been implemented. The spawn() function
       now takes an env parameter which can override the default environment. A
       set command has been added to the shell to display and set environment variables.
-      
-    * Implemented vfork() and exec(). It uses setjmp()/longjmp() to emulate the behaviour 
-      of vfork()/exec(). The exit() also resumes active vforks. Also waitpid() has been
-      implemented.
       
     * Support for VMDK virtual disk image format used by VMware and Qemu. The mkdfs tool can 
       now generate vmdk images directly using the -t option. This enables creation of disk

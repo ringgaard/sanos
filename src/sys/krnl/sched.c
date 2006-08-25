@@ -235,6 +235,9 @@ void mark_thread_ready(struct thread *t, int charge, int boost)
     return;
   }
 
+  // If thread has been interrupted it is already ready
+  if ((t->flags & THREAD_INTERRUPTED) !=0 && t->state == THREAD_STATE_READY) return;
+
   // Charge quantums units each time a thread is restarted
   t->quantum -= charge;
 

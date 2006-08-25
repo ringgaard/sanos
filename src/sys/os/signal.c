@@ -32,6 +32,7 @@
 // 
 
 #include <os.h>
+#include <string.h>
 #include <os/syscall.h>
 
 struct sigentry
@@ -66,7 +67,7 @@ struct sigentry sigtab[_NSIG] =
   {"SIGPIPE",   "Broken pipe", 0, SIGACT_TERM},
   {"SIGALRM",   "Alarm clock", 0, SIGACT_TERM},
   {"SIGTERM",   "Termination", 0, SIGACT_TERM},
-  {"SIGSTKFLT", "Stack fault", 0, SIGACT_IGN},
+  {"SIGSTKFLT", "Stack fault", 0, SIGACT_ABORT},
   {"SIGCHLD",   "Child status has changed", 0, SIGACT_IGN},
   {"SIGCONT",   "Continue", 0, SIGACT_CONT},
   {"SIGSTOP",   "Stop", 0, SIGACT_STOP},
@@ -220,8 +221,19 @@ int sigpending(sigset_t *set)
 
 int sigsuspend(const sigset_t *mask)
 {
-  errno = ENOSYS;
-  return -1;
+  int rc;
+
+  if (mask)
+  {
+    rc = sigprocmask(SIG_BLOCK, mask, NULL);
+    if (rc < 0) return rc;
+  }
+
+  rc = waitone(self(), INFINITE);
+
+  if (mask) sigprocmask(SIG_UNBLOCK, mask, NULL);
+
+  return rc;
 }
 
 int sendsig(handle_t thread, int signum)
@@ -266,17 +278,16 @@ void globalhandler(struct siginfo *info)
 
   if (oldact.sa_handler == SIG_DFL)
   {
-    if (peb->debug) sigexit(info, 1);
-
     switch (sigtab[signum].defaction)
     {
       case SIGACT_TERM:
 	syslog(LOG_ERR, "terminating with signal %d (%s)", signum, strsignal(signum));
-	exit(signum);
+	exit((signum << 8) | 0x10000);
 
       case SIGACT_ABORT:
+        if (peb->debug) sigexit(info, 1);
 	syslog(LOG_ERR, "aborting with signal %d (%s)", signum, strsignal(signum));
-	exit(3);
+	exit((signum << 8) | 0x10000);
 
       case SIGACT_IGN:
 	break;

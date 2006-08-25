@@ -88,6 +88,11 @@ int *_fmode()
   return &peb->fmodeval;
 }
 
+int __getstdhndl(int n)
+{
+  return gettib()->job->iob[n];
+}
+
 static int check_access(struct stat64 *st, int mode)
 {
   int uid = getuid();

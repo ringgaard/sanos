@@ -46,14 +46,6 @@
 #endif
 
 //
-// Standard file descriptors
-//
-
-#define	STDIN_FILENO	0	// Standard input
-#define	STDOUT_FILENO	1	// Standard output
-#define	STDERR_FILENO	2	// Standard error output
-
-//
 // Values for the second argument to access
 //
 
@@ -87,6 +79,7 @@
 struct _forkctx
 {
   struct _forkctx *prev;
+  int pid;
   jmp_buf jmp;
   int fd[3];
   char **env;
@@ -147,6 +140,12 @@ osapi int getegid();
 osapi int seteuid(uid_t uid);
 osapi int setegid(gid_t gid);
 osapi int getgroups(int size, gid_t list[]);
+
+osapi int __getstdhndl(int n);
+
+#define STDIN_FILENO  __getstdhndl(0)
+#define STDOUT_FILENO __getstdhndl(1)
+#define STDERR_FILENO __getstdhndl(2)
 
 #ifndef NOGETOPT
 

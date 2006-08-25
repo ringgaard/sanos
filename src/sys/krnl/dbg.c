@@ -340,7 +340,7 @@ static void dbg_get_thread_context(struct dbg_hdr *hdr, union dbg_body *body)
     if (KERNELSPACE(body->ctx.ctxt.eip))
     {
       body->ctx.ctxt.ess = SEL_KDATA;
-      body->ctx.ctxt.esp = (unsigned long) &t->ctxt + sizeof(struct context) - 8;
+      body->ctx.ctxt.esp = (unsigned long) t->ctxt + sizeof(struct context) - 8;
     }
   }
   else

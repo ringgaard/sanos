@@ -130,7 +130,7 @@ void cancel_wait(struct thread *t)
 //
 // release_thread
 //
-// Release thread and mark is as ready to run
+// Release thread and mark it as ready to run
 //
 
 void release_thread(struct thread *t)

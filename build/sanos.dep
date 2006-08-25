@@ -114,6 +114,7 @@ $(SRC)/lib/fork.c: \
   $(SRC)/include/os.h \
   $(SRC)/include/string.h \
   $(SRC)/include/unistd.h \
+  $(SRC)/include/atomic.h \
   $(SRC)/include/sys/wait.h
 
 $(SRC)/lib/getopt.c: \

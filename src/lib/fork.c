@@ -34,7 +34,10 @@
 #include <os.h>
 #include <string.h>
 #include <unistd.h>
+#include <atomic.h>
 #include <sys/wait.h>
+
+static int forkpid = 0;
 
 //
 // This implementation of vfork()/exec() has been inspired by Shaun 
@@ -70,17 +73,16 @@ static void freeenv(char **env)
 
 static resume_fork(struct tib *tib, int pid)
 {
+  int i;
   struct job *job = tib->job;
   struct _forkctx *fc = (struct _forkctx *) tib->forkctx;
 
   // Restore standard handles
-  close(job->in);
-  close(job->out);
-  close(job->err);
-
-  job->in = fc->fd[0];
-  job->out = fc->fd[1];
-  job->err = fc->fd[2];
+  for (i = 0; i < 3; i++)
+  {
+    close(job->iob[i]);
+    job->iob[i] = fc->fd[i];
+  }
 
   // Restore environment variables
   freeenv(job->env);
@@ -95,17 +97,19 @@ static resume_fork(struct tib *tib, int pid)
 
 struct _forkctx *_vfork(struct _forkctx *fc)
 {
+  int i;
   struct tib *tib = gettib();
   struct job *job = tib->job;
 
-  // Save and duplicate standard handles
-  fc->fd[0] = job->in;
-  fc->fd[1] = job->out;
-  fc->fd[2] = job->err;
+  // Assign fork pid
+  fc->pid = atomic_increment(&forkpid);
 
-  job->in = dup(job->in);
-  job->out = dup(job->out);
-  job->err = dup(job->err);
+  // Save and duplicate standard handles
+  for (i = 0; i < 3; i++)
+  {
+    fc->fd[i] = job->iob[i];
+    job->iob[i] = dup(job->iob[i]);
+  }
 
   // Save and duplicate environment variables
   fc->env = job->env;
@@ -121,51 +125,68 @@ struct _forkctx *_vfork(struct _forkctx *fc)
 void fork_exit(int status)
 {
   struct tib *tib = gettib();
-  struct job *job = tib->job;
 
   // If no vfork() is in progress just return
   struct _forkctx *fc = (struct _forkctx *) tib->forkctx;
   if (!fc) return;
 
-  // Return control to the parent process path with synthetic status encoded pid
-  resume_fork(tib, (status & 0xFF) | 0x40000000);
+  // Add a fake zombie for job
+  setchildstat(0x40000000 | fc->pid, status & 0xFF);
+
+  // Send a SIGCHLD to account for the virtual process exit
+  sendsig(self(), SIGCHLD);
+
+  // Return control to the parent process path with fork pid
+  resume_fork(tib, 0x40000000 | fc->pid);
 }
 
-int waitpid(int pid, int *stat_loc, int options)
+pid_t wait(int *stat_loc)
 {
+  struct job *job = gettib()->job;
+  sigset_t set;
+
+  sigemptyset(&set);
+  while (1)
+  {
+    int pid = getchildstat(-1, stat_loc);
+    if (pid != -1) return pid;
+    sigsuspend(&set);
+  }
+}
+
+pid_t waitpid(pid_t pid, int *stat_loc, int options)
+{
+  struct job *job = gettib()->job;
   int rc;
   handle_t h;
 
-  // We can only wait for specific pids
-  if (pid == -1)
+  // Use wait() if pid is -1 (TODO pid==0 meaning wait for any child in process group)
+  if (pid <= 0)
   {
-    errno = ENOSYS;
-    return -1;
+    if (options & WNOHANG) 
+      return getchildstat(-1, stat_loc);
+    else
+      return wait(stat_loc);
   }
 
-  // Handle synthetic status encoded handles from exit()
-  if (pid & 0x40000000)
+  while (1)
   {
-    if (stat_loc) *stat_loc = pid & 0xFF;
-    return pid;
+    // Check for zombies
+    rc = getchildstat(pid, stat_loc);
+    if (rc != -1 || (options & WNOHANG)) return rc;
+
+    // Get handle for job from pid
+    h = getjobhandle(pid);
+    if (h == NOHANDLE)
+    {
+      errno = ECHILD;
+      return -1;
+    }
+
+    // Wait for main thread in job to terminate
+    rc = waitone(h, INFINITE);
+    close(h);
   }
-
-  // Get handle for job from pid
-  h = getjobhandle(pid);
-  if (h == NOHANDLE)
-  {
-    errno = ECHILD;
-    return -1;
-  }
-
-  // Wait for main thread in job to terminate
-  rc = waitone(h, (options & WNOHANG) ? 0 : INFINITE);
-  close(h);
-  if (rc < 0) return 0;
-
-  // Termination, return status
-  if (stat_loc) *stat_loc = rc & 0xFF;
-  return pid;
 }
  
 int execve(const char *path, char *argv[], char *env[])
@@ -214,8 +235,8 @@ int execve(const char *path, char *argv[], char *env[])
   }
   *q = 0;
 
-  // Spawn new job
-  child = spawn(P_SUSPEND, path, cmdline, env, &ctib);
+  // Spawn new child job
+  child = spawn(P_SUSPEND | P_CHILD, path, cmdline, env, &ctib);
   free(cmdline);
   if (child < 0) return -1;
   pid = ctib->job->id;

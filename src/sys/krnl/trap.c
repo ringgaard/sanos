@@ -246,6 +246,10 @@ static void __declspec(naked) sysentry(void)
     push    SEL_UDATA + SEL_RPL3    // Push ds (fixed)
     push    SEL_UDATA + SEL_RPL3    // Push es (fixed)
 
+    mov	    bx, SEL_KDATA           // Setup kernel data segment
+    mov	    ds, bx
+    mov	    es, bx
+
     mov     ebx, esp                // ebx = context
     push    ebx                     // Push context
     push    edx                     // Push params
@@ -457,6 +461,9 @@ void send_signal(struct context *ctxt, int signum, void *addr)
 
 int send_user_signal(struct thread *t, int signum)
 {
+  // Signal can only be sent to user threads
+  if (!t->tib) return -EPERM;
+
   // Add signal to the pending signal mask for thread
   t->pending_signals |= (1 << signum);
 

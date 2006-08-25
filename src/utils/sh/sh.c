@@ -836,7 +836,7 @@ int cmd_jobs(int argc, char *argv[])
 
   while (job)
   {
-    printf("%4d %6d %-13s%08x%8d%4d%4d%4d %s\n", job->id, job->parent->id, job->ident, job->hmod, job->threadcnt, job->in, job->out, job->err, job->cmdline ? job->cmdline : "");
+    printf("%4d %6d %-13s%08x%8d%4d%4d%4d %s\n", job->id, job->parent ? job->parent->id : 0, job->ident, job->hmod, job->threadcnt, job->iob[0], job->iob[1], job->iob[2], job->cmdline ? job->cmdline : "");
     job = job->nextjob;
   }
 
@@ -1508,6 +1508,11 @@ void alarm_handler(int signum)
   printf("alarm\n");
 }
 
+void sigchld_handler(int signum)
+{
+  printf("child terminated\n");
+}
+
 int cmd_test(int argc, char *argv[])
 {
 #if 0
@@ -1520,9 +1525,15 @@ int cmd_test(int argc, char *argv[])
 #endif
 
 //  signal(SIGINT, ctrlc_handler);
+  sigset_t set;
 
   signal(SIGALRM, alarm_handler);
   alarm(argc > 1 ? atoi(argv[1]) : 0);
+  sigemptyset(&set);
+
+  if (sigsuspend(&set) < 0) perror("sigsuspend");
+
+  signal(SIGCHLD, sigchld_handler);
 
   return 0;
 }

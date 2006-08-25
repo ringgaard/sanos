@@ -329,8 +329,8 @@ void __stdcall telnet_task(void *arg)
   dispatch(mux, pout[0], IOEVT_READ | IOEVT_ERROR | IOEVT_CLOSE, APPATT);
 
   // Redirect standard input, output, and error
-  job->in = pin[0];
-  job->out = job->err = pout[1];
+  job->iob[0] = pin[0];
+  job->iob[1] = job->iob[2] = pout[1];
   job->term = &ts.term;
   
   // Spawn initial telnet application
@@ -340,7 +340,7 @@ void __stdcall telnet_task(void *arg)
   // The spawned application has duped the handles, now close our copy
   close(pin[0]);
   close(pout[1]);
-  job->in = job->out = job->err = NOHANDLE;
+  job->iob[0] = job->iob[1] = job->iob[2] = NOHANDLE;
 
   // Initialize event handle array
   events[0] = app;

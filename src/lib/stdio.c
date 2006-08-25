@@ -54,15 +54,15 @@ void init_stdio()
   struct job *job = gettib()->job;
   struct crtbase *crtbase = (struct crtbase *) job->crtbase;
 
-  crtbase->iob[0].file = job->in;
+  crtbase->iob[0].file = job->iob[0];
   crtbase->iob[0].base = crtbase->iob[0].ptr = crtbase->stdinbuf;
   crtbase->iob[0].flag = _IORD | _IOEXTBUF;
   crtbase->iob[0].bufsiz = BUFSIZ;
 
-  crtbase->iob[1].file = job->out;
+  crtbase->iob[1].file = job->iob[1];
   crtbase->iob[1].flag = _IOWR | _IONBF | _IOCRLF;
 
-  crtbase->iob[2].file = job->err;
+  crtbase->iob[2].file = job->iob[2];
   crtbase->iob[2].flag = _IOWR | _IONBF | _IOCRLF;
 
   crtbase->opt.err = 1;
@@ -70,7 +70,7 @@ void init_stdio()
   crtbase->opt.sp = 1;
 }
 
-FILE *__getstdhndl(int n)
+FILE *__getstdfile(int n)
 {
   struct job *job = gettib()->job;
   struct crtbase *crtbase = (struct crtbase *) job->crtbase;
@@ -457,14 +457,14 @@ FILE *popen(const char *command, const char *mode)
 
   if (*mode == 'w')
   {
-    if (job->in != NOHANDLE) close(job->in);
-    job->in = hndl[0];
+    if (job->iob[0] != NOHANDLE) close(job->iob[0]);
+    job->iob[0] = hndl[0];
     f = fdopen(hndl[1], mode);
   }
   else
   {
-    if (job->out != NOHANDLE) close(job->out);
-    job->out = hndl[1];
+    if (job->iob[1] != NOHANDLE) close(job->iob[1]);
+    job->iob[1] = hndl[1];
     f = fdopen(hndl[0], mode);
   }
 

@@ -69,9 +69,9 @@ struct _iobuf
 
 typedef struct _iobuf FILE;
 
-#define stdin   __getstdhndl(0)
-#define stdout  __getstdhndl(1)
-#define stderr  __getstdhndl(2)
+#define stdin   __getstdfile(0)
+#define stdout  __getstdfile(1)
+#define stderr  __getstdfile(2)
 
 #define _IORD           0x0001
 #define _IOWR           0x0002
@@ -157,7 +157,7 @@ int fscanf(FILE *stream, const char *fmt, ...);
 int scanf(const char *fmt, ...);
 int sscanf(const char *buffer, const char *fmt, ...);
 
-FILE *__getstdhndl(int n);
+FILE *__getstdfile(int n);
 
 #ifdef  __cplusplus
 }
