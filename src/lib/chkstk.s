@@ -4,7 +4,6 @@
 // TCC stack check routine
 //
 
-.file "chkstk.s"
 .text
 	
 .globl ___chkstk

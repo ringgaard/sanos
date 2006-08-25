@@ -11,7 +11,6 @@ OFS_ESI=12
 OFS_ESP=16
 OFS_EIP=20
 
-.file "setjmp.s"
 .text
 
 .globl	_setjmp

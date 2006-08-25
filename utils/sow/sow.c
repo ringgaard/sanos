@@ -310,10 +310,9 @@ void init()
 
   job->threadcnt = 1;
   job->id = 1;
-  job->parent = job;
-  job->in = 0;
-  job->out = 1;
-  job->err = 2;
+  job->iob[0] = 0;
+  job->iob[1] = 1;
+  job->iob[2] = 2;
   job->term = &console;
   job->hmod = GetModuleHandle(NULL);
   job->cmdline = GetCommandLine();
@@ -1401,6 +1400,16 @@ handle_t getjobhandle(pid_t pid)
   return notimpl("getjobhandle");
 }
 
+int getchildstat(pid_t pid, int *status)
+{
+  return notimpl("getchildstat");
+}
+
+int setchildstat(pid_t pid, int status)
+{
+  return notimpl("setchildstat");
+}
+
 void exitos(int mode)
 {
   ExitProcess(0);
@@ -1496,15 +1505,9 @@ int raise(int signum)
   return notimpl("raise");
 }
 
-int sendsig(struct siginfo *info)
+int sendsig(handle_t thread, int signum)
 {
   return notimpl("sendsig");
-}
-
-struct siginfo *getsiginfo()
-{
-  notimpl("getsiginfo");
-  return NULL;
 }
 
 void sigexit(struct siginfo *info, int action)
@@ -1685,6 +1688,26 @@ struct mallinfo mallinfo()
   memset(&mallinfo, 0, sizeof mallinfo);
   notimpl("mallinfo");
   return mallinfo;
+}
+
+void *_lmalloc(size_t size)
+{
+  return malloc(size);
+}
+
+void *_lrealloc(void *mem, size_t size)
+{
+  return realloc(mem, size);
+}
+
+void *_lcalloc(size_t num, size_t size)
+{
+  return calloc(num, size);
+}
+
+void _lfree(void *p)
+{
+  free(p);
 }
 
 hmodule_t dlopen(const char *name, int mode)
