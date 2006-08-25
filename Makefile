@@ -19,6 +19,7 @@ MKISOFS=$(TOOLS)\mkisofs.exe
 MKDFS=$(TOOLS)\mkdfs.exe
 MKFLOPPY=$(TOOLS)\mkfloppy.exe
 MKPART=$(TOOLS)\mkpart.exe
+SOW=$(TOOLS)\os.dll
 DBGGW=$(TOOLS)\dbggw.exe
 
 AR=lib
@@ -96,6 +97,7 @@ dirs:
     -@if not exist $(TOOLSRC)\mkfloppy\release mkdir $(TOOLSRC)\mkfloppy\release
     -@if not exist $(TOOLSRC)\mkpart\release mkdir $(TOOLSRC)\mkpart\release
     -@if not exist $(TOOLSRC)\dbggw\release mkdir $(TOOLSRC)\dbggw\release
+    -@if not exist $(TOOLSRC)\sow\release mkdir $(TOOLSRC)\sow\release
     -@if not exist $(TOOLSRC)\dfs\release mkdir $(TOOLSRC)\dfs\release
 
 #
@@ -112,6 +114,7 @@ clean:
     del /Q $(TOOLSRC)\mkfloppy\release
     del /Q $(TOOLSRC)\mkpart\release
     del /Q $(TOOLSRC)\dbggw\release
+    del /Q $(TOOLSRC)\sow\release
     del /Q $(TOOLSRC)\dfs\release
     del /Q $(IMG)\bootdisk.img
     del /Q $(IMG)\sanos.0
@@ -123,7 +126,7 @@ clean:
 
 WIN32CFLAGS=/nologo /O2 /Ob1 /Oy /GF /ML /Gy /W3 /TC /D WIN32 /D NDEBUG /D _CONSOLE /D _MBCS
 
-tools: $(MKDFS) $(MKFLOPPY) $(MKPART) $(DBGGW)
+tools: $(MKDFS) $(MKFLOPPY) $(MKPART) $(DBGGW) $(SOW)
 
 $(MKFLOPPY): $(TOOLSRC)/mkfloppy/mkfloppy.c
     $(CC) $(WIN32CFLAGS) /Fe$@ /Fo$(TOOLSRC)/mkfloppy/release/ $**
@@ -133,6 +136,10 @@ $(MKPART): $(TOOLSRC)/mkpart/mkpart.c
 
 $(DBGGW): $(TOOLSRC)/dbggw/dbggw.c $(TOOLSRC)/dbggw/rdp.c
     $(CC) $(WIN32CFLAGS) /I$(SRC)/include/os /Fe$@ /Fo$(TOOLSRC)/dbggw/release/ $** /link wsock32.lib
+
+$(SOW): $(TOOLSRC)/sow/sow.c $(SRC)/lib/vsprintf.c
+    $(CC) $(WIN32CFLAGS) /I$(SRC)/include/os /Fe$@ /Fo$(TOOLSRC)/sow/release/ $** /D NOFLOAT /link /ENTRY:dllmain /DLL /NODEFAULTLIB kernel32.lib
+
 
 $(MKDFS): \
   $(TOOLSRC)/dfs/blockdev.c \
