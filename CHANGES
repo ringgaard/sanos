@@ -6,11 +6,11 @@ Changes since last release
 
     * Kernel related files moved from /bin and /etc to /boot.
     
-    * Implemented vfork() and exec(). It uses setjmp()/longjmp() to emulate the behaviour 
-      of vfork()/exec(). The exit() also resumes active vforks. Also waitpid() and
-      wait() has been implemented. The new getchildstat() and setchildstat() are
-      used for tracking zombie child jobs. A SIGCHLD is generated when a child
-      terminates.
+    * Implemented vfork() and exec(). It uses setjmp()/longjmp() to emulate the 
+      behaviour of vfork()/exec(). The exit() function also resumes active vforks. 
+      Also waitpid() and wait() has been implemented. The new getchildstat() and 
+      setchildstat() are used for tracking zombie child jobs. A SIGCHLD is generated 
+      when a child terminates.
       
     * STDIN_FILENO, STDOUT_FILENO, and STDERR_FILENO added to unistd.h.
 
