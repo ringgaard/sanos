@@ -949,6 +949,7 @@ install: sanos
     if not exist $(INSTALL)\proc mkdir $(INSTALL)\proc
     if not exist $(INSTALL)\tmp mkdir $(INSTALL)\tmp
     if not exist $(INSTALL)\usr mkdir $(INSTALL)\usr
+    if not exist $(INSTALL)\var mkdir $(INSTALL)\var
     copy $(BIN)\sh.exe       $(INSTALL)\bin\sh.exe
     copy $(BIN)\httpd.dll    $(INSTALL)\bin\httpd.dll
     copy $(BIN)\setup.exe    $(INSTALL)\bin\setup.exe
