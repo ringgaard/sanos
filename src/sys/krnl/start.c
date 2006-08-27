@@ -33,8 +33,6 @@
 
 #include <os/krnl.h>
 
-#define KERNEL_CONFIG  "/etc/krnl.ini"
-
 #ifdef BSD
 char *copyright = 
 "Redistribution and use in source and binary forms, with or without\n"
@@ -165,9 +163,12 @@ static int load_kernel_config()
   int size;
   int rc;
   struct stat64 buffer;
+  char config[MAXPATH];
   char *props;
 
-  rc = open(KERNEL_CONFIG, O_RDONLY | O_BINARY, 0, &f);
+  get_option(krnlopts, "config", config, sizeof(config), "/boot/krnl.ini");
+
+  rc = open(config, O_RDONLY | O_BINARY, 0, &f);
   if (rc < 0) return rc;
 
   fstat(f, &buffer);
@@ -199,6 +200,58 @@ static int load_kernel_config()
   free(props);
 
   return 0;
+}
+
+static void init_filesystem()
+{
+  int rc;
+  char bootdev[8];
+  char rootdev[128];
+  char rootfs[32];
+  char *rootfsopts;
+  char fsoptbuf[128];
+
+  // Initialize built-in file systems
+  init_vfs();
+  init_dfs();
+  init_devfs();
+  init_procfs();
+  init_pipefs();
+  init_smbfs();
+  init_cdfs();
+ 
+  // Determine boot device
+  if ((syspage->ldrparams.bootdrv & 0xF0) == 0xF0)
+  {
+    create_initrd();
+    strcpy(bootdev, "initrd");
+  }
+  else if (syspage->ldrparams.bootdrv & 0x80)
+  {
+    if (syspage->ldrparams.bootpart == -1)
+      sprintf(bootdev, "hd%c", '0' + (syspage->ldrparams.bootdrv & 0x7F));
+    else
+      sprintf(bootdev, "hd%c%c", '0' + (syspage->ldrparams.bootdrv & 0x7F), 'a' + syspage->ldrparams.bootpart);
+  }
+  else
+    sprintf(bootdev, "fd%c", '0' + (syspage->ldrparams.bootdrv & 0x7F));
+
+  // Determine root file system
+  get_option(krnlopts, "rootdev", rootdev, sizeof(rootdev), bootdev);
+  get_option(krnlopts, "rootfs", rootfs, sizeof(rootfs), "dfs");
+  rootfsopts = get_option(krnlopts, "rootopts", fsoptbuf, sizeof(fsoptbuf), NULL);
+
+  kprintf(KERN_INFO "mount: root on %s\n", rootdev);
+
+  // Mount file systems
+  rc = mount(rootfs, "/", rootdev, rootfsopts, NULL);
+  if (rc < 0) panic("error mounting root filesystem");
+
+  rc = mount("devfs", "/dev", NULL, NULL, NULL);
+  if (rc < 0) panic("error mounting dev filesystem");
+
+  rc = mount("procfs", "/proc", NULL, NULL, NULL);
+  if (rc < 0) panic("error mounting proc filesystem");
 }
 
 static int version_proc(struct proc_file *pf, void *arg)
@@ -252,7 +305,6 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
 
   // Initialize screen
   init_video();
-  //clear_screen();
 
   // Display banner
   kprintf(KERN_INFO "boot: starting kernel\n");
@@ -344,7 +396,6 @@ void main(void *arg)
   unsigned long stack_commit;
   struct image_header *imghdr;
   struct verinfo *ver;
-  char bootdev[8];
   int rc;
   char *str;
   struct file *cons;
@@ -362,46 +413,11 @@ void main(void *arg)
   init_hd();
   init_fd();
 
-  // Initialize built-in file systems
-  init_vfs();
-  init_dfs();
-  init_devfs();
-  init_procfs();
-  init_pipefs();
-  init_smbfs();
-  init_cdfs();
- 
-  // Open boot device
-  if ((syspage->ldrparams.bootdrv & 0xF0) == 0xF0)
-  {
-    create_initrd();
-    strcpy(bootdev, "initrd");
-  }
-  else if (syspage->ldrparams.bootdrv & 0x80)
-  {
-    if (syspage->ldrparams.bootpart == -1)
-      sprintf(bootdev, "hd%c", '0' + (syspage->ldrparams.bootdrv & 0x7F));
-    else
-      sprintf(bootdev, "hd%c%c", '0' + (syspage->ldrparams.bootdrv & 0x7F), 'a' + syspage->ldrparams.bootpart);
-  }
-  else
-    sprintf(bootdev, "fd%c", '0' + (syspage->ldrparams.bootdrv & 0x7F));
-
-  kprintf(KERN_INFO "mount: root on device %s\n", bootdev);
-
-  // Mount file systems
-  rc = mount("dfs", "/", bootdev, "", NULL);
-  if (rc < 0) panic("error mounting root filesystem");
-
-  rc = mount("devfs", "/dev", NULL, NULL, NULL);
-  if (rc < 0) panic("error mounting dev filesystem");
-
-  rc = mount("procfs", "/proc", NULL, NULL, NULL);
-  if (rc < 0) panic("error mounting proc filesystem");
+  // Initialize file systems
+  init_filesystem();
 
   // Load kernel configuration
-  rc = load_kernel_config();
-  //if (rc < 0) kprintf(KERN_INFO "%s: error %d loading kernel configuration\n", KERNEL_CONFIG, rc);
+  load_kernel_config();
 
   // Determine kernel panic action
   str = get_property(krnlcfg, "kernel", "onpanic", "halt");
@@ -441,14 +457,14 @@ void main(void *arg)
   register_proc_inode("copyright", copyright_proc, NULL);
 
   // Allocate handles for stdin, stdout and stderr
-  rc = open("/dev/console", O_RDWR, S_IREAD | S_IWRITE, &cons);
+  rc = open(get_property(krnlcfg, "kernel", "console", "/dev/console"), O_RDWR, S_IREAD | S_IWRITE, &cons);
   if (rc < 0) panic("no console");
   if (halloc(&cons->iob.object) != 0) panic("unexpected stdin handle");
   if (halloc(&cons->iob.object) != 1) panic("unexpected stdout handle");
   if (halloc(&cons->iob.object) != 2) panic("unexpected stderr handle");
 
   // Load os.dll in user address space
-  imgbase = load_image_file("/bin/os.dll", 1);
+  imgbase = load_image_file(get_property(krnlcfg, "kernel", "osapi", "/boot/os.dll"), 1);
   if (!imgbase) panic("unable to load os.dll");
   imghdr = get_image_header(imgbase);
   stack_reserve = imghdr->optional.size_of_stack_reserve;

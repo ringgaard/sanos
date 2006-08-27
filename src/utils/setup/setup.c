@@ -280,8 +280,8 @@ int dosysprep(struct section *sect)
 
   // Get properties
   devname = get_property(inst, sect->name, "device", "<none>");
-  bootstrap = get_property(inst, sect->name, "bootstrap", "/setup/boot");
-  loader = get_property(inst, sect->name, "loader", "/setup/osldr.dll");
+  bootstrap = get_property(inst, sect->name, "bootstrap", "/boot/boot");
+  loader = get_property(inst, sect->name, "loader", "/boot/osldr.dll");
   krnlopts = get_property(inst, sect->name, "options", "");
 
   // Install loader
@@ -312,8 +312,8 @@ int dokernel(struct section *sect)
   char targetfn[MAXPATH];
 
   // Get properties
-  kernel = get_property(inst, sect->name, "kernel", "/setup/krnl.dll");
-  target = get_property(inst, sect->name, "target", "/mnt/bin");
+  kernel = get_property(inst, sect->name, "kernel", "/boot/krnl.dll");
+  target = get_property(inst, sect->name, "target", "/mnt/boot");
 
   printf("Installing kernel %s\n", kernel);
 
@@ -674,7 +674,7 @@ int main(int argc, char *argv[])
   if (argc == 2)
     instfn = argv[1];
   else
-    instfn = "/setup/setup.ini";
+    instfn = "/etc/setup.ini";
 
   // Get setup properties
   inst = read_properties(instfn);

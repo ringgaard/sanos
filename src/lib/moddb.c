@@ -912,7 +912,8 @@ int get_resource_data(hmodule_t hmod, char *id1, char *id2, char *id3, void **da
 
 int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *libpath, struct section *aliassect, int flags)
 {
-  char buffer[MAXPATH];
+  char *basename;
+  char *p;
   struct property *prop;
 
   // Set flags
@@ -983,14 +984,21 @@ int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *lib
   }
 
   // Setup module database with initial module
-  if (!find_in_modpaths(db, name, buffer)) panic("initial module missing");
+  basename = name;
+  p = name;
+  while (*p)
+  {
+    if (*p == PS1 || *p == PS2) basename = p + 1;
+    p++;
+  }
+
   db->modules = (struct module *) malloc(sizeof(struct module));
   if (!db->modules) return -ENOMEM;
 
   db->modules->hmod = hmod;
   db->modules->db = db;
-  db->modules->name = strdup(name);
-  db->modules->path = strdup(buffer);
+  db->modules->name = strdup(basename);
+  db->modules->path = strdup(name);
   db->modules->next = db->modules;
   db->modules->prev = db->modules;
   db->modules->refcnt = 1;

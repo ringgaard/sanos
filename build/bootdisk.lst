@@ -5,17 +5,27 @@
 ; Directories
 
 /bin
-/dev
-/proc
+/boot
 /etc
-/setup
+/dev
 /mnt
+/proc
 /usr
 /tmp
+/var
+
+; Boot files
+
+/boot/boot         bin\boot           dbg\bin\boot
+/boot/cdboot       bin\cdboot         dbg\bin\cdboot
+/boot/cdemboot     bin\cdemboot       dbg\bin\cdemboot
+/boot/netboot      bin\netboot        dbg\bin\netboot
+/boot/osldr.dll    bin\osldr.dll      dbg\bin\osldr.dll
+/boot/krnl.ini     build\krnl.ini
+/boot/os.dll       bin\os.dll         dbg\bin\os.dll
 
 ; System files
 
-/bin/os.dll        bin\os.dll         dbg\bin\os.dll
 /bin/sh.exe        bin\sh.exe         dbg\bin\sh.exe
 ;/bin/httpd.dll     bin\httpd.dll      dbg\bin\httpd.dll
 /bin/telnetd.exe   bin\telnetd.exe    dbg\bin\telnetd.exe
@@ -27,13 +37,13 @@
 
 ; Drivers
 
-/bin/pcnet32.sys   bin\pcnet32.sys    dbg\bin\pcnet32.sys
-/bin/ne2000.sys    bin\ne2000.sys     dbg\bin\ne2000.sys
-;/bin/3c905c.sys    bin\3c905c.sys     dbg\bin\3c905c.sys
-;/bin/rtl8139.sys   bin\rtl8139.sys    dbg\bin\rtl8139.sys
-;/bin/eepro100.sys  bin\eepro100.sys   dbg\bin\eepro100.sys
-;/bin/sis900.sys    bin\sis900.sys     dbg\bin\sis900.sys
-/bin/tulip.sys     bin\tulip.sys      dbg\bin\tulip.sys
+/boot/pcnet32.sys  bin\pcnet32.sys    dbg\bin\pcnet32.sys
+/boot/ne2000.sys   bin\ne2000.sys     dbg\bin\ne2000.sys
+;/boot/3c905c.sys   bin\3c905c.sys     dbg\bin\3c905c.sys
+;/boot/rtl8139.sys  bin\rtl8139.sys    dbg\bin\rtl8139.sys
+;/boot/eepro100.sys bin\eepro100.sys   dbg\bin\eepro100.sys
+;/boot/sis900.sys   bin\sis900.sys     dbg\bin\sis900.sys
+/boot/tulip.sys    bin\tulip.sys      dbg\bin\tulip.sys
 
 ; Win32 wrapper DLLs
 
@@ -50,16 +60,8 @@
 
 ; Configuration files
 
-/etc/krnl.ini      build\krnl.ini
 /etc/os.ini        build\os.ini
 /etc/rc            build\rc
 /etc/passwd        build\passwd
 /etc/group         build\group
-
-; Setup files for hard disk install
-
-/setup/boot        bin\boot           dbg\bin\boot
-/setup/osldr.dll   bin\osldr.dll      dbg\bin\osldr.dll
-/setup/krnl.ini    build\krnl.ini
-/setup/os.ini      build\os.ini
-/setup/setup.ini   build\setup.ini
+/etc/setup.ini     build\setup.ini

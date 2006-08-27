@@ -14,7 +14,7 @@
 
 ; System files
 
-/bin/os.dll       [!output SANOS_SDKPATH]\bin\os.dll [!output SANOS_SDKPATH]\dbg\bin\os.dll
+/boot/os.dll      [!output SANOS_SDKPATH]\bin\os.dll [!output SANOS_SDKPATH]\dbg\bin\os.dll
 /bin/sh.exe       [!output SANOS_SDKPATH]\bin\sh.exe [!output SANOS_SDKPATH]\dbg\bin\sh.exe
 
 [!if NETWORK]
@@ -32,10 +32,10 @@
 ; Configuration files
 
 [!if EXT_PROJ]
-/etc/krnl.ini     build\krnl.ini
+/boot/krnl.ini    build\krnl.ini
 /etc/os.ini       build\os.ini
 [!else]
-/etc/krnl.ini     krnl.ini
+/boot/krnl.ini    krnl.ini
 /etc/os.ini       os.ini
 [!endif]
 

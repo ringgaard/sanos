@@ -260,7 +260,7 @@ void init_kernel_modules()
   kmods.notify_load = dbg_notify_load_module;
   kmods.notify_unload = dbg_notify_unload_module;
 
-  init_module_database(&kmods, "krnl.dll", (hmodule_t) OSBASE, get_property(krnlcfg, "kernel", "libpath", "/bin"), find_section(krnlcfg, "modaliases"), 0);
+  init_module_database(&kmods, "krnl.dll", (hmodule_t) OSBASE, get_property(krnlcfg, "kernel", "libpath", "/boot"), find_section(krnlcfg, "modaliases"), 0);
 
   register_proc_inode("kmods", kmods_proc, NULL);
   register_proc_inode("umods", umods_proc, NULL);

@@ -12,6 +12,9 @@ OBJ=$(TOPDIR)\obj
 SRC=$(TOPDIR)\src
 TOOLS=$(TOPDIR)\tools
 TOOLSRC=$(TOPDIR)\utils
+!IFNDEF INSTALL
+INSTALL=$(TOPDIR)\install
+!ENDIF
 
 NASM=$(TOOLS)\nasmw.exe
 MKISOFS=$(TOOLS)\mkisofs.exe
@@ -65,6 +68,7 @@ dirs:
     -@if not exist $(OBJ) mkdir $(OBJ)
     -@if not exist $(IMG) mkdir $(IMG)
     -@if not exist $(LIBS) mkdir $(LIBS)
+    -@if not exist $(INSTALL) mkdir $(INSTALL)
     -@if not exist $(OBJ)\3c905c mkdir $(OBJ)\3c905c
     -@if not exist $(OBJ)\advapi32 mkdir $(OBJ)\advapi32
     -@if not exist $(OBJ)\boot mkdir $(OBJ)\boot
@@ -107,6 +111,7 @@ dirs:
 clean:
     del /Q $(BIN)
     del /Q /S $(OBJ)
+    del /Q /S $(INSTALL)
     del /Q $(MKDFS)
     del /Q $(MKFLOPPY)
     del /Q $(MKPART)
@@ -920,29 +925,59 @@ $(IMG)/sanos.0: dirs sanos $(MKDFS) $(BUILD)/bootnet.lst
 # bootcd
 #
 
-bootcd: $(IMG)/sanos.iso
+bootcd: install $(IMG)/sanos.iso
 
 $(IMG)/sanos.iso: dirs sanos tools $(BUILD)/bootcd.lst
     if not exist $(IMG) mkdir $(IMG)
-    if not exist $(IMG)\usr mkdir $(IMG)\usr
-    if not exist $(IMG)\usr\bin mkdir $(IMG)\usr\bin
     if exist $(IMG)\sanos.iso del $(IMG)\sanos.iso
-    copy $(BIN)\sh.exe       $(IMG)\usr\bin\sh.exe
-    copy $(BIN)\httpd.dll    $(IMG)\usr\bin\httpd.dll
-    copy $(BIN)\setup.exe    $(IMG)\usr\bin\setup.exe
-    copy $(BIN)\edit.exe     $(IMG)\usr\bin\edit.exe
-    copy $(BIN)\fdisk.exe    $(IMG)\usr\bin\fdisk.exe
-    copy $(BIN)\jinit.exe    $(IMG)\usr\bin\jinit.exe
-    copy $(BIN)\telnetd.exe  $(IMG)\usr\bin\telnetd.exe
-    copy $(BIN)\ftpd.exe     $(IMG)\usr\bin\ftpd.exe
-    copy $(BIN)\login.exe    $(IMG)\usr\bin\login.exe
-    copy $(BIN)\msvcrt.dll   $(IMG)\usr\bin\msvcrt.dll
-    copy $(BIN)\kernel32.dll $(IMG)\usr\bin\kernel32.dll
-    copy $(BIN)\user32.dll   $(IMG)\usr\bin\user32.dll
-    copy $(BIN)\advapi32.dll $(IMG)\usr\bin\advapi32.dll
-    copy $(BIN)\winmm.dll    $(IMG)\usr\bin\winmm.dll
-    copy $(BIN)\wsock32.dll  $(IMG)\usr\bin\wsock32.dll
-    $(MKDFS) -d $(IMG)\usr\BOOTIMG.BIN -b $(BIN)\cdemboot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 512 -C 1440 -I 8192 -i -f -S $(TOPDIR) -F $(BUILD)\bootcd.lst
-    $(MKISOFS) -J -c BOOTCAT.BIN -b BOOTIMG.BIN -o $(IMG)\sanos.iso $(IMG)\usr
-#    $(MKDFS) -d $(IMG)\usr\BOOTIMG.BIN -b $(BIN)\cdboot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 512 -I 8192 -i -f -S $(TOPDIR) -F $(BUILD)\bootcd.lst
-#    $(MKISOFS) -no-emul-boot -J -c BOOTCAT.BIN -b BOOTIMG.BIN -o $(IMG)\sanos.iso $(IMG)\usr
+    $(MKDFS) -d $(INSTALL)\BOOTIMG.BIN -b $(BIN)\cdemboot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 512 -C 1440 -I 8192 -i -f -K rootdev=cd0,rootfs=cdfs
+    $(MKISOFS) -J -c BOOTCAT.BIN -b BOOTIMG.BIN -o $(IMG)\sanos.iso $(INSTALL)
+#    $(MKDFS) -d $(INSTALL)\BOOTIMG.BIN -b $(BIN)\cdboot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 512 -I 8192 -i -f -K rootdev=cd0,rootfs=cdfs
+#    $(MKISOFS) -no-emul-boot -J -c BOOTCAT.BIN -b BOOTIMG.BIN -o $(IMG)\sanos.iso $(INSTALL)
+    del $(INSTALL)\BOOTIMG.BIN
+
+#
+# install
+#
+
+install: sanos
+    if not exist $(INSTALL)\bin mkdir $(INSTALL)\bin
+    if not exist $(INSTALL)\boot mkdir $(INSTALL)\boot
+    if not exist $(INSTALL)\dev mkdir $(INSTALL)\dev
+    if not exist $(INSTALL)\etc mkdir $(INSTALL)\etc
+    if not exist $(INSTALL)\mnt mkdir $(INSTALL)\mnt
+    if not exist $(INSTALL)\proc mkdir $(INSTALL)\proc
+    if not exist $(INSTALL)\tmp mkdir $(INSTALL)\tmp
+    if not exist $(INSTALL)\usr mkdir $(INSTALL)\usr
+    copy $(BIN)\sh.exe       $(INSTALL)\bin\sh.exe
+    copy $(BIN)\httpd.dll    $(INSTALL)\bin\httpd.dll
+    copy $(BIN)\setup.exe    $(INSTALL)\bin\setup.exe
+    copy $(BIN)\edit.exe     $(INSTALL)\bin\edit.exe
+    copy $(BIN)\fdisk.exe    $(INSTALL)\bin\fdisk.exe
+    copy $(BIN)\jinit.exe    $(INSTALL)\bin\jinit.exe
+    copy $(BIN)\telnetd.exe  $(INSTALL)\bin\telnetd.exe
+    copy $(BIN)\ftpd.exe     $(INSTALL)\bin\ftpd.exe
+    copy $(BIN)\login.exe    $(INSTALL)\bin\login.exe
+    copy $(BIN)\msvcrt.dll   $(INSTALL)\bin\msvcrt.dll
+    copy $(BIN)\kernel32.dll $(INSTALL)\bin\kernel32.dll
+    copy $(BIN)\user32.dll   $(INSTALL)\bin\user32.dll
+    copy $(BIN)\advapi32.dll $(INSTALL)\bin\advapi32.dll
+    copy $(BIN)\winmm.dll    $(INSTALL)\bin\winmm.dll
+    copy $(BIN)\wsock32.dll  $(INSTALL)\bin\wsock32.dll
+    copy $(BUILD)\os.ini     $(INSTALL)\etc\os.ini
+    copy $(BUILD)\setup.ini  $(INSTALL)\etc\setup.ini
+    copy $(BUILD)\krnl.ini   $(INSTALL)\boot\krnl.ini
+    copy $(BIN)\boot         $(INSTALL)\boot\boot
+    copy $(BIN)\cdboot       $(INSTALL)\boot\cdboot
+    copy $(BIN)\cdemboot     $(INSTALL)\boot\cdemboot
+    copy $(BIN)\netboot      $(INSTALL)\boot\netboot
+    copy $(BIN)\osldr.dll    $(INSTALL)\boot\osldr.dll
+    copy $(BIN)\krnl.dll     $(INSTALL)\boot\krnl.dll
+    copy $(BIN)\os.dll       $(INSTALL)\boot\os.dll
+    copy $(BIN)\3c905c.sys   $(INSTALL)\boot\3c905c.sys
+    copy $(BIN)\eepro100.sys $(INSTALL)\boot\eepro100.sys
+    copy $(BIN)\ne2000.sys   $(INSTALL)\boot\ne2000.sys
+    copy $(BIN)\pcnet32.sys  $(INSTALL)\boot\pcnet32.sys
+    copy $(BIN)\rtl8139.sys  $(INSTALL)\boot\rtl8139.sys
+    copy $(BIN)\sis900.sys   $(INSTALL)\boot\sis900.sys
+    copy $(BIN)\tulip.sys    $(INSTALL)\boot\tulip.sys
