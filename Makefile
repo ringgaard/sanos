@@ -121,9 +121,7 @@ clean:
     del /Q $(TOOLSRC)\dbggw\release
     del /Q $(TOOLSRC)\sow\release
     del /Q $(TOOLSRC)\dfs\release
-    del /Q $(IMG)\bootdisk.img
-    del /Q $(IMG)\sanos.0
-    del /Q $(IMG)\sanos.iso
+    del /Q $(IMG)
 
 #
 # tools
