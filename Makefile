@@ -116,6 +116,7 @@ clean:
     del /Q $(MKFLOPPY)
     del /Q $(MKPART)
     del /Q $(DBGGW)
+    del /Q $(SOW)
     del /Q $(TOOLSRC)\mkfloppy\release
     del /Q $(TOOLSRC)\mkpart\release
     del /Q $(TOOLSRC)\dbggw\release

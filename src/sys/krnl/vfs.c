@@ -99,7 +99,7 @@ int canonicalize(char *path, char *buffer)
     {
       p -= 4;
       if (p < buffer) return -EINVAL;
-      while (*p != PS1) p--;
+      while (*p != pathsep) p--;
     }
   }
 
