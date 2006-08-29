@@ -313,6 +313,7 @@ void init()
   job->iob[0] = 0;
   job->iob[1] = 1;
   job->iob[2] = 2;
+  job->env = (char **) GetEnvironmentStrings();
   job->term = &console;
   job->hmod = GetModuleHandle(NULL);
   job->cmdline = GetCommandLine();
@@ -1978,6 +1979,11 @@ struct servent *getservbyport(int port, const char *proto)
 int *_errno()
 {
   return &(gettib()->errnum);
+}
+
+char ***_environ()
+{
+  return &mainjob->env;
 }
 
 int *_fmode()
