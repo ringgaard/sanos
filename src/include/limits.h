@@ -38,6 +38,8 @@
 #ifndef LIMITS_H
 #define LIMITS_H
 
+#define PATH_MAX      255
+
 #define CHAR_BIT      8			// Number of bits in a char
 #define SCHAR_MIN   (-128)		// Minimum signed char value
 #define SCHAR_MAX     127		// Maximum signed char value

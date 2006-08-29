@@ -97,7 +97,7 @@ proc_t __xt_z[] = { NULL };
 
 #endif
 
-int main(int argc, char *argv[]);
+int main(int argc, char *argv[], char *envp[]);
 
 int atexit(proc_t exitfunc)
 {
@@ -224,7 +224,7 @@ int mainCRTStartup()
   if (rc == 0) 
   {
     gettib()->job->atexit = termcrt;
-    rc = main(crtbase->argc, crtbase->argv);
+    rc = main(crtbase->argc, crtbase->argv, environ);
   }
 
   return rc;

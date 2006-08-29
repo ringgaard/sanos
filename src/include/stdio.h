@@ -51,6 +51,7 @@ typedef long fpos_t;
 #define SEEK_END   2
 #endif
 
+#define L_tmpnam       256
 #define FILENAME_MAX   256
 #define EOF            (-1)
 #define BUFSIZ         512
