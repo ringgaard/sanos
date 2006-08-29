@@ -224,7 +224,7 @@ int mainCRTStartup()
   if (rc == 0) 
   {
     gettib()->job->atexit = termcrt;
-    rc = main(crtbase->argc, crtbase->argv, environ);
+    rc = main(crtbase->argc, crtbase->argv, environ ? environ : (char **) &environ);
   }
 
   return rc;
