@@ -132,6 +132,42 @@ static void ftbuf(FILE *stream)
   }
 }
 
+static int write_translated(int fh, char *buf, int len)
+{
+  char *ptr = buf;
+  char *end = buf + len;
+  int written = 0;
+  int rc;
+
+  while (ptr < end)
+  {
+    if (*ptr == '\n')
+    {
+      if (buf < ptr)
+      {
+	rc = write(fh, buf, ptr - buf);
+	if (rc < 0) return rc;
+	written += rc;
+      }
+
+      rc = write(fh, "\r", 1);
+      if (rc < 0) return -1;
+
+      buf = ptr;
+    }
+    ptr++;
+  }
+
+  if (buf < end)
+  {
+    rc = write(fh, buf, end - buf);
+    if (rc < 0) return rc;
+    written += rc;
+  }
+
+  return written;
+}
+
 int filbuf(FILE *stream)
 {
   if (stream->flag & _IOSTR) return EOF;
@@ -208,7 +244,13 @@ int flsbuf(int ch, FILE *stream)
     stream->ptr = stream->base + 1;
     stream->cnt = stream->bufsiz - 1;
 
-    if (count > 0) written = write(fh, stream->base, count);
+    if (count > 0)
+    {
+      if (stream->flag & _IOCRLF)
+        written = write_translated(fh, stream->base, count);
+      else
+        written = write(fh, stream->base, count);
+    }
 
     *stream->base = (char) ch;
   }
@@ -217,7 +259,10 @@ int flsbuf(int ch, FILE *stream)
     // Perform single character output (either _IONBF or no buffering)
     count = 1;
     chbuf = (char) ch;
-    written = write(fh, &chbuf, count);
+    if (stream->flag & _IOCRLF)
+      written = write_translated(fh, &chbuf, count);
+    else
+      written = write(fh, &chbuf, count);
   }
 
   // See if the write was successful.
@@ -515,12 +560,18 @@ int fflush(FILE *stream)
 {
   int rc = 0;
   int count;
+  int written;
 
   if ((stream->flag & (_IORD | _IOWR)) == _IOWR && 
       bigbuf(stream) && 
       (count = stream->ptr - stream->base) > 0)
   {
-    if (write(fileno(stream), stream->base, count) == count) 
+    if (stream->flag & _IOCRLF)
+      written = write_translated(fileno(stream), stream->base, count);
+    else
+      write(fileno(stream), stream->base, count);
+
+    if (written == count) 
     {
       // If this is a read/write file, clear _IOWR so that next operation can be a read
       if (stream->flag & _IORW) stream->flag &= ~_IOWR;
@@ -813,7 +864,12 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
 
       // Calc chars to write -- (count / bufsize) * bufsize
       nbytes = bufsize ? (count - count % bufsize) : count;
-      nwritten = write(fileno(stream), data, nbytes);
+
+      if (stream->flag & _IOCRLF)
+        nwritten = write_translated(fileno(stream), (char *) data, nbytes);
+      else
+        nwritten = write(fileno(stream), data, nbytes);
+
       if ((int) nwritten < 0) 
       {
 	// Error -- out of here

@@ -218,7 +218,7 @@ int output(FILE *stream, const char *format, va_list args)
     // Go forward until next format specifier or end of string
     while (*fmt != 0 && *fmt != '%') 
     {
-      if ((stream->flag & _IOCRLF) && *fmt == '\n') putc('\r', stream);
+      //if ((stream->flag & _IOCRLF) && *fmt == '\n') putc('\r', stream);
       putc(*fmt, stream);
       fmt++;
       cnt++;
