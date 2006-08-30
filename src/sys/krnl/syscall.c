@@ -2779,7 +2779,7 @@ int syscall(int syscallno, char *params, struct context *ctxt)
 
 #ifdef SYSCALL_LOGENTER
 #ifndef SYSCALL_LOGWAIT
-  if (syscallno != SYSCALL_WAIT && syscallno != SYSCALL_WAITALL && syscallno != SYSCALL_WAITANY)
+  if (syscallno != SYSCALL_WAITONE && syscallno != SYSCALL_WAITALL && syscallno != SYSCALL_WAITANY)
 #endif
   {
     char buf[1024];

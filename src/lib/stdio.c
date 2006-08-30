@@ -569,7 +569,7 @@ int fflush(FILE *stream)
     if (stream->flag & _IOCRLF)
       written = write_translated(fileno(stream), stream->base, count);
     else
-      write(fileno(stream), stream->base, count);
+      written = write(fileno(stream), stream->base, count);
 
     if (written == count) 
     {
