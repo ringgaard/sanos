@@ -344,10 +344,7 @@ int getchildstat(pid_t pid, int *status)
     free(z);
   }
   else
-  {
     rc = -1;
-    return -1;
-  }
 
   leave(&job_lock);
 

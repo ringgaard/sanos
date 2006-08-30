@@ -143,14 +143,12 @@ void fork_exit(int status)
 pid_t wait(int *stat_loc)
 {
   struct job *job = gettib()->job;
-  sigset_t set;
 
-  sigemptyset(&set);
   while (1)
   {
     int pid = getchildstat(-1, stat_loc);
     if (pid != -1) return pid;
-    sigsuspend(&set);
+    sigsuspend(NULL);
   }
 }
 

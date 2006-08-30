@@ -1493,47 +1493,36 @@ void ctrlc_handler(int signum)
   printf("Ctrl-C pressed\n");
 }
 
-char vp;
-volatile char *p;
-
-void sigsegv_handler(int signum)
-{
-  printf("SIGSEGV, setting p\n");
-  p = &vp;
-  signal(SIGSEGV, SIG_DFL);
-}
-
-void alarm_handler(int signum)
-{
-  printf("alarm\n");
-}
-
 void sigchld_handler(int signum)
 {
   printf("child terminated\n");
 }
 
+#include <unistd.h>
+#include <sys/wait.h>
+
 int cmd_test(int argc, char *argv[])
 {
-#if 0
-  signal(SIGSEGV, sigsegv_handler);
-  printf("Generate SIGSEGV\n");
-  fflush(stdout);
-  p = NULL;
-  *p = 'x';
-  printf("new value: %c\n", *p);
-#endif
+  int pid, status;
+  
+  //signal(SIGCHLD, sigchld_handler);
+  pid = vfork();
+  if (pid == 0)
+  {
+    printf("exec\n");
+    execl("/bin/sh.exe", "sh", "ls", NULL);
+    perror("execl");
+    exit(5);
+  }
+  else if (pid < 0)
+  {
+    perror("vfork");
+    return 0;
+  }
 
-//  signal(SIGINT, ctrlc_handler);
-  sigset_t set;
-
-  signal(SIGALRM, alarm_handler);
-  alarm(argc > 1 ? atoi(argv[1]) : 0);
-  sigemptyset(&set);
-
-  if (sigsuspend(&set) < 0) perror("sigsuspend");
-
-  signal(SIGCHLD, sigchld_handler);
+  printf("wait for pid %d\n", pid);
+  pid = wait(&status);
+  printf("pid %d returned with status %d\n", pid, status);
 
   return 0;
 }
@@ -1793,14 +1782,22 @@ void shell()
   char curdir[MAXPATH];
   char cmdline[256];
   char *prompt = get_property(osconfig, "shell", "prompt", "%s$ ");
+  int rc;
 
   while (1)
   {
     printf(prompt, getcwd(curdir, sizeof curdir));
-    if (readline(cmdline, sizeof cmdline) < 0) break;
-    if (stricmp(cmdline, "exit") == 0) break;
-    fflush(stdout);
-    exec_command(cmdline);
+    rc = readline(cmdline, sizeof cmdline);
+    if (rc < 0)
+    {
+      if (errno != EINTR) break;
+    }
+    else
+    {
+      if (stricmp(cmdline, "exit") == 0) break;
+      fflush(stdout);
+      exec_command(cmdline);
+    }
   }
 }
 

@@ -132,12 +132,12 @@ typedef int handle_t;
 
 #ifndef _TID_T_DEFINED
 #define _TID_T_DEFINED
-typedef unsigned long tid_t;
+typedef int tid_t;
 #endif
 
 #ifndef _PID_T_DEFINED
 #define _PID_T_DEFINED
-typedef unsigned long pid_t;
+typedef int pid_t;
 #endif
 
 #ifndef _HMODULE_T_DEFINED

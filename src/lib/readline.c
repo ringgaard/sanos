@@ -243,11 +243,7 @@ int readline(char *buf, int size)
   {
     fflush(stdout);
     key = getkey();
-    if (key < 0) 
-    {
-      errno = -key;
-      return -1;
-    }
+    if (key < 0) return key;
 
     if (key == KEY_TAB)
     {
