@@ -498,6 +498,24 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
     if (!dotseen && strlen(pgmbuf) + 5 < MAXPATH) strcat(pgmbuf, ".exe");
     pgm = pgmbuf;
   }
+  else
+  {
+    char *p = (char *) pgm;
+    int dotseen = 0;
+    while (*p)
+    {
+      if (*p == '.') dotseen = 1;
+      if (*p == PS1 || *p == PS2) dotseen = 0;
+      p++;
+    }
+
+    if (!dotseen && strlen(pgm) + 5 < MAXPATH)
+    {
+      strcpy(pgmbuf, pgm);
+      strcat(pgmbuf, ".exe");
+      pgm = pgmbuf;
+    }
+  }
 
   hmod = dlopen(pgm, RTLD_NOSHARE);
   if (!hmod) return -1;
