@@ -44,7 +44,7 @@ extern struct critsect env_lock;
 
 char ***_environ()
 {
-  return &gettib()->job->env;
+  return &gettib()->proc->env;
 }
 
 static char *findenv(char **env, const char *name, int *offset)

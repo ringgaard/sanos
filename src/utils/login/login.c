@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
   uname(&sys);
 
   // Determine console newline character
-  enter = (gettib()->job->term->type == TERM_CONSOLE) ? '\r' : '\n';
+  enter = (gettib()->proc->term->type == TERM_CONSOLE) ? '\r' : '\n';
 
   // Print banner
   write(fdout, sys.sysname, strlen(sys.sysname));

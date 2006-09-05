@@ -40,8 +40,8 @@
 
 static struct opt *getoptvars()
 {
-  struct job *job = gettib()->job;
-  struct crtbase *crtbase = (struct crtbase *) job->crtbase;
+  struct process *proc = gettib()->proc;
+  struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
   return &crtbase->opt;
 }

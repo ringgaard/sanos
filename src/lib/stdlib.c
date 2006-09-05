@@ -180,23 +180,7 @@ int rand()
 
 int system(const char *command)
 {
-  char pgm[MAXPATH];
-  char *p;
-  char *q;
-  int dotseen = 0;
-
-  p = (char *) command;
-  q = pgm;
-  while (*p != 0 && *p != ' ')
-  {
-    if (*p == '.') dotseen = 1;
-    if (*p == PS1 || *p == PS2) dotseen = 0;
-    *q++ = *p++;
-  }
-  *q++ = 0;
-  if (!dotseen) strcat(pgm, ".exe");
-
-  return spawn(P_WAIT, pgm, command, NULL, NULL);
+  return spawn(P_WAIT, NULL, command, NULL, NULL);
 }
 
 char *realpath(const char *path, char *buffer)

@@ -51,21 +51,21 @@ static int syslogcons = 1;
 
 void openlog(char *ident, int option, int facility)
 {
-  struct job *job = gettib()->job;
+  struct process *proc = gettib()->proc;
 
   if (ident && strlen(ident) < 64)
   {
-    if (job->ident) 
+    if (proc->ident) 
     {
-      char *oldident = job->ident;
-      job->ident = strdup(ident);
+      char *oldident = proc->ident;
+      proc->ident = strdup(ident);
       free(oldident);
     }
     else
-      job->ident = strdup(ident);
+      proc->ident = strdup(ident);
   }
 
-  job->facility = facility;
+  proc->facility = facility;
 }
 
 void closelog()
@@ -152,14 +152,14 @@ void vsyslog(int pri, const char *fmt, va_list args)
 
   if (facility == 0)
   {
-    if (tib->job)
-      facility = tib->job->facility;
+    if (tib->proc)
+      facility = tib->proc->facility;
     else
       facility = LOG_USER;
   }
   
-  if (tib->job && tib->job->ident)
-    ident = tib->job->ident;
+  if (tib->proc && tib->proc->ident)
+    ident = tib->proc->ident;
   else
     ident = "thread";
 

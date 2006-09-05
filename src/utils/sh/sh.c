@@ -827,17 +827,17 @@ int cmd_httpget(int argc, char *argv[])
   return 0;
 }
 
-int cmd_jobs(int argc, char *argv[])
+int cmd_ps(int argc, char *argv[])
 {
-  struct job *job = peb->firstjob;
+  struct process *proc = peb->firstproc;
 
   printf("  id parent name         hmod     threads in  out err command line\n");
   printf("---- ------ ------------ -------- ------- --- --- --- -------------------------\n");
 
-  while (job)
+  while (proc)
   {
-    printf("%4d %6d %-13s%08x%8d%4d%4d%4d %s\n", job->id, job->parent ? job->parent->id : 0, job->ident, job->hmod, job->threadcnt, job->iob[0], job->iob[1], job->iob[2], job->cmdline ? job->cmdline : "");
-    job = job->nextjob;
+    printf("%4d %6d %-13s%08x%8d%4d%4d%4d %s\n", proc->id, proc->parent ? proc->parent->id : 0, proc->ident, proc->hmod, proc->threadcnt, proc->iob[0], proc->iob[1], proc->iob[2], proc->cmdline ? proc->cmdline : "");
+    proc = proc->nextproc;
   }
 
   return 0;
@@ -1656,7 +1656,7 @@ struct command cmdtab[] =
   {"heapstat", cmd_heapstat, "Display heap statistics"},
   {"help",     cmd_help,     "This help"},
   {"httpget",  cmd_httpget,  "Retrieve file via http"},
-  {"jobs",     cmd_jobs,     "Display job list"},
+  {"jobs",     cmd_ps,       "Display process list"},
   {"kbd",      cmd_kbd,      "Keyboard test"},
   {"kill",     cmd_kill,     "Send signal"},
   {"klog",     cmd_klog,     "Enable/disable kernel log messages"},
@@ -1675,6 +1675,7 @@ struct command cmdtab[] =
   {"nslookup", cmd_nslookup, "Lookup hostname or IP address using DNS"},
   {"ping",     cmd_ping,     "Send ICMP echo request to network host"},
   {"play",     cmd_play,     "Play RTTTL file in speaker"},
+  {"ps",       cmd_ps,       "Display process list"},
   {"read",     cmd_read,     "Read file from disk"},
   {"reboot",   cmd_reboot,   "Reboot computer"},
   {"rm",       cmd_rm,       "Delete file"},
@@ -1713,7 +1714,7 @@ static void launch_program(char *args)
     perror("error");
   else
   {
-    printf("[job %d started]\n", h);
+    printf("[process %d started]\n", h);
     close(h);
   }
 }
@@ -1836,7 +1837,7 @@ int main(int argc, char *argv[])
   char *initcmds;
 
   if (sizeof(struct tib) != PAGESIZE) printf("warning: tib is %d bytes (%d expected)\n", sizeof(struct tib), PAGESIZE);
-  if (gettib()->job->term->type == TERM_VT100) setvbuf(stdout, NULL, 0, 8192);
+  if (gettib()->proc->term->type == TERM_VT100) setvbuf(stdout, NULL, 0, 8192);
 
   initcmds = get_property(osconfig, "shell", "initcmds", NULL);
   if (initcmds && !peb->rcdone)
@@ -1847,7 +1848,7 @@ int main(int argc, char *argv[])
 
   if (argc > 1)
   {
-    char *cmdline = gettib()->job->cmdline;
+    char *cmdline = gettib()->proc->cmdline;
     while (*cmdline != ' ')
     {
       if (!*cmdline) return 0;

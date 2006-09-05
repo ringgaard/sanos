@@ -90,7 +90,7 @@ int *_fmode()
 
 int __getstdhndl(int n)
 {
-  return gettib()->job->iob[n];
+  return gettib()->proc->iob[n];
 }
 
 static int check_access(struct stat64 *st, int mode)
@@ -232,9 +232,9 @@ int malloc_usable_size(void *p)
 
 struct heap *get_local_heap()
 {
-  struct job *job = gettib()->job;
-  if (!job->heap) job->heap = create_module_heap(job->hmod);
-  return job->heap;
+  struct process *proc = gettib()->proc;
+  if (!proc->heap) proc->heap = create_module_heap(proc->hmod);
+  return proc->heap;
 }
 
 void *_lmalloc(size_t size)
@@ -472,7 +472,7 @@ hmodule_t getmodule(const char *name)
 {
   hmodule_t hmod;
 
-  if (name == NULL) return gettib()->job->hmod;
+  if (name == NULL) return gettib()->proc->hmod;
 
   enter(&mod_lock);
   hmod = get_module_handle(&usermods, (char *) name);
@@ -484,7 +484,7 @@ int getmodpath(hmodule_t hmod, char *buffer, int size)
 {
   int rc;
 
-  if (hmod == NULL) hmod = gettib()->job->hmod;
+  if (hmod == NULL) hmod = gettib()->proc->hmod;
 
   enter(&mod_lock);
   rc = get_module_filename(&usermods, hmod, buffer, size);
@@ -546,7 +546,7 @@ void *getresdata(hmodule_t hmod, int type, char *name, int lang, int *len)
   void *data;
   int rc;
 
-  if (hmod == NULL) hmod = gettib()->job->hmod;
+  if (hmod == NULL) hmod = gettib()->proc->hmod;
 
   rc = get_resource_data(hmod, INTRES(type), name, INTRES(lang), &data);
   if (rc < 0)
@@ -564,7 +564,7 @@ int getreslen(hmodule_t hmod, int type, char *name, int lang)
   void *data;
   int rc;
 
-  if (hmod == NULL) hmod = gettib()->job->hmod;
+  if (hmod == NULL) hmod = gettib()->proc->hmod;
 
   rc = get_resource_data(hmod, INTRES(type), name, INTRES(lang), &data);
   if (rc < 0)
@@ -580,7 +580,7 @@ struct verinfo *getverinfo(hmodule_t hmod)
 {
   struct verinfo *ver;
 
-  if (hmod == NULL) hmod = gettib()->job->hmod;
+  if (hmod == NULL) hmod = gettib()->proc->hmod;
   ver = get_version_info(hmod);
   if (ver == NULL) errno = ENOENT;
   return ver;
@@ -590,7 +590,7 @@ int getvervalue(hmodule_t hmod, char *name, char *buf, int size)
 {
   int rc;
 
-  if (hmod == NULL) hmod = gettib()->job->hmod;
+  if (hmod == NULL) hmod = gettib()->proc->hmod;
   rc = get_version_value(hmod, name, buf, size);
   if (rc < 0)
   {
@@ -830,58 +830,6 @@ void init_mount()
   }
 }
 
-int seed_random_device(char *rndfn)
-{
-  int rndfile;
-  int rnddev;
-  char buf[512];
-  int n;
-
-  rnddev = open("/dev/random", O_WRONLY | O_BINARY);
-  if (rnddev < 0) return rnddev;
-
-  rndfile = open(rndfn, O_BINARY);
-  if (rndfile < 0)
-  {
-    close(rnddev);
-    return -1;
-  }
-
-  n = read(rndfile, buf, sizeof buf);
-  if (n > 0) write(rnddev, buf, n);
-
-  close(rndfile);
-  close(rnddev);
-
-  return 0;
-}
-
-int save_random_device(char *rndfn)
-{
-  int rndfile;
-  int rnddev;
-  char buf[512];
-  int n;
-
-  rnddev = open("/dev/urandom", O_BINARY);
-  if (rnddev < 0) return -1;
-
-  rndfile = open(rndfn, O_CREAT | O_BINARY);
-  if (rndfile < 0)
-  {
-    close(rnddev);
-    return -1;
-  }
-
-  n = read(rnddev, buf, sizeof buf);
-  if (n > 0) write(rndfile, buf, n);
-
-  close(rndfile);
-  close(rnddev);
-
-  return 0;
-}
-
 int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 {
   int rc;
@@ -921,7 +869,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   //if (!osconfig) syslog(LOG_INFO, "Unable to read /etc/os.ini");
   peb->debug = get_numeric_property(osconfig, "os", "debug", peb->debug);
 
-  // Initialize initial job
+  // Initialize initial process
   init_threads(hmod, &console);
 
   // Initialize network interfaces
@@ -954,10 +902,6 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   // Initialize log
   start_syslog();
 
-  // Initialize random device with seed
-  rndfn = get_property(osconfig, "os", "rndfile", NULL);
-  if (rndfn) seed_random_device(rndfn);
-
   // Load and execute init program
   init = get_property(osconfig, "os", "init", "/bin/sh");
   while (1)
@@ -969,9 +913,4 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
       sleep(1);
     }
   }
-
-  //if (rndfn) save_random_device(rndfn);
-  //syslog(LOG_INFO | LOG_SYSLOG, "shutdown");
-  //stop_syslog();
-  //exitos(EXITOS_POWEROFF);
 }

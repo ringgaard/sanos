@@ -169,8 +169,8 @@ static int getkey()
   {
     case 0x08: return KEY_BACKSPACE;
     case 0x09: return KEY_TAB;
-    case 0x0D: return gettib()->job->term->type == TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
-    case 0x0A: return gettib()->job->term->type != TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
+    case 0x0D: return gettib()->proc->term->type == TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
+    case 0x0A: return gettib()->proc->term->type != TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
 
     case 0x1B:
       ch = getchar();

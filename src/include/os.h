@@ -164,7 +164,7 @@ struct section;
 //
 
 #define CREATE_SUSPENDED        0x00000004
-#define CREATE_NEW_JOB          0x00000010
+#define CREATE_NEW_PROCESS      0x00000010
 #define CREATE_DETACHED         0x00000020
 #define CREATE_POSIX            0x00000040
 #define CREATE_NO_ENV           0x00000080
@@ -1171,7 +1171,7 @@ struct group
 // Process Environment Block
 //
 
-struct job;
+struct process;
 struct heap;
 
 #define PEB_ADDRESS 0x7FFDF000
@@ -1196,8 +1196,8 @@ struct peb
   int fmodeval;
   char pathsep;
 
-  struct job *firstjob;
-  struct job *lastjob;
+  struct process *firstproc;
+  struct process *lastproc;
 
   char osname[16];
   time_t ostimestamp;
@@ -1206,7 +1206,7 @@ struct peb
 };
 
 //
-// Job Object
+// Process Object
 //
 
 #define TERM_UNKNOWN   0
@@ -1229,18 +1229,18 @@ struct zombie
   struct zombie *next;
 };
 
-struct job
+struct process
 {
-  int id;                           // Job id
-  int threadcnt;                    // Number of threads in job
-  struct job *parent;               // Parent job
-  struct job *nextjob;              // Next job in global job list
-  struct job *prevjob;              // Previous job in global job list
+  int id;                           // Process id
+  int threadcnt;                    // Number of threads in process
+  struct process *parent;           // Parent process
+  struct process *nextproc;         // Next process in global process list
+  struct process *prevproc;         // Previous process in global process list
   hmodule_t hmod;                   // Module handle for exec module
   char *cmdline;                    // Command line arguments
   char **env;                       // Environment variables
 
-  handle_t hndl;                    // Handle for main thead in job
+  handle_t hndl;                    // Handle for main thread in process
   void (*atexit)(int);              // Exit handler (used by libc)
 
   handle_t iob[3];                  // Standard input, output, and error handle
@@ -1250,7 +1250,7 @@ struct job
   struct sigaction handlers[_NSIG]; // Signal handlers
   struct zombie *zombies;           // List of terminated childs
 
-  char *ident;                      // Job identifier for syslog
+  char *ident;                      // Process identifier for syslog
   int facility;                     // Default facility for syslog
 
   char crtbase[CRTBASESIZE];        // Used by C runtime library 
@@ -1306,7 +1306,7 @@ struct tib
   int flags;                       // Thread creation flags
 
   handle_t hndl;                   // Handle for thread
-  struct job *job;                 // Job object for thread
+  struct process *proc;            // Process object for thread
 
   struct hostent host;             // Per-thread hostent buffer
   unsigned char host_addr[sizeof(struct in_addr)];
@@ -1540,7 +1540,7 @@ osapi handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int sta
 osapi int suspend(handle_t thread);
 osapi int resume(handle_t thread);
 osapi struct tib *getthreadblock(handle_t thread);
-osapi handle_t getjobhandle(pid_t pid);
+osapi handle_t getprochandle(pid_t pid);
 osapi void endthread(int status);
 osapi tid_t gettid();
 osapi pid_t getpid();

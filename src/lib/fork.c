@@ -74,19 +74,19 @@ static void freeenv(char **env)
 static resume_fork(struct tib *tib, int pid)
 {
   int i;
-  struct job *job = tib->job;
+  struct process *proc = tib->proc;
   struct _forkctx *fc = (struct _forkctx *) tib->forkctx;
 
   // Restore standard handles
   for (i = 0; i < 3; i++)
   {
-    close(job->iob[i]);
-    job->iob[i] = fc->fd[i];
+    close(proc->iob[i]);
+    proc->iob[i] = fc->fd[i];
   }
 
   // Restore environment variables
-  freeenv(job->env);
-  job->env = fc->env;
+  freeenv(proc->env);
+  proc->env = fc->env;
 
   // Unlink fork context from chain
   tib->forkctx = fc->prev;
@@ -99,7 +99,7 @@ struct _forkctx *_vfork(struct _forkctx *fc)
 {
   int i;
   struct tib *tib = gettib();
-  struct job *job = tib->job;
+  struct process *proc = tib->proc;
 
   // Assign fork pid
   fc->pid = atomic_increment(&forkpid);
@@ -107,13 +107,13 @@ struct _forkctx *_vfork(struct _forkctx *fc)
   // Save and duplicate standard handles
   for (i = 0; i < 3; i++)
   {
-    fc->fd[i] = job->iob[i];
-    job->iob[i] = dup(job->iob[i]);
+    fc->fd[i] = proc->iob[i];
+    proc->iob[i] = dup(proc->iob[i]);
   }
 
   // Save and duplicate environment variables
-  fc->env = job->env;
-  job->env = copyenv(job->env);
+  fc->env = proc->env;
+  proc->env = copyenv(proc->env);
 
   // Link fork context into chain
   fc->prev = tib->forkctx;
@@ -130,7 +130,7 @@ void fork_exit(int status)
   struct _forkctx *fc = (struct _forkctx *) tib->forkctx;
   if (!fc) return;
 
-  // Add a fake zombie for job
+  // Add a fake zombie for process
   setchildstat(0x40000000 | fc->pid, status & 0xFF);
 
   // Send a SIGCHLD to account for the virtual process exit
@@ -142,7 +142,7 @@ void fork_exit(int status)
 
 pid_t wait(int *stat_loc)
 {
-  struct job *job = gettib()->job;
+  struct process *proc = gettib()->proc;
 
   while (1)
   {
@@ -154,7 +154,7 @@ pid_t wait(int *stat_loc)
 
 pid_t waitpid(pid_t pid, int *stat_loc, int options)
 {
-  struct job *job = gettib()->job;
+  struct process *proc = gettib()->proc;
   int rc;
   handle_t h;
 
@@ -173,15 +173,15 @@ pid_t waitpid(pid_t pid, int *stat_loc, int options)
     rc = getchildstat(pid, stat_loc);
     if (rc != -1 || (options & WNOHANG)) return rc;
 
-    // Get handle for job from pid
-    h = getjobhandle(pid);
+    // Get handle for process from pid
+    h = getprochandle(pid);
     if (h == NOHANDLE)
     {
       errno = ECHILD;
       return -1;
     }
 
-    // Wait for main thread in job to terminate
+    // Wait for main thread in process to terminate
     rc = waitone(h, INFINITE);
     close(h);
   }
@@ -190,7 +190,7 @@ pid_t waitpid(pid_t pid, int *stat_loc, int options)
 int execve(const char *path, char *argv[], char *env[])
 {
   struct tib *tib = gettib();
-  struct job *job = tib->job;
+  struct process *proc = tib->proc;
   char *cmdline;
   char *p, *q;
   int i, len, pid;
@@ -233,11 +233,11 @@ int execve(const char *path, char *argv[], char *env[])
   }
   *q = 0;
 
-  // Spawn new child job
+  // Spawn new child process
   child = spawn(P_SUSPEND | P_CHILD, path, cmdline, env, &ctib);
   free(cmdline);
   if (child < 0) return -1;
-  pid = ctib->job->id;
+  pid = ctib->proc->id;
   resume(child);
   close(child);
 

@@ -51,18 +51,18 @@ int input(FILE *stream, const unsigned char *format, va_list arglist);
 
 void init_stdio()
 {
-  struct job *job = gettib()->job;
-  struct crtbase *crtbase = (struct crtbase *) job->crtbase;
+  struct process *proc = gettib()->proc;
+  struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
-  crtbase->iob[0].file = job->iob[0];
+  crtbase->iob[0].file = proc->iob[0];
   crtbase->iob[0].base = crtbase->iob[0].ptr = crtbase->stdinbuf;
   crtbase->iob[0].flag = _IORD | _IOEXTBUF;
   crtbase->iob[0].bufsiz = BUFSIZ;
 
-  crtbase->iob[1].file = job->iob[1];
+  crtbase->iob[1].file = proc->iob[1];
   crtbase->iob[1].flag = _IOWR | _IONBF | _IOCRLF;
 
-  crtbase->iob[2].file = job->iob[2];
+  crtbase->iob[2].file = proc->iob[2];
   crtbase->iob[2].flag = _IOWR | _IONBF | _IOCRLF;
 
   crtbase->opt.err = 1;
@@ -72,8 +72,8 @@ void init_stdio()
 
 FILE *__getstdfile(int n)
 {
-  struct job *job = gettib()->job;
-  struct crtbase *crtbase = (struct crtbase *) job->crtbase;
+  struct process *proc = gettib()->proc;
+  struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
   return &crtbase->iob[n];
 }
@@ -474,7 +474,7 @@ FILE *popen(const char *command, const char *mode)
   int hndl[2];
   int phndl;
   struct tib *tib;
-  struct job *job;
+  struct process *proc;
   FILE *f;
 
   if (!command)
@@ -495,21 +495,21 @@ FILE *popen(const char *command, const char *mode)
 
   phndl = spawn(P_SUSPEND, SHELL, cmdline, NULL, &tib);
   if (phndl < 0) return NULL;
-  job = tib->job;
+  proc = tib->proc;
 
   rc = pipe(hndl);
   if (rc < 0) return NULL;
 
   if (*mode == 'w')
   {
-    if (job->iob[0] != NOHANDLE) close(job->iob[0]);
-    job->iob[0] = hndl[0];
+    if (proc->iob[0] != NOHANDLE) close(proc->iob[0]);
+    proc->iob[0] = hndl[0];
     f = fdopen(hndl[1], mode);
   }
   else
   {
-    if (job->iob[1] != NOHANDLE) close(job->iob[1]);
-    job->iob[1] = hndl[1];
+    if (proc->iob[1] != NOHANDLE) close(proc->iob[1]);
+    proc->iob[1] = hndl[1];
     f = fdopen(hndl[0], mode);
   }
 

@@ -223,9 +223,9 @@ void __getmainargs(int *pargc, char ***pargv, char ***penvp, int dowildcard, _st
   TRACE("__getmainargs");
 
   // TODO: argv and envp should be freed on termination
-  *pargc = parse_args(gettib()->job->cmdline, NULL);
+  *pargc = parse_args(gettib()->proc->cmdline, NULL);
   *pargv = malloc(sizeof(char *) * *pargc);
-  if (*pargv) parse_args(gettib()->job->cmdline, *pargv);
+  if (*pargv) parse_args(gettib()->proc->cmdline, *pargv);
   *penvp = build_env_block();
 }
 

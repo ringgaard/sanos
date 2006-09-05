@@ -285,7 +285,7 @@ void parse(struct termstate *ts)
 
 void __stdcall telnet_task(void *arg)
 {
-  struct job *job = gettib()->job;
+  struct process *proc = gettib()->proc;
   int s = (int) arg;
   int pin[2];
   int pout[2];
@@ -295,15 +295,15 @@ void __stdcall telnet_task(void *arg)
   int n;
   struct termstate ts;
 
-  // Set job identifer
-  if (!job->ident && !job->cmdline)
+  // Set process identifer
+  if (!proc->ident && !proc->cmdline)
   {
     struct sockaddr_in sin;
     int sinlen = sizeof sin;
 
     getpeername(s, (struct sockaddr *) &sin, &sinlen);
-    job->ident = strdup("user");
-    job->cmdline = strdup(inet_ntoa(sin.sin_addr));
+    proc->ident = strdup("user");
+    proc->cmdline = strdup(inet_ntoa(sin.sin_addr));
   }
 
   // Initialize terminal state
@@ -329,9 +329,9 @@ void __stdcall telnet_task(void *arg)
   dispatch(mux, pout[0], IOEVT_READ | IOEVT_ERROR | IOEVT_CLOSE, APPATT);
 
   // Redirect standard input, output, and error
-  job->iob[0] = pin[0];
-  job->iob[1] = job->iob[2] = pout[1];
-  job->term = &ts.term;
+  proc->iob[0] = pin[0];
+  proc->iob[1] = proc->iob[2] = pout[1];
+  proc->term = &ts.term;
   
   // Spawn initial telnet application
   app = spawn(P_NOWAIT, NULL, pgm, NULL, NULL);
@@ -340,7 +340,7 @@ void __stdcall telnet_task(void *arg)
   // The spawned application has duped the handles, now close our copy
   close(pin[0]);
   close(pout[1]);
-  job->iob[0] = job->iob[1] = job->iob[2] = NOHANDLE;
+  proc->iob[0] = proc->iob[1] = proc->iob[2] = NOHANDLE;
 
   // Initialize event handle array
   events[0] = app;
@@ -510,7 +510,7 @@ int main(int argc, char *argv[])
 
     setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (char *) &off, sizeof(off));
 
-    hthread = beginthread(telnet_task, 0, (void *) s, CREATE_NEW_JOB | CREATE_DETACHED, NULL);
+    hthread = beginthread(telnet_task, 0, (void *) s, CREATE_NEW_PROCESS | CREATE_DETACHED, NULL);
     close(hthread);
   }
 

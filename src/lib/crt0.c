@@ -160,8 +160,8 @@ static int initcrt()
 
 static void termcrt(int status)
 {
-  struct job *job = gettib()->job;
-  struct crtbase *crtbase = (struct crtbase *) job->crtbase;
+  struct process *proc = gettib()->proc;
+  struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
   // Check for vfork() exit
   fork_exit(status);
@@ -213,17 +213,17 @@ int mainCRTStartup()
 {
   int rc;
   struct tib *tib = gettib();
-  struct job *job = tib->job;
-  struct crtbase *crtbase = (struct crtbase *) job->crtbase;
+  struct process *proc = tib->proc;
+  struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
-  crtbase->argc = parse_args(job->cmdline, NULL);
+  crtbase->argc = parse_args(proc->cmdline, NULL);
   crtbase->argv = (char **) malloc(crtbase->argc * sizeof(char *));
-  parse_args(job->cmdline, crtbase->argv);
+  parse_args(proc->cmdline, crtbase->argv);
 
   rc = initcrt();
   if (rc == 0) 
   {
-    gettib()->job->atexit = termcrt;
+    gettib()->proc->atexit = termcrt;
     rc = main(crtbase->argc, crtbase->argv, environ ? environ : (char **) &environ);
   }
 

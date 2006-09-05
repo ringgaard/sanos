@@ -1256,7 +1256,7 @@ void __stdcall ftp_task(void *arg)
 {
   struct ftpstate ftpstate;
   struct ftpstate *fs = &ftpstate;
-  struct job *job = gettib()->job;
+  struct process *proc = gettib()->proc;
   int s = (int) arg;
   int len;
 
@@ -1269,15 +1269,15 @@ void __stdcall ftp_task(void *arg)
   len = sizeof(fs->peer);
   getpeername(s, (struct sockaddr *) &fs->peer, &len);
 
-  // Set job identifer
-  if (!job->ident && !job->cmdline)
+  // Set process identifer
+  if (!proc->ident && !proc->cmdline)
   {
     struct sockaddr_in sin;
     int sinlen = sizeof sin;
 
     getpeername(s, (struct sockaddr *) &sin, &sinlen);
-    job->ident = strdup("ftp");
-    job->cmdline = strdup(inet_ntoa(sin.sin_addr));
+    proc->ident = strdup("ftp");
+    proc->cmdline = strdup(inet_ntoa(sin.sin_addr));
   }
 
   // Set idle timeout for connection
@@ -1385,7 +1385,7 @@ int main(int argc, char *argv[])
 
     syslog(LOG_INFO, "FTP client connected from %a", &sin.sin_addr);
 
-    hthread = beginthread(ftp_task, 0, (void *) s, CREATE_NEW_JOB | CREATE_DETACHED, NULL);
+    hthread = beginthread(ftp_task, 0, (void *) s, CREATE_NEW_PROCESS | CREATE_DETACHED, NULL);
     close(hthread);
   }
 

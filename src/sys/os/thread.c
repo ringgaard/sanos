@@ -48,35 +48,35 @@ char **initenv(struct section *sect);
 char **copyenv(char **env);
 void freeenv(char **env);
 
-struct critsect job_lock;
-int nextjobid = 1;
+struct critsect proc_lock;
+int nextprocid = 1;
 
 void init_threads(hmodule_t hmod, struct term *initterm)
 {
   struct tib *tib = gettib();
-  struct job *job;
+  struct process *proc;
 
-  mkcs(&job_lock);
+  mkcs(&proc_lock);
 
-  job = malloc(sizeof(struct job));
-  if (!job) panic("unable to allocate initial job");
-  memset(job, 0, sizeof(struct job));
+  proc = malloc(sizeof(struct process));
+  if (!proc) panic("unable to allocate initial process");
+  memset(proc, 0, sizeof(struct process));
 
-  job->id = nextjobid++;
-  job->threadcnt = 1;
-  job->hndl = dup(self());
-  job->iob[0] = 0;
-  job->iob[1] = 1;
-  job->iob[2] = 2;
-  job->term = initterm;
-  job->hmod = hmod;
-  job->cmdline = NULL;
-  job->env = initenv(find_section(osconfig, "env"));
-  job->facility = LOG_DAEMON;
-  job->ident = strdup("os");
+  proc->id = nextprocid++;
+  proc->threadcnt = 1;
+  proc->hndl = dup(self());
+  proc->iob[0] = 0;
+  proc->iob[1] = 1;
+  proc->iob[2] = 2;
+  proc->term = initterm;
+  proc->hmod = hmod;
+  proc->cmdline = NULL;
+  proc->env = initenv(find_section(osconfig, "env"));
+  proc->facility = LOG_DAEMON;
+  proc->ident = strdup("os");
 
-  tib->job = job;
-  peb->firstjob = peb->lastjob = job;
+  tib->proc = proc;
+  peb->firstproc = peb->lastproc = proc;
 }
 
 handle_t mkthread(void (__stdcall *startaddr)(struct tib *), unsigned long stacksize, struct tib **ptib)
@@ -106,46 +106,46 @@ void __stdcall threadstart(struct tib *tib)
   }
 }
 
-static struct job *mkjob(struct job *parent, int hndl, int flags)
+static struct process *mkproc(struct process *parent, int hndl, int flags)
 {
-  struct job *job;
+  struct process *proc;
   int i;
 
-  job = malloc(sizeof(struct job));
-  if (!job) return NULL;
-  memset(job, 0, sizeof(struct job));
+  proc = malloc(sizeof(struct process));
+  if (!proc) return NULL;
+  memset(proc, 0, sizeof(struct process));
 
   if (flags & CREATE_DETACHED)
   {
-    for (i = 0; i < 3; i++) job->iob[i] = NOHANDLE;
+    for (i = 0; i < 3; i++) proc->iob[i] = NOHANDLE;
   }
   else
   {
-    for (i = 0; i < 3; i++) job->iob[i] = dup(parent->iob[i]);
-    job->term = parent->term;
+    for (i = 0; i < 3; i++) proc->iob[i] = dup(parent->iob[i]);
+    proc->term = parent->term;
   }
 
-  job->hndl = dup(hndl);
-  job->facility = LOG_USER;
-  if ((flags & CREATE_NO_ENV) == 0) job->env = copyenv(parent->env);
+  proc->hndl = dup(hndl);
+  proc->facility = LOG_USER;
+  if ((flags & CREATE_NO_ENV) == 0) proc->env = copyenv(parent->env);
 
-  enter(&job_lock);
-  job->id = nextjobid++;
-  if (flags & CREATE_CHILD) job->parent = parent;
-  job->prevjob = peb->lastjob;
-  if (!peb->firstjob) peb->firstjob = job;
-  if (peb->lastjob) peb->lastjob->nextjob = job;
-  peb->lastjob = job;
-  leave(&job_lock);
+  enter(&proc_lock);
+  proc->id = nextprocid++;
+  if (flags & CREATE_CHILD) proc->parent = parent;
+  proc->prevproc = peb->lastproc;
+  if (!peb->firstproc) peb->firstproc = proc;
+  if (peb->lastproc) peb->lastproc->nextproc = proc;
+  peb->lastproc = proc;
+  leave(&proc_lock);
 
-  return job;
+  return proc;
 }
 
 handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize, void *arg, int flags, struct tib **ptib)
 {
-  struct job *parent = gettib()->job;
+  struct process *parent = gettib()->proc;
   struct tib *tib;
-  struct job *job;
+  struct process *proc;
   handle_t h;
 
   h = mkthread(threadstart, stacksize, &tib);
@@ -155,21 +155,21 @@ handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize
   tib->startarg = arg;
   tib->flags = flags;
 
-  if (flags & CREATE_NEW_JOB)
+  if (flags & CREATE_NEW_PROCESS)
   {
-    job = mkjob(parent, h, flags);
-    if (!job) 
+    proc = mkproc(parent, h, flags);
+    if (!proc) 
     {
       errno = ENOMEM;
       return -1;
     }
   }
   else
-    job = parent;
+    proc = parent;
 
-  atomic_add(&job->threadcnt, 1);
-  tib->job = job;
-  tib->pid = job->id;
+  atomic_add(&proc->threadcnt, 1);
+  tib->proc = proc;
+  tib->pid = proc->id;
 
   if (!(flags & CREATE_SUSPENDED)) resume(h);
 
@@ -201,25 +201,25 @@ int resume(handle_t thread)
   return syscall(SYSCALL_RESUME, &thread);
 }
 
-void endjob(struct job *job, int status)
+void endproc(struct process *proc, int status)
 {
-  struct job *parent;
-  struct job *j;
+  struct process *parent;
+  struct process *p;
   struct zombie *z;
   int i;
 
   int ppid = -1;
 
-  enter(&job_lock);
+  enter(&proc_lock);
 
-  // Add zombie to parent job
-  parent = job->parent;
+  // Add zombie to parent process
+  parent = proc->parent;
   if (parent)
   {
     z = (struct zombie *) malloc(sizeof(struct zombie));
     if (z)
     {
-      z->pid = job->id;
+      z->pid = proc->id;
       z->status = status;
       z->next = parent->zombies;
       parent->zombies = z;
@@ -228,38 +228,38 @@ void endjob(struct job *job, int status)
     }
   }
 
-  // Free zombies for job
-  while (job->zombies)
+  // Free zombies for process
+  while (proc->zombies)
   {
-    z = job->zombies->next;
-    free(job->zombies);
-    job->zombies = z;
+    z = proc->zombies->next;
+    free(proc->zombies);
+    proc->zombies = z;
   }
 
-  // Remove job from job list
-  if (job->nextjob) job->nextjob->prevjob = job->prevjob;
-  if (job->prevjob) job->prevjob->nextjob = job->nextjob;
-  if (job == peb->firstjob) peb->firstjob = job->nextjob;
-  if (job == peb->lastjob) peb->lastjob = job->prevjob;
+  // Remove process from process list
+  if (proc->nextproc) proc->nextproc->prevproc = proc->prevproc;
+  if (proc->prevproc) proc->prevproc->nextproc = proc->nextproc;
+  if (proc == peb->firstproc) peb->firstproc = proc->nextproc;
+  if (proc == peb->lastproc) peb->lastproc = proc->prevproc;
   
-  // Orphan child jobs
-  for (j = peb->firstjob; j; j = j->nextjob) if (j->parent == job) j->parent = NULL;
+  // Orphan child processes
+  for (p = peb->firstproc; p; p = p->nextproc) if (p->parent == proc) p->parent = NULL;
   
-  leave(&job_lock);
+  leave(&proc_lock);
 
   // Close standard handles
-  for (i = 0; i < 3; i++) if (job->iob[i] >= 0) close(job->iob[i]);
+  for (i = 0; i < 3; i++) if (proc->iob[i] >= 0) close(proc->iob[i]);
 
-  // Cleanup job resources
-  if (job->hmod) dlclose(job->hmod);
-  if (job->cmdline) free(job->cmdline);
-  if (job->ident) free(job->ident);
-  if (job->env) freeenv(job->env);
-  if (job->heap) heap_destroy(job->heap);
+  // Cleanup process resources
+  if (proc->hmod) dlclose(proc->hmod);
+  if (proc->cmdline) free(proc->cmdline);
+  if (proc->ident) free(proc->ident);
+  if (proc->env) freeenv(proc->env);
+  if (proc->heap) heap_destroy(proc->heap);
 
-  close(job->hndl);
+  close(proc->hndl);
 
-  free(job);
+  free(proc);
 
   // Notify parent about child termination
   if (ppid != -1) kill(ppid, SIGCHLD);
@@ -267,10 +267,10 @@ void endjob(struct job *job, int status)
 
 void endthread(int status)
 {
-  struct job *job;
+  struct process *proc;
 
-  job = gettib()->job;
-  if (atomic_add(&job->threadcnt, -1) == 0) endjob(job, status);
+  proc = gettib()->proc;
+  if (atomic_add(&proc->threadcnt, -1) == 0) endproc(proc, status);
 
   syscall(SYSCALL_ENDTHREAD, &status);
 }
@@ -290,33 +290,33 @@ pid_t getppid()
   struct tib *tib = gettib();
   int id;
 
-  enter(&job_lock);
+  enter(&proc_lock);
   
-  if (tib && tib->job && tib->job->parent)
-    id = tib->job->parent->id;
+  if (tib && tib->proc && tib->proc->parent)
+    id = tib->proc->parent->id;
   else
   {
     id = -1;
     errno = ESRCH;
   }
 
-  leave(&job_lock);
+  leave(&proc_lock);
 
   return id;
 }
 
 int getchildstat(pid_t pid, int *status)
 {
-  struct job *job = gettib()->job;
+  struct process *proc = gettib()->proc;
   struct zombie *z;
   int rc;
 
-  enter(&job_lock);
+  enter(&proc_lock);
 
-  z = job->zombies;
+  z = proc->zombies;
   if (pid == -1)
   {
-    if (z) job->zombies = z->next;
+    if (z) proc->zombies = z->next;
   }
   else
   {
@@ -328,7 +328,7 @@ int getchildstat(pid_t pid, int *status)
 	if (pz)
 	  pz->next = z->next;
 	else
-	  job->zombies = z->next;
+	  proc->zombies = z->next;
 
         break;
       }
@@ -346,42 +346,42 @@ int getchildstat(pid_t pid, int *status)
   else
     rc = -1;
 
-  leave(&job_lock);
+  leave(&proc_lock);
 
   return rc;
 }
 
 int setchildstat(pid_t pid, int status)
 {
-  struct job *job = gettib()->job;
+  struct process *proc = gettib()->proc;
   struct zombie *z;
 
-  enter(&job_lock);
+  enter(&proc_lock);
   z = (struct zombie *) malloc(sizeof(struct zombie));
   z->pid = pid;
   z->status = status;
-  z->next = job->zombies;
-  job->zombies = z;
-  leave(&job_lock);
+  z->next = proc->zombies;
+  proc->zombies = z;
+  leave(&proc_lock);
 
   return 0;
 }
 
-handle_t getjobhandle(pid_t pid)
+handle_t getprochandle(pid_t pid)
 {
   handle_t h = NOHANDLE;
-  struct job *j;
+  struct process *p;
 
-  enter(&job_lock);
-  for (j = peb->firstjob; j; j = j->nextjob) 
+  enter(&proc_lock);
+  for (p = peb->firstproc; p; p = p->nextproc) 
   {
-    if (j->id == pid)
+    if (p->id == pid)
     {
-      h = dup(j->hndl);
+      h = dup(p->hndl);
       break;
     }
   }
-  leave(&job_lock);
+  leave(&proc_lock);
 
   if (h == NOHANDLE) errno = ESRCH;
   return h;
@@ -427,18 +427,18 @@ struct tib *gettib()
 
 void exit(int status)
 {
-  struct job *job = gettib()->job;
+  struct process *proc = gettib()->proc;
 
-  if (job->atexit) job->atexit(status);
+  if (proc->atexit) proc->atexit(status);
   endthread(status);
 }
 
 static void __stdcall spawn_program(void *args)
 {
-  struct job *job = gettib()->job;
+  struct process *proc = gettib()->proc;
   int rc;
 
-  rc = exec(job->hmod, job->cmdline, job->env);
+  rc = exec(proc->hmod, proc->cmdline, proc->env);
   exit(rc);
 }
 
@@ -470,7 +470,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
   hmodule_t hmod;
   handle_t hthread;
   struct tib *tib;
-  struct job *job;
+  struct process *proc;
   int flags;
   int rc;
   char pgmbuf[MAXPATH];
@@ -520,7 +520,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
   hmod = dlopen(pgm, RTLD_NOSHARE);
   if (!hmod) return -1;
 
-  flags = CREATE_SUSPENDED | CREATE_NEW_JOB;
+  flags = CREATE_SUSPENDED | CREATE_NEW_PROCESS;
   if (mode & P_DETACH) flags |= CREATE_DETACHED;
   if (mode & P_CHILD) flags |= CREATE_CHILD;
   if (env) flags |= CREATE_NO_ENV;
@@ -532,11 +532,11 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
     return -1;
   }
 
-  job = tib->job;
-  job->hmod = hmod;
-  job->cmdline = strdup(cmdline);
-  job->ident = procname(pgm);
-  if (env) job->env = copyenv(env);
+  proc = tib->proc;
+  proc->hmod = hmod;
+  proc->cmdline = strdup(cmdline);
+  proc->ident = procname(pgm);
+  if (env) proc->env = copyenv(env);
 
   if (mode & (P_NOWAIT | P_SUSPEND))
   {

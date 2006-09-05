@@ -182,7 +182,7 @@ int sigismember(sigset_t *set, int signum)
 
 int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
 {
-  struct job *job = gettib()->job;
+  struct process *proc = gettib()->proc;
 
   if (signum < 0 || signum >= _NSIG)
   {
@@ -190,8 +190,8 @@ int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
     return -1;
   }
 
-  if (oldact) memcpy(oldact, job->handlers + signum, sizeof(struct sigaction));
-  memcpy(job->handlers + signum, act, sizeof(struct sigaction));
+  if (oldact) memcpy(oldact, proc->handlers + signum, sizeof(struct sigaction));
+  memcpy(proc->handlers + signum, act, sizeof(struct sigaction));
 
   return 0;
 }
@@ -246,7 +246,7 @@ int kill(pid_t pid, int signum)
   handle_t h;
   int rc;
 
-  h = getjobhandle(pid);
+  h = getprochandle(pid);
   if (h < 0) return h;
 
   rc = sendsig(h, signum);
@@ -273,7 +273,7 @@ void globalhandler(struct siginfo *info)
 
   if (signum < 0 || signum >= _NSIG) return;
 
-  act = gettib()->job->handlers + signum;
+  act = gettib()->proc->handlers + signum;
   memcpy(&oldact, act, sizeof(struct sigaction));
 
   if (oldact.sa_handler == SIG_DFL)

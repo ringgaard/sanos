@@ -405,8 +405,8 @@ int getkey()
     case 0x08: return KEY_BACKSPACE;
     case 0x09: return KEY_TAB;
 #ifdef SANOS
-    case 0x0D: return gettib()->job->term->type == TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
-    case 0x0A: return gettib()->job->term->type != TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
+    case 0x0D: return gettib()->proc->term->type == TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
+    case 0x0A: return gettib()->proc->term->type != TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
 #else
     case 0x0D: return KEY_ENTER;
 #endif
@@ -892,7 +892,7 @@ int main(int argc, char *argv[])
 
   setvbuf(stdout, NULL, 0, 8192);
 
-  term = gettib()->job->term;
+  term = gettib()->proc->term;
   ed->cols = term->cols;
   ed->lines = term->lines - 1;
   ed->linebuf = malloc(ed->cols);
