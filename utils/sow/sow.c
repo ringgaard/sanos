@@ -123,7 +123,7 @@ int vsprintf(char *buf, const char *fmt, va_list args);
 //
 
 struct handle htab[MAXHANDLES];
-struct job *mainjob;
+struct process *mainproc;
 DWORD tibtls;
 
 struct term console;
@@ -271,7 +271,7 @@ void init()
 {
   int i;
   struct tib *tib;
-  struct job *job;
+  struct process *proc;
 
   // Initialize sockets
   initsock();
@@ -305,22 +305,22 @@ void init()
   console.lines = 25;
   console.type = TERM_CONSOLE;
 
-  job = malloc(sizeof(struct job));
-  memset(job, 0, sizeof(struct job));
+  proc = malloc(sizeof(struct process));
+  memset(proc, 0, sizeof(struct process));
 
-  job->threadcnt = 1;
-  job->id = 1;
-  job->iob[0] = 0;
-  job->iob[1] = 1;
-  job->iob[2] = 2;
-  job->env = (char **) GetEnvironmentStrings();
-  job->term = &console;
-  job->hmod = GetModuleHandle(NULL);
-  job->cmdline = GetCommandLine();
-  job->facility = LOG_DAEMON;
-  job->ident = "sanos";
+  proc->threadcnt = 1;
+  proc->id = 1;
+  proc->iob[0] = 0;
+  proc->iob[1] = 1;
+  proc->iob[2] = 2;
+  proc->env = (char **) GetEnvironmentStrings();
+  proc->term = &console;
+  proc->hmod = GetModuleHandle(NULL);
+  proc->cmdline = GetCommandLine();
+  proc->facility = LOG_DAEMON;
+  proc->ident = "sanos";
 
-  mainjob = peb->firstjob = peb->lastjob = job;
+  mainproc = peb->firstproc = peb->lastproc = proc;
 
   // Allocate tib for initial thread
   tib = malloc(4096);
@@ -332,14 +332,14 @@ void init()
   tib->hndl = halloc(HANDLE_THREAD, GetCurrentThread());
   tib->peb = peb;
   tib->except = (struct xcptrec *) 0xFFFFFFFF;
-  tib->job = job;
+  tib->proc = proc;
 
   TlsSetValue(tibtls, tib);
 }
 
 void term()
 {
-  if (mainjob && mainjob->atexit) mainjob->atexit(0);
+  if (mainproc && mainproc->atexit) mainproc->atexit(0);
 }
 
 //
@@ -1983,7 +1983,7 @@ int *_errno()
 
 char ***_environ()
 {
-  return &mainjob->env;
+  return &mainproc->env;
 }
 
 int *_fmode()

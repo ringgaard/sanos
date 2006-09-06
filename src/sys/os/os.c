@@ -834,7 +834,6 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 {
   int rc;
   char *init;
-  char *rndfn;
 
   // Set usermode segment selectors
   __asm
