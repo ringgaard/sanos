@@ -340,6 +340,16 @@ int stat(const char *name, struct stat *buffer)
     return stat64(name, NULL);
 }
 
+int lstat(const char *name, struct stat *buffer)
+{
+  return stat(name, buffer);
+}
+
+int lstat64(const char *name, struct stat64 *buffer)
+{
+  return stat64(name, buffer);
+}
+
 int chmod(const char *name, int mode)
 {
   return syscall(SYSCALL_CHMOD, (void *) &name);

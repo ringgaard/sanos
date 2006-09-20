@@ -144,6 +144,12 @@
 				RelativePath="..\src\include\float.h">
 			</File>
 			<File
+				RelativePath="..\src\include\fnmatch.h">
+			</File>
+			<File
+				RelativePath="..\src\include\glob.h">
+			</File>
+			<File
 				RelativePath="..\src\include\grp.h">
 			</File>
 			<File
@@ -897,6 +903,9 @@
 			RelativePath="..\src\lib\fcvt.c">
 		</File>
 		<File
+			RelativePath="..\src\lib\fnmatch.c">
+		</File>
+		<File
 			RelativePath="..\src\lib\fork.c">
 		</File>
 		<File
@@ -907,6 +916,9 @@
 					Name="VCCLCompilerTool"
 					AssemblerOutput="4"/>
 			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\src\lib\glob.c">
 		</File>
 		<File
 			RelativePath="..\src\lib\hash.c">

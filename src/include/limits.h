@@ -39,6 +39,7 @@
 #define LIMITS_H
 
 #define PATH_MAX      255
+#define ARG_MAX       131072
 
 #define CHAR_BIT      8			// Number of bits in a char
 #define SCHAR_MIN   (-128)		// Minimum signed char value

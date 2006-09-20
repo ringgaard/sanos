@@ -61,6 +61,8 @@ src\                           Souce files
     errno.h                    Error codes
     fcntl.h                    File control
     float.h                    Constants for floating point values
+    fnmatch.h                  Filename matching
+    glob.h                     Pathname pattern-matching
     hash.h                     A hashed lookup mechanism
     httpd.h                    HTTP server
     inifile.h                  Property files
@@ -184,8 +186,10 @@ src\                           Souce files
     ctype.c                    Character types
     dirent.c                   List diretory entries
     fcvt.c                     Floating point to string conversion routines
+    fnmatch.c                  Filename matching
     fork.c                     Unix process creation routines
     getopt.c                   Parse command options
+    glob.c                     Pathname pattern-matching
     hash.c                     A hashed lookup mechanism
     inifile.c                  Property files
     input.c                    C formatted input, used by scanf, etc.

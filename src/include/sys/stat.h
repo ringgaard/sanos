@@ -126,13 +126,16 @@ extern "C" {
 #ifdef LARGEFILES
 #define fstat fstat64
 #define stat stat64
+#define lstat lstat64
 #else
 osapi int fstat(handle_t f, struct stat *buffer);
 osapi int stat(const char *name, struct stat *buffer);
+osapi int lstat(const char *name, struct stat *buffer);
 #endif
 
 osapi int fstat64(handle_t f, struct stat64 *buffer);
 osapi int stat64(const char *name, struct stat64 *buffer);
+osapi int lstat64(const char *name, struct stat64 *buffer);
 
 osapi int chmod(const char *name, int mode);
 osapi int fchmod(handle_t f, int mode);

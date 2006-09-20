@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Pathname pattern-matching with glob() and fnmatch() added to libc.
+    
     * Renamed jobs to processes
 
     * Kernel related files moved from /bin and /etc to /boot.

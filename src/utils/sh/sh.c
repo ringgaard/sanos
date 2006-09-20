@@ -1488,41 +1488,28 @@ int cmd_sysinfo(int argc, char *argv[])
   return 0;
 }
 
-void ctrlc_handler(int signum)
-{
-  printf("Ctrl-C pressed\n");
-}
-
-void sigchld_handler(int signum)
-{
-  printf("child terminated\n");
-}
-
-#include <unistd.h>
-#include <sys/wait.h>
+#include <glob.h>
 
 int cmd_test(int argc, char *argv[])
 {
-  int pid, status;
-  
-  //signal(SIGCHLD, sigchld_handler);
-  pid = vfork();
-  if (pid == 0)
-  {
-    printf("exec\n");
-    execl("/bin/sh.exe", "sh", "ls", NULL);
-    perror("execl");
-    exit(5);
-  }
-  else if (pid < 0)
-  {
-    perror("vfork");
-    return 0;
-  }
+  glob_t globbuf;
+  int i;
+  int rc;
 
-  printf("wait for pid %d\n", pid);
-  pid = wait(&status);
-  printf("pid %d returned with status %d\n", pid, status);
+  if (argc > 1)
+  {
+    for (i = 1; i < argc; i++)
+    {
+      rc = glob(argv[i], i > 1 ? GLOB_APPEND : 0, NULL, &globbuf);
+      if (rc < 0) printf("glob(%s) returned %d\n", argv[i], rc);
+    }
+
+    for (i = 0; i < (int) globbuf.gl_pathc; i++)
+    {
+      printf("%s\n", globbuf.gl_pathv[i]);
+    }
+    globfree(&globbuf);
+  }
 
   return 0;
 }

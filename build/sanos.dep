@@ -123,6 +123,18 @@ $(SRC)/lib/getopt.c: \
   $(SRC)/include/string.h \
   $(SRC)/include/crtbase.h
 
+$(SRC)/lib/glob.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/glob.h \
+  $(SRC)/include/limits.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/dirent.h
+
+$(SRC)/lib/fnmatch.c: \
+  $(SRC)/include/fnmatch.h \
+  $(SRC)/include/string.h \
+
 $(SRC)/lib/hash.c: \
   $(SRC)/include/stdlib.h \
   $(SRC)/include/string.h \

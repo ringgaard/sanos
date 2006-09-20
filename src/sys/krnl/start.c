@@ -358,7 +358,7 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
   init_syscall();
 
   // Enable interrupts and calibrate delay
-  __asm { sti };
+  sti();
   calibrate_delay();
 
   // Start main task and dispatch to idle task

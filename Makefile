@@ -647,6 +647,12 @@ $(OBJ)/libc/dirent.obj: $(SRC)/lib/dirent.c
 $(OBJ)/libc/getopt.obj: $(SRC)/lib/getopt.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
+$(OBJ)/libc/glob.obj: $(SRC)/lib/glob.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
+$(OBJ)/libc/fnmatch.obj: $(SRC)/lib/fnmatch.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
 $(LIBS)/libc.lib: \
   $(OBJ)/libc/spinlock.obj \
   $(OBJ)/libc/rwlock.obj \
@@ -721,6 +727,8 @@ $(LIBS)/libc.lib: \
   $(OBJ)/libc/acos.obj \
   $(OBJ)/libc/dirent.obj \
   $(OBJ)/libc/getopt.obj \
+  $(OBJ)/libc/glob.obj \
+  $(OBJ)/libc/fnmatch.obj \
   $(OBJ)/libc/fork.obj
     $(AR) /NOLOGO /NODEFAULTLIB /OUT:$(LIBS)/libc.lib $**
 
