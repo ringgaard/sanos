@@ -64,7 +64,6 @@ void fpu_enable(struct fpu *state)
       fninit
     }
   }
-
 }
 
 void fpu_disable(struct fpu *state)
