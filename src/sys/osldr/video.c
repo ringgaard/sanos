@@ -63,11 +63,11 @@ void init_video()
   vidmem = (unsigned char *) VIDEO_BASE;
 
   // Get cursor position
-  _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_MSB);
-  cursor_pos = _inp(VIDEO_PORT_DATA) & 0xFF;
+  outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_MSB);
+  cursor_pos = inp(VIDEO_PORT_DATA) & 0xFF;
   cursor_pos <<= 8;
-  _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_LSB);
-  cursor_pos += _inp(VIDEO_PORT_DATA) & 0xFF;
+  outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_LSB);
+  cursor_pos += inp(VIDEO_PORT_DATA) & 0xFF;
   cursor_pos <<= 1;
 
   if (cursor_pos > SCREENSIZE) cursor_pos = SCREENSIZE - LINESIZE;
@@ -77,10 +77,10 @@ static void move_cursor()
 {
   // Set new cursor position
   unsigned int pos = cursor_pos >> 1;
-  _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_LSB);
-  _outp(VIDEO_PORT_DATA, pos & 0xFF);
-  _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_MSB);
-  _outp(VIDEO_PORT_DATA, pos >> 8);
+  outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_LSB);
+  outp(VIDEO_PORT_DATA, pos & 0xFF);
+  outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_MSB);
+  outp(VIDEO_PORT_DATA, pos >> 8);
 }
 
 static void scroll_up()

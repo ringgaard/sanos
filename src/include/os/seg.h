@@ -97,10 +97,17 @@ struct gate
   unsigned short offset_high;  // Offset 16..31
 };
 
+struct desc
+{
+  unsigned long low;
+  unsigned long high;
+};
+
 union dte
 {
   struct segment segment;
   struct gate gate;
+  struct desc desc;
 };
 
 struct selector

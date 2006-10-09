@@ -407,12 +407,12 @@ static int hd_wait(struct hdc *hdc, unsigned char mask, unsigned int timeout)
   start = clocks;
   while (1)
   {
-    status = _inp(hdc->iobase + HDC_ALT_STATUS);
+    status = inp(hdc->iobase + HDC_ALT_STATUS);
     if (status & HDCS_ERR) 
     {
       unsigned char error;
  
-      error = _inp(hdc->iobase + HDC_ERR);
+      error = inp(hdc->iobase + HDC_ERR);
       hd_error("hdwait", error);
 
       return error;
@@ -444,11 +444,11 @@ static void hd_setup_transfer(struct hd *hd, blkno_t blkno, int nsects)
     sector = blkno % hd->sectors + 1;
   }
 
-  _outp(hd->hdc->iobase + HDC_SECTORCNT, nsects);
-  _outp(hd->hdc->iobase + HDC_SECTOR, (unsigned char) sector);
-  _outp(hd->hdc->iobase + HDC_TRACKLSB, (unsigned char) track);
-  _outp(hd->hdc->iobase + HDC_TRACKMSB, (unsigned char) (track >> 8));
-  _outp(hd->hdc->iobase + HDC_DRVHD, (unsigned char) (head & 0xFF | hd->drvsel));
+  outp(hd->hdc->iobase + HDC_SECTORCNT, nsects);
+  outp(hd->hdc->iobase + HDC_SECTOR, (unsigned char) sector);
+  outp(hd->hdc->iobase + HDC_TRACKLSB, (unsigned char) track);
+  outp(hd->hdc->iobase + HDC_TRACKMSB, (unsigned char) (track >> 8));
+  outp(hd->hdc->iobase + HDC_DRVHD, (unsigned char) (head & 0xFF | hd->drvsel));
 }
 
 static void pio_read_buffer(struct hd *hd, char *buffer, int size)
@@ -500,7 +500,7 @@ static void setup_dma_transfer(struct hdc *hdc, char *buffer, int count)
     }
   }
 
-  _outpd(hdc->bmregbase + BM_PRD_ADDR, hdc->prds_phys);
+  outpd(hdc->bmregbase + BM_PRD_ADDR, hdc->prds_phys);
 }
 
 static int hd_identify(struct hd *hd)
@@ -509,9 +509,9 @@ static int hd_identify(struct hd *hd)
   hd->hdc->dir = HD_XFER_IGNORE;
 
   // Issue read drive parameters command
-  _outp(hd->hdc->iobase + HDC_FEATURE, 0);
-  _outp(hd->hdc->iobase + HDC_DRVHD, hd->drvsel);
-  _outp(hd->hdc->iobase + HDC_COMMAND, hd->iftype == HDIF_ATAPI ? HDCMD_PIDENTIFY : HDCMD_IDENTIFY);
+  outp(hd->hdc->iobase + HDC_FEATURE, 0);
+  outp(hd->hdc->iobase + HDC_DRVHD, hd->drvsel);
+  outp(hd->hdc->iobase + HDC_COMMAND, hd->iftype == HDIF_ATAPI ? HDCMD_PIDENTIFY : HDCMD_IDENTIFY);
 
   // Wait for data ready
   if (wait_for_object(&hd->hdc->ready, HDTIMEOUT_CMD) < 0) return -ETIMEOUT;
@@ -562,9 +562,9 @@ static int hd_cmd(struct hd *hd, unsigned int cmd, unsigned int nsects)
   hd->hdc->dir = HD_XFER_IGNORE;
 
   // Issue command
-  _outp(hd->hdc->iobase + HDC_SECTORCNT, nsects);
-  _outp(hd->hdc->iobase + HDC_DRVHD, hd->drvsel);
-  _outp(hd->hdc->iobase + HDC_COMMAND, cmd);
+  outp(hd->hdc->iobase + HDC_SECTORCNT, nsects);
+  outp(hd->hdc->iobase + HDC_DRVHD, hd->drvsel);
+  outp(hd->hdc->iobase + HDC_COMMAND, cmd);
 
   // Wait for data ready
   if (wait_for_object(&hd->hdc->ready, HDTIMEOUT_CMD) < 0) return -ETIMEOUT;
@@ -595,14 +595,14 @@ static int atapi_packet_read(struct hd *hd, unsigned char *pkt, int pktlen, void
   reset_event(&hdc->ready);
 
   // Setup registers
-  _outp(hdc->iobase + HDC_SECTORCNT, 0);
-  _outp(hdc->iobase + HDC_SECTOR, 0);
-  _outp(hdc->iobase + HDC_TRACKLSB, (unsigned char) (bufsize & 0xFF));
-  _outp(hdc->iobase + HDC_TRACKMSB, (unsigned char) (bufsize >> 8));
-  _outp(hdc->iobase + HDC_DRVHD, (unsigned char) hd->drvsel);
+  outp(hdc->iobase + HDC_SECTORCNT, 0);
+  outp(hdc->iobase + HDC_SECTOR, 0);
+  outp(hdc->iobase + HDC_TRACKLSB, (unsigned char) (bufsize & 0xFF));
+  outp(hdc->iobase + HDC_TRACKMSB, (unsigned char) (bufsize >> 8));
+  outp(hdc->iobase + HDC_DRVHD, (unsigned char) hd->drvsel);
   
   // Send packet command
-  _outp(hdc->iobase + HDC_COMMAND, HDCMD_PACKET);
+  outp(hdc->iobase + HDC_COMMAND, HDCMD_PACKET);
 
   // Wait for drive ready to receive packet
   result = hd_wait(hdc, HDCS_DRDY, HDTIMEOUT_DRDY);
@@ -638,7 +638,7 @@ static int atapi_packet_read(struct hd *hd, unsigned char *pkt, int pktlen, void
     {
       unsigned char error;
 
-      error = _inp(hdc->iobase + HDC_ERR);
+      error = inp(hdc->iobase + HDC_ERR);
       kprintf(KERN_ERR "hd: atapi packet read error (status=0x%02x,error=0x%02x)\n", hdc->status, error);
 
       hdc->result = -EIO;
@@ -650,7 +650,7 @@ static int atapi_packet_read(struct hd *hd, unsigned char *pkt, int pktlen, void
     if ((hdc->status & (HDCS_BSY | HDCS_DRQ)) == 0) break;
 
     // Get the byte count
-    bytes = (_inp(hdc->iobase + HDC_TRACKMSB) << 8) | _inp(hdc->iobase + HDC_TRACKLSB);
+    bytes = (inp(hdc->iobase + HDC_TRACKMSB) << 8) | inp(hdc->iobase + HDC_TRACKLSB);
     //kprintf("%d bytes\n", bytes);
     if (bytes == 0) break;
     if (bytes > bufleft)
@@ -788,7 +788,7 @@ static int hd_read_pio(struct dev *dev, void *buffer, size_t count, blkno_t blkn
     reset_event(&hdc->ready);
 
     hd_setup_transfer(hd, blkno, nsects);
-    _outp(hdc->iobase + HDC_COMMAND, hd->multsect > 1 ? HDCMD_MULTREAD : HDCMD_READ);
+    outp(hdc->iobase + HDC_COMMAND, hd->multsect > 1 ? HDCMD_MULTREAD : HDCMD_READ);
 
     // Wait until data read
     if (wait_for_object(&hdc->ready, HDTIMEOUT_XFER) < 0)
@@ -861,10 +861,10 @@ static int hd_write_pio(struct dev *dev, void *buffer, size_t count, blkno_t blk
     reset_event(&hdc->ready);
 
     hd_setup_transfer(hd, blkno, nsects);
-    _outp(hdc->iobase + HDC_COMMAND, hd->multsect > 1 ? HDCMD_MULTWRITE : HDCMD_WRITE);
+    outp(hdc->iobase + HDC_COMMAND, hd->multsect > 1 ? HDCMD_MULTWRITE : HDCMD_WRITE);
 
     // Wait for data ready
-    if (!(_inp(hdc->iobase + HDC_ALT_STATUS) & HDCS_DRQ))
+    if (!(inp(hdc->iobase + HDC_ALT_STATUS) & HDCS_DRQ))
     {
       result = hd_wait(hdc, HDCS_DRQ, HDTIMEOUT_DRQ);
       if (result != 0)
@@ -960,12 +960,12 @@ static int hd_read_udma(struct dev *dev, void *buffer, size_t count, blkno_t blk
     
     // Setup DMA
     setup_dma_transfer(hdc, bufp, nsects * SECTORSIZE);
-    _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_WRITE | BM_CR_MASK_STOP);
-    _outp(hdc->bmregbase + BM_STATUS_REG, _inp(hdc->bmregbase + BM_STATUS_REG) | BM_SR_MASK_INT | BM_SR_MASK_ERR);
+    outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_WRITE | BM_CR_MASK_STOP);
+    outp(hdc->bmregbase + BM_STATUS_REG, inp(hdc->bmregbase + BM_STATUS_REG) | BM_SR_MASK_INT | BM_SR_MASK_ERR);
 
     // Start read
-    _outp(hdc->iobase + HDC_COMMAND, HDCMD_READDMA);
-    _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_WRITE | BM_CR_MASK_START);
+    outp(hdc->iobase + HDC_COMMAND, HDCMD_READDMA);
+    outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_WRITE | BM_CR_MASK_START);
 
     // Wait for interrupt
     if (wait_for_object(&hdc->ready, HDTIMEOUT_XFER) < 0)
@@ -976,9 +976,9 @@ static int hd_read_udma(struct dev *dev, void *buffer, size_t count, blkno_t blk
     }
 
     // Stop DMA channel and check DMA status
-    _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_WRITE | BM_CR_MASK_STOP);
-    bmstat = _inp(hdc->bmregbase + BM_STATUS_REG);
-    _outp(hdc->bmregbase + BM_STATUS_REG, bmstat | BM_SR_MASK_INT | BM_SR_MASK_ERR);
+    outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_WRITE | BM_CR_MASK_STOP);
+    bmstat = inp(hdc->bmregbase + BM_STATUS_REG);
+    outp(hdc->bmregbase + BM_STATUS_REG, bmstat | BM_SR_MASK_INT | BM_SR_MASK_ERR);
     if ((bmstat & (BM_SR_MASK_INT | BM_SR_MASK_ERR | BM_SR_MASK_ACT)) != BM_SR_MASK_INT)
     {
       kprintf(KERN_ERR "hd: dma error %02X\n", bmstat);
@@ -991,7 +991,7 @@ static int hd_read_udma(struct dev *dev, void *buffer, size_t count, blkno_t blk
     {
       unsigned char error;
 
-      error = _inp(hdc->iobase + HDC_ERR);
+      error = inp(hdc->iobase + HDC_ERR);
       hd_error("hdread", error);
 
       kprintf(KERN_ERR "hd: read error (0x%02x)\n", hdc->status);
@@ -1060,12 +1060,12 @@ static int hd_write_udma(struct dev *dev, void *buffer, size_t count, blkno_t bl
 
     // Setup DMA
     setup_dma_transfer(hdc, bufp, nsects * SECTORSIZE);
-    _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_READ | BM_CR_MASK_STOP);
-    _outp(hdc->bmregbase + BM_STATUS_REG, _inp(hdc->bmregbase + BM_STATUS_REG) | BM_SR_MASK_INT | BM_SR_MASK_ERR);
+    outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_READ | BM_CR_MASK_STOP);
+    outp(hdc->bmregbase + BM_STATUS_REG, inp(hdc->bmregbase + BM_STATUS_REG) | BM_SR_MASK_INT | BM_SR_MASK_ERR);
     
     // Start write
-    _outp(hdc->iobase + HDC_COMMAND, HDCMD_WRITEDMA);
-    _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_READ | BM_CR_MASK_START);
+    outp(hdc->iobase + HDC_COMMAND, HDCMD_WRITEDMA);
+    outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_READ | BM_CR_MASK_START);
 
     // Wait for interrupt
     if (wait_for_object(&hdc->ready, HDTIMEOUT_XFER) < 0)
@@ -1076,9 +1076,9 @@ static int hd_write_udma(struct dev *dev, void *buffer, size_t count, blkno_t bl
     }
 
     // Stop DMA channel and check DMA status
-    _outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_READ | BM_CR_MASK_STOP);
-    bmstat = _inp(hdc->bmregbase + BM_STATUS_REG);
-    _outp(hdc->bmregbase + BM_STATUS_REG, bmstat | BM_SR_MASK_INT | BM_SR_MASK_ERR);
+    outp(hdc->bmregbase + BM_COMMAND_REG, BM_CR_MASK_READ | BM_CR_MASK_STOP);
+    bmstat = inp(hdc->bmregbase + BM_STATUS_REG);
+    outp(hdc->bmregbase + BM_STATUS_REG, bmstat | BM_SR_MASK_INT | BM_SR_MASK_ERR);
     if ((bmstat & (BM_SR_MASK_INT | BM_SR_MASK_ERR | BM_SR_MASK_ACT)) != BM_SR_MASK_INT)
     {
       kprintf(KERN_ERR "hd: dma error %02X\n", bmstat);
@@ -1091,7 +1091,7 @@ static int hd_write_udma(struct dev *dev, void *buffer, size_t count, blkno_t bl
     {
       unsigned char error;
 
-      error = _inp(hdc->iobase + HDC_ERR);
+      error = inp(hdc->iobase + HDC_ERR);
       hd_error("hdwrite", error);
 
       kprintf(KERN_ERR "hd: write error (0x%02x)\n", hdc->status);
@@ -1177,12 +1177,12 @@ void hd_dpc(void *arg)
   {
     case HD_XFER_READ:
       // Check status
-      hdc->status = _inp(hdc->iobase + HDC_STATUS);
+      hdc->status = inp(hdc->iobase + HDC_STATUS);
       if (hdc->status & HDCS_ERR)
       {
         unsigned char error;
 
-        error = _inp(hdc->iobase + HDC_ERR);
+        error = inp(hdc->iobase + HDC_ERR);
         hd_error("hdread", error);
 
 	kprintf(KERN_ERR "hd: read error (0x%02x)\n", hdc->status);
@@ -1209,12 +1209,12 @@ void hd_dpc(void *arg)
 
     case HD_XFER_WRITE:
       // Check status
-      hdc->status = _inp(hdc->iobase + HDC_STATUS);
+      hdc->status = inp(hdc->iobase + HDC_STATUS);
       if (hdc->status & HDCS_ERR)
       {
         unsigned char error;
 
-        error = _inp(hdc->iobase + HDC_ERR);
+        error = inp(hdc->iobase + HDC_ERR);
         hd_error("hdwrite", error);
 
 	kprintf(KERN_ERR "hd: write error (0x%02x)\n", hdc->status);
@@ -1246,20 +1246,20 @@ void hd_dpc(void *arg)
       break;
 
     case HD_XFER_DMA:
-      hdc->status = _inp(hdc->iobase + HDC_STATUS);
+      hdc->status = inp(hdc->iobase + HDC_STATUS);
       set_event(&hdc->ready);
       break;
 
     case HD_XFER_IGNORE:
       // Read status to acknowledge interrupt
-      hdc->status = _inp(hdc->iobase + HDC_STATUS);
+      hdc->status = inp(hdc->iobase + HDC_STATUS);
       set_event(&hdc->ready);
       break;
 
     case HD_XFER_IDLE:
     default:
       // Read status to acknowledge interrupt
-      hdc->status = _inp(hdc->iobase + HDC_STATUS);
+      hdc->status = inp(hdc->iobase + HDC_STATUS);
       kprintf("unexpected intr from hdc\n");
   }
 }
@@ -1393,20 +1393,20 @@ static int probe_device(struct hdc *hdc, int drvsel)
   unsigned char sc, sn;
 
   // Probe for device on controller
-  _outp(hdc->iobase + HDC_DRVHD, drvsel);
+  outp(hdc->iobase + HDC_DRVHD, drvsel);
   idedelay();
 
-  _outp(hdc->iobase + HDC_SECTORCNT, 0x55);
-  _outp(hdc->iobase + HDC_SECTOR, 0xAA);
+  outp(hdc->iobase + HDC_SECTORCNT, 0x55);
+  outp(hdc->iobase + HDC_SECTOR, 0xAA);
 
-  _outp(hdc->iobase + HDC_SECTORCNT, 0xAA);
-  _outp(hdc->iobase + HDC_SECTOR, 0x55);
+  outp(hdc->iobase + HDC_SECTORCNT, 0xAA);
+  outp(hdc->iobase + HDC_SECTOR, 0x55);
 
-  _outp(hdc->iobase + HDC_SECTORCNT, 0x55);
-  _outp(hdc->iobase + HDC_SECTOR, 0xAA);
+  outp(hdc->iobase + HDC_SECTORCNT, 0x55);
+  outp(hdc->iobase + HDC_SECTOR, 0xAA);
 
-  sc = _inp(hdc->iobase + HDC_SECTORCNT);
-  sn = _inp(hdc->iobase + HDC_SECTOR);
+  sc = inp(hdc->iobase + HDC_SECTORCNT);
+  sn = inp(hdc->iobase + HDC_SECTOR);
 
   if (sc == 0x55 && sn == 0xAA)
     return 1;
@@ -1418,13 +1418,13 @@ static int wait_reset_done(struct hdc *hdc, int drvsel)
 {
   unsigned int tmo;
 
-  _outp(hdc->iobase + HDC_DRVHD, drvsel);
+  outp(hdc->iobase + HDC_DRVHD, drvsel);
   idedelay();
 
   tmo = ticks + 5*HZ;
   while (time_after(tmo, ticks))
   {
-    hdc->status = _inp(hdc->iobase + HDC_STATUS);
+    hdc->status = inp(hdc->iobase + HDC_STATUS);
     if ((hdc->status & HDCS_BSY) == 0) return 0;
   }
 
@@ -1435,18 +1435,18 @@ static int get_interface_type(struct hdc *hdc, int drvsel)
 {
   unsigned char sc, sn, cl, ch, st;
 
-  _outp(hdc->iobase + HDC_DRVHD, drvsel);
+  outp(hdc->iobase + HDC_DRVHD, drvsel);
   idedelay();
 
-  sc = _inp(hdc->iobase + HDC_SECTORCNT);
-  sn = _inp(hdc->iobase + HDC_SECTOR);
+  sc = inp(hdc->iobase + HDC_SECTORCNT);
+  sn = inp(hdc->iobase + HDC_SECTOR);
   //kprintf("%x: sc=0x%02x sn=0x%02x\n", hdc->iobase, sc, sn);
 
   if (sc == 0x01 && sn == 0x01)
   {
-    cl = _inp(hdc->iobase + HDC_TRACKLSB);
-    ch = _inp(hdc->iobase + HDC_TRACKMSB);
-    st = _inp(hdc->iobase + HDC_STATUS);
+    cl = inp(hdc->iobase + HDC_TRACKLSB);
+    ch = inp(hdc->iobase + HDC_TRACKMSB);
+    st = inp(hdc->iobase + HDC_STATUS);
 
     //kprintf("%x: cl=0x%02x ch=0x%02x st=0x%02x\n", hdc->iobase, cl, ch, st);
 
@@ -1483,16 +1483,16 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase, int *m
     *slaveif = HDIF_NONE;
 
     // Setup device control register
-    _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_NIEN);
+    outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_NIEN);
 
     // Probe for master and slave device on controller
     if (probe_device(hdc, HD0_DRVSEL) >= 0) *masterif = HDIF_PRESENT;
     if (probe_device(hdc, HD1_DRVSEL) >= 0) *slaveif = HDIF_PRESENT;
 
     // Reset controller
-    _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_SRST | HDDC_NIEN);
+    outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_SRST | HDDC_NIEN);
     idedelay();
-    _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_NIEN);
+    outp(hdc->iobase + HDC_CONTROL, HDDC_HD15 | HDDC_NIEN);
     idedelay();
 
     // Wait for reset to finish on all present devices
@@ -1531,7 +1531,7 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase, int *m
   register_interrupt(&hdc->intr, IRQ2INTR(irq), hdc_handler, hdc);
   enable_irq(irq);
 
-  _outp(hdc->iobase + HDC_CONTROL, HDDC_HD15);
+  outp(hdc->iobase + HDC_CONTROL, HDDC_HD15);
   idedelay();
 
   return 0;

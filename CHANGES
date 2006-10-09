@@ -4,6 +4,11 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Cleaned up port I/O functions (_inp -> inp, ...).
+    
+    * The kernel now uses the BIOS memory map to initialize the
+      page frame database
+      
     * Pathname pattern-matching with glob() and fnmatch() added to libc.
     
     * Renamed jobs to processes

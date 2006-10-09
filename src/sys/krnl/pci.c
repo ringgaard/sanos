@@ -130,38 +130,38 @@ struct
 
 static __inline unsigned char pci_read_byte(int busno, int devno, int funcno, int addr)
 {
-  _outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
-  return _inp(PCI_CONFIG_DATA);
+  outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
+  return inp(PCI_CONFIG_DATA);
 }
 
 static __inline unsigned short pci_read_word(int busno, int devno, int funcno, int addr)
 {
-  _outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
-  return _inpw(PCI_CONFIG_DATA);
+  outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
+  return inpw(PCI_CONFIG_DATA);
 }
 
 static __inline unsigned long pci_read_dword(int busno, int devno, int funcno, int addr)
 {
-  _outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
-  return _inpd(PCI_CONFIG_DATA);
+  outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
+  return inpd(PCI_CONFIG_DATA);
 }
 
 static __inline void pci_write_byte(int busno, int devno, int funcno, int addr, unsigned char value)
 {
-  _outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
-  _outp(PCI_CONFIG_DATA, value);
+  outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
+  outp(PCI_CONFIG_DATA, value);
 }
 
 static __inline void pci_write_word(int busno, int devno, int funcno, int addr, unsigned short value)
 {
-  _outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
-  _outpw(PCI_CONFIG_DATA, value);
+  outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
+  outpw(PCI_CONFIG_DATA, value);
 }
 
 static __inline void pci_write_dword(int busno, int devno, int funcno, int addr, unsigned long value)
 {
-  _outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
-  _outpd(PCI_CONFIG_DATA, value);
+  outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
+  outpd(PCI_CONFIG_DATA, value);
 }
 
 unsigned char pci_read_config_byte(struct unit *unit, int addr)

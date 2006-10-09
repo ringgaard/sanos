@@ -282,18 +282,18 @@ static void ne_readmem(struct ne *ne, unsigned short src, void *dst, unsigned sh
   if (len & 1) len++;
 
   // Abort any remote DMA already in progress
-  _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
+  outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
 
   // Setup DMA byte count
-  _outp(ne->nic_addr + NE_P0_RBCR0, len);
-  _outp(ne->nic_addr + NE_P0_RBCR1, len >> 8);
+  outp(ne->nic_addr + NE_P0_RBCR0, len);
+  outp(ne->nic_addr + NE_P0_RBCR1, len >> 8);
 
   // Setup NIC memory source address
-  _outp(ne->nic_addr + NE_P0_RSAR0, src);
-  _outp(ne->nic_addr + NE_P0_RSAR1, src >> 8);
+  outp(ne->nic_addr + NE_P0_RSAR0, src);
+  outp(ne->nic_addr + NE_P0_RSAR1, src >> 8);
 
   // Select remote DMA read
-  _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD0 | NE_CR_STA);
+  outp(ne->nic_addr + NE_P0_CR, NE_CR_RD0 | NE_CR_STA);
 
   // Read NIC memory
   insw(ne->asic_addr + NE_NOVELL_DATA, dst, len >> 1);
@@ -304,19 +304,19 @@ static int ne_probe(struct ne *ne)
   unsigned char byte;
 
   // Reset
-  byte = _inp(ne->asic_addr + NE_NOVELL_RESET);
-  _outp(ne->asic_addr + NE_NOVELL_RESET, byte);
-  _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STP);
+  byte = inp(ne->asic_addr + NE_NOVELL_RESET);
+  outp(ne->asic_addr + NE_NOVELL_RESET, byte);
+  outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STP);
 
   //msleep(5000);
   msleep(100);
 
   // Test for a generic DP8390 NIC
-  byte = _inp(ne->nic_addr + NE_P0_CR);
+  byte = inp(ne->nic_addr + NE_P0_CR);
   byte &= NE_CR_RD2 | NE_CR_TXP | NE_CR_STA | NE_CR_STP;
   if (byte != (NE_CR_RD2 | NE_CR_STP)) return 0;
 
-  byte = _inp(ne->nic_addr + NE_P0_ISR);
+  byte = inp(ne->nic_addr + NE_P0_ISR);
   byte &= NE_ISR_RST;
   if (byte != NE_ISR_RST) return 0;
 
@@ -348,9 +348,9 @@ void ne_receive(struct ne *ne)
   int rc;
 
   // Set page 1 registers
-  _outp(ne->nic_addr + NE_P0_CR, NE_CR_PAGE_1 | NE_CR_RD2 | NE_CR_STA);
+  outp(ne->nic_addr + NE_P0_CR, NE_CR_PAGE_1 | NE_CR_RD2 | NE_CR_STA);
 
-  while (ne->next_pkt != _inp(ne->nic_addr + NE_P1_CURR)) 
+  while (ne->next_pkt != inp(ne->nic_addr + NE_P1_CURR)) 
   {
     // Get pointer to buffer header structure
     packet_ptr = ne->next_pkt * NE_PAGE_SIZE;
@@ -392,17 +392,17 @@ void ne_receive(struct ne *ne)
     ne->next_pkt = packet_hdr.next_pkt;
 
     // Set page 0 registers
-    _outp(ne->nic_addr + NE_P0_CR, NE_CR_PAGE_0 | NE_CR_RD2 | NE_CR_STA);
+    outp(ne->nic_addr + NE_P0_CR, NE_CR_PAGE_0 | NE_CR_RD2 | NE_CR_STA);
 
     // Update boundry pointer
     bndry = ne->next_pkt - 1;
     if (bndry < ne->rx_page_start) bndry = ne->rx_page_stop - 1;
-    _outp(ne->nic_addr + NE_P0_BNRY, bndry);
+    outp(ne->nic_addr + NE_P0_BNRY, bndry);
 
     //kprintf("start: %02x stop: %02x next: %02x bndry: %02x\n", ne->rx_page_start, ne->rx_page_stop, ne->next_pkt, bndry);
 
     // Set page 1 registers
-    _outp(ne->nic_addr + NE_P0_CR, NE_CR_PAGE_1 | NE_CR_RD2 | NE_CR_STA);
+    outp(ne->nic_addr + NE_P0_CR, NE_CR_PAGE_1 | NE_CR_RD2 | NE_CR_STA);
   }
 }
 
@@ -414,13 +414,13 @@ void ne_dpc(void *arg)
   //kprintf("ne2000: dpc\n");
 
   // Select page 0
-  _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
+  outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
 
   // Loop until there are no pending interrupts
-  while ((isr = _inp(ne->nic_addr + NE_P0_ISR)) != 0) 
+  while ((isr = inp(ne->nic_addr + NE_P0_ISR)) != 0) 
   {
     // Reset bits for interrupts being acknowledged
-    _outp(ne->nic_addr + NE_P0_ISR, isr);
+    outp(ne->nic_addr + NE_P0_ISR, isr);
 
     // Packet received
     if (isr & NE_ISR_PRX) 
@@ -444,7 +444,7 @@ void ne_dpc(void *arg)
     }
 
     // Select page 0
-    _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
+    outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
   }
 
   eoi(ne->irq);
@@ -489,22 +489,22 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   reset_event(&ne->rdc);
 
   // Set page 0 registers
-  _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
+  outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
 
   // Reset remote DMA complete flag
-  _outp(ne->nic_addr + NE_P0_ISR, NE_ISR_RDC);
+  outp(ne->nic_addr + NE_P0_ISR, NE_ISR_RDC);
 
   // Set up DMA byte count
-  _outp(ne->nic_addr + NE_P0_RBCR0, dma_len);
-  _outp(ne->nic_addr + NE_P0_RBCR1, dma_len >> 8);
+  outp(ne->nic_addr + NE_P0_RBCR0, dma_len);
+  outp(ne->nic_addr + NE_P0_RBCR1, dma_len >> 8);
 
   // Set up destination address in NIC memory
   dst = ne->rx_page_stop; // for now we only use one tx buffer
-  _outp(ne->nic_addr + NE_P0_RSAR0, (dst * NE_PAGE_SIZE));
-  _outp(ne->nic_addr + NE_P0_RSAR1, (dst * NE_PAGE_SIZE) >> 8);
+  outp(ne->nic_addr + NE_P0_RSAR0, (dst * NE_PAGE_SIZE));
+  outp(ne->nic_addr + NE_P0_RSAR1, (dst * NE_PAGE_SIZE) >> 8);
 
   // Set remote DMA write
-  _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD1 | NE_CR_STA);
+  outp(ne->nic_addr + NE_P0_CR, NE_CR_RD1 | NE_CR_STA);
 
   wrap = 0;
   for (q = p; q != NULL; q = q->next) 
@@ -518,7 +518,7 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
       if (wrap) 
       {
 	save_byte[1] = *data;
-	_outpw((unsigned short) (ne->asic_addr + NE_NOVELL_DATA), *(unsigned short *) save_byte);
+	outpw((unsigned short) (ne->asic_addr + NE_NOVELL_DATA), *(unsigned short *) save_byte);
 	data++;
 	len--;
 	wrap = 0;
@@ -544,7 +544,7 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   // Output last byte
   if (wrap) 
   {
-    _outpw((unsigned short) (ne->asic_addr + NE_NOVELL_DATA), *(unsigned short *) save_byte);
+    outpw((unsigned short) (ne->asic_addr + NE_NOVELL_DATA), *(unsigned short *) save_byte);
   }
 
   // Wait for remote DMA complete
@@ -556,22 +556,22 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   }
 
   // Set TX buffer start page
-  _outp(ne->nic_addr + NE_P0_TPSR, dst);
+  outp(ne->nic_addr + NE_P0_TPSR, dst);
 
   // Set TX length (packets smaller than 64 bytes must be padded)
   if (p->tot_len > 64)
   {
-    _outp(ne->nic_addr + NE_P0_TBCR0, p->tot_len);
-    _outp(ne->nic_addr + NE_P0_TBCR1, p->tot_len >> 8);
+    outp(ne->nic_addr + NE_P0_TBCR0, p->tot_len);
+    outp(ne->nic_addr + NE_P0_TBCR1, p->tot_len >> 8);
   }
   else
   {
-    _outp(ne->nic_addr + NE_P0_TBCR0, 64);
-    _outp(ne->nic_addr + NE_P0_TBCR1, 0);
+    outp(ne->nic_addr + NE_P0_TBCR0, 64);
+    outp(ne->nic_addr + NE_P0_TBCR1, 0);
   }
 
   // Set page 0 registers, transmit packet, and start
-  _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_TXP | NE_CR_STA);
+  outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_TXP | NE_CR_STA);
 
   // Wait for packet transmitted
   if (wait_for_object(&ne->ptx, NE_TIMEOUT) < 0)
@@ -659,57 +659,57 @@ int ne_setup(unsigned short iobase, int irq, unsigned short membase, unsigned sh
   enable_irq(ne->irq);
 
   // Set page 0 registers, abort remote DMA, stop NIC
-  _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STP);
+  outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STP);
 
   // Set FIFO threshold to 8, no auto-init remote DMA, byte order=80x86, word-wide DMA transfers
-  _outp(ne->nic_addr + NE_P0_DCR, NE_DCR_FT1 | NE_DCR_WTS | NE_DCR_LS);
+  outp(ne->nic_addr + NE_P0_DCR, NE_DCR_FT1 | NE_DCR_WTS | NE_DCR_LS);
 
   // Get Ethernet MAC address
   ne_readmem(ne, 0, romdata, 16);
   for (i = 0; i < ETHER_ADDR_LEN; i++) ne->hwaddr.addr[i] = romdata[i * 2];
 
   // Set page 0 registers, abort remote DMA, stop NIC
-  _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STP);
+  outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STP);
 
   // Clear remote byte count registers
-  _outp(ne->nic_addr + NE_P0_RBCR0, 0);
-  _outp(ne->nic_addr + NE_P0_RBCR1, 0);
+  outp(ne->nic_addr + NE_P0_RBCR0, 0);
+  outp(ne->nic_addr + NE_P0_RBCR1, 0);
 
   // Initialize receiver (ring-buffer) page stop and boundry
-  _outp(ne->nic_addr + NE_P0_PSTART, ne->rx_page_start);
-  _outp(ne->nic_addr + NE_P0_PSTOP, ne->rx_page_stop);
-  _outp(ne->nic_addr + NE_P0_BNRY, ne->rx_page_start);
+  outp(ne->nic_addr + NE_P0_PSTART, ne->rx_page_start);
+  outp(ne->nic_addr + NE_P0_PSTOP, ne->rx_page_stop);
+  outp(ne->nic_addr + NE_P0_BNRY, ne->rx_page_start);
 
   // Enable the following interrupts: receive/transmit complete, receive/transmit error, 
   // receiver overwrite and remote dma complete.
-  _outp(ne->nic_addr + NE_P0_IMR, NE_IMR_PRXE | NE_IMR_PTXE | NE_IMR_RXEE | NE_IMR_TXEE | NE_IMR_OVWE | NE_IMR_RDCE);
+  outp(ne->nic_addr + NE_P0_IMR, NE_IMR_PRXE | NE_IMR_PTXE | NE_IMR_RXEE | NE_IMR_TXEE | NE_IMR_OVWE | NE_IMR_RDCE);
 
   // Set page 1 registers
-  _outp(ne->nic_addr + NE_P0_CR, NE_CR_PAGE_1 | NE_CR_RD2 | NE_CR_STP);
+  outp(ne->nic_addr + NE_P0_CR, NE_CR_PAGE_1 | NE_CR_RD2 | NE_CR_STP);
 
   // Copy out our station address
-  for (i = 0; i < ETHER_ADDR_LEN; i++) _outp(ne->nic_addr + NE_P1_PAR0 + i, ne->hwaddr.addr[i]);
+  for (i = 0; i < ETHER_ADDR_LEN; i++) outp(ne->nic_addr + NE_P1_PAR0 + i, ne->hwaddr.addr[i]);
 
   // Set current page pointer 
-  _outp(ne->nic_addr + NE_P1_CURR, ne->next_pkt);
+  outp(ne->nic_addr + NE_P1_CURR, ne->next_pkt);
 
   // Initialize multicast address hashing registers to not accept multicasts
-  for (i = 0; i < 8; i++) _outp(ne->nic_addr + NE_P1_MAR0 + i, 0);
+  for (i = 0; i < 8; i++) outp(ne->nic_addr + NE_P1_MAR0 + i, 0);
 
   // Set page 0 registers
-  _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STP);
+  outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STP);
 
   // Accept broadcast packets
-  _outp(ne->nic_addr + NE_P0_RCR, NE_RCR_AB);
+  outp(ne->nic_addr + NE_P0_RCR, NE_RCR_AB);
 
   // Take NIC out of loopback
-  _outp(ne->nic_addr + NE_P0_TCR, 0);
+  outp(ne->nic_addr + NE_P0_TCR, 0);
 
   // Clear any pending interrupts
-  _outp(ne->nic_addr + NE_P0_ISR, 0xFF);
+  outp(ne->nic_addr + NE_P0_ISR, 0xFF);
 
   // Start NIC
-  _outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
+  outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
 
   // Create packet device
   ne->devno = dev_make("eth#", &ne_driver, unit, ne);

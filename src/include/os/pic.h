@@ -52,7 +52,6 @@
 #define PIC_MSTR_ICW2		0x20
 #define PIC_MSTR_ICW3		0x04
 #define PIC_MSTR_ICW4		0x01
-#define PIC_MSTR_DISABLE	0xFB   // All but cascade
 
 //
 // Slave commands
@@ -62,7 +61,6 @@
 #define PIC_SLV_ICW2		0x28
 #define PIC_SLV_ICW3		0x02
 #define PIC_SLV_ICW4		0x01
-#define PIC_SLV_DISABLE	        0xFF
 
 //
 // End of interrupt commands

@@ -38,21 +38,31 @@
 unsigned int irq_mask = 0xFFFB; 
 
 //
+// Set interrupt mask
+//
+
+static void set_intr_mask(unsigned long mask)
+{
+  outp(PIC_MSTR_MASK, mask & 0xFF);
+  outp(PIC_SLV_MASK, (mask >> 8) & 0xFF);
+}
+
+//
 // Initialize the 8259 Programmable Interrupt Controller
 //
 
 void init_pic()
 {
-  _outp(PIC_MSTR_CTRL, PIC_MSTR_ICW1);
-  _outp(PIC_SLV_CTRL, PIC_SLV_ICW1);
-  _outp(PIC_MSTR_MASK, PIC_MSTR_ICW2);
-  _outp(PIC_SLV_MASK, PIC_SLV_ICW2);
-  _outp(PIC_MSTR_MASK, PIC_MSTR_ICW3);
-  _outp(PIC_SLV_MASK, PIC_SLV_ICW3);
-  _outp(PIC_MSTR_MASK, PIC_MSTR_ICW4);
-  _outp(PIC_SLV_MASK, PIC_SLV_ICW4);
-  _outp(PIC_MSTR_MASK, PIC_MSTR_DISABLE);
-  _outp(PIC_SLV_MASK, PIC_SLV_DISABLE);
+  outp(PIC_MSTR_CTRL, PIC_MSTR_ICW1);
+  outp(PIC_SLV_CTRL, PIC_SLV_ICW1);
+  outp(PIC_MSTR_MASK, PIC_MSTR_ICW2);
+  outp(PIC_SLV_MASK, PIC_SLV_ICW2);
+  outp(PIC_MSTR_MASK, PIC_MSTR_ICW3);
+  outp(PIC_SLV_MASK, PIC_SLV_ICW3);
+  outp(PIC_MSTR_MASK, PIC_MSTR_ICW4);
+  outp(PIC_SLV_MASK, PIC_SLV_ICW4);
+
+  set_intr_mask(irq_mask);
 }
 
 //
@@ -63,9 +73,7 @@ void enable_irq(unsigned int irq)
 {
   irq_mask &= ~(1 << irq);
   if (irq >= 8) irq_mask &= ~(1 << 2);
-	
-  _outp(PIC_MSTR_MASK, irq_mask & 0xFF);
-  _outp(PIC_SLV_MASK, (irq_mask >> 8) & 0xFF);
+  set_intr_mask(irq_mask);
 }
 
 //
@@ -76,9 +84,7 @@ void disable_irq(unsigned int irq)
 {
   irq_mask |= (1 << irq);
   if ((irq_mask & 0xFF00) == 0xFF00) irq_mask |= (1 << 2);
-	
-  _outp(PIC_MSTR_MASK, irq_mask & 0xFF);
-  _outp(PIC_SLV_MASK, (irq_mask >> 8) & 0xFF);
+  set_intr_mask(irq_mask);
 }
 
 //
@@ -88,10 +94,10 @@ void disable_irq(unsigned int irq)
 void eoi(unsigned int irq)
 {
   if (irq < 8)
-    _outp(PIC_MSTR_CTRL, irq + PIC_EOI_BASE);
+    outp(PIC_MSTR_CTRL, irq + PIC_EOI_BASE);
   else
   {
-    _outp(PIC_SLV_CTRL, (irq - 8) + PIC_EOI_BASE);
-    _outp(PIC_MSTR_CTRL, PIC_EOI_CAS);
+    outp(PIC_SLV_CTRL, (irq - 8) + PIC_EOI_BASE);
+    outp(PIC_MSTR_CTRL, PIC_EOI_CAS);
   }
 }

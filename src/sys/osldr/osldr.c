@@ -169,6 +169,42 @@ unsigned long memsize()
   return addr;
 }
 
+
+void setup_memory(struct memmap *memmap)
+{
+  int i;
+
+  if (memmap->count != 0)
+  {
+    // Determine largest available RAM address from BIOS memory map
+    mem_end = 0;
+    for (i = 0; i < memmap->count; i++)
+    {
+      if (memmap->entry[i].type == MEMTYPE_RAM) 
+      {
+	mem_end = (unsigned long) (memmap->entry[i].addr + memmap->entry[i].size);
+      }
+    }
+  }
+  else
+  {
+    // No BIOS memory map, probe memory and create a simple map with 640K:1M hole
+    mem_end = memsize();
+
+    memmap->entry[0].addr = 0;
+    memmap->entry[0].size = 0xA0000;
+    memmap->entry[0].type = MEMTYPE_RAM;
+
+    memmap->entry[1].addr = 0xA0000;
+    memmap->entry[1].size = 0x60000;
+    memmap->entry[1].type = MEMTYPE_RESERVED;
+
+    memmap->entry[2].addr = 0x100000;
+    memmap->entry[2].size = mem_end - 0x100000;
+    memmap->entry[2].type = MEMTYPE_RESERVED;
+  }
+}
+
 void setup_descriptors()
 {
   struct syspage *syspage;
@@ -283,7 +319,7 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
   //kprintf("OSLDR\n");
 
   // Determine size of RAM
-  mem_end = memsize();
+  setup_memory(&bootparams->memmap);
   //kprintf("%d MB RAM\n", mem_end / (1024 * 1024));
 
   // Page allocation starts at 1MB

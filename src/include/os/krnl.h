@@ -49,6 +49,10 @@
 #define GPL
 #endif
 
+#ifndef NOVMACH
+#define VMACH
+#endif
+
 #include <os.h>
 
 #include <sys/types.h>
@@ -71,6 +75,9 @@
 
 #include <os/pdir.h>
 #include <os/pframe.h>
+
+#include <os/mach.h>
+
 #include <os/kmem.h>
 #include <os/kmalloc.h>
 #include <os/vmm.h>

@@ -194,10 +194,10 @@ static int fd_command(unsigned char cmd)
   tmo = ticks + 1*HZ;
   while (1)
   {
-    msr = _inp(FDC_MSR);
+    msr = inp(FDC_MSR);
     if ((msr & 0xc0) == 0x80)
     {
-      _outp(FDC_DATA, cmd);
+      outp(FDC_DATA, cmd);
       return 0;
     }
     
@@ -221,8 +221,8 @@ static int fd_data()
   tmo = ticks + 5*HZ;
   while (1)
   {
-    msr = _inp(FDC_MSR);
-    if ((msr & 0xd0) == 0xd0) return _inp(FDC_DATA) & 0xFF;
+    msr = inp(FDC_MSR);
+    if ((msr & 0xd0) == 0xd0) return inp(FDC_DATA) & 0xFF;
     if (time_before(tmo, ticks)) break;
     yield(); // delay
   }
@@ -243,7 +243,7 @@ static int fd_result(struct fd *fd, struct fdresult *result, int sensei)
 
   // Read in command result bytes
   n = 0;
-  while (n < 7 && (_inp(FDC_MSR) & (1 << 4)) != 0) 
+  while (n < 7 && (inp(FDC_MSR) & (1 << 4)) != 0) 
   {
     data = fd_data();
     if (data < 0) return data;
@@ -259,7 +259,7 @@ static int fd_result(struct fd *fd, struct fdresult *result, int sensei)
   }
 
   // Check for disk changed
-  if (_inp(FDC_DIR) & 0x80) fd->media_changed = 1;
+  if (inp(FDC_DIR) & 0x80) fd->media_changed = 1;
 
   return 0;
 }
@@ -275,7 +275,7 @@ static void fd_motor_timeout(void *arg)
   //kprintf("fd: motor off\n");
   if (wait_for_object(&fd->fdc->lock, 0) < 0) return;
   fd->fdc->dor &= ~(0x10 << fd->drive);
-  _outp(FDC_DOR, fd->fdc->dor);
+  outp(FDC_DOR, fd->fdc->dor);
   fd->motor_status = FD_MOTOR_OFF;
   release_mutex(&fd->fdc->lock);
 }
@@ -290,7 +290,7 @@ static void fd_motor_on(struct fd *fd)
   {
     //kprintf("fd: motor on\n");
     fd->fdc->dor |= 0x10 << fd->drive;
-    _outp(FDC_DOR, fd->fdc->dor);
+    outp(FDC_DOR, fd->fdc->dor);
     fd->motor_status = FD_MOTOR_ON;
     msleep(FD_MOTOR_SPINUP_TIME);
     //kprintf("fd: motor spinned up\n");
@@ -419,29 +419,29 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
     }
 
     // Program data rate (500K/s)
-    _outp(FDC_CCR,0);
+    outp(FDC_CCR,0);
 
     // Set up DMA
-    _outp(DMA1_CHAN, 0x06);
+    outp(DMA1_CHAN, 0x06);
 
     if (mode == FD_MODE_READ) 
     {
-      _outp(DMA1_RESET, DMA1_CHAN2_READ);
-      _outp(DMA1_MODE, DMA1_CHAN2_READ);
+      outp(DMA1_RESET, DMA1_CHAN2_READ);
+      outp(DMA1_MODE, DMA1_CHAN2_READ);
     } 
     else 
     {
-      _outp(DMA1_RESET, DMA1_CHAN2_WRITE);
-      _outp(DMA1_MODE, DMA1_CHAN2_WRITE);
+      outp(DMA1_RESET, DMA1_CHAN2_WRITE);
+      outp(DMA1_MODE, DMA1_CHAN2_WRITE);
     }
 
     // Setup DMA transfer
-    _outp(DMA1_CHAN2_ADDR, fd->fdc->bufl);
-    _outp(DMA1_CHAN2_ADDR, fd->fdc->bufh);
-    _outp(DMA1_CHAN2_PAGE, fd->fdc->bufp);
-    _outp(DMA1_CHAN2_COUNT, ((count - 1) & 0xFF));
-    _outp(DMA1_CHAN2_COUNT, ((count - 1) >> 8));
-    _outp(DMA1_CHAN, 0x02);
+    outp(DMA1_CHAN2_ADDR, fd->fdc->bufl);
+    outp(DMA1_CHAN2_ADDR, fd->fdc->bufh);
+    outp(DMA1_CHAN2_PAGE, fd->fdc->bufp);
+    outp(DMA1_CHAN2_COUNT, ((count - 1) & 0xFF));
+    outp(DMA1_CHAN2_COUNT, ((count - 1) >> 8));
+    outp(DMA1_CHAN, 0x02);
 
     reset_event(&fd->fdc->done);
 

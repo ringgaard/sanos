@@ -135,10 +135,10 @@ static int apm_bios_call(unsigned long func, unsigned long ebx_in, unsigned long
     mov ebx, [ebx_in]
     mov ecx, [ecx_in]
     
-    cli
+    CLI
     call fword ptr [apm_entrypoint]
     setc al
-    sti
+    STI
 
     popf
     pop gs
@@ -192,10 +192,10 @@ static int apm_bios_call_simple(unsigned long func, unsigned long ebx_in, unsign
     mov ecx, [ecx_in]
     xor	edx, edx
 
-    cli
+    CLI
     call fword ptr [apm_entrypoint]
     setc al
-    sti
+    STI
 
     popf
     pop gs
@@ -379,15 +379,15 @@ int __declspec(dllexport) apm(struct unit *unit, char *opts)
 
   // Setup APM selectors in GDT
   vaddr = (unsigned long) iomap(apm->cseg32 << 4, cseg32len);
-  seginit(&syspage->gdt[GDT_APMCS],  vaddr, cseg32len, D_CODE | D_DPL0 | D_READ | D_PRESENT, D_BIG);
+  set_gdt_entry(GDT_APMCS,  vaddr, cseg32len, D_CODE | D_DPL0 | D_READ | D_PRESENT, D_BIG);
 
   vaddr = (unsigned long) iomap(apm->cseg16 << 4, cseg16len);
-  seginit(&syspage->gdt[GDT_APMCS16], vaddr, cseg16len, D_CODE | D_DPL0 | D_READ | D_PRESENT, 0);
+  set_gdt_entry(GDT_APMCS16, vaddr, cseg16len, D_CODE | D_DPL0 | D_READ | D_PRESENT, 0);
 
   vaddr = (unsigned long) iomap(apm->dseg << 4, dseglen);
-  seginit(&syspage->gdt[GDT_APMDS], vaddr, dseglen, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, D_BIG);
+  set_gdt_entry(GDT_APMDS, vaddr, dseglen, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, D_BIG);
   
-  seginit(&syspage->gdt[GDT_APM40], (unsigned long) iomap(0x400, 4096), 4096 - 0x40 * 16, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, D_BIG);
+  set_gdt_entry(GDT_APM40, (unsigned long) iomap(0x400, 4096), 4096 - 0x40 * 16, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, D_BIG);
 
   // Setup APM entry point
   apm_entrypoint.segment = SEL_APMCS;

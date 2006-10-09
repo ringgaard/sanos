@@ -156,16 +156,16 @@ unsigned char read_cmos_reg(int reg)
 {
   unsigned char val;
 
-  _outp(0x70, reg);
-  val = _inp(0x71) & 0xFF;
+  outp(0x70, reg);
+  val = inp(0x71) & 0xFF;
 
   return val;
 }
 
 void write_cmos_reg(int reg, unsigned char val)
 {
-  _outp(0x70, reg);
-  _outp(0x71, val);
+  outp(0x70, reg);
+  outp(0x71, val);
 }
 
 static int read_bcd_cmos_reg(int reg)
@@ -205,21 +205,16 @@ static void set_cmos_time(struct tm *tm)
   write_bcd_cmos_reg(0x02, (unsigned char) (tm->tm_min));
   write_bcd_cmos_reg(0x00, (unsigned char) (tm->tm_sec));
 }
-__inline static long __declspec(naked) rdtscl()
-{
-  __asm { rdtsc }
-  __asm { ret }
-}
 
 static void tsc_delay(unsigned long cycles)
 {
   long end, now;
 
-  end = rdtscl() + cycles;
+  end = (unsigned long) rdtsc() + cycles;
   do 
   {
     __asm { nop };
-    now = rdtscl();
+    now = (unsigned long) rdtsc();
   } while (end - now > 0);
 }
 
@@ -261,11 +256,11 @@ void calibrate_delay()
 
     t = ticks;
     while (t == ticks);
-    start = rdtscl();
+    start = (unsigned long) rdtsc();
 
     t = ticks;
     while (t == ticks);
-    end = rdtscl();
+    end = (unsigned long) rdtsc();
 
     cycles_per_tick = end - start;
   }
@@ -374,9 +369,9 @@ void init_pit()
   struct tm tm;
 
   unsigned int cnt = PIT_CLOCK / TIMER_FREQ;
-  _outp(TMR_CTRL, TMR_CH0 + TMR_BOTH + TMR_MD3);
-  _outp(TMR_CNT0, (unsigned char) (cnt & 0xFF));
-  _outp(TMR_CNT0, (unsigned char) (cnt >> 8));
+  outp(TMR_CTRL, TMR_CH0 + TMR_BOTH + TMR_MD3);
+  outp(TMR_CNT0, (unsigned char) (cnt & 0xFF));
+  outp(TMR_CNT0, (unsigned char) (cnt >> 8));
 
   loadptr = loadtab;
   loadend = loadtab + LOADTAB_SIZE;

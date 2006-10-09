@@ -75,26 +75,6 @@ static char *table_lookup_model(struct cpu *c)
   return NULL;
 }
 
-static void cpuid(unsigned long reg, unsigned long values[4])
-{
-  unsigned long a, b, c, d;
-
-  __asm
-  {
-    mov    eax, reg
-    cpuid
-    mov    a, eax
-    mov    b, ebx
-    mov    c, ecx
-    mov    d, edx
-  }
-
-  values[0] = a;
-  values[1] = b;
-  values[2] = c;
-  values[3] = d;
-}
-
 static int eflag_supported(unsigned long flag)
 {
   unsigned long f1, f2;

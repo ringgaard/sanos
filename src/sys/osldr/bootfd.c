@@ -34,6 +34,8 @@
 #include <os.h>
 #include <string.h>
 #include <sys/types.h>
+#include <os/pdir.h>
+#include <os/mach.h>
 #include <os/iop.h>
 #include <os/seg.h>
 #include <os/tss.h>
@@ -175,8 +177,8 @@ static void iodelay(int usecs)
 
   for (n = 0; n < usecs; n++) 
   {
-    _inp(0x80);
-    _inp(0x80);
+    inp(0x80);
+    inp(0x80);
   }
 }
 
@@ -191,10 +193,10 @@ static void fd_command(unsigned char cmd)
 
   for (tmo = 0;tmo < 10000000; tmo++) 
   {
-    msr = _inp(FDC_MSR);
+    msr = inp(FDC_MSR);
     if ((msr & 0xc0) == 0x80)
     {
-      _outp(FDC_DATA, cmd);
+      outp(FDC_DATA, cmd);
       return;
     }
   }
@@ -212,8 +214,8 @@ static unsigned char fd_result()
 
   for (tmo = 0;tmo < 10000000; tmo++) 
   {
-    msr = _inp(FDC_MSR);
-    if ((msr & 0xd0) == 0xd0) return _inp(FDC_DATA);
+    msr = inp(FDC_MSR);
+    if ((msr & 0xd0) == 0xd0) return inp(FDC_DATA);
   }
 
   // Read timeout
@@ -285,20 +287,20 @@ static int fd_transfer(struct fd *fd, void *buffer, size_t count, blkno_t blkno)
     }
 
     // Program data rate (500K/s)
-    _outp(FDC_CCR,0);
+    outp(FDC_CCR,0);
 
     // Set up DMA
-    _outp(DMA1_CHAN, 0x06);
-    _outp(DMA1_RESET, DMA1_CHAN2_READ);
-    _outp(DMA1_MODE, DMA1_CHAN2_READ);
+    outp(DMA1_CHAN, 0x06);
+    outp(DMA1_RESET, DMA1_CHAN2_READ);
+    outp(DMA1_MODE, DMA1_CHAN2_READ);
 
     // Setup DMA transfer
-    _outp(DMA1_CHAN2_ADDR, fd->fdc->bufl);
-    _outp(DMA1_CHAN2_ADDR, fd->fdc->bufh);
-    _outp(DMA1_CHAN2_PAGE, fd->fdc->bufp);
-    _outp(DMA1_CHAN2_COUNT, ((count - 1) & 0xFF));
-    _outp(DMA1_CHAN2_COUNT, ((count - 1) >> 8));
-    _outp(DMA1_CHAN, 0x02);
+    outp(DMA1_CHAN2_ADDR, fd->fdc->bufl);
+    outp(DMA1_CHAN2_ADDR, fd->fdc->bufh);
+    outp(DMA1_CHAN2_PAGE, fd->fdc->bufp);
+    outp(DMA1_CHAN2_COUNT, ((count - 1) & 0xFF));
+    outp(DMA1_CHAN2_COUNT, ((count - 1) >> 8));
+    outp(DMA1_CHAN, 0x02);
 
 //kprintf("fd: xfer %d\n", count);
     // Perform transfer
@@ -407,11 +409,11 @@ static void __declspec(naked) fd_isr()
 static void init_boot_intrs()
 {
   // Initialize master PIC
-  _outp(PIC_MSTR_CTRL, PIC_MSTR_ICW1);
-  _outp(PIC_MSTR_MASK, PIC_MSTR_ICW2);
-  _outp(PIC_MSTR_MASK, PIC_MSTR_ICW3);
-  _outp(PIC_MSTR_MASK, PIC_MSTR_ICW4);
-  _outp(PIC_MSTR_MASK, ~(1 << IRQ_FD));
+  outp(PIC_MSTR_CTRL, PIC_MSTR_ICW1);
+  outp(PIC_MSTR_MASK, PIC_MSTR_ICW2);
+  outp(PIC_MSTR_MASK, PIC_MSTR_ICW3);
+  outp(PIC_MSTR_MASK, PIC_MSTR_ICW4);
+  outp(PIC_MSTR_MASK, ~(1 << IRQ_FD));
 
   // Setup IDT for FDC
   bootidt[INTR_FD].offset_low = (unsigned short) (((unsigned long) fd_isr) & 0xFFFF);
@@ -450,7 +452,7 @@ void init_bootfd(int bootdrv)
 
   // Start motor on drive
   fdc.dor |= 0x10 << fd.drive;
-  _outp(FDC_DOR, fdc.dor);
+  outp(FDC_DOR, fdc.dor);
 
   // Initialize interrupts
   init_boot_intrs();
@@ -464,7 +466,7 @@ void uninit_bootfd()
 {
   // Stop motor
   fdc.dor &= 0x0F;
-  _outp(FDC_DOR, fdc.dor);
+  outp(FDC_DOR, fdc.dor);
 
   // Disable interrupts
   cli();

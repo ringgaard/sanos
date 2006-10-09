@@ -61,11 +61,11 @@ void init_video()
   vidmem = (unsigned char *) VIDBASE_ADDRESS;
 
   // Get cursor position
-  _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_MSB);
-  cursor_pos = _inp(VIDEO_PORT_DATA) & 0xFF;
+  outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_MSB);
+  cursor_pos = inp(VIDEO_PORT_DATA) & 0xFF;
   cursor_pos <<= 8;
-  _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_LSB);
-  cursor_pos += _inp(VIDEO_PORT_DATA) & 0xFF;
+  outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_LSB);
+  cursor_pos += inp(VIDEO_PORT_DATA) & 0xFF;
   cursor_pos <<= 1;
 }
 
@@ -73,20 +73,20 @@ void show_cursor()
 {
   // Set new cursor position
   unsigned int pos = cursor_pos >> 1;
-  _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_LSB);
-  _outp(VIDEO_PORT_DATA, pos & 0xFF);
-  _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_MSB);
-  _outp(VIDEO_PORT_DATA, pos >> 8);
+  outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_LSB);
+  outp(VIDEO_PORT_DATA, pos & 0xFF);
+  outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_MSB);
+  outp(VIDEO_PORT_DATA, pos >> 8);
 }
 
 void hide_cursor()
 {
   // Set cursor position off screen
   unsigned int pos = COLS * LINES + 1;
-  _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_LSB);
-  _outp(VIDEO_PORT_DATA, pos & 0x0ff);
-  _outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_MSB);
-  _outp(VIDEO_PORT_DATA, pos >> 8);
+  outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_LSB);
+  outp(VIDEO_PORT_DATA, pos & 0x0ff);
+  outp(VIDEO_PORT_REG, VIDEO_REG_CURSOR_MSB);
+  outp(VIDEO_PORT_DATA, pos >> 8);
 }
 
 void set_cursor(int col, int line)

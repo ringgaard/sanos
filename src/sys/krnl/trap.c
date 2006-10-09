@@ -145,6 +145,9 @@ static void __declspec(naked) isr()
     push    ds
     push    es
     mov	    ax, SEL_KDATA           // Setup kernel data segment
+#ifdef VMACH
+    or      eax, cs:mach.kring
+#endif
     mov	    ds, ax
     mov	    es, ax
     call    trap                    // Call trap handler
@@ -158,7 +161,7 @@ static void __declspec(naked) isr()
     pop	    ecx
     pop	    eax
     add	    esp, 8
-    iretd                           // Return
+    IRETD                           // Return
   }
 }
 
@@ -188,6 +191,9 @@ static void __declspec(naked) systrap(void)
     push    es
 
     mov	    bx, SEL_KDATA           // Setup kernel data segment
+#ifdef VMACH
+    or      ebx, cs:mach.kring
+#endif
     mov	    ds, bx
     mov	    es, bx
 
@@ -210,7 +216,7 @@ static void __declspec(naked) systrap(void)
 
     add	    esp, 12                 // Skip eax, errcode, and traptype
 
-    iretd                           // Return
+    IRETD                           // Return
   }
 }
 
@@ -225,7 +231,7 @@ static void __declspec(naked) sysentry(void)
   __asm
   {
     mov     esp, ss:[esp]           // Get kernel stack pointer from TSS
-    sti                             // Sysenter disables interrupts, re-enable now
+    STI                             // Sysenter disables interrupts, re-enable now
 
     push    SEL_UDATA + SEL_RPL3    // Push ss (fixed)
     push    ebp                     // Push esp (ebp set to esp by caller)
@@ -247,6 +253,9 @@ static void __declspec(naked) sysentry(void)
     push    SEL_UDATA + SEL_RPL3    // Push es (fixed)
 
     mov	    bx, SEL_KDATA           // Setup kernel data segment
+#ifdef VMACH
+    or      ebx, cs:mach.kring
+#endif
     mov	    ds, bx
     mov	    es, bx
 
@@ -272,7 +281,7 @@ static void __declspec(naked) sysentry(void)
     pop     ecx                     // Put esp into ecx for sysexit
     add     esp, 4                  // Skip ss
 
-    sysexit                         // Return
+    SYSEXIT                         // Return
   }
 }
 
@@ -330,34 +339,6 @@ void wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh)
     mov edx, valuehigh
     wrmsr
   }
-}
-
-//
-// init_idt_gate
-//
-// Initialize one idt entry
-//
-
-static void init_idt_gate(int intrno, void *handler)
-{
-  syspage->idt[intrno].offset_low = (unsigned short) (((unsigned long) handler) & 0xFFFF);
-  syspage->idt[intrno].selector = SEL_KTEXT;
-  syspage->idt[intrno].access = D_PRESENT | D_INT | D_DPL0;
-  syspage->idt[intrno].offset_high = (unsigned short) (((unsigned long) handler) >> 16);
-}
-
-//
-// init_trap_gate
-//
-// Initialize one trap entry
-//
-
-static void init_trap_gate(int intrno, void *handler)
-{
-  syspage->idt[intrno].offset_low = (unsigned short) (((unsigned long) handler) & 0xFFFF);
-  syspage->idt[intrno].selector = SEL_KTEXT;
-  syspage->idt[intrno].access = D_PRESENT | D_TRAP | D_DPL3;
-  syspage->idt[intrno].offset_high = (unsigned short) (((unsigned long) handler) >> 16);
 }
 
 //
@@ -784,7 +765,7 @@ static int pagefault_handler(struct context *ctxt, void *arg)
   void *addr;
   void *pageaddr;
 
-  addr = (void *) cr2();
+  addr = (void *) get_cr2();
   pageaddr = (void *) PAGEADDR(addr);
 
   if (usermode(ctxt))
@@ -813,7 +794,7 @@ static int pagefault_handler(struct context *ctxt, void *arg)
 static int alignment_handler(struct context *ctxt, void *arg)
 {
   if (usermode(ctxt))
-    send_signal(ctxt, SIGBUS, (void *) cr2());
+    send_signal(ctxt, SIGBUS, (void *) get_cr2());
   else
   {
     kprintf(KERN_CRIT "trap: alignment exception in kernel mode\n");
@@ -865,70 +846,70 @@ void init_trap()
   }
 
   // Setup idt
-  init_idt_gate(0, isr0);
-  init_idt_gate(1, isr1);
-  init_idt_gate(2, isr2);
-  init_trap_gate(3, isr3);
-  init_idt_gate(4, isr4);
-  init_idt_gate(5, isr5);
-  init_idt_gate(6, isr6);
-  init_idt_gate(7, isr7);
-  init_idt_gate(8, isr8);
-  init_idt_gate(9, isr9);
-  init_idt_gate(10, isr10);
-  init_idt_gate(11, isr11);
-  init_idt_gate(12, isr12);
-  init_idt_gate(13, isr13);
-  init_idt_gate(14, isr14);
-  init_idt_gate(15, isr15);
-  init_idt_gate(16, isr16);
-  init_idt_gate(17, isr17);
-  init_idt_gate(18, isr18);
-  init_idt_gate(19, isr19);
-  init_idt_gate(20, isr20);
-  init_idt_gate(21, isr21);
-  init_idt_gate(22, isr22);
-  init_idt_gate(23, isr23);
-  init_idt_gate(24, isr24);
-  init_idt_gate(25, isr25);
-  init_idt_gate(26, isr26);
-  init_idt_gate(27, isr27);
-  init_idt_gate(28, isr28);
-  init_idt_gate(29, isr29);
-  init_idt_gate(30, isr30);
-  init_idt_gate(31, isr31);
-  init_idt_gate(32, isr32);
-  init_idt_gate(33, isr33);
-  init_idt_gate(34, isr34);
-  init_idt_gate(35, isr35);
-  init_idt_gate(36, isr36);
-  init_idt_gate(37, isr37);
-  init_idt_gate(38, isr38);
-  init_idt_gate(39, isr39);
-  init_idt_gate(40, isr40);
-  init_idt_gate(41, isr41);
-  init_idt_gate(42, isr42);
-  init_idt_gate(43, isr43);
-  init_idt_gate(44, isr44);
-  init_idt_gate(45, isr45);
-  init_idt_gate(46, isr46);
-  init_idt_gate(47, isr47);
-  init_trap_gate(48, systrap);
-  init_trap_gate(49, isr49);
-  init_idt_gate(50, isr50);
-  init_idt_gate(51, isr51);
-  init_idt_gate(52, isr52);
-  init_idt_gate(53, isr53);
-  init_idt_gate(54, isr54);
-  init_idt_gate(55, isr55);
-  init_idt_gate(56, isr56);
-  init_idt_gate(57, isr57);
-  init_idt_gate(58, isr58);
-  init_idt_gate(59, isr59);
-  init_idt_gate(60, isr60);
-  init_idt_gate(61, isr61);
-  init_idt_gate(62, isr62);
-  init_idt_gate(63, isr63);
+  set_idt_gate(0, isr0);
+  set_idt_gate(1, isr1);
+  set_idt_gate(2, isr2);
+  set_idt_trap(3, isr3);
+  set_idt_gate(4, isr4);
+  set_idt_gate(5, isr5);
+  set_idt_gate(6, isr6);
+  set_idt_gate(7, isr7);
+  set_idt_gate(8, isr8);
+  set_idt_gate(9, isr9);
+  set_idt_gate(10, isr10);
+  set_idt_gate(11, isr11);
+  set_idt_gate(12, isr12);
+  set_idt_gate(13, isr13);
+  set_idt_gate(14, isr14);
+  set_idt_gate(15, isr15);
+  set_idt_gate(16, isr16);
+  set_idt_gate(17, isr17);
+  set_idt_gate(18, isr18);
+  set_idt_gate(19, isr19);
+  set_idt_gate(20, isr20);
+  set_idt_gate(21, isr21);
+  set_idt_gate(22, isr22);
+  set_idt_gate(23, isr23);
+  set_idt_gate(24, isr24);
+  set_idt_gate(25, isr25);
+  set_idt_gate(26, isr26);
+  set_idt_gate(27, isr27);
+  set_idt_gate(28, isr28);
+  set_idt_gate(29, isr29);
+  set_idt_gate(30, isr30);
+  set_idt_gate(31, isr31);
+  set_idt_gate(32, isr32);
+  set_idt_gate(33, isr33);
+  set_idt_gate(34, isr34);
+  set_idt_gate(35, isr35);
+  set_idt_gate(36, isr36);
+  set_idt_gate(37, isr37);
+  set_idt_gate(38, isr38);
+  set_idt_gate(39, isr39);
+  set_idt_gate(40, isr40);
+  set_idt_gate(41, isr41);
+  set_idt_gate(42, isr42);
+  set_idt_gate(43, isr43);
+  set_idt_gate(44, isr44);
+  set_idt_gate(45, isr45);
+  set_idt_gate(46, isr46);
+  set_idt_gate(47, isr47);
+  set_idt_trap(48, systrap);
+  set_idt_trap(49, isr49);
+  set_idt_gate(50, isr50);
+  set_idt_gate(51, isr51);
+  set_idt_gate(52, isr52);
+  set_idt_gate(53, isr53);
+  set_idt_gate(54, isr54);
+  set_idt_gate(55, isr55);
+  set_idt_gate(56, isr56);
+  set_idt_gate(57, isr57);
+  set_idt_gate(58, isr58);
+  set_idt_gate(59, isr59);
+  set_idt_gate(60, isr60);
+  set_idt_gate(61, isr61);
+  set_idt_gate(62, isr62);
+  set_idt_gate(63, isr63);
 
   // Set system trap handlers
   register_interrupt(&divintr, INTR_DIV, div_handler, NULL);
@@ -946,7 +927,7 @@ void init_trap()
   // Initialize fast syscall
   if (cpu.features & CPU_FEATURE_SEP)
   {
-    wrmsr(MSR_SYSENTER_CS, SEL_KTEXT, 0);
+    wrmsr(MSR_SYSENTER_CS, SEL_KTEXT | mach.kring, 0);
     wrmsr(MSR_SYSENTER_ESP, TSS_ESP0, 0);
     wrmsr(MSR_SYSENTER_EIP, (unsigned long) sysentry, 0);
   }

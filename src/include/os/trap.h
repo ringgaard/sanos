@@ -123,25 +123,12 @@ int get_pending_signals(sigset_t *set);
 int get_context(struct thread *t, struct context *ctxt);
 int set_context(struct thread *t, struct context *ctxt);
 
-void __inline cli() { __asm cli };
-void __inline sti() { __asm sti };
-void __inline halt() { __asm hlt };
-
 __inline __declspec(naked) unsigned long eflags()
 {
   __asm
   {
     pushfd
     pop eax
-    ret
-  }
-}
-
-__inline __declspec(naked) unsigned long cr2()
-{
-  __asm
-  {
-    mov eax, cr2;
     ret
   }
 }

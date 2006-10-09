@@ -3,5 +3,5 @@
 #define OS_LEGAL     "All rights reserved."
 #define OS_MAJ_VERS  1
 #define OS_MIN_VERS  3
-#define OS_RELEASE   3
+#define OS_RELEASE   4
 #define OS_BUILD     0

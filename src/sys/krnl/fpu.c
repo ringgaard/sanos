@@ -39,12 +39,7 @@ struct interrupt fpuxcpt;
 void fpu_enable(struct fpu *state)
 {
   // Turn on access to FPU
-  __asm
-  {
-    mov eax, cr0
-    and eax, ~(CR0_EM | CR0_TS)
-    mov cr0, eax
-  }
+  set_cr0(get_cr0() &  ~(CR0_EM | CR0_TS));
 
   if (state)
   {
@@ -79,12 +74,7 @@ void fpu_disable(struct fpu *state)
   }
 
   // Disable acces to FPU
-  __asm
-  {
-    mov eax, cr0
-    or eax, CR0_EM
-    mov cr0, eax
-  }
+  set_cr0(get_cr0() | CR0_EM);
 }
 
 int fpu_trap_handler(struct context *ctxt, void *arg)
@@ -115,11 +105,5 @@ void init_fpu()
 {
   register_interrupt(&fpuintr, INTR_FPU, fpu_trap_handler, NULL);
   register_interrupt(&fpuxcpt, INTR_NPX, fpu_npx_handler, NULL);
-
-  _asm
-  {
-    mov eax, cr0
-    or eax, CR0_EM | CR0_NE
-    mov cr0, eax
-  }
+  set_cr0(get_cr0() | CR0_EM | CR0_NE);
 }

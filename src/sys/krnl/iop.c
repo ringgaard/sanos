@@ -33,7 +33,9 @@
 
 #include <os/krnl.h>
 
-void insw(int port, void *buf, int count)
+#ifndef VMACH
+
+void insw(port_t port, void *buf, int count)
 {
   __asm
   {
@@ -44,7 +46,7 @@ void insw(int port, void *buf, int count)
   }
 }
 
-void outsw(int port, void *buf, int count)
+void outsw(port_t port, void *buf, int count)
 {
   __asm
   {
@@ -55,7 +57,7 @@ void outsw(int port, void *buf, int count)
   }
 }
 
-void insd(int port, void *buf, int count)
+void insd(port_t port, void *buf, int count)
 {
   __asm
   {
@@ -66,7 +68,7 @@ void insd(int port, void *buf, int count)
   }
 }
 
-void outsd(int port, void *buf, int count)
+void outsd(port_t port, void *buf, int count)
 {
   __asm
   {
@@ -79,7 +81,7 @@ void outsd(int port, void *buf, int count)
 
 #ifdef DEBUG
 
-int __declspec(naked) _outp(port_t port, int databyte)
+int __declspec(naked) outp(port_t port, int val)
 {
   __asm
   {
@@ -91,7 +93,7 @@ int __declspec(naked) _outp(port_t port, int databyte)
   }
 }
 
-unsigned short __declspec(naked) _outpw(port_t port, unsigned short dataword)
+unsigned short __declspec(naked) outpw(port_t port, unsigned short val)
 {
   __asm
   {
@@ -102,7 +104,7 @@ unsigned short __declspec(naked) _outpw(port_t port, unsigned short dataword)
   }
 }
 
-unsigned long __declspec(naked) _outpd(port_t port, unsigned long dataword)
+unsigned long __declspec(naked) outpd(port_t port, unsigned long val)
 {
   __asm
   {
@@ -113,7 +115,7 @@ unsigned long __declspec(naked) _outpd(port_t port, unsigned long dataword)
   }
 }
 
-int __declspec(naked) _inp(port_t port)
+int __declspec(naked) inp(port_t port)
 {
   __asm
   {
@@ -124,7 +126,7 @@ int __declspec(naked) _inp(port_t port)
   }
 }
 
-unsigned short __declspec(naked) _inpw(port_t port)
+unsigned short __declspec(naked) inpw(port_t port)
 {
   __asm
   {
@@ -134,7 +136,7 @@ unsigned short __declspec(naked) _inpw(port_t port)
   }
 }
 
-unsigned long __declspec(naked) _inpd(port_t port)
+unsigned long __declspec(naked) inpd(port_t port)
 {
   __asm
   {
@@ -143,5 +145,7 @@ unsigned long __declspec(naked) _inpd(port_t port)
     ret
   }
 }
+
+#endif
 
 #endif

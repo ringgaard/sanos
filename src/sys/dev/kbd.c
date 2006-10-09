@@ -157,7 +157,7 @@ static void kbd_wait()
 {
   int tmo = KEYBOARD_TIMEOUT;
 
-  while (_inp(KBD_STATUS) & KBD_STAT_IBF)
+  while (inp(KBD_STATUS) & KBD_STAT_IBF)
   {
     if (--tmo == 0)
     {
@@ -177,10 +177,10 @@ static int kbd_read_data()
 {
   unsigned char status;
 
-  status = _inp(KBD_STATUS);
+  status = inp(KBD_STATUS);
   if (status & KBD_STAT_OBF) 
   {
-    unsigned char data = _inp(KBD_DATA);
+    unsigned char data = inp(KBD_DATA);
 
     if (status & (KBD_STAT_GTO | KBD_STAT_PERR)) 
       return -EIO;
@@ -220,7 +220,7 @@ static int kbd_wait_for_data()
 
 static void kbd_write_data(unsigned char data)
 {
-  _outp(KBD_DATA, data);
+  outp(KBD_DATA, data);
 }
 
 //
@@ -229,7 +229,7 @@ static void kbd_write_data(unsigned char data)
 
 static void kbd_write_command(unsigned char cmd)
 {
-  _outp(KBD_COMMAND, cmd);
+  outp(KBD_COMMAND, cmd);
 }
 
 //
@@ -412,10 +412,10 @@ static void keyb_dpc(void *arg)
   unsigned char status;
 
 
-  while ((status = _inp(KBD_STATUS)) & KBD_STAT_OBF) 
+  while ((status = inp(KBD_STATUS)) & KBD_STAT_OBF) 
   {
     // Get next scancode from keyboard
-    scancode = _inp(KBD_DATA) & 0xFF;
+    scancode = inp(KBD_DATA) & 0xFF;
     //kprintf("key %d\n", scancode);
 
     // Process scan code

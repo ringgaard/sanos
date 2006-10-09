@@ -310,28 +310,40 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
   kprintf(KERN_INFO "boot: starting kernel\n");
   if (*krnlopts) kprintf(KERN_INFO "options: %s\n", krnlopts);
 
+  // Initialize machine
+  kprintf("start: init_mach\n");
+  init_mach();
+
   // Initialize CPU
+  kprintf("start: init_cpu\n");
   init_cpu();
 
   // Initialize page frame database
+  kprintf("start: init_pfdb\n");
   init_pfdb();
 
   // Initialize page directory
+  kprintf("start: init_pdir\n");
   init_pdir();
 
   // Initialize kernel heap
+  kprintf("start: init_kmem\n");
   init_kmem();
 
   // Initialize kernel allocator
+  kprintf("start: init_malloc\n");
   init_malloc();
 
   // Initialize virtual memory manager
+  kprintf("start: init_vmm\n");
   init_vmm();
 
   // Flush tlb
+  kprintf("start: flush\n");
   flushtlb();
 
   // Register memory management procs
+  kprintf("start: reg procs\n");
   register_proc_inode("memmap", memmap_proc, NULL);
   register_proc_inode("memusage", memusage_proc, NULL);
   register_proc_inode("memstat", memstat_proc, NULL);
@@ -346,24 +358,36 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
   register_proc_inode("cpu", cpu_proc, NULL);
 
   // Initialize interrupts, floating-point support, and real-time clock
+  kprintf("start: init_pic\n");
   init_pic();
+  kprintf("start: init_trap\n");
   init_trap();
+  kprintf("start: init_fpu\n");
   init_fpu();
+  kprintf("start: init_pit\n");
   init_pit();
   
   // Initialize timers, scheduler, and handle manager
+  kprintf("start: init_timers\n");
   init_timers();
+  kprintf("start: init_sched\n");
   init_sched();
+  kprintf("start: init_handles\n");
   init_handles();
+  kprintf("start: init_syscalls\n");
   init_syscall();
 
   // Enable interrupts and calibrate delay
+  kprintf("start: sti\n");
   sti();
+  kprintf("start: calibrate_delay\n");
   calibrate_delay();
 
   // Start main task and dispatch to idle task
+  kprintf("start: main task\n");
   mainthread = create_kernel_thread(main, 0, PRIORITY_NORMAL, "init");
   
+  kprintf("start: idle task\n");
   idle_task();
 }
 
@@ -400,6 +424,7 @@ void main(void *arg)
   char *str;
   struct file *cons;
 
+  kprintf("main: started\n");
   // Allocate and initialize PEB
   peb = mmap((void *) PEB_ADDRESS, PAGESIZE, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'PEB');
   if (!peb) panic("unable to allocate PEB");
@@ -501,9 +526,6 @@ void main(void *arg)
     pushfd
     push SEL_UTEXT + SEL_RPL3
     push ebx
-    iretd
-
-    cli
-    hlt
+    IRETD
   }
 }

@@ -34,28 +34,19 @@
 #ifndef IOP_H
 #define IOP_H
 
-void insw(int port, void *buf, int count);
-void outsw(int port, void *buf, int count);
-void insd(int port, void *buf, int count);
-void outsd(int port, void *buf, int count);
+#if 0
+void insw(port_t port, void *buf, int count);
+void outsw(port_t port, void *buf, int count);
+void insd(port_t port, void *buf, int count);
+void outsd(port_t port, void *buf, int count);
 
-int __cdecl _inp(port_t);
-unsigned short __cdecl _inpw(port_t);
-unsigned long __cdecl _inpd(port_t);
+int inp(port_t port);
+unsigned short inpw(port_t port);
+unsigned long inpd(port_t port);
 
-int __cdecl _outp(port_t, int);
-unsigned short __cdecl _outpw(port_t, unsigned short);
-unsigned long __cdecl _outpd(port_t, unsigned long);
-
-#ifdef DEBUG
-
-#define inp _inp
-#define inpw _inpw
-#define inpd _inpd
-#define outp _outp
-#define outpw _outpw
-#define outpd _outpd
-
+int outp(port_t port, int);
+unsigned short outpw(port_t port, unsigned short val);
+unsigned long outpd(port_t port, unsigned long val);
 #endif
 
 #endif

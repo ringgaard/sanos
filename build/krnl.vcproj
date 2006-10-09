@@ -160,6 +160,12 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\fpu.c">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="4"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\hndl.c">
@@ -184,6 +190,15 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\ldr.c">
+			</File>
+			<File
+				RelativePath="..\src\sys\krnl\mach.c">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="4"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\object.c">
@@ -223,12 +238,27 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\trap.c">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="4"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\user.c">
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\vfs.c">
+			</File>
+			<File
+				RelativePath="..\src\sys\krnl\vmi.c">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="4"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\vmm.c">
@@ -555,6 +585,9 @@
 					RelativePath="..\src\include\os\ldr.h">
 				</File>
 				<File
+					RelativePath="..\src\include\os\mach.h">
+				</File>
+				<File
 					RelativePath="..\src\include\os\mbr.h">
 				</File>
 				<File
@@ -622,6 +655,9 @@
 				</File>
 				<File
 					RelativePath="..\src\include\os\video.h">
+				</File>
+				<File
+					RelativePath="..\src\include\os\vmi.h">
 				</File>
 				<File
 					RelativePath="..\src\include\os\vmm.h">

@@ -254,12 +254,12 @@ static int boothd_wait(unsigned char mask)
 
   while (1)
   {
-    status = _inp((unsigned short) (hd.iobase + HDC_ALT_STATUS));
+    status = inp((unsigned short) (hd.iobase + HDC_ALT_STATUS));
     if (status & HDCS_ERR) 
     {
        unsigned char error;
  
-       error = _inp((unsigned short) (hd.iobase + HDC_ERR));
+       error = inp((unsigned short) (hd.iobase + HDC_ERR));
        boothd_error("boothd_wait", error);
 
        return error;
@@ -288,11 +288,11 @@ static void boothd_setup_transfer(blkno_t blkno, int nsects)
     sector = blkno % hd.sectors + 1;
   }
 
-  _outp((unsigned short) (hd.iobase + HDC_SECTORCNT), nsects);
-  _outp((unsigned short) (hd.iobase + HDC_SECTOR), (unsigned char) sector);
-  _outp((unsigned short) (hd.iobase + HDC_TRACKLSB), (unsigned char) track);
-  _outp((unsigned short) (hd.iobase + HDC_TRACKMSB), (unsigned char) (track >> 8));
-  _outp((unsigned short) (hd.iobase + HDC_DRVHD), (unsigned char) (head | hd.drvsel));
+  outp((unsigned short) (hd.iobase + HDC_SECTORCNT), nsects);
+  outp((unsigned short) (hd.iobase + HDC_SECTOR), (unsigned char) sector);
+  outp((unsigned short) (hd.iobase + HDC_TRACKLSB), (unsigned char) track);
+  outp((unsigned short) (hd.iobase + HDC_TRACKMSB), (unsigned char) (track >> 8));
+  outp((unsigned short) (hd.iobase + HDC_DRVHD), (unsigned char) (head | hd.drvsel));
 }
 
 static int boothd_identify()
@@ -300,11 +300,11 @@ static int boothd_identify()
   int result;
 
   // Issue read drive parameters command
-  _outp(hd.iobase + HDC_DRVHD, hd.drvsel);
-  _outp(hd.iobase + HDC_COMMAND, HDCMD_IDENTIFY);
+  outp(hd.iobase + HDC_DRVHD, hd.drvsel);
+  outp(hd.iobase + HDC_COMMAND, HDCMD_IDENTIFY);
 
   // Wait for data ready
-  if (!(_inp((unsigned short) (hd.iobase + HDC_ALT_STATUS)) & HDCS_DRQ))
+  if (!(inp((unsigned short) (hd.iobase + HDC_ALT_STATUS)) & HDCS_DRQ))
   {
     result = boothd_wait(HDCS_DRQ);
     if (result != 0) return result;
@@ -332,7 +332,7 @@ static int boothd_identify()
   hd.size = hd.blks / ((1024 * 1024) / SECTORSIZE);
 
   // Read status
-  hd.status = _inp((unsigned short) (hd.iobase + HDC_STATUS));
+  hd.status = inp((unsigned short) (hd.iobase + HDC_STATUS));
 
   return 0;
 }
@@ -356,13 +356,13 @@ int boothd_read(void *buffer, size_t count, blkno_t blkno)
   }
 
   boothd_setup_transfer(blkno, nsects);
-  _outp((unsigned short) (hd.iobase + HDC_COMMAND), HDCMD_READ);
+  outp((unsigned short) (hd.iobase + HDC_COMMAND), HDCMD_READ);
 
   hdbuf = (char *) buffer;
   for (i = 0; i < nsects; i++) 
   {
     // Wait for data ready
-    if (!(_inp((unsigned short)(hd.iobase + HDC_ALT_STATUS)) & HDCS_DRQ))
+    if (!(inp((unsigned short)(hd.iobase + HDC_ALT_STATUS)) & HDCS_DRQ))
     {
       result = boothd_wait(HDCS_DRQ);
       if (result != 0)
@@ -373,7 +373,7 @@ int boothd_read(void *buffer, size_t count, blkno_t blkno)
     }
 
     // Check status
-    hd.status = _inp((unsigned short) (hd.iobase + HDC_STATUS));
+    hd.status = inp((unsigned short) (hd.iobase + HDC_STATUS));
     if (hd.status & HDCS_ERR)
     {
       kprintf("boothd_read: read error (%d)\n", hd.status);
@@ -416,7 +416,7 @@ void init_boothd(int bootdrv)
 
   boothd_identify();
 
-  _outp((unsigned short) (hd.iobase + HDC_CONTROL), HDDC_HD15 | HDDC_NIEN);
+  outp((unsigned short) (hd.iobase + HDC_CONTROL), HDDC_HD15 | HDDC_NIEN);
 
   //kprintf("%d: %u blks (%d MB) CHS=%u/%u/%u\n", hd.drvsel, hd.blks, hd.size, hd.cyls, hd.heads, hd.sectors);
 }

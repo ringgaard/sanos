@@ -51,15 +51,15 @@ static char *krnlname = "krnl.dll";
 void init_debug_port()
 {
   // Turn off interrupts
-  _outp(DEBUGPORT + 1, 0);
+  outp(DEBUGPORT + 1, 0);
   
   // Set 115200 baud, 8 bits, no parity, one stopbit
-  _outp(DEBUGPORT + 3, 0x80);
-  _outp(DEBUGPORT + 0, 0x01); // 0x0C = 9600, 0x01 = 115200
-  _outp(DEBUGPORT + 1, 0x00);
-  _outp(DEBUGPORT + 3, 0x03);
-  _outp(DEBUGPORT + 2, 0xC7);
-  _outp(DEBUGPORT + 4, 0x0B);
+  outp(DEBUGPORT + 3, 0x80);
+  outp(DEBUGPORT + 0, 0x01); // 0x0C = 9600, 0x01 = 115200
+  outp(DEBUGPORT + 1, 0x00);
+  outp(DEBUGPORT + 3, 0x03);
+  outp(DEBUGPORT + 2, 0xC7);
+  outp(DEBUGPORT + 4, 0x0B);
 }
 
 static void dbg_send(void *buffer, int count)
@@ -68,11 +68,11 @@ static void dbg_send(void *buffer, int count)
 
   while (count-- > 0)
   {
-    while ((_inp(DEBUGPORT + 5) & 0x20) == 0) 
+    while ((inp(DEBUGPORT + 5) & 0x20) == 0) 
     {
       if (!debug_nointr) check_dpc_queue();
     }
-    _outp(DEBUGPORT, *p++);
+    outp(DEBUGPORT, *p++);
   }
 }
 
@@ -82,11 +82,11 @@ static void dbg_recv(void *buffer, int count)
 
   while (count-- > 0)
   {
-    while ((_inp(DEBUGPORT + 5) & 0x01) == 0) 
+    while ((inp(DEBUGPORT + 5) & 0x01) == 0) 
     {
       if (!debug_nointr) check_dpc_queue();
     }
-    *p++ = _inp(DEBUGPORT) & 0xFF;
+    *p++ = inp(DEBUGPORT) & 0xFF;
   }
 }
 
@@ -339,7 +339,7 @@ static void dbg_get_thread_context(struct dbg_hdr *hdr, union dbg_body *body)
     // Kernel mode contexts does not have ss:esp in context, fixup
     if (KERNELSPACE(body->ctx.ctxt.eip))
     {
-      body->ctx.ctxt.ess = SEL_KDATA;
+      body->ctx.ctxt.ess = SEL_KDATA | mach.kring;
       body->ctx.ctxt.esp = (unsigned long) t->ctxt + sizeof(struct context) - 8;
     }
   }
@@ -357,10 +357,10 @@ static void dbg_get_thread_context(struct dbg_hdr *hdr, union dbg_body *body)
     body->ctx.ctxt.eip = kctxt->eip;
     body->ctx.ctxt.esp = (unsigned long) kctxt->stack;
 
-    body->ctx.ctxt.ds = SEL_KDATA;
-    body->ctx.ctxt.es = SEL_KDATA;
-    body->ctx.ctxt.ess = SEL_KDATA;
-    body->ctx.ctxt.ecs = SEL_KTEXT;
+    body->ctx.ctxt.ds = SEL_KDATA | mach.kring;
+    body->ctx.ctxt.es = SEL_KDATA | mach.kring;
+    body->ctx.ctxt.ess = SEL_KDATA | mach.kring;
+    body->ctx.ctxt.ecs = SEL_KTEXT | mach.kring;
   }
 
   dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_context));

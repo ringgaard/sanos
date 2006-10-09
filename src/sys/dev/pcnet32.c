@@ -260,47 +260,47 @@ static void dump_csr(unsigned short csr)
 
 static unsigned short pcnet32_wio_read_csr(unsigned short addr, int index)
 {
-  _outpw((unsigned short) (addr + PCNET32_WIO_RAP), (unsigned short) index);
-  return _inpw((unsigned short) (addr + PCNET32_WIO_RDP));
+  outpw((unsigned short) (addr + PCNET32_WIO_RAP), (unsigned short) index);
+  return inpw((unsigned short) (addr + PCNET32_WIO_RDP));
 }
 
 static void pcnet32_wio_write_csr(unsigned short addr, int index, unsigned short val)
 {
-  _outpw((unsigned short) (addr + PCNET32_WIO_RAP), (unsigned short) index);
-  _outpw((unsigned short) (addr + PCNET32_WIO_RDP), val);
+  outpw((unsigned short) (addr + PCNET32_WIO_RAP), (unsigned short) index);
+  outpw((unsigned short) (addr + PCNET32_WIO_RDP), val);
 }
 
 static unsigned short pcnet32_wio_read_bcr(unsigned short addr, int index)
 {
-  _outpw((unsigned short) (addr + PCNET32_WIO_RAP), (unsigned short) index);
-  return _inpw((unsigned short) (addr + PCNET32_WIO_BDP));
+  outpw((unsigned short) (addr + PCNET32_WIO_RAP), (unsigned short) index);
+  return inpw((unsigned short) (addr + PCNET32_WIO_BDP));
 }
 
 static void pcnet32_wio_write_bcr(unsigned short addr, int index, unsigned short val)
 {
-  _outpw((unsigned short) (addr + PCNET32_WIO_RAP), (unsigned short) index);
-  _outpw((unsigned short) (addr + PCNET32_WIO_BDP), val);
+  outpw((unsigned short) (addr + PCNET32_WIO_RAP), (unsigned short) index);
+  outpw((unsigned short) (addr + PCNET32_WIO_BDP), val);
 }
 
 static unsigned short pcnet32_wio_read_rap(unsigned short addr)
 {
-  return _inpw((unsigned short) (addr + PCNET32_WIO_RAP));
+  return inpw((unsigned short) (addr + PCNET32_WIO_RAP));
 }
 
 static void pcnet32_wio_write_rap(unsigned short addr, unsigned short val)
 {
-  _outpw((unsigned short) (addr + PCNET32_WIO_RAP), val);
+  outpw((unsigned short) (addr + PCNET32_WIO_RAP), val);
 }
 
 static void pcnet32_wio_reset(unsigned short addr)
 {
-  _inpw((unsigned short) (addr + PCNET32_WIO_RESET));
+  inpw((unsigned short) (addr + PCNET32_WIO_RESET));
 }
 
 static int pcnet32_wio_check(unsigned short addr)
 {
-  _outpw((unsigned short) (addr + PCNET32_WIO_RAP), 88);
-  return _inpw((unsigned short) (addr + PCNET32_WIO_RAP)) == 88;
+  outpw((unsigned short) (addr + PCNET32_WIO_RAP), 88);
+  return inpw((unsigned short) (addr + PCNET32_WIO_RAP)) == 88;
 }
 
 static struct pcnet32_access pcnet32_wio =
@@ -316,47 +316,47 @@ static struct pcnet32_access pcnet32_wio =
 
 static unsigned short pcnet32_dwio_read_csr(unsigned short addr, int index)
 {
-  _outpd((unsigned short) (addr + PCNET32_DWIO_RAP), index);
-  return (unsigned short) (_inpd((unsigned short) (addr + PCNET32_DWIO_RDP)) & 0xffff);
+  outpd((unsigned short) (addr + PCNET32_DWIO_RAP), index);
+  return (unsigned short) (inpd((unsigned short) (addr + PCNET32_DWIO_RDP)) & 0xffff);
 }
 
 static void pcnet32_dwio_write_csr (unsigned short addr, int index, unsigned short val)
 {
-  _outpd((unsigned short) (addr + PCNET32_DWIO_RAP), index);
-  _outpd((unsigned short) (addr + PCNET32_DWIO_RDP), val);
+  outpd((unsigned short) (addr + PCNET32_DWIO_RAP), index);
+  outpd((unsigned short) (addr + PCNET32_DWIO_RDP), val);
 }
 
 static unsigned short pcnet32_dwio_read_bcr(unsigned short addr, int index)
 {
-  _outpd((unsigned short) (addr + PCNET32_DWIO_RAP), index);
-  return (unsigned short) _inpd((unsigned short) (addr + PCNET32_DWIO_BDP)) & 0xffff;
+  outpd((unsigned short) (addr + PCNET32_DWIO_RAP), index);
+  return (unsigned short) inpd((unsigned short) (addr + PCNET32_DWIO_BDP)) & 0xffff;
 }
 
 static void pcnet32_dwio_write_bcr(unsigned short addr, int index, unsigned short val)
 {
-  _outpd((unsigned short) (addr + PCNET32_DWIO_RAP), index);
-  _outpd((unsigned short) (addr + PCNET32_DWIO_BDP), val);
+  outpd((unsigned short) (addr + PCNET32_DWIO_RAP), index);
+  outpd((unsigned short) (addr + PCNET32_DWIO_BDP), val);
 }
 
 static unsigned short pcnet32_dwio_read_rap(unsigned short addr)
 {
-  return (unsigned short) _inpd((unsigned short) (addr + PCNET32_DWIO_RAP)) & 0xffff;
+  return (unsigned short) inpd((unsigned short) (addr + PCNET32_DWIO_RAP)) & 0xffff;
 }
 
 static void pcnet32_dwio_write_rap(unsigned short addr, unsigned short val)
 {
-  _outpd((unsigned short) (addr + PCNET32_DWIO_RAP), val);
+  outpd((unsigned short) (addr + PCNET32_DWIO_RAP), val);
 }
 
 static void pcnet32_dwio_reset(unsigned short addr)
 {
-  _inpd((unsigned short) (addr + PCNET32_DWIO_RESET));
+  inpd((unsigned short) (addr + PCNET32_DWIO_RESET));
 }
 
 static int pcnet32_dwio_check(unsigned short addr)
 {
-  _outpd((unsigned short) (addr + PCNET32_DWIO_RAP), 88);
-  return _inpd((unsigned short) (addr + PCNET32_DWIO_RAP)) == 88;
+  outpd((unsigned short) (addr + PCNET32_DWIO_RAP), 88);
+  return inpd((unsigned short) (addr + PCNET32_DWIO_RAP)) == 88;
 }
 
 static struct pcnet32_access pcnet32_dwio =
@@ -715,7 +715,7 @@ int __declspec(dllexport) install(struct unit *unit)
   enable_irq(pcnet32->irq);
 
   // Read MAC address from PROM
-  for (i = 0; i < ETHER_ADDR_LEN; i++) pcnet32->hwaddr.addr[i] = (unsigned char) _inp((unsigned short) (pcnet32->iobase + i));
+  for (i = 0; i < ETHER_ADDR_LEN; i++) pcnet32->hwaddr.addr[i] = (unsigned char) inp((unsigned short) (pcnet32->iobase + i));
 
   // Setup the init block
   //pcnet32->init_block.mode = 0x0003;

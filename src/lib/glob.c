@@ -60,6 +60,9 @@
 
 #include <os.h>
 
+#ifdef DEBUG
+#include <stdio.h>
+#endif
 #include <glob.h>
 #include <limits.h>
 #include <string.h>

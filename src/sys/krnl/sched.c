@@ -309,7 +309,6 @@ void mark_thread_running()
 {
   struct thread *t;
   struct tib *tib;
-  struct segment *seg;
 
   // Set thread state to running
   t = self();
@@ -320,11 +319,17 @@ void mark_thread_running()
   tib = t->tib;
   if (tib)
   {
-    // Update descriptor
+    // Update TIB descriptor
+#ifdef VMACH
+    set_gdt_entry(GDT_TIB, (unsigned long) tib, PAGESIZE, D_DATA | D_DPL3 | D_WRITE | D_PRESENT, 0);
+#else
+    struct segment *seg;
+
     seg = &syspage->gdt[GDT_TIB];
     seg->base_low = (unsigned short)((unsigned long) tib & 0xFFFF);
     seg->base_med = (unsigned char)(((unsigned long) tib >> 16) & 0xFF);
     seg->base_high = (unsigned char)(((unsigned long) tib >> 24) & 0xFF);
+#endif
 
     // Reload FS register
     __asm
@@ -372,10 +377,7 @@ void user_thread_start(void *arg)
     pushfd
     push SEL_UTEXT + SEL_RPL3
     push ebx
-    iretd
-
-    cli
-    hlt
+    IRETD
   }
 }
 
@@ -918,6 +920,10 @@ void dispatch()
 
   // Switch to new thread
   switch_context(t);
+
+#ifdef VMACH
+  switch_kernel_stack();
+#endif
 
   // Mark new thread as running
   mark_thread_running();

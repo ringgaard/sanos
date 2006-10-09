@@ -38,12 +38,18 @@
 #ifndef OS_H
 #define OS_H
 
+#include <os/version.h>
+
 #ifndef SYS_TYPES_H
 #include <sys/types.h>
 #endif
 
 #ifndef SANOS
 #define SANOS
+#endif
+
+#ifndef SANOS_VER
+#define SANOS_VER (OS_MAJ_VERS * 10000 + OS_MIN_VERS * 100 + OS_RELEASE)
 #endif
 
 #ifdef KRNL_LIB

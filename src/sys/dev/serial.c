@@ -248,8 +248,8 @@ static void check_uart_type(struct serial_port *sp)
   unsigned char t3;
 
   // Look to see if we can find any sort of FIFO response
-  _outp(sp->iobase + UART_FCR, FCR_ENABLE);
-  b = (_inp((unsigned short) (sp->iobase + UART_IIR)) & IIR_FIFO_MASK) >> 6;
+  outp(sp->iobase + UART_FCR, FCR_ENABLE);
+  b = (inp((unsigned short) (sp->iobase + UART_IIR)) & IIR_FIFO_MASK) >> 6;
 
   switch(b)
   {
@@ -259,12 +259,12 @@ static void check_uart_type(struct serial_port *sp)
       // make this test attempt to restore the original
       // scratchpad state
       sp->type = UART_16450;
-      t3 = _inp((unsigned short) (sp->iobase + UART_SCR));
-      _outp(sp->iobase + UART_SCR, 0xA5);
-      t1 = _inp((unsigned short) (sp->iobase + UART_SCR));
-      _outp(sp->iobase + UART_SCR, 0x5A);
-      t2 = _inp((unsigned short) (sp->iobase + UART_SCR));
-      _outp(sp->iobase + UART_SCR, t3);
+      t3 = inp((unsigned short) (sp->iobase + UART_SCR));
+      outp(sp->iobase + UART_SCR, 0xA5);
+      t1 = inp((unsigned short) (sp->iobase + UART_SCR));
+      outp(sp->iobase + UART_SCR, 0x5A);
+      t2 = inp((unsigned short) (sp->iobase + UART_SCR));
+      outp(sp->iobase + UART_SCR, t3);
       if (t1 != 0xA5 || t2 != 0x5A) sp->type = UART_8250;
       break;
 
@@ -296,9 +296,9 @@ static void serial_config(struct serial_port *sp)
   else
     divisor = (1843200 / (16 * sp->cfg.speed));
 
-  _outp(sp->iobase + UART_LCR, LCR_DLAB);
-  _outp(sp->iobase + UART_DLH, (divisor >> 8) & 0xFF);
-  _outp(sp->iobase + UART_DLL, divisor & 0xFF);
+  outp(sp->iobase + UART_LCR, LCR_DLAB);
+  outp(sp->iobase + UART_DLH, (divisor >> 8) & 0xFF);
+  outp(sp->iobase + UART_DLL, divisor & 0xFF);
 
   // Set line control register
   lcr = 0;
@@ -326,7 +326,7 @@ static void serial_config(struct serial_port *sp)
     case 8: lcr |= LCR_8BITS; break;
   }
 
-  _outp(sp->iobase + UART_LCR, lcr);
+  outp(sp->iobase + UART_LCR, lcr);
 }
 
 static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
@@ -370,7 +370,7 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       ss = (struct serial_status *) args;
       ss->linestatus = sp->linestatus;
       sp->linestatus = 0;
-      ss->modemstatus = _inp((unsigned short) (sp->iobase + UART_MSR)) & 0xFF;
+      ss->modemstatus = inp((unsigned short) (sp->iobase + UART_MSR)) & 0xFF;
       ss->rx_queue_size = sp->rxq.count;
       ss->tx_queue_size = sp->txq.count;
       return 0;
@@ -383,7 +383,7 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       else
 	sp->mcr &= ~MCR_DTR;
 
-      _outp(sp->iobase + UART_MCR, sp->mcr);
+      outp(sp->iobase + UART_MCR, sp->mcr);
       return 0;
 
     case IOCTL_SERIAL_RTS:
@@ -394,7 +394,7 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       else
 	sp->mcr &= ~MCR_RTS;
 
-      _outp(sp->iobase + UART_MCR, sp->mcr);
+      outp(sp->iobase + UART_MCR, sp->mcr);
       return 0;
 
     case IOCTL_SERIAL_FLUSH_TX_BUFFER:
@@ -402,7 +402,7 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       fifo_clear(&sp->txq);
       set_sem(&sp->tx_sem, QUEUE_SIZE);
       sp->tx_queue_rel = 0;
-      if (sp->type == UART_16550A) _outp(sp->iobase + UART_FCR, FCR_ENABLE | FCR_XMT_RST | FCR_TRIGGER_14);
+      if (sp->type == UART_16550A) outp(sp->iobase + UART_FCR, FCR_ENABLE | FCR_XMT_RST | FCR_TRIGGER_14);
       sti();
       return 0;
 
@@ -411,7 +411,7 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       fifo_clear(&sp->rxq);
       set_sem(&sp->rx_sem, 0);
       sp->rx_queue_rel = 0;
-      if (sp->type == UART_16550A) _outp(sp->iobase + UART_FCR, FCR_ENABLE | FCR_RCV_RST | FCR_TRIGGER_14);
+      if (sp->type == UART_16550A) outp(sp->iobase + UART_FCR, FCR_ENABLE | FCR_RCV_RST | FCR_TRIGGER_14);
       sti();
       return 0;
   }
@@ -490,7 +490,7 @@ static void drain_tx_queue(struct serial_port *sp)
     cli();
 
     // Is UART ready to transmit next byte
-    lsr = _inp((unsigned short) (sp->iobase + UART_LSR));
+    lsr = inp((unsigned short) (sp->iobase + UART_LSR));
     sp->linestatus |= (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI));
     //kprintf("drain_tx_queue: lsr=%02X\n", lsr);
 
@@ -512,7 +512,7 @@ static void drain_tx_queue(struct serial_port *sp)
     //kprintf("fifo get: h:%d t:%d c:%d\n", sp->txq.head, sp->txq.tail, sp->txq.count);
 
     //kprintf("serial: xmit %02X (drain)\n", b);
-    _outp(sp->iobase + UART_TX, b);
+    outp(sp->iobase + UART_TX, b);
     sp->tx_busy = 1;
     count++;
     sti();
@@ -558,7 +558,7 @@ static void serial_transmit(struct serial_port *sp)
   while (1)
   {
     // Is UART ready to transmit next byte
-    lsr = _inp((unsigned short) (sp->iobase + UART_LSR));
+    lsr = inp((unsigned short) (sp->iobase + UART_LSR));
     sp->linestatus |= (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI));
     //kprintf("serial_transmit: lsr=%02X\n", lsr);
 
@@ -575,7 +575,7 @@ static void serial_transmit(struct serial_port *sp)
     b = fifo_get(&sp->txq);
     //kprintf("fifo get: h:%d t:%d c:%d\n", sp->txq.head, sp->txq.tail, sp->txq.count);
     //kprintf("serial: xmit %02X\n", b);
-    _outp(sp->iobase + UART_TX, b);
+    outp(sp->iobase + UART_TX, b);
     sp->tx_busy = 1;
     sp->tx_queue_rel++;
   }
@@ -589,13 +589,13 @@ static void serial_receive(struct serial_port *sp)
   while (1)
   {
     // Is there any data ready in the UART
-    lsr = _inp((unsigned short) (sp->iobase + UART_LSR));
+    lsr = inp((unsigned short) (sp->iobase + UART_LSR));
     sp->linestatus |= (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI));
     //kprintf("serial_receive: lsr=%02X\n", lsr);
     if (!(lsr & LSR_RXRDY)) break;
 
     // Get next byte from UART and insert in rx queue
-    b = _inp((unsigned short) (sp->iobase + UART_RX));
+    b = inp((unsigned short) (sp->iobase + UART_RX));
     //kprintf("serial: receive %02X\n", b);
     if (fifo_put(&sp->rxq, b) < 0)
     {
@@ -616,7 +616,7 @@ static int serial_handler(struct context *ctxt, void *arg)
 
   while (1)
   {
-    lsr = _inp((unsigned short) (sp->iobase + UART_LSR));
+    lsr = inp((unsigned short) (sp->iobase + UART_LSR));
 
     // If receiver ready drain FIFO
     if (lsr & LSR_RXRDY) serial_receive(sp);
@@ -625,7 +625,7 @@ static int serial_handler(struct context *ctxt, void *arg)
     if (lsr & LSR_TXRDY) serial_transmit(sp);
 
     // Get interrupt identification register
-    iir = _inp((unsigned short) (sp->iobase + UART_IIR));
+    iir = inp((unsigned short) (sp->iobase + UART_IIR));
     //kprintf("[sisr %d %x]", sp->irq, iir);
 
     if (iir & IIR_NOPEND) break;
@@ -634,7 +634,7 @@ static int serial_handler(struct context *ctxt, void *arg)
     {
       case IIR_MLSC:
 	// Modem status changed
-        sp->msr = _inp((unsigned short) (sp->iobase + UART_MSR));
+        sp->msr = inp((unsigned short) (sp->iobase + UART_MSR));
 	sp->mlsc = 1;
 	break;
 
@@ -653,7 +653,7 @@ static int serial_handler(struct context *ctxt, void *arg)
   }
 
   // Set OUT2 to enable interrupts
-  _outp(sp->iobase + UART_MCR, sp->mcr);
+  outp(sp->iobase + UART_MCR, sp->mcr);
 
   queue_irq_dpc(&sp->dpc, serial_dpc, sp);
   eoi(sp->irq);
@@ -700,7 +700,7 @@ static void init_serial_port(char *devname, int iobase, int irq, struct unit *un
   init_mutex(&sp->rx_lock, 0);
 
   // Disable interrupts
-  _outp(sp->iobase + UART_IER, 0);
+  outp(sp->iobase + UART_IER, 0);
 
   // Determine UART type
   check_uart_type(sp);
@@ -711,12 +711,12 @@ static void init_serial_port(char *devname, int iobase, int irq, struct unit *un
   // Enable FIFO
   if (sp->type == UART_16550A)
   {
-    _outp(sp->iobase + UART_FCR, FCR_ENABLE | FCR_RCV_RST | FCR_XMT_RST | FCR_TRIGGER_14);
+    outp(sp->iobase + UART_FCR, FCR_ENABLE | FCR_RCV_RST | FCR_XMT_RST | FCR_TRIGGER_14);
   }
 
   // Turn on DTR, RTS and OUT2
   sp->mcr = MCR_DTR | MCR_RTS | MCR_IENABLE;  
-  _outp(sp->iobase + UART_MCR, sp->mcr);
+  outp(sp->iobase + UART_MCR, sp->mcr);
 
   // Create device
   devno = dev_make(devname, &serial_driver, unit, sp);
@@ -724,7 +724,7 @@ static void init_serial_port(char *devname, int iobase, int irq, struct unit *un
   // Enable interrupts
   register_interrupt(&sp->intr, IRQ2INTR(sp->irq), serial_handler, sp);
   enable_irq(sp->irq);
-  _outp((unsigned short) (sp->iobase + UART_IER), IER_ERXRDY | IER_ETXRDY | IER_ERLS | IER_EMSC);
+  outp((unsigned short) (sp->iobase + UART_IER), IER_ERXRDY | IER_ETXRDY | IER_ERLS | IER_EMSC);
 
   kprintf(KERN_INFO "%s: %s iobase 0x%x irq %d\n", device(devno)->name, uart_name[sp->type], sp->iobase, sp->irq);
 }

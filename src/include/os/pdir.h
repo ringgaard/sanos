@@ -34,11 +34,11 @@
 #ifndef PDIR_H
 #define PDIR_H
 
+typedef unsigned long pte_t;
+
 #define PAGESIZE       4096
 #define PAGESHIFT      12
 #define PTES_PER_PAGE  (PAGESIZE / sizeof(pte_t))
-
-typedef unsigned long pte_t;
 
 #define PT_PRESENT   0x001
 #define PT_WRITABLE  0x002
@@ -65,6 +65,11 @@ typedef unsigned long pte_t;
 #define PTOB(x) ((unsigned long)(x) << PAGESHIFT)
 #define BTOP(x) ((unsigned long)(x) >> PAGESHIFT)
 
+#define SET_PDE(vaddr, val) set_page_dir_entry(&pdir[PDEIDX(vaddr)], (val))
+#define SET_PTE(vaddr, val) set_page_table_entry(&ptab[PTABIDX(vaddr)], (val))
+#define GET_PDE(vaddr) (pdir[PDEIDX(vaddr)])
+#define GET_PTE(vaddr) (ptab[PTABIDX(vaddr)])
+
 struct pdirstat
 {
   int present;
@@ -81,7 +86,6 @@ struct pdirstat
 extern pte_t *pdir;
 extern pte_t *ptab;
 
-krnlapi void flushtlb();
 krnlapi void map_page(void *vaddr, unsigned long pfn, unsigned long flags);
 krnlapi void unmap_page(void *vaddr);
 krnlapi unsigned long virt2phys(void *vaddr);

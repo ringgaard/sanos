@@ -317,21 +317,21 @@ unsigned char ndisapi READ_PORT_UCHAR(unsigned char *port)
 {
   //NDISTRACE("READ_PORT_UCHAR");
   kprintf("ndis: inp(0x%x)\n", port);
-  return _inp((unsigned short) port);
+  return inp((unsigned short) port);
 }
 
 void ndisapi WRITE_PORT_USHORT(unsigned short *port, unsigned short value)
 {
   //NDISTRACE("WRITE_PORT_USHORT");
   kprintf("ndis: outpw(0x%x,0x%x)\n", port, value);
-  _outpw((unsigned short) port, value);
+  outpw((unsigned short) port, value);
 }
 
 unsigned short ndisapi READ_PORT_USHORT(unsigned short *port)
 {
   //NDISTRACE("READ_PORT_USHORT");
   kprintf("ndis: inp(0x%x)\n", port);
-  return _inpw((unsigned short) port);
+  return inpw((unsigned short) port);
 }
 
 void ndisapi KeStallExecutionProcessor(unsigned long microseconds)

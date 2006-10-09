@@ -36,82 +36,66 @@
 pte_t *pdir = (pte_t *) PAGEDIR_ADDRESS; // Page directory
 pte_t *ptab = (pte_t *) PTBASE;          // Page tables
 
-void flushtlb()
-{
-  __asm { mov eax, cr3 }
-  __asm { mov cr3, eax }
-}
-
-void invlpage(void *addr)
-{
-  if (cpu.family < CPU_FAMILY_486)
-  {
-    __asm { mov eax, cr3 }
-    __asm { mov cr3, eax }
-  }
-  else
-  {
-    __asm { mov eax, addr }
-    __asm { invlpg [eax] }
-  }
-}
-
 void map_page(void *vaddr, unsigned long pfn, unsigned long flags)
 {
   // Allocate page table if not already done
-  if ((pdir[PDEIDX(vaddr)] & PT_PRESENT) == 0)
+  if ((GET_PDE(vaddr) & PT_PRESENT) == 0)
   {
+    unsigned long pdfn;
+
+    pdfn = alloc_pageframe('PTAB');
     if (USERSPACE(vaddr))
-      pdir[PDEIDX(vaddr)] = PTOB(alloc_pageframe('PTAB')) | PT_PRESENT | PT_WRITABLE | PT_USER;
+      SET_PDE(vaddr, PTOB(pdfn) | PT_PRESENT | PT_WRITABLE | PT_USER);
     else
-      pdir[PDEIDX(vaddr)] = PTOB(alloc_pageframe('PTAB')) | PT_PRESENT | PT_WRITABLE;
+      SET_PDE(vaddr, PTOB(pdfn) | PT_PRESENT | PT_WRITABLE);
 
     memset(ptab + PDEIDX(vaddr) * PTES_PER_PAGE, 0, PAGESIZE);
+    register_page_table(pdfn);
   }
 
   // Map page frame into address space
-  ptab[PTABIDX(vaddr)] = PTOB(pfn) | flags;
+  SET_PTE(vaddr, PTOB(pfn) | flags);
 }
 
 void unmap_page(void *vaddr)
 {
-  ptab[PTABIDX(vaddr)] = 0;
+  SET_PTE(vaddr, 0);
   invlpage(vaddr);
 }
 
 unsigned long virt2phys(void *vaddr)
 {
-  return ((ptab[PTABIDX(vaddr)] & PT_PFNMASK) + PGOFF(vaddr));
+  return ((GET_PTE(vaddr) & PT_PFNMASK) + PGOFF(vaddr));
 }
 
 pte_t get_page_flags(void *vaddr)
 {
-  return ptab[PTABIDX(vaddr)] & PT_FLAGMASK;
+  return GET_PTE(vaddr) & PT_FLAGMASK;
 }
 
 void set_page_flags(void *vaddr, unsigned long flags)
 {
-  ptab[PTABIDX(vaddr)] = (ptab[PTABIDX(vaddr)] & PT_PFNMASK) | flags;
+  SET_PTE(vaddr, (GET_PTE(vaddr) & PT_PFNMASK) | flags);
   invlpage(vaddr);
 }
 
 int page_guarded(void *vaddr)
 {
-  if ((pdir[PDEIDX(vaddr)] & PT_PRESENT) == 0) return 0;
-  if ((ptab[PTABIDX(vaddr)] & PT_GUARD) == 0) return 0;
+  if ((GET_PDE(vaddr) & PT_PRESENT) == 0) return 0;
+  if ((GET_PTE(vaddr) & PT_GUARD) == 0) return 0;
   return 1;
 }
 
 int page_mapped(void *vaddr)
 {
-  if ((pdir[PDEIDX(vaddr)] & PT_PRESENT) == 0) return 0;
-  if ((ptab[PTABIDX(vaddr)] & PT_PRESENT) == 0) return 0;
+  if ((GET_PDE(vaddr) & PT_PRESENT) == 0) return 0;
+  if ((GET_PTE(vaddr) & PT_PRESENT) == 0) return 0;
   return 1;
 }
 
 void unguard_page(void *vaddr)
 {
-  ptab[PTABIDX(vaddr)] = (ptab[PTABIDX(vaddr)] & ~PT_GUARD) | PT_USER;
+  SET_PTE(vaddr, (GET_PTE(vaddr) & ~PT_GUARD) | PT_USER);
   invlpage(vaddr);
 }
 
@@ -125,8 +109,8 @@ int mem_mapped(void *vaddr, int size)
   next = (addr & ~PAGESIZE) + PAGESIZE;
   while (1)
   {
-    if ((pdir[PDEIDX(addr)] & PT_PRESENT) == 0) return 0;
-    if ((ptab[PTABIDX(addr)] & PT_PRESENT) == 0) return 0;
+    if ((GET_PDE(addr) & PT_PRESENT) == 0) return 0;
+    if ((GET_PTE(addr) & PT_PRESENT) == 0) return 0;
     len = next - addr;
     if (size > len)
     {
@@ -145,8 +129,8 @@ int str_mapped(char *s)
 {
   while (1)
   {
-    if ((pdir[PDEIDX(s)] & PT_PRESENT) == 0) return 0;
-    if ((ptab[PTABIDX(s)] & PT_PRESENT) == 0) return 0;
+    if ((GET_PDE(s) & PT_PRESENT) == 0) return 0;
+    if ((GET_PTE(s) & PT_PRESENT) == 0) return 0;
 
     while (1)
     {
@@ -162,7 +146,7 @@ void init_pdir()
   unsigned long i;
 
   // Clear identity mapping of the first 4 MB made by the os loader
-  for (i = 0; i < PTES_PER_PAGE; i++) ptab[i] = 0;
+  for (i = 0; i < PTES_PER_PAGE; i++) SET_PTE(PTOB(i), 0);
 }
 
 int pdir_proc(struct proc_file *pf, void *arg)
@@ -185,11 +169,11 @@ int pdir_proc(struct proc_file *pf, void *arg)
   vaddr = NULL;
   while (1)
   {
-    if ((pdir[PDEIDX(vaddr)] & PT_PRESENT) == 0)
+    if ((GET_PDE(vaddr) & PT_PRESENT) == 0)
       vaddr += PTES_PER_PAGE * PAGESIZE;
     else
     {
-      pte = ptab[PTABIDX(vaddr)];
+      pte = GET_PTE(vaddr);
       if (pte & PT_PRESENT) 
       {
 	ma++;
@@ -247,7 +231,7 @@ int virtmem_proc(struct proc_file *pf, void *arg)
   curtag = 0;
   while (1)
   {
-    if ((pdir[PDEIDX(vaddr)] & PT_PRESENT) == 0)
+    if ((GET_PDE(vaddr) & PT_PRESENT) == 0)
     {
       if (start != NULL)
       {
@@ -259,7 +243,7 @@ int virtmem_proc(struct proc_file *pf, void *arg)
     }
     else
     {
-      pte_t pte = ptab[PTABIDX(vaddr)];
+      pte_t pte = GET_PTE(vaddr);
       unsigned long tag = pfdb[pte >> PT_PFNSHIFT].tag;
 
       if (pte & PT_PRESENT)
@@ -310,14 +294,14 @@ int pdir_stat(void *addr, int len, struct pdirstat *buf)
   end = vaddr + len;
   while (vaddr < end)
   {
-    if ((pdir[PDEIDX(vaddr)] & PT_PRESENT) == 0)
+    if ((GET_PDE(vaddr) & PT_PRESENT) == 0)
     {
       vaddr += PTES_PER_PAGE * PAGESIZE;
       vaddr = (char *) ((unsigned long) vaddr & ~(PTES_PER_PAGE * PAGESIZE - 1));
     }
     else
     {
-      pte = ptab[PTABIDX(vaddr)];
+      pte = GET_PTE(vaddr);
       if (pte & PT_PRESENT) 
       {
 	buf->present++;

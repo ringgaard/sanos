@@ -1,6 +1,7 @@
 #include <os/version.h>
 
-#define VERS(a,b,c,d) a+0x30,0x2E,b+0x30,0x2E,c+0x30,0x2E,d+0x30,0
+#define NUMSTR(n) #n
+#define VERS(a,b,c,d) NUMSTR(a) "." NUMSTR(b) "." NUMSTR(c) "." NUMSTR(d)
 
 LANGUAGE 0, 0
 

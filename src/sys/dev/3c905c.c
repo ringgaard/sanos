@@ -164,7 +164,7 @@ struct driver nic_driver =
 
 __inline void execute_command(struct nic *nic, int cmd, int param)
 {
-  _outpw(nic->iobase + CMD, (unsigned short) (cmd | param));
+  outpw(nic->iobase + CMD, (unsigned short) (cmd | param));
 }
 
 int execute_command_wait(struct nic *nic, int cmd, int param)
@@ -174,13 +174,13 @@ int execute_command_wait(struct nic *nic, int cmd, int param)
   execute_command(nic, cmd, param);
   for (i = 0; i < 100000; i++)
   {
-    if (!(_inpw(nic->iobase + STATUS) & INTSTATUS_CMD_IN_PROGRESS)) return 0;
+    if (!(inpw(nic->iobase + STATUS) & INTSTATUS_CMD_IN_PROGRESS)) return 0;
     udelay(10);
   }
 
   for (i = 0; i < 200; i++)
   {
-    if (!(_inpw(nic->iobase + STATUS) & INTSTATUS_CMD_IN_PROGRESS)) return 0;
+    if (!(inpw(nic->iobase + STATUS) & INTSTATUS_CMD_IN_PROGRESS)) return 0;
     msleep(10);
   }
 
@@ -198,12 +198,12 @@ void clear_statistics(struct nic *nic)
   int i;
 
   select_window(nic, 6);
-  for (i = FIRST_BYTE_STAT; i <= LAST_BYTE_STAT; i++) _inp(nic->iobase + i);
-  _inpw(nic->iobase + BYTES_RECEIVED_OK);
-  _inpw(nic->iobase + BYTES_XMITTED_OK);
+  for (i = FIRST_BYTE_STAT; i <= LAST_BYTE_STAT; i++) inp(nic->iobase + i);
+  inpw(nic->iobase + BYTES_RECEIVED_OK);
+  inpw(nic->iobase + BYTES_XMITTED_OK);
   select_window(nic, 4);
-  _inp(nic->iobase + BAD_SSD);
-  _inp(nic->iobase + UPPER_BYTES_OK);
+  inp(nic->iobase + BAD_SSD);
+  inp(nic->iobase + UPPER_BYTES_OK);
 }
 
 void update_statistics(struct nic *nic)
@@ -216,23 +216,23 @@ void update_statistics(struct nic *nic)
   unsigned char upper;
   
   // Read the current window
-  current_window = _inpw(nic->iobase + STATUS) >> 13;
+  current_window = inpw(nic->iobase + STATUS) >> 13;
 
   // Read statistics from window 6
   select_window(nic, 6);
 
-  nic->stat.tx_sqe_errors += _inp(nic->iobase + SQE_ERRORS) & 0xFF;
-  nic->stat.tx_multiple_collisions += _inp(nic->iobase + MULTIPLE_COLLISIONS) & 0xFF;
-  nic->stat.tx_single_collisions += _inp(nic->iobase + SINGLE_COLLISIONS) & 0xFF;
-  nic->stat.rx_overruns += _inp(nic->iobase + RX_OVERRUNS) & 0xFF;
-  nic->stat.tx_carrier_lost += _inp(nic->iobase + CARRIER_LOST) & 0xFF;
-  nic->stat.tx_late_collisions += _inp(nic->iobase + LATE_COLLISIONS) & 0xFF;
-  nic->stat.tx_frames_deferred += _inp(nic->iobase + FRAMES_DEFERRED) & 0xFF;
+  nic->stat.tx_sqe_errors += inp(nic->iobase + SQE_ERRORS) & 0xFF;
+  nic->stat.tx_multiple_collisions += inp(nic->iobase + MULTIPLE_COLLISIONS) & 0xFF;
+  nic->stat.tx_single_collisions += inp(nic->iobase + SINGLE_COLLISIONS) & 0xFF;
+  nic->stat.rx_overruns += inp(nic->iobase + RX_OVERRUNS) & 0xFF;
+  nic->stat.tx_carrier_lost += inp(nic->iobase + CARRIER_LOST) & 0xFF;
+  nic->stat.tx_late_collisions += inp(nic->iobase + LATE_COLLISIONS) & 0xFF;
+  nic->stat.tx_frames_deferred += inp(nic->iobase + FRAMES_DEFERRED) & 0xFF;
 
   // Frames received/transmitted
-  rx_frames = _inp(nic->iobase + FRAMES_RECEIVED_OK) & 0xFF;
-  tx_frames = _inp(nic->iobase + FRAMES_XMITTED_OK) & 0xFF;
-  upper = _inp(nic->iobase + UPPER_FRAMES_OK) & 0xFF;
+  rx_frames = inp(nic->iobase + FRAMES_RECEIVED_OK) & 0xFF;
+  tx_frames = inp(nic->iobase + FRAMES_XMITTED_OK) & 0xFF;
+  upper = inp(nic->iobase + UPPER_FRAMES_OK) & 0xFF;
   rx_frames += (upper & 0x0F) << 8;
   tx_frames += (upper & 0xF0) << 4;
 
@@ -240,21 +240,21 @@ void update_statistics(struct nic *nic)
   nic->stat.tx_frames_ok += tx_frames;
 
   // Bytes received/transmitted - upper part added below from window 4
-  rx_bytes = _inpw(nic->iobase + BYTES_RECEIVED_OK) & 0xFFFF;
-  tx_bytes = _inpw(nic->iobase + BYTES_XMITTED_OK) & 0xFFFF;
+  rx_bytes = inpw(nic->iobase + BYTES_RECEIVED_OK) & 0xFFFF;
+  tx_bytes = inpw(nic->iobase + BYTES_XMITTED_OK) & 0xFFFF;
 
   // Read final statistics from window 4
   select_window(nic, 4);
 
   // Update bytes received/transmitted with upper part
-  upper = _inp(nic->iobase + UPPER_BYTES_OK);
+  upper = inp(nic->iobase + UPPER_BYTES_OK);
   rx_bytes += (upper & 0x0F) << 16;
   tx_bytes += (upper & 0xF0) << 12;
 
   nic->stat.rx_bytes_ok += rx_bytes;
   nic->stat.tx_bytes_ok += tx_bytes;
 
-  nic->stat.rx_bad_ssd += _inp(nic->iobase + BAD_SSD) & 0xFF;
+  nic->stat.rx_bad_ssd += inp(nic->iobase + BAD_SSD) & 0xFF;
 
   // Set the window to its previous value
   select_window(nic, current_window);
@@ -297,7 +297,7 @@ int nic_find_mii_phy(struct nic *nic)
 
   // Read the MEDIA OPTIONS to see what connectors are available
   select_window(nic, 3);
-  media_options = _inpw(nic->iobase + MEDIA_OPTIONS);
+  media_options = inpw(nic->iobase + MEDIA_OPTIONS);
 
   if ((media_options & MEDIA_OPTIONS_MII_AVAILABLE) ||
       (media_options & MEDIA_OPTIONS_100BASET4_AVAILABLE))
@@ -309,19 +309,19 @@ int nic_find_mii_phy(struct nic *nic)
     // will read as a 1 if it's present.
     //
     select_window(nic, 4);
-    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+    outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
 
     for (i = 0; i < 32; i++) 
     {
       udelay(1);
-      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
+      outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
 
       udelay(1);
-      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+      outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
 
     }
 
-    phy_management = _inpw(nic->iobase + PHYSICAL_MANAGEMENT);
+    phy_management = inpw(nic->iobase + PHYSICAL_MANAGEMENT);
 
     if (phy_management & PHY_DATA1)
       return 0;
@@ -338,14 +338,14 @@ void nic_send_mii_phy_preamble(struct nic *nic)
 
   // Set up and send the preamble, a sequence of 32 "1" bits
   select_window(nic, 4);
-  _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
+  outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
 
   for (i = 0; i < 32; i++) 
   {
-    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1);
-    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1 | PHY_CLOCK);
+    outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1);
+    outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1 | PHY_CLOCK);
     udelay(1);
-    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
+    outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
     udelay(1);
   }
 }
@@ -373,27 +373,27 @@ void nic_write_mii_phy(struct nic *nic, unsigned short reg, unsigned short value
 
       if (writecmd[i] & j) 
       {
-        _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1);
-        _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1 | PHY_CLOCK);
+        outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1);
+        outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1 | PHY_CLOCK);
       }
       else 
       {
-        _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
-        _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_CLOCK);
+        outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
+        outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_CLOCK);
       }
       udelay(1);
-      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
+      outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
       udelay(1);
     }
   }
 
   // Now give it a couple of clocks with nobody driving
-  _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+  outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
   for (i = 0; i < 2; i++) 
   {
-    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
+    outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
     udelay(1);
-    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+    outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
     udelay(1);
   }
 }
@@ -418,32 +418,32 @@ int nic_read_mii_phy(struct nic *nic, unsigned short reg)
   {
     if (read_cmd & i) 
     {
-      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1);
-      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1 | PHY_CLOCK);
+      outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1);
+      outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_DATA1 | PHY_CLOCK);
     }
     else 
     {
-      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
-      _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_CLOCK);
+      outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
+      outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE | PHY_CLOCK);
     }
 
     udelay(1);
-    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
+    outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_WRITE);
     udelay(1);
   }
 
   // Now run one clock with nobody driving
-  _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
-  _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
+  outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+  outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
   udelay(1);
-  _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+  outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
   udelay(1);
 
   // Now run one clock, expecting the PHY to be driving a 0 on the data
   // line.  If we read a 1, it has to be just his pull-up, and he's not
   // responding.
 
-  phy_mgmt = _inpw(nic->iobase + PHYSICAL_MANAGEMENT);
+  phy_mgmt = inpw(nic->iobase + PHYSICAL_MANAGEMENT);
   if (phy_mgmt & PHY_DATA1) return -EIO;
 
   // We think we are in sync.  Now we read 16 bits of data from the PHY.
@@ -452,23 +452,23 @@ int nic_read_mii_phy(struct nic *nic, unsigned short reg)
   for (i = 0x8000; i; i >>= 1) 
   {
     // Shift input up one to make room
-    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
+    outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
     udelay(1);
-    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+    outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
     udelay(1);
 
-    phy_mgmt = _inpw(nic->iobase + PHYSICAL_MANAGEMENT);
+    phy_mgmt = inpw(nic->iobase + PHYSICAL_MANAGEMENT);
 
     if (phy_mgmt & PHY_DATA1) value |= i;
   }
 
   // Now give it a couple of clocks with nobody driving
-  _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+  outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
   for (i = 0; i < 2; i++) 
   {
-    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
+    outpw(nic->iobase + PHYSICAL_MANAGEMENT, PHY_CLOCK);
     udelay(1);
-    _outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
+    outpw(nic->iobase + PHYSICAL_MANAGEMENT, 0);
     udelay(1);
   }
 
@@ -483,7 +483,7 @@ int nic_eeprom_busy(struct nic *nic)
   timeout = ticks + 1 * TICKS_PER_SEC;
   while (1)
   {
-    status = _inpw(nic->iobase + EEPROM_CMD);
+    status = inpw(nic->iobase + EEPROM_CMD);
     if (!(status & EEPROM_BUSY)) return 0;
     if (time_after(ticks, timeout))
     {
@@ -505,13 +505,13 @@ int nic_read_eeprom(struct nic *nic, unsigned short addr)
   if (nic_eeprom_busy(nic) < 0) return -ETIMEOUT;
 
   // Issue the read eeprom data command
-  _outpw(nic->iobase + EEPROM_CMD, (unsigned short) (EEPROM_CMD_READ + addr));
+  outpw(nic->iobase + EEPROM_CMD, (unsigned short) (EEPROM_CMD_READ + addr));
 
   // Check for eeprom busy
   if (nic_eeprom_busy(nic) < 0) return -ETIMEOUT;
 
   // Return value read from eeprom
-  return _inpw(nic->iobase + EEPROM_DATA);
+  return inpw(nic->iobase + EEPROM_DATA);
 }
 
 int nic_transmit(struct dev *dev, struct pbuf *p)
@@ -562,11 +562,11 @@ int nic_transmit(struct dev *dev, struct pbuf *p)
 
   // Update download list
   execute_command_wait(nic, CMD_DOWN_STALL, 0);
-  dnlistptr = _inpd(nic->iobase + DOWN_LIST_POINTER);
+  dnlistptr = inpd(nic->iobase + DOWN_LIST_POINTER);
   if (dnlistptr == 0)
   {
     nictrace("nic: set dnlist to %p\n", entry->phys_addr);
-    _outpd(nic->iobase + DOWN_LIST_POINTER, entry->phys_addr);
+    outpd(nic->iobase + DOWN_LIST_POINTER, entry->phys_addr);
   }
   else
   {
@@ -765,8 +765,8 @@ void nic_tx_complete(struct nic *nic)
 {
   unsigned char txstatus;
 
-  txstatus = _inp(nic->iobase + TX_STATUS);
-  _outp(nic->iobase + TX_STATUS, txstatus);
+  txstatus = inp(nic->iobase + TX_STATUS);
+  outp(nic->iobase + TX_STATUS, txstatus);
 
   if (txstatus & TX_STATUS_HWERROR) 
   {
@@ -800,7 +800,7 @@ void nic_dpc(void *arg)
   unsigned short status;
 
   // Read the status
-  status = _inpw(nic->iobase + STATUS);
+  status = inpw(nic->iobase + STATUS);
 
   // Return if no interrupt - caused by shared interrupt
   if (!(status & INTSTATUS_INT_LATCH)) return;
@@ -873,7 +873,7 @@ void nic_dpc(void *arg)
     execute_command(nic, CMD_ACKNOWLEDGE_INTERRUPT, INTERRUPT_LATCH_ACK);
 
     // Get next status
-    status = _inpw(nic->iobase + STATUS);
+    status = inpw(nic->iobase + STATUS);
   }
 
   eoi(nic->irq);
@@ -1077,20 +1077,20 @@ int nic_initialize_adapter(struct nic *nic)
 
   // Set the card MAC address
   select_window(nic, 2);
-  for (i = 0; i < ETHER_ADDR_LEN; i++) _outp(nic->iobase + i, nic->hwaddr.addr[i]);
+  for (i = 0; i < ETHER_ADDR_LEN; i++) outp(nic->iobase + i, nic->hwaddr.addr[i]);
 
-  _outpw(nic->iobase + 0x6, 0);
-  _outpw(nic->iobase + 0x8, 0);
-  _outpw(nic->iobase + 0xA, 0);
+  outpw(nic->iobase + 0x6, 0);
+  outpw(nic->iobase + 0x8, 0);
+  outpw(nic->iobase + 0xA, 0);
 
   // Enable statistics
   execute_command(nic, CMD_STATISTICS_ENABLE, 0);
 
   // Clear the mac control register.
   select_window(nic, 3);
-  mac_control = _inpw(nic->iobase + MAC_CONTROL);
+  mac_control = inpw(nic->iobase + MAC_CONTROL);
   mac_control &= 0x1;
-  _outpw(nic->iobase + MAC_CONTROL, mac_control);
+  outpw(nic->iobase + MAC_CONTROL, mac_control);
 
   return 0;
 }
@@ -1180,7 +1180,7 @@ int nic_restart_transmitter(struct nic *nic)
   // Wait for the transmit to go quiet.
   select_window(nic, 4);
 
-  media_status = _inpw(nic->iobase + MEDIA_STATUS);
+  media_status = inpw(nic->iobase + MEDIA_STATUS);
   udelay(10);
 
   if (media_status & MEDIA_STATUS_TX_IN_PROGRESS)
@@ -1188,7 +1188,7 @@ int nic_restart_transmitter(struct nic *nic)
     timeout = ticks + 1 * TICKS_PER_SEC;
     while (1)
     {
-      media_status = _inpw(nic->iobase + MEDIA_STATUS);
+      media_status = inpw(nic->iobase + MEDIA_STATUS);
       if (!(media_status & MEDIA_STATUS_TX_IN_PROGRESS)) break;
       if (time_after(ticks, timeout))
       {
@@ -1200,7 +1200,7 @@ int nic_restart_transmitter(struct nic *nic)
   }
 
   // Wait for download engine to stop
-  dma_control = _inpd(nic->iobase + DMA_CONTROL);
+  dma_control = inpd(nic->iobase + DMA_CONTROL);
   udelay(10);
 
   if (dma_control & DMA_CONTROL_DOWN_IN_PROGRESS)
@@ -1208,7 +1208,7 @@ int nic_restart_transmitter(struct nic *nic)
     timeout = ticks + 1 * TICKS_PER_SEC;
     while (1)
     {
-      dma_control = _inpd(nic->iobase + DMA_CONTROL);
+      dma_control = inpd(nic->iobase + DMA_CONTROL);
       if (!(dma_control & DMA_CONTROL_DOWN_IN_PROGRESS)) break;
       if (time_after(ticks, timeout))
       {
@@ -1463,7 +1463,7 @@ int nic_check_dc_converter(struct nic *nic, int enabled)
 
   nictrace("enter nic_check_dc_converter\n");
 
-  media_status = _inpw(nic->iobase + MEDIA_STATUS);
+  media_status = inpw(nic->iobase + MEDIA_STATUS);
   udelay(1000);
 
   if (enabled && !(media_status & MEDIA_STATUS_DC_CONVERTER_ENABLED) ||
@@ -1472,7 +1472,7 @@ int nic_check_dc_converter(struct nic *nic, int enabled)
     timeout = ticks + 3; // 30 ms
     while (1)
     {
-      media_status = _inpw(nic->iobase + MEDIA_STATUS);
+      media_status = inpw(nic->iobase + MEDIA_STATUS);
       if (enabled && (media_status & MEDIA_STATUS_DC_CONVERTER_ENABLED)) break;
       if (!enabled && !(media_status & MEDIA_STATUS_DC_CONVERTER_ENABLED)) break;
       if (time_after(ticks, timeout))
@@ -1497,7 +1497,7 @@ int nic_setup_connector(struct nic *nic, int connector)
 
   select_window(nic, 3);
 
-  internal_config = _inpd(nic->iobase + INTERNAL_CONFIG);
+  internal_config = inpd(nic->iobase + INTERNAL_CONFIG);
   old_internal_config = internal_config;
 
   // Program the MII registers if forcing the configuration to 10/100BaseT.
@@ -1511,7 +1511,7 @@ int nic_setup_connector(struct nic *nic, int connector)
     // changed to avoid dropping link.
     if (old_internal_config != internal_config)
     {
-      _outpd(nic->iobase + INTERNAL_CONFIG, internal_config);
+      outpd(nic->iobase + INTERNAL_CONFIG, internal_config);
     }
 
     // Force the MII registers to the correct settings.
@@ -1531,7 +1531,7 @@ int nic_setup_connector(struct nic *nic, int connector)
     // changed to avoid dropping link.
     if (old_internal_config != internal_config)
     {
-      _outpd(nic->iobase + INTERNAL_CONFIG, internal_config);
+      outpd(nic->iobase + INTERNAL_CONFIG, internal_config);
     }
   }
 
@@ -1541,7 +1541,7 @@ int nic_setup_connector(struct nic *nic, int connector)
   //
   select_window(nic, 4);
 
-  media_status = _inpw(nic->iobase + MEDIA_STATUS);
+  media_status = inpw(nic->iobase + MEDIA_STATUS);
   media_status &= ~(MEDIA_STATUS_SQE_STATISTICS_ENABLE | MEDIA_STATUS_LINK_BEAT_ENABLE | MEDIA_STATUS_JABBER_GUARD_ENABLE);
   media_status |= MEDIA_STATUS_JABBER_GUARD_ENABLE;
 
@@ -1560,7 +1560,7 @@ int nic_setup_connector(struct nic *nic, int connector)
     }
   }
 
-  _outpw(nic->iobase + MEDIA_STATUS, media_status);
+  outpw(nic->iobase + MEDIA_STATUS, media_status);
 
   //
   // If configured for coax we must start the internal transceiver.
@@ -1600,7 +1600,7 @@ int nic_setup_media(struct nic *nic)
   {
     // Read the MEDIA OPTIONS to see what connectors are available
     select_window(nic, 3);
-    options_available = _inpw(nic->iobase + MEDIA_OPTIONS);
+    options_available = inpw(nic->iobase + MEDIA_OPTIONS);
   }
 
   // Get internal config from EEPROM since reset invalidates the normal register value.
@@ -1615,9 +1615,9 @@ int nic_setup_media(struct nic *nic)
 
   select_window(nic, 3);
 
-  if (internal_config != _inpd(nic->iobase + INTERNAL_CONFIG))
+  if (internal_config != inpd(nic->iobase + INTERNAL_CONFIG))
   {
-    _outpd(nic->iobase + INTERNAL_CONFIG, internal_config);
+    outpd(nic->iobase + INTERNAL_CONFIG, internal_config);
   }
 
   // Get the connector to use.
@@ -1661,7 +1661,7 @@ int nic_setup_media(struct nic *nic)
   
   // Set up duplex mode
   select_window(nic, 3);
-  mac_control = _inpw(nic->iobase +  MAC_CONTROL);
+  mac_control = inpw(nic->iobase +  MAC_CONTROL);
   if (nic->fullduplex) 
   {
     // Set Full duplex in MacControl register
@@ -1679,7 +1679,7 @@ int nic_setup_media(struct nic *nic)
     // Since we're switching to half duplex, disable flow control
     mac_control &= ~ MAC_CONTROL_FLOW_CONTROL_ENABLE;
   }
-  _outpw(nic->iobase + MAC_CONTROL, mac_control);
+  outpw(nic->iobase + MAC_CONTROL, mac_control);
 
   // Reset and enable transmitter
   rc = nic_restart_transmitter(nic);
@@ -1712,12 +1712,12 @@ int nic_software_work(struct nic *nic)
 
   if (!(nic->eeprom[EEPROM_SOFTWARE_INFO2] & ENABLE_MWI_WORK)) 
   {
-    dma_control = _inpd(nic->iobase + DMA_CONTROL);
-    _outpd(nic->iobase + DMA_CONTROL, dma_control | DMA_CONTROL_DEFEAT_MWI);
+    dma_control = inpd(nic->iobase + DMA_CONTROL);
+    outpd(nic->iobase + DMA_CONTROL, dma_control | DMA_CONTROL_DEFEAT_MWI);
   }
 
   select_window(nic, 4);
-  net_diag = _inpw(nic->iobase + NETWORK_DIAGNOSTICS);
+  net_diag = inpw(nic->iobase + NETWORK_DIAGNOSTICS);
 
   if ((((net_diag & NETWORK_DIAGNOSTICS_ASIC_REVISION) >> 4) == 1) &&
       (((net_diag & NETWORK_DIAGNOSTICS_ASIC_REVISION_LOW) >> 1) < 4)) 
@@ -1788,24 +1788,24 @@ int nic_start_adapter(struct nic *nic)
   // Enable upper bytes counting in diagnostics register.
   select_window(nic, 4);
 
-  diagnostics = _inpw(nic->iobase + NETWORK_DIAGNOSTICS);
+  diagnostics = inpw(nic->iobase + NETWORK_DIAGNOSTICS);
   diagnostics |= NETWORK_DIAGNOSTICS_UPPER_BYTES_ENABLE;
-  _outpw(nic->iobase + NETWORK_DIAGNOSTICS, diagnostics);
+  outpw(nic->iobase + NETWORK_DIAGNOSTICS, diagnostics);
 
   // Enable counter speed in DMA control.
-  dma_control = _inpd(nic->iobase + DMA_CONTROL);
+  dma_control = inpd(nic->iobase + DMA_CONTROL);
   if (nic->linkspeed == 100) dma_control |= DMA_CONTROL_COUNTER_SPEED;
-  _outpd(nic->iobase + DMA_CONTROL, dma_control);
+  outpd(nic->iobase + DMA_CONTROL, dma_control);
 
   // Give receive ring to upload engine
   execute_command_wait(nic, CMD_UP_STALL, 0);
-  _outpd(nic->iobase + UP_LIST_POINTER, virt2phys(nic->curr_rx));
+  outpd(nic->iobase + UP_LIST_POINTER, virt2phys(nic->curr_rx));
   execute_command(nic, CMD_UP_UNSTALL, 0);
 
   // Give transmit ring to download engine
   init_sem(&nic->tx_sem, TX_RING_SIZE);
   execute_command_wait(nic, CMD_DOWN_STALL, 0);
-  _outpd(nic->iobase + DOWN_LIST_POINTER, 0);
+  outpd(nic->iobase + DOWN_LIST_POINTER, 0);
   execute_command(nic, CMD_DOWN_UNSTALL, 0);
 
   // Set receive filter

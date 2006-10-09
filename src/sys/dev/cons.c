@@ -47,17 +47,17 @@ void sound(unsigned short freq)
   freqdiv = 1193180 / freq;
 
   // Counter 2 select, binary 16-bit counter, first bits 0-7
-  _outp(0x43, 0xB6); 
+  outp(0x43, 0xB6); 
          
   // First bits 0-7
-  _outp(0x42, (unsigned char) freqdiv);
+  outp(0x42, (unsigned char) freqdiv);
   
   // Then bits 8-15
-  _outp(0x42, (unsigned char) (freqdiv >> 8)); 
+  outp(0x42, (unsigned char) (freqdiv >> 8)); 
 
   // Only output if bits are not correctly set
-  b = _inp(0x61);
-  if (b != (b | 3)) _outp(0x61, b | 3);
+  b = inp(0x61);
+  if (b != (b | 3)) outp(0x61, b | 3);
 }
 
 void nosound() 
@@ -65,13 +65,13 @@ void nosound()
   unsigned char b;
 
    // KB controller port B
-  b = _inp(0x61);
+  b = inp(0x61);
 
   // Disable speaker + clock 2 gate
   b &= 0xFC;
 
   // Output
-  _outp(0x61, b);
+  outp(0x61, b);
 }
  
 void beep() 
