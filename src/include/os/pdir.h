@@ -89,6 +89,7 @@ extern pte_t *ptab;
 krnlapi void map_page(void *vaddr, unsigned long pfn, unsigned long flags);
 krnlapi void unmap_page(void *vaddr);
 krnlapi unsigned long virt2phys(void *vaddr);
+krnlapi unsigned long virt2pfn(void *vaddr);
 krnlapi pte_t get_page_flags(void *vaddr);
 krnlapi void set_page_flags(void *vaddr, unsigned long flags);
 krnlapi int page_guarded(void *vaddr);

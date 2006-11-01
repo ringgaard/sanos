@@ -34,25 +34,7 @@
 #ifndef KRNL_H
 #define KRNL_H
 
-#define LICENSE_BSD 0
-#define LICENSE_GPL 1
-
-#ifndef LICENSE
-#define LICENSE LICENSE_BSD
-#endif
-
-#if LICENSE == LICENSE_BSD
-#define BSD
-#endif
-
-#if LICENSE == LICENSE_GPL
-#define GPL
-#endif
-
-#ifndef NOVMACH
-#define VMACH
-#endif
-
+#include <os/config.h>
 #include <os.h>
 
 #include <sys/types.h>
@@ -71,7 +53,6 @@
 #include <os/seg.h>
 #include <os/fpu.h>
 #include <os/cpu.h>
-#include <os/iop.h>
 
 #include <os/pdir.h>
 #include <os/pframe.h>

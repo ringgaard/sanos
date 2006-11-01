@@ -207,15 +207,6 @@ static void hw_set_cr0(unsigned long val)
   }
 }
 
-static __declspec(naked) unsigned __int64 hw_rdtsc()
-{
-  __asm 
-  { 
-    rdtsc
-    ret 
-  }
-}
-
 static unsigned long hw_get_cr2()
 {
   unsigned long val;
@@ -227,6 +218,26 @@ static unsigned long hw_get_cr2()
   }
 
   return val;
+}
+
+static __declspec(naked) unsigned __int64 hw_rdtsc()
+{
+  __asm 
+  { 
+    rdtsc
+    ret 
+  }
+}
+
+static void hw_wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh)
+{
+  __asm
+  {
+    mov ecx, reg
+    mov eax, valuelow
+    mov edx, valuehigh
+    wrmsr
+  }
 }
 
 static void hw_set_gdt_entry(int entry, unsigned long addr, unsigned long size, int access, int granularity)
@@ -294,6 +305,28 @@ static void hw_set_page_table_entry(pte_t *pte, unsigned long value)
   *pte = value;
 }
 
+static void hw_poweroff()
+{
+  if (apm_enabled)
+    apm_power_off();
+  else
+    kprintf("kernel: power management not enabled, system stopped...\n");
+
+  while (1)
+  {
+    __asm
+    {
+      cli
+      hlt
+    }
+  }
+}
+
+static void hw_reboot()
+{
+  kbd_reboot();
+}
+
 struct mach mach =
 {
   0, // kernel ring
@@ -318,6 +351,7 @@ struct mach mach =
   hw_set_cr0,
   hw_get_cr2,
   hw_rdtsc,
+  hw_wrmsr,
   hw_set_gdt_entry,
   hw_set_idt_gate,
   hw_set_idt_trap,
@@ -328,6 +362,8 @@ struct mach mach =
   hw_register_page_table,
   hw_set_page_dir_entry,
   hw_set_page_table_entry,
+  hw_poweroff,
+  hw_reboot
 };
 
 #ifdef VMACH

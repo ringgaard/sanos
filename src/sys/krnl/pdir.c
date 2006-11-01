@@ -68,6 +68,11 @@ unsigned long virt2phys(void *vaddr)
   return ((GET_PTE(vaddr) & PT_PFNMASK) + PGOFF(vaddr));
 }
 
+unsigned long virt2pfn(void *vaddr)
+{
+  return BTOP(GET_PTE(vaddr) & PT_PFNMASK);
+}
+
 pte_t get_page_flags(void *vaddr)
 {
   return GET_PTE(vaddr) & PT_FLAGMASK;

@@ -853,7 +853,9 @@ void dispatch_dpc_queue()
       dpc_total++;
     }
  
+#ifdef RANDOMDEV
     if ((dpc->flags & DPC_NORAND) == 0) add_dpc_randomness(dpc);
+#endif
   }
 
   in_dpc = 0;

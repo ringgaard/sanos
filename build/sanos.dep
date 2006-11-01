@@ -13,6 +13,7 @@ $(SRC)/include/java/jni.h: \
   $(SRC)/include/stdarg.h
 
 $(SRC)/include/os/krnl.h: \
+  $(SRC)/include/os/config.h \
   $(SRC)/include/os.h \
   $(SRC)/include/sys/types.h \
   $(SRC)/include/stddef.h \
@@ -27,6 +28,7 @@ $(SRC)/include/os/krnl.h: \
   $(SRC)/include/os/seg.h \
   $(SRC)/include/os/fpu.h \
   $(SRC)/include/os/cpu.h \
+  $(SRC)/include/os/mach.h \
   $(SRC)/include/os/pdir.h \
   $(SRC)/include/os/pframe.h \
   $(SRC)/include/os/kmem.h \
@@ -437,6 +439,9 @@ $(SRC)/sys/krnl/kmem.c: \
 $(SRC)/sys/krnl/ldr.c: \
   $(SRC)/include/os/krnl.h
 
+$(SRC)/sys/krnl/mach.c: \
+  $(SRC)/include/os/krnl.h
+
 $(SRC)/sys/krnl/object.c: \
   $(SRC)/include/os/krnl.h
 
@@ -477,6 +482,9 @@ $(SRC)/sys/krnl/trap.c: \
   $(SRC)/include/os/krnl.h
 
 $(SRC)/sys/krnl/vfs.c: \
+  $(SRC)/include/os/krnl.h
+
+$(SRC)/sys/krnl/vmi.c: \
   $(SRC)/include/os/krnl.h
 
 $(SRC)/sys/krnl/vmm.c: \

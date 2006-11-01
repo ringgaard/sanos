@@ -4,6 +4,11 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * VMWare VMI implemented.
+    
+    * Implemented physical/virtual machine interface. This interface allows the kernel to
+      run parvirtualized on top of a virtual machine monitor.
+
     * Cleaned up port I/O functions (_inp -> inp, ...).
     
     * The kernel now uses the BIOS memory map to initialize the

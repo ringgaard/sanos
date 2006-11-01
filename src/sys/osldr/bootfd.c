@@ -36,7 +36,6 @@
 #include <sys/types.h>
 #include <os/pdir.h>
 #include <os/mach.h>
-#include <os/iop.h>
 #include <os/seg.h>
 #include <os/tss.h>
 #include <os/syspage.h>

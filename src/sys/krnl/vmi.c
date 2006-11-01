@@ -199,6 +199,17 @@ static unsigned long vmi_get_cr2()
   return val;
 }
 
+static void vmi_wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh)
+{
+  __asm
+  {
+    mov ecx, reg
+    mov eax, valuelow
+    mov edx, valuehigh
+    VMCALL(VMI_CALL_WRMSR);
+  }
+}
+
 static void vmi_set_gdt_entry(int entry, unsigned long addr, unsigned long size, int access, int granularity)
 {
   union dte dte;
@@ -336,8 +347,10 @@ static void vmi_set_linear_mapping(int slot, unsigned long vaddr, unsigned long 
 
 static void vmi_set_page_dir_entry(pte_t *pde, unsigned long value)
 {
-  kprintf("vmi: vmi_set_linear_mapping\n");
-  vmi_set_linear_mapping(0, PAGEADDR(pde), 1, virt2phys(pde));
+  kprintf("vmi: vmi_set_linear_mapping %p %d\n", PAGEADDR(pde), virt2pfn(pde));
+
+  vmi_set_linear_mapping(0, PAGEADDR(pde), 1, virt2pfn(pde));
+
   kprintf("vmi: vmi_set_page_dir_entry\n");
 
   __asm
@@ -354,7 +367,7 @@ static void vmi_set_page_dir_entry(pte_t *pde, unsigned long value)
 
 static void vmi_set_page_table_entry(pte_t *pte, unsigned long value)
 {
-  vmi_set_linear_mapping(0, PAGEADDR(pte), 1, virt2phys(pte));
+  vmi_set_linear_mapping(0, PAGEADDR(pte), 1, virt2pfn(pte));
 
   __asm
   {
@@ -365,6 +378,15 @@ static void vmi_set_page_table_entry(pte_t *pte, unsigned long value)
   }
 
   vmi_flush_deferred_calls();
+}
+
+static void vmi_reboot()
+{
+  __asm
+  {
+    mov eax, VMI_REBOOT_HARD
+    VMCALL(VMI_CALL_Reboot)
+  }
 }
 
 //
@@ -464,6 +486,7 @@ int init_vmi()
   SET_MACH_FUNC(iretd, vmicall[VMI_CALL_IRET]);
   SET_MACH_FUNC(sysret, vmicall[VMI_CALL_SYSEXIT]);
   SET_MACH_FUNC(rdtsc, vmicall[VMI_CALL_RDTSC]);
+  SET_MACH_FUNC(poweroff, vmicall[VMI_CALL_Shutdown]);
 
   // Setup VMI calls
   mach.in = vmi_in;
@@ -480,6 +503,7 @@ int init_vmi()
   mach.get_cr0 = vmi_get_cr0;
   mach.set_cr0 = vmi_set_cr0;
   mach.get_cr2 = vmi_get_cr2;
+  mach.wrmsr = vmi_wrmsr;
   mach.set_gdt_entry = vmi_set_gdt_entry;
   mach.set_idt_gate = vmi_set_idt_gate;
   mach.set_idt_trap = vmi_set_idt_trap;
@@ -490,6 +514,7 @@ int init_vmi()
   mach.register_page_table = vmi_register_page_table;
   mach.set_page_dir_entry = vmi_set_page_dir_entry;
   mach.set_page_table_entry = vmi_set_page_table_entry;
+  mach.reboot = vmi_reboot;
 
   return 0;
 }

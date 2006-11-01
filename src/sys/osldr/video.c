@@ -35,7 +35,6 @@
 #include <stdarg.h>
 #include <string.h>
 #include <sys/types.h>
-#include <os/iop.h>
 
 int vsprintf(char *buf, const char *fmt, va_list args);
 

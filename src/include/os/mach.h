@@ -62,6 +62,7 @@ struct mach
   void (*set_cr0)(unsigned long val);
   unsigned long (*get_cr2)();
   unsigned __int64 (*rdtsc)();
+  void (*wrmsr)(unsigned long reg, unsigned long valuelow, unsigned long valuehigh);
   void (*set_gdt_entry)(int entry, unsigned long addr, unsigned long size, int access, int granularity);
   void (*set_idt_gate)(int intrno, void *handler);
   void (*set_idt_trap)(int intrno, void *handler);
@@ -72,6 +73,8 @@ struct mach
   void (*register_page_table)(unsigned long pfn);
   void (*set_page_dir_entry)(pte_t *pde, unsigned long value);
   void (*set_page_table_entry)(pte_t *pte, unsigned long value);
+  void (*poweroff)();
+  void (*reboot)();
 };
 
 krnlapi extern struct mach mach;
@@ -135,6 +138,11 @@ unsigned long __inline get_cr2()
 unsigned __int64 __inline rdtsc()
 {
   return mach.rdtsc();
+}
+
+void __inline wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh)
+{
+  mach.wrmsr(reg, valuelow, valuehigh);
 }
 
 void __inline switch_kernel_stack()
@@ -240,6 +248,17 @@ __declspec(naked) unsigned __int64 __inline rdtsc()
   }
 }
 
+void __inline wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh)
+{
+  __asm
+  {
+    mov ecx, reg
+    mov eax, valuelow
+    mov edx, valuehigh
+    wrmsr
+  }
+}
+
 void __inline register_page_dir(unsigned long pfn)
 {
   // Do nothing
@@ -311,6 +330,16 @@ void __inline flushtlb()
 void __inline invlpage(void *addr)
 {
   mach.invlpage(addr);
+}
+
+void __inline poweroff()
+{
+  mach.poweroff();
+}
+
+void __inline reboot()
+{
+  mach.reboot();
 }
 
 void init_mach();

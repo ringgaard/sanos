@@ -325,23 +325,6 @@ __inline static int usermode(struct context *ctxt)
 }
 
 //
-// wrmsr
-//
-// Write MSR
-//
-
-void wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh)
-{
-  __asm
-  {
-    mov ecx, reg
-    mov eax, valuelow
-    mov edx, valuehigh
-    wrmsr
-  }
-}
-
-//
 // setup_signal_frame
 //
 // Setup a call frame for invoking the global signal handler

@@ -236,7 +236,7 @@ static void kbd_write_command(unsigned char cmd)
 // Reboot machine
 //
 
-void reboot()
+void kbd_reboot()
 {
   kbd_wait();
   kbd_write_command(0xFE);

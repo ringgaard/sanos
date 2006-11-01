@@ -65,6 +65,6 @@ int change_keyboard_map_id(int id);
 
 int getch(unsigned int timeout);
 int kbhit();
-void reboot();
+void kbd_reboot();
 
 #endif

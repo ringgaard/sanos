@@ -1,7 +1,7 @@
 //
-// iop.h
+// config.h
 //
-// Port input/output
+// Kernel configuration
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -31,22 +31,25 @@
 // SUCH DAMAGE.
 // 
 
-#ifndef IOP_H
-#define IOP_H
+#ifndef CONFIG_H
+#define CONFIG_H
 
-#if 0
-void insw(port_t port, void *buf, int count);
-void outsw(port_t port, void *buf, int count);
-void insd(port_t port, void *buf, int count);
-void outsd(port_t port, void *buf, int count);
+#define LICENSE_BSD 0
+#define LICENSE_GPL 1
 
-int inp(port_t port);
-unsigned short inpw(port_t port);
-unsigned long inpd(port_t port);
-
-int outp(port_t port, int);
-unsigned short outpw(port_t port, unsigned short val);
-unsigned long outpd(port_t port, unsigned long val);
+#ifndef LICENSE
+#define LICENSE LICENSE_BSD
 #endif
+
+#if LICENSE == LICENSE_BSD
+#define BSD
+#endif
+
+#if LICENSE == LICENSE_GPL
+#define GPL
+#endif
+
+//#define VMACH
+#define RANDOMDEV
 
 #endif

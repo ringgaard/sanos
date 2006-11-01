@@ -34,6 +34,8 @@
 
 #include <os/krnl.h>
 
+#ifdef RANDOMDEV
+
 //
 // Configuration information
 //
@@ -390,14 +392,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned long n
   int entropy = 0;
 
   if (cpu.features & CPU_FEATURE_TSC)
-  {
-    __asm
-    {
-      rdtsc
-      xor eax, edx
-      mov time, eax
-    }
-  } 
+    time = (unsigned long) rdtsc();
   else 
     time = ticks;
 
@@ -807,3 +802,5 @@ int __declspec(dllexport) random()
 
   return 0;
 }
+
+#endif

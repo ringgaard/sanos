@@ -255,30 +255,23 @@ void init_pfdb()
   struct memmap *memmap;
 
   // Register page directory
-kprintf("1 %p\n", BTOP(virt2phys(pdir)));
-  register_page_dir(BTOP(virt2phys(pdir)));
+  register_page_dir(virt2pfn(pdir));
 
   // Calculates number of pages needed for page frame database
-kprintf("2\n");
   memend = syspage->ldrparams.memend;
   heap = syspage->ldrparams.heapend;
   pfdbpages = PAGES((memend / PAGESIZE) * sizeof(struct pageframe));
   if ((pfdbpages + 2) * PAGESIZE + heap >= memend) panic("not enough memory for page table database");
 
   // Intialize page tables for mapping the page frame database into kernel space
-kprintf("3 %p\n", PDEIDX(PFDBBASE));
   set_page_dir_entry(&pdir[PDEIDX(PFDBBASE)], heap | PT_PRESENT | PT_WRITABLE);
-kprintf("3a\n");
   set_page_dir_entry(&pdir[PDEIDX(PFDBBASE) + 1], (heap + PAGESIZE) | PT_PRESENT | PT_WRITABLE);
-kprintf("4\n");
   pt = (pte_t *) heap;
   heap += 2 * PAGESIZE;
   memset(pt, 0, 2 * PAGESIZE);
-kprintf("5 %p\n", BTOP(pt));
   register_page_table(BTOP(pt));
   register_page_table(BTOP(pt) + 1);
 
-kprintf("6\n");
   // Allocate and map pages for page frame database
   for (i = 0; i < pfdbpages; i++)
   {
@@ -286,19 +279,15 @@ kprintf("6\n");
     heap += PAGESIZE;
   }
 
-kprintf("7\n");
   // Initialize page frame database
   maxmem = syspage->ldrparams.memend / PAGESIZE;
   totalmem = 0;
   freemem = 0;
 
   pfdb = (struct pageframe *) PFDBBASE;
-kprintf("7a\n");
   memset(pfdb, 0, pfdbpages * PAGESIZE);
-kprintf("7b\n");
   for (i = 0; i < maxmem; i++) pfdb[i].tag = 'BAD';
 
-kprintf("8\n");
   // Add all memory from memory map to page frame database
   memmap = &syspage->bootparams.memmap;
   for (i = 0; i < (unsigned long) memmap->count; i++)
@@ -350,5 +339,4 @@ kprintf("8\n");
     }
   } 
   while (pf > pfdb);
-kprintf("9\n");
 }

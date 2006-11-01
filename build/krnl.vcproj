@@ -139,12 +139,6 @@
 			Filter="">
 			<File
 				RelativePath="..\src\sys\krnl\apm.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						AssemblerOutput="2"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\buf.c">
@@ -160,12 +154,6 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\fpu.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						AssemblerOutput="4"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\hndl.c">
@@ -193,12 +181,6 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\mach.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						AssemblerOutput="4"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\object.c">
@@ -238,12 +220,6 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\trap.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						AssemblerOutput="4"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\user.c">
@@ -253,12 +229,6 @@
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\vmi.c">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						AssemblerOutput="4"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\sys\krnl\vmm.c">
@@ -533,14 +503,14 @@
 			<File
 				RelativePath="..\src\include\time.h">
 			</File>
-			<File
-				RelativePath="..\src\include\verinfo.h">
-			</File>
 			<Filter
 				Name="include/os"
 				Filter="">
 				<File
 					RelativePath="..\src\include\os\buf.h">
+				</File>
+				<File
+					RelativePath="..\src\include\os\config.h">
 				</File>
 				<File
 					RelativePath="..\src\include\os\cpu.h">
@@ -559,9 +529,6 @@
 				</File>
 				<File
 					RelativePath="..\src\include\os\fpu.h">
-				</File>
-				<File
-					RelativePath="..\src\include\os\iop.h">
 				</File>
 				<File
 					RelativePath="..\src\include\os\iovec.h">
@@ -646,6 +613,9 @@
 				</File>
 				<File
 					RelativePath="..\src\include\os\user.h">
+				</File>
+				<File
+					RelativePath="..\src\include\verinfo.h">
 				</File>
 				<File
 					RelativePath="..\src\include\os\version.h">
