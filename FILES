@@ -130,7 +130,6 @@ src\                           Souce files
       devfs.h                  Device file system
       dfs.h                    Disk file system
       fpu.h                    Floating point unit
-      iop.h                    Port input/output
       iovec.h                  Scatter/gather utility routines
       kbd.h                    Keyboard driver
       klog.h                   Kernel logging
@@ -138,6 +137,7 @@ src\                           Souce files
       kmem.h                   Kernel memory page allocator
       krnl.h                   Main kernel include file
       ldr.h                    Kernel module loader
+      mach.h                   Interface to physical/virtual machine
       mbr.h                    Master Boot Record
       object.h                 Object manager
       pci.h                    PCI bus interface
@@ -330,6 +330,7 @@ src\                           Souce files
       krnl.rc                  Kernel resource file with version infomation
       kmem.c                   Kernel memory page allocator
       ldr.c                    Kernel module loader
+      mach.c                   Interface to physical/virtual machine
       object.c                 Object manager
       pci.c                    PCI bus driver
       pdir.c                   Page directory
@@ -345,6 +346,7 @@ src\                           Souce files
       trap.c                   Interrupt and trap handling
       user.c                   User management
       vfs.c                    Virtual file system
+      vmi.c                    VMWare Virtual Machine Interface (VMI)
       vmm.c                    Virtual memory manager
     ndis\                      NDIS source files
       ndis.c                   NDIS network miniport driver interface

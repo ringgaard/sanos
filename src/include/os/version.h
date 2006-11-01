@@ -1,3 +1,4 @@
+#define VERSION_H
 #define OS_NAME      "Sanos"
 #define OS_COPYRIGHT "Copyright (c) 2001-2005 Michael Ringgaard."
 #define OS_LEGAL     "All rights reserved."

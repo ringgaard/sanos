@@ -25,6 +25,7 @@
 
 #define OS_LIB
 #include "../../src/include/sys/types.h"
+#include "../../src/include/os/version.h"
 #include "../../src/include/os.h"
 #include "../../src/include/inifile.h"
 #include "../../src/include/atomic.h"

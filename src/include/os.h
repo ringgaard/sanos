@@ -38,7 +38,9 @@
 #ifndef OS_H
 #define OS_H
 
+#ifndef VERSION_H
 #include <os/version.h>
+#endif VERSION_H
 
 #ifndef SYS_TYPES_H
 #include <sys/types.h>
