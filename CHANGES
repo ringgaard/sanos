@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Fixed bug in hfree() that could crash the kernel (JHO).
+
     * VMWare VMI implemented.
     
     * Implemented physical/virtual machine interface. This interface allows the kernel to

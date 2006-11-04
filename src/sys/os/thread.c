@@ -517,7 +517,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
     }
   }
 
-  hmod = dlopen(pgm, RTLD_NOSHARE);
+  hmod = dlopen(pgm, 0 /*RTLD_NOSHARE*/);
   if (!hmod) return -1;
 
   flags = CREATE_SUSPENDED | CREATE_NEW_PROCESS;

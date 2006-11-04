@@ -171,10 +171,9 @@ int hfree(handle_t h)
   struct object *o;
   int rc;
 
-  if (HPROT(htab[h])) return -EACCES;
-
   o = hlookup(h);
   if (!o) return -EBADF;
+  if (HPROT(htab[h])) return -EACCES;
 
   htab[h] = hfreelist;
   hfreelist = h;
