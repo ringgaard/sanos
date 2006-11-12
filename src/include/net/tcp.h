@@ -257,7 +257,6 @@ struct tcp_seg
 
 // Internal functions and global variables
 
-struct tcp_pcb *tcp_pcb_copy(struct tcp_pcb *pcb);
 void tcp_pcb_purge(struct tcp_pcb *pcb);
 void tcp_pcb_remove(struct tcp_pcb **pcblist, struct tcp_pcb *pcb);
 
@@ -265,15 +264,22 @@ int tcp_segs_free(struct tcp_seg *seg);
 int tcp_seg_free(struct tcp_seg *seg);
 struct tcp_seg *tcp_seg_copy(struct tcp_seg *seg);
 
-#define tcp_ack(pcb)     if ((pcb)->flags & TF_ACK_DELAY) { \
-                            (pcb)->flags |= TF_ACK_NOW; \
-                            tcp_output(pcb); \
-                         } else { \
-                            (pcb)->flags |= TF_ACK_DELAY; \
-                         }
+__inline void tcp_ack(struct tcp_pcb *pcb)
+{
+  if (pcb->flags & TF_ACK_DELAY) 
+  {
+    pcb->flags |= TF_ACK_NOW;
+    tcp_output(pcb);
+  }
+  else 
+    pcb->flags |= TF_ACK_DELAY;
+}
 
-#define tcp_ack_now(pcb) (pcb)->flags |= TF_ACK_NOW; \
-                         tcp_output(pcb)
+__inline void tcp_ack_now(struct tcp_pcb *pcb)
+{
+  pcb->flags |= TF_ACK_NOW;
+  tcp_output(pcb);
+}
 
 err_t tcp_send_ctrl(struct tcp_pcb *pcb, int flags);
 err_t tcp_enqueue(struct tcp_pcb *pcb, void *data, int len, int flags, unsigned char *optdata, int optlen);
@@ -326,6 +332,3 @@ extern struct tcp_pcb *tcp_tw_pcbs;             // List of all TCP PCBs in TIME-
                             } while (0)
 
 #endif
-
-
-

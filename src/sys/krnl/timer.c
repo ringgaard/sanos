@@ -2,7 +2,7 @@
 // timer.c
 //
 // Timer functions 
-// Derived from Finn Arne Gangstads kernel timer implementation
+// Derived from Finn Arne Gangstad's kernel timer implementation
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //

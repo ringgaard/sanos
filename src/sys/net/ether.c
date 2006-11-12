@@ -302,6 +302,14 @@ err_t ether_input(struct netif *netif, struct pbuf *p)
 
   if ((netif->flags & NETIF_UP) == 0) return -ENETDOWN;
 
+  if (p->len < ETHER_HLEN)
+  {
+    kprintf("ether: Packet dropped due to too short packet %d %s\n", p->len, netif->name);
+    stats.link.lenerr++;
+    stats.link.drop++;
+    return -EINVAL;
+  }
+
   msg = (struct ether_msg *) kmalloc(sizeof(struct ether_msg));
   if (!msg) return -ENOMEM;
 
@@ -321,7 +329,7 @@ err_t ether_input(struct netif *netif, struct pbuf *p)
 }
 
 //
-// ether_task
+// ether_dispatcher
 //
 // This task dispatches received packets from the network interfaces 
 // to the TCP/IP stack. 
@@ -347,7 +355,7 @@ void ether_dispatcher(void *arg)
     {
       ethhdr = p->payload;
 
-      //if (!eth_addr_isbroadcast(&ethhdr->dest)) kprintf("ether: recv src=%la dst=%la type=%04X len=%d\n", &ethhdr->src, &ethhdr->dest, htons(ethhdr->type), p->tot_len);
+      //if (!eth_addr_isbroadcast(&ethhdr->dest)) kprintf("ether: recv src=%la dst=%la type=%04X len=%d\n", &ethhdr->src, &ethhdr->dest, htons(ethhdr->type), p->len);
       
       switch (htons(ethhdr->type))
       {
@@ -361,7 +369,7 @@ void ether_dispatcher(void *arg)
 	  p = arp_arp_input(netif, &netif->hwaddr, p);
 	  if (p != NULL) 
 	  {
-            if (dev_transmit((dev_t) netif->state, p) < 0) pbuf_free(p);
+	    if (dev_transmit((dev_t) netif->state, p) < 0) pbuf_free(p);
 	  }
 	  break;
 
