@@ -131,21 +131,21 @@ in the img subdirectory. See above for booting and installing this image.
 Contributions to sanos
 ----------------------
 
-The sanos kernel is written by Michael Ringgaard <mri@jbox.dk>
+The sanos kernel is written by Michael Ringgaard
 
-The pcnet32 driver is written by Søren Gjesse <stg@jbox.dk>.
+The pcnet32 driver is written by Søren Gjesse
 
-The heap allocator is a port of dlmalloc by Doug Lea <dl@cs.oswego.edu>
+The heap allocator is a port of dlmalloc by Doug Lea
 
-The TCP/IP network stack is a port of lwIP by Adam Dunkels <adam@sics.se>
+The TCP/IP network stack is a port of lwIP by Adam Dunkels
 
-The DHCP module is a port of the lwIP DHCP module by Leon Woestenberg <leon.woestenberg@axon.nl>
+The DHCP module is a port of the lwIP DHCP module by Leon Woestenberg
 
-The DNS resolver is a port of ISC BIND lwres (http://www.isc.org/products/BIND)
+The DNS resolver is a port of ISC BIND lwres
 
 The kernel timer implementation is a port of Finn Arne Gangstads kernel timer implementation
 
-The rtl8139, eepro100, sis900, and tulip network drivers are ported from Linux (Donald Becker)
+The tulip, rtl8139, eepro100, and sis900, and tulip network drivers are ported from Linux (Donald Becker)
 
 The win32 exception handling has been ported from WINE (Turchanov Sergey, Alexandre Julliard, and Jon Griffiths)
 
