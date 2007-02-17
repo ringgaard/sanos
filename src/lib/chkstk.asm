@@ -4,7 +4,9 @@
                 .386
 _TEXT           segment use32 para public 'CODE'
                 public  __chkstk
-		public __alloca_probe
+		public  __alloca_probe
+                public  __alloca_probe_8
+                public  __alloca_probe_16
          
 PAGESIZE        equ     4096
 
@@ -28,8 +30,8 @@ __alloca_probe  =  __chkstk
 probesetup:
 		push    ecx                     ; save ecx
 		lea     ecx,[esp] + 8           ; compute new stack pointer in ecx
-			                        ; correct for return address and
-				                ; saved ecx
+						; correct for return address and
+						; saved ecx
 
 probepages:
 		sub     ecx,PAGESIZE            ; yes, move down a page
@@ -52,39 +54,38 @@ lastpage:
 		mov     eax,dword ptr [eax + 4] ; recover return address
 
 		push    eax                     ; prepare return address
-										; ...probe in case a page was crossed
+						; ...probe in case a page was crossed
 		ret
 
 __chkstk        endp
 
-public  _alloca_probe_8
+__alloca_probe_16 proc                          ; 16 byte aligned alloca
 
-_alloca_probe_16 proc                   ; 16 byte aligned alloca
+                push    ecx
+                lea     ecx, [esp] + 8          ; TOS before entering this function
+                sub     ecx, eax                ; New TOS
+                and     ecx, (16 - 1)           ; Distance from 16 bit align (align down)
+                add     eax, ecx                ; Increase allocation size
+                sbb     ecx, ecx                ; ecx = 0xFFFFFFFF if size wrapped around
+                or      eax, ecx                ; cap allocation size on wraparound
+                pop     ecx                     ; Restore ecx
+                jmp     __chkstk
 
-        push    ecx
-        lea     ecx, [esp] + 8          ; TOS before entering this function
-        sub     ecx, eax                ; New TOS
-        and     ecx, (16 - 1)           ; Distance from 16 bit align (align down)
-        add     eax, ecx                ; Increase allocation size
-        sbb     ecx, ecx                ; ecx = 0xFFFFFFFF if size wrapped around
-        or      eax, ecx                ; cap allocation size on wraparound
-        pop     ecx                     ; Restore ecx
-        jmp     __chkstk
+__alloca_probe_16 endp
 
-alloca_8:                               ; 8 byte aligned alloca
-_alloca_probe_8 = alloca_8
+__alloca_probe_8 proc                           ; 8 byte aligned alloca
 
-        push    ecx
-        lea     ecx, [esp] + 8          ; TOS before entering this function
-        sub     ecx, eax                ; New TOS
-        and     ecx, (8 - 1)            ; Distance from 8 bit align (align down)
-        add     eax, ecx                ; Increase allocation Size
-        sbb     ecx, ecx                ; ecx = 0xFFFFFFFF if size wrapped around
-        or      eax, ecx                ; cap allocation size on wraparound
-        pop     ecx                     ; Restore ecx
-        jmp     __chkstk
+                push    ecx
+                lea     ecx, [esp] + 8          ; TOS before entering this function
+                sub     ecx, eax                ; New TOS
+                and     ecx, (8 - 1)            ; Distance from 8 bit align (align down)
+                add     eax, ecx                ; Increase allocation Size
+                sbb     ecx, ecx                ; ecx = 0xFFFFFFFF if size wrapped around
+                or      eax, ecx                ; cap allocation size on wraparound
+                pop     ecx                     ; Restore ecx
+                jmp     __chkstk
 
-_alloca_probe_16 endp
+__alloca_probe_8 endp
 
 _TEXT           ends
                 end
