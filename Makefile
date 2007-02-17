@@ -2,7 +2,9 @@
 # Makefile for sanos
 #
 
+!IFNDEF TOPDIR
 TOPDIR=.
+!ENDIF
 
 BIN=$(TOPDIR)\bin
 BUILD=$(TOPDIR)\build
@@ -36,7 +38,11 @@ DEFS=
 !ENDIF
 
 AFLAGS=/nologo
+!IF $(MSVC) == 8
+CFLAGS=/nologo /O2 /Ob1 /Oi /Ot /Oy /GS- /GR- /X /GF /Gy /W3 /I $(SRC)/include $(DEFS)
+!ELSE
 CFLAGS=/nologo /O2 /Og /Ob1 /Oi /Ot /Oy /X /GF /Gy /W3 /I $(SRC)/include $(DEFS)
+!ENDIF
 
 #
 # /nologo               Suppress copyright message
@@ -51,6 +57,9 @@ CFLAGS=/nologo /O2 /Og /Ob1 /Oi /Ot /Oy /X /GF /Gy /W3 /I $(SRC)/include $(DEFS)
 # /Gy                   Separate functions for linker
 # /W3                   Set warning level 3
 # /I $(SRC)/include     Include search path
+#
+# /GS-                  Disable security checks
+# /GR-                  Disable runtime typeinfo
 #
 
 all: dirs tools sanos bootdisk boothd netbootimg bootcd
@@ -128,7 +137,27 @@ clean:
 # tools
 #
 
+#
+# /nologo               Suppress copyright message
+# /O2                   Maximize speed
+# /Ob1                  Inline expansion (1 level)
+# /Oy                   Enable frame pointer omission
+# /Oi                   Enable intrinsic functions 
+# /GF                   Enable read-only string pooling
+# /GS-                  Disable security checks
+# /GR-                  Disable runtime typeinfo
+# /MT                   Link with multithreaded CRT
+# /Gy                   Separate functions for linker
+# /W3                   Set warning level 3
+# /TC                   Compile all files as .c
+# /I $(SRC)/include     Include search path
+#
+
+!IF $(MSVC) == 8
+WIN32CFLAGS=/nologo /O2 /Ob1 /Oy /Oi /GF /GS- /GR- /MT /Gy /W3 /TC /D WIN32 /D NDEBUG /D _CONSOLE /D _MBCS /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE /D _USE_32BIT_TIME_T
+!ELSE
 WIN32CFLAGS=/nologo /O2 /Ob1 /Oy /GF /ML /Gy /W3 /TC /D WIN32 /D NDEBUG /D _CONSOLE /D _MBCS
+!ENDIF
 
 tools: $(MKDFS) $(MKFLOPPY) $(MKPART) $(DBGGW) $(SOW)
 
@@ -184,7 +213,7 @@ $(BIN)/netboot: $(SRC)/sys/boot/netboot.asm
 $(OBJ)/boot/ldrinit.exe: $(SRC)/sys/boot/ldrinit.asm
     $(NASM) -f bin $** -o $@
 
-OSLDRSRC=$(SRC)\sys\osldr\video.c $(SRC)\sys\osldr\osldr.c $(SRC)\sys\osldr\loadkrnl.c $(SRC)\sys\osldr\boothd.c $(SRC)\sys\osldr\bootfd.c $(SRC)\sys\osldr\unzip.c $(SRC)\lib\vsprintf.c 
+OSLDRSRC=$(SRC)\sys\osldr\video.c $(SRC)\sys\osldr\osldr.c $(SRC)\sys\osldr\loadkrnl.c $(SRC)\sys\osldr\boothd.c $(SRC)\sys\osldr\bootfd.c $(SRC)\sys\osldr\unzip.c $(SRC)\lib\vsprintf.c $(SRC)\lib\string.c 
 
 $(BIN)/osldr.dll: $(OSLDRSRC) $(OBJ)\boot\ldrinit.exe
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/osldr/ $(OSLDRSRC) /D KERNEL /D OSLDR /link /DLL /NODEFAULTLIB /OPT:WIN98 /ENTRY:start /BASE:0x00090000 /FIXED /STUB:$(OBJ)\boot\ldrinit.exe

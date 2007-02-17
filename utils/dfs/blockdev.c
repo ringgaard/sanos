@@ -107,25 +107,24 @@ struct blockdriver *drivers[] = {&bdrv_raw, &bdrv_vmdk, NULL};
 
 static struct blockdriver *find_image_format(const char *filename)
 {
-  int ret, score, score_max;
+  int buflen, score, score_max;
   struct blockdriver *drv1, *drv;
   uint8_t *buf;
   size_t bufsize = 1024;
   HANDLE hdev;
-  DWORD bytes;
   int i;
 
   hdev = CreateFile(filename, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
   if (hdev == INVALID_HANDLE_VALUE)
   {
     buf = NULL;
-    ret = 0;
+    buflen = 0;
   } 
   else 
   {
     buf = malloc(bufsize);
     if (!buf) return NULL;
-    if (!ReadFile(hdev, buf, bufsize, &bytes, NULL))
+    if (!ReadFile(hdev, buf, bufsize, &buflen, NULL))
     {
       CloseHandle(hdev);
       free(buf);
@@ -139,7 +138,7 @@ static struct blockdriver *find_image_format(const char *filename)
   for (i = 0; drivers[i]; i++)
   {
     drv1 = drivers[i];
-    score = drv1->bdrv_probe(buf, ret, filename);
+    score = drv1->bdrv_probe(buf, buflen, filename);
     if (score > score_max) 
     {
       score_max = score;

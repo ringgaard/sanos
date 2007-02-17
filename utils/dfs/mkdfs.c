@@ -183,7 +183,7 @@ unsigned int ft2time(FILETIME *ft)
   tm.tm_sec = st.wSecond;
   tm.tm_isdst = 0;
 
-  return mktime(&tm);
+  return (int) mktime(&tm);
 }
 
 int isdir(char *filename)

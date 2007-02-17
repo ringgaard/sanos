@@ -8,6 +8,7 @@
 
 #define handle_t oshandle_t
 #define STRING_H
+#define _INC_STRING
 #define strerror win32_strerror
 
 #define WIN32_LEAN_AND_MEAN
@@ -21,6 +22,7 @@
 
 #undef handle_t
 #undef STRING_H
+#undef _INC_STRING
 #undef strerror
 
 #define OS_LIB
@@ -136,7 +138,17 @@ unsigned long loglevel;
 // Intrinsic functions
 //
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
+
+#pragma function(memset)
+#pragma function(memcmp)
+#pragma function(memcpy)
+
+#pragma function(strcpy)
+#pragma function(strlen)
+#pragma function(strcat)
+#pragma function(strcmp)
+#pragma function(strset)
 
 void *memset(void *p, int c, size_t n)
 {
@@ -203,7 +215,7 @@ int strcmp(const char * src, const char * dst)
   return ret;
 }
 
-#endif
+//#endif
 
 static __declspec(naked) unsigned __int64 div64x32(unsigned __int64 dividend, unsigned int divisor)
 {
@@ -964,7 +976,7 @@ int fstat64(handle_t f, struct stat64 *buffer)
     buffer->st_ctime = ft2time(&fi.ftCreationTime);
     buffer->st_mtime = ft2time(&fi.ftLastWriteTime);
   
-    buffer->st_size = (fi.nFileSizeHigh << 32) | fi.nFileSizeLow;
+    buffer->st_size = ((__int64) fi.nFileSizeHigh << 32) | fi.nFileSizeLow;
     buffer->st_mode = 0;
   }
 
@@ -1014,7 +1026,7 @@ int stat64(const char *name, struct stat64 *buffer)
     buffer->st_atime = ft2time(&fdata.ftLastAccessTime);
     buffer->st_ctime = ft2time(&fdata.ftCreationTime);
     buffer->st_mtime = ft2time(&fdata.ftCreationTime);
-    buffer->st_size = (fdata.nFileSizeHigh << 32) | fdata.nFileSizeLow;
+    buffer->st_size = ((__int64) fdata.nFileSizeHigh << 32) | fdata.nFileSizeLow;
     buffer->st_mode = 0;
 
     if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) buffer->st_mode |= 0040000;
@@ -1539,7 +1551,7 @@ int gettimeofday(struct timeval *tv, void *tzp)
   FILETIME ft;
 
   GetSystemTimeAsFileTime(&ft);
-  tv->tv_sec = ft2time(&ft);
+  tv->tv_sec = (long) ft2time(&ft);
   tv->tv_usec = ft.dwLowDateTime / 10;
   return tv->tv_usec;
 }

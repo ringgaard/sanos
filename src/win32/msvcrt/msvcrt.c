@@ -48,6 +48,11 @@ static long holdrand = 1L;
 
 int _sys_nerr = 90;
 
+#pragma function(wcslen)
+#pragma function(wcscpy)
+#pragma function(wcscat)
+#pragma function(wcscmp)
+
 void _initterm(_PVFV *begin, _PVFV *end)
 {
   TRACE("_initterm");
@@ -463,6 +468,12 @@ size_t wcslen(const wchar_t *s)
   while (*eos++);
   return (int) (eos - s - 1);
 }
+
+// The MSVC8 compiler complains about the definitions for the
+// instrinsic functions wcscpy and wcscat. For now we just 
+// ignore the warning.
+
+#pragma warning(disable: 4142) // warning C4142: benign redefinition of type
 
 wchar_t *wcscpy(wchar_t *dst, const wchar_t *src)
 {
