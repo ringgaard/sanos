@@ -36,6 +36,7 @@
 #endif
 
 #include <time.h>
+#include <sys/time.h>
 #include <sys/times.h>
 
 #define	YEAR0		        1900
@@ -115,7 +116,8 @@ struct tm *gmtime_r(const time_t *timer, struct tm *tmbuf)
   }
   tmbuf->tm_mday = dayno + 1;
   tmbuf->tm_isdst = 0;
-
+  tmbuf->tm_gmtoff = 0;
+  tmbuf->tm_zone = "UTC";
   return tmbuf;
 }
 
@@ -256,16 +258,25 @@ time_t mktime(struct tm *tmbuf)
 
 #if !defined(KERNEL) && !defined(OS_LIB)
 
-char *asctime(const struct tm *tp)
+char *asctime_r(const struct tm *tm, char *buf)
 {
-  char *ascbuf = gettib()->ascbuf;
-  strftime(ascbuf, ASCBUFSIZE, "%c\n", tp);
-  return ascbuf;
+  strftime(buf, ASCBUFSIZE, "%c\n", tm);
+  return buf;
 }
 
-char *ctime(const time_t *tp)
+char *ctime_r(const time_t *timer, char *buf)
 {
-  return asctime(localtime(tp));
+  return asctime_r(localtime(timer), buf);
+}
+
+char *asctime(const struct tm *tm)
+{
+  return asctime_r(tm, gettib()->ascbuf);
+}
+
+char *ctime(const time_t *timer)
+{
+  return asctime(localtime(timer));
 }
 
 char *_strdate(char *s)
@@ -295,6 +306,18 @@ clock_t times(struct tms *tms)
   // TODO implement
   tms->tms_cstime = tms->tms_cutime = tms->tms_stime = tms->tms_utime = 1;
   return clock();
+}
+
+int getitimer(int which, struct itimerval *value)
+{
+  // TODO implement
+  return -1;
+}
+
+int setitimer(int which, const struct itimerval *value, struct itimerval *oldvalue)
+{
+  // TODO implement
+  return -1;
 }
 
 #endif

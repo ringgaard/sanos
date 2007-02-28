@@ -165,6 +165,7 @@ src\                           Souce files
     sys\                       Standard system include files
       param.h                  System parameters
       poll.h                   Wait for events on set of file descriptors
+      resource.h               Definitions for resource operation
       select.h                 Select from file descriptor set
       socket.h                 Socket definitions
       stat.h                   Defines structure used by stat() and fstat()
@@ -199,6 +200,7 @@ src\                           Souce files
     llrem.asm                  Signed long remainder routine
     llshl.asm                  Long shift left
     llshr.asm                  Long shift right
+    match.c                    Math routines
     moddb.c                    Module loader
     new.cpp                    Object new and delete operators
     opts.c                     Option string parsing

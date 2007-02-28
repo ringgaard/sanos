@@ -4,6 +4,14 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added tm_gmtoff and tm_zone fields to struct tm in time.h.
+    
+    * Added math routines in math.c
+    
+    * Added rusage() in sys/resource.h.
+    
+    * Sanos can now be build using Microsoft Visual Studio 8.
+    
     * Fixed bug in hfree() that could crash the kernel (JHO).
 
     * VMWare VMI implemented.

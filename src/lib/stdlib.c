@@ -191,3 +191,10 @@ char *realpath(const char *path, char *buffer)
   if (rc < 0) return NULL;
   return buffer;
 }
+
+int getrusage(int who, struct rusage *usage)
+{
+  // TODO implement
+  errno = ENOSYS;
+  return -1;
+}

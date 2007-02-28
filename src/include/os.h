@@ -78,6 +78,8 @@ struct tm
   int tm_wday;			// Days since Sunday [0, 6]
   int tm_yday;			// Days since January 1 [0, 365]
   int tm_isdst;			// Daylight Saving Time flag
+  int tm_gmtoff;                // Seconds east of UTC
+  char *tm_zone;                // Timezone abbreviation
 };
 
 #endif
@@ -1330,7 +1332,7 @@ struct tib
   char cryptbuf[CRYPTBUFSIZE];     // For crypt()
   void *forkctx;                   // For vfork()
 
-  char reserved1[1494];
+  char reserved1[1486];
 
   void *tls[MAX_TLS];              // Thread local storage
   char reserved2[240];

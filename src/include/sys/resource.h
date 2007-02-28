@@ -1,7 +1,7 @@
 //
-// time.h
+// resource.h
 //
-// Time types
+// Definitions for resource operations
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -35,8 +35,8 @@
 #pragma once
 #endif
 
-#ifndef SYS_TIME_H
-#define SYS_TIME_H
+#ifndef SYS_RESOURCE_H
+#define SYS_RESOURCE_H
 
 #include <sys/types.h>
 
@@ -51,24 +51,19 @@ struct timeval
 
 #endif
 
-struct itimerval
-{
-  struct timeval it_interval;   // Timer interval
-  struct timeval it_value;      // Current value  
-};
+#define RUSAGE_SELF -1
 
-#define ITIMER_REAL    0           // A SIGALRM signal is delivered when this timer expires
-#define ITIMER_VIRTUAL 1           // A SIGVTALRM signal is delivered when this timer expires
-#define ITIMER_PROF    2           // A SIGPROF signal is delivered when this timer expires
+struct rusage
+{
+  struct timeval ru_utime;      // User time used
+  struct timeval ru_stime;      // System time used
+};
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
-int getitimer(int which, struct itimerval *value);
-int setitimer(int which, const struct itimerval *value, struct itimerval *oldvalue);
-
-osapi int gettimeofday(struct timeval *tv, void *tzp);
+int getrusage(int who, struct rusage *usage);
 
 #ifdef  __cplusplus
 }

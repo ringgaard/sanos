@@ -93,7 +93,11 @@ proc_t __xt_z[] = { NULL };
 
 #pragma data_seg()  // reset
 
+#if _MSC_FULL_VER >= 140050214
+#pragma comment(linker, "/merge:.CRT=.rdata")
+#else
 #pragma comment(linker, "/merge:.CRT=.data")
+#endif
 
 #endif
 

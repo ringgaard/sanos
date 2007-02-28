@@ -42,6 +42,10 @@
 #define INFINITY _infinity
 #define NAN _nan
 
+//
+// Definitions of useful mathematical constants
+//
+
 #define M_E        2.71828182845904523536     // e
 #define M_LOG2E    1.44269504088896340736     // log2(e)
 #define M_LOG10E   0.434294481903251827651    // log10(e)
@@ -55,6 +59,16 @@
 #define M_2_SQRTPI 1.12837916709551257390     // 2/sqrt(pi)
 #define M_SQRT2    1.41421356237309504880     // sqrt(2)
 #define M_SQRT1_2  0.707106781186547524401    // 1/sqrt(2)
+
+//
+// Floating point classes for fpclassify()
+//
+
+#define FP_NAN       0
+#define FP_INFINITE  1
+#define FP_ZERO      2
+#define FP_SUBNORMAL 3
+#define FP_NORMAL    4
 
 #ifdef  __cplusplus
 extern "C" {
@@ -91,6 +105,13 @@ double atof(const char *str);
 int isinf(double x); 
 int isnan(double x);
 int isfinite(double x);
+
+int fpclassify(double x);
+
+int isless(double x, double y);
+int isgreater(double x, double y);
+
+double round(double x);
 
 #ifdef  __cplusplus
 }

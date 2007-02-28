@@ -175,6 +175,7 @@ struct pthread_mutex
 typedef struct pthread_mutex pthread_mutex_t;
 
 #define PTHREAD_MUTEX_INITIALIZER {0, 0, -1, -1, -1}
+#define PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP {0, 0, -1, -1, -1}
 
 //
 // Condition variables

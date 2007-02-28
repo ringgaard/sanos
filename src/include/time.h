@@ -56,6 +56,8 @@ struct tm
   int tm_wday;			// Days since Sunday [0, 6]
   int tm_yday;			// Days since January 1 [0, 365]
   int tm_isdst;			// Daylight Saving Time flag
+  int tm_gmtoff;                // Seconds east of UTC
+  char *tm_zone;                // Timezone abbreviation
 };
 
 #endif
@@ -106,8 +108,12 @@ size_t strftime(char *s, size_t maxsize, const char *format, const struct tm *t)
 osapi clock_t clock();
 osapi time_t time(time_t *timeptr);
 
-char *asctime(const struct tm *tp);
-char *ctime(const time_t *tp);
+char *asctime_r(const struct tm *tm, char *buf);
+char *ctime_r(const time_t *timer, char *buf);
+
+char *asctime(const struct tm *tm);
+char *ctime(const time_t *timer);
+
 char *_strdate(char *s);
 char *_strtime(char *s);
 void _tzset();

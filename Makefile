@@ -37,6 +37,10 @@ DEFS=/D RELEASE
 DEFS=
 !ENDIF
 
+!IFNDEF MSVC
+MSVC=7
+!ENDIF
+
 AFLAGS=/nologo
 !IF $(MSVC) == 8
 CFLAGS=/nologo /O2 /Ob1 /Oi /Ot /Oy /GS- /GR- /X /GF /Gy /W3 /I $(SRC)/include $(DEFS)
@@ -615,6 +619,9 @@ $(OBJ)/libc/opts.obj: $(SRC)/lib/opts.c
 $(OBJ)/libc/new.obj: $(SRC)/lib/new.cpp
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
+$(OBJ)/libc/math.obj: $(SRC)/lib/math.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
 $(OBJ)/libc/input.obj: $(SRC)/lib/input.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
@@ -709,6 +716,7 @@ $(LIBS)/libc.lib: \
   $(OBJ)/libc/qsort.obj \
   $(OBJ)/libc/output.obj \
   $(OBJ)/libc/opts.obj \
+  $(OBJ)/libc/math.obj \
   $(OBJ)/libc/input.obj \
   $(OBJ)/libc/inifile.obj \
   $(OBJ)/libc/hash.obj \

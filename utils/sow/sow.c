@@ -33,6 +33,7 @@
 #include "../../src/include/atomic.h"
 
 #define MAXHANDLES 1024
+#define MAXENVVARS 1024
 
 #define SECTIMESCALE    10000000               // 1 sec resolution
 #define SECEPOC         11644473600            // 00:00:00 GMT on January 1, 1970 (in secs) 
@@ -120,6 +121,7 @@ static int (WSAAPI *_gethostname)(char *name, int namelen);
 
 handle_t halloc(int type, void *data);
 int vsprintf(char *buf, const char *fmt, va_list args);
+int sprintf(char *buf, const char *fmt, ...);
 
 //
 // Globals
@@ -128,11 +130,16 @@ int vsprintf(char *buf, const char *fmt, va_list args);
 struct handle htab[MAXHANDLES];
 struct process *mainproc;
 DWORD tibtls;
+char *envtab[MAXENVVARS];
 
 struct term console;
 struct peb *peb;
 struct section *osconfig;
 unsigned long loglevel;
+
+static struct passwd defpasswd = {"root", "", 0, 0, "root", "/", "/bin/sh.exe"};
+static char *defgrpmem[] = {"root", NULL};
+static struct group defgroup = {"root", "", 0, defgrpmem};
 
 //
 // Intrinsic functions
@@ -285,6 +292,7 @@ void init()
   int i;
   struct tib *tib;
   struct process *proc;
+  char *env;
 
   // Initialize sockets
   initsock();
@@ -313,6 +321,16 @@ void init()
   peb = malloc(4096);
   memset(peb, 0, 4096);
 
+  // Get environment variables
+  env = GetEnvironmentStrings();
+  i = 0;
+  while (i < MAXENVVARS - 1 && *env)
+  {
+    envtab[i++] = env;
+    env += strlen(env) + 1;
+  }
+  envtab[i] = "";
+
   // Allocate initial job
   console.cols = 80;
   console.lines = 25;
@@ -326,7 +344,7 @@ void init()
   proc->iob[0] = 0;
   proc->iob[1] = 1;
   proc->iob[2] = 2;
-  proc->env = (char **) GetEnvironmentStrings();
+  proc->env = envtab;
   proc->term = &console;
   proc->hmod = GetModuleHandle(NULL);
   proc->cmdline = GetCommandLine();
@@ -952,7 +970,7 @@ int fstat(handle_t f, struct stat *buffer)
     buffer->st_mtime = ft2time(&fi.ftLastWriteTime);
   
     buffer->st_size = fi.nFileSizeLow;
-    buffer->st_mode = 0;
+    buffer->st_mode = 0700;
   }
 
   return buffer ? 0 : fi.nFileSizeLow;
@@ -977,7 +995,7 @@ int fstat64(handle_t f, struct stat64 *buffer)
     buffer->st_mtime = ft2time(&fi.ftLastWriteTime);
   
     buffer->st_size = ((__int64) fi.nFileSizeHigh << 32) | fi.nFileSizeLow;
-    buffer->st_mode = 0;
+    buffer->st_mode = 0700;
   }
 
   return buffer ? 0 : fi.nFileSizeLow;
@@ -1001,7 +1019,7 @@ int stat(const char *name, struct stat *buffer)
     buffer->st_ctime = ft2time(&fdata.ftCreationTime);
     buffer->st_mtime = ft2time(&fdata.ftCreationTime);
     buffer->st_size = fdata.nFileSizeLow;
-    buffer->st_mode = 0;
+    buffer->st_mode = 0700;
 
     if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) buffer->st_mode |= 0040000;
   }
@@ -1027,12 +1045,17 @@ int stat64(const char *name, struct stat64 *buffer)
     buffer->st_ctime = ft2time(&fdata.ftCreationTime);
     buffer->st_mtime = ft2time(&fdata.ftCreationTime);
     buffer->st_size = ((__int64) fdata.nFileSizeHigh << 32) | fdata.nFileSizeLow;
-    buffer->st_mode = 0;
+    buffer->st_mode = 0700;
 
     if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) buffer->st_mode |= 0040000;
   }
 
   return buffer ? 0 : fdata.nFileSizeLow;
+}
+
+int lstat(const char *name, struct stat *buffer)
+{
+  return stat(name, buffer);
 }
 
 int access(const char *name, int mode)
@@ -1119,6 +1142,11 @@ int chmod(const char *name, int mode)
 int fchmod(handle_t f, int mode)
 {
   return notimpl("fchmod");
+}
+
+int chown(const char *name, int owner, int group)
+{
+  return notimpl("chown");
 }
 
 int chdir(const char *name)
@@ -1278,6 +1306,54 @@ int pipe(handle_t fildes[2])
   return notimpl("pipe");
 }
 
+int __getstdhndl(int n)
+{
+  return n;
+}
+
+struct passwd *getpwnam(const char *name)
+{
+  return &defpasswd;
+}
+
+struct passwd *getpwuid(uid_t uid)
+{
+  return &defpasswd;
+}
+
+struct group *getgrnam(const char *name)
+{
+  return &defgroup;
+}
+
+struct group *getgrgid(uid_t uid)
+{
+  return &defgroup;
+}
+
+int getgroups(int size, gid_t list[])
+{
+  if (size < 1) return -EINVAL;
+  list[0] = 0;
+  return 1;
+}
+
+int getgid()
+{
+  return 0;
+}
+
+int getuid()
+{
+  return 0;
+}
+
+char *crypt(const char *key, const char *salt)
+{
+  notimpl("crypt");
+  return NULL;
+}
+
 void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long tag)
 {
   return VirtualAlloc(addr, size, type, protect);
@@ -1401,7 +1477,20 @@ int sysinfo(int cmd, void *data, size_t size)
 
 int uname(struct utsname *buf)
 {
-  return notimpl("uname");
+  SYSTEM_INFO sysinfo;
+  OSVERSIONINFO verinfo;
+
+  GetSystemInfo(&sysinfo);
+  verinfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+  GetVersionEx(&verinfo);
+
+  memset(buf, 0, sizeof(struct utsname));
+  strcpy(buf->sysname, "windows");
+  gethostname(buf->nodename, UTSNAMELEN);
+  sprintf(buf->release, "%d.%d.%d.%d", verinfo.dwMajorVersion, verinfo.dwMinorVersion, verinfo.dwBuildNumber, 0);
+  strcpy(buf->version, *verinfo.szCSDVersion ? verinfo.szCSDVersion : "release");
+  sprintf(buf->machine, "i%d", sysinfo.dwProcessorType);
+  return 0;  
 }
 
 handle_t self()
@@ -1519,6 +1608,16 @@ int raise(int signum)
   return notimpl("raise");
 }
 
+int kill(pid_t pid, int signum)
+{
+  return notimpl("kill");
+}
+
+int getpid()
+{
+  return 0;
+}
+
 int sendsig(handle_t thread, int signum)
 {
   return notimpl("sendsig");
@@ -1533,6 +1632,16 @@ char *getenv(const char *name)
 {
   notimpl("getenv");
   return NULL;
+}
+
+int setenv(const char *name, const char *value, int rewrite)
+{
+  return notimpl("setenv");
+}
+
+int putenv(const char *str)
+{
+  return notimpl("putenv");
 }
 
 time_t time(time_t *timeptr)

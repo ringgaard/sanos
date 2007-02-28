@@ -1,7 +1,7 @@
 //
-// time.h
+// ucontext.h
 //
-// Time types
+// User context
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
@@ -35,40 +35,76 @@
 #pragma once
 #endif
 
-#ifndef SYS_TIME_H
-#define SYS_TIME_H
+#ifndef UCONTEXT_H
+#define UCONTEXT_H
 
 #include <sys/types.h>
 
-#ifndef _TIMEVAL_DEFINED
-#define _TIMEVAL_DEFINED
+//
+// General registers in context
+//
 
-struct timeval 
+#define REG_ES     0
+#define REG_DS     1
+#define REG_EDI    2
+#define REG_ESI    3
+#define REG_EBP    4
+#define REG_EBX    5
+#define REG_EDX    6
+#define REG_ECX    7
+#define REG_EAX    8
+#define REG_TRAPNO 9
+#define REG_ERR    10
+#define REG_EIP    11
+#define REG_ECS    12
+#define REG_EFLAGS 13
+#define REG_ESP    14
+#define REG_ESS    15
+
+#define NGREG	   16
+
+//
+// Machine-dependent context
+//
+
+struct mcontext
 {
-  long tv_sec;		        // Seconds
-  long tv_usec;		        // Microseconds
+  int gregs[NGREG];
 };
 
-#endif
+typedef struct mcontext mcontext_t;
 
-struct itimerval
+//
+// Stack
+//
+
+struct stack
 {
-  struct timeval it_interval;   // Timer interval
-  struct timeval it_value;      // Current value  
+  void *ss_sp;       // Stack base or pointer
+  size_t ss_size;    // Stack size
+  int ss_flags;      // Flags
 };
 
-#define ITIMER_REAL    0           // A SIGALRM signal is delivered when this timer expires
-#define ITIMER_VIRTUAL 1           // A SIGVTALRM signal is delivered when this timer expires
-#define ITIMER_PROF    2           // A SIGPROF signal is delivered when this timer expires
+typedef struct stack stack_t;
+
+//
+// User context
+//
+
+struct ucontext
+{
+  struct ucontext *uc_link;
+  sigset_t uc_sigmask;
+  stack_t uc_stack;
+  mcontext_t uc_mcontext;
+}; 
+
+typedef struct ucontext ucontext_t;
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
-int getitimer(int which, struct itimerval *value);
-int setitimer(int which, const struct itimerval *value, struct itimerval *oldvalue);
-
-osapi int gettimeofday(struct timeval *tv, void *tzp);
 
 #ifdef  __cplusplus
 }

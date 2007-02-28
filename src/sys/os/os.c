@@ -49,6 +49,10 @@
 #include "heap.h"
 #include "resolv.h"
 
+//
+// Globals
+//
+
 struct critsect heap_lock;
 struct critsect mod_lock;
 struct critsect env_lock;
@@ -58,6 +62,10 @@ struct moddb usermods;
 struct peb *peb;
 
 struct term console = {TERM_CONSOLE, 80, 25};
+
+//
+// Forward declarations
+//
 
 int sprintf(char *buf, const char *fmt, ...);
 
@@ -72,6 +80,10 @@ void stop_syslog();
 
 void globalhandler(struct siginfo *info);
 
+//
+// Error handling
+//
+
 void panic(const char *msg)
 {
   syslog(LOG_CRIT, "panic: %s", msg);
@@ -82,6 +94,15 @@ int *_errno()
 {
   return &(gettib()->errnum);
 }
+
+void dbgbreak()
+{
+  __asm { int 3 };
+}
+
+//
+// File routines
+//
 
 int *_fmode()
 {
@@ -148,6 +169,106 @@ int umask(int mask)
   return oldmask;
 }
 
+int canonicalize(const char *filename, char *buffer, int size)
+{
+  char *p;
+  char *end;
+  int len;
+
+  // Check for maximum filename length
+  if (!filename) 
+  {
+    errno = EINVAL;
+    return -1;
+  }
+
+  // Remove drive letter from filename (e.g. c:)
+  if (filename[0] != 0 && filename[1] == ':') filename += 2;
+
+  // Initialize buffer
+  p = buffer;
+  end = buffer + size;
+
+  // Add current directory to filename if relative path
+  if (*filename != PS1 && *filename != PS2)
+  {
+    char curdir[MAXPATH];
+
+    // Do not add current directory if it is root directory
+    if (!getcwd(curdir, MAXPATH)) return -1;
+    len = strlen(curdir);
+    if (len > 1)
+    {
+      memcpy(p, curdir, len);
+      p += len;
+    }
+  }
+
+  while (*filename)
+  {
+    // Parse path separator
+    if (*filename == PS1 || *filename == PS2) filename++;
+    if (p == end) 
+    {
+      errno = ENAMETOOLONG;
+      return -1;
+    }
+    *p++ = peb->pathsep;
+
+    // Parse next name part in path
+    len = 0;
+    while (*filename && *filename != PS1 && *filename != PS2)
+    {
+      // We do not allow control characters in filenames
+      if (*filename > 0 && *filename < ' ') 
+      {
+	errno = EINVAL;
+	return -1;
+      }
+      if (p == end) 
+      {
+	errno = ENAMETOOLONG;
+	return -1;
+      }
+      *p++ = *filename++;
+      len++;
+    }
+
+    // Handle empty name parts and '.' and '..'
+    if (len == 0)
+      p--;
+    if (len == 1 && filename[-1] == '.')
+      p -= 2;
+    else if (len == 2 && filename[-1] == '.' && filename[-2] == '.')
+    {
+      p -= 4;
+      if (p < buffer) 
+      {
+	errno = EINVAL;
+	return -1;
+      }
+      while (*p != PS1) p--;
+    }
+  }
+
+  // Convert empty filename to /
+  if (p == buffer) *p++ = peb->pathsep;
+
+  // Terminate string
+  if (p == end) 
+  {
+    errno = ENAMETOOLONG;
+    return -1;
+  }
+
+  *p = 0;
+
+  return p - buffer;
+}
+
+//
+// Heap routines
+//
 
 struct heap *create_module_heap(hmodule_t hmod)
 {
@@ -257,102 +378,9 @@ void _lfree(void *p)
   heap_free(get_local_heap(), p);
 }
 
-int canonicalize(const char *filename, char *buffer, int size)
-{
-  char *p;
-  char *end;
-  int len;
-
-  // Check for maximum filename length
-  if (!filename) 
-  {
-    errno = EINVAL;
-    return -1;
-  }
-
-  // Remove drive letter from filename (e.g. c:)
-  if (filename[0] != 0 && filename[1] == ':') filename += 2;
-
-  // Initialize buffer
-  p = buffer;
-  end = buffer + size;
-
-  // Add current directory to filename if relative path
-  if (*filename != PS1 && *filename != PS2)
-  {
-    char curdir[MAXPATH];
-
-    // Do not add current directory if it is root directory
-    if (!getcwd(curdir, MAXPATH)) return -1;
-    len = strlen(curdir);
-    if (len > 1)
-    {
-      memcpy(p, curdir, len);
-      p += len;
-    }
-  }
-
-  while (*filename)
-  {
-    // Parse path separator
-    if (*filename == PS1 || *filename == PS2) filename++;
-    if (p == end) 
-    {
-      errno = ENAMETOOLONG;
-      return -1;
-    }
-    *p++ = peb->pathsep;
-
-    // Parse next name part in path
-    len = 0;
-    while (*filename && *filename != PS1 && *filename != PS2)
-    {
-      // We do not allow control characters in filenames
-      if (*filename > 0 && *filename < ' ') 
-      {
-	errno = EINVAL;
-	return -1;
-      }
-      if (p == end) 
-      {
-	errno = ENAMETOOLONG;
-	return -1;
-      }
-      *p++ = *filename++;
-      len++;
-    }
-
-    // Handle empty name parts and '.' and '..'
-    if (len == 0)
-      p--;
-    if (len == 1 && filename[-1] == '.')
-      p -= 2;
-    else if (len == 2 && filename[-1] == '.' && filename[-2] == '.')
-    {
-      p -= 4;
-      if (p < buffer) 
-      {
-	errno = EINVAL;
-	return -1;
-      }
-      while (*p != PS1) p--;
-    }
-  }
-
-  // Convert empty filename to /
-  if (p == buffer) *p++ = peb->pathsep;
-
-  // Terminate string
-  if (p == end) 
-  {
-    errno = ENAMETOOLONG;
-    return -1;
-  }
-
-  *p = 0;
-
-  return p - buffer;
-}
+//
+// Module routines
+//
 
 static void *load_image(char *filename)
 {
@@ -601,6 +629,10 @@ int getvervalue(hmodule_t hmod, char *name, char *buf, int size)
   return rc;
 }
 
+//
+// Misc. routines
+//
+
 int uname(struct utsname *buf)
 {
   struct cpuinfo cpu;
@@ -648,11 +680,6 @@ int uname(struct utsname *buf)
   return 0;
 }
 
-void dbgbreak()
-{
-  __asm { int 3 };
-}
-
 unsigned sleep(unsigned seconds)
 {
   msleep(seconds * 1000);
@@ -663,6 +690,10 @@ char *crypt(const char *key, const char *salt)
 {
   return crypt_r(key, salt, gettib()->cryptbuf);
 }
+
+//
+// Initialization
+//
 
 void init_net()
 {
@@ -829,6 +860,10 @@ void init_mount()
     prop = prop->next;
   }
 }
+
+//
+// Main user mode entry point
+//
 
 int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 {

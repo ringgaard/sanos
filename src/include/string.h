@@ -55,6 +55,9 @@ size_t strspn(const char *string, const char *control);
 size_t strcspn(const char *string, const char *control);
 char *strpbrk(const char *string, const char *control);
 
+int strcasecmp(const char *s1, const char *s2);
+int strcoll(const char *s1, const char *s2);
+
 #ifdef USE_LOCAL_HEAP
 char *_lstrdup(const char *s);
 #define strdup(s) _lstrdup(s);

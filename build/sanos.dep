@@ -159,6 +159,11 @@ $(SRC)/lib/input.c: \
   $(SRC)/include/ctype.h \
   $(SRC)/include/sys/types.h
 
+$(SRC)/lib/math.c: \
+  $(SRC)/include/os.h \
+  $(SRC)/include/math.h \
+  $(SRC)/include/float.h
+
 $(SRC)/lib/moddb.c: \
   $(SRC)/include/os.h \
   $(SRC)/include/os/pe.h \
