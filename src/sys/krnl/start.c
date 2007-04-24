@@ -272,6 +272,9 @@ static int version_proc(struct proc_file *pf, void *arg)
   if (ver->file_flags & VER_FLAG_DEBUG) pprintf(pf, " debug");
 
   pprintf(pf, " (%04d-%02d-%02d %02d:%02d:%02d)", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+#ifdef _MSC_VER
+  pprintf(pf, " (MSVC vers. %d.%02d)", _MSC_VER / 100, _MSC_VER % 100);
+#endif
   pprintf(pf, "\n");
 
   return 0;
