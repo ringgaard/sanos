@@ -48,10 +48,12 @@ static long holdrand = 1L;
 
 int _sys_nerr = 90;
 
+#if _MSC_VER >= 1400
 #pragma function(wcslen)
 #pragma function(wcscpy)
 #pragma function(wcscat)
 #pragma function(wcscmp)
+#endif
 
 void _initterm(_PVFV *begin, _PVFV *end)
 {

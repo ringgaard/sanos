@@ -10,7 +10,9 @@ Changes since last release
     
     * Added rusage() in sys/resource.h.
     
-    * Sanos can now be build using Microsoft Visual Studio 8.
+    * Sanos can now be build using Microsoft Visual Studio 8. The sanos.sln solution
+      now uses the makefile for building sanos. The old Visual Studio 7 solution
+      has been renamed to sanos-vc7.sln.
     
     * Fixed bug in hfree() that could crash the kernel (JHO).
 

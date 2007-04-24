@@ -1056,6 +1056,9 @@
 			</FileConfiguration>
 		</File>
 		<File
+			RelativePath="..\src\lib\math.c">
+		</File>
+		<File
 			RelativePath="..\src\lib\new.cpp">
 			<FileConfiguration
 				Name="Debug|Win32">
