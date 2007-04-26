@@ -1440,6 +1440,21 @@ int cmd_set(int argc, char *argv[])
   return 0;
 }
 
+int cmd_sleep(int argc, char *argv[])
+{
+  int ms;
+
+  if (argc != 2)
+  {
+    printf("usage: sleep <millis>\n");
+    return -EINVAL;
+  }
+  ms = atoi(argv[1]);
+
+  msleep(ms);
+  return 0;
+}
+
 int cmd_sound(int argc, char *argv[])
 {
   int freq;
@@ -1669,6 +1684,7 @@ struct command cmdtab[] =
   {"rd",       cmd_rmdir,    "Remove directory"},
   {"rmdir",    cmd_rmdir,    "Remove directory"},
   {"set",      cmd_set,      "Set or display environment variables"},
+  {"sleep",    cmd_sleep,    "Sleep for a number of milliseconds"},
   {"sound",    cmd_sound,    "Play sound in speaker"},
   {"shutdown", cmd_shutdown, "Shutdown computer and power off"},
   {"sysinfo",  cmd_sysinfo,  "Display system info"},

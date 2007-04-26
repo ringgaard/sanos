@@ -407,9 +407,9 @@ int setprio(handle_t thread, int priority)
   return syscall(SYSCALL_SETPRIO, &thread);
 }
 
-void msleep(int millisecs)
+int msleep(int millisecs)
 {
-  syscall(SYSCALL_MSLEEP, &millisecs);
+  return syscall(SYSCALL_MSLEEP, &millisecs);
 }
 
 struct tib *gettib()

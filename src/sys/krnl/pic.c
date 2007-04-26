@@ -43,8 +43,8 @@ unsigned int irq_mask = 0xFFFB;
 
 static void set_intr_mask(unsigned long mask)
 {
-  outp(PIC_MSTR_MASK, mask & 0xFF);
-  outp(PIC_SLV_MASK, (mask >> 8) & 0xFF);
+  outp(PIC_MSTR_MASK, (unsigned char) mask);
+  outp(PIC_SLV_MASK, (unsigned char) (mask >> 8));
 }
 
 //

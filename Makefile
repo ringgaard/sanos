@@ -217,7 +217,7 @@ $(BIN)/netboot: $(SRC)/sys/boot/netboot.asm
 $(OBJ)/boot/ldrinit.exe: $(SRC)/sys/boot/ldrinit.asm
     $(NASM) -f bin $** -o $@
 
-OSLDRSRC=$(SRC)\sys\osldr\video.c $(SRC)\sys\osldr\osldr.c $(SRC)\sys\osldr\loadkrnl.c $(SRC)\sys\osldr\boothd.c $(SRC)\sys\osldr\bootfd.c $(SRC)\sys\osldr\unzip.c $(SRC)\lib\vsprintf.c $(SRC)\lib\string.c 
+OSLDRSRC=$(SRC)\sys\osldr\osldr.c $(SRC)\sys\osldr\loadkrnl.c $(SRC)\sys\osldr\boothd.c $(SRC)\sys\osldr\bootfd.c $(SRC)\sys\osldr\unzip.c $(SRC)\sys\osldr\video.c $(SRC)\sys\krnl\iop.c $(SRC)\lib\vsprintf.c $(SRC)\lib\string.c 
 
 $(BIN)/osldr.dll: $(OSLDRSRC) $(OBJ)\boot\ldrinit.exe
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/osldr/ $(OSLDRSRC) /D KERNEL /D OSLDR /link /DLL /NODEFAULTLIB /OPT:WIN98 /ENTRY:start /BASE:0x00090000 /FIXED /STUB:$(OBJ)\boot\ldrinit.exe
@@ -403,7 +403,6 @@ $(BIN)/eepro100.sys: \
 
 $(BIN)/ne2000.sys: \
   $(SRC)/sys/dev/ne2000.c \
-  $(SRC)/sys/krnl/iop.c \
   $(SRC)/lib/opts.c \
   $(SRC)/lib/string.c \
   $(SRC)/lib/strtol.c \
@@ -414,7 +413,6 @@ $(BIN)/ne2000.sys: \
 
 $(BIN)/pcnet32.sys: \
   $(SRC)/sys/dev/pcnet32.c \
-  $(SRC)/sys/krnl/iop.c \
   $(SRC)/lib/string.c \
   $(SRC)/lib/ctype.c \
   $(LIBS)/krnl.lib
@@ -423,7 +421,6 @@ $(BIN)/pcnet32.sys: \
 
 $(BIN)/rtl8139.sys: \
   $(SRC)/sys/dev/rtl8139.c \
-  $(SRC)/sys/krnl/iop.c \
   $(SRC)/lib/opts.c \
   $(SRC)/lib/strtol.c \
   $(SRC)/lib/string.c \
@@ -434,7 +431,6 @@ $(BIN)/rtl8139.sys: \
 
 $(BIN)/sis900.sys: \
   $(SRC)/sys/dev/sis900.c \
-  $(SRC)/sys/krnl/iop.c \
   $(SRC)/lib/opts.c \
   $(SRC)/lib/strtol.c \
   $(SRC)/lib/string.c \
@@ -445,7 +441,6 @@ $(BIN)/sis900.sys: \
 
 $(BIN)/tulip.sys: \
   $(SRC)/sys/dev/tulip.c \
-  $(SRC)/sys/krnl/iop.c \
   $(SRC)/lib/opts.c \
   $(SRC)/lib/strtol.c \
   $(SRC)/lib/string.c \

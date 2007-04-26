@@ -279,17 +279,27 @@ void __inline set_page_table_entry(pte_t *pte, unsigned long value)
   *pte = value;
 }
 
-int inp(port_t port);
-unsigned short inpw(port_t port);
-unsigned long inpd(port_t port);
-void insw(port_t port, void *buf, int count);
-void insd(port_t port, void *buf, int count);
+#define inp(port)  (inb(port))
+#define inpw(port) (inw(port))
+#define inpd(port) (ind(port))
 
-int outp(port_t port, int val);
-unsigned short outpw(port_t port, unsigned short val);
-unsigned long outpd(port_t port, unsigned long val);
-void outsw(port_t port, void *buf, int count);
-void outsd(port_t port, void *buf, int count);
+#define outp(port, val)  (outb((port), (val)))
+#define outpw(port, val) (outw((port), (val)))
+#define outpd(port, val) (outd((port), (val)))
+
+krnlapi unsigned char inb(port_t port);
+krnlapi unsigned short inpw(port_t port);
+krnlapi unsigned long inpd(port_t port);
+
+krnlapi void insw(port_t port, void *buf, int count);
+krnlapi void insd(port_t port, void *buf, int count);
+
+krnlapi unsigned char outb(port_t port, unsigned char val);
+krnlapi unsigned short outw(port_t port, unsigned short val);
+krnlapi unsigned long outd(port_t port, unsigned long val);
+
+krnlapi void outsw(port_t port, void *buf, int count);
+krnlapi void outsd(port_t port, void *buf, int count);
 
 #define CLI   cli
 #define STI   sti

@@ -35,6 +35,36 @@
 
 #ifndef VMACH
 
+unsigned char __declspec(naked) inb(port_t port)
+{
+  __asm
+  {
+    mov     dx,word ptr [esp + 4]
+    in      al,dx
+    ret
+  }
+}
+
+unsigned short __declspec(naked) inw(port_t port)
+{
+  __asm
+  {
+    mov     dx,word ptr [esp + 4]
+    in      ax,dx
+    ret
+  }
+}
+
+unsigned long __declspec(naked) ind(port_t port)
+{
+  __asm
+  {
+    mov     dx,word ptr [esp + 4]
+    in      eax,dx
+    ret
+  }
+}
+
 void insw(port_t port, void *buf, int count)
 {
   __asm
@@ -43,17 +73,6 @@ void insw(port_t port, void *buf, int count)
     mov edi, buf
     mov ecx, count
     rep insw
-  }
-}
-
-void outsw(port_t port, void *buf, int count)
-{
-  __asm
-  {
-    mov edx, port
-    mov esi, buf
-    mov ecx, count
-    rep outsw
   }
 }
 
@@ -68,24 +87,10 @@ void insd(port_t port, void *buf, int count)
   }
 }
 
-void outsd(port_t port, void *buf, int count)
+unsigned char __declspec(naked) outb(port_t port, unsigned char val)
 {
   __asm
   {
-    mov edx, port
-    mov esi, buf
-    mov ecx, count
-    rep outsd
-  }
-}
-
-#ifdef DEBUG
-
-int __declspec(naked) outp(port_t port, int val)
-{
-  __asm
-  {
-    xor     eax,eax
     mov     dx,word ptr [esp + 4]
     mov     al,byte ptr [esp + 8]
     out     dx, al
@@ -93,7 +98,7 @@ int __declspec(naked) outp(port_t port, int val)
   }
 }
 
-unsigned short __declspec(naked) outpw(port_t port, unsigned short val)
+unsigned short __declspec(naked) outw(port_t port, unsigned short val)
 {
   __asm
   {
@@ -104,7 +109,7 @@ unsigned short __declspec(naked) outpw(port_t port, unsigned short val)
   }
 }
 
-unsigned long __declspec(naked) outpd(port_t port, unsigned long val)
+unsigned long __declspec(naked) outd(port_t port, unsigned long val)
 {
   __asm
   {
@@ -115,37 +120,26 @@ unsigned long __declspec(naked) outpd(port_t port, unsigned long val)
   }
 }
 
-int __declspec(naked) inp(port_t port)
+void outsw(port_t port, void *buf, int count)
 {
   __asm
   {
-    xor     eax,eax
-    mov     dx,word ptr [esp + 4]
-    in      al,dx
-    ret
+    mov edx, port
+    mov esi, buf
+    mov ecx, count
+    rep outsw
   }
 }
 
-unsigned short __declspec(naked) inpw(port_t port)
+void outsd(port_t port, void *buf, int count)
 {
   __asm
   {
-    mov     dx,word ptr [esp + 4]
-    in      ax,dx
-    ret
+    mov edx, port
+    mov esi, buf
+    mov ecx, count
+    rep outsd
   }
 }
-
-unsigned long __declspec(naked) inpd(port_t port)
-{
-  __asm
-  {
-    mov     dx,word ptr [esp + 4]
-    in      eax,dx
-    ret
-  }
-}
-
-#endif
 
 #endif

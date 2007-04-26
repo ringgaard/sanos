@@ -54,10 +54,14 @@
 #define SANOS_VER (OS_MAJ_VERS * 10000 + OS_MIN_VERS * 100 + OS_RELEASE)
 #endif
 
+#ifdef OSLDR
+#define krnlapi
+#else
 #ifdef KRNL_LIB
 #define krnlapi __declspec(dllexport)
 #else
 #define krnlapi __declspec(dllimport)
+#endif
 #endif
 
 //
@@ -1563,7 +1567,7 @@ osapi int setcontext(handle_t thread, void *context);
 osapi int getcontext(handle_t thread, void *context);
 osapi int getprio(handle_t thread);
 osapi int setprio(handle_t thread, int priority);
-osapi void msleep(int millisecs);
+osapi int msleep(int millisecs);
 osapi unsigned sleep(unsigned seconds);
 osapi struct tib *gettib();
 osapi int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib **tibptr);

@@ -285,12 +285,12 @@ static void ne_readmem(struct ne *ne, unsigned short src, void *dst, unsigned sh
   outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
 
   // Setup DMA byte count
-  outp(ne->nic_addr + NE_P0_RBCR0, len);
-  outp(ne->nic_addr + NE_P0_RBCR1, len >> 8);
+  outp(ne->nic_addr + NE_P0_RBCR0, (unsigned char) len);
+  outp(ne->nic_addr + NE_P0_RBCR1, (unsigned char) (len >> 8));
 
   // Setup NIC memory source address
-  outp(ne->nic_addr + NE_P0_RSAR0, src);
-  outp(ne->nic_addr + NE_P0_RSAR1, src >> 8);
+  outp(ne->nic_addr + NE_P0_RSAR0, (unsigned char) src);
+  outp(ne->nic_addr + NE_P0_RSAR1, (unsigned char) (src >> 8));
 
   // Select remote DMA read
   outp(ne->nic_addr + NE_P0_CR, NE_CR_RD0 | NE_CR_STA);
@@ -495,8 +495,8 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   outp(ne->nic_addr + NE_P0_ISR, NE_ISR_RDC);
 
   // Set up DMA byte count
-  outp(ne->nic_addr + NE_P0_RBCR0, dma_len);
-  outp(ne->nic_addr + NE_P0_RBCR1, dma_len >> 8);
+  outp(ne->nic_addr + NE_P0_RBCR0, (unsigned char) dma_len);
+  outp(ne->nic_addr + NE_P0_RBCR1, (unsigned char) (dma_len >> 8));
 
   // Set up destination address in NIC memory
   dst = ne->rx_page_stop; // for now we only use one tx buffer
@@ -556,7 +556,7 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   }
 
   // Set TX buffer start page
-  outp(ne->nic_addr + NE_P0_TPSR, dst);
+  outp(ne->nic_addr + NE_P0_TPSR, (unsigned char) dst);
 
   // Set TX length (packets smaller than 64 bytes must be padded)
   if (p->tot_len > 64)
