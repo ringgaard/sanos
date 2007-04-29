@@ -134,9 +134,6 @@
 				RelativePath="..\src\lib\ctype.c">
 			</File>
 			<File
-				RelativePath="..\src\sys\krnl\iop.c">
-			</File>
-			<File
 				RelativePath="..\src\lib\opts.c">
 			</File>
 			<File

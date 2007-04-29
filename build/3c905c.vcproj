@@ -131,9 +131,6 @@
 			Name="lib"
 			Filter="">
 			<File
-				RelativePath="..\src\sys\krnl\iop.c">
-			</File>
-			<File
 				RelativePath="..\src\lib\string.c">
 			</File>
 		</Filter>

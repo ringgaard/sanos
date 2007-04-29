@@ -141,6 +141,9 @@
 				RelativePath="..\src\sys\osldr\boothd.c">
 			</File>
 			<File
+				RelativePath="..\src\sys\krnl\iop.c">
+			</File>
+			<File
 				RelativePath="..\src\sys\osldr\loadkrnl.c">
 			</File>
 			<File

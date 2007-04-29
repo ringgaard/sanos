@@ -52,7 +52,7 @@
 #define HD0_DRVSEL              0xA0
 #define HD1_DRVSEL              0xB0
 
-#define idedelay() udelay(1)
+#define idedelay() udelay(25)
 
 //
 // Controller registers
@@ -515,6 +515,10 @@ static int hd_identify(struct hd *hd)
 
   // Wait for data ready
   if (wait_for_object(&hd->hdc->ready, HDTIMEOUT_CMD) < 0) return -ETIMEOUT;
+  
+  // Some controllers issues the interrupt before data is ready to be read
+  // Make sure data is ready by waiting for DRQ to be set
+  if (hd_wait(hd->hdc, HDCS_DRQ, HDTIMEOUT_DRQ) < 0) return -EIO;
 
   // Read parameter data
   insw(hd->hdc->iobase + HDC_DATA, &(hd->param), SECTORSIZE / 2);
