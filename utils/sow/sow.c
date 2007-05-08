@@ -1578,9 +1578,10 @@ int setprio(handle_t thread, int priority)
   return 0;
 }
 
-void msleep(int millisecs)
+int msleep(int millisecs)
 {
   Sleep(millisecs);
+  return 0;
 }
 
 struct tib *gettib()
