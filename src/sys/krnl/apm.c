@@ -240,20 +240,6 @@ int apm_set_system_power_state(unsigned long state)
   return apm_set_power_state(APM_DEVICE_ALL, state);
 }
 
-void apm_power_off()
-{
-  int rc;
-
-  if (apm_enabled) 
-  {
-    rc = apm_set_system_power_state(APM_STATE_OFF);
-    if (rc != 0) 
-    {
-      kprintf(KERN_ERR "apm: error %d in apm_set_system_power_state()\n", rc);
-    }
-  }
-}
-
 int apm_get_power_status(unsigned long *status, unsigned long *battery, unsigned long *life)
 {
   unsigned long eax;
@@ -290,6 +276,28 @@ int apm_engage_power_management(unsigned long device, unsigned long enable)
   rc = apm_bios_call_simple(APM_FUNC_ENGAGE_PM, device, enable, &eax);
   if (rc != 0) return (eax >> 8) & 0xFF;
   return 0;
+}
+
+void apm_power_off()
+{
+  int rc;
+
+  if (apm_enabled) 
+  {
+    rc = apm_set_system_power_state(APM_STATE_OFF);
+
+    if (rc != 0)
+    {
+      // If shutdown fails, try to engage power management and try again.
+      apm_engage_power_management(APM_DEVICE_ALL, 1);
+      rc = apm_set_system_power_state(APM_STATE_OFF);
+    }
+
+    if (rc != 0) 
+    {
+      kprintf(KERN_ERR "apm: error %d in apm_set_system_power_state()\n", rc);
+    }
+  }
 }
 
 int apm_proc(struct proc_file *pf, void *arg)
