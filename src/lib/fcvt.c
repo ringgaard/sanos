@@ -34,6 +34,11 @@
 #include <os.h>
 #include <math.h>
 
+//
+// cvt.c - IEEE floating point formatting routines for FreeBSD
+// from GNU libc-4.6.27
+//
+
 static char *cvt(double arg, int ndigits, int *decpt, int *sign, char *buf, int eflag)
 {
   int r2;
