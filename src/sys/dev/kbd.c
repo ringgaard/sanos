@@ -411,7 +411,6 @@ static void keyb_dpc(void *arg)
   unsigned int scancode;
   unsigned char status;
 
-
   while ((status = inp(KBD_STATUS)) & KBD_STAT_OBF) 
   {
     // Get next scancode from keyboard

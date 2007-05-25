@@ -33,7 +33,7 @@
 
 #include <os/krnl.h>
 
-#define VIDEO_PORT_REG        0x3D4
+#define VIDEO_PORT_REG       0x3D4
 #define VIDEO_PORT_DATA      0x3D5
 
 #define VIDEO_REG_CURSOR_MSB 0x0E
@@ -46,8 +46,8 @@
 #define SCREENSIZE           (LINESIZE * LINES)
 #define TABSTOP              8
 
-#define ATTR_NORMAL         0x07
-#define ATTR_INVERSE        0x70
+#define ATTR_NORMAL          0x07
+#define ATTR_INVERSE         0x70
 
 unsigned char *vidmem;
 int cursor_pos;

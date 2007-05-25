@@ -1,5 +1,7 @@
 ;-----------------------------------------------------------------------------
 ; ulldiv.asm - unsigned long divide routine
+; Adapted from Visual Studio C runtime library
+; Portions Copyright (c) Microsoft Corporation. All rights reserved. 
 ;-----------------------------------------------------------------------------
                 .386
 _TEXT           segment use32 para public 'CODE'
