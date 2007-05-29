@@ -1,5 +1,6 @@
 ;-----------------------------------------------------------------------------
 ; floor.asm - floating point floor
+; Ported from Al Maromaty's free C Runtime Library
 ;-----------------------------------------------------------------------------
                 .386
 _TEXT           segment use32 para public 'CODE'

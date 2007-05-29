@@ -1,5 +1,6 @@
 ;-----------------------------------------------------------------------------
 ; tanh.asm - floating point hyperbolic tangent
+; Ported from Al Maromaty's free C Runtime Library
 ;-----------------------------------------------------------------------------
                 .386
 _TEXT           segment use32 para public 'CODE'
