@@ -226,6 +226,33 @@ int munlock(void *addr, unsigned long size)
   return -ENOSYS;
 }
 
+void *miomap(unsigned long addr, int size, int protect)
+{
+  char *vaddr;
+  int i;
+  unsigned long flags = pte_flags_from_protect(protect);
+  int pages = PAGES(size);
+
+  vaddr = (char *) PTOB(rmap_alloc(vmap, pages));
+  if (vaddr == NULL) return NULL;
+  
+  for (i = 0; i < pages; i++)
+  {
+    map_page(vaddr + PTOB(i), BTOP(addr) + i, flags | PT_PRESENT);
+  }
+
+  return vaddr;
+}
+
+void miounmap(void *addr, int size)
+{
+  int i;
+  int pages = PAGES(size);
+
+  for (i = 0; i < pages; i++) unmap_page((char *) addr + PTOB(i));
+  rmap_free(vmap, BTOP(addr), pages);
+}
+
 int guard_page_handler(void *addr)
 {
   unsigned long pfn;

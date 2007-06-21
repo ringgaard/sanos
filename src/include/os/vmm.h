@@ -45,6 +45,9 @@ krnlapi int mprotect(void *addr, unsigned long size, int protect);
 krnlapi int mlock(void *addr, unsigned long size);
 krnlapi int munlock(void *addr, unsigned long size);
 
+krnlapi void *miomap(unsigned long addr, int size, int protect);
+krnlapi void miounmap(void *addr, int size);
+
 int guard_page_handler(void *addr);
 int vmem_proc(struct proc_file *pf, void *arg);
 int mem_sysinfo(struct meminfo *info);
