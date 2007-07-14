@@ -252,9 +252,19 @@ static void handle_sequence(int x, int y, char ch)
     }
     
     case 'm': // Set character enhancements
-      // Just make it reverse if any enhancement selected, otherwise normal
-      if (x) 
-        video_attr = ATTR_INVERSE;
+      // Modified for ANSI color attributes 3/15/07 - C Girdosky
+      if (x >= 30 && x <= 37) // Foreground color
+        video_attr = (x - 30) + (video_attr & 0xF8);
+      else if (x >= 40 && x <= 47) // Background color
+        video_attr = ((x - 40) << 4) + (video_attr & 0x8F);
+      else if (x == 1) // High intensity foreground
+        video_attr = video_attr | 8;
+      else if (x == 5) // High intensity background
+        video_attr = video_attr | 128;
+      else if (x == 8) // Invisible make forground match background
+        video_attr = ((video_attr & 0xF0) >> 4) + (video_attr & 0xF0);
+      else if (x == 7) // Reverse
+        video_attr = ((video_attr & 0xF0) >> 4) + ((video_attr & 0x0F) << 4); 
       else
         video_attr = ATTR_NORMAL;
       break;

@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Modified video driver for ANSI color attributes (Girdosky).
+
     * Added miomap() and miounmap() to virtual memory manger to allow memory mapping
       of memory based device resources to user mode accessible virtual memory regions. 
       This is useful for mapping frame buffers on graphic cards.
