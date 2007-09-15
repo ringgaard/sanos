@@ -42,7 +42,7 @@
 #define ICMP_MIN 8              // Minimum 8 byte icmp packet (just header) 
  
 // 
-// ICMP header 
+// IP header 
 //
 
 #pragma pack(push)
