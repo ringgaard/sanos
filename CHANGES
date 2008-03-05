@@ -4,6 +4,9 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Fixed bug in ide driver that prevented UDMA to function correctly
+      with QEMU.
+
     * Modified video driver for ANSI color attributes (Girdosky).
 
     * Added miomap() and miounmap() to virtual memory manger to allow memory mapping

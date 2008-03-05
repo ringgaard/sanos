@@ -115,7 +115,7 @@
 #define HDDC_NIEN               0x02  // Disable interrupts
 
 //
-// Feature bits
+// Feature commands
 //
 
 #define HDFEAT_ENABLE_WCACHE    0x02  // Enable write caching
@@ -555,7 +555,8 @@ static int stop_dma(struct hdc *hdc)
   // Clear INTR && ERROR flags
   outp(hdc->bmregbase + BM_STATUS_REG, dmastat | BM_SR_MASK_INT | BM_SR_MASK_ERR);
 
-  if ((dmastat & (BM_SR_MASK_INT | BM_SR_MASK_ERR | BM_SR_MASK_ACT)) != BM_SR_MASK_INT)
+  // Check for DMA errors
+  if (dmastat & BM_SR_MASK_ERR)
   {
     kprintf(KERN_ERR "hd: dma error %02X\n", dmastat);
     return -EIO;
@@ -1001,8 +1002,6 @@ static int hd_read_udma(struct dev *dev, void *buffer, size_t count, blkno_t blk
   hdc = hd->hdc;
   sectsleft = count / SECTORSIZE;
   if (wait_for_object(&hdc->lock, HDTIMEOUT_BUSY) < 0) return -EBUSY;
-
-  //kprintf("hdread block %d size %d buffer %p\n", blkno, count, buffer);
 
   while (sectsleft > 0)
   {
