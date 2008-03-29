@@ -1619,7 +1619,7 @@ BOOL WINAPI GetThreadContext
   {
     if (errno == EPERM)
     {
-      // Thead does not have a usermode context, just return dummy context
+      // Thread does not have a usermode context, just return dummy context
       memset(lpContext, 0, sizeof(CONTEXT));
       return TRUE;
     }
