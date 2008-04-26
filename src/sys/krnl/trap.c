@@ -526,7 +526,7 @@ int deliver_pending_signals(int retcode)
   // on the user stack for the thread together with the siginfo structure. A
   // stack frame for calling the global signal handler with the siginfo structure
   // as argument is put on the stack. The instruction pointer (eip) and stack
-  // pointer (esp) is adjusted such that when the thread returns from the kernel
+  // pointer (esp) are adjusted such that when the thread returns from the kernel
   // the global signal handler is called with the siginfo structure.
   //
   // When the global handler has handled the signal it calls sigexit() with the

@@ -707,7 +707,7 @@ int cmd_keyb(int argc, char *argv[])
 
   if (argc != 2)
   {
-    printf("usage: keyb [us|uk|dk]\n");
+    printf("usage: keyb [us|uk|dk|fr]\n");
     return -EINVAL;
   }
   keybname = argv[1];
@@ -718,6 +718,8 @@ int cmd_keyb(int argc, char *argv[])
     keymap = 1;
   else if (strcmp(keybname, "uk") == 0)
     keymap = 2;
+  else if (strcmp(keybname, "fr") == 0)
+    keymap = 3;
   else
   {
     printf("keyb: unknown keymap '%s'\n", keybname);
@@ -726,9 +728,7 @@ int cmd_keyb(int argc, char *argv[])
 
   rc = ioctl(0, IOCTL_SET_KEYMAP, &keymap, sizeof(int));
   return rc;
-
 }
-
 
 int cmd_heapstat(int argc, char *argv[])
 {

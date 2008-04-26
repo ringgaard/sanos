@@ -130,6 +130,7 @@ struct keytable *keytables[MAX_KEYTABLES];
 #include "kbdus.h"
 #include "kbddk.h"
 #include "kbduk.h"
+#include "kbdfr.h"
 
 // Keyboard status
 
@@ -608,6 +609,7 @@ void init_keyboard(int reset)
   keytables[0] = &uskeys;
   keytables[1] = &dkkeys;
   keytables[2] = &ukkeys;
+  keytables[3] = &frkeys;
 
   // Select keyboard table
   kbdname = get_property(krnlcfg, "kernel", "keyboard", "us");
