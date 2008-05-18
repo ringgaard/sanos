@@ -88,6 +88,22 @@ int read_boot_sector(HANDLE hdev)
   return 0;
 }
 
+int read_mbr_file(char *filename)
+{
+  HANDLE himg;
+  DWORD bytes;
+
+  himg = CreateFile(filename, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+  if (himg == INVALID_HANDLE_VALUE)
+  {
+    printf("mkpart: unable to open partition file %s\n", filename);
+    return -1;
+  }
+  if (!ReadFile(himg, bootsect, 512, &bytes, NULL)) return -1;
+  CloseHandle(himg);
+  return 0;
+}
+
 int write_boot_sector(HANDLE hdev)
 {
   DWORD bytes;
@@ -262,13 +278,14 @@ int main(int argc, char **argv)
 {
   HANDLE hdev;
   char *devname;
+  char *mbrfn;
   int readmode;
   char *partinf;
 
   // Check arguments
-  if (argc != 4)
+  if (argc != 4 && argc != 5)
   {
-    printf("usage: [-r|-w] <device> <partition info file>\n");
+    printf("usage: [-r|-w] <device> <partition info file> [<mbr>]\n");
     return 1;
   }
 
@@ -284,6 +301,7 @@ int main(int argc, char **argv)
 
   devname = argv[2];
   partinf = argv[3];
+  mbrfn = argc == 5 ? argv[4] : NULL;
 
   // Open device file
   hdev = CreateFile(devname, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_WRITE_THROUGH | FILE_FLAG_NO_BUFFERING, NULL);
@@ -324,7 +342,17 @@ int main(int argc, char **argv)
       return 3;
     }
 
-    memcpy(bootsect, bootrecord, 512);
+    if (mbrfn != NULL)
+    {
+      printf("mkpart: reading MBR from %s\n", mbrfn);
+      if (read_mbr_file(mbrfn) < 0)
+      {
+        printf("mkpart: error %d reading MBR from %s\n", GetLastError(), mbrfn);
+        return 3;
+      }
+    }
+    else
+      memcpy(bootsect, bootrecord, 512);
 
     if (set_partition_info(partinf) < 0)
     {
