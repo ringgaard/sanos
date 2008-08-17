@@ -4,6 +4,10 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Fixed problem with mounting cdrom under QEMU. The ide feature register needs to be 
+      cleared before doing an ATAPI packet command in order to signal that it is a PIO
+      transfer.
+    
     * Added French keyboard table (Rio).
 
     * Fixed bug in ide driver that prevented UDMA to function correctly
@@ -471,7 +475,6 @@ Version 1.3.0
       been fixed.
 
     * Intrinsic fmod function (_CIfmod) implemented.
-
 
     * The stdin, stdout and stderr macros in stdio.h required os.h to be 
       included to define the job structure. This is no longer needed. The standard 

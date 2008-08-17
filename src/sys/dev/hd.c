@@ -470,6 +470,7 @@ static void hd_setup_transfer(struct hd *hd, blkno_t blkno, int nsects)
     sector = blkno % hd->sectors + 1;
   }
 
+  outp(hd->hdc->iobase + HDC_FEATURE, 0);
   outp(hd->hdc->iobase + HDC_SECTORCNT, nsects);
   outp(hd->hdc->iobase + HDC_SECTOR, (unsigned char) sector);
   outp(hd->hdc->iobase + HDC_TRACKLSB, (unsigned char) track);
@@ -664,6 +665,7 @@ static int atapi_packet_read(struct hd *hd, unsigned char *pkt, int pktlen, void
   reset_event(&hdc->ready);
 
   // Setup registers
+  outp(hdc->iobase + HDC_FEATURE, 0);
   outp(hdc->iobase + HDC_SECTORCNT, 0);
   outp(hdc->iobase + HDC_SECTOR, 0);
   outp(hdc->iobase + HDC_TRACKLSB, (unsigned char) (bufsize & 0xFF));
