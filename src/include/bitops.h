@@ -87,6 +87,7 @@ static __inline int find_lowest_bit(unsigned mask)
   return n;
 }
 
+#if 0
 static __inline int find_highest_bit(unsigned mask)
 {
   int n;
@@ -99,6 +100,20 @@ static __inline int find_highest_bit(unsigned mask)
 
   return n;
 }
+#else
+static __inline int find_highest_bit(unsigned mask)
+{
+  int n = 31;
+
+  while (n > 0 && !(mask & 0x80000000))
+  {
+    mask <<= 1;
+    n--;
+  }
+
+  return n;
+}
+#endif
 
 __inline void set_bits(void *bitmap, int pos, int len)
 {
