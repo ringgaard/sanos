@@ -4,7 +4,7 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
-    * Fixed building using Visual C++ 2008 (Marius K). Sanos can now be build using 
+    * Fixed building using Visual C++ 2008 (Marius K). Sanos can now be built using 
       the following command:
         NMAKE sanos MSVC=9
 
