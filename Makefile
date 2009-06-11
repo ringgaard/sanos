@@ -26,7 +26,6 @@ MKFLOPPY=$(TOOLS)\mkfloppy.exe
 MKPART=$(TOOLS)\mkpart.exe
 SOW=$(TOOLS)\os.dll
 DBGGW=$(TOOLS)\dbggw.exe
-
 AR=lib
 
 !IFDEF PRERELEASEBUILD
@@ -42,10 +41,15 @@ MSVC=7
 !ENDIF
 
 AFLAGS=/nologo
-!IF $(MSVC) == 8
+!IF $(MSVC) == 9
 CFLAGS=/nologo /O2 /Ob1 /Oi /Ot /Oy /GS- /GR- /X /GF /Gy /W3 /I $(SRC)/include $(DEFS)
+RAWIMGFLAGS=/FILEALIGN:4096
+!ELSEIF $(MSVC) == 8
+CFLAGS=/nologo /O2 /Ob1 /Oi /Ot /Oy /GS- /GR- /X /GF /Gy /W3 /I $(SRC)/include $(DEFS)
+RAWIMGFLAGS=/OPT:WIN98
 !ELSE
 CFLAGS=/nologo /O2 /Og /Ob1 /Oi /Ot /Oy /X /GF /Gy /W3 /I $(SRC)/include $(DEFS)
+RAWIMGFLAGS=/OPT:WIN98
 !ENDIF
 
 #
@@ -157,7 +161,9 @@ clean:
 # /I $(SRC)/include     Include search path
 #
 
-!IF $(MSVC) == 8
+!IF $(MSVC) == 9
+WIN32CFLAGS=/nologo /O2 /Ob1 /Oy /Oi /GF /GS- /GR- /MT /Gy /W3 /TC /D WIN32 /D NDEBUG /D _CONSOLE /D _MBCS /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE /D _USE_32BIT_TIME_T
+!ELSEIF $(MSVC) == 8
 WIN32CFLAGS=/nologo /O2 /Ob1 /Oy /Oi /GF /GS- /GR- /MT /Gy /W3 /TC /D WIN32 /D NDEBUG /D _CONSOLE /D _MBCS /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE /D _USE_32BIT_TIME_T
 !ELSE
 WIN32CFLAGS=/nologo /O2 /Ob1 /Oy /GF /ML /Gy /W3 /TC /D WIN32 /D NDEBUG /D _CONSOLE /D _MBCS
@@ -220,7 +226,7 @@ $(OBJ)/boot/ldrinit.exe: $(SRC)/sys/boot/ldrinit.asm
 OSLDRSRC=$(SRC)\sys\osldr\osldr.c $(SRC)\sys\osldr\loadkrnl.c $(SRC)\sys\osldr\boothd.c $(SRC)\sys\osldr\bootfd.c $(SRC)\sys\osldr\unzip.c $(SRC)\sys\osldr\video.c $(SRC)\sys\krnl\iop.c $(SRC)\lib\vsprintf.c $(SRC)\lib\string.c 
 
 $(BIN)/osldr.dll: $(OSLDRSRC) $(OBJ)\boot\ldrinit.exe
-    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/osldr/ $(OSLDRSRC) /D KERNEL /D OSLDR /link /DLL /NODEFAULTLIB /OPT:WIN98 /ENTRY:start /BASE:0x00090000 /FIXED /STUB:$(OBJ)\boot\ldrinit.exe
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/osldr/ $(OSLDRSRC) /D KERNEL /D OSLDR /link /DLL /NODEFAULTLIB /ENTRY:start /BASE:0x00090000 /FIXED /STUB:$(OBJ)\boot\ldrinit.exe $(RAWIMGFLAGS)
 
 $(OBJ)/krnl/lldiv.obj: $(SRC)/lib/lldiv.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
@@ -332,7 +338,7 @@ $(LIBS)/krnl.lib $(BIN)/krnl.dll: \
   $(OBJ)/krnl/lldvrm.obj \
   $(OBJ)/krnl/krnl.res
     $(CC) $(CFLAGS) /Fe$(BIN)/krnl.dll /Fo$(OBJ)/krnl/ $** /D KERNEL /D KRNL_LIB \
-      /link /DLL /LARGEADDRESSAWARE /NODEFAULTLIB /OPT:WIN98 /ENTRY:start \
+      /link /DLL /LARGEADDRESSAWARE /NODEFAULTLIB $(RAWIMGFLAGS) /ENTRY:start \
       /BASE:0x80000000 /FIXED /IMPLIB:$(LIBS)/krnl.lib
 
 $(OBJ)/os/modf.obj: $(SRC)/lib/math/modf.asm
@@ -376,7 +382,7 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
   $(OBJ)/os/ftol.obj \
   $(OBJ)/os/fpconst.obj
     $(CC) $(CFLAGS) /Fe$(BIN)/os.dll /Fo$(OBJ)/os/ $** /D OS_LIB \
-      /link /DLL /NODEFAULTLIB /OPT:WIN98 /ENTRY:start /BASE:0x7FF00000 /HEAP:33554432,131072 /FIXED /IMPLIB:$(LIBS)/os.lib
+      /link /DLL /NODEFAULTLIB /ENTRY:start /BASE:0x7FF00000 /HEAP:33554432,131072 /FIXED /IMPLIB:$(LIBS)/os.lib
 
 #
 # drivers
