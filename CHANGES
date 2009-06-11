@@ -4,8 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
-    * Fixed building using Visual C++ 2008. Sanos can now be build using the following 
-      command:
+    * Fixed building using Visual C++ 2008 (Marius K). Sanos can now be build using 
+      the following command:
         NMAKE sanos MSVC=9
 
     * Fixed problem with mounting cdrom under QEMU. The ide feature register needs to be 
