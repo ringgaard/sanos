@@ -17,7 +17,7 @@
 
 ; System files
 
-/boot/krnl.ini       build\krnl.ini
+/boot/krnl.ini       build\krnlrel.ini
 /boot/os.dll         bin\os.dll
 /bin/sh.exe          bin\sh.exe
 /bin/edit.exe        bin\edit.exe
@@ -30,7 +30,6 @@
 
 ; Configuration files
 
-/etc/krnl.ini        build\krnl.ini
 /etc/os.ini          build\ossdk.ini
 
 ; Compiler
@@ -44,11 +43,12 @@
 
 ; Include files
 
-/usr/include         \sanos\img\usr\include
+/usr/include         img\usr\include
 
 ; Examples
 
-/usr/src/hello.c     \sanos\utils\samples\hello.c
-/usr/src/fib.c       \sanos\utils\samples\fib.c
-/usr/src/webserver.c \sanos\utils\samples\webserver.c
-/usr/src/edit.c      \sanos\src\utils\edit\edit.c
+/usr/src/hello.c     utils\samples\hello.c
+/usr/src/fib.c       utils\samples\fib.c
+/usr/src/webserver.c utils\samples\webserver.c
+/usr/src/edit.c      src\utils\edit\edit.c
+/usr/src/telnetd.c   src\utils\telnetd\telnetd.c
