@@ -1,0 +1,54 @@
+;
+; File list for sanos SDK floppy
+;
+
+; Directories
+
+/bin
+/dev
+/proc
+/etc
+/tmp
+/usr
+/usr/bin
+/usr/include
+/usr/lib
+/usr/src
+
+; System files
+
+/boot/krnl.ini       build\krnl.ini
+/boot/os.dll         bin\os.dll
+/bin/sh.exe          bin\sh.exe
+/bin/edit.exe        bin\edit.exe
+
+; Drivers
+
+;/boot/pcnet32.sys    bin\pcnet32.sys
+/boot/ne2000.sys     bin\ne2000.sys
+;/boot/tulip.sys      bin\tulip.sys
+
+; Configuration files
+
+/etc/krnl.ini        build\krnl.ini
+/etc/os.ini          build\ossdk.ini
+
+; Compiler
+
+/usr/bin/cc.exe      img\usr\bin\cc.exe
+
+; Libraries
+
+/usr/lib/os.def      img\usr\lib\os.def
+/usr/lib/libc.a      img\usr\lib\libc.a
+
+; Include files
+
+/usr/include         \sanos\img\usr\include
+
+; Examples
+
+/usr/src/hello.c     \sanos\utils\samples\hello.c
+/usr/src/fib.c       \sanos\utils\samples\fib.c
+/usr/src/webserver.c \sanos\utils\samples\webserver.c
+/usr/src/edit.c      \sanos\src\utils\edit\edit.c
