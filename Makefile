@@ -956,8 +956,8 @@ $(IMG)/sanos.flp: dirs sanos $(MKDFS) $(BUILD)/bootdisk.lst
 
 boothd: $(IMG)/sanos.vmdk
 
-$(IMG)/sanos.vmdk: dirs sanos $(MKDFS) $(BUILD)/bootdisk.lst
-    $(MKDFS) -d $(IMG)/sanos.vmdk -t vmdk -b $(BIN)\boot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 100M -i -f -S $(TOPDIR) -F $(BUILD)\bootdisk.lst
+$(IMG)/sanos.vmdk: dirs sanos $(MKDFS) $(BUILD)/boothd.lst
+    $(MKDFS) -d $(IMG)/sanos.vmdk -t vmdk -b $(BIN)\boot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 100M -i -f -S $(TOPDIR) -F $(BUILD)\boothd.lst
 
 #
 # netbootimg
@@ -997,35 +997,35 @@ install: sanos
     if not exist $(INSTALL)\tmp mkdir $(INSTALL)\tmp
     if not exist $(INSTALL)\usr mkdir $(INSTALL)\usr
     if not exist $(INSTALL)\var mkdir $(INSTALL)\var
-    copy $(BIN)\sh.exe       $(INSTALL)\bin\sh.exe
-    copy $(BIN)\httpd.dll    $(INSTALL)\bin\httpd.dll
-    copy $(BIN)\setup.exe    $(INSTALL)\bin\setup.exe
-    copy $(BIN)\edit.exe     $(INSTALL)\bin\edit.exe
-    copy $(BIN)\fdisk.exe    $(INSTALL)\bin\fdisk.exe
-    copy $(BIN)\jinit.exe    $(INSTALL)\bin\jinit.exe
-    copy $(BIN)\telnetd.exe  $(INSTALL)\bin\telnetd.exe
-    copy $(BIN)\ftpd.exe     $(INSTALL)\bin\ftpd.exe
-    copy $(BIN)\login.exe    $(INSTALL)\bin\login.exe
-    copy $(BIN)\msvcrt.dll   $(INSTALL)\bin\msvcrt.dll
-    copy $(BIN)\kernel32.dll $(INSTALL)\bin\kernel32.dll
-    copy $(BIN)\user32.dll   $(INSTALL)\bin\user32.dll
-    copy $(BIN)\advapi32.dll $(INSTALL)\bin\advapi32.dll
-    copy $(BIN)\winmm.dll    $(INSTALL)\bin\winmm.dll
-    copy $(BIN)\wsock32.dll  $(INSTALL)\bin\wsock32.dll
-    copy $(BUILD)\os.ini     $(INSTALL)\etc\os.ini
-    copy $(BUILD)\setup.ini  $(INSTALL)\etc\setup.ini
-    copy $(BUILD)\krnl.ini   $(INSTALL)\boot\krnl.ini
-    copy $(BIN)\boot         $(INSTALL)\boot\boot
-    copy $(BIN)\cdboot       $(INSTALL)\boot\cdboot
-    copy $(BIN)\cdemboot     $(INSTALL)\boot\cdemboot
-    copy $(BIN)\netboot      $(INSTALL)\boot\netboot
-    copy $(BIN)\osldr.dll    $(INSTALL)\boot\osldr.dll
-    copy $(BIN)\krnl.dll     $(INSTALL)\boot\krnl.dll
-    copy $(BIN)\os.dll       $(INSTALL)\boot\os.dll
-    copy $(BIN)\3c905c.sys   $(INSTALL)\boot\3c905c.sys
-    copy $(BIN)\eepro100.sys $(INSTALL)\boot\eepro100.sys
-    copy $(BIN)\ne2000.sys   $(INSTALL)\boot\ne2000.sys
-    copy $(BIN)\pcnet32.sys  $(INSTALL)\boot\pcnet32.sys
-    copy $(BIN)\rtl8139.sys  $(INSTALL)\boot\rtl8139.sys
-    copy $(BIN)\sis900.sys   $(INSTALL)\boot\sis900.sys
-    copy $(BIN)\tulip.sys    $(INSTALL)\boot\tulip.sys
+    copy $(BIN)\sh.exe        $(INSTALL)\bin\sh.exe
+    copy $(BIN)\httpd.dll     $(INSTALL)\bin\httpd.dll
+    copy $(BIN)\setup.exe     $(INSTALL)\bin\setup.exe
+    copy $(BIN)\edit.exe      $(INSTALL)\bin\edit.exe
+    copy $(BIN)\fdisk.exe     $(INSTALL)\bin\fdisk.exe
+    copy $(BIN)\jinit.exe     $(INSTALL)\bin\jinit.exe
+    copy $(BIN)\telnetd.exe   $(INSTALL)\bin\telnetd.exe
+    copy $(BIN)\ftpd.exe      $(INSTALL)\bin\ftpd.exe
+    copy $(BIN)\login.exe     $(INSTALL)\bin\login.exe
+    copy $(BIN)\msvcrt.dll    $(INSTALL)\bin\msvcrt.dll
+    copy $(BIN)\kernel32.dll  $(INSTALL)\bin\kernel32.dll
+    copy $(BIN)\user32.dll    $(INSTALL)\bin\user32.dll
+    copy $(BIN)\advapi32.dll  $(INSTALL)\bin\advapi32.dll
+    copy $(BIN)\winmm.dll     $(INSTALL)\bin\winmm.dll
+    copy $(BIN)\wsock32.dll   $(INSTALL)\bin\wsock32.dll
+    copy $(BUILD)\osrel.ini   $(INSTALL)\etc\os.ini
+    copy $(BUILD)\setup.ini   $(INSTALL)\etc\setup.ini
+    copy $(BUILD)\krnlrel.ini $(INSTALL)\boot\krnl.ini
+    copy $(BIN)\boot          $(INSTALL)\boot\boot
+    copy $(BIN)\cdboot        $(INSTALL)\boot\cdboot
+    copy $(BIN)\cdemboot      $(INSTALL)\boot\cdemboot
+    copy $(BIN)\netboot       $(INSTALL)\boot\netboot
+    copy $(BIN)\osldr.dll     $(INSTALL)\boot\osldr.dll
+    copy $(BIN)\krnl.dll      $(INSTALL)\boot\krnl.dll
+    copy $(BIN)\os.dll        $(INSTALL)\boot\os.dll
+    copy $(BIN)\3c905c.sys    $(INSTALL)\boot\3c905c.sys
+    copy $(BIN)\eepro100.sys  $(INSTALL)\boot\eepro100.sys
+    copy $(BIN)\ne2000.sys    $(INSTALL)\boot\ne2000.sys
+    copy $(BIN)\pcnet32.sys   $(INSTALL)\boot\pcnet32.sys
+    copy $(BIN)\rtl8139.sys   $(INSTALL)\boot\rtl8139.sys
+    copy $(BIN)\sis900.sys    $(INSTALL)\boot\sis900.sys
+    copy $(BIN)\tulip.sys     $(INSTALL)\boot\tulip.sys

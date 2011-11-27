@@ -1404,6 +1404,11 @@ int wait(handle_t h, int timeout)
   return 0;
 }
 
+int waitone(handle_t h, int timeout)
+{
+  return notimpl("waitone");
+}
+
 int waitall(handle_t *h, int count, int timeout)
 {
   return notimpl("waitall");
@@ -1578,6 +1583,11 @@ int setprio(handle_t thread, int priority)
   return 0;
 }
 
+handle_t getprochandle(pid_t pid) 
+{
+  return notimpl("getprochandle");
+}
+
 int msleep(int millisecs)
 {
   Sleep(millisecs);
@@ -1602,6 +1612,11 @@ void exit(int status)
 sighandler_t signal(int signum, sighandler_t handler)
 {
   return (sighandler_t) notimpl("signal");
+}
+
+int sigsuspend(const sigset_t *mask) 
+{
+  return notimpl("sigsuspend");
 }
 
 int raise(int signum)

@@ -24,9 +24,9 @@
 
 ; Drivers
 
-;/boot/pcnet32.sys    bin\pcnet32.sys
+/boot/pcnet32.sys    bin\pcnet32.sys
 /boot/ne2000.sys     bin\ne2000.sys
-;/boot/tulip.sys      bin\tulip.sys
+/boot/tulip.sys      bin\tulip.sys
 
 ; Configuration files
 
@@ -52,3 +52,4 @@
 /usr/src/webserver.c utils\samples\webserver.c
 /usr/src/edit.c      src\utils\edit\edit.c
 /usr/src/telnetd.c   src\utils\telnetd\telnetd.c
+/usr/src/login.c     src\utils\login\login.c

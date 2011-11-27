@@ -8,7 +8,7 @@ INCLUDE=$(SANOS)\src\include
 MATHOBJSRC=$(SANOS)\obj\libc
 
 !IFNDEF INSTALLDIR
-INSTALLDIR=..\..\img
+INSTALLDIR=..\..\install
 !ENDIF
 
 TOOLS=$(SANOS)\tools
@@ -17,7 +17,7 @@ OBJCOPY=$(TOOLS)\objcopy.exe
 IMPDEF=$(TOOLS)\tiny_impdef.exe
 TCC=cc.exe
 
-OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fork.o getopt.o hash.o inifile.o input.o \
+OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fork.o getopt.o glob.o hash.o inifile.o input.o \
      math.o opts.o output.o qsort.o random.o readline.o rmap.o rtttl.o sched.o semaphore.o stdio.o stdlib.o strftime.o \
      string.o strtod.o strtol.o time.o xtoa.o \
      barrier.o condvar.o mutex.o pthread.o rwlock.o spinlock.o \
@@ -31,25 +31,30 @@ OBJCOPYFLAGS=-g --remove-leading-char -I pe-i386 -O elf32-i386
 all: cc.exe os.dll libc.a os.def
 
 install: all
-     copy /Y cc.exe $(INSTALLDIR)\usr\bin
+     if not exist $(INSTALLDIR)\usr\bin mkdir $(INSTALLDIR)\usr\bin
      if not exist $(INSTALLDIR)\usr\include mkdir $(INSTALLDIR)\usr\include
      if not exist $(INSTALLDIR)\usr\include\arpa mkdir $(INSTALLDIR)\usr\include\arpa
+     if not exist $(INSTALLDIR)\usr\include\java mkdir $(INSTALLDIR)\usr\include\java
+     if not exist $(INSTALLDIR)\usr\include\net mkdir $(INSTALLDIR)\usr\include\net
      if not exist $(INSTALLDIR)\usr\include\netinet mkdir $(INSTALLDIR)\usr\include\netinet
      if not exist $(INSTALLDIR)\usr\include\os mkdir $(INSTALLDIR)\usr\include\os
      if not exist $(INSTALLDIR)\usr\include\sys mkdir $(INSTALLDIR)\usr\include\sys
-     copy $(INCLUDE)\* $(INSTALLDIR)\usr\include
-     copy $(INCLUDE)\arpa\* $(INSTALLDIR)\usr\include\arps
-     copy $(INCLUDE)\netinet\* $(INSTALLDIR)\usr\include\netinet
-     copy $(INCLUDE)\os\version.h $(INSTALLDIR)\usr\include\os
-     copy $(INCLUDE)\sys\* $(INSTALLDIR)\usr\include\sys
      if not exist $(INSTALLDIR)\usr\lib mkdir $(INSTALLDIR)\usr\lib
+     if not exist $(INSTALLDIR)\usr\src\cc mkdir $(INSTALLDIR)\usr\src\cc
+     copy /Y cc.exe $(INSTALLDIR)\usr\bin
+     copy $(INCLUDE)\* $(INSTALLDIR)\usr\include
+     copy $(INCLUDE)\arpa\* $(INSTALLDIR)\usr\include\arpa
+     copy $(INCLUDE)\java\* $(INSTALLDIR)\usr\include\java
+     copy $(INCLUDE)\net\* $(INSTALLDIR)\usr\include\net
+     copy $(INCLUDE)\netinet\* $(INSTALLDIR)\usr\include\netinet
+     copy $(INCLUDE)\os\* $(INSTALLDIR)\usr\include\os
+     copy $(INCLUDE)\sys\* $(INSTALLDIR)\usr\include\sys
      copy /Y libc.a $(INSTALLDIR)\usr\lib
      copy /Y os.def $(INSTALLDIR)\usr\lib
-     if not exist $(INSTALLDIR)\usr\src\cc mkdir $(INSTALLDIR)\usr\src\cc
      copy /Y *.c $(INSTALLDIR)\usr\src\cc
      copy /Y *.h $(INSTALLDIR)\usr\src\cc
-     copy /Y *.h $(INSTALLDIR)\usr\src\cc
      copy /Y stab.def $(INSTALLDIR)\usr\src\cc
+     copy /Y $(SANOS)\utils\samples\* $(INSTALLDIR)\usr\src
 
 clean:
   del *.exe *.obj *.dll *.o os.def libc.a *.nbc *.suo
@@ -61,7 +66,7 @@ cc.exe: tcc.c $(SANOS)/lib/os.lib $(SANOS)/lib/libc.lib
     
 os.def: $(SANOS)/bin/os.dll
     $(IMPDEF) $** -o $@
-    
+
 os.dll: $(SANOS)/tools/os.dll
     copy $(SANOS)\tools\os.dll os.dll
 
@@ -96,6 +101,9 @@ fork.o: $(LIBSRC)/fork.c
     $(TCC) -c $** -o $@ -I$(INCLUDE)
 
 getopt.o: $(LIBSRC)/getopt.c
+    $(TCC) -c $** -o $@ -I$(INCLUDE)
+
+glob.o: $(LIBSRC)/glob.c
     $(TCC) -c $** -o $@ -I$(INCLUDE)
 
 hash.o: $(LIBSRC)/hash.c
