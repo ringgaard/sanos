@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Fixed bug in pthread_barrier_wait (zhanglei8893).
+
     * Fixed building using Visual C++ 2008 (Marius K). Sanos can now be built using 
       the following command:
         NMAKE sanos MSVC=9
