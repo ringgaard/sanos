@@ -98,7 +98,7 @@ int pthread_barrier_wait(pthread_barrier_t *barrier)
   int step = barrier->step;
   int rc;
 
-  if (atomic_increment(&barrier->curr_height) == 0)
+  if (atomic_decrement(&barrier->curr_height) == 0)
   {
     barrier->curr_height = barrier->init_height;
     if (barrier->init_height > 1)
