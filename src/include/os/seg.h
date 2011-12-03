@@ -74,8 +74,7 @@
 
 // Structures for descriptors and gates
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 
 struct segment
 {

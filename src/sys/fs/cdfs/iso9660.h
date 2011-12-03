@@ -43,8 +43,7 @@
 #define ISO_VD_PARTITION    3
 #define ISO_VD_END          255
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 
 struct iso_volume_descriptor 
 {

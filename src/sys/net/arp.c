@@ -44,8 +44,7 @@
 
 #define MAX_XMIT_DELAY     1000        // Maximum delay for packets in millisecs     
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 
 struct arp_hdr 
 {

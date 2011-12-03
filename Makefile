@@ -1029,3 +1029,10 @@ install: sanos
     copy $(BIN)\rtl8139.sys   $(INSTALL)\boot\rtl8139.sys
     copy $(BIN)\sis900.sys    $(INSTALL)\boot\sis900.sys
     copy $(BIN)\tulip.sys     $(INSTALL)\boot\tulip.sys
+
+install-source: dirs
+    xcopy /S /I /Y $(SRC)\include $(INSTALL)\usr\include
+    xcopy /S /I /Y $(SRC)\lib $(INSTALL)\usr\src\lib
+    xcopy /S /I /Y $(SRC)\sys $(INSTALL)\usr\src\sys
+    xcopy /S /I /Y $(SRC)\utils $(INSTALL)\usr\src\utils
+    xcopy /S /I /Y $(SRC)\win32 $(INSTALL)\usr\src\win32

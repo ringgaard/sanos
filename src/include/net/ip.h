@@ -60,8 +60,7 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
 #define IP_MF      0x2000        // More fragments flag
 #define IP_OFFMASK 0x1fff        // Mask for fragmenting bits
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 
 struct ip_hdr 
 {

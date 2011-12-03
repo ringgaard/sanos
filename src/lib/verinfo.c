@@ -46,8 +46,7 @@
 #define TYPE_VALUE_BINARY 0
 #define TYPE_VALUE_TEXT   1
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 
 struct stringinfo
 {

@@ -54,7 +54,7 @@
 #define SANOS_VER (OS_MAJ_VERS * 10000 + OS_MIN_VERS * 100 + OS_RELEASE)
 #endif
 
-#ifdef OSLDR
+#if defined(OSLDR) || defined(__TINYC__)
 #define krnlapi
 #else
 #ifdef KRNL_LIB
@@ -1113,10 +1113,7 @@ struct pollfd
 // Module version info
 //
 
-#if !defined(__TINYC__) && !defined(__GNUC__)
-#pragma pack(push)
-#pragma pack(1)
-#endif
+#pragma pack(push, 1)
 
 struct verinfo 
 { 
@@ -1142,9 +1139,7 @@ struct verinfo
   unsigned __int64 file_date;
 };
 
-#if !defined(__TINYC__) && !defined(__GNUC__)
 #pragma pack(pop)
-#endif
 
 //
 // User database

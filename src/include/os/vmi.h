@@ -198,8 +198,7 @@ struct vmi_relocation_info
 // VROM call table definitions
 //
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 
 #define VROM_CALL_LEN 32
 

@@ -1702,10 +1702,7 @@ static void exec_program(char *args)
   int rc;
 
   rc = spawn(P_WAIT, NULL, args, NULL, NULL);
-  if (rc < 0)
-    perror("error");
-  else if (rc > 0)
-    printf("Exitcode: %d\n", rc);
+  if (rc < 0) perror("error");
 }
 
 static void launch_program(char *args)

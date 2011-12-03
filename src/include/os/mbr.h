@@ -38,8 +38,7 @@
 
 #define SANOS_BOOT_PARTITION_ID  0xCC
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 
 struct disk_partition 
 {

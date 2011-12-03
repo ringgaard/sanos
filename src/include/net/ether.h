@@ -35,8 +35,7 @@
 #ifndef ETHER_H
 #define ETHER_H
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 
 #define ETHER_HLEN 14
 

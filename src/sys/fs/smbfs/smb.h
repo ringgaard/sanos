@@ -363,8 +363,7 @@
 #define ERRsharebufexc		36      // Share buffer exceeded
 #define ERRdiskfull		39
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 
 typedef __int64 smb_size;
 typedef __int64 smb_time;

@@ -64,8 +64,7 @@ err_t icmp_input(struct pbuf *p, struct netif *inp);
 void icmp_dest_unreach(struct pbuf *p, int t);
 void icmp_time_exceeded(struct pbuf *p, int t);
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 
 struct icmp_echo_hdr 
 {

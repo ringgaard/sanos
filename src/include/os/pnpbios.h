@@ -78,8 +78,7 @@
 #define PNP_MESSAGE_NOT_SUPPORTED                  0x8E
 #define PNP_HARDWARE_ERROR                         0x8F
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 
 struct pnp_bios_expansion_header 
 {

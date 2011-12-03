@@ -49,14 +49,16 @@
 #define KEY_RIGHT       0x106
 #define KEY_UP          0x107
 #define KEY_DOWN        0x108
-#define KEY_CTRL_LEFT   0x109
-#define KEY_CTRL_RIGHT  0x10A
-#define KEY_HOME        0x10B
-#define KEY_END         0x10C
-#define KEY_ENTER       0x10D
-#define KEY_TAB         0x10E
-#define KEY_PGUP        0x10F
-#define KEY_PGDN        0x110
+#define KEY_HOME        0x109
+#define KEY_END         0x10A
+#define KEY_ENTER       0x10B
+#define KEY_TAB         0x10C
+#define KEY_PGUP        0x10D
+#define KEY_PGDN        0x10E
+#define KEY_CTRL_LEFT   0x10F
+#define KEY_CTRL_RIGHT  0x111
+#define KEY_CTRL_HOME   0x112
+#define KEY_CTRL_END    0x113
 
 #define KEY_UNKNOWN     0xFFF
 
@@ -334,6 +336,11 @@ int copy_line(struct editor *ed, unsigned char *buf, int pos, int margin, int le
 // Navigation functions
 //
 
+int text_length(struct editor *ed)
+{
+  return (ed->gap - ed->start) + (ed->end - ed->rest);
+}
+
 int line_length(struct editor *ed, int linepos)
 {
   int pos = linepos;
@@ -457,6 +464,8 @@ int getkey()
 	case 0x53: return KEY_DEL;
 	case 0x73: return KEY_CTRL_LEFT;
 	case 0x74: return KEY_CTRL_RIGHT;
+	case 0x75: return KEY_CTRL_END;
+	case 0x77: return KEY_CTRL_HOME;
 	default: return KEY_UNKNOWN;
       }
       break;
@@ -696,6 +705,33 @@ void end(struct editor *ed)
   adjust(ed);
 }
 
+void top(struct editor *ed)
+{
+  ed->toppos = ed->topline = ed->margin = 0;
+  ed->linepos = ed->line = ed->col = ed->lastcol = 0;
+  ed->refresh = 1;
+}
+
+void bottom(struct editor *ed)
+{
+  for (;;) {
+    int newpos = next_line(ed, ed->linepos);
+    if (newpos < 0) break;
+
+    ed->linepos = newpos;
+    ed->line++;
+
+    if (ed->line >= ed->topline + ed->lines)
+    {
+      ed->toppos = next_line(ed, ed->toppos);
+      ed->topline++;
+      ed->refresh = 1;
+    }
+  }
+  ed->col = ed->lastcol = line_length(ed, ed->linepos);
+  adjust(ed);
+}
+
 void pageup(struct editor *ed)
 {
   int i;
@@ -863,6 +899,45 @@ int quit(struct editor *ed)
   return 0;
 }
 
+void detab(struct editor *ed)
+{
+  int pos, linepos, tabs, dirty;
+  unsigned char *p;
+  
+  tabs = 0;
+  p = ed->start;
+  while (p < ed->end)
+  {
+    if (p == ed->gap) 
+    {
+      p = ed->rest;
+      continue;
+    }
+    if (*p == '\t') {
+      tabs = 1;
+      break;
+    }
+    if (++p == ed->gap) p = ed->rest;
+  }
+  if (!tabs) return;
+
+  dirty = ed->dirty;
+  linepos = 0;
+  pos = 0;
+  for (;;)
+  {
+    int ch = get(ed, pos);
+    if (ch < 0) break;
+    if (ch == '\t')
+    {
+      int spaces = 8 - linepos % 8;
+      replace(ed, pos, 1, "        ", spaces);
+    }
+    pos++;
+  }
+  ed->dirty = dirty;
+}
+
 //
 // main
 //
@@ -889,6 +964,7 @@ int main(int argc, char *argv[])
     perror(argv[1]);
     return 0;
   }
+  detab(ed);
 
   setvbuf(stdout, NULL, 0, 8192);
 
@@ -930,6 +1006,8 @@ int main(int argc, char *argv[])
       case KEY_RIGHT: right(ed); break;
       case KEY_HOME: home(ed); break;
       case KEY_END: end(ed); break;
+      case KEY_CTRL_HOME: top(ed); break;
+      case KEY_CTRL_END: bottom(ed); break;
       case KEY_PGUP: pageup(ed); break;
       case KEY_PGDN: pagedown(ed); break;
       case KEY_ENTER: newline(ed); break;

@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Adeed detabbing to editor and goto begining and and of file.
+
     * Fixed bug in pthread_barrier_wait (zhanglei8893).
 
     * Fixed building using Visual C++ 2008 (Marius K). Sanos can now be built using 

@@ -96,8 +96,7 @@ err_t tcp_output(struct tcp_pcb *pcb);
 
 #define TCP_OOSEQ_TIMEOUT        6  // x RTO
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 
 struct tcp_hdr 
 {

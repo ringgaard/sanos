@@ -328,8 +328,7 @@ typedef void (__stdcall *adapter_shutdown_handler)(void *shutdown_context);
 #define NDIS_RESOURCE_DMA_TYPE_B                0x0020
 #define NDIS_RESOURCE_DMA_TYPE_F                0x0040
 
-#pragma pack(push)
-#pragma pack(4)
+#pragma pack(push, 4)
 
 struct ndis_resource_descriptor
 {

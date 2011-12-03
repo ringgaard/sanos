@@ -144,8 +144,7 @@
 #define ETHER_FRAME_LEN         1544
 #define TX_TIMEOUT              5000
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 
 // Rx and Tx ring descriptors
 

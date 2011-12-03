@@ -111,8 +111,7 @@ struct apmparams
 #define MEMTYPE_ACPI      3
 #define MEMTYPE_NVS       4
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 
 struct memmap
 {
