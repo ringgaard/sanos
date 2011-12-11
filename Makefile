@@ -1020,7 +1020,6 @@ install: sanos
     copy $(BIN)\cdemboot      $(INSTALL)\boot\cdemboot
     copy $(BIN)\netboot       $(INSTALL)\boot\netboot
     copy $(BIN)\osldr.dll     $(INSTALL)\boot\osldr.dll
-    copy $(BIN)\krnl.dll      $(INSTALL)\boot\krnl.dll
     copy $(BIN)\os.dll        $(INSTALL)\boot\os.dll
     copy $(BIN)\3c905c.sys    $(INSTALL)\boot\3c905c.sys
     copy $(BIN)\eepro100.sys  $(INSTALL)\boot\eepro100.sys

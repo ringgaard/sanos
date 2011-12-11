@@ -56,7 +56,7 @@ typedef unsigned long pte_t;
 
 #define PDEIDX(vaddr)  (((unsigned long) vaddr) >> 22)
 #define PTEIDX(vaddr)  ((((unsigned long) vaddr) >> 12) & 0x3FF)
-#define PGOFF(vaddr)   (((unsigned long) vaddr) & 0xFFF) 
+#define PGOFF(vaddr)   (((unsigned long) vaddr) & 0xFFF)
 #define PTABIDX(vaddr) (((unsigned long) vaddr) >> 12)
 
 #define PAGES(x) (((unsigned long)(x) + (PAGESIZE - 1)) >> PAGESHIFT)

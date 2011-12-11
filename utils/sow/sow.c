@@ -1594,6 +1594,11 @@ int msleep(int millisecs)
   return 0;
 }
 
+unsigned sleep(unsigned seconds) {
+  Sleep(seconds * 1000);
+  return 0;
+}
+
 struct tib *gettib()
 {
   return (struct tib *) TlsGetValue(tibtls);

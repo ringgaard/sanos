@@ -198,29 +198,29 @@
 // Bus master registers
 //
 
-#define BM_COMMAND_REG    0            // Offset to command reg
-#define BM_STATUS_REG     2            // Offset to status reg
-#define BM_PRD_ADDR       4            // Offset to PRD addr reg
+#define BM_COMMAND_REG          0      // Offset to command reg
+#define BM_STATUS_REG           2      // Offset to status reg
+#define BM_PRD_ADDR             4      // Offset to PRD addr reg
 
 //
 // Bus master command register flags
 //
 
-#define BM_CR_MASK_READ    0x00        // Read from memory
-#define BM_CR_MASK_WRITE   0x08        // Write to memory
-#define BM_CR_MASK_START   0x01        // Start transfer
-#define BM_CR_MASK_STOP    0x00        // Stop transfer
+#define BM_CR_STOP              0x00   // Stop transfer
+#define BM_CR_START             0x01   // Start transfer
+#define BM_CR_READ              0x00   // Read from memory
+#define BM_CR_WRITE             0x08   // Write to memory
 
 //
 // Bus master status register flags
 //
 
-#define BM_SR_MASK_SIMPLEX 0x80        // Simplex only
-#define BM_SR_MASK_DRV1    0x40        // Drive 1 can do dma
-#define BM_SR_MASK_DRV0    0x20        // Drive 0 can do dma
-#define BM_SR_MASK_INT     0x04        // INTRQ signal asserted
-#define BM_SR_MASK_ERR     0x02        // Error
-#define BM_SR_MASK_ACT     0x01        // Active
+#define BM_SR_ACT               0x01   // Active
+#define BM_SR_ERR               0x02   // Error
+#define BM_SR_INT               0x04   // INTRQ signal asserted
+#define BM_SR_DRV0              0x20   // Drive 0 can do dma
+#define BM_SR_DRV1              0x40   // Drive 1 can do dma
+#define BM_SR_SIMPLEX           0x80   // Simplex only
 
 //
 // Parameters returned by read drive parameters command
@@ -505,7 +505,7 @@ static void setup_dma(struct hdc *hdc, char *buffer, int count, int cmd)
   char *next;
 
   i = 0;
-  next = (char *) ((unsigned long) buffer & ~PAGESIZE) + PAGESIZE;
+  next = (char *) ((unsigned long) buffer & (PAGESIZE - 1)) + PAGESIZE;
   while (1)
   {
     if (i == MAX_PRDS) panic("hd dma transfer too large");
@@ -531,16 +531,16 @@ static void setup_dma(struct hdc *hdc, char *buffer, int count, int cmd)
   outpd(hdc->bmregbase + BM_PRD_ADDR, hdc->prds_phys);
   
   // Specify read/write
-  outp(hdc->bmregbase + BM_COMMAND_REG, cmd | BM_CR_MASK_STOP);
+  outp(hdc->bmregbase + BM_COMMAND_REG, cmd | BM_CR_STOP);
 
   // Clear INTR & ERROR flags
-  outp(hdc->bmregbase + BM_STATUS_REG, inp(hdc->bmregbase + BM_STATUS_REG) | BM_SR_MASK_INT | BM_SR_MASK_ERR);
+  outp(hdc->bmregbase + BM_STATUS_REG, inp(hdc->bmregbase + BM_STATUS_REG) | BM_SR_INT | BM_SR_ERR);
 }
 
 static void start_dma(struct hdc *hdc)
 {
   // Start DMA operation
-  outp(hdc->bmregbase + BM_COMMAND_REG, inp(hdc->bmregbase + BM_COMMAND_REG) | BM_CR_MASK_START);
+  outp(hdc->bmregbase + BM_COMMAND_REG, inp(hdc->bmregbase + BM_COMMAND_REG) | BM_CR_START);
 }
 
 static int stop_dma(struct hdc *hdc)
@@ -548,16 +548,16 @@ static int stop_dma(struct hdc *hdc)
   int dmastat;
 
   // Stop DMA channel and check DMA status
-  outp(hdc->bmregbase + BM_COMMAND_REG, inp(hdc->bmregbase + BM_COMMAND_REG) & ~BM_CR_MASK_START);
+  outp(hdc->bmregbase + BM_COMMAND_REG, inp(hdc->bmregbase + BM_COMMAND_REG) & ~BM_CR_START);
   
   // Get DMA status
   dmastat = inp(hdc->bmregbase + BM_STATUS_REG);
 
   // Clear INTR && ERROR flags
-  outp(hdc->bmregbase + BM_STATUS_REG, dmastat | BM_SR_MASK_INT | BM_SR_MASK_ERR);
+  outp(hdc->bmregbase + BM_STATUS_REG, dmastat | BM_SR_INT | BM_SR_ERR);
 
   // Check for DMA errors
-  if (dmastat & BM_SR_MASK_ERR)
+  if (dmastat & BM_SR_ERR)
   {
     kprintf(KERN_ERR "hd: dma error %02X\n", dmastat);
     return -EIO;
@@ -1036,7 +1036,7 @@ static int hd_read_udma(struct dev *dev, void *buffer, size_t count, blkno_t blk
     hd_setup_transfer(hd, blkno, nsects);
     
     // Setup DMA
-    setup_dma(hdc, bufp, nsects * SECTORSIZE, BM_CR_MASK_WRITE);
+    setup_dma(hdc, bufp, nsects * SECTORSIZE, BM_CR_WRITE);
 
     // Start read
     outp(hdc->iobase + HDC_COMMAND, HDCMD_READDMA);
@@ -1130,7 +1130,7 @@ static int hd_write_udma(struct dev *dev, void *buffer, size_t count, blkno_t bl
     hd_setup_transfer(hd, blkno, nsects);
 
     // Setup DMA
-    setup_dma(hdc, bufp, nsects * SECTORSIZE, BM_CR_MASK_READ);
+    setup_dma(hdc, bufp, nsects * SECTORSIZE, BM_CR_READ);
     
     // Start write
     outp(hdc->iobase + HDC_COMMAND, HDCMD_WRITEDMA);
@@ -1635,11 +1635,6 @@ static void setup_hd(struct hd *hd, struct hdc *hdc, char *devname, int drvsel, 
   // Determine UDMA mode
   if (!hdc->bmregbase)
     hd->udmamode = -1;
-  else if (memcmp(hd->param.model, "VMware", 6) == 0)
-  {
-    // UltraDMA does not seem to work with VMware emulator, disable it
-    hd->udmamode = -1;
-  }
   else if ((hd->param.valid & 4) &&  (hd->param.dmaultra & (hd->param.dmaultra >> 8) & 0x3F))
   {
     if ((hd->param.dmaultra >> 13) & 1)
@@ -1749,8 +1744,8 @@ void init_hd()
       kprintf(KERN_ERR "hd: error %d initializing primary IDE controller\n", rc);
     else
     {
-      if (numhd >= 1 && masterif > HDIF_UNKNOWN) setup_hd(&hdtab[0], &hdctab[0], "hd0", HD0_DRVSEL, BM_SR_MASK_DRV0, masterif);
-      if (numhd >= 2 && slaveif > HDIF_UNKNOWN) setup_hd(&hdtab[1], &hdctab[0], "hd1", HD1_DRVSEL, BM_SR_MASK_DRV1, slaveif);
+      if (numhd >= 1 && masterif > HDIF_UNKNOWN) setup_hd(&hdtab[0], &hdctab[0], "hd0", HD0_DRVSEL, BM_SR_DRV0, masterif);
+      if (numhd >= 2 && slaveif > HDIF_UNKNOWN) setup_hd(&hdtab[1], &hdctab[0], "hd1", HD1_DRVSEL, BM_SR_DRV1, slaveif);
     }
   }
 
@@ -1761,8 +1756,8 @@ void init_hd()
       kprintf(KERN_ERR "hd: error %d initializing secondary IDE controller\n", rc);
     else
     {
-      if (numhd >= 3 && masterif > HDIF_UNKNOWN) setup_hd(&hdtab[2], &hdctab[1], "hd2", HD0_DRVSEL, BM_SR_MASK_DRV0, masterif);
-      if (numhd >= 4 && slaveif > HDIF_UNKNOWN) setup_hd(&hdtab[3], &hdctab[1], "hd3", HD1_DRVSEL, BM_SR_MASK_DRV1, slaveif);
+      if (numhd >= 3 && masterif > HDIF_UNKNOWN) setup_hd(&hdtab[2], &hdctab[1], "hd2", HD0_DRVSEL, BM_SR_DRV0, masterif);
+      if (numhd >= 4 && slaveif > HDIF_UNKNOWN) setup_hd(&hdtab[3], &hdctab[1], "hd3", HD1_DRVSEL, BM_SR_DRV1, slaveif);
     }
   }
 }
