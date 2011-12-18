@@ -1,6 +1,7 @@
 if not exist %1 mkdir %1
 if not exist %1\build mkdir %1\build
 if not exist %1\src mkdir %1\src
+if not exist %1\sdk mkdir %1\sdk
 if not exist %1\vcwizard mkdir %1\vcwizard
 if not exist %1\tools mkdir %1\tools
 if not exist %1\utils mkdir %1\utils
@@ -29,12 +30,15 @@ copy build\setuprel.ini %1\build\setup.ini
 copy build\sanos.dep %1\build\sanos.dep
 
 xcopy src %1\src /s /exclude:build\exclrel.lst
+xcopy sdk %1\sdk /s /exclude:build\exclrel.lst
 xcopy vcwizard %1\vcwizard /s /exclude:build\exclrel.lst
 
 copy tools\mkdfs.exe %1\tools
 copy tools\dbggw.exe %1\tools
 copy tools\mkfloppy.exe %1\tools
 copy tools\nasmw.exe %1\tools
+copy tools\objcopy.exe %1\tools
+copy tools\tiny_impdef.exe %1\tools
 
 xcopy utils\dfs %1\utils\dfs /exclude:build\exclrel.lst
 xcopy utils\dbggw %1\utils\dbggw /exclude:build\exclrel.lst
