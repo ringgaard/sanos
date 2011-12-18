@@ -61,8 +61,10 @@
 #define inline __inline
 #define inp __inp
 #undef optarg
-#define find_section __findsection
-#define parse_args __parse_args
+#undef find_section
+#undef parse_args
+#define find_section ___tcc_findsection
+#define parse_args __tcc_parse_args
 #endif
 
 #include "libtcc.h"
@@ -1085,9 +1087,11 @@ static char *tcc_strdup(const char *str)
     return ptr;
 }
 
+#ifndef USE_LOCAL_HEAP
 #define free(p) use_tcc_free(p)
 #define malloc(s) use_tcc_malloc(s)
 #define realloc(p, s) use_tcc_realloc(p, s)
+#endif
 
 static void dynarray_add(void ***ptab, int *nb_ptr, void *data)
 {

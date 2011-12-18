@@ -4,6 +4,14 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * The user-mode utlities and the C runtime library can now be built uder sanos.
+
+    * Added make and ar utilities
+    
+    * Added regex library.
+
+    * Added support for serial console.
+
     * Fixed bug in DMA setup for IDE/UDMA mode. 
 
     * Adeed detabbing to editor and goto begining and and of file.

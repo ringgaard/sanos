@@ -260,6 +260,44 @@ $(SRC)/lib/vsprintf.c: \
   $(SRC)/include/stdarg.h \
   $(SRC)/include/string.h
 
+$(SRC)/lib/regex/regcomp.c: \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/ctype.h \
+  $(SRC)/include/limits.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/regex.h \
+  $(SRC)/lib/regex/regex2.h \
+  $(SRC)/lib/regex/cclass.h \
+  $(SRC)/lib/regex/cname.h
+
+$(SRC)/lib/regex/regexec.c: \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/limits.h \
+  $(SRC)/include/ctype.h \
+  $(SRC)/include/regex.h \
+  $(SRC)/lib/regex/regex2.h
+
+$(SRC)/lib/regex/regerror.c: \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/ctype.h \
+  $(SRC)/include/limits.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/regex.h
+
+$(SRC)/lib/regex/regfree.c: \
+  $(SRC)/include/sys/types.h \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/regex.h \
+  $(SRC)/lib/regex/regex2.h
+
 $(SRC)/lib/pthread/barrier.c: \
   $(SRC)/include/os.h \
   $(SRC)/include/pthread.h \
@@ -681,6 +719,25 @@ $(SRC)/sys/osldr/video.c: \
   $(SRC)/include/stdarg.h
 
 # utils
+
+$(SRC)/utils/ar/ar.c: \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/stdint.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/unistd.h \
+  $(SRC)/include/fcntl.h \
+  $(SRC)/include/time.h \
+  $(SRC)/include/sys/stat.h \
+  $(SRC)/include/netinet/in.h
+
+$(SRC)/utils/make/make.c: \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/string.h \
+  $(SRC)/include/ctype.h \
+  $(SRC)/include/unistd.h \
+  $(SRC)/include/sys/stat.h
 
 $(SRC)/utils/edit/edit.c: \
   $(SRC)/include/os.h \

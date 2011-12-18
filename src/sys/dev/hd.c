@@ -505,7 +505,7 @@ static void setup_dma(struct hdc *hdc, char *buffer, int count, int cmd)
   char *next;
 
   i = 0;
-  next = (char *) ((unsigned long) buffer & (PAGESIZE - 1)) + PAGESIZE;
+  next = (char *) ((unsigned long) buffer & ~(PAGESIZE - 1)) + PAGESIZE;
   while (1)
   {
     if (i == MAX_PRDS) panic("hd dma transfer too large");

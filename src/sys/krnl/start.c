@@ -300,9 +300,10 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
   // Copy kernel options
   strcpy(krnlopts, opts);
   if (get_option(opts, "silent", NULL, 0, NULL) != NULL) kprint_enabled = 0;
+  if (get_option(opts, "serialconsole", NULL, 0, NULL) != NULL) serial_console = 1;
 
-  // Initialize screen
-  init_video();
+  // Initialize console
+  init_console();
 
   // Display banner
   kprintf(KERN_INFO "boot: starting kernel\n");
@@ -400,6 +401,7 @@ void main(void *arg)
   int rc;
   char *str;
   struct file *cons;
+  char *console;
 
   // Allocate and initialize PEB
   peb = mmap((void *) PEB_ADDRESS, PAGESIZE, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'PEB');
@@ -458,7 +460,8 @@ void main(void *arg)
   register_proc_inode("copyright", copyright_proc, NULL);
 
   // Allocate handles for stdin, stdout and stderr
-  rc = open(get_property(krnlcfg, "kernel", "console", "/dev/console"), O_RDWR, S_IREAD | S_IWRITE, &cons);
+  console = get_property(krnlcfg, "kernel", "console", serial_console ? "/dev/com1" : "/dev/console");
+  rc = open(console, O_RDWR, S_IREAD | S_IWRITE, &cons);
   if (rc < 0) panic("no console");
   if (halloc(&cons->iob.object) != 0) panic("unexpected stdin handle");
   if (halloc(&cons->iob.object) != 1) panic("unexpected stdout handle");

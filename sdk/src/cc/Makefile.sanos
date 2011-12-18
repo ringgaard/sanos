@@ -1,0 +1,17 @@
+#
+# Makefile for C compiler
+#
+
+all: cc.exe
+
+tcc.c: config.h elf.h i386-asm.c i386-asm.h i386-gen.c libtcc.h stab.def \
+       stab.h tccasm.c tccelf.c tccpe.c tcctok.h
+
+cc.exe: tcc.c
+    $(CC) -o cc.exe tcc.c
+
+install: cc.exe
+    sh cp cc.exe /usr/bin/cc.exe
+
+clean:
+    sh rm cc.exe

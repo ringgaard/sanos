@@ -92,6 +92,8 @@ dirs:
     -@if not exist $(OBJ)\eepro100 mkdir $(OBJ)\eepro100
     -@if not exist $(OBJ)\edit mkdir $(OBJ)\edit
     -@if not exist $(OBJ)\fdisk mkdir $(OBJ)\fdisk
+    -@if not exist $(OBJ)\make mkdir $(OBJ)\make
+    -@if not exist $(OBJ)\ar mkdir $(OBJ)\ar
     -@if not exist $(OBJ)\httpd mkdir $(OBJ)\httpd
     -@if not exist $(OBJ)\jinit mkdir $(OBJ)\jinit
     -@if not exist $(OBJ)\kernel32 mkdir $(OBJ)\kernel32
@@ -182,7 +184,6 @@ $(DBGGW): $(TOOLSRC)/dbggw/dbggw.c $(TOOLSRC)/dbggw/rdp.c
 
 $(SOW): $(TOOLSRC)/sow/sow.c $(SRC)/lib/vsprintf.c
     $(CC) $(WIN32CFLAGS) /I$(SRC)/include/os /Fe$@ /Fo$(TOOLSRC)/sow/release/ $** /D NOFLOAT /link /ENTRY:dllmain /DLL /NODEFAULTLIB kernel32.lib
-
 
 $(MKDFS): \
   $(TOOLSRC)/dfs/blockdev.c \
@@ -692,6 +693,18 @@ $(OBJ)/libc/glob.obj: $(SRC)/lib/glob.c
 $(OBJ)/libc/fnmatch.obj: $(SRC)/lib/fnmatch.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
+$(OBJ)/libc/regcomp.obj: $(SRC)/lib/regex/regcomp.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
+$(OBJ)/libc/regexec.obj: $(SRC)/lib/regex/regexec.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
+$(OBJ)/libc/regerror.obj: $(SRC)/lib/regex/regerror.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
+$(OBJ)/libc/regfree.obj: $(SRC)/lib/regex/regfree.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
 $(LIBS)/libc.lib: \
   $(OBJ)/libc/spinlock.obj \
   $(OBJ)/libc/rwlock.obj \
@@ -769,7 +782,11 @@ $(LIBS)/libc.lib: \
   $(OBJ)/libc/getopt.obj \
   $(OBJ)/libc/glob.obj \
   $(OBJ)/libc/fnmatch.obj \
-  $(OBJ)/libc/fork.obj
+  $(OBJ)/libc/fork.obj \
+  $(OBJ)/libc/regcomp.obj \
+  $(OBJ)/libc/regexec.obj \
+  $(OBJ)/libc/regerror.obj \
+  $(OBJ)/libc/regfree.obj
     $(AR) /NOLOGO /NODEFAULTLIB /OUT:$(LIBS)/libc.lib $**
 
 #
@@ -875,7 +892,7 @@ $(BIN)/msvcrt.dll: \
 # utils
 #
 
-utils: dirs $(BIN)/sh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/httpd.dll
+utils: dirs $(BIN)/sh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/httpd.dll
 
 $(BIN)/sh.exe: \
   $(SRC)/utils/sh/sh.c \
@@ -901,6 +918,18 @@ $(BIN)/setup.exe: \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/setup/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(BIN)/make.exe: \
+  $(SRC)/utils/make/make.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/make/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(BIN)/ar.exe: \
+  $(SRC)/utils/ar/ar.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/ar/ $** /link /NODEFAULTLIB /FIXED:NO
 
 $(BIN)/jinit.exe: \
   $(SRC)/utils/jinit/jinit.c \
@@ -984,6 +1013,36 @@ $(IMG)/sanos.iso: dirs sanos tools $(BUILD)/bootcd.lst
     del $(INSTALL)\BOOTIMG.BIN
 
 #
+# sdk
+#
+
+SDK=$(TOPDIR)\sdk
+SDKBIN=$(SDK)\bin
+SDKLIB=$(SDK)\lib
+SDKSRC=$(SDK)\src
+
+$(SDKBIN)/os.dll: $(SOW)
+    if not exist $(SDKBIN) mkdir $(SDKBIN)
+    copy $(SOW) $(SDKBIN)\os.dll
+
+$(SDKBIN)/make.exe: $(BIN)/make.exe
+    if not exist $(SDKBIN) mkdir $(SDKBIN)
+    copy $(BIN)\make.exe $(SDKBIN)\make.exe
+
+$(SDKBIN)/ar.exe: $(BIN)/ar.exe
+    if not exist $(SDKBIN) mkdir $(SDKBIN)
+    copy $(BIN)\ar.exe $(SDKBIN)\ar.exe
+
+sdk: $(SDKBIN)/os.dll $(SDKBIN)/make.exe $(SDKBIN)/ar.exe
+    cd $(SDKSRC)\cc && nmake install
+    cd $(SDKSRC)\libc && nmake install
+
+sdk-clean:
+    del /Q $(SDKBIN)\bin
+    cd $(SDKSRC)\cc && nmake clean
+    cd $(SDKSRC)\libc && nmake clean
+
+#
 # install
 #
 
@@ -1030,8 +1089,32 @@ install: sanos
     copy $(BIN)\tulip.sys     $(INSTALL)\boot\tulip.sys
 
 install-source: dirs
+    -@if not exist $(INSTALL)\usr mkdir $(INSTALL)\usr
+    -@if not exist $(INSTALL)\usr\include mkdir $(INSTALL)\usr\include
+    -@if not exist $(INSTALL)\usr\src mkdir $(INSTALL)\usr\src
+    -@if not exist $(INSTALL)\usr\src\lib mkdir $(INSTALL)\usr\src\lib
+    -@if not exist $(INSTALL)\usr\src\sys mkdir $(INSTALL)\usr\src\sys
+    -@if not exist $(INSTALL)\usr\src\utils mkdir $(INSTALL)\usr\src\utils
+    -@if not exist $(INSTALL)\usr\src\win32 mkdir $(INSTALL)\usr\src\win32
     xcopy /S /I /Y $(SRC)\include $(INSTALL)\usr\include
     xcopy /S /I /Y $(SRC)\lib $(INSTALL)\usr\src\lib
     xcopy /S /I /Y $(SRC)\sys $(INSTALL)\usr\src\sys
     xcopy /S /I /Y $(SRC)\utils $(INSTALL)\usr\src\utils
     xcopy /S /I /Y $(SRC)\win32 $(INSTALL)\usr\src\win32
+    copy $(SRC)\Makefile $(INSTALL)\usr\src
+
+install-sdk: install-source sdk
+    -@if not exist $(INSTALL)\usr\bin mkdir $(INSTALL)\usr\bin
+    -@if not exist $(INSTALL)\usr\lib mkdir $(INSTALL)\usr\lib
+    -@if not exist $(INSTALL)\usr\src\utils\cc mkdir $(INSTALL)\usr\src\utils\cc
+    -@if not exist $(INSTALL)\usr\src\utils\ar mkdir $(INSTALL)\usr\src\utils\ar
+    copy $(SDKBIN)\cc.exe        $(INSTALL)\usr\bin\cc.exe
+    copy $(SDKBIN)\make.exe      $(INSTALL)\usr\bin\make.exe
+    copy $(SDKBIN)\ar.exe        $(INSTALL)\usr\bin\ar.exe
+    copy $(SDKLIB)\libc.a        $(INSTALL)\usr\lib\libc.a
+    copy $(SDKLIB)\libm.a        $(INSTALL)\usr\lib\libm.a
+    copy $(SDKLIB)\os.def        $(INSTALL)\usr\lib\os.def
+    copy $(SDKSRC)\cc\*.c        $(INSTALL)\usr\src\utils\cc
+    copy $(SDKSRC)\cc\*.h        $(INSTALL)\usr\src\utils\cc
+    copy $(SDKSRC)\cc\*.def      $(INSTALL)\usr\src\utils\cc
+    copy $(SDKSRC)\cc\Makefile.sanos $(INSTALL)\usr\src\utils\cc\Makefile

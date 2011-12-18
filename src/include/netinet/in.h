@@ -51,6 +51,12 @@ typedef unsigned long in_addr_t;
 #ifndef _IN_ADDR_DEFINED
 #define _IN_ADDR_DEFINED
 
+#ifdef __TINYC__
+struct in_addr 
+{
+  unsigned long s_addr;
+};
+#else
 struct in_addr 
 {
   union 
@@ -60,6 +66,7 @@ struct in_addr
     unsigned long s_addr;
   };
 };
+#endif
 
 #endif
 

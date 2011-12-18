@@ -157,4 +157,8 @@ The inflate decompression routines has been ported from zlib (Jean-loup Gailly a
 
 The FTP daemon is derived from Troll FTP server (Arnt Gulbrandsen)
 
+The regex library has been ported from Henry Spencer's regex libray
+
+The C compiler has been ported from Tiny C (Fabrice Bellard)
+
 Bug fixes and uk key binding by Thierry Supplisson

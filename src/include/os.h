@@ -389,7 +389,7 @@ struct section;
 #define EINVAL          22               // Invalid argument
 #define ENFILE          23               // Too many open files in system
 #define EMFILE          24               // Too many files open
-//#define ENOTTY          25               // Inappropriate ioctl for device
+#define ENOTTY          25               // Inappropriate ioctl for device
 #define ETXTBSY         26               // Unknown error
 #define EFBIG           27               // File too large
 #define ENOSPC          28               // No space left on device
@@ -1468,6 +1468,7 @@ osapi int stat64(const char *name, struct stat64 *buffer);
 osapi int lstat(const char *name, struct stat *buffer);
 osapi int lstat64(const char *name, struct stat64 *buffer);
 osapi int access(const char *name, int mode);
+osapi int isatty(handle_t f);
 
 osapi int eof(handle_t f);
 osapi int umask(int mask);

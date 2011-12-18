@@ -681,7 +681,7 @@ static void init_serial_port(char *devname, int iobase, int irq, struct unit *un
   sp->iobase = iobase;
   sp->irq = irq;
 
-  sp->cfg.speed = 9600;
+  sp->cfg.speed = 115200;
   sp->cfg.databits = 8;
   sp->cfg.parity = PARITY_NONE;
   sp->cfg.stopbits = 1;

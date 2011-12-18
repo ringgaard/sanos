@@ -140,10 +140,7 @@ void kprintf(const char *fmt,...)
       msglen -= 3;
     }
 
-    if (consdev == NODEV)
-      print_string(msg);
-    else
-      dev_write(consdev, msg, msglen, 0, 0);
+    console_print(msg, msglen);
   }
 }
 

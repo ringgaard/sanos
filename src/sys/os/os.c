@@ -169,6 +169,13 @@ int umask(int mask)
   return oldmask;
 }
 
+int isatty(handle_t f) 
+{
+  // For now we regard all file handles as non-interactive.
+  errno = ENOTTY;
+  return 0;
+}
+
 int canonicalize(const char *filename, char *buffer, int size)
 {
   char *p;
@@ -277,7 +284,7 @@ struct heap *create_module_heap(hmodule_t hmod)
 
   region_size = get_image_header(hmod)->optional.size_of_heap_reserve & ~(PAGESIZE - 1);
   group_size = get_image_header(hmod)->optional.size_of_heap_commit & ~(PAGESIZE - 1);
-  if (region_size == 0) region_size = 32 * 1024 * 1024;
+  if (region_size == 0) region_size = 64 * 1024 * 1024;
   if (group_size < 128 * 1024) group_size = 128 * 1024;
 
   return heap_create(region_size, group_size);

@@ -1,77 +1,58 @@
 #
-# Makefile for Sanos Tiny C Compiler
+# Makefile for Sanos native C library
 #
 
-SANOS=..\..
+SANOS=..\..\..
+SDK=..\..
 LIBSRC=$(SANOS)\src\lib
 INCLUDE=$(SANOS)\src\include
 MATHOBJSRC=$(SANOS)\obj\libc
 
-!IFNDEF INSTALLDIR
-INSTALLDIR=..\..\install
-!ENDIF
-
 TOOLS=$(SANOS)\tools
-AR=$(TOOLS)\ar.exe
+AR=$(SDK)\bin\ar.exe
 OBJCOPY=$(TOOLS)\objcopy.exe
 IMPDEF=$(TOOLS)\tiny_impdef.exe
-TCC=cc.exe
+TCC=$(SDK)\bin\cc.exe
 
 OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fork.o getopt.o glob.o hash.o inifile.o input.o \
      math.o opts.o output.o qsort.o random.o readline.o rmap.o rtttl.o sched.o semaphore.o stdio.o stdlib.o strftime.o \
      string.o strtod.o strtol.o time.o xtoa.o \
+     regcomp.o regexec.o regerror.o regfree.o \
      barrier.o condvar.o mutex.o pthread.o rwlock.o spinlock.o \
-     setjmp.o chkstk.o \
-     acos.o asin.o atan.o atan2.o ceil.o cos.o cosh.o exp.o fabs.o floor.o fmod.o fpconst.o fpreset.o frexp.o \
-     ftol.o ldexp.o log.o log10.o modf.o pow.o sin.o sinh.o sqrt.o tan.o tanh.o
+     setjmp.o chkstk.o
 
-CFLAGS=/nologo /O2 /Og /Ob1 /Oi /Ot /Oy /X /GF /Gy /W1 /I $(SANOS)/src/include /D SANOS
+MATHOBJ=acos.o asin.o atan.o atan2.o ceil.o cos.o cosh.o exp.o fabs.o floor.o fmod.o fpconst.o fpreset.o frexp.o \
+        ftol.o ldexp.o log.o log10.o modf.o pow.o sin.o sinh.o sqrt.o tan.o tanh.o
+
 OBJCOPYFLAGS=-g --remove-leading-char -I pe-i386 -O elf32-i386
 
-all: cc.exe os.dll libc.a os.def
+all: libc.a libm.a os.def
 
 install: all
-     if not exist $(INSTALLDIR)\usr\bin mkdir $(INSTALLDIR)\usr\bin
-     if not exist $(INSTALLDIR)\usr\include mkdir $(INSTALLDIR)\usr\include
-     if not exist $(INSTALLDIR)\usr\include\arpa mkdir $(INSTALLDIR)\usr\include\arpa
-     if not exist $(INSTALLDIR)\usr\include\java mkdir $(INSTALLDIR)\usr\include\java
-     if not exist $(INSTALLDIR)\usr\include\net mkdir $(INSTALLDIR)\usr\include\net
-     if not exist $(INSTALLDIR)\usr\include\netinet mkdir $(INSTALLDIR)\usr\include\netinet
-     if not exist $(INSTALLDIR)\usr\include\os mkdir $(INSTALLDIR)\usr\include\os
-     if not exist $(INSTALLDIR)\usr\include\sys mkdir $(INSTALLDIR)\usr\include\sys
-     if not exist $(INSTALLDIR)\usr\lib mkdir $(INSTALLDIR)\usr\lib
-     if not exist $(INSTALLDIR)\usr\src\cc mkdir $(INSTALLDIR)\usr\src\cc
-     copy /Y cc.exe $(INSTALLDIR)\usr\bin
-     copy $(INCLUDE)\* $(INSTALLDIR)\usr\include
-     copy $(INCLUDE)\arpa\* $(INSTALLDIR)\usr\include\arpa
-     copy $(INCLUDE)\java\* $(INSTALLDIR)\usr\include\java
-     copy $(INCLUDE)\net\* $(INSTALLDIR)\usr\include\net
-     copy $(INCLUDE)\netinet\* $(INSTALLDIR)\usr\include\netinet
-     copy $(INCLUDE)\os\* $(INSTALLDIR)\usr\include\os
-     copy $(INCLUDE)\sys\* $(INSTALLDIR)\usr\include\sys
-     copy /Y libc.a $(INSTALLDIR)\usr\lib
-     copy /Y os.def $(INSTALLDIR)\usr\lib
-     copy /Y *.c $(INSTALLDIR)\usr\src\cc
-     copy /Y *.h $(INSTALLDIR)\usr\src\cc
-     copy /Y stab.def $(INSTALLDIR)\usr\src\cc
-     copy /Y $(SANOS)\utils\samples\* $(INSTALLDIR)\usr\src
+     if not exist $(SDK)\lib mkdir $(SDK)\lib
+     copy /Y libc.a $(SDK)\lib
+     copy /Y libm.a $(SDK)\lib
+     copy /Y os.def $(SDK)\lib
 
 clean:
-  del *.exe *.obj *.dll *.o os.def libc.a *.nbc *.suo
+  del *.o *.a os.def *.dll
 
-tcc.c: config.h elf.h i386-asm.c i386-asm.h i386-gen.c libtcc.h stab.def stab.h tccasm.c tccelf.c tccpe.c tcctok.h
+#
+# OS lib
+#
 
-cc.exe: tcc.c $(SANOS)/lib/os.lib $(SANOS)/lib/libc.lib
-    $(CC) $(CFLAGS) /D TCC_TARGET_PE /Fe$@ $** /link /NODEFAULTLIB /FIXED:NO
-    
 os.def: $(SANOS)/bin/os.dll
     $(IMPDEF) $** -o $@
 
-os.dll: $(SANOS)/tools/os.dll
-    copy $(SANOS)\tools\os.dll os.dll
+os.dll: $(SDK)/bin/os.dll
+    copy $(SDK)/bin/os.dll os.dll
 
-libc.a: $(OBJ) 
-    $(AR) rcs $@ $**
+#
+# C lib
+#
+
+libc.a: $(OBJ) libm.a
+    $(AR) -s -m $@ $**
 
 tcccrt.o: $(LIBSRC)/tcccrt.c
     $(TCC) -c $** -o $@ -I$(INCLUDE)
@@ -169,6 +150,18 @@ time.o: $(LIBSRC)/time.c
 xtoa.o: $(LIBSRC)/xtoa.c
     $(TCC) -c $** -o $@ -I$(INCLUDE)
 
+regcomp.o: $(LIBSRC)/regex/regcomp.c
+    $(TCC) -c $** -o $@ -I$(INCLUDE)
+
+regexec.o: $(LIBSRC)/regex/regexec.c
+    $(TCC) -c $** -o $@ -I$(INCLUDE)
+
+regerror.o: $(LIBSRC)/regex/regerror.c
+    $(TCC) -c $** -o $@ -I$(INCLUDE)
+
+regfree.o: $(LIBSRC)/regex/regfree.c
+    $(TCC) -c $** -o $@ -I$(INCLUDE)
+
 barrier.o: $(LIBSRC)/pthread/barrier.c
     $(TCC) -c $** -o $@ -I$(INCLUDE)
 
@@ -192,6 +185,13 @@ setjmp.o: $(LIBSRC)/setjmp.s
 
 chkstk.o: $(LIBSRC)/chkstk.s
     $(TCC) -c $** -o $@ -I$(INCLUDE)
+
+#
+# Math lib
+#
+
+libm.a: $(MATHOBJ)
+    $(AR) -s $@ $**
 
 acos.o: $(MATHOBJSRC)\acos.obj
     $(OBJCOPY) $(OBJCOPYFLAGS) $** $@

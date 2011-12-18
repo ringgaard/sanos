@@ -48,7 +48,7 @@ static char dbgdata[MAX_DBG_PACKETLEN];
 struct dbg_evt_trap last_trap;
 static char *krnlname = "krnl.dll";
 
-void init_debug_port()
+static void init_debug_port()
 {
   // Turn off interrupts
   outp(DEBUGPORT + 1, 0);

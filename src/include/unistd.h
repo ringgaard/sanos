@@ -122,6 +122,7 @@ osapi int mkdir(const char *name, int mode);
 osapi int rmdir(const char *name);
 osapi int chown(const char *name, int owner, int group);
 osapi int fchown(handle_t f, int owner, int group);
+osapi int isatty(handle_t f);
 
 osapi int gethostname(char *name, int namelen);
 

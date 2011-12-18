@@ -78,6 +78,7 @@ src\                           Souce files
     os.h                       Operating system API
     process.h                  Process control functions
     pthread.h                  POSIX threads library
+    regex.h                    Regular expression library
     rmap.h                     Routines for working with a resource map
     sched.h                    POSIX scheduling library
     semaphore.h                POSIX semaphore library
@@ -255,6 +256,15 @@ src\                           Souce files
       sqrt.asm                 Floating point square root
       tan.asm                  Floating point tangent
       tanh.asm                 Floating point hyperbolic tangent
+    regex\                     Regular expression matching
+      cclass.h                 Character classes for regular expression library
+      cname.h                  Character name table for regular expression library
+      engine.c                 Matching engine for regular expression library
+      regcomp.c                Compiler for regular expression library
+      regerror.c               Error codes for regular expression library
+      regex2.h                 Internal definitions for regular expression library
+      regexec.c                Matching for regular expression library
+      regfree.c                Free regular expression
     pthread\                   POSIX threads
       barrier.c                POSIX barriers
       condvar.c                POSIX condition variables

@@ -35,9 +35,12 @@
 
 #define CTRL(c) ((c) - 'A' + 1)
 
-dev_t consdev = NODEV;
+#define SERIAL_CONSOLE_PORT 0x3F8 // COM1
+
+static dev_t consdev = NODEV;
 static int cursoff = 0;
 static unsigned int kbd_timeout = INFINITE;
+int serial_console = 0;
 
 void sound(unsigned short freq) 
 {
@@ -79,6 +82,31 @@ void beep()
   sound(1000);
   msleep(250);
   nosound();
+}
+
+void init_serial_console()
+{
+  // Turn off interrupts
+  outp(SERIAL_CONSOLE_PORT + 1, 0);
+  
+  // Set 115200 baud, 8 bits, no parity, one stopbit
+  outp(SERIAL_CONSOLE_PORT + 3, 0x80);
+  outp(SERIAL_CONSOLE_PORT + 0, 0x01); // 0x0C = 9600, 0x01 = 115200
+  outp(SERIAL_CONSOLE_PORT + 1, 0x00);
+  outp(SERIAL_CONSOLE_PORT + 3, 0x03);
+  outp(SERIAL_CONSOLE_PORT + 2, 0xC7);
+  outp(SERIAL_CONSOLE_PORT + 4, 0x0B);
+}
+
+static void serial_console_write(void *buffer, int count)
+{
+  unsigned char *p = buffer;
+
+  while (count-- > 0)
+  {
+    while ((inp(SERIAL_CONSOLE_PORT + 5) & 0x20) == 0);
+    outp(SERIAL_CONSOLE_PORT, *p++);
+  }
 }
 
 static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size)
@@ -195,8 +223,32 @@ int __declspec(dllexport) console(struct unit *unit, char *opts)
 {
   init_keyboard(get_num_option(opts, "resetkbd", 0));
   dev_make("console", &console_driver, NULL, NULL);
-  consdev = dev_open("console");
+
+  if (serial_console)
+  {
+    init_serial();
+    consdev = dev_open("com1");
+  }
+  else 
+    consdev = dev_open("console");
+    
   register_proc_inode("screen", screen_proc, NULL);
 
   return 0;
+}
+
+void console_print(char *buffer, int size)
+{
+  if (consdev != NODEV)
+    dev_write(consdev, buffer, size, 0, 0);
+  else if (serial_console)
+    serial_console_write(buffer, size);
+  else
+    print_buffer(buffer, size);
+}
+
+void init_console(int serial)
+{
+  init_video();
+  if (serial_console) init_serial_console();
 }

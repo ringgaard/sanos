@@ -58,7 +58,7 @@ struct command
   char *help;
 };
 
-struct command cmdtab[];
+extern struct command cmdtab[];
 
 static void display_buffer(FILE *f, char *buffer, int size)
 {
@@ -950,7 +950,7 @@ int cmd_ls(int argc, char *argv[])
   int i;
   int dir;
   struct direntry dirp;
-  struct stat64 buf;
+  struct stat buf;
   struct tm tm;
   char path[MAXPATH];
   char *arg;
@@ -990,16 +990,11 @@ int cmd_ls(int argc, char *argv[])
     strcat(path, "/");
     strcat(path, dirp.name);
 
-    if (stat64(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat64));
+    if (stat(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat));
 
     if (verbose == 2)
     {
-      if (col == 4)
-      {
-	col = 0;
-	//printf("\n");
-      }
-
+      if (col == 4) col = 0;
       if ((buf.st_mode & S_IFMT) == S_IFDIR) strcat(dirp.name, "/");
       printf("%-20s", dirp.name);
       col++;
@@ -1010,7 +1005,7 @@ int cmd_ls(int argc, char *argv[])
       strcat(path, "/");
       strcat(path, dirp.name);
 
-      if (stat64(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat64));
+      if (stat(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat));
 
       if (verbose)
       {
@@ -1050,16 +1045,7 @@ int cmd_ls(int argc, char *argv[])
 	if ((buf.st_mode & S_IFMT) == S_IFDIR)
 	  printf("         ");
 	else
-	{
-	  if (buf.st_size < 1024)
-	    printf("%6dB  ", (int) buf.st_size);
-	  else if (buf.st_size < 1024 * 1024)
-	    printf("%6dKB ", (int) (buf.st_size / 1024));
-	  else if (buf.st_size < 1073741824i64)
-	    printf("%6dMB ", (int) (buf.st_size / (1024 * 1024)));
-	  else
-	    printf("%6dGB ", (int) (buf.st_size / 1073741824i64));
-	}
+          printf("%7d  ", buf.st_size);
       }
 
       gmtime_r(&buf.st_mtime, &tm);
@@ -1383,19 +1369,23 @@ int cmd_rm(int argc, char *argv[])
 {
   char *filename;
   int rc;
+  int i;
 
-  if (argc != 2)
+  if (argc < 2)
   {
-    printf("usage: rm <file>\n");
+    printf("usage: rm <file(s)>\n");
     return -EINVAL;
   }
-  filename = argv[1];
 
-  rc = unlink(filename); 
-  if (rc < 0)
+  for (i = 1; i < argc; i++)
   {
-    printf("%s: %s\n", filename, strerror(errno));
-    return -1;
+    filename = argv[i];
+    rc = unlink(filename); 
+    if (rc < 0)
+    {
+      printf("%s: %s\n", filename, strerror(errno));
+      return -1;
+    }
   }
 
   return 0;
@@ -1834,15 +1824,14 @@ int execute_script(char *cmdfile)
 
 int main(int argc, char *argv[])
 {
-  char *initcmds;
 
   if (sizeof(struct tib) != PAGESIZE) printf("warning: tib is %d bytes (%d expected)\n", sizeof(struct tib), PAGESIZE);
   if (gettib()->proc->term->type == TERM_VT100) setvbuf(stdout, NULL, 0, 8192);
 
-  initcmds = get_property(osconfig, "shell", "initcmds", NULL);
-  if (initcmds && !peb->rcdone)
+  if (!peb->rcdone)
   {
-    execute_script(initcmds);
+    char *initcmds = get_property(osconfig, "shell", "initcmds", NULL);
+    if (initcmds) execute_script(initcmds);
     peb->rcdone = 1;
   }
 

@@ -143,7 +143,13 @@ void init_cdfs();
 
 // cons.c
 
-extern dev_t consdev;
+extern int serial_console;
+void init_console();
+void console_print(char *buffer, int size);
+
+// serial.c
+
+void init_serial();
 
 // ramdisk.c
 

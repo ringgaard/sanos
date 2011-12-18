@@ -222,6 +222,19 @@ int strcmp(const char * src, const char * dst)
   return ret;
 }
 
+int strncmp(const char *s1, const char *s2, size_t count)
+{
+  if (!count) return 0;
+
+  while (--count && *s1 && *s1 == *s2)
+  {
+    s1++;
+    s2++;
+  }
+
+  return *(unsigned char *) s1 - *(unsigned char *) s2;
+}
+
 //#endif
 
 static __declspec(naked) unsigned __int64 div64x32(unsigned __int64 dividend, unsigned int divisor)
@@ -287,12 +300,26 @@ void initsock()
   if (_WSAStartup(0x0202, &wsa_data) == -1) return;
 }
 
+void setup_env()
+{
+  char *env;
+  int i;
+        
+  env = GetEnvironmentStrings();
+  i = 0;
+  while (i < MAXENVVARS - 1 && *env)
+  {
+    envtab[i++] = env;
+    env += strlen(env) + 1;
+  }
+  envtab[i] = NULL;
+}
+
 void init()
 {
-  int i;
   struct tib *tib;
   struct process *proc;
-  char *env;
+  int i;
 
   // Initialize sockets
   initsock();
@@ -322,14 +349,7 @@ void init()
   memset(peb, 0, 4096);
 
   // Get environment variables
-  env = GetEnvironmentStrings();
-  i = 0;
-  while (i < MAXENVVARS - 1 && *env)
-  {
-    envtab[i++] = env;
-    env += strlen(env) + 1;
-  }
-  envtab[i] = "";
+  setup_env();
 
   // Allocate initial job
   console.cols = 80;
@@ -970,7 +990,7 @@ int fstat(handle_t f, struct stat *buffer)
     buffer->st_mtime = ft2time(&fi.ftLastWriteTime);
   
     buffer->st_size = fi.nFileSizeLow;
-    buffer->st_mode = 0700;
+    buffer->st_mode = 0644;
   }
 
   return buffer ? 0 : fi.nFileSizeLow;
@@ -995,7 +1015,7 @@ int fstat64(handle_t f, struct stat64 *buffer)
     buffer->st_mtime = ft2time(&fi.ftLastWriteTime);
   
     buffer->st_size = ((__int64) fi.nFileSizeHigh << 32) | fi.nFileSizeLow;
-    buffer->st_mode = 0700;
+    buffer->st_mode = 0644;
   }
 
   return buffer ? 0 : fi.nFileSizeLow;
@@ -1019,7 +1039,7 @@ int stat(const char *name, struct stat *buffer)
     buffer->st_ctime = ft2time(&fdata.ftCreationTime);
     buffer->st_mtime = ft2time(&fdata.ftCreationTime);
     buffer->st_size = fdata.nFileSizeLow;
-    buffer->st_mode = 0700;
+    buffer->st_mode = 0644;
 
     if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) buffer->st_mode |= 0040000;
   }
@@ -1045,7 +1065,7 @@ int stat64(const char *name, struct stat64 *buffer)
     buffer->st_ctime = ft2time(&fdata.ftCreationTime);
     buffer->st_mtime = ft2time(&fdata.ftCreationTime);
     buffer->st_size = ((__int64) fdata.nFileSizeHigh << 32) | fdata.nFileSizeLow;
-    buffer->st_mode = 0700;
+    buffer->st_mode = 0644;
 
     if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) buffer->st_mode |= 0040000;
   }
@@ -1127,6 +1147,12 @@ int umask(int mask)
   oldmask = peb->umaskval;
   peb->umaskval = mask;
   return oldmask;
+}
+
+int isatty(handle_t f)
+{
+  errno = ENOTTY;
+  return -1;
 }
 
 int setmode(handle_t f, int mode)
@@ -1651,13 +1677,28 @@ void sigexit(struct siginfo *info, int action)
 
 char *getenv(const char *name)
 {
-  notimpl("getenv");
+  int i;
+  int len;
+
+  if (!name) return NULL;
+  len = strlen(name);
+  for (i = 0; envtab[i]; i++)
+  {
+    if (strncmp(envtab[i], name, len) == 0 && envtab[i][len] == '=') return envtab[i] + len + 1;
+  }
+
   return NULL;
+
 }
 
 int setenv(const char *name, const char *value, int rewrite)
 {
-  return notimpl("setenv");
+  if (rewrite || getenv(name) == NULL) 
+  {
+    SetEnvironmentVariable(name, value);
+    setup_env();
+  }
+  return 0;
 }
 
 int putenv(const char *str)
