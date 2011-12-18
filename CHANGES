@@ -4,7 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
-    * The user-mode utlities and the C runtime library can now be built uder sanos.
+    * The user-mode applications and the C runtime library can now be built 
+      under sanos using the C compiler.
 
     * Added make and ar utilities
     
