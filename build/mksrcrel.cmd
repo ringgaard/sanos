@@ -23,6 +23,7 @@ copy build\sanos*.sln %1\build
 copy build\mkbootdisk.cmd %1\build
 copy build\bootdisk.lst %1\build
 copy build\bootcd.lst %1\build
+copy build\boothd.lst %1\build
 copy build\krnlrel.ini %1\build\krnl.ini
 copy build\osrel.ini %1\build\os.ini
 copy build\oscd.ini %1\build

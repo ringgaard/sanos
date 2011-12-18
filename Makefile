@@ -1042,6 +1042,8 @@ sdk-clean:
     cd $(SDKSRC)\cc && nmake clean
     cd $(SDKSRC)\libc && nmake clean
 
+sdkdisk: sanos sdk install install-source install-sdk boothd
+
 #
 # install
 #
@@ -1071,9 +1073,9 @@ install: sanos
     copy $(BIN)\advapi32.dll  $(INSTALL)\bin\advapi32.dll
     copy $(BIN)\winmm.dll     $(INSTALL)\bin\winmm.dll
     copy $(BIN)\wsock32.dll   $(INSTALL)\bin\wsock32.dll
-    copy $(BUILD)\osrel.ini   $(INSTALL)\etc\os.ini
+    copy $(BUILD)\os.ini      $(INSTALL)\etc\os.ini
     copy $(BUILD)\setup.ini   $(INSTALL)\etc\setup.ini
-    copy $(BUILD)\krnlrel.ini $(INSTALL)\boot\krnl.ini
+    copy $(BUILD)\krnl.ini    $(INSTALL)\boot\krnl.ini
     copy $(BIN)\boot          $(INSTALL)\boot\boot
     copy $(BIN)\cdboot        $(INSTALL)\boot\cdboot
     copy $(BIN)\cdemboot      $(INSTALL)\boot\cdemboot
