@@ -36,19 +36,26 @@ DEFS=/D RELEASE
 DEFS=
 !ENDIF
 
+# MSVC=7  for Microsoft Visual Studio.NET (2002)
+# MSVC=8  for Microsoft Visual Visual Studio 2005
+# MSVC=9  for Microsoft Visual Visual Studio 2008
+# MSVC=10 for Microsoft Visual Visual Studio 2010
+
 !IFNDEF MSVC
 MSVC=7
 !ENDIF
 
 AFLAGS=/nologo
-!IF $(MSVC) == 9
+
+!IF $(MSVC) == 8 || $(MSVC) == 9 || $(MSVC) == 10
 CFLAGS=/nologo /O2 /Ob1 /Oi /Ot /Oy /GS- /GR- /X /GF /Gy /W3 /I $(SRC)/include $(DEFS)
-RAWIMGFLAGS=/FILEALIGN:4096
-!ELSEIF $(MSVC) == 8
-CFLAGS=/nologo /O2 /Ob1 /Oi /Ot /Oy /GS- /GR- /X /GF /Gy /W3 /I $(SRC)/include $(DEFS)
-RAWIMGFLAGS=/OPT:WIN98
 !ELSE
 CFLAGS=/nologo /O2 /Og /Ob1 /Oi /Ot /Oy /X /GF /Gy /W3 /I $(SRC)/include $(DEFS)
+!ENDIF
+
+!IF $(MSVC) == 9 || $(MSVC) == 10
+RAWIMGFLAGS=/FILEALIGN:4096
+!ELSE
 RAWIMGFLAGS=/OPT:WIN98
 !ENDIF
 
@@ -164,7 +171,7 @@ clean:
 # /I $(SRC)/include     Include search path
 #
 
-!IF $(MSVC) == 9
+!IF $(MSVC) == 9 || $(MSVC) == 10
 WIN32CFLAGS=/nologo /O2 /Ob1 /Oy /Oi /GF /GS- /GR- /MT /Gy /W3 /TC /D WIN32 /D NDEBUG /D _CONSOLE /D _MBCS /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE /D _USE_32BIT_TIME_T
 !ELSEIF $(MSVC) == 8
 WIN32CFLAGS=/nologo /O2 /Ob1 /Oy /Oi /GF /GS- /GR- /MT /Gy /W3 /TC /D WIN32 /D NDEBUG /D _CONSOLE /D _MBCS /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE /D _USE_32BIT_TIME_T

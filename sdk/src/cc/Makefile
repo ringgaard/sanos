@@ -6,7 +6,17 @@ SANOS=..\..\..
 INCLUDE=$(SANOS)\src\include
 SDK=..\..
 
-CFLAGS=/nologo /O2 /Og /Ob1 /Oi /Ot /Oy /X /GF /Gy /W1 /I $(SANOS)/src/include /D SANOS /D USE_LOCAL_HEAP
+!IFNDEF MSVC
+MSVC=7
+!ENDIF
+
+COMMONCFLAGS=/I $(INCLUDE) /D SANOS /D USE_LOCAL_HEAP
+
+!IF $(MSVC) == 8 || $(MSVC) == 9 || $(MSVC) == 10
+CFLAGS=/nologo /O2 /Ob1 /Oi /Ot /Oy /GS- /GR- /X /GF /Gy /W1 $(COMMONCFLAGS)
+!ELSE
+CFLAGS=/nologo /O2 /Og /Ob1 /Oi /Ot /Oy /X /GF /Gy /W1 $(COMMONCFLAGS)
+!ENDIF
 
 all: cc.exe 
 
