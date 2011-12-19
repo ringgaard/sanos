@@ -739,6 +739,14 @@ $(SRC)/utils/make/make.c: \
   $(SRC)/include/unistd.h \
   $(SRC)/include/sys/stat.h
 
+$(SRC)/utils/impdef/impdef.c: \
+  $(SRC)/include/stdio.h \
+  $(SRC)/include/unistd.h \
+  $(SRC)/include/stdlib.h \
+  $(SRC)/include/fcntl.h \
+  $(SRC)/include/sys/stat.h \
+  $(SRC)/include/os/pe.h
+
 $(SRC)/utils/edit/edit.c: \
   $(SRC)/include/os.h \
   $(SRC)/include/stdio.h \

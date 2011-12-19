@@ -1176,7 +1176,7 @@ unsigned long pe_add_runtime(TCCState * s1)
     }
 
 #ifdef SANOS
-    start_symbol = "mainCRTStartup";
+    start_symbol = PE_DLL == pe_type ? "DllMain" : "mainCRTStartup";
 #else
     start_symbol =
 	TCC_OUTPUT_MEMORY == s1->output_type

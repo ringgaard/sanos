@@ -126,7 +126,7 @@ _onexit_t __dllonexit(_onexit_t func, _PVFV **pbegin, _PVFV **pend)
   return func;
 }
 
-_onexit_t _cdecl _onexit(_onexit_t func)
+_onexit_t __cdecl _onexit(_onexit_t func)
 {
   TRACE("_onexit");
   syslog(LOG_DEBUG, "warning: _onexit not implemented, ignored");
@@ -327,7 +327,7 @@ unsigned long _beginthreadex(void *security, unsigned stack_size, unsigned (__st
   handle_t hthread;
 
   TRACE("_beginthreadex");
-  hthread = beginthread(start_address, stack_size, arglist, initflag, &tib);
+  hthread = beginthread((void (__stdcall *)(void *)) start_address, stack_size, arglist, initflag, &tib);
   if (hthread >= 0 && thrdaddr && tib) *thrdaddr = tib->tid;
   return hthread;
 }

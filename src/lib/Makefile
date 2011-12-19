@@ -9,7 +9,7 @@ OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fork.o ge
     barrier.o condvar.o mutex.o pthread.o rwlock.o spinlock.o \
     setjmp.o chkstk.o
 
-all: libc.a
+all: libc.a os.def
 
 libc.a: $(OBJ) /usr/lib/libm.a
     ar -s -m $@ $^
@@ -146,8 +146,12 @@ setjmp.o: setjmp.s
 chkstk.o: chkstk.s
     $(CC) -c $<
 
-install: libc.a
+os.def: /boot/os.dll
+    impdef $^ $@
+
+install: libc.a os.def
     sh cp libc.a /usr/lib/libc.a
+    sh cp os.def /usr/lib/os.def
 
 clean:
-    sh rm libc.a $(OBJ)
+    sh rm libc.a os.def $(OBJ)

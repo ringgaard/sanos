@@ -1317,8 +1317,8 @@ DWORD WINAPI GetFileSize
 
   size.QuadPart = fstat64((handle_t) hFile, NULL);
   if (size.QuadPart < 0) return INVALID_FILE_SIZE;
-  if (lpFileSizeHigh) *lpFileSizeHigh = size.HighPart;
-  return size.LowPart;
+  if (lpFileSizeHigh) *lpFileSizeHigh = size.u.HighPart;
+  return size.u.LowPart;
 }
 
 BOOL WINAPI GetFileTime
@@ -1809,6 +1809,7 @@ VOID WINAPI InitializeCriticalSection
   mkcs((struct critsect *) lpCriticalSection);
 }
 
+#ifndef __TINYC__
 __declspec(naked) LONG WINAPI InterlockedDecrement
 (
   LPLONG volatile lpAddend
@@ -1858,6 +1859,7 @@ __declspec(naked) LONG WINAPI InterlockedIncrement
     ret   4
   }
 }
+#endif
 
 BOOL WINAPI IsDBCSLeadByte
 (
@@ -2044,8 +2046,8 @@ BOOL WINAPI QueryPerformanceCounter
 )
 {
   TRACEX("QueryPerformanceCounter");
-  lpPerformanceCount->HighPart = 0;
-  lpPerformanceCount->LowPart = clock();
+  lpPerformanceCount->u.HighPart = 0;
+  lpPerformanceCount->u.LowPart = clock();
 
   return TRUE;
 }
@@ -2057,8 +2059,8 @@ BOOL WINAPI QueryPerformanceFrequency
 {
   TRACE("QueryPerformanceFrequency");
   // Tick count is in milliseconds
-  lpFrequency->HighPart = 0;
-  lpFrequency->LowPart = 1000;
+  lpFrequency->u.HighPart = 0;
+  lpFrequency->u.LowPart = 1000;
 
   return TRUE;
 }
@@ -2258,8 +2260,8 @@ DWORD WINAPI SetFilePointer
     LARGE_INTEGER offset;
     LARGE_INTEGER retval;
 
-    offset.LowPart = lDistanceToMove;
-    offset.HighPart = *lpDistanceToMoveHigh;
+    offset.u.LowPart = lDistanceToMove;
+    offset.u.HighPart = *lpDistanceToMoveHigh;
 
     retval.QuadPart = lseek64((handle_t) hFile, offset.QuadPart, dwMoveMethod);
     if (retval.QuadPart < 0)
@@ -2268,8 +2270,8 @@ DWORD WINAPI SetFilePointer
     }
     else
     {
-      *lpDistanceToMoveHigh = retval.HighPart;
-      rc = retval.LowPart;
+      *lpDistanceToMoveHigh = retval.u.HighPart;
+      rc = retval.u.LowPart;
     }
   }
   else
@@ -2547,6 +2549,12 @@ BOOL WINAPI UnmapViewOfFile
   return FALSE;
 }
 
+#ifdef __TINYC__
+#define VALO 0
+#else
+#define VALO 'VALO'
+#endif
+
 LPVOID WINAPI VirtualAlloc
 (
   LPVOID lpAddress,
@@ -2564,7 +2572,7 @@ LPVOID WINAPI VirtualAlloc
   // Do not allow JVM to mess with the stack (this is a hack!)
   //if (lpAddress >= tib->stackbase && lpAddress < tib->stacktop) return lpAddress;
 
-  addr = mmap(lpAddress, dwSize, flAllocationType | MEM_ALIGN64K, flProtect, 'VALO');
+  addr = mmap(lpAddress, dwSize, flAllocationType | MEM_ALIGN64K, flProtect, VALO);
 
   //syslog(LOG_DEBUG, "VirtualAlloc %p %dKB (%p,%p) -> %p", lpAddress, dwSize / K, flAllocationType, flProtect, addr);
 

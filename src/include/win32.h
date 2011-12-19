@@ -34,7 +34,11 @@
 #ifndef WIN32_H
 #define WIN32_H
 
+#ifdef __TINYC__
+#define WINAPI __attribute__((dllexport))
+#else
 #define WINAPI __declspec(dllexport) __stdcall
+#endif
 
 #define CONST const
 
@@ -298,7 +302,7 @@ typedef union _LARGE_INTEGER
   {
     DWORD LowPart; 
     LONG  HighPart; 
-  };
+  } u;
   LONGLONG QuadPart;
 } LARGE_INTEGER, *PLARGE_INTEGER; 
 
@@ -329,8 +333,8 @@ typedef struct _SYSTEM_INFO
     { 
       WORD wProcessorArchitecture; 
       WORD wReserved; 
-    }; 
-  }; 
+    } s; 
+  } u; 
   DWORD  dwPageSize; 
   LPVOID lpMinimumApplicationAddress; 
   LPVOID lpMaximumApplicationAddress; 

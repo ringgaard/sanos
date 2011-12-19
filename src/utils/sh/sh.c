@@ -347,7 +347,7 @@ int cmd_cp(int argc, char *argv[])
     return -1;
   }
 
-  if ((fd2 = open(dstfn, O_CREAT | O_BINARY, S_IREAD | S_IWRITE)) < 0)
+  if ((fd2 = open(dstfn, O_CREAT | O_TRUNC | O_BINARY, S_IREAD | S_IWRITE)) < 0)
   {
     close(fd1);
     printf("%s: %s\n", dstfn, strerror(errno));

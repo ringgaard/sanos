@@ -180,11 +180,11 @@ struct image_optional_header
 struct image_section_header
 {
   char name[IMAGE_SIZEOF_SHORT_NAME];
-  union misc
+  union
   {
     unsigned long physical_address;
     unsigned long virtual_size;
-  };
+  } u;
   unsigned long virtual_address;
   unsigned long size_of_raw_data;
   unsigned long pointer_to_raw_data;
@@ -316,7 +316,7 @@ struct image_import_descriptor
   {
     unsigned long characteristics;            // 0 for terminating null import descriptor
     unsigned long original_first_thunk;       // RVA to original unbound IAT (PIMAGE_THUNK_DATA)
-  };
+  } u;
   unsigned long timestamp;
   unsigned long forwarder_chain;              // -1 if no forwarders
   unsigned long name;
@@ -364,10 +364,10 @@ struct image_resource_directory_entry
     {
       unsigned long name_offset : 31;
       unsigned long name_is_string : 1;
-    };
+    } o;
     unsigned long name;
     unsigned short id;
-  };
+  } n;
   union 
   {
     unsigned long offset_to_data;
@@ -375,8 +375,8 @@ struct image_resource_directory_entry
     {
       unsigned long offset_to_directory : 31;
       unsigned long data_is_directory : 1;
-    };
-  };
+    } o;
+  } d;
 };
 
 struct image_resource_directory_string

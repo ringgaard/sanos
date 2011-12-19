@@ -11,7 +11,7 @@ MATHOBJSRC=$(SANOS)\obj\libc
 TOOLS=$(SANOS)\tools
 AR=$(SDK)\bin\ar.exe
 OBJCOPY=$(TOOLS)\objcopy.exe
-IMPDEF=$(TOOLS)\tiny_impdef.exe
+IMPDEF=$(SDK)\bin\impdef.exe
 TCC=$(SDK)\bin\cc.exe
 
 OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fork.o getopt.o glob.o hash.o inifile.o input.o \
@@ -42,7 +42,7 @@ clean:
 #
 
 os.def: $(SANOS)/bin/os.dll
-    $(IMPDEF) $** -o $@
+    $(IMPDEF) $** $@
 
 os.dll: $(SDK)/bin/os.dll
     copy $(SDK)/bin/os.dll os.dll

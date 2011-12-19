@@ -9,6 +9,7 @@ sdk:
     make -C utils/cc
     make -C utils/ar
     make -C utils/make
+    make -C utils/impdef
 
 apps:
     make -C utils/edit
@@ -19,11 +20,12 @@ apps:
     make -C utils/sh
     make -C utils/telnetd
 
-install: sdk apps
+install: sdk apps 
     make -C lib install
     make -C utils/cc install
     make -C utils/ar install
     make -C utils/make install
+    make -C utils/impdef install
     make -C utils/edit install
     make -C utils/fdisk install
     make -C utils/ftpd install
@@ -37,6 +39,7 @@ clean:
     make -C utils/cc clean
     make -C utils/ar clean
     make -C utils/make clean
+    make -C utils/impdef clean
     make -C utils/edit clean
     make -C utils/fdisk clean
     make -C utils/ftpd clean
@@ -44,3 +47,7 @@ clean:
     make -C utils/setup clean
     make -C utils/sh clean
     make -C utils/telnetd clean
+    make -C win32/kernel32 clean
+    make -C win32/user32 clean
+    make -C win32/winmm clean
+    make -C win32/advapi32 clean

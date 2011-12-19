@@ -39,7 +39,6 @@ copy tools\dbggw.exe %1\tools
 copy tools\mkfloppy.exe %1\tools
 copy tools\nasmw.exe %1\tools
 copy tools\objcopy.exe %1\tools
-copy tools\tiny_impdef.exe %1\tools
 
 xcopy utils\dfs %1\utils\dfs /exclude:build\exclrel.lst
 xcopy utils\dbggw %1\utils\dbggw /exclude:build\exclrel.lst

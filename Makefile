@@ -94,6 +94,7 @@ dirs:
     -@if not exist $(OBJ)\fdisk mkdir $(OBJ)\fdisk
     -@if not exist $(OBJ)\make mkdir $(OBJ)\make
     -@if not exist $(OBJ)\ar mkdir $(OBJ)\ar
+    -@if not exist $(OBJ)\impdef mkdir $(OBJ)\impdef
     -@if not exist $(OBJ)\httpd mkdir $(OBJ)\httpd
     -@if not exist $(OBJ)\jinit mkdir $(OBJ)\jinit
     -@if not exist $(OBJ)\kernel32 mkdir $(OBJ)\kernel32
@@ -892,7 +893,7 @@ $(BIN)/msvcrt.dll: \
 # utils
 #
 
-utils: dirs $(BIN)/sh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/httpd.dll
+utils: dirs $(BIN)/sh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/httpd.dll
 
 $(BIN)/sh.exe: \
   $(SRC)/utils/sh/sh.c \
@@ -930,6 +931,12 @@ $(BIN)/ar.exe: \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/ar/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(BIN)/impdef.exe: \
+  $(SRC)/utils/impdef/impdef.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/impdef/ $** /link /NODEFAULTLIB /FIXED:NO
 
 $(BIN)/jinit.exe: \
   $(SRC)/utils/jinit/jinit.c \
@@ -1033,7 +1040,11 @@ $(SDKBIN)/ar.exe: $(BIN)/ar.exe
     if not exist $(SDKBIN) mkdir $(SDKBIN)
     copy $(BIN)\ar.exe $(SDKBIN)\ar.exe
 
-sdk: $(SDKBIN)/os.dll $(SDKBIN)/make.exe $(SDKBIN)/ar.exe
+$(SDKBIN)/impdef.exe: $(BIN)/impdef.exe
+    if not exist $(SDKBIN) mkdir $(SDKBIN)
+    copy $(BIN)\impdef.exe $(SDKBIN)\impdef.exe
+
+sdk: $(SDKBIN)/os.dll $(SDKBIN)/make.exe $(SDKBIN)/ar.exe $(SDKBIN)/impdef.exe
     cd $(SDKSRC)\cc && nmake install
     cd $(SDKSRC)\libc && nmake install
 
@@ -1113,6 +1124,7 @@ install-sdk: install-source sdk
     copy $(SDKBIN)\cc.exe        $(INSTALL)\usr\bin\cc.exe
     copy $(SDKBIN)\make.exe      $(INSTALL)\usr\bin\make.exe
     copy $(SDKBIN)\ar.exe        $(INSTALL)\usr\bin\ar.exe
+    copy $(SDKBIN)\impdef.exe    $(INSTALL)\usr\bin\impdef.exe
     copy $(SDKLIB)\libc.a        $(INSTALL)\usr\lib\libc.a
     copy $(SDKLIB)\libm.a        $(INSTALL)\usr\lib\libm.a
     copy $(SDKLIB)\os.def        $(INSTALL)\usr\lib\os.def
