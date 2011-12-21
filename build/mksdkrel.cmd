@@ -1,3 +1,5 @@
+if not exist %1 mkdir %1
+
 copy README %1
 copy COPYING %1
 copy CHANGES %1
