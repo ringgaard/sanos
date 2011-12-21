@@ -433,6 +433,8 @@ int cmd_date(int argc, char *argv[])
 
 int cmd_debug(int argc, char *argv[])
 {
+  struct peb *peb = gettib()->peb;
+
   if (argc > 1)
   {
     if (strcmp(argv[1], "on") == 0)
@@ -624,6 +626,7 @@ int cmd_id(int argc, char *argv[])
 
 int cmd_ifconfig(int argc, char *argv[])
 {
+  struct peb *peb = gettib()->peb;
   int sock;
   struct ifcfg iflist[16];
   int n, i;
@@ -829,6 +832,7 @@ int cmd_httpget(int argc, char *argv[])
 
 int cmd_ps(int argc, char *argv[])
 {
+  struct peb *peb = gettib()->peb;
   struct process *proc = peb->firstproc;
 
   printf("  id parent name         hmod     threads in  out err command line\n");
@@ -1043,9 +1047,9 @@ int cmd_ls(int argc, char *argv[])
 	printf("%-8s %-8s", pwd ? pwd->pw_name : "?", grp ? grp->gr_name : "?");
 
 	if ((buf.st_mode & S_IFMT) == S_IFDIR)
-	  printf("         ");
+	  printf("           ");
 	else
-          printf("%7d  ", buf.st_size);
+          printf("%10d ", buf.st_size);
       }
 
       gmtime_r(&buf.st_mtime, &tm);
@@ -1828,11 +1832,11 @@ int main(int argc, char *argv[])
   if (sizeof(struct tib) != PAGESIZE) printf("warning: tib is %d bytes (%d expected)\n", sizeof(struct tib), PAGESIZE);
   if (gettib()->proc->term->type == TERM_VT100) setvbuf(stdout, NULL, 0, 8192);
 
-  if (!peb->rcdone)
+  if (!gettib()->peb->rcdone)
   {
     char *initcmds = get_property(osconfig, "shell", "initcmds", NULL);
     if (initcmds) execute_script(initcmds);
-    peb->rcdone = 1;
+    gettib()->peb->rcdone = 1;
   }
 
   if (argc > 1)

@@ -161,4 +161,6 @@ The regex library has been ported from Henry Spencer's regex libray
 
 The C compiler has been ported from Tiny C (Fabrice Bellard)
 
+The assembler has been ported from NASM (Julian Hall et al.)
+
 Bug fixes and uk key binding by Thierry Supplisson

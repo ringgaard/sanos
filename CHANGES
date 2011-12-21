@@ -5,7 +5,9 @@ Changes since last release
 --------------------------
 
     * The user-mode applications and the C runtime library can now be built 
-      under sanos using the C compiler.
+      under sanos using the C compiler and the assembler.
+
+    * Added assembler (nasm).
 
     * Added make, ar, and impdef utilities
     

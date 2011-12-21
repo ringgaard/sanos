@@ -18,7 +18,7 @@ TOOLSRC=$(TOPDIR)\utils
 INSTALL=$(TOPDIR)\install
 !ENDIF
 
-NASM=$(TOOLS)\nasmw.exe
+NASM=$(TOOLS)\nasm.exe
 MKISOFS=$(TOOLS)\mkisofs.exe
 
 MKDFS=$(TOOLS)\mkdfs.exe
@@ -351,13 +351,13 @@ $(LIBS)/krnl.lib $(BIN)/krnl.dll: \
       /BASE:0x80000000 /FIXED /IMPLIB:$(LIBS)/krnl.lib
 
 $(OBJ)/os/modf.obj: $(SRC)/lib/math/modf.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/os/ftol.obj: $(SRC)/lib/math/ftol.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/os/fpconst.obj: $(SRC)/lib/math/fpconst.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(LIBS)/os.lib $(BIN)/os.dll: \
   $(SRC)/sys/os/tls.c \
@@ -504,79 +504,79 @@ $(OBJ)/libc/chkstk.obj: $(SRC)/lib/chkstk.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
 
 $(OBJ)/libc/tanh.obj: $(SRC)/lib/math/tanh.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/tan.obj: $(SRC)/lib/math/tan.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/sqrt.obj: $(SRC)/lib/math/sqrt.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/sinh.obj: $(SRC)/lib/math/sinh.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/sin.obj: $(SRC)/lib/math/sin.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/pow.obj: $(SRC)/lib/math/pow.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/modf.obj: $(SRC)/lib/math/modf.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/log10.obj: $(SRC)/lib/math/log10.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/log.obj: $(SRC)/lib/math/log.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/ldexp.obj: $(SRC)/lib/math/ldexp.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/ftol.obj: $(SRC)/lib/math/ftol.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/frexp.obj: $(SRC)/lib/math/frexp.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/fpreset.obj: $(SRC)/lib/math/fpreset.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/fpconst.obj: $(SRC)/lib/math/fpconst.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/fmod.obj: $(SRC)/lib/math/fmod.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/floor.obj: $(SRC)/lib/math/floor.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/fabs.obj: $(SRC)/lib/math/fabs.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/exp.obj: $(SRC)/lib/math/exp.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/cosh.obj: $(SRC)/lib/math/cosh.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/cos.obj: $(SRC)/lib/math/cos.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/ceil.obj: $(SRC)/lib/math/ceil.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/atan2.obj: $(SRC)/lib/math/atan2.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/atan.obj: $(SRC)/lib/math/atan.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/asin.obj: $(SRC)/lib/math/asin.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/acos.obj: $(SRC)/lib/math/acos.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/libc/xtoa.obj: $(SRC)/lib/xtoa.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
@@ -844,25 +844,25 @@ $(BIN)/winmm.dll: \
       /link /DLL /NODEFAULTLIB /ENTRY:DllMain /IMPLIB:$(LIBS)/winmm.lib
 
 $(OBJ)/msvcrt/fpconst.obj: $(SRC)/lib/math/fpconst.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/msvcrt/floor.obj: $(SRC)/lib/math/floor.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/msvcrt/fmod.obj: $(SRC)/lib/math/fmod.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/msvcrt/frexp.obj: $(SRC)/lib/math/frexp.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/msvcrt/ftol.obj: $(SRC)/lib/math/ftol.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/msvcrt/ldexp.obj: $(SRC)/lib/math/ldexp.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(OBJ)/msvcrt/modf.obj: $(SRC)/lib/math/modf.asm
-    $(AS) $(AFLAGS) /c /Fo$@ $**
+    $(NASM) -f win32 $** -o $@
 
 $(BIN)/msvcrt.dll: \
   $(SRC)/win32/msvcrt/msvcrt.def \
@@ -1052,11 +1052,13 @@ $(SDKBIN)/impdef.exe: $(BIN)/impdef.exe
     copy $(BIN)\impdef.exe $(SDKBIN)\impdef.exe
 
 sdk: $(SDKBIN)/os.dll $(SDKBIN)/make.exe $(SDKBIN)/ar.exe $(SDKBIN)/impdef.exe
+    cd $(SDKSRC)\as && nmake install
     cd $(SDKSRC)\cc && nmake install
     cd $(SDKSRC)\libc && nmake install
 
 sdk-clean:
     del /Q $(SDKBIN)\bin
+    cd $(SDKSRC)\as && nmake clean
     cd $(SDKSRC)\cc && nmake clean
     cd $(SDKSRC)\libc && nmake clean
 
@@ -1126,15 +1128,22 @@ install-source: dirs
 install-sdk: install-source sdk
     -@if not exist $(INSTALL)\usr\bin mkdir $(INSTALL)\usr\bin
     -@if not exist $(INSTALL)\usr\lib mkdir $(INSTALL)\usr\lib
+    -@if not exist $(INSTALL)\usr\src\utils\as mkdir $(INSTALL)\usr\src\utils\as
+    -@if not exist $(INSTALL)\usr\src\utils\as\output mkdir $(INSTALL)\usr\src\utils\as\output
     -@if not exist $(INSTALL)\usr\src\utils\cc mkdir $(INSTALL)\usr\src\utils\cc
     -@if not exist $(INSTALL)\usr\src\utils\ar mkdir $(INSTALL)\usr\src\utils\ar
+    copy $(SDKBIN)\as.exe        $(INSTALL)\usr\bin\as.exe
     copy $(SDKBIN)\cc.exe        $(INSTALL)\usr\bin\cc.exe
     copy $(SDKBIN)\make.exe      $(INSTALL)\usr\bin\make.exe
     copy $(SDKBIN)\ar.exe        $(INSTALL)\usr\bin\ar.exe
     copy $(SDKBIN)\impdef.exe    $(INSTALL)\usr\bin\impdef.exe
     copy $(SDKLIB)\libc.a        $(INSTALL)\usr\lib\libc.a
-    copy $(SDKLIB)\libm.a        $(INSTALL)\usr\lib\libm.a
     copy $(SDKLIB)\os.def        $(INSTALL)\usr\lib\os.def
+    copy $(SDKSRC)\as\*.c        $(INSTALL)\usr\src\utils\as
+    copy $(SDKSRC)\as\*.h        $(INSTALL)\usr\src\utils\as
+    copy $(SDKSRC)\as\output\*.h $(INSTALL)\usr\src\utils\as\output
+    copy $(SDKSRC)\as\output\*.c $(INSTALL)\usr\src\utils\as\output
+    copy $(SDKSRC)\as\Makefile.sanos $(INSTALL)\usr\src\utils\as\Makefile
     copy $(SDKSRC)\cc\*.c        $(INSTALL)\usr\src\utils\cc
     copy $(SDKSRC)\cc\*.h        $(INSTALL)\usr\src\utils\cc
     copy $(SDKSRC)\cc\*.def      $(INSTALL)\usr\src\utils\cc

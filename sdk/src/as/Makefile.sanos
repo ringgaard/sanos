@@ -1,0 +1,24 @@
+#
+# Makefile for assembler
+#
+
+OUTDEFS=-DOF_ONLY -DOF_ELF32 -DOF_WIN32 -DOF_COFF -DOF_OBJ -DOF_BIN -DOF_DBG -DOF_DEFAULT=of_elf32
+CFLAGS=-I. -DHAVE_SNPRINTF -DHAVE_VSNPRINTF -DUSE_LOCAL_HEAP $(OUTDEFS)
+
+SRCFILES=nasm.c nasmlib.c ver.c raa.c saa.c rbtree.c float.c insnsa.c insnsb.c \
+         directiv.c assemble.c labels.c hashtbl.c crc64.c parser.c \
+         preproc.c quote.c pptok.c macros.c listing.c eval.c exprlib.c stdscan.c \
+         strfunc.c tokhash.c regvals.c regflags.c ilog2.c strlcpy.c \
+         output/outform.c output/outlib.c output/nulldbg.c output/nullout.c output/outbin.c \
+         output/outcoff.c output/outelf.c output/outelf32.c output/outobj.c output/outdbg.c \
+
+all: as.exe
+
+as.exe: $(SRCFILES)
+    $(CC) $(CFLAGS) -o as.exe $(SRCFILES)
+
+install: as.exe
+    sh cp as.exe /usr/bin/as.exe
+
+clean:
+    sh rm as.exe

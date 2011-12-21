@@ -5,11 +5,12 @@
 all: sdk apps
 
 sdk:
-    make -C lib
+    make -C utils/as
     make -C utils/cc
     make -C utils/ar
     make -C utils/make
     make -C utils/impdef
+    make -C lib
 
 apps:
     make -C utils/edit
@@ -22,6 +23,7 @@ apps:
 
 install: sdk apps 
     make -C lib install
+    make -C utils/as install
     make -C utils/cc install
     make -C utils/ar install
     make -C utils/make install
@@ -36,6 +38,7 @@ install: sdk apps
 
 clean:
     make -C lib clean
+    make -C utils/as clean
     make -C utils/cc clean
     make -C utils/ar clean
     make -C utils/make clean
@@ -47,7 +50,3 @@ clean:
     make -C utils/setup clean
     make -C utils/sh clean
     make -C utils/telnetd clean
-    make -C win32/kernel32 clean
-    make -C win32/user32 clean
-    make -C win32/winmm clean
-    make -C win32/advapi32 clean

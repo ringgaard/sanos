@@ -43,7 +43,8 @@ OSLDRSIZE   equ 32
 
 	; Entry point for initial bootstap code
 boot:
-	jmp 	start
+	jmp 	short start
+	nop
 	nop
 	
 	db	'SANOS   '

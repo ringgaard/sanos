@@ -37,8 +37,7 @@ xcopy vcwizard %1\vcwizard /s /exclude:build\exclrel.lst
 copy tools\mkdfs.exe %1\tools
 copy tools\dbggw.exe %1\tools
 copy tools\mkfloppy.exe %1\tools
-copy tools\nasmw.exe %1\tools
-copy tools\objcopy.exe %1\tools
+copy tools\nasm.exe %1\tools
 
 xcopy utils\dfs %1\utils\dfs /exclude:build\exclrel.lst
 xcopy utils\dbggw %1\utils\dbggw /exclude:build\exclrel.lst

@@ -269,4 +269,17 @@ typedef struct
 #define SCNuLEAST8 "hhu"
 #define SCNuFAST8 "hhu"
 
+// Macros for integer constants
+
+#define INT8_C(x)     x##i8 
+#define INT16_C(x)    x##i16 
+#define INT32_C(x)    x##i32 
+#define INT64_C(x)    x##i64 
+#define UINT8_C(x)    x##ui8 
+#define UINT16_C(x)   x##ui16 
+#define UINT32_C(x)   x##ui32 
+#define UINT64_C(x)   x##ui64 
+#define INTMAX_C(x)   x##i64 
+#define UINTMAX_C(x)  x##ui64 
+
 #endif

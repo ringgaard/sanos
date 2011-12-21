@@ -256,6 +256,8 @@ struct rule *find_rule(struct project *prj, char *name)
 
 void setup_predefined_variables() 
 {
+  setenv("AR", "ar", 0);
+  setenv("AS", "as", 0);
   setenv("CC", "cc", 0);
   setenv("MAKE", "make", 0);
 }

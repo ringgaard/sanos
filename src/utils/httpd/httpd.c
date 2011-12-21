@@ -172,7 +172,7 @@ struct httpd_server *httpd_initialize(struct section *cfg)
   server->rspbufsiz = getnumconfig(cfg, "responsebuffer", 4096);
   server->backlog = getnumconfig(cfg, "backlog", 5);
   server->indexname = getstrconfig(cfg, "indexname", "index.htm");
-  server->swname = getstrconfig(cfg, "swname", peb->osname);
+  server->swname = getstrconfig(cfg, "swname", gettib()->peb->osname);
   server->allowdirbrowse = getnumconfig(cfg, "allowdirbrowse", 1);
 
   parse_log_columns(server, getstrconfig(cfg, "logcolumns", "date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status cs(user-agent)"));

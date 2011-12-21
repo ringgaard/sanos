@@ -9,9 +9,12 @@ OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fork.o ge
     barrier.o condvar.o mutex.o pthread.o rwlock.o spinlock.o \
     setjmp.o chkstk.o
 
+MATHOBJ=acos.o asin.o atan.o atan2.o ceil.o cos.o cosh.o exp.o fabs.o floor.o fmod.o fpconst.o fpreset.o frexp.o \
+        ftol.o ldexp.o log.o log10.o modf.o pow.o sin.o sinh.o sqrt.o tan.o tanh.o
+
 all: libc.a os.def
 
-libc.a: $(OBJ) /usr/lib/libm.a
+libc.a: $(OBJ) $(MATHOBJ)
     ar -s -m $@ $^
 
 tcccrt.o: tcccrt.c
@@ -146,6 +149,81 @@ setjmp.o: setjmp.s
 chkstk.o: chkstk.s
     $(CC) -c $<
 
+acos.o: math/acos.asm
+    $(AS) $** -o $@
+
+asin.o: math/asin.asm
+    $(AS) $** -o $@
+
+atan.o: math/atan.asm
+    $(AS) $** -o $@
+
+atan2.o: math/atan2.asm
+    $(AS) $** -o $@
+
+ceil.o: math/ceil.asm
+    $(AS) $** -o $@
+
+cos.o: math/cos.asm
+    $(AS) $** -o $@
+
+cosh.o: math/cosh.asm
+    $(AS) $** -o $@
+
+exp.o: math/exp.asm
+    $(AS) $** -o $@
+
+fabs.o: math/fabs.asm
+    $(AS) $** -o $@
+
+floor.o: math/floor.asm
+    $(AS) $** -o $@
+
+fmod.o: math/fmod.asm
+    $(AS) $** -o $@
+
+fpconst.o: math/fpconst.asm
+    $(AS) $** -o $@
+
+fpreset.o: math/fpreset.asm
+    $(AS) $** -o $@
+
+frexp.o: math/frexp.asm
+    $(AS) $** -o $@
+
+ftol.o: math/ftol.asm
+    $(AS) $** -o $@
+
+ldexp.o: math/ldexp.asm
+    $(AS) $** -o $@
+
+log.o: math/log.asm
+    $(AS) $** -o $@
+
+log10.o: math/log10.asm
+    $(AS) $** -o $@
+
+modf.o: math/modf.asm
+    $(AS) $** -o $@
+
+pow.o: math/pow.asm
+    $(AS) $** -o $@
+
+sin.o: math/sin.asm
+    $(AS) $** -o $@
+
+sinh.o: math/sinh.asm
+    $(AS) $** -o $@
+
+sqrt.o: math/sqrt.asm
+    $(AS) $** -o $@
+
+tan.o: math/tan.asm
+    $(AS) $** -o $@
+
+tanh.o: math/tanh.asm
+    $(AS) $** -o $@
+
 os.def: /boot/os.dll
     impdef $^ $@
 
@@ -154,4 +232,4 @@ install: libc.a os.def
     sh cp os.def /usr/lib/os.def
 
 clean:
-    sh rm libc.a os.def $(OBJ)
+    sh rm libc.a os.def $(OBJ) $(MATHOBJ)

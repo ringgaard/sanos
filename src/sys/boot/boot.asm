@@ -45,7 +45,8 @@ OSLDRSIZE   equ 32
 ;
 
 boot:
-	jmp 	start
+	jmp 	short start
+	nop
 	nop
 	
 	db	'SANOS   '

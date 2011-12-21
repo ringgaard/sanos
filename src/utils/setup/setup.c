@@ -684,7 +684,7 @@ int main(int argc, char *argv[])
     return 2;
   }
 
-  prodname = get_property(inst, "setup", "product", peb->osname);
+  prodname = get_property(inst, "setup", "product", gettib()->peb->osname);
   prodvers = get_property(inst, "setup", "version", "1.0");
   scriptname = get_property(inst, "setup", "actions", "actions");
 

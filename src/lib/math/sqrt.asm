@@ -2,19 +2,17 @@
 ; sqrt.asm - floating point square root
 ; Ported from Al Maromaty's free C Runtime Library
 ;-----------------------------------------------------------------------------
-                .386
-_TEXT           segment use32 para public 'CODE'
-                public  _sqrt
 
-_sqrt           proc    near
-                assume  cs:_TEXT
+        	SECTION	.text
+
+                global  sqrt
+                global  _sqrt
+
+sqrt:
+_sqrt:
                 push    ebp
                 mov     ebp,esp
-                fld     qword ptr [ebp+8]       ; Load real from stack
+                fld     qword [ebp+8]           ; Load real from stack
                 fsqrt                           ; Take the square root
                 pop     ebp
                 ret
-_sqrt           endp
-
-_TEXT           ends
-                end

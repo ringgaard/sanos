@@ -50,7 +50,8 @@ IMGSIZE     equ (512 * 2) - 1
 
 	; Entry point for initial bootstap code
 boot:
-	jmp 	start
+	jmp 	short start
+	nop
 	nop
 	
 	db	'SANOS   '

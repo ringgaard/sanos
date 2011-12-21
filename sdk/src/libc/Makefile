@@ -6,13 +6,11 @@ SANOS=..\..\..
 SDK=..\..
 LIBSRC=$(SANOS)\src\lib
 INCLUDE=$(SANOS)\src\include
-MATHOBJSRC=$(SANOS)\obj\libc
 
-TOOLS=$(SANOS)\tools
 AR=$(SDK)\bin\ar.exe
-OBJCOPY=$(TOOLS)\objcopy.exe
 IMPDEF=$(SDK)\bin\impdef.exe
 TCC=$(SDK)\bin\cc.exe
+NASM=$(SDK)\bin\as.exe
 
 OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fork.o getopt.o glob.o hash.o inifile.o input.o \
      math.o opts.o output.o qsort.o random.o readline.o rmap.o rtttl.o sched.o semaphore.o stdio.o stdlib.o strftime.o \
@@ -24,14 +22,11 @@ OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fork.o ge
 MATHOBJ=acos.o asin.o atan.o atan2.o ceil.o cos.o cosh.o exp.o fabs.o floor.o fmod.o fpconst.o fpreset.o frexp.o \
         ftol.o ldexp.o log.o log10.o modf.o pow.o sin.o sinh.o sqrt.o tan.o tanh.o
 
-OBJCOPYFLAGS=-g --remove-leading-char -I pe-i386 -O elf32-i386
-
-all: libc.a libm.a os.def
+all: libc.a os.def
 
 install: all
      if not exist $(SDK)\lib mkdir $(SDK)\lib
      copy /Y libc.a $(SDK)\lib
-     copy /Y libm.a $(SDK)\lib
      copy /Y os.def $(SDK)\lib
 
 clean:
@@ -51,7 +46,7 @@ os.dll: $(SDK)/bin/os.dll
 # C lib
 #
 
-libc.a: $(OBJ) libm.a
+libc.a: $(OBJ) $(MATHOBJ)
     $(AR) -s -m $@ $**
 
 tcccrt.o: $(LIBSRC)/tcccrt.c
@@ -186,84 +181,77 @@ setjmp.o: $(LIBSRC)/setjmp.s
 chkstk.o: $(LIBSRC)/chkstk.s
     $(TCC) -c $** -o $@ -I$(INCLUDE)
 
-#
-# Math lib
-#
+acos.o: $(LIBSRC)\math\acos.asm
+    $(NASM) -f elf $** -o $@
 
-libm.a: $(MATHOBJ)
-    $(AR) -s $@ $**
+asin.o: $(LIBSRC)\math\asin.asm
+    $(NASM) -f elf $** -o $@
 
-acos.o: $(MATHOBJSRC)\acos.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+atan.o: $(LIBSRC)\math\atan.asm
+    $(NASM) -f elf $** -o $@
 
-asin.o: $(MATHOBJSRC)\asin.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+atan2.o: $(LIBSRC)\math\atan2.asm
+    $(NASM) -f elf $** -o $@
 
-atan.o: $(MATHOBJSRC)\atan.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+ceil.o: $(LIBSRC)\math\ceil.asm
+    $(NASM) -f elf $** -o $@
 
-atan2.o: $(MATHOBJSRC)\atan2.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+cos.o: $(LIBSRC)\math\cos.asm
+    $(NASM) -f elf $** -o $@
 
-ceil.o: $(MATHOBJSRC)\ceil.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+cosh.o: $(LIBSRC)\math\cosh.asm
+    $(NASM) -f elf $** -o $@
 
-cos.o: $(MATHOBJSRC)\cos.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+exp.o: $(LIBSRC)\math\exp.asm
+    $(NASM) -f elf $** -o $@
 
-cosh.o: $(MATHOBJSRC)\cosh.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+fabs.o: $(LIBSRC)\math\fabs.asm
+    $(NASM) -f elf $** -o $@
 
-exp.o: $(MATHOBJSRC)\exp.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+floor.o: $(LIBSRC)\math\floor.asm
+    $(NASM) -f elf $** -o $@
 
-fabs.o: $(MATHOBJSRC)\fabs.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+fmod.o: $(LIBSRC)\math\fmod.asm
+    $(NASM) -f elf $** -o $@
 
-floor.o: $(MATHOBJSRC)\floor.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+fpconst.o: $(LIBSRC)\math\fpconst.asm
+    $(NASM) -f elf $** -o $@
 
-fmod.o: $(MATHOBJSRC)\fmod.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+fpreset.o: $(LIBSRC)\math\fpreset.asm
+    $(NASM) -f elf $** -o $@
 
-fpconst.o: $(MATHOBJSRC)\fpconst.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+frexp.o: $(LIBSRC)\math\frexp.asm
+    $(NASM) -f elf $** -o $@
 
-fpreset.o: $(MATHOBJSRC)\fpreset.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+ftol.o: $(LIBSRC)\math\ftol.asm
+    $(NASM) -f elf $** -o $@
 
-frexp.o: $(MATHOBJSRC)\frexp.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+ldexp.o: $(LIBSRC)\math\ldexp.asm
+    $(NASM) -f elf $** -o $@
 
-ftol.o: $(MATHOBJSRC)\ftol.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+log.o: $(LIBSRC)\math\log.asm
+    $(NASM) -f elf $** -o $@
 
-ldexp.o: $(MATHOBJSRC)\ldexp.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+log10.o: $(LIBSRC)\math\log10.asm
+    $(NASM) -f elf $** -o $@
 
-log.o: $(MATHOBJSRC)\log.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+modf.o: $(LIBSRC)\math\modf.asm
+    $(NASM) -f elf $** -o $@
 
-log10.o: $(MATHOBJSRC)\log10.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+pow.o: $(LIBSRC)\math\pow.asm
+    $(NASM) -f elf $** -o $@
 
-modf.o: $(MATHOBJSRC)\modf.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+sin.o: $(LIBSRC)\math\sin.asm
+    $(NASM) -f elf $** -o $@
 
-pow.o: $(MATHOBJSRC)\pow.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+sinh.o: $(LIBSRC)\math\sinh.asm
+    $(NASM) -f elf $** -o $@
 
-sin.o: $(MATHOBJSRC)\sin.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+sqrt.o: $(LIBSRC)\math\sqrt.asm
+    $(NASM) -f elf $** -o $@
 
-sinh.o: $(MATHOBJSRC)\sinh.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+tan.o: $(LIBSRC)\math\tan.asm
+    $(NASM) -f elf $** -o $@
 
-sqrt.o: $(MATHOBJSRC)\sqrt.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
-
-tan.o: $(MATHOBJSRC)\tan.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
-
-tanh.o: $(MATHOBJSRC)\tanh.obj
-    $(OBJCOPY) $(OBJCOPYFLAGS) $** $@
+tanh.o: $(LIBSRC)\math\tanh.asm
+    $(NASM) -f elf $** -o $@

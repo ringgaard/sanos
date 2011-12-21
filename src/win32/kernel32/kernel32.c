@@ -2772,6 +2772,7 @@ int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
   if (reason == DLL_PROCESS_ATTACH)
   {
     // Register global WIN32 handler for all signals
+    struct peb *peb = gettib()->peb;
     old_globalhandler = peb->globalhandler;
     peb->globalhandler = win32_globalhandler;
   }

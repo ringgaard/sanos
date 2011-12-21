@@ -2,15 +2,13 @@
 ; fpreset.asm - floating point unit reset
 ; Ported from Al Maromaty's free C Runtime Library
 ;-----------------------------------------------------------------------------
-                .386
-_TEXT           segment use32 para public 'CODE'
-                public  __fpreset
+
+        	SECTION	.text
+
+                global  _fpreset
+                global  __fpreset
                 
-__fpreset       proc    near
-                assume  cs:_TEXT
+_fpreset:
+__fpreset:
                 finit                           ; Initialize the FPU
                 ret
-__fpreset       endp
-
-_TEXT           ends
-                end

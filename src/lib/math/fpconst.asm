@@ -1,18 +1,24 @@
 ;-----------------------------------------------------------------------------
 ; fpconst.asm - floating point constants
 ;-----------------------------------------------------------------------------
-                .386
-_DATA           segment DWORD public USE32 'DATA'
-                assume  DS:FLAT
 
-                public  __fltused
-                public  __infinity
-                public  __nan
+        	SECTION	.data
 
-__fltused       dd      9875h                   ; Floating point used flag
-__infinity      db      6 dup(0), 0f0h, 07fh    ; Floating point infinity
-__nan           db      6 dup(0ffh), 0f8h, 0ffh ; Floating point NaN
+                global  _fltused
+                global  __fltused
+                global  _infinity
+                global  __infinity
+                global  _nan
+                global  __nan
 
-_DATA           ends
+; Floating point used flag
+_fltused:
+__fltused:      dd      9875h
 
-                end
+; Floating point infinity
+_infinity:
+__infinity:     db      000h, 000h, 000h, 000h, 000h, 000h, 0f0h, 07fh    
+
+; Floating point NaN
+_nan:
+__nan:          db      0ffh, 0ffh, 0ffh, 0ffh, 0ffh, 0ffh, 0f8h, 0ffh

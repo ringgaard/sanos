@@ -2,29 +2,31 @@
 ; tanh.asm - floating point hyperbolic tangent
 ; Ported from Al Maromaty's free C Runtime Library
 ;-----------------------------------------------------------------------------
-                .386
-_TEXT           segment use32 para public 'CODE'
-                public  _tanh
-                public  __CItanh
 
-_tanh           proc    near
-                assume  cs:_TEXT
+        	SECTION	.text
+
+                global  tanh
+                global  _tanh
+                global  __CItanh
+
+tanh:
+_tanh:
                 push    ebp
                 mov     ebp,esp
-                fld     qword ptr [ebp+8]       ; Load real from stack
-                fld     st                      ; Duplicate stack top
+                fld     qword [ebp+8]           ; Load real from stack
+                fld     st0                     ; Duplicate stack top
                 fadd                            ; Compute 2 * x
                 fldl2e                          ; Load log base 2(e)
-                fmulp   st(1),st                ; Multiply x * log base 2(e)
-                fst     st(1)                   ; Push result
+                fmulp   st1,st0                 ; Multiply x * log base 2(e)
+                fst     st1                     ; Push result
                 frndint                         ; Round to integer
-                fsub    st(1),st                ; Subtract
+                fsub    st1,st0                 ; Subtract
                 fxch                            ; Exchange st, st(1)
                 f2xm1                           ; Compute 2 to the (x - 1)
                 fld1                            ; Load real number 1
                 fadd                            ; 2 to the x
                 fscale                          ; Scale by power of 2
-                fstp    st(1)                   ; Set new stack top and pop
+                fstp    st1                     ; Set new stack top and pop
                 fld1                            ; Load constant 1
                 fadd                            ; Compute exp(2*x)+1
                 fld1                            ; Load the constant 1
@@ -35,16 +37,10 @@ _tanh           proc    near
                 fsubr                           ; Compute the hyperbolic tangent
                 pop     ebp                     ; Restore register bp
                 ret
-_tanh           endp
 
-__CItanh        proc    near
-                assume  cs:_TEXT
+__CItanh:
                 sub     esp,8                   ; Allocate stack space for x
-                fstp    qword ptr [esp]         ; Copy x onto stack
+                fstp    qword [esp]             ; Copy x onto stack
                 call    _tanh                   ; Call tanh
                 add     esp,8                   ; Remove x from stack
                 ret
-__CItanh        endp
-
-_TEXT           ends                            ;End of segment
-                end                             ;End of module
