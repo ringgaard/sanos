@@ -1,1 +1,1 @@
-start qemu -L . -hda ..\..\img\sanos.vmdk -fda ..\..\img\sanos.flp -cdrom ..\..\img\sanos.iso -boot c -redir tcp:2323::23
+qemu -hda sanos.vmdk -boot c -redir tcp:2323::23 -L . -no-kqemu
