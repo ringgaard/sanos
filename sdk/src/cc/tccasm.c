@@ -806,7 +806,7 @@ static void subst_asm_operands(ASMOperand *operands, int nb_operands,
             sv = *op->vt;
             if (op->reg >= 0) {
                 sv.r = op->reg;
-                if ((op->vt->r & VT_VALMASK) == VT_LLOCAL)
+                if ((op->vt->r & VT_VALMASK) == VT_LLOCAL && op->is_memory)
                     sv.r |= VT_LVAL;
             }
             subst_asm_operand(out_str, &sv, modifier);
@@ -916,21 +916,23 @@ static void asm_instr(void)
         nb_outputs = nb_operands;
         if (tok == ':') {
             next();
-            /* input args */
-            parse_asm_operands(operands, &nb_operands, 0);
-            if (tok == ':') {
-                /* clobber list */
-                /* XXX: handle registers */
-                next();
-                for(;;) {
-                    if (tok != TOK_STR)
-                        expect("string constant");
-                    asm_clobber(clobber_regs, tokc.cstr->data);
+            if (tok != ')') {
+                /* input args */
+                parse_asm_operands(operands, &nb_operands, 0);
+                if (tok == ':') {
+                    /* clobber list */
+                    /* XXX: handle registers */
                     next();
-                    if (tok == ',') {
+                    for(;;) {
+                        if (tok != TOK_STR)
+                            expect("string constant");
+                        asm_clobber(clobber_regs, tokc.cstr->data);
                         next();
-                    } else {
-                        break;
+                        if (tok == ',') {
+                            next();
+                        } else {
+                            break;
+                        }
                     }
                 }
             }

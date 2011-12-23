@@ -42,17 +42,17 @@
 
 static unsigned long strtoxl(const char *nptr, char **endptr, int ibase, int flags)
 {
-  const char *p;
+  const unsigned char *p;
   char c;
   unsigned long number;
   unsigned digval;
   unsigned long maxval;
 
-  p = nptr;
+  p = (const unsigned char *) nptr;
   number = 0;
 
   c = *p++;
-  while (isspace((int)(unsigned char) c)) c = *p++;
+  while (isspace(c)) c = *p++;
 
   if (c == '-') 
   {
@@ -90,9 +90,9 @@ static unsigned long strtoxl(const char *nptr, char **endptr, int ibase, int fla
 
   for (;;) 
   {
-    if (isdigit((int) (unsigned char) c))
+    if (isdigit(c))
       digval = c - '0';
-    else if (isalpha((int) (unsigned char) c))
+    else if (isalpha(c))
       digval = toupper(c) - 'A' + 10;
     else
       break;
@@ -114,7 +114,7 @@ static unsigned long strtoxl(const char *nptr, char **endptr, int ibase, int fla
   if (!(flags & FL_READDIGIT)) 
   {
     if (endptr) p = nptr;
-    number = 0L;
+    number = 0;
   }
   else if ((flags & FL_OVERFLOW) || (!(flags & FL_UNSIGNED) && (((flags & FL_NEG) && (number < LONG_MIN)) || (!(flags & FL_NEG) && (number > LONG_MAX)))))
   {
@@ -130,7 +130,7 @@ static unsigned long strtoxl(const char *nptr, char **endptr, int ibase, int fla
       number = LONG_MAX;
   }
 
-  if (endptr != NULL) *endptr = (char *) p;
+  if (endptr) *endptr = (char *) p;
 
   if (flags & FL_NEG) number = (unsigned long) (-(long) number);
 
@@ -150,20 +150,21 @@ unsigned long strtoul(const char *nptr, char **endptr, int ibase)
 long atol(const char *nptr)
 {
   int c;
-  long total;
   int sign;
+  long total;
+  const unsigned char *p = (const unsigned char *) nptr;
 
-  while (isspace((int)(unsigned char) *nptr)) ++nptr;
+  while (isspace(*p)) ++p;
 
-  c = (int)(unsigned char) *nptr++;
+  c = *p++;
   sign = c;
-  if (c == '-' || c == '+') c = (int)(unsigned char) *nptr++;
+  if (c == '-' || c == '+') c = *p++;
 
   total = 0;
   while (isdigit(c)) 
   {
     total = 10 * total + (c - '0');
-    c = (int)(unsigned char) *nptr++;
+    c = *p++;
   }
 
   if (sign == '-')
@@ -176,3 +177,95 @@ int atoi(const char *nptr)
 {
   return (int) atol(nptr);
 }
+
+#ifndef KERNEL
+__int64 strtoll(const char *nptr, char **endptr, int ibase)
+{
+  const unsigned char *p = (const unsigned char *) nptr;
+  int flags = 0;
+  __int64 number = 0;
+  __int64 digval;
+  __int64 maxval;
+  int c;
+
+  c = *p++;
+  while (isspace(c)) c = *p++;
+
+  if (c == '-') 
+  {
+    flags |= FL_NEG;
+    c = *p++;
+  }
+  else if (c == '+')
+    c = *p++;
+
+  if (ibase < 0 || ibase == 1 || ibase > 36) 
+  {
+    if (endptr) *endptr = (char *) nptr;
+    return 0;
+  }
+  else if (ibase == 0)
+  {
+    if (c != '0')
+      ibase = 10;
+    else if (*p == 'x' || *p == 'X')
+      ibase = 16;
+    else
+      ibase = 8;
+  }
+
+  if (ibase == 16)
+  {
+    if (c == '0' && (*p == 'x' || *p == 'X')) 
+    {
+      ++p;
+      c = *p++;
+    }
+  }
+
+  maxval = _I64_MAX / ibase;
+
+  for (;;) 
+  {
+    if (isdigit(c))
+      digval = c - '0';
+    else if (isalpha(c))
+      digval = toupper(c) - 'A' + 10;
+    else
+      break;
+
+    if (digval >= (__int64) ibase) break;
+
+    flags |= FL_READDIGIT;
+
+    if (number < maxval || (number == maxval && digval <= _I64_MAX % ibase)) 
+      number = number * ibase + digval;
+    else 
+      flags |= FL_OVERFLOW;
+
+    c = *p++;
+  }
+
+  --p;
+
+  if (!(flags & FL_READDIGIT)) 
+  {
+    if (endptr) p = nptr;
+    number = 0;
+  }
+  else if (flags & FL_OVERFLOW)
+  {
+    errno = ERANGE;
+
+    if (flags & FL_NEG)
+      number = _I64_MIN;
+    else
+      number = _I64_MAX;
+  }
+
+  if (endptr) *endptr = (char *) p;
+  if (flags & FL_NEG) number = -number;
+
+  return number;
+}
+#endif

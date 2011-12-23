@@ -5,6 +5,7 @@
 ; Directories
 
 /bin
+/boot
 /dev
 /proc
 /etc
@@ -14,20 +15,21 @@
 
 ; System files
 
-/bin/os.dll       bin\os.dll
+/boot/os.dll      bin\os.dll
 /bin/sh.exe       bin\sh.exe
 
 ; Drivers
 
-/bin/pcnet32.sys  bin\pcnet32.sys
-/bin/ne2000.sys   bin\ne2000.sys
-/bin/3c905c.sys   bin\3c905c.sys
-/bin/rtl8139.sys  bin\rtl8139.sys
-;/bin/eepro100.sys bin\eepro100.sys
-/bin/sis900.sys   bin\sis900.sys
-;/bin/tulip.sys bin\tulip.sys
+;/boot/pcnet32.sys  bin\pcnet32.sys
+/boot/ne2000.sys   bin\ne2000.sys
+;/boot/3c905c.sys   bin\3c905c.sys
+/boot/rtl8139.sys  bin\rtl8139.sys
+;/boot/eepro100.sys bin\eepro100.sys
+;/boot/sis900.sys   bin\sis900.sys
+;/boot/tulip.sys bin\tulip.sys
 
 ; Configuration files
 
-/etc/krnl.ini     build\krnl.ini
+/boot/krnl.ini    build\krnl.ini
 /etc/os.ini       build\osnet.ini
+

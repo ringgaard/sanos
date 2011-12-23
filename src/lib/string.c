@@ -38,20 +38,20 @@
 #include <ctype.h>
 #endif
 
-char *strncpy(char *dest, const char *source, size_t count)
+char *strncpy(char *dest, const char *source, size_t n)
 {
   char *start = dest;
 
-  while (count && (*dest++ = *source++)) count--;
-  if (count) while (--count) *dest++ = '\0';
+  while (n && (*dest++ = *source++)) n--;
+  if (n) while (--n) *dest++ = '\0';
   return start;
 }
 
-int strncmp(const char *s1, const char *s2, size_t count)
+int strncmp(const char *s1, const char *s2, size_t n)
 {
-  if (!count) return 0;
+  if (!n) return 0;
 
-  while (--count && *s1 && *s1 == *s2)
+  while (--n && *s1 && *s1 == *s2)
   {
     s1++;
     s2++;
@@ -75,7 +75,7 @@ int stricmp(const char *s1, const char *s2)
   return (int) (f - l);
 }
 
-int strnicmp(const char *s1, const char *s2, size_t count)
+int strnicmp(const char *s1, const char *s2, size_t n)
 {
   int f, l;
 
@@ -83,9 +83,19 @@ int strnicmp(const char *s1, const char *s2, size_t count)
   {
       if (((f = (unsigned char)(*(s1++))) >= 'A') && (f <= 'Z')) f -= 'A' - 'a';
       if (((l = (unsigned char)(*(s2++))) >= 'A') && (l <= 'Z')) l -= 'A' - 'a';
-  } while (--count && f && (f == l));
+  } while (--n && f && (f == l));
 
   return f - l;
+}
+
+int strcasecmp(const char *s1, const char *s2)
+{
+  return stricmp(s1, s2);
+}
+
+int strncasecmp(const char *s1, const char *s2, size_t n)
+{
+  return strnicmp(s1, s2, n);
 }
 
 char *strchr(const char *s, int ch)
@@ -132,10 +142,10 @@ size_t strspn(const char *string, const char *control)
   const unsigned char *ctrl = control;
 
   unsigned char map[32];
-  int count;
+  int n;
 
   // Clear out bit map
-  for (count = 0; count < 32; count++) map[count] = 0;
+  for (n = 0; n < 32; n++) map[n] = 0;
 
   // Set bits in control map
   while (*ctrl)
@@ -147,14 +157,14 @@ size_t strspn(const char *string, const char *control)
   // 1st char NOT in control map stops search
   if (*str)
   {
-    count = 0;
+    n = 0;
     while (map[*str >> 3] & (1 << (*str & 7)))
     {
-      count++;
+      n++;
       str++;
     }
     
-    return count;
+    return n;
   }
 
   return 0;
@@ -166,10 +176,10 @@ size_t strcspn(const char *string, const char *control)
   const unsigned char *ctrl = control;
 
   unsigned char map[32];
-  int count;
+  int n;
 
   // Clear out bit map
-  for (count = 0; count < 32; count++) map[count] = 0;
+  for (n = 0; n < 32; n++) map[n] = 0;
 
   // Set bits in control map
   while (*ctrl)
@@ -179,14 +189,14 @@ size_t strcspn(const char *string, const char *control)
   }
 
   // 1st char in control map stops search
-  count = 0;
+  n = 0;
   map[0] |= 1;
   while (!(map[*str >> 3] & (1 << (*str & 7))))
   {
-    count++;
+    n++;
     str++;
   }
-  return count;
+  return n;
 }
 
 char *strpbrk(const char *string, const char *control)
@@ -195,10 +205,10 @@ char *strpbrk(const char *string, const char *control)
   const unsigned char *ctrl = control;
 
   unsigned char map[32];
-  int count;
+  int n;
 
   // Clear out bit map
-  for (count = 0; count < 32; count++) map[count] = 0;
+  for (n = 0; n < 32; n++) map[n] = 0;
 
   // Set bits in control map
   while (*ctrl)
@@ -217,17 +227,17 @@ char *strpbrk(const char *string, const char *control)
   return NULL;
 }
 
-void *memmove(void *dst, const void *src, size_t count)
+void *memmove(void *dst, const void *src, size_t n)
 {
   void * ret = dst;
 
-  if (dst <= src || (char *) dst >= ((char *) src + count)) 
+  if (dst <= src || (char *) dst >= ((char *) src + n)) 
   {
     //
     // Non-Overlapping Buffers
     // copy from lower addresses to higher addresses
     //
-    while (count--) 
+    while (n--) 
     {
       *(char *) dst = *(char *) src;
       dst = (char *) dst + 1;
@@ -240,10 +250,10 @@ void *memmove(void *dst, const void *src, size_t count)
     // Overlapping Buffers
     // copy from higher addresses to lower addresses
     //
-    dst = (char *) dst + count - 1;
-    src = (char *) src + count - 1;
+    dst = (char *) dst + n - 1;
+    src = (char *) src + n - 1;
 
-    while (count--) 
+    while (n--) 
     {
       *(char *) dst = *(char *) src;
       dst = (char *) dst - 1;
@@ -254,15 +264,15 @@ void *memmove(void *dst, const void *src, size_t count)
   return ret;
 }
 
-void *memchr(const void *buf, int ch, size_t count)
+void *memchr(const void *buf, int ch, size_t n)
 {
-  while (count && (*(unsigned char *) buf != (unsigned char) ch)) 
+  while (n && (*(unsigned char *) buf != (unsigned char) ch)) 
   {
     buf = (unsigned char *) buf + 1;
-    count--;
+    n--;
   }
 
-  return (count ? (void *) buf : NULL);
+  return (n ? (void *) buf : NULL);
 }
 
 #ifndef KERNEL
@@ -319,14 +329,14 @@ char *strupr(char *s)
 
 #endif
 
-char *strncat(char *s1, const char *s2, size_t count)
+char *strncat(char *s1, const char *s2, size_t n)
 {
   char *start = s1;
 
   while (*s1++);
   s1--;
 
-  while (count--)
+  while (n--)
   {
     if (!(*s1++ = *s2++)) return start;
   }
@@ -335,10 +345,10 @@ char *strncat(char *s1, const char *s2, size_t count)
   return start;
 }
 
-char *strnset(char *s, int c, size_t count)
+char *strnset(char *s, int c, size_t n)
 {
   char *start = s;
-  while (count-- && *s) *s++ = (char) c;
+  while (n-- && *s) *s++ = (char) c;
   return s;
 }
 
@@ -367,10 +377,10 @@ char *strtok_r(char *string, const char *control, char **lasts)
   const unsigned char *ctrl = control;
 
   unsigned char map[32];
-  int count;
+  int n;
 
   // Clear control map
-  for (count = 0; count < 32; count++) map[count] = 0;
+  for (n = 0; n < 32; n++) map[n] = 0;
 
   // Set bits in delimiter table
   do { map[*ctrl >> 3] |= (1 << (*ctrl & 7)); } while (*ctrl++);
@@ -471,23 +481,23 @@ void *memcpy(void *dst, const void *src, size_t n)
   return ret;
 }
 
-void *memccpy(void *dst, const void *src, int c, size_t count)
+void *memccpy(void *dst, const void *src, int c, size_t n)
 {
-  while (count && (*((char *) (dst = (char *) dst + 1) - 1) =
+  while (n && (*((char *) (dst = (char *) dst + 1) - 1) =
          *((char *)(src = (char *) src + 1) - 1)) != (char) c)
-    count--;
+    n--;
 
-  return count ? dst : NULL;
+  return n ? dst : NULL;
 }
 
 #ifndef KERNEL
 
-int memicmp(const void *buf1, const void *buf2, size_t count)
+int memicmp(const void *buf1, const void *buf2, size_t n)
 {
   int f = 0, l = 0;
   const unsigned char *dst = buf1, *src = buf2;
 
-  while (count-- && f == l)
+  while (n-- && f == l)
   {
     f = tolower(*dst++);
     l = tolower(*src++);

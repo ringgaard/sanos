@@ -108,16 +108,15 @@ typedef struct Operand {
     ExprValue e;
 } Operand;
 
-#ifdef _MSC_VER
-static const uint8_t reg_to_size[5] = { 0, 0, 1, 0, 2 };
-#else
 static const uint8_t reg_to_size[5] = {
+/*
     [OP_REG8] = 0,
     [OP_REG16] = 1,
     [OP_REG32] = 2,
+*/
+    0, 0, 1, 0, 2
 };
-#endif
-
+    
 #define WORD_PREFIX_OPCODE 0x66
 
 #define NB_TEST_OPCODES 30
@@ -153,6 +152,15 @@ static const uint8_t test_bits[NB_TEST_OPCODES] = {
  0x0e, /* ng */
  0x0f, /* nle */
  0x0f, /* g */
+};
+
+static const uint8_t segment_prefixes[] = {
+ 0x26, /* es */
+ 0x2e, /* cs */
+ 0x36, /* ss */
+ 0x3e, /* ds */
+ 0x64, /* fs */
+ 0x65  /* gs */
 };
 
 static const ASMInstr asm_instrs[] = {
@@ -315,8 +323,10 @@ static void parse_operand(TCCState *s1, Operand *op)
                 if (tok != ',') {
                     op->reg2 = asm_parse_reg();
                 } 
-                skip(',');
-                op->shift = get_reg_shift(s1);
+                if (tok == ',') {
+                    next();
+                    op->shift = get_reg_shift(s1);
+                }
             }
             skip(')');
         }
@@ -414,7 +424,7 @@ static inline void asm_modrm(int reg, Operand *op)
 static void asm_opcode(TCCState *s1, int opcode)
 {
     const ASMInstr *pa;
-    int i, modrm_index, reg, v, op1, is_short_jmp;
+    int i, modrm_index, reg, v, op1, is_short_jmp, seg_prefix;
     int nb_ops, s, ss;
     Operand ops[MAX_OPERANDS], *pop;
     int op_type[3]; /* decoded op type */
@@ -422,6 +432,7 @@ static void asm_opcode(TCCState *s1, int opcode)
     /* get operands */
     pop = ops;
     nb_ops = 0;
+    seg_prefix = 0;
     for(;;) {
         if (tok == ';' || tok == TOK_LINEFEED)
             break;
@@ -429,6 +440,17 @@ static void asm_opcode(TCCState *s1, int opcode)
             error("incorrect number of operands");
         }
         parse_operand(s1, pop);
+        if (tok == ':') {
+           if (pop->type != OP_SEG || seg_prefix) {
+               error("incorrect prefix");
+           }
+           seg_prefix = segment_prefixes[pop->reg];
+           next();
+           parse_operand(s1, pop);
+           if (!(pop->type & OP_EA)) {
+               error("segment prefix must be followed by memory reference");
+           }
+        }
         pop++;
         nb_ops++;
         if (tok != ',')
@@ -542,6 +564,8 @@ static void asm_opcode(TCCState *s1, int opcode)
     /* now generates the operation */
     if (pa->instr_type & OPC_FWAIT)
         g(0x9b);
+    if (seg_prefix)
+        g(seg_prefix);
 
     v = pa->opcode;
     if (v == 0x69 || v == 0x69) {

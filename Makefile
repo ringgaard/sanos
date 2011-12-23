@@ -387,6 +387,8 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
   $(SRC)/lib/bitops.c \
   $(SRC)\lib\verinfo.c \
   $(SRC)\lib\crypt.c \
+  $(OBJ)/libc/llmul.obj \
+  $(OBJ)/libc/lldvrm.obj \
   $(OBJ)/os/modf.obj \
   $(OBJ)/os/ftol.obj \
   $(OBJ)/os/fpconst.obj
@@ -864,6 +866,12 @@ $(OBJ)/msvcrt/ldexp.obj: $(SRC)/lib/math/ldexp.asm
 $(OBJ)/msvcrt/modf.obj: $(SRC)/lib/math/modf.asm
     $(NASM) -f win32 $** -o $@
 
+$(OBJ)/msvcrt/llmul.obj: $(SRC)/lib/llmul.asm
+    $(AS) $(AFLAGS) /c /Fo$@ $**
+
+$(OBJ)/msvcrt/lldvrm.obj: $(SRC)/lib/lldvrm.asm
+    $(AS) $(AFLAGS) /c /Fo$@ $**
+
 $(BIN)/msvcrt.dll: \
   $(SRC)/win32/msvcrt/msvcrt.def \
   $(SRC)/win32/msvcrt/msvcrt.c \
@@ -891,6 +899,8 @@ $(BIN)/msvcrt.dll: \
   $(OBJ)/msvcrt/ftol.obj \
   $(OBJ)/msvcrt/ldexp.obj \
   $(OBJ)/msvcrt/modf.obj \
+  $(OBJ)/msvcrt/llmul.obj \
+  $(OBJ)/msvcrt/lldvrm.obj \
   $(LIBS)/os.lib \
   $(LIBS)/kernel32.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/msvcrt/ $** /D MSVCRT_LIB \

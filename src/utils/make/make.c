@@ -623,7 +623,7 @@ int build_targets(struct project *prj)
       if (!prj->silent) printf("%s\n", cmd->start);
       if (!prj->dry_run)
       {
-        if (system(cmd->start) < 0) return -1;
+        if (system(cmd->start) != 0) return -1;
       }
 
       command = command->next;

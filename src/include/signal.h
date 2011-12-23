@@ -125,15 +125,11 @@ typedef struct siginfo siginfo_t;
 
 struct sigaction 
 {
-#ifdef __TINYC__
-  void (*sa_handler)(int signum);
-#else
   union
   {
     void (*sa_handler)(int signum);
     void (*sa_sigaction)(int signum, siginfo_t *info, void *context);
   };
-#endif
   sigset_t sa_mask;
   int sa_flags;
 };

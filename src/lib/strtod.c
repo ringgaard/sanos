@@ -151,6 +151,17 @@ double strtod(const char *str, char **endptr)
   return number;
 }
 
+float strtof(const char *str, char **endptr)
+{
+  return (float) strtod(str, endptr);
+}
+
+
+long double strtold(const char *str, char **endptr)
+{
+  return strtod(str, endptr);
+}
+
 double atof(const char *str)
 {
   return strtod(str, NULL);

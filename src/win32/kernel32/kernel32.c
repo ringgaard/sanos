@@ -1317,8 +1317,8 @@ DWORD WINAPI GetFileSize
 
   size.QuadPart = fstat64((handle_t) hFile, NULL);
   if (size.QuadPart < 0) return INVALID_FILE_SIZE;
-  if (lpFileSizeHigh) *lpFileSizeHigh = size.u.HighPart;
-  return size.u.LowPart;
+  if (lpFileSizeHigh) *lpFileSizeHigh = size.HighPart;
+  return size.LowPart;
 }
 
 BOOL WINAPI GetFileTime
@@ -2046,8 +2046,8 @@ BOOL WINAPI QueryPerformanceCounter
 )
 {
   TRACEX("QueryPerformanceCounter");
-  lpPerformanceCount->u.HighPart = 0;
-  lpPerformanceCount->u.LowPart = clock();
+  lpPerformanceCount->HighPart = 0;
+  lpPerformanceCount->LowPart = clock();
 
   return TRUE;
 }
@@ -2059,8 +2059,8 @@ BOOL WINAPI QueryPerformanceFrequency
 {
   TRACE("QueryPerformanceFrequency");
   // Tick count is in milliseconds
-  lpFrequency->u.HighPart = 0;
-  lpFrequency->u.LowPart = 1000;
+  lpFrequency->HighPart = 0;
+  lpFrequency->LowPart = 1000;
 
   return TRUE;
 }
@@ -2260,8 +2260,8 @@ DWORD WINAPI SetFilePointer
     LARGE_INTEGER offset;
     LARGE_INTEGER retval;
 
-    offset.u.LowPart = lDistanceToMove;
-    offset.u.HighPart = *lpDistanceToMoveHigh;
+    offset.LowPart = lDistanceToMove;
+    offset.HighPart = *lpDistanceToMoveHigh;
 
     retval.QuadPart = lseek64((handle_t) hFile, offset.QuadPart, dwMoveMethod);
     if (retval.QuadPart < 0)
@@ -2270,8 +2270,8 @@ DWORD WINAPI SetFilePointer
     }
     else
     {
-      *lpDistanceToMoveHigh = retval.u.HighPart;
-      rc = retval.u.LowPart;
+      *lpDistanceToMoveHigh = retval.HighPart;
+      rc = retval.LowPart;
     }
   }
   else

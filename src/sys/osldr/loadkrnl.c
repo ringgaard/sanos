@@ -227,7 +227,7 @@ void load_kernel(int bootdrv)
     struct image_section_header *data = &imghdr->sections[2];
     struct image_section_header *rsrc = &imghdr->sections[3];
     memcpy(kerneladdr + rsrc->virtual_address, kerneladdr + rsrc->pointer_to_raw_data, rsrc->size_of_raw_data);
-    memset(kerneladdr + data->virtual_address + data->size_of_raw_data, 0, data->u.virtual_size - data->size_of_raw_data);
+    memset(kerneladdr + data->virtual_address + data->size_of_raw_data, 0, data->virtual_size - data->size_of_raw_data);
   }
 
   // Map kernel into vitual address space

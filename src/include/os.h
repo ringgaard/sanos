@@ -577,15 +577,11 @@ typedef struct siginfo siginfo_t;
 
 struct sigaction 
 {
-#ifdef __TINYC__
-  void (*sa_handler)(int signum);
-#else
   union
   {
     void (*sa_handler)(int signum);
     void (*sa_sigaction)(int signum, siginfo_t *info, void *context);
   };
-#endif
   sigset_t sa_mask;
   int sa_flags;
 };
@@ -825,12 +821,6 @@ struct serial_status
 #ifndef _IN_ADDR_DEFINED
 #define _IN_ADDR_DEFINED
 
-#ifdef __TINYC__
-struct in_addr 
-{
-  unsigned long s_addr;
-};
-#else
 struct in_addr 
 {
   union 
@@ -840,7 +830,6 @@ struct in_addr
     unsigned long s_addr;
   };
 };
-#endif
 
 #endif
 

@@ -302,7 +302,7 @@ typedef union _LARGE_INTEGER
   {
     DWORD LowPart; 
     LONG  HighPart; 
-  } u;
+  };
   LONGLONG QuadPart;
 } LARGE_INTEGER, *PLARGE_INTEGER; 
 
@@ -333,8 +333,8 @@ typedef struct _SYSTEM_INFO
     { 
       WORD wProcessorArchitecture; 
       WORD wReserved; 
-    } s; 
-  } u; 
+    }; 
+  }; 
   DWORD  dwPageSize; 
   LPVOID lpMinimumApplicationAddress; 
   LPVOID lpMaximumApplicationAddress; 

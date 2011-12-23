@@ -4,6 +4,9 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Updated C compiler to Tiny C version 0.9.24 ans implemented support for
+      MSVC 64-bit integer extension (__int64 type and 0i64 constants).
+
     * The user-mode applications and the C runtime library can now be built 
       under sanos using the C compiler and the assembler.
 

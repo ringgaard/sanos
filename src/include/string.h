@@ -44,10 +44,10 @@
 extern "C" {
 #endif
 
-char *strncpy(char *dest, const char *source, size_t count);
-int strncmp(const char *s1, const char *s2, size_t count);
+char *strncpy(char *dest, const char *source, size_t n);
+int strncmp(const char *s1, const char *s2, size_t n);
 int stricmp(const char *s1, const char *s2);
-int strnicmp(const char *s1, const char *s2, size_t count);
+int strnicmp(const char *s1, const char *s2, size_t n);
 char *strchr(const char *s, int ch);
 char *strrchr(const char *s, int ch);
 char *strstr(const char *s1, const char *s2);
@@ -56,6 +56,8 @@ size_t strcspn(const char *string, const char *control);
 char *strpbrk(const char *string, const char *control);
 
 int strcasecmp(const char *s1, const char *s2);
+int strncasecmp(const char *s1, const char *s2, size_t n);
+
 int strcoll(const char *s1, const char *s2);
 
 #ifdef USE_LOCAL_HEAP
@@ -68,8 +70,8 @@ char *strdup(const char *s);
 char *strlwr(char *s);
 char *strupr(char *s);
 
-char *strncat(char *s1, const char *s2, size_t count);
-char *strnset(char *s, int c, size_t count);
+char *strncat(char *s1, const char *s2, size_t n);
+char *strnset(char *s, int c, size_t n);
 char *strset(char *s, int c);
 char *strrev(char *s);
 char *strtok(char *string, const char *control);
@@ -78,11 +80,11 @@ char *strtok_r(char *string, const char *control, char **lasts);
 osapi char *strerror(int errnum);
 osapi char *strsignal(int signum);
 
-void *memmove(void *dst, const void *src, size_t count);
-void *memchr(const void *buf, int ch, size_t count);
+void *memmove(void *dst, const void *src, size_t n);
+void *memchr(const void *buf, int ch, size_t n);
 
-void *memccpy(void *dst, const void *src, int c, size_t count);
-int memicmp(const void *buf1, const void *buf2, size_t count);
+void *memccpy(void *dst, const void *src, int c, size_t n);
+int memicmp(const void *buf1, const void *buf2, size_t n);
 
 // Intrinsic functions
 

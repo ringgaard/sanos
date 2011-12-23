@@ -367,7 +367,7 @@ static struct module *resolve_imports(struct module *mod)
   if (!imp) return mod;
 
   // Load each dependent module
-  while (imp->u.characteristics != 0)
+  while (imp->characteristics != 0)
   {
     char *name = RVA(mod->hmod, imp->name);
     struct module *newmod = get_module(mod->db, name);
@@ -427,7 +427,7 @@ static int bind_imports(struct module *mod)
   }
 
   // Update Import Address Table (IAT)
-  while (imp->u.characteristics != 0)
+  while (imp->characteristics != 0)
   {
     unsigned long *thunks;
     unsigned long *origthunks;
@@ -445,7 +445,7 @@ static int bind_imports(struct module *mod)
     }
     
     thunks = (unsigned long *) RVA(mod->hmod, imp->first_thunk);
-    origthunks = (unsigned long *) RVA(mod->hmod, imp->u.original_first_thunk);
+    origthunks = (unsigned long *) RVA(mod->hmod, imp->original_first_thunk);
     while (*thunks)
     {
       if (*origthunks & IMAGE_ORDINAL_FLAG)
@@ -572,7 +572,7 @@ static void update_refcount(struct module *mod)
   if (!imp) return;
 
   // Get or load each dependent module
-  while (imp->u.characteristics != 0)
+  while (imp->characteristics != 0)
   {
     char *name = RVA(mod->hmod, imp->name);
     struct module *depmod = get_module(mod->db, name);
@@ -608,7 +608,7 @@ static int remove_module(struct module *mod)
     imp = (struct image_import_descriptor *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_IMPORT);
     if (imp)
     {
-      while (imp->u.characteristics != 0)
+      while (imp->characteristics != 0)
       {
 	char *name = RVA(mod->hmod, imp->name);
 	struct module *depmod = get_module(mod->db, name);
@@ -839,7 +839,7 @@ static struct image_resource_directory_entry *find_resource(char *resbase, struc
 
     for (i = 0; i < dir->number_of_id_entries; i++)
     {
-      if (direntry->n.id == (unsigned long) id) return direntry;
+      if (direntry->id == (unsigned long) id) return direntry;
       direntry++;
     }
   }
@@ -854,7 +854,7 @@ static struct image_resource_directory_entry *find_resource(char *resbase, struc
       unsigned short ch1;
       unsigned short ch2;
 
-      entname = (struct image_resource_directory_string *) RVA(resbase, direntry->n.o.name_offset);
+      entname = (struct image_resource_directory_string *) RVA(resbase, direntry->name_offset);
       p1 = (unsigned short *) entname->name_string;
       p2 = (unsigned char *) id;
       left = entname->length;
@@ -891,21 +891,21 @@ int get_resource_data(hmodule_t hmod, char *id1, char *id2, char *id3, void **da
   // Find first level entry
   direntry = find_resource(resbase, dir, id1);
   if (!direntry) return -ENOENT;
-  if (!direntry->d.o.data_is_directory) return -EINVAL;
-  dir = (struct image_resource_directory *) RVA(resbase, direntry->d.o.offset_to_directory);
+  if (!direntry->data_is_directory) return -EINVAL;
+  dir = (struct image_resource_directory *) RVA(resbase, direntry->offset_to_directory);
 
   // Find second level entry
   direntry = find_resource(resbase, dir, id2);
   if (!direntry) return -ENOENT;
-  if (!direntry->d.o.data_is_directory) return -EINVAL;
-  dir = (struct image_resource_directory *) RVA(resbase, direntry->d.o.offset_to_directory);
+  if (!direntry->data_is_directory) return -EINVAL;
+  dir = (struct image_resource_directory *) RVA(resbase, direntry->offset_to_directory);
 
   // Find third level entry
   direntry = find_resource(resbase, dir, id3);
   if (!direntry) return -ENOENT;
-  if (direntry->d.o.data_is_directory) return -EINVAL;
+  if (direntry->data_is_directory) return -EINVAL;
 
-  dataentry = (struct image_resource_data_entry *) RVA(resbase, direntry->d.offset_to_data);
+  dataentry = (struct image_resource_data_entry *) RVA(resbase, direntry->offset_to_data);
   *data = RVA(hmod, dataentry->offset_to_data);
   return dataentry->size;
 }

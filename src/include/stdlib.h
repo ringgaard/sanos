@@ -83,7 +83,10 @@ void qsort(void *base, unsigned num, unsigned width, int (*comp)(const void *, c
 int rand();
 void srand(unsigned int seed);
 double strtod(const char *str, char **endptr);
+float strtof(const char *str, char **endptr);
+long double strtold(const char *str, char **endptr);
 long strtol(const char *nptr, char **endptr, int ibase);
+__int64 strtoll(const char *nptr, char **endptr, int ibase);
 unsigned long strtoul(const char *nptr, char **endptr, int ibase);
 int system(const char *command);
 char *ultoa(unsigned long val, char *buf, int radix);
