@@ -354,8 +354,8 @@ gdtsel:
 gdt:
 
 null_desc	segdesc	0,0,0
-flat_code	segdesc	0, 0xFFFFF, D_CODE | D_READ | D_BIG | D_BIG_LIM
-flat_data	segdesc	0, 0xFFFFF, D_DATA | D_WRITE | D_BIG | D_BIG_LIM
+flat_code	segdesc	0, 0xFFFF, D_CODE | D_READ | D_BIG | D_BIG_LIM
+flat_data	segdesc	0, 0xFFFF, D_DATA | D_WRITE | D_BIG | D_BIG_LIM
 
 gdtlen	  	equ $ - gdt - 1
 

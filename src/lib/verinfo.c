@@ -103,7 +103,7 @@ static struct version_resource *getver(hmodule_t hmod)
   int rc;
   struct version_resource *ver;
 
-  rc = get_resource_data(hmod, INTRES(16), INTRES(1), 0, &ver);
+  rc = get_resource_data(hmod, INTRES(16), INTRES(1), 0, (void **) &ver);
   if (rc < 0) return NULL;
   if (rc < sizeof(struct version_resource)) return NULL;
   if (ver->fixed.signature != VER_SIGNATURE) return NULL;

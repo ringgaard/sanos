@@ -97,7 +97,11 @@ int *_errno()
 
 void dbgbreak()
 {
+#ifdef __TINYC__
+  __asm ( "int3" );
+#else
   __asm { int 3 };
+#endif  
 }
 
 //
@@ -878,12 +882,20 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   char *init;
 
   // Set usermode segment selectors
+#ifdef __TINYC__
+  __asm__ __volatile__ (
+    "movw $27,%ax;"
+    "movw %ax,%ds;"
+    "movw %ax,%es;"
+  );
+#else  
   __asm
   {
     mov	ax, SEL_UDATA + SEL_RPL3
     mov	ds, ax
     mov	es, ax
   }
+#endif
 
   // Setup pointer to process environment block (PEB)
   peb = (struct peb *) PEB_ADDRESS;

@@ -1,7 +1,7 @@
 //
 // fnmatch.h
 //
-// Filename-matching 
+// Filename matching
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //

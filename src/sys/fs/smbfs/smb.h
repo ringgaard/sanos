@@ -998,6 +998,7 @@ struct smb_share
 int recv_fully(struct socket *s, char *buf, int size, int flags);
 char *addstr(char *p, char *s);
 char *addstrz(char *p, char *s);
+char *addpathz(char *p, char *s);
 time_t ft2time(smb_time filetime);
 smb_time time2ft(time_t time);
 int smb_convert_filename(char *name);

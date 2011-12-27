@@ -65,6 +65,18 @@ char *addstrz(char *p, char *s)
   return p;
 }
 
+char *addpathz(char *p, char *s)
+{
+  while (*s) 
+  {
+    *p = *s == '/' ? '\\' : *s;
+    p++;
+    s++;
+  }
+  *p++ = 0;
+  return p;
+}
+
 time_t ft2time(smb_time filetime)
 {
   return (time_t) ((filetime - EPOC) / SECTIMESCALE);

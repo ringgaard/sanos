@@ -3934,6 +3934,24 @@ static inline void next_nomacro1(void)
                     char_size = sizeof(nwchar_t);
                 if (tokcstr.size <= char_size)
                     error("empty character constant");
+#ifdef SANOS
+                if (!is_long) {
+                    if (tokcstr.size > 2) {
+                        /* multi-character character constant */
+                        unsigned char *p = tokcstr.data;
+                        tokc.i = 0;
+                        while (*p) tokc.i = tokc.i << 8 | *p++; 
+                    }
+                    else
+                        tokc.i = *(int8_t *)tokcstr.data;
+                    tok = TOK_CCHAR;
+                } else {
+                    if (tokcstr.size > 2 * sizeof(nwchar_t))
+                        warning("multi-character character constant");
+                    tokc.i = *(nwchar_t *)tokcstr.data;
+                    tok = TOK_LCHAR;
+                }
+#else
                 if (tokcstr.size > 2 * char_size)
                     warning("multi-character character constant");
                 if (!is_long) {
@@ -3943,6 +3961,7 @@ static inline void next_nomacro1(void)
                     tokc.i = *(nwchar_t *)tokcstr.data;
                     tok = TOK_LCHAR;
                 }
+#endif
             } else {
                 tokc.cstr = &tokcstr;
                 if (!is_long)
@@ -7075,7 +7094,6 @@ static int parse_btype(CType *type, AttributeDef *ad)
             t |= VT_INLINE;
             next();
             break;
-
             /* GNUC attribute */
         case TOK_ATTRIBUTE1:
         case TOK_ATTRIBUTE2:
@@ -7261,10 +7279,21 @@ static void type_decl(CType *type, AttributeDef *ad, int *v, int td)
         mk_pointer(type);
         type->t |= qualifiers;
     }
-    
+
     /* XXX: clarify attribute handling */
     if (tok == TOK_ATTRIBUTE1 || tok == TOK_ATTRIBUTE2)
         parse_attribute(ad);
+
+#ifdef SANOS
+    if (tok == TOK_CDECL1 || tok == TOK_CDECL2 || tok == TOK_CDECL3) {
+        FUNC_CALL(ad->func_attr) = FUNC_CDECL;
+        next();
+    }
+    if (tok == TOK_STDCALL1 || tok == TOK_STDCALL2 || tok == TOK_STDCALL3) {
+        FUNC_CALL(ad->func_attr) = FUNC_STDCALL;
+        next();
+    }
+#endif
 
     /* recursive type */
     /* XXX: incorrect if abstract type for functions (e.g. 'int ()') */
@@ -7275,6 +7304,16 @@ static void type_decl(CType *type, AttributeDef *ad, int *v, int td)
            the syntax is not clear */
         if (tok == TOK_ATTRIBUTE1 || tok == TOK_ATTRIBUTE2)
             parse_attribute(ad);
+#ifdef SANOS
+        if (tok == TOK_CDECL1 || tok == TOK_CDECL2 || tok == TOK_CDECL3) {
+            FUNC_CALL(ad->func_attr) = FUNC_CDECL;
+            next();
+        }
+        if (tok == TOK_STDCALL1 || tok == TOK_STDCALL2 || tok == TOK_STDCALL3) {
+            FUNC_CALL(ad->func_attr) = FUNC_STDCALL;
+            next();
+        }
+#endif
         type_decl(&type1, ad, v, td);
         skip(')');
     } else {

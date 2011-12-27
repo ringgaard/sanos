@@ -1041,7 +1041,10 @@ int stat(const char *name, struct stat *buffer)
     buffer->st_size = fdata.nFileSizeLow;
     buffer->st_mode = 0644;
 
-    if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) buffer->st_mode |= 0040000;
+    if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) 
+      buffer->st_mode |= 0040000;
+    else
+      buffer->st_mode |= 0100000;
   }
 
   return buffer ? 0 : fdata.nFileSizeLow;

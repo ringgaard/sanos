@@ -101,6 +101,7 @@ dirs:
     -@if not exist $(OBJ)\fdisk mkdir $(OBJ)\fdisk
     -@if not exist $(OBJ)\make mkdir $(OBJ)\make
     -@if not exist $(OBJ)\ar mkdir $(OBJ)\ar
+    -@if not exist $(OBJ)\ctohtml mkdir $(OBJ)\ctohtml
     -@if not exist $(OBJ)\impdef mkdir $(OBJ)\impdef
     -@if not exist $(OBJ)\httpd mkdir $(OBJ)\httpd
     -@if not exist $(OBJ)\jinit mkdir $(OBJ)\jinit
@@ -910,7 +911,7 @@ $(BIN)/msvcrt.dll: \
 # utils
 #
 
-utils: dirs $(BIN)/sh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/httpd.dll
+utils: dirs $(BIN)/sh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/ctohtml.exe $(BIN)/httpd.dll
 
 $(BIN)/sh.exe: \
   $(SRC)/utils/sh/sh.c \
@@ -978,6 +979,12 @@ $(BIN)/login.exe: \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/login/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(BIN)/ctohtml.exe: \
+  $(SRC)/utils/ctohtml/ctohtml.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/ctohtml/ $** /link /NODEFAULTLIB /FIXED:NO
 
 $(OBJ)/httpd/httpd.res: $(SRC)/utils/httpd/httpd.rc
   $(RC) /d "NDEBUG" /l 0x406 /fo$@ $**
@@ -1061,7 +1068,11 @@ $(SDKBIN)/impdef.exe: $(BIN)/impdef.exe
     if not exist $(SDKBIN) mkdir $(SDKBIN)
     copy $(BIN)\impdef.exe $(SDKBIN)\impdef.exe
 
-sdk: $(SDKBIN)/os.dll $(SDKBIN)/make.exe $(SDKBIN)/ar.exe $(SDKBIN)/impdef.exe
+$(SDKBIN)/ctohtml.exe: $(BIN)/ctohtml.exe
+    if not exist $(SDKBIN) mkdir $(SDKBIN)
+    copy $(BIN)\ctohtml.exe $(SDKBIN)\ctohtml.exe
+
+sdk: $(SDKBIN)/os.dll $(SDKBIN)/make.exe $(SDKBIN)/ar.exe $(SDKBIN)/impdef.exe $(SDKBIN)/ctohtml.exe
     cd $(SDKSRC)\as && nmake install
     cd $(SDKSRC)\cc && nmake install
     cd $(SDKSRC)\libc && nmake install
@@ -1091,6 +1102,7 @@ install: sanos
     copy $(BIN)\sh.exe        $(INSTALL)\bin\sh.exe
     copy $(BIN)\httpd.dll     $(INSTALL)\bin\httpd.dll
     copy $(BIN)\setup.exe     $(INSTALL)\bin\setup.exe
+    copy $(BIN)\ctohtml.exe   $(INSTALL)\bin\ctohtml.exe
     copy $(BIN)\edit.exe      $(INSTALL)\bin\edit.exe
     copy $(BIN)\fdisk.exe     $(INSTALL)\bin\fdisk.exe
     copy $(BIN)\jinit.exe     $(INSTALL)\bin\jinit.exe

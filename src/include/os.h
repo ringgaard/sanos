@@ -637,8 +637,8 @@ typedef struct critsect *critsect_t;
 #define MAXPATH                 256     // Maximum filename length (including trailing zero)
 #define MFSNAMELEN              16      // Length of fs type name
 
-#define PS1                     '\\'    // Primary path separator
-#define PS2                     '/'     // Alternate path separator
+#define PS1                     '/'     // Primary path separator
+#define PS2                     '\\'    // Alternate path separator
 
 #define SH_FLAGS(flags)                 (((flags) >> 16) & 0x0F)
 #define FILE_FLAGS(flags, shflags)      (((flags) & 0xFFFF) | (((shflags) & 0x0F) << 16))

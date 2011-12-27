@@ -1,7 +1,7 @@
 //
 // chkstk.s
 //
-// TCC stack check routine
+// TCC stack check
 //
 
 .text

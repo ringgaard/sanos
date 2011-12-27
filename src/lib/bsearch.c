@@ -60,7 +60,7 @@ void *bsearch(const void *key, const void *base, size_t num, size_t width, int (
       }
     }
     else if (num)
-      return ((*compare)(key,lo) ? NULL : lo);
+      return ((*compare)(key, lo) ? NULL : lo);
     else
       break;
   }

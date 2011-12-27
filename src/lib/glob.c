@@ -1,7 +1,7 @@
 //
 // glob.c
 //
-// Pathname pattern-matching 
+// Path name pattern matching
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //

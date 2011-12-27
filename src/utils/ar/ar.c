@@ -1,7 +1,7 @@
 //
 // ar.c
 //
-// Archive utility
+// Library archive utility
 //
 // Copyright (C) 2011 Michael Ringgaard. All rights reserved.
 //

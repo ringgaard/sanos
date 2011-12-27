@@ -13,6 +13,7 @@ sdk:
     make -C lib
 
 apps:
+    make -C utils/ctohtml
     make -C utils/edit
     make -C utils/fdisk
     make -C utils/ftpd

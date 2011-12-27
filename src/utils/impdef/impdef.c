@@ -1,7 +1,7 @@
 //
 // impdef.c
 //
-// Utility for generating import definitions for DLLs.
+// Utility for generating import definitions for DLLs
 //
 // Copyright (C) 2011 Michael Ringgaard. All rights reserved.
 //

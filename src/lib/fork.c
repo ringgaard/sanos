@@ -1,7 +1,7 @@
 //
 // fork.c
 //
-// Unix process creation routines
+// Process creation routines
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //

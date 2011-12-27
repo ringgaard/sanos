@@ -110,13 +110,13 @@ int mount(const char *type, const char *mntto, const char *mntfrom, const char *
     struct in_addr ipaddr;
     int rc;
 
-    if (mntfrom[0] != '\\' && mntfrom[1] != '\\') 
+    if (mntfrom[0] != '/' && mntfrom[1] != '/') 
     {
       errno = EINVAL;
       return -1;
     }
     p = (char *) mntfrom + 2;
-    q = strchr(p, '\\');
+    q = strchr(p, '/');
     if (!q) 
     {
       errno = EINVAL;

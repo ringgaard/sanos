@@ -316,7 +316,7 @@ int smb_connect_tree(struct smb_share *share)
 
   p = buf;
   p = addstr(p, share->server->password);
-  p = addstrz(p, share->sharename);
+  p = addpathz(p, share->sharename);
   p = addstrz(p, SMB_SERVICE_DISK);
 
   rc = smb_request(share, smb, SMB_COM_TREE_CONNECT_ANDX, 4, buf, p - buf, 0);

@@ -1,7 +1,7 @@
 //
 // wait.h
 //
-// Declarations for waiting
+// Wait for child process termination
 //
 // Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //

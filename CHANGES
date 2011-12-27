@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Implemented C source to HTML conversion tool.
+
     * Updated C compiler to Tiny C version 0.9.24 and implemented support for
       MSVC 64-bit integer extension (__int64 type and 0i64 constants).
 
