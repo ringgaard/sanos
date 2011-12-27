@@ -56,7 +56,7 @@ char *include_dir = "include";
 char *ctags_file = NULL;
 char *title = "source";
 int source_index = 0;
-int source_prefix_len = 0;
+size_t source_prefix_len = 0;
 
 struct tag **tags = NULL;
 int tags_size = 0;
@@ -462,8 +462,11 @@ void convert_directory(char *path)
   struct stat st;
 
   strcpy(dirname, output_dir);
-  strcat(dirname, "/");
-  strcat(dirname, path + source_prefix_len);
+  if (strlen(path) > source_prefix_len)
+  {
+    strcat(dirname, "/");
+    strcat(dirname, path + source_prefix_len);
+  }
   mkdir(dirname, 0644);
 
   dirp = opendir(path);
