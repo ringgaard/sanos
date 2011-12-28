@@ -216,3 +216,28 @@ simplified BSD license.
       CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
       OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
       EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+---------------------------------------------------------------------------------
+
+objconv
+
+By Agner Fog. (C) 2011. (http://www.agner.org/optimize/#objconv)
+
+Objconv is an open source program published under the conditions of the GNU General
+Public License, as defined in www.gnu.org/licenses/. The program is provided without any
+warranty or support.
+It may not be legal to modify, convert or disassemble copyright protected software files
+without permission from the copyright owner. It is an open question whether it is legal to
+modify or convert a copyright protected function library and use it for other purposes than
+presupposed in the license conditions. It is recommended to ask the vendor for permission
+before developing and publishing any software that is built with the use of a converted
+copyright protected function library.
+Copyright law does not generally permit disassembly of copyright protected software for the
+purpose of modifying the software, for circumventing a copy protection mechanism, for
+using part of the code in other contexts, or for extracting the algorithms behind the code.
+European, Australian and US copyright law does, however, under certain conditions permit
+reverse engineering of copyright protected software when the purpose is to extract the
+information necessary for establishing interoperability with other software, and only to the
+extent necessary for this purpose. However, I am not a legal expert. The user should seek
+legal advise before deciding whether it is legal to use objconv on copyrighted software for a
+specific purpose.

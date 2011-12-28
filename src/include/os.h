@@ -1457,6 +1457,8 @@ osapi int stat64(const char *name, struct stat64 *buffer);
 osapi int lstat(const char *name, struct stat *buffer);
 osapi int lstat64(const char *name, struct stat64 *buffer);
 osapi int access(const char *name, int mode);
+osapi loff_t filelength(handle_t f);
+osapi off64_t filelength64(handle_t f);
 osapi int isatty(handle_t f);
 
 osapi int eof(handle_t f);

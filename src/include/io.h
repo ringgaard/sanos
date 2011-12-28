@@ -57,6 +57,8 @@ osapi handle_t dup2(handle_t h1, handle_t h2);
 
 osapi loff_t tell(handle_t f);
 osapi loff_t lseek(handle_t f, loff_t offset, int origin);
+osapi loff_t filelength(handle_t f);
+osapi off64_t filelength64(handle_t f);
 
 osapi int access(const char *name, int mode);
 osapi int umask(int mode);

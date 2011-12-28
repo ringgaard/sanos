@@ -4,9 +4,13 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added objconv utility to sdk.
+
+    * Added filelength() and filelength64() to io.h.
+    
     * Refactored stdio routines.
 
-    * Added support for outputting map file from C compiler.
+    * Added support for outputting linker map file from C compiler.
 
     * Implemented C source to HTML conversion tool.
 
@@ -96,7 +100,7 @@ Changes since last release
       
     * STDIN_FILENO, STDOUT_FILENO, and STDERR_FILENO added to unistd.h.
 
-    * Basic POSIX signal handling implemented. The following functions has been 
+    * Basic POSIX signal handling implemented. The following functions have been 
       implemented:
         alarm(), kill(), sigaction(), sigprocmask(), sigpending(), sigsuspend(),
         sigismember(), sigdelset(), sigaddset(), sigfillset(), sigemptyset(), 
@@ -117,10 +121,10 @@ Changes since last release
       commit increment are now initialized from the PE header
       of the executable. The global heap uses os.dll for heap parameters.
       
-    * Jobs now has ids that can be used to simulate process ids. Each job also has
+    * Jobs now have ids that can be used to simulate process ids. Each job also has
       a parent job and a handle to the main thread. The getjobhandle() function 
       returns a new handle to the main thread of the job. The getpid() and getppid()
-      functions has been implemented. The P_CHILD flag for spawn() can be set
+      functions have been implemented. The P_CHILD flag for spawn() can be set
       to create a child job.
     
     * Kernel thread handles are now protected from being closed from
@@ -218,7 +222,7 @@ Version 1.3.3
       configured for the application.
 
     * Shell prompt can be configured by setting the prompt property in the 
-      [shell] section  of the os.ini file.
+      [shell] section of the os.ini file.
 
     * If command line arguments are given to the shell it now executes the built-
       in command and exits the shell.

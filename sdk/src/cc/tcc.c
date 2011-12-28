@@ -545,7 +545,7 @@ struct TCCState {
     /* output file for preprocessing */
     FILE *outfile;
     
-    /* map file */
+    /* linker map file */
     const char *mapfile;
 };
 
@@ -10690,7 +10690,7 @@ void help(void)
            "  -static     static linking\n"
            "  -rdynamic   export all global symbols to dynamic linker\n"
            "  -r          generate (relocatable) object file\n"
-           "  -m mapfile  generate map file\n"
+           "  -m mapfile  generate linker map file\n"
            "Debugger options:\n"
            "  -g          generate runtime debug info\n"
 #ifdef CONFIG_TCC_BCHECK

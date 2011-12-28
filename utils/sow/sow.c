@@ -1081,6 +1081,16 @@ int lstat(const char *name, struct stat *buffer)
   return stat(name, buffer);
 }
 
+loff_t filelength(handle_t f)
+{
+  return fstat(f, NULL);
+}
+
+off64_t filelength64(handle_t f)
+{
+  return fstat64(f, NULL);
+}
+
 int access(const char *name, int mode)
 {
   int rc;

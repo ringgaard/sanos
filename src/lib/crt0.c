@@ -167,7 +167,7 @@ static void termcrt(int status)
   struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
   // Check for vfork() exit
-  if (crtbase->vfork_exit) crtbase->vfork_exit(status);
+  if (crtbase->fork_exit) crtbase->fork_exit(status);
 
   // Call termination handlers when last instance exits
   if (atomic_decrement(&__instcount) == 0)

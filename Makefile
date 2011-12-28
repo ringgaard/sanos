@@ -1092,12 +1092,14 @@ sdk: $(SDKBIN)/os.dll $(SDKBIN)/make.exe $(SDKBIN)/ar.exe $(SDKBIN)/impdef.exe $
     cd $(SDKSRC)\as && nmake install
     cd $(SDKSRC)\cc && nmake install
     cd $(SDKSRC)\libc && nmake install
+    cd $(SDKSRC)\objconv && nmake install
 
 sdk-clean:
     del /Q $(SDKBIN)\bin
     cd $(SDKSRC)\as && nmake clean
     cd $(SDKSRC)\cc && nmake clean
     cd $(SDKSRC)\libc && nmake clean
+    cd $(SDKSRC)\objconv && nmake clean
 
 sdkdisk: sanos sdk install install-source install-sdk boothd
 
@@ -1175,6 +1177,7 @@ install-sdk: install-source sdk
     copy $(SDKBIN)\make.exe      $(INSTALL)\usr\bin\make.exe
     copy $(SDKBIN)\ar.exe        $(INSTALL)\usr\bin\ar.exe
     copy $(SDKBIN)\impdef.exe    $(INSTALL)\usr\bin\impdef.exe
+    copy $(SDKBIN)\objconv.exe   $(INSTALL)\usr\bin\objconv.exe
     copy $(SDKLIB)\libc.a        $(INSTALL)\usr\lib\libc.a
     copy $(SDKLIB)\os.def        $(INSTALL)\usr\lib\os.def
     copy $(SDKSRC)\as\*.c        $(INSTALL)\usr\src\utils\as

@@ -57,7 +57,7 @@ struct crtbase
   FILE iob[3];
   char stdinbuf[BUFSIZ];
   struct opt opt;
-  void (*vfork_exit)(int);
+  void (*fork_exit)(int);
 };
 
 #endif

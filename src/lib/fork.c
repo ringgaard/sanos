@@ -35,6 +35,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <atomic.h>
+#include <crtbase.h>
 #include <sys/wait.h>
 
 static int forkpid = 0;
@@ -95,14 +96,36 @@ static resume_fork(struct tib *tib, int pid)
   longjmp(fc->jmp, pid);
 }
 
+void fork_exit(int status)
+{
+  struct tib *tib = gettib();
+
+  // If no vfork() is in progress just return
+  struct _forkctx *fc = (struct _forkctx *) tib->forkctx;
+  if (!fc) return;
+
+  // Add a fake zombie for process
+  setchildstat(0x40000000 | fc->pid, status & 0xFF);
+
+  // Send a SIGCHLD to account for the virtual process exit
+  sendsig(self(), SIGCHLD);
+
+  // Return control to the parent process path with fork pid
+  resume_fork(tib, 0x40000000 | fc->pid);
+}
+
 struct _forkctx *_vfork(struct _forkctx *fc)
 {
   int i;
   struct tib *tib = gettib();
   struct process *proc = tib->proc;
+  struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
   // Assign fork pid
   fc->pid = atomic_increment(&forkpid);
+
+  // Install exit handler.
+  crtbase->fork_exit = fork_exit;
 
   // Save and duplicate standard handles
   for (i = 0; i < 3; i++)
@@ -120,24 +143,6 @@ struct _forkctx *_vfork(struct _forkctx *fc)
   tib->forkctx = fc;
 
   return fc;
-}
-
-void fork_exit(int status)
-{
-  struct tib *tib = gettib();
-
-  // If no vfork() is in progress just return
-  struct _forkctx *fc = (struct _forkctx *) tib->forkctx;
-  if (!fc) return;
-
-  // Add a fake zombie for process
-  setchildstat(0x40000000 | fc->pid, status & 0xFF);
-
-  // Send a SIGCHLD to account for the virtual process exit
-  sendsig(self(), SIGCHLD);
-
-  // Return control to the parent process path with fork pid
-  resume_fork(tib, 0x40000000 | fc->pid);
 }
 
 pid_t wait(int *stat_loc)

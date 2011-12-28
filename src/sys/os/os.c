@@ -173,6 +173,16 @@ int umask(int mask)
   return oldmask;
 }
 
+loff_t filelength(handle_t f)
+{
+  return fstat(f, NULL);
+}
+
+off64_t filelength64(handle_t f)
+{
+  return fstat64(f, NULL);
+}
+
 int isatty(handle_t f) 
 {
   // For now we regard all file handles as non-interactive.
