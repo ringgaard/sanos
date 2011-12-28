@@ -233,10 +233,7 @@ void *memmove(void *dst, const void *src, size_t n)
 
   if (dst <= src || (char *) dst >= ((char *) src + n)) 
   {
-    //
-    // Non-Overlapping Buffers
-    // copy from lower addresses to higher addresses
-    //
+    // Non-overlapping buffers; copy from lower addresses to higher addresses
     while (n--) 
     {
       *(char *) dst = *(char *) src;
@@ -246,10 +243,7 @@ void *memmove(void *dst, const void *src, size_t n)
   }
   else 
   {
-    //
-    // Overlapping Buffers
-    // copy from higher addresses to lower addresses
-    //
+    // Overlapping buffers; copy from higher addresses to lower addresses
     dst = (char *) dst + n - 1;
     src = (char *) src + n - 1;
 

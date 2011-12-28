@@ -12,12 +12,13 @@ IMPDEF=$(SDK)\bin\impdef.exe
 TCC=$(SDK)\bin\cc.exe
 NASM=$(SDK)\bin\as.exe
 
-OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fork.o getopt.o glob.o hash.o inifile.o input.o \
-     math.o opts.o output.o qsort.o random.o readline.o rmap.o rtttl.o sched.o semaphore.o stdio.o stdlib.o strftime.o \
-     string.o strtod.o strtol.o time.o xtoa.o \
-     regcomp.o regexec.o regerror.o regfree.o \
-     barrier.o condvar.o mutex.o pthread.o rwlock.o spinlock.o \
-     setjmp.o chkstk.o
+OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fork.o getopt.o glob.o hash.o \
+    inifile.o input.o math.o opts.o output.o qsort.o random.o readline.o rmap.o rtttl.o sched.o \
+    semaphore.o stdio.o scanf.o printf.o tmpfile.o popen.o stdlib.o strftime.o string.o strtod.o \
+    strtol.o time.o xtoa.o \
+    regcomp.o regexec.o regerror.o regfree.o \
+    barrier.o condvar.o mutex.o pthread.o rwlock.o spinlock.o \
+    setjmp.o chkstk.o
 
 MATHOBJ=acos.o asin.o atan.o atan2.o ceil.o cos.o cosh.o exp.o fabs.o floor.o fmod.o fpconst.o fpreset.o frexp.o \
         ftol.o ldexp.o log.o log10.o modf.o pow.o sin.o sinh.o sqrt.o tan.o tanh.o
@@ -122,6 +123,18 @@ semaphore.o: $(LIBSRC)/semaphore.c
     $(TCC) -c $** -o $@ -I$(INCLUDE)
 
 stdio.o: $(LIBSRC)/stdio.c
+    $(TCC) -c $** -o $@ -I$(INCLUDE)
+
+scanf.o: $(LIBSRC)/scanf.c
+    $(TCC) -c $** -o $@ -I$(INCLUDE)
+
+printf.o: $(LIBSRC)/printf.c
+    $(TCC) -c $** -o $@ -I$(INCLUDE)
+
+tmpfile.o: $(LIBSRC)/tmpfile.c
+    $(TCC) -c $** -o $@ -I$(INCLUDE)
+
+popen.o: $(LIBSRC)/popen.c
     $(TCC) -c $** -o $@ -I$(INCLUDE)
 
 stdlib.o: $(LIBSRC)/stdlib.c

@@ -36,14 +36,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <stdarg.h>
 #include <crtbase.h>
-
-#define SHELL "sh.exe"
-
-int output(FILE *stream, const char *format, va_list args);
-int input(FILE *stream, const unsigned char *format, va_list arglist);
 
 #define bigbuf(s) ((s)->flag & (_IOOWNBUF | _IOEXTBUF | _IOTMPBUF))
 #define anybuf(s) ((s)->flag & (_IOOWNBUF | _IOEXTBUF | _IOTMPBUF | _IONBF))
@@ -110,7 +104,7 @@ static void freebuf(FILE *stream)
   }
 }
 
-static int stbuf(FILE *stream, char *buf, int bufsiz)
+int _stbuf(FILE *stream, char *buf, int bufsiz)
 {
   // Setup temp buffering
   stream->base = stream->ptr = buf;
@@ -120,7 +114,7 @@ static int stbuf(FILE *stream, char *buf, int bufsiz)
   return 0;
 }
 
-static void ftbuf(FILE *stream)
+void _ftbuf(FILE *stream)
 {
   if (stream->flag & _IOTMPBUF)
   {
@@ -467,80 +461,6 @@ FILE *fopen(const char *filename, const char *mode)
   return stream;
 }
 
-FILE *popen(const char *command, const char *mode)
-{
-  char cmdline[1024];
-  int rc;
-  int hndl[2];
-  int phndl;
-  struct tib *tib;
-  struct process *proc;
-  FILE *f;
-
-  if (!command)
-  {
-    errno = EINVAL;
-    return NULL;
-  }
-
-  if (strlen(command) + strlen(SHELL) + 1 >= sizeof(cmdline))
-  {
-    errno = E2BIG;
-    return NULL;
-  }
-
-  strcpy(cmdline, SHELL);
-  strcat(cmdline, " ");
-  strcat(cmdline, command);
-
-  phndl = spawn(P_SUSPEND, SHELL, cmdline, NULL, &tib);
-  if (phndl < 0) return NULL;
-  proc = tib->proc;
-
-  rc = pipe(hndl);
-  if (rc < 0) return NULL;
-
-  if (*mode == 'w')
-  {
-    if (proc->iob[0] != NOHANDLE) close(proc->iob[0]);
-    proc->iob[0] = hndl[0];
-    f = fdopen(hndl[1], mode);
-  }
-  else
-  {
-    if (proc->iob[1] != NOHANDLE) close(proc->iob[1]);
-    proc->iob[1] = hndl[1];
-    f = fdopen(hndl[0], mode);
-  }
-
-  if (f == NULL) return NULL;
-  f->phndl = phndl;
-  resume(phndl);
-
-  return f;
-}
-
-int pclose(FILE *stream)
-{
-  int rc;
-
-  if (stream->flag & _IORD)
-  {
-    waitone(stream->phndl, INFINITE);
-    close(stream->phndl);
-    rc = close_file(stream);
-  }
-  else
-  {
-    int phndl = stream->phndl;
-    rc = close_file(stream);
-    waitone(phndl, INFINITE);
-    close(phndl);
-  }
-
-  return rc;
-}
-
 void clearerr(FILE *stream)
 {
   // Clear flags
@@ -632,9 +552,9 @@ int fputs(const char *string, FILE *stream)
   {
     char buf[BUFSIZ];
 
-    stbuf(stream, buf, BUFSIZ);
+    _stbuf(stream, buf, BUFSIZ);
     written = fwrite(string, 1, len, stream);
-    ftbuf(stream);
+    _ftbuf(stream);
   }
   else
     written = fwrite(string, 1, len, stream);
@@ -687,13 +607,13 @@ int puts(const char *string)
   {
     char buf[BUFSIZ];
 
-    stbuf(stream, buf, BUFSIZ);
+    _stbuf(stream, buf, BUFSIZ);
 
     while (*string) 
     {
       if (putchar(*string) == EOF)
       {
-        ftbuf(stream);
+        _ftbuf(stream);
 	return EOF;
       }
       string++;
@@ -701,11 +621,11 @@ int puts(const char *string)
   
     if (putchar('\n') == EOF) 
     {
-      ftbuf(stream);
+      _ftbuf(stream);
       return EOF;
     }
 
-    ftbuf(stream);
+    _ftbuf(stream);
   }
   else
   {
@@ -972,7 +892,10 @@ int fgetpos(FILE *stream, fpos_t *pos)
 
 void perror(const char *message)
 {
-  fprintf(stderr, "%s: %s\n", message, strerror(errno));
+  fputs(message, stderr);
+  fputs(": ", stderr);
+  fputs(strerror(errno), stderr);
+  fputs("\n", stderr);
 }
 
 void setbuf(FILE *stream, char *buffer)
@@ -1051,263 +974,4 @@ int ungetc(int c, FILE *stream)
 int remove(const char *filename)
 {
   return unlink(filename);
-}
-
-static int gentmpfn(char *path, char *prefix, int unique, char *tempfn)
-{
-  const char *format = "%s%c%s%4.4x.tmp";
-  int len;
-
-  len = strlen(path);
-  if (len > 0 && (path[len - 1] == PS1 || path[len - 1] == PS2)) len--;
-
-  if (unique == 0) unique = clock();
-  
-  sprintf(tempfn, format, path, PS1, prefix, unique);
-  while (access(tempfn, 0) == 0)
-  {
-    unique++;
-    sprintf(tempfn, format, path, PS1, prefix, unique);
-  }
-  if (errno != ENOENT) return -1;
-
-  return unique;
-}
-
-FILE *tmpfile()
-{
-  static int unique = 0;
-
-  FILE *stream;
-  char *path;
-  char tempfn[MAXPATH];
-  int rc;
-
-  path = getenv("tmp");
-  if (!path) path = "/tmp";
-
-  stream = malloc(sizeof(FILE));
-  if (!stream)
-  {
-    errno = ENFILE;
-    return NULL;
-  }
-
-  while (1)
-  {
-    rc = gentmpfn(path, "t", unique, tempfn);
-    if (rc < 0) return NULL;
-    unique = rc;
-
-    rc = open_file(stream, tempfn, "wb+TD");
-    if (rc == 0) break;
-
-    if (rc < 0 && errno != EEXIST)
-    {
-      free(stream);
-      return NULL;
-    }
-  }
-
-  return stream;
-}
-
-char *tmpnam(char *string)
-{
-  static int unique = 0;
-  char *path;
-  char *tempfn;
-  int rc;
-
-  if (string)
-    tempfn = string;
-  else
-    tempfn = gettib()->tmpnambuf;
-  
-  path = getenv("tmp");
-  if (!path) path = "/tmp";
-
-  rc = gentmpfn(path, "s", 0, tempfn);
-  if (rc < 0) return NULL;
-  unique = rc;
-
-  return tempfn;
-}
-
-char *tempnam(const char *dir, const char *prefix)
-{
-  static int unique = 0;
-  char *path;
-  char *tempfn;
-  int rc;
-
-  tempfn = gettib()->tmpnambuf;
-  
-  path = (char *) dir;
-  if (!path) path = getenv("tmp");
-  if (!path) path = ".";
-
-  rc = gentmpfn(path, (char *) prefix, unique, tempfn);
-  if (rc < 0) return NULL;
-  unique = rc;
-
-  return strdup(tempfn);
-}
-
-int vfprintf(FILE *stream, const char *fmt, va_list args)
-{
-  int rc;
-
-  if (stream->flag & _IONBF)
-  {
-    char buf[BUFSIZ];
-
-    stbuf(stream, buf, BUFSIZ);
-    rc = output(stream, fmt, args);
-    ftbuf(stream);
-  }
-  else
-    rc = output(stream, fmt, args);
-
-  return rc;
-}
-
-int fprintf(FILE *stream, const char *fmt, ...)
-{
-  int rc;
-  va_list args;
-
-  va_start(args, fmt);
-
-  if (stream->flag & _IONBF)
-  {
-    char buf[BUFSIZ];
-
-    stbuf(stream, buf, BUFSIZ);
-    rc = output(stream, fmt, args);
-    ftbuf(stream);
-  }
-  else
-    rc = output(stream, fmt, args);
-
-  return rc;
-}
-
-int vprintf(const char *fmt, va_list args)
-{
-  return vfprintf(stdout, fmt, args);
-}
-
-int printf(const char *fmt, ...)
-{
-  va_list args;
-
-  va_start(args, fmt);
-  return vfprintf(stdout, fmt, args);
-}
-
-int vsprintf(char *buf, const char *fmt, va_list args)
-{
-  FILE str;
-  int rc;
-
-  str.cnt = INT_MAX;
-  str.flag = _IOWR | _IOSTR;
-  str.ptr = str.base = buf;
-
-  rc = output(&str, fmt, args);
-  if (buf != NULL) putc('\0', &str);
-
-  return rc;
-}
-
-int sprintf(char *buf, const char *fmt, ...)
-{
-  va_list args;
-  FILE str;
-  int rc;
-
-  va_start(args, fmt);
-
-  str.cnt = INT_MAX;
-  str.flag = _IOWR | _IOSTR;
-  str.ptr = str.base = buf;
-
-  rc = output(&str, fmt, args);
-  if (buf != NULL) putc('\0', &str);
-
-  return rc;
-}
-
-int vsnprintf(char *buf, size_t count, const char *fmt, va_list args)
-{
-  FILE str;
-  int rc;
-
-  str.cnt = (int) count;
-  str.flag = _IOWR | _IOSTR;
-  str.ptr = str.base = buf;
-
-  rc = output(&str, fmt, args);
-  if (buf != NULL) putc('\0', &str);
-
-  return rc;
-}
-
-int snprintf(char *buf, size_t count, const char *fmt, ...)
-{
-  va_list args;
-  FILE str;
-  int rc;
-
-  va_start(args, fmt);
-
-  str.cnt = (int) count;
-  str.flag = _IOWR | _IOSTR;
-  str.ptr = str.base = buf;
-
-  rc = output(&str, fmt, args);
-  if (buf != NULL) putc('\0', &str);
-
-  return rc;
-}
-
-int fscanf(FILE *stream, const char *fmt, ...)
-{
-  int rc;
-  va_list args;
-
-  va_start(args, fmt);
-
-  rc = input(stream, fmt, args);
-
-  return rc;
-}
-
-int scanf(const char *fmt, ...)
-{
-  int rc;
-  va_list args;
-
-  va_start(args, fmt);
-
-  rc = input(stdin, fmt, args);
-
-  return rc;
-}
-
-int sscanf(const char *buffer, const char *fmt, ...)
-{
-  int rc;
-  va_list args;
-  FILE str;
-
-  va_start(args, fmt);
-
-  str.flag = _IORD | _IOSTR | _IOOWNBUF;
-  str.ptr = str.base = (char *) buffer;
-  str.cnt = strlen(buffer);
-  rc = input(&str, fmt, args);
-
-  return rc;
 }

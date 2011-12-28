@@ -13,9 +13,7 @@ if not exist %1\utils\sow mkdir %1\utils\sow
 
 copy README %1
 copy COPYING %1
-copy FILES %1
 copy CHANGES %1
-copy build.cmd %1
 copy Makefile %1
 
 copy build\*.vcproj %1\build

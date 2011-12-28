@@ -192,7 +192,7 @@ static void cropzeros(char *buffer)
   }
 }
 
-int output(FILE *stream, const char *format, va_list args)
+int _output(FILE *stream, const char *format, va_list args)
 {
   char *text;
   int textlen;

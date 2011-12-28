@@ -1,9 +1,9 @@
 //
-// crtbase.h
+// popen.c
 //
-// Internal definitions for C runtime library
+// Pipe I/O
 //
-// Copyright (C) 2002 Michael Ringgaard. All rights reserved.
+// Copyright (C) 2011 Michael Ringgaard. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -31,33 +31,84 @@
 // SUCH DAMAGE.
 // 
 
-#if _MSC_VER > 1000
-#pragma once
-#endif
-
-#ifndef CRTBASE_H
-#define CRTBASE_H
+#include <os.h>
 
 #include <stdio.h>
-#include <setjmp.h>
+#include <string.h>
 
-struct opt
+#define SHELL "sh.exe"
+
+FILE *popen(const char *command, const char *mode)
 {
-  int err;
-  int ind;
-  int opt;
-  char *arg;
-  int sp;
-};
+  char cmdline[1024];
+  int rc;
+  int hndl[2];
+  int phndl;
+  struct tib *tib;
+  struct process *proc;
+  FILE *f;
 
-struct crtbase
+  if (!command)
+  {
+    errno = EINVAL;
+    return NULL;
+  }
+
+  if (strlen(command) + strlen(SHELL) + 1 >= sizeof(cmdline))
+  {
+    errno = E2BIG;
+    return NULL;
+  }
+
+  strcpy(cmdline, SHELL);
+  strcat(cmdline, " ");
+  strcat(cmdline, command);
+
+  phndl = spawn(P_SUSPEND, SHELL, cmdline, NULL, &tib);
+  if (phndl < 0) return NULL;
+  proc = tib->proc;
+
+  rc = pipe(hndl);
+  if (rc < 0) return NULL;
+
+  if (*mode == 'w')
+  {
+    if (proc->iob[0] != NOHANDLE) close(proc->iob[0]);
+    proc->iob[0] = hndl[0];
+    f = fdopen(hndl[1], mode);
+  }
+  else
+  {
+    if (proc->iob[1] != NOHANDLE) close(proc->iob[1]);
+    proc->iob[1] = hndl[1];
+    f = fdopen(hndl[0], mode);
+  }
+
+  if (f == NULL) return NULL;
+  f->phndl = phndl;
+  resume(phndl);
+
+  return f;
+}
+
+int pclose(FILE *stream)
 {
-  int argc;
-  char **argv;
-  FILE iob[3];
-  char stdinbuf[BUFSIZ];
-  struct opt opt;
-  void (*vfork_exit)(int);
-};
+  int rc;
 
-#endif
+  if (stream->flag & _IORD)
+  {
+    waitone(stream->phndl, INFINITE);
+    close(stream->phndl);
+    rc = fclose(stream);
+  }
+  else
+  {
+    int phndl = stream->phndl;
+    rc = fclose(stream);
+    waitone(phndl, INFINITE);
+    close(phndl);
+  }
+
+  return rc;
+}
+

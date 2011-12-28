@@ -78,7 +78,7 @@ static int skipws(int *counter, FILE *stream)
   }
 }
 
-int input(FILE *stream, const unsigned char *format, va_list arglist)
+int _input(FILE *stream, const unsigned char *format, va_list arglist)
 {
   char table[RANGESETSIZE];           // Which chars allowed for %[], %s
   char fltbuf[CVTBUFSIZE + 1];        // ASCII buffer for floats

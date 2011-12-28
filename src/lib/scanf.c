@@ -1,9 +1,9 @@
 //
-// crtbase.h
+// scanf.c
 //
-// Internal definitions for C runtime library
+// Formatted input
 //
-// Copyright (C) 2002 Michael Ringgaard. All rights reserved.
+// Copyright (C) 2011 Michael Ringgaard. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -31,33 +31,47 @@
 // SUCH DAMAGE.
 // 
 
-#if _MSC_VER > 1000
-#pragma once
-#endif
-
-#ifndef CRTBASE_H
-#define CRTBASE_H
-
 #include <stdio.h>
-#include <setjmp.h>
+#include <stdarg.h>
 
-struct opt
+int _input(FILE *stream, const unsigned char *format, va_list arglist);
+
+int fscanf(FILE *stream, const char *fmt, ...)
 {
-  int err;
-  int ind;
-  int opt;
-  char *arg;
-  int sp;
-};
+  int rc;
+  va_list args;
 
-struct crtbase
+  va_start(args, fmt);
+
+  rc = _input(stream, fmt, args);
+
+  return rc;
+}
+
+int scanf(const char *fmt, ...)
 {
-  int argc;
-  char **argv;
-  FILE iob[3];
-  char stdinbuf[BUFSIZ];
-  struct opt opt;
-  void (*vfork_exit)(int);
-};
+  int rc;
+  va_list args;
 
-#endif
+  va_start(args, fmt);
+
+  rc = _input(stdin, fmt, args);
+
+  return rc;
+}
+
+int sscanf(const char *buffer, const char *fmt, ...)
+{
+  int rc;
+  va_list args;
+  FILE str;
+
+  va_start(args, fmt);
+
+  str.flag = _IORD | _IOSTR | _IOOWNBUF;
+  str.ptr = str.base = (char *) buffer;
+  str.cnt = strlen(buffer);
+  rc = _input(&str, fmt, args);
+
+  return rc;
+}

@@ -605,6 +605,18 @@ $(OBJ)/libc/stdlib.obj: $(SRC)/lib/stdlib.c
 $(OBJ)/libc/stdio.obj: $(SRC)/lib/stdio.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
+$(OBJ)/libc/scanf.obj: $(SRC)/lib/scanf.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
+$(OBJ)/libc/tmpfile.obj: $(SRC)/lib/tmpfile.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
+$(OBJ)/libc/printf.obj: $(SRC)/lib/printf.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
+$(OBJ)/libc/popen.obj: $(SRC)/lib/popen.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
 $(OBJ)/libc/setjmp.obj: $(SRC)/lib/setjmp.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
@@ -731,6 +743,10 @@ $(LIBS)/libc.lib: \
   $(OBJ)/libc/strftime.obj \
   $(OBJ)/libc/stdlib.obj \
   $(OBJ)/libc/stdio.obj \
+  $(OBJ)/libc/scanf.obj \
+  $(OBJ)/libc/printf.obj \
+  $(OBJ)/libc/tmpfile.obj \
+  $(OBJ)/libc/popen.obj \
   $(OBJ)/libc/setjmp.obj \
   $(OBJ)/libc/semaphore.obj \
   $(OBJ)/libc/sched.obj \

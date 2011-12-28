@@ -34,7 +34,7 @@
 #endif
 
 #define PE_MERGE_DATA
-// #define PE_PRINT_SECTIONS
+#define PE_PRINT_SECTIONS
 
 /* ----------------------------------------------------------- */
 #ifndef IMAGE_NT_SIGNATURE
@@ -884,7 +884,7 @@ ST_FN void pe_build_exports(struct pe_info *pe)
 }
 
 /* ------------------------------------------------------------- */
-ST_FN void pe_build_reloc (struct pe_info *pe)
+ST_FN void pe_build_reloc(struct pe_info *pe)
 {
     DWORD offset, block_ptr, addr;
     int count, i;
@@ -971,7 +971,7 @@ ST_FN int pe_section_class(Section *s)
     return -1;
 }
 
-ST_FN int pe_assign_addresses (struct pe_info *pe)
+ST_FN int pe_assign_addresses(struct pe_info *pe)
 {
     int i, k, o, c;
     DWORD addr;
@@ -1069,7 +1069,7 @@ ST_FN int pe_assign_addresses (struct pe_info *pe)
 }
 
 /* ------------------------------------------------------------- */
-ST_FN void pe_relocate_rva (struct pe_info *pe, Section *s)
+ST_FN void pe_relocate_rva(struct pe_info *pe, Section *s)
 {
     Section *sr = s->reloc;
     Elf32_Rel *rel, *rel_end;
@@ -1562,7 +1562,7 @@ PUB_FN int pe_output_file(TCCState * s1, const char *filename)
     }
 
 #ifdef PE_PRINT_SECTIONS
-    pe_print_sections(s1, "tcc.log");
+    if (s1->mapfile) pe_print_sections(s1, s1->mapfile);
 #endif
     return ret;
 }

@@ -38,7 +38,6 @@
 
 void init_stdio();
 void exit_stdio();
-void fork_exit(int status);
 
 typedef void (__cdecl *proc_t)(void);
 typedef int (__cdecl *func_t)(void);
@@ -168,7 +167,7 @@ static void termcrt(int status)
   struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
   // Check for vfork() exit
-  fork_exit(status);
+  if (crtbase->vfork_exit) crtbase->vfork_exit(status);
 
   // Call termination handlers when last instance exits
   if (atomic_decrement(&__instcount) == 0)

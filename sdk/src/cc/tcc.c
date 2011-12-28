@@ -544,6 +544,9 @@ struct TCCState {
 
     /* output file for preprocessing */
     FILE *outfile;
+    
+    /* map file */
+    const char *mapfile;
 };
 
 /* The current value can be: */
@@ -10687,6 +10690,7 @@ void help(void)
            "  -static     static linking\n"
            "  -rdynamic   export all global symbols to dynamic linker\n"
            "  -r          generate (relocatable) object file\n"
+           "  -m mapfile  generate map file\n"
            "Debugger options:\n"
            "  -g          generate runtime debug info\n"
 #ifdef CONFIG_TCC_BCHECK
@@ -10937,6 +10941,9 @@ int parse_args(TCCState *s, int argc, char **argv)
             case TCC_OPTION_o:
                 multiple_files = 1;
                 outfile = optarg;
+                break;
+            case TCC_OPTION_m:
+                s->mapfile = optarg;
                 break;
             case TCC_OPTION_r:
                 /* generate a .o merging several output files */
