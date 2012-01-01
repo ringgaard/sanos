@@ -1663,6 +1663,24 @@ int sigsuspend(const sigset_t *mask)
   return notimpl("sigsuspend");
 }
 
+int sigemptyset(sigset_t *set)
+{
+  *set = 0;
+  return 0;
+}
+
+int sigaddset(sigset_t *set, int signum)
+{
+  *set |= (1 << signum);
+  return 0;
+}
+
+int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
+{
+  return notimpl("sigaction");
+}
+
+
 int raise(int signum)
 {
   return notimpl("raise");

@@ -113,7 +113,7 @@ char **initenv(struct section *sect)
   for (n = 0, prop = sect->properties; prop; n++, prop = prop->next)
   {
     int len = strlen(prop->name) + 1;
-    if (prop->value) len+= strlen(prop->value);
+    if (prop->value) len += strlen(prop->value);
     env[n] = (char *) malloc(len + 1);
     if (env[n])
     {

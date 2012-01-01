@@ -10,6 +10,7 @@ sdk:
     make -C utils/ar
     make -C utils/make
     make -C utils/impdef
+    make -C utils/makedepend
     make -C lib
 
 apps:
@@ -29,6 +30,7 @@ install: sdk apps
     make -C utils/ar install
     make -C utils/make install
     make -C utils/impdef install
+    make -C utils/makedepend install
     make -C utils/edit install
     make -C utils/fdisk install
     make -C utils/ftpd install
@@ -44,6 +46,7 @@ clean:
     make -C utils/ar clean
     make -C utils/make clean
     make -C utils/impdef clean
+    make -C utils/makedepend clean
     make -C utils/edit clean
     make -C utils/fdisk clean
     make -C utils/ftpd clean

@@ -34,11 +34,7 @@
 #ifndef WIN32_H
 #define WIN32_H
 
-#ifdef __TINYC__
-#define WINAPI __attribute__((dllexport))
-#else
 #define WINAPI __declspec(dllexport) __stdcall
-#endif
 
 #define CONST const
 

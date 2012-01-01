@@ -54,7 +54,7 @@
 #define SANOS_VER (OS_MAJ_VERS * 10000 + OS_MIN_VERS * 100 + OS_RELEASE)
 #endif
 
-#if defined(OSLDR) || defined(__TINYC__)
+#if defined(OSLDR)
 #define krnlapi
 #else
 #ifdef KRNL_LIB
@@ -1211,7 +1211,7 @@ struct peb
 #define TERM_CONSOLE   1
 #define TERM_VT100     2
 
-#define CRTBASESIZE    (8 + 3 * 32 + 512 + 5 * 4 + 4)
+#define CRTBASESIZE    (16 + 3 * 32 + 512 + 5 * 4 + 4)
 
 struct term
 {

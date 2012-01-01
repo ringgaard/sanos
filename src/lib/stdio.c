@@ -38,30 +38,48 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <crtbase.h>
+#include <atomic.h>
 
 #define bigbuf(s) ((s)->flag & (_IOOWNBUF | _IOEXTBUF | _IOTMPBUF))
 #define anybuf(s) ((s)->flag & (_IOOWNBUF | _IOEXTBUF | _IOTMPBUF | _IONBF))
 #define inuse(s)  ((s)->flag & (_IORD |_IOWR |_IORW))
 
-void init_stdio()
+static void exit_stdio(void)
+{
+  // Flush stdout and stderr
+  fflush(stdout);
+  fflush(stderr);
+}
+
+static void init_stdio()
 {
   struct process *proc = gettib()->proc;
   struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
-  crtbase->iob[0].file = proc->iob[0];
-  crtbase->iob[0].base = crtbase->iob[0].ptr = crtbase->stdinbuf;
-  crtbase->iob[0].flag = _IORD | _IOEXTBUF;
-  crtbase->iob[0].bufsiz = BUFSIZ;
+  // Only initialize on first call.
+  if (crtbase->stdio_initialized) return;
+  if (atomic_increment(&crtbase->stdio_init) == 1)
+  {
+    // Set up stdin, stdout, and stderr.
+    crtbase->iob[0].file = proc->iob[0];
+    crtbase->iob[0].base = crtbase->iob[0].ptr = crtbase->stdinbuf;
+    crtbase->iob[0].flag = _IORD | _IOEXTBUF;
+    crtbase->iob[0].bufsiz = BUFSIZ;
 
-  crtbase->iob[1].file = proc->iob[1];
-  crtbase->iob[1].flag = _IOWR | _IONBF | _IOCRLF;
+    crtbase->iob[1].file = proc->iob[1];
+    crtbase->iob[1].flag = _IOWR | _IONBF | _IOCRLF;
 
-  crtbase->iob[2].file = proc->iob[2];
-  crtbase->iob[2].flag = _IOWR | _IONBF | _IOCRLF;
+    crtbase->iob[2].file = proc->iob[2];
+    crtbase->iob[2].flag = _IOWR | _IONBF | _IOCRLF;
 
-  crtbase->opt.err = 1;
-  crtbase->opt.ind = 1;
-  crtbase->opt.sp = 1;
+    atexit(exit_stdio);
+    crtbase->stdio_initialized = 1;
+  }
+  else
+  {
+    // Wait until initialization done.
+    while (!crtbase->stdio_initialized) msleep(0);
+  }
 }
 
 FILE *__getstdfile(int n)
@@ -69,6 +87,7 @@ FILE *__getstdfile(int n)
   struct process *proc = gettib()->proc;
   struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
+  if (!crtbase->stdio_initialized) init_stdio();
   return &crtbase->iob[n];
 }
 

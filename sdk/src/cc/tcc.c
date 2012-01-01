@@ -6766,6 +6766,72 @@ static void parse_attribute(AttributeDef *ad)
     }
 }
 
+#ifdef SANOS
+/* Parse MSVC __declspec extension */
+static void parse_declspec(AttributeDef *ad)
+{
+    int t, n;
+    
+    while (tok == TOK_DECLSPEC) {
+        next();
+        skip('(');
+        if (tok < TOK_IDENT)
+            expect("declspec name");
+        t = tok;
+        next();
+        switch(t) {
+        case TOK_DLLEXPORT:
+            FUNC_EXPORT(ad->func_attr) = 1;
+            break;
+        case TOK_DLLIMPORT:
+            /* ignore */
+            break;
+        case TOK_NAKED:
+            warning("naked functions not supported, ignored");
+            break;
+        default:
+            if (tcc_state->warn_unsupported)
+            warning("'%s' declspec ignored", get_tok_str(t, NULL));
+            /* skip parameters */
+            if (tok == '(') {
+                int parenthesis = 0;
+                do {
+                    if (tok == '(') 
+                        parenthesis++;
+                    else if (tok == ')') 
+                        parenthesis--;
+                    next();
+                } while (parenthesis && tok != -1);
+            }
+            break;
+        }
+        skip(')');
+    }
+}
+#endif
+
+
+/* parse type modifers */
+static void parse_modifiers(AttributeDef *ad)
+{
+    if (tok == TOK_ATTRIBUTE1 || tok == TOK_ATTRIBUTE2)
+        parse_attribute(ad);
+
+#ifdef SANOS
+    if (tok == TOK_DECLSPEC)
+        parse_declspec(ad);
+
+    if (tok == TOK_CDECL1 || tok == TOK_CDECL2 || tok == TOK_CDECL3) {
+        FUNC_CALL(ad->func_attr) = FUNC_CDECL;
+        next();
+    }
+    if (tok == TOK_STDCALL1 || tok == TOK_STDCALL2 || tok == TOK_STDCALL3) {
+        FUNC_CALL(ad->func_attr) = FUNC_STDCALL;
+        next();
+    }
+#endif
+}
+
 /* enum/struct/union declaration. u is either VT_ENUM or VT_STRUCT */
 static void struct_decl(CType *type, int u)
 {
@@ -7095,6 +7161,9 @@ static int parse_btype(CType *type, AttributeDef *ad)
         case TOK_INLINE2:
         case TOK_INLINE3:
             t |= VT_INLINE;
+#ifdef SANOS
+            t |= VT_STATIC;
+#endif
             next();
             break;
             /* GNUC attribute */
@@ -7102,6 +7171,11 @@ static int parse_btype(CType *type, AttributeDef *ad)
         case TOK_ATTRIBUTE2:
             parse_attribute(ad);
             break;
+#ifdef SANOS
+        case TOK_DECLSPEC:
+            parse_declspec(ad);
+            break;
+#endif
             /* GNUC typeof */
         case TOK_TYPEOF1:
         case TOK_TYPEOF2:
@@ -7284,19 +7358,7 @@ static void type_decl(CType *type, AttributeDef *ad, int *v, int td)
     }
 
     /* XXX: clarify attribute handling */
-    if (tok == TOK_ATTRIBUTE1 || tok == TOK_ATTRIBUTE2)
-        parse_attribute(ad);
-
-#ifdef SANOS
-    if (tok == TOK_CDECL1 || tok == TOK_CDECL2 || tok == TOK_CDECL3) {
-        FUNC_CALL(ad->func_attr) = FUNC_CDECL;
-        next();
-    }
-    if (tok == TOK_STDCALL1 || tok == TOK_STDCALL2 || tok == TOK_STDCALL3) {
-        FUNC_CALL(ad->func_attr) = FUNC_STDCALL;
-        next();
-    }
-#endif
+    parse_modifiers(ad);
 
     /* recursive type */
     /* XXX: incorrect if abstract type for functions (e.g. 'int ()') */
@@ -7305,18 +7367,7 @@ static void type_decl(CType *type, AttributeDef *ad, int *v, int td)
         next();
         /* XXX: this is not correct to modify 'ad' at this point, but
            the syntax is not clear */
-        if (tok == TOK_ATTRIBUTE1 || tok == TOK_ATTRIBUTE2)
-            parse_attribute(ad);
-#ifdef SANOS
-        if (tok == TOK_CDECL1 || tok == TOK_CDECL2 || tok == TOK_CDECL3) {
-            FUNC_CALL(ad->func_attr) = FUNC_CDECL;
-            next();
-        }
-        if (tok == TOK_STDCALL1 || tok == TOK_STDCALL2 || tok == TOK_STDCALL3) {
-            FUNC_CALL(ad->func_attr) = FUNC_STDCALL;
-            next();
-        }
-#endif
+        parse_modifiers(ad);
         type_decl(&type1, ad, v, td);
         skip(')');
     } else {
@@ -7331,8 +7382,7 @@ static void type_decl(CType *type, AttributeDef *ad, int *v, int td)
         }
     }
     post_type(type, ad);
-    if (tok == TOK_ATTRIBUTE1 || tok == TOK_ATTRIBUTE2)
-        parse_attribute(ad);
+    parse_modifiers(ad);
     if (!type1.t)
         return;
     /* append type at the end of type1 */

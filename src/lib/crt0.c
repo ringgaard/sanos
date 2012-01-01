@@ -36,17 +36,10 @@
 #include <crtbase.h>
 #include <atomic.h>
 
-void init_stdio();
-void exit_stdio();
-
 typedef void (__cdecl *proc_t)(void);
 typedef int (__cdecl *func_t)(void);
 
 int __instcount;
-
-proc_t *atexit_begin = NULL;
-proc_t *atexit_end = NULL;
-proc_t *atexit_last = NULL;
 
 #if !defined(__GNUC__) && !defined(__TINYC__)
 
@@ -102,21 +95,7 @@ proc_t __xt_z[] = { NULL };
 
 int main(int argc, char *argv[], char *envp[]);
 
-int atexit(proc_t exitfunc)
-{
-  if (atexit_end == atexit_last)
-  {
-    int size = atexit_end - atexit_begin;
-    int newsize = size + 32;
-    atexit_begin = (proc_t *) realloc(atexit_begin, newsize * sizeof(proc_t));
-    if (atexit_begin == NULL) return -ENOMEM;
-    atexit_end = atexit_begin + size;
-    atexit_last = atexit_begin + newsize;
-  }
-
-  *atexit_end++ = exitfunc;
-  return 0;
-}
+void run_atexit_handlers();
 
 static void initterm(proc_t *begin, proc_t *end)
 {
@@ -143,8 +122,6 @@ static int inittermi(func_t *begin, func_t *end)
 static int initcrt()
 {
   int rc;
-
-  init_stdio();
 
   if (atomic_increment(&__instcount) == 1)
   {
@@ -173,12 +150,7 @@ static void termcrt(int status)
   if (atomic_decrement(&__instcount) == 0)
   {
     // Execute atexit handlers
-    if (atexit_begin)
-    {
-      while (--atexit_end >= atexit_begin) if (*atexit_end != NULL) (**atexit_end)();
-      free(atexit_begin);
-      atexit_begin = atexit_end = atexit_last = NULL;
-    }
+    run_atexit_handlers();
 
 #if !defined(__GNUC__) && !defined(__TINYC__)
     // Execute C pre-terminators
@@ -188,10 +160,6 @@ static void termcrt(int status)
     initterm(__xt_a, __xt_z);
 #endif
   }
-
-  // Flush stdout and stderr
-  fflush(stdout);
-  fflush(stderr);
 
   // Deallocate arguments
   free_args(crtbase->argc, crtbase->argv);
@@ -222,6 +190,9 @@ int mainCRTStartup()
   crtbase->argc = parse_args(proc->cmdline, NULL);
   crtbase->argv = (char **) malloc(crtbase->argc * sizeof(char *));
   parse_args(proc->cmdline, crtbase->argv);
+  crtbase->opt.err = 1;
+  crtbase->opt.ind = 1;
+  crtbase->opt.sp = 1;
 
   rc = initcrt();
   if (rc == 0) 

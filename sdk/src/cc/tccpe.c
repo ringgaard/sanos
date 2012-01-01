@@ -881,6 +881,7 @@ ST_FN void pe_build_exports(struct pe_info *pe)
     }
     pe->exp_size = pe->thunk->data_offset - pe->exp_offs;
     tcc_free(sorted);
+    if (op) fclose(op);
 }
 
 /* ------------------------------------------------------------- */

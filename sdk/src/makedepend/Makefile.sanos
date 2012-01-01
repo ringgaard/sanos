@@ -1,0 +1,40 @@
+#
+# Makefile for makedepend
+#
+
+TARGET=makedepend.exe
+CFILES=cppsetup.c ifparser.c include.c main.c parse.c pr.c
+OBJS=$(CFILES:.c=.o)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+    $(CC) -o $@ $^
+
+cppsetup.o: cppsetup.c
+    $(CC) -c $<
+
+ifparser.o: ifparser.c
+    $(CC) -c $<
+
+include.o: include.c
+    $(CC) -c $<
+
+main.o: main.c
+    $(CC) -c $<
+
+parse.o: parse.c
+    $(CC) -c $<
+
+pr.o: pr.c
+    $(CC) -c $<
+
+install: $(TARGET)
+    sh cp $(TARGET) /usr/bin/$(TARGET)
+
+clean:
+    sh rm $(TARGET) $(OBJS)
+
+depend:
+    makedepend $(CFILES)
+

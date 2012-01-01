@@ -1828,7 +1828,6 @@ int execute_script(char *cmdfile)
 
 int main(int argc, char *argv[])
 {
-
   if (sizeof(struct tib) != PAGESIZE) printf("warning: tib is %d bytes (%d expected)\n", sizeof(struct tib), PAGESIZE);
   if (gettib()->proc->term->type == TERM_VT100) setvbuf(stdout, NULL, 0, 8192);
 

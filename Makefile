@@ -116,6 +116,7 @@ dirs:
     -@if not exist $(OBJ)\rtl8139 mkdir $(OBJ)\rtl8139
     -@if not exist $(OBJ)\setup mkdir $(OBJ)\setup
     -@if not exist $(OBJ)\sh mkdir $(OBJ)\sh
+    -@if not exist $(OBJ)\nsh mkdir $(OBJ)\nsh
     -@if not exist $(OBJ)\sis900 mkdir $(OBJ)\sis900
     -@if not exist $(OBJ)\tulip mkdir $(OBJ)\tulip
     -@if not exist $(OBJ)\edit mkdir $(OBJ)\edit
@@ -936,6 +937,16 @@ $(BIN)/sh.exe: \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/sh/ $** /link /NODEFAULTLIB /FIXED:NO
 
+$(BIN)/nsh.exe: \
+  $(SRC)/utils/nsh/sh.c \
+  $(SRC)/utils/nsh/input.c \
+  $(SRC)/utils/nsh/parser.c \
+  $(SRC)/utils/nsh/stmalloc.c \
+  $(SRC)/utils/nsh/chartype.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/nsh/ $** /link /NODEFAULTLIB /FIXED:NO
+
 $(BIN)/edit.exe: \
   $(SRC)/utils/edit/edit.c \
   $(LIBS)/os.lib \
@@ -1088,11 +1099,16 @@ $(SDKBIN)/ctohtml.exe: $(BIN)/ctohtml.exe
     if not exist $(SDKBIN) mkdir $(SDKBIN)
     copy $(BIN)\ctohtml.exe $(SDKBIN)\ctohtml.exe
 
+$(SDKBIN)/nsh.exe: $(BIN)/nsh.exe
+    if not exist $(SDKBIN) mkdir $(SDKBIN)
+    copy $(BIN)\nsh.exe $(SDKBIN)\nsh.exe
+
 sdk: $(SDKBIN)/os.dll $(SDKBIN)/make.exe $(SDKBIN)/ar.exe $(SDKBIN)/impdef.exe $(SDKBIN)/ctohtml.exe
     cd $(SDKSRC)\as && nmake install
     cd $(SDKSRC)\cc && nmake install
     cd $(SDKSRC)\libc && nmake install
     cd $(SDKSRC)\objconv && nmake install
+    cd $(SDKSRC)\makedepend && nmake install
 
 sdk-clean:
     del /Q $(SDKBIN)\bin
@@ -1100,6 +1116,7 @@ sdk-clean:
     cd $(SDKSRC)\cc && nmake clean
     cd $(SDKSRC)\libc && nmake clean
     cd $(SDKSRC)\objconv && nmake clean
+    cd $(SDKSRC)\makedepend && nmake clean
 
 sdkdisk: sanos sdk install install-source install-sdk boothd
 
@@ -1172,20 +1189,25 @@ install-sdk: install-source sdk
     -@if not exist $(INSTALL)\usr\src\utils\as\output mkdir $(INSTALL)\usr\src\utils\as\output
     -@if not exist $(INSTALL)\usr\src\utils\cc mkdir $(INSTALL)\usr\src\utils\cc
     -@if not exist $(INSTALL)\usr\src\utils\ar mkdir $(INSTALL)\usr\src\utils\ar
-    copy $(SDKBIN)\as.exe        $(INSTALL)\usr\bin\as.exe
-    copy $(SDKBIN)\cc.exe        $(INSTALL)\usr\bin\cc.exe
-    copy $(SDKBIN)\make.exe      $(INSTALL)\usr\bin\make.exe
-    copy $(SDKBIN)\ar.exe        $(INSTALL)\usr\bin\ar.exe
-    copy $(SDKBIN)\impdef.exe    $(INSTALL)\usr\bin\impdef.exe
-    copy $(SDKBIN)\objconv.exe   $(INSTALL)\usr\bin\objconv.exe
-    copy $(SDKLIB)\libc.a        $(INSTALL)\usr\lib\libc.a
-    copy $(SDKLIB)\os.def        $(INSTALL)\usr\lib\os.def
-    copy $(SDKSRC)\as\*.c        $(INSTALL)\usr\src\utils\as
-    copy $(SDKSRC)\as\*.h        $(INSTALL)\usr\src\utils\as
-    copy $(SDKSRC)\as\output\*.h $(INSTALL)\usr\src\utils\as\output
-    copy $(SDKSRC)\as\output\*.c $(INSTALL)\usr\src\utils\as\output
+    -@if not exist $(INSTALL)\usr\src\utils\makedepend mkdir $(INSTALL)\usr\src\utils\makedepend
+    copy $(SDKBIN)\as.exe         $(INSTALL)\usr\bin
+    copy $(SDKBIN)\cc.exe         $(INSTALL)\usr\bin
+    copy $(SDKBIN)\make.exe       $(INSTALL)\usr\bin
+    copy $(SDKBIN)\ar.exe         $(INSTALL)\usr\bin
+    copy $(SDKBIN)\impdef.exe     $(INSTALL)\usr\bin
+    copy $(SDKBIN)\objconv.exe    $(INSTALL)\usr\bin
+    copy $(SDKBIN)\makedepend.exe $(INSTALL)\usr\bin
+    copy $(SDKLIB)\libc.a         $(INSTALL)\usr\lib
+    copy $(SDKLIB)\os.def         $(INSTALL)\usr\lib\os.def
+    copy $(SDKSRC)\as\*.c         $(INSTALL)\usr\src\utils\as
+    copy $(SDKSRC)\as\*.h         $(INSTALL)\usr\src\utils\as
+    copy $(SDKSRC)\as\output\*.h  $(INSTALL)\usr\src\utils\as\output
+    copy $(SDKSRC)\as\output\*.c  $(INSTALL)\usr\src\utils\as\output
     copy $(SDKSRC)\as\Makefile.sanos $(INSTALL)\usr\src\utils\as\Makefile
-    copy $(SDKSRC)\cc\*.c        $(INSTALL)\usr\src\utils\cc
-    copy $(SDKSRC)\cc\*.h        $(INSTALL)\usr\src\utils\cc
-    copy $(SDKSRC)\cc\*.def      $(INSTALL)\usr\src\utils\cc
+    copy $(SDKSRC)\cc\*.c         $(INSTALL)\usr\src\utils\cc
+    copy $(SDKSRC)\cc\*.h         $(INSTALL)\usr\src\utils\cc
+    copy $(SDKSRC)\cc\*.def       $(INSTALL)\usr\src\utils\cc
     copy $(SDKSRC)\cc\Makefile.sanos $(INSTALL)\usr\src\utils\cc\Makefile
+    copy $(SDKSRC)\makedepend\*.c $(INSTALL)\usr\src\utils\makedepend
+    copy $(SDKSRC)\makedepend\*.h $(INSTALL)\usr\src\utils\makedepend
+    copy $(SDKSRC)\makedepend\Makefile.sanos $(INSTALL)\usr\src\utils\makedepend\Makefile

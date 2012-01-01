@@ -61,6 +61,9 @@
 
 #ifdef SANOS
      DEF(TOK_INT64, "__int64")
+     DEF(TOK_DECLSPEC, "__declspec")
+     DEF(TOK_DLLIMPORT, "dllimport")
+     DEF(TOK_NAKED, "naked")
 #endif
 
 /*********************************************************************/

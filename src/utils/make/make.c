@@ -201,7 +201,7 @@ void project_init(struct project *prj)
   memset(prj, 0, sizeof(struct project));
   getcwd(prj->oldcwd, FILENAME_MAX);
 }
-  
+
 void project_free(struct project *prj)
 {
   struct rule *r;
@@ -262,8 +262,24 @@ void setup_predefined_variables()
   setenv("MAKE", "make", 0);
 }
 
+void replace_pattern(char *p, char *pattern, char *replace, struct buffer *b)
+{
+  int pattern_len = strlen(pattern);
+  while (*p)
+  {
+    if (strncmp(p, pattern, pattern_len) == 0)
+    {
+      buffer_concat(b, replace);
+      p += pattern_len;
+    }
+    else
+      buffer_add(b, *p++);
+  }
+}
+
 int expand_macros(char *p, struct project *prj, struct rule *rule, struct buffer *b)
 {
+  buffer_clear(b);
   while (*p) 
   {
     if (*p == '$')
@@ -346,13 +362,35 @@ int expand_macros(char *p, struct project *prj, struct rule *rule, struct buffer
 
       if (end != NULL)
       {
-        // Lookup variable.
+        // Substitute variable.
+        char *pattern = NULL;
+        char *replace = NULL;
         char *name = strndup(start, end - start);
-        char *value = getenv(name);
+        char *value;
+
+        // Check for $(VAR:pattern=replace)
+        char *colon = strchr(name, ':');
+        if (colon)
+        {
+          char *equal = strchr(colon, '=');
+          if (equal)
+          {
+            *colon = 0;
+            pattern = colon + 1;
+            *equal = 0;
+            replace = equal + 1;
+          }
+        }
+
+        // Expand variable
+        value = getenv(name);
+        if (value != NULL) {
+          if (pattern != NULL)
+            replace_pattern(value, pattern, replace, b);
+          else
+            buffer_concat(b, value);
+        }
         free(name);
-        
-        // Expand variable.
-        if (value != NULL) buffer_concat(b, value);
       }
     }
     else
@@ -360,6 +398,7 @@ int expand_macros(char *p, struct project *prj, struct rule *rule, struct buffer
       buffer_add(b, *p++);
   }
 
+  buffer_add(b, 0);
   return 0;
 }
 
@@ -446,49 +485,48 @@ int parse_makefile(struct project *prj, FILE *f) {
     }
     else
     {
-      char *name_start = p;
+      char *name_start;
       char *name_end;
       char type;
       
+      // Expand macros
+      if (expand_macros(line->start, prj, NULL, value) < 0) {
+        fprintf(stderr, "line %d: expansion failed\n", line_num);
+        return -1;
+      }
+
       // Parse target or variable name
+      p = value->start;
+      name_start = p;
       while (*p && *p != ':' && *p != '=' && !isspace(*p)) p++;
       name_end = p;
-      if (!*p|| name_start == name_end) {
+      if (!*p || name_start == name_end) {
         fprintf(stderr, "line %d: syntax errror\n", line_num);
         return -1;
       }
       while (isspace(*p)) p++;
       type = *p++;
+      while (isspace(*p)) p++;
       if (type != ':' && type != '=')
       {
         fprintf(stderr, "line %d: syntax errror, rule or variable expected\n", line_num);
         return -1;
       }
-      
-      // Copy name and value
       buffer_set(name, name_start, name_end - name_start);
       buffer_add(name, 0);
-      
-      // Expand macros
-      buffer_clear(value);
-      if (expand_macros(p, prj, NULL, value) < 0) {
-        fprintf(stderr, "line %d: expansion failed\n", line_num);
-        return -1;
-      }
-      buffer_add(value, 0);
 
       if (type == '=')
       {
         // Set variable
-        setenv(name->start, value->start, 1);
+        setenv(name->start, p, 1);
+        if (prj->debug) printf("set %s=%s\n", name->start, p);
       }
       else
       {
-        // Create new rule
-        struct rule *rule = add_rule(prj, buffer_dup(name));
-        list_init(&rule->dependencies);
-        list_init(&rule->commands);
-        parse_list(value->start, &rule->dependencies);
+        // Find existing rule or create a new one
+        struct rule *rule = find_rule(prj, name->start);
+        if (!rule) rule = add_rule(prj, buffer_dup(name));
+        parse_list(p, &rule->dependencies);
         current_rule = rule;
       }
     }
@@ -617,9 +655,7 @@ int build_targets(struct project *prj)
     while (command)
     {
       // Expand macros in command.
-      buffer_clear(cmd);
       if (expand_macros(command->value, prj, r, cmd) < 0) return -1;
-      buffer_add(cmd, 0);
       if (!prj->silent) printf("%s\n", cmd->start);
       if (!prj->dry_run)
       {

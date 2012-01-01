@@ -4,7 +4,11 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
-    * Added objconv utility to sdk.
+    * Implemented support for __declspec MSVC extension in C compiler.
+
+    * Implemented $(VAR:pattern=replace) support in make.
+
+    * Added objconv and makedepend utility to sdk.
 
     * Added filelength() and filelength64() to io.h.
     
