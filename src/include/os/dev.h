@@ -45,6 +45,8 @@ struct unit;
 #define DEVNAMELEN              32
 #define MAX_DEVS                64
 
+#define SECTORSIZE              512
+
 #define DEV_TYPE_STREAM		1
 #define DEV_TYPE_BLOCK		2
 #define DEV_TYPE_PACKET		3
@@ -67,6 +69,7 @@ struct unit;
 
 #define BIND_BY_CLASSCODE       1
 #define BIND_BY_UNITCODE        2
+#define BIND_BY_SUBUNITCODE     3
 
 //
 // Bus
@@ -227,6 +230,7 @@ krnlapi void *get_unit_membase(struct unit *unit);
 krnlapi char *get_unit_name(struct unit *unit);
 
 krnlapi struct unit *lookup_unit(struct unit *start, unsigned long unitcode, unsigned long unitmask);
+krnlapi struct unit *lookup_unit_by_subunit(struct unit *start, unsigned long subunitcode, unsigned long subunitmask);
 krnlapi struct unit *lookup_unit_by_class(struct unit *start, unsigned long classcode, unsigned long classmask);
 
 krnlapi struct board *lookup_board(struct board *board_tbl, struct unit *unit);
@@ -234,6 +238,7 @@ krnlapi struct board *lookup_board(struct board *board_tbl, struct unit *unit);
 krnlapi struct dev *device(dev_t devno);
 
 krnlapi dev_t dev_make(char *name, struct driver *driver, struct unit *unit, void *privdata);
+krnlapi dev_t devno(char *name);
 krnlapi dev_t dev_open(char *name);
 krnlapi int dev_close(dev_t devno);
 

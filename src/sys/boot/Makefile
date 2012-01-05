@@ -2,7 +2,7 @@
 # Makefile for boot sectors
 #
 
-all: boot cdboot cdemboot netboot ldrinit.exe
+all: boot cdboot cdemboot netboot
 
 boot: boot.asm
     $(AS) -f bin $< -o $@
@@ -16,8 +16,5 @@ cdemboot: cdemboot.asm
 netboot: netboot.asm
     $(AS) -f bin $< -o $@
 
-ldrinit.exe: ldrinit.asm
-    $(AS) -f bin $< -o $@
-
 clean:
-    sh rm boot cdboot cdemboot netboot ldrinit.exe
+    sh rm boot cdboot cdemboot netboot

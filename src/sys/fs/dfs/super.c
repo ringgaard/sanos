@@ -33,8 +33,6 @@
 
 #include <os/krnl.h>
 
-#define SECTORSIZE   512
-
 #define DEFAULT_BLOCKSIZE       4096
 #define DEFAULT_INODE_RATIO     4096
 #define DEFAULT_CACHE_BUFFERS   1024

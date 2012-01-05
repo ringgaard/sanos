@@ -47,7 +47,7 @@ OSLDRBASE   equ (OSLDRSEG * 16)
 ; Put the stack 2K below the 640K border to allow room for
 ; the Extended BIOS Data Area
 
-STACKTOP    equ	0x9F800
+STACKTOP    equ	0x9d800 ;0x9f800
 
 	BITS	16
 	SECTION	.text
@@ -91,8 +91,8 @@ start:
 	mov	[bootimg], ebx
 
 	; Display boot message
-	;mov	si, osldrmsg
-	;call	print
+	mov	si, osldrmsg
+	call	print
 
 	; Try to get system memory map from BIOS
 	call	getmemmap
@@ -135,6 +135,9 @@ start32:
 	BITS	32
 	; Setup stack
 	mov	esp, STACKTOP
+	
+	; Add room for protected mode stack pointer
+	push    esp
 
 	; Clear flags
 	push	dword 2
@@ -327,6 +330,7 @@ D_CODE		equ	0x1800
 
 D_WRITE		equ	0x200
 D_READ		equ	0x200
+D_CONFORM       equ     0x400
 
 D_BIG		equ	0x40
 D_BIG_LIM	equ	0x80
@@ -334,8 +338,8 @@ D_BIG_LIM	equ	0x80
 D_PRESENT	equ	0x8000
 
 %macro segdesc 3
-	dw	%2
-	dw	%1
+	dw	(%2 & 0xffff)
+	dw	(%1 & 0xffff)
 	db	(%1) >> 16
 	db	((%3) | D_PRESENT) >> 8
 	db	((%3) & 0xff) | ((%2) >> 16)
@@ -354,8 +358,10 @@ gdtsel:
 gdt:
 
 null_desc	segdesc	0,0,0
-flat_code	segdesc	0, 0xFFFF, D_CODE | D_READ | D_BIG | D_BIG_LIM
-flat_data	segdesc	0, 0xFFFF, D_DATA | D_WRITE | D_BIG | D_BIG_LIM
+flat_code	segdesc	0, 0x0fffff, D_CODE | D_READ | D_BIG | D_BIG_LIM
+flat_data	segdesc	0, 0x0fffff, D_DATA | D_WRITE | D_BIG | D_BIG_LIM
+real_code       segdesc	OSLDRBASE, 0x0ffff, D_CODE | D_READ | D_CONFORM
+real_data       segdesc	OSLDRBASE, 0x0ffff, D_DATA | D_WRITE
 
 gdtlen	  	equ $ - gdt - 1
 
@@ -387,8 +393,7 @@ memrecs	     times (MAXMEMRECS * MEMRECSIZ) db 0
 ; Strings
 ;
 
-osldrmsg:
-	db	'Real mode OS loader entered', 13, 10, 0
+osldrmsg:    db    ', ldrinit', 0
 
 textend:
 

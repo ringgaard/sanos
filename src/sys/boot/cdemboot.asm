@@ -257,7 +257,7 @@ bootdrv	db	0
 
 	; Message strings
 bootmsg:
-	db	13, 10, 'Loading boot image from CD-ROM', 0
+	db	'Loading boot image from CD-ROM... ', 0
 
 	; Boot signature
 	times 	510-($-$$) db 0

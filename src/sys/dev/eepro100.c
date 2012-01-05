@@ -1468,7 +1468,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   unsigned short eeprom[0x100];
 
   // Check license
-  if (license() != LICENSE_GPL) kprintf(KERN_WARNING "warning: license violation, eepro100 driver may only be used under GPL\n");
+  if (license() != LICENSE_GPL) kprintf(KERN_WARNING "warning: eepro100 driver is under GPL license\n");
 
   // Determine NIC type
   board = lookup_board(board_tbl, unit);

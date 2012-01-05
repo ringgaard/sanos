@@ -33,7 +33,6 @@
 
 #include <os/krnl.h>
 
-#define SECTORSIZE            512
 #define NUMDRIVES             4
 
 #define FD_MOTOR_TIMEOUT      3000

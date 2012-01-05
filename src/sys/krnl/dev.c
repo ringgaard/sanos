@@ -231,6 +231,24 @@ struct unit *lookup_unit(struct unit *start, unsigned long unitcode, unsigned lo
   return NULL;
 }
 
+struct unit *lookup_unit_by_subunit(struct unit *start, unsigned long subunitcode, unsigned long subunitmask)
+{
+  struct unit *unit;
+  
+  if (start)
+    unit = start->next;
+  else
+    unit = units;
+
+  while (unit)
+  {
+    if ((unit->subunitcode & subunitmask) == subunitcode) return unit;
+    unit = unit->next;
+  }
+
+  return NULL;
+}
+
 struct unit *lookup_unit_by_class(struct unit *start, unsigned long classcode, unsigned long classmask)
 {
   struct unit *unit;
@@ -346,6 +364,8 @@ static void parse_bindings()
       bind->bindtype = BIND_BY_CLASSCODE;
     else if (strcmp(p, "unit") == 0)
       bind->bindtype = BIND_BY_UNITCODE;
+    else if (strcmp(p, "subunit") == 0)
+      bind->bindtype = BIND_BY_SUBUNITCODE;
 
     while (*q == ' ') q++;
 
@@ -398,6 +418,11 @@ static struct binding *find_binding(struct unit *unit)
       if (bind->bindtype == BIND_BY_UNITCODE)
       {
 	if ((unit->unitcode & bind->mask) == bind->code) return bind;
+      }
+
+      if (bind->bindtype == BIND_BY_SUBUNITCODE)
+      {
+	if ((unit->subunitcode & bind->mask) == bind->code) return bind;
       }
     }
   }
@@ -484,8 +509,11 @@ static void bind_units()
 
   while (unit)
   {
-    struct binding *bind = find_binding(unit);
-    if (bind) install_driver(unit, bind);
+    if (unit->dev == NULL)
+    {
+      struct binding *bind = find_binding(unit);
+      if (bind) install_driver(unit, bind);
+    }
     unit = unit->next;
   }
 }
@@ -621,20 +649,22 @@ dev_t dev_make(char *name, struct driver *driver, struct unit *unit, void *privd
   return devno;
 }
 
-dev_t dev_open(char *name)
+dev_t devno(char *name)
 {
   dev_t devno;
 
   for (devno = 0; devno < num_devs; devno++)
   {
-    if (strcmp(devtab[devno]->name, name) == 0)
-    {
-      devtab[devno]->refcnt++;
-      return devno;
-    }
+    if (strcmp(devtab[devno]->name, name) == 0) return devno;
   }
-
   return NODEV;
+}
+
+dev_t dev_open(char *name)
+{
+  dev_t d = devno(name);
+  if (d != NODEV) devtab[d]->refcnt++;
+  return d;
 }
 
 int dev_close(dev_t devno)

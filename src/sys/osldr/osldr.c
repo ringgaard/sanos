@@ -33,6 +33,7 @@
 
 #include <os.h>
 #include <string.h>
+#include <stdarg.h>
 #include <sys/types.h>
 
 #include <os/pdir.h>
@@ -44,10 +45,7 @@
 #include <os/object.h>
 #include <os/sched.h>
 #include <os/dfs.h>
-
-void kprintf(const char *fmt,...);
-void clear_screen();
-void init_video();
+#include <os/dev.h>
 
 #define VIDEO_BASE           0xB8000
 #define HEAP_START           (1024 * 1024)
@@ -68,21 +66,90 @@ int bootpart;                   // Boot partition
 char *krnlopts;                 // Kernel options
 char *initrd;                   // Initial RAM disk location in heap
 int initrd_size;                // Initial RAM disk size (in bytes)
+int bootdev_cyls;               // Boot device cylinders
+int bootdev_heads;              // Boot device heads
+int bootdev_sects;              // Boot device sector per track
 
+int vsprintf(char *buf, const char *fmt, va_list args);
+void bios_print_string(char *str);
+int bios_get_drive_params(int drive, int *cyls, int *heads, int *sects);
+int bios_read_disk(int drive, int cyl, int head, int sect, int nsect, void *buffer);
 int unzip(void *src, unsigned long srclen, void *dst, unsigned long dstlen, char *heap, int heapsize);
 void load_kernel();
 
-void init_bootfd(int bootdrv);
-void uninit_bootfd();
-int bootfd_read(void *buffer, size_t count, blkno_t blkno);
+void kprintf(const char *fmt,...)
+{
+  va_list args;
+  char buffer[1024];
 
-void init_boothd(int bootdrv);
-void uninit_boothd();
-int boothd_read(void *buffer, size_t count, blkno_t blkno);
+  va_start(args, fmt);
+  vsprintf(buffer, fmt, args);
+  va_end(args);
+
+  bios_print_string(buffer);
+}
+
+void panic(char *msg)
+{
+  kprintf("panic: %s\n", msg);
+  while (1);
+}
+
+void init_biosdisk()
+{
+  int status;
+  
+  status = bios_get_drive_params(bootdrive, &bootdev_cyls, &bootdev_heads, &bootdev_sects);
+  if (status != 0) panic("Unable to initialize boot device");
+}
+
+int biosdisk_read(void *buffer, size_t count, blkno_t blkno)
+{
+  static char scratch[4096];
+
+  char *buf = buffer;
+  int sects = count / SECTORSIZE;
+  int left = sects;
+  while (left > 0)
+  {
+    int nsect, status;
+    
+    // Compute CHS address
+    int sect = blkno % bootdev_sects + 1;
+    int track = blkno / bootdev_sects;
+    int head = track % bootdev_heads;
+    int cyl = track / bootdev_heads;
+    if (cyl >= bootdev_cyls) return -ERANGE;
+    
+    // Compute number of sectors to read
+    nsect = left;
+    if (nsect > sizeof(scratch) / SECTORSIZE) nsect = sizeof(scratch) / SECTORSIZE;
+    if (nsect > 0x7f) nsect = 0x7f;
+    if ((sect - 1) + nsect > bootdev_sects) nsect = bootdev_sects - (sect - 1);
+
+    // Read sectors from disk into temporary buffer in low memory.
+    status = bios_read_disk(bootdrive, cyl, head, sect, nsect, scratch);
+    if (status != 0) 
+    {
+      kprintf("biosdisk: read error %d\n", status);
+      return -EIO;
+    }
+
+    // Move data to high memory
+    memcpy(buf, scratch, nsect * SECTORSIZE);
+    
+    // Prepeare next read
+    blkno += nsect;
+    buf += nsect * SECTORSIZE;
+    left -= nsect;
+  }
+
+  return count;
+}
 
 int bootrd_read(void *buffer, size_t count, blkno_t blkno)
 {
-  memcpy(buffer, initrd + blkno * 512, count);
+  memcpy(buffer, initrd + blkno * SECTORSIZE, count);
   return count;
 }
 
@@ -90,16 +157,8 @@ int boot_read(void *buffer, size_t count, blkno_t blkno)
 {
   if ((bootdrive & 0xF0) == 0xF0)
     return bootrd_read(buffer, count, blkno);
-  else if (bootdrive & 0x80)
-    return boothd_read(buffer, count, blkno);
   else
-    return bootfd_read(buffer, count, blkno);
-}
-
-void panic(char *msg)
-{
-  kprintf("panic: %s\n", msg);
-  while (1);
+    return biosdisk_read(buffer, count, blkno);
 }
 
 char *check_heap(int numpages)
@@ -264,7 +323,7 @@ void setup_descriptors()
 
 void copy_ramdisk(char *bootimg)
 {
-  struct superblock *super = (struct superblock *) (bootimg + 512);
+  struct superblock *super = (struct superblock *) (bootimg + SECTORSIZE);
   int i;
   int rdpages;
     
@@ -313,10 +372,7 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
   int i;
   char *bootimg = bootparams->bootimg;
 
-  // Initialize video 
-  init_video();
-  //clear_screen();
-  //kprintf("OSLDR\n");
+  kprintf(", osldr");
 
   // Determine size of RAM
   setup_memory(&bootparams->memmap);
@@ -364,17 +420,10 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
     copy_ramdisk(bootimg);
     load_kernel(bootdrive);
   }
-  else if (bootdrive & 0x80)
-  {
-    init_boothd(bootdrive);
-    load_kernel(bootdrive);
-    uninit_boothd();
-  }
   else
   {
-    init_bootfd(bootdrive);
+    init_biosdisk();
     load_kernel(bootdrive);
-    uninit_bootfd();
   }
 
   // Set page directory (CR3) enable paging (PG bit in CR0)

@@ -231,6 +231,9 @@ static void init_filesystem()
   else
     sprintf(bootdev, "fd%c", '0' + (syspage->ldrparams.bootdrv & 0x7F));
 
+  // If default boot device is not found try a virtual device.
+  if (devno(bootdev) == NODEV && devno("vd0") != NODEV) strcpy(bootdev, "vd0");
+
   // Determine root file system
   get_option(krnlopts, "rootdev", rootdev, sizeof(rootdev), bootdev);
   get_option(krnlopts, "rootfs", rootfs, sizeof(rootfs), "dfs");
@@ -306,7 +309,7 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
   init_console();
 
   // Display banner
-  kprintf(KERN_INFO "boot: starting kernel\n");
+  kprintf(KERN_INFO ", kernel\n");
   if (*krnlopts) kprintf(KERN_INFO "options: %s\n", krnlopts);
 
   // Initialize machine
@@ -415,6 +418,7 @@ void main(void *arg)
   // Initialize boot device drivers
   init_hd();
   init_fd();
+  init_vblk();
 
   // Initialize file systems
   init_filesystem();

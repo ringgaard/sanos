@@ -38,13 +38,12 @@
 #include <stdlib.h>
 #include <inifile.h>
 
+#include <os/dev.h>
 #include <os/mbr.h>
 #include <os/dfs.h>
 #include <os/seg.h>
 #include <os/tss.h>
 #include <os/syspage.h>
-
-#define SECTORSIZE 512
 
 struct section *inst;
 char *devname;

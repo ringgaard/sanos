@@ -33,8 +33,6 @@
 
 #include <os/krnl.h>
 
-#define SECTORSIZE              512
-
 struct ramdisk
 {
   unsigned int blks;

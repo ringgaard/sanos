@@ -33,7 +33,6 @@
 
 #include <os/krnl.h>
 
-#define SECTORSIZE              512
 #define CDSECTORSIZE            2048
 
 #define HD_CONTROLLERS		2
@@ -710,7 +709,7 @@ static int atapi_packet_read(struct hd *hd, unsigned char *pkt, int pktlen, void
       unsigned char error;
 
       error = inp(hdc->iobase + HDC_ERR);
-      kprintf(KERN_ERR "hd: atapi packet read error (status=0x%02x,error=0x%02x)\n", hdc->status, error);
+      //kprintf(KERN_ERR "hd: atapi packet read error (status=0x%02x,error=0x%02x)\n", hdc->status, error);
 
       hdc->result = -EIO;
       break;

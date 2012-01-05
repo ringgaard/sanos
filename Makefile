@@ -95,7 +95,6 @@ dirs:
     -@if not exist $(INSTALL) mkdir $(INSTALL)
     -@if not exist $(OBJ)\3c905c mkdir $(OBJ)\3c905c
     -@if not exist $(OBJ)\advapi32 mkdir $(OBJ)\advapi32
-    -@if not exist $(OBJ)\boot mkdir $(OBJ)\boot
     -@if not exist $(OBJ)\eepro100 mkdir $(OBJ)\eepro100
     -@if not exist $(OBJ)\edit mkdir $(OBJ)\edit
     -@if not exist $(OBJ)\fdisk mkdir $(OBJ)\fdisk
@@ -231,13 +230,16 @@ $(BIN)/cdemboot: $(SRC)/sys/boot/cdemboot.asm
 $(BIN)/netboot: $(SRC)/sys/boot/netboot.asm
     $(NASM) -f bin $** -o $@
 
-$(OBJ)/boot/ldrinit.exe: $(SRC)/sys/boot/ldrinit.asm
-    $(NASM) -f bin $** -o $@
+$(OBJ)/osldr/ldrinit.exe: $(SRC)/sys/osldr/ldrinit.asm
+    $(NASM) -f bin $** -o $@ -l $(OBJ)/osldr/ldrinit.lst
 
-OSLDRSRC=$(SRC)\sys\osldr\osldr.c $(SRC)\sys\osldr\loadkrnl.c $(SRC)\sys\osldr\boothd.c $(SRC)\sys\osldr\bootfd.c $(SRC)\sys\osldr\unzip.c $(SRC)\sys\osldr\video.c $(SRC)\sys\krnl\iop.c $(SRC)\lib\vsprintf.c $(SRC)\lib\string.c 
+$(OBJ)/osldr/bioscall.obj: $(SRC)/sys/osldr/bioscall.asm
+    $(NASM) -f win32 $** -o $@ -l $(OBJ)/osldr/bioscall.lst
 
-$(BIN)/osldr.dll: $(OSLDRSRC) $(OBJ)\boot\ldrinit.exe
-    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/osldr/ $(OSLDRSRC) /D KERNEL /D OSLDR /link /DLL /NODEFAULTLIB /ENTRY:start /BASE:0x00090000 /FIXED /STUB:$(OBJ)\boot\ldrinit.exe $(RAWIMGFLAGS)
+OSLDRSRC=$(SRC)\sys\osldr\osldr.c $(SRC)\sys\osldr\loadkrnl.c $(SRC)\sys\osldr\unzip.c $(SRC)\sys\krnl\iop.c $(SRC)\lib\vsprintf.c $(SRC)\lib\string.c 
+
+$(BIN)/osldr.dll: $(OSLDRSRC) $(OBJ)\osldr\ldrinit.exe $(OBJ)/osldr/bioscall.obj
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/osldr/ $(OSLDRSRC) $(OBJ)/osldr/bioscall.obj /D KERNEL /D OSLDR /link /DLL /NODEFAULTLIB /ENTRY:start /BASE:0x00090000 /FIXED /STUB:$(OBJ)\osldr\ldrinit.exe $(RAWIMGFLAGS)
 
 $(OBJ)/krnl/lldiv.obj: $(SRC)/lib/lldiv.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
@@ -286,6 +288,7 @@ $(LIBS)/krnl.lib $(BIN)/krnl.dll: \
   $(SRC)\sys\krnl\user.c \
   $(SRC)\sys\krnl\mach.c \
   $(SRC)\sys\krnl\vmi.c \
+  $(SRC)\sys\krnl\virtio.c \
   $(SRC)\sys\dev\video.c \
   $(SRC)\sys\dev\serial.c \
   $(SRC)\sys\dev\rnd.c \
@@ -297,6 +300,7 @@ $(LIBS)/krnl.lib $(BIN)/krnl.dll: \
   $(SRC)\sys\dev\kbd.c \
   $(SRC)\sys\dev\hd.c \
   $(SRC)\sys\dev\fd.c \
+  $(SRC)\sys\dev\virtioblk.c \
   $(SRC)\sys\dev\cons.c \
   $(SRC)\sys\net\udpsock.c \
   $(SRC)\sys\net\udp.c \
@@ -1107,7 +1111,6 @@ sdk: $(SDKBIN)/os.dll $(SDKBIN)/make.exe $(SDKBIN)/ar.exe $(SDKBIN)/impdef.exe $
     cd $(SDKSRC)\as && nmake install
     cd $(SDKSRC)\cc && nmake install
     cd $(SDKSRC)\libc && nmake install
-    cd $(SDKSRC)\objconv && nmake install
     cd $(SDKSRC)\makedepend && nmake install
 
 sdk-clean:
@@ -1115,7 +1118,6 @@ sdk-clean:
     cd $(SDKSRC)\as && nmake clean
     cd $(SDKSRC)\cc && nmake clean
     cd $(SDKSRC)\libc && nmake clean
-    cd $(SDKSRC)\objconv && nmake clean
     cd $(SDKSRC)\makedepend && nmake clean
 
 sdkdisk: sanos sdk install install-source install-sdk boothd
@@ -1195,7 +1197,6 @@ install-sdk: install-source sdk
     copy $(SDKBIN)\make.exe       $(INSTALL)\usr\bin
     copy $(SDKBIN)\ar.exe         $(INSTALL)\usr\bin
     copy $(SDKBIN)\impdef.exe     $(INSTALL)\usr\bin
-    copy $(SDKBIN)\objconv.exe    $(INSTALL)\usr\bin
     copy $(SDKBIN)\makedepend.exe $(INSTALL)\usr\bin
     copy $(SDKLIB)\libc.a         $(INSTALL)\usr\lib
     copy $(SDKLIB)\os.def         $(INSTALL)\usr\lib\os.def

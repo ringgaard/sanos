@@ -3383,7 +3383,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
 #endif
 
   // Check license
-  if (license() != LICENSE_GPL) kprintf(KERN_WARNING "warning: license violation, tulip driver may only be used under GPL\n");
+  if (license() != LICENSE_GPL) kprintf(KERN_WARNING "warning: tulip driver is under GPL license\n");
 
   // Check for PCI device
   if (unit->bus->bustype != BUSTYPE_PCI) return -EINVAL;

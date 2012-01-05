@@ -127,7 +127,7 @@ bootdrv	db	0
 
 	; Message strings
 bootmsg:
-	db	13, 10, 'Booting system from CD-ROM', 13, 10, 0
+	db	'Booting system from CD-ROM... ', 0
 
 	; Boot signature
 	times 	510-($-$$) db 0

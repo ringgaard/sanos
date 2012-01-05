@@ -1285,7 +1285,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   int config1;
 
   // Check license
-  if (license() != LICENSE_GPL) kprintf(KERN_WARNING "warning: license violation, rtl8139 driver may only be used under GPL\n");
+  if (license() != LICENSE_GPL) kprintf(KERN_WARNING "warning: rtl8139 driver is under GPL license\n");
 
   // Determine NIC type
   board = lookup_board(board_tbl, unit);

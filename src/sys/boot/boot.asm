@@ -84,9 +84,6 @@ readldr:
 	; Load os loader from boot drive
 
 loadnext:
-	mov	al, '.'
-	call	printchar
-
 	xor	eax, eax
 	mov	ax, [sectno]	    ; eax = os loader sector number
 
@@ -116,11 +113,6 @@ loadnext1:
 
 	cmp	ax, [ldrsize]
 	jnz	loadnext
-
-	;mov	al, 10
-	;call	printchar
-	;mov	al, 13
-	;call	printchar
 
 	; Call real mode entry point in os loader
 	mov	ax, OSLDRSEG
@@ -240,7 +232,7 @@ bootdrv	db	0
 ;
 
 bootmsg:
-	db	13, 10, 'Loading system', 0
+	db	'Booting... bootstrap', 0
 
 ;
 ; Boot signature

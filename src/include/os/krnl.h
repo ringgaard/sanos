@@ -84,6 +84,7 @@
 #include <os/dev.h>
 #include <os/pci.h>
 #include <os/pnpbios.h>
+#include <os/virtio.h>
 
 #include <os/video.h>
 #include <os/kbd.h>
@@ -162,6 +163,10 @@ void init_hd();
 // fd.c
 
 void init_fd();
+
+// virtioblk.c
+
+void init_vblk();
 
 // apm.c
 
