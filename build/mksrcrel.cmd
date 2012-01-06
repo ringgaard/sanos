@@ -22,11 +22,12 @@ copy build\mkbootdisk.cmd %1\build
 copy build\bootdisk.lst %1\build
 copy build\bootcd.lst %1\build
 copy build\boothd.lst %1\build
-copy build\krnlrel.ini %1\build\krnl.ini
-copy build\osrel.ini %1\build\os.ini
+copy build\minbootdisk.lst %1\build
+copy build\krnl.ini %1\build
+copy build\osrel.ini %1\build
 copy build\oscd.ini %1\build
-copy build\setuprel.ini %1\build\setup.ini
-copy build\sanos.dep %1\build\sanos.dep
+copy build\setup.ini %1\build
+copy build\sanos.dep %1\build
 
 xcopy src %1\src /s /exclude:build\exclrel.lst
 xcopy sdk %1\sdk /s /exclude:build\exclrel.lst

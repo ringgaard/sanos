@@ -39,15 +39,15 @@
 ;
 
 ; The os loader is loaded at the fixed address 0x90000. 
-; This allows for 62K for the loader, data area and stack.
+; This allows for 56K for the loader, data area and stack.
 
 OSLDRSEG    equ 0x9000
 OSLDRBASE   equ (OSLDRSEG * 16)
 
-; Put the stack 2K below the 640K border to allow room for
+; Put the stack 8K below the 640K border to allow room for
 ; the Extended BIOS Data Area
 
-STACKTOP    equ	0x9d800 ;0x9f800
+STACKTOP    equ	0x9e000
 
 	BITS	16
 	SECTION	.text

@@ -5,10 +5,11 @@
 ; Directories
 
 /bin
+/boot
 /dev
 /proc
 
 ; System files
 
-/bin/os.dll        bin\os.dll         dbg\bin\os.dll
+/boot/os.dll       bin\os.dll         dbg\bin\os.dll
 /bin/sh.exe        bin\sh.exe         dbg\bin\sh.exe

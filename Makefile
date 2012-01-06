@@ -1082,6 +1082,15 @@ $(IMG)/sanos.iso: dirs sanos tools $(BUILD)/bootcd.lst
     del $(INSTALL)\BOOTIMG.BIN
 
 #
+# minimal
+#
+
+minimal: $(IMG)/minimal.flp
+
+$(IMG)/minimal.flp: dirs sanos $(MKDFS) $(BUILD)/minbootdisk.lst
+    $(MKDFS) -d $(IMG)/minimal.flp -b $(BIN)\boot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 1440 -i -f -S . -F $(BUILD)\minbootdisk.lst
+
+#
 # sdk
 #
 

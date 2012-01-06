@@ -672,7 +672,7 @@ int build_targets(struct project *prj)
 void usage()
 {
   fprintf(stderr, "usage: make [ -f <makefile> ] [ options ] ... [ targets ] ... \n\n");
-  fprintf(stderr, "  -B            Unconditionall build all targets.\n");
+  fprintf(stderr, "  -B            Unconditionally build all targets.\n");
   fprintf(stderr, "  -C <dir>      Change current directory to <dir> before building.\n");
   fprintf(stderr, "  -d            Output debug messages.\n");
   fprintf(stderr, "  -f <file>     Read <file> as makefle.\n");
