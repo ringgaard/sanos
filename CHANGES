@@ -4,17 +4,15 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
-    * Implemented virtio network driver
-
     * Changed the secondary boot loader to use BIOS for loading kernel.
 
-    * Implemented virtio block device driver for paravirtualized device io.
+    * Implemented virtio block and network device drivers for paravirtualized device io.
 
     * Implemented support for __declspec MSVC extension in C compiler.
 
     * Implemented $(VAR:pattern=replace) support in make.
 
-    * Added objconv and makedepend utility to sdk.
+    * Added makedepend utility to sdk.
 
     * Added filelength() and filelength64() to io.h.
     
@@ -40,7 +38,7 @@ Changes since last release
 
     * Fixed bug in DMA setup for IDE/UDMA mode. 
 
-    * Adeed detabbing to editor and goto begining and and of file.
+    * Added detabbing to editor and goto begining and end of file.
 
     * Fixed bug in pthread_barrier_wait (zhanglei8893).
 
@@ -67,7 +65,7 @@ Changes since last release
       
     * Refactored IDE UDMA code.
 
-    * If APM power down fails, the apm driver not tries to engage power
+    * If APM power down fails, the apm driver tries to engage power
       management, and tries power down again.
       
     * Some ATA controllers failed HDIDENTIFY, returning garbage. Now the ide
@@ -176,7 +174,7 @@ Changes since last release
     
     * Added tulip network driver.
     
-    * The toupper() and tolower() macroes did not properly check the character type
+    * The toupper() and tolower() macros did not properly check the character type
       before conversion. This problem has been fixed (SMC). 
 
     * The poll() function for waiting for events on a set of file descriptor has
