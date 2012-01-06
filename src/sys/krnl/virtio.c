@@ -76,6 +76,7 @@ int virtio_device_init(struct virtio_device *vd, struct unit *unit, int features
   vd->unit = unit;
   vd->irq = get_unit_irq(unit);
   vd->iobase = get_unit_iobase(unit);
+  vd->queues = NULL;
 
   // Reset device
   outp(vd->iobase + VIRTIO_PCI_STATUS, 0);
@@ -101,32 +102,32 @@ void virtio_setup_complete(struct virtio_device *vd, int success)
   outp(vd->iobase + VIRTIO_PCI_STATUS, inp(vd->iobase + VIRTIO_PCI_STATUS) | status);
 }
 
-static unsigned int vring_size(unsigned int num)
+static unsigned int vring_size(unsigned int size)
 {
-  return ((sizeof(struct vring_desc) * num + sizeof(unsigned short) * (3 + num) + PAGESIZE - 1) & ~(PAGESIZE - 1)) +
-         sizeof(unsigned short) * 3 + sizeof(struct vring_used_elem) * num;
+  return ((sizeof(struct vring_desc) * size + sizeof(unsigned short) * (3 + size) + PAGESIZE - 1) & ~(PAGESIZE - 1)) +
+         sizeof(unsigned short) * 3 + sizeof(struct vring_used_elem) * size;
 }
 
-static void vring_init(struct vring *vr, unsigned int num, void *p)
+static void vring_init(struct vring *vr, unsigned int size, void *p)
 {
-  vr->num = num;
+  vr->size = size;
   vr->desc = p;
-  vr->avail = (struct vring_avail *) ((char *) p + num * sizeof(struct vring_desc));
-  vr->used = (struct vring_used *) (((unsigned long) &vr->avail->ring[num] + sizeof(unsigned short) + PAGESIZE - 1) & ~(PAGESIZE - 1));
+  vr->avail = (struct vring_avail *) ((char *) p + size * sizeof(struct vring_desc));
+  vr->used = (struct vring_used *) (((unsigned long) &vr->avail->ring[size] + sizeof(unsigned short) + PAGESIZE - 1) & ~(PAGESIZE - 1));
 }
 
-static int init_queue(struct virtio_queue *vq, int index, int num)
+static int init_queue(struct virtio_queue *vq, int index, int size)
 {
-  unsigned int size;
+  unsigned int len;
   char *buffer;
   int i;
   
   // Initialize vring structure.
-  size = vring_size(num);
-  buffer = kmalloc(size);
+  len = vring_size(size);
+  buffer = kmalloc(len);
   if (!buffer) return -ENOMEM;
-  memset(buffer, 0, size);
-  vring_init(&vq->vring, num, buffer);
+  memset(buffer, 0, len);
+  vring_init(&vq->vring, size, buffer);
   
   // Setup queue.
   vq->index = index;
@@ -134,40 +135,40 @@ static int init_queue(struct virtio_queue *vq, int index, int num)
   vq->num_added = 0;
 
   // Put everything on the free list
-  vq->num_free = num;
+  vq->num_free = size;
   vq->free_head = 0;
-  for (i = 0; i < num - 1; i++) vq->vring.desc[i].next = i + 1;
+  for (i = 0; i < size - 1; i++) vq->vring.desc[i].next = i + 1;
 
   return 0;
 }
 
 int virtio_queue_init(struct virtio_queue *vq, struct virtio_device *vd, int index, virtio_callback_t callback)
 {
-  unsigned short num;
+  unsigned short size;
   int rc;
 
   // Select the queue
   outpw(vd->iobase + VIRTIO_PCI_QUEUE_SEL, index);
 
   // Check if queue is either not available or already active
-  num = inpw(vd->iobase + VIRTIO_PCI_QUEUE_NUM);
-  if (!num || inpd(vd->iobase + VIRTIO_PCI_QUEUE_PFN)) return -ENOENT;
+  size = inpw(vd->iobase + VIRTIO_PCI_QUEUE_SIZE);
+  if (!size || inpd(vd->iobase + VIRTIO_PCI_QUEUE_PFN)) return -ENOENT;
 
   // Initialize virtual queue
-  rc = init_queue(vq, index, num);
+  rc = init_queue(vq, index, size);
   if (rc < 0) return rc;
   
   // Allocate space for callback data tokens
-  vq->data = (void **) kmalloc(sizeof(void *) * num);
+  vq->data = (void **) kmalloc(sizeof(void *) * size);
   if (!vq->data) return -ENOSPC;
-  memset(vq->data, 0, sizeof(void *) * num);
+  memset(vq->data, 0, sizeof(void *) * size);
 
   // Initialize buffer available event
   init_event(&vq->bufavail, 0, 1);
 
   // Attach queue to device
   vq->vd = vd;
-  if (vd->queues) vd->queues->next = vq;
+  vq->next = vd->queues;
   vd->queues = vq;
   vq->callback = callback;
 
@@ -175,6 +176,11 @@ int virtio_queue_init(struct virtio_queue *vq, struct virtio_device *vd, int ind
   outpd(vd->iobase + VIRTIO_PCI_QUEUE_PFN, BTOP(virt2phys(vq->vring.desc)));
 
   return 0;
+}
+
+int virtio_queue_size(struct virtio_queue *vq)
+{
+  return vq->vring.size;
 }
 
 int virtio_enqueue(struct virtio_queue *vq, struct scatterlist sg[], unsigned int out, unsigned int in, void *data)
@@ -218,7 +224,7 @@ int virtio_enqueue(struct virtio_queue *vq, struct scatterlist sg[], unsigned in
   vq->data[head] = data;
 
   // Put entry in available array, but do not update avail->idx until sync
-  avail = (vq->vring.avail->idx + vq->num_added++) % vq->vring.num;
+  avail = (vq->vring.avail->idx + vq->num_added++) % vq->vring.size;
   vq->vring.avail->ring[avail] = head;
 
   // Notify about free buffers
@@ -278,7 +284,7 @@ void *virtio_dequeue(struct virtio_queue *vq, unsigned int *len)
   if (!more_used(vq)) return NULL;
 
   // Get next completed buffer
-  e = &vq->vring.used->ring[vq->last_used_idx % vq->vring.num];
+  e = &vq->vring.used->ring[vq->last_used_idx % vq->vring.size];
   *len = e->len;
   data = vq->data[e->id];
   

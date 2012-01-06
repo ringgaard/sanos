@@ -41,7 +41,7 @@
 #define VIRTIO_PCI_HOST_FEATURES	0   // Features supported by the host
 #define VIRTIO_PCI_GUEST_FEATURES	4   // Features activated by the guest
 #define VIRTIO_PCI_QUEUE_PFN		8   // PFN for the currently selected queue
-#define VIRTIO_PCI_QUEUE_NUM		12  // Queue size for the currently selected queue
+#define VIRTIO_PCI_QUEUE_SIZE		12  // Queue size for the currently selected queue
 #define VIRTIO_PCI_QUEUE_SEL		14  // Queue selector
 #define VIRTIO_PCI_QUEUE_NOTIFY		16  // Queue notifier
 #define VIRTIO_PCI_STATUS		18  // Device status register
@@ -103,7 +103,7 @@ struct vring_used
 
 struct vring 
 {
-  unsigned int num;
+  unsigned int size;
   struct vring_desc *desc;
   struct vring_avail *avail;
   struct vring_used *used;
@@ -166,6 +166,7 @@ krnlapi void virtio_setup_complete(struct virtio_device *vd, int success);
 krnlapi void virtio_get_config(struct virtio_device *vd, void *buf, int len);
 
 krnlapi int virtio_queue_init(struct virtio_queue *vq, struct virtio_device *vd, int index, virtio_callback_t callback);
+krnlapi int virtio_queue_size(struct virtio_queue *vq);
 krnlapi int virtio_enqueue(struct virtio_queue *vq, struct scatterlist sg[], unsigned int out, unsigned int in, void *data);
 krnlapi void virtio_kick(struct virtio_queue *vq);
 krnlapi void *virtio_dequeue(struct virtio_queue *vq, unsigned int *len);

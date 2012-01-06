@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Implemented virtio network driver
+
     * Changed the secondary boot loader to use BIOS for loading kernel.
 
     * Implemented virtio block device driver for paravirtualized device io.

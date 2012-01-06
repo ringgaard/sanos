@@ -1559,7 +1559,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
 
   if (sp->rx_bug) kprintf(KERN_INFO "%s: Receiver lock-up workaround activated\n", dev->name);
 
-  kprintf(KERN_INFO "%s: %s%s iobase 0x%x irq %d hwaddr %la\n", dev->name, eeprom[3] & 0x0100 ? "OEM " : "", unit->productname, ioaddr, irq, &sp->hwaddr);
+  kprintf(KERN_INFO "%s: %s%s iobase 0x%x irq %d mac %la\n", dev->name, eeprom[3] & 0x0100 ? "OEM " : "", unit->productname, ioaddr, irq, &sp->hwaddr);
 
   return speedo_open(dev);
 }

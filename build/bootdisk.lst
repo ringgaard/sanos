@@ -37,13 +37,14 @@
 
 ; Drivers
 
-/boot/pcnet32.sys  bin\pcnet32.sys    dbg\bin\pcnet32.sys
-/boot/ne2000.sys   bin\ne2000.sys     dbg\bin\ne2000.sys
-/boot/3c905c.sys   bin\3c905c.sys     dbg\bin\3c905c.sys
-/boot/rtl8139.sys  bin\rtl8139.sys    dbg\bin\rtl8139.sys
-/boot/eepro100.sys bin\eepro100.sys   dbg\bin\eepro100.sys
-/boot/sis900.sys   bin\sis900.sys     dbg\bin\sis900.sys
-/boot/tulip.sys    bin\tulip.sys      dbg\bin\tulip.sys
+/boot/pcnet32.sys   bin\pcnet32.sys    dbg\bin\pcnet32.sys
+/boot/ne2000.sys    bin\ne2000.sys     dbg\bin\ne2000.sys
+/boot/3c905c.sys    bin\3c905c.sys     dbg\bin\3c905c.sys
+/boot/rtl8139.sys   bin\rtl8139.sys    dbg\bin\rtl8139.sys
+/boot/eepro100.sys  bin\eepro100.sys   dbg\bin\eepro100.sys
+/boot/sis900.sys    bin\sis900.sys     dbg\bin\sis900.sys
+/boot/tulip.sys     bin\tulip.sys      dbg\bin\tulip.sys
+/boot/virtionet.sys bin\virtionet.sys  dbg\bin\virtionet.sys
 
 ; Win32 wrapper DLLs
 

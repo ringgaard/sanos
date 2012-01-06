@@ -714,7 +714,7 @@ int ne_setup(unsigned short iobase, int irq, unsigned short membase, unsigned sh
   // Create packet device
   ne->devno = dev_make("eth#", &ne_driver, unit, ne);
 
-  kprintf(KERN_INFO "%s: NE2000 iobase 0x%x irq %d hwaddr %s\n", device(ne->devno)->name, ne->iobase, ne->irq, ether2str(&ne->hwaddr, str));
+  kprintf(KERN_INFO "%s: NE2000 iobase 0x%x irq %d mac %s\n", device(ne->devno)->name, ne->iobase, ne->irq, ether2str(&ne->hwaddr, str));
   return 0;
 }
 

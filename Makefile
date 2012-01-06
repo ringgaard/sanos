@@ -113,6 +113,7 @@ dirs:
     -@if not exist $(OBJ)\osldr mkdir $(OBJ)\osldr
     -@if not exist $(OBJ)\pcnet32 mkdir $(OBJ)\pcnet32
     -@if not exist $(OBJ)\rtl8139 mkdir $(OBJ)\rtl8139
+    -@if not exist $(OBJ)\virtionet mkdir $(OBJ)\virtionet
     -@if not exist $(OBJ)\setup mkdir $(OBJ)\setup
     -@if not exist $(OBJ)\sh mkdir $(OBJ)\sh
     -@if not exist $(OBJ)\nsh mkdir $(OBJ)\nsh
@@ -405,7 +406,7 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
 # drivers
 #
 
-drivers: dirs $(BIN)/3c905c.sys $(BIN)/eepro100.sys $(BIN)/ne2000.sys $(BIN)/pcnet32.sys $(BIN)/rtl8139.sys $(BIN)/sis900.sys $(BIN)/tulip.sys
+drivers: dirs $(BIN)/3c905c.sys $(BIN)/eepro100.sys $(BIN)/ne2000.sys $(BIN)/pcnet32.sys $(BIN)/rtl8139.sys $(BIN)/sis900.sys $(BIN)/tulip.sys $(BIN)/virtionet.sys
 
 $(BIN)/3c905c.sys: \
   $(SRC)/sys/dev/3c905c.c \
@@ -471,6 +472,12 @@ $(BIN)/tulip.sys: \
   $(LIBS)/krnl.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/tulip/ $** /D KERNEL /D TULIP_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:start /IMPLIB:$(LIBS)/tulip.lib
+
+$(BIN)/virtionet.sys: \
+  $(SRC)/sys/dev/virtionet.c \
+  $(LIBS)/krnl.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/tulip/ $** /D KERNEL /D VIRTIONET_LIB \
+      /link /DLL /NODEFAULTLIB /ENTRY:start /IMPLIB:$(LIBS)/virtionet.lib
 
 #
 # libc
@@ -1168,6 +1175,7 @@ install: sanos
     copy $(BIN)\rtl8139.sys   $(INSTALL)\boot\rtl8139.sys
     copy $(BIN)\sis900.sys    $(INSTALL)\boot\sis900.sys
     copy $(BIN)\tulip.sys     $(INSTALL)\boot\tulip.sys
+    copy $(BIN)\virtionet.sys $(INSTALL)\boot\virtionet.sys
 
 install-source: dirs
     -@if not exist $(INSTALL)\usr mkdir $(INSTALL)\usr

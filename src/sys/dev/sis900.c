@@ -1802,7 +1802,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   if (sis900_mii_probe(dev) == 0) return -ENODEV;
 
   // Print some information about our NIC
-  kprintf(KERN_INFO "%s: %s iobase %#lx irq %d hwaddr %la\n", dev->name, board->productname, ioaddr, irq, &sp->hwaddr);
+  kprintf(KERN_INFO "%s: %s iobase %#lx irq %d mac %la\n", dev->name, board->productname, ioaddr, irq, &sp->hwaddr);
 
   // Initialize NIC
   rc = sis900_open(dev);

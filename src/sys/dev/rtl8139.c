@@ -1330,7 +1330,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
     }
   }
 
-  kprintf(KERN_INFO "%s: %s iobase 0x%x irq %d hwaddr %la\n", dev->name, unit->productname, ioaddr, irq, &np->hwaddr);
+  kprintf(KERN_INFO "%s: %s iobase 0x%x irq %d mac %la\n", dev->name, unit->productname, ioaddr, irq, &np->hwaddr);
 
   np->dev = dev;
   np->iobase = ioaddr;

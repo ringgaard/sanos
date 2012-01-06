@@ -1932,7 +1932,7 @@ int __declspec(dllexport) install(struct unit *unit)
 
   register_proc_inode(device(nic->devno)->name, nicstat_proc, nic);
 
-  kprintf(KERN_INFO "%s: %s, iobase 0x%x irq %d hwaddr %la\n", device(nic->devno)->name, unit->productname, nic->iobase, nic->irq, &nic->hwaddr);
+  kprintf(KERN_INFO "%s: %s, iobase 0x%x irq %d mac %la\n", device(nic->devno)->name, unit->productname, nic->iobase, nic->irq, &nic->hwaddr);
   kprintf(KERN_INFO "%s: %d MBits/s, %s-duplex, %s\n", device(nic->devno)->name, nic->linkspeed, nic->fullduplex ? "full" : "half", connectorname[nic->connector]);
 
   return 0;
