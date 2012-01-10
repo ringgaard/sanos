@@ -174,6 +174,11 @@ struct dev
   gid_t gid;
   int mode;
   struct devfile *files;
+  
+  int reads;
+  int writes;
+  int input;
+  int output;
 
   struct netif *netif;
   int (*receive)(struct netif *netif, struct pbuf *p);

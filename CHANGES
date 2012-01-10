@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added /proc/devstat to display device I/O statistics.
+
     * Changed the secondary boot loader to use BIOS for loading kernel.
 
     * Implemented virtio block and network device drivers for paravirtualized device io.

@@ -44,6 +44,7 @@ unsigned int num_devs = 0;
 
 static int units_proc(struct proc_file *pf, void *arg);
 static int devices_proc(struct proc_file *pf, void *arg);
+static int devstat_proc(struct proc_file *pf, void *arg);
 
 static char *busnames[] = {"HOST", "PCI", "ISA", "?", "?"};
 static char *devtypenames[] = {"?", "stream", "block", "packet"};
@@ -565,6 +566,7 @@ void install_drivers()
   // Register /proc/units
   register_proc_inode("units", units_proc, NULL);
   register_proc_inode("devices", devices_proc, NULL);
+  register_proc_inode("devstat", devstat_proc, NULL);
 
   // Parse driver binding database
   parse_bindings();
@@ -693,6 +695,8 @@ int dev_read(dev_t devno, void *buffer, size_t count, blkno_t blkno, int flags)
   if (devno < 0 || devno >= num_devs) return -ENODEV;
   dev = devtab[devno];
   if (!dev->driver->read) return -ENOSYS;
+  dev->reads++;
+  dev->input += count;
 
   return dev->driver->read(dev, buffer, count, blkno, flags);
 }
@@ -704,6 +708,8 @@ int dev_write(dev_t devno, void *buffer, size_t count, blkno_t blkno, int flags)
   if (devno < 0 || devno >= num_devs) return -ENODEV;
   dev = devtab[devno];
   if (!dev->driver->read) return -ENOSYS;
+  dev->writes++;
+  dev->output += count;
 
   return dev->driver->write(dev, buffer, count, blkno, flags);
 }
@@ -747,6 +753,8 @@ int dev_transmit(dev_t devno, struct pbuf *p)
   if (devno < 0 || devno >= num_devs) return -ENODEV;
   dev = devtab[devno];
   if (!dev->driver->transmit) return -ENOSYS;
+  dev->writes++;
+  dev->output += p->tot_len;
 
   return dev->driver->transmit(dev, p);
 }
@@ -758,6 +766,8 @@ int dev_receive(dev_t devno, struct pbuf *p)
   if (devno < 0 || devno >= num_devs) return -ENODEV;
   dev = devtab[devno];
   if (!dev->receive) return -ENOSYS;
+  dev->reads++;
+  dev->input += p->tot_len;
 
   return dev->receive(dev->netif, p);
 }
@@ -874,5 +884,21 @@ static int devices_proc(struct proc_file *pf, void *arg)
   }
 
   return 0;
+}
 
+static int devstat_proc(struct proc_file *pf, void *arg)
+{
+  dev_t devno;
+  struct dev *dev;
+
+  pprintf(pf, "devno name        reads      input   writes     output\n");
+  pprintf(pf, "----- -------- -------- ---------- -------- ----------\n");
+
+  for (devno = 0; devno < num_devs; devno++)
+  {
+    dev = devtab[devno];
+    pprintf(pf, "%5d %-8s%9d%11d%9d%11d\n", devno, dev->name, dev->reads, dev->input, dev->writes, dev->output);
+  }
+
+  return 0;
 }

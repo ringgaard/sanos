@@ -56,7 +56,7 @@ struct virtio_blk_config
   unsigned __int64 capacity;         // The capacity (in 512-byte sectors)
   unsigned long size_max;            // The maximum segment size
   unsigned long seg_max;             // The maximum number of segments
-  struct virtio_blk_geometry {	     // Device geometry
+  struct virtio_blk_geometry {       // Device geometry
     unsigned short cylinders;
     unsigned char heads;
     unsigned char sectors;

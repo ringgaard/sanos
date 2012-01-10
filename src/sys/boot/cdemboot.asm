@@ -93,9 +93,6 @@ readimg:
 	; Load disk image from emulated floppy
 
 loadnext:
-	mov	al, '.'
-	call	printchar
-
 	xor	eax, eax
 	mov	ax, [sectno]	    ; eax = image sector number
 
@@ -125,11 +122,6 @@ loadnext1:
 
 	cmp	ax, IMGSIZE
 	jnz	loadnext
-
-	mov	al, 10
-	call	printchar
-	mov	al, 13
-	call	printchar
 
 	; Copy os loader from ram boot image 
 	push	ds

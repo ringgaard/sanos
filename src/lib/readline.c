@@ -54,9 +54,10 @@
 
 #define KEY_UNKNOWN     0xFFF
 
-int insmode = 1;
-int history_len = 0;
-char *history[MAX_HISTORY];
+static int insmode = 1;
+static int history_len = 0;
+static char *history[MAX_HISTORY];
+int _break_on_escape = 0;
 
 void add_to_history(char *line)
 {
@@ -396,10 +397,18 @@ int readline(char *buf, int size)
 	break;
 
       case KEY_ESC:
-	for (i = 0; i < idx; i++) putchar('\b');
-	for (i = 0; i < len; i++) putchar(' ');
-	for (i = 0; i < len; i++) putchar('\b');
-	idx = len = 0;
+        if (_break_on_escape)
+        {
+          buf[len] = 0;
+          return -EINTR;
+        }
+        else
+        {
+          for (i = 0; i < idx; i++) putchar('\b');
+	  for (i = 0; i < len; i++) putchar(' ');
+	  for (i = 0; i < len; i++) putchar('\b');
+	  idx = len = 0;
+	}
 	break;
 
       case KEY_ENTER:

@@ -341,7 +341,7 @@ void copy_ramdisk(char *bootimg)
     unsigned int zofs;
     unsigned int zsize;
 
-    kprintf("Uncompressing boot image\n");
+    //kprintf("Uncompressing boot image\n");
 
     // Copy uncompressed part of image
     memcpy(initrd, bootimg, super->compress_offset);
@@ -363,7 +363,7 @@ void copy_ramdisk(char *bootimg)
     syspagetable[PTEIDX(INITRD_ADDRESS) + i] = ((unsigned long) initrd + i * PAGESIZE) | PT_PRESENT | PT_WRITABLE;
   }
 
-  kprintf("%d KB boot image found\n", initrd_size / 1024);
+  //kprintf("%d KB boot image found\n", initrd_size / 1024);
 }
 
 void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)

@@ -151,7 +151,7 @@ clean:
     del /Q $(TOOLSRC)\dbggw\release
     del /Q $(TOOLSRC)\sow\release
     del /Q $(TOOLSRC)\dfs\release
-    del /Q $(IMG)
+    del /Q /S $(IMG)
 
 #
 # tools
