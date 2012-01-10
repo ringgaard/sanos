@@ -1,6 +1,5 @@
 CVS
 *.suo
-dfs.ncb
-dbggw.ncb
-mkpart.ncb
+*.ncb
+*.obj
 junk.c

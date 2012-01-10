@@ -2,6 +2,11 @@ if not exist %1 mkdir %1
 if not exist %1\build mkdir %1\build
 if not exist %1\src mkdir %1\src
 if not exist %1\sdk mkdir %1\sdk
+if not exist %1\sdk\src mkdir %1\sdk\src
+if not exist %1\sdk\src\as mkdir %1\sdk\src\as
+if not exist %1\sdk\src\cc mkdir %1\sdk\src\cc
+if not exist %1\sdk\src\libc mkdir %1\sdk\src\libc
+if not exist %1\sdk\src\makedepend mkdir %1\sdk\src\makedepend
 if not exist %1\vcwizard mkdir %1\vcwizard
 if not exist %1\tools mkdir %1\tools
 if not exist %1\utils mkdir %1\utils
@@ -30,7 +35,12 @@ copy build\setup.ini %1\build
 copy build\sanos.dep %1\build
 
 xcopy src %1\src /s /exclude:build\exclrel.lst
-xcopy sdk %1\sdk /s /exclude:build\exclrel.lst
+
+copy sdk\src\as\* %1\sdk\src\as
+copy sdk\src\cc\* %1\sdk\src\cc
+copy sdk\src\libc\* %1\sdk\src\libc
+copy sdk\src\makedepend\* %1\sdk\src\makedepend
+
 xcopy vcwizard %1\vcwizard /s /exclude:build\exclrel.lst
 
 copy tools\mkdfs.exe %1\tools
