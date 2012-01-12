@@ -1,0 +1,5 @@
+set cpu 18b
+set cpu 512K
+set rl0 RL02
+att rl0 /var/unix_v7_rl.dsk
+boot rl0
