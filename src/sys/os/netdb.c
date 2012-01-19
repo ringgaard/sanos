@@ -135,21 +135,21 @@ char *salias[] =
 
 struct servent services[] =
 {
-  {"echo",             salias,	       7, "tcp"},
-  {"echo",             salias,	       7, "udp"},
+  {"echo",             salias,         7, "tcp"},
+  {"echo",             salias,         7, "udp"},
   {"discard",          salias + 1,     9, "tcp"},
   {"discard",          salias + 1,     9, "udp"},
   {"systat",           salias + 4,    11, "tcp"},  // Active users
   {"systat",           salias + 4,    11, "tcp"},  // Active users
-  {"daytime",          salias,	      13, "tcp"},
-  {"daytime",          salias,	      13, "udp"},
+  {"daytime",          salias,        13, "tcp"},
+  {"daytime",          salias,        13, "udp"},
   {"qotd",             salias + 6,    17, "tcp"},  // Quote of the day
   {"qotd",             salias + 6,    17, "udp"},  // Quote of the day
   {"chargen",          salias + 8,    19, "tcp"},  // Character generator
   {"chargen",          salias + 8,    19, "udp"},  // Character generator
-  {"ftp-data",         salias,	      20, "tcp"},  // FTP, data
-  {"ftp",              salias,	      21, "tcp"},  // FTP, control
-  {"telnet",           salias,	      23, "tcp"},
+  {"ftp-data",         salias,        20, "tcp"},  // FTP, data
+  {"ftp",              salias,        21, "tcp"},  // FTP, control
+  {"telnet",           salias,        23, "tcp"},
   {"smtp",             salias + 11,   25, "tcp"},  // Simple Mail Transfer Protocol
   {"time",             salias + 13,   37, "tcp"},
   {"time",             salias + 13,   37, "udp"},
@@ -157,13 +157,13 @@ struct servent services[] =
   {"nameserver",       salias + 17,   42, "tcp"},  // Host Name Server
   {"nameserver",       salias + 17,   42, "udp"},  // Host Name Server
   {"nicname",          salias + 19,   43, "tcp"},
-  {"domain",           salias,	      53, "tcp"},  // Domain Name Server
-  {"domain",           salias,	      53, "udp"},  // Domain Name Server
+  {"domain",           salias,        53, "tcp"},  // Domain Name Server
+  {"domain",           salias,        53, "udp"},  // Domain Name Server
   {"bootps",           salias + 21,   67, "udp"},  // Bootstrap Protocol Server
   {"bootpc",           salias + 23,   68, "udp"},  // Bootstrap Protocol Client
-  {"tftp",             salias,	      69, "udp"},  // Trivial File Transfer
-  {"gopher",           salias,	      70, "tcp"},
-  {"finger",           salias,	      79, "tcp"},
+  {"tftp",             salias,        69, "udp"},  // Trivial File Transfer
+  {"gopher",           salias,        70, "tcp"},
+  {"finger",           salias,        79, "tcp"},
   {"http",             salias + 25,   80, "tcp"},  // World Wide Web
   {"kerberos",         salias + 28,   88, "tcp"},  // Kerberos
   {"kerberos",         salias + 28,   88, "udp"},  // Kerberos
@@ -378,14 +378,14 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       n = dn_expand(answer, eom, cp, tbuf, sizeof tbuf);
       if (n < 0) 
       {
-	had_error++;
-	continue;
+        had_error++;
+        continue;
       }
       cp += n;
       if (cp != erdata) 
       {
-	errno = EIO;
-	return NULL;
+        errno = EIO;
+        return NULL;
       }
       
       // Store alias
@@ -393,9 +393,9 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       n = strlen(bp) + 1;
       if (n >= MAXHOSTNAMELEN) 
       {
-	errno = EMSGSIZE;
-	had_error++;
-	continue;
+        errno = EMSGSIZE;
+        had_error++;
+        continue;
       }
       
       bp += n;
@@ -405,9 +405,9 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       n = strlen(tbuf) + 1;
       if (n > buflen || n >= MAXHOSTNAMELEN) 
       {
-	errno = EMSGSIZE;
-	had_error++;
-	continue;
+        errno = EMSGSIZE;
+        had_error++;
+        continue;
       }
       
       strcpy(bp, tbuf);
@@ -422,23 +422,23 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       n = dn_expand(answer, eom, cp, tbuf, sizeof tbuf);
       if (n < 0) 
       {
-	had_error++;
-	continue;
+        had_error++;
+        continue;
       }
       cp += n;
       if (cp != erdata) 
       {
-	errno = EIO;
-	return NULL; 
+        errno = EIO;
+        return NULL; 
       }
 
       // Get canonical name
       n = strlen(tbuf) + 1;
       if (n > buflen || n >= MAXHOSTNAMELEN) 
       {
-	errno = EMSGSIZE;
-	had_error++;
-	continue;
+        errno = EMSGSIZE;
+        had_error++;
+        continue;
       }
       strcpy(bp, tbuf);
       tname = bp;
@@ -456,72 +456,72 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
     switch (type) 
     {
       case DNS_TYPE_PTR:
-	if (stricmp(tname, bp) != 0) 
-	{
-	  cp += n;
-	  continue;
-	}
+        if (stricmp(tname, bp) != 0) 
+        {
+          cp += n;
+          continue;
+        }
 
-	n = dn_expand(answer, eom, cp, bp, buflen);
-	if (n < 0) 
-	{
-	  had_error++;
-	  break;
-	}
-	tib->host.h_name = bp;
-	return &tib->host;
+        n = dn_expand(answer, eom, cp, bp, buflen);
+        if (n < 0) 
+        {
+          had_error++;
+          break;
+        }
+        tib->host.h_name = bp;
+        return &tib->host;
 
       case DNS_TYPE_A:
-	if (stricmp(tib->host.h_name, bp) != 0) 
-	{
-	  cp += n;
-	  continue;
-	}
-	if (n != tib->host.h_length) 
-	{
-	  cp += n;
-	  continue;
-	}
-	if (!haveanswer) 
-	{
-	  int nn;
+        if (stricmp(tib->host.h_name, bp) != 0) 
+        {
+          cp += n;
+          continue;
+        }
+        if (n != tib->host.h_length) 
+        {
+          cp += n;
+          continue;
+        }
+        if (!haveanswer) 
+        {
+          int nn;
 
-	  tib->host.h_name = bp;
-	  nn = strlen(bp) + 1;
-	  bp += nn;
-	  buflen -= nn;
-	}
+          tib->host.h_name = bp;
+          nn = strlen(bp) + 1;
+          bp += nn;
+          buflen -= nn;
+        }
 
-	// Align next buffer entry
-	buflen -= sizeof(int) - ((unsigned long) bp % sizeof(int));
-	bp += sizeof(int) - ((unsigned long) bp % sizeof(int));
+        // Align next buffer entry
+        buflen -= sizeof(int) - ((unsigned long) bp % sizeof(int));
+        bp += sizeof(int) - ((unsigned long) bp % sizeof(int));
 
-	if (bp + n >= &tib->hostbuf[sizeof tib->hostbuf]) 
-	{
-	  errno = EMSGSIZE;
-	  had_error++;
-	  continue;
-	}
+        if (bp + n >= &tib->hostbuf[sizeof tib->hostbuf]) 
+        {
+          errno = EMSGSIZE;
+          had_error++;
+          continue;
+        }
 
-	if (hap >= &tib->h_addr_ptrs[MAX_HOST_ADDRS - 1]) 
-	{
-	  cp += n;
-	  continue;
-	}
+        if (hap >= &tib->h_addr_ptrs[MAX_HOST_ADDRS - 1]) 
+        {
+          cp += n;
+          continue;
+        }
 
-	memmove(*hap++ = bp, cp, n);
-	bp += n;
-	buflen -= n;
-	cp += n;
-	if (cp != erdata) 
-	{
-	  errno = EIO;
-	  return NULL;
-	}
-	break;
+        memmove(*hap++ = bp, cp, n);
+        bp += n;
+        buflen -= n;
+        cp += n;
+        if (cp != erdata) 
+        {
+          errno = EIO;
+          return NULL;
+        }
+        break;
 
       default:
-	errno = EIO;
+        errno = EIO;
         return NULL;
     }
 
@@ -537,8 +537,8 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       n = strlen(qname) + 1;
       if (n > buflen || n >= MAXHOSTNAMELEN) 
       {
-	errno = EMSGSIZE;
-	return NULL;
+        errno = EMSGSIZE;
+        return NULL;
       }
       strcpy(bp, qname);
       tib->host.h_name = bp;
@@ -590,25 +590,25 @@ struct hostent *gethostbyname(const char *name)
     {
       if (!*cp)
       {
-	struct in_addr addr;
+        struct in_addr addr;
 
-	if (*--cp == '.') break;
+        if (*--cp == '.') break;
 
-	// All-numeric, no dot at the end. Fake up a hostent as if we'd actually done a lookup.
-	addr.s_addr = inet_addr(name);
-	if (addr.s_addr == INADDR_NONE) return NULL;
+        // All-numeric, no dot at the end. Fake up a hostent as if we'd actually done a lookup.
+        addr.s_addr = inet_addr(name);
+        if (addr.s_addr == INADDR_NONE) return NULL;
 
-	memcpy(tib->host_addr, &addr, tib->host.h_length);
-	strncpy(tib->hostbuf, name, HOSTBUF_SIZE - 1);
-	tib->hostbuf[HOSTBUF_SIZE - 1] = '\0';
-	tib->host.h_name = tib->hostbuf;
-	tib->host.h_aliases = tib->host_aliases;
-	tib->host_aliases[0] = NULL;
-	tib->h_addr_ptrs[0] = (char *) tib->host_addr;
-	tib->h_addr_ptrs[1] = NULL;
-	tib->host.h_addr_list = tib->h_addr_ptrs;
+        memcpy(tib->host_addr, &addr, tib->host.h_length);
+        strncpy(tib->hostbuf, name, HOSTBUF_SIZE - 1);
+        tib->hostbuf[HOSTBUF_SIZE - 1] = '\0';
+        tib->host.h_name = tib->hostbuf;
+        tib->host.h_aliases = tib->host_aliases;
+        tib->host_aliases[0] = NULL;
+        tib->h_addr_ptrs[0] = (char *) tib->host_addr;
+        tib->h_addr_ptrs[1] = NULL;
+        tib->host.h_addr_list = tib->h_addr_ptrs;
 
-	return &tib->host;
+        return &tib->host;
       }
 
       if (*cp < '0' && *cp > '9' && *cp != '.') break;
@@ -715,8 +715,8 @@ unsigned long inet_addr(const char *cp)
         base = 16, c = *++cp;
       else 
       {
-	base = 8;
-	digit = 1;
+        base = 8;
+        digit = 1;
       }
     }
 
@@ -724,26 +724,26 @@ unsigned long inet_addr(const char *cp)
     {
       if (c >= '0' && c <= '9') 
       {
-	if (base == 8 && (c == '8' || c == '9')) 
-	{
-	  errno = EINVAL;
-	  return INADDR_NONE;
-	}
-	val = (val * base) + (c - '0');
-	c = *++cp;
-	digit = 1;
+        if (base == 8 && (c == '8' || c == '9')) 
+        {
+          errno = EINVAL;
+          return INADDR_NONE;
+        }
+        val = (val * base) + (c - '0');
+        c = *++cp;
+        digit = 1;
       } 
       else if (base == 16 && c >= 'a' && c <= 'f') 
       {
-	val = (val << 4) | (c + 10 - 'a');
-	c = *++cp;
-	digit = 1;
+        val = (val << 4) | (c + 10 - 'a');
+        c = *++cp;
+        digit = 1;
       } 
       else if (base == 16 && c >= 'A' && c <= 'F') 
       {
-	val = (val << 4) | (c + 10 - 'A');
-	c = *++cp;
-	digit = 1;
+        val = (val << 4) | (c + 10 - 'A');
+        c = *++cp;
+        digit = 1;
       } 
       else
         break;
@@ -753,13 +753,13 @@ unsigned long inet_addr(const char *cp)
     {
       // Internet format:
       //   a.b.c.d
-      //   a.b.c	(with c treated as 16 bits)
-      //   a.b		(with b treated as 24 bits)
+      //   a.b.c        (with c treated as 16 bits)
+      //   a.b          (with b treated as 24 bits)
 
       if (pp > res.bytes + 2 || val > 0xFF) 
       {
-	errno = EINVAL;
-	return INADDR_NONE;
+        errno = EINVAL;
+        return INADDR_NONE;
       }
       *pp++ = (unsigned char) val;
       c = *++cp;
@@ -906,7 +906,7 @@ struct servent *getservbyname(const char *name, const char *proto)
     {
       if (strcmp(*alias, name) == 0) 
       {
-	if (!proto || strcmp(sp->s_proto, proto) == 0) return sp;
+        if (!proto || strcmp(sp->s_proto, proto) == 0) return sp;
       }
       alias++;
     }

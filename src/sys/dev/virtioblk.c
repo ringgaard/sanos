@@ -61,7 +61,7 @@ struct virtio_blk_config
     unsigned char heads;
     unsigned char sectors;
   } geometry;
-  unsigned long blk_size;	     // Block size of device
+  unsigned long blk_size;            // Block size of device
   unsigned char physical_block_exp;  // Exponent for physical block per logical block
   unsigned char alignment_offset;    // Alignment offset in logical blocks
   unsigned short min_io_size;        // Minimum I/O size without performance penalty in logical blocks

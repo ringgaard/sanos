@@ -525,7 +525,7 @@ struct tulip_private
   int chip_id, revision;
   int flags;
   int iobase;                         // Configured I/O base
-  int irq;		              // Configured IRQ
+  int irq;                            // Configured IRQ
   struct timer timer;                 // Media selection timer
   struct interrupt intr;              // Interrupt object for driver
   struct dpc dpc;                     // DPC for driver
@@ -607,7 +607,7 @@ static void start_link(struct dev *dev)
     {
       for (i = 0; i < tp->mtable->leafcount; i++)
         if (tp->mtable->mleaf[i].media == 11) 
-	{
+        {
           tp->cur_index = i;
           tp->saved_if_port = tp->if_port;
           select_media(dev, 2);
@@ -640,14 +640,14 @@ static void start_link(struct dev *dev)
         tp->phys[phy_idx++] = phy;
         kprintf(KERN_INFO "%s:  MII transceiver #%d config %4.4x status %4.4x advertising %4.4x.\n", dev->name, phy, mii_reg0, mii_status, mii_advert);
 
-	// Fixup for DLink with miswired PHY
+        // Fixup for DLink with miswired PHY
         if (mii_advert != to_advert) 
-	{
+        {
           kprintf(KERN_DEBUG "%s:  Advertising %4.4x on PHY %d, previously advertising %4.4x.\n", dev->name, to_advert, phy, mii_advert);
           mdio_write(dev, phy, 4, to_advert);
         }
 
-	// Enable autonegotiation: some boards default to off
+        // Enable autonegotiation: some boards default to off
         mdio_write(dev, phy, 0, (mii_reg0 & ~0x3000) | (tp->full_duplex ? 0x0100 : 0x0000) | ((media_cap[tp->default_port] & MediaIs100) ? 0x2000 : 0x1000));
       }
     }
@@ -687,24 +687,24 @@ static void start_link(struct dev *dev)
     case PNIC2:
       if (tp->mii_cnt || media_cap[tp->if_port] & MediaIsMII) 
       {
-	writel(0x82020000, ioaddr + CSR6);
-	writel(0x0000, ioaddr + CSR13);
-	writel(0x0000, ioaddr + CSR14);
-	writel(0x820E0000, ioaddr + CSR6);
+        writel(0x82020000, ioaddr + CSR6);
+        writel(0x0000, ioaddr + CSR13);
+        writel(0x0000, ioaddr + CSR14);
+        writel(0x820E0000, ioaddr + CSR6);
       } 
       else
-	nway_start(dev);
+        nway_start(dev);
       break;
 
     case LC82C168:
       if (!tp->mii_cnt) 
       {
-	tp->nway = 1;
-	tp->nwayset = 0;
-	writel(0x00420000, ioaddr + CSR6);
-	writel(0x30, ioaddr + CSR12);
-	writel(0x0001F078, ioaddr + 0xB8);
-	writel(0x0201F078, ioaddr + 0xB8); // Turn on autonegotiation
+        tp->nway = 1;
+        tp->nwayset = 0;
+        writel(0x00420000, ioaddr + CSR6);
+        writel(0x30, ioaddr + CSR12);
+        writel(0x0001F078, ioaddr + 0xB8);
+        writel(0x0201F078, ioaddr + 0xB8); // Turn on autonegotiation
       }
       break;
 
@@ -923,7 +923,7 @@ subsequent_board:
 
       if ((p[0] & 0x80) == 0) 
       { 
-	// 21140 Compact block
+        // 21140 Compact block
         leaf->type = 0;
         leaf->media = p[0] & 0x3f;
         leaf->leafdata = p;
@@ -933,47 +933,47 @@ subsequent_board:
       else 
       {
         switch(leaf->type = p[1]) 
-	{
-	  case 5:
-	    mtable->has_reset = i + 1; // Assure non-zero
-	    // Fall through
+        {
+          case 5:
+            mtable->has_reset = i + 1; // Assure non-zero
+            // Fall through
 
-	  case 6:
-	    leaf->media = 31;
-	    break;
+          case 6:
+            leaf->media = 31;
+            break;
 
-	  case 1: 
-	  case 3:
-	    mtable->has_mii = 1;
-	    leaf->media = 11;
-	    break;
+          case 1: 
+          case 3:
+            mtable->has_mii = 1;
+            leaf->media = 11;
+            break;
 
-	  case 2:
-	    if ((p[2] & 0x3f) == 0) 
-	    {
-	      unsigned long base15 = (p[2] & 0x40) ? get_u16(p + 7) : 0x0008;
-	      unsigned short *p1 = (unsigned short *)(p + (p[2] & 0x40 ? 9 : 3));
-	      mtable->csr15dir = (p1[0] << 16) + base15;
-	      mtable->csr15val = (p1[1] << 16) + base15;
-	    }
-	    // Fall through
+          case 2:
+            if ((p[2] & 0x3f) == 0) 
+            {
+              unsigned long base15 = (p[2] & 0x40) ? get_u16(p + 7) : 0x0008;
+              unsigned short *p1 = (unsigned short *)(p + (p[2] & 0x40 ? 9 : 3));
+              mtable->csr15dir = (p1[0] << 16) + base15;
+              mtable->csr15val = (p1[1] << 16) + base15;
+            }
+            // Fall through
 
-	  case 0: 
-	  case 4:
-	    mtable->has_nonmii = 1;
-	    leaf->media = p[2] & MEDIA_MASK;
-	    switch (leaf->media) 
-	    {
-	      case 0: new_advertise |= 0x0020; break;
-	      case 4: new_advertise |= 0x0040; break;
-	      case 3: new_advertise |= 0x0080; break;
-	      case 5: new_advertise |= 0x0100; break;
-	      case 6: new_advertise |= 0x0200; break;
-	    }
-	    break;
+          case 0: 
+          case 4:
+            mtable->has_nonmii = 1;
+            leaf->media = p[2] & MEDIA_MASK;
+            switch (leaf->media) 
+            {
+              case 0: new_advertise |= 0x0020; break;
+              case 4: new_advertise |= 0x0040; break;
+              case 3: new_advertise |= 0x0080; break;
+              case 5: new_advertise |= 0x0100; break;
+              case 6: new_advertise |= 0x0200; break;
+            }
+            break;
 
-	  default:
-	    leaf->media = 19;
+          default:
+            leaf->media = 19;
         }
         leaf->leafdata = p + 2;
         p += (p[0] & 0x3f) + 1;
@@ -1233,119 +1233,119 @@ static void select_media(struct dev *dev, int startup)
     switch (mleaf->type) 
     {
       case 0: // 21140 non-MII xcvr
-	//kprintf(KERN_DEBUG "%s: Using a 21140 non-MII transceiver with control setting %2.2x.\n", dev->name, p[1]);
-	tp->if_port = p[0];
-	if (startup) writel(mtable->csr12dir | 0x100, ioaddr + CSR12);
-	writel(p[1], ioaddr + CSR12);
-	new_csr6 = 0x02000000 | ((p[2] & 0x71) << 18);
-	break;
+        //kprintf(KERN_DEBUG "%s: Using a 21140 non-MII transceiver with control setting %2.2x.\n", dev->name, p[1]);
+        tp->if_port = p[0];
+        if (startup) writel(mtable->csr12dir | 0x100, ioaddr + CSR12);
+        writel(p[1], ioaddr + CSR12);
+        new_csr6 = 0x02000000 | ((p[2] & 0x71) << 18);
+        break;
 
       case 2: 
       case 4: 
       {
-	unsigned short setup[5];
-	unsigned long csr13val, csr14val, csr15dir, csr15val;
-	for (i = 0; i < 5; i++) setup[i] = get_u16(&p[i * 2 + 1]);
+        unsigned short setup[5];
+        unsigned long csr13val, csr14val, csr15dir, csr15val;
+        for (i = 0; i < 5; i++) setup[i] = get_u16(&p[i * 2 + 1]);
 
-	tp->if_port = p[0] & MEDIA_MASK;
-	if (media_cap[tp->if_port] & MediaAlwaysFD) tp->full_duplex = 1;
+        tp->if_port = p[0] & MEDIA_MASK;
+        if (media_cap[tp->if_port] & MediaAlwaysFD) tp->full_duplex = 1;
 
-	if (startup && mtable->has_reset) 
-	{
-	  struct medialeaf *rleaf = &mtable->mleaf[mtable->has_reset-1];
-	  unsigned char *rst = rleaf->leafdata;
+        if (startup && mtable->has_reset) 
+        {
+          struct medialeaf *rleaf = &mtable->mleaf[mtable->has_reset-1];
+          unsigned char *rst = rleaf->leafdata;
           kprintf(KERN_DEBUG "%s: Resetting the transceiver.\n", dev->name);
-	  for (i = 0; i < rst[0]; i++) writel(get_u16(rst + 1 + (i<<1)) << 16, ioaddr + CSR15);
-	}
+          for (i = 0; i < rst[0]; i++) writel(get_u16(rst + 1 + (i<<1)) << 16, ioaddr + CSR15);
+        }
 
         kprintf(KERN_DEBUG "%s: 21143 non-MII %s transceiver control %4.4x/%4.4x.\n", dev->name, medianame[tp->if_port], setup[0], setup[1]);
-	if (p[0] & 0x40) 
-	{  
-	  // SIA (CSR13-15) setup values are provided
-	  csr13val = setup[0];
-	  csr14val = setup[1];
-	  csr15dir = (setup[3]<<16) | setup[2];
-	  csr15val = (setup[4]<<16) | setup[2];
-	  writel(0, ioaddr + CSR13);
-	  writel(csr14val, ioaddr + CSR14);
-	  writel(csr15dir, ioaddr + CSR15); // Direction
-	  writel(csr15val, ioaddr + CSR15); // Data
-	  writel(csr13val, ioaddr + CSR13);
-	} 
-	else 
-	{
-	  csr13val = 1;
-	  csr14val = 0x0003FFFF;
-	  csr15dir = (setup[0]<<16) | 0x0008;
-	  csr15val = (setup[1]<<16) | 0x0008;
-	  if (tp->if_port <= 4) csr14val = t21142_csr14[tp->if_port];
-	  if (startup) 
-	  {
-	    writel(0, ioaddr + CSR13);
-	    writel(csr14val, ioaddr + CSR14);
-	  }
-	  writel(csr15dir, ioaddr + CSR15); // Direction
-	  writel(csr15val, ioaddr + CSR15); // Data
-	  if (startup) writel(csr13val, ioaddr + CSR13);
-	}
+        if (p[0] & 0x40) 
+        {  
+          // SIA (CSR13-15) setup values are provided
+          csr13val = setup[0];
+          csr14val = setup[1];
+          csr15dir = (setup[3]<<16) | setup[2];
+          csr15val = (setup[4]<<16) | setup[2];
+          writel(0, ioaddr + CSR13);
+          writel(csr14val, ioaddr + CSR14);
+          writel(csr15dir, ioaddr + CSR15); // Direction
+          writel(csr15val, ioaddr + CSR15); // Data
+          writel(csr13val, ioaddr + CSR13);
+        } 
+        else 
+        {
+          csr13val = 1;
+          csr14val = 0x0003FFFF;
+          csr15dir = (setup[0]<<16) | 0x0008;
+          csr15val = (setup[1]<<16) | 0x0008;
+          if (tp->if_port <= 4) csr14val = t21142_csr14[tp->if_port];
+          if (startup) 
+          {
+            writel(0, ioaddr + CSR13);
+            writel(csr14val, ioaddr + CSR14);
+          }
+          writel(csr15dir, ioaddr + CSR15); // Direction
+          writel(csr15val, ioaddr + CSR15); // Data
+          if (startup) writel(csr13val, ioaddr + CSR13);
+        }
         kprintf(KERN_DEBUG "%s:  Setting CSR15 to %8.8x/%8.8x.\n", dev->name, csr15dir, csr15val);
-	if (mleaf->type == 4)
-	  new_csr6 = 0x820A0000 | ((setup[2] & 0x71) << 18);
-	else
-	  new_csr6 = 0x82420000;
-	break;
+        if (mleaf->type == 4)
+          new_csr6 = 0x820A0000 | ((setup[2] & 0x71) << 18);
+        else
+          new_csr6 = 0x82420000;
+        break;
       }
 
       case 1: 
       case 3: 
       {
-	int phy_num = p[0];
-	int init_length = p[1];
-	unsigned short *misc_info;
+        int phy_num = p[0];
+        int init_length = p[1];
+        unsigned short *misc_info;
 
-	tp->if_port = 11;
-	new_csr6 = 0x020E0000;
-	if (mleaf->type == 3) 
-	{ 
-	  // 21142
-	  unsigned short *init_sequence = (unsigned short *)(p + 2);
-	  unsigned short *reset_sequence = &((unsigned short *)(p + 3))[init_length];
-	  int reset_length = p[2 + init_length * 2];
-	  misc_info = reset_sequence + reset_length;
-	  if (startup)
-	  {
-	    for (i = 0; i < reset_length; i++)
-	      writel(get_u16(&reset_sequence[i]) << 16, ioaddr + CSR15);
-	  }
-	  for (i = 0; i < init_length; i++)
-	    writel(get_u16(&init_sequence[i]) << 16, ioaddr + CSR15);
-	} 
-	else 
-	{
-	  unsigned char *init_sequence = p + 2;
-	  unsigned char *reset_sequence = p + 3 + init_length;
-	  int reset_length = p[2 + init_length];
-	  misc_info = (unsigned short *)(reset_sequence + reset_length);
-	  if (startup) 
-	  {
-	    writel(mtable->csr12dir | 0x100, ioaddr + CSR12);
-	    for (i = 0; i < reset_length; i++) writel(reset_sequence[i], ioaddr + CSR12);
-	  }
-	  for (i = 0; i < init_length; i++) writel(init_sequence[i], ioaddr + CSR12);
-	}
-	tp->advertising[phy_num] = get_u16(&misc_info[1]) | 1;
-	if (startup < 2) 
-	{
-	  if (tp->mii_advertise == 0) tp->mii_advertise = tp->advertising[phy_num];
+        tp->if_port = 11;
+        new_csr6 = 0x020E0000;
+        if (mleaf->type == 3) 
+        { 
+          // 21142
+          unsigned short *init_sequence = (unsigned short *)(p + 2);
+          unsigned short *reset_sequence = &((unsigned short *)(p + 3))[init_length];
+          int reset_length = p[2 + init_length * 2];
+          misc_info = reset_sequence + reset_length;
+          if (startup)
+          {
+            for (i = 0; i < reset_length; i++)
+              writel(get_u16(&reset_sequence[i]) << 16, ioaddr + CSR15);
+          }
+          for (i = 0; i < init_length; i++)
+            writel(get_u16(&init_sequence[i]) << 16, ioaddr + CSR15);
+        } 
+        else 
+        {
+          unsigned char *init_sequence = p + 2;
+          unsigned char *reset_sequence = p + 3 + init_length;
+          int reset_length = p[2 + init_length];
+          misc_info = (unsigned short *)(reset_sequence + reset_length);
+          if (startup) 
+          {
+            writel(mtable->csr12dir | 0x100, ioaddr + CSR12);
+            for (i = 0; i < reset_length; i++) writel(reset_sequence[i], ioaddr + CSR12);
+          }
+          for (i = 0; i < init_length; i++) writel(init_sequence[i], ioaddr + CSR12);
+        }
+        tp->advertising[phy_num] = get_u16(&misc_info[1]) | 1;
+        if (startup < 2) 
+        {
+          if (tp->mii_advertise == 0) tp->mii_advertise = tp->advertising[phy_num];
           kprintf(KERN_DEBUG "%s:  Advertising %4.4x on MII %d.\n", dev->name, tp->mii_advertise, tp->phys[phy_num]);
-	  mdio_write(dev, tp->phys[phy_num], 4, tp->mii_advertise);
-	}
-	break;
+          mdio_write(dev, tp->phys[phy_num], 4, tp->mii_advertise);
+        }
+        break;
       }
 
       default:
-	kprintf(KERN_DEBUG "%s:  Invalid media table selection %d.\n", dev->name, mleaf->type);
-	new_csr6 = 0x020E0000;
+        kprintf(KERN_DEBUG "%s:  Invalid media table selection %d.\n", dev->name, mleaf->type);
+        new_csr6 = 0x020E0000;
     }
 
     //kprintf(KERN_DEBUG "%s: Using media type %s, CSR12 is %2.2x.\n", dev->name, medianame[tp->if_port], readl(ioaddr + CSR12) & 0xff);
@@ -1639,20 +1639,20 @@ static void tulip_timer(void *data)
   int next_tick = 2 * HZ;
 
   //kprintf(KERN_DEBUG "%s: Media selection tick, %s, status %8.8x mode %8.8x SIA %8.8x %8.8x %8.8x %8.8x.\n",
-  //	 dev->name, medianame[tp->if_port], readl(ioaddr + CSR5),
-  //	 readl(ioaddr + CSR6), csr12, readl(ioaddr + CSR13),
-  //	 readl(ioaddr + CSR14), readl(ioaddr + CSR15));
+  //     dev->name, medianame[tp->if_port], readl(ioaddr + CSR5),
+  //     readl(ioaddr + CSR6), csr12, readl(ioaddr + CSR13),
+  //     readl(ioaddr + CSR14), readl(ioaddr + CSR15));
 
   switch (tp->chip_id) 
   {
     case DC21040:
       if (!tp->medialock && (csr12 & 0x0002)) 
       { 
-	// Network error
+        // Network error
         kprintf(KERN_INFO "%s: No link beat found.\n", dev->name);
-	tp->if_port = (tp->if_port == 2 ? 0 : 2);
-	select_media(dev, 0);
-	tp->trans_start = ticks;
+        tp->if_port = (tp->if_port == 2 ? 0 : 2);
+        select_media(dev, 0);
+        tp->trans_start = ticks;
       }
       break;
 
@@ -1661,52 +1661,52 @@ static void tulip_timer(void *data)
       if (tp->medialock) break;
       switch (tp->if_port) 
       {
-	case 0: 
-	case 3: 
-	case 4:
-	  if (csr12 & 0x0004) 
-	  { 
-	    // LnkFail. 10baseT is dead.  Check for activity on alternate port.
-	    tp->mediasense = 1;
-	    if (csr12 & 0x0200)
-	      tp->if_port = 2;
-	    else
-	      tp->if_port = 1;
+        case 0: 
+        case 3: 
+        case 4:
+          if (csr12 & 0x0004) 
+          { 
+            // LnkFail. 10baseT is dead.  Check for activity on alternate port.
+            tp->mediasense = 1;
+            if (csr12 & 0x0200)
+              tp->if_port = 2;
+            else
+              tp->if_port = 1;
 
             kprintf(KERN_INFO "%s: No 21041 10baseT link beat, Media switched to %s.\n", dev->name, medianame[tp->if_port]);
-	    writel(0, ioaddr + CSR13); // Reset
-	    writel(t21041_csr14[tp->if_port], ioaddr + CSR14);
-	    writel(t21041_csr15[tp->if_port], ioaddr + CSR15);
-	    writel(t21041_csr13[tp->if_port], ioaddr + CSR13);
-	    next_tick = 10 * HZ;      // 10 sec
-	  } 
-	  else
-	    next_tick = 30 * HZ;
-	  break;
+            writel(0, ioaddr + CSR13); // Reset
+            writel(t21041_csr14[tp->if_port], ioaddr + CSR14);
+            writel(t21041_csr15[tp->if_port], ioaddr + CSR15);
+            writel(t21041_csr13[tp->if_port], ioaddr + CSR13);
+            next_tick = 10 * HZ;      // 10 sec
+          } 
+          else
+            next_tick = 30 * HZ;
+          break;
 
-	case 1: // 10base2
-	case 2: // AUI
-	  if (csr12 & 0x0100) 
-	  {
-	    next_tick = (30 * HZ); // 30 sec
-	    tp->mediasense = 0;
-	  } 
-	  else if ((csr12 & 0x0004) == 0) 
-	  {
+        case 1: // 10base2
+        case 2: // AUI
+          if (csr12 & 0x0100) 
+          {
+            next_tick = (30 * HZ); // 30 sec
+            tp->mediasense = 0;
+          } 
+          else if ((csr12 & 0x0004) == 0) 
+          {
             kprintf(KERN_INFO "%s: 21041 media switched to 10baseT.\n", dev->name);
-	    tp->if_port = 0;
-	    select_media(dev, 0);
-	    next_tick = (24 * HZ) / 10;       // 2.4 sec
-	  } 
-	  else if (tp->mediasense || (csr12 & 0x0002)) 
-	  {
-	    tp->if_port = 3 - tp->if_port; // Swap ports
-	    select_media(dev, 0);
-	    next_tick = 20 * HZ;
-	  } 
-	  else 
-	    next_tick = 20 * HZ;
-	  break;
+            tp->if_port = 0;
+            select_media(dev, 0);
+            next_tick = (24 * HZ) / 10;       // 2.4 sec
+          } 
+          else if (tp->mediasense || (csr12 & 0x0002)) 
+          {
+            tp->if_port = 3 - tp->if_port; // Swap ports
+            select_media(dev, 0);
+            next_tick = 20 * HZ;
+          } 
+          else 
+            next_tick = 20 * HZ;
+          break;
       }
       break;
 
@@ -1720,79 +1720,79 @@ static void tulip_timer(void *data)
       unsigned char *p;
       if (tp->mtable == NULL) 
       { 
-	// No EEPROM info, use generic code
-	// Not much that can be done. Assume this a generic MII or SYM transceiver
+        // No EEPROM info, use generic code
+        // Not much that can be done. Assume this a generic MII or SYM transceiver
 
-	next_tick = 60 * HZ;
+        next_tick = 60 * HZ;
         kprintf(KERN_DEBUG "%s: network media monitor CSR6 %8.8x CSR12 0x%2.2x.\n", dev->name, readl(ioaddr + CSR6), csr12 & 0xff);
-	break;
+        break;
       }
       mleaf = &tp->mtable->mleaf[tp->cur_index];
       p = mleaf->leafdata;
       switch (mleaf->type) 
       {
-	case 0: case 4:
-	{
-	  // Type 0 serial or 4 SYM transceiver.  Check the link beat bit.
-	  int offset = mleaf->type == 4 ? 5 : 2;
-	  char bitnum = p[offset];
-	  if (p[offset + 1] & 0x80) 
-	  {
+        case 0: case 4:
+        {
+          // Type 0 serial or 4 SYM transceiver.  Check the link beat bit.
+          int offset = mleaf->type == 4 ? 5 : 2;
+          char bitnum = p[offset];
+          if (p[offset + 1] & 0x80) 
+          {
             kprintf(KERN_DEBUG "%s: Transceiver monitor tick CSR12=%#2.2x, no media sense.\n", dev->name, csr12);
-	    if (mleaf->type == 4) 
-	    {
-	      if (mleaf->media == 3 && (csr12 & 0x02)) goto select_next_media;
-	    }
-	    break;
-	  }
+            if (mleaf->type == 4) 
+            {
+              if (mleaf->media == 3 && (csr12 & 0x02)) goto select_next_media;
+            }
+            break;
+          }
 
-	  //kprintf(KERN_DEBUG "%s: Transceiver monitor tick: CSR12=%#2.2x bit %d is %d, expecting %d.\n",
-	  //	 dev->name, csr12, (bitnum >> 1) & 7,
-	  //	 (csr12 & (1 << ((bitnum >> 1) & 7))) != 0,
-	  //	 (bitnum >= 0));
+          //kprintf(KERN_DEBUG "%s: Transceiver monitor tick: CSR12=%#2.2x bit %d is %d, expecting %d.\n",
+          //     dev->name, csr12, (bitnum >> 1) & 7,
+          //     (csr12 & (1 << ((bitnum >> 1) & 7))) != 0,
+          //     (bitnum >= 0));
 
-	  // Check that the specified bit has the proper value.
-	  if ((bitnum < 0) != ((csr12 & (1 << ((bitnum >> 1) & 7))) != 0)) 
-	  {
+          // Check that the specified bit has the proper value.
+          if ((bitnum < 0) != ((csr12 & (1 << ((bitnum >> 1) & 7))) != 0)) 
+          {
             //kprintf(KERN_DEBUG "%s: Link beat detected for %s.\n", dev->name, medianame[mleaf->media & MEDIA_MASK]);
-	    if ((p[2] & 0x61) == 0x01) goto actually_mii; // Bogus Znyx board
-	    break;
-	  }
+            if ((p[2] & 0x61) == 0x01) goto actually_mii; // Bogus Znyx board
+            break;
+          }
 
-	  if (tp->medialock) break;
+          if (tp->medialock) break;
 
-	select_next_media:
-	  if (--tp->cur_index < 0) 
-	  {
-	    // We start again, but should instead look for default
-	    tp->cur_index = tp->mtable->leafcount - 1;
-	  }
+        select_next_media:
+          if (--tp->cur_index < 0) 
+          {
+            // We start again, but should instead look for default
+            tp->cur_index = tp->mtable->leafcount - 1;
+          }
 
-	  tp->if_port = tp->mtable->mleaf[tp->cur_index].media;
-	  if (media_cap[tp->if_port] & MediaIsFD) goto select_next_media; // Skip FD entries
+          tp->if_port = tp->mtable->mleaf[tp->cur_index].media;
+          if (media_cap[tp->if_port] & MediaIsFD) goto select_next_media; // Skip FD entries
           kprintf(KERN_DEBUG "%s: No link beat on media %s, trying transceiver type %s.\n",
-		 dev->name, medianame[mleaf->media & MEDIA_MASK],
-		 medianame[tp->mtable->mleaf[tp->cur_index].media]);
+                 dev->name, medianame[mleaf->media & MEDIA_MASK],
+                 medianame[tp->mtable->mleaf[tp->cur_index].media]);
 
-	  select_media(dev, 0);
+          select_media(dev, 0);
 
-	  // Restart the transmit process
-	  writel(tp->csr6 | RxOn, ioaddr + CSR6);
-	  writel(tp->csr6 | TxOn | RxOn, ioaddr + CSR6);
-	  next_tick = (24 * HZ) / 10;
-	  break;
-	}
+          // Restart the transmit process
+          writel(tp->csr6 | RxOn, ioaddr + CSR6);
+          writel(tp->csr6 | TxOn | RxOn, ioaddr + CSR6);
+          next_tick = (24 * HZ) / 10;
+          break;
+        }
 
-	case 1:  
-	case 3: // 21140, 21142 MII
-	actually_mii:
-	  check_duplex(dev);
-	  next_tick = 60 * HZ;
-	  break;
+        case 1:  
+        case 3: // 21140, 21142 MII
+        actually_mii:
+          check_duplex(dev);
+          next_tick = 60 * HZ;
+          break;
 
-	case 2: // 21142 serial block has no link beat. */
-	default:
-	  break;
+        case 2: // 21142 serial block has no link beat. */
+        default:
+          break;
       }
     }
     break;
@@ -1977,7 +1977,7 @@ static void nway_lnk_change(struct dev *dev, int csr5)
       for (i = 0; i < tp->mtable->leafcount; i++)
       {
         if (tp->mtable->mleaf[i].media == tp->if_port)
-	{
+        {
           tp->cur_index = i;
           select_media(dev, 0);
           setup_done = 1;
@@ -2245,84 +2245,84 @@ static void tulip_tx_timeout(struct dev *dev)
     switch (tp->chip_id) 
     {
       case DC21040:
-	if (!tp->medialock && readl(ioaddr + CSR12) & 0x0002) 
-	{
-	  tp->if_port = (tp->if_port == 2 ? 0 : 2);
-	  kprintf(KERN_INFO "%s: transmit timed out, switching to %s.\n", dev->name, medianame[tp->if_port]);
-	  select_media(dev, 0);
-	}
-	tp->trans_start = ticks;
-	return; // Note: not break!
+        if (!tp->medialock && readl(ioaddr + CSR12) & 0x0002) 
+        {
+          tp->if_port = (tp->if_port == 2 ? 0 : 2);
+          kprintf(KERN_INFO "%s: transmit timed out, switching to %s.\n", dev->name, medianame[tp->if_port]);
+          select_media(dev, 0);
+        }
+        tp->trans_start = ticks;
+        return; // Note: not break!
 
       case DC21041: 
       {
-	int csr12 = readl(ioaddr + CSR12);
+        int csr12 = readl(ioaddr + CSR12);
 
-	kprintf(KERN_WARNING "%s: 21041 transmit timed out, status %8.8x, CSR12 %8.8x, CSR13 %8.8x, CSR14 %8.8x, resetting...\n",
-	       dev->name, readl(ioaddr + CSR5), csr12,
-	       readl(ioaddr + CSR13), readl(ioaddr + CSR14));
+        kprintf(KERN_WARNING "%s: 21041 transmit timed out, status %8.8x, CSR12 %8.8x, CSR13 %8.8x, CSR14 %8.8x, resetting...\n",
+               dev->name, readl(ioaddr + CSR5), csr12,
+               readl(ioaddr + CSR13), readl(ioaddr + CSR14));
 
-	tp->mediasense = 1;
-	if (! tp->medialock) 
-	{
-	  if (tp->if_port == 1 || tp->if_port == 2)
-	    tp->if_port = (csr12 & 0x0004) ? 2 - tp->if_port : 0;
-	  else
-	    tp->if_port = 1;
+        tp->mediasense = 1;
+        if (! tp->medialock) 
+        {
+          if (tp->if_port == 1 || tp->if_port == 2)
+            tp->if_port = (csr12 & 0x0004) ? 2 - tp->if_port : 0;
+          else
+            tp->if_port = 1;
 
-	  select_media(dev, 0);
-	}
-	break;
+          select_media(dev, 0);
+        }
+        break;
       }
 
       case DC21142:
-	if (tp->nwayset) 
-	{
-	  kprintf(KERN_WARNING "%s: Transmit timed out, status %8.8x, SIA %8.8x %8.8x %8.8x %8.8x, restarting NWay .\n",
-	      dev->name, (int)readl(ioaddr + CSR5),
-	      readl(ioaddr + CSR12), readl(ioaddr + CSR13),
-	      readl(ioaddr + CSR14), readl(ioaddr + CSR15));
-	  nway_start(dev);
-	  break;
-	}
-	// Fall through
+        if (tp->nwayset) 
+        {
+          kprintf(KERN_WARNING "%s: Transmit timed out, status %8.8x, SIA %8.8x %8.8x %8.8x %8.8x, restarting NWay .\n",
+              dev->name, (int)readl(ioaddr + CSR5),
+              readl(ioaddr + CSR12), readl(ioaddr + CSR13),
+              readl(ioaddr + CSR14), readl(ioaddr + CSR15));
+          nway_start(dev);
+          break;
+        }
+        // Fall through
 
       case DC21140: 
       case MX98713: 
       case COMPEX9881:
-	kprintf(KERN_WARNING "%s: %s transmit timed out, status %8.8x, SIA %8.8x %8.8x %8.8x %8.8x, resetting...\n",
-	       dev->name, tulip_tbl[tp->chip_id].chip_name,
-	       readl(ioaddr + CSR5), readl(ioaddr + CSR12),
-	       readl(ioaddr + CSR13), readl(ioaddr + CSR14),
-	       readl(ioaddr + CSR15));
+        kprintf(KERN_WARNING "%s: %s transmit timed out, status %8.8x, SIA %8.8x %8.8x %8.8x %8.8x, resetting...\n",
+               dev->name, tulip_tbl[tp->chip_id].chip_name,
+               readl(ioaddr + CSR5), readl(ioaddr + CSR12),
+               readl(ioaddr + CSR13), readl(ioaddr + CSR14),
+               readl(ioaddr + CSR15));
 
-	if (!tp->medialock && tp->mtable) 
-	{
-	  do
-	  {
-	    --tp->cur_index;
-	  } while (tp->cur_index >= 0 && (media_cap[tp->mtable->mleaf[tp->cur_index].media] & MediaIsFD));
+        if (!tp->medialock && tp->mtable) 
+        {
+          do
+          {
+            --tp->cur_index;
+          } while (tp->cur_index >= 0 && (media_cap[tp->mtable->mleaf[tp->cur_index].media] & MediaIsFD));
 
-	  if (tp->cur_index < 0) 
-	  {
-	    // We start again, but should instead look for default
-	    tp->cur_index = tp->mtable->leafcount - 1;
-	  }
+          if (tp->cur_index < 0) 
+          {
+            // We start again, but should instead look for default
+            tp->cur_index = tp->mtable->leafcount - 1;
+          }
 
-	  select_media(dev, 0);
-	  kprintf(KERN_WARNING "%s: transmit timed out, switching to %s media.\n", dev->name, medianame[tp->if_port]);
-	}
-	break;
+          select_media(dev, 0);
+          kprintf(KERN_WARNING "%s: transmit timed out, switching to %s media.\n", dev->name, medianame[tp->if_port]);
+        }
+        break;
 
       case PNIC2:
-	kprintf(KERN_WARNING "%s: PNIC2 transmit timed out, status %8.8x, CSR6/7 %8.8x / %8.8x CSR12 %8.8x, resetting...\n",
-	       dev->name, readl(ioaddr + CSR5), readl(ioaddr + CSR6),
-	       readl(ioaddr + CSR7), readl(ioaddr + CSR12));
-	break;
+        kprintf(KERN_WARNING "%s: PNIC2 transmit timed out, status %8.8x, CSR6/7 %8.8x / %8.8x CSR12 %8.8x, resetting...\n",
+               dev->name, readl(ioaddr + CSR5), readl(ioaddr + CSR6),
+               readl(ioaddr + CSR7), readl(ioaddr + CSR12));
+        break;
 
       default:
-	kprintf(KERN_WARNING "%s: Transmit timed out, status %8.8x, CSR12 %8.8x, resetting...\n",
-	       dev->name, readl(ioaddr + CSR5), readl(ioaddr + CSR12));
+        kprintf(KERN_WARNING "%s: Transmit timed out, status %8.8x, CSR12 %8.8x, resetting...\n",
+               dev->name, readl(ioaddr + CSR5), readl(ioaddr + CSR12));
     }
   }
 
@@ -2485,7 +2485,7 @@ static int tulip_rx(struct dev *dev)
       {
         // Ingore earlier buffers
         if ((status & 0xffff) != 0x7fff) 
-	{
+        {
           kprintf(KERN_WARNING "%s: Oversized Ethernet frame spanned multiple buffers, status %8.8x!\n", dev->name, status);
           tp->stats.rx_length_errors++;
         }
@@ -2516,7 +2516,7 @@ static int tulip_rx(struct dev *dev)
       }
       else 
       {  
-	// Pass up the packet buffer already on the Rx ring
+        // Pass up the packet buffer already on the Rx ring
         p = tp->rx_pbuf[entry];
         tp->rx_pbuf[entry] = NULL;
       }
@@ -2862,11 +2862,11 @@ static void tulip_dpc(void *arg)
 
         if (status < 0) break;      // It still has not been Txed
         
-	// Check for Rx filter setup frames
+        // Check for Rx filter setup frames
         if (tp->tx_pbuf[entry] == NULL) continue;
 
         if (status & 0x8000) 
-	{
+        {
           // There was an major error, log it
           kprintf(KERN_DEBUG "%s: Transmit error, Tx status %8.8x.\n", dev->name, status);
           tp->stats.tx_errors++;
@@ -2877,8 +2877,8 @@ static void tulip_dpc(void *arg)
           if ((status & 0x0080) && tp->full_duplex == 0) tp->stats.tx_heartbeat_errors++;
           if (status & 0x0100) tp->stats.collisions++;
         } 
-	else 
-	{
+        else 
+        {
           //kprintf(KERN_DEBUG "%s: Transmit complete, status %8.8x.\n", dev->name, status);
           //if (status & 0x0001) tp->stats.tx_deferred++;
           tp->stats.tx_bytes += tp->tx_pbuf[entry]->len;
@@ -2950,7 +2950,7 @@ static void tulip_dpc(void *arg)
         // Missed a Rx frame or mode change
         tp->stats.rx_missed_errors += readl(ioaddr + CSR8) & 0xffff;
         if (tp->flags & COMET_MAC_ADDR) 
-	{
+        {
           writel(tp->mc_filter[0], ioaddr + 0xAC);
           writel(tp->mc_filter[1], ioaddr + 0xB0);
         }

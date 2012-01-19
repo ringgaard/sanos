@@ -61,30 +61,30 @@ typedef long double XFtype;
 
 // The following deals with IEEE single-precision numbers
 
-#define EXCESS		126
-#define SIGNBIT		0x80000000
-#define HIDDEN		(1 << 23)
-#define SIGN(fp)	((fp) & SIGNBIT)
-#define EXP(fp)		(((fp) >> 23) & 0xFF)
-#define MANT(fp)	(((fp) & 0x7FFFFF) | HIDDEN)
-#define PACK(s,e,m)	((s) | ((e) << 23) | (m))
+#define EXCESS          126
+#define SIGNBIT         0x80000000
+#define HIDDEN          (1 << 23)
+#define SIGN(fp)        ((fp) & SIGNBIT)
+#define EXP(fp)         (((fp) >> 23) & 0xFF)
+#define MANT(fp)        (((fp) & 0x7FFFFF) | HIDDEN)
+#define PACK(s,e,m)     ((s) | ((e) << 23) | (m))
 
 // The following deal with IEEE double-precision numbers
 
-#define EXCESSD		1022
-#define HIDDEND		(1 << 20)
-#define EXPD(fp)	(((fp.l.upper) >> 20) & 0x7FF)
-#define SIGND(fp)	((fp.l.upper) & SIGNBIT)
-#define MANTD(fp)	(((((fp.l.upper) & 0xFFFFF) | HIDDEND) << 10) | (fp.l.lower >> 22))
-#define HIDDEND_LL	((long long)1 << 52)
-#define MANTD_LL(fp)	((fp.ll & (HIDDEND_LL-1)) | HIDDEND_LL)
-#define PACKD_LL(s,e,m)	(((long long)((s)+((e)<<20))<<32)|(m))
+#define EXCESSD         1022
+#define HIDDEND         (1 << 20)
+#define EXPD(fp)        (((fp.l.upper) >> 20) & 0x7FF)
+#define SIGND(fp)       ((fp.l.upper) & SIGNBIT)
+#define MANTD(fp)       (((((fp.l.upper) & 0xFFFFF) | HIDDEND) << 10) | (fp.l.lower >> 22))
+#define HIDDEND_LL      ((long long)1 << 52)
+#define MANTD_LL(fp)    ((fp.ll & (HIDDEND_LL-1)) | HIDDEND_LL)
+#define PACKD_LL(s,e,m) (((long long)((s)+((e)<<20))<<32)|(m))
 
 // The following deal with x86 long double-precision numbers
 
-#define EXCESSLD	16382
-#define EXPLD(fp)	(fp.l.upper & 0x7fff)
-#define SIGNLD(fp)	((fp.l.upper) & 0x8000)
+#define EXCESSLD        16382
+#define EXPLD(fp)       (fp.l.upper & 0x7fff)
+#define SIGNLD(fp)      ((fp.l.upper) & 0x8000)
 
 // Only for x86
 
@@ -118,35 +118,35 @@ union float_long
 #if defined(__i386__)
 
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
-  __asm__ ("subl %5,%1\n\tsbbl %3,%0"					\
-	   : "=r" ((USItype) (sh)),					\
-	     "=&r" ((USItype) (sl))					\
-	   : "0" ((USItype) (ah)),					\
-	     "g" ((USItype) (bh)),					\
-	     "1" ((USItype) (al)),					\
-	     "g" ((USItype) (bl)))
+  __asm__ ("subl %5,%1\n\tsbbl %3,%0"                                   \
+           : "=r" ((USItype) (sh)),                                     \
+             "=&r" ((USItype) (sl))                                     \
+           : "0" ((USItype) (ah)),                                      \
+             "g" ((USItype) (bh)),                                      \
+             "1" ((USItype) (al)),                                      \
+             "g" ((USItype) (bl)))
 
 #define umul_ppmm(w1, w0, u, v) \
-  __asm__ ("mull %3"							\
-	   : "=a" ((USItype) (w0)),					\
-	     "=d" ((USItype) (w1))					\
-	   : "%0" ((USItype) (u)),					\
-	     "rm" ((USItype) (v)))
+  __asm__ ("mull %3"                                                    \
+           : "=a" ((USItype) (w0)),                                     \
+             "=d" ((USItype) (w1))                                      \
+           : "%0" ((USItype) (u)),                                      \
+             "rm" ((USItype) (v)))
 
 #define udiv_qrnnd(q, r, n1, n0, dv) \
-  __asm__ ("divl %4"							\
-	   : "=a" ((USItype) (q)),					\
-	     "=d" ((USItype) (r))					\
-	   : "0" ((USItype) (n0)),					\
-	     "1" ((USItype) (n1)),					\
-	     "rm" ((USItype) (dv)))
+  __asm__ ("divl %4"                                                    \
+           : "=a" ((USItype) (q)),                                      \
+             "=d" ((USItype) (r))                                       \
+           : "0" ((USItype) (n0)),                                      \
+             "1" ((USItype) (n1)),                                      \
+             "rm" ((USItype) (dv)))
 
 #define count_leading_zeros(count, x) \
-  do {									\
-    USItype __cbtmp;							\
-    __asm__ ("bsrl %1,%0"						\
-	     : "=r" (__cbtmp) : "rm" ((USItype) (x)));			\
-    (count) = __cbtmp ^ 31;						\
+  do {                                                                  \
+    USItype __cbtmp;                                                    \
+    __asm__ ("bsrl %1,%0"                                               \
+             : "=r" (__cbtmp) : "rm" ((USItype) (x)));                  \
+    (count) = __cbtmp ^ 31;                                             \
   } while (0)
 
 #else
@@ -187,7 +187,7 @@ static UDWtype __udivmoddi4(UDWtype n, UDWtype d, UDWtype *rp)
     else
     {
       // qq = NN / 0d
-      if (d0 == 0) d0 = 1 / d0;	// Divide intentionally by zero
+      if (d0 == 0) d0 = 1 / d0; // Divide intentionally by zero
       udiv_qrnnd(q1, n1, 0, n1, d0);
       udiv_qrnnd(q0, n0, n1, n0, d0);
       // Remainder in n0.
@@ -207,61 +207,61 @@ static UDWtype __udivmoddi4(UDWtype n, UDWtype d, UDWtype *rp)
     {
       if (d0 > n1)
       {
-	// 0q = nn / 0D
-	count_leading_zeros(bm, d0);
-	if (bm != 0)
-	{
-	  // Normalize, i.e. make the most significant bit of the denominator set.
-	  d0 = d0 << bm;
-	  n1 = (n1 << bm) | (n0 >> (W_TYPE_SIZE - bm));
-	  n0 = n0 << bm;
-	}
+        // 0q = nn / 0D
+        count_leading_zeros(bm, d0);
+        if (bm != 0)
+        {
+          // Normalize, i.e. make the most significant bit of the denominator set.
+          d0 = d0 << bm;
+          n1 = (n1 << bm) | (n0 >> (W_TYPE_SIZE - bm));
+          n0 = n0 << bm;
+        }
 
-	udiv_qrnnd (q0, n0, n1, n0, d0);
-	q1 = 0;
-	// Remainder in n0 >> bm.
+        udiv_qrnnd (q0, n0, n1, n0, d0);
+        q1 = 0;
+        // Remainder in n0 >> bm.
       }
       else
       {
-	// qq = NN / 0d
-	if (d0 == 0) d0 = 1 / d0;	// Divide intentionally by zero.
-	count_leading_zeros(bm, d0);
-	if (bm == 0)
-	{
-	  // From (n1 >= d0) /\ (the most significant bit of d0 is set),
-	  // conclude (the most significant bit of n1 is set) /\ (the
-	  // leading quotient digit q1 = 1).
-	  //
-	  // This special case is necessary, not an optimization.
-	  // (Shifts counts of W_TYPE_SIZE are undefined.)  */
+        // qq = NN / 0d
+        if (d0 == 0) d0 = 1 / d0;       // Divide intentionally by zero.
+        count_leading_zeros(bm, d0);
+        if (bm == 0)
+        {
+          // From (n1 >= d0) /\ (the most significant bit of d0 is set),
+          // conclude (the most significant bit of n1 is set) /\ (the
+          // leading quotient digit q1 = 1).
+          //
+          // This special case is necessary, not an optimization.
+          // (Shifts counts of W_TYPE_SIZE are undefined.)  */
 
-	  n1 -= d0;
-	  q1 = 1;
-	}
-	else
-	{
-	  // Normalize
-	  b = W_TYPE_SIZE - bm;
+          n1 -= d0;
+          q1 = 1;
+        }
+        else
+        {
+          // Normalize
+          b = W_TYPE_SIZE - bm;
 
-	  d0 = d0 << bm;
-	  n2 = n1 >> b;
-	  n1 = (n1 << bm) | (n0 >> b);
-	  n0 = n0 << bm;
+          d0 = d0 << bm;
+          n2 = n1 >> b;
+          n1 = (n1 << bm) | (n0 >> b);
+          n0 = n0 << bm;
 
-	  udiv_qrnnd(q1, n1, n2, n1, d0);
-	}
+          udiv_qrnnd(q1, n1, n2, n1, d0);
+        }
 
-	// n1 != d0...
-	udiv_qrnnd(q0, n0, n1, n0, d0);
+        // n1 != d0...
+        udiv_qrnnd(q0, n0, n1, n0, d0);
 
-	// Remainder in n0 >> bm.
+        // Remainder in n0 >> bm.
       }
 
       if (rp != 0)
       {
-	rr.s.low = n0 >> bm;
-	rr.s.high = 0;
-	*rp = rr.ll;
+        rr.s.low = n0 >> bm;
+        rr.s.high = 0;
+        *rp = rr.ll;
       }
     }
 #endif // UDIV_NEEDS_NORMALIZATION
@@ -277,9 +277,9 @@ static UDWtype __udivmoddi4(UDWtype n, UDWtype d, UDWtype *rp)
       // Remainder in n1n0.
       if (rp != 0)
       {
-	rr.s.low = n0;
-	rr.s.high = n1;
-	*rp = rr.ll;
+        rr.s.low = n0;
+        rr.s.high = n1;
+        *rp = rr.ll;
       }
     }
     else
@@ -288,63 +288,63 @@ static UDWtype __udivmoddi4(UDWtype n, UDWtype d, UDWtype *rp)
       count_leading_zeros(bm, d1);
       if (bm == 0)
       {
-	// From (n1 >= d1) /\ (the most significant bit of d1 is set),
+        // From (n1 >= d1) /\ (the most significant bit of d1 is set),
         // conclude (the most significant bit of n1 is set) /\ (the
         // quotient digit q0 = 0 or 1).
         //
-	// This special case is necessary, not an optimization.
+        // This special case is necessary, not an optimization.
         //
-	// The condition on the next line takes advantage of that
-	// n1 >= d1 (true due to program flow).
+        // The condition on the next line takes advantage of that
+        // n1 >= d1 (true due to program flow).
 
-	if (n1 > d1 || n0 >= d0)
-	{
-	  q0 = 1;
-	  sub_ddmmss(n1, n0, n1, n0, d1, d0);
-	}
-	else
-	  q0 = 0;
+        if (n1 > d1 || n0 >= d0)
+        {
+          q0 = 1;
+          sub_ddmmss(n1, n0, n1, n0, d1, d0);
+        }
+        else
+          q0 = 0;
 
-	q1 = 0;
+        q1 = 0;
 
-	if (rp != 0)
-	{
-	  rr.s.low = n0;
-	  rr.s.high = n1;
-	  *rp = rr.ll;
-	}
+        if (rp != 0)
+        {
+          rr.s.low = n0;
+          rr.s.high = n1;
+          *rp = rr.ll;
+        }
       }
       else
       {
-	UWtype m1, m0;
-	// Normalize.
-	b = W_TYPE_SIZE - bm;
+        UWtype m1, m0;
+        // Normalize.
+        b = W_TYPE_SIZE - bm;
 
-	d1 = (d1 << bm) | (d0 >> b);
-	d0 = d0 << bm;
-	n2 = n1 >> b;
-	n1 = (n1 << bm) | (n0 >> b);
-	n0 = n0 << bm;
+        d1 = (d1 << bm) | (d0 >> b);
+        d0 = d0 << bm;
+        n2 = n1 >> b;
+        n1 = (n1 << bm) | (n0 >> b);
+        n0 = n0 << bm;
 
-	udiv_qrnnd(q0, n1, n2, n1, d1);
-	umul_ppmm(m1, m0, q0, d0);
+        udiv_qrnnd(q0, n1, n2, n1, d1);
+        umul_ppmm(m1, m0, q0, d0);
 
-	if (m1 > n1 || (m1 == n1 && m0 > n0))
-	{
-	  q0--;
-	  sub_ddmmss(m1, m0, m1, m0, d1, d0);
-	}
+        if (m1 > n1 || (m1 == n1 && m0 > n0))
+        {
+          q0--;
+          sub_ddmmss(m1, m0, m1, m0, d1, d0);
+        }
 
-	q1 = 0;
+        q1 = 0;
 
-	// Remainder in (n1n0 - m1m0) >> bm.
-	if (rp != 0)
-	{
-	  sub_ddmmss(n1, n0, n1, n0, m1, m0);
-	  rr.s.low = (n1 << b) | (n0 >> bm);
-	  rr.s.high = n1 >> bm;
-	  *rp = rr.ll;
-	}
+        // Remainder in (n1n0 - m1m0) >> bm.
+        if (rp != 0)
+        {
+          sub_ddmmss(n1, n0, n1, n0, m1, m0);
+          rr.s.low = (n1 << b) | (n0 >> bm);
+          rr.s.high = n1 >> bm;
+          *rp = rr.ll;
+        }
       }
     }
   }

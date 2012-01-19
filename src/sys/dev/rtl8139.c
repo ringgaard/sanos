@@ -234,8 +234,8 @@ struct nic
   dev_t devno;                          // Device number
   struct dev *dev;                      // Device block
 
-  unsigned short iobase;		// Configured I/O base
-  unsigned short irq;		        // Configured IRQ
+  unsigned short iobase;                // Configured I/O base
+  unsigned short irq;                   // Configured IRQ
 
   struct interrupt intr;                // Interrupt object for driver
   struct dpc dpc;                       // DPC for driver
@@ -841,7 +841,7 @@ static int rtl8139_rx(struct dev *dev)
       {
         kprintf("%s: Memory squeeze, deferring packet.\n", dev->name);
         
-	// We should check that some rx space is free.
+        // We should check that some rx space is free.
         // If not, free one and mark stats->rx_dropped
         tp->stats.rx_dropped++;
         break;
@@ -1037,24 +1037,24 @@ static void rtl8139_dpc(void *arg)
 
         // Note: TxCarrierLost is always asserted at 100mbps
         if (txstatus & (TxOutOfWindow | TxAborted))
-	{
+        {
           // There was an major error, log it
           kprintf("%s: Transmit error, Tx status %8.8x\n", dev->name, txstatus);
           tp->stats.tx_errors++;
           if (txstatus & TxAborted) 
-	  {
+          {
             tp->stats.tx_aborted_errors++;
             outpd(ioaddr + TxConfig, TX_DMA_BURST << 8);
           }
           if (txstatus & TxCarrierLost) tp->stats.tx_carrier_errors++;
           if (txstatus & TxOutOfWindow) tp->stats.tx_window_errors++;
         }
-	else 
-	{
+        else 
+        {
           //kprintf("%s: Transmit done, Tx status %8.8x\n", dev->name, txstatus);
 
           if (txstatus & TxUnderrun) 
-	  {
+          {
             // Add 64 to the Tx FIFO threshold
             if (tp->tx_flag <  0x00300000) tp->tx_flag += 0x00020000;
             tp->stats.tx_fifo_errors++;
@@ -1065,9 +1065,9 @@ static void rtl8139_dpc(void *arg)
         }
 
         // Free the original pbuf
-	pbuf_free(tp->tx_pbuf[entry]);
-	tp->tx_pbuf[entry] = NULL;
-	entries_freed++;
+        pbuf_free(tp->tx_pbuf[entry]);
+        tp->tx_pbuf[entry] = NULL;
+        entries_freed++;
         
         dirty_tx++;
       }
@@ -1126,7 +1126,7 @@ static void rtl8139_timer(void *arg)
       np->full_duplex = duplex;
       
       kprintf(KERN_INFO "%s: Using %s-duplex based on MII #%d link partner ability of %4.4x\n", 
-	dev->name, np->full_duplex ? "full" : "half", np->phys[0], mii_reg5);
+        dev->name, np->full_duplex ? "full" : "half", np->phys[0], mii_reg5);
 
       if (np->flags & HAS_MII_XCVR) 
       {
@@ -1152,80 +1152,80 @@ static void rtl8139_timer(void *arg)
     switch(np->twistie) 
     {
       case 1: 
-	if (inpw(ioaddr + CSCR) & CSCR_LinkOKBit) 
-	{
-	  // We have link beat, let us tune the twister
-	  outpw(ioaddr + CSCR, CSCR_LinkDownOffCmd);
-	  np->twistie = 2;
-	  next_tick = HZ / 10;
-	} 
-	else 
-	{
-	  // Just put in some reasonable defaults for when beat returns
-	  outpw(ioaddr + CSCR, CSCR_LinkDownCmd);
-	  outpd(ioaddr + FIFOTMS, 0x20);  // Turn on cable test mode
-	  outpd(ioaddr + PARA78, PARA78_default);
-	  outpd(ioaddr + PARA7c, PARA7c_default);
-	  np->twistie = 0;  // Bail from future actions
-	}
+        if (inpw(ioaddr + CSCR) & CSCR_LinkOKBit) 
+        {
+          // We have link beat, let us tune the twister
+          outpw(ioaddr + CSCR, CSCR_LinkDownOffCmd);
+          np->twistie = 2;
+          next_tick = HZ / 10;
+        } 
+        else 
+        {
+          // Just put in some reasonable defaults for when beat returns
+          outpw(ioaddr + CSCR, CSCR_LinkDownCmd);
+          outpd(ioaddr + FIFOTMS, 0x20);  // Turn on cable test mode
+          outpd(ioaddr + PARA78, PARA78_default);
+          outpd(ioaddr + PARA7c, PARA7c_default);
+          np->twistie = 0;  // Bail from future actions
+        }
         break;
 
       case 2: 
       {
-	// Read how long it took to hear the echo
-	int linkcase = inpw(ioaddr + CSCR) & CSCR_LinkStatusBits;
-	if (linkcase == 0x7000) 
-	  np->twist_row = 3;
-	else if (linkcase == 0x3000) 
-	  np->twist_row = 2;
-	else if (linkcase == 0x1000) 
-	  np->twist_row = 1;
-	else 
-	  np->twist_row = 0;
-	
-	np->twist_col = 0;
-	np->twistie = 3;
-	next_tick = HZ / 10;
-	break;
+        // Read how long it took to hear the echo
+        int linkcase = inpw(ioaddr + CSCR) & CSCR_LinkStatusBits;
+        if (linkcase == 0x7000) 
+          np->twist_row = 3;
+        else if (linkcase == 0x3000) 
+          np->twist_row = 2;
+        else if (linkcase == 0x1000) 
+          np->twist_row = 1;
+        else 
+          np->twist_row = 0;
+        
+        np->twist_col = 0;
+        np->twistie = 3;
+        next_tick = HZ / 10;
+        break;
       }
 
       case 3: 
-	// Put out four tuning parameters, one per 100msec
-	if (np->twist_col == 0) outpw(ioaddr + FIFOTMS, 0);
-	outpd(ioaddr + PARA7c, param[(int) np->twist_row][(int) np->twist_col]);
-	next_tick = HZ / 10;
-	if (++np->twist_col >= 4) 
-	{
-	  // For short cables we are done. For long cables (row == 3) check for mistune
-	  np->twistie = (np->twist_row == 3) ? 4 : 0;
-	}
-	break;
+        // Put out four tuning parameters, one per 100msec
+        if (np->twist_col == 0) outpw(ioaddr + FIFOTMS, 0);
+        outpd(ioaddr + PARA7c, param[(int) np->twist_row][(int) np->twist_col]);
+        next_tick = HZ / 10;
+        if (++np->twist_col >= 4) 
+        {
+          // For short cables we are done. For long cables (row == 3) check for mistune
+          np->twistie = (np->twist_row == 3) ? 4 : 0;
+        }
+        break;
 
       case 4: 
-	// Special case for long cables: check for mistune
-	if ((inpw(ioaddr + CSCR) & CSCR_LinkStatusBits) == 0x7000) 
-	{
-	  np->twistie = 0;
-	} 
-	else 
-	{
-	  outpd(0xfb38de03, ioaddr + PARA7c);
-	  np->twistie = 5;
-	  next_tick = HZ / 10;
-	}
-	break;
+        // Special case for long cables: check for mistune
+        if ((inpw(ioaddr + CSCR) & CSCR_LinkStatusBits) == 0x7000) 
+        {
+          np->twistie = 0;
+        } 
+        else 
+        {
+          outpd(0xfb38de03, ioaddr + PARA7c);
+          np->twistie = 5;
+          next_tick = HZ / 10;
+        }
+        break;
 
       case 5: 
-	// Retune for shorter cable (column 2)
-	outpd(ioaddr + FIFOTMS, 0x20);
-	outpd(ioaddr + PARA78, PARA78_default);
-	outpd(ioaddr + PARA7c, PARA7c_default);
-	outpd(ioaddr + FIFOTMS, 0x00);
-	np->twist_row = 2;
-	np->twist_col = 0;
-	np->twistie = 3;
-	next_tick = HZ / 10;
-	break;
+        // Retune for shorter cable (column 2)
+        outpd(ioaddr + FIFOTMS, 0x20);
+        outpd(ioaddr + PARA78, PARA78_default);
+        outpd(ioaddr + PARA7c, PARA7c_default);
+        outpd(ioaddr + FIFOTMS, 0x00);
+        np->twist_row = 2;
+        np->twist_col = 0;
+        np->twistie = 3;
+        next_tick = HZ / 10;
+        break;
     }
   }
 #endif

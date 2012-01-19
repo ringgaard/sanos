@@ -342,7 +342,7 @@ void enum_pci_bus(struct bus *bus)
 
       // Register new unit, host bridge is a special case
       if (bus->busno == 0 && devno == 0 && funcno == 0 && bus->self)
-	unit = bus->self;
+        unit = bus->self;
       else
         unit = add_unit(bus, classcode, PCI_UNITCODE(vendorid, deviceid), PCI_UNITNO(devno, funcno));
       
@@ -355,53 +355,53 @@ void enum_pci_bus(struct bus *bus)
 
       if (classcode == PCI_BRIDGE)
       {
-	struct bus *bridge;
+        struct bus *bridge;
 
-	// Get secondary bus number for bridge
+        // Get secondary bus number for bridge
         value = pci_read_dword(bus->busno, devno, funcno, PCI_CONFIG_BASE_ADDR_2);
-	busno = (value >> 8) & 0xFF;
+        busno = (value >> 8) & 0xFF;
 
         // Allocate and initialize new PCI bus
-	bridge = add_bus(unit, BUSTYPE_PCI, busno);
+        bridge = add_bus(unit, BUSTYPE_PCI, busno);
 
-	// Scan for devices on secondary bus
-	enum_pci_bus(bridge);
+        // Scan for devices on secondary bus
+        enum_pci_bus(bridge);
       }
       else
       {
-	// Function I/O and memory base addresses
-	for (bar = 0; bar < 6; bar++)
-	{
-	  int reg = PCI_CONFIG_BASE_ADDR_0 + (bar << 2);
+        // Function I/O and memory base addresses
+        for (bar = 0; bar < 6; bar++)
+        {
+          int reg = PCI_CONFIG_BASE_ADDR_0 + (bar << 2);
 
-  	  value = pci_read_dword(bus->busno, devno, funcno, reg);
-	  pci_write_dword(bus->busno, devno, funcno, reg, 0xFFFFFFFF);
-  	  len = pci_read_dword(bus->busno, devno, funcno, reg);
-	  pci_write_dword(bus->busno, devno, funcno, reg, value);
+          value = pci_read_dword(bus->busno, devno, funcno, reg);
+          pci_write_dword(bus->busno, devno, funcno, reg, 0xFFFFFFFF);
+          len = pci_read_dword(bus->busno, devno, funcno, reg);
+          pci_write_dword(bus->busno, devno, funcno, reg, value);
 
-	  if (len != 0 && len != 0xFFFFFFFF)
-	  {
-	    if (value == 0xFFFFFFFF) value = 0;
+          if (len != 0 && len != 0xFFFFFFFF)
+          {
+            if (value == 0xFFFFFFFF) value = 0;
 
-	    if (value & 1)
-	    {
-	      add_resource(unit, RESOURCE_IO, 0, value & PCI_BASE_ADDRESS_IO_MASK, pci_size(len, PCI_BASE_ADDRESS_IO_MASK & 0xFFFF));
-	    }
-	    else
-	    {
-	      add_resource(unit, RESOURCE_MEM, 0, value & PCI_BASE_ADDRESS_MEM_MASK, pci_size(len, PCI_BASE_ADDRESS_MEM_MASK));
-	    }
-	  }
-	}
+            if (value & 1)
+            {
+              add_resource(unit, RESOURCE_IO, 0, value & PCI_BASE_ADDRESS_IO_MASK, pci_size(len, PCI_BASE_ADDRESS_IO_MASK & 0xFFFF));
+            }
+            else
+            {
+              add_resource(unit, RESOURCE_MEM, 0, value & PCI_BASE_ADDRESS_MEM_MASK, pci_size(len, PCI_BASE_ADDRESS_MEM_MASK));
+            }
+          }
+        }
 
-	// Function interrupt line
-	value = pci_read_dword(bus->busno, devno, funcno, PCI_CONFIG_INTR);
-	if ((value & 0xFF) > 0 && (value & 0xFF) < 32)
-	{
-	  intrpin = (value >> 8) & 0xFF;
-	  irq = value & 0xFF;
-	  add_resource(unit, RESOURCE_IRQ, 0, irq, 1);
-	}
+        // Function interrupt line
+        value = pci_read_dword(bus->busno, devno, funcno, PCI_CONFIG_INTR);
+        if ((value & 0xFF) > 0 && (value & 0xFF) < 32)
+        {
+          intrpin = (value >> 8) & 0xFF;
+          irq = value & 0xFF;
+          add_resource(unit, RESOURCE_IRQ, 0, irq, 1);
+        }
       }
     }
   }

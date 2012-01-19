@@ -75,7 +75,7 @@ struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr,
     {
       if (wait_for_object(&state->binding_complete, 30000)  < 0)
       {
-	kprintf(KERN_WARNING "ether: timeout waiting for dhcp to complete on %s\n", name);
+        kprintf(KERN_WARNING "ether: timeout waiting for dhcp to complete on %s\n", name);
       }
     }
   }
@@ -129,7 +129,7 @@ char *ether2str(struct eth_addr *hwaddr, char *s)
 {
   sprintf(s, "%02x:%02x:%02x:%02x:%02x:%02x",  
           hwaddr->addr[0], hwaddr->addr[1], hwaddr->addr[2], 
-	  hwaddr->addr[3], hwaddr->addr[4], hwaddr->addr[5]);
+          hwaddr->addr[3], hwaddr->addr[4], hwaddr->addr[5]);
   return s;
 }
 
@@ -236,7 +236,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
         kprintf(KERN_ERR "ether: error %d sending arp packet\n", err);
         pbuf_free(q);
         stats.link.drop++;
-	return err;
+        return err;
       }
     }
 
@@ -359,23 +359,23 @@ void ether_dispatcher(void *arg)
       
       switch (htons(ethhdr->type))
       {
-	case ETHTYPE_IP:
-	  arp_ip_input(netif, p);
-	  pbuf_header(p, -ETHER_HLEN);
-	  if (netif->input(p, netif) < 0) pbuf_free(p);
-	  break;
+        case ETHTYPE_IP:
+          arp_ip_input(netif, p);
+          pbuf_header(p, -ETHER_HLEN);
+          if (netif->input(p, netif) < 0) pbuf_free(p);
+          break;
 
-	case ETHTYPE_ARP:
-	  p = arp_arp_input(netif, &netif->hwaddr, p);
-	  if (p != NULL) 
-	  {
-	    if (dev_transmit((dev_t) netif->state, p) < 0) pbuf_free(p);
-	  }
-	  break;
+        case ETHTYPE_ARP:
+          p = arp_arp_input(netif, &netif->hwaddr, p);
+          if (p != NULL) 
+          {
+            if (dev_transmit((dev_t) netif->state, p) < 0) pbuf_free(p);
+          }
+          break;
 
-	default:
-	  pbuf_free(p);
-	  break;
+        default:
+          pbuf_free(p);
+          break;
       }
     }
 

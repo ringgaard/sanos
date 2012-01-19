@@ -39,13 +39,13 @@
 #define NOFLOAT
 #endif
 
-#define ZEROPAD	1		// Pad with zero
-#define SIGN	2		// Unsigned/signed long
-#define PLUS	4		// Show plus
-#define SPACE	8		// Space if plus
-#define LEFT	16		// Left justified
-#define SPECIAL	32		// 0x
-#define LARGE	64		// Use 'ABCDEF' instead of 'abcdef'
+#define ZEROPAD 1               // Pad with zero
+#define SIGN    2               // Unsigned/signed long
+#define PLUS    4               // Show plus
+#define SPACE   8               // Space if plus
+#define LEFT    16              // Left justified
+#define SPECIAL 32              // 0x
+#define LARGE   64              // Use 'ABCDEF' instead of 'abcdef'
 
 #define is_digit(c) ((c) >= '0' && (c) <= '9')
 
@@ -182,15 +182,15 @@ static char *iaddr(char *str, unsigned char *addr, int size, int precision, int 
     {
       if (n >= 100) 
       {
-	tmp[len++] = digits[n / 100];
+        tmp[len++] = digits[n / 100];
         n = n % 100;
-	tmp[len++] = digits[n / 10];
-	n = n % 10;
+        tmp[len++] = digits[n / 10];
+        n = n % 10;
       }
       else if (n >= 10) 
       {
-	tmp[len++] = digits[n / 10];
-	n = n % 10;
+        tmp[len++] = digits[n / 10];
+        n = n % 10;
       }
 
       tmp[len++] = digits[n];
@@ -253,9 +253,9 @@ static void cfltcvt(double value, char *buffer, char fmt, int precision)
     if (decpt == 0)
     {
       if (value == 0.0)
-	exp = 0;
+        exp = 0;
       else
-	exp = -1;
+        exp = -1;
     }
     else
       exp = decpt - 1;
@@ -283,19 +283,19 @@ static void cfltcvt(double value, char *buffer, char fmt, int precision)
     {
       if (decpt <= 0)
       {
-	*buffer++ = '0';
-	*buffer++ = '.';
-	for (pos = 0; pos < -decpt; pos++) *buffer++ = '0';
-	while (*digits) *buffer++ = *digits++;
+        *buffer++ = '0';
+        *buffer++ = '.';
+        for (pos = 0; pos < -decpt; pos++) *buffer++ = '0';
+        while (*digits) *buffer++ = *digits++;
       }
       else
       {
-	pos = 0;
-	while (*digits)
-	{
-	  if (pos++ == decpt) *buffer++ = '.';
-	  *buffer++ = *digits++;
-	}
+        pos = 0;
+        while (*digits)
+        {
+          if (pos++ == decpt) *buffer++ = '.';
+          *buffer++ = *digits++;
+        }
       }
     }
     else
@@ -303,8 +303,8 @@ static void cfltcvt(double value, char *buffer, char fmt, int precision)
       *buffer++ = '0';
       if (precision > 0)
       {
-	*buffer++ = '.';
-	for (pos = 0; pos < precision; pos++) *buffer++ = '0';
+        *buffer++ = '.';
+        for (pos = 0; pos < precision; pos++) *buffer++ = '0';
       }
     }
   }
@@ -426,9 +426,9 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 
   int flags;            // Flags to number()
 
-  int field_width;	// Width of output field
-  int precision;	// Min. # of digits for integers; max number of chars for from string
-  int qualifier;	// 'h', 'l', or 'L' for integer fields
+  int field_width;      // Width of output field
+  int precision;        // Min. # of digits for integers; max number of chars for from string
+  int qualifier;        // 'h', 'l', or 'L' for integer fields
 
   for (str = buf; *fmt; fmt++)
   {
@@ -437,7 +437,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
       *str++ = *fmt;
       continue;
     }
-		  
+                  
     // Process flags
     flags = 0;
 repeat:
@@ -450,7 +450,7 @@ repeat:
       case '#': flags |= SPECIAL; goto repeat;
       case '0': flags |= ZEROPAD; goto repeat;
     }
-	  
+          
     // Get field width
     field_width = -1;
     if (is_digit(*fmt))
@@ -461,8 +461,8 @@ repeat:
       field_width = va_arg(args, int);
       if (field_width < 0)
       {
-	field_width = -field_width;
-	flags |= LEFT;
+        field_width = -field_width;
+        flags |= LEFT;
       }
     }
 
@@ -470,7 +470,7 @@ repeat:
     precision = -1;
     if (*fmt == '.')
     {
-      ++fmt;	
+      ++fmt;    
       if (is_digit(*fmt))
         precision = skip_atoi(&fmt);
       else if (*fmt == '*')
@@ -495,70 +495,70 @@ repeat:
     switch (*fmt)
     {
       case 'c':
-	if (!(flags & LEFT)) while (--field_width > 0) *str++ = ' ';
-	*str++ = (unsigned char) va_arg(args, int);
-	while (--field_width > 0) *str++ = ' ';
-	continue;
+        if (!(flags & LEFT)) while (--field_width > 0) *str++ = ' ';
+        *str++ = (unsigned char) va_arg(args, int);
+        while (--field_width > 0) *str++ = ' ';
+        continue;
 
       case 's':
-	s = va_arg(args, char *);
-	if (!s)	s = "<NULL>";
-	len = strnlen(s, precision);
-	if (!(flags & LEFT)) while (len < field_width--) *str++ = ' ';
-	for (i = 0; i < len; ++i) *str++ = *s++;
-	while (len < field_width--) *str++ = ' ';
-	continue;
+        s = va_arg(args, char *);
+        if (!s) s = "<NULL>";
+        len = strnlen(s, precision);
+        if (!(flags & LEFT)) while (len < field_width--) *str++ = ' ';
+        for (i = 0; i < len; ++i) *str++ = *s++;
+        while (len < field_width--) *str++ = ' ';
+        continue;
 
       case 'p':
-	if (field_width == -1)
-	{
-	  field_width = 2 * sizeof(void *);
-	  flags |= ZEROPAD;
-	}
-	str = number(str, (unsigned long) va_arg(args, void *), 16, field_width, precision, flags);
-	continue;
+        if (field_width == -1)
+        {
+          field_width = 2 * sizeof(void *);
+          flags |= ZEROPAD;
+        }
+        str = number(str, (unsigned long) va_arg(args, void *), 16, field_width, precision, flags);
+        continue;
 
       case 'n':
-	if (qualifier == 'l')
-	{
-	  long *ip = va_arg(args, long *);
-	  *ip = (str - buf);
-	}
-	else
-	{
-	  int *ip = va_arg(args, int *);
-	  *ip = (str - buf);
-	}
-	continue;
+        if (qualifier == 'l')
+        {
+          long *ip = va_arg(args, long *);
+          *ip = (str - buf);
+        }
+        else
+        {
+          int *ip = va_arg(args, int *);
+          *ip = (str - buf);
+        }
+        continue;
 
       case 'A':
-	flags |= LARGE;
+        flags |= LARGE;
 
       case 'a':
-	if (qualifier == 'l')
-	  str = eaddr(str, va_arg(args, unsigned char *), field_width, precision, flags);
-	else
-	  str = iaddr(str, va_arg(args, unsigned char *), field_width, precision, flags);
-	continue;
+        if (qualifier == 'l')
+          str = eaddr(str, va_arg(args, unsigned char *), field_width, precision, flags);
+        else
+          str = iaddr(str, va_arg(args, unsigned char *), field_width, precision, flags);
+        continue;
 
       // Integer number formats - set up the flags and "break"
       case 'o':
-	base = 8;
-	break;
+        base = 8;
+        break;
 
       case 'X':
-	flags |= LARGE;
+        flags |= LARGE;
 
       case 'x':
-	base = 16;
-	break;
+        base = 16;
+        break;
 
       case 'd':
       case 'i':
-	flags |= SIGN;
+        flags |= SIGN;
 
       case 'u':
-	break;
+        break;
 
 #ifndef NOFLOAT
 
@@ -568,17 +568,17 @@ repeat:
       case 'f':
       case 'g':
         str = flt(str, va_arg(args, double), field_width, precision, *fmt, flags | SIGN);
-	continue;
+        continue;
 
 #endif
 
       default:
-	if (*fmt != '%') *str++ = '%';
-	if (*fmt)
-	  *str++ = *fmt;
-	else
-	  --fmt;
-	continue;
+        if (*fmt != '%') *str++ = '%';
+        if (*fmt)
+          *str++ = *fmt;
+        else
+          --fmt;
+        continue;
     }
 
     if (qualifier == 'l')
@@ -586,9 +586,9 @@ repeat:
     else if (qualifier == 'h')
     {
       if (flags & SIGN)
-	num = va_arg(args, short);
+        num = va_arg(args, short);
       else
-	num = va_arg(args, unsigned short);
+        num = va_arg(args, unsigned short);
     }
     else if (flags & SIGN)
       num = va_arg(args, int);

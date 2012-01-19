@@ -69,8 +69,8 @@
 
 // Granularity flags
 
-#define D_BIG      0x4	  // Default to 32 bit mode
-#define D_BIG_LIM  0x8	  // Limit is in 4K units
+#define D_BIG      0x4    // Default to 32 bit mode
+#define D_BIG_LIM  0x8    // Limit is in 4K units
 
 // Structures for descriptors and gates
 

@@ -199,9 +199,9 @@ void move_gap(struct editor *ed, int pos, int minsize)
     if (p != ed->rest)
     {
       if (p < ed->gap)
-	memmove(p + gapsize, p, ed->gap - p);
+        memmove(p + gapsize, p, ed->gap - p);
       else
-	memmove(ed->gap, ed->rest, p - ed->rest);
+        memmove(ed->gap, ed->rest, p - ed->rest);
 
       ed->gap = ed->start + pos;
       ed->rest = ed->gap + gapsize;
@@ -421,29 +421,29 @@ int getkey()
       ch = getchar();
       switch (ch)
       {
-	case 0x1B: return KEY_ESC;
-	case 0x5B:
-	  ch = getchar();
+        case 0x1B: return KEY_ESC;
+        case 0x5B:
+          ch = getchar();
 
-	  switch (ch)
-	  {
-	    case 0x31: return getchar() == 0x7E ? KEY_HOME : KEY_UNKNOWN;
-	    case 0x32: return getchar() == 0x7E ? KEY_INS : KEY_UNKNOWN;
-	    case 0x33: return getchar() == 0x7E ? KEY_DEL : KEY_UNKNOWN;
-	    case 0x34: return getchar() == 0x7E ? KEY_END : KEY_UNKNOWN;
-	    case 0x35: return getchar() == 0x7E ? KEY_PGUP : KEY_UNKNOWN;
-	    case 0x36: return getchar() == 0x7E ? KEY_PGDN : KEY_UNKNOWN;
+          switch (ch)
+          {
+            case 0x31: return getchar() == 0x7E ? KEY_HOME : KEY_UNKNOWN;
+            case 0x32: return getchar() == 0x7E ? KEY_INS : KEY_UNKNOWN;
+            case 0x33: return getchar() == 0x7E ? KEY_DEL : KEY_UNKNOWN;
+            case 0x34: return getchar() == 0x7E ? KEY_END : KEY_UNKNOWN;
+            case 0x35: return getchar() == 0x7E ? KEY_PGUP : KEY_UNKNOWN;
+            case 0x36: return getchar() == 0x7E ? KEY_PGDN : KEY_UNKNOWN;
 
-	    case 0x41: return KEY_UP;
-	    case 0x42: return KEY_DOWN;
-	    case 0x43: return KEY_RIGHT;
-	    case 0x44: return KEY_LEFT;
+            case 0x41: return KEY_UP;
+            case 0x42: return KEY_DOWN;
+            case 0x43: return KEY_RIGHT;
+            case 0x44: return KEY_LEFT;
 
-	    default: return KEY_UNKNOWN;
-	  }
-	  break;
+            default: return KEY_UNKNOWN;
+          }
+          break;
 
-	default: return KEY_UNKNOWN;
+        default: return KEY_UNKNOWN;
       }
       break;
 
@@ -452,21 +452,21 @@ int getkey()
       ch = getchar();
       switch (ch)
       {
-	case 0x47: return KEY_HOME;
-	case 0x48: return KEY_UP;
-	case 0x49: return KEY_PGUP;
-	case 0x4B: return KEY_LEFT;
-	case 0x4D: return KEY_RIGHT;
-	case 0x4F: return KEY_END;
-	case 0x50: return KEY_DOWN;
-	case 0x51: return KEY_PGDN;
-	case 0x52: return KEY_INS;
-	case 0x53: return KEY_DEL;
-	case 0x73: return KEY_CTRL_LEFT;
-	case 0x74: return KEY_CTRL_RIGHT;
-	case 0x75: return KEY_CTRL_END;
-	case 0x77: return KEY_CTRL_HOME;
-	default: return KEY_UNKNOWN;
+        case 0x47: return KEY_HOME;
+        case 0x48: return KEY_UP;
+        case 0x49: return KEY_PGUP;
+        case 0x4B: return KEY_LEFT;
+        case 0x4D: return KEY_RIGHT;
+        case 0x4F: return KEY_END;
+        case 0x50: return KEY_DOWN;
+        case 0x51: return KEY_PGDN;
+        case 0x52: return KEY_INS;
+        case 0x53: return KEY_DEL;
+        case 0x73: return KEY_CTRL_LEFT;
+        case 0x74: return KEY_CTRL_RIGHT;
+        case 0x75: return KEY_CTRL_END;
+        case 0x77: return KEY_CTRL_HOME;
+        default: return KEY_UNKNOWN;
       }
       break;
 
@@ -753,8 +753,8 @@ void pageup(struct editor *ed)
 
       if (ed->topline > 0)
       {
-	ed->toppos = prev_line(ed, ed->toppos);
-	ed->topline--;
+        ed->toppos = prev_line(ed, ed->toppos);
+        ed->topline--;
       }
     }
   }
@@ -1016,14 +1016,14 @@ int main(int argc, char *argv[])
       case CTRL('s'): save(ed); break;
       case CTRL('q'): if (quit(ed)) done = 1; break;
       case CTRL('l'): 
-	ed->cols = term->cols;
-	ed->lines = term->lines - 1;
-	ed->linebuf = realloc(ed->linebuf, ed->cols);
-	draw_screen(ed);
-	break;
+        ed->cols = term->cols;
+        ed->lines = term->lines - 1;
+        ed->linebuf = realloc(ed->linebuf, ed->cols);
+        draw_screen(ed);
+        break;
 
       default: 
-	if (key >= ' ' && key <= 0xFF) insert_char(ed, (unsigned char) key);
+        if (key >= ' ' && key <= 0xFF) insert_char(ed, (unsigned char) key);
     }
   }
 

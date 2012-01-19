@@ -155,83 +155,83 @@ int log_request(struct httpd_request *req)
     switch (field)
     {
       case HTTP_LOG_DATE: 
-	strftime(buf, sizeof(buf), "%Y-%m-%d", tm);
-	break;
+        strftime(buf, sizeof(buf), "%Y-%m-%d", tm);
+        break;
 
       case HTTP_LOG_TIME:
-	strftime(buf, sizeof(buf), "%H:%M:%S", tm);
-	break;
+        strftime(buf, sizeof(buf), "%H:%M:%S", tm);
+        break;
 
       case HTTP_LOG_TIME_TAKEN:
-	value = "0";
-	break;
+        value = "0";
+        break;
 
       case HTTP_LOG_C_IP:
-	strcpy(buf, inet_ntoa(conn->client_addr.sa_in.sin_addr));
-	break;
+        strcpy(buf, inet_ntoa(conn->client_addr.sa_in.sin_addr));
+        break;
 
       case HTTP_LOG_S_IP:
-	strcpy(buf, inet_ntoa(conn->server_addr.sa_in.sin_addr));
-	break;
+        strcpy(buf, inet_ntoa(conn->server_addr.sa_in.sin_addr));
+        break;
 
       case HTTP_LOG_S_PORT:
-	sprintf(buf, "%d", ntohs(conn->server_addr.sa_in.sin_port));
-	break;
+        sprintf(buf, "%d", ntohs(conn->server_addr.sa_in.sin_port));
+        break;
 
       case HTTP_LOG_CS_URI:
       case HTTP_LOG_CS_URI_STEM:
-	value = req->decoded_url;
-	break;
+        value = req->decoded_url;
+        break;
 
       case HTTP_LOG_CS_URI_QUERY:
-	value = req->query;
-	break;
+        value = req->query;
+        break;
 
       case HTTP_LOG_CS_METHOD:
-	value = req->method;
-	break;
+        value = req->method;
+        break;
 
       case HTTP_LOG_CS_BYTES:
-	if (req->content_length > 0)
-	  sprintf(buf, "%d", req->content_length);
-	else
-	  value = NULL;
-	break;
-	
+        if (req->content_length > 0)
+          sprintf(buf, "%d", req->content_length);
+        else
+          value = NULL;
+        break;
+        
       case HTTP_LOG_CS_USER_AGENT:
-	value = req->user_agent;
-	break;
+        value = req->user_agent;
+        break;
 
       case HTTP_LOG_CS_REFERER:
-	value = req->referer;
-	break;
+        value = req->referer;
+        break;
 
       case HTTP_LOG_CS_COOKIE:
-	value = req->cookie;
-	break;
+        value = req->cookie;
+        break;
 
       case HTTP_LOG_CS_HOST:
-	value = req->host;
-	break;
+        value = req->host;
+        break;
 
       case HTTP_LOG_CS_USERNAME:
-	value = req->username;
-	break;
+        value = req->username;
+        break;
 
       case HTTP_LOG_CS_PROTOCOL:
-	value = req->protocol;
-	break;
+        value = req->protocol;
+        break;
 
       case HTTP_LOG_SC_BYTES:
-	if (rsp->content_length > 0)
-	  sprintf(buf, "%d", rsp->content_length);
-	else
-	  value = NULL;
-	break;
+        if (rsp->content_length > 0)
+          sprintf(buf, "%d", rsp->content_length);
+        else
+          value = NULL;
+        break;
 
       case HTTP_LOG_SC_STATUS:
-	sprintf(buf, "%d", rsp->status);
-	break;
+        sprintf(buf, "%d", rsp->status);
+        break;
     }
 
     if (!value || !*value) value = "-";
@@ -239,8 +239,8 @@ int log_request(struct httpd_request *req)
     {
       if (p == end) 
       {
-	errno = EBUF;
-	return -1;
+        errno = EBUF;
+        return -1;
       }
       *p++ = ' ';
     }
@@ -248,13 +248,13 @@ int log_request(struct httpd_request *req)
     {
       if (p == end) 
       {
-	errno = EBUF;
-	return -1;
+        errno = EBUF;
+        return -1;
       }
       if (*value == ' ')
-	*p++ = '+';
+        *p++ = '+';
       else
-	*p++ = *value;
+        *p++ = *value;
 
       value++;
     }

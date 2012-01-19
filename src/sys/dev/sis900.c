@@ -89,8 +89,8 @@ struct sis900_private
   dev_t devno;                          // Device number
   struct dev *dev;                      // Device block
 
-  unsigned long iobase;		        // Configured I/O base
-  unsigned long irq;		        // Configured IRQ
+  unsigned long iobase;                 // Configured I/O base
+  unsigned long irq;                    // Configured IRQ
 
   struct interrupt intr;                // Interrupt object for driver
   struct dpc dpc;                       // DPC for driver
@@ -286,7 +286,7 @@ static int sis96x_get_mac_addr(struct dev *dev)
     } 
     else 
     {
-      udelay(1);	
+      udelay(1);        
       waittime++;
     }
   }
@@ -341,9 +341,9 @@ static int sis900_mii_probe(struct dev *dev)
       {
         mii_phy->phy_types = mii_chip_table[i].phy_types;
         if (mii_chip_table[i].phy_types == MIX)
-	{
+        {
           mii_phy->phy_types = (mii_status & (MII_STAT_CAN_TX_FDX | MII_STAT_CAN_TX)) ? LAN : HOME;
-	}
+        }
 
         kprintf("%s: %s transceiver found at address %d.\n", dev->name, mii_chip_table[i].name, phy_addr);
         break;
@@ -1379,7 +1379,7 @@ static int sis900_rx(struct dev *dev)
         kprintf("%s: Memory squeeze, deferring packet.\n", dev->name);
         sp->rx_pbuf[entry] = NULL;
 
-	// Reset buffer descriptor state
+        // Reset buffer descriptor state
         sp->rx_ring[entry].cmdsts = 0;
         sp->rx_ring[entry].bufptr = 0;
         sp->stats.rx_dropped++;

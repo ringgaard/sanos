@@ -271,40 +271,40 @@ void write_memory()
       j = 0;
       while (j < PTES_PER_PAGE)
       {
-	int s;
-	char *addr;
-	char *mem;
+        int s;
+        char *addr;
+        char *mem;
 
-	while (j < PTES_PER_PAGE && (pdir[j] & PT_PRESENT) == 0) j++;
-	if (j == PTES_PER_PAGE) break;
+        while (j < PTES_PER_PAGE && (pdir[j] & PT_PRESENT) == 0) j++;
+        if (j == PTES_PER_PAGE) break;
 
-	s = j;
-	while (j < PTES_PER_PAGE && (pdir[j] & PT_PRESENT) != 0) j++;
+        s = j;
+        while (j < PTES_PER_PAGE && (pdir[j] & PT_PRESENT) != 0) j++;
 
-	mb = (struct memblock *) malloc(sizeof(struct memblock));
-	if (memory == NULL) memory = mb;
-	if (last != NULL) last->next = mb;
+        mb = (struct memblock *) malloc(sizeof(struct memblock));
+        if (memory == NULL) memory = mb;
+        if (last != NULL) last->next = mb;
 
-	mb->addr = ((i * PTES_PER_PAGE) + s) * PAGESIZE;
-	mb->size = (j - s) * PAGESIZE;
-	mb->mem = malloc(mb->size);
-	mb->next = NULL;
-	numblocks++;
-	last = mb;
-	total += (j - s);
+        mb->addr = ((i * PTES_PER_PAGE) + s) * PAGESIZE;
+        mb->size = (j - s) * PAGESIZE;
+        mb->mem = malloc(mb->size);
+        mb->next = NULL;
+        numblocks++;
+        last = mb;
+        total += (j - s);
 
-	printf("memory %08X (%dK)", mb->addr, mb->size / 1024);
+        printf("memory %08X (%dK)", mb->addr, mb->size / 1024);
 
-	addr = (char *) mb->addr;
-	mem = mb->mem;
-	for (k = s; k < j; k++)
-	{
-	  dbg_read_memory(sess, addr, PAGESIZE, mem);
-	  addr += PAGESIZE;
-	  mem += PAGESIZE;
-	  printf(".");
-	}
-	printf("\n");
+        addr = (char *) mb->addr;
+        mem = mb->mem;
+        for (k = s; k < j; k++)
+        {
+          dbg_read_memory(sess, addr, PAGESIZE, mem);
+          addr += PAGESIZE;
+          mem += PAGESIZE;
+          printf(".");
+        }
+        printf("\n");
       }
     }
   }
@@ -453,20 +453,20 @@ int main(int argc, char *argv[])
     switch (c)
     {
       case 'o':
-	dumpfn = optarg;
-	break;
+        dumpfn = optarg;
+        break;
 
       case 'p':
-	port = optarg;
-	break;
+        port = optarg;
+        break;
 
       case 's':
-	searchpath = optarg;
-	break;
+        searchpath = optarg;
+        break;
 
       case '?':
       default:
-	help = 1;
+        help = 1;
     }
   }
 

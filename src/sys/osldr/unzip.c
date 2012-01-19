@@ -197,7 +197,7 @@ static void *gzip_malloc(int size)
 {
   void *p;
   
-  heap_ptr = (char *) (((unsigned long) heap_ptr + 3) & ~3);	// Align
+  heap_ptr = (char *) (((unsigned long) heap_ptr + 3) & ~3);    // Align
   p = (void *) heap_ptr;
   heap_ptr += size;
   if (heap_ptr >= heap_end) return NULL;
@@ -533,7 +533,7 @@ static int huft_build(unsigned *b, unsigned n, unsigned s, const unsigned short 
       {
         r.e = (unsigned char) (*p < 256 ? 16 : 15); // 256 is end-of-block code
         r.v.n = (unsigned short) (*p);              // Simple code is just the value
-	p++;
+        p++;
       }
       else
       {
@@ -643,7 +643,7 @@ static int inflate_codes(struct huft *tl, struct huft *td, int bl, int bd)
       if ((e = (t = td + ((unsigned) b & md))->e) > 16)
       {
         do 
-	{
+        {
           if (e == 99) return 1;
           DUMPBITS(t->b)
           e -= 16;
@@ -946,7 +946,7 @@ static int inflate()
     gzip_mark(&ptr);
     if ((r = inflate_block(&e)) != 0) 
     {
-      gzip_release(&ptr);	    
+      gzip_release(&ptr);           
       return r;
     }
     gzip_release(&ptr);
@@ -1098,7 +1098,7 @@ int unzip(void *src, unsigned long srclen, void *dst, unsigned long dstlen, char
   // Decompress
   res = inflate();
   if (res != 0) panic("unzip: error in inflate");
-	  
+          
   // Get the original crc and length
   orig_crc = (unsigned long) getbyte();
   orig_crc |= (unsigned long) getbyte() << 8;

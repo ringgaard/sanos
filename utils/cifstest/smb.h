@@ -86,52 +86,52 @@
 //
 // SMB TRANS2 sub commands
 
-#define TRANS2_OPEN2			0x00	// Create file with extended attributes
-#define TRANS2_FIND_FIRST2		0x01	// Begin search for files
-#define TRANS2_FIND_NEXT2		0x02	// Resume search for files
-#define TRANS2_QUERY_FS_INFORMATION	0x03	// Get file system information
-#define TRANS2_QUERY_PATH_INFORMATION	0x05	// Get information about a named file or directory
-#define TRANS2_SET_PATH_INFORMATION	0x06	// Set information about a named file or directory
-#define TRANS2_QUERY_FILE_INFORMATION	0x07	// Get information about a handle
-#define TRANS2_SET_FILE_INFORMATION	0x08	// Set information by handle
-#define TRANS2_FSCTL			0x09	// Not implemented by NT server
-#define TRANS2_IOCTL2			0x0A	// Not implemented by NT server
-#define TRANS2_FIND_NOTIFY_FIRST	0x0B	// Not implemented by NT server
-#define TRANS2_FIND_NOTIFY_NEXT		0x0C	// Not implemented by NT server
-#define TRANS2_CREATE_DIRECTORY		0x0D	// Create directory with extended attributes
-#define TRANS2_SESSION_SETUP		0x0E	// Session setup with extended security information
-#define TRANS2_GET_DFS_REFERRAL		0x10	// Get a DFS referral
-#define TRANS2_REPORT_DFS_INCONSISTENCY	0x11	// Report a DFS knowledge inconsistency
+#define TRANS2_OPEN2                    0x00    // Create file with extended attributes
+#define TRANS2_FIND_FIRST2              0x01    // Begin search for files
+#define TRANS2_FIND_NEXT2               0x02    // Resume search for files
+#define TRANS2_QUERY_FS_INFORMATION     0x03    // Get file system information
+#define TRANS2_QUERY_PATH_INFORMATION   0x05    // Get information about a named file or directory
+#define TRANS2_SET_PATH_INFORMATION     0x06    // Set information about a named file or directory
+#define TRANS2_QUERY_FILE_INFORMATION   0x07    // Get information about a handle
+#define TRANS2_SET_FILE_INFORMATION     0x08    // Set information by handle
+#define TRANS2_FSCTL                    0x09    // Not implemented by NT server
+#define TRANS2_IOCTL2                   0x0A    // Not implemented by NT server
+#define TRANS2_FIND_NOTIFY_FIRST        0x0B    // Not implemented by NT server
+#define TRANS2_FIND_NOTIFY_NEXT         0x0C    // Not implemented by NT server
+#define TRANS2_CREATE_DIRECTORY         0x0D    // Create directory with extended attributes
+#define TRANS2_SESSION_SETUP            0x0E    // Session setup with extended security information
+#define TRANS2_GET_DFS_REFERRAL         0x10    // Get a DFS referral
+#define TRANS2_REPORT_DFS_INCONSISTENCY 0x11    // Report a DFS knowledge inconsistency
 
 //
 // SMB protocol capability flags
 //
 
-#define SMB_CAP_RAW_MODE		0x0001
-#define SMB_CAP_MPX_MODE		0x0002
-#define SMB_CAP_UNICODE			0x0004
-#define SMB_CAP_LARGE_FILES		0x0008
-#define SMB_CAP_NT_SMBS			0x0010
-#define SMB_CAP_RPC_REMOTE_APIS		0x0020
-#define SMB_CAP_STATUS32		0x0040
-#define SMB_CAP_LEVEL_II_OPLOCKS	0x0080
-#define SMB_CAP_LOCK_AND_READ		0x0100
-#define SMB_CAP_NT_FIND			0x0200
-#define SMB_CAP_DFS			0x1000
-#define SMB_CAP_LARGE_READX		0x4000
+#define SMB_CAP_RAW_MODE                0x0001
+#define SMB_CAP_MPX_MODE                0x0002
+#define SMB_CAP_UNICODE                 0x0004
+#define SMB_CAP_LARGE_FILES             0x0008
+#define SMB_CAP_NT_SMBS                 0x0010
+#define SMB_CAP_RPC_REMOTE_APIS         0x0020
+#define SMB_CAP_STATUS32                0x0040
+#define SMB_CAP_LEVEL_II_OPLOCKS        0x0080
+#define SMB_CAP_LOCK_AND_READ           0x0100
+#define SMB_CAP_NT_FIND                 0x0200
+#define SMB_CAP_DFS                     0x1000
+#define SMB_CAP_LARGE_READX             0x4000
 
 //
 // SMB file attributes and flags
 //
 
-#define SMB_FILE_ATTR_ARCHIVE		0x020	// The file has not been archived since it was last modified.
-#define SMB_FILE_ATTR_COMPRESSED	0x800	// The file or directory is compressed. 
-#define SMB_FILE_ATTR_NORMAL		0x080	// The file has no other attributes set. 
-#define SMB_FILE_ATTR_HIDDEN		0x002	// The file is hidden. 
-#define SMB_FILE_ATTR_READONLY		0x001	// The file is read only. 
-#define SMB_FILE_ATTR_TEMPORARY		0x100	// The file is temporary
-#define SMB_FILE_ATTR_DIRECTORY		0x010	// The file is a directory
-#define SMB_FILE_ATTR_SYSTEM		0x004	// The file is part of or is used exclusively by the operating system.
+#define SMB_FILE_ATTR_ARCHIVE           0x020   // The file has not been archived since it was last modified.
+#define SMB_FILE_ATTR_COMPRESSED        0x800   // The file or directory is compressed. 
+#define SMB_FILE_ATTR_NORMAL            0x080   // The file has no other attributes set. 
+#define SMB_FILE_ATTR_HIDDEN            0x002   // The file is hidden. 
+#define SMB_FILE_ATTR_READONLY          0x001   // The file is read only. 
+#define SMB_FILE_ATTR_TEMPORARY         0x100   // The file is temporary
+#define SMB_FILE_ATTR_DIRECTORY         0x010   // The file is a directory
+#define SMB_FILE_ATTR_SYSTEM            0x004   // The file is part of or is used exclusively by the operating system.
 
 #define SMB_FILE_FLAG_WRITE_THROUGH     0x80000000
 #define SMB_FILE_FLAG_NO_BUFFERING      0x20000000
@@ -159,164 +159,164 @@
 // SMB file sharing access
 //
 
-#define SMB_FILE_SHARE_READ		0x00000001
-#define SMB_FILE_SHARE_WRITE		0x00000002
-#define SMB_FILE_SHARE_DELETE	        0x00000004
+#define SMB_FILE_SHARE_READ             0x00000001
+#define SMB_FILE_SHARE_WRITE            0x00000002
+#define SMB_FILE_SHARE_DELETE           0x00000004
 
 //
 // SMB file create disposition
 //
 
-#define SMB_OPEN_EXISTING	1	// Fail if not exist, open if exists
-#define SMB_CREATE_NEW		2	// Create if not exist, fail if exist
-#define SMB_OPEN_ALWAYS		3	// Create if not exist, open if exists
-#define SMB_TRUNCATE_EXISTING	4	// Fail if not exist, truncate if exists
-#define SMB_CREATE_ALWAYS	5	// Create if not exist, trunc if exist
+#define SMB_OPEN_EXISTING       1       // Fail if not exist, open if exists
+#define SMB_CREATE_NEW          2       // Create if not exist, fail if exist
+#define SMB_OPEN_ALWAYS         3       // Create if not exist, open if exists
+#define SMB_TRUNCATE_EXISTING   4       // Fail if not exist, truncate if exists
+#define SMB_CREATE_ALWAYS       5       // Create if not exist, trunc if exist
 
 //
 // SMB impersonation levels
 //
 
-#define SMB_SECURITY_ANONYMOUS		0
-#define SMB_SECURITY_IDENTIFICATION	1
-#define SMB_SECURITY_IMPERSONATION	2
-#define SMB_SECURITY_DELEGATION		3
+#define SMB_SECURITY_ANONYMOUS          0
+#define SMB_SECURITY_IDENTIFICATION     1
+#define SMB_SECURITY_IMPERSONATION      2
+#define SMB_SECURITY_DELEGATION         3
 
 //
 // SMB filesystem information levels
 //
 
-#define SMB_INFO_ALLOCATION		1
-#define SMB_INFO_VOLUME			2
-#define SMB_QUERY_FS_VOLUME_INFO	0x102
-#define SMB_QUERY_FS_SIZE_INFO		0x103
-#define SMB_QUERY_FS_DEVICE_INFO	0x104
-#define SMB_QUERY_FS_ATTRIBUTE_INFO	0x105
+#define SMB_INFO_ALLOCATION             1
+#define SMB_INFO_VOLUME                 2
+#define SMB_QUERY_FS_VOLUME_INFO        0x102
+#define SMB_QUERY_FS_SIZE_INFO          0x103
+#define SMB_QUERY_FS_DEVICE_INFO        0x104
+#define SMB_QUERY_FS_ATTRIBUTE_INFO     0x105
 
 //
 // SMB file information levels
 //
 
-#define SMB_INFO_STANDARD		1
-#define SMB_INFO_QUERY_EA_SIZE		2
-#define SMB_INFO_QUERY_EAS_FROM_LIST	3
-#define SMB_INFO_QUERY_ALL_EAS		4
-#define SMB_INFO_IS_NAME_VALID		6
-#define SMB_QUERY_FILE_BASIC_INFO	0x101
-#define SMB_QUERY_FILE_STANDARD_INFO	0x102
-#define SMB_QUERY_FILE_EA_INFO		0x103
-#define SMB_QUERY_FILE_NAME_INFO	0x104
-#define SMB_QUERY_FILE_ALL_INFO		0x107
-#define SMB_QUERY_FILE_ALT_NAME_INFO	0x108
-#define SMB_QUERY_FILE_STREAM_INFO	0x109
-#define SMB_QUERY_FILE_COMPRESSION_INFO	0x10B
+#define SMB_INFO_STANDARD               1
+#define SMB_INFO_QUERY_EA_SIZE          2
+#define SMB_INFO_QUERY_EAS_FROM_LIST    3
+#define SMB_INFO_QUERY_ALL_EAS          4
+#define SMB_INFO_IS_NAME_VALID          6
+#define SMB_QUERY_FILE_BASIC_INFO       0x101
+#define SMB_QUERY_FILE_STANDARD_INFO    0x102
+#define SMB_QUERY_FILE_EA_INFO          0x103
+#define SMB_QUERY_FILE_NAME_INFO        0x104
+#define SMB_QUERY_FILE_ALL_INFO         0x107
+#define SMB_QUERY_FILE_ALT_NAME_INFO    0x108
+#define SMB_QUERY_FILE_STREAM_INFO      0x109
+#define SMB_QUERY_FILE_COMPRESSION_INFO 0x10B
 
 //
 // FindFirst/FindNext flags
 //
 
-#define SMB_CLOSE_AFTER_FIRST		(1 << 0)
-#define SMB_CLOSE_IF_END		(1 << 1)
-#define SMB_REQUIRE_RESUME_KEY		(1 << 2)
-#define SMB_CONTINUE_BIT		(1 << 3)
+#define SMB_CLOSE_AFTER_FIRST           (1 << 0)
+#define SMB_CLOSE_IF_END                (1 << 1)
+#define SMB_REQUIRE_RESUME_KEY          (1 << 2)
+#define SMB_CONTINUE_BIT                (1 << 3)
 
 //
 // Error Classes
 //
 
-#define SMB_SUCCESS		0	// The request was successful.
-#define SMB_ERRDOS		0x01	// Error is from the core DOS operating system set.
-#define SMB_ERRSRV		0x02	// Error is generated by the server network file manager.
-#define SMB_ERRHRD		0x03	// Error is an hardware error.
-#define SMB_ERRCMD		0xFF	// Command was not in the "SMB" format.
+#define SMB_SUCCESS             0       // The request was successful.
+#define SMB_ERRDOS              0x01    // Error is from the core DOS operating system set.
+#define SMB_ERRSRV              0x02    // Error is generated by the server network file manager.
+#define SMB_ERRHRD              0x03    // Error is an hardware error.
+#define SMB_ERRCMD              0xFF    // Command was not in the "SMB" format.
 
 //
 // SMB X/Open error codes for the ERRdos error class
 //
 
-#define ERRbadfunc		1       // Invalid function (or system call)
-#define ERRbadfile		2       // File not found (pathname error)
-#define ERRbadpath		3       // Directory not found
-#define ERRnofids		4       // Too many open files
-#define ERRnoaccess		5       // Access denied
-#define ERRbadfid		6       // Invalid fid
-#define ERRbadmcb		7       // Memory control blocks destroyed
-#define ERRnomem		8       // Out of memory
-#define ERRbadmem		9       // Invalid memory block address
-#define ERRbadenv		10      // Invalid environment
-#define ERRbadformat		11      // Invalid format
-#define ERRbadaccess		12      // Invalid open mode
-#define ERRbaddata		13      // Invalid data (only from ioctl call)
-#define ERRres			14      // Reserved
-#define ERRbaddrive		15      // Invalid drive
-#define ERRremcd		16      // Attempt to delete current directory
-#define ERRdiffdevice		17      // Rename/move across different filesystems
-#define ERRnofiles		18      // No more files found in file search
-#define ERRbadshare		32      // Share mode on file conflict with open mode
-#define ERRlock			33      // Lock request conflicts with existing lock
-#define ERRfilexists		80      // File in operation already exists
-#define ERRundocumented1	123     // Invalid name?? e.g. .tmp*
-#define ERRbadpipe		230     // Named pipe invalid
-#define ERRpipebusy		231     // All instances of pipe are busy
-#define ERRpipeclosing		232     // Named pipe close in progress
-#define ERRnotconnected		233     // No process on other end of named pipe
-#define ERRmoredata		234     // More data to be returned
+#define ERRbadfunc              1       // Invalid function (or system call)
+#define ERRbadfile              2       // File not found (pathname error)
+#define ERRbadpath              3       // Directory not found
+#define ERRnofids               4       // Too many open files
+#define ERRnoaccess             5       // Access denied
+#define ERRbadfid               6       // Invalid fid
+#define ERRbadmcb               7       // Memory control blocks destroyed
+#define ERRnomem                8       // Out of memory
+#define ERRbadmem               9       // Invalid memory block address
+#define ERRbadenv               10      // Invalid environment
+#define ERRbadformat            11      // Invalid format
+#define ERRbadaccess            12      // Invalid open mode
+#define ERRbaddata              13      // Invalid data (only from ioctl call)
+#define ERRres                  14      // Reserved
+#define ERRbaddrive             15      // Invalid drive
+#define ERRremcd                16      // Attempt to delete current directory
+#define ERRdiffdevice           17      // Rename/move across different filesystems
+#define ERRnofiles              18      // No more files found in file search
+#define ERRbadshare             32      // Share mode on file conflict with open mode
+#define ERRlock                 33      // Lock request conflicts with existing lock
+#define ERRfilexists            80      // File in operation already exists
+#define ERRundocumented1        123     // Invalid name?? e.g. .tmp*
+#define ERRbadpipe              230     // Named pipe invalid
+#define ERRpipebusy             231     // All instances of pipe are busy
+#define ERRpipeclosing          232     // Named pipe close in progress
+#define ERRnotconnected         233     // No process on other end of named pipe
+#define ERRmoredata             234     // More data to be returned
 
 //
 // Error codes for the ERRSRV class
 //
 
-#define ERRerror	        1       // Non specific error code
-#define ERRbadpw	        2       // Bad password
-#define ERRbadtype	        3       // Reserved
-#define ERRaccess	        4       // No permissions to do the requested operation
-#define ERRinvnid	        5       // Tid invalid
-#define ERRinvnetname	        6       // Invalid servername
-#define ERRinvdevice	        7       // Invalid device
-#define ERRqfull	        49      // Print queue full
-#define ERRqtoobig	        50      // Queued item too big
-#define ERRinvpfid	        52      // Invalid print file in smb_fid
-#define ERRsmbcmd	        64      // Unrecognised command
-#define ERRsrverror	        65      // SMB server internal error
-#define ERRfilespecs	        67      // Fid and pathname invalid combination
-#define ERRbadlink	        68      // Reserved
-#define ERRbadpermits	        69      // Access specified for a file is not valid
-#define ERRbadpid	        70      // Reserved
-#define ERRsetattrmode	        71      // Attribute mode invalid
-#define ERRpaused	        81      // Message server paused
-#define ERRmsgoff	        82      // Not receiving messages
-#define ERRnoroom	        83      // No room for message
-#define ERRrmuns	        87      // Too many remote usernames
-#define ERRtimeout	        88      // Operation timed out
-#define ERRnoresource	        89	// No resources currently available for request.
-#define ERRtoomanyuids	        90      // Too many userids
-#define ERRbaduid	        91      // Bad userid
-#define ERRuseMPX	        250	// Temporarily unable to use raw mode, use MPX mode
-#define ERRuseSTD	        251	// Temporarily unable to use raw mode, use std.mode
-#define ERRcontMPX	        252     // Resume MPX mode
-#define ERRnosupport	        0xFFFF
+#define ERRerror                1       // Non specific error code
+#define ERRbadpw                2       // Bad password
+#define ERRbadtype              3       // Reserved
+#define ERRaccess               4       // No permissions to do the requested operation
+#define ERRinvnid               5       // Tid invalid
+#define ERRinvnetname           6       // Invalid servername
+#define ERRinvdevice            7       // Invalid device
+#define ERRqfull                49      // Print queue full
+#define ERRqtoobig              50      // Queued item too big
+#define ERRinvpfid              52      // Invalid print file in smb_fid
+#define ERRsmbcmd               64      // Unrecognised command
+#define ERRsrverror             65      // SMB server internal error
+#define ERRfilespecs            67      // Fid and pathname invalid combination
+#define ERRbadlink              68      // Reserved
+#define ERRbadpermits           69      // Access specified for a file is not valid
+#define ERRbadpid               70      // Reserved
+#define ERRsetattrmode          71      // Attribute mode invalid
+#define ERRpaused               81      // Message server paused
+#define ERRmsgoff               82      // Not receiving messages
+#define ERRnoroom               83      // No room for message
+#define ERRrmuns                87      // Too many remote usernames
+#define ERRtimeout              88      // Operation timed out
+#define ERRnoresource           89      // No resources currently available for request.
+#define ERRtoomanyuids          90      // Too many userids
+#define ERRbaduid               91      // Bad userid
+#define ERRuseMPX               250     // Temporarily unable to use raw mode, use MPX mode
+#define ERRuseSTD               251     // Temporarily unable to use raw mode, use std.mode
+#define ERRcontMPX              252     // Resume MPX mode
+#define ERRnosupport            0xFFFF
 
 //
 // Error codes for the ERRHRD class
 //
 
-#define ERRnowrite		19      // Read only media
-#define ERRbadunit		20      // Unknown device
-#define ERRnotready		21      // Drive not ready
-#define ERRbadcmd		22      // Unknown command
-#define ERRdata			23      // Data (CRC) error
-#define ERRbadreq		24      // Bad request structure length
-#define ERRseek			25
-#define ERRbadmedia		26
-#define ERRbadsector		27
-#define ERRnopaper		28
-#define ERRwrite		29      // Write fault
-#define ERRread			30      // Read fault
-#define ERRgeneral		31      // General hardware failure
-#define ERRwrongdisk		34
-#define ERRFCBunavail		35
-#define ERRsharebufexc		36      // Share buffer exceeded
-#define ERRdiskfull		39
+#define ERRnowrite              19      // Read only media
+#define ERRbadunit              20      // Unknown device
+#define ERRnotready             21      // Drive not ready
+#define ERRbadcmd               22      // Unknown command
+#define ERRdata                 23      // Data (CRC) error
+#define ERRbadreq               24      // Bad request structure length
+#define ERRseek                 25
+#define ERRbadmedia             26
+#define ERRbadsector            27
+#define ERRnopaper              28
+#define ERRwrite                29      // Write fault
+#define ERRread                 30      // Read fault
+#define ERRgeneral              31      // General hardware failure
+#define ERRwrongdisk            34
+#define ERRFCBunavail           35
+#define ERRsharebufexc          36      // Share buffer exceeded
+#define ERRdiskfull             39
 
 
 #pragma pack(push)
@@ -343,9 +343,9 @@ typedef __int64 smb_time;
 
 struct smb_andx
 {
-  unsigned char cmd;			// Secondary (X) command; 0xFF = none
-  unsigned char reserved;		// Reserved (must be 0)
-  unsigned short offset;		// Offset to next command WordCount
+  unsigned char cmd;                    // Secondary (X) command; 0xFF = none
+  unsigned char reserved;               // Reserved (must be 0)
+  unsigned short offset;                // Offset to next command WordCount
 };
 
 //
@@ -354,22 +354,22 @@ struct smb_andx
 
 struct smb_negotiate_response
 {
-  unsigned short dialect_index;		// Index of selected dialect
-  unsigned char security_mode;		// Security mode:
-					//   bit 0: 0 = share, 1 = user
-					//   bit 1: 1 = encrypt passwords
-					//   bit 2: 1 = Security Signatures (SMB sequence numbers) enabled
-					//   bit 3: 1 = Security Signatures (SMB sequence numbers) required
-  unsigned short max_mpx_count;		// Max pending multiplexed requests
-  unsigned short max_number_vcs;	// Max VCs between client and server
-  unsigned long max_buffer_size;	// Max transmit buffer size
-  unsigned long max_raw_size;	        // Maximum raw buffer size
-  unsigned long session_key;	        // Unique token identifying this session
-  unsigned long capabilities;	        // Server capabilities
-  unsigned long systemtime_low;	        // System (UTC) time of the server (low).
-  unsigned long systemtime_high;	// System (UTC) time of the server (high).
-  short server_timezone;		// Time zone of server (min from UTC)
-  unsigned char encryption_key_length;	// Length of encryption key.
+  unsigned short dialect_index;         // Index of selected dialect
+  unsigned char security_mode;          // Security mode:
+                                        //   bit 0: 0 = share, 1 = user
+                                        //   bit 1: 1 = encrypt passwords
+                                        //   bit 2: 1 = Security Signatures (SMB sequence numbers) enabled
+                                        //   bit 3: 1 = Security Signatures (SMB sequence numbers) required
+  unsigned short max_mpx_count;         // Max pending multiplexed requests
+  unsigned short max_number_vcs;        // Max VCs between client and server
+  unsigned long max_buffer_size;        // Max transmit buffer size
+  unsigned long max_raw_size;           // Maximum raw buffer size
+  unsigned long session_key;            // Unique token identifying this session
+  unsigned long capabilities;           // Server capabilities
+  unsigned long systemtime_low;         // System (UTC) time of the server (low).
+  unsigned long systemtime_high;        // System (UTC) time of the server (high).
+  short server_timezone;                // Time zone of server (min from UTC)
+  unsigned char encryption_key_length;  // Length of encryption key.
 };
 
 //
@@ -379,14 +379,14 @@ struct smb_negotiate_response
 struct smb_session_setup_request
 {
   struct smb_andx andx;
-  unsigned short max_buffer_size;	  // Client maximum buffer size
-  unsigned short max_mpx_count;		  // Actual maximum multiplexed pending requests
-  unsigned short vc_number;		  // 0 = first (only), nonzero=additional VC number
-  unsigned long session_key;		  // Session key (valid iff VcNumber != 0)
-  unsigned short ansi_password_length;	  // Account password size (ansi, case insensitive)
+  unsigned short max_buffer_size;         // Client maximum buffer size
+  unsigned short max_mpx_count;           // Actual maximum multiplexed pending requests
+  unsigned short vc_number;               // 0 = first (only), nonzero=additional VC number
+  unsigned long session_key;              // Session key (valid iff VcNumber != 0)
+  unsigned short ansi_password_length;    // Account password size (ansi, case insensitive)
   unsigned short unicode_password_length; // Account password size (unicode, case sensitive)
-  unsigned long reserved;		  // Must be 0
-  unsigned long capabilities;		  // Client capabilities
+  unsigned long reserved;                 // Must be 0
+  unsigned long capabilities;             // Client capabilities
 };
 
 //
@@ -396,7 +396,7 @@ struct smb_session_setup_request
 struct smb_session_setup_response
 {
   struct smb_andx andx;
-  unsigned short action;		  // Request mode: bit0 = logged in as client
+  unsigned short action;                  // Request mode: bit0 = logged in as client
 };
 
 //
@@ -406,8 +406,8 @@ struct smb_session_setup_response
 struct smb_tree_connect_request
 {
   struct smb_andx andx;
-  unsigned short flags;			  // Additional information; bit 0 set = disconnect tid
-  unsigned short password_length;	  // Length of password[]
+  unsigned short flags;                   // Additional information; bit 0 set = disconnect tid
+  unsigned short password_length;         // Length of password[]
 };
 
 //
@@ -417,7 +417,7 @@ struct smb_tree_connect_request
 struct smb_tree_connect_response
 {
   struct smb_andx andx;
-  unsigned short optional_support;	  // Optional support bits
+  unsigned short optional_support;        // Optional support bits
 };
 
 //
@@ -427,21 +427,21 @@ struct smb_tree_connect_response
 struct smb_create_file_request
 {
   struct smb_andx andx;
-  unsigned char reserved;		// Reserved (must be 0)
-  unsigned short name_length;		// Length of name[] in bytes
-  unsigned long flags;			// Create bit set:
+  unsigned char reserved;               // Reserved (must be 0)
+  unsigned short name_length;           // Length of name[] in bytes
+  unsigned long flags;                  // Create bit set:
                                         //   0x02 - Request an oplock
                                         //   0x04 - Request a batch oplock
                                         //   0x08 - Target of open must be directory
-  unsigned long root_directory_fid;	// If non-zero, open is relative to this directory
-  unsigned long desired_access;		// Access desired
-  smb_size allocation_size;		// Initial allocation size
-  unsigned long ext_file_attributes;	// File attributes
-  unsigned long share_access;		// Type of share access
-  unsigned long create_disposition;	// Action to take if file exists or not
-  unsigned long create_options;		// Options to use if creating a file
-  unsigned long impersonation_level;	// Security QOS information
-  unsigned char security_flags;		// Security tracking mode flags:
+  unsigned long root_directory_fid;     // If non-zero, open is relative to this directory
+  unsigned long desired_access;         // Access desired
+  smb_size allocation_size;             // Initial allocation size
+  unsigned long ext_file_attributes;    // File attributes
+  unsigned long share_access;           // Type of share access
+  unsigned long create_disposition;     // Action to take if file exists or not
+  unsigned long create_options;         // Options to use if creating a file
+  unsigned long impersonation_level;    // Security QOS information
+  unsigned char security_flags;         // Security tracking mode flags:
                                         //   0x1 - SECURITY_CONTEXT_TRACKING
                                         //   0x2 - SECURITY_EFFECTIVE_ONLY
 };
@@ -453,23 +453,23 @@ struct smb_create_file_request
 struct smb_create_file_response
 {
   struct smb_andx andx;
-  unsigned char oplock_level;		// The oplock level granted
+  unsigned char oplock_level;           // The oplock level granted
                                         //   0 - No oplock granted
                                         //   1 - Exclusive oplock granted
                                         //   2 - Batch oplock granted
                                         //   3 - Level II oplock granted
-  unsigned short fid;			// The file ID
-  unsigned long create_action;		// The action taken
-  smb_time creation_time;		// The time the file was created
-  smb_time last_access_time;		// The time the file was accessed
-  smb_time last_write_time;		// The time the file was last written
-  smb_time change_time;			// The time the file was last changed
-  unsigned long ext_file_attributes;	// The file attributes
-  smb_size allocation_size;		// The number of byes allocated
-  smb_size end_of_file;			// The end of file offset
-  unsigned short file_type;	
-  unsigned short device_state;		// State of IPC device (e.g. pipe)
-  unsigned char directory;		// TRUE if this is a directory
+  unsigned short fid;                   // The file ID
+  unsigned long create_action;          // The action taken
+  smb_time creation_time;               // The time the file was created
+  smb_time last_access_time;            // The time the file was accessed
+  smb_time last_write_time;             // The time the file was last written
+  smb_time change_time;                 // The time the file was last changed
+  unsigned long ext_file_attributes;    // The file attributes
+  smb_size allocation_size;             // The number of byes allocated
+  smb_size end_of_file;                 // The end of file offset
+  unsigned short file_type;     
+  unsigned short device_state;          // State of IPC device (e.g. pipe)
+  unsigned char directory;              // TRUE if this is a directory
 };
 
 //
@@ -478,8 +478,8 @@ struct smb_create_file_response
 
 struct smb_close_file_request
 {
-  unsigned short fid;			  // File handle
-  smb_time last_write_time; 		  // Time of last write
+  unsigned short fid;                     // File handle
+  smb_time last_write_time;               // Time of last write
 };
 
 //
@@ -489,13 +489,13 @@ struct smb_close_file_request
 struct smb_read_file_request
 {
   struct smb_andx andx;
-  unsigned short fid;			// File handle
-  unsigned long offset;			// Offset in file to begin read
-  unsigned short max_count;		// Max number of bytes to return
-  unsigned short min_count;		// Reserved
-  unsigned long reserved;		// Must be 0
-  unsigned short remaining;		// Reserved
-  unsigned long offset_high;		// Upper 32 bits of offset (only if wordcount is 12)
+  unsigned short fid;                   // File handle
+  unsigned long offset;                 // Offset in file to begin read
+  unsigned short max_count;             // Max number of bytes to return
+  unsigned short min_count;             // Reserved
+  unsigned long reserved;               // Must be 0
+  unsigned short remaining;             // Reserved
+  unsigned long offset_high;            // Upper 32 bits of offset (only if wordcount is 12)
 };
 
 //
@@ -505,12 +505,12 @@ struct smb_read_file_request
 struct smb_read_file_response
 {
   struct smb_andx andx;
-  unsigned short remaining;		// Reserved -- must be -1
-  unsigned short data_compaction_mode;	
-  unsigned short reserved1;		// Reserved (must be 0)
-  unsigned short data_length;		// Number of data bytes (min = 0)
-  unsigned short data_offset;		// Offset (from header start) to data
-  unsigned short reserved2[5];		// Reserved (must be 0)
+  unsigned short remaining;             // Reserved -- must be -1
+  unsigned short data_compaction_mode;  
+  unsigned short reserved1;             // Reserved (must be 0)
+  unsigned short data_length;           // Number of data bytes (min = 0)
+  unsigned short data_offset;           // Offset (from header start) to data
+  unsigned short reserved2[5];          // Reserved (must be 0)
 };
 
 //
@@ -519,12 +519,12 @@ struct smb_read_file_response
 
 struct smb_read_raw_request
 {
-  unsigned short fid;			// File handle
-  unsigned long offset;			// Offset in file to begin read
-  unsigned short max_count;		// Max number of bytes to return
-  unsigned short min_count;		// Reserved
-  unsigned long timeout;		// Wait timeout if named pipe
-  unsigned short reserved;		// Reserved
+  unsigned short fid;                   // File handle
+  unsigned long offset;                 // Offset in file to begin read
+  unsigned short max_count;             // Max number of bytes to return
+  unsigned short min_count;             // Reserved
+  unsigned long timeout;                // Wait timeout if named pipe
+  unsigned short reserved;              // Reserved
 };
 
 
@@ -535,15 +535,15 @@ struct smb_read_raw_request
 struct smb_write_file_request
 {
   struct smb_andx andx;
-  unsigned short fid;			// File handle
-  unsigned long offset;			// Offset in file to begin read
-  unsigned long reserved1;		// Must be 0
-  unsigned short write_mode;		// Write mode bits: 0 - write through
-  unsigned short remaining;		// Reserved
-  unsigned short reserved2;		// Must be 0
-  unsigned short data_length;		// Number of data bytes in buffer (>= 0)
-  unsigned short data_offset;		// Offset to data bytes
-  unsigned long offset_high;		// Upper 32 bits of offset (Only if wordcount is 14)
+  unsigned short fid;                   // File handle
+  unsigned long offset;                 // Offset in file to begin read
+  unsigned long reserved1;              // Must be 0
+  unsigned short write_mode;            // Write mode bits: 0 - write through
+  unsigned short remaining;             // Reserved
+  unsigned short reserved2;             // Must be 0
+  unsigned short data_length;           // Number of data bytes in buffer (>= 0)
+  unsigned short data_offset;           // Offset to data bytes
+  unsigned long offset_high;            // Upper 32 bits of offset (Only if wordcount is 14)
 };
 
 //
@@ -553,9 +553,9 @@ struct smb_write_file_request
 struct smb_write_file_response
 {
   struct smb_andx andx;
-  unsigned short count;			// Number of bytes written
-  unsigned short remaining;		// Reserved -- must be -1
-  unsigned short reserved;		// Reserved (must be 0)
+  unsigned short count;                 // Number of bytes written
+  unsigned short remaining;             // Reserved -- must be -1
+  unsigned short reserved;              // Reserved (must be 0)
 };
 
 //
@@ -582,15 +582,15 @@ struct smb_delete_request
 
 struct smb_copy_request
 {
-  unsigned short tid2;			// Second (target) path TID
-  unsigned short open_function;		// What to do if target file exists
-  unsigned short flags;			// Flags to control copy operation:
-					//   bit 0 - target must be a file
-					//   bit 1 - target must be a dir.
-					//   bit 2 - copy target mode: 0 = binary, 1 = ASCII
-					//   bit 3 - copy source mode: 0 = binary, 1 = ASCII
-					//   bit 4 - verify all writes
-					//   bit 5 - tree copy
+  unsigned short tid2;                  // Second (target) path TID
+  unsigned short open_function;         // What to do if target file exists
+  unsigned short flags;                 // Flags to control copy operation:
+                                        //   bit 0 - target must be a file
+                                        //   bit 1 - target must be a dir.
+                                        //   bit 2 - copy target mode: 0 = binary, 1 = ASCII
+                                        //   bit 3 - copy source mode: 0 = binary, 1 = ASCII
+                                        //   bit 4 - verify all writes
+                                        //   bit 5 - tree copy
 };
 
 //
@@ -599,7 +599,7 @@ struct smb_copy_request
 
 struct smb_copy_response
 {
-  unsigned short count;			// Number of files copied
+  unsigned short count;                 // Number of files copied
 };
 
 //
@@ -608,22 +608,22 @@ struct smb_copy_response
 
 struct smb_trans_request
 {
-  unsigned short total_parameter_count;	// Total parameter bytes being sent
-  unsigned short total_data_count;	// Total data bytes being sent
-  unsigned short max_parameter_count;	// Max parameter bytes to return
-  unsigned short max_data_count;	// Max data bytes to return
+  unsigned short total_parameter_count; // Total parameter bytes being sent
+  unsigned short total_data_count;      // Total data bytes being sent
+  unsigned short max_parameter_count;   // Max parameter bytes to return
+  unsigned short max_data_count;        // Max data bytes to return
   unsigned char max_setup_count;        // Max setup words to return
   unsigned char reserved;
-  unsigned short flags;	                // Additional information: bit 0 - also disconnect TID in Tid
+  unsigned short flags;                 // Additional information: bit 0 - also disconnect TID in Tid
   unsigned long timeout;
   unsigned short reserved2;
-  unsigned short parameter_count;	// Parameter bytes sent this buffer
-  unsigned short parameter_offset;	// Offset (from header start) to Parameters
-  unsigned short data_count;	        // Data bytes sent this buffer
-  unsigned short data_offset;	        // Offset (from header start) to data
-  unsigned char setup_count;	        // Count of setup words
-  unsigned char reserved3;	        // Reserved (pad above to word)
-  unsigned short setup[1];	        // Setup words (# = SetupWordCount)
+  unsigned short parameter_count;       // Parameter bytes sent this buffer
+  unsigned short parameter_offset;      // Offset (from header start) to Parameters
+  unsigned short data_count;            // Data bytes sent this buffer
+  unsigned short data_offset;           // Offset (from header start) to data
+  unsigned char setup_count;            // Count of setup words
+  unsigned char reserved3;              // Reserved (pad above to word)
+  unsigned short setup[1];              // Setup words (# = SetupWordCount)
 };
 
 //
@@ -632,18 +632,18 @@ struct smb_trans_request
 
 struct smb_trans_response
 {
-  unsigned short total_parameter_count;	// Total parameter bytes being sent
-  unsigned short total_data_count;	// Total data bytes being sent
-  unsigned short reserved;		
-  unsigned short parameter_count;	// Parameter bytes sent this buffer
-  unsigned short parameter_offset;	// Offset (from header start) to Parameters
+  unsigned short total_parameter_count; // Total parameter bytes being sent
+  unsigned short total_data_count;      // Total data bytes being sent
+  unsigned short reserved;              
+  unsigned short parameter_count;       // Parameter bytes sent this buffer
+  unsigned short parameter_offset;      // Offset (from header start) to Parameters
   unsigned short parameter_displacement;// Displacement of these Parameter bytes
-  unsigned short data_count;		// Data bytes sent this buffer
-  unsigned short data_offset;	        // Offset (from header start) to data
-  unsigned short data_displacement;	// Displacement of these data bytes
-  unsigned char setup_count;	        // Count of setup words
-  unsigned char reserved2;	        // Reserved (pad above to word)
-  unsigned short setup[1];	        // Setup words (# = SetupWordCount)
+  unsigned short data_count;            // Data bytes sent this buffer
+  unsigned short data_offset;           // Offset (from header start) to data
+  unsigned short data_displacement;     // Displacement of these data bytes
+  unsigned char setup_count;            // Count of setup words
+  unsigned char reserved2;              // Reserved (pad above to word)
+  unsigned short setup[1];              // Setup words (# = SetupWordCount)
 };
 
 //
@@ -707,7 +707,7 @@ struct smb
 
 struct smb_fileinfo_request
 {
-  unsigned short fid;		        // File ID
+  unsigned short fid;                   // File ID
   unsigned short infolevel;             // Information level
 };
 
@@ -718,44 +718,44 @@ struct smb_fsinfo_request
 
 struct smb_info_standard
 {
-  unsigned short creation_date;	        // Date when file was created	
-  unsigned short creation_time;	        // Time when file was created	
-  unsigned short last_access_date;      // Date of last file access	
-  unsigned short last_access_time;      // Time of last file access	
-  unsigned short last_write_date;       // Date of last write to the file	
-  unsigned short last_write_time;	// Time of last write to the file	
-  unsigned long data_size;	        // File Size	
-  unsigned long allocation_size;        // Size of filesystem allocation unit	
-  unsigned short attributes;	        // File Attributes	
-  unsigned long ea_size;	        // Size of file's EA information
+  unsigned short creation_date;         // Date when file was created   
+  unsigned short creation_time;         // Time when file was created   
+  unsigned short last_access_date;      // Date of last file access     
+  unsigned short last_access_time;      // Time of last file access     
+  unsigned short last_write_date;       // Date of last write to the file       
+  unsigned short last_write_time;       // Time of last write to the file       
+  unsigned long data_size;              // File Size    
+  unsigned long allocation_size;        // Size of filesystem allocation unit   
+  unsigned short attributes;            // File Attributes      
+  unsigned long ea_size;                // Size of file's EA information
 };
 
 struct smb_info_allocation
 {
-  unsigned long file_system_id;		// File system identifier.  NT server always returns 0
-  unsigned long sector_per_unit;	// Number of sectors per allocation unit
-  unsigned long units_total;	        // Total number of allocation units
-  unsigned long units_avail;	        // Total number of available allocation units
-  unsigned short sectorsize;	        // Number of bytes per sector
+  unsigned long file_system_id;         // File system identifier.  NT server always returns 0
+  unsigned long sector_per_unit;        // Number of sectors per allocation unit
+  unsigned long units_total;            // Total number of allocation units
+  unsigned long units_avail;            // Total number of available allocation units
+  unsigned short sectorsize;            // Number of bytes per sector
 };
 
 struct smb_file_basic_info
 {
-  smb_time creation_time;		// Time when file was created
-  smb_time last_access_time;		// Time of last file access
-  smb_time last_write_time;		// Time of last write to the file
-  smb_time change_time;			// Time when file was last changed
-  unsigned long attributes;		// File Attributes
+  smb_time creation_time;               // Time when file was created
+  smb_time last_access_time;            // Time of last file access
+  smb_time last_write_time;             // Time of last write to the file
+  smb_time change_time;                 // Time when file was last changed
+  unsigned long attributes;             // File Attributes
   unsigned long reserved;
 };
 
 struct smb_file_standard_info
 {
-  smb_size allocation_size;		// Allocated size of the file in number of bytes
-  smb_size end_of_file;			// Offset to the first free byte in the file
-  unsigned long number_of_links;	// Number of hard links to the file
-  unsigned char delete_pending;	        // Indicates whether the file is marked for deletion
-  unsigned char directory;		// Indicates whether the file is a directory
+  smb_size allocation_size;             // Allocated size of the file in number of bytes
+  smb_size end_of_file;                 // Offset to the first free byte in the file
+  unsigned long number_of_links;        // Number of hard links to the file
+  unsigned char delete_pending;         // Indicates whether the file is marked for deletion
+  unsigned char directory;              // Indicates whether the file is a directory
   unsigned short pad;
 };
 
@@ -763,76 +763,76 @@ struct smb_file_all_info
 {
   struct smb_file_basic_info basic;
   struct smb_file_standard_info standard;
-  __int64 index_number;			// A file system unique identifier
-  unsigned long ea_size;		// Size of the file’s extended attributes in number of bytes
-  unsigned long access_flags;	  	// Access that a caller has to the file; Possible values and meanings are specified below
-  __int64 current_byte_offset;		// Current byte offset within the file
-  unsigned long mode;			// Current Open mode of the file handle to the file
-  unsigned long alignment_requirement;	// Buffer Alignment required by device; possible values detailed below
-  unsigned long file_name_length;	// Length of the file name in number of bytes
-  char filename[256];			// Name of the file
+  __int64 index_number;                 // A file system unique identifier
+  unsigned long ea_size;                // Size of the file’s extended attributes in number of bytes
+  unsigned long access_flags;           // Access that a caller has to the file; Possible values and meanings are specified below
+  __int64 current_byte_offset;          // Current byte offset within the file
+  unsigned long mode;                   // Current Open mode of the file handle to the file
+  unsigned long alignment_requirement;  // Buffer Alignment required by device; possible values detailed below
+  unsigned long file_name_length;       // Length of the file name in number of bytes
+  char filename[256];                   // Name of the file
 };
 
 struct smb_findfirst_request
 {
-  unsigned short search_attributes;     // Search attributes	
-  unsigned short search_count;	        // Maximum number of entries to return
-  unsigned short flags;	                // Additional information:
- 					//   Bit 0 - close search after this request
-					//   Bit 1 - close search if end of search reached
-					//   Bit 2 - return resume keys for each entry found
-					//   Bit 3 - continue search from previous ending place
-					//   Bit 4 - find with backup intent
-  unsigned short infolevel;		// Information level
-  unsigned long search_storage_type;	
-  char filename[256];			// Pattern for the search
+  unsigned short search_attributes;     // Search attributes    
+  unsigned short search_count;          // Maximum number of entries to return
+  unsigned short flags;                 // Additional information:
+                                        //   Bit 0 - close search after this request
+                                        //   Bit 1 - close search if end of search reached
+                                        //   Bit 2 - return resume keys for each entry found
+                                        //   Bit 3 - continue search from previous ending place
+                                        //   Bit 4 - find with backup intent
+  unsigned short infolevel;             // Information level
+  unsigned long search_storage_type;    
+  char filename[256];                   // Pattern for the search
 };
 
 struct smb_findfirst_response
 {
-  unsigned short sid;			// Search handle
-  unsigned short search_count;		// Number of entries returned
-  unsigned short end_of_search;		// Was last entry returned?
-  unsigned short ea_error_offset;	// Offset into EA list if EA error
-  unsigned short last_name_offset;	// Offset into data to file name of last entry, if server needs it to resume search; else 0
+  unsigned short sid;                   // Search handle
+  unsigned short search_count;          // Number of entries returned
+  unsigned short end_of_search;         // Was last entry returned?
+  unsigned short ea_error_offset;       // Offset into EA list if EA error
+  unsigned short last_name_offset;      // Offset into data to file name of last entry, if server needs it to resume search; else 0
 };
 
 struct smb_findnext_request
 {
-  unsigned short sid;			// Search handle
-  unsigned short search_count;		// Maximum number of entries to return
-  unsigned short infolevel;		// Levels described in TRANS2_FIND_FIRST2 request
-  unsigned long resume_key;		// Value returned by previous find2 call
-  unsigned short flags;			// Additional information::
-					//   Bit 0 - close search after this request
-					//   Bit 1 - close search if end of search reached
-					//   Bit 2 - return resume keys for each entry found
-					//   Bit 3 - resume/continue from previous ending place
-					//   Bit 4 - find with backup intent
-  char filename[1];			// Resume file name
+  unsigned short sid;                   // Search handle
+  unsigned short search_count;          // Maximum number of entries to return
+  unsigned short infolevel;             // Levels described in TRANS2_FIND_FIRST2 request
+  unsigned long resume_key;             // Value returned by previous find2 call
+  unsigned short flags;                 // Additional information::
+                                        //   Bit 0 - close search after this request
+                                        //   Bit 1 - close search if end of search reached
+                                        //   Bit 2 - return resume keys for each entry found
+                                        //   Bit 3 - resume/continue from previous ending place
+                                        //   Bit 4 - find with backup intent
+  char filename[1];                     // Resume file name
 };
 
 struct smb_findnext_response
 {
-  unsigned short search_count;		// Number of entries returned
-  unsigned short end_of_search;		// Was last entry returned?
-  unsigned short ea_error_offset;	// Offset into EA list if EA error
-  unsigned short last_name_offset;	// Offset into data to file name of last entry, if server needs it to resume search; else 0
+  unsigned short search_count;          // Number of entries returned
+  unsigned short end_of_search;         // Was last entry returned?
+  unsigned short ea_error_offset;       // Offset into EA list if EA error
+  unsigned short last_name_offset;      // Offset into data to file name of last entry, if server needs it to resume search; else 0
 };
 
 struct smb_file_directory_info
 {
-  unsigned long next_entry_offset;	// Offset from this structure to beginning of next one
-  unsigned long file_index;	
-  smb_time creation_time;		// File creation time
-  smb_time last_access_time;		// Last access time
-  smb_time last_write_time;		// Last write time
-  smb_time change_time;			// Last attribute change time
-  smb_size end_of_file;			// File size
-  smb_size allocation_aize;		// Size of filesystem allocation information 
-  unsigned long ext_file_attributes;	// Extended file attributes (see section 3.12)
-  unsigned long filename_length;	// Length of filename in bytes
-  char filename[0];			// Name of the file
+  unsigned long next_entry_offset;      // Offset from this structure to beginning of next one
+  unsigned long file_index;     
+  smb_time creation_time;               // File creation time
+  smb_time last_access_time;            // Last access time
+  smb_time last_write_time;             // Last write time
+  smb_time change_time;                 // Last attribute change time
+  smb_size end_of_file;                 // File size
+  smb_size allocation_aize;             // Size of filesystem allocation information 
+  unsigned long ext_file_attributes;    // Extended file attributes (see section 3.12)
+  unsigned long filename_length;        // Length of filename in bytes
+  char filename[0];                     // Name of the file
 };
 
 struct smb_pathinfo_request

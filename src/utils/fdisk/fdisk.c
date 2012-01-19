@@ -101,12 +101,12 @@ int ask(char *question, char *choices)
       s = choices;
       while (*s)
       {
-	if (*s == ch) 
-	{
-	  printf("%c\n", ch);
-	  return ch;
-	}
-	s++;
+        if (*s == ch) 
+        {
+          printf("%c\n", ch);
+          return ch;
+        }
+        s++;
       }
     }
   }
@@ -319,10 +319,10 @@ void list_partitions()
     
     printf("%c", p->bootid == 0x80 ? '*' : ' ');
     printf("%3d  %4u  %3u     %2u  %4u  %3u     %2u %8u %12u  %02x\n",
-	   i, 
-	   p->begcyl + ((p->begsect >> 6) << 8), p->beghead, p->begsect & 0x3F, 
-	   p->endcyl + ((p->endsect >> 6) << 8), p->endhead, p->endsect & 0x3F, 
-	   p->relsect, p->numsect / (1024 / geom.sectorsize), p->systid);
+           i, 
+           p->begcyl + ((p->begsect >> 6) << 8), p->beghead, p->begsect & 0x3F, 
+           p->endcyl + ((p->endsect >> 6) << 8), p->endhead, p->endsect & 0x3F, 
+           p->relsect, p->numsect / (1024 / geom.sectorsize), p->systid);
   }
 }
 
@@ -450,37 +450,37 @@ int main(int argc, char *argv[])
     switch (cmd)
     {
       case 'a':
-	add_partition();
-	break;
+        add_partition();
+        break;
 
       case 'b':
-	set_boot_part();
-	break;
+        set_boot_part();
+        break;
 
       case 'c':
-	commit_mbr();
-	break;
+        commit_mbr();
+        break;
 
       case 'd':
-	delete_partition();
-	break;
+        delete_partition();
+        break;
 
       case 'l':
-	list_partitions();
-	break;
+        list_partitions();
+        break;
 
       case 'm':
         clear_mbr();
-	break;
+        break;
 
       case 'h':
       case '?':
         help();
-	break;
+        break;
 
       case 'x':
-	done = 1;
-	break;
+        done = 1;
+        break;
     }
   }
 

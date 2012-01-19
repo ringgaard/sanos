@@ -109,8 +109,8 @@ static char *cvt(double arg, int ndigits, int *decpt, int *sign, char *buf, int 
       (*decpt)++;
       if (eflag == 0) 
       {
-	if (p > buf) *p = '0';
-	p++;
+        if (p > buf) *p = '0';
+        p++;
       }
     }
   }

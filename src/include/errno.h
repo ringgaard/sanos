@@ -150,7 +150,7 @@
 // Error code aliases
 //
 
-#define	ETIMEOUT	ETIMEDOUT
+#define ETIMEOUT        ETIMEDOUT
 #define EBUF            ENOBUFS
 #define EROUTE          ENETUNREACH
 #define ECONN           ENOTCONN

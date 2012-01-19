@@ -137,14 +137,14 @@ int smb_request(struct smb_share *share, struct smb *smb, unsigned char cmd, int
 }
 
 int smb_trans_send(struct smb_share *share, unsigned short cmd, 
-		   void *params, int paramlen,
-		   void *data, int datalen,
-		   int maxparamlen, int maxdatalen)
+                   void *params, int paramlen,
+                   void *data, int datalen,
+                   int maxparamlen, int maxdatalen)
 {
   struct smb *smb;
   int wordcount = 15;
   int paramofs = ROUNDUP(SMB_HEADER_LEN + 2 * wordcount + 2 + 3);
-  int dataofs =	ROUNDUP(paramofs + paramlen);
+  int dataofs = ROUNDUP(paramofs + paramlen);
   int bcc = dataofs + datalen - (SMB_HEADER_LEN + 2 * wordcount + 2);
   int len = SMB_HEADER_LEN + 2 * wordcount + 2 + bcc;
   char *p;
@@ -213,8 +213,8 @@ int smb_trans_send(struct smb_share *share, unsigned short cmd,
 }
 
 int smb_trans_recv(struct smb_share *share,
-		   void *params, int *paramlen,
-		   void *data, int *datalen)
+                   void *params, int *paramlen,
+                   void *data, int *datalen)
 {
   struct smb *smb;
   int paramofs, paramdisp, paramcnt;
@@ -260,11 +260,11 @@ int smb_trans_recv(struct smb_share *share,
 }
 
 int smb_trans(struct smb_share *share,
-	      unsigned short cmd, 
-	      void *reqparams, int reqparamlen,
-	      void *reqdata, int reqdatalen,
-	      void *rspparams, int *rspparamlen,
-	      void *rspdata, int *rspdatalen)
+              unsigned short cmd, 
+              void *reqparams, int reqparamlen,
+              void *reqdata, int reqdatalen,
+              void *rspparams, int *rspparamlen,
+              void *rspdata, int *rspdatalen)
 {
   int rc;
   int dummyparamlen;
@@ -511,11 +511,11 @@ int smb_release_connection(struct smb_share *share)
 
       for (s = server->shares; s != NULL; s = s->next)
       {
-	if (s->next == share)
-	{
-	  s->next = share->next;
-	  break;
-	}
+        if (s->next == share)
+        {
+          s->next = share->next;
+          break;
+        }
       }
     }
 
@@ -537,8 +537,8 @@ int smb_release_connection(struct smb_share *share)
     {
       if (s->next == server)
       {
-	s->next = server->next;
-	break;
+        s->next = server->next;
+        break;
       }
     }
   }

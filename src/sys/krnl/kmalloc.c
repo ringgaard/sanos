@@ -216,7 +216,7 @@ int kheapstat_proc(struct proc_file *pf, void *arg)
       while (addr)
       {
         addr = *(void **) addr;
-	elems++;
+        elems++;
       }
 
       heapsize += b->pages * PAGESIZE;

@@ -281,24 +281,24 @@ void globalhandler(struct siginfo *info)
     switch (sigtab[signum].defaction)
     {
       case SIGACT_TERM:
-	syslog(LOG_ERR, "terminating with signal %d (%s)", signum, strsignal(signum));
-	exit((signum << 8) | 0x10000);
+        syslog(LOG_ERR, "terminating with signal %d (%s)", signum, strsignal(signum));
+        exit((signum << 8) | 0x10000);
 
       case SIGACT_ABORT:
         if (peb->debug) sigexit(info, 1);
-	syslog(LOG_ERR, "aborting with signal %d (%s)", signum, strsignal(signum));
-	exit((signum << 8) | 0x10000);
+        syslog(LOG_ERR, "aborting with signal %d (%s)", signum, strsignal(signum));
+        exit((signum << 8) | 0x10000);
 
       case SIGACT_IGN:
-	break;
+        break;
 
       case SIGACT_STOP:
-	syslog(LOG_INFO, "stopped");
-	suspend(self());
-	break;
+        syslog(LOG_INFO, "stopped");
+        suspend(self());
+        break;
 
       case SIGACT_CONT:
-	break;
+        break;
     }
   }
   else if (oldact.sa_handler != SIG_IGN)

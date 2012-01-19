@@ -422,43 +422,43 @@ FILE *fopen(const char *filename, const char *mode)
     switch (*mode)
     {
       case '+':
-	oflag &= ~(O_RDONLY | O_WRONLY);
-	oflag |= O_RDWR;
-	break;
+        oflag &= ~(O_RDONLY | O_WRONLY);
+        oflag |= O_RDWR;
+        break;
 
       case 't':
-	oflag &= ~(O_TEXT | O_BINARY);
-	oflag |= O_TEXT;
-	break;
+        oflag &= ~(O_TEXT | O_BINARY);
+        oflag |= O_TEXT;
+        break;
 
       case 'b':
-	oflag &= ~(O_TEXT | O_BINARY);
-	oflag |= O_BINARY;
-	break;
+        oflag &= ~(O_TEXT | O_BINARY);
+        oflag |= O_BINARY;
+        break;
 
       case 'c':
       case 'n':
-	break;
+        break;
 
       case 'S':
-	oflag |= O_SEQUENTIAL;
-	break;
+        oflag |= O_SEQUENTIAL;
+        break;
 
       case 'R':
-	oflag |= O_RANDOM;
-	break;
+        oflag |= O_RANDOM;
+        break;
 
       case 'T':
-	oflag |= O_SHORT_LIVED;
-	break;
+        oflag |= O_SHORT_LIVED;
+        break;
 
       case 'D':
-	oflag |= O_TEMPORARY;
-	break;
+        oflag |= O_TEMPORARY;
+        break;
 
       default:
-	errno = EINVAL;
-	return NULL;
+        errno = EINVAL;
+        return NULL;
     }
   }
 
@@ -503,43 +503,43 @@ FILE *freopen(const char *path, const char *mode, FILE *stream)
     switch (*mode)
     {
       case '+':
-	oflag &= ~(O_RDONLY | O_WRONLY);
-	oflag |= O_RDWR;
-	break;
+        oflag &= ~(O_RDONLY | O_WRONLY);
+        oflag |= O_RDWR;
+        break;
 
       case 't':
-	oflag &= ~(O_TEXT | O_BINARY);
-	oflag |= O_TEXT;
-	break;
+        oflag &= ~(O_TEXT | O_BINARY);
+        oflag |= O_TEXT;
+        break;
 
       case 'b':
-	oflag &= ~(O_TEXT | O_BINARY);
-	oflag |= O_BINARY;
-	break;
+        oflag &= ~(O_TEXT | O_BINARY);
+        oflag |= O_BINARY;
+        break;
 
       case 'c':
       case 'n':
-	break;
+        break;
 
       case 'S':
-	oflag |= O_SEQUENTIAL;
-	break;
+        oflag |= O_SEQUENTIAL;
+        break;
 
       case 'R':
-	oflag |= O_RANDOM;
-	break;
+        oflag |= O_RANDOM;
+        break;
 
       case 'T':
-	oflag |= O_SHORT_LIVED;
-	break;
+        oflag |= O_SHORT_LIVED;
+        break;
 
       case 'D':
-	oflag |= O_TEMPORARY;
-	break;
+        oflag |= O_TEMPORARY;
+        break;
 
       default:
-	errno = EINVAL;
-	return NULL;
+        errno = EINVAL;
+        return NULL;
     }
   }
 

@@ -443,7 +443,7 @@ int probe_vmi()
       if (rom->APIVersionMajor == VMI_API_REV_MAJOR)
       {
         vmi = rom;
-	break;
+        break;
       }
     }
   }

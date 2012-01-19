@@ -89,9 +89,9 @@ void __stdcall threadstart(struct tib *tib)
   // Set usermode segment selectors
   __asm
   {
-    mov	ax, SEL_UDATA + SEL_RPL3
-    mov	ds, ax
-    mov	es, ax
+    mov ax, SEL_UDATA + SEL_RPL3
+    mov ds, ax
+    mov es, ax
   }
 
   // Call thread routine
@@ -325,10 +325,10 @@ int getchildstat(pid_t pid, int *status)
     {
       if (z->pid == pid)
       {      
-	if (pz)
-	  pz->next = z->next;
-	else
-	  proc->zombies = z->next;
+        if (pz)
+          pz->next = z->next;
+        else
+          proc->zombies = z->next;
 
         break;
       }
@@ -552,7 +552,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
       while (1)
       {
         rc = waitone(hthread, INFINITE);
-	if (rc >= 0 || errno != EINTR) break;
+        if (rc >= 0 || errno != EINTR) break;
       }
       close(hthread);
     }

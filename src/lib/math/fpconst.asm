@@ -2,7 +2,7 @@
 ; fpconst.asm - floating point constants
 ;-----------------------------------------------------------------------------
 
-        	SECTION	.data
+                SECTION .data
 
                 global  _fltused
                 global  __fltused

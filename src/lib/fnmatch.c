@@ -59,74 +59,74 @@ int fnmatch(const char *pattern, const char *string, int flags)
     switch (c = *pattern++) 
     {
       case EOS:
-	return *string == EOS ? 0 : FNM_NOMATCH;
+        return *string == EOS ? 0 : FNM_NOMATCH;
 
       case '?':
-	if (*string == EOS) return FNM_NOMATCH;
-	if (*string == '/' && (flags & FNM_PATHNAME)) return FNM_NOMATCH;
+        if (*string == EOS) return FNM_NOMATCH;
+        if (*string == '/' && (flags & FNM_PATHNAME)) return FNM_NOMATCH;
 
-	if (*string == '.' && 
-	    (flags & FNM_PERIOD) &&
-	    (string == stringstart || ((flags & FNM_PATHNAME) && *(string - 1) == '/')))
-	  return FNM_NOMATCH;
+        if (*string == '.' && 
+            (flags & FNM_PERIOD) &&
+            (string == stringstart || ((flags & FNM_PATHNAME) && *(string - 1) == '/')))
+          return FNM_NOMATCH;
 
-	string++;
-	break;
+        string++;
+        break;
 
       case '*':
-	c = *pattern;
-	// Collapse multiple stars
-	while (c == '*') c = *++pattern;
+        c = *pattern;
+        // Collapse multiple stars
+        while (c == '*') c = *++pattern;
         
-	if (*string == '.' && 
-	    (flags & FNM_PERIOD) && 
-	    (string == stringstart || ((flags & FNM_PATHNAME) && *(string - 1) == '/')))
-	  return FNM_NOMATCH;
+        if (*string == '.' && 
+            (flags & FNM_PERIOD) && 
+            (string == stringstart || ((flags & FNM_PATHNAME) && *(string - 1) == '/')))
+          return FNM_NOMATCH;
 
-	// Optimize for pattern with * at end or before
-	if (c == EOS) 
-	{
-	  if (flags & FNM_PATHNAME) 
-	    return strchr(string, '/') == NULL ? 0 : FNM_NOMATCH;
-	  else 
-	    return (0);
-	} 
-	else if (c == '/' && flags & FNM_PATHNAME) 
-	{
-	  if ((string = strchr(string, '/')) == NULL) return FNM_NOMATCH;
-	  break;
-	}
+        // Optimize for pattern with * at end or before
+        if (c == EOS) 
+        {
+          if (flags & FNM_PATHNAME) 
+            return strchr(string, '/') == NULL ? 0 : FNM_NOMATCH;
+          else 
+            return (0);
+        } 
+        else if (c == '/' && flags & FNM_PATHNAME) 
+        {
+          if ((string = strchr(string, '/')) == NULL) return FNM_NOMATCH;
+          break;
+        }
 
-	// General case, use recursion
-	while ((test = *string) != EOS) 
-	{
-	  if (!fnmatch(pattern, string, flags & ~FNM_PERIOD)) return 0;
-	  if (test == '/' && flags & FNM_PATHNAME) break;
-	  string++;
-	}
-	return FNM_NOMATCH;
+        // General case, use recursion
+        while ((test = *string) != EOS) 
+        {
+          if (!fnmatch(pattern, string, flags & ~FNM_PERIOD)) return 0;
+          if (test == '/' && flags & FNM_PATHNAME) break;
+          string++;
+        }
+        return FNM_NOMATCH;
 
       case '[':
-	if (*string == EOS) return FNM_NOMATCH;
-	if (*string == '/' && flags & FNM_PATHNAME) return FNM_NOMATCH;
-	if ((pattern = rangematch(pattern, *string, flags)) == NULL) return FNM_NOMATCH;
-	string++;
-	break;
+        if (*string == EOS) return FNM_NOMATCH;
+        if (*string == '/' && flags & FNM_PATHNAME) return FNM_NOMATCH;
+        if ((pattern = rangematch(pattern, *string, flags)) == NULL) return FNM_NOMATCH;
+        string++;
+        break;
 
       case '\\':
-	if (!(flags & FNM_NOESCAPE)) 
-	{
-	  if ((c = *pattern++) == EOS) 
-	  {
-	    c = '\\';
-	    pattern--;
-	  }
-	}
-	// FALLTHROUGH
+        if (!(flags & FNM_NOESCAPE)) 
+        {
+          if ((c = *pattern++) == EOS) 
+          {
+            c = '\\';
+            pattern--;
+          }
+        }
+        // FALLTHROUGH
 
       default:
-	if (c != *string++) return FNM_NOMATCH;
-	break;
+        if (c != *string++) return FNM_NOMATCH;
+        break;
     }
   }
 }

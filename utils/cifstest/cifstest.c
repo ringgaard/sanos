@@ -52,7 +52,7 @@ static time_t date_dos2unix(struct smb_session *sess, unsigned short date, unsig
   year = date >> 9;
   secs = (time & 31) * 2 + 60 * ((time >> 5) & 63) + (time >> 11) * 3600 + 86400 *
          ((date & 31) - 1 + day_n[month] + (year / 4) + year * 365 - ((year & 3) == 0 &&
-	 month < 2 ? 1 : 0) + 3653);
+         month < 2 ? 1 : 0) + 3653);
 
   return secs + sess->tzofs;
 }
@@ -67,8 +67,8 @@ static void date_unix2dos(struct smb_session *sess, int unix_date, unsigned shor
 
   unix_date -= sess->tzofs;
   *time = (unix_date % 60) / 2 +
-	  (((unix_date / 60) % 60) << 5) +
-	  (((unix_date / 3600) % 24) << 11);
+          (((unix_date / 60) % 60) << 5) +
+          (((unix_date / 3600) % 24) << 11);
 
   day = unix_date / 86400 - 3652;
   year = day / 365;
@@ -269,14 +269,14 @@ void *get_smb_data(struct smb *smb)
 #define ROUNDUP(x) (((x) + 3) & ~3)
 
 int smb_trans_send(struct smb_session *sess, unsigned short cmd, 
-		   void *params, int paramlen,
-		   void *data, int datalen,
-		   int maxparamlen, int maxdatalen)
+                   void *params, int paramlen,
+                   void *data, int datalen,
+                   int maxparamlen, int maxdatalen)
 {
   struct smb *smb = sess->packet;
   int wordcount = 15;
   int paramofs = ROUNDUP(SMB_HEADER_LEN + 2 * wordcount + 2 + 3);
-  int dataofs =	ROUNDUP(paramofs + paramlen);
+  int dataofs = ROUNDUP(paramofs + paramlen);
   int bcc = dataofs + datalen - (SMB_HEADER_LEN + 2 * wordcount + 2);
   int len = SMB_HEADER_LEN + 2 * wordcount + 2 + bcc;
   char *p;
@@ -327,8 +327,8 @@ int smb_trans_send(struct smb_session *sess, unsigned short cmd,
 }
 
 int smb_trans_recv(struct smb_session *sess,
-		   void *params, int *paramlen,
-		   void *data, int *datalen)
+                   void *params, int *paramlen,
+                   void *data, int *datalen)
 {
   struct smb *smb;
   int paramofs, paramdisp, paramcnt;
@@ -377,11 +377,11 @@ int smb_trans_recv(struct smb_session *sess,
 }
 
 int smb_trans(struct smb_session *sess,
-	      unsigned short cmd, 
-	      void *reqparams, int reqparamlen,
-	      void *reqdata, int reqdatalen,
-	      void *rspparams, int *rspparamlen,
-	      void *rspdata, int *rspdatalen)
+              unsigned short cmd, 
+              void *reqparams, int reqparamlen,
+              void *reqdata, int reqdatalen,
+              void *rspparams, int *rspparamlen,
+              void *rspdata, int *rspdatalen)
 {
   int rc;
   int dummyparamlen;
@@ -942,11 +942,11 @@ int smb_listdir(struct smb_session *sess, char *dirname)
       skip = fi->filename[0] == '.' && (fi->filename[1] == 0 || (fi->filename[1] == '.' && fi->filename[2] == 0));
       if (!skip)
       {
-	created = ft2time(fi->creation_time);
-	modified = ft2time(fi->last_write_time);
-	size = (size_t) fi->end_of_file;
+        created = ft2time(fi->creation_time);
+        modified = ft2time(fi->last_write_time);
+        size = (size_t) fi->end_of_file;
 
-	printf("%04X %-32s%12d %s %s", fi->ext_file_attributes, fi->filename, size, fi->ext_file_attributes & SMB_FILE_ATTR_DIRECTORY ? "DIR" : "   ", asctime(gmtime(&modified)));
+        printf("%04X %-32s%12d %s %s", fi->ext_file_attributes, fi->filename, size, fi->ext_file_attributes & SMB_FILE_ATTR_DIRECTORY ? "DIR" : "   ", asctime(gmtime(&modified)));
       }
 
       fi = (struct smb_file_directory_info *) ((char *) fi + fi->next_entry_offset);

@@ -37,88 +37,88 @@
 // Keyboard Ports
 //
 
-#define KBD_DATA	0x60	// I/O port for keyboard data
-#define KBD_COMMAND	0x64	// I/O port for keyboard commands (write)
-#define KBD_STATUS	0x64	// I/O port for keyboard status (read)
+#define KBD_DATA        0x60    // I/O port for keyboard data
+#define KBD_COMMAND     0x64    // I/O port for keyboard commands (write)
+#define KBD_STATUS      0x64    // I/O port for keyboard status (read)
 
 //
 // Keyboard Controller Commands
 //
 
-#define KBD_CCMD_READ_MODE	0x20	// Read mode bits
-#define KBD_CCMD_WRITE_MODE	0x60	// Write mode bits
-#define KBD_CCMD_GET_VERSION	0xA1	// Get controller version
-#define KBD_CCMD_MOUSE_DISABLE	0xA7	// Disable mouse interface
-#define KBD_CCMD_MOUSE_ENABLE	0xA8	// Enable mouse interface
-#define KBD_CCMD_TEST_MOUSE	0xA9	// Mouse interface test
-#define KBD_CCMD_SELF_TEST	0xAA	// Controller self test
-#define KBD_CCMD_KBD_TEST	0xAB	// Keyboard interface test
-#define KBD_CCMD_KBD_DISABLE	0xAD	// Keyboard interface disable
-#define KBD_CCMD_KBD_ENABLE	0xAE	// Keyboard interface enable
-#define KBD_CCMD_WRITE_AUX_OBUF	0xD3    // Write to output buffer as if initiated by the auxiliary device
-#define KBD_CCMD_WRITE_MOUSE	0xD4	// Write the following byte to the mouse
+#define KBD_CCMD_READ_MODE      0x20    // Read mode bits
+#define KBD_CCMD_WRITE_MODE     0x60    // Write mode bits
+#define KBD_CCMD_GET_VERSION    0xA1    // Get controller version
+#define KBD_CCMD_MOUSE_DISABLE  0xA7    // Disable mouse interface
+#define KBD_CCMD_MOUSE_ENABLE   0xA8    // Enable mouse interface
+#define KBD_CCMD_TEST_MOUSE     0xA9    // Mouse interface test
+#define KBD_CCMD_SELF_TEST      0xAA    // Controller self test
+#define KBD_CCMD_KBD_TEST       0xAB    // Keyboard interface test
+#define KBD_CCMD_KBD_DISABLE    0xAD    // Keyboard interface disable
+#define KBD_CCMD_KBD_ENABLE     0xAE    // Keyboard interface enable
+#define KBD_CCMD_WRITE_AUX_OBUF 0xD3    // Write to output buffer as if initiated by the auxiliary device
+#define KBD_CCMD_WRITE_MOUSE    0xD4    // Write the following byte to the mouse
 
 //
 // Keyboard Commands
 //
 
-#define KBD_CMD_SET_LEDS	0xED	// Set keyboard leds
-#define KBD_CMD_SET_RATE	0xF3	// Set typematic rate
-#define KBD_CMD_ENABLE		0xF4	// Enable scanning
-#define KBD_CMD_DISABLE		0xF5	// Disable scanning
-#define KBD_CMD_RESET		0xFF	// Reset
+#define KBD_CMD_SET_LEDS        0xED    // Set keyboard leds
+#define KBD_CMD_SET_RATE        0xF3    // Set typematic rate
+#define KBD_CMD_ENABLE          0xF4    // Enable scanning
+#define KBD_CMD_DISABLE         0xF5    // Disable scanning
+#define KBD_CMD_RESET           0xFF    // Reset
 
 //
 // Keyboard Replies
 //
 
-#define KBD_REPLY_POR		0xAA	// Power on reset
-#define KBD_REPLY_ACK		0xFA	// Command ACK
-#define KBD_REPLY_RESEND	0xFE	// Command NACK, send command again
+#define KBD_REPLY_POR           0xAA    // Power on reset
+#define KBD_REPLY_ACK           0xFA    // Command ACK
+#define KBD_REPLY_RESEND        0xFE    // Command NACK, send command again
 
 //
 // Keyboard Status Register Bits
 //
 
-#define KBD_STAT_OBF 		0x01	// Keyboard output buffer full
-#define KBD_STAT_IBF 		0x02	// Keyboard input buffer full
-#define KBD_STAT_SELFTEST	0x04	// Self test successful
-#define KBD_STAT_CMD		0x08	// Last write was a command write
-#define KBD_STAT_UNLOCKED	0x10	// Zero if keyboard locked
-#define KBD_STAT_MOUSE_OBF	0x20	// Mouse output buffer full
-#define KBD_STAT_GTO 		0x40	// General receive/xmit timeout
-#define KBD_STAT_PERR 		0x80	// Parity error
+#define KBD_STAT_OBF            0x01    // Keyboard output buffer full
+#define KBD_STAT_IBF            0x02    // Keyboard input buffer full
+#define KBD_STAT_SELFTEST       0x04    // Self test successful
+#define KBD_STAT_CMD            0x08    // Last write was a command write
+#define KBD_STAT_UNLOCKED       0x10    // Zero if keyboard locked
+#define KBD_STAT_MOUSE_OBF      0x20    // Mouse output buffer full
+#define KBD_STAT_GTO            0x40    // General receive/xmit timeout
+#define KBD_STAT_PERR           0x80    // Parity error
 
 //
 // Controller Mode Register Bits
 //
 
-#define KBD_MODE_KBD_INT	0x01	// Keyboard data generate IRQ1
-#define KBD_MODE_MOUSE_INT	0x02	// Mouse data generate IRQ12
-#define KBD_MODE_SYS 		0x04	// System flag
-#define KBD_MODE_NO_KEYLOCK	0x08	// The keylock doesn't affect the keyboard if set
-#define KBD_MODE_DISABLE_KBD	0x10	// Disable keyboard interface
-#define KBD_MODE_DISABLE_MOUSE	0x20	// Disable mouse interface
-#define KBD_MODE_KCC 		0x40	// Scan code conversion to PC format
-#define KBD_MODE_RFU		0x80
+#define KBD_MODE_KBD_INT        0x01    // Keyboard data generate IRQ1
+#define KBD_MODE_MOUSE_INT      0x02    // Mouse data generate IRQ12
+#define KBD_MODE_SYS            0x04    // System flag
+#define KBD_MODE_NO_KEYLOCK     0x08    // The keylock doesn't affect the keyboard if set
+#define KBD_MODE_DISABLE_KBD    0x10    // Disable keyboard interface
+#define KBD_MODE_DISABLE_MOUSE  0x20    // Disable mouse interface
+#define KBD_MODE_KCC            0x40    // Scan code conversion to PC format
+#define KBD_MODE_RFU            0x80
 
 //
 // Keyboard LEDs
 //
-#define LED_NUM_LOCK		2
-#define LED_SCROLL_LOCK		1
-#define LED_CAPS_LOCK		4
+#define LED_NUM_LOCK            2
+#define LED_SCROLL_LOCK         1
+#define LED_CAPS_LOCK           4
 
 //
 // Control Keys
 //
 
-#define CK_LSHIFT	        0x01
-#define	CK_LALT		        0x02
-#define CK_LCTRL		0x04
-#define CK_RSHIFT 	        0x10
-#define CK_RALT 	        0x20
-#define CK_RCTRL 	        0x40
+#define CK_LSHIFT               0x01
+#define CK_LALT                 0x02
+#define CK_LCTRL                0x04
+#define CK_RSHIFT               0x10
+#define CK_RALT                 0x20
+#define CK_RCTRL                0x40
 
 #define KEYBOARD_BUFFER_SIZE    256
 #define KEYBOARD_TIMEOUT        100000
@@ -243,7 +243,7 @@ void kbd_reboot()
   kbd_write_command(0xFE);
   cli();
   halt();
-}		
+}               
 
 //
 // Set keyboard LEDs
@@ -353,7 +353,7 @@ static void process_scancode(unsigned int scancode)
   // Alt key
   if (!ext && scancode == 0x38) control_keys |= CK_LALT;
   if (!ext && scancode == 0x80 + 0x38) control_keys &= ~CK_LALT;
-	  
+          
   // AltGr key
   if (ext && scancode == 0x38) control_keys |= CK_RALT;
   if (ext && scancode == (0x38 | 0x80)) control_keys &= ~CK_RALT;
@@ -390,12 +390,12 @@ static void process_scancode(unsigned int scancode)
     {
       if (keycode <= 0xFF)
       {
-	insert_key((unsigned char) keycode);
+        insert_key((unsigned char) keycode);
       }
       else
       {
-	insert_key((unsigned char) (keycode & 0xFF));
-	insert_key((unsigned char) (keycode >> 8));
+        insert_key((unsigned char) (keycode & 0xFF));
+        insert_key((unsigned char) (keycode >> 8));
       }
     }
   }

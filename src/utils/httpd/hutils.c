@@ -76,19 +76,19 @@ int decode_url(char *from, char *to)
       x1 = *from++;
       if (!isxdigit(x1)) 
       {
-	errno = EINVAL;
-	return -1;
+        errno = EINVAL;
+        return -1;
       }
       x2 = *from++;
       if (!isxdigit(x2)) 
       {
-	errno = EINVAL;
-	return -1;
+        errno = EINVAL;
+        return -1;
       }
       if (x1 == 0 && x2 == 0) 
       {
-	errno = EINVAL;
-	return -1;
+        errno = EINVAL;
+        return -1;
       }
       *to++ = (hexdigit(x1) << 4) + hexdigit(x2);
     } 
@@ -113,14 +113,14 @@ void encode_url(const char *from, char *to)
       case '?':
       case '+':
       case '&':
-	*to++ = '%';
-	*to++ = hex[(c >> 4) & 15];
-	*to++ = hex[c & 15];
-	break;
+        *to++ = '%';
+        *to++ = hex[(c >> 4) & 15];
+        *to++ = hex[c & 15];
+        break;
 
       default:
-	*to++ = c;
-	break;
+        *to++ = c;
+        break;
     }
   }
   *to = 0;
@@ -153,88 +153,88 @@ time_t timerfc(char *s)
     switch (state) 
     {
       case D_START:
-	if (c == ' ') 
-	{
-	  state = D_MON;
-	  isctime = 1;
-	} 
-	else if (c == ',') 
-	  state = D_DAY;
-	break;
+        if (c == ' ') 
+        {
+          state = D_MON;
+          isctime = 1;
+        } 
+        else if (c == ',') 
+          state = D_DAY;
+        break;
 
       case D_MON:
-	if (isalpha(c)) 
-	{
-	  if (n < 3) month[n++] = c;
-	} 
-	else 
-	{
-	  if (n < 3) return -1;
-	  n = 0;
-	  state = isctime ? D_DAY : D_YEAR;
-	}
-	break;
+        if (isalpha(c)) 
+        {
+          if (n < 3) month[n++] = c;
+        } 
+        else 
+        {
+          if (n < 3) return -1;
+          n = 0;
+          state = isctime ? D_DAY : D_YEAR;
+        }
+        break;
 
       case D_DAY:
-	if (c == ' ' && flag)
-	{
-	}
-	else if (isdigit(c)) 
-	{
-	  flag = 0;
-	  n = 10 * n + (c - '0');
-	} 
-	else 
-	{
-	  tm.tm_mday = n;
-	  n = 0;
-	  state = isctime ? D_HOUR : D_MON;
-	}
-	break;
+        if (c == ' ' && flag)
+        {
+        }
+        else if (isdigit(c)) 
+        {
+          flag = 0;
+          n = 10 * n + (c - '0');
+        } 
+        else 
+        {
+          tm.tm_mday = n;
+          n = 0;
+          state = isctime ? D_HOUR : D_MON;
+        }
+        break;
 
       case D_YEAR:
-	if (isdigit(c))
-	  n = 10 * n + (c - '0');
-	else 
-	{
-	  tm.tm_year = n;
-   	  n = 0;
-  	  state = isctime ? D_END : D_HOUR;
-	}
-	break;
+        if (isdigit(c))
+          n = 10 * n + (c - '0');
+        else 
+        {
+          tm.tm_year = n;
+          n = 0;
+          state = isctime ? D_END : D_HOUR;
+        }
+        break;
 
       case D_HOUR:
-	if (isdigit(c))
-  	  n = 10 * n + (c - '0');
-	else 
-	{
-	  tm.tm_hour = n;
-	  n = 0;
-	  state = D_MIN;
-	}
-	break;
+        if (isdigit(c))
+          n = 10 * n + (c - '0');
+        else 
+        {
+          tm.tm_hour = n;
+          n = 0;
+          state = D_MIN;
+        }
+        break;
 
       case D_MIN:
-	if (isdigit(c))
-  	  n = 10 * n + (c - '0');
-	else 
-	{
-	  tm.tm_min = n;
-	  n = 0;
-	  state = D_SEC;
-	}
-	break;
+        if (isdigit(c))
+          n = 10 * n + (c - '0');
+        else 
+        {
+          tm.tm_min = n;
+          n = 0;
+          state = D_SEC;
+        }
+        break;
 
       case D_SEC:
-	if (isdigit(c))
-  	  n = 10 * n + (c - '0');
-	else
-	{
-	  tm.tm_sec = n;
-	  n = 0;
-	  state = isctime ? D_YEAR : D_END;
-	}
-	break;
+        if (isdigit(c))
+          n = 10 * n + (c - '0');
+        else
+        {
+          tm.tm_sec = n;
+          n = 0;
+          state = isctime ? D_YEAR : D_END;
+        }
+        break;
     }
   }
 

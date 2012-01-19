@@ -46,24 +46,24 @@
 
 struct smbios_eps 
 {
-  unsigned char	anchor[4]; // '_SM_'
-  unsigned char	checksum;
-  unsigned char	length;
+  unsigned char anchor[4]; // '_SM_'
+  unsigned char checksum;
+  unsigned char length;
 
-  unsigned char	smbios_major;
-  unsigned char	smbios_minor;
+  unsigned char smbios_major;
+  unsigned char smbios_minor;
   unsigned short max_size;
-  unsigned char	revision;
-  unsigned char	formatted_area[5];
+  unsigned char revision;
+  unsigned char formatted_area[5];
 
-  unsigned char	intermediate_anchor[5];	// '_DMI_'
-  unsigned char	intermediate_checksum;
+  unsigned char intermediate_anchor[5]; // '_DMI_'
+  unsigned char intermediate_checksum;
 
   unsigned short structure_table_length;
-  unsigned long	structure_table_address;
+  unsigned long structure_table_address;
   unsigned short structure_count;
 
-  unsigned char	smbios_bcd_revision;
+  unsigned char smbios_bcd_revision;
 };
 
 #pragma pack(pop)

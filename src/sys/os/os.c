@@ -243,13 +243,13 @@ int canonicalize(const char *filename, char *buffer, int size)
       // We do not allow control characters in filenames
       if (*filename > 0 && *filename < ' ') 
       {
-	errno = EINVAL;
-	return -1;
+        errno = EINVAL;
+        return -1;
       }
       if (p == end) 
       {
-	errno = ENAMETOOLONG;
-	return -1;
+        errno = ENAMETOOLONG;
+        return -1;
       }
       *p++ = *filename++;
       len++;
@@ -265,8 +265,8 @@ int canonicalize(const char *filename, char *buffer, int size)
       p -= 4;
       if (p < buffer) 
       {
-	errno = EINVAL;
-	return -1;
+        errno = EINVAL;
+        return -1;
       }
       while (*p != PS1) p--;
     }
@@ -467,18 +467,18 @@ static void *load_image(char *filename)
     {
       if (lseek(f, imghdr->sections[i].pointer_to_raw_data, SEEK_SET) != imghdr->sections[i].pointer_to_raw_data)
       {
-	munmap(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
-	close(f);
+        munmap(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
+        close(f);
         free(buffer);
-	return NULL;
+        return NULL;
       }
 
       if (read(f, RVA(imgbase, imghdr->sections[i].virtual_address), imghdr->sections[i].size_of_raw_data) != (int) imghdr->sections[i].size_of_raw_data)
       {
-	munmap(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
-	close(f);
+        munmap(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
+        close(f);
         free(buffer);
-	return NULL;
+        return NULL;
       }
     }
   }
@@ -861,11 +861,11 @@ void init_mount()
       opts = strchr(type, ',');
       if (opts)
       {
-	*opts++ = 0;
-	while (*opts == ' ') opts++;
+        *opts++ = 0;
+        while (*opts == ' ') opts++;
       }
       else
-	opts = NULL;
+        opts = NULL;
     }
     else
     {
@@ -901,9 +901,9 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 #else  
   __asm
   {
-    mov	ax, SEL_UDATA + SEL_RPL3
-    mov	ds, ax
-    mov	es, ax
+    mov ax, SEL_UDATA + SEL_RPL3
+    mov ds, ax
+    mov es, ax
   }
 #endif
 

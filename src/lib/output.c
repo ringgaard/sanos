@@ -91,9 +91,9 @@ static void cfltcvt(double value, char *buffer, char fmt, int precision, int cap
     if (decpt == 0)
     {
       if (value == 0.0)
-	exp = 0;
+        exp = 0;
       else
-	exp = -1;
+        exp = -1;
     }
     else
       exp = decpt - 1;
@@ -121,19 +121,19 @@ static void cfltcvt(double value, char *buffer, char fmt, int precision, int cap
     {
       if (decpt <= 0)
       {
-	*buffer++ = '0';
-	*buffer++ = '.';
-	for (pos = 0; pos < -decpt; pos++) *buffer++ = '0';
-	while (*digits) *buffer++ = *digits++;
+        *buffer++ = '0';
+        *buffer++ = '.';
+        for (pos = 0; pos < -decpt; pos++) *buffer++ = '0';
+        while (*digits) *buffer++ = *digits++;
       }
       else
       {
-	pos = 0;
-	while (*digits)
-	{
-	  if (pos++ == decpt) *buffer++ = '.';
-	  *buffer++ = *digits++;
-	}
+        pos = 0;
+        while (*digits)
+        {
+          if (pos++ == decpt) *buffer++ = '.';
+          *buffer++ = *digits++;
+        }
       }
     }
     else
@@ -141,8 +141,8 @@ static void cfltcvt(double value, char *buffer, char fmt, int precision, int cap
       *buffer++ = '0';
       if (precision > 0)
       {
-	*buffer++ = '.';
-	for (pos = 0; pos < precision; pos++) *buffer++ = '0';
+        *buffer++ = '.';
+        for (pos = 0; pos < precision; pos++) *buffer++ = '0';
       }
     }
   }
@@ -299,36 +299,36 @@ int _output(FILE *stream, const char *format, va_list args)
         break;
      
       case 's': // Zero terminated character string
-	text = va_arg(args, char *);
-	if (text == NULL)
-	{
-	  text = "(null)";
-	  textlen = 6;
-	}
-	else
-	{
-	  char *p;
+        text = va_arg(args, char *);
+        if (text == NULL)
+        {
+          text = "(null)";
+          textlen = 6;
+        }
+        else
+        {
+          char *p;
 
-	  int maxlen = precision == -1 ? INT_MAX : precision;
-	  textlen = 0;
-	  p = text;
+          int maxlen = precision == -1 ? INT_MAX : precision;
+          textlen = 0;
+          p = text;
           while (maxlen-- && *p) p++;
           textlen = p - text;
         }
-	break;
+        break;
 
       case 'n': // Number of characters successfully written so far
-	if (qualifier == 'l')
-	{
-	  long *ip = va_arg(args, long *);
-	  *ip = cnt;
-	}
-	else
-	{
-	  int *ip = va_arg(args, int *);
-	  *ip = cnt;
-	}
-	continue;
+        if (qualifier == 'l')
+        {
+          long *ip = va_arg(args, long *);
+          *ip = cnt;
+        }
+        else
+        {
+          int *ip = va_arg(args, int *);
+          *ip = cnt;
+        }
+        continue;
 
       case 'd': // Signed decimal integer
       case 'i':
@@ -492,7 +492,7 @@ int _output(FILE *stream, const char *format, va_list args)
       case 'G':
         capexp = 1;      // Capitalize exponent
         ch += 'a' - 'A'; // Convert format char to lower
-	// Drop through to float formatting
+        // Drop through to float formatting
 
       case 'e':
       case 'f':
@@ -500,38 +500,38 @@ int _output(FILE *stream, const char *format, va_list args)
         flags |= FL_SIGNED; // Floating point is signed conversion
         text = buffer;      // Put result in buffer
 
-	// Get floating point value
-	fltval = va_arg(args, double);
+        // Get floating point value
+        fltval = va_arg(args, double);
 
-	if (isfinite(fltval))
-	{
-	  // Compute the precision value
-	  if (precision < 0)
-	    precision = 6; // Default precision: 6
-	  else if (precision == 0 && ch == 'g')
-	    precision = 1; // ANSI specified
+        if (isfinite(fltval))
+        {
+          // Compute the precision value
+          if (precision < 0)
+            precision = 6; // Default precision: 6
+          else if (precision == 0 && ch == 'g')
+            precision = 1; // ANSI specified
 
-	  // Convert floating point number to text
-	  cfltcvt(fltval, text, ch, precision, capexp);
+          // Convert floating point number to text
+          cfltcvt(fltval, text, ch, precision, capexp);
 
-	  // '#' and precision == 0 means force a decimal point
-	  if ((flags & FL_ALTERNATE) && precision == 0) forcdecpt(text);
+          // '#' and precision == 0 means force a decimal point
+          if ((flags & FL_ALTERNATE) && precision == 0) forcdecpt(text);
 
-	  // 'g' format means crop zero unless '#' given
-	  if (ch == 'g' && !(flags & FL_ALTERNATE)) cropzeros(text);
-	}
-	else if (isnan(fltval))
+          // 'g' format means crop zero unless '#' given
+          if (ch == 'g' && !(flags & FL_ALTERNATE)) cropzeros(text);
+        }
+        else if (isnan(fltval))
           strcpy(buffer, "NaN");
         else if (fltval == HUGE_VAL)
           strcpy(buffer, "+INF");
         else if (fltval == -HUGE_VAL)
           strcpy(buffer, "-INF");
-	else
-	  strcpy(buffer, "?FLT?");
+        else
+          strcpy(buffer, "?FLT?");
 
         // Check if result was negative, save '-' for later and point to positive part (this is for '0' padding)
         if (*text == '-')
-	{
+        {
           flags |= FL_NEGATIVE;
           text++;
         }
@@ -541,8 +541,8 @@ int _output(FILE *stream, const char *format, va_list args)
       case '%':
         text = "%";
         textlen = 1;
-	break;
-	
+        break;
+        
       default:
         text = "";
         textlen = 0;
@@ -577,9 +577,9 @@ int _output(FILE *stream, const char *format, va_list args)
       // Pad on left with blanks
       while (padding > 0)
       {
-	putc(' ', stream);
-	cnt++;
-	padding--;
+        putc(' ', stream);
+        cnt++;
+        padding--;
       }
     }
 
@@ -590,8 +590,8 @@ int _output(FILE *stream, const char *format, va_list args)
 
       for (n = 0; n < prefixlen; n++)
       {
-	putc(prefix[n], stream);
-	cnt++;
+        putc(prefix[n], stream);
+        cnt++;
       }
     }
 
@@ -601,9 +601,9 @@ int _output(FILE *stream, const char *format, va_list args)
       // Write leading zeros
       while (padding > 0)
       {
-	putc('0', stream);
-	cnt++;
-	padding--;
+        putc('0', stream);
+        cnt++;
+        padding--;
       }
     }
 
@@ -622,9 +622,9 @@ int _output(FILE *stream, const char *format, va_list args)
       // Pad on right with blanks
       while (padding > 0)
       {
-	putc(' ', stream);
-	cnt++;
-	padding--;
+        putc(' ', stream);
+        cnt++;
+        padding--;
       }
     }
   }

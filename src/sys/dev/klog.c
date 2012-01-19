@@ -94,16 +94,16 @@ static void add_to_klog(char *buf, int size)
     {
       while (klogbuf[klog_start] != '\n' && klog_size > 0) 
       {
-	klog_size--;
-	klog_start++;
-	if (klog_start == KLOG_SIZE) klog_start = 0;
+        klog_size--;
+        klog_start++;
+        if (klog_start == KLOG_SIZE) klog_start = 0;
       }
 
       if (klog_size > 0)
       {
-	klog_size--;
-	klog_start++;
-	if (klog_start == KLOG_SIZE) klog_start = 0;
+        klog_size--;
+        klog_start++;
+        if (klog_start == KLOG_SIZE) klog_start = 0;
       }
     }
 

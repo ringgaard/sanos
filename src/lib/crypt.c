@@ -355,9 +355,9 @@ osapi char *crypt_r(const char *key, const char *salt, char *buf)
     {
       if ((c >> j) & 01) 
       {
-	temp = s.E[6 * i + j];
-	s.E[6 * i + j] = s.E[6 * i + j + 24];
-	s.E[6 * i + j + 24] = temp;
+        temp = s.E[6 * i + j];
+        s.E[6 * i + j] = s.E[6 * i + j + 24];
+        s.E[6 * i + j + 24] = temp;
       }
     }
   }

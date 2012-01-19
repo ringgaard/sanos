@@ -76,36 +76,36 @@ int main(int argc, char *argv[])
     {
       while (!*username)
       {
-	if (*sys.nodename)
-	{
-	  write(fdout, sys.nodename, strlen(sys.nodename));
-	  write(fdout, " ", 1);
-	}
+        if (*sys.nodename)
+        {
+          write(fdout, sys.nodename, strlen(sys.nodename));
+          write(fdout, " ", 1);
+        }
 
-	write(fdout, "login: ", 7);
-	p = username;
-	for (;;)
-	{
-	  rc = read(fdin, &ch, 1);
-	  if (rc < 0) return 0;
-	  if (ch == 0x03) return 0;
-  	
-	  if (ch == '\r' || ch == '\n')
-	  {
-	    if (ch == enter)
-	      break;
-	    else
-	      continue;
-	  }
+        write(fdout, "login: ", 7);
+        p = username;
+        for (;;)
+        {
+          rc = read(fdin, &ch, 1);
+          if (rc < 0) return 0;
+          if (ch == 0x03) return 0;
+        
+          if (ch == '\r' || ch == '\n')
+          {
+            if (ch == enter)
+              break;
+            else
+              continue;
+          }
 
-	  if (ch > ' ')
-	  {
-	    write(fdout, &ch, 1);
-	    if (p < username + NAMESIZE - 1) *p++ = ch;
-	  }
-	}
-	*p = 0;
-	write(fdout, "\r\n", 2);
+          if (ch > ' ')
+          {
+            write(fdout, &ch, 1);
+            if (p < username + NAMESIZE - 1) *p++ = ch;
+          }
+        }
+        *p = 0;
+        write(fdout, "\r\n", 2);
       }
     }
 
@@ -124,10 +124,10 @@ int main(int argc, char *argv[])
       
       if (ch == '\r' || ch == '\n')
       {
-	if (ch == enter)
-	  break;
-	else
-	  continue;
+        if (ch == enter)
+          break;
+        else
+          continue;
       }
 
       if (p < password + NAMESIZE - 1) *p++ = ch;
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
       if (p && strcmp(p, pwd->pw_passwd) == 0) 
       {
         memset(password, 0, NAMESIZE);
-	break;
+        break;
       }
     }
 

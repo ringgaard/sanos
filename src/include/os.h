@@ -73,15 +73,15 @@
 
 struct tm
 {
-  int tm_sec;			// Seconds after the minute [0, 59]
-  int tm_min;			// Minutes after the hour [0, 59]
-  int tm_hour;			// Hours since midnight [0, 23]
-  int tm_mday;			// Day of the month [1, 31]
-  int tm_mon;			// Months since January [0, 11]
-  int tm_year;			// Years since 1900
-  int tm_wday;			// Days since Sunday [0, 6]
-  int tm_yday;			// Days since January 1 [0, 365]
-  int tm_isdst;			// Daylight Saving Time flag
+  int tm_sec;                   // Seconds after the minute [0, 59]
+  int tm_min;                   // Minutes after the hour [0, 59]
+  int tm_hour;                  // Hours since midnight [0, 23]
+  int tm_mday;                  // Day of the month [1, 31]
+  int tm_mon;                   // Months since January [0, 11]
+  int tm_year;                  // Years since 1900
+  int tm_wday;                  // Days since Sunday [0, 6]
+  int tm_yday;                  // Days since January 1 [0, 365]
+  int tm_isdst;                 // Daylight Saving Time flag
   int tm_gmtoff;                // Seconds east of UTC
   char *tm_zone;                // Timezone abbreviation
 };
@@ -93,8 +93,8 @@ struct tm
 
 struct timeval 
 {
-  long tv_sec;		        // Seconds
-  long tv_usec;		        // Microseconds
+  long tv_sec;                  // Seconds
+  long tv_usec;                 // Microseconds
 };
 
 #endif
@@ -232,7 +232,7 @@ struct section;
 #define S_IFMT         0170000         // File type mask
 #define S_IFPKT        0160000         // Packet device
 #define S_IFSOCK       0140000         // Socket
-#define S_IFLNK	       0120000         // Symbolic link
+#define S_IFLNK        0120000         // Symbolic link
 #define S_IFREG        0100000         // Regular file
 #define S_IFBLK        0060000         // Block device
 #define S_IFDIR        0040000         // Directory
@@ -243,14 +243,14 @@ struct section;
 #define S_IWRITE       0000200         // Write permission, owner
 #define S_IEXEC        0000100         // Execute/search permission, owner
 
-#define S_ISLNK(m)	(((m) & S_IFMT) == S_IFLNK)
-#define S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)
-#define S_ISDIR(m)	(((m) & S_IFMT) == S_IFDIR)
-#define S_ISCHR(m)	(((m) & S_IFMT) == S_IFCHR)
-#define S_ISBLK(m)	(((m) & S_IFMT) == S_IFBLK)
-#define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
-#define S_ISSOCK(m)	(((m) & S_IFMT) == S_IFSOCK)
-#define S_ISPKT(m)	(((m) & S_IFMT) == S_IFPKT)
+#define S_ISLNK(m)      (((m) & S_IFMT) == S_IFLNK)
+#define S_ISREG(m)      (((m) & S_IFMT) == S_IFREG)
+#define S_ISDIR(m)      (((m) & S_IFMT) == S_IFDIR)
+#define S_ISCHR(m)      (((m) & S_IFMT) == S_IFCHR)
+#define S_ISBLK(m)      (((m) & S_IFMT) == S_IFBLK)
+#define S_ISFIFO(m)     (((m) & S_IFMT) == S_IFIFO)
+#define S_ISSOCK(m)     (((m) & S_IFMT) == S_IFSOCK)
+#define S_ISPKT(m)      (((m) & S_IFMT) == S_IFPKT)
 
 #define S_IRWXU 00700
 #define S_IRUSR 00400
@@ -303,14 +303,14 @@ struct section;
 
 #ifndef LOG_EMERG
 
-#define LOG_EMERG	0
-#define LOG_ALERT	1
-#define LOG_CRIT	2
-#define LOG_ERR		3
-#define LOG_WARNING	4
-#define LOG_NOTICE	5
-#define LOG_INFO	6
-#define LOG_DEBUG	7
+#define LOG_EMERG       0
+#define LOG_ALERT       1
+#define LOG_CRIT        2
+#define LOG_ERR         3
+#define LOG_WARNING     4
+#define LOG_NOTICE      5
+#define LOG_INFO        6
+#define LOG_DEBUG       7
 #define LOG_TRACE       8
 
 #endif
@@ -472,7 +472,7 @@ struct section;
 // Error code aliases
 //
 
-#define	ETIMEOUT	ETIMEDOUT
+#define ETIMEOUT        ETIMEDOUT
 #define EBUF            ENOBUFS
 #define EROUTE          ENETUNREACH
 #define ECONN           ENOTCONN
@@ -736,11 +736,11 @@ struct iovec
 #define IOCTL_SERIAL_FLUSH_TX_BUFFER 1030
 #define IOCTL_SERIAL_FLUSH_RX_BUFFER 1031
 
-#define PARITY_NONE	           0x0
-#define PARITY_EVEN	           0x1
-#define PARITY_ODD	           0x2
-#define PARITY_MARK	           0x3
-#define PARITY_SPACE	           0x4
+#define PARITY_NONE                0x0
+#define PARITY_EVEN                0x1
+#define PARITY_ODD                 0x2
+#define PARITY_MARK                0x3
+#define PARITY_SPACE               0x4
 
 #define LINESTAT_OVERRUN           0x0002
 #define LINESTAT_PARITY_ERROR      0x0004
@@ -748,10 +748,10 @@ struct iovec
 #define LINESTAT_BREAK             0x0010
 #define LINESTAT_OVERFLOW          0x0100
 
-#define	MODEMSTAT_DCD		   0x80
-#define	MODEMSTAT_RI		   0x40
-#define	MODEMSTAT_DSR		   0x20
-#define	MODEMSTAT_CTS		   0x10
+#define MODEMSTAT_DCD              0x80
+#define MODEMSTAT_RI               0x40
+#define MODEMSTAT_DSR              0x20
+#define MODEMSTAT_CTS              0x10
 
 struct serial_config
 {
@@ -1053,8 +1053,8 @@ __inline void _fd_clr(int fd, fd_set *set)
     {
       while (i < set->count - 1)
       {
-	set->fd[i] = set->fd[i + 1];
-	i++;
+        set->fd[i] = set->fd[i + 1];
+        i++;
       }
       set->count--;
       break;
@@ -1263,8 +1263,8 @@ struct process
 #define MAX_TLS           64
 #define INVALID_TLS_INDEX 0xFFFFFFFF
 
-#define	MAX_HOST_ALIASES  35
-#define	MAX_HOST_ADDRS	  35
+#define MAX_HOST_ALIASES  35
+#define MAX_HOST_ADDRS    35
 #define HOSTBUF_SIZE      1024
 
 #define CVTBUFSIZE        (309 + 43)

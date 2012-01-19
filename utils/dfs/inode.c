@@ -110,8 +110,8 @@ blkno_t set_inode_block(struct inode *inode, unsigned int iblock, blkno_t block)
         ((blkno_t *) buf->data)[offsets[d]] = dirblock;
         mark_buffer_updated(buf);
 
-	buf = alloc_buffer(inode->fs->cache, dirblock);
-	memset(buf->data, 0, inode->fs->blocksize);
+        buf = alloc_buffer(inode->fs->cache, dirblock);
+        memset(buf->data, 0, inode->fs->blocksize);
       }
       else
       {
@@ -307,8 +307,8 @@ int truncate_inode(struct inode *inode, unsigned int blocks)
     {
       if (!buf[d] || buf[d]->blkno != blk)
       {
-	if (buf[d]) release_buffer(inode->fs->cache, buf[d]);
-	buf[d] = get_buffer(inode->fs->cache, blk);
+        if (buf[d]) release_buffer(inode->fs->cache, buf[d]);
+        buf[d] = get_buffer(inode->fs->cache, blk);
       }
       blk = ((blkno_t *) buf[d]->data)[offsets[d]];
     }
@@ -329,24 +329,24 @@ int truncate_inode(struct inode *inode, unsigned int blocks)
       // Remove internal directory pages
       while (--d > 0)
       {
-	((blkno_t *) buf[d]->data)[offsets[d]] = 0;
-	if (offsets[d] == 0)
-	{
+        ((blkno_t *) buf[d]->data)[offsets[d]] = 0;
+        if (offsets[d] == 0)
+        {
           free_blocks(inode->fs, &(buf[d]->blkno), 1);
           mark_buffer_invalid(buf[d]);
-	}
-	else
-	{
-  	  mark_buffer_updated(buf[d]);
-	  break;
-	}
+        }
+        else
+        {
+          mark_buffer_updated(buf[d]);
+          break;
+        }
       }
 
       // Update top directory page in inode
       if (d == 0 && offsets[1] == 0)
       {
         inode->desc->blockdir[offsets[0]] = 0;
-	mark_inode_dirty(inode);
+        mark_inode_dirty(inode);
       }
     }
     else

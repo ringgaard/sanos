@@ -181,27 +181,27 @@ int pdir_proc(struct proc_file *pf, void *arg)
       pte = GET_PTE(vaddr);
       if (pte & PT_PRESENT) 
       {
-	ma++;
-	
-	if (pte & PT_WRITABLE)
-	  rw++;
-	else
-	  ro++;
+        ma++;
+        
+        if (pte & PT_WRITABLE)
+          rw++;
+        else
+          ro++;
 
-	if (pte & PT_USER) 
-	  us++;
-	else
-	  su++;
+        if (pte & PT_USER) 
+          us++;
+        else
+          su++;
 
-	if (pte & PT_ACCESSED) ac++;
-	if (pte & PT_DIRTY) dt++;
+        if (pte & PT_ACCESSED) ac++;
+        if (pte & PT_DIRTY) dt++;
 
-	pprintf(pf, "%08x %08x %c%c%c%c\n", 
-	        vaddr, PAGEADDR(pte), 
-		(pte & PT_WRITABLE) ? 'w' : 'r',
-		(pte & PT_USER) ? 'u' : 's',
-		(pte & PT_ACCESSED) ? 'a' : ' ',
-		(pte & PT_DIRTY) ? 'd' : ' ');
+        pprintf(pf, "%08x %08x %c%c%c%c\n", 
+                vaddr, PAGEADDR(pte), 
+                (pte & PT_WRITABLE) ? 'w' : 'r',
+                (pte & PT_USER) ? 'u' : 's',
+                (pte & PT_ACCESSED) ? 'a' : ' ',
+                (pte & PT_DIRTY) ? 'd' : ' ');
       }
 
       vaddr += PAGESIZE;
@@ -240,8 +240,8 @@ int virtmem_proc(struct proc_file *pf, void *arg)
     {
       if (start != NULL)
       {
-	print_virtmem(pf, start, vaddr, curtag);
-	start = NULL;
+        print_virtmem(pf, start, vaddr, curtag);
+        start = NULL;
       }
 
       vaddr += PTES_PER_PAGE * PAGESIZE;
@@ -253,27 +253,27 @@ int virtmem_proc(struct proc_file *pf, void *arg)
 
       if (pte & PT_PRESENT)
       {
-	if (start == NULL) 
-	{
-	  start = vaddr;
-	  curtag = tag;
-	}
-	else if (tag != curtag)
-	{
-  	  print_virtmem(pf, start, vaddr, curtag);
-	  start = vaddr;
-	  curtag = tag;
-	}
+        if (start == NULL) 
+        {
+          start = vaddr;
+          curtag = tag;
+        }
+        else if (tag != curtag)
+        {
+          print_virtmem(pf, start, vaddr, curtag);
+          start = vaddr;
+          curtag = tag;
+        }
 
-	total += PAGESIZE;
+        total += PAGESIZE;
       }
       else
       {
-	if (start != NULL)
-	{
-  	  print_virtmem(pf, start, vaddr, curtag);
-	  start = NULL;
-	}
+        if (start != NULL)
+        {
+          print_virtmem(pf, start, vaddr, curtag);
+          start = NULL;
+        }
       }
 
       vaddr += PAGESIZE;
@@ -309,20 +309,20 @@ int pdir_stat(void *addr, int len, struct pdirstat *buf)
       pte = GET_PTE(vaddr);
       if (pte & PT_PRESENT) 
       {
-	buf->present++;
-	
-	if (pte & PT_WRITABLE)
-	  buf->readwrite++;
-	else
-	  buf->readonly++;
+        buf->present++;
+        
+        if (pte & PT_WRITABLE)
+          buf->readwrite++;
+        else
+          buf->readonly++;
 
-	if (pte & PT_USER) 
-	  buf->user++;
-	else
-	  buf->kernel++;
+        if (pte & PT_USER) 
+          buf->user++;
+        else
+          buf->kernel++;
 
-	if (pte & PT_ACCESSED) buf->accessed++;
-	if (pte & PT_DIRTY) buf->dirty++;
+        if (pte & PT_ACCESSED) buf->accessed++;
+        if (pte & PT_DIRTY) buf->dirty++;
       }
 
       vaddr += PAGESIZE;

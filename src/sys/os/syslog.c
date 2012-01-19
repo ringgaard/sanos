@@ -213,19 +213,19 @@ void __stdcall klogd(void *arg)
 
       for (i = 0; i < size; i++)
       {
-	if (linelen == sizeof(line))
-	{
+        if (linelen == sizeof(line))
+        {
           add_to_klog(line, linelen);
-	  linelen = 0;
-	}
+          linelen = 0;
+        }
 
-	if (buffer[i] == '\n')
-	{
+        if (buffer[i] == '\n')
+        {
           if (linelen > 0) add_to_klog(line, linelen);
-	  linelen = 0;
-	}
-	else
-	  line[linelen++] = buffer[i];
+          linelen = 0;
+        }
+        else
+          line[linelen++] = buffer[i];
       }
     }
     else

@@ -644,7 +644,7 @@ static void heap_consolidate(struct heap *av)
         *fb = 0;
         
         do 
-	{
+        {
           nextp = p->fd;
           
           // Slightly streamlined version of consolidation code in free()
@@ -653,7 +653,7 @@ static void heap_consolidate(struct heap *av)
           nextsize = chunksize(nextchunk);
           
           if (!prev_inuse(p))
-	  {
+          {
             prevsize = p->prev_size;
             size += prevsize;
             p = chunk_at_offset(p, -((long) prevsize));
@@ -661,12 +661,12 @@ static void heap_consolidate(struct heap *av)
           }
           
           if (nextchunk != av->top) 
-	  {
+          {
             nextinuse = inuse_bit_at_offset(nextchunk, nextsize);
             set_head(nextchunk, nextsize);
             
             if (!nextinuse) 
-	    {
+            {
               size += nextsize;
               unlink(nextchunk, bck, fwd);
             }
@@ -681,7 +681,7 @@ static void heap_consolidate(struct heap *av)
             set_foot(p, size);
           }
           else 
-	  {
+          {
             size += nextsize;
             set_head(p, size | PREV_INUSE);
             av->top = p;
@@ -955,18 +955,18 @@ void *heap_alloc(struct heap *av, size_t bytes)
 
         // Maintain large bins in sorted order
         if (fwd != bck) 
-	{
-	  // Or with inuse bit to speed comparisons
+        {
+          // Or with inuse bit to speed comparisons
           size |= PREV_INUSE;
 
           // If smaller than smallest, bypass loop below
           if (size <= bck->bk->size) 
-	  {
+          {
             fwd = bck;
             bck = bck->bk;
           }
           else 
-	  {
+          {
             while (size < fwd->size) fwd = fwd->fd;
             bck = fwd->bk;
           }
@@ -999,12 +999,12 @@ void *heap_alloc(struct heap *av, size_t bytes)
         
         // Exhaust
         if (remainder_size < MINSIZE)  
-	{
+        {
           set_inuse_bit_at_offset(victim, size);
           return chunk2mem(victim);
         }
         else 
-	{
+        {
           // Split
           remainder = chunk_at_offset(victim, nb);
           unsorted_chunks(av)->bk = unsorted_chunks(av)->fd = remainder;
@@ -1076,19 +1076,19 @@ void *heap_alloc(struct heap *av, size_t bytes)
         
         // Exhaust
         if (remainder_size < MINSIZE) 
-	{
+        {
           set_inuse_bit_at_offset(victim, size);
           return chunk2mem(victim);
         }
         else 
-	{
+        {
           // Split
           remainder = chunk_at_offset(victim, nb);
           
           unsorted_chunks(av)->bk = unsorted_chunks(av)->fd = remainder;
           remainder->bk = remainder->fd = unsorted_chunks(av);
           
-	  // Advertise as last remainder
+          // Advertise as last remainder
           if (in_smallbin_range(nb)) av->last_remainder = remainder; 
           
           set_head(victim, nb | PREV_INUSE);
@@ -1197,7 +1197,7 @@ void heap_free(struct heap *av, void *mem)
 
         // Consolidate forward 
         if (!nextinuse) 
-	{
+        {
           unlink(nextchunk, bck, fwd);
           size += nextsize;
         }
@@ -1218,8 +1218,8 @@ void heap_free(struct heap *av, void *mem)
       }
       else 
       {
-	// If the chunk borders the current high end of memory,
-	// consolidate into top
+        // If the chunk borders the current high end of memory,
+        // consolidate into top
 
         size += nextsize;
         set_head(p, size | PREV_INUSE);
@@ -1242,9 +1242,9 @@ void heap_free(struct heap *av, void *mem)
         if (have_fastchunks(av)) heap_consolidate(av);
 
         if (chunksize(av->top) >= av->trim_threshold)
-	{
+        {
           systrim(av->top_pad, av);
-	}
+        }
       }
     }
 
@@ -1345,12 +1345,12 @@ void *heap_realloc(struct heap *av, void *oldmem, size_t bytes)
         
         // Avoid copy if newp is next chunk after oldp.
         if (newp == next) 
-	{
+        {
           newsize += oldsize;
           newp = oldp;
         }
         else 
-	{
+        {
           memcpy(newmem, oldmem, oldsize - sizeof(size_t));
           heap_free(av, oldmem);
           return chunk2mem(newp);

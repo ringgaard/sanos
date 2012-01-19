@@ -1027,7 +1027,7 @@ static err_t dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip
       {
         unsigned char *options_ptr;
 
-	del_timer(&state->request_timeout_timer);
+        del_timer(&state->request_timeout_timer);
 
         if (dhcp_unfold_reply(state) == 0)
         {
@@ -1042,10 +1042,10 @@ static err_t dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip
               dhcp_handle_ack(state);
               if (state->state == DHCP_REQUESTING)
               {
-		if (dhcp_arp_check)
+                if (dhcp_arp_check)
                   dhcp_check(state);
-		else
-		  dhcp_bind(state);
+                else
+                  dhcp_bind(state);
               }
               else if (state->state == DHCP_REBOOTING || state->state == DHCP_REBINDING || state->state == DHCP_RENEWING)
               {
@@ -1164,7 +1164,7 @@ static unsigned char *dhcp_get_option_ptr(struct dhcp_state *state, unsigned cha
       else if (options[offset] == option_type)
         return &options[offset];
       else if (options[offset] == DHCP_OPTION_PAD)
-	offset++;
+        offset++;
       else
       {
         //kprintf("opt(%d,%d)", options[offset], options[offset + 1]);
@@ -1198,9 +1198,9 @@ static unsigned char *dhcp_get_option_ptr(struct dhcp_state *state, unsigned cha
       while ((offset < field_len) && (options[offset] != DHCP_OPTION_END))
       {
         if (options[offset] == option_type) 
-	  return &options[offset];
+          return &options[offset];
         else if (options[offset] == DHCP_OPTION_PAD)
-	  offset++;
+          offset++;
         else
         {
          //kprintf("opt(%d,%d)", options[offset], options[offset + 1]);
@@ -1299,7 +1299,7 @@ static void dhcp_dump_options(struct dhcp_state *state)
         overload = options[offset++];
       }
       else if (options[offset] == DHCP_OPTION_PAD)
-	offset++;
+        offset++;
       else
       {
         kprintf(" option %d len %d\n", options[offset], options[offset + 1]);
@@ -1333,7 +1333,7 @@ static void dhcp_dump_options(struct dhcp_state *state)
       while ((offset < field_len) && (options[offset] != DHCP_OPTION_END))
       {
         if (options[offset] == DHCP_OPTION_PAD)
-	  offset++;
+          offset++;
         else
         {
           kprintf(" option %d len %d\n", options[offset], options[offset + 1]);

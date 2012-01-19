@@ -146,25 +146,25 @@ int fslookup(char *name, int full, struct fs **mntfs, char **rest)
 
       if (!*q)
       {
-	rc = check(fs->mode, fs->uid, fs->gid, S_IEXEC);
-	if (rc < 0) return rc;
+        rc = check(fs->mode, fs->uid, fs->gid, S_IEXEC);
+        if (rc < 0) return rc;
 
-	if (rest) *rest = p;
-	*mntfs = fs;
+        if (rest) *rest = p;
+        *mntfs = fs;
 
-	return 0;
+        return 0;
       }
 
       m = strlen(q);
       if (n >= m && fnmatch(p, m, q, m) && (p[m] == PS1 || p[m] == PS2 || full && p[m] == 0))
       {
-	rc = check(fs->mode, fs->uid, fs->gid, S_IEXEC);
-	if (rc < 0) return rc;
+        rc = check(fs->mode, fs->uid, fs->gid, S_IEXEC);
+        if (rc < 0) return rc;
 
-	if (rest) *rest = p + m;
-	*mntfs = fs;
+        if (rest) *rest = p + m;
+        *mntfs = fs;
 
-	return 0;
+        return 0;
       }
     }
 
@@ -589,11 +589,11 @@ int open(char *name, int flags, int mode, struct file **retval)
       int access;
 
       if (filp->flags & O_RDWR)
-	access = S_IREAD | S_IWRITE;
+        access = S_IREAD | S_IWRITE;
       else if (filp->flags & O_WRONLY)
-	access = S_IWRITE;
+        access = S_IWRITE;
       else
-	access = S_IREAD;
+        access = S_IREAD;
 
       rc = check(filp->mode, filp->owner, filp->group, access);
     }
@@ -721,40 +721,40 @@ int read_translated(struct file *filp, void *data, size_t size)
       // *p is CR, so must check next char for LF
       if (p < buf + bytes - 1) 
       {
-	if (*(p + 1) == LF) 
-	{
-	  // convert CR/LF to LF
-	  p += 2;
-	  *q++ = LF;
-	}
-	else
-	  *q++ = *p++;
+        if (*(p + 1) == LF) 
+        {
+          // convert CR/LF to LF
+          p += 2;
+          *q++ = LF;
+        }
+        else
+          *q++ = *p++;
       }
       else 
       {
-	// We found a CR at end of buffer. 
-	// We must peek ahead to see if next char is an LF.
-	p++;
+        // We found a CR at end of buffer. 
+        // We must peek ahead to see if next char is an LF.
+        p++;
 
-	rc = filp->fs->ops->read(filp, &peekch, 1, filp->pos);
+        rc = filp->fs->ops->read(filp, &peekch, 1, filp->pos);
         if (rc > 0) filp->pos += rc;
-	if (rc <= 0) 
-	{
-	  // Couldn't read ahead, store CR
-	  *q++ = CR;
-	}
-	else 
-	{
-	  // peekch now has the extra character. If char is LF store LF
-	  // else store CR and put char in lookahead buffer.
-	  if (peekch == LF)
-	    *q++ = LF;
-	  else 
-	  {
-	    *q++ = CR;
-	    filp->chbuf = peekch;
-	  }
-	}
+        if (rc <= 0) 
+        {
+          // Couldn't read ahead, store CR
+          *q++ = CR;
+        }
+        else 
+        {
+          // peekch now has the extra character. If char is LF store LF
+          // else store CR and put char in lookahead buffer.
+          if (peekch == LF)
+            *q++ = LF;
+          else 
+          {
+            *q++ = CR;
+            filp->chbuf = peekch;
+          }
+        }
       }
     }
   }
@@ -823,8 +823,8 @@ static int write_translated(struct file *filp, void *data, size_t size)
       char ch = *p++;
       if (ch == LF) 
       {
-	lfcnt++;
-	*q++ = CR;
+        lfcnt++;
+        *q++ = CR;
       }
       *q++ = ch;
     }

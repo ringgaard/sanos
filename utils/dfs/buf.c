@@ -253,10 +253,10 @@ static struct buf *get_new_buffer(struct bufpool *pool)
       // Only use the buffer if it has not been locked by other buffer waiters
       if (buf->locks == 0)
       {
-	// Remove buffer from hash table and return buffer
-	remove_from_hashtable(pool, buf);
+        // Remove buffer from hash table and return buffer
+        remove_from_hashtable(pool, buf);
 
-	return buf;
+        return buf;
       }
     }
 

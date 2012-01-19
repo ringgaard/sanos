@@ -281,8 +281,8 @@ struct nic
 
   dev_t devno;                             // Device number
   struct dev *dev;                         // Device block
-  unsigned short iobase;		   // Configured I/O base
-  unsigned short irq;		           // Configured IRQ
+  unsigned short iobase;                   // Configured I/O base
+  unsigned short irq;                      // Configured IRQ
   struct interrupt intr;                   // Interrupt object for driver
   struct dpc dpc;                          // DPC for driver
   struct timer timer;                      // Media selection timer
@@ -1049,7 +1049,7 @@ static void speedo_timer(void *arg)
       if (!sp->polling)
       {
         if (ticks - sp->last_reset > 10*HZ) 
-	{
+        {
           kprintf(KERN_WARNING "%s: IRQ %d is physically blocked! (%4.4x) Failing back to low-rate polling\n", dev->name, sp->irq, status);
           sp->last_reset = ticks;
         }
@@ -1189,14 +1189,14 @@ static int speedo_rx(struct dev *dev)
 
       if (pkt_len < rx_copybreak && (p = pbuf_alloc(PBUF_RAW, pkt_len, PBUF_RW)) != NULL) 
       {
-	memcpy(p->payload, sp->rx_pbuf[entry]->payload, pkt_len);
+        memcpy(p->payload, sp->rx_pbuf[entry]->payload, pkt_len);
       } 
       else 
       {
         // Pass up the already-filled pbuf
         p = sp->rx_pbuf[entry];
         if (p == NULL) 
-	{
+        {
           kprintf(KERN_WARNING "%s: Inconsistent Rx descriptor chain\n", dev->name);
           break;
         }
@@ -1204,7 +1204,7 @@ static int speedo_rx(struct dev *dev)
         sp->rx_pbuf[entry] = NULL;
         sp->rx_ringp[entry] = NULL;
 
-	pbuf_realloc(p, pkt_len);
+        pbuf_realloc(p, pkt_len);
       }
 
       // Send packet to upper layer
@@ -1295,40 +1295,40 @@ static void speedo_interrupt(struct dev *dev)
         int entry = dirty_tx % TX_RING_SIZE;
         int status = sp->tx_ring[entry].status;
 
-	//kprintf("%s: scavenge candidate %d status %4.4x\n", dev->name, entry, status);
+        //kprintf("%s: scavenge candidate %d status %4.4x\n", dev->name, entry, status);
 
-	if ((status & StatusComplete) == 0) 
-	{
+        if ((status & StatusComplete) == 0) 
+        {
           // Special case error check: look for descriptor that the chip skipped(?)
           if (sp->cur_tx - dirty_tx > 2  && (sp->tx_ring[(dirty_tx + 1) % TX_RING_SIZE].status & StatusComplete)) 
-	  {
+          {
             kprintf(KERN_ERR "%s: Command unit failed to mark command %8.8x as complete at %d\n", dev->name, status, dirty_tx);
           } 
-	  else
-	    // It still hasn't been processed
+          else
+            // It still hasn't been processed
             break;
         }
 
         if ((status & TxUnderrun) && (sp->tx_threshold < 0x01e08000)) 
-	{
+        {
           sp->tx_threshold += 0x00040000;
           kprintf("%s: Tx threshold increased, %#8.8x\n", dev->name, sp->tx_threshold);
         }
 
         // Free the original pbuf
         if (sp->tx_pbuf[entry]) 
-	{
-	  // Count only user packets
+        {
+          // Count only user packets
           sp->stats.tx_packets++; 
           sp->stats.tx_bytes += sp->tx_pbuf[entry]->len;
           pbuf_free(sp->tx_pbuf[entry]);
           sp->tx_pbuf[entry] = NULL;
         } 
-	else if ((status & 0x70000) == CmdNOp)
+        else if ((status & 0x70000) == CmdNOp)
           sp->mc_setup_busy = 0;
         
-	dirty_tx++;
-	entries_freed++;
+        dirty_tx++;
+        entries_freed++;
       }
 
       sp->dirty_tx = dirty_tx;
@@ -1517,8 +1517,8 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
       sum += value;
       if (i < 3) 
       {
-	sp->hwaddr.addr[j++] = (unsigned char) (value % 0xFF);
-	sp->hwaddr.addr[j++] = (unsigned char) (value >> 8);
+        sp->hwaddr.addr[j++] = (unsigned char) (value % 0xFF);
+        sp->hwaddr.addr[j++] = (unsigned char) (value >> 8);
       }
     }
 

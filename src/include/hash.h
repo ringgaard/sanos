@@ -40,9 +40,9 @@
 
 struct hash 
 {
-  int hashsize;			// Width of bucket array
+  int hashsize;                 // Width of bucket array
   unsigned long hashmask;       // Bit mask to match array size
-  struct hash_node *buckets[0];	// Chains under each hash value
+  struct hash_node *buckets[0]; // Chains under each hash value
 };
 
 //
@@ -51,9 +51,9 @@ struct hash
 
 struct hash_node 
 {
-  struct hash_node *next;	// Next on hash chain
-  unsigned long key;		// Key for this node
-  void *data;			//  ...corresponding value
+  struct hash_node *next;       // Next on hash chain
+  unsigned long key;            // Key for this node
+  void *data;                   //  ...corresponding value
 };
 
 typedef int (*enumfunc_t)(int key, void *val, void *arg);

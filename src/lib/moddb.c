@@ -158,13 +158,13 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path)
     {
       if (*s == '.')
       {
-	dot = s;
-	*p++ = '.';
+        dot = s;
+        *p++ = '.';
       }
       else if (*s >= 'A' && *s <= 'Z')
-	*p++ = *s + ('a' - 'A');
+        *p++ = *s + ('a' - 'A');
       else
-	*p++ = *s;
+        *p++ = *s;
 
       s++;
     }
@@ -183,8 +183,8 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path)
     {
       if (strcmp(basename, ma->name) == 0 && basename + strlen(ma->name) < pathend)
       {
-	strcpy(basename, ma->alias);
-	break;
+        strcpy(basename, ma->alias);
+        break;
       }
 
       ma = ma->next;
@@ -218,9 +218,9 @@ static char *get_module_name(struct moddb *db, char *name, char *path)
     while (*s)
     {
       if (*s == '.')
-	dot = s;
+        dot = s;
       else if (*s >= 'A' && *s <= 'Z')
-	*s = *s + ('a' - 'A');
+        *s = *s + ('a' - 'A');
 
       s++;
     }
@@ -379,14 +379,14 @@ static struct module *resolve_imports(struct module *mod)
       name = get_module_name(mod->db, name, path);
       if (!name)
       {
-	logmsg(mod->db, "module %s not found", RVA(mod->hmod, imp->name));
+        logmsg(mod->db, "module %s not found", RVA(mod->hmod, imp->name));
         return NULL;
       }
 
       imgbase = mod->db->load_image(path);
       if (imgbase == NULL) 
       {
-	logmsg(mod->db, "unable to load module %s", path);
+        logmsg(mod->db, "unable to load module %s", path);
         return NULL;
       }
 
@@ -450,24 +450,24 @@ static int bind_imports(struct module *mod)
     {
       if (*origthunks & IMAGE_ORDINAL_FLAG)
       {
-	// Import by ordinal
+        // Import by ordinal
         unsigned long ordinal = *origthunks & ~IMAGE_ORDINAL_FLAG;
-	*thunks = (unsigned long) get_proc_by_ordinal(expmod->hmod, ordinal);
-	if (*thunks == 0) 
+        *thunks = (unsigned long) get_proc_by_ordinal(expmod->hmod, ordinal);
+        if (*thunks == 0) 
         {
-	  logmsg(mod->db, "unable to resolve %s:#%d in %s", expmod->name, ordinal, mod->name);
-	  errs++;
+          logmsg(mod->db, "unable to resolve %s:#%d in %s", expmod->name, ordinal, mod->name);
+          errs++;
         }
       }
       else
       {
-	// Import by name (and hint)
-	ibn = (struct image_import_by_name *) RVA(mod->hmod, *origthunks);
-	*thunks = (unsigned long) get_proc_by_name(expmod->hmod, ibn->hint, ibn->name);
-	if (*thunks == 0)
+        // Import by name (and hint)
+        ibn = (struct image_import_by_name *) RVA(mod->hmod, *origthunks);
+        *thunks = (unsigned long) get_proc_by_name(expmod->hmod, ibn->hint, ibn->name);
+        if (*thunks == 0)
         {
-	  logmsg(mod->db, "unable to resolve %s:%s in %s", expmod->name, ibn->name, mod->name);
-	  errs++;
+          logmsg(mod->db, "unable to resolve %s:%s in %s", expmod->name, ibn->name, mod->name);
+          errs++;
         }
       }
 
@@ -516,11 +516,11 @@ static int relocate_module(struct module *mod)
       unsigned short pos = *fixup & 0xfff;
 
       if (type == IMAGE_REL_BASED_HIGHLOW)
-	*(unsigned long *) (pagestart + pos) += offset;
+        *(unsigned long *) (pagestart + pos) += offset;
       else if (type != IMAGE_REL_BASED_ABSOLUTE)
       {
-	logmsg(mod->db, "unsupported relocation type %d in %s", type, mod->name);
-	return -ENOEXEC;
+        logmsg(mod->db, "unsupported relocation type %d in %s", type, mod->name);
+        return -ENOEXEC;
       }
     }
 
@@ -610,11 +610,11 @@ static int remove_module(struct module *mod)
     {
       while (imp->characteristics != 0)
       {
-	char *name = RVA(mod->hmod, imp->name);
-	struct module *depmod = get_module(mod->db, name);
+        char *name = RVA(mod->hmod, imp->name);
+        struct module *depmod = get_module(mod->db, name);
 
-	if (depmod && --depmod->refcnt == 0) remove_module(depmod); 
-	imp++;
+        if (depmod && --depmod->refcnt == 0) remove_module(depmod); 
+        imp++;
       }
     }
 
@@ -775,16 +775,16 @@ hmodule_t load_module(struct moddb *db, char *name, int flags)
     {
       if ((flags & MODLOAD_NOINIT) == 0 || m != mod)
       {
-	int ok;
+        int ok;
 
-	//logmsg(db, "initializing module %s", m->name);
-	ok = ((int (__stdcall *)(hmodule_t, int, void *)) get_entrypoint(m->hmod))(m->hmod, DLL_PROCESS_ATTACH, NULL);
-	//logmsg(db, "module %s initialized%s", m->name, ok ? "" : ", init failed");
-	if (!ok)
-	{
-	  free_unused_modules(db);
-	  return NULL;
-	}
+        //logmsg(db, "initializing module %s", m->name);
+        ok = ((int (__stdcall *)(hmodule_t, int, void *)) get_entrypoint(m->hmod))(m->hmod, DLL_PROCESS_ATTACH, NULL);
+        //logmsg(db, "module %s initialized%s", m->name, ok ? "" : ", init failed");
+        if (!ok)
+        {
+          free_unused_modules(db);
+          return NULL;
+        }
 
         m->flags |= MODULE_INITIALIZED;
       }
@@ -860,12 +860,12 @@ static struct image_resource_directory_entry *find_resource(char *resbase, struc
       left = entname->length;
       while (left > 0 && *p2 != 0)
       {
-	if (((ch1 = *p1++) >= 'a') && (ch1 <= 'z')) ch1 += 'A' - 'a';
-	if (((ch2 = *p2++) >= 'a') && (ch2 <= 'z')) ch2 += 'A' - 'a';
+        if (((ch1 = *p1++) >= 'a') && (ch1 <= 'z')) ch1 += 'A' - 'a';
+        if (((ch2 = *p2++) >= 'a') && (ch2 <= 'z')) ch2 += 'A' - 'a';
 
-	if (ch1 != ch2) break;
+        if (ch1 != ch2) break;
 
-	left--;
+        left--;
       }
       
       if (left == 0 && *p2 == 0) return direntry;
@@ -952,7 +952,7 @@ int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *lib
       if (*q)
         p = q + 1;
       else
-	p = q;
+        p = q;
     }
   }
   else

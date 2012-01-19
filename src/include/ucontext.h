@@ -61,7 +61,7 @@
 #define REG_ESP    14
 #define REG_ESS    15
 
-#define NGREG	   16
+#define NGREG      16
 
 //
 // Machine-dependent context

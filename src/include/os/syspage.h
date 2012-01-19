@@ -81,10 +81,10 @@
 
 // APM install check flags
 
-#define APM_16_BIT_SUPPORT	0x0001
-#define APM_32_BIT_SUPPORT	0x0002
-#define APM_IDLE_SLOWS_CLOCK	0x0004
-#define APM_BIOS_DISABLED      	0x0008
+#define APM_16_BIT_SUPPORT      0x0001
+#define APM_32_BIT_SUPPORT      0x0002
+#define APM_IDLE_SLOWS_CLOCK    0x0004
+#define APM_BIOS_DISABLED       0x0008
 #define APM_BIOS_DISENGAGED     0x0010
 
 // APM BIOS parameter block
@@ -148,24 +148,24 @@ struct bootparams
 
 struct ldrparams
 {
-  unsigned long heapstart;	// Start of boot heap
-  unsigned long heapend;	// End of boot heap
-  unsigned long memend;		// End of RAM
-  int bootdrv;			// Boot drive
-  int bootpart;			// Boot partition
-  unsigned long initrd_size;	// Initial RAM disk size
+  unsigned long heapstart;      // Start of boot heap
+  unsigned long heapend;        // End of boot heap
+  unsigned long memend;         // End of RAM
+  int bootdrv;                  // Boot drive
+  int bootpart;                 // Boot partition
+  unsigned long initrd_size;    // Initial RAM disk size
 };
 
 // System page
 
 struct syspage
 {
-  struct tss tss;		// Task State Segment
-  struct segment gdt[MAXGDT];	// Global Descriptor Table
-  struct gate idt[MAXIDT];	// Interrupt Descriptor Table
-  struct bootparams bootparams;	// Boot parameter block
-  struct ldrparams ldrparams;	// Loader parameter block
-  unsigned char biosdata[256];	// Copy of BIOS data area
+  struct tss tss;               // Task State Segment
+  struct segment gdt[MAXGDT];   // Global Descriptor Table
+  struct gate idt[MAXIDT];      // Interrupt Descriptor Table
+  struct bootparams bootparams; // Boot parameter block
+  struct ldrparams ldrparams;   // Loader parameter block
+  unsigned char biosdata[256];  // Copy of BIOS data area
 };
 
 #ifdef KERNEL

@@ -24,12 +24,12 @@
 #define RX_COPYBREAK            128
 #define TX_TIMEOUT              5000
 
-#define TX_RING_SIZE	          16
-#define RX_RING_SIZE	          32
+#define TX_RING_SIZE              16
+#define RX_RING_SIZE              32
 #define TX_MAX_FRAGS              16
 
-#define LAST_FRAG 	          0x80000000  // Last entry in descriptor
-#define DN_COMPLETE	          0x00010000  // This packet has been downloaded
+#define LAST_FRAG                 0x80000000  // Last entry in descriptor
+#define DN_COMPLETE               0x00010000  // This packet has been downloaded
 #define UP_COMPLETE               0x00008000  // This packet has been uploaded
 
 //
@@ -50,14 +50,14 @@
 #define CMD_RX_DISABLE             (0x3 << 0xB)
 #define CMD_RX_ENABLE              (0x4 << 0xB)
 #define CMD_RX_RESET               (0x5 << 0xB)
-#define CMD_UP_STALL		   ((0x6 << 0xB) | 0x0)
-#define CMD_UP_UNSTALL		   ((0x6 << 0xB) | 0x1)
-#define CMD_DOWN_STALL		   ((0x6 << 0xB) | 0x2)
-#define CMD_DOWN_UNSTALL	   ((0x6 << 0xB) | 0x3)
+#define CMD_UP_STALL               ((0x6 << 0xB) | 0x0)
+#define CMD_UP_UNSTALL             ((0x6 << 0xB) | 0x1)
+#define CMD_DOWN_STALL             ((0x6 << 0xB) | 0x2)
+#define CMD_DOWN_UNSTALL           ((0x6 << 0xB) | 0x3)
 #define CMD_TX_DONE                (0x7 << 0xB)
 #define CMD_RX_DISCARD             (0x8 << 0xB)
 #define CMD_TX_ENABLE              (0x9 << 0xB)
-#define CMD_TX_DISABLE	           (0xA << 0xB)
+#define CMD_TX_DISABLE             (0xA << 0xB)
 #define CMD_TX_RESET               (0xB << 0xB)
 #define CMD_REQUEST_INTERRUPT      (0xC << 0xB)
 #define CMD_ACKNOWLEDGE_INTERRUPT  (0xD << 0xB)
@@ -68,8 +68,8 @@
 #define CMD_STATISTICS_ENABLE      (0x15 << 0xB)
 #define CMD_STATISTICS_DISABLE     (0x16 << 0xB)
 #define CMD_DISABLE_DC_CONVERTER   (0x17 << 0xB)
-#define CMD_SET_HASH_FILTER_BIT	   (0x19 << 0xB)
-#define CMD_TX_FIFO_BISECT	   (0x1B << 0xB)
+#define CMD_SET_HASH_FILTER_BIT    (0x19 << 0xB)
+#define CMD_TX_FIFO_BISECT         (0x1B << 0xB)
 
 //
 // Non-windowed registers
@@ -78,22 +78,22 @@
 #define CMD                   0x0E 
 #define STATUS                0x0E
 
-#define TIMER	              0x1A
-#define TX_STATUS	      0x1B
+#define TIMER                 0x1A
+#define TX_STATUS             0x1B
 #define INT_STATUS_AUTO       0x1E
-#define DMA_CONTROL  	      0x20
+#define DMA_CONTROL           0x20
 #define DOWN_LIST_POINTER     0x24
-#define DOWN_POLL  	      0x2D
+#define DOWN_POLL             0x2D
 #define UP_PACKET_STATUS      0x30
-#define FREE_TIMER  	      0x34
-#define COUNTDOWN 	      0x36
+#define FREE_TIMER            0x34
+#define COUNTDOWN             0x36
 #define UP_LIST_POINTER       0x38
-#define UP_POLL	              0x3D
+#define UP_POLL               0x3D
 #define REAL_TIME_COUNTER     0x40
-#define CONFIG_ADDRESS 	      0x44
-#define CONFIG_DATA   	      0x48
-#define DEBUG_DATA 	      0x70
-#define DEBUG_CONTROL 	      0x74
+#define CONFIG_ADDRESS        0x44
+#define CONFIG_DATA           0x48
+#define DEBUG_DATA            0x70
+#define DEBUG_CONTROL         0x74
 
 //
 // Window 0
@@ -128,10 +128,10 @@
 
 #define INTERNAL_CONFIG       0x00
 #define MAXIMUM_PACKET_SIZE   0x04
-#define MAC_CONTROL	      0x06
-#define MEDIA_OPTIONS  	      0x08
-#define RX_FREE	  	      0x0A
-#define TX_FREE		      0x0C
+#define MAC_CONTROL           0x06
+#define MEDIA_OPTIONS         0x08
+#define RX_FREE               0x0A
+#define TX_FREE               0x0C
 
 //
 // Window 4
@@ -147,7 +147,7 @@
 // Window 5
 //
 
-#define RX_FILTER  	      0x08
+#define RX_FILTER             0x08
 #define INTERRUPT_ENABLE      0x0A
 #define INDICATION_ENABLE     0x0C
 
@@ -179,22 +179,22 @@
 // TX status flags
 //
 
-#define TX_STATUS_MAXIMUM_COLLISION	(1 << 3)
-#define TX_STATUS_HWERROR		(1 << 4)
-#define TX_STATUS_JABBER		(1 << 5)
-#define TX_STATUS_INTERRUPT_REQUESTED	(1 << 6)
-#define TX_STATUS_COMPLETE		(1 << 7)
+#define TX_STATUS_MAXIMUM_COLLISION     (1 << 3)
+#define TX_STATUS_HWERROR               (1 << 4)
+#define TX_STATUS_JABBER                (1 << 5)
+#define TX_STATUS_INTERRUPT_REQUESTED   (1 << 6)
+#define TX_STATUS_COMPLETE              (1 << 7)
 
 //
 // Global reset flags
 //
 
-#define GLOBAL_RESET_MASK_TP_AUI_RESET	(1 << 0)
+#define GLOBAL_RESET_MASK_TP_AUI_RESET  (1 << 0)
 #define GLOBAL_RESET_MASK_ENDEC_RESET   (1 << 1)
-#define GLOBAL_RESET_MASK_NETWORK_RESET	(1 << 2)
+#define GLOBAL_RESET_MASK_NETWORK_RESET (1 << 2)
 #define GLOBAL_RESET_MASK_FIFO_RESET    (1 << 3)
 #define GLOBAL_RESET_MASK_AISM_RESET    (1 << 4)
-#define GLOBAL_RESET_MASK_HOST_RESET	(1 << 5)
+#define GLOBAL_RESET_MASK_HOST_RESET    (1 << 5)
 #define GLOBAL_RESET_MASK_SMB_RESET     (1 << 6)
 #define GLOBAL_RESET_MASK_VCO_RESET     (1 << 7)
 #define GLOBAL_RESET_MASK_UP_DOWN_RESET (1 << 8)
@@ -203,21 +203,21 @@
 // TX reset flags
 //
 
-#define TX_RESET_MASK_TP_AUI_RESET	(1 << 0)
-#define TX_RESET_MASK_ENDEC_RESET	(1 << 1)
-#define TX_RESET_MASK_NETWORK_RESET	(1 << 2)
-#define TX_RESET_MASK_FIFO_RESET	(1 << 3)
-#define TX_RESET_MASK_DOWN_RESET	(1 << 8)
+#define TX_RESET_MASK_TP_AUI_RESET      (1 << 0)
+#define TX_RESET_MASK_ENDEC_RESET       (1 << 1)
+#define TX_RESET_MASK_NETWORK_RESET     (1 << 2)
+#define TX_RESET_MASK_FIFO_RESET        (1 << 3)
+#define TX_RESET_MASK_DOWN_RESET        (1 << 8)
 
 //
 // RX reset flags
 //
 
-#define RX_RESET_MASK_TP_AUI_RESET	(1 << 0)
-#define RX_RESET_MASK_ENDEC_RESET	(1 << 1)
-#define RX_RESET_MASK_NETWORK_RESET	(1 << 2)
-#define RX_RESET_MASK_FIFO_RESET	(1 << 3)
-#define RX_RESET_MASK_UP_RESET		(1 << 8)
+#define RX_RESET_MASK_TP_AUI_RESET      (1 << 0)
+#define RX_RESET_MASK_ENDEC_RESET       (1 << 1)
+#define RX_RESET_MASK_NETWORK_RESET     (1 << 2)
+#define RX_RESET_MASK_FIFO_RESET        (1 << 3)
+#define RX_RESET_MASK_UP_RESET          (1 << 8)
 
 //
 // IntStatus flags
@@ -235,7 +235,7 @@
 #define INTSTATUS_UP_COMPLETE           (1 << 10)
 #define INTSTATUS_CMD_IN_PROGRESS       (1 << 12)
 
-#define ALL_INTERRUPTS		        0x06EE
+#define ALL_INTERRUPTS                  0x06EE
 
 //
 // AcknowledgeInterrupt flags
@@ -248,7 +248,7 @@
 #define DN_COMPLETE_ACK            0x0200
 #define UP_COMPLETE_ACK            0x0400
 
-#define ALL_ACK	                   0x07FF   
+#define ALL_ACK                    0x07FF   
 
 //
 // RxFilter
@@ -264,50 +264,50 @@
 // UpStatus
 //
 
-#define UP_PACKET_STATUS_ERROR			(1 << 14)
-#define UP_PACKET_STATUS_COMPLETE		(1 << 15)
-#define UP_PACKET_STATUS_OVERRUN		(1 << 16)
-#define UP_PACKET_STATUS_RUNT_FRAME		(1 << 17)
-#define UP_PACKET_STATUS_ALIGNMENT_ERROR	(1 << 18)
-#define UP_PACKET_STATUS_CRC_ERROR             	(1 << 19)
-#define UP_PACKET_STATUS_OVERSIZE_FRAME        	(1 << 20)
-#define UP_PACKET_STATUS_DRIBBLE_BITS		(1 << 23)
-#define UP_PACKET_STATUS_OVERFLOW		(1 << 24)
-#define UP_PACKET_STATUS_IP_CHECKSUM_ERROR	(1 << 25)
-#define UP_PACKET_STATUS_TCP_CHECKSUM_ERROR	(1 << 26)
-#define UP_PACKET_STATUS_UDP_CHECKSUM_ERROR	(1 << 27)
-#define UP_PACKET_STATUS_IMPLIED_BUFFER_ENABLE	(1 << 28)
-#define UP_PACKET_STATUS_IP_CHECKSUM_CHECKED	(1 << 29)
-#define UP_PACKET_STATUS_TCP_CHECKSUM_CHECKED	(1 << 30)
-#define UP_PACKET_STATUS_UDP_CHECKSUM_CHECKED	(1 << 31)
-#define UP_PACKET_STATUS_ERROR_MASK		0x1F0000
+#define UP_PACKET_STATUS_ERROR                  (1 << 14)
+#define UP_PACKET_STATUS_COMPLETE               (1 << 15)
+#define UP_PACKET_STATUS_OVERRUN                (1 << 16)
+#define UP_PACKET_STATUS_RUNT_FRAME             (1 << 17)
+#define UP_PACKET_STATUS_ALIGNMENT_ERROR        (1 << 18)
+#define UP_PACKET_STATUS_CRC_ERROR              (1 << 19)
+#define UP_PACKET_STATUS_OVERSIZE_FRAME         (1 << 20)
+#define UP_PACKET_STATUS_DRIBBLE_BITS           (1 << 23)
+#define UP_PACKET_STATUS_OVERFLOW               (1 << 24)
+#define UP_PACKET_STATUS_IP_CHECKSUM_ERROR      (1 << 25)
+#define UP_PACKET_STATUS_TCP_CHECKSUM_ERROR     (1 << 26)
+#define UP_PACKET_STATUS_UDP_CHECKSUM_ERROR     (1 << 27)
+#define UP_PACKET_STATUS_IMPLIED_BUFFER_ENABLE  (1 << 28)
+#define UP_PACKET_STATUS_IP_CHECKSUM_CHECKED    (1 << 29)
+#define UP_PACKET_STATUS_TCP_CHECKSUM_CHECKED   (1 << 30)
+#define UP_PACKET_STATUS_UDP_CHECKSUM_CHECKED   (1 << 31)
+#define UP_PACKET_STATUS_ERROR_MASK             0x1F0000
 
 //
 // Frame Start Header
 //
-#define FSH_CRC_APPEND_DISABLE		        (1 << 13)
-#define FSH_TX_INDICATE			        (1 << 15)
-#define FSH_DOWN_COMPLETE		        (1 << 16)
-#define FSH_LAST_KEEP_ALIVE_PACKET	        (1 << 24)
-#define FSH_ADD_IP_CHECKSUM		        (1 << 25)
-#define FSH_ADD_TCP_CHECKSUM		        (1 << 26)
-#define FSH_ADD_UDP_CHECKSUM		        (1 << 27)
-#define FSH_ROUND_UP_DEFEAT		        (1 << 28)
-#define FSH_DPD_EMPTY			        (1 << 29)
-#define FSH_DOWN_INDICATE		        (1 << 31)
+#define FSH_CRC_APPEND_DISABLE                  (1 << 13)
+#define FSH_TX_INDICATE                         (1 << 15)
+#define FSH_DOWN_COMPLETE                       (1 << 16)
+#define FSH_LAST_KEEP_ALIVE_PACKET              (1 << 24)
+#define FSH_ADD_IP_CHECKSUM                     (1 << 25)
+#define FSH_ADD_TCP_CHECKSUM                    (1 << 26)
+#define FSH_ADD_UDP_CHECKSUM                    (1 << 27)
+#define FSH_ROUND_UP_DEFEAT                     (1 << 28)
+#define FSH_DPD_EMPTY                           (1 << 29)
+#define FSH_DOWN_INDICATE                       (1 << 31)
 
 //
 // Internal Config
 //
 
-#define INTERNAL_CONFIG_DISABLE_BAD_SSD		(1 << 8)
-#define INTERNAL_CONFIG_ENABLE_TX_LARGE		(1 << 14)
-#define INTERNAL_CONFIG_ENABLE_RX_LARGE		(1 << 15)
-#define INTERNAL_CONFIG_AUTO_SELECT		(1 << 24)
-#define INTERNAL_CONFIG_DISABLE_ROM		(1 << 25)
+#define INTERNAL_CONFIG_DISABLE_BAD_SSD         (1 << 8)
+#define INTERNAL_CONFIG_ENABLE_TX_LARGE         (1 << 14)
+#define INTERNAL_CONFIG_ENABLE_RX_LARGE         (1 << 15)
+#define INTERNAL_CONFIG_AUTO_SELECT             (1 << 24)
+#define INTERNAL_CONFIG_DISABLE_ROM             (1 << 25)
 
-#define INTERNAL_CONFIG_TRANSCEIVER_MASK	0x00F00000
-#define INTERNAL_CONFIG_TRANSCEIVER_SHIFT	20
+#define INTERNAL_CONFIG_TRANSCEIVER_MASK        0x00F00000
+#define INTERNAL_CONFIG_TRANSCEIVER_SHIFT       20
 
 //
 // Connector types
@@ -327,21 +327,21 @@
 // Physical Management
 //
 
-#define PHY_WRITE			        0x0004  // Write to PHY (drive MDIO)
-#define PHY_DATA1			        0x0002  // MDIO data bit
-#define PHY_CLOCK			        0x0001  // MII clock signal
+#define PHY_WRITE                               0x0004  // Write to PHY (drive MDIO)
+#define PHY_DATA1                               0x0002  // MDIO data bit
+#define PHY_CLOCK                               0x0001  // MII clock signal
 
-#define MII_PHY_ADDRESS				0x0C00
-#define MII_PHY_ADDRESS_READ  		        (MII_PHY_ADDRESS | 0x6000)
-#define MII_PHY_ADDRESS_WRITE  		        (MII_PHY_ADDRESS | 0x5002)
+#define MII_PHY_ADDRESS                         0x0C00
+#define MII_PHY_ADDRESS_READ                    (MII_PHY_ADDRESS | 0x6000)
+#define MII_PHY_ADDRESS_WRITE                   (MII_PHY_ADDRESS | 0x5002)
 
 //
 // DMA control
 //
 
-#define DMA_CONTROL_DOWN_STALLED	(1 << 2)
-#define DMA_CONTROL_UP_COMPLETE		(1 << 3)
-#define DMA_CONTROL_DOWN_COMPLETE	(1 << 4)
+#define DMA_CONTROL_DOWN_STALLED        (1 << 2)
+#define DMA_CONTROL_UP_COMPLETE         (1 << 3)
+#define DMA_CONTROL_DOWN_COMPLETE       (1 << 4)
 #define DMA_CONTROL_ARM_COUNTDOWN       (1 << 6)
 #define DMA_CONTROL_DOWN_IN_PROGRESS    (1 << 7)
 #define DMA_CONTROL_COUNTER_SPEED       (1 << 8)
@@ -349,7 +349,7 @@
 #define DMA_CONTROL_DOWN_SEQ_DISABLE    (1 << 17)
 #define DMA_CONTROL_DEFEAT_MWI          (1 << 20)
 #define DMA_CONTROL_DEFEAT_MRL          (1 << 21)
-#define DMA_CONTROL_UPOVERDISC_DISABLE	(1 << 22)
+#define DMA_CONTROL_UPOVERDISC_DISABLE  (1 << 22)
 #define DMA_CONTROL_TARGET_ABORT        (1 << 30)
 #define DMA_CONTROL_MASTER_ABORT        (1 << 31)
 
@@ -357,107 +357,107 @@
 // Media status
 //
 
-#define MEDIA_STATUS_SQE_STATISTICS_ENABLE	(1 << 3)
-#define MEDIA_STATUS_CARRIER_SENSE		(1 << 5)
-#define MEDIA_STATUS_JABBER_GUARD_ENABLE	(1 << 6)
-#define MEDIA_STATUS_LINK_BEAT_ENABLE		(1 << 7)
-#define MEDIA_STATUS_LINK_DETECT		(1 << 11)
-#define MEDIA_STATUS_TX_IN_PROGRESS		(1 << 12)
-#define MEDIA_STATUS_DC_CONVERTER_ENABLED	(1 << 14)
+#define MEDIA_STATUS_SQE_STATISTICS_ENABLE      (1 << 3)
+#define MEDIA_STATUS_CARRIER_SENSE              (1 << 5)
+#define MEDIA_STATUS_JABBER_GUARD_ENABLE        (1 << 6)
+#define MEDIA_STATUS_LINK_BEAT_ENABLE           (1 << 7)
+#define MEDIA_STATUS_LINK_DETECT                (1 << 11)
+#define MEDIA_STATUS_TX_IN_PROGRESS             (1 << 12)
+#define MEDIA_STATUS_DC_CONVERTER_ENABLED       (1 << 14)
 
 //
 // Media Options
 //
 
-#define MEDIA_OPTIONS_100BASET4_AVAILABLE	(1 << 0)
-#define MEDIA_OPTIONS_100BASETX_AVAILABLE	(1 << 1)
-#define MEDIA_OPTIONS_100BASEFX_AVAILABLE	(1 << 2)
-#define MEDIA_OPTIONS_10BASET_AVAILABLE		(1 << 3)
-#define MEDIA_OPTIONS_10BASE2_AVAILABLE		(1 << 4)
-#define MEDIA_OPTIONS_10AUI_AVAILABLE		(1 << 5)
-#define MEDIA_OPTIONS_MII_AVAILABLE		(1 << 6)
-#define MEDIA_OPTIONS_10BASEFL_AVAILABLE	(1 << 8)
+#define MEDIA_OPTIONS_100BASET4_AVAILABLE       (1 << 0)
+#define MEDIA_OPTIONS_100BASETX_AVAILABLE       (1 << 1)
+#define MEDIA_OPTIONS_100BASEFX_AVAILABLE       (1 << 2)
+#define MEDIA_OPTIONS_10BASET_AVAILABLE         (1 << 3)
+#define MEDIA_OPTIONS_10BASE2_AVAILABLE         (1 << 4)
+#define MEDIA_OPTIONS_10AUI_AVAILABLE           (1 << 5)
+#define MEDIA_OPTIONS_MII_AVAILABLE             (1 << 6)
+#define MEDIA_OPTIONS_10BASEFL_AVAILABLE        (1 << 8)
 
 //
 // MAC Control
 //
 
-#define MAC_CONTROL_FULL_DUPLEX_ENABLE		(1 << 5)
-#define MAC_CONTROL_ALLOW_LARGE_PACKETS		(1 << 6)
-#define MAC_CONTROL_FLOW_CONTROL_ENABLE 	(1 << 8)
+#define MAC_CONTROL_FULL_DUPLEX_ENABLE          (1 << 5)
+#define MAC_CONTROL_ALLOW_LARGE_PACKETS         (1 << 6)
+#define MAC_CONTROL_FLOW_CONTROL_ENABLE         (1 << 8)
 
 //
 // Network diagnostics
 //
 
-#define NETWORK_DIAGNOSTICS_ASIC_REVISION	0x003E
-#define NETWORK_DIAGNOSTICS_ASIC_REVISION_LOW  	0x000E 
-#define NETWORK_DIAGNOSTICS_UPPER_BYTES_ENABLE 	(1 << 6)
+#define NETWORK_DIAGNOSTICS_ASIC_REVISION       0x003E
+#define NETWORK_DIAGNOSTICS_ASIC_REVISION_LOW   0x000E 
+#define NETWORK_DIAGNOSTICS_UPPER_BYTES_ENABLE  (1 << 6)
 
 //
 // MII Registers
 //
 
-#define MII_PHY_CONTROL			0   // Control reg address
-#define MII_PHY_STATUS              	1   // Status reg address
-#define MII_PHY_OUI                 	2   // Most of the OUI bits
-#define MII_PHY_MODEL               	3   // Model/rev bits, and rest of OUI
-#define MII_PHY_ANAR                	4   // Auto negotiate advertisement reg
-#define MII_PHY_ANLPAR              	5   // Auto negotiate link partner reg
-#define MII_PHY_ANER                	6   // Auto negotiate expansion reg
+#define MII_PHY_CONTROL                 0   // Control reg address
+#define MII_PHY_STATUS                  1   // Status reg address
+#define MII_PHY_OUI                     2   // Most of the OUI bits
+#define MII_PHY_MODEL                   3   // Model/rev bits, and rest of OUI
+#define MII_PHY_ANAR                    4   // Auto negotiate advertisement reg
+#define MII_PHY_ANLPAR                  5   // Auto negotiate link partner reg
+#define MII_PHY_ANER                    6   // Auto negotiate expansion reg
 
 //
 // MII control register
 //
 
-#define MII_CONTROL_RESET		0x8000  // Reset bit in control reg
-#define MII_CONTROL_100MB		0x2000  // 100Mbit or 10 Mbit flag
-#define MII_CONTROL_ENABLE_AUTO		0x1000  // Autonegotiate enable
-#define MII_CONTROL_ISOLATE		0x0400  // Islolate bit
-#define MII_CONTROL_START_AUTO		0x0200  // Restart autonegotiate
-#define MII_CONTROL_FULL_DUPLEX		0x0100  // Full duplex
+#define MII_CONTROL_RESET               0x8000  // Reset bit in control reg
+#define MII_CONTROL_100MB               0x2000  // 100Mbit or 10 Mbit flag
+#define MII_CONTROL_ENABLE_AUTO         0x1000  // Autonegotiate enable
+#define MII_CONTROL_ISOLATE             0x0400  // Islolate bit
+#define MII_CONTROL_START_AUTO          0x0200  // Restart autonegotiate
+#define MII_CONTROL_FULL_DUPLEX         0x0100  // Full duplex
 
 //
 // MII status register
 //
 
-#define MII_STATUS_100MB_MASK	0xE000  // Any of these indicate 100 Mbit
-#define MII_STATUS_10MB_MASK	0x1800  // Either of these indicate 10 Mbit
-#define MII_STATUS_AUTO_DONE	0x0020  // Auto negotiation complete
-#define MII_STATUS_AUTO		0x0008  // Auto negotiation is available
-#define MII_STATUS_LINK_UP	0x0004  // Link status bit
-#define MII_STATUS_EXTENDED	0x0001  // Extended regs exist
-#define MII_STATUS_100T4	0x8000  // Capable of 100BT4
-#define MII_STATUS_100TXFD	0x4000  // Capable of 100BTX full duplex
-#define MII_STATUS_100TX	0x2000  // Capable of 100BTX
-#define MII_STATUS_10TFD	0x1000  // Capable of 10BT full duplex
-#define MII_STATUS_10T		0x0800  // Capable of 10BT
+#define MII_STATUS_100MB_MASK   0xE000  // Any of these indicate 100 Mbit
+#define MII_STATUS_10MB_MASK    0x1800  // Either of these indicate 10 Mbit
+#define MII_STATUS_AUTO_DONE    0x0020  // Auto negotiation complete
+#define MII_STATUS_AUTO         0x0008  // Auto negotiation is available
+#define MII_STATUS_LINK_UP      0x0004  // Link status bit
+#define MII_STATUS_EXTENDED     0x0001  // Extended regs exist
+#define MII_STATUS_100T4        0x8000  // Capable of 100BT4
+#define MII_STATUS_100TXFD      0x4000  // Capable of 100BTX full duplex
+#define MII_STATUS_100TX        0x2000  // Capable of 100BTX
+#define MII_STATUS_10TFD        0x1000  // Capable of 10BT full duplex
+#define MII_STATUS_10T          0x0800  // Capable of 10BT
 
 //
 // MII Auto-Negotiation Link Partner Ability
 //
 
-#define MII_ANLPAR_100T4	0x0200  // Support 100BT4
-#define MII_ANLPAR_100TXFD	0x0100  // Support 100BTX full duplex
-#define MII_ANLPAR_100TX	0x0080  // Support 100BTX half duplex
-#define MII_ANLPAR_10TFD	0x0040  // Support 10BT full duplex
-#define MII_ANLPAR_10T		0x0020  // Support 10BT half duplex
+#define MII_ANLPAR_100T4        0x0200  // Support 100BT4
+#define MII_ANLPAR_100TXFD      0x0100  // Support 100BTX full duplex
+#define MII_ANLPAR_100TX        0x0080  // Support 100BTX half duplex
+#define MII_ANLPAR_10TFD        0x0040  // Support 10BT full duplex
+#define MII_ANLPAR_10T          0x0020  // Support 10BT half duplex
 
 //
 // MII Auto-Negotiation Advertisement
 //
 
-#define MII_ANER_LPANABLE	0x0001  // Link partner autonegotiatable ?
-#define MII_ANAR_100T4		0x0200  // Support 100BT4
-#define MII_ANAR_100TXFD	0x0100  // Support 100BTX full duplex
-#define MII_ANAR_100TX		0x0080  // Support 100BTX half duplex
-#define MII_ANAR_10TFD		0x0040  // Support 10BT full duplex
-#define MII_ANAR_10T		0x0020  // Support 10BT half duplex
-#define MII_ANAR_FLOWCONTROL	0x0400  // Support Flow Control
+#define MII_ANER_LPANABLE       0x0001  // Link partner autonegotiatable ?
+#define MII_ANAR_100T4          0x0200  // Support 100BT4
+#define MII_ANAR_100TXFD        0x0100  // Support 100BTX full duplex
+#define MII_ANAR_100TX          0x0080  // Support 100BTX half duplex
+#define MII_ANAR_10TFD          0x0040  // Support 10BT full duplex
+#define MII_ANAR_10T            0x0020  // Support 10BT half duplex
+#define MII_ANAR_FLOWCONTROL    0x0400  // Support Flow Control
 
-#define MII_ANAR_MEDIA_MASK     0x07E0	// Mask the media selection bits
-#define MII_ANAR_MEDIA_100_MASK	(MII_ANAR_100TXFD | MII_ANAR_100TX)
-#define MII_ANAR_MEDIA_10_MASK	(MII_ANAR_10TFD | MII_ANAR_10T)
+#define MII_ANAR_MEDIA_MASK     0x07E0  // Mask the media selection bits
+#define MII_ANAR_MEDIA_100_MASK (MII_ANAR_100TXFD | MII_ANAR_100TX)
+#define MII_ANAR_MEDIA_10_MASK  (MII_ANAR_10TFD | MII_ANAR_10T)
 
 //
 // EEPROM contents
@@ -507,17 +507,17 @@
 // EEPROM software information 2
 //
 
-#define ENABLE_MWI_WORK	           0x0020
+#define ENABLE_MWI_WORK            0x0020
 
 //
 // MII Transceiver Type
 //
-#define MIISELECT_GENERIC	0x0000
-#define MIISELECT_100BT4	0x0001
-#define MIISELECT_10BT		0x0002
-#define MIISELECT_100BTX	0x0003
-#define MIISELECT_10BT_ANE	0x0004
-#define MIISELECT_100BTX_ANE	0x0005
-#define MIITXTYPE_MASK		0x000F
+#define MIISELECT_GENERIC       0x0000
+#define MIISELECT_100BT4        0x0001
+#define MIISELECT_10BT          0x0002
+#define MIISELECT_100BTX        0x0003
+#define MIISELECT_10BT_ANE      0x0004
+#define MIISELECT_100BTX_ANE    0x0005
+#define MIITXTYPE_MASK          0x000F
 
 #endif

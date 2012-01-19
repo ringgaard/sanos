@@ -40,8 +40,8 @@ static void protstat(struct proc_file *pf, char *prot, struct stats_proto *stat)
 {
   pprintf(pf, "%-4s%7d%6d%7d%6d%6d%6d%6d%6d%6d%6d%6d%6d\n",
           prot, stat->xmit, stat->rexmit, stat->recv, stat->fw, stat->drop,
-	  stat->chkerr, stat->lenerr, stat->memerr, stat->rterr, stat->proterr,
-	  stat->opterr, stat->err);
+          stat->chkerr, stat->lenerr, stat->memerr, stat->rterr, stat->proterr,
+          stat->opterr, stat->err);
 }
 
 static int netstat_proc(struct proc_file *pf, void *arg)

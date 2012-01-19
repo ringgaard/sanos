@@ -95,14 +95,14 @@ static void dbg_send_rle(struct dbg_session *s, void *data, unsigned int len)
 
       if (p > q)
       {
-	dbg_send(s, q, p - q);
-	q = p;
+        dbg_send(s, q, p - q);
+        q = p;
       }
 
       while (left > 0 && q - p < 256 && q[0] == *p)
       {
-	q++;
-	left--;
+        q++;
+        left--;
       }
 
       buf[0] = DBG_RLE_ESCAPE;
@@ -146,9 +146,9 @@ static void dbg_recv_rle(struct dbg_session *s, void *data, unsigned int len)
 
       while (n > 0)
       {
-	*p++ = value;
-	left--;
-	n--;
+        *p++ = value;
+        left--;
+        n--;
       }
     }
     else

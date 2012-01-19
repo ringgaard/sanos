@@ -211,8 +211,8 @@ int cmd_ping(int argc, char *argv[])
     { 
       if (errno == ETIMEDOUT)
       {
-	printf("timed out\n"); 
-	continue; 
+        printf("timed out\n"); 
+        continue; 
       } 
       perror("ping: sendto"); 
       return 1; 
@@ -232,8 +232,8 @@ int cmd_ping(int argc, char *argv[])
     { 
       if (errno == ETIMEDOUT)
       {
-	printf("timed out\n"); 
-	continue; 
+        printf("timed out\n"); 
+        continue; 
       } 
       perror("ping: recvfrom"); 
       return 1; 

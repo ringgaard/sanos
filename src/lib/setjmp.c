@@ -47,14 +47,14 @@ __declspec(naked) int setjmp(jmp_buf env)
   __asm
   {
     mov edx, 4[esp]          // Get jmp_buf pointer
-    mov	eax, [esp]           // Save EIP
-    mov	OFS_EIP[edx], eax
-    mov	OFS_EBP[edx], ebp    // Save EBP, EBX, EDI, ESI, and ESP
-    mov	OFS_EBX[edx], ebx
-    mov	OFS_EDI[edx], edi
-    mov	OFS_ESI[edx], esi
-    mov	OFS_ESP[edx], esp
-    xor	eax, eax             // Return 0
+    mov eax, [esp]           // Save EIP
+    mov OFS_EIP[edx], eax
+    mov OFS_EBP[edx], ebp    // Save EBP, EBX, EDI, ESI, and ESP
+    mov OFS_EBX[edx], ebx
+    mov OFS_EDI[edx], edi
+    mov OFS_ESI[edx], esi
+    mov OFS_ESP[edx], esp
+    xor eax, eax             // Return 0
     ret
   }
 }
@@ -64,16 +64,16 @@ __declspec(naked) void longjmp(jmp_buf env, int value)
   __asm
   {
     mov edx, 4[esp]          // Get jmp_buf pointer
-    mov	eax, 8[esp]          // Get return value (eax)
+    mov eax, 8[esp]          // Get return value (eax)
 
     mov esp, OFS_ESP[edx]    // Switch to new stack position
-    mov	ebx, OFS_EIP[edx]    // Get new EIP value and set as return address
+    mov ebx, OFS_EIP[edx]    // Get new EIP value and set as return address
     mov [esp], ebx
     
-    mov	ebp, OFS_EBP[edx]    // Restore EBP, EBX, EDI, and ESI
-    mov	ebx, OFS_EBX[edx]
-    mov	edi, OFS_EDI[edx]
-    mov	esi, OFS_ESI[edx]
+    mov ebp, OFS_EBP[edx]    // Restore EBP, EBX, EDI, and ESI
+    mov ebx, OFS_EBX[edx]
+    mov edi, OFS_EDI[edx]
+    mov esi, OFS_ESI[edx]
 
     ret
   }

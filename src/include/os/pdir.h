@@ -42,7 +42,7 @@ typedef unsigned long pte_t;
 
 #define PT_PRESENT   0x001
 #define PT_WRITABLE  0x002
-#define	PT_USER      0x004
+#define PT_USER      0x004
 #define PT_ACCESSED  0x020
 #define PT_DIRTY     0x040
 

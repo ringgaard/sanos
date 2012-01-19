@@ -92,8 +92,8 @@ void loopif_init()
   loopback_netif->output = loopif_output;
   loopback_netif->flags |= NETIF_LOOPBACK | NETIF_UP |
                            NETIF_IP_TX_CHECKSUM_OFFLOAD | NETIF_IP_RX_CHECKSUM_OFFLOAD |
-		           NETIF_UDP_RX_CHECKSUM_OFFLOAD | NETIF_UDP_TX_CHECKSUM_OFFLOAD |
-		           NETIF_TCP_RX_CHECKSUM_OFFLOAD | NETIF_TCP_TX_CHECKSUM_OFFLOAD;
+                           NETIF_UDP_RX_CHECKSUM_OFFLOAD | NETIF_UDP_TX_CHECKSUM_OFFLOAD |
+                           NETIF_TCP_RX_CHECKSUM_OFFLOAD | NETIF_TCP_TX_CHECKSUM_OFFLOAD;
 
   loopback_queue = alloc_queue(256);
   create_kernel_thread(loopif_dispatcher, loopback_netif, PRIORITY_NORMAL, "loopback");

@@ -403,14 +403,14 @@ static struct buf *get_new_buffer(struct bufpool *pool)
       // Write the least recently changed buffer to the device
       if (!(write_buffer(pool, buf, 0) < 0))
       {
-	// Only use the buffer if it has not been locked by other buffer waiters
-	if (buf->locks == 0)
-	{
-	  // Remove buffer from hash table and return buffer
-	  remove_from_hashtable(pool, buf);
+        // Only use the buffer if it has not been locked by other buffer waiters
+        if (buf->locks == 0)
+        {
+          // Remove buffer from hash table and return buffer
+          remove_from_hashtable(pool, buf);
 
-	  return buf;
-	}
+          return buf;
+        }
       }
     }
 
@@ -458,17 +458,17 @@ static void lazywriter_task(void *arg)
     {
       for (pool = bufpools; pool; pool = pool->next)
       {
-	// Wait until we get one second with no activity
-	while (pool->ioactive)
-	{
-	  pool->ioactive = 0;
-  	  msleep(1000);
-	  check_sync();
-	}
+        // Wait until we get one second with no activity
+        while (pool->ioactive)
+        {
+          pool->ioactive = 0;
+          msleep(1000);
+          check_sync();
+        }
 
-	// Flush all dirty buffers
+        // Flush all dirty buffers
         //dump_pool_stat(pool);
-	if (flush_buffers(pool, 1) < 0) set_event(&dirty_buffers);
+        if (flush_buffers(pool, 1) < 0) set_event(&dirty_buffers);
       }
     }
 
@@ -854,7 +854,7 @@ int sync_buffers(struct bufpool *pool, int interruptable)
       if (interruptable && pool->ioactive) 
       {
         //kprintf("sync: interrupted\n");
-	return -EINTR;
+        return -EINTR;
       }
 
       // Lock buffer

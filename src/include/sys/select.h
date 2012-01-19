@@ -45,8 +45,8 @@
 
 struct timeval 
 {
-  long tv_sec;		        // Seconds
-  long tv_usec;		        // Microseconds
+  long tv_sec;                  // Seconds
+  long tv_usec;                 // Microseconds
 };
 
 #endif
@@ -102,8 +102,8 @@ __inline void _fd_clr(int fd, fd_set *set)
     {
       while (i < set->count - 1)
       {
-	set->fd[i] = set->fd[i + 1];
-	i++;
+        set->fd[i] = set->fd[i + 1];
+        i++;
       }
       set->count--;
       break;

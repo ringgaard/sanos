@@ -104,14 +104,14 @@ static void dbg_send_rle(void *data, unsigned int len)
 
       if (p > q)
       {
-	dbg_send(q, p - q);
-	q = p;
+        dbg_send(q, p - q);
+        q = p;
       }
 
       while (left > 0 && q - p < 256 && q[0] == *p)
       {
-	q++;
-	left--;
+        q++;
+        left--;
       }
 
       buf[0] = DBG_RLE_ESCAPE;
@@ -151,9 +151,9 @@ static void dbg_recv_rle(void *data, unsigned int len)
 
       while (n > 0)
       {
-	*p++ = value;
-	left--;
-	n--;
+        *p++ = value;
+        left--;
+        n--;
       }
     }
     else
@@ -507,54 +507,54 @@ static void dbg_main()
     switch (hdr.cmd)
     {
       case DBGCMD_CONNECT:
-	dbg_connect(&hdr, body);
+        dbg_connect(&hdr, body);
         print_string("dbg: remote debugger connected\n");
-	break;
+        break;
 
       case DBGCMD_CONTINUE:
         dbg_send_packet(DBGCMD_CONTINUE | DBGCMD_REPLY, hdr.id, NULL, 0);
         debugger_active = 0;
-	return;
+        return;
 
       case DBGCMD_READ_MEMORY:
-	dbg_read_memory(&hdr, body);
-	break;
+        dbg_read_memory(&hdr, body);
+        break;
 
       case DBGCMD_WRITE_MEMORY:
-	dbg_write_memory(&hdr, body);
-	break;
+        dbg_write_memory(&hdr, body);
+        break;
 
       case DBGCMD_SUSPEND_THREAD:
-	dbg_suspend_thread(&hdr, body);
-	break;
+        dbg_suspend_thread(&hdr, body);
+        break;
 
       case DBGCMD_RESUME_THREAD:
-	dbg_resume_thread(&hdr, body);
-	break;
+        dbg_resume_thread(&hdr, body);
+        break;
 
       case DBGCMD_GET_THREAD_CONTEXT:
-	dbg_get_thread_context(&hdr, body);
-	break;
+        dbg_get_thread_context(&hdr, body);
+        break;
 
       case DBGCMD_SET_THREAD_CONTEXT:
-	dbg_set_thread_context(&hdr, body);
-	break;
+        dbg_set_thread_context(&hdr, body);
+        break;
 
       case DBGCMD_GET_SELECTOR:
-	dbg_get_selector(&hdr, body);
-	break;
+        dbg_get_selector(&hdr, body);
+        break;
 
       case DBGCMD_GET_MODULES:
-	dbg_get_modules(&hdr, body);
-	break;
+        dbg_get_modules(&hdr, body);
+        break;
 
       case DBGCMD_GET_THREADS:
-	dbg_get_threads(&hdr, body);
-	break;
+        dbg_get_threads(&hdr, body);
+        break;
 
       default:
         kprintf("dbg: invalid command %d %d len=%d\n", hdr.id, hdr.cmd, hdr.len);
-	dbg_send_error(DBGERR_INVALIDCMD, hdr.id);
+        dbg_send_error(DBGERR_INVALIDCMD, hdr.id);
     }
   }
 

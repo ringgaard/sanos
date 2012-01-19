@@ -3,7 +3,7 @@
 ; Ported from Al Maromaty's free C Runtime Library
 ;-----------------------------------------------------------------------------
 
-        	SECTION	.text
+                SECTION .text
 
                 global  fabs
                 global  _fabs

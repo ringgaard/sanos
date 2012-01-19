@@ -5,7 +5,7 @@
 //
 
 .text
-	
+        
 .globl ___chkstk
 .globl __chkstk
 .globl _alloca
@@ -13,27 +13,27 @@
 
 ___chkstk:
 __chkstk:
-	xchg    (%esp), %ebp   /* store ebp, get ret.addr */
-	push    %ebp           /* push ret.addr */
-	lea     4(%esp), %ebp  /* setup frame ptr */
-	push    %ecx           /* save ecx */
-	mov     %ebp, %ecx
+        xchg    (%esp), %ebp   /* store ebp, get ret.addr */
+        push    %ebp           /* push ret.addr */
+        lea     4(%esp), %ebp  /* setup frame ptr */
+        push    %ecx           /* save ecx */
+        mov     %ebp, %ecx
 L1:
-	sub     $4096,%ecx
-	test    %eax,(%ecx)
-	sub     $4096,%eax
-	cmp     $4096,%eax
-	jge     L1
+        sub     $4096,%ecx
+        test    %eax,(%ecx)
+        sub     $4096,%eax
+        cmp     $4096,%eax
+        jge     L1
 
-	sub     %eax,%ecx
-	mov     %esp,%eax
-	test    %eax,(%ecx)
-	mov     %ecx,%esp
+        sub     %eax,%ecx
+        mov     %esp,%eax
+        test    %eax,(%ecx)
+        mov     %ecx,%esp
 
-	mov     (%eax),%ecx     /* restore ecx */
-	mov     4(%eax),%eax
-	push    %eax
-	ret
+        mov     (%eax),%ecx     /* restore ecx */
+        mov     4(%eax),%eax
+        push    %eax
+        ret
 
 __alloca:
 _alloca:

@@ -37,20 +37,20 @@
 
 // PCI IDs
 
-#define PCI_DEVICE_PCNET32	0x2000
-#define PCI_VENDOR_AMD		0x1022
+#define PCI_DEVICE_PCNET32      0x2000
+#define PCI_VENDOR_AMD          0x1022
 
 // Offsets from base I/O address
 
-#define PCNET32_WIO_RDP		0x10 // Register data port
-#define PCNET32_WIO_RAP		0x12 // Register address port
-#define PCNET32_WIO_RESET	0x14
-#define PCNET32_WIO_BDP		0x16
+#define PCNET32_WIO_RDP         0x10 // Register data port
+#define PCNET32_WIO_RAP         0x12 // Register address port
+#define PCNET32_WIO_RESET       0x14
+#define PCNET32_WIO_BDP         0x16
 
-#define PCNET32_DWIO_RDP	0x10
-#define PCNET32_DWIO_RAP	0x14
-#define PCNET32_DWIO_RESET	0x18
-#define PCNET32_DWIO_BDP	0x1C
+#define PCNET32_DWIO_RDP        0x10
+#define PCNET32_DWIO_RAP        0x14
+#define PCNET32_DWIO_RESET      0x18
+#define PCNET32_DWIO_BDP        0x1C
 
 // Controller Status Registers
 
@@ -133,13 +133,13 @@
 #define PCNET32_LOG_RX_BUFFERS  5
 #endif
 
-#define TX_RING_SIZE		(1 << (PCNET32_LOG_TX_BUFFERS))
-#define TX_RING_MOD_MASK	(TX_RING_SIZE - 1)
-#define TX_RING_LEN_BITS	((PCNET32_LOG_TX_BUFFERS) << 12)
+#define TX_RING_SIZE            (1 << (PCNET32_LOG_TX_BUFFERS))
+#define TX_RING_MOD_MASK        (TX_RING_SIZE - 1)
+#define TX_RING_LEN_BITS        ((PCNET32_LOG_TX_BUFFERS) << 12)
 
-#define RX_RING_SIZE		(1 << (PCNET32_LOG_RX_BUFFERS))
-#define RX_RING_MOD_MASK	(RX_RING_SIZE - 1)
-#define RX_RING_LEN_BITS	((PCNET32_LOG_RX_BUFFERS) << 4)
+#define RX_RING_SIZE            (1 << (PCNET32_LOG_RX_BUFFERS))
+#define RX_RING_MOD_MASK        (RX_RING_SIZE - 1)
+#define RX_RING_LEN_BITS        ((PCNET32_LOG_RX_BUFFERS) << 4)
 
 #define ETHER_FRAME_LEN         1544
 #define TX_TIMEOUT              5000
@@ -156,7 +156,7 @@ struct pcnet32_rx_head
   unsigned long msg_length;
   unsigned long reserved;
 };
-	
+        
 struct pcnet32_tx_head
 {
   unsigned long buffer;
@@ -206,8 +206,8 @@ struct pcnet32
   unsigned long phys_addr;              // Physical address of this structure
   dev_t devno;                          // Device number
 
-  unsigned short iobase;		// Configured I/O base
-  unsigned short irq;		        // Configured IRQ
+  unsigned short iobase;                // Configured I/O base
+  unsigned short irq;                   // Configured IRQ
   unsigned short membase;               // Configured memory base
 
   unsigned long next_rx;                // Next entry to receive
@@ -220,7 +220,7 @@ struct pcnet32
   struct interrupt intr;                // Interrupt object for driver
   struct dpc dpc;                       // DPC for driver
 
-  struct event rdc;	                // Remote DMA completed event
+  struct event rdc;                     // Remote DMA completed event
   struct event ptx;                     // Packet transmitted event
 
   struct eth_addr hwaddr;               // MAC address for NIC
@@ -399,9 +399,9 @@ int pcnet32_transmit(struct dev *dev, struct pbuf *p)
     {
       if (wait_for_object(&pcnet32->sem_tx, TX_TIMEOUT) < 0)
       {
-	kprintf("pcnet32: transmit timeout, drop packet\n");
-	stats.link.drop++;
-	return -ETIMEOUT;
+        kprintf("pcnet32: transmit timeout, drop packet\n");
+        stats.link.drop++;
+        return -ETIMEOUT;
       }
     }
   }
@@ -475,24 +475,24 @@ void pcnet32_receive(struct pcnet32 *pcnet32)
       pcnet32->rx_buffer[entry] = pbuf_alloc(PBUF_RAW, ETHER_FRAME_LEN, PBUF_RW);
       if (pcnet32->rx_buffer[entry])
       {
-	// Give ownership back to card
-	pcnet32->rx_ring[entry].buffer = virt2phys(pcnet32->rx_buffer[entry]->payload);
-	pcnet32->rx_ring[entry].length = -ETHER_FRAME_LEN; // Note 1
-	pcnet32->rx_ring[entry].status |= RMD_OWN;
+        // Give ownership back to card
+        pcnet32->rx_ring[entry].buffer = virt2phys(pcnet32->rx_buffer[entry]->payload);
+        pcnet32->rx_ring[entry].length = -ETHER_FRAME_LEN; // Note 1
+        pcnet32->rx_ring[entry].status |= RMD_OWN;
       }
       else
       {
-	kprintf(KERN_WARNING "pcnet32: unable to allocate packet for receive ring\n");
-	stats.link.memerr++;
+        kprintf(KERN_WARNING "pcnet32: unable to allocate packet for receive ring\n");
+        stats.link.memerr++;
       }
 
       if (p)
       {
-	// Resize packet buffer
-	pbuf_realloc(p, len);
+        // Resize packet buffer
+        pbuf_realloc(p, len);
 
         // Send packet to upper layer
-	if (dev_receive(pcnet32->devno, p) < 0) pbuf_free(p);
+        if (dev_receive(pcnet32->devno, p) < 0) pbuf_free(p);
       }
 
       // Move to next entry

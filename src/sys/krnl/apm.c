@@ -37,73 +37,73 @@
 // APM function codes
 //
 
-#define	APM_FUNC_INST_CHECK	0x5300
-#define	APM_FUNC_REAL_CONN	0x5301
-#define	APM_FUNC_16BIT_CONN	0x5302
-#define	APM_FUNC_32BIT_CONN	0x5303
-#define	APM_FUNC_DISCONN	0x5304
-#define	APM_FUNC_IDLE		0x5305
-#define	APM_FUNC_BUSY		0x5306
-#define	APM_FUNC_SET_STATE	0x5307
-#define	APM_FUNC_ENABLE_PM	0x5308
-#define	APM_FUNC_RESTORE_BIOS	0x5309
-#define	APM_FUNC_GET_STATUS	0x530A
-#define	APM_FUNC_GET_EVENT	0x530B
-#define	APM_FUNC_GET_STATE	0x530C
-#define	APM_FUNC_ENABLE_DEV_PM	0x530D
-#define	APM_FUNC_VERSION	0x530E
-#define	APM_FUNC_ENGAGE_PM	0x530F
-#define	APM_FUNC_GET_CAP	0x5310
-#define	APM_FUNC_RESUME_TIMER	0x5311
-#define	APM_FUNC_RESUME_ON_RING	0x5312
-#define	APM_FUNC_TIMER		0x5313
+#define APM_FUNC_INST_CHECK     0x5300
+#define APM_FUNC_REAL_CONN      0x5301
+#define APM_FUNC_16BIT_CONN     0x5302
+#define APM_FUNC_32BIT_CONN     0x5303
+#define APM_FUNC_DISCONN        0x5304
+#define APM_FUNC_IDLE           0x5305
+#define APM_FUNC_BUSY           0x5306
+#define APM_FUNC_SET_STATE      0x5307
+#define APM_FUNC_ENABLE_PM      0x5308
+#define APM_FUNC_RESTORE_BIOS   0x5309
+#define APM_FUNC_GET_STATUS     0x530A
+#define APM_FUNC_GET_EVENT      0x530B
+#define APM_FUNC_GET_STATE      0x530C
+#define APM_FUNC_ENABLE_DEV_PM  0x530D
+#define APM_FUNC_VERSION        0x530E
+#define APM_FUNC_ENGAGE_PM      0x530F
+#define APM_FUNC_GET_CAP        0x5310
+#define APM_FUNC_RESUME_TIMER   0x5311
+#define APM_FUNC_RESUME_ON_RING 0x5312
+#define APM_FUNC_TIMER          0x5313
 
 //
 // Power states
 //
 
-#define APM_STATE_READY		0x0000
-#define APM_STATE_STANDBY	0x0001
-#define APM_STATE_SUSPEND	0x0002
-#define APM_STATE_OFF		0x0003
-#define APM_STATE_BUSY		0x0004
-#define APM_STATE_REJECT	0x0005
-#define APM_STATE_OEM_SYS	0x0020
-#define APM_STATE_OEM_DEV	0x0040
+#define APM_STATE_READY         0x0000
+#define APM_STATE_STANDBY       0x0001
+#define APM_STATE_SUSPEND       0x0002
+#define APM_STATE_OFF           0x0003
+#define APM_STATE_BUSY          0x0004
+#define APM_STATE_REJECT        0x0005
+#define APM_STATE_OEM_SYS       0x0020
+#define APM_STATE_OEM_DEV       0x0040
 
-#define APM_STATE_DISABLE	0x0000
-#define APM_STATE_ENABLE	0x0001
+#define APM_STATE_DISABLE       0x0000
+#define APM_STATE_ENABLE        0x0001
 
-#define APM_STATE_DISENGAGE	0x0000
-#define APM_STATE_ENGAGE	0x0001
+#define APM_STATE_DISENGAGE     0x0000
+#define APM_STATE_ENGAGE        0x0001
 
 
 //
 // APM Device IDs
 //
 
-#define APM_DEVICE_BIOS		0x0000
-#define APM_DEVICE_ALL		0x0001
-#define APM_DEVICE_DISPLAY	0x0100
-#define APM_DEVICE_STORAGE	0x0200
-#define APM_DEVICE_PARALLEL	0x0300
-#define APM_DEVICE_SERIAL	0x0400
-#define APM_DEVICE_NETWORK	0x0500
-#define APM_DEVICE_PCMCIA	0x0600
-#define APM_DEVICE_BATTERY	0x8000
-#define APM_DEVICE_OEM		0xE000
-#define APM_DEVICE_OLD_ALL	0xFFFF
-#define APM_DEVICE_CLASS	0x00FF
-#define APM_DEVICE_MASK		0xFF00
+#define APM_DEVICE_BIOS         0x0000
+#define APM_DEVICE_ALL          0x0001
+#define APM_DEVICE_DISPLAY      0x0100
+#define APM_DEVICE_STORAGE      0x0200
+#define APM_DEVICE_PARALLEL     0x0300
+#define APM_DEVICE_SERIAL       0x0400
+#define APM_DEVICE_NETWORK      0x0500
+#define APM_DEVICE_PCMCIA       0x0600
+#define APM_DEVICE_BATTERY      0x8000
+#define APM_DEVICE_OEM          0xE000
+#define APM_DEVICE_OLD_ALL      0xFFFF
+#define APM_DEVICE_CLASS        0x00FF
+#define APM_DEVICE_MASK         0xFF00
 
 //
 // APM BIOS Installation Check Flags
 //
 
-#define APM_16_BIT_SUPPORT	0x0001
-#define APM_32_BIT_SUPPORT	0x0002
-#define APM_IDLE_SLOWS_CLOCK	0x0004
-#define APM_BIOS_DISABLED      	0x0008
+#define APM_16_BIT_SUPPORT      0x0001
+#define APM_32_BIT_SUPPORT      0x0002
+#define APM_IDLE_SLOWS_CLOCK    0x0004
+#define APM_BIOS_DISABLED       0x0008
 #define APM_BIOS_DISENGAGED     0x0010
 
 int apm_enabled = 0;
@@ -113,8 +113,8 @@ static struct fullptr apm_entrypoint;
 #pragma warning(disable: 4731) // C4731: frame pointer register 'ebp' modified by inline assembly code
 
 static int apm_bios_call(unsigned long func, unsigned long ebx_in, unsigned long ecx_in,
-	                 unsigned long *eax_out, unsigned long *ebx_out, unsigned long *ecx_out, 
-			 unsigned long *edx_out, unsigned long *esi_out)
+                         unsigned long *eax_out, unsigned long *ebx_out, unsigned long *ecx_out, 
+                         unsigned long *edx_out, unsigned long *esi_out)
 {
   __asm
   {
@@ -173,7 +173,7 @@ static int apm_bios_call(unsigned long func, unsigned long ebx_in, unsigned long
 }
 
 static int apm_bios_call_simple(unsigned long func, unsigned long ebx_in, unsigned long ecx_in, 
-				unsigned long *eax_out)
+                                unsigned long *eax_out)
 {
   __asm
   {
@@ -190,7 +190,7 @@ static int apm_bios_call_simple(unsigned long func, unsigned long ebx_in, unsign
     mov eax, [func]
     mov ebx, [ebx_in]
     mov ecx, [ecx_in]
-    xor	edx, edx
+    xor edx, edx
 
     CLI
     call fword ptr [apm_entrypoint]

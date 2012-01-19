@@ -106,11 +106,11 @@ void load_kernel(int bootdrv)
       bootpart = -1;
       for (i = 0; i < 4; i++)
       {
-	if (mbr->parttab[i].bootid == 0x80)
-	{
-	  bootpart = i;
-	  start = mbr->parttab[i].relsect;
-	}
+        if (mbr->parttab[i].bootid == 0x80)
+        {
+          bootpart = i;
+          start = mbr->parttab[i].relsect;
+        }
       }
 
       if (bootpart == -1) panic("no bootable partition on boot drive");

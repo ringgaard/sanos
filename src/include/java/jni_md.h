@@ -1,5 +1,5 @@
 /*
- * @(#)jni_md.h	1.11 00/02/02
+ * @(#)jni_md.h 1.11 00/02/02
  *
  * Copyright 1996-2000 Sun Microsystems, Inc. All Rights Reserved.
  * 

@@ -43,7 +43,7 @@ EXPORTS
   
   __WSAFDIsSet                              @151
   WSAGetLastError                           @111
-  WSACleanup	                            @116
+  WSACleanup                                @116
   WSARecvFrom                               @73
   WSASendTo                                 @78
   WSAIoctl                                  @60

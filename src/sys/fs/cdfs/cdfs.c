@@ -381,7 +381,7 @@ int cdfs_mount(struct fs *fs, char *opts)
       cdfs->vdblk = blk;
     else if (type == ISO_VD_SUPPLEMENTAL && 
              esc[0] == 0x25 && esc[1] == 0x2F && 
-	     (esc[2] == 0x40 || esc[2] == 0x43 || esc[2] == 0x45))
+             (esc[2] == 0x40 || esc[2] == 0x43 || esc[2] == 0x45))
     {
       cdfs->vdblk = blk;
       cdfs->joliet = 1;

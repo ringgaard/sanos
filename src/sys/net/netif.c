@@ -231,12 +231,12 @@ int netif_ioctl_cfg(void *data, size_t size)
       state = dhcp_start(netif);
       if (state) 
       {
-	if (wait_for_object(&state->binding_complete, 30000)  < 0) return -ETIMEDOUT;
+        if (wait_for_object(&state->binding_complete, 30000)  < 0) return -ETIMEDOUT;
 
-	((struct sockaddr_in *) &ifcfg->addr)->sin_addr.s_addr = netif->ipaddr.addr;
-	((struct sockaddr_in *) &ifcfg->netmask)->sin_addr.s_addr = netif->netmask.addr;
-	((struct sockaddr_in *) &ifcfg->gw)->sin_addr.s_addr = netif->gw.addr;
-	((struct sockaddr_in *) &ifcfg->broadcast)->sin_addr.s_addr = netif->broadcast.addr;
+        ((struct sockaddr_in *) &ifcfg->addr)->sin_addr.s_addr = netif->ipaddr.addr;
+        ((struct sockaddr_in *) &ifcfg->netmask)->sin_addr.s_addr = netif->netmask.addr;
+        ((struct sockaddr_in *) &ifcfg->gw)->sin_addr.s_addr = netif->gw.addr;
+        ((struct sockaddr_in *) &ifcfg->broadcast)->sin_addr.s_addr = netif->broadcast.addr;
       }
     }
   }

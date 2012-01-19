@@ -45,11 +45,11 @@ int check_iovec(struct iovec *iov, int iovlen)
       if (iov->iov_len < 0) return -EINVAL;
       if (iov->iov_base)
       {
-	if (KERNELSPACE(iov->iov_base)) return -EFAULT;
-	if (!mem_mapped(iov->iov_base, iov->iov_len)) return -EFAULT;
+        if (KERNELSPACE(iov->iov_base)) return -EFAULT;
+        if (!mem_mapped(iov->iov_base, iov->iov_len)) return -EFAULT;
       }
       else if (iov->iov_len != 0) 
-	return -EFAULT;
+        return -EFAULT;
 
       iov++;
       iovlen--;

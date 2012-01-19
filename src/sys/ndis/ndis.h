@@ -356,8 +356,8 @@ struct ndis_resource_descriptor
 
     struct 
     {
-	ndis_physical_address_t start;
-	unsigned long length;
+        ndis_physical_address_t start;
+        unsigned long length;
     } port;
 
     //

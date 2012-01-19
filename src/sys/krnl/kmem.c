@@ -225,12 +225,12 @@ int list_memmap(struct proc_file *pf, struct rmap *rmap, unsigned int startpos)
     {
       pdir_stat((void *) (pos * PAGESIZE), size * PAGESIZE, &stat);
       pprintf(pf, "%08X %08X %8dK %8dK %8dK %8dK\n", 
-	      pos * PAGESIZE, 
-	      r->offset * PAGESIZE - 1, 
-	      size * (PAGESIZE / 1024), 
-	      stat.present * (PAGESIZE / 1024), 
-	      stat.readonly * (PAGESIZE / 1024), 
-	      r->size * (PAGESIZE / 1024));
+              pos * PAGESIZE, 
+              r->offset * PAGESIZE - 1, 
+              size * (PAGESIZE / 1024), 
+              stat.present * (PAGESIZE / 1024), 
+              stat.readonly * (PAGESIZE / 1024), 
+              r->size * (PAGESIZE / 1024));
 
       total += size;
     }

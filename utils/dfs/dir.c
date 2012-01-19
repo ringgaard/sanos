@@ -33,9 +33,9 @@ ino_t find_dir_entry(struct inode *dir, char *name, int len)
 
       if (fnmatch(name, len, de->name, de->namelen))
       {
-	ino = de->ino;
+        ino = de->ino;
         release_buffer(dir->fs->cache, buf);
-	return ino;
+        return ino;
       }
 
       p += de->reclen;
@@ -156,22 +156,22 @@ int add_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
 
       if (de->reclen >= minlen + sizeof(struct dentry) + NAME_ALIGN_LEN(de->namelen))
       {
-	newde = (struct dentry *) (p + minlen);
+        newde = (struct dentry *) (p + minlen);
 
-	newde->ino = ino;
-	newde->reclen = de->reclen - minlen;
-	newde->namelen = len;
-	memcpy(newde->name, name, len);
+        newde->ino = ino;
+        newde->reclen = de->reclen - minlen;
+        newde->namelen = len;
+        memcpy(newde->name, name, len);
 
-	de->reclen = minlen;
+        de->reclen = minlen;
 
-	mark_buffer_updated(buf);
+        mark_buffer_updated(buf);
         release_buffer(dir->fs->cache, buf);
 
-	dir->desc->mtime = time(NULL);
-	mark_inode_dirty(dir);
+        dir->desc->mtime = time(NULL);
+        mark_inode_dirty(dir);
 
-	return 0;
+        return 0;
       }
 
       p += de->reclen;
@@ -227,11 +227,11 @@ ino_t modify_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
 
       if (fnmatch(name, len, de->name, de->namelen))
       {
-	oldino = de->ino;
-	de->ino = ino;
-	mark_buffer_updated(buf);
+        oldino = de->ino;
+        de->ino = ino;
+        mark_buffer_updated(buf);
         release_buffer(dir->fs->cache, buf);
-	return oldino;
+        return oldino;
       }
 
       p += de->reclen;
@@ -271,44 +271,44 @@ int delete_dir_entry(struct inode *dir, char *name, int len)
 
       if (fnmatch(name, len, de->name, de->namelen))
       {
-	if (prevde)
-	{
-	  // Merge entry with previous entry
-	  prevde->reclen += de->reclen;
-	  memset(de, 0, sizeof(struct dentry) + NAME_ALIGN_LEN(de->namelen));
+        if (prevde)
+        {
+          // Merge entry with previous entry
+          prevde->reclen += de->reclen;
+          memset(de, 0, sizeof(struct dentry) + NAME_ALIGN_LEN(de->namelen));
           mark_buffer_updated(buf);
-	}
-	else if (de->reclen == dir->fs->blocksize)
-	{
-	  // Block is empty, swap this block with last block and truncate
-	  if (block != dir->desc->blocks - 1)
-	  {
-	    lastblk = get_inode_block(dir, dir->desc->blocks - 1);
-  	    set_inode_block(dir, block, lastblk);
-  	    set_inode_block(dir, dir->desc->blocks - 1, buf->blkno);
-	  }
+        }
+        else if (de->reclen == dir->fs->blocksize)
+        {
+          // Block is empty, swap this block with last block and truncate
+          if (block != dir->desc->blocks - 1)
+          {
+            lastblk = get_inode_block(dir, dir->desc->blocks - 1);
+            set_inode_block(dir, block, lastblk);
+            set_inode_block(dir, dir->desc->blocks - 1, buf->blkno);
+          }
 
           truncate_inode(dir, dir->desc->blocks - 1);
-	  dir->desc->size -= dir->fs->blocksize;
-	  mark_buffer_invalid(buf);
-	}
-	else
-	{
-	  // Merge with next entry
-	  nextde = (struct dentry *) (p + de->reclen);
-	  de->ino = nextde->ino;
-	  de->reclen += nextde->reclen;
-	  de->namelen = nextde->namelen;
-	  memcpy(de->name, nextde->name, nextde->namelen); // TODO: should be memmove?
-  	  mark_buffer_updated(buf);
-	}
+          dir->desc->size -= dir->fs->blocksize;
+          mark_buffer_invalid(buf);
+        }
+        else
+        {
+          // Merge with next entry
+          nextde = (struct dentry *) (p + de->reclen);
+          de->ino = nextde->ino;
+          de->reclen += nextde->reclen;
+          de->namelen = nextde->namelen;
+          memcpy(de->name, nextde->name, nextde->namelen); // TODO: should be memmove?
+          mark_buffer_updated(buf);
+        }
 
         release_buffer(dir->fs->cache, buf);
 
-	dir->desc->mtime = time(NULL);
-	mark_inode_dirty(dir);
+        dir->desc->mtime = time(NULL);
+        mark_inode_dirty(dir);
 
-	return 0;
+        return 0;
       }
 
       prevde = de;
@@ -347,7 +347,7 @@ int read_dir(struct inode *dir, filldir_t filldir, void *data)
       if (rc != 0)
       {
         release_buffer(dir->fs->cache, buf);
-	return rc;
+        return rc;
       }
 
       p += de->reclen;

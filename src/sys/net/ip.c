@@ -229,7 +229,7 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
     if (ip_addr_isany(&netif->ipaddr) ||
         ip_addr_cmp(&iphdr->dest, &netif->ipaddr) ||
        (ip_addr_isbroadcast(&iphdr->dest, &netif->netmask) &&
-	ip_addr_maskcmp(&iphdr->dest, &netif->ipaddr, &netif->netmask)) ||
+        ip_addr_maskcmp(&iphdr->dest, &netif->ipaddr, &netif->netmask)) ||
         ip_addr_cmp(&iphdr->dest, IP_ADDR_BROADCAST)) 
           break;
   }
@@ -295,8 +295,8 @@ err_t ip_input(struct pbuf *p, struct netif *inp)
       // Send ICMP destination protocol unreachable unless is was a broadcast
       if(!ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) && !ip_addr_ismulticast(&iphdr->dest))
       {
-	p->payload = iphdr;
-	icmp_dest_unreach(p, ICMP_DUR_PROTO);
+        p->payload = iphdr;
+        icmp_dest_unreach(p, ICMP_DUR_PROTO);
       }
 
       kprintf("Unsupported transport protocol %d\n", IPH_PROTO(iphdr));
@@ -419,32 +419,32 @@ void ip_debug_print(struct pbuf *p)
   kprintf("+-------------------------------+\n");
   kprintf("|%2d |%2d |   %2d  |      %4d     | (v, hl, tos, len)\n", 
              IPH_V(iphdr), 
-	     IPH_HL(iphdr), 
-	     IPH_TOS(iphdr), 
-	     ntohs(IPH_LEN(iphdr)));
+             IPH_HL(iphdr), 
+             IPH_TOS(iphdr), 
+             ntohs(IPH_LEN(iphdr)));
   kprintf("+-------------------------------+\n");
   kprintf("|    %5d      |%d%d%d|    %4d   | (id, flags, offset)\n",
-	     ntohs(IPH_ID(iphdr)),
-	     ntohs(IPH_OFFSET(iphdr)) >> 15 & 1,
-	     ntohs(IPH_OFFSET(iphdr)) >> 14 & 1,
-	     ntohs(IPH_OFFSET(iphdr)) >> 13 & 1,
-	     ntohs(IPH_OFFSET(iphdr)) & IP_OFFMASK);
+             ntohs(IPH_ID(iphdr)),
+             ntohs(IPH_OFFSET(iphdr)) >> 15 & 1,
+             ntohs(IPH_OFFSET(iphdr)) >> 14 & 1,
+             ntohs(IPH_OFFSET(iphdr)) >> 13 & 1,
+             ntohs(IPH_OFFSET(iphdr)) & IP_OFFMASK);
   kprintf("+-------------------------------+\n");
   kprintf("|  %3d  |   %2d  |    0x%04x     | (ttl, proto, chksum)\n",
-	     IPH_TTL(iphdr),
-	     IPH_PROTO(iphdr),
-	     ntohs(IPH_CHKSUM(iphdr)));
+             IPH_TTL(iphdr),
+             IPH_PROTO(iphdr),
+             ntohs(IPH_CHKSUM(iphdr)));
   kprintf("+-------------------------------+\n");
   kprintf("|  %3ld  |  %3ld  |  %3ld  |  %3ld  | (src)\n",
-	     ntohl(iphdr->src.addr) >> 24 & 0xFF,
-	     ntohl(iphdr->src.addr) >> 16 & 0xFF,
-	     ntohl(iphdr->src.addr) >> 8 & 0xFF,
-	     ntohl(iphdr->src.addr) & 0xFF);
+             ntohl(iphdr->src.addr) >> 24 & 0xFF,
+             ntohl(iphdr->src.addr) >> 16 & 0xFF,
+             ntohl(iphdr->src.addr) >> 8 & 0xFF,
+             ntohl(iphdr->src.addr) & 0xFF);
   kprintf("+-------------------------------+\n");
   kprintf("|  %3ld  |  %3ld  |  %3ld  |  %3ld  | (dest)\n",
-	     ntohl(iphdr->dest.addr) >> 24 & 0xFF,
-	     ntohl(iphdr->dest.addr) >> 16 & 0xFF,
-	     ntohl(iphdr->dest.addr) >> 8 & 0xFF,
-	     ntohl(iphdr->dest.addr) & 0xFF);
+             ntohl(iphdr->dest.addr) >> 24 & 0xFF,
+             ntohl(iphdr->dest.addr) >> 16 & 0xFF,
+             ntohl(iphdr->dest.addr) >> 8 & 0xFF,
+             ntohl(iphdr->dest.addr) & 0xFF);
   kprintf("+-------------------------------+\n");
 }

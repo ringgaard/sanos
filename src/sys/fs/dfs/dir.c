@@ -64,11 +64,11 @@ int find_dir_entry(struct inode *dir, char *name, int len, ino_t *retval)
 
       if (fnmatch(name, len, de->name, de->namelen))
       {
-	ino = de->ino;
+        ino = de->ino;
         release_buffer(dir->fs->cache, buf);
 
-	if (retval) *retval = ino;
-	return 0;
+        if (retval) *retval = ino;
+        return 0;
       }
 
       p += de->reclen;
@@ -113,22 +113,22 @@ int add_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
 
       if (de->reclen >= minlen + newlen)
       {
-	newde = (struct dentry *) (p + minlen);
+        newde = (struct dentry *) (p + minlen);
 
-	newde->ino = ino;
-	newde->reclen = de->reclen - minlen;
-	newde->namelen = len;
-	memcpy(newde->name, name, len);
+        newde->ino = ino;
+        newde->reclen = de->reclen - minlen;
+        newde->namelen = len;
+        memcpy(newde->name, name, len);
 
-	de->reclen = minlen;
+        de->reclen = minlen;
 
-	mark_buffer_updated(dir->fs->cache, buf);
+        mark_buffer_updated(dir->fs->cache, buf);
         release_buffer(dir->fs->cache, buf);
 
-	dir->desc->mtime = time(NULL);
-	mark_inode_dirty(dir);
+        dir->desc->mtime = time(NULL);
+        mark_inode_dirty(dir);
 
-	return 0;
+        return 0;
       }
 
       p += de->reclen;
@@ -187,12 +187,12 @@ int modify_dir_entry(struct inode *dir, char *name, int len, ino_t ino, ino_t *o
 
       if (fnmatch(name, len, de->name, de->namelen))
       {
-	if (oldino) *oldino = de->ino;
-	de->ino = ino;
-	mark_buffer_updated(dir->fs->cache, buf);
+        if (oldino) *oldino = de->ino;
+        de->ino = ino;
+        mark_buffer_updated(dir->fs->cache, buf);
         release_buffer(dir->fs->cache, buf);
 
-	return 0;
+        return 0;
       }
 
       p += de->reclen;
@@ -235,45 +235,45 @@ int delete_dir_entry(struct inode *dir, char *name, int len)
 
       if (fnmatch(name, len, de->name, de->namelen))
       {
-	if (prevde)
-	{
-	  // Merge entry with previous entry
-	  prevde->reclen += de->reclen;
-	  memset(de, 0, de->reclen);
+        if (prevde)
+        {
+          // Merge entry with previous entry
+          prevde->reclen += de->reclen;
+          memset(de, 0, de->reclen);
           mark_buffer_updated(dir->fs->cache, buf);
-	}
-	else if (de->reclen == dir->fs->blocksize)
-	{
-	  // Block is empty, swap this block with last block and truncate
-	  if (block != dir->desc->blocks - 1)
-	  {
-	    lastblk = get_inode_block(dir, dir->desc->blocks - 1);
-	    if (lastblk == NOBLOCK) return -EIO;
-  	    set_inode_block(dir, block, lastblk);
-  	    set_inode_block(dir, dir->desc->blocks - 1, buf->blkno);
-	  }
+        }
+        else if (de->reclen == dir->fs->blocksize)
+        {
+          // Block is empty, swap this block with last block and truncate
+          if (block != dir->desc->blocks - 1)
+          {
+            lastblk = get_inode_block(dir, dir->desc->blocks - 1);
+            if (lastblk == NOBLOCK) return -EIO;
+            set_inode_block(dir, block, lastblk);
+            set_inode_block(dir, dir->desc->blocks - 1, buf->blkno);
+          }
 
           truncate_inode(dir, dir->desc->blocks - 1);
-	  dir->desc->size -= dir->fs->blocksize;
-	  mark_buffer_invalid(dir->fs->cache, buf);
-	}
-	else
-	{
-	  // Merge with next entry
-	  nextde = (struct dentry *) (p + de->reclen);
-	  de->ino = nextde->ino;
-	  de->reclen += nextde->reclen;
-	  de->namelen = nextde->namelen;
-	  memmove(de->name, nextde->name, nextde->namelen);
-  	  mark_buffer_updated(dir->fs->cache, buf);
-	}
+          dir->desc->size -= dir->fs->blocksize;
+          mark_buffer_invalid(dir->fs->cache, buf);
+        }
+        else
+        {
+          // Merge with next entry
+          nextde = (struct dentry *) (p + de->reclen);
+          de->ino = nextde->ino;
+          de->reclen += nextde->reclen;
+          de->namelen = nextde->namelen;
+          memmove(de->name, nextde->name, nextde->namelen);
+          mark_buffer_updated(dir->fs->cache, buf);
+        }
 
         release_buffer(dir->fs->cache, buf);
 
-	dir->desc->mtime = time(NULL);
-	mark_inode_dirty(dir);
+        dir->desc->mtime = time(NULL);
+        mark_inode_dirty(dir);
 
-	return 0;
+        return 0;
       }
 
       prevde = de;

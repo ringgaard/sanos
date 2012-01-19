@@ -97,7 +97,7 @@ __inline int atomic_compare_and_exchange(int *dest, int exchange, int comperand)
   __asm__ __volatile__ (
     "cmpxchgl %2, %0"
     : "=m" (*dest), "=a" (old)
-    : "r" (exchange), "m" (*dest), "a" (comperand));	
+    : "r" (exchange), "m" (*dest), "a" (comperand));    
   
   return old;
 }

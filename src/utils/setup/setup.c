@@ -518,15 +518,15 @@ int copy_dir(char *srcdir, char *dstdir)
       if ((buf.st_mode & S_IFMT) == S_IFDIR)
       {
         printf("Creating directory %s\n", dstfn);
-	rc = mkdir(dstfn, 0755);
-	if (rc < 0) return -1;
+        rc = mkdir(dstfn, 0755);
+        if (rc < 0) return -1;
 
-	tail->next = (struct copyitem *) malloc(sizeof(struct copyitem));
-	if (!tail->next) return -1;
-	tail = tail->next;
-	strcpy(tail->srcdir, srcfn);
-	strcpy(tail->dstdir, dstfn);
-	tail->next = NULL;
+        tail->next = (struct copyitem *) malloc(sizeof(struct copyitem));
+        if (!tail->next) return -1;
+        tail = tail->next;
+        strcpy(tail->srcdir, srcfn);
+        strcpy(tail->dstdir, dstfn);
+        tail->next = NULL;
       }
       else
       {

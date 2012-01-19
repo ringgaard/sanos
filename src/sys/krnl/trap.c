@@ -144,23 +144,23 @@ static void __declspec(naked) isr()
     push    edi
     push    ds
     push    es
-    mov	    ax, SEL_KDATA           // Setup kernel data segment
+    mov     ax, SEL_KDATA           // Setup kernel data segment
 #ifdef VMACH
     or      eax, cs:mach.kring
 #endif
-    mov	    ds, ax
-    mov	    es, ax
+    mov     ds, ax
+    mov     es, ax
     call    trap                    // Call trap handler
-    pop	    es                      // Restore registers
-    pop	    ds
-    pop	    edi
-    pop	    esi
-    pop	    ebp
-    pop	    ebx
-    pop	    edx
-    pop	    ecx
-    pop	    eax
-    add	    esp, 8
+    pop     es                      // Restore registers
+    pop     ds
+    pop     edi
+    pop     esi
+    pop     ebp
+    pop     ebx
+    pop     edx
+    pop     ecx
+    pop     eax
+    add     esp, 8
     IRETD                           // Return
   }
 }
@@ -190,12 +190,12 @@ static void __declspec(naked) systrap(void)
     push    ds
     push    es
 
-    mov	    bx, SEL_KDATA           // Setup kernel data segment
+    mov     bx, SEL_KDATA           // Setup kernel data segment
 #ifdef VMACH
     or      ebx, cs:mach.kring
 #endif
-    mov	    ds, bx
-    mov	    es, bx
+    mov     ds, bx
+    mov     es, bx
 
     mov     ebx, esp                // ebx = context
     push    ebx                     // Push context
@@ -203,18 +203,18 @@ static void __declspec(naked) systrap(void)
     push    eax                     // Push syscallno
 
     call    syscall                 // Call syscall
-    add	    esp, 12
+    add     esp, 12
 
-    pop	    es                      // Restore registers
-    pop	    ds
-    pop	    edi
-    pop	    esi
-    pop	    ebp
-    pop	    ebx
-    pop	    edx
-    pop	    ecx
+    pop     es                      // Restore registers
+    pop     ds
+    pop     edi
+    pop     esi
+    pop     ebp
+    pop     ebx
+    pop     edx
+    pop     ecx
 
-    add	    esp, 12                 // Skip eax, errcode, and traptype
+    add     esp, 12                 // Skip eax, errcode, and traptype
 
     IRETD                           // Return
   }
@@ -252,12 +252,12 @@ static void __declspec(naked) sysentry(void)
     push    SEL_UDATA + SEL_RPL3    // Push ds (fixed)
     push    SEL_UDATA + SEL_RPL3    // Push es (fixed)
 
-    mov	    bx, SEL_KDATA           // Setup kernel data segment
+    mov     bx, SEL_KDATA           // Setup kernel data segment
 #ifdef VMACH
     or      ebx, cs:mach.kring
 #endif
-    mov	    ds, bx
-    mov	    es, bx
+    mov     ds, bx
+    mov     es, bx
 
     mov     ebx, esp                // ebx = context
     push    ebx                     // Push context
@@ -265,14 +265,14 @@ static void __declspec(naked) sysentry(void)
     push    eax                     // Push syscallno
 
     call    syscall                 // Call syscall
-    add	    esp, 12
+    add     esp, 12
 
-    pop	    es                      // Restore registers
-    pop	    ds
-    pop	    edi
-    pop	    esi
-    pop	    ebp
-    pop	    ebx
+    pop     es                      // Restore registers
+    pop     ds
+    pop     edi
+    pop     esi
+    pop     ebp
+    pop     ebx
 
     add     esp, 20                 // Skip edx, ecx, eax, errcode, traptype
     pop     edx                     // Put eip into edx for sysexit
@@ -460,19 +460,19 @@ int set_signal_mask(int how, sigset_t *set, sigset_t *oldset)
     switch (how)
     {
       case SIG_BLOCK:
-	t->blocked_signals |= *set;
-	break;
+        t->blocked_signals |= *set;
+        break;
 
       case SIG_UNBLOCK:
-	t->blocked_signals &= ~*set;
-	break;
+        t->blocked_signals &= ~*set;
+        break;
 
       case SIG_SETMASK:
-	t->blocked_signals = *set;
-	break;
+        t->blocked_signals = *set;
+        break;
 
       default:
-	return -EINVAL;
+        return -EINVAL;
     }
 
     if (signals_ready(t) && t->state == THREAD_STATE_WAITING) interrupt_thread(t);
@@ -1005,8 +1005,8 @@ void unregister_interrupt(struct interrupt *intr, int intrno)
     {
       if (i->next == intr)
       {
-	i->next = intr->next;
-	break;
+        i->next = intr->next;
+        break;
       }
     }
   }

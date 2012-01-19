@@ -153,7 +153,7 @@ static void pbuf_pool_free(struct pbuf *p)
 // * PBUF_RO:    no buffer memory is allocated for the pbuf, even for
 //               protocol headers. Additional headers must be prepended
 //               by allocating another pbuf and chain in to the front of
-//               the ROM pbuf.	       
+//               the ROM pbuf.         
 // * PBUF_POOL:  the pbuf is allocated as a pbuf chain, with pbufs from
 //               the pbuf pool that is allocated during pbuf_init.
 //
@@ -195,8 +195,8 @@ struct pbuf *pbuf_alloc(int layer, int size, int flag)
       p = pbuf_pool_alloc();
       if (p == NULL) 
       {
-	stats.pbuf.err++;
-	return NULL;
+        stats.pbuf.err++;
+        return NULL;
       }
       p->next = NULL;
     
@@ -216,22 +216,22 @@ struct pbuf *pbuf_alloc(int layer, int size, int flag)
       rsize = size - p->len;
       while (rsize > 0) 
       {
-	q = pbuf_pool_alloc();
-	if (q == NULL) 
-	{
-	  stats.pbuf.err++;
-	  pbuf_pool_free(p);
-	  return NULL;
-	}
-	q->next = NULL;
-	r->next = q;
-	q->len = rsize > PBUF_POOL_BUFSIZE ? PBUF_POOL_BUFSIZE: rsize;
-	q->flags = PBUF_FLAG_POOL;
-	q->payload = (void *) ((char *) q + sizeof(struct pbuf));
-	r = q;
-	q->ref = 1;
-	q = q->next;
-	rsize -= PBUF_POOL_BUFSIZE;
+        q = pbuf_pool_alloc();
+        if (q == NULL) 
+        {
+          stats.pbuf.err++;
+          pbuf_pool_free(p);
+          return NULL;
+        }
+        q->next = NULL;
+        r->next = q;
+        q->len = rsize > PBUF_POOL_BUFSIZE ? PBUF_POOL_BUFSIZE: rsize;
+        q->flags = PBUF_FLAG_POOL;
+        q->payload = (void *) ((char *) q + sizeof(struct pbuf));
+        r = q;
+        q->ref = 1;
+        q = q->next;
+        rsize -= PBUF_POOL_BUFSIZE;
       }
       r->next = NULL;
       break;
@@ -287,12 +287,12 @@ void pbuf_refresh()
     {
       if (pbuf_pool == NULL)
       {
-	pbuf_pool = pbuf_pool_free_cache;	
+        pbuf_pool = pbuf_pool_free_cache;       
       } 
       else 
       {  
-	for (p = pbuf_pool; p->next != NULL; p = p->next);
-	p->next = pbuf_pool_free_cache;
+        for (p = pbuf_pool; p->next != NULL; p = p->next);
+        p->next = pbuf_pool_free_cache;
       }
 
       pbuf_pool_free_cache = NULL;
@@ -333,8 +333,8 @@ void pbuf_realloc(struct pbuf *p, int size)
       q = p;  
       while (rsize > q->len)
       {
-	rsize -= q->len;
-	q = q->next;
+        rsize -= q->len;
+        q = q->next;
       }
       
       // Adjust the length of the pbuf that will be halved
@@ -346,13 +346,13 @@ void pbuf_realloc(struct pbuf *p, int size)
       q = r;
       while (q != NULL) 
       {
-	r = q->next;
+        r = q->next;
 
         q->next = pbuf_pool_free_cache;
         pbuf_pool_free_cache = q;
 
-	stats.pbuf.used--;
-	q = r;
+        stats.pbuf.used--;
+        q = r;
       }
       break;
 
@@ -366,14 +366,14 @@ void pbuf_realloc(struct pbuf *p, int size)
       q = p;
       while (rsize > q->len) 
       {
-	rsize -= q->len;
-	q = q->next;
+        rsize -= q->len;
+        q = q->next;
       }
 
       if (q->flags == PBUF_FLAG_RW)
       {
-	// Reallocate and adjust the length of the pbuf that will be halved
-	// TODO: we cannot reallocate the buffer without relinking it, we just leave it for now
+        // Reallocate and adjust the length of the pbuf that will be halved
+        // TODO: we cannot reallocate the buffer without relinking it, we just leave it for now
         // mem_realloc(q, (u8_t *)q->payload - (u8_t *)q + rsize/sizeof(u8_t));
       }
     
@@ -441,25 +441,25 @@ int pbuf_free(struct pbuf *p)
       // Check if this is a pbuf from the pool
       if (p->flags == PBUF_FLAG_POOL) 
       {
-	p->len = p->tot_len = PBUF_POOL_BUFSIZE;
-	p->payload = (void *)((char *) p + sizeof(struct pbuf));
-	q = p->next;
+        p->len = p->tot_len = PBUF_POOL_BUFSIZE;
+        p->payload = (void *)((char *) p + sizeof(struct pbuf));
+        q = p->next;
 
         p->next = pbuf_pool_free_cache;
         pbuf_pool_free_cache = p;
 
-	stats.pbuf.used--;
+        stats.pbuf.used--;
       } 
       else if (p->flags == PBUF_FLAG_RO)
       {
-	q = p->next;
-	kfree(p);
+        q = p->next;
+        kfree(p);
       } 
       else 
       {
-	q = p->next;
+        q = p->next;
         stats.pbuf.rwbufs--;
-	kfree(p);
+        kfree(p);
       }
 
       p = q;

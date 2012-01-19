@@ -170,28 +170,28 @@ void dump_data(FILE *f, unsigned char *buf, int bytes, int wordsize, unsigned ch
 
       switch (wordsize)
       {
-	case 4:
+        case 4:
           if (addr >= bytes)
- 	    fprintf(f, "         ");
-	  else if (cmpbuf && *(unsigned long *)(buf + addr) == *(unsigned long *)(cmpbuf + addr))
-	    fprintf(f, " XXXXXXXX");
-	  else
-  	    fprintf(f, " %08X", *(unsigned long *)(buf + addr)); 
-	  break;
+            fprintf(f, "         ");
+          else if (cmpbuf && *(unsigned long *)(buf + addr) == *(unsigned long *)(cmpbuf + addr))
+            fprintf(f, " XXXXXXXX");
+          else
+            fprintf(f, " %08X", *(unsigned long *)(buf + addr)); 
+          break;
 
-	case 2: 
+        case 2: 
           if (addr >= bytes)
- 	    fprintf(f, "     ");
-	  else
-  	    fprintf(f, " %04X", *(unsigned short *)(buf + addr)); 
-	  break;
+            fprintf(f, "     ");
+          else
+            fprintf(f, " %04X", *(unsigned short *)(buf + addr)); 
+          break;
 
-	case 1: 
+        case 1: 
           if (addr >= bytes)
- 	    fprintf(f, "   ");
-	  else
-  	    fprintf(f, " %02X", *(unsigned char *)(buf + addr)); 
-	  break;
+            fprintf(f, "   ");
+          else
+            fprintf(f, " %02X", *(unsigned char *)(buf + addr)); 
+          break;
       }
     }
     fprintf(f, " ");
@@ -201,13 +201,13 @@ void dump_data(FILE *f, unsigned char *buf, int bytes, int wordsize, unsigned ch
       addr = start + i;
 
       if (addr >= bytes)
-	fprintf(f, " ");
+        fprintf(f, " ");
       else if (cmpbuf && cmpbuf[addr] == buf[addr])
-	fprintf(f, "?");
+        fprintf(f, "?");
       else if (buf[addr] < 32 || buf[addr] > 127)
-	fprintf(f, ".");
+        fprintf(f, ".");
       else
-	fprintf(f, "%c", buf[addr]);
+        fprintf(f, "%c", buf[addr]);
     }
     fprintf(f, "\n");
 
@@ -473,11 +473,11 @@ void get_debug_event(struct drpc_packet *pkt, char *buf)
   {
     case DBGEVT_TRAP:
       printf("EVENT Trap %d tid %d eip %08X err %08X addr %08X\n", 
-	     e->evt.trap.traptype, 
-	     e->evt.trap.tid, 
-	     e->evt.trap.eip,
-	     e->evt.trap.errcode, 
-	     e->evt.trap.addr);
+             e->evt.trap.traptype, 
+             e->evt.trap.tid, 
+             e->evt.trap.eip,
+             e->evt.trap.errcode, 
+             e->evt.trap.addr);
 
       evt->dwDebugEventCode = EXCEPTION_DEBUG_EVENT;
       evt->dwThreadId = e->evt.trap.tid;
@@ -501,9 +501,9 @@ void get_debug_event(struct drpc_packet *pkt, char *buf)
       evt->u.CreateThread.hThread = (HANDLE) e->evt.create.tid;
       
       if (e->evt.create.tib)
-	evt->u.CreateThread.lpThreadLocalBase = e->evt.create.tib;
+        evt->u.CreateThread.lpThreadLocalBase = e->evt.create.tib;
       else
-	evt->u.CreateThread.lpThreadLocalBase = (void *) 0xFFFF0000;
+        evt->u.CreateThread.lpThreadLocalBase = (void *) 0xFFFF0000;
 
       evt->u.CreateThread.lpStartAddress = e->evt.create.startaddr;
       break;
@@ -784,8 +784,8 @@ void handle_command(struct drpc_packet *pkt, char *buf)
       logmsg("COMMAND SuspendThread: hthread=");
       for (n = 0; n < len; n++)
       {
-	tid = *(unsigned long *) (buf + 8 + n * 8);
-	logmsg(" %08X", tid);
+        tid = *(unsigned long *) (buf + 8 + n * 8);
+        logmsg(" %08X", tid);
       }
       logmsg("\n");
       suspend_threads(pkt, buf);
@@ -796,8 +796,8 @@ void handle_command(struct drpc_packet *pkt, char *buf)
       logmsg("COMMAND ResumeThread: hthread=");
       for (n = 0; n < len; n++)
       {
-	tid = *(unsigned long *) (buf + 8 + n * 8);
-	logmsg(" %08X", tid);
+        tid = *(unsigned long *) (buf + 8 + n * 8);
+        logmsg(" %08X", tid);
       }
       logmsg("\n");
       resume_threads(pkt, buf);
@@ -863,9 +863,9 @@ void handle_command(struct drpc_packet *pkt, char *buf)
       logmsg("COMMAND %08X ??? (reqlen=%d, rsplen=%d):\n", pkt->cmd, pkt->reqlen, pkt->rsplen);
       if (pkt->reqlen > 0)
       {
-	logmsg("reqdata: ");
-	dump_data(stdout, buf, pkt->reqlen > 256 ? 256 : pkt->reqlen, 4, NULL);
-	if (logfile) dump_data(logfile, buf, pkt->reqlen, 4, NULL);
+        logmsg("reqdata: ");
+        dump_data(stdout, buf, pkt->reqlen > 256 ? 256 : pkt->reqlen, 4, NULL);
+        if (logfile) dump_data(logfile, buf, pkt->reqlen, 4, NULL);
       }
       pkt->result = E_FAIL;
   }

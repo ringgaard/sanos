@@ -40,120 +40,120 @@
 // UART registers
 //
 
-#define UART_RX		0	// Receive buffer
-#define UART_TX		0	// Transmit buffer
-#define UART_DLL	0	// Divisor Latch Low
+#define UART_RX         0       // Receive buffer
+#define UART_TX         0       // Transmit buffer
+#define UART_DLL        0       // Divisor Latch Low
 
-#define UART_DLH	1	// Divisor Latch High
-#define UART_IER	1	// Interrupt Enable Register
+#define UART_DLH        1       // Divisor Latch High
+#define UART_IER        1       // Interrupt Enable Register
 
-#define UART_IIR	2	// Interrupt ID Register
-#define UART_FCR	2	// FIFO Control Register
+#define UART_IIR        2       // Interrupt ID Register
+#define UART_FCR        2       // FIFO Control Register
 
-#define UART_LCR	3	// Line Control Register
-#define UART_MCR	4	// Modem Control Register
-#define UART_LSR	5	// Line Status Register
-#define UART_MSR	6	// Modem Status Register
-#define UART_SCR	7	// Scratch Register
+#define UART_LCR        3       // Line Control Register
+#define UART_MCR        4       // Modem Control Register
+#define UART_LSR        5       // Line Status Register
+#define UART_MSR        6       // Modem Status Register
+#define UART_SCR        7       // Scratch Register
 
 //
 // Interrupt Enable Register
 //
 
-#define	IER_ERXRDY	0x01
-#define	IER_ETXRDY	0x02
-#define	IER_ERLS	0x04
-#define	IER_EMSC	0x08
+#define IER_ERXRDY      0x01
+#define IER_ETXRDY      0x02
+#define IER_ERLS        0x04
+#define IER_EMSC        0x08
 
 //
 // Interrupt Identification Register
 //
 
-#define	IIR_IMASK	0x0F
-#define	IIR_NOPEND	0x01
-#define	IIR_MLSC	0x00
-#define	IIR_TXRDY	0x02
-#define	IIR_RXRDY	0x04
-#define	IIR_RLS		0x06
-#define IIR_RXTOUT	0x0C
-#define	IIR_FIFO_MASK	0xC0	// Set if FIFOs are enabled
+#define IIR_IMASK       0x0F
+#define IIR_NOPEND      0x01
+#define IIR_MLSC        0x00
+#define IIR_TXRDY       0x02
+#define IIR_RXRDY       0x04
+#define IIR_RLS         0x06
+#define IIR_RXTOUT      0x0C
+#define IIR_FIFO_MASK   0xC0    // Set if FIFOs are enabled
 
 //
 // FIFO Control Register
 //
 
-#define	FCR_ENABLE	0x01
-#define	FCR_RCV_RST	0x02
-#define	FCR_XMT_RST	0x04
-#define	FCR_DMA_MODE	0x08
-#define	FCR_TRIGGER_1	0x00
-#define	FCR_TRIGGER_4	0x40
-#define	FCR_TRIGGER_8	0x80
-#define	FCR_TRIGGER_14	0xC0
+#define FCR_ENABLE      0x01
+#define FCR_RCV_RST     0x02
+#define FCR_XMT_RST     0x04
+#define FCR_DMA_MODE    0x08
+#define FCR_TRIGGER_1   0x00
+#define FCR_TRIGGER_4   0x40
+#define FCR_TRIGGER_8   0x80
+#define FCR_TRIGGER_14  0xC0
 
 //
 // Line Control Register
 //
 
-#define	LCR_DLAB	0x80
-#define	LCR_SBREAK	0x40
-#define	LCR_PZERO	0x30
-#define	LCR_PONE	0x20
-#define	LCR_PEVEN	0x10
-#define	LCR_PODD	0x00
-#define	LCR_PENAB	0x08
-#define	LCR_STOPB	0x04
-#define	LCR_8BITS	0x03
-#define	LCR_7BITS	0x02
-#define	LCR_6BITS	0x01
-#define	LCR_5BITS	0x00
+#define LCR_DLAB        0x80
+#define LCR_SBREAK      0x40
+#define LCR_PZERO       0x30
+#define LCR_PONE        0x20
+#define LCR_PEVEN       0x10
+#define LCR_PODD        0x00
+#define LCR_PENAB       0x08
+#define LCR_STOPB       0x04
+#define LCR_8BITS       0x03
+#define LCR_7BITS       0x02
+#define LCR_6BITS       0x01
+#define LCR_5BITS       0x00
 
 //
 // Modem Control Register
 //
 
-#define	MCR_LOOPBACK	0x10
-#define	MCR_IENABLE	0x08
-#define	MCR_DRS		0x04
-#define	MCR_RTS		0x02
-#define	MCR_DTR		0x01
+#define MCR_LOOPBACK    0x10
+#define MCR_IENABLE     0x08
+#define MCR_DRS         0x04
+#define MCR_RTS         0x02
+#define MCR_DTR         0x01
 
 //
 // Line Status Register
 //
 
-#define	LSR_RCV_FIFO	0x80
-#define	LSR_TSRE	0x40
-#define	LSR_TXRDY	0x20
-#define	LSR_BI		0x10
-#define	LSR_FE		0x08
-#define	LSR_PE		0x04
-#define	LSR_OE		0x02
-#define	LSR_RXRDY	0x01
-#define	LSR_RCV_MASK	0x1F
+#define LSR_RCV_FIFO    0x80
+#define LSR_TSRE        0x40
+#define LSR_TXRDY       0x20
+#define LSR_BI          0x10
+#define LSR_FE          0x08
+#define LSR_PE          0x04
+#define LSR_OE          0x02
+#define LSR_RXRDY       0x01
+#define LSR_RCV_MASK    0x1F
 
 //
 // Modem Status Register
 //
 
-#define	MSR_DCD		0x80
-#define	MSR_RI		0x40
-#define	MSR_DSR		0x20
-#define	MSR_CTS		0x10
-#define	MSR_DDCD	0x08
-#define	MSR_TERI	0x04
-#define	MSR_DDSR	0x02
-#define	MSR_DCTS	0x01
+#define MSR_DCD         0x80
+#define MSR_RI          0x40
+#define MSR_DSR         0x20
+#define MSR_CTS         0x10
+#define MSR_DDCD        0x08
+#define MSR_TERI        0x04
+#define MSR_DDSR        0x02
+#define MSR_DCTS        0x01
 
 //
 // UART types
 //
 
-#define UART_UNKNOWN	0
-#define UART_8250	1
-#define UART_16450	2
-#define UART_16550	3
-#define UART_16550A	4
+#define UART_UNKNOWN    0
+#define UART_8250       1
+#define UART_16450      2
+#define UART_16550      3
+#define UART_16550A     4
 
 static char *uart_name[] = {"(unknown)", "8250", "16450", "16550", "16550A"};
 static int serial_default_irq[4] = {4, 3, 11, 10};
@@ -356,14 +356,14 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
     case IOCTL_SERIAL_WAITEVENT:
       if (!args && size == 0)
       {
-	return wait_for_object(&sp->event, INFINITE);
+        return wait_for_object(&sp->event, INFINITE);
       }
       else if (args && size == 4)
       {
-	return wait_for_object(&sp->event, *(unsigned int *) args);
+        return wait_for_object(&sp->event, *(unsigned int *) args);
       }
       else
-	return -EINVAL;
+        return -EINVAL;
 
     case IOCTL_SERIAL_STAT:
       if (!args || size != sizeof(struct serial_status)) return -EINVAL;
@@ -379,9 +379,9 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       if (!args || size != 4) return -EINVAL;
       
       if (*(int *) args)
-	sp->mcr |= MCR_DTR;
+        sp->mcr |= MCR_DTR;
       else
-	sp->mcr &= ~MCR_DTR;
+        sp->mcr &= ~MCR_DTR;
 
       outp(sp->iobase + UART_MCR, sp->mcr);
       return 0;
@@ -390,9 +390,9 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       if (!args || size != 4) return -EINVAL;
 
       if (*(int *) args)
-	sp->mcr |= MCR_RTS;
+        sp->mcr |= MCR_RTS;
       else
-	sp->mcr &= ~MCR_RTS;
+        sp->mcr &= ~MCR_RTS;
 
       outp(sp->iobase + UART_MCR, sp->mcr);
       return 0;
@@ -633,16 +633,16 @@ static int serial_handler(struct context *ctxt, void *arg)
     switch (iir & IIR_IMASK)
     {
       case IIR_MLSC:
-	// Modem status changed
+        // Modem status changed
         sp->msr = inp((unsigned short) (sp->iobase + UART_MSR));
-	sp->mlsc = 1;
-	break;
+        sp->mlsc = 1;
+        break;
 
       case IIR_RLS:
-	// Line status changed
+        // Line status changed
         sp->linestatus |= (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI));
-	sp->rls = 1;
-	break;
+        sp->rls = 1;
+        break;
     }
 
     if (--boguscnt < 0) 
@@ -761,13 +761,13 @@ void init_serial()
 
       if (iobase != 0)
       {
-	switch (port)
-	{
-	  case 0: init_serial_port("com1", iobase, serial_default_irq[0], NULL); break;
-	  case 1: init_serial_port("com2", iobase, serial_default_irq[1], NULL); break;
-	  case 2: init_serial_port("com3", iobase, serial_default_irq[2], NULL); break;
-	  case 3: init_serial_port("com4", iobase, serial_default_irq[3], NULL); break;
-	}
+        switch (port)
+        {
+          case 0: init_serial_port("com1", iobase, serial_default_irq[0], NULL); break;
+          case 1: init_serial_port("com2", iobase, serial_default_irq[1], NULL); break;
+          case 2: init_serial_port("com3", iobase, serial_default_irq[2], NULL); break;
+          case 3: init_serial_port("com4", iobase, serial_default_irq[3], NULL); break;
+        }
       }
     }
   }

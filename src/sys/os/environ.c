@@ -173,7 +173,7 @@ int setenv(const char *name, const char *value, int rewrite)
     }
 
     if (strlen(p) >= len)
-    {			
+    {                   
       // Old value is larger; copy over
       while ((*p++ = *value++) != 0);
       leave(&env_lock);
@@ -229,7 +229,7 @@ void unsetenv(const char *name)
   {
     for (p = &(env[offset]);; p++)
       if (!(*p = *(p + 1)))
-	break;
+        break;
   }
 
   leave(&env_lock);

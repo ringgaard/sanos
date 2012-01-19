@@ -249,8 +249,8 @@ int wait_for_one_object(object_t hobj, unsigned int timeout, int alertable)
       int rc = enter_alertable_wait(THREAD_WAIT_OBJECT);
       if (rc < 0)
       {
-	cancel_wait(t);
-	t->waitkey = rc;
+        cancel_wait(t);
+        t->waitkey = rc;
       }
     }
     else
@@ -282,8 +282,8 @@ int wait_for_one_object(object_t hobj, unsigned int timeout, int alertable)
       int rc = enter_alertable_wait(THREAD_WAIT_OBJECT);
       if (rc < 0)
       {
-	cancel_wait(t);
-	t->waitkey = rc;
+        cancel_wait(t);
+        t->waitkey = rc;
       }
     }
     else
@@ -328,16 +328,16 @@ int wait_for_all_objects(struct object **objs, int count, unsigned int timeout, 
     {
       if (!objs[n]->signaled || ((struct mutex *) objs[n])->owner != self())
       {
-	all = 0;
-	break;
+        all = 0;
+        break;
       }
     }
     else
     {
       if (!objs[n]->signaled)
       {
-	all = 0;
-	break;
+        all = 0;
+        break;
       }
     }
   }
@@ -351,11 +351,11 @@ int wait_for_all_objects(struct object **objs, int count, unsigned int timeout, 
     for (n = 0; n < count; n++)
     {
       if (objs[n]->signaled)
-	rc |= enter_object(objs[n]);
+        rc |= enter_object(objs[n]);
       else if (objs[n]->type == OBJECT_MUTEX && ((struct mutex *) objs[n])->owner == self())
       {
-	// Mutex is already owned by current thread, increase recursion count
-	((struct mutex *) objs[n])->recursion++;
+        // Mutex is already owned by current thread, increase recursion count
+        ((struct mutex *) objs[n])->recursion++;
       }
     }
 
@@ -788,18 +788,18 @@ unsigned int release_sem(struct sem *s, unsigned int count)
       wb_next = wb->next_wait;
       if (thread_ready_to_run(wb->thread))
       {
-	// Decrease semaphore count
-	s->count--;
+        // Decrease semaphore count
+        s->count--;
 
-	// Release waiting thread
-	release_thread(wb->thread);
+        // Release waiting thread
+        release_thread(wb->thread);
 
-	// If count reaches zero then set semaphore to the nonsignaled state
-	if (s->count == 0)
-	{
-	  s->object.signaled = 0;
-	  break;
-	}
+        // If count reaches zero then set semaphore to the nonsignaled state
+        if (s->count == 0)
+        {
+          s->object.signaled = 0;
+          break;
+        }
       }
 
       wb = wb_next;
@@ -837,18 +837,18 @@ unsigned int set_sem(struct sem *s, unsigned int count)
       wb_next = wb->next_wait;
       if (thread_ready_to_run(wb->thread))
       {
-	// Decrease semaphore count
-	s->count--;
+        // Decrease semaphore count
+        s->count--;
 
-	// Release waiting thread
-	release_thread(wb->thread);
+        // Release waiting thread
+        release_thread(wb->thread);
 
-	// If count reaches zero then set semaphore to the nonsignaled state
-	if (s->count == 0)
-	{
-	  s->object.signaled = 0;
-	  break;
-	}
+        // If count reaches zero then set semaphore to the nonsignaled state
+        if (s->count == 0)
+        {
+          s->object.signaled = 0;
+          break;
+        }
       }
 
       wb = wb_next;

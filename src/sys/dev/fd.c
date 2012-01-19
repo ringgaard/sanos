@@ -77,35 +77,35 @@
 // Transfer mode
 //
 
-#define FD_MODE_READ	0
-#define FD_MODE_WRITE	1
+#define FD_MODE_READ    0
+#define FD_MODE_WRITE   1
 
 //
 // Motor status
 //
 
-#define FD_MOTOR_OFF		0
-#define FD_MOTOR_DELAY		1
-#define FD_MOTOR_ON		2
+#define FD_MOTOR_OFF            0
+#define FD_MOTOR_DELAY          1
+#define FD_MOTOR_ON             2
 
 //
 // DMA I/O ports
 //
 
-#define DMA1_CHAN		0x0A
-#define DMA1_MODE		0x0B
-#define DMA1_RESET	        0x0C
+#define DMA1_CHAN               0x0A
+#define DMA1_MODE               0x0B
+#define DMA1_RESET              0x0C
 
-#define DMA1_CHAN2_ADDR	        0x04
-#define DMA1_CHAN2_COUNT	0x05
-#define DMA1_CHAN2_PAGE	        0x81
+#define DMA1_CHAN2_ADDR         0x04
+#define DMA1_CHAN2_COUNT        0x05
+#define DMA1_CHAN2_PAGE         0x81
 
 //
 // DMA commands
 //
 
-#define DMA1_CHAN2_READ	        0x46
-#define DMA1_CHAN2_WRITE	0x4A
+#define DMA1_CHAN2_READ         0x46
+#define DMA1_CHAN2_WRITE        0x4A
 
 //
 // Drive geometry
@@ -142,8 +142,8 @@ struct fdresult
 
 struct fdc
 {
-  struct mutex lock;	               // Controller mutex
-  struct event done;	               // Controller interrupt event
+  struct mutex lock;                   // Controller mutex
+  struct event done;                   // Controller interrupt event
   struct interrupt intr;               // Interrupt object
   struct dpc dpc;                      // DPC for fd interrupt
   unsigned char dor;                   // DOR register with motor status
@@ -399,16 +399,16 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
     
       if (wait_for_object(&fd->fdc->done, FD_SEEK_TIMEOUT) < 0) 
       {
-	kprintf(KERN_WARNING "fd: timeout waiting for seek to complete\n");
-	fd_recalibrate(fd);
-	continue;
+        kprintf(KERN_WARNING "fd: timeout waiting for seek to complete\n");
+        fd_recalibrate(fd);
+        continue;
       }
 
       fd_result(fd, &result, 1);
       if ((fd->st0 &0xE0) != 0x20 || fd->curtrack != track)
       {
-	kprintf(KERN_ERR "fd: seek failed, st0 0x%02x, current %d, target %d\n", fd->st0, fd->curtrack, track);
-	continue;
+        kprintf(KERN_ERR "fd: seek failed, st0 0x%02x, current %d, target %d\n", fd->st0, fd->curtrack, track);
+        continue;
       }
 
       //kprintf("fd: set curtrack to %d\n", fd->curtrack);

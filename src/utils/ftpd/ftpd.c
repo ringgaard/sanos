@@ -274,7 +274,7 @@ void douser(struct ftpstate *fs, char *username)
     if (username) 
     {
       if (!fs->guest)
-	addreply(fs, 530, "You're already logged in.");
+        addreply(fs, 530, "You're already logged in.");
       else
         addreply(fs, 230, "Anonymous user logged in.");
     }
@@ -305,9 +305,9 @@ void douser(struct ftpstate *fs, char *username)
         addreply(fs, 530, "Could not login anonymous user.");
       else
       {
-	addreply(fs, 230, "Anonymous user logged in.");
-	fs->loggedin = fs->guest = 1;
-	syslog(LOG_INFO, "guest logged in");
+        addreply(fs, 230, "Anonymous user logged in.");
+        fs->loggedin = fs->guest = 1;
+        syslog(LOG_INFO, "guest logged in");
       }
     }
   }
@@ -439,7 +439,7 @@ void doretr(struct ftpstate *fs, char *name)
     if (n <= 0)
     {
       if (n == 0)
-	addreply(fs, 451, "unexpected end of file");
+        addreply(fs, 451, "unexpected end of file");
       else
         error(fs, 451, "error reading file");
 
@@ -733,8 +733,8 @@ void doport(struct ftpstate *fs, unsigned int ip, unsigned int port)
   if (htonl(ip) != fs->peer.sin_addr.s_addr) 
   {
     addreply(fs, 425, "Will not open connection to %d.%d.%d.%d (only to %s)",
-	     (ip >> 24) & 255, (ip >> 16) & 255, (ip >> 8) & 255, ip & 255,
-	     inet_ntoa(fs->peer.sin_addr));
+             (ip >> 24) & 255, (ip >> 16) & 255, (ip >> 8) & 255, ip & 255,
+             inet_ntoa(fs->peer.sin_addr));
     close(fs->datasock);
     fs->datasock = -1;
     return;
@@ -919,9 +919,9 @@ void donlist(struct ftpstate *fs, char *arg)
     {
       switch (*arg)
       {
-	case 'l':
-	  opt_l = 1;
-	  break;
+        case 'l':
+          opt_l = 1;
+          break;
       }
     }
 
@@ -974,12 +974,12 @@ void donlist(struct ftpstate *fs, char *arg)
       strcpy(perm, " ---------");
       switch (st.st_mode & S_IFMT) 
       {
-	case S_IFREG: perm[0] = '-'; break;
-	case S_IFLNK: perm[0] = 'l'; break;
-	case S_IFDIR: perm[0] = 'd'; break;
-	case S_IFBLK: perm[0] = 'b'; break;
-	case S_IFCHR: perm[0] = 'c'; break;
-	case S_IFPKT: perm[0] = 'p'; break;
+        case S_IFREG: perm[0] = '-'; break;
+        case S_IFLNK: perm[0] = 'l'; break;
+        case S_IFDIR: perm[0] = 'd'; break;
+        case S_IFBLK: perm[0] = 'b'; break;
+        case S_IFCHR: perm[0] = 'c'; break;
+        case S_IFPKT: perm[0] = 'p'; break;
       }
 
       if (st.st_mode & 0400) perm[1] = 'r';
@@ -999,7 +999,7 @@ void donlist(struct ftpstate *fs, char *arg)
       if (now - st.st_mtime > 180 * 24 * 60 * 60)
         snprintf(timestr, 6, "%5d", tm->tm_year + 1900);
       else
-	snprintf(timestr, 6, "%02d:%02d", tm->tm_hour, tm->tm_min);
+        snprintf(timestr, 6, "%02d:%02d", tm->tm_hour, tm->tm_min);
 
       snprintf(buf, sizeof(buf), "%s %3d %s %s %7d %s %2d %s %s\r\n",
                perm, st.st_nlink, pwd->pw_name, grp->gr_name,
@@ -1088,11 +1088,11 @@ int docmd(struct ftpstate *fs)
       addreply(fs, 522, "IPv6 not supported, use IPv4 (1)");
     else if (cmd[0] == 'e' && 
              sscanf(arg, "|1|%u.%u.%u.%u|%u|", &a1, &a2, &a3, &a4, &p1) == 5  &&
-	     a1 < 256 && a2 < 256 && a3 < 256 && a4 < 256 && p1 < 65536)
+             a1 < 256 && a2 < 256 && a3 < 256 && a4 < 256 && p1 < 65536)
       doport(fs, (a1 << 24) + (a2 << 16) + (a3 << 8) + a4, p1);
     else if (cmd[0] == 'p' &&
-	     sscanf(arg, "%u,%u,%u,%u,%u,%u", &a1, &a2, &a3, &a4, &p1, &p2) == 6 &&
-	     a1 < 256 && a2 < 256 && a3 < 256 && a4 < 256 && p1 < 256 && p2 < 256)
+             sscanf(arg, "%u,%u,%u,%u,%u,%u", &a1, &a2, &a3, &a4, &p1, &p2) == 6 &&
+             a1 < 256 && a2 < 256 && a3 < 256 && a4 < 256 && p1 < 256 && p2 < 256)
       doport(fs, (a1 << 24) + (a2 << 16) + (a3 << 8) + a4, ((p1 << 8) + p2));
     else
       addreply(fs, 501, "Syntax error.");
@@ -1135,28 +1135,28 @@ int docmd(struct ftpstate *fs)
     else if (strcmp(cmd, "retr") == 0)
     {
       if (arg && *arg)
-	doretr(fs, arg);
+        doretr(fs, arg);
       else
-	addreply(fs, 501, "No file name");
+        addreply(fs, 501, "No file name");
     } 
     else if (strcmp(cmd, "rest") == 0)
     {
       if (arg && *arg)
-	dorest(fs, arg);
+        dorest(fs, arg);
       else
-	addreply(fs, 501, "No restart point");
+        addreply(fs, 501, "No restart point");
     }
     else if (strcmp(cmd, "dele") == 0) 
     {
       if (arg && *arg)
         dodele(fs, arg);
       else
-	addreply(fs, 501, "No file name");
+        addreply(fs, 501, "No file name");
     } 
     else if (strcmp(cmd, "stor") == 0)
     {
       if (arg && *arg)
-	dostor(fs, arg);
+        dostor(fs, arg);
       else
         addreply(fs, 501, "No file name");
     } 
@@ -1170,7 +1170,7 @@ int docmd(struct ftpstate *fs)
     else if (strcmp(cmd, "rmd") == 0 || strcmp(cmd, "xrmd") == 0)
     {
       if (arg && *arg)
-	dormd(fs, arg);
+        dormd(fs, arg);
       else
         addreply(fs, 550, "No directory name");
     } 
@@ -1194,31 +1194,31 @@ int docmd(struct ftpstate *fs)
 
       if (strcmp(arg, "idle") == 0)
       {
-	if (!*sitearg) 
-	  addreply(fs, 501, "SITE IDLE: need argument");
-	else
-	{
-	  unsigned long int i = 0;
+        if (!*sitearg) 
+          addreply(fs, 501, "SITE IDLE: need argument");
+        else
+        {
+          unsigned long int i = 0;
 
-	  i = strtoul(sitearg, &sitearg, 10);
-	  if (sitearg && *sitearg)
+          i = strtoul(sitearg, &sitearg, 10);
+          if (sitearg && *sitearg)
             addreply(fs, 501, "Garbage (%s) after value (%u)", sitearg, i);
-	  else 
-	  {
-	    if (i > 7200) i = 7200;
-	    if (i < 10) i = 10;
-	    fs->idletime = i * 1000;
-	    setsockopt(fs->ctrlsock, SOL_SOCKET, SO_RCVTIMEO, (char *) &fs->idletime, 4);
-	    setsockopt(fs->ctrlsock, SOL_SOCKET, SO_SNDTIMEO, (char *) &fs->idletime, 4);
+          else 
+          {
+            if (i > 7200) i = 7200;
+            if (i < 10) i = 10;
+            fs->idletime = i * 1000;
+            setsockopt(fs->ctrlsock, SOL_SOCKET, SO_RCVTIMEO, (char *) &fs->idletime, 4);
+            setsockopt(fs->ctrlsock, SOL_SOCKET, SO_SNDTIMEO, (char *) &fs->idletime, 4);
 
-	    addreply(fs, 200, "Idle time set to %u seconds", fs->idletime / 1000);
-	  }
-	}
+            addreply(fs, 200, "Idle time set to %u seconds", fs->idletime / 1000);
+          }
+        }
       } 
       else if (arg && *arg) 
-	addreply(fs, 500, "SITE %s unknown", arg);
+        addreply(fs, 500, "SITE %s unknown", arg);
       else
-	addreply(fs, 500, "SITE: argument needed");
+        addreply(fs, 500, "SITE: argument needed");
     } 
     else if (strcmp(cmd, "xdbg") == 0)
     {
@@ -1226,22 +1226,22 @@ int docmd(struct ftpstate *fs)
       addreply(fs, 200, "XDBG command succeeded, debug level is now %d.", fs->debug);
     }
     else if (strcmp(cmd, "mdtm") == 0)
-      domdtm(fs, (arg && *arg) ? arg :	"");
+      domdtm(fs, (arg && *arg) ? arg :  "");
     else if (strcmp(cmd, "size") == 0)
-      dosize(fs, (arg && *arg) ? arg :	"");
+      dosize(fs, (arg && *arg) ? arg :  "");
     else if (strcmp(cmd, "rnfr") == 0)
     {
       if (arg && *arg)
         dornfr(fs, arg);
       else
-	addreply(fs, 550, "No file name given.");
+        addreply(fs, 550, "No file name given.");
     } 
     else if (strcmp(cmd, "rnto") == 0)
     {
       if (arg && *arg)
-	dornto(fs, arg);
+        dornto(fs, arg);
       else
-	addreply(fs, 550, "No file name given.");
+        addreply(fs, 550, "No file name given.");
     }
     else if (strcmp(cmd, "rest") == 0)
       fs->restartat = 0;

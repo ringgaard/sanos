@@ -439,23 +439,23 @@ static int check_poll(struct pollfd fds[], unsigned int nfds)
       iob = (struct ioobject *) olock(fds[n].fd, OBJECT_ANY);
       if (!iob || !ISIOOBJECT(iob))
       {
-	revents = POLLNVAL;
-	if (iob) orel(iob);
+        revents = POLLNVAL;
+        if (iob) orel(iob);
       }
       else
       {
-	mask = IOEVT_ERROR | IOEVT_CLOSE;
-	if (fds[n].events & POLLIN) mask |= IOEVT_READ | IOEVT_ACCEPT;
-	if (fds[n].events & POLLOUT) mask |= IOEVT_WRITE | IOEVT_CONNECT;
+        mask = IOEVT_ERROR | IOEVT_CLOSE;
+        if (fds[n].events & POLLIN) mask |= IOEVT_READ | IOEVT_ACCEPT;
+        if (fds[n].events & POLLOUT) mask |= IOEVT_WRITE | IOEVT_CONNECT;
 
-	mask &= iob->events_signaled;
-	if (mask != 0)
-	{
+        mask &= iob->events_signaled;
+        if (mask != 0)
+        {
           if (mask & (IOEVT_READ | IOEVT_ACCEPT)) revents |= POLLIN;
           if (mask & (IOEVT_WRITE | IOEVT_CONNECT)) revents |= POLLOUT;
-	  if (mask & IOEVT_ERROR) revents |= POLLERR;
-	  if (mask & IOEVT_CLOSE) revents |= POLLHUP;
-	}
+          if (mask & IOEVT_ERROR) revents |= POLLERR;
+          if (mask & IOEVT_CLOSE) revents |= POLLHUP;
+        }
       }
 
       orel(iob);

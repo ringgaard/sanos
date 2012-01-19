@@ -487,9 +487,9 @@ void main(void *arg)
   mark_thread_running();
 
   kprintf(KERN_INFO "mem: %dMB total, %dKB used, %dKB free, %dKB reserved\n", 
-	  maxmem * PAGESIZE / (1024 * 1024), 
-	  (totalmem - freemem) * PAGESIZE / 1024, 
-	  freemem * PAGESIZE / 1024, (maxmem - totalmem) * PAGESIZE / 1024);
+          maxmem * PAGESIZE / (1024 * 1024), 
+          (totalmem - freemem) * PAGESIZE / 1024, 
+          freemem * PAGESIZE / 1024, (maxmem - totalmem) * PAGESIZE / 1024);
 
   // Place arguments to start routine on stack
   stacktop = (unsigned long *) t->tib->stacktop;

@@ -45,8 +45,8 @@
 
 struct timeval 
 {
-  long tv_sec;		        // Seconds
-  long tv_usec;		        // Microseconds
+  long tv_sec;                  // Seconds
+  long tv_usec;                 // Microseconds
 };
 
 #endif

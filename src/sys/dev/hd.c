@@ -35,15 +35,15 @@
 
 #define CDSECTORSIZE            2048
 
-#define HD_CONTROLLERS		2
-#define HD_DRIVES		4
-#define HD_PARTITIONS		4
+#define HD_CONTROLLERS          2
+#define HD_DRIVES               4
+#define HD_PARTITIONS           4
 
 #define MAX_PRDS                (PAGESIZE / 8)
 #define MAX_DMA_XFER_SIZE       ((MAX_PRDS - 1) * PAGESIZE)
 
-#define HDC0_IOBASE		0x01F0
-#define HDC1_IOBASE		0x0170
+#define HDC0_IOBASE             0x01F0
+#define HDC1_IOBASE             0x0170
 
 #define HDC0_IRQ                14
 #define HDC1_IRQ                15
@@ -58,35 +58,35 @@
 // Controller registers
 //
 
-#define HDC_DATA		0x0000
-#define HDC_ERR			0x0001
-#define HDC_FEATURE		0x0001
-#define HDC_SECTORCNT		0x0002
-#define HDC_SECTOR		0x0003
-#define HDC_TRACKLSB		0x0004
-#define HDC_TRACKMSB		0x0005
-#define HDC_DRVHD		0x0006
-#define HDC_STATUS		0x0007
-#define HDC_COMMAND		0x0007
-#define HDC_DEVCTRL		0x0008
-#define HDC_ALT_STATUS		0x0206
-#define HDC_CONTROL		0x0206
+#define HDC_DATA                0x0000
+#define HDC_ERR                 0x0001
+#define HDC_FEATURE             0x0001
+#define HDC_SECTORCNT           0x0002
+#define HDC_SECTOR              0x0003
+#define HDC_TRACKLSB            0x0004
+#define HDC_TRACKMSB            0x0005
+#define HDC_DRVHD               0x0006
+#define HDC_STATUS              0x0007
+#define HDC_COMMAND             0x0007
+#define HDC_DEVCTRL             0x0008
+#define HDC_ALT_STATUS          0x0206
+#define HDC_CONTROL             0x0206
 
 //
 // Drive commands
 //
 
-#define HDCMD_NULL		0x00
-#define HDCMD_IDENTIFY		0xEC
-#define HDCMD_RESET		0x10
-#define HDCMD_DIAG		0x90
-#define HDCMD_READ		0x20
-#define HDCMD_WRITE		0x30
+#define HDCMD_NULL              0x00
+#define HDCMD_IDENTIFY          0xEC
+#define HDCMD_RESET             0x10
+#define HDCMD_DIAG              0x90
+#define HDCMD_READ              0x20
+#define HDCMD_WRITE             0x30
 #define HDCMD_PACKET            0xA0
 #define HDCMD_PIDENTIFY         0xA1
-#define HDCMD_MULTREAD		0xC4
-#define HDCMD_MULTWRITE		0xC5
-#define HDCMD_SETMULT		0xC6
+#define HDCMD_MULTREAD          0xC4
+#define HDCMD_MULTWRITE         0xC5
+#define HDCMD_SETMULT           0xC6
 #define HDCMD_READDMA           0xC8
 #define HDCMD_WRITEDMA          0xCA
 #define HDCMD_SETFEATURES       0xEF
@@ -96,14 +96,14 @@
 // Controller status
 //
 
-#define HDCS_ERR		0x01   // Error
-#define HDCS_IDX		0x02   // Index
-#define HDCS_CORR		0x04   // Corrected data
-#define HDCS_DRQ		0x08   // Data request
-#define HDCS_DSC		0x10   // Drive seek complete
-#define HDCS_DWF		0x20   // Drive write fault
-#define HDCS_DRDY		0x40   // Drive ready
-#define HDCS_BSY		0x80   // Controller busy
+#define HDCS_ERR                0x01   // Error
+#define HDCS_IDX                0x02   // Index
+#define HDCS_CORR               0x04   // Corrected data
+#define HDCS_DRQ                0x08   // Data request
+#define HDCS_DSC                0x10   // Drive seek complete
+#define HDCS_DWF                0x20   // Drive write fault
+#define HDCS_DRDY               0x40   // Drive ready
+#define HDCS_BSY                0x80   // Controller busy
 
 //
 // Device control 
@@ -127,7 +127,7 @@
 // Transfer modes
 //
 
-#define HDXFER_MODE_PIO	        0x00
+#define HDXFER_MODE_PIO         0x00
 #define HDXFER_MODE_WDMA        0x20
 #define HDXFER_MODE_UDMA        0x40
 
@@ -135,24 +135,24 @@
 // Controller error conditions 
 //
 
-#define HDCE_AMNF		0x01   // Address mark not found
-#define HDCE_TK0NF		0x02   // Track 0 not found
-#define HDCE_ABRT		0x04   // Abort
-#define HDCE_MCR		0x08   // Media change requested
-#define HDCE_IDNF		0x10   // Sector id not found
-#define HDCE_MC			0x20   // Media change
-#define HDCE_UNC		0x40   // Uncorrectable data error
-#define HDCE_BBK		0x80   // Bad block
+#define HDCE_AMNF               0x01   // Address mark not found
+#define HDCE_TK0NF              0x02   // Track 0 not found
+#define HDCE_ABRT               0x04   // Abort
+#define HDCE_MCR                0x08   // Media change requested
+#define HDCE_IDNF               0x10   // Sector id not found
+#define HDCE_MC                 0x20   // Media change
+#define HDCE_UNC                0x40   // Uncorrectable data error
+#define HDCE_BBK                0x80   // Bad block
 
 //
 // Timeouts (in ms)
 //
 
-#define HDTIMEOUT_DRDY		5000
-#define HDTIMEOUT_DRQ		5000
-#define HDTIMEOUT_CMD		1000
-#define HDTIMEOUT_BUSY		60000
-#define HDTIMEOUT_XFER		10000
+#define HDTIMEOUT_DRDY          5000
+#define HDTIMEOUT_DRQ           5000
+#define HDTIMEOUT_CMD           1000
+#define HDTIMEOUT_BUSY          60000
+#define HDTIMEOUT_XFER          10000
 
 //
 // Drive interface types
@@ -227,23 +227,23 @@
 
 struct hdparam 
 {
-  unsigned short config;	       // General configuration bits
-  unsigned short cylinders;	       // Cylinders
+  unsigned short config;               // General configuration bits
+  unsigned short cylinders;            // Cylinders
   unsigned short reserved;
-  unsigned short heads;		       // Heads
+  unsigned short heads;                // Heads
   unsigned short unfbytespertrk;       // Unformatted bytes/track
-  unsigned short unfbytes;	       // Unformatted bytes/sector
-  unsigned short sectors;	       // Sectors per track
+  unsigned short unfbytes;             // Unformatted bytes/sector
+  unsigned short sectors;              // Sectors per track
   unsigned short vendorunique[3];
-  char serial[20];		       // Serial number
-  unsigned short buffertype;	       // Buffer type
-  unsigned short buffersize;	       // Buffer size, in 512-byte units
-  unsigned short necc;		       // ECC bytes appended
-  char rev[8];		               // Firmware revision
-  char model[40];		       // Model name
-  unsigned char nsecperint;	       // Sectors per interrupt
+  char serial[20];                     // Serial number
+  unsigned short buffertype;           // Buffer type
+  unsigned short buffersize;           // Buffer size, in 512-byte units
+  unsigned short necc;                 // ECC bytes appended
+  char rev[8];                         // Firmware revision
+  char model[40];                      // Model name
+  unsigned char nsecperint;            // Sectors per interrupt
   unsigned char resv0;                 // Reserved
-  unsigned short usedmovsd;	       // Can use double word read/write?
+  unsigned short usedmovsd;            // Can use double word read/write?
   unsigned short caps;                 // Capabilities
   unsigned short resv1;                // Reserved
   unsigned short pio;                  // PIO data transfer cycle timing (0=slow, 1=medium, 2=fast)
@@ -271,38 +271,38 @@ struct hdparam
   unsigned short verminor;             // Minor version number
   unsigned short cmdset1;              // Command set supported
   unsigned short cmdset2;
-  unsigned short cfsse;		       // Command set-feature supported extensions
-  unsigned short cfs_enable_1;	       // Command set-feature enabled
-  unsigned short cfs_enable_2;	       // Command set-feature enabled
-  unsigned short csf_default;	       // Command set-feature default
-  unsigned short dmaultra;	       // UltraDMA mode (0:5 = supported mode, 8:13 = selected mode)
+  unsigned short cfsse;                // Command set-feature supported extensions
+  unsigned short cfs_enable_1;         // Command set-feature enabled
+  unsigned short cfs_enable_2;         // Command set-feature enabled
+  unsigned short csf_default;          // Command set-feature default
+  unsigned short dmaultra;             // UltraDMA mode (0:5 = supported mode, 8:13 = selected mode)
 
-  unsigned short word89;	       // Reserved (word 89)
-  unsigned short word90;	       // Reserved (word 90)
-  unsigned short curapmvalues;	       // Current APM values
-  unsigned short word92;	       // Reserved (word 92)
-  unsigned short hw_config;	       // Hardware config
+  unsigned short word89;               // Reserved (word 89)
+  unsigned short word90;               // Reserved (word 90)
+  unsigned short curapmvalues;         // Current APM values
+  unsigned short word92;               // Reserved (word 92)
+  unsigned short hw_config;            // Hardware config
   unsigned short words94_125[32];      // Reserved words 94-125
-  unsigned short last_lun; 	       // Reserved (word 126)
-  unsigned short word127;	       // Reserved (word 127)
-  unsigned short dlf;		       // Device lock function
-				       // 15:9	reserved
-				       // 8	security level 1:max 0:high
-				       // 7:6	reserved
-				       // 5	enhanced erase
-				       // 4	expire
-				       // 3	frozen
-				       // 2	locked
-				       // 1	en/disabled
-				       // 0	capability
-					
-  unsigned short csfo;		       // Current set features options
-				       // 15:4 reserved
-				       // 3	 auto reassign
-				       // 2	 reverting
-				       // 1	 read-look-ahead
-				       // 0	 write cache
-					 
+  unsigned short last_lun;             // Reserved (word 126)
+  unsigned short word127;              // Reserved (word 127)
+  unsigned short dlf;                  // Device lock function
+                                       // 15:9  reserved
+                                       // 8     security level 1:max 0:high
+                                       // 7:6   reserved
+                                       // 5     enhanced erase
+                                       // 4     expire
+                                       // 3     frozen
+                                       // 2     locked
+                                       // 1     en/disabled
+                                       // 0     capability
+                                        
+  unsigned short csfo;                 // Current set features options
+                                       // 15:4 reserved
+                                       // 3      auto reassign
+                                       // 2      reverting
+                                       // 1      read-look-ahead
+                                       // 0      write cache
+                                         
   unsigned short words130_155[26];     // Reserved vendor words 130-155
   unsigned short word156;
   unsigned short words157_159[3];      // Reserved vendor words 157-159
@@ -319,14 +319,14 @@ struct prd
 
 struct hdc 
 {
-  struct mutex lock;	               // Controller mutex
-  struct event ready;	               // Controller interrupt event
+  struct mutex lock;                   // Controller mutex
+  struct event ready;                  // Controller interrupt event
   struct interrupt intr;               // Interrupt object
   struct dpc xfer_dpc;                 // DPC for data transfer
   
   int status;                          // Controller status
 
-  int iobase;	                       // I/O port registers base address
+  int iobase;                          // I/O port registers base address
   int irq;                             // IRQ for controller
   int bmregbase;                       // Busmaster register base
 
@@ -351,8 +351,8 @@ struct partition
 
 struct hd 
 {
-  struct hdc *hdc;		        // Controller
-  struct hdparam param;		        // Drive parameter block
+  struct hdc *hdc;                      // Controller
+  struct hdparam param;                 // Drive parameter block
   int drvsel;                           // Drive select on controller
   int use32bits;                        // Use 32 bit transfers
   int sectbufs;                         // Number of sector buffers
@@ -364,11 +364,11 @@ struct hd
   dev_t devno;                          // Device number
 
   // Geometry
-  unsigned int blks;		        // Number of blocks on drive
-  unsigned int size;		        // Size in MB
+  unsigned int blks;                    // Number of blocks on drive
+  unsigned int size;                    // Size in MB
 
-  unsigned int cyls;	                // Number of cylinders
-  unsigned int heads;		        // Number of heads
+  unsigned int cyls;                    // Number of cylinders
+  unsigned int heads;                   // Number of heads
   unsigned int sectors;                 // Sectors per track
 
   struct partition parts[HD_PARTITIONS]; // Partition info
@@ -945,9 +945,9 @@ static int hd_write_pio(struct dev *dev, void *buffer, size_t count, blkno_t blk
       result = hd_wait(hdc, HDCS_DRQ, HDTIMEOUT_DRQ);
       if (result != 0)
       {
-	kprintf("hd_write: no drq (0x%02x)\n", result);
-	hdc->result = -EIO;
-	break;
+        kprintf("hd_write: no drq (0x%02x)\n", result);
+        hdc->result = -EIO;
+        break;
       }
     }
     
@@ -1247,24 +1247,24 @@ void hd_dpc(void *arg)
         error = inp(hdc->iobase + HDC_ERR);
         hd_error("hdread", error);
 
-	kprintf(KERN_ERR "hd: read error (0x%02x)\n", hdc->status);
-	hdc->result = -EIO;
-	set_event(&hdc->ready);
+        kprintf(KERN_ERR "hd: read error (0x%02x)\n", hdc->status);
+        hdc->result = -EIO;
+        set_event(&hdc->ready);
       }
       else
       {
-	// Read sector data
-	nsects = hdc->active->multsect;
-	if (nsects > hdc->nsects) nsects = hdc->nsects;
-	for (n = 0; n < nsects; n++)
-	{
-	  pio_read_buffer(hdc->active, hdc->bufp, SECTORSIZE);
-	  hdc->bufp += SECTORSIZE;
-	}
+        // Read sector data
+        nsects = hdc->active->multsect;
+        if (nsects > hdc->nsects) nsects = hdc->nsects;
+        for (n = 0; n < nsects; n++)
+        {
+          pio_read_buffer(hdc->active, hdc->bufp, SECTORSIZE);
+          hdc->bufp += SECTORSIZE;
+        }
 
-	// Signal event if we have read all sectors
-	hdc->nsects -= nsects;
-	if (hdc->nsects == 0) set_event(&hdc->ready);
+        // Signal event if we have read all sectors
+        hdc->nsects -= nsects;
+        if (hdc->nsects == 0) set_event(&hdc->ready);
       }
       
       break;
@@ -1279,30 +1279,30 @@ void hd_dpc(void *arg)
         error = inp(hdc->iobase + HDC_ERR);
         hd_error("hdwrite", error);
 
-	kprintf(KERN_ERR "hd: write error (0x%02x)\n", hdc->status);
-	hdc->result = -EIO;
-	set_event(&hdc->ready);
+        kprintf(KERN_ERR "hd: write error (0x%02x)\n", hdc->status);
+        hdc->result = -EIO;
+        set_event(&hdc->ready);
       }
       else
       {
-	// Transfer next sector(s) or signal end of transfer
-	nsects = hdc->active->multsect;
-	if (nsects > hdc->nsects) nsects = hdc->nsects;
-	hdc->nsects -= nsects;
+        // Transfer next sector(s) or signal end of transfer
+        nsects = hdc->active->multsect;
+        if (nsects > hdc->nsects) nsects = hdc->nsects;
+        hdc->nsects -= nsects;
 
-	if (hdc->nsects > 0)
-	{
-	  nsects = hdc->active->multsect;
-	  if (nsects > hdc->nsects) nsects = hdc->nsects;
+        if (hdc->nsects > 0)
+        {
+          nsects = hdc->active->multsect;
+          if (nsects > hdc->nsects) nsects = hdc->nsects;
 
-	  for (n = 0; n < nsects; n++)
-	  {
-  	    pio_write_buffer(hdc->active, hdc->bufp, SECTORSIZE);
-	    hdc->bufp += SECTORSIZE;
-	  }
-	}
-	else
-	  set_event(&hdc->ready);
+          for (n = 0; n < nsects; n++)
+          {
+            pio_write_buffer(hdc->active, hdc->bufp, SECTORSIZE);
+            hdc->bufp += SECTORSIZE;
+          }
+        }
+        else
+          set_event(&hdc->ready);
       }
 
       break;
@@ -1445,7 +1445,7 @@ static int create_partitions(struct hd *hd)
         kprintf(KERN_INFO "%s: partition %d on %s, %dMB (type %02x)\n", devname, i, device(hd->devno)->name, mbr->parttab[i].numsect / ((1024 * 1024) / SECTORSIZE), mbr->parttab[i].systid);
       }
       else
-	dev_close(devno);
+        dev_close(devno);
     }
   }
 
@@ -1565,8 +1565,8 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase, int *m
       int rc = wait_reset_done(hdc, HD0_DRVSEL);
       if (rc < 0)
       {
-	kprintf(KERN_ERR "hd: error %d waiting for reset to complete on master device\n");
-	*masterif = HDIF_NONE;
+        kprintf(KERN_ERR "hd: error %d waiting for reset to complete on master device\n");
+        *masterif = HDIF_NONE;
       }
     }
 
@@ -1575,8 +1575,8 @@ static int setup_hdc(struct hdc *hdc, int iobase, int irq, int bmregbase, int *m
       int rc = wait_reset_done(hdc, HD1_DRVSEL);
       if (rc < 0)
       {
-	kprintf(KERN_ERR "hd: error %d waiting for reset to complete on slave device\n");
-	*slaveif = HDIF_NONE;
+        kprintf(KERN_ERR "hd: error %d waiting for reset to complete on slave device\n");
+        *slaveif = HDIF_NONE;
       }
     }
 

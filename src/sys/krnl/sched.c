@@ -80,23 +80,23 @@ __declspec(naked) void switch_context(struct thread *t)
     push    esi
 
     // Store kernel stack pointer in tcb
-    mov	    eax, esp
-    and	    eax, TCBMASK
-    add	    eax, TCBESP
-    mov	    [eax], esp
+    mov     eax, esp
+    and     eax, TCBMASK
+    add     eax, TCBESP
+    mov     [eax], esp
 
     // Get stack pointer for new thread and store in esp0
-    mov	    eax, 20[esp]
-    add	    eax, TCBESP
-    mov	    esp, [eax]
-    mov	    ebp, TSS_ESP0
-    mov	    [ebp], eax
+    mov     eax, 20[esp]
+    add     eax, TCBESP
+    mov     esp, [eax]
+    mov     ebp, TSS_ESP0
+    mov     [ebp], eax
 
     // Restore registers from new kernel stack
-    pop	    esi
-    pop	    edi
-    pop	    ebx
-    pop	    ebp
+    pop     esi
+    pop     edi
+    pop     ebx
+    pop     ebp
 
     ret
   }
@@ -979,11 +979,11 @@ void idle_task()
     {
       while (task)
       {
-	if (!system_idle()) break;
-	task->flags |= TASK_EXECUTING;
-	task->proc(task->arg);
-	task->flags &= ~TASK_EXECUTING;
-	task = task->next;
+        if (!system_idle()) break;
+        task->flags |= TASK_EXECUTING;
+        task->proc(task->arg);
+        task->flags &= ~TASK_EXECUTING;
+        task = task->next;
       }
     }
     else if (system_idle()) 
@@ -1020,10 +1020,10 @@ static int threads_proc(struct proc_file *pf, void *arg)
 
     pprintf(pf,"%3d %p %4d %-6s %2d%+2d %1d %2d%7d%7d%7d%6dK %s\n",
             t->id, t, t->hndl, state, t->base_priority, t->priority - t->base_priority, 
-	    t->suspend_count, t->object.handle_count, 
-	    t->utime, t->stime, t->context_switches,
-	    stksiz / 1024,
-	    t->name ? t->name : "");
+            t->suspend_count, t->object.handle_count, 
+            t->utime, t->stime, t->context_switches,
+            stksiz / 1024,
+            t->name ? t->name : "");
 
     t = t->next;
     if (t == threadlist) break;

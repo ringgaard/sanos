@@ -152,8 +152,8 @@ int pthread_rwlock_timedrdlock(pthread_rwlock_t *lock, const struct timespec *ab
     {
       if (pthread_equal(lock->owner, pthread_self()))
       {
-	lock->num_active--;
-	break;
+        lock->num_active--;
+        break;
       }
 
       lock->num_shared_waiters++;
@@ -195,8 +195,8 @@ int pthread_rwlock_timedwrlock(pthread_rwlock_t *lock, const struct timespec *ab
       // Exclusive lock in progress
       if (pthread_equal(lock->owner, pthread_self()))
       {
-	lock->num_active--;
-	break;
+        lock->num_active--;
+        break;
       }
     }
 
@@ -222,8 +222,8 @@ int pthread_rwlock_unlock(pthread_rwlock_t *lock)
     {
       if (lock->num_exclusive_waiters > 0)
       {
-	lock->num_exclusive_waiters--;
-	semrel(lock->exclusive_waiters, 1);
+        lock->num_exclusive_waiters--;
+        semrel(lock->exclusive_waiters, 1);
       }
     }
   }
@@ -235,14 +235,14 @@ int pthread_rwlock_unlock(pthread_rwlock_t *lock)
       lock->owner = NOHANDLE;
       if (lock->num_exclusive_waiters > 0)
       {
-	lock->num_exclusive_waiters--;
-	semrel(lock->exclusive_waiters, 1);
+        lock->num_exclusive_waiters--;
+        semrel(lock->exclusive_waiters, 1);
       }
       else if (lock->num_shared_waiters > 0)
       {
-	int num = lock->num_shared_waiters;
-	lock->num_active = num;
-	lock->num_shared_waiters = 0;
+        int num = lock->num_shared_waiters;
+        lock->num_active = num;
+        lock->num_shared_waiters = 0;
         semrel(lock->shared_waiters, num);
       }
     }

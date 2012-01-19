@@ -128,7 +128,7 @@ struct rand_pool_info
 {
   int entropy_count;
   int buf_size;
-  unsigned long	buf[0];
+  unsigned long buf[0];
 };
 
 struct entropy_store 

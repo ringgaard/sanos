@@ -291,30 +291,30 @@ void raise_exception(EXCEPTION_RECORD *rec, CONTEXT *ctxt)
     switch (rc)
     {
       case ExceptionContinueExecution:
-	if (!(rec->ExceptionFlags & EH_NONCONTINUABLE)) return;
-	newrec.ExceptionCode = STATUS_NONCONTINUABLE_EXCEPTION;
-	newrec.ExceptionFlags = EH_NONCONTINUABLE;
-	newrec.ExceptionRecord  = rec;
-	newrec.NumberParameters = 0;
-	panic("kernel32: exception not continuable");
-	//TODO: RtlRaiseException(&newrec);  // Never returns
-	break;
+        if (!(rec->ExceptionFlags & EH_NONCONTINUABLE)) return;
+        newrec.ExceptionCode = STATUS_NONCONTINUABLE_EXCEPTION;
+        newrec.ExceptionFlags = EH_NONCONTINUABLE;
+        newrec.ExceptionRecord  = rec;
+        newrec.NumberParameters = 0;
+        panic("kernel32: exception not continuable");
+        //TODO: RtlRaiseException(&newrec);  // Never returns
+        break;
 
       case ExceptionContinueSearch:
-	break;
+        break;
 
       case ExceptionNestedException:
-	if (nested_frame < dispatch) nested_frame = dispatch;
-	rec->ExceptionFlags |= EH_NESTED_CALL;
-	break;
+        if (nested_frame < dispatch) nested_frame = dispatch;
+        rec->ExceptionFlags |= EH_NESTED_CALL;
+        break;
 
       default:
-	newrec.ExceptionCode = STATUS_INVALID_DISPOSITION;
-	newrec.ExceptionFlags = EH_NONCONTINUABLE;
-	newrec.ExceptionRecord = rec;
-	newrec.NumberParameters = 0;
-	panic("kernel32: invalid disposition returned from exception handler");
-	//TODO: RtlRaiseException(&newrec);  // Never returns
+        newrec.ExceptionCode = STATUS_INVALID_DISPOSITION;
+        newrec.ExceptionFlags = EH_NONCONTINUABLE;
+        newrec.ExceptionRecord = rec;
+        newrec.NumberParameters = 0;
+        panic("kernel32: invalid disposition returned from exception handler");
+        //TODO: RtlRaiseException(&newrec);  // Never returns
     }
 
     frame = frame->prev;
@@ -379,19 +379,19 @@ void unwind(PEXCEPTION_FRAME endframe, LPVOID eip, PEXCEPTION_RECORD rec, DWORD 
     switch (rc)
     {
       case ExceptionContinueSearch:
-	break;
+        break;
 
       case ExceptionCollidedUnwind:
-	frame = dispatch;
-	break;
+        frame = dispatch;
+        break;
 
       default:
-	newrec.ExceptionCode = STATUS_INVALID_DISPOSITION;
-	newrec.ExceptionFlags = EH_NONCONTINUABLE;
-	newrec.ExceptionRecord = rec;
-	newrec.NumberParameters = 0;
-	panic("kernel32: invalid disposition returned from exception handler in unwind");
-	//TODO: RtlRaiseException(&newrec);  // Never returns
+        newrec.ExceptionCode = STATUS_INVALID_DISPOSITION;
+        newrec.ExceptionFlags = EH_NONCONTINUABLE;
+        newrec.ExceptionRecord = rec;
+        newrec.NumberParameters = 0;
+        panic("kernel32: invalid disposition returned from exception handler in unwind");
+        //TODO: RtlRaiseException(&newrec);  // Never returns
     }
 
     frame = pop_frame(frame);
@@ -440,7 +440,7 @@ void win32_globalhandler(struct siginfo *info)
       if (info->si_signo == SIGSTKFLT)
         rec.ExceptionCode = STATUS_GUARD_PAGE_VIOLATION;
       else
-	rec.ExceptionCode = EXCEPTION_ACCESS_VIOLATION;
+        rec.ExceptionCode = EXCEPTION_ACCESS_VIOLATION;
       rec.NumberParameters = 2;
       rec.ExceptionInformation[0] = (void *) ((info->si_ctxt->errcode & 2) ? 1 : 0);
       rec.ExceptionInformation[1] = info->si_addr;
@@ -958,19 +958,19 @@ HANDLE WINAPI FindFirstFileA
       //syslog(LOG_DEBUG | LOG_AUX, "match %s with %s", dirent.name, finddata->mask);
       if (like(dirent.name, finddata->mask))
       {
-	strcpy(fn, finddata->dir);
-	strcpy(fn + strlen(fn), "\\");
-	strcpy(fn + strlen(fn), dirent.name);
+        strcpy(fn, finddata->dir);
+        strcpy(fn + strlen(fn), "\\");
+        strcpy(fn + strlen(fn), dirent.name);
 
         if (stat64(fn, &statbuf) < 0) 
-	{
-	  errno = ENOENT;
+        {
+          errno = ENOENT;
           free(finddata);
-	  return INVALID_HANDLE_VALUE;
-	}
+          return INVALID_HANDLE_VALUE;
+        }
 
         fill_find_data(lpFindFileData, dirent.name, &statbuf);
-	return (HANDLE) finddata;
+        return (HANDLE) finddata;
       }
     }
 
@@ -1057,18 +1057,18 @@ BOOL WINAPI FindNextFileA
       //syslog(LOG_DEBUG | LOG_AUX, "match next %s with %s", dirent.name, finddata->mask);
       if (like(dirent.name, finddata->mask))
       {
-	strcpy(fn, finddata->dir);
-	strcpy(fn + strlen(fn), "\\");
-	strcpy(fn + strlen(fn), dirent.name);
+        strcpy(fn, finddata->dir);
+        strcpy(fn + strlen(fn), "\\");
+        strcpy(fn + strlen(fn), dirent.name);
 
         if (stat64(fn, &statbuf) < 0) 
-	{
-	  errno = ENOENT;
-	  return FALSE;
-	}
+        {
+          errno = ENOENT;
+          return FALSE;
+        }
 
         fill_find_data(lpFindFileData, dirent.name, &statbuf);
-	return TRUE;
+        return TRUE;
       }
     }
 

@@ -644,158 +644,158 @@ int httpd_check_header(struct httpd_connection *conn)
     {
       case HDR_STATE_FIRSTWORD:
         switch (c)
-	{
-	  case ' ': 
-	  case '\t':
-	    conn->hdrstate = HDR_STATE_FIRSTWS;
-	    break;
+        {
+          case ' ': 
+          case '\t':
+            conn->hdrstate = HDR_STATE_FIRSTWS;
+            break;
 
-	  case '\n': 
-	  case '\r':
-	    conn->hdrstate = HDR_STATE_BOGUS;
-	    return -EINVAL;
-	}
+          case '\n': 
+          case '\r':
+            conn->hdrstate = HDR_STATE_BOGUS;
+            return -EINVAL;
+        }
         break;
 
       case HDR_STATE_FIRSTWS:
         switch (c)
-	{
-	  case ' ': 
-	  case '\t':
-	    break;
+        {
+          case ' ': 
+          case '\t':
+            break;
 
-	  case '\n': 
-	  case '\r':
- 	    conn->hdrstate = HDR_STATE_BOGUS;
-	    return -EINVAL;
-	
-	  default:
-	    conn->hdrstate = HDR_STATE_SECONDWORD;
-	}
+          case '\n': 
+          case '\r':
+            conn->hdrstate = HDR_STATE_BOGUS;
+            return -EINVAL;
+        
+          default:
+            conn->hdrstate = HDR_STATE_SECONDWORD;
+        }
         break;
 
       case HDR_STATE_SECONDWORD:
         switch (c)
-	{
-	  case ' ': 
-	  case '\t':
-	    conn->hdrstate = HDR_STATE_SECONDWS;
-	    break;
+        {
+          case ' ': 
+          case '\t':
+            conn->hdrstate = HDR_STATE_SECONDWS;
+            break;
 
-	  case '\n': 
-	  case '\r':
-	    // The first line has only two words - an HTTP/0.9 request
-	   return 1;
-	}
+          case '\n': 
+          case '\r':
+            // The first line has only two words - an HTTP/0.9 request
+           return 1;
+        }
         break;
 
       case HDR_STATE_SECONDWS:
         switch (c)
-	{
-  	  case ' ':
-	  case '\t':
-	    break;
+        {
+          case ' ':
+          case '\t':
+            break;
 
-	  case '\n': 
-	  case '\r':
-	    conn->hdrstate = HDR_STATE_BOGUS;
-	    return -EINVAL;
+          case '\n': 
+          case '\r':
+            conn->hdrstate = HDR_STATE_BOGUS;
+            return -EINVAL;
 
-	  default:
-	    conn->hdrstate = HDR_STATE_THIRDWORD;
-	}
+          default:
+            conn->hdrstate = HDR_STATE_THIRDWORD;
+        }
         break;
 
       case HDR_STATE_THIRDWORD:
         switch (c)
-	{
-	  case ' ': 
-	  case '\t':
-	    conn->hdrstate = HDR_STATE_BOGUS;
-	    return -EINVAL;
+        {
+          case ' ': 
+          case '\t':
+            conn->hdrstate = HDR_STATE_BOGUS;
+            return -EINVAL;
 
-	  case '\n':
-	    conn->hdrstate = HDR_STATE_LF;
-	    break;
+          case '\n':
+            conn->hdrstate = HDR_STATE_LF;
+            break;
 
-	  case '\r':
-	    conn->hdrstate = HDR_STATE_CR;
-	    break;
-	}
+          case '\r':
+            conn->hdrstate = HDR_STATE_CR;
+            break;
+        }
         break;
 
       case HDR_STATE_LINE:
         switch (c)
-	{
-	  case '\n':
-	    conn->hdrstate = HDR_STATE_LF;
-	    break;
+        {
+          case '\n':
+            conn->hdrstate = HDR_STATE_LF;
+            break;
 
-	  case '\r':
-	    conn->hdrstate = HDR_STATE_CR;
-	    break;
-	}
+          case '\r':
+            conn->hdrstate = HDR_STATE_CR;
+            break;
+        }
         break;
 
       case HDR_STATE_LF:
         switch (c)
-	{
-	  case '\n':
-	    // Two newlines in a row - a blank line - end of request
-	   return 1;
+        {
+          case '\n':
+            // Two newlines in a row - a blank line - end of request
+           return 1;
 
-	  case '\r':
-	    conn->hdrstate = HDR_STATE_CR;
-	    break;
+          case '\r':
+            conn->hdrstate = HDR_STATE_CR;
+            break;
 
-	  default:
-	    conn->hdrstate = HDR_STATE_LINE;
-	}
+          default:
+            conn->hdrstate = HDR_STATE_LINE;
+        }
         break;
 
       case HDR_STATE_CR:
         switch (c)
-	{
-	  case '\n':
-	    conn->hdrstate = HDR_STATE_CRLF;
-	    break;
+        {
+          case '\n':
+            conn->hdrstate = HDR_STATE_CRLF;
+            break;
 
-	  case '\r':
-	    // Two returns in a row - end of request
-	    return 1;
+          case '\r':
+            // Two returns in a row - end of request
+            return 1;
 
-	  default:
-	    conn->hdrstate = HDR_STATE_LINE;
-	}
+          default:
+            conn->hdrstate = HDR_STATE_LINE;
+        }
         break;
 
       case HDR_STATE_CRLF:
         switch (c)
-	{
-	  case '\n':
-	    // Two newlines in a row - end of request
-	    return 1;
-	
-	  case '\r':
-	    conn->hdrstate = HDR_STATE_CRLFCR;
-	    break;
+        {
+          case '\n':
+            // Two newlines in a row - end of request
+            return 1;
+        
+          case '\r':
+            conn->hdrstate = HDR_STATE_CRLFCR;
+            break;
 
-	  default:
-	    conn->hdrstate = HDR_STATE_LINE;
-	}
+          default:
+            conn->hdrstate = HDR_STATE_LINE;
+        }
         break;
     
       case HDR_STATE_CRLFCR:
         switch (c)
-	{
-	  case '\n': 
-	  case '\r':
-	    // Two CRLFs or two CRs in a row - end of request
-	    return 1;
+        {
+          case '\n': 
+          case '\r':
+            // Two CRLFs or two CRs in a row - end of request
+            return 1;
 
-	  default:
-	    conn->hdrstate = HDR_STATE_LINE;
-	}
+          default:
+            conn->hdrstate = HDR_STATE_LINE;
+        }
         break;
 
       case HDR_STATE_BOGUS:
@@ -931,9 +931,9 @@ int httpd_find_context(struct httpd_request *req)
     if (strncmp(context->alias, pathinfo, n) == 0 && (*s == '/' || *s == 0))
     {
       if (*s)
-	req->pathinfo = s + 1;
+        req->pathinfo = s + 1;
       else
-	req->pathinfo = "";
+        req->pathinfo = "";
 
       req->context = context;
       return 0;
@@ -1049,8 +1049,8 @@ int httpd_write(struct httpd_connection *conn)
       // Allocate response body buffer if not already done
       if (conn->rspbody.floor == NULL)
       {
-	rc = allocate_buffer(&conn->rspbody, conn->server->rspbufsiz);
-	if (rc < 0) return rc;
+        rc = allocate_buffer(&conn->rspbody, conn->server->rspbufsiz);
+        if (rc < 0) return rc;
       }
 
       // Read from file
@@ -1112,31 +1112,31 @@ int httpd_process(struct httpd_connection *conn)
       if (rc < 0) goto errorexit;
       if (rc > 0)
       {
-	// Return HTTP error to client
-	rc = httpd_send_error(&rsp, rc, NULL, NULL);
-	if (rc < 0) goto errorexit;
+        // Return HTTP error to client
+        rc = httpd_send_error(&rsp, rc, NULL, NULL);
+        if (rc < 0) goto errorexit;
       }
 
       // Build HTTP header if not already done
       if (!conn->hdrsent && buffer_empty(&conn->rsphdr))
       {
-	if (rsp.content_length < 0)
-	{
-	  int len = 0;
+        if (rsp.content_length < 0)
+        {
+          int len = 0;
 
-	  len += buffer_size(&conn->rspbody);
-	  len += conn->fixed_rsp_len;
-	  if (conn->fd >= 0)
-	  {
-	    size = fstat(conn->fd, NULL);
-	    if (size >= 0) len += size;
-	  }
+          len += buffer_size(&conn->rspbody);
+          len += conn->fixed_rsp_len;
+          if (conn->fd >= 0)
+          {
+            size = fstat(conn->fd, NULL);
+            if (size >= 0) len += size;
+          }
 
           rsp.content_length = len;
-	}
+        }
 
-	rc = httpd_send_header(&rsp, 200, "OK", NULL);
-	if (rc < 0) goto errorexit;
+        rc = httpd_send_header(&rsp, 200, "OK", NULL);
+        if (rc < 0) goto errorexit;
       }
     }
   }
@@ -1179,15 +1179,15 @@ int httpd_io(struct httpd_connection *conn)
       rc = recv(conn->sock, conn->reqhdr.end, buffer_left(&conn->reqhdr), 0);
       if (rc <= 0) 
       {
-	if (errno == ECONNRESET && buffer_size(&conn->reqhdr) == 0)
-	{
-	  // Keep-Alive connection closed
-	  conn->state = HTTP_STATE_TERMINATED;
-	  httpd_close_connection(conn);
-	  return 1;
-	}
+        if (errno == ECONNRESET && buffer_size(&conn->reqhdr) == 0)
+        {
+          // Keep-Alive connection closed
+          conn->state = HTTP_STATE_TERMINATED;
+          httpd_close_connection(conn);
+          return 1;
+        }
 
-	return rc;
+        return rc;
       }
 
       conn->reqhdr.end += rc;
@@ -1198,7 +1198,7 @@ int httpd_io(struct httpd_connection *conn)
       {
         rc = dispatch(conn->server->iomux, conn->sock, IOEVT_READ | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
         if (rc < 0) return rc;
-	return 1;
+        return 1;
       }
       conn->state = HTTP_STATE_PROCESSING;
       // Fall through
@@ -1215,23 +1215,23 @@ int httpd_io(struct httpd_connection *conn)
 
       if (rc > 0)
       {
-	rc = dispatch(conn->server->iomux, conn->sock, IOEVT_WRITE | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
-	if (rc < 0) return rc;
+        rc = dispatch(conn->server->iomux, conn->sock, IOEVT_WRITE | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
+        if (rc < 0) return rc;
       }
       else
       {
-	rc = httpd_terminate_request(conn);
-	if (rc > 0)
-	{
-	  conn->state = HTTP_STATE_IDLE;
-	  rc = dispatch(conn->server->iomux, conn->sock, IOEVT_READ | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
-	  if (rc < 0) return rc;
-	}
-	else
-	{
-	  conn->state = HTTP_STATE_TERMINATED;
-	  httpd_close_connection(conn);
-	}
+        rc = httpd_terminate_request(conn);
+        if (rc > 0)
+        {
+          conn->state = HTTP_STATE_IDLE;
+          rc = dispatch(conn->server->iomux, conn->sock, IOEVT_READ | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
+          if (rc < 0) return rc;
+        }
+        else
+        {
+          conn->state = HTTP_STATE_TERMINATED;
+          httpd_close_connection(conn);
+        }
       }
       return 1;
 

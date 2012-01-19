@@ -211,8 +211,8 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
 
       if (rc < 0)
       {
-	kprintf("dfs: error %d in format\n", rc);
-	return NULL;
+        kprintf("dfs: error %d in format\n", rc);
+        return NULL;
       }
     }
     if (fsopts->flags & FSOPT_PROGRESS) kprintf("100%% complete\r");

@@ -59,17 +59,17 @@ char *get_option(char *opts, char *name, char *buffer, int size, char *defval)
     {
       if (strncmp(name, opts, eq - opts) == 0)
       {
-	if (!buffer) return eq + 1;
+        if (!buffer) return eq + 1;
 
-	if (p - (eq + 1) > size)
-	  strncpy(buffer, eq + 1, size);
-	else
-	{
-	  memcpy(buffer, eq + 1, p - (eq + 1));
-	  buffer[p - (eq + 1)] = 0;
-	}
+        if (p - (eq + 1) > size)
+          strncpy(buffer, eq + 1, size);
+        else
+        {
+          memcpy(buffer, eq + 1, p - (eq + 1));
+          buffer[p - (eq + 1)] = 0;
+        }
 
-	return buffer;
+        return buffer;
       }
     }
     else
@@ -77,7 +77,7 @@ char *get_option(char *opts, char *name, char *buffer, int size, char *defval)
       if (strncmp(name, opts, p - opts) == 0)
       {
         if (!buffer) return "";
-	*buffer = 0;
+        *buffer = 0;
         return buffer;
       }
     }
@@ -109,13 +109,13 @@ int get_num_option(char *opts, char *name, int defval)
     while (*p)
     {
       if (*p >= '0' && *p <= '9')
-	value = (value << 4) | (*p - '0');
+        value = (value << 4) | (*p - '0');
       else if (*p >= 'A' && *p <= 'F')
-	value = (value << 4) | (*p - 'A' + 10);
+        value = (value << 4) | (*p - 'A' + 10);
       else if (*p >= 'a' && *p <= 'f')
-	value = (value << 4) | (*p - 'a' + 10);
+        value = (value << 4) | (*p - 'a' + 10);
       else
-	return defval;
+        return defval;
 
       p++;
     }

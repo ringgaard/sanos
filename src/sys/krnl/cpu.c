@@ -44,15 +44,15 @@ struct cpu_model_info
 
 static struct cpu_model_info cpu_models[] = 
 {
-  {CPU_VENDOR_INTEL,	4, {"486 DX-25/33", "486 DX-50", "486 SX", "486 DX/2", "486 SL", "486 SX/2", NULL, "486 DX/2-WB", "486 DX/4", "486 DX/4-WB", NULL, NULL, NULL, NULL, NULL, NULL}},
-  {CPU_VENDOR_INTEL,	5, {"Pentium 60/66 A-step", "Pentium 60/66", "Pentium 75 - 200", "OverDrive PODP5V83", "Pentium MMX", NULL, NULL, "Mobile Pentium 75 - 200", "Mobile Pentium MMX", NULL, NULL, NULL, NULL, NULL, NULL, NULL}},
-  {CPU_VENDOR_INTEL,	6, {"Pentium Pro A-step", "Pentium Pro", NULL, "Pentium II (Klamath)", NULL, "Pentium II (Deschutes)", "Mobile Pentium II", "Pentium III (Katmai)", "Pentium III (Coppermine)", NULL, "Pentium III (Cascades)", NULL, NULL, NULL, NULL}},
-  {CPU_VENDOR_AMD,	4, {NULL, NULL, NULL, "486 DX/2", NULL, NULL, NULL, "486 DX/2-WB", "486 DX/4", "486 DX/4-WB", NULL, NULL, NULL, NULL, "Am5x86-WT", "Am5x86-WB"}},
-  {CPU_VENDOR_AMD,	5, {"K5/SSA5", "K5", "K5", "K5", NULL, NULL, "K6", "K6", "K6-2", "K6-3", NULL, NULL, NULL, NULL, NULL, NULL}},
-  {CPU_VENDOR_AMD,	6, {"Athlon", "Athlon", "Athlon", NULL, "Athlon", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}},
-  {CPU_VENDOR_UMC,	4, {NULL, "U5D", "U5S", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}},
-  {CPU_VENDOR_NEXGEN,	5, {"Nx586", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}},
-  {CPU_VENDOR_RISE,	5, {"iDragon", NULL, "iDragon", NULL, NULL, NULL, NULL, NULL, "iDragon II", "iDragon II", NULL, NULL, NULL, NULL, NULL, NULL}}
+  {CPU_VENDOR_INTEL,    4, {"486 DX-25/33", "486 DX-50", "486 SX", "486 DX/2", "486 SL", "486 SX/2", NULL, "486 DX/2-WB", "486 DX/4", "486 DX/4-WB", NULL, NULL, NULL, NULL, NULL, NULL}},
+  {CPU_VENDOR_INTEL,    5, {"Pentium 60/66 A-step", "Pentium 60/66", "Pentium 75 - 200", "OverDrive PODP5V83", "Pentium MMX", NULL, NULL, "Mobile Pentium 75 - 200", "Mobile Pentium MMX", NULL, NULL, NULL, NULL, NULL, NULL, NULL}},
+  {CPU_VENDOR_INTEL,    6, {"Pentium Pro A-step", "Pentium Pro", NULL, "Pentium II (Klamath)", NULL, "Pentium II (Deschutes)", "Mobile Pentium II", "Pentium III (Katmai)", "Pentium III (Coppermine)", NULL, "Pentium III (Cascades)", NULL, NULL, NULL, NULL}},
+  {CPU_VENDOR_AMD,      4, {NULL, NULL, NULL, "486 DX/2", NULL, NULL, NULL, "486 DX/2-WB", "486 DX/4", "486 DX/4-WB", NULL, NULL, NULL, NULL, "Am5x86-WT", "Am5x86-WB"}},
+  {CPU_VENDOR_AMD,      5, {"K5/SSA5", "K5", "K5", "K5", NULL, NULL, "K6", "K6", "K6-2", "K6-3", NULL, NULL, NULL, NULL, NULL, NULL}},
+  {CPU_VENDOR_AMD,      6, {"Athlon", "Athlon", "Athlon", NULL, "Athlon", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}},
+  {CPU_VENDOR_UMC,      4, {NULL, "U5D", "U5S", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}},
+  {CPU_VENDOR_NEXGEN,   5, {"Nx586", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}},
+  {CPU_VENDOR_RISE,     5, {"iDragon", NULL, "iDragon", NULL, NULL, NULL, NULL, NULL, "iDragon II", "iDragon II", NULL, NULL, NULL, NULL, NULL, NULL}}
 };
 
 static char *table_lookup_model(struct cpu *c)
@@ -220,16 +220,16 @@ void init_cpu()
       while (*p == ' ') p++;
       while (*p)
       {
-	if (*p == ' ')
-	  space = 1;
-	else
-	{
-	  if (space) *q++ = ' ';
-	  space = 0;
-	  *q++ = *p;
-	}
+        if (*p == ' ')
+          space = 1;
+        else
+        {
+          if (space) *q++ = ' ';
+          space = 0;
+          *q++ = *p;
+        }
 
-	p++;
+        p++;
       }
       *q = 0;
     }

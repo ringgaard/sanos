@@ -241,7 +241,7 @@ void setup_memory(struct memmap *memmap)
     {
       if (memmap->entry[i].type == MEMTYPE_RAM) 
       {
-	mem_end = (unsigned long) (memmap->entry[i].addr + memmap->entry[i].size);
+        mem_end = (unsigned long) (memmap->entry[i].addr + memmap->entry[i].size);
       }
     }
   }
@@ -455,12 +455,12 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
   // Reload segment registers
   __asm
   {
-    mov	ax, SEL_KDATA
-    mov	ds, ax
-    mov	es, ax
-    mov	fs, ax
-    mov	gs, ax
-    mov	ss, ax
+    mov ax, SEL_KDATA
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
     push SEL_KTEXT
     push offset startpg
     retf

@@ -50,13 +50,13 @@ void *bsearch(const void *key, const void *base, size_t num, size_t width, int (
         return mid;
       else if (result < 0)
       {
-	hi = mid - width;
-	num = num & 1 ? half : half - 1;
+        hi = mid - width;
+        num = num & 1 ? half : half - 1;
       }
       else    
       {
-	lo = mid + width;
-	num = half;
+        lo = mid + width;
+        num = half;
       }
     }
     else if (num)

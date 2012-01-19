@@ -158,9 +158,9 @@ static int write_translated(int fh, char *buf, int len)
     {
       if (buf < ptr)
       {
-	rc = write(fh, buf, ptr - buf);
-	if (rc < 0) return rc;
-	written += rc;
+        rc = write(fh, buf, ptr - buf);
+        if (rc < 0) return rc;
+        written += rc;
       }
 
       rc = write(fh, "\r", 1);
@@ -321,49 +321,49 @@ static int open_file(FILE *stream, const char *filename, const char *mode)
     switch (*mode)
     {
       case '+':
-	oflag |= O_RDWR;
-	oflag &= ~(O_RDONLY | O_WRONLY);
+        oflag |= O_RDWR;
+        oflag &= ~(O_RDONLY | O_WRONLY);
         streamflag |= _IORW;
         streamflag &= ~(_IORD | _IOWR);
-	break;
+        break;
 
       case 't':
-	oflag &= ~(O_TEXT | O_BINARY);
-	oflag |= O_TEXT;
-	break;
+        oflag &= ~(O_TEXT | O_BINARY);
+        oflag |= O_TEXT;
+        break;
 
       case 'b':
-	oflag &= ~(O_TEXT | O_BINARY);
-	oflag |= O_BINARY;
-	break;
+        oflag &= ~(O_TEXT | O_BINARY);
+        oflag |= O_BINARY;
+        break;
 
       case 'c':
       case 'n':
-	break;
+        break;
 
       case 'S':
-	oflag |= O_SEQUENTIAL;
-	break;
+        oflag |= O_SEQUENTIAL;
+        break;
 
       case 'R':
-	oflag |= O_RANDOM;
-	break;
+        oflag |= O_RANDOM;
+        break;
 
       case 'T':
-	oflag |= O_SHORT_LIVED;
-	break;
+        oflag |= O_SHORT_LIVED;
+        break;
 
       case 'D':
-	oflag |= O_TEMPORARY;
-	break;
+        oflag |= O_TEMPORARY;
+        break;
 
       case ' ':
-	// Ignore
-	break;
+        // Ignore
+        break;
 
       default:
-	errno = EINVAL;
-	return -1;
+        errno = EINVAL;
+        return -1;
     }
   }
 
@@ -428,7 +428,7 @@ FILE *fdopen(int fd, const char *mode)
       case '+':
         streamflag |= _IORW;
         streamflag &= ~(_IORD | _IOWR);
-	break;
+        break;
     }
   }
 
@@ -599,10 +599,10 @@ char *gets(char *buf)
     {
       if (p > buf)
       {
-	putchar('\b');
-	putchar(' ');
-	putchar('\b');
-	p--;
+        putchar('\b');
+        putchar(' ');
+        putchar('\b');
+        p--;
       }
     }
     else if (ch == '\r' || ch =='\n' || ch >= ' ')
@@ -633,7 +633,7 @@ int puts(const char *string)
       if (putchar(*string) == EOF)
       {
         _ftbuf(stream);
-	return EOF;
+        return EOF;
       }
       string++;
     }
@@ -710,15 +710,15 @@ size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
       nread = read(fileno(stream), data, nbytes);
       if (nread == 0) 
       {
-	// End of file -- out of here
-	stream->flag |= _IOEOF;
-	return (total - count) / size;
+        // End of file -- out of here
+        stream->flag |= _IOEOF;
+        return (total - count) / size;
       }
       else if ((int) nread < 0)
       {
-	// Error -- out of here
-	stream->flag |= _IOERR;
-	return (total - count) / size;
+        // Error -- out of here
+        stream->flag |= _IOERR;
+        return (total - count) / size;
       }
 
       // Update count and data to reflect read
@@ -730,8 +730,8 @@ size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
       // Less than bufsize chars to read, so call filbuf to fill buffer
       if ((c = filbuf(stream)) == EOF) 
       {
-	// Error or eof, stream flags set by filbuf
-	return (total - count) / size;
+        // Error or eof, stream flags set by filbuf
+        return (total - count) / size;
       }
 
       // filbuf returned a char -- store it
@@ -794,11 +794,11 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
 
       if (bigbuf(stream)) 
       {
-	if (fflush(stream)) 
-	{
-	  // Error, stream flags set -- we're out of here
-	  return (total - count) / size;
-	}
+        if (fflush(stream)) 
+        {
+          // Error, stream flags set -- we're out of here
+          return (total - count) / size;
+        }
       }
 
       // Calc chars to write -- (count / bufsize) * bufsize
@@ -811,9 +811,9 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
 
       if ((int) nwritten < 0) 
       {
-	// Error -- out of here
-	stream->flag |= _IOERR;
-	return (total - count) / size;
+        // Error -- out of here
+        stream->flag |= _IOERR;
+        return (total - count) / size;
       }
 
       // Update count and data to reflect write
@@ -822,9 +822,9 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
 
       if (nwritten < nbytes) 
       {
-	// Error -- out of here
-	stream->flag |= _IOERR;
-	return (total - count) / size;
+        // Error -- out of here
+        stream->flag |= _IOERR;
+        return (total - count) / size;
       }
     }
     else 
@@ -833,8 +833,8 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
       c = *data;  
       if (flsbuf(c, stream) == EOF) 
       {
-	// Error or eof, stream flags set by _flsbuf
-	return (total - count) / size;
+        // Error or eof, stream flags set by _flsbuf
+        return (total - count) / size;
       }
 
       // flsbuf wrote a char -- update count

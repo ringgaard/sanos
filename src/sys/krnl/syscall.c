@@ -2262,21 +2262,21 @@ static int sys_sysinfo(char *params)
   {
     case SYSINFO_CPU:
       if (!data || size < sizeof(struct cpuinfo))
-	rc = -EFAULT;
+        rc = -EFAULT;
       else
         rc = cpu_sysinfo((struct cpuinfo *) data);
       break;
 
     case SYSINFO_MEM:
       if (!data || size < sizeof(struct meminfo))
-	rc = -EFAULT;
+        rc = -EFAULT;
       else
         rc = mem_sysinfo((struct meminfo *) data);
       break;
 
     case SYSINFO_LOAD:
       if (!data || size < sizeof(struct loadinfo))
-	rc = -EFAULT;
+        rc = -EFAULT;
       else
         rc = load_sysinfo((struct loadinfo *) data);
       break;

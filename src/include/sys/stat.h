@@ -80,7 +80,7 @@ struct stat64
 #define S_IFMT         0170000         // File type mask
 #define S_IFPKT        0160000         // Packet device
 #define S_IFSOCK       0140000         // Socket
-#define S_IFLNK	       0120000         // Symbolic link
+#define S_IFLNK        0120000         // Symbolic link
 #define S_IFREG        0100000         // Regular file
 #define S_IFBLK        0060000         // Block device
 #define S_IFDIR        0040000         // Directory
@@ -91,14 +91,14 @@ struct stat64
 #define S_IWRITE       0000200         // Write permission, owner
 #define S_IEXEC        0000100         // Execute/search permission, owner
 
-#define S_ISLNK(m)	(((m) & S_IFMT) == S_IFLNK)
-#define S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)
-#define S_ISDIR(m)	(((m) & S_IFMT) == S_IFDIR)
-#define S_ISCHR(m)	(((m) & S_IFMT) == S_IFCHR)
-#define S_ISBLK(m)	(((m) & S_IFMT) == S_IFBLK)
-#define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
-#define S_ISSOCK(m)	(((m) & S_IFMT) == S_IFSOCK)
-#define S_ISPKT(m)	(((m) & S_IFMT) == S_IFPKT)
+#define S_ISLNK(m)      (((m) & S_IFMT) == S_IFLNK)
+#define S_ISREG(m)      (((m) & S_IFMT) == S_IFREG)
+#define S_ISDIR(m)      (((m) & S_IFMT) == S_IFDIR)
+#define S_ISCHR(m)      (((m) & S_IFMT) == S_IFCHR)
+#define S_ISBLK(m)      (((m) & S_IFMT) == S_IFBLK)
+#define S_ISFIFO(m)     (((m) & S_IFMT) == S_IFIFO)
+#define S_ISSOCK(m)     (((m) & S_IFMT) == S_IFSOCK)
+#define S_ISPKT(m)      (((m) & S_IFMT) == S_IFPKT)
 
 #define S_IRWXU 00700
 #define S_IRUSR 00400

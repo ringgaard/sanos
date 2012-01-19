@@ -68,17 +68,17 @@ static int fill_sndbuf(struct socket *s, struct iovec *iov, int iovlen)
     {
       if (iov->iov_len > 0)
       {
-	len = iov->iov_len;
-	if (len > left) len = left;
+        len = iov->iov_len;
+        if (len > left) len = left;
 
-	rc = tcp_write(s->tcp.pcb, iov->iov_base, len, TCP_WRITE_NOFLUSH);
-	if (rc < 0) return rc;
+        rc = tcp_write(s->tcp.pcb, iov->iov_base, len, TCP_WRITE_NOFLUSH);
+        if (rc < 0) return rc;
 
-	(char *) iov->iov_base += len;
-	iov->iov_len -= len;
+        (char *) iov->iov_base += len;
+        iov->iov_len -= len;
 
-	left -= len;
-	bytes += len;
+        left -= len;
+        bytes += len;
       }
 
       iov++;
@@ -176,8 +176,8 @@ static err_t accept_tcp(void *arg, struct tcp_pcb *newpcb, err_t err)
     {
       if (err < 0)
       {
-	release_socket_request(req, err);
-	return 0;
+        release_socket_request(req, err);
+        return 0;
       }
 
       req->newsock = accept_connection(newpcb);
@@ -286,13 +286,13 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
     {
       if (waitrecv)
       {
-	req = s->waithead;
-	while (req)
-	{
-	  next = req->next;
-	  if (req->type == SOCKREQ_WAITRECV) release_socket_request(req, 0);
-	  req = next;
-	}
+        req = s->waithead;
+        while (req)
+        {
+          next = req->next;
+          if (req->type == SOCKREQ_WAITRECV) release_socket_request(req, 0);
+          req = next;
+        }
       }
 
       break;
@@ -496,7 +496,7 @@ static int tcpsock_close(struct socket *s)
     {
       if (tcp_close(s->tcp.pcb) < 0)
       {
-	tcp_abort(s->tcp.pcb);
+        tcp_abort(s->tcp.pcb);
       }
     }
   }
@@ -611,9 +611,9 @@ static int tcpsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
     case FIONBIO:
       if (!data || size != 4) return -EFAULT;
       if (*(int *) data)
-	s->flags |= SOCK_NBIO;
+        s->flags |= SOCK_NBIO;
       else
-	s->flags &= ~SOCK_NBIO;
+        s->flags &= ~SOCK_NBIO;
       break;
 
     default:
@@ -728,32 +728,32 @@ static int tcpsock_setsockopt(struct socket *s, int level, int optname, const ch
     switch (optname)
     {
       case SO_LINGER:
-	if (!optval || optlen != sizeof(struct linger)) return -EFAULT;
-	l = (struct linger *) optval;
-	s->tcp.lingertime = l->l_linger * HZ;
-	if (l->l_onoff)
-	  s->flags |= SOCK_LINGER;
-	else
-	  s->flags &= ~SOCK_LINGER;
-	break;
+        if (!optval || optlen != sizeof(struct linger)) return -EFAULT;
+        l = (struct linger *) optval;
+        s->tcp.lingertime = l->l_linger * HZ;
+        if (l->l_onoff)
+          s->flags |= SOCK_LINGER;
+        else
+          s->flags &= ~SOCK_LINGER;
+        break;
 
       case SO_DONTLINGER:
-	if (!optval || optlen != 4) return -EFAULT;
-	if (*(int *) optval)
-	  s->flags &= ~SOCK_LINGER;
-	else
-	  s->flags |= SOCK_LINGER;
-	break;
+        if (!optval || optlen != 4) return -EFAULT;
+        if (*(int *) optval)
+          s->flags &= ~SOCK_LINGER;
+        else
+          s->flags |= SOCK_LINGER;
+        break;
 
       case SO_SNDTIMEO:
-	if (optlen != 4) return -EINVAL;
-	s->sndtimeo = *(unsigned int *) optval;
-	break;
+        if (optlen != 4) return -EINVAL;
+        s->sndtimeo = *(unsigned int *) optval;
+        break;
 
       case SO_RCVTIMEO:
-	if (optlen != 4) return -EINVAL;
-	s->rcvtimeo = *(unsigned int *) optval;
-	break;
+        if (optlen != 4) return -EINVAL;
+        s->rcvtimeo = *(unsigned int *) optval;
+        break;
 
       default:
         return -ENOPROTOOPT;
@@ -764,12 +764,12 @@ static int tcpsock_setsockopt(struct socket *s, int level, int optname, const ch
     switch (optname)
     {
       case TCP_NODELAY:
-	if (!optval || optlen != 4) return -EFAULT;
-	if (*(int *) optval)
-	  s->flags |= SOCK_NODELAY;
-	else
-	  s->flags &= ~SOCK_NODELAY;
-	break;
+        if (!optval || optlen != 4) return -EFAULT;
+        if (*(int *) optval)
+          s->flags |= SOCK_NODELAY;
+        else
+          s->flags &= ~SOCK_NODELAY;
+        break;
 
       default:
         return -ENOPROTOOPT;

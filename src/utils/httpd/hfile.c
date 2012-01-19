@@ -139,13 +139,13 @@ int ls(struct httpd_connection *conn)
     if ((statbuf.st_mode & S_IFMT) != S_IFDIR)
     {
       if (statbuf.st_size < 1024)
-	sprintf(buf, "%8d B", (int) statbuf.st_size);
+        sprintf(buf, "%8d B", (int) statbuf.st_size);
       else if (statbuf.st_size < 1024 * 1024)
-	sprintf(buf, "%8d KB", (int) (statbuf.st_size / 1024));
+        sprintf(buf, "%8d KB", (int) (statbuf.st_size / 1024));
       else if (statbuf.st_size < 1073741824i64)
-	sprintf(buf, "%8d MB", (int) (statbuf.st_size / (1024 * 1024)));
+        sprintf(buf, "%8d MB", (int) (statbuf.st_size / (1024 * 1024)));
       else
-	sprintf(buf, "%8d GB", (int) (statbuf.st_size / 1073741824i64));
+        sprintf(buf, "%8d GB", (int) (statbuf.st_size / 1073741824i64));
 
       httpd_send(conn->rsp, buf, -1);
     }
@@ -207,15 +207,15 @@ int httpd_file_handler(struct httpd_connection *conn)
       rc = stat64(buf, &statbuf);
       if (rc < 0) 
       {
-	if (conn->server->allowdirbrowse) 
-	  return ls(conn);
-	else
-	  return httpd_send_error(conn->rsp, 403, "Forbidden", "Directory browsing now allowed");
+        if (conn->server->allowdirbrowse) 
+          return ls(conn);
+        else
+          return httpd_send_error(conn->rsp, 403, "Forbidden", "Directory browsing now allowed");
       }
       else
       {
-	if ((statbuf.st_mode & S_IFMT) == S_IFDIR) return 500;
-	filename = buf;
+        if ((statbuf.st_mode & S_IFMT) == S_IFDIR) return 500;
+        filename = buf;
       }
     }
   }

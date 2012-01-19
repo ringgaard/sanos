@@ -177,21 +177,21 @@ static int getkey()
       ch = getchar();
       switch (ch)
       {
-	case 0x1B: return KEY_ESC;
-	case 0x5B:
-	  ch = getchar();
-	  switch (ch)
-	  {
-	    case 0x41: return KEY_UP;
-	    case 0x42: return KEY_DOWN;
-	    case 0x43: return KEY_RIGHT;
-	    case 0x44: return KEY_LEFT;
+        case 0x1B: return KEY_ESC;
+        case 0x5B:
+          ch = getchar();
+          switch (ch)
+          {
+            case 0x41: return KEY_UP;
+            case 0x42: return KEY_DOWN;
+            case 0x43: return KEY_RIGHT;
+            case 0x44: return KEY_LEFT;
 
-	    default: return KEY_UNKNOWN;
-	  }
-	  break;
+            default: return KEY_UNKNOWN;
+          }
+          break;
 
-	default: return KEY_UNKNOWN;
+        default: return KEY_UNKNOWN;
       }
       break;
 
@@ -200,17 +200,17 @@ static int getkey()
       ch = getchar();
       switch (ch)
       {
-	case 0x47: return KEY_HOME;
-	case 0x48: return KEY_UP;
-	case 0x4B: return KEY_LEFT;
-	case 0x4D: return KEY_RIGHT;
-	case 0x4F: return KEY_END;
-	case 0x50: return KEY_DOWN;
-	case 0x52: return KEY_INS;
-	case 0x53: return KEY_DEL;
-	case 0x73: return KEY_CTRL_LEFT;
-	case 0x74: return KEY_CTRL_RIGHT;
-	default: return KEY_UNKNOWN;
+        case 0x47: return KEY_HOME;
+        case 0x48: return KEY_UP;
+        case 0x4B: return KEY_LEFT;
+        case 0x4D: return KEY_RIGHT;
+        case 0x4F: return KEY_END;
+        case 0x50: return KEY_DOWN;
+        case 0x52: return KEY_INS;
+        case 0x53: return KEY_DEL;
+        case 0x73: return KEY_CTRL_LEFT;
+        case 0x74: return KEY_CTRL_RIGHT;
+        default: return KEY_UNKNOWN;
       }
       break;
 
@@ -259,142 +259,142 @@ int readline(char *buf, int size)
       end = split = start;
       while (end < len && !delimchar(buf[end]))
       {
-	if (buf[end] == PS1 || buf[end] == PS2) split = end + 1;
-	end++;
+        if (buf[end] == PS1 || buf[end] == PS2) split = end + 1;
+        end++;
       }
 
       dir = find_dir(buf, start, end, split, mask);
       if (dir >= 0)
       {
-	while (_readdir(dir, &dirent, 1) > 0)
-	{
-	  int newlen = len - (end - split) + dirent.namelen;
-	  
-	  if (like(dirent.name, mask) && newlen < size - 1)
-	  {
-	    memmove(buf + split + dirent.namelen, buf + end, len - end);
-	    memcpy(buf + split, dirent.name, dirent.namelen);
+        while (_readdir(dir, &dirent, 1) > 0)
+        {
+          int newlen = len - (end - split) + dirent.namelen;
+          
+          if (like(dirent.name, mask) && newlen < size - 1)
+          {
+            memmove(buf + split + dirent.namelen, buf + end, len - end);
+            memcpy(buf + split, dirent.name, dirent.namelen);
 
-	    while (idx < split) putchar(buf[idx++]);
-	    while (idx > split) 
-	    {
-	      putchar('\b');
-	      idx--;
-	    }
+            while (idx < split) putchar(buf[idx++]);
+            while (idx > split) 
+            {
+              putchar('\b');
+              idx--;
+            }
 
-	    for (i = split; i < newlen; i++) putchar(buf[i]);
-	    if (newlen < len)
-	    {
-	      for (i = newlen; i < len; i++) putchar(' ');
-	      for (i = newlen; i < len; i++) putchar('\b');
-	    }
+            for (i = split; i < newlen; i++) putchar(buf[i]);
+            if (newlen < len)
+            {
+              for (i = newlen; i < len; i++) putchar(' ');
+              for (i = newlen; i < len; i++) putchar('\b');
+            }
 
-	    end = split + dirent.namelen;
-	    len = newlen;
-	    idx = end;
+            end = split + dirent.namelen;
+            len = newlen;
+            idx = end;
 
-	    for (i = end; i < len; i++) putchar('\b');
+            for (i = end; i < len; i++) putchar('\b');
 
-	    fflush(stdout);
-	    key = getkey();
-	    if (key < 0) break;
-	    if (key != KEY_TAB) break;
-	  }
-	}
+            fflush(stdout);
+            key = getkey();
+            if (key < 0) break;
+            if (key != KEY_TAB) break;
+          }
+        }
         close(dir);
-	if (key < 0) return key;
+        if (key < 0) return key;
       }
     }
 
     switch (key)
     {
       case KEY_LEFT:
-	if (idx > 0)
-	{
-	  putchar('\b');
-	  idx--;
-	}
-	break;
+        if (idx > 0)
+        {
+          putchar('\b');
+          idx--;
+        }
+        break;
 
       case KEY_RIGHT:
-	if (idx < len)
-	{
-	  putchar(buf[idx]);
-	  idx++;
-	}
-	break;
+        if (idx < len)
+        {
+          putchar(buf[idx]);
+          idx++;
+        }
+        break;
 
       case KEY_CTRL_LEFT:
-	if (idx > 0)
-	{
-	  putchar('\b');
-	  idx--;
-	}
-	while (idx > 0 && buf[idx - 1] != ' ')
-	{
-	  putchar('\b');
-	  idx--;
-	}
-	break;
+        if (idx > 0)
+        {
+          putchar('\b');
+          idx--;
+        }
+        while (idx > 0 && buf[idx - 1] != ' ')
+        {
+          putchar('\b');
+          idx--;
+        }
+        break;
 
       case KEY_CTRL_RIGHT:
-	while (idx < len && buf[idx] != ' ')
-	{
-	  putchar(buf[idx]);
-	  idx++;
-	}
-	if (idx < len)
-	{
-	  putchar(buf[idx]);
-	  idx++;
-	}
-	break;
+        while (idx < len && buf[idx] != ' ')
+        {
+          putchar(buf[idx]);
+          idx++;
+        }
+        if (idx < len)
+        {
+          putchar(buf[idx]);
+          idx++;
+        }
+        break;
 
       case KEY_HOME:
-	while (idx > 0)
-	{
-	  putchar('\b');
-	  idx--;
-	}
-	break;
+        while (idx > 0)
+        {
+          putchar('\b');
+          idx--;
+        }
+        break;
 
       case KEY_END:
-	while (idx < len)
-	{
-	  putchar(buf[idx]);
-	  idx++;
-	}
-	break;
+        while (idx < len)
+        {
+          putchar(buf[idx]);
+          idx++;
+        }
+        break;
 
       case KEY_DEL:
-	if (idx < len)
-	{
-      	  len--;
-	  memmove(buf + idx, buf + idx + 1, len - idx);
-	  for (i = idx; i < len; i++) putchar(buf[i]);
-	  putchar(' ');
-	  putchar('\b');
-	  for (i = idx; i < len; i++) putchar('\b');
-	}
-	break;
+        if (idx < len)
+        {
+          len--;
+          memmove(buf + idx, buf + idx + 1, len - idx);
+          for (i = idx; i < len; i++) putchar(buf[i]);
+          putchar(' ');
+          putchar('\b');
+          for (i = idx; i < len; i++) putchar('\b');
+        }
+        break;
 
       case KEY_INS:
-	insmode = !insmode;
-	break;
+        insmode = !insmode;
+        break;
 
       case KEY_BACKSPACE:
-	if (idx > 0)
-	{
-	  putchar('\b');
-	  idx--;
-      	  len--;
-	  memmove(buf + idx, buf + idx + 1, len - idx);
-	  for (i = idx; i < len; i++) putchar(buf[i]);
-	  putchar(' ');
-	  putchar('\b');
-	  for (i = idx; i < len; i++) putchar('\b');
-	}
-	break;
+        if (idx > 0)
+        {
+          putchar('\b');
+          idx--;
+          len--;
+          memmove(buf + idx, buf + idx + 1, len - idx);
+          for (i = idx; i < len; i++) putchar(buf[i]);
+          putchar(' ');
+          putchar('\b');
+          for (i = idx; i < len; i++) putchar('\b');
+        }
+        break;
 
       case KEY_ESC:
         if (_break_on_escape)
@@ -405,77 +405,77 @@ int readline(char *buf, int size)
         else
         {
           for (i = 0; i < idx; i++) putchar('\b');
-	  for (i = 0; i < len; i++) putchar(' ');
-	  for (i = 0; i < len; i++) putchar('\b');
-	  idx = len = 0;
-	}
-	break;
+          for (i = 0; i < len; i++) putchar(' ');
+          for (i = 0; i < len; i++) putchar('\b');
+          idx = len = 0;
+        }
+        break;
 
       case KEY_ENTER:
-	putchar('\r');
-	putchar('\n');
-	done = 1;
-	break;
+        putchar('\r');
+        putchar('\n');
+        done = 1;
+        break;
 
       case KEY_UP:
-	if (hist_idx > 0)
-	{
-	  hist_idx--;
-	  for (i = 0; i < idx; i++) putchar('\b');
-	  for (i = 0; i < len; i++) putchar(' ');
-	  for (i = 0; i < len; i++) putchar('\b');
-	  len = strlen(history[hist_idx]);
-	  if (len > size - 1) len = size - 1;
-	  idx = len;
-	  memcpy(buf, history[hist_idx], len);
-	  for (i = 0; i < len; i++) putchar(buf[i]);
-	}
-	break;
+        if (hist_idx > 0)
+        {
+          hist_idx--;
+          for (i = 0; i < idx; i++) putchar('\b');
+          for (i = 0; i < len; i++) putchar(' ');
+          for (i = 0; i < len; i++) putchar('\b');
+          len = strlen(history[hist_idx]);
+          if (len > size - 1) len = size - 1;
+          idx = len;
+          memcpy(buf, history[hist_idx], len);
+          for (i = 0; i < len; i++) putchar(buf[i]);
+        }
+        break;
 
       case KEY_DOWN:
-	if (hist_idx < history_len - 1)
-	{
-	  hist_idx++;
-	  for (i = 0; i < idx; i++) putchar('\b');
-	  for (i = 0; i < len; i++) putchar(' ');
-	  for (i = 0; i < len; i++) putchar('\b');
-	  len = strlen(history[hist_idx]);
-	  if (len > size - 1) len = size - 1;
-	  idx = len;
-	  memcpy(buf, history[hist_idx], len);
-	  for (i = 0; i < len; i++) putchar(buf[i]);
-	}
-	break;
+        if (hist_idx < history_len - 1)
+        {
+          hist_idx++;
+          for (i = 0; i < idx; i++) putchar('\b');
+          for (i = 0; i < len; i++) putchar(' ');
+          for (i = 0; i < len; i++) putchar('\b');
+          len = strlen(history[hist_idx]);
+          if (len > size - 1) len = size - 1;
+          idx = len;
+          memcpy(buf, history[hist_idx], len);
+          for (i = 0; i < len; i++) putchar(buf[i]);
+        }
+        break;
 
       case KEY_UNKNOWN:
-	break;
+        break;
 
       default:
-	if (key >= 0x20 && key <= 0xFF)
-	{
-	  if (insmode)
-	  {
-	    if (len < size - 1)
-	    {
-  	      if (idx < len) memmove(buf + idx + 1, buf + idx, len - idx);
-	      buf[idx] = key;
-	      len++;
-	      for (i = idx; i < len; i++) putchar(buf[i]);
-	      idx++;
-  	      for (i = idx; i < len; i++) putchar('\b');
-	    }
-	  }
-	  else
-	  {
-	    if (idx < size - 1)
-	    {
-	      buf[idx] = key;
-	      putchar(buf[idx]);
-	      if (idx == len) len++;
-	      idx++;
-	    }
-	  }
-	}
+        if (key >= 0x20 && key <= 0xFF)
+        {
+          if (insmode)
+          {
+            if (len < size - 1)
+            {
+              if (idx < len) memmove(buf + idx + 1, buf + idx, len - idx);
+              buf[idx] = key;
+              len++;
+              for (i = idx; i < len; i++) putchar(buf[i]);
+              idx++;
+              for (i = idx; i < len; i++) putchar('\b');
+            }
+          }
+          else
+          {
+            if (idx < size - 1)
+            {
+              buf[idx] = key;
+              putchar(buf[idx]);
+              if (idx == len) len++;
+              idx++;
+            }
+          }
+        }
     }
   }
 

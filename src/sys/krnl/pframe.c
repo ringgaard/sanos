@@ -78,26 +78,26 @@ unsigned long alloc_linear_pageframes(int pages, unsigned long tag)
 
       for (n = 0; n < pages; n++)
       {
-	if (pf[n].tag != 'FREE') break;
-	if (n != 0 && pf[n - 1].next != &pf[n]) break;
+        if (pf[n].tag != 'FREE') break;
+        if (n != 0 && pf[n - 1].next != &pf[n]) break;
       }
 
       if (n == pages)
       {
-	if (prevpf)
-	  prevpf->next = pf[pages - 1].next;
-	else
-	  freelist = pf[pages - 1].next;
+        if (prevpf)
+          prevpf->next = pf[pages - 1].next;
+        else
+          freelist = pf[pages - 1].next;
 
         for (n = 0; n < pages; n++)
-	{
-	  pf[n].tag = tag;
-	  pf[n].next = NULL;
-	}
+        {
+          pf[n].tag = tag;
+          pf[n].next = NULL;
+        }
 
-	freemem -= pages;
+        freemem -= pages;
 
-	return pf - pfdb;
+        return pf - pfdb;
       }
     }
 
@@ -207,9 +207,9 @@ int memusage_proc(struct proc_file *pf, void *arg)
 int memstat_proc(struct proc_file *pf, void *arg)
 {
   pprintf(pf, "Memory %dMB total, %dKB used, %dKB free, %dKB reserved\n", 
-	  maxmem * PAGESIZE / (1024 * 1024), 
-	  (totalmem - freemem) * PAGESIZE / 1024, 
-	  freemem * PAGESIZE / 1024, (maxmem - totalmem) * PAGESIZE / 1024);
+          maxmem * PAGESIZE / (1024 * 1024), 
+          (totalmem - freemem) * PAGESIZE / 1024, 
+          freemem * PAGESIZE / 1024, (maxmem - totalmem) * PAGESIZE / 1024);
   
   return 0;
 }

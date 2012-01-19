@@ -48,13 +48,13 @@ static err_t recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
     if (req->msg->msg_name)
     {
       if (req->msg->msg_namelen < sizeof(struct sockaddr_in))
-	rc = -EFAULT;
+        rc = -EFAULT;
       else
       {
-	sin = (struct sockaddr_in *) req->msg->msg_name;
-	sin->sin_family = AF_INET;
-	sin->sin_port = htons(port);
-	sin->sin_addr.s_addr = addr->addr;
+        sin = (struct sockaddr_in *) req->msg->msg_name;
+        sin->sin_family = AF_INET;
+        sin->sin_port = htons(port);
+        sin->sin_addr.s_addr = addr->addr;
       }
     }
     req->msg->msg_namelen = sizeof(struct sockaddr_in);
@@ -215,9 +215,9 @@ static int udpsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
     case FIONBIO:
       if (!data || size != 4) return -EFAULT;
       if (*(int *) data)
-	s->flags |= SOCK_NBIO;
+        s->flags |= SOCK_NBIO;
       else
-	s->flags &= ~SOCK_NBIO;
+        s->flags &= ~SOCK_NBIO;
       break;
 
     default:
@@ -335,28 +335,28 @@ static int udpsock_setsockopt(struct socket *s, int level, int optname, const ch
     switch (optname)
     {
       case SO_BROADCAST:
-	if (optlen != 4) return -EINVAL;
-	if (*(int *) optval)
-	{
-	  s->flags |= SOCK_BCAST;
-	  if (s->udp.pcb) s->udp.pcb->flags |= UDP_FLAGS_BROADCAST;
-	}
-	else
-	{
-	  s->flags &= ~SOCK_BCAST;
-	  if (s->udp.pcb) s->udp.pcb->flags &= ~UDP_FLAGS_BROADCAST;
-	}
+        if (optlen != 4) return -EINVAL;
+        if (*(int *) optval)
+        {
+          s->flags |= SOCK_BCAST;
+          if (s->udp.pcb) s->udp.pcb->flags |= UDP_FLAGS_BROADCAST;
+        }
+        else
+        {
+          s->flags &= ~SOCK_BCAST;
+          if (s->udp.pcb) s->udp.pcb->flags &= ~UDP_FLAGS_BROADCAST;
+        }
         break;
 
       case SO_SNDTIMEO:
-	if (optlen != 4) return -EINVAL;
-	s->sndtimeo = *(unsigned int *) optval;
-	break;
+        if (optlen != 4) return -EINVAL;
+        s->sndtimeo = *(unsigned int *) optval;
+        break;
 
       case SO_RCVTIMEO:
-	if (optlen != 4) return -EINVAL;
-	s->rcvtimeo = *(unsigned int *) optval;
-	break;
+        if (optlen != 4) return -EINVAL;
+        s->rcvtimeo = *(unsigned int *) optval;
+        break;
 
       default:
         return -ENOPROTOOPT;

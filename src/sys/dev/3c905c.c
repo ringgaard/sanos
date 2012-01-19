@@ -92,8 +92,8 @@ struct nic
   dev_t devno;                          // Device number
   unsigned long deviceid;               // PCI device id
 
-  unsigned short iobase;		// Configured I/O base
-  unsigned short irq;		        // Configured IRQ
+  unsigned short iobase;                // Configured I/O base
+  unsigned short irq;                   // Configured IRQ
 
   int autoselect;                       // Auto-negotiate
   int connector;                        // Active connector
@@ -620,22 +620,22 @@ void nic_up_complete(struct nic *nic)
 
       if (status & UP_PACKET_STATUS_RUNT_FRAME) 
       {
-	kprintf(KERN_WARNING "nic: runt frame\n");
+        kprintf(KERN_WARNING "nic: runt frame\n");
       }
       if (status & UP_PACKET_STATUS_ALIGNMENT_ERROR) 
       {
-	kprintf(KERN_WARNING "nic: alignment error\n");
-	nic->stat.rx_alignment_error++;
+        kprintf(KERN_WARNING "nic: alignment error\n");
+        nic->stat.rx_alignment_error++;
       }
       if (status & UP_PACKET_STATUS_CRC_ERROR) 
       {
-	kprintf(KERN_WARNING "nic: crc error\n");
-	nic->stat.rx_bad_crc_error++;
+        kprintf(KERN_WARNING "nic: crc error\n");
+        nic->stat.rx_bad_crc_error++;
       }
       if (status & UP_PACKET_STATUS_OVERSIZE_FRAME)
       {
-	kprintf(KERN_WARNING "nic: oversize frame\n");
-	nic->stat.rx_oversize_error++;
+        kprintf(KERN_WARNING "nic: oversize frame\n");
+        nic->stat.rx_oversize_error++;
       }
 
       nic->curr_rx->status = 0;
@@ -682,12 +682,12 @@ void nic_up_complete(struct nic *nic)
       p = pbuf_alloc(PBUF_RAW, length, PBUF_RW);
       if (p)
       {
-	memcpy(p->payload, nic->curr_rx->pkt->payload, length);
+        memcpy(p->payload, nic->curr_rx->pkt->payload, length);
       }
       else
       {
-	stats.link.memerr++;
-	stats.link.drop++;
+        stats.link.memerr++;
+        stats.link.drop++;
       }
     }
     else
@@ -696,17 +696,17 @@ void nic_up_complete(struct nic *nic)
       q = pbuf_alloc(PBUF_RAW, ETHER_FRAME_LEN, PBUF_RW);
       if (q)
       {
-	p = nic->curr_rx->pkt;
-	pbuf_realloc(p, length);
+        p = nic->curr_rx->pkt;
+        pbuf_realloc(p, length);
 
-	nic->curr_rx->pkt = q;
-	nic->curr_rx->sglist[0].addr = virt2phys(q->payload);
+        nic->curr_rx->pkt = q;
+        nic->curr_rx->sglist[0].addr = virt2phys(q->payload);
       }
       else
       {
-	p = NULL;
-	stats.link.memerr++;
-	stats.link.drop++;
+        p = NULL;
+        stats.link.memerr++;
+        stats.link.drop++;
       }
     }
 
@@ -922,9 +922,9 @@ int nic_try_mii(struct nic *nic, unsigned short options)
     else 
     {
       if (phy_status & MII_STATUS_100MB_MASK) 
-	nic->linkspeed = 100;
+        nic->linkspeed = 100;
       else
-	nic->linkspeed = 10;
+        nic->linkspeed = 10;
 
       return 0;
     }
@@ -1192,8 +1192,8 @@ int nic_restart_transmitter(struct nic *nic)
       if (!(media_status & MEDIA_STATUS_TX_IN_PROGRESS)) break;
       if (time_after(ticks, timeout))
       {
-	kprintf(KERN_WARNING "nic: timeout waiting for transmitter to go quiet\n");
-	return -ETIMEOUT;
+        kprintf(KERN_WARNING "nic: timeout waiting for transmitter to go quiet\n");
+        return -ETIMEOUT;
       }
       msleep(10);
     }
@@ -1212,8 +1212,8 @@ int nic_restart_transmitter(struct nic *nic)
       if (!(dma_control & DMA_CONTROL_DOWN_IN_PROGRESS)) break;
       if (time_after(ticks, timeout))
       {
-	kprintf(KERN_WARNING "nic: timeout waiting for download engine to stop\n");
-	return -ETIMEOUT;
+        kprintf(KERN_WARNING "nic: timeout waiting for download engine to stop\n");
+        return -ETIMEOUT;
       }
       msleep(10);
     }
@@ -1322,8 +1322,8 @@ int nic_configure_mii(struct nic *nic, unsigned short media_options)
       if (phy_status & MII_STATUS_AUTO_DONE) break;
       if (time_after(ticks, timeout))
       {
-	kprintf(KERN_WARNING "nic: timeout waiting for auto-negotiation to finish\n");
-	return -ETIMEOUT;
+        kprintf(KERN_WARNING "nic: timeout waiting for auto-negotiation to finish\n");
+        return -ETIMEOUT;
       }
       msleep(10);
     }
@@ -1477,8 +1477,8 @@ int nic_check_dc_converter(struct nic *nic, int enabled)
       if (!enabled && !(media_status & MEDIA_STATUS_DC_CONVERTER_ENABLED)) break;
       if (time_after(ticks, timeout))
       {
-	kprintf(KERN_ERR "nic: timeout waiting for dc converter to go %s\n", enabled ? "on" : "off");
-	return -ETIMEOUT;
+        kprintf(KERN_ERR "nic: timeout waiting for dc converter to go %s\n", enabled ? "on" : "off");
+        return -ETIMEOUT;
       }
       msleep(10);
     }
@@ -1644,9 +1644,9 @@ int nic_setup_media(struct nic *nic)
     else 
     {
       if (nic->connector == CONNECTOR_100BASEFX || nic->connector == CONNECTOR_100BASETX) 
-	nic->linkspeed = 100;
+        nic->linkspeed = 100;
       else
-	nic->linkspeed = 10;
+        nic->linkspeed = 10;
     }
 
     nic_setup_connector(nic, nic->connector);
@@ -1896,9 +1896,9 @@ int __declspec(dllexport) install(struct unit *unit)
   rc = execute_command_wait(nic, CMD_RESET, 
          GLOBAL_RESET_MASK_TP_AUI_RESET | 
          GLOBAL_RESET_MASK_ENDEC_RESET | 
-	 GLOBAL_RESET_MASK_AISM_RESET | 
-	 GLOBAL_RESET_MASK_SMB_RESET | 
-	 GLOBAL_RESET_MASK_VCO_RESET);
+         GLOBAL_RESET_MASK_AISM_RESET | 
+         GLOBAL_RESET_MASK_SMB_RESET | 
+         GLOBAL_RESET_MASK_VCO_RESET);
 
   if (rc < 0)
   {

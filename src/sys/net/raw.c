@@ -96,8 +96,8 @@ err_t raw_input(struct pbuf *p, struct netif *inp)
       if (pcb->recv != NULL) 
       {
         // The receive callback function did not eat the packet?
-	rc = pcb->recv(pcb->recv_arg, pcb, p, &iphdr->src);
-	if (rc < 0) return rc;
+        rc = pcb->recv(pcb->recv_arg, pcb, p, &iphdr->src);
+        if (rc < 0) return rc;
         if (rc > 0)
         {
           // Receive function ate the packet

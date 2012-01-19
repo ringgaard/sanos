@@ -47,7 +47,7 @@
 typedef signed char int8_t;
 typedef short int16_t;
 typedef int int32_t;
-typedef __int64	int64_t;
+typedef __int64 int64_t;
 
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
@@ -71,7 +71,7 @@ typedef unsigned long uintptr_t;
 
 #ifndef _INTMAX_T_DEFINED
 #define _INTMAX_T_DEFINED
-typedef __int64	intmax_t;
+typedef __int64 intmax_t;
 typedef unsigned __int64 uintmax_t;
 #endif
 

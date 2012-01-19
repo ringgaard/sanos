@@ -38,8 +38,8 @@
 // Ports for access to PCI config space
 //
 
-#define PCI_CONFIG_ADDR			0xCF8
-#define PCI_CONFIG_DATA			0xCFC
+#define PCI_CONFIG_ADDR                 0xCF8
+#define PCI_CONFIG_DATA                 0xCFC
 
 //
 // PCI config space register offsets
@@ -69,8 +69,8 @@
 #define PCI_CONFIG_MIN_GNT              0x3E    // 8 bits
 #define PCI_CONFIG_MAX_LAT              0x3F    // 8 bits
 
-#define PCI_BASE_ADDRESS_MEM_MASK	(~0x0FUL)
-#define PCI_BASE_ADDRESS_IO_MASK	(~0x03UL)
+#define PCI_BASE_ADDRESS_MEM_MASK       (~0x0FUL)
+#define PCI_BASE_ADDRESS_IO_MASK        (~0x03UL)
 
 //
 // PCI Command
@@ -122,20 +122,20 @@
 //
 
 #define PCI_PM_CTRL                     4       // PM control and status register
-#define PCI_PM_CTRL_STATE_MASK	        0x0003	// Current power state (D0 to D3)
+#define PCI_PM_CTRL_STATE_MASK          0x0003  // Current power state (D0 to D3)
 
 //
 // PCI device codes
 //
 
-#define PCI_CLASS_MASK  	0xFF0000
-#define PCI_SUBCLASS_MASK  	0xFFFF00
+#define PCI_CLASS_MASK          0xFF0000
+#define PCI_SUBCLASS_MASK       0xFFFF00
 
 #define PCI_HOST_BRIDGE         0x060000
 #define PCI_BRIDGE              0x060400
 #define PCI_ISA_BRIDGE          0x060100
 
-#define PCI_CLASS_STORAGE_IDE	0x010100
+#define PCI_CLASS_STORAGE_IDE   0x010100
 
 #define PCI_ID_ANY              0xFFFFFFFF
 

@@ -138,24 +138,24 @@ void __stdcall sntpd(void *arg)
 
       if (srv->hostname != NULL)
       {
-	hp = gethostbyname(srv->hostname);
-	if (hp)
-	{
-	  for (j = 0; hp->h_addr_list[j] != NULL; j++) 
-	  {
-	    struct in_addr *addr = (struct in_addr *) (hp->h_addr_list[j]);
+        hp = gethostbyname(srv->hostname);
+        if (hp)
+        {
+          for (j = 0; hp->h_addr_list[j] != NULL; j++) 
+          {
+            struct in_addr *addr = (struct in_addr *) (hp->h_addr_list[j]);
             memcpy(&srv->sa.sin_addr, addr, hp->h_length);
-	    if (sntp_get(srv, &tv) >= 0)
-	    {
-	      success = 1;
-	      break;
-	    }
-	  }
-	}
+            if (sntp_get(srv, &tv) >= 0)
+            {
+              success = 1;
+              break;
+            }
+          }
+        }
       }
       else
       {
-	if (sntp_get(srv, &tv) >= 0) success = 1;
+        if (sntp_get(srv, &tv) >= 0) success = 1;
       }
 
       if (success) break;

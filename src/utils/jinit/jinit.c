@@ -162,17 +162,17 @@ void init_jvm_args()
 
       if (prop->name)
       {
-	len = strlen(prop->name);
-	memcpy(p, prop->name, len + 1);
-	p += len;
+        len = strlen(prop->name);
+        memcpy(p, prop->name, len + 1);
+        p += len;
       }
 
       if (prop->value)
       {
-	*p++ = ':';
-	len = strlen(prop->value);
-	memcpy(p, prop->value, len + 1);
-	p += len;
+        *p++ = ':';
+        len = strlen(prop->value);
+        memcpy(p, prop->value, len + 1);
+        p += len;
       }
 
       prop = prop->next;
@@ -188,17 +188,17 @@ void init_jvm_args()
     {
       if (prop->value)
       {
-	len = strlen(prop->name) + 1 + strlen(prop->value);
-	buf = (char *) malloc(len + 1);
-	strcpy(buf, prop->name);
-	strcpy(buf + strlen(buf), ":");
-	strcpy(buf + strlen(buf), prop->value);
+        len = strlen(prop->name) + 1 + strlen(prop->value);
+        buf = (char *) malloc(len + 1);
+        strcpy(buf, prop->name);
+        strcpy(buf + strlen(buf), ":");
+        strcpy(buf + strlen(buf), prop->value);
       }
       else
       {
-	len = strlen(prop->name);
-	buf = (char *) malloc(len + 1);
-	strcpy(buf, prop->name);
+        len = strlen(prop->name);
+        buf = (char *) malloc(len + 1);
+        strcpy(buf, prop->name);
       }
 
       options[n++].optionString = buf;
@@ -213,9 +213,9 @@ void init_jvm_args()
     while (prop)
     {
       if (prop->value)
-	len = 2 + strlen(prop->name) + 1 + strlen(prop->value);
+        len = 2 + strlen(prop->name) + 1 + strlen(prop->value);
       else
-	len = 2 + strlen(prop->name);
+        len = 2 + strlen(prop->name);
 
       buf = (char *) malloc(len + 1);
       strcpy(buf, "-D");
@@ -223,8 +223,8 @@ void init_jvm_args()
 
       if (prop->value)
       {
-	strcpy(buf + strlen(buf), "=");
-	strcpy(buf + strlen(buf), prop->value);
+        strcpy(buf + strlen(buf), "=");
+        strcpy(buf + strlen(buf), prop->value);
       }
 
       options[n++].optionString = buf;

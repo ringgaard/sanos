@@ -110,7 +110,7 @@ int pthread_mutex_lock(pthread_mutex_t *mutex)
     {
       while (atomic_exchange(&mutex->lock, -1) != 0)
       {
-	if (waitone(mutex->event, INFINITE) != 0) return EINVAL;
+        if (waitone(mutex->event, INFINITE) != 0) return EINVAL;
       }
     }
   }
@@ -127,19 +127,19 @@ int pthread_mutex_lock(pthread_mutex_t *mutex)
     {
       if (pthread_equal(mutex->owner, self))
       {
-	if (mutex->kind == PTHREAD_MUTEX_RECURSIVE)
-	  mutex->recursion++;
-	else
-	  return EDEADLK;
+        if (mutex->kind == PTHREAD_MUTEX_RECURSIVE)
+          mutex->recursion++;
+        else
+          return EDEADLK;
       }
       else
       {
-	while (atomic_exchange(&mutex->lock, -1) != 0)
-	{
-	  if (waitone(mutex->event, INFINITE) != 0) return EINVAL;
-	  mutex->recursion = 1;
-	  mutex->owner = self;
-	}
+        while (atomic_exchange(&mutex->lock, -1) != 0)
+        {
+          if (waitone(mutex->event, INFINITE) != 0) return EINVAL;
+          mutex->recursion = 1;
+          mutex->owner = self;
+        }
       }
     }
   }
@@ -155,7 +155,7 @@ int pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *absti
     {
       while (atomic_exchange(&mutex->lock, -1) != 0)
       {
-	if (waitone(mutex->event, __abstime2timeout(abstime)) != 0) return EINVAL;
+        if (waitone(mutex->event, __abstime2timeout(abstime)) != 0) return EINVAL;
       }
     }
   }
@@ -172,19 +172,19 @@ int pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *absti
     {
       if (pthread_equal(mutex->owner, self))
       {
-	if (mutex->kind == PTHREAD_MUTEX_RECURSIVE)
-	  mutex->recursion++;
-	else
-	  return EDEADLK;
+        if (mutex->kind == PTHREAD_MUTEX_RECURSIVE)
+          mutex->recursion++;
+        else
+          return EDEADLK;
       }
       else
       {
-	while (atomic_exchange(&mutex->lock, -1) != 0)
-	{
-	  if (waitone(mutex->event, __abstime2timeout(abstime)) != 0) return EINVAL;
-	  mutex->recursion = 1;
-	  mutex->owner = self;
-	}
+        while (atomic_exchange(&mutex->lock, -1) != 0)
+        {
+          if (waitone(mutex->event, __abstime2timeout(abstime)) != 0) return EINVAL;
+          mutex->recursion = 1;
+          mutex->owner = self;
+        }
       }
     }
   }
@@ -224,7 +224,7 @@ int pthread_mutex_unlock(pthread_mutex_t *mutex)
     {
       if (idx < 0)
       {
-	if (eset(mutex->event) < 0) return EINVAL;
+        if (eset(mutex->event) < 0) return EINVAL;
       }
     }
     else
@@ -236,11 +236,11 @@ int pthread_mutex_unlock(pthread_mutex_t *mutex)
     {
       if (mutex->kind != PTHREAD_MUTEX_RECURSIVE || --mutex->recursion == 0)
       {
-	mutex->owner = NOHANDLE;
-	if (atomic_exchange(&mutex->lock, 0) < 0)
-	{
-	  if (eset(mutex->event) < 0) return EINVAL;
-	}
+        mutex->owner = NOHANDLE;
+        if (atomic_exchange(&mutex->lock, 0) < 0)
+        {
+          if (eset(mutex->event) < 0) return EINVAL;
+        }
       }
     }
     else

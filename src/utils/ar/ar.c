@@ -58,7 +58,7 @@ struct ar_header
 // ELF file header
 //
 
-#define	ELF_MAGIC "\177ELF"
+#define ELF_MAGIC "\177ELF"
 #define EI_NIDENT (16)
 
 #define ET_NONE   0               // No file type

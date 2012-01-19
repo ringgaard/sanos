@@ -130,28 +130,28 @@ char *bufgets(struct httpd_buffer *buf)
     switch (*s)
     {
       case '\n':
-	if (s[1] != ' ' && s[1] != '\t')
-	{
-	  if (s > start && s[-1] == ' ')
-	    s[-1] = 0;
-	  else
-	    s[0] = 0;
+        if (s[1] != ' ' && s[1] != '\t')
+        {
+          if (s > start && s[-1] == ' ')
+            s[-1] = 0;
+          else
+            s[0] = 0;
 
-	  buf->start = s + 1;
-	  return start;
-	}
-	else
-	  *s++ = ' ';
+          buf->start = s + 1;
+          return start;
+        }
+        else
+          *s++ = ' ';
 
-	break;
+        break;
 
       case '\r':
       case '\t':
-	*s++ = ' ';
-	break;
+        *s++ = ' ';
+        break;
 
       default:
-	s++;
+        s++;
     }
   }
 

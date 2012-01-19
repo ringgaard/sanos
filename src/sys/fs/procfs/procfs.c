@@ -181,11 +181,11 @@ int proc_write(struct proc_file *pf, void *buffer, size_t size)
 
       if (pf->blktail)
       {
-	pf->blktail->next = blk;
-	pf->blktail = blk;
+        pf->blktail->next = blk;
+        pf->blktail = blk;
       }
       else
-	pf->blkhead = pf->blktail = blk;
+        pf->blkhead = pf->blktail = blk;
     }
     else
       blk = pf->blktail;

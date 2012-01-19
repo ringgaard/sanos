@@ -461,11 +461,11 @@ static int winerr()
 
     default:
       if (rc >= WSAERRBASE && rc < WSAERRBASE + 35)
-	err = rc - WSAERRBASE;
+        err = rc - WSAERRBASE;
       else if (rc >= WSAERRBASE + 35 && rc < WSAERRBASE + 72)
-	err = rc - WSAERRBASE + 10;
+        err = rc - WSAERRBASE + 10;
       else if (rc >= WSAERRBASE + 1000 && rc < WSAERRBASE + 1005)
-	err = rc - WSAERRBASE + 81;
+        err = rc - WSAERRBASE + 81;
       else
       {
         syslog(LOG_DEBUG, "Unknown win32 error %d", rc);
@@ -1113,8 +1113,8 @@ int access(const char *name, int mode)
         rc = 0;
       else
       {
-	errno = EACCES;
-	rc = -1;
+        errno = EACCES;
+        rc = -1;
       }
       break; 
 
@@ -1124,8 +1124,8 @@ int access(const char *name, int mode)
         rc = 0;
       else
       {
-	errno = EACCES;
-	rc = -1;
+        errno = EACCES;
+        rc = -1;
       }
       break; 
 
@@ -1135,8 +1135,8 @@ int access(const char *name, int mode)
         rc = 0;
       else
       {
-	errno = EACCES;
-	rc = -1;
+        errno = EACCES;
+        rc = -1;
       }
       break;
 

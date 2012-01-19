@@ -140,9 +140,9 @@ static void cancel_request(struct pipe *pipe, struct pipereq *req)
     {
       if (r->next == req)
       {
-	r->next = req->next;
-	if (pipe->waittail == req) pipe->waittail = r;
-	return;
+        r->next = req->next;
+        if (pipe->waittail == req) pipe->waittail = r;
+        return;
       }
       r = r->next;
     }

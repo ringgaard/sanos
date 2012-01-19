@@ -145,28 +145,28 @@ void dump_data(FILE *f, unsigned char *buf, int bytes, int wordsize, unsigned ch
 
       switch (wordsize)
       {
-	case 4:
+        case 4:
           if (addr >= bytes)
- 	    fprintf(f, "         ");
-	  else if (cmpbuf && *(unsigned long *)(buf + addr) == *(unsigned long *)(cmpbuf + addr))
-	    fprintf(f, " XXXXXXXX");
-	  else
-  	    fprintf(f, " %08X", *(unsigned long *)(buf + addr)); 
-	  break;
+            fprintf(f, "         ");
+          else if (cmpbuf && *(unsigned long *)(buf + addr) == *(unsigned long *)(cmpbuf + addr))
+            fprintf(f, " XXXXXXXX");
+          else
+            fprintf(f, " %08X", *(unsigned long *)(buf + addr)); 
+          break;
 
-	case 2: 
+        case 2: 
           if (addr >= bytes)
- 	    fprintf(f, "     ");
-	  else
-  	    fprintf(f, " %04X", *(unsigned short *)(buf + addr)); 
-	  break;
+            fprintf(f, "     ");
+          else
+            fprintf(f, " %04X", *(unsigned short *)(buf + addr)); 
+          break;
 
-	case 1: 
+        case 1: 
           if (addr >= bytes)
- 	    fprintf(f, "   ");
-	  else
-  	    fprintf(f, " %02X", *(unsigned char *)(buf + addr)); 
-	  break;
+            fprintf(f, "   ");
+          else
+            fprintf(f, " %02X", *(unsigned char *)(buf + addr)); 
+          break;
       }
     }
     fprintf(f, " ");
@@ -176,13 +176,13 @@ void dump_data(FILE *f, unsigned char *buf, int bytes, int wordsize, unsigned ch
       addr = start + i;
 
       if (addr >= bytes)
-	fprintf(f, " ");
+        fprintf(f, " ");
       else if (cmpbuf && cmpbuf[addr] == buf[addr])
-	fprintf(f, "?");
+        fprintf(f, "?");
       else if (buf[addr] < 32 || buf[addr] > 127)
-	fprintf(f, ".");
+        fprintf(f, ".");
       else
-	fprintf(f, "%c", buf[addr]);
+        fprintf(f, "%c", buf[addr]);
     }
     fprintf(f, "\n");
 
@@ -458,8 +458,8 @@ void decode_request(struct drpc_packet *req, char *buf)
       logmsg("COMMAND SuspendThread: hthread=");
       for (n = 0; n < len; n++)
       {
-	tid = *(unsigned long *) (buf + 8 + n * 8);
-	logmsg(" %08X", tid);
+        tid = *(unsigned long *) (buf + 8 + n * 8);
+        logmsg(" %08X", tid);
       }
       logmsg("\n");
       break;
@@ -469,8 +469,8 @@ void decode_request(struct drpc_packet *req, char *buf)
       logmsg("COMMAND ResumeThread: hthread=");
       for (n = 0; n < len; n++)
       {
-	tid = *(unsigned long *) (buf + 8 + n * 8);
-	logmsg(" %08X", tid);
+        tid = *(unsigned long *) (buf + 8 + n * 8);
+        logmsg(" %08X", tid);
       }
       logmsg("\n");
       break;
@@ -519,9 +519,9 @@ void decode_request(struct drpc_packet *req, char *buf)
       logmsg("COMMAND %08X (reqlen=%d, rsplen=%d):\n", req->cmd, req->reqlen, req->rsplen);
       if (req->reqlen > 0)
       {
-	logmsg("reqdata: ");
-	dump_data(stdout, buf, req->reqlen > 256 ? 256 : req->reqlen, 4, NULL);
-	dump_data(logfile, buf, req->reqlen, 4, NULL);
+        logmsg("reqdata: ");
+        dump_data(stdout, buf, req->reqlen > 256 ? 256 : req->reqlen, 4, NULL);
+        dump_data(logfile, buf, req->reqlen, 4, NULL);
       }
   }
 }
@@ -552,9 +552,9 @@ void decode_response(struct drpc_packet *rsp, char *buf)
       vers->spnum = 1;
       strcpy(vers->spname, "SanOS");
       strcpy(vers->buildname, "Version 0.0.4 (Build 15 Mar 2002)");
-#endif	
+#endif  
       logmsg("RESPONSE GetSystemVersion: unknown1=%d, processors=%d platformid=%d version=%d sp=%d spname='%s' buildname='%s'\n",
-	     vers->unknown1, vers->processors, vers->platformid, vers->build, vers->spnum, vers->spname, vers->buildname);
+             vers->unknown1, vers->processors, vers->platformid, vers->build, vers->spnum, vers->spname, vers->buildname);
       break;
     
     case DRPC_GET_HOST_INFO:
@@ -643,9 +643,9 @@ void decode_response(struct drpc_packet *rsp, char *buf)
     default:
       if (rsp->rsplen > 0)
       {
-	logmsg("rspdata: ");
-	dump_data(stdout, buf, rsp->rsplen > 256 ? 256 : rsp->rsplen, 4, NULL /*prevrsp*/);
-	dump_data(logfile, buf, rsp->rsplen, 4, NULL /*prevrsp*/);
+        logmsg("rspdata: ");
+        dump_data(stdout, buf, rsp->rsplen > 256 ? 256 : rsp->rsplen, 4, NULL /*prevrsp*/);
+        dump_data(logfile, buf, rsp->rsplen, 4, NULL /*prevrsp*/);
       }
   }
 }
@@ -746,8 +746,8 @@ void handle_command(struct session *sess, struct drpc_packet *pkt, char *buf)
       logmsg("COMMAND SuspendThread: hthread=");
       for (n = 0; n < len; n++)
       {
-	tid = *(unsigned long *) (buf + 8 + n * 8);
-	logmsg(" %08X", tid);
+        tid = *(unsigned long *) (buf + 8 + n * 8);
+        logmsg(" %08X", tid);
       }
       logmsg("\n");
       break;
@@ -757,8 +757,8 @@ void handle_command(struct session *sess, struct drpc_packet *pkt, char *buf)
       logmsg("COMMAND ResumeThread: hthread=");
       for (n = 0; n < len; n++)
       {
-	tid = *(unsigned long *) (buf + 8 + n * 8);
-	logmsg(" %08X", tid);
+        tid = *(unsigned long *) (buf + 8 + n * 8);
+        logmsg(" %08X", tid);
       }
       logmsg("\n");
       break;
@@ -807,9 +807,9 @@ void handle_command(struct session *sess, struct drpc_packet *pkt, char *buf)
       logmsg("COMMAND %08X (reqlen=%d, rsplen=%d):\n", pkt->cmd, pkt->reqlen, pkt->rsplen);
       if (pkt->reqlen > 0)
       {
-	logmsg("reqdata: ");
-	dump_data(stdout, buf, pkt->reqlen > 256 ? 256 : pkt->reqlen, 4, NULL);
-	dump_data(logfile, buf, pkt->reqlen, 4, NULL);
+        logmsg("reqdata: ");
+        dump_data(stdout, buf, pkt->reqlen > 256 ? 256 : pkt->reqlen, 4, NULL);
+        dump_data(logfile, buf, pkt->reqlen, 4, NULL);
       }
   }
 
@@ -1138,7 +1138,7 @@ void handle_event(struct dbg_hdr *hdr, union dbg_body *body)
   {
     case DBGEVT_TRAP:
       printf("break: thread %d trap %d eip %08X addr %08X\n", 
-	     body->trap.tid, body->trap.traptype, body->trap.eip, body->trap.addr);
+             body->trap.tid, body->trap.traptype, body->trap.eip, body->trap.addr);
       return;
 
     case DBGEVT_CREATE_THREAD:
@@ -1216,7 +1216,7 @@ void main()
   if (hdr.cmd == (DBGCMD_CONNECT | DBGCMD_REPLY))
   {
     printf("break: thread %d trap %d eip %08X addr %08X\n", 
-	   body->conn.tid, body->conn.traptype, body->conn.eip, body->conn.addr);
+           body->conn.tid, body->conn.traptype, body->conn.eip, body->conn.addr);
   }
   else
     handle_event(&hdr, body);
@@ -1234,29 +1234,29 @@ void main()
     switch (command)
     {
       case 'r':
-	read_mem(arg1, arg2);
-	break;
+        read_mem(arg1, arg2);
+        break;
 
       case 'm':
-	get_mod_list();
-	break;
+        get_mod_list();
+        break;
 
       case 't':
-	get_thread_list();
-	break;
+        get_thread_list();
+        break;
 
       case 'c':
-	get_context(arg1);
-	break;
+        get_context(arg1);
+        break;
 
       case 'g':
-	go();
-	break;
+        go();
+        break;
 
       case 'x':
         dbg_xact(DBGCMD_CONTINUE, NULL, 0, body);
-	done = 1;
-	break;
+        done = 1;
+        break;
     }
   }
 

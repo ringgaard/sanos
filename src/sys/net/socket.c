@@ -341,20 +341,20 @@ int socket(int domain, int type, int protocol, struct socket **retval)
   {
     case SOCK_STREAM:
       if (protocol == IPPROTO_IP)
-	socktype = SOCKTYPE_TCP;
+        socktype = SOCKTYPE_TCP;
       else if (protocol == IPPROTO_TCP)
-	socktype = SOCKTYPE_TCP;
+        socktype = SOCKTYPE_TCP;
       else
-	return -EPROTONOSUPPORT;
+        return -EPROTONOSUPPORT;
       break;
 
     case SOCK_DGRAM:
       if (protocol == IPPROTO_IP)
-	socktype = SOCKTYPE_UDP;
+        socktype = SOCKTYPE_UDP;
       else if (protocol == IPPROTO_UDP)
-	socktype = SOCKTYPE_UDP;
+        socktype = SOCKTYPE_UDP;
       else
-	return -EPROTONOSUPPORT;
+        return -EPROTONOSUPPORT;
       break;
 
     case SOCK_RAW:

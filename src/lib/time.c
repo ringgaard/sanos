@@ -39,13 +39,13 @@
 #include <sys/time.h>
 #include <sys/times.h>
 
-#define	YEAR0		        1900
-#define	EPOCH_YR	        1970
-#define	SECS_DAY	        (24L * 60L * 60L)
-#define	LEAPYEAR(year)	        (!((year) % 4) && (((year) % 100) || !((year) % 400)))
-#define	YEARSIZE(year)	        (LEAPYEAR(year) ? 366 : 365)
-#define	FIRSTSUNDAY(timp)       (((timp)->tm_yday - (timp)->tm_wday + 420) % 7)
-#define	FIRSTDAYOF(timp)        (((timp)->tm_wday - (timp)->tm_yday + 420) % 7)
+#define YEAR0                   1900
+#define EPOCH_YR                1970
+#define SECS_DAY                (24L * 60L * 60L)
+#define LEAPYEAR(year)          (!((year) % 4) && (((year) % 100) || !((year) % 400)))
+#define YEARSIZE(year)          (LEAPYEAR(year) ? 366 : 365)
+#define FIRSTSUNDAY(timp)       (((timp)->tm_yday - (timp)->tm_wday + 420) % 7)
+#define FIRSTDAYOF(timp)        (((timp)->tm_wday - (timp)->tm_yday + 420) % 7)
 
 #define TIME_MAX                2147483647L
 
@@ -201,7 +201,7 @@ time_t mktime(struct tm *tmbuf)
   year = EPOCH_YR;
   if (tmbuf->tm_year < year - YEAR0) return (time_t) -1;
   seconds = 0;
-  day = 0;			// Means days since day 0 now
+  day = 0;                      // Means days since day 0 now
   overflow = 0;
 
   // Assume that when day becomes negative, there will certainly
@@ -229,7 +229,7 @@ time_t mktime(struct tm *tmbuf)
   day += yday;
 
   tmbuf->tm_yday = yday;
-  tmbuf->tm_wday = (day + 4) % 7;		// Day 0 was thursday (4)
+  tmbuf->tm_wday = (day + 4) % 7;               // Day 0 was thursday (4)
 
   seconds = ((tmbuf->tm_hour * 60L) + tmbuf->tm_min) * 60L + tmbuf->tm_sec;
 
@@ -239,7 +239,7 @@ time_t mktime(struct tm *tmbuf)
   // Now adjust according to timezone and daylight saving time
   if (((_timezone > 0) && (TIME_MAX - _timezone < seconds))
       || ((_timezone < 0) && (seconds < -_timezone)))
-	  overflow++;
+          overflow++;
   seconds += _timezone;
 
   if (tmbuf->tm_isdst)
@@ -247,7 +247,7 @@ time_t mktime(struct tm *tmbuf)
   else 
     dst = 0;
 
-  if (dst > seconds) overflow++;	// dst is always non-negative
+  if (dst > seconds) overflow++;        // dst is always non-negative
   seconds -= dst;
 
   if (overflow) return (time_t) -1;

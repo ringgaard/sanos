@@ -70,19 +70,19 @@ static void free_config(struct ndis_config *cfg)
     {
       case NDIS_PARAMETER_INTEGER:
       case NDIS_PARAMETER_HEXINTEGER:
-	break;
+        break;
 
       case NDIS_PARAMETER_STRING:
-	kfree(prop->value.parameter_data.string_data.buffer);
-	break;
+        kfree(prop->value.parameter_data.string_data.buffer);
+        break;
 
       case NDIS_PARAMETER_MULTISTRING:
-	panic("unsupported ndis property type");
-	break;
+        panic("unsupported ndis property type");
+        break;
 
       case NDIS_PARAMETER_BINARY:
-	kfree(prop->value.parameter_data.binary_data.buffer);
-	break;
+        kfree(prop->value.parameter_data.binary_data.buffer);
+        break;
     }
 
     kfree(prop);
@@ -122,8 +122,8 @@ static struct ndis_configuration_parameter *read_config(struct ndis_config *cfg,
     {
       if (np->value.parameter_type != type)
       {
-	kprintf("ndis: wrong type for parameter %s\n", name);
-	return NULL;
+        kprintf("ndis: wrong type for parameter %s\n", name);
+        return NULL;
       }
 
       kprintf("ndis: cached parameter %s\n", name);
@@ -554,34 +554,34 @@ void ndisapi NdisMQueryAdapterResources
     switch (res->type)
     {
       case RESOURCE_IO:
-	desc->type = NDIS_RESOURCE_TYPE_PORT;
-	desc->flags = NDIS_RESOURCE_PORT_IO;
-	desc->u.port.start = res->start;
-	desc->u.port.length = res->len;
-	break;
+        desc->type = NDIS_RESOURCE_TYPE_PORT;
+        desc->flags = NDIS_RESOURCE_PORT_IO;
+        desc->u.port.start = res->start;
+        desc->u.port.length = res->len;
+        break;
 
       case RESOURCE_MEM:
-	desc->type = NDIS_RESOURCE_TYPE_MEMORY;
-	desc->flags = 0;
-	desc->u.memory.start = res->start;
-	desc->u.memory.length = res->len;
-	break;
+        desc->type = NDIS_RESOURCE_TYPE_MEMORY;
+        desc->flags = 0;
+        desc->u.memory.start = res->start;
+        desc->u.memory.length = res->len;
+        break;
 
       case RESOURCE_IRQ:
-	desc->type = NDIS_RESOURCE_TYPE_INTERRUPT;
-	desc->flags = 0;
-	desc->u.interrupt.level = res->start;
-	desc->u.interrupt.vector = res->start;
-	desc->u.interrupt.affinity = -1;
-	break;
+        desc->type = NDIS_RESOURCE_TYPE_INTERRUPT;
+        desc->flags = 0;
+        desc->u.interrupt.level = res->start;
+        desc->u.interrupt.vector = res->start;
+        desc->u.interrupt.affinity = -1;
+        break;
 
       case RESOURCE_DMA:
-	desc->type = NDIS_RESOURCE_TYPE_DMA;
-	desc->flags = 0;
-	desc->u.dma.channel = res->start;
-	desc->u.dma.port = 0;
-	desc->u.dma.reserved1 = 0;
-	break;
+        desc->type = NDIS_RESOURCE_TYPE_DMA;
+        desc->flags = 0;
+        desc->u.dma.channel = res->start;
+        desc->u.dma.port = 0;
+        desc->u.dma.reserved1 = 0;
+        break;
     }
 
     resource_list->descriptors[resno].share_disposition = NDIS_RESOURCE_SHARE_UNDETERMINED;

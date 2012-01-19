@@ -117,7 +117,7 @@ struct tcp_hdr
 #define TCPH_FLAGS_SET(hdr, flags) (hdr)->_offset_flags = HTONS((TCPH_OFFSET(hdr) << 8) | (flags))
 
 #define TCP_TCPLEN(seg) ((seg)->len + ((TCPH_FLAGS((seg)->tcphdr) & TCP_FIN || \
-					TCPH_FLAGS((seg)->tcphdr) & TCP_SYN) ? 1 : 0))
+                                        TCPH_FLAGS((seg)->tcphdr) & TCP_SYN) ? 1 : 0))
 
 enum tcp_state 
 {

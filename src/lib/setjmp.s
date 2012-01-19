@@ -13,10 +13,10 @@ OFS_EIP=20
 
 .text
 
-.globl	_setjmp
-.globl	setjmp
-.globl	_longjmp
-.globl	longjmp
+.globl  _setjmp
+.globl  setjmp
+.globl  _longjmp
+.globl  longjmp
 
 _setjmp:
 setjmp:

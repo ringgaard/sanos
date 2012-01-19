@@ -31,7 +31,7 @@
 ; SUCH DAMAGE.
 ; 
 
-        SECTION	.text
+        SECTION .text
 
         global  _prot2real
         global  _real2prot
@@ -60,67 +60,67 @@ REAL_STACK  equ (0x2000 - 0x10)
 ;
 
 _prot2real:
-	BITS	32
-	; No interrupts while switching mode
-	cli
+        BITS    32
+        ; No interrupts while switching mode
+        cli
 
-	; Save protected mode stack and base pointers
-	mov	eax, esp
-	mov	[prot_esp], eax
-	mov	eax, ebp
-	mov	[prot_ebp], eax
-	
-	; Save descritors
-	sidt	[prot_idt]
-	sgdt	[prot_gdt]
+        ; Save protected mode stack and base pointers
+        mov     eax, esp
+        mov     [prot_esp], eax
+        mov     eax, ebp
+        mov     [prot_ebp], eax
+        
+        ; Save descritors
+        sidt    [prot_idt]
+        sgdt    [prot_gdt]
 
-	; Store return address in real mode stack
-	mov	eax,  [esp]
-	mov	[REAL_STACK], eax
+        ; Store return address in real mode stack
+        mov     eax,  [esp]
+        mov     [REAL_STACK], eax
 
-	; Set up real mode stack
-	mov	eax, REAL_STACK
-	mov	esp, eax
-	mov	ebp, eax
+        ; Set up real mode stack
+        mov     eax, REAL_STACK
+        mov     esp, eax
+        mov     ebp, eax
 
-	; Setup segment registers
-	mov	ax, REAL_DSEG
-	mov	ds, ax
-	mov	es, ax
-	mov	fs, ax
-	mov	gs, ax
-	mov	ss, ax
+        ; Setup segment registers
+        mov     ax, REAL_DSEG
+        mov     ds, ax
+        mov     es, ax
+        mov     fs, ax
+        mov     gs, ax
+        mov     ss, ax
 
-	; Transition to 16 bit segment
-	jmp	REAL_CSEG:(LOCAL(start16))
+        ; Transition to 16 bit segment
+        jmp     REAL_CSEG:(LOCAL(start16))
 
 start16:
-	BITS	16
+        BITS    16
 
-	; Exit protected mode by clearing the PE bit of CR0
-	mov	eax, cr0
-	and 	eax, ~1
-	mov	cr0, eax
+        ; Exit protected mode by clearing the PE bit of CR0
+        mov     eax, cr0
+        and     eax, ~1
+        mov     cr0, eax
 
-	; Reload code segment register and clear prefetch
-	jmp	dword OSLDRSEG:(LOCAL(realmode))
+        ; Reload code segment register and clear prefetch
+        jmp     dword OSLDRSEG:(LOCAL(realmode))
 
 realmode:
 
         ; Setup real mode segment registers
-	mov     ax, OSLDRSEG
-	mov	ds, ax
-	mov	es, ax
-	mov	fs, ax
-	mov	gs, ax
-	xor     ax, ax
-	mov     ss, ax
-	
-	; Load real mode IDT
+        mov     ax, OSLDRSEG
+        mov     ds, ax
+        mov     es, ax
+        mov     fs, ax
+        mov     gs, ax
+        xor     ax, ax
+        mov     ss, ax
+        
+        ; Load real mode IDT
         a32 lidt [LOCAL(real_idt)]
 
-	; Return on the real mode stack
-	sti
+        ; Return on the real mode stack
+        sti
         ret
 
 ;
@@ -128,51 +128,51 @@ realmode:
 ;
 
 _real2prot:
-	BITS	16
-	; Disable interrupts
-	cli
-	
+        BITS    16
+        ; Disable interrupts
+        cli
+        
         ; Restore protected mode descriptors
-	mov     ax, OSLDRSEG
-	mov     ds, ax
-	a32 lidt    [LOCAL(prot_idt)]
-	a32 lgdt    [LOCAL(prot_gdt)]
+        mov     ax, OSLDRSEG
+        mov     ds, ax
+        a32 lidt    [LOCAL(prot_idt)]
+        a32 lgdt    [LOCAL(prot_gdt)]
 
-	; Enable protected mode
-	mov     eax, cr0
-	or      eax, 1
-	mov     cr0, eax
+        ; Enable protected mode
+        mov     eax, cr0
+        or      eax, 1
+        mov     cr0, eax
 
-	; Set code segment and clear prefetch
-	jmp	dword PROT_CSEG:protmode
+        ; Set code segment and clear prefetch
+        jmp     dword PROT_CSEG:protmode
 
 protmode:
         BITS    32
-	; Setup rest of segment registers for protected mode
-	mov     ax, PROT_DSEG
-	mov     ds, ax
-	mov     es, ax
-	mov     ss, ax
-	mov     fs, ax
-	mov     gs, ax
+        ; Setup rest of segment registers for protected mode
+        mov     ax, PROT_DSEG
+        mov     ds, ax
+        mov     es, ax
+        mov     ss, ax
+        mov     fs, ax
+        mov     gs, ax
 
-	; Store return address in real mode stack
-	mov	eax, [esp]
-	mov	[REAL_STACK], eax
+        ; Store return address in real mode stack
+        mov     eax, [esp]
+        mov     [REAL_STACK], eax
 
-	; Restore protected mode stack
-	mov	eax, [prot_esp]
-	mov	esp, eax
-	mov	eax, [prot_ebp]
-	mov	ebp, eax
+        ; Restore protected mode stack
+        mov     eax, [prot_esp]
+        mov     esp, eax
+        mov     eax, [prot_ebp]
+        mov     ebp, eax
 
-	; Put return address onto protected mode stack
-	mov	eax, [REAL_STACK]
-	mov	[esp], eax
+        ; Put return address onto protected mode stack
+        mov     eax, [REAL_STACK]
+        mov     [esp], eax
 
-	; Return on protected mode stack
-	xor     eax, eax
-	ret
+        ; Return on protected mode stack
+        xor     eax, eax
+        ret
 ;
 ; Print string on screen
 ;
@@ -197,25 +197,25 @@ _bios_print_string:
 
         ; Output all characters in string
 nextchar:
-	mov	al, [si]
-	cmp	al, 0
-	je	printdone
+        mov     al, [si]
+        cmp     al, 0
+        je      printdone
 
-	mov	ah, 0x0e
-	int	0x10
-	
+        mov     ah, 0x0e
+        int     0x10
+        
         cmp     al, 10
         jne     notnl
 
         ; Output cr/nl for newline
         mov     al, 13
-	mov	ah, 0x0e
-	int	0x10
+        mov     ah, 0x0e
+        int     0x10
         
 notnl:
 
-	inc	si
-	jmp 	nextchar
+        inc     si
+        jmp     nextchar
 printdone:
                 
         ; Return to protected mode
@@ -365,4 +365,4 @@ prot_gdt:   dw 0, 0, 0
 
 ; Real mode IDT for BIOS
 real_idt:   dw 0x3ff   ; 256 entries, 4b each = 1K
-	    dd 0       ; Real mode IVT @ 0x0000
+            dd 0       ; Real mode IVT @ 0x0000

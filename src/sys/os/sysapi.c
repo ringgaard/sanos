@@ -43,10 +43,10 @@ __declspec(naked) int syscall(int syscallno, void *params)
   __asm
   {
     push  ebp
-    mov	  ebp, esp
+    mov   ebp, esp
 
-    mov	  eax, 8[ebp]
-    mov	  edx, 12[ebp]
+    mov   eax, 8[ebp]
+    mov   edx, 12[ebp]
     mov   ecx, offset sys_return
 
     sysenter
@@ -62,12 +62,12 @@ __declspec(naked) int syscall_int48(int syscallno, void *params)
   __asm
   {
     push  ebp
-    mov	  ebp, esp
+    mov   ebp, esp
 
-    mov	  eax, 8[ebp]
-    mov	  edx, 12[ebp]
+    mov   eax, 8[ebp]
+    mov   edx, 12[ebp]
 
-    int	  48
+    int   48
 
     leave
     ret

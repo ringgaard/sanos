@@ -117,12 +117,12 @@ struct
 static unsigned char pnp_bios_thunk[] =
 {
   0x52,                // push edx
-  0x51,	               // push ecx
+  0x51,                // push ecx
   0x53,                // push ebx
   0x50,                // push eax
   0x66, 0x9A, 0,0,0,0, // call word pnpseg:pnpofs
   0x83, 0xC4, 0x10,    // add  esp, 16
-  0xCB		       // retf 0
+  0xCB                 // retf 0
 };
 
 static int pnp_bios_call(int func, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7)
@@ -282,7 +282,7 @@ static char *get_device_type_name(unsigned char type_code[3])
   {
     if (pnp_typecodes[i].type_code[0] == type_code[0] &&
         pnp_typecodes[i].type_code[1] == type_code[1] &&
-	pnp_typecodes[i].type_code[2] == type_code[2])
+        pnp_typecodes[i].type_code[2] == type_code[2])
     {
       return pnp_typecodes[i].name;
     }
@@ -308,41 +308,41 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct unit *
       // Large item
       switch (p[0] & 0x7F) 
       {
-	case 0x01: // Memory
-	{
-	  int addr = *(short *) &p[4];
-	  int len = *(short *) &p[10];
-	  add_resource(unit, RESOURCE_MEM, 0, addr, len);
-	  break;
-	}
-	
-	case 0x02: // Device name
-	{
-	  int len = *(short *) &p[1];
-	  unit->productname = (char *) kmalloc(len + 1);
-	  memcpy(unit->productname, p + 3, len);
-	  unit->productname[len] = 0;
-	  break;
-	}
+        case 0x01: // Memory
+        {
+          int addr = *(short *) &p[4];
+          int len = *(short *) &p[10];
+          add_resource(unit, RESOURCE_MEM, 0, addr, len);
+          break;
+        }
+        
+        case 0x02: // Device name
+        {
+          int len = *(short *) &p[1];
+          unit->productname = (char *) kmalloc(len + 1);
+          memcpy(unit->productname, p + 3, len);
+          unit->productname[len] = 0;
+          break;
+        }
 
-	case 0x05: // 32-bit memory
-	{
-	  int addr = *(int *) &p[4];
-	  int len = *(int *) &p[16];
-	  add_resource(unit, RESOURCE_MEM, 0, addr, len);
-	  break;
-	}
+        case 0x05: // 32-bit memory
+        {
+          int addr = *(int *) &p[4];
+          int len = *(int *) &p[16];
+          add_resource(unit, RESOURCE_MEM, 0, addr, len);
+          break;
+        }
 
-	case 0x06: // Fixed location 32-bit memory
-	{
-	  int addr = *(int *) &p[4];
-	  int len = *(int *) &p[8];
-	  add_resource(unit, RESOURCE_MEM, 0, addr, len);
-	  break;
-	}
+        case 0x06: // Fixed location 32-bit memory
+        {
+          int addr = *(int *) &p[4];
+          int len = *(int *) &p[8];
+          add_resource(unit, RESOURCE_MEM, 0, addr, len);
+          break;
+        }
 
-	//default:
-	  //kprintf("tag:%x ", p[0]);
+        //default:
+          //kprintf("tag:%x ", p[0]);
       }
 
       lastp = p + 3;
@@ -357,36 +357,36 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct unit *
     {
       case 0x04: // IRQ
       {
-	int i, mask, irq = -1;
-	mask = p[1] + (p[2] << 8);
-	for (i = 0; i < 16; i++, mask = mask >> 1) if (mask & 0x01) irq = i;
-	if (irq != -1) add_resource(unit, RESOURCE_IRQ, 0, irq, 1);
-	break;
+        int i, mask, irq = -1;
+        mask = p[1] + (p[2] << 8);
+        for (i = 0; i < 16; i++, mask = mask >> 1) if (mask & 0x01) irq = i;
+        if (irq != -1) add_resource(unit, RESOURCE_IRQ, 0, irq, 1);
+        break;
       }
 
       case 0x05: // DMA
       {
-	int i, mask, dma = -1;
-	mask = p[1];
-	for (i = 0; i < 8;i++, mask = mask>>1) if (mask & 0x01) dma = i;
-	if (dma != -1) add_resource(unit, RESOURCE_DMA, 0, dma, 1);
-	break;
+        int i, mask, dma = -1;
+        mask = p[1];
+        for (i = 0; i < 8;i++, mask = mask>>1) if (mask & 0x01) dma = i;
+        if (dma != -1) add_resource(unit, RESOURCE_DMA, 0, dma, 1);
+        break;
       }
 
       case 0x08: // I/O
       {
-	int io = p[2] + (p[3] << 8);
-	int len = p[7];
-	if (len != 0) add_resource(unit, RESOURCE_IO, 0, io, len);
-	break;
+        int io = p[2] + (p[3] << 8);
+        int len = p[7];
+        if (len != 0) add_resource(unit, RESOURCE_IO, 0, io, len);
+        break;
       }
 
       case 0x09: // Fixed location io
       {
-	int io = p[1] + (p[2] << 8);
-	int len = p[3];
-	add_resource(unit, RESOURCE_IO, 0, io, len);
-	break;
+        int io = p[1] + (p[2] << 8);
+        int len = p[3];
+        add_resource(unit, RESOURCE_IO, 0, io, len);
+        break;
       }
 
       //default:
@@ -447,7 +447,7 @@ static void build_sys_devlist(struct bus *bus)
 }
 
 int enum_pnp_mem(struct unit *unit, unsigned char *b)
-{	
+{       
   int i = 0;
   unsigned long int start, len, more = 1;
 
@@ -483,7 +483,7 @@ int enum_pnp_mem(struct unit *unit, unsigned char *b)
 }
 
 int enum_pnp_irq(struct unit *unit, unsigned char *b)
-{	
+{       
   int i = 0, more = 1;
 
   while (more) 

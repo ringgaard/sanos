@@ -141,9 +141,9 @@ void main(int argc, char **argv)
       b = 0;
       for (i = 0; i < BUFLEN * 8; i++)
       {
-	//b = find_first_zero_bit(buffer, BUFLEN * 8);
-	b = find_next_zero_bit(buffer, BUFLEN * 8, i);
-	set_bit(buffer, b);
+        //b = find_first_zero_bit(buffer, BUFLEN * 8);
+        b = find_next_zero_bit(buffer, BUFLEN * 8, i);
+        set_bit(buffer, b);
         //printf("bit pos %d (%d,%d)\n", b, test_bit(buffer, b), test_bit(buffer, b + 1));
       }
     }

@@ -173,7 +173,7 @@ int _except_handler3(PEXCEPTION_RECORD rec, MSVCRT_EXCEPTION_FRAME* frame, PCONT
       {
         //syslog(LOG_DEBUG, "filter = %p", pScopeTable[trylevel].lpfnFilter);
 
-	retval = call_filter(pScopeTable[trylevel].lpfnFilter, &exceptPtrs, &frame->_ebp);
+        retval = call_filter(pScopeTable[trylevel].lpfnFilter, &exceptPtrs, &frame->_ebp);
 
         //syslog(LOG_DEBUG, "filter returned %s", retval == EXCEPTION_CONTINUE_EXECUTION ?
         //      "CONTINUE_EXECUTION" : retval == EXCEPTION_EXECUTE_HANDLER ?
@@ -181,7 +181,7 @@ int _except_handler3(PEXCEPTION_RECORD rec, MSVCRT_EXCEPTION_FRAME* frame, PCONT
 
         if (retval == EXCEPTION_CONTINUE_EXECUTION) return ExceptionContinueExecution;
 
-	if (retval == EXCEPTION_EXECUTE_HANDLER)
+        if (retval == EXCEPTION_EXECUTE_HANDLER)
         {
           // Unwind all higher frames, this one will handle the exception
           _global_unwind2((PEXCEPTION_FRAME) frame);

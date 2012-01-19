@@ -124,15 +124,15 @@ void *load_image_file(char *filename, int userspace)
       lseek(f, imghdr->sections[i].pointer_to_raw_data, SEEK_SET);
       if (read(f, RVA(imgbase, imghdr->sections[i].virtual_address), imghdr->sections[i].size_of_raw_data) < 0)
       {
-	if (userspace)
-	  munmap(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
-	else
-	  free_module_mem(imgbase, imghdr->optional.size_of_image);
+        if (userspace)
+          munmap(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
+        else
+          free_module_mem(imgbase, imghdr->optional.size_of_image);
 
-	close(f);
+        close(f);
         destroy(f);
         kfree(buffer);
-	return NULL;
+        return NULL;
       }
     }
   }
@@ -220,12 +220,12 @@ static int dump_mods(struct proc_file *pf, struct moddb *moddb)
 
     pprintf(pf, "%08X %-16s %4d %08X %5dK %5dK %5dK %5dK\n", 
             mod->hmod, mod->name, mod->refcnt, 
-	    get_entrypoint(mod->hmod),
-	    imghdr->optional.size_of_image / 1024,
-	    imghdr->optional.size_of_code / 1024,
-	    imghdr->optional.size_of_initialized_data / 1024,
-	    imghdr->optional.size_of_uninitialized_data / 1024
-	    );
+            get_entrypoint(mod->hmod),
+            imghdr->optional.size_of_image / 1024,
+            imghdr->optional.size_of_code / 1024,
+            imghdr->optional.size_of_initialized_data / 1024,
+            imghdr->optional.size_of_uninitialized_data / 1024
+            );
 
     mod = mod->next;
     if (mod == moddb->modules) break;

@@ -83,19 +83,19 @@
 struct pnp_bios_expansion_header 
 {
   unsigned long signature;      // "$PnP"
-  unsigned char version;	// PnP BIOS version number in BCD
-  unsigned char length;		// Length in bytes, currently 21h
-  unsigned short control;	// System capabilities
-  unsigned char checksum;	// Checksum, all bytes must add up to 0
+  unsigned char version;        // PnP BIOS version number in BCD
+  unsigned char length;         // Length in bytes, currently 21h
+  unsigned short control;       // System capabilities
+  unsigned char checksum;       // Checksum, all bytes must add up to 0
 
   unsigned long eventflag;      // Physical address of the event flag
   unsigned short rmoffset;      // Real mode entry point 
   unsigned short rmcseg;
   unsigned short pm16offset;    // 16 bit protected mode entry
   unsigned long pm16cseg;
-  unsigned long deviceid;	// EISA encoded system ID or 0
-  unsigned short rmdseg;	// Real mode data segment
-  unsigned long pm16dseg;	// 16 bit pm data segment base
+  unsigned long deviceid;       // EISA encoded system ID or 0
+  unsigned short rmdseg;        // Real mode data segment
+  unsigned long pm16dseg;       // 16 bit pm data segment base
 };
 
 struct pnp_dev_node_info 

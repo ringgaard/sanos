@@ -300,8 +300,8 @@ void transfer_files(char *dstdir, char *srcdir)
     {
       if (strcmp(finddata.cFileName, ".") != 0 && strcmp(finddata.cFileName, "..") != 0)
       {
-	make_directory(dstfn);
-	transfer_files(dstfn, srcfn);
+        make_directory(dstfn);
+        transfer_files(dstfn, srcfn);
       }
     }
     else
@@ -340,14 +340,14 @@ void process_filelist(FILE *f)
       
       if (*p)
       {
-	*p++ = 0;
-	while (*p && isspace(*p)) p++;
-	if (*p)
-	{
-	  altsrc = p;
-	  while (*p && !isspace(*p)) p++;
-	  *p++ = 0;
-	}
+        *p++ = 0;
+        while (*p && isspace(*p)) p++;
+        if (*p)
+        {
+          altsrc = p;
+          while (*p && !isspace(*p)) p++;
+          *p++ = 0;
+        }
       }
     }
 
@@ -362,10 +362,10 @@ void process_filelist(FILE *f)
       if (isdir(src))
       {
         make_directory(dst);
-	transfer_files(dst, src);
+        transfer_files(dst, src);
       }
       else
-	transfer_file(dst, src);
+        transfer_file(dst, src);
     }
   }
 }
@@ -445,89 +445,89 @@ int main(int argc, char **argv)
     switch (c)
     {
       case 'a':
-	altfile = !altfile;
-	break;
+        altfile = !altfile;
+        break;
 
       case 'd':
-	devname = optarg;
-	break;
+        devname = optarg;
+        break;
 
       case 'b':
-	bootfile = optarg;
-	break;
+        bootfile = optarg;
+        break;
 
       case 'c':
-	devsize = devcap = str2sectors(optarg);
-	break;
+        devsize = devcap = str2sectors(optarg);
+        break;
 
       case 'p':
-	part = atoi(optarg);
-	break;
+        part = atoi(optarg);
+        break;
 
       case 'i':
-	doinit = !doinit;
-	break;
+        doinit = !doinit;
+        break;
 
       case 'f':
-	doformat = !doformat;
-	break;
+        doformat = !doformat;
+        break;
 
       case 'k':
-	krnlfile = optarg;
-	break;
+        krnlfile = optarg;
+        break;
 
       case 'l':
-	ldrfile = optarg;
-	break;
+        ldrfile = optarg;
+        break;
 
       case 'w':
-	dowipe = !dowipe;
-	break;
+        dowipe = !dowipe;
+        break;
 
       case 'q':
-	quick = !quick;
-	break;
+        quick = !quick;
+        break;
 
       case 't':
-	devtype = optarg;
-	break;
+        devtype = optarg;
+        break;
 
       case 'B':
-	blocksize = atoi(optarg);
-	break;
+        blocksize = atoi(optarg);
+        break;
 
       case 'C':
-	devcap = str2sectors(optarg);
-	break;
+        devcap = str2sectors(optarg);
+        break;
 
       case 'F':
-	filelist = optarg;
-	break;
+        filelist = optarg;
+        break;
 
       case 'I':
-	inoderatio = atoi(optarg);
-	break;
+        inoderatio = atoi(optarg);
+        break;
 
       case 'K':
-	krnlopts = optarg;
-	break;
+        krnlopts = optarg;
+        break;
 
       case 'P':
-	part_start = atoi(optarg);
-	break;
+        part_start = atoi(optarg);
+        break;
 
       case 'S':
-	source = optarg;
-	break;
+        source = optarg;
+        break;
 
       case 'T':
-	target = optarg;
-	break;
+        target = optarg;
+        break;
 
       case '?':
       default:
-	usage();
-	return 1;
+        usage();
+        return 1;
     }
   }
 

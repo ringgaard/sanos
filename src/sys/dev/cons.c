@@ -145,7 +145,7 @@ static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       if (freq < 0 || freq > 0xFFFF) return -EINVAL;
 
       if (freq == 0)
-	nosound();
+        nosound();
       else
         sound((unsigned short) freq);
 
@@ -158,8 +158,8 @@ static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size)
     case IOCTL_KBHIT:
       if (cursoff)
       {
-	cursoff = 0;
-	show_cursor();
+        cursoff = 0;
+        show_cursor();
       }
       return kbhit();
   }

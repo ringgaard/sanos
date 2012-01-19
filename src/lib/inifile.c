@@ -68,16 +68,16 @@ static char *trimstr(char *s, char *end)
       {
         if (s == end) break;
 
-	if (*s >= '0' && *s <= '9')
-	  ch = (ch << 4) + *s - '0';
-	else if (*s >= 'A' && *s <= 'F')
-	  ch = (ch << 4) + *s + 10 - 'A';
-	else if (*s >= 'a' && *s <= 'f')
-	  ch = (ch << 4) + *s + 10 - 'a';
-	else
+        if (*s >= '0' && *s <= '9')
+          ch = (ch << 4) + *s - '0';
+        else if (*s >= 'A' && *s <= 'F')
+          ch = (ch << 4) + *s + 10 - 'A';
+        else if (*s >= 'a' && *s <= 'f')
+          ch = (ch << 4) + *s + 10 - 'a';
+        else
           break;
 
-	s++;
+        s++;
       }
       *t++ = ch;
     }
@@ -244,35 +244,35 @@ struct section *parse_properties(char *props)
       split = NULL;
       while (*end && *end != '\r' && *end != '\n') 
       {
-	if (!split && (*end == '=' || *end == ':')) split = end;
-	end++;
+        if (!split && (*end == '=' || *end == ':')) split = end;
+        end++;
       }
 
       if (sect)
       {
-	newprop = (struct property *) malloc(sizeof(struct property));
-	if (!newprop) return NULL;
+        newprop = (struct property *) malloc(sizeof(struct property));
+        if (!newprop) return NULL;
 
-	if (split)
-	{
-	  newprop->name = trimstr(p, split);
-	  split++;
-	  while (*split == ' ' || *split == '\t') split++;
-	  newprop->value = trimstr(split, end);
-	}
-	else
-	{
-	  newprop->name = trimstr(p, end);
-	  newprop->value = NULL;
-	}
+        if (split)
+        {
+          newprop->name = trimstr(p, split);
+          split++;
+          while (*split == ' ' || *split == '\t') split++;
+          newprop->value = trimstr(split, end);
+        }
+        else
+        {
+          newprop->name = trimstr(p, end);
+          newprop->value = NULL;
+        }
 
-	newprop->next = NULL;
-	if (prop)
-	  prop->next = newprop;
-	else
-	  sect->properties = newprop;
+        newprop->next = NULL;
+        if (prop)
+          prop->next = newprop;
+        else
+          sect->properties = newprop;
 
-	prop = newprop;
+        prop = newprop;
       }
 
       p = end;
@@ -302,7 +302,7 @@ void list_properties(int f, struct section *sect)
       write(f, prop->name, strlen(prop->name));
       if (prop->value)
       {
-	write(f, "=", 1);
+        write(f, "=", 1);
         write(f, prop->value, strlen(prop->value));
       }
       write(f, "\r\n", 2);

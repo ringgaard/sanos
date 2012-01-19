@@ -114,11 +114,11 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
     {
       if (inet_chksum_pseudo(p, &iphdr->src, &iphdr->dest, IP_PROTO_UDP, p->tot_len) != 0) 
       {
-	kprintf(KERN_WARNING "udp_input: UDP datagram discarded due to failing checksum\n");
+        kprintf(KERN_WARNING "udp_input: UDP datagram discarded due to failing checksum\n");
 
-	stats.udp.chkerr++;
-	stats.udp.drop++;
-	return -ECHKSUM;
+        stats.udp.chkerr++;
+        stats.udp.drop++;
+        return -ECHKSUM;
       }
     }
   }
@@ -144,11 +144,11 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
     for (pcb = udp_pcbs; pcb != NULL; pcb = pcb->next) 
     {
       if (!(pcb->flags & UDP_FLAGS_CONNECTED) &&
-	  pcb->local_port == dest &&
-	  (ip_addr_isany(&pcb->remote_ip) || ip_addr_cmp(&pcb->remote_ip, &iphdr->src)) &&
-	  (ip_addr_isany(&pcb->local_ip) || ip_addr_cmp(&pcb->local_ip, &iphdr->dest))) 
+          pcb->local_port == dest &&
+          (ip_addr_isany(&pcb->remote_ip) || ip_addr_cmp(&pcb->remote_ip, &iphdr->src)) &&
+          (ip_addr_isany(&pcb->local_ip) || ip_addr_cmp(&pcb->local_ip, &iphdr->dest))) 
       {
-	break;
+        break;
       }      
     }
   }
@@ -159,7 +159,7 @@ err_t udp_input(struct pbuf *p, struct netif *inp)
     // destination address was broadcast/multicast.
     
     if (!ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) && !ip_addr_ismulticast(&iphdr->dest))
-    {	
+    {   
       // Adjust pbuf pointer
       p->payload = iphdr;
       icmp_dest_unreach(p, ICMP_DUR_PORT);
@@ -309,8 +309,8 @@ void udp_remove(struct udp_pcb *pcb)
     {
       if (pcb2->next != NULL && pcb2->next == pcb) 
       {
-	pcb2->next = pcb->next;
-	break;
+        pcb2->next = pcb->next;
+        break;
       }
     }
   }

@@ -54,7 +54,7 @@ blkno_t new_block(struct filsys *fs, blkno_t goal)
       else
       {
         block = find_first_zero_bit(buf->data, fs->groups[group].desc->block_count);
-	fs->groups[group].first_free_block = block;
+        fs->groups[group].first_free_block = block;
       }
 
       if (block != fs->groups[group].desc->block_count) goto block_found;
@@ -142,10 +142,10 @@ ino_t new_inode(struct filsys *fs, ino_t parent, int dir)
     {
       if (fs->groups[i].desc->free_inode_count && fs->groups[i].desc->free_inode_count >= avefreei)
       {
-	if (group == -1 || fs->groups[i].desc->free_block_count > fs->groups[group].desc->free_block_count)
-	{
-	  group = i;
-	}
+        if (group == -1 || fs->groups[i].desc->free_block_count > fs->groups[group].desc->free_block_count)
+        {
+          group = i;
+        }
       }
     }
     if (group == -1) group = 0;

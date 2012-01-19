@@ -212,8 +212,8 @@ static char **build_env_block()
       strcpy(envp[num], prop->name);
       if (prop->value)
       {
-	strcpy(envp[num] + strlen(envp[num]), "=");
-	strcpy(envp[num] + strlen(envp[num]), prop->value);
+        strcpy(envp[num] + strlen(envp[num]), "=");
+        strcpy(envp[num] + strlen(envp[num]), prop->value);
       }
       num++;
       prop = prop->next;

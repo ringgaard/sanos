@@ -132,14 +132,14 @@ void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long 
     for (i = 0; i < pages; i++)
     {
       if (page_mapped(vaddr))
-	set_page_flags(vaddr, flags | PT_PRESENT);
+        set_page_flags(vaddr, flags | PT_PRESENT);
       else
       {
-	pfn = alloc_pageframe(tag);
-	if (pfn == 0xFFFFFFFF) return NULL;
+        pfn = alloc_pageframe(tag);
+        if (pfn == 0xFFFFFFFF) return NULL;
 
-	map_page(vaddr, pfn, flags | PT_PRESENT);
-	memset(vaddr, 0, PAGESIZE);
+        map_page(vaddr, pfn, flags | PT_PRESENT);
+        memset(vaddr, 0, PAGESIZE);
       }
       vaddr += PAGESIZE;
     }
@@ -166,11 +166,11 @@ int munmap(void *addr, unsigned long size, int type)
     {
       if (page_mapped(vaddr))
       {
-	unsigned long pfn;
+        unsigned long pfn;
 
-	pfn = BTOP(virt2phys(vaddr));
-	unmap_page(vaddr);
-	free_pageframe(pfn);
+        pfn = BTOP(virt2phys(vaddr));
+        unmap_page(vaddr);
+        free_pageframe(pfn);
       }
       vaddr += PAGESIZE;
     }

@@ -45,7 +45,7 @@
 #include <string.h>
 #include <rmap.h>
 
-unsigned int lost_elems = 0L;	// Diagnostic for space lost due to fragmentation
+unsigned int lost_elems = 0L;   // Diagnostic for space lost due to fragmentation
 
 //
 // Initialize the named resource map
@@ -116,7 +116,7 @@ unsigned int rmap_alloc(struct rmap *rmap, unsigned int size)
     if (r->size >= size) break;
   }
   
-  if (r > rlim)	return 0;
+  if (r > rlim) return 0;
 
   // Trim the resource element if it still has some left,
   // otherwise delete from the list.
@@ -157,7 +157,7 @@ unsigned int rmap_alloc_align(struct rmap *rmap, unsigned int size, unsigned int
     if (r->size >= size + gap) break;
   }
   
-  if (r > rlim)	return 0;
+  if (r > rlim) return 0;
   idx = r->offset + gap;
 
   // Reserve region
@@ -190,10 +190,10 @@ void rmap_free(struct rmap *rmap, unsigned int offset, unsigned int size)
       // If this entry now abuts the next, coalesce
       if ((r < rlim) && ((r->offset + r->size) == (r[1].offset))) 
       {
-	r->size += r[1].size;
-	rmap->offset -= 1;
-	r++;
-	if (r < rlim) memmove(r, r + 1, sizeof(struct rmap) * (rlim - r));
+        r->size += r[1].size;
+        rmap->offset -= 1;
+        r++;
+        if (r < rlim) memmove(r, r + 1, sizeof(struct rmap) * (rlim - r));
       }
 
       return;
@@ -321,9 +321,9 @@ int rmap_status(struct rmap *rmap, unsigned int offset, unsigned int size)
     if (r->offset > offset) 
     {
       if (offset + size > r->offset)
-	return -1;
+        return -1;
       else
-	return 1;
+        return 1;
     }
 
     // See if this is the range which will hold our request

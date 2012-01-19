@@ -73,8 +73,8 @@ static int remove_from_freelist(handle_t h)
     {
       if (h == htab[fl])
       {
-	htab[fl] = htab[h];
-	return 0;
+        htab[fl] = htab[h];
+        return 0;
       }
     }
 

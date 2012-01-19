@@ -68,31 +68,31 @@ err_t icmp_input(struct pbuf *p, struct netif *inp)
     case ICMP_ECHO:
       if (ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) || ip_addr_ismulticast(&iphdr->dest))
       {
-	stats.icmp.err++;
-	return -EPROTO;
+        stats.icmp.err++;
+        return -EPROTO;
       }
     
       if (!ip_ownaddr(&iphdr->dest))
       {
-	stats.icmp.err++;
-	return -EPROTO;
+        stats.icmp.err++;
+        return -EPROTO;
       }
 
       //kprintf("icmp_input: ping src %a dest %a\n", &iphdr->src, &iphdr->dest);
 
       if (p->tot_len < sizeof(struct icmp_echo_hdr)) 
       {
-	kprintf("icmp_input: bad ICMP echo received\n");
-	stats.icmp.lenerr++;
-	return -EPROTO;
+        kprintf("icmp_input: bad ICMP echo received\n");
+        stats.icmp.lenerr++;
+        return -EPROTO;
       }
 
       iecho = p->payload;
       if (inet_chksum_pbuf(p) != 0) 
       {
-	kprintf("icmp_input: checksum failed for received ICMP echo\n");
-	stats.icmp.chkerr++;
-	return -ECHKSUM;
+        kprintf("icmp_input: checksum failed for received ICMP echo\n");
+        stats.icmp.chkerr++;
+        return -ECHKSUM;
       }
 
       tmpaddr.addr = iphdr->src.addr;
@@ -102,9 +102,9 @@ err_t icmp_input(struct pbuf *p, struct netif *inp)
       
       // Adjust the checksum
       if (iecho->chksum >= htons(0xFFFF - (ICMP_ECHO << 8))) 
-	iecho->chksum += htons(ICMP_ECHO << 8) + 1;
+        iecho->chksum += htons(ICMP_ECHO << 8) + 1;
       else
-	iecho->chksum += htons(ICMP_ECHO << 8);
+        iecho->chksum += htons(ICMP_ECHO << 8);
 
       stats.icmp.xmit++;
       
@@ -114,9 +114,9 @@ err_t icmp_input(struct pbuf *p, struct netif *inp)
     case ICMP_DUR:
       if (p->tot_len < ICMP_HLEN)
       {
-	kprintf("icmp_input: ICMP message too short\n");
-	stats.icmp.lenerr++;
-	return -EPROTO;
+        kprintf("icmp_input: ICMP message too short\n");
+        stats.icmp.lenerr++;
+        return -EPROTO;
       }
 
       idur = (struct icmp_dur_hdr *) p->payload;

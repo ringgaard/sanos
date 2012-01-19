@@ -2,7 +2,7 @@
 ; ftol.asm - floating point to integer conversion
 ;-----------------------------------------------------------------------------
 
-        	SECTION	.text
+                SECTION .text
 
                 global  _ftol
                 global  __ftol

@@ -240,10 +240,10 @@ err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
     if (cpcb->local_port == port)
     {
       if (ip_addr_isany(&cpcb->local_ip) ||
-	  ip_addr_isany(ipaddr) ||
-	  ip_addr_cmp(&cpcb->local_ip, ipaddr)) 
+          ip_addr_isany(ipaddr) ||
+          ip_addr_cmp(&cpcb->local_ip, ipaddr)) 
       {
-	return -EADDRINUSE;
+        return -EADDRINUSE;
       }
     }
   }
@@ -253,10 +253,10 @@ err_t tcp_bind(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port)
     if (cpcb->local_port == port)
     {
       if (ip_addr_isany(&cpcb->local_ip) ||
-	  ip_addr_isany(ipaddr) ||
-	  ip_addr_cmp(&cpcb->local_ip, ipaddr))
+          ip_addr_isany(ipaddr) ||
+          ip_addr_cmp(&cpcb->local_ip, ipaddr))
       {
-	return -EADDRINUSE;
+        return -EADDRINUSE;
       }
     }
   }
@@ -318,7 +318,7 @@ void tcp_recved(struct tcp_pcb *pcb, int len)
 //
 
 err_t tcp_connect(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short port,
-	          err_t (*connected)(void *arg, struct tcp_pcb *tpcb, err_t err))
+                  err_t (*connected)(void *arg, struct tcp_pcb *tpcb, err_t err))
 {
   unsigned long optdata;
   err_t ret;
@@ -347,9 +347,9 @@ err_t tcp_connect(struct tcp_pcb *pcb, struct ip_addr *ipaddr, unsigned short po
   
   // Build an MSS option
   optdata = HTONL(((unsigned long) 2 << 24) | 
-		  ((unsigned long) 4 << 16) | 
-		  (((unsigned long) pcb->mss / 256) << 8) |
-		  (pcb->mss & 255));
+                  ((unsigned long) 4 << 16) | 
+                  (((unsigned long) pcb->mss / 256) << 8) |
+                  (pcb->mss & 255));
 
   ret = tcp_enqueue(pcb, NULL, 0, TCP_SYN, (unsigned char *) &optdata, 4);
   if (ret == 0) tcp_output(pcb);
@@ -392,17 +392,17 @@ void tcp_slowtmr(void *arg)
       {
         kprintf("tcp_slowtmr: rtime %ld pcb->rto %d\n", tcp_ticks - pcb->rtime, pcb->rto);
 
-	// Double retransmission time-out unless we are trying to
+        // Double retransmission time-out unless we are trying to
         // connect to somebody (i.e., we are in SYN_SENT)
-	if (pcb->state != SYN_SENT) 
-	{
-	  pcb->rto = ((pcb->sa >> 3) + pcb->sv) << tcp_backoff[pcb->nrtx];
-	}
+        if (pcb->state != SYN_SENT) 
+        {
+          pcb->rto = ((pcb->sa >> 3) + pcb->sv) << tcp_backoff[pcb->nrtx];
+        }
 
-	// Retransmit unacknowled segments
-	tcp_rexmit(pcb);
+        // Retransmit unacknowled segments
+        tcp_rexmit(pcb);
 
-	// Reduce congestion window and ssthresh
+        // Reduce congestion window and ssthresh
         eff_wnd = MIN(pcb->cwnd, pcb->snd_wnd);
         pcb->ssthresh = eff_wnd >> 1;
         if (pcb->ssthresh < (unsigned long) pcb->mss) pcb->ssthresh = pcb->mss * 2;
@@ -411,7 +411,7 @@ void tcp_slowtmr(void *arg)
         kprintf("tcp_rexmit_seg: cwnd %u ssthresh %u\n", pcb->cwnd, pcb->ssthresh);
       }
     }
-	  
+          
     // Check if this PCB has stayed too long in FIN-WAIT-2
     if (pcb->state == FIN_WAIT_2) 
     {
@@ -447,7 +447,7 @@ void tcp_slowtmr(void *arg)
 
       if (pcb->errf != NULL) 
       {
-	pcb->errf(pcb->callback_arg, -EABORT);
+        pcb->errf(pcb->callback_arg, -EABORT);
       }
 
       pcb2 = pcb->next;
@@ -460,9 +460,9 @@ void tcp_slowtmr(void *arg)
       pcb->polltmr++;
       if (pcb->polltmr >= pcb->pollinterval && pcb->poll != NULL) 
       {
-	pcb->polltmr = 0;
-	pcb->poll(pcb->callback_arg, pcb);
-	tcp_output(pcb);
+        pcb->polltmr = 0;
+        pcb->poll(pcb->callback_arg, pcb);
+        tcp_output(pcb);
       }
       
       prev = pcb;
@@ -687,7 +687,7 @@ void tcp_shutdown()
   {
     tcp_rst(pcb->snd_nxt, pcb->rcv_nxt, 
             &pcb->local_ip, &pcb->remote_ip, 
-	    pcb->local_port, pcb->remote_port);
+            pcb->local_port, pcb->remote_port);
   }
 }
 
@@ -826,13 +826,13 @@ void tcp_debug_print(struct tcp_hdr *tcphdr)
   kprintf("|          %10lu           | (ack no)\n", ntohl(tcphdr->ackno));
   kprintf("+-------------------------------+\n");
   kprintf("| %2d |    |%d%d%d%d%d|    %5d      | (offset, flags (",
-	  ntohs(tcphdr->_offset_flags) >> 4 & 1,
-	  ntohs(tcphdr->_offset_flags) >> 4 & 1,
-	  ntohs(tcphdr->_offset_flags) >> 3 & 1,
-	  ntohs(tcphdr->_offset_flags) >> 2 & 1,
-	  ntohs(tcphdr->_offset_flags) >> 1 & 1,
-	  ntohs(tcphdr->_offset_flags) & 1,
-	  ntohs(tcphdr->wnd));
+          ntohs(tcphdr->_offset_flags) >> 4 & 1,
+          ntohs(tcphdr->_offset_flags) >> 4 & 1,
+          ntohs(tcphdr->_offset_flags) >> 3 & 1,
+          ntohs(tcphdr->_offset_flags) >> 2 & 1,
+          ntohs(tcphdr->_offset_flags) >> 1 & 1,
+          ntohs(tcphdr->_offset_flags) & 1,
+          ntohs(tcphdr->wnd));
   tcp_debug_print_flags(ntohs(tcphdr->_offset_flags));
   kprintf("), win)\n");
   kprintf("+-------------------------------+\n");
@@ -877,8 +877,8 @@ void tcp_debug_print_pcbs()
   for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) 
   {
     kprintf("Local port %d, remote port %d snd_nxt %lu rcv_nxt %lu ",
-	    pcb->local_port, pcb->remote_port,
-	    pcb->snd_nxt, pcb->rcv_nxt);
+            pcb->local_port, pcb->remote_port,
+            pcb->snd_nxt, pcb->rcv_nxt);
     tcp_debug_print_state(pcb->state);
   }
 

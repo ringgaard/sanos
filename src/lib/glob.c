@@ -161,7 +161,7 @@ int glob(const char *pattern, int flags, int (*errfunc)(const char *, int), glob
       if (*patnext == QUOTE) 
       {
         if (*++patnext == EOS) 
-	{
+        {
           *bufnext++ = QUOTE | M_PROTECT;
           continue;
         }
@@ -255,51 +255,51 @@ static int globexp2(const char *ptr, const char *pattern, glob_t *pglob, int *rv
     switch (*pm) 
     {
       case LBRACKET:
-	// Ignore everything between []
-	for (pm1 = pm++; *pm != RBRACKET && *pm != EOS; pm++) continue;
-	if (*pm == EOS) 
-	{
-	  // We could not find a matching RBRACKET. Ignore and just look for RBRACE.
-	  pm = pm1;
-	}
-	break;
+        // Ignore everything between []
+        for (pm1 = pm++; *pm != RBRACKET && *pm != EOS; pm++) continue;
+        if (*pm == EOS) 
+        {
+          // We could not find a matching RBRACKET. Ignore and just look for RBRACE.
+          pm = pm1;
+        }
+        break;
 
       case LBRACE:
-	i++;
-	break;
+        i++;
+        break;
 
       case RBRACE:
-	if (i) 
-	{
-	  i--;
-	  break;
-	}
-	// FALLTHROUGH
+        if (i) 
+        {
+          i--;
+          break;
+        }
+        // FALLTHROUGH
 
       case COMMA:
-	if (i && *pm == COMMA)
-	  break;
-	else 
-	{
-	  // Append the current string
-	  for (lm = ls; (pl < pm); *lm++ = *pl++) continue;
+        if (i && *pm == COMMA)
+          break;
+        else 
+        {
+          // Append the current string
+          for (lm = ls; (pl < pm); *lm++ = *pl++) continue;
 
-	  // Append the rest of the pattern after the closing brace
-	  for (pl = pe + 1; (*lm++ = *pl++) != EOS;) continue;
+          // Append the rest of the pattern after the closing brace
+          for (pl = pe + 1; (*lm++ = *pl++) != EOS;) continue;
 
-	  // Expand the current pattern
+          // Expand the current pattern
   #ifdef DEBUG
-	  qprintf("globexp2:", patbuf);
+          qprintf("globexp2:", patbuf);
   #endif
-	  *rv = globexp1(patbuf, pglob, limit);
+          *rv = globexp1(patbuf, pglob, limit);
 
-	  // Move after the comma, to the next string
-	  pl = pm + 1;
-	}
-	break;
+          // Move after the comma, to the next string
+          pl = pm + 1;
+        }
+        break;
 
       default:
-	break;
+        break;
     }
   }
 
@@ -382,45 +382,45 @@ static int glob0(const char *pattern, glob_t *pglob, size_t *limit)
     switch (c) 
     {
       case LBRACKET:
-	c = *qpatnext;
-	if (c == NOT) ++qpatnext;
-	if (*qpatnext == EOS || strchr(qpatnext + 1, RBRACKET) == NULL) 
-	{
-	  *bufnext++ = LBRACKET;
-	  if (c == NOT) --qpatnext;
-	  break;
-	}
-	*bufnext++ = M_SET;
-	if (c == NOT) *bufnext++ = M_NOT;
-	c = *qpatnext++;
-	do 
-	{
-	  *bufnext++ = CHAR(c);
-	  if (*qpatnext == RANGE && (c = qpatnext[1]) != RBRACKET) 
-	  {
-	    *bufnext++ = M_RNG;
-	    *bufnext++ = CHAR(c);
-	    qpatnext += 2;
-	  }
-	} while ((c = *qpatnext++) != RBRACKET);
-	pglob->gl_flags |= GLOB_MAGCHAR;
-	*bufnext++ = M_END;
-	break;
+        c = *qpatnext;
+        if (c == NOT) ++qpatnext;
+        if (*qpatnext == EOS || strchr(qpatnext + 1, RBRACKET) == NULL) 
+        {
+          *bufnext++ = LBRACKET;
+          if (c == NOT) --qpatnext;
+          break;
+        }
+        *bufnext++ = M_SET;
+        if (c == NOT) *bufnext++ = M_NOT;
+        c = *qpatnext++;
+        do 
+        {
+          *bufnext++ = CHAR(c);
+          if (*qpatnext == RANGE && (c = qpatnext[1]) != RBRACKET) 
+          {
+            *bufnext++ = M_RNG;
+            *bufnext++ = CHAR(c);
+            qpatnext += 2;
+          }
+        } while ((c = *qpatnext++) != RBRACKET);
+        pglob->gl_flags |= GLOB_MAGCHAR;
+        *bufnext++ = M_END;
+        break;
 
       case QUESTION:
-	pglob->gl_flags |= GLOB_MAGCHAR;
-	*bufnext++ = M_ONE;
-	break;
+        pglob->gl_flags |= GLOB_MAGCHAR;
+        *bufnext++ = M_ONE;
+        break;
 
       case STAR:
-	pglob->gl_flags |= GLOB_MAGCHAR;
-	// Collapse adjacent stars to one, to avoid exponential behavior
-	if (bufnext == patbuf || bufnext[-1] != M_ALL) *bufnext++ = M_ALL;
-	break;
+        pglob->gl_flags |= GLOB_MAGCHAR;
+        // Collapse adjacent stars to one, to avoid exponential behavior
+        if (bufnext == patbuf || bufnext[-1] != M_ALL) *bufnext++ = M_ALL;
+        break;
 
       default:
-	*bufnext++ = CHAR(c);
-	break;
+        *bufnext++ = CHAR(c);
+        break;
     }
   }
   *bufnext = EOS;
@@ -549,7 +549,7 @@ static int glob3(char *pathbuf, char *pathend, char *pathend_last, char *pattern
     {
       if (pglob->gl_errfunc(pathbuf, errno) || pglob->gl_flags & GLOB_ERR) 
       {
-	return GLOB_ABORTED;
+        return GLOB_ABORTED;
       }
     }
 
@@ -653,38 +653,38 @@ static int match(char *name, char *pat, char *patend)
     switch (c & M_MASK) 
     {
       case M_ALL:
-	if (pat == patend) return 1;
-	do
-	{
+        if (pat == patend) return 1;
+        do
+        {
           if (match(name, pat, patend)) return 1;
-	} while (*name++ != EOS);
-	return 0;
+        } while (*name++ != EOS);
+        return 0;
 
       case M_ONE:
-	if (*name++ == EOS) return 0;
-	break;
+        if (*name++ == EOS) return 0;
+        break;
 
       case M_SET:
-	ok = 0;
-	if ((k = *name++) == EOS) return 0;
-	if ((negate_range = ((*pat & M_MASK) == M_NOT)) != EOS) pat++;
-	while (((c = *pat++) & M_MASK) != M_END)
-	{
-	  if ((*pat & M_MASK) == M_RNG)
-	  {
-	    if (CHAR(c) <= CHAR(k) && CHAR(k) <= CHAR(pat[1])) ok = 1;
-	    pat += 2;
-	  }
-	  else if (c == k)
-	  {
-	    ok = 1;
-	  }
+        ok = 0;
+        if ((k = *name++) == EOS) return 0;
+        if ((negate_range = ((*pat & M_MASK) == M_NOT)) != EOS) pat++;
+        while (((c = *pat++) & M_MASK) != M_END)
+        {
+          if ((*pat & M_MASK) == M_RNG)
+          {
+            if (CHAR(c) <= CHAR(k) && CHAR(k) <= CHAR(pat[1])) ok = 1;
+            pat += 2;
+          }
+          else if (c == k)
+          {
+            ok = 1;
+          }
         }
-	if (ok == negate_range) return 0;
-	break;
+        if (ok == negate_range) return 0;
+        break;
 
       default:
-	if (*name++ != c) return 0;
+        if (*name++ != c) return 0;
     }
   }
 

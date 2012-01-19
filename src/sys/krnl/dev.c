@@ -172,9 +172,9 @@ struct resource *get_unit_resource(struct unit *unit, int type, int num)
     if (res->type == type)
     {
       if (num == 0)
-	return res;
+        return res;
       else
-	num--;
+        num--;
     }
 
     res = res->next;
@@ -377,15 +377,15 @@ static void parse_bindings()
 
       mask = 0xF;
       if (*q >= '0' && *q <= '9')
-	digit = *q - '0';
+        digit = *q - '0';
       else if (*q >= 'A' && *q <= 'F')
-	digit = *q - 'A' + 10;
+        digit = *q - 'A' + 10;
       else if (*q >= 'a' && *q <= 'f')
-	digit = *q - 'a' + 10;
+        digit = *q - 'a' + 10;
       else
       {
-	digit = 0;
-	mask = 0;
+        digit = 0;
+        mask = 0;
       }
 
       bind->code = (bind->code << 4) | digit;
@@ -413,17 +413,17 @@ static struct binding *find_binding(struct unit *unit)
     {
       if (bind->bindtype == BIND_BY_CLASSCODE)
       {
-	if ((unit->classcode & bind->mask) == bind->code) return bind;
+        if ((unit->classcode & bind->mask) == bind->code) return bind;
       }
 
       if (bind->bindtype == BIND_BY_UNITCODE)
       {
-	if ((unit->unitcode & bind->mask) == bind->code) return bind;
+        if ((unit->unitcode & bind->mask) == bind->code) return bind;
       }
 
       if (bind->bindtype == BIND_BY_SUBUNITCODE)
       {
-	if ((unit->subunitcode & bind->mask) == bind->code) return bind;
+        if ((unit->subunitcode & bind->mask) == bind->code) return bind;
       }
     }
   }
@@ -542,14 +542,14 @@ static void install_legacy_drivers()
       strcpy(buf, prop->name);
       if (prop->value)
       {
-	strcat(buf, ":");
-	strcat(buf, prop->value);
+        strcat(buf, ":");
+        strcat(buf, prop->value);
       }
 
       rc = initialize_driver(NULL, buf);
       if (rc < 0)
       {
-	kprintf(KERN_ERR "dev: error %d initializing driver %s\n", rc, prop->name);
+        kprintf(KERN_ERR "dev: error %d initializing driver %s\n", rc, prop->name);
       }
 
       kfree(buf);
@@ -618,11 +618,11 @@ dev_t dev_make(char *name, struct driver *driver, struct unit *unit, void *privd
       exists = 0;
       for (m = 0; m < num_devs; m++) 
       {
-	if (strcmp(devtab[m]->name, dev->name) == 0) 
-	{
-	  exists = 1;
-	  break;
-	}
+        if (strcmp(devtab[m]->name, dev->name) == 0) 
+        {
+          exists = 1;
+          break;
+        }
       }
 
       if (!exists) break;
@@ -825,33 +825,33 @@ static int units_proc(struct proc_file *pf, void *arg)
     {
       switch (res->type)
       {
-	case RESOURCE_IO: 
-	  if (res->len == 1) 
-	    pprintf(pf, "  io: 0x%03x", res->start);
-	  else
-	    pprintf(pf, "  io: 0x%03x-0x%03x", res->start, res->start + res->len - 1);
-	  break;
+        case RESOURCE_IO: 
+          if (res->len == 1) 
+            pprintf(pf, "  io: 0x%03x", res->start);
+          else
+            pprintf(pf, "  io: 0x%03x-0x%03x", res->start, res->start + res->len - 1);
+          break;
 
-	case RESOURCE_MEM:
-	  if (res->len == 1) 
-	    pprintf(pf, "  mem: 0x%08x", res->start);
-	  else
-	    pprintf(pf, "  mem: 0x%08x-0x%08x", res->start, res->start + res->len - 1);
-	  break;
+        case RESOURCE_MEM:
+          if (res->len == 1) 
+            pprintf(pf, "  mem: 0x%08x", res->start);
+          else
+            pprintf(pf, "  mem: 0x%08x-0x%08x", res->start, res->start + res->len - 1);
+          break;
 
-	case RESOURCE_IRQ:
-	  if (res->len == 1) 
-	    pprintf(pf, "  irq: %d", res->start);
-	  else
-	    pprintf(pf, "  irq: %d-%d", res->start, res->start + res->len - 1);
-	  break;
+        case RESOURCE_IRQ:
+          if (res->len == 1) 
+            pprintf(pf, "  irq: %d", res->start);
+          else
+            pprintf(pf, "  irq: %d-%d", res->start, res->start + res->len - 1);
+          break;
 
-	case RESOURCE_DMA:
-	  if (res->len == 1) 
-	    pprintf(pf, "  dma: %d", res->start);
-	  else
-	    pprintf(pf, "  dma: %d-%d", res->start, res->start + res->len - 1);
-	  break;
+        case RESOURCE_DMA:
+          if (res->len == 1) 
+            pprintf(pf, "  dma: %d", res->start);
+          else
+            pprintf(pf, "  dma: %d-%d", res->start, res->start + res->len - 1);
+          break;
       }
 
       pprintf(pf, "\n");

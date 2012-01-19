@@ -487,9 +487,9 @@ int cmd_df(int argc, char *argv[])
     {
       printf("%6dK", b->cachesize / 1024);
       if (b->blocks * (b->bsize / 512) / 2 > 10000)
-	printf("%8dM", b->blocks * (b->bsize / 512) / 2000);
+        printf("%8dM", b->blocks * (b->bsize / 512) / 2000);
       else
-	printf("%8dK", b->blocks * (b->bsize / 512) / 2);
+        printf("%8dK", b->blocks * (b->bsize / 512) / 2);
 
       if ((b->blocks - b->bfree) * (b->bsize / 512) / 2 > 10000)
         printf("%8dM", (b->blocks - b->bfree) * (b->bsize / 512) / 2000);
@@ -565,8 +565,8 @@ int cmd_dump(int argc, char *argv[])
       ch = getchar();
       if (ch == 'x')
       {
-	close(fd);
-	return 0;
+        close(fd);
+        return 0;
       }
       line = 0;
     }
@@ -769,12 +769,12 @@ int cmd_help(int argc, char *argv[])
       ok = 0;
       for (n = 1; n < argc; n++)
       {
-	if (strstr(command->cmdname, argv[n]) ||
-	    command->help && strstr(command->help, argv[n]))
-	{
-	  ok = 1;
-	  break;
-	}
+        if (strstr(command->cmdname, argv[n]) ||
+            command->help && strstr(command->help, argv[n]))
+        {
+          ok = 1;
+          break;
+        }
       }
     }
 
@@ -783,9 +783,9 @@ int cmd_help(int argc, char *argv[])
       printf("%-10.10s %s\n", command->cmdname, command->help);
       if (++lineno == 24)
       {
-	fflush(stdout);
-	getchar();
-	lineno = 0;
+        fflush(stdout);
+        getchar();
+        lineno = 0;
       }
     }
   }
@@ -973,8 +973,8 @@ int cmd_ls(int argc, char *argv[])
     {
       while (*++arg)
       {
-	if (*arg == 'l') verbose = 1;
-	if (*arg == 'w') verbose = 2;
+        if (*arg == 'l') verbose = 1;
+        if (*arg == 'w') verbose = 2;
       }
     }
     else
@@ -1013,42 +1013,42 @@ int cmd_ls(int argc, char *argv[])
 
       if (verbose)
       {
-	printf("%8d %4d %1d %2d ", (int) buf.st_size, buf.st_ino, buf.st_nlink, buf.st_dev);
+        printf("%8d %4d %1d %2d ", (int) buf.st_size, buf.st_ino, buf.st_nlink, buf.st_dev);
 
-	gmtime_r(&buf.st_ctime, &tm);
-	printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
+        gmtime_r(&buf.st_ctime, &tm);
+        printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
       }
       else
       {
-	strcpy(perm, " ---------");
-	switch (buf.st_mode & S_IFMT) 
-	{
-	  case S_IFREG: perm[0] = '-'; break;
-	  case S_IFLNK: perm[0] = 'l'; break;
-	  case S_IFDIR: perm[0] = 'd'; break;
-	  case S_IFBLK: perm[0] = 'b'; break;
-	  case S_IFCHR: perm[0] = 'c'; break;
-	  case S_IFPKT: perm[0] = 'p'; break;
-	}
+        strcpy(perm, " ---------");
+        switch (buf.st_mode & S_IFMT) 
+        {
+          case S_IFREG: perm[0] = '-'; break;
+          case S_IFLNK: perm[0] = 'l'; break;
+          case S_IFDIR: perm[0] = 'd'; break;
+          case S_IFBLK: perm[0] = 'b'; break;
+          case S_IFCHR: perm[0] = 'c'; break;
+          case S_IFPKT: perm[0] = 'p'; break;
+        }
 
-	if (buf.st_mode & 0400) perm[1] = 'r';
-	if (buf.st_mode & 0200) perm[2] = 'w';
-	if (buf.st_mode & 0100) perm[3] = 'x';
-	if (buf.st_mode & 0040) perm[4] = 'r';
-	if (buf.st_mode & 0020) perm[5] = 'w';
-	if (buf.st_mode & 0010) perm[6] = 'x';
-	if (buf.st_mode & 0004) perm[7] = 'r';
-	if (buf.st_mode & 0002) perm[8] = 'w';
-	if (buf.st_mode & 0001) perm[9] = 'x';
-	printf("%s ", perm);
+        if (buf.st_mode & 0400) perm[1] = 'r';
+        if (buf.st_mode & 0200) perm[2] = 'w';
+        if (buf.st_mode & 0100) perm[3] = 'x';
+        if (buf.st_mode & 0040) perm[4] = 'r';
+        if (buf.st_mode & 0020) perm[5] = 'w';
+        if (buf.st_mode & 0010) perm[6] = 'x';
+        if (buf.st_mode & 0004) perm[7] = 'r';
+        if (buf.st_mode & 0002) perm[8] = 'w';
+        if (buf.st_mode & 0001) perm[9] = 'x';
+        printf("%s ", perm);
 
-	pwd = getpwuid(buf.st_uid);
-	grp = getgrgid(buf.st_gid);
-	printf("%-8s %-8s", pwd ? pwd->pw_name : "?", grp ? grp->gr_name : "?");
+        pwd = getpwuid(buf.st_uid);
+        grp = getgrgid(buf.st_gid);
+        printf("%-8s %-8s", pwd ? pwd->pw_name : "?", grp ? grp->gr_name : "?");
 
-	if ((buf.st_mode & S_IFMT) == S_IFDIR)
-	  printf("           ");
-	else
+        if ((buf.st_mode & S_IFMT) == S_IFDIR)
+          printf("           ");
+        else
           printf("%10d ", buf.st_size);
       }
 
@@ -1149,15 +1149,15 @@ int cmd_more(int argc, char *argv[])
     {
       if (line == 24)
       {
-	display_buffer(stdout, start, end - start);
-	fflush(stdout);
-	ch = getchar();
-	if (ch == 'x')
-	{
-	  close(fd);
-	  return 0;
-	}
-	start = end;
+        display_buffer(stdout, start, end - start);
+        fflush(stdout);
+        ch = getchar();
+        if (ch == 'x')
+        {
+          close(fd);
+          return 0;
+        }
+        start = end;
         line = 0;
       }
       if (*end++ == '\n') line++;

@@ -158,9 +158,9 @@ void parseopt(struct termstate *ts, int code, int option)
 
     case TELOPT_SUPPRESS_GO_AHEAD:
       if (code == TELNET_WILL || code == TELNET_WONT)
-	sendopt(ts, TELNET_DO, option);
+        sendopt(ts, TELNET_DO, option);
       else
-	sendopt(ts, TELNET_WILL, option);
+        sendopt(ts, TELNET_WILL, option);
       break;
 
     case TELOPT_TERMINAL_TYPE:
@@ -171,9 +171,9 @@ void parseopt(struct termstate *ts, int code, int option)
 
     default:
       if (code == TELNET_WILL || code == TELNET_WONT)
-	sendopt(ts, TELNET_DONT, option);
+        sendopt(ts, TELNET_DONT, option);
       else
-	sendopt(ts, TELNET_WONT, option);
+        sendopt(ts, TELNET_WONT, option);
   }
 }
 
@@ -186,11 +186,11 @@ void parseoptdat(struct termstate *ts, int option, unsigned char *data, int len)
     case TELOPT_NAWS:
       if (len == 4)
       {
-	int cols = ntohs(*(unsigned short *) data);
-	int lines = ntohs(*(unsigned short *) (data + 2));
-	//syslog(LOG_DEBUG, "WINDOW %d cols %d lines", cols, lines);
-	if (cols != 0) ts->term.cols = cols;
-	if (lines != 0) ts->term.lines = lines;
+        int cols = ntohs(*(unsigned short *) data);
+        int lines = ntohs(*(unsigned short *) (data + 2));
+        //syslog(LOG_DEBUG, "WINDOW %d cols %d lines", cols, lines);
+        if (cols != 0) ts->term.cols = cols;
+        if (lines != 0) ts->term.lines = lines;
       }
       break;
 
@@ -225,22 +225,22 @@ void parse(struct termstate *ts)
       case STATE_IAC:
         switch (c) 
         {
-	  case TELNET_IAC:
-	    *q++ = c;
-	    ts->state = STATE_NORMAL;
-	    break;
+          case TELNET_IAC:
+            *q++ = c;
+            ts->state = STATE_NORMAL;
+            break;
 
-	  case TELNET_WILL:
+          case TELNET_WILL:
           case TELNET_WONT:
           case TELNET_DO:
           case TELNET_DONT:
-	    ts->code = c;
-	    ts->state = STATE_OPT;
-	    break;
+            ts->code = c;
+            ts->state = STATE_OPT;
+            break;
 
-	  case TELNET_SB:
-	    ts->state = STATE_SB;
-	    break;
+          case TELNET_SB:
+            ts->state = STATE_SB;
+            break;
 
           default:
             ts->state = STATE_NORMAL;
@@ -248,27 +248,27 @@ void parse(struct termstate *ts)
         break;
 
       case STATE_OPT:
-	parseopt(ts, ts->code, c);
+        parseopt(ts, ts->code, c);
         ts->state = STATE_NORMAL;
         break;
 
       case STATE_SB:
-	ts->code = c;
-	ts->optlen = 0;
-	ts->state = STATE_OPTDAT;
-	break;
+        ts->code = c;
+        ts->optlen = 0;
+        ts->state = STATE_OPTDAT;
+        break;
 
       case STATE_OPTDAT:
-	if (c == TELNET_IAC)
-	  ts->state = STATE_SE;
-	else if (ts->optlen < sizeof(ts->optdata))
-	  ts->optdata[ts->optlen++] = c;
-	break;
+        if (c == TELNET_IAC)
+          ts->state = STATE_SE;
+        else if (ts->optlen < sizeof(ts->optdata))
+          ts->optdata[ts->optlen++] = c;
+        break;
 
       case STATE_SE:
-	if (c == TELNET_SE) parseoptdat(ts, ts->code, ts->optdata, ts->optlen);
-	ts->state = STATE_NORMAL;
-	break;
+        if (c == TELNET_SE) parseoptdat(ts, ts->code, ts->optdata, ts->optlen);
+        ts->state = STATE_NORMAL;
+        break;
     } 
   }
 
@@ -357,75 +357,75 @@ void __stdcall telnet_task(void *arg)
     switch (rc)
     {
       case APPDON: 
-	// Application terminated
-	goto done;
+        // Application terminated
+        goto done;
 
       case USRATT:
-	// Data arrived from user
-	if (ts.bi.start == ts.bi.end)
-	{
-	  // Read data from user
-	  n = read(s, ts.bi.data, sizeof ts.bi.data);
-	  if (n < 0) goto done;
-	  ts.bi.start = ts.bi.data;
-	  ts.bi.end = ts.bi.data + n;
-	}
+        // Data arrived from user
+        if (ts.bi.start == ts.bi.end)
+        {
+          // Read data from user
+          n = read(s, ts.bi.data, sizeof ts.bi.data);
+          if (n < 0) goto done;
+          ts.bi.start = ts.bi.data;
+          ts.bi.end = ts.bi.data + n;
+        }
 
-	// Parse user input for telnet options
-	parse(&ts);
+        // Parse user input for telnet options
+        parse(&ts);
 
-	// Fall through
+        // Fall through
 
       case APPRDY:
         // Application ready to receive
-	if (ts.bi.start != ts.bi.end)
-	{
-	  // Write data to application
-	  n = write(pin[1], ts.bi.start, ts.bi.end - ts.bi.start);
-	  if (n < 0) goto done;
-	  ts.bi.start += n;
-	}
+        if (ts.bi.start != ts.bi.end)
+        {
+          // Write data to application
+          n = write(pin[1], ts.bi.start, ts.bi.end - ts.bi.start);
+          if (n < 0) goto done;
+          ts.bi.start += n;
+        }
 
-	if (ts.bi.start == ts.bi.end)
+        if (ts.bi.start == ts.bi.end)
           dispatch(mux, s, IOEVT_READ | IOEVT_ERROR | IOEVT_CLOSE, USRATT);
-	else
+        else
           dispatch(mux, pin[1], IOEVT_WRITE | IOEVT_ERROR | IOEVT_CLOSE, APPRDY);
 
-	break;
+        break;
 
       case APPATT:
-	// Data arrived from application
-	if (ts.bo.start == ts.bo.end)
-	{
-	  // Read data from application
-	  n = read(pout[0], ts.bo.data, sizeof ts.bo.data);
-	  if (n < 0) goto done;
-	  ts.bo.start = ts.bo.data;
-	  ts.bo.end = ts.bo.data + n;
-	}
+        // Data arrived from application
+        if (ts.bo.start == ts.bo.end)
+        {
+          // Read data from application
+          n = read(pout[0], ts.bo.data, sizeof ts.bo.data);
+          if (n < 0) goto done;
+          ts.bo.start = ts.bo.data;
+          ts.bo.end = ts.bo.data + n;
+        }
 
-	// Fall through
+        // Fall through
 
       case USRRDY:
-	// User ready to receive
-	if (ts.bo.start != ts.bo.end)
-	{
-	  // Write data to user
-	  n = write(s, ts.bo.start, ts.bo.end - ts.bo.start);
-	  if (n < 0) goto done;
-	  ts.bo.start += n;
-	}
+        // User ready to receive
+        if (ts.bo.start != ts.bo.end)
+        {
+          // Write data to user
+          n = write(s, ts.bo.start, ts.bo.end - ts.bo.start);
+          if (n < 0) goto done;
+          ts.bo.start += n;
+        }
 
-	if (ts.bo.start == ts.bo.end)
+        if (ts.bo.start == ts.bo.end)
           dispatch(mux, pout[0], IOEVT_READ | IOEVT_ERROR | IOEVT_CLOSE, APPATT);
-	else
+        else
           dispatch(mux, s, IOEVT_WRITE | IOEVT_ERROR | IOEVT_CLOSE, USRRDY);
 
-	break;
+        break;
 
       default:
-	// Error occured
-	goto done;
+        // Error occured
+        goto done;
     }
   }
 

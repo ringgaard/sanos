@@ -454,9 +454,9 @@ int dfs_write(struct file *filp, void *data, size_t size, off64_t pos)
     else
     {
       if (count == inode->fs->blocksize)
-	buf = alloc_buffer(inode->fs->cache, blk);
+        buf = alloc_buffer(inode->fs->cache, blk);
       else
-	buf = get_buffer(inode->fs->cache, blk);
+        buf = get_buffer(inode->fs->cache, blk);
 
       if (!buf) return -EIO;
 

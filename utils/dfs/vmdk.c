@@ -198,10 +198,10 @@ static uint64_t get_cluster_offset(struct blockdevice *bs, uint64_t offset, int 
       // Increment the hit count
       if (++s->l2_cache_counts[i] == 0xffffffff) 
       {
-	for (j = 0; j < L2_CACHE_SIZE; j++) 
-	{
-	  s->l2_cache_counts[j] >>= 1;
-	}
+        for (j = 0; j < L2_CACHE_SIZE; j++) 
+        {
+          s->l2_cache_counts[j] >>= 1;
+        }
       }
       l2_table = s->l2_cache + (i * s->l2_size);
       goto found;

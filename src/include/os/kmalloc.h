@@ -36,8 +36,8 @@
 
 struct bucket 
 {
-  void *mem;	        // List of chunks of memory
-  unsigned long elems;	// # chunks available in this bucket
+  void *mem;            // List of chunks of memory
+  unsigned long elems;  // # chunks available in this bucket
   unsigned long pages;  // # pages used for this bucket size
   unsigned long size;   // Size of this kind of chunk
 };

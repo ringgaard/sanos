@@ -47,9 +47,9 @@ struct unit;
 
 #define SECTORSIZE              512
 
-#define DEV_TYPE_STREAM		1
-#define DEV_TYPE_BLOCK		2
-#define DEV_TYPE_PACKET		3
+#define DEV_TYPE_STREAM         1
+#define DEV_TYPE_BLOCK          2
+#define DEV_TYPE_PACKET         3
 
 #define DEVFLAG_NBIO            1
 
@@ -58,10 +58,10 @@ struct unit;
 #define IOCTL_GETGEOMETRY       3
 #define IOCTL_REVALIDATE        4
 
-#define RESOURCE_IO	        1
-#define RESOURCE_MEM	        2
-#define RESOURCE_IRQ	        3
-#define RESOURCE_DMA	        4
+#define RESOURCE_IO             1
+#define RESOURCE_MEM            2
+#define RESOURCE_IRQ            3
+#define RESOURCE_DMA            4
 
 #define BUSTYPE_HOST            0
 #define BUSTYPE_PCI             1
