@@ -181,8 +181,13 @@ static int console_read(struct dev *dev, void *buffer, size_t count, blkno_t blk
       show_cursor();
     }
 
-    ch = getch(n ? 0 : kbd_timeout);
-    if (ch < 0) return n ? n : ch;
+    ch = getch(n || (flags & DEVFLAG_NBIO) ? 0 : kbd_timeout);
+    if (ch < 0) 
+    {
+      if (n) return n;
+      if (ch == -ETIMEOUT && (flags & DEVFLAG_NBIO)) return -EAGAIN;
+      return ch;
+    }
     
     if (ch < ' ')
     {

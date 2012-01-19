@@ -425,6 +425,7 @@ static int winerr()
     case ERROR_INVALID_ACCESS: err = EINVAL; break;
     case ERROR_INVALID_DATA: err = EINVAL; break;
     case ERROR_INVALID_DRIVE: err = ENOENT; break;
+    case ERROR_INVALID_NAME: err= EINVAL; break;
     case ERROR_CURRENT_DIRECTORY: err = EACCES; break;
     case ERROR_NOT_SAME_DEVICE: err = EXDEV; break;
     case ERROR_NO_MORE_FILES: err = ENOENT; break;
@@ -1431,7 +1432,7 @@ int munlock(void *addr, unsigned long size)
   return notimpl("mnlock");
 }
 
-int wait(handle_t h, int timeout)
+int waitone(handle_t h, int timeout)
 {
   DWORD rc = WaitForSingleObject(hget(h, HANDLE_ANY), timeout);
   if (rc == WAIT_TIMEOUT)
@@ -1441,11 +1442,6 @@ int wait(handle_t h, int timeout)
   }
 
   return 0;
-}
-
-int waitone(handle_t h, int timeout)
-{
-  return notimpl("waitone");
 }
 
 int waitall(handle_t *h, int count, int timeout)
@@ -1706,6 +1702,13 @@ void sigexit(struct siginfo *info, int action)
   notimpl("sigexit");
 }
 
+unsigned alarm(unsigned seconds)
+{
+  notimpl("alarm");
+  return -1;
+}
+
+
 char *getenv(const char *name)
 {
   int i;
@@ -1855,7 +1858,7 @@ void enter(critsect_t cs)
   }
   else 
   {    
-    if (atomic_add(&cs->count, 1) > 0) wait(cs->event, INFINITE);
+    if (atomic_add(&cs->count, 1) > 0) waitone(cs->event, INFINITE);
     cs->owner = tid;
   }
 }
