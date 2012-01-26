@@ -1627,6 +1627,7 @@ struct command cmdtab[] =
   {"?",        cmd_help,     "This help"},
   {"beep",     cmd_beep,     "Play beep in speaker"},
   {"break",    cmd_break,    "Debug breakpoint"},
+  {"bye",      cmd_shutdown, "Shutdown computer and power off"},
   {"cat",      cmd_cat,      "Display file"},
   {"cd",       cmd_chdir,    "Change current directory"},
   {"chdir",    cmd_chdir,    "Change current directory"},
