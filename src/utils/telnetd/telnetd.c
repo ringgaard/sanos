@@ -154,17 +154,11 @@ void parseopt(struct termstate *ts, int code, int option)
   switch (option)
   {
     case TELOPT_ECHO:
-      break;
-
     case TELOPT_SUPPRESS_GO_AHEAD:
-      if (code == TELNET_WILL || code == TELNET_WONT)
-        sendopt(ts, TELNET_DO, option);
-      else
-        sendopt(ts, TELNET_WILL, option);
+    case TELOPT_NAWS:
       break;
 
     case TELOPT_TERMINAL_TYPE:
-    case TELOPT_NAWS:
     case TELOPT_TERMINAL_SPEED:
       sendopt(ts, TELNET_DO, option);
       break;
@@ -293,6 +287,7 @@ void __stdcall telnet_task(void *arg)
   int app;
   int mux;
   int n;
+  int last_was_cr;
   struct termstate ts;
 
   // Set process identifer
@@ -348,7 +343,11 @@ void __stdcall telnet_task(void *arg)
 
   // Send initial options
   sendopt(&ts, TELNET_WILL, TELOPT_ECHO);
+  sendopt(&ts, TELNET_WILL, TELOPT_SUPPRESS_GO_AHEAD);
+  sendopt(&ts, TELNET_WONT, TELOPT_LINEMODE);
+  sendopt(&ts, TELNET_DO, TELOPT_NAWS);
 
+  last_was_cr = 0;
   for (;;)
   {
     // Wait for application termination or multiplexer event
@@ -364,9 +363,19 @@ void __stdcall telnet_task(void *arg)
         // Data arrived from user
         if (ts.bi.start == ts.bi.end)
         {
+          int i;
+
           // Read data from user
           n = read(s, ts.bi.data, sizeof ts.bi.data);
           if (n < 0) goto done;
+
+          // Convert cr nul to cr lf.
+          for (i = 0; i < n; ++i) {
+            unsigned char ch = ts.bi.data[i];
+            if (ch == 0 && last_was_cr) ts.bi.data[i] = '\n';
+            last_was_cr = (ch == '\r');
+          }
+
           ts.bi.start = ts.bi.data;
           ts.bi.end = ts.bi.data + n;
         }

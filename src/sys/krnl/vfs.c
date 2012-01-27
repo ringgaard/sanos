@@ -265,6 +265,7 @@ struct filesystem *register_filesystem(char *name, struct fsops *ops)
 
 struct file *newfile(struct fs *fs, char *path, int flags, int mode)
 {
+  struct thread *thread = self();
   struct file *filp;
   int umaskval = 0;
   int fmodeval = 0;
@@ -284,6 +285,8 @@ struct file *newfile(struct fs *fs, char *path, int flags, int mode)
   filp->fs = fs;
   filp->flags = flags;
   filp->mode = mode & ~umaskval;
+  filp->owner = thread->euid; 
+  filp->group = thread->egid;
   filp->pos = 0;
   filp->data = NULL;
   filp->path = strdup(path);
@@ -630,6 +633,7 @@ int close(struct file *filp)
 
   if (rc == 0) filp->fs->locks--;
   
+  detach_ioobject(&filp->iob);
   kfree(filp->path);
   filp->path = NULL;
   filp->flags |= F_CLOSED;

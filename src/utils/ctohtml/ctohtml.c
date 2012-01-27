@@ -426,9 +426,12 @@ void convert_file(char *source_filename)
           if (tag)
           {
             relative_url(relative_filename, tag->file, url);
-            fprintf(out, "<a href='%s.html#:%d'>", url, tag->line);
-            output_html(out, start, p);
-            fprintf(out, "</a>");
+            if (strcmp(url, html_filename) == 0 || tag->line != line_num)
+            {
+              fprintf(out, "<a href='%s.html#:%d'>", url, tag->line);
+              output_html(out, start, p);
+              fprintf(out, "</a>");
+            }
           }
           else
             output_html(out, start, p);
