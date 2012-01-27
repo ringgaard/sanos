@@ -428,7 +428,7 @@ void convert_file(char *source_filename)
             int self;
             
             relative_url(relative_filename, tag->file, url);
-            self = strcmp(url, html_filename) == 0 && tag->line == line_num;
+            self = strcmp(url, base_filename) == 0 && tag->line == line_num;
             if (!self) fprintf(out, "<a href='%s.html#:%d'>", url, tag->line);
             output_html(out, start, p);
             if (!self) fprintf(out, "</a>");
