@@ -425,13 +425,13 @@ void convert_file(char *source_filename)
           struct tag *tag = find_tag(token, relative_filename);
           if (tag)
           {
+            int self;
+            
             relative_url(relative_filename, tag->file, url);
-            if (strcmp(url, html_filename) == 0 || tag->line != line_num)
-            {
-              fprintf(out, "<a href='%s.html#:%d'>", url, tag->line);
-              output_html(out, start, p);
-              fprintf(out, "</a>");
-            }
+            self = strcmp(url, html_filename) == 0 && tag->line == line_num;
+            if (!self) fprintf(out, "<a href='%s.html#:%d'>", url, tag->line);
+            output_html(out, start, p);
+            if (!self) fprintf(out, "</a>");
           }
           else
             output_html(out, start, p);
