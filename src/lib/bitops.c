@@ -31,7 +31,7 @@
 // SUCH DAMAGE.
 // 
 
-#include "bitops.h"
+#include <bitops.h>
 
 int find_first_zero_bit(void *bitmap, int len)
 {

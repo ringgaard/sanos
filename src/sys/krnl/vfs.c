@@ -199,8 +199,8 @@ static int files_proc(struct proc_file *pf, void *arg)
   struct file *filp;
   char perm[11];
 
-  pprintf(pf, "handle    flags mode       uid gid path\n");
-  pprintf(pf, "------ -------- ---------- --- --- -------------------------------------------\n");
+  pprintf(pf, "handle    flags mode       uid gid type     path\n");
+  pprintf(pf, "------ -------- ---------- --- --- -------- ----------------------------------\n");
   for (h = 0; h < htabsize; h++)
   {
     if (!HUSED(htab[h])) continue;
@@ -230,7 +230,7 @@ static int files_proc(struct proc_file *pf, void *arg)
     if (filp->mode & 0002) perm[8] = 'w';
     if (filp->mode & 0001) perm[9] = 'x';
 
-    pprintf(pf, "%6d %08X %s %3d %3d %s\n", h, filp->flags, perm, filp->owner, filp->group, filp->path ? filp->path : "<no name>");
+    pprintf(pf, "%6d %08X %s %3d %3d %-8s %s\n", h, filp->flags, perm, filp->owner, filp->group, filp->fs->fsys->name, filp->path ? filp->path : "<no name>");
   }
 
   return 0;

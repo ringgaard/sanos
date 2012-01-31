@@ -32,7 +32,7 @@
 // 
 
 #define _CTYPE_DISABLE_MACROS
-#include "ctype.h"
+#include <ctype.h>
 
 unsigned short _ctype[257] = 
 {

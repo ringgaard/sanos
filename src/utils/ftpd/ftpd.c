@@ -421,8 +421,8 @@ void doretr(struct ftpstate *fs, char *name)
     return;
   }
 
-  if (fs->type == 1) addreply(fs, 0, "NOTE: ASCII mode requested, but binary mode used");
-  if (st.st_size - fs->restartat > 4096) addreply(fs, 0, "%.1f kbytes to download", (st.st_size - fs->restartat) / 1024.0);
+  //if (fs->type == 1) addreply(fs, 0, "NOTE: ASCII mode requested, but binary mode used");
+  //if (st.st_size - fs->restartat > 4096) addreply(fs, 0, "%.1f kbytes to download", (st.st_size - fs->restartat) / 1024.0);
 
   doreply(fs);
 
@@ -469,7 +469,7 @@ void doretr(struct ftpstate *fs, char *name)
   else
     speed = 0.0;
 
-  addreply(fs, 0, "%.3f seconds (measured by the server), %.2f %sb/s", t, speed > 524288 ? speed / 1048576 : speed / 1024, speed > 524288 ? "M" : "K");
+  //addreply(fs, 0, "%.3f seconds (measured by the server), %.2f %sb/s", t, speed > 524288 ? speed / 1048576 : speed / 1024, speed > 524288 ? "M" : "K");
 
   close(f);
   close(sock);
@@ -920,6 +920,7 @@ void donlist(struct ftpstate *fs, char *arg)
       switch (*arg)
       {
         case 'l':
+        case 'a':
           opt_l = 1;
           break;
       }
@@ -1075,6 +1076,8 @@ int docmd(struct ftpstate *fs)
     addreply(fs, 200, "NOOP command successful");
   else if (strcmp(cmd, "syst") == 0)
     addreply(fs, 215, "UNIX Type: L8");
+  else if (strcmp(cmd, "feat") == 0)
+    addreply(fs, 500, "Unsupported command");
   else if (strcmp(cmd, "port") == 0|| strcmp(cmd, "eprt") == 0)
   {
     // Don't auto-login for PORT or PASV, but do auto-login
