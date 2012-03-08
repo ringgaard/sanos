@@ -4,6 +4,9 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+Version 1.3.4
+-------------
+
     * The ctohtml tools no longer generates self links.
 
     * Fixed bug in vfs, where file objects where not detached from io waiters.
