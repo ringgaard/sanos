@@ -40,7 +40,7 @@ void qsort(void *base, unsigned num, unsigned width, int (*comp)(const void *, c
 {
   char *lo, *hi;
   char *mid;
-  char *loguy, *higuy;
+  char *l, *h;
   unsigned size;
   char *lostk[30], *histk[30];
   int stkptr;
@@ -63,46 +63,46 @@ recurse:
     mid = lo + (size / 2) * width;
     swap(mid, lo, width);
 
-    loguy = lo;
-    higuy = hi + width;
+    l = lo;
+    h = hi + width;
 
     for (;;) 
     {
-      do { loguy += width; } while (loguy <= hi && comp(loguy, lo) <= 0);
-      do { higuy -= width; } while (higuy > lo && comp(higuy, lo) >= 0);
-      if (higuy < loguy) break;
-      swap(loguy, higuy, width);
+      do { l += width; } while (l <= hi && comp(l, lo) <= 0);
+      do { h -= width; } while (h > lo && comp(h, lo) >= 0);
+      if (h < l) break;
+      swap(l, h, width);
     }
 
-    swap(lo, higuy, width);
+    swap(lo, h, width);
 
-    if (higuy - 1 - lo >= hi - loguy) 
+    if (h - 1 - lo >= hi - l) 
     {
-      if (lo + width < higuy) 
+      if (lo + width < h)
       {
         lostk[stkptr] = lo;
-        histk[stkptr] = higuy - width;
+        histk[stkptr] = h - width;
         ++stkptr;
       }
 
-      if (loguy < hi) 
+      if (l < hi) 
       {
-        lo = loguy;
+        lo = l;
         goto recurse;
       }
     }
     else
     {
-      if (loguy < hi) 
+      if (l < hi) 
       {
-        lostk[stkptr] = loguy;
+        lostk[stkptr] = l;
         histk[stkptr] = hi;
         ++stkptr;
       }
 
-      if (lo + width < higuy) 
+      if (lo + width < h)
       {
-        hi = higuy - width;
+        hi = h - width;
         goto recurse;
       }
     }
@@ -126,7 +126,7 @@ static void shortsort(char *lo, char *hi, unsigned width, int (*comp)(const void
   while (hi > lo) 
   {
     max = lo;
-    for (p = lo+width; p <= hi; p += width) if (comp(p, max) > 0) max = p;
+    for (p = lo + width; p <= hi; p += width) if (comp(p, max) > 0) max = p;
     swap(max, hi, width);
     hi -= width;
   }
