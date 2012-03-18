@@ -4,12 +4,13 @@
 // Simple HTTP server sample for sanos
 //
 
-#include <os.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 #define SERVER "webserver/1.0"
 #define PROTOCOL "HTTP/1.0"
@@ -103,7 +104,7 @@ int process(FILE *f)
 
   fseek(f, 0, SEEK_CUR); // Force change of stream direction
 
-  if (stricmp(method, "GET") != 0)
+  if (strcasecmp(method, "GET") != 0)
     send_error(f, 501, "Not supported", NULL, "Method is not supported.");
   else if (stat(path, &statbuf) < 0)
     send_error(f, 404, "Not Found", NULL, "File not found.");
@@ -128,7 +129,7 @@ int process(FILE *f)
         send_headers(f, 200, "OK", NULL, "text/html", -1, statbuf.st_mtime);
         fprintf(f, "<HTML><HEAD><TITLE>Index of %s</TITLE></HEAD>\r\n<BODY>", path);
         fprintf(f, "<H4>Index of %s</H4>\r\n<PRE>\n", path);
-        fprintf(f, "Name Last Modified Size\r\n");
+        fprintf(f, "Name                             Last Modified              Size\r\n");
         fprintf(f, "<HR>\r\n");
         if (len > 1) fprintf(f, "<A HREF=\"..\">..</A>\r\n");
 
@@ -147,7 +148,7 @@ int process(FILE *f)
 
           fprintf(f, "<A HREF=\"%s%s\">", de->d_name, S_ISDIR(statbuf.st_mode) ? "/" : "");
           fprintf(f, "%s%s", de->d_name, S_ISDIR(statbuf.st_mode) ? "/</A>" : "</A> ");
-          if (de->d_namlen < 32) fprintf(f, "%*s", 32 - de->d_namlen, "");
+          if (strlen(de->d_name) < 32) fprintf(f, "%*s", 32 - strlen(de->d_name), "");
 
           if (S_ISDIR(statbuf.st_mode))
             fprintf(f, "%s\r\n", timebuf);
@@ -179,7 +180,7 @@ int main(int argc, char *argv[])
   bind(sock, (struct sockaddr *) &sin, sizeof(sin));
 
   listen(sock, 5);
-  printf("HTTP server listening on port %d at %s\n", PORT, inet_ntoa(peb->ipaddr));
+  printf("HTTP server listening on port %d\n", PORT);
 
   while (1)
   {
@@ -189,7 +190,7 @@ int main(int argc, char *argv[])
     s = accept(sock, NULL, NULL);
     if (s < 0) break;
 
-    f = fdopen(s, "r+");
+    f = fdopen(s, "a+");
     process(f);
     fclose(f);
   }

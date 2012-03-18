@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Updated webserver.c to compile both under sanos and linux.
+
 Version 1.3.4
 -------------
 
