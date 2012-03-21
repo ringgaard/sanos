@@ -206,7 +206,7 @@ int virtionet_transmit(struct dev *dev, struct pbuf *p)
   // Add packet to transmit queue
   for (i = 0, q = hdr; q; q = q->next, i++)
   {
-    if (i == MAXSEGS) -ERANGE;
+    if (i == MAXSEGS) return -ERANGE;
     sg[i].data = q->payload;
     sg[i].size = q->len;
   }
