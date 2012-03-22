@@ -3625,7 +3625,7 @@ void parse_number(const char *p)
           if (bits == 64)
               tok = sgn ? TOK_CLLONG : TOK_CULLONG;
           else if (bits == 32 || bits == 16 || bits == 8)
-              tok = sgn? TOK_CINT : TOK_CUINT;
+              tok = sgn ? TOK_CINT : TOK_CUINT;
           else 
               error("illegal number of bits in integer constant");
         }
