@@ -1,5 +1,5 @@
 /*
- *  GAS like assembler for TCC
+ *  GAS/MASM like assembler for TCC
  * 
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *
@@ -71,6 +71,12 @@ static void asm_expr_unary(TCCState *s1, ExprValue *pe)
         }
         next();
         break;
+    case TOK_CINT:
+    case TOK_CUINT:
+      pe->v = tokc.i;
+      pe->sym = NULL;
+      next();
+      break;
     case '+':
         next();
         asm_expr_unary(s1, pe);
@@ -100,8 +106,15 @@ static void asm_expr_unary(TCCState *s1, ExprValue *pe)
         break;
     default:
         if (tok >= TOK_IDENT) {
+            /* allow all symbols in masm mode */
+            if (parse_flags & PARSE_FLAG_MASM) {
+              sym = sym_find(tok);
+              if (!sym) sym = label_find(tok);
+            } else {
+              sym = label_find(tok);
+            }
+            
             /* label case : if the label was not found, add one */
-            sym = label_find(tok);
             if (!sym) {
                 sym = label_push(&s1->asm_labels, tok, 0);
                 /* NOTE: by default, the symbol is global */
@@ -122,7 +135,7 @@ static void asm_expr_unary(TCCState *s1, ExprValue *pe)
         break;
     }
 }
-    
+
 static void asm_expr_prod(TCCState *s1, ExprValue *pe)
 {
     int op;
@@ -989,6 +1002,67 @@ static void asm_instr(void)
         vpop();
     }
     cstr_free(&astr1);
+}
+
+static void parse_masm_instr(TCCState *s1) {
+    if (tok == TOK_PPNUM) {
+        const char *p;
+        int n;
+        p = tokc.cstr->data;
+        n = strtoul(p, (char **)&p, 10);
+        if (*p != '\0')
+                expect("':'");
+        /* new local label */
+        asm_new_label(s1, asm_get_local_label_name(s1, n), 1);
+        next();
+        skip(':');
+    } else if (tok == TOK_ASM__emit) {
+        int opcode;
+        next();
+        opcode = asm_int_expr(s1);
+        g(opcode);
+    } else if (tok >= TOK_IDENT) {
+        /* instruction or label */
+        int opcode = tok;
+        next();
+        if (tok == ':') {
+            /* new label */
+            asm_new_label(s1, opcode, 0);
+            next();
+        } else {
+            asm_opcode(s1, opcode);
+        }
+    } else {
+        expect("asm instruction");
+    }
+}
+
+static void masm_instr(TCCState *s1) {
+    int opcode;
+    int saved_parse_flags = parse_flags;
+
+    parse_flags = PARSE_FLAG_MASM | PARSE_FLAG_PREPROCESS;
+    next();
+    if (tok == '{') {
+        parse_flags |= PARSE_FLAG_LINEFEED;
+        next();
+        while (tok != '}') {
+            if (tok == TOK_EOF) expect("end of block");
+            if (tok == TOK_ASM2) {
+                next();
+                continue;
+            }
+            if (tok != TOK_LINEFEED) parse_masm_instr(s1);
+            if (tok == TOK_LINEFEED || tok == ';') next();
+        }
+        skip('}');
+    } else {
+        parse_masm_instr(s1);
+        if (tok == ';') next();
+    }    
+    parse_flags = saved_parse_flags;
+    if (tok == TOK_LINEFEED) next();
+    asm_free_labels(s1);
 }
 
 static void asm_global_instr(void)

@@ -88,6 +88,7 @@ int reg_classes[NB_REGS] = {
 static unsigned long func_sub_sp_offset;
 static unsigned long func_bound_offset;
 static int func_ret_sub;
+static int func_naked;
 
 /* XXX: make it faster ? */
 void g(int c)
@@ -160,7 +161,7 @@ static void gen_addr32(int r, Sym *sym, int c)
     gen_le32(c);
 }
 
-/* generate a modrm reference. 'op_reg' contains the addtionnal 3
+/* generate a modrm reference. 'op_reg' contains the addtional 3
    opcode bits */
 static void gen_modrm(int op_reg, int r, Sym *sym, int c)
 {
@@ -423,6 +424,8 @@ void gfunc_prolog(CType *func_type)
     CType *type;
 
     sym = func_type->ref;
+    func_naked = FUNC_NAKED(sym->r);
+    if (func_naked) return;
     func_call = FUNC_CALL(sym->r);
     addr = 8;
     loc = 0;
@@ -525,6 +528,9 @@ void gfunc_epilog(void)
         o(0x585a); /* restore returned value, if any */
     }
 #endif
+
+    if (func_naked) return;
+
     o(0xc9); /* leave */
     if (func_ret_sub == 0) {
         o(0xc3); /* ret */

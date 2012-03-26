@@ -42,7 +42,9 @@ ALT(DEF_ASM_OP0L(cmpsb, 0xa6, 0, OPC_BWL))
 ALT(DEF_ASM_OP0L(scmpb, 0xa6, 0, OPC_BWL))
 
 ALT(DEF_ASM_OP0L(insb, 0x6c, 0, OPC_BWL))
+    DEF_ASM_OP0(insd, 0x6d)
 ALT(DEF_ASM_OP0L(outsb, 0x6e, 0, OPC_BWL))
+    DEF_ASM_OP0(outsd, 0x6f)
 
 ALT(DEF_ASM_OP0L(lodsb, 0xac, 0, OPC_BWL))
 ALT(DEF_ASM_OP0L(slodb, 0xac, 0, OPC_BWL))
@@ -51,6 +53,7 @@ ALT(DEF_ASM_OP0L(movsb, 0xa4, 0, OPC_BWL))
 ALT(DEF_ASM_OP0L(smovb, 0xa4, 0, OPC_BWL))
 
 ALT(DEF_ASM_OP0L(scasb, 0xae, 0, OPC_BWL))
+    DEF_ASM_OP0(scasd, 0xaf)
 ALT(DEF_ASM_OP0L(sscab, 0xae, 0, OPC_BWL))
 
 ALT(DEF_ASM_OP0L(stosb, 0xaa, 0, OPC_BWL))

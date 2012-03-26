@@ -25,7 +25,7 @@ typedef struct ASMInstr {
     uint16_t opcode;
     uint16_t instr_type;
 #define OPC_JMP       0x01  /* jmp operand */
-#define OPC_B         0x02  /* only used zith OPC_WL */
+#define OPC_B         0x02  /* only used with OPC_WL */
 #define OPC_WL        0x04  /* accepts w, l or no suffix */
 #define OPC_BWL       (OPC_B | OPC_WL) /* accepts b, w, l or no suffix */
 #define OPC_REG       0x08 /* register is added to opcode */
@@ -336,6 +336,197 @@ static void parse_operand(TCCState *s1, Operand *op)
     op->type |= indir;
 }
 
+static void masm_logic_or_reg(TCCState *s1, Operand *op) {
+    op->reg = -1;
+    op->reg2 = -1;
+    op->shift = 0;
+    op->e.v = 0;
+    op->e.sym = NULL;
+    if (tok >= TOK_ASM_eax && tok <= TOK_ASM_edi) {
+        int reg = tok - TOK_ASM_eax;
+        next();
+        if (tok == '*') {
+            next();
+            op->reg2 = reg;
+            op->shift = get_reg_shift(s1);
+        } else {
+            op->reg = reg;
+        }
+    } else {
+        asm_expr_logic(s1, &op->e);
+    }
+}
+
+static void masm_expr(TCCState *s1, Operand *op)
+{
+    int opr;
+    int indir;
+    Operand op2;
+    indir = 0;
+    if (tok == '[') {
+        indir = 1;
+        next();
+    }
+    masm_logic_or_reg(s1, op);
+    for(;;) {
+        opr = tok;
+        if (opr != '+' && opr != '-' && opr != '[')
+            break;
+        if (opr == '[') {
+          if (indir) 
+              break;
+          opr = '+';
+          indir = 1;
+        }
+        next();
+        masm_logic_or_reg(s1, &op2);
+        
+        /* combine registers */
+        if (op2.reg != -1 || op2.reg2 != -1) {
+            if (opr != '+') expect("positive offset");
+            if (op2.reg != -1) {
+                if (op->reg == -1)
+                    op->reg = op2.reg;
+                else if (op->reg2 == -1) {
+                    op->reg2 = op2.reg;
+                    op->shift = 0;
+                } else {
+                    error("invalid adressing mode");
+                }
+            }
+            else if (op2.reg2 != -1) {
+                if (op->reg2 == -1) {
+                    op->reg2 = op2.reg2;
+                    op->shift = op2.shift;
+                } else {
+                    error("invalid adressing mode");
+                }
+            }
+        }
+
+        /* combine values */
+        if (opr == '+')
+            op->e.v += op2.e.v;
+        else
+            op->e.v -= op2.e.v;
+
+        /* combine symbols */
+        if (opr == '+') {
+            if (op->e.sym != NULL && op2.e.sym != NULL)
+                goto cannot_relocate;
+            if (op->e.sym == NULL && op2.e.sym != NULL)
+                op->e.sym = op2.e.sym;
+        } else {
+            if (!op->e.sym && !op2.e.sym) {
+                /* OK */
+            } else if (op->e.sym && !op2.e.sym) {
+                /* OK */
+            } else if (op->e.sym && op2.e.sym) {
+                if (op->e.sym == op2.e.sym) { 
+                    /* OK */
+                } else if (op->e.sym->r == op2.e.sym->r && op->e.sym->r != 0) {
+                    /* we also accept defined symbols in the same section */
+                    op->e.v += (long)op->e.sym->next - (long)op2.e.sym->next;
+                } else {
+                    goto cannot_relocate;
+                }
+                op->e.sym = NULL; /* same symbols can be subtracted to NULL */
+            } else {
+            cannot_relocate:
+                error("invalid operation with label");
+            }
+        }
+    }
+    if (indir) {
+        op->type |= OP_INDIR;
+        skip(']');
+    }
+}
+
+static void parse_masm_operand(TCCState *s1, Operand *op)
+{
+    ExprValue e;
+    int reg;
+    const char *p;
+
+    op->type = 0;
+    op->reg = -1;
+    op->reg2 = -1;
+    op->shift = 0;
+    op->e.v = 0;
+    op->e.sym = NULL;
+    if (tok >= TOK_ASM_al && tok <= TOK_ASM_db7) {
+        reg = tok - TOK_ASM_al;
+        op->type = 1 << (reg >> 3); /* WARNING: do not change constant order */
+        op->reg = reg & 7;
+        if ((op->type & OP_REG) && op->reg == TREG_EAX)
+            op->type |= OP_EAX;
+        else if (op->type == OP_REG8 && op->reg == TREG_ECX)
+            op->type |= OP_CL;
+        else if (op->type == OP_REG16 && op->reg == TREG_EDX)
+            op->type |= OP_DX;
+        next();
+    } else if (tok >= TOK_ASM_dr0 && tok <= TOK_ASM_dr7) {
+        op->type = OP_DB;
+        op->reg = tok - TOK_ASM_dr0;
+        next();
+    } else if (tok >= TOK_ASM_es && tok <= TOK_ASM_gs) {
+        op->type = OP_SEG;
+        op->reg = tok - TOK_ASM_es;
+        next();
+    } else if (tok == TOK_ASM_st) {
+        op->type = OP_ST;
+        op->reg = 0;
+        next();
+        if (tok == '(') {
+            next();
+            if (tok != TOK_PPNUM)
+                error("illegal fp register");
+            p = tokc.cstr->data;
+            reg = p[0] - '0';
+            next();  
+            if ((unsigned)reg >= 8 || p[1] != '\0')
+                error("illegal fp register number");
+            op->reg = reg;
+            next();
+            skip(')');
+        }
+        if (op->reg == 0)
+            op->type |= OP_ST0;
+    } else {
+        if (tok == TOK_ASM_offset) {
+            next();
+        }
+        if (tok == TOK_ASM_byte || tok == TOK_ASM_word || tok == TOK_ASM_dword) {
+            next();
+            skip(TOK_ASM_ptr);
+        }
+        masm_expr(s1, op);
+        if ((op->type & OP_INDIR) == 0 && op->reg == -1 && op->reg == -1 && !op->e.sym) {
+            /* constant */
+            op->type = OP_IM32;
+            if (op->e.v == (uint8_t)op->e.v)
+                op->type |= OP_IM8;
+            if (op->e.v == (int8_t)op->e.v)
+                op->type |= OP_IM8S;
+            if (op->e.v == (uint16_t)op->e.v)
+                op->type |= OP_IM16;
+        } else if (op->reg == -1 && op->reg == -1 && op->e.v == 0 && 
+                   op->e.sym && (op->e.sym->r & VT_VALMASK) == VT_LOCAL) {
+            /* local variable */
+            op->type = OP_EA | OP_INDIR;
+            op->reg = TOK_ASM_ebp - TOK_ASM_eax;
+            op->e.v = op->e.sym->c;
+            op->e.sym = NULL;
+        } else {
+            /* address+reg+reg2*n */
+            op->type |= OP_EA;
+            if (op->reg == -1 && op->reg2 == -1)
+                op->type |= OP_ADDR;
+        }
+    }
+}
+
 /* XXX: unify with C code output ? */
 static void gen_expr32(ExprValue *pe)
 {
@@ -429,6 +620,15 @@ static void asm_opcode(TCCState *s1, int opcode)
     Operand ops[MAX_OPERANDS], *pop;
     int op_type[3]; /* decoded op type */
 
+    /* process prefixes in masm mode */
+    if (parse_flags & PARSE_FLAG_MASM) {
+        while (opcode >= TOK_ASM_lock && opcode <= TOK_ASM_repnz) {
+            g(op0_codes[opcode - TOK_ASM_pusha]);
+            opcode = tok;
+            next();
+        }
+    }
+
     /* get operands */
     pop = ops;
     nb_ops = 0;
@@ -439,23 +639,51 @@ static void asm_opcode(TCCState *s1, int opcode)
         if (nb_ops >= MAX_OPERANDS) {
             error("incorrect number of operands");
         }
-        parse_operand(s1, pop);
+        if (parse_flags & PARSE_FLAG_MASM)
+            parse_masm_operand(s1, pop);
+        else
+            parse_operand(s1, pop);
         if (tok == ':') {
-           if (pop->type != OP_SEG || seg_prefix) {
-               error("incorrect prefix");
-           }
-           seg_prefix = segment_prefixes[pop->reg];
-           next();
-           parse_operand(s1, pop);
-           if (!(pop->type & OP_EA)) {
-               error("segment prefix must be followed by memory reference");
+            if (pop->type != OP_SEG || seg_prefix) {
+                error("incorrect prefix");
+            }
+            seg_prefix = segment_prefixes[pop->reg];
+            next();
+            if (parse_flags & PARSE_FLAG_MASM)
+                parse_masm_operand(s1, pop);
+            else
+                parse_operand(s1, pop);
+            if (!(pop->type & OP_EA)) {
+                error("segment prefix must be followed by memory reference");
            }
         }
+
+#ifdef ASM_DEBUG
+        printf("op%d: type=%x", nb_ops, pop->type);
+        if (pop->reg != -1) printf(" reg=%x", pop->reg); 
+        if (pop->reg2 != -1) printf(" reg2=%x", pop->reg2); 
+        if (pop->shift != 0) printf(" shift=%d", pop->shift); 
+        if (pop->e.v != 0) printf(" v=%x", pop->e.v); 
+        if (pop->e.sym) printf(" sym.v=%x sym.r=%x sym.c=%x sym.type=%x", pop->e.sym->v, pop->e.sym->r, pop->e.sym->c, pop->e.sym->type); 
+        printf("\n");
+#endif
+        
         pop++;
         nb_ops++;
         if (tok != ',')
             break;
         next();
+    }
+
+    /* swap operands for masm mode */
+    if (parse_flags & PARSE_FLAG_MASM) {
+      int a, b;
+      for (a = 0, b = nb_ops - 1; a < b; a++, b--) {
+        Operand tmp;
+        tmp = ops[a];
+        ops[a] = ops[b];
+        ops[b] = tmp;
+      }
     }
 
     is_short_jmp = 0;
@@ -639,6 +867,9 @@ static void asm_opcode(TCCState *s1, int opcode)
         g(op1);
     g(v);
         
+#ifdef ASM_DEBUG
+printf("v=%x instr_type=%x\n", v, pa->instr_type);
+#endif
     /* search which operand will used for modrm */
     modrm_index = 0;
     if (pa->instr_type & OPC_SHIFT) {

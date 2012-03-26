@@ -509,6 +509,9 @@ void main(void *arg)
     pushfd
     push SEL_UTEXT + SEL_RPL3
     push ebx
+    mov ax, SEL_UDATA + SEL_RPL3
+    mov ds, ax
+    mov es, ax
     IRETD
   }
 }

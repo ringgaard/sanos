@@ -1459,16 +1459,19 @@ ST_FN void pe_add_runtime_ex(TCCState *s1, struct pe_info *pe)
         s1->output_type = TCC_OUTPUT_EXE;
     }
 
+    start_symbol = s1->start_symbol;
+    if (!start_symbol) {
 #ifdef SANOS
-    start_symbol = PE_DLL == pe_type ? "DllMain" : "mainCRTStartup";
+        start_symbol = PE_DLL == pe_type ? "DllMain" : "mainCRTStartup";
 #else
-    start_symbol =
-        TCC_OUTPUT_MEMORY == s1->output_type
-        ? PE_GUI == pe_type ? "_runwinmain" : NULL
-        : PE_DLL == pe_type ? "__dllstart@12"
-        : PE_GUI == pe_type ? "_winstart" : "_start"
-        ;
+        start_symbol =
+            TCC_OUTPUT_MEMORY == s1->output_type
+            ? PE_GUI == pe_type ? "_runwinmain" : NULL
+            : PE_DLL == pe_type ? "__dllstart@12"
+            : PE_GUI == pe_type ? "_winstart" : "_start"
+            ;
 #endif
+    }
 
     /* grab the startup code from libtcc1 */
     if (start_symbol)
@@ -1535,9 +1538,13 @@ PUB_FN int pe_output_file(TCCState * s1, const char *filename)
     ret = pe_check_symbols(&pe);
     if (0 == ret) {
 #ifdef SANOS
-       // Always generate relocation information for SANOS
-       pe.reloc = new_section(pe.s1, ".reloc", SHT_PROGBITS, 0);
-       pe.imagebase = PE_DLL == pe.type ? 0x10000000 : 0x00400000;
+        // generate relocation information by default for SANOS
+        if (s1->imagebase == 0xFFFFFFFF) {
+            pe.reloc = new_section(pe.s1, ".reloc", SHT_PROGBITS, 0);
+            pe.imagebase = PE_DLL == pe.type ? 0x10000000 : 0x00400000;
+        } else {
+            pe.imagebase = s1->imagebase;
+        }
 #else
         if (PE_DLL == pe.type) {
             pe.reloc = new_section(pe.s1, ".reloc", SHT_PROGBITS, 0);

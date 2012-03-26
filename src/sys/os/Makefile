@@ -2,14 +2,13 @@
 # Makefile for os.dll
 #
 
-OBJS=environ.o heap.o netdb.o os.o resolv.o sntp.o syserr.o syslog.o userdb.o moddb.o verinfo.o
-
-# critsect.o signal.o sysapi.o thread.o tls.o
+OBJS=environ.o heap.o netdb.o os.o resolv.o sntp.o syserr.o syslog.o userdb.o \
+     moddb.o verinfo.o critsect.o signal.o sysapi.o thread.o tls.o bitops.o crypt.o
 
 all: os.dll
 
 os.dll: $(OBJS)
-    $(CC) -shared -o os.dll $(OBJS)
+    $(CC) -shared -entry _start@12 -fixed 0x7FF00000 -o os.dll $(OBJS)
 
 critsect.o: critsect.c
     $(CC) -c $** -o $@ -D OS_LIB
@@ -59,8 +58,14 @@ moddb.o: /usr/src/lib/moddb.c
 verinfo.o: /usr/src/lib/verinfo.c
     $(CC) -c $** -o $@ -D OS_LIB
 
+bitops.o: /usr/src/lib/bitops.c
+    $(CC) -c $** -o $@ -D OS_LIB
+
+crypt.o: /usr/src/lib/crypt.c
+    $(CC) -c $** -o $@ -D OS_LIB
+
 install: os.dll
     sh cp os.dll /boot/os.dll
 
 clean:
-    sh rm os.dll
+    sh rm $(OBJS) os.dll os.def

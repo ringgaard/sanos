@@ -245,6 +245,11 @@
  DEF_ASM(org)
  DEF_ASM(quad)
 
+ DEF_ASM(_emit)
+ DEF_ASM(offset)
+ DEF_ASM(dword)
+ DEF_ASM(ptr)
+
 #ifdef TCC_TARGET_I386
 
 /* WARNING: relative order of tokens is important. */

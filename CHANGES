@@ -4,6 +4,15 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * New features in the C compiler:
+        - Support for masm inline assembler syntax.
+        - Support for __declspec(naked) in C compiler
+        - New -start option for specifying the start symbol
+        - New -fixed option for specifying the PE base image address
+
+    * Data segment registers are now inilialized by the kernel before starting
+      a user-mode thread.
+
     * Updated webserver.c to compile both under sanos and linux.
 
 Version 1.3.4

@@ -255,11 +255,13 @@ typedef struct {
     unsigned
       func_call : 8,
       func_args : 8,
-      func_export : 1;
+      func_export : 1,
+      func_naked : 1;
 } func_attr_t;
 
 #define FUNC_CALL(r) (((func_attr_t*)&(r))->func_call)
 #define FUNC_EXPORT(r) (((func_attr_t*)&(r))->func_export)
+#define FUNC_NAKED(r) (((func_attr_t*)&(r))->func_naked)
 #define FUNC_ARGS(r) (((func_attr_t*)&(r))->func_args)
 #define INLINE_DEF(r) (*(int **)&(r))
 /* -------------------------------------------------- */
@@ -364,6 +366,7 @@ static int parse_flags;
                                         token. line feed is also
                                         returned at eof */
 #define PARSE_FLAG_ASM_COMMENTS 0x0008 /* '#' can be used for line comment */
+#define PARSE_FLAG_MASM         0x0010 /* use masm syntax for inline assembler */
  
 static Section *text_section, *data_section, *bss_section; /* predefined sections */
 static Section *cur_text_section; /* current section where function code is
@@ -494,6 +497,12 @@ struct TCCState {
 
     /* soname as specified on the command line (-soname) */
     const char *soname;
+    
+    /* start symbol */
+    const char *start_symbol;
+    
+    /* image base address for non-relocatable PE files */
+    unsigned long imagebase;
 
     /* if true, all symbols are exported */
     int rdynamic;
@@ -657,7 +666,7 @@ struct TCCState {
 
 #define TOK_SHL   0x01 /* shift left */
 #define TOK_SAR   0x02 /* signed shift right */
-  
+
 /* assignement operators : normal operator or 0x80 */
 #define TOK_A_MOD 0xa5
 #define TOK_A_AND 0xa6
@@ -909,7 +918,7 @@ typedef struct ExprValue {
 #define MAX_ASM_OPERANDS 30
 
 typedef struct ASMOperand {
-    int id; /* GCC 3 optionnal identifier (0 if number only supported */
+    int id; /* GCC 3 optional identifier (0 if number only supported */
     char *constraint;
     char asm_str[16]; /* computed asm string for operand */
     SValue *vt; /* C value of the expression */
@@ -924,6 +933,7 @@ typedef struct ASMOperand {
 
 static void asm_expr(TCCState *s1, ExprValue *pe);
 static int asm_int_expr(TCCState *s1);
+static void asm_expr_logic(TCCState *s1, ExprValue *pe);
 static int find_constraint(ASMOperand *operands, int nb_operands, 
                            const char *name, const char **pp);
 
@@ -932,6 +942,7 @@ static int tcc_assemble(TCCState *s1, int do_preprocess);
 #endif
 
 static void asm_instr(void);
+static void masm_instr(TCCState *s1);
 static void asm_global_instr(void);
 
 /* true if float/double/long double type */
@@ -6787,7 +6798,7 @@ static void parse_declspec(AttributeDef *ad)
             /* ignore */
             break;
         case TOK_NAKED:
-            warning("naked functions not supported, ignored");
+            FUNC_NAKED(ad->func_attr) = 1;
             break;
         default:
             if (tcc_state->warn_unsupported)
@@ -8584,7 +8595,11 @@ static void block(int *bsym, int *csym, int *case_sym, int *def_sym,
             expect("label identifier");
         }
         skip(';');
-    } else if (tok == TOK_ASM1 || tok == TOK_ASM2 || tok == TOK_ASM3) {
+    } else if (tok == TOK_ASM2) {
+        /* inline assembler with masm syntax */
+        masm_instr(tcc_state);
+    } else if (tok == TOK_ASM1 || tok == TOK_ASM3) {
+        /* inline assembler with gas syntax */
         asm_instr();
     } else {
         b = is_label();
@@ -10304,7 +10319,7 @@ TCCState *tcc_new(void)
                                       ".dynstrtab", 
                                       ".dynhashtab", SHF_PRIVATE);
     s->alacarte_link = 1;
-
+    s->imagebase = 0xFFFFFFFF;
 #ifdef CHAR_IS_UNSIGNED
     s->char_is_unsigned = 1;
 #endif
@@ -10737,6 +10752,8 @@ void help(void)
            "  -llib       link with dynamic or static library 'lib'\n"
            "  -shared     generate a shared library\n"
            "  -soname     set name for shared library to be used at runtime\n"
+           "  -entry sym  set start symbol name\n"
+           "  -fixed addr set base address (and do not generate relocation info)\n"
            "  -static     static linking\n"
            "  -rdynamic   export all global symbols to dynamic linker\n"
            "  -r          generate (relocatable) object file\n"
@@ -10775,6 +10792,8 @@ enum {
     TCC_OPTION_static,
     TCC_OPTION_shared,
     TCC_OPTION_soname,
+    TCC_OPTION_entry,
+    TCC_OPTION_fixed,
     TCC_OPTION_o,
     TCC_OPTION_r,
     TCC_OPTION_Wl,
@@ -10812,6 +10831,8 @@ static const TCCOption tcc_options[] = {
     { "static", TCC_OPTION_static, 0 },
     { "shared", TCC_OPTION_shared, 0 },
     { "soname", TCC_OPTION_soname, TCC_OPTION_HAS_ARG },
+    { "entry", TCC_OPTION_entry, TCC_OPTION_HAS_ARG },
+    { "fixed", TCC_OPTION_fixed, TCC_OPTION_HAS_ARG },
     { "o", TCC_OPTION_o, TCC_OPTION_HAS_ARG },
     { "run", TCC_OPTION_run, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "rdynamic", TCC_OPTION_rdynamic, 0 },
@@ -10987,6 +11008,12 @@ int parse_args(TCCState *s, int argc, char **argv)
                 break;
             case TCC_OPTION_soname:
                 s->soname = optarg; 
+                break;
+            case TCC_OPTION_entry:
+                s->start_symbol = optarg; 
+                break;
+            case TCC_OPTION_fixed:
+                s->imagebase = strtoul(optarg, NULL, 0);
                 break;
             case TCC_OPTION_o:
                 multiple_files = 1;

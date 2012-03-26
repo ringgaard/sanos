@@ -86,14 +86,6 @@ handle_t mkthread(void (__stdcall *startaddr)(struct tib *), unsigned long stack
 
 void __stdcall threadstart(struct tib *tib)
 {
-  // Set usermode segment selectors
-  __asm
-  {
-    mov ax, SEL_UDATA + SEL_RPL3
-    mov ds, ax
-    mov es, ax
-  }
-
   // Call thread routine
   if (tib->flags & CREATE_POSIX)
   {
