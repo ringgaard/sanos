@@ -494,15 +494,24 @@ static void parse_masm_operand(TCCState *s1, Operand *op)
         if (op->reg == 0)
             op->type |= OP_ST0;
     } else {
+        int offset = 0;
         if (tok == TOK_ASM_offset) {
+            offset = 1;
             next();
         }
         if (tok == TOK_ASM_byte || tok == TOK_ASM_word || tok == TOK_ASM_dword) {
+            /* XXX: use size hint */
             next();
             skip(TOK_ASM_ptr);
         }
         masm_expr(s1, op);
-        if ((op->type & OP_INDIR) == 0 && op->reg == -1 && op->reg == -1 && !op->e.sym) {
+        if (offset) {
+           if (op->reg != -1 && op->reg != -1) 
+               error("register not allowed in offset");
+           op->type |= OP_IM32;
+        } else if ((op->type & OP_INDIR) == 0 && 
+                   op->reg == -1 && op->reg == -1 && 
+                   !op->e.sym) {
             /* constant */
             op->type = OP_IM32;
             if (op->e.v == (uint8_t)op->e.v)

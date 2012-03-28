@@ -113,7 +113,7 @@ static void asm_expr_unary(TCCState *s1, ExprValue *pe)
             } else {
               sym = label_find(tok);
             }
-            
+
             /* label case : if the label was not found, add one */
             if (!sym) {
                 sym = label_push(&s1->asm_labels, tok, 0);

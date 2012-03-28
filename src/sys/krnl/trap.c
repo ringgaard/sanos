@@ -402,7 +402,7 @@ void send_signal(struct context *ctxt, int signum, void *addr)
 //   No signals can be delivered while the thread is initializing.
 //
 // THREAD_STATE_READY:
-//   The pending signals is delivered when the thread is scheduled
+//   The pending signals are delivered when the thread is scheduled
 //   to run again.
 //
 // THREAD_STATE_RUNNING:
