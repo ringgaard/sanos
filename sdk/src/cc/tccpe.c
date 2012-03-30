@@ -314,8 +314,13 @@ ST_DATA struct pe_header pe_header = {
     0x0000, /*WORD    DllCharacteristics; */
     0x00100000, /*DWORD   SizeOfStackReserve; */
     0x00001000, /*DWORD   SizeOfStackCommit; */
+#ifdef SANOS
+    0x02000000, /*DWORD   SizeOfHeapReserve; */
+    0x00020000, /*DWORD   SizeOfHeapCommit; */
+#else
     0x00100000, /*DWORD   SizeOfHeapReserve; */
     0x00001000, /*DWORD   SizeOfHeapCommit; */
+#endif
     0x00000000, /*DWORD   LoaderFlags; */
     0x00000010, /*DWORD   NumberOfRvaAndSizes; */
 

@@ -91,12 +91,12 @@ static void add_to_syslog(int pri, char *msg, int msglen, char *ident, int id, i
 
   if ((logmask & LOG_MASK(LOG_PRI(pri))) == 0) return;
   
-  if (*peb->hostname) 
-    hostname = peb->hostname;
+  if (*PEB->hostname) 
+    hostname = PEB->hostname;
   else
   {
-    hostname = get_property(osconfig, "os", "hostname", NULL);
-    if (!hostname && peb->ipaddr.s_addr != INADDR_ANY) hostname = inet_ntoa(peb->ipaddr);
+    hostname = get_property(osconfig(), "os", "hostname", NULL);
+    if (!hostname && PEB->ipaddr.s_addr != INADDR_ANY) hostname = inet_ntoa(PEB->ipaddr);
     if (!hostname) hostname = "localhost";
   }
 
@@ -242,17 +242,17 @@ void start_syslog()
   char *logfn;
   char *loghost;
 
-  logmask = LOG_UPTO(get_numeric_property(osconfig, "os", "loglevel", LOG_DEBUG));
+  logmask = LOG_UPTO(get_numeric_property(osconfig(), "os", "loglevel", LOG_DEBUG));
   syslogcons = fderr;
 
-  logfn = get_property(osconfig, "os", "logfile", NULL);
+  logfn = get_property(osconfig(), "os", "logfile", NULL);
   if (logfn != NULL) 
   {
     syslogfd = open(logfn, O_CREAT, S_IREAD | S_IWRITE);
     if (syslogfd >= 0) lseek(syslogfd, 0, SEEK_END);
   }
 
-  loghost = get_property(osconfig, "os", "loghost", NULL);
+  loghost = get_property(osconfig(), "os", "loghost", NULL);
   if (loghost != NULL)
   {
     struct hostent *hp;

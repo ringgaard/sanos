@@ -803,15 +803,15 @@ int gethostname(char *name, int namelen)
   char *host;
   char *domain;
 
-  if (*peb->hostname)
-    host = peb->hostname;
+  if (*PEB->hostname)
+    host = PEB->hostname;
   else
-    host = get_property(osconfig, "os", "hostname", NULL);
+    host = get_property(osconfig(), "os", "hostname", NULL);
 
-  if (*peb->default_domain)
-    domain = peb->default_domain;
+  if (*PEB->default_domain)
+    domain = PEB->default_domain;
   else
-    host = get_property(osconfig, "dns", "domain", NULL);
+    host = get_property(osconfig(), "dns", "domain", NULL);
 
   if (!host)
     strncpy(name, "localhost", namelen);

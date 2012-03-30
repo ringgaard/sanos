@@ -183,28 +183,28 @@ void init_sntpd()
   struct section *sect;
   struct property *prop;
   
-  if (peb->ipaddr.s_addr == INADDR_ANY) return;
+  if (PEB->ipaddr.s_addr == INADDR_ANY) return;
 
   idx = 0;
-  if (peb->ntp_server1.s_addr != INADDR_ANY)
+  if (PEB->ntp_server1.s_addr != INADDR_ANY)
   {
     ntp_servers[idx].hostname = NULL;
-    ntp_servers[idx].sa.sin_addr.s_addr = peb->ntp_server1.s_addr;
+    ntp_servers[idx].sa.sin_addr.s_addr = PEB->ntp_server1.s_addr;
     ntp_servers[idx].sa.sin_family = AF_INET;
     ntp_servers[idx].sa.sin_port = htons(NTP_PORT);
     idx++;
   }
 
-  if (peb->ntp_server2.s_addr != INADDR_ANY)
+  if (PEB->ntp_server2.s_addr != INADDR_ANY)
   {
     ntp_servers[idx].hostname = NULL;
-    ntp_servers[idx].sa.sin_addr.s_addr = peb->ntp_server2.s_addr;
+    ntp_servers[idx].sa.sin_addr.s_addr = PEB->ntp_server2.s_addr;
     ntp_servers[idx].sa.sin_family = AF_INET;
     ntp_servers[idx].sa.sin_port = htons(NTP_PORT);
     idx++;
   }
 
-  sect = find_section(osconfig, "ntp");
+  sect = find_section(osconfig(), "ntp");
   if (sect)
   {
     prop = sect->properties;

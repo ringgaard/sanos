@@ -474,8 +474,8 @@ int main(int argc, char *argv[])
     }
   }
 
-  port = get_numeric_property(osconfig, "telnetd", "port", 23);
-  pgm = get_property(osconfig, "telnetd", "pgm", "login");
+  port = get_numeric_property(osconfig(), "telnetd", "port", 23);
+  pgm = get_property(osconfig(), "telnetd", "pgm", "login");
 
   sock = socket(AF_INET, SOCK_STREAM, 0);
   if (sock < 0)

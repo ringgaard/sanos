@@ -1346,7 +1346,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  port = get_numeric_property(osconfig, "ftpd", "port", getservbyname("ftp", "tcp")->s_port);
+  port = get_numeric_property(osconfig(), "ftpd", "port", getservbyname("ftp", "tcp")->s_port);
 
   sock = socket(AF_INET, SOCK_STREAM, 0);
   if (sock < 0)

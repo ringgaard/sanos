@@ -367,7 +367,7 @@ int main(int argc, char *argv[])
     }
   }
   else
-    cfg = osconfig;
+    cfg = osconfig();
 
   // Initialize Java VM
   if (init_jvm() != 0) return 1;

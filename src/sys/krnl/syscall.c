@@ -2785,7 +2785,6 @@ int syscall(int syscallno, char *params, struct context *ctxt)
     char buf[1024];
 
     vsprintf(buf, syscalltab[syscallno].argfmt, params);
-    //print_string("<-%s(%s)\n", syscalltab[syscallno].name, buf);
     print_string("<-");
     print_string(syscalltab[syscallno].name);
     print_string("(");
@@ -2807,7 +2806,7 @@ int syscall(int syscallno, char *params, struct context *ctxt)
 
   if (rc < 0)
   {
-    struct tib *tib = self()->tib;
+    struct tib *tib = t->tib;
     if (tib) tib->errnum = -rc;
   }
 
@@ -2828,7 +2827,7 @@ int syscall(int syscallno, char *params, struct context *ctxt)
 #else
 
 #ifndef SYSCALL_LOGWAIT
-  if (syscallno != SYSCALL_WAIT && syscallno != SYSCALL_WAITALL && syscallno != SYSCALL_WAITANY)
+  if (syscallno != SYSCALL_WAITONE && syscallno != SYSCALL_WAITALL && syscallno != SYSCALL_WAITANY)
 #endif
 
 #endif
@@ -2837,7 +2836,6 @@ int syscall(int syscallno, char *params, struct context *ctxt)
     char rcstr[16];
 
     vsprintf(buf, syscalltab[syscallno].argfmt, params);
-    //kprintf("%s(%s) -> %d\n", syscalltab[syscallno].name, buf, rc);
     sprintf(rcstr, "%d", rc);
     print_string(syscalltab[syscallno].name);
     print_string("(");

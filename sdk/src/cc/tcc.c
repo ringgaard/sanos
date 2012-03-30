@@ -6216,7 +6216,9 @@ static int type_size(CType *type, int *a)
         *a = LDOUBLE_ALIGN;
         return LDOUBLE_SIZE;
     } else if (bt == VT_DOUBLE || bt == VT_LLONG) {
-#ifdef TCC_TARGET_I386
+#ifdef SANOS
+        *a = 8; 
+#elif TCC_TARGET_I386
         *a = 4;
 #elif defined(TCC_TARGET_ARM)
 #ifdef TCC_ARM_EABI

@@ -1777,7 +1777,7 @@ void shell()
 {
   char curdir[MAXPATH];
   char cmdline[256];
-  char *prompt = get_property(osconfig, "shell", "prompt", "%s$ ");
+  char *prompt = get_property(osconfig(), "shell", "prompt", "%s$ ");
   int rc;
 
   while (1)
@@ -1803,7 +1803,7 @@ int execute_script(char *cmdfile)
   char cmdline[256];
   int echo;
 
-  echo = get_numeric_property(osconfig, "shell", "echo", 0);
+  echo = get_numeric_property(osconfig(), "shell", "echo", 0);
 
   f = fopen(cmdfile, "r");
   if (!f)
@@ -1834,7 +1834,7 @@ int main(int argc, char *argv[])
 
   if (!gettib()->peb->rcdone)
   {
-    char *initcmds = get_property(osconfig, "shell", "initcmds", NULL);
+    char *initcmds = get_property(osconfig(), "shell", "initcmds", NULL);
     if (initcmds) execute_script(initcmds);
     gettib()->peb->rcdone = 1;
   }

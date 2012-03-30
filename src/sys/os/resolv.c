@@ -616,23 +616,23 @@ int res_init()
   res.ndots = 1;
   res.nscount = 0;
 
-  if (peb->primary_dns.s_addr != INADDR_ANY)
+  if (PEB->primary_dns.s_addr != INADDR_ANY)
   {
-    res.nsaddr_list[res.nscount].sin_addr.s_addr = peb->primary_dns.s_addr;    
+    res.nsaddr_list[res.nscount].sin_addr.s_addr = PEB->primary_dns.s_addr;    
     res.nsaddr_list[res.nscount].sin_family = AF_INET;
     res.nsaddr_list[res.nscount].sin_port = htons(NS_DEFAULTPORT);
     res.nscount++;
   }
 
-  if (peb->secondary_dns.s_addr != INADDR_ANY)
+  if (PEB->secondary_dns.s_addr != INADDR_ANY)
   {
-    res.nsaddr_list[res.nscount].sin_addr.s_addr = peb->secondary_dns.s_addr;
+    res.nsaddr_list[res.nscount].sin_addr.s_addr = PEB->secondary_dns.s_addr;
     res.nsaddr_list[res.nscount].sin_family = AF_INET;
     res.nsaddr_list[res.nscount].sin_port = htons(NS_DEFAULTPORT);
     res.nscount++;
   }
 
-  addr = get_property(osconfig, "dns", "primary", NULL);
+  addr = get_property(osconfig(), "dns", "primary", NULL);
   if (addr != NULL)
   {
     res.nsaddr_list[res.nscount].sin_addr.s_addr = inet_addr(addr);
@@ -641,7 +641,7 @@ int res_init()
     res.nscount++;
   }
 
-  addr = get_property(osconfig, "dns", "secondary", NULL);
+  addr = get_property(osconfig(), "dns", "secondary", NULL);
   if (addr != NULL)
   {
     res.nsaddr_list[res.nscount].sin_addr.s_addr = inet_addr(addr);
@@ -658,10 +658,10 @@ int res_init()
     if (res.nsaddr_list[res.nscount].sin_addr.s_addr != INADDR_NONE) res.nscount++;
   }
 
-  strcpy(res.defdname, peb->default_domain);
+  strcpy(res.defdname, PEB->default_domain);
   if (!*res.defdname) 
   {
-    strcpy(res.defdname, get_property(osconfig, "dns", "domain", "local.domain"));
+    strcpy(res.defdname, get_property(osconfig(), "dns", "domain", "local.domain"));
   }
 
   res.dnsrch[0] = res.defdname;

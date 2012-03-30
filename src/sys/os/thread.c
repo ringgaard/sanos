@@ -71,12 +71,12 @@ void init_threads(hmodule_t hmod, struct term *initterm)
   proc->term = initterm;
   proc->hmod = hmod;
   proc->cmdline = NULL;
-  proc->env = initenv(find_section(osconfig, "env"));
+  proc->env = initenv(find_section(osconfig(), "env"));
   proc->facility = LOG_DAEMON;
   proc->ident = strdup("os");
 
   tib->proc = proc;
-  peb->firstproc = peb->lastproc = proc;
+  PEB->firstproc = PEB->lastproc = proc;
 }
 
 handle_t mkthread(void (__stdcall *startaddr)(struct tib *), unsigned long stacksize, struct tib **ptib)
@@ -124,10 +124,10 @@ static struct process *mkproc(struct process *parent, int hndl, int flags)
   enter(&proc_lock);
   proc->id = nextprocid++;
   if (flags & CREATE_CHILD) proc->parent = parent;
-  proc->prevproc = peb->lastproc;
-  if (!peb->firstproc) peb->firstproc = proc;
-  if (peb->lastproc) peb->lastproc->nextproc = proc;
-  peb->lastproc = proc;
+  proc->prevproc = PEB->lastproc;
+  if (!PEB->firstproc) PEB->firstproc = proc;
+  if (PEB->lastproc) PEB->lastproc->nextproc = proc;
+  PEB->lastproc = proc;
   leave(&proc_lock);
 
   return proc;
@@ -231,11 +231,11 @@ void endproc(struct process *proc, int status)
   // Remove process from process list
   if (proc->nextproc) proc->nextproc->prevproc = proc->prevproc;
   if (proc->prevproc) proc->prevproc->nextproc = proc->nextproc;
-  if (proc == peb->firstproc) peb->firstproc = proc->nextproc;
-  if (proc == peb->lastproc) peb->lastproc = proc->prevproc;
+  if (proc == PEB->firstproc) PEB->firstproc = proc->nextproc;
+  if (proc == PEB->lastproc) PEB->lastproc = proc->prevproc;
   
   // Orphan child processes
-  for (p = peb->firstproc; p; p = p->nextproc) if (p->parent == proc) p->parent = NULL;
+  for (p = PEB->firstproc; p; p = p->nextproc) if (p->parent == proc) p->parent = NULL;
   
   leave(&proc_lock);
 
@@ -365,7 +365,7 @@ handle_t getprochandle(pid_t pid)
   struct process *p;
 
   enter(&proc_lock);
-  for (p = peb->firstproc; p; p = p->nextproc) 
+  for (p = PEB->firstproc; p; p = p->nextproc) 
   {
     if (p->id == pid)
     {

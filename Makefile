@@ -138,20 +138,20 @@ dirs:
 #
 
 clean:
-    del /Q $(BIN)
-    del /Q /S $(OBJ)
-    del /Q /S $(INSTALL)
-    del /Q $(MKDFS)
-    del /Q $(MKFLOPPY)
-    del /Q $(MKPART)
-    del /Q $(DBGGW)
-    del /Q $(SOW)
-    del /Q $(TOOLSRC)\mkfloppy\release
-    del /Q $(TOOLSRC)\mkpart\release
-    del /Q $(TOOLSRC)\dbggw\release
-    del /Q $(TOOLSRC)\sow\release
-    del /Q $(TOOLSRC)\dfs\release
-    del /Q /S $(IMG)
+    -del /Q $(BIN)
+    -del /Q /S $(OBJ)
+    -del /Q /S $(INSTALL)
+    -del /Q $(MKDFS)
+    -del /Q $(MKFLOPPY)
+    -del /Q $(MKPART)
+    -del /Q $(DBGGW)
+    -del /Q $(SOW)
+    -del /Q $(TOOLSRC)\mkfloppy\release
+    -del /Q $(TOOLSRC)\mkpart\release
+    -del /Q $(TOOLSRC)\dbggw\release
+    -del /Q $(TOOLSRC)\sow\release
+    -del /Q $(TOOLSRC)\dfs\release
+    -del /Q /S $(IMG)
 
 #
 # tools
@@ -1101,27 +1101,27 @@ SDKSRC=$(SDK)\src
 
 $(SDKBIN)/os.dll: $(SOW)
     if not exist $(SDKBIN) mkdir $(SDKBIN)
-    copy $(SOW) $(SDKBIN)\os.dll
+    copy /Y $(SOW) $(SDKBIN)\os.dll
 
 $(SDKBIN)/make.exe: $(BIN)/make.exe
     if not exist $(SDKBIN) mkdir $(SDKBIN)
-    copy $(BIN)\make.exe $(SDKBIN)\make.exe
+    copy /Y $(BIN)\make.exe $(SDKBIN)\make.exe
 
 $(SDKBIN)/ar.exe: $(BIN)/ar.exe
     if not exist $(SDKBIN) mkdir $(SDKBIN)
-    copy $(BIN)\ar.exe $(SDKBIN)\ar.exe
+    copy /Y $(BIN)\ar.exe $(SDKBIN)\ar.exe
 
 $(SDKBIN)/impdef.exe: $(BIN)/impdef.exe
     if not exist $(SDKBIN) mkdir $(SDKBIN)
-    copy $(BIN)\impdef.exe $(SDKBIN)\impdef.exe
+    copy /Y $(BIN)\impdef.exe $(SDKBIN)\impdef.exe
 
 $(SDKBIN)/ctohtml.exe: $(BIN)/ctohtml.exe
     if not exist $(SDKBIN) mkdir $(SDKBIN)
-    copy $(BIN)\ctohtml.exe $(SDKBIN)\ctohtml.exe
+    copy /Y $(BIN)\ctohtml.exe $(SDKBIN)\ctohtml.exe
 
 $(SDKBIN)/nsh.exe: $(BIN)/nsh.exe
     if not exist $(SDKBIN) mkdir $(SDKBIN)
-    copy $(BIN)\nsh.exe $(SDKBIN)\nsh.exe
+    copy /Y $(BIN)\nsh.exe $(SDKBIN)\nsh.exe
 
 sdk: $(SDKBIN)/os.dll $(SDKBIN)/make.exe $(SDKBIN)/ar.exe $(SDKBIN)/impdef.exe $(SDKBIN)/ctohtml.exe
     cd $(SDKSRC)\as && nmake install
@@ -1152,39 +1152,39 @@ install: sanos
     if not exist $(INSTALL)\tmp mkdir $(INSTALL)\tmp
     if not exist $(INSTALL)\usr mkdir $(INSTALL)\usr
     if not exist $(INSTALL)\var mkdir $(INSTALL)\var
-    copy $(BIN)\sh.exe        $(INSTALL)\bin\sh.exe
-    copy $(BIN)\httpd.dll     $(INSTALL)\bin\httpd.dll
-    copy $(BIN)\setup.exe     $(INSTALL)\bin\setup.exe
-    copy $(BIN)\ctohtml.exe   $(INSTALL)\bin\ctohtml.exe
-    copy $(BIN)\edit.exe      $(INSTALL)\bin\edit.exe
-    copy $(BIN)\fdisk.exe     $(INSTALL)\bin\fdisk.exe
-    copy $(BIN)\jinit.exe     $(INSTALL)\bin\jinit.exe
-    copy $(BIN)\telnetd.exe   $(INSTALL)\bin\telnetd.exe
-    copy $(BIN)\ftpd.exe      $(INSTALL)\bin\ftpd.exe
-    copy $(BIN)\login.exe     $(INSTALL)\bin\login.exe
-    copy $(BIN)\msvcrt.dll    $(INSTALL)\bin\msvcrt.dll
-    copy $(BIN)\kernel32.dll  $(INSTALL)\bin\kernel32.dll
-    copy $(BIN)\user32.dll    $(INSTALL)\bin\user32.dll
-    copy $(BIN)\advapi32.dll  $(INSTALL)\bin\advapi32.dll
-    copy $(BIN)\winmm.dll     $(INSTALL)\bin\winmm.dll
-    copy $(BIN)\wsock32.dll   $(INSTALL)\bin\wsock32.dll
-    copy $(BUILD)\os.ini      $(INSTALL)\etc\os.ini
-    copy $(BUILD)\setup.ini   $(INSTALL)\etc\setup.ini
-    copy $(BUILD)\krnl.ini    $(INSTALL)\boot\krnl.ini
-    copy $(BIN)\boot          $(INSTALL)\boot\boot
-    copy $(BIN)\cdboot        $(INSTALL)\boot\cdboot
-    copy $(BIN)\cdemboot      $(INSTALL)\boot\cdemboot
-    copy $(BIN)\netboot       $(INSTALL)\boot\netboot
-    copy $(BIN)\osldr.dll     $(INSTALL)\boot\osldr.dll
-    copy $(BIN)\os.dll        $(INSTALL)\boot\os.dll
-    copy $(BIN)\3c905c.sys    $(INSTALL)\boot\3c905c.sys
-    copy $(BIN)\eepro100.sys  $(INSTALL)\boot\eepro100.sys
-    copy $(BIN)\ne2000.sys    $(INSTALL)\boot\ne2000.sys
-    copy $(BIN)\pcnet32.sys   $(INSTALL)\boot\pcnet32.sys
-    copy $(BIN)\rtl8139.sys   $(INSTALL)\boot\rtl8139.sys
-    copy $(BIN)\sis900.sys    $(INSTALL)\boot\sis900.sys
-    copy $(BIN)\tulip.sys     $(INSTALL)\boot\tulip.sys
-    copy $(BIN)\virtionet.sys $(INSTALL)\boot\virtionet.sys
+    copy /Y $(BIN)\sh.exe        $(INSTALL)\bin\sh.exe
+    copy /Y $(BIN)\httpd.dll     $(INSTALL)\bin\httpd.dll
+    copy /Y $(BIN)\setup.exe     $(INSTALL)\bin\setup.exe
+    copy /Y $(BIN)\ctohtml.exe   $(INSTALL)\bin\ctohtml.exe
+    copy /Y $(BIN)\edit.exe      $(INSTALL)\bin\edit.exe
+    copy /Y $(BIN)\fdisk.exe     $(INSTALL)\bin\fdisk.exe
+    copy /Y $(BIN)\jinit.exe     $(INSTALL)\bin\jinit.exe
+    copy /Y $(BIN)\telnetd.exe   $(INSTALL)\bin\telnetd.exe
+    copy /Y $(BIN)\ftpd.exe      $(INSTALL)\bin\ftpd.exe
+    copy /Y $(BIN)\login.exe     $(INSTALL)\bin\login.exe
+    copy /Y $(BIN)\msvcrt.dll    $(INSTALL)\bin\msvcrt.dll
+    copy /Y $(BIN)\kernel32.dll  $(INSTALL)\bin\kernel32.dll
+    copy /Y $(BIN)\user32.dll    $(INSTALL)\bin\user32.dll
+    copy /Y $(BIN)\advapi32.dll  $(INSTALL)\bin\advapi32.dll
+    copy /Y $(BIN)\winmm.dll     $(INSTALL)\bin\winmm.dll
+    copy /Y $(BIN)\wsock32.dll   $(INSTALL)\bin\wsock32.dll
+    copy /Y $(BUILD)\os.ini      $(INSTALL)\etc\os.ini
+    copy /Y $(BUILD)\setup.ini   $(INSTALL)\etc\setup.ini
+    copy /Y $(BUILD)\krnl.ini    $(INSTALL)\boot\krnl.ini
+    copy /Y $(BIN)\boot          $(INSTALL)\boot\boot
+    copy /Y $(BIN)\cdboot        $(INSTALL)\boot\cdboot
+    copy /Y $(BIN)\cdemboot      $(INSTALL)\boot\cdemboot
+    copy /Y $(BIN)\netboot       $(INSTALL)\boot\netboot
+    copy /Y $(BIN)\osldr.dll     $(INSTALL)\boot\osldr.dll
+    copy /Y $(BIN)\os.dll        $(INSTALL)\boot\os.dll
+    copy /Y $(BIN)\3c905c.sys    $(INSTALL)\boot\3c905c.sys
+    copy /Y $(BIN)\eepro100.sys  $(INSTALL)\boot\eepro100.sys
+    copy /Y $(BIN)\ne2000.sys    $(INSTALL)\boot\ne2000.sys
+    copy /Y $(BIN)\pcnet32.sys   $(INSTALL)\boot\pcnet32.sys
+    copy /Y $(BIN)\rtl8139.sys   $(INSTALL)\boot\rtl8139.sys
+    copy /Y $(BIN)\sis900.sys    $(INSTALL)\boot\sis900.sys
+    copy /Y $(BIN)\tulip.sys     $(INSTALL)\boot\tulip.sys
+    copy /Y $(BIN)\virtionet.sys $(INSTALL)\boot\virtionet.sys
 
 install-source: dirs
     -@if not exist $(INSTALL)\usr mkdir $(INSTALL)\usr
@@ -1199,7 +1199,7 @@ install-source: dirs
     xcopy /S /I /Y $(SRC)\sys $(INSTALL)\usr\src\sys
     xcopy /S /I /Y $(SRC)\utils $(INSTALL)\usr\src\utils
     xcopy /S /I /Y $(SRC)\win32 $(INSTALL)\usr\src\win32
-    copy $(SRC)\Makefile $(INSTALL)\usr\src
+    copy /Y $(SRC)\Makefile $(INSTALL)\usr\src
 
 install-sdk: install-source sdk
     -@if not exist $(INSTALL)\usr\bin mkdir $(INSTALL)\usr\bin
@@ -1209,23 +1209,23 @@ install-sdk: install-source sdk
     -@if not exist $(INSTALL)\usr\src\utils\cc mkdir $(INSTALL)\usr\src\utils\cc
     -@if not exist $(INSTALL)\usr\src\utils\ar mkdir $(INSTALL)\usr\src\utils\ar
     -@if not exist $(INSTALL)\usr\src\utils\makedepend mkdir $(INSTALL)\usr\src\utils\makedepend
-    copy $(SDKBIN)\as.exe         $(INSTALL)\usr\bin
-    copy $(SDKBIN)\cc.exe         $(INSTALL)\usr\bin
-    copy $(SDKBIN)\make.exe       $(INSTALL)\usr\bin
-    copy $(SDKBIN)\ar.exe         $(INSTALL)\usr\bin
-    copy $(SDKBIN)\impdef.exe     $(INSTALL)\usr\bin
-    copy $(SDKBIN)\makedepend.exe $(INSTALL)\usr\bin
-    copy $(SDKLIB)\libc.a         $(INSTALL)\usr\lib
-    copy $(SDKLIB)\os.def         $(INSTALL)\usr\lib\os.def
-    copy $(SDKSRC)\as\*.c         $(INSTALL)\usr\src\utils\as
-    copy $(SDKSRC)\as\*.h         $(INSTALL)\usr\src\utils\as
-    copy $(SDKSRC)\as\output\*.h  $(INSTALL)\usr\src\utils\as\output
-    copy $(SDKSRC)\as\output\*.c  $(INSTALL)\usr\src\utils\as\output
-    copy $(SDKSRC)\as\Makefile.sanos $(INSTALL)\usr\src\utils\as\Makefile
-    copy $(SDKSRC)\cc\*.c         $(INSTALL)\usr\src\utils\cc
-    copy $(SDKSRC)\cc\*.h         $(INSTALL)\usr\src\utils\cc
-    copy $(SDKSRC)\cc\*.def       $(INSTALL)\usr\src\utils\cc
-    copy $(SDKSRC)\cc\Makefile.sanos $(INSTALL)\usr\src\utils\cc\Makefile
-    copy $(SDKSRC)\makedepend\*.c $(INSTALL)\usr\src\utils\makedepend
-    copy $(SDKSRC)\makedepend\*.h $(INSTALL)\usr\src\utils\makedepend
-    copy $(SDKSRC)\makedepend\Makefile.sanos $(INSTALL)\usr\src\utils\makedepend\Makefile
+    copy /Y $(SDKBIN)\as.exe         $(INSTALL)\usr\bin
+    copy /Y $(SDKBIN)\cc.exe         $(INSTALL)\usr\bin
+    copy /Y $(SDKBIN)\make.exe       $(INSTALL)\usr\bin
+    copy /Y $(SDKBIN)\ar.exe         $(INSTALL)\usr\bin
+    copy /Y $(SDKBIN)\impdef.exe     $(INSTALL)\usr\bin
+    copy /Y $(SDKBIN)\makedepend.exe $(INSTALL)\usr\bin
+    copy /Y $(SDKLIB)\libc.a         $(INSTALL)\usr\lib
+    copy /Y $(SDKLIB)\os.def         $(INSTALL)\usr\lib\os.def
+    copy /Y $(SDKSRC)\as\*.c         $(INSTALL)\usr\src\utils\as
+    copy /Y $(SDKSRC)\as\*.h         $(INSTALL)\usr\src\utils\as
+    copy /Y $(SDKSRC)\as\output\*.h  $(INSTALL)\usr\src\utils\as\output
+    copy /Y $(SDKSRC)\as\output\*.c  $(INSTALL)\usr\src\utils\as\output
+    copy /Y $(SDKSRC)\as\Makefile.sanos $(INSTALL)\usr\src\utils\as\Makefile
+    copy /Y $(SDKSRC)\cc\*.c         $(INSTALL)\usr\src\utils\cc
+    copy /Y $(SDKSRC)\cc\*.h         $(INSTALL)\usr\src\utils\cc
+    copy /Y $(SDKSRC)\cc\*.def       $(INSTALL)\usr\src\utils\cc
+    copy /Y $(SDKSRC)\cc\Makefile.sanos $(INSTALL)\usr\src\utils\cc\Makefile
+    copy /Y $(SDKSRC)\makedepend\*.c $(INSTALL)\usr\src\utils\makedepend
+    copy /Y $(SDKSRC)\makedepend\*.h $(INSTALL)\usr\src\utils\makedepend
+    copy /Y $(SDKSRC)\makedepend\Makefile.sanos $(INSTALL)\usr\src\utils\makedepend\Makefile
