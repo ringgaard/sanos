@@ -58,6 +58,7 @@ struct critsect mod_lock;
 struct critsect env_lock;
 
 struct section *config;
+struct peb *global;
 struct moddb usermods;
 
 struct term console = {TERM_CONSOLE, 80, 25};
@@ -105,7 +106,7 @@ void dbgbreak()
 
 int *_fmode()
 {
-  return &PEB->fmodeval;
+  return &getpeb()->fmodeval;
 }
 
 int __getstdhndl(int n)
@@ -163,8 +164,8 @@ int umask(int mask)
   int oldmask;
 
   mask &= S_IRWXUGO;
-  oldmask = PEB->umaskval;
-  PEB->umaskval = mask;
+  oldmask = getpeb()->umaskval;
+  getpeb()->umaskval = mask;
   return oldmask;
 }
 
@@ -229,7 +230,7 @@ int canonicalize(const char *filename, char *buffer, int size)
       errno = ENAMETOOLONG;
       return -1;
     }
-    *p++ = PEB->pathsep;
+    *p++ = getpeb()->pathsep;
 
     // Parse next name part in path
     len = 0;
@@ -268,7 +269,7 @@ int canonicalize(const char *filename, char *buffer, int size)
   }
 
   // Convert empty filename to /
-  if (p == buffer) *p++ = PEB->pathsep;
+  if (p == buffer) *p++ = getpeb()->pathsep;
 
   // Terminate string
   if (p == end) 
@@ -306,7 +307,7 @@ void *malloc(size_t size)
   //syslog(LOG_MODULE | LOG_DEBUG, "malloc %d bytes", size);
 
   enter(&heap_lock);
-  p = heap_alloc(PEB->heap, size);
+  p = heap_alloc(getpeb()->heap, size);
   leave(&heap_lock);
 
   if (size && !p) panic("malloc: out of memory");
@@ -321,7 +322,7 @@ void *realloc(void *mem, size_t size)
   void *p;
 
   enter(&heap_lock);
-  p = heap_realloc(PEB->heap, mem, size);
+  p = heap_realloc(getpeb()->heap, mem, size);
   leave(&heap_lock);
 
   if (size && !p) panic("realloc: out of memory");
@@ -335,7 +336,7 @@ void *calloc(size_t num, size_t size)
   void *p;
 
   enter(&heap_lock);
-  p = heap_calloc(PEB->heap, num, size);
+  p = heap_calloc(getpeb()->heap, num, size);
   leave(&heap_lock);
 
   if (size * num != 0 && !p) panic("calloc: out of memory");
@@ -347,7 +348,7 @@ void *calloc(size_t num, size_t size)
 void free(void *p)
 {
   enter(&heap_lock);
-  heap_free(PEB->heap, p);
+  heap_free(getpeb()->heap, p);
   leave(&heap_lock);
 }
 
@@ -356,7 +357,7 @@ struct mallinfo mallinfo()
   struct mallinfo m;
 
   enter(&heap_lock);
-  m = heap_mallinfo(PEB->heap);
+  m = heap_mallinfo(getpeb()->heap);
   leave(&heap_lock);
 
   return m;
@@ -671,7 +672,7 @@ int uname(struct utsname *buf)
   machine[3] = '6';
   machine[4] = 0;
 
-  osflags = PEB->osversion.file_flags;
+  osflags = getpeb()->osversion.file_flags;
   if (osflags & VER_FLAG_PRERELEASE) 
     build = "prerelease ";
   else if (osflags & VER_FLAG_PATCHED) 
@@ -683,11 +684,11 @@ int uname(struct utsname *buf)
   else
     build = "";
 
-  gmtime_r(&PEB->ostimestamp, &tm);
-  ver = &PEB->osversion;
+  gmtime_r(&getpeb()->ostimestamp, &tm);
+  ver = &getpeb()->osversion;
 
   memset(buf, 0, sizeof(struct utsname));
-  strncpy(buf->sysname, PEB->osname, UTSNAMELEN);
+  strncpy(buf->sysname, getpeb()->osname, UTSNAMELEN);
   gethostname(buf->nodename, UTSNAMELEN);
   sprintf(buf->release, "%d.%d.%d.%d", ver->file_major_version, ver->file_minor_version, ver->file_release_number, ver->file_build_number);
   sprintf(buf->version, "%s%04d-%02d-%02d %02d:%02d:%02d", build, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
@@ -710,6 +711,11 @@ char *crypt(const char *key, const char *salt)
 struct section *osconfig()
 {
   return config;
+}
+
+struct peb *getpeb()
+{
+  return (struct peb *) PEB_ADDRESS;
 }
 
 //
@@ -786,7 +792,7 @@ void init_net()
 
       //syslog(LOG_INFO, "%s: addr %a mask %a gw %a bcast %a", ifcfg.name, &addr, &mask, &gw, &bcast);
 
-      if (first) PEB->ipaddr.s_addr = addr;
+      if (first) getpeb()->ipaddr.s_addr = addr;
     }
 
     prop = prop->next;
@@ -803,38 +809,38 @@ void init_hostname()
   int len;
 
   // Get hostname and domain from os config
-  if (!*PEB->hostname)
+  if (!*getpeb()->hostname)
   {
     char *host = get_property(config, "os", "hostname", NULL);
-    if (host) strcpy(PEB->hostname, host);
+    if (host) strcpy(getpeb()->hostname, host);
   }
 
-  if (!*PEB->default_domain)
+  if (!*getpeb()->default_domain)
   {
     char *domain = get_property(config, "dns", "domain", NULL);
-    if (domain) strcpy(PEB->default_domain, domain);
+    if (domain) strcpy(getpeb()->default_domain, domain);
   }
 
   // Check for hostname already set by configuration or DHCP
-  if (*PEB->hostname) return;
+  if (*getpeb()->hostname) return;
 
   // Check for any IP address configured
-  if (PEB->ipaddr.s_addr == INADDR_ANY) return;
+  if (getpeb()->ipaddr.s_addr == INADDR_ANY) return;
 
   // Try to lookup hostname from the ip address using DNS
-  hp = gethostbyaddr((char *) &PEB->ipaddr, sizeof(struct in_addr), AF_INET);
+  hp = gethostbyaddr((char *) &getpeb()->ipaddr, sizeof(struct in_addr), AF_INET);
   if (!hp || !hp->h_name || !*hp->h_name) return;
 
   // Check that domain name matches
   dot = strchr(hp->h_name, '.');
   if (!dot) return;
-  if (strcmp(dot + 1, PEB->default_domain) != 0) return;
+  if (strcmp(dot + 1, getpeb()->default_domain) != 0) return;
 
   // Copy hostname from DNS to PEB
   len = dot - hp->h_name;
-  if (len >= sizeof(PEB->hostname)) return;
-  memcpy(PEB->hostname, hp->h_name, len);
-  PEB->hostname[len] = 0;
+  if (len >= sizeof(getpeb()->hostname)) return;
+  memcpy(getpeb()->hostname, hp->h_name, len);
+  getpeb()->hostname[len] = 0;
 }
 
 void init_mount()
@@ -891,19 +897,19 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   int rc;
   char *init;
 
-  // Setup pointer to process environment block (PEB)
-  PEB->globalhandler = globalhandler;
-  PEB->fmodeval = O_BINARY; //O_TEXT;
+  // Initialize process environment block (PEB)
+  getpeb()->globalhandler = globalhandler;
+  getpeb()->fmodeval = O_BINARY; //O_TEXT;
 #if DEBUG
-  PEB->debug = 1;
+  getpeb()->debug = 1;
 #endif
 
   // Initialize syscall handler
   init_syscall();
 
   // Initialize global heap
-  PEB->heap = create_module_heap(hmod);
-  if (!PEB->heap) panic("unable to create global heap");
+  getpeb()->heap = create_module_heap(hmod);
+  if (!getpeb()->heap) panic("unable to create global heap");
 
   // Initialize locks
   mkcs(&heap_lock);
@@ -913,7 +919,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   // Load configuration file
   config = read_properties("/etc/os.ini");
   //if (!config) syslog(LOG_INFO, "Unable to read /etc/os.ini");
-  PEB->debug = get_numeric_property(config, "os", "debug", PEB->debug);
+  getpeb()->debug = get_numeric_property(config, "os", "debug", getpeb()->debug);
 
   // Initialize initial process
   init_threads(hmod, &console);
@@ -931,7 +937,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   init_sntpd();
 
   // Initialize user module database
-  PEB->usermods = &usermods;
+  getpeb()->usermods = &usermods;
   usermods.load_image = load_image;
   usermods.unload_image = unload_image;
   usermods.protect_region = protect_region;

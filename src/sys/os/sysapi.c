@@ -79,7 +79,7 @@ void init_syscall()
   // If the processor does not support sysenter patch the 
   // syscall routine with a jump to syscall_int48
 
-  if (!PEB->fast_syscalls_supported)
+  if (!getpeb()->fast_syscalls_supported)
   {
     // Inject a 'JMP syscall_int48' at the entry of syscall
     char *sc = (char *) syscall;

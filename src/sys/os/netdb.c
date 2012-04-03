@@ -802,14 +802,15 @@ int gethostname(char *name, int namelen)
   char buf[MAXHOSTNAMELEN];
   char *host;
   char *domain;
+  struct peb *peb = getpeb();
 
-  if (*PEB->hostname)
-    host = PEB->hostname;
+  if (*peb->hostname)
+    host = peb->hostname;
   else
     host = get_property(osconfig(), "os", "hostname", NULL);
 
-  if (*PEB->default_domain)
-    domain = PEB->default_domain;
+  if (*peb->default_domain)
+    domain = peb->default_domain;
   else
     host = get_property(osconfig(), "dns", "domain", NULL);
 

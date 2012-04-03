@@ -182,23 +182,24 @@ void init_sntpd()
   int idx;
   struct section *sect;
   struct property *prop;
+  struct peb *peb = getpeb();
   
-  if (PEB->ipaddr.s_addr == INADDR_ANY) return;
+  if (peb->ipaddr.s_addr == INADDR_ANY) return;
 
   idx = 0;
-  if (PEB->ntp_server1.s_addr != INADDR_ANY)
+  if (peb->ntp_server1.s_addr != INADDR_ANY)
   {
     ntp_servers[idx].hostname = NULL;
-    ntp_servers[idx].sa.sin_addr.s_addr = PEB->ntp_server1.s_addr;
+    ntp_servers[idx].sa.sin_addr.s_addr = peb->ntp_server1.s_addr;
     ntp_servers[idx].sa.sin_family = AF_INET;
     ntp_servers[idx].sa.sin_port = htons(NTP_PORT);
     idx++;
   }
 
-  if (PEB->ntp_server2.s_addr != INADDR_ANY)
+  if (peb->ntp_server2.s_addr != INADDR_ANY)
   {
     ntp_servers[idx].hostname = NULL;
-    ntp_servers[idx].sa.sin_addr.s_addr = PEB->ntp_server2.s_addr;
+    ntp_servers[idx].sa.sin_addr.s_addr = peb->ntp_server2.s_addr;
     ntp_servers[idx].sa.sin_family = AF_INET;
     ntp_servers[idx].sa.sin_port = htons(NTP_PORT);
     idx++;

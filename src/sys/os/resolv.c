@@ -606,6 +606,7 @@ static unsigned int res_randomid()
 
 int res_init()
 {
+  struct peb *peb = getpeb();
   char *addr;
 
   memset(&res, 0, sizeof(struct res_state));
@@ -616,17 +617,17 @@ int res_init()
   res.ndots = 1;
   res.nscount = 0;
 
-  if (PEB->primary_dns.s_addr != INADDR_ANY)
+  if (peb->primary_dns.s_addr != INADDR_ANY)
   {
-    res.nsaddr_list[res.nscount].sin_addr.s_addr = PEB->primary_dns.s_addr;    
+    res.nsaddr_list[res.nscount].sin_addr.s_addr = peb->primary_dns.s_addr;    
     res.nsaddr_list[res.nscount].sin_family = AF_INET;
     res.nsaddr_list[res.nscount].sin_port = htons(NS_DEFAULTPORT);
     res.nscount++;
   }
 
-  if (PEB->secondary_dns.s_addr != INADDR_ANY)
+  if (peb->secondary_dns.s_addr != INADDR_ANY)
   {
-    res.nsaddr_list[res.nscount].sin_addr.s_addr = PEB->secondary_dns.s_addr;
+    res.nsaddr_list[res.nscount].sin_addr.s_addr = peb->secondary_dns.s_addr;
     res.nsaddr_list[res.nscount].sin_family = AF_INET;
     res.nsaddr_list[res.nscount].sin_port = htons(NS_DEFAULTPORT);
     res.nscount++;
@@ -658,7 +659,7 @@ int res_init()
     if (res.nsaddr_list[res.nscount].sin_addr.s_addr != INADDR_NONE) res.nscount++;
   }
 
-  strcpy(res.defdname, PEB->default_domain);
+  strcpy(res.defdname, peb->default_domain);
   if (!*res.defdname) 
   {
     strcpy(res.defdname, get_property(osconfig(), "dns", "domain", "local.domain"));

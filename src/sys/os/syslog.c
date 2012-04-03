@@ -81,6 +81,7 @@ int setlogmask(int mask)
 
 static void add_to_syslog(int pri, char *msg, int msglen, char *ident, int id, int display)
 {
+  struct peb *peb = getpeb();
   char buffer[1024];
   char pribuf[32];
   char *bufend;
@@ -91,12 +92,12 @@ static void add_to_syslog(int pri, char *msg, int msglen, char *ident, int id, i
 
   if ((logmask & LOG_MASK(LOG_PRI(pri))) == 0) return;
   
-  if (*PEB->hostname) 
-    hostname = PEB->hostname;
+  if (*peb->hostname) 
+    hostname = peb->hostname;
   else
   {
     hostname = get_property(osconfig(), "os", "hostname", NULL);
-    if (!hostname && PEB->ipaddr.s_addr != INADDR_ANY) hostname = inet_ntoa(PEB->ipaddr);
+    if (!hostname && peb->ipaddr.s_addr != INADDR_ANY) hostname = inet_ntoa(peb->ipaddr);
     if (!hostname) hostname = "localhost";
   }
 

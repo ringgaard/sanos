@@ -1679,10 +1679,9 @@ osapi void unsetenv(const char *name);
 osapi int putenv(const char *str);
 
 osapi struct section *osconfig();
+osapi struct peb *getpeb();
 
 osapi int __getstdhndl(int n);
-
-#define PEB ((struct peb *) PEB_ADDRESS)
 
 #ifndef errno
 osapi int *_errno();

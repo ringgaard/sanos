@@ -134,7 +134,6 @@ char *envtab[MAXENVVARS];
 
 struct term console;
 struct peb *peb;
-struct section *osconfig;
 unsigned long loglevel;
 
 static struct passwd defpasswd = {"root", "", 0, 0, "root", "/", "/bin/sh.exe"};

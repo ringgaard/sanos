@@ -285,7 +285,7 @@ void globalhandler(struct siginfo *info)
         exit((signum << 8) | 0x10000);
 
       case SIGACT_ABORT:
-        if (PEB->debug) sigexit(info, 1);
+        if (getpeb()->debug) sigexit(info, 1);
         syslog(LOG_ERR, "aborting with signal %d (%s)", signum, strsignal(signum));
         exit((signum << 8) | 0x10000);
 

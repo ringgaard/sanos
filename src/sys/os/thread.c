@@ -54,6 +54,7 @@ int nextprocid = 1;
 void init_threads(hmodule_t hmod, struct term *initterm)
 {
   struct tib *tib = gettib();
+  struct peb *peb = getpeb();
   struct process *proc;
 
   mkcs(&proc_lock);
@@ -76,7 +77,7 @@ void init_threads(hmodule_t hmod, struct term *initterm)
   proc->ident = strdup("os");
 
   tib->proc = proc;
-  PEB->firstproc = PEB->lastproc = proc;
+  peb->firstproc = peb->lastproc = proc;
 }
 
 handle_t mkthread(void (__stdcall *startaddr)(struct tib *), unsigned long stacksize, struct tib **ptib)
@@ -100,6 +101,7 @@ void __stdcall threadstart(struct tib *tib)
 
 static struct process *mkproc(struct process *parent, int hndl, int flags)
 {
+  struct peb *peb = getpeb();
   struct process *proc;
   int i;
 
@@ -124,10 +126,10 @@ static struct process *mkproc(struct process *parent, int hndl, int flags)
   enter(&proc_lock);
   proc->id = nextprocid++;
   if (flags & CREATE_CHILD) proc->parent = parent;
-  proc->prevproc = PEB->lastproc;
-  if (!PEB->firstproc) PEB->firstproc = proc;
-  if (PEB->lastproc) PEB->lastproc->nextproc = proc;
-  PEB->lastproc = proc;
+  proc->prevproc = peb->lastproc;
+  if (!peb->firstproc) peb->firstproc = proc;
+  if (peb->lastproc) peb->lastproc->nextproc = proc;
+  peb->lastproc = proc;
   leave(&proc_lock);
 
   return proc;
@@ -195,6 +197,7 @@ int resume(handle_t thread)
 
 void endproc(struct process *proc, int status)
 {
+  struct peb *peb = getpeb();
   struct process *parent;
   struct process *p;
   struct zombie *z;
@@ -231,11 +234,11 @@ void endproc(struct process *proc, int status)
   // Remove process from process list
   if (proc->nextproc) proc->nextproc->prevproc = proc->prevproc;
   if (proc->prevproc) proc->prevproc->nextproc = proc->nextproc;
-  if (proc == PEB->firstproc) PEB->firstproc = proc->nextproc;
-  if (proc == PEB->lastproc) PEB->lastproc = proc->prevproc;
+  if (proc == peb->firstproc) peb->firstproc = proc->nextproc;
+  if (proc == peb->lastproc) peb->lastproc = proc->prevproc;
   
   // Orphan child processes
-  for (p = PEB->firstproc; p; p = p->nextproc) if (p->parent == proc) p->parent = NULL;
+  for (p = peb->firstproc; p; p = p->nextproc) if (p->parent == proc) p->parent = NULL;
   
   leave(&proc_lock);
 
@@ -365,7 +368,7 @@ handle_t getprochandle(pid_t pid)
   struct process *p;
 
   enter(&proc_lock);
-  for (p = PEB->firstproc; p; p = p->nextproc) 
+  for (p = getpeb()->firstproc; p; p = p->nextproc) 
   {
     if (p->id == pid)
     {
