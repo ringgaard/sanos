@@ -4,7 +4,7 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
-    * The main Makefile has been updated so Sanos can now builds under Linux 
+    * The main Makefile has been updated so Sanos can now build under Linux 
       using WINE.
  
     * The user-mode component of Sanos (os.dll) compiles under sanos.
