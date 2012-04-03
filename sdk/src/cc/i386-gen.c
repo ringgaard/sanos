@@ -161,7 +161,7 @@ static void gen_addr32(int r, Sym *sym, int c)
     gen_le32(c);
 }
 
-/* generate a modrm reference. 'op_reg' contains the addtional 3
+/* generate a modrm reference. 'op_reg' contains the additional 3
    opcode bits */
 static void gen_modrm(int op_reg, int r, Sym *sym, int c)
 {
@@ -183,7 +183,6 @@ static void gen_modrm(int op_reg, int r, Sym *sym, int c)
         g(0x00 | op_reg | (r & VT_VALMASK));
     }
 }
-
 
 /* load 'r' from value 'sv' */
 void load(int r, SValue *sv)
@@ -227,8 +226,13 @@ void load(int r, SValue *sv)
         gen_modrm(r, fr, sv->sym, fc);
     } else {
         if (v == VT_CONST) {
-            o(0xb8 + r); /* mov $xx, r */
-            gen_addr32(fr, sv->sym, fc);
+            if (fc == 0 && (fr & VT_SYM) == 0) {
+                o(0x33); /* xor r, r */
+                o(0xc0 + r + r * 8);
+            } else {
+                o(0xb8 + r); /* mov $xx, r */
+                gen_addr32(fr, sv->sym, fc);
+            }
         } else if (v == VT_LOCAL) {
             o(0x8d); /* lea xxx(%ebp), r */
             gen_modrm(r, VT_LOCAL, sv->sym, fc);
@@ -325,11 +329,11 @@ static uint8_t fastcall_regs[3] = { TREG_EAX, TREG_EDX, TREG_ECX };
 static uint8_t fastcallw_regs[2] = { TREG_ECX, TREG_EDX };
 
 /* Generate function call. The function address is pushed first, then
-   all the parameters in call order. This functions pops all the
+   all the parameters in call order. This function pops all the
    parameters and the function address. */
 void gfunc_call(int nb_args)
 {
-    int size, align, r, args_size, i, func_call;
+    int size, align, r, args_size, i, func_call, v;
     Sym *func_sym;
     
     args_size = 0;
@@ -367,14 +371,38 @@ void gfunc_call(int nb_args)
         } else {
             /* simple type (currently always same size) */
             /* XXX: implicit cast ? */
-            r = gv(RC_INT);
-            if ((vtop->type.t & VT_BTYPE) == VT_LLONG) {
-                size = 8;
-                o(0x50 + vtop->r2); /* push r */
+            v = vtop->r & (VT_VALMASK | VT_LVAL | VT_SYM);
+            if (v == VT_CONST || v == (VT_CONST | VT_SYM)) {
+                /* push constant */
+                if ((vtop->type.t & VT_BTYPE) == VT_LLONG) {
+                    size = 8;
+                    if (vtop->c.word[1] == (char) vtop->c.word[1]) {
+                        g(0x6a); /* push imm8 */
+                        g(vtop->c.word[1]);
+                    } else {
+                        g(0x68); /* push imm32 */
+                        gen_le32(vtop->c.word[1]);
+                    }
+                } else {
+                    size = 4;
+                }
+                if ((v & VT_SYM) == 0 && vtop->c.i == (char) vtop->c.i) {
+                    g(0x6a); /* push imm8 */
+                    g(vtop->c.i);
+                } else {
+                    g(0x68); /* push imm32 */
+                    gen_addr32(v, vtop->sym, vtop->c.i);
+                }
             } else {
-                size = 4;
+                r = gv(RC_INT);
+                if ((vtop->type.t & VT_BTYPE) == VT_LLONG) {
+                    size = 8;
+                    o(0x50 + vtop->r2); /* push r */
+                } else {
+                    size = 4;
+                }
+                o(0x50 + r); /* push r */
             }
-            o(0x50 + r); /* push r */
             args_size += size;
         }
         vtop--;
@@ -644,10 +672,16 @@ void gen_opi(int op)
             vswap();
             c = vtop->c.i;
             if (c == (char)c) {
-                /* XXX: generate inc and dec for smaller code ? */
-                o(0x83);
-                o(0xc0 | (opc << 3) | r);
-                g(c);
+                /* optimize +/- 1 case with inc and dec  */
+                if (op == '+' && c == 1 || op == '-' && c == -1) {
+                    o(0x40 | r);  /* inc r */
+                } else if (op == '-' && c == 1 || op == '+' && c == -1) {
+                    o(0x48 | r);  /* dec r */
+                } else {
+                    o(0x83);
+                    o(0xc0 | (opc << 3) | r);
+                    g(c);
+                }
             } else {
                 o(0x81);
                 oad(0xc0 | (opc << 3) | r, c);

@@ -592,14 +592,17 @@ ST_FN int pe_write(struct pe_info *pe)
         switch (si->cls) {
             case sec_text:
                 pe_header.opthdr.BaseOfCode = addr;
+                pe_header.opthdr.SizeOfCode += size;
                 pe_header.opthdr.AddressOfEntryPoint = addr + pe->start_addr;
                 break;
 
             case sec_data:
                 pe_header.opthdr.BaseOfData = addr;
+                pe_header.opthdr.SizeOfInitializedData += size;
                 break;
 
             case sec_bss:
+                pe_header.opthdr.SizeOfUninitializedData += size;
                 break;
 
             case sec_reloc:

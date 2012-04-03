@@ -182,6 +182,7 @@ typedef union CValue {
     unsigned int ul; /* address (should be unsigned long on 64 bit cpu) */
     int64_t ll;
     uint64_t ull;
+    unsigned int word[2];
     struct CString *cstr;
     void *ptr;
     int tab[1];

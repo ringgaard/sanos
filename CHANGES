@@ -4,6 +4,13 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Code generation optimizations for C compiler:
+        - Optimize 'add/sub r, +/-1' to 'inc/dec r'
+        - Optimize 'mov r, 0' to 'xor r,r'
+        - Generate 'push imm' for constant function call arguments 
+
+    * Set code and data section sizes for PE files in C compiler.
+
     * The main Makefile has been updated so Sanos can now build under Linux 
       using WINE.
  
