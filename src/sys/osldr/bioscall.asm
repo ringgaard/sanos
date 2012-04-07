@@ -33,10 +33,15 @@
 
         SECTION .text
 
+        global  prot2real
         global  _prot2real
+        global  real2prot
         global  _real2prot
+        global  bios_print_string
         global  _bios_print_string
+        global  bios_get_drive_params
         global  _bios_get_drive_params
+        global  bios_read_disk
         global  _bios_read_disk
 
 ; OS Loader base address
@@ -59,6 +64,7 @@ REAL_STACK  equ (0x2000 - 0x10)
 ; Switch from protected to real mode
 ;
 
+prot2real:
 _prot2real:
         BITS    32
         ; No interrupts while switching mode
@@ -127,6 +133,7 @@ realmode:
 ; Switch from real to protected mode
 ;
 
+real2prot:
 _real2prot:
         BITS    16
         ; Disable interrupts
@@ -179,6 +186,7 @@ protmode:
 ; void bios_print_string(char *str);
 ;
 
+bios_print_string:
 _bios_print_string:
         push ebp
         mov  ebp, esp
@@ -237,6 +245,7 @@ printdone:
 ; int bios_get_drive_params(int drive, unsigned int *cyls, unsigned int *heads, unsigned int *sects);
 ;
 
+bios_get_drive_params:
 _bios_get_drive_params:
         push ebp
         mov  ebp, esp
@@ -306,6 +315,7 @@ _bios_get_drive_params:
 ; int bios_read_disk(int drive, int cyl, int head, int sect, int nsect, void *buffer);
 ;
 
+bios_read_disk:
 _bios_read_disk:
         push ebp
         mov  ebp, esp

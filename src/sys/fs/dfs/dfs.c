@@ -189,16 +189,12 @@ int dfs_mkdir(struct fs *fs, char *name, int mode)
     return rc >= 0 ? -EEXIST : rc;
   }
 
-  dir = alloc_inode(parent, mode);
+  dir = alloc_inode(parent, S_IFDIR | (mode & S_IRWXUGO));
   if (!dir)
   {
     release_inode(parent);
     return -ENOSPC;
   }
-
-  dir->desc->mode = S_IFDIR | (mode & S_IRWXUGO);
-  dir->desc->linkcount++;
-  mark_inode_dirty(dir);
 
   rc = add_dir_entry(parent, name, len, dir->ino);
   if (rc < 0)

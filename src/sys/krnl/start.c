@@ -278,6 +278,9 @@ static int version_proc(struct proc_file *pf, void *arg)
 #ifdef _MSC_VER
   pprintf(pf, " (MSVC vers. %d.%02d)", _MSC_VER / 100, _MSC_VER % 100);
 #endif
+#ifdef _TCC_VER
+  pprintf(pf, " (TCC vers. %s)", _TCC_VER);
+#endif
   pprintf(pf, "\n");
 
   return 0;

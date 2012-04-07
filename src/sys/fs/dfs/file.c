@@ -72,9 +72,6 @@ static int open_always(struct filsys *fs, char *name, int mode, struct inode **r
       return -ENOSPC;
     }
 
-    inode->desc->linkcount++;
-    mark_inode_dirty(inode);
-
     rc = add_dir_entry(dir, name, len, inode->ino);
     if (rc < 0)
     {
@@ -111,29 +108,50 @@ static int create_always(struct filsys *fs, char *name, int mode, struct inode *
   rc = diri(fs, &name, &len, &dir);
   if (rc < 0) return rc;
 
-  inode = alloc_inode(dir, S_IFREG | (mode & S_IRWXUGO));
-  if (!inode)
-  {
-    release_inode(dir);
-    return -ENOSPC;
-  }
-
-  inode->desc->linkcount++;
-  mark_inode_dirty(inode);
-
-  rc = modify_dir_entry(dir, name, len, inode->ino, &oldino);
-
+  rc = find_dir_entry(dir, name, len, &oldino);
   if (rc == 0)
   {
     rc = get_inode(fs, oldino, &oldinode);
-    if (rc == 0)
+    if (rc < 0)
     {
-      unlink_inode(oldinode);
-      release_inode(oldinode);
+      release_inode(dir);
+      return rc;
     }
-  }
+
+    if (S_ISDIR(oldinode->desc->mode) && oldinode->desc->linkcount == 1)
+    {
+      release_inode(dir);
+      return -EISDIR;
+    }
+
+    inode = alloc_inode(dir, S_IFREG | (mode & S_IRWXUGO));
+    if (!inode)
+    {
+      release_inode(dir);
+      return -ENOSPC;
+    }
+
+    rc = modify_dir_entry(dir, name, len, inode->ino, NULL);
+    if (rc < 0)
+    {
+      unlink_inode(inode);
+      release_inode(inode);
+      release_inode(dir);
+      return rc;
+    }
+
+    unlink_inode(oldinode);
+    release_inode(oldinode);
+  } 
   else if (rc == -ENOENT)
   {
+    inode = alloc_inode(dir, S_IFREG | (mode & S_IRWXUGO));
+    if (!inode)
+    {
+      release_inode(dir);
+      return -ENOSPC;
+    }
+
     rc = add_dir_entry(dir, name, len, inode->ino);
     if (rc < 0)
     {
@@ -142,10 +160,10 @@ static int create_always(struct filsys *fs, char *name, int mode, struct inode *
       release_inode(dir);
       return rc;
     }
-  }
+  } 
   else
   {
-    unlink_inode(inode);
+    release_inode(dir);
     return rc;
   }
 
@@ -212,18 +230,16 @@ static int create_new(struct filsys *fs, char *name, ino_t ino, int mode, struct
       inode->desc->ctime = inode->desc->mtime = time(NULL);
       inode->desc->uid = inode->desc->gid = 0;
       inode->desc->mode = S_IFREG | 0700;
+      inode->desc->linkcount++;
+      mark_inode_dirty(inode);
     }
   }
 
   if (!inode)
   {
     release_inode(dir);
-    release_inode(dir);
     return rc;
   }
-
-  inode->desc->linkcount++;
-  mark_inode_dirty(inode);
 
   rc = add_dir_entry(dir, name, len, inode->ino);
   if (rc < 0)

@@ -181,6 +181,7 @@ extern struct cpu cpu;
 
 void init_cpu();
 int cpu_sysinfo(struct cpuinfo *info);
+unsigned long eflags();
 
 #endif
 

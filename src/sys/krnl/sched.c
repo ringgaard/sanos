@@ -948,7 +948,7 @@ void yield()
   dispatch();
 }
 
-__inline int system_idle()
+int system_idle()
 {
   if (thread_ready_summary != 0) return 0;
   if (dpc_queue_head != NULL) return 0;

@@ -40,6 +40,8 @@
 #define time_after_eq(a, b)  ((long) (a) - (long) (b) >= 0)
 #define time_before_eq(a ,b) time_after_eq(b, a)
 
+typedef void (*timerproc_t)(void *arg);
+
 struct timer;
 
 struct timer_link
@@ -53,14 +55,14 @@ struct timer
   struct timer_link link;
   unsigned int expires;
   int active;
-  void (*handler)(void *arg);
+  timerproc_t handler;
   void *arg;
 };
 
 void init_timers();
 void run_timer_list();
 
-krnlapi void init_timer(struct timer *timer, void (*handler)(void *arg), void *arg);
+krnlapi void init_timer(struct timer *timer, timerproc_t handler, void *arg);
 krnlapi void add_timer(struct timer *timer);
 krnlapi int del_timer(struct timer *timer);
 krnlapi int mod_timer(struct timer *timer, unsigned int expires);

@@ -462,9 +462,9 @@ struct dhcp_state *dhcp_start(struct netif *netif)
   init_task(&state->t1_timeout_task);
   init_task(&state->t2_timeout_task);
 
-  init_timer(&state->request_timeout_timer, dhcp_timeout, state);
-  init_timer(&state->t1_timeout_timer, dhcp_t1_timeout, state);
-  init_timer(&state->t2_timeout_timer, dhcp_t2_timeout, state);
+  init_timer(&state->request_timeout_timer, (timerproc_t) dhcp_timeout, state);
+  init_timer(&state->t1_timeout_timer, (timerproc_t) dhcp_t1_timeout, state);
+  init_timer(&state->t2_timeout_timer, (timerproc_t) dhcp_t2_timeout, state);
 
   if (!dhcp_client_list)
     dhcp_client_list = state;

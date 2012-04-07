@@ -248,6 +248,8 @@
  DEF_ASM(_emit)
  DEF_ASM(offset)
  DEF_ASM(dword)
+ DEF_ASM(fword)
+ DEF_ASM(far)
  DEF_ASM(ptr)
 
 #ifdef TCC_TARGET_I386

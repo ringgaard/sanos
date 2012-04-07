@@ -23,21 +23,25 @@ OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fork.o ge
 MATHOBJ=acos.o asin.o atan.o atan2.o ceil.o cos.o cosh.o exp.o fabs.o floor.o fmod.o fpconst.o fpreset.o frexp.o \
         ftol.o ldexp.o log.o log10.o modf.o pow.o sin.o sinh.o sqrt.o tan.o tanh.o
 
-all: libc.a os.def
+all: libc.a os.def krnl.def
 
 install: all
      if not exist $(SDK)\lib mkdir $(SDK)\lib
      copy /Y libc.a $(SDK)\lib
      copy /Y os.def $(SDK)\lib
+     copy /Y krnl.def $(SDK)\lib
 
 clean:
-  del *.o *.a os.def *.dll
+  del *.o *.a *.def *.dll
 
 #
 # OS lib
 #
 
 os.def: $(SANOS)/bin/os.dll
+    $(IMPDEF) $** $@
+
+krnl.def: $(SANOS)/bin/krnl.dll
     $(IMPDEF) $** $@
 
 os.dll: $(SDK)/bin/os.dll

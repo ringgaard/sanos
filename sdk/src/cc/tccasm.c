@@ -1057,9 +1057,10 @@ static void masm_instr(TCCState *s1) {
         }
         skip('}');
     } else {
+        while (tok == TOK_ASM2) next();
         parse_masm_instr(s1);
         if (tok == ';') next();
-    }    
+    }
     parse_flags = saved_parse_flags;
     if (tok == TOK_LINEFEED) next();
     asm_free_labels(s1);

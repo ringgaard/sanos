@@ -158,7 +158,7 @@ void init_timers()
 // init_timer
 //
 
-void init_timer(struct timer *timer, void (*handler)(void *arg), void *arg)
+void init_timer(struct timer *timer, timerproc_t handler, void *arg)
 {
   timer->link.next = NULL;
   timer->link.next = NULL;
@@ -262,7 +262,7 @@ void run_timer_list()
     while (1)
     {
       struct timer *timer;
-      void (*handler)(void *arg);
+      timerproc_t handler;
       void *arg;
 
       head = tv1.vec + tv1.index;

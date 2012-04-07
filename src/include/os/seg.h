@@ -82,8 +82,7 @@ struct segment
   unsigned short base_low;       // Base  0..15
   unsigned char base_med;        // Base  16..23
   unsigned char access;          // Access byte
-  unsigned char limit_high:4;    // Limit 16..19
-  unsigned char granularity:4;   // Granularity
+  unsigned char limit_high;      // Limit 16..19 + Granularity << 4
   unsigned char base_high;       // Base 24..31
 };
 
@@ -127,9 +126,8 @@ void __inline seginit(struct segment *seg, unsigned long addr, unsigned long siz
   seg->base_med = (unsigned char)((addr >> 16) & 0xFF);
   seg->base_high = (unsigned char)((addr >> 24) & 0xFF);
   seg->limit_low = (unsigned short) ((size - 1) & 0xFFFF);
-  seg->limit_high = (unsigned char) (((size - 1) >> 16) & 0xF);
+  seg->limit_high = (unsigned char) ((((size - 1) >> 16) & 0xF) | (granularity << 4));
   seg->access = access;
-  seg->granularity = granularity;
 }
 
 #pragma pack(pop)

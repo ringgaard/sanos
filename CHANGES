@@ -4,6 +4,13 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added check to dfs file system to prevent deleting non-empty directories.
+
+    * Added kernel install utility, mkboot, for installing boot sectors, 
+      boot loaders, and kernels.
+ 
+    * Added support for phony targets in make utility.
+
     * Code generation optimizations for C compiler:
         - Optimize 'add/sub r, +/-1' to 'inc/dec r'
         - Optimize 'mov r, 0' to 'xor r,r'
@@ -22,6 +29,9 @@ Changes since last release
         - New -start option for specifying the start symbol
         - New -fixed option for specifying the PE base image address
         - MSVC compatible data type alignment
+        - Custom DOS stub and PE file section alignment
+        - Bug fix for unsigned integer constant folding
+        - Added pre-defined _TCC_VER macro with TCC version number
 
     * Data segment registers are now inilialized by the kernel before starting
       a user-mode thread.

@@ -502,8 +502,14 @@ struct TCCState {
     /* start symbol */
     const char *start_symbol;
     
+    /* DOS stub */
+    const char *stub;
+
     /* image base address for non-relocatable PE files */
     unsigned long imagebase;
+
+    /* file alignment for sections in PE files */
+    unsigned long filealign;
 
     /* if true, all symbols are exported */
     int rdynamic;
@@ -5565,8 +5571,8 @@ void gen_opic(int op)
     v2 = vtop;
     t1 = v1->type.t & VT_BTYPE;
     t2 = v2->type.t & VT_BTYPE;
-    l1 = (t1 == VT_LLONG) ? v1->c.ll : v1->c.i;
-    l2 = (t2 == VT_LLONG) ? v2->c.ll : v2->c.i;
+    l1 = (t1 == VT_LLONG) ? v1->c.ll : (v1->type.t & VT_UNSIGNED) ? v1->c.ui : v1->c.i;
+    l2 = (t2 == VT_LLONG) ? v2->c.ll : (v2->type.t & VT_UNSIGNED) ? v2->c.ui : v2->c.i;
 
     /* currently, we cannot do computations with forward symbols */
     c1 = (v1->r & (VT_VALMASK | VT_LVAL | VT_SYM)) == VT_CONST;
@@ -6841,6 +6847,10 @@ static void parse_modifiers(AttributeDef *ad)
     }
     if (tok == TOK_STDCALL1 || tok == TOK_STDCALL2 || tok == TOK_STDCALL3) {
         FUNC_CALL(ad->func_attr) = FUNC_STDCALL;
+        next();
+    }
+    if (tok == TOK_FASTCALL1 || tok == TOK_FASTCALL2 || tok == TOK_FASTCALL3) {
+        FUNC_CALL(ad->func_attr) = FUNC_FASTCALLW;
         next();
     }
 #endif
@@ -10286,6 +10296,7 @@ TCCState *tcc_new(void)
 #endif
     /* tiny C specific defines */
     tcc_define_symbol(s, "__TINYC__", NULL);
+    tcc_define_symbol(s, "_TCC_VER", TCC_VERSION);
 
     /* tiny C & gcc defines */
     tcc_define_symbol(s, "__SIZE_TYPE__", "unsigned int");
@@ -10323,6 +10334,7 @@ TCCState *tcc_new(void)
                                       ".dynhashtab", SHF_PRIVATE);
     s->alacarte_link = 1;
     s->imagebase = 0xFFFFFFFF;
+    s->filealign = 512;
 #ifdef CHAR_IS_UNSIGNED
     s->char_is_unsigned = 1;
 #endif
@@ -10736,37 +10748,39 @@ void help(void)
            "           [-static] [infile1 infile2...] [-run infile args...]\n"
            "\n"
            "General options:\n"
-           "  -v          display current version, increase verbosity\n"
-           "  -c          compile only - generate an object file\n"
-           "  -o outfile  set output filename\n"
-           "  -Bdir       set tcc internal library path\n"
-           "  -bench      output compilation statistics\n"
-           "  -run        run compiled source\n"
-           "  -fflag      set or reset (with 'no-' prefix) 'flag' (see man page)\n"
-           "  -Wwarning   set or reset (with 'no-' prefix) 'warning' (see man page)\n"
-           "  -w          disable all warnings\n"
+           "  -v           display current version, increase verbosity\n"
+           "  -c           compile only - generate an object file\n"
+           "  -o outfile   set output filename\n"
+           "  -B dir       set tcc internal library path\n"
+           "  -bench       output compilation statistics\n"
+           "  -run         run compiled source\n"
+           "  -fflag       set or reset (with 'no-' prefix) 'flag' (see man page)\n"
+           "  -Wwarning    set or reset (with 'no-' prefix) 'warning' (see man page)\n"
+           "  -w           disable all warnings\n"
            "Preprocessor options:\n"
-           "  -E          preprocess only\n"
-           "  -Idir       add include path 'dir'\n"
-           "  -Dsym[=val] define 'sym' with value 'val'\n"
-           "  -Usym       undefine 'sym'\n"
+           "  -E           preprocess only\n"
+           "  -Idir        add include path 'dir'\n"
+           "  -Dsym[=val]  define 'sym' with value 'val'\n"
+           "  -Usym        undefine 'sym'\n"
            "Linker options:\n"
-           "  -Ldir       add library path 'dir'\n"
-           "  -llib       link with dynamic or static library 'lib'\n"
-           "  -shared     generate a shared library\n"
-           "  -soname     set name for shared library to be used at runtime\n"
-           "  -entry sym  set start symbol name\n"
-           "  -fixed addr set base address (and do not generate relocation info)\n"
-           "  -static     static linking\n"
-           "  -rdynamic   export all global symbols to dynamic linker\n"
-           "  -r          generate (relocatable) object file\n"
-           "  -m mapfile  generate linker map file\n"
+           "  -Ldir        add library path 'dir'\n"
+           "  -llib        link with dynamic or static library 'lib'\n"
+           "  -shared      generate a shared library\n"
+           "  -soname      set name for shared library to be used at runtime\n"
+           "  -entry sym   set start symbol name\n"
+           "  -fixed addr  set base address (and do not generate relocation info)\n"
+           "  -filealign n alignment for sections in PE file\n"
+           "  -stub file   set DOS stub for PE file\n"
+           "  -static      static linking\n"
+           "  -rdynamic    export all global symbols to dynamic linker\n"
+           "  -r           generate (relocatable) object file\n"
+           "  -m mapfile   generate linker map file\n"
            "Debugger options:\n"
-           "  -g          generate runtime debug info\n"
+           "  -g           generate runtime debug info\n"
 #ifdef CONFIG_TCC_BCHECK
-           "  -b          compile with built-in memory and bounds checker (implies -g)\n"
+           "  -b           compile with built-in memory and bounds checker (implies -g)\n"
 #endif
-           "  -bt N       show N callers in stack traces\n"
+           "  -bt N        show N callers in stack traces\n"
            );
 }
 
@@ -10797,6 +10811,8 @@ enum {
     TCC_OPTION_soname,
     TCC_OPTION_entry,
     TCC_OPTION_fixed,
+    TCC_OPTION_filealign,
+    TCC_OPTION_stub,
     TCC_OPTION_o,
     TCC_OPTION_r,
     TCC_OPTION_Wl,
@@ -10836,6 +10852,8 @@ static const TCCOption tcc_options[] = {
     { "soname", TCC_OPTION_soname, TCC_OPTION_HAS_ARG },
     { "entry", TCC_OPTION_entry, TCC_OPTION_HAS_ARG },
     { "fixed", TCC_OPTION_fixed, TCC_OPTION_HAS_ARG },
+    { "filealign", TCC_OPTION_filealign, TCC_OPTION_HAS_ARG },
+    { "stub", TCC_OPTION_stub, TCC_OPTION_HAS_ARG },
     { "o", TCC_OPTION_o, TCC_OPTION_HAS_ARG },
     { "run", TCC_OPTION_run, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "rdynamic", TCC_OPTION_rdynamic, 0 },
@@ -11017,6 +11035,12 @@ int parse_args(TCCState *s, int argc, char **argv)
                 break;
             case TCC_OPTION_fixed:
                 s->imagebase = strtoul(optarg, NULL, 0);
+                break;
+            case TCC_OPTION_filealign:
+                s->filealign = strtoul(optarg, NULL, 0);
+                break;
+            case TCC_OPTION_stub:
+                s->stub = optarg; 
                 break;
             case TCC_OPTION_o:
                 multiple_files = 1;

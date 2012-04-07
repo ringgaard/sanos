@@ -205,7 +205,7 @@ unsigned long memsize()
   __asm { mov cr0, eax };
 
   // Probe for each megabyte
-  while (addr < 0xFFF0000000000)
+  while (addr < 0xFFF00000)
   {
     addr += 1024 * 1024;
     mem= (unsigned long *) addr;
@@ -426,10 +426,10 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
     load_kernel(bootdrive);
   }
 
-  // Set page directory (CR3) enable paging (PG bit in CR0)
+  // Set page directory (CR3) and enable paging (PG bit in CR0)
   __asm
   {
-    mov eax, pdir
+    mov eax, dword ptr [pdir]
     mov cr3, eax
     mov eax, cr0
     or eax, 0x80000000
@@ -472,9 +472,9 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
   {
     mov esp, INITTCB_ADDRESS + TCBESP
     push 0
-    push krnlopts
+    push dword ptr [krnlopts]
     push OSBASE
-    call [krnlentry]
+    call dword ptr [krnlentry]
     cli
     hlt
   }

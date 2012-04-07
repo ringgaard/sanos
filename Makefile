@@ -102,6 +102,7 @@ dirs:
     -@if not exist $(OBJ)\ar mkdir $(OBJ)\ar
     -@if not exist $(OBJ)\ctohtml mkdir $(OBJ)\ctohtml
     -@if not exist $(OBJ)\impdef mkdir $(OBJ)\impdef
+    -@if not exist $(OBJ)\mkboot mkdir $(OBJ)\mkboot
     -@if not exist $(OBJ)\httpd mkdir $(OBJ)\httpd
     -@if not exist $(OBJ)\jinit mkdir $(OBJ)\jinit
     -@if not exist $(OBJ)\kernel32 mkdir $(OBJ)\kernel32
@@ -237,7 +238,7 @@ $(OBJ)/osldr/ldrinit.exe: $(SRC)/sys/osldr/ldrinit.asm
 $(OBJ)/osldr/bioscall.obj: $(SRC)/sys/osldr/bioscall.asm
     $(NASM) -f win32 $** -o $@ -l $(OBJ)/osldr/bioscall.lst
 
-OSLDRSRC=$(SRC)\sys\osldr\osldr.c $(SRC)\sys\osldr\loadkrnl.c $(SRC)\sys\osldr\unzip.c $(SRC)\sys\krnl\iop.c $(SRC)\lib\vsprintf.c $(SRC)\lib\string.c 
+OSLDRSRC=$(SRC)\sys\osldr\osldr.c $(SRC)\sys\osldr\loadkrnl.c $(SRC)\sys\osldr\unzip.c $(SRC)\lib\vsprintf.c $(SRC)\lib\string.c 
 
 $(BIN)/osldr.dll: $(OSLDRSRC) $(OBJ)\osldr\ldrinit.exe $(OBJ)/osldr/bioscall.obj
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/osldr/ $(OSLDRSRC) $(OBJ)/osldr/bioscall.obj /D KERNEL /D OSLDR /link /DLL /NODEFAULTLIB /ENTRY:start /BASE:0x00090000 /FIXED /STUB:$(OBJ)\osldr\ldrinit.exe $(RAWIMGFLAGS)
@@ -939,7 +940,7 @@ $(BIN)/msvcrt.dll: \
 # utils
 #
 
-utils: dirs $(BIN)/sh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/ctohtml.exe $(BIN)/httpd.dll
+utils: dirs $(BIN)/sh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/ctohtml.exe $(BIN)/mkboot.exe $(BIN)/httpd.dll
 
 $(BIN)/sh.exe: \
   $(SRC)/utils/sh/sh.c \
@@ -1023,6 +1024,12 @@ $(BIN)/ctohtml.exe: \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/ctohtml/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(BIN)/mkboot.exe: \
+  $(SRC)/utils/mkboot/mkboot.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/mkboot/ $** /link /NODEFAULTLIB /FIXED:NO
 
 $(OBJ)/httpd/httpd.res: $(SRC)/utils/httpd/httpd.rc
   $(RC) /d "NDEBUG" /l 0x406 /fo$@ $**
@@ -1130,7 +1137,7 @@ sdk: $(SDKBIN)/os.dll $(SDKBIN)/make.exe $(SDKBIN)/ar.exe $(SDKBIN)/impdef.exe $
     cd $(SDKSRC)\makedepend && nmake install
 
 sdk-clean:
-    del /Q $(SDKBIN)\bin
+    del /Q $(SDKBIN)
     cd $(SDKSRC)\as && nmake clean
     cd $(SDKSRC)\cc && nmake clean
     cd $(SDKSRC)\libc && nmake clean
@@ -1156,6 +1163,7 @@ install: sanos
     copy /Y $(BIN)\httpd.dll     $(INSTALL)\bin\httpd.dll
     copy /Y $(BIN)\setup.exe     $(INSTALL)\bin\setup.exe
     copy /Y $(BIN)\ctohtml.exe   $(INSTALL)\bin\ctohtml.exe
+    copy /Y $(BIN)\mkboot.exe    $(INSTALL)\bin\mkboot.exe
     copy /Y $(BIN)\edit.exe      $(INSTALL)\bin\edit.exe
     copy /Y $(BIN)\fdisk.exe     $(INSTALL)\bin\fdisk.exe
     copy /Y $(BIN)\jinit.exe     $(INSTALL)\bin\jinit.exe
@@ -1217,6 +1225,7 @@ install-sdk: install-source sdk
     copy /Y $(SDKBIN)\makedepend.exe $(INSTALL)\usr\bin
     copy /Y $(SDKLIB)\libc.a         $(INSTALL)\usr\lib
     copy /Y $(SDKLIB)\os.def         $(INSTALL)\usr\lib\os.def
+    copy /Y $(SDKLIB)\krnl.def       $(INSTALL)\usr\lib\krnl.def
     copy /Y $(SDKSRC)\as\*.c         $(INSTALL)\usr\src\utils\as
     copy /Y $(SDKSRC)\as\*.h         $(INSTALL)\usr\src\utils\as
     copy /Y $(SDKSRC)\as\output\*.h  $(INSTALL)\usr\src\utils\as\output
@@ -1229,3 +1238,4 @@ install-sdk: install-source sdk
     copy /Y $(SDKSRC)\makedepend\*.c $(INSTALL)\usr\src\utils\makedepend
     copy /Y $(SDKSRC)\makedepend\*.h $(INSTALL)\usr\src\utils\makedepend
     copy /Y $(SDKSRC)\makedepend\Makefile.sanos $(INSTALL)\usr\src\utils\makedepend\Makefile
+

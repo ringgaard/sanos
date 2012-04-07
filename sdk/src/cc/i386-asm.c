@@ -61,13 +61,13 @@ typedef struct ASMInstr {
 #define OPT_DX    17 /* %dx register */
 #define OPT_ADDR  18 /* OP_EA with only offset */
 #define OPT_INDIR 19 /* *(expr) */
+#define OPT_FAR   20
 
 /* composite types */ 
-#define OPT_COMPOSITE_FIRST   20
-#define OPT_IM       20 /* IM8 | IM16 | IM32 */
-#define OPT_REG      21 /* REG8 | REG16 | REG32 */ 
-#define OPT_REGW     22 /* REG16 | REG32 */
-#define OPT_IMW      23 /* IM16 | IM32 */ 
+#define OPT_IM       21 /* IM8 | IM16 | IM32 */
+#define OPT_REG      22 /* REG8 | REG16 | REG32 */ 
+#define OPT_REGW     23 /* REG16 | REG32 */
+#define OPT_IMW      24 /* IM16 | IM32 */ 
 
 /* can be ored with any OPT_xxx */
 #define OPT_EA    0x80
@@ -98,6 +98,7 @@ typedef struct Operand {
 #define OP_DX     (1 << OPT_DX)
 #define OP_ADDR   (1 << OPT_ADDR)
 #define OP_INDIR  (1 << OPT_INDIR)
+#define OP_FAR    (1 << OPT_FAR)
 
 #define OP_EA     0x40000000
 #define OP_REG    (OP_REG8 | OP_REG16 | OP_REG32)
@@ -105,6 +106,7 @@ typedef struct Operand {
     int8_t  reg; /* register, -1 if none */
     int8_t  reg2; /* second register, -1 if none */
     uint8_t shift;
+    uint8_t size;
     ExprValue e;
 } Operand;
 
@@ -235,6 +237,7 @@ static void parse_operand(TCCState *s1, Operand *op)
     int reg, indir;
     const char *p;
 
+    op->size = 3;
     indir = 0;
     if (tok == '*') {
         next();
@@ -340,6 +343,7 @@ static void masm_logic_or_reg(TCCState *s1, Operand *op) {
     op->reg = -1;
     op->reg2 = -1;
     op->shift = 0;
+    op->size = 3;
     op->e.v = 0;
     op->e.sym = NULL;
     if (tok >= TOK_ASM_eax && tok <= TOK_ASM_edi) {
@@ -380,7 +384,7 @@ static void masm_expr(TCCState *s1, Operand *op)
         }
         next();
         masm_logic_or_reg(s1, &op2);
-        
+
         /* combine registers */
         if (op2.reg != -1 || op2.reg2 != -1) {
             if (opr != '+') expect("positive offset");
@@ -438,7 +442,7 @@ static void masm_expr(TCCState *s1, Operand *op)
         }
     }
     if (indir) {
-        op->type |= OP_INDIR;
+        op->type |= OP_EA | OP_INDIR;
         skip(']');
     }
 }
@@ -498,19 +502,37 @@ static void parse_masm_operand(TCCState *s1, Operand *op)
         if (tok == TOK_ASM_offset) {
             offset = 1;
             next();
+        } else if (tok == TOK_ASM_far) {
+            op->type |= OP_FAR;
         }
-        if (tok == TOK_ASM_byte || tok == TOK_ASM_word || tok == TOK_ASM_dword) {
-            /* XXX: use size hint */
+        if (tok == TOK_ASM_byte || tok == TOK_ASM_word || 
+            tok == TOK_ASM_dword || tok == TOK_ASM_fword) {
+            switch (tok) {
+            case TOK_ASM_byte: op->size = 0; break;
+            case TOK_ASM_word: op->size = 1; break;
+            case TOK_ASM_dword: op->size = 2;; break;
+            case TOK_ASM_fword: op->size = 2; op->type |= OP_FAR; break;
+            }
             next();
+            op->type |= OP_EA;
             skip(TOK_ASM_ptr);
         }
         masm_expr(s1, op);
+        if (op->size == 3 && op->e.sym) {
+          int align;
+          switch (type_size(&op->e.sym->type, &align)) {
+            case 1: op->size = 0; break;
+            case 2: op->size = 1; break;
+            case 4: op->size = 2; break;
+          }
+        }
         if (offset) {
-           if (op->reg != -1 && op->reg != -1) 
+           if (op->reg != -1 && op->reg2 != -1) 
                error("register not allowed in offset");
+           op->type &= ~OP_EA;
            op->type |= OP_IM32;
-        } else if ((op->type & OP_INDIR) == 0 && 
-                   op->reg == -1 && op->reg == -1 && 
+        } else if ((op->type & OP_EA) == 0 && 
+                   op->reg == -1 && op->reg2 == -1 && 
                    !op->e.sym) {
             /* constant */
             op->type = OP_IM32;
@@ -520,10 +542,10 @@ static void parse_masm_operand(TCCState *s1, Operand *op)
                 op->type |= OP_IM8S;
             if (op->e.v == (uint16_t)op->e.v)
                 op->type |= OP_IM16;
-        } else if (op->reg == -1 && op->reg == -1 && op->e.v == 0 && 
+        } else if (op->reg == -1 && op->reg2 == -1 && op->e.v == 0 && 
                    op->e.sym && (op->e.sym->r & VT_VALMASK) == VT_LOCAL) {
             /* local variable */
-            op->type = OP_EA | OP_INDIR;
+            op->type = OP_EA;
             op->reg = TOK_ASM_ebp - TOK_ASM_eax;
             op->e.v = op->e.sym->c;
             op->e.sym = NULL;
@@ -567,7 +589,6 @@ static void gen_disp32(ExprValue *pe)
         gen_le32(pe->v - 4);
     }
 }
-
 
 static void gen_le16(int v)
 {
@@ -643,7 +664,7 @@ static void asm_opcode(TCCState *s1, int opcode)
     nb_ops = 0;
     seg_prefix = 0;
     for(;;) {
-        if (tok == ';' || tok == TOK_LINEFEED)
+        if (tok == ';' || tok == TOK_LINEFEED || tok == '}')
             break;
         if (nb_ops >= MAX_OPERANDS) {
             error("incorrect number of operands");
@@ -671,7 +692,8 @@ static void asm_opcode(TCCState *s1, int opcode)
         printf("op%d: type=%x", nb_ops, pop->type);
         if (pop->reg != -1) printf(" reg=%x", pop->reg); 
         if (pop->reg2 != -1) printf(" reg2=%x", pop->reg2); 
-        if (pop->shift != 0) printf(" shift=%d", pop->shift); 
+        if (pop->shift != 0) printf(" shift=%d", pop->shift);
+        if (pop->size != 3) printf(" size=%d", pop->size);
         if (pop->e.v != 0) printf(" v=%x", pop->e.v); 
         if (pop->e.sym) printf(" sym.v=%x sym.r=%x sym.c=%x sym.type=%x", pop->e.sym->v, pop->e.sym->r, pop->e.sym->c, pop->e.sym->type); 
         printf("\n");
@@ -698,8 +720,7 @@ static void asm_opcode(TCCState *s1, int opcode)
     is_short_jmp = 0;
     s = 0; /* avoid warning */
     
-    /* optimize matching by using a lookup table (no hashing is needed
-       !) */
+    /* optimize matching by using a lookup table (no hashing is needed!) */
     for(pa = asm_instrs; pa->sym != 0; pa++) {
         s = 0;
         if (pa->instr_type & OPC_FARITH) {
@@ -787,8 +808,11 @@ static void asm_opcode(TCCState *s1, int opcode)
             if ((opcode == TOK_ASM_push || opcode == TOK_ASM_pop) && 
                 (ops[0].type & (OP_SEG | OP_IM8S | OP_IM32)))
                 s = 2;
-            else
-                error("cannot infer opcode suffix");
+            else {
+                for(i = 0; s == 3 && i < nb_ops; i++) s = ops[i].size;
+                if (s == 3)
+                    error("cannot infer opcode suffix");
+            }
         }
     }
 

@@ -16,5 +16,13 @@ cdemboot: cdemboot.asm
 netboot: netboot.asm
     $(AS) -f bin $< -o $@
 
+install: boot cdboot cdemboot netboot
+    sh cp boot /boot/boot
+    sh cp cdboot /boot/cdboot
+    sh cp cdemboot /boot/cdemboot
+    sh cp netboot /boot/netboot
+    mkboot -b /boot/boot
+
 clean:
     sh rm boot cdboot cdemboot netboot
+

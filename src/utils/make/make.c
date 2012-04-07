@@ -86,6 +86,7 @@ struct project
 
   struct rule *build_first;
   struct rule *build_last;
+  struct rule *phony;
   
   struct buffer line;
   struct buffer name;
@@ -586,7 +587,7 @@ int check_rule(struct project *prj, struct rule *rule)
     if (dep) {
       // Check dependent rule
       if (check_rule(prj, dep) < 0) return -1;
-      
+
       // If dependent rule is dirty we also need to build this rule
       if (dep->status == DIRTY) {
         if (prj->debug) printf("build %s because %s needs to be built\n", rule->target, item->value);
@@ -612,6 +613,22 @@ int check_rule(struct project *prj, struct rule *rule)
     item = item->next;
   }
   
+  // Always build phony targets
+  if (prj->phony)
+  {
+    item = prj->phony->dependencies.head;
+    while (item)
+    {
+      if (strcmp(item->value, rule->target) == 0)
+      {
+        if (prj->debug)  printf("build %s because it is a phony target\n", rule->target);
+        dirty = 1;
+        break;
+      }
+      item = item->next;
+    }
+  }
+      
   // Mark as dirty if we are in always-build mode
   if (prj->always_build) dirty = 1;
 
@@ -629,6 +646,7 @@ int check_rule(struct project *prj, struct rule *rule)
 int check_targets(struct project *prj) 
 {
   struct item *target = prj->targets.head;
+  prj->phony = find_rule(prj, ".PHONY");
   while (target)
   {
     struct rule *r = find_rule(prj, target->value);

@@ -264,3 +264,14 @@ int cpu_sysinfo(struct cpuinfo *info)
 
   return 0;
 }
+
+__declspec(naked) unsigned long eflags()
+{
+  __asm
+  {
+    pushfd
+    pop eax
+    ret
+  }
+}
+

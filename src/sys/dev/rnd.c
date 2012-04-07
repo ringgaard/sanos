@@ -568,7 +568,7 @@ static void MD5Transform(unsigned long buf[HASH_BUFFER_SIZE], unsigned long cons
 #define TMP_BUF_SIZE              (HASH_BUFFER_SIZE + HASH_EXTRA_SIZE)
 #define SEC_XFER_SIZE             (TMP_BUF_SIZE * 4)
 
-static int extract_entropy(struct entropy_store *r, void * buf, size_t nbytes, int flags);
+static int extract_entropy(struct entropy_store *r, void *buf, size_t nbytes, int flags);
 
 //
 // This utility function is responsible for transfering entropy
@@ -606,11 +606,12 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
 // Note: extract_entropy() assumes that POOLWORDS is a multiple of 16 words.
 //
 
-static int extract_entropy(struct entropy_store *r, char *buf, size_t nbytes, int flags)
+static int extract_entropy(struct entropy_store *r, void *buf, size_t nbytes, int flags)
 {
   int ret, i;
   unsigned long tmp[TMP_BUF_SIZE];
   unsigned long x;
+  char *b = (char *) buf; 
 
   add_timer_randomness(&extract_timer_state, nbytes);
   
@@ -669,10 +670,10 @@ static int extract_entropy(struct entropy_store *r, char *buf, size_t nbytes, in
 
     // Copy data to destination buffer
     i = MIN(nbytes, HASH_BUFFER_SIZE * sizeof(unsigned long) / 2);
-    memcpy(buf, (unsigned char const *) tmp, i);
+    memcpy(b, (unsigned char const *) tmp, i);
 
     nbytes -= i;
-    buf += i;
+    b += i;
     ret += i;
     add_timer_randomness(&extract_timer_state, nbytes);
   }

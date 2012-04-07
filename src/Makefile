@@ -1,29 +1,33 @@
 #
-# Main makefile for Sanos applications
+# Main makefile for Sanos
 #
 
-all: sdk apps
+all: sdk sys utils
 
 sdk:
+    make -C lib
     make -C utils/as
     make -C utils/cc
     make -C utils/ar
     make -C utils/make
     make -C utils/impdef
     make -C utils/makedepend
-    make -C lib
 
-apps:
+sys:
+    make -C sys
+
+utils:
     make -C utils/ctohtml
     make -C utils/edit
     make -C utils/fdisk
     make -C utils/ftpd
     make -C utils/login
+    make -C utils/mkboot
     make -C utils/setup
     make -C utils/sh
     make -C utils/telnetd
 
-install: sdk apps 
+install-sdk: sdk
     make -C lib install
     make -C utils/as install
     make -C utils/cc install
@@ -31,15 +35,23 @@ install: sdk apps
     make -C utils/make install
     make -C utils/impdef install
     make -C utils/makedepend install
+
+install-sys: sys
+    make -C sys install
+
+install-utils: utils 
     make -C utils/edit install
     make -C utils/fdisk install
     make -C utils/ftpd install
     make -C utils/login install
+    make -C utils/mkboot install
     make -C utils/setup install
     make -C utils/sh install
     make -C utils/telnetd install
 
-clean:
+install: install-sdk install-sys install-utils
+
+clean-sdk:
     make -C lib clean
     make -C utils/as clean
     make -C utils/cc clean
@@ -47,6 +59,11 @@ clean:
     make -C utils/make clean
     make -C utils/impdef clean
     make -C utils/makedepend clean
+
+clean-sys:
+    make -C sys clean
+
+clean-utils:
     make -C utils/edit clean
     make -C utils/fdisk clean
     make -C utils/ftpd clean
@@ -54,3 +71,8 @@ clean:
     make -C utils/setup clean
     make -C utils/sh clean
     make -C utils/telnetd clean
+
+clean: clean-sdk clean-sys clean-utils
+
+.PHONY: utils sys
+

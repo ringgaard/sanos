@@ -123,16 +123,6 @@ int get_pending_signals(sigset_t *set);
 int get_context(struct thread *t, struct context *ctxt);
 int set_context(struct thread *t, struct context *ctxt);
 
-__inline __declspec(naked) unsigned long eflags()
-{
-  __asm
-  {
-    pushfd
-    pop eax
-    ret
-  }
-}
-
 #endif
 
 #endif

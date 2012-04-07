@@ -192,15 +192,6 @@ typedef struct _IMAGE_BASE_RELOCATION {
 
 #pragma pack(push, 1)
 
-struct pe_header
-{
-    IMAGE_DOS_HEADER doshdr;
-    BYTE dosstub[0x40];
-    DWORD nt_sig;
-    IMAGE_FILE_HEADER filehdr;
-    IMAGE_OPTIONAL_HEADER opthdr;
-};
-
 struct pe_import_header {
     DWORD first_entry;
     DWORD time_date;
@@ -240,10 +231,7 @@ struct pe_rsrc_reloc {
 
 #pragma pack(pop)
 
-/* ----------------------------------------------------------- */
-ST_DATA struct pe_header pe_header = {
-{
-    /* IMAGE_DOS_HEADER doshdr */
+ST_DATA IMAGE_DOS_HEADER pe_doshdr = {
     0x5A4D, /*WORD e_magic;         Magic number */
     0x0090, /*WORD e_cblp;          Bytes on last page of file */
     0x0003, /*WORD e_cp;            Pages in file */
@@ -265,17 +253,21 @@ ST_DATA struct pe_header pe_header = {
     0x0000, /*WORD e_oeminfo;       OEM information; e_oemid specific */
     {0,0,0,0,0,0,0,0,0,0}, /*WORD e_res2[10];      Reserved words */
     0x00000080  /*DWORD   e_lfanew;        File address of new exe header */
-},{
-    /* BYTE dosstub[0x40] */
+};
+
+#define DOSSTUB_SIZE 0x40
+
+ST_DATA BYTE pe_dosstub[DOSSTUB_SIZE] = {
     /* 14 code bytes + "This program cannot be run in DOS mode.\r\r\n$" + 6 * 0x00 */
     0x0e,0x1f,0xba,0x0e,0x00,0xb4,0x09,0xcd,0x21,0xb8,0x01,0x4c,0xcd,0x21,0x54,0x68,
     0x69,0x73,0x20,0x70,0x72,0x6f,0x67,0x72,0x61,0x6d,0x20,0x63,0x61,0x6e,0x6e,0x6f,
     0x74,0x20,0x62,0x65,0x20,0x72,0x75,0x6e,0x20,0x69,0x6e,0x20,0x44,0x4f,0x53,0x20,
     0x6d,0x6f,0x64,0x65,0x2e,0x0d,0x0d,0x0a,0x24,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-},
-    0x00004550, /* DWORD nt_sig = IMAGE_NT_SIGNATURE */
-{
-    /* IMAGE_FILE_HEADER filehdr */
+};
+
+ST_DATA DWORD pe_ntsig = 0x00004550;
+
+ST_DATA IMAGE_FILE_HEADER pe_filehdr = {
     0x014C, /*WORD    Machine; */
     0x0003, /*WORD    NumberOfSections; */
     0x00000000, /*DWORD   TimeDateStamp; */
@@ -283,8 +275,9 @@ ST_DATA struct pe_header pe_header = {
     0x00000000, /*DWORD   NumberOfSymbols; */
     0x00E0, /*WORD    SizeOfOptionalHeader; */
     0x030F  /*WORD    Characteristics; */
-},{
-    /* IMAGE_OPTIONAL_HEADER opthdr */
+};
+
+ST_DATA IMAGE_OPTIONAL_HEADER pe_opthdr = {
     /* Standard fields. */
     0x010B, /*WORD    Magic; */
     0x06, /*BYTE    MajorLinkerVersion; */
@@ -327,7 +320,7 @@ ST_DATA struct pe_header pe_header = {
     /* IMAGE_DATA_DIRECTORY DataDirectory[16]; */
     {{0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},
      {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}}
-}};
+};
 
 /* ------------------------------------------------------------- */
 /* internal temporary structures */
@@ -393,6 +386,8 @@ struct pe_info {
     Section *reloc;
     Section *thunk;
     const char *filename;
+    const char *stub;
+    DWORD filealign;
     int type;
     DWORD sizeofheaders;
     DWORD imagebase;
@@ -530,9 +525,9 @@ ST_FN void pe_fpad(FILE *fp, DWORD new_pos)
         fputc(0, fp);
 }
 
-ST_FN DWORD pe_file_align(DWORD n)
+ST_FN DWORD pe_file_align(struct pe_info *pe, DWORD n)
 {
-    return (n + (0x200 - 1)) & ~(0x200 - 1);
+    return (n + (pe->filealign - 1)) & ~(pe->filealign - 1);
 }
 
 ST_FN DWORD pe_virtual_align(DWORD n)
@@ -549,8 +544,8 @@ ST_FN void pe_align_section(Section *s, int a)
 
 ST_FN void pe_set_datadir(int dir, DWORD addr, DWORD size)
 {
-    pe_header.opthdr.DataDirectory[dir].VirtualAddress = addr;
-    pe_header.opthdr.DataDirectory[dir].Size = size;
+    pe_opthdr.DataDirectory[dir].VirtualAddress = addr;
+    pe_opthdr.DataDirectory[dir].Size = size;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -558,7 +553,37 @@ ST_FN int pe_write(struct pe_info *pe)
 {
     int i;
     FILE *op;
+    FILE *stubfile;
+    char *stub;
+    int stub_size;
     DWORD file_offset, r;
+
+    if (pe->stub) {
+        stubfile = fopen(pe->stub, "rb");
+        if (NULL == stubfile) {
+            error_noabort("could not read '%s': %s", pe->stub, strerror(errno));
+            return 1;
+        }
+        fseek(stubfile, 0, SEEK_END);
+        stub_size = ftell(stubfile);
+        fseek(stubfile, 0, SEEK_SET);
+        if (stub_size < sizeof(IMAGE_DOS_HEADER)) {
+            error_noabort("invalid stub (%d bytes): %s", stub_size, pe->stub);
+            return 1;
+        }
+        stub = tcc_malloc(stub_size);
+        if (fread(stub, 1, stub_size, stubfile) != stub_size) {
+            error_noabort("error reading stub '%s': %s", pe->stub, strerror(errno));
+            return 1;
+        }
+        fclose(stubfile);
+    } else {
+        stub_size = DOSSTUB_SIZE + sizeof(IMAGE_DOS_HEADER);
+        stub = tcc_malloc(stub_size);
+        memcpy(stub, &pe_doshdr, sizeof(IMAGE_DOS_HEADER));
+        memcpy(stub + sizeof(IMAGE_DOS_HEADER), pe_dosstub, DOSSTUB_SIZE);
+    }
+    ((PIMAGE_DOS_HEADER) stub)->e_lfanew = stub_size;
 
     op = fopen(pe->filename, "wb");
     if (NULL == op) {
@@ -566,10 +591,13 @@ ST_FN int pe_write(struct pe_info *pe)
         return 1;
     }
 
-    pe->sizeofheaders = pe_file_align(
-        sizeof pe_header
-        + pe->sec_count * sizeof (IMAGE_SECTION_HEADER)
-        );
+    pe->sizeofheaders = 
+        pe_file_align(pe,
+            stub_size +
+            sizeof(DWORD) + 
+            sizeof(IMAGE_FILE_HEADER) +
+            sizeof(IMAGE_OPTIONAL_HEADER) +
+            pe->sec_count * sizeof (IMAGE_SECTION_HEADER));
 
     file_offset = pe->sizeofheaders;
     pe_fpad(op, file_offset);
@@ -591,18 +619,18 @@ ST_FN int pe_write(struct pe_info *pe)
 
         switch (si->cls) {
             case sec_text:
-                pe_header.opthdr.BaseOfCode = addr;
-                pe_header.opthdr.SizeOfCode += size;
-                pe_header.opthdr.AddressOfEntryPoint = addr + pe->start_addr;
+                pe_opthdr.BaseOfCode = addr;
+                pe_opthdr.SizeOfCode += size;
+                pe_opthdr.AddressOfEntryPoint = addr + pe->start_addr;
                 break;
 
             case sec_data:
-                pe_header.opthdr.BaseOfData = addr;
-                pe_header.opthdr.SizeOfInitializedData += size;
+                pe_opthdr.BaseOfData = addr;
+                pe_opthdr.SizeOfInitializedData += size;
                 break;
 
             case sec_bss:
-                pe_header.opthdr.SizeOfUninitializedData += size;
+                pe_opthdr.SizeOfUninitializedData += size;
                 break;
 
             case sec_reloc:
@@ -635,43 +663,50 @@ ST_FN int pe_write(struct pe_info *pe)
         psh->Characteristics = pe_sec_flags[si->cls];
         psh->VirtualAddress = addr;
         psh->Misc.VirtualSize = size;
-        pe_header.opthdr.SizeOfImage =
-            umax(pe_virtual_align(size + addr), pe_header.opthdr.SizeOfImage); 
+        pe_opthdr.SizeOfImage =
+            umax(pe_virtual_align(size + addr), pe_opthdr.SizeOfImage); 
 
         if (si->data_size) {
             psh->PointerToRawData = r = file_offset;
             fwrite(si->data, 1, si->data_size, op);
-            file_offset = pe_file_align(file_offset + si->data_size);
+            file_offset = pe_file_align(pe, file_offset + si->data_size);
             psh->SizeOfRawData = file_offset - r;
             pe_fpad(op, file_offset);
         }
     }
 
-    // pe_header.filehdr.TimeDateStamp = time(NULL);
-    pe_header.filehdr.NumberOfSections = pe->sec_count;
-    pe_header.opthdr.SizeOfHeaders = pe->sizeofheaders;
-    pe_header.opthdr.ImageBase = pe->imagebase;
+    // pe_filehdr.TimeDateStamp = time(NULL);
+    pe_filehdr.NumberOfSections = pe->sec_count;
+    pe_opthdr.SizeOfHeaders = pe->sizeofheaders;
+    pe_opthdr.ImageBase = pe->imagebase;
+    pe_opthdr.FileAlignment = pe->filealign;
     if (PE_DLL == pe->type)
-        pe_header.filehdr.Characteristics = 0x230E;
+        pe_filehdr.Characteristics = 0x230E;
     else if (PE_GUI != pe->type)
-        pe_header.opthdr.Subsystem = 3;
+        pe_opthdr.Subsystem = 3;
 
 #ifdef SANOS
-    /* always include relocation info in sanos executables */
-    pe_header.filehdr.Characteristics &= ~1;
+    /* include relocation info in sanos executables unless it has fixed base */
+    if (pe->reloc) {
+        pe_filehdr.Characteristics &= ~1;
+    }
 #endif
 
-    fseek(op, SEEK_SET, 0);
-    fwrite(&pe_header,  1, sizeof pe_header, op);
+    fseek(op, 0, SEEK_SET);
+    fwrite(stub,  1, stub_size, op);
+    fwrite(&pe_ntsig,  1, sizeof pe_ntsig, op);
+    fwrite(&pe_filehdr,  1, sizeof pe_filehdr, op);
+    fwrite(&pe_opthdr,  1, sizeof pe_opthdr, op);
     for (i = 0; i < pe->sec_count; ++i)
         fwrite(&pe->sec_info[i].ish, 1, sizeof(IMAGE_SECTION_HEADER), op);
-    fclose (op);
+    fclose(op);
 
     if (2 == verbose)
         printf("-------------------------------\n");
     if (verbose)
         printf("<- %s (%lu bytes)\n", pe->filename, file_offset);
 
+    tcc_free(stub);
     return 0;
 }
 
@@ -1521,6 +1556,8 @@ ST_FN void pe_add_runtime_ex(TCCState *s1, struct pe_info *pe)
     if (pe) {
         pe->type = pe_type;
         pe->start_addr = addr;
+        pe->stub = s1->stub;
+        pe->filealign = s1->filealign;
     }
 }
 
