@@ -390,7 +390,7 @@ void tcp_slowtmr(void *arg)
       pcb->rtime++;
       if (pcb->unacked != NULL && pcb->rtime >= pcb->rto) 
       {
-        kprintf("tcp_slowtmr: rtime %ld pcb->rto %d\n", tcp_ticks - pcb->rtime, pcb->rto);
+        //kprintf("tcp_slowtmr: rtime %ld pcb->rto %d\n", tcp_ticks - pcb->rtime, pcb->rto);
 
         // Double retransmission time-out unless we are trying to
         // connect to somebody (i.e., we are in SYN_SENT)
@@ -408,7 +408,7 @@ void tcp_slowtmr(void *arg)
         if (pcb->ssthresh < (unsigned long) pcb->mss) pcb->ssthresh = pcb->mss * 2;
         pcb->cwnd = pcb->mss;
 
-        kprintf("tcp_rexmit_seg: cwnd %u ssthresh %u\n", pcb->cwnd, pcb->ssthresh);
+        //kprintf("tcp_rexmit_seg: cwnd %u ssthresh %u\n", pcb->cwnd, pcb->ssthresh);
       }
     }
           
