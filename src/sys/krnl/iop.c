@@ -40,6 +40,7 @@ unsigned char __declspec(naked) inb(port_t port)
   __asm
   {
     mov     dx,word ptr [esp + 4]
+    xor     eax,eax
     in      al,dx
     ret
   }
@@ -50,6 +51,7 @@ unsigned short __declspec(naked) inw(port_t port)
   __asm
   {
     mov     dx,word ptr [esp + 4]
+    xor     eax,eax
     in      ax,dx
     ret
   }
