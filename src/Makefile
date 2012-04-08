@@ -27,7 +27,7 @@ utils:
     make -C utils/sh
     make -C utils/telnetd
 
-install-sdk: sdk
+install-sdk:
     make -C lib install
     make -C utils/as install
     make -C utils/cc install
@@ -36,10 +36,11 @@ install-sdk: sdk
     make -C utils/impdef install
     make -C utils/makedepend install
 
-install-sys: sys
+install-sys:
     make -C sys install
 
-install-utils: utils 
+install-utils:
+    make -C utils/ctohtml install
     make -C utils/edit install
     make -C utils/fdisk install
     make -C utils/ftpd install

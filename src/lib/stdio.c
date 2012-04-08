@@ -367,7 +367,7 @@ static int open_file(FILE *stream, const char *filename, const char *mode)
     }
   }
 
-  handle = open(filename, oflag, S_IREAD | S_IWRITE);
+  handle = open(filename, oflag, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   if (handle < 0) return -1;
 
   stream->flag = streamflag;

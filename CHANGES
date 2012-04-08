@@ -4,7 +4,13 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Sanos is now self-contained in the sense that it can build itself. 
+      This includes the boot sector, boot loader, kernel, device drivers,
+      OS API, standard C library, assembler, C compiler, and utilities.
+
     * Added check to dfs file system to prevent deleting non-empty directories.
+
+    * Fixed bug in dfs so reserved inodes are not marked as free when deleted.
 
     * Added kernel install utility, mkboot, for installing boot sectors, 
       boot loaders, and kernels.
@@ -21,8 +27,6 @@ Changes since last release
     * The main Makefile has been updated so Sanos can now build under Linux 
       using WINE.
  
-    * The user-mode component of Sanos (os.dll) compiles under sanos.
-
     * New features in the C compiler:
         - Support for masm inline assembler syntax.
         - Support for __declspec(naked) in C compiler
@@ -32,6 +36,7 @@ Changes since last release
         - Custom DOS stub and PE file section alignment
         - Bug fix for unsigned integer constant folding
         - Added pre-defined _TCC_VER macro with TCC version number
+        - Set execute bit for generated executable files
 
     * Data segment registers are now inilialized by the kernel before starting
       a user-mode thread.

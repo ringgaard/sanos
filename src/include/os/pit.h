@@ -46,14 +46,11 @@
 #define USECS_PER_TICK  (1000000 / TIMER_FREQ)
 #define MSECS_PER_TICK  (1000 / TIMER_FREQ)
 
-krnlapi extern struct timeval systemclock;
-krnlapi extern volatile unsigned int ticks;
-krnlapi extern volatile unsigned int clocks;
+extern struct timeval systemclock;
+extern volatile unsigned int ticks;
+extern volatile unsigned int clocks;
 
-__inline unsigned int get_tick_count()
-{
-  return ticks;
-}
+krnlapi unsigned int get_ticks();
 
 krnlapi void udelay(unsigned long us);
 

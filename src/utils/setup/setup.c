@@ -322,7 +322,7 @@ int dokernel(struct section *sect)
 
   size = fstat(fin, NULL);
 
-  // Make sure /bin directory exists on target
+  // Make sure /boot directory exists on target
   if (stat(target, NULL) < 0)
   {
     rc = mkdir(target, 0755);

@@ -235,6 +235,8 @@ struct pcnet32
   void (*reset)(unsigned short);
 };
 
+struct netstats *netstats;
+
 static void dump_csr(unsigned short csr)
 {
   kprintf("CRS: ");
@@ -386,7 +388,7 @@ int pcnet32_transmit(struct dev *dev, struct pbuf *p)
   if (wait_for_object(&pcnet32->sem_tx, TX_TIMEOUT) < 0)
   {
     kprintf("pcnet32: transmit timeout, drop packet\n");
-    stats.link.drop++;
+    netstats->link.drop++;
     return -ETIMEOUT;
   }
 
@@ -400,7 +402,7 @@ int pcnet32_transmit(struct dev *dev, struct pbuf *p)
       if (wait_for_object(&pcnet32->sem_tx, TX_TIMEOUT) < 0)
       {
         kprintf("pcnet32: transmit timeout, drop packet\n");
-        stats.link.drop++;
+        netstats->link.drop++;
         return -ETIMEOUT;
       }
     }
@@ -461,7 +463,7 @@ void pcnet32_receive(struct pcnet32 *pcnet32)
     {
       // Error
       kprintf("pcnet32: rx error\n");
-      stats.link.err++;
+      netstats->link.err++;
     }
     else
     {
@@ -483,7 +485,7 @@ void pcnet32_receive(struct pcnet32 *pcnet32)
       else
       {
         kprintf(KERN_WARNING "pcnet32: unable to allocate packet for receive ring\n");
-        stats.link.memerr++;
+        netstats->link.memerr++;
       }
 
       if (p)
@@ -614,7 +616,7 @@ int __declspec(dllexport) install(struct unit *unit)
   // Setup NIC configuration
   pcnet32->iobase = (unsigned short) get_unit_iobase(unit);
   pcnet32->irq = (unsigned short) get_unit_irq(unit);
-  pcnet32->membase = (unsigned short) get_unit_membase(unit);
+  pcnet32->membase = (unsigned short) (unsigned long) get_unit_membase(unit);
 
   // Enable bus mastering
   pci_enable_busmastering(unit);
@@ -790,5 +792,6 @@ int __declspec(dllexport) install(struct unit *unit)
 
 int __stdcall start(hmodule_t hmod, int reason, void *reserved2)
 {
+  netstats = get_netstats();
   return 1;
 }

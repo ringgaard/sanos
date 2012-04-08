@@ -34,7 +34,7 @@
 
 #include <net/net.h>
 
-struct stats_all stats;
+struct netstats stats;
 
 static void protstat(struct proc_file *pf, char *prot, struct stats_proto *stat)
 {
@@ -72,6 +72,11 @@ static int pbufs_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
+struct netstats *get_netstats()
+{
+  return &stats;
+}
+
 void stats_init()
 {
   //memset(&stats, 0, sizeof(struct stats_all));
@@ -79,3 +84,4 @@ void stats_init()
   register_proc_inode("pbufs", pbufs_proc, NULL);
   register_proc_inode("netstat", netstat_proc, NULL);
 }
+

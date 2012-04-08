@@ -141,6 +141,9 @@ tmpfile.o: $(LIBSRC)/tmpfile.c
 popen.o: $(LIBSRC)/popen.c
     $(TCC) -c $** -o $@ -I$(INCLUDE)
 
+setjmp.o: $(LIBSRC)/setjmp.c
+    $(TCC) -c $** -o $@ -I$(INCLUDE)
+
 stdlib.o: $(LIBSRC)/stdlib.c
     $(TCC) -c $** -o $@ -I$(INCLUDE)
 
@@ -190,9 +193,6 @@ rwlock.o: $(LIBSRC)/pthread/rwlock.c
     $(TCC) -c $** -o $@ -I$(INCLUDE)
 
 spinlock.o: $(LIBSRC)/pthread/spinlock.c
-    $(TCC) -c $** -o $@ -I$(INCLUDE)
-
-setjmp.o: $(LIBSRC)/setjmp.s
     $(TCC) -c $** -o $@ -I$(INCLUDE)
 
 chkstk.o: $(LIBSRC)/chkstk.s

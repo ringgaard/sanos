@@ -397,6 +397,11 @@ void udelay(unsigned long us)
     timed_delay(us * (loops_per_tick / (1000000 / TIMER_FREQ)));
 }
 
+unsigned int get_ticks()
+{
+  return ticks;
+}
+
 time_t get_time()
 {
   return systemclock.tv_sec;

@@ -332,6 +332,7 @@ int cmd_cp(int argc, char *argv[])
   int fd2;
   char *srcfn;
   char *dstfn;
+  struct stat st;
 
   if (argc != 3)
   {
@@ -346,8 +347,9 @@ int cmd_cp(int argc, char *argv[])
     printf("%s: %s\n", srcfn, strerror(errno));
     return -1;
   }
+  fstat(fd1, &st);
 
-  if ((fd2 = open(dstfn, O_CREAT | O_TRUNC | O_BINARY, S_IREAD | S_IWRITE)) < 0)
+  if ((fd2 = open(dstfn, O_CREAT | O_TRUNC | O_BINARY, st.st_mode)) < 0)
   {
     close(fd1);
     printf("%s: %s\n", dstfn, strerror(errno));

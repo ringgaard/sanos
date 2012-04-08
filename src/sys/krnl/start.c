@@ -264,15 +264,20 @@ static int version_proc(struct proc_file *pf, void *arg)
   gmtime_r(&ostimestamp, &tm);
 
   ver = get_version_info(krnl);
-  if (!ver) return -ENOENT;
-  if (get_version_value(krnl, "ProductName", osname, sizeof(osname)) < 0) strcpy(osname, "Sanos");
+  if (ver) 
+  {
+    if (get_version_value(krnl, "ProductName", osname, sizeof(osname)) < 0) strcpy(osname, "Sanos");
+    pprintf(pf, "%s version %d.%d.%d.%d", osname, ver->file_major_version, ver->file_minor_version, ver->file_release_number, ver->file_build_number);
 
-  pprintf(pf, "%s version %d.%d.%d.%d", osname, ver->file_major_version, ver->file_minor_version, ver->file_release_number, ver->file_build_number);
-
-  if (ver->file_flags & VER_FLAG_PRERELEASE) pprintf(pf, " prerelease");
-  if (ver->file_flags & VER_FLAG_PATCHED) pprintf(pf, " patch");
-  if (ver->file_flags & VER_FLAG_PRIVATEBUILD) pprintf(pf, " private");
-  if (ver->file_flags & VER_FLAG_DEBUG) pprintf(pf, " debug");
+    if (ver->file_flags & VER_FLAG_PRERELEASE) pprintf(pf, " prerelease");
+    if (ver->file_flags & VER_FLAG_PATCHED) pprintf(pf, " patch");
+    if (ver->file_flags & VER_FLAG_PRIVATEBUILD) pprintf(pf, " private");
+    if (ver->file_flags & VER_FLAG_DEBUG) pprintf(pf, " debug");
+  }
+  else
+  {
+    pprintf(pf, "%s version %d.%d.%d.%d", OS_NAME, OS_MAJ_VERS, OS_MIN_VERS, OS_RELEASE, OS_BUILD);
+  }
 
   pprintf(pf, " (%04d-%02d-%02d %02d:%02d:%02d)", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 #ifdef _MSC_VER
@@ -292,8 +297,8 @@ static int copyright_proc(struct proc_file *pf, void *arg)
   char copy[128];
   char legal[128];
 
-  if (get_version_value(krnl, "LegalCopyright", copy, sizeof(copy)) < 0) *copy = 0;
-  if (get_version_value(krnl, "LegalTrademarks", legal, sizeof(legal)) < 0) *legal = 0;
+  if (get_version_value(krnl, "LegalCopyright", copy, sizeof(copy)) < 0) strcpy(copy, OS_COPYRIGHT);
+  if (get_version_value(krnl, "LegalTrademarks", legal, sizeof(legal)) < 0) strcpy(legal, OS_LEGAL);
 
   version_proc(pf, arg);
   pprintf(pf, "%s %s\n\n", copy, legal);

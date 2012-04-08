@@ -40,8 +40,6 @@
 #define OFS_ESP   16
 #define OFS_EIP   20
 
-#ifndef __TINYC__
-
 __declspec(naked) int setjmp(jmp_buf env)
 {
   __asm
@@ -79,4 +77,3 @@ __declspec(naked) void longjmp(jmp_buf env, int value)
   }
 }
 
-#endif

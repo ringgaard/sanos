@@ -1652,7 +1652,7 @@ static void tulip_timer(void *data)
         kprintf(KERN_INFO "%s: No link beat found.\n", dev->name);
         tp->if_port = (tp->if_port == 2 ? 0 : 2);
         select_media(dev, 0);
-        tp->trans_start = ticks;
+        tp->trans_start = get_ticks();
       }
       break;
 
@@ -1798,7 +1798,7 @@ static void tulip_timer(void *data)
     break;
   }
 
-  mod_timer(&tp->timer, ticks + next_tick);
+  mod_timer(&tp->timer, get_ticks() + next_tick);
 }
 
 //
@@ -1879,13 +1879,13 @@ static void nway_timer(void *data)
     next_tick = 3 * HZ;
   }
 
-  if (tp->cur_tx - tp->dirty_tx > 0  && ticks - tp->trans_start > TX_TIMEOUT) 
+  if (tp->cur_tx - tp->dirty_tx > 0  && get_ticks() - tp->trans_start > TX_TIMEOUT) 
   {
     kprintf(KERN_WARNING "%s: Tx hung, %d vs. %d.\n", dev->name, tp->cur_tx, tp->dirty_tx);
     tulip_tx_timeout(dev);
   }
 
-  mod_timer(&tp->timer, ticks + next_tick);
+  mod_timer(&tp->timer, get_ticks() + next_tick);
 }
 
 static void nway_start(struct dev *dev)
@@ -2004,7 +2004,7 @@ static void nway_lnk_change(struct dev *dev, int csr5)
     // Link blew? Maybe restart NWay
     del_timer(&tp->timer);
     nway_start(dev);
-    mod_timer(&tp->timer, ticks + 3 * HZ);
+    mod_timer(&tp->timer, get_ticks() + 3 * HZ);
   } 
   else if (tp->if_port == 3 || tp->if_port == 5) 
   {
@@ -2013,7 +2013,7 @@ static void nway_lnk_change(struct dev *dev, int csr5)
     {
       del_timer(&tp->timer);
       nway_start(dev);
-      mod_timer(&tp->timer, ticks + 3 * HZ);
+      mod_timer(&tp->timer, get_ticks() + 3 * HZ);
     } 
     else if (tp->if_port == 5)
       writel(readl(ioaddr + CSR14) & ~0x080, ioaddr + CSR14);
@@ -2056,7 +2056,7 @@ static void mxic_timer(void *data)
   int next_tick = 60 * HZ;
 
   kprintf(KERN_INFO "%s: MXIC negotiation status %8.8x.\n", dev->name, readl(ioaddr + CSR12));
-  mod_timer(&tp->timer, ticks + next_tick);
+  mod_timer(&tp->timer, get_ticks() + next_tick);
 }
 
 static void pnic_do_nway(struct dev *dev)
@@ -2095,7 +2095,7 @@ static void pnic_do_nway(struct dev *dev)
       tp->csr6 = new_csr6;
       writel(tp->csr6 | RxOn, ioaddr + CSR6); // Restart Tx
       writel(tp->csr6 | TxOn | RxOn, ioaddr + CSR6);
-      tp->trans_start = ticks;
+      tp->trans_start = get_ticks();
     }
   }
 }
@@ -2111,13 +2111,13 @@ static void pnic_lnk_change(struct dev *dev, int csr5)
   if (readl(ioaddr + CSR5) & TPLnkFail) 
   {
     writel((readl(ioaddr + CSR7) & ~TPLnkFail) | TPLnkPass, ioaddr + CSR7);
-    if (!tp->nwayset || ticks - tp->trans_start > 1 * HZ) 
+    if (!tp->nwayset || get_ticks() - tp->trans_start > 1 * HZ) 
     {
       tp->csr6 = 0x00420000 | (tp->csr6 & 0x0000fdff);
       writel(tp->csr6, ioaddr + CSR6);
       writel(0x30, ioaddr + CSR12);
       writel(0x0201F078, ioaddr + 0xB8); // Turn on autonegotiation
-      tp->trans_start = ticks;
+      tp->trans_start = get_ticks();
     }
   } 
   else if (readl(ioaddr + CSR5) & TPLnkPass) 
@@ -2196,7 +2196,7 @@ static void pnic_timer(void *data)
         tp->csr6 = new_csr6;
         writel(tp->csr6 | RxOn, ioaddr + CSR6); // Restart Tx
         writel(tp->csr6 | RxOn | TxOn, ioaddr + CSR6);
-        tp->trans_start = ticks;
+        tp->trans_start = get_ticks();
         kprintf(KERN_INFO "%s: Changing PNIC configuration to %s %s-duplex, CSR6 %8.8x.\n",
                dev->name, medianame[tp->if_port],
                tp->full_duplex ? "full" : "half", new_csr6);
@@ -2204,7 +2204,7 @@ static void pnic_timer(void *data)
     }
   }
 
-  mod_timer(&tp->timer, ticks + next_tick);
+  mod_timer(&tp->timer, get_ticks() + next_tick);
 }
 
 static void comet_timer(void *data)
@@ -2219,7 +2219,7 @@ static void comet_timer(void *data)
 
   check_duplex(dev);
 
-  mod_timer(&tp->timer, ticks + next_tick);
+  mod_timer(&tp->timer, get_ticks() + next_tick);
 }
 
 static void tulip_tx_timeout(struct dev *dev)
@@ -2235,7 +2235,7 @@ static void tulip_tx_timeout(struct dev *dev)
     if (!(mii_bmsr & 0x0004)) 
     {   
       // No link beat present
-      tp->trans_start = ticks;
+      tp->trans_start = get_ticks();
       //netif_link_down(dev);
       return;
     }
@@ -2251,7 +2251,7 @@ static void tulip_tx_timeout(struct dev *dev)
           kprintf(KERN_INFO "%s: transmit timed out, switching to %s.\n", dev->name, medianame[tp->if_port]);
           select_media(dev, 0);
         }
-        tp->trans_start = ticks;
+        tp->trans_start = get_ticks();
         return; // Note: not break!
 
       case DC21041: 
@@ -2334,7 +2334,7 @@ static void tulip_tx_timeout(struct dev *dev)
   writel(0, ioaddr + CSR1);
   writel(tulip_tbl[tp->chip_id].valid_intrs, ioaddr + CSR7);
 
-  tp->trans_start = ticks;
+  tp->trans_start = get_ticks();
   tp->stats.tx_errors++;
 }
 
@@ -2453,7 +2453,7 @@ static int tulip_transmit(struct dev *dev, struct pbuf *p)
   //  if (!tp->tx_full) netif_resume_tx_queue(dev);
   //}
 
-  tp->trans_start = ticks;
+  tp->trans_start = get_ticks();
 
   // Trigger an immediate transmit demand
   writel(0, tp->iobase + CSR1);
@@ -2529,7 +2529,7 @@ static int tulip_rx(struct dev *dev)
       // Send packet to upper layer
       if (dev_receive(tp->devno, p) < 0) pbuf_free(p);
 
-      tp->last_rx = ticks;
+      tp->last_rx = get_ticks();
       tp->stats.rx_packets++;
       tp->stats.rx_bytes += pkt_len;
     }
@@ -3368,7 +3368,7 @@ static int tulip_open(struct dev *dev)
   // Set the timer to switch to check for link beat and perhaps switch
   // to an alternate media type
   init_timer(&tp->timer, tulip_tbl[tp->chip_id].media_timer, dev);
-  mod_timer(&tp->timer, ticks + next_tick);
+  mod_timer(&tp->timer, get_ticks() + next_tick);
 
   return 0;
 }

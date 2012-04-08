@@ -276,6 +276,8 @@ struct ne
   struct mutex txlock;                  // Transmit lock
 };
 
+struct netstats *netstats;
+
 static void ne_readmem(struct ne *ne, unsigned short src, void *dst, unsigned short len)
 {
   // Word align length
@@ -384,8 +386,8 @@ void ne_receive(struct ne *ne)
     {
       // Drop packet
       kprintf("ne2000: packet dropped\n");
-      stats.link.memerr++;
-      stats.link.drop++;
+      netstats->link.memerr++;
+      netstats->link.drop++;
     }
 
     // Update next packet pointer
@@ -748,5 +750,6 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
 
 int __stdcall start(hmodule_t hmod, int reason, void *reserved2)
 {
+  netstats = get_netstats();
   return 1;
 }

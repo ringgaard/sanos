@@ -263,6 +263,47 @@ error:
   return -1;
 }
 
+int install_kernel(char *target, char *krnlfile)
+{
+  int fin;
+  int fout;
+  int bytes;
+  char block[512];
+  char targetfn[MAXPATH];
+
+  // Open new kernel file
+  fin = open(krnlfile, O_BINARY);
+  if (fin < 0) 
+  {
+    perror(krnlfile);
+    return -1;
+  }
+
+  // Remove old kernel
+  sprintf(targetfn, "%s/boot/krnl.dll", target);
+  unlink(targetfn);
+
+  // Install kernel on target using reserved inode
+  fout = open(targetfn, O_SPECIAL | (DFS_INODE_KRNL << 24), 0744);
+  if (fout < 0) 
+  {
+    perror(targetfn);
+    close(fin);
+    return -1;
+  }
+  fchmod(fout, 0644);
+
+  // Copy kernel
+  while ((bytes = read(fin, block, sizeof block)) > 0)
+  {
+    write(fout, block, bytes);
+  }
+
+  close(fin);
+  close(fout);
+  return 0;
+}
+
 int main(int argc, char *argv[])
 {
   char *bootfs = "/";
@@ -347,6 +388,14 @@ int main(int argc, char *argv[])
     if (krnlopts) printf(" with options %s", krnlopts);
     printf("\n");
     rc = install_loader(devname, ldrfile, krnlopts);
+    if (rc < 0)  return 1;
+  }
+
+  // Install new kernel
+  if (krnlfile != NULL) 
+  {
+    printf("Installing kernel %s on %s\n", krnlfile, devname);
+    rc = install_kernel(fs.mntto, krnlfile);
     if (rc < 0)  return 1;
   }
 

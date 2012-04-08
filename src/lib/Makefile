@@ -107,6 +107,9 @@ tmpfile.o: tmpfile.c
 popen.o: popen.c
     $(CC) -c $<
 
+setjmp.o: setjmp.c
+    $(CC) -c $<
+
 stdlib.o: stdlib.c
     $(CC) -c $<
 
@@ -156,9 +159,6 @@ rwlock.o: pthread/rwlock.c
     $(CC) -c $<
 
 spinlock.o: pthread/spinlock.c
-    $(CC) -c $<
-
-setjmp.o: setjmp.s
     $(CC) -c $<
 
 chkstk.o: chkstk.s

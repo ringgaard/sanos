@@ -228,7 +228,10 @@ int unlink_inode(struct inode *inode)
 
   memset(inode->desc, 0, sizeof(struct inodedesc));
 
-  free_inode(inode->fs, inode->ino);
+  if (inode->ino >= inode->fs->super->reserved_inodes)
+  {
+    free_inode(inode->fs, inode->ino);
+  }
 
   return 0;
 }

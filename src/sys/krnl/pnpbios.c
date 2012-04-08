@@ -690,19 +690,19 @@ int enum_isapnp(struct bus *bus)
     if (hdr->signature != PNP_SIGNATURE) continue;
     length = hdr->length;
     if (!length) continue;
-    
+
     checksum = 0;
     for (i = 0; i < length; i++) checksum += ((unsigned char *) hdr)[i];
     if (checksum) continue;
 
     //kprintf("pnpbios: PnP BIOS version %d.%d\n", hdr->version >> 4, hdr->version & 0x0F);
-    
+
     memcpy(&pnpbios, hdr, sizeof(struct pnp_bios_expansion_header));
 
     set_gdt_entry(GDT_PNPTEXT, pnpbios.pm16cseg, 64 * 1024, D_CODE | D_DPL0 | D_READ | D_PRESENT, 0);
     set_gdt_entry(GDT_PNPDATA, pnpbios.pm16dseg, 64 * 1024, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
     set_gdt_entry(GDT_PNPTHUNK, (unsigned long) pnp_bios_thunk, 1, D_CODE | D_DPL0 | D_READ | D_PRESENT, D_BIG | D_BIG_LIM);
-    
+
     *((unsigned short *)(pnp_bios_thunk + 6)) = pnpbios.pm16offset;
     *((unsigned short *)(pnp_bios_thunk + 8)) = SEL_PNPTEXT;
 

@@ -307,7 +307,7 @@ static int sis900_mii_probe(struct dev *dev)
 {
   struct sis900_private *sp = dev->privdata;
   unsigned short poll_bit = MII_STAT_LINK, status = 0;
-  unsigned int timeout = ticks + 5 * HZ;
+  unsigned int timeout = get_ticks() + 5 * HZ;
   int phy_addr;
 
   sp->mii = NULL;
@@ -383,7 +383,7 @@ static int sis900_mii_probe(struct dev *dev)
     while (poll_bit) 
     {
       poll_bit ^= (mdio_read(dev, sp->cur_phy, MII_STATUS) & poll_bit);
-      if (ticks >= timeout) 
+      if (get_ticks() >= timeout) 
       {
         kprintf(KERN_WARNING "%s: reset phy and link down now\n", dev->name);
         return -ETIMEOUT;
@@ -715,7 +715,7 @@ static int sis900_open(struct dev *dev)
   // Set the timer to switch to check for link beat and perhaps switch
   // to an alternate media type.
   init_timer(&sp->timer, sis900_timer, dev);
-  mod_timer(&sp->timer, ticks + HZ);
+  mod_timer(&sp->timer, get_ticks() + HZ);
 
   return 0;
 }
@@ -950,7 +950,7 @@ static void sis900_timer(void *arg)
       //sp->carrier_ok = 1; // MRI
     }
 
-    mod_timer(&sp->timer, ticks + HZ);
+    mod_timer(&sp->timer, get_ticks() + HZ);
     return;
   }
 
@@ -992,7 +992,7 @@ look_for_link:
     }
   }
 
-  mod_timer(&sp->timer, ticks + 5*HZ);
+  mod_timer(&sp->timer, get_ticks() + 5*HZ);
 }
 
 //

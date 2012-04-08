@@ -621,7 +621,7 @@ static int speedo_open(struct dev *dev)
   //    hangs.
 
   init_timer(&sp->timer, speedo_timer, dev);
-  mod_timer(&sp->timer, ticks + 3*HZ);
+  mod_timer(&sp->timer, get_ticks() + 3*HZ);
 
   // No need to wait for the command unit to accept here.
   if ((sp->phy[0] & 0x8000) == 0) mdio_read(ioaddr, sp->phy[0] & 0x1f, 0);
@@ -854,7 +854,7 @@ static int speedo_set_rx_mode(struct dev *dev)
     clear_suspend(last_cmd);
     outp(ioaddr + SCBCmd, CUResume);
     sti();
-    sp->last_cmd_time = ticks;
+    sp->last_cmd_time = get_ticks();
   }
 
   if (new_rx_mode == 0 && dev->netif->mccount < 4) 
@@ -892,7 +892,7 @@ static int speedo_set_rx_mode(struct dev *dev)
     // Immediately trigger the command unit resume
     outp(ioaddr + SCBCmd, CUResume);
     sti();
-    sp->last_cmd_time = ticks;
+    sp->last_cmd_time = get_ticks();
   } 
   else if (new_rx_mode == 0) 
   {
@@ -965,7 +965,7 @@ static int speedo_set_rx_mode(struct dev *dev)
     // Immediately trigger the command unit resume
     outp(ioaddr + SCBCmd, CUResume);
     sti();
-    sp->last_cmd_time = ticks;
+    sp->last_cmd_time = get_ticks();
     kprintf("%s: CmdMCSetup frame length %d in entry %d\n", dev->name, dev->netif->mccount, entry);
   }
 
@@ -987,7 +987,7 @@ static void speedo_timer(void *arg)
   //kprintf("%s: Interface monitor tick, chip status %4.4x\n", dev->name, status);
 
   // Normally we check every two seconds.
-  expires = ticks + 2*HZ;
+  expires = get_ticks() + 2*HZ;
 
   if (sp->polling) 
   {
@@ -995,16 +995,16 @@ static void speedo_timer(void *arg)
     if (status & 0xfc00) 
     {
       speedo_interrupt(dev);
-      if (ticks - sp->last_reset > 10*HZ) 
+      if (get_ticks() - sp->last_reset > 10*HZ) 
       {
         kprintf(KERN_WARNING "%s: IRQ %d is still blocked!\n", dev->name, sp->irq);
-        sp->last_reset = ticks;
+        sp->last_reset = get_ticks();
       }
     } 
-    else if (ticks - sp->last_reset > 10*HZ)
+    else if (get_ticks() - sp->last_reset > 10*HZ)
       sp->polling = 0;
     
-    expires = ticks + 2;
+    expires = get_ticks() + 2;
   }
 
   // We have MII and lost link beat
@@ -1033,13 +1033,13 @@ static void speedo_timer(void *arg)
   }
 
   // This no longer has a false-trigger window
-  if (sp->cur_tx - sp->dirty_tx > 1 && (ticks - sp->trans_start) > TX_TIMEOUT  && (ticks - sp->last_cmd_time) > TX_TIMEOUT) 
+  if (sp->cur_tx - sp->dirty_tx > 1 && (get_ticks() - sp->trans_start) > TX_TIMEOUT  && (get_ticks() - sp->last_cmd_time) > TX_TIMEOUT) 
   {
     if (status == 0xffff) 
     {
-      if (ticks - sp->last_reset > 10*HZ) 
+      if (get_ticks() - sp->last_reset > 10*HZ) 
       {
-        sp->last_reset = ticks;
+        sp->last_reset = get_ticks();
         kprintf(KERN_WARNING "%s: The EEPro100 chip is missing!\n", dev->name);
       }
     } 
@@ -1048,25 +1048,25 @@ static void speedo_timer(void *arg)
       // We have a blocked IRQ line.  This should never happen, but we recover as best we can
       if (!sp->polling)
       {
-        if (ticks - sp->last_reset > 10*HZ) 
+        if (get_ticks() - sp->last_reset > 10*HZ) 
         {
           kprintf(KERN_WARNING "%s: IRQ %d is physically blocked! (%4.4x) Failing back to low-rate polling\n", dev->name, sp->irq, status);
-          sp->last_reset = ticks;
+          sp->last_reset = get_ticks();
         }
 
         sp->polling = 1;
       }
       speedo_interrupt(dev);
-      expires = ticks + 2;  // Avoid 
+      expires = get_ticks() + 2;  // Avoid 
     } 
     else 
     {
       speedo_tx_timeout(dev);
-      sp->last_reset = ticks;
+      sp->last_reset = get_ticks();
     }
   }
 
-  if (sp->rx_mode < 0 || (sp->rx_bug && ticks - sp->last_rx_time > 2*HZ)) 
+  if (sp->rx_mode < 0 || (sp->rx_bug && get_ticks() - sp->last_rx_time > 2*HZ)) 
   {
     // We haven't received a packet in a Long Time.  We might have been
     // bitten by the receiver hang bug.  This can be cleared by sending
@@ -1119,7 +1119,7 @@ static void speedo_tx_timeout(struct dev *dev)
   }
 
   sp->stats.tx_errors++;
-  sp->trans_start = ticks;
+  sp->trans_start = get_ticks();
 }
 
 // Handle the interrupt cases when something unexpected happens
@@ -1253,7 +1253,7 @@ static int speedo_rx(struct dev *dev)
     sp->last_rxf = rxf;
   }
 
-  sp->last_rx_time = ticks;
+  sp->last_rx_time = get_ticks();
   return 0;
 }
 
@@ -1421,7 +1421,7 @@ static int speedo_transmit(struct dev *dev, struct pbuf *p)
   
   wait_for_cmd_done(ioaddr + SCBCmd);
   outp(ioaddr + SCBCmd, CUResume);
-  sp->trans_start = ticks;
+  sp->trans_start = get_ticks();
 
   return 0;
 }

@@ -110,6 +110,8 @@ struct nic
   unsigned short eeprom[EEPROM_SIZE];   // EEPROM contents
 };
 
+struct netstats *netstats;
+
 void clear_statistics(struct nic *nic);
 void update_statistics(struct nic *nic);
 void update_statistics(struct nic *nic);
@@ -480,12 +482,12 @@ int nic_eeprom_busy(struct nic *nic)
   unsigned short status;
   unsigned long timeout;
 
-  timeout = ticks + 1 * TICKS_PER_SEC;
+  timeout = get_ticks() + 1 * TICKS_PER_SEC;
   while (1)
   {
     status = inpw(nic->iobase + EEPROM_CMD);
     if (!(status & EEPROM_BUSY)) return 0;
-    if (time_after(ticks, timeout))
+    if (time_after(get_ticks(), timeout))
     {
       kprintf(KERN_ERR "nic: timeout reading eeprom\n");
       return -ETIMEOUT;
@@ -528,7 +530,7 @@ int nic_transmit(struct dev *dev, struct pbuf *p)
   if (wait_for_object(&nic->tx_sem, TX_TIMEOUT) < 0)
   {
     kprintf(KERN_ERR "nic: transmit timeout, drop packet\n");
-    stats.link.drop++;
+    netstats->link.drop++;
     return -ETIMEOUT;
   }
 
@@ -536,8 +538,8 @@ int nic_transmit(struct dev *dev, struct pbuf *p)
   if (pbuf_clen(p) > TX_MAX_FRAGS)
   {
     p = pbuf_linearize(PBUF_RAW, p);
-    stats.link.memerr++;
-    stats.link.drop++;
+    netstats->link.memerr++;
+    netstats->link.drop++;
     if (!p) return -ENOMEM;
   }
 
@@ -575,7 +577,7 @@ int nic_transmit(struct dev *dev, struct pbuf *p)
   }
   execute_command(nic, CMD_DOWN_UNSTALL, 0);
 
-  stats.link.xmit++;
+  netstats->link.xmit++;
   return 0;
 }
 
@@ -616,7 +618,7 @@ void nic_up_complete(struct nic *nic)
     // Check for errors
     if (status & UP_PACKET_STATUS_ERROR)
     {
-      stats.link.err++;
+      netstats->link.err++;
 
       if (status & UP_PACKET_STATUS_RUNT_FRAME) 
       {
@@ -648,7 +650,7 @@ void nic_up_complete(struct nic *nic)
         (nic->curr_rx->status & UP_PACKET_STATUS_IP_CHECKSUM_ERROR))
     {
       //kprintf("nic: ip checksum error\n");
-      stats.ip.chkerr++;
+      netstats->ip.chkerr++;
       nic->curr_rx->status = 0;
       nic->curr_rx = nic->curr_rx->next;
       continue;
@@ -659,7 +661,7 @@ void nic_up_complete(struct nic *nic)
         (nic->curr_rx->status & UP_PACKET_STATUS_UDP_CHECKSUM_ERROR))
     {
       //kprintf("nic: udp checksum error\n");
-      stats.udp.chkerr++;
+      netstats->udp.chkerr++;
       nic->curr_rx->status = 0;
       nic->curr_rx = nic->curr_rx->next;
       continue;
@@ -670,7 +672,7 @@ void nic_up_complete(struct nic *nic)
         (nic->curr_rx->status & UP_PACKET_STATUS_TCP_CHECKSUM_ERROR))
     {
       //kprintf("nic: tcp checksum error\n");
-      stats.tcp.chkerr++;
+      netstats->tcp.chkerr++;
       nic->curr_rx->status = 0;
       nic->curr_rx = nic->curr_rx->next;
       continue;
@@ -686,8 +688,8 @@ void nic_up_complete(struct nic *nic)
       }
       else
       {
-        stats.link.memerr++;
-        stats.link.drop++;
+        netstats->link.memerr++;
+        netstats->link.drop++;
       }
     }
     else
@@ -705,15 +707,15 @@ void nic_up_complete(struct nic *nic)
       else
       {
         p = NULL;
-        stats.link.memerr++;
-        stats.link.drop++;
+        netstats->link.memerr++;
+        netstats->link.drop++;
       }
     }
 
     // Send packet to upper layer
     if (p)
     {
-      stats.link.recv++;
+      netstats->link.recv++;
       if (dev_receive(nic->devno, p) < 0) pbuf_free(p);
     }
 
@@ -1185,12 +1187,12 @@ int nic_restart_transmitter(struct nic *nic)
 
   if (media_status & MEDIA_STATUS_TX_IN_PROGRESS)
   {
-    timeout = ticks + 1 * TICKS_PER_SEC;
+    timeout = get_ticks() + 1 * TICKS_PER_SEC;
     while (1)
     {
       media_status = inpw(nic->iobase + MEDIA_STATUS);
       if (!(media_status & MEDIA_STATUS_TX_IN_PROGRESS)) break;
-      if (time_after(ticks, timeout))
+      if (time_after(get_ticks(), timeout))
       {
         kprintf(KERN_WARNING "nic: timeout waiting for transmitter to go quiet\n");
         return -ETIMEOUT;
@@ -1205,12 +1207,12 @@ int nic_restart_transmitter(struct nic *nic)
 
   if (dma_control & DMA_CONTROL_DOWN_IN_PROGRESS)
   {
-    timeout = ticks + 1 * TICKS_PER_SEC;
+    timeout = get_ticks() + 1 * TICKS_PER_SEC;
     while (1)
     {
       dma_control = inpd(nic->iobase + DMA_CONTROL);
       if (!(dma_control & DMA_CONTROL_DOWN_IN_PROGRESS)) break;
-      if (time_after(ticks, timeout))
+      if (time_after(get_ticks(), timeout))
       {
         kprintf(KERN_WARNING "nic: timeout waiting for download engine to stop\n");
         return -ETIMEOUT;
@@ -1315,12 +1317,12 @@ int nic_configure_mii(struct nic *nic, unsigned short media_options)
 
   if (!(phy_status & MII_STATUS_AUTO_DONE))
   {
-    timeout = ticks + 3 * TICKS_PER_SEC;
+    timeout = get_ticks() + 3 * TICKS_PER_SEC;
     while (1)
     {
       phy_status = nic_read_mii_phy(nic, MII_PHY_STATUS);
       if (phy_status & MII_STATUS_AUTO_DONE) break;
-      if (time_after(ticks, timeout))
+      if (time_after(get_ticks(), timeout))
       {
         kprintf(KERN_WARNING "nic: timeout waiting for auto-negotiation to finish\n");
         return -ETIMEOUT;
@@ -1469,13 +1471,13 @@ int nic_check_dc_converter(struct nic *nic, int enabled)
   if (enabled && !(media_status & MEDIA_STATUS_DC_CONVERTER_ENABLED) ||
       !enabled && (media_status & MEDIA_STATUS_DC_CONVERTER_ENABLED))
   {
-    timeout = ticks + 3; // 30 ms
+    timeout = get_ticks() + 3; // 30 ms
     while (1)
     {
       media_status = inpw(nic->iobase + MEDIA_STATUS);
       if (enabled && (media_status & MEDIA_STATUS_DC_CONVERTER_ENABLED)) break;
       if (!enabled && !(media_status & MEDIA_STATUS_DC_CONVERTER_ENABLED)) break;
-      if (time_after(ticks, timeout))
+      if (time_after(get_ticks(), timeout))
       {
         kprintf(KERN_ERR "nic: timeout waiting for dc converter to go %s\n", enabled ? "on" : "off");
         return -ETIMEOUT;
@@ -1940,5 +1942,6 @@ int __declspec(dllexport) install(struct unit *unit)
 
 int __stdcall start(hmodule_t hmod, int reason, void *reserved2)
 {
+  netstats = get_netstats();
   return 1;
 }

@@ -678,7 +678,7 @@ static int rtl8139_open(struct dev *dev)
   // Set the timer to switch to check for link beat and perhaps switch
   // to an alternate media type
   init_timer(&tp->timer, rtl8139_timer, dev);
-  mod_timer(&tp->timer, ticks + 3*HZ);
+  mod_timer(&tp->timer, get_ticks() + 3*HZ);
 
   return 0;
 }
@@ -763,7 +763,7 @@ static int rtl8139_transmit(struct dev *dev, struct pbuf *p)
   // Note: the chip doesn't have auto-pad!
   outpd(ioaddr + TxStatus0 + entry * 4, tp->tx_flag | (p->tot_len >= ETH_ZLEN ? p->tot_len : ETH_ZLEN));
 
-  tp->trans_start = ticks;
+  tp->trans_start = get_ticks();
   tp->cur_tx++;
 
   //kprintf("%s: Queued Tx packet at %p size %d to slot %d\n", dev->name, p->payload, p->tot_len, entry);
@@ -1137,7 +1137,7 @@ static void rtl8139_timer(void *arg)
     }
   }
 
-  if (np->cur_tx - np->dirty_tx > 1  && (ticks - np->trans_start) > TX_TIMEOUT) 
+  if (np->cur_tx - np->dirty_tx > 1  && (get_ticks() - np->trans_start) > TX_TIMEOUT) 
   {
     rtl8139_tx_timeout(dev);
   }
@@ -1240,7 +1240,7 @@ static void rtl8139_timer(void *arg)
 
   //kprintf("%s:  Chip config %2.2x %2.2x\n", dev->name, inp(ioaddr + Config0), inp(ioaddr + Config1));
 
-  mod_timer(&np->timer, ticks + next_tick);
+  mod_timer(&np->timer, get_ticks() + next_tick);
 }
 
 static int rtl8139_ioctl(struct dev *dev, int cmd, void *args, size_t size)

@@ -552,6 +552,7 @@ ST_FN void pe_set_datadir(int dir, DWORD addr, DWORD size)
 ST_FN int pe_write(struct pe_info *pe)
 {
     int i;
+    int fd;
     FILE *op;
     FILE *stubfile;
     char *stub;
@@ -585,11 +586,12 @@ ST_FN int pe_write(struct pe_info *pe)
     }
     ((PIMAGE_DOS_HEADER) stub)->e_lfanew = stub_size;
 
-    op = fopen(pe->filename, "wb");
-    if (NULL == op) {
+    fd = open(pe->filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0777);
+    if (fd < 0) {
         error_noabort("could not write '%s': %s", pe->filename, strerror(errno));
         return 1;
     }
+    op = fdopen(fd, "wb");
 
     pe->sizeofheaders = 
         pe_file_align(pe,
@@ -675,7 +677,7 @@ ST_FN int pe_write(struct pe_info *pe)
         }
     }
 
-    // pe_filehdr.TimeDateStamp = time(NULL);
+    pe_filehdr.TimeDateStamp = time(NULL);
     pe_filehdr.NumberOfSections = pe->sec_count;
     pe_opthdr.SizeOfHeaders = pe->sizeofheaders;
     pe_opthdr.ImageBase = pe->imagebase;

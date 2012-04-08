@@ -900,6 +900,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
   // Initialize process environment block (PEB)
   getpeb()->globalhandler = globalhandler;
   getpeb()->fmodeval = O_BINARY; //O_TEXT;
+  getpeb()->umaskval = S_IWGRP | S_IWOTH;
 #if DEBUG
   getpeb()->debug = 1;
 #endif

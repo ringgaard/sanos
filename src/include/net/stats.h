@@ -98,7 +98,7 @@ struct stats_pbuf
   unsigned long rwbufs;
 };
 
-struct stats_all
+struct netstats
 {
   struct stats_proto link;
   struct stats_proto ip;
@@ -109,7 +109,9 @@ struct stats_all
   struct stats_pbuf pbuf;
 };
 
-krnlapi extern struct stats_all stats;
+extern struct netstats stats;
+
+krnlapi extern struct netstats *get_netstats();
 
 void stats_init();
 

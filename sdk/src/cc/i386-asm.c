@@ -106,7 +106,7 @@ typedef struct Operand {
     int8_t  reg; /* register, -1 if none */
     int8_t  reg2; /* second register, -1 if none */
     uint8_t shift;
-    uint8_t size;
+    uint8_t sizehint;
     ExprValue e;
 } Operand;
 
@@ -237,7 +237,7 @@ static void parse_operand(TCCState *s1, Operand *op)
     int reg, indir;
     const char *p;
 
-    op->size = 3;
+    op->sizehint = 3;
     indir = 0;
     if (tok == '*') {
         next();
@@ -343,7 +343,7 @@ static void masm_logic_or_reg(TCCState *s1, Operand *op) {
     op->reg = -1;
     op->reg2 = -1;
     op->shift = 0;
-    op->size = 3;
+    op->sizehint = 3;
     op->e.v = 0;
     op->e.sym = NULL;
     if (tok >= TOK_ASM_eax && tok <= TOK_ASM_edi) {
@@ -508,22 +508,22 @@ static void parse_masm_operand(TCCState *s1, Operand *op)
         if (tok == TOK_ASM_byte || tok == TOK_ASM_word || 
             tok == TOK_ASM_dword || tok == TOK_ASM_fword) {
             switch (tok) {
-            case TOK_ASM_byte: op->size = 0; break;
-            case TOK_ASM_word: op->size = 1; break;
-            case TOK_ASM_dword: op->size = 2;; break;
-            case TOK_ASM_fword: op->size = 2; op->type |= OP_FAR; break;
+            case TOK_ASM_byte: op->sizehint = 0; break;
+            case TOK_ASM_word: op->sizehint = 1; break;
+            case TOK_ASM_dword: op->sizehint = 2;; break;
+            case TOK_ASM_fword: op->sizehint = 2; op->type |= OP_FAR; break;
             }
             next();
             op->type |= OP_EA;
             skip(TOK_ASM_ptr);
         }
         masm_expr(s1, op);
-        if (op->size == 3 && op->e.sym) {
+        if (op->sizehint == 3 && op->e.sym) {
           int align;
           switch (type_size(&op->e.sym->type, &align)) {
-            case 1: op->size = 0; break;
-            case 2: op->size = 1; break;
-            case 4: op->size = 2; break;
+            case 1: op->sizehint = 0; break;
+            case 2: op->sizehint = 1; break;
+            case 4: op->sizehint = 2; break;
           }
         }
         if (offset) {
@@ -693,7 +693,7 @@ static void asm_opcode(TCCState *s1, int opcode)
         if (pop->reg != -1) printf(" reg=%x", pop->reg); 
         if (pop->reg2 != -1) printf(" reg2=%x", pop->reg2); 
         if (pop->shift != 0) printf(" shift=%d", pop->shift);
-        if (pop->size != 3) printf(" size=%d", pop->size);
+        if (pop->sizehint != 3) printf(" size=%d", pop->sizehint);
         if (pop->e.v != 0) printf(" v=%x", pop->e.v); 
         if (pop->e.sym) printf(" sym.v=%x sym.r=%x sym.c=%x sym.type=%x", pop->e.sym->v, pop->e.sym->r, pop->e.sym->c, pop->e.sym->type); 
         printf("\n");
@@ -809,9 +809,9 @@ static void asm_opcode(TCCState *s1, int opcode)
                 (ops[0].type & (OP_SEG | OP_IM8S | OP_IM32)))
                 s = 2;
             else {
-                for(i = 0; s == 3 && i < nb_ops; i++) s = ops[i].size;
+                for(i = 0; s == 3 && i < nb_ops; i++) s = ops[i].sizehint;
                 if (s == 3)
-                    error("cannot infer opcode suffix");
+                    error("cannot infer operand size");
             }
         }
     }
@@ -924,7 +924,7 @@ printf("v=%x instr_type=%x\n", v, pa->instr_type);
         }
         /* then if not found, a register or indirection (shift instructions) */
         for(i = 0;i < nb_ops; i++) {
-            if (op_type[i] & (OP_REG | OP_MMX | OP_SSE | OP_INDIR))
+            if (op_type[i] & (OP_REG | OP_MMX | OP_SSE | OP_INDIR | OP_FAR))
                 goto modrm_found;
         }
 #ifdef ASM_DEBUG

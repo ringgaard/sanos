@@ -9551,7 +9551,7 @@ static void decl(int l)
                     (VT_INLINE | VT_STATIC)) {
                     TokenString func_str;
                     int block_level;
-                           
+
                     tok_str_new(&func_str);
                     
                     block_level = 0;
@@ -9568,6 +9568,22 @@ static void decl(int l)
                             block_level--;
                             if (block_level == 0)
                                 break;
+                        } else if (t == TOK_ASM2 && tok == '{') {
+                            int saved_flags;
+
+                            saved_flags = parse_flags;
+                            parse_flags = PARSE_FLAG_MASM | PARSE_FLAG_PREPROCESS | PARSE_FLAG_LINEFEED;
+                            tok_str_add_tok(&func_str);
+                            next();
+                            while (tok != '}') {
+                                if (tok == TOK_EOF)
+                                    error("unexpected end of file");
+                                tok_str_add_tok(&func_str);
+                                next();
+                            }
+                            tok_str_add_tok(&func_str);
+                            next();
+                            parse_flags = saved_flags;
                         }
                     }
                     tok_str_add(&func_str, -1);
@@ -10296,7 +10312,7 @@ TCCState *tcc_new(void)
 #endif
     /* tiny C specific defines */
     tcc_define_symbol(s, "__TINYC__", NULL);
-    tcc_define_symbol(s, "_TCC_VER", TCC_VERSION);
+    tcc_define_symbol(s, "_TCC_VER", "\"" TCC_VERSION "\"");
 
     /* tiny C & gcc defines */
     tcc_define_symbol(s, "__SIZE_TYPE__", "unsigned int");
