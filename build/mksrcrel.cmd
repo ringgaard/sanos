@@ -25,12 +25,10 @@ copy build\*.vcproj %1\build
 copy build\sanos*.sln %1\build
 copy build\mkbootdisk.cmd %1\build
 copy build\bootdisk.lst %1\build
-copy build\bootcd.lst %1\build
 copy build\boothd.lst %1\build
 copy build\minbootdisk.lst %1\build
 copy build\krnl.ini %1\build
-copy build\osrel.ini %1\build
-copy build\oscd.ini %1\build
+copy build\os.ini %1\build
 copy build\setup.ini %1\build
 copy build\sanos.dep %1\build
 

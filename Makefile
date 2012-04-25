@@ -1080,7 +1080,7 @@ $(IMG)/sanos.0: dirs sanos $(MKDFS) $(BUILD)/bootnet.lst
 
 bootcd: install $(IMG)/sanos.iso
 
-$(IMG)/sanos.iso: dirs sanos tools $(BUILD)/bootcd.lst
+$(IMG)/sanos.iso: dirs sanos tools
     if not exist $(IMG) mkdir $(IMG)
     if exist $(IMG)\sanos.iso del $(IMG)\sanos.iso
     $(MKDFS) -d $(INSTALL)\BOOTIMG.BIN -b $(BIN)\cdemboot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 512 -C 1440 -I 8192 -i -f -K rootdev=cd0,rootfs=cdfs

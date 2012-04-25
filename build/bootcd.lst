@@ -1,8 +1,0 @@
-;
-; File list for sanos cd boot image
-;
-
-; Directories
-
-/boot
-/boot/krnl.ini    build\krnlcd.ini
