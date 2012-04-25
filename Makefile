@@ -476,6 +476,7 @@ $(BIN)/tulip.sys: \
 
 $(BIN)/virtionet.sys: \
   $(SRC)/sys/dev/virtionet.c \
+  $(SRC)/lib/string.c \
   $(LIBS)/krnl.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/tulip/ $** /D KERNEL /D VIRTIONET_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:start /IMPLIB:$(LIBS)/virtionet.lib
