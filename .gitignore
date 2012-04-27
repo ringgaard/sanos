@@ -1,0 +1,16 @@
+bin
+dbg
+img
+lib
+obj
+install
+*.obj
+*.exe
+*.o
+*.a
+*.dll
+*.exp
+*.lib
+krnl.def
+os.def
+
