@@ -32,7 +32,7 @@ install: all
      copy /Y krnl.def $(SDK)\lib
 
 clean:
-  del *.o *.a *.def *.dll
+  del /Q *.o *.a *.def *.dll
 
 #
 # OS lib

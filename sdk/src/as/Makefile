@@ -27,7 +27,7 @@ install: all
     copy /Y as.exe $(SDK)\bin
      
 clean:
-    del *.exe *.obj
+    del /Q *.exe *.obj
 
 #
 # Assembler

@@ -49,7 +49,7 @@
 #define GPL
 #endif
 
-#define VMACH
+//#define VMACH
 #define RANDOMDEV
 
 #endif

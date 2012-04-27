@@ -25,7 +25,7 @@ install: all
     copy /Y cc.exe $(SDK)\bin
      
 clean:
-    del *.exe *.obj
+    del /Q *.exe *.obj
 
 #
 # C compiler

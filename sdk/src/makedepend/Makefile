@@ -25,7 +25,7 @@ install: all
     copy /Y makedepend.exe $(SDK)\bin
      
 clean:
-    del *.exe *.obj
+    del /Q *.exe *.obj
 
 SRCFILES=cppsetup.c ifparser.c include.c main.c parse.c pr.c
 

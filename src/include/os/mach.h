@@ -77,7 +77,7 @@ struct mach
   void (*reboot)();
 };
 
-krnlapi extern struct mach mach;
+extern struct mach mach;
 
 #ifdef VMACH
 
@@ -301,8 +301,8 @@ krnlapi unsigned long outd(port_t port, unsigned long val);
 krnlapi void outsw(port_t port, void *buf, int count);
 krnlapi void outsd(port_t port, void *buf, int count);
 
-#define CLI   cli
-#define STI   sti
+#define CLI cli
+#define STI sti
 #define IRETD iretd
 #define SYSEXIT sysexit
 
