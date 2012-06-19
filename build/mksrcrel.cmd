@@ -20,6 +20,7 @@ copy README %1
 copy COPYING %1
 copy CHANGES %1
 copy Makefile %1
+copy Makefile.linux %1
 
 copy build\*.vcproj %1\build
 copy build\sanos*.sln %1\build
