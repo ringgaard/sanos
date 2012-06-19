@@ -4,6 +4,11 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added makefile for building Sanos under Linux using GCC. GCC is used
+      for compiling the Sanos build tools (cc, as, ar, mkdfs) for Linux and 
+      using these to build Sanos. This means that you can build Sanos under 
+      Linux without needing anything else than GCC.
+
     * Sanos is now self-contained in the sense that it can build itself. 
       This includes the boot sector, boot loader, kernel, device drivers,
       OS API, standard C library, assembler, C compiler, and utilities.

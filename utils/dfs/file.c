@@ -9,7 +9,7 @@
 static struct inode *open_existing(struct filsys *fs, char *name, int len)
 {
   struct inode *inode;
-  ino_t ino;
+  vfs_ino_t ino;
 
   ino = lookup_name(fs, DFS_INODE_ROOT, name, len);
   if (ino == -1) return NULL;
@@ -17,7 +17,7 @@ static struct inode *open_existing(struct filsys *fs, char *name, int len)
   inode = get_inode(fs, ino);
   if (!inode) return NULL;
 
-  if (S_ISDIR(inode->desc->mode))
+  if (VFS_S_ISDIR(inode->desc->mode))
   {
     release_inode(inode);
     return NULL;
@@ -30,7 +30,7 @@ static struct inode *open_always(struct filsys *fs, char *name, int len, int mod
 {
   struct inode *dir;
   struct inode *inode;
-  ino_t ino;
+  vfs_ino_t ino;
 
   dir = parse_name(fs, &name, &len);
   if (!dir) return NULL;
@@ -38,7 +38,7 @@ static struct inode *open_always(struct filsys *fs, char *name, int len, int mod
   ino = find_dir_entry(dir, name, len);
   if (ino == -1)
   {
-    inode = alloc_inode(dir, S_IFREG | mode);
+    inode = alloc_inode(dir, VFS_S_IFREG | mode);
     if (!inode) 
     {
       release_inode(dir);
@@ -65,7 +65,7 @@ static struct inode *open_always(struct filsys *fs, char *name, int len, int mod
       return NULL;
     }
 
-    if (S_ISDIR(inode->desc->mode))
+    if (VFS_S_ISDIR(inode->desc->mode))
     {
       release_inode(dir);
       release_inode(inode);
@@ -82,12 +82,12 @@ static struct inode *create_new(struct filsys *fs, char *name, int len, int mode
   struct inode *dir;
   struct inode *inode;
   struct inode *oldinode;
-  ino_t oldino;
+  vfs_ino_t oldino;
 
   dir = parse_name(fs, &name, &len);
   if (!dir) return NULL;
 
-  inode = alloc_inode(dir, S_IFREG | mode);
+  inode = alloc_inode(dir, VFS_S_IFREG | mode);
   if (!inode)
   {
     release_inode(dir);
@@ -125,7 +125,7 @@ static struct inode *create_new(struct filsys *fs, char *name, int len, int mode
 static struct inode *truncate_existing(struct filsys *fs, char *name, int len)
 {
   struct inode *inode;
-  ino_t ino;
+  vfs_ino_t ino;
 
   ino = lookup_name(fs, DFS_INODE_ROOT, name, len);
   if (ino == -1) return NULL;
@@ -133,7 +133,7 @@ static struct inode *truncate_existing(struct filsys *fs, char *name, int len)
   inode = get_inode(fs, ino);
   if (!inode) return NULL;
 
-  if (S_ISDIR(inode->desc->mode))
+  if (VFS_S_ISDIR(inode->desc->mode))
   {
     release_inode(inode);
     return NULL;
@@ -150,7 +150,7 @@ static struct inode *truncate_existing(struct filsys *fs, char *name, int len)
   return inode;
 }
 
-static struct inode *create_always(struct filsys *fs, char *name, int len, ino_t ino, int mode)
+static struct inode *create_always(struct filsys *fs, char *name, int len, vfs_ino_t ino, int mode)
 {
   struct inode *dir;
   struct inode *inode;
@@ -165,12 +165,12 @@ static struct inode *create_always(struct filsys *fs, char *name, int len, ino_t
   }
 
   if (ino == -1)
-    inode = alloc_inode(dir, S_IFREG | mode);
+    inode = alloc_inode(dir, VFS_S_IFREG | mode);
   else
   {
     inode = get_inode(fs, ino);
     if (inode->desc->ctime == 0) inode->desc->ctime = time(NULL);
-    inode->desc->mode = S_IFREG | mode;
+    inode->desc->mode = VFS_S_IFREG | mode;
   }
 
   if (!inode)
@@ -203,38 +203,38 @@ int dfs_open(struct file *filp, char *name, int mode)
   fs = (struct filsys *) filp->fs->data;
   len = strlen(name);
 
-  switch (filp->flags & (O_CREAT | O_EXCL | O_TRUNC | O_SPECIAL))
+  switch (filp->flags & (VFS_O_CREAT | VFS_O_EXCL | VFS_O_TRUNC | VFS_O_SPECIAL))
   {
     case 0:
-    case O_EXCL:
+    case VFS_O_EXCL:
       // Open existing file
       inode = open_existing(fs, name, len);
       break;
 
-    case O_CREAT:
+    case VFS_O_CREAT:
       // Open file, create new file if it does not exists
       inode = open_always(fs, name, len, mode);
       break;
 
-    case O_CREAT | O_EXCL:
-    case O_CREAT | O_TRUNC | O_EXCL:
+    case VFS_O_CREAT | VFS_O_EXCL:
+    case VFS_O_CREAT | VFS_O_TRUNC | VFS_O_EXCL:
       // Create new file, unlink existing file if it exists
       inode = create_new(fs, name, len, mode);
       break;
 
-    case O_TRUNC:
-    case O_TRUNC | O_EXCL:
+    case VFS_O_TRUNC:
+    case VFS_O_TRUNC | VFS_O_EXCL:
       // Open and truncate existing file
       inode = truncate_existing(fs, name, len);
       filp->flags |= F_MODIFIED;
       break;
 
-    case O_CREAT | O_TRUNC:
+    case VFS_O_CREAT | VFS_O_TRUNC:
       // Create new file, fail if it exists
       inode = create_always(fs, name, len, -1, mode);
       break;
 
-    case O_SPECIAL:
+    case VFS_O_SPECIAL:
       // Create new file with special inode number
       inode = create_always(fs, name, len, filp->flags >> 24, mode);
       break;
@@ -245,7 +245,7 @@ int dfs_open(struct file *filp, char *name, int mode)
 
   if (!inode) return -1;
 
-  if (filp->flags & O_APPEND) filp->pos = (int) inode->desc->size;
+  if (filp->flags & VFS_O_APPEND) filp->pos = (int) inode->desc->size;
   filp->data = inode;
 
   return 0;
@@ -281,7 +281,7 @@ int dfs_read(struct file *filp, void *data, size_t size)
   char *p;
   unsigned int iblock;
   unsigned int start;
-  blkno_t blk;
+  vfs_blkno_t blk;
   struct buf *buf;
 
   inode = (struct inode *) filp->data;
@@ -325,7 +325,7 @@ int dfs_write(struct file *filp, void *data, size_t size)
   char *p;
   unsigned int iblock;
   unsigned int start;
-  blkno_t blk;
+  vfs_blkno_t blk;
   struct buf *buf;
 
   inode = (struct inode *) filp->data;
@@ -376,12 +376,12 @@ int dfs_write(struct file *filp, void *data, size_t size)
   return written;
 }
 
-loff_t dfs_tell(struct file *filp)
+vfs_loff_t dfs_tell(struct file *filp)
 {
   return filp->pos;
 }
 
-loff_t dfs_lseek(struct file *filp, loff_t offset, int origin)
+vfs_loff_t dfs_lseek(struct file *filp, vfs_loff_t offset, int origin)
 {
   struct inode *inode;
 
@@ -389,11 +389,11 @@ loff_t dfs_lseek(struct file *filp, loff_t offset, int origin)
 
   switch (origin)
   {
-    case SEEK_END:
+    case VFS_SEEK_END:
       offset += (int) inode->desc->size;
       break;
 
-    case SEEK_CUR:
+    case VFS_SEEK_CUR:
       offset += filp->pos;
   }
 
@@ -403,7 +403,7 @@ loff_t dfs_lseek(struct file *filp, loff_t offset, int origin)
   return offset;
 }
 
-int dfs_chsize(struct file *filp, loff_t size)
+int dfs_chsize(struct file *filp, vfs_loff_t size)
 {
   struct inode *inode;
   int rc;
@@ -426,7 +426,7 @@ int dfs_chsize(struct file *filp, loff_t size)
   return 0;
 }
 
-int dfs_futime(struct file *filp, struct utimbuf *times)
+int dfs_futime(struct file *filp, struct vfs_utimbuf *times)
 {
   struct inode *inode;
 
@@ -439,7 +439,7 @@ int dfs_futime(struct file *filp, struct utimbuf *times)
   return 0;
 }
 
-int dfs_fstat(struct file *filp, struct stat *buffer)
+int dfs_fstat(struct file *filp, struct vfs_stat *buffer)
 {
   struct inode *inode;
 

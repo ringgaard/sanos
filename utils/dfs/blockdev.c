@@ -1,6 +1,14 @@
-#include <windows.h>
+#include <stdio.h>
+#include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#ifdef WIN32
+#include <io.h>
+#include <windows.h>
+#endif
 
 #include "blockdev.h"
 
@@ -12,7 +20,7 @@ extern struct blockdriver bdrv_vmdk;
 
 struct rawdev
 {
-  HANDLE hdev;
+  int fd;
 };
 
 static int raw_probe(const uint8_t *buf, int buf_size, const char *filename)
@@ -23,20 +31,28 @@ static int raw_probe(const uint8_t *buf, int buf_size, const char *filename)
 static int raw_open(struct blockdevice *bs, const char *filename)
 {
   struct rawdev *s = bs->opaque;
-  HANDLE hdev;
+  int fd;
   int64_t size;
+#ifdef WIN32
+  struct __stat64 st;
+#else
+  struct stat st;
+#endif
 
-  hdev = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-  if (hdev == INVALID_HANDLE_VALUE) return -1;
+  fd = open(filename, O_RDWR | O_BINARY);
+  if (fd == -1) return -1;
 
-  if (!GetFileSizeEx(hdev, (LARGE_INTEGER *) &size))
-  {
-    CloseHandle(hdev);
-    return -1;
-  }
+#ifdef WIN32
+  if (_fstat64(fd, &st) == -1) return -1;
+  size = st.st_size;
+#else
+  if (fstat(fd, &st) == -1) return -1;
+  size = st.st_size;
+#endif
 
   bs->total_sectors = size / 512;
-  s->hdev = hdev;
+  s->fd = fd;
+printf("fd=%d\n", fd);
 
   return 0;
 }
@@ -44,31 +60,38 @@ static int raw_open(struct blockdevice *bs, const char *filename)
 static int raw_read(struct blockdevice *bs, int64_t sector_num,  uint8_t *buf, int nb_sectors)
 {
   struct rawdev *s = bs->opaque;
-  DWORD bytes;
   int64_t pos = sector_num * 512;
-  if (SetFilePointerEx(s->hdev, *(LARGE_INTEGER*) &pos, NULL, FILE_BEGIN) == -1) return -1;
-  if (!ReadFile(s->hdev, buf, nb_sectors * 512, &bytes, NULL)) return -1;
-  if (bytes != nb_sectors * 512) return -1;
+#ifdef WIN32
+  if (_lseeki64(s->fd, pos, SEEK_SET) == -1) return -1;
+#else
+  if (lseek(s->fd, pos, SEEK_SET) == -1) return -1;
+#endif
+  if (read(s->fd, buf, nb_sectors * 512) != nb_sectors * 512) return -1;
   return 0;
 }
 
 static int raw_write(struct blockdevice *bs, int64_t sector_num,  const uint8_t *buf, int nb_sectors)
 {
   struct rawdev *s = bs->opaque;
-  DWORD bytes;
   int64_t pos = sector_num * 512;
-  if (SetFilePointerEx(s->hdev, *(LARGE_INTEGER*) &pos, NULL, FILE_BEGIN) == -1) return -1;
-  if (!WriteFile(s->hdev, buf, nb_sectors * 512, &bytes, NULL)) return -1;
-  if (bytes != nb_sectors * 512) return -1;
+  int rc;
+#ifdef WIN32
+  if (_lseeki64(s->fd, pos, SEEK_SET) == -1) return -1;
+#else
+  if (lseek(s->fd, pos, SEEK_SET) == -1) return -1;
+#endif
+  rc = write(s->fd, buf, nb_sectors * 512);
+  if (rc != nb_sectors * 512) return -1;
   return 0;
 }
 
 static void raw_close(struct blockdevice *bs)
 {
   struct rawdev *s = bs->opaque;
-  CloseHandle(s->hdev);
+  close(s->fd);
 }
 
+#ifdef WIN32
 static int raw_create(const char *filename, int64_t total_size, int flags)
 {
   HANDLE hdev;
@@ -86,6 +109,29 @@ static int raw_create(const char *filename, int64_t total_size, int flags)
 
   return 0;
 }
+#else
+static int raw_create(const char *filename, int64_t total_size, int flags)
+{
+  int fd;
+  int64_t size;
+  int rc;
+
+  if (flags) return -1;
+
+  fd = open(filename, O_BINARY | O_CREAT, S_IREAD | S_IWRITE);
+  if (fd == -1) {
+    perror(filename);
+    return -1;
+  }
+
+  size = total_size * 512;
+  lseek(fd, size - 1, SEEK_SET);
+  rc = write(fd, "", 1);
+  close(fd);
+
+  return 0;
+}
+#endif
 
 struct blockdriver bdrv_raw = 
 {
@@ -111,11 +157,11 @@ static struct blockdriver *find_image_format(const char *filename)
   struct blockdriver *drv1, *drv;
   uint8_t *buf;
   size_t bufsize = 1024;
-  HANDLE hdev;
+  int fd;
   int i;
 
-  hdev = CreateFile(filename, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
-  if (hdev == INVALID_HANDLE_VALUE)
+  fd = open(filename, O_BINARY);
+  if (fd == -1)
   {
     buf = NULL;
     buflen = 0;
@@ -124,13 +170,14 @@ static struct blockdriver *find_image_format(const char *filename)
   {
     buf = malloc(bufsize);
     if (!buf) return NULL;
-    if (!ReadFile(hdev, buf, bufsize, &buflen, NULL))
+    buflen = read(fd, buf, bufsize);
+    if (buflen <= 0)
     {
-      CloseHandle(hdev);
+      close(fd);
       free(buf);
       return NULL;
     }
-    CloseHandle(hdev);
+    close(fd);
   }
   
   drv = NULL;

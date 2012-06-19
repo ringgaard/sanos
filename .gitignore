@@ -4,6 +4,7 @@ img
 lib
 obj
 install
+linux
 *.obj
 *.exe
 *.o

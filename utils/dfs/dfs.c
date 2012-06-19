@@ -5,7 +5,7 @@
 #include "vfs.h"
 #include "dfs.h"
 
-int dfs_format(devno_t devno, char *opts);
+int dfs_format(vfs_devno_t devno, char *opts);
 int dfs_mount(struct fs *fs, char *opts);
 int dfs_unmount(struct fs *fs);
 
@@ -16,14 +16,14 @@ int dfs_flush(struct file *filp);
 int dfs_read(struct file *filp, void *data, size_t size);
 int dfs_write(struct file *filp, void *data, size_t size);
 
-loff_t dfs_tell(struct file *filp);
-loff_t dfs_lseek(struct file *filp, loff_t offset, int origin);
-int dfs_chsize(struct file *filp, loff_t size);
+vfs_loff_t dfs_tell(struct file *filp);
+vfs_loff_t dfs_lseek(struct file *filp, vfs_loff_t offset, int origin);
+int dfs_chsize(struct file *filp, vfs_loff_t size);
 
-int dfs_futime(struct file *filp, struct utimbuf *times);
+int dfs_futime(struct file *filp, struct vfs_utimbuf *times);
 
-int dfs_fstat(struct file *filp, struct stat *buffer);
-int dfs_stat(struct fs *fs, char *name, struct stat *buffer);
+int dfs_fstat(struct file *filp, struct vfs_stat *buffer);
+int dfs_stat(struct fs *fs, char *name, struct vfs_stat *buffer);
 
 int dfs_mkdir(struct fs *fs, char *name, int mode);
 int dfs_rmdir(struct fs *fs, char *name);
@@ -33,7 +33,7 @@ int dfs_link(struct fs *fs, char *oldname, char *newname);
 int dfs_unlink(struct fs *fs, char *name);
 
 int dfs_opendir(struct file *filp, char *name);
-int dfs_readdir(struct file *filp, struct dirent *dirp, int count);
+int dfs_readdir(struct file *filp, struct vfs_dirent *dirp, int count);
 
 struct fsops dfsops =
 {
@@ -73,9 +73,9 @@ void dfs_init()
   register_filesystem("dfs", &dfsops);
 }
 
-int dfs_stat(struct fs *fs, char *name, struct stat *buffer)
+int dfs_stat(struct fs *fs, char *name, struct vfs_stat *buffer)
 {
-  ino_t ino;
+  vfs_ino_t ino;
   struct inode *inode;
 
   ino = lookup_name((struct filsys *) fs->data, DFS_INODE_ROOT, name, strlen(name));
@@ -114,7 +114,7 @@ int dfs_mkdir(struct fs *fs, char *name, int mode)
     return -1;
   }
 
-  dir = alloc_inode(parent, S_IFDIR | mode);
+  dir = alloc_inode(parent, VFS_S_IFDIR | mode);
   if (!dir)
   {
     release_inode(parent);
@@ -141,7 +141,7 @@ int dfs_rmdir(struct fs *fs, char *name)
 {
   struct inode *parent;
   struct inode *dir;
-  ino_t ino;
+  vfs_ino_t ino;
   int len;
 
   len = strlen(name);
@@ -162,7 +162,7 @@ int dfs_rmdir(struct fs *fs, char *name)
     return -1;
   }
 
-  if (!S_ISDIR(dir->desc->mode) || dir->desc->size > 0)
+  if (!VFS_S_ISDIR(dir->desc->mode) || dir->desc->size > 0)
   {
     release_inode(dir);
     release_inode(parent);
@@ -195,7 +195,7 @@ int dfs_rename(struct fs *fs, char *oldname, char *newname)
   struct inode *newparent;
   int oldlen;
   int newlen;
-  ino_t ino;
+  vfs_ino_t ino;
 
   oldlen = strlen(oldname);
   oldparent = parse_name((struct filsys *) fs->data, &oldname, &oldlen);
@@ -250,7 +250,7 @@ int dfs_link(struct fs *fs, char *oldname, char *newname)
 {
   struct inode *inode;
   struct inode *parent;
-  ino_t ino;
+  vfs_ino_t ino;
   int len;
 
   ino = lookup_name((struct filsys *) fs->data, DFS_INODE_ROOT, oldname, strlen(oldname));
@@ -294,7 +294,7 @@ int dfs_unlink(struct fs *fs, char *name)
 {
   struct inode *dir;
   struct inode *inode;
-  ino_t ino;
+  vfs_ino_t ino;
   int len;
 
   len = strlen(name);
@@ -315,7 +315,7 @@ int dfs_unlink(struct fs *fs, char *name)
     return -1;
   }
 
-  if (S_ISDIR(inode->desc->mode))
+  if (VFS_S_ISDIR(inode->desc->mode))
   {
     release_inode(inode);
     release_inode(dir);

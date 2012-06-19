@@ -1,4 +1,3 @@
-#include <windows.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -6,12 +5,17 @@
 #include "types.h"
 #include "buf.h"
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 unsigned long threadtls;
 
 void panic(char *reason);
-int dev_read(devno_t devno, void *buffer, size_t count, blkno_t blkno);
-int dev_write(devno_t devno, void *buffer, size_t count, blkno_t blkno);
+int dev_read(vfs_devno_t devno, void *buffer, size_t count, vfs_blkno_t blkno);
+int dev_write(vfs_devno_t devno, void *buffer, size_t count, vfs_blkno_t blkno);
 
+#ifdef WIN32
 struct thread *get_current_thread()
 {
   struct thread *thread;
@@ -28,29 +32,42 @@ struct thread *get_current_thread()
 
   return thread;
 }
+#endif
 
 static void yield()
 {
+#ifdef WIN32
   Sleep(0);
+#else
+  panic("yield() not supported");
+#endif
 }
 
-static unsigned long bufhash(blkno_t blkno)
+static unsigned long bufhash(vfs_blkno_t blkno)
 {
   return blkno;
 }
 
 static void wait_for_buffer(struct buf *buf)
 {
+#ifdef WIN32
   struct thread *self = get_current_thread();
   self->next_buffer_waiter = buf->waiters;
   buf->waiters = self;
   ResetEvent(self->ready);
   WaitForSingleObject(self->ready, INFINITE);
+#else
+  panic("wait_for_buffer() not supported");
+#endif
 }
 
 static void mark_ready(struct thread *thread)
 {
+#ifdef WIN32
   SetEvent(thread->ready);
+#else
+  panic("mark_ready() not supported");
+#endif
 }
 
 static void insert_into_hashtable(struct bufpool *pool, struct buf *buf)
@@ -76,7 +93,7 @@ static void remove_from_hashtable(struct bufpool *pool, struct buf *buf)
   buf->bucket.prev = NULL;
 }
 
-static struct buf *lookup_buffer(struct bufpool *pool, blkno_t blkno)
+static struct buf *lookup_buffer(struct bufpool *pool, vfs_blkno_t blkno)
 {
   struct buf *buf;
 
@@ -199,7 +216,9 @@ static void write_buffer(struct bufpool *pool, struct buf *buf)
     next = thread->next_buffer_waiter;
     thread->next_buffer_waiter = NULL;
     
+#ifdef WIN32
     SetEvent(thread->ready);
+#endif
     thread = next;
   }
   buf->waiters = NULL;
@@ -265,7 +284,7 @@ static struct buf *get_new_buffer(struct bufpool *pool)
   }
 }
 
-struct bufpool *init_buffer_pool(devno_t devno, int poolsize, int bufsize)
+struct bufpool *init_buffer_pool(vfs_devno_t devno, int poolsize, int bufsize)
 {
   struct bufpool *pool;
   struct buf *buf;
@@ -316,7 +335,9 @@ struct bufpool *init_buffer_pool(devno_t devno, int poolsize, int bufsize)
     data += bufsize;
   }
 
+#ifdef WIN32
   threadtls = TlsAlloc();
+#endif
   return pool;
 }
 
@@ -327,7 +348,7 @@ void free_buffer_pool(struct bufpool *pool)
   free(pool);
 }
 
-struct buf *get_buffer(struct bufpool *pool, blkno_t blkno)
+struct buf *get_buffer(struct bufpool *pool, vfs_blkno_t blkno)
 {
   struct buf *buf;
 
@@ -351,7 +372,7 @@ struct buf *get_buffer(struct bufpool *pool, blkno_t blkno)
   return buf;
 }
 
-struct buf *alloc_buffer(struct bufpool *pool, blkno_t blkno)
+struct buf *alloc_buffer(struct bufpool *pool, vfs_blkno_t blkno)
 {
   struct buf *buf;
 
@@ -445,7 +466,7 @@ void release_buffer(struct bufpool *pool, struct buf *buf)
   }
 }
 
-void invalidate_buffer(struct bufpool *pool, blkno_t blkno)
+void invalidate_buffer(struct bufpool *pool, vfs_blkno_t blkno)
 {
   struct buf *buf;
 

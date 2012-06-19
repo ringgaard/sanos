@@ -3,7 +3,9 @@
 
 #define BITS_PER_BYTE 8
 
+#ifndef __linux__
 #define USE_I386_BITOPS
+#endif
 
 #ifdef USE_I386_BITOPS
 
@@ -45,24 +47,24 @@ __inline int test_bit(void *bitmap, int pos)
 
 #else
 
-__inline void set_bit(void *bitmap, int pos)
+static __inline void set_bit(void *bitmap, int pos)
 {
   *(((unsigned char *) bitmap) + (pos / BITS_PER_BYTE)) |= (1 << (pos % BITS_PER_BYTE));
 }
 
-__inline void clear_bit(void *bitmap, int pos)
+static __inline void clear_bit(void *bitmap, int pos)
 {
   *(((unsigned char *) bitmap) + (pos / BITS_PER_BYTE)) &= ~(1 << (pos % BITS_PER_BYTE));
 }
 
-__inline int test_bit(void *bitmap, int pos)
+static __inline int test_bit(void *bitmap, int pos)
 {
   return *(((unsigned char *) bitmap) + (pos / BITS_PER_BYTE)) & (1 << (pos % BITS_PER_BYTE));
 }
 
 #endif
 
-__inline void set_bits(void *bitmap, int pos, int len)
+static __inline void set_bits(void *bitmap, int pos, int len)
 {
   while (len-- > 0) set_bit(bitmap, pos++);
 }

@@ -39,13 +39,13 @@ struct buf
   unsigned short state;
   unsigned short locks;
   struct thread *waiters;
-  blkno_t blkno;
+  vfs_blkno_t blkno;
   char *data;
 };
 
 struct bufpool
 {
-  devno_t devno;
+  vfs_devno_t devno;
   int poolsize;
   int bufsize;
   int blks_per_buffer;
@@ -60,14 +60,14 @@ struct bufpool
   struct buf *hashtable[BUFPOOL_HASHSIZE];
 };
 
-struct bufpool *init_buffer_pool(devno_t devno, int poolsize, int bufsize);
+struct bufpool *init_buffer_pool(vfs_devno_t devno, int poolsize, int bufsize);
 void free_buffer_pool(struct bufpool *pool);
-struct buf *get_buffer(struct bufpool *pool, blkno_t blkno);
-struct buf *alloc_buffer(struct bufpool *pool, blkno_t blkno);
+struct buf *get_buffer(struct bufpool *pool, vfs_blkno_t blkno);
+struct buf *alloc_buffer(struct bufpool *pool, vfs_blkno_t blkno);
 void mark_buffer_updated(struct buf *buf);
 void mark_buffer_invalid(struct buf *buf);
 void release_buffer(struct bufpool *pool, struct buf *buf);
-void invalidate_buffer(struct bufpool *pool, blkno_t blkno);
+void invalidate_buffer(struct bufpool *pool, vfs_blkno_t blkno);
 void flush_buffers(struct bufpool *pool);
 
 #endif

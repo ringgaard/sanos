@@ -1,5 +1,3 @@
-#include <windows.h>
-
 #include <stdio.h>
 #include <time.h>
 
@@ -16,12 +14,12 @@ static void mark_group_desc_dirty(struct filsys *fs, int group)
   mark_buffer_updated(fs->groupdesc_buffers[group / fs->groupdescs_per_block]);
 }
 
-blkno_t new_block(struct filsys *fs, blkno_t goal)
+vfs_blkno_t new_block(struct filsys *fs, vfs_blkno_t goal)
 {
   unsigned int group;
   unsigned int i;
   struct buf *buf;
-  blkno_t block;
+  vfs_blkno_t block;
 
   if (goal < fs->super->block_count)
   {
@@ -87,12 +85,12 @@ block_found:
   return block;
 }
 
-void free_blocks(struct filsys *fs, blkno_t *blocks, int count)
+void free_blocks(struct filsys *fs, vfs_blkno_t *blocks, int count)
 {
   unsigned int group;
   unsigned int prev_group;
   struct buf *buf;
-  blkno_t block;
+  vfs_blkno_t block;
   int i;
 
   prev_group = -1;
@@ -124,13 +122,13 @@ void free_blocks(struct filsys *fs, blkno_t *blocks, int count)
   if (buf) release_buffer(fs->cache, buf);
 }
 
-ino_t new_inode(struct filsys *fs, ino_t parent, int dir)
+vfs_ino_t new_inode(struct filsys *fs, vfs_ino_t parent, int dir)
 {
   unsigned int group;
   unsigned int i;
   unsigned int avefreei;
   struct buf *buf;
-  ino_t ino;
+  vfs_ino_t ino;
 
   if (dir)
   {
@@ -198,7 +196,7 @@ ino_t new_inode(struct filsys *fs, ino_t parent, int dir)
   return ino;
 }
 
-void free_inode(struct filsys *fs, ino_t ino)
+void free_inode(struct filsys *fs, vfs_ino_t ino)
 {
   unsigned int group;
   struct buf *buf;

@@ -1,6 +1,6 @@
-#include <windows.h>
-
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <time.h>
 
 #include "types.h"
@@ -19,16 +19,16 @@
 #define RESERVED_INODES  16
 
 void panic(char *reason);
-int dev_read(devno_t devno, void *buffer, size_t count, blkno_t blkno);
-int dev_write(devno_t devno, void *buffer, size_t count, blkno_t blkno);
-unsigned int dev_getsize(devno_t devno);
+int dev_read(vfs_devno_t devno, void *buffer, size_t count, vfs_blkno_t blkno);
+int dev_write(vfs_devno_t devno, void *buffer, size_t count, vfs_blkno_t blkno);
+unsigned int dev_getsize(vfs_devno_t devno);
 
 static void mark_group_desc_dirty(struct filsys *fs, int group)
 {
   mark_buffer_updated(fs->groupdesc_buffers[group / fs->groupdescs_per_block]);
 }
 
-static int log2(int n)
+static int bits(int n)
 {
   int l = 0;
   n >>= 1;
@@ -86,7 +86,7 @@ static int parse_options(char *opts, int *blocksize, int *inode_ratio, int *quic
   return 0;
 }
 
-static struct filsys *create_filesystem(devno_t devno, int blocksize, int inode_ratio, int quick)
+struct filsys *create_filesystem(vfs_devno_t devno, int blocksize, int inode_ratio, int quick)
 {
   struct filsys *fs;
   unsigned int blocks;
@@ -94,7 +94,7 @@ static struct filsys *create_filesystem(devno_t devno, int blocksize, int inode_
   struct groupdesc *gd;
   struct buf *buf;
   unsigned int i, j;
-  ino_t ino;
+  vfs_ino_t ino;
   struct inode *root;
   char *buffer;
 
@@ -117,7 +117,7 @@ static struct filsys *create_filesystem(devno_t devno, int blocksize, int inode_
   // Set signature, version and block size in super block
   fs->super->signature = DFS_SIGNATURE;
   fs->super->version = DFS_VERSION;
-  fs->super->log_block_size = log2(blocksize);
+  fs->super->log_block_size = bits(blocksize);
 
   // Each group has as many blocks as can be represented by the block bitmap block
   fs->super->blocks_per_group = fs->blocksize * 8;
@@ -270,7 +270,7 @@ static struct filsys *create_filesystem(devno_t devno, int blocksize, int inode_
 
   // Create root directory
   root = get_inode(fs, DFS_INODE_ROOT);
-  root->desc->mode = S_IFDIR | S_IRWXU | S_IRWXG | S_IRWXO;
+  root->desc->mode = VFS_S_IFDIR | VFS_S_IRWXU | VFS_S_IRWXG | VFS_S_IRWXO;
   root->desc->ctime = root->desc->mtime = time(NULL);
   root->desc->linkcount = 1;
   mark_buffer_updated(root->buf);
@@ -279,7 +279,7 @@ static struct filsys *create_filesystem(devno_t devno, int blocksize, int inode_
   return fs;
 }
 
-static struct filsys *open_filesystem(devno_t devno)
+struct filsys *open_filesystem(vfs_devno_t devno)
 {
   struct filsys *fs;
   struct groupdesc *gd;
@@ -335,7 +335,7 @@ static struct filsys *open_filesystem(devno_t devno)
   return fs;
 }
 
-static void close_filesystem(struct filsys *fs)
+void close_filesystem(struct filsys *fs)
 {
   unsigned int i;
 
@@ -358,7 +358,7 @@ static void close_filesystem(struct filsys *fs)
   free(fs);
 }
 
-int dfs_format(devno_t devno, char *opts)
+int dfs_format(vfs_devno_t devno, char *opts)
 {
   int blocksize;
   int inode_ratio;

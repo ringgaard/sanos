@@ -126,7 +126,7 @@ struct filesystem *register_filesystem(char *name, struct fsops *ops)
   return fsys;
 }
 
-int format(devno_t devno, char *type, char *opts)
+int vfs_format(vfs_devno_t devno, char *type, char *opts)
 {
   struct filesystem *fsys;
   int rc;
@@ -146,7 +146,7 @@ int format(devno_t devno, char *type, char *opts)
   return rc;
 }
 
-int mount(char *type, char *path, devno_t devno, char *opts)
+int vfs_mount(char *type, char *path, vfs_devno_t devno, char *opts)
 {
   struct filesystem *fsys;
   struct fs *fs;
@@ -191,7 +191,7 @@ int mount(char *type, char *path, devno_t devno, char *opts)
   return 0;
 }
 
-int unmount_all()
+int vfs_unmount_all()
 {
   struct fs *fs;
   struct fs *nextfs;
@@ -209,7 +209,7 @@ int unmount_all()
   return 0;
 }
 
-struct file *open(char *name, int flags, int mode)
+struct file *vfs_open(char *name, int flags, int mode)
 {
   struct fs *fs;
   struct file *filp;
@@ -241,7 +241,7 @@ struct file *open(char *name, int flags, int mode)
   return filp;
 }
 
-int close(struct file *filp)
+int vfs_close(struct file *filp)
 {
   int rc;
 
@@ -252,7 +252,7 @@ int close(struct file *filp)
   return rc;
 }
 
-int flush(struct file *filp)
+int vfs_flush(struct file *filp)
 {
   if (!filp) return -1;
 
@@ -260,27 +260,27 @@ int flush(struct file *filp)
   return filp->fs->ops->flush(filp);
 }
 
-int read(struct file *filp, void *data, size_t size)
+int vfs_read(struct file *filp, void *data, size_t size)
 {
   if (!filp) return -1;
   if (!data && size > 0) return -1;
-  if (filp->flags & O_WRONLY) return -1;
+  if (filp->flags & VFS_O_WRONLY) return -1;
   
   if (!filp->fs->ops->read) return -1;
   return filp->fs->ops->read(filp, data, size);
 }
 
-int write(struct file *filp, void *data, size_t size)
+int vfs_write(struct file *filp, void *data, size_t size)
 {
   if (!filp) return -1;
   if (!data && size > 0) return -1;
-  if (filp->flags & O_RDONLY) return -1;
+  if (filp->flags & VFS_O_RDONLY) return -1;
 
   if (!filp->fs->ops->write) return -1;
   return filp->fs->ops->write(filp, data, size);
 }
 
-loff_t tell(struct file *filp)
+vfs_loff_t vfs_tell(struct file *filp)
 {
   if (!filp) return -1;
  
@@ -288,7 +288,7 @@ loff_t tell(struct file *filp)
   return filp->fs->ops->tell(filp);
 }
 
-loff_t lseek(struct file *filp, loff_t offset, int origin)
+vfs_loff_t vfs_lseek(struct file *filp, vfs_loff_t offset, int origin)
 {
   if (!filp) return -1;
 
@@ -296,26 +296,26 @@ loff_t lseek(struct file *filp, loff_t offset, int origin)
   return filp->fs->ops->lseek(filp, offset, origin);
 }
 
-int chsize(struct file *filp, loff_t size)
+int vfs_chsize(struct file *filp, vfs_loff_t size)
 {
   if (!filp) return -1;
-  if (filp->flags & O_RDONLY) return -1;
+  if (filp->flags & VFS_O_RDONLY) return -1;
 
   if (!filp->fs->ops->chsize) return -1;
   return filp->fs->ops->chsize(filp, size);
 }
 
-int futime(struct file *filp, struct utimbuf *times)
+int vfs_futime(struct file *filp, struct vfs_utimbuf *times)
 {
   if (!filp) return -1;
   if (!times) return -1;
-  if (filp->flags & O_RDONLY) return -1;
+  if (filp->flags & VFS_O_RDONLY) return -1;
  
   if (!filp->fs->ops->futime) return -1;
   return filp->fs->ops->futime(filp, times);
 }
 
-int fstat(struct file *filp, struct stat *buffer)
+int vfs_fstat(struct file *filp, struct vfs_stat *buffer)
 {
   if (!filp) return -1;
   if (!buffer) return -1;
@@ -324,7 +324,7 @@ int fstat(struct file *filp, struct stat *buffer)
   return filp->fs->ops->fstat(filp, buffer);
 }
 
-int stat(char *name, struct stat *buffer)
+int vfs_stat(char *name, struct vfs_stat *buffer)
 {
   struct fs *fs;
   char *rest;
@@ -343,7 +343,7 @@ int stat(char *name, struct stat *buffer)
   return fs->ops->stat(fs, rest, buffer);
 }
 
-int mkdir(char *name, int mode)
+int vfs_mkdir(char *name, int mode)
 {
   struct fs *fs;
   char *rest;
@@ -360,7 +360,7 @@ int mkdir(char *name, int mode)
   return fs->ops->mkdir(fs, rest, mode);
 }
 
-int rmdir(char *name)
+int vfs_rmdir(char *name)
 {
   struct fs *fs;
   char *rest;
@@ -377,7 +377,7 @@ int rmdir(char *name)
   return fs->ops->rmdir(fs, rest);
 }
 
-int xrename(char *oldname, char *newname)
+int vfs_rename(char *oldname, char *newname)
 {
   struct fs *oldfs;
   struct fs *newfs;
@@ -405,7 +405,7 @@ int xrename(char *oldname, char *newname)
   return oldfs->ops->rename(oldfs, oldrest, newrest);
 }
 
-int xlink(char *oldname, char *newname)
+int vfs_link(char *oldname, char *newname)
 {
   struct fs *oldfs;
   struct fs *newfs;
@@ -433,7 +433,7 @@ int xlink(char *oldname, char *newname)
   return oldfs->ops->link(oldfs, oldrest, newrest);
 }
 
-int xunlink(char *name)
+int vfs_unlink(char *name)
 {
   struct fs *fs;
   char *rest;
@@ -450,7 +450,7 @@ int xunlink(char *name)
   return fs->ops->unlink(fs, rest);
 }
 
-struct file *opendir(char *name)
+struct file *vfs_opendir(char *name)
 {
   struct fs *fs;
   struct file *filp;
@@ -468,7 +468,7 @@ struct file *opendir(char *name)
   if (!filp) return NULL;
   
   filp->fs = fs;
-  filp->flags = O_RDONLY | F_DIR;
+  filp->flags = VFS_O_RDONLY | F_DIR;
   filp->pos = 0;
   filp->data = NULL;
 
@@ -482,7 +482,7 @@ struct file *opendir(char *name)
   return filp;
 }
 
-int readdir(struct file *filp, struct dirent *dirp, int count)
+int vfs_readdir(struct file *filp, struct vfs_dirent *dirp, int count)
 {
   if (!filp) return -1;
   if (!dirp) return -1;

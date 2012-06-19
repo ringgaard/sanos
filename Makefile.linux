@@ -1,0 +1,747 @@
+#
+# Makefile for building Sanos under Linux
+#
+
+TCC=linux/tools/cc
+AR=linux/tools/ar
+AS=linux/tools/as
+MKDFS=linux/tools/mkdfs
+
+OBJ=linux/obj
+
+LIB_KRNL=linux/install/usr/lib/krnl.def
+LIB_OS=linux/install/usr/lib/os.def
+
+TCCFLAGS=-I src/include -L linux/install/usr/lib
+
+sanos: dirs build-tools boot osldr kernel drivers os libc utils sdk sdk-source
+
+#
+# dirs
+#
+
+dirs: linux/.timestamp
+
+linux/.timestamp:
+	mkdir -p linux
+	mkdir -p linux/tools
+	mkdir -p linux/obj
+	mkdir -p linux/include
+	mkdir -p linux/install
+	mkdir -p linux/install/bin
+	mkdir -p linux/install/boot
+	mkdir -p linux/install/dev
+	mkdir -p linux/install/etc
+	mkdir -p linux/install/mnt
+	mkdir -p linux/install/proc
+	mkdir -p linux/install/tmp
+	mkdir -p linux/install/usr
+	mkdir -p linux/install/usr/bin
+	mkdir -p linux/install/usr/lib
+	mkdir -p linux/install/usr/src
+	mkdir -p linux/install/usr/src/utils
+	mkdir -p linux/install/var
+	[ -d linux/include/os ] || ln -s ../../src/include/os linux/include/os
+	[ -d linux/install/boot/krnl.ini ]         || ln -s ../../../build/krnl.ini linux/install/boot/krnl.ini
+	[ -d linux/install/etc/os.ini ]            || ln -s ../../../build/os.ini linux/install/etc/os.ini
+	[ -d linux/install/etc/setup.ini ]         || ln -s ../../../build/setup.ini linux/install/etc/setup.ini
+	[ -d linux/install/usr/include ]           || ln -s ../../../src/include linux/install/usr/include
+	[ -d linux/install/usr/src/lib ]           || ln -s ../../../../src/lib linux/install/usr/src/lib
+	[ -d linux/install/usr/src/sys ]           || ln -s ../../../../src/sys linux/install/usr/src/sys
+	[ -d linux/install/usr/src/utils/ar ]      || ln -s ../../../../../src/utils/ar linux/install/usr/src/utils/ar
+	[ -d linux/install/usr/src/utils/ctohtml ] || ln -s ../../../../../src/utils/ctohtml linux/install/usr/src/utils/ctohtml
+	[ -d linux/install/usr/src/utils/edit ]    || ln -s ../../../../../src/utils/edit linux/install/usr/src/utils/edit
+	[ -d linux/install/usr/src/utils/fdisk ]   || ln -s ../../../../../src/utils/fdisk linux/install/usr/src/utils/fdisk
+	[ -d linux/install/usr/src/utils/ftpd ]    || ln -s ../../../../../src/utils/ftpd linux/install/usr/src/utils/ftpd
+	[ -d linux/install/usr/src/utils/httpd ]   || ln -s ../../../../../src/utils/httpd linux/install/usr/src/utils/httpd
+	[ -d linux/install/usr/src/utils/impdef ]  || ln -s ../../../../../src/utils/impdef linux/install/usr/src/utils/impdef
+	[ -d linux/install/usr/src/utils/login ]   || ln -s ../../../../../src/utils/login linux/install/usr/src/utils/login
+	[ -d linux/install/usr/src/utils/make ]    || ln -s ../../../../../src/utils/make linux/install/usr/src/utils/make
+	[ -d linux/install/usr/src/utils/mkboot ]  || ln -s ../../../../../src/utils/mkboot linux/install/usr/src/utils/mkboot
+	[ -d linux/install/usr/src/utils/samples ] || ln -s ../../../../../src/utils/samples linux/install/usr/src/utils/samples
+	[ -d linux/install/usr/src/utils/setup ]   || ln -s ../../../../../src/utils/setup linux/install/usr/src/utils/setup
+	[ -d linux/install/usr/src/utils/sh ]      || ln -s ../../../../../src/utils/sh linux/install/usr/src/utils/sh
+	[ -d linux/install/usr/src/utils/telnetd ] || ln -s ../../../../../src/utils/telnetd linux/install/usr/src/utils/telnetd
+	[ -d linux/install/usr/src/win32 ]         || ln -s ../../../../src/win32 linux/install/usr/src/win32
+	[ -d linux/install/usr/src/Makefile ]      || ln -s ../../../../src/Makefile linux/install/usr/src/Makefile
+	touch linux/.timestamp
+
+#
+# build-tools
+#
+
+build-tools: $(TCC) $(AS) $(AR) $(MKDFS)
+
+sdk/src/cc/tcc.c: \
+	sdk/src/cc/config.h sdk/src/cc/elf.h sdk/src/cc/i386-asm.c sdk/src/cc/i386-asm.h \
+	sdk/src/cc/i386-gen.c sdk/src/cc/libtcc.h sdk/src/cc/stab.def sdk/src/cc/stab.h \
+	sdk/src/cc/tccasm.c sdk/src/cc/tccelf.c sdk/src/cc/tccpe.c sdk/src/cc/tcctok.h
+
+$(TCC): sdk/src/cc/tcc.c
+	gcc -o $(TCC) sdk/src/cc/tcc.c -I sdk/src/cc -O2 -D SANOS
+
+AS_OUTDEFS=-DOF_ONLY -DOF_ELF32 -DOF_WIN32 -DOF_COFF -DOF_OBJ -DOF_BIN -DOF_DBG -DOF_DEFAULT=of_elf32
+AS_CFLAGS=-I. -DHAVE_SNPRINTF -DHAVE_VSNPRINTF $(AS_OUTDEFS)
+
+AS_SRCFILES= \
+	sdk/src/as/nasm.c sdk/src/as/nasmlib.c sdk/src/as/ver.c sdk/src/as/raa.c sdk/src/as/saa.c \
+	sdk/src/as/rbtree.c sdk/src/as/float.c sdk/src/as/insnsa.c sdk/src/as/insnsb.c sdk/src/as/directiv.c \
+	sdk/src/as/assemble.c sdk/src/as/labels.c sdk/src/as/hashtbl.c sdk/src/as/crc64.c sdk/src/as/parser.c \
+	sdk/src/as/preproc.c sdk/src/as/quote.c sdk/src/as/pptok.c sdk/src/as/macros.c sdk/src/as/listing.c \
+	sdk/src/as/eval.c sdk/src/as/exprlib.c sdk/src/as/stdscan.c sdk/src/as/strfunc.c sdk/src/as/tokhash.c \
+	sdk/src/as/regvals.c sdk/src/as/regflags.c sdk/src/as/ilog2.c sdk/src/as/strlcpy.c \
+	sdk/src/as/output/outform.c sdk/src/as/output/outlib.c sdk/src/as/output/nulldbg.c sdk/src/as/output/nullout.c \
+	sdk/src/as/output/outbin.c sdk/src/as/output/outcoff.c sdk/src/as/output/outelf.c sdk/src/as/output/outelf32.c \
+	sdk/src/as/output/outobj.c sdk/src/as/output/outdbg.c
+
+$(AS): $(AS_SRCFILES)
+	gcc -o $(AS) $(AS_SRCFILES) $(AS_OUTDEFS) -I sdk/src/as -O2
+
+$(AR): src/utils/ar/ar.c
+	gcc -o $(AR) src/utils/ar/ar.c -DO_BINARY=0 -I linux/include -O2
+
+MKDFS_SRCFILES= \
+	utils/dfs/blockdev.c utils/dfs/vmdk.c utils/dfs/bitops.c utils/dfs/buf.c utils/dfs/dfs.c \
+	utils/dfs/dir.c utils/dfs/file.c utils/dfs/group.c utils/dfs/inode.c \
+	utils/dfs/mkdfs.c utils/dfs/super.c utils/dfs/vfs.c
+
+$(MKDFS): $(MKDFS_SRCFILES)
+	gcc -o $(MKDFS) $(MKDFS_SRCFILES) -DO_BINARY=0 -I linux/include -O2
+
+#
+# boot
+#
+
+boot: linux/install/boot/boot linux/install/boot/cdboot linux/install/boot/cdemboot linux/install/boot/netboot
+
+linux/install/boot/boot: src/sys/boot/boot.asm
+	$(AS) -f bin $^ -o $@
+
+linux/install/boot/cdboot: src/sys/boot/cdboot.asm
+	$(AS) -f bin $^ -o $@
+
+linux/install/boot/cdemboot: src/sys/boot/cdemboot.asm
+	$(AS) -f bin $^ -o $@
+
+linux/install/boot/netboot: src/sys/boot/netboot.asm
+	$(AS) -f bin $^ -o $@
+
+#
+# osldr
+#
+
+osldr: linux/install/boot/osldr.dll
+
+$(OBJ)/bioscall.o: src/sys/osldr/bioscall.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/ldrinit.exe: src/sys/osldr/ldrinit.asm
+	$(AS) -f bin $^ -o $@
+
+OSLDR_SRCS=src/sys/osldr/osldr.c src/sys/osldr/loadkrnl.c src/sys/osldr/unzip.c
+OSLDR_LIBSRCS=src/lib/vsprintf.c src/lib/string.c
+
+linux/install/boot/osldr.dll: $(OSLDR_SRCS) $(OSLDR_LIBSRCS) $(OBJ)/bioscall.o $(OBJ)/ldrinit.exe
+	$(TCC) -shared -entry _start@12 -fixed 0x00090000 -filealign 4096 -stub $(OBJ)/ldrinit.exe -nostdlib -o $@ $(OSLDR_SRCS) $(OSLDR_LIBSRCS) $(OBJ)/bioscall.o -D OSLDR -D KERNEL $(TCCFLAGS)
+
+#
+# kernel
+#
+
+kernel: linux/install/boot/krnl.dll
+
+KRNL_SRCS=\
+  src/sys/krnl/apm.c \
+  src/sys/krnl/buf.c \
+  src/sys/krnl/cpu.c \
+  src/sys/krnl/dbg.c \
+  src/sys/krnl/dev.c \
+  src/sys/krnl/fpu.c \
+  src/sys/krnl/hndl.c \
+  src/sys/krnl/iomux.c \
+  src/sys/krnl/iop.c \
+  src/sys/krnl/iovec.c \
+  src/sys/krnl/kmalloc.c \
+  src/sys/krnl/kmem.c \
+  src/sys/krnl/ldr.c \
+  src/sys/krnl/mach.c \
+  src/sys/krnl/object.c \
+  src/sys/krnl/pci.c \
+  src/sys/krnl/pdir.c \
+  src/sys/krnl/pframe.c \
+  src/sys/krnl/pic.c \
+  src/sys/krnl/pit.c \
+  src/sys/krnl/pnpbios.c \
+  src/sys/krnl/queue.c \
+  src/sys/krnl/sched.c \
+  src/sys/krnl/start.c \
+  src/sys/krnl/syscall.c \
+  src/sys/krnl/timer.c \
+  src/sys/krnl/trap.c \
+  src/sys/krnl/user.c \
+  src/sys/krnl/vfs.c \
+  src/sys/krnl/virtio.c \
+  src/sys/krnl/vmi.c \
+  src/sys/krnl/vmm.c
+
+DEV_SRCS=\
+  src/sys/dev/cons.c \
+  src/sys/dev/fd.c \
+  src/sys/dev/hd.c \
+  src/sys/dev/kbd.c \
+  src/sys/dev/klog.c \
+  src/sys/dev/null.c \
+  src/sys/dev/nvram.c \
+  src/sys/dev/ramdisk.c \
+  src/sys/dev/rnd.c \
+  src/sys/dev/serial.c \
+  src/sys/dev/smbios.c \
+  src/sys/dev/video.c \
+  src/sys/dev/virtioblk.c
+
+NET_SRCS=\
+  src/sys/net/arp.c \
+  src/sys/net/dhcp.c \
+  src/sys/net/ether.c \
+  src/sys/net/icmp.c \
+  src/sys/net/inet.c \
+  src/sys/net/ipaddr.c \
+  src/sys/net/ip.c \
+  src/sys/net/loopif.c \
+  src/sys/net/netif.c \
+  src/sys/net/pbuf.c \
+  src/sys/net/raw.c \
+  src/sys/net/rawsock.c \
+  src/sys/net/socket.c \
+  src/sys/net/stats.c \
+  src/sys/net/tcp.c \
+  src/sys/net/tcp_input.c \
+  src/sys/net/tcp_output.c \
+  src/sys/net/tcpsock.c \
+  src/sys/net/udp.c \
+  src/sys/net/udpsock.c \
+
+FS_SRCS=\
+  src/sys/fs/cdfs/cdfs.c \
+  src/sys/fs/devfs/devfs.c \
+  src/sys/fs/dfs/dfs.c \
+  src/sys/fs/dfs/dir.c \
+  src/sys/fs/dfs/file.c \
+  src/sys/fs/dfs/group.c \
+  src/sys/fs/dfs/inode.c \
+  src/sys/fs/dfs/super.c \
+  src/sys/fs/pipefs/pipefs.c \
+  src/sys/fs/procfs/procfs.c \
+  src/sys/fs/smbfs/smbcache.c \
+  src/sys/fs/smbfs/smbfs.c \
+  src/sys/fs/smbfs/smbproto.c \
+  src/sys/fs/smbfs/smbutil.c
+
+KRNL_LIB_SRCS=\
+  src/lib/bitops.c \
+  src/lib/ctype.c \
+  src/lib/inifile.c \
+  src/lib/moddb.c \
+  src/lib/opts.c \
+  src/lib/rmap.c \
+  src/lib/string.c \
+  src/lib/strtol.c \
+  src/lib/tcccrt.c \
+  src/lib/time.c \
+  src/lib/verinfo.c \
+  src/lib/vsprintf.c
+
+KERNEL_SRCS=$(KRNL_SRCS) $(DEV_SRCS) $(NET_SRCS) $(FS_SRCS) $(KRNL_LIB_SRCS)
+
+linux/install/boot/krnl.dll $(LIB_KRNL): $(KERNEL_SRCS)
+	$(TCC) -shared -entry _start@12 -fixed 0x80000000 -filealign 4096 -nostdlib -o linux/install/boot/krnl.dll -D KERNEL -D KRNL_LIB $(KERNEL_SRCS) $(TCCFLAGS)
+	mv linux/install/boot/krnl.def $(LIB_KRNL)
+
+#
+# drivers
+#
+
+drivers: \
+  linux/install/boot/3c905c.sys \
+  linux/install/boot/eepro100.sys \
+  linux/install/boot/ne2000.sys \
+  linux/install/boot/pcnet32.sys \
+  linux/install/boot/rtl8139.sys \
+  linux/install/boot/sis900.sys \
+  linux/install/boot/tulip.sys \
+  linux/install/boot/virtionet.sys
+
+linux/install/boot/3c905c.sys: src/sys/dev/3c905c.c src/lib/string.c
+	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
+	rm linux/install/boot/3c905c.def
+
+linux/install/boot/eepro100.sys: src/sys/dev/eepro100.c src/lib/opts.c src/lib/string.c src/lib/strtol.c src/lib/ctype.c
+	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
+	rm linux/install/boot/eepro100.def
+
+linux/install/boot/ne2000.sys: src/sys/dev/ne2000.c src/lib/opts.c src/lib/string.c src/lib/strtol.c src/lib/ctype.c
+	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
+	rm linux/install/boot/ne2000.def
+
+linux/install/boot/pcnet32.sys: src/sys/dev/pcnet32.c src/lib/string.c src/lib/ctype.c
+	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
+	rm linux/install/boot/pcnet32.def
+
+linux/install/boot/rtl8139.sys: src/sys/dev/rtl8139.c src/lib/opts.c src/lib/string.c src/lib/strtol.c src/lib/ctype.c
+	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
+	rm linux/install/boot/rtl8139.def
+
+linux/install/boot/sis900.sys: src/sys/dev/sis900.c src/lib/opts.c src/lib/string.c src/lib/strtol.c src/lib/ctype.c
+	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
+	rm linux/install/boot/sis900.def
+
+linux/install/boot/tulip.sys: src/sys/dev/tulip.c src/lib/opts.c src/lib/string.c src/lib/strtol.c src/lib/ctype.c
+	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
+	rm linux/install/boot/tulip.def
+
+linux/install/boot/virtionet.sys: src/sys/dev/virtionet.c src/lib/string.c
+	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
+	rm linux/install/boot/virtionet.def
+
+#
+# os
+#
+
+os: linux/install/boot/os.dll
+
+OS_SRCS= \
+  src/sys/os/critsect.c \
+  src/sys/os/environ.c \
+  src/sys/os/heap.c \
+  src/sys/os/netdb.c \
+  src/sys/os/os.c \
+  src/sys/os/resolv.c \
+  src/sys/os/signal.c \
+  src/sys/os/sntp.c \
+  src/sys/os/sysapi.c \
+  src/sys/os/syserr.c \
+  src/sys/os/syslog.c \
+  src/sys/os/thread.c \
+  src/sys/os/tls.c \
+  src/sys/os/userdb.c
+
+OS_LIB_SRCS= \
+  src/lib/bitops.c \
+  src/lib/crypt.c \
+  src/lib/ctype.c \
+  src/lib/fcvt.c \
+  src/lib/inifile.c \
+  src/lib/moddb.c \
+  src/lib/opts.c \
+  src/lib/strftime.c \
+  src/lib/string.c \
+  src/lib/strtol.c \
+  src/lib/tcccrt.c \
+  src/lib/time.c \
+  src/lib/verinfo.c \
+  src/lib/vsprintf.c
+
+linux/install/boot/os.dll $(LIB_OS): $(OS_SRCS) $(OS_LIB_SRCS) $(OBJ)/modf.o
+	$(TCC) -shared -entry _start@12 -fixed 0x7FF00000 -nostdlib -o linux/install/boot/os.dll $^ -D OS_LIB $(TCCFLAGS)
+	mv linux/install/boot/os.def $(LIB_OS)
+
+#
+# libc
+#
+
+libc: linux/install/usr/lib/libc.a
+
+LIBC_OBJ = \
+  $(OBJ)/tcccrt.o \
+  $(OBJ)/assert.o \
+  $(OBJ)/bsearch.o \
+  $(OBJ)/conio.o \
+  $(OBJ)/crt0.o \
+  $(OBJ)/ctype.o \
+  $(OBJ)/dirent.o \
+  $(OBJ)/fcvt.o \
+  $(OBJ)/fork.o \
+  $(OBJ)/getopt.o \
+  $(OBJ)/glob.o \
+  $(OBJ)/hash.o \
+  $(OBJ)/inifile.o \
+  $(OBJ)/input.o \
+  $(OBJ)/math.o \
+  $(OBJ)/opts.o \
+  $(OBJ)/output.o \
+  $(OBJ)/qsort.o \
+  $(OBJ)/random.o \
+  $(OBJ)/readline.o \
+  $(OBJ)/rmap.o \
+  $(OBJ)/rtttl.o \
+  $(OBJ)/sched.o \
+  $(OBJ)/semaphore.o \
+  $(OBJ)/stdio.o \
+  $(OBJ)/scanf.o \
+  $(OBJ)/printf.o \
+  $(OBJ)/tmpfile.o \
+  $(OBJ)/popen.o \
+  $(OBJ)/stdlib.o \
+  $(OBJ)/strftime.o \
+  $(OBJ)/string.o \
+  $(OBJ)/strtod.o \
+  $(OBJ)/strtol.o \
+  $(OBJ)/time.o \
+  $(OBJ)/xtoa.o \
+  $(OBJ)/regcomp.o \
+  $(OBJ)/regexec.o \
+  $(OBJ)/regerror.o \
+  $(OBJ)/regfree.o \
+  $(OBJ)/barrier.o \
+  $(OBJ)/condvar.o \
+  $(OBJ)/mutex.o \
+  $(OBJ)/pthread.o \
+  $(OBJ)/rwlock.o \
+  $(OBJ)/spinlock.o \
+  $(OBJ)/setjmp.o \
+  $(OBJ)/chkstk.o
+
+LIBC_MATHOBJ = \
+  $(OBJ)/acos.o \
+  $(OBJ)/asin.o \
+  $(OBJ)/atan.o \
+  $(OBJ)/atan2.o \
+  $(OBJ)/ceil.o \
+  $(OBJ)/cos.o \
+  $(OBJ)/cosh.o \
+  $(OBJ)/exp.o \
+  $(OBJ)/fabs.o \
+  $(OBJ)/floor.o \
+  $(OBJ)/fmod.o \
+  $(OBJ)/fpconst.o \
+  $(OBJ)/fpreset.o \
+  $(OBJ)/frexp.o \
+  $(OBJ)/ftol.o \
+  $(OBJ)/ldexp.o \
+  $(OBJ)/log.o \
+  $(OBJ)/log10.o \
+  $(OBJ)/modf.o \
+  $(OBJ)/pow.o \
+  $(OBJ)/sin.o \
+  $(OBJ)/sinh.o \
+  $(OBJ)/sqrt.o \
+  $(OBJ)/tan.o \
+  $(OBJ)/tanh.o
+
+TCCLIBFLAGS=-I src/include
+
+$(OBJ)/tcccrt.o: src/lib/tcccrt.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/assert.o: src/lib/assert.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/bsearch.o: src/lib/bsearch.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/conio.o: src/lib/conio.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/crt0.o: src/lib/crt0.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/ctype.o: src/lib/ctype.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/dirent.o: src/lib/dirent.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/fcvt.o: src/lib/fcvt.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/fork.o: src/lib/fork.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/getopt.o: src/lib/getopt.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/glob.o: src/lib/glob.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/hash.o: src/lib/hash.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/inifile.o: src/lib/inifile.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/input.o: src/lib/input.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/math.o: src/lib/math.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/opts.o: src/lib/opts.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/output.o: src/lib/output.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/qsort.o: src/lib/qsort.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/random.o: src/lib/random.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/readline.o: src/lib/readline.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/rmap.o: src/lib/rmap.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/rtttl.o: src/lib/rtttl.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/sched.o: src/lib/sched.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/semaphore.o: src/lib/semaphore.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/stdio.o: src/lib/stdio.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/printf.o: src/lib/printf.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/scanf.o: src/lib/scanf.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/tmpfile.o: src/lib/tmpfile.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/popen.o: src/lib/popen.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/setjmp.o: src/lib/setjmp.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/stdlib.o: src/lib/stdlib.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/strftime.o: src/lib/strftime.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/string.o: src/lib/string.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/strtod.o: src/lib/strtod.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/strtol.o: src/lib/strtol.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/time.o: src/lib/time.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/xtoa.o: src/lib/xtoa.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/regcomp.o: src/lib/regex/regcomp.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/regexec.o: src/lib/regex/regexec.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/regerror.o: src/lib/regex/regerror.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/regfree.o: src/lib/regex/regfree.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/barrier.o: src/lib/pthread/barrier.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/condvar.o: src/lib/pthread/condvar.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/mutex.o: src/lib/pthread/mutex.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/pthread.o: src/lib/pthread/pthread.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/rwlock.o: src/lib/pthread/rwlock.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/spinlock.o: src/lib/pthread/spinlock.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/chkstk.o: src/lib/chkstk.s
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/acos.o: src/lib/math/acos.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/asin.o: src/lib/math/asin.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/atan.o: src/lib/math/atan.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/atan2.o: src/lib/math/atan2.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/ceil.o: src/lib/math/ceil.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/cos.o: src/lib/math/cos.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/cosh.o: src/lib/math/cosh.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/exp.o: src/lib/math/exp.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/fabs.o: src/lib/math/fabs.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/floor.o: src/lib/math/floor.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/fmod.o: src/lib/math/fmod.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/fpconst.o: src/lib/math/fpconst.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/fpreset.o: src/lib/math/fpreset.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/frexp.o: src/lib/math/frexp.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/ftol.o: src/lib/math/ftol.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/ldexp.o: src/lib/math/ldexp.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/log.o: src/lib/math/log.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/log10.o: src/lib/math/log10.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/modf.o: src/lib/math/modf.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/pow.o: src/lib/math/pow.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/sin.o: src/lib/math/sin.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/sinh.o: src/lib/math/sinh.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/sqrt.o: src/lib/math/sqrt.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/tan.o: src/lib/math/tan.asm
+	$(AS) $^ -o $@
+
+$(OBJ)/tanh.o: src/lib/math/tanh.asm
+	$(AS) $^ -o $@
+
+linux/install/usr/lib/libc.a: $(LIBC_OBJ) $(LIBC_MATHOBJ)
+	$(AR) -s -m $@ $^
+
+#
+# utils
+#
+
+utils: \
+  linux/install/bin/sh.exe \
+  linux/install/bin/edit.exe \
+  linux/install/bin/fdisk.exe \
+  linux/install/bin/setup.exe \
+  linux/install/bin/mkboot.exe \
+  linux/install/bin/ftpd.exe \
+  linux/install/bin/telnetd.exe \
+  linux/install/bin/login.exe \
+  linux/install/usr/bin/make.exe \
+  linux/install/usr/bin/ar.exe \
+  linux/install/usr/bin/impdef.exe \
+  linux/install/usr/bin/ctohtml.exe
+
+linux/install/bin/sh.exe: src/utils/sh/sh.c src/utils/sh/ping.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+linux/install/bin/edit.exe: src/utils/edit/edit.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+linux/install/bin/fdisk.exe: src/utils/fdisk/fdisk.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+linux/install/bin/setup.exe: src/utils/setup/setup.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+linux/install/bin/mkboot.exe: src/utils/mkboot/mkboot.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+linux/install/bin/ftpd.exe: src/utils/ftpd/ftpd.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+linux/install/bin/telnetd.exe: src/utils/telnetd/telnetd.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+linux/install/bin/login.exe: src/utils/login/login.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+linux/install/usr/bin/make.exe: src/utils/make/make.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+linux/install/usr/bin/ar.exe: src/utils/ar/ar.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+linux/install/usr/bin/impdef.exe: src/utils/impdef/impdef.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+linux/install/usr/bin/ctohtml.exe: src/utils/ctohtml/ctohtml.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+#
+# sdk
+#
+
+sdk: linux/install/usr/bin/cc.exe linux/install/usr/bin/as.exe
+
+linux/install/usr/bin/cc.exe: sdk/src/cc/tcc.c
+	$(TCC) -o $@ $^ -I sdk/src/cc $(TCCFLAGS)
+
+linux/install/usr/bin/as.exe: $(AS_SRCFILES)
+	$(TCC) -o $@ $^ -I sdk/src/as $(TCCFLAGS) $(AS_CFLAGS)
+
+sdk-source:
+	mkdir -p linux/install/usr/src/utils/as
+	mkdir -p linux/install/usr/src/utils/as/output
+	cp sdk/src/as/*.c sdk/src/as/*.h linux/install/usr/src/utils/as
+	cp sdk/src/as/Makefile.sanos linux/install/usr/src/utils/as/Makefile
+	cp sdk/src/as/output/*.c sdk/src/as/output/*.h linux/install/usr/src/utils/as/output
+	mkdir -p linux/install/usr/src/utils/cc
+	cp sdk/src/cc/*.c sdk/src/cc/*.h sdk/src/cc/*.def linux/install/usr/src/utils/cc
+	cp sdk/src/cc/Makefile.sanos linux/install/usr/src/utils/cc/Makefile
+	mkdir -p linux/install/usr/src/utils/makedepend
+	cp sdk/src/makedepend/*.c sdk/src/makedepend/*.h linux/install/usr/src/utils/makedepend
+	cp sdk/src/makedepend/Makefile.sanos linux/install/usr/src/utils/makedepend/Makefile
+
+#
+# vmdk
+#
+
+vmdk: img/sanos.vmdk
+
+img/sanos.vmdk: sanos
+	echo "/ linux/install" > linux/disk.lst
+	$(MKDFS) -d img/sanos.vmdk -t vmdk -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 100M -i -f -S linux/image -F linux/disk.lst
+
+clean:
+	rm -rf linux
+	rm img/sanos.vmdk
+

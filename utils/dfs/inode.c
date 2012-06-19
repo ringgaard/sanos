@@ -1,6 +1,6 @@
-#include <windows.h>
-
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <time.h>
 
 #include "types.h"
@@ -30,10 +30,10 @@ void mark_inode_dirty(struct inode *inode)
   mark_buffer_updated(inode->buf);
 }
 
-blkno_t get_inode_block(struct inode *inode, unsigned int iblock)
+vfs_blkno_t get_inode_block(struct inode *inode, unsigned int iblock)
 {
   int d;
-  blkno_t block;
+  vfs_blkno_t block;
   struct buf *buf;
   unsigned int offsets[DFS_MAX_DEPTH];
 
@@ -43,7 +43,7 @@ blkno_t get_inode_block(struct inode *inode, unsigned int iblock)
   for (d = 1; d <= inode->desc->depth; d++)
   {
     buf = get_buffer(inode->fs->cache, block);
-    block = ((blkno_t *) buf->data)[offsets[d]];
+    block = ((vfs_blkno_t *) buf->data)[offsets[d]];
     release_buffer(inode->fs->cache, buf);
 
     if (!block) return -1;
@@ -52,12 +52,12 @@ blkno_t get_inode_block(struct inode *inode, unsigned int iblock)
   return block;
 }
 
-blkno_t set_inode_block(struct inode *inode, unsigned int iblock, blkno_t block)
+vfs_blkno_t set_inode_block(struct inode *inode, unsigned int iblock, vfs_blkno_t block)
 {
   int d;
   struct buf *buf;
-  blkno_t dirblock;
-  blkno_t goal;
+  vfs_blkno_t dirblock;
+  vfs_blkno_t goal;
   unsigned int offsets[DFS_MAX_DEPTH];
 
   goal = inode->ino / inode->fs->super->inodes_per_group * inode->fs->super->blocks_per_group;
@@ -101,13 +101,13 @@ blkno_t set_inode_block(struct inode *inode, unsigned int iblock, blkno_t block)
       // Get directory page for next level
       if (!buf) buf = get_buffer(inode->fs->cache, dirblock);
       goal = dirblock + 1;
-      dirblock = ((blkno_t *) buf->data)[offsets[d]];
+      dirblock = ((vfs_blkno_t *) buf->data)[offsets[d]];
 
       // Allocate directory page block if missing        
       if (dirblock == 0)
       {
         dirblock = new_block(inode->fs, goal);
-        ((blkno_t *) buf->data)[offsets[d]] = dirblock;
+        ((vfs_blkno_t *) buf->data)[offsets[d]] = dirblock;
         mark_buffer_updated(buf);
 
         buf = alloc_buffer(inode->fs->cache, dirblock);
@@ -126,13 +126,13 @@ blkno_t set_inode_block(struct inode *inode, unsigned int iblock, blkno_t block)
     // Allocate new block near previous block or leaf directory page if requested
     if (block == -1) 
     {
-      block = new_block(inode->fs, offsets[d] == 0 ? dirblock + 1 : ((blkno_t *) buf->data)[offsets[d] - 1] + 1);
+      block = new_block(inode->fs, offsets[d] == 0 ? dirblock + 1 : ((vfs_blkno_t *) buf->data)[offsets[d] - 1] + 1);
       inode->desc->blocks++;
       mark_inode_dirty(inode);
     }
 
     // Update leaf with new block
-    ((blkno_t *) buf->data)[offsets[d]] = block;
+    ((vfs_blkno_t *) buf->data)[offsets[d]] = block;
     mark_buffer_updated(buf);
     release_buffer(inode->fs->cache, buf);
   }
@@ -142,12 +142,12 @@ blkno_t set_inode_block(struct inode *inode, unsigned int iblock, blkno_t block)
 
 struct inode *alloc_inode(struct inode *parent, int mode)
 {
-  ino_t ino;
+  vfs_ino_t ino;
   struct inode *inode;
   unsigned int group;
   unsigned int block;
 
-  ino = new_inode(parent->fs, parent->ino, S_ISDIR(mode));
+  ino = new_inode(parent->fs, parent->ino, VFS_S_ISDIR(mode));
   if (ino == -1) return NULL; 
 
   inode = (struct inode *) malloc(sizeof(struct inode));
@@ -189,7 +189,7 @@ int unlink_inode(struct inode *inode)
   return 0;
 }
 
-struct inode *get_inode(struct filsys *fs, ino_t ino)
+struct inode *get_inode(struct filsys *fs, vfs_ino_t ino)
 {
   struct inode *inode;
   unsigned int group;
@@ -216,7 +216,7 @@ void release_inode(struct inode *inode)
   free(inode);
 }
 
-blkno_t expand_inode(struct inode *inode)
+vfs_blkno_t expand_inode(struct inode *inode)
 {
   unsigned int maxblocks;
   unsigned int dirblock;
@@ -236,7 +236,7 @@ blkno_t expand_inode(struct inode *inode)
     memset(buf->data, 0, inode->fs->blocksize);
     for (i = 0; i < DFS_TOPBLOCKDIR_SIZE; i++)
     {
-      ((blkno_t *) buf->data)[i] = inode->desc->blockdir[i];
+      ((vfs_blkno_t *) buf->data)[i] = inode->desc->blockdir[i];
       inode->desc->blockdir[i] = 0;
     }
 
@@ -253,7 +253,7 @@ blkno_t expand_inode(struct inode *inode)
   return set_inode_block(inode, inode->desc->blocks, -1);
 }
 
-static void remove_blocks(struct filsys *fs, blkno_t *blocks, int count)
+static void remove_blocks(struct filsys *fs, vfs_blkno_t *blocks, int count)
 {
   int i;
 
@@ -261,7 +261,7 @@ static void remove_blocks(struct filsys *fs, blkno_t *blocks, int count)
   {
     for (i = 0; i < count; i++) invalidate_buffer(fs->cache, blocks[i]);
     free_blocks(fs, blocks, count);
-    memset(blocks, 0, sizeof(blkno_t) * count);
+    memset(blocks, 0, sizeof(vfs_blkno_t) * count);
   }
 }
 
@@ -271,7 +271,7 @@ int truncate_inode(struct inode *inode, unsigned int blocks)
   unsigned int iblock;
   unsigned int blocksleft;
   unsigned int count;
-  blkno_t blk;
+  vfs_blkno_t blk;
   unsigned int offsets[DFS_MAX_DEPTH];
   struct buf *buf[DFS_MAX_DEPTH];
 
@@ -310,7 +310,7 @@ int truncate_inode(struct inode *inode, unsigned int blocks)
         if (buf[d]) release_buffer(inode->fs->cache, buf[d]);
         buf[d] = get_buffer(inode->fs->cache, blk);
       }
-      blk = ((blkno_t *) buf[d]->data)[offsets[d]];
+      blk = ((vfs_blkno_t *) buf[d]->data)[offsets[d]];
     }
 
     d = inode->desc->depth;
@@ -318,7 +318,7 @@ int truncate_inode(struct inode *inode, unsigned int blocks)
     {
       // Remove all blocks in leaf directory page and free it
       count = offsets[d] + 1;
-      remove_blocks(inode->fs, (blkno_t *) buf[d]->data, count);
+      remove_blocks(inode->fs, (vfs_blkno_t *) buf[d]->data, count);
       free_blocks(inode->fs, &(buf[d]->blkno), 1);
       mark_buffer_invalid(buf[d]);
 
@@ -329,7 +329,7 @@ int truncate_inode(struct inode *inode, unsigned int blocks)
       // Remove internal directory pages
       while (--d > 0)
       {
-        ((blkno_t *) buf[d]->data)[offsets[d]] = 0;
+        ((vfs_blkno_t *) buf[d]->data)[offsets[d]] = 0;
         if (offsets[d] == 0)
         {
           free_blocks(inode->fs, &(buf[d]->blkno), 1);
@@ -352,7 +352,7 @@ int truncate_inode(struct inode *inode, unsigned int blocks)
     else
     {
       // Remove range of blocks in leaf directory page
-      remove_blocks(inode->fs, (blkno_t *) buf[d]->data + offsets[d] + 1 - blocksleft, blocksleft);
+      remove_blocks(inode->fs, (vfs_blkno_t *) buf[d]->data + offsets[d] + 1 - blocksleft, blocksleft);
       mark_buffer_updated(buf[d]);
 
       iblock -= blocksleft;

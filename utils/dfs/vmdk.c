@@ -24,14 +24,19 @@
 // THE SOFTWARE.
 //
 
-#include <windows.h>
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #include "blockdev.h"
+
+#ifdef WIN32
+#include <io.h>
+#include <windows.h>
+#endif
 
 #define VMDK3_MAGIC (('D' << 24) | ('W' << 16) | ('O' << 8) | 'C')
 #define VMDK4_MAGIC (('V' << 24) | ('M' << 16) | ('D' << 8) | 'K')
@@ -75,7 +80,7 @@ struct vmdk4header
 
 struct vmdkdev
 {
-  HANDLE hdev;
+  int fd;
   int64_t l1_table_offset;
   int64_t l1_backup_table_offset;
   uint32_t *l1_table;
@@ -90,6 +95,37 @@ struct vmdkdev
 
   unsigned int cluster_sectors;
 };
+
+static int64_t seek(int fd, int64_t pos)
+{
+#ifdef WIN32
+  return _lseeki64(fd, pos, SEEK_SET);
+#else
+  return lseek(fd, pos, SEEK_SET);
+#endif
+}
+
+static int64_t filesize(int fd)
+{
+#ifdef WIN32
+  return _filelengthi64(fd);
+#else
+  struct stat st;
+  if (fstat(fd, &st) == -1) return -1;
+  return st.st_size;
+#endif
+}
+
+static void set_eof(int fd)
+{
+#ifdef WIN32
+  HANDLE hfile = (HANDLE) _get_osfhandle(fd);
+  SetEndOfFile(hfile);
+#else
+  lseek(fd, -1, SEEK_CUR);
+  write(fd, "", 1);
+#endif
+}
 
 static int vmdk_probe(const uint8_t *buf, int buf_size, const char *filename)
 {
@@ -106,22 +142,20 @@ static int vmdk_probe(const uint8_t *buf, int buf_size, const char *filename)
 static int vmdk_open(struct blockdevice *bs, const char *filename)
 {
   struct vmdkdev *s = bs->opaque;
-  HANDLE hdev;
-  DWORD bytes;
+  int fd;
   uint32_t magic;
   int l1_size;
 
+  fd = open(filename, O_RDWR | O_BINARY);
+  if (fd == -1) return -1;
 
-  hdev = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-  if (hdev == INVALID_HANDLE_VALUE) return -1;
-
-  if (!ReadFile(hdev, &magic, sizeof(magic), &bytes, NULL) || bytes != sizeof(magic)) goto fail;
+  if (read(fd, &magic, sizeof(magic)) != sizeof(magic)) goto fail;
 
   if (magic == VMDK3_MAGIC) 
   {
     struct vmdk3header header;
 
-    if (!ReadFile(hdev, &header, sizeof(header), &bytes, NULL) || bytes != sizeof(header)) goto fail;
+    if (read(fd, &header, sizeof(header)) != sizeof(header)) goto fail;
     s->cluster_sectors = header.granularity;
     s->l2_size = 1 << 9;
     s->l1_size = 1 << 6;
@@ -134,7 +168,7 @@ static int vmdk_open(struct blockdevice *bs, const char *filename)
   {
     struct vmdk4header header;
     
-    if (!ReadFile(hdev, &header, sizeof(header), &bytes, NULL) || bytes != sizeof(header)) goto fail;
+    if (read(fd, &header, sizeof(header)) != sizeof(header)) goto fail;
     bs->total_sectors = (int) header.capacity;
     s->cluster_sectors = (unsigned int) header.granularity;
     s->l2_size = header.num_gtes_per_gte;
@@ -152,29 +186,29 @@ static int vmdk_open(struct blockdevice *bs, const char *filename)
   s->l1_table = malloc(l1_size);
   if (!s->l1_table) goto fail;
 
-  if (SetFilePointerEx(hdev, *(LARGE_INTEGER*) &s->l1_table_offset, NULL, FILE_BEGIN) == -1) goto fail;
-  if (!ReadFile(hdev, s->l1_table, l1_size, &bytes, NULL)) goto fail;
+  if (seek(fd, s->l1_table_offset) == -1) goto fail;
+  if (read(fd, s->l1_table, l1_size) != l1_size) goto fail;
 
-  if (s->l1_backup_table_offset) 
+  if (s->l1_backup_table_offset)
   {
     s->l1_backup_table = malloc(l1_size);
     if (!s->l1_backup_table) goto fail;
 
-    if (SetFilePointerEx(hdev, *(LARGE_INTEGER*) &s->l1_backup_table_offset, NULL, FILE_BEGIN) == -1) goto fail;
-    if (!ReadFile(hdev, s->l1_backup_table, l1_size, &bytes, NULL)) goto fail;
+    if (seek(fd, s->l1_backup_table_offset) == -1) goto fail;
+    if (read(fd, s->l1_backup_table, l1_size) != l1_size) goto fail;
   }
 
   s->l2_cache = malloc(s->l2_size * L2_CACHE_SIZE * sizeof(uint32_t));
   if (!s->l2_cache) goto fail;
   memset(s->l2_cache, 0, s->l2_size * L2_CACHE_SIZE * sizeof(uint32_t));
-  s->hdev = hdev;
+  s->fd = fd;
   return 0;
 
 fail:
   if (s->l1_backup_table) free(s->l1_backup_table);
   if (s->l1_table) free(s->l1_table);
   if (s->l2_cache) free(s->l2_cache);
-  CloseHandle(hdev);
+  close(fd);
   return -1;
 }
 
@@ -185,7 +219,6 @@ static uint64_t get_cluster_offset(struct blockdevice *bs, uint64_t offset, int 
   int min_index, i, j;
   uint32_t min_count, *l2_table, tmp;
   uint64_t cluster_offset, pos;
-  DWORD bytes;
   
   l1_index = (unsigned int) (offset >> 9) / s->l1_entry_sectors;
   if (l1_index >= s->l1_size) return 0;
@@ -221,8 +254,8 @@ static uint64_t get_cluster_offset(struct blockdevice *bs, uint64_t offset, int 
   }
   l2_table = s->l2_cache + (min_index * s->l2_size);
   pos = l2_offset * 512;
-  SetFilePointerEx(s->hdev, *(LARGE_INTEGER*) &pos, NULL, FILE_BEGIN);
-  if (!ReadFile(s->hdev, l2_table, s->l2_size * sizeof(uint32_t), &bytes, NULL) || bytes != s->l2_size * sizeof(uint32_t)) return 0;
+  seek(s->fd, pos);
+  if (read(s->fd, l2_table, s->l2_size * sizeof(uint32_t)) != s->l2_size * sizeof(uint32_t)) return 0;
   s->l2_cache_offsets[min_index] = l2_offset;
   s->l2_cache_counts[min_index] = 1;
 
@@ -232,26 +265,26 @@ found:
   if (!cluster_offset) 
   {
     if (!allocate) return 0;
-    GetFileSizeEx(s->hdev, (LARGE_INTEGER *) &cluster_offset);
+    cluster_offset = filesize(s->fd);
     pos = cluster_offset + (s->cluster_sectors << 9);
-    SetFilePointerEx(s->hdev, *(LARGE_INTEGER*) &pos, NULL, FILE_BEGIN);
-    SetEndOfFile(s->hdev);
+    seek(s->fd, pos);
+    set_eof(s->fd);
     cluster_offset >>= 9;
 
     // Update L2 table
     tmp = (uint32_t) cluster_offset;
     l2_table[l2_index] = tmp;
     pos = ((int64_t)l2_offset * 512) + (l2_index * sizeof(tmp));
-    SetFilePointerEx(s->hdev, *(LARGE_INTEGER*) &pos, NULL, FILE_BEGIN);
-    if (!WriteFile(s->hdev, &tmp, sizeof(tmp), &bytes, NULL) || bytes != sizeof(tmp)) return 0;
+    seek(s->fd, pos);
+    if (write(s->fd, &tmp, sizeof(tmp)) != sizeof(tmp)) return 0;
 
     // Update backup L2 table
     if (s->l1_backup_table_offset != 0) 
     {
       l2_offset = s->l1_backup_table[l1_index];
       pos = ((int64_t)l2_offset * 512) + (l2_index * sizeof(tmp));
-      SetFilePointerEx(s->hdev, *(LARGE_INTEGER*) &pos, NULL, FILE_BEGIN);
-      if (!WriteFile(s->hdev, &tmp, sizeof(tmp), &bytes, NULL) || bytes != sizeof(tmp)) return 0;
+      seek(s->fd, pos);
+      if (write(s->fd, &tmp, sizeof(tmp)) != sizeof(tmp)) return 0;
     }
   }
 
@@ -279,7 +312,6 @@ static int vmdk_read(struct blockdevice *bs, int64_t sector_num, uint8_t *buf, i
   struct vmdkdev *s = bs->opaque;
   int index_in_cluster, n;
   uint64_t cluster_offset, pos;
-  DWORD bytes;
   
   while (nb_sectors > 0) 
   {
@@ -294,8 +326,8 @@ static int vmdk_read(struct blockdevice *bs, int64_t sector_num, uint8_t *buf, i
     else 
     {
       pos = cluster_offset + index_in_cluster * 512;
-      SetFilePointerEx(s->hdev, *(LARGE_INTEGER*) &pos, NULL, FILE_BEGIN);
-      if (!ReadFile(s->hdev, buf, n * 512, &bytes, NULL) || bytes != n * 512) return -1;
+      seek(s->fd, pos);
+      if (read(s->fd, buf, n * 512) != n * 512) return -1;
     }
     nb_sectors -= n;
     sector_num += n;
@@ -310,7 +342,6 @@ static int vmdk_write(struct blockdevice *bs, int64_t sector_num,  const uint8_t
   struct vmdkdev *s = bs->opaque;
   int index_in_cluster, n;
   uint64_t cluster_offset, pos;
-  DWORD bytes;
 
   while (nb_sectors > 0) 
   {
@@ -320,8 +351,8 @@ static int vmdk_write(struct blockdevice *bs, int64_t sector_num,  const uint8_t
     cluster_offset = get_cluster_offset(bs, sector_num << 9, 1);
     if (!cluster_offset) return -1;
     pos = cluster_offset + index_in_cluster * 512;
-    SetFilePointerEx(s->hdev, *(LARGE_INTEGER*) &pos, NULL, FILE_BEGIN);
-    if (!WriteFile(s->hdev, buf, n * 512, &bytes, NULL) || bytes != n * 512) return -1;
+    seek(s->fd, pos);
+    if (write(s->fd, buf, n * 512) != n * 512) return -1;
     nb_sectors -= n;
     sector_num += n;
     buf += n * 512;
@@ -332,8 +363,7 @@ static int vmdk_write(struct blockdevice *bs, int64_t sector_num,  const uint8_t
 
 static int vmdk_create(const char *filename, int64_t total_size, int flags)
 {
-  HANDLE hdev;
-  DWORD bytes;
+  int fd;
   int64_t pos;
   uint32_t i;
   struct vmdk4header header;
@@ -359,8 +389,8 @@ static int vmdk_create(const char *filename, int64_t total_size, int flags)
   char desc[1024];
   const char *real_filename, *temp_str;
 
-  hdev = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
-  if (hdev == INVALID_HANDLE_VALUE) return -1;
+  fd = open(filename, O_CREAT | O_RDWR | O_BINARY, S_IREAD | S_IWRITE);
+  if (fd == -1) return -1;
   magic = VMDK4_MAGIC;
   memset(&header, 0, sizeof(header));
   header.version = 1;
@@ -395,27 +425,27 @@ static int vmdk_create(const char *filename, int64_t total_size, int flags)
   header.check_bytes[3] = 0xa;
   
   // Write all the data
-  WriteFile(hdev, &magic, sizeof(magic), &bytes, NULL);
-  WriteFile(hdev, &header, sizeof(header), &bytes, NULL);
+  write(fd, &magic, sizeof(magic));
+  write(fd, &header, sizeof(header));
 
   pos = header.grain_offset << 9;
-  SetFilePointerEx(hdev, *(LARGE_INTEGER*) &pos, NULL, FILE_BEGIN);
-  SetEndOfFile(hdev);
+  seek(fd, pos);
+  set_eof(fd);
 
   // Write grain directory
   pos = header.rgd_offset << 9;
-  SetFilePointerEx(hdev, *(LARGE_INTEGER*) &pos, NULL, FILE_BEGIN);
+  seek(fd, pos);
   for (i = 0, tmp = (uint32_t) header.rgd_offset + gd_size; i < gt_count; i++, tmp += gt_size)
   {
-    WriteFile(hdev, &tmp, sizeof(tmp), &bytes, NULL);
+    write(fd, &tmp, sizeof(tmp));
   }
   
   // Write backup grain directory
   pos = header.gd_offset << 9;
-  SetFilePointerEx(hdev, *(LARGE_INTEGER*) &pos, NULL, FILE_BEGIN);
+  seek(fd, pos);
   for (i = 0, tmp = (uint32_t) header.gd_offset + gd_size; i < gt_count; i++, tmp += gt_size)
   {
-    WriteFile(hdev, &tmp, sizeof(tmp), &bytes, NULL);
+    write(fd, &tmp, sizeof(tmp));
   }
 
   // Compose the descriptor
@@ -427,10 +457,10 @@ static int vmdk_create(const char *filename, int64_t total_size, int flags)
 
   // Write the descriptor
   pos = header.desc_offset << 9;
-  SetFilePointerEx(hdev, *(LARGE_INTEGER*) &pos, NULL, FILE_BEGIN);
-  WriteFile(hdev, desc, strlen(desc), &bytes, NULL);
+  seek(fd, pos);
+  write(fd, desc, strlen(desc));
 
-  CloseHandle(hdev);
+  close(fd);
   return 0;
 }
 
@@ -439,7 +469,7 @@ static void vmdk_close(struct blockdevice *bs)
   struct vmdkdev *s = bs->opaque;
   free(s->l1_table);
   free(s->l2_cache);
-  CloseHandle(s->hdev);
+  close(s->fd);
 }
 
 struct blockdriver bdrv_vmdk =

@@ -1,7 +1,20 @@
-#include <windows.h>
-
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+
+#ifdef WIN32
+#include <direct.h>
+#include <io.h>
+#include <windows.h>
+#endif
+
+#ifdef __linux__
+#include <dirent.h>
+#endif
 
 #include "getopt.h"
 #include "blockdev.h"
@@ -12,6 +25,11 @@
 #include "vfs.h"
 #include "dfs.h"
 #include "mbr.h"
+
+#ifdef WIN32
+#define S_IFMT _S_IFMT
+#define S_IFDIR _S_IFDIR
+#endif
 
 extern struct fs *mountlist;
 
@@ -59,21 +77,21 @@ void panic(char *reason)
   exit(1);
 }
 
-int dev_read(devno_t devno, void *buffer, size_t count, blkno_t blkno)
+int dev_read(vfs_devno_t devno, void *buffer, size_t count, vfs_blkno_t blkno)
 {
   struct blockdevice *blkdev = (struct blockdevice *) devno;
   if (bdrv_read(blkdev, blkno + part_offset, buffer, count / SECTORSIZE) < 0) panic("error reading from device"); 
   return count;
 }
 
-int dev_write(devno_t devno, void *buffer, size_t count, blkno_t blkno)
+int dev_write(vfs_devno_t devno, void *buffer, size_t count, vfs_blkno_t blkno)
 {
   struct blockdevice *blkdev = (struct blockdevice *) devno;
-  if (bdrv_write(blkdev, blkno + part_offset, buffer, count / SECTORSIZE) < 0) panic("error reading from device"); 
+  if (bdrv_write(blkdev, blkno + part_offset, buffer, count / SECTORSIZE) < 0) panic("error writing to device"); 
   return count;
 }
 
-unsigned int dev_getsize(devno_t devno)
+unsigned int dev_getsize(vfs_devno_t devno)
 {
   unsigned int size;
 
@@ -99,17 +117,25 @@ void clear_device(struct blockdevice *bs, int devsize)
   }
 }
 
+size_t filesize(int fd)
+{
+  struct stat st;
+  if (fstat(fd, &st) == -1) panic("cannot get file size");
+  return st.st_size;
+}
+
 void read_boot_sector(char *name)
 {
-  HANDLE hfile;
-  DWORD bytes;
+  int fd;
+  size_t bytes;
 
-  hfile = CreateFile(name, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
-  if (hfile == INVALID_HANDLE_VALUE) panic("unable to read boot sector");
+  fd = open(name, O_BINARY);
+  if (fd == -1) panic("unable to read boot sector");
 
-  ReadFile(hfile, bootsect, SECTORSIZE, &bytes, NULL);
+  bytes = read(fd, bootsect, SECTORSIZE);
+  if (bytes != SECTORSIZE) panic("bad bootsector");
 
-  CloseHandle(hfile);
+  close(fd);
 }
 
 void read_mbr(struct blockdevice *bs)
@@ -128,8 +154,8 @@ void read_mbr(struct blockdevice *bs)
 
 void install_loader()
 {
-  HANDLE hfile;
-  DWORD size;
+  int fd;
+  size_t size;
   size_t count;
   struct filsys *fs;
 
@@ -138,12 +164,13 @@ void install_loader()
   char *image;
 
   // Read loader
-  hfile = CreateFile(ldrfile, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
-  if (hfile == INVALID_HANDLE_VALUE) panic("unable to read os loader");
-  size = GetFileSize(hfile, NULL);
+  fd = open(ldrfile, O_BINARY);
+  if (fd == -1) panic("unable to read os loader");
+  size = filesize(fd);
   image = malloc(size);
-  ReadFile(hfile, image, size, &count, NULL);
-  CloseHandle(hfile);
+  count = read(fd, image, size);
+  close(fd);
+  if (count != size) panic("error reading os loader");
 
   // Patch kernel options into image
   if (krnlopts)
@@ -169,80 +196,66 @@ void install_loader()
   free(image);
 }
 
-unsigned int ft2time(FILETIME *ft)
-{
-  SYSTEMTIME st;
-  struct tm tm;
-
-  FileTimeToSystemTime(ft, &st);
-  tm.tm_year = st.wYear - 1900;
-  tm.tm_mon = st.wMonth - 1;
-  tm.tm_mday = st.wDay;
-  tm.tm_hour = st.wHour;
-  tm.tm_min = st.wMinute;
-  tm.tm_sec = st.wSecond;
-  tm.tm_isdst = 0;
-
-  return (int) mktime(&tm);
-}
-
 int isdir(char *filename)
 {
-  ULONG flags = GetFileAttributes(filename);
-  if (flags == (DWORD) -1) return 0;
-  return (flags & FILE_ATTRIBUTE_DIRECTORY) != 0;
+  struct stat st;
+  if (stat(filename, &st) == -1) 
+  {
+    perror(filename);
+    panic("cannot stat file");
+  }
+  return (st.st_mode & S_IFMT) == S_IFDIR;
 }
 
-void set_time(HANDLE hfile, struct file *f)
+void set_time(int fd, struct file *f)
 {
-  FILETIME ctime, atime, mtime;
-  struct utimbuf t;
+  struct stat st;
+  struct vfs_utimbuf t;
 
-  GetFileTime(hfile, &ctime, &atime, &mtime);
-  t.atime = ft2time(&atime);
-  t.ctime = ft2time(&ctime);
-  t.mtime = ft2time(&mtime);
-
-  if (futime(f, &t) < 0) panic("error setting file time");
+  fstat(fd, &st);
+  t.atime = st.st_atime;
+  t.ctime = st.st_ctime;
+  t.mtime = st.st_mtime;
+  if (vfs_futime(f, &t) < 0) panic("error setting file time");
 }
 
 void install_kernel()
 {
-  HANDLE hfile;
-  DWORD size;
+  int fd;
+  size_t size;
   size_t count;
 
   struct file *file;
   char buf[4096];
 
-  hfile = CreateFile(krnlfile, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
-  size = GetFileSize(hfile, NULL);
+  fd = open(krnlfile, O_BINARY);
+  size = filesize(fd);
 
-  mkdir("/boot", 0755);
-  file = open("/boot/krnl.dll", O_SPECIAL | (DFS_INODE_KERNEL << 24) | O_WRONLY, 0644);
+  vfs_mkdir("/boot", 0755);
+  file = vfs_open("/boot/krnl.dll", VFS_O_SPECIAL | (DFS_INODE_KERNEL << 24) | O_WRONLY, 0644);
   if (file == NULL) panic("error creating kernel file");
 
-  ReadFile(hfile, buf, 4096, &count, NULL);
+  count = read(fd, buf, 4096);
   while (count > 0)
   {
-    write(file, buf, count);
-    ReadFile(hfile, buf, 4096, &count, NULL);
+    vfs_write(file, buf, count);
+    count = read(fd, buf, 4096);
   }
   
-  set_time(hfile, file);
-  close(file);
-  CloseHandle(hfile);
+  set_time(fd, file);
+  vfs_close(file);
+  close(fd);
 }
 
 void make_directory(char *dirname)
 {
-  mkdir(dirname, 0755);
+  vfs_mkdir(dirname, 0755);
 }
 
 void transfer_file(char *dstfn, char *srcfn)
 {
-  HANDLE hfile;
-  DWORD size;
+  int fd;
+  size_t size;
   size_t count;
 
   struct file *file;
@@ -250,29 +263,30 @@ void transfer_file(char *dstfn, char *srcfn)
   char *ext;
   int executable = 0;
 
-  hfile = CreateFile(srcfn, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
-  size = GetFileSize(hfile, NULL);
+  fd = open(srcfn, O_BINARY);
+  size = filesize(fd);
 
   ext = dstfn + strlen(dstfn) - 1;
   while (ext > dstfn && *ext != '.' && *ext != PS1 && *ext != PS2) ext--;
   if (strcmp(ext, ".dll") == 0 || strcmp(ext, ".exe") == 0) executable = 1;
 
-  file = open(dstfn, O_CREAT, executable ? 0755 : 0644);
+  file = vfs_open(dstfn, VFS_O_CREAT, executable ? 0755 : 0644);
 
   printf("%s -> %s (%d bytes)\n", srcfn, dstfn, size);
 
-  ReadFile(hfile, buf, 4096, &count, NULL);
+  count = read(fd, buf, 4096);
   while (count > 0)
   {
-    write(file, buf, count);
-    ReadFile(hfile, buf, 4096, &count, NULL);
+    vfs_write(file, buf, count);
+    count = read(fd, buf, 4096);
   }
   
-  set_time(hfile, file);
-  close(file);
-  CloseHandle(hfile);
+  set_time(fd, file);
+  vfs_close(file);
+  close(fd);
 }
 
+#ifdef WIN32
 void transfer_files(char *dstdir, char *srcdir)
 {
   WIN32_FIND_DATA finddata;
@@ -312,6 +326,39 @@ void transfer_files(char *dstdir, char *srcdir)
 
   FindClose(hfind);
 }
+#else
+void transfer_files(char *dstdir, char *srcdir)
+{
+  char srcfn[255];
+  char dstfn[255];
+  struct dirent *dp;
+
+  DIR *dir = opendir(srcdir);
+  if (dir == NULL) return;
+  while ((dp = readdir(dir)) != NULL) 
+  {
+    strcpy(srcfn, srcdir);
+    strcat(srcfn, "/");
+    strcat(srcfn, dp->d_name);
+
+    strcpy(dstfn, dstdir);
+    strcat(dstfn, "/");
+    strcat(dstfn, dp->d_name);
+
+    if (isdir(srcfn))
+    {
+      if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)
+      {
+        make_directory(dstfn);
+        transfer_files(dstfn, srcfn);
+      }
+    }
+    else
+      transfer_file(dstfn, srcfn);
+  }
+  closedir(dir);
+}
+#endif
 
 void process_filelist(FILE *f)
 {
@@ -368,27 +415,6 @@ void process_filelist(FILE *f)
         transfer_file(dst, src);
     }
   }
-}
-
-void list_file(char *filename)
-{
-  size_t count;
-  char buf[4096];
-  struct file *file;
-
-  file = open(filename, 0, 0);
-  if (!file)
-  {
-    printf("%s: file not found\n", filename);
-    return;
-  }
-
-  while ((count = read(file, buf, 4096)) > 0)
-  {
-    fwrite(buf, 1, count, stdout);
-  }
-
-  close(file);
 }
 
 void usage()
@@ -564,12 +590,12 @@ int main(int argc, char **argv)
 
     sprintf(options, "blocksize=%d,inoderatio=%d%s", blocksize, inoderatio, quick ? ",quick" : "");
     printf("Formating device (%s)...\n", options);
-    if (format((devno_t) &blkdev, "dfs", options) < 0) panic("error formatting device");
+    if (vfs_format((vfs_devno_t) &blkdev, "dfs", options) < 0) panic("error formatting device");
   }
 
   // Initialize the file system
   printf("Mounting device\n");
-  if (mount("dfs", "/", (devno_t) &blkdev, NULL) < 0) panic("error mounting device");
+  if (vfs_mount("dfs", "/", (vfs_devno_t) &blkdev, NULL) < 0) panic("error mounting device");
 
   // Install os loader
   if (ldrfile) 
@@ -594,7 +620,7 @@ int main(int argc, char **argv)
     read_boot_sector(bootfile);
     bsect->ldrstart += part_start;
     bsect->ldrsize = ldrsize;
-    dev_write((devno_t) &blkdev, bootsect, SECTORSIZE, 0);
+    dev_write((vfs_devno_t) &blkdev, bootsect, SECTORSIZE, 0);
   }
 
   // Copy files to device
@@ -612,7 +638,7 @@ int main(int argc, char **argv)
     }
     else
     {
-      if (source) SetCurrentDirectory(source);
+      if (source) chdir(source);
       process_filelist(f);
       fclose(f);
     }
@@ -630,7 +656,7 @@ int main(int argc, char **argv)
 
   // Close file system
   printf("Unmounting device\n");
-  unmount_all();
+  vfs_unmount_all();
 
   // Close device file
   printf("Closing device\n");

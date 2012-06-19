@@ -8,17 +8,17 @@
 
 #define NAME_ALIGN_LEN(l) (((l) + 3) & ~3)
 
-ino_t find_dir_entry(struct inode *dir, char *name, int len)
+vfs_ino_t find_dir_entry(struct inode *dir, char *name, int len)
 {
   unsigned int block;
-  blkno_t blk;
+  vfs_blkno_t blk;
   struct buf *buf;
   char *p;
   struct dentry *de;
-  ino_t ino;
+  vfs_ino_t ino;
 
   if (len <= 0 || len >= MAXPATH) return -1;
-  if (!S_ISDIR(dir->desc->mode)) return -1;
+  if (!VFS_S_ISDIR(dir->desc->mode)) return -1;
 
   for (block = 0; block < dir->desc->blocks; block++)
   {
@@ -47,7 +47,7 @@ ino_t find_dir_entry(struct inode *dir, char *name, int len)
   return -1;
 }
 
-ino_t lookup_name(struct filsys *fs, ino_t ino, char *name, int len)
+vfs_ino_t lookup_name(struct filsys *fs, vfs_ino_t ino, char *name, int len)
 {
   char *p;
   int l;
@@ -92,7 +92,7 @@ struct inode *parse_name(struct filsys *fs, char **name, int *len)
 {
   char *start;
   char *p;
-  ino_t ino;
+  vfs_ino_t ino;
   struct inode *dir;
 
   if (*len == 0) return get_inode(fs, DFS_INODE_ROOT);
@@ -118,7 +118,7 @@ struct inode *parse_name(struct filsys *fs, char **name, int *len)
   dir = get_inode(fs, ino);
   if (!dir) return NULL;
 
-  if (!S_ISDIR(dir->desc->mode))
+  if (!VFS_S_ISDIR(dir->desc->mode))
   {
     release_inode(dir);
     return NULL;
@@ -129,10 +129,10 @@ struct inode *parse_name(struct filsys *fs, char **name, int *len)
   return dir;
 }
 
-int add_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
+int add_dir_entry(struct inode *dir, char *name, int len, vfs_ino_t ino)
 {
   unsigned int block;
-  blkno_t blk;
+  vfs_blkno_t blk;
   struct buf *buf;
   char *p;
   struct dentry *de;
@@ -140,7 +140,7 @@ int add_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
   int minlen;
 
   if (len <= 0 || len >= MAXPATH) return -1;
-  if (!S_ISDIR(dir->desc->mode)) return -1;
+  if (!VFS_S_ISDIR(dir->desc->mode)) return -1;
 
   for (block = 0; block < dir->desc->blocks; block++)
   {
@@ -202,17 +202,17 @@ int add_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
   return 0;
 }
 
-ino_t modify_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
+vfs_ino_t modify_dir_entry(struct inode *dir, char *name, int len, vfs_ino_t ino)
 {
   unsigned int block;
-  blkno_t blk;
+  vfs_blkno_t blk;
   struct buf *buf;
   char *p;
   struct dentry *de;
-  ino_t oldino;
+  vfs_ino_t oldino;
 
   if (len <= 0 || len >= MAXPATH) return -1;
-  if (!S_ISDIR(dir->desc->mode)) return -1;
+  if (!VFS_S_ISDIR(dir->desc->mode)) return -1;
 
   for (block = 0; block < dir->desc->blocks; block++)
   {
@@ -246,8 +246,8 @@ ino_t modify_dir_entry(struct inode *dir, char *name, int len, ino_t ino)
 int delete_dir_entry(struct inode *dir, char *name, int len)
 {
   unsigned int block;
-  blkno_t blk;
-  blkno_t lastblk;
+  vfs_blkno_t blk;
+  vfs_blkno_t lastblk;
   struct buf *buf;
   char *p;
   struct dentry *de;
@@ -255,7 +255,7 @@ int delete_dir_entry(struct inode *dir, char *name, int len)
   struct dentry *nextde;
 
   if (len <= 0 || len >= MAXPATH) return -1;
-  if (!S_ISDIR(dir->desc->mode)) return -1;
+  if (!VFS_S_ISDIR(dir->desc->mode)) return -1;
 
   for (block = 0; block < dir->desc->blocks; block++)
   {
@@ -324,13 +324,13 @@ int delete_dir_entry(struct inode *dir, char *name, int len)
 int read_dir(struct inode *dir, filldir_t filldir, void *data)
 {
   unsigned int block;
-  blkno_t blk;
+  vfs_blkno_t blk;
   struct buf *buf;
   char *p;
   struct dentry *de;
   int rc;
 
-  if (!S_ISDIR(dir->desc->mode)) return -1;
+  if (!VFS_S_ISDIR(dir->desc->mode)) return -1;
 
   for (block = 0; block < dir->desc->blocks; block++)
   {
@@ -363,7 +363,7 @@ int dfs_opendir(struct file *filp, char *name)
 {
   struct filsys *fs;
   int len;
-  ino_t ino;
+  vfs_ino_t ino;
   struct inode *inode;
 
   fs = (struct filsys *) filp->fs->data;
@@ -375,7 +375,7 @@ int dfs_opendir(struct file *filp, char *name)
   inode = get_inode(fs, ino);
   if (!inode) return -1;
 
-  if (!S_ISDIR(inode->desc->mode))
+  if (!VFS_S_ISDIR(inode->desc->mode))
   {
     release_inode(inode);
     return -1;
@@ -385,12 +385,12 @@ int dfs_opendir(struct file *filp, char *name)
   return 0;
 }
 
-int dfs_readdir(struct file *filp, struct dirent *dirp, int count)
+int dfs_readdir(struct file *filp, struct vfs_dirent *dirp, int count)
 {
   unsigned int iblock;
   unsigned int start;
   struct inode *inode;
-  blkno_t blk;
+  vfs_blkno_t blk;
   struct buf *buf;
   struct dentry *de;
 

@@ -72,8 +72,10 @@
 #define find_section ___tcc_findsection
 #define parse_args __tcc_parse_args
 
+#ifndef __linux__
 #define PAGE_EXECUTE_READWRITE  0x40
 osapi int mprotect(void *addr, unsigned long size, int protect);
+#endif
 
 #endif
 
@@ -1026,7 +1028,11 @@ void *resolve_sym(TCCState *s1, const char *symbol, int type)
 
 void *resolve_sym(TCCState *s1, const char *sym, int type)
 {
+#ifdef __linux
+    return NULL;
+#else
     return dlsym(RTLD_DEFAULT, sym);
+#endif
 }
 
 #endif
@@ -1140,7 +1146,9 @@ char *w32_tcc_lib_path(void)
 void set_pages_executable(void *ptr, unsigned long length)
 {
 #ifdef SANOS
+#ifndef __linux__
     mprotect(ptr, length, PAGE_EXECUTE_READWRITE);
+#endif
 #else
 #ifdef _WIN32
     unsigned long old_protect;
@@ -1302,6 +1310,7 @@ Section *new_section(TCCState *s1, const char *name, int sh_type, int sh_flags)
     case SHT_DYNSYM:
     case SHT_SYMTAB:
     case SHT_DYNAMIC:
+    case SHT_PROGBITS:
         sec->sh_addralign = 4;
         break;
     case SHT_STRTAB:
@@ -6223,9 +6232,9 @@ static int type_size(CType *type, int *a)
         *a = LDOUBLE_ALIGN;
         return LDOUBLE_SIZE;
     } else if (bt == VT_DOUBLE || bt == VT_LLONG) {
-#ifdef SANOS
+#if defined(SANOS)
         *a = 8; 
-#elif TCC_TARGET_I386
+#elif defined(TCC_TARGET_I386)
         *a = 4;
 #elif defined(TCC_TARGET_ARM)
 #ifdef TCC_ARM_EABI
@@ -9594,6 +9603,7 @@ static void decl(int l)
                     cur_text_section = ad.section;
                     if (!cur_text_section)
                         cur_text_section = text_section;
+                    cur_text_section->sh_flags |= SHF_EXECINSTR;
                     sym->r = VT_SYM | VT_CONST;
                     gen_function(sym);
                 }
