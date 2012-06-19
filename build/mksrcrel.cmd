@@ -3,7 +3,7 @@ if not exist %1\build mkdir %1\build
 if not exist %1\src mkdir %1\src
 if not exist %1\sdk mkdir %1\sdk
 if not exist %1\sdk\src mkdir %1\sdk\src
-if not exist %1\sdk\src\as mkdir %1\sdk\src\as
+if not exist %1\sdk\src\as\output mkdir %1\sdk\src\as\output
 if not exist %1\sdk\src\cc mkdir %1\sdk\src\cc
 if not exist %1\sdk\src\libc mkdir %1\sdk\src\libc
 if not exist %1\sdk\src\makedepend mkdir %1\sdk\src\makedepend
@@ -36,6 +36,7 @@ copy build\sanos.dep %1\build
 xcopy src %1\src /s /exclude:build\exclrel.lst
 
 copy sdk\src\as\* %1\sdk\src\as
+copy sdk\src\as\output\* %1\sdk\src\as\output
 copy sdk\src\cc\* %1\sdk\src\cc
 copy sdk\src\libc\* %1\sdk\src\libc
 copy sdk\src\makedepend\* %1\sdk\src\makedepend
