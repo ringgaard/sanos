@@ -254,8 +254,7 @@ KRNL_LIB_SRCS=\
 KERNEL_SRCS=$(KRNL_SRCS) $(DEV_SRCS) $(NET_SRCS) $(FS_SRCS) $(KRNL_LIB_SRCS)
 
 linux/install/boot/krnl.dll $(LIB_KRNL): $(KERNEL_SRCS)
-	$(TCC) -shared -entry _start@12 -fixed 0x80000000 -filealign 4096 -nostdlib -o linux/install/boot/krnl.dll -D KERNEL -D KRNL_LIB $(KERNEL_SRCS) $(TCCFLAGS)
-	mv linux/install/boot/krnl.def $(LIB_KRNL)
+	$(TCC) -shared -entry _start@12 -fixed 0x80000000 -filealign 4096 -nostdlib -o linux/install/boot/krnl.dll -def $(LIB_KRNL) -D KERNEL -D KRNL_LIB $(KERNEL_SRCS) $(TCCFLAGS)
 
 #
 # drivers
@@ -273,35 +272,27 @@ drivers: \
 
 linux/install/boot/3c905c.sys: src/sys/dev/3c905c.c src/lib/string.c
 	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
-	rm linux/install/boot/3c905c.def
 
 linux/install/boot/eepro100.sys: src/sys/dev/eepro100.c src/lib/opts.c src/lib/string.c src/lib/strtol.c src/lib/ctype.c
 	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
-	rm linux/install/boot/eepro100.def
 
 linux/install/boot/ne2000.sys: src/sys/dev/ne2000.c src/lib/opts.c src/lib/string.c src/lib/strtol.c src/lib/ctype.c
 	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
-	rm linux/install/boot/ne2000.def
 
 linux/install/boot/pcnet32.sys: src/sys/dev/pcnet32.c src/lib/string.c src/lib/ctype.c
 	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
-	rm linux/install/boot/pcnet32.def
 
 linux/install/boot/rtl8139.sys: src/sys/dev/rtl8139.c src/lib/opts.c src/lib/string.c src/lib/strtol.c src/lib/ctype.c
 	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
-	rm linux/install/boot/rtl8139.def
 
 linux/install/boot/sis900.sys: src/sys/dev/sis900.c src/lib/opts.c src/lib/string.c src/lib/strtol.c src/lib/ctype.c
 	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
-	rm linux/install/boot/sis900.def
 
 linux/install/boot/tulip.sys: src/sys/dev/tulip.c src/lib/opts.c src/lib/string.c src/lib/strtol.c src/lib/ctype.c
 	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
-	rm linux/install/boot/tulip.def
 
 linux/install/boot/virtionet.sys: src/sys/dev/virtionet.c src/lib/string.c
 	$(TCC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $^ $(TCCFLAGS)
-	rm linux/install/boot/virtionet.def
 
 #
 # os
@@ -342,8 +333,7 @@ OS_LIB_SRCS= \
   src/lib/vsprintf.c
 
 linux/install/boot/os.dll $(LIB_OS): $(OS_SRCS) $(OS_LIB_SRCS) $(OBJ)/modf.o
-	$(TCC) -shared -entry _start@12 -fixed 0x7FF00000 -nostdlib -o linux/install/boot/os.dll $^ -D OS_LIB $(TCCFLAGS)
-	mv linux/install/boot/os.def $(LIB_OS)
+	$(TCC) -shared -entry _start@12 -fixed 0x7FF00000 -nostdlib -o linux/install/boot/os.dll -def $(LIB_OS) $^ -D OS_LIB $(TCCFLAGS)
 
 #
 # libc

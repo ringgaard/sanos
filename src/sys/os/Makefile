@@ -39,7 +39,7 @@ LIB_OBJS=modf.o
 all: os.dll
 
 os.dll: $(SRCS) $(LIB_SRCS) $(LIB_OBJS)
-    $(CC) -shared -entry _start@12 -fixed 0x7FF00000 -nostdlib -o os.dll $(SRCS) $(LIB_SRCS) $(LIB_OBJS) -D OS_LIB
+    $(CC) -shared -entry _start@12 -fixed 0x7FF00000 -nostdlib -o os.dll -def os.def $(SRCS) $(LIB_SRCS) $(LIB_OBJS) -D OS_LIB
 
 modf.o: /usr/src/lib/math/modf.asm
     $(AS) $** -o $@

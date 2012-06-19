@@ -507,6 +507,9 @@ struct TCCState {
     /* DOS stub */
     const char *stub;
 
+    /* DEF file */
+    const char *def_file;
+
     /* image base address for non-relocatable PE files */
     unsigned long imagebase;
 
@@ -10797,6 +10800,7 @@ void help(void)
            "  -fixed addr  set base address (and do not generate relocation info)\n"
            "  -filealign n alignment for sections in PE file\n"
            "  -stub file   set DOS stub for PE file\n"
+           "  -def file    generate import definition file for shared library\n"
            "  -static      static linking\n"
            "  -rdynamic    export all global symbols to dynamic linker\n"
            "  -r           generate (relocatable) object file\n"
@@ -10839,6 +10843,7 @@ enum {
     TCC_OPTION_fixed,
     TCC_OPTION_filealign,
     TCC_OPTION_stub,
+    TCC_OPTION_def,
     TCC_OPTION_o,
     TCC_OPTION_r,
     TCC_OPTION_Wl,
@@ -10880,6 +10885,7 @@ static const TCCOption tcc_options[] = {
     { "fixed", TCC_OPTION_fixed, TCC_OPTION_HAS_ARG },
     { "filealign", TCC_OPTION_filealign, TCC_OPTION_HAS_ARG },
     { "stub", TCC_OPTION_stub, TCC_OPTION_HAS_ARG },
+    { "def", TCC_OPTION_def, TCC_OPTION_HAS_ARG },
     { "o", TCC_OPTION_o, TCC_OPTION_HAS_ARG },
     { "run", TCC_OPTION_run, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "rdynamic", TCC_OPTION_rdynamic, 0 },
@@ -11067,6 +11073,9 @@ int parse_args(TCCState *s, int argc, char **argv)
                 break;
             case TCC_OPTION_stub:
                 s->stub = optarg; 
+                break;
+            case TCC_OPTION_def:
+                s->def_file = optarg; 
                 break;
             case TCC_OPTION_o:
                 multiple_files = 1;

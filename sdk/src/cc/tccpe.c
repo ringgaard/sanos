@@ -387,6 +387,7 @@ struct pe_info {
     Section *thunk;
     const char *filename;
     const char *stub;
+    const char *def;
     DWORD filealign;
     int type;
     DWORD sizeofheaders;
@@ -892,19 +893,17 @@ ST_FN void pe_build_exports(struct pe_info *pe)
     hdr->Name                   = str_o + rva_base;
     put_elf_str(pe->thunk, dllname);
 
-#if 1
-    /* automatically write exports to <output-filename>.def */
-    strcpy(buf, pe->filename);
-    strcpy(tcc_fileextension(buf), ".def");
-    op = fopen(buf, "w");
-    if (NULL == op) {
-        error_noabort("could not create '%s': %s", buf, strerror(errno));
-    } else {
-        fprintf(op, "LIBRARY %s\n\nEXPORTS\n", dllname);
-        if (verbose)
-            printf("<- %s (%d symbols)\n", buf, sym_count);
+    if (pe->def != NULL) {
+        /* write exports to .def file */
+        op = fopen(pe->def, "w");
+        if (NULL == op) {
+            error_noabort("could not create '%s': %s", pe->def, strerror(errno));
+        } else {
+            fprintf(op, "LIBRARY %s\n\nEXPORTS\n", dllname);
+            if (verbose)
+                printf("<- %s (%d symbols)\n", buf, sym_count);
+        }
     }
-#endif
 
     for (sp = sorted, ord = 0; ord < sym_count; ++ord, sp += 2)
     {
@@ -1559,6 +1558,7 @@ ST_FN void pe_add_runtime_ex(TCCState *s1, struct pe_info *pe)
         pe->type = pe_type;
         pe->start_addr = addr;
         pe->stub = s1->stub;
+        pe->def = s1->def_file;
         pe->filealign = s1->filealign;
     }
 }
