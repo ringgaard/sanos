@@ -709,6 +709,7 @@ linux/install/usr/bin/as.exe: $(AS_SRCFILES)
 	$(TCC) -o $@ $^ -I sdk/src/as $(TCCFLAGS) $(AS_CFLAGS)
 
 sdk-source:
+	mkdir -p img
 	mkdir -p linux/install/usr/src/utils/as
 	mkdir -p linux/install/usr/src/utils/as/output
 	cp sdk/src/as/*.c sdk/src/as/*.h linux/install/usr/src/utils/as
@@ -733,5 +734,5 @@ img/sanos.vmdk: sanos
 
 clean:
 	rm -rf linux
-	rm img/sanos.vmdk
+	rm -rf img
 
