@@ -10335,6 +10335,8 @@ TCCState *tcc_new(void)
 #else
     tcc_define_symbol(s, "__WCHAR_TYPE__", "int");
 #endif
+
+    tcc_define_symbol(s, "_TCC_PLATFORM", "\"" TCC_PLATFORM "\"");
     
 #ifndef TCC_TARGET_PE
     /* default library paths */

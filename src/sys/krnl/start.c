@@ -279,12 +279,12 @@ static int version_proc(struct proc_file *pf, void *arg)
     pprintf(pf, "%s version %d.%d.%d.%d", OS_NAME, OS_MAJ_VERS, OS_MIN_VERS, OS_RELEASE, OS_BUILD);
   }
 
-  pprintf(pf, " (%04d-%02d-%02d %02d:%02d:%02d)", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+  pprintf(pf, ", %04d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 #ifdef _MSC_VER
-  pprintf(pf, " (MSVC vers. %d.%02d)", _MSC_VER / 100, _MSC_VER % 100);
+  pprintf(pf, ", MSVC version %d.%02d on WIN32", _MSC_VER / 100, _MSC_VER % 100);
 #endif
 #ifdef _TCC_VER
-  pprintf(pf, " (TCC vers. %s)", _TCC_VER);
+  pprintf(pf, ", TCC version %s on %s", _TCC_VER, _TCC_PLATFORM);
 #endif
   pprintf(pf, "\n");
 
