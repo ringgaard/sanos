@@ -111,8 +111,7 @@
 // Drive geometry
 //
 
-struct fdgeometry
-{
+struct fdgeometry {
   char *name;
   unsigned char heads;         // Heads per drive (1.44M)
   unsigned char tracks;        // Number of tracks
@@ -124,8 +123,7 @@ struct fdgeometry
 // Result from FDC
 //
 
-struct fdresult
-{
+struct fdresult {
   unsigned char st0;
   unsigned char st1;
   unsigned char st2;
@@ -140,8 +138,7 @@ struct fdresult
 // Floppy Disk Controller
 //
 
-struct fdc
-{
+struct fdc {
   struct mutex lock;                   // Controller mutex
   struct event done;                   // Controller interrupt event
   struct interrupt intr;               // Interrupt object
@@ -161,8 +158,7 @@ struct fdc
 // Floppy Disk Drive
 //
 
-struct fd
-{
+struct fd {
   struct fdc *fdc;
   struct fdgeometry *geom;
   struct timer motortimer;
@@ -185,17 +181,14 @@ struct fd fddrives[NUMDRIVES];
 // fd_command
 //
 
-static int fd_command(unsigned char cmd)
-{
+static int fd_command(unsigned char cmd) {
   int msr;
   unsigned int tmo;
 
   tmo = ticks + 1*HZ;
-  while (1)
-  {
+  while (1) {
     msr = inp(FDC_MSR);
-    if ((msr & 0xc0) == 0x80)
-    {
+    if ((msr & 0xc0) == 0x80) {
       outp(FDC_DATA, cmd);
       return 0;
     }
@@ -212,14 +205,12 @@ static int fd_command(unsigned char cmd)
 // fd_data
 //
 
-static int fd_data()
-{
+static int fd_data() {
   int msr;
   unsigned int tmo;
 
   tmo = ticks + 5*HZ;
-  while (1)
-  {
+  while (1) {
     msr = inp(FDC_MSR);
     if ((msr & 0xd0) == 0xd0) return inp(FDC_DATA) & 0xFF;
     if (time_before(tmo, ticks)) break;
@@ -234,23 +225,20 @@ static int fd_data()
 // fd_result
 //
 
-static int fd_result(struct fd *fd, struct fdresult *result, int sensei)
-{
+static int fd_result(struct fd *fd, struct fdresult *result, int sensei) {
   unsigned char *status = (unsigned char *) result;
   int n;
   int data;
 
   // Read in command result bytes
   n = 0;
-  while (n < 7 && (inp(FDC_MSR) & (1 << 4)) != 0) 
-  {
+  while (n < 7 && (inp(FDC_MSR) & (1 << 4)) != 0) {
     data = fd_data();
     if (data < 0) return data;
     status[n++] = data;
   }
 
-  if (sensei) 
-  {
+  if (sensei) {
     // Send a "sense interrupt status" command
     fd_command(CMD_SENSEI);
     fd->st0 = fd_data();
@@ -267,8 +255,7 @@ static int fd_result(struct fd *fd, struct fdresult *result, int sensei)
 // fd_motor_timeout
 //
 
-static void fd_motor_timeout(void *arg)
-{
+static void fd_motor_timeout(void *arg) {
   struct fd *fd = (struct fd *) arg;
 
   //kprintf("fd: motor off\n");
@@ -283,19 +270,15 @@ static void fd_motor_timeout(void *arg)
 // fd_motor_on
 //
 
-static void fd_motor_on(struct fd *fd)
-{
-  if (fd->motor_status == FD_MOTOR_OFF)
-  {
+static void fd_motor_on(struct fd *fd) {
+  if (fd->motor_status == FD_MOTOR_OFF) {
     //kprintf("fd: motor on\n");
     fd->fdc->dor |= 0x10 << fd->drive;
     outp(FDC_DOR, fd->fdc->dor);
     fd->motor_status = FD_MOTOR_ON;
     msleep(FD_MOTOR_SPINUP_TIME);
     //kprintf("fd: motor spinned up\n");
-  }
-  else
-  {
+  } else {
     fd->motor_status = FD_MOTOR_ON;
   }
 }
@@ -304,10 +287,8 @@ static void fd_motor_on(struct fd *fd)
 // fd_motor_off
 //
 
-static void fd_motor_off(struct fd *fd)
-{
-  if (fd->motor_status == FD_MOTOR_ON)
-  {
+static void fd_motor_off(struct fd *fd) {
+  if (fd->motor_status == FD_MOTOR_ON) {
     fd->motor_status = FD_MOTOR_DELAY;
     mod_timer(&fd->motortimer, ticks + FD_MOTOR_TIMEOUT / MSECS_PER_TICK);
   }
@@ -317,8 +298,7 @@ static void fd_motor_off(struct fd *fd)
 // blk2ths
 //
 
-static void blk2ths(struct fd *fd, blkno_t blkno, unsigned char *track, unsigned char *head, unsigned char *sector)
-{
+static void blk2ths(struct fd *fd, blkno_t blkno, unsigned char *track, unsigned char *head, unsigned char *sector) {
   *track = blkno / (fd->geom->heads * fd->geom->spt);
   *head = (blkno / fd->geom->spt) % fd->geom->heads;
   *sector = blkno % fd->geom->spt + 1;
@@ -328,8 +308,7 @@ static void blk2ths(struct fd *fd, blkno_t blkno, unsigned char *track, unsigned
 // fd_recalibrate
 //
 
-static int fd_recalibrate(struct fd *fd)
-{
+static int fd_recalibrate(struct fd *fd) {
   struct fdresult result;
 
   kprintf("fd: recalibrate\n");
@@ -337,8 +316,7 @@ static int fd_recalibrate(struct fd *fd)
   fd_command(CMD_RECAL);
   fd_command(0x00);
 
-  if (wait_for_object(&fd->fdc->done, FD_RECAL_TIMEOUT) < 0) 
-  {
+  if (wait_for_object(&fd->fdc->done, FD_RECAL_TIMEOUT) < 0) {
     kprintf(KERN_WARNING "fd: timeout waiting for calibrate to complete\n");
     return -ETIMEOUT;
   }
@@ -352,8 +330,7 @@ static int fd_recalibrate(struct fd *fd)
 // fd_initialize
 //
 
-static int fd_initialize(struct fd *fd)
-{
+static int fd_initialize(struct fd *fd) {
   // Specify drive timings
   fd_command(CMD_SPECIFY);
   fd_command(0xdf);  // SRT = 3ms, HUT = 240ms 
@@ -369,8 +346,7 @@ static int fd_initialize(struct fd *fd)
 // fd_transfer
 //
 
-static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkno_t blkno)
-{
+static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkno_t blkno) {
   struct fdresult result;
   int retries = 5;
   unsigned char track, head, sector;
@@ -385,11 +361,9 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
   
   if (mode == FD_MODE_WRITE) memcpy(fd->fdc->dmabuf, buffer, count);
 
-  while (retries-- > 0) 
-  {
+  while (retries-- > 0) {
     // Perform seek if necessary
-    if (fd->curtrack != track)
-    {
+    if (fd->curtrack != track) {
       reset_event(&fd->fdc->done);
 
       //kprintf("fd: seek track %d head %d (curtrack %d)\n", track, head, fd->curtrack);
@@ -397,16 +371,14 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
       fd_command((unsigned char) ((head << 2) | fd->drive));
       fd_command(track);
     
-      if (wait_for_object(&fd->fdc->done, FD_SEEK_TIMEOUT) < 0) 
-      {
+      if (wait_for_object(&fd->fdc->done, FD_SEEK_TIMEOUT) < 0) {
         kprintf(KERN_WARNING "fd: timeout waiting for seek to complete\n");
         fd_recalibrate(fd);
         continue;
       }
 
       fd_result(fd, &result, 1);
-      if ((fd->st0 &0xE0) != 0x20 || fd->curtrack != track)
-      {
+      if ((fd->st0 &0xE0) != 0x20 || fd->curtrack != track) {
         kprintf(KERN_ERR "fd: seek failed, st0 0x%02x, current %d, target %d\n", fd->st0, fd->curtrack, track);
         continue;
       }
@@ -423,13 +395,10 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
     // Set up DMA
     outp(DMA1_CHAN, 0x06);
 
-    if (mode == FD_MODE_READ) 
-    {
+    if (mode == FD_MODE_READ) {
       outp(DMA1_RESET, DMA1_CHAN2_READ);
       outp(DMA1_MODE, DMA1_CHAN2_READ);
-    } 
-    else 
-    {
+    } else {
       outp(DMA1_RESET, DMA1_CHAN2_WRITE);
       outp(DMA1_MODE, DMA1_CHAN2_WRITE);
     }
@@ -445,10 +414,11 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
     reset_event(&fd->fdc->done);
 
     // Perform transfer
-    if (mode == FD_MODE_READ)
+    if (mode == FD_MODE_READ) {
       fd_command(CMD_READ);
-    else
+    } else {
       fd_command(CMD_WRITE);
+    }
 
     fd_command((unsigned char) ((head << 2) | fd->drive));
     fd_command(track);
@@ -459,8 +429,7 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
     fd_command(fd->geom->gap3);
     fd_command(0xff); // DTL = unused
     
-    if (wait_for_object(&fd->fdc->done, FD_XFER_TIMEOUT) < 0) 
-    {
+    if (wait_for_object(&fd->fdc->done, FD_XFER_TIMEOUT) < 0) {
       kprintf(KERN_WARNING "fd: timeout waiting for transfer to complete\n");
       fd_recalibrate(fd);
       continue;
@@ -468,18 +437,11 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
 
     fd_result(fd, &result, 0);
 
-    if ((result.st0 & 0xc0) == 0) 
-    {
+    if ((result.st0 & 0xc0) == 0) {
       // Successful transfer
       if (mode == FD_MODE_READ) memcpy(buffer, fd->fdc->dmabuf, count);
       return count;
-    }
-    //else if ((result.st0 & 0xc0) == 0x40 && (result.st1 & 0x04) == 0x04)
-    //{
-    //  fd_recalibrate(fd);
-    //}
-    else
-    {
+    } else {
       kprintf(KERN_ERR "fd: xfer error, st0 %02X st1 %02X st2 %02X THS=%d/%d/%d\n", result.st0, result.st1, result.st2, result.track, result.head, result.sector);
 
       // Recalibrate before retrying.
@@ -494,12 +456,10 @@ static int fd_transfer(struct fd *fd, int mode, void *buffer, size_t count, blkn
 // fd_ioctl
 //
 
-static int fd_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
+static int fd_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
   struct fd *fd = (struct fd *) dev->privdata;
 
-  switch (cmd)
-  {
+  switch (cmd) {
     case IOCTL_GETDEVSIZE:
       return fd->geom->heads * fd->geom->tracks * fd->geom->spt;
 
@@ -514,8 +474,7 @@ static int fd_ioctl(struct dev *dev, int cmd, void *args, size_t size)
 // fd_read
 //
 
-static int fd_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int fd_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   struct fd *fd = (struct fd *) dev->privdata;
   int left;
   int result;
@@ -527,11 +486,9 @@ static int fd_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, i
 
   left = count;
   buf = (char *) buffer;
-  while (left > 0)
-  {
+  while (left > 0) {
     result = fd_transfer(fd, FD_MODE_READ, buf, left, blkno);
-    if (result <= 0)
-    {
+    if (result <= 0) {
       kprintf(KERN_ERR "fd: error %d reading from floppy\n", result);
       fd_motor_off(fd);
       release_mutex(&fd->fdc->lock);
@@ -553,8 +510,7 @@ static int fd_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, i
 // fd_write
 //
 
-static int fd_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int fd_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   struct fd *fd = (struct fd *) dev->privdata;
   int left;
   int result;
@@ -566,11 +522,9 @@ static int fd_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, 
 
   left = count;
   buf = (char *) buffer;
-  while (left > 0)
-  {
+  while (left > 0) {
     result = fd_transfer(fd, FD_MODE_WRITE, buf, left, blkno);
-    if (result <= 0)
-    {
+    if (result <= 0) {
       kprintf(KERN_ERR "fd: error %d writing to floppy\n", result);
       fd_motor_off(fd);
       release_mutex(&fd->fdc->lock);
@@ -592,8 +546,7 @@ static int fd_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, 
 // fd_dpc
 //
 
-static void fd_dpc(void *arg)
-{
+static void fd_dpc(void *arg) {
   struct fdc *fdc = (struct fdc *) arg;
   set_event(&fdc->done);
 }
@@ -602,15 +555,13 @@ static void fd_dpc(void *arg)
 // fd_handler
 //
 
-static int fd_handler(struct context *ctxt, void *arg)
-{
+static int fd_handler(struct context *ctxt, void *arg) {
   queue_irq_dpc(&fdc.dpc, fd_dpc, arg);
   eoi(IRQ_FD);
   return 0;
 }
 
-struct driver floppy_driver =
-{
+struct driver floppy_driver = {
   "floppy",
   DEV_TYPE_BLOCK,
   fd_ioctl,
@@ -622,8 +573,7 @@ struct driver floppy_driver =
 // init_fd
 //
 
-static void init_drive(char *devname, struct fd *fd, struct fdc *fdc, int drive, struct fdgeometry *geom)
-{
+static void init_drive(char *devname, struct fd *fd, struct fdc *fdc, int drive, struct fdgeometry *geom) {
   fd->fdc = fdc;
   fd->geom = geom;
   fd->drive = drive;
@@ -638,8 +588,7 @@ static void init_drive(char *devname, struct fd *fd, struct fdc *fdc, int drive,
     fd->geom->tracks, fd->geom->heads, fd->geom->spt);
 }
 
-void init_fd()
-{
+void init_fd() {
   int i;
   unsigned char fdtypes;
   int first_floppy;

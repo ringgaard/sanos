@@ -80,8 +80,7 @@
 
 #pragma pack(push, 1)
 
-struct pnp_bios_expansion_header 
-{
+struct pnp_bios_expansion_header {
   unsigned long signature;      // "$PnP"
   unsigned char version;        // PnP BIOS version number in BCD
   unsigned char length;         // Length in bytes, currently 21h
@@ -98,14 +97,12 @@ struct pnp_bios_expansion_header
   unsigned long pm16dseg;       // 16 bit pm data segment base
 };
 
-struct pnp_dev_node_info 
-{
+struct pnp_dev_node_info {
   unsigned short no_nodes;
   unsigned short max_node_size;
 };
 
-struct pnp_bios_node 
-{
+struct pnp_bios_node {
   unsigned short size;
   unsigned char handle;
   unsigned long eisa_id;
@@ -114,16 +111,14 @@ struct pnp_bios_node
   unsigned char data[0];
 };
 
-struct pnp_isa_config_struc 
-{
+struct pnp_isa_config_struc {
   unsigned char revision;
   unsigned char no_csns;
   unsigned short isa_rd_data_port;
   unsigned short reserved;
 };
 
-struct escd_info_struc 
-{
+struct escd_info_struc {
   unsigned short min_escd_write_size;
   unsigned short escd_size;
   unsigned long nv_storage_base;

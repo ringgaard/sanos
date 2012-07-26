@@ -44,8 +44,7 @@
 
 #pragma pack(push, 1)
 
-struct smbios_eps 
-{
+struct smbios_eps {
   unsigned char anchor[4]; // '_SM_'
   unsigned char checksum;
   unsigned char length;
@@ -73,8 +72,7 @@ struct smbios_eps
 static struct smbios_eps *eps = NULL;
 static char *smbios_table = NULL;
 
-static int init_smbios()
-{
+static int init_smbios() {
   unsigned char *biosarea;
   int ofs, n;
   struct smbios_eps *s;
@@ -84,8 +82,7 @@ static int init_smbios()
   // Search the bios data area (0xf0000-0xffff0) for a valid SMBIOS structure.
   biosarea = iomap(0xF0000, 0x10000);
   if (!biosarea) return -EIO;
-  for (ofs = 0x0000; ofs < 0xFFF0; ofs += 0x10)
-  {
+  for (ofs = 0x0000; ofs < 0xFFF0; ofs += 0x10) {
     s = (struct smbios_eps *) (biosarea + ofs);
 
     // Check _SM_ signature
@@ -118,10 +115,8 @@ static int init_smbios()
   return 0;
 }
 
-static int smbios_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
-  switch (cmd)
-  {
+static int smbios_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
+  switch (cmd) {
     case IOCTL_GETDEVSIZE:
       return eps ? eps->structure_table_length : 0;
 
@@ -138,8 +133,7 @@ static int smbios_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int smbios_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int smbios_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   if (count == 0) return 0;
   if (!eps || !smbios_table) return -EIO;
   if (blkno + count > eps->structure_table_length) return -EFAULT;
@@ -147,13 +141,11 @@ static int smbios_read(struct dev *dev, void *buffer, size_t count, blkno_t blkn
   return count;
 }
 
-static int smbios_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int smbios_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   return -ENOSYS;
 }
 
-struct driver smbios_driver =
-{
+struct driver smbios_driver = {
   "smbios",
   DEV_TYPE_BLOCK,
   smbios_ioctl,
@@ -161,8 +153,7 @@ struct driver smbios_driver =
   smbios_write
 };
 
-int __declspec(dllexport) smbios(struct unit *unit)
-{
+int __declspec(dllexport) smbios(struct unit *unit) {
   int rc;
 
   rc = init_smbios();

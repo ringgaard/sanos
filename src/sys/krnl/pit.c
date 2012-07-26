@@ -92,13 +92,11 @@ unsigned char *loadend;
 struct interrupt timerintr;
 struct dpc timerdpc;
 
-void timer_dpc(void *arg)
-{
+void timer_dpc(void *arg) {
   run_timer_list();
 }
 
-int timer_handler(struct context *ctxt, void *arg)
-{
+int timer_handler(struct context *ctxt, void *arg) {
   struct thread *t;
 
   // Update timer clock
@@ -109,33 +107,27 @@ int timer_handler(struct context *ctxt, void *arg)
 
   // Update system clock
   systemclock.tv_usec += USECS_PER_TICK;
-  while (systemclock.tv_usec >= 1000000) 
-  {
+  while (systemclock.tv_usec >= 1000000)  {
     systemclock.tv_sec++;
     systemclock.tv_usec -= 1000000;
   }
 
   // Update thread times and load average
   t = self();
-  if (in_dpc)
-  {
+  if (in_dpc) {
     dpc_time++;
     *loadptr = LOADTYPE_DPC;
-  }
-  else
-  {
-    if (USERSPACE(ctxt->eip))
-    {
+  } else {
+    if (USERSPACE(ctxt->eip)) {
       t->utime++;
       *loadptr = LOADTYPE_USER;
-    }
-    else
-    {
+    } else {
       t->stime++;
-      if (t->base_priority == PRIORITY_SYSIDLE)
+      if (t->base_priority == PRIORITY_SYSIDLE) {
         *loadptr = LOADTYPE_IDLE;
-      else
+      } else {
         *loadptr = LOADTYPE_KERNEL;
+      }
     }
   }
 
@@ -152,8 +144,7 @@ int timer_handler(struct context *ctxt, void *arg)
   return 0;
 }
 
-unsigned char read_cmos_reg(int reg)
-{
+unsigned char read_cmos_reg(int reg) {
   unsigned char val;
 
   outp(0x70, reg);
@@ -162,27 +153,23 @@ unsigned char read_cmos_reg(int reg)
   return val;
 }
 
-void write_cmos_reg(int reg, unsigned char val)
-{
+void write_cmos_reg(int reg, unsigned char val) {
   outp(0x70, reg);
   outp(0x71, val);
 }
 
-static int read_bcd_cmos_reg(int reg)
-{
+static int read_bcd_cmos_reg(int reg) {
   int val;
 
   val = read_cmos_reg(reg);
   return (val >> 4) * 10 + (val & 0x0F);
 }
 
-static void write_bcd_cmos_reg(int reg, unsigned char val)
-{
+static void write_bcd_cmos_reg(int reg, unsigned char val) {
   write_cmos_reg(reg, (unsigned char) (((val / 10) << 4) + (val % 10)));
 }
 
-static void get_cmos_time(struct tm *tm)
-{
+static void get_cmos_time(struct tm *tm) {
   tm->tm_year = read_bcd_cmos_reg(0x09) + (read_bcd_cmos_reg(0x32) * 100) - 1900;
   tm->tm_mon = read_bcd_cmos_reg(0x08) - 1;
   tm->tm_mday = read_bcd_cmos_reg(0x07);
@@ -195,8 +182,7 @@ static void get_cmos_time(struct tm *tm)
   tm->tm_isdst = 0;
 }
 
-static void set_cmos_time(struct tm *tm)
-{
+static void set_cmos_time(struct tm *tm) {
   write_bcd_cmos_reg(0x09, (unsigned char) (tm->tm_year % 100));
   write_bcd_cmos_reg(0x32, (unsigned char) ((tm->tm_year + 1900) / 100));
   write_bcd_cmos_reg(0x08, (unsigned char) (tm->tm_mon + 1));
@@ -206,32 +192,26 @@ static void set_cmos_time(struct tm *tm)
   write_bcd_cmos_reg(0x00, (unsigned char) (tm->tm_sec));
 }
 
-static void tsc_delay(unsigned long cycles)
-{
+static void tsc_delay(unsigned long cycles) {
   long end, now;
 
   end = (unsigned long) rdtsc() + cycles;
-  do 
-  {
+  do  {
     __asm { nop };
     now = (unsigned long) rdtsc();
   } while (end - now > 0);
 }
 
-static void timed_delay(unsigned long loops)
-{
-  __asm
-  {
+static void timed_delay(unsigned long loops) {
+  __asm {
     delay_loop:
       dec loops
       jns delay_loop; 
   }
 }
 
-void calibrate_delay()
-{
-  static int cpu_speeds[] = 
-  {
+void calibrate_delay() {
+  static int cpu_speeds[] =  {
     16, 20, 25, 33, 40, 50, 60, 66, 75, 80, 90, 
     100, 110, 120, 133, 150, 166, 180, 188,
     200, 233, 250, 266,
@@ -249,8 +229,7 @@ void calibrate_delay()
   unsigned long t, bit;
   int precision;
 
-  if (cpu.features & CPU_FEATURE_TSC)
-  {
+  if (cpu.features & CPU_FEATURE_TSC) {
     unsigned long start;
     unsigned long end;
 
@@ -263,13 +242,10 @@ void calibrate_delay()
     end = (unsigned long) rdtsc();
 
     cycles_per_tick = end - start;
-  }
-  else
-  {
+  } else {
     // Determine magnitude of loops_per_tick
     loops_per_tick = 1 << 12;
-    while (loops_per_tick <<= 1)
-    {
+    while (loops_per_tick <<= 1) {
       t = ticks;
       while (t == ticks);
     
@@ -282,8 +258,7 @@ void calibrate_delay()
     precision = 8;
     loops_per_tick >>= 1;
     bit = loops_per_tick;
-    while (precision-- && (bit >>= 1))
-    {
+    while (precision-- && (bit >>= 1)) {
       loops_per_tick |= bit;
       t = ticks;
       while (t == ticks);
@@ -298,16 +273,14 @@ void calibrate_delay()
 
   mhz = cycles_per_tick * TIMER_FREQ / 1000000;
 
-  if (mhz > 1275)
+  if (mhz > 1275) {
     mhz = ((mhz + 25) / 50) * 50;
-  else if (mhz > 14)
-  {
+  } else if (mhz > 14) {
     int *speed = cpu_speeds;
     int i;
     unsigned long bestmhz = 0;
 
-    for (i = 0; i < sizeof(cpu_speeds) / sizeof(int); i++)
-    {
+    for (i = 0; i < sizeof(cpu_speeds) / sizeof(int); i++) {
       int curdiff = mhz - bestmhz;
       int newdiff = mhz - *speed;
 
@@ -325,8 +298,7 @@ void calibrate_delay()
   cpu.mhz = mhz;
 }
 
-static int uptime_proc(struct proc_file *pf, void *arg)
-{
+static int uptime_proc(struct proc_file *pf, void *arg) {
   int days, hours, mins, secs;
   int uptime = get_time() - upsince;
 
@@ -346,8 +318,7 @@ static int uptime_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-static int loadavg_proc(struct proc_file *pf, void *arg)
-{
+static int loadavg_proc(struct proc_file *pf, void *arg) {
   int loadavg[4];
   unsigned char *p;
 
@@ -364,8 +335,7 @@ static int loadavg_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-void init_pit()
-{
+void init_pit() {
   struct tm tm;
 
   unsigned int cnt = PIT_CLOCK / TIMER_FREQ;
@@ -389,37 +359,32 @@ void init_pit()
   register_proc_inode("loadavg", loadavg_proc, NULL);
 }
 
-void udelay(unsigned long us)
-{
-  if (cpu.features & CPU_FEATURE_TSC)
+void udelay(unsigned long us) {
+  if (cpu.features & CPU_FEATURE_TSC) {
     tsc_delay(us * (cycles_per_tick / (1000000 / TIMER_FREQ)));
-  else
+  } else {
     timed_delay(us * (loops_per_tick / (1000000 / TIMER_FREQ)));
+  }
 }
 
-unsigned int get_ticks()
-{
+unsigned int get_ticks() {
   return ticks;
 }
 
-time_t get_time()
-{
+time_t get_time() {
   return systemclock.tv_sec;
 }
 
-time_t time(time_t *time)
-{
-  if (time)
-  {
+time_t time(time_t *time) {
+  if (time) {
     *time = get_time();
     return *time;
-  }
-  else
+  } else {
     return get_time();
+  }
 }
 
-void set_time(struct timeval *tv)
-{
+void set_time(struct timeval *tv) {
   struct tm tm;
 
   upsince += (tv->tv_sec - systemclock.tv_sec);
@@ -429,8 +394,7 @@ void set_time(struct timeval *tv)
   set_cmos_time(&tm);
 }
 
-int load_sysinfo(struct loadinfo *info)
-{
+int load_sysinfo(struct loadinfo *info) {
   int loadavg[4];
   unsigned char *p;
 

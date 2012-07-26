@@ -138,8 +138,7 @@ static int nope = 0;    // for use in asserts; shuts lint up
 // when choosing which matcher to call.  Also, by this point the matchers
 // have been prototyped.
 //
-int regexec(const regex_t *preg, const char *string, size_t nmatch, regmatch_t pmatch[], int eflags)
-{
+int regexec(const regex_t *preg, const char *string, size_t nmatch, regmatch_t pmatch[], int eflags) {
   struct re_guts *g = preg->re_g;
 
   if (preg->re_magic != MAGIC1 || g->magic != MAGIC2) return REG_BADPAT;
@@ -148,8 +147,9 @@ int regexec(const regex_t *preg, const char *string, size_t nmatch, regmatch_t p
     
   eflags = GOODFLAGS(eflags);
 
-  if (g->nstates <= CHAR_BIT * sizeof(states1) && !(eflags & REG_LARGE))
+  if (g->nstates <= CHAR_BIT * sizeof(states1) && !(eflags & REG_LARGE)) {
     return smatcher(g, (char *) string, nmatch, pmatch, eflags);
-  else
+  } else {
     return lmatcher(g, (char *) string, nmatch, pmatch, eflags);
+  }
 }

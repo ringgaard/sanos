@@ -43,8 +43,7 @@
 #ifndef _PASSWD_DEFINED
 #define _PASSWD_DEFINED
 
-struct passwd
-{
+struct passwd {
   char *pw_name;    // User name
   char *pw_passwd;  // User password
   uid_t pw_uid;     // User id

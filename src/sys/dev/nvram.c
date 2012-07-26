@@ -35,10 +35,8 @@
 
 #define NVRAM_SIZE 128
 
-static int nvram_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
-  switch (cmd)
-  {
+static int nvram_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
+  switch (cmd) {
     case IOCTL_GETDEVSIZE:
       return NVRAM_SIZE;
 
@@ -49,8 +47,7 @@ static int nvram_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int nvram_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int nvram_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   unsigned int n;
 
   if (count == 0) return 0;
@@ -60,8 +57,7 @@ static int nvram_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno
   return count;
 }
 
-static int nvram_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int nvram_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   unsigned int n;
 
   if (count == 0) return 0;
@@ -71,8 +67,7 @@ static int nvram_write(struct dev *dev, void *buffer, size_t count, blkno_t blkn
   return count;
 }
 
-struct driver nvram_driver =
-{
+struct driver nvram_driver = {
   "nvram",
   DEV_TYPE_BLOCK,
   nvram_ioctl,
@@ -80,8 +75,7 @@ struct driver nvram_driver =
   nvram_write
 };
 
-int __declspec(dllexport) nvram()
-{
+int __declspec(dllexport) nvram() {
   dev_make("nvram", &nvram_driver, NULL, NULL);
   return 0;
 }

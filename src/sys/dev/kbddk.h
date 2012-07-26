@@ -31,8 +31,7 @@
 // SUCH DAMAGE.
 // 
 
-struct keytable dkkeys = 
-{
+struct keytable dkkeys = {
   "dk",
 
   // Normal scancodes

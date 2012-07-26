@@ -42,8 +42,7 @@
 
 #define SYSCALL_CHECKBUFFER
 
-struct syscall_entry
-{
+struct syscall_entry {
   char *name;
   int paramsize;
   char *argfmt;
@@ -55,11 +54,9 @@ static unsigned long sccnt[SYSCALL_MAX  + 1];
 static unsigned long scerr[SYSCALL_MAX  + 1];
 #endif
 
-static __inline int lock_buffer(void *buffer, int size)
-{
+static __inline int lock_buffer(void *buffer, int size) {
 #ifdef SYSCALL_CHECKBUFFER
-  if (buffer)
-  {
+  if (buffer) {
     if (size < 0) return -EINVAL;
     if (buffer >= (void *) OSBASE) return -EFAULT;
     if ((char *) buffer + size >= (char *) OSBASE) return -EFAULT;
@@ -70,15 +67,12 @@ static __inline int lock_buffer(void *buffer, int size)
   return 0;
 }
 
-static __inline void unlock_buffer(void *buffer, int size)
-{
+static __inline void unlock_buffer(void *buffer, int size) {
 }
 
-static __inline int lock_string(char *s)
-{
+static __inline int lock_string(char *s) {
 #ifdef SYSCALL_CHECKBUFFER
-  if (s)
-  {
+  if (s) {
     if (s >= (char *) OSBASE) return -EFAULT;
     if (!str_mapped(s)) return -EFAULT;
   }
@@ -87,12 +81,10 @@ static __inline int lock_string(char *s)
   return 0;
 }
 
-static __inline void unlock_string(char *s)
-{
+static __inline void unlock_string(char *s) {
 }
 
-static __inline int lock_iovec(struct iovec *iov, int count)
-{
+static __inline int lock_iovec(struct iovec *iov, int count) {
 #ifdef SYSCALL_CHECKBUFFER
   int rc;
 
@@ -103,15 +95,12 @@ static __inline int lock_iovec(struct iovec *iov, int count)
   return 0;
 }
 
-static __inline void unlock_iovec(struct iovec *iov, int count)
-{
+static __inline void unlock_iovec(struct iovec *iov, int count) {
 }
 
-static __inline int lock_fdset(fd_set *fds)
-{
+static __inline int lock_fdset(fd_set *fds) {
 #ifdef SYSCALL_CHECKBUFFER
-  if (fds)
-  {
+  if (fds) {
     if (!mem_mapped(fds, sizeof(int))) return -EFAULT;
     if ((void *) fds >= (void *) OSBASE) return -EFAULT;
     if ((char *) fds + (fds->count + 1) * sizeof(int) >= (char *) OSBASE) return -EFAULT;
@@ -122,17 +111,14 @@ static __inline int lock_fdset(fd_set *fds)
   return 0;
 }
 
-static __inline void unlock_fdset(fd_set *fds)
-{
+static __inline void unlock_fdset(fd_set *fds) {
 }
 
-static int sys_null(char *params)
-{
+static int sys_null(char *params) {
   return 0;
 }
 
-static int sys_mkfs(char *params)
-{
+static int sys_mkfs(char *params) {
   char *devname; 
   char *type;
   char *opts;
@@ -144,14 +130,12 @@ static int sys_mkfs(char *params)
 
   if (lock_string(devname) < 0) return -EFAULT;
 
-  if (lock_string(type) < 0)
-  {
+  if (lock_string(type) < 0) {
     unlock_string(devname);
     return -EFAULT;
   }
 
-  if (lock_string(opts) < 0)
-  {
+  if (lock_string(opts) < 0) {
     unlock_string(type);
     unlock_string(devname);
     return -EFAULT;
@@ -166,8 +150,7 @@ static int sys_mkfs(char *params)
   return rc;
 }
 
-static int sys_mount(char *params)
-{
+static int sys_mount(char *params) {
   char *type;
   char *mntto;
   char *mntfrom; 
@@ -181,21 +164,18 @@ static int sys_mount(char *params)
 
   if (lock_string(type) < 0) return -EFAULT;
 
-  if (lock_string(mntto) < 0)
-  {
+  if (lock_string(mntto) < 0) {
     unlock_string(type);
     return -EFAULT;
   }
 
-  if (lock_string(mntfrom) < 0)
-  {
+  if (lock_string(mntfrom) < 0) {
     unlock_string(mntto);
     unlock_string(type);
     return -EFAULT;
   }
 
-  if (lock_string(opts) < 0)
-  {
+  if (lock_string(opts) < 0) {
     unlock_string(mntfrom);
     unlock_string(mntto);
     unlock_string(type);
@@ -212,8 +192,7 @@ static int sys_mount(char *params)
   return rc;
 }
 
-static int sys_umount(char *params)
-{
+static int sys_umount(char *params) {
   char *path;
   int rc;
 
@@ -228,8 +207,7 @@ static int sys_umount(char *params)
   return rc;
 }
 
-static int sys_getfsstat(char *params)
-{
+static int sys_getfsstat(char *params) {
   struct statfs *buf;
   size_t size;
   int rc;
@@ -246,8 +224,7 @@ static int sys_getfsstat(char *params)
   return rc;
 }
 
-static int sys_fstatfs(char *params)
-{
+static int sys_fstatfs(char *params) {
   struct file *f;
   handle_t h;
   struct statfs *buf;
@@ -259,8 +236,7 @@ static int sys_fstatfs(char *params)
   f = (struct file *) olock(h, OBJECT_FILE);
   if (!f) return -EBADF;
 
-  if (lock_buffer(buf, sizeof(struct statfs)) < 0)
-  {
+  if (lock_buffer(buf, sizeof(struct statfs)) < 0) {
     orel(f);
     return -EFAULT;
   }
@@ -273,8 +249,7 @@ static int sys_fstatfs(char *params)
   return rc;
 }
 
-static int sys_statfs(char *params)
-{
+static int sys_statfs(char *params) {
   char *name;
   struct statfs *buf;
   int rc;
@@ -284,8 +259,7 @@ static int sys_statfs(char *params)
 
   if (lock_string(name) < 0) return -EFAULT;
 
-  if (lock_buffer(buf, sizeof(struct statfs)) < 0)
-  {
+  if (lock_buffer(buf, sizeof(struct statfs)) < 0) {
     unlock_string(name);
     return -EFAULT;
   }
@@ -298,8 +272,7 @@ static int sys_statfs(char *params)
   return rc;
 }
 
-static int sys_open(char *params)
-{
+static int sys_open(char *params) {
   struct file *f;
   char *name;
   int flags;
@@ -315,8 +288,7 @@ static int sys_open(char *params)
   if (lock_string(name) < 0) return -EFAULT;
 
   rc = open(name, flags, mode, &f);
-  if (rc == 0)
-  {
+  if (rc == 0) {
     rc = halloc(&f->iob.object);
     if (rc < 0) close(f);
   }
@@ -326,8 +298,7 @@ static int sys_open(char *params)
   return rc;
 }
 
-static int sys_close(char *params)
-{
+static int sys_close(char *params) {
   handle_t h;
   int rc;
 
@@ -336,8 +307,7 @@ static int sys_close(char *params)
   return rc;
 }
 
-static int sys_fsync(char *params)
-{
+static int sys_fsync(char *params) {
   struct file *f;
   handle_t h;
   int rc;
@@ -353,8 +323,7 @@ static int sys_fsync(char *params)
   return rc;
 }
 
-static int sys_read(char *params)
-{
+static int sys_read(char *params) {
   handle_t h;
   struct object *o;
   int rc;
@@ -368,18 +337,18 @@ static int sys_read(char *params)
   o = olock(h, OBJECT_ANY);
   if (!o) return -EBADF;
   
-  if (lock_buffer(data, size) < 0)
-  {
+  if (lock_buffer(data, size) < 0) {
     orel(o);
     return -EFAULT;
   }
 
-  if (o->type == OBJECT_FILE)
+  if (o->type == OBJECT_FILE) {
     rc = read((struct file *) o, data, size);
-  else if (o->type == OBJECT_SOCKET)
+  } else if (o->type == OBJECT_SOCKET) {
     rc = recv((struct socket *) o, data, size, 0);
-  else
+  } else {
     rc = -EBADF;
+  }
 
   orel(o);
   unlock_buffer(data, size);
@@ -387,8 +356,7 @@ static int sys_read(char *params)
   return rc;
 }
 
-static int sys_write(char *params)
-{
+static int sys_write(char *params) {
   handle_t h;
   struct object *o;
   int rc;
@@ -402,18 +370,18 @@ static int sys_write(char *params)
   o = olock(h, OBJECT_ANY);
   if (!o) return -EBADF;
 
-  if (lock_buffer(data, size) < 0)
-  {
+  if (lock_buffer(data, size) < 0) {
     orel(o);
     return -EFAULT;
   }
-  
-  if (o->type == OBJECT_FILE)
+
+  if (o->type == OBJECT_FILE) {
     rc = write((struct file *) o, data, size);
-  else if (o->type == OBJECT_SOCKET)
+  } else if (o->type == OBJECT_SOCKET) {
     rc = send((struct socket *) o, data, size, 0);
-  else
+  } else {
     rc = -EBADF;
+  }
   
   orel(o);
   unlock_buffer(data, size);
@@ -421,8 +389,7 @@ static int sys_write(char *params)
   return rc;
 }
 
-static int sys_ioctl(char *params)
-{
+static int sys_ioctl(char *params) {
   handle_t h;
   struct object *o;
   int rc;
@@ -438,26 +405,25 @@ static int sys_ioctl(char *params)
   o = olock(h, OBJECT_ANY);
   if (!o) return -EBADF;
 
-  if (lock_buffer(data, size) < 0)
-  {
+  if (lock_buffer(data, size) < 0) {
     orel(o);
     return -EFAULT;
   }
   
-  if (o->type == OBJECT_FILE)
+  if (o->type == OBJECT_FILE) {
     rc = ioctl((struct file *) o, cmd, data, size);
-  else if (o->type == OBJECT_SOCKET)
+  } else if (o->type == OBJECT_SOCKET) {
     rc = ioctlsocket((struct socket *) o, cmd, data, size);
-  else
+  } else {
     rc = -EBADF;
-  
+  }
+
   orel(o);
 
   return rc;
 }
 
-static int sys_tell(char *params)
-{
+static int sys_tell(char *params) {
   struct file *f;
   handle_t h;
   off64_t rc;
@@ -469,8 +435,7 @@ static int sys_tell(char *params)
   f = (struct file *) olock(h, OBJECT_FILE);
   if (!f) return -EBADF;
 
-  if (lock_buffer(retval, sizeof(off64_t)) < 0)
-  {
+  if (lock_buffer(retval, sizeof(off64_t)) < 0) {
     orel(f);
     return -EFAULT;
   }
@@ -484,8 +449,7 @@ static int sys_tell(char *params)
   return rc < 0 ? (int) rc : (int) (rc & 0x7FFFFFFF);
 }
 
-static int sys_lseek(char *params)
-{
+static int sys_lseek(char *params) {
   struct file *f;
   handle_t h;
   off64_t offset;
@@ -501,8 +465,7 @@ static int sys_lseek(char *params)
   f = (struct file *) olock(h, OBJECT_FILE);
   if (!f) return -EBADF;
 
-  if (lock_buffer(retval, sizeof(off64_t)) < 0)
-  {
+  if (lock_buffer(retval, sizeof(off64_t)) < 0) {
     orel(f);
     return -EFAULT;
   }
@@ -516,8 +479,7 @@ static int sys_lseek(char *params)
   return rc < 0 ? (int) rc : (int) (rc & 0x7FFFFFFF);
 }
 
-static int sys_ftruncate(char *params)
-{
+static int sys_ftruncate(char *params) {
   struct file *f;
   handle_t h;
   off64_t size;
@@ -536,8 +498,7 @@ static int sys_ftruncate(char *params)
   return rc;
 }
 
-static int sys_futime(char *params)
-{
+static int sys_futime(char *params) {
   struct file *f;
   handle_t h;
   struct utimbuf *times;
@@ -549,8 +510,7 @@ static int sys_futime(char *params)
   f = (struct file *) olock(h, OBJECT_FILE);
   if (!f) return -EBADF;
 
-  if (lock_buffer(times, sizeof(struct utimbuf)) < 0)
-  {
+  if (lock_buffer(times, sizeof(struct utimbuf)) < 0) {
     orel(f);
     return -EFAULT;
   }
@@ -563,8 +523,7 @@ static int sys_futime(char *params)
   return rc;
 }
 
-static int sys_utime(char *params)
-{
+static int sys_utime(char *params) {
   char *name;
   struct utimbuf *times;
   int rc;
@@ -574,8 +533,7 @@ static int sys_utime(char *params)
 
   if (lock_string(name) < 0) return -EFAULT;
 
-  if (lock_buffer(times, sizeof(struct utimbuf)) < 0)
-  {
+  if (lock_buffer(times, sizeof(struct utimbuf)) < 0) {
     unlock_string(name);
     return -EFAULT;
   }
@@ -588,8 +546,7 @@ static int sys_utime(char *params)
   return rc;
 }
 
-static int sys_fstat(char *params)
-{
+static int sys_fstat(char *params) {
   struct file *f;
   handle_t h;
   struct stat64 *buffer;
@@ -601,8 +558,7 @@ static int sys_fstat(char *params)
   f = (struct file *) olock(h, OBJECT_FILE);
   if (!f) return -EBADF;
 
-  if (lock_buffer(buffer, sizeof(struct stat64)) < 0)
-  {
+  if (lock_buffer(buffer, sizeof(struct stat64)) < 0) {
     orel(f);
     return -EFAULT;
   }
@@ -616,8 +572,7 @@ static int sys_fstat(char *params)
   return rc;
 }
 
-static int sys_stat(char *params)
-{
+static int sys_stat(char *params) {
   char *name;
   struct stat64 *buffer;
   int rc;
@@ -627,8 +582,7 @@ static int sys_stat(char *params)
 
   if (lock_string(name) < 0) return -EFAULT;
 
-  if (lock_buffer(buffer, sizeof(struct stat64)) < 0)
-  {
+  if (lock_buffer(buffer, sizeof(struct stat64)) < 0) {
     unlock_string(name);
     return -EFAULT;
   }
@@ -642,8 +596,7 @@ static int sys_stat(char *params)
   return rc;
 }
 
-static int sys_mkdir(char *params)
-{
+static int sys_mkdir(char *params) {
   char *name;
   int mode;
   int rc;
@@ -660,8 +613,7 @@ static int sys_mkdir(char *params)
   return rc;
 }
 
-static int sys_rmdir(char *params)
-{
+static int sys_rmdir(char *params) {
   char *name;
   int rc;
 
@@ -676,8 +628,7 @@ static int sys_rmdir(char *params)
   return rc;
 }
 
-static int sys_rename(char *params)
-{
+static int sys_rename(char *params) {
   char *oldname;
   char *newname;
   int rc;
@@ -687,8 +638,7 @@ static int sys_rename(char *params)
 
   if (lock_string(oldname) < 0) return -EFAULT;
 
-  if (lock_string(newname) < 0) 
-  {
+  if (lock_string(newname) < 0)  {
     unlock_string(oldname);
     return -EFAULT;
   }
@@ -701,8 +651,7 @@ static int sys_rename(char *params)
   return rc;
 }
 
-static int sys_link(char *params)
-{
+static int sys_link(char *params) {
   char *oldname;
   char *newname;
   int rc;
@@ -712,8 +661,7 @@ static int sys_link(char *params)
 
   if (lock_string(oldname) < 0) return -EFAULT;
 
-  if (lock_string(newname) < 0) 
-  {
+  if (lock_string(newname) < 0) {
     unlock_string(oldname);
     return -EFAULT;
   }
@@ -726,8 +674,7 @@ static int sys_link(char *params)
   return rc;
 }
 
-static int sys_unlink(char *params)
-{
+static int sys_unlink(char *params) {
   char *name;
   int rc;
 
@@ -742,8 +689,7 @@ static int sys_unlink(char *params)
   return rc;
 }
 
-static int sys_opendir(char *params)
-{
+static int sys_opendir(char *params) {
   struct file *f;
   char *name;
   int rc;
@@ -753,8 +699,7 @@ static int sys_opendir(char *params)
   if (lock_string(name) < 0) return -EFAULT;
 
   rc = opendir(name, &f);
-  if (rc == 0)
-  {
+  if (rc == 0) {
     rc = halloc(&f->iob.object);
     if (rc < 0) close(f);
   }
@@ -764,8 +709,7 @@ static int sys_opendir(char *params)
   return rc;
 }
 
-static int sys_readdir(char *params)
-{
+static int sys_readdir(char *params) {
   handle_t h;
   struct file *f;
   int rc;
@@ -779,21 +723,19 @@ static int sys_readdir(char *params)
   f = (struct file *) olock(h, OBJECT_FILE);
   if (f == NULL) return -EBADF;
 
-  if (lock_buffer(dirp, count * sizeof(struct direntry)) < 0)
-  {
+  if (lock_buffer(dirp, count * sizeof(struct direntry)) < 0) {
     orel(f);
     return -EFAULT;
   }
-  
+
   rc = readdir(f, dirp, count);
-  
+
   orel(f);
 
   return rc;
 }
 
-static int sys_mmap(char *params)
-{
+static int sys_mmap(char *params) {
   char *addr;
   unsigned long size;
   int type;
@@ -812,8 +754,7 @@ static int sys_mmap(char *params)
   return (int) retval;
 }
 
-static int sys_munmap(char *params)
-{
+static int sys_munmap(char *params) {
   char *addr;
   unsigned long size;
   int type;
@@ -828,8 +769,7 @@ static int sys_munmap(char *params)
   return rc;
 }
 
-static int sys_mremap(char *params)
-{
+static int sys_mremap(char *params) {
   char *addr;
   unsigned long oldsize;
   unsigned long newsize;
@@ -850,8 +790,7 @@ static int sys_mremap(char *params)
   return (int) retval;
 }
 
-static int sys_mprotect(char *params)
-{
+static int sys_mprotect(char *params) {
   char *addr;
   unsigned long size;
   int protect;
@@ -866,8 +805,7 @@ static int sys_mprotect(char *params)
   return rc;
 }
 
-static int sys_mlock(char *params)
-{
+static int sys_mlock(char *params) {
   char *addr;
   unsigned long size;
   int rc;
@@ -880,8 +818,7 @@ static int sys_mlock(char *params)
   return rc;
 }
 
-static int sys_munlock(char *params)
-{
+static int sys_munlock(char *params) {
   char *addr;
   unsigned long size;
   int rc;
@@ -894,8 +831,7 @@ static int sys_munlock(char *params)
   return rc;
 }
 
-static int sys_waitone(char *params)
-{
+static int sys_waitone(char *params) {
   handle_t h;
   struct object *o;
   unsigned int timeout;
@@ -913,8 +849,7 @@ static int sys_waitone(char *params)
   return rc;
 }
 
-static int sys_waitall(char *params)
-{
+static int sys_waitall(char *params) {
   handle_t *h;
   int count;
   unsigned int timeout;
@@ -930,27 +865,25 @@ static int sys_waitall(char *params)
 
   if ((!h && count > 0) || lock_buffer(h, count * sizeof(handle_t *)) < 0) return -EFAULT;
 
-  for (n = 0; n < count; n++)
-  {
+  for (n = 0; n < count; n++) {
     o[n] = olock(h[n], OBJECT_ANY);
-    if (!o[n])
-    {
+    if (!o[n]) {
       while (--n >= 0) orel(o[n]);
       return -EBADF;
     }
   }
 
-  if (count == 1)
+  if (count == 1) {
     rc = wait_for_one_object(o[0], timeout, 1);
-  else
+  } else {
     rc = wait_for_all_objects(o, count, timeout, 1);
+  }
 
   for (n = 0; n < count; n++) orel(o[n]);
   return rc;
 }
 
-static int sys_waitany(char *params)
-{
+static int sys_waitany(char *params) {
   handle_t *h;
   int count;
   unsigned int timeout;
@@ -966,27 +899,25 @@ static int sys_waitany(char *params)
 
   if ((!h && count > 0) || lock_buffer(h, count * sizeof(handle_t *)) < 0) return -EFAULT;
 
-  for (n = 0; n < count; n++)
-  {
+  for (n = 0; n < count; n++) {
     o[n] = olock(h[n], OBJECT_ANY);
-    if (!o[n])
-    {
+    if (!o[n]) {
       while (--n >= 0) orel(o[n]);
       return -EBADF;
     }
   }
 
-  if (count == 1)
+  if (count == 1) {
     rc = wait_for_one_object(o[0], timeout, 1);
-  else
+  } else {
     rc = wait_for_any_object(o, count, timeout, 1);
+  }
 
   for (n = 0; n < count; n++) orel(o[n]);
   return rc;
 }
 
-static int sys_mkevent(char *params)
-{
+static int sys_mkevent(char *params) {
   int manual_reset;
   int initial_state;
   struct event *e;
@@ -1001,8 +932,7 @@ static int sys_mkevent(char *params)
   init_event(e, manual_reset, initial_state);
 
   h = halloc(&e->object);
-  if (h < 0)
-  {
+  if (h < 0) {
     close_object(&e->object);
     return h;
   }
@@ -1010,8 +940,7 @@ static int sys_mkevent(char *params)
   return h;
 }
 
-static int sys_epulse(char *params)
-{
+static int sys_epulse(char *params) {
   struct event *e;
   handle_t h;
 
@@ -1026,8 +955,7 @@ static int sys_epulse(char *params)
   return 0;
 }
 
-static int sys_eset(char *params)
-{
+static int sys_eset(char *params) {
   struct event *e;
   handle_t h;
 
@@ -1042,8 +970,7 @@ static int sys_eset(char *params)
   return 0;
 }
 
-static int sys_ereset(char *params)
-{
+static int sys_ereset(char *params) {
   struct event *e;
   handle_t h;
 
@@ -1058,8 +985,7 @@ static int sys_ereset(char *params)
   return 0;
 }
 
-static int sys_getthreadblock(char *params)
-{
+static int sys_getthreadblock(char *params) {
   handle_t h;
   struct thread *t;
   struct tib *tib;
@@ -1075,8 +1001,7 @@ static int sys_getthreadblock(char *params)
   return (int) tib;
 }
 
-static int sys_exitos(char *params)
-{
+static int sys_exitos(char *params) {
   int mode;
 
   mode = *(int *) params;
@@ -1086,8 +1011,7 @@ static int sys_exitos(char *params)
   return 0;
 }
 
-static int sys_dup(char *params)
-{
+static int sys_dup(char *params) {
   handle_t h;
   handle_t newh;
   struct object *o;
@@ -1103,8 +1027,7 @@ static int sys_dup(char *params)
   return newh;
 }
 
-static int sys_dup2(char *params)
-{
+static int sys_dup2(char *params) {
   handle_t h1;
   handle_t h2;
   struct object *o;
@@ -1123,8 +1046,7 @@ static int sys_dup2(char *params)
   return rc;
 }
 
-static int sys_mkthread(char *params)
-{
+static int sys_mkthread(char *params) {
   void *entrypoint;
   unsigned long stacksize;
   struct tib **ptib;
@@ -1140,19 +1062,14 @@ static int sys_mkthread(char *params)
   if (rc < 0) return rc;
 
   h = halloc(&t->object);
-  if (h < 0)
-  {
-    //destroy_thread(t);
-    return h;
-  }
+  if (h < 0) return h;
 
   if (ptib) *ptib = t->tib;
 
   return h;
 }
 
-static int sys_suspend(char *params)
-{
+static int sys_suspend(char *params) {
   handle_t h;
   struct thread *t;
   int rc;
@@ -1168,8 +1085,7 @@ static int sys_suspend(char *params)
   return rc;
 }
 
-static int sys_resume(char *params)
-{
+static int sys_resume(char *params) {
   handle_t h;
   struct thread *t;
   int rc;
@@ -1185,8 +1101,7 @@ static int sys_resume(char *params)
   return rc;
 }
 
-static int sys_endthread(char *params)
-{
+static int sys_endthread(char *params) {
   int exitcode;
 
   exitcode = *(int *) params;
@@ -1196,8 +1111,7 @@ static int sys_endthread(char *params)
   return 0;
 }
 
-static int sys_setcontext(char *params)
-{
+static int sys_setcontext(char *params) {
   handle_t h;
   struct thread *t;
   struct context *context;
@@ -1209,8 +1123,7 @@ static int sys_setcontext(char *params)
   t = (struct thread *) olock(h, OBJECT_THREAD);
   if (!t) return -EBADF;
 
-  if (lock_buffer(context, sizeof(struct context)) < 0)
-  {
+  if (lock_buffer(context, sizeof(struct context)) < 0) {
     orel(t);
     return -EFAULT;
   }
@@ -1223,8 +1136,7 @@ static int sys_setcontext(char *params)
   return rc;
 }
 
-static int sys_getcontext(char *params)
-{
+static int sys_getcontext(char *params) {
   handle_t h;
   struct thread *t;
   struct context *context;
@@ -1236,8 +1148,7 @@ static int sys_getcontext(char *params)
   t = (struct thread *) olock(h, OBJECT_THREAD);
   if (!t) return -EBADF;
 
-  if (lock_buffer(context, sizeof(struct context)) < 0)
-  {
+  if (lock_buffer(context, sizeof(struct context)) < 0) {
     orel(t);
     return -EFAULT;
   }
@@ -1250,8 +1161,7 @@ static int sys_getcontext(char *params)
   return rc;
 }
 
-static int sys_getprio(char *params)
-{
+static int sys_getprio(char *params) {
   handle_t h;
   struct thread *t;
   int priority;
@@ -1268,8 +1178,7 @@ static int sys_getprio(char *params)
   return priority;
 }
 
-static int sys_setprio(char *params)
-{
+static int sys_setprio(char *params) {
   handle_t h;
   struct thread *t;
   int priority;
@@ -1281,22 +1190,22 @@ static int sys_setprio(char *params)
   t = (struct thread *) olock(h, OBJECT_THREAD);
   if (!t) return -EBADF;
 
-  if (priority < 1 || priority > 15)
+  if (priority < 1 || priority > 15) {
     // User mode code can only set priority levels 1-15
     rc = -EINVAL;
-  else if (!t->tib)
+  } else if (!t->tib) {
     // User mode code not allowed to set priority for kernel threads
     rc = -EPERM;
-  else
+  } else {
     // Change thread priority
     rc = set_thread_priority(t, priority);
+  }
 
   orel(t);
   return rc;
 }
 
-static int sys_msleep(char *params)
-{
+static int sys_msleep(char *params) {
   int millisecs;
   int rc;
 
@@ -1307,8 +1216,7 @@ static int sys_msleep(char *params)
   return rc;
 }
 
-static int sys_time(char *params)
-{
+static int sys_time(char *params) {
   time_t *timeptr;
   time_t t;
 
@@ -1324,8 +1232,7 @@ static int sys_time(char *params)
   return t;
 }
 
-static int sys_gettimeofday(char *params)
-{
+static int sys_gettimeofday(char *params) {
   struct timeval *tv;
   void *tzp;
 
@@ -1343,8 +1250,7 @@ static int sys_gettimeofday(char *params)
   return 0;
 }
 
-static int sys_settimeofday(char *params)
-{
+static int sys_settimeofday(char *params) {
   struct timeval *tv;
 
   tv = *(struct timeval **) params;
@@ -1359,13 +1265,11 @@ static int sys_settimeofday(char *params)
   return 0;
 }
 
-static int sys_clock(char *params)
-{
+static int sys_clock(char *params) {
   return clocks;
 }
 
-static int sys_mksem(char *params)
-{
+static int sys_mksem(char *params) {
   int initial_count;
   struct sem *s;
   handle_t h;
@@ -1378,8 +1282,7 @@ static int sys_mksem(char *params)
   init_sem(s, initial_count);
 
   h = halloc(&s->object);
-  if (h < 0)
-  {
+  if (h < 0) {
     close_object(&s->object);
     return h;
   }
@@ -1387,8 +1290,7 @@ static int sys_mksem(char *params)
   return h;
 }
 
-static int sys_semrel(char *params)
-{
+static int sys_semrel(char *params) {
   handle_t h;
   struct sem *s;
   int count;
@@ -1406,8 +1308,7 @@ static int sys_semrel(char *params)
   return rc;
 }
 
-static int sys_accept(char *params)
-{
+static int sys_accept(char *params) {
   handle_t h;
   struct socket *s;
   struct socket *news;
@@ -1422,22 +1323,19 @@ static int sys_accept(char *params)
   s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) return -EBADF;
 
-  if (lock_buffer(addr, sizeof(struct sockaddr)) < 0)
-  {
+  if (lock_buffer(addr, sizeof(struct sockaddr)) < 0) {
     orel(s);
     return -EFAULT;
   }
   
-  if (lock_buffer(addrlen, sizeof(int)) < 0)
-  {
+  if (lock_buffer(addrlen, sizeof(int)) < 0) {
     orel(s);
     unlock_buffer(addr, sizeof(struct sockaddr));
     return -EFAULT;
   }
 
   rc = accept(s, addr, addrlen, &news);
-  if (rc == 0)
-  {
+  if (rc == 0) {
     rc = halloc(&news->iob.object);
     if (rc < 0) closesocket(news);
   }
@@ -1449,8 +1347,7 @@ static int sys_accept(char *params)
   return rc;
 }
 
-static int sys_bind(char *params)
-{
+static int sys_bind(char *params) {
   handle_t h;
   struct socket *s;
   int rc;
@@ -1464,8 +1361,7 @@ static int sys_bind(char *params)
   s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) return -EBADF;
 
-  if (lock_buffer(name, namelen) < 0)
-  {
+  if (lock_buffer(name, namelen) < 0) {
     orel(s);
     return -EFAULT;
   }
@@ -1478,8 +1374,7 @@ static int sys_bind(char *params)
   return rc;
 }
 
-static int sys_connect(char *params)
-{
+static int sys_connect(char *params) {
   handle_t h;
   struct socket *s;
   int rc;
@@ -1493,8 +1388,7 @@ static int sys_connect(char *params)
   s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) return -EBADF;
 
-  if (lock_buffer(name, namelen) < 0)
-  {
+  if (lock_buffer(name, namelen) < 0) {
     orel(s);
     return -EFAULT;
   }
@@ -1507,8 +1401,7 @@ static int sys_connect(char *params)
   return rc;
 }
 
-static int sys_getpeername(char *params)
-{
+static int sys_getpeername(char *params) {
   handle_t h;
   struct socket *s;
   int rc;
@@ -1522,14 +1415,12 @@ static int sys_getpeername(char *params)
   s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) return -EBADF;
 
-  if (lock_buffer(name, sizeof(struct sockaddr)) < 0)
-  {
+  if (lock_buffer(name, sizeof(struct sockaddr)) < 0) {
     orel(s);
     return -EFAULT;
   }
   
-  if (lock_buffer(namelen, 4) < 0)
-  {
+  if (lock_buffer(namelen, 4) < 0) {
     orel(s);
     unlock_buffer(name, sizeof(struct sockaddr));
     return -EFAULT;
@@ -1544,8 +1435,7 @@ static int sys_getpeername(char *params)
   return rc;
 }
 
-static int sys_getsockname(char *params)
-{
+static int sys_getsockname(char *params) {
   handle_t h;
   struct socket *s;
   int rc;
@@ -1559,14 +1449,12 @@ static int sys_getsockname(char *params)
   s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) return -EBADF;
 
-  if (lock_buffer(name, sizeof(struct sockaddr)) < 0)
-  {
+  if (lock_buffer(name, sizeof(struct sockaddr)) < 0) {
     orel(s);
     return -EFAULT;
   }
   
-  if (lock_buffer(namelen, 4) < 0)
-  {
+  if (lock_buffer(namelen, 4) < 0) {
     orel(s);
     unlock_buffer(name, sizeof(struct sockaddr));
     return -EFAULT;
@@ -1581,8 +1469,7 @@ static int sys_getsockname(char *params)
   return rc;
 }
 
-static int sys_getsockopt(char *params)
-{
+static int sys_getsockopt(char *params) {
   handle_t h;
   struct socket *s;
   int rc;
@@ -1601,20 +1488,18 @@ static int sys_getsockopt(char *params)
   s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) return -EBADF;
 
-  if (!optlen || lock_buffer(optlen, 4) < 0)
-  {
+  if (!optlen || lock_buffer(optlen, 4) < 0) {
     orel(s);
     return -EFAULT;
   }
   inoptlen = *optlen;
 
-  if (lock_buffer(optval, inoptlen) < 0)
-  {
+  if (lock_buffer(optval, inoptlen) < 0) {
     orel(s);
     unlock_buffer(optlen, 4);
     return -EFAULT;
   }
-  
+
   rc = getsockopt(s, level, optname, optval, optlen);
 
   orel(s);
@@ -1624,8 +1509,7 @@ static int sys_getsockopt(char *params)
   return rc;
 }
 
-static int sys_listen(char *params)
-{
+static int sys_listen(char *params) {
   handle_t h;
   struct socket *s;
   int rc;
@@ -1636,7 +1520,7 @@ static int sys_listen(char *params)
 
   s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) return -EBADF;
-  
+
   rc = listen(s, backlog);
 
   orel(s);
@@ -1644,8 +1528,7 @@ static int sys_listen(char *params)
   return rc;
 }
 
-static int sys_recv(char *params)
-{
+static int sys_recv(char *params) {
   handle_t h;
   struct socket *s;
   int rc;
@@ -1661,8 +1544,7 @@ static int sys_recv(char *params)
   s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) return -EBADF;
 
-  if (lock_buffer(data, size) < 0)
-  {
+  if (lock_buffer(data, size) < 0) {
     orel(s);
     return -EFAULT;
   }
@@ -1675,8 +1557,7 @@ static int sys_recv(char *params)
   return rc;
 }
 
-static int sys_recvfrom(char *params)
-{
+static int sys_recvfrom(char *params) {
   handle_t h;
   struct socket *s;
   int rc;
@@ -1696,21 +1577,18 @@ static int sys_recvfrom(char *params)
   s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) return -EBADF;
 
-  if (lock_buffer(data, size) < 0)
-  {
+  if (lock_buffer(data, size) < 0) {
     orel(s);
     return -EFAULT;
   }
-  
-  if (lock_buffer(from, sizeof(struct sockaddr)) < 0)
-  {
+
+  if (lock_buffer(from, sizeof(struct sockaddr)) < 0) {
     orel(s);
     unlock_buffer(data, size);
     return -EFAULT;
   }
 
-  if (lock_buffer(fromlen, sizeof(int)) < 0)
-  {
+  if (lock_buffer(fromlen, sizeof(int)) < 0) {
     orel(s);
     unlock_buffer(from, sizeof(struct sockaddr));
     unlock_buffer(data, size);
@@ -1727,8 +1605,7 @@ static int sys_recvfrom(char *params)
   return rc;
 }
 
-static int sys_send(char *params)
-{
+static int sys_send(char *params) {
   handle_t h;
   struct socket *s;
   int rc;
@@ -1744,8 +1621,7 @@ static int sys_send(char *params)
   s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) return -EBADF;
 
-  if (lock_buffer(data, size) < 0)
-  {
+  if (lock_buffer(data, size) < 0) {
     orel(s);
     return -EFAULT;
   }
@@ -1758,8 +1634,7 @@ static int sys_send(char *params)
   return rc;
 }
 
-static int sys_sendto(char *params)
-{
+static int sys_sendto(char *params) {
   handle_t h;
   struct socket *s;
   int rc;
@@ -1779,14 +1654,12 @@ static int sys_sendto(char *params)
   s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) return -EBADF;
 
-  if (lock_buffer(data, size) < 0)
-  {
+  if (lock_buffer(data, size) < 0) {
     orel(s);
     return -EFAULT;
   }
-  
-  if (lock_buffer(to, sizeof(struct sockaddr)) < 0)
-  {
+
+  if (lock_buffer(to, sizeof(struct sockaddr)) < 0) {
     orel(s);
     unlock_buffer(data, size);
     return -EFAULT;
@@ -1801,8 +1674,7 @@ static int sys_sendto(char *params)
   return rc;
 }
 
-static int sys_setsockopt(char *params)
-{
+static int sys_setsockopt(char *params) {
   handle_t h;
   struct socket *s;
   int rc;
@@ -1820,12 +1692,11 @@ static int sys_setsockopt(char *params)
   s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) return -EBADF;
 
-  if (lock_buffer(optval, optlen) < 0)
-  {
+  if (lock_buffer(optval, optlen) < 0) {
     orel(s);
     return -EFAULT;
   }
-  
+
   rc = setsockopt(s, level, optname, optval, optlen);
 
   orel(s);
@@ -1834,8 +1705,7 @@ static int sys_setsockopt(char *params)
   return rc;
 }
 
-static int sys_shutdown(char *params)
-{
+static int sys_shutdown(char *params) {
   handle_t h;
   struct socket *s;
   int rc;
@@ -1846,7 +1716,7 @@ static int sys_shutdown(char *params)
 
   s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) return -EBADF;
-  
+
   rc = shutdown(s, how);
 
   orel(s);
@@ -1854,8 +1724,7 @@ static int sys_shutdown(char *params)
   return rc;
 }
 
-static int sys_socket(char *params)
-{
+static int sys_socket(char *params) {
   int rc;
   struct socket *s;
   int domain;
@@ -1867,8 +1736,7 @@ static int sys_socket(char *params)
   protocol = *(int *) (params + 8);
 
   rc = socket(domain, type, protocol, &s);
-  if (rc == 0)
-  {
+  if (rc == 0) {
     rc = halloc(&s->iob.object);
     if (rc < 0) closesocket(s);
   }
@@ -1876,8 +1744,7 @@ static int sys_socket(char *params)
   return rc;
 }
 
-static int sys_readv(char *params)
-{
+static int sys_readv(char *params) {
   handle_t h;
   struct object *o;
   int rc;
@@ -1890,19 +1757,19 @@ static int sys_readv(char *params)
 
   o = olock(h, OBJECT_ANY);
   if (!o) return -EBADF;
-  
-  if (lock_iovec(iov, count) < 0)
-  {
+
+  if (lock_iovec(iov, count) < 0) {
     orel(o);
     return -EFAULT;
   }
 
-  if (o->type == OBJECT_FILE)
+  if (o->type == OBJECT_FILE) {
     rc = readv((struct file *) o, iov, count);
-  else if (o->type == OBJECT_SOCKET)
+  } else if (o->type == OBJECT_SOCKET) {
     rc = recvv((struct socket *) o, iov, count);
-  else
+  } else {
     rc = -EBADF;
+  }
 
   unlock_iovec(iov, count);
   orel(o);
@@ -1910,8 +1777,7 @@ static int sys_readv(char *params)
   return rc;
 }
 
-static int sys_writev(char *params)
-{
+static int sys_writev(char *params) {
   handle_t h;
   struct object *o;
   int rc;
@@ -1925,18 +1791,18 @@ static int sys_writev(char *params)
   o = olock(h, OBJECT_ANY);
   if (!o) return -EBADF;
   
-  if (lock_iovec(iov, count) < 0)
-  {
+  if (lock_iovec(iov, count) < 0) {
     orel(o);
     return -EFAULT;
   }
 
-  if (o->type == OBJECT_FILE)
+  if (o->type == OBJECT_FILE) {
     rc = writev((struct file *) o, iov, count);
-  else if (o->type == OBJECT_SOCKET)
+  } else if (o->type == OBJECT_SOCKET) {
     rc = sendv((struct socket *) o, iov, count);
-  else
+  } else {
     rc = -EBADF;
+  }
 
   lock_iovec(iov, count);
   orel(o);
@@ -1944,8 +1810,7 @@ static int sys_writev(char *params)
   return rc;
 }
 
-static int sys_chdir(char *params)
-{
+static int sys_chdir(char *params) {
   char *name;
   int rc;
 
@@ -1960,8 +1825,7 @@ static int sys_chdir(char *params)
   return rc;
 }
 
-static int sys_mkiomux(char *params)
-{
+static int sys_mkiomux(char *params) {
   int flags;
   struct iomux *iomux;
   handle_t h;
@@ -1974,8 +1838,7 @@ static int sys_mkiomux(char *params)
   init_iomux(iomux, flags);
 
   h = halloc(&iomux->object);
-  if (h < 0)
-  {
+  if (h < 0) {
     close_object(&iomux->object);
     return h;
   }
@@ -1983,8 +1846,7 @@ static int sys_mkiomux(char *params)
   return h;
 }
 
-static int sys_dispatch(char *params)
-{
+static int sys_dispatch(char *params) {
   handle_t ioh;
   handle_t h;
   struct iomux *iomux;
@@ -2002,8 +1864,7 @@ static int sys_dispatch(char *params)
   if (!iomux) return -EBADF;
 
   o = (struct object *) olock(h, OBJECT_ANY);
-  if (!o) 
-  {
+  if (!o)  {
     orel(iomux);
     return -EBADF;
   }
@@ -2015,8 +1876,7 @@ static int sys_dispatch(char *params)
   return rc;
 }
 
-static int sys_recvmsg(char *params)
-{
+static int sys_recvmsg(char *params) {
   handle_t h;
   struct msghdr *msg;
   unsigned int flags;
@@ -2030,21 +1890,18 @@ static int sys_recvmsg(char *params)
   s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) return -EBADF;
 
-  if (lock_buffer(msg, sizeof(struct msghdr)) < 0)
-  {
+  if (lock_buffer(msg, sizeof(struct msghdr)) < 0) {
     orel(s);
     return -EFAULT;
   }
   
-  if (lock_iovec(msg->msg_iov, msg->msg_iovlen) < 0)
-  {
+  if (lock_iovec(msg->msg_iov, msg->msg_iovlen) < 0) {
     unlock_buffer(msg, sizeof(struct msghdr));
     orel(s);
     return -EFAULT;
   }
 
-  if (lock_buffer(msg->msg_name, msg->msg_namelen) < 0)
-  {
+  if (lock_buffer(msg->msg_name, msg->msg_namelen) < 0) {
     unlock_iovec(msg->msg_iov, msg->msg_iovlen);
     unlock_buffer(msg, sizeof(struct msghdr));
     orel(s);
@@ -2060,8 +1917,7 @@ static int sys_recvmsg(char *params)
   return rc;
 }
 
-static int sys_sendmsg(char *params)
-{
+static int sys_sendmsg(char *params) {
   handle_t h;
   struct msghdr *msg;
   unsigned int flags;
@@ -2075,21 +1931,18 @@ static int sys_sendmsg(char *params)
   s = (struct socket *) olock(h, OBJECT_SOCKET);
   if (!s) return -EBADF;
 
-  if (lock_buffer(msg, sizeof(struct msghdr)) < 0)
-  {
+  if (lock_buffer(msg, sizeof(struct msghdr)) < 0) {
     orel(s);
     return -EFAULT;
   }
   
-  if (lock_iovec(msg->msg_iov, msg->msg_iovlen) < 0)
-  {
+  if (lock_iovec(msg->msg_iov, msg->msg_iovlen) < 0) {
     unlock_buffer(msg, sizeof(struct msghdr));
     orel(s);
     return -EFAULT;
   }
 
-  if (lock_buffer(msg->msg_name, msg->msg_namelen) < 0)
-  {
+  if (lock_buffer(msg->msg_name, msg->msg_namelen) < 0) {
     unlock_iovec(msg->msg_iov, msg->msg_iovlen);
     unlock_buffer(msg, sizeof(struct msghdr));
     orel(s);
@@ -2105,8 +1958,7 @@ static int sys_sendmsg(char *params)
   return rc;
 }
 
-static int sys_select(char *params)
-{
+static int sys_select(char *params) {
   int nfds;
   fd_set *readfds;
   fd_set *writefds;
@@ -2122,21 +1974,18 @@ static int sys_select(char *params)
 
   if (lock_fdset(readfds) < 0) return -EFAULT;
 
-  if (lock_fdset(writefds) < 0)
-  {
+  if (lock_fdset(writefds) < 0) {
     unlock_fdset(readfds);
     return -EFAULT;
   }
 
-  if (lock_fdset(exceptfds) < 0)
-  {
+  if (lock_fdset(exceptfds) < 0) {
     unlock_fdset(writefds);
     unlock_fdset(readfds);
     return -EFAULT;
   }
 
-  if (lock_buffer(timeout, sizeof(struct timeval)) < 0)
-  {
+  if (lock_buffer(timeout, sizeof(struct timeval)) < 0) {
     unlock_fdset(exceptfds);
     unlock_fdset(writefds);
     unlock_fdset(readfds);
@@ -2153,8 +2002,7 @@ static int sys_select(char *params)
   return rc;
 }
 
-static int sys_pipe(char *params)
-{
+static int sys_pipe(char *params) {
   handle_t *fildes;
   int rc;
   struct file *readpipe;
@@ -2166,13 +2014,11 @@ static int sys_pipe(char *params)
 
   rc = pipe(&readpipe, &writepipe);
 
-  if (rc == 0)
-  {
+  if (rc == 0) {
     fildes[0] = halloc(&readpipe->iob.object);
     fildes[1] = halloc(&writepipe->iob.object);
 
-    if (fildes[0] < 0 || fildes[1] < 0)
-    {
+    if (fildes[0] < 0 || fildes[1] < 0) {
       if (fildes[0] >= 0) hfree(fildes[0]);
       if (fildes[1] >= 0) hfree(fildes[1]);
 
@@ -2181,14 +2027,13 @@ static int sys_pipe(char *params)
       rc = -ENFILE;
     }
   }
-  
+
   unlock_buffer(fildes, sizeof(handle_t) * 2);
 
   return rc;
 }
 
-static int sys_setmode(char *params)
-{
+static int sys_setmode(char *params) {
   handle_t h;
   struct file *f;
   int rc;
@@ -2207,8 +2052,7 @@ static int sys_setmode(char *params)
   return rc;
 }
 
-static int sys_chmod(char *params)
-{
+static int sys_chmod(char *params) {
   char *name;
   int mode;
   int rc;
@@ -2225,8 +2069,7 @@ static int sys_chmod(char *params)
   return rc;
 }
 
-static int sys_fchmod(char *params)
-{
+static int sys_fchmod(char *params) {
   handle_t h;
   struct file *f;
   int rc;
@@ -2237,7 +2080,7 @@ static int sys_fchmod(char *params)
 
   f = (struct file *) olock(h, OBJECT_FILE);
   if (!f) return -EBADF;
-  
+
   rc = fchmod(f, mode);
 
   orel(f);
@@ -2245,8 +2088,7 @@ static int sys_fchmod(char *params)
   return rc;
 }
 
-static int sys_sysinfo(char *params)
-{
+static int sys_sysinfo(char *params) {
   int rc;
   int cmd;
   void *data;
@@ -2258,27 +2100,29 @@ static int sys_sysinfo(char *params)
 
   if (lock_buffer(data, size) < 0) return -EFAULT;
 
-  switch (cmd)
-  {
+  switch (cmd) {
     case SYSINFO_CPU:
-      if (!data || size < sizeof(struct cpuinfo))
+      if (!data || size < sizeof(struct cpuinfo)) {
         rc = -EFAULT;
-      else
+      } else {
         rc = cpu_sysinfo((struct cpuinfo *) data);
+      }
       break;
 
     case SYSINFO_MEM:
-      if (!data || size < sizeof(struct meminfo))
+      if (!data || size < sizeof(struct meminfo)) {
         rc = -EFAULT;
-      else
+      } else {
         rc = mem_sysinfo((struct meminfo *) data);
+      }
       break;
 
     case SYSINFO_LOAD:
-      if (!data || size < sizeof(struct loadinfo))
+      if (!data || size < sizeof(struct loadinfo)) {
         rc = -EFAULT;
-      else
+      } else {
         rc = load_sysinfo((struct loadinfo *) data);
+      }
       break;
 
     default:
@@ -2290,8 +2134,7 @@ static int sys_sysinfo(char *params)
   return rc;
 }
 
-static int sys_mkmutex(char *params)
-{
+static int sys_mkmutex(char *params) {
   int owned;
   struct mutex *m;
   handle_t h;
@@ -2304,8 +2147,7 @@ static int sys_mkmutex(char *params)
   init_mutex(m, owned);
 
   h = halloc(&m->object);
-  if (h < 0)
-  {
+  if (h < 0) {
     close_object(&m->object);
     return h;
   }
@@ -2313,8 +2155,7 @@ static int sys_mkmutex(char *params)
   return h;
 }
 
-static int sys_mutexrel(char *params)
-{
+static int sys_mutexrel(char *params) {
   handle_t h;
   struct mutex *m;
   int rc;
@@ -2330,8 +2171,7 @@ static int sys_mutexrel(char *params)
   return rc;
 }
 
-static int sys_pread(char *params)
-{
+static int sys_pread(char *params) {
   handle_t h;
   struct object *o;
   int rc;
@@ -2347,8 +2187,7 @@ static int sys_pread(char *params)
   o = olock(h, OBJECT_FILE);
   if (!o) return -EBADF;
   
-  if (lock_buffer(data, size) < 0)
-  {
+  if (lock_buffer(data, size) < 0) {
     orel(o);
     return -EFAULT;
   }
@@ -2361,8 +2200,7 @@ static int sys_pread(char *params)
   return rc;
 }
 
-static int sys_pwrite(char *params)
-{
+static int sys_pwrite(char *params) {
   handle_t h;
   struct object *o;
   int rc;
@@ -2378,27 +2216,24 @@ static int sys_pwrite(char *params)
   o = olock(h, OBJECT_FILE);
   if (!o) return -EBADF;
 
-  if (lock_buffer(data, size) < 0)
-  {
+  if (lock_buffer(data, size) < 0) {
     orel(o);
     return -EFAULT;
   }
-  
+
   rc = pwrite((struct file *) o, data, size, offset);
-  
+
   orel(o);
   unlock_buffer(data, size);
 
   return rc;
 }
 
-static int sys_getuid(char *params)
-{
+static int sys_getuid(char *params) {
   return getuid();
 }
 
-static int sys_setuid(char *params)
-{
+static int sys_setuid(char *params) {
   uid_t uid;
 
   uid = *(uid_t *) params;
@@ -2406,13 +2241,11 @@ static int sys_setuid(char *params)
   return setuid(uid);
 }
 
-static int sys_getgid(char *params)
-{
+static int sys_getgid(char *params) {
   return getgid();
 }
 
-static int sys_setgid(char *params)
-{
+static int sys_setgid(char *params) {
   gid_t gid;
 
   gid = *(gid_t *) params;
@@ -2420,13 +2253,11 @@ static int sys_setgid(char *params)
   return setgid(gid);
 }
 
-static int sys_geteuid(char *params)
-{
+static int sys_geteuid(char *params) {
   return geteuid();
 }
 
-static int sys_seteuid(char *params)
-{
+static int sys_seteuid(char *params) {
   uid_t uid;
 
   uid = *(uid_t *) params;
@@ -2434,13 +2265,11 @@ static int sys_seteuid(char *params)
   return seteuid(uid);
 }
 
-static int sys_getegid(char *params)
-{
+static int sys_getegid(char *params) {
   return getegid();
 }
 
-static int sys_setegid(char *params)
-{
+static int sys_setegid(char *params) {
   gid_t gid;
 
   gid = *(gid_t *) params;
@@ -2448,8 +2277,7 @@ static int sys_setegid(char *params)
   return setegid(gid);
 }
 
-static int sys_getgroups(char *params)
-{
+static int sys_getgroups(char *params) {
   int rc;
   int size;
   gid_t *list;
@@ -2466,8 +2294,7 @@ static int sys_getgroups(char *params)
   return rc;
 }
 
-static int sys_setgroups(char *params)
-{
+static int sys_setgroups(char *params) {
   int rc;
   int size;
   gid_t *list;
@@ -2484,8 +2311,7 @@ static int sys_setgroups(char *params)
   return rc;
 }
 
-static int sys_chown(char *params)
-{
+static int sys_chown(char *params) {
   char *name;
   int owner;
   int group;
@@ -2504,8 +2330,7 @@ static int sys_chown(char *params)
   return rc;
 }
 
-static int sys_fchown(char *params)
-{
+static int sys_fchown(char *params) {
   handle_t h;
   struct file *f;
   int rc;
@@ -2526,8 +2351,7 @@ static int sys_fchown(char *params)
   return rc;
 }
 
-static int sys_access(char *params)
-{
+static int sys_access(char *params) {
   char *name;
   int mode;
   int rc;
@@ -2544,8 +2368,7 @@ static int sys_access(char *params)
   return rc;
 }
 
-static int sys_poll(char *params)
-{
+static int sys_poll(char *params) {
   struct pollfd *fds;
   unsigned int nfds;
   int timeout;
@@ -2564,8 +2387,7 @@ static int sys_poll(char *params)
   return rc;
 }
 
-static int sys_getcwd(char *params)
-{
+static int sys_getcwd(char *params) {
   char *buf;
   int size;
   int rc;
@@ -2582,8 +2404,7 @@ static int sys_getcwd(char *params)
   return rc;
 }
 
-static int sys_sendsig(char *params)
-{
+static int sys_sendsig(char *params) {
   handle_t h;
   int signum;
   struct thread *t;
@@ -2602,8 +2423,7 @@ static int sys_sendsig(char *params)
   return rc;
 }
 
-static int sys_sigprocmask(char *params)
-{
+static int sys_sigprocmask(char *params) {
   int how;
   sigset_t *set;
   sigset_t *oldset;
@@ -2614,8 +2434,7 @@ static int sys_sigprocmask(char *params)
   oldset = *(sigset_t **) (params + 8);
 
   if (lock_buffer(set, sizeof(sigset_t)) < 0) return -EFAULT;
-  if (lock_buffer(oldset, sizeof(sigset_t)) < 0)
-  {
+  if (lock_buffer(oldset, sizeof(sigset_t)) < 0) {
     unlock_buffer(set, sizeof(sigset_t));
     return -EFAULT;
   }
@@ -2628,8 +2447,7 @@ static int sys_sigprocmask(char *params)
   return rc;
 }
 
-static int sys_sigpending(char *params)
-{
+static int sys_sigpending(char *params) {
   sigset_t *set;
   int rc;
 
@@ -2644,8 +2462,7 @@ static int sys_sigpending(char *params)
   return rc;
 }
 
-static int sys_alarm(char *params)
-{
+static int sys_alarm(char *params) {
   unsigned int seconds;
   int rc;
 
@@ -2656,8 +2473,7 @@ static int sys_alarm(char *params)
   return rc;
 }
 
-struct syscall_entry syscalltab[] =
-{
+struct syscall_entry syscalltab[] = {
   {"null",0, "", sys_null},
   {"mkfs", 12, "'%s','%s','%s'", sys_mkfs},
   {"mount", 16, "'%s','%s','%s','%s'", sys_mount},
@@ -2769,8 +2585,7 @@ struct syscall_entry syscalltab[] =
   {"alarm", 4, "%d", sys_alarm},
 };
 
-int syscall(int syscallno, char *params, struct context *ctxt)
-{
+int syscall(int syscallno, char *params, struct context *ctxt) {
   int rc;
   struct thread *t = self();
 
@@ -2798,14 +2613,12 @@ int syscall(int syscallno, char *params, struct context *ctxt)
 #endif
 
   rc = lock_buffer(params, syscalltab[syscallno].paramsize);
-  if (rc >= 0)
-  {
+  if (rc >= 0) {
     rc = syscalltab[syscallno].func(params);
     unlock_buffer(params, syscalltab[syscallno].paramsize);
   }
 
-  if (rc < 0)
-  {
+  if (rc < 0) {
     struct tib *tib = t->tib;
     if (tib) tib->errnum = -rc;
   }
@@ -2857,16 +2670,13 @@ int syscall(int syscallno, char *params, struct context *ctxt)
 }
 
 #ifdef SYSCALL_PROFILE
-static int syscalls_proc(struct proc_file *pf, void *arg)
-{
+static int syscalls_proc(struct proc_file *pf, void *arg) {
   int i = 0;
 
   pprintf(pf, "syscall               calls     errors\n");
   pprintf(pf, "---------------- ---------- ----------\n");
-  for (i = 0; i < SYSCALL_MAX  + 1; i++)
-  {
-    if (sccnt[i] != 0) 
-    {
+  for (i = 0; i < SYSCALL_MAX  + 1; i++) {
+    if (sccnt[i] != 0) {
       pprintf(pf, "%-16s %10d %10d\n", syscalltab[i].name, sccnt[i], scerr[i]);
     }
   }
@@ -2875,8 +2685,7 @@ static int syscalls_proc(struct proc_file *pf, void *arg)
 }
 #endif
 
-void init_syscall()
-{
+void init_syscall() {
 #ifdef SYSCALL_PROFILE
   register_proc_inode("syscalls", syscalls_proc, NULL);
 #endif

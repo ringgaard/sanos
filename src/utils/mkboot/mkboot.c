@@ -42,8 +42,7 @@
 #include <os/seg.h>
 #include <os/syspage.h>
 
-void usage()
-{
+void usage() {
   fprintf(stderr, "usage: mkboot [ options ]\n\n");
   fprintf(stderr, "  -b <bootsect> Install new boot sector\n");
   fprintf(stderr, "  -d <path>     Filesystem where boot components will be installed\n");
@@ -52,26 +51,22 @@ void usage()
   fprintf(stderr, "  -o <options>  Kernel options\n");
 }
 
-int read_boot_sector(int fd, struct boot_sector *bsect)
-{
+int read_boot_sector(int fd, struct boot_sector *bsect) {
   int rc;
 
   rc = read(fd, bsect, sizeof(struct boot_sector));
-  if (rc < 0)
-  {
+  if (rc < 0) {
     perror("error reading boot sector");
     return -1;
   }
-  if (rc != sizeof(struct boot_sector))
-  {
+  if (rc != sizeof(struct boot_sector)) {
     fprintf(stderr, "error: Wrong size for boot sector (%d bytes)\n", rc);
     return -1;
   }
   return 0;
 }
 
-int install_boot_sector(char *devname, char *bootfile)
-{
+int install_boot_sector(char *devname, char *bootfile) {
   int dev;
   int fd;
   struct boot_sector bsect;
@@ -81,13 +76,11 @@ int install_boot_sector(char *devname, char *bootfile)
 
   // Read existing boot sector to get loader parameters
   dev = open(devname, O_RDWR | O_BINARY);
-  if (dev < 0) 
-  {
+  if (dev < 0) {
     perror(devname);
     return -1;
   }
-  if (read_boot_sector(dev, &bsect) < 0) 
-  {
+  if (read_boot_sector(dev, &bsect) < 0) {
     close(dev);
     return -1;
   }
@@ -101,8 +94,7 @@ int install_boot_sector(char *devname, char *bootfile)
     close(dev);
     return -1;
   }
-  if (read_boot_sector(fd, &bsect) < 0) 
-  {
+  if (read_boot_sector(fd, &bsect) < 0) {
     close(dev);
     close(fd);
     return -1;
@@ -110,8 +102,7 @@ int install_boot_sector(char *devname, char *bootfile)
   close(fd);
 
   // Check for valid boot sector
-  if (bsect.signature != MBR_SIGNATURE)
-  {
+  if (bsect.signature != MBR_SIGNATURE) {
     fprintf(stderr, "Invalid boot sector signature\n");
     close(dev);
     return -1; 
@@ -130,8 +121,7 @@ int install_boot_sector(char *devname, char *bootfile)
   }
 
   rc = write(dev, &bsect, sizeof(struct boot_sector));
-  if (rc < 0) 
-  {
+  if (rc < 0) {
     printf("Unable to write boot sector\n");
     close(dev);
     return -1;
@@ -141,8 +131,7 @@ int install_boot_sector(char *devname, char *bootfile)
   return 0;
 }
 
-int install_loader(char *devname, char *ldrfile, char *krnlopts)
-{
+int install_loader(char *devname, char *ldrfile, char *krnlopts) {
   int dev = -1;
   int ldr = -1;
   char *image = NULL;
@@ -156,8 +145,7 @@ int install_loader(char *devname, char *ldrfile, char *krnlopts)
 
   // Open device
   dev = open(devname, O_RDWR | O_BINARY);
-  if (dev < 0) 
-  {
+  if (dev < 0) {
     perror(devname);
     goto error;
   }
@@ -191,8 +179,7 @@ int install_loader(char *devname, char *ldrfile, char *krnlopts)
   }
 
   // Check signature
-  if (size < 2 || image[0] != 'M' || image[1] != 'Z')
-  {
+  if (size < 2 || image[0] != 'M' || image[1] != 'Z') {
     fprintf(stderr, "%s: Invalid boot loader signature\n", ldrfile);
     goto error;
   }
@@ -216,15 +203,13 @@ int install_loader(char *devname, char *ldrfile, char *krnlopts)
   // Calculate loader start and size in sectors (used by bootstrap)
   bsect.ldrstart = super->first_reserved_block * (blocksize / SECTORSIZE);
   bsect.ldrsize = size / SECTORSIZE;
-  if (size > (int) super->reserved_blocks * blocksize) 
-  {
+  if (size > (int) super->reserved_blocks * blocksize) {
     printf("Loader too big (max %d bytes)\n", super->reserved_blocks * blocksize);
     goto error;
   }
 
   // Patch kernel options into loader
-  if (krnlopts)
-  {
+  if (krnlopts) {
     int optspos;
     
     optspos = *(unsigned short *) (image + KRNLOPTS_POSOFS);
@@ -238,8 +223,7 @@ int install_loader(char *devname, char *ldrfile, char *krnlopts)
     goto error;
   }
   
-  for (n = 0; n < size / blocksize; n++)
-  {
+  for (n = 0; n < size / blocksize; n++) {
     rc = write(dev, image + n * blocksize, blocksize);
     if (rc < 0) {
       perror(devname);
@@ -263,8 +247,7 @@ error:
   return -1;
 }
 
-int install_kernel(char *target, char *krnlfile)
-{
+int install_kernel(char *target, char *krnlfile) {
   int fin;
   int fout;
   int bytes;
@@ -273,8 +256,7 @@ int install_kernel(char *target, char *krnlfile)
 
   // Open new kernel file
   fin = open(krnlfile, O_BINARY);
-  if (fin < 0) 
-  {
+  if (fin < 0) {
     perror(krnlfile);
     return -1;
   }
@@ -285,8 +267,7 @@ int install_kernel(char *target, char *krnlfile)
 
   // Install kernel on target using reserved inode
   fout = open(targetfn, O_SPECIAL | (DFS_INODE_KRNL << 24), 0744);
-  if (fout < 0) 
-  {
+  if (fout < 0) {
     perror(targetfn);
     close(fin);
     return -1;
@@ -294,8 +275,7 @@ int install_kernel(char *target, char *krnlfile)
   fchmod(fout, 0644);
 
   // Copy kernel
-  while ((bytes = read(fin, block, sizeof block)) > 0)
-  {
+  while ((bytes = read(fin, block, sizeof block)) > 0) {
     write(fout, block, bytes);
   }
 
@@ -304,8 +284,7 @@ int install_kernel(char *target, char *krnlfile)
   return 0;
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   char *bootfs = "/";
   char devname[MAXPATH];
   char *bootfile = NULL;
@@ -317,10 +296,8 @@ int main(int argc, char *argv[])
   int rc;
 
   // Parse command line options
-  while ((c = getopt(argc, argv, "b:d:hk:l:o:")) != EOF)
-  {
-    switch (c)
-    {
+  while ((c = getopt(argc, argv, "b:d:hk:l:o:")) != EOF) {
+    switch (c) {
       case 'b':
         bootfile = optarg;
         break;
@@ -349,8 +326,7 @@ int main(int argc, char *argv[])
   }
 
   // Get boot file system information
-  if (statfs(bootfs, &fs) < 0)
-  {
+  if (statfs(bootfs, &fs) < 0) {
     perror(bootfs);
     return 1;
   }
@@ -358,32 +334,27 @@ int main(int argc, char *argv[])
   strcat(devname, fs.mntfrom);
 
   // Check boot file system
-  if (strcmp(fs.fstype, "dfs") != 0 || strcmp(fs.mntto, bootfs) != 0)
-  {
+  if (strcmp(fs.fstype, "dfs") != 0 || strcmp(fs.mntto, bootfs) != 0) {
     printf("%s: cannot install on %s (%s)\n", devname, fs.fstype, fs.mntto);
     return 1;
   }
 
   // Install new boot sector
-  if (bootfile != NULL) 
-  {
+  if (bootfile != NULL) {
     printf("Installing boot sector %s on %s\n", bootfile, devname);
     rc = install_boot_sector(devname, bootfile);
     if (rc < 0)  return 1;
   }
 
   // Install new loader
-  if (krnlopts != NULL)
-  {
-    if (strlen(krnlopts) > KRNLOPTS_LEN - 1)
-    {
+  if (krnlopts != NULL) {
+    if (strlen(krnlopts) > KRNLOPTS_LEN - 1) {
       printf("Kernel options too big\n");
       return 1;
     }
     if (ldrfile == NULL) ldrfile = "/boot/osldr.dll";
   }
-  if (ldrfile != NULL) 
-  {
+  if (ldrfile != NULL) {
     printf("Installing loader %s on %s", ldrfile, devname);
     if (krnlopts) printf(" with options %s", krnlopts);
     printf("\n");
@@ -392,8 +363,7 @@ int main(int argc, char *argv[])
   }
 
   // Install new kernel
-  if (krnlfile != NULL) 
-  {
+  if (krnlfile != NULL) {
     printf("Installing kernel %s on %s\n", krnlfile, devname);
     rc = install_kernel(fs.mntto, krnlfile);
     if (rc < 0)  return 1;
@@ -401,4 +371,3 @@ int main(int argc, char *argv[])
 
   return 0;
 }
-

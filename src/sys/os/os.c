@@ -84,19 +84,16 @@ void globalhandler(struct siginfo *info);
 // Error handling
 //
 
-void panic(const char *msg)
-{
+void panic(const char *msg) {
   syslog(LOG_CRIT, "panic: %s", msg);
   exit(3);
 }
 
-int *_errno()
-{
+int *_errno() {
   return &(gettib()->errnum);
 }
 
-void dbgbreak()
-{
+void dbgbreak() {
   __asm { int 3 };
 }
 
@@ -104,29 +101,26 @@ void dbgbreak()
 // File routines
 //
 
-int *_fmode()
-{
+int *_fmode() {
   return &getpeb()->fmodeval;
 }
 
-int __getstdhndl(int n)
-{
+int __getstdhndl(int n) {
   return gettib()->proc->iob[n];
 }
 
-static int check_access(struct stat64 *st, int mode)
-{
+static int check_access(struct stat64 *st, int mode) {
   int uid = getuid();
   
   if (uid == 0) return 0;
 
-  if (uid == st->st_uid)
+  if (uid == st->st_uid) {
     mode <<= 6;
-  else if (getgid() == st->st_gid)
+  } else if (getgid() == st->st_gid) {
     mode <<= 3;
+  }
 
-  if ((mode && st->st_mode) == 0)
-  {
+  if ((mode && st->st_mode) == 0) {
     errno = EACCES;
     return -1;
   }
@@ -134,18 +128,15 @@ static int check_access(struct stat64 *st, int mode)
   return 0;
 }
 
-handle_t creat(const char *name, int mode)
-{
+handle_t creat(const char *name, int mode) {
   return open(name, O_CREAT | O_TRUNC | O_WRONLY, mode);
 }
 
-handle_t sopen(const char *name, int flags, int shflags, ...)
-{
+handle_t sopen(const char *name, int flags, int shflags, ...) {
   va_list args;
   int mode = 0;
 
-  if (flags & O_CREAT)
-  {
+  if (flags & O_CREAT) {
     va_start(args, shflags);
     mode = va_arg(args, int);
     va_end(args);
@@ -154,13 +145,11 @@ handle_t sopen(const char *name, int flags, int shflags, ...)
   return open(name, FILE_FLAGS(flags, shflags), mode);
 }
 
-int eof(handle_t f)
-{
+int eof(handle_t f) {
   return tell64(f) == fstat64(f, NULL);
 }
 
-int umask(int mask)
-{
+int umask(int mask) {
   int oldmask;
 
   mask &= S_IRWXUGO;
@@ -169,32 +158,27 @@ int umask(int mask)
   return oldmask;
 }
 
-loff_t filelength(handle_t f)
-{
+loff_t filelength(handle_t f) {
   return fstat(f, NULL);
 }
 
-off64_t filelength64(handle_t f)
-{
+off64_t filelength64(handle_t f) {
   return fstat64(f, NULL);
 }
 
-int isatty(handle_t f) 
-{
+int isatty(handle_t f)  {
   // For now we regard all file handles as non-interactive.
   errno = ENOTTY;
   return 0;
 }
 
-int canonicalize(const char *filename, char *buffer, int size)
-{
+int canonicalize(const char *filename, char *buffer, int size) {
   char *p;
   char *end;
   int len;
 
   // Check for maximum filename length
-  if (!filename) 
-  {
+  if (!filename) {
     errno = EINVAL;
     return -1;
   }
@@ -207,26 +191,22 @@ int canonicalize(const char *filename, char *buffer, int size)
   end = buffer + size;
 
   // Add current directory to filename if relative path
-  if (*filename != PS1 && *filename != PS2)
-  {
+  if (*filename != PS1 && *filename != PS2) {
     char curdir[MAXPATH];
 
     // Do not add current directory if it is root directory
     if (!getcwd(curdir, MAXPATH)) return -1;
     len = strlen(curdir);
-    if (len > 1)
-    {
+    if (len > 1) {
       memcpy(p, curdir, len);
       p += len;
     }
   }
 
-  while (*filename)
-  {
+  while (*filename) {
     // Parse path separator
     if (*filename == PS1 || *filename == PS2) filename++;
-    if (p == end) 
-    {
+    if (p == end) {
       errno = ENAMETOOLONG;
       return -1;
     }
@@ -234,16 +214,13 @@ int canonicalize(const char *filename, char *buffer, int size)
 
     // Parse next name part in path
     len = 0;
-    while (*filename && *filename != PS1 && *filename != PS2)
-    {
+    while (*filename && *filename != PS1 && *filename != PS2) {
       // We do not allow control characters in filenames
-      if (*filename > 0 && *filename < ' ') 
-      {
+      if (*filename > 0 && *filename < ' ') {
         errno = EINVAL;
         return -1;
       }
-      if (p == end) 
-      {
+      if (p == end) {
         errno = ENAMETOOLONG;
         return -1;
       }
@@ -252,15 +229,13 @@ int canonicalize(const char *filename, char *buffer, int size)
     }
 
     // Handle empty name parts and '.' and '..'
-    if (len == 0)
+    if (len == 0) {
       p--;
-    if (len == 1 && filename[-1] == '.')
+    } else if (len == 1 && filename[-1] == '.') {
       p -= 2;
-    else if (len == 2 && filename[-1] == '.' && filename[-2] == '.')
-    {
+    } else if (len == 2 && filename[-1] == '.' && filename[-2] == '.') {
       p -= 4;
-      if (p < buffer) 
-      {
+      if (p < buffer) {
         errno = EINVAL;
         return -1;
       }
@@ -272,8 +247,7 @@ int canonicalize(const char *filename, char *buffer, int size)
   if (p == buffer) *p++ = getpeb()->pathsep;
 
   // Terminate string
-  if (p == end) 
-  {
+  if (p == end) {
     errno = ENAMETOOLONG;
     return -1;
   }
@@ -287,8 +261,7 @@ int canonicalize(const char *filename, char *buffer, int size)
 // Heap routines
 //
 
-struct heap *create_module_heap(hmodule_t hmod)
-{
+struct heap *create_module_heap(hmodule_t hmod) {
   size_t region_size;
   size_t group_size;
 
@@ -300,8 +273,7 @@ struct heap *create_module_heap(hmodule_t hmod)
   return heap_create(region_size, group_size);
 }
 
-void *malloc(size_t size)
-{
+void *malloc(size_t size) {
   void *p;
 
   //syslog(LOG_MODULE | LOG_DEBUG, "malloc %d bytes", size);
@@ -317,8 +289,7 @@ void *malloc(size_t size)
   return p;
 }
 
-void *realloc(void *mem, size_t size)
-{
+void *realloc(void *mem, size_t size) {
   void *p;
 
   enter(&heap_lock);
@@ -331,8 +302,7 @@ void *realloc(void *mem, size_t size)
   return p;
 }
 
-void *calloc(size_t num, size_t size)
-{
+void *calloc(size_t num, size_t size) {
   void *p;
 
   enter(&heap_lock);
@@ -345,15 +315,13 @@ void *calloc(size_t num, size_t size)
   return p;
 }
 
-void free(void *p)
-{
+void free(void *p) {
   enter(&heap_lock);
   heap_free(getpeb()->heap, p);
   leave(&heap_lock);
 }
 
-struct mallinfo mallinfo()
-{
+struct mallinfo mallinfo() {
   struct mallinfo m;
 
   enter(&heap_lock);
@@ -363,35 +331,29 @@ struct mallinfo mallinfo()
   return m;
 }
 
-int malloc_usable_size(void *p)
-{
+int malloc_usable_size(void *p) {
   return heap_malloc_usable_size(p);
 }
 
-struct heap *get_local_heap()
-{
+struct heap *get_local_heap() {
   struct process *proc = gettib()->proc;
   if (!proc->heap) proc->heap = create_module_heap(proc->hmod);
   return proc->heap;
 }
 
-void *_lmalloc(size_t size)
-{
+void *_lmalloc(size_t size) {
   return heap_alloc(get_local_heap(), size);
 }
 
-void *_lrealloc(void *mem, size_t size)
-{
+void *_lrealloc(void *mem, size_t size) {
   return heap_realloc(get_local_heap(), mem, size);
 }
 
-void *_lcalloc(size_t num, size_t size)
-{
+void *_lcalloc(size_t num, size_t size) {
   return heap_calloc(get_local_heap(), num, size);
 }
 
-void _lfree(void *p)
-{
+void _lfree(void *p) {
   heap_free(get_local_heap(), p);
 }
 
@@ -399,8 +361,7 @@ void _lfree(void *p)
 // Module routines
 //
 
-static void *load_image(char *filename)
-{
+static void *load_image(char *filename) {
   handle_t f;
   char *buffer;
   char *imgbase;
@@ -416,15 +377,13 @@ static void *load_image(char *filename)
 
   // Open file
   f = open(filename, O_RDONLY | O_BINARY);
-  if (f < 0) 
-  {
+  if (f < 0) {
     free(buffer);
     return NULL;
   }
 
   // Read headers
-  if ((bytes = read(f, buffer, PAGESIZE)) < 0)
-  {
+  if ((bytes = read(f, buffer, PAGESIZE)) < 0) {
     close(f);
     free(buffer);
     return NULL;
@@ -434,8 +393,7 @@ static void *load_image(char *filename)
   imghdr = (struct image_header *) (buffer + doshdr->e_lfanew);
 
   // Check PE file signature
-  if (doshdr->e_lfanew > bytes || imghdr->signature != IMAGE_PE_SIGNATURE) 
-  {
+  if (doshdr->e_lfanew > bytes || imghdr->signature != IMAGE_PE_SIGNATURE) {
     close(f);
     free(buffer);
     return NULL;
@@ -446,8 +404,7 @@ static void *load_image(char *filename)
 
   // Allocate memory for module
   imgbase = (char *) mmap(NULL, imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UMOD');
-  if (imgbase == NULL)
-  {
+  if (imgbase == NULL) {
     close(f);
     free(buffer);
     return NULL;
@@ -457,20 +414,16 @@ static void *load_image(char *filename)
   memcpy(imgbase, buffer, PAGESIZE);
 
   // Read sections
-  for (i = 0; i < imghdr->header.number_of_sections; i++)
-  {
-    if (imghdr->sections[i].pointer_to_raw_data != 0)
-    {
-      if (lseek(f, imghdr->sections[i].pointer_to_raw_data, SEEK_SET) != imghdr->sections[i].pointer_to_raw_data)
-      {
+  for (i = 0; i < imghdr->header.number_of_sections; i++) {
+    if (imghdr->sections[i].pointer_to_raw_data != 0) {
+      if (lseek(f, imghdr->sections[i].pointer_to_raw_data, SEEK_SET) != imghdr->sections[i].pointer_to_raw_data) {
         munmap(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
         close(f);
         free(buffer);
         return NULL;
       }
 
-      if (read(f, RVA(imgbase, imghdr->sections[i].virtual_address), imghdr->sections[i].size_of_raw_data) != (int) imghdr->sections[i].size_of_raw_data)
-      {
+      if (read(f, RVA(imgbase, imghdr->sections[i].virtual_address), imghdr->sections[i].size_of_raw_data) != (int) imghdr->sections[i].size_of_raw_data) {
         munmap(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
         close(f);
         free(buffer);
@@ -488,23 +441,19 @@ static void *load_image(char *filename)
   return imgbase;
 }
 
-static int unload_image(hmodule_t hmod, size_t size)
-{
+static int unload_image(hmodule_t hmod, size_t size) {
   return munmap(hmod, size, MEM_RELEASE);
 }
 
-static int protect_region(void *mem, size_t size, int protect)
-{
+static int protect_region(void *mem, size_t size, int protect) {
   return mprotect(mem, size, protect);
 }
 
-static void logldr(char *msg)
-{
+static void logldr(char *msg) {
   syslog(LOG_MODULE | LOG_DEBUG, "mod: %s", msg);
 }
 
-void *dlsym(hmodule_t hmod, const char *procname)
-{
+void *dlsym(hmodule_t hmod, const char *procname) {
   void *addr;
 
   enter(&mod_lock);
@@ -513,8 +462,7 @@ void *dlsym(hmodule_t hmod, const char *procname)
   return addr;
 }
 
-hmodule_t getmodule(const char *name)
-{
+hmodule_t getmodule(const char *name) {
   hmodule_t hmod;
 
   if (name == NULL) return gettib()->proc->hmod;
@@ -525,8 +473,7 @@ hmodule_t getmodule(const char *name)
   return hmod;
 }
 
-int getmodpath(hmodule_t hmod, char *buffer, int size)
-{
+int getmodpath(hmodule_t hmod, char *buffer, int size) {
   int rc;
 
   if (hmod == NULL) hmod = gettib()->proc->hmod;
@@ -535,8 +482,7 @@ int getmodpath(hmodule_t hmod, char *buffer, int size)
   rc = get_module_filename(&usermods, hmod, buffer, size);
   leave(&mod_lock);
   
-  if (rc < 0)
-  {
+  if (rc < 0) {
     errno = -rc;
     return -1;
   }
@@ -544,8 +490,7 @@ int getmodpath(hmodule_t hmod, char *buffer, int size)
   return 0;
 }
 
-hmodule_t dlopen(const char *name, int mode)
-{
+hmodule_t dlopen(const char *name, int mode) {
   hmodule_t hmod;
   int flags = 0;
 
@@ -560,8 +505,7 @@ hmodule_t dlopen(const char *name, int mode)
   return hmod;
 }
 
-int dlclose(hmodule_t hmod)
-{
+int dlclose(hmodule_t hmod) {
   int rc;
 
   enter(&mod_lock);
@@ -570,13 +514,11 @@ int dlclose(hmodule_t hmod)
   return rc;
 }
 
-char *dlerror()
-{
+char *dlerror() {
   return strerror(errno);
 }
 
-int exec(hmodule_t hmod, const char *args, char **env)
-{
+int exec(hmodule_t hmod, const char *args, char **env) {
   int rc;
 
   if (get_image_header(hmod)->header.characteristics & IMAGE_FILE_DLL) return -ENOEXEC;
@@ -586,16 +528,14 @@ int exec(hmodule_t hmod, const char *args, char **env)
   return rc;
 }
 
-void *getresdata(hmodule_t hmod, int type, char *name, int lang, int *len)
-{
+void *getresdata(hmodule_t hmod, int type, char *name, int lang, int *len) {
   void *data;
   int rc;
 
   if (hmod == NULL) hmod = gettib()->proc->hmod;
 
   rc = get_resource_data(hmod, INTRES(type), name, INTRES(lang), &data);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     errno = -rc;
     return NULL;
   }
@@ -604,16 +544,14 @@ void *getresdata(hmodule_t hmod, int type, char *name, int lang, int *len)
   return data;
 }
 
-int getreslen(hmodule_t hmod, int type, char *name, int lang)
-{
+int getreslen(hmodule_t hmod, int type, char *name, int lang) {
   void *data;
   int rc;
 
   if (hmod == NULL) hmod = gettib()->proc->hmod;
 
   rc = get_resource_data(hmod, INTRES(type), name, INTRES(lang), &data);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     errno = -rc;
     return rc;
   }
@@ -621,8 +559,7 @@ int getreslen(hmodule_t hmod, int type, char *name, int lang)
   return rc;
 }
 
-struct verinfo *getverinfo(hmodule_t hmod)
-{
+struct verinfo *getverinfo(hmodule_t hmod) {
   struct verinfo *ver;
 
   if (hmod == NULL) hmod = gettib()->proc->hmod;
@@ -631,14 +568,12 @@ struct verinfo *getverinfo(hmodule_t hmod)
   return ver;
 }
 
-int getvervalue(hmodule_t hmod, char *name, char *buf, int size)
-{
+int getvervalue(hmodule_t hmod, char *name, char *buf, int size) {
   int rc;
 
   if (hmod == NULL) hmod = gettib()->proc->hmod;
   rc = get_version_value(hmod, name, buf, size);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     errno = -rc;
     return -1;
   }
@@ -650,8 +585,7 @@ int getvervalue(hmodule_t hmod, char *name, char *buf, int size)
 // Misc. routines
 //
 
-int uname(struct utsname *buf)
-{
+int uname(struct utsname *buf) {
   struct cpuinfo cpu;
   char machine[8];
   struct verinfo *ver;
@@ -659,8 +593,7 @@ int uname(struct utsname *buf)
   char *build;
   struct tm tm;
 
-  if (!buf)
-  {
+  if (!buf) {
     errno = EINVAL;
     return -1;
   }
@@ -673,16 +606,17 @@ int uname(struct utsname *buf)
   machine[4] = 0;
 
   osflags = getpeb()->osversion.file_flags;
-  if (osflags & VER_FLAG_PRERELEASE) 
+  if (osflags & VER_FLAG_PRERELEASE) {
     build = "prerelease ";
-  else if (osflags & VER_FLAG_PATCHED) 
+  } else if (osflags & VER_FLAG_PATCHED) {
     build = "patch ";
-  else if (osflags & VER_FLAG_PRIVATEBUILD) 
+  } else if (osflags & VER_FLAG_PRIVATEBUILD) {
     build = "private ";
-  else if (osflags & VER_FLAG_DEBUG) 
+  } else if (osflags & VER_FLAG_DEBUG) {
     build = "debug ";
-  else
+  } else {
     build = "";
+  }
 
   gmtime_r(&getpeb()->ostimestamp, &tm);
   ver = &getpeb()->osversion;
@@ -697,24 +631,20 @@ int uname(struct utsname *buf)
   return 0;
 }
 
-unsigned sleep(unsigned seconds)
-{
+unsigned sleep(unsigned seconds) {
   msleep(seconds * 1000);
   return 0;
 }
 
-char *crypt(const char *key, const char *salt)
-{
+char *crypt(const char *key, const char *salt) {
   return crypt_r(key, salt, gettib()->cryptbuf);
 }
 
-struct section *osconfig()
-{
+struct section *osconfig() {
   return config;
 }
 
-struct peb *getpeb()
-{
+struct peb *getpeb() {
   return (struct peb *) PEB_ADDRESS;
 }
 
@@ -722,8 +652,7 @@ struct peb *getpeb()
 // Initialization
 //
 
-void init_net()
-{
+void init_net() {
   struct section *sect;
   struct property *prop;
   struct ifcfg ifcfg;
@@ -741,37 +670,32 @@ void init_net()
 
   first = 1;
   prop = sect->properties;
-  while (prop)
-  {
+  while (prop) {
     memset(&ifcfg, 0, sizeof(ifcfg));
 
     strcpy(ifcfg.name, prop->name);
 
-    if (get_option(prop->value, "ip", str, sizeof str, NULL))
-    {
+    if (get_option(prop->value, "ip", str, sizeof str, NULL)) {
       sin = (struct sockaddr_in *) &ifcfg.addr;
       sin->sin_family = AF_INET;
       sin->sin_addr.s_addr = inet_addr(str);
-    }
-    else
+    } else {
       ifcfg.flags |= IFCFG_DHCP;
+    }
 
-    if (get_option(prop->value, "gw", str, sizeof str, NULL))
-    {
+    if (get_option(prop->value, "gw", str, sizeof str, NULL)) {
       sin = (struct sockaddr_in *) &ifcfg.gw;
       sin->sin_family = AF_INET;
       sin->sin_addr.s_addr = inet_addr(str);
     }
 
-    if (get_option(prop->value, "mask", str, sizeof str, NULL))
-    {
+    if (get_option(prop->value, "mask", str, sizeof str, NULL)) {
       sin = (struct sockaddr_in *) &ifcfg.netmask;
       sin->sin_family = AF_INET;
       sin->sin_addr.s_addr = inet_addr(str);
     }
 
-    if (get_option(prop->value, "broadcast", str, sizeof str, NULL))
-    {
+    if (get_option(prop->value, "broadcast", str, sizeof str, NULL)) {
       sin = (struct sockaddr_in *) &ifcfg.broadcast;
       sin->sin_family = AF_INET;
       sin->sin_addr.s_addr = inet_addr(str);
@@ -781,10 +705,9 @@ void init_net()
     if (first) ifcfg.flags |= IFCFG_DEFAULT;
 
     rc = ioctl(sock, SIOIFCFG, &ifcfg, sizeof(struct ifcfg));
-    if (rc < 0)
+    if (rc < 0) {
       syslog(LOG_ERR, "%s: unable to configure net interface, %s", ifcfg.name, strerror(errno));
-    else
-    {
+    } else {
       unsigned long addr = ((struct sockaddr_in *) &ifcfg.addr)->sin_addr.s_addr;
       unsigned long gw = ((struct sockaddr_in *) &ifcfg.gw)->sin_addr.s_addr;
       unsigned long mask = ((struct sockaddr_in *) &ifcfg.netmask)->sin_addr.s_addr;
@@ -802,21 +725,18 @@ void init_net()
   close(sock);
 }
 
-void init_hostname()
-{
+void init_hostname() {
   struct hostent *hp;
   char *dot;
   int len;
 
   // Get hostname and domain from os config
-  if (!*getpeb()->hostname)
-  {
+  if (!*getpeb()->hostname) {
     char *host = get_property(config, "os", "hostname", NULL);
     if (host) strcpy(getpeb()->hostname, host);
   }
 
-  if (!*getpeb()->default_domain)
-  {
+  if (!*getpeb()->default_domain) {
     char *domain = get_property(config, "dns", "domain", NULL);
     if (domain) strcpy(getpeb()->default_domain, domain);
   }
@@ -843,8 +763,7 @@ void init_hostname()
   getpeb()->hostname[len] = 0;
 }
 
-void init_mount()
-{
+void init_mount() {
   struct section *sect;
   struct property *prop;
   char devname[256];
@@ -856,25 +775,20 @@ void init_mount()
   if (!sect) return;
 
   prop = sect->properties;
-  while (prop)
-  {
+  while (prop) {
     strcpy(devname, prop->value ? prop->value : "");
     type = strchr(devname, ',');
-    if (type)
-    {
+    if (type) {
       *type++ = 0;
       while (*type == ' ') type++;
       opts = strchr(type, ',');
-      if (opts)
-      {
+      if (opts) {
         *opts++ = 0;
         while (*opts == ' ') opts++;
-      }
-      else
+      } else {
         opts = NULL;
-    }
-    else
-    {
+      }
+    } else {
       type = "dfs";
       opts = NULL;
     }
@@ -892,8 +806,7 @@ void init_mount()
 // Main user mode entry point
 //
 
-int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
-{
+int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2) {
   int rc;
   char *init;
 
@@ -957,11 +870,9 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2)
 
   // Load and execute init program
   init = get_property(config, "os", "init", "/bin/sh");
-  while (1)
-  {
+  while (1) {
     rc = spawn(P_WAIT, NULL, init, NULL, NULL);
-    if (rc != 0) 
-    {
+    if (rc != 0) {
       syslog(LOG_DEBUG, "Init returned exit code %d: %s", rc, init);
       sleep(1);
     }

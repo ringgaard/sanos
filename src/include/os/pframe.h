@@ -37,11 +37,9 @@
 #define DMA_BUFFER_START 0x10000
 #define DMA_BUFFER_PAGES 16
 
-struct pageframe
-{
+struct pageframe {
   unsigned long tag;
-  union
-  {
+  union {
     unsigned long locks;        // Number of locks
     unsigned long size;         // Size/buckets for kernel pages
     struct pageframe *next;     // Next free page frame for free pages

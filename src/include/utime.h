@@ -43,8 +43,7 @@
 #ifndef _UTIMBUF_DEFINED
 #define _UTIMBUF_DEFINED
 
-struct utimbuf 
-{
+struct utimbuf {
   time_t modtime;
   time_t actime;
   time_t ctime;

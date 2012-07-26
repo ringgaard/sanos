@@ -368,8 +368,7 @@
 typedef __int64 smb_size;
 typedef __int64 smb_time;
 
-struct smb_pos
-{
+struct smb_pos {
   unsigned long low_part;
   unsigned long high_part;
 };
@@ -378,8 +377,7 @@ struct smb_pos
 // SMB ANDX structure
 //
 
-struct smb_andx
-{
+struct smb_andx {
   unsigned char cmd;                    // Secondary (X) command; 0xFF = none
   unsigned char reserved;               // Reserved (must be 0)
   unsigned short offset;                // Offset to next command WordCount
@@ -389,8 +387,7 @@ struct smb_andx
 // SMB NEGOTIATE response parameters
 //
 
-struct smb_negotiate_response
-{
+struct smb_negotiate_response {
   unsigned short dialect_index;         // Index of selected dialect
   unsigned char security_mode;          // Security mode:
                                         //   bit 0: 0 = share, 1 = user
@@ -413,8 +410,7 @@ struct smb_negotiate_response
 // SMB SESSION SETUP request parameters
 //
 
-struct smb_session_setup_request
-{
+struct smb_session_setup_request {
   struct smb_andx andx;
   unsigned short max_buffer_size;         // Client maximum buffer size
   unsigned short max_mpx_count;           // Actual maximum multiplexed pending requests
@@ -430,8 +426,7 @@ struct smb_session_setup_request
 // SMB SESSION SETUP response parameters
 //
 
-struct smb_session_setup_response
-{
+struct smb_session_setup_response {
   struct smb_andx andx;
   unsigned short action;                  // Request mode: bit0 = logged in as client
 };
@@ -440,8 +435,7 @@ struct smb_session_setup_response
 // SMB TREE CONNECT request parameters
 //
 
-struct smb_tree_connect_request
-{
+struct smb_tree_connect_request {
   struct smb_andx andx;
   unsigned short flags;                   // Additional information; bit 0 set = disconnect tid
   unsigned short password_length;         // Length of password[]
@@ -451,8 +445,7 @@ struct smb_tree_connect_request
 // SMB TREE CONNECT response parameters
 //
 
-struct smb_tree_connect_response
-{
+struct smb_tree_connect_response {
   struct smb_andx andx;
   unsigned short optional_support;        // Optional support bits
 };
@@ -461,8 +454,7 @@ struct smb_tree_connect_response
 // SMB CREATE FILE request parameters
 //
 
-struct smb_create_file_request
-{
+struct smb_create_file_request {
   struct smb_andx andx;
   unsigned char reserved;               // Reserved (must be 0)
   unsigned short name_length;           // Length of name[] in bytes
@@ -487,8 +479,7 @@ struct smb_create_file_request
 // SMB CREATE FILE response parameters
 //
 
-struct smb_create_file_response
-{
+struct smb_create_file_response {
   struct smb_andx andx;
   unsigned char oplock_level;           // The oplock level granted
                                         //   0 - No oplock granted
@@ -513,8 +504,7 @@ struct smb_create_file_response
 // SMB CLOSE FILE request parameters
 //
 
-struct smb_close_file_request
-{
+struct smb_close_file_request {
   unsigned short fid;                     // File handle
   smb_time last_write_time;               // Time of last write
 };
@@ -523,8 +513,7 @@ struct smb_close_file_request
 // SMB FLUSH FILE request parameters
 //
 
-struct smb_flush_file_request
-{
+struct smb_flush_file_request {
   unsigned short fid;                     // File handle
 };
 
@@ -532,8 +521,7 @@ struct smb_flush_file_request
 // SMB READ FILE request parameters
 //
 
-struct smb_read_file_request
-{
+struct smb_read_file_request {
   struct smb_andx andx;
   unsigned short fid;                   // File handle
   unsigned long offset;                 // Offset in file to begin read
@@ -548,8 +536,7 @@ struct smb_read_file_request
 // SMB READ FILE response parameters
 //
 
-struct smb_read_file_response
-{
+struct smb_read_file_response {
   struct smb_andx andx;
   unsigned short remaining;             // Reserved -- must be -1
   unsigned short data_compaction_mode;  
@@ -563,8 +550,7 @@ struct smb_read_file_response
 // SMB READ FILE RAW request parameters
 //
 
-struct smb_read_raw_request
-{
+struct smb_read_raw_request {
   unsigned short fid;                   // File handle
   unsigned long offset;                 // Offset in file to begin read
   unsigned short max_count;             // Max number of bytes to return
@@ -578,8 +564,7 @@ struct smb_read_raw_request
 // SMB WRITE FILE request parameters
 //
 
-struct smb_write_file_request
-{
+struct smb_write_file_request {
   struct smb_andx andx;
   unsigned short fid;                   // File handle
   unsigned long offset;                 // Offset in file to begin read
@@ -596,8 +581,7 @@ struct smb_write_file_request
 // SMB WRITE FILE response parameters
 //
 
-struct smb_write_file_response
-{
+struct smb_write_file_response {
   struct smb_andx andx;
   unsigned short count;                 // Number of bytes written
   unsigned short remaining;             // Reserved -- must be -1
@@ -608,8 +592,7 @@ struct smb_write_file_response
 // SMB RENAME request parameters
 //
 
-struct smb_rename_request
-{
+struct smb_rename_request {
   unsigned short search_attributes;     // Target file attributes
 };
 
@@ -617,8 +600,7 @@ struct smb_rename_request
 // SMB DELETE request parameters
 //
 
-struct smb_delete_request
-{
+struct smb_delete_request {
   unsigned short search_attributes;     // Target file attributes
 };
 
@@ -626,8 +608,7 @@ struct smb_delete_request
 // SMB COPY request parameters
 //
 
-struct smb_copy_request
-{
+struct smb_copy_request {
   unsigned short tid2;                  // Second (target) path TID
   unsigned short open_function;         // What to do if target file exists
   unsigned short flags;                 // Flags to control copy operation:
@@ -643,8 +624,7 @@ struct smb_copy_request
 // SMB COPY response parameters
 //
 
-struct smb_copy_response
-{
+struct smb_copy_response {
   unsigned short count;                 // Number of files copied
 };
 
@@ -652,8 +632,7 @@ struct smb_copy_response
 // SMB FINDCLOSE2 request parameters
 //
 
-struct smb_findclose_request
-{
+struct smb_findclose_request {
   unsigned short sid;                   // Search handle
 };
 
@@ -661,8 +640,7 @@ struct smb_findclose_request
 // SMB TRANSACTION request parameters
 //
 
-struct smb_trans_request
-{
+struct smb_trans_request {
   unsigned short total_parameter_count; // Total parameter bytes being sent
   unsigned short total_data_count;      // Total data bytes being sent
   unsigned short max_parameter_count;   // Max parameter bytes to return
@@ -685,8 +663,7 @@ struct smb_trans_request
 // SMB TRANSACTION response parameters
 //
 
-struct smb_trans_response
-{
+struct smb_trans_response {
   unsigned short total_parameter_count; // Total parameter bytes being sent
   unsigned short total_data_count;      // Total data bytes being sent
   unsigned short reserved;              
@@ -705,8 +682,7 @@ struct smb_trans_response
 // Server Message Block (SMB)
 //
 
-struct smb
-{
+struct smb {
   unsigned char len[4];                // Length field
   unsigned char protocol[4];           // Always 0xFF,'SMB'
   unsigned char cmd;                   // Command
@@ -723,12 +699,10 @@ struct smb
   unsigned short uid;                  // Unauthenticated user id
   unsigned short mid;                  // Multiplex id
   unsigned char wordcount;             // Count of parameter words
-  union
-  {
+  union {
     unsigned short words[0];
     struct smb_andx andx;
-    union
-    {
+    union {
       struct smb_session_setup_request setup;
       struct smb_tree_connect_request connect;
       struct smb_create_file_request create;
@@ -743,8 +717,7 @@ struct smb
       struct smb_copy_request copy;
       struct smb_findclose_request findclose;
     } req;
-    union
-    {
+    union {
       struct smb_negotiate_response negotiate;
       struct smb_session_setup_response setup;
       struct smb_tree_connect_response connect;
@@ -761,38 +734,32 @@ struct smb
 // SMB TRANS request and response messages
 //
 
-struct smb_fileinfo_request
-{
+struct smb_fileinfo_request {
   unsigned short fid;                   // File ID
   unsigned short infolevel;             // Information level
 };
 
-struct smb_pathinfo_request
-{
+struct smb_pathinfo_request {
   unsigned short infolevel;             // Information level
   unsigned long reserved;
   char filename[MAXPATH];
 };
 
-struct smb_set_fileinfo_request
-{
+struct smb_set_fileinfo_request {
   unsigned short fid;                   // File ID
   unsigned short infolevel;             // Information level
   unsigned short reserved;
 };
 
-struct smb_set_fileinfo_response
-{
+struct smb_set_fileinfo_response {
   unsigned short reserved;
 };
 
-struct smb_fsinfo_request
-{
+struct smb_fsinfo_request {
   unsigned short infolevel;             // Information level
 };
 
-struct smb_info_standard
-{
+struct smb_info_standard {
   unsigned short creation_date;         // Date when file was created   
   unsigned short creation_time;         // Time when file was created   
   unsigned short last_access_date;      // Date of last file access     
@@ -805,8 +772,7 @@ struct smb_info_standard
   unsigned long ea_size;                // Size of file's EA information
 };
 
-struct smb_info_allocation
-{
+struct smb_info_allocation {
   unsigned long file_system_id;         // File system identifier.  NT server always returns 0
   unsigned long sector_per_unit;        // Number of sectors per allocation unit
   unsigned long units_total;            // Total number of allocation units
@@ -814,8 +780,7 @@ struct smb_info_allocation
   unsigned short sectorsize;            // Number of bytes per sector
 };
 
-struct smb_file_basic_info
-{
+struct smb_file_basic_info {
   smb_time creation_time;               // Time when file was created
   smb_time last_access_time;            // Time of last file access
   smb_time last_write_time;             // Time of last write to the file
@@ -824,8 +789,7 @@ struct smb_file_basic_info
   unsigned long reserved;
 };
 
-struct smb_file_standard_info
-{
+struct smb_file_standard_info {
   smb_size allocation_size;             // Allocated size of the file in number of bytes
   smb_size end_of_file;                 // Offset to the first free byte in the file
   unsigned long number_of_links;        // Number of hard links to the file
@@ -834,8 +798,7 @@ struct smb_file_standard_info
   unsigned short pad;
 };
 
-struct smb_file_all_info
-{
+struct smb_file_all_info {
   struct smb_file_basic_info basic;
   struct smb_file_standard_info standard;
   __int64 index_number;                 // A file system unique identifier
@@ -848,13 +811,11 @@ struct smb_file_all_info
   char filename[256];                   // Name of the file
 };
 
-struct smb_file_end_of_file_info
-{
+struct smb_file_end_of_file_info {
   smb_size end_of_file;                 // Offset to the first free byte in the file
 };
 
-struct smb_findfirst_request
-{
+struct smb_findfirst_request {
   unsigned short search_attributes;     // Search attributes    
   unsigned short search_count;          // Maximum number of entries to return
   unsigned short flags;                 // Additional information:
@@ -868,8 +829,7 @@ struct smb_findfirst_request
   char filename[MAXPATH];               // Pattern for the search
 };
 
-struct smb_findfirst_response
-{
+struct smb_findfirst_response {
   unsigned short sid;                   // Search handle
   unsigned short search_count;          // Number of entries returned
   unsigned short end_of_search;         // Was last entry returned?
@@ -877,8 +837,7 @@ struct smb_findfirst_response
   unsigned short last_name_offset;      // Offset into data to file name of last entry, if server needs it to resume search; else 0
 };
 
-struct smb_findnext_request
-{
+struct smb_findnext_request {
   unsigned short sid;                   // Search handle
   unsigned short search_count;          // Maximum number of entries to return
   unsigned short infolevel;             // Levels described in TRANS2_FIND_FIRST2 request
@@ -892,16 +851,14 @@ struct smb_findnext_request
   char filename[1];                     // Resume file name
 };
 
-struct smb_findnext_response
-{
+struct smb_findnext_response {
   unsigned short search_count;          // Number of entries returned
   unsigned short end_of_search;         // Was last entry returned?
   unsigned short ea_error_offset;       // Offset into EA list if EA error
   unsigned short last_name_offset;      // Offset into data to file name of last entry, if server needs it to resume search; else 0
 };
 
-struct smb_file_directory_info
-{
+struct smb_file_directory_info {
   unsigned long next_entry_offset;      // Offset from this structure to beginning of next one
   unsigned long file_index;     
   smb_time creation_time;               // File creation time
@@ -923,8 +880,7 @@ struct smb_share;
 // SMB directory entry
 //
 
-struct smb_dentry
-{
+struct smb_dentry {
   char path[MAXPATH];
   struct stat64 statbuf;
 };
@@ -933,8 +889,7 @@ struct smb_dentry
 // SMB file
 //
 
-struct smb_file
-{
+struct smb_file {
   unsigned short fid;
   unsigned long attrs;
   struct stat64 statbuf;
@@ -944,8 +899,7 @@ struct smb_file
 // SMB directory
 //
 
-struct smb_directory
-{
+struct smb_directory {
   unsigned short sid;
   int eos;
   int entries_left;
@@ -958,8 +912,7 @@ struct smb_directory
 // SMB server
 //
 
-struct smb_server
-{
+struct smb_server {
   struct ip_addr ipaddr;
   unsigned short port;
   struct socket *sock;
@@ -982,8 +935,7 @@ struct smb_server
 // SMB share
 //
 
-struct smb_share
-{
+struct smb_share {
   struct smb_server *server;
   struct smb_share *next;
   unsigned short tid;

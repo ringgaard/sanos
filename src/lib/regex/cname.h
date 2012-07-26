@@ -31,12 +31,10 @@
 // Character name table
 //
 
-static struct cname 
-{
+static struct cname {
   char *name;
   char code;
-} cnames[] = 
-{
+} cnames[] = {
   {"NUL", '\0'},
   {"SOH", '\001'},
   {"STX", '\002'},

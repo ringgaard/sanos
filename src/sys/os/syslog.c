@@ -49,38 +49,32 @@ static handle_t syslogfd = -1;
 static int syslogsock = -1;
 static int syslogcons = 1;
 
-void openlog(char *ident, int option, int facility)
-{
+void openlog(char *ident, int option, int facility) {
   struct process *proc = gettib()->proc;
 
-  if (ident && strlen(ident) < 64)
-  {
-    if (proc->ident) 
-    {
+  if (ident && strlen(ident) < 64) {
+    if (proc->ident)  {
       char *oldident = proc->ident;
       proc->ident = strdup(ident);
       free(oldident);
-    }
-    else
+    } else {
       proc->ident = strdup(ident);
+    }
   }
 
   proc->facility = facility;
 }
 
-void closelog()
-{
+void closelog() {
 }
 
-int setlogmask(int mask)
-{
+int setlogmask(int mask) {
   int oldmask = logmask;
   if (mask != 0) logmask = mask;
   return oldmask;
 }
 
-static void add_to_syslog(int pri, char *msg, int msglen, char *ident, int id, int display)
-{
+static void add_to_syslog(int pri, char *msg, int msglen, char *ident, int id, int display) {
   struct peb *peb = getpeb();
   char buffer[1024];
   char pribuf[32];
@@ -92,10 +86,9 @@ static void add_to_syslog(int pri, char *msg, int msglen, char *ident, int id, i
 
   if ((logmask & LOG_MASK(LOG_PRI(pri))) == 0) return;
   
-  if (*peb->hostname) 
+  if (*peb->hostname) {
     hostname = peb->hostname;
-  else
-  {
+  } else {
     hostname = get_property(osconfig(), "os", "hostname", NULL);
     if (!hostname && peb->ipaddr.s_addr != INADDR_ANY) hostname = inet_ntoa(peb->ipaddr);
     if (!hostname) hostname = "localhost";
@@ -109,12 +102,12 @@ static void add_to_syslog(int pri, char *msg, int msglen, char *ident, int id, i
   sprintf(buffer, "%s %2d %02d:%02d:%02d %s ", _months_abbrev[tm.tm_mon], tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, hostname);
   bufend = buffer + strlen(buffer);
 
-  if (ident)
-  {
-    if (id != -1)
+  if (ident) {
+    if (id != -1) {
       sprintf(bufend, "%s[%d]: ", ident, id);
-    else
+    } else {
       sprintf(bufend, "%s: ", ident);
+    }
 
     bufend += strlen(bufend);
   }
@@ -136,8 +129,7 @@ static void add_to_syslog(int pri, char *msg, int msglen, char *ident, int id, i
   if (syslogsock >= 0) writev(syslogsock, iov, 3);
 }
 
-void vsyslog(int pri, const char *fmt, va_list args)
-{
+void vsyslog(int pri, const char *fmt, va_list args) {
   char buffer[1024];
   char *ident;
   int priority;
@@ -151,38 +143,36 @@ void vsyslog(int pri, const char *fmt, va_list args)
 
   tib = gettib();
 
-  if (facility == 0)
-  {
-    if (tib->proc)
+  if (facility == 0) {
+    if (tib->proc) {
       facility = tib->proc->facility;
-    else
+    } else {
       facility = LOG_USER;
+    }
   }
   
-  if (tib->proc && tib->proc->ident)
+  if (tib->proc && tib->proc->ident) {
     ident = tib->proc->ident;
-  else
+  } else {
     ident = "thread";
+  }
 
   vsprintf(buffer, fmt, args);
 
   add_to_syslog(LOG_MAKEPRI(facility, priority), buffer, strlen(buffer), ident, tib->tid, 1);
 }
 
-void syslog(int pri, const char *fmt, ...)
-{
+void syslog(int pri, const char *fmt, ...) {
   va_list args;
 
   va_start(args, fmt);
   vsyslog(pri, fmt, args);
 }
 
-void add_to_klog(char *msg, int msglen)
-{
+void add_to_klog(char *msg, int msglen) {
   int pri = LOG_DEBUG;
 
-  if (msglen >= 3 && msg[0] == '<' && msg[1] >= '0' && msg[1] <= '7' && msg[2] == '>')
-  {
+  if (msglen >= 3 && msg[0] == '<' && msg[1] >= '0' && msg[1] <= '7' && msg[2] == '>') {
     pri = msg[1] - '0';
     msg += 3;
     msglen -= 3;
@@ -191,8 +181,7 @@ void add_to_klog(char *msg, int msglen)
   add_to_syslog(LOG_MAKEPRI(LOG_KERN, pri), msg, msglen, NULL, -1, 0);
 }
 
-void __stdcall klogd(void *arg)
-{
+void __stdcall klogd(void *arg) {
   int klog;
   char buffer[512];
   char line[512];
@@ -203,34 +192,27 @@ void __stdcall klogd(void *arg)
   if (klog < 0) return;
 
   linelen = 0;
-  while (1)
-  {
+  while (1) {
     size = read(klog, buffer, sizeof buffer);
-    if (size < 0)
+    if (size < 0) {
       break;
-    else if (size > 0)
-    {
+    } else if (size > 0) {
       int i;
 
-      for (i = 0; i < size; i++)
-      {
-        if (linelen == sizeof(line))
-        {
+      for (i = 0; i < size; i++) {
+        if (linelen == sizeof(line)) {
           add_to_klog(line, linelen);
           linelen = 0;
         }
 
-        if (buffer[i] == '\n')
-        {
+        if (buffer[i] == '\n') {
           if (linelen > 0) add_to_klog(line, linelen);
           linelen = 0;
-        }
-        else
+        } else {
           line[linelen++] = buffer[i];
+        }
       }
-    }
-    else
-    {
+    } else {
       if (ioctl(klog, IOCTL_KLOG_WAIT, NULL, 0) < 0) break;
     }
   }
@@ -238,8 +220,7 @@ void __stdcall klogd(void *arg)
   close(klog);
 }
 
-void start_syslog()
-{
+void start_syslog() {
   char *logfn;
   char *loghost;
 
@@ -247,20 +228,17 @@ void start_syslog()
   syslogcons = fderr;
 
   logfn = get_property(osconfig(), "os", "logfile", NULL);
-  if (logfn != NULL) 
-  {
+  if (logfn != NULL) {
     syslogfd = open(logfn, O_CREAT, S_IREAD | S_IWRITE);
     if (syslogfd >= 0) lseek(syslogfd, 0, SEEK_END);
   }
 
   loghost = get_property(osconfig(), "os", "loghost", NULL);
-  if (loghost != NULL)
-  {
+  if (loghost != NULL) {
     struct hostent *hp;
 
     hp = gethostbyname(loghost);
-    if (hp)
-    {
+    if (hp) {
       struct sockaddr_in sin;
 
       memset(&sin, 0, sizeof(sin));
@@ -270,24 +248,21 @@ void start_syslog()
 
       syslogsock = socket(AF_INET, SOCK_DGRAM, 0);
       connect(syslogsock, (struct sockaddr *) &sin, sizeof(sin));
-    }
-    else
+    } else {
       syslog(LOG_ERR | LOG_SYSLOG, "unknown syslog server %s", loghost);
+    }
   }
 
   close(beginthread(klogd, 0, NULL, 0, NULL));
 }
 
-void stop_syslog()
-{
-  if (syslogfd >= 0) 
-  {
+void stop_syslog() {
+  if (syslogfd >= 0) {
     close(syslogfd);
     syslogfd = -1;
   }
 
-  if (syslogsock > 0)
-  {
+  if (syslogsock > 0) {
     close(syslogsock);
     syslogsock = -1;
   }

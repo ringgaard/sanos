@@ -48,38 +48,30 @@ static unsigned long vmicall[NUM_VMI_CALLS];
 // VMI machine functions
 //
 
-static __declspec(naked) int __fastcall vmi_in(port_t port)
-{
-  __asm
-  {
+static __declspec(naked) int __fastcall vmi_in(port_t port) {
+  __asm {
     mov edx, ecx
     xor eax, eax
     VMJUMP(VMI_CALL_INB)
   }
 }
 
-static __declspec(naked) unsigned short __fastcall vmi_inw(port_t port)
-{
-  __asm
-  {
+static __declspec(naked) unsigned short __fastcall vmi_inw(port_t port) {
+  __asm {
     mov edx, ecx
     VMJUMP(VMI_CALL_INW)
   }
 }
 
-static __declspec(naked) unsigned long __fastcall vmi_ind(port_t port)
-{
-  __asm
-  {
+static __declspec(naked) unsigned long __fastcall vmi_ind(port_t port) {
+  __asm {
     mov edx, ecx
     VMJUMP(VMI_CALL_IN)
   }
 }
 
-static void vmi_insw(port_t port, void *buf, int count)
-{
-  __asm
-  {
+static void vmi_insw(port_t port, void *buf, int count) {
+  __asm {
     mov edx, port
     mov edi, buf
     mov ecx, count
@@ -87,10 +79,8 @@ static void vmi_insw(port_t port, void *buf, int count)
   }
 }
 
-static void vmi_insd(port_t port, void *buf, int count)
-{
-  __asm
-  {
+static void vmi_insd(port_t port, void *buf, int count) {
+  __asm {
     mov edx, port
     mov edi, buf
     mov ecx, count
@@ -98,40 +88,32 @@ static void vmi_insd(port_t port, void *buf, int count)
   }
 }
 
-static __declspec(naked) int __fastcall vmi_out(port_t port, int val)
-{
-  __asm
-  {
+static __declspec(naked) int __fastcall vmi_out(port_t port, int val) {
+  __asm {
     mov eax,edx
     mov edx,ecx
     VMJUMP(VMI_CALL_OUTB)
   }
 }
 
-static __declspec(naked) unsigned short __fastcall vmi_outw(port_t port, unsigned short val)
-{
-  __asm
-  {
+static __declspec(naked) unsigned short __fastcall vmi_outw(port_t port, unsigned short val) {
+  __asm {
     mov eax,edx
     mov edx,ecx
     VMJUMP(VMI_CALL_OUTW)
   }
 }
 
-static __declspec(naked) unsigned long __fastcall vmi_outd(port_t port, unsigned long val)
-{
-  __asm
-  {
+static __declspec(naked) unsigned long __fastcall vmi_outd(port_t port, unsigned long val) {
+  __asm {
     mov eax,edx
     mov edx,ecx
     VMJUMP(VMI_CALL_OUT)
   }
 }
 
-static void vmi_outsw(port_t port, void *buf, int count)
-{
-  __asm
-  {
+static void vmi_outsw(port_t port, void *buf, int count) {
+  __asm {
     mov edx, port
     mov esi, buf
     mov ecx, count
@@ -139,10 +121,8 @@ static void vmi_outsw(port_t port, void *buf, int count)
   }
 }
 
-static void vmi_outsd(port_t port, void *buf, int count)
-{
-  __asm
-  {
+static void vmi_outsd(port_t port, void *buf, int count) {
+  __asm {
     mov edx, port
     mov esi, buf
     mov ecx, count
@@ -150,10 +130,8 @@ static void vmi_outsd(port_t port, void *buf, int count)
   }
 }
 
-static void vmi_cpuid(unsigned long reg, unsigned long values[4])
-{
-  __asm
-  {
+static void vmi_cpuid(unsigned long reg, unsigned long values[4]) {
+  __asm {
     mov eax, reg
     VMCALL(VMI_CALL_CPUID)
     mov esi, values
@@ -164,12 +142,10 @@ static void vmi_cpuid(unsigned long reg, unsigned long values[4])
   }
 }
 
-static unsigned long vmi_get_cr0()
-{
+static unsigned long vmi_get_cr0() {
   unsigned long val;
 
-  __asm 
-  {
+  __asm  {
     VMCALL(VMI_CALL_GetCR0);
     mov val, eax
   }
@@ -177,21 +153,17 @@ static unsigned long vmi_get_cr0()
   return val;
 }
 
-static void vmi_set_cr0(unsigned long val)
-{
-  __asm
-  {
+static void vmi_set_cr0(unsigned long val) {
+  __asm {
     mov eax, val
     VMCALL(VMI_CALL_SetCR0);
   }
 }
 
-static unsigned long vmi_get_cr2()
-{
+static unsigned long vmi_get_cr2() {
   unsigned long val;
 
-  __asm 
-  {
+  __asm {
     VMCALL(VMI_CALL_GetCR2);
     mov val, eax
   }
@@ -199,10 +171,8 @@ static unsigned long vmi_get_cr2()
   return val;
 }
 
-static void vmi_wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh)
-{
-  __asm
-  {
+static void vmi_wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh) {
+  __asm {
     mov ecx, reg
     mov eax, valuelow
     mov edx, valuehigh
@@ -210,14 +180,12 @@ static void vmi_wrmsr(unsigned long reg, unsigned long valuelow, unsigned long v
   }
 }
 
-static void vmi_set_gdt_entry(int entry, unsigned long addr, unsigned long size, int access, int granularity)
-{
+static void vmi_set_gdt_entry(int entry, unsigned long addr, unsigned long size, int access, int granularity) {
   union dte dte;
 
   seginit(&dte.segment, addr, size, access, granularity);
 
-  __asm
-  {
+  __asm {
     mov eax, offset syspage.gdt
     mov edx, entry
     mov ecx, dte.desc.low
@@ -227,8 +195,7 @@ static void vmi_set_gdt_entry(int entry, unsigned long addr, unsigned long size,
   }
 }
 
-static void vmi_set_idt_gate(int intrno, void *handler)
-{
+static void vmi_set_idt_gate(int intrno, void *handler) {
   union dte dte;
 
   dte.gate.offset_low = (unsigned short) (((unsigned long) handler) & 0xFFFF);
@@ -236,8 +203,7 @@ static void vmi_set_idt_gate(int intrno, void *handler)
   dte.gate.access = D_PRESENT | D_INT | D_DPL0;
   dte.gate.offset_high = (unsigned short) (((unsigned long) handler) >> 16);
 
-  __asm
-  {
+  __asm {
     mov eax, offset syspage.idt
     mov edx, intrno
     mov ecx, dte.desc.low
@@ -247,8 +213,7 @@ static void vmi_set_idt_gate(int intrno, void *handler)
   }
 }
 
-static void vmi_set_idt_trap(int intrno, void *handler)
-{
+static void vmi_set_idt_trap(int intrno, void *handler) {
   union dte dte;
 
   dte.gate.offset_low = (unsigned short) (((unsigned long) handler) & 0xFFFF);
@@ -256,8 +221,7 @@ static void vmi_set_idt_trap(int intrno, void *handler)
   dte.gate.access = D_PRESENT | D_TRAP | D_DPL3;
   dte.gate.offset_high = (unsigned short) (((unsigned long) handler) >> 16);
 
-  __asm
-  {
+  __asm {
     mov eax, offset syspage.idt
     mov edx, intrno
     mov ecx, dte.desc.low
@@ -267,47 +231,37 @@ static void vmi_set_idt_trap(int intrno, void *handler)
   }
 }
 
-static void vmi_switch_kernel_stack()
-{
-  __asm
-  {
+static void vmi_switch_kernel_stack() {
+  __asm {
     mov eax, offset syspage.tss
     mov edx, syspage.tss.esp0
     VMCALL(VMI_CALL_UpdateKernelStack)
   }
 }
 
-static void vmi_flushtlb()
-{
-  __asm
-  {
+static void vmi_flushtlb() {
+  __asm {
     mov eax, VMI_FLUSH_TLB
     VMCALL(VMI_CALL_FlushTLB)
   }
 }
 
-static void vmi_invlpage(void *addr)
-{
-  __asm
-  {
+static void vmi_invlpage(void *addr) {
+  __asm {
     mov eax, addr
     VMCALL(VMI_CALL_InvalPage)
   }
 }
 
-static void vmi_flush_deferred_calls()
-{
-  __asm
-  {
+static void vmi_flush_deferred_calls() {
+  __asm {
     mov eax, VMI_FLUSH_PT_UPDATES | VMI_FLUSH_CPU_STATE
     VMCALL(VMI_CALL_FlushDeferredCalls)
   }
 }
 
-static void vmi_register_page_dir(unsigned long pfn)
-{
-  __asm
-  {
+static void vmi_register_page_dir(unsigned long pfn) {
+  __asm {
     mov eax, pfn
     mov edx, VMI_PAGE_PD | VMI_PAGE_PT
     xor ecx, ecx
@@ -318,10 +272,8 @@ static void vmi_register_page_dir(unsigned long pfn)
   }
 }
 
-static void vmi_register_page_table(unsigned long pfn)
-{
-  __asm
-  {
+static void vmi_register_page_table(unsigned long pfn) {
+  __asm {
     mov eax, pfn
     mov edx, VMI_PAGE_PT
     xor ecx, ecx
@@ -332,10 +284,8 @@ static void vmi_register_page_table(unsigned long pfn)
   }
 }
 
-static void vmi_set_linear_mapping(int slot, unsigned long vaddr, unsigned long pages, unsigned long pfn)
-{
-  __asm
-  {
+static void vmi_set_linear_mapping(int slot, unsigned long vaddr, unsigned long pages, unsigned long pfn) {
+  __asm {
     mov eax, slot
     mov edx, vaddr
     mov ecx, pages
@@ -345,16 +295,14 @@ static void vmi_set_linear_mapping(int slot, unsigned long vaddr, unsigned long 
   }
 }
 
-static void vmi_set_page_dir_entry(pte_t *pde, unsigned long value)
-{
+static void vmi_set_page_dir_entry(pte_t *pde, unsigned long value) {
   kprintf("vmi: vmi_set_linear_mapping %p %d\n", PAGEADDR(pde), virt2pfn(pde));
 
   vmi_set_linear_mapping(0, PAGEADDR(pde), 1, virt2pfn(pde));
 
   kprintf("vmi: vmi_set_page_dir_entry\n");
 
-  __asm
-  {
+  __asm {
     mov eax, value
     mov edx, pde
     mov ecx, VMI_PAGE_PD
@@ -365,12 +313,10 @@ static void vmi_set_page_dir_entry(pte_t *pde, unsigned long value)
   vmi_flush_deferred_calls();
 }
 
-static void vmi_set_page_table_entry(pte_t *pte, unsigned long value)
-{
+static void vmi_set_page_table_entry(pte_t *pte, unsigned long value) {
   vmi_set_linear_mapping(0, PAGEADDR(pte), 1, virt2pfn(pte));
 
-  __asm
-  {
+  __asm {
     mov eax, value
     mov edx, pte
     mov ecx, VMI_PAGE_PT
@@ -380,10 +326,8 @@ static void vmi_set_page_table_entry(pte_t *pte, unsigned long value)
   vmi_flush_deferred_calls();
 }
 
-static void vmi_reboot()
-{
-  __asm
-  {
+static void vmi_reboot() {
+  __asm {
     mov eax, VMI_REBOOT_HARD
     VMCALL(VMI_CALL_Reboot)
   }
@@ -393,12 +337,10 @@ static void vmi_reboot()
 // Initialize VMI
 //
 
-static int vmi_init()
-{
+static int vmi_init() {
   int rc;
 
-  __asm
-  {
+  __asm {
     mov ecx, vmi
     add ecx, VMI_CALL_Init * VROM_CALL_LEN
     call ecx
@@ -409,10 +351,8 @@ static int vmi_init()
   return rc;
 }
 
-static void vmi_get_reloc_info(int callno, struct vmi_relocation_info *reloc)
-{
-  __asm
-  {
+static void vmi_get_reloc_info(int callno, struct vmi_relocation_info *reloc) {
+  __asm {
     mov eax, callno
     mov ecx, vmi
     add ecx, VMI_CALL_GetRelocationInfo * VROM_CALL_LEN
@@ -423,13 +363,11 @@ static void vmi_get_reloc_info(int callno, struct vmi_relocation_info *reloc)
   }
 }
 
-int probe_vmi()
-{
+int probe_vmi() {
   unsigned long base;
 
   // VMI ROM is in option ROM area, check signature
-  for (base = 0xC0000; base < 0xE0000; base += 2048)
-  {
+  for (base = 0xC0000; base < 0xE0000; base += 2048) {
     struct vrom_header *rom;
 
     rom = (struct vrom_header *) base;
@@ -437,11 +375,9 @@ int probe_vmi()
     if (rom->romSignature != 0xAA55) continue;
     //kprintf("vrom: sig ok at 0x%p, vrom sig 0x%08X\n", rom, rom->vRomSignature);
 
-    if (rom->vRomSignature == VMI_SIGNATURE)
-    {
+    if (rom->vRomSignature == VMI_SIGNATURE) {
       kprintf("mach: VMWare VMI ROM version %d.%d detected\n", rom->APIVersionMajor, rom->APIVersionMinor);
-      if (rom->APIVersionMajor == VMI_API_REV_MAJOR)
-      {
+      if (rom->APIVersionMajor == VMI_API_REV_MAJOR) {
         vmi = rom;
         break;
       }
@@ -452,8 +388,7 @@ int probe_vmi()
   return vmi != NULL;
 }
 
-int init_vmi()
-{
+int init_vmi() {
   int i;
   int cssel;
 
@@ -461,8 +396,7 @@ int init_vmi()
   if (vmi_init() < 0) return -ENXIO;
 
   kprintf("mach: now in VMI mode\n");
-  for (i = VMI_CALL_Init; i < NUM_VMI_CALLS; i++)
-  {
+  for (i = VMI_CALL_Init; i < NUM_VMI_CALLS; i++) {
     struct vmi_relocation_info reloc;
 
     vmi_get_reloc_info(i, &reloc);
@@ -471,8 +405,7 @@ int init_vmi()
   }
 
   // Determine kernel ring
-  __asm
-  {
+  __asm {
     push cs
     pop cssel
   }

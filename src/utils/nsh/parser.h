@@ -38,8 +38,7 @@
 // Token table
 //
 
-struct token
-{
+struct token {
   int eol;            // End of list flag
   const char *name;   // Token name
 };
@@ -146,8 +145,7 @@ extern struct token tokens[];
 // Parser context
 //
 
-struct parserstate
-{
+struct parserstate {
   int flags;
   int pushback;
   int quot;
@@ -156,8 +154,7 @@ struct parserstate
   union node *tree;
 };
 
-struct parser
-{
+struct parser {
   int flags;
   int pushback;
   int quot;

@@ -41,14 +41,12 @@
 #define TVN_MASK (TVN_SIZE - 1)
 #define TVR_MASK (TVR_SIZE - 1)
 
-struct timer_vec 
-{
+struct timer_vec {
   int index;
   struct timer_link vec[TVN_SIZE];
 };
 
-struct timer_vec_root 
-{
+struct timer_vec_root {
   int index;
   struct timer_link vec[TVR_SIZE];
 };
@@ -61,8 +59,7 @@ static struct timer_vec tv3;
 static struct timer_vec tv2;
 static struct timer_vec_root tv1;
 
-static struct timer_vec * const tvecs[] = 
-{
+static struct timer_vec * const tvecs[] = {
   (struct timer_vec *)&tv1, &tv2, &tv3, &tv4, &tv5
 };
 
@@ -72,43 +69,31 @@ static struct timer_vec * const tvecs[] =
 // attach_timer
 //
 
-static void attach_timer(struct timer *timer)
-{
+static void attach_timer(struct timer *timer) {
   unsigned int expires = timer->expires;
   unsigned int idx = expires - timer_ticks;
   struct timer_link *vec;
 
-  if (idx < TVR_SIZE) 
-  {
+  if (idx < TVR_SIZE) {
     int i = expires & TVR_MASK;
     vec = tv1.vec + i;
-  } 
-  else if (idx < 1 << (TVR_BITS + TVN_BITS)) 
-  {
+  } else if (idx < 1 << (TVR_BITS + TVN_BITS)) {
     int i = (expires >> TVR_BITS) & TVN_MASK;
     vec = tv2.vec + i;
-  } 
-  else if (idx < 1 << (TVR_BITS + 2 * TVN_BITS)) 
-  {
+  } else if (idx < 1 << (TVR_BITS + 2 * TVN_BITS)) {
     int i = (expires >> (TVR_BITS + TVN_BITS)) & TVN_MASK;
     vec =  tv3.vec + i;
-  } 
-  else if (idx < 1 << (TVR_BITS + 3 * TVN_BITS)) 
-  {
+  } else if (idx < 1 << (TVR_BITS + 3 * TVN_BITS)) {
     int i = (expires >> (TVR_BITS + 2 * TVN_BITS)) & TVN_MASK;
     vec = tv4.vec + i;
-  } 
-  else if ((signed long) idx < 0) 
-  {
+  } else if ((signed long) idx < 0) {
     // Can happen if you add a timer with expires == timer_ticks, 
     // or you set a timer to go off in the past
     vec = tv1.vec + tv1.index;
-  } 
-  else
-  {
+  } else {
     int i = (expires >> (TVR_BITS + 3 * TVN_BITS)) & TVN_MASK;
     vec = tv5.vec + i;
-  } 
+  }
 
   timer->link.next = vec;
   timer->link.prev = vec->prev;
@@ -122,8 +107,7 @@ static void attach_timer(struct timer *timer)
 // detach_timer
 //
 
-static int detach_timer(struct timer *timer)
-{
+static int detach_timer(struct timer *timer) {
   if (!timer->active) return 0;
 
   timer->link.next->prev = timer->link.prev;
@@ -137,19 +121,16 @@ static int detach_timer(struct timer *timer)
 // init_timers
 //
 
-void init_timers()
-{
+void init_timers() {
   int i;
 
-  for (i = 0; i < TVN_SIZE; i++) 
-  {
+  for (i = 0; i < TVN_SIZE; i++)  {
     tv5.vec[i].next = tv5.vec[i].prev = tv5.vec + i;
     tv4.vec[i].next = tv4.vec[i].prev = tv4.vec + i;
     tv3.vec[i].next = tv3.vec[i].prev = tv3.vec + i;
     tv2.vec[i].next = tv2.vec[i].prev = tv2.vec + i;
   }
-  for (i = 0; i < TVR_SIZE; i++)
-  {
+  for (i = 0; i < TVR_SIZE; i++) {
     tv1.vec[i].next = tv1.vec[i].prev = tv1.vec + i;
   }
 }
@@ -158,8 +139,7 @@ void init_timers()
 // init_timer
 //
 
-void init_timer(struct timer *timer, timerproc_t handler, void *arg)
-{
+void init_timer(struct timer *timer, timerproc_t handler, void *arg) {
   timer->link.next = NULL;
   timer->link.next = NULL;
   timer->expires = 0;
@@ -172,10 +152,8 @@ void init_timer(struct timer *timer, timerproc_t handler, void *arg)
 // add_timer
 //
 
-void add_timer(struct timer *timer)
-{
-  if (timer->active) 
-  {
+void add_timer(struct timer *timer) {
+  if (timer->active) {
     kprintf("timer: timer is already active\n");
     return;
   }
@@ -187,8 +165,7 @@ void add_timer(struct timer *timer)
 // del_timer
 //
 
-int del_timer(struct timer *timer)
-{
+int del_timer(struct timer *timer) {
   int rc;
 
   rc = detach_timer(timer);
@@ -202,8 +179,7 @@ int del_timer(struct timer *timer)
 // mod_timer
 //
 
-int mod_timer(struct timer *timer, unsigned int expires)
-{
+int mod_timer(struct timer *timer, unsigned int expires) {
   int rc;
 
   timer->expires = expires;
@@ -221,15 +197,13 @@ int mod_timer(struct timer *timer, unsigned int expires)
 // individually, just clear the list afterwards.
 //
 
-static void cascade_timers(struct timer_vec *tv)
-{
+static void cascade_timers(struct timer_vec *tv) {
   struct timer_link *head, *curr, *next;
 
   head = tv->vec + tv->index;
   curr = head->next;
 
-  while (curr != head) 
-  {
+  while (curr != head) {
     struct timer *timer;
 
     timer = (struct timer *) curr;
@@ -247,20 +221,16 @@ static void cascade_timers(struct timer_vec *tv)
 // run_timer_list
 //
 
-void run_timer_list()
-{
-  while ((long) (ticks - timer_ticks) >= 0) 
-  {
+void run_timer_list() {
+  while ((long) (ticks - timer_ticks) >= 0) {
     struct timer_link *head, *curr;
 
-    if (!tv1.index) 
-    {
+    if (!tv1.index) {
       int n = 1;
       do { cascade_timers(tvecs[n]); } while (tvecs[n]->index == 1 && ++n < NOOF_TVECS);
     }
 
-    while (1)
-    {
+    while (1) {
       struct timer *timer;
       timerproc_t handler;
       void *arg;
@@ -290,8 +260,7 @@ void run_timer_list()
 // End sleep state for thread
 //
 
-static void tmr_sleep(void *arg)
-{
+static void tmr_sleep(void *arg) {
   struct thread *t = arg;
   mark_thread_ready(t, 1, 0);
 }
@@ -302,18 +271,14 @@ static void tmr_sleep(void *arg)
 // Sleep for a number of milliseconds
 //
 
-int msleep(unsigned int millisecs)
-{
+int msleep(unsigned int millisecs) {
   struct timer timer;
   int rc;
 
-  if (millisecs == 0)
-  {
+  if (millisecs == 0) {
     yield();
     rc = 0;
-  }
-  else
-  {
+  } else {
     init_timer(&timer, tmr_sleep, self());
     timer.expires = ticks + millisecs / MSECS_PER_TICK;
     add_timer(&timer);

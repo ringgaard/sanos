@@ -62,8 +62,7 @@
 // fields at known offsets from a given base. See explanation below.
 //
 
-struct chunk 
-{
+struct chunk {
   size_t prev_size;          // Size of previous chunk (if free).
   size_t size;               // Size in bytes, including overhead.
 
@@ -525,8 +524,7 @@ typedef struct chunk *mfastbinptr;
 // Internal heap state representation and initialization
 //
 
-struct heap
-{
+struct heap {
   size_t max_fast;                  // The maximum chunk size to be eligible for fastbin (low 2 bits used as flags)
   mfastbinptr fastbins[NFASTBINS];  // Fastbins
   mchunkptr top;                    // Base of the topmost chunk -- not otherwise kept in a bin
@@ -569,14 +567,12 @@ struct heap
 // optimization at all. (Inlining it in heap_consolidate is fine though.)
 // 
 
-static heap_init(struct heap *av)
-{
+static heap_init(struct heap *av) {
   int i;
   mbinptr bin;
 
   // Establish circular links for normal bins
-  for (i = 1; i < NBINS; i++)
-  { 
+  for (i = 1; i < NBINS; i++) {
     bin = bin_at(av,i);
     bin->fd = bin->bk = bin;
   }
@@ -605,8 +601,7 @@ static heap_init(struct heap *av)
 // initialization code.
 //
 
-static void heap_consolidate(struct heap *av)
-{
+static void heap_consolidate(struct heap *av) {
   mfastbinptr *fb;          // Current fastbin being consolidated
   mfastbinptr *maxfb;       // Last fastbin (for loop control)
   mchunkptr p;              // Current chunk being consolidated
@@ -624,8 +619,7 @@ static void heap_consolidate(struct heap *av)
   mchunkptr fwd;
 
   // If max_fast is 0, we know that av hasn't yet been initialized, in which case do so below
-  if (av->max_fast != 0) 
-  {
+  if (av->max_fast != 0) {
     clear_fastchunks(av);
     unsorted_bin = unsorted_chunks(av);
 
@@ -637,14 +631,11 @@ static void heap_consolidate(struct heap *av)
     
     maxfb = &(av->fastbins[fastbin_index(av->max_fast)]);
     fb = &(av->fastbins[0]);
-    do 
-    {
-      if ((p = *fb) != 0) 
-      {
+    do {
+      if ((p = *fb) != 0) {
         *fb = 0;
         
-        do 
-        {
+        do {
           nextp = p->fd;
           
           // Slightly streamlined version of consolidation code in free()
@@ -652,21 +643,18 @@ static void heap_consolidate(struct heap *av)
           nextchunk = chunk_at_offset(p, size);
           nextsize = chunksize(nextchunk);
           
-          if (!prev_inuse(p))
-          {
+          if (!prev_inuse(p)) {
             prevsize = p->prev_size;
             size += prevsize;
             p = chunk_at_offset(p, -((long) prevsize));
             unlink(p, bck, fwd);
           }
           
-          if (nextchunk != av->top) 
-          {
+          if (nextchunk != av->top) {
             nextinuse = inuse_bit_at_offset(nextchunk, nextsize);
             set_head(nextchunk, nextsize);
             
-            if (!nextinuse) 
-            {
+            if (!nextinuse) {
               size += nextsize;
               unlink(nextchunk, bck, fwd);
             }
@@ -679,9 +667,7 @@ static void heap_consolidate(struct heap *av)
             p->bk = unsorted_bin;
             p->fd = first_unsorted;
             set_foot(p, size);
-          }
-          else 
-          {
+          } else {
             size += nextsize;
             set_head(p, size | PREV_INUSE);
             av->top = p;
@@ -689,9 +675,9 @@ static void heap_consolidate(struct heap *av)
         } while ( (p = nextp) != 0);
       }
     } while (fb++ != maxfb);
-  }
-  else 
+  } else {
     heap_init(av);
+  }
 }
 
 //
@@ -701,8 +687,7 @@ static void heap_consolidate(struct heap *av)
 // be extended or replaced.
 // 
 
-static void *sysalloc(size_t nb, struct heap *av)
-{
+static void *sysalloc(size_t nb, struct heap *av) {
   mchunkptr top;                // Incoming value of av->top
   size_t size;                  // Its size
   size_t newsize;
@@ -712,15 +697,13 @@ static void *sysalloc(size_t nb, struct heap *av)
   size_t expand;
 
   // Allocate big chunks directly from system
-  if (nb >= av->mmap_threshold && av->n_mmaps < av->n_mmaps_max) 
-  {
+  if (nb >= av->mmap_threshold && av->n_mmaps < av->n_mmaps_max) {
     char *mem;
 
     size = (nb + sizeof(size_t) + ALIGNMASK + PAGESIZE - 1) & ~(PAGESIZE - 1);
 
     mem = (char *) mmap(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'MALL');
-    if (mem != NULL)
-    {
+    if (mem != NULL) {
       p = (mchunkptr) mem;
       set_head(p, size | IS_MMAPPED);
       //syslog(LOG_DEBUG | LOG_HEAP, "Big allocation %dK", size / 1024);
@@ -736,8 +719,7 @@ static void *sysalloc(size_t nb, struct heap *av)
   }
 
   // Allocate memory from the system
-  if (av->region == NULL)
-  {
+  if (av->region == NULL) {
     av->region = (char *) mmap(NULL, av->region_size, MEM_RESERVE, 0, 'MALL');
     if (!av->region) panic("unable to reserve heap region");
     //syslog(LOG_HEAP | LOG_DEBUG, "Reserve heap %p", region);
@@ -756,14 +738,13 @@ static void *sysalloc(size_t nb, struct heap *av)
   if (mmap(av->wilderness, expand, MEM_COMMIT, PAGE_READWRITE, 'MALL') == 0) panic("unable to expand heap");
   av->wilderness += expand;
 
-  if (size == 0)
-  {
+  if (size == 0) {
     //syslog(LOG_HEAP | LOG_DEBUG, "Reserve heap region");
     av->top = (mchunkptr) av->region;
     newsize = expand;
-  }
-  else
+  } else {
     newsize = size + expand;
+  }
 
   set_head(av->top, newsize | PREV_INUSE);
 
@@ -796,8 +777,7 @@ static void *sysalloc(size_t nb, struct heap *av)
 // returns 1 if it actually released any memory, else 0.
 //
 
-static int systrim(size_t pad, struct heap *av)
-{
+static int systrim(size_t pad, struct heap *av) {
   //syslog(LOG_HEAP | LOG_DEBUG, "Heap Trim called: top remaining = %d", chunksize(av->top));
   return 0;
 }
@@ -806,8 +786,7 @@ static int systrim(size_t pad, struct heap *av)
 // heap_alloc
 //
 
-void *heap_alloc(struct heap *av, size_t bytes)
-{
+void *heap_alloc(struct heap *av, size_t bytes) {
   size_t nb;                    // Normalized request size
   unsigned int idx;             // Associated bin index
   mbinptr bin;                  // Associated bin
@@ -838,11 +817,9 @@ void *heap_alloc(struct heap *av, size_t bytes)
   // This code is safe to execute even if av is not yet initialized, so we
   // can try it without checking, which saves some time on this fast path.
 
-  if (nb <= av->max_fast)
-  { 
+  if (nb <= av->max_fast) {
     fb = &(av->fastbins[(fastbin_index(nb))]);
-    if ( (victim = *fb) != 0) 
-    {
+    if ((victim = *fb) != 0) {
       *fb = victim->fd;
       return chunk2mem(victim);
     }
@@ -854,17 +831,14 @@ void *heap_alloc(struct heap *av, size_t bytes)
   // processed to find best fit. But for small ones, fits are exact
   // anyway, so we can check now, which is faster.)
 
-  if (in_smallbin_range(nb)) 
-  {
+  if (in_smallbin_range(nb)) {
     idx = smallbin_index(nb);
     bin = bin_at(av,idx);
 
-    if ((victim = last(bin)) != bin) 
-    {
-      if (victim == 0) // Initialization check
+    if ((victim = last(bin)) != bin) {
+      if (victim == 0) { // Initialization check
         heap_consolidate(av);
-      else 
-      {
+      } else {
         bck = victim->bk;
         set_inuse_bit_at_offset(victim, nb);
         bin->bk = bck;
@@ -873,9 +847,7 @@ void *heap_alloc(struct heap *av, size_t bytes)
         return chunk2mem(victim);
       }
     }
-  }
-  else 
-  {
+  } else {
     // If this is a large request, consolidate fastbins before continuing.
     // While it might look excessive to kill all fastbins before
     // even seeing if there is space available, this avoids
@@ -900,10 +872,8 @@ void *heap_alloc(struct heap *av, size_t bytes)
   // do so and retry. This happens at most once, and only when we would
   // otherwise need to expand memory to service a "small" request.
     
-  for (;;) 
-  {    
-    while ((victim = unsorted_chunks(av)->bk) != unsorted_chunks(av)) 
-    {
+  for (;;) {
+    while ((victim = unsorted_chunks(av)->bk) != unsorted_chunks(av)) {
       bck = victim->bk;
       size = chunksize(victim);
 
@@ -913,8 +883,7 @@ void *heap_alloc(struct heap *av, size_t bytes)
       // exception to best-fit, and applies only when there is
       // no exact fit for a small chunk.
 
-      if (in_smallbin_range(nb) && bck == unsorted_chunks(av) && victim == av->last_remainder && size > nb + MINSIZE)
-      {
+      if (in_smallbin_range(nb) && bck == unsorted_chunks(av) && victim == av->last_remainder && size > nb + MINSIZE) {
         // Split and reattach remainder
         remainder_size = size - nb;
         remainder = chunk_at_offset(victim, nb);
@@ -934,39 +903,31 @@ void *heap_alloc(struct heap *av, size_t bytes)
       bck->fd = unsorted_chunks(av);
       
       // Take now instead of binning if exact fit
-      if (size == nb) 
-      {
+      if (size == nb) {
         set_inuse_bit_at_offset(victim, size);
         return chunk2mem(victim);
       }
       
       // Place chunk in bin
-      if (in_smallbin_range(size)) 
-      {
+      if (in_smallbin_range(size)) {
         victim_index = smallbin_index(size);
         bck = bin_at(av, victim_index);
         fwd = bck->fd;
-      }
-      else 
-      {
+      } else {
         victim_index = largebin_index(size);
         bck = bin_at(av, victim_index);
         fwd = bck->fd;
 
         // Maintain large bins in sorted order
-        if (fwd != bck) 
-        {
+        if (fwd != bck) {
           // Or with inuse bit to speed comparisons
           size |= PREV_INUSE;
 
           // If smaller than smallest, bypass loop below
-          if (size <= bck->bk->size) 
-          {
+          if (size <= bck->bk->size) {
             fwd = bck;
             bck = bck->bk;
-          }
-          else 
-          {
+          } else {
             while (size < fwd->size) fwd = fwd->fd;
             bck = fwd->bk;
           }
@@ -985,26 +946,21 @@ void *heap_alloc(struct heap *av, size_t bytes)
     // where an unbounded number of chunks might be scanned without doing
     // anything useful with them. However the lists tend to be short.
       
-    if (!in_smallbin_range(nb)) 
-    {
+    if (!in_smallbin_range(nb)) {
       bin = bin_at(av, idx);
 
       // Skip scan if empty or largest chunk is too small
-      if ((victim = last(bin)) != bin && first(bin)->size >= nb) 
-      {
+      if ((victim = last(bin)) != bin && first(bin)->size >= nb) {
         while ((size = chunksize(victim)) < nb) victim = victim->bk;
 
         remainder_size = size - nb;
         unlink(victim, bck, fwd);
         
         // Exhaust
-        if (remainder_size < MINSIZE)  
-        {
+        if (remainder_size < MINSIZE) {
           set_inuse_bit_at_offset(victim, size);
           return chunk2mem(victim);
-        }
-        else 
-        {
+        } else {
           // Split
           remainder = chunk_at_offset(victim, nb);
           unsorted_chunks(av)->bk = unsorted_chunks(av)->fd = remainder;
@@ -1032,19 +988,16 @@ void *heap_alloc(struct heap *av, size_t bytes)
     map = av->binmap[block];
     bit = idx2bit(idx);
     
-    for (;;) 
-    {
+    for (;;) {
       // Skip rest of block if there are no more set bits in this block.
-      if (bit > map || bit == 0) 
-      {
+      if (bit > map || bit == 0) {
         do { if (++block >= BINMAPSIZE) goto use_top; } while ((map = av->binmap[block]) == 0);
         bin = bin_at(av, (block << BINMAPSHIFT));
         bit = 1;
       }
       
       // Advance to bin with set bit. There must be one.
-      while ((bit & map) == 0) 
-      {
+      while ((bit & map) == 0) {
         bin = next_bin(bin);
         bit <<= 1;
         assert(bit != 0);
@@ -1054,14 +1007,11 @@ void *heap_alloc(struct heap *av, size_t bytes)
       victim = last(bin);
       
       //  If a false alarm (empty bin), clear the bit.
-      if (victim == bin) 
-      {
+      if (victim == bin) {
         av->binmap[block] = map &= ~bit; // Write through
         bin = next_bin(bin);
         bit <<= 1;
-      }
-      else 
-      {
+      } else {
         size = chunksize(victim);
 
         //  We know the first chunk in this bin is big enough to use.
@@ -1075,13 +1025,10 @@ void *heap_alloc(struct heap *av, size_t bytes)
         bck->fd = bin;
         
         // Exhaust
-        if (remainder_size < MINSIZE) 
-        {
+        if (remainder_size < MINSIZE) {
           set_inuse_bit_at_offset(victim, size);
           return chunk2mem(victim);
-        }
-        else 
-        {
+        } else {
           // Split
           remainder = chunk_at_offset(victim, nb);
           
@@ -1116,8 +1063,7 @@ void *heap_alloc(struct heap *av, size_t bytes)
     victim = av->top;
     size = chunksize(victim);
    
-    if (size >= nb + MINSIZE)
-    {
+    if (size >= nb + MINSIZE) {
       remainder_size = size - nb;
       remainder = chunk_at_offset(victim, nb);
       av->top = remainder;
@@ -1125,9 +1071,7 @@ void *heap_alloc(struct heap *av, size_t bytes)
       set_head(remainder, remainder_size | PREV_INUSE);
 
       return chunk2mem(victim);
-    }
-    else if (have_fastchunks(av)) 
-    {
+    } else if (have_fastchunks(av)) {
       // If there is space available in fastbins, consolidate and retry,
       // to possibly avoid expanding memory. This can occur only if nb is
       // in smallbin range so we didn't consolidate upon entry.
@@ -1135,10 +1079,10 @@ void *heap_alloc(struct heap *av, size_t bytes)
       assert(in_smallbin_range(nb));
       heap_consolidate(av);
       idx = smallbin_index(nb); // Restore original bin index
-    }
-    else 
+    } else {
       // Otherwise, relay to handle system-dependent cases 
       return sysalloc(nb, av);
+    }
   }
 }
 
@@ -1146,8 +1090,7 @@ void *heap_alloc(struct heap *av, size_t bytes)
 // heap_free
 //
 
-void heap_free(struct heap *av, void *mem)
-{
+void heap_free(struct heap *av, void *mem) {
   mchunkptr p;         // Chunk corresponding to mem
   size_t size;         // Its size
   mfastbinptr *fb;     // Associated fastbin
@@ -1159,45 +1102,38 @@ void heap_free(struct heap *av, void *mem)
   mchunkptr fwd;       // Misc temp for linking
 
   // free(0) has no effect
-  if (mem != 0) 
-  {
+  if (mem != 0) {
     p = mem2chunk(mem);
     size = chunksize(p);
 
     // If eligible, place chunk on a fastbin so it can be found
     // and used quickly in malloc.
 
-    if (size <= av->max_fast) 
-    {
+    if (size <= av->max_fast) {
       set_fastchunks(av);
       fb = &(av->fastbins[fastbin_index(size)]);
       p->fd = *fb;
       *fb = p;
-    }
-    else if (!chunk_is_mmapped(p)) 
-    {
+    } else if (!chunk_is_mmapped(p)) {
       // Consolidate other non-mmapped chunks as they arrive.
       nextchunk = chunk_at_offset(p, size);
       nextsize = chunksize(nextchunk);
 
       // Consolidate backward
-      if (!prev_inuse(p)) 
-      {
+      if (!prev_inuse(p)) {
         prevsize = p->prev_size;
         size += prevsize;
         p = chunk_at_offset(p, -((long) prevsize));
         unlink(p, bck, fwd);
       }
 
-      if (nextchunk != av->top) 
-      {
+      if (nextchunk != av->top) {
         // Get and clear inuse bit
         nextinuse = inuse_bit_at_offset(nextchunk, nextsize);
         set_head(nextchunk, nextsize);
 
         // Consolidate forward 
-        if (!nextinuse) 
-        {
+        if (!nextinuse) {
           unlink(nextchunk, bck, fwd);
           size += nextsize;
         }
@@ -1215,9 +1151,7 @@ void heap_free(struct heap *av, void *mem)
 
         set_head(p, size | PREV_INUSE);
         set_foot(p, size);
-      }
-      else 
-      {
+      } else {
         // If the chunk borders the current high end of memory,
         // consolidate into top
 
@@ -1237,25 +1171,19 @@ void heap_free(struct heap *av, void *mem)
       // consolidation is performed if FASTBIN_CONSOLIDATION_THRESHOLD
       // is reached.
 
-      if (size >= FASTBIN_CONSOLIDATION_THRESHOLD) 
-      { 
+      if (size >= FASTBIN_CONSOLIDATION_THRESHOLD) { 
         if (have_fastchunks(av)) heap_consolidate(av);
 
-        if (chunksize(av->top) >= av->trim_threshold)
-        {
+        if (chunksize(av->top) >= av->trim_threshold) {
           systrim(av->top_pad, av);
         }
       }
-    }
-
-    // If the chunk was allocated via mmap, release via munmap()
-    // Note that if HAVE_MMAP is false but chunk_is_mmapped is
-    // true, then user must have overwritten memory. There's nothing
-    // we can do to catch this error unless DEBUG is set, in which case
-    // check_inuse_chunk (above) will have triggered error.
-
-    else 
-    {
+    } else {
+      // If the chunk was allocated via mmap, release via munmap()
+      // Note that if HAVE_MMAP is false but chunk_is_mmapped is
+      // true, then user must have overwritten memory. There's nothing
+      // we can do to catch this error unless DEBUG is set, in which case
+      // check_inuse_chunk (above) will have triggered error.
       int ret;
       size_t offset = p->prev_size;
 
@@ -1274,8 +1202,7 @@ void heap_free(struct heap *av, void *mem)
 // heap_realloc
 //
 
-void *heap_realloc(struct heap *av, void *oldmem, size_t bytes)
-{
+void *heap_realloc(struct heap *av, void *oldmem, size_t bytes) {
   size_t nb;                   // Padded request size
 
   mchunkptr oldp;               // Chunk corresponding to oldmem
@@ -1293,8 +1220,7 @@ void *heap_realloc(struct heap *av, void *oldmem, size_t bytes)
   mchunkptr bck;                // Misc temp for linking
   mchunkptr fwd;                // Misc temp for linking
 
-  if (bytes == 0)
-  {
+  if (bytes == 0) {
     heap_free(av, oldmem);
     return 0;
   }
@@ -1307,35 +1233,25 @@ void *heap_realloc(struct heap *av, void *oldmem, size_t bytes)
   oldp = mem2chunk(oldmem);
   oldsize = chunksize(oldp);
 
-  if (!chunk_is_mmapped(oldp)) 
-  {
-    if (oldsize >= nb) 
-    {
+  if (!chunk_is_mmapped(oldp)) {
+    if (oldsize >= nb) {
       // Already big enough; split below
       newp = oldp;
       newsize = oldsize;
-    }
-    else 
-    {
+    } else {
       next = chunk_at_offset(oldp, oldsize);
 
       // Try to expand forward into top
-      if (next == av->top && (newsize = oldsize + chunksize(next)) >= nb + MINSIZE) 
-      {
+      if (next == av->top && (newsize = oldsize + chunksize(next)) >= nb + MINSIZE) {
         set_head_size(oldp, nb);
         av->top = chunk_at_offset(oldp, nb);
         set_head(av->top, (newsize - nb) | PREV_INUSE);
         return chunk2mem(oldp);
-      }
-
-      // Try to expand forward into next chunk;  split off remainder below
-      else if (next != av->top && !inuse(next) && (newsize = oldsize + chunksize(next)) >= nb) 
-      {
+      } else if (next != av->top && !inuse(next) && (newsize = oldsize + chunksize(next)) >= nb) {
+        // Try to expand forward into next chunk;  split off remainder below
         newp = oldp;
         unlink(next, bck, fwd);
-      }
-      else 
-      {
+      } else {
         // Allocate, copy, free
         newmem = heap_alloc(av, nb - ALIGNMASK);
         if (newmem == 0) return 0; // Propagate failure
@@ -1344,13 +1260,10 @@ void *heap_realloc(struct heap *av, void *oldmem, size_t bytes)
         newsize = chunksize(newp);
         
         // Avoid copy if newp is next chunk after oldp.
-        if (newp == next) 
-        {
+        if (newp == next) {
           newsize += oldsize;
           newp = oldp;
-        }
-        else 
-        {
+        } else {
           memcpy(newmem, oldmem, oldsize - sizeof(size_t));
           heap_free(av, oldmem);
           return chunk2mem(newp);
@@ -1362,14 +1275,11 @@ void *heap_realloc(struct heap *av, void *oldmem, size_t bytes)
     assert(newsize >= nb);
     remainder_size = newsize - nb;
 
-    if (remainder_size < MINSIZE) 
-    {
+    if (remainder_size < MINSIZE) {
       // Not enough extra to split off
       set_head_size(newp, newsize);
       set_inuse_bit_at_offset(newp, newsize);
-    }
-    else 
-    { 
+    } else { 
       // Split remainder
       remainder = chunk_at_offset(newp, nb);
       set_head_size(newp, nb);
@@ -1381,9 +1291,7 @@ void *heap_realloc(struct heap *av, void *oldmem, size_t bytes)
     }
 
     return chunk2mem(newp);
-  }
-  else 
-  {
+  } else {
     // Handle mmap cases
 #if HAVE_MREMAP
     size_t offset = oldp->prev_size;
@@ -1398,8 +1306,7 @@ void *heap_realloc(struct heap *av, void *oldmem, size_t bytes)
     if (oldsize == newsize - offset) return oldmem;
 
     cp = (char *) mremap((char *) oldp - offset, oldsize + offset, newsize, 1);
-    if (cp != (char *) MORECORE_FAILURE) 
-    {
+    if (cp != (char *) MORECORE_FAILURE) {
       newp = (mchunkptr) (cp + offset);
       set_head(newp, (newsize - offset) | IS_MMAPPED);
       
@@ -1416,14 +1323,12 @@ void *heap_realloc(struct heap *av, void *oldmem, size_t bytes)
 #endif
 
     // Note the extra sizeof(size_t) overhead.
-    if (oldsize >= nb + sizeof(size_t)) 
+    if (oldsize >= nb + sizeof(size_t)) {
       newmem = oldmem; // do nothing
-    else 
-    {
+    } else {
       // Must alloc, copy, free.
       newmem = heap_alloc(av, nb - ALIGNMASK);
-      if (newmem != 0) 
-      {
+      if (newmem != 0) {
         memcpy(newmem, oldmem, oldsize - 2 * sizeof(size_t));
         heap_free(av, oldmem);
       }
@@ -1436,14 +1341,12 @@ void *heap_realloc(struct heap *av, void *oldmem, size_t bytes)
 // heap_calloc
 //
 
-void *heap_calloc(struct heap *av, size_t n_elements, size_t elem_size)
-{
+void *heap_calloc(struct heap *av, size_t n_elements, size_t elem_size) {
   mchunkptr p;
 
   void *mem = heap_alloc(av, n_elements * elem_size);
 
-  if (mem != 0) 
-  {
+  if (mem != 0) {
     p = mem2chunk(mem);
 
     // Don't need to clear mmapped space
@@ -1457,8 +1360,7 @@ void *heap_calloc(struct heap *av, size_t n_elements, size_t elem_size)
 // heap_mallinfo
 //
 
-struct mallinfo heap_mallinfo(struct heap *av)
-{
+struct mallinfo heap_mallinfo(struct heap *av) {
   struct mallinfo mi;
   int i;
   mbinptr b;
@@ -1479,10 +1381,8 @@ struct mallinfo heap_mallinfo(struct heap *av)
   nfastblocks = 0;
   fastavail = 0;
 
-  for (i = 0; i < NFASTBINS; i++) 
-  {
-    for (p = av->fastbins[i]; p != 0; p = p->fd) 
-    {
+  for (i = 0; i < NFASTBINS; i++) {
+    for (p = av->fastbins[i]; p != 0; p = p->fd) {
       nfastblocks++;
       fastavail += chunksize(p);
     }
@@ -1491,11 +1391,9 @@ struct mallinfo heap_mallinfo(struct heap *av)
   avail += fastavail;
 
   // Traverse regular bins
-  for (i = 1; i < NBINS; i++)
-  {
+  for (i = 1; i < NBINS; i++) {
     b = bin_at(av, i);
-    for (p = last(b); p != b; p = p->bk) 
-    {
+    for (p = last(b); p != b; p = p->bk) {
       nblocks++;
       avail += chunksize(p);
     }
@@ -1519,17 +1417,16 @@ struct mallinfo heap_mallinfo(struct heap *av)
 // heap_malloc_usable_size
 //
 
-int heap_malloc_usable_size(void *mem)
-{
+int heap_malloc_usable_size(void *mem) {
   mchunkptr p;
 
-  if (mem) 
-  {
+  if (mem) {
     p = mem2chunk(mem);
-    if (chunk_is_mmapped(p))
+    if (chunk_is_mmapped(p)) {
       return chunksize(p) - 2 * sizeof(size_t);
-    else if (inuse(p))
+    } else if (inuse(p)) {
       return chunksize(p) - sizeof(size_t);
+    }
   }
   return 0;
 }
@@ -1538,8 +1435,7 @@ int heap_malloc_usable_size(void *mem)
 // heap_create
 //
 
-struct heap *heap_create(size_t region_size, size_t group_size)
-{
+struct heap *heap_create(size_t region_size, size_t group_size) {
   struct heap *av;
 
   av = (struct heap *) mmap(NULL, sizeof(struct heap), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'HBLK');

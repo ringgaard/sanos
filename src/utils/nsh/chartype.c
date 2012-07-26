@@ -37,8 +37,7 @@
 // Character class table 
 //
 
-const unsigned short ctype[CHAR_RANGE] =
-{       
+const unsigned short ctype[CHAR_RANGE] = {
   // 0x00
   C_UNDEF, C_UNDEF, C_UNDEF, C_UNDEF, C_UNDEF, C_UNDEF, C_UNDEF, C_UNDEF,
   C_UNDEF, C_SPACE, C_SPACE, C_UNDEF, C_UNDEF, C_SPACE, C_UNDEF, C_UNDEF,

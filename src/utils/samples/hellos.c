@@ -1,6 +1,5 @@
 #include <os.h>
 
-int mainCRTStartup()
-{
+int mainCRTStartup() {
   write(fdout, "hello world\n", 12);
 }

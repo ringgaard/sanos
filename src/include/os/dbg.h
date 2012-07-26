@@ -71,8 +71,7 @@
 #define DBGERR_INVALIDSEL         0x85
 #define DBGERR_NOCONTEXT          0x86
 
-struct dbg_hdr
-{
+struct dbg_hdr {
   unsigned char signature;
   unsigned char cmd;
   unsigned char id;
@@ -80,59 +79,50 @@ struct dbg_hdr
   unsigned int len;
 };
 
-struct dbg_memory
-{
+struct dbg_memory {
   void *addr;
   unsigned long size;
   unsigned char data[0];
 };
 
-struct dbg_thread
-{
+struct dbg_thread {
   int count;
   tid_t threadids[0];
 };
 
-struct dbg_threadinfo
-{
+struct dbg_threadinfo {
   tid_t tid; 
   void *tib; 
   void *startaddr; 
   void *tcb;
 };
 
-struct dbg_threadlist
-{
+struct dbg_threadlist {
   int count;
   struct dbg_threadinfo threads[0];
 };
 
-struct dbg_context
-{
+struct dbg_context {
   tid_t tid;
   struct context ctxt;
 };
 
-struct dbg_selector
-{
+struct dbg_selector {
   int sel;
   struct segment seg;
 };
 
-struct dbg_moduleinfo
-{
+struct dbg_moduleinfo {
   hmodule_t hmod; 
   char **name;
 };
 
-struct dbg_modulelist
-{
+struct dbg_modulelist {
   int count;
   struct dbg_moduleinfo mods[0];
 };
 
-struct dbg_evt_trap
-{
+struct dbg_evt_trap {
   tid_t tid;
   unsigned long traptype;
   unsigned long errcode;
@@ -140,39 +130,33 @@ struct dbg_evt_trap
   void *addr;
 };
 
-struct dbg_evt_create_thread
-{
+struct dbg_evt_create_thread {
   tid_t tid;
   void *tib;
   void *startaddr;
   void *tcb;
 };
 
-struct dbg_evt_exit_thread
-{
+struct dbg_evt_exit_thread {
   tid_t tid;
   int exitcode;
 };
 
-struct dbg_evt_load_module
-{
+struct dbg_evt_load_module {
   hmodule_t hmod;
   char **name;
 };
 
-struct dbg_evt_unload_module
-{
+struct dbg_evt_unload_module {
   hmodule_t hmod;
 };
 
-struct dbg_evt_output
-{
+struct dbg_evt_output {
   char *msgptr;
   int msglen;
 };
 
-struct dbg_connect
-{
+struct dbg_connect {
   int version;
   
   struct dbg_evt_trap trap;
@@ -181,8 +165,7 @@ struct dbg_connect
   struct cpu cpu;
 };
 
-union dbg_body
-{
+union dbg_body {
   char string[0];
   unsigned char data[0];
   struct dbg_connect conn;
@@ -201,8 +184,7 @@ union dbg_body
   struct dbg_evt_output output;
 };
 
-struct dbg_event
-{
+struct dbg_event {
   tid_t tid;
   int type;
   union dbg_body evt;

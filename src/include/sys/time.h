@@ -43,16 +43,14 @@
 #ifndef _TIMEVAL_DEFINED
 #define _TIMEVAL_DEFINED
 
-struct timeval 
-{
+struct timeval {
   long tv_sec;                  // Seconds
   long tv_usec;                 // Microseconds
 };
 
 #endif
 
-struct itimerval
-{
+struct itimerval {
   struct timeval it_interval;   // Timer interval
   struct timeval it_value;      // Current value  
 };

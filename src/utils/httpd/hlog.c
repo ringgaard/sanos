@@ -41,8 +41,7 @@
 
 #define MAX_LOGLINE_SIZE (32 * 1024)
 
-char *logfieldnames[] = 
-{
+char *logfieldnames[] = {
   "date",
   "time",
   "time-taken",
@@ -65,8 +64,7 @@ char *logfieldnames[] =
   NULL
 };
 
-int parse_log_columns(struct httpd_server *server, char *fields)
-{
+int parse_log_columns(struct httpd_server *server, char *fields) {
   char *p;
   char *q;
   int n;
@@ -76,8 +74,7 @@ int parse_log_columns(struct httpd_server *server, char *fields)
   p = fields;
   if (!p) return 0;
 
-  while (*p && server->nlogcolumns < HTTP_NLOGCOLUMNS - 1)
-  {
+  while (*p && server->nlogcolumns < HTTP_NLOGCOLUMNS - 1) {
     while (*p == ' ') p++;
     q = str;
     while (*p && *p != ' ') *q++ = *p++;
@@ -91,14 +88,12 @@ int parse_log_columns(struct httpd_server *server, char *fields)
   return 0;
 }
 
-int write_log(struct httpd_server *server, char *data, int len, struct tm *tm)
-{
+int write_log(struct httpd_server *server, char *data, int len, struct tm *tm) {
   int year = tm->tm_year + 1900;
   int mon = tm->tm_mon + 1;
   int day = tm->tm_mday;
 
-  if (year != server->logyear || mon != server->logmon || day != server->logday)
-  {
+  if (year != server->logyear || mon != server->logmon || day != server->logday) {
     char logfn[MAXPATH];
     char buf[1024];
     int n;
@@ -114,8 +109,7 @@ int write_log(struct httpd_server *server, char *data, int len, struct tm *tm)
 
     write(server->logfd, "#Version: 1.0\r\n", 15);
     write(server->logfd, "#Fields: ", 9);
-    for (n = 0; n < server->nlogcolumns; n++)
-    {
+    for (n = 0; n < server->nlogcolumns; n++) {
       if (n > 0) write(server->logfd, " ", 1);
       write(server->logfd, logfieldnames[server->logcoumns[n]], strlen(logfieldnames[server->logcoumns[n]]));
     }
@@ -131,8 +125,7 @@ int write_log(struct httpd_server *server, char *data, int len, struct tm *tm)
   return write(server->logfd, data, len);
 }
 
-int log_request(struct httpd_request *req)
-{
+int log_request(struct httpd_request *req) {
   char line[MAX_LOGLINE_SIZE];
   char *p = line;
   char *end = line + MAX_LOGLINE_SIZE;
@@ -147,13 +140,11 @@ int log_request(struct httpd_request *req)
 
   if (req->conn->server->nlogcolumns == 0 || req->conn->server->logdir == NULL) return 0;
 
-  for (n = 0; n < req->conn->server->nlogcolumns; n++)
-  {
+  for (n = 0; n < req->conn->server->nlogcolumns; n++) {
     field = req->conn->server->logcoumns[n];
     value = buf;
 
-    switch (field)
-    {
+    switch (field) {
       case HTTP_LOG_DATE: 
         strftime(buf, sizeof(buf), "%Y-%m-%d", tm);
         break;
@@ -235,45 +226,38 @@ int log_request(struct httpd_request *req)
     }
 
     if (!value || !*value) value = "-";
-    if (n > 0)
-    {
-      if (p == end) 
-      {
+    if (n > 0) {
+      if (p == end) {
         errno = EBUF;
         return -1;
       }
       *p++ = ' ';
     }
-    while (*value)
-    {
-      if (p == end) 
-      {
+    while (*value) {
+      if (p == end) {
         errno = EBUF;
         return -1;
       }
-      if (*value == ' ')
+      if (*value == ' ') {
         *p++ = '+';
-      else
+      } else {
         *p++ = *value;
-
+      }
       value++;
     }
   }
 
-  if (p == end) 
-  {
+  if (p == end) {
     errno = EBUF;
     return -1;
   }
   *p++ = '\r';
-  if (p == end) 
-  {
+  if (p == end) {
     errno = EBUF;
     return -1;
   }
   *p++ = '\n';
-  if (p == end) 
-  {
+  if (p == end) {
     errno = EBUF;
     return -1;
   }

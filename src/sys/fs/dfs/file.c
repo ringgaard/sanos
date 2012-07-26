@@ -33,8 +33,7 @@
 
 #include <os/krnl.h>
 
-static int open_existing(struct filsys *fs, char *name, struct inode **retval)
-{
+static int open_existing(struct filsys *fs, char *name, struct inode **retval) {
   struct inode *inode;
   int rc;
 
@@ -45,8 +44,7 @@ static int open_existing(struct filsys *fs, char *name, struct inode **retval)
   return 0;
 }
 
-static int open_always(struct filsys *fs, char *name, int mode, struct inode **retval)
-{
+static int open_always(struct filsys *fs, char *name, int mode, struct inode **retval) {
   struct inode *dir;
   struct inode *inode;
   ino_t ino;
@@ -57,35 +55,28 @@ static int open_always(struct filsys *fs, char *name, int mode, struct inode **r
   if (rc < 0) return rc;
 
   rc = find_dir_entry(dir, name, len, &ino);
-  if (rc < 0 && rc != -ENOENT)
-  {
+  if (rc < 0 && rc != -ENOENT) {
     release_inode(dir);
     return rc;
   }
 
-  if (rc == -ENOENT)
-  {
+  if (rc == -ENOENT) {
     inode = alloc_inode(dir, S_IFREG | (mode & S_IRWXUGO));
-    if (!inode) 
-    {
+    if (!inode) {
       release_inode(dir);
       return -ENOSPC;
     }
 
     rc = add_dir_entry(dir, name, len, inode->ino);
-    if (rc < 0)
-    {
+    if (rc < 0) {
       unlink_inode(inode);
       release_inode(inode);
       release_inode(dir);
       return rc;
     }
-  }
-  else
-  {
+  } else {
     rc = get_inode(fs, ino, &inode);
-    if (rc < 0) 
-    {
+    if (rc < 0) {
       release_inode(dir);
       return rc;
     }
@@ -96,8 +87,7 @@ static int open_always(struct filsys *fs, char *name, int mode, struct inode **r
   return 0;
 }
 
-static int create_always(struct filsys *fs, char *name, int mode, struct inode **retval)
-{
+static int create_always(struct filsys *fs, char *name, int mode, struct inode **retval) {
   struct inode *dir;
   struct inode *inode;
   struct inode *oldinode;
@@ -109,31 +99,26 @@ static int create_always(struct filsys *fs, char *name, int mode, struct inode *
   if (rc < 0) return rc;
 
   rc = find_dir_entry(dir, name, len, &oldino);
-  if (rc == 0)
-  {
+  if (rc == 0) {
     rc = get_inode(fs, oldino, &oldinode);
-    if (rc < 0)
-    {
+    if (rc < 0) {
       release_inode(dir);
       return rc;
     }
 
-    if (S_ISDIR(oldinode->desc->mode) && oldinode->desc->linkcount == 1)
-    {
+    if (S_ISDIR(oldinode->desc->mode) && oldinode->desc->linkcount == 1) {
       release_inode(dir);
       return -EISDIR;
     }
 
     inode = alloc_inode(dir, S_IFREG | (mode & S_IRWXUGO));
-    if (!inode)
-    {
+    if (!inode) {
       release_inode(dir);
       return -ENOSPC;
     }
 
     rc = modify_dir_entry(dir, name, len, inode->ino, NULL);
-    if (rc < 0)
-    {
+    if (rc < 0) {
       unlink_inode(inode);
       release_inode(inode);
       release_inode(dir);
@@ -142,27 +127,21 @@ static int create_always(struct filsys *fs, char *name, int mode, struct inode *
 
     unlink_inode(oldinode);
     release_inode(oldinode);
-  } 
-  else if (rc == -ENOENT)
-  {
+  } else if (rc == -ENOENT) {
     inode = alloc_inode(dir, S_IFREG | (mode & S_IRWXUGO));
-    if (!inode)
-    {
+    if (!inode) {
       release_inode(dir);
       return -ENOSPC;
     }
 
     rc = add_dir_entry(dir, name, len, inode->ino);
-    if (rc < 0)
-    {
+    if (rc < 0) {
       unlink_inode(inode);
       release_inode(inode);
       release_inode(dir);
       return rc;
     }
-  } 
-  else
-  {
+  } else {
     release_inode(dir);
     return rc;
   }
@@ -172,23 +151,20 @@ static int create_always(struct filsys *fs, char *name, int mode, struct inode *
   return 0;
 }
 
-static int truncate_existing(struct filsys *fs, char *name, struct inode **retval)
-{
+static int truncate_existing(struct filsys *fs, char *name, struct inode **retval) {
   struct inode *inode;
   int rc;
 
   rc = namei(fs, name, &inode);
   if (rc < 0) return rc;
 
-  if (S_ISDIR(inode->desc->mode))
-  {
+  if (S_ISDIR(inode->desc->mode)) {
     release_inode(inode);
     return -EISDIR;
   }
 
   rc = truncate_inode(inode, 0); 
-  if (rc < 0)
-  {
+  if (rc < 0) {
     release_inode(inode);
     return rc;
   }
@@ -199,8 +175,7 @@ static int truncate_existing(struct filsys *fs, char *name, struct inode **retva
   return 0;
 }
 
-static int create_new(struct filsys *fs, char *name, ino_t ino, int mode, struct inode **retval)
-{
+static int create_new(struct filsys *fs, char *name, ino_t ino, int mode, struct inode **retval) {
   struct inode *dir;
   struct inode *inode;
   int rc;
@@ -210,23 +185,18 @@ static int create_new(struct filsys *fs, char *name, ino_t ino, int mode, struct
   if (rc < 0) return rc;
 
   rc = find_dir_entry(dir, name, len, NULL);
-  if (rc != -ENOENT)
-  {
+  if (rc != -ENOENT) {
     release_inode(dir);
     return rc >= 0 ? -EEXIST : rc;
   }
 
-  if (ino == NOINODE)
-  {
+  if (ino == NOINODE) {
     inode = alloc_inode(dir, S_IFREG | (mode & S_IRWXUGO));
     if (!inode) rc = -ENOSPC;
-  }
-  else
-  {
+  } else {
     rc = get_inode(fs, ino, &inode);
     if (rc < 0) inode = NULL;
-    if (inode)
-    {
+    if (inode) {
       inode->desc->ctime = inode->desc->mtime = time(NULL);
       inode->desc->uid = inode->desc->gid = 0;
       inode->desc->mode = S_IFREG | 0700;
@@ -235,15 +205,13 @@ static int create_new(struct filsys *fs, char *name, ino_t ino, int mode, struct
     }
   }
 
-  if (!inode)
-  {
+  if (!inode) {
     release_inode(dir);
     return rc;
   }
 
   rc = add_dir_entry(dir, name, len, inode->ino);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     unlink_inode(inode);
     release_inode(inode);
     release_inode(dir);
@@ -255,16 +223,14 @@ static int create_new(struct filsys *fs, char *name, ino_t ino, int mode, struct
   return 0;
 }
 
-int dfs_open(struct file *filp, char *name)
-{
+int dfs_open(struct file *filp, char *name) {
   struct filsys *fs;
   struct inode *inode;
   int rc;
 
   fs = (struct filsys *) filp->fs->data;
 
-  switch (filp->flags & (O_CREAT | O_EXCL | O_TRUNC | O_SPECIAL))
-  {
+  switch (filp->flags & (O_CREAT | O_EXCL | O_TRUNC | O_SPECIAL)) {
     case 0:
     case O_EXCL:
       // Open existing file
@@ -318,13 +284,11 @@ int dfs_open(struct file *filp, char *name)
   return 0;
 }
 
-int dfs_close(struct file *filp)
-{
+int dfs_close(struct file *filp) {
   struct inode *inode;
 
   inode = (struct inode *) filp->data;
-  if (filp->flags & F_MODIFIED) 
-  {
+  if (filp->flags & F_MODIFIED) {
     inode->desc->mtime = time(NULL);
     mark_inode_dirty(inode);
   }
@@ -334,8 +298,7 @@ int dfs_close(struct file *filp)
   return 0;
 }
 
-int dfs_destroy(struct file *filp)
-{
+int dfs_destroy(struct file *filp) {
   struct inode *inode;
 
   inode = (struct inode *) filp->data;
@@ -344,8 +307,7 @@ int dfs_destroy(struct file *filp)
   return 0;
 }
 
-int dfs_fsync(struct file *filp)
-{
+int dfs_fsync(struct file *filp) {
   int rc;
   struct inode *inode = (struct inode *) filp->data;
 
@@ -359,8 +321,7 @@ int dfs_fsync(struct file *filp)
   return 0;
 }
 
-int dfs_read(struct file *filp, void *data, size_t size, off64_t pos)
-{
+int dfs_read(struct file *filp, void *data, size_t size, off64_t pos) {
   struct inode *inode;
   size_t read;
   size_t count;
@@ -374,8 +335,7 @@ int dfs_read(struct file *filp, void *data, size_t size, off64_t pos)
   inode = (struct inode *) filp->data;
   read = 0;
   p = (char *) data;
-  while (pos < inode->desc->size && size > 0)
-  {
+  while (pos < inode->desc->size && size > 0) {
     if (filp->flags & F_CLOSED) return -EINTR;
 
     iblock = (unsigned int) (pos / inode->fs->blocksize);
@@ -391,13 +351,10 @@ int dfs_read(struct file *filp, void *data, size_t size, off64_t pos)
     blk = get_inode_block(inode, iblock);
     if (blk == NOBLOCK) return -EIO;
 
-    if (filp->flags & O_DIRECT)
-    {
+    if (filp->flags & O_DIRECT) {
       if (start != 0 || count != inode->fs->blocksize) return read;
       if (dev_read(inode->fs->devno, p, count, blk, 0) != (int) count) return read;
-    }
-    else
-    {
+    } else {
       buf = get_buffer(inode->fs->cache, blk);
       if (!buf) return -EIO;
       memcpy(p, buf->data + start, count);
@@ -413,8 +370,7 @@ int dfs_read(struct file *filp, void *data, size_t size, off64_t pos)
   return read;
 }
 
-int dfs_write(struct file *filp, void *data, size_t size, off64_t pos)
-{
+int dfs_write(struct file *filp, void *data, size_t size, off64_t pos) {
   struct inode *inode;
   size_t written;
   size_t count;
@@ -431,16 +387,14 @@ int dfs_write(struct file *filp, void *data, size_t size, off64_t pos)
   if (pos + size > DFS_MAXFILESIZE) return -EFBIG;
   if (S_ISDIR(inode->desc->mode)) return -EISDIR;
 
-  if (pos > inode->desc->size)
-  {
+  if (pos > inode->desc->size) {
     rc = dfs_ftruncate(filp, pos);
     if (rc < 0) return rc;
   }
 
   written = 0;
   p = (char *) data;
-  while (size > 0)
-  {
+  while (size > 0) {
     if (filp->flags & F_CLOSED) return -EINTR;
 
     iblock = (unsigned int) pos / inode->fs->blocksize;
@@ -449,31 +403,25 @@ int dfs_write(struct file *filp, void *data, size_t size, off64_t pos)
     count = inode->fs->blocksize - start;
     if (count > size) count = size;
 
-    if (iblock < inode->desc->blocks)
-    {
+    if (iblock < inode->desc->blocks) {
       blk = get_inode_block(inode, iblock);
       if (blk == NOBLOCK) return -EIO;
-    }
-    else if (iblock == inode->desc->blocks)
-    {
+    } else if (iblock == inode->desc->blocks) {
       blk = expand_inode(inode);
       if (blk == NOBLOCK) return -ENOSPC;
-    }
-    else
+    } else {
       return written;
+    }
 
-    if (filp->flags & O_DIRECT)
-    {
+    if (filp->flags & O_DIRECT) {
       if (start != 0 || count != inode->fs->blocksize) return written;
       if (dev_write(inode->fs->devno, p, count, blk, 0) != (int) count) return written;
-    }
-    else
-    {
-      if (count == inode->fs->blocksize)
+    } else {
+      if (count == inode->fs->blocksize) {
         buf = alloc_buffer(inode->fs->cache, blk);
-      else
+      } else {
         buf = get_buffer(inode->fs->cache, blk);
-
+      }
       if (!buf) return -EIO;
 
       memcpy(buf->data + start, p, count);
@@ -488,8 +436,7 @@ int dfs_write(struct file *filp, void *data, size_t size, off64_t pos)
     written += count;
     size -= count;
 
-    if (pos > inode->desc->size)
-    {
+    if (pos > inode->desc->size) {
       inode->desc->size = (loff_t) pos;
       mark_inode_dirty(inode);
     }
@@ -498,24 +445,20 @@ int dfs_write(struct file *filp, void *data, size_t size, off64_t pos)
   return written;
 }
 
-int dfs_ioctl(struct file *filp, int cmd, void *data, size_t size)
-{
+int dfs_ioctl(struct file *filp, int cmd, void *data, size_t size) {
   return -ENOSYS;
 }
 
-off64_t dfs_tell(struct file *filp)
-{
+off64_t dfs_tell(struct file *filp) {
   return filp->pos;
 }
 
-off64_t dfs_lseek(struct file *filp, off64_t offset, int origin)
-{
+off64_t dfs_lseek(struct file *filp, off64_t offset, int origin) {
   struct inode *inode;
 
   inode = (struct inode *) filp->data;
 
-  switch (origin)
-  {
+  switch (origin) {
     case SEEK_END:
       offset += inode->desc->size;
       break;
@@ -530,8 +473,7 @@ off64_t dfs_lseek(struct file *filp, off64_t offset, int origin)
   return offset;
 }
 
-int dfs_ftruncate(struct file *filp, off64_t size)
-{
+int dfs_ftruncate(struct file *filp, off64_t size) {
   struct inode *inode;
   int rc;
   unsigned int blocks;
@@ -548,10 +490,8 @@ int dfs_ftruncate(struct file *filp, off64_t size)
 
   blocks = ((size_t) size + inode->fs->blocksize - 1) / inode->fs->blocksize;
 
-  if (size > inode->desc->size)
-  {
-    while (blocks < inode->desc->blocks)
-    {
+  if (size > inode->desc->size) {
+    while (blocks < inode->desc->blocks) {
       blk = expand_inode(inode);
       if (blk == NOBLOCK) return -ENOSPC;
 
@@ -563,9 +503,7 @@ int dfs_ftruncate(struct file *filp, off64_t size)
       mark_buffer_updated(inode->fs->cache, buf);
       release_buffer(inode->fs->cache, buf);
     }
-  }
-  else
-  {
+  } else {
     blocks = ((size_t) size + inode->fs->blocksize - 1) / inode->fs->blocksize;
     rc = truncate_inode(inode, blocks);
     if (rc < 0) return rc;
@@ -579,8 +517,7 @@ int dfs_ftruncate(struct file *filp, off64_t size)
   return 0;
 }
 
-int dfs_futime(struct file *filp, struct utimbuf *times)
-{
+int dfs_futime(struct file *filp, struct utimbuf *times) {
   struct inode *inode;
 
   inode = (struct inode *) filp->data;
@@ -591,16 +528,14 @@ int dfs_futime(struct file *filp, struct utimbuf *times)
   return 0;
 }
 
-int dfs_fstat(struct file *filp, struct stat64 *buffer)
-{
+int dfs_fstat(struct file *filp, struct stat64 *buffer) {
   struct inode *inode;
   off64_t size;
 
   inode = (struct inode *) filp->data;
   size = inode->desc->size;
   
-  if (buffer)
-  {
+  if (buffer) {
     memset(buffer, 0, sizeof(struct stat64));
 
     buffer->st_mode = inode->desc->mode;
@@ -618,8 +553,7 @@ int dfs_fstat(struct file *filp, struct stat64 *buffer)
   return (int) size;
 }
 
-int dfs_fchmod(struct file *filp, int mode)
-{
+int dfs_fchmod(struct file *filp, int mode) {
   struct thread *thread = self();
   struct inode *inode;
 
@@ -631,8 +565,7 @@ int dfs_fchmod(struct file *filp, int mode)
   return 0;
 }
 
-int dfs_fchown(struct file *filp, int owner, int group)
-{
+int dfs_fchown(struct file *filp, int owner, int group) {
   struct thread *thread = self();
   struct inode *inode;
 

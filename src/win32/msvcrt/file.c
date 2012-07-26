@@ -49,16 +49,13 @@ struct critsect iob_lock;
 int vsprintf(char *buf, const char *fmt, va_list args);
 int readline(char *buf, int size);
 
-static FILE *alloc_stream()
-{
+static FILE *alloc_stream() {
   FILE *stream;
 
   enter(&iob_lock);
   stream = _iob;
-  while (stream < _iob + _NSTREAM_) 
-  {
-    if (stream->flag & _IOFREE)
-    {
+  while (stream < _iob + _NSTREAM_)  {
+    if (stream->flag & _IOFREE) {
       stream->flag = 0;
       leave(&iob_lock);
       return stream;
@@ -71,30 +68,25 @@ static FILE *alloc_stream()
   return NULL;
 }
 
-static void free_stream(FILE *stream)
-{
+static void free_stream(FILE *stream) {
   stream->flag = _IOFREE;
 }
 
-int _pipe(int *phandles, unsigned int psize, int textmode)
-{
+int _pipe(int *phandles, unsigned int psize, int textmode) {
   TRACE("_pipe");
   return pipe(phandles);
 }
 
-int _open(const char *filename, int oflag)
-{
+int _open(const char *filename, int oflag) {
   TRACE("_open");
   //syslog(LOG_DEBUG, "_open(%s,%p)", filename, oflag);
   return open(filename, oflag, S_IREAD | S_IWRITE);
 }
 
-int _close(int handle)
-{
+int _close(int handle) {
   TRACE("_close");
 
-  if (handle == -1)
-  {
+  if (handle == -1) {
     errno = EBADF;
     return -1;
   }
@@ -102,25 +94,21 @@ int _close(int handle)
   return close(handle);
 }
 
-int _commit(int handle)
-{
+int _commit(int handle) {
   TRACE("_commit");
   return fsync(handle);
 }
 
-int _read(int handle, void *buffer, unsigned int count)
-{
+int _read(int handle, void *buffer, unsigned int count) {
   TRACE("_read");
 
 #if 0
-  if (handle == 0) 
-  {
+  if (handle == 0) {
     char *buf;
     int pos;
 
     // Handle console input using readline
-    if (stdinbufpos == stdinbuflen)
-    {
+    if (stdinbufpos == stdinbuflen) {
       int len;
 
       len = readline(stdinbuf, sizeof(stdinbuf) - 3);
@@ -136,14 +124,11 @@ int _read(int handle, void *buffer, unsigned int count)
 
     buf = buffer;
     pos = 0;
-    while (pos < (int) count && stdinbufpos < stdinbuflen) 
-    {
+    while (pos < (int) count && stdinbufpos < stdinbuflen) {
       buf[pos++] = stdinbuf[stdinbufpos++];
     }
     return pos;
-  }
-  else
-  {
+  } else {
     return read(handle, buffer, count);
   }
 #else
@@ -151,21 +136,18 @@ int _read(int handle, void *buffer, unsigned int count)
 #endif
 }
 
-int _write(int handle, const void *buffer, unsigned int count)
-{
+int _write(int handle, const void *buffer, unsigned int count) {
   TRACE("_write");
   
   return write(handle, buffer, count);
 }
 
-int _setmode(int handle, int mode)
-{
+int _setmode(int handle, int mode) {
   TRACE("_setmode");
   return setmode(handle, mode);
 }
 
-int _stat(const char *path, struct _stat *buffer)
-{
+int _stat(const char *path, struct _stat *buffer) {
   struct stat64 fs;
 
   TRACE("_stat");
@@ -173,8 +155,7 @@ int _stat(const char *path, struct _stat *buffer)
 
   if (stat64(path, &fs) < 0) return -1;
 
-  if (buffer)
-  {
+  if (buffer) {
     memset(buffer, 0, sizeof(struct _stat));
     buffer->st_atime = fs.st_atime;
     buffer->st_ctime = fs.st_ctime;
@@ -187,8 +168,7 @@ int _stat(const char *path, struct _stat *buffer)
   return 0;
 }
 
-__int64 _stati64(const char *path, struct _stati64 *buffer)
-{
+__int64 _stati64(const char *path, struct _stati64 *buffer) {
   struct stat64 fs;
 
   TRACE("_stati64");
@@ -196,8 +176,7 @@ __int64 _stati64(const char *path, struct _stati64 *buffer)
 
   if (stat64(path, &fs) < 0) return -1;
 
-  if (buffer)
-  {
+  if (buffer) {
     memset(buffer, 0, sizeof(struct _stati64));
     buffer->st_atime = fs.st_atime;
     buffer->st_ctime = fs.st_ctime;
@@ -210,15 +189,13 @@ __int64 _stati64(const char *path, struct _stati64 *buffer)
   return 0;
 }
 
-int _fstat(int handle, struct _stat *buffer)
-{
+int _fstat(int handle, struct _stat *buffer) {
   struct stat64 fs;
 
   TRACE("_fstat");
   if (fstat64(handle, &fs) < 0) return -1;
 
-  if (buffer)
-  {
+  if (buffer) {
     memset(buffer, 0, sizeof(struct _stat));
     buffer->st_atime = fs.st_atime;
     buffer->st_ctime = fs.st_ctime;
@@ -230,15 +207,13 @@ int _fstat(int handle, struct _stat *buffer)
   return 0;
 }
 
-__int64 _fstati64(int handle, struct _stati64 *buffer)
-{
+__int64 _fstati64(int handle, struct _stati64 *buffer) {
   struct stat64 fs;
 
   TRACE("_fstati64");
   if (fstat64(handle, &fs) < 0) return -1;
 
-  if (buffer)
-  {
+  if (buffer) {
     memset(buffer, 0, sizeof(struct _stati64));
     buffer->st_atime = fs.st_atime;
     buffer->st_ctime = fs.st_ctime;
@@ -250,20 +225,17 @@ __int64 _fstati64(int handle, struct _stati64 *buffer)
   return 0;
 }
 
-loff_t _lseek(int f, loff_t offset, int origin)
-{
+loff_t _lseek(int f, loff_t offset, int origin) {
   TRACE("_lseek");
   return lseek(f, offset, origin);
 }
 
-__int64 _lseeki64(int handle, __int64 offset, int origin)
-{
+__int64 _lseeki64(int handle, __int64 offset, int origin) {
   TRACE("_lseeki64");
   return (int) lseek64(handle, offset, origin);
 }
 
-int _open_osfhandle(long osfhandle, int flags)
-{
+int _open_osfhandle(long osfhandle, int flags) {
   int rc;
 
   TRACE("_open_osfhandle");
@@ -276,39 +248,33 @@ int _open_osfhandle(long osfhandle, int flags)
   return osfhandle;
 }
 
-int _dup2(int handle1, int handle2)
-{
+int _dup2(int handle1, int handle2) {
   TRACE("_dup2");
   return dup2(handle1, handle2);
 }
 
-long _get_osfhandle(int filehandle)
-{
+long _get_osfhandle(int filehandle) {
   TRACE("_get_osfhandle");
   return filehandle;
 }
 
-int _getdrive()
-{
+int _getdrive() {
   TRACE("_getdrive");
   // Drive C is current drive
   return 3;
 }
 
-char *_getdcwd(int drive, char *buffer, int maxlen)
-{
+char *_getdcwd(int drive, char *buffer, int maxlen) {
   TRACE("_getdcwd");
   return getcwd(buffer, maxlen);
 }
 
-char *_fullpath(char *abspath, const char *relpath, size_t maxlen)
-{
+char *_fullpath(char *abspath, const char *relpath, size_t maxlen) {
   int rc;
 
   TRACE("_fullpath");
 
-  if (maxlen < 3) 
-  {
+  if (maxlen < 3) {
     errno = ERANGE;
     return NULL;
   }
@@ -322,62 +288,52 @@ char *_fullpath(char *abspath, const char *relpath, size_t maxlen)
   return abspath;
 }
 
-int _unlink(const char *filename)
-{
+int _unlink(const char *filename) {
   TRACE("_unlink");
   return unlink(filename);
 }
 
-int remove(const char *path)
-{
+int remove(const char *path) {
   TRACE("_remove");
   return unlink(path);
 }
 
-int _rename(const char *oldname, const char *newname)
-{
+int _rename(const char *oldname, const char *newname) {
   TRACE("_rename");
   return rename(oldname, newname);
 }
 
-int _access(const char *path, int mode)
-{
+int _access(const char *path, int mode) {
   TRACE("_access");
   return access(path, mode);
 }
 
-int _chmod(const char *filename, int pmode)
-{
+int _chmod(const char *filename, int pmode) {
   TRACE("_chmod");
   return chmod(filename, pmode);
 }
 
-int _mkdir(const char *dirname)
-{
+int _mkdir(const char *dirname) {
   TRACE("_mkdir");
   return mkdir(dirname, 0666);
 }
 
-int _chdir(const char *dirname)
-{
+int _chdir(const char *dirname) {
   TRACE("_chdir");
   return chdir(dirname);
 }
 
-char *_getcwd(char *buffer, int maxlen)
-{
+char *_getcwd(char *buffer, int maxlen) {
   TRACE("_getcwd");
   return getcwd(buffer, maxlen);
 }
 
-int _fileno(FILE *stream)
-{
+int _fileno(FILE *stream) {
   TRACE("_fileno");
   return stream->file;
 }
 
-FILE *_fdopen(int handle, const char *mode)
-{
+FILE *_fdopen(int handle, const char *mode) {
   FILE *stream; 
 
   TRACE("fdopen");
@@ -389,8 +345,7 @@ FILE *_fdopen(int handle, const char *mode)
   return stream;
 }
 
-FILE *fopen(const char *filename, const char *mode)
-{
+FILE *fopen(const char *filename, const char *mode) {
   FILE *stream; 
   int oflag;
   handle_t handle;
@@ -398,8 +353,7 @@ FILE *fopen(const char *filename, const char *mode)
   TRACE("fopen");
   //syslog(LOG_DEBUG, "fopen(%s,%s)", filename, mode);
 
-  switch (*mode)
-  {
+  switch (*mode) {
     case 'r':
       oflag = O_RDONLY;
       break;
@@ -417,10 +371,8 @@ FILE *fopen(const char *filename, const char *mode)
       return NULL;
   }
 
-  while (*++mode)
-  {
-    switch (*mode)
-    {
+  while (*++mode) {
+    switch (*mode) {
       case '+':
         oflag &= ~(O_RDONLY | O_WRONLY);
         oflag |= O_RDWR;
@@ -472,15 +424,13 @@ FILE *fopen(const char *filename, const char *mode)
   return stream;
 }
 
-FILE *freopen(const char *path, const char *mode, FILE *stream)
-{
+FILE *freopen(const char *path, const char *mode, FILE *stream) {
   int oflag;
   handle_t handle;
 
   TRACE("freopen");
 
-  switch (*mode)
-  {
+  switch (*mode) {
     case 'r':
       oflag = O_RDONLY;
       break;
@@ -498,10 +448,8 @@ FILE *freopen(const char *path, const char *mode, FILE *stream)
       return NULL;
   }
 
-  while (*++mode)
-  {
-    switch (*mode)
-    {
+  while (*++mode) {
+    switch (*mode) {
       case '+':
         oflag &= ~(O_RDONLY | O_WRONLY);
         oflag |= O_RDWR;
@@ -551,8 +499,7 @@ FILE *freopen(const char *path, const char *mode, FILE *stream)
   return stream;
 }
 
-int fclose(FILE *stream)
-{
+int fclose(FILE *stream) {
   int rc;
 
   TRACE("fclose");
@@ -561,14 +508,12 @@ int fclose(FILE *stream)
   return rc;
 }
 
-int fflush(FILE *stream)
-{
+int fflush(FILE *stream) {
   int rc;
 
   TRACE("fflush");
   rc = fsync(stream->file);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     stream->flag |= _IOERR;
     return -1;
   }
@@ -576,8 +521,7 @@ int fflush(FILE *stream)
   return rc;
 }
 
-size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
-{
+size_t fread(void *buffer, size_t size, size_t num, FILE *stream) {
   int rc;
   int count;
 
@@ -586,8 +530,7 @@ size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
   if ((count = size * num) == 0) return 0;
 
   rc = read(stream->file, buffer, size * num);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     stream->flag |= _IOERR;
     return 0;
   }
@@ -597,8 +540,7 @@ size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
   return rc / size;
 }
 
-size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
-{
+size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream) {
   int rc;
   int count;
 
@@ -607,8 +549,7 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
   if ((count = size * num) == 0) return 0;
 
   rc = write(stream->file, buffer, size * num);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     stream->flag |= _IOERR;
     return 0;
   }
@@ -616,8 +557,7 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
   return rc / size;
 }
 
-int fputs(const char *string, FILE *stream)
-{
+int fputs(const char *string, FILE *stream) {
   int len;
   int rc;
 
@@ -629,19 +569,16 @@ int fputs(const char *string, FILE *stream)
   return rc == len ? 0 : EOF;
 }
 
-int fseek(FILE *stream, long offset, int whence)
-{
+int fseek(FILE *stream, long offset, int whence) {
   TRACE("fseek");
   return lseek(stream->file, offset, whence);
 }
 
-long ftell(FILE *stream)
-{
+long ftell(FILE *stream) {
   return tell(stream->file);
 }
 
-int fgetpos(FILE *stream, fpos_t *pos)
-{
+int fgetpos(FILE *stream, fpos_t *pos) {
   int rc;
 
   TRACE("fgetpos");
@@ -653,56 +590,50 @@ int fgetpos(FILE *stream, fpos_t *pos)
   return 0;
 }
 
-void clearerr(FILE *stream)
-{
+void clearerr(FILE *stream) {
   TRACE("clearerr");
   stream->flag &= ~(_IOERR | _IOEOF);
 }
 
-int getc(FILE *stream)
-{
+int getc(FILE *stream) {
   unsigned char ch;
   int rc;
 
   TRACE("getc");
 
   rc = read(stream->file, &ch, 1);
-  if (rc <= 0)
-  {
-    if (rc == 0) 
+  if (rc <= 0) {
+    if (rc == 0) { 
       stream->flag |= _IOEOF;
-    else
+    } else {
       stream->flag |= _IOERR;
-
+    }
     return EOF;
   }
 
   return ch;
 }
 
-int fgetc(FILE *stream)
-{
+int fgetc(FILE *stream) {
   unsigned char ch;
   int rc;
 
   TRACE("fgetc");
 
   rc = read(stream->file, &ch, 1);
-  if (rc <= 0) 
-  {
-    if (rc == 0) 
+  if (rc <= 0) {
+    if (rc == 0) {
       stream->flag |= _IOEOF;
-    else
+    } else {
       stream->flag |= _IOERR;
-
+    }
     return EOF;
   }
 
   return ch;
 }
 
-int fputc(int c, FILE *stream)
-{
+int fputc(int c, FILE *stream) {
   char ch;
 
   TRACE("fputc");
@@ -711,15 +642,13 @@ int fputc(int c, FILE *stream)
   return c;
 }
 
-char *fgets(char *string, int n, FILE *stream)
-{
+char *fgets(char *string, int n, FILE *stream) {
   TRACE("fgets");
   panic("fgets not implemented");
   return NULL;
 }
 
-int fprintf(FILE *stream, const char *fmt, ...)
-{
+int fprintf(FILE *stream, const char *fmt, ...) {
   va_list args;
   int n;
   char buffer[1024];
@@ -731,8 +660,7 @@ int fprintf(FILE *stream, const char *fmt, ...)
   return write(stream->file, buffer, n);
 }
 
-int vfprintf(FILE *stream, const char *fmt, va_list args)
-{
+int vfprintf(FILE *stream, const char *fmt, va_list args) {
   int n;
   char buffer[1024];
 
@@ -741,8 +669,7 @@ int vfprintf(FILE *stream, const char *fmt, va_list args)
   return write(stream->file, buffer, n);
 }
 
-int putchar(int c)
-{
+int putchar(int c) {
   char ch;
 
   TRACEX("putchar");
@@ -751,8 +678,7 @@ int putchar(int c)
   return c;
 }
 
-int puts(const char *string)
-{
+int puts(const char *string) {
   int len;
   int rc;
 
@@ -768,40 +694,33 @@ int puts(const char *string)
   return 0;
 }
 
-void _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext)
-{
+void _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext) {
   char *p;
   char *last_slash = NULL, *dot = NULL;
   int len;
 
   TRACE("_splitpath");
-  if (strlen(path) >= 1 && path[1] == ':')
-  {
-    if (drive) 
-    {
+  if (strlen(path) >= 1 && path[1] == ':') {
+    if (drive)  {
       drive[0] = path[0];
       drive[1] = '\0';
     }
 
     path += 2;
-  }
-  else if (drive) 
-  {
+  } else if (drive) {
     *drive = '\0';
   }
 
-  for (last_slash = NULL, p = (char *) path; *p; p++) 
-  {
-    if (*p == '/' || *p == '\\')
+  for (last_slash = NULL, p = (char *) path; *p; p++)  {
+    if (*p == '/' || *p == '\\') {
      last_slash = p + 1;
-    else if (*p == '.')
+    } else if (*p == '.') {
       dot = p;
+    }
   }
 
-  if (last_slash) 
-  {
-    if (dir) 
-    {
+  if (last_slash) {
+    if (dir) {
       len = last_slash - path;
       if (len > MAXPATH - 1) len = MAXPATH - 1;
       memcpy(dir, path, len);
@@ -809,48 +728,38 @@ void _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext
     }
 
     path = last_slash;
-  }
-  else if (dir) 
-  {
+  } else if (dir) {
     *dir = '\0';
   }
 
-  if (dot && dot >= path)
-  {
-    if (fname) 
-    {
+  if (dot && dot >= path) {
+    if (fname) {
       len = dot - path;
       if (len > MAXPATH - 1) len = MAXPATH - 1;
       memcpy(fname, path, len);
       fname[len] = '\0';
     }
 
-    if (ext) 
-    {
+    if (ext) {
       len = p - dot;
       if (len > MAXPATH - 1) len = MAXPATH - 1;
       memcpy(ext, dot, len);
       ext[len] = '\0';
     }
-  }
-  else 
-  {
-    if (fname) 
-    {
+  } else {
+    if (fname) {
       len = p - path;
       if (len > MAXPATH - 1) len = MAXPATH - 1;
       memcpy(fname, path, len);
       fname[len] = '\0';
     }
-    if (ext) 
-    {
+    if (ext) {
       *ext = '\0';
     }
   }
 }
 
-int _wopen(const wchar_t *filename, int oflag)
-{
+int _wopen(const wchar_t *filename, int oflag) {
   char buf[MAXPATH];
   int rc;
 
@@ -861,8 +770,7 @@ int _wopen(const wchar_t *filename, int oflag)
   return _open(buf, oflag);
 }
 
-int _waccess(const wchar_t *path, int mode)
-{
+int _waccess(const wchar_t *path, int mode) {
   char buf[MAXPATH];
   int rc;
 
@@ -873,8 +781,7 @@ int _waccess(const wchar_t *path, int mode)
   return _access(buf, mode);
 }
 
-__int64 _wstati64(const wchar_t *path, struct _stati64 *buffer)
-{
+__int64 _wstati64(const wchar_t *path, struct _stati64 *buffer) {
   char buf[MAXPATH];
   int rc;
 
@@ -885,8 +792,7 @@ __int64 _wstati64(const wchar_t *path, struct _stati64 *buffer)
   return _stati64(buf, buffer);
 }
 
-int _wmkdir(const wchar_t *dirname)
-{
+int _wmkdir(const wchar_t *dirname) {
   char buf[MAXPATH];
   int rc;
 
@@ -897,8 +803,7 @@ int _wmkdir(const wchar_t *dirname)
   return _mkdir(buf);
 }
 
-int _wrename(const wchar_t *oldname, const wchar_t *newname)
-{
+int _wrename(const wchar_t *oldname, const wchar_t *newname) {
   char buf1[MAXPATH];
   char buf2[MAXPATH];
   int rc;
@@ -913,8 +818,7 @@ int _wrename(const wchar_t *oldname, const wchar_t *newname)
   return _rename(buf1, buf2);
 }
 
-wchar_t *_wgetdcwd(int drive, wchar_t *buffer, int maxlen)
-{
+wchar_t *_wgetdcwd(int drive, wchar_t *buffer, int maxlen) {
   char curdir[MAXPATH];
   int len;
 
@@ -922,28 +826,22 @@ wchar_t *_wgetdcwd(int drive, wchar_t *buffer, int maxlen)
   if (getcwd(curdir, MAXPATH) == 0) return NULL;
   len = strlen(curdir);
 
-  if (buffer)
-  {
-    if (len >= maxlen)
-    {
+  if (buffer) {
+    if (len >= maxlen) {
       errno = ERANGE;
       return NULL;
     }
-  }
-  else
-  {
-    if (maxlen == 0) 
+  } else {
+    if (maxlen == 0) {
       maxlen = len + 1;
-    else if (len >= maxlen)
-    {
+    } else if (len >= maxlen) {
       errno = ERANGE;
       return NULL;
     }
 
     buffer = malloc(maxlen * sizeof(wchar_t));
 
-    if (!buffer) 
-    {
+    if (!buffer) {
       errno = ENOMEM;
       return NULL;
     }
@@ -953,16 +851,14 @@ wchar_t *_wgetdcwd(int drive, wchar_t *buffer, int maxlen)
   return buffer;
 }
 
-wchar_t *_wfullpath(wchar_t *abspath, const wchar_t *relpath, size_t maxlen) 
-{
+wchar_t *_wfullpath(wchar_t *abspath, const wchar_t *relpath, size_t maxlen) {
   char buf1[MAXPATH];
   char buf2[MAXPATH];
   int rc;
 
   TRACE("_wfullpath");
   
-  if (maxlen < 2) 
-  {
+  if (maxlen < 2) {
     errno = EINVAL;
     return NULL;
   }
@@ -973,12 +869,10 @@ wchar_t *_wfullpath(wchar_t *abspath, const wchar_t *relpath, size_t maxlen)
   rc = canonicalize(buf1, buf2, MAXPATH);
   if (rc < 0) return NULL;
 
-  if (!abspath)
-  {
+  if (!abspath) {
     maxlen = MAXPATH;
     abspath = (wchar_t *) malloc(maxlen * sizeof(wchar_t));
-    if (!abspath)
-    {
+    if (!abspath) {
       errno = ENOMEM;
       return NULL;
     }
@@ -992,15 +886,13 @@ wchar_t *_wfullpath(wchar_t *abspath, const wchar_t *relpath, size_t maxlen)
   return abspath;
 }
 
-void init_fileio()
-{
+void init_fileio() {
   int i;
 
   mkcs(&iob_lock);
 
   memset(_iob, 0, sizeof(struct _iobuf) * _NSTREAM_);
-  for (i = 0; i < _NSTREAM_; i++) 
-  {
+  for (i = 0; i < _NSTREAM_; i++) {
     _iob[i].file = NOHANDLE;
     _iob[i].flag = _IOFREE;
   }

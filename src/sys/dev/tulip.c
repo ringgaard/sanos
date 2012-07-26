@@ -33,8 +33,7 @@ static int max_interrupt_work = 25;
 
 #define MEDIA_MASK 31
 
-static char *medianame[32] = 
-{
+static char *medianame[32] = {
   "10baseT", "10base2", "AUI", "100baseTx",
   "10baseT-FDX", "100baseTx-FDX", "100baseT4", "100baseFx",
   "100baseFx-FDX", "MII 10baseT", "MII 10baseT-FDX", "MII",
@@ -236,8 +235,7 @@ static int tulip_pwr_event(void *dev_instance, int event);
 
 // This much match tulip_tbl[]!  Note 21142 == 21143.
 
-enum tulip_chips 
-{
+enum tulip_chips {
   DC21040=0, 
   DC21041=1, 
   DC21140=2, 
@@ -259,8 +257,7 @@ enum tulip_chips
   HAS_VLAN = 0x100,
 };
 
-static struct board board_tbl[] = 
-{
+static struct board board_tbl[] = {
   {"Digital", "Digital DC21040 Tulip",                     BUSTYPE_PCI, PCI_UNITCODE(0x1011, 0x0002), 0xffffffff, 0,                            0,          0,    0,    DC21040},
   {"Digital", "Digital DC21041 Tulip",                     BUSTYPE_PCI, PCI_UNITCODE(0x1011, 0x0014), 0xffffffff, 0,                            0,          0,    0,    DC21041},
   {"Digital", "Digital DS21140A Tulip",                    BUSTYPE_PCI, PCI_UNITCODE(0x1011, 0x0009), 0xffffffff, 0,                            0,          0x20, 0xf0, DC21140},
@@ -314,8 +311,7 @@ static void mxic_timer(void *data);
 static void pnic_timer(void *data);
 static void comet_timer(void *data);
 
-enum tbl_flag 
-{
+enum tbl_flag {
   HAS_MII             = 0x001,
   HAS_MEDIA_TABLE     = 0x002,
   CSR12_IN_SROM       = 0x004,
@@ -334,8 +330,7 @@ enum tbl_flag
 // Note: this table must match  enum tulip_chips  above
 //
 
-struct tulip_chip_table 
-{
+struct tulip_chip_table {
   char *chip_name;
   int io_size;          // Unused
   int valid_intrs;      // CSR7 interrupt enable settings
@@ -343,8 +338,7 @@ struct tulip_chip_table
   void (*media_timer)(void *data);
 };
 
-static struct tulip_chip_table tulip_tbl[] = 
-{
+static struct tulip_chip_table tulip_tbl[] = {
   {"Digital DC21040 Tulip", 128, 0x0001ebef, 0, tulip_timer},
   {"Digital DC21041 Tulip", 128, 0x0001ebff, HAS_MEDIA_TABLE | HAS_NWAY, tulip_timer},
   {"Digital DS21140 Tulip", 128, 0x0001ebef, HAS_MII | HAS_MEDIA_TABLE | CSR12_IN_SROM, tulip_timer},
@@ -368,8 +362,7 @@ static struct tulip_chip_table tulip_tbl[] =
 // A full-duplex map for media types
 //
 
-enum MediaIs 
-{
+enum MediaIs {
   MediaIsFD     = 1, 
   MediaAlwaysFD = 2, 
   MediaIsMII    = 4, 
@@ -394,8 +387,7 @@ static unsigned short t21142_csr15[] = { 0x0008, 0x0006, 0x000E, 0x0008, 0x0008,
 // must be longword instructions and quadword aligned.
 //
 
-enum tulip_offsets 
-{
+enum tulip_offsets {
   CSR0  = 0,    
   CSR1  = 0x08, 
   CSR2  = 0x10, 
@@ -416,8 +408,7 @@ enum tulip_offsets
 
 // The bits in the CSR5 status registers, mostly interrupt sources
 
-enum status_bits 
-{
+enum status_bits {
   TimerInt        = 0x800, 
   TPLnkFail       = 0x1000, 
   TPLnkPass       = 0x10,
@@ -437,8 +428,7 @@ enum status_bits
 
 // The configuration bits in CSR6
 
-enum csr6_mode_bits 
-{
+enum csr6_mode_bits {
   TxOn               = 0x2000, 
   RxOn               = 0x0002, 
   FullDuplex         = 0x0200,
@@ -450,22 +440,19 @@ enum csr6_mode_bits
 
 // The Tulip Rx and Tx buffer descriptors
 
-struct tulip_rx_desc 
-{
+struct tulip_rx_desc {
   long status;
   long length;
   unsigned long buffer1, buffer2;
 };
 
-struct tulip_tx_desc 
-{
+struct tulip_tx_desc {
   long status;
   long length;
   unsigned long buffer1, buffer2;       // We use only buffer 1
 };
 
-enum desc_status_bits 
-{
+enum desc_status_bits {
   DescOwned      = 0x80000000, 
   RxDescFatalErr = 0x8000, 
   RxWholePkt     = 0x0300,
@@ -485,15 +472,13 @@ enum desc_status_bits
 
 #define EEPROM_SIZE 512   // support 256*16 EEPROMs
 
-struct medialeaf 
-{
+struct medialeaf {
   unsigned char type;
   unsigned char media;
   unsigned char *leafdata;
 };
 
-struct mediatable 
-{
+struct mediatable {
   unsigned short defaultmedia;
   unsigned char leafcount, csr12dir;       // General purpose pin directions
   unsigned has_mii:1, has_nonmii:1, has_reset:6;
@@ -501,16 +486,14 @@ struct mediatable
   struct medialeaf mleaf[0];
 };
 
-struct mediainfo 
-{
+struct mediainfo {
   struct mediainfo *next;
   int info_type;
   int index;
   unsigned char *info;
 };
 
-struct tulip_private 
-{
+struct tulip_private {
   struct tulip_rx_desc rx_ring[RX_RING_SIZE];
   struct tulip_tx_desc tx_ring[TX_RING_SIZE];
   // The saved addresses of Rx/Tx-in-place packet buffers
@@ -593,56 +576,52 @@ static struct dev *root_tulip_dev = NULL;
 // multiport cards
 //
 
-static void start_link(struct dev *dev)
-{
+static void start_link(struct dev *dev) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
   int i;
 
-  if ((tp->flags & ALWAYS_CHECK_MII) || (tp->mtable && tp->mtable->has_mii) || (!tp->mtable && (tp->flags & HAS_MII))) 
-  {
+  if ((tp->flags & ALWAYS_CHECK_MII) || (tp->mtable && tp->mtable->has_mii) || (!tp->mtable && (tp->flags & HAS_MII))) {
     int phyn, phy_idx = 0;
     
-    if (tp->mtable && tp->mtable->has_mii) 
-    {
-      for (i = 0; i < tp->mtable->leafcount; i++)
-        if (tp->mtable->mleaf[i].media == 11) 
-        {
+    if (tp->mtable && tp->mtable->has_mii) {
+      for (i = 0; i < tp->mtable->leafcount; i++) {
+        if (tp->mtable->mleaf[i].media == 11) {
           tp->cur_index = i;
           tp->saved_if_port = tp->if_port;
           select_media(dev, 2);
           tp->if_port = tp->saved_if_port;
           break;
         }
+      }
     }
 
     // Find the connected MII xcvrs
     // Doing this in open() would allow detecting external xcvrs later,
     // but takes much time
 
-    for (phyn = 1; phyn <= 32 && phy_idx < sizeof(tp->phys); phyn++) 
-    {
+    for (phyn = 1; phyn <= 32 && phy_idx < sizeof(tp->phys); phyn++) {
       int phy = phyn & 0x1f;
       int mii_status = mdio_read(dev, phy, 1);
-      if ((mii_status & 0x8301) == 0x8001 || ((mii_status & 0x8000) == 0  && (mii_status & 0x7800) != 0)) 
-      {
+      if ((mii_status & 0x8301) == 0x8001 || ((mii_status & 0x8000) == 0  && (mii_status & 0x7800) != 0)) {
         int mii_reg0 = mdio_read(dev, phy, 0);
         int mii_advert = mdio_read(dev, phy, 4);
         int to_advert;
 
-        if (tp->mii_advertise)
+        if (tp->mii_advertise) {
           to_advert = tp->mii_advertise;
-        else if (tp->advertising[phy_idx])
+        } else if (tp->advertising[phy_idx]) {
           to_advert = tp->advertising[phy_idx];
-        else // Leave unchanged
+        } else {
+          // Leave unchanged
           tp->mii_advertise = to_advert = mii_advert;
+        }
 
         tp->phys[phy_idx++] = phy;
         kprintf(KERN_INFO "%s:  MII transceiver #%d config %4.4x status %4.4x advertising %4.4x.\n", dev->name, phy, mii_reg0, mii_status, mii_advert);
 
         // Fixup for DLink with miswired PHY
-        if (mii_advert != to_advert) 
-        {
+        if (mii_advert != to_advert) {
           kprintf(KERN_DEBUG "%s:  Advertising %4.4x on PHY %d, previously advertising %4.4x.\n", dev->name, to_advert, phy, mii_advert);
           mdio_write(dev, phy, 4, to_advert);
         }
@@ -653,16 +632,14 @@ static void start_link(struct dev *dev)
     }
 
     tp->mii_cnt = phy_idx;
-    if (tp->mtable && tp->mtable->has_mii && phy_idx == 0) 
-    {
+    if (tp->mtable && tp->mtable->has_mii && phy_idx == 0) {
       kprintf(KERN_INFO "%s: ***WARNING***: No MII transceiver found!\n", dev->name);
       tp->phys[0] = 1;
     }
   }
 
   // Reset the xcvr interface and turn on heartbeat
-  switch (tp->chip_id) 
-  {
+  switch (tp->chip_id) {
     case DC21040:
       writel(0x00000000, ioaddr + CSR13);
       writel(0x00000004, ioaddr + CSR13);
@@ -685,20 +662,18 @@ static void start_link(struct dev *dev)
 
     case DC21142:
     case PNIC2:
-      if (tp->mii_cnt || media_cap[tp->if_port] & MediaIsMII) 
-      {
+      if (tp->mii_cnt || media_cap[tp->if_port] & MediaIsMII) {
         writel(0x82020000, ioaddr + CSR6);
         writel(0x0000, ioaddr + CSR13);
         writel(0x0000, ioaddr + CSR14);
         writel(0x820E0000, ioaddr + CSR6);
-      } 
-      else
+      } else {
         nway_start(dev);
+      }
       break;
 
     case LC82C168:
-      if (!tp->mii_cnt) 
-      {
+      if (!tp->mii_cnt) {
         tp->nway = 1;
         tp->nwayset = 0;
         writel(0x00420000, ioaddr + CSR6);
@@ -741,15 +716,13 @@ static void start_link(struct dev *dev)
 // Writing this table is described at http://www.scyld.com/network/tulip-media.html
 //
 
-struct fixups 
-{
+struct fixups {
   char *name;
   unsigned char addr0, addr1, addr2;
   unsigned short newtable[32];       /* Max length below. */
 };
 
-static struct fixups eeprom_fixups[] = 
-{
+static struct fixups eeprom_fixups[] = {
   {"Asante", 0, 0, 0x94, {0x1e00, 0x0000, 0x0800, 0x0100, 0x018c,
               0x0000, 0x0000, 0xe078, 0x0001, 0x0050, 0x0018}},
   {"SMC9332DST", 0, 0, 0xC0, { 0x1e00, 0x0000, 0x0800, 0x041f,
@@ -783,15 +756,13 @@ static struct fixups eeprom_fixups[] =
   {NULL,}
 };
 
-static char *block_name[] = 
-{
+static char *block_name[] = {
   "21140 non-MII", "21140 MII PHY", "21142 Serial PHY", "21142 MII PHY", "21143 SYM PHY", "21143 reset method"
 };
 
 #define get_u16(ptr) (*(unsigned short *)(ptr))
 
-static void parse_eeprom(struct dev *dev)
-{
+static void parse_eeprom(struct dev *dev) {
   // The last media info list parsed, for multiport boards
   static struct mediatable *last_mediatable = NULL;
   static unsigned char *last_ee_data = NULL;
@@ -804,35 +775,29 @@ static void parse_eeprom(struct dev *dev)
   tp->mtable = 0;
   
   // Detect an old-style (SA only) EEPROM layout: memcmp(eedata, eedata+16, 8)
-  for (i = 0; i < 8; i ++)
-    if (ee_data[i] != ee_data[16+i])
-      break;
+  for (i = 0; i < 8; i ++) {
+    if (ee_data[i] != ee_data[16 + i]) break;
+  }
 
-  if (i >= 8) 
-  {
-    if (ee_data[0] == 0xff) 
-    {
-      if (last_mediatable) 
-      {
+  if (i >= 8) {
+    if (ee_data[0] == 0xff) {
+      if (last_mediatable) {
         controller_index++;
         kprintf(KERN_INFO "%s:  Controller %d of multiport board.\n", dev->name, controller_index);
         tp->mtable = last_mediatable;
         ee_data = last_ee_data;
         goto subsequent_board;
-      } 
-      else
+      } else {
         kprintf(KERN_INFO "%s:  Missing EEPROM, this interface may not work correctly!\n", dev->name);
-
+      }
       return;
     }
 
     // Do a fix-up based on the vendor half of the station address
-    for (i = 0; eeprom_fixups[i].name; i++) 
-    {
+    for (i = 0; eeprom_fixups[i].name; i++) {
       if (tp->hwaddr.addr[0] == eeprom_fixups[i].addr0 &&
           tp->hwaddr.addr[1] == eeprom_fixups[i].addr1 &&
-          tp->hwaddr.addr[2] == eeprom_fixups[i].addr2) 
-      {
+          tp->hwaddr.addr[2] == eeprom_fixups[i].addr2) {
         if (tp->hwaddr.addr[2] == 0xE8 && ee_data[0x1a] == 0x55) i++;  // An Accton EN1207, not an outlaw Maxtech
         memcpy(ee_data + 26, eeprom_fixups[i].newtable, sizeof(eeprom_fixups[i].newtable));
         kprintf(KERN_INFO "%s: Old format EEPROM on '%s' board. Using substitute media control info.\n", dev->name, eeprom_fixups[i].name);
@@ -840,8 +805,7 @@ static void parse_eeprom(struct dev *dev)
       }
     }
 
-    if (eeprom_fixups[i].name == NULL) 
-    { 
+    if (eeprom_fixups[i].name == NULL) {
       // No fixup found
       kprintf(KERN_INFO "%s: Old style EEPROM with no media selection information.\n", dev->name);
       return;
@@ -849,56 +813,46 @@ static void parse_eeprom(struct dev *dev)
   }
 
   controller_index = 0;
-  if (ee_data[19] > 1) 
-  {
+  if (ee_data[19] > 1) {
     struct dev *prev_dev;
     struct tulip_private *otp;
 
     // This is a multiport board.  The probe order may be "backwards", so we patch up already found devices.
     last_ee_data = ee_data;
-    for (prev_dev = tp->next_module; prev_dev; prev_dev = otp->next_module) 
-    {
+    for (prev_dev = tp->next_module; prev_dev; prev_dev = otp->next_module) {
       otp = (struct tulip_private *) prev_dev->privdata;
-      if (otp->eeprom[0] == 0xff && otp->mtable == 0) 
-      {
+      if (otp->eeprom[0] == 0xff && otp->mtable == 0) {
         parse_eeprom(prev_dev);
         start_link(prev_dev);
-      } 
-      else
+      } else {
         break;
+      }
     }
     controller_index = 0;
   }
 
 subsequent_board:
   p = (void *) (ee_data + ee_data[27 + controller_index * 3]);
-  if (ee_data[27] == 0) 
-  {
+  if (ee_data[27] == 0) {
     // No valid media table
-  } 
-  else if (tp->chip_id == DC21041) 
-  {
+  } else if (tp->chip_id == DC21041) {
     int media = get_u16(p);
     int count = p[2];
     p += 3;
 
     kprintf(KERN_INFO "%s: 21041 Media table, default media %4.4x (%s).\n", dev->name, media, media & 0x0800 ? "Autosense" : medianame[media & MEDIA_MASK]);
-    for (i = 0; i < count; i++) 
-    {
+    for (i = 0; i < count; i++) {
       unsigned char media_block = *p++;
       int media_code = media_block & MEDIA_MASK;
       
       if (media_block & 0x40) p += 6;
-      switch(media_code) 
-      {
+      switch(media_code) {
         case 0: new_advertise |= 0x0020; break;
         case 4: new_advertise |= 0x0040; break;
       }
       kprintf(KERN_INFO "%s:  21041 media #%d, %s.\n", dev->name, media_code, medianame[media_code]);
     }
-  } 
-  else 
-  {
+  } else {
     unsigned char csr12dir = 0;
     int count;
     struct mediatable *mtable;
@@ -917,23 +871,18 @@ subsequent_board:
     mtable->csr15dir = mtable->csr15val = 0;
 
     kprintf(KERN_INFO "%s: EEPROM default media type %s.\n", dev->name, media & 0x0800 ? "Autosense" : medianame[media & MEDIA_MASK]);
-    for (i = 0; i < count; i++) 
-    {
+    for (i = 0; i < count; i++) {
       struct medialeaf *leaf = &mtable->mleaf[i];
 
-      if ((p[0] & 0x80) == 0) 
-      { 
+      if ((p[0] & 0x80) == 0) {
         // 21140 Compact block
         leaf->type = 0;
         leaf->media = p[0] & 0x3f;
         leaf->leafdata = p;
         if ((p[2] & 0x61) == 0x01)  mtable->has_mii = 1; // Bogus, but Znyx boards do it
         p += 4;
-      } 
-      else 
-      {
-        switch(leaf->type = p[1]) 
-        {
+      } else {
+        switch(leaf->type = p[1]) {
           case 5:
             mtable->has_reset = i + 1; // Assure non-zero
             // Fall through
@@ -949,8 +898,7 @@ subsequent_board:
             break;
 
           case 2:
-            if ((p[2] & 0x3f) == 0) 
-            {
+            if ((p[2] & 0x3f) == 0) {
               unsigned long base15 = (p[2] & 0x40) ? get_u16(p + 7) : 0x0008;
               unsigned short *p1 = (unsigned short *)(p + (p[2] & 0x40 ? 9 : 3));
               mtable->csr15dir = (p1[0] << 16) + base15;
@@ -962,8 +910,7 @@ subsequent_board:
           case 4:
             mtable->has_nonmii = 1;
             leaf->media = p[2] & MEDIA_MASK;
-            switch (leaf->media) 
-            {
+            switch (leaf->media) {
               case 0: new_advertise |= 0x0020; break;
               case 4: new_advertise |= 0x0040; break;
               case 3: new_advertise |= 0x0080; break;
@@ -1007,8 +954,7 @@ subsequent_board:
 
 // Note: this routine returns extra data bits for size detection
 
-static int read_eeprom(long ioaddr, int location, int addr_len)
-{
+static int read_eeprom(long ioaddr, int location, int addr_len) {
   int i;
   unsigned retval = 0;
   long ee_addr = ioaddr + CSR9;
@@ -1018,8 +964,7 @@ static int read_eeprom(long ioaddr, int location, int addr_len)
   writel(EE_ENB, ee_addr);
 
   // Shift the read command bits out
-  for (i = 4 + addr_len; i >= 0; i--) 
-  {
+  for (i = 4 + addr_len; i >= 0; i--) {
     short dataval = (read_cmd & (1 << i)) ? EE_DATA_WRITE : 0;
     writel(EE_ENB | dataval, ee_addr);
     eeprom_delay();
@@ -1030,8 +975,7 @@ static int read_eeprom(long ioaddr, int location, int addr_len)
   writel(EE_ENB, ee_addr);
   eeprom_delay();
 
-  for (i = 16; i > 0; i--) 
-  {
+  for (i = 16; i > 0; i--) {
     writel(EE_ENB | EE_SHIFT_CLK, ee_addr);
     eeprom_delay();
     retval = (retval << 1) | ((readl(ee_addr) & EE_DATA_READ) ? 1 : 0);
@@ -1068,14 +1012,12 @@ static int read_eeprom(long ioaddr, int location, int addr_len)
 #define MDIO_ENB_IN      0x40000
 #define MDIO_DATA_READ   0x80000
 
-static const unsigned char comet_miireg2offset[32] = 
-{
+static const unsigned char comet_miireg2offset[32] = {
   0xB4, 0xB8, 0xBC, 0xC0,  0xC4, 0xC8, 0xCC, 0,  0,0,0,0,  0,0,0,0,
   0,0xD0,0,0,  0,0,0,0,  0,0,0,0, 0, 0xD4, 0xD8, 0xDC, 
 };
 
-static int mdio_read(struct dev *dev, int phy_id, int location)
-{
+static int mdio_read(struct dev *dev, int phy_id, int location) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   int i;
   int read_cmd = (0xf6 << 10) | ((phy_id & 0x1f) << 5) | location;
@@ -1086,18 +1028,15 @@ static int mdio_read(struct dev *dev, int phy_id, int location)
 
   if (location & ~0x1f) return 0xffff;
 
-  if (tp->chip_id == COMET && phy_id == 30) 
-  {
-    if (comet_miireg2offset[location]) 
-    {
+  if (tp->chip_id == COMET && phy_id == 30) {
+    if (comet_miireg2offset[location]) {
       return readl(ioaddr + comet_miireg2offset[location]);
     }
     return 0xffff;
   }
 
   //spin_lock_irqsave(&tp->mii_lock, flags);
-  if (tp->chip_id == LC82C168) 
-  {
+  if (tp->chip_id == LC82C168) {
     int i = 1000;
     writel(0x60020000 + (phy_id<<23) + (location<<18), ioaddr + 0xA0);
     readl(ioaddr + 0xA0);
@@ -1105,17 +1044,16 @@ static int mdio_read(struct dev *dev, int phy_id, int location)
     readl(ioaddr + 0xA0);
     readl(ioaddr + 0xA0);
     
-    while (--i > 0)
-      if (!((retval = readl(ioaddr + 0xA0)) & 0x80000000))
-        break;
+    while (--i > 0) {
+      if (!((retval = readl(ioaddr + 0xA0)) & 0x80000000)) break;
+    }
 
     //spin_unlock_irqrestore(&tp->mii_lock, flags);
     return retval & 0xffff;
   }
 
   // Establish sync by sending at least 32 logic ones
-  for (i = 32; i >= 0; i--) 
-  {
+  for (i = 32; i >= 0; i--) {
     writel(MDIO_ENB | MDIO_DATA_WRITE1, mdio_addr);
     mdio_delay();
     writel(MDIO_ENB | MDIO_DATA_WRITE1 | MDIO_SHIFT_CLK, mdio_addr);
@@ -1123,8 +1061,7 @@ static int mdio_read(struct dev *dev, int phy_id, int location)
   }
 
   // Shift the read command bits out
-  for (i = 15; i >= 0; i--) 
-  {
+  for (i = 15; i >= 0; i--) {
     int dataval = (read_cmd & (1 << i)) ? MDIO_DATA_WRITE1 : 0;
 
     writel(MDIO_ENB | dataval, mdio_addr);
@@ -1134,8 +1071,7 @@ static int mdio_read(struct dev *dev, int phy_id, int location)
   }
 
   // Read the two transition, 16 data, and wire-idle bits
-  for (i = 19; i > 0; i--) 
-  {
+  for (i = 19; i > 0; i--) {
     writel(MDIO_ENB_IN, mdio_addr);
     mdio_delay();
     retval = (retval << 1) | ((readl(mdio_addr) & MDIO_DATA_READ) ? 1 : 0);
@@ -1148,39 +1084,31 @@ static int mdio_read(struct dev *dev, int phy_id, int location)
   return (retval >> 1) & 0xffff;
 }
 
-static void mdio_write(struct dev *dev, int phy_id, int location, int val)
-{
+static void mdio_write(struct dev *dev, int phy_id, int location, int val) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   int i;
   int cmd = (0x5002 << 16) | (phy_id << 23) | (location << 18) | (val & 0xffff);
   long ioaddr = tp->iobase;
   long mdio_addr = ioaddr + CSR9;
-  //unsigned long flags;
 
   if (location & ~0x1f) return;
 
-  if (tp->chip_id == COMET && phy_id == 30) 
-  {
+  if (tp->chip_id == COMET && phy_id == 30) {
     if (comet_miireg2offset[location]) writel(val, ioaddr + comet_miireg2offset[location]);
     return;
   }
 
-  //spin_lock_irqsave(&tp->mii_lock, flags);
-  if (tp->chip_id == LC82C168) 
-  {
+  if (tp->chip_id == LC82C168) {
     int i = 1000;
     writel(cmd, ioaddr + 0xA0);
-    do
-    {
+    do {
       if (!(readl(ioaddr + 0xA0) & 0x80000000)) break;
     } while (--i > 0);
-    //spin_unlock_irqrestore(&tp->mii_lock, flags);
     return;
   }
 
   // Establish sync by sending 32 logic ones
-  for (i = 32; i >= 0; i--) 
-  {
+  for (i = 32; i >= 0; i--)  {
     writel(MDIO_ENB | MDIO_DATA_WRITE1, mdio_addr);
     mdio_delay();
     writel(MDIO_ENB | MDIO_DATA_WRITE1 | MDIO_SHIFT_CLK, mdio_addr);
@@ -1188,8 +1116,7 @@ static void mdio_write(struct dev *dev, int phy_id, int location, int val)
   }
   
   // Shift the command bits out
-  for (i = 31; i >= 0; i--) 
-  {
+  for (i = 31; i >= 0; i--) {
     int dataval = (cmd & (1 << i)) ? MDIO_DATA_WRITE1 : 0;
     writel(MDIO_ENB | dataval, mdio_addr);
     mdio_delay();
@@ -1198,15 +1125,12 @@ static void mdio_write(struct dev *dev, int phy_id, int location, int val)
   }
 
   // Clear out extra bits
-  for (i = 2; i > 0; i--) 
-  {
+  for (i = 2; i > 0; i--) {
     writel(MDIO_ENB_IN, mdio_addr);
     mdio_delay();
     writel(MDIO_ENB_IN | MDIO_SHIFT_CLK, mdio_addr);
     mdio_delay();
   }
-  
-  //spin_unlock_irqrestore(&tp->mii_lock, flags);
 }
 
 //
@@ -1215,23 +1139,20 @@ static void mdio_write(struct dev *dev, int phy_id, int location, int val)
 // the initial card detection, and '1' during resume or open().
 //
 
-static void select_media(struct dev *dev, int startup)
-{
+static void select_media(struct dev *dev, int startup) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
   struct mediatable *mtable = tp->mtable;
   unsigned long new_csr6;
   int i;
 
-  if (mtable) 
-  {
+  if (mtable) {
     struct medialeaf *mleaf = &mtable->mleaf[tp->cur_index];
     unsigned char *p = mleaf->leafdata;
     
     //kprintf(KERN_DEBUG "%s:  Media table type %d.\n", dev->name, mleaf->type);
 
-    switch (mleaf->type) 
-    {
+    switch (mleaf->type) {
       case 0: // 21140 non-MII xcvr
         //kprintf(KERN_DEBUG "%s: Using a 21140 non-MII transceiver with control setting %2.2x.\n", dev->name, p[1]);
         tp->if_port = p[0];
@@ -1241,8 +1162,7 @@ static void select_media(struct dev *dev, int startup)
         break;
 
       case 2: 
-      case 4: 
-      {
+      case 4: {
         unsigned short setup[5];
         unsigned long csr13val, csr14val, csr15dir, csr15val;
         for (i = 0; i < 5; i++) setup[i] = get_u16(&p[i * 2 + 1]);
@@ -1250,8 +1170,7 @@ static void select_media(struct dev *dev, int startup)
         tp->if_port = p[0] & MEDIA_MASK;
         if (media_cap[tp->if_port] & MediaAlwaysFD) tp->full_duplex = 1;
 
-        if (startup && mtable->has_reset) 
-        {
+        if (startup && mtable->has_reset) {
           struct medialeaf *rleaf = &mtable->mleaf[mtable->has_reset-1];
           unsigned char *rst = rleaf->leafdata;
           kprintf(KERN_DEBUG "%s: Resetting the transceiver.\n", dev->name);
@@ -1259,8 +1178,7 @@ static void select_media(struct dev *dev, int startup)
         }
 
         kprintf(KERN_DEBUG "%s: 21143 non-MII %s transceiver control %4.4x/%4.4x.\n", dev->name, medianame[tp->if_port], setup[0], setup[1]);
-        if (p[0] & 0x40) 
-        {  
+        if (p[0] & 0x40) {
           // SIA (CSR13-15) setup values are provided
           csr13val = setup[0];
           csr14val = setup[1];
@@ -1271,16 +1189,13 @@ static void select_media(struct dev *dev, int startup)
           writel(csr15dir, ioaddr + CSR15); // Direction
           writel(csr15val, ioaddr + CSR15); // Data
           writel(csr13val, ioaddr + CSR13);
-        } 
-        else 
-        {
+        } else {
           csr13val = 1;
           csr14val = 0x0003FFFF;
           csr15dir = (setup[0]<<16) | 0x0008;
           csr15val = (setup[1]<<16) | 0x0008;
           if (tp->if_port <= 4) csr14val = t21142_csr14[tp->if_port];
-          if (startup) 
-          {
+          if (startup) {
             writel(0, ioaddr + CSR13);
             writel(csr14val, ioaddr + CSR14);
           }
@@ -1289,53 +1204,49 @@ static void select_media(struct dev *dev, int startup)
           if (startup) writel(csr13val, ioaddr + CSR13);
         }
         kprintf(KERN_DEBUG "%s:  Setting CSR15 to %8.8x/%8.8x.\n", dev->name, csr15dir, csr15val);
-        if (mleaf->type == 4)
+        if (mleaf->type == 4) {
           new_csr6 = 0x820A0000 | ((setup[2] & 0x71) << 18);
-        else
+        } else {
           new_csr6 = 0x82420000;
+        }
         break;
       }
 
       case 1: 
-      case 3: 
-      {
+      case 3: {
         int phy_num = p[0];
         int init_length = p[1];
         unsigned short *misc_info;
 
         tp->if_port = 11;
         new_csr6 = 0x020E0000;
-        if (mleaf->type == 3) 
-        { 
+        if (mleaf->type == 3) { 
           // 21142
           unsigned short *init_sequence = (unsigned short *)(p + 2);
           unsigned short *reset_sequence = &((unsigned short *)(p + 3))[init_length];
           int reset_length = p[2 + init_length * 2];
           misc_info = reset_sequence + reset_length;
-          if (startup)
-          {
-            for (i = 0; i < reset_length; i++)
+          if (startup) {
+            for (i = 0; i < reset_length; i++) {
               writel(get_u16(&reset_sequence[i]) << 16, ioaddr + CSR15);
+             }
           }
-          for (i = 0; i < init_length; i++)
+          for (i = 0; i < init_length; i++) {
             writel(get_u16(&init_sequence[i]) << 16, ioaddr + CSR15);
-        } 
-        else 
-        {
+          }
+        } else {
           unsigned char *init_sequence = p + 2;
           unsigned char *reset_sequence = p + 3 + init_length;
           int reset_length = p[2 + init_length];
           misc_info = (unsigned short *)(reset_sequence + reset_length);
-          if (startup) 
-          {
+          if (startup) {
             writel(mtable->csr12dir | 0x100, ioaddr + CSR12);
             for (i = 0; i < reset_length; i++) writel(reset_sequence[i], ioaddr + CSR12);
           }
           for (i = 0; i < init_length; i++) writel(init_sequence[i], ioaddr + CSR12);
         }
         tp->advertising[phy_num] = get_u16(&misc_info[1]) | 1;
-        if (startup < 2) 
-        {
+        if (startup < 2) {
           if (tp->mii_advertise == 0) tp->mii_advertise = tp->advertising[phy_num];
           kprintf(KERN_DEBUG "%s:  Advertising %4.4x on MII %d.\n", dev->name, tp->mii_advertise, tp->phys[phy_num]);
           mdio_write(dev, tp->phys[phy_num], 4, tp->mii_advertise);
@@ -1349,9 +1260,7 @@ static void select_media(struct dev *dev, int startup)
     }
 
     //kprintf(KERN_DEBUG "%s: Using media type %s, CSR12 is %2.2x.\n", dev->name, medianame[tp->if_port], readl(ioaddr + CSR12) & 0xff);
-  } 
-  else if (tp->chip_id == DC21041) 
-  {
+  } else if (tp->chip_id == DC21041) {
     int port = tp->if_port <= 4 ? tp->if_port : 0;
     kprintf(KERN_DEBUG "%s: 21041 using media %s, CSR12 is %4.4x.\n", dev->name, medianame[port == 3 ? 12: port], readl(ioaddr + CSR12));
     writel(0x00000000, ioaddr + CSR13); /* Reset the serial interface */
@@ -1359,41 +1268,30 @@ static void select_media(struct dev *dev, int startup)
     writel(t21041_csr15[port], ioaddr + CSR15);
     writel(t21041_csr13[port], ioaddr + CSR13);
     new_csr6 = 0x80020000;
-  } 
-  else if (tp->chip_id == LC82C168) 
-  {
+  } else if (tp->chip_id == LC82C168) {
     if (startup && ! tp->medialock) tp->if_port = tp->mii_cnt ? 11 : 0;
     kprintf(KERN_DEBUG "%s: PNIC PHY status is %3.3x, media %s.\n", dev->name, readl(ioaddr + 0xB8), medianame[tp->if_port]);
-    if (tp->mii_cnt) 
-    {
+    if (tp->mii_cnt) {
       new_csr6 = 0x810C0000;
       writel(0x0001, ioaddr + CSR15);
       writel(0x0201B07A, ioaddr + 0xB8);
-    } 
-    else if (startup) 
-    {
+    } else if (startup) {
       // Start with 10mbps to do autonegotiation
       writel(0x32, ioaddr + CSR12);
       new_csr6 = 0x00420000;
       writel(0x0001B078, ioaddr + 0xB8);
       writel(0x0201B078, ioaddr + 0xB8);
-    } 
-    else if (tp->if_port == 3 || tp->if_port == 5) 
-    {
+    } else if (tp->if_port == 3 || tp->if_port == 5) {
       writel(0x33, ioaddr + CSR12);
       new_csr6 = 0x01860000;
       // Trigger autonegotiation
       writel(startup ? 0x0201F868 : 0x0001F868, ioaddr + 0xB8);
-    } 
-    else 
-    {
+    } else {
       writel(0x32, ioaddr + CSR12);
       new_csr6 = 0x00420000;
       writel(0x1F078, ioaddr + 0xB8);
     }
-  } 
-  else if (tp->chip_id == DC21040) 
-  {
+  } else if (tp->chip_id == DC21040) {
     // 21040
     
     // Turn on the xcvr interface
@@ -1405,38 +1303,32 @@ static void select_media(struct dev *dev, int startup)
     // Set the full duplux match frame
     writel(FULL_DUPLEX_MAGIC, ioaddr + CSR11);
     writel(0x00000000, ioaddr + CSR13); // Reset the serial interface
-    if (t21040_csr13[tp->if_port] & 8) 
-    {
+    if (t21040_csr13[tp->if_port] & 8) {
       writel(0x0705, ioaddr + CSR14);
       writel(0x0006, ioaddr + CSR15);
-    } 
-    else 
-    {
+    } else {
       writel(0xffff, ioaddr + CSR14);
       writel(0x0000, ioaddr + CSR15);
     }
     writel(0x8f01 | t21040_csr13[tp->if_port], ioaddr + CSR13);
-  } 
-  else 
-  {
+  } else {
     // Unknown chip type with no media table
     if (tp->default_port == 0) tp->if_port = tp->mii_cnt ? 11 : 3;
 
-    if (media_cap[tp->if_port] & MediaIsMII) 
+    if (media_cap[tp->if_port] & MediaIsMII) {
       new_csr6 = 0x020E0000;
-    else if (media_cap[tp->if_port] & MediaIsFx) 
+    } else if (media_cap[tp->if_port] & MediaIsFx) {
       new_csr6 = 0x02860000;
-    else
+    } else {
       new_csr6 = 0x038E0000;
-
+    }
     kprintf(KERN_DEBUG "%s: No media description table, assuming %s transceiver, CSR12 %2.2x.\n", dev->name, medianame[tp->if_port], readl(ioaddr + CSR12));
   }
 
   tp->csr6 = new_csr6 | (tp->csr6 & 0xfdff) | (tp->full_duplex ? FullDuplex : 0);
 }
 
-static void init_media(struct dev *dev)
-{
+static void init_media(struct dev *dev) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
   int i;
@@ -1448,25 +1340,19 @@ static void init_media(struct dev *dev)
   i = 0;
   if (tp->mtable == NULL) goto media_picked;
 
-  if (tp->if_port) 
-  {
+  if (tp->if_port) {
     int looking_for = media_cap[tp->if_port] & MediaIsMII ? 11 : (tp->if_port == 12 ? 0 : tp->if_port);
-    for (i = 0; i < tp->mtable->leafcount; i++)
-    {
-      if (tp->mtable->mleaf[i].media == looking_for) 
-      {
+    for (i = 0; i < tp->mtable->leafcount; i++) {
+      if (tp->mtable->mleaf[i].media == looking_for) {
         kprintf(KERN_INFO "%s: Using user-specified media %s.\n", dev->name, medianame[tp->if_port]);
         goto media_picked;
       }
     }
   }
-  if ((tp->mtable->defaultmedia & 0x0800) == 0) 
-  {
+  if ((tp->mtable->defaultmedia & 0x0800) == 0) {
     int looking_for = tp->mtable->defaultmedia & MEDIA_MASK;
-    for (i = 0; i < tp->mtable->leafcount; i++)
-    {
-      if (tp->mtable->mleaf[i].media == looking_for) 
-      {
+    for (i = 0; i < tp->mtable->leafcount; i++) {
+      if (tp->mtable->mleaf[i].media == looking_for) {
         kprintf(KERN_INFO "%s: Using EEPROM-set media %s.\n", dev->name, medianame[looking_for]);
         goto media_picked;
       }
@@ -1481,10 +1367,8 @@ media_picked:
   tp->cur_index = i;
   tp->nwayset = 0;
 
-  if (tp->if_port) 
-  {
-    if (tp->chip_id == DC21143  && (media_cap[tp->if_port] & MediaIsMII)) 
-    {
+  if (tp->if_port) {
+    if (tp->chip_id == DC21143  && (media_cap[tp->if_port] & MediaIsMII)) {
       // We must reset the media CSRs when we force-select MII mode
       writel(0x0000, ioaddr + CSR13);
       writel(0x0000, ioaddr + CSR14);
@@ -1494,82 +1378,77 @@ media_picked:
     return;
   }
 
-  switch(tp->chip_id) 
-  {
-  case DC21041:
-    // tp->nway = 1;
-    nway_start(dev);
-    break;
-
-  case DC21142:
-    if (tp->mii_cnt) 
-    {
-      select_media(dev, 1);
-      kprintf(KERN_INFO "%s: Using MII transceiver %d, status %4.4x.\n", dev->name, tp->phys[0], mdio_read(dev, tp->phys[0], 1));
-      writel(0x82020000, ioaddr + CSR6);
-      tp->csr6 = 0x820E0000;
-      tp->if_port = 11;
-      writel(0x0000, ioaddr + CSR13);
-      writel(0x0000, ioaddr + CSR14);
-    } 
-    else
+  switch(tp->chip_id) {
+    case DC21041:
+      // tp->nway = 1;
       nway_start(dev);
-    break;
+      break;
 
-  case PNIC2:
-    nway_start(dev);
-    break;
+    case DC21142:
+      if (tp->mii_cnt) {
+        select_media(dev, 1);
+        kprintf(KERN_INFO "%s: Using MII transceiver %d, status %4.4x.\n", dev->name, tp->phys[0], mdio_read(dev, tp->phys[0], 1));
+        writel(0x82020000, ioaddr + CSR6);
+        tp->csr6 = 0x820E0000;
+        tp->if_port = 11;
+        writel(0x0000, ioaddr + CSR13);
+        writel(0x0000, ioaddr + CSR14);
+      } else {
+        nway_start(dev);
+      }
+      break;
 
-  case LC82C168:
-    if (tp->mii_cnt) 
-    {
-      tp->if_port = 11;
-      tp->csr6 = 0x814C0000 | (tp->full_duplex ? FullDuplex : 0);
-      writel(0x0001, ioaddr + CSR15);
-    } 
-    else if (readl(ioaddr + CSR5) & TPLnkPass)
-      pnic_do_nway(dev);
-    else 
-    {
-      // Start with 10mbps to do autonegotiation
-      writel(0x32, ioaddr + CSR12);
-      tp->csr6 = 0x00420000;
-      writel(0x0001B078, ioaddr + 0xB8);
-      writel(0x0201B078, ioaddr + 0xB8);
-    }
-    break;
+    case PNIC2:
+      nway_start(dev);
+      break;
 
-  case MX98713: 
-  case COMPEX9881:
-    tp->if_port = 0;
-    tp->csr6 = 0x01880000 | (tp->full_duplex ? FullDuplex : 0);
-    writel(0x0f370000 | readw(ioaddr + 0x80), ioaddr + 0x80);
-    break;
+    case LC82C168:
+      if (tp->mii_cnt) {
+        tp->if_port = 11;
+        tp->csr6 = 0x814C0000 | (tp->full_duplex ? FullDuplex : 0);
+        writel(0x0001, ioaddr + CSR15);
+      } else if (readl(ioaddr + CSR5) & TPLnkPass) {
+        pnic_do_nway(dev);
+      } else {
+        // Start with 10mbps to do autonegotiation
+        writel(0x32, ioaddr + CSR12);
+        tp->csr6 = 0x00420000;
+        writel(0x0001B078, ioaddr + 0xB8);
+        writel(0x0201B078, ioaddr + 0xB8);
+      }
+      break;
 
-  case MX98715: 
-  case MX98725:
-    // Provided by BOLO, Macronix - 12/10/1998
-    tp->if_port = 0;
-    tp->csr6 = 0x01a80000 | FullDuplex;
-    writel(0x0f370000 | readw(ioaddr + 0x80), ioaddr + 0x80);
-    writel(0x11000 | readw(ioaddr + 0xa0), ioaddr + 0xa0);
-    break;
+    case MX98713: 
+    case COMPEX9881:
+      tp->if_port = 0;
+      tp->csr6 = 0x01880000 | (tp->full_duplex ? FullDuplex : 0);
+      writel(0x0f370000 | readw(ioaddr + 0x80), ioaddr + 0x80);
+      break;
 
-  case COMET: 
-  case CONEXANT:
-    // Enable automatic Tx underrun recovery
-    writel(readl(ioaddr + 0x88) | 1, ioaddr + 0x88);
-    tp->if_port = tp->mii_cnt ? 11 : 0;
-    tp->csr6 = 0x00040000;
-    break;
+    case MX98715: 
+    case MX98725:
+      // Provided by BOLO, Macronix - 12/10/1998
+      tp->if_port = 0;
+      tp->csr6 = 0x01a80000 | FullDuplex;
+      writel(0x0f370000 | readw(ioaddr + 0x80), ioaddr + 0x80);
+      writel(0x11000 | readw(ioaddr + 0xa0), ioaddr + 0xa0);
+      break;
 
-  case AX88140: 
-  case AX88141:
-    tp->csr6 = tp->mii_cnt ? 0x00040100 : 0x00000100;
-    break;
+    case COMET: 
+    case CONEXANT:
+      // Enable automatic Tx underrun recovery
+      writel(readl(ioaddr + 0x88) | 1, ioaddr + 0x88);
+      tp->if_port = tp->mii_cnt ? 11 : 0;
+      tp->csr6 = 0x00040000;
+      break;
 
-  default:
-    select_media(dev, 1);
+    case AX88140: 
+    case AX88141:
+      tp->csr6 = tp->mii_cnt ? 0x00040100 : 0x00000100;
+      break;
+
+    default:
+      select_media(dev, 1);
   }
 }
 
@@ -1580,8 +1459,7 @@ media_picked:
 // Return < 0 if the transceiver is missing or has no link beat.
 //
 
-static int check_duplex(struct dev *dev)
-{
+static int check_duplex(struct dev *dev) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
   int mii_reg1, mii_reg5, negotiated, duplex;
@@ -1594,11 +1472,9 @@ static int check_duplex(struct dev *dev)
 
   if (mii_reg5 == 0xffff) return -2;
 
-  if ((mii_reg5 & 0x4000) == 0 && ((mii_reg1 = mdio_read(dev, tp->phys[0], 1)) & 0x0004) == 0) 
-  {
+  if ((mii_reg5 & 0x4000) == 0 && ((mii_reg1 = mdio_read(dev, tp->phys[0], 1)) & 0x0004) == 0) {
     int new_reg1 = mdio_read(dev, tp->phys[0], 1);
-    if ((new_reg1 & 0x0004) == 0) 
-    {
+    if ((new_reg1 & 0x0004) == 0) {
       kprintf(KERN_INFO "%s: No link beat on the MII interface, status %4.4x.\n", dev->name, new_reg1);
       return -1;
     }
@@ -1607,15 +1483,15 @@ static int check_duplex(struct dev *dev)
   duplex = ((negotiated & 0x0300) == 0x0100 || (negotiated & 0x00C0) == 0x0040);
 
   // 100baseTx-FD or 10T-FD, but not 100-HD
-  if (tp->full_duplex != duplex) 
-  {
+  if (tp->full_duplex != duplex) {
     tp->full_duplex = duplex;
     if (negotiated & 0x0380) tp->csr6 &= ~0x00400000;
     
-    if (tp->full_duplex) 
+    if (tp->full_duplex) {
       tp->csr6 |= FullDuplex;
-    else         
+     } else {
       tp->csr6 &= ~FullDuplex;
+     }
 
     writel(tp->csr6 | RxOn, ioaddr + CSR6);
     writel(tp->csr6 | TxOn | RxOn, ioaddr + CSR6);
@@ -1630,8 +1506,7 @@ static int check_duplex(struct dev *dev)
   return 0;
 }
 
-static void tulip_timer(void *data)
-{
+static void tulip_timer(void *data) {
   struct dev *dev = (struct dev *) data;
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
@@ -1643,11 +1518,9 @@ static void tulip_timer(void *data)
   //     readl(ioaddr + CSR6), csr12, readl(ioaddr + CSR13),
   //     readl(ioaddr + CSR14), readl(ioaddr + CSR15));
 
-  switch (tp->chip_id) 
-  {
+  switch (tp->chip_id) {
     case DC21040:
-      if (!tp->medialock && (csr12 & 0x0002)) 
-      { 
+      if (!tp->medialock && (csr12 & 0x0002)) { 
         // Network error
         kprintf(KERN_INFO "%s: No link beat found.\n", dev->name);
         tp->if_port = (tp->if_port == 2 ? 0 : 2);
@@ -1659,53 +1532,46 @@ static void tulip_timer(void *data)
     case DC21041:
       kprintf(KERN_DEBUG "%s: 21041 media tick  CSR12 %8.8x.\n", dev->name, csr12);
       if (tp->medialock) break;
-      switch (tp->if_port) 
-      {
+      switch (tp->if_port) {
         case 0: 
         case 3: 
         case 4:
-          if (csr12 & 0x0004) 
-          { 
+          if (csr12 & 0x0004) { 
             // LnkFail. 10baseT is dead.  Check for activity on alternate port.
             tp->mediasense = 1;
-            if (csr12 & 0x0200)
+            if (csr12 & 0x0200) {
               tp->if_port = 2;
-            else
+            } else {
               tp->if_port = 1;
-
+            }
             kprintf(KERN_INFO "%s: No 21041 10baseT link beat, Media switched to %s.\n", dev->name, medianame[tp->if_port]);
             writel(0, ioaddr + CSR13); // Reset
             writel(t21041_csr14[tp->if_port], ioaddr + CSR14);
             writel(t21041_csr15[tp->if_port], ioaddr + CSR15);
             writel(t21041_csr13[tp->if_port], ioaddr + CSR13);
             next_tick = 10 * HZ;      // 10 sec
-          } 
-          else
+          } else {
             next_tick = 30 * HZ;
+          }
           break;
 
         case 1: // 10base2
         case 2: // AUI
-          if (csr12 & 0x0100) 
-          {
+          if (csr12 & 0x0100) {
             next_tick = (30 * HZ); // 30 sec
             tp->mediasense = 0;
-          } 
-          else if ((csr12 & 0x0004) == 0) 
-          {
+          } else if ((csr12 & 0x0004) == 0) {
             kprintf(KERN_INFO "%s: 21041 media switched to 10baseT.\n", dev->name);
             tp->if_port = 0;
             select_media(dev, 0);
             next_tick = (24 * HZ) / 10;       // 2.4 sec
-          } 
-          else if (tp->mediasense || (csr12 & 0x0002)) 
-          {
+          } else if (tp->mediasense || (csr12 & 0x0002)) {
             tp->if_port = 3 - tp->if_port; // Swap ports
             select_media(dev, 0);
             next_tick = 20 * HZ;
-          } 
-          else 
+          } else {
             next_tick = 20 * HZ;
+          }
           break;
       }
       break;
@@ -1714,33 +1580,26 @@ static void tulip_timer(void *data)
     case DC21142: 
     case MX98713: 
     case COMPEX9881: 
-    default: 
-    {
+    default: {
       struct medialeaf *mleaf;
       unsigned char *p;
-      if (tp->mtable == NULL) 
-      { 
+      if (tp->mtable == NULL) { 
         // No EEPROM info, use generic code
         // Not much that can be done. Assume this a generic MII or SYM transceiver
-
         next_tick = 60 * HZ;
         kprintf(KERN_DEBUG "%s: network media monitor CSR6 %8.8x CSR12 0x%2.2x.\n", dev->name, readl(ioaddr + CSR6), csr12 & 0xff);
         break;
       }
       mleaf = &tp->mtable->mleaf[tp->cur_index];
       p = mleaf->leafdata;
-      switch (mleaf->type) 
-      {
-        case 0: case 4:
-        {
+      switch (mleaf->type) {
+        case 0: case 4: {
           // Type 0 serial or 4 SYM transceiver.  Check the link beat bit.
           int offset = mleaf->type == 4 ? 5 : 2;
           char bitnum = p[offset];
-          if (p[offset + 1] & 0x80) 
-          {
+          if (p[offset + 1] & 0x80) {
             kprintf(KERN_DEBUG "%s: Transceiver monitor tick CSR12=%#2.2x, no media sense.\n", dev->name, csr12);
-            if (mleaf->type == 4) 
-            {
+            if (mleaf->type == 4) {
               if (mleaf->media == 3 && (csr12 & 0x02)) goto select_next_media;
             }
             break;
@@ -1752,8 +1611,7 @@ static void tulip_timer(void *data)
           //     (bitnum >= 0));
 
           // Check that the specified bit has the proper value.
-          if ((bitnum < 0) != ((csr12 & (1 << ((bitnum >> 1) & 7))) != 0)) 
-          {
+          if ((bitnum < 0) != ((csr12 & (1 << ((bitnum >> 1) & 7))) != 0)) {
             //kprintf(KERN_DEBUG "%s: Link beat detected for %s.\n", dev->name, medianame[mleaf->media & MEDIA_MASK]);
             if ((p[2] & 0x61) == 0x01) goto actually_mii; // Bogus Znyx board
             break;
@@ -1762,8 +1620,7 @@ static void tulip_timer(void *data)
           if (tp->medialock) break;
 
         select_next_media:
-          if (--tp->cur_index < 0) 
-          {
+          if (--tp->cur_index < 0) {
             // We start again, but should instead look for default
             tp->cur_index = tp->mtable->leafcount - 1;
           }
@@ -1806,8 +1663,7 @@ static void tulip_timer(void *data)
 // These exist on the 21041, 21143 (in SYM mode) and the PNIC2.
 //
 
-static void nway_timer(void *data)
-{
+static void nway_timer(void *data) {
   struct dev *dev = (struct dev *) data;
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
@@ -1817,35 +1673,24 @@ static void nway_timer(void *data)
 
   kprintf(KERN_INFO "%s: N-Way autonegotiation status %8.8x, %s.\n", dev->name, csr12, medianame[tp->if_port]);
   
-  if (media_cap[tp->if_port] & MediaIsMII) 
-  {
+  if (media_cap[tp->if_port] & MediaIsMII) {
     check_duplex(dev);
-  } 
-  else if (tp->nwayset) 
-  {
+  } else if (tp->nwayset) {
     // Do not screw up a negotiated session!
     kprintf(KERN_INFO "%s: Using NWay-set %s media, csr12 %8.8x.\n", dev->name, medianame[tp->if_port], csr12);
-  } 
-  else if (tp->medialock) 
-  {
-  } 
-  else if (tp->if_port == 3) 
-  {
-    if (csr12 & 2) 
-    {  
+  } else if (tp->medialock) {
+  } else if (tp->if_port == 3) {
+    if (csr12 & 2) {  
       // No 100mbps link beat, revert to 10mbps.
       kprintf(KERN_INFO "%s: No 21143 100baseTx link beat, %8.8x, trying NWay.\n", dev->name, csr12);
       nway_start(dev);
       next_tick = 3 * HZ;
     }
-  } 
-  else if ((csr12 & 0x7000) != 0x5000) 
-  {
+  } else if ((csr12 & 0x7000) != 0x5000) {
     // Negotiation failed.  Search media types.
     kprintf(KERN_INFO "%s: 21143 negotiation failed, status %8.8x.\n", dev->name, csr12);
 
-    if (!(csr12 & 4)) 
-    {   
+    if (!(csr12 & 4)) {
       // 10mbps link beat good
       new_csr6 = 0x82420000;
       tp->if_port = 0;
@@ -1853,9 +1698,7 @@ static void nway_timer(void *data)
       writel(0x0003FFFF, ioaddr + CSR14);
       writew(t21142_csr15[tp->if_port], ioaddr + CSR15);
       writel(t21142_csr13[tp->if_port], ioaddr + CSR13);
-    } 
-    else 
-    {
+    } else {
       // Select 100mbps port to check for link beat
       new_csr6 = 0x83860000;
       tp->if_port = 3;
@@ -1867,8 +1710,7 @@ static void nway_timer(void *data)
 
     kprintf(KERN_INFO "%s: Testing new 21143 media %s.\n", dev->name, medianame[tp->if_port]);
 
-    if (new_csr6 != (tp->csr6 & ~0x20D7)) 
-    {
+    if (new_csr6 != (tp->csr6 & ~0x20D7)) {
       tp->csr6 &= 0x20D7;
       tp->csr6 |= new_csr6;
       writel(0x0301, ioaddr + CSR12);
@@ -1879,8 +1721,7 @@ static void nway_timer(void *data)
     next_tick = 3 * HZ;
   }
 
-  if (tp->cur_tx - tp->dirty_tx > 0  && get_ticks() - tp->trans_start > TX_TIMEOUT) 
-  {
+  if (tp->cur_tx - tp->dirty_tx > 0  && get_ticks() - tp->trans_start > TX_TIMEOUT) {
     kprintf(KERN_WARNING "%s: Tx hung, %d vs. %d.\n", dev->name, tp->cur_tx, tp->dirty_tx);
     tulip_tx_timeout(dev);
   }
@@ -1888,8 +1729,7 @@ static void nway_timer(void *data)
   mod_timer(&tp->timer, get_ticks() + next_tick);
 }
 
-static void nway_start(struct dev *dev)
-{
+static void nway_start(struct dev *dev) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
   int csr14 = ((tp->sym_advertise & 0x0780) << 9) | ((tp->sym_advertise & 0x0020) << 1) | 0xffbf;
@@ -1898,8 +1738,7 @@ static void nway_start(struct dev *dev)
   tp->nway = tp->mediasense = 1;
   tp->nwayset = tp->lpar = 0;
   
-  if (tp->chip_id == PNIC2) 
-  {
+  if (tp->chip_id == PNIC2) {
     tp->csr6 = 0x01000000 | (tp->sym_advertise & 0x0040 ? FullDuplex : 0);
     return;
   }
@@ -1909,28 +1748,26 @@ static void nway_start(struct dev *dev)
   writel(csr14, ioaddr + CSR14);
   tp->csr6 = 0x82420000 | (tp->sym_advertise & 0x0040 ? FullDuplex : 0) | (tp->csr6 & 0x20ff);
   writel(tp->csr6, ioaddr + CSR6);
-  if (tp->mtable && tp->mtable->csr15dir) 
-  {
+  if (tp->mtable && tp->mtable->csr15dir) {
     writel(tp->mtable->csr15dir, ioaddr + CSR15);
     writel(tp->mtable->csr15val, ioaddr + CSR15);
-  } 
-  else if (tp->chip_id != PNIC2)
+  } else if (tp->chip_id != PNIC2) {
     writew(0x0008, ioaddr + CSR15);
+  }
 
-  if (tp->chip_id == DC21041)
+  if (tp->chip_id == DC21041) {
     writel(0xEF01, ioaddr + CSR12);
-  else
+  } else {
     writel(0x1301, ioaddr + CSR12);
+  }
 }
 
-static void nway_lnk_change(struct dev *dev, int csr5)
-{
+static void nway_lnk_change(struct dev *dev, int csr5) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
   int csr12 = readl(ioaddr + CSR12);
 
-  if (tp->chip_id == PNIC2) 
-  {
+  if (tp->chip_id == PNIC2) {
     kprintf(KERN_INFO "%s: PNIC-2 link status changed, CSR5/12/14 %8.8x %8.8x, %8.8x.\n", dev->name, csr12, csr5, readl(ioaddr + CSR14));
     tp->if_port = 5;
     tp->lpar = csr12 >> 16;
@@ -1943,41 +1780,37 @@ static void nway_lnk_change(struct dev *dev, int csr5)
   kprintf(KERN_INFO "%s: 21143 link status interrupt %8.8x, CSR5 %x, %8.8x.\n", dev->name, csr12, csr5, readl(ioaddr + CSR14));
 
   // If NWay finished and we have a negotiated partner capability
-  if (tp->nway && !tp->nwayset && (csr12 & 0x7000) == 0x5000) 
-  {
+  if (tp->nway && !tp->nwayset && (csr12 & 0x7000) == 0x5000) {
     int setup_done = 0;
     int negotiated = tp->sym_advertise & (csr12 >> 16);
     tp->lpar = csr12 >> 16;
     tp->nwayset = 1;
 
-    if (negotiated & 0x0100)
+    if (negotiated & 0x0100) {
       tp->if_port = 5;
-    else if (negotiated & 0x0080)
+    } else if (negotiated & 0x0080) {
       tp->if_port = 3;
-    else if (negotiated & 0x0040)
+    } else if (negotiated & 0x0040) {
       tp->if_port = 4;
-    else if (negotiated & 0x0020)
+    } else if (negotiated & 0x0020) {
       tp->if_port = 0;
-    else 
-    {
+    } else {
       tp->nwayset = 0;
       if ((csr12 & 2) == 0 && (tp->sym_advertise & 0x0180)) tp->if_port = 3;
     }
 
     tp->full_duplex = (media_cap[tp->if_port] & MediaAlwaysFD) ? 1 : 0;
 
-    if (tp->nwayset)
+    if (tp->nwayset) {
       kprintf(KERN_INFO "%s: Switching to %s based on link negotiation %4.4x & %4.4x = %4.4x.\n", dev->name, medianame[tp->if_port], tp->sym_advertise, tp->lpar, negotiated);
-    else
+    } else {
       kprintf(KERN_INFO "%s: Autonegotiation failed, using %s, link beat status %4.4x.\n", dev->name, medianame[tp->if_port], csr12);
+    }
 
-    if (tp->mtable) 
-    {
+    if (tp->mtable) {
       int i;
-      for (i = 0; i < tp->mtable->leafcount; i++)
-      {
-        if (tp->mtable->mleaf[i].media == tp->if_port)
-        {
+      for (i = 0; i < tp->mtable->leafcount; i++) {
+        if (tp->mtable->mleaf[i].media == tp->if_port) {
           tp->cur_index = i;
           select_media(dev, 0);
           setup_done = 1;
@@ -1986,8 +1819,7 @@ static void nway_lnk_change(struct dev *dev, int csr5)
       }
     }
 
-    if (! setup_done) 
-    {
+    if (! setup_done) {
       tp->csr6 = (tp->if_port & 1 ? 0x838E0000 : 0x82420000) | (tp->csr6 & 0x20ff);
       if (tp->full_duplex) tp->csr6 |= FullDuplex;
       writel(1, ioaddr + CSR13);
@@ -1995,48 +1827,33 @@ static void nway_lnk_change(struct dev *dev, int csr5)
 
     writel(tp->csr6 | TxOn | RxOn, ioaddr + CSR6);
     kprintf(KERN_DEBUG "%s:  Setting CSR6 %8.8x/%x CSR12 %8.8x.\n", dev->name, tp->csr6, readl(ioaddr + CSR6), readl(ioaddr + CSR12));
-  } 
-  else if ((tp->nwayset && (csr5 & 0x08000000) &&
-           (tp->if_port == 3 || tp->if_port == 5) &&
-           (csr12 & 2) == 2) ||
-         (tp->nway && (csr5 & (TPLnkFail)))) 
-  {
+  } else if ((tp->nwayset && (csr5 & 0x08000000) &&
+             (tp->if_port == 3 || tp->if_port == 5) &&
+             (csr12 & 2) == 2) || (tp->nway && (csr5 & (TPLnkFail)))) {
     // Link blew? Maybe restart NWay
     del_timer(&tp->timer);
     nway_start(dev);
     mod_timer(&tp->timer, get_ticks() + 3 * HZ);
-  } 
-  else if (tp->if_port == 3 || tp->if_port == 5) 
-  {
+  } else if (tp->if_port == 3 || tp->if_port == 5) {
     kprintf(KERN_INFO "%s: 21143 %s link beat %s.\n", dev->name, medianame[tp->if_port], (csr12 & 2) ? "failed" : "good");
-    if ((csr12 & 2) && ! tp->medialock) 
-    {
+    if ((csr12 & 2) && ! tp->medialock) {
       del_timer(&tp->timer);
       nway_start(dev);
       mod_timer(&tp->timer, get_ticks() + 3 * HZ);
-    } 
-    else if (tp->if_port == 5)
+    } else if (tp->if_port == 5) {
       writel(readl(ioaddr + CSR14) & ~0x080, ioaddr + CSR14);
-  } 
-  else if (tp->if_port == 0 || tp->if_port == 4) 
-  {
-    if ((csr12 & 4) == 0)
-    {
+    }
+  } else if (tp->if_port == 0 || tp->if_port == 4) {
+    if ((csr12 & 4) == 0) {
       kprintf(KERN_INFO "%s: 21143 10baseT link beat good.\n", dev->name);
     }
-  } 
-  else if (!(csr12 & 4)) 
-  {    
+  } else if (!(csr12 & 4)) {
     // 10mbps link beat good
     kprintf(KERN_INFO "%s: 21143 10mbps sensed media.\n", dev->name);
     tp->if_port = 0;
-  } 
-  else if (tp->nwayset) 
-  {
+  } else if (tp->nwayset) {
     kprintf(KERN_INFO "%s: 21143 using NWay-set %s, csr6 %8.8x.\n", dev->name, medianame[tp->if_port], tp->csr6);
-  } 
-  else 
-  {    
+  } else {    
     // 100mbps link beat good
     kprintf(KERN_INFO "%s: 21143 100baseTx sensed media.\n", dev->name);
     tp->if_port = 3;
@@ -2048,8 +1865,7 @@ static void nway_lnk_change(struct dev *dev, int csr5)
   }
 }
 
-static void mxic_timer(void *data)
-{
+static void mxic_timer(void *data) {
   struct dev *dev = (struct dev *)data;
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
@@ -2059,39 +1875,36 @@ static void mxic_timer(void *data)
   mod_timer(&tp->timer, get_ticks() + next_tick);
 }
 
-static void pnic_do_nway(struct dev *dev)
-{
+static void pnic_do_nway(struct dev *dev) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
   unsigned long phy_reg = readl(ioaddr + 0xB8);
   unsigned long new_csr6 = tp->csr6 & ~0x40C40200;
 
-  if (phy_reg & 0x78000000) 
-  { 
+  if (phy_reg & 0x78000000) { 
     // Ignore baseT4
-    if (phy_reg & 0x20000000)
+    if (phy_reg & 0x20000000) {
       tp->if_port = 5;
-    else if (phy_reg & 0x40000000)
+    } else if (phy_reg & 0x40000000) {
       tp->if_port = 3;
-    else if (phy_reg & 0x10000000)
+    } else if (phy_reg & 0x10000000) {
       tp->if_port = 4;
-    else if (phy_reg & 0x08000000)
+    } else if (phy_reg & 0x08000000) {
       tp->if_port = 0;
+    }
 
     tp->nwayset = 1;
     new_csr6 = (tp->if_port & 1) ? 0x01860000 : 0x00420000;
     writel(0x32 | (tp->if_port & 1), ioaddr + CSR12);
     if (tp->if_port & 1) writel(0x1F868, ioaddr + 0xB8);
-    if (phy_reg & 0x30000000) 
-    {
+    if (phy_reg & 0x30000000) {
       tp->full_duplex = 1;
       new_csr6 |= FullDuplex;
     }
 
     kprintf(KERN_DEBUG "%s: PNIC autonegotiated status %8.8x, %s.\n", dev->name, phy_reg, medianame[tp->if_port]);
 
-    if (tp->csr6 != new_csr6) 
-    {
+    if (tp->csr6 != new_csr6) {
       tp->csr6 = new_csr6;
       writel(tp->csr6 | RxOn, ioaddr + CSR6); // Restart Tx
       writel(tp->csr6 | TxOn | RxOn, ioaddr + CSR6);
@@ -2100,46 +1913,37 @@ static void pnic_do_nway(struct dev *dev)
   }
 }
 
-static void pnic_lnk_change(struct dev *dev, int csr5)
-{
+static void pnic_lnk_change(struct dev *dev, int csr5) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
   int phy_reg = readl(ioaddr + 0xB8);
 
   kprintf(KERN_DEBUG "%s: PNIC link changed state %8.8x, CSR5 %8.8x.\n", dev->name, phy_reg, csr5);
 
-  if (readl(ioaddr + CSR5) & TPLnkFail) 
-  {
+  if (readl(ioaddr + CSR5) & TPLnkFail) {
     writel((readl(ioaddr + CSR7) & ~TPLnkFail) | TPLnkPass, ioaddr + CSR7);
-    if (!tp->nwayset || get_ticks() - tp->trans_start > 1 * HZ) 
-    {
+    if (!tp->nwayset || get_ticks() - tp->trans_start > 1 * HZ) {
       tp->csr6 = 0x00420000 | (tp->csr6 & 0x0000fdff);
       writel(tp->csr6, ioaddr + CSR6);
       writel(0x30, ioaddr + CSR12);
       writel(0x0201F078, ioaddr + 0xB8); // Turn on autonegotiation
       tp->trans_start = get_ticks();
     }
-  } 
-  else if (readl(ioaddr + CSR5) & TPLnkPass) 
-  {
+  } else if (readl(ioaddr + CSR5) & TPLnkPass) {
     pnic_do_nway(dev);
     writel((readl(ioaddr + CSR7) & ~TPLnkPass) | TPLnkFail, ioaddr + CSR7);
   }
 }
 
-static void pnic_timer(void *data)
-{
+static void pnic_timer(void *data) {
   struct dev *dev = (struct dev *) data;
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
   int next_tick = 60 * HZ;
 
-  if (media_cap[tp->if_port] & MediaIsMII) 
-  {
+  if (media_cap[tp->if_port] & MediaIsMII) {
     if (check_duplex(dev) > 0) next_tick = 3 * HZ;
-  } 
-  else 
-  {
+  } else {
     int csr12 = readl(ioaddr + CSR12);
     int new_csr6 = tp->csr6 & ~0x40C40200;
     int phy_reg = readl(ioaddr + 0xB8);
@@ -2147,21 +1951,16 @@ static void pnic_timer(void *data)
 
     kprintf(KERN_DEBUG "%s: PNIC timer PHY status %8.8x, %s CSR5 %8.8x.\n", dev->name, phy_reg, medianame[tp->if_port], csr5);
 
-    if (phy_reg & 0x04000000) 
-    { 
+    if (phy_reg & 0x04000000) { 
       // Remote link fault
       writel(0x0201F078, ioaddr + 0xB8);
       next_tick = 1 * HZ;
       tp->nwayset = 0;
-    } 
-    else if (phy_reg & 0x78000000) 
-    { 
+    } else if (phy_reg & 0x78000000) { 
       // Ignore baseT4
       pnic_do_nway(dev);
       next_tick = 60 * HZ;
-    } 
-    else if (csr5 & TPLnkFail) 
-    { 
+    } else if (csr5 & TPLnkFail) { 
       // 100baseTx link beat
       kprintf(KERN_DEBUG "%s: %s link beat failed, CSR12 %4.4x, CSR5 %8.8x, PHY %3.3x.\n",
              dev->name, medianame[tp->if_port], csr12,
@@ -2169,30 +1968,22 @@ static void pnic_timer(void *data)
 
       next_tick = 3 * HZ;
 
-      if (tp->medialock) 
-      {
-      } 
-      else if (tp->nwayset && (tp->if_port & 1)) 
-      {
+      if (tp->medialock) {
+      } else if (tp->nwayset && (tp->if_port & 1)) {
         next_tick = 1 * HZ;
-      } 
-      else if (tp->if_port == 0) 
-      {
+      } else if (tp->if_port == 0) {
         tp->if_port = 3;
         writel(0x33, ioaddr + CSR12);
         new_csr6 = 0x01860000;
         writel(0x1F868, ioaddr + 0xB8);
-      } 
-      else 
-      {
+      } else {
         tp->if_port = 0;
         writel(0x32, ioaddr + CSR12);
         new_csr6 = 0x00420000;
         writel(0x1F078, ioaddr + 0xB8);
       }
       
-      if (tp->csr6 != new_csr6) 
-      {
+      if (tp->csr6 != new_csr6) {
         tp->csr6 = new_csr6;
         writel(tp->csr6 | RxOn, ioaddr + CSR6); // Restart Tx
         writel(tp->csr6 | RxOn | TxOn, ioaddr + CSR6);
@@ -2207,8 +1998,7 @@ static void pnic_timer(void *data)
   mod_timer(&tp->timer, get_ticks() + next_tick);
 }
 
-static void comet_timer(void *data)
-{
+static void comet_timer(void *data) {
   struct dev *dev = (struct dev *) data;
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   int next_tick = 60 * HZ;
@@ -2222,31 +2012,24 @@ static void comet_timer(void *data)
   mod_timer(&tp->timer, get_ticks() + next_tick);
 }
 
-static void tulip_tx_timeout(struct dev *dev)
-{
+static void tulip_tx_timeout(struct dev *dev) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
 
-  if (media_cap[tp->if_port] & MediaIsMII) 
-  {
+  if (media_cap[tp->if_port] & MediaIsMII) {
     // Do nothing -- the media monitor should handle this
     int mii_bmsr = mdio_read(dev, tp->phys[0], 1);
     kprintf(KERN_WARNING "%s: Transmit timeout using MII device, status %4.4x.\n", dev->name, mii_bmsr);
-    if (!(mii_bmsr & 0x0004)) 
-    {   
+    if (!(mii_bmsr & 0x0004)) {
       // No link beat present
       tp->trans_start = get_ticks();
       //netif_link_down(dev);
       return;
     }
-  } 
-  else 
-  {
-    switch (tp->chip_id) 
-    {
+  } else {
+    switch (tp->chip_id) {
       case DC21040:
-        if (!tp->medialock && readl(ioaddr + CSR12) & 0x0002) 
-        {
+        if (!tp->medialock && readl(ioaddr + CSR12) & 0x0002) {
           tp->if_port = (tp->if_port == 2 ? 0 : 2);
           kprintf(KERN_INFO "%s: transmit timed out, switching to %s.\n", dev->name, medianame[tp->if_port]);
           select_media(dev, 0);
@@ -2254,8 +2037,7 @@ static void tulip_tx_timeout(struct dev *dev)
         tp->trans_start = get_ticks();
         return; // Note: not break!
 
-      case DC21041: 
-      {
+      case DC21041: {
         int csr12 = readl(ioaddr + CSR12);
 
         kprintf(KERN_WARNING "%s: 21041 transmit timed out, status %8.8x, CSR12 %8.8x, CSR13 %8.8x, CSR14 %8.8x, resetting...\n",
@@ -2263,21 +2045,19 @@ static void tulip_tx_timeout(struct dev *dev)
                readl(ioaddr + CSR13), readl(ioaddr + CSR14));
 
         tp->mediasense = 1;
-        if (! tp->medialock) 
-        {
-          if (tp->if_port == 1 || tp->if_port == 2)
+        if (! tp->medialock) {
+          if (tp->if_port == 1 || tp->if_port == 2) {
             tp->if_port = (csr12 & 0x0004) ? 2 - tp->if_port : 0;
-          else
+          } else {
             tp->if_port = 1;
-
+          }
           select_media(dev, 0);
         }
         break;
       }
 
       case DC21142:
-        if (tp->nwayset) 
-        {
+        if (tp->nwayset) {
           kprintf(KERN_WARNING "%s: Transmit timed out, status %8.8x, SIA %8.8x %8.8x %8.8x %8.8x, restarting NWay .\n",
               dev->name, (int)readl(ioaddr + CSR5),
               readl(ioaddr + CSR12), readl(ioaddr + CSR13),
@@ -2296,15 +2076,12 @@ static void tulip_tx_timeout(struct dev *dev)
                readl(ioaddr + CSR13), readl(ioaddr + CSR14),
                readl(ioaddr + CSR15));
 
-        if (!tp->medialock && tp->mtable) 
-        {
-          do
-          {
+        if (!tp->medialock && tp->mtable) {
+          do {
             --tp->cur_index;
           } while (tp->cur_index >= 0 && (media_cap[tp->mtable->mleaf[tp->cur_index].media] & MediaIsFD));
 
-          if (tp->cur_index < 0) 
-          {
+          if (tp->cur_index < 0) {
             // We start again, but should instead look for default
             tp->cur_index = tp->mtable->leafcount - 1;
           }
@@ -2340,8 +2117,7 @@ static void tulip_tx_timeout(struct dev *dev)
 
 // Initialize the Rx and Tx rings, along with various 'dev' bits
 
-static void tulip_init_ring(struct dev *dev)
-{
+static void tulip_init_ring(struct dev *dev) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   int i;
 
@@ -2349,8 +2125,7 @@ static void tulip_init_ring(struct dev *dev)
   tp->cur_rx = tp->cur_tx = 0;
   tp->dirty_rx = tp->dirty_tx = 0;
 
-  for (i = 0; i < RX_RING_SIZE; i++) 
-  {
+  for (i = 0; i < RX_RING_SIZE; i++) {
     tp->rx_ring[i].status = 0x00000000;
     tp->rx_ring[i].length = PKT_BUF_SZ;
     tp->rx_ring[i].buffer2 = virt2phys(&tp->rx_ring[i + 1]);
@@ -2361,8 +2136,7 @@ static void tulip_init_ring(struct dev *dev)
   tp->rx_ring[i - 1].length = PKT_BUF_SZ | DESC_RING_WRAP;
   tp->rx_ring[i - 1].buffer2 = virt2phys(&tp->rx_ring[0]);
 
-  for (i = 0; i < RX_RING_SIZE; i++) 
-  {
+  for (i = 0; i < RX_RING_SIZE; i++) {
     // Note the receive buffer must be longword aligned.
     // alloc_pbuf() provides the alignment.
     struct pbuf *pbuf = pbuf_alloc(PBUF_RAW, PKT_BUF_SZ, PBUF_RW);
@@ -2377,8 +2151,7 @@ static void tulip_init_ring(struct dev *dev)
   // The Tx buffer descriptor is filled in as needed, but we
   // do need to clear the ownership bit
 
-  for (i = 0; i < TX_RING_SIZE; i++) 
-  {
+  for (i = 0; i < TX_RING_SIZE; i++) {
     tp->tx_pbuf[i] = 0;
     tp->tx_ring[i].status = 0x00000000;
     tp->tx_ring[i].buffer2 = virt2phys(&tp->tx_ring[i + 1]);
@@ -2386,15 +2159,13 @@ static void tulip_init_ring(struct dev *dev)
   tp->tx_ring[i - 1].buffer2 = virt2phys(&tp->tx_ring[0]);
 }
 
-static int tulip_transmit(struct dev *dev, struct pbuf *p)
-{
+static int tulip_transmit(struct dev *dev, struct pbuf *p) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   int entry, q_used_cnt;
   unsigned long flag;
 
   // Wait for free entry in transmit ring
-  if (wait_for_object(&tp->tx_sem, TX_TIMEOUT) < 0)
-  {
+  if (wait_for_object(&tp->tx_sem, TX_TIMEOUT) < 0) {
     kprintf(KERN_WARNING "%s: transmit timeout, drop packet\n", dev->name);
     tp->stats.tx_dropped++;
     return -ETIMEOUT;
@@ -2414,21 +2185,14 @@ static int tulip_transmit(struct dev *dev, struct pbuf *p)
   tp->tx_pbuf[entry] = p;
   tp->tx_ring[entry].buffer1 = virt2phys(p->payload);
 
-  if (q_used_cnt < TX_QUEUE_LEN / 2) 
-  {
+  if (q_used_cnt < TX_QUEUE_LEN / 2) {
     // Typical path
     flag = 0x60000000; // No interrupt
-  } 
-  else if (q_used_cnt == TX_QUEUE_LEN / 2) 
-  {
+  } else if (q_used_cnt == TX_QUEUE_LEN / 2) {
     flag = 0xe0000000; // Tx-done intr
-  } 
-  else if (q_used_cnt < TX_QUEUE_LEN) 
-  {
+  } else if (q_used_cnt < TX_QUEUE_LEN) {
     flag = 0x60000000; // No Tx-done intr
-  } 
-  else 
-  {
+  } else {
     // Leave room for set_rx_mode() to fill entries
     tp->tx_full = 1;
     flag = 0xe0000000; // Tx-done intr
@@ -2440,19 +2204,6 @@ static int tulip_transmit(struct dev *dev, struct pbuf *p)
   tp->tx_ring[entry].status = DescOwned;
   tp->cur_tx++;
   
-  //if (!tp->tx_full)
-  //  netif_unpause_tx_queue(dev);
-  //else 
-  //{
-  //  netif_stop_tx_queue(dev);
-  //  
-  //  // Check for a just-cleared queue race.
-  //  // Note that this code path differs from other drivers because we
-  //  // set the tx_full flag early.
-  //
-  //  if (!tp->tx_full) netif_resume_tx_queue(dev);
-  //}
-
   tp->trans_start = get_ticks();
 
   // Trigger an immediate transmit demand
@@ -2461,8 +2212,7 @@ static int tulip_transmit(struct dev *dev, struct pbuf *p)
   return 0;
 }
 
-static int tulip_rx(struct dev *dev)
-{
+static int tulip_rx(struct dev *dev) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   int entry = tp->cur_rx % RX_RING_SIZE;
   int rx_work_limit = tp->dirty_rx + RX_RING_SIZE - tp->cur_rx;
@@ -2471,27 +2221,21 @@ static int tulip_rx(struct dev *dev)
   //kprintf(KERN_DEBUG " In tulip_rx(), entry %d %8.8x.\n", entry, tp->rx_ring[entry].status);
 
   // If we own the next entry, it is a new packet. Send it up
-  while (!(tp->rx_ring[entry].status & DescOwned)) 
-  {
+  while (!(tp->rx_ring[entry].status & DescOwned)) {
     long status = tp->rx_ring[entry].status;
 
     //kprintf(KERN_DEBUG "%s: In tulip_rx(), entry %d %8.8x.\n", dev->name, entry, status);
 
     if (--rx_work_limit < 0) break;
 
-    if ((status & 0x38008300) != 0x0300) 
-    {
-      if ((status & 0x38000300) != 0x0300) 
-      {
+    if ((status & 0x38008300) != 0x0300) {
+      if ((status & 0x38000300) != 0x0300) {
         // Ingore earlier buffers
-        if ((status & 0xffff) != 0x7fff) 
-        {
+        if ((status & 0xffff) != 0x7fff) {
           kprintf(KERN_WARNING "%s: Oversized Ethernet frame spanned multiple buffers, status %8.8x!\n", dev->name, status);
           tp->stats.rx_length_errors++;
         }
-      } 
-      else if (status & RxDescFatalErr) 
-      {
+      } else if (status & RxDescFatalErr) {
         // There was a fatal error
         kprintf(KERN_DEBUG "%s: Receive error, Rx status %8.8x.\n", dev->name, status);
         tp->stats.rx_errors++; /* end of a packet.*/
@@ -2500,22 +2244,17 @@ static int tulip_rx(struct dev *dev)
         if (status & 0x0002) tp->stats.rx_crc_errors++;
         if (status & 0x0001) tp->stats.rx_fifo_errors++;
       }
-    } 
-    else 
-    {
+    } else {
       // Omit the four octet CRC from the length
       int pkt_len = ((status >> 16) & 0x7ff) - 4;
       struct pbuf *p;
 
       // Check if the packet is long enough to accept without copying
       // to a minimally-sized packet buffer
-      if (pkt_len < rx_copybreak && (p = pbuf_alloc(PBUF_RAW, pkt_len, PBUF_RW)) != NULL) 
-      {
+      if (pkt_len < rx_copybreak && (p = pbuf_alloc(PBUF_RAW, pkt_len, PBUF_RW)) != NULL) {
         memcpy(p->payload, tp->rx_pbuf[entry]->payload, pkt_len);
         work_done++;
-      }
-      else 
-      {  
+      } else {  
         // Pass up the packet buffer already on the Rx ring
         p = tp->rx_pbuf[entry];
         tp->rx_pbuf[entry] = NULL;
@@ -2537,15 +2276,12 @@ static int tulip_rx(struct dev *dev)
   }
 
   // Refill the Rx ring buffers
-  for (; tp->cur_rx - tp->dirty_rx > 0; tp->dirty_rx++) 
-  {
+  for (; tp->cur_rx - tp->dirty_rx > 0; tp->dirty_rx++) {
     entry = tp->dirty_rx % RX_RING_SIZE;
-    if (tp->rx_pbuf[entry] == NULL) 
-    {
+    if (tp->rx_pbuf[entry] == NULL) {
       struct pbuf *p;
       p = tp->rx_pbuf[entry] = pbuf_alloc(PBUF_RAW, PKT_BUF_SZ, PBUF_RW);
-      if (p == NULL) 
-      {
+      if (p == NULL) {
         if (tp->cur_rx - tp->dirty_rx == RX_RING_SIZE) kprintf(KERN_ERR "%s: No kernel memory to allocate receive buffers.\n", dev->name);
         break;
       }
@@ -2558,14 +2294,12 @@ static int tulip_rx(struct dev *dev)
   return work_done;
 }
 
-static void empty_rings(struct dev *dev)
-{
+static void empty_rings(struct dev *dev) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   int i;
 
   // Free all the buffers in the Rx queue
-  for (i = 0; i < RX_RING_SIZE; i++) 
-  {
+  for (i = 0; i < RX_RING_SIZE; i++) {
     struct pbuf *p = tp->rx_pbuf[i];
     tp->rx_pbuf[i] = 0;
     tp->rx_ring[i].status = 0;    // Not owned by Tulip chip
@@ -2574,15 +2308,13 @@ static void empty_rings(struct dev *dev)
     if (p) pbuf_free(p);
   }
 
-  for (i = 0; i < TX_RING_SIZE; i++) 
-  {
+  for (i = 0; i < TX_RING_SIZE; i++) {
     if (tp->tx_pbuf[i]) pbuf_free(tp->tx_pbuf[i]);
     tp->tx_pbuf[i] = 0;
   }
 }
 
-static int tulip_close(struct dev *dev)
-{
+static int tulip_close(struct dev *dev) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
 
@@ -2613,8 +2345,7 @@ static int tulip_close(struct dev *dev)
   return 0;
 }
 
-static struct stats_nic *tulip_get_stats(struct dev *dev)
-{
+static struct stats_nic *tulip_get_stats(struct dev *dev) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
   int csr8 = readl(ioaddr + CSR8);
@@ -2636,101 +2367,79 @@ static struct stats_nic *tulip_get_stats(struct dev *dev)
 
 static unsigned const ethernet_polynomial_le = 0xedb88320U;
 
-static unsigned long ether_crc_le(int length, unsigned char *data)
-{
+static unsigned long ether_crc_le(int length, unsigned char *data) {
   unsigned long crc = 0xffffffff;
-  while(--length >= 0) 
-  {
+  while(--length >= 0) {
     unsigned char current_octet = *data++;
     int bit;
-    for (bit = 8; --bit >= 0; current_octet >>= 1) 
-    {
-      if ((crc ^ current_octet) & 1) 
-      {
+    for (bit = 8; --bit >= 0; current_octet >>= 1) {
+      if ((crc ^ current_octet) & 1) {
         crc >>= 1;
         crc ^= ethernet_polynomial_le;
-      } 
-      else
+      } else {
         crc >>= 1;
+      }
     }
   }
 
   return crc;
 }
 
-static int tulip_set_rx_mode(struct dev *dev)
-{
+static int tulip_set_rx_mode(struct dev *dev) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
   int csr6 = readl(ioaddr + CSR6) & ~0x00D5;
 
   tp->csr6 &= ~0x00D5;
-  if (!dev->netif)
-  {
+  if (!dev->netif) {
     // Network interface not attached yet -- accept all multicasts
     tp->csr6 |= AcceptAllMulticast;
     csr6 |= AcceptAllMulticast;
-  }
-  else if (dev->netif->flags & NETIF_PROMISC) 
-  {     
+  } else if (dev->netif->flags & NETIF_PROMISC) {     
     // Set promiscuous
     tp->csr6 |= AcceptAllMulticast | AcceptAllPhys;
     csr6 |= AcceptAllMulticast | AcceptAllPhys;
     // Unconditionally log net taps
     kprintf(KERN_INFO "%s: Promiscuous mode enabled.\n", dev->name);
-  } 
-  else if (dev->netif->mccount > 1000 || (dev->netif->flags & NETIF_ALLMULTI)) 
-  {
+  } else if (dev->netif->mccount > 1000 || (dev->netif->flags & NETIF_ALLMULTI)) {
     // Too many to filter well -- accept all multicasts
     tp->csr6 |= AcceptAllMulticast;
     csr6 |= AcceptAllMulticast;
-  } 
-  else  if (tp->flags & MC_HASH_ONLY) 
-  {
+  } else  if (tp->flags & MC_HASH_ONLY) {
     // Some work-alikes have only a 64-entry hash filter table
     struct mclist *mclist;
     int i;
-    if (dev->netif->mccount > multicast_filter_limit) 
-    {
+    if (dev->netif->mccount > multicast_filter_limit) {
       tp->csr6 |= AcceptAllMulticast;
       csr6 |= AcceptAllMulticast;
-    } 
-    else 
-    {
+    } else {
       unsigned long mc_filter[2] = {0, 0};     // Multicast hash filter
       int filterbit;
-      for (i = 0, mclist = dev->netif->mclist; mclist && i < dev->netif->mccount; i++, mclist = mclist->next) 
-      {
-        if (tp->flags & COMET_MAC_ADDR)
+      for (i = 0, mclist = dev->netif->mclist; mclist && i < dev->netif->mccount; i++, mclist = mclist->next) {
+        if (tp->flags & COMET_MAC_ADDR) {
           filterbit = ether_crc_le(ETHER_ADDR_LEN, mclist->hwaddr.addr);
-        else
+        } else {
           filterbit = ether_crc(ETHER_ADDR_LEN, mclist->hwaddr.addr) >> 26;
+        }
         filterbit &= 0x3f;
         set_bit(mc_filter, filterbit);
       }
 
-      if (mc_filter[0] == tp->mc_filter[0] && mc_filter[1] == tp->mc_filter[1])
-      {
+      if (mc_filter[0] == tp->mc_filter[0] && mc_filter[1] == tp->mc_filter[1]) {
         // No change
-      }
-      else if (tp->flags & IS_ASIX) 
-      {
+      } else if (tp->flags & IS_ASIX) {
         writel(2, ioaddr + CSR13);
         writel(mc_filter[0], ioaddr + CSR14);
         writel(3, ioaddr + CSR13);
         writel(mc_filter[1], ioaddr + CSR14);
-      } 
-      else if (tp->flags & COMET_MAC_ADDR) 
-      {
+      } else if (tp->flags & COMET_MAC_ADDR) {
         writel(mc_filter[0], ioaddr + 0xAC);
         writel(mc_filter[1], ioaddr + 0xB0);
       }
       tp->mc_filter[0] = mc_filter[0];
       tp->mc_filter[1] = mc_filter[1];
     }
-  } 
-  else 
-  {
+  } else {
     unsigned short *eaddrs, *setup_frm = tp->setup_frame;
     struct mclist *mclist;
     unsigned long tx_flags = 0x08000000 | 192;
@@ -2738,34 +2447,28 @@ static int tulip_set_rx_mode(struct dev *dev)
 
     // Note that only the low-address shortword of setup_frame is valid!
     // The values are doubled for big-endian architectures
-    if (dev->netif->mccount > 14) 
-    { 
+    if (dev->netif->mccount > 14) {
       // Must use a multicast hash table
       unsigned short hash_table[32];
       tx_flags = 0x08400000 | 192;    // Use hash filter
       memset(hash_table, 0, sizeof(hash_table));
       set_bit(hash_table, 255);      // Broadcast entry
 
-      for (i = 0, mclist = dev->netif->mclist; mclist && i < dev->netif->mccount; i++, mclist = mclist->next)
-      {
+      for (i = 0, mclist = dev->netif->mclist; mclist && i < dev->netif->mccount; i++, mclist = mclist->next) {
         set_bit(hash_table, ether_crc_le(ETHER_ADDR_LEN, mclist->hwaddr.addr) & 0x1ff);
       }
 
-      for (i = 0; i < 32; i++) 
-      {
+      for (i = 0; i < 32; i++) {
         *setup_frm++ = hash_table[i];
         *setup_frm++ = hash_table[i];
       }
 
       setup_frm = &tp->setup_frame[13 * 6];
-    } 
-    else 
-    {
+    } else {
       // We have <= 14 addresses so we can use the wonderful
       // 16 address perfect filtering of the Tulip
 
-      for (i = 0, mclist = dev->netif->mclist; i < dev->netif->mccount; i++, mclist = mclist->next) 
-      {
+      for (i = 0, mclist = dev->netif->mclist; i < dev->netif->mccount; i++, mclist = mclist->next) {
         eaddrs = (unsigned short *) mclist->hwaddr.addr;
         *setup_frm++ = *eaddrs; *setup_frm++ = *eaddrs++;
         *setup_frm++ = *eaddrs; *setup_frm++ = *eaddrs++;
@@ -2784,20 +2487,14 @@ static int tulip_set_rx_mode(struct dev *dev)
     *setup_frm++ = eaddrs[2]; *setup_frm++ = eaddrs[2];
     
     // Now add this frame to the Tx list
-    if (tp->cur_tx - tp->dirty_tx > TX_RING_SIZE - 2) 
-    {
+    if (tp->cur_tx - tp->dirty_tx > TX_RING_SIZE - 2) {
       // Same setup recently queued, we need not add it
-    } 
-    else 
-    {
-      //unsigned long flags;
+    } else {
       unsigned int entry;
 
-      //spin_lock_irqsave(&tp->mii_lock, flags);
       entry = tp->cur_tx++ % TX_RING_SIZE;
 
-      if (entry != 0) 
-      {
+      if (entry != 0) {
         // Avoid a chip errata by prefixing a dummy entry
         tp->tx_pbuf[entry] = 0;
         tp->tx_ring[entry].length = (entry == TX_RING_SIZE-1) ? DESC_RING_WRAP : 0;
@@ -2813,12 +2510,7 @@ static int tulip_set_rx_mode(struct dev *dev)
       tp->tx_ring[entry].length = tx_flags;
       tp->tx_ring[entry].buffer1 = virt2phys(tp->setup_frame);
       tp->tx_ring[entry].status = DescOwned;
-      if (tp->cur_tx - tp->dirty_tx >= TX_RING_SIZE - 2) 
-      {
-        //netif_stop_tx_queue(dev);
-        tp->tx_full = 1;
-      }
-      //spin_unlock_irqrestore(&tp->mii_lock, flags);
+      if (tp->cur_tx - tp->dirty_tx >= TX_RING_SIZE - 2)  tp->tx_full = 1;
       
       // Trigger an immediate transmit demand
       writel(0, ioaddr + CSR1);
@@ -2832,15 +2524,13 @@ static int tulip_set_rx_mode(struct dev *dev)
 // The interrupt handler does all of the Rx thread work and cleans up
 // after the Tx thread
 
-static void tulip_dpc(void *arg)
-{
+static void tulip_dpc(void *arg) {
   struct dev *dev = (struct dev *) arg;
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
   int csr5, work_budget = max_interrupt_work;
 
-  while (1)
-  {
+  while (1) {
     csr5 = readl(ioaddr + CSR5);
     if ((csr5 & (NormalIntr | AbnormalIntr)) == 0) break;
 
@@ -2851,12 +2541,10 @@ static void tulip_dpc(void *arg)
 
     if (csr5 & (RxIntr | RxNoBuf)) work_budget -= tulip_rx(dev);
 
-    if (csr5 & (TxNoBuf | TxDied | TxIntr)) 
-    {
+    if (csr5 & (TxNoBuf | TxDied | TxIntr)) {
       unsigned int dirty_tx;
 
-      for (dirty_tx = tp->dirty_tx; tp->cur_tx - dirty_tx > 0; dirty_tx++) 
-      {
+      for (dirty_tx = tp->dirty_tx; tp->cur_tx - dirty_tx > 0; dirty_tx++) {
         int entry = dirty_tx % TX_RING_SIZE;
         int status = tp->tx_ring[entry].status;
 
@@ -2865,8 +2553,7 @@ static void tulip_dpc(void *arg)
         // Check for Rx filter setup frames
         if (tp->tx_pbuf[entry] == NULL) continue;
 
-        if (status & 0x8000) 
-        {
+        if (status & 0x8000) {
           // There was an major error, log it
           kprintf(KERN_DEBUG "%s: Transmit error, Tx status %8.8x.\n", dev->name, status);
           tp->stats.tx_errors++;
@@ -2876,9 +2563,7 @@ static void tulip_dpc(void *arg)
           if (status & 0x0002) tp->stats.tx_fifo_errors++;
           if ((status & 0x0080) && tp->full_duplex == 0) tp->stats.tx_heartbeat_errors++;
           if (status & 0x0100) tp->stats.collisions++;
-        } 
-        else 
-        {
+        } else {
           //kprintf(KERN_DEBUG "%s: Transmit complete, status %8.8x.\n", dev->name, status);
           //if (status & 0x0001) tp->stats.tx_deferred++;
           tp->stats.tx_bytes += tp->tx_pbuf[entry]->len;
@@ -2893,21 +2578,17 @@ static void tulip_dpc(void *arg)
         release_sem(&tp->tx_sem, 1);
       }
 
-      if (tp->tx_full && tp->cur_tx - dirty_tx  < TX_QUEUE_LEN - 4) 
-      {
+      if (tp->tx_full && tp->cur_tx - dirty_tx  < TX_QUEUE_LEN - 4) {
         // The ring is no longer full, clear tbusy
         tp->tx_full = 0;
-        //netif_resume_tx_queue(dev);
       }
 
       tp->dirty_tx = dirty_tx;
     }
 
-    if (tp->rx_dead) 
-    {
+    if (tp->rx_dead) {
       tulip_rx(dev);
-      if (tp->cur_rx - tp->dirty_rx < RX_RING_SIZE - 3) 
-      {
+      if (tp->cur_rx - tp->dirty_rx < RX_RING_SIZE - 3) {
         kprintf(KERN_ERR "%s: Restarted Rx at %d / %d.\n", dev->name, tp->cur_rx, tp->dirty_rx);
         writel(0, ioaddr + CSR2);   // Rx poll demand
         tp->rx_dead = 0;
@@ -2915,42 +2596,36 @@ static void tulip_dpc(void *arg)
     }
 
     // Log errors
-    if (csr5 & AbnormalIntr) 
-    {  
+    if (csr5 & AbnormalIntr) {  
       // Abnormal error summary bit
       if (csr5 == 0xffffffff) break;
       if (csr5 & TxJabber) tp->stats.tx_errors++;
       if (csr5 & PCIBusError) kprintf(KERN_ERR "%s: PCI Fatal Bus Error, %8.8x.\n", dev->name, csr5);
-      if (csr5 & TxFIFOUnderflow) 
-      {
-        if ((tp->csr6 & 0xC000) != 0xC000)
+      if (csr5 & TxFIFOUnderflow) {
+        if ((tp->csr6 & 0xC000) != 0xC000) {
           tp->csr6 += 0x4000; // Bump up the Tx threshold
-        else
+        } else {
           tp->csr6 |= 0x00200000;  // Store-n-forward
-
+        }
         kprintf(KERN_WARNING "%s: Tx threshold increased, new CSR6 %x.\n", dev->name, tp->csr6);
       }
 
-      if (csr5 & TxDied) 
-      {
+      if (csr5 & TxDied) {
         // This is normal when changing Tx modes
         kprintf(KERN_WARNING "%s: The transmitter stopped. CSR5 is %x, CSR6 %x, new CSR6 %x.\n",
                dev->name, csr5, readl(ioaddr + CSR6), tp->csr6);
       }
 
-      if (csr5 & (TxDied | TxFIFOUnderflow | PCIBusError)) 
-      {
+      if (csr5 & (TxDied | TxFIFOUnderflow | PCIBusError)) {
         // Restart the transmit process
         writel(tp->csr6 | RxOn, ioaddr + CSR6);
         writel(tp->csr6 | RxOn | TxOn, ioaddr + CSR6);
       }
 
-      if (csr5 & (RxStopped | RxNoBuf)) 
-      {
+      if (csr5 & (RxStopped | RxNoBuf)) {
         // Missed a Rx frame or mode change
         tp->stats.rx_missed_errors += readl(ioaddr + CSR8) & 0xffff;
-        if (tp->flags & COMET_MAC_ADDR) 
-        {
+        if (tp->flags & COMET_MAC_ADDR) {
           writel(tp->mc_filter[0], ioaddr + 0xAC);
           writel(tp->mc_filter[1], ioaddr + 0xB0);
         }
@@ -2959,14 +2634,12 @@ static void tulip_dpc(void *arg)
         writel(tp->csr6 | RxOn | TxOn, ioaddr + CSR6);
       }
 
-      if (csr5 & TimerInt) 
-      {
+      if (csr5 & TimerInt) {
         kprintf(KERN_ERR "%s: Re-enabling interrupts, %8.8x.\n", dev->name, csr5);
         writel(tulip_tbl[tp->chip_id].valid_intrs, ioaddr + CSR7);
       }
 
-      if (csr5 & (TPLnkPass | TPLnkFail | 0x08000000)) 
-      {
+      if (csr5 & (TPLnkPass | TPLnkFail | 0x08000000)) {
         if (tp->link_change) (tp->link_change)(dev, csr5);
       }
 
@@ -2974,20 +2647,16 @@ static void tulip_dpc(void *arg)
       writel(0x0800f7ba, ioaddr + CSR5);
     }
 
-    if (--work_budget < 0) 
-    {
+    if (--work_budget < 0) {
       kprintf(KERN_WARNING "%s: Too much work during an interrupt, csr5=0x%8.8x.\n", dev->name, csr5);
       
       // Acknowledge all interrupt sources
       writel(0x8001ffff, ioaddr + CSR5);
-      if (tp->flags & HAS_INTR_MITIGATION) 
-      {
+      if (tp->flags & HAS_INTR_MITIGATION) {
         // Josip Loncaric at ICASE did extensive experimentation
         // to develop a good interrupt mitigation setting
         writel(0x8b240000, ioaddr + CSR11);
-      } 
-      else 
-      {
+      } else {
         // Mask all interrupting sources, set timer to re-enable
         writel(((~csr5) & 0x0001ebef) | AbnormalIntr | TimerInt, ioaddr + CSR7);
         writel(0x0012, ioaddr + CSR11);
@@ -3000,8 +2669,7 @@ static void tulip_dpc(void *arg)
   eoi(tp->irq);
 }
 
-static int tulip_handler(struct context *ctxt, void *arg)
-{
+static int tulip_handler(struct context *ctxt, void *arg) {
   struct dev *dev = (struct dev *) arg;
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
 
@@ -3012,26 +2680,22 @@ static int tulip_handler(struct context *ctxt, void *arg)
   return 0;
 }
 
-static int tulip_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
+static int tulip_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
   return -ENOSYS;
 }
 
-static int tulip_attach(struct dev *dev, struct eth_addr *hwaddr)
-{
+static int tulip_attach(struct dev *dev, struct eth_addr *hwaddr) {
   struct tulip_private *tp = dev->privdata;
   *hwaddr = tp->hwaddr;
 
   return 0;
 }
 
-static int tulip_detach(struct dev *dev)
-{
+static int tulip_detach(struct dev *dev) {
   return 0;
 }
 
-struct driver tulip_driver =
-{
+struct driver tulip_driver = {
   "tulip",
   DEV_TYPE_PACKET,
   tulip_ioctl,
@@ -3043,8 +2707,7 @@ struct driver tulip_driver =
   tulip_set_rx_mode
 };
 
-static struct dev *tulip_probe(struct unit *pdev, struct board *board, int ioaddr, char *opts)
-{
+static struct dev *tulip_probe(struct unit *pdev, struct board *board, int ioaddr, char *opts) {
   struct dev *dev;
   struct tulip_private *tp;
 
@@ -3063,8 +2726,7 @@ static struct dev *tulip_probe(struct unit *pdev, struct board *board, int ioadd
   // Bring the 21041/21143 out of sleep mode. Caution: Snooze mode does not work with some boards!
   if (tulip_tbl[chip_idx].flags & HAS_PWRDWN) pci_write_config_dword(pdev, 0x40, 0x00000000);
 
-  if (readl(ioaddr + CSR5) == 0xffffffff) 
-  {
+  if (readl(ioaddr + CSR5) == 0xffffffff) {
     kprintf(KERN_ERR "The Tulip chip at %#lx is not functioning.\n", ioaddr);
     return 0;
   }
@@ -3075,7 +2737,6 @@ static struct dev *tulip_probe(struct unit *pdev, struct board *board, int ioadd
   // Check for the very unlikely case of no memory
   if (tp == NULL) return NULL;
   memset(tp, 0, sizeof(*tp));
-  //tp->mii_lock = (spinlock_t) SPIN_LOCK_UNLOCKED;
 
   // Create new device
   tp->devno = dev_make("eth#", &tulip_driver, pdev, tp);
@@ -3095,88 +2756,73 @@ static struct dev *tulip_probe(struct unit *pdev, struct board *board, int ioadd
   // Clear the missed-packet counter
   readl(ioaddr + CSR8);
 
-  if (chip_idx == DC21041 && readl(ioaddr + CSR9) & 0x8000) 
-  {
+  if (chip_idx == DC21041 && readl(ioaddr + CSR9) & 0x8000) {
     kprintf(" 21040 compatible mode,");
     chip_idx = DC21040;
   }
 
   // The SROM/EEPROM interface varies dramatically
   sum = 0;
-  if (chip_idx == DC21040) 
-  {
+  if (chip_idx == DC21040) {
     writel(0, ioaddr + CSR9);   // Reset the pointer with a dummy write
-    for (i = 0; i < 6; i++) 
-    {
+    for (i = 0; i < 6; i++) {
       int value, boguscnt = 100000;
-      do
+      do {
         value = readl(ioaddr + CSR9);
-      while (value < 0  && --boguscnt > 0);
+      } while (value < 0  && --boguscnt > 0);
       tp->hwaddr.addr[i] = value;
       sum += value & 0xff;
     }
-  } 
-  else if (chip_idx == LC82C168) 
-  {
-    for (i = 0; i < 3; i++) 
-    {
+  } else if (chip_idx == LC82C168) {
+    for (i = 0; i < 3; i++) {
       int value, boguscnt = 100000;
       writel(0x600 | i, ioaddr + 0x98);
-      do
+      do {
         value = readl(ioaddr + CSR9);
-      while (value < 0  && --boguscnt > 0);
+      } while (value < 0  && --boguscnt > 0);
 
       ((unsigned short *) tp->hwaddr.addr)[i] = value;
       sum += value & 0xffff;
     }
-  } 
-  else if (chip_idx == COMET) 
-  {
+  } else if (chip_idx == COMET) {
     // No need to read the EEPROM
     *(unsigned long *) (tp->hwaddr.addr) = readl(ioaddr + 0xA4);
     *(unsigned short *) (tp->hwaddr.addr + 4) = readl(ioaddr + 0xA8);
     for (i = 0; i < 6; i++) sum += tp->hwaddr.addr[i];
-  } 
-  else 
-  {
+  } else {
     // A serial EEPROM interface, we read now and sort it out later
     int sa_offset = 0;
     int ee_addr_size = read_eeprom(ioaddr, 0xff, 8) & 0x40000 ? 8 : 6;
     int eeprom_word_cnt = 1 << ee_addr_size;
 
-    for (i = 0; i < eeprom_word_cnt; i++)
+    for (i = 0; i < eeprom_word_cnt; i++) {
       ((unsigned short *) ee_data)[i] = read_eeprom(ioaddr, i, ee_addr_size);
+    }
 
     // DEC now has a specification (see Notes) but early board makers
     // just put the address in the first EEPROM locations
     // This does  memcmp(eedata, eedata + 16, 8)
-    for (i = 0; i < 8; i ++)
-      if (ee_data[i] != ee_data[16 + i])
-        sa_offset = 20;
+    for (i = 0; i < 8; i ++) {
+      if (ee_data[i] != ee_data[16 + i]) sa_offset = 20;
+    }
 
-    if (chip_idx == CONEXANT) 
-    {
+    if (chip_idx == CONEXANT) {
       // Check that the tuple type and length is correct
       if (ee_data[0x198] == 0x04 && ee_data[0x199] == 6) sa_offset = 0x19A;
-    } 
-    else if (ee_data[0] == 0xff && ee_data[1] == 0xff && ee_data[2] == 0) 
-    {
+    } else if (ee_data[0] == 0xff && ee_data[1] == 0xff && ee_data[2] == 0) {
       sa_offset = 2;    // Grrr, damn Matrox boards
       multiport_cnt = 4;
     }
 
-    for (i = 0; i < 6; i ++) 
-    {
+    for (i = 0; i < 6; i ++) {
       tp->hwaddr.addr[i] = ee_data[i + sa_offset];
       sum += ee_data[i + sa_offset];
     }
   }
 
   // Lite-On boards have the address byte-swapped
-  if ((tp->hwaddr.addr[0] == 0xA0 || tp->hwaddr.addr[0] == 0xC0) &&  tp->hwaddr.addr[1] == 0x00)
-  {
-    for (i = 0; i < 6; i += 2) 
-    {
+  if ((tp->hwaddr.addr[0] == 0xA0 || tp->hwaddr.addr[0] == 0xC0) &&  tp->hwaddr.addr[1] == 0x00) {
+    for (i = 0; i < 6; i += 2) {
       unsigned char tmp = tp->hwaddr.addr[i];
       tp->hwaddr.addr[i] = tp->hwaddr.addr[i + 1];
       tp->hwaddr.addr[i + 1] = tmp;
@@ -3189,8 +2835,7 @@ static struct dev *tulip_probe(struct unit *pdev, struct board *board, int ioadd
   // Many PCI BIOSes also incorrectly report the IRQ line, so we correct
   // that here as well
 
-  if (sum == 0 || sum == 6 * 0xff)
-  {
+  if (sum == 0 || sum == 6 * 0xff) {
     kprintf(" EEPROM not present,");
     for (i = 0; i < 5; i++) tp->hwaddr.addr[i] = last_phys_addr[i];
     tp->hwaddr.addr[i] = last_phys_addr[i] + 1;
@@ -3216,10 +2861,11 @@ static struct dev *tulip_probe(struct unit *pdev, struct board *board, int ioadd
 
   // BugFixes: The 21143-TD hangs with PCI Write-and-Invalidate cycles.
   // And the ASIX must have a burst limit or horrible things happen
-  if (chip_idx == DC21143 && chip_rev == 65)
+  if (chip_idx == DC21143 && chip_rev == 65) {
     tp->csr0 &= ~0x01000000;
-  else if (tp->flags & IS_ASIX)
+  } else if (tp->flags & IS_ASIX) {
     tp->csr0 |= 0x2000;
+  }
 
   // We support a zillion ways to set the media type
 #ifdef TULIP_FULL_DUPLEX
@@ -3234,8 +2880,7 @@ static struct dev *tulip_probe(struct unit *pdev, struct board *board, int ioadd
 #endif
 
   // Set options
-  if (opts)
-  {
+  if (opts) {
     tp->default_port = get_num_option(opts, "defaultport", tp->default_port);
     tp->full_duplex = get_num_option(opts, "fullduplex", tp->full_duplex);
     //tp->mtu = get_num_option(opts, "mtu", tp->mtu);
@@ -3244,8 +2889,7 @@ static struct dev *tulip_probe(struct unit *pdev, struct board *board, int ioadd
   // ???
   //if (dev->mem_start) tp->default_port = dev->mem_start & 0x1f;
 
-  if (tp->default_port) 
-  {
+  if (tp->default_port) {
     kprintf(KERN_INFO "%s: Transceiver selection forced to %s.\n", dev->name, medianame[tp->default_port & MEDIA_MASK]);
     tp->medialock = 1;
     if (media_cap[tp->default_port] & MediaAlwaysFD) tp->full_duplex = 1;
@@ -3253,28 +2897,25 @@ static struct dev *tulip_probe(struct unit *pdev, struct board *board, int ioadd
 
   if (tp->full_duplex) tp->full_duplex_lock = 1;
 
-  if (media_cap[tp->default_port] & MediaIsMII) 
-  {
+  if (media_cap[tp->default_port] & MediaIsMII) {
     unsigned short media2advert[] = {0x20, 0x40, 0x03e0, 0x60, 0x80, 0x100, 0x200};
     tp->mii_advertise = media2advert[tp->default_port - 9];
     tp->mii_advertise |= (tp->flags & HAS_8023X); // Matching bits!
   }
 
-  if (tp->flags & HAS_MEDIA_TABLE) 
-  {
+  if (tp->flags & HAS_MEDIA_TABLE) {
     memcpy(tp->eeprom, ee_data, sizeof(tp->eeprom));
     parse_eeprom(dev);
   }
 
-  if (tp->flags & HAS_NWAY)
+  if (tp->flags & HAS_NWAY) {
     tp->link_change = nway_lnk_change;
-  else if (tp->flags & HAS_PNICNWAY)
+  } else if (tp->flags & HAS_PNICNWAY) {
     tp->link_change = pnic_lnk_change;
-  
+  }
   start_link(dev);
 
-  if (chip_idx == COMET) 
-  {
+  if (chip_idx == COMET) {
     // Set the Comet LED configuration
     writel(0xf0000000, ioaddr + CSR9);
   }
@@ -3282,8 +2923,7 @@ static struct dev *tulip_probe(struct unit *pdev, struct board *board, int ioadd
   return dev;
 }
 
-static int tulip_open(struct dev *dev)
-{
+static int tulip_open(struct dev *dev) {
   struct tulip_private *tp = (struct tulip_private *) dev->privdata;
   long ioaddr = tp->iobase;
   int next_tick = 3*HZ;
@@ -3313,8 +2953,7 @@ static int tulip_open(struct dev *dev)
   tulip_init_ring(dev);
   init_sem(&tp->tx_sem, TX_RING_SIZE);
 
-  if (tp->chip_id == PNIC2) 
-  {
+  if (tp->chip_id == PNIC2) {
     unsigned long addr_high = (tp->hwaddr.addr[1] << 8) + (tp->hwaddr.addr[0] << 0);
     
     // This address setting does not appear to impact chip operation??
@@ -3324,20 +2963,16 @@ static int tulip_open(struct dev *dev)
     writel(addr_high + (addr_high << 16), ioaddr + 0xB8);
   }
 
-  if (tp->flags & MC_HASH_ONLY) 
-  {
+  if (tp->flags & MC_HASH_ONLY) {
     unsigned long addr_low = *(unsigned long *) tp->hwaddr.addr;
     unsigned long addr_high = *(unsigned short *) (tp->hwaddr.addr + 4);
 
-    if (tp->flags & IS_ASIX) 
-    {
+    if (tp->flags & IS_ASIX) {
       writel(0, ioaddr + CSR13);
       writel(addr_low,  ioaddr + CSR14);
       writel(1, ioaddr + CSR13);
       writel(addr_high, ioaddr + CSR14);
-    } 
-    else if (tp->flags & COMET_MAC_ADDR) 
-    {
+    } else if (tp->flags & COMET_MAC_ADDR) {
       writel(addr_low,  ioaddr + 0xA4);
       writel(addr_high, ioaddr + 0xA8);
       writel(0, ioaddr + 0xAC);
@@ -3357,8 +2992,6 @@ static int tulip_open(struct dev *dev)
   writel(tp->csr6, ioaddr + CSR6);
   writel(tp->csr6 | TxOn, ioaddr + CSR6);
 
-  //netif_start_tx_queue(dev);
-
   // Enable interrupts by setting the interrupt mask
   writel(tulip_tbl[tp->chip_id].valid_intrs, ioaddr + CSR5);
   writel(tulip_tbl[tp->chip_id].valid_intrs, ioaddr + CSR7);
@@ -3373,8 +3006,7 @@ static int tulip_open(struct dev *dev)
   return 0;
 }
 
-int __declspec(dllexport) install(struct unit *unit, char *opts)
-{
+int __declspec(dllexport) install(struct unit *unit, char *opts) {
   struct board *board;
   struct dev *dev;
   int ioaddr;
@@ -3413,7 +3045,6 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   return tulip_open(dev);
 }
 
-int __stdcall start(hmodule_t hmod, int reason, void *reserved2)
-{
+int __stdcall start(hmodule_t hmod, int reason, void *reserved2) {
   return 1;
 }

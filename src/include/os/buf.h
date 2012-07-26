@@ -51,20 +51,17 @@
 struct thread;
 struct buf;
 
-struct buflist
-{
+struct buflist {
   struct buf *head;
   struct buf *tail;
 };
 
-struct buflink
-{
+struct buflink {
   struct buf *next;
   struct buf *prev;
 };
 
-struct buf
-{
+struct buf {
   struct buflink bucket;
   struct buflink chain;
   unsigned short state;
@@ -74,8 +71,7 @@ struct buf
   char *data;
 };
 
-struct bufpool
-{
+struct bufpool {
   dev_t devno;
   int poolsize;
   int bufsize;

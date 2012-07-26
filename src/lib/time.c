@@ -54,42 +54,36 @@ long _dstbias = 0;                  // Offset for Daylight Saving Time
 long _timezone = 0;                 // Difference in seconds between GMT and local time
 char *_tzname[2] = {"GMT", "GMT"};  // Standard/daylight savings time zone names
 
-const char *_days[] = 
-{
+const char *_days[] = {
   "Sunday", "Monday", "Tuesday", "Wednesday",
   "Thursday", "Friday", "Saturday"
 };
 
-const char *_days_abbrev[] = 
-{
+const char *_days_abbrev[] = {
   "Sun", "Mon", "Tue", "Wed", 
   "Thu", "Fri", "Sat"
 };
 
-const char *_months[] = 
-{
+const char *_months[] = {
   "January", "February", "March",
   "April", "May", "June",
   "July", "August", "September",
   "October", "November", "December"
 };
 
-const char *_months_abbrev[] = 
-{
+const char *_months_abbrev[] = {
   "Jan", "Feb", "Mar",
   "Apr", "May", "Jun",
   "Jul", "Aug", "Sep",
   "Oct", "Nov", "Dec"
 };
 
-const int _ytab[2][12] = 
-{
+const int _ytab[2][12] = {
   {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
   {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
 };
 
-struct tm *gmtime_r(const time_t *timer, struct tm *tmbuf)
-{
+struct tm *gmtime_r(const time_t *timer, struct tm *tmbuf) {
   time_t time = *timer;
   unsigned long dayclock, dayno;
   int year = EPOCH_YR;
@@ -101,16 +95,14 @@ struct tm *gmtime_r(const time_t *timer, struct tm *tmbuf)
   tmbuf->tm_min = (dayclock % 3600) / 60;
   tmbuf->tm_hour = dayclock / 3600;
   tmbuf->tm_wday = (dayno + 4) % 7; // Day 0 was a thursday
-  while (dayno >= (unsigned long) YEARSIZE(year)) 
-  {
+  while (dayno >= (unsigned long) YEARSIZE(year)) {
     dayno -= YEARSIZE(year);
     year++;
   }
   tmbuf->tm_year = year - YEAR0;
   tmbuf->tm_yday = dayno;
   tmbuf->tm_mon = 0;
-  while (dayno >= (unsigned long) _ytab[LEAPYEAR(year)][tmbuf->tm_mon]) 
-  {
+  while (dayno >= (unsigned long) _ytab[LEAPYEAR(year)][tmbuf->tm_mon]) {
     dayno -= _ytab[LEAPYEAR(year)][tmbuf->tm_mon];
     tmbuf->tm_mon++;
   }
@@ -121,8 +113,7 @@ struct tm *gmtime_r(const time_t *timer, struct tm *tmbuf)
   return tmbuf;
 }
 
-struct tm *localtime_r(const time_t *timer, struct tm *tmbuf)
-{
+struct tm *localtime_r(const time_t *timer, struct tm *tmbuf) {
   time_t t;
 
   t = *timer - _timezone;
@@ -130,19 +121,16 @@ struct tm *localtime_r(const time_t *timer, struct tm *tmbuf)
 }
 
 #ifndef KERNEL
-struct tm *gmtime(const time_t *timer)
-{
+struct tm *gmtime(const time_t *timer) {
   return gmtime_r(timer, &gettib()->tmbuf);
 }
 
-struct tm *localtime(const time_t *timer)
-{
+struct tm *localtime(const time_t *timer) {
   return localtime_r(timer, &gettib()->tmbuf);
 }
 #endif
 
-time_t mktime(struct tm *tmbuf)
-{
+time_t mktime(struct tm *tmbuf) {
   long day, year;
   int tm_year;
   int yday, month;
@@ -152,47 +140,39 @@ time_t mktime(struct tm *tmbuf)
 
   tmbuf->tm_min += tmbuf->tm_sec / 60;
   tmbuf->tm_sec %= 60;
-  if (tmbuf->tm_sec < 0) 
-  {
+  if (tmbuf->tm_sec < 0) {
     tmbuf->tm_sec += 60;
     tmbuf->tm_min--;
   }
   tmbuf->tm_hour += tmbuf->tm_min / 60;
   tmbuf->tm_min = tmbuf->tm_min % 60;
-  if (tmbuf->tm_min < 0) 
-  {
+  if (tmbuf->tm_min < 0) {
     tmbuf->tm_min += 60;
     tmbuf->tm_hour--;
   }
   day = tmbuf->tm_hour / 24;
   tmbuf->tm_hour= tmbuf->tm_hour % 24;
-  if (tmbuf->tm_hour < 0) 
-  {
+  if (tmbuf->tm_hour < 0) {
     tmbuf->tm_hour += 24;
     day--;
   }
   tmbuf->tm_year += tmbuf->tm_mon / 12;
   tmbuf->tm_mon %= 12;
-  if (tmbuf->tm_mon < 0) 
-  {
+  if (tmbuf->tm_mon < 0) {
     tmbuf->tm_mon += 12;
     tmbuf->tm_year--;
   }
   day += (tmbuf->tm_mday - 1);
-  while (day < 0) 
-  {
-    if(--tmbuf->tm_mon < 0) 
-    {
+  while (day < 0) {
+    if(--tmbuf->tm_mon < 0) {
       tmbuf->tm_year--;
       tmbuf->tm_mon = 11;
     }
     day += _ytab[LEAPYEAR(YEAR0 + tmbuf->tm_year)][tmbuf->tm_mon];
   }
-  while (day >= _ytab[LEAPYEAR(YEAR0 + tmbuf->tm_year)][tmbuf->tm_mon]) 
-  {
+  while (day >= _ytab[LEAPYEAR(YEAR0 + tmbuf->tm_year)][tmbuf->tm_mon]) {
     day -= _ytab[LEAPYEAR(YEAR0 + tmbuf->tm_year)][tmbuf->tm_mon];
-    if (++(tmbuf->tm_mon) == 12) 
-    {
+    if (++(tmbuf->tm_mon) == 12) {
       tmbuf->tm_mon = 0;
       tmbuf->tm_year++;
     }
@@ -219,8 +199,7 @@ time_t mktime(struct tm *tmbuf)
   day += (tm_year - year) / 400 + ((tm_year % 400) && tm_year % 400 < year % 400);
 
   yday = month = 0;
-  while (month < tmbuf->tm_mon)
-  {
+  while (month < tmbuf->tm_mon) {
     yday += _ytab[LEAPYEAR(tm_year)][month];
     month++;
   }
@@ -237,15 +216,17 @@ time_t mktime(struct tm *tmbuf)
   seconds += day * SECS_DAY;
 
   // Now adjust according to timezone and daylight saving time
-  if (((_timezone > 0) && (TIME_MAX - _timezone < seconds))
-      || ((_timezone < 0) && (seconds < -_timezone)))
+  if (((_timezone > 0) && (TIME_MAX - _timezone < seconds)) || 
+      ((_timezone < 0) && (seconds < -_timezone))) {
           overflow++;
+  }
   seconds += _timezone;
 
-  if (tmbuf->tm_isdst)
+  if (tmbuf->tm_isdst) {
     dst = _dstbias;
-  else 
+  } else {
     dst = 0;
+  }
 
   if (dst > seconds) overflow++;        // dst is always non-negative
   seconds -= dst;
@@ -258,29 +239,24 @@ time_t mktime(struct tm *tmbuf)
 
 #if !defined(KERNEL) && !defined(OS_LIB)
 
-char *asctime_r(const struct tm *tm, char *buf)
-{
+char *asctime_r(const struct tm *tm, char *buf) {
   strftime(buf, ASCBUFSIZE, "%c\n", tm);
   return buf;
 }
 
-char *ctime_r(const time_t *timer, char *buf)
-{
+char *ctime_r(const time_t *timer, char *buf) {
   return asctime_r(localtime(timer), buf);
 }
 
-char *asctime(const struct tm *tm)
-{
+char *asctime(const struct tm *tm) {
   return asctime_r(tm, gettib()->ascbuf);
 }
 
-char *ctime(const time_t *timer)
-{
+char *ctime(const time_t *timer) {
   return asctime(localtime(timer));
 }
 
-char *_strdate(char *s)
-{
+char *_strdate(char *s) {
   time_t now;
 
   time(&now);
@@ -288,8 +264,7 @@ char *_strdate(char *s)
   return s;
 }
 
-char *_strtime(char *s)
-{
+char *_strtime(char *s) {
   time_t now;
 
   time(&now);
@@ -297,25 +272,21 @@ char *_strtime(char *s)
   return s;
 }
 
-void _tzset()
-{
+void _tzset() {
 }
 
-clock_t times(struct tms *tms)
-{
+clock_t times(struct tms *tms) {
   // TODO implement
   tms->tms_cstime = tms->tms_cutime = tms->tms_stime = tms->tms_utime = 1;
   return clock();
 }
 
-int getitimer(int which, struct itimerval *value)
-{
+int getitimer(int which, struct itimerval *value) {
   // TODO implement
   return -1;
 }
 
-int setitimer(int which, const struct itimerval *value, struct itimerval *oldvalue)
-{
+int setitimer(int which, const struct itimerval *value, struct itimerval *oldvalue) {
   // TODO implement
   return -1;
 }

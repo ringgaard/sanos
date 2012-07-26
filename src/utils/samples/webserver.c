@@ -17,8 +17,7 @@
 #define RFC1123FMT "%a, %d %b %Y %H:%M:%S GMT"
 #define PORT 80
 
-char *get_mime_type(char *name)
-{
+char *get_mime_type(char *name) {
   char *ext = strrchr(name, '.');
   if (!ext) return NULL;
   if (strcmp(ext, ".html") == 0 || strcmp(ext, ".htm") == 0) return "text/html";
@@ -35,8 +34,7 @@ char *get_mime_type(char *name)
 }
 
 void send_headers(FILE *f, int status, char *title, char *extra, char *mime, 
-                  int length, time_t date)
-{
+                  int length, time_t date) {
   time_t now;
   char timebuf[128];
 
@@ -48,8 +46,7 @@ void send_headers(FILE *f, int status, char *title, char *extra, char *mime,
   if (extra) fprintf(f, "%s\r\n", extra);
   if (mime) fprintf(f, "Content-Type: %s\r\n", mime);
   if (length >= 0) fprintf(f, "Content-Length: %d\r\n", length);
-  if (date != -1)
-  {
+  if (date != -1) {
     strftime(timebuf, sizeof(timebuf), RFC1123FMT, gmtime(&date));
     fprintf(f, "Last-Modified: %s\r\n", timebuf);
   }
@@ -57,8 +54,7 @@ void send_headers(FILE *f, int status, char *title, char *extra, char *mime,
   fprintf(f, "\r\n");
 }
 
-void send_error(FILE *f, int status, char *title, char *extra, char *text)
-{
+void send_error(FILE *f, int status, char *title, char *extra, char *text) {
   send_headers(f, status, title, extra, "text/html", -1, -1);
   fprintf(f, "<HTML><HEAD><TITLE>%d %s</TITLE></HEAD>\r\n", status, title);
   fprintf(f, "<BODY><H4>%d %s</H4>\r\n", status, title);
@@ -66,16 +62,14 @@ void send_error(FILE *f, int status, char *title, char *extra, char *text)
   fprintf(f, "</BODY></HTML>\r\n");
 }
 
-void send_file(FILE *f, char *path, struct stat *statbuf)
-{
+void send_file(FILE *f, char *path, struct stat *statbuf) {
   char data[4096];
   int n;
 
   FILE *file = fopen(path, "r");
-  if (!file)
+  if (!file) {
     send_error(f, 403, "Forbidden", NULL, "Access denied.");
-  else
-  {
+  } else {
     int length = S_ISREG(statbuf->st_mode) ? statbuf->st_size : -1;
     send_headers(f, 200, "OK", NULL, get_mime_type(path), length, statbuf->st_mtime);
 
@@ -84,8 +78,7 @@ void send_file(FILE *f, char *path, struct stat *statbuf)
   }
 }
 
-int process(FILE *f)
-{
+int process(FILE *f) {
   char buf[4096];
   char *method;
   char *path;
@@ -104,25 +97,20 @@ int process(FILE *f)
 
   fseek(f, 0, SEEK_CUR); // Force change of stream direction
 
-  if (strcasecmp(method, "GET") != 0)
+  if (strcasecmp(method, "GET") != 0) {
     send_error(f, 501, "Not supported", NULL, "Method is not supported.");
-  else if (stat(path, &statbuf) < 0)
+  } else if (stat(path, &statbuf) < 0) {
     send_error(f, 404, "Not Found", NULL, "File not found.");
-  else if (S_ISDIR(statbuf.st_mode))
-  {
+  } else if (S_ISDIR(statbuf.st_mode)) {
     len = strlen(path);
-    if (len == 0 || path[len - 1] != '/')
-    {
+    if (len == 0 || path[len - 1] != '/') {
       snprintf(pathbuf, sizeof(pathbuf), "Location: %s/", path);
       send_error(f, 302, "Found", pathbuf, "Directories must end with a slash.");
-    }
-    else
-    {
+    } else {
       snprintf(pathbuf, sizeof(pathbuf), "%sindex.html", path);
-      if (stat(pathbuf, &statbuf) >= 0)
+      if (stat(pathbuf, &statbuf) >= 0) {
         send_file(f, pathbuf, &statbuf);
-      else
-      {
+      } else {
         DIR *dir;
         struct dirent *de;
 
@@ -134,8 +122,7 @@ int process(FILE *f)
         if (len > 1) fprintf(f, "<A HREF=\"..\">..</A>\r\n");
 
         dir = opendir(path);
-        while ((de = readdir(dir)) != NULL)
-        {
+        while ((de = readdir(dir)) != NULL) {
           char timebuf[32];
           struct tm *tm;
 
@@ -150,25 +137,25 @@ int process(FILE *f)
           fprintf(f, "%s%s", de->d_name, S_ISDIR(statbuf.st_mode) ? "/</A>" : "</A> ");
           if (strlen(de->d_name) < 32) fprintf(f, "%*s", 32 - strlen(de->d_name), "");
 
-          if (S_ISDIR(statbuf.st_mode))
+          if (S_ISDIR(statbuf.st_mode)) {
             fprintf(f, "%s\r\n", timebuf);
-          else
+          } else {
             fprintf(f, "%s %10d\r\n", timebuf, statbuf.st_size);
+          }
         }
         closedir(dir);
 
         fprintf(f, "</PRE>\r\n<HR>\r\n<ADDRESS>%s</ADDRESS>\r\n</BODY></HTML>\r\n", SERVER);
       }
     }
-  }
-  else
+  } else {
     send_file(f, path, &statbuf);
+  }
 
   return 0;
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   int sock;
   struct sockaddr_in sin;
 
@@ -182,8 +169,7 @@ int main(int argc, char *argv[])
   listen(sock, 5);
   printf("HTTP server listening on port %d\n", PORT);
 
-  while (1)
-  {
+  while (1) {
     int s;
     FILE *f;
 

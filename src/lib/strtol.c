@@ -40,8 +40,7 @@
 #define FL_OVERFLOW   4
 #define FL_READDIGIT  8
 
-static unsigned long strtoxl(const char *nptr, char **endptr, int ibase, int flags)
-{
+static unsigned long strtoxl(const char *nptr, char **endptr, int ibase, int flags) {
   const unsigned char *p;
   char c;
   unsigned long number;
@@ -54,33 +53,28 @@ static unsigned long strtoxl(const char *nptr, char **endptr, int ibase, int fla
   c = *p++;
   while (isspace(c)) c = *p++;
 
-  if (c == '-') 
-  {
+  if (c == '-') {
     flags |= FL_NEG;
     c = *p++;
-  }
-  else if (c == '+')
+  } else if (c == '+') {
     c = *p++;
+  }
 
-  if (ibase < 0 || ibase == 1 || ibase > 36) 
-  {
+  if (ibase < 0 || ibase == 1 || ibase > 36) {
     if (endptr) *endptr = (char *) nptr;
     return 0L;
-  }
-  else if (ibase == 0)
-  {
-    if (c != '0')
+  } else if (ibase == 0) {
+    if (c != '0') {
       ibase = 10;
-    else if (*p == 'x' || *p == 'X')
+    } else if (*p == 'x' || *p == 'X') {
       ibase = 16;
-    else
+    } else {
       ibase = 8;
+    }
   }
 
-  if (ibase == 16)
-  {
-    if (c == '0' && (*p == 'x' || *p == 'X')) 
-    {
+  if (ibase == 16) {
+    if (c == '0' && (*p == 'x' || *p == 'X')) {
       ++p;
       c = *p++;
     }
@@ -88,46 +82,45 @@ static unsigned long strtoxl(const char *nptr, char **endptr, int ibase, int fla
 
   maxval = ULONG_MAX / ibase;
 
-  for (;;) 
-  {
-    if (isdigit(c))
+  for (;;) {
+    if (isdigit(c)) {
       digval = c - '0';
-    else if (isalpha(c))
+    } else if (isalpha(c)) {
       digval = toupper(c) - 'A' + 10;
-    else
+    } else {
       break;
+    }
 
     if (digval >= (unsigned) ibase) break;
 
     flags |= FL_READDIGIT;
 
-    if (number < maxval || (number == maxval && (unsigned long) digval <= ULONG_MAX % ibase)) 
+    if (number < maxval || (number == maxval && (unsigned long) digval <= ULONG_MAX % ibase)) {
       number = number * ibase + digval;
-    else 
+    } else {
       flags |= FL_OVERFLOW;
+    }
 
     c = *p++;
   }
 
   --p;
 
-  if (!(flags & FL_READDIGIT)) 
-  {
+  if (!(flags & FL_READDIGIT)) {
     if (endptr) p = nptr;
     number = 0;
-  }
-  else if ((flags & FL_OVERFLOW) || (!(flags & FL_UNSIGNED) && (((flags & FL_NEG) && (number < LONG_MIN)) || (!(flags & FL_NEG) && (number > LONG_MAX)))))
-  {
+  } else if ((flags & FL_OVERFLOW) || (!(flags & FL_UNSIGNED) && (((flags & FL_NEG) && (number < LONG_MIN)) || (!(flags & FL_NEG) && (number > LONG_MAX))))) {
 #ifndef KERNEL
     errno = ERANGE;
 #endif
 
-    if (flags & FL_UNSIGNED)
+    if (flags & FL_UNSIGNED) {
       number = ULONG_MAX;
-    else if (flags & FL_NEG)
+    } else if (flags & FL_NEG) {
       number = LONG_MIN;
-    else
+    } else {
       number = LONG_MAX;
+    }
   }
 
   if (endptr) *endptr = (char *) p;
@@ -137,18 +130,15 @@ static unsigned long strtoxl(const char *nptr, char **endptr, int ibase, int fla
   return number;
 }
 
-long strtol(const char *nptr, char **endptr, int ibase)
-{
+long strtol(const char *nptr, char **endptr, int ibase) {
   return (long) strtoxl(nptr, endptr, ibase, 0);
 }
 
-unsigned long strtoul(const char *nptr, char **endptr, int ibase)
-{
+unsigned long strtoul(const char *nptr, char **endptr, int ibase) {
   return strtoxl(nptr, endptr, ibase, FL_UNSIGNED);
 }
 
-long atol(const char *nptr)
-{
+long atol(const char *nptr) {
   int c;
   int sign;
   long total;
@@ -161,26 +151,24 @@ long atol(const char *nptr)
   if (c == '-' || c == '+') c = *p++;
 
   total = 0;
-  while (isdigit(c)) 
-  {
+  while (isdigit(c)) {
     total = 10 * total + (c - '0');
     c = *p++;
   }
 
-  if (sign == '-')
+  if (sign == '-') {
     return -total;
-  else
+  } else {
     return total;
+  }
 }
 
-int atoi(const char *nptr)
-{
+int atoi(const char *nptr) {
   return (int) atol(nptr);
 }
 
 #ifndef KERNEL
-__int64 strtoll(const char *nptr, char **endptr, int ibase)
-{
+__int64 strtoll(const char *nptr, char **endptr, int ibase) {
   const unsigned char *p = (const unsigned char *) nptr;
   int flags = 0;
   __int64 number = 0;
@@ -191,33 +179,28 @@ __int64 strtoll(const char *nptr, char **endptr, int ibase)
   c = *p++;
   while (isspace(c)) c = *p++;
 
-  if (c == '-') 
-  {
+  if (c == '-') {
     flags |= FL_NEG;
     c = *p++;
-  }
-  else if (c == '+')
+  } else if (c == '+') {
     c = *p++;
+  }
 
-  if (ibase < 0 || ibase == 1 || ibase > 36) 
-  {
+  if (ibase < 0 || ibase == 1 || ibase > 36) {
     if (endptr) *endptr = (char *) nptr;
     return 0;
-  }
-  else if (ibase == 0)
-  {
-    if (c != '0')
+  } else if (ibase == 0) {
+    if (c != '0') {
       ibase = 10;
-    else if (*p == 'x' || *p == 'X')
+    } else if (*p == 'x' || *p == 'X') {
       ibase = 16;
-    else
+    } else {
       ibase = 8;
+    }
   }
 
-  if (ibase == 16)
-  {
-    if (c == '0' && (*p == 'x' || *p == 'X')) 
-    {
+  if (ibase == 16) {
+    if (c == '0' && (*p == 'x' || *p == 'X')) {
       ++p;
       c = *p++;
     }
@@ -225,42 +208,41 @@ __int64 strtoll(const char *nptr, char **endptr, int ibase)
 
   maxval = _I64_MAX / ibase;
 
-  for (;;) 
-  {
-    if (isdigit(c))
+  for (;;) {
+    if (isdigit(c)) {
       digval = c - '0';
-    else if (isalpha(c))
+    } else if (isalpha(c)) {
       digval = toupper(c) - 'A' + 10;
-    else
+    } else {
       break;
+    }
 
     if (digval >= (__int64) ibase) break;
 
     flags |= FL_READDIGIT;
 
-    if (number < maxval || (number == maxval && digval <= _I64_MAX % ibase)) 
+    if (number < maxval || (number == maxval && digval <= _I64_MAX % ibase)) {
       number = number * ibase + digval;
-    else 
+    } else {
       flags |= FL_OVERFLOW;
+    }
 
     c = *p++;
   }
 
   --p;
 
-  if (!(flags & FL_READDIGIT)) 
-  {
+  if (!(flags & FL_READDIGIT)) {
     if (endptr) p = nptr;
     number = 0;
-  }
-  else if (flags & FL_OVERFLOW)
-  {
+  } else if (flags & FL_OVERFLOW) {
     errno = ERANGE;
 
-    if (flags & FL_NEG)
+    if (flags & FL_NEG) {
       number = _I64_MIN;
-    else
+    } else {
       number = _I64_MAX;
+    }
   }
 
   if (endptr) *endptr = (char *) p;
@@ -268,4 +250,5 @@ __int64 strtoll(const char *nptr, char **endptr, int ibase)
 
   return number;
 }
+
 #endif

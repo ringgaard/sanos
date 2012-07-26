@@ -42,8 +42,7 @@
 #define STRSIZE   1024
 #define NUMFIELDS 10
 
-struct tag
-{
+struct tag {
   char *name;
   char *file;
   int line;
@@ -62,8 +61,7 @@ struct tag **tags = NULL;
 int tags_size = 0;
 int num_tags = 0;
 
-char *keywords[] = 
-{
+char *keywords[] = {
   "#include", "#define", "#if", "#ifdef", "#ifndef", "#elif", "#else", "#endif", "#pragma",
   "int", "void", "char", "short", "long", "__int64", "float", "double", 
   "struct", "union", "enum", "typedef", "sizeof",
@@ -76,43 +74,37 @@ char *keywords[] =
   NULL,
 };
 
-int is_keyword(char *str)
-{
+int is_keyword(char *str) {
   char **keyword = keywords;
-  while (*keyword)
-  {
+  while (*keyword) {
     if (strcmp(str, *keyword) == 0) return 1;
     keyword++;
   }
   return 0;
 }
 
-void output_html(FILE *out, char *str, char *end)
-{
-  while (str < end)
-  {
-    if (*str == '<')
+void output_html(FILE *out, char *str, char *end) {
+  while (str < end) {
+    if (*str == '<') {
       fputs("&lt;", out);
-    else if (*str == '>')
+    } else if (*str == '>') {
       fputs("&gt;", out);
-    else if (*str == '&')
+    } else if (*str == '&') {
       fputs("&amp;", out);
-    else 
+    } else {
       fputc(*str, out);
+    }
 
     str++;
   }
 }
 
-int split_string(char *str, char **fields, int max_fields)
-{
+int split_string(char *str, char **fields, int max_fields) {
   int n = 0;
   fields[n++] = str;
-  while (*str)
-  {
+  while (*str) {
     if (n == max_fields) break;
-    if (*str == '\t' || *str == '\r' || *str == '\n')
-    {
+    if (*str == '\t' || *str == '\r' || *str == '\n') {
       *str = 0;
       fields[n++] = str + 1;
     }
@@ -121,32 +113,28 @@ int split_string(char *str, char **fields, int max_fields)
   return n;
 }
 
-void relative_url(char *source, char *target, char *url)
-{
+void relative_url(char *source, char *target, char *url) {
   char *s = source;
   char *t = target;
   while (*s && *t && *s == *t) {
     int sep = *s == '/';
     s++;
     t++;
-    if (sep)
-    {
+    if (sep) {
       source = s;
       target = t;
     }
   }
   
   url[0] = 0;
-  while (*source)
-  {
+  while (*source) {
     if (*source == '/') strcat(url, "../");
     source++;
   }
   strcat(url, target);
 }
 
-void read_ctags(char *ctags_file) 
-{
+void read_ctags(char *ctags_file)  {
   char line[STRSIZE];
   char *field[NUMFIELDS];
   struct tag *t;
@@ -155,22 +143,19 @@ void read_ctags(char *ctags_file)
   char *s;
    
   f = fopen(ctags_file, "r");
-  if (!f)
-  {
+  if (!f) {
     perror(ctags_file);
     return;
   }
   
-  while (fgets(line, sizeof line, f))
-  {
+  while (fgets(line, sizeof line, f)) {
     if (*line == '!') continue;
     for (i = 0; i < NUMFIELDS; ++i) field[i] = NULL;
     n = split_string(line, field, NUMFIELDS);
     if (n < 4) continue;
     if (strcmp(field[3], "m") == 0) continue;
 
-    if (num_tags == tags_size)
-    {
+    if (num_tags == tags_size) {
       tags_size = tags_size ? tags_size * 2 : 64;
       tags = (struct tag **) realloc(tags, sizeof(struct tag *) * tags_size);
     }
@@ -178,50 +163,43 @@ void read_ctags(char *ctags_file)
     t->name = strdup(field[0]);
     t->file = strdup(field[1]);
     s = t->file;
-    while (*s)
-    {
+    while (*s) {
       if (*s == '\\') *s = '/';
       s++;
     }
     t->line = atoi(field[2]);
     t->local = 0;
-    for (i = 4; i < n; ++i)
-    {
+    for (i = 4; i < n; ++i) {
       if (strcmp(field[i], "file:") == 0) t->local = 1;
     }
   }
   fclose(f);
 }
 
-struct tag *find_tag(char *name, char *file)
-{
+struct tag *find_tag(char *name, char *file) {
   int lo = 0;
   int hi = num_tags - 1;
-  while (lo <= hi)
-  {
+  while (lo <= hi) {
     int mid = lo + (hi - lo) / 2;
     int compare = strcmp(tags[mid]->name, name);
-    if (compare == 0)
-    {
+    if (compare == 0) {
       int i = mid;
       while (i > 0 && strcmp(tags[i - 1]->name, name) == 0) i--;
-      while (i < num_tags && strcmp(tags[i]->name, name) == 0)
-      {
+      while (i < num_tags && strcmp(tags[i]->name, name) == 0) {
         if (!tags[i]->local || strcmp(tags[i]->file, file) == 0) return tags[i];
         i++;
       }
       return NULL;
-    } 
-    else if (compare < 0)
+    } else if (compare < 0) {
       lo = mid + 1;
-    else
+    } else {
       hi = mid - 1;
+    }
   }
   return NULL;
 }
 
-void convert_file(char *source_filename)
-{
+void convert_file(char *source_filename) {
   char html_filename[NAME_MAX + 1];
   char *relative_filename;
   char *base_filename;
@@ -241,8 +219,7 @@ void convert_file(char *source_filename)
   ext = "";
   base_filename = relative_filename;
   p = relative_filename;
-  while (*p)
-  {
+  while (*p) {
     if (*p == '/') {
       base_filename = p + 1;
       ext = "";
@@ -265,15 +242,13 @@ void convert_file(char *source_filename)
   if (!is_c && !is_asm) return;
   
   src = fopen(source_filename, "rt");
-  if (!src)
-  {
+  if (!src) {
     perror(source_filename);
     return;
   }
   
   out = fopen(html_filename, "wb");
-  if (!out)
-  {
+  if (!out) {
     perror(html_filename);
     return;
   }
@@ -288,27 +263,23 @@ void convert_file(char *source_filename)
   fprintf(out, "</style>\r\n");
   fprintf(out, "</head>\r\n");
   fprintf(out, "<body>\r\n");
-  if (source_index)
-  {
+  if (source_index) {
     fprintf(out, "<p style='float: right'><a href='/sanos/source/index.html'>Goto sanos source index</a></p>");
   }
   fprintf(out, "<pre>\r\n");
   
   line_num = 1;
   in_comment = 0;
-  while (fgets(line, sizeof line, src))
-  {
+  while (fgets(line, sizeof line, src)) {
     char *p = line;
     char *end = line;
     while (*end && *end != '\r' && *end != '\n') end++;
     *end = 0;
     
-    if (in_comment)
-    {
+    if (in_comment) {
       char *comment_start = p;
       fprintf(out, "<font color='green'>");
-      while (p < end)
-      {
+      while (p < end) {
         if (p[0] == '*' && p[1] == '/') {
           p += 2;
           output_html(out, comment_start, p);
@@ -322,27 +293,21 @@ void convert_file(char *source_filename)
 
     fprintf(out, "<a name=':%d'></a>", line_num);
     
-    if (!is_c)
-    {
+    if (!is_c) {
       output_html(out, p, end);
       p = end;
     }
 
-    while (p < end)
-    {
-      if (p[0] == '/' && p[1] == '/')
-      {
+    while (p < end) {
+      if (p[0] == '/' && p[1] == '/') {
         fprintf(out, "<font color='green'>");
         output_html(out, p, end);
         fprintf(out, "</font>");
         p = end;
-      }
-      else if (p[0] == '/' && p[1] == '*')
-      {
+      } else if (p[0] == '/' && p[1] == '*') {
         char *comment_start = p;
         fprintf(out, "<font color='green'>");
-        while (p < end)
-        {
+        while (p < end) {
           if (p[0] == '*' && p[1] == '/') {
             p += 2;
             output_html(out, comment_start, p);
@@ -352,12 +317,9 @@ void convert_file(char *source_filename)
           }
           p++;
         }
-      }
-      else if (*p == '\'' || *p == '"')
-      {
+      } else if (*p == '\'' || *p == '"') {
         char *start = p++;
-        while (*p && *p != *start)
-        {
+        while (*p && *p != *start) {
           if (*p == '\\' && *(p + 1)) p++;
           p++;
         }
@@ -365,33 +327,27 @@ void convert_file(char *source_filename)
         fprintf(out, "<font color='brown'>");
         output_html(out, start, p);
         fprintf(out, "</font>");
-      }
-      else if (*p == '#' || *p == '_' || isalpha(*p))
-      {
+      } else if (*p == '#' || *p == '_' || isalpha(*p)) {
         char *start = p++;
         while (*p && (*p == '_' || isalnum(*p))) p++;
         memcpy(token, start, p - start);
         token[p - start] = 0;
-        if (is_keyword(token))
-        {
+        if (is_keyword(token)) {
           fprintf(out, "<font color='blue'>");
           output_html(out, start, p);
           fprintf(out, "</font>");
           
-          if (strncmp(start, "#include", 8) == 0)
-          {
+          if (strncmp(start, "#include", 8) == 0) {
             start = p;
             while (isspace(*p)) p++;
             output_html(out, start, p);
             
-            if (*p == '"' || *p == '<')
-            {
+            if (*p == '"' || *p == '<') {
               int stdincl = *p == '<';
               output_html(out, p, p + 1);
               start = ++p;
               while (*p && *p != '>' && *p != '"') p++;
-              if (stdincl)
-              {
+              if (stdincl) {
                 char *base;
                 
                 strcpy(filename, include_dir);
@@ -399,9 +355,7 @@ void convert_file(char *source_filename)
                 base = filename + strlen(filename);
                 memcpy(base, start, p - start);
                 base[p - start] = 0;
-              }
-              else
-              {
+              } else {
                 int pathlen = base_filename - relative_filename;
                 int fnlen = p - start;
                 memcpy(filename, relative_filename, pathlen);
@@ -412,19 +366,15 @@ void convert_file(char *source_filename)
               fprintf(out, "<a href='%s.html'>", url);
               output_html(out, start, p);
               fprintf(out, "</a>");
-              if (*p)
-              {
+              if (*p) {
                 output_html(out, p, p + 1);
                 p++;
               }
             }
           }
-        }
-        else
-        {
+        } else {
           struct tag *tag = find_tag(token, relative_filename);
-          if (tag)
-          {
+          if (tag) {
             int self;
             
             relative_url(relative_filename, tag->file, url);
@@ -432,13 +382,11 @@ void convert_file(char *source_filename)
             if (!self) fprintf(out, "<a href='%s.html#:%d'>", url, tag->line);
             output_html(out, start, p);
             if (!self) fprintf(out, "</a>");
-          }
-          else
+          } else {
             output_html(out, start, p);
+          }
         }
-      }
-      else
-      {
+      } else {
         output_html(out, p, p + 1);
         p++;
       }
@@ -456,8 +404,7 @@ void convert_file(char *source_filename)
   fclose(out);
 }
 
-void convert_directory(char *path)
-{
+void convert_directory(char *path) {
   struct dirent *dp;
   DIR *dirp;
   char filename[NAME_MAX + 1];
@@ -465,8 +412,7 @@ void convert_directory(char *path)
   struct stat st;
 
   strcpy(dirname, output_dir);
-  if (strlen(path) > source_prefix_len)
-  {
+  if (strlen(path) > source_prefix_len) {
     strcat(dirname, "/");
     strcat(dirname, path + source_prefix_len);
   }
@@ -474,8 +420,7 @@ void convert_directory(char *path)
 
   dirp = opendir(path);
   if (!dirp) return;
-  while ((dp = readdir(dirp))) 
-  {
+  while ((dp = readdir(dirp))) {
     if (strcmp(dp->d_name, ".") == 0) continue;
     if (strcmp(dp->d_name, "..") == 0) continue;
     if (strcmp(dp->d_name, "CVS") == 0) continue;
@@ -490,8 +435,7 @@ void convert_directory(char *path)
   closedir(dirp);
 }
 
-void usage()
-{
+void usage() {
   fprintf(stderr, "usage: ctohtml [options]\n\n");
   fprintf(stderr, "  -h            Print this message.\n");
   fprintf(stderr, "  -d <dir>      Input directory for source files.\n");
@@ -502,15 +446,12 @@ void usage()
   fprintf(stderr, "  -t <title>    Title for HTML pages.\n");
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   int c, i;
 
   // Parse command line options
-  while ((c = getopt(argc, argv, "d:c:i:o:hlt:")) != EOF)
-  {
-    switch (c)
-    {
+  while ((c = getopt(argc, argv, "d:c:i:o:hlt:")) != EOF) {
+    switch (c) {
       case 'd':
         source_dir = optarg;
         break;
@@ -541,8 +482,7 @@ int main(int argc, char *argv[])
         return 1;
     }
   }
-  if (!source_dir)
-  {
+  if (!source_dir) {
     usage();
     return 1;
   }
@@ -555,8 +495,7 @@ int main(int argc, char *argv[])
   convert_directory(source_dir);
   
   // Deallocate tags
-  for (i = 0; i < num_tags; ++i) 
-  {
+  for (i = 0; i < num_tags; ++i) {
     free(tags[i]->name);
     free(tags[i]->file);
     free(tags[i]);

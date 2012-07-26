@@ -45,8 +45,7 @@ int sprintf(char *buf, const char *fmt, ...);
 // Protocol aliases
 //
 
-char *palias[] =
-{
+char *palias[] = {
   "IP", NULL,       //  0 ip
   "ICMP", NULL,     //  2 icmp
   "GGP", NULL,      //  4 ggp
@@ -64,8 +63,7 @@ char *palias[] =
 // Internet protocols as defined by RFC 1700 (Assigned Numbers).
 //
 
-struct protoent protocols[] = 
-{
+struct protoent protocols[] = {
   {"ip",      palias + 0,  0},   // Internet protocol
   {"icmp",    palias + 2,  1},   // Internet control message protocol
   {"ggp",     palias + 4,  3},   // Gateway-gateway protocol
@@ -80,8 +78,7 @@ struct protoent protocols[] =
   {NULL,      NULL, 0}
 };
 
-char *salias[] = 
-{
+char *salias[] = {
   NULL,
   "sink", "null", NULL,         //  1 echo
   "users", NULL,                //  4 sysstat
@@ -133,8 +130,7 @@ char *salias[] =
 // Port numbers for well-known services defined by IANA
 //
 
-struct servent services[] =
-{
+struct servent services[] = {
   {"echo",             salias,         7, "tcp"},
   {"echo",             salias,         7, "udp"},
   {"discard",          salias + 1,     9, "tcp"},
@@ -253,8 +249,7 @@ struct servent services[] =
 // getanswer
 //
 
-static struct hostent *getanswer(const char *answer, int anslen, const char *qname, int qtype)
-{
+static struct hostent *getanswer(const char *answer, int anslen, const char *qname, int qtype) {
   struct tib *tib = gettib();
   const struct dns_hdr *hp;
   const unsigned char *cp;
@@ -279,14 +274,12 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
   cp = answer;
 
   cp += NS_HFIXEDSZ;
-  if (cp > eom) 
-  {
+  if (cp > eom)  {
     errno = EMSGSIZE;
     return NULL;
   }
 
-  if (qdcount != 1)
-  {
+  if (qdcount != 1) {
     errno = EIO;
     return NULL;
   }
@@ -295,21 +288,18 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
   if (n < 0) return NULL;
 
   cp += n + NS_QFIXEDSZ;
-  if (cp > eom) 
-  {
+  if (cp > eom) {
     errno = EMSGSIZE;
     return NULL;
   }
 
-  if (qtype == DNS_TYPE_A)
-  {
+  if (qtype == DNS_TYPE_A) {
     // res_send() has already verified that the query name is the
     // same as the one we sent; this just gets the expanded name
     // (i.e., with the succeeding search-domain tacked on).
 
     n = strlen(bp) + 1;
-    if (n >= MAXHOSTNAMELEN)
-    {
+    if (n >= MAXHOSTNAMELEN) {
       errno = EMSGSIZE;
       return NULL;
     }
@@ -330,19 +320,16 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
   
   haveanswer = 0;
   had_error = 0;
-  while (ancount-- > 0 && cp < eom && !had_error) 
-  {
+  while (ancount-- > 0 && cp < eom && !had_error) {
     n = dn_expand(answer, eom, cp, bp, buflen);
-    if (n < 0)
-    {
+    if (n < 0) {
       had_error++;
       continue;
     }
 
     cp += n; // name
 
-    if (cp + 3 * sizeof(short) + sizeof(long) > eom)
-    {
+    if (cp + 3 * sizeof(short) + sizeof(long) > eom) {
       errno = EMSGSIZE;
       return NULL;
     }
@@ -359,31 +346,26 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
     n = ntohs(*(unsigned short *) cp);
     cp += sizeof(unsigned short); // len
 
-    if (cp + n > eom)
-    {
+    if (cp + n > eom) {
       errno = EMSGSIZE;
       return NULL;
     }
     
     erdata = cp + n;
-    if (class != DNS_CLASS_IN) 
-    {
+    if (class != DNS_CLASS_IN) {
       cp += n;
       continue;
     }
 
-    if (qtype == DNS_TYPE_A && type == DNS_TYPE_CNAME) 
-    {
+    if (qtype == DNS_TYPE_A && type == DNS_TYPE_CNAME) {
       if (ap >= &tib->host_aliases[MAX_HOST_ALIASES - 1]) continue;
       n = dn_expand(answer, eom, cp, tbuf, sizeof tbuf);
-      if (n < 0) 
-      {
+      if (n < 0) {
         had_error++;
         continue;
       }
       cp += n;
-      if (cp != erdata) 
-      {
+      if (cp != erdata) {
         errno = EIO;
         return NULL;
       }
@@ -391,8 +373,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       // Store alias
       *ap++ = bp;
       n = strlen(bp) + 1;
-      if (n >= MAXHOSTNAMELEN) 
-      {
+      if (n >= MAXHOSTNAMELEN) {
         errno = EMSGSIZE;
         had_error++;
         continue;
@@ -403,8 +384,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       
       // Get canonical name
       n = strlen(tbuf) + 1;
-      if (n > buflen || n >= MAXHOSTNAMELEN) 
-      {
+      if (n > buflen || n >= MAXHOSTNAMELEN) {
         errno = EMSGSIZE;
         had_error++;
         continue;
@@ -417,25 +397,21 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       continue;
     }
 
-    if (qtype == DNS_TYPE_PTR && type == DNS_TYPE_CNAME) 
-    {
+    if (qtype == DNS_TYPE_PTR && type == DNS_TYPE_CNAME) {
       n = dn_expand(answer, eom, cp, tbuf, sizeof tbuf);
-      if (n < 0) 
-      {
+      if (n < 0) {
         had_error++;
         continue;
       }
       cp += n;
-      if (cp != erdata) 
-      {
+      if (cp != erdata) {
         errno = EIO;
         return NULL; 
       }
 
       // Get canonical name
       n = strlen(tbuf) + 1;
-      if (n > buflen || n >= MAXHOSTNAMELEN) 
-      {
+      if (n > buflen || n >= MAXHOSTNAMELEN) {
         errno = EMSGSIZE;
         had_error++;
         continue;
@@ -447,24 +423,20 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
       continue;
     }
 
-    if (type != qtype)
-    {
+    if (type != qtype) {
       cp += n;
       continue;
     }
 
-    switch (type) 
-    {
+    switch (type) {
       case DNS_TYPE_PTR:
-        if (stricmp(tname, bp) != 0) 
-        {
+        if (stricmp(tname, bp) != 0) {
           cp += n;
           continue;
         }
 
         n = dn_expand(answer, eom, cp, bp, buflen);
-        if (n < 0) 
-        {
+        if (n < 0) {
           had_error++;
           break;
         }
@@ -472,18 +444,15 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
         return &tib->host;
 
       case DNS_TYPE_A:
-        if (stricmp(tib->host.h_name, bp) != 0) 
-        {
+        if (stricmp(tib->host.h_name, bp) != 0) {
           cp += n;
           continue;
         }
-        if (n != tib->host.h_length) 
-        {
+        if (n != tib->host.h_length) {
           cp += n;
           continue;
         }
-        if (!haveanswer) 
-        {
+        if (!haveanswer) {
           int nn;
 
           tib->host.h_name = bp;
@@ -496,15 +465,13 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
         buflen -= sizeof(int) - ((unsigned long) bp % sizeof(int));
         bp += sizeof(int) - ((unsigned long) bp % sizeof(int));
 
-        if (bp + n >= &tib->hostbuf[sizeof tib->hostbuf]) 
-        {
+        if (bp + n >= &tib->hostbuf[sizeof tib->hostbuf]) {
           errno = EMSGSIZE;
           had_error++;
           continue;
         }
 
-        if (hap >= &tib->h_addr_ptrs[MAX_HOST_ADDRS - 1]) 
-        {
+        if (hap >= &tib->h_addr_ptrs[MAX_HOST_ADDRS - 1]) {
           cp += n;
           continue;
         }
@@ -513,8 +480,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
         bp += n;
         buflen -= n;
         cp += n;
-        if (cp != erdata) 
-        {
+        if (cp != erdata) {
           errno = EIO;
           return NULL;
         }
@@ -528,15 +494,12 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
     if (!had_error) haveanswer++;
   }
 
-  if (haveanswer) 
-  {
+  if (haveanswer) {
     *ap = NULL;
     *hap = NULL;
-    if (!tib->host.h_name) 
-    {
+    if (!tib->host.h_name) {
       n = strlen(qname) + 1;
-      if (n > buflen || n >= MAXHOSTNAMELEN) 
-      {
+      if (n > buflen || n >= MAXHOSTNAMELEN) {
         errno = EMSGSIZE;
         return NULL;
       }
@@ -556,8 +519,7 @@ static struct hostent *getanswer(const char *answer, int anslen, const char *qna
 // gethostbyname
 //
 
-struct hostent *gethostbyname(const char *name)
-{
+struct hostent *gethostbyname(const char *name) {
   char buf[QUERYBUF_SIZE];
   const char *cp;
   int n;
@@ -567,8 +529,7 @@ struct hostent *gethostbyname(const char *name)
   tib->host.h_length = sizeof(struct in_addr);
 
   // Return 127.0.0.1 for localhost
-  if (strcmp(name, "localhost") == 0)
-  {
+  if (strcmp(name, "localhost") == 0) {
     struct in_addr loaddr;
     loaddr.s_addr = htonl(INADDR_LOOPBACK);
     memcpy(tib->host_addr, &loaddr, sizeof(struct in_addr));
@@ -584,12 +545,9 @@ struct hostent *gethostbyname(const char *name)
   }
 
   // Disallow names consisting only of digits/dots, unless they end in a dot
-  if (*name >= '0' && *name <= '9')
-  {
-    for (cp = name;; ++cp) 
-    {
-      if (!*cp)
-      {
+  if (*name >= '0' && *name <= '9') {
+    for (cp = name;; ++cp) {
+      if (!*cp) {
         struct in_addr addr;
 
         if (*--cp == '.') break;
@@ -625,8 +583,7 @@ struct hostent *gethostbyname(const char *name)
 // gethostbyaddr
 //
 
-struct hostent *gethostbyaddr(const char *addr, int len, int type)
-{
+struct hostent *gethostbyaddr(const char *addr, int len, int type) {
   struct tib *tib = gettib();
   const unsigned char *uaddr = (const unsigned char *) addr;
   int n;
@@ -634,14 +591,12 @@ struct hostent *gethostbyaddr(const char *addr, int len, int type)
   struct hostent *hp;
   char qbuf[NS_MAXDNAME + 1];
 
-  if (type != AF_INET)
-  {
+  if (type != AF_INET) {
     errno = EPROTONOSUPPORT;
     return NULL;
   }
 
-  if (len != sizeof(struct in_addr))
-  {
+  if (len != sizeof(struct in_addr)) {
     errno = EMSGSIZE;
     return NULL;
   }
@@ -668,8 +623,7 @@ struct hostent *gethostbyaddr(const char *addr, int len, int type)
 // inet_ntoa
 //
 
-char *inet_ntoa(struct in_addr in)
-{
+char *inet_ntoa(struct in_addr in) {
   char *buf = gettib()->hostbuf;
   sprintf(buf, "%d.%d.%d.%d", in.s_un_b.s_b1, in.s_un_b.s_b2, in.s_un_b.s_b3, in.s_un_b.s_b4);
   return buf;
@@ -679,13 +633,11 @@ char *inet_ntoa(struct in_addr in)
 // inet_addr
 //
 
-unsigned long inet_addr(const char *cp)
-{
+unsigned long inet_addr(const char *cp) {
   static const unsigned long max[4] = {0xFFFFFFFF, 0xFFFFFF, 0xFFFF, 0xFF};
   unsigned long val;
   char c;
-  union iaddr 
-  {
+  union iaddr {
     unsigned char bytes[4];
     unsigned long word;
   } res;
@@ -696,96 +648,80 @@ unsigned long inet_addr(const char *cp)
   res.word = 0;
 
   c = *cp;
-  for (;;) 
-  {
+  for (;;) {
     // Collect number up to ``.''.
     // Values are specified as for C: 0x=hex, 0=octal, isdigit=decimal.
 
-    if (c < '0' || c > '9') 
-    {
+    if (c < '0' || c > '9') {
       errno = EINVAL;
       return INADDR_NONE;
     }
 
     val = 0; base = 10; digit = 0;
-    if (c == '0') 
-    {
+    if (c == '0') {
       c = *++cp;
-      if (c == 'x' || c == 'X')
+      if (c == 'x' || c == 'X') {
         base = 16, c = *++cp;
-      else 
-      {
+      } else {
         base = 8;
         digit = 1;
       }
     }
 
-    for (;;) 
-    {
-      if (c >= '0' && c <= '9') 
-      {
-        if (base == 8 && (c == '8' || c == '9')) 
-        {
+    for (;;) {
+      if (c >= '0' && c <= '9') {
+        if (base == 8 && (c == '8' || c == '9')) {
           errno = EINVAL;
           return INADDR_NONE;
         }
         val = (val * base) + (c - '0');
         c = *++cp;
         digit = 1;
-      } 
-      else if (base == 16 && c >= 'a' && c <= 'f') 
-      {
+      } else if (base == 16 && c >= 'a' && c <= 'f') {
         val = (val << 4) | (c + 10 - 'a');
         c = *++cp;
         digit = 1;
-      } 
-      else if (base == 16 && c >= 'A' && c <= 'F') 
-      {
+      } else if (base == 16 && c >= 'A' && c <= 'F') {
         val = (val << 4) | (c + 10 - 'A');
         c = *++cp;
         digit = 1;
-      } 
-      else
+      } else {
         break;
+      }
     }
 
-    if (c == '.') 
-    {
+    if (c == '.') {
       // Internet format:
       //   a.b.c.d
       //   a.b.c        (with c treated as 16 bits)
       //   a.b          (with b treated as 24 bits)
 
-      if (pp > res.bytes + 2 || val > 0xFF) 
-      {
+      if (pp > res.bytes + 2 || val > 0xFF) {
         errno = EINVAL;
         return INADDR_NONE;
       }
       *pp++ = (unsigned char) val;
       c = *++cp;
-    } 
-    else
+    } else {
       break;
+    }
   }
 
   // Check for trailing characters.
-  if (c > ' ') 
-  {
+  if (c > ' ') {
     errno = EINVAL;
     return INADDR_NONE;
   }
 
   // Did we get a valid digit?
-  if (!digit) 
-  {
+  if (!digit) {
     errno = EINVAL;
     return INADDR_NONE;
   }
 
   // Check whether the last part is in its limits depending on 
   // the number of parts in total.
-  if (val > max[pp - res.bytes]) 
-  {
+  if (val > max[pp - res.bytes]) {
     errno = EINVAL;
     return INADDR_NONE;
   }
@@ -797,29 +733,29 @@ unsigned long inet_addr(const char *cp)
 // gethostname
 //
 
-int gethostname(char *name, int namelen)
-{
+int gethostname(char *name, int namelen) {
   char buf[MAXHOSTNAMELEN];
   char *host;
   char *domain;
   struct peb *peb = getpeb();
 
-  if (*peb->hostname)
+  if (*peb->hostname) {
     host = peb->hostname;
-  else
+  } else {
     host = get_property(osconfig(), "os", "hostname", NULL);
+  }
 
-  if (*peb->default_domain)
+  if (*peb->default_domain) {
     domain = peb->default_domain;
-  else
+  } else {
     host = get_property(osconfig(), "dns", "domain", NULL);
+  }
 
-  if (!host)
+  if (!host) {
     strncpy(name, "localhost", namelen);
-  else if (!domain)
+  } else if (!domain) {
     strncpy(name, host, namelen);
-  else
-  {
+  } else {
     sprintf(buf, "%s.%s", host, domain);
     strncpy(name, buf, namelen);
   }
@@ -831,24 +767,20 @@ int gethostname(char *name, int namelen)
 // getprotobyname
 //
 
-struct protoent *getprotobyname(const char *name)
-{
+struct protoent *getprotobyname(const char *name) {
   struct protoent *p;
   char **alias;
 
-  if (!name)
-  {
+  if (!name) {
     errno = EFAULT;
     return NULL;
   }
 
   p = protocols;
-  while (p->p_name != NULL)
-  {
+  while (p->p_name != NULL) {
     if (strcmp(p->p_name, name) == 0) return p;
     alias = p->p_aliases;
-    while (*alias)
-    {
+    while (*alias) {
       if (strcmp(*alias, name) == 0) return p;
       alias++;
     }
@@ -864,13 +796,11 @@ struct protoent *getprotobyname(const char *name)
 // getprotobynumber
 //
 
-struct protoent *getprotobynumber(int proto)
-{
+struct protoent *getprotobynumber(int proto) {
   struct protoent *pp;
 
   pp = protocols;
-  while (pp->p_name != NULL)
-  {
+  while (pp->p_name != NULL) {
     if (pp->p_proto == proto) return pp;
     pp++;
   }
@@ -883,30 +813,24 @@ struct protoent *getprotobynumber(int proto)
 // getservbyname
 //
 
-struct servent *getservbyname(const char *name, const char *proto)
-{
+struct servent *getservbyname(const char *name, const char *proto) {
   struct servent *sp;
   char **alias;
 
-  if (!name)
-  {
+  if (!name) {
     errno = EFAULT;
     return NULL;
   }
 
   sp = services;
-  while (sp->s_name != NULL)
-  {
-    if (strcmp(sp->s_name, name) == 0) 
-    {
+  while (sp->s_name != NULL) {
+    if (strcmp(sp->s_name, name) == 0) {
       if (!proto || strcmp(sp->s_proto, proto) == 0) return sp;
     }
 
     alias = sp->s_aliases;
-    while (*alias)
-    {
-      if (strcmp(*alias, name) == 0) 
-      {
+    while (*alias) {
+      if (strcmp(*alias, name) == 0) {
         if (!proto || strcmp(sp->s_proto, proto) == 0) return sp;
       }
       alias++;
@@ -923,15 +847,12 @@ struct servent *getservbyname(const char *name, const char *proto)
 // getservbyport
 //
 
-struct servent *getservbyport(int port, const char *proto)
-{
+struct servent *getservbyport(int port, const char *proto) {
   struct servent *sp;
 
   sp = services;
-  while (sp->s_name != NULL)
-  {
-    if (sp->s_port == port) 
-    {
+  while (sp->s_name != NULL) {
+    if (sp->s_port == port) {
       if (!proto || strcmp(sp->s_proto, proto) == 0) return sp;
     }
     sp++;

@@ -47,8 +47,7 @@
 
 #pragma pack(push, 1)
 
-struct iphdr 
-{ 
+struct iphdr {
   unsigned short h_len_and_vers; // Length of the header and IP version
   unsigned short total_len;      // Total length of the packet 
   unsigned short ident;          // Unique identifier 
@@ -65,8 +64,7 @@ struct iphdr
 // ICMP header 
 //
 
-struct icmphdr 
-{ 
+struct icmphdr {
   unsigned char i_type; 
   unsigned char i_code; // type sub code
   unsigned short i_cksum; 
@@ -79,8 +77,7 @@ struct icmphdr
  
 #pragma pack(pop)
 
-struct pingstat
-{
+struct pingstat {
   int tmin;
   int tmax;
   int tsum;
@@ -97,8 +94,7 @@ void fill_icmp_data(char *icmp_data, int datasize);
 unsigned short checksum(unsigned short *buffer, int size); 
 void decode_resp(char *buf, int bytes, struct sockaddr_in *from, struct pingstat *stat);
 
-int cmd_ping(int argc, char *argv[])
-{ 
+int cmd_ping(int argc, char *argv[]) {
   int sockraw; 
   struct sockaddr_in dest, from; 
   struct hostent *hp; 
@@ -114,8 +110,7 @@ int cmd_ping(int argc, char *argv[])
   char *hostname;
   struct pingstat stat;
 
-  if (argc < 2) 
-  {
+  if (argc < 2) {
     fprintf(stderr, "usage: %s <host> [data_size]\n", argv[0]); 
     return 0;
   }
@@ -125,57 +120,53 @@ int cmd_ping(int argc, char *argv[])
   hp = gethostbyname(hostname);
   if (!hp) addr = inet_addr(hostname); 
   
-  if (!hp && addr == INADDR_NONE)
-  {
+  if (!hp && addr == INADDR_NONE) {
     fprintf(stderr, "%s: unknown host %s\n", argv[0], hostname);
     return 1; 
   } 
 
-  if (hp != NULL) 
+  if (hp != NULL) {
     memcpy(&(dest.sin_addr), hp->h_addr, hp->h_length); 
-  else 
+  } else {
     dest.sin_addr.s_addr = addr; 
- 
-  if (hp) 
+  }
+
+  if (hp) {
     dest.sin_family = (unsigned char) hp->h_addrtype; 
-  else 
+  } else  {
     dest.sin_family = AF_INET; 
+  }
  
   dest.sin_port = htons(53);
   dest_ip = inet_ntoa(dest.sin_addr); 
  
-  if (argc > 2)
-  { 
+  if (argc > 2) { 
     datasize = atoi(argv[2]); 
     if (datasize == 0) datasize = DEF_PACKET_SIZE; 
-  }
-  else 
+  } else {
     datasize = DEF_PACKET_SIZE; 
- 
-  if (datasize + sizeof(struct icmphdr) > PKTSIZ)
-  { 
+  }
+
+  if (datasize + sizeof(struct icmphdr) > PKTSIZ) { 
     fprintf(stderr, "%s: packet size too large\n", argv[0]); 
     return 1; 
   } 
 
   sockraw = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);   
-  if (sockraw < 0) 
-  {
+  if (sockraw < 0) {
     perror("ping: socket");
     return 1; 
   } 
 
   rc = setsockopt(sockraw, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof(timeout)); 
-  if (rc < 0) 
-  { 
+  if (rc < 0) {
     perror("ping: recv timeout");
     return 1; 
   } 
 
   timeout = 1000; 
   rc = setsockopt(sockraw, SOL_SOCKET, SO_SNDTIMEO, (char *) &timeout, sizeof(timeout)); 
-  if(rc < 0) 
-  { 
+  if (rc < 0) { 
     perror("ping: send timeout");
     return 1; 
   }
@@ -189,14 +180,14 @@ int cmd_ping(int argc, char *argv[])
   memset(icmp_data, 0, MAX_PACKET); 
   fill_icmp_data(icmp_data, datasize + sizeof(struct icmphdr));
  
-  if (dest.sin_family == AF_INET) 
+  if (dest.sin_family == AF_INET) {
     printf("PING %s (%s): %d data bytes\n", hostname, inet_ntoa(dest.sin_addr), datasize);
-  else
+  } else {
     printf("PING %s: %d data bytes\n", hostname, datasize);
+  }
   printf("\n");
 
-  for (numpackets = 0; numpackets < 5; numpackets++)
-  { 
+  for (numpackets = 0; numpackets < 5; numpackets++) { 
     int bwrote;
     struct icmphdr *icmphdr = (struct icmphdr *) &icmp_data;
 
@@ -207,10 +198,8 @@ int cmd_ping(int argc, char *argv[])
     icmphdr->i_cksum = checksum((unsigned short *) icmp_data, datasize + sizeof(struct icmphdr));
  
     bwrote = sendto(sockraw, icmp_data, datasize + sizeof(struct icmphdr), 0, (struct sockaddr *) &dest, sizeof(dest)); 
-    if (bwrote < 0)
-    { 
-      if (errno == ETIMEDOUT)
-      {
+    if (bwrote < 0) { 
+      if (errno == ETIMEDOUT) {
         printf("timed out\n"); 
         continue; 
       } 
@@ -218,8 +207,7 @@ int cmd_ping(int argc, char *argv[])
       return 1; 
     }
  
-    if (bwrote < datasize)
-    {
+    if (bwrote < datasize) {
       fprintf(stdout, "Wrote %d bytes\n", bwrote); 
     }
 
@@ -228,10 +216,8 @@ int cmd_ping(int argc, char *argv[])
     stat.ntransmitted++;
 
     bread = recvfrom(sockraw ,recvbuf, MAX_PACKET, 0, (struct sockaddr *) &from, &fromlen); 
-    if (bread < 0)
-    { 
-      if (errno == ETIMEDOUT)
-      {
+    if (bread < 0) {
+      if (errno == ETIMEDOUT) {
         printf("timed out\n"); 
         continue; 
       } 
@@ -246,17 +232,16 @@ int cmd_ping(int argc, char *argv[])
   printf("----%s PING Statistics----\n", hostname);
   printf("%d packets transmitted, ", stat.ntransmitted);
   printf("%d packets received, ", stat.nreceived);
-  if (stat.ntransmitted)
-  {
-    if (stat.nreceived > stat.ntransmitted)
+  if (stat.ntransmitted) {
+    if (stat.nreceived > stat.ntransmitted) {
       printf("-- somebody's printing up packets!");
-    else
+    } else {
       printf("%d%% packet loss", (int) (((stat.ntransmitted - stat.nreceived) * 100) / stat.ntransmitted));
+    }
     printf("\n");
   }
 
-  if (stat.nreceived)
-  {
+  if (stat.nreceived) {
     printf("round-trip (ms)  min/avg/max = %d/%d/%d\n", stat.tmin, stat.tsum / stat.nreceived, stat.tmax);
   }
 
@@ -264,8 +249,7 @@ int cmd_ping(int argc, char *argv[])
   return 0; 
 } 
 
-void decode_resp(char *buf, int bytes, struct sockaddr_in *from, struct pingstat *stat) 
-{ 
+void decode_resp(char *buf, int bytes, struct sockaddr_in *from, struct pingstat *stat) {
   struct iphdr *iphdr; 
   struct icmphdr *icmphdr; 
   unsigned short iphdrlen; 
@@ -274,22 +258,19 @@ void decode_resp(char *buf, int bytes, struct sockaddr_in *from, struct pingstat
   iphdr = (struct iphdr *) buf;
   iphdrlen = (iphdr->h_len_and_vers & 0x0F) * 4;
 
-  if (bytes < iphdrlen + ICMP_MIN) 
-  { 
+  if (bytes < iphdrlen + ICMP_MIN) {
     printf("Too few bytes from %s\n", inet_ntoa(from->sin_addr)); 
     return;
   } 
 
   icmphdr = (struct icmphdr *) (buf + iphdrlen); 
 
-  if (icmphdr->i_type != ICMP_ECHOREPLY && icmphdr->i_type != ICMP_ECHO)
-  { 
+  if (icmphdr->i_type != ICMP_ECHOREPLY && icmphdr->i_type != ICMP_ECHO) {
     fprintf(stderr, "non-echo type %d recvd\n", icmphdr->i_type); 
     return; 
   } 
 
-  if (icmphdr->i_id != (unsigned short) gettid()) 
-  { 
+  if (icmphdr->i_id != (unsigned short) gettid()) {
     fprintf(stderr, "someone else's packet!\n"); 
     return; 
   } 
@@ -308,12 +289,10 @@ void decode_resp(char *buf, int bytes, struct sockaddr_in *from, struct pingstat
   printf("\n"); 
 } 
  
-unsigned short checksum(unsigned short *buffer, int size) 
-{ 
+unsigned short checksum(unsigned short *buffer, int size) {
   unsigned long cksum = 0; 
  
-  while (size > 1)
-  { 
+  while (size > 1) {
     cksum += *buffer++; 
     size -= sizeof(unsigned short); 
   } 
@@ -323,10 +302,9 @@ unsigned short checksum(unsigned short *buffer, int size)
   cksum = (cksum >> 16) + (cksum & 0xffff); 
   cksum += (cksum >> 16); 
   return (unsigned short) (~cksum); 
-} 
+}
 
-void fill_icmp_data(char *icmp_data, int datasize)
-{ 
+void fill_icmp_data(char *icmp_data, int datasize) {
   struct icmphdr *icmp_hdr; 
   char *datapart; 
  
@@ -340,4 +318,4 @@ void fill_icmp_data(char *icmp_data, int datasize)
    
   datapart = icmp_data + sizeof(struct icmphdr); 
   memset(datapart, 'E', datasize - sizeof(struct icmphdr));  
-} 
+}

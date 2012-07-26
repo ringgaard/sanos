@@ -34,8 +34,7 @@
 #ifndef TSS_H
 #define TSS_H
 
-struct tss
-{
+struct tss {
   unsigned long link;
   unsigned long esp0, ss0;
   unsigned long esp1, ss1;

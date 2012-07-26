@@ -50,15 +50,13 @@
 #define NETIF_TCP_RX_CHECKSUM_OFFLOAD 0x00100000
 #define NETIF_TCP_TX_CHECKSUM_OFFLOAD 0x00200000
 
-struct mclist
-{
+struct mclist {
   struct mclist *next;
   struct ip_addr ipaddr;
   struct eth_addr hwaddr;
 };
 
-struct netif 
-{
+struct netif {
   struct netif *next;
   struct ip_addr ipaddr;
   struct ip_addr netmask;

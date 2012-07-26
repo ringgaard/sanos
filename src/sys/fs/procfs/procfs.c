@@ -51,8 +51,7 @@ int procfs_stat(struct fs *fs, char *name, struct stat64 *buffer);
 int procfs_opendir(struct file *filp, char *name);
 int procfs_readdir(struct file *filp, struct direntry *dirp, int count);
 
-struct fsops procfsops =
-{
+struct fsops procfsops = {
   FSOP_OPEN | FSOP_CLOSE | FSOP_READ | FSOP_TELL | FSOP_LSEEK | FSOP_STAT | FSOP_FSTAT | FSOP_OPENDIR | FSOP_READDIR,
 
   NULL,
@@ -101,13 +100,11 @@ struct fsops procfsops =
   procfs_readdir
 };
 
-static struct proc_inode *find_proc(char *name)
-{
+static struct proc_inode *find_proc(char *name) {
   struct proc_inode *inode = proc_list_head;
   int namelen = strlen(name);
 
-  while (inode)
-  {
+  while (inode) {
     if (fnmatch(name, namelen, inode->name, inode->namelen)) return inode;
     inode = inode->next;
   }
@@ -115,15 +112,13 @@ static struct proc_inode *find_proc(char *name)
   return NULL;
 }
 
-static void free_proc_file(struct proc_file *pf)
-{
+static void free_proc_file(struct proc_file *pf) {
   struct proc_blk *blk;
   struct proc_blk *next;
 
   if (!pf) return;
   blk = pf->blkhead;
-  while (blk)
-  {
+  while (blk) {
     next = blk->next;
     kfree(blk);
     blk = next;
@@ -132,13 +127,11 @@ static void free_proc_file(struct proc_file *pf)
   kfree(pf);
 }
 
-void init_procfs()
-{
+void init_procfs() {
   register_filesystem("procfs", &procfsops);
 }
 
-int register_proc_inode(char *name, proc_t proc, void *arg)
-{
+int register_proc_inode(char *name, proc_t proc, void *arg) {
   struct proc_inode *inode;
 
   inode = (struct proc_inode *) kmalloc(sizeof(struct proc_inode));
@@ -151,44 +144,39 @@ int register_proc_inode(char *name, proc_t proc, void *arg)
   inode->arg = arg;
   inode->size = 0;
 
-  if (proc_list_tail)
-  {
+  if (proc_list_tail) {
     proc_list_tail->next = inode;
     proc_list_tail = inode;
-  }
-  else
+  } else {
     proc_list_head = proc_list_tail = inode;
+  }
 
   return 0;
 }
 
-int proc_write(struct proc_file *pf, void *buffer, size_t size)
-{
+int proc_write(struct proc_file *pf, void *buffer, size_t size) {
   char *ptr = (char *) buffer;
   size_t left = size;
   struct proc_blk *blk;
   size_t count;
 
-  while (left > 0)
-  {
-    if (!pf->blktail || pf->blktail->size == PROC_BLKSIZE)
-    {
+  while (left > 0) {
+    if (!pf->blktail || pf->blktail->size == PROC_BLKSIZE) {
       blk = (struct proc_blk *) kmalloc(sizeof(struct proc_blk));
       if (!blk) return -ENOMEM;
 
       blk->next = NULL;
       blk->size = 0;
 
-      if (pf->blktail)
-      {
+      if (pf->blktail) {
         pf->blktail->next = blk;
         pf->blktail = blk;
-      }
-      else
+      } else {
         pf->blkhead = pf->blktail = blk;
-    }
-    else
+      }
+    } else {
       blk = pf->blktail;
+    }
 
     count = blk->size + left > PROC_BLKSIZE ? (size_t) (PROC_BLKSIZE - blk->size) : left;
 
@@ -202,8 +190,7 @@ int proc_write(struct proc_file *pf, void *buffer, size_t size)
   return size;
 }
 
-int pprintf(struct proc_file *pf, const char *fmt, ...)
-{
+int pprintf(struct proc_file *pf, const char *fmt, ...) {
   va_list args;
   char buffer[1024];
   int len;
@@ -215,8 +202,7 @@ int pprintf(struct proc_file *pf, const char *fmt, ...)
   return proc_write(pf, buffer, len);
 }
 
-int procfs_open(struct file *filp, char *name)
-{
+int procfs_open(struct file *filp, char *name) {
   struct proc_inode *inode;
   struct proc_file *pf;
   int rc;
@@ -233,8 +219,7 @@ int procfs_open(struct file *filp, char *name)
   pf->size = 0;
 
   rc = inode->proc(pf, inode->arg);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     free_proc_file(pf);
     return rc;
   }
@@ -245,10 +230,8 @@ int procfs_open(struct file *filp, char *name)
   return 0;
 }
 
-int procfs_close(struct file *filp)
-{
-  if (!(filp->flags & F_DIR))
-  {
+int procfs_close(struct file *filp) {
+  if (!(filp->flags & F_DIR)) {
     struct proc_file *pf = filp->data;
     free_proc_file(pf);
   }
@@ -256,8 +239,7 @@ int procfs_close(struct file *filp)
   return 0;
 }
 
-int procfs_read(struct file *filp, void *data, size_t size, off64_t pos)
-{
+int procfs_read(struct file *filp, void *data, size_t size, off64_t pos) {
   struct proc_file *pf = filp->data;
   struct proc_blk *blk;
   size_t start = 0;
@@ -270,26 +252,24 @@ int procfs_read(struct file *filp, void *data, size_t size, off64_t pos)
   if (!size) return 0;
 
   blk = pf->blkhead;
-  while (blk && start + blk->size <= pos)
-  {
+  while (blk && start + blk->size <= pos) {
     start += blk->size;
     blk = blk->next;
   }
 
-  if (blk)
-  {
+  if (blk) {
     offset = (int) pos - start;
 
-    if (offset < 0 || offset >= PROC_BLKSIZE)
-    {
+    if (offset < 0 || offset >= PROC_BLKSIZE) {
       kprintf("invalid proc blk offset %d\n", offset);
       dbg_break();
     }
 
-    if (left < blk->size - offset)
+    if (left < blk->size - offset) {
       count = left;
-    else
+    } else {
       count = blk->size - offset;
+    }
 
     memcpy(ptr, blk->data + offset, count);
     ptr += count;
@@ -297,12 +277,12 @@ int procfs_read(struct file *filp, void *data, size_t size, off64_t pos)
     blk = blk->next;
   }
 
-  while (left > 0 && blk)
-  {
-    if (left < blk->size)
+  while (left > 0 && blk) {
+    if (left < blk->size) {
       count = left;
-    else
+    } else {
       count = blk->size;
+    }
 
     memcpy(ptr, blk->data, count);
     ptr += count;
@@ -313,19 +293,16 @@ int procfs_read(struct file *filp, void *data, size_t size, off64_t pos)
   return size - left;
 }
 
-off64_t procfs_tell(struct file *filp)
-{
+off64_t procfs_tell(struct file *filp) {
   return filp->pos;
 }
 
-off64_t procfs_lseek(struct file *filp, off64_t offset, int origin)
-{
+off64_t procfs_lseek(struct file *filp, off64_t offset, int origin) {
   struct proc_file *pf = filp->data;
 
   if (filp->flags & F_DIR) return -EINVAL;
 
-  switch (origin)
-  {
+  switch (origin) {
     case SEEK_END:
       offset += pf->size;
       break;
@@ -340,14 +317,11 @@ off64_t procfs_lseek(struct file *filp, off64_t offset, int origin)
   return offset;
 }
 
-int procfs_fstat(struct file *filp, struct stat64 *buffer)
-{
+int procfs_fstat(struct file *filp, struct stat64 *buffer) {
   struct proc_file *pf = filp->data;
 
-  if (filp->flags & F_DIR)
-  {
-    if (buffer)
-    {
+  if (filp->flags & F_DIR) {
+    if (buffer) {
       memset(buffer, 0, sizeof(struct stat64));
       buffer->st_mode = S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
       buffer->st_ino = PROC_ROOT_INODE;
@@ -360,8 +334,7 @@ int procfs_fstat(struct file *filp, struct stat64 *buffer)
     return 0;
   }
 
-  if (buffer)
-  {
+  if (buffer) {
     memset(buffer, 0, sizeof(struct stat64));
     buffer->st_mode = S_IFCHR | S_IRUSR | S_IRGRP | S_IROTH;
 
@@ -376,16 +349,13 @@ int procfs_fstat(struct file *filp, struct stat64 *buffer)
   return pf->size;
 }
 
-int procfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
-{
+int procfs_stat(struct fs *fs, char *name, struct stat64 *buffer) {
   struct proc_inode *inode;
 
   if (*name == PS1 || *name == PS2) name++;
 
-  if (!*name)
-  {
-    if (buffer)
-    {
+  if (!*name) {
+    if (buffer) {
       memset(buffer, 0, sizeof(struct stat64));
       buffer->st_mode = S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
       buffer->st_ino = PROC_ROOT_INODE;
@@ -401,8 +371,7 @@ int procfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
   inode = find_proc(name);
   if (!inode) return -ENOENT;
 
-  if (buffer)
-  {
+  if (buffer) {
     memset(buffer, 0, sizeof(struct stat64));
     buffer->st_mode = S_IFCHR | S_IRUSR | S_IRGRP | S_IROTH;
 
@@ -417,8 +386,7 @@ int procfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
   return inode->size;
 }
 
-int procfs_opendir(struct file *filp, char *name)
-{
+int procfs_opendir(struct file *filp, char *name) {
   if (*name == PS1 || *name == PS2) name++;
   if (*name) return -ENOENT;
 
@@ -426,8 +394,7 @@ int procfs_opendir(struct file *filp, char *name)
   return 0;
 }
 
-int procfs_readdir(struct file *filp, struct direntry *dirp, int count)
-{
+int procfs_readdir(struct file *filp, struct direntry *dirp, int count) {
   struct proc_inode *inode = filp->data;
 
   if (!inode) return 0;

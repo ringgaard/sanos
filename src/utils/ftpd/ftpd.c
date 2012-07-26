@@ -56,14 +56,12 @@ int sock = NOHANDLE;
 int logging = 2;
 int timeout = 900 * 1000;
 
-struct reply 
-{
+struct reply {
   struct reply *next;
   char line[1];
 };
 
-struct ftpstate
-{
+struct ftpstate {
   int ctrlsock;
   int datasock;
   int replycode;
@@ -87,8 +85,7 @@ struct ftpstate
   int type;
 };
 
-int login(struct ftpstate *fs, struct passwd *pw)
-{
+int login(struct ftpstate *fs, struct passwd *pw) {
   if (initgroups(pw->pw_name, pw->pw_gid) < 0) return -1;
   if (setgid(pw->pw_gid) < 0) return -1;
   if (setuid(pw->pw_uid) < 0) return -1;
@@ -99,15 +96,13 @@ int login(struct ftpstate *fs, struct passwd *pw)
   return 0;
 }
 
-int convert(struct ftpstate *fs, char *filename, char *buf)
-{
+int convert(struct ftpstate *fs, char *filename, char *buf) {
   char buffer[2 * MAXPATH];
   char *p;
 
-  if (*filename == '/' || *filename == '\\')
+  if (*filename == '/' || *filename == '\\') {
     strcpy(buffer, filename);
-  else
-  {
+  } else {
     strcpy(buffer, fs->wd);
     strcat(buffer, "/");
     strcat(buffer, filename);
@@ -116,8 +111,7 @@ int convert(struct ftpstate *fs, char *filename, char *buf)
   if (realpath(buffer, buf) == NULL) return -1;
 
   p = buf;
-  while (*p)
-  {
+  while (*p) {
     if (*p == '\\') *p = '/';
     p++;
   }
@@ -125,8 +119,7 @@ int convert(struct ftpstate *fs, char *filename, char *buf)
   return 0;
 }
 
-void addreply(struct ftpstate *fs, int code, const char *line, ...)
-{
+void addreply(struct ftpstate *fs, int code, const char *line, ...) {
   char buf[MAXPATH + 128];
   va_list ap;
   char *s;
@@ -139,8 +132,7 @@ void addreply(struct ftpstate *fs, int code, const char *line, ...)
   va_end(ap);
 
   s = buf;
-  while (*s)
-  {
+  while (*s) {
     char *e = s;
     while (*e && *e != '\n') e++;
     l = e - s;
@@ -151,10 +143,11 @@ void addreply(struct ftpstate *fs, int code, const char *line, ...)
     r->line[l] = 0;
     r->next = NULL;
 
-    if (fs->lastreply) 
+    if (fs->lastreply) {
       fs->lastreply->next = r;
-    else
+    } else {
       fs->firstreply = r;
+    }
 
     fs->lastreply = r;
 
@@ -163,27 +156,21 @@ void addreply(struct ftpstate *fs, int code, const char *line, ...)
   }
 }
 
-void error(struct ftpstate *fs, int code, char *msg)
-{
+void error(struct ftpstate *fs, int code, char *msg) {
   int err = errno;
-  if (err == 0)
-  {
+  if (err == 0) {
     syslog(LOG_ERR, "%s", msg);
     addreply(fs, code, "%s", msg);
-  }
-  else
-  {
+  } else {
     char *errmsg = strerror(errno);
     syslog(LOG_ERR, "%s: %s", msg, errmsg);
     addreply(fs, code, "%s: %s", msg, errmsg);
   }
 }
 
-void doreply(struct ftpstate *fs)
-{
+void doreply(struct ftpstate *fs) {
   struct reply *r = fs->firstreply;
-  while (r)
-  {
+  while (r) {
     struct reply *next = r->next;
     fprintf(fs->out, "%03d %s\r\n", fs->replycode, r->line);
     if (logging > 1) syslog(LOG_DEBUG, "%03d %s", fs->replycode, r->line);
@@ -195,20 +182,17 @@ void doreply(struct ftpstate *fs)
   fflush(fs->out);
 }
 
-int opendata(struct ftpstate *fs)
-{
+int opendata(struct ftpstate *fs) {
   struct sockaddr_in sin;
   int sock;
   int len;
 
-  if (fs->datasock < 0)
-  {
+  if (fs->datasock < 0) {
     addreply(fs, 425, "No data connection");
     return -1;
   }
 
-  if (fs->passive)
-  {
+  if (fs->passive) {
     fd_set rs;
     struct timeval tv;
 
@@ -216,24 +200,21 @@ int opendata(struct ftpstate *fs)
     FD_SET(fs->datasock, &rs);
     tv.tv_sec = fs->idletime;
     tv.tv_usec = 0;
-    if (select(fs->datasock + 1, &rs, NULL, NULL, &tv) < 0)
-    {
+    if (select(fs->datasock + 1, &rs, NULL, NULL, &tv) < 0) {
       addreply(fs, 421, "timeout (no connection for %d seconds)", fs->idletime);
       return -1;
     }
 
     len = sizeof(sin);
     sock = accept(fs->datasock, (struct sockaddr *) &sin, &len);
-    if (sock < 0) 
-    {
+    if (sock < 0) {
       error(fs, 421, "accept failed");
       close(fs->datasock);
       fs->datasock = -1;
       return -1;
     }
 
-    if (!fs->guest && sin.sin_addr.s_addr != fs->peer.sin_addr.s_addr)
-    {
+    if (!fs->guest && sin.sin_addr.s_addr != fs->peer.sin_addr.s_addr) {
       addreply(fs, 425, "Connection must originate at %s", inet_ntoa(fs->peer.sin_addr));
       close(sock);
       close(fs->datasock);
@@ -242,15 +223,12 @@ int opendata(struct ftpstate *fs)
     }
 
     addreply(fs, 150, "Accepted data connection from %s:%d", inet_ntoa(sin.sin_addr), ntohs(sin.sin_port));
-  } 
-  else 
-  {
+  } else {
     sin.sin_addr.s_addr = fs->peer.sin_addr.s_addr;
     sin.sin_port = htons(fs->dataport);
     sin.sin_family = AF_INET;
 
-    if (connect(fs->datasock, (struct sockaddr *) &sin, sizeof(sin)) < 0) 
-    {
+    if (connect(fs->datasock, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
       addreply(fs, 425, "Could not open data connection to %s port %d: %s", inet_ntoa(sin.sin_addr), fs->dataport, strerror(errno));
       close(fs->datasock);
       fs->datasock = -1;
@@ -265,46 +243,38 @@ int opendata(struct ftpstate *fs)
   return sock;
 }
 
-void douser(struct ftpstate *fs, char *username)
-{
+void douser(struct ftpstate *fs, char *username) {
   struct passwd *pw;
 
-  if (fs->loggedin)
-  {
-    if (username) 
-    {
-      if (!fs->guest)
+  if (fs->loggedin) {
+    if (username) {
+      if (!fs->guest) {
         addreply(fs, 530, "You're already logged in.");
-      else
+      } else {
         addreply(fs, 230, "Anonymous user logged in.");
+      }
     }
     return;
   }
 
-  if (username && strcmp(username, "ftp") != 0 && strcmp(username, "anonymous") != 0)
-  {
+  if (username && strcmp(username, "ftp") != 0 && strcmp(username, "anonymous") != 0) {
     pw = getpwnam(username);
-    if (pw == NULL)
+    if (pw == NULL) {
       addreply(fs, 331, "User %s unknown.", username);
-    else
-    {
+    } else {
       fs->uid = pw->pw_uid;
       addreply(fs, 331, "User %s OK.  Password required.", pw->pw_name);
     }
     
     fs->loggedin = 0;
-  } 
-  else 
-  {
+  } else {
     pw = getpwnam("ftp");
-    if (!pw)
+    if (!pw) {
       addreply(fs, 530, "Anonymous access not allowed.");
-    else
-    {
-      if (login(fs, pw) < 0)
+    } else {
+      if (login(fs, pw) < 0) {
         addreply(fs, 530, "Could not login anonymous user.");
-      else
-      {
+      } else {
         addreply(fs, 230, "Anonymous user logged in.");
         fs->loggedin = fs->guest = 1;
         syslog(LOG_INFO, "guest logged in");
@@ -313,42 +283,36 @@ void douser(struct ftpstate *fs, char *username)
   }
 }
 
-void dopass(struct ftpstate *fs, char *password)
-{
+void dopass(struct ftpstate *fs, char *password) {
   struct passwd *pw;
 
-  if (fs->uid < 0)
+  if (fs->uid < 0) {
     addreply(fs, 332, "Need account for login.");
-  else if ((pw = getpwuid(fs->uid)) == NULL)
+  } else if ((pw = getpwuid(fs->uid)) == NULL) {
     addreply(fs, 331, "Unknow user.");
-  else if (strcmp(pw->pw_passwd, crypt(password, pw->pw_passwd)) == 0)
-  {
-    if (login(fs, pw) < 0)
+  } else if (strcmp(pw->pw_passwd, crypt(password, pw->pw_passwd)) == 0) {
+    if (login(fs, pw) < 0) {
       addreply(fs, 530, "Could not login user.");
-    else
-    {
+    } else {
       fs->loggedin = 1;
       addreply(fs, 230, "OK. Current directory is %s", fs->wd);
       syslog(LOG_INFO, "%s logged in", pw->pw_name);
     }
-  }
-  else
+  } else {
     addreply(fs, 530, "Sorry");
+  }
 }
 
-void docwd(struct ftpstate *fs, char *dir)
-{
+void docwd(struct ftpstate *fs, char *dir) {
   char newwd[MAXPATH];
   struct stat st;
 
-  if (convert(fs, dir, newwd) < 0 || stat(newwd, &st) < 0)
-  {
+  if (convert(fs, dir, newwd) < 0 || stat(newwd, &st) < 0) {
     addreply(fs, 530, "Cannot change directory to %s: %s", dir, strerror(errno));
     return;
   }
 
-  if (!S_ISDIR(st.st_mode))
-  {
+  if (!S_ISDIR(st.st_mode)) {
     addreply(fs, 530, "Not a directory");
     return;
   }
@@ -357,8 +321,7 @@ void docwd(struct ftpstate *fs, char *dir)
   addreply(fs, 250, "Changed to %s", fs->wd);
 }
 
-void doretr(struct ftpstate *fs, char *name)
-{
+void doretr(struct ftpstate *fs, char *name) {
   char filename[MAXPATH];
   int f;
   int sock;
@@ -371,50 +334,43 @@ void doretr(struct ftpstate *fs, char *name)
   double t;
   double speed;
 
-  if (convert(fs, name, filename) < 0)
-  {
+  if (convert(fs, name, filename) < 0) {
     error(fs, 550, name);
     return;
   }
 
   f = open(filename, O_RDONLY);
-  if (f < 0) 
-  {
+  if (f < 0) {
     char buffer[MAXPATH + 40];
     snprintf(buffer, MAXPATH + 39, "Can't open %s", name);
     error(fs, 550, buffer);
     return;
   }
 
-  if (fstat(f, &st))
-  {
+  if (fstat(f, &st)) {
     close(f);
     error(fs, 451, "can't find file size");
     return;
   }
 
-  if (fs->restartat && fs->restartat > st.st_size)
-  {
+  if (fs->restartat && fs->restartat > st.st_size) {
     addreply(fs, 451, "Restart offset %d is too large for file size %d.\nRestart offset reset to 0.", fs->restartat, st.st_size);
     return;
   }
 
-  if (!S_ISREG(st.st_mode))
-  {
+  if (!S_ISREG(st.st_mode)) {
     close(f);
     addreply(fs, 450, "Not a regular file");
     return;
   }
 
   sock = opendata(fs);
-  if (sock < 0)
-  {
+  if (sock < 0) {
     close(f);
     return;
   }
 
-  if (fs->restartat == st.st_size) 
-  {
+  if (fs->restartat == st.st_size) {
     close(f);
     close(sock);
     addreply(fs, 226, "Nothing left to download.  Restart offset reset to 0.");
@@ -430,26 +386,24 @@ void doretr(struct ftpstate *fs, char *name)
   ofs = fs->restartat;
   if (ofs != 0) lseek(f, ofs, SEEK_SET);
 
-  while (ofs < st.st_size)
-  {
+  while (ofs < st.st_size) {
     n = st.st_size - ofs;
     if (n > sizeof(buf)) n = sizeof(buf);
 
     n  = read(f, buf, n);
-    if (n <= 0)
-    {
-      if (n == 0)
+    if (n <= 0) {
+      if (n == 0) {
         addreply(fs, 451, "unexpected end of file");
-      else
+      } else {
         error(fs, 451, "error reading file");
+      }
 
       close(f);
       close(sock);
       return;
     }
 
-    if (send(sock, buf, n, 0) < 0)
-    {
+    if (send(sock, buf, n, 0) < 0) {
       addreply(fs, 426, "Transfer aborted");
       close(f);
       close(sock);
@@ -464,60 +418,54 @@ void doretr(struct ftpstate *fs, char *name)
   t = (ended - started) / 1000.0;
   addreply(fs, 226, "File written successfully");
 
-  if (t != 0.0 && st.st_size - fs->restartat > 0)
+  if (t != 0.0 && st.st_size - fs->restartat > 0) {
     speed = (st.st_size - fs->restartat) / t;
-  else
+  } else {
     speed = 0.0;
+  }
 
   //addreply(fs, 0, "%.3f seconds (measured by the server), %.2f %sb/s", t, speed > 524288 ? speed / 1048576 : speed / 1024, speed > 524288 ? "M" : "K");
 
   close(f);
   close(sock);
 
-  if (fs->restartat != 0)
-  {
+  if (fs->restartat != 0) {
     fs->restartat = 0;
     addreply(fs, 0, "Restart offset reset to 0.");
   }
 }
 
-void dorest(struct ftpstate *fs, char *name)
-{
+void dorest(struct ftpstate *fs, char *name) {
   char *endptr;
 
   fs->restartat = strtoul(name, &endptr, 10);
-  if (*endptr) 
-  {
+  if (*endptr) {
     fs->restartat = 0;
     addreply(fs, 501, "RESTART needs numeric parameter.\nRestart offset set to 0.");
-  } 
-  else 
-  {
+  } else {
     syslog(LOG_NOTICE, "info: restart %d", fs->restartat);
     addreply(fs, 350, "Restarting at %ld. Send STOR or RETR to initiate transfer.", fs->restartat);
   }
 }
 
-void dodele(struct ftpstate *fs, char *name)
-{
+void dodele(struct ftpstate *fs, char *name) {
   char filename[MAXPATH];
 
-  if (convert(fs, name, filename) < 0)
-  {
+  if (convert(fs, name, filename) < 0) {
     error(fs, 550, name);
     return;
   }
 
-  if (fs->guest)
+  if (fs->guest) {
     addreply(fs, 550, "Anonymous users can not delete files.");
-  else if (unlink(filename) < 0)
+  } else if (unlink(filename) < 0) {
     addreply(fs, 550, "Could not delete %s: %s", name, strerror(errno));
-  else
+  } else {
     addreply(fs, 250, "Deleted %s", name);
+  }
 }
 
-void dostor(struct ftpstate *fs, char *name)
-{
+void dostor(struct ftpstate *fs, char *name) {
   char filename[MAXPATH];
   struct stat st;
   int f;
@@ -525,59 +473,48 @@ void dostor(struct ftpstate *fs, char *name)
   char buf[4096];
   int n;
 
-  if (convert(fs, name, filename) < 0)
-  {
+  if (convert(fs, name, filename) < 0) {
     error(fs, 550, name);
     return;
   }
 
-  if (fs->type < 1)
-  {
+  if (fs->type < 1) {
     addreply(fs, 503, "Only ASCII and binary modes are supported");
     return;
   }
 
-  if (stat(filename, &st) >= 0)
-  {
-    if (fs->guest) 
-    {
+  if (stat(filename, &st) >= 0) {
+    if (fs->guest) {
       addreply(fs, 553, "Anonymous users may not overwrite existing files");
       return;
     }
-  } 
-  else if (errno != ENOENT)
-  {
+  } else if (errno != ENOENT) {
     error(fs, 553, "Can't check for file presence");
     return;
   }
 
   f = open(filename, O_CREAT | O_TRUNC | O_WRONLY, 0600);
-  if (f < 0)
-  {
+  if (f < 0) {
     error(fs, 553, "Can't open file");
     return;
   }
 
-  if (fs->restartat && lseek(f, fs->restartat, SEEK_SET) < 0) 
-  {
+  if (fs->restartat && lseek(f, fs->restartat, SEEK_SET) < 0) {
     close(f);
     error(fs, 451, "can't seek");
     return;
   }
 
   sock = opendata(fs);
-  if (sock < 0)
-  {
+  if (sock < 0) {
     close(f);
     return;
   }
   doreply(fs);
 
-  while (1)
-  {
+  while (1) {
     n = recv(sock, buf, sizeof(buf), 0);
-    if (n < 0)
-    {
+    if (n < 0) {
       error(fs, 451, "Error during read from data connection");
       close(f);
       close(sock);
@@ -587,8 +524,7 @@ void dostor(struct ftpstate *fs, char *name)
 
     if (n == 0) break;
 
-    if (write(f, buf, n) < 0)
-    {
+    if (write(f, buf, n) < 0) {
       error(fs, 450, "Error during write to file");
       close(f);
       close(sock);
@@ -603,114 +539,104 @@ void dostor(struct ftpstate *fs, char *name)
   close(f);
   close(sock);
 
-  if (fs->restartat)
-  {
+  if (fs->restartat) {
     fs->restartat = 0;
     addreply(fs, 0, "Restart offset reset to 0.");
   }
 }
 
-void domkd(struct ftpstate *fs, char *name)
-{
+void domkd(struct ftpstate *fs, char *name) {
   char filename[MAXPATH];
 
-  if (convert(fs, name, filename) < 0)
-  {
+  if (convert(fs, name, filename) < 0) {
     error(fs, 550, name);
     return;
   }
 
-  if (fs->guest)
+  if (fs->guest) {
     addreply(fs, 550, "Sorry, anonymous users are not allowed to make directories.");
-  else if (mkdir(filename, 0755) < 0)
+  } else if (mkdir(filename, 0755) < 0) {
     error(fs, 550, "Can't create directory");
-  else
+  } else {
     addreply(fs, 257, "MKD command successful.");
+  }
 }
 
-void dormd(struct ftpstate *fs, char *name)
-{
+void dormd(struct ftpstate *fs, char *name) {
   char filename[MAXPATH];
 
-  if (convert(fs, name, filename) < 0)
-  {
+  if (convert(fs, name, filename) < 0) {
     error(fs, 550, name);
     return;
   }
 
-  if (fs->guest)
+  if (fs->guest) {
     addreply(fs, 550, "Sorry, anonymous users are not allowed to remove directories.");
-  else if (rmdir(filename) < 0)
+  } else if (rmdir(filename) < 0) {
     error(fs, 550, "Can't remove directory");
-  else
+  } else {
     addreply(fs, 250, "RMD command successful.");
+  }
 }
 
-void domdtm(struct ftpstate *fs, char *name)
-{
+void domdtm(struct ftpstate *fs, char *name) {
   char filename[MAXPATH];
   struct stat st;
   struct tm *t;
 
-  if (convert(fs, name, filename) < 0)
-  {
+  if (convert(fs, name, filename) < 0) {
     error(fs, 550, name);
     return;
   }
 
-  if (stat(filename, &st) < 0)
+  if (stat(filename, &st) < 0) {
     error(fs, 550, "Unable to stat()");
-  else if (!S_ISREG(st.st_mode))
+  } else if (!S_ISREG(st.st_mode)) {
     addreply(fs, 550, "Not a regular file");
-  else 
-  {
+  } else {
     t = gmtime(& st.st_mtime);
-    if (!t)
+    if (!t) {
       addreply(fs, 550, "gmtime() returned NULL");
-    else 
+    } else {
       addreply(fs, 213, "%04d%02d%02d%02d%02d%02d", t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
+    }
   }
 }
 
-void dosize(struct ftpstate *fs, char *name)
-{
+void dosize(struct ftpstate *fs, char *name) {
   char filename[MAXPATH];
   struct stat st;
 
-  if (convert(fs, name, filename) < 0)
-  {
+  if (convert(fs, name, filename) < 0) {
     error(fs, 550, name);
     return;
   }
 
-  if (stat(filename, &st ) < 0)
+  if (stat(filename, &st ) < 0) {
     addreply(fs, 550, "Unable to stat()");
-  else if (!S_ISREG(st.st_mode))
+  } else if (!S_ISREG(st.st_mode)) {
     addreply(fs, 550, "Not a regular file");
-  else
+  } else {
     addreply(fs, 213, "%ld", st.st_size);
+  }
 }
 
-void doport(struct ftpstate *fs, unsigned int ip, unsigned int port)
-{
+void doport(struct ftpstate *fs, unsigned int ip, unsigned int port) {
   struct sockaddr_in sin;
 
-  if (fs->datasock != -1) 
-  {
+  if (fs->datasock != -1) {
     close(fs->datasock);
     fs->datasock = -1;
   }
 
   fs->datasock = socket(AF_INET, SOCK_STREAM, 0);
-  if (fs->datasock < 0)
-  {
+  if (fs->datasock < 0) {
     error(fs, 425, "Can't make data socket");
     return;
   }
 
   //int on = 1;
-  //if (setsockopt(fs->datasock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0) 
-  //{
+  //if (setsockopt(fs->datasock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0) {
   //  error(fs, 421, "setsockopt");
   //  return;
   //}
@@ -718,8 +644,7 @@ void doport(struct ftpstate *fs, unsigned int ip, unsigned int port)
   sin.sin_family = AF_INET;
   sin.sin_addr.s_addr = INADDR_ANY;
   sin.sin_port = htons(20); // FTP data connection port
-  if (bind(fs->datasock, (struct sockaddr *) &sin, sizeof(sin)) < 0)
-  {
+  if (bind(fs->datasock, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
     error(fs, 220, "bind");
     close(fs->datasock);
     fs->datasock = -1;
@@ -730,8 +655,7 @@ void doport(struct ftpstate *fs, unsigned int ip, unsigned int port)
 
   fs->dataport = port;
 
-  if (htonl(ip) != fs->peer.sin_addr.s_addr) 
-  {
+  if (htonl(ip) != fs->peer.sin_addr.s_addr) {
     addreply(fs, 425, "Will not open connection to %d.%d.%d.%d (only to %s)",
              (ip >> 24) & 255, (ip >> 16) & 255, (ip >> 8) & 255, ip & 255,
              inet_ntoa(fs->peer.sin_addr));
@@ -745,43 +669,37 @@ void doport(struct ftpstate *fs, unsigned int ip, unsigned int port)
   addreply(fs, 200, "PORT command successful");
 }
 
-void dopasv(struct ftpstate *fs, int useepsv)
-{
+void dopasv(struct ftpstate *fs, int useepsv) {
   unsigned int a;
   unsigned int p;
   struct sockaddr_in sin;
   unsigned int len;
 
-  if (fs->datasock != -1)
-  {
+  if (fs->datasock != -1) {
     close(fs->datasock);
     fs->datasock = -1;
   }
 
   len = sizeof(sin);
-  if (getsockname(fs->ctrlsock, (struct sockaddr *) &sin, &len) < 0)
-  {
+  if (getsockname(fs->ctrlsock, (struct sockaddr *) &sin, &len) < 0) {
     error(fs, 425, "Can't getsockname");
     return;
   }
 
   fs->datasock = socket(AF_INET, SOCK_STREAM, 0);
-  if (fs->datasock < 0) 
-  {
+  if (fs->datasock < 0) {
     error(fs, 425, "Can't open passive connection");
     return;
   }
 
   sin.sin_port = 0;
-  if (bind(fs->datasock, (struct sockaddr *) &sin, sizeof(sin)) < 0)
-  {
+  if (bind(fs->datasock, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
     error(fs, 425, "Can't bind to socket");
     return;
   }
 
   len = sizeof(sin);
-  if (getsockname(fs->datasock, (struct sockaddr *) &sin, &len) < 0)
-  {
+  if (getsockname(fs->datasock, (struct sockaddr *) &sin, &len) < 0) {
     error(fs, 425, "Can't getsockname");
     return;
   }
@@ -790,81 +708,75 @@ void dopasv(struct ftpstate *fs, int useepsv)
 
   a = ntohl(sin.sin_addr.s_addr);
   p = ntohs(sin.sin_port);
-  if (useepsv)
+  if (useepsv) {
     addreply(fs, 229, "Extended Passive mode OK (|||%d|)", p);
-  else
+  } else {
     addreply(fs, 227, "Passive mode OK (%d,%d,%d,%d,%d,%d)", (a >> 24) & 255, (a >> 16) & 255, (a >> 8) & 255, a & 255, (p >> 8) & 255, p & 255);
+  }
   
   fs->passive = 1;
 }
 
-void domode(struct ftpstate *fs, char *arg)
-{
-  if (!arg || !*arg)
+void domode(struct ftpstate *fs, char *arg) {
+  if (!arg || !*arg) {
     addreply(fs, 500, "No arguments\nNot that it matters, only MODE S is supported");
-  else if (strcmp(arg, "S") != 0)
+  } else if (strcmp(arg, "S") != 0) {
     addreply(fs, 504, "MODE %s is not supported\nOnly S(tream) is supported", arg);
-  else
+  } else {
     addreply(fs, 200, "S OK");
+  }
 }
 
-void dostru(struct ftpstate *fs, char *arg)
-{
-  if (!arg || !*arg)
+void dostru(struct ftpstate *fs, char *arg) {
+  if (!arg || !*arg) {
     addreply(fs, 500, "No arguments\nNot that it matters, only STRU F is supported");
-  if (strcmp(arg, "F") != 0)
+  } else if (strcmp(arg, "F") != 0) {
     addreply(fs, 504, "STRU %s is not supported\nOnly F(ile) is supported", arg);
-  else
+  } else {
     addreply(fs, 200, "F OK");
+  }
 }
 
-void dotype(struct ftpstate *fs, char *arg)
-{
+void dotype(struct ftpstate *fs, char *arg) {
   fs->replycode = 200;
 
-  if (!arg || !*arg)
+  if (!arg || !*arg) {
     addreply(fs, 501, "TYPE needs an argument\nOnly A(scii), I(mage) and L(ocal) are supported");
-  else if (tolower(*arg) == 'a')
+  } else if (tolower(*arg) == 'a') {
     fs->type = 1;
-  else if (tolower(*arg) == 'i')
+  } else if (tolower(*arg) == 'i') {
     fs->type = 2;
-  else if (tolower(*arg) == 'l')
-  {
-    if (arg[1] == '8')
+  } else if (tolower(*arg) == 'l') {
+    if (arg[1] == '8') {
       fs->type = 2;
-    else if (isdigit(arg[1]))
+    } else if (isdigit(arg[1])) {
       addreply(fs, 504, "Only 8-bit bytes are supported");
-    else
-    {
+    } else {
       addreply(fs, 0, "Byte size not specified");
       fs->type = 2;
     }
-  } 
-  else
+  } else {
     addreply(fs, 504, "Unknown TYPE: %s", arg);
+  }
 
   addreply(fs, 0, "TYPE is now %s", (fs->type > 1) ? "8-bit binary" : "ASCII");
 }
 
-void dornfr(struct ftpstate *fs, char *name)
-{
+void dornfr(struct ftpstate *fs, char *name) {
   char filename[MAXPATH];
   struct stat st;
 
-  if (convert(fs, name, filename) < 0)
-  {
+  if (convert(fs, name, filename) < 0) {
     error(fs, 550, name);
     return;
   }
 
-  if (fs->guest)
+  if (fs->guest) {
     addreply(fs, 550, "Sorry, anonymous users are not allowed to rename files.");
-  else if (stat(filename, &st) < 0)
+  } else if (stat(filename, &st) < 0) {
     addreply(fs, 550, "File does not exist");
-  else
-  {
-    if (fs->renamefrom)
-    {
+  } else {
+    if (fs->renamefrom) {
       addreply(fs, 0, "Aborting previous rename operation.");
       free(fs->renamefrom);
     }
@@ -873,34 +785,32 @@ void dornfr(struct ftpstate *fs, char *name)
   }
 }
 
-void dornto(struct ftpstate *fs, char *name)
-{
+void dornto(struct ftpstate *fs, char *name) {
   char filename[MAXPATH];
   struct stat st;
 
-  if (convert(fs, name, filename) < 0)
-  {
+  if (convert(fs, name, filename) < 0) {
     error(fs, 550, name);
     return;
   }
 
-  if (fs->guest)
+  if (fs->guest) {
     addreply(fs, 550, "Sorry, anonymous users are not allowed to rename files.");
-  else if (stat(filename, &st) == 0)
+  } else if (stat(filename, &st) == 0) {
     addreply(fs, 550, "RENAME Failed - destination file already exists.");
-  else if (!fs->renamefrom)
+  } else if (!fs->renamefrom) {
     addreply(fs, 503, "Need RNFR before RNTO");
-  else if (rename(fs->renamefrom, filename) < 0)
+  } else if (rename(fs->renamefrom, filename) < 0) {
     addreply(fs, 550, "Rename failed: %s", strerror(errno));
-  else
+  } else {
     addreply(fs, 250, "File renamed.");
+  }
 
   if (fs->renamefrom) free(fs->renamefrom);
   fs->renamefrom = NULL;
 }
 
-void donlist(struct ftpstate *fs, char *arg)
-{
+void donlist(struct ftpstate *fs, char *arg) {
   static char *months[12] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
   char dirname[MAXPATH];
@@ -913,12 +823,9 @@ void donlist(struct ftpstate *fs, char *arg)
 
   while (isspace(*arg)) arg++;
 
-  while (*arg == '-')
-  {
-    while (isalnum(*++arg))
-    {
-      switch (*arg)
-      {
+  while (*arg == '-') {
+    while (isalnum(*++arg)) {
+      switch (*arg) {
         case 'l':
         case 'a':
           opt_l = 1;
@@ -929,34 +836,29 @@ void donlist(struct ftpstate *fs, char *arg)
     while (isspace(*arg)) arg++;
   }
 
-  if (convert(fs, arg, dirname) < 0)
-  {
+  if (convert(fs, arg, dirname) < 0) {
     error(fs, 550, arg);
     return;
   }
 
   dir = opendir(dirname);
-  if (!dir)
-  {
+  if (!dir) {
     error(fs, 550, dirname);
     return;
   }
 
   sock = opendata(fs);
-  if (sock < 0)
-  {
+  if (sock < 0) {
     closedir(dir);
     return;
   }
   doreply(fs);
 
   matches = 0;
-  while ((de = readdir(dir)) != NULL)
-  {
+  while ((de = readdir(dir)) != NULL) {
     char buf[MAXPATH + 128];
 
-    if (opt_l)
-    {
+    if (opt_l) {
       char fn[MAXPATH * 2 + 2];
       struct stat st;
       char perm[11];
@@ -973,8 +875,7 @@ void donlist(struct ftpstate *fs, char *arg)
       if ((tm = localtime(&st.st_mtime)) == NULL) continue;
 
       strcpy(perm, " ---------");
-      switch (st.st_mode & S_IFMT) 
-      {
+      switch (st.st_mode & S_IFMT) {
         case S_IFREG: perm[0] = '-'; break;
         case S_IFLNK: perm[0] = 'l'; break;
         case S_IFDIR: perm[0] = 'd'; break;
@@ -997,17 +898,18 @@ void donlist(struct ftpstate *fs, char *arg)
       grp = getgrgid(st.st_gid);
       if (!pwd || !grp) continue;
 
-      if (now - st.st_mtime > 180 * 24 * 60 * 60)
+      if (now - st.st_mtime > 180 * 24 * 60 * 60) {
         snprintf(timestr, 6, "%5d", tm->tm_year + 1900);
-      else
+      } else {
         snprintf(timestr, 6, "%02d:%02d", tm->tm_hour, tm->tm_min);
+      }
 
       snprintf(buf, sizeof(buf), "%s %3d %s %s %7d %s %2d %s %s\r\n",
                perm, st.st_nlink, pwd->pw_name, grp->gr_name,
                st.st_size, months[tm->tm_mon], tm->tm_mday, timestr, de->d_name);
-    }
-    else
+    } else {
       sprintf(buf, "%s\r\n", de->d_name);
+    }
     
     send(sock, buf, strlen(buf), 0);
     matches++;
@@ -1019,15 +921,13 @@ void donlist(struct ftpstate *fs, char *arg)
   closedir(dir);
 }
 
-int docmd(struct ftpstate *fs)
-{
+int docmd(struct ftpstate *fs) {
   char *arg;
   char *cmd;
   int cmdsize;
   int n = 0;
 
-  if (!fgets(fs->cmd, sizeof(fs->cmd), fs->in)) 
-  {
+  if (!fgets(fs->cmd, sizeof(fs->cmd), fs->in)) {
     if (errno == ETIMEOUT) addreply(fs, 421, "Timeout (%d seconds).", fs->idletime / 1000);
     return -1;
   }
@@ -1037,14 +937,12 @@ int docmd(struct ftpstate *fs)
   if (fs->debug) addreply(fs, 0, "%s", cmd);
 
   n = 0;
-  while (isalpha(cmd[n]) && n < cmdsize) 
-  {
+  while (isalpha(cmd[n]) && n < cmdsize) {
     cmd[n] = tolower(cmd[n]);
     n++;
   }
 
-  if (!n) 
-  {
+  if (!n) {
     addreply(fs, 221, "Goodbye.");
     return 0;
   }
@@ -1059,155 +957,134 @@ int docmd(struct ftpstate *fs)
 
   if (logging > 0) syslog(LOG_DEBUG, "CMD %s %s", cmd, strcmp(cmd, "pass") ? arg : "<password>");
 
-  if (strlen(cmd) > 10)
+  if (strlen(cmd) > 10) {
     addreply(fs, 500, "Unknown command.");
-  else if (strlen(arg) >= MAXPATH) // ">=" on purpose.
+  } else if (strlen(arg) >= MAXPATH) { // ">=" on purpose.
     addreply(fs, 501, "Cannot handle %d-character file names", strlen(arg));
-  else if (strcmp(cmd, "user") == 0)
+  } else if (strcmp(cmd, "user") == 0) {
     douser(fs, arg);
-  else if (strcmp(cmd, "pass") == 0)
+  } else if (strcmp(cmd, "pass") == 0) {
     dopass(fs, arg);
-  else if (strcmp(cmd, "quit") == 0)
-  {
+  } else if (strcmp(cmd, "quit") == 0) {
      addreply(fs, 221, "Goodbye");
      return 0;
-  }
-  else if (strcmp(cmd, "noop") == 0)
+  } else if (strcmp(cmd, "noop") == 0) {
     addreply(fs, 200, "NOOP command successful");
-  else if (strcmp(cmd, "syst") == 0)
+  } else if (strcmp(cmd, "syst") == 0) {
     addreply(fs, 215, "UNIX Type: L8");
-  else if (strcmp(cmd, "feat") == 0)
+  } else if (strcmp(cmd, "feat") == 0) {
     addreply(fs, 500, "Unsupported command");
-  else if (strcmp(cmd, "port") == 0|| strcmp(cmd, "eprt") == 0)
-  {
+  } else if (strcmp(cmd, "port") == 0|| strcmp(cmd, "eprt") == 0) {
     // Don't auto-login for PORT or PASV, but do auto-login
     // for the command which uses the data connection
-
     unsigned int a1, a2, a3, a4, p1, p2;
 
-    if (fs->epsvall)
+    if (fs->epsvall) {
       addreply(fs, 501, "Cannot use PORT/EPRT after EPSV ALL");
-    else if (cmd[0] == 'e' && strncmp(arg, "|2|", 3) == 0)
+    } else if (cmd[0] == 'e' && strncmp(arg, "|2|", 3) == 0) {
       addreply(fs, 522, "IPv6 not supported, use IPv4 (1)");
-    else if (cmd[0] == 'e' && 
-             sscanf(arg, "|1|%u.%u.%u.%u|%u|", &a1, &a2, &a3, &a4, &p1) == 5  &&
-             a1 < 256 && a2 < 256 && a3 < 256 && a4 < 256 && p1 < 65536)
+    } else if (cmd[0] == 'e' && 
+                sscanf(arg, "|1|%u.%u.%u.%u|%u|", &a1, &a2, &a3, &a4, &p1) == 5  &&
+                a1 < 256 && a2 < 256 && a3 < 256 && a4 < 256 && p1 < 65536) {
       doport(fs, (a1 << 24) + (a2 << 16) + (a3 << 8) + a4, p1);
-    else if (cmd[0] == 'p' &&
-             sscanf(arg, "%u,%u,%u,%u,%u,%u", &a1, &a2, &a3, &a4, &p1, &p2) == 6 &&
-             a1 < 256 && a2 < 256 && a3 < 256 && a4 < 256 && p1 < 256 && p2 < 256)
+    } else if (cmd[0] == 'p' &&
+               sscanf(arg, "%u,%u,%u,%u,%u,%u", &a1, &a2, &a3, &a4, &p1, &p2) == 6 &&
+               a1 < 256 && a2 < 256 && a3 < 256 && a4 < 256 && p1 < 256 && p2 < 256) {
       doport(fs, (a1 << 24) + (a2 << 16) + (a3 << 8) + a4, ((p1 << 8) + p2));
-    else
+    } else {
       addreply(fs, 501, "Syntax error.");
-  } 
-  else if (strcmp(cmd, "pasv") == 0)
+    }
+  } else if (strcmp(cmd, "pasv") == 0) {
     dopasv(fs, 0);
-  else if (strcmp(cmd, "epsv") == 0) 
-  {
-    if (strcmp(arg, "all") == 0)
-    {
+  } else if (strcmp(cmd, "epsv") == 0) {
+    if (strcmp(arg, "all") == 0) {
       addreply(fs, 220, "OK; will reject non-EPSV data connections");
       fs->epsvall++;
-    } 
-    else if (strcmp(arg, "2") == 0)
+    } else if (strcmp(arg, "2") == 0) {
       addreply(fs, 522, "IPv6 not supported, use IPv4 (1)");
-    else if (strlen(arg) == 0 || strcmp(arg, "1") == 0)
+    } else if (strlen(arg) == 0 || strcmp(arg, "1") == 0) {
       dopasv(fs, 1);
-  } 
-  else if (strcmp(cmd, "pwd") == 0 || strcmp(cmd, "xpwd") == 0)
-  {
-    if (fs->loggedin)
+    }
+  } else if (strcmp(cmd, "pwd") == 0 || strcmp(cmd, "xpwd") == 0) {
+    if (fs->loggedin) {
       addreply(fs, 257, "\"%s\"", fs->wd);
-    else
+    } else {
       addreply(fs, 550, "Not logged in");
-  } 
-  else if (strcmp(cmd, "auth") == 0)
-  {
+    }
+  } else if (strcmp(cmd, "auth") == 0) {
     // RFC 2228 Page 5 Authentication/Security mechanism (AUTH)
     addreply(fs, 502, "Security extensions not implemented");
-  } 
-  else 
-  {
+  } else {
     // From this point, all commands trigger an automatic login
     douser(fs, NULL);
 
-    if (strcmp(cmd, "cwd") == 0)
+    if (strcmp(cmd, "cwd") == 0) {
       docwd(fs, arg);
-    else if (strcmp(cmd, "cdup") == 0)
+    } else if (strcmp(cmd, "cdup") == 0) {
       docwd(fs, "..");
-    else if (strcmp(cmd, "retr") == 0)
-    {
-      if (arg && *arg)
+    } else if (strcmp(cmd, "retr") == 0) {
+      if (arg && *arg) {
         doretr(fs, arg);
-      else
+      } else {
         addreply(fs, 501, "No file name");
-    } 
-    else if (strcmp(cmd, "rest") == 0)
-    {
-      if (arg && *arg)
+      }
+    } else if (strcmp(cmd, "rest") == 0) {
+      if (arg && *arg) {
         dorest(fs, arg);
-      else
+      } else {
         addreply(fs, 501, "No restart point");
-    }
-    else if (strcmp(cmd, "dele") == 0) 
-    {
-      if (arg && *arg)
+      }
+    } else if (strcmp(cmd, "dele") == 0) {
+      if (arg && *arg) {
         dodele(fs, arg);
-      else
+      } else {
         addreply(fs, 501, "No file name");
-    } 
-    else if (strcmp(cmd, "stor") == 0)
-    {
-      if (arg && *arg)
+      }
+    } else if (strcmp(cmd, "stor") == 0) {
+      if (arg && *arg) {
         dostor(fs, arg);
-      else
+      } else {
         addreply(fs, 501, "No file name");
-    } 
-    else if (strcmp(cmd, "mkd") == 0 || strcmp(cmd, "xmkd") == 0)
-    {
-      if (arg && *arg)
+      }
+    } else if (strcmp(cmd, "mkd") == 0 || strcmp(cmd, "xmkd") == 0) {
+      if (arg && *arg) {
         domkd(fs, arg);
-      else
+      } else {
         addreply(fs, 501, "No directory name");
-    }
-    else if (strcmp(cmd, "rmd") == 0 || strcmp(cmd, "xrmd") == 0)
-    {
-      if (arg && *arg)
+      }
+    } else if (strcmp(cmd, "rmd") == 0 || strcmp(cmd, "xrmd") == 0) {
+      if (arg && *arg) {
         dormd(fs, arg);
-      else
+      } else {
         addreply(fs, 550, "No directory name");
-    } 
-    else if (strcmp(cmd, "list") == 0 || strcmp(cmd, "nlst") == 0)
+      }
+    } else if (strcmp(cmd, "list") == 0 || strcmp(cmd, "nlst") == 0) {
       donlist(fs, (arg && *arg) ? arg : "-l");
-    else if (strcmp(cmd, "type") == 0)
+    } else if (strcmp(cmd, "type") == 0) {
       dotype(fs, arg);
-    else if (strcmp(cmd, "mode") == 0)
+    } else if (strcmp(cmd, "mode") == 0) {
       domode(fs, arg);
-    else if (strcmp(cmd, "stru") == 0)
+    } else if (strcmp(cmd, "stru") == 0) {
       dostru(fs, arg);
-    else if (strcmp(cmd, "abor") == 0)
+    } else if (strcmp(cmd, "abor") == 0) {
       addreply(fs, 226, "ABOR succeeded.");
-    else if (strcmp(cmd, "site") == 0)
-    {
+    } else if (strcmp(cmd, "site") == 0) {
       char *sitearg;
 
       sitearg = arg;
       while (sitearg && *sitearg && !isspace(*sitearg)) sitearg++;
       if (sitearg) *sitearg++ = '\0';
 
-      if (strcmp(arg, "idle") == 0)
-      {
-        if (!*sitearg) 
+      if (strcmp(arg, "idle") == 0) {
+        if (!*sitearg) {
           addreply(fs, 501, "SITE IDLE: need argument");
-        else
-        {
+        } else {
           unsigned long int i = 0;
 
           i = strtoul(sitearg, &sitearg, 10);
-          if (sitearg && *sitearg)
+          if (sitearg && *sitearg) {
             addreply(fs, 501, "Garbage (%s) after value (%u)", sitearg, i);
-          else 
-          {
+          } else {
             if (i > 7200) i = 7200;
             if (i < 10) i = 10;
             fs->idletime = i * 1000;
@@ -1217,46 +1094,41 @@ int docmd(struct ftpstate *fs)
             addreply(fs, 200, "Idle time set to %u seconds", fs->idletime / 1000);
           }
         }
-      } 
-      else if (arg && *arg) 
+      } else if (arg && *arg) {
         addreply(fs, 500, "SITE %s unknown", arg);
-      else
+      } else {
         addreply(fs, 500, "SITE: argument needed");
-    } 
-    else if (strcmp(cmd, "xdbg") == 0)
-    {
+      }
+    } else if (strcmp(cmd, "xdbg") == 0) {
       fs->debug++;
       addreply(fs, 200, "XDBG command succeeded, debug level is now %d.", fs->debug);
-    }
-    else if (strcmp(cmd, "mdtm") == 0)
+    } else if (strcmp(cmd, "mdtm") == 0) {
       domdtm(fs, (arg && *arg) ? arg :  "");
-    else if (strcmp(cmd, "size") == 0)
+    } else if (strcmp(cmd, "size") == 0) {
       dosize(fs, (arg && *arg) ? arg :  "");
-    else if (strcmp(cmd, "rnfr") == 0)
-    {
-      if (arg && *arg)
+    } else if (strcmp(cmd, "rnfr") == 0) {
+      if (arg && *arg) {
         dornfr(fs, arg);
-      else
+      } else {
         addreply(fs, 550, "No file name given.");
-    } 
-    else if (strcmp(cmd, "rnto") == 0)
-    {
-      if (arg && *arg)
+      }
+    } else if (strcmp(cmd, "rnto") == 0) {
+      if (arg && *arg) {
         dornto(fs, arg);
-      else
+      } else {
         addreply(fs, 550, "No file name given.");
-    }
-    else if (strcmp(cmd, "rest") == 0)
+      }
+    } else if (strcmp(cmd, "rest") == 0) {
       fs->restartat = 0;
-    else 
+    } else {
       addreply(fs, 500, "Unknown command.");
+    }
   }
 
   return 1;
 }
 
-void __stdcall ftp_task(void *arg)
-{
+void __stdcall ftp_task(void *arg) {
   struct ftpstate ftpstate;
   struct ftpstate *fs = &ftpstate;
   struct process *proc = gettib()->proc;
@@ -1273,8 +1145,7 @@ void __stdcall ftp_task(void *arg)
   getpeername(s, (struct sockaddr *) &fs->peer, &len);
 
   // Set process identifer
-  if (!proc->ident && !proc->cmdline)
-  {
+  if (!proc->ident && !proc->cmdline) {
     struct sockaddr_in sin;
     int sinlen = sizeof sin;
 
@@ -1290,23 +1161,20 @@ void __stdcall ftp_task(void *arg)
 
   // Open data input and out file descriptors
   fs->in = fdopen(s, "r");
-  if (!fs->in)
-  {
+  if (!fs->in) {
     close(s);
     return;
   }
 
   fs->out = fdopen(dup(s), "w");
-  if (!fs->out)
-  {
+  if (!fs->out) {
     fclose(fs->in);
     return;
   }
 
   // Handle commands
   addreply(fs, 220, "FTP server ready");
-  while (1)
-  {
+  while (1) {
     doreply(fs);
     if (docmd(fs) <= 0) break;
   }
@@ -1319,17 +1187,14 @@ void __stdcall ftp_task(void *arg)
   if (fs->datasock != -1) close(fs->datasock);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   int s;
   int rc;
   struct sockaddr_in sin;
   int hthread;
 
-  if (argc == 2)
-  {
-    if (strcmp(argv[1], "start") == 0)
-    {
+  if (argc == 2) {
+    if (strcmp(argv[1], "start") == 0) {
       char path[MAXPATH];
       
       getmodpath(NULL, path, MAXPATH);
@@ -1337,9 +1202,7 @@ int main(int argc, char *argv[])
       if (hthread < 0) syslog(LOG_ERR, "error %d (%s) in spawn", errno, strerror(errno));
       close(hthread);
       return 0;
-    }
-    else if (strcmp(argv[1], "stop") == 0)
-    {
+    } else if (strcmp(argv[1], "stop") == 0) {
       state = STOPPED;
       close(sock);
       return 0;
@@ -1349,8 +1212,7 @@ int main(int argc, char *argv[])
   port = get_numeric_property(osconfig(), "ftpd", "port", getservbyname("ftp", "tcp")->s_port);
 
   sock = socket(AF_INET, SOCK_STREAM, 0);
-  if (sock < 0)
-  {
+  if (sock < 0) {
     syslog(LOG_ERR, "error %d (%s) in socket", errno, strerror(errno));
     return 1;
   }
@@ -1359,29 +1221,25 @@ int main(int argc, char *argv[])
   sin.sin_addr.s_addr = INADDR_ANY;
   sin.sin_port = htons(port);
   rc = bind(sock, (struct sockaddr *) &sin, sizeof sin);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     syslog(LOG_ERR, "error %d (%s) in bind", errno, strerror(errno));
     return 1;
   }
 
   rc = listen(sock, 5);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     syslog(LOG_ERR, "error %d (%s) in listen", errno, strerror(errno));
     return 1;
   }
 
   syslog(LOG_INFO, "ftpd started on port %d", port);
   state = RUNNING;
-  while (1)
-  {
+  while (1) {
     struct sockaddr_in sin;
 
     s = accept(sock, (struct sockaddr *) &sin, NULL);
     if (state == STOPPED) break;
-    if (s < 0)
-    {
+    if (s < 0) {
       syslog(LOG_ERR, "error %d (%s) in accept", errno, strerror(errno));
       return 1;
     }

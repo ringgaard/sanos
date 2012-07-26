@@ -35,8 +35,7 @@
 #ifndef STATS_H
 #define STATS_H
 
-struct stats_nic
-{
+struct stats_nic {
   unsigned long rx_packets;             // Total packets received
   unsigned long tx_packets;             // Total packets transmitted
   unsigned long rx_bytes;               // Total bytes received
@@ -68,8 +67,7 @@ struct stats_nic
   unsigned long tx_compressed;
 };
 
-struct stats_proto 
-{
+struct stats_proto {
   unsigned long xmit;    // Transmitted packets
   unsigned long rexmit;  // Retransmitted packets
   unsigned long recv;    // Received packets
@@ -84,8 +82,7 @@ struct stats_proto
   unsigned long err;     // Misc error
 };
 
-struct stats_pbuf 
-{
+struct stats_pbuf {
   unsigned long avail;
   unsigned long used;
   unsigned long max;  
@@ -98,8 +95,7 @@ struct stats_pbuf
   unsigned long rwbufs;
 };
 
-struct netstats
-{
+struct netstats {
   struct stats_proto link;
   struct stats_proto ip;
   struct stats_proto icmp;

@@ -1,4 +1,5 @@
 #define CONFIG_TCCDIR "/usr"
+#define CONFIG_TCC_CRT_PREFIX "/usr/lib"
 #define GCC_MAJOR 2
 #define HOST_I386 1
 #define TCC_VERSION "0.9.24"

@@ -44,8 +44,7 @@
 
 #ifndef _UTSNAME_DEFINED
 #define _UTSNAME_DEFINED
-struct utsname
-{
+struct utsname {
   char sysname[UTSNAMELEN];
   char nodename[UTSNAMELEN];
   char release[UTSNAMELEN];

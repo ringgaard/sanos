@@ -34,13 +34,11 @@
 #include <os.h>
 #include <string.h>
 
-int cputs(char *string)
-{
+int cputs(char *string) {
   return write(fdout, string, strlen(string));
 }
 
-int getch()
-{
+int getch() {
   unsigned char c;
   int rc;
 
@@ -51,8 +49,7 @@ int getch()
   return c;
 }
 
-int putch(int ch)
-{
+int putch(int ch) {
   unsigned char c;
   int rc;
 
@@ -63,7 +60,6 @@ int putch(int ch)
   return ch;
 }
 
-int kbhit()
-{
+int kbhit() {
   return ioctl(fdin, IOCTL_KBHIT, NULL, 0) > 0;
 }

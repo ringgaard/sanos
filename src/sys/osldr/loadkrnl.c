@@ -56,8 +56,7 @@ char gsect[SECTORSIZE];
 char isect[SECTORSIZE];
 blkno_t blockdir[1024];
 
-void load_kernel(int bootdrv)
-{
+void load_kernel(int bootdrv) {
   struct master_boot_record *mbr;
   struct superblock *sb;
   struct groupdesc *group;
@@ -82,11 +81,9 @@ void load_kernel(int bootdrv)
   //kprintf("Loading kernel");
 
   // Determine active boot partition if booting from harddisk
-  if (bootdrv & 0x80 && (bootdrv & 0xF0) != 0xF0)
-  {
+  if (bootdrv & 0x80 && (bootdrv & 0xF0) != 0xF0) {
     mbr = (struct master_boot_record *) bsect;
-    if (boot_read(mbr, SECTORSIZE, 0) != SECTORSIZE)
-    {
+    if (boot_read(mbr, SECTORSIZE, 0) != SECTORSIZE) {
       panic("unable to read master boot record");
     }
 
@@ -94,20 +91,15 @@ void load_kernel(int bootdrv)
 
     bootsect = (struct boot_sector *) bsect;
     label = bootsect->label;
-    if (label[0] == 'S' && label[1] == 'A' && label[2] == 'N' && label[3] == 'O' && label[4] == 'S')
-    {
+    if (label[0] == 'S' && label[1] == 'A' && label[2] == 'N' && label[3] == 'O' && label[4] == 'S') {
       // Disk does not have a partition table
       start = 0;
       bootpart = -1;
-    }
-    else
-    {
+    } else {
       // Find active partition
       bootpart = -1;
-      for (i = 0; i < 4; i++)
-      {
-        if (mbr->parttab[i].bootid == 0x80)
-        {
+      for (i = 0; i < 4; i++) {
+        if (mbr->parttab[i].bootid == 0x80) {
           bootpart = i;
           start = mbr->parttab[i].relsect;
         }
@@ -115,17 +107,14 @@ void load_kernel(int bootdrv)
 
       if (bootpart == -1) panic("no bootable partition on boot drive");
     }
-  }
-  else
-  {
+  } else {
     start = 0;
     bootpart = 0;
   }
 
   // Read super block from boot device
   sb = (struct superblock *) ssect;
-  if (boot_read(sb, SECTORSIZE, 1 + start) != SECTORSIZE) 
-  {
+  if (boot_read(sb, SECTORSIZE, 1 + start) != SECTORSIZE) {
     panic("unable to read super block from boot device");
   }
 
@@ -137,15 +126,13 @@ void load_kernel(int bootdrv)
 
   // Read first group descriptor
   group = (struct groupdesc *) gsect;
-  if (boot_read(group, SECTORSIZE, sb->groupdesc_table_block * blks_per_sect + start) != SECTORSIZE) 
-  { 
+  if (boot_read(group, SECTORSIZE, sb->groupdesc_table_block * blks_per_sect + start) != SECTORSIZE) {
     panic("unable to read group descriptor from boot device");
   }
 
   // Read inode for kernel
   inode = (struct inodedesc *) isect;
-  if (boot_read(isect, SECTORSIZE, group->inode_table_block * blks_per_sect + start) != SECTORSIZE) 
-  {
+  if (boot_read(isect, SECTORSIZE, group->inode_table_block * blks_per_sect + start) != SECTORSIZE) {
     panic("unable to read kernel inode from boot device");
   }
   inode += DFS_INODE_KRNL;
@@ -164,33 +151,24 @@ void load_kernel(int bootdrv)
   kerneladdr = alloc_heap(kernelpages);
 
   // Read kernel from boot device
-  if (inode->depth == 0)
-  {
+  if (inode->depth == 0) {
     addr = kerneladdr;
-    for (i = 0; i < (int) inode->blocks; i++)
-    {
-      if (boot_read(addr, blocksize, inode->blockdir[i] * blks_per_sect + start) != blocksize)
-      {
+    for (i = 0; i < (int) inode->blocks; i++) {
+      if (boot_read(addr, blocksize, inode->blockdir[i] * blks_per_sect + start) != blocksize) {
         panic("error reading kernel from boot device");
       }
       addr += blocksize;
     }
-  }
-  else if (inode->depth == 1)
-  {
+  } else if (inode->depth == 1) {
     addr = kerneladdr;
     blkno = 0;
-    for (i = 0; i < DFS_TOPBLOCKDIR_SIZE; i++)
-    {
-      if (boot_read(blockdir, blocksize, inode->blockdir[i] * blks_per_sect + start) != blocksize)
-      {
+    for (i = 0; i < DFS_TOPBLOCKDIR_SIZE; i++) {
+      if (boot_read(blockdir, blocksize, inode->blockdir[i] * blks_per_sect + start) != blocksize) {
         panic("error reading kernel inode dir from boot device");
       }
 
-      for (j = 0; j < (int) (blocksize / sizeof(blkno_t)); j++)
-      {
-        if (boot_read(addr, blocksize, blockdir[j] * blks_per_sect + start) != blocksize)
-        {
+      for (j = 0; j < (int) (blocksize / sizeof(blkno_t)); j++) {
+        if (boot_read(addr, blocksize, blockdir[j] * blks_per_sect + start) != blocksize) {
           panic("error reading kernel inode dir from boot device");
         }
         
@@ -202,9 +180,9 @@ void load_kernel(int bootdrv)
 
       if (blkno == inode->blocks) break;
     }
-  }
-  else
+  } else {
     panic("unsupported inode depth");
+  }
 
   // Determine entry point for kernel
   doshdr = (struct dos_header *) kerneladdr;
@@ -216,8 +194,7 @@ void load_kernel(int bootdrv)
   alloc_heap(imgpages - kernelpages);
 
   // Relocate resource data and clear uninitialized data
-  if (imghdr->header.number_of_sections == 4)
-  {
+  if (imghdr->header.number_of_sections == 4) {
     struct image_section_header *data = &imghdr->sections[2];
     struct image_section_header *rsrc = &imghdr->sections[3];
     memcpy(kerneladdr + rsrc->virtual_address, kerneladdr + rsrc->pointer_to_raw_data, rsrc->size_of_raw_data);

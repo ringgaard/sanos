@@ -42,8 +42,7 @@
 // Convert key into hash value
 //
 
-__inline unsigned int hashidx(unsigned long key, unsigned int mask)
-{
+__inline unsigned int hashidx(unsigned long key, unsigned int mask) {
   return (key ^ (key >> 2) ^ (key >> 6)) & mask;
 }
 
@@ -56,21 +55,18 @@ __inline unsigned int hashidx(unsigned long key, unsigned int mask)
 // of 2 above the requested size.
 //
 
-struct hash *hash_alloc(int hashsize)
-{
+struct hash *hash_alloc(int hashsize) {
   struct hash *h;
   int i = 3, hashlim = 8;
 
   // Adjust hash size to the next power of 2
-  while (hashsize > hashlim) 
-  {
+  while (hashsize > hashlim) {
     i++;
     hashlim <<= 1;
   }
 
   h = malloc(sizeof(struct hash) + hashlim * sizeof(struct hash_node *));
-  if (h) 
-  {
+  if (h) {
     h->hashsize = hashlim;
     h->hashmask = hashlim - 1;
     memset(&h->buckets, 0, hashlim * sizeof(struct hash_node *));
@@ -85,8 +81,7 @@ struct hash *hash_alloc(int hashsize)
 // Insert a new key/value pair into the hash
 //
 
-int hash_insert(struct hash *h, unsigned long key, void *val)
-{
+int hash_insert(struct hash *h, unsigned long key, void *val) {
   struct hash_node *hn;
   unsigned int idx;
 
@@ -110,8 +105,7 @@ int hash_insert(struct hash *h, unsigned long key, void *val)
 // Remove node from hash
 //
 
-int hash_delete(struct hash *h, unsigned long key)
-{
+int hash_delete(struct hash *h, unsigned long key) {
   struct hash_node **hnp, *hn;
   unsigned int idx;
 
@@ -125,10 +119,8 @@ int hash_delete(struct hash *h, unsigned long key)
   idx = hashidx(key, h->hashmask);
   hnp = &h->buckets[idx];
   hn = *hnp;
-  while (hn)
-  {
-    if (hn->key == key)
-    {
+  while (hn) {
+    if (hn->key == key) {
       *hnp = hn->next;
       free(hn);
       return 0;
@@ -147,15 +139,12 @@ int hash_delete(struct hash *h, unsigned long key)
 // Free up the entire hash structure
 //
 
-void hash_dealloc(struct hash *h)
-{
+void hash_dealloc(struct hash *h) {
   int x;
   struct hash_node *hn, *hnn;
 
-  for (x = 0; x < h->hashsize; x++) 
-  {
-    for (hn = h->buckets[x]; hn; hn = hnn) 
-    {
+  for (x = 0; x < h->hashsize; x++) {
+    for (hn = h->buckets[x]; hn; hn = hnn) {
       hnn = hn->next;
       free(hn);
     }
@@ -170,8 +159,7 @@ void hash_dealloc(struct hash *h)
 // Look up a node based on its key
 //
 
-void *hash_lookup(struct hash *h, unsigned long key)
-{
+void *hash_lookup(struct hash *h, unsigned long key) {
   struct hash_node *hn;
   unsigned int idx;
 
@@ -179,8 +167,7 @@ void *hash_lookup(struct hash *h, unsigned long key)
 
   idx = hashidx(key, h->hashmask);
 
-  for (hn = h->buckets[idx]; hn; hn = hn->next) 
-  {
+  for (hn = h->buckets[idx]; hn; hn = hn->next) {
     if (hn->key == key) return hn->data;
   }
 
@@ -193,15 +180,12 @@ void *hash_lookup(struct hash *h, unsigned long key)
 // Tell how many elements are stored in the hash
 //
 
-int hash_size(struct hash *h)
-{
+int hash_size(struct hash *h) {
   int x, cnt = 0;
   struct hash_node *hn;
 
-  for (x = 0; x < h->hashsize; x++) 
-  {
-    for (hn = h->buckets[x]; hn; hn = hn->next) 
-    {
+  for (x = 0; x < h->hashsize; x++) {
+    for (hn = h->buckets[x]; hn; hn = hn->next) {
       cnt += 1;
     }
   }
@@ -215,16 +199,13 @@ int hash_size(struct hash *h)
 // Enumerate each entry in the hash, invoking a function
 //
 
-int hash_foreach(struct hash *h, enumfunc_t f, void *arg)
-{
+int hash_foreach(struct hash *h, enumfunc_t f, void *arg) {
   int x;
   int rc;
   struct hash_node *hn;
 
-  for (x = 0; x < h->hashsize; x++) 
-  {
-    for (hn = h->buckets[x]; hn; hn = hn->next) 
-    {
+  for (x = 0; x < h->hashsize; x++) {
+    for (hn = h->buckets[x]; hn; hn = hn->next) {
       rc = (*f)(hn->key, hn->data, arg);
       if (rc) return rc;
     }

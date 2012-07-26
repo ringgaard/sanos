@@ -34,17 +34,14 @@
 #include <os.h>
 #include <semaphore.h>
 
-int sem_init(sem_t *sem, int pshared, unsigned int value)
-{
-  if (pshared)
-  {
+int sem_init(sem_t *sem, int pshared, unsigned int value) {
+  if (pshared) {
     errno = EPERM;
     return -1;
   }
 
   *sem = mksem(value);
-  if (*sem < 0)
-  {
+  if (*sem < 0) {
     errno = ENOSPC;
     return -1;
   }
@@ -52,16 +49,13 @@ int sem_init(sem_t *sem, int pshared, unsigned int value)
   return 0;
 }
 
-int sem_destroy(sem_t *sem)
-{
-  if (!sem || *sem == -1)
-  {
+int sem_destroy(sem_t *sem) {
+  if (!sem || *sem == -1) {
     errno = EINVAL;
     return -1;
   }
 
-  if (close(*sem) < 0)
-  {
+  if (close(*sem) < 0) {
     errno = EINVAL;
     return -1;
   }
@@ -70,16 +64,13 @@ int sem_destroy(sem_t *sem)
   return 0;
 }
 
-int sem_trywait(sem_t *sem)
-{
-  if (!sem || *sem == -1)
-  {
+int sem_trywait(sem_t *sem) {
+  if (!sem || *sem == -1) {
     errno = EINVAL;
     return -1;
   }
 
-  if (waitone(*sem, 0) < 0)
-  {
+  if (waitone(*sem, 0) < 0) {
     errno = EAGAIN;
     return -1;
   }
@@ -87,10 +78,8 @@ int sem_trywait(sem_t *sem)
   return 0;
 }
 
-int sem_wait(sem_t * sem)
-{
-  if (!sem || *sem == -1)
-  {
+int sem_wait(sem_t * sem) {
+  if (!sem || *sem == -1) {
     errno = EINVAL;
     return -1;
   }
@@ -99,13 +88,11 @@ int sem_wait(sem_t * sem)
   return 0;
 }
 
-int sem_timedwait(sem_t *sem, const struct timespec *abstime)
-{
+int sem_timedwait(sem_t *sem, const struct timespec *abstime) {
   struct timeval curtime;
   long timeout;
 
-  if (!sem || *sem == -1)
-  {
+  if (!sem || *sem == -1) {
     errno = EINVAL;
     return -1;
   }
@@ -119,33 +106,13 @@ int sem_timedwait(sem_t *sem, const struct timespec *abstime)
   return 0;
 }
 
-int sem_post(sem_t *sem)
-{
-  if (!sem || *sem == -1)
-  {
+int sem_post(sem_t *sem) {
+  if (!sem || *sem == -1) {
     errno = EINVAL;
     return -1;
   }
 
-  if (semrel(*sem, 1) < 0)
-  {
-    errno = EINVAL;
-    return -1;
-  }
-
-  return 0;
-}
-
-int sem_post_multiple(sem_t *sem, int count)
-{
-  if (!sem || *sem == -1)
-  {
-    errno = EINVAL;
-    return -1;
-  }
-
-  if (semrel(*sem, count) < 0)
-  {
+  if (semrel(*sem, 1) < 0) {
     errno = EINVAL;
     return -1;
   }
@@ -153,26 +120,36 @@ int sem_post_multiple(sem_t *sem, int count)
   return 0;
 }
 
-int sem_open(const char *name, int oflag, int mode, unsigned int value)
-{
+int sem_post_multiple(sem_t *sem, int count) {
+  if (!sem || *sem == -1) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  if (semrel(*sem, count) < 0) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  return 0;
+}
+
+int sem_open(const char *name, int oflag, int mode, unsigned int value) {
   errno = ENOSYS;
   return -1;
 }
 
-int sem_close(sem_t *sem)
-{
+int sem_close(sem_t *sem) {
   errno = ENOSYS;
   return -1;
 }
 
-int sem_unlink(const char *name)
-{
+int sem_unlink(const char *name) {
   errno = ENOSYS;
   return -1;
 }
 
-int sem_getvalue(sem_t *sem, int *sval)
-{
+int sem_getvalue(sem_t *sem, int *sval) {
   errno = ENOSYS;
   return -1;
 }

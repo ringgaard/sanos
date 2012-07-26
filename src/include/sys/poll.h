@@ -43,8 +43,7 @@
 #ifndef _POLL_FD_DEFINED
 #define _POLL_FD_DEFINED
 
-struct pollfd 
-{
+struct pollfd {
   int fd;                     // File descriptor
   short events;               // Requested events
   short revents;              // Returned events

@@ -97,21 +97,17 @@ int main(int argc, char *argv[], char *envp[]);
 
 void run_atexit_handlers();
 
-static void initterm(proc_t *begin, proc_t *end)
-{
-  while (begin < end)
-  {
+static void initterm(proc_t *begin, proc_t *end) {
+  while (begin < end) {
     if (*begin != NULL) (**begin)();
     ++begin;
   }
 }
 
-static int inittermi(func_t *begin, func_t *end)
-{
+static int inittermi(func_t *begin, func_t *end) {
   int rc = 0;
 
-  while (begin < end && rc == 0)
-  {
+  while (begin < end && rc == 0) {
     if (*begin != NULL) rc = (**begin)();
     ++begin;
   }
@@ -119,12 +115,10 @@ static int inittermi(func_t *begin, func_t *end)
   return rc;
 }
 
-static int initcrt()
-{
+static int initcrt() {
   int rc;
 
-  if (atomic_increment(&__instcount) == 1)
-  {
+  if (atomic_increment(&__instcount) == 1) {
 #if !defined(__GNUC__) && !defined(__TINYC__)
     // Execute C initializers
     rc = inittermi(__xi_a, __xi_z);
@@ -138,8 +132,7 @@ static int initcrt()
   return 0;
 }
 
-static void termcrt(int status)
-{
+static void termcrt(int status) {
   struct process *proc = gettib()->proc;
   struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
@@ -147,8 +140,7 @@ static void termcrt(int status)
   if (crtbase->fork_exit) crtbase->fork_exit(status);
 
   // Call termination handlers when last instance exits
-  if (atomic_decrement(&__instcount) == 0)
-  {
+  if (atomic_decrement(&__instcount) == 0) {
     // Execute atexit handlers
     run_atexit_handlers();
 
@@ -170,18 +162,15 @@ static void termcrt(int status)
 // Dummy __main and __alloca and routine for GCC
 // TODO: implement proper constructor handling
 
-void __main()
-{
+void __main() {
 }
 
-void _alloca()
-{
+void _alloca() {
 }
 
 #endif
 
-int mainCRTStartup()
-{
+int mainCRTStartup() {
   int rc;
   struct tib *tib = gettib();
   struct process *proc = tib->proc;
@@ -195,8 +184,7 @@ int mainCRTStartup()
   crtbase->opt.sp = 1;
 
   rc = initcrt();
-  if (rc == 0) 
-  {
+  if (rc == 0) {
     gettib()->proc->atexit = termcrt;
     rc = main(crtbase->argc, crtbase->argv, environ ? environ : (char **) &environ);
   }

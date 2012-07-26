@@ -48,8 +48,7 @@
 #define MAX_SCANCODES           0x80
 #define MAX_KEYTABLES           16
 
-struct keytable
-{
+struct keytable {
   char *name;
   unsigned short normal[MAX_SCANCODES][MAX_KBSTATES];
   unsigned short extended[MAX_SCANCODES][MAX_KBSTATES];

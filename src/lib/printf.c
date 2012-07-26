@@ -39,20 +39,18 @@ int _output(FILE *stream, const char *format, va_list args);
 int _stbuf(FILE *stream, char *buf, int bufsiz);
 void _ftbuf(FILE *stream);
 
-int vfprintf(FILE *stream, const char *fmt, va_list args)
-{
+int vfprintf(FILE *stream, const char *fmt, va_list args) {
   int rc;
 
-  if (stream->flag & _IONBF)
-  {
+  if (stream->flag & _IONBF) {
     char buf[BUFSIZ];
 
     _stbuf(stream, buf, BUFSIZ);
     rc = _output(stream, fmt, args);
     _ftbuf(stream);
-  }
-  else
+  } else {
     rc = _output(stream, fmt, args);
+  }
 
   return rc;
 }
@@ -64,35 +62,31 @@ int fprintf(FILE *stream, const char *fmt, ...)
 
   va_start(args, fmt);
 
-  if (stream->flag & _IONBF)
-  {
+  if (stream->flag & _IONBF) {
     char buf[BUFSIZ];
 
     _stbuf(stream, buf, BUFSIZ);
     rc = _output(stream, fmt, args);
     _ftbuf(stream);
-  }
-  else
+  } else {
     rc = _output(stream, fmt, args);
+  }
 
   return rc;
 }
 
-int vprintf(const char *fmt, va_list args)
-{
+int vprintf(const char *fmt, va_list args) {
   return vfprintf(stdout, fmt, args);
 }
 
-int printf(const char *fmt, ...)
-{
+int printf(const char *fmt, ...) {
   va_list args;
 
   va_start(args, fmt);
   return vfprintf(stdout, fmt, args);
 }
 
-int vsprintf(char *buf, const char *fmt, va_list args)
-{
+int vsprintf(char *buf, const char *fmt, va_list args) {
   FILE str;
   int rc;
 
@@ -106,8 +100,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
   return rc;
 }
 
-int sprintf(char *buf, const char *fmt, ...)
-{
+int sprintf(char *buf, const char *fmt, ...) {
   va_list args;
   FILE str;
   int rc;
@@ -124,8 +117,7 @@ int sprintf(char *buf, const char *fmt, ...)
   return rc;
 }
 
-int vsnprintf(char *buf, size_t count, const char *fmt, va_list args)
-{
+int vsnprintf(char *buf, size_t count, const char *fmt, va_list args) {
   FILE str;
   int rc;
 
@@ -139,8 +131,7 @@ int vsnprintf(char *buf, size_t count, const char *fmt, va_list args)
   return rc;
 }
 
-int snprintf(char *buf, size_t count, const char *fmt, ...)
-{
+int snprintf(char *buf, size_t count, const char *fmt, ...) {
   va_list args;
   FILE str;
   int rc;

@@ -36,14 +36,12 @@
 
 #define STKBLKMIN (4096 - 8 - 8)
 
-struct stkblk
-{
+struct stkblk {
   struct stkblk *prev;
   char space[STKBLKMIN];
 };
 
-struct stkmark
-{
+struct stkmark {
   struct stkblk *blk;
   char *ptr;
   char *txt;

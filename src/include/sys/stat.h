@@ -43,8 +43,7 @@
 #ifndef _STAT_DEFINED
 #define _STAT_DEFINED
 
-struct stat
-{
+struct stat {
   dev_t st_dev;
   ino_t st_ino;
   mode_t st_mode;
@@ -58,8 +57,7 @@ struct stat
   time_t st_ctime;
 };
 
-struct stat64
-{
+struct stat64 {
   dev_t st_dev;
   ino_t st_ino;
   mode_t st_mode;

@@ -43,8 +43,7 @@
 #ifndef _TIMEVAL_DEFINED
 #define _TIMEVAL_DEFINED
 
-struct timeval 
-{
+struct timeval {
   long tv_sec;                  // Seconds
   long tv_usec;                 // Microseconds
 };
@@ -58,8 +57,7 @@ struct timeval
 #ifndef _FD_SET_DEFINED
 #define _FD_SET_DEFINED
 
-typedef struct fd_set 
-{
+typedef struct fd_set {
   unsigned int count;
   int fd[FD_SETSIZE];
 } fd_set;
@@ -74,34 +72,27 @@ typedef struct fd_set
 #ifndef _FD_FUNCS_DEFINED
 #define _FD_FUNCS_DEFINED
 
-__inline void _fd_zero(fd_set *set)
-{
+__inline void _fd_zero(fd_set *set) {
   set->count = 0;
 }
 
-__inline int _fd_isset(int fd, fd_set *set)
-{
+__inline int _fd_isset(int fd, fd_set *set) {
   unsigned int i;
 
   for (i = 0; i < set->count; i++) if (set->fd[i] == fd) return 1;
   return 0;
 }
 
-__inline void _fd_set(int fd, fd_set *set)
-{
+__inline void _fd_set(int fd, fd_set *set) {
   if (set->count < FD_SETSIZE) set->fd[set->count++] = fd;
 }
 
-__inline void _fd_clr(int fd, fd_set *set)
-{
+__inline void _fd_clr(int fd, fd_set *set) {
   unsigned int i;
 
-  for (i = 0; i < set->count ; i++) 
-  {
-    if (set->fd[i] == fd) 
-    {
-      while (i < set->count - 1)
-      {
+  for (i = 0; i < set->count ; i++) {
+    if (set->fd[i] == fd) {
+      while (i < set->count - 1) {
         set->fd[i] = set->fd[i + 1];
         i++;
       }

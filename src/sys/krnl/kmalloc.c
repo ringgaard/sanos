@@ -33,8 +33,7 @@
 
 #include <os/krnl.h>
 
-unsigned char log2[2048] =
-{
+unsigned char log2[2048] = {
    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
@@ -105,15 +104,13 @@ unsigned char log2[2048] =
 
 struct bucket buckets[PAGESHIFT];
 
-void *kmalloc_tag(int size, unsigned long tag)
-{
+void *kmalloc_tag(int size, unsigned long tag) {
   struct bucket *b;
   int bucket;
   void *addr;
 
   // Handle large allocation by allocating pages
-  if (size > PAGESIZE / 2)
-  {
+  if (size > PAGESIZE / 2) {
     // Allocate pages
     addr = alloc_pages(PAGES(size), tag ? tag : 'ALOC');
 
@@ -128,8 +125,7 @@ void *kmalloc_tag(int size, unsigned long tag)
   b = &buckets[bucket];
 
   // If bucket is empty the allocate one more page for the bucket
-  if (b->mem == 0)
-  {
+  if (b->mem == 0) {
     char *p;
     int i;
 
@@ -141,12 +137,10 @@ void *kmalloc_tag(int size, unsigned long tag)
 
     // Split page into chunks
     p = (char *) addr;
-    for (i = 0; i < PAGESIZE; i += b->size) 
-    {
+    for (i = 0; i < PAGESIZE; i += b->size)  {
       *(void **)(p + i) = b->mem;
       b->mem = p + i;
     }
-    //b->elems += PAGESIZE / b->size;
 
     // Update count of pages used for this bucket
     b->pages++;
@@ -155,20 +149,17 @@ void *kmalloc_tag(int size, unsigned long tag)
   // Allocate chunk from bucket
   addr = b->mem;
   b->mem = *(void **) addr;
-  //b->elems--;
 
   // Return allocated chunk
   return addr;
 }
 
-void *krealloc_tag(void *addr, int newsize, unsigned long tag)
-{
+void *krealloc_tag(void *addr, int newsize, unsigned long tag) {
   panic("krealloc_tag not implemented");
   return NULL;
 }
 
-void kfree(void *addr)
-{
+void kfree(void *addr) {
   unsigned long bucket;
   struct bucket *b;
 
@@ -179,8 +170,7 @@ void kfree(void *addr)
   bucket = pfdb[BTOP(virt2phys(addr))].size;
 
   // If a whole page or more, free directly
-  if (bucket >= PAGESHIFT) 
-  {
+  if (bucket >= PAGESHIFT) {
     free_pages(addr, bucket - PAGESHIFT);
     return;
   }
@@ -193,8 +183,7 @@ void kfree(void *addr)
   b->mem = addr;
 }
 
-int kheapstat_proc(struct proc_file *pf, void *arg)
-{
+int kheapstat_proc(struct proc_file *pf, void *arg) {
   int i;
   int elems;
   struct bucket *b;
@@ -205,16 +194,13 @@ int kheapstat_proc(struct proc_file *pf, void *arg)
   pprintf(pf, "bucket size pages allocated      free\n");
   pprintf(pf, "------ ---- ----- --------- ---------\n");
 
-  for (i = 0; i < PAGESHIFT; i++)
-  {
+  for (i = 0; i < PAGESHIFT; i++) {
     b = &buckets[i];
 
-    if (b->pages > 0)
-    {
+    if (b->pages > 0) {
       elems = 0;
       addr = b->mem;
-      while (addr)
-      {
+      while (addr) {
         addr = *(void **) addr;
         elems++;
       }
@@ -230,41 +216,34 @@ int kheapstat_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-void init_malloc()
-{
+void init_malloc() {
   int i;
   struct bucket *b;
 
   // Initialize the buckets
-  for (i = 0; i < PAGESHIFT; i++)
-  {
+  for (i = 0; i < PAGESHIFT; i++) {
     b = &buckets[i];
     b->size = (1 << i);
   }
 }
 
-void *kmalloc(int size)
-{
+void *kmalloc(int size) {
   return kmalloc_tag(size, 0);
 }
 
-void *krealloc(void *addr, int newsize)
-{
+void *krealloc(void *addr, int newsize) {
   return krealloc_tag(addr, newsize, 0);
 }
 
-void *malloc(size_t size)
-{
+void *malloc(size_t size) {
   return kmalloc_tag(size, 0);
 }
 
-void free(void *addr)
-{
+void free(void *addr) {
   kfree(addr);
 }
 
-char *strdup(const char *s)
-{
+char *strdup(const char *s) {
   char *t;
   int len;
 

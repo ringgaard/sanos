@@ -34,14 +34,12 @@
 #include <os/krnl.h>
 #include "smb.h"
 
-int recv_fully(struct socket *s, char *buf, int size, int flags)
-{
+int recv_fully(struct socket *s, char *buf, int size, int flags) {
   int bytes;
   int left;
 
   left = size;
-  while (left > 0)
-  {
+  while (left > 0) {
     bytes = recv(s, buf, left, flags);
     if (bytes <= 0) return bytes;
 
@@ -52,23 +50,19 @@ int recv_fully(struct socket *s, char *buf, int size, int flags)
   return size;
 }
 
-char *addstr(char *p, char *s)
-{
+char *addstr(char *p, char *s) {
   while (*s) *p++ = *s++;
   return p;
 }
 
-char *addstrz(char *p, char *s)
-{
+char *addstrz(char *p, char *s) {
   while (*s) *p++ = *s++;
   *p++ = 0;
   return p;
 }
 
-char *addpathz(char *p, char *s)
-{
-  while (*s) 
-  {
+char *addpathz(char *p, char *s) {
+  while (*s) {
     *p = *s == '/' ? '\\' : *s;
     p++;
     s++;
@@ -77,35 +71,29 @@ char *addpathz(char *p, char *s)
   return p;
 }
 
-time_t ft2time(smb_time filetime)
-{
+time_t ft2time(smb_time filetime) {
   return (time_t) ((filetime - EPOC) / SECTIMESCALE);
 }
 
-smb_time time2ft(time_t time)
-{
+smb_time time2ft(time_t time) {
   return (smb_time) time * SECTIMESCALE + EPOC;
 }
 
-int smb_convert_filename(char *name)
-{
+int smb_convert_filename(char *name) {
   char *p;
 
   for (p = name; *p; p++)  if (*p == '/') *p = '\\';
   return 0;
 }
 
-int smb_errno(struct smb *smb)
-{
+int smb_errno(struct smb *smb) {
   int errcls = smb->error_class;
   int error  = smb->error;
 
   //kprintf("smb: error %d class: %d\n", error, errcls);
 
-  if (errcls == SMB_ERRDOS)
-  {
-    switch (error)
-    {
+  if (errcls == SMB_ERRDOS) {
+    switch (error) {
       case ERRbadfunc: return -EINVAL;
       case ERRbadfile: return -ENOENT;
       case ERRbadpath: return -ENOENT;
@@ -132,11 +120,8 @@ int smb_errno(struct smb *smb)
       case 183: return -EEXIST;
       default: return -EIO;
     }
-  } 
-  else if (errcls == SMB_ERRSRV)
-  {
-    switch (error)
-    {
+  } else if (errcls == SMB_ERRSRV) {
+    switch (error) {
       case ERRerror: return -ENFILE;
       case ERRbadpw: return -EINVAL;
       case ERRbadtype: return -EIO;
@@ -144,11 +129,8 @@ int smb_errno(struct smb *smb)
       case ERRinvnid: return -EBADSLT;
       default: return -EIO;
     }
-  } 
-  else if (errcls == SMB_ERRHRD)
-  {
-    switch (error)
-    {
+  } else if (errcls == SMB_ERRHRD) {
+    switch (error) {
       case ERRnowrite: return -EROFS;
       case ERRbadunit: return -ENODEV;
       case ERRnotready: return -EUCLEAN;
@@ -159,9 +141,9 @@ int smb_errno(struct smb *smb)
       case ERRlock: return -EDEADLK;
       default: return -EIO;
     }
-  } 
-  else if (errcls == SMB_ERRCMD)
+  } else if (errcls == SMB_ERRCMD) {
     return -EIO;
+  }
 
   return -EIO;
 }

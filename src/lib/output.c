@@ -54,31 +54,25 @@
 #define FL_NEGATIVE   0x00100   // Value is negative
 #define FL_FORCEOCTAL 0x00200   // Force leading '0' for octals
 
-static void cfltcvt(double value, char *buffer, char fmt, int precision, int capexp)
-{
+static void cfltcvt(double value, char *buffer, char fmt, int precision, int capexp) {
   int decpt, sign, exp, pos;
   char *digits = NULL;
   char cvtbuf[CVTBUFSIZE];
   int magnitude;
 
-  if (fmt == 'g')
-  {
+  if (fmt == 'g') {
     digits = ecvtbuf(value, precision, &decpt, &sign, cvtbuf);
     magnitude = decpt - 1;
-    if (magnitude < -4  ||  magnitude > precision - 1)
-    {
+    if (magnitude < -4  ||  magnitude > precision - 1) {
       fmt = 'e';
       precision -= 1;
-    }
-    else
-    {
+    } else {
       fmt = 'f';
       precision -= decpt;
     }
   }
 
-  if (fmt == 'e')
-  {
+  if (fmt == 'e') {
     digits = ecvtbuf(value, precision + 1, &decpt, &sign, cvtbuf);
 
     if (sign) *buffer++ = '-';
@@ -88,23 +82,22 @@ static void cfltcvt(double value, char *buffer, char fmt, int precision, int cap
     buffer += precision;
     *buffer++ = capexp ? 'E' : 'e';
 
-    if (decpt == 0)
-    {
-      if (value == 0.0)
+    if (decpt == 0) {
+      if (value == 0.0) {
         exp = 0;
-      else
+      } else {
         exp = -1;
-    }
-    else
+      }
+    } else {
       exp = decpt - 1;
+    }
 
-    if (exp < 0)
-    {
+    if (exp < 0) {
       *buffer++ = '-';
       exp = -exp;
-    }
-    else
+    } else {
       *buffer++ = '+';
+    }
 
     buffer[2] = (exp % 10) + '0';
     exp = exp / 10;
@@ -112,35 +105,25 @@ static void cfltcvt(double value, char *buffer, char fmt, int precision, int cap
     exp = exp / 10;
     buffer[0] = (exp % 10) + '0';
     buffer += 3;
-  }
-  else if (fmt == 'f')
-  {
+  } else if (fmt == 'f') {
     digits = fcvtbuf(value, precision, &decpt, &sign, cvtbuf);
     if (sign) *buffer++ = '-';
-    if (*digits)
-    {
-      if (decpt <= 0)
-      {
+    if (*digits) {
+      if (decpt <= 0) {
         *buffer++ = '0';
         *buffer++ = '.';
         for (pos = 0; pos < -decpt; pos++) *buffer++ = '0';
         while (*digits) *buffer++ = *digits++;
-      }
-      else
-      {
+      } else {
         pos = 0;
-        while (*digits)
-        {
+        while (*digits) {
           if (pos++ == decpt) *buffer++ = '.';
           *buffer++ = *digits++;
         }
       }
-    }
-    else
-    {
+    } else {
       *buffer++ = '0';
-      if (precision > 0)
-      {
+      if (precision > 0) {
         *buffer++ = '.';
         for (pos = 0; pos < precision; pos++) *buffer++ = '0';
       }
@@ -150,40 +133,32 @@ static void cfltcvt(double value, char *buffer, char fmt, int precision, int cap
   *buffer = '\0';
 }
 
-static void forcdecpt(char *buffer)
-{
-  while (*buffer)
-  {
+static void forcdecpt(char *buffer) {
+  while (*buffer) {
     if (*buffer == '.') return;
     if (*buffer == 'e' || *buffer == 'E') break;
     buffer++;
   }
 
-  if (*buffer)
-  {
+  if (*buffer) {
     int n = strlen(buffer);
-    while (n > 0) 
-    {
+    while (n > 0)  {
       buffer[n + 1] = buffer[n];
       n--;
     }
 
     *buffer = '.';
-  }
-  else
-  {
+  } else {
     *buffer++ = '.';
     *buffer = '\0';
   }
 }
 
-static void cropzeros(char *buffer)
-{
+static void cropzeros(char *buffer) {
   char *stop;
 
   while (*buffer && *buffer != '.') buffer++;
-  if (*buffer++)
-  {
+  if (*buffer++) {
     while (*buffer && *buffer != 'e' && *buffer != 'E') buffer++;
     stop = buffer--;
     while (*buffer == '0') buffer--;
@@ -192,8 +167,7 @@ static void cropzeros(char *buffer)
   }
 }
 
-int _output(FILE *stream, const char *format, va_list args)
-{
+int _output(FILE *stream, const char *format, va_list args) {
   char *text;
   int textlen;
   int ch;
@@ -204,8 +178,7 @@ int _output(FILE *stream, const char *format, va_list args)
   char *fmt = (char *) format;
 
   cnt = 0;
-  while (*fmt)
-  {
+  while (*fmt) {
     // Initialize formating state
     char prefix[2];
     int prefixlen = 0;
@@ -216,8 +189,7 @@ int _output(FILE *stream, const char *format, va_list args)
     int capexp = 0;
 
     // Go forward until next format specifier or end of string
-    while (*fmt != 0 && *fmt != '%') 
-    {
+    while (*fmt != 0 && *fmt != '%') {
       //if ((stream->flag & _IOCRLF) && *fmt == '\n') putc('\r', stream);
       putc(*fmt, stream);
       fmt++;
@@ -226,8 +198,7 @@ int _output(FILE *stream, const char *format, va_list args)
     if (*fmt++ == 0) break;
 
     // Check for flags
-    switch (*fmt++)
-    {
+    switch (*fmt++) {
       case '-': flags |= FL_LEFT;      break;  // '-' => Left justify
       case '+': flags |= FL_SIGN;      break;  // '+' => Force sign indicator
       case ' ': flags |= FL_SIGNSP;    break;  // ' ' => Force sign or space
@@ -237,61 +208,49 @@ int _output(FILE *stream, const char *format, va_list args)
     }
 
     // Check for width value
-    if (*fmt == '*')
-    {
+    if (*fmt == '*') {
       // Get width from arg list
       width = va_arg(args, int);
-      if (width < 0)
-      {
+      if (width < 0) {
         // ANSI says neg fld width means '-' flag and pos width
         flags |= FL_LEFT;
         width = -width;
       }
       fmt++;
-    }
-    else
-    {
+    } else {
       // Get field width
       while (*fmt >= '0' && *fmt <= '9') width = width * 10 + (*fmt++ - '0');
     }
     
     // Check for precision
-    if (*fmt == '.')
-    {
+    if (*fmt == '.') {
       // Zero the precision, since dot with no number means 0, not default, according to ANSI
       precision = 0;
       fmt++;
 
-      if (*fmt == '*')
-      {
+      if (*fmt == '*') {
         // Get precision from arg list
         precision = va_arg(args, int);
         if (precision < 0) precision = -1; // Negative precision means default
         fmt++;
-      }
-      else
-      {
+      } else {
         // Get precision
         while (*fmt >= '0' && *fmt <= '9') precision = precision * 10 + (*fmt++ - '0');
       }
     }
     
     // Get the conversion qualifier
-    if (*fmt == 'h' || *fmt == 'l' || *fmt == 'L')
-    {
+    if (*fmt == 'h' || *fmt == 'l' || *fmt == 'L') {
       qualifier = *fmt;
       fmt++;
-    }
-    else if (*fmt == 'I' && *(fmt + 1) == '6' && *(fmt + 2) == '4')
-    {
+    } else if (*fmt == 'I' && *(fmt + 1) == '6' && *(fmt + 2) == '4') {
       qualifier = 'I';
       fmt += 3;
     }
 
     // Format output according to type specifier    
     ch = *fmt++;
-    switch (ch)
-    {
+    switch (ch) {
       case 'c': // One character
         buffer[0] = va_arg(args, char);
         text = buffer;
@@ -300,13 +259,10 @@ int _output(FILE *stream, const char *format, va_list args)
      
       case 's': // Zero terminated character string
         text = va_arg(args, char *);
-        if (text == NULL)
-        {
+        if (text == NULL) {
           text = "(null)";
           textlen = 6;
-        }
-        else
-        {
+        } else {
           char *p;
 
           int maxlen = precision == -1 ? INT_MAX : precision;
@@ -318,13 +274,10 @@ int _output(FILE *stream, const char *format, va_list args)
         break;
 
       case 'n': // Number of characters successfully written so far
-        if (qualifier == 'l')
-        {
+        if (qualifier == 'l') {
           long *ip = va_arg(args, long *);
           *ip = cnt;
-        }
-        else
-        {
+        } else {
           int *ip = va_arg(args, int *);
           *ip = cnt;
         }
@@ -354,8 +307,7 @@ int _output(FILE *stream, const char *format, va_list args)
          
       case_hex:
          radix = 16;
-         if (flags & FL_ALTERNATE)
-         {
+         if (flags & FL_ALTERNATE) {
            // Alternate form means '0x' prefix
            prefix[0] = '0';
            prefix[1] = 'x' - 'a' + '9' + 1 + hexadd;  // 'x' or 'X'
@@ -365,110 +317,90 @@ int _output(FILE *stream, const char *format, va_list args)
 
       case 'o': // Unsigned octal integer
         radix = 8;
-        if (flags & FL_ALTERNATE)
-        {
+        if (flags & FL_ALTERNATE) {
           // Alternate form means force a leading 0
           flags |= FL_FORCEOCTAL;
         }
         // Drop through to int formatting
 
-      case_int:
-      {
+      case_int: {
         unsigned int number;       // Number to convert (32 bit)
         unsigned __int64 number64; // Number to convert (64 bit)
         int digit;                 // ASCII value of digit
 
         // Read argument and check for negative
-        if (qualifier == 'I')
-        {
-          if (flags & FL_SIGNED)
-          {
+        if (qualifier == 'I') {
+          if (flags & FL_SIGNED) {
             __int64 n = va_arg(args, __int64);
-            if (n < 0)
-            {
+            if (n < 0) {
               number64 = -n;
               flags |= FL_NEGATIVE;
-            }
-            else
+            } else {
               number64 = n;
-          }
-          else
+            }
+          } else {
             number64 = va_arg(args, unsigned __int64);
-        }
-        else if (qualifier == 'l' || qualifier == 'L')
-        {
-          if (flags & FL_SIGNED)
-          {
+          }
+        } else if (qualifier == 'l' || qualifier == 'L') {
+          if (flags & FL_SIGNED) {
             long n = va_arg(args, long);
-            if (n < 0)
-            {
+            if (n < 0) {
               number = -n;
               flags |= FL_NEGATIVE;
-            }
-            else
+            } else {
               number = n;
-          }
-          else
+            }
+          } else {
             number = va_arg(args, unsigned long);
-        }
-        else if (qualifier == 'h')
-        {
-          if (flags & FL_SIGNED)
-          {
+          }
+        } else if (qualifier == 'h') {
+          if (flags & FL_SIGNED) {
             short n = va_arg(args, short);
-            if (n < 0)
-            {
+            if (n < 0) {
               number = -n;
               flags |= FL_NEGATIVE;
-            }
-            else
+            } else {
               number = n;
-          }
-          else
+            }
+          } else {
             number = va_arg(args, unsigned short);
-        }
-        else if (flags & FL_SIGNED)
-        {
+          }
+        } else if (flags & FL_SIGNED) {
           int n = va_arg(args, int);
-          if (n < 0)
-          {
+          if (n < 0) {
             number = -n;
             flags |= FL_NEGATIVE;
-          }
-          else
+          } else {
             number = n;
-        }
-        else
+          }
+        } else {
           number = va_arg(args, unsigned int);
+        }
 
         // Check precision value for default; non-default turns off 0 flag, according to ANSI
-        if (precision < 0)
+        if (precision < 0) {
           precision = 1;  // Default precision
-        else
+        } else {
           flags &= ~FL_LEADZERO;
+        }
 
         // Convert data to ASCII -- note if precision is zero and number is zero, we get no digits at all
         text = &buffer[MAXBUFFER - 1]; // Last digit at end of buffer
-        if (qualifier == 'I')
-        {
+        if (qualifier == 'I') {
           // Check if data is 0; if so, turn off hex prefix
           if (number64 == 0) prefixlen = 0;
 
-          while (precision-- > 0 || number64 != 0)
-          {
+          while (precision-- > 0 || number64 != 0) {
             digit = (int) (number64 % radix) + '0';
             number64 /= radix; // Reduce number
             if (digit > '9') digit += hexadd;
             *text-- = digit;
           }
-        }
-        else
-        {
+        } else {
           // Check if data is 0; if so, turn off hex prefix
           if (number == 0) prefixlen = 0;
 
-          while (precision-- > 0 || number != 0)
-          {
+          while (precision-- > 0 || number != 0) {
             digit = (int) (number % radix) + '0';
             number /= radix; // Reduce number
             if (digit > '9') digit += hexadd;
@@ -480,8 +412,7 @@ int _output(FILE *stream, const char *format, va_list args)
         text++; // Text points to first digit now
 
         // Force a leading zero if FORCEOCTAL flag set */
-        if ((flags & FL_FORCEOCTAL) && (*text != '0' || textlen == 0))
-        {
+        if ((flags & FL_FORCEOCTAL) && (*text != '0' || textlen == 0)) {
           *--text = '0';
           textlen++;
         }
@@ -503,13 +434,13 @@ int _output(FILE *stream, const char *format, va_list args)
         // Get floating point value
         fltval = va_arg(args, double);
 
-        if (isfinite(fltval))
-        {
+        if (isfinite(fltval)) {
           // Compute the precision value
-          if (precision < 0)
+          if (precision < 0) {
             precision = 6; // Default precision: 6
-          else if (precision == 0 && ch == 'g')
+          } else if (precision == 0 && ch == 'g') {
             precision = 1; // ANSI specified
+          }
 
           // Convert floating point number to text
           cfltcvt(fltval, text, ch, precision, capexp);
@@ -519,19 +450,18 @@ int _output(FILE *stream, const char *format, va_list args)
 
           // 'g' format means crop zero unless '#' given
           if (ch == 'g' && !(flags & FL_ALTERNATE)) cropzeros(text);
-        }
-        else if (isnan(fltval))
+        } else if (isnan(fltval)) {
           strcpy(buffer, "NaN");
-        else if (fltval == HUGE_VAL)
+        } else if (fltval == HUGE_VAL) {
           strcpy(buffer, "+INF");
-        else if (fltval == -HUGE_VAL)
+        } else if (fltval == -HUGE_VAL) {
           strcpy(buffer, "-INF");
-        else
+        } else {
           strcpy(buffer, "?FLT?");
+        }
 
         // Check if result was negative, save '-' for later and point to positive part (this is for '0' padding)
-        if (*text == '-')
-        {
+        if (*text == '-') {
           flags |= FL_NEGATIVE;
           text++;
         }
@@ -549,20 +479,14 @@ int _output(FILE *stream, const char *format, va_list args)
     }
 
     // Check for signs
-    if (flags & FL_SIGNED)
-    {
-      if (flags & FL_NEGATIVE)
-      {
+    if (flags & FL_SIGNED) {
+      if (flags & FL_NEGATIVE) {
         prefix[0] = '-';
         prefixlen = 1;
-      }
-      else if (flags & FL_SIGN)
-      {
+      } else if (flags & FL_SIGN) {
         prefix[0] = '+';
         prefixlen = 1;
-      }
-      else if (flags & FL_SIGNSP)
-      {
+      } else if (flags & FL_SIGNSP) {
         prefix[0] = ' ';
         prefixlen = 1;
       }
@@ -572,11 +496,9 @@ int _output(FILE *stream, const char *format, va_list args)
     padding = width - textlen - prefixlen;
 
     // Put out the padding, prefix, and text, in the correct order
-    if (!(flags & (FL_LEFT | FL_LEADZERO)))
-    {
+    if (!(flags & (FL_LEFT | FL_LEADZERO))) {
       // Pad on left with blanks
-      while (padding > 0)
-      {
+      while (padding > 0) {
         putc(' ', stream);
         cnt++;
         padding--;
@@ -584,23 +506,19 @@ int _output(FILE *stream, const char *format, va_list args)
     }
 
     // Write prefix
-    if (prefixlen > 0)
-    {
+    if (prefixlen > 0) {
       int n;
 
-      for (n = 0; n < prefixlen; n++)
-      {
+      for (n = 0; n < prefixlen; n++) {
         putc(prefix[n], stream);
         cnt++;
       }
     }
 
     // Put out leading zeroes
-    if ((flags & FL_LEADZERO) && !(flags & FL_LEFT))
-    {
+    if ((flags & FL_LEADZERO) && !(flags & FL_LEFT)) {
       // Write leading zeros
-      while (padding > 0)
-      {
+      while (padding > 0) {
         putc('0', stream);
         cnt++;
         padding--;
@@ -608,8 +526,7 @@ int _output(FILE *stream, const char *format, va_list args)
     }
 
     // Put out text
-    while (textlen > 0) 
-    {
+    while (textlen > 0) {
       putc(*text, stream);
       text++;
       textlen--;
@@ -617,11 +534,9 @@ int _output(FILE *stream, const char *format, va_list args)
     }
 
     // Put out trailling blanks
-    if (flags & FL_LEFT)
-    {
+    if (flags & FL_LEFT) {
       // Pad on right with blanks
-      while (padding > 0)
-      {
+      while (padding > 0) {
         putc(' ', stream);
         cnt++;
         padding--;

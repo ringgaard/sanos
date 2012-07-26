@@ -89,8 +89,7 @@
 
 // APM BIOS parameter block
 
-struct apmparams
-{
+struct apmparams {
   unsigned short version;      // APM version (BCD format)
   unsigned short flags;        // APM flags from install check
   unsigned short cseg32;       // APM 32-bit code segment (real mode segment base address)
@@ -113,11 +112,9 @@ struct apmparams
 
 #pragma pack(push, 1)
 
-struct memmap
-{
+struct memmap {
   int count;              // Number of entries in memory map
-  struct mementry
-  {
+  struct mementry {
     unsigned __int64 addr;     // Start of memory segment
     unsigned __int64 size;     // Size of memory segment
     unsigned long type;        // Type of memory segment
@@ -126,8 +123,7 @@ struct memmap
 
 // Boot parameter block
 
-struct bootparams
-{
+struct bootparams {
   int bootdrv;                 // Boot drive:
                                //  0x00 First floppy
                                //  0x01 Second floppy
@@ -146,8 +142,7 @@ struct bootparams
 
 // Loader parameter block
 
-struct ldrparams
-{
+struct ldrparams {
   unsigned long heapstart;      // Start of boot heap
   unsigned long heapend;        // End of boot heap
   unsigned long memend;         // End of RAM
@@ -158,8 +153,7 @@ struct ldrparams
 
 // System page
 
-struct syspage
-{
+struct syspage {
   struct tss tss;               // Task State Segment
   struct segment gdt[MAXGDT];   // Global Descriptor Table
   struct gate idt[MAXIDT];      // Interrupt Descriptor Table

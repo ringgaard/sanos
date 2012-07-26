@@ -48,16 +48,14 @@
 
 #pragma pack(push, 1)
 
-struct stringinfo
-{
+struct stringinfo {
   unsigned short length;
   unsigned short value_length;
   unsigned short type;
   wchar_t key[0];
 };
 
-struct version_resource
-{
+struct version_resource {
   unsigned short length;
   unsigned short value_length;
   unsigned short type;
@@ -69,21 +67,17 @@ struct version_resource
 
 #pragma pack(pop)
 
-static int streq(wchar_t *s1, char *s2)
-{
+static int streq(wchar_t *s1, char *s2) {
   while (*s1 && *s2) if (*s1++ != *s2++) return 0;
   return !*s1 && !*s2;
 }
 
-static char *getchild(char *start, char *end, char *name, int *size)
-{
+static char *getchild(char *start, char *end, char *name, int *size) {
   char *p = start;
-  while (p < end)
-  {
+  while (p < end) {
     struct stringinfo *si = (struct stringinfo *) p;
     if (si->length == 0) break;
-    if (streq(si->key, name))
-    {
+    if (streq(si->key, name)) {
       end = p + si->length;
       p += 3 * sizeof(unsigned short) + (strlen(name) + 1) * sizeof(wchar_t);
       p = ALIGN(p);
@@ -98,8 +92,7 @@ static char *getchild(char *start, char *end, char *name, int *size)
   return NULL;
 }
 
-static struct version_resource *getver(hmodule_t hmod)
-{
+static struct version_resource *getver(hmodule_t hmod) {
   int rc;
   struct version_resource *ver;
 
@@ -111,8 +104,7 @@ static struct version_resource *getver(hmodule_t hmod)
   return ver;
 }
 
-struct verinfo *get_version_info(hmodule_t hmod)
-{
+struct verinfo *get_version_info(hmodule_t hmod) {
   struct version_resource *ver;
   
   ver = getver(hmod);
@@ -120,8 +112,7 @@ struct verinfo *get_version_info(hmodule_t hmod)
   return &ver->fixed;
 }
 
-int get_version_value(hmodule_t hmod, char *name, char *buf, int size)
-{
+int get_version_value(hmodule_t hmod, char *name, char *buf, int size) {
   struct version_resource *ver;
   char *start;
   char *end;
@@ -146,8 +137,7 @@ int get_version_value(hmodule_t hmod, char *name, char *buf, int size)
 
   q = (wchar_t *) p;
   p = buf;
-  while (*q)
-  {
+  while (*q) {
     if (--size == 0) return -E2BIG;
     *p++ = (char) *q++;
   }

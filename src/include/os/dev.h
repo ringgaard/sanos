@@ -75,8 +75,7 @@ struct unit;
 // Bus
 //
 
-struct bus
-{
+struct bus {
   struct bus *next;
   struct bus *sibling;
   struct bus *parent;
@@ -94,8 +93,7 @@ struct bus
 // Unit
 //
 
-struct unit
-{
+struct unit {
   struct unit *next;
   struct unit *sibling;
   struct bus *bus;
@@ -118,8 +116,7 @@ struct unit
 // Resource
 //
 
-struct resource
-{
+struct resource {
   struct resource *next;
   unsigned short type;
   unsigned short flags;
@@ -131,8 +128,7 @@ struct resource
 // Binding
 //
 
-struct binding
-{
+struct binding {
   int bindtype;
   unsigned long bustype;
   unsigned long code;
@@ -144,8 +140,7 @@ struct binding
 // Driver
 //
 
-struct driver
-{
+struct driver {
   char *name;
   int type;
 
@@ -163,8 +158,7 @@ struct driver
 // Device
 //
 
-struct dev 
-{
+struct dev {
   char name[DEVNAMELEN];
   struct driver *driver;
   struct unit *unit;
@@ -188,8 +182,7 @@ struct dev
 // Geometry
 //
 
-struct geometry
-{
+struct geometry {
   int cyls;
   int heads;
   int spt;
@@ -201,8 +194,7 @@ struct geometry
 // Board info
 //
 
-struct board
-{
+struct board {
   char *vendorname;
   char *productname;
   unsigned long bustype;

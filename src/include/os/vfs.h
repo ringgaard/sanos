@@ -70,15 +70,13 @@
 #define FSOP_OPENDIR    0x08000000
 #define FSOP_READDIR    0x10000000
 
-struct filesystem
-{
+struct filesystem {
   char *name;
   struct fsops *ops;
   struct filesystem *next;
 };
 
-struct fs
-{
+struct fs {
   int locks;
   struct mutex exclusive;
   char mntfrom[MAXPATH];
@@ -93,8 +91,7 @@ struct fs
   struct filesystem *fsys;
 };
 
-struct file
-{
+struct file {
   struct ioobject iob;
 
   struct fs *fs;
@@ -108,8 +105,7 @@ struct file
   char chbuf;
 };
 
-struct fsops
-{
+struct fsops {
   unsigned long reentrant;
 
   int (*lockfs)(struct fs *fs);

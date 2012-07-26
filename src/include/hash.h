@@ -38,8 +38,7 @@
 // This is the root of the hashed object.
 //
 
-struct hash 
-{
+struct hash  {
   int hashsize;                 // Width of bucket array
   unsigned long hashmask;       // Bit mask to match array size
   struct hash_node *buckets[0]; // Chains under each hash value
@@ -49,8 +48,7 @@ struct hash
 // Hash collision chains.  An internal data structure.
 //
 
-struct hash_node 
-{
+struct hash_node {
   struct hash_node *next;       // Next on hash chain
   unsigned long key;            // Key for this node
   void *data;                   //  ...corresponding value

@@ -33,8 +33,7 @@
 
 #include <os/krnl.h>
 
-struct fsops dfsops =
-{
+struct fsops dfsops = {
   FSOP_READ | FSOP_WRITE | FSOP_IOCTL | FSOP_TELL | FSOP_LSEEK | FSOP_FTRUNCATE | 
   FSOP_FUTIME | FSOP_FSTAT,
 
@@ -84,13 +83,11 @@ struct fsops dfsops =
   dfs_readdir
 };
 
-void init_dfs()
-{
+void init_dfs() {
   register_filesystem("dfs", &dfsops);
 }
 
-int dfs_utime(struct fs *fs, char *name, struct utimbuf *times)
-{
+int dfs_utime(struct fs *fs, char *name, struct utimbuf *times) {
   struct inode *inode;
   int rc;
 
@@ -98,8 +95,7 @@ int dfs_utime(struct fs *fs, char *name, struct utimbuf *times)
   if (rc < 0) return rc;
 
   rc = checki(inode, S_IWRITE);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     release_inode(inode);
     return rc;
   }
@@ -112,8 +108,7 @@ int dfs_utime(struct fs *fs, char *name, struct utimbuf *times)
   return 0;
 }
 
-int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
-{
+int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer) {
   struct inode *inode;
   off64_t size;
   int rc;
@@ -123,8 +118,7 @@ int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
 
   size = inode->desc->size;
 
-  if (buffer)
-  {
+  if (buffer) {
     memset(buffer, 0, sizeof(struct stat64));
 
     buffer->st_mode = inode->desc->mode;
@@ -145,8 +139,7 @@ int dfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
   return (int) size;
 }
 
-int dfs_access(struct fs *fs, char *name, int mode)
-{
+int dfs_access(struct fs *fs, char *name, int mode) {
   struct thread *thread = self();
   struct inode *inode;
   int rc;
@@ -154,10 +147,8 @@ int dfs_access(struct fs *fs, char *name, int mode)
   rc = namei((struct filsys *) fs->data, name, &inode);
   if (rc < 0) return rc;
 
-  if (mode != 0 && thread->euid != 0) 
-  {
-    if (thread->euid != inode->desc->uid) 
-    {
+  if (mode != 0 && thread->euid != 0) {
+    if (thread->euid != inode->desc->uid) {
       mode >>= 3;
       if (thread->egid != inode->desc->gid) mode >>= 3;
     }
@@ -170,8 +161,7 @@ int dfs_access(struct fs *fs, char *name, int mode)
   return rc;
 }
 
-int dfs_mkdir(struct fs *fs, char *name, int mode)
-{
+int dfs_mkdir(struct fs *fs, char *name, int mode) {
   struct inode *parent;
   ino_t ino;
   struct inode *dir;
@@ -183,22 +173,19 @@ int dfs_mkdir(struct fs *fs, char *name, int mode)
   if (rc < 0) return rc;
 
   rc = find_dir_entry(parent, name, len, &ino);
-  if (rc != -ENOENT)
-  {
+  if (rc != -ENOENT) {
     release_inode(parent);
     return rc >= 0 ? -EEXIST : rc;
   }
 
   dir = alloc_inode(parent, S_IFDIR | (mode & S_IRWXUGO));
-  if (!dir)
-  {
+  if (!dir) {
     release_inode(parent);
     return -ENOSPC;
   }
 
   rc = add_dir_entry(parent, name, len, dir->ino);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     unlink_inode(dir);
     release_inode(dir);
     release_inode(parent);
@@ -210,8 +197,7 @@ int dfs_mkdir(struct fs *fs, char *name, int mode)
   return 0;
 }
 
-int dfs_rmdir(struct fs *fs, char *name)
-{
+int dfs_rmdir(struct fs *fs, char *name) {
   struct inode *parent;
   struct inode *dir;
   ino_t ino;
@@ -223,50 +209,43 @@ int dfs_rmdir(struct fs *fs, char *name)
   if (rc < 0) return rc;
 
   rc = find_dir_entry(parent, name, len, &ino);
-  if (rc < 0) 
-  {
+  if (rc < 0) {
     release_inode(parent);
     return rc;
   }
 
-  if (ino == DFS_INODE_ROOT)
-  {
+  if (ino == DFS_INODE_ROOT) {
     release_inode(parent);
     return -EPERM;
   }
 
   rc = get_inode(parent->fs, ino, &dir);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     release_inode(parent);
     return rc;
   }
 
-  if (!S_ISDIR(dir->desc->mode))
-  {
+  if (!S_ISDIR(dir->desc->mode)) {
     release_inode(dir);
     release_inode(parent);
     return -ENOTDIR;
   }
 
-  if (dir->desc->size > 0)
-  {
+  if (dir->desc->size > 0) {
     release_inode(dir);
     release_inode(parent);
     return -ENOTEMPTY;
   }
 
   rc = delete_dir_entry(parent, name, len); 
-  if (rc < 0)
-  {
+  if (rc < 0) {
     release_inode(dir);
     release_inode(parent);
     return rc;
   }
 
   rc = unlink_inode(dir);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     release_inode(dir);
     release_inode(parent);
     return rc;
@@ -277,8 +256,7 @@ int dfs_rmdir(struct fs *fs, char *name)
   return 0;
 }
 
-int dfs_rename(struct fs *fs, char *oldname, char *newname)
-{
+int dfs_rename(struct fs *fs, char *oldname, char *newname) {
   struct inode *oldparent;
   struct inode *newparent;
   int oldlen;
@@ -291,47 +269,41 @@ int dfs_rename(struct fs *fs, char *oldname, char *newname)
   if (rc < 0) return rc;
 
   rc = find_dir_entry(oldparent, oldname, oldlen, &ino);
-  if (rc < 0) 
-  {
+  if (rc < 0) {
     release_inode(oldparent);
     return rc;
   }
 
   newlen = strlen(newname);
   rc = diri((struct filsys *) fs->data, &newname, &newlen, &newparent);
-  if (rc < 0) 
-  {
+  if (rc < 0) {
     release_inode(oldparent);
     return rc;
   }
 
   rc = find_dir_entry(newparent, newname, newlen, NULL);
-  if (rc != -ENOENT)
-  {
+  if (rc != -ENOENT) {
     release_inode(oldparent);
     release_inode(newparent);
     if (strcmp(oldname, newname) == 0) return 0;
     return rc >= 0 ? -EEXIST : rc;
   }
 
-  if (checki(oldparent, S_IWRITE) < 0 || checki(newparent, S_IWRITE) < 0)
-  {
+  if (checki(oldparent, S_IWRITE) < 0 || checki(newparent, S_IWRITE) < 0) {
     release_inode(oldparent);
     release_inode(newparent);
     return -EACCES;
   }
 
   rc = add_dir_entry(newparent, newname, newlen, ino); 
-  if (rc < 0)
-  {
+  if (rc < 0) {
     release_inode(oldparent);
     release_inode(newparent);
     return rc;
   }
 
   rc = delete_dir_entry(oldparent, oldname, oldlen);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     release_inode(oldparent);
     release_inode(newparent);
     return rc;
@@ -342,8 +314,7 @@ int dfs_rename(struct fs *fs, char *oldname, char *newname)
   return 0;
 }
 
-int dfs_link(struct fs *fs, char *oldname, char *newname)
-{
+int dfs_link(struct fs *fs, char *oldname, char *newname) {
   struct inode *inode;
   struct inode *parent;
   int len;
@@ -354,15 +325,13 @@ int dfs_link(struct fs *fs, char *oldname, char *newname)
 
   len = strlen(newname);
   rc = diri((struct filsys *) fs->data, &newname, &len, &parent);
-  if (rc < 0) 
-  {
+  if (rc < 0) {
     release_inode(inode);
     return rc;
   }
 
   rc = find_dir_entry(parent, newname, len, NULL);
-  if (rc != -ENOENT)
-  {
+  if (rc != -ENOENT) {
     release_inode(inode);
     release_inode(parent);
     return rc >= 0 ? -EEXIST : rc;
@@ -372,8 +341,7 @@ int dfs_link(struct fs *fs, char *oldname, char *newname)
   mark_inode_dirty(inode);
 
   rc = add_dir_entry(parent, newname, len, inode->ino);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     unlink_inode(inode);
     release_inode(inode);
     release_inode(parent);
@@ -385,8 +353,7 @@ int dfs_link(struct fs *fs, char *oldname, char *newname)
   return 0;
 }
 
-int dfs_unlink(struct fs *fs, char *name)
-{
+int dfs_unlink(struct fs *fs, char *name) {
   struct inode *dir;
   struct inode *inode;
   ino_t ino;
@@ -398,37 +365,32 @@ int dfs_unlink(struct fs *fs, char *name)
   if (rc < 0) return rc;
 
   rc = find_dir_entry(dir, name, len, &ino);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     release_inode(dir);
     return rc;
   }
 
   rc = get_inode(dir->fs, ino, &inode);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     release_inode(dir);
     return rc;
   }
 
-  if (S_ISDIR(inode->desc->mode))
-  {
+  if (S_ISDIR(inode->desc->mode)) {
     release_inode(inode);
     release_inode(dir);
     return -EISDIR;
   }
 
   rc = delete_dir_entry(dir, name, len);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     release_inode(inode);
     release_inode(dir);
     return rc;
   }
 
   rc = unlink_inode(inode); 
-  if (rc < 0)
-  {
+  if (rc < 0) {
     release_inode(inode);
     release_inode(dir);
     return rc;
@@ -439,8 +401,7 @@ int dfs_unlink(struct fs *fs, char *name)
   return 0;
 }
 
-int dfs_chmod(struct fs *fs, char *name, int mode)
-{
+int dfs_chmod(struct fs *fs, char *name, int mode) {
   struct thread *thread = self();
   struct inode *inode;
   int rc;
@@ -448,8 +409,7 @@ int dfs_chmod(struct fs *fs, char *name, int mode)
   rc = namei((struct filsys *) fs->data, name, &inode);
   if (rc < 0) return rc;
 
-  if (thread->euid != 0 && thread->euid != inode->desc->uid)
-  {
+  if (thread->euid != 0 && thread->euid != inode->desc->uid) {
     release_inode(inode);
     return -EPERM;
   }
@@ -462,8 +422,7 @@ int dfs_chmod(struct fs *fs, char *name, int mode)
   return 0;
 }
 
-int dfs_chown(struct fs *fs, char *name, int owner, int group)
-{
+int dfs_chown(struct fs *fs, char *name, int owner, int group) {
   struct thread *thread = self();
   struct inode *inode;
   int rc;
@@ -471,8 +430,7 @@ int dfs_chown(struct fs *fs, char *name, int owner, int group)
   rc = namei((struct filsys *) fs->data, name, &inode);
   if (rc < 0) return rc;
 
-  if (thread->euid != 0)
-  {
+  if (thread->euid != 0) {
     release_inode(inode);
     return -EPERM;
   }

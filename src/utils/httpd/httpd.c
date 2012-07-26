@@ -42,14 +42,12 @@
 
 #include <httpd.h>
 
-struct mimetype
-{
+struct mimetype {
   char *ext;
   char *mime;
 };
 
-struct mimetype mimetypes[] = 
-{
+struct mimetype mimetypes[] = {
   {"txt",  "text/plain"},
   {"html", "text/html"},
   {"htm",  "text/html"},
@@ -131,10 +129,8 @@ struct mimetype mimetypes[] =
   {NULL, NULL}
 };
 
-char *statustitle(int status)
-{
-  switch (status)
-  {
+char *statustitle(int status) {
+  switch (status) {
     case 200: return "OK";
     case 204: return "No Content";
     case 302: return "Moved";
@@ -153,8 +149,7 @@ char *statustitle(int status)
   return "Internal Error";
 }
 
-struct httpd_server *httpd_initialize(struct section *cfg)
-{
+struct httpd_server *httpd_initialize(struct section *cfg) {
   struct httpd_server *server;
   char *name;
 
@@ -179,8 +174,7 @@ struct httpd_server *httpd_initialize(struct section *cfg)
   server->logdir = getstrconfig(cfg, "logdir", NULL);
   server->logfd = -1;
 
-  if (cfg)
-  {
+  if (cfg) {
     name = getstrconfig(cfg, "mimemap", "mimetypes");
     server->mimemap = find_section(cfg, name);
   }
@@ -188,24 +182,20 @@ struct httpd_server *httpd_initialize(struct section *cfg)
   return server;
 }
 
-int httpd_terminate(struct httpd_server *server)
-{
+int httpd_terminate(struct httpd_server *server) {
   return -ENOSYS;
 }
 
-char *httpd_get_mimetype(struct httpd_server *server, char *ext)
-{
+char *httpd_get_mimetype(struct httpd_server *server, char *ext) {
   struct property *prop;
   struct mimetype *m;
 
   if (!ext) return NULL;
 
   // Find MIME type in servers mime map
-  if (server && server->mimemap)
-  {
+  if (server && server->mimemap) {
     prop = server->mimemap->properties;
-    while (prop)
-    {
+    while (prop) {
       if (stricmp(ext, prop->name) == 0) return prop->value;
       prop = prop->next;
     }
@@ -213,8 +203,7 @@ char *httpd_get_mimetype(struct httpd_server *server, char *ext)
 
   // Find MIME type in default MIME type table
   m = mimetypes;
-  while (m->ext)
-  {
+  while (m->ext) {
     if (stricmp(ext, m->ext) == 0) return m->mime;
     m++;
   }
@@ -222,8 +211,7 @@ char *httpd_get_mimetype(struct httpd_server *server, char *ext)
   return NULL;
 }
 
-struct httpd_context *httpd_add_context(struct httpd_server *server, char *alias, httpd_handler handler, void *userdata, struct section *cfg)
-{
+struct httpd_context *httpd_add_context(struct httpd_server *server, char *alias, httpd_handler handler, void *userdata, struct section *cfg) {
   struct httpd_context *context;
 
   context = (struct httpd_context *) malloc(sizeof(struct httpd_context));
@@ -243,8 +231,7 @@ struct httpd_context *httpd_add_context(struct httpd_server *server, char *alias
   return context;
 }
 
-struct httpd_context *httpd_add_file_context(struct httpd_server *server, char *alias, char *location, struct section *cfg)
-{
+struct httpd_context *httpd_add_file_context(struct httpd_server *server, char *alias, char *location, struct section *cfg) {
   struct httpd_context *context;
 
   context = httpd_add_context(server, alias, httpd_file_handler, NULL, cfg);
@@ -256,8 +243,7 @@ struct httpd_context *httpd_add_file_context(struct httpd_server *server, char *
   return context;
 }
 
-struct httpd_context *httpd_add_resource_context(struct httpd_server *server, char *alias, hmodule_t hmod, struct section *cfg)
-{
+struct httpd_context *httpd_add_resource_context(struct httpd_server *server, char *alias, hmodule_t hmod, struct section *cfg) {
   struct httpd_context *context;
   char modfn[MAXPATH];
   struct stat statbuf;
@@ -274,8 +260,7 @@ struct httpd_context *httpd_add_resource_context(struct httpd_server *server, ch
   return context;
 }
 
-void httpd_accept(struct httpd_server *server)
-{
+void httpd_accept(struct httpd_server *server) {
   int sock;
   httpd_sockaddr addr;
   struct httpd_connection *conn;
@@ -308,10 +293,8 @@ void httpd_accept(struct httpd_server *server)
   dispatch(server->iomux, conn->sock, IOEVT_READ | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
 }
 
-void httpd_finish_processing(struct httpd_connection *conn)
-{
-  if (conn->req)
-  {
+void httpd_finish_processing(struct httpd_connection *conn) {
+  if (conn->req) {
     if (conn->req->decoded_url) free(conn->req->decoded_url);
     if (conn->req->path_translated) free(conn->req->path_translated);
     if (conn->req->username) free(conn->req->username);
@@ -319,8 +302,7 @@ void httpd_finish_processing(struct httpd_connection *conn)
     conn->req = NULL;
   }
 
-  if (conn->rsp)
-  {
+  if (conn->rsp) {
     conn->rsp = NULL;
   }
 }
@@ -331,8 +313,7 @@ int httpd_terminate_request(struct httpd_connection *conn)
 
   if (!conn->keep) return 0;
   
-  if (conn->fd >= 0)
-  {
+  if (conn->fd >= 0) {
     close(conn->fd);
     conn->fd = -1;
   }
@@ -355,15 +336,13 @@ int httpd_terminate_request(struct httpd_connection *conn)
   return 1;
 }
 
-void httpd_close_connection(struct httpd_connection *conn)
-{
+void httpd_close_connection(struct httpd_connection *conn) {
   struct httpd_server *server = conn->server;
 
   //printf("close %s port %d\n", inet_ntoa(conn->client_addr.sa_in.sin_addr), ntohs(conn->client_addr.sa_in.sin_port));
 
   close(conn->sock);
-  if (conn->fd >= 0)
-  {
+  if (conn->fd >= 0) {
     close(conn->fd);
     conn->fd = -1;
   }
@@ -381,8 +360,7 @@ void httpd_close_connection(struct httpd_connection *conn)
   free(conn);
 }
 
-int httpd_recv(struct httpd_request *req, char *data, int len)
-{
+int httpd_recv(struct httpd_request *req, char *data, int len) {
   struct httpd_buffer *buf;
   int rc;
   int n;
@@ -390,8 +368,7 @@ int httpd_recv(struct httpd_request *req, char *data, int len)
   // First copy any remaining data in the request header buffer
   buf = &req->conn->reqhdr;
   n = buf->end - buf->start;
-  if (n > 0)
-  {
+  if (n > 0) {
     if (n > len) n = len;
     memcpy(data, buf->start, n);
     buf->start += n;
@@ -400,19 +377,16 @@ int httpd_recv(struct httpd_request *req, char *data, int len)
 
   // Allocate request body buffer if it has not already been done
   buf = &req->conn->reqbody;
-  if (!buf->floor)
-  {
+  if (!buf->floor) {
     rc = allocate_buffer(buf, req->conn->server->reqbufsiz);
     if (rc < 0) return rc;
   }
 
   // Receive new data if request body buffer empty
-  if (buf->end == buf->start)
-  {
+  if (buf->end == buf->start) {
     n = recv(req->conn->sock, buf->floor, buf->ceil - buf->floor, 0);
     if (n < 0) return n;
-    if (n == 0) 
-    {
+    if (n == 0) {
       errno = ECONNRESET;
       return -1;
     }
@@ -430,8 +404,7 @@ int httpd_recv(struct httpd_request *req, char *data, int len)
   return n;
 }
 
-int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *headers)
-{
+int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *headers) {
   int rc;
   char buf[2048];
   char datebuf[32];
@@ -446,29 +419,25 @@ int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *
   rc = bufcat(&rsp->conn->rsphdr, buf);
   if (rc < 0) return rc;
 
-  if (rsp->last_modified)
-  {
+  if (rsp->last_modified) {
     sprintf(buf, "Last-Modified: %s\r\n", rfctime(rsp->last_modified, datebuf));
     rc = bufcat(&rsp->conn->rsphdr, buf);
     if (rc < 0) return rc;
   }
 
-  if (rsp->content_type)
-  {
+  if (rsp->content_type) {
     sprintf(buf, "Content-Type: %s\r\n", rsp->content_type);
     rc = bufcat(&rsp->conn->rsphdr, buf);
     if (rc < 0) return rc;
   }
 
-  if (rsp->content_length >= 0)
-  {
+  if (rsp->content_length >= 0) {
     sprintf(buf, "Content-Length: %d\r\n", rsp->content_length);
     rc = bufcat(&rsp->conn->rsphdr, buf);
     if (rc < 0) return rc;
   }
 
-  if (headers)
-  {
+  if (headers) {
     rc = bufcat(&rsp->conn->rsphdr, headers);
     if (rc < 0) return rc;
   }
@@ -476,8 +445,7 @@ int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *
   if (rsp->content_length < 0) rsp->keep_alive = 0;
   if (state >= 500) rsp->keep_alive = 0;
 
-  if (rsp->keep_alive)
-  {
+  if (rsp->keep_alive) {
     rc = bufcat(&rsp->conn->rsphdr, "Connection: Keep-Alive\r\n");
     if (rc < 0) return rc;
   }
@@ -488,8 +456,7 @@ int httpd_send_header(struct httpd_response *rsp, int state, char *title, char *
   return 0;
 }
 
-int httpd_send_error(struct httpd_response *rsp, int state, char *title, char *msg)
-{
+int httpd_send_error(struct httpd_response *rsp, int state, char *title, char *msg) {
   int rc;
   char buf[2048];
 
@@ -509,8 +476,7 @@ int httpd_send_error(struct httpd_response *rsp, int state, char *title, char *m
   return 0;
 }
 
-int httpd_redirect(struct httpd_response *rsp, char *newloc)
-{
+int httpd_redirect(struct httpd_response *rsp, char *newloc) {
   char *hdrs;
   int rc;
 
@@ -530,8 +496,7 @@ int httpd_redirect(struct httpd_response *rsp, char *newloc)
   return rc;
 }
 
-int httpd_send(struct httpd_response *rsp, char *data, int len)
-{
+int httpd_send(struct httpd_response *rsp, char *data, int len) {
   struct httpd_buffer *buf = &rsp->conn->rspbody;
   int rc;
   int left;
@@ -540,8 +505,7 @@ int httpd_send(struct httpd_response *rsp, char *data, int len)
   if (len == -1) len = strlen(data);
 
   // Send directly if data larger than buffer
-  if (len > rsp->conn->server->rspbufsiz)
-  {
+  if (len > rsp->conn->server->rspbufsiz) {
     rc = httpd_flush(rsp);
     if (rc < 0) return rc;
 
@@ -550,18 +514,15 @@ int httpd_send(struct httpd_response *rsp, char *data, int len)
   }
 
   // Allocate response body buffer if not already done
-  if (!buf->floor)
-  {
+  if (!buf->floor) {
     rc = allocate_buffer(buf, rsp->conn->server->rspbufsiz);
     if (rc < 0) return rc;
   }
 
   left = len;
-  while (left > 0)
-  {
+  while (left > 0) {
     // Send buffer if full
-    if (buf->ceil == buf->end)
-    {
+    if (buf->ceil == buf->end) {
       rc = httpd_flush(rsp);
       if (rc < 0) return rc;
     }
@@ -578,26 +539,22 @@ int httpd_send(struct httpd_response *rsp, char *data, int len)
   return len;
 }
 
-int httpd_flush(struct httpd_response *rsp)
-{
+int httpd_flush(struct httpd_response *rsp) {
   struct httpd_buffer *buf;
   int rc;
 
   // Send response header if not already done
-  if (!rsp->conn->hdrsent)
-  {
+  if (!rsp->conn->hdrsent) {
     buf = &rsp->conn->rsphdr;
 
     // Generate standard header
-    if (buf->start == buf->end)
-    {
+    if (buf->start == buf->end) {
       rc = httpd_send_header(rsp, 200, "OK", NULL);
       if (rc < 0) return rc;
     }
 
     // Send header
-    if (buf->end != buf->start)
-    {
+    if (buf->end != buf->start) {
       rc = send(rsp->conn->sock, buf->start, buf->end - buf->start, 0);
       if (rc < 0) return rc;
 
@@ -609,8 +566,7 @@ int httpd_flush(struct httpd_response *rsp)
 
   // Send response body
   buf = &rsp->conn->rspbody;
-  if (buf->end != buf->start)
-  {
+  if (buf->end != buf->start) {
     rc = send(rsp->conn->sock, buf->start, buf->end - buf->start, 0);
     if (rc < 0) return rc;
 
@@ -620,31 +576,25 @@ int httpd_flush(struct httpd_response *rsp)
   return 0;
 }
 
-int httpd_send_file(struct httpd_response *rsp, int fd)
-{
+int httpd_send_file(struct httpd_response *rsp, int fd) {
   rsp->conn->fd = fd;
   return 0;
 }
 
-int httpd_send_fixed_data(struct httpd_response *rsp, char *data, int len)
-{
+int httpd_send_fixed_data(struct httpd_response *rsp, char *data, int len) {
   rsp->conn->fixed_rsp_data = data;
   rsp->conn->fixed_rsp_len = len;
   return 0;
 }
 
-int httpd_check_header(struct httpd_connection *conn)
-{
+int httpd_check_header(struct httpd_connection *conn) {
   char c;
 
-  while (conn->reqhdr.start < conn->reqhdr.end)
-  {
+  while (conn->reqhdr.start < conn->reqhdr.end) {
     c = *conn->reqhdr.start++;
-    switch (conn->hdrstate)
-    {
+    switch (conn->hdrstate) {
       case HDR_STATE_FIRSTWORD:
-        switch (c)
-        {
+        switch (c) {
           case ' ': 
           case '\t':
             conn->hdrstate = HDR_STATE_FIRSTWS;
@@ -658,8 +608,7 @@ int httpd_check_header(struct httpd_connection *conn)
         break;
 
       case HDR_STATE_FIRSTWS:
-        switch (c)
-        {
+        switch (c) {
           case ' ': 
           case '\t':
             break;
@@ -675,8 +624,7 @@ int httpd_check_header(struct httpd_connection *conn)
         break;
 
       case HDR_STATE_SECONDWORD:
-        switch (c)
-        {
+        switch (c) {
           case ' ': 
           case '\t':
             conn->hdrstate = HDR_STATE_SECONDWS;
@@ -690,8 +638,7 @@ int httpd_check_header(struct httpd_connection *conn)
         break;
 
       case HDR_STATE_SECONDWS:
-        switch (c)
-        {
+        switch (c) {
           case ' ':
           case '\t':
             break;
@@ -707,8 +654,7 @@ int httpd_check_header(struct httpd_connection *conn)
         break;
 
       case HDR_STATE_THIRDWORD:
-        switch (c)
-        {
+        switch (c) {
           case ' ': 
           case '\t':
             conn->hdrstate = HDR_STATE_BOGUS;
@@ -725,8 +671,7 @@ int httpd_check_header(struct httpd_connection *conn)
         break;
 
       case HDR_STATE_LINE:
-        switch (c)
-        {
+        switch (c) {
           case '\n':
             conn->hdrstate = HDR_STATE_LF;
             break;
@@ -738,8 +683,7 @@ int httpd_check_header(struct httpd_connection *conn)
         break;
 
       case HDR_STATE_LF:
-        switch (c)
-        {
+        switch (c) {
           case '\n':
             // Two newlines in a row - a blank line - end of request
            return 1;
@@ -754,8 +698,7 @@ int httpd_check_header(struct httpd_connection *conn)
         break;
 
       case HDR_STATE_CR:
-        switch (c)
-        {
+        switch (c) {
           case '\n':
             conn->hdrstate = HDR_STATE_CRLF;
             break;
@@ -770,8 +713,7 @@ int httpd_check_header(struct httpd_connection *conn)
         break;
 
       case HDR_STATE_CRLF:
-        switch (c)
-        {
+        switch (c) {
           case '\n':
             // Two newlines in a row - end of request
             return 1;
@@ -786,8 +728,7 @@ int httpd_check_header(struct httpd_connection *conn)
         break;
     
       case HDR_STATE_CRLFCR:
-        switch (c)
-        {
+        switch (c) {
           case '\n': 
           case '\r':
             // Two CRLFs or two CRs in a row - end of request
@@ -806,8 +747,7 @@ int httpd_check_header(struct httpd_connection *conn)
   return 0;
 }
 
-int httpd_parse_request(struct httpd_request *req)
-{
+int httpd_parse_request(struct httpd_request *req) {
   struct httpd_buffer *buf;
   char *s;
   char *l;
@@ -817,8 +757,7 @@ int httpd_parse_request(struct httpd_request *req)
   buf->start = buf->floor;
 
   s = bufgets(buf);
-  if (!s) 
-  {
+  if (!s) {
     errno = EINVAL;
     return -1;
   }
@@ -826,8 +765,7 @@ int httpd_parse_request(struct httpd_request *req)
   // Parse method
   req->method = s;
   s = strchr(s, ' ');
-  if (!s) 
-  {
+  if (!s) {
     errno = EINVAL;
     return -1;
   }
@@ -839,14 +777,14 @@ int httpd_parse_request(struct httpd_request *req)
   s = strchr(s, ' ');
 
   // Parse protocol version
-  if (*s)
-  {
+  if (*s) {
     *s++ = 0;
     while (*s == ' ') s++;
-    if (*s)
+    if (*s) {
       req->protocol = s;
-    else
+    } else {
       req->protocol = "HTTP/0.9";
+    }
 
     if (strcmp(req->protocol, "HTTP/1.1") == 0) req->http11 = 1;
   }
@@ -860,8 +798,7 @@ int httpd_parse_request(struct httpd_request *req)
 
   req->pathinfo = req->decoded_url;
   s = strchr(req->pathinfo, '?');
-  if (s)
-  {
+  if (s) {
     *s++ = 0;
     req->query = s;
   }
@@ -873,8 +810,7 @@ int httpd_parse_request(struct httpd_request *req)
 
   // Parse headers
   req->nheaders = 0;
-  while ((l = bufgets(buf)))
-  {
+  while ((l = bufgets(buf))) {
     if (!*l) continue;
    
     s = strchr(l, ':');
@@ -883,31 +819,31 @@ int httpd_parse_request(struct httpd_request *req)
     while (*s == ' ') s++;
     if (!*s) continue;
 
-    if (stricmp(l, "Referer") == 0)
+    if (stricmp(l, "Referer") == 0) {
       req->referer = s;
-    else if (stricmp(l, "User-agent") == 0)
+    } else if (stricmp(l, "User-agent") == 0) {
       req->user_agent = s;
-    else if (stricmp(l, "Accept") == 0)
+    } else if (stricmp(l, "Accept") == 0) {
       req->accept = s;
-    else if (stricmp(l, "Cookie") == 0)
+    } else if (stricmp(l, "Cookie") == 0) {
       req->cookie = s;
-    else if (stricmp(l, "Authorization") == 0)
+    } else if (stricmp(l, "Authorization") == 0) {
       req->authorization = s;
-    else if (stricmp(l, "Content-type") == 0)
+    } else if (stricmp(l, "Content-type") == 0) {
       req->content_type = s;
-    else if (stricmp(l, "Content-length") == 0)
+    } else if (stricmp(l, "Content-length") == 0) {
       req->content_length = atoi(s);
-    else if (stricmp(l, "Host") == 0)
+    } else if (stricmp(l, "Host") == 0) {
       req->host = s;
-    else if (stricmp(l, "If-modified-since") == 0)
+    } else if (stricmp(l, "If-modified-since") == 0) {
       req->if_modified_since = timerfc(s);
-    else if (stricmp(l, "Connection") == 0)
+    } else if (stricmp(l, "Connection") == 0) {
       req->keep_alive = stricmp(s, "keep-alive") == 0;
+    }
 
     //printf("hdr: %s: %s\n", l, s);
 
-    if (req->nheaders < MAX_HTTP_HEADERS)
-    {
+    if (req->nheaders < MAX_HTTP_HEADERS) {
       req->headers[req->nheaders].name = l;
       req->headers[req->nheaders].value = s;
       req->nheaders++;
@@ -917,23 +853,21 @@ int httpd_parse_request(struct httpd_request *req)
   return 0;
 }
 
-int httpd_find_context(struct httpd_request *req)
-{
+int httpd_find_context(struct httpd_request *req) {
   int n;
   char *s;
   struct httpd_context *context = req->conn->server->contexts;
   char *pathinfo = req->pathinfo;
 
-  while (context)
-  {
+  while (context) {
     n = strlen(context->alias);
     s = pathinfo + n;
-    if (strncmp(context->alias, pathinfo, n) == 0 && (*s == '/' || *s == 0))
-    {
-      if (*s)
+    if (strncmp(context->alias, pathinfo, n) == 0 && (*s == '/' || *s == 0)) {
+      if (*s) {
         req->pathinfo = s + 1;
-      else
+      } else {
         req->pathinfo = "";
+      }
 
       req->context = context;
       return 0;
@@ -945,8 +879,7 @@ int httpd_find_context(struct httpd_request *req)
   return -1;
 }
 
-int httpd_translate_path(struct httpd_request *req)
-{
+int httpd_translate_path(struct httpd_request *req) {
   int rc;
   char buf[512];
   char path[256];
@@ -954,8 +887,7 @@ int httpd_translate_path(struct httpd_request *req)
   int pathlen;
   char *p;
 
-  if (req->context->location == NULL)
-  {
+  if (req->context->location == NULL) {
     rc = httpd_send_error(req->conn->rsp, 500, "Internal Server Error", "No location for context");
     if (rc < 0) return rc;
     return 0;
@@ -963,8 +895,7 @@ int httpd_translate_path(struct httpd_request *req)
 
   loclen = strlen(req->context->location);
   pathlen = strlen(req->pathinfo);
-  if (loclen + 1 +  pathlen >= sizeof(buf))
-  {
+  if (loclen + 1 +  pathlen >= sizeof(buf)) {
     rc = httpd_send_error(req->conn->rsp, 400, "Bad Request", "URL to long");
     if (rc < 0) return rc;
     return 0;
@@ -976,22 +907,19 @@ int httpd_translate_path(struct httpd_request *req)
   buf[loclen + 1 + pathlen] = 0;
 
   rc = canonicalize(buf, path, sizeof(path));
-  if (rc < 0)
-  {
+  if (rc < 0) {
     rc = httpd_send_error(req->conn->rsp, 400, "Bad Request", "Bad URL");
     if (rc < 0) return rc;
     return 0;
   }
 
   p = path;
-  while (*p)
-  {
+  while (*p) {
     if (*p == '\\') *p = '/';
     p++;
   }
 
-  if (loclen > 0 && strnicmp(req->context->location, path, loclen) != 0)
-  {
+  if (loclen > 0 && strnicmp(req->context->location, path, loclen) != 0) {
     rc = httpd_send_error(req->conn->rsp, 400, "Bad Request", "Illegal URL");
     if (rc < 0) return rc;
     return 0;
@@ -1003,16 +931,14 @@ int httpd_translate_path(struct httpd_request *req)
   return 1;
 }
 
-int httpd_write(struct httpd_connection *conn)
-{
+int httpd_write(struct httpd_connection *conn) {
   int left;
   int bytes;
   int rc;
 
   // Sent any remaining data in response header
   left = conn->rsphdr.end - conn->rsphdr.start;
-  if (left > 0)
-  {
+  if (left > 0) {
     bytes = send(conn->sock, conn->rsphdr.start, left, 0);
     if (bytes < 0) return bytes;
     conn->rsphdr.start += bytes;
@@ -1021,8 +947,7 @@ int httpd_write(struct httpd_connection *conn)
 
   // Sent any remaining fixed response data
   left = conn->fixed_rsp_len;
-  if (left > 0)
-  {
+  if (left > 0) {
     bytes = send(conn->sock, conn->fixed_rsp_data, left, 0);
     if (bytes < 0) return bytes;
     conn->fixed_rsp_data += bytes;
@@ -1031,12 +956,10 @@ int httpd_write(struct httpd_connection *conn)
   }
 
   // Send response body
-  while (1)
-  {
+  while (1) {
     // Send any remaining data in response body buffer
     left = conn->rspbody.end - conn->rspbody.start;
-    if (left > 0)
-    {
+    if (left > 0) {
       bytes = send(conn->sock, conn->rspbody.start, left, 0);
       if (bytes < 0) return bytes;
       conn->rspbody.start += bytes;
@@ -1044,11 +967,9 @@ int httpd_write(struct httpd_connection *conn)
     }
 
     // Fill response buffer
-    if (conn->fd >= 0)
-    {
+    if (conn->fd >= 0) {
       // Allocate response body buffer if not already done
-      if (conn->rspbody.floor == NULL)
-      {
+      if (conn->rspbody.floor == NULL) {
         rc = allocate_buffer(&conn->rspbody, conn->server->rspbufsiz);
         if (rc < 0) return rc;
       }
@@ -1060,14 +981,13 @@ int httpd_write(struct httpd_connection *conn)
 
       conn->rspbody.start = conn->rspbody.floor;
       conn->rspbody.end = conn->rspbody.floor + bytes;
-    }
-    else
+    } else {
       return 0;
+    }
   }
 }
 
-int httpd_process(struct httpd_connection *conn)
-{
+int httpd_process(struct httpd_connection *conn) {
   struct httpd_request req;
   struct httpd_response rsp;
   int rc;
@@ -1094,40 +1014,32 @@ int httpd_process(struct httpd_connection *conn)
 
   // Find context handler for request
   rc = httpd_find_context(&req);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     // No context found - return error
     rc = httpd_send_error(&rsp, 404, "Not Found", "Context does not exist");
     if (rc < 0) goto errorexit;
-  }
-  else
-  {
+  } else {
     // Translate path
     rc = httpd_translate_path(&req);
     if (rc < 0) goto errorexit;
-    if (rc > 0)
-    {
+    if (rc > 0) {
       // Call context handler to handle request
       rc = req.context->handler(conn);
       if (rc < 0) goto errorexit;
-      if (rc > 0)
-      {
+      if (rc > 0) {
         // Return HTTP error to client
         rc = httpd_send_error(&rsp, rc, NULL, NULL);
         if (rc < 0) goto errorexit;
       }
 
       // Build HTTP header if not already done
-      if (!conn->hdrsent && buffer_empty(&conn->rsphdr))
-      {
-        if (rsp.content_length < 0)
-        {
+      if (!conn->hdrsent && buffer_empty(&conn->rsphdr)) {
+        if (rsp.content_length < 0) {
           int len = 0;
 
           len += buffer_size(&conn->rspbody);
           len += conn->fixed_rsp_len;
-          if (conn->fd >= 0)
-          {
+          if (conn->fd >= 0) {
             size = fstat(conn->fd, NULL);
             if (size >= 0) len += size;
           }
@@ -1158,12 +1070,10 @@ errorexit:
   return -1;
 }
 
-int httpd_io(struct httpd_connection *conn)
-{
+int httpd_io(struct httpd_connection *conn) {
   int rc;
 
-  switch (conn->state)
-  {
+  switch (conn->state) {
     case HTTP_STATE_IDLE:
       rc = allocate_buffer(&conn->reqhdr, conn->server->min_hdrbufsiz);
       if (rc < 0) return rc;
@@ -1177,10 +1087,8 @@ int httpd_io(struct httpd_connection *conn)
       if (rc < 0) return rc;
 
       rc = recv(conn->sock, conn->reqhdr.end, buffer_left(&conn->reqhdr), 0);
-      if (rc <= 0) 
-      {
-        if (errno == ECONNRESET && buffer_size(&conn->reqhdr) == 0)
-        {
+      if (rc <= 0) {
+        if (errno == ECONNRESET && buffer_size(&conn->reqhdr) == 0) {
           // Keep-Alive connection closed
           conn->state = HTTP_STATE_TERMINATED;
           httpd_close_connection(conn);
@@ -1194,8 +1102,7 @@ int httpd_io(struct httpd_connection *conn)
 
       rc = httpd_check_header(conn);
       if (rc < 0) return rc;
-      if (rc == 0)
-      {
+      if (rc == 0) {
         rc = dispatch(conn->server->iomux, conn->sock, IOEVT_READ | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
         if (rc < 0) return rc;
         return 1;
@@ -1213,22 +1120,16 @@ int httpd_io(struct httpd_connection *conn)
       rc = httpd_write(conn);
       if (rc < 0) return rc;
 
-      if (rc > 0)
-      {
+      if (rc > 0) {
         rc = dispatch(conn->server->iomux, conn->sock, IOEVT_WRITE | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
         if (rc < 0) return rc;
-      }
-      else
-      {
+      } else {
         rc = httpd_terminate_request(conn);
-        if (rc > 0)
-        {
+        if (rc > 0) {
           conn->state = HTTP_STATE_IDLE;
           rc = dispatch(conn->server->iomux, conn->sock, IOEVT_READ | IOEVT_CLOSE | IOEVT_ERROR, (int) conn);
           if (rc < 0) return rc;
-        }
-        else
-        {
+        } else {
           conn->state = HTTP_STATE_TERMINATED;
           httpd_close_connection(conn);
         }
@@ -1244,36 +1145,29 @@ int httpd_io(struct httpd_connection *conn)
   }
 }
 
-void __stdcall httpd_worker(void *arg)
-{
+void __stdcall httpd_worker(void *arg) {
   struct httpd_server *server = (struct httpd_server *) arg;
   struct httpd_connection *conn;
   int rc;
 
-  while (1)
-  {
+  while (1) {
     rc = waitone(server->iomux, INFINITE);
     if (rc < 0) break;
 
     conn = (struct httpd_connection *) rc;
-    if (conn == NULL)
-    {
+    if (conn == NULL) {
       httpd_accept(server);
       dispatch(server->iomux, server->sock, IOEVT_ACCEPT, 0);
-    }
-    else
-    {
+    } else {
       rc = httpd_io(conn);
-      if (rc <= 0)
-      {
+      if (rc <= 0) {
         httpd_close_connection(conn);
       }
     }
   }
 }
 
-int httpd_start(struct httpd_server *server)
-{
+int httpd_start(struct httpd_server *server) {
   int sock;
   int rc;
   int i;
@@ -1288,15 +1182,13 @@ int httpd_start(struct httpd_server *server)
   addr.sa_in.sin_addr.s_addr = htonl(INADDR_ANY);
 
   rc = bind(sock, &addr.sa, sizeof(addr));
-  if (rc < 0)
-  {
+  if (rc < 0) {
     close(sock);
     return -1;
   }
 
   rc = listen(sock, server->backlog);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     close(sock);
     return -1;
   }
@@ -1307,8 +1199,7 @@ int httpd_start(struct httpd_server *server)
   server->iomux = mkiomux(0);
   dispatch(server->iomux, server->sock, IOEVT_ACCEPT, 0);
 
-  for (i = 0; i < server->num_workers; i++)
-  {
+  for (i = 0; i < server->num_workers; i++) {
     hthread = beginthread(httpd_worker, 0, server, 0, NULL);
     close(hthread);
   }
@@ -1316,7 +1207,6 @@ int httpd_start(struct httpd_server *server)
   return 0;
 }
 
-int __stdcall DllMain(hmodule_t hmod, int reason, void *reserved)
-{
+int __stdcall DllMain(hmodule_t hmod, int reason, void *reserved) {
   return TRUE;
 }

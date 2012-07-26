@@ -38,8 +38,7 @@
 #ifndef SETJMP_H
 #define SETJMP_H
 
-typedef struct 
-{
+typedef struct {
   unsigned long ebp;
   unsigned long ebx;
   unsigned long edi;

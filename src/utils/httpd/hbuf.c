@@ -36,40 +36,31 @@
 
 #include <httpd.h>
 
-int buffer_size(struct httpd_buffer *buf)
-{
+int buffer_size(struct httpd_buffer *buf) {
   return buf->end - buf->start;
 }
 
-int buffer_capacity(struct httpd_buffer *buf)
-{
+int buffer_capacity(struct httpd_buffer *buf) {
   return buf->ceil - buf->floor;
 }
 
-int buffer_left(struct httpd_buffer *buf)
-{
+int buffer_left(struct httpd_buffer *buf) {
   return buf->ceil - buf->end;
 }
 
-int buffer_empty(struct httpd_buffer *buf)
-{
+int buffer_empty(struct httpd_buffer *buf) {
   return buf->start == buf->end;
 }
 
-int buffer_full(struct httpd_buffer *buf)
-{
+int buffer_full(struct httpd_buffer *buf) {
   return buf->end == buf->ceil;
 }
 
-int allocate_buffer(struct httpd_buffer *buf, int size)
-{
-  if (size == 0)
-  {
+int allocate_buffer(struct httpd_buffer *buf, int size) {
+  if (size == 0) {
     buf->floor = buf->ceil = NULL;
     buf->start = buf->end = NULL;
-  }
-  else
-  {
+  } else {
     buf->floor = (char *) malloc(size);
     if (!buf->floor) return -1;
     buf->ceil = buf->floor + size;
@@ -79,19 +70,16 @@ int allocate_buffer(struct httpd_buffer *buf, int size)
   return 0;
 }
 
-void free_buffer(struct httpd_buffer *buf)
-{
+void free_buffer(struct httpd_buffer *buf) {
   if (buf->floor) free(buf->floor);
   buf->floor = buf->ceil = buf->start = buf->end = NULL;
 }
 
-void clear_buffer(struct httpd_buffer *buf)
-{
+void clear_buffer(struct httpd_buffer *buf) {
   buf->start = buf->end = buf->floor;
 }
 
-int expand_buffer(struct httpd_buffer *buf, int minfree)
-{
+int expand_buffer(struct httpd_buffer *buf, int minfree) {
   char *p;
   int size;
   int minsize;
@@ -100,12 +88,12 @@ int expand_buffer(struct httpd_buffer *buf, int minfree)
   
   size = buf->ceil - buf->floor;
   minsize = buf->end + minfree - buf->floor;
-  while (size < minsize)
-  {
-    if (size == 0)
+  while (size < minsize) {
+    if (size == 0) {
       size = 1024;
-    else
+    } else {
       size *= 2;
+    }
   }
 
   p = (char *) realloc(buf->floor, size);
@@ -119,30 +107,26 @@ int expand_buffer(struct httpd_buffer *buf, int minfree)
   return 0;
 }
 
-char *bufgets(struct httpd_buffer *buf)
-{
+char *bufgets(struct httpd_buffer *buf) {
   char *start;
   char *s;
 
   s = start = buf->start;
-  while (s < buf->end)
-  {
-    switch (*s)
-    {
+  while (s < buf->end) {
+    switch (*s) {
       case '\n':
-        if (s[1] != ' ' && s[1] != '\t')
-        {
-          if (s > start && s[-1] == ' ')
+        if (s[1] != ' ' && s[1] != '\t') {
+          if (s > start && s[-1] == ' ') {
             s[-1] = 0;
-          else
+          } else {
             s[0] = 0;
+          }
 
           buf->start = s + 1;
           return start;
-        }
-        else
+        } else {
           *s++ = ' ';
-
+        }
         break;
 
       case '\r':
@@ -158,8 +142,7 @@ char *bufgets(struct httpd_buffer *buf)
   return NULL;
 }
 
-int bufncat(struct httpd_buffer *buf, char *data, int len)
-{
+int bufncat(struct httpd_buffer *buf, char *data, int len) {
   int rc;
 
   rc = expand_buffer(buf, len);
@@ -170,8 +153,7 @@ int bufncat(struct httpd_buffer *buf, char *data, int len)
   return 0;
 }
 
-int bufcat(struct httpd_buffer *buf, char *data)
-{
+int bufcat(struct httpd_buffer *buf, char *data) {
   if (!data) return 0;
   return bufncat(buf, data, strlen(data));
 }

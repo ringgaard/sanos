@@ -41,8 +41,7 @@ struct proc_file;
 
 typedef int (*proc_t)(struct proc_file *f, void *arg);
 
-struct proc_inode
-{
+struct proc_inode {
   char *name;
   int namelen;
   ino_t ino;
@@ -52,15 +51,13 @@ struct proc_inode
   struct proc_inode *next;
 };
 
-struct proc_blk
-{
+struct proc_blk {
   struct proc_blk *next;
   int size;
   char data[PROC_BLKSIZE];
 };
 
-struct proc_file
-{
+struct proc_file {
   struct proc_inode *inode;
   size_t size;
   struct proc_blk *blkhead;

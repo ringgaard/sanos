@@ -36,8 +36,7 @@
 
 unsigned char tlsbitmap[MAX_TLS / 8];
 
-tls_t tlsalloc()
-{
+tls_t tlsalloc() {
   tls_t index = find_first_zero_bit(tlsbitmap, MAX_TLS);
   if (index == MAX_TLS) return INVALID_TLS_INDEX;
   set_bit(tlsbitmap, index);
@@ -45,20 +44,16 @@ tls_t tlsalloc()
   return index;
 }
 
-void tlsfree(tls_t index)
-{
-  if (index >= 0 && index < MAX_TLS)
-  {
+void tlsfree(tls_t index) {
+  if (index >= 0 && index < MAX_TLS) {
     clear_bit(tlsbitmap, index);
   }
 }
 
-void *tlsget(tls_t index)
-{
+void *tlsget(tls_t index) {
   struct tib *tib;
 
-  __asm
-  {
+  __asm {
     mov eax, fs:[TIB_SELF_OFFSET]
     mov [tib], eax
   }
@@ -66,12 +61,10 @@ void *tlsget(tls_t index)
   return tib->tls[index];
 }
 
-int tlsset(tls_t index, void *value)
-{
+int tlsset(tls_t index, void *value) {
   struct tib *tib;
 
-  __asm
-  {
+  __asm {
     mov eax, fs:[TIB_SELF_OFFSET]
     mov [tib], eax
   }

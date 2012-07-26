@@ -95,8 +95,7 @@ typedef long sopno;
 // a string of multi-character elements, and decide the size of the
 // vectors at run time.
 //
-typedef struct 
-{
+typedef struct {
   uch *ptr;       // -> uch [csetsize]
   uch mask;       // bit within array
   uch hash;       // hash code
@@ -123,8 +122,7 @@ typedef unsigned char cat_t;
 #define  USEEOL  02  // used $
 #define  BAD     04  // something wrong
 
-struct re_guts 
-{
+struct re_guts {
   int magic;
   sop *strip;            // malloced area for strip
   int csetsize;          // number of bits in a cset vector

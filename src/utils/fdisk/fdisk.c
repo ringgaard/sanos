@@ -48,8 +48,7 @@ int hdev;
 struct master_boot_record mbr;
 struct geometry geom;
 
-unsigned char bootrecord[512] =
-{
+unsigned char bootrecord[512] = {
   0x33, 0xC0, 0x8E, 0xD0, 0xBC, 0x00, 0x7C, 0xFB, 0x50, 0x07, 0x50, 0x1F, 0xFC, 0xBE, 0x1B, 0x7C,
   0xBF, 0x1B, 0x06, 0x50, 0x57, 0xB9, 0xE5, 0x01, 0xF3, 0xA4, 0xCB, 0xBD, 0xBE, 0x07, 0xB1, 0x04,
   0x38, 0x6E, 0x00, 0x7C, 0x09, 0x75, 0x13, 0x83, 0xC5, 0x10, 0xE2, 0xF4, 0xCD, 0x18, 0x8B, 0xF5,
@@ -88,21 +87,16 @@ unsigned char bootrecord[512] =
 // ask
 //
 
-int ask(char *question, char *choices)
-{
+int ask(char *question, char *choices) {
   char ch;
   char *s;
 
   printf("%s", question);
-  while (1)
-  {
-    if (read(fdin, &ch, 1) == 1)
-    {
+  while (1) {
+    if (read(fdin, &ch, 1) == 1) {
       s = choices;
-      while (*s)
-      {
-        if (*s == ch) 
-        {
+      while (*s) {
+        if (*s == ch)  {
           printf("%c\n", ch);
           return ch;
         }
@@ -116,8 +110,7 @@ int ask(char *question, char *choices)
 // lba_to_chs
 //
 
-void lba_to_chs(int blkno, int *cyl, int *head, int *sect)
-{
+void lba_to_chs(int blkno, int *cyl, int *head, int *sect) {
   *cyl  = blkno / (geom.heads * geom.spt);
   *head = (blkno / geom.spt) % geom.heads;
   *sect = blkno % geom.spt + 1;
@@ -127,16 +120,14 @@ void lba_to_chs(int blkno, int *cyl, int *head, int *sect)
 // read_mbr
 //
 
-int read_mbr()
-{
+int read_mbr() {
   int rc;
 
   lseek(hdev, 0, SEEK_SET);
   rc = read(hdev, &mbr, sizeof(mbr));
   if (rc < 0) return rc;
 
-  if (mbr.signature != MBR_SIGNATURE) 
-  {
+  if (mbr.signature != MBR_SIGNATURE) {
     errno = EINVAL;
     return -1;
   }
@@ -148,8 +139,7 @@ int read_mbr()
 // add_partition
 //
 
-void add_partition()
-{
+void add_partition() {
   int off, noff, poff;
   int size, psize;
   int i, partno, type;
@@ -161,8 +151,7 @@ void add_partition()
   ch = ask("partition number (0-3)? ", "0123\n");
   if (ch == '\n') return;
   partno = ch - '0';
-  if (mbr.parttab[partno].systid != 0)
-  {
+  if (mbr.parttab[partno].systid != 0) {
     printf("error: partition already used\n");
     return;
   }
@@ -178,58 +167,49 @@ void add_partition()
   type = *str ? strtol(str, NULL, 16) : SANOS_BOOT_PARTITION_ID;
 
   // Adjust size to be a multiple of the sectors per track
-  if (size > 0)
-  {
+  if (size > 0) {
     size = ALIGN(size, geom.spt);
-    if (size < geom.spt) 
-    {
+    if (size < geom.spt) {
       printf("partition size must be at least %d sectors\n", geom.spt);
       return;
     }
   }
 
   // Search for the next partition in the table
-  for (i = partno + 1; i < 4; i++)
-  {
+  for (i = partno + 1; i < 4; i++) {
     if (mbr.parttab[i].systid != 0) break;
   }
 
-  if (i >= 4) 
+  if (i >= 4) {
     noff = -1;
-  else 
+  } else {
     noff = mbr.parttab[i].relsect;
+  }
 
   // Search for the previous partition in the table
-  for (i = partno - 1; i >= 0; i--)
-  {
+  for (i = partno - 1; i >= 0; i--) {
     if (mbr.parttab[i].systid != 0) break;
   }
 
-  if (i < 0) 
-  {
+  if (i < 0) {
     poff = -1;
-  } 
-  else 
-  {
+  } else {
     poff = mbr.parttab[i].relsect;
     psize = mbr.parttab[i].numsect;
   }
 
   // Compute offset of new partition
-  if (poff < 0)
+  if (poff < 0) {
     off = geom.spt;
-  else
+  } else {
     off = ALIGN(poff + psize, geom.spt);
+  }
 
   // Check whether specified partition will fit, or calculate maximum partition size
-  if (size < 0)
-  {
+  if (size < 0) {
     size = (noff < 0 ? geom.sectors : noff) - off;
-  }
-  else
-  {
-    if (off + size > (noff < 0 ? geom.sectors : noff)) 
-    {
+  } else {
+    if (off + size > (noff < 0 ? geom.sectors : noff)) {
       printf("partition size too large\n");
       return;
     }
@@ -255,8 +235,7 @@ void add_partition()
 // delete_partition
 //
 
-void delete_partition()
-{
+void delete_partition() {
   int ch;
   int partno;
 
@@ -264,8 +243,7 @@ void delete_partition()
   ch = ask("delete partition number (0-3)? ", "0123\n");
   if (ch == '\n') return;
   partno = ch - '0';
-  if (mbr.parttab[partno].systid == 0)
-  {
+  if (mbr.parttab[partno].systid == 0) {
     printf("error: partition not used\n");
     return;
   }
@@ -283,8 +261,7 @@ void delete_partition()
 // set_boot_part
 //
 
-void set_boot_part()
-{
+void set_boot_part() {
   int ch;
   int partno;
   int i;
@@ -304,8 +281,7 @@ void set_boot_part()
 // list_partitions
 //
 
-void list_partitions()
-{
+void list_partitions() {
   int i;
 
   printf("device %s: %d KB CHS=%d/%d/%d\n\n", devname, geom.sectors / (1024 / geom.sectorsize), geom.cyls, geom.heads, geom.spt);
@@ -313,8 +289,7 @@ void list_partitions()
   printf("     ------start------ -------end-------\n");
   printf("part   cyl head sector   cyl head sector   offset         size type\n");
 
-  for (i = 0; i < 4; i++)
-  {
+  for (i = 0; i < 4; i++) {
     struct disk_partition *p = &mbr.parttab[i];
     
     printf("%c", p->bootid == 0x80 ? '*' : ' ');
@@ -330,23 +305,19 @@ void list_partitions()
 // commit_mbr
 //
 
-void commit_mbr()
-{
+void commit_mbr() {
   int rc;
 
-  if (ask("save partition table (y/n)? ", "yn") == 'y')
-  {
+  if (ask("save partition table (y/n)? ", "yn") == 'y') {
     lseek(hdev, 0, SEEK_SET);
     rc = write(hdev, &mbr, sizeof(mbr));
-    if (rc < 0)
-    {
+    if (rc < 0) {
       printf("%s: error %d writing master boot record\n", devname, errno);
       return;
     }
 
     rc = ioctl(hdev, IOCTL_REVALIDATE, NULL, 0);
-    if (rc < 0)
-    {
+    if (rc < 0) {
       printf("%s: error %d revalidating partitions\n", devname, errno);
       return;
     }
@@ -359,10 +330,8 @@ void commit_mbr()
 // clear_mbr
 //
 
-void clear_mbr()
-{
-  if (ask("create new master boot record (y/n)? ", "yn") == 'y')
-  {
+void clear_mbr() {
+  if (ask("create new master boot record (y/n)? ", "yn") == 'y') {
     memcpy(&mbr, bootrecord, sizeof(mbr));
     printf("new master boot record created\n");
   }
@@ -372,8 +341,7 @@ void clear_mbr()
 // help
 //
 
-void help()
-{
+void help() {
   printf("  (a)dd     add new partition\n");
   printf("  (b)oot    set boot partition\n");
   printf("  (c)ommit  save partition table in master boot record\n");
@@ -388,35 +356,31 @@ void help()
 // main
 //
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   int rc;
   int cmd;
   int done = 0;
 
   // Check arguments
-  if (argc == 1)
+  if (argc == 1) {
     devname = "/dev/hd0";
-  else if (argc == 2)
+  } else if (argc == 2) {
     devname = argv[1];
-  else
-  {
+  } else {
     printf("usage: fdisk <device>\n");
     return 1;
   }
 
   // Open device
   hdev = open(devname, O_RDWR | O_BINARY);
-  if (hdev < 0)
-  {
+  if (hdev < 0) {
     printf("%s: error %d opening device\n", devname, errno);
     return 1;
   }
 
   // Get disk geometry
   rc = ioctl(hdev, IOCTL_GETGEOMETRY, &geom , sizeof(struct geometry));
-  if (rc < 0)
-  {
+  if (rc < 0) {
     printf("%s: error %d determining disk geometry\n", devname, errno);
     close(hdev);
     return 1;
@@ -424,31 +388,26 @@ int main(int argc, char *argv[])
 
   // Read master boot record
   rc = read_mbr();
-  if (rc < 0 && errno != EINVAL)
-  {
+  if (rc < 0 && errno != EINVAL) {
     printf("%s: error %d reading master boot record\n", devname, errno);
     close(hdev);
     return 1;
   }
 
   // Ask to create new master boot record if the existing is invalid
-  if (rc < 0 && errno == EINVAL)
-  {
+  if (rc < 0 && errno == EINVAL) {
     printf("%s: invalid master boot record\n", devname);
-    if (ask("create new master boot record (y/n)? ", "yn") == 'y')
-    {
+    if (ask("create new master boot record (y/n)? ", "yn") == 'y') {
       memcpy(&mbr, bootrecord, sizeof(mbr));
     }
   }
 
   // Read commands
   printf("(a)dd (b)oot (c)ommit (d)elete (l)ist (m)br (h)elp e(x)it\n");
-  while (!done)
-  {
+  while (!done) {
     cmd = ask("fdisk> ", "abcdlmhx?");
 
-    switch (cmd)
-    {
+    switch (cmd) {
       case 'a':
         add_partition();
         break;

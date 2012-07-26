@@ -87,8 +87,7 @@
 // All node types starts with type, flags, and a next pointer for building lists
 //
 
-struct list
-{
+struct list {
   int type;
   int flags;
   union node *next;
@@ -102,8 +101,7 @@ struct list
 // background
 //
 
-struct ncmd
-{
+struct ncmd {
   int type;
   int flags;
   union node *next;
@@ -116,8 +114,7 @@ struct ncmd
 // 3.9.2 - Pipeline
 //
 
-struct npipe
-{
+struct npipe {
   int type;
   int flags;
   union node *next;
@@ -133,8 +130,7 @@ struct npipe
 
 // AND-OR list
 
-struct nandor
-{
+struct nandor {
   int type;
   int flags;
   union node *next;
@@ -144,8 +140,7 @@ struct nandor
 
 // List
 
-struct nlist
-{
+struct nlist {
   int type;
   int flags;
   union node *next;
@@ -156,8 +151,7 @@ struct nlist
 // 3.9.4.1 - Grouping compound
 //
 
-struct ngrp
-{
+struct ngrp {
   int type;
   int flags;
   union node *next;
@@ -169,8 +163,7 @@ struct ngrp
 // 3.9.4.2 - for loop
 //
 
-struct nfor
-{
+struct nfor {
   int type;
   int flags;
   union node *next;
@@ -184,8 +177,7 @@ struct nfor
 // 3.9.4.3 - case conditional 
 //
 
-struct ncase
-{
+struct ncase {
   int type;
   int flags;
   union node *next;
@@ -194,8 +186,7 @@ struct ncase
   union node *word;
 };
 
-struct ncasenode
-{
+struct ncasenode {
   int type;
   int flags;
   union node *next;
@@ -207,8 +198,7 @@ struct ncasenode
 // 3.9.4.4 - if conditional
 //
 
-struct nif
-{
+struct nif {
   int type;
   int flags;
   union node *next;
@@ -223,8 +213,7 @@ struct nif
 // 3.9.4.6 - until loop
 //
 
-struct nloop
-{
+struct nloop {
   int type;
   int flags;
   union node *next;
@@ -237,8 +226,7 @@ struct nloop
 // 3.9.5 - Function definition 
 //
 
-struct nfunc
-{
+struct nfunc {
   int type;
   int flags;
   union node *next;
@@ -254,8 +242,7 @@ struct nfunc
 // The members nredir.file and nassign.args are themselves a narg.
 // 
 
-struct narg
-{
+struct narg {
   int type;
   int flags;
   union node *next;
@@ -265,8 +252,7 @@ struct narg
 
 // [fd]<operator><file>
 
-struct nredir
-{
+struct nredir {
   int type;
   int flags;
   union node *next;
@@ -275,8 +261,7 @@ struct nredir
   int fd;
 };
 
-struct nassign
-{
+struct nassign {
   int type;
   int flags;
   union node *next;
@@ -288,16 +273,14 @@ struct nassign
 // Argument (word) subnodes
 //
 
-struct nargstr
-{
+struct nargstr {
   int type;
   int flags;
   union node *next;
   char *text;
 };
 
-struct nargparam
-{
+struct nargparam {
   int type;
   int flags;
   union node *next;
@@ -306,16 +289,14 @@ struct nargparam
   int num;
 };
 
-struct nargcmd
-{
+struct nargcmd {
   int type;
   int flags;
   union node *next;
   union node *list;
 };
 
-struct nargarith
-{
+struct nargarith {
   int type;
   int flags;
   union node *next;
@@ -326,8 +307,7 @@ struct nargarith
 // Nodes
 //
 
-union node
-{
+union node {
   int type;
   struct list list;
   struct ncmd ncmd;
@@ -349,6 +329,5 @@ union node
   struct nargarith nargarith;
   struct nargparam nargparam;
 };
-
 
 #endif

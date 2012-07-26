@@ -38,8 +38,7 @@
 // Machine interface
 //
 
-struct mach
-{
+struct mach {
   int kring;
 
   void (*sti)();
@@ -85,88 +84,71 @@ extern struct mach mach;
 // Interface functions for virtual machine layer
 //
 
-void __inline sti() 
-{ 
+void __inline sti() { 
   mach.sti(); 
 }
 
-void __inline cli() 
-{ 
+void __inline cli() {
   mach.cli(); 
 }
 
-void __inline halt() 
-{ 
+void __inline halt() {
   mach.hlt(); 
 }
 
-void __inline insw(port_t port, void *buf, int count) 
-{ 
+void __inline insw(port_t port, void *buf, int count) {
   mach.insw(port, buf, count); 
 }
 
-void __inline insd(port_t port, void *buf, int count) 
-{ 
+void __inline insd(port_t port, void *buf, int count) {
   mach.insd(port, buf, count); 
 }
 
-void __inline outsw(port_t port, void *buf, int count) 
-{ 
+void __inline outsw(port_t port, void *buf, int count) {
   mach.outsw(port, buf, count); 
 }
 
-void __inline outsd(port_t port, void *buf, int count) 
-{ 
+void __inline outsd(port_t port, void *buf, int count) {
   mach.outsd(port, buf, count); 
 }
 
-unsigned long __inline get_cr0()
-{
+unsigned long __inline get_cr0() {
   return mach.get_cr0();
 }
 
-void __inline set_cr0(unsigned long val)
-{
+void __inline set_cr0(unsigned long val) {
   mach.set_cr0(val);
 }
 
-unsigned long __inline get_cr2()
-{
+unsigned long __inline get_cr2() {
   return mach.get_cr2();
 }
 
-unsigned __int64 __inline rdtsc()
-{
+unsigned __int64 __inline rdtsc() {
   return mach.rdtsc();
 }
 
-void __inline wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh)
-{
+void __inline wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh) {
   mach.wrmsr(reg, valuelow, valuehigh);
 }
 
-void __inline switch_kernel_stack()
-{
+void __inline switch_kernel_stack() {
   mach.switch_kernel_stack();
 }
 
-void __inline register_page_dir(unsigned long pfn)
-{
+void __inline register_page_dir(unsigned long pfn) {
   mach.register_page_dir(pfn);
 }
 
-void __inline register_page_table(unsigned long pfn)
-{
+void __inline register_page_table(unsigned long pfn) {
   mach.register_page_table(pfn);
 }
 
-void __inline set_page_dir_entry(pte_t *pde, unsigned long value)
-{
+void __inline set_page_dir_entry(pte_t *pde, unsigned long value) {
   mach.set_page_dir_entry(pde, value);
 }
 
-void __inline set_page_table_entry(pte_t *pte, unsigned long value)
-{
+void __inline set_page_table_entry(pte_t *pte, unsigned long value) {
   mach.set_page_table_entry(pte, value);
 }
 
@@ -189,27 +171,22 @@ void __inline set_page_table_entry(pte_t *pte, unsigned long value)
 // Interface functions for direct hardware access
 //
 
-void __inline sti() 
-{ 
+void __inline sti() {
   __asm sti
 }
 
-void __inline cli() 
-{ 
+void __inline cli() {
   __asm cli
 }
 
-void __inline halt() 
-{ 
+void __inline halt() {
   __asm hlt
 }
 
-unsigned long __inline get_cr0()
-{
+unsigned long __inline get_cr0() {
   unsigned long val;
 
-  __asm 
-  {
+  __asm {
     mov eax, cr0
     mov val, eax
   }
@@ -217,21 +194,17 @@ unsigned long __inline get_cr0()
   return val;
 }
 
-void __inline set_cr0(unsigned long val)
-{
-  __asm
-  {
+void __inline set_cr0(unsigned long val) {
+  __asm {
     mov eax, val
     mov cr0, eax
   }
 }
 
-unsigned long __inline get_cr2()
-{
+unsigned long __inline get_cr2() {
   unsigned long val;
 
-  __asm 
-  {
+  __asm {
     mov eax, cr2
     mov val, eax
   }
@@ -239,19 +212,15 @@ unsigned long __inline get_cr2()
   return val;
 }
 
-__declspec(naked) unsigned __int64 __inline rdtsc()
-{
-  __asm 
-  { 
+__declspec(naked) unsigned __int64 __inline rdtsc() {
+  __asm {
     rdtsc
     ret 
   }
 }
 
-void __inline wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh)
-{
-  __asm
-  {
+void __inline wrmsr(unsigned long reg, unsigned long valuelow, unsigned long valuehigh) {
+  __asm {
     mov ecx, reg
     mov eax, valuelow
     mov edx, valuehigh
@@ -259,23 +228,19 @@ void __inline wrmsr(unsigned long reg, unsigned long valuelow, unsigned long val
   }
 }
 
-void __inline register_page_dir(unsigned long pfn)
-{
+void __inline register_page_dir(unsigned long pfn) {
   // Do nothing
 }
 
-void __inline register_page_table(unsigned long pfn)
-{
+void __inline register_page_table(unsigned long pfn) {
   // Do nothing
 }
 
-void __inline set_page_dir_entry(pte_t *pde, unsigned long value)
-{
+void __inline set_page_dir_entry(pte_t *pde, unsigned long value) {
   *pde = value;
 }
 
-void __inline set_page_table_entry(pte_t *pte, unsigned long value)
-{
+void __inline set_page_table_entry(pte_t *pte, unsigned long value) {
   *pte = value;
 }
 
@@ -312,43 +277,35 @@ krnlapi void outsd(port_t port, void *buf, int count);
 // Common interface functions
 //
 
-void __inline cpuid(unsigned long reg, unsigned long values[4]) 
-{ 
+void __inline cpuid(unsigned long reg, unsigned long values[4]) {
   mach.cpuid(reg, values); 
 }
 
-void __inline set_gdt_entry(int entry, unsigned long addr, unsigned long size, int access, int granularity)
-{
+void __inline set_gdt_entry(int entry, unsigned long addr, unsigned long size, int access, int granularity) {
   mach.set_gdt_entry(entry, addr, size, access, granularity);
 }
 
-void __inline set_idt_gate(int intrno, void *handler)
-{
+void __inline set_idt_gate(int intrno, void *handler) {
   mach.set_idt_gate(intrno, handler);
 }
 
-void __inline set_idt_trap(int intrno, void *handler)
-{
+void __inline set_idt_trap(int intrno, void *handler) {
   mach.set_idt_trap(intrno, handler);
 }
 
-void __inline flushtlb()
-{
+void __inline flushtlb() {
   mach.flushtlb();
 }
 
-void __inline invlpage(void *addr)
-{
+void __inline invlpage(void *addr) {
   mach.invlpage(addr);
 }
 
-void __inline poweroff()
-{
+void __inline poweroff() {
   mach.poweroff();
 }
 
-void __inline reboot()
-{
+void __inline reboot() {
   mach.reboot();
 }
 

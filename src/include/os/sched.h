@@ -65,31 +65,27 @@ typedef void (*taskproc_t)(void *arg);
 #define TASK_QUEUED       1
 #define TASK_EXECUTING    2
 
-struct tcb
-{
+struct tcb {
   struct thread thread;
   unsigned long stack[(TCBSIZE - sizeof(struct thread)) / sizeof(unsigned long) - 1];
   unsigned long *esp;
 };
 
-struct dpc
-{
+struct dpc {
   dpcproc_t proc;
   void *arg;
   struct dpc *next;
   int flags;
 };
 
-struct task
-{
+struct task {
   taskproc_t proc;
   void *arg;
   struct task *next;
   int flags;
 };
 
-struct task_queue
-{
+struct task_queue {
   struct task *head;
   struct task *tail;
   struct thread *thread;
@@ -98,8 +94,7 @@ struct task_queue
   int flags;
 };
 
-struct kernel_context
-{
+struct kernel_context {
   unsigned long esi, edi;
   unsigned long ebx, ebp;
   unsigned long eip;
@@ -118,10 +113,8 @@ extern int preempt;
 extern unsigned long dpc_time;
 
 #if 0
-__inline __declspec(naked) struct thread *self()
-{
-  __asm
-  {
+__inline __declspec(naked) struct thread *self() {
+  __asm {
     mov eax, esp;
     and eax, TCBMASK
     ret
@@ -130,8 +123,7 @@ __inline __declspec(naked) struct thread *self()
 #endif
 
 #if 0
-__inline struct thread *self()
-{
+__inline struct thread *self() {
   unsigned long stkvar;
   return (struct thread *) (((unsigned long) &stkvar) & TCBMASK);
 }
@@ -183,20 +175,17 @@ krnlapi int system_idle();
 
 void init_sched();
 
-__inline void check_dpc_queue()
-{
+__inline void check_dpc_queue() {
   if (dpc_queue_head) dispatch_dpc_queue();
 }
 
-__inline void check_preempt()
-{
+__inline void check_preempt() {
 #ifndef NOPREEMPTION
   if (preempt) preempt_thread();
 #endif
 }
 
-__inline int signals_ready(struct thread *t)
-{
+__inline int signals_ready(struct thread *t) {
   return t->pending_signals & ~t->blocked_signals;
 }
 

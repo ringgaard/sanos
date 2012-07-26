@@ -43,8 +43,7 @@
 
 #define AR_MAGIC "!<arch>\012"
 
-struct ar_header
-{
+struct ar_header {
   char ar_name[16];               // Name of this member
   char ar_date[12];               // File mtime
   char ar_uid[6];                 // Owner uid; printed as decimal
@@ -67,8 +66,7 @@ struct ar_header
 #define ET_DYN    3               // Shared object file
 #define ET_CORE   4               // Core file
 
-struct elf_header
-{
+struct elf_header {
   uint8_t  e_ident[EI_NIDENT];    // Magic number and other info
   uint16_t e_type;                // Object file type
   uint16_t e_machine;             // Architecture
@@ -103,8 +101,7 @@ struct elf_header
 #define SHT_SHLIB        10       // Reserved
 #define SHT_DYNSYM       11       // Dynamic linker symbol table
 
-struct elf_section_header
-{
+struct elf_section_header {
   uint32_t sh_name;               // Section name (string table index)
   uint32_t sh_type;               // Section type
   uint32_t sh_flags;              // Section flags
@@ -121,8 +118,7 @@ struct elf_section_header
 // ELF symbol table entry
 //
 
-struct elf_symbol
-{
+struct elf_symbol {
   uint32_t st_name;               // Symbol name (string table index)
   uint32_t st_value;              // Symbol value
   uint32_t st_size;               // Symbol size
@@ -135,8 +131,7 @@ struct elf_symbol
 // Archive state information
 //
 
-struct entry
-{
+struct entry {
   struct ar_header header;        // Header for archive entry
   char *contents;                 // File contents
   int size;                       // Size of input file
@@ -144,15 +139,13 @@ struct entry
   struct entry *next;             // Next entry in archive
 };
 
-struct symbol
-{
+struct symbol {
   char *name;                     // Symbol name
   struct entry *entry;            // Entry in the archive the symbol belongs to
   struct symbol *next;            // Next symbol
 };
 
-struct archive
-{
+struct archive {
   struct entry *first_entry;      // First archive entry
   struct entry *last_entry;       // Last archive entry
   struct symbol *first_symbol;    // First archive entry
@@ -163,21 +156,18 @@ struct archive
 int make_symtab = 0;
 int merge_archives = 0;
 
-void *load_data(int fd, int offset, int size)
-{
+void *load_data(int fd, int offset, int size) {
   void *data;
 
   data = malloc(size);
   if (!data) return NULL;
   
-  if (lseek(fd, offset, SEEK_SET) != offset) 
-  {
+  if (lseek(fd, offset, SEEK_SET) != offset)  {
     free(data);
     return NULL;
   }
 
-  if (read(fd, data, size) != size)
-  {
+  if (read(fd, data, size) != size) {
     free(data);
     return NULL;
   }
@@ -185,8 +175,7 @@ void *load_data(int fd, int offset, int size)
   return data;
 }
 
-struct entry *add_new_entry(struct archive *ar)
-{
+struct entry *add_new_entry(struct archive *ar) {
   struct entry *e = (struct entry *) malloc(sizeof(struct entry));
   memset(e, 0, sizeof(struct entry));
   memset(&e->header, ' ', sizeof(struct ar_header));
@@ -197,8 +186,7 @@ struct entry *add_new_entry(struct archive *ar)
   return e;
 }
 
-struct symbol *add_new_symbol(struct archive *ar, struct entry *e, char *name)
-{
+struct symbol *add_new_symbol(struct archive *ar, struct entry *e, char *name) {
   struct symbol *s = (struct symbol *) malloc(sizeof(struct symbol));
   s->name = strdup(name);
   s->entry = e;
@@ -210,31 +198,26 @@ struct symbol *add_new_symbol(struct archive *ar, struct entry *e, char *name)
   return s;
 }
 
-struct symbol *find_symbol(struct archive *ar, char *name) 
-{
+struct symbol *find_symbol(struct archive *ar, char *name)  {
   struct symbol *s = ar->first_symbol;
-  while (s)
-  {
+  while (s) {
     if (strcmp(s->name, name) == 0) return s;
     s = s->next;
   }
   return NULL;
 }
   
-void init_archive(struct archive *ar)
-{
+void init_archive(struct archive *ar) {
   memset(ar, 0, sizeof(struct archive));
   if (make_symtab) ar->symtab = add_new_entry(ar);
 }
 
-void free_archive(struct archive *ar)
-{
+void free_archive(struct archive *ar) {
   struct entry *e;
   struct symbol *s;
 
   e = ar->first_entry;
-  while (e)
-  {
+  while (e) {
     struct entry *next = e->next;
     if (e->contents) free(e->contents);
     free(e);
@@ -242,8 +225,7 @@ void free_archive(struct archive *ar)
   }
 
   s = ar->first_symbol;
-  while (s)
-  {
+  while (s) {
     struct symbol *next = s->next;
     if (s->name) free(s->name);
     free(s);
@@ -251,8 +233,7 @@ void free_archive(struct archive *ar)
   }
 }
 
-int add_symbols(struct archive  *ar, struct entry *e)
-{
+int add_symbols(struct archive  *ar, struct entry *e) {
   struct elf_header *hdr;
   struct elf_section_header *sections, *s;
   struct elf_symbol *symtab, *sym;
@@ -271,19 +252,16 @@ int add_symbols(struct archive  *ar, struct entry *e)
   sections = (struct elf_section_header *) (e->contents + hdr->e_shoff);
     
   // Get symbols
-  for(i = 1; i < hdr->e_shnum; i++) 
-  {
+  for (i = 1; i < hdr->e_shnum; i++) {
     s = &sections[i];
-    if (s->sh_type == SHT_SYMTAB) 
-    {
+    if (s->sh_type == SHT_SYMTAB) {
       num_syms = s->sh_size / sizeof(struct elf_symbol);
       symtab = (struct elf_symbol *) (e->contents + s->sh_offset);
       
       s = &sections[s->sh_link];
       strtab = e->contents + s->sh_offset;
       
-      for (j = 0; j < num_syms; j++)
-      {
+      for (j = 0; j < num_syms; j++) {
         sym = &symtab[j];
         name = strtab + sym->st_name;
         type = sym->st_info & 0x0f;
@@ -305,8 +283,7 @@ int add_symbols(struct archive  *ar, struct entry *e)
   return 0;
 }
 
-void fill_header(struct ar_header *hdr, char *filename, struct stat *st)
-{
+void fill_header(struct ar_header *hdr, char *filename, struct stat *st) {
   char *p, *name;
   int len;
   char buf[32];
@@ -314,12 +291,12 @@ void fill_header(struct ar_header *hdr, char *filename, struct stat *st)
   // Set the file name
   name = filename;
   p = filename;
-  while (*p)
-  {
-    if (*p == '/' || *p == '\\')
+  while (*p) {
+    if (*p == '/' || *p == '\\') {
       name = ++p;
-    else
+    } else {
       p++;
+    }
   }
   len = strlen(name);
   if (len > 15) len = 15;
@@ -347,8 +324,7 @@ void fill_header(struct ar_header *hdr, char *filename, struct stat *st)
   hdr->ar_fmag[1] = '\n';
 }
 
-int read_file(struct archive  *ar, int fd, int offset, int size, char *filename)
-{
+int read_file(struct archive  *ar, int fd, int offset, int size, char *filename) {
   struct entry *e;
   struct stat st;
 
@@ -365,37 +341,32 @@ int read_file(struct archive  *ar, int fd, int offset, int size, char *filename)
   fill_header(&e->header, filename, &st);
 
   // Add symbols from ELF object file
-  if (make_symtab && size >= 4 && memcmp(e->contents, ELF_MAGIC, 4) == 0)
-  {
+  if (make_symtab && size >= 4 && memcmp(e->contents, ELF_MAGIC, 4) == 0) {
     if (add_symbols(ar, e) < 0) return -1;
   }
   
   return 0;
 }
 
-int read_archive_file(struct archive  *ar, int fd)
-{
+int read_archive_file(struct archive  *ar, int fd) {
   struct ar_header hdr;
   char name[17];
   char sizebuf[11];
   int len, i, offset, size;
   struct entry *e;
   
-  for (;;) 
-  {
+  for (;;) {
     // Read next header from input archive
     len = read(fd, &hdr, sizeof(hdr));
     if (len == 0) break;
-    if (len != sizeof(hdr)) 
-    {
+    if (len != sizeof(hdr)) {
       fprintf(stderr, "invalid archive");
       return -1;
     }
     
     // Get entry name and length from header
     memcpy(name, hdr.ar_name, sizeof(hdr.ar_name));
-    for(i = sizeof(hdr.ar_name) - 1; i >= 0; i--) 
-    {
+    for(i = sizeof(hdr.ar_name) - 1; i >= 0; i--) {
       if (name[i] != ' ') break;
     }
     name[i + 1] = '\0';
@@ -405,8 +376,7 @@ int read_archive_file(struct archive  *ar, int fd)
     
     // Skip the symbol table
     offset = lseek(fd, 0, SEEK_CUR);
-    if (strcmp(name, "/") != 0)
-    {
+    if (strcmp(name, "/") != 0) {
       // Add new entry to archive.
       e = add_new_entry(ar);
       memcpy(&e->header, &hdr, sizeof(hdr));
@@ -415,8 +385,7 @@ int read_archive_file(struct archive  *ar, int fd)
       if (e->contents == NULL) return -1;
 
      // Add symbols from ELF object file
-     if (make_symtab && size >= 4 && memcmp(e->contents, ELF_MAGIC, 4) == 0)
-     {
+     if (make_symtab && size >= 4 && memcmp(e->contents, ELF_MAGIC, 4) == 0) {
        if (add_symbols(ar, e) < 0) return -1;
      }
    }
@@ -427,8 +396,7 @@ int read_archive_file(struct archive  *ar, int fd)
   return 0;
 }
 
-void build_symbol_table(struct archive *ar)
-{
+void build_symbol_table(struct archive *ar) {
   struct symbol *s;
   struct entry *e;
   int size, num_syms, offset;
@@ -441,8 +409,7 @@ void build_symbol_table(struct archive *ar)
   size = 4;
   num_syms = 0;
   s = ar->first_symbol;
-  while (s)
-  {
+  while (s) {
     size += strlen(s->name) + 1 + 4;
     num_syms++;
     s = s->next;
@@ -452,8 +419,7 @@ void build_symbol_table(struct archive *ar)
   // Compute offsets for all entries
   offset = 8;
   e = ar->first_entry;
-  while (e)
-  {
+  while (e) {
     e->offset = offset;
     offset += sizeof(struct ar_header) + e->size;
     if (offset & 1) offset++;
@@ -466,8 +432,7 @@ void build_symbol_table(struct archive *ar)
   index = (uint32_t *) (symtab + 4);
   strtab = symtab + 4 * num_syms + 4;
   s = ar->first_symbol;
-  while (s)
-  {
+  while (s) {
     *index++ = htonl(s->entry->offset);
     strcpy(strtab, s->name);
     strtab += strlen(s->name) + 1;
@@ -482,8 +447,7 @@ void build_symbol_table(struct archive *ar)
   fill_header(&ar->symtab->header, "", &st);
 }
 
-int write_archive(struct archive *ar, int fd)
-{
+int write_archive(struct archive *ar, int fd) {
   struct entry *e;
   int size;
   int offset;
@@ -494,13 +458,11 @@ int write_archive(struct archive *ar, int fd)
   
   // Write entries.
   e = ar->first_entry;
-  while (e)
-  {
+  while (e) {
     size += write(fd, &e->header, sizeof(struct ar_header));
     size += write(fd, e->contents, e->size);
     offset += sizeof(struct ar_header) + e->size;
-    if (offset & 1)
-    {
+    if (offset & 1) {
       size += write(fd, "\0", 1);
       offset++;
     }
@@ -511,25 +473,21 @@ int write_archive(struct archive *ar, int fd)
   return offset == size ? 0 : -1;
 }
 
-void usage()
-{
+void usage() {
   fprintf(stderr, "usage: ar [options] <archive> <files>\n\n");
   fprintf(stderr, "  -s            Add symbol table to archive.\n");
   fprintf(stderr, "  -m            Add individual entries in input archives.\n");
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   int c, fd;
   char *archive_filename;
   char magic[8];
   struct archive ar;
 
   // Parse command line options
-  while ((c = getopt(argc, argv, "ms")) != EOF)
-  {
-    switch (c)
-    {
+  while ((c = getopt(argc, argv, "ms")) != EOF) {
+    switch (c) {
       case 'm':
         merge_archives = 1;
         break;
@@ -544,8 +502,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  if (optind == argc)
-  {
+  if (optind == argc) {
     usage();
     return 1;
   }
@@ -553,21 +510,18 @@ int main(int argc, char *argv[])
   
   // Read all the input object files
   init_archive(&ar);
-  while (optind < argc)
-  {
+  while (optind < argc) {
     // Open next input file
     char *input_file = argv[optind++];
     fd = open(input_file, O_RDONLY | O_BINARY);
-    if (fd < 0)
-    {
+    if (fd < 0) {
       perror(archive_filename);
       free_archive(&ar);
       return 1;
     }
     
     // Determine file type
-    if (read(fd, magic, 8) != 8)
-    {
+    if (read(fd, magic, 8) != 8) {
       fprintf(stderr, "%s: Invalid input file\n", input_file);
       close(fd);
       free_archive(&ar);
@@ -575,20 +529,15 @@ int main(int argc, char *argv[])
     }
     
     // Add input file to archive
-    if (merge_archives && memcmp(magic, AR_MAGIC, 8) == 0)
-    {
-      if (read_archive_file(&ar, fd) < 0)
-      {
+    if (merge_archives && memcmp(magic, AR_MAGIC, 8) == 0) {
+      if (read_archive_file(&ar, fd) < 0) {
         fprintf(stderr, "%s: Error reading archive file\n", input_file);
         close(fd);
         free_archive(&ar);
         return 1;
       }
-    }
-    else
-    {
-      if (read_file(&ar, fd, 0, lseek(fd, 0, SEEK_END), input_file) < 0)
-      {
+    } else {
+      if (read_file(&ar, fd, 0, lseek(fd, 0, SEEK_END), input_file) < 0) {
         fprintf(stderr, "%s: Error reading file\n", input_file);
         close(fd);
         free_archive(&ar);
@@ -600,8 +549,7 @@ int main(int argc, char *argv[])
 
   // Open output archive
   fd = open(archive_filename, O_CREAT | O_TRUNC | O_WRONLY | O_BINARY, 0666);
-  if (fd < 0) 
-  {
+  if (fd < 0)  {
     perror(archive_filename);
     free_archive(&ar);
     return 1;
@@ -611,8 +559,7 @@ int main(int argc, char *argv[])
   if (make_symtab) build_symbol_table(&ar);
   
   // Write archive.
-  if (write_archive(&ar, fd) < 0)
-  {
+  if (write_archive(&ar, fd) < 0) {
     perror(archive_filename);
     free_archive(&ar);
     close(fd);

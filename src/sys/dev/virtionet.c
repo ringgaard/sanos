@@ -64,8 +64,7 @@
 
 #define VIRTIO_NET_S_LINK_UP    1              // Link is up
 
-struct virtio_net_config 
-{
+struct virtio_net_config {
   struct eth_addr mac;
   unsigned short status;
 };
@@ -83,8 +82,7 @@ struct virtio_net_config
 #define VIRTIO_NET_HDR_GSO_TCPV6        4       // GSO frame, IPv6 TCP
 #define VIRTIO_NET_HDR_GSO_ECN          0x80    // TCP has ECN set
 
-struct virtio_net_hdr
-{
+struct virtio_net_hdr {
   unsigned char flags;
   unsigned char gso_type;
   unsigned short hdr_len;          // Ethernet + IP + TCP/UDP headers
@@ -97,8 +95,7 @@ struct virtio_net_hdr
 // Virtual network device data
 //
 
-struct virtionet
-{
+struct virtionet {
   struct virtio_device vd;
   struct virtio_net_config config;
   struct virtio_queue rxqueue;
@@ -106,8 +103,7 @@ struct virtionet
   dev_t devno;
 };
 
-static int add_receive_buffer(struct virtionet *vnet)
-{
+static int add_receive_buffer(struct virtionet *vnet) {
   struct virtio_net_hdr *hdr;
   struct scatterlist sg[2];
 
@@ -124,13 +120,11 @@ static int add_receive_buffer(struct virtionet *vnet)
   return 0;
 }
 
-static int virtionet_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
+static int virtionet_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
   return -ENOSYS;
 }
 
-static int virtionet_rx_callback(struct virtio_queue *vq)
-{
+static int virtionet_rx_callback(struct virtio_queue *vq) {
   struct virtionet *vnet = (struct virtionet *) vq->vd;
   struct pbuf *p;
   unsigned int len;
@@ -138,8 +132,7 @@ static int virtionet_rx_callback(struct virtio_queue *vq)
 
   // Drain receive queue
   received = 0;
-  while ((p = virtio_dequeue(vq, &len)) != NULL)
-  {
+  while ((p = virtio_dequeue(vq, &len)) != NULL) {
     pbuf_realloc(p, len);
     rc = dev_receive(vnet->devno, p);
     if (rc < 0) pbuf_free(p);
@@ -147,8 +140,7 @@ static int virtionet_rx_callback(struct virtio_queue *vq)
   }
 
   // Fill up receive queue with new empty buffers
-  if (received > 0)
-  {
+  if (received > 0) {
     while (received > 0) {
       add_receive_buffer(vnet);
       received--;
@@ -159,15 +151,13 @@ static int virtionet_rx_callback(struct virtio_queue *vq)
   return 0;
 }
 
-static int virtionet_tx_callback(struct virtio_queue *vq)
-{
+static int virtionet_tx_callback(struct virtio_queue *vq) {
   struct pbuf *hdr;
   struct pbuf *data;
   unsigned int len;
 
   // Deallocate packets buffers after they have been transmitted.
-  while ((hdr = virtio_dequeue(vq, &len)) != NULL)
-  {
+  while ((hdr = virtio_dequeue(vq, &len)) != NULL) {
     data = pbuf_dechain(hdr);
     pbuf_free(hdr);
     pbuf_free(data);
@@ -176,21 +166,18 @@ static int virtionet_tx_callback(struct virtio_queue *vq)
   return 0;
 }
 
-int virtionet_attach(struct dev *dev, struct eth_addr *hwaddr)
-{
+int virtionet_attach(struct dev *dev, struct eth_addr *hwaddr) {
   struct virtionet *vnet = dev->privdata;
   *hwaddr = vnet->config.mac;
 
   return 0;
 }
 
-int virtionet_detach(struct dev *dev)
-{
+int virtionet_detach(struct dev *dev) {
   return 0;
 }
 
-int virtionet_transmit(struct dev *dev, struct pbuf *p)
-{
+int virtionet_transmit(struct dev *dev, struct pbuf *p) {
   struct virtionet *vnet = dev->privdata;
   struct pbuf *hdr;
   struct pbuf *q;
@@ -204,8 +191,7 @@ int virtionet_transmit(struct dev *dev, struct pbuf *p)
   pbuf_chain(hdr, p);
 
   // Add packet to transmit queue
-  for (i = 0, q = hdr; q; q = q->next, i++)
-  {
+  for (i = 0, q = hdr; q; q = q->next, i++) {
     if (i == MAXSEGS) return -ERANGE;
     sg[i].data = q->payload;
     sg[i].size = q->len;
@@ -216,8 +202,7 @@ int virtionet_transmit(struct dev *dev, struct pbuf *p)
   return 0;  
 }
 
-struct driver virtionet_driver =
-{
+struct driver virtionet_driver = {
   "virtionet",
   DEV_TYPE_PACKET,
   virtionet_ioctl,
@@ -228,8 +213,7 @@ struct driver virtionet_driver =
   virtionet_transmit
 };
 
-int __declspec(dllexport) install(struct unit *unit, char *opts)
-{
+int __declspec(dllexport) install(struct unit *unit, char *opts) {
   struct virtionet *vnet;
   int rc, size, i;
 
@@ -269,7 +253,6 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   return 0;
 }
 
-int __stdcall start(hmodule_t hmod, int reason, void *reserved2)
-{
+int __stdcall start(hmodule_t hmod, int reason, void *reserved2) {
   return 1;
 }

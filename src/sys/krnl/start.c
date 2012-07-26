@@ -89,20 +89,17 @@ char krnlopts[KRNLOPTS_LEN];
 
 void main(void *arg);
 
-int license()
-{
+int license() {
   return LICENSE;
 }
 
-void stop(int mode)
-{
+void stop(int mode) {
   suspend_all_user_threads();
   umount_all();
   tcp_shutdown();
   msleep(200);
 
-  switch (mode)
-  {
+  switch (mode) {
     case EXITOS_HALT:
       kprintf("kernel: system stopped\n");
       break;
@@ -122,19 +119,16 @@ void stop(int mode)
       break;
   }
 
-  while (1)
-  {
+  while (1) {
     cli();
     halt();
   }
 }
 
-void panic(char *msg)
-{
+void panic(char *msg) {
   static int inpanic = 0;
 
-  if (inpanic)
-  {
+  if (inpanic) {
     kprintf(KERN_EMERG "double panic: %s, halting\n", msg);
     cli();
     halt();
@@ -143,17 +137,15 @@ void panic(char *msg)
   inpanic = 1;
   kprintf(KERN_EMERG "panic: %s\n", msg);
 
-  if (onpanic == ONPANIC_DEBUG)
-  {
+  if (onpanic == ONPANIC_DEBUG) {
     if (debugging) dbg_output(msg);
     dbg_break();
-  }
-  else
+  } else {
     stop(onpanic);
+  }
 }
 
-static int load_kernel_config()
-{
+static int load_kernel_config() {
   struct file *f;
   int size;
   int rc;
@@ -170,16 +162,14 @@ static int load_kernel_config()
   size = (int) buffer.st_size;
 
   props = (char *) kmalloc(size + 1);
-  if (!props) 
-  {
+  if (!props)  {
     close(f);
     destroy(f);
     return -ENOMEM;
   }
 
   rc = read(f, props, size);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     free(props);
     close(f);
     destroy(f);
@@ -197,8 +187,7 @@ static int load_kernel_config()
   return 0;
 }
 
-static void init_filesystem()
-{
+static void init_filesystem() {
   int rc;
   char bootdev[8];
   char rootdev[128];
@@ -216,20 +205,19 @@ static void init_filesystem()
   init_cdfs();
  
   // Determine boot device
-  if ((syspage->ldrparams.bootdrv & 0xF0) == 0xF0)
-  {
+  if ((syspage->ldrparams.bootdrv & 0xF0) == 0xF0) {
     create_initrd();
     strcpy(bootdev, "initrd");
-  }
-  else if (syspage->ldrparams.bootdrv & 0x80)
-  {
-    if (syspage->ldrparams.bootpart == -1)
+  } else if (syspage->ldrparams.bootdrv & 0x80) {
+    if (syspage->ldrparams.bootpart == -1) {
       sprintf(bootdev, "hd%c", '0' + (syspage->ldrparams.bootdrv & 0x7F));
-    else
+    } else {
       sprintf(bootdev, "hd%c%c", '0' + (syspage->ldrparams.bootdrv & 0x7F), 'a' + syspage->ldrparams.bootpart);
+    }
   }
-  else
+  else {
     sprintf(bootdev, "fd%c", '0' + (syspage->ldrparams.bootdrv & 0x7F));
+  }
 
   // If default boot device is not found try a virtual device.
   if (devno(bootdev) == NODEV && devno("vd0") != NODEV) strcpy(bootdev, "vd0");
@@ -252,8 +240,7 @@ static void init_filesystem()
   if (rc < 0) panic("error mounting proc filesystem");
 }
 
-static int version_proc(struct proc_file *pf, void *arg)
-{
+static int version_proc(struct proc_file *pf, void *arg) {
   hmodule_t krnl = (hmodule_t) OSBASE;
   struct verinfo *ver;
   time_t ostimestamp;
@@ -264,8 +251,7 @@ static int version_proc(struct proc_file *pf, void *arg)
   gmtime_r(&ostimestamp, &tm);
 
   ver = get_version_info(krnl);
-  if (ver) 
-  {
+  if (ver)  {
     if (get_version_value(krnl, "ProductName", osname, sizeof(osname)) < 0) strcpy(osname, "Sanos");
     pprintf(pf, "%s version %d.%d.%d.%d", osname, ver->file_major_version, ver->file_minor_version, ver->file_release_number, ver->file_build_number);
 
@@ -273,9 +259,7 @@ static int version_proc(struct proc_file *pf, void *arg)
     if (ver->file_flags & VER_FLAG_PATCHED) pprintf(pf, " patch");
     if (ver->file_flags & VER_FLAG_PRIVATEBUILD) pprintf(pf, " private");
     if (ver->file_flags & VER_FLAG_DEBUG) pprintf(pf, " debug");
-  }
-  else
-  {
+  } else {
     pprintf(pf, "%s version %d.%d.%d.%d", OS_NAME, OS_MAJ_VERS, OS_MIN_VERS, OS_RELEASE, OS_BUILD);
   }
 
@@ -291,8 +275,7 @@ static int version_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-static int copyright_proc(struct proc_file *pf, void *arg)
-{
+static int copyright_proc(struct proc_file *pf, void *arg) {
   hmodule_t krnl = (hmodule_t) OSBASE;
   char copy[128];
   char legal[128];
@@ -306,8 +289,7 @@ static int copyright_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-void __stdcall start(void *hmod, char *opts, int reserved2)
-{
+void __stdcall start(void *hmod, char *opts, int reserved2) {
   // Copy kernel options
   strcpy(krnlopts, opts);
   if (get_option(opts, "silent", NULL, 0, NULL) != NULL) kprint_enabled = 0;
@@ -380,8 +362,7 @@ void __stdcall start(void *hmod, char *opts, int reserved2)
   idle_task();
 }
 
-void init_net()
-{
+void init_net() {
   stats_init();
   netif_init();
   ether_init();
@@ -398,8 +379,7 @@ void init_net()
   register_ether_netifs();
 }
 
-void main(void *arg)
-{
+void main(void *arg) {
   unsigned long *stacktop;
   struct thread *t = self();
 
@@ -436,14 +416,15 @@ void main(void *arg)
 
   // Determine kernel panic action
   str = get_property(krnlcfg, "kernel", "onpanic", "halt");
-  if (strcmp(str, "halt") == 0)
+  if (strcmp(str, "halt") == 0) {
     onpanic = ONPANIC_HALT;
-  else if (strcmp(str, "reboot") == 0)
+  } else if (strcmp(str, "reboot") == 0) {
     onpanic = ONPANIC_REBOOT;
-  else if (strcmp(str, "debug") == 0)
+  } else if (strcmp(str, "debug") == 0) {
     onpanic = ONPANIC_DEBUG;
-  else if (strcmp(str, "poweroff") == 0)
+  } else if (strcmp(str, "poweroff") == 0) {
     onpanic = ONPANIC_POWEROFF;
+  }
 
   // Set path separator
   pathsep = *get_property(krnlcfg, "kernel", "pathsep", "");
@@ -507,8 +488,7 @@ void main(void *arg)
   *(--stacktop) = 0;
 
   // Jump into user mode
-  __asm
-  {
+  __asm {
     mov eax, stacktop
     mov ebx, entrypoint
 

@@ -35,8 +35,7 @@
 #include <string.h>
 #include <dirent.h>
 
-DIR *opendir(const char *name)
-{
+DIR *opendir(const char *name) {
   int handle;
   DIR *dirp;
 
@@ -44,8 +43,7 @@ DIR *opendir(const char *name)
   if (handle < 0) return NULL;
 
   dirp = (DIR *) malloc(sizeof(DIR));
-  if (!dirp) 
-  {
+  if (!dirp) {
     close(handle);
     return NULL;
   }
@@ -55,12 +53,10 @@ DIR *opendir(const char *name)
   return dirp;
 }
 
-int closedir(DIR *dirp)
-{
+int closedir(DIR *dirp) {
   int rc;
 
-  if (!dirp)
-  {
+  if (!dirp) {
     errno = EINVAL;
     return -1;
   }
@@ -71,13 +67,11 @@ int closedir(DIR *dirp)
   return rc;
 }
 
-struct dirent *readdir(DIR *dirp)
-{
+struct dirent *readdir(DIR *dirp) {
   struct direntry dirent;
   int rc;
 
-  if (!dirp)
-  {
+  if (!dirp) {
     errno = EINVAL;
     return NULL;
   }
@@ -93,13 +87,11 @@ struct dirent *readdir(DIR *dirp)
   return &dirp->entry;
 }
 
-int readdir_r(DIR *dirp, struct dirent *entry, struct dirent **result)
-{
+int readdir_r(DIR *dirp, struct dirent *entry, struct dirent **result) {
   struct direntry dirent;
   int rc;
 
-  if (!dirp || !entry)
-  {
+  if (!dirp || !entry) {
     errno = EINVAL;
     return -1;
   }
@@ -116,10 +108,8 @@ int readdir_r(DIR *dirp, struct dirent *entry, struct dirent **result)
   return 0;
 }
 
-int rewinddir(DIR *dirp)
-{
-  if (!dirp)
-  {
+int rewinddir(DIR *dirp) {
+  if (!dirp) {
     errno = EINVAL;
     return -1;
   }

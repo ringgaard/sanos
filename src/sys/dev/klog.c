@@ -35,8 +35,7 @@
 
 #define KLOG_SIZE (64 * 1024)
 
-struct klogreq
-{
+struct klogreq {
   struct klogreq *next;
   struct thread *thread;
   err_t rc;
@@ -51,8 +50,7 @@ static unsigned int klog_size;
 static struct klogreq *klog_waiters;
 static struct dpc klog_dpc;
 
-static int wait_for_klog()
-{
+static int wait_for_klog() {
   struct klogreq req;
 
   req.thread = self();
@@ -64,20 +62,17 @@ static int wait_for_klog()
   return req.rc;
 }
 
-static void release_klog_waiters(void *arg)
-{
+static void release_klog_waiters(void *arg) {
   struct klogreq *waiter;
 
   // Defer scheduling of kernel log waiter if we are in a interrupt handler
-  if ((eflags() & EFLAG_IF) == 0) 
-  {
+  if ((eflags() & EFLAG_IF) == 0)  {
     queue_irq_dpc(&klog_dpc, release_klog_waiters, NULL);
     return;
   }
 
   waiter = klog_waiters;
-  while (waiter)
-  {
+  while (waiter) {
     waiter->rc = 0;
     mark_thread_ready(waiter->thread, 1, 2);
     waiter = waiter->next;
@@ -86,21 +81,16 @@ static void release_klog_waiters(void *arg)
   klog_waiters = NULL;
 }
 
-static void add_to_klog(char *buf, int size)
-{
-  while (size-- > 0)
-  {
-    if (klog_size == KLOG_SIZE)
-    {
-      while (klogbuf[klog_start] != '\n' && klog_size > 0) 
-      {
+static void add_to_klog(char *buf, int size) {
+  while (size-- > 0) {
+    if (klog_size == KLOG_SIZE) {
+      while (klogbuf[klog_start] != '\n' && klog_size > 0) {
         klog_size--;
         klog_start++;
         if (klog_start == KLOG_SIZE) klog_start = 0;
       }
 
-      if (klog_size > 0)
-      {
+      if (klog_size > 0) {
         klog_size--;
         klog_start++;
         if (klog_start == KLOG_SIZE) klog_start = 0;
@@ -115,8 +105,7 @@ static void add_to_klog(char *buf, int size)
   release_klog_waiters(NULL);
 }
 
-void kprintf(const char *fmt,...)
-{
+void kprintf(const char *fmt,...) {
   va_list args;
   char buffer[1024];
   int len;
@@ -129,13 +118,11 @@ void kprintf(const char *fmt,...)
   
   //if (debugging) dbg_output(buffer);
 
-  if (kprint_enabled)
-  {
+  if (kprint_enabled) {
     char *msg = buffer;
     int msglen = len;
 
-    if (msg[0] == '<' && msg[1] >= '0' && msg[1] <= '7' && msg[2] == '>')
-    {
+    if (msg[0] == '<' && msg[1] >= '0' && msg[1] <= '7' && msg[2] == '>') {
       msg += 3;
       msglen -= 3;
     }
@@ -144,10 +131,8 @@ void kprintf(const char *fmt,...)
   }
 }
 
-static int klog_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
-  switch (cmd)
-  {
+static int klog_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
+  switch (cmd) {
     case IOCTL_GETDEVSIZE:
       return klog_size;
 
@@ -166,8 +151,7 @@ static int klog_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int klog_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int klog_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   char *ptr;
   unsigned int idx;
   unsigned int n;
@@ -180,8 +164,7 @@ static int klog_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno,
   ptr = (char *) buffer;
   idx = (klog_start + blkno) % KLOG_SIZE;
   n = count;
-  while (n-- > 0)
-  {
+  while (n-- > 0) {
     *ptr++ = klogbuf[idx++];
     if (idx == KLOG_SIZE) idx = 0;
   }
@@ -189,14 +172,12 @@ static int klog_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno,
   return count;
 }
 
-static int klog_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int klog_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   add_to_klog(buffer, count);
   return count;
 }
 
-struct driver klog_driver =
-{
+struct driver klog_driver = {
   "klog",
   DEV_TYPE_BLOCK,
   klog_ioctl,
@@ -204,8 +185,7 @@ struct driver klog_driver =
   klog_write
 };
 
-int __declspec(dllexport) klog(struct unit *unit, char *opts)
-{
+int __declspec(dllexport) klog(struct unit *unit, char *opts) {
   dev_make("klog", &klog_driver, NULL, NULL);
   return 0;
 }

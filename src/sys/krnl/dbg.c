@@ -48,8 +48,7 @@ static char dbgdata[MAX_DBG_PACKETLEN];
 struct dbg_evt_trap last_trap;
 static char *krnlname = "krnl.dll";
 
-static void init_debug_port()
-{
+static void init_debug_port() {
   // Turn off interrupts
   outp(DEBUGPORT + 1, 0);
   
@@ -62,54 +61,43 @@ static void init_debug_port()
   outp(DEBUGPORT + 4, 0x0B);
 }
 
-static void dbg_send(void *buffer, int count)
-{
+static void dbg_send(void *buffer, int count) {
   unsigned char *p = buffer;
 
-  while (count-- > 0)
-  {
-    while ((inp(DEBUGPORT + 5) & 0x20) == 0) 
-    {
+  while (count-- > 0) {
+    while ((inp(DEBUGPORT + 5) & 0x20) == 0) {
       if (!debug_nointr) check_dpc_queue();
     }
     outp(DEBUGPORT, *p++);
   }
 }
 
-static void dbg_recv(void *buffer, int count)
-{
+static void dbg_recv(void *buffer, int count) {
   unsigned char *p = buffer;
 
-  while (count-- > 0)
-  {
-    while ((inp(DEBUGPORT + 5) & 0x01) == 0) 
-    {
+  while (count-- > 0) {
+    while ((inp(DEBUGPORT + 5) & 0x01) == 0) {
       if (!debug_nointr) check_dpc_queue();
     }
     *p++ = inp(DEBUGPORT) & 0xFF;
   }
 }
 
-static void dbg_send_rle(void *data, unsigned int len)
-{
+static void dbg_send_rle(void *data, unsigned int len) {
   unsigned char *p = (unsigned char *) data;
   unsigned char *q = p;
   unsigned int left = len;
 
-  while (left > 0)
-  {
-    if (p[0] == DBG_RLE_ESCAPE || (left > 3 && p[0] == p[1] && p[0] == p[2]))
-    {
+  while (left > 0) {
+    if (p[0] == DBG_RLE_ESCAPE || (left > 3 && p[0] == p[1] && p[0] == p[2])) {
       unsigned char buf[3];
 
-      if (p > q)
-      {
+      if (p > q) {
         dbg_send(q, p - q);
         q = p;
       }
 
-      while (left > 0 && q - p < 256 && q[0] == *p)
-      {
+      while (left > 0 && q - p < 256 && q[0] == *p) {
         q++;
         left--;
       }
@@ -119,9 +107,7 @@ static void dbg_send_rle(void *data, unsigned int len)
       buf[2] = (unsigned char) (q - p);
       dbg_send(buf, 3);
       p = q;
-    }
-    else
-    {
+    } else {
       p++;
       left--;
     }
@@ -130,17 +116,14 @@ static void dbg_send_rle(void *data, unsigned int len)
   if (p > q) dbg_send(q, p - q);
 }
 
-static void dbg_recv_rle(void *data, unsigned int len)
-{
+static void dbg_recv_rle(void *data, unsigned int len) {
   unsigned char *p = (unsigned char *) data;
   unsigned int left = len;
-  while (left > 0)
-  {
+  while (left > 0) {
     unsigned char ch;
 
     dbg_recv(&ch, 1);
-    if (ch == DBG_RLE_ESCAPE)
-    {
+    if (ch == DBG_RLE_ESCAPE) {
       unsigned char value;
       unsigned char count;
       int n;
@@ -149,23 +132,19 @@ static void dbg_recv_rle(void *data, unsigned int len)
       dbg_recv(&count, 1);
       n = (count == 0) ? 256 : count;
 
-      while (n > 0)
-      {
+      while (n > 0) {
         *p++ = value;
         left--;
         n--;
       }
-    }
-    else
-    {
+    } else {
       *p++ = ch;
       left--;
     }
   }
 }
 
-static void dbg_send_packet(int cmd, unsigned char id, void *data, unsigned int len)
-{
+static void dbg_send_packet(int cmd, unsigned char id, void *data, unsigned int len) {
   unsigned int n;
   struct dbg_hdr hdr;
   unsigned char checksum;
@@ -188,19 +167,16 @@ static void dbg_send_packet(int cmd, unsigned char id, void *data, unsigned int 
   dbg_send_rle(data, len);
 }
 
-static void dbg_send_error(unsigned char errcode, unsigned char id)
-{
+static void dbg_send_error(unsigned char errcode, unsigned char id) {
   dbg_send_packet(errcode, id, NULL, 0);
 }
 
-static int dbg_recv_packet(struct dbg_hdr *hdr, void *data)
-{
+static int dbg_recv_packet(struct dbg_hdr *hdr, void *data) {
   unsigned int n;
   unsigned char checksum;
   unsigned char *p;
 
-  while (1)
-  {
+  while (1) {
     dbg_recv(&hdr->signature, 1);
     if (hdr->signature == DBG_SIGNATURE) break;
   }
@@ -222,16 +198,12 @@ static int dbg_recv_packet(struct dbg_hdr *hdr, void *data)
   return hdr->len;
 }
 
-static void dbg_connect(struct dbg_hdr *hdr, union dbg_body *body)
-{
+static void dbg_connect(struct dbg_hdr *hdr, union dbg_body *body) {
   struct thread *t = self();
 
-  //kprintf("dbg: connect, version=%d\n", body->conn.version);
-
-  if (body->conn.version != DRPC_VERSION)
+  if (body->conn.version != DRPC_VERSION) {
     dbg_send_error(DBGERR_VERSION, hdr->id);
-  else
-  {
+  } else {
     body->conn.version = DRPC_VERSION;
     body->conn.trap = last_trap;
     body->conn.mod.hmod = (hmodule_t) OSBASE;
@@ -246,90 +218,69 @@ static void dbg_connect(struct dbg_hdr *hdr, union dbg_body *body)
   }
 }
 
-static void dbg_read_memory(struct dbg_hdr *hdr, union dbg_body *body)
-{
-  //kprintf("dbg: readmem, addr=%p size=%d\n", body->mem.addr, body->mem.size);
-
-  if (!mem_mapped(body->mem.addr, body->mem.size))
+static void dbg_read_memory(struct dbg_hdr *hdr, union dbg_body *body) {
+  if (!mem_mapped(body->mem.addr, body->mem.size)) {
     dbg_send_error(DBGERR_INVALIDADDR, hdr->id);
-  else
+  } else {
     dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body->mem.addr, body->mem.size);
+  }
 }
 
-static void dbg_write_memory(struct dbg_hdr *hdr, union dbg_body *body)
-{
-  //kprintf("dbg: memwrite, addr=%p size=%d\n", body->mem.addr, body->mem.size);
-
-  if (!mem_mapped(body->mem.addr, body->mem.size))
+static void dbg_write_memory(struct dbg_hdr *hdr, union dbg_body *body) {
+  if (!mem_mapped(body->mem.addr, body->mem.size)) {
     dbg_send_error(DBGERR_INVALIDADDR, hdr->id);
-  else
-  {
+  } else {
     memcpy(body->mem.addr, body->mem.data, body->mem.size);
     dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, NULL, 0);
   }
 }
 
-static void dbg_suspend_thread(struct dbg_hdr *hdr, union dbg_body *body)
-{
+static void dbg_suspend_thread(struct dbg_hdr *hdr, union dbg_body *body) {
   int n;
   tid_t tid;
   struct thread *t;
 
-  //kprintf("dbg: suspend, threads ");
-  for (n = 0; n < body->thr.count; n++)
-  {
+  for (n = 0; n < body->thr.count; n++) {
     tid = body->thr.threadids[n];
     t = get_thread(tid);
-    if (t == NULL)
+    if (t == NULL) {
       body->thr.threadids[n] = -ENOENT;
-    else if (t != self())
+    } else if (t != self()) {
       body->thr.threadids[n] = suspend_thread(t);
-
-    //kprintf("%d(%d) ", tid, body->thr.threadids[n]);
+    }
   }
-  //kprintf("\n");
 
   dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, hdr->len);
 }
 
-static void dbg_resume_thread(struct dbg_hdr *hdr, union dbg_body *body)
-{
+static void dbg_resume_thread(struct dbg_hdr *hdr, union dbg_body *body) {
   int n;
   tid_t tid;
   struct thread *t;
 
-  //kprintf("dbg: resume, threads ");
-  for (n = 0; n < body->thr.count; n++)
-  {
+  for (n = 0; n < body->thr.count; n++) {
     tid = body->thr.threadids[n];
     t = get_thread(tid);
-    if (t == NULL)
+    if (t == NULL) {
       body->thr.threadids[n] = -ENOENT;
-    else if (t != self())
+    } else if (t != self()) {
       body->thr.threadids[n] = resume_thread(t);
-
-    //kprintf("%d(%d) ", tid, body->thr.threadids[n]);
+    }
   }
-  //kprintf("\n");
 
   dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, hdr->len);
 }
 
-static void dbg_get_thread_context(struct dbg_hdr *hdr, union dbg_body *body)
-{
+static void dbg_get_thread_context(struct dbg_hdr *hdr, union dbg_body *body) {
   struct thread *t;
-
-  //kprintf("dbg: get context, tid %d\n", body->ctx.tid);
 
   t = get_thread(body->ctx.tid);
-  if (!t) 
-  {
+  if (!t) {
     dbg_send_error(DBGERR_INVALIDTHREAD, hdr->id);
     return;
   }
 
-  if (t->ctxt)
-  {
+  if (t->ctxt) {
     memcpy(&body->ctx.ctxt, t->ctxt, sizeof(struct context));
   
     // DS and ES are 16 bit register, clear upper bits
@@ -337,14 +288,11 @@ static void dbg_get_thread_context(struct dbg_hdr *hdr, union dbg_body *body)
     body->ctx.ctxt.es &= 0xFFFF;
 
     // Kernel mode contexts does not have ss:esp in context, fixup
-    if (KERNELSPACE(body->ctx.ctxt.eip))
-    {
+    if (KERNELSPACE(body->ctx.ctxt.eip)) {
       body->ctx.ctxt.ess = SEL_KDATA | mach.kring;
       body->ctx.ctxt.esp = (unsigned long) t->ctxt + sizeof(struct context) - 8;
     }
-  }
-  else
-  {
+  } else {
     // Build kernel mini context
     struct tcb *tcb= (struct tcb *) t;
     struct kernel_context *kctxt = (struct kernel_context *) tcb->esp;
@@ -366,42 +314,34 @@ static void dbg_get_thread_context(struct dbg_hdr *hdr, union dbg_body *body)
   dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_context));
 }
 
-static void dbg_set_thread_context(struct dbg_hdr *hdr, union dbg_body *body)
-{
+static void dbg_set_thread_context(struct dbg_hdr *hdr, union dbg_body *body) {
   struct thread *t;
 
-  //kprintf("dbg: set context, tid %d\n", body->ctx.tid);
-
   t = get_thread(body->ctx.tid);
-  if (!t) 
-  {
+  if (!t) {
     dbg_send_error(DBGERR_INVALIDTHREAD, hdr->id);
     return;
   }
 
-  if (!t->ctxt)
-  {
+  if (!t->ctxt) {
     dbg_send_error(DBGERR_NOCONTEXT, hdr->id);
     return;
   }
 
   // Kernel mode contexts does not have ss:esp in context
-  if (KERNELSPACE(body->ctx.ctxt.eip))
+  if (KERNELSPACE(body->ctx.ctxt.eip)) {
     memcpy(t->ctxt, &body->ctx.ctxt, sizeof(struct context) - 8);
-  else
+  } else {
     memcpy(t->ctxt, &body->ctx.ctxt, sizeof(struct context));
+  }
 
   dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, NULL, 0);
 }
 
-static void dbg_get_selector(struct dbg_hdr *hdr, union dbg_body *body)
-{
+static void dbg_get_selector(struct dbg_hdr *hdr, union dbg_body *body) {
   int gdtidx = body->sel.sel >> 3;
 
-  //kprintf("dbg: get selector, sel %04x\n", body->sel.sel);
-
-  if (gdtidx < 0 || gdtidx >= MAXGDT) 
-  {
+  if (gdtidx < 0 || gdtidx >= MAXGDT) {
     dbg_send_error(DBGERR_INVALIDSEL, hdr->id);
     return;
   }
@@ -410,19 +350,14 @@ static void dbg_get_selector(struct dbg_hdr *hdr, union dbg_body *body)
   dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_selector));
 }
 
-static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
-{
+static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body) {
   struct peb *peb = (struct peb *) PEB_ADDRESS;
   struct module *mod;
   int n = 0;
-  
-  //kprintf("dbg: get module list\n");
 
   mod = kmods.modules;
-  if (kmods.modules)
-  {
-    while (1)
-    {
+  if (kmods.modules) {
+    while (1) {
       body->modl.mods[n].hmod = mod->hmod;
       body->modl.mods[n].name = &mod->name;
       n++;
@@ -432,11 +367,9 @@ static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
     }
   }
 
-  if (page_mapped(peb) && peb->usermods)
-  {
+  if (page_mapped(peb) && peb->usermods) {
     mod = peb->usermods->modules;
-    while (1)
-    {
+    while (1) {
       body->modl.mods[n].hmod = mod->hmod;
       body->modl.mods[n].name = &mod->name;
       n++;
@@ -446,8 +379,7 @@ static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
     }
   }
 
-  if (n == 0) 
-  {
+  if (n == 0)  {
     body->modl.mods[n].hmod = (hmodule_t) OSBASE;
     body->modl.mods[n].name = &krnlname;
     n++;
@@ -457,15 +389,11 @@ static void dbg_get_modules(struct dbg_hdr *hdr, union dbg_body *body)
   dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_modulelist) + n * sizeof(struct dbg_moduleinfo));
 }
 
-static void dbg_get_threads(struct dbg_hdr *hdr, union dbg_body *body)
-{
+static void dbg_get_threads(struct dbg_hdr *hdr, union dbg_body *body) {
   int n = 0;
   struct thread *t = threadlist;
 
-  //kprintf("dbg: get thread list\n");
-
-  while (1)
-  {
+  while (1) {
     body->thl.threads[n].tid = t->id;
     body->thl.threads[n].tib = t->tib;
     body->thl.threads[n].startaddr = t->entrypoint;
@@ -479,15 +407,13 @@ static void dbg_get_threads(struct dbg_hdr *hdr, union dbg_body *body)
   dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body, sizeof(struct dbg_threadlist) + n * sizeof(struct dbg_threadinfo));
 }
 
-static void dbg_main()
-{
+static void dbg_main() {
   struct dbg_hdr hdr;
   union dbg_body *body = (union dbg_body *) dbgdata;
 
   int rc;
 
-  if (!debugging)
-  {
+  if (!debugging) {
     init_debug_port();
     kprintf("dbg: waiting for remote debugger...\n");
     debugging = 1;
@@ -495,17 +421,14 @@ static void dbg_main()
 
   debugger_active = 1;
 
-  while (1)
-  {
+  while (1) {
     rc = dbg_recv_packet(&hdr, dbgdata);
-    if (rc < 0)
-    {
+    if (rc < 0) {
       kprintf("dbg: error %d receiving debugger command\n", rc);
       continue;
     }
 
-    switch (hdr.cmd)
-    {
+    switch (hdr.cmd) {
       case DBGCMD_CONNECT:
         dbg_connect(&hdr, body);
         print_string("dbg: remote debugger connected\n");
@@ -561,18 +484,15 @@ static void dbg_main()
   debugger_active = 0;
 }
 
-void dumpregs(struct context *ctxt)
-{
+void dumpregs(struct context *ctxt) {
   kprintf("EAX  = %08X EBX  = %08X ECX  = %08X EDX  = %08X\n", ctxt->eax, ctxt->ebx, ctxt->ecx, ctxt->edx);
   kprintf("EDI  = %08X ESI  = %08X EBP  = %08X ESP  = %08X\n", ctxt->edi, ctxt->esi, ctxt->ebp, ctxt->esp);
   kprintf("CS   = %08X DS   = %08X ES   = %08X SS   = %08X\n", ctxt->ecs, ctxt->ds, ctxt->es, ctxt->ess);
   kprintf("EIP  = %08X EFLG = %08X TRAP = %08X ERR  = %08X\n", ctxt->eip, ctxt->eflags, ctxt->traptype, ctxt->errcode);
 }
 
-void dbg_enter(struct context *ctxt, void *addr)
-{
-  if (!debugging)
-  {
+void dbg_enter(struct context *ctxt, void *addr) {
+  if (!debugging) {
     kprintf("dbg: trap %d (%s) thread %d, addr %p\n", ctxt->traptype, trapnames[ctxt->traptype], self()->id, addr);
     dumpregs(ctxt);
   }
@@ -585,10 +505,8 @@ void dbg_enter(struct context *ctxt, void *addr)
 
   if (!debug_nointr) sti();
 
-  if (debugging)
-  {
-    if (debugger_active)
-    {
+  if (debugging) {
+    if (debugger_active) {
       kprintf("dbg: trap %d thread %d, addr %p while debugger active, system halted.\n", ctxt->traptype, self()->id, addr);
       dumpregs(ctxt);
       cli();
@@ -603,12 +521,10 @@ void dbg_enter(struct context *ctxt, void *addr)
   if (self()->suspend_count > 0) dispatch();
 }
 
-void dbg_notify_create_thread(struct thread *t, void *startaddr)
-{
+void dbg_notify_create_thread(struct thread *t, void *startaddr) {
   struct dbg_evt_create_thread create;
 
-  if (debugging && !debugger_active)
-  {
+  if (debugging && !debugger_active) {
     create.tid = t->id;
     create.tib = t->tib;
     create.startaddr = startaddr;
@@ -619,12 +535,10 @@ void dbg_notify_create_thread(struct thread *t, void *startaddr)
   }
 }
 
-void dbg_notify_exit_thread(struct thread *t)
-{
+void dbg_notify_exit_thread(struct thread *t) {
   struct dbg_evt_exit_thread exit;
 
-  if (debugging && !debugger_active)
-  {
+  if (debugging && !debugger_active) {
     exit.tid = t->id;
     exit.exitcode = t->exitcode;
 
@@ -633,12 +547,10 @@ void dbg_notify_exit_thread(struct thread *t)
   }
 }
 
-void dbg_notify_load_module(hmodule_t hmod, char **name)
-{
+void dbg_notify_load_module(hmodule_t hmod, char **name) {
   struct dbg_evt_load_module load;
 
-  if (debugging && !debugger_active)
-  {
+  if (debugging && !debugger_active) {
     load.hmod = hmod;
     load.name = name;
 
@@ -647,12 +559,10 @@ void dbg_notify_load_module(hmodule_t hmod, char **name)
   }
 }
 
-void dbg_notify_unload_module(hmodule_t hmod)
-{
+void dbg_notify_unload_module(hmodule_t hmod) {
   struct dbg_evt_unload_module unload;
 
-  if (debugging && !debugger_active)
-  {
+  if (debugging && !debugger_active) {
     unload.hmod = hmod;
 
     dbg_send_packet(DBGEVT_UNLOAD_MODULE, 0, &unload, sizeof(struct dbg_evt_unload_module));
@@ -660,12 +570,10 @@ void dbg_notify_unload_module(hmodule_t hmod)
   }
 }
 
-void dbg_output(char *msg)
-{
+void dbg_output(char *msg) {
   struct dbg_evt_output output;
 
-  if (debugging && !debugger_active)
-  {
+  if (debugging && !debugger_active) {
     output.msgptr = msg;
     output.msglen = strlen(msg) + 1;
 

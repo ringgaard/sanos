@@ -101,8 +101,7 @@
 
 typedef int (*intrproc_t)(struct context *ctxt, void *arg);
 
-struct interrupt
-{
+struct interrupt {
   struct interrupt *next;
   int flags;
   intrproc_t handler;

@@ -52,22 +52,19 @@
 static char *digits = "0123456789abcdefghijklmnopqrstuvwxyz";
 static char *upper_digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-static size_t strnlen(const char *s, size_t count)
-{
+static size_t strnlen(const char *s, size_t count) {
   const char *sc;
   for (sc = s; *sc != '\0' && count--; ++sc);
   return sc - s;
 }
 
-static int skip_atoi(const char **s)
-{
+static int skip_atoi(const char **s) {
   int i = 0;
   while (is_digit(**s)) i = i*10 + *((*s)++) - '0';
   return i;
 }
 
-static char *number(char *str, long num, int base, int size, int precision, int type)
-{
+static char *number(char *str, long num, int base, int size, int precision, int type) {
   char c, sign, tmp[66];
   char *dig = digits;
   int i;
@@ -78,42 +75,34 @@ static char *number(char *str, long num, int base, int size, int precision, int 
   
   c = (type & ZEROPAD) ? '0' : ' ';
   sign = 0;
-  if (type & SIGN)
-  {
-    if (num < 0)
-    {
+  if (type & SIGN) {
+    if (num < 0) {
       sign = '-';
       num = -num;
       size--;
-    }
-    else if (type & PLUS)
-    {
+    } else if (type & PLUS) {
       sign = '+';
       size--;
-    }
-    else if (type & SPACE)
-    {
+    } else if (type & SPACE) {
       sign = ' ';
       size--;
     }
   }
 
-  if (type & SPECIAL)
-  {
-    if (base == 16)
+  if (type & SPECIAL) {
+    if (base == 16) {
       size -= 2;
-    else if (base == 8)
+    } else if (base == 8) {
       size--;
+    }
   }
 
   i = 0;
 
-  if (num == 0)
+  if (num == 0) {
     tmp[i++] = '0';
-  else
-  {
-    while (num != 0)
-    {
+  } else {
+    while (num != 0) {
       tmp[i++] = dig[((unsigned long) num) % (unsigned) base];
       num = ((unsigned long) num) / (unsigned) base;
     }
@@ -124,12 +113,10 @@ static char *number(char *str, long num, int base, int size, int precision, int 
   if (!(type & (ZEROPAD | LEFT))) while (size-- > 0) *str++ = ' ';
   if (sign) *str++ = sign;
   
-  if (type & SPECIAL)
-  {
-    if (base == 8)
+  if (type & SPECIAL) {
+    if (base == 8) {
       *str++ = '0';
-    else if (base == 16)
-    {
+    } else if (base == 16) {
       *str++ = '0';
       *str++ = digits[33];
     }
@@ -143,16 +130,14 @@ static char *number(char *str, long num, int base, int size, int precision, int 
   return str;
 }
 
-static char *eaddr(char *str, unsigned char *addr, int size, int precision, int type)
-{
+static char *eaddr(char *str, unsigned char *addr, int size, int precision, int type) {
   char tmp[24];
   char *dig = digits;
   int i, len;
 
   if (type & LARGE)  dig = upper_digits;
   len = 0;
-  for (i = 0; i < 6; i++)
-  {
+  for (i = 0; i < 6; i++) {
     if (i != 0) tmp[len++] = ':';
     tmp[len++] = dig[addr[i] >> 4];
     tmp[len++] = dig[addr[i] & 0x0F];
@@ -165,30 +150,24 @@ static char *eaddr(char *str, unsigned char *addr, int size, int precision, int 
   return str;
 }
 
-static char *iaddr(char *str, unsigned char *addr, int size, int precision, int type)
-{
+static char *iaddr(char *str, unsigned char *addr, int size, int precision, int type) {
   char tmp[24];
   int i, n, len;
 
   len = 0;
-  for (i = 0; i < 4; i++)
-  {
+  for (i = 0; i < 4; i++) {
     if (i != 0) tmp[len++] = '.';
     n = addr[i];
     
-    if (n == 0)
+    if (n == 0) {
       tmp[len++] = digits[0];
-    else
-    {
-      if (n >= 100) 
-      {
+    } else {
+      if (n >= 100) {
         tmp[len++] = digits[n / 100];
         n = n % 100;
         tmp[len++] = digits[n / 10];
         n = n % 10;
-      }
-      else if (n >= 10) 
-      {
+      } else if (n >= 10) {
         tmp[len++] = digits[n / 10];
         n = n % 10;
       }
@@ -209,38 +188,31 @@ static char *iaddr(char *str, unsigned char *addr, int size, int precision, int 
 char *ecvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf);
 char *fcvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf);
 
-static void cfltcvt(double value, char *buffer, char fmt, int precision)
-{
+static void cfltcvt(double value, char *buffer, char fmt, int precision) {
   int decpt, sign, exp, pos;
   char *digits = NULL;
   char cvtbuf[80];
   int capexp = 0;
   int magnitude;
 
-  if (fmt == 'G' || fmt == 'E')
-  {
+  if (fmt == 'G' || fmt == 'E') {
     capexp = 1;
     fmt += 'a' - 'A';
   }
 
-  if (fmt == 'g')
-  {
+  if (fmt == 'g') {
     digits = ecvtbuf(value, precision, &decpt, &sign, cvtbuf);
     magnitude = decpt - 1;
-    if (magnitude < -4  ||  magnitude > precision - 1)
-    {
+    if (magnitude < -4  ||  magnitude > precision - 1) {
       fmt = 'e';
       precision -= 1;
-    }
-    else
-    {
+    } else {
       fmt = 'f';
       precision -= decpt;
     }
   }
 
-  if (fmt == 'e')
-  {
+  if (fmt == 'e') {
     digits = ecvtbuf(value, precision + 1, &decpt, &sign, cvtbuf);
 
     if (sign) *buffer++ = '-';
@@ -250,23 +222,22 @@ static void cfltcvt(double value, char *buffer, char fmt, int precision)
     buffer += precision;
     *buffer++ = capexp ? 'E' : 'e';
 
-    if (decpt == 0)
-    {
-      if (value == 0.0)
+    if (decpt == 0) {
+      if (value == 0.0) {
         exp = 0;
-      else
+      } else {
         exp = -1;
-    }
-    else
+      }
+    } else {
       exp = decpt - 1;
+    }
 
-    if (exp < 0)
-    {
+    if (exp < 0) {
       *buffer++ = '-';
       exp = -exp;
-    }
-    else
+    } else {
       *buffer++ = '+';
+    }
 
     buffer[2] = (exp % 10) + '0';
     exp = exp / 10;
@@ -274,35 +245,25 @@ static void cfltcvt(double value, char *buffer, char fmt, int precision)
     exp = exp / 10;
     buffer[0] = (exp % 10) + '0';
     buffer += 3;
-  }
-  else if (fmt == 'f')
-  {
+  } else if (fmt == 'f') {
     digits = fcvtbuf(value, precision, &decpt, &sign, cvtbuf);
     if (sign) *buffer++ = '-';
-    if (*digits)
-    {
-      if (decpt <= 0)
-      {
+    if (*digits) {
+      if (decpt <= 0) {
         *buffer++ = '0';
         *buffer++ = '.';
         for (pos = 0; pos < -decpt; pos++) *buffer++ = '0';
         while (*digits) *buffer++ = *digits++;
-      }
-      else
-      {
+      } else {
         pos = 0;
-        while (*digits)
-        {
+        while (*digits) {
           if (pos++ == decpt) *buffer++ = '.';
           *buffer++ = *digits++;
         }
       }
-    }
-    else
-    {
+    } else {
       *buffer++ = '0';
-      if (precision > 0)
-      {
+      if (precision > 0) {
         *buffer++ = '.';
         for (pos = 0; pos < precision; pos++) *buffer++ = '0';
       }
@@ -312,40 +273,32 @@ static void cfltcvt(double value, char *buffer, char fmt, int precision)
   *buffer = '\0';
 }
 
-static void forcdecpt(char *buffer)
-{
-  while (*buffer)
-  {
+static void forcdecpt(char *buffer) {
+  while (*buffer) {
     if (*buffer == '.') return;
     if (*buffer == 'e' || *buffer == 'E') break;
     buffer++;
   }
 
-  if (*buffer)
-  {
+  if (*buffer) {
     int n = strlen(buffer);
-    while (n > 0) 
-    {
+    while (n > 0) {
       buffer[n + 1] = buffer[n];
       n--;
     }
 
     *buffer = '.';
-  }
-  else
-  {
+  } else {
     *buffer++ = '.';
     *buffer = '\0';
   }
 }
 
-static void cropzeros(char *buffer)
-{
+static void cropzeros(char *buffer) {
   char *stop;
 
   while (*buffer && *buffer != '.') buffer++;
-  if (*buffer++)
-  {
+  if (*buffer++) {
     while (*buffer && *buffer != 'e' && *buffer != 'E') buffer++;
     stop = buffer--;
     while (*buffer == '0') buffer--;
@@ -354,8 +307,7 @@ static void cropzeros(char *buffer)
   }
 }
 
-static char *flt(char *str, double num, int size, int precision, char fmt, int flags)
-{
+static char *flt(char *str, double num, int size, int precision, char fmt, int flags) {
   char tmp[80];
   char c, sign;
   int n, i;
@@ -366,31 +318,26 @@ static char *flt(char *str, double num, int size, int precision, char fmt, int f
   // Determine padding and sign char
   c = (flags & ZEROPAD) ? '0' : ' ';
   sign = 0;
-  if (flags & SIGN)
-  {
-    if (num < 0.0)
-    {
+  if (flags & SIGN) {
+    if (num < 0.0) {
       sign = '-';
       num = -num;
       size--;
-    }
-    else if (flags & PLUS)
-    {
+    } else if (flags & PLUS) {
       sign = '+';
       size--;
-    }
-    else if (flags & SPACE)
-    {
+    } else if (flags & SPACE) {
       sign = ' ';
       size--;
     }
   }
 
   // Compute the precision value
-  if (precision < 0)
+  if (precision < 0) {
     precision = 6; // Default precision: 6
-  else if (precision == 0 && fmt == 'g')
+  } else if (precision == 0 && fmt == 'g') {
     precision = 1; // ANSI specified
+  }
 
   // Convert floating point number to text
   cfltcvt(num, tmp, fmt, precision);
@@ -416,8 +363,7 @@ static char *flt(char *str, double num, int size, int precision, char fmt, int f
 
 #endif
 
-int vsprintf(char *buf, const char *fmt, va_list args)
-{
+int vsprintf(char *buf, const char *fmt, va_list args) {
   int len;
   unsigned long num;
   int i, base;
@@ -430,10 +376,8 @@ int vsprintf(char *buf, const char *fmt, va_list args)
   int precision;        // Min. # of digits for integers; max number of chars for from string
   int qualifier;        // 'h', 'l', or 'L' for integer fields
 
-  for (str = buf; *fmt; fmt++)
-  {
-    if (*fmt != '%')
-    {
+  for (str = buf; *fmt; fmt++) {
+    if (*fmt != '%') {
       *str++ = *fmt;
       continue;
     }
@@ -442,8 +386,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
     flags = 0;
 repeat:
     fmt++; // This also skips first '%'
-    switch (*fmt)
-    {
+    switch (*fmt) {
       case '-': flags |= LEFT; goto repeat;
       case '+': flags |= PLUS; goto repeat;
       case ' ': flags |= SPACE; goto repeat;
@@ -453,14 +396,12 @@ repeat:
           
     // Get field width
     field_width = -1;
-    if (is_digit(*fmt))
+    if (is_digit(*fmt)) {
       field_width = skip_atoi(&fmt);
-    else if (*fmt == '*')
-    {
+    } else if (*fmt == '*') {
       fmt++;
       field_width = va_arg(args, int);
-      if (field_width < 0)
-      {
+      if (field_width < 0) {
         field_width = -field_width;
         flags |= LEFT;
       }
@@ -468,13 +409,11 @@ repeat:
 
     // Get the precision
     precision = -1;
-    if (*fmt == '.')
-    {
+    if (*fmt == '.') {
       ++fmt;    
-      if (is_digit(*fmt))
+      if (is_digit(*fmt)) {
         precision = skip_atoi(&fmt);
-      else if (*fmt == '*')
-      {
+      } else if (*fmt == '*') {
         ++fmt;
         precision = va_arg(args, int);
       }
@@ -483,8 +422,7 @@ repeat:
 
     // Get the conversion qualifier
     qualifier = -1;
-    if (*fmt == 'h' || *fmt == 'l' || *fmt == 'L')
-    {
+    if (*fmt == 'h' || *fmt == 'l' || *fmt == 'L') {
       qualifier = *fmt;
       fmt++;
     }
@@ -492,8 +430,7 @@ repeat:
     // Default base
     base = 10;
 
-    switch (*fmt)
-    {
+    switch (*fmt) {
       case 'c':
         if (!(flags & LEFT)) while (--field_width > 0) *str++ = ' ';
         *str++ = (unsigned char) va_arg(args, int);
@@ -510,8 +447,7 @@ repeat:
         continue;
 
       case 'p':
-        if (field_width == -1)
-        {
+        if (field_width == -1) {
           field_width = 2 * sizeof(void *);
           flags |= ZEROPAD;
         }
@@ -519,13 +455,10 @@ repeat:
         continue;
 
       case 'n':
-        if (qualifier == 'l')
-        {
+        if (qualifier == 'l') {
           long *ip = va_arg(args, long *);
           *ip = (str - buf);
-        }
-        else
-        {
+        } else {
           int *ip = va_arg(args, int *);
           *ip = (str - buf);
         }
@@ -535,10 +468,11 @@ repeat:
         flags |= LARGE;
 
       case 'a':
-        if (qualifier == 'l')
+        if (qualifier == 'l') {
           str = eaddr(str, va_arg(args, unsigned char *), field_width, precision, flags);
-        else
+        } else {
           str = iaddr(str, va_arg(args, unsigned char *), field_width, precision, flags);
+        }
         continue;
 
       // Integer number formats - set up the flags and "break"
@@ -574,26 +508,27 @@ repeat:
 
       default:
         if (*fmt != '%') *str++ = '%';
-        if (*fmt)
+        if (*fmt) {
           *str++ = *fmt;
-        else
+        } else {
           --fmt;
+        }
         continue;
     }
 
-    if (qualifier == 'l')
+    if (qualifier == 'l') {
       num = va_arg(args, unsigned long);
-    else if (qualifier == 'h')
-    {
-      if (flags & SIGN)
+    } else if (qualifier == 'h') {
+      if (flags & SIGN) {
         num = va_arg(args, short);
-      else
+      } else {
         num = va_arg(args, unsigned short);
-    }
-    else if (flags & SIGN)
+      }
+    } else if (flags & SIGN) {
       num = va_arg(args, int);
-    else
+    } else {
       num = va_arg(args, unsigned int);
+    }
 
     str = number(str, num, base, field_width, precision, flags);
   }
@@ -602,8 +537,7 @@ repeat:
   return str - buf;
 }
 
-int sprintf(char *buf, const char *fmt, ...)
-{
+int sprintf(char *buf, const char *fmt, ...) {
   va_list args;
   int n;
 

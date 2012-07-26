@@ -38,12 +38,10 @@
 struct pnp_bios_expansion_header pnpbios;
 struct fullptr pnp_thunk_entrypoint;
 
-struct
-{
+struct {
   unsigned char type_code[3];
   char *name;
-} pnp_typecodes[] =
-{
+} pnp_typecodes[] = {
   {{0x01, 0x00, 0x00}, "SCSI controller"},
   {{0x01, 0x01, 0x00}, "IDE controller"},
   {{0x01, 0x02, 0x00}, "Floppy disk controller"},
@@ -114,8 +112,7 @@ struct
   {{0xFF, 0xFF, 0xFF}, NULL},
 };
 
-static unsigned char pnp_bios_thunk[] =
-{
+static unsigned char pnp_bios_thunk[] = {
   0x52,                // push edx
   0x51,                // push ecx
   0x53,                // push ebx
@@ -125,12 +122,10 @@ static unsigned char pnp_bios_thunk[] =
   0xCB                 // retf 0
 };
 
-static int pnp_bios_call(int func, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7)
-{
+static int pnp_bios_call(int func, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7) {
   int status;
 
-  __asm
-  {
+  __asm {
     CLI
     push ebp
     push edi
@@ -180,8 +175,7 @@ static int pnp_bios_call(int func, int arg1, int arg2, int arg3, int arg4, int a
 // Call PnP BIOS with function 0x00, "Get number of system device nodes"
 //
 
-static int pnp_bios_dev_node_info(struct pnp_dev_node_info *data)
-{
+static int pnp_bios_dev_node_info(struct pnp_dev_node_info *data) {
   int status;
 
   set_gdt_entry(GDT_AUX1, (unsigned long) data, sizeof(struct pnp_dev_node_info), D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
@@ -202,8 +196,7 @@ static int pnp_bios_dev_node_info(struct pnp_dev_node_info *data)
 //   *nodenum=next node or 0xff if no more nodes
 //
 
-static int pnp_bios_get_dev_node(unsigned char *nodenum, char boot, struct pnp_bios_node *data)
-{
+static int pnp_bios_get_dev_node(unsigned char *nodenum, char boot, struct pnp_bios_node *data) {
   int status;
 
   set_gdt_entry(GDT_AUX1, (unsigned long) nodenum, sizeof(char), D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
@@ -217,8 +210,7 @@ static int pnp_bios_get_dev_node(unsigned char *nodenum, char boot, struct pnp_b
 // Call PnP BIOS with function 0x40, "Get isa pnp configuration structure"
 //
 
-static int pnp_bios_isapnp_config(struct pnp_isa_config_struc *data)
-{
+static int pnp_bios_isapnp_config(struct pnp_isa_config_struc *data) {
   int status;
 
   set_gdt_entry(GDT_AUX1, (unsigned long) data, sizeof(struct pnp_isa_config_struc), D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
@@ -231,8 +223,7 @@ static int pnp_bios_isapnp_config(struct pnp_isa_config_struc *data)
 // Call PnP BIOS with function 0x41, "Get ESCD info"
 //
 
-static int pnp_bios_escd_info(struct escd_info_struc *data)
-{
+static int pnp_bios_escd_info(struct escd_info_struc *data) {
   int status;
 
   set_gdt_entry(GDT_AUX1, (unsigned long) data, sizeof(struct escd_info_struc), D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
@@ -246,8 +237,7 @@ static int pnp_bios_escd_info(struct escd_info_struc *data)
 // nvram_base is determined by calling escd_info
 //
 
-static int pnp_bios_read_escd(void *data, void *nvram_base)
-{
+static int pnp_bios_read_escd(void *data, void *nvram_base) {
   int status;
 
   set_gdt_entry(GDT_AUX1, (unsigned long) data, 64 * 1024, D_DATA | D_DPL0 | D_WRITE | D_PRESENT, 0);
@@ -257,8 +247,7 @@ static int pnp_bios_read_escd(void *data, void *nvram_base)
   return status;
 }
 
-static void pnpid32_to_pnpid(unsigned long id, char *str)
-{
+static void pnpid32_to_pnpid(unsigned long id, char *str) {
   const char *hex = "0123456789ABCDEF";
 
   id = ntohl(id);
@@ -274,16 +263,13 @@ static void pnpid32_to_pnpid(unsigned long id, char *str)
   return;
 }
 
-static char *get_device_type_name(unsigned char type_code[3])
-{
+static char *get_device_type_name(unsigned char type_code[3]) {
   int i = 0;
 
-  while (pnp_typecodes[i].name != NULL)
-  {
+  while (pnp_typecodes[i].name != NULL) {
     if (pnp_typecodes[i].type_code[0] == type_code[0] &&
         pnp_typecodes[i].type_code[1] == type_code[1] &&
-        pnp_typecodes[i].type_code[2] == type_code[2])
-    {
+        pnp_typecodes[i].type_code[2] == type_code[2]) {
       return pnp_typecodes[i].name;
     }
 
@@ -293,31 +279,25 @@ static char *get_device_type_name(unsigned char type_code[3])
   return "Unknown";
 }
 
-static void extract_node_resource_data(struct pnp_bios_node *node, struct unit *unit)
-{
+static void extract_node_resource_data(struct pnp_bios_node *node, struct unit *unit) {
   unsigned char *p = node->data;
   unsigned char *end = node->data + node->size;
   unsigned char *lastp = NULL;
 
-  while (p < end) 
-  {
+  while (p < end)  {
     if(p == lastp) break;
 
-    if(p[0] & 0x80) 
-    {
+    if(p[0] & 0x80)  {
       // Large item
-      switch (p[0] & 0x7F) 
-      {
-        case 0x01: // Memory
-        {
+      switch (p[0] & 0x7F) {
+        case 0x01: { // Memory
           int addr = *(short *) &p[4];
           int len = *(short *) &p[10];
           add_resource(unit, RESOURCE_MEM, 0, addr, len);
           break;
         }
         
-        case 0x02: // Device name
-        {
+        case 0x02: { // Device name
           int len = *(short *) &p[1];
           unit->productname = (char *) kmalloc(len + 1);
           memcpy(unit->productname, p + 3, len);
@@ -325,16 +305,14 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct unit *
           break;
         }
 
-        case 0x05: // 32-bit memory
-        {
+        case 0x05: { // 32-bit memory
           int addr = *(int *) &p[4];
           int len = *(int *) &p[16];
           add_resource(unit, RESOURCE_MEM, 0, addr, len);
           break;
         }
 
-        case 0x06: // Fixed location 32-bit memory
-        {
+        case 0x06: { // Fixed location 32-bit memory
           int addr = *(int *) &p[4];
           int len = *(int *) &p[8];
           add_resource(unit, RESOURCE_MEM, 0, addr, len);
@@ -353,10 +331,8 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct unit *
      // Test for end tag
     if ((p[0] >> 3) == 0x0F) break;
                   
-    switch (p[0] >> 3)
-    {
-      case 0x04: // IRQ
-      {
+    switch (p[0] >> 3) {
+      case 0x04: { // IRQ
         int i, mask, irq = -1;
         mask = p[1] + (p[2] << 8);
         for (i = 0; i < 16; i++, mask = mask >> 1) if (mask & 0x01) irq = i;
@@ -364,8 +340,7 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct unit *
         break;
       }
 
-      case 0x05: // DMA
-      {
+      case 0x05: { // DMA
         int i, mask, dma = -1;
         mask = p[1];
         for (i = 0; i < 8;i++, mask = mask>>1) if (mask & 0x01) dma = i;
@@ -373,16 +348,14 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct unit *
         break;
       }
 
-      case 0x08: // I/O
-      {
+      case 0x08: { // I/O
         int io = p[2] + (p[3] << 8);
         int len = p[7];
         if (len != 0) add_resource(unit, RESOURCE_IO, 0, io, len);
         break;
       }
 
-      case 0x09: // Fixed location io
-      {
+      case 0x09: { // Fixed location io
         int io = p[1] + (p[2] << 8);
         int len = p[3];
         add_resource(unit, RESOURCE_IO, 0, io, len);
@@ -398,8 +371,7 @@ static void extract_node_resource_data(struct pnp_bios_node *node, struct unit *
   }
 }
 
-static void build_sys_devlist(struct bus *bus)
-{
+static void build_sys_devlist(struct bus *bus) {
   struct pnp_dev_node_info info;
   int status;
   int i;
@@ -416,23 +388,20 @@ static void build_sys_devlist(struct bus *bus)
   node = kmalloc(info.max_node_size);
   if (!node) return;
 
-  for (i = 0; i < 0xFF && nodenum != 0xFF; i++) 
-  {
+  for (i = 0; i < 0xFF && nodenum != 0xFF; i++)  {
     int thisnodenum = nodenum;
 
-    if (pnp_bios_get_dev_node((unsigned char *) &nodenum, (char) 0 /*1*/, node))
-    {
+    if (pnp_bios_get_dev_node((unsigned char *) &nodenum, (char) 0 /*1*/, node)) {
       kprintf(KERN_ERR  "pnpbios: PnP BIOS reported error on attempt to get dev node.\n");
       break;
     }
 
     // The BIOS returns with nodenum = the next node number
-    if (nodenum < thisnodenum) 
-    {
+    if (nodenum < thisnodenum)  {
       kprintf("pnpbios: Node number is out of sequence.\n");
       break;
     }
-    
+
     nodes_fetched++;
 
     classcode = (node->type_code[0] << 16) + (node->type_code[1] << 8) + node->type_code[0];
@@ -446,8 +415,7 @@ static void build_sys_devlist(struct bus *bus)
   kfree(node);
 }
 
-int enum_pnp_mem(struct unit *unit, unsigned char *b)
-{       
+int enum_pnp_mem(struct unit *unit, unsigned char *b) {       
   int i = 0;
   unsigned long int start, len, more = 1;
 
@@ -455,8 +423,7 @@ int enum_pnp_mem(struct unit *unit, unsigned char *b)
   //static char *decodeszs[] = {"(20bit)", "(24bit)", "(32bit)", "(rsv)"};
   //static char *memtypes[] = {"(sys)", "(exp)", "(vir)", "(oth)"};
 
-  while (more) 
-  {
+  while (more)  {
     unsigned int ram, cached, wt_wb_cache, shared, datasize, decodesz, memtyp;
 
     ram = b[i] & 0x01;
@@ -482,12 +449,10 @@ int enum_pnp_mem(struct unit *unit, unsigned char *b)
   return i;
 }
 
-int enum_pnp_irq(struct unit *unit, unsigned char *b)
-{       
+int enum_pnp_irq(struct unit *unit, unsigned char *b) {
   int i = 0, more = 1;
 
-  while (more) 
-  {
+  while (more) {
     int irq, shared, mode;
 
     more = b[i] & 0x80;
@@ -505,15 +470,13 @@ int enum_pnp_irq(struct unit *unit, unsigned char *b)
   return i;
 }
 
-int enum_pnp_dma(struct unit *unit, unsigned char *b)
-{
+int enum_pnp_dma(struct unit *unit, unsigned char *b) {
   int i = 0, more = 1;
 
   //static char *transfers[] = {"8bit","(16bit)","(32bit)","(16bit w/count)"};
   //static char *timings[] = {"ISA", "(Type A)", "(Type B)", "(Type C)"};
 
-  while (more) 
-  {
+  while (more) {
     int dma, shared, timing, transfer;
 
     more = b[i] & 0x80;
@@ -532,12 +495,10 @@ int enum_pnp_dma(struct unit *unit, unsigned char *b)
   return i;
 }
 
-int enum_pnp_io(struct unit *unit, unsigned char *b)
-{
+int enum_pnp_io(struct unit *unit, unsigned char *b) {
   int i = 0,more = 1;
 
-  while (more)  
-  {
+  while (more) {
     unsigned int io, len, shared;
 
     more = b[i] & 0x80;
@@ -554,8 +515,7 @@ int enum_pnp_io(struct unit *unit, unsigned char *b)
   return i;
 }
 
-static int enum_pnp_board(struct bus *bus, unsigned char *b)
-{
+static int enum_pnp_board(struct bus *bus, unsigned char *b) {
   int size, len, off, type, o, slot, unitcode;
   struct unit *unit;
 
@@ -577,8 +537,7 @@ static int enum_pnp_board(struct bus *bus, unsigned char *b)
 
   // Enumerate resouces
   off = 12;
-  while (off + 4 < size)
-  {
+  while (off + 4 < size) {
     len = b[off];
     if (len == 0) break;
     type = b[off + 4];
@@ -588,13 +547,10 @@ static int enum_pnp_board(struct bus *bus, unsigned char *b)
     //if (b[off + 2] != 1) kprintf("escd: b[0x%x]=0x%x, expected 1\n", off + 2, b[off + 2]);
     //if (b[off + 3] != 0) kprintf("escd: b[0x%x]=0x%x, expected 0\n", off + 3, b[off + 3]);
     
-    if (type == 0xc0)
-    {
+    if (type == 0xc0) {
       //showfreeform(&b[off + 4]);
       break;
-    }
-    else
-    {
+    } else {
       o = off + 5;
       //if (type & 0x80) kprintf(" Device/Function disabled.\n");
       if (type & 0x02) o += enum_pnp_mem(unit, &b[o]);
@@ -609,12 +565,10 @@ static int enum_pnp_board(struct bus *bus, unsigned char *b)
   return size;
 }
 
-static void parse_escd(struct bus *bus, unsigned char *b, int maxlen)
-{
+static void parse_escd(struct bus *bus, unsigned char *b, int maxlen) {
   int off, len, size, major, minor, brdcnt, i;
 
-  if (memcmp("ACFG", &b[2], 4) != 0) 
-  {
+  if (memcmp("ACFG", &b[2], 4) != 0)  {
     kprintf(KERN_WARNING "escd: signature does not match ACFG, is: %4s\n", &b[2]);
     return;
   }
@@ -627,20 +581,17 @@ static void parse_escd(struct bus *bus, unsigned char *b, int maxlen)
   //kprintf("escd: size=%d, version=%d.%d, boardcount=%d\n", size, major, minor, brdcnt);
 
   off = 12;
-  for (i = 0; i < brdcnt; i++)
-  {
+  for (i = 0; i < brdcnt; i++) {
     len = enum_pnp_board(bus, &b[off]);
     off += len;
-    if (off > size)
-    {
+    if (off > size) {
       kprintf(KERN_WARNING "escd: offset exceeded size (%d)\n", off);
       break;
     }
   }
 }
 
-static int build_isa_devlist(struct bus *bus)
-{
+static int build_isa_devlist(struct bus *bus) {
   int rc;
   struct pnp_isa_config_struc isacfg;
   struct escd_info_struc escdinfo;
@@ -670,8 +621,7 @@ static int build_isa_devlist(struct bus *bus)
   return 0;
 }
 
-int enum_isapnp(struct bus *bus)
-{
+int enum_isapnp(struct bus *bus) {
   int ofs;
   struct pnp_bios_expansion_header *hdr;
   unsigned char checksum;
@@ -683,8 +633,7 @@ int enum_isapnp(struct bus *bus)
   // Search the defined area (0xf0000-0xffff0) for a valid PnP BIOS
   // structure and, if one is found, sets up the selectors and
   // entry points
-  for (ofs = 0xF0000; ofs < 0xFFFF0; ofs += 16)
-  {
+  for (ofs = 0xF0000; ofs < 0xFFFF0; ofs += 16) {
     hdr = (struct pnp_bios_expansion_header *) ofs;
 
     if (hdr->signature != PNP_SIGNATURE) continue;
@@ -724,8 +673,7 @@ int enum_isapnp(struct bus *bus)
   return 0;
 }
 
-int __declspec(dllexport) isapnp(struct unit *unit)
-{
+int __declspec(dllexport) isapnp(struct unit *unit) {
   struct bus *isabus;
 
   isabus = add_bus(unit, BUSTYPE_ISA, 0);

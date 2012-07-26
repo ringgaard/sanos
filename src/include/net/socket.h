@@ -80,8 +80,7 @@
 
 struct sockreq;
 
-struct sockops
-{
+struct sockops {
   int (*accept)(struct socket *s, struct sockaddr *addr, int *addrlen, struct socket **retval);
   int (*bind)(struct socket *s, struct sockaddr *name, int namelen);
   int (*close)(struct socket *s);
@@ -98,8 +97,7 @@ struct sockops
   int (*socket)(struct socket *s, int domain, int type, int protocol);
 };
 
-struct tcpsocket
-{
+struct tcpsocket {
   struct tcp_pcb *pcb;
 
   int backlog;
@@ -111,22 +109,19 @@ struct tcpsocket
   struct pbuf *recvtail;
 };
 
-struct udpsocket
-{
+struct udpsocket {
   struct udp_pcb *pcb;
   struct pbuf *recvhead;
   struct pbuf *recvtail;
 };
 
-struct rawsocket
-{
+struct rawsocket {
   struct raw_pcb *pcb;
   struct pbuf *recvhead;
   struct pbuf *recvtail;
 };
 
-struct socket
-{
+struct socket {
   struct ioobject iob;
 
   int type;
@@ -139,16 +134,14 @@ struct socket
   unsigned int sndtimeo;
   unsigned int rcvtimeo;
 
-  union 
-  {
+  union {
     struct tcpsocket tcp;
     struct udpsocket udp;
     struct rawsocket raw;
   };
 };
 
-struct sockreq
-{
+struct sockreq {
   struct sockreq *next;
   struct sockreq *prev;
   struct socket *socket;

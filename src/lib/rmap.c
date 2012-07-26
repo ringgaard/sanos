@@ -54,8 +54,7 @@ unsigned int lost_elems = 0L;   // Diagnostic for space lost due to fragmentatio
 // as the header.
 //
 
-void rmap_init(struct rmap *rmap, unsigned int size)
-{
+void rmap_init(struct rmap *rmap, unsigned int size) {
   // Record # slots available, which is one less (since we use the first as our own header).
   rmap->offset = 0;
   rmap->size = size - 1;
@@ -67,8 +66,7 @@ void rmap_init(struct rmap *rmap, unsigned int size)
 // Returns 1 if there isn't room to insert the element, 0 on success.
 //
 
-static int makespace(struct rmap *rmap, struct rmap *r)
-{
+static int makespace(struct rmap *rmap, struct rmap *r) {
   struct rmap *rlim = &rmap[rmap->offset];
 
   // If no room to insert slot, return failure
@@ -76,8 +74,7 @@ static int makespace(struct rmap *rmap, struct rmap *r)
   rmap->offset += 1;
 
   // If inserting in middle, slide up entries
-  if (r <= rlim) 
-  {
+  if (r <= rlim) {
     memmove(r + 1, r, sizeof(struct rmap) * ((rlim - r) + 1));
     return 0;
   }
@@ -89,8 +86,7 @@ static int makespace(struct rmap *rmap, struct rmap *r)
 // An entry has been emptied, so make it disappear
 //
 
-static void collapse(struct rmap *rmap, struct rmap *r)
-{
+static void collapse(struct rmap *rmap, struct rmap *r) {
   struct rmap *rlim = &rmap[rmap->offset];
 
   rmap->offset -= 1;
@@ -103,16 +99,14 @@ static void collapse(struct rmap *rmap, struct rmap *r)
 // Returns 0 on failure.  Thus, you can't store index 0 in a resource map
 //
 
-unsigned int rmap_alloc(struct rmap *rmap, unsigned int size)
-{
+unsigned int rmap_alloc(struct rmap *rmap, unsigned int size) {
   struct rmap *r, *rlim;
   unsigned int idx;
 
   // Find first slot with a fit, return failure if we run off the 
   // end of the list without finding a fit.
   rlim = &rmap[rmap->offset];
-  for (r = &rmap[1]; r <= rlim; r++)
-  {
+  for (r = &rmap[1]; r <= rlim; r++) {
     if (r->size >= size) break;
   }
   
@@ -121,13 +115,12 @@ unsigned int rmap_alloc(struct rmap *rmap, unsigned int size)
   // Trim the resource element if it still has some left,
   // otherwise delete from the list.
   idx = r->offset;
-  if (r->size > size)
-  {
+  if (r->size > size) {
     r->offset += size;
     r->size -= size;
-  } 
-  else 
+  } else {
     collapse(rmap, r);
+  }
 
   return idx;
 }
@@ -138,8 +131,7 @@ unsigned int rmap_alloc(struct rmap *rmap, unsigned int size)
 // Returns 0 on failure.
 //
 
-unsigned int rmap_alloc_align(struct rmap *rmap, unsigned int size, unsigned int align)
-{
+unsigned int rmap_alloc_align(struct rmap *rmap, unsigned int size, unsigned int align) {
   struct rmap *r, *rlim;
   unsigned int idx;
   unsigned int gap;
@@ -147,13 +139,12 @@ unsigned int rmap_alloc_align(struct rmap *rmap, unsigned int size, unsigned int
   // Find first slot with a fit, return failure if we run off the 
   // end of the list without finding a fit.
   rlim = &rmap[rmap->offset];
-  for (r = &rmap[1]; r <= rlim; r++)
-  {
-    if (r->offset % align == 0)
+  for (r = &rmap[1]; r <= rlim; r++) {
+    if (r->offset % align == 0) {
       gap = 0;
-    else
+    } else {
       gap = align - (r->offset % align);
-
+    }
     if (r->size >= size + gap) break;
   }
   
@@ -161,10 +152,11 @@ unsigned int rmap_alloc_align(struct rmap *rmap, unsigned int size, unsigned int
   idx = r->offset + gap;
 
   // Reserve region
-  if (rmap_reserve(rmap, idx, size))
+  if (rmap_reserve(rmap, idx, size)) {
     return 0;
-  else
+  } else {
     return idx;
+  }
 }
 
 //
@@ -174,22 +166,18 @@ unsigned int rmap_alloc_align(struct rmap *rmap, unsigned int size, unsigned int
 // with a size of 0.
 //
 
-void rmap_free(struct rmap *rmap, unsigned int offset, unsigned int size)
-{
+void rmap_free(struct rmap *rmap, unsigned int offset, unsigned int size) {
   struct rmap *r, *rlim;
 
   // Scan forward until we find the place we should be inserted.
   rlim = &rmap[rmap->offset];
-  for (r = &rmap[1]; r <= rlim; r++)
-  {
+  for (r = &rmap[1]; r <= rlim; r++) {
     // If the new free space abuts this entry, tack it on and return.
-    if ((r->offset + r->size) == offset) 
-    {
+    if ((r->offset + r->size) == offset) {
       r->size += size;
 
       // If this entry now abuts the next, coalesce
-      if ((r < rlim) && ((r->offset + r->size) == (r[1].offset))) 
-      {
+      if ((r < rlim) && ((r->offset + r->size) == (r[1].offset))) {
         r->size += r[1].size;
         rmap->offset -= 1;
         r++;
@@ -200,8 +188,7 @@ void rmap_free(struct rmap *rmap, unsigned int offset, unsigned int size)
     }
 
     // If this space abuts the entry, pad it onto the beginning.
-    if ((offset + size) == r->offset)
-    {
+    if ((offset + size) == r->offset) {
       r->size += size;
       r->offset = offset;
       return;
@@ -211,8 +198,7 @@ void rmap_free(struct rmap *rmap, unsigned int offset, unsigned int size)
   }
 
   // Need to add a new element. See if it'll fit.
-  if (makespace(rmap, r)) 
-  {
+  if (makespace(rmap, r)) {
     // Nope. Tabulate and lose the space.
     lost_elems += size;
     return;
@@ -229,14 +215,12 @@ void rmap_free(struct rmap *rmap, unsigned int offset, unsigned int size)
 // Returns 0 on success, 1 on failure.
 //
 
-int rmap_reserve(struct rmap *rmap, unsigned int offset, unsigned int size)
-{
+int rmap_reserve(struct rmap *rmap, unsigned int offset, unsigned int size) {
   struct rmap *r, *rlim;
   unsigned int top, rtop;
 
   rlim = &rmap[rmap->offset];
-  for (r = &rmap[1]; r <= rlim; r++) 
-  {
+  for (r = &rmap[1]; r <= rlim; r++) {
     // If we've advanced beyond the requested offset, 
     // we can never match, so end the loop.
     if (r->offset > offset) break;
@@ -254,8 +238,7 @@ int rmap_reserve(struct rmap *rmap, unsigned int offset, unsigned int size)
 
     // If the requested start matches our range's start, we
     // can simply shave it off the front.
-    if (offset == r->offset)
-    {
+    if (offset == r->offset) {
       r->offset += size;
       r->size -= size;
       if (r->size == 0) collapse(rmap, r);
@@ -263,8 +246,7 @@ int rmap_reserve(struct rmap *rmap, unsigned int offset, unsigned int size)
     }
 
     // Similarly, if the end matches, we can shave the end
-    if (rtop == top) 
-    {
+    if (rtop == top) {
       r->size -= size;
 
       // We know r->size > 0, since otherwise we would've
@@ -274,8 +256,7 @@ int rmap_reserve(struct rmap *rmap, unsigned int offset, unsigned int size)
     }
 
     // Otherwise we must split the range
-    if (makespace(rmap, r)) 
-    {
+    if (makespace(rmap, r)) {
       unsigned int osize;
 
       // No room for further fragmentation, so chop off to the tail.
@@ -308,22 +289,20 @@ int rmap_reserve(struct rmap *rmap, unsigned int offset, unsigned int size)
 // Returns 0 if free, 1 if allocated, -1 if partially allocated.
 //
 
-int rmap_status(struct rmap *rmap, unsigned int offset, unsigned int size)
-{
+int rmap_status(struct rmap *rmap, unsigned int offset, unsigned int size) {
   struct rmap *r, *rlim;
   unsigned int top, rtop;
 
   rlim = &rmap[rmap->offset];
-  for (r = &rmap[1]; r <= rlim; r++) 
-  {
+  for (r = &rmap[1]; r <= rlim; r++) {
     // If we've advanced beyond the requested offset, 
     // we can never match, check for partially allocated.
-    if (r->offset > offset) 
-    {
-      if (offset + size > r->offset)
+    if (r->offset > offset) {
+      if (offset + size > r->offset) {
         return -1;
-      else
+      } else {
         return 1;
+      }
     }
 
     // See if this is the range which will hold our request
@@ -332,10 +311,11 @@ int rmap_status(struct rmap *rmap, unsigned int offset, unsigned int size)
 
     // Check allocation status
     rtop = offset + size;
-    if (rtop < top) 
+    if (rtop < top) {
       return 0;
-    else
+    } else {
       return -1;
+    }
   }
 
   // Resource region is allocated

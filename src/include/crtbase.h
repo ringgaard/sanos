@@ -41,8 +41,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 
-struct opt
-{
+struct opt {
   int err;
   int ind;
   int opt;
@@ -50,8 +49,7 @@ struct opt
   int sp;
 };
 
-struct crtbase
-{
+struct crtbase {
   int argc;
   char **argv;
   int stdio_init;

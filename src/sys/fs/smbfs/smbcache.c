@@ -34,8 +34,7 @@
 #include <os/krnl.h>
 #include "smb.h"
 
-void smb_add_to_cache(struct smb_share *share, char *path, char *filename, struct stat64 *statbuf)
-{
+void smb_add_to_cache(struct smb_share *share, char *path, char *filename, struct stat64 *statbuf) {
   int idx = share->next_cacheidx;
 
   strcpy(share->dircache[idx].path, path);
@@ -47,16 +46,13 @@ void smb_add_to_cache(struct smb_share *share, char *path, char *filename, struc
   if (++share->next_cacheidx == SMB_DENTRY_CACHESIZE) share->next_cacheidx = 0;
 }
 
-struct smb_dentry *smb_find_in_cache(struct smb_share *share, char *path)
-{
+struct smb_dentry *smb_find_in_cache(struct smb_share *share, char *path) {
   int idx;
 
   if (share->dircache[share->next_cacheidx].path[0] && strcmp(share->dircache[share->next_cacheidx].path, path) == 0) return &share->dircache[share->next_cacheidx];
 
-  for (idx = 0; idx < SMB_DENTRY_CACHESIZE; idx++)
-  {
-    if (share->dircache[idx].path[0] && strcmp(share->dircache[idx].path, path) == 0)
-    {
+  for (idx = 0; idx < SMB_DENTRY_CACHESIZE; idx++) {
+    if (share->dircache[idx].path[0] && strcmp(share->dircache[idx].path, path) == 0) {
       return &share->dircache[idx];
     }
   }
@@ -64,8 +60,7 @@ struct smb_dentry *smb_find_in_cache(struct smb_share *share, char *path)
   return NULL;
 }
 
-void smb_clear_cache(struct smb_share *share)
-{
+void smb_clear_cache(struct smb_share *share) {
   int idx;
 
   for (idx = 0; idx < SMB_DENTRY_CACHESIZE; idx++) share->dircache[idx].path[0] = 0;

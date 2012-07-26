@@ -48,8 +48,7 @@ static proc_t *atexit_last = NULL;
 #pragma function(abs)
 #pragma function(labs)
 
-static int __parse_args(char *args, char **argv, int local)
-{
+static int __parse_args(char *args, char **argv, int local) {
   char *p;
   int argc;
   char *start;
@@ -60,53 +59,43 @@ static int __parse_args(char *args, char **argv, int local)
 
   p = args;
   argc = 0;
-  while (*p)
-  {
+  while (*p) {
     while (*p == ' ') p++;
     if (!*p) break;
 
     escapes = 0;
-    if (*p == '"' || *p == '\'')
-    {
+    if (*p == '"' || *p == '\'') {
       delim = *p++;
       start = p;
-      while (*p && *p != delim) 
-      {
+      while (*p && *p != delim) {
         if (*p == '\\' && *(p + 1)) escapes++;
         p++;
       }
       end = p;
       if (*p == delim) p++;
-    }
-    else
-    {
+    } else {
       start = p;
       while (*p && *p != ' ') p++;
       end = p;
     }
 
-    if (argv)
-    {
-      if (local)
+    if (argv) {
+      if (local) {
         buf = (char *) _lmalloc(end - start - escapes + 1);
-      else
+      } else {
         buf = (char *) malloc(end - start - escapes + 1);
-
+      }
       if (!buf) break;
 
-      if (escapes)
-      {
+      if (escapes) {
         char *s = start;
         char *t = buf;
-        while (s < end)
-        {
+        while (s < end) {
           if (*s == '\\' && *(s + 1)) s++;
           *t++ = *s++;
         }
         *t = 0;
-      }
-      else
-      {
+      } else {
         memcpy(buf, start, end - start);
         buf[end - start] = 0;
       }
@@ -120,36 +109,30 @@ static int __parse_args(char *args, char **argv, int local)
   return argc;
 }
 
-int parse_args(char *args, char **argv)
-{
+int parse_args(char *args, char **argv) {
   return __parse_args(args, argv, 0);
 }
 
-int _lparse_args(char *args, char **argv)
-{
+int _lparse_args(char *args, char **argv) {
   return __parse_args(args, argv, 1);
 }
 
-void free_args(int argc, char **argv)
-{
+void free_args(int argc, char **argv) {
   int i;
 
   for (i = 0; i < argc; i++) free(argv[i]);
   if (argv) free(argv);
 }
 
-void _lfree_args(int argc, char **argv)
-{
+void _lfree_args(int argc, char **argv) {
   int i;
 
   for (i = 0; i < argc; i++) _lfree(argv[i]);
   if (argv) _lfree(argv);
 }
 
-int atexit(proc_t exitfunc)
-{
-  if (atexit_end == atexit_last)
-  {
+int atexit(proc_t exitfunc) {
+  if (atexit_end == atexit_last) {
     int size = atexit_end - atexit_begin;
     int newsize = size + 32;
     atexit_begin = (proc_t *) realloc(atexit_begin, newsize * sizeof(proc_t));
@@ -162,38 +145,32 @@ int atexit(proc_t exitfunc)
   return 0;
 }
 
-void run_atexit_handlers()
-{
-  if (atexit_begin)
-  {
+void run_atexit_handlers() {
+  if (atexit_begin) {
     while (--atexit_end >= atexit_begin) if (*atexit_end != NULL) (**atexit_end)();
     free(atexit_begin);
     atexit_begin = atexit_end = atexit_last = NULL;
   }
 }
 
-void abort()
-{
+void abort() {
   raise(SIGABRT);
 #ifdef __GNUC__
   while (1);
 #endif
 }
 
-int abs(int number)
-{
+int abs(int number) {
   return number >= 0 ? number : -number;
 }
 
-div_t div(int numer, int denom)
-{
+div_t div(int numer, int denom) {
   div_t result;
 
   result.quot = numer / denom;
   result.rem  = numer - (result.quot * denom);
 
-  if (numer < 0 && result.rem > 0) 
-  {
+  if (numer < 0 && result.rem > 0) {
     result.quot++;
     result.rem -= denom;
   }
@@ -201,20 +178,17 @@ div_t div(int numer, int denom)
   return result;
 }
 
-long labs(long n)
-{
+long labs(long n) {
   return  n >= 0L ? n : -n;
 }
 
-ldiv_t ldiv(long numer, long denom)
-{
+ldiv_t ldiv(long numer, long denom) {
   ldiv_t result;
 
   result.quot = numer / denom;
   result.rem = numer % denom;
 
-  if (numer < 0 && result.rem > 0) 
-  {
+  if (numer < 0 && result.rem > 0) {
     result.quot++;
     result.rem -= denom;
   }
@@ -222,23 +196,19 @@ ldiv_t ldiv(long numer, long denom)
   return result;
 }
 
-void srand(unsigned int seed)
-{
+void srand(unsigned int seed) {
   holdrand = (long) seed;
 }
 
-int rand()
-{
+int rand() {
   return (((holdrand = holdrand * 214013L + 2531011L) >> 16) & 0x7fff);
 }
 
-int system(const char *command)
-{
+int system(const char *command) {
   return spawn(P_WAIT, NULL, command, NULL, NULL);
 }
 
-char *realpath(const char *path, char *buffer)
-{
+char *realpath(const char *path, char *buffer) {
   int rc;
 
   rc = canonicalize(path, buffer, MAXPATH);
@@ -246,8 +216,7 @@ char *realpath(const char *path, char *buffer)
   return buffer;
 }
 
-int getrusage(int who, struct rusage *usage)
-{
+int getrusage(int who, struct rusage *usage) {
   // TODO implement
   errno = ENOSYS;
   return -1;

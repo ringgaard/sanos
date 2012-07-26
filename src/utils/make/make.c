@@ -38,21 +38,18 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-struct buffer
-{
+struct buffer {
   char *start;
   char *end;
   char *limit;
 };
 
-struct item 
-{
+struct item {
   char *value;
   struct item *next;
 };
 
-struct list 
-{
+struct list {
   struct item *head;
   struct item *tail;
 };
@@ -72,8 +69,7 @@ struct rule {
   struct rule *build_next;
 };
 
-struct project
-{
+struct project {
   struct rule *rules_head;  
   struct rule *rules_tail;
 
@@ -93,31 +89,26 @@ struct project
   struct buffer value;
 };
 
-char *strndup(char *str, int size)
-{
+char *strndup(char *str, int size) {
   char *buffer = (char *) malloc(size + 1);
   memcpy(buffer, str, size);
   buffer[size] = 0;
   return buffer;
 }
 
-void buffer_init(struct buffer *b)
-{
+void buffer_init(struct buffer *b) {
   b->start = b->end = b->limit = NULL;
 }
 
-void buffer_free(struct buffer *b)
-{
+void buffer_free(struct buffer *b) {
   if (b->start) free(b->start);
 }
 
-void buffer_clear(struct buffer *b)
-{
+void buffer_clear(struct buffer *b) {
   b->end = b->start;
 }
 
-void buffer_expand(struct buffer *b, int minfree)
-{
+void buffer_expand(struct buffer *b, int minfree) {
   char *p;
   int size;
   int minsize;
@@ -126,12 +117,12 @@ void buffer_expand(struct buffer *b, int minfree)
   
   size = b->limit - b->start;
   minsize = b->end - b->start + minfree;
-  while (size < minsize)
-  {
-    if (size == 0)
+  while (size < minsize) {
+    if (size == 0) {
       size = 128;
-    else
+    } else {
       size *= 2;
+    }
   }
 
   p = (char *) realloc(b->start, size);
@@ -140,42 +131,35 @@ void buffer_expand(struct buffer *b, int minfree)
   b->start = p;
 }
 
-void buffer_append(struct buffer *b, char *data, int size)
-{
+void buffer_append(struct buffer *b, char *data, int size) {
   buffer_expand(b, size);
   memcpy(b->end, data, size);
   b->end += size;
 }
 
-void buffer_add(struct buffer *b, char ch)
-{
+void buffer_add(struct buffer *b, char ch) {
   buffer_expand(b, 1);
   *b->end++ = ch;
 }
 
-void buffer_concat(struct buffer *b, char *str)
-{
+void buffer_concat(struct buffer *b, char *str) {
   buffer_append(b, str, strlen(str));
 }
 
-void buffer_set(struct buffer *b, char *data, int size)
-{
+void buffer_set(struct buffer *b, char *data, int size) {
   buffer_clear(b);
   buffer_append(b, data, size);
 }
 
-char *buffer_dup(struct buffer *b)
-{
+char *buffer_dup(struct buffer *b) {
   return strndup(b->start, b->end - b->start);
 }
 
-void list_init(struct list *l)
-{
+void list_init(struct list *l) {
   l->head = l->tail = NULL;
 }
 
-void list_append(struct list *l, char *value)
-{
+void list_append(struct list *l, char *value) {
   struct item *itm = (struct item *) malloc(sizeof(struct item));
   itm->value = value;
   itm->next = NULL;
@@ -184,12 +168,10 @@ void list_append(struct list *l, char *value)
   l->tail = itm;
 }
 
-void list_free(struct list *l) 
-{
+void list_free(struct list *l)  {
   struct item *next;
   struct item *i = l->head;
-  while (i != NULL)
-  {
+  while (i != NULL) {
     if (i->value) free(i->value);
     next = i->next;
     free(i);
@@ -197,21 +179,18 @@ void list_free(struct list *l)
   }
 }
 
-void project_init(struct project *prj)
-{
+void project_init(struct project *prj) {
   memset(prj, 0, sizeof(struct project));
   getcwd(prj->oldcwd, FILENAME_MAX);
 }
 
-void project_free(struct project *prj)
-{
+void project_free(struct project *prj) {
   struct rule *r;
   
   list_free(&prj->targets);
 
   r = prj->rules_head;
-  while (r != NULL)
-  {
+  while (r != NULL) {
     struct rule *next;
     if (r->target) free(r->target);
     list_free(&r->dependencies);
@@ -227,8 +206,7 @@ void project_free(struct project *prj)
   chdir(prj->oldcwd);
 }
 
-struct rule *add_rule(struct project *prj, char *target)
-{
+struct rule *add_rule(struct project *prj, char *target) {
   struct rule *rule = (struct rule *) malloc(sizeof(struct rule));
   rule->target = target;
   rule->build_next = NULL;
@@ -244,90 +222,71 @@ struct rule *add_rule(struct project *prj, char *target)
   return rule;
 }
 
-struct rule *find_rule(struct project *prj, char *name)
-{
+struct rule *find_rule(struct project *prj, char *name) {
   struct rule *r = prj->rules_head;
-  while (r)
-  {
+  while (r) {
     if (strcmp(r->target, name) == 0) return r;
     r = r->next;
   }
   return NULL;
 }
 
-void setup_predefined_variables() 
-{
+void setup_predefined_variables() {
   setenv("AR", "ar", 0);
   setenv("AS", "as", 0);
   setenv("CC", "cc", 0);
   setenv("MAKE", "make", 0);
 }
 
-void replace_pattern(char *p, char *pattern, char *replace, struct buffer *b)
-{
+void replace_pattern(char *p, char *pattern, char *replace, struct buffer *b) {
   int pattern_len = strlen(pattern);
-  while (*p)
-  {
-    if (strncmp(p, pattern, pattern_len) == 0)
-    {
+  while (*p) {
+    if (strncmp(p, pattern, pattern_len) == 0) {
       buffer_concat(b, replace);
       p += pattern_len;
-    }
-    else
+    } else {
       buffer_add(b, *p++);
+    }
   }
 }
 
-int expand_macros(char *p, struct project *prj, struct rule *rule, struct buffer *b)
-{
+int expand_macros(char *p, struct project *prj, struct rule *rule, struct buffer *b) {
   buffer_clear(b);
-  while (*p) 
-  {
-    if (*p == '$')
-    {
+  while (*p) {
+    if (*p == '$') {
       // Parse macro
       char *start = ++p;
       char *end = NULL;
-      if (*p == '@')
-      {
+      if (*p == '@') {
         // Expand to target name
-        if (!rule)
-        {
+        if (!rule) {
           fprintf(stderr, "Special macro $@ only allowed in commands\n");
           return -1;
         }
         buffer_concat(b, rule->target);
         p++;
-      }
-      else if (*p == '<')
-      {
+      } else if (*p == '<') {
         // Expand to first name in dependencies
-        if (!rule)
-        {
+        if (!rule) {
           fprintf(stderr, "Special macro $< only allowed in commands\n");
           return -1;
         }
-        if (rule->dependencies.head != NULL)
-        {
+        if (rule->dependencies.head != NULL) {
           buffer_concat(b, rule->dependencies.head->value);
         }
         p++;
-      }
-      else if (*p == '^' || *p == '*' && *(p + 1) == '*')
-      {
+      } else if (*p == '^' || *p == '*' && *(p + 1) == '*') {
         struct item *item;
         int first;
 
         // Expand to list of dependencies
-        if (!rule)
-        {
+        if (!rule) {
           fprintf(stderr, "Special macro $^ only allowed in commands\n");
           return -1;
         }
         item = rule->dependencies.head;
         first = 1;
-        while (item)
-        {
+        while (item) {
           if (!first) buffer_add(b, ' ');
           buffer_concat(b, item->value);
           item = item->next;
@@ -336,33 +295,25 @@ int expand_macros(char *p, struct project *prj, struct rule *rule, struct buffer
         if (*p == '*') p++;
         p++;
         
-      }
-      else if (*p == '?')
-      {
+      } else if (*p == '?') {
         // Expand to list of dependencies more recent than target
-        if (!rule)
-        {
+        if (!rule) {
           fprintf(stderr, "Special macro $? only allowed in commands\n");
           return -1;
         }
         buffer_concat(b, "#NOTIMPL#");
         p++;
-      }
-      else if (*p == '(')
-      {
+      } else if (*p == '(') {
         start = ++p;
         while (*p && *p != ')') p++;
         if (*p != ')') return -1;
         end = p++;
-      }
-      else
-      {
+      } else {
         while (isalnum(*p) || *p == '_') *p++;
         end = p;
       }
 
-      if (end != NULL)
-      {
+      if (end != NULL) {
         // Substitute variable.
         char *pattern = NULL;
         char *replace = NULL;
@@ -371,11 +322,9 @@ int expand_macros(char *p, struct project *prj, struct rule *rule, struct buffer
 
         // Check for $(VAR:pattern=replace)
         char *colon = strchr(name, ':');
-        if (colon)
-        {
+        if (colon) {
           char *equal = strchr(colon, '=');
-          if (equal)
-          {
+          if (equal) {
             *colon = 0;
             pattern = colon + 1;
             *equal = 0;
@@ -386,32 +335,30 @@ int expand_macros(char *p, struct project *prj, struct rule *rule, struct buffer
         // Expand variable
         value = getenv(name);
         if (value != NULL) {
-          if (pattern != NULL)
+          if (pattern != NULL) {
             replace_pattern(value, pattern, replace, b);
-          else
+          } else {
             buffer_concat(b, value);
+          }
         }
         free(name);
       }
-    }
-    else
+    } else {
       // Just add character.
       buffer_add(b, *p++);
+    }
   }
 
   buffer_add(b, 0);
   return 0;
 }
 
-void parse_list(char *p, struct list *list)
-{
+void parse_list(char *p, struct list *list) {
   char *start;
   
-  while (*p)
-  {
+  while (*p) {
     // Skip whitespace
-    if (isspace(*p)) 
-    {
+    if (isspace(*p)) {
       p++;
       continue;
     }
@@ -430,28 +377,24 @@ int parse_makefile(struct project *prj, FILE *f) {
   struct buffer *name = &prj->name;
   struct buffer *value = &prj->value;
 
-  while (!feof(f))
-  {
+  while (!feof(f)) {
     int ch;
     char *p;
     
     buffer_clear(line);
-    while ((ch = getc(f)) != EOF) 
-    {
+    while ((ch = getc(f)) != EOF)  {
       if (ch == '\r') continue;
-      if (ch == '\n')
-      {
+      if (ch == '\n') {
         // Increment line counter.
         line_num++;
         
         // Check for line continuation.
-        if (line->end > line->start && *(line->end - 1) == '\\')
-        {
+        if (line->end > line->start && *(line->end - 1) == '\\') {
           line->end--;
           continue;
-        }
-        else
+        } else {
           break;
+        }
       }
       buffer_add(line, ch);
     }
@@ -468,24 +411,20 @@ int parse_makefile(struct project *prj, FILE *f) {
     if (*p == '!') continue;
     
     // If the line starts with whitespace it must be a command.
-    if (isspace(*p))
-    {
+    if (isspace(*p)) {
       // Skip trailing whitespace.
       while (isspace(*p)) p++;
       
       // Is it just a blank line?
       if (!*p) continue;
 
-      if (!current_rule)
-      {
+      if (!current_rule) {
         fprintf(stderr, "line %d: command with no target\n", line_num);
         return -1;
       }
       
       list_append(&current_rule->commands, strdup(p));
-    }
-    else
-    {
+    } else {
       char *name_start;
       char *name_end;
       char type;
@@ -508,22 +447,18 @@ int parse_makefile(struct project *prj, FILE *f) {
       while (isspace(*p)) p++;
       type = *p++;
       while (isspace(*p)) p++;
-      if (type != ':' && type != '=')
-      {
+      if (type != ':' && type != '=') {
         fprintf(stderr, "line %d: syntax errror, rule or variable expected\n", line_num);
         return -1;
       }
       buffer_set(name, name_start, name_end - name_start);
       buffer_add(name, 0);
 
-      if (type == '=')
-      {
+      if (type == '=') {
         // Set variable
         setenv(name->start, p, 1);
         if (prj->debug) printf("set %s=%s\n", name->start, p);
-      }
-      else
-      {
+      } else {
         // Find existing rule or create a new one
         struct rule *rule = find_rule(prj, name->start);
         if (!rule) rule = add_rule(prj, buffer_dup(name));
@@ -536,30 +471,26 @@ int parse_makefile(struct project *prj, FILE *f) {
   return 0;
 }
 
-time_t get_timestamp(char *filename)
-{
+time_t get_timestamp(char *filename) {
   struct stat st;
   
   if (stat(filename, &st) < 0) return -1;
   return st.st_mtime;
 }
 
-void mark_for_build(struct project *prj, struct rule *rule)
-{
+void mark_for_build(struct project *prj, struct rule *rule) {
   if (prj->build_last) prj->build_last->build_next = rule;
   if (!prj->build_first) prj->build_first = rule;
   prj->build_last = rule;
 }
 
-int check_rule(struct project *prj, struct rule *rule)
-{
+int check_rule(struct project *prj, struct rule *rule) {
   struct item *item;
   struct rule *dep;
   int dirty = 0;
 
   // Check for cyclic dependencies
-  if (rule->status == PENDING)
-  {
+  if (rule->status == PENDING) {
     fprintf(stderr, "Cyclic dependency on %s\n", rule->target);
     return -1;
   }
@@ -581,8 +512,7 @@ int check_rule(struct project *prj, struct rule *rule)
   
   // Check dependencies.
   item = rule->dependencies.head;
-  while (item)
-  {
+  while (item) {
     dep = find_rule(prj, item->value);
     if (dep) {
       // Check dependent rule
@@ -599,9 +529,7 @@ int check_rule(struct project *prj, struct rule *rule)
         if (prj->debug) printf("build %s because it is older than %s\n", rule->target, item->value);
         dirty = 1;
       }
-    }
-    else
-    {
+    } else {
       // No rule for dependent, just check the timestamp.
       time_t t = get_timestamp(item->value);
       if (rule->timestamp < t) {
@@ -614,13 +542,10 @@ int check_rule(struct project *prj, struct rule *rule)
   }
   
   // Always build phony targets
-  if (prj->phony)
-  {
+  if (prj->phony) {
     item = prj->phony->dependencies.head;
-    while (item)
-    {
-      if (strcmp(item->value, rule->target) == 0)
-      {
+    while (item) {
+      if (strcmp(item->value, rule->target) == 0) {
         if (prj->debug)  printf("build %s because it is a phony target\n", rule->target);
         dirty = 1;
         break;
@@ -636,22 +561,19 @@ int check_rule(struct project *prj, struct rule *rule)
   if (dirty) {
     mark_for_build(prj, rule);
     rule->status = DIRTY;
-  }
-  else
+  } else {
     rule->status = CLEAN;
-  
+  }
+
   return 0;
 }
 
-int check_targets(struct project *prj) 
-{
+int check_targets(struct project *prj) {
   struct item *target = prj->targets.head;
   prj->phony = find_rule(prj, ".PHONY");
-  while (target)
-  {
+  while (target) {
     struct rule *r = find_rule(prj, target->value);
-    if (!r)
-    {
+    if (!r) {
       // This is a classic!
       fprintf(stderr, "Don't know how to make %s\n", target->value);
       return -1;
@@ -662,21 +584,17 @@ int check_targets(struct project *prj)
   return 0;
 }
 
-int build_targets(struct project *prj)
-{
+int build_targets(struct project *prj) {
   struct buffer *cmd = &prj->value;
   struct rule *r = prj->build_first;
-  while (r)
-  {
+  while (r) {
     // Run commands in rule.
     struct item *command = r->commands.head;
-    while (command)
-    {
+    while (command) {
       // Expand macros in command.
       if (expand_macros(command->value, prj, r, cmd) < 0) return -1;
       if (!prj->silent) printf("%s\n", cmd->start);
-      if (!prj->dry_run)
-      {
+      if (!prj->dry_run) {
         if (system(cmd->start) != 0) return -1;
       }
 
@@ -687,8 +605,7 @@ int build_targets(struct project *prj)
   return 0;
 }
 
-void usage()
-{
+void usage() {
   fprintf(stderr, "usage: make [ -f <makefile> ] [ options ] ... [ targets ] ... \n\n");
   fprintf(stderr, "  -B            Unconditionally build all targets.\n");
   fprintf(stderr, "  -C <dir>      Change current directory to <dir> before building.\n");
@@ -699,8 +616,7 @@ void usage()
   fprintf(stderr, "  -s            Do not print commands as they are executed.\n");
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   int c;
   int i;
   int rc;
@@ -713,10 +629,8 @@ int main(int argc, char *argv[])
   project_init(&prj);
     
   // Parse command line options
-  while ((c = getopt(argc, argv, "BC:df:hns")) != EOF)
-  {
-    switch (c)
-    {
+  while ((c = getopt(argc, argv, "BC:df:hns")) != EOF) {
+    switch (c) {
       case 'B':
         prj.always_build = 1;
         break;
@@ -752,16 +666,12 @@ int main(int argc, char *argv[])
   }
   
   // Add targets and variables from command line
-  for (i = optind; i < argc; ++i)
-  {
+  for (i = optind; i < argc; ++i) {
     char *eq = strchr(argv[i], '=');
-    if (eq)
-    {
+    if (eq) {
       // Set variable
       putenv(argv[i]);
-    }
-    else
-    {
+    } else {
       // Add target.
       list_append(&prj.targets, strdup(argv[i]));
     }
@@ -769,20 +679,17 @@ int main(int argc, char *argv[])
 
   // Read and parse makefile.
   mf = fopen(makefile, "r");
-  if (mf) 
-  {
+  if (mf) {
     rc = parse_makefile(&prj, mf);
     fclose(mf);
-    if (rc < 0) 
-    {
+    if (rc < 0) {
       project_free(&prj);
       return 1;
     }
   }
   
   // Use the first rule if no targets were specified on the command line
-  if (!prj.targets.head && prj.rules_head)
-  {
+  if (!prj.targets.head && prj.rules_head) {
     list_append(&prj.targets, strdup(prj.rules_head->target));
   }
 

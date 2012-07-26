@@ -33,12 +33,10 @@
 
 #include <os/krnl.h>
 
-struct
-{
+struct {
   int classcode;
   char *name;
-} pci_classnames[] =
-{
+} pci_classnames[] = {
   {0x000000, "Non-VGA unclassified device"},
   {0x000100, "VGA compatible unclassified device"},
   {0x010000, "SCSI storage controller"},
@@ -128,91 +126,73 @@ struct
   {0x000000, NULL}
 };
 
-static __inline unsigned char pci_read_byte(int busno, int devno, int funcno, int addr)
-{
+static __inline unsigned char pci_read_byte(int busno, int devno, int funcno, int addr) {
   outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
   return inp(PCI_CONFIG_DATA);
 }
 
-static __inline unsigned short pci_read_word(int busno, int devno, int funcno, int addr)
-{
+static __inline unsigned short pci_read_word(int busno, int devno, int funcno, int addr) {
   outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
   return inpw(PCI_CONFIG_DATA);
 }
 
-static __inline unsigned long pci_read_dword(int busno, int devno, int funcno, int addr)
-{
+static __inline unsigned long pci_read_dword(int busno, int devno, int funcno, int addr) {
   outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
   return inpd(PCI_CONFIG_DATA);
 }
 
-static __inline void pci_write_byte(int busno, int devno, int funcno, int addr, unsigned char value)
-{
+static __inline void pci_write_byte(int busno, int devno, int funcno, int addr, unsigned char value) {
   outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
   outp(PCI_CONFIG_DATA, value);
 }
 
-static __inline void pci_write_word(int busno, int devno, int funcno, int addr, unsigned short value)
-{
+static __inline void pci_write_word(int busno, int devno, int funcno, int addr, unsigned short value) {
   outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
   outpw(PCI_CONFIG_DATA, value);
 }
 
-static __inline void pci_write_dword(int busno, int devno, int funcno, int addr, unsigned long value)
-{
+static __inline void pci_write_dword(int busno, int devno, int funcno, int addr, unsigned long value) {
   outpd(PCI_CONFIG_ADDR, ((unsigned long) 0x80000000 | (busno << 16) | (devno << 11) | (funcno << 8) | addr));
   outpd(PCI_CONFIG_DATA, value);
 }
 
-unsigned char pci_read_config_byte(struct unit *unit, int addr)
-{
+unsigned char pci_read_config_byte(struct unit *unit, int addr) {
   return pci_read_byte(unit->bus->busno, PCI_DEVNO(unit->unitno), PCI_FUNCNO(unit->unitno), addr); 
 }
 
-unsigned short pci_read_config_word(struct unit *unit, int addr)
-{
+unsigned short pci_read_config_word(struct unit *unit, int addr) {
   return pci_read_word(unit->bus->busno, PCI_DEVNO(unit->unitno), PCI_FUNCNO(unit->unitno), addr); 
 }
 
-unsigned long pci_read_config_dword(struct unit *unit, int addr)
-{
+unsigned long pci_read_config_dword(struct unit *unit, int addr) {
   return pci_read_dword(unit->bus->busno, PCI_DEVNO(unit->unitno), PCI_FUNCNO(unit->unitno), addr); 
 }
 
-void pci_write_config_byte(struct unit *unit, int addr, unsigned char value)
-{
+void pci_write_config_byte(struct unit *unit, int addr, unsigned char value) {
   pci_write_byte(unit->bus->busno, PCI_DEVNO(unit->unitno), PCI_FUNCNO(unit->unitno), addr, value); 
 }
 
-void pci_write_config_word(struct unit *unit, int addr, unsigned short value)
-{
+void pci_write_config_word(struct unit *unit, int addr, unsigned short value) {
   pci_write_word(unit->bus->busno, PCI_DEVNO(unit->unitno), PCI_FUNCNO(unit->unitno), addr, value); 
 }
 
-void pci_write_config_dword(struct unit *unit, int addr, unsigned long value)
-{
+void pci_write_config_dword(struct unit *unit, int addr, unsigned long value) {
   pci_write_dword(unit->bus->busno, PCI_DEVNO(unit->unitno), PCI_FUNCNO(unit->unitno), addr, value); 
 }
 
-void pci_read_buffer(struct unit *unit, int addr, void *buffer, int len)
-{
-  if ((addr & 3) == 0 && (len && 3) == 0)
-  {
+void pci_read_buffer(struct unit *unit, int addr, void *buffer, int len) {
+  if ((addr & 3) == 0 && (len && 3) == 0) {
     unsigned long *buf = (unsigned long *) buffer;
 
-    while (len > 0)
-    {
+    while (len > 0) {
       *buf++ = pci_read_dword(unit->bus->busno, PCI_DEVNO(unit->unitno), PCI_FUNCNO(unit->unitno), addr);
       addr += 4;
       len -= 4;
     }
-  }
-  else
-  {
+  } else {
     unsigned char *buf = (unsigned char *) buffer;
 
-    while (len > 0)
-    {
+    while (len > 0) {
       *buf++ = pci_read_byte(unit->bus->busno, PCI_DEVNO(unit->unitno), PCI_FUNCNO(unit->unitno), addr);
       addr++;
       len--;
@@ -220,25 +200,19 @@ void pci_read_buffer(struct unit *unit, int addr, void *buffer, int len)
   }
 }
 
-void pci_write_buffer(struct unit *unit, int addr, void *buffer, int len)
-{
-  if ((addr & 3) == 0 && (len && 3) == 0)
-  {
+void pci_write_buffer(struct unit *unit, int addr, void *buffer, int len) {
+  if ((addr & 3) == 0 && (len && 3) == 0) {
     unsigned long *buf = (unsigned long *) buffer;
 
-    while (len > 0)
-    {
+    while (len > 0) {
       pci_write_dword(unit->bus->busno, PCI_DEVNO(unit->unitno), PCI_FUNCNO(unit->unitno), addr, *buf++);
       addr += 4;
       len -= 4;
     }
-  }
-  else
-  {
+  } else {
     unsigned char *buf = (unsigned char *) buffer;
 
-    while (len > 0)
-    {
+    while (len > 0) {
       pci_write_byte(unit->bus->busno, PCI_DEVNO(unit->unitno), PCI_FUNCNO(unit->unitno), addr, *buf++);
       addr++;
       len--;
@@ -246,8 +220,7 @@ void pci_write_buffer(struct unit *unit, int addr, void *buffer, int len)
   }
 }
 
-int pci_find_capability(struct unit *unit, int cap)
-{
+int pci_find_capability(struct unit *unit, int cap) {
   unsigned short status;
   unsigned char pos, id;
   int ttl = 48;
@@ -257,8 +230,7 @@ int pci_find_capability(struct unit *unit, int cap)
 
   pos = pci_read_config_byte(unit, PCI_CONFIG_CAPABILITIES);
   
-  while (ttl-- && pos >= 0x40)
-  {
+  while (ttl-- && pos >= 0x40) {
     pos &= ~3;
     id = pci_read_config_byte(unit, pos + PCI_CAP_LIST_ID);
     if (id == 0xff) break;
@@ -269,8 +241,7 @@ int pci_find_capability(struct unit *unit, int cap)
   return 0;
 }
 
-void pci_enable_busmastering(struct unit *unit)
-{
+void pci_enable_busmastering(struct unit *unit) {
   unsigned long value;
 
   value = pci_read_config_dword(unit, PCI_CONFIG_CMD_STAT);
@@ -278,12 +249,10 @@ void pci_enable_busmastering(struct unit *unit)
   pci_write_config_dword(unit, PCI_CONFIG_CMD_STAT, value);
 }
 
-static char *get_pci_class_name(int classcode)
-{
+static char *get_pci_class_name(int classcode) {
   int i = 0;
 
-  while (pci_classnames[i].name != NULL)
-  {
+  while (pci_classnames[i].name != NULL) {
     if (pci_classnames[i].classcode == classcode) return pci_classnames[i].name;
     if (pci_classnames[i].classcode == (classcode & 0xFFFF00)) return pci_classnames[i].name;
     i++;
@@ -292,8 +261,7 @@ static char *get_pci_class_name(int classcode)
   return "Unknown";
 }
 
-static unsigned long pci_size(unsigned long base, unsigned long mask)
-{
+static unsigned long pci_size(unsigned long base, unsigned long mask) {
   // Find the significant bits
   unsigned long size = mask & base;
 
@@ -303,8 +271,7 @@ static unsigned long pci_size(unsigned long base, unsigned long mask)
   return size;
 }
 
-void enum_pci_bus(struct bus *bus)
-{
+void enum_pci_bus(struct bus *bus) {
   int devno;
   int funcno;
   int busno;
@@ -320,12 +287,10 @@ void enum_pci_bus(struct bus *bus)
   struct unit *unit;
   unsigned long prev_deviceid;
 
-  for (devno = 0; devno < 32; devno++)
-  {
+  for (devno = 0; devno < 32; devno++) {
     prev_deviceid = 0;
 
-    for (funcno = 0; funcno < 8; funcno++)
-    {
+    for (funcno = 0; funcno < 8; funcno++) {
       // Vendor and device ids
       value = pci_read_dword(bus->busno, devno, funcno, PCI_CONFIG_VENDOR);
       vendorid = value & 0xFFFF;
@@ -341,10 +306,12 @@ void enum_pci_bus(struct bus *bus)
       revision = value & 0xFF;
 
       // Register new unit, host bridge is a special case
-      if (bus->busno == 0 && devno == 0 && funcno == 0 && bus->self)
+      if (bus->busno == 0 && devno == 0 && funcno == 0 && bus->self) {
         unit = bus->self;
-      else
+      } else {
         unit = add_unit(bus, classcode, PCI_UNITCODE(vendorid, deviceid), PCI_UNITNO(devno, funcno));
+      }
+
       
       unit->classname = get_pci_class_name(classcode);
       unit->revision = revision;
@@ -353,8 +320,7 @@ void enum_pci_bus(struct bus *bus)
       value = pci_read_dword(bus->busno, devno, funcno, PCI_CONFIG_SUBSYSTEM);
       unit->subunitcode = PCI_UNITCODE(value & 0xFFFF, value >> 16);
 
-      if (classcode == PCI_BRIDGE)
-      {
+      if (classcode == PCI_BRIDGE) {
         struct bus *bridge;
 
         // Get secondary bus number for bridge
@@ -366,12 +332,9 @@ void enum_pci_bus(struct bus *bus)
 
         // Scan for devices on secondary bus
         enum_pci_bus(bridge);
-      }
-      else
-      {
+      } else {
         // Function I/O and memory base addresses
-        for (bar = 0; bar < 6; bar++)
-        {
+        for (bar = 0; bar < 6; bar++) {
           int reg = PCI_CONFIG_BASE_ADDR_0 + (bar << 2);
 
           value = pci_read_dword(bus->busno, devno, funcno, reg);
@@ -379,16 +342,12 @@ void enum_pci_bus(struct bus *bus)
           len = pci_read_dword(bus->busno, devno, funcno, reg);
           pci_write_dword(bus->busno, devno, funcno, reg, value);
 
-          if (len != 0 && len != 0xFFFFFFFF)
-          {
+          if (len != 0 && len != 0xFFFFFFFF) {
             if (value == 0xFFFFFFFF) value = 0;
 
-            if (value & 1)
-            {
+            if (value & 1) {
               add_resource(unit, RESOURCE_IO, 0, value & PCI_BASE_ADDRESS_IO_MASK, pci_size(len, PCI_BASE_ADDRESS_IO_MASK & 0xFFFF));
-            }
-            else
-            {
+            } else {
               add_resource(unit, RESOURCE_MEM, 0, value & PCI_BASE_ADDRESS_MEM_MASK, pci_size(len, PCI_BASE_ADDRESS_MEM_MASK));
             }
           }
@@ -396,8 +355,7 @@ void enum_pci_bus(struct bus *bus)
 
         // Function interrupt line
         value = pci_read_dword(bus->busno, devno, funcno, PCI_CONFIG_INTR);
-        if ((value & 0xFF) > 0 && (value & 0xFF) < 32)
-        {
+        if ((value & 0xFF) > 0 && (value & 0xFF) < 32) {
           intrpin = (value >> 8) & 0xFF;
           irq = value & 0xFF;
           add_resource(unit, RESOURCE_IRQ, 0, irq, 1);
@@ -407,8 +365,7 @@ void enum_pci_bus(struct bus *bus)
   }
 }
 
-unsigned long get_pci_hostbus_unitcode()
-{
+unsigned long get_pci_hostbus_unitcode() {
   unsigned long value;
   unsigned long vendorid;
   unsigned long deviceid;

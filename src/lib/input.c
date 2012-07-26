@@ -51,35 +51,29 @@ static char sbrackset[] = " \t-\r]"; // Use range-style list
 static char cbrackset[] = "]";
 
 
-static int hextodec(int ch)
-{
+static int hextodec(int ch) {
   return isdigit(ch) ? ch : (ch & ~('a' - 'A')) - 'A' + 10 + '0';
 }
 
-static int inc(FILE *stream)
-{
+static int inc(FILE *stream) {
   return getc(stream);
 }
 
-static void uninc(int ch, FILE *stream)
-{
+static void uninc(int ch, FILE *stream) {
   if (ch != EOF) ungetc(ch, stream);
 }
 
-static int skipws(int *counter, FILE *stream)
-{
+static int skipws(int *counter, FILE *stream) {
   int ch;
 
-  while (1)
-  {
+  while (1) {
     ch = inc(stream);
     *counter++;
     if (!isspace(ch)) return ch;
   }
 }
 
-int _input(FILE *stream, const unsigned char *format, va_list arglist)
-{
+int _input(FILE *stream, const unsigned char *format, va_list arglist) {
   char table[RANGESETSIZE];           // Which chars allowed for %[], %s
   char fltbuf[CVTBUFSIZE + 1];        // ASCII buffer for floats
   unsigned long number;               // Temp hold-value
@@ -122,18 +116,15 @@ int _input(FILE *stream, const unsigned char *format, va_list arglist)
 
   count = charcount = match = 0;
 
-  while (*format) 
-  {
-    if (isspace(*format))
-    {
+  while (*format) {
+    if (isspace(*format)) {
       UNGETCH(SKIPWS()); // Put first non-space char back
 
       while ((isspace)(*++format));
       // Careful: isspace macro may evaluate argument more than once!
     }
 
-    if (*format == '%') 
-    {
+    if (*format == '%') {
       number = 0;
       prevchar = 0;
       width = widthset = started = 0;
@@ -141,18 +132,13 @@ int _input(FILE *stream, const unsigned char *format, va_list arglist)
       longone = 1;
       integer64 = 0;
 
-      while (!done_flag) 
-      {
+      while (!done_flag) {
         comchr = *++format;
-        if (isdigit(comchr)) 
-        {
+        if (isdigit(comchr)) {
           ++widthset;
           width = width * 10 + (comchr - '0');
-        } 
-        else
-        {
-          switch (comchr) 
-          {
+        } else {
+          switch (comchr) {
             case 'F':
             case 'N':
               // Near and far pointer modifiers ignored
@@ -163,8 +149,7 @@ int _input(FILE *stream, const unsigned char *format, va_list arglist)
               break;
 
             case 'I':
-              if ((*(format + 1) == '6') && (*(format + 2) == '4'))
-              {
+              if ((*(format + 1) == '6') && (*(format + 2) == '4')) {
                 format += 2;
                 ++integer64;
                 num64 = 0;
@@ -189,8 +174,7 @@ default_label:
         }
       }
 
-      if (!suppress) 
-      {
+      if (!suppress) {
         arglistsave = arglist;
         pointer = va_arg(arglist, void *);
       }
@@ -200,21 +184,18 @@ default_label:
       // Switch to lowercase to allow %E,%G, and to keep the switch table small
       comchr = *format | ('a' - 'A');
 
-      if (comchr != 'n')
-      {
-        if (comchr != 'c' && comchr != LEFT_BRACKET)
+      if (comchr != 'n') {
+        if (comchr != 'c' && comchr != LEFT_BRACKET) {
           ch = SKIPWS();
-        else
+        } else {
           ch = GETCH();
+        }
       }
 
-      if (!widthset || width) 
-      {
-        switch(comchr) 
-        {
+      if (!widthset || width) {
+        switch(comchr) {
           case 'c':
-            if (!widthset) 
-            {
+            if (!widthset) {
               ++widthset;
               ++width;
             }
@@ -230,42 +211,34 @@ default_label:
           case LEFT_BRACKET:
             scanptr = (char *)(++format);
 
-            if (*scanptr == '^') 
-            {
+            if (*scanptr == '^') {
               ++scanptr;
               --reject;
             }
 scanit2:
             memset(table, 0, RANGESETSIZE);
 
-            if (LEFT_BRACKET == comchr)
-            {
-              if (*scanptr == ']') 
-              {
+            if (LEFT_BRACKET == comchr) {
+              if (*scanptr == ']') {
                 prevchar = ']';
                 ++scanptr;
                 table[']' >> 3] = 1 << (']' & 7);
               }
             }
 
-            while (*scanptr != ']') 
-            {
+            while (*scanptr != ']') {
               rngch = *scanptr++;
 
-              if (rngch != '-'|| !prevchar || *scanptr == ']')
+              if (rngch != '-'|| !prevchar || *scanptr == ']') {
                 table[(prevchar = rngch) >> 3] |= 1 << (rngch & 7);
-              else 
-              {  
+              } else  {  
                 // Handle a-z type set
                 rngch = *scanptr++; // Get end of range
 
-                if (prevchar < rngch)
-                {
+                if (prevchar < rngch) {
                   // %[a-z]
                   last = rngch;
-                }
-                else 
-                {
+                } else {
                   // %[z-a]
                   last = prevchar;
                   prevchar = rngch;
@@ -297,24 +270,17 @@ scanit2:
 
             UNGETCH(ch);
 
-            while (!widthset || width--) 
-            {
+            while (!widthset || width--) {
               ch = GETCH();
-              if (((table[ch >> 3] ^ reject) & (1 << (ch & 7)))) 
-              {
-                if (!suppress) 
-                {
+              if (((table[ch >> 3] ^ reject) & (1 << (ch & 7)))) {
+                if (!suppress) {
                   *(char *) pointer = (char) ch;
                   pointer = (char *) pointer + 1;
-                }
-                else 
-                {
+                } else {
                   // Just indicate a match
                   start = (char *) start + 1;
                 }
-              }
-              else  
-              {
+              } else {
                 UNGETCH(ch);
                 break;
               }
@@ -324,20 +290,17 @@ scanit2:
             // assignment is not suppressed, null-terminate
             // output string if comchr != c
 
-            if (start != pointer) 
-            {
-              if (!suppress) 
-              {
+            if (start != pointer) {
+              if (!suppress) {
                 ++count;
-                if (comchr != 'c') 
-                {
+                if (comchr != 'c') {
                   // Null-terminate strings
                   *(char *) pointer = '\0';
                 }
               }
-            }
-            else
+            } else {
               goto error_return;
+            }
 
             break;
 
@@ -345,34 +308,27 @@ scanit2:
             comchr = 'd';
 
           case 'x':
-            if (ch == '-') 
-            {
+            if (ch == '-') {
               ++negative;
               goto x_incwidth;
-            } 
-            else if (ch == '+') 
-            {
+            } else if (ch == '+') {
 x_incwidth:
-              if (!--width && widthset)
+              if (!--width && widthset) {
                 ++done_flag;
-              else
+              } else {
                 ch = GETCH();
+              }
             }
 
-            if (ch == '0') 
-            {
-              if ((ch = GETCH()) == 'x' || ch == 'X') 
-              {
+            if (ch == '0') {
+              if ((ch = GETCH()) == 'x' || ch == 'X') {
                 ch = GETCH();
                 comchr = 'x';
-              } 
-              else 
-              {
+              } else {
                 ++started;
-                if (comchr != 'x') 
+                if (comchr != 'x') {
                   comchr = 'o';
-                else 
-                {
+                } else {
                   // Scanning a hex number that starts
                   // with a 0. Push back the character
                   // currently in ch and restore the 0
@@ -390,112 +346,94 @@ x_incwidth:
           case 'o':
           case 'u':
           case 'd':
-            if (ch == '-') 
-            {
+            if (ch == '-') {
               ++negative;
               goto d_incwidth;
-            } 
-            else if (ch == '+') 
-            {
+            } else if (ch == '+') {
 d_incwidth:
-              if (!--width && widthset)
+              if (!--width && widthset) {
                 ++done_flag;
-              else
+              } else {
                 ch = GETCH();
+              }
             }
 getnum:
-            if (integer64) 
-            {
-              while (!done_flag) 
-              {
-                if (comchr == 'x')
-                {
-                  if (isxdigit(ch)) 
-                  {
+            if (integer64) {
+              while (!done_flag) {
+                if (comchr == 'x') {
+                  if (isxdigit(ch)) {
                     num64 <<= 4;
                     ch = hextodec(ch);
-                  }
-                  else
+                  } else {
                     ++done_flag;
-                }
-                else if (isdigit(ch))
-                {
-                  if (comchr == 'o')
-                  {
-                    if (ch < '8')
-                      num64 <<= 3;
-                    else 
-                      ++done_flag;
                   }
-                  else 
-                  {
+                } else if (isdigit(ch)) {
+                  if (comchr == 'o') {
+                    if (ch < '8') {
+                      num64 <<= 3;
+                    } else {
+                      ++done_flag;
+                    }
+                  } else {
                     // comchr == 'd'
                     num64 = num64 * 10;
                   }
-                }
-                else
+                } else {
                   ++done_flag;
+                }
 
-                if (!done_flag) 
-                {
+                if (!done_flag) {
                   ++started;
                   num64 += ch - '0';
 
-                  if (widthset && !--width)
+                  if (widthset && !--width) {
                     ++done_flag;
-                  else
+                  } else {
                     ch = GETCH();
+                  }
                 } 
-                else
+                else {
                   UNGETCH(ch);
+                }
               }
 
               if (negative) num64 = (unsigned __int64 ) (-(__int64) num64);
-            }
-            else 
-            {
-              while (!done_flag) 
-              {
-                if (comchr == 'x' || comchr == 'p')
-                {
-                  if (isxdigit(ch)) 
-                  {
+            } else {
+              while (!done_flag) {
+                if (comchr == 'x' || comchr == 'p') {
+                  if (isxdigit(ch))  {
                     number = (number << 4);
                     ch = hextodec(ch);
-                  }
-                  else
+                  } else {
                     ++done_flag;
-                }
-                else if (isdigit(ch))
-                {
-                  if (comchr == 'o')
-                  {
-                    if (ch < '8')
-                      number = (number << 3);
-                    else 
-                      ++done_flag;
                   }
-                  else 
-                  {
+                } else if (isdigit(ch)) {
+                  if (comchr == 'o') {
+                    if (ch < '8') {
+                      number = (number << 3);
+                    } else {
+                      ++done_flag;
+                    }
+                  } else {
                     // comchr == 'd'
                     number = number * 10;
                   }
-                }
-                else
+                } else {
                   ++done_flag;
+                }
 
-                if (!done_flag) 
-                {
+                if (!done_flag) {
                   ++started;
                   number += ch - '0';
 
-                  if (widthset && !--width)
+                  if (widthset && !--width) {
                     ++done_flag;
-                  else
+                  } else {
                     ch = GETCH();
-                } 
-                else
+                  }
+                } else {
                   UNGETCH(ch);
+                }
               }
 
               if (negative) number = (unsigned long) (-(long) number);
@@ -503,22 +441,21 @@ getnum:
 
             if (comchr == 'F') started = 0; // Expected ':' in long pointer
 
-            if (started)
-            {
-              if (!suppress) 
-              {
+            if (started) {
+              if (!suppress) {
                 ++count;
 assign_num:
-                if (integer64)
+                if (integer64) {
                   *(__int64 *) pointer = (unsigned __int64) num64;
-                else if (longone)
+                } else if (longone) {
                   *(long *) pointer = (unsigned long) number;
-                else
+                } else {
                   *(short *) pointer = (unsigned short) number;
+                }
               }
-            }
-            else
+            } else {
               goto error_return;
+            }
 
             break;
 
@@ -534,13 +471,10 @@ assign_num:
             // Scan a float
             scanptr = fltbuf;
 
-            if (ch == '-') 
-            {
+            if (ch == '-') {
               *scanptr++ = '-';
               goto f_incwidth;
-            } 
-            else if (ch == '+') 
-            {
+            } else if (ch == '+') {
 f_incwidth:
               --width;
               ch = GETCH();
@@ -549,21 +483,18 @@ f_incwidth:
             if (!widthset || width > CVTBUFSIZE) width = CVTBUFSIZE;
 
             // Now get integral part
-            while (isdigit(ch) && width--) 
-            {
+            while (isdigit(ch) && width--) {
               ++started;
               *scanptr++ = (char)ch;
               ch = GETCH();
             }
 
             // Now check for decimal
-            if (ch == DECIMALPOINT && width--) 
-            {
+            if (ch == DECIMALPOINT && width--) {
               ch = GETCH();
               *scanptr++ = DECIMALPOINT;
 
-              while (isdigit(ch) && width--) 
-              {
+              while (isdigit(ch) && width--) {
                 ++started;
                 *scanptr++ = (char) ch;
                 ch = GETCH();
@@ -571,26 +502,22 @@ f_incwidth:
             }
 
             // Now check for exponent
-            if (started && (ch == 'e' || ch == 'E') && width--) 
-            {
+            if (started && (ch == 'e' || ch == 'E') && width--) {
               *scanptr++ = 'e';
 
-              if ((ch = GETCH()) == '-') 
-              {
+              if ((ch = GETCH()) == '-') {
                 *scanptr++ = '-';
                 goto f_incwidth2;
-              } 
-              else if (ch == '+') 
-              {
+              } else if (ch == '+') {
 f_incwidth2:
-                if (!width--)
+                if (!width--) {
                   ++width;
-                else
+                } else {
                   ch = GETCH();
+                }
               }
 
-              while (isdigit(ch) && width--) 
-              {
+              while (isdigit(ch) && width--) {
                 ++started;
                 *scanptr++ = (char)ch;
                 ch = GETCH();
@@ -599,10 +526,8 @@ f_incwidth2:
 
             UNGETCH(ch);
 
-            if (started)
-            {
-              if (!suppress) 
-              {
+            if (started) {
+              if (!suppress) {
                 double d;
 
                 ++count;
@@ -610,35 +535,33 @@ f_incwidth2:
 
                 d = strtod(fltbuf, NULL);
 
-                if (longone)
+                if (longone) {
                   *(double *) pointer = d;
-                else
+                } else {
                   *(float *) pointer = (float) d;
+                }
               }
-            }
-            else
+            } else {
               goto error_return;
+            }
 
             break;
 
           default:
             // Either found '%' or something else
-            if ((int) *format != (int) ch) 
-            {
+            if ((int) *format != (int) ch) {
               UNGETCH(ch);
               goto error_return;
-            }
-            else
+            } else {
               match--; // % found, compensate for inc below
+            }
 
             if (!suppress) arglist = arglistsave;
         }
 
         // Matched a format field - set flag
         match++;        
-      }
-      else 
-      {  
+      } else {  
         // Zero-width field in format string
         UNGETCH(ch);
         goto error_return;
@@ -646,12 +569,9 @@ f_incwidth2:
 
       // Skip to next char
       ++format;
-    } 
-    else  
-    {
+    } else {
       // *format != '%'
-      if ((int) *format++ != (int) (ch = GETCH()))
-      {
+      if ((int) *format++ != (int) (ch = GETCH())) {
         UNGETCH(ch);
         goto error_return;
       }
@@ -662,9 +582,10 @@ f_incwidth2:
 
 error_return:
 
-  if (ch == EOF)
+  if (ch == EOF) {
     // If any fields were matched or assigned, return count
     return (count || match) ? count : EOF;
-  else
+  } else {
     return count;
+  }
 }

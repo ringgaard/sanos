@@ -237,8 +237,7 @@
 // Receive ring descriptor
 //
 
-struct recv_ring_desc 
-{
+struct recv_ring_desc {
   unsigned char rsr;                   // Receiver status
   unsigned char next_pkt;              // Pointer to next packet
   unsigned short count;                // Bytes in packet (length + 4)
@@ -248,8 +247,7 @@ struct recv_ring_desc
 // NE2000 NIC status
 //
 
-struct ne
-{
+struct ne {
   dev_t devno;                          // Device number
   struct eth_addr hwaddr;               // MAC address
 
@@ -278,8 +276,7 @@ struct ne
 
 struct netstats *netstats;
 
-static void ne_readmem(struct ne *ne, unsigned short src, void *dst, unsigned short len)
-{
+static void ne_readmem(struct ne *ne, unsigned short src, void *dst, unsigned short len) {
   // Word align length
   if (len & 1) len++;
 
@@ -301,8 +298,7 @@ static void ne_readmem(struct ne *ne, unsigned short src, void *dst, unsigned sh
   insw(ne->asic_addr + NE_NOVELL_DATA, dst, len >> 1);
 }
 
-static int ne_probe(struct ne *ne)
-{
+static int ne_probe(struct ne *ne) {
   unsigned char byte;
 
   // Reset
@@ -325,10 +321,8 @@ static int ne_probe(struct ne *ne)
   return 1;
 }
 
-void ne_get_packet(struct ne *ne, unsigned short src, char *dst, unsigned short len)
-{
-  if (src + len > ne->rx_ring_end)
-  {
+void ne_get_packet(struct ne *ne, unsigned short src, char *dst, unsigned short len) {
+  if (src + len > ne->rx_ring_end) {
     unsigned short split = ne->rx_ring_end - src;
 
     ne_readmem(ne, src, dst, split);
@@ -352,8 +346,7 @@ void ne_receive(struct ne *ne)
   // Set page 1 registers
   outp(ne->nic_addr + NE_P0_CR, NE_CR_PAGE_1 | NE_CR_RD2 | NE_CR_STA);
 
-  while (ne->next_pkt != inp(ne->nic_addr + NE_P1_CURR)) 
-  {
+  while (ne->next_pkt != inp(ne->nic_addr + NE_P1_CURR)) {
     // Get pointer to buffer header structure
     packet_ptr = ne->next_pkt * NE_PAGE_SIZE;
 
@@ -365,25 +358,20 @@ void ne_receive(struct ne *ne)
     p = pbuf_alloc(PBUF_RAW, len, PBUF_RW);
 
     // Get packet from nic and send to upper layer
-    if (p != NULL)
-    {
+    if (p != NULL) {
       packet_ptr += sizeof(struct recv_ring_desc);
-      for (q = p; q != NULL; q = q->next) 
-      {
+      for (q = p; q != NULL; q = q->next) {
         ne_get_packet(ne, packet_ptr, q->payload, (unsigned short) q->len);
         packet_ptr += q->len;
       }
 
       //kprintf("ne2000: received packet, %d bytes\n", len);
       rc = dev_receive(ne->devno, p); 
-      if (rc < 0)
-      {
+      if (rc < 0) {
         kprintf("ne2000: error %d processing packet\n", rc);
         pbuf_free(p);
       }
-    }
-    else
-    {
+    } else {
       // Drop packet
       kprintf("ne2000: packet dropped\n");
       netstats->link.memerr++;
@@ -408,8 +396,7 @@ void ne_receive(struct ne *ne)
   }
 }
 
-void ne_dpc(void *arg)
-{
+void ne_dpc(void *arg) {
   struct ne *ne = arg;
   unsigned char isr;
 
@@ -419,28 +406,24 @@ void ne_dpc(void *arg)
   outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_STA);
 
   // Loop until there are no pending interrupts
-  while ((isr = inp(ne->nic_addr + NE_P0_ISR)) != 0) 
-  {
+  while ((isr = inp(ne->nic_addr + NE_P0_ISR)) != 0) {
     // Reset bits for interrupts being acknowledged
     outp(ne->nic_addr + NE_P0_ISR, isr);
 
     // Packet received
-    if (isr & NE_ISR_PRX) 
-    {
+    if (isr & NE_ISR_PRX) {
       //kprintf("ne2000: new packet arrived\n");
       ne_receive(ne);
     }
 
     // Packet transmitted
-    if (isr & NE_ISR_PTX) 
-    {
+    if (isr & NE_ISR_PTX) {
       //kprintf("ne2000: packet transmitted\n");
       set_event(&ne->ptx);
     }
 
     // Remote DMA complete
-    if (isr & NE_ISR_RDC) 
-    {
+    if (isr & NE_ISR_RDC) {
       //kprintf("ne2000: remote DMA complete\n");
       set_event(&ne->rdc);
     }
@@ -452,8 +435,7 @@ void ne_dpc(void *arg)
   eoi(ne->irq);
 }
 
-int ne_handler(struct context *ctxt, void *arg)
-{
+int ne_handler(struct context *ctxt, void *arg) {
   struct ne *ne = (struct ne *) arg;
 
   // Queue DPC to service interrupt
@@ -462,8 +444,7 @@ int ne_handler(struct context *ctxt, void *arg)
   return 0;
 }
 
-int ne_transmit(struct dev *dev, struct pbuf *p)
-{
+int ne_transmit(struct dev *dev, struct pbuf *p) {
   struct ne *ne = dev->privdata;
   unsigned short dma_len;
   unsigned short dst;
@@ -476,8 +457,7 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   //kprintf("ne_transmit: transmit packet len=%d\n", p->tot_len);
 
   // Get transmit lock
-  if (wait_for_object(&ne->txlock, NE_TXTIMEOUT) < 0)
-  {
+  if (wait_for_object(&ne->txlock, NE_TXTIMEOUT) < 0) {
     kprintf(KERN_WARNING "ne2000: timeout waiting for tx lock\n");
     return -ETIMEOUT;
   }
@@ -509,16 +489,13 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   outp(ne->nic_addr + NE_P0_CR, NE_CR_RD1 | NE_CR_STA);
 
   wrap = 0;
-  for (q = p; q != NULL; q = q->next) 
-  {
+  for (q = p; q != NULL; q = q->next) {
     len = q->len;
-    if (len > 0)
-    {
+    if (len > 0) {
       data = q->payload;
 
       // Finish the last word
-      if (wrap) 
-      {
+      if (wrap) {
         save_byte[1] = *data;
         outpw((unsigned short) (ne->asic_addr + NE_NOVELL_DATA), *(unsigned short *) save_byte);
         data++;
@@ -527,16 +504,14 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
       }
 
       // Output contiguous words
-      if (len > 1) 
-      {
+      if (len > 1) {
         outsw(ne->asic_addr + NE_NOVELL_DATA, data, len >> 1);
         data += len & ~1;
         len &= 1;
       }
 
       // Save last byte if necessary
-      if (len == 1) 
-      {
+      if (len == 1) {
         save_byte[0] = *data;
         wrap = 1;
       }
@@ -544,14 +519,12 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   }
 
   // Output last byte
-  if (wrap) 
-  {
+  if (wrap) {
     outpw((unsigned short) (ne->asic_addr + NE_NOVELL_DATA), *(unsigned short *) save_byte);
   }
 
   // Wait for remote DMA complete
-  if (wait_for_object(&ne->rdc, NE_TIMEOUT) < 0)
-  {
+  if (wait_for_object(&ne->rdc, NE_TIMEOUT) < 0) {
     kprintf(KERN_WARNING "ne2000: timeout waiting for remote dma to complete\n");
     release_mutex(&ne->txlock);
     return -EIO;
@@ -561,13 +534,10 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   outp(ne->nic_addr + NE_P0_TPSR, (unsigned char) dst);
 
   // Set TX length (packets smaller than 64 bytes must be padded)
-  if (p->tot_len > 64)
-  {
+  if (p->tot_len > 64) {
     outp(ne->nic_addr + NE_P0_TBCR0, p->tot_len);
     outp(ne->nic_addr + NE_P0_TBCR1, p->tot_len >> 8);
-  }
-  else
-  {
+  } else {
     outp(ne->nic_addr + NE_P0_TBCR0, 64);
     outp(ne->nic_addr + NE_P0_TBCR1, 0);
   }
@@ -576,8 +546,7 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   outp(ne->nic_addr + NE_P0_CR, NE_CR_RD2 | NE_CR_TXP | NE_CR_STA);
 
   // Wait for packet transmitted
-  if (wait_for_object(&ne->ptx, NE_TIMEOUT) < 0)
-  {
+  if (wait_for_object(&ne->ptx, NE_TIMEOUT) < 0) {
     kprintf(KERN_WARNING "ne2000: timeout waiting for packet transmit\n");
     release_mutex(&ne->txlock);
     return -EIO;
@@ -589,26 +558,22 @@ int ne_transmit(struct dev *dev, struct pbuf *p)
   return 0;
 }
 
-int ne_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
+int ne_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
   return -ENOSYS;
 }
 
-int ne_attach(struct dev *dev, struct eth_addr *hwaddr)
-{
+int ne_attach(struct dev *dev, struct eth_addr *hwaddr) {
   struct ne *ne = dev->privdata;
   *hwaddr = ne->hwaddr;
 
   return 0;
 }
 
-int ne_detach(struct dev *dev)
-{
+int ne_detach(struct dev *dev) {
   return 0;
 }
 
-struct driver ne_driver =
-{
+struct driver ne_driver = {
   "ne2000",
   DEV_TYPE_PACKET,
   ne_ioctl,
@@ -619,8 +584,7 @@ struct driver ne_driver =
   ne_transmit
 };
 
-int ne_setup(unsigned short iobase, int irq, unsigned short membase, unsigned short memsize, struct unit *unit)
-{
+int ne_setup(unsigned short iobase, int irq, unsigned short membase, unsigned short memsize, struct unit *unit) {
   struct ne *ne;
   unsigned char romdata[16];
   int i;
@@ -720,21 +684,18 @@ int ne_setup(unsigned short iobase, int irq, unsigned short membase, unsigned sh
   return 0;
 }
 
-int __declspec(dllexport) install(struct unit *unit, char *opts)
-{
+int __declspec(dllexport) install(struct unit *unit, char *opts) {
   unsigned short iobase = 0x280;
   int irq = 9;
   unsigned short membase = 16 * 1024;
   unsigned short memsize = 16 * 1024;
   struct resource *memres;
 
-  if (unit)
-  {
+  if (unit) {
     iobase = (unsigned short) get_unit_iobase(unit);
     irq = get_unit_irq(unit);
     memres = get_unit_resource(unit, RESOURCE_MEM, 0);
-    if (memres)
-    {
+    if (memres) {
       membase = (unsigned short) memres->start;
       memsize = (unsigned short) memres->len;
     }
@@ -748,8 +709,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   return ne_setup(iobase, irq, membase, memsize, unit);
 }
 
-int __stdcall start(hmodule_t hmod, int reason, void *reserved2)
-{
+int __stdcall start(hmodule_t hmod, int reason, void *reserved2) {
   netstats = get_netstats();
   return 1;
 }

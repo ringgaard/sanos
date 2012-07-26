@@ -34,8 +34,7 @@
 #ifndef RMAP_H
 #define RMAP_H
 
-struct rmap
-{
+struct rmap {
   unsigned int offset;
   unsigned int size;
 };

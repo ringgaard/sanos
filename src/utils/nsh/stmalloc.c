@@ -33,17 +33,13 @@
 
 #include "sh.h"
 
-void pushstkmark(struct stkmark *oldmark, struct stkmark *newmark)
-{
-  if (oldmark)
-  {
+void pushstkmark(struct stkmark *oldmark, struct stkmark *newmark) {
+  if (oldmark) {
     newmark->blk = oldmark->blk;
     newmark->ptr = oldmark->ptr;
     newmark->txt = oldmark->txt;
     newmark->end = oldmark->end;
-  }
-  else
-  {
+  } else {
     newmark->blk = NULL;
     newmark->ptr = NULL;
     newmark->txt = NULL;
@@ -52,26 +48,22 @@ void pushstkmark(struct stkmark *oldmark, struct stkmark *newmark)
   newmark->prev = oldmark;
 }
 
-void popstkmark(struct stkmark *mark)
-{
+void popstkmark(struct stkmark *mark) {
   struct stkblk *blk = mark->blk;
   struct stkblk *prev_mark_blk = mark->prev ? mark->prev->blk : NULL;
-  while (blk && blk != prev_mark_blk)
-  {
+  while (blk && blk != prev_mark_blk) {
     struct stkblk *prev = blk->prev;
     free(blk);
     blk = prev;
   }
 }
 
-void *stalloc(struct stkmark *mark, int size)
-{
+void *stalloc(struct stkmark *mark, int size) {
   char *ptr;
 
   if (mark->txt) printf("=== alloc with active string\n");
 
-  if (size > mark->end - mark->ptr)
-  {
+  if (size > mark->end - mark->ptr) {
     int blksize;
     struct stkblk *blk;
 
@@ -95,8 +87,7 @@ printf("==== malloc new block (%d bytes)\n", size);
   return ptr;
 }
 
-static int streserve(struct stkmark *mark, int size)
-{
+static int streserve(struct stkmark *mark, int size) {
   int txtlen;
 
   if (!mark->txt) mark->txt = mark->ptr;
@@ -104,8 +95,7 @@ static int streserve(struct stkmark *mark, int size)
   
   txtlen = mark->txt - mark->ptr;
 
-  if (mark->blk && mark->ptr == mark->blk->space && (!mark->prev || mark->blk != mark->prev->blk))
-  {
+  if (mark->blk && mark->ptr == mark->blk->space && (!mark->prev || mark->blk != mark->prev->blk)) {
     int blksize = mark->end - mark->ptr;
     int minsize = txtlen + size;
     while (blksize < minsize) blksize *= 2;
@@ -115,9 +105,7 @@ static int streserve(struct stkmark *mark, int size)
     mark->ptr = mark->blk->space;
     mark->end = mark->ptr + blksize;
     mark->txt = mark->ptr + txtlen;
-  }
-  else
-  {
+  } else {
     struct stkblk *blk;
     int blksize = txtlen + size;
     if (blksize < STKBLKMIN) blksize = STKBLKMIN;
@@ -126,8 +114,7 @@ static int streserve(struct stkmark *mark, int size)
     blk = (struct stkblk *) malloc(sizeof(struct stkblk) - STKBLKMIN + blksize);
     if (!blk) return -1;
 
-    if (mark->txt)
-    {
+    if (mark->txt) {
       //printf("==== copying %d string bytes\n", txtlen);
       memcpy(blk->space, mark->ptr, txtlen);
       mark->txt = blk->space + txtlen;
@@ -143,8 +130,7 @@ static int streserve(struct stkmark *mark, int size)
   return 0;
 }
 
-int stputstr(struct stkmark *mark, char *str)
-{
+int stputstr(struct stkmark *mark, char *str) {
   int len = strlen(str);
   if (streserve(mark, len) < 0) return -1;
   memcpy(mark->txt, str, len);
@@ -152,15 +138,13 @@ int stputstr(struct stkmark *mark, char *str)
   return 0;
 }
 
-int stputc(struct stkmark *mark, int ch)
-{
+int stputc(struct stkmark *mark, int ch) {
   if (streserve(mark, 1) < 0) return -1;
   *(mark->txt)++ = ch;
   return 0;
 }
 
-char *ststr(struct stkmark *mark)
-{
+char *ststr(struct stkmark *mark) {
   char *str;
 
   if (!mark->txt) return NULL;
@@ -171,26 +155,22 @@ char *ststr(struct stkmark *mark)
   return str;
 }
 
-int ststrlen(struct stkmark *mark)
-{
+int ststrlen(struct stkmark *mark) {
   if (!mark->txt) return -1;
   return mark->txt - mark->ptr;
 }
 
-char *ststrptr(struct stkmark *mark)
-{
+char *ststrptr(struct stkmark *mark) {
   if (!mark->txt) return NULL;
   return mark->ptr;
 }
 
-int stfreestr(struct stkmark *mark, char *str)
-{
+int stfreestr(struct stkmark *mark, char *str) {
   if (!str) return 0;
-  if (mark->blk && mark->blk->space <= str && str <= mark->ptr)
-  {
+  if (mark->blk && mark->blk->space <= str && str <= mark->ptr) {
     mark->ptr = str;
     return 0;
-  }
-  else
+  } else {
     return -1;
+  }
 }

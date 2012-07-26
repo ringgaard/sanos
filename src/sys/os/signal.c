@@ -35,8 +35,7 @@
 #include <string.h>
 #include <os/syscall.h>
 
-struct sigentry
-{
+struct sigentry {
   char *label;
   char *name;
   int flags;
@@ -49,8 +48,7 @@ struct sigentry
 #define SIGACT_STOP      3
 #define SIGACT_CONT      4
 
-struct sigentry sigtab[_NSIG] =
-{
+struct sigentry sigtab[_NSIG] = {
   {"SIGNUL",    "Null", 0, SIGACT_IGN},
   {"SIGHUP",    "Hangup", 0, SIGACT_TERM},
   {"SIGINT",    "Interrupt", 0, SIGACT_TERM},
@@ -85,28 +83,24 @@ struct sigentry sigtab[_NSIG] =
   {"SIGSYS",    "Bad system call", 0, SIGACT_ABORT}
 };
 
-char *strsignal(int signum)
-{
-  if (signum >= 0 && signum < _NSIG) 
+char *strsignal(int signum) {
+  if (signum >= 0 && signum < _NSIG) {
     return sigtab[signum].name;
-  else
+  } else {
     return "Unknown";
+  }
 }
 
-void sigexit(struct siginfo *info, int action)
-{
-  __asm
-  {
+void sigexit(struct siginfo *info, int action) {
+  __asm {
     mov eax, [action]
     mov ebx, [info]
     int 49
   }
 }
 
-int sigemptyset(sigset_t *set)
-{
-  if (!set)
-  {
+int sigemptyset(sigset_t *set) {
+  if (!set) {
     errno = EFAULT;
     return -1;
   }
@@ -115,10 +109,8 @@ int sigemptyset(sigset_t *set)
   return 0;
 }
 
-int sigfillset(sigset_t *set)
-{
-  if (!set)
-  {
+int sigfillset(sigset_t *set) {
+  if (!set) {
     errno = EFAULT;
     return -1;
   }
@@ -127,16 +119,13 @@ int sigfillset(sigset_t *set)
   return 0;
 }
 
-int sigaddset(sigset_t *set, int signum)
-{
-  if (!set)
-  {
+int sigaddset(sigset_t *set, int signum) {
+  if (!set) {
     errno = EFAULT;
     return -1;
   }
 
-  if (signum < 0 || signum >= _NSIG)
-  {
+  if (signum < 0 || signum >= _NSIG) {
     errno = EINVAL;
     return -1;
   }
@@ -145,16 +134,13 @@ int sigaddset(sigset_t *set, int signum)
   return 0;
 }
 
-int sigdelset(sigset_t *set, int signum)
-{
-  if (!set)
-  {
+int sigdelset(sigset_t *set, int signum) {
+  if (!set) {
     errno = EFAULT;
     return -1;
   }
 
-  if (signum < 0 || signum >= _NSIG)
-  {
+  if (signum < 0 || signum >= _NSIG) {
     errno = EINVAL;
     return -1;
   }
@@ -163,16 +149,13 @@ int sigdelset(sigset_t *set, int signum)
   return 0;
 }
 
-int sigismember(sigset_t *set, int signum)
-{
-  if (!set)
-  {
+int sigismember(sigset_t *set, int signum) {
+  if (!set) {
     errno = EFAULT;
     return -1;
   }
 
-  if (signum < 0 || signum >= _NSIG)
-  {
+  if (signum < 0 || signum >= _NSIG) {
     errno = EINVAL;
     return -1;
   }
@@ -180,12 +163,10 @@ int sigismember(sigset_t *set, int signum)
   return (*set & (1 << signum)) != 0;
 }
 
-int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
-{
+int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
   struct process *proc = gettib()->proc;
 
-  if (signum < 0 || signum >= _NSIG)
-  {
+  if (signum < 0 || signum >= _NSIG) {
     errno = EINVAL;
     return -1;
   }
@@ -196,8 +177,7 @@ int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
   return 0;
 }
 
-sighandler_t signal(int signum, sighandler_t handler)
-{
+sighandler_t signal(int signum, sighandler_t handler) {
   struct sigaction act;
   struct sigaction oldact;
 
@@ -209,22 +189,18 @@ sighandler_t signal(int signum, sighandler_t handler)
   return oldact.sa_handler;
 }
 
-int sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
-{
+int sigprocmask(int how, const sigset_t *set, sigset_t *oldset) {
   return syscall(SYSCALL_SIGPROCMASK, &how);
 }
 
-int sigpending(sigset_t *set)
-{
+int sigpending(sigset_t *set) {
   return syscall(SYSCALL_SIGPENDING, &set);
 }
 
-int sigsuspend(const sigset_t *mask)
-{
+int sigsuspend(const sigset_t *mask) {
   int rc;
 
-  if (mask)
-  {
+  if (mask) {
     rc = sigprocmask(SIG_BLOCK, mask, NULL);
     if (rc < 0) return rc;
   }
@@ -236,13 +212,11 @@ int sigsuspend(const sigset_t *mask)
   return rc;
 }
 
-int sendsig(handle_t thread, int signum)
-{
+int sendsig(handle_t thread, int signum) {
   return syscall(SYSCALL_SENDSIG, &thread);
 }
 
-int kill(pid_t pid, int signum)
-{
+int kill(pid_t pid, int signum) {
   handle_t h;
   int rc;
 
@@ -255,18 +229,15 @@ int kill(pid_t pid, int signum)
   return rc;
 }
 
-int raise(int signum)
-{
+int raise(int signum) {
   return sendsig(self(), signum);
 }
 
-unsigned alarm(unsigned seconds)
-{
+unsigned alarm(unsigned seconds) {
   return syscall(SYSCALL_ALARM, &seconds);
 }
 
-void globalhandler(struct siginfo *info)
-{
+void globalhandler(struct siginfo *info) {
   struct sigaction *act;
   struct sigaction oldact;
   int signum = info->si_signo;
@@ -276,10 +247,8 @@ void globalhandler(struct siginfo *info)
   act = gettib()->proc->handlers + signum;
   memcpy(&oldact, act, sizeof(struct sigaction));
 
-  if (oldact.sa_handler == SIG_DFL)
-  {
-    switch (sigtab[signum].defaction)
-    {
+  if (oldact.sa_handler == SIG_DFL) {
+    switch (sigtab[signum].defaction) {
       case SIGACT_TERM:
         syslog(LOG_ERR, "terminating with signal %d (%s)", signum, strsignal(signum));
         exit((signum << 8) | 0x10000);
@@ -300,21 +269,19 @@ void globalhandler(struct siginfo *info)
       case SIGACT_CONT:
         break;
     }
-  }
-  else if (oldact.sa_handler != SIG_IGN)
-  {
-    if (oldact.sa_flags & SA_RESETHAND)
-    {
+  } else if (oldact.sa_handler != SIG_IGN) {
+    if (oldact.sa_flags & SA_RESETHAND) {
       act->sa_handler = SIG_IGN;
       act->sa_flags &= ~SA_SIGINFO;
     }
 
     if (oldact.sa_mask) sigprocmask(SIG_BLOCK, &oldact.sa_mask, NULL);
 
-    if (oldact.sa_flags & SA_SIGINFO)
+    if (oldact.sa_flags & SA_SIGINFO) {
       oldact.sa_sigaction(signum, info, info->si_ctxt);
-    else
+    } else {
       oldact.sa_handler(signum);
+    }
 
     if (oldact.sa_mask) sigprocmask(SIG_UNBLOCK, &oldact.sa_mask, NULL);
   }

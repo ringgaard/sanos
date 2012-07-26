@@ -35,15 +35,13 @@
 
 struct cpu cpu;
 
-struct cpu_model_info 
-{
+struct cpu_model_info {
   int vendor;
   int family;
   char *model_names[16];
 };
 
-static struct cpu_model_info cpu_models[] = 
-{
+static struct cpu_model_info cpu_models[] = {
   {CPU_VENDOR_INTEL,    4, {"486 DX-25/33", "486 DX-50", "486 SX", "486 DX/2", "486 SL", "486 SX/2", NULL, "486 DX/2-WB", "486 DX/4", "486 DX/4-WB", NULL, NULL, NULL, NULL, NULL, NULL}},
   {CPU_VENDOR_INTEL,    5, {"Pentium 60/66 A-step", "Pentium 60/66", "Pentium 75 - 200", "OverDrive PODP5V83", "Pentium MMX", NULL, NULL, "Mobile Pentium 75 - 200", "Mobile Pentium MMX", NULL, NULL, NULL, NULL, NULL, NULL, NULL}},
   {CPU_VENDOR_INTEL,    6, {"Pentium Pro A-step", "Pentium Pro", NULL, "Pentium II (Klamath)", NULL, "Pentium II (Deschutes)", "Mobile Pentium II", "Pentium III (Katmai)", "Pentium III (Coppermine)", NULL, "Pentium III (Cascades)", NULL, NULL, NULL, NULL}},
@@ -55,32 +53,26 @@ static struct cpu_model_info cpu_models[] =
   {CPU_VENDOR_RISE,     5, {"iDragon", NULL, "iDragon", NULL, NULL, NULL, NULL, NULL, "iDragon II", "iDragon II", NULL, NULL, NULL, NULL, NULL, NULL}}
 };
 
-static char *table_lookup_model(struct cpu *c)
-{
+static char *table_lookup_model(struct cpu *c) {
   struct cpu_model_info *info = cpu_models;
   int i;
 
   if (c->model >= 16) return NULL;
 
-  for (i = 0; i < sizeof(cpu_models) / sizeof(struct cpu_model_info); i++)
-  {
-    if (info->vendor == c->vendor && info->family == c->family)
-    {
+  for (i = 0; i < sizeof(cpu_models) / sizeof(struct cpu_model_info); i++) {
+    if (info->vendor == c->vendor && info->family == c->family) {
       return info->model_names[c->model];
     }
-
     info++;
   }
 
   return NULL;
 }
 
-static int eflag_supported(unsigned long flag)
-{
+static int eflag_supported(unsigned long flag) {
   unsigned long f1, f2;
 
-  __asm
-  {
+  __asm {
     // Save eflags
     pushfd
     
@@ -113,32 +105,28 @@ static int eflag_supported(unsigned long flag)
   return ((f1 ^ f2) & flag) != 0;
 }
 
-static int cpuid_supported()
-{
+static int cpuid_supported() {
   return eflag_supported(EFLAGS_ID);
 }
 
-void init_cpu()
-{
+void init_cpu() {
   unsigned long val[4];
   char *vendorname;
 
   // Check for CPUID supported
-  if (!cpuid_supported())
-  {
+  if (!cpuid_supported()) {
     // It must be either an 386 or 486 processor
-    if (eflag_supported(EFLAGS_AC))
+    if (eflag_supported(EFLAGS_AC)) {
       cpu.family = CPU_FAMILY_486;
-    else
+    } else {
       cpu.family = CPU_FAMILY_386;
+    }
 
     cpu.vendor = CPU_VENDOR_UNKNOWN;
     strcpy(cpu.vendorid, "IntelCompatible");
     vendorname = "Intel Compatible";
     sprintf(cpu.modelid, "%s %d86", vendorname, cpu.family);
-  }
-  else
-  {
+  } else {
     // Get vendor ID
     cpuid(0x00000000, val);
     cpu.cpuid_level = val[0];
@@ -146,50 +134,34 @@ void init_cpu()
     memcpy(cpu.vendorid + 4, val + 3, 4);
     memcpy(cpu.vendorid + 8, val + 2, 4);
 
-    if (strcmp(cpu.vendorid, "GenuineIntel") == 0)
-    {
+    if (strcmp(cpu.vendorid, "GenuineIntel") == 0) {
       cpu.vendor = CPU_VENDOR_INTEL;
       vendorname = "Intel";
-    }
-    else if (strcmp(cpu.vendorid, "AuthenticAMD") == 0)
-    {
+    } else if (strcmp(cpu.vendorid, "AuthenticAMD") == 0) {
       cpu.vendor = CPU_VENDOR_AMD;
       vendorname = "AMD";
-    }
-    else if (strcmp(cpu.vendorid, "CyrixInstead") == 0)
-    {
+    } else if (strcmp(cpu.vendorid, "CyrixInstead") == 0) {
       cpu.vendor = CPU_VENDOR_CYRIX;
       vendorname = "Cyrix";
-    }
-    else if (strcmp(cpu.vendorid, "UMC UMC UMC ") == 0)
-    {
+    } else if (strcmp(cpu.vendorid, "UMC UMC UMC ") == 0) {
       cpu.vendor = CPU_VENDOR_UMC;
       vendorname = "UMC";
-    }
-    else if (strcmp(cpu.vendorid, "CentaurHauls") == 0)
-    {
+    } else if (strcmp(cpu.vendorid, "CentaurHauls") == 0) {
       cpu.vendor = CPU_VENDOR_CENTAUR;
       vendorname = "Centaur";
-    }
-    else if (strcmp(cpu.vendorid, "NexGenDriven") == 0)
-    {
+    } else if (strcmp(cpu.vendorid, "NexGenDriven") == 0) {
       cpu.vendor = CPU_VENDOR_NEXGEN;
       vendorname = "NexGen";
-    }
-    else if (strcmp(cpu.vendorid, "GenuineTMx86") == 0 || strcmp(cpu.vendorid, "TransmetaCPU") == 0)
-    {
+    } else if (strcmp(cpu.vendorid, "GenuineTMx86") == 0 || strcmp(cpu.vendorid, "TransmetaCPU") == 0) {
       cpu.vendor = CPU_VENDOR_TRANSMETA;
       vendorname = "Transmeta";
-    }
-    else
-    {
+    } else {
       cpu.vendor = CPU_VENDOR_UNKNOWN;
       vendorname = cpu.vendorid;
     }
 
     // Get model and features
-    if (cpu.cpuid_level >= 0x00000001)
-    {
+    if (cpu.cpuid_level >= 0x00000001) {
       cpuid(0x00000001, val);
       cpu.family = (val[0] >> 8) & 15;
       cpu.model = (val[0] >> 4) & 15;
@@ -202,8 +174,7 @@ void init_cpu()
 
     // Get brand string
     cpuid(0x80000000, val);
-    if (val[0] > 0x80000000)
-    {
+    if (val[0] > 0x80000000) {
       char model[64];
       char *p, *q;
       int space;
@@ -218,42 +189,36 @@ void init_cpu()
       q = cpu.modelid;
       space = 0;
       while (*p == ' ') p++;
-      while (*p)
-      {
-        if (*p == ' ')
+      while (*p) {
+        if (*p == ' ') {
           space = 1;
-        else
-        {
+        } else {
           if (space) *q++ = ' ';
           space = 0;
           *q++ = *p;
         }
-
         p++;
       }
       *q = 0;
-    }
-    else
-    {
+    } else {
       char *modelid = table_lookup_model(&cpu);
-      if (modelid) 
+      if (modelid) {
         sprintf(cpu.modelid, "%s %s", vendorname, modelid);
-      else
+      } else {
         sprintf(cpu.modelid, "%s %d86", vendorname, cpu.family);
+      }
     }
   }
 
   kprintf(KERN_INFO "cpu: %s family %d model %d stepping %d\n", cpu.modelid, cpu.family, cpu.model, cpu.stepping);
 }
 
-int cpu_proc(struct proc_file *pf, void *arg)
-{
+int cpu_proc(struct proc_file *pf, void *arg) {
   pprintf(pf, "%s family %d model %d stepping %d\n", cpu.modelid, cpu.family, cpu.model, cpu.stepping);
   return 0;
 }
 
-int cpu_sysinfo(struct cpuinfo *info)
-{
+int cpu_sysinfo(struct cpuinfo *info) {
   info->cpu_vendor = cpu.vendor;
   info->cpu_family = cpu.family;
   info->cpu_model = cpu.model;
@@ -265,10 +230,8 @@ int cpu_sysinfo(struct cpuinfo *info)
   return 0;
 }
 
-__declspec(naked) unsigned long eflags()
-{
-  __asm
-  {
+__declspec(naked) unsigned long eflags() {
+  __asm {
     pushfd
     pop eax
     ret

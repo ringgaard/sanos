@@ -42,8 +42,7 @@ int pipefs_ioctl(struct file *filp, int cmd, void *data, size_t size);
 off64_t pipefs_lseek(struct file *filp, off64_t offset, int origin);
 int pipefs_fstat(struct file *filp, struct stat64 *buffer);
 
-struct fsops pipefsops =
-{
+struct fsops pipefsops = {
   FSOP_READ | FSOP_WRITE,
 
   NULL,
@@ -90,8 +89,7 @@ struct fsops pipefsops =
   NULL
 };
 
-struct pipereq
-{
+struct pipereq {
   struct pipereq *next;
   struct pipe *pipe;
   struct thread *thread;
@@ -100,8 +98,7 @@ struct pipereq
   int rc;
 };
 
-struct pipe
-{
+struct pipe {
   struct file *filp;
   struct pipe *peer;
   struct pipereq *waithead;
@@ -110,13 +107,11 @@ struct pipe
 
 struct fs *pipefs;
 
-static void release_all_waiters(struct pipe *pipe, int retcode)
-{
+static void release_all_waiters(struct pipe *pipe, int retcode) {
   struct pipereq *req = pipe->waithead;
   struct pipereq *next;
 
-  while (req)
-  {
+  while (req) {
     next = req->next;
     req->rc = retcode;
     mark_thread_ready(req->thread, 1, 2);
@@ -126,20 +121,14 @@ static void release_all_waiters(struct pipe *pipe, int retcode)
   pipe->waithead = pipe->waittail = NULL;
 }
 
-static void cancel_request(struct pipe *pipe, struct pipereq *req)
-{
-  if (pipe->waithead == req)
-  {
+static void cancel_request(struct pipe *pipe, struct pipereq *req) {
+  if (pipe->waithead == req) {
     pipe->waithead = req->next;
     if (pipe->waittail == req) pipe->waittail = NULL;
-  }
-  else if (pipe->waithead)
-  {
+  } else if (pipe->waithead) {
     struct pipereq *r = pipe->waithead;
-    while (r->next)
-    {
-      if (r->next == req)
-      {
+    while (r->next) {
+      if (r->next == req) {
         r->next = req->next;
         if (pipe->waittail == req) pipe->waittail = r;
         return;
@@ -149,14 +138,12 @@ static void cancel_request(struct pipe *pipe, struct pipereq *req)
   }
 }
 
-void init_pipefs()
-{
+void init_pipefs() {
   register_filesystem("pipefs", &pipefsops);
   mount("pipefs", "", "", NULL, &pipefs);
 }
 
-int pipe(struct file **readpipe, struct file **writepipe)
-{
+int pipe(struct file **readpipe, struct file **writepipe) {
   struct file *rd;
   struct file *wr;
   struct pipe *rdp;
@@ -168,8 +155,7 @@ int pipe(struct file **readpipe, struct file **writepipe)
   wr = newfile(pipefs, NULL, O_WRONLY, S_IWRITE);
   rdp = kmalloc(sizeof(struct pipe));
   wrp = kmalloc(sizeof(struct pipe));
-  if (!rd || !wr || !rdp || !wrp) 
-  {
+  if (!rd || !wr || !rdp || !wrp) {
     kfree(rd);
     kfree(wr);
     kfree(rdp);
@@ -193,29 +179,23 @@ int pipe(struct file **readpipe, struct file **writepipe)
   return 0;
 }
 
-int pipefs_mount(struct fs *fs, char *opts)
-{
+int pipefs_mount(struct fs *fs, char *opts) {
   // Only allow one instance of pipefs
   if (pipefs) return -EPERM;
   return 0;
 }
 
-int pipefs_close(struct file *filp)
-{
+int pipefs_close(struct file *filp) {
   struct pipe *pipe = (struct pipe *) filp->data;
 
   set_io_event(&filp->iob, IOEVT_CLOSE);
   release_all_waiters(pipe, -EINTR);
 
-  if (pipe->peer)
-  {
-    if (filp->flags & O_WRONLY)
-    {
+  if (pipe->peer) {
+    if (filp->flags & O_WRONLY) {
       set_io_event(&pipe->peer->filp->iob, IOEVT_READ);
       release_all_waiters(pipe->peer, 0);
-    }
-    else
-    {
+    } else {
       set_io_event(&pipe->peer->filp->iob, IOEVT_WRITE);
       release_all_waiters(pipe->peer, -EPIPE);
     }
@@ -228,13 +208,11 @@ int pipefs_close(struct file *filp)
   return 0;
 }
 
-int pipefs_fsync(struct file *filp)
-{
+int pipefs_fsync(struct file *filp) {
   return 0;
 }
 
-int pipefs_read(struct file *filp, void *data, size_t size, off64_t pos)
-{
+int pipefs_read(struct file *filp, void *data, size_t size, off64_t pos) {
   struct pipe *pipe = (struct pipe *) filp->data;
   char *p;
   size_t left;
@@ -246,8 +224,7 @@ int pipefs_read(struct file *filp, void *data, size_t size, off64_t pos)
   p = (char *) data;
   left = size;
   count = 0;
-  while (pipe->peer->waithead && left > 0)
-  {
+  while (pipe->peer->waithead && left > 0) {
     struct pipereq *req = pipe->peer->waithead;
     size_t bytes = req->size;
     
@@ -261,8 +238,7 @@ int pipefs_read(struct file *filp, void *data, size_t size, off64_t pos)
     left -= bytes;
     count += bytes;
 
-    if (req->size == 0)
-    {
+    if (req->size == 0) {
       pipe->peer->waithead = req->next;
       if (pipe->peer->waithead == NULL) pipe->peer->waittail = NULL;
       req->rc = 0;
@@ -272,8 +248,7 @@ int pipefs_read(struct file *filp, void *data, size_t size, off64_t pos)
 
   if (pipe->peer->waithead == NULL) clear_io_event(&filp->iob, IOEVT_READ);
 
-  if (count == 0)
-  {
+  if (count == 0) {
     struct pipereq req;
     int rc;
 
@@ -287,16 +262,16 @@ int pipefs_read(struct file *filp, void *data, size_t size, off64_t pos)
     req.rc = -EINTR;
     req.next = NULL;
 
-    if (pipe->waittail) 
+    if (pipe->waittail) { 
       pipe->waittail->next = &req;
-    else
+    } else {
       pipe->waittail = &req;
+    }
 
     if (!pipe->waithead) pipe->waithead = &req;
 
     rc = enter_alertable_wait(THREAD_WAIT_PIPE);
-    if (rc < 0)
-    {
+    if (rc < 0) {
       cancel_request(pipe, &req);
       req.rc = rc;
     }
@@ -308,8 +283,7 @@ int pipefs_read(struct file *filp, void *data, size_t size, off64_t pos)
   return count;
 }
 
-int pipefs_write(struct file *filp, void *data, size_t size, off64_t pos)
-{
+int pipefs_write(struct file *filp, void *data, size_t size, off64_t pos) {
   struct pipe *pipe = (struct pipe *) filp->data;
   char *p;
   size_t left;
@@ -320,8 +294,7 @@ int pipefs_write(struct file *filp, void *data, size_t size, off64_t pos)
 
   p = (char *) data;
   left = size;
-  while (pipe->peer->waithead && left > 0)
-  {
+  while (pipe->peer->waithead && left > 0) {
     struct pipereq *req = pipe->peer->waithead;
     size_t bytes = req->size;
     
@@ -340,8 +313,7 @@ int pipefs_write(struct file *filp, void *data, size_t size, off64_t pos)
 
   if (pipe->peer->waithead == NULL) clear_io_event(&filp->iob, IOEVT_WRITE);
 
-  if (left > 0)
-  {
+  if (left > 0) {
     struct pipereq req;
     int rc;
 
@@ -355,16 +327,16 @@ int pipefs_write(struct file *filp, void *data, size_t size, off64_t pos)
     req.rc = -EINTR;
     req.next = NULL;
 
-    if (pipe->waittail) 
+    if (pipe->waittail) { 
       pipe->waittail->next = &req;
-    else
+    } else {
       pipe->waittail = &req;
+    }
 
     if (!pipe->waithead) pipe->waithead = &req;
 
     rc = enter_alertable_wait(THREAD_WAIT_PIPE);
-    if (rc < 0)
-    {
+    if (rc < 0) {
       cancel_request(pipe, &req);
       req.rc = rc;
     }
@@ -375,19 +347,16 @@ int pipefs_write(struct file *filp, void *data, size_t size, off64_t pos)
   return size;
 }
 
-int pipefs_ioctl(struct file *filp, int cmd, void *data, size_t size)
-{
+int pipefs_ioctl(struct file *filp, int cmd, void *data, size_t size) {
   if (cmd == FIONBIO) return 0;
   return -ENOSYS;
 }
 
-off64_t pipefs_lseek(struct file *filp, off64_t offset, int origin)
-{
+off64_t pipefs_lseek(struct file *filp, off64_t offset, int origin) {
   return -ESPIPE;
 }
 
-int pipefs_fstat(struct file *filp, struct stat64 *buffer)
-{
+int pipefs_fstat(struct file *filp, struct stat64 *buffer) {
   // TODO: implement timestamps on create, read and write
   return -ENOSYS;
 }

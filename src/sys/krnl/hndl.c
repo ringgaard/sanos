@@ -39,8 +39,7 @@ handle_t *htab = (handle_t *) HTABBASE;
 handle_t hfreelist = HEND;
 int htabsize = 0;
 
-static int expand_htab()
-{
+static int expand_htab() {
   unsigned long pfn;
   handle_t h;
 
@@ -48,8 +47,7 @@ static int expand_htab()
   pfn = alloc_pageframe('HTAB');
   map_page(htab + htabsize, pfn, PT_WRITABLE | PT_PRESENT);
 
-  for (h = htabsize + HANDLES_PER_PAGE - 1; h >= htabsize; h--)
-  {
+  for (h = htabsize + HANDLES_PER_PAGE - 1; h >= htabsize; h--) {
     htab[h] = hfreelist;
     hfreelist = h;
   }
@@ -58,21 +56,15 @@ static int expand_htab()
   return 0;
 }
 
-static int remove_from_freelist(handle_t h)
-{
-  if (h == hfreelist)
-  {
+static int remove_from_freelist(handle_t h) {
+  if (h == hfreelist) {
     hfreelist = htab[h];
     return 0;
-  }
-  else 
-  {
+  } else  {
     handle_t fl = hfreelist;
 
-    while (fl != HEND)
-    {
-      if (h == htab[fl])
-      {
+    while (fl != HEND) {
+      if (h == htab[fl]) {
         htab[fl] = htab[h];
         return 0;
       }
@@ -82,8 +74,7 @@ static int remove_from_freelist(handle_t h)
   }
 }
 
-static struct object *hlookup(handle_t h)
-{
+static struct object *hlookup(handle_t h) {
   if (h < 0 || h >= htabsize) return NULL;
   if (!HUSED(htab[h])) return NULL;
   return HOBJ(htab[h]);
@@ -95,14 +86,12 @@ static struct object *hlookup(handle_t h)
 // Allocate handle
 //
 
-handle_t halloc(struct object *o)
-{
+handle_t halloc(struct object *o) {
   handle_t h;
   int rc;
 
   // Expand handle table if full
-  if (hfreelist == HEND)
-  {
+  if (hfreelist == HEND) {
     rc = expand_htab();
     if (rc < 0) return rc;
   }
@@ -122,31 +111,25 @@ handle_t halloc(struct object *o)
 // before beeing assigned
 //
 
-int hassign(struct object *o, handle_t h)
-{
+int hassign(struct object *o, handle_t h) {
   int rc;
 
   if (h > HTABSIZE / sizeof(handle_t)) return -EBADF;
 
-  while (htabsize <= h)
-  {
+  while (htabsize <= h) {
     rc = expand_htab();
     if (rc < 0) return rc;
   }
 
-  if (!HUSED(htab[h]))
-  {
+  if (!HUSED(htab[h])) {
     // Not allocated, remove from freelist
     rc = remove_from_freelist(h);
     if (rc < 0) return rc;
-  }
-  else
-  {
+  } else {
     // Handle already allocated, free handle
     struct object *oo = HOBJ(htab[h]);
     if (HPROT(htab[h])) return -EACCES;
-    if (--oo->handle_count == 0)
-    {
+    if (--oo->handle_count == 0) {
       rc = close_object(oo);
       if (oo->lock_count == 0) destroy_object(oo);
       if (rc < 0) return rc;
@@ -166,8 +149,7 @@ int hassign(struct object *o, handle_t h)
 // Free handle
 //
 
-int hfree(handle_t h)
-{
+int hfree(handle_t h) {
   struct object *o;
   int rc;
 
@@ -193,8 +175,7 @@ int hfree(handle_t h)
 // Protect handle from being closed
 //
 
-int hprotect(handle_t h)
-{
+int hprotect(handle_t h) {
   if (!hlookup(h)) return -EBADF;
   htab[h] |= HPROTECT;
   return 0;
@@ -206,8 +187,7 @@ int hprotect(handle_t h)
 // Remove protection handle
 //
 
-int hunprotect(handle_t h)
-{
+int hunprotect(handle_t h) {
   if (!hlookup(h)) return -EBADF;
   htab[h] &= ~HPROTECT;
   return 0;
@@ -219,8 +199,7 @@ int hunprotect(handle_t h)
 // Lock object
 //
 
-struct object *olock(handle_t h, int type)
-{
+struct object *olock(handle_t h, int type) {
   struct object *o;
 
   o = hlookup(h);
@@ -237,14 +216,14 @@ struct object *olock(handle_t h, int type)
 // Release lock on object
 //
 
-int orel(object_t hobj)
-{
+int orel(object_t hobj) {
   struct object *o = (struct object *) hobj;
 
-  if (--o->lock_count == 0 && o->handle_count == 0) 
+  if (--o->lock_count == 0 && o->handle_count == 0) {
     return destroy_object(o);
-  else
+  } else {
     return 0;
+  }
 }
 
 //
@@ -253,8 +232,7 @@ int orel(object_t hobj)
 
 #define FRAQ 2310
 
-static int handles_proc(struct proc_file *pf, void *arg)
-{
+static int handles_proc(struct proc_file *pf, void *arg) {
   static char *objtype[] = {"THREAD", "EVENT", "TIMER", "MUTEX", "SEM", "FILE", "SOCKET", "IOMUX"};
 
   int h;
@@ -266,8 +244,7 @@ static int handles_proc(struct proc_file *pf, void *arg)
 
   pprintf(pf, "handle addr     s p type   count locks\n");
   pprintf(pf, "------ -------- - - ------ ----- -----\n");
-  for (h = 0; h < htabsize; h++)
-  {
+  for (h = 0; h < htabsize; h++) {
     if (!HUSED(htab[h])) continue;
     o = HOBJ(htab[h]);
     
@@ -289,7 +266,6 @@ static int handles_proc(struct proc_file *pf, void *arg)
 // init_handles
 //
 
-void init_handles()
-{
+void init_handles() {
   register_proc_inode("handles", handles_proc, NULL);
 }

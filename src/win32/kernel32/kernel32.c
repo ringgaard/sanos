@@ -54,15 +54,13 @@ int sprintf(char *buf, const char *fmt, ...);
 #define NOFINDHANDLE ((HANDLE) (-2))
 #define PROCESSHEAP  ((HANDLE) (-3))
 
-struct winfinddata
-{
+struct winfinddata {
   handle_t fhandle;
   char dir[MAXPATH];
   char *mask;
 };
 
-struct vad
-{
+struct vad {
   void *addr;
   unsigned long size;
 };
@@ -71,13 +69,10 @@ struct vad vads[MAX_VADS];
 PTOP_LEVEL_EXCEPTION_FILTER topexcptfilter = NULL;
 void (*old_globalhandler)(struct siginfo *info);
 
-int convert_filename_to_unicode(const char *src, wchar_t *dst, int maxlen)
-{
+int convert_filename_to_unicode(const char *src, wchar_t *dst, int maxlen) {
   wchar_t *end = dst + maxlen;
-  while (*src)
-  {
-    if (dst == end) 
-    {
+  while (*src) {
+    if (dst == end) {
       errno = ENAMETOOLONG;
       return -1;
     }
@@ -85,8 +80,7 @@ int convert_filename_to_unicode(const char *src, wchar_t *dst, int maxlen)
     *dst++ = (unsigned char) *src++;
   }
   
-  if (dst == end) 
-  {
+  if (dst == end) {
     errno = ENAMETOOLONG;
     return -1;
   }
@@ -94,26 +88,21 @@ int convert_filename_to_unicode(const char *src, wchar_t *dst, int maxlen)
   return 0;
 }
 
-int convert_filename_from_unicode(const wchar_t *src, char *dst, int maxlen)
-{
+int convert_filename_from_unicode(const wchar_t *src, char *dst, int maxlen) {
   char *end = dst + maxlen;
-  while (*src)
-  {
-    if (dst == end) 
-    {
+  while (*src) {
+    if (dst == end) {
       errno = ENAMETOOLONG;
       return -1;
     }
-    if (*src & 0xFF00) 
-    {
+    if (*src & 0xFF00) {
       errno = EINVAL;
       return -1;
     }
     *dst++ = (unsigned char) *src++;
   }
   
-  if (dst == end) 
-  {
+  if (dst == end) {
     errno = ENAMETOOLONG;
     return -1;
   }
@@ -121,10 +110,8 @@ int convert_filename_from_unicode(const wchar_t *src, char *dst, int maxlen)
   return 0;
 }
 
-void convert_from_win32_context(struct context *ctxt, CONTEXT *ctx)
-{
-  if (ctx->ContextFlags & CONTEXT_CONTROL)
-  {
+void convert_from_win32_context(struct context *ctxt, CONTEXT *ctx) {
+  if (ctx->ContextFlags & CONTEXT_CONTROL) {
     ctxt->ess = ctx->SegSs;
     ctxt->esp = ctx->Esp;
     ctxt->ecs = ctx->SegCs;
@@ -133,8 +120,7 @@ void convert_from_win32_context(struct context *ctxt, CONTEXT *ctx)
     ctxt->ebp = ctx->Ebp;
   }
 
-  if (ctx->ContextFlags & CONTEXT_INTEGER)
-  {
+  if (ctx->ContextFlags & CONTEXT_INTEGER) {
     ctxt->eax = ctx->Eax;
     ctxt->ebx = ctx->Ebx;
     ctxt->ecx = ctx->Ecx;
@@ -143,27 +129,23 @@ void convert_from_win32_context(struct context *ctxt, CONTEXT *ctx)
     ctxt->edi = ctx->Edi;
   }
 
-  if (ctx->ContextFlags & CONTEXT_SEGMENTS)
-  {
+  if (ctx->ContextFlags & CONTEXT_SEGMENTS) {
     ctxt->ds = ctx->SegDs;
     ctxt->es = ctx->SegEs;
     // fs missing
     // gs missing
   }
 
-  if (ctx->ContextFlags & CONTEXT_FLOATING_POINT)
-  {
+  if (ctx->ContextFlags & CONTEXT_FLOATING_POINT) {
     // fpu state missing
   }
 
-  if (ctx->ContextFlags & CONTEXT_DEBUG_REGISTERS)
-  {
+  if (ctx->ContextFlags & CONTEXT_DEBUG_REGISTERS) {
     // debug registers missing
   }
 }
 
-void convert_to_win32_context(struct context *ctxt, CONTEXT *ctx)
-{
+void convert_to_win32_context(struct context *ctxt, CONTEXT *ctx) {
   memset(ctx, 0, sizeof(CONTEXT));
   ctx->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS;
 
@@ -187,16 +169,14 @@ void convert_to_win32_context(struct context *ctxt, CONTEXT *ctx)
   ctx->SegGs = 0;
 }
 
-static __inline EXCEPTION_FRAME *push_frame(EXCEPTION_FRAME *frame)
-{
+static __inline EXCEPTION_FRAME *push_frame(EXCEPTION_FRAME *frame) {
   struct tib *tib = gettib();
   frame->prev = (EXCEPTION_FRAME *) tib->except;
   tib->except = (struct xcptrec *) frame;
   return frame->prev;
 }
 
-static __inline EXCEPTION_FRAME *pop_frame(EXCEPTION_FRAME *frame)
-{
+static __inline EXCEPTION_FRAME *pop_frame(EXCEPTION_FRAME *frame) {
   struct tib *tib = gettib();
   tib->except = (struct xcptrec *) frame->prev;
   return frame->prev;
@@ -206,8 +186,7 @@ static __inline EXCEPTION_FRAME *pop_frame(EXCEPTION_FRAME *frame)
 // Handler for exceptions happening inside a handler
 //
 
-static EXCEPTION_DISPOSITION raise_handler(EXCEPTION_RECORD *rec, EXCEPTION_FRAME *frame, CONTEXT *ctxt, EXCEPTION_FRAME **dispatcher)
-{
+static EXCEPTION_DISPOSITION raise_handler(EXCEPTION_RECORD *rec, EXCEPTION_FRAME *frame, CONTEXT *ctxt, EXCEPTION_FRAME **dispatcher) {
   if (rec->ExceptionFlags & (EH_UNWINDING | EH_EXIT_UNWIND)) return ExceptionContinueSearch;
 
   // We shouldn't get here so we store faulty frame in dispatcher
@@ -219,8 +198,7 @@ static EXCEPTION_DISPOSITION raise_handler(EXCEPTION_RECORD *rec, EXCEPTION_FRAM
 // Handler for exceptions happening inside an unwind handler.
 //
 
-static EXCEPTION_DISPOSITION unwind_handler(EXCEPTION_RECORD *rec, EXCEPTION_FRAME *frame, CONTEXT *ctxt, EXCEPTION_FRAME **dispatcher)
-{
+static EXCEPTION_DISPOSITION unwind_handler(EXCEPTION_RECORD *rec, EXCEPTION_FRAME *frame, CONTEXT *ctxt, EXCEPTION_FRAME **dispatcher) {
   if (!(rec->ExceptionFlags & (EH_UNWINDING | EH_EXIT_UNWIND))) return ExceptionContinueSearch;
 
   // We shouldn't get here so we store faulty frame in dispatcher
@@ -233,16 +211,13 @@ static EXCEPTION_DISPOSITION unwind_handler(EXCEPTION_RECORD *rec, EXCEPTION_FRA
 // happening during the handler execution.
 //
 
-static EXCEPTION_DISPOSITION call_handler
-(
-  EXCEPTION_RECORD *record, 
-  EXCEPTION_FRAME *frame,
-  CONTEXT *ctxt, 
-  EXCEPTION_FRAME **dispatcher,
-  PEXCEPTION_HANDLER handler, 
-  PEXCEPTION_HANDLER nested_handler
-)
-{
+static EXCEPTION_DISPOSITION call_handler(
+    EXCEPTION_RECORD *record, 
+    EXCEPTION_FRAME *frame,
+    CONTEXT *ctxt, 
+    EXCEPTION_FRAME **dispatcher,
+    PEXCEPTION_HANDLER handler, 
+    PEXCEPTION_HANDLER nested_handler) {
   NESTED_FRAME newframe;
   EXCEPTION_DISPOSITION rc;
 
@@ -257,8 +232,7 @@ static EXCEPTION_DISPOSITION call_handler
   return rc;
 }
 
-void raise_exception(EXCEPTION_RECORD *rec, CONTEXT *ctxt)
-{
+void raise_exception(EXCEPTION_RECORD *rec, CONTEXT *ctxt) {
   PEXCEPTION_FRAME frame, dispatch, nested_frame;
   EXCEPTION_RECORD newrec;
   EXCEPTION_DISPOSITION rc;
@@ -268,28 +242,24 @@ void raise_exception(EXCEPTION_RECORD *rec, CONTEXT *ctxt)
 
   frame = (EXCEPTION_FRAME *) tib->except;
   nested_frame = NULL;
-  while (frame != (PEXCEPTION_FRAME) 0xFFFFFFFF)
-  {
+  while (frame != (PEXCEPTION_FRAME) 0xFFFFFFFF) {
     //syslog(LOG_DEBUG, "frame: %p handler: %p", frame, frame->handler);
     
     // Check frame address
-    if ((void *) frame < tib->stacklimit || (void *)(frame + 1) > tib->stacktop || (int) frame & 3)
-    {
+    if ((void *) frame < tib->stacklimit || (void *)(frame + 1) > tib->stacktop || (int) frame & 3) {
       rec->ExceptionFlags |= EH_STACK_INVALID;
       break;
     }
 
     // Call handler
     rc = call_handler(rec, frame, ctxt, &dispatch, frame->handler, raise_handler);
-    if (frame == nested_frame)
-    {
+    if (frame == nested_frame) {
       // No longer nested
       nested_frame = NULL;
       rec->ExceptionFlags &= ~EH_NESTED_CALL;
     }
 
-    switch (rc)
-    {
+    switch (rc) {
       case ExceptionContinueExecution:
         if (!(rec->ExceptionFlags & EH_NONCONTINUABLE)) return;
         newrec.ExceptionCode = STATUS_NONCONTINUABLE_EXCEPTION;
@@ -324,8 +294,7 @@ void raise_exception(EXCEPTION_RECORD *rec, CONTEXT *ctxt)
   // DefaultHandling(rec, context);
 }
 
-void unwind(PEXCEPTION_FRAME endframe, LPVOID eip, PEXCEPTION_RECORD rec, DWORD retval, CONTEXT *ctxt)
-{
+void unwind(PEXCEPTION_FRAME endframe, LPVOID eip, PEXCEPTION_RECORD rec, DWORD retval, CONTEXT *ctxt) {
   EXCEPTION_RECORD record, newrec;
   PEXCEPTION_FRAME frame, dispatch;
   EXCEPTION_DISPOSITION rc;
@@ -334,8 +303,7 @@ void unwind(PEXCEPTION_FRAME endframe, LPVOID eip, PEXCEPTION_RECORD rec, DWORD 
   ctxt->Eax = retval;
 
   // Build an exception record, if we do not have one
-  if (!rec)
-  {
+  if (!rec) {
     record.ExceptionCode    = STATUS_UNWIND;
     record.ExceptionFlags   = 0;
     record.ExceptionRecord  = NULL;
@@ -350,11 +318,9 @@ void unwind(PEXCEPTION_FRAME endframe, LPVOID eip, PEXCEPTION_RECORD rec, DWORD 
 
   // Get chain of exception frames
   frame = (EXCEPTION_FRAME *) tib->except;
-  while (frame != (PEXCEPTION_FRAME) 0xffffffff && frame != endframe)
-  {
+  while (frame != (PEXCEPTION_FRAME) 0xffffffff && frame != endframe) {
     // Check frame address
-    if (endframe && (frame > endframe))
-    {
+    if (endframe && (frame > endframe)) {
       newrec.ExceptionCode = STATUS_INVALID_UNWIND_TARGET;
       newrec.ExceptionFlags = EH_NONCONTINUABLE;
       newrec.ExceptionRecord = rec;
@@ -363,8 +329,7 @@ void unwind(PEXCEPTION_FRAME endframe, LPVOID eip, PEXCEPTION_RECORD rec, DWORD 
       //TODO: RtlRaiseException(&newrec);  // Never returns
     }
 
-    if ((void *) frame < tib->stacklimit || (void *)(frame + 1) > tib->stacktop || (int) frame & 3)
-    {
+    if ((void *) frame < tib->stacklimit || (void *)(frame + 1) > tib->stacktop || (int) frame & 3) {
       newrec.ExceptionCode = STATUS_BAD_STACK;
       newrec.ExceptionFlags = EH_NONCONTINUABLE;
       newrec.ExceptionRecord = rec;
@@ -376,8 +341,7 @@ void unwind(PEXCEPTION_FRAME endframe, LPVOID eip, PEXCEPTION_RECORD rec, DWORD 
     // Call handler
     rc = call_handler(rec, frame, ctxt, &dispatch, frame->handler, unwind_handler);
 
-    switch (rc)
-    {
+    switch (rc) {
       case ExceptionContinueSearch:
         break;
 
@@ -398,8 +362,7 @@ void unwind(PEXCEPTION_FRAME endframe, LPVOID eip, PEXCEPTION_RECORD rec, DWORD 
   }
 }
 
-void win32_globalhandler(struct siginfo *info)
-{
+void win32_globalhandler(struct siginfo *info) {
   CONTEXT ctxt;
   EXCEPTION_RECORD rec;
   EXCEPTION_POINTERS ep;
@@ -414,8 +377,7 @@ void win32_globalhandler(struct siginfo *info)
 
   convert_to_win32_context(info->si_ctxt, &ctxt);
   
-  switch (info->si_ctxt->traptype)
-  {
+  switch (info->si_ctxt->traptype) {
     case INTR_DIV:
       rec.ExceptionCode = EXCEPTION_INT_DIVIDE_BY_ZERO;
       break;
@@ -437,10 +399,11 @@ void win32_globalhandler(struct siginfo *info)
       break;
 
     case INTR_PGFLT:
-      if (info->si_signo == SIGSTKFLT)
+      if (info->si_signo == SIGSTKFLT) {
         rec.ExceptionCode = STATUS_GUARD_PAGE_VIOLATION;
-      else
+      } else {
         rec.ExceptionCode = EXCEPTION_ACCESS_VIOLATION;
+      }
       rec.NumberParameters = 2;
       rec.ExceptionInformation[0] = (void *) ((info->si_ctxt->errcode & 2) ? 1 : 0);
       rec.ExceptionInformation[1] = info->si_addr;
@@ -463,41 +426,34 @@ void win32_globalhandler(struct siginfo *info)
   sigexit(info, 0);
 }
 
-BOOL WINAPI CloseHandle
-(
-  HANDLE hObject
-)
-{
+BOOL WINAPI CloseHandle(
+    HANDLE hObject) {
   TRACE("CloseHandle");
   if (close((handle_t) hObject) < 0) return FALSE;
   return TRUE;
 }
 
 LONG WINAPI CompareFileTime(
-  CONST FILETIME *lpFileTime1,
-  CONST FILETIME *lpFileTime2
-)
-{
+    CONST FILETIME *lpFileTime1,
+    CONST FILETIME *lpFileTime2) {
   TRACE("CompareFileTime");
 
-  if (lpFileTime1->dwHighDateTime > lpFileTime2->dwHighDateTime)
+  if (lpFileTime1->dwHighDateTime > lpFileTime2->dwHighDateTime) {
     return 1;
-  else if (lpFileTime1->dwHighDateTime < lpFileTime2->dwHighDateTime)
+  } else if (lpFileTime1->dwHighDateTime < lpFileTime2->dwHighDateTime) {
     return -1;
-  else if (lpFileTime1->dwLowDateTime > lpFileTime2->dwLowDateTime)
+  } else if (lpFileTime1->dwLowDateTime > lpFileTime2->dwLowDateTime) {
     return 1;
-  else if (lpFileTime1->dwLowDateTime < lpFileTime2->dwLowDateTime)
+  } else if (lpFileTime1->dwLowDateTime < lpFileTime2->dwLowDateTime) {
     return -1;
-  else
+  } else {
     return 0;
+  }
 }
 
-BOOL WINAPI CreateDirectoryA
-(
-  LPCTSTR lpPathName,
-  LPSECURITY_ATTRIBUTES lpSecurityAttributes
-)
-{
+BOOL WINAPI CreateDirectoryA(
+    LPCTSTR lpPathName,
+    LPSECURITY_ATTRIBUTES lpSecurityAttributes) {
   int rc;
 
   TRACE("CreateDirectoryA");
@@ -507,12 +463,9 @@ BOOL WINAPI CreateDirectoryA
   return TRUE;
 }
 
-BOOL WINAPI CreateDirectoryW
-(
-  LPCWSTR lpPathName,
-  LPSECURITY_ATTRIBUTES lpSecurityAttributes
-)
-{
+BOOL WINAPI CreateDirectoryW(
+    LPCWSTR lpPathName,
+    LPSECURITY_ATTRIBUTES lpSecurityAttributes) {
   char fn[MAXPATH];
   int rc;
 
@@ -524,30 +477,24 @@ BOOL WINAPI CreateDirectoryW
   return CreateDirectoryA(fn, lpSecurityAttributes);
 }
 
-HANDLE WINAPI CreateEventA
-(
-  LPSECURITY_ATTRIBUTES lpEventAttributes,
-  BOOL bManualReset,
-  BOOL bInitialState,
-  LPCTSTR lpName
-)
-{
+HANDLE WINAPI CreateEventA(
+    LPSECURITY_ATTRIBUTES lpEventAttributes,
+    BOOL bManualReset,
+    BOOL bInitialState,
+    LPCTSTR lpName) {
   TRACE("CreateEventA");
   if (lpName != NULL) panic("named event not supported");
   return (HANDLE) mkevent(bManualReset, bInitialState);
 }
 
-HANDLE WINAPI CreateFileA
-(
-  LPCTSTR lpFileName, 
-  DWORD dwDesiredAccess, 
-  DWORD dwShareMode, 
-  LPSECURITY_ATTRIBUTES lpSecurityAttributes, 
-  DWORD dwCreationDisposition, 
-  DWORD dwFlagsAndAttributes, 
-  HANDLE hTemplateFile
-)
-{
+HANDLE WINAPI CreateFileA(
+    LPCTSTR lpFileName, 
+    DWORD dwDesiredAccess, 
+    DWORD dwShareMode, 
+    LPSECURITY_ATTRIBUTES lpSecurityAttributes, 
+    DWORD dwCreationDisposition, 
+    DWORD dwFlagsAndAttributes, 
+    HANDLE hTemplateFile) {
   int flags = 0;
   int mode = 0;
   int shflags = 0;
@@ -555,28 +502,29 @@ HANDLE WINAPI CreateFileA
 
   TRACE("CreateFile");
 
-  if ((dwDesiredAccess & (GENERIC_READ | GENERIC_WRITE)) == (GENERIC_READ | GENERIC_WRITE))
+  if ((dwDesiredAccess & (GENERIC_READ | GENERIC_WRITE)) == (GENERIC_READ | GENERIC_WRITE)) {
     flags = O_RDWR;
-  else if (dwDesiredAccess & GENERIC_READ)
+  } else if (dwDesiredAccess & GENERIC_READ) {
     flags = O_RDONLY;
-  else if (dwDesiredAccess & GENERIC_WRITE)
+  } else if (dwDesiredAccess & GENERIC_WRITE) {
     flags = O_WRONLY;
-  else if (dwDesiredAccess & GENERIC_ALL)
+  } else if (dwDesiredAccess & GENERIC_ALL) {
     flags = O_RDWR;
-  else
+  } else {
     flags = O_RDONLY;
+  }
 
-  if ((dwShareMode & (FILE_SHARE_READ | FILE_SHARE_WRITE)) == (FILE_SHARE_READ | FILE_SHARE_WRITE))
+  if ((dwShareMode & (FILE_SHARE_READ | FILE_SHARE_WRITE)) == (FILE_SHARE_READ | FILE_SHARE_WRITE)) {
     shflags = SH_DENYNO;
-  else if (dwShareMode & FILE_SHARE_READ)
+  } else if (dwShareMode & FILE_SHARE_READ) {
     shflags = SH_DENYWR;
-  else if (dwShareMode & FILE_SHARE_WRITE)
+  } else if (dwShareMode & FILE_SHARE_WRITE) {
     shflags = SH_DENYRD;
-  else
+  } else {
     shflags = SH_DENYRW;
+  }
 
-  switch (dwCreationDisposition)
-  {
+  switch (dwCreationDisposition) {
     case CREATE_NEW:
       flags |= O_CREAT | O_EXCL;
       break;
@@ -602,13 +550,13 @@ HANDLE WINAPI CreateFileA
       return FALSE;
   }
 
-  if (dwFlagsAndAttributes & FILE_ATTRIBUTE_READONLY)
+  if (dwFlagsAndAttributes & FILE_ATTRIBUTE_READONLY) {
     mode = S_IREAD;
-  else
+  } else {
     mode = S_IREAD | S_IWRITE | S_IEXEC;
+  }
 
-  if (dwFlagsAndAttributes & FILE_FLAG_OVERLAPPED)
-  {
+  if (dwFlagsAndAttributes & FILE_FLAG_OVERLAPPED) {
     syslog(LOG_WARNING, "CreateFile(%s): overlapped operation not supported", lpFileName);
     errno = EINVAL;
     return INVALID_HANDLE_VALUE;
@@ -626,32 +574,26 @@ HANDLE WINAPI CreateFileA
   return (HANDLE) h;
 }
 
-HANDLE WINAPI CreateFileMappingA
-(
-  HANDLE hFile,
-  LPSECURITY_ATTRIBUTES lpAttributes,
-  DWORD flProtect,
-  DWORD dwMaximumSizeHigh,
-  DWORD dwMaximumSizeLow,
-  LPCTSTR lpName
-)
-{
+HANDLE WINAPI CreateFileMappingA(
+    HANDLE hFile,
+    LPSECURITY_ATTRIBUTES lpAttributes,
+    DWORD flProtect,
+    DWORD dwMaximumSizeHigh,
+    DWORD dwMaximumSizeLow,
+    LPCTSTR lpName) {
   TRACE("CreateFileMappingA");
   panic("CreateFileMappingA not implemented");
   return INVALID_HANDLE_VALUE;
 }
 
-HANDLE WINAPI CreateFileW
-(
-  LPCWSTR lpFileName,
-  DWORD dwDesiredAccess,
-  DWORD dwShareMode,
-  LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-  DWORD dwCreationDisposition,
-  DWORD dwFlagsAndAttributes,
-  HANDLE hTemplateFile
-)
-{
+HANDLE WINAPI CreateFileW(
+    LPCWSTR lpFileName,
+    DWORD dwDesiredAccess,
+    DWORD dwShareMode,
+    LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+    DWORD dwCreationDisposition,
+    DWORD dwFlagsAndAttributes,
+    HANDLE hTemplateFile) {
   char fn[MAXPATH];
   int rc;
 
@@ -663,81 +605,62 @@ HANDLE WINAPI CreateFileW
   return CreateFileA(fn, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 }
 
-BOOL WINAPI CreatePipe
-(
-  PHANDLE hReadPipe, 
-  PHANDLE hWritePipe, 
-  LPSECURITY_ATTRIBUTES lpPipeAttributes, 
-  DWORD nSize
-)
-{
+BOOL WINAPI CreatePipe(
+    PHANDLE hReadPipe, 
+    PHANDLE hWritePipe, 
+    LPSECURITY_ATTRIBUTES lpPipeAttributes, 
+    DWORD nSize) {
   TRACE("CreatePipe");
   panic("CreatePipe not implemented");
   return FALSE;
 }
 
-BOOL WINAPI CreateProcessA
-(
-  LPCTSTR lpApplicationName,
-  LPTSTR lpCommandLine,
-  LPSECURITY_ATTRIBUTES lpProcessAttributes,
-  LPSECURITY_ATTRIBUTES lpThreadAttributes,
-  BOOL bInheritHandles,
-  DWORD dwCreationFlags,
-  LPVOID lpEnvironment,
-  LPCTSTR lpCurrentDirectory,
-  LPSTARTUPINFO lpStartupInfo,
-  LPPROCESS_INFORMATION lpProcessInformation
-)
-{
+BOOL WINAPI CreateProcessA(
+    LPCTSTR lpApplicationName,
+    LPTSTR lpCommandLine,
+    LPSECURITY_ATTRIBUTES lpProcessAttributes,
+    LPSECURITY_ATTRIBUTES lpThreadAttributes,
+    BOOL bInheritHandles,
+    DWORD dwCreationFlags,
+    LPVOID lpEnvironment,
+    LPCTSTR lpCurrentDirectory,
+    LPSTARTUPINFO lpStartupInfo,
+    LPPROCESS_INFORMATION lpProcessInformation) {
   TRACE("CreateProcessA");
   panic("CreateProcessA not implemented");
   return FALSE;
 }
 
-HANDLE WINAPI CreateSemaphoreA
-(
-  LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
-  LONG lInitialCount,
-  LONG lMaximumCount,
-  LPCTSTR lpName
-)
-{
+HANDLE WINAPI CreateSemaphoreA(
+    LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
+    LONG lInitialCount,
+    LONG lMaximumCount,
+    LPCTSTR lpName) {
   TRACE("CreateSemaphoreA");
   if (lpName != NULL) panic("named semaphores not supported");
   return (HANDLE) mksem(lInitialCount);
 }
 
-VOID WINAPI DebugBreak(VOID)
-{
+VOID WINAPI DebugBreak(VOID) {
   TRACE("DebugBreak");
   dbgbreak();
 }
 
-VOID WINAPI DeleteCriticalSection
-(
-  LPCRITICAL_SECTION lpCriticalSection
-)
-{
+VOID WINAPI DeleteCriticalSection(
+    LPCRITICAL_SECTION lpCriticalSection) {
   TRACE("DeleteCriticalSection");
   csfree(lpCriticalSection);
 }
 
-BOOL WINAPI DeleteFileA
-(
-  LPCTSTR lpFileName
-)
-{
+BOOL WINAPI DeleteFileA(
+    LPCTSTR lpFileName) {
   TRACE("DeleteFileA");
   if (unlink(lpFileName) < 0) return FALSE;
   return TRUE;
 }
 
-BOOL WINAPI DeleteFileW
-(
-  LPCWSTR lpFileName
-)
-{
+BOOL WINAPI DeleteFileW(
+    LPCWSTR lpFileName) {
   char fn[MAXPATH];
   int rc;
 
@@ -749,58 +672,43 @@ BOOL WINAPI DeleteFileW
   return DeleteFileA(fn);
 }
 
-BOOL WINAPI DisableThreadLibraryCalls
-(
-  HMODULE hModule
-)
-{
+BOOL WINAPI DisableThreadLibraryCalls(
+    HMODULE hModule) {
   TRACE("DisableThreadLibraryCalls");
   // ignore
   return TRUE;
 }
 
-BOOL WINAPI DuplicateHandle
-(
-  HANDLE hSourceProcessHandle,
-  HANDLE hSourceHandle,
-  HANDLE hTargetProcessHandle,
-  LPHANDLE lpTargetHandle,
-  DWORD dwDesiredAccess,
-  BOOL bInheritHandle,
-  DWORD dwOptions
-)
-{
+BOOL WINAPI DuplicateHandle(
+    HANDLE hSourceProcessHandle,
+    HANDLE hSourceHandle,
+    HANDLE hTargetProcessHandle,
+    LPHANDLE lpTargetHandle,
+    DWORD dwDesiredAccess,
+    BOOL bInheritHandle,
+    DWORD dwOptions) {
   TRACE("DuplicateHandle");
   *lpTargetHandle = (HANDLE) dup((handle_t) hSourceHandle);
   return TRUE;
 }
 
-VOID WINAPI EnterCriticalSection
-(
-  LPCRITICAL_SECTION lpCriticalSection
-)
-{
+VOID WINAPI EnterCriticalSection(
+    LPCRITICAL_SECTION lpCriticalSection) {
   TRACEX("EnterCriticalSection");
   enter(lpCriticalSection);
 }
 
-BOOL WINAPI FileTimeToLocalFileTime
-(
-  CONST FILETIME *lpFileTime,
-  LPFILETIME lpLocalFileTime
-)
-{
+BOOL WINAPI FileTimeToLocalFileTime(
+    CONST FILETIME *lpFileTime,
+    LPFILETIME lpLocalFileTime) {
   TRACEX("FileTimeToLocalFileTime");
   *lpLocalFileTime = *lpFileTime;
   return TRUE;
 }
 
-BOOL WINAPI FileTimeToSystemTime
-(
-  CONST FILETIME *lpFileTime,
-  LPSYSTEMTIME lpSystemTime
-)
-{
+BOOL WINAPI FileTimeToSystemTime(
+    CONST FILETIME *lpFileTime,
+    LPSYSTEMTIME lpSystemTime) {
   time_t t;
   struct tm tm;
 
@@ -822,17 +730,17 @@ BOOL WINAPI FileTimeToSystemTime
   return TRUE;
 }
 
-static void fill_find_data(LPWIN32_FIND_DATA fd, char *filename, struct stat64 *statbuf)
-{
+static void fill_find_data(LPWIN32_FIND_DATA fd, char *filename, struct stat64 *statbuf) {
   FILETIME *ft;
 
   memset(fd, 0, sizeof(WIN32_FIND_DATA));
   strcpy(fd->cFileName, filename);
 
-  if ((statbuf->st_mode & S_IFMT) == S_IFDIR) 
+  if ((statbuf->st_mode & S_IFMT) == S_IFDIR) {
     fd->dwFileAttributes |= FILE_ATTRIBUTE_DIRECTORY;
-  else
+  } else {
     fd->dwFileAttributes |= FILE_ATTRIBUTE_NORMAL;
+  }
 
   ft = (FILETIME *) &statbuf->st_size;
   fd->nFileSizeLow = ft->dwLowDateTime;
@@ -843,50 +751,40 @@ static void fill_find_data(LPWIN32_FIND_DATA fd, char *filename, struct stat64 *
   *(unsigned __int64 *) &(fd->ftLastWriteTime) = (unsigned __int64) statbuf->st_mtime * SECTIMESCALE + EPOC;
 }
 
-static int like(char *str, char *mask)
-{
+static int like(char *str, char *mask) {
   if (!str) str = "";
   if (!mask) mask = "";
 
-  while (*mask)
-  {
-    if (*mask == '*')
-    {
+  while (*mask) {
+    if (*mask == '*') {
       while (*mask == '*') mask++;
       if (*mask == 0) return 1;
-      while (*str)
-      {
+      while (*str) {
         if (like(str, mask)) return 1;
         str++;
       }
       return 0;
-    }
-    else if (*mask == *str || *mask == '?' && *str != 0)
-    {
+    } else if (*mask == *str || *mask == '?' && *str != 0) {
       str++;
       mask++;
-    }
-    else
+    } else {
       return 0;
+    }
   }
 
   return *str == 0;
 }
 
-BOOL WINAPI FindClose
-(
-  HANDLE hFindFile
-)
-{
+BOOL WINAPI FindClose(
+    HANDLE hFindFile) {
   struct winfinddata *finddata;
 
   TRACE("FindClose");
-  if (hFindFile == NOFINDHANDLE)
+  if (hFindFile == NOFINDHANDLE) {
     return TRUE;
-  else if (hFindFile == INVALID_HANDLE_VALUE)
+  } else if (hFindFile == INVALID_HANDLE_VALUE) {
     return FALSE;
-  else
-  {
+  } else {
     finddata = (struct winfinddata *) hFindFile;
 
     close(finddata->fhandle);
@@ -896,12 +794,9 @@ BOOL WINAPI FindClose
   }
 }
 
-HANDLE WINAPI FindFirstFileA
-(
-  LPCTSTR lpFileName,
-  LPWIN32_FIND_DATA lpFindFileData
-)
-{
+HANDLE WINAPI FindFirstFileA(
+    LPCTSTR lpFileName,
+    LPWIN32_FIND_DATA lpFindFileData) {
   struct winfinddata *finddata;
   struct direntry dirent;
   struct stat64 statbuf;
@@ -915,11 +810,9 @@ HANDLE WINAPI FindFirstFileA
   p = (char *) lpFileName;
   while (*p != 0 && *p != '*' && *p != '?') p++;
   
-  if (*p)
-  {
+  if (*p) {
     finddata = (struct winfinddata *) malloc(sizeof(struct winfinddata));
-    if (!finddata) 
-    {
+    if (!finddata) {
       errno = ENOMEM;
       return INVALID_HANDLE_VALUE;
     }
@@ -927,13 +820,11 @@ HANDLE WINAPI FindFirstFileA
     strcpy(finddata->dir, lpFileName);
     base = NULL;
     p = finddata->dir;
-    while (*p)
-    {
+    while (*p) {
       if (*p == PS1 || *p == PS2) base = p + 1;
       p++;
     }
-    if (!base)
-    {
+    if (!base) {
       errno = ENOTDIR;
       free(finddata);
       return INVALID_HANDLE_VALUE;
@@ -941,29 +832,24 @@ HANDLE WINAPI FindFirstFileA
     base[-1] = 0;
     finddata->mask = base;
 
-    if (finddata->mask[0] == '*' && finddata->mask[1] == '.' && finddata->mask[2] == '*' && finddata->mask[3] == 0) 
-    {
+    if (finddata->mask[0] == '*' && finddata->mask[1] == '.' && finddata->mask[2] == '*' && finddata->mask[3] == 0) {
       finddata->mask[1] = 0;
     }
 
     finddata->fhandle = _opendir(finddata->dir);
-    if (finddata->fhandle < 0)
-    {
+    if (finddata->fhandle < 0) {
       free(finddata);
       return INVALID_HANDLE_VALUE;
     }
 
-    while (_readdir(finddata->fhandle, &dirent, 1) > 0)
-    {
+    while (_readdir(finddata->fhandle, &dirent, 1) > 0) {
       //syslog(LOG_DEBUG | LOG_AUX, "match %s with %s", dirent.name, finddata->mask);
-      if (like(dirent.name, finddata->mask))
-      {
+      if (like(dirent.name, finddata->mask)) {
         strcpy(fn, finddata->dir);
         strcpy(fn + strlen(fn), "\\");
         strcpy(fn + strlen(fn), dirent.name);
 
-        if (stat64(fn, &statbuf) < 0) 
-        {
+        if (stat64(fn, &statbuf) < 0) {
           errno = ENOENT;
           free(finddata);
           return INVALID_HANDLE_VALUE;
@@ -977,27 +863,22 @@ HANDLE WINAPI FindFirstFileA
     // Add dummy entry
     close(finddata->fhandle);
     free(finddata);
-    if (stat64(finddata->dir, &statbuf) < 0) 
-    {
+    if (stat64(finddata->dir, &statbuf) < 0) {
       errno = ENOENT;
       return INVALID_HANDLE_VALUE;
     }
 
     fill_find_data(lpFindFileData, ".", &statbuf);
     return NOFINDHANDLE;
-  }
-  else
-  {
-    if (stat64((char *) lpFileName, &statbuf) < 0) 
-    {
+  } else {
+    if (stat64((char *) lpFileName, &statbuf) < 0) {
       errno = ENOENT;
       return INVALID_HANDLE_VALUE;
     }
 
     p = (char *) lpFileName;
     base = p;
-    while (*p)
-    {
+    while (*p) {
       if (*p == PS1 || *p == PS2) base = p + 1;
       p++;
     }
@@ -1008,12 +889,9 @@ HANDLE WINAPI FindFirstFileA
   }
 }
 
-HANDLE WINAPI FindFirstFileW
-(
-  LPCWSTR lpFileName,
-  LPWIN32_FIND_DATAW lpFindFileData
-)
-{
+HANDLE WINAPI FindFirstFileW(
+    LPCWSTR lpFileName,
+    LPWIN32_FIND_DATAW lpFindFileData) {
   char fn[MAXPATH];
   int rc;
   WIN32_FIND_DATA fd;
@@ -1030,12 +908,9 @@ HANDLE WINAPI FindFirstFileW
   return fh;
 }
 
-BOOL WINAPI FindNextFileA
-(
-  HANDLE hFindFile,
-  LPWIN32_FIND_DATA lpFindFileData
-)
-{
+BOOL WINAPI FindNextFileA(
+    HANDLE hFindFile,
+    LPWIN32_FIND_DATA lpFindFileData) {
   struct winfinddata *finddata;
   struct direntry dirent;
   struct stat64 statbuf;
@@ -1043,26 +918,20 @@ BOOL WINAPI FindNextFileA
 
   TRACE("FindNextFileA");
 
-  if (hFindFile == NOFINDHANDLE)
-  {
+  if (hFindFile == NOFINDHANDLE) {
     errno = ESRCH;
     return FALSE;
-  }
-  else
-  {
+  } else {
     finddata = (struct winfinddata *) hFindFile;
 
-    while (_readdir(finddata->fhandle, &dirent, 1) > 0)
-    {
+    while (_readdir(finddata->fhandle, &dirent, 1) > 0) {
       //syslog(LOG_DEBUG | LOG_AUX, "match next %s with %s", dirent.name, finddata->mask);
-      if (like(dirent.name, finddata->mask))
-      {
+      if (like(dirent.name, finddata->mask)) {
         strcpy(fn, finddata->dir);
         strcpy(fn + strlen(fn), "\\");
         strcpy(fn + strlen(fn), dirent.name);
 
-        if (stat64(fn, &statbuf) < 0) 
-        {
+        if (stat64(fn, &statbuf) < 0) {
           errno = ENOENT;
           return FALSE;
         }
@@ -1077,12 +946,9 @@ BOOL WINAPI FindNextFileA
   }
 }
 
-BOOL WINAPI FindNextFileW
-(
-  HANDLE hFindFile,
-  LPWIN32_FIND_DATAW lpFindFileData
-)
-{
+BOOL WINAPI FindNextFileW(
+    HANDLE hFindFile,
+    LPWIN32_FIND_DATAW lpFindFileData) {
   WIN32_FIND_DATA fd;
   BOOL ok;
 
@@ -1097,55 +963,42 @@ BOOL WINAPI FindNextFileW
   return TRUE;
 }
 
-BOOL WINAPI FlushFileBuffers
-(
-  HANDLE hFile
-)
-{
+BOOL WINAPI FlushFileBuffers(
+    HANDLE hFile) {
   TRACE("FlushFileBuffers");
   if (fsync((handle_t) hFile) < 0) return FALSE;
   return TRUE;
 }
 
-BOOL WINAPI FlushViewOfFile
-(
-  LPCVOID lpBaseAddress,
-  SIZE_T dwNumberOfBytesToFlush
-)
-{
+BOOL WINAPI FlushViewOfFile(
+    LPCVOID lpBaseAddress,
+    SIZE_T dwNumberOfBytesToFlush) {
   panic("FlushViewOfFile not implemented");
   return FALSE;
 }
 
-DWORD WINAPI FormatMessageA
-(
-  DWORD dwFlags,
-  LPCVOID lpSource,
-  DWORD dwMessageId,
-  DWORD dwLanguageId,
-  LPTSTR lpBuffer,
-  DWORD nSize,
-  va_list *Arguments
-)
-{
+DWORD WINAPI FormatMessageA(
+    DWORD dwFlags,
+    LPCVOID lpSource,
+    DWORD dwMessageId,
+    DWORD dwLanguageId,
+    LPTSTR lpBuffer,
+    DWORD nSize,
+    va_list *Arguments) {
   char *buf;
 
   TRACE("FormatMessageA");
 
   // TODO: generate more descriptive message
-  if (dwFlags & FORMAT_MESSAGE_ALLOCATE_BUFFER)
-  {
+  if (dwFlags & FORMAT_MESSAGE_ALLOCATE_BUFFER) {
     buf = malloc(nSize > 256 ? nSize : 256);
-    if (!buf) 
-    {
+    if (!buf) {
       errno = ENOMEM;
       return 0;
     }
 
     *(char **) lpBuffer = buf;
-  }
-  else
-  {
+  } else {
     buf = lpBuffer;
   }
 
@@ -1153,22 +1006,16 @@ DWORD WINAPI FormatMessageA
   return strlen(buf);
 }
 
-BOOL WINAPI FreeLibrary
-(
-  HMODULE hModule
-)
-{
+BOOL WINAPI FreeLibrary(
+    HMODULE hModule) {
   TRACE("FreeLibrary");
   if (dlclose((hmodule_t) hModule) < 0) return FALSE;
   return TRUE;
 }
 
-DWORD WINAPI GetCurrentDirectoryA
-(
-  DWORD nBufferLength,
-  LPTSTR lpBuffer
-)
-{
+DWORD WINAPI GetCurrentDirectoryA(
+    DWORD nBufferLength,
+    LPTSTR lpBuffer) {
   char curdir[MAXPATH];
 
   TRACE("GetCurrentDirectoryA");
@@ -1181,83 +1028,64 @@ DWORD WINAPI GetCurrentDirectoryA
   return strlen(lpBuffer);
 }
 
-HANDLE WINAPI GetCurrentProcess(VOID)
-{
+HANDLE WINAPI GetCurrentProcess(VOID) {
   TRACE("GetCurrentProcess");
   return (HANDLE) 1;
 }
 
-HANDLE WINAPI GetCurrentThread(VOID)
-{
+HANDLE WINAPI GetCurrentThread(VOID) {
   TRACE("GetCurrentThread");
   return (HANDLE) self();
 }
 
-DWORD WINAPI GetCurrentThreadId(VOID)
-{
+DWORD WINAPI GetCurrentThreadId(VOID) {
   TRACE("GetCurrentThreadId");
   return gettid();
 }
 
-DWORD WINAPI GetEnvironmentVariableA
-(
-  LPCTSTR lpName,
-  LPTSTR lpBuffer,
-  DWORD nSize
-)
-{
+DWORD WINAPI GetEnvironmentVariableA(
+    LPCTSTR lpName,
+    LPTSTR lpBuffer,
+    DWORD nSize) {
   char *value;
 
   TRACE("GetEnvironmentVariableA");
   //syslog(LOG_DEBUG, "GetEnvironmentVariable(%s)", lpName);
   
   value = get_property(osconfig(), "env", (char *) lpName, NULL);
-  if (value)
-  {
+  if (value) {
     strcpy(lpBuffer, value);
     return strlen(value);
-  }
-  else
-  {
+  } else {
     memset(lpBuffer, 0, nSize);
     return 0;
   }
 }
 
-BOOL WINAPI GetExitCodeProcess
-(
-  HANDLE hProcess,
-  LPDWORD lpExitCode
-)
-{
+BOOL WINAPI GetExitCodeProcess(
+    HANDLE hProcess,
+    LPDWORD lpExitCode) {
   TRACE("GetExitCodeProcess");
   panic("GetExitCodeProcess not implemented");
   return 0;
 }
 
-BOOL WINAPI GetExitCodeThread
-(
-  HANDLE hThread,
-  LPDWORD lpExitCode
-)
-{
+BOOL WINAPI GetExitCodeThread(
+    HANDLE hThread,
+    LPDWORD lpExitCode) {
   TRACE("GetExitCodeThread");
   panic("GetExitCodeThread not implemented");
   return FALSE;
 }
 
-DWORD WINAPI GetFileAttributesA
-(
-  LPCTSTR lpFileName
-)
-{
+DWORD WINAPI GetFileAttributesA(
+    LPCTSTR lpFileName) {
   struct stat64 fs;
   unsigned long attrs;
 
   if (stat64((char *) lpFileName, &fs) < 0) return -1;
 
-  switch (fs.st_mode & S_IFMT)
-  {
+  switch (fs.st_mode & S_IFMT) {
     case S_IFREG:
       attrs = FILE_ATTRIBUTE_NORMAL;
       break;
@@ -1287,11 +1115,8 @@ DWORD WINAPI GetFileAttributesA
   return attrs;
 }
 
-DWORD WINAPI GetFileAttributesW
-(
-  LPCWSTR lpFileName
-)
-{
+DWORD WINAPI GetFileAttributesW(
+    LPCWSTR lpFileName) {
   char fn[MAXPATH];
   int rc;
 
@@ -1305,12 +1130,9 @@ DWORD WINAPI GetFileAttributesW
   return rc;
 }
 
-DWORD WINAPI GetFileSize
-(
-  HANDLE hFile,
-  LPDWORD lpFileSizeHigh
-)
-{
+DWORD WINAPI GetFileSize(
+    HANDLE hFile,
+    LPDWORD lpFileSizeHigh) {
   LARGE_INTEGER size;
 
   TRACE("GetFileSize");
@@ -1321,46 +1143,37 @@ DWORD WINAPI GetFileSize
   return size.LowPart;
 }
 
-BOOL WINAPI GetFileTime
-(
-  HANDLE hFile,
-  LPFILETIME lpCreationTime,
-  LPFILETIME lpLastAccessTime,
-  LPFILETIME lpLastWriteTime
-)
-{
+BOOL WINAPI GetFileTime(
+    HANDLE hFile,
+    LPFILETIME lpCreationTime,
+    LPFILETIME lpLastAccessTime,
+    LPFILETIME lpLastWriteTime) {
   struct stat64 statbuf;
 
   TRACE("GetFileTime");
 
   if (fstat64((handle_t) hFile, &statbuf) < 0) return FALSE;
 
-  if (lpCreationTime)
-  {
+  if (lpCreationTime) {
     *(unsigned __int64 *) lpCreationTime = (unsigned __int64) statbuf.st_ctime * SECTIMESCALE + EPOC;
   }
 
-  if (lpLastAccessTime)
-  {
+  if (lpLastAccessTime) {
     *(unsigned __int64 *) lpLastAccessTime = (unsigned __int64) statbuf.st_atime * SECTIMESCALE + EPOC;
   }
 
-  if (lpLastWriteTime)
-  {
+  if (lpLastWriteTime) {
     *(unsigned __int64 *) lpLastWriteTime = (unsigned __int64) statbuf.st_mtime * SECTIMESCALE + EPOC;
   }
 
   return TRUE;
 }
 
-DWORD WINAPI GetFullPathNameA
-(
-  LPCTSTR lpFileName,
-  DWORD nBufferLength,
-  LPTSTR lpBuffer,
-  LPTSTR *lpFilePart
-)
-{
+DWORD WINAPI GetFullPathNameA(
+    LPCTSTR lpFileName,
+    DWORD nBufferLength,
+    LPTSTR lpBuffer,
+    LPTSTR *lpFilePart) {
   char fn[MAXPATH];
   int rc;
   char *basename;
@@ -1377,8 +1190,7 @@ DWORD WINAPI GetFullPathNameA
   strcat(lpBuffer, fn);
 
   p = basename = lpBuffer;
-  while (*p)
-  {
+  while (*p) {
     if (*p == PS1 || *p == PS2) basename = p + 1;
     p++;
   }
@@ -1387,8 +1199,7 @@ DWORD WINAPI GetFullPathNameA
   return strlen(lpBuffer);
 }
 
-DWORD WINAPI GetLastError(VOID)
-{
+DWORD WINAPI GetLastError(VOID) {
   TRACE("GetLastError");
   // TODO: implement better error reporting
   if (errno == 0) return 0;
@@ -1397,19 +1208,15 @@ DWORD WINAPI GetLastError(VOID)
   return 0x80040000 | errno;
 }
 
-DWORD WINAPI GetLogicalDrives(VOID)
-{
+DWORD WINAPI GetLogicalDrives(VOID) {
   TRACE("GetLogicalDrives");
   return 4; // Drive C:
 }
 
-DWORD WINAPI GetModuleFileNameA
-(
-  HMODULE hModule,
-  LPTSTR lpFilename,
-  DWORD nSize
-)
-{
+DWORD WINAPI GetModuleFileNameA(
+    HMODULE hModule,
+    LPTSTR lpFilename,
+    DWORD nSize) {
   int rc;
 
   TRACE("GetModuleFileNameA");
@@ -1418,11 +1225,8 @@ DWORD WINAPI GetModuleFileNameA
   return rc;
 }
 
-HMODULE WINAPI GetModuleHandleA
-(
-  LPCTSTR lpModuleName
-)
-{
+HMODULE WINAPI GetModuleHandleA(
+    LPCTSTR lpModuleName) {
   hmodule_t hmod;
 
   TRACE("GetModuleHandleA");
@@ -1431,12 +1235,9 @@ HMODULE WINAPI GetModuleHandleA
   return (HMODULE) hmod;
 }
 
-BOOL WINAPI GetNumberOfConsoleInputEvents
-(
-  HANDLE hConsoleInput,
-  LPDWORD lpcNumberOfEvents
-)
-{
+BOOL WINAPI GetNumberOfConsoleInputEvents(
+    HANDLE hConsoleInput,
+    LPDWORD lpcNumberOfEvents) {
   int rc;
 
   TRACE("GetNumberOfConsoleInputEvents");
@@ -1444,65 +1245,52 @@ BOOL WINAPI GetNumberOfConsoleInputEvents
   // TODO: Here we assume that the handle refers to /dev/console
   rc = ioctl(fdin, IOCTL_KBHIT, NULL, 0);
   if (rc < 0) return FALSE;
-  if (rc > 0)
+  if (rc > 0) {
     *lpcNumberOfEvents = 1;
-  else
+  } else {
     *lpcNumberOfEvents = 0;
+  }
 
   return TRUE;
 }
 
-BOOL WINAPI GetOverlappedResult
-(
-  HANDLE hFile,
-  LPOVERLAPPED lpOverlapped,
-  LPDWORD lpNumberOfBytesTransferred,
-  BOOL bWait
-)
-{
+BOOL WINAPI GetOverlappedResult(
+    HANDLE hFile,
+    LPOVERLAPPED lpOverlapped,
+    LPDWORD lpNumberOfBytesTransferred,
+    BOOL bWait) {
   TRACE("GetOverlappedResult");
   panic("GetOverlappedResult not implemented");
   return FALSE;
 }
 
-FARPROC WINAPI GetProcAddress
-(
-  HMODULE hModule,
-  LPCSTR lpProcName
-)
-{
+FARPROC WINAPI GetProcAddress(
+    HMODULE hModule,
+    LPCSTR lpProcName) {
   TRACE("GetProcAddress");
   //syslog(LOG_DEBUG, "GetProcAddress name: %s hmod: %08X", lpProcName, hModule);
   return dlsym((hmodule_t) hModule, (char *) lpProcName);
 }
 
-BOOL WINAPI GetProcessAffinityMask
-(
-  HANDLE hProcess,
-  LPDWORD lpProcessAffinityMask,
-  LPDWORD lpSystemAffinityMask
-)
-{
+BOOL WINAPI GetProcessAffinityMask(
+    HANDLE hProcess,
+    LPDWORD lpProcessAffinityMask,
+    LPDWORD lpSystemAffinityMask) {
   TRACE("GetProcessAffinityMask");
   panic("GetProcessAffinityMask not implemented");
   return TRUE;
 }
 
-HANDLE WINAPI GetProcessHeap()
-{
+HANDLE WINAPI GetProcessHeap(VOID) {
   TRACE("GetProcessHeap");
   return PROCESSHEAP;
 }
 
-HANDLE WINAPI GetStdHandle
-(
-  DWORD nStdHandle
-)
-{
+HANDLE WINAPI GetStdHandle(
+    DWORD nStdHandle) {
   TRACE("GetStdHandle");
 
-  switch (nStdHandle)
-  {
+  switch (nStdHandle) {
     case STD_INPUT_HANDLE:  return (HANDLE) fdin;
     case STD_OUTPUT_HANDLE: return (HANDLE) fdout;
     case STD_ERROR_HANDLE:  return (HANDLE) fderr;
@@ -1511,22 +1299,16 @@ HANDLE WINAPI GetStdHandle
   return INVALID_HANDLE_VALUE;
 }
 
-UINT WINAPI GetSystemDirectoryA
-(
-  LPTSTR lpBuffer,
-  UINT uSize
-)
-{
+UINT WINAPI GetSystemDirectoryA(
+    LPTSTR lpBuffer,
+    UINT uSize) {
   TRACE("GetSystemDirectoryA");
   strcpy(lpBuffer, get_property(osconfig(), "win32", "sysdir", "c:\\bin"));
   return strlen(lpBuffer);
 }
 
-VOID WINAPI GetSystemInfo
-(
-  LPSYSTEM_INFO lpSystemInfo
-)
-{
+VOID WINAPI GetSystemInfo(
+    LPSYSTEM_INFO lpSystemInfo) {
   struct cpuinfo cpu;
 
   TRACE("GetSystemInfo");
@@ -1537,18 +1319,13 @@ VOID WINAPI GetSystemInfo
 
   lpSystemInfo->wProcessorLevel = cpu.cpu_family;
 
-  if (cpu.cpu_family == 3)
-  {
+  if (cpu.cpu_family == 3) {
     lpSystemInfo->dwProcessorType = 386;
     lpSystemInfo->wProcessorRevision = 0xFFA0;
-  }
-  else if (cpu.cpu_family == 4)
-  {
+  } else if (cpu.cpu_family == 4) {
     lpSystemInfo->dwProcessorType = 486;
     lpSystemInfo->wProcessorRevision = 0xFFA0;
-  }
-  else
-  {
+  } else {
     lpSystemInfo->dwProcessorType = 586;
     lpSystemInfo->wProcessorRevision = (cpu.cpu_model << 16) | cpu.cpu_stepping;
   }
@@ -1559,11 +1336,8 @@ VOID WINAPI GetSystemInfo
   lpSystemInfo->lpMaximumApplicationAddress = (void *) 0x7FFFFFFF;
 }
 
-VOID WINAPI GetSystemTime
-(
-  LPSYSTEMTIME lpSystemTime
-)
-{
+VOID WINAPI GetSystemTime(
+    LPSYSTEMTIME lpSystemTime) {
   struct timeval tv;
   struct tm tm;
 
@@ -1581,11 +1355,8 @@ VOID WINAPI GetSystemTime
   lpSystemTime->wMilliseconds = (WORD) (tv.tv_usec / 1000);
 }
 
-VOID WINAPI GetSystemTimeAsFileTime
-(
-  LPFILETIME lpSystemTimeAsFileTime
-)
-{
+VOID WINAPI GetSystemTimeAsFileTime(
+    LPFILETIME lpSystemTimeAsFileTime) {
   struct timeval tv;
 
   TRACE("GetSystemTimeAsFileTime");
@@ -1593,32 +1364,24 @@ VOID WINAPI GetSystemTimeAsFileTime
   *(unsigned __int64 *) lpSystemTimeAsFileTime = ((unsigned __int64) (tv.tv_sec) * 1000000 + (unsigned __int64) (tv.tv_usec)) * MICROTIMESCALE + EPOC;
 }
 
-DWORD WINAPI GetTempPathA
-(
-  DWORD nBufferLength,
-  LPTSTR lpBuffer
-)
-{
+DWORD WINAPI GetTempPathA(
+    DWORD nBufferLength,
+    LPTSTR lpBuffer) {
   TRACE("GetTempPathA");
   strcpy(lpBuffer, get_property(osconfig(), "win32", "tmpdir", "c:\\tmp"));
   return strlen(lpBuffer);
 }
 
-BOOL WINAPI GetThreadContext
-(
-  HANDLE hThread,
-  LPCONTEXT lpContext
-)
-{
+BOOL WINAPI GetThreadContext(
+    HANDLE hThread,
+    LPCONTEXT lpContext) {
   struct context ctxt;
   int rc;
 
   TRACE("GetThreadContext");
   rc = getcontext((handle_t) hThread, &ctxt);
-  if (rc < 0) 
-  {
-    if (errno == EPERM)
-    {
+  if (rc < 0) {
+    if (errno == EPERM) {
       // Thread does not have a usermode context, just return dummy context
       memset(lpContext, 0, sizeof(CONTEXT));
       return TRUE;
@@ -1632,17 +1395,13 @@ BOOL WINAPI GetThreadContext
   return TRUE;
 }
 
-LCID WINAPI GetThreadLocale(void)
-{
+LCID WINAPI GetThreadLocale(VOID) {
   TRACE("GetThreadLocale");
   return get_numeric_property(osconfig(), "win32", "locale", 0x0406);
 }
 
-int WINAPI GetThreadPriority
-(
-  HANDLE hThread
-)
-{
+int WINAPI GetThreadPriority(
+    HANDLE hThread) {
   int prio;
 
   TRACE("GetThreadPriority");
@@ -1651,8 +1410,7 @@ int WINAPI GetThreadPriority
   if (prio < 0) return 0x7FFFFFFF;
 
   // Return priority based on win32 normal priority class scheme
-  switch (prio)
-  {
+  switch (prio) {
     case 1: return THREAD_PRIORITY_IDLE;
     case 6: return THREAD_PRIORITY_LOWEST;
     case 7: return THREAD_PRIORITY_BELOW_NORMAL;
@@ -1665,41 +1423,31 @@ int WINAPI GetThreadPriority
   return 0x7FFFFFFF;
 }
 
-BOOL WINAPI GetThreadTimes
-(
-  HANDLE hThread,
-  LPFILETIME lpCreationTime,
-  LPFILETIME lpExitTime,
-  LPFILETIME lpKernelTime,
-  LPFILETIME lpUserTime
-)
-{
+BOOL WINAPI GetThreadTimes(
+    HANDLE hThread,
+    LPFILETIME lpCreationTime,
+    LPFILETIME lpExitTime,
+    LPFILETIME lpKernelTime,
+    LPFILETIME lpUserTime) {
   TRACE("GetThreadTimes");
   panic("GetThreadTimes not implemented");
   return FALSE;
 }
 
-DWORD WINAPI GetTickCount(VOID)
-{
+DWORD WINAPI GetTickCount(VOID) {
   TRACE("GetTickCount");
   return clock();
 }
 
-DWORD WINAPI GetTimeZoneInformation
-(
-  LPTIME_ZONE_INFORMATION lpTimeZoneInformation
-)
-{
+DWORD WINAPI GetTimeZoneInformation(
+    LPTIME_ZONE_INFORMATION lpTimeZoneInformation) {
   TRACE("GetTimeZoneInformation");
   // TODO: return real time zone information (used by win32\native\java\util\TimeZone_md.c)
   return -1;
 }
 
-BOOL WINAPI GetVersionExA
-(
-  LPOSVERSIONINFO lpVersionInfo
-)
-{
+BOOL WINAPI GetVersionExA(
+    LPOSVERSIONINFO lpVersionInfo) {
   TRACE("GetVersionExA");
   lpVersionInfo->dwMajorVersion = 5;
   lpVersionInfo->dwMinorVersion = 0;
@@ -1709,18 +1457,15 @@ BOOL WINAPI GetVersionExA
   return TRUE;
 }
 
-BOOL WINAPI GetVolumeInformationA
-(
-  LPCTSTR lpRootPathName,
-  LPTSTR lpVolumeNameBuffer,
-  DWORD nVolumeNameSize,
-  LPDWORD lpVolumeSerialNumber,
-  LPDWORD lpMaximumComponentLength,
-  LPDWORD lpFileSystemFlags,
-  LPTSTR lpFileSystemNameBuffer,
-  DWORD nFileSystemNameSize
-)
-{
+BOOL WINAPI GetVolumeInformationA(
+    LPCTSTR lpRootPathName,
+    LPTSTR lpVolumeNameBuffer,
+    DWORD nVolumeNameSize,
+    LPDWORD lpVolumeSerialNumber,
+    LPDWORD lpMaximumComponentLength,
+    LPDWORD lpFileSystemFlags,
+    LPTSTR lpFileSystemNameBuffer,
+    DWORD nFileSystemNameSize) {
   TRACE("GetVolumeInformationA");
 
   if (lpVolumeNameBuffer) *lpVolumeNameBuffer = 0;
@@ -1732,22 +1477,16 @@ BOOL WINAPI GetVolumeInformationA
   return TRUE;
 }
 
-UINT WINAPI GetWindowsDirectoryA
-(
-  LPTSTR lpBuffer,
-  UINT uSize
-)
-{
+UINT WINAPI GetWindowsDirectoryA(
+    LPTSTR lpBuffer,
+    UINT uSize) {
   TRACE("GetWindowsDirectoryA");
   strcpy(lpBuffer, get_property(osconfig(), "win32", "windir", "c:\\bin"));
   return strlen(lpBuffer);
 }
 
-VOID WINAPI GlobalMemoryStatus
-(
-  LPMEMORYSTATUS lpBuffer
-)
-{
+VOID WINAPI GlobalMemoryStatus(
+    LPMEMORYSTATUS lpBuffer) {
   struct meminfo mem;
 
   TRACE("GlobalMemoryStatus");
@@ -1764,16 +1503,12 @@ VOID WINAPI GlobalMemoryStatus
   lpBuffer->dwAvailVirtual = mem.virtmem_avail;
 }
 
-LPVOID WINAPI HeapAlloc
-(
-  HANDLE hHeap,
-  DWORD dwFlags,
-  SIZE_T dwBytes
-)
-{
+LPVOID WINAPI HeapAlloc(
+    HANDLE hHeap,
+    DWORD dwFlags,
+    SIZE_T dwBytes) {
   TRACE("HeapAlloc");
-  if (hHeap != PROCESSHEAP)
-  {
+  if (hHeap != PROCESSHEAP) {
     syslog(LOG_DEBUG, "warning: HeapAlloc only supported for process heap");
     return NULL;
   }
@@ -1781,16 +1516,12 @@ LPVOID WINAPI HeapAlloc
   return malloc(dwBytes);
 }
 
-BOOL WINAPI HeapFree
-(
-  HANDLE hHeap,
-  DWORD dwFlags,
-  LPVOID lpMem
-)
-{
+BOOL WINAPI HeapFree(
+    HANDLE hHeap,
+    DWORD dwFlags,
+    LPVOID lpMem) {
   TRACE("HeapFree");
-  if (hHeap != PROCESSHEAP)
-  {
+  if (hHeap != PROCESSHEAP) {
     syslog(LOG_DEBUG, "warning: HeapFree only supported for process heap");
     return FALSE;
   }
@@ -1800,23 +1531,16 @@ BOOL WINAPI HeapFree
 }
 
 
-VOID WINAPI InitializeCriticalSection
-(
-  LPCRITICAL_SECTION lpCriticalSection
-)
-{
+VOID WINAPI InitializeCriticalSection(
+    LPCRITICAL_SECTION lpCriticalSection) {
   TRACE("InitializeCriticalSection");
   mkcs((struct critsect *) lpCriticalSection);
 }
 
 #ifndef __TINYC__
-__declspec(naked) LONG WINAPI InterlockedDecrement
-(
-  LPLONG volatile lpAddend
-)
-{
-  __asm
-  {
+__declspec(naked) LONG WINAPI InterlockedDecrement(
+    LPLONG volatile lpAddend) {
+  __asm {
     mov   ecx,dword ptr [esp+4]
     mov   eax,0FFFFFFFFh
     nop
@@ -1826,14 +1550,10 @@ __declspec(naked) LONG WINAPI InterlockedDecrement
   }
 }
 
-__declspec(naked) LONG WINAPI InterlockedExchange
-(
-  LPLONG volatile Target,
-  LONG Value
-)
-{
-  __asm
-  {
+__declspec(naked) LONG WINAPI InterlockedExchange(
+    LPLONG volatile Target,
+    LONG Value) {
+  __asm {
     mov ecx,dword ptr [esp+4]
     mov edx,dword ptr [esp+8]
     mov eax,dword ptr [ecx]
@@ -1844,13 +1564,9 @@ ileagain:
   }
 }
 
-__declspec(naked) LONG WINAPI InterlockedIncrement
-(
-  LPLONG volatile lpAddend
-)
-{
-  __asm
-  {
+__declspec(naked) LONG WINAPI InterlockedIncrement(
+    LPLONG volatile lpAddend) {
+  __asm {
     mov   ecx,dword ptr [esp+4]
     mov   eax,1
     nop
@@ -1861,145 +1577,109 @@ __declspec(naked) LONG WINAPI InterlockedIncrement
 }
 #endif
 
-BOOL WINAPI IsDBCSLeadByte
-(
-  BYTE TestChar
-)
-{
+BOOL WINAPI IsDBCSLeadByte(
+    BYTE TestChar) {
   TRACEX("IsDBCSLeadByte");
   // TODO: test is lead byte
   //syslog(LOG_DEBUG, "IsDBCSLeadByte called");
   return FALSE;
 }
 
-BOOL WINAPI IsValidCodePage
-(
-  UINT CodePage
-)
-{
+BOOL WINAPI IsValidCodePage(
+    UINT CodePage) {
   TRACE("IsValidCodePage");
   panic("IsValidCodePage not implemented");
   return FALSE;
 }
 
-VOID WINAPI LeaveCriticalSection
-(
-  LPCRITICAL_SECTION lpCriticalSection
-)
-{
+VOID WINAPI LeaveCriticalSection(
+    LPCRITICAL_SECTION lpCriticalSection) {
   TRACEX("LeaveCriticalSection");
   leave(lpCriticalSection);
 }
 
-HMODULE WINAPI LoadLibraryA
-(
-  LPCTSTR lpFileName
-)
-{
+HMODULE WINAPI LoadLibraryA(
+    LPCTSTR lpFileName) {
   TRACE("LoadLibraryA");
   return (HMODULE) dlopen((char *) lpFileName, 0);
 }
 
-BOOL WINAPI LockFile
-(
-  HANDLE hFile,
-  DWORD dwFileOffsetLow,
-  DWORD dwFileOffsetHigh,
-  DWORD nNumberOfBytesToLockLow,
-  DWORD nNumberOfBytesToLockHigh
-)
-{
+BOOL WINAPI LockFile(
+    HANDLE hFile,
+    DWORD dwFileOffsetLow,
+    DWORD dwFileOffsetHigh,
+    DWORD nNumberOfBytesToLockLow,
+    DWORD nNumberOfBytesToLockHigh) {
   panic("LockFile not implemented");
   return FALSE;
 }
 
-BOOL WINAPI LockFileEx
-(
-  HANDLE hFile,
-  DWORD dwFlags,
-  DWORD dwReserved,
-  DWORD nNumberOfBytesToLockLow,
-  DWORD nNumberOfBytesToLockHigh,
-  LPOVERLAPPED lpOverlapped
-)
-{
+BOOL WINAPI LockFileEx(
+    HANDLE hFile,
+    DWORD dwFlags,
+    DWORD dwReserved,
+    DWORD nNumberOfBytesToLockLow,
+    DWORD nNumberOfBytesToLockHigh,
+    LPOVERLAPPED lpOverlapped) {
   panic("LockFileEx not implemented");
   return FALSE;
 }
 
-LPVOID WINAPI MapViewOfFile
-(
-  HANDLE hFileMappingObject,
-  DWORD dwDesiredAccess,
-  DWORD dwFileOffsetHigh,
-  DWORD dwFileOffsetLow,
-  SIZE_T dwNumberOfBytesToMap
-)
-{
+LPVOID WINAPI MapViewOfFile(
+    HANDLE hFileMappingObject,
+    DWORD dwDesiredAccess,
+    DWORD dwFileOffsetHigh,
+    DWORD dwFileOffsetLow,
+    SIZE_T dwNumberOfBytesToMap) {
   TRACE("MapViewOfFile");
   panic("MapViewOfFile not implemented");
   return NULL;
 }
 
-BOOL WINAPI MoveFileA
-(
-  LPCTSTR lpExistingFileName,
-  LPCTSTR lpNewFileName
-)
-{
+BOOL WINAPI MoveFileA(
+    LPCTSTR lpExistingFileName,
+    LPCTSTR lpNewFileName) {
   TRACE("MoveFileA");
   if (rename(lpExistingFileName, lpNewFileName) < 0) return FALSE;
 
   return TRUE;
 }
 
-int WINAPI MultiByteToWideChar
-(
-  UINT CodePage,         // code page
-  DWORD dwFlags,         // character-type options
-  LPCSTR lpMultiByteStr, // string to map
-  int cbMultiByte,       // number of bytes in string
-  LPWSTR lpWideCharStr,  // wide-character buffer
-  int cchWideChar        // size of buffer
-)
-{
+int WINAPI MultiByteToWideChar(
+    UINT CodePage,         // code page
+    DWORD dwFlags,         // character-type options
+    LPCSTR lpMultiByteStr, // string to map
+    int cbMultiByte,       // number of bytes in string
+    LPWSTR lpWideCharStr,  // wide-character buffer
+    int cchWideChar) {     // size of buffer
   TRACE("MultiByteToWideChar");
   panic("MultiByteToWideChar not implemented");
   return 0;
 }
 
-HANDLE WINAPI OpenFileMappingA
-(
-  DWORD dwDesiredAccess,
-  BOOL bInheritHandle,
-  LPCTSTR lpName
-)
-{
+HANDLE WINAPI OpenFileMappingA(
+    DWORD dwDesiredAccess,
+    BOOL bInheritHandle,
+    LPCTSTR lpName) {
   TRACE("OpenFileMappingA");
   panic("OpenFileMappingA not implemented");
   return INVALID_HANDLE_VALUE;
 }
 
-HANDLE WINAPI OpenProcess
-(
-  DWORD dwDesiredAccess,
-  BOOL bInheritHandle,
-  DWORD dwProcessId
-)
-{
+HANDLE WINAPI OpenProcess(
+    DWORD dwDesiredAccess,
+    BOOL bInheritHandle,
+    DWORD dwProcessId) {
   TRACE("OpenProcess");
   panic("OpenProcess not implemented");
   return NULL;
 }
 
-BOOL WINAPI PeekConsoleInputA
-(
-  HANDLE hConsoleInput,
-  PINPUT_RECORD lpBuffer,
-  DWORD nLength,
-  LPDWORD lpNumberOfEventsRead
-)
-{
+BOOL WINAPI PeekConsoleInputA(
+    HANDLE hConsoleInput,
+    PINPUT_RECORD lpBuffer,
+    DWORD nLength,
+    LPDWORD lpNumberOfEventsRead) {
   int rc;
 
   TRACE("PeekConsoleInputA");
@@ -2008,8 +1688,7 @@ BOOL WINAPI PeekConsoleInputA
   // Just return a bogus key event record if keyboard buffer is not empty
   rc = ioctl(fdin, IOCTL_KBHIT, NULL, 0);
   if (rc < 0) return FALSE;
-  if (rc > 0)
-  {
+  if (rc > 0) {
     KEY_EVENT_RECORD *rec = (KEY_EVENT_RECORD *) lpBuffer;
     rec->bKeyDown = TRUE;
     rec->wRepeatCount = 1;
@@ -2018,33 +1697,27 @@ BOOL WINAPI PeekConsoleInputA
     rec->uChar.AsciiChar = ' ';
     rec->dwControlKeyState = 0;
     *lpNumberOfEventsRead = 1;
-  }
-  else
+  } else {
     *lpNumberOfEventsRead = 0;
+  }
 
   return TRUE;
 }
 
-BOOL WINAPI PeekNamedPipe
-(
-  HANDLE hNamedPipe,
-  LPVOID lpBuffer,
-  DWORD nBufferSize,
-  LPDWORD lpBytesRead,
-  LPDWORD lpTotalBytesAvail,
-  LPDWORD lpBytesLeftThisMessage
-)
-{
+BOOL WINAPI PeekNamedPipe(
+    HANDLE hNamedPipe,
+    LPVOID lpBuffer,
+    DWORD nBufferSize,
+    LPDWORD lpBytesRead,
+    LPDWORD lpTotalBytesAvail,
+    LPDWORD lpBytesLeftThisMessage) {
   TRACE("PeekNamedPipe");
   panic("PeekNamedPipe not implemented");
   return FALSE;
 }
 
-BOOL WINAPI QueryPerformanceCounter
-(
-  LARGE_INTEGER *lpPerformanceCount
-)
-{
+BOOL WINAPI QueryPerformanceCounter(
+    LARGE_INTEGER *lpPerformanceCount) {
   TRACEX("QueryPerformanceCounter");
   lpPerformanceCount->HighPart = 0;
   lpPerformanceCount->LowPart = clock();
@@ -2052,11 +1725,8 @@ BOOL WINAPI QueryPerformanceCounter
   return TRUE;
 }
 
-BOOL WINAPI QueryPerformanceFrequency
-(
-  LARGE_INTEGER *lpFrequency
-)
-{
+BOOL WINAPI QueryPerformanceFrequency(
+    LARGE_INTEGER *lpFrequency) {
   TRACE("QueryPerformanceFrequency");
   // Tick count is in milliseconds
   lpFrequency->HighPart = 0;
@@ -2065,15 +1735,12 @@ BOOL WINAPI QueryPerformanceFrequency
   return TRUE;
 }
 
-BOOL WINAPI ReadFile
-(
-  HANDLE hFile,
-  LPVOID lpBuffer,
-  DWORD nNumberOfBytesToRead,
-  LPDWORD lpNumberOfBytesRead,
-  LPOVERLAPPED lpOverlapped
-)
-{
+BOOL WINAPI ReadFile(
+    HANDLE hFile,
+    LPVOID lpBuffer,
+    DWORD nNumberOfBytesToRead,
+    LPDWORD lpNumberOfBytesRead,
+    LPOVERLAPPED lpOverlapped) {
   int rc;
 
   TRACE("ReadFile");
@@ -2086,13 +1753,10 @@ BOOL WINAPI ReadFile
   return TRUE;
 }
 
-BOOL WINAPI ReleaseSemaphore
-(
-  HANDLE hSemaphore,
-  LONG lReleaseCount,
-  LPLONG lpPreviousCount
-)
-{
+BOOL WINAPI ReleaseSemaphore(
+    HANDLE hSemaphore,
+    LONG lReleaseCount,
+    LPLONG lpPreviousCount) {
   LONG dummy;
 
   TRACE("ReleaseSemaphore");
@@ -2101,21 +1765,15 @@ BOOL WINAPI ReleaseSemaphore
   return TRUE;
 }
 
-BOOL WINAPI RemoveDirectoryA
-(
-  LPCTSTR lpPathName
-)
-{
+BOOL WINAPI RemoveDirectoryA(
+    LPCTSTR lpPathName) {
   TRACE("RemoveDirectoryA");
   if (rmdir(lpPathName) < 0) return FALSE;
   return TRUE;
 }
 
-BOOL WINAPI RemoveDirectoryW
-(
-  LPCWSTR lpPathName
-)
-{
+BOOL WINAPI RemoveDirectoryW(
+    LPCWSTR lpPathName) {
   char path[MAXPATH];
   int rc;
 
@@ -2127,33 +1785,24 @@ BOOL WINAPI RemoveDirectoryW
   return RemoveDirectoryA(path);
 }
 
-BOOL WINAPI ResetEvent
-(
-  HANDLE hEvent
-)
-{
+BOOL WINAPI ResetEvent(
+    HANDLE hEvent) {
   TRACE("ResetEvent");
   ereset((handle_t) hEvent);
   return TRUE;
 }
 
-DWORD WINAPI ResumeThread
-(
-  HANDLE hThread
-)
-{
+DWORD WINAPI ResumeThread(
+    HANDLE hThread) {
   TRACE("ResumeThread");
   return resume((handle_t) hThread);
 }
 
-VOID WINAPI RtlUnwind
-(
-  PEXCEPTION_FRAME endframe, 
-  LPVOID eip, 
-  PEXCEPTION_RECORD rec, 
-  DWORD retval
-)
-{
+VOID WINAPI RtlUnwind(
+    PEXCEPTION_FRAME endframe, 
+    LPVOID eip, 
+    PEXCEPTION_RECORD rec, 
+    DWORD retval) {
   CONTEXT ctxt;
 
   TRACE("RtlUnwind");
@@ -2161,78 +1810,58 @@ VOID WINAPI RtlUnwind
   unwind(endframe, eip, rec, retval, &ctxt);
 }
 
-DWORD WINAPI SearchPathA
-(
-  LPCSTR lpPath,
-  LPCSTR lpFileName,
-  LPCSTR lpExtension,
-  DWORD nBufferLength,
-  LPSTR lpBuffer,
-  LPSTR *lpFilePart
-)
-{
+DWORD WINAPI SearchPathA(
+    LPCSTR lpPath,
+    LPCSTR lpFileName,
+    LPCSTR lpExtension,
+    DWORD nBufferLength,
+    LPSTR lpBuffer,
+    LPSTR *lpFilePart) {
   TRACE("SearchPathA");
   panic("SearchPathA not implemented");
   return 0;
 }
 
-BOOL WINAPI SetConsoleCtrlHandler
-(
-  PHANDLER_ROUTINE HandlerRoutine,
-  BOOL Add
-)
-{
+BOOL WINAPI SetConsoleCtrlHandler(
+    PHANDLER_ROUTINE HandlerRoutine,
+    BOOL Add) {
   TRACE("SetConsoleCtrlHandler");
   //syslog(LOG_DEBUG, "warning: SetConsoleCtrlHandler not implemented, ignored");
   return TRUE;
 }
 
-BOOL WINAPI SetConsoleTitleA
-(
-  LPCTSTR lpConsoleTitle
-)
-{
+BOOL WINAPI SetConsoleTitleA(
+    LPCTSTR lpConsoleTitle) {
   TRACE("SetConsoleTitle");
   return TRUE;
 }
 
-BOOL WINAPI SetEndOfFile
-(
-  HANDLE hFile
-)
+BOOL WINAPI SetEndOfFile(
+    HANDLE hFile)
 {
   TRACE("SetEndOfFile");
   if (ftruncate((handle_t) hFile, tell((handle_t) hFile)) < 0) return FALSE;
   return TRUE;
 }
 
-BOOL WINAPI SetEvent
-(
-  HANDLE hEvent
-)
-{
+BOOL WINAPI SetEvent(
+    HANDLE hEvent) {
   TRACE("SetEvent");
   eset((handle_t) hEvent);
   return TRUE;
 }
 
-BOOL WINAPI SetFileAttributesA
-(
-  LPCTSTR lpFileName,
-  DWORD dwFileAttributes
-)
-{
+BOOL WINAPI SetFileAttributesA(
+    LPCTSTR lpFileName,
+    DWORD dwFileAttributes) {
   TRACE("SetFileAttributesA");
   if (dwFileAttributes != 0) syslog(LOG_DEBUG, "warning: SetFileAttributesA(%s,%08x) not implemented, ignored", lpFileName, dwFileAttributes);
   return TRUE;
 }
 
-BOOL WINAPI SetFileAttributesW
-(
-  LPCWSTR lpFileName,
-  DWORD dwFileAttributes
-)
-{
+BOOL WINAPI SetFileAttributesW(
+    LPCWSTR lpFileName,
+    DWORD dwFileAttributes) {
   char fn[MAXPATH];
   int rc;
 
@@ -2244,19 +1873,15 @@ BOOL WINAPI SetFileAttributesW
   return SetFileAttributesA(fn, dwFileAttributes);
 }
 
-DWORD WINAPI SetFilePointer
-(
-  HANDLE hFile,
-  LONG lDistanceToMove,
-  PLONG lpDistanceToMoveHigh,
-  DWORD dwMoveMethod
-)
-{
+DWORD WINAPI SetFilePointer(
+    HANDLE hFile,
+    LONG lDistanceToMove,
+    PLONG lpDistanceToMoveHigh,
+    DWORD dwMoveMethod) {
   int rc;
   TRACE("SetFilePointer");
   
-  if (lpDistanceToMoveHigh)
-  {
+  if (lpDistanceToMoveHigh) {
     LARGE_INTEGER offset;
     LARGE_INTEGER retval;
 
@@ -2264,18 +1889,13 @@ DWORD WINAPI SetFilePointer
     offset.HighPart = *lpDistanceToMoveHigh;
 
     retval.QuadPart = lseek64((handle_t) hFile, offset.QuadPart, dwMoveMethod);
-    if (retval.QuadPart < 0)
-    {
+    if (retval.QuadPart < 0) {
       rc = -1;
-    }
-    else
-    {
+    } else {
       *lpDistanceToMoveHigh = retval.HighPart;
       rc = retval.LowPart;
     }
-  }
-  else
-  {
+  } else {
     rc = lseek((handle_t) hFile, lDistanceToMove, dwMoveMethod);
     if (rc < 0) rc = -1;
   }
@@ -2283,33 +1903,33 @@ DWORD WINAPI SetFilePointer
   return rc;
 }
 
-BOOL WINAPI SetFileTime
-(
-  HANDLE hFile,
-  CONST FILETIME *lpCreationTime,
-  CONST FILETIME *lpLastAccessTime,
-  CONST FILETIME *lpLastWriteTime
-)
-{
+BOOL WINAPI SetFileTime(
+    HANDLE hFile,
+    CONST FILETIME *lpCreationTime,
+    CONST FILETIME *lpLastAccessTime,
+    CONST FILETIME *lpLastWriteTime) {
   struct utimbuf times;
   int rc;
 
   TRACE("SetFileTime");
 
-  if (lpCreationTime != NULL)
+  if (lpCreationTime != NULL) {
     times.ctime = (time_t)(((*(__int64 *) lpCreationTime) - EPOC) / SECTIMESCALE);
-  else
+  } else {
     times.ctime = -1;
+  }
 
-  if (lpLastAccessTime != NULL)
+  if (lpLastAccessTime != NULL) {
     times.actime = (time_t)(((*(__int64 *) lpLastAccessTime) - EPOC) / SECTIMESCALE);
-  else
+  } else {
     times.actime = -1;
+  }
 
-  if (lpLastWriteTime != NULL)
+  if (lpLastWriteTime != NULL) {
     times.modtime = (time_t)(((*(__int64 *) lpLastWriteTime) - EPOC) / SECTIMESCALE);
-  else
+  } else {
     times.modtime = -1;
+  }
 
   rc = futime((handle_t) hFile, &times);
   if (rc < 0) return FALSE;
@@ -2317,31 +1937,24 @@ BOOL WINAPI SetFileTime
   return TRUE;
 }
 
-BOOL WINAPI SetHandleInformation
-(
-  HANDLE hObject,
-  DWORD dwMask,
-  DWORD dwFlags
-)
-{
+BOOL WINAPI SetHandleInformation(
+    HANDLE hObject,
+    DWORD dwMask,
+    DWORD dwFlags) {
   TRACE("SetHandleInformation");
   // Ignored, only used for setting handle inheritance
   //syslog(LOG_DEBUG, "warning: SetHandleInformation ignored");
   return TRUE;
 }
 
-BOOL WINAPI SetThreadContext
-(
-  HANDLE hThread,
-  CONST CONTEXT *lpContext
-)
-{
+BOOL WINAPI SetThreadContext(
+    HANDLE hThread,
+    CONST CONTEXT *lpContext) {
   struct context ctxt;
 
   TRACE("SetThreadContext");
 
-  if (lpContext->ContextFlags != (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS))
-  {
+  if (lpContext->ContextFlags != (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS)) {
     syslog(LOG_WARNING, "kernel32: incomplete context in SetContext, flags %lx", lpContext->ContextFlags); 
   }
 
@@ -2352,19 +1965,15 @@ BOOL WINAPI SetThreadContext
   return TRUE;
 }
 
-BOOL WINAPI SetThreadPriority
-(
-  HANDLE hThread,
-  int nPriority
-)
-{
+BOOL WINAPI SetThreadPriority(
+    HANDLE hThread,
+    int nPriority) {
   int prio;
 
   TRACE("SetThreadPriority");
 
   // Set new thread priority based on win32 normal priority class scheme
-  switch (nPriority)
-  {
+  switch (nPriority) {
     case THREAD_PRIORITY_IDLE:
       prio = 1;
       break;
@@ -2401,11 +2010,8 @@ BOOL WINAPI SetThreadPriority
   return TRUE;
 }
 
-LPTOP_LEVEL_EXCEPTION_FILTER WINAPI SetUnhandledExceptionFilter
-(
-  LPTOP_LEVEL_EXCEPTION_FILTER lpTopLevelExceptionFilter 
-)
-{
+LPTOP_LEVEL_EXCEPTION_FILTER WINAPI SetUnhandledExceptionFilter(
+    LPTOP_LEVEL_EXCEPTION_FILTER lpTopLevelExceptionFilter) {
   LPTOP_LEVEL_EXCEPTION_FILTER oldfilter = topexcptfilter;
 
   TRACE("SetUnhandledExceptionFilter");
@@ -2414,30 +2020,21 @@ LPTOP_LEVEL_EXCEPTION_FILTER WINAPI SetUnhandledExceptionFilter
   return oldfilter;
 }
 
-VOID WINAPI Sleep
-(
-  DWORD dwMilliseconds
-)
-{
+VOID WINAPI Sleep(
+    DWORD dwMilliseconds) {
   TRACEX("Sleep");
   msleep(dwMilliseconds);
 }
 
-DWORD WINAPI SuspendThread
-(
-  HANDLE hThread
-)
-{
+DWORD WINAPI SuspendThread(
+    HANDLE hThread) {
   TRACE("SuspendThread");
   return suspend((handle_t) hThread);
 }
 
-BOOL WINAPI SystemTimeToFileTime
-(
-  CONST SYSTEMTIME *lpSystemTime,
-  LPFILETIME lpFileTime
-)
-{
+BOOL WINAPI SystemTimeToFileTime(
+    CONST SYSTEMTIME *lpSystemTime,
+    LPFILETIME lpFileTime) {
   struct tm tm;
   time_t time;
 
@@ -2456,113 +2053,79 @@ BOOL WINAPI SystemTimeToFileTime
   return TRUE;
 }
 
-BOOL WINAPI TerminateProcess
-(
-  HANDLE hProcess,
-  UINT uExitCode
-)
-{
+BOOL WINAPI TerminateProcess(
+    HANDLE hProcess,
+    UINT uExitCode) {
   TRACE("TerminateProcess");
   panic("TerminateProcess not implemented");
   return FALSE;
 }
 
-DWORD WINAPI TlsAlloc(VOID)
-{
+DWORD WINAPI TlsAlloc(VOID) {
   TRACE("TlsAlloc");
   return tlsalloc();
 }
 
-BOOL WINAPI TlsFree
-(
-  DWORD dwTlsIndex
-)
-{
+BOOL WINAPI TlsFree(
+    DWORD dwTlsIndex) {
   TRACE("TlsFree");
   tlsfree(dwTlsIndex);
   return TRUE;
 }
 
-LPVOID WINAPI TlsGetValue
-(
-  DWORD dwTlsIndex
-)
-{
+LPVOID WINAPI TlsGetValue(
+    DWORD dwTlsIndex) {
   TRACEX("TlsGetValue");
   return tlsget(dwTlsIndex);
 }
 
-BOOL WINAPI TlsSetValue
-(
-  DWORD dwTlsIndex,
-  LPVOID lpTlsValue
-)
-{
+BOOL WINAPI TlsSetValue(
+    DWORD dwTlsIndex,
+    LPVOID lpTlsValue) {
   TRACEX("TlsSetValue");
   tlsset(dwTlsIndex, lpTlsValue);
   return TRUE;
 }
 
-BOOL WINAPI TryEnterCriticalSection
-(
-  LPCRITICAL_SECTION lpCriticalSection
-)
-{
+BOOL WINAPI TryEnterCriticalSection(
+    LPCRITICAL_SECTION lpCriticalSection) {
   TRACE("TryEnterCriticalSection");
   panic("TryEnterCriticalSection not implemented");
   return TRUE;
 }
 
-BOOL WINAPI UnlockFile
-(
-  HANDLE hFile,
-  DWORD dwFileOffsetLow,
-  DWORD dwFileOffsetHigh,
-  DWORD nNumberOfBytesToUnlockLow,
-  DWORD nNumberOfBytesToUnlockHigh
-)
-{
+BOOL WINAPI UnlockFile(
+    HANDLE hFile,
+    DWORD dwFileOffsetLow,
+    DWORD dwFileOffsetHigh,
+    DWORD nNumberOfBytesToUnlockLow,
+    DWORD nNumberOfBytesToUnlockHigh) {
   panic("UnlockFile not implemented");
   return FALSE;
 }
 
-BOOL WINAPI UnlockFileEx
-(
-  HANDLE hFile,
-  DWORD dwReserved,
-  DWORD nNumberOfBytesToUnlockLow,
-  DWORD nNumberOfBytesToUnlockHigh,
-  LPOVERLAPPED lpOverlapped
-)
-{
+BOOL WINAPI UnlockFileEx(
+    HANDLE hFile,
+    DWORD dwReserved,
+    DWORD nNumberOfBytesToUnlockLow,
+    DWORD nNumberOfBytesToUnlockHigh,
+    LPOVERLAPPED lpOverlapped) {
   panic("UnlockFileEx not implemented");
   return FALSE;
 }
 
-BOOL WINAPI UnmapViewOfFile
-(
-  LPCVOID lpBaseAddress
-)
-{
+BOOL WINAPI UnmapViewOfFile(
+    LPCVOID lpBaseAddress) {
   TRACE("UnmapViewOfFile");
   panic("UnmapViewOfFile not implemented");
   return FALSE;
 }
 
-#ifdef __TINYC__
-#define VALO 0
-#else
-#define VALO 'VALO'
-#endif
-
-LPVOID WINAPI VirtualAlloc
-(
-  LPVOID lpAddress,
-  SIZE_T dwSize,
-  DWORD flAllocationType,
-  DWORD flProtect
-)
-{
+LPVOID WINAPI VirtualAlloc(
+    LPVOID lpAddress,
+    SIZE_T dwSize,
+    DWORD flAllocationType,
+    DWORD flProtect) {
   void *addr;
   int n;
   //struct tib *tib = gettib();
@@ -2572,46 +2135,39 @@ LPVOID WINAPI VirtualAlloc
   // Do not allow JVM to mess with the stack (this is a hack!)
   //if (lpAddress >= tib->stackbase && lpAddress < tib->stacktop) return lpAddress;
 
-  addr = mmap(lpAddress, dwSize, flAllocationType | MEM_ALIGN64K, flProtect, VALO);
+  addr = mmap(lpAddress, dwSize, flAllocationType | MEM_ALIGN64K, flProtect, 'VALO');
 
   //syslog(LOG_DEBUG, "VirtualAlloc %p %dKB (%p,%p) -> %p", lpAddress, dwSize / K, flAllocationType, flProtect, addr);
 
-  if (addr != NULL && (flAllocationType & MEM_RESERVE) != 0)
-  {
+  if (addr != NULL && (flAllocationType & MEM_RESERVE) != 0) {
     for (n = 0; n < MAX_VADS; n++) if (vads[n].addr == NULL) break;
-    if (n != MAX_VADS)
-    {
+    if (n != MAX_VADS) {
       vads[n].addr = addr;
       vads[n].size = dwSize;
-    }
-    else
+    } else {
       panic("no vad for VirtualAlloc");
+    }
   }
 
   return addr;
 }
 
-BOOL WINAPI VirtualFree
-(
-  LPVOID lpAddress,
-  SIZE_T dwSize,
-  DWORD dwFreeType
-)
-{
+BOOL WINAPI VirtualFree(
+    LPVOID lpAddress,
+    SIZE_T dwSize,
+    DWORD dwFreeType) {
   int n;
   int rc;
 
   TRACE("VirtualFree");
-  if (lpAddress != NULL && (dwFreeType & MEM_RELEASE) != 0 && dwSize == 0)
-  {
+  if (lpAddress != NULL && (dwFreeType & MEM_RELEASE) != 0 && dwSize == 0) {
     for (n = 0; n < MAX_VADS; n++) if (vads[n].addr == lpAddress) break;
-    if (n != MAX_VADS)
-    {
+    if (n != MAX_VADS) {
       vads[n].addr = NULL;
       dwSize = vads[n].size;
-    }
-    else
+    } else {
       syslog(LOG_WARNING, "warning: vad not found for VitualFree");
+    }
   }
 
   rc = munmap(lpAddress, dwSize, dwFreeType);
@@ -2621,14 +2177,11 @@ BOOL WINAPI VirtualFree
   return rc == 0;
 }
 
-BOOL WINAPI VirtualProtect
-(
-  LPVOID lpAddress,
-  SIZE_T dwSize,
-  DWORD flNewProtect,
-  LPDWORD lpflOldProtect
-)
-{
+BOOL WINAPI VirtualProtect(
+    LPVOID lpAddress,
+    SIZE_T dwSize,
+    DWORD flNewProtect,
+    LPDWORD lpflOldProtect) {
   int rc;
   //struct tib *tib = gettib();
 
@@ -2645,30 +2198,24 @@ BOOL WINAPI VirtualProtect
   return TRUE;
 }
 
-DWORD WINAPI VirtualQuery
-(
-  LPCVOID lpAddress,
-  PMEMORY_BASIC_INFORMATION lpBuffer,
-  SIZE_T dwLength
-)
-{
+DWORD WINAPI VirtualQuery(
+    LPCVOID lpAddress,
+    PMEMORY_BASIC_INFORMATION lpBuffer,
+    SIZE_T dwLength) {
   struct tib *tib = gettib();
 
   TRACE("VirtualQuery");
 
   // Used in win32\hpi\src\threads_md.c to check for stack guard pages
   // In JVM 1.4 also used for checking stack size in hotspot\src\os\win32\vm\os_win32.cpp
-  if (lpAddress >= tib->stacklimit && lpAddress < tib->stacktop)
-  {
+  if (lpAddress >= tib->stacklimit && lpAddress < tib->stacktop) {
     // Handle stack case
     //syslog(LOG_DEBUG, "VirtualQuery %p (in stack %p %p %p)", lpAddress, tib->stackbase, tib->stacklimit, tib->stacktop);
     lpBuffer->BaseAddress = tib->stacklimit;
     lpBuffer->RegionSize = (char *) tib->stacktop - (char *) tib->stacklimit;
     lpBuffer->AllocationBase = tib->stackbase;
     lpBuffer->Protect = PAGE_READWRITE;
-  }
-  else
-  {
+  } else {
     //syslog(LOG_DEBUG, "VirtualQuery %p (not in stack!!!!)", lpAddress);
   
     // Return dummy result
@@ -2679,82 +2226,71 @@ DWORD WINAPI VirtualQuery
   return dwLength;
 }
 
-DWORD WINAPI WaitForMultipleObjects
-(
-  DWORD nCount,
-  CONST HANDLE *lpHandles,
-  BOOL bWaitAll,
-  DWORD dwMilliseconds
-)
-{
+DWORD WINAPI WaitForMultipleObjects(
+    DWORD nCount,
+    CONST HANDLE *lpHandles,
+    BOOL bWaitAll,
+    DWORD dwMilliseconds) {
   int rc;
 
   TRACE("WaitForMultipleObjects");
 
-  if (bWaitAll)
+  if (bWaitAll) {
     rc = waitall((handle_t *) lpHandles, nCount, dwMilliseconds);
-  else
+  } else {
     rc = waitany((handle_t *) lpHandles, nCount, dwMilliseconds);
+  }
 
-  if (rc < 0)
-  {
-    if (errno == ETIMEOUT) 
+  if (rc < 0) {
+    if (errno == ETIMEOUT) {
       return WAIT_TIMEOUT;
-    else
+    } else {
       return WAIT_FAILED;
+    }
   }
 
   return rc;
 }
 
-DWORD WINAPI WaitForSingleObject
-(
-  HANDLE hHandle,
-  DWORD dwMilliseconds
-)
-{
+DWORD WINAPI WaitForSingleObject(
+    HANDLE hHandle,
+    DWORD dwMilliseconds) {
   int rc;
 
   TRACEX("WaitForSingleObject");
   rc = waitone((handle_t) hHandle, dwMilliseconds);
 
-  if (rc < 0)
-  {
-    if (errno == ETIMEOUT) 
+  if (rc < 0) {
+    if (errno == ETIMEOUT) {
       return WAIT_TIMEOUT;
-    else
+    } else {
       return WAIT_FAILED;
+    }
   }
 
   return rc;
 }
 
-int WINAPI WideCharToMultiByte
-(
-  UINT CodePage,
-  DWORD dwFlags,
-  LPCWSTR lpWideCharStr,
-  int cchWideChar,
-  LPSTR lpMultiByteStr,
-  int cbMultiByte,
-  LPCSTR lpDefaultChar,
-  LPBOOL lpUsedDefaultChar
-)
-{
+int WINAPI WideCharToMultiByte(
+    UINT CodePage,
+    DWORD dwFlags,
+    LPCWSTR lpWideCharStr,
+    int cchWideChar,
+    LPSTR lpMultiByteStr,
+    int cbMultiByte,
+    LPCSTR lpDefaultChar,
+    LPBOOL lpUsedDefaultChar) {
   TRACE("WideCharToMultiByte");
   panic("WideCharToMultiByte not implemented");
   return 0;
 }
 
-BOOL WINAPI WriteFile
-(
-  HANDLE hFile,
-  LPCVOID lpBuffer,
-  DWORD nNumberOfBytesToWrite,
-  LPDWORD lpNumberOfBytesWritten,
-  LPOVERLAPPED lpOverlapped
-)
-{
+BOOL WINAPI WriteFile(
+    HANDLE hFile,
+    LPCVOID lpBuffer,
+    DWORD nNumberOfBytesToWrite,
+    LPDWORD lpNumberOfBytesWritten,
+    LPOVERLAPPED lpOverlapped) {
   int rc;
 
   TRACE("WriteFile");
@@ -2767,10 +2303,8 @@ BOOL WINAPI WriteFile
   return TRUE;
 }
 
-int __stdcall DllMain(handle_t hmod, int reason, void *reserved)
-{
-  if (reason == DLL_PROCESS_ATTACH)
-  {
+int __stdcall DllMain(handle_t hmod, int reason, void *reserved) {
+  if (reason == DLL_PROCESS_ATTACH) {
     // Register global WIN32 handler for all signals
     struct peb *peb = gettib()->peb;
     old_globalhandler = peb->globalhandler;

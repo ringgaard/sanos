@@ -49,8 +49,7 @@
 
 #ifndef _SCHED_PARAM_DEFINED
 #define _SCHED_PARAM_DEFINED
-struct sched_param 
-{
+struct sched_param {
   int sched_priority;
 };
 #endif

@@ -42,8 +42,7 @@
 
 #pragma pack(push, 1)
 
-struct dos_header 
-{
+struct dos_header {
   unsigned short e_magic;                     // Magic number
   unsigned short e_cblp;                      // Bytes on last page of file
   unsigned short e_cp;                        // Pages in file
@@ -71,8 +70,7 @@ struct dos_header
 // PE image file header
 //
 
-struct image_file_header
-{
+struct image_file_header {
   unsigned short machine;
   unsigned short number_of_sections;
   unsigned long  timestamp;
@@ -105,8 +103,7 @@ struct image_file_header
 // Image directory
 //
 
-struct image_directory
-{
+struct image_directory {
   unsigned long virtual_address;
   unsigned long size;
 };
@@ -118,8 +115,7 @@ struct image_directory
 // Optional image header
 //
 
-struct image_optional_header
-{
+struct image_optional_header {
   unsigned short magic;
   unsigned char  major_linker_version;
   unsigned char  minor_linker_version;
@@ -177,11 +173,9 @@ struct image_optional_header
 
 #define IMAGE_SIZEOF_SHORT_NAME 8
 
-struct image_section_header
-{
+struct image_section_header {
   char name[IMAGE_SIZEOF_SHORT_NAME];
-  union
-  {
+  union {
     unsigned long physical_address;
     unsigned long virtual_size;
   };
@@ -248,8 +242,7 @@ struct image_section_header
 // Combined image header
 //
 
-struct image_header
-{
+struct image_header {
   unsigned long signature;
   struct image_file_header header;
   struct image_optional_header optional;
@@ -260,8 +253,7 @@ struct image_header
 // Based relocation format
 //
 
-struct image_base_relocation
-{
+struct image_base_relocation {
   unsigned long virtual_address;
   unsigned long size_of_block;
 };
@@ -285,8 +277,7 @@ struct image_base_relocation
 
 #define IMAGE_ORDINAL_FLAG 0x80000000
 
-struct image_export_directory
-{
+struct image_export_directory {
   unsigned long characteristics;
   unsigned long timestamp;
   unsigned short major_version;
@@ -304,16 +295,13 @@ struct image_export_directory
 // Import Format
 //
 
-struct image_import_by_name
-{
+struct image_import_by_name {
   unsigned short hint;
   char name[1];
 };
 
-struct image_import_descriptor
-{
-  union
-  {
+struct image_import_descriptor {
+  union {
     unsigned long characteristics;            // 0 for terminating null import descriptor
     unsigned long original_first_thunk;       // RVA to original unbound IAT (PIMAGE_THUNK_DATA)
   };
@@ -323,16 +311,14 @@ struct image_import_descriptor
   unsigned long first_thunk;                  // RVA to IAT (if bound this IAT has actual addresses)
 };
 
-struct image_bound_import_descriptor
-{
+struct image_bound_import_descriptor {
   unsigned long timestamp;
   unsigned short offset_module_name;
   unsigned short number_of_module_forwarder_refs;
   // array of zero or more struct image_bound_forwarder_ref follows
 };
 
-struct image_bound_forwarder_ref
-{
+struct image_bound_forwarder_ref {
   unsigned long timestamp;
   unsigned short offset_module_name;
   unsigned short reserved;
@@ -342,8 +328,7 @@ struct image_bound_forwarder_ref
 // Resource Format
 //
 
-struct image_resource_directory 
-{
+struct image_resource_directory {
   unsigned long characteristics;
   unsigned long timestamp;
   unsigned short major_version;
@@ -356,37 +341,30 @@ struct image_resource_directory
 #define IMAGE_RESOURCE_NAME_IS_STRING        0x80000000
 #define IMAGE_RESOURCE_DATA_IS_DIRECTORY     0x80000000
 
-struct image_resource_directory_entry 
-{
-  union 
-  {
-    struct 
-    {
+struct image_resource_directory_entry {
+  union {
+    struct {
       unsigned long name_offset : 31;
       unsigned long name_is_string : 1;
     };
     unsigned long name;
     unsigned short id;
   };
-  union 
-  {
+  union {
     unsigned long offset_to_data;
-    struct 
-    {
+    struct {
       unsigned long offset_to_directory : 31;
       unsigned long data_is_directory : 1;
     };
   };
 };
 
-struct image_resource_directory_string
-{
+struct image_resource_directory_string {
  unsigned short length;
  char name_string[1];
 };
 
-struct image_resource_data_entry 
-{
+struct image_resource_data_entry {
   unsigned long offset_to_data;
   unsigned long size;
   unsigned long codepage;
@@ -397,8 +375,7 @@ struct image_resource_data_entry
 // TLS Directory
 //
 
-struct image_tls_directory
-{
+struct image_tls_directory {
   unsigned long start_address_of_raw_data;
   unsigned long end_address_of_raw_data;
   unsigned long address_of_index;

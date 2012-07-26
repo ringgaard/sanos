@@ -38,8 +38,7 @@
 #include <ctype.h>
 #endif
 
-char *strncpy(char *dest, const char *source, size_t n)
-{
+char *strncpy(char *dest, const char *source, size_t n) {
   char *start = dest;
 
   while (n && (*dest++ = *source++)) n--;
@@ -47,12 +46,10 @@ char *strncpy(char *dest, const char *source, size_t n)
   return start;
 }
 
-int strncmp(const char *s1, const char *s2, size_t n)
-{
+int strncmp(const char *s1, const char *s2, size_t n) {
   if (!n) return 0;
 
-  while (--n && *s1 && *s1 == *s2)
-  {
+  while (--n && *s1 && *s1 == *s2) {
     s1++;
     s2++;
   }
@@ -60,12 +57,10 @@ int strncmp(const char *s1, const char *s2, size_t n)
   return *(unsigned char *) s1 - *(unsigned char *) s2;
 }
 
-int stricmp(const char *s1, const char *s2)
-{
+int stricmp(const char *s1, const char *s2) {
   char f, l;
 
-  do 
-  {
+  do {
     f = ((*s1 <= 'Z') && (*s1 >= 'A')) ? *s1 + 'a' - 'A' : *s1;
     l = ((*s2 <= 'Z') && (*s2 >= 'A')) ? *s2 + 'a' - 'A' : *s2;
     s1++;
@@ -75,38 +70,32 @@ int stricmp(const char *s1, const char *s2)
   return (int) (f - l);
 }
 
-int strnicmp(const char *s1, const char *s2, size_t n)
-{
+int strnicmp(const char *s1, const char *s2, size_t n) {
   int f, l;
 
-  do 
-  {
-      if (((f = (unsigned char)(*(s1++))) >= 'A') && (f <= 'Z')) f -= 'A' - 'a';
-      if (((l = (unsigned char)(*(s2++))) >= 'A') && (l <= 'Z')) l -= 'A' - 'a';
+  do {
+    if (((f = (unsigned char)(*(s1++))) >= 'A') && (f <= 'Z')) f -= 'A' - 'a';
+    if (((l = (unsigned char)(*(s2++))) >= 'A') && (l <= 'Z')) l -= 'A' - 'a';
   } while (--n && f && (f == l));
 
   return f - l;
 }
 
-int strcasecmp(const char *s1, const char *s2)
-{
+int strcasecmp(const char *s1, const char *s2) {
   return stricmp(s1, s2);
 }
 
-int strncasecmp(const char *s1, const char *s2, size_t n)
-{
+int strncasecmp(const char *s1, const char *s2, size_t n) {
   return strnicmp(s1, s2, n);
 }
 
-char *strchr(const char *s, int ch)
-{
+char *strchr(const char *s, int ch) {
   while (*s && *s != (char) ch) s++;
   if (*s == (char) ch) return (char *) s;
   return NULL;
 }
 
-char *strrchr(const char *s, int ch)
-{
+char *strrchr(const char *s, int ch) {
   char *start = (char *) s;
 
   while (*s++);
@@ -116,15 +105,13 @@ char *strrchr(const char *s, int ch)
   return NULL;
 }
 
-char *strstr(const char *str1, const char *str2)
-{
+char *strstr(const char *str1, const char *str2) {
   char *cp = (char *) str1;
   char *s1, *s2;
 
   if (!*str2) return (char *) str1;
 
-  while (*cp)
-  {
+  while (*cp) {
     s1 = cp;
     s2 = (char *) str2;
 
@@ -136,8 +123,7 @@ char *strstr(const char *str1, const char *str2)
   return NULL;
 }
 
-size_t strspn(const char *string, const char *control)
-{
+size_t strspn(const char *string, const char *control) {
   const unsigned char *str = string;
   const unsigned char *ctrl = control;
 
@@ -148,18 +134,15 @@ size_t strspn(const char *string, const char *control)
   for (n = 0; n < 32; n++) map[n] = 0;
 
   // Set bits in control map
-  while (*ctrl)
-  {
+  while (*ctrl) {
     map[*ctrl >> 3] |= (1 << (*ctrl & 7));
     ctrl++;
   }
 
   // 1st char NOT in control map stops search
-  if (*str)
-  {
+  if (*str) {
     n = 0;
-    while (map[*str >> 3] & (1 << (*str & 7)))
-    {
+    while (map[*str >> 3] & (1 << (*str & 7))) {
       n++;
       str++;
     }
@@ -170,8 +153,7 @@ size_t strspn(const char *string, const char *control)
   return 0;
 }
 
-size_t strcspn(const char *string, const char *control)
-{
+size_t strcspn(const char *string, const char *control) {
   const unsigned char *str = string;
   const unsigned char *ctrl = control;
 
@@ -182,8 +164,7 @@ size_t strcspn(const char *string, const char *control)
   for (n = 0; n < 32; n++) map[n] = 0;
 
   // Set bits in control map
-  while (*ctrl)
-  {
+  while (*ctrl) {
     map[*ctrl >> 3] |= (1 << (*ctrl & 7));
     ctrl++;
   }
@@ -191,16 +172,14 @@ size_t strcspn(const char *string, const char *control)
   // 1st char in control map stops search
   n = 0;
   map[0] |= 1;
-  while (!(map[*str >> 3] & (1 << (*str & 7))))
-  {
+  while (!(map[*str >> 3] & (1 << (*str & 7)))) {
     n++;
     str++;
   }
   return n;
 }
 
-char *strpbrk(const char *string, const char *control)
-{
+char *strpbrk(const char *string, const char *control) {
   const unsigned char *str = string;
   const unsigned char *ctrl = control;
 
@@ -211,15 +190,13 @@ char *strpbrk(const char *string, const char *control)
   for (n = 0; n < 32; n++) map[n] = 0;
 
   // Set bits in control map
-  while (*ctrl)
-  {
+  while (*ctrl) {
     map[*ctrl >> 3] |= (1 << (*ctrl & 7));
     ctrl++;
   }
 
   // 1st char in control map stops search
-  while (*str)
-  {
+  while (*str) {
     if (map[*str >> 3] & (1 << (*str & 7))) return (char *) str;
     str++;
   }
@@ -227,28 +204,22 @@ char *strpbrk(const char *string, const char *control)
   return NULL;
 }
 
-void *memmove(void *dst, const void *src, size_t n)
-{
+void *memmove(void *dst, const void *src, size_t n) {
   void * ret = dst;
 
-  if (dst <= src || (char *) dst >= ((char *) src + n)) 
-  {
+  if (dst <= src || (char *) dst >= ((char *) src + n)) {
     // Non-overlapping buffers; copy from lower addresses to higher addresses
-    while (n--) 
-    {
+    while (n--) {
       *(char *) dst = *(char *) src;
       dst = (char *) dst + 1;
       src = (char *) src + 1;
     }
-  }
-  else 
-  {
+  } else {
     // Overlapping buffers; copy from higher addresses to lower addresses
     dst = (char *) dst + n - 1;
     src = (char *) src + n - 1;
 
-    while (n--) 
-    {
+    while (n--) {
       *(char *) dst = *(char *) src;
       dst = (char *) dst - 1;
       src = (char *) src - 1;
@@ -258,10 +229,8 @@ void *memmove(void *dst, const void *src, size_t n)
   return ret;
 }
 
-void *memchr(const void *buf, int ch, size_t n)
-{
-  while (n && (*(unsigned char *) buf != (unsigned char) ch)) 
-  {
+void *memchr(const void *buf, int ch, size_t n) {
+  while (n && (*(unsigned char *) buf != (unsigned char) ch)) {
     buf = (unsigned char *) buf + 1;
     n--;
   }
@@ -271,8 +240,7 @@ void *memchr(const void *buf, int ch, size_t n)
 
 #ifndef KERNEL
 
-char *strdup(const char *s)
-{
+char *strdup(const char *s) {
   char *t;
   int len;
 
@@ -283,8 +251,7 @@ char *strdup(const char *s)
   return t;
 }
 
-char *_lstrdup(const char *s)
-{
+char *_lstrdup(const char *s) {
   char *t;
   int len;
 
@@ -295,12 +262,10 @@ char *_lstrdup(const char *s)
   return t;
 }
 
-char *strlwr(char *s)
-{
+char *strlwr(char *s) {
   char *p = s;
 
-  while (*p)
-  {
+  while (*p) {
     *p = (char) tolower(*p);
     p++;
   }
@@ -308,12 +273,10 @@ char *strlwr(char *s)
   return s;
 }
 
-char *strupr(char *s)
-{
+char *strupr(char *s) {
   char *p = s;
 
-  while (*p)
-  {
+  while (*p) {
     *p = (char) toupper(*p);
     p++;
   }
@@ -323,15 +286,13 @@ char *strupr(char *s)
 
 #endif
 
-char *strncat(char *s1, const char *s2, size_t n)
-{
+char *strncat(char *s1, const char *s2, size_t n) {
   char *start = s1;
 
   while (*s1++);
   s1--;
 
-  while (n--)
-  {
+  while (n--) {
     if (!(*s1++ = *s2++)) return start;
   }
 
@@ -339,15 +300,13 @@ char *strncat(char *s1, const char *s2, size_t n)
   return start;
 }
 
-char *strnset(char *s, int c, size_t n)
-{
+char *strnset(char *s, int c, size_t n) {
   char *start = s;
   while (n-- && *s) *s++ = (char) c;
   return s;
 }
 
-char *strrev(char *s)
-{
+char *strrev(char *s) {
   char *start = s;
   char *left = s;
   char ch;
@@ -355,8 +314,7 @@ char *strrev(char *s)
   while (*s++);
   s -= 2;
 
-  while (left < s)
-  {
+  while (left < s) {
     ch = *left;
     *left++ = *s;
     *s-- = ch;
@@ -365,8 +323,7 @@ char *strrev(char *s)
   return start;
 }
 
-char *strtok_r(char *string, const char *control, char **lasts)
-{
+char *strtok_r(char *string, const char *control, char **lasts) {
   unsigned char *str;
   const unsigned char *ctrl = control;
 
@@ -382,10 +339,11 @@ char *strtok_r(char *string, const char *control, char **lasts)
   // Initialize str. If string is NULL, set str to the saved
   // pointer (i.e., continue breaking tokens out of the string
   // from the last strtok call)
-  if (string)
+  if (string) {
     str = string;
-  else
+  } else {
     str = *lasts;
+  }
 
   // Find beginning of token (skip over leading delimiters). Note that
   // there is no token iff this loop sets str to point to the terminal
@@ -397,10 +355,8 @@ char *strtok_r(char *string, const char *control, char **lasts)
 
   // Find the end of the token. If it is not the end of the string,
   // put a null there
-  for ( ; *str ; str++)
-  {
-    if (map[*str >> 3] & (1 << (*str & 7)))
-    {
+  for ( ; *str ; str++) {
+    if (map[*str >> 3] & (1 << (*str & 7))) {
       *str++ = '\0';
       break;
     }
@@ -410,16 +366,16 @@ char *strtok_r(char *string, const char *control, char **lasts)
   *lasts = str;
 
   // Determine if a token has been found
-  if (string == (char *) str)
+  if (string == (char *) str) {
     return NULL;
-  else
+  } else {
     return string;
+  }
 }
 
 #ifndef KERNEL
 
-char *strtok(char *string, const char *control)
-{
+char *strtok(char *string, const char *control) {
   return strtok_r(string, control, &gettib()->nexttoken);
 }
 
@@ -440,20 +396,17 @@ char *strtok(char *string, const char *control)
 #pragma function(strcmp)
 #pragma function(strset)
 
-void *memset(void *p, int c, size_t n)
-{
+void *memset(void *p, int c, size_t n) {
   char *pb = (char *) p;
   char *pbend = pb + n;
   while (pb != pbend) *pb++ = c;
   return p;
 }
 
-int memcmp(const void *dst, const void *src, size_t n)
-{
+int memcmp(const void *dst, const void *src, size_t n) {
   if (!n) return 0;
 
-  while (--n && *(char *) dst == *(char *) src)
-  {
+  while (--n && *(char *) dst == *(char *) src) {
     dst = (char *) dst + 1;
     src = (char *) src + 1;
   }
@@ -461,12 +414,10 @@ int memcmp(const void *dst, const void *src, size_t n)
   return *((unsigned char *) dst) - *((unsigned char *) src);
 }
 
-void *memcpy(void *dst, const void *src, size_t n)
-{
+void *memcpy(void *dst, const void *src, size_t n) {
   void *ret = dst;
 
-  while (n--)
-  {
+  while (n--) {
     *(char *)dst = *(char *)src;
     dst = (char *) dst + 1;
     src = (char *) src + 1;
@@ -475,24 +426,22 @@ void *memcpy(void *dst, const void *src, size_t n)
   return ret;
 }
 
-void *memccpy(void *dst, const void *src, int c, size_t n)
-{
+void *memccpy(void *dst, const void *src, int c, size_t n) {
   while (n && (*((char *) (dst = (char *) dst + 1) - 1) =
-         *((char *)(src = (char *) src + 1) - 1)) != (char) c)
+         *((char *)(src = (char *) src + 1) - 1)) != (char) c) {
     n--;
+  }
 
   return n ? dst : NULL;
 }
 
 #ifndef KERNEL
 
-int memicmp(const void *buf1, const void *buf2, size_t n)
-{
+int memicmp(const void *buf1, const void *buf2, size_t n) {
   int f = 0, l = 0;
   const unsigned char *dst = buf1, *src = buf2;
 
-  while (n-- && f == l)
-  {
+  while (n-- && f == l) {
     f = tolower(*dst++);
     l = tolower(*src++);
   }
@@ -502,43 +451,39 @@ int memicmp(const void *buf1, const void *buf2, size_t n)
 
 #endif
 
-char *strcpy(char *dst, const char *src)
-{
+char *strcpy(char *dst, const char *src) {
   char *cp = dst;
   while (*cp++ = *src++);
   return dst;
 }
 
-size_t strlen(const char *s)
-{
+size_t strlen(const char *s) {
   const char *eos = s;
   while (*eos++);
   return (int) (eos - s - 1);
 }
 
-int strcmp(const char *s1, const char *s2)
-{
+int strcmp(const char *s1, const char *s2) {
   int ret = 0;
   while (!(ret = *(unsigned char *) s1 - *(unsigned char *) s2) && *s2) ++s1, ++s2;
 
-  if (ret < 0)
+  if (ret < 0) {
     ret = -1;
-  else if (ret > 0)
+  } else if (ret > 0) {
     ret = 1 ;
+  }
 
   return ret;
 }
 
-char *strcat(char *dst, const char *src)
-{
+char *strcat(char *dst, const char *src) {
   char *cp = dst;
   while (*cp) cp++;
   while (*cp++ = *src++);
   return dst;
 }
 
-char *strset(char *s, int c)
-{
+char *strset(char *s, int c) {
   char *start = s;
   while (*s) *s++ = (char) c;
   return start;

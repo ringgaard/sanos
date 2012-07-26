@@ -42,16 +42,14 @@
 struct rmap *osvmap = (struct rmap *) OSVMAP_ADDRESS;
 struct rmap *kmodmap = (struct rmap *) KMODMAP_ADDRESS;
 
-void *alloc_pages(int pages, unsigned long tag)
-{
+void *alloc_pages(int pages, unsigned long tag) {
   char *vaddr;
   int i;
   unsigned long pfn;
 
   if (tag == 0) tag = 'KMEM';
   vaddr = (char *) PTOB(rmap_alloc(osvmap, pages));
-  for (i = 0; i < pages; i++)
-  {
+  for (i = 0; i < pages; i++) {
     pfn = alloc_pageframe(tag);
     map_page(vaddr + PTOB(i), pfn, PT_WRITABLE | PT_PRESENT);
   }
@@ -68,8 +66,7 @@ void *alloc_pages_align(int pages, int align, unsigned long tag)
 
   if (tag == 0) tag = 'KMEM';
   vaddr = (char *) PTOB(rmap_alloc_align(osvmap, pages, align));
-  for (i = 0; i < pages; i++)
-  {
+  for (i = 0; i < pages; i++) {
     pfn = alloc_pageframe(tag);
     map_page(vaddr + PTOB(i), pfn, PT_WRITABLE | PT_PRESENT);
   }
@@ -88,8 +85,7 @@ void *alloc_pages_linear(int pages, unsigned long tag)
   pfn = alloc_linear_pageframes(pages, tag);
   if (pfn == 0xFFFFFFFF) return 0;
   vaddr = (char *) PTOB(rmap_alloc(osvmap, pages));
-  for (i = 0; i < pages; i++)
-  {
+  for (i = 0; i < pages; i++) {
     map_page(vaddr + PTOB(i), pfn, PT_WRITABLE | PT_PRESENT);
     pfn++;
   }
@@ -106,8 +102,7 @@ void free_pages(void *addr, int pages)
 
   //kprintf("free kmem %dK @ %p\n", pages * PAGESIZE / K, addr);
 
-  for (i = 0; i < pages; i++)
-  {
+  for (i = 0; i < pages; i++) {
     pfn = BTOP(virt2phys((char *) addr + PTOB(i)));
     free_pageframe(pfn);
     unmap_page((char *) addr + PTOB(i));
@@ -116,23 +111,20 @@ void free_pages(void *addr, int pages)
   rmap_free(osvmap, BTOP(addr), pages);
 }
 
-void *iomap(unsigned long addr, int size)
-{
+void *iomap(unsigned long addr, int size) {
   char *vaddr;
   int i;
   int pages = PAGES(size);
 
   vaddr = (char *) PTOB(rmap_alloc(osvmap, pages));
-  for (i = 0; i < pages; i++)
-  {
+  for (i = 0; i < pages; i++) {
     map_page(vaddr + PTOB(i), BTOP(addr) + i, PT_WRITABLE | PT_PRESENT);
   }
 
   return vaddr;
 }
 
-void iounmap(void *addr, int size)
-{
+void iounmap(void *addr, int size) {
   int i;
   int pages = PAGES(size);
 
@@ -140,15 +132,13 @@ void iounmap(void *addr, int size)
   rmap_free(osvmap, BTOP(addr), pages);
 }
 
-void *alloc_module_mem(int pages)
-{
+void *alloc_module_mem(int pages) {
   char *vaddr;
   int i;
   unsigned long pfn;
 
   vaddr = (char *) PTOB(rmap_alloc(kmodmap, pages));
-  for (i = 0; i < pages; i++)
-  {
+  for (i = 0; i < pages; i++) {
     pfn = alloc_pageframe('KMOD');
     map_page(vaddr + PTOB(i), pfn, PT_WRITABLE | PT_PRESENT);
     memset(vaddr + PTOB(i), 0, PAGESIZE);
@@ -159,15 +149,13 @@ void *alloc_module_mem(int pages)
   return vaddr;
 }
 
-void free_module_mem(void *addr, int pages)
-{
+void free_module_mem(void *addr, int pages) {
   int i;
   unsigned long pfn;
 
   //kprintf("free mod mem %dK @ %p\n", pages * PAGESIZE / K, addr);
 
-  for (i = 0; i < pages; i++)
-  {
+  for (i = 0; i < pages; i++) {
     pfn = BTOP(virt2phys((char *) addr + PTOB(i)));
     free_pageframe(pfn);
     unmap_page((char *) addr + PTOB(i));
@@ -176,8 +164,7 @@ void free_module_mem(void *addr, int pages)
   rmap_free(kmodmap, BTOP(addr), pages);
 }
 
-void init_kmem()
-{
+void init_kmem() {
   int pfn;
   struct image_header *imghdr;
 
@@ -217,12 +204,10 @@ int list_memmap(struct proc_file *pf, struct rmap *rmap, unsigned int startpos)
 
   rlim = &rmap[rmap->offset];
 
-  for (r = &rmap[1]; r <= rlim; r++) 
-  {
+  for (r = &rmap[1]; r <= rlim; r++)  {
     unsigned int size = r->offset - pos;
 
-    if (size > 0)
-    {
+    if (size > 0) {
       pdir_stat((void *) (pos * PAGESIZE), size * PAGESIZE, &stat);
       pprintf(pf, "%08X %08X %8dK %8dK %8dK %8dK\n", 
               pos * PAGESIZE, 
@@ -240,12 +225,10 @@ int list_memmap(struct proc_file *pf, struct rmap *rmap, unsigned int startpos)
   return 0;
 }
 
-int kmem_proc(struct proc_file *pf, void *arg)
-{
+int kmem_proc(struct proc_file *pf, void *arg) {
   return list_memmap(pf, osvmap, BTOP(KHEAPBASE));
 }
 
-int kmodmem_proc(struct proc_file *pf, void *arg)
-{
+int kmodmem_proc(struct proc_file *pf, void *arg) {
   return list_memmap(pf, kmodmap, BTOP(OSBASE));
 }

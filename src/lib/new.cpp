@@ -38,16 +38,14 @@ extern "C"
 
 void *memset(void *, int, size_t);
 
-int _purecall()
-{
+int _purecall() {
   panic("pure virtual function call attempted");
   return 0;
 }
 
 }
 
-void *operator new(unsigned int size)
-{
+void *operator new(unsigned int size) {
   void *p;
 
   p = malloc(size);
@@ -55,7 +53,6 @@ void *operator new(unsigned int size)
   return p;
 }
 
-void operator delete(void *p)
-{
+void operator delete(void *p) {
   if (p) free(p);
 }

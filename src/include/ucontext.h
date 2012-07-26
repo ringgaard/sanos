@@ -67,8 +67,7 @@
 // Machine-dependent context
 //
 
-struct mcontext
-{
+struct mcontext {
   int gregs[NGREG];
 };
 
@@ -78,8 +77,7 @@ typedef struct mcontext mcontext_t;
 // Stack
 //
 
-struct stack
-{
+struct stack {
   void *ss_sp;       // Stack base or pointer
   size_t ss_size;    // Stack size
   int ss_flags;      // Flags
@@ -91,8 +89,7 @@ typedef struct stack stack_t;
 // User context
 //
 
-struct ucontext
-{
+struct ucontext {
   struct ucontext *uc_link;
   sigset_t uc_sigmask;
   stack_t uc_stack;

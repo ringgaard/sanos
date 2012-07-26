@@ -51,8 +51,7 @@
 #ifndef _LCONV_DEFINED
 #define _LCONV_DEFINED
 
-struct lconv 
-{
+struct lconv {
   char *decimal_point;
   char *thousands_sep;
   char *grouping;

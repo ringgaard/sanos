@@ -35,8 +35,7 @@
 #ifndef RAW_H
 #define RAW_H
 
-struct raw_pcb 
-{
+struct raw_pcb {
   struct ip_addr local_ip;
   struct ip_addr remote_ip;
   int ttl;

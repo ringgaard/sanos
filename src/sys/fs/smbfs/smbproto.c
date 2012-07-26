@@ -36,21 +36,20 @@
 
 struct smb_server *servers = NULL;
 
-struct smb *smb_init(struct smb_share *share, int aux)
-{
+struct smb *smb_init(struct smb_share *share, int aux) {
   struct smb *smb;
   
-  if (aux)
+  if (aux) {
     smb = (struct smb *) share->server->auxbuf;
-  else
+  } else {
     smb = (struct smb *) share->server->buffer;
+  }
 
   memset(smb, 0, sizeof(struct smb));
   return smb;
 }
 
-int smb_send(struct smb_share *share, struct smb *smb, unsigned char cmd, int params, char *data, int datasize)
-{
+int smb_send(struct smb_share *share, struct smb *smb, unsigned char cmd, int params, char *data, int datasize) {
   int len;
   int rc;
   char *p;
@@ -85,8 +84,7 @@ int smb_send(struct smb_share *share, struct smb *smb, unsigned char cmd, int pa
   return 0;
 }
 
-int smb_recv(struct smb_share *share, struct smb *smb)
-{
+int smb_recv(struct smb_share *share, struct smb *smb) {
   int len;
   int rc;
 
@@ -106,27 +104,22 @@ int smb_recv(struct smb_share *share, struct smb *smb)
   return 0;
 }
 
-int smb_request(struct smb_share *share, struct smb *smb, unsigned char cmd, int params, char *data, int datasize, int retry)
-{
+int smb_request(struct smb_share *share, struct smb *smb, unsigned char cmd, int params, char *data, int datasize, int retry) {
   int rc;
 
-  if (retry)
-  {
+  if (retry) {
     rc = smb_check_connection(share);
     if (rc < 0) return rc;
   }
 
   rc = smb_send(share, smb, cmd, params, data, datasize);
-  if ((rc == -ECONN || rc == -ERST) && retry)
-  {
+  if ((rc == -ECONN || rc == -ERST) && retry) {
     rc = smb_reconnect(share);
     if (rc < 0) return rc;
 
     rc = smb_send(share, smb, cmd, params, data, datasize);
     if (rc < 0) return rc;
-  }
-  else
-  {
+  } else {
     if (rc < 0) return rc;
   }
 
@@ -139,8 +132,7 @@ int smb_request(struct smb_share *share, struct smb *smb, unsigned char cmd, int
 int smb_trans_send(struct smb_share *share, unsigned short cmd, 
                    void *params, int paramlen,
                    void *data, int datalen,
-                   int maxparamlen, int maxdatalen)
-{
+                   int maxparamlen, int maxdatalen) {
   struct smb *smb;
   int wordcount = 15;
   int paramofs = ROUNDUP(SMB_HEADER_LEN + 2 * wordcount + 2 + 3);
@@ -194,17 +186,14 @@ int smb_trans_send(struct smb_share *share, unsigned short cmd,
   if (data) memcpy(p + dataofs, data, datalen);
 
   rc = send(share->server->sock, (char *) smb, len + 4, 0);
-  if (rc == -ECONN || rc == -ERST)
-  {
+  if (rc == -ECONN || rc == -ERST) {
     rc = smb_reconnect(share);
     if (rc < 0) return rc;
 
     rc = send(share->server->sock, (char *) smb, len + 4, 0);
     if (rc < 0) return rc;
     if (rc != len + 4) return -EIO;
-  }
-  else
-  {
+  } else {
     if (rc < 0) return rc;
     if (rc != len + 4) return -EIO;
   }
@@ -214,15 +203,13 @@ int smb_trans_send(struct smb_share *share, unsigned short cmd,
 
 int smb_trans_recv(struct smb_share *share,
                    void *params, int *paramlen,
-                   void *data, int *datalen)
-{
+                   void *data, int *datalen) {
   struct smb *smb;
   int paramofs, paramdisp, paramcnt;
   int dataofs, datadisp, datacnt;
   int rc;
 
-  while (1)
-  {
+  while (1) {
     // Receive next block
     smb = (struct smb *) share->server->buffer;
     rc = smb_recv(share, smb);
@@ -232,8 +219,7 @@ int smb_trans_recv(struct smb_share *share,
     paramofs = smb->params.rsp.trans.parameter_offset;
     paramdisp = smb->params.rsp.trans.parameter_displacement;
     paramcnt = smb->params.rsp.trans.parameter_count;
-    if (params)
-    {
+    if (params) {
       if (paramdisp + paramcnt > *paramlen) return -EBUF;
       if (paramcnt) memcpy((char *) params + paramdisp, (char *) smb + paramofs + 4, paramcnt);
     }
@@ -242,16 +228,14 @@ int smb_trans_recv(struct smb_share *share,
     dataofs = smb->params.rsp.trans.data_offset;
     datadisp = smb->params.rsp.trans.data_displacement;
     datacnt = smb->params.rsp.trans.data_count;
-    if (data)
-    {
+    if (data) {
       if (datadisp + datacnt > *datalen) return -EBUF;
       if (datacnt) memcpy((char *) data + datadisp, (char *) smb + dataofs + 4, datacnt);
     }
 
     // Check for last block
     if (paramdisp + paramcnt == smb->params.rsp.trans.total_parameter_count &&
-        datadisp + datacnt == smb->params.rsp.trans.total_data_count)
-    {
+        datadisp + datacnt == smb->params.rsp.trans.total_data_count) {
       *paramlen = smb->params.rsp.trans.total_parameter_count;
       *datalen = smb->params.rsp.trans.total_data_count;
       return 0;
@@ -264,20 +248,17 @@ int smb_trans(struct smb_share *share,
               void *reqparams, int reqparamlen,
               void *reqdata, int reqdatalen,
               void *rspparams, int *rspparamlen,
-              void *rspdata, int *rspdatalen)
-{
+              void *rspdata, int *rspdatalen) {
   int rc;
   int dummyparamlen;
   int dummydatalen;
 
-  if (!rspparamlen) 
-  {
+  if (!rspparamlen) {
     dummyparamlen = 0;
     rspparamlen = &dummyparamlen;
   }
 
-  if (!rspdatalen) 
-  {
+  if (!rspdatalen) {
     dummydatalen = 0;
     rspdatalen = &dummydatalen;
   }
@@ -286,8 +267,7 @@ int smb_trans(struct smb_share *share,
   if (rc < 0) return rc;
 
   rc = smb_trans_recv(share, rspparams, rspparamlen, rspdata, rspdatalen);
-  if (rc == -ERST)
-  {
+  if (rc == -ERST) {
     rc = smb_reconnect(share);
     if (rc < 0) return rc;
 
@@ -302,8 +282,7 @@ int smb_trans(struct smb_share *share,
   return 0;
 }
 
-int smb_connect_tree(struct smb_share *share)
-{
+int smb_connect_tree(struct smb_share *share) {
   struct smb *smb;
   int rc;
   char *p;
@@ -328,8 +307,7 @@ int smb_connect_tree(struct smb_share *share)
   return 0;
 }
 
-int smb_disconnect_tree(struct smb_share *share)
-{
+int smb_disconnect_tree(struct smb_share *share) {
   struct smb *smb;
 
   // Disconnect from share
@@ -340,8 +318,7 @@ int smb_disconnect_tree(struct smb_share *share)
   return 0;
 }
 
-int smb_connect(struct smb_share *share)
-{
+int smb_connect(struct smb_share *share) {
   struct smb_server *server = share->server;
   struct smb *smb;
   struct sockaddr_in sin;
@@ -367,8 +344,7 @@ int smb_connect(struct smb_share *share)
   rc = smb_request(share, smb, SMB_COM_NEGOTIATE, 0, "\002NT LM 0.12", 12, 0); 
   if (rc < 0) goto error;
 
-  if (smb->params.rsp.negotiate.dialect_index == 0xFFFF) 
-  {
+  if (smb->params.rsp.negotiate.dialect_index == 0xFFFF) {
     rc = -EREMOTEIO;
     goto error;
   }
@@ -402,8 +378,7 @@ int smb_connect(struct smb_share *share)
   return 0;
 
 error:
-  if (server->sock)
-  {
+  if (server->sock) {
     closesocket(server->sock);
     server->sock = NULL;
   }
@@ -411,16 +386,13 @@ error:
   return rc;
 }
 
-int smb_disconnect(struct smb_share *share)
-{
+int smb_disconnect(struct smb_share *share) {
   struct smb_server *server = share->server;
   struct smb *smb;
 
-  if (server->sock)
-  {
+  if (server->sock) {
     // Logoff server
-    if (server->uid != 0xFFFF)
-    {
+    if (server->uid != 0xFFFF) {
       smb = smb_init(share, 1);
       smb->params.andx.cmd = 0xFF;
       smb_request(share, smb, SMB_COM_LOGOFF_ANDX, 2, NULL, 0, 0);
@@ -435,17 +407,14 @@ int smb_disconnect(struct smb_share *share)
   return 0;
 }
 
-int smb_get_connection(struct smb_share *share, struct ip_addr *ipaddr, unsigned short port, char *domain, char *username, char *password)
-{
+int smb_get_connection(struct smb_share *share, struct ip_addr *ipaddr, unsigned short port, char *domain, char *username, char *password) {
   struct smb_server *server;
   int rc;
 
   // Try to find existing connection to server
   server = servers;
-  while (server)
-  {
-    if (ip_addr_cmp(&server->ipaddr, ipaddr) && server->port == port)
-    {
+  while (server) {
+    if (ip_addr_cmp(&server->ipaddr, ipaddr) && server->port == port) {
       // Add share to server
       share->server = server;
       share->next = server->shares;
@@ -480,8 +449,7 @@ int smb_get_connection(struct smb_share *share, struct ip_addr *ipaddr, unsigned
 
   // Connect to server
   rc = smb_connect(share);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     share->server = NULL;
     kfree(server);
     return rc;
@@ -494,25 +462,20 @@ int smb_get_connection(struct smb_share *share, struct ip_addr *ipaddr, unsigned
   return 0;
 }
 
-int smb_release_connection(struct smb_share *share)
-{
+int smb_release_connection(struct smb_share *share) {
   struct smb_server *server = share->server;
 
   if (!server) return 0;
 
-  if (--server->refcnt > 0)
-  {
+  if (--server->refcnt > 0) {
     // Remove share from server list
-    if (server->shares == share)
+    if (server->shares == share) {
       server->shares = share->next;
-    else
-    {
+    } else {
       struct smb_share *s;
 
-      for (s = server->shares; s != NULL; s = s->next)
-      {
-        if (s->next == share)
-        {
+      for (s = server->shares; s != NULL; s = s->next) {
+        if (s->next == share) {
           s->next = share->next;
           break;
         }
@@ -527,16 +490,13 @@ int smb_release_connection(struct smb_share *share)
   smb_disconnect(share);
 
   // Remove server block
-  if (servers == server)
+  if (servers == server) {
    servers = server->next;
-  else
-  {
+  } else {
     struct smb_server *s;
 
-    for (s = servers; s != NULL; s = s->next)
-    {
-      if (s->next == server)
-      {
+    for (s = servers; s != NULL; s = s->next) {
+      if (s->next == server) {
         s->next = server->next;
         break;
       }
@@ -549,20 +509,17 @@ int smb_release_connection(struct smb_share *share)
   return 0;
 }
 
-int smb_check_connection(struct smb_share *share)
-{
+int smb_check_connection(struct smb_share *share) {
   struct smb_server *server = share->server;
   int rc;
 
-  if (!server->sock)
-  {
+  if (!server->sock) {
     // Create new connection to server
     rc = smb_connect(share);
     if (rc < 0) return rc;
   }
 
-  if (share->tid == 0xFFFF)
-  {
+  if (share->tid == 0xFFFF) {
     // Reconnect share
     rc = smb_connect_tree(share);
     if (rc < 0) return rc;
@@ -571,15 +528,13 @@ int smb_check_connection(struct smb_share *share)
   return 0;
 }
 
-int smb_reconnect(struct smb_share *share)
-{
+int smb_reconnect(struct smb_share *share) {
   struct smb_server *server = share->server;
   struct smb_share *s;
   int rc;
 
   s = server->shares;
-  while (s)
-  {
+  while (s) {
     s->tid = 0xFFFF;
     s = s->next;
   }

@@ -43,8 +43,7 @@
 #ifndef _IOVEC_DEFINED
 #define _IOVEC_DEFINED
 
-struct iovec 
-{ 
+struct iovec {
   size_t iov_len;
   void *iov_base;
 };

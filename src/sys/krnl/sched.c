@@ -63,16 +63,13 @@ unsigned long schedmapidx;
 
 static void tmr_alarm(void *arg);
 
-struct thread *self()
-{
+struct thread *self() {
   unsigned long stkvar;
   return (struct thread *) (((unsigned long) &stkvar) & TCBMASK);
 }
 
-__declspec(naked) void switch_context(struct thread *t)
-{
-  __asm
-  {
+__declspec(naked) void switch_context(struct thread *t) {
+  __asm {
     // Save registers on current kernel stack
     push    ebp
     push    ebx
@@ -102,38 +99,31 @@ __declspec(naked) void switch_context(struct thread *t)
   }
 }
 
-static void insert_before(struct thread *t1, struct thread *t2)
-{
+static void insert_before(struct thread *t1, struct thread *t2) {
   t2->next = t1;
   t2->prev = t1->prev;
   t1->prev->next = t2;
   t1->prev = t2;
 }
 
-static void insert_after(struct thread *t1, struct thread *t2)
-{
+static void insert_after(struct thread *t1, struct thread *t2) {
   t2->next = t1->next;
   t2->prev = t1;
   t1->next->prev = t2;
   t1->next = t2;
 }
 
-static void remove(struct thread *t)
-{
+static void remove(struct thread *t) {
   t->next->prev = t->prev;
   t->prev->next = t->next;
 }
 
-static void insert_ready_head(struct thread *t)
-{
-  if (!ready_queue_head[t->priority])
-  {
+static void insert_ready_head(struct thread *t) {
+  if (!ready_queue_head[t->priority]) {
     t->next_ready = t->prev_ready = NULL;
     ready_queue_head[t->priority] = ready_queue_tail[t->priority] = t;
     thread_ready_summary |= (1 << t->priority);
-  }
-  else
-  {
+  } else {
     t->next_ready = ready_queue_head[t->priority];
     t->prev_ready = NULL;
     t->next_ready->prev_ready = t;
@@ -141,16 +131,12 @@ static void insert_ready_head(struct thread *t)
   }
 }
 
-static void insert_ready_tail(struct thread *t)
-{
-  if (!ready_queue_tail[t->priority])
-  {
+static void insert_ready_tail(struct thread *t) {
+  if (!ready_queue_tail[t->priority]) {
     t->next_ready = t->prev_ready = NULL;
     ready_queue_head[t->priority] = ready_queue_tail[t->priority] = t;
     thread_ready_summary |= (1 << t->priority);
-  }
-  else
-  {
+  } else {
     t->next_ready = NULL;
     t->prev_ready = ready_queue_tail[t->priority];
     t->prev_ready->next_ready = t;
@@ -158,8 +144,7 @@ static void insert_ready_tail(struct thread *t)
   }
 }
 
-static void remove_from_ready_queue(struct thread *t)
-{
+static void remove_from_ready_queue(struct thread *t) {
   if (t->next_ready) t->next_ready->prev_ready = t->prev_ready;
   if (t->prev_ready) t->prev_ready->next_ready = t->next_ready;
   if (t == ready_queue_head[t->priority]) ready_queue_head[t->priority] = t->next_ready;
@@ -167,8 +152,7 @@ static void remove_from_ready_queue(struct thread *t)
   if (!ready_queue_tail[t->priority]) thread_ready_summary &= ~(1 << t->priority);
 }
 
-static void init_thread_stack(struct thread *t, void *startaddr, void *arg)
-{
+static void init_thread_stack(struct thread *t, void *startaddr, void *arg) {
   struct tcb *tcb = (struct tcb *) t;
   unsigned long *esp = (unsigned long *) &tcb->esp;
   
@@ -182,8 +166,7 @@ static void init_thread_stack(struct thread *t, void *startaddr, void *arg)
   tcb->esp = esp;
 }
 
-void enter_wait(int reason)
-{
+void enter_wait(int reason) {
   struct thread *t = self();
 
   t->state = THREAD_STATE_WAITING;
@@ -191,8 +174,7 @@ void enter_wait(int reason)
   dispatch();
 }
 
-int enter_alertable_wait(int reason)
-{
+int enter_alertable_wait(int reason) {
   struct thread *t = self();
 
   if (signals_ready(t)) return -EINTR;
@@ -205,8 +187,7 @@ int enter_alertable_wait(int reason)
   dispatch();
   t->flags &= ~THREAD_ALERTABLE;
 
-  if (t->flags & THREAD_INTERRUPTED)
-  {
+  if (t->flags & THREAD_INTERRUPTED) {
     t->flags &= ~THREAD_INTERRUPTED;
     return -EINTR;
   }
@@ -214,8 +195,7 @@ int enter_alertable_wait(int reason)
   return 0;
 }
 
-int interrupt_thread(struct thread *t)
-{
+int interrupt_thread(struct thread *t) {
   if (t->state != THREAD_STATE_WAITING) return -EBUSY;
   if ((t->flags & THREAD_ALERTABLE) == 0) return -EPERM;
   t->flags |= THREAD_INTERRUPTED;
@@ -223,14 +203,12 @@ int interrupt_thread(struct thread *t)
   return 0;
 }
 
-void mark_thread_ready(struct thread *t, int charge, int boost)
-{
+void mark_thread_ready(struct thread *t, int charge, int boost) {
   int prio = t->priority;
   int newprio;
 
   // Check for suspended thread that is now ready to run 
-  if (t->suspend_count > 0)
-  {
+  if (t->suspend_count > 0) {
     t->state = THREAD_STATE_SUSPENDED;
     return;
   }
@@ -254,14 +232,11 @@ void mark_thread_ready(struct thread *t, int charge, int boost)
   t->state = THREAD_STATE_READY;
 
   // Insert thread in ready queue
-  if (t->quantum > 0)
-  {
+  if (t->quantum > 0) {
     // Thread has some quantum left. Insert it at the head of the
     // ready queue for its priority.
     insert_ready_head(t);
-  }
-  else
-  {
+  } else {
     // The thread has exhausted its CPU quantum. Assign a new quantum 
     t->quantum = DEFAULT_QUANTUM;
     
@@ -276,8 +251,7 @@ void mark_thread_ready(struct thread *t, int charge, int boost)
   if (t->priority > self()->priority) preempt = 1;
 }
 
-void preempt_thread()
-{
+void preempt_thread() {
   struct thread *t = self();
 
   // Enable interrupt in case we have been called in interupt context
@@ -287,8 +261,7 @@ void preempt_thread()
   t->preempts++;
 
   // Assign a new quantum if quantum expired
-  if (t->quantum <= 0) 
-  {
+  if (t->quantum <= 0)  {
     t->quantum = DEFAULT_QUANTUM;
 
     // Let priority decay towards base priority
@@ -305,8 +278,7 @@ void preempt_thread()
   dispatch();
 }
 
-void mark_thread_running()
-{
+void mark_thread_running() {
   struct thread *t;
   struct tib *tib;
 
@@ -317,8 +289,7 @@ void mark_thread_running()
 
   // Set FS register to point to current TIB
   tib = t->tib;
-  if (tib)
-  {
+  if (tib) {
     // Update TIB descriptor
 #ifdef VMACH
     set_gdt_entry(GDT_TIB, (unsigned long) tib, PAGESIZE, D_DATA | D_DPL3 | D_WRITE | D_PRESENT, 0);
@@ -332,16 +303,14 @@ void mark_thread_running()
 #endif
 
     // Reload FS register
-    __asm
-    {
+    __asm {
       mov ax, SEL_TIB + SEL_RPL3
       mov fs, ax
     }
   }
 }
 
-void kernel_thread_start(void *arg)
-{
+void kernel_thread_start(void *arg) {
   struct thread *t = self();
 
   // Mark thread as running
@@ -351,8 +320,7 @@ void kernel_thread_start(void *arg)
   ((void (*)(void *)) (t->entrypoint))(arg);
 }
 
-void user_thread_start(void *arg)
-{
+void user_thread_start(void *arg) {
   struct thread *t = self();
   unsigned long *stacktop;
   void *entrypoint;
@@ -367,8 +335,7 @@ void user_thread_start(void *arg)
 
   // Switch to usermode and start excuting thread routine
   entrypoint = t->entrypoint;
-  __asm
-  {
+  __asm {
     mov eax, stacktop
     mov ebx, entrypoint
 
@@ -384,8 +351,7 @@ void user_thread_start(void *arg)
   }
 }
 
-static struct thread *create_thread(threadproc_t startaddr, void *arg, int priority)
-{
+static struct thread *create_thread(threadproc_t startaddr, void *arg, int priority) {
   // Allocate a new aligned thread control block
   struct thread *t = (struct thread *) alloc_pages_align(PAGES_PER_TCB, PAGES_PER_TCB, 'TCB');
   if (!t) return NULL;
@@ -404,8 +370,7 @@ static struct thread *create_thread(threadproc_t startaddr, void *arg, int prior
   return t;
 }
 
-struct thread *create_kernel_thread(threadproc_t startaddr, void *arg, int priority, char *name)
-{
+struct thread *create_kernel_thread(threadproc_t startaddr, void *arg, int priority, char *name) {
   struct thread *t;
 
   // Create new thread object
@@ -423,17 +388,17 @@ struct thread *create_kernel_thread(threadproc_t startaddr, void *arg, int prior
   return t;
 }
 
-int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread **retval)
-{
+int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread **retval) {
   struct thread *creator = self();
   struct thread *t;
   int rc;
 
   // Determine stacksize
-  if (stacksize == 0)
+  if (stacksize == 0) {
     stacksize = DEFAULT_STACK_SIZE;
-  else
+  } else {
     stacksize = PAGES(stacksize) * PAGESIZE;
+  }
 
   // Create and initialize new TCB and suspend thread
   t = create_thread(user_thread_start, NULL, PRIORITY_NORMAL);
@@ -472,8 +437,7 @@ int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread 
   return 0;
 }
 
-int init_user_thread(struct thread *t, void *entrypoint)
-{
+int init_user_thread(struct thread *t, void *entrypoint) {
   struct tib *tib;
 
   // Allocate and initialize thread information block for thread
@@ -492,8 +456,7 @@ int init_user_thread(struct thread *t, void *entrypoint)
   return 0;
 }
 
-int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned long stack_commit)
-{
+int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned long stack_commit) {
   char *stack;
   struct tib *tib;
 
@@ -511,8 +474,7 @@ int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned 
   return 0;
 }
 
-static void destroy_tcb(void *arg)
-{
+static void destroy_tcb(void *arg) {
   // Deallocate TCB
   free_pages(arg, PAGES_PER_TCB);
 
@@ -523,19 +485,16 @@ static void destroy_tcb(void *arg)
   sys_task_queue.flags |= TASK_QUEUE_ACTIVE_TASK_INVALID;
 }
 
-int destroy_thread(struct thread *t)
-{
+int destroy_thread(struct thread *t) {
   struct task *task;
 
   // We can only remove terminated threads
   if (t->state != THREAD_STATE_TERMINATED) panic("thread terminated in invalid state");
  
   // Deallocate user context
-  if (t->tib)
-  {
+  if (t->tib) {
     // Deallocate user stack
-    if (t->tib->stackbase) 
-    {
+    if (t->tib->stackbase) {
       munmap(t->tib->stackbase, (char *) (t->tib->stacktop) - (char *) (t->tib->stackbase), MEM_RELEASE);
       t->tib->stackbase = NULL;
     }
@@ -559,31 +518,24 @@ int destroy_thread(struct thread *t)
   return 0;
 }
 
-struct thread *get_thread(tid_t tid)
-{
+struct thread *get_thread(tid_t tid) {
   struct thread *t = threadlist;
 
-  while (1)
-  {
+  while (1) {
     if (t->id == tid) return t;
     t = t->next;
     if (t == threadlist) return NULL;
   }
 }
 
-int suspend_thread(struct thread *t)
-{
+int suspend_thread(struct thread *t) {
   int prevcount = t->suspend_count++;
 
-  if (prevcount == 0)
-  {
-    if (t->state == THREAD_STATE_READY)
-    {
+  if (prevcount == 0) {
+    if (t->state == THREAD_STATE_READY) {
       remove_from_ready_queue(t);
       t->state = THREAD_STATE_SUSPENDED;
-    }
-    else if (t->state == THREAD_STATE_RUNNING)
-    {
+    } else if (t->state == THREAD_STATE_RUNNING) {
       t->state = THREAD_STATE_SUSPENDED;
       dispatch();
     }
@@ -592,14 +544,11 @@ int suspend_thread(struct thread *t)
   return prevcount;
 }
 
-int resume_thread(struct thread *t)
-{
+int resume_thread(struct thread *t) {
   int prevcount = t->suspend_count;
 
-  if (t->suspend_count > 0)
-  {
-    if (--t->suspend_count == 0) 
-    {
+  if (t->suspend_count > 0) {
+    if (--t->suspend_count == 0)  {
       if (t->state == THREAD_STATE_SUSPENDED || t->state == THREAD_STATE_INITIALIZED) mark_thread_ready(t, 0, 0);
     }
   }
@@ -607,39 +556,35 @@ int resume_thread(struct thread *t)
   return prevcount;
 }
 
-void suspend_all_user_threads()
-{
+void suspend_all_user_threads() {
   struct thread *t = threadlist;
-  while (1)
-  {
+  while (1) {
     if (t->tib && t != self()) suspend_thread(t);
     t = t->next;
     if (t == threadlist) break;
   }
 }
 
-static void tmr_alarm(void *arg)
-{
+static void tmr_alarm(void *arg) {
   struct thread *t = arg;
   send_user_signal(t, SIGALRM);
 }
 
-int schedule_alarm(unsigned int seconds)
-{
+int schedule_alarm(unsigned int seconds) {
   struct thread *t = self();
   int rc = 0;
 
   if (t->alarm.active) rc = (t->alarm.expires - ticks) / HZ;
-  if (seconds == 0)
+  if (seconds == 0) {
     del_timer(&t->alarm);
-  else
+  } else {
     mod_timer(&t->alarm, ticks + seconds * HZ);
+  }
 
   return rc;
 }
 
-void terminate_thread(int exitcode)
-{
+void terminate_thread(int exitcode) {
   struct thread *t = self();
   t->state = THREAD_STATE_TERMINATED;
   t->exitcode = exitcode;
@@ -650,58 +595,48 @@ void terminate_thread(int exitcode)
   dispatch();
 }
 
-int get_thread_priority(struct thread *t)
-{
+int get_thread_priority(struct thread *t) {
   return t->priority;
 }
 
-int set_thread_priority(struct thread *t, int priority)
-{
+int set_thread_priority(struct thread *t, int priority) {
   if (priority < 0 || priority >= THREAD_PRIORITY_LEVELS) return -EINVAL;
   if (t->base_priority == priority) return 0;
 
-  if (t == self())
-  {
+  if (t == self()) {
     // Thread changed priority for it self, reschedule if new priority lower
-    if (priority < t->priority) 
-    {
+    if (priority < t->priority)  {
       t->base_priority = t->priority = priority;
       mark_thread_ready(t, 0, 0);
       dispatch();
-    }
-    else
+    } else {
       t->base_priority = t->priority = priority;
-  }
-  else
-  {
+    }
+  } else {
     // If thread is ready to run, remove it from the current ready queue 
     // and insert the ready queue for the new priority
-    if (t->state == THREAD_STATE_READY)
-    {
+    if (t->state == THREAD_STATE_READY) {
       remove_from_ready_queue(t);
       t->base_priority = t->priority = priority;
       t->state = THREAD_STATE_TRANSITION;
       mark_thread_ready(t, 0, 0);
-    }
-    else
+    } else {
       t->base_priority = t->priority = priority;
+    }
   }
 
   return 0;
 }
 
-static void task_queue_task(void *tqarg)
-{
+static void task_queue_task(void *tqarg) {
   struct task_queue *tq = tqarg;
   struct task *task;
   taskproc_t proc;
   void *arg;
 
-  while (1)
-  {
+  while (1) {
     // Wait until tasks arrive on the task queue
-    while (tq->head == NULL) 
-    {
+    while (tq->head == NULL) {
       enter_wait(THREAD_WAIT_TASK);
       if (tq->head == NULL) SCHEDEVT('#');
     }
@@ -714,8 +649,7 @@ static void task_queue_task(void *tqarg)
 
     // Execute task
     task->flags &= ~TASK_QUEUED;
-    if ((task->flags & TASK_EXECUTING) == 0)
-    {
+    if ((task->flags & TASK_EXECUTING) == 0) {
       task->flags |= TASK_EXECUTING;
       proc = task->proc;
       arg = task->arg;
@@ -729,8 +663,7 @@ static void task_queue_task(void *tqarg)
   }
 }
 
-int init_task_queue(struct task_queue *tq, int priority, int maxsize, char *name)
-{
+int init_task_queue(struct task_queue *tq, int priority, int maxsize, char *name) {
   memset(tq, 0, sizeof(struct task_queue));
   tq->maxsize = maxsize;
   tq->thread = create_kernel_thread(task_queue_task, tq, priority, name);
@@ -738,16 +671,14 @@ int init_task_queue(struct task_queue *tq, int priority, int maxsize, char *name
   return 0;
 }
 
-void init_task(struct task *task)
-{
+void init_task(struct task *task) {
   task->proc = NULL;
   task->arg = NULL;
   task->next = NULL;
   task->flags = 0;
 }
 
-int queue_task(struct task_queue *tq, struct task *task, taskproc_t proc, void *arg)
-{
+int queue_task(struct task_queue *tq, struct task *task, taskproc_t proc, void *arg) {
   if (!tq) tq = &sys_task_queue;
   if (task->flags & TASK_QUEUED) return -EBUSY;
   if (tq->maxsize != INFINITE && tq->size >= tq->maxsize) return -EAGAIN;
@@ -757,36 +688,31 @@ int queue_task(struct task_queue *tq, struct task *task, taskproc_t proc, void *
   task->next = NULL;
   task->flags |= TASK_QUEUED;
 
-  if (tq->tail)
-  {
+  if (tq->tail) {
     tq->tail->next = task;
     tq->tail = task;
-  }
-  else
+  } else {
     tq->head = tq->tail = task;
+  }
 
   tq->size++;
 
-  if ((tq->flags & TASK_QUEUE_ACTIVE) == 0 && tq->thread->state == THREAD_STATE_WAITING)
-  {
+  if ((tq->flags & TASK_QUEUE_ACTIVE) == 0 && tq->thread->state == THREAD_STATE_WAITING) {
     mark_thread_ready(tq->thread, 0, 0);
   }
 
   return 0;
 }
 
-void init_dpc(struct dpc *dpc)
-{
+void init_dpc(struct dpc *dpc) {
   dpc->proc = NULL;
   dpc->arg = NULL;
   dpc->next = NULL;
   dpc->flags = 0;
 }
 
-void queue_irq_dpc(struct dpc *dpc, dpcproc_t proc, void *arg)
-{
-  if (dpc->flags & DPC_QUEUED) 
-  {
+void queue_irq_dpc(struct dpc *dpc, dpcproc_t proc, void *arg) {
+  if (dpc->flags & DPC_QUEUED) {
     dpc_lost++;
     return;
   }
@@ -800,35 +726,31 @@ void queue_irq_dpc(struct dpc *dpc, dpcproc_t proc, void *arg)
   set_bit(&dpc->flags, DPC_QUEUED_BIT);
 }
 
-void queue_dpc(struct dpc *dpc, dpcproc_t proc, void *arg)
-{
+void queue_dpc(struct dpc *dpc, dpcproc_t proc, void *arg) {
   cli();
   queue_irq_dpc(dpc, proc, arg);
   sti();
 }
 
-struct dpc *get_next_dpc()
-{
+struct dpc *get_next_dpc() {
   struct dpc *dpc;
 
   cli();
 
-  if (dpc_queue_head)
-  {
+  if (dpc_queue_head) {
     dpc = dpc_queue_head;
     dpc_queue_head = dpc->next;
     if (dpc_queue_tail == dpc) dpc_queue_tail = NULL;
-  }
-  else
+  } else {
     dpc = NULL;
+  }
 
   sti();
 
   return dpc;
 }
 
-void dispatch_dpc_queue()
-{
+void dispatch_dpc_queue() {
   struct dpc *dpc;
   dpcproc_t proc;
   void *arg;
@@ -836,8 +758,7 @@ void dispatch_dpc_queue()
   if (in_dpc) panic("sched: nested execution of dpc queue");
   in_dpc = 1;
 
-  while (1)
-  {
+  while (1) {
     // Get next deferred procedure call
     // As a side effect this will enable interrupts
     dpc = get_next_dpc();
@@ -848,8 +769,7 @@ void dispatch_dpc_queue()
     arg = dpc->arg;
     clear_bit(&dpc->flags, DPC_QUEUED_BIT);
  
-    if ((dpc->flags & DPC_EXECUTING) == 0)
-    {
+    if ((dpc->flags & DPC_EXECUTING) == 0) {
       set_bit(&dpc->flags, DPC_EXECUTING_BIT);
       proc(arg);
       clear_bit(&dpc->flags, DPC_EXECUTING_BIT);
@@ -864,8 +784,7 @@ void dispatch_dpc_queue()
   in_dpc = 0;
 }
 
-static struct thread *find_ready_thread()
-{
+static struct thread *find_ready_thread() {
   int prio;
   struct thread *t;
 
@@ -875,13 +794,10 @@ static struct thread *find_ready_thread()
 
   // Remove thread from ready queue
   t = ready_queue_head[prio];
-  if (!t->next_ready) 
-  {
+  if (!t->next_ready)  {
     ready_queue_head[prio] = ready_queue_tail[prio] = NULL;
     thread_ready_summary &= ~(1 << prio);
-  }
-  else
-  {
+  } else {
     t->next_ready->prev_ready = NULL;
     ready_queue_head[prio] = t->next_ready;
   }
@@ -892,8 +808,7 @@ static struct thread *find_ready_thread()
   return t;
 }
 
-void dispatch()
-{
+void dispatch() {
   struct thread *curthread = self();
   struct thread *t;
 
@@ -908,8 +823,7 @@ void dispatch()
   if (!t) panic("No thread ready to run");
 
   // If current thread has been selected to run again then just return
-  if (t == curthread) 
-  {
+  if (t == curthread)  {
     t->state = THREAD_STATE_RUNNING;
     return;
   }
@@ -917,8 +831,7 @@ void dispatch()
   SCHEDEVT(t->id + '0');
 
   // Save fpu state if fpu has been used
-  if (curthread->flags & THREAD_FPU_ENABLED)
-  {
+  if (curthread->flags & THREAD_FPU_ENABLED) {
     fpu_disable(&curthread->fpustate);
     t->flags &= ~THREAD_FPU_ENABLED;
   }
@@ -934,8 +847,7 @@ void dispatch()
   mark_thread_running();
 }
 
-void yield()
-{
+void yield() {
   struct thread *t = self();
 
   // Give up remaining quantum
@@ -948,49 +860,42 @@ void yield()
   dispatch();
 }
 
-int system_idle()
-{
+int system_idle() {
   if (thread_ready_summary != 0) return 0;
   if (dpc_queue_head != NULL) return 0;
   return 1;
 }
 
-void add_idle_task(struct task *task, taskproc_t proc, void *arg)
-{
+void add_idle_task(struct task *task, taskproc_t proc, void *arg) {
   task->proc = proc;
   task->arg = arg;
   task->next = NULL;
   task->flags |= TASK_QUEUED;
 
-  if (idle_tasks_tail)
-  {
+  if (idle_tasks_tail) {
     idle_tasks_tail->next = task;
     idle_tasks_tail = task;
-  }
-  else
+  } else {
     idle_tasks_head = idle_tasks_tail = task;
+  }
 }
 
-void idle_task()
-{
+void idle_task() {
   struct thread *t = self();
 
-  while (1) 
-  {
+  while (1) {
     struct task *task = idle_tasks_head;
-    if (task)
-    {
-      while (task)
-      {
+    if (task) {
+      while (task) {
         if (!system_idle()) break;
         task->flags |= TASK_EXECUTING;
         task->proc(task->arg);
         task->flags &= ~TASK_EXECUTING;
         task = task->next;
       }
-    }
-    else if (system_idle()) 
+    } else if (system_idle()) {
       halt();
+    }
 
     mark_thread_ready(t, 0, 0);
     dispatch();
@@ -999,8 +904,7 @@ void idle_task()
   }
 }
 
-static int threads_proc(struct proc_file *pf, void *arg)
-{
+static int threads_proc(struct proc_file *pf, void *arg) {
   static char *threadstatename[] = {"init", "ready", "run", "wait", "term", "susp", "trans"};
   static char *waitreasonname[] = {"wait", "fileio", "taskq", "sockio", "sleep", "pipe", "devio"};
   struct thread *t = threadlist;
@@ -1009,17 +913,18 @@ static int threads_proc(struct proc_file *pf, void *arg)
 
   pprintf(pf, "tid tcb      hndl state  prio s #h   user kernel ctxtsw stksiz name\n");
   pprintf(pf, "--- -------- ---- ------ ---- - -- ------ ------ ------ ------ --------------\n");
-  while (1)
-  {
-    if (t->state == THREAD_STATE_WAITING)
+  while (1) {
+    if (t->state == THREAD_STATE_WAITING) {
       state = waitreasonname[t->wait_reason];
-    else
+    } else {
       state = threadstatename[t->state];
+    }
 
-    if (t->tib)
+    if (t->tib) {
       stksiz = (char *) (t->tib->stacktop) - (char *) (t->tib->stacklimit);
-    else
+    } else {
       stksiz = 0;
+    }
 
     pprintf(pf,"%3d %p %4d %-6s %2d%+2d %1d %2d%7d%7d%7d%6dK %s\n",
             t->id, t, t->hndl, state, t->base_priority, t->priority - t->base_priority, 
@@ -1035,8 +940,7 @@ static int threads_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-static int dpcs_proc(struct proc_file *pf, void *arg)
-{
+static int dpcs_proc(struct proc_file *pf, void *arg) {
   pprintf(pf, "dpc time   : %8d\n", dpc_time);
   pprintf(pf, "total dpcs : %8d\n", dpc_total);
   pprintf(pf, "lost dpcs  : %8d\n", dpc_lost);
@@ -1045,8 +949,7 @@ static int dpcs_proc(struct proc_file *pf, void *arg)
 }
 
 #ifdef SCHEDMAP
-static int schedmap_proc(struct proc_file *pf, void *arg)
-{
+static int schedmap_proc(struct proc_file *pf, void *arg) {
   unsigned long idx = schedmapidx % SCHEDMAPSIZE;
 
   proc_write(pf, schedmap + idx, SCHEDMAPSIZE - idx);
@@ -1056,8 +959,7 @@ static int schedmap_proc(struct proc_file *pf, void *arg)
 }
 #endif
 
-void init_sched()
-{
+void init_sched() {
   // Initialize scheduler
   dpc_queue_head = dpc_queue_tail = NULL;
   memset(ready_queue_head, 0, sizeof(ready_queue_head));

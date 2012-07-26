@@ -51,8 +51,7 @@ int execute_script(char *cmdfile);
 
 typedef int (*cmdproc_t)(int argc, char *argv[]);
 
-struct command
-{
+struct command {
   char *cmdname;
   cmdproc_t proc;
   char *help;
@@ -60,22 +59,19 @@ struct command
 
 extern struct command cmdtab[];
 
-static void display_buffer(FILE *f, char *buffer, int size)
-{
+static void display_buffer(FILE *f, char *buffer, int size) {
   char *p;
   char *q;
   char *end;
 
   p = buffer;
   end = buffer + size;
-  while (p < end)
-  {
+  while (p < end) {
     q = p;
     while (q < end && *q != '\n') q++;
 
     if (p != q) fwrite(p, q - p, 1, f);
-    if (q < end) 
-    {
+    if (q < end) {
       fwrite("\r\n", 2, 1, f);
       q++;
     }
@@ -83,18 +79,15 @@ static void display_buffer(FILE *f, char *buffer, int size)
   }
 }
 
-static int read_line(int f, char *buf)
-{
+static int read_line(int f, char *buf) {
   char c;
   int rc;
   int count;
 
   count = 0;
-  while ((rc = read(f, &c, 1)) > 0)
-  {
+  while ((rc = read(f, &c, 1)) > 0) {
     if (c == '\r') continue;
-    if (c == '\n')
-    {
+    if (c == '\n') {
       *buf++ = 0;
       return count;
     }
@@ -106,8 +99,7 @@ static int read_line(int f, char *buf)
   return rc;
 }
 
-static int httpget(char *server, char *path, char *filename)
-{
+static int httpget(char *server, char *path, char *filename) {
   struct hostent *hp;
   struct sockaddr_in sin;
   int s;
@@ -129,8 +121,7 @@ static int httpget(char *server, char *path, char *filename)
   sin.sin_port = htons(80);
 
   rc = connect(s, (struct sockaddr *) &sin, sizeof(sin));
-  if (rc  < 0)
-  {
+  if (rc  < 0) {
     close(s);
     return rc;
   }
@@ -140,37 +131,32 @@ static int httpget(char *server, char *path, char *filename)
 
   sprintf(buf, "GET %s HTTP/1.0\r\nHost: %s\r\n\r\n", path, server);
   rc = send(s, buf, strlen(buf), 0);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     close(s);
     return rc;
   }
 
-  while ((rc = read_line(s, buf)) > 0)
-  {
+  while ((rc = read_line(s, buf)) > 0) {
     //printf("hdr %s\n", buf);
   }
 
   if (rc < 0) return rc;
 
   f = open(filename, O_CREAT | O_TRUNC | O_BINARY, S_IREAD | S_IWRITE);
-  if (f < 0)
-  {
+  if (f < 0) {
     close(s);
     free(buf);
     return f;
   }
 
   count = 0;
-  while ((n = recv(s, buf, 8 * 1024, 0)) > 0)
-  {
+  while ((n = recv(s, buf, 8 * 1024, 0)) > 0) {
     write(f, buf, n);
     count += n;
     //printf("len %d\n", n);
   }
 
-  if (rc < 0)
-  {
+  if (rc < 0) {
     close(s);
     close(f);
     free(buf);
@@ -184,39 +170,33 @@ static int httpget(char *server, char *path, char *filename)
   return count;
 }
 
-int cmd_beep(int argc, char *argv[])
-{
+int cmd_beep(int argc, char *argv[]) {
   return ioctl(1, IOCTL_BEEP, NULL, 0);
 }
 
-int cmd_break(int argc, char *argv[])
-{
+int cmd_break(int argc, char *argv[]) {
   dbgbreak();
   return 0;
 }
 
-int cmd_cat(int argc, char *argv[])
-{
+int cmd_cat(int argc, char *argv[]) {
   int count;
   int fd;
   char *filename;
   char buffer[BUFSIZE];
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: cat <filename>\n");
     return -EINVAL;
   }
   filename = argv[1];
 
-  if ((fd = open(filename, O_BINARY)) < 0)
-  {
+  if ((fd = open(filename, O_BINARY)) < 0) {
     printf("%s: %s\n", filename, strerror(fd));
     return fd;
   }
 
-  while ((count = read(fd, buffer, sizeof buffer)) > 0)
-  {
+  while ((count = read(fd, buffer, sizeof buffer)) > 0) {
     fwrite(buffer, 1, count, stdout);
   }
 
@@ -224,19 +204,16 @@ int cmd_cat(int argc, char *argv[])
   return 0;
 }
 
-int cmd_chdir(int argc, char *argv[])
-{
+int cmd_chdir(int argc, char *argv[]) {
   char *path;
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: chdir <path>\n");
     return -EINVAL;
   }
   path = argv[1];
 
-  if (chdir(path) < 0)
-  {
+  if (chdir(path) < 0) {
     printf("%s: %s\n", path, strerror(errno));
     return -1;
   }
@@ -244,14 +221,12 @@ int cmd_chdir(int argc, char *argv[])
   return 0;
 }
 
-int cmd_chmod(int argc, char *argv[])
-{
+int cmd_chmod(int argc, char *argv[]) {
   int mode;
   char *path;
   char *p;
 
-  if (argc != 3)
-  {
+  if (argc != 3) {
     printf("usage: chmod <mode> <path>\n");
     return -EINVAL;
   }
@@ -260,10 +235,8 @@ int cmd_chmod(int argc, char *argv[])
 
   mode = 0;
   p = argv[1];
-  while (*p)
-  {
-    if (*p < '0' || *p > '7')
-    {
+  while (*p) {
+    if (*p < '0' || *p > '7') {
       printf("Illegal mode\n");
       return -EINVAL;
     }
@@ -275,15 +248,13 @@ int cmd_chmod(int argc, char *argv[])
   return 0;
 }
 
-int cmd_chown(int argc, char *argv[])
-{
+int cmd_chown(int argc, char *argv[]) {
   struct passwd *pwd = NULL;
   struct group *grp = NULL;
   char *path;
   char *p;
 
-  if (argc != 3)
-  {
+  if (argc != 3) {
     printf("usage: chown <owner>:<group> <path>\n");
     return -EINVAL;
   }
@@ -291,23 +262,18 @@ int cmd_chown(int argc, char *argv[])
   path = argv[2];
 
   p = strchr(argv[1], ':');
-  if (p)
-  {
+  if (p) {
     *p++ = 0;
     pwd = getpwnam(argv[1]);
     grp = getgrnam(p);
 
-    if (!pwd && !grp)
-    {
+    if (!pwd && !grp) {
       printf("Unknown user/group\n");
       return -EINVAL;
     }
-  }
-  else
-  {
+  } else {
     pwd = getpwnam(argv[1]);
-    if (!pwd)
-    {
+    if (!pwd) {
       printf("Unknown user\n");
       return -EINVAL;
     }
@@ -318,14 +284,12 @@ int cmd_chown(int argc, char *argv[])
   return 0;
 }
 
-int cmd_cls(int argc, char *argv[])
-{
+int cmd_cls(int argc, char *argv[]) {
   printf("\f");
   return 0;
 }
 
-int cmd_cp(int argc, char *argv[])
-{
+int cmd_cp(int argc, char *argv[]) {
   char *data;
   int count;
   int fd1;
@@ -334,41 +298,35 @@ int cmd_cp(int argc, char *argv[])
   char *dstfn;
   struct stat st;
 
-  if (argc != 3)
-  {
+  if (argc != 3) {
     printf("usage: cp <source file> <dest file>\n");
     return -EINVAL;
   }
   srcfn = argv[1];
   dstfn = argv[2];
 
-  if ((fd1 = open(srcfn, O_BINARY)) < 0)
-  {
+  if ((fd1 = open(srcfn, O_BINARY)) < 0) {
     printf("%s: %s\n", srcfn, strerror(errno));
     return -1;
   }
   fstat(fd1, &st);
 
-  if ((fd2 = open(dstfn, O_CREAT | O_TRUNC | O_BINARY, st.st_mode)) < 0)
-  {
+  if ((fd2 = open(dstfn, O_CREAT | O_TRUNC | O_BINARY, st.st_mode)) < 0) {
     close(fd1);
     printf("%s: %s\n", dstfn, strerror(errno));
     return -1;
   }
 
   data = malloc(64 * 1024);
-  while ((count = read(fd1, data, 64 * 1024)) > 0)
-  {
-    if (write(fd2, data, count) != count)
-    {
+  while ((count = read(fd1, data, 64 * 1024)) > 0) {
+    if (write(fd2, data, count) != count) {
       printf("%s: error writing data (%s)\n", dstfn, strerror(errno));
       break;
     }
   }
   free(data);
 
-  if (count < 0) 
-  {
+  if (count < 0) {
     printf("%s: %s\n", srcfn, strerror(errno));
     close(fd1);
     close(fd2);
@@ -380,27 +338,23 @@ int cmd_cp(int argc, char *argv[])
   return 0;
 }
 
-int cmd_crypt(int argc, char *argv[])
-{
+int cmd_crypt(int argc, char *argv[]) {
   char *pw;
   char *salt;
   char saltc[3];
 
-  if (argc != 2 && argc != 3)
-  {
+  if (argc != 2 && argc != 3) {
     printf("usage: crypt <pw> [<salt>]\n");
     return -EINVAL;
   }
 
   pw = argv[1];
-  if (argc == 3)
+  if (argc == 3) {
     salt = argv[2];
-  else
-  {
+  } else {
     int i;
     salt = saltc;
-    for (i = 0; i < 2; i++)
-    {
+    for (i = 0; i < 2; i++) {
       saltc[i] = (char) (random() & 077) + '.';
       if (saltc[i] > '9') saltc[i] += 7;
       if (saltc[i] > 'Z') saltc[i] += 6;
@@ -412,39 +366,33 @@ int cmd_crypt(int argc, char *argv[])
   return 0;
 }
 
-int cmd_date(int argc, char *argv[])
-{
+int cmd_date(int argc, char *argv[]) {
   time_t t;
   struct tm tm;
 
   t = time(NULL);
   gmtime_r(&t, &tm);
 
-  if (argc > 1)
-  {
+  if (argc > 1) {
     char buffer[256];
 
     strftime(buffer, 256, argv[1], &tm);
     printf("%s\n", buffer);
-  }
-  else
+  } else {
     printf("Time is %04d/%02d/%02d %02d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-
+  }
   return 0;
 }
 
-int cmd_debug(int argc, char *argv[])
-{
+int cmd_debug(int argc, char *argv[]) {
   struct peb *peb = gettib()->peb;
 
-  if (argc > 1)
-  {
-    if (strcmp(argv[1], "on") == 0)
+  if (argc > 1) {
+    if (strcmp(argv[1], "on") == 0) {
       peb->debug = 1;
-    else if (strcmp(argv[1], "off") == 0)
+    } else if (strcmp(argv[1], "off") == 0) {
       peb->debug = 0;
-    else
-    {
+    } else {
       printf("usage: debug [on|off]\n");
       return -EINVAL;
     }
@@ -454,8 +402,7 @@ int cmd_debug(int argc, char *argv[])
   return 0;
 }
 
-int cmd_df(int argc, char *argv[])
-{
+int cmd_df(int argc, char *argv[]) {
   int count;
   int rc;
   int n;
@@ -463,16 +410,14 @@ int cmd_df(int argc, char *argv[])
   struct statfs *b;
 
   count = getfsstat(NULL, 0);
-  if (count < 0)
-  {
+  if (count < 0) {
     printf("df: %s\n", strerror(errno));
     return -1;
   }
 
   buf = (struct statfs *) malloc(count * sizeof(struct statfs));
   rc = getfsstat(buf, count * sizeof(struct statfs));
-  if (rc < 0)
-  {
+  if (rc < 0) {
     printf("df: %s\n", strerror(errno));
     return -1;
   }
@@ -480,28 +425,29 @@ int cmd_df(int argc, char *argv[])
   printf("type   mounted on mounted from          cache    total     used    avail files\n");
   printf("------ ---------- -------------------- ------ -------- -------- -------- -----\n");
 
-  for (n = 0; n < count; n++)
-  {
+  for (n = 0; n < count; n++) {
     b = buf + n;
 
     printf("%-7s%-11s%-20s", b->fstype, b->mntto, b->mntfrom);
-    if (b->blocks != -1)
-    {
+    if (b->blocks != -1) {
       printf("%6dK", b->cachesize / 1024);
-      if (b->blocks * (b->bsize / 512) / 2 > 10000)
+      if (b->blocks * (b->bsize / 512) / 2 > 10000) {
         printf("%8dM", b->blocks * (b->bsize / 512) / 2000);
-      else
+      } else {
         printf("%8dK", b->blocks * (b->bsize / 512) / 2);
+      }
 
-      if ((b->blocks - b->bfree) * (b->bsize / 512) / 2 > 10000)
+      if ((b->blocks - b->bfree) * (b->bsize / 512) / 2 > 10000) {
         printf("%8dM", (b->blocks - b->bfree) * (b->bsize / 512) / 2000);
-      else
+      } else {
         printf("%8dK", (b->blocks - b->bfree) * (b->bsize / 512) / 2);
+      }
 
-      if (b->bfree * (b->bsize / 512) / 2 > 10000)
+      if (b->bfree * (b->bsize / 512) / 2 > 10000) {
          printf("%8dM", b->bfree * (b->bsize / 512) / 2000);
-      else
+      } else {
         printf("%8dK", b->bfree * (b->bsize / 512) / 2);
+      }
 
       if (b->files != -1 && b->ffree != -1) printf(" %d/%d", b->files - b->ffree, b->files);
     }
@@ -513,12 +459,10 @@ int cmd_df(int argc, char *argv[])
   return 0;
 }
 
-int cmd_exec(int argc, char *argv[])
-{
+int cmd_exec(int argc, char *argv[]) {
   char *filename;
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: dump <file>\n");
     return -EINVAL;
   }
@@ -527,8 +471,7 @@ int cmd_exec(int argc, char *argv[])
   return execute_script(filename);
 }
 
-int cmd_dump(int argc, char *argv[])
-{
+int cmd_dump(int argc, char *argv[]) {
   char *filename;
   int fd;
   unsigned char buf[16];
@@ -538,42 +481,37 @@ int cmd_dump(int argc, char *argv[])
   int i;
   int ch;
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: dump <file>\n");
     return -EINVAL;
   }
   filename = argv[1];
 
-  if ((fd = open(filename, O_BINARY)) < 0)
-  {
+  if ((fd = open(filename, O_BINARY)) < 0) {
     printf("%s: %s\n", filename, strerror(errno));
     return -EINVAL;
   }
 
   line = 0;
   pos = 0;
-  while ((count = read(fd, buf, 16)) > 0)
-  {
+  while ((count = read(fd, buf, 16)) > 0) {
     printf("%08X ", pos);
     for (i = 0; i < count; i++) printf("%02X ", buf[i]);
     for (i = count; i < 16; i++) printf("   ");
     for (i = 0; i < count; i++) printf("%c", buf[i] < 0x20 ? '.' : buf[i]);
     printf("\n");
 
-    if (line == 23)
-    {
+    if (line == 23) {
       fflush(stdout);
       ch = getchar();
-      if (ch == 'x')
-      {
+      if (ch == 'x') {
         close(fd);
         return 0;
       }
       line = 0;
-    }
-    else
+    } else {
       line++;
+    }
 
     pos += count;
   }
@@ -582,8 +520,7 @@ int cmd_dump(int argc, char *argv[])
   return 0;
 }
 
-int cmd_grabcon(int argc, char *argv[])
-{
+int cmd_grabcon(int argc, char *argv[]) {
   dup2(fdin, 0);
   dup2(fdout, 1);
   dup2(fderr, 2);
@@ -591,15 +528,13 @@ int cmd_grabcon(int argc, char *argv[])
   return 0;
 }
 
-int cmd_id(int argc, char *argv[])
-{
+int cmd_id(int argc, char *argv[]) {
   gid_t groups[NGROUPS_MAX];
   int ngroups;
   struct passwd *pwd = getpwuid(getuid());
   struct group *grp = getgrgid(getgid());
 
-  if (!pwd || !grp)
-  {
+  if (!pwd || !grp) {
     perror("id");
     return -1;
   }
@@ -607,13 +542,11 @@ int cmd_id(int argc, char *argv[])
   printf("uid=%d(%s) gid=%d(%s)", pwd->pw_uid, pwd->pw_name, grp->gr_gid, grp->gr_name);
 
   ngroups = getgroups(NGROUPS_MAX, groups);
-  if (ngroups > 0)
-  {
+  if (ngroups > 0) {
     int i;
 
     printf(" groups");
-    for (i = 0; i < ngroups; i++)
-    {
+    for (i = 0; i < ngroups; i++) {
       grp = getgrgid(groups[i]);
       printf("%c%d(%s)", (i == 0 ? '=' : ','), groups[i], grp->gr_name);
     }
@@ -626,40 +559,33 @@ int cmd_id(int argc, char *argv[])
   return 0;
 }
 
-int cmd_ifconfig(int argc, char *argv[])
-{
+int cmd_ifconfig(int argc, char *argv[]) {
   struct peb *peb = gettib()->peb;
   int sock;
   struct ifcfg iflist[16];
   int n, i;
 
-  if (*peb->hostname)
-  {
+  if (*peb->hostname) {
     printf("Host Name ............... : %s\n", peb->hostname);
   }
 
-  if (*peb->default_domain) 
-  {
+  if (*peb->default_domain) {
     printf("Domain Name ............. : %s\n", peb->default_domain);
   }
 
-  if (peb->primary_dns.s_addr != INADDR_ANY)
-  {
+  if (peb->primary_dns.s_addr != INADDR_ANY) {
     printf("Primary DNS Server ...... : %s\n", inet_ntoa(peb->primary_dns));
   }
 
-  if (peb->secondary_dns.s_addr != INADDR_ANY)
-  {
+  if (peb->secondary_dns.s_addr != INADDR_ANY) {
     printf("Secondary DNS Server .... : %s\n", inet_ntoa(peb->secondary_dns));
   }
 
-  if (peb->ntp_server1.s_addr != INADDR_ANY)
-  {
+  if (peb->ntp_server1.s_addr != INADDR_ANY) {
     printf("Primary NTP Server ...... : %s\n", inet_ntoa(peb->ntp_server1));
   }
 
-  if (peb->ntp_server2.s_addr != INADDR_ANY)
-  {
+  if (peb->ntp_server2.s_addr != INADDR_ANY) {
     printf("Secondary NTP Server .... : %s\n", inet_ntoa(peb->ntp_server2));
   }
 
@@ -667,14 +593,12 @@ int cmd_ifconfig(int argc, char *argv[])
   if (sock < 0) return -1;
 
   n = ioctl(sock, SIOIFLIST, iflist, sizeof iflist);
-  if (n < 0)
-  {
+  if (n < 0) {
     close(sock);
     return -1;
   }
 
-  for (i = 0; i < n / (int) sizeof(struct ifcfg); i++)
-  {
+  for (i = 0; i < n / (int) sizeof(struct ifcfg); i++) {
     struct sockaddr_in *addr = ((struct sockaddr_in *) &iflist[i].addr);
     struct sockaddr_in *gw = ((struct sockaddr_in *) &iflist[i].gw);
     struct sockaddr_in *mask = ((struct sockaddr_in *) &iflist[i].netmask);
@@ -704,29 +628,26 @@ int cmd_ifconfig(int argc, char *argv[])
   return 0;
 }
 
-int cmd_keyb(int argc, char *argv[])
-{
+int cmd_keyb(int argc, char *argv[]) {
   char *keybname;
   int keymap;
   int rc;
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: keyb [us|uk|dk|fr]\n");
     return -EINVAL;
   }
   keybname = argv[1];
 
-  if (strcmp(keybname, "us") == 0)
+  if (strcmp(keybname, "us") == 0) {
     keymap = 0;
-  else if (strcmp(keybname, "dk") == 0)
+  } else if (strcmp(keybname, "dk") == 0) {
     keymap = 1;
-  else if (strcmp(keybname, "uk") == 0)
+  } else if (strcmp(keybname, "uk") == 0) {
     keymap = 2;
-  else if (strcmp(keybname, "fr") == 0)
+  } else if (strcmp(keybname, "fr") == 0) {
     keymap = 3;
-  else
-  {
+  } else {
     printf("keyb: unknown keymap '%s'\n", keybname);
     return -EINVAL;
   }
@@ -735,8 +656,7 @@ int cmd_keyb(int argc, char *argv[])
   return rc;
 }
 
-int cmd_heapstat(int argc, char *argv[])
-{
+int cmd_heapstat(int argc, char *argv[]) {
   struct mallinfo m;
 
   m = mallinfo();
@@ -755,36 +675,29 @@ int cmd_heapstat(int argc, char *argv[])
   return 0;
 }
 
-int cmd_help(int argc, char *argv[])
-{
+int cmd_help(int argc, char *argv[]) {
   struct command *command;
   int lineno;
   int ok;
   int n;
 
   lineno = 0;
-  for (command = cmdtab; command->cmdname; command++)
-  {
+  for (command = cmdtab; command->cmdname; command++) {
     ok = 1;
-    if (argc > 1)
-    {
+    if (argc > 1) {
       ok = 0;
-      for (n = 1; n < argc; n++)
-      {
+      for (n = 1; n < argc; n++) {
         if (strstr(command->cmdname, argv[n]) ||
-            command->help && strstr(command->help, argv[n]))
-        {
+            command->help && strstr(command->help, argv[n])) {
           ok = 1;
           break;
         }
       }
     }
 
-    if (ok && command->help) 
-    {
+    if (ok && command->help) {
       printf("%-10.10s %s\n", command->cmdname, command->help);
-      if (++lineno == 24)
-      {
+      if (++lineno == 24) {
         fflush(stdout);
         getchar();
         lineno = 0;
@@ -795,8 +708,7 @@ int cmd_help(int argc, char *argv[])
   return 0;
 }
 
-int cmd_httpget(int argc, char *argv[])
-{
+int cmd_httpget(int argc, char *argv[]) {
   char *server;
   char *path;
   char *filename;
@@ -807,8 +719,7 @@ int cmd_httpget(int argc, char *argv[])
   path = "/";
   filename = "/dev/null";
 
-  if (argc == 1)
-  {
+  if (argc == 1) {
     printf("usage: httpget <server> [<url> [<filename>]]\n");
     return -EINVAL;
   }
@@ -819,8 +730,7 @@ int cmd_httpget(int argc, char *argv[])
   
   t = clock();
   rc = httpget(server, path, filename);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     printf("Error %d '%s' retrieving %s from %s\n", errno, strerror(errno), path, server);
     return -1;
   }
@@ -832,16 +742,14 @@ int cmd_httpget(int argc, char *argv[])
   return 0;
 }
 
-int cmd_ps(int argc, char *argv[])
-{
+int cmd_ps(int argc, char *argv[]) {
   struct peb *peb = gettib()->peb;
   struct process *proc = peb->firstproc;
 
   printf("  id parent name         hmod     threads in  out err command line\n");
   printf("---- ------ ------------ -------- ------- --- --- --- -------------------------\n");
 
-  while (proc)
-  {
+  while (proc) {
     printf("%4d %6d %-13s%08x%8d%4d%4d%4d %s\n", proc->id, proc->parent ? proc->parent->id : 0, proc->ident, proc->hmod, proc->threadcnt, proc->iob[0], proc->iob[1], proc->iob[2], proc->cmdline ? proc->cmdline : "");
     proc = proc->nextproc;
   }
@@ -849,23 +757,22 @@ int cmd_ps(int argc, char *argv[])
   return 0;
 }
 
-int cmd_kbd(int argc, char *argv[])
-{
+int cmd_kbd(int argc, char *argv[]) {
   int escs;
   int ch;
 
   printf("(press esc three times to exit)\n");
 
   escs = 0;
-  while (1)
-  {
+  while (1) {
     fflush(stdout);
     ch = getchar();
 
-    if (ch == 0x1B) 
+    if (ch == 0x1B) {
       escs++;
-    else
+    } else {
       escs = 0;
+    }
 
     if (escs == 3) break;
 
@@ -875,8 +782,7 @@ int cmd_kbd(int argc, char *argv[])
   return 0;
 }
 
-int cmd_kill(int argc, char *argv[])
-{
+int cmd_kill(int argc, char *argv[]) {
   int pid = getpid();
   int signum = SIGINT;
   int rc;
@@ -890,14 +796,12 @@ int cmd_kill(int argc, char *argv[])
   return 0;
 }
 
-int cmd_klog(int argc, char *argv[])
-{
+int cmd_klog(int argc, char *argv[]) {
   int enabled;
   int klog;
   int rc;
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: klog [on|off]\n");
     return -EINVAL;
   }
@@ -911,21 +815,18 @@ int cmd_klog(int argc, char *argv[])
   return rc;
 }
 
-int cmd_load(int argc, char *argv[])
-{
+int cmd_load(int argc, char *argv[]) {
   char *pgm;
   hmodule_t hmod;
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: load <module>\n");
     return -EINVAL;
   }
   pgm = argv[1];
 
   hmod = dlopen(pgm, 0);
-  if (hmod == NULL)
-  {
+  if (hmod == NULL) {
     printf("%s: unable to load module\n", pgm);
     return -1;
   }
@@ -933,13 +834,11 @@ int cmd_load(int argc, char *argv[])
   return 0;
 }
 
-int cmd_loglevel(int argc, char *argv[])
-{
+int cmd_loglevel(int argc, char *argv[]) {
   int level;
   int ll = 0;
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: logevel [<loglevel>]\n");
     return -EINVAL;
   }
@@ -949,8 +848,7 @@ int cmd_loglevel(int argc, char *argv[])
   return 0;
 }
 
-int cmd_ls(int argc, char *argv[])
-{
+int cmd_ls(int argc, char *argv[]) {
   char *dirname;
   int verbose;
   int i;
@@ -967,64 +865,52 @@ int cmd_ls(int argc, char *argv[])
 
   verbose = 0;
   dirname = ".";
-  for (i = 1; i < argc; i++)
-  {
+  for (i = 1; i < argc; i++) {
     arg = argv[i];
 
-    if (*arg == '-')
-    {
-      while (*++arg)
-      {
+    if (*arg == '-') {
+      while (*++arg) {
         if (*arg == 'l') verbose = 1;
         if (*arg == 'w') verbose = 2;
       }
-    }
-    else
+    } else {
       dirname = arg;
+    }
   }
 
-  if ((dir = _opendir(dirname)) < 0)
-  {
+  if ((dir = _opendir(dirname)) < 0) {
     printf("%s: %s\n", dirname, strerror(errno));
     return dir;
   }
 
   col = 0;
-  while (_readdir(dir, &dirp, 1) > 0)
-  {
+  while (_readdir(dir, &dirp, 1) > 0) {
     strcpy(path, dirname);
     strcat(path, "/");
     strcat(path, dirp.name);
 
     if (stat(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat));
 
-    if (verbose == 2)
-    {
+    if (verbose == 2) {
       if (col == 4) col = 0;
       if ((buf.st_mode & S_IFMT) == S_IFDIR) strcat(dirp.name, "/");
       printf("%-20s", dirp.name);
       col++;
-    }
-    else
-    {
+    } else {
       strcpy(path, dirname);
       strcat(path, "/");
       strcat(path, dirp.name);
 
       if (stat(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat));
 
-      if (verbose)
-      {
+      if (verbose) {
         printf("%8d %4d %1d %2d ", (int) buf.st_size, buf.st_ino, buf.st_nlink, buf.st_dev);
 
         gmtime_r(&buf.st_ctime, &tm);
         printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
-      }
-      else
-      {
+      } else {
         strcpy(perm, " ---------");
-        switch (buf.st_mode & S_IFMT) 
-        {
+        switch (buf.st_mode & S_IFMT) {
           case S_IFREG: perm[0] = '-'; break;
           case S_IFLNK: perm[0] = 'l'; break;
           case S_IFDIR: perm[0] = 'd'; break;
@@ -1048,10 +934,11 @@ int cmd_ls(int argc, char *argv[])
         grp = getgrgid(buf.st_gid);
         printf("%-8s %-8s", pwd ? pwd->pw_name : "?", grp ? grp->gr_name : "?");
 
-        if ((buf.st_mode & S_IFMT) == S_IFDIR)
+        if ((buf.st_mode & S_IFMT) == S_IFDIR) {
           printf("           ");
-        else
+        } else {
           printf("%10d ", buf.st_size);
+        }
       }
 
       gmtime_r(&buf.st_mtime, &tm);
@@ -1070,21 +957,18 @@ int cmd_ls(int argc, char *argv[])
   return 0;
 }
 
-int cmd_mkdir(int argc, char *argv[])
-{
+int cmd_mkdir(int argc, char *argv[]) {
   char *path;
   int rc;
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: mkdir <path>\n");
     return -EINVAL;
   }
   path = argv[1];
 
   rc = mkdir(path, 0755); 
-  if (rc < 0)
-  {
+  if (rc < 0) {
     printf("%s: %s\n", path, strerror(errno));
     return -1;
   }
@@ -1092,15 +976,13 @@ int cmd_mkdir(int argc, char *argv[])
   return 0;
 }
 
-int cmd_mkfs(int argc, char *argv[])
-{
+int cmd_mkfs(int argc, char *argv[]) {
   char *devname;
   char *type = "dfs";
   char *opts = NULL;
   int rc;
 
-  if (argc < 2)
-  {
+  if (argc < 2) {
     printf("usage: mkfs <device> [<type> [<options>]]\n");
     return -EINVAL;
   }
@@ -1110,8 +992,7 @@ int cmd_mkfs(int argc, char *argv[])
   if (argc > 3) opts = argv[3];
 
   rc = mkfs(devname, type, opts); 
-  if (rc < 0)
-  {
+  if (rc < 0) {
     printf("%s: %s\n", devname, strerror(errno));
     return -1;
   }
@@ -1119,8 +1000,7 @@ int cmd_mkfs(int argc, char *argv[])
   return 0;
 }
 
-int cmd_more(int argc, char *argv[])
-{
+int cmd_more(int argc, char *argv[]) {
   char *filename;
   int count;
   int fd;
@@ -1137,25 +1017,20 @@ int cmd_more(int argc, char *argv[])
   }
   filename = argv[1];
 
-  if ((fd = open(filename, O_BINARY)) < 0)
-  {
+  if ((fd = open(filename, O_BINARY)) < 0) {
     printf("%s: %s\n", filename, strerror(errno));
     return fd;
   }
 
   line = 0;
-  while ((count = read(fd, buffer, sizeof buffer)) > 0)
-  {
+  while ((count = read(fd, buffer, sizeof buffer)) > 0) {
     start = end = buffer;
-    while (end < buffer + count)
-    {
-      if (line == 24)
-      {
+    while (end < buffer + count) {
+      if (line == 24) {
         display_buffer(stdout, start, end - start);
         fflush(stdout);
         ch = getchar();
-        if (ch == 'x')
-        {
+        if (ch == 'x') {
           close(fd);
           return 0;
         }
@@ -1171,16 +1046,14 @@ int cmd_more(int argc, char *argv[])
   return 0;
 }
 
-int cmd_mount(int argc, char *argv[])
-{
+int cmd_mount(int argc, char *argv[]) {
   char *devname;
   char *path;
   char *type = "dfs";
   char *opts = NULL;
   int rc;
 
-  if (argc < 3)
-  {
+  if (argc < 3) {
     printf("usage: mount <device> <path> [<type> [<options>]]\n");
     return -EINVAL;
   }
@@ -1191,8 +1064,7 @@ int cmd_mount(int argc, char *argv[])
   if (argc > 4) opts = argv[4];
 
   rc = mount(type, path, devname, opts); 
-  if (rc < 0)
-  {
+  if (rc < 0) {
     printf("%s: %s\n", devname, strerror(errno));
     return -1;
   }
@@ -1200,14 +1072,12 @@ int cmd_mount(int argc, char *argv[])
   return 0;
 }
 
-int cmd_mv(int argc, char *argv[])
-{
+int cmd_mv(int argc, char *argv[]) {
   char *oldname;
   char *newname;
   int rc;
 
-  if (argc != 3)
-  {
+  if (argc != 3) {
     printf("usage: mv <old name> <new name>\n");
     return -EINVAL;
   }
@@ -1215,8 +1085,7 @@ int cmd_mv(int argc, char *argv[])
   newname = argv[2];
 
   rc = rename(oldname, newname);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     printf("%s: %s\n", oldname, strerror(errno));
     return -1;
   }
@@ -1224,14 +1093,12 @@ int cmd_mv(int argc, char *argv[])
   return 0;
 }
 
-int cmd_nslookup(int argc, char *argv[])
-{
+int cmd_nslookup(int argc, char *argv[]) {
   char *name;
   struct hostent *hp;
   int i;
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: nslookup [<hostname>|<ipaddress>]\n");
     return -EINVAL;
   }
@@ -1239,43 +1106,37 @@ int cmd_nslookup(int argc, char *argv[])
 
   if (!*name) return 0;
 
-  if (*name >= '0' && *name <= '9')
-  {
+  if (*name >= '0' && *name <= '9') {
     struct in_addr addr;
     addr.s_addr = inet_addr(name);
-    if (addr.s_addr == INADDR_NONE)
-    {
+    if (addr.s_addr == INADDR_NONE) {
       printf("%s: %s\n", name, strerror(errno));
       return -1;
     }
 
     hp = gethostbyaddr((char *) &addr, sizeof(struct in_addr), AF_INET);
-  }
-  else
+  } else {
     hp = gethostbyname(name);
+  }
 
-  if (!hp)
-  {
+  if (!hp) {
     printf("%s: %s\n", name, strerror(errno));
     return -errno;
   }
 
-  if (hp->h_addrtype != AF_INET)
-  {
+  if (hp->h_addrtype != AF_INET) {
     printf("unknown address type %d\n", hp->h_addrtype);
     return 0;
   }
 
-  if (hp->h_length != sizeof(struct in_addr))
-  {
+  if (hp->h_length != sizeof(struct in_addr)) {
     printf("unknown address length %d\n", hp->h_length);
     return 0;
   }
 
   printf("name: %s\n", hp->h_name);
   for (i = 0; hp->h_aliases[i] != NULL; i++) printf("alias: %s\n", hp->h_aliases[i]);
-  for (i = 0; hp->h_addr_list[i] != NULL; i++) 
-  {
+  for (i = 0; hp->h_addr_list[i] != NULL; i++) {
     struct in_addr *addr = (struct in_addr *) (hp->h_addr_list[i]);
     printf("address: %s\n", inet_ntoa(*addr));
   }
@@ -1283,8 +1144,7 @@ int cmd_nslookup(int argc, char *argv[])
   return 0;
 }
 
-int cmd_play(int argc, char *argv[])
-{
+int cmd_play(int argc, char *argv[]) {
   char *filename;
   extern void play(char *song);
 
@@ -1297,22 +1157,19 @@ int cmd_play(int argc, char *argv[])
   char buffer[4096];
   FILE *f;
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: play <rttl file>\n");
     return -EINVAL;
   }
   filename = argv[1];
 
   f = fopen(filename, "r");
-  if (!f)
-  {
+  if (!f) {
     printf("%s: %s\n", filename, strerror(errno));
     return -1;
   }
   
-  while (fgets(buffer, sizeof buffer, f))
-  {
+  while (fgets(buffer, sizeof buffer, f)) {
     printf("%s\n", buffer);
     play(buffer);
   }
@@ -1321,8 +1178,7 @@ int cmd_play(int argc, char *argv[])
   return 0;
 }
 
-int cmd_read(int argc, char *argv[])
-{
+int cmd_read(int argc, char *argv[]) {
   char *filename;
   int count;
   int fd;
@@ -1331,15 +1187,13 @@ int cmd_read(int argc, char *argv[])
   clock_t time;
   int bytes;
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: read <file>\n");
     return -EINVAL;
   }
   filename = argv[1];
 
-  if ((fd = open(filename, 0)) < 0)
-  {
+  if ((fd = open(filename, 0)) < 0) {
     printf("%s: %s\n", filename, strerror(errno));
     return fd;
   }
@@ -1348,8 +1202,7 @@ int cmd_read(int argc, char *argv[])
 
   bytes = 0;
   start = clock();
-  while ((count = read(fd, data, 64 * 1024)) > 0)
-  {
+  while ((count = read(fd, data, 64 * 1024)) > 0) {
     bytes += count;
   }
   time = clock() - start;
@@ -1365,30 +1218,25 @@ int cmd_read(int argc, char *argv[])
   return 0;
 }
 
-int cmd_reboot(int argc, char *argv[])
-{
+int cmd_reboot(int argc, char *argv[]) {
   exitos(EXITOS_REBOOT);
   return 0;
 }
 
-int cmd_rm(int argc, char *argv[])
-{
+int cmd_rm(int argc, char *argv[]) {
   char *filename;
   int rc;
   int i;
 
-  if (argc < 2)
-  {
+  if (argc < 2) {
     printf("usage: rm <file(s)>\n");
     return -EINVAL;
   }
 
-  for (i = 1; i < argc; i++)
-  {
+  for (i = 1; i < argc; i++) {
     filename = argv[i];
     rc = unlink(filename); 
-    if (rc < 0)
-    {
+    if (rc < 0) {
       printf("%s: %s\n", filename, strerror(errno));
       return -1;
     }
@@ -1397,21 +1245,18 @@ int cmd_rm(int argc, char *argv[])
   return 0;
 }
 
-int cmd_rmdir(int argc, char *argv[])
-{
+int cmd_rmdir(int argc, char *argv[]) {
   char *path;
   int rc;
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: rmdir <path>\n");
     return -EINVAL;
   }
   path = argv[1];
 
   rc = rmdir(path); 
-  if (rc < 0)
-  {
+  if (rc < 0) {
     printf("%s: %s\n", path, strerror(errno));
     return -1;
   }
@@ -1419,29 +1264,23 @@ int cmd_rmdir(int argc, char *argv[])
   return 0;
 }
 
-int cmd_set(int argc, char *argv[])
-{
+int cmd_set(int argc, char *argv[]) {
   char **env = environ;
   int n;
 
-  if (argc <= 1)
-  {
+  if (argc <= 1) {
     if (env) for (n = 0; env[n]; n++) printf("%s\n", env[n]);
-  }
-  else
-  {
+  } else {
     for (n = 1; n < argc; n++) putenv(argv[n]);
   }
 
   return 0;
 }
 
-int cmd_sleep(int argc, char *argv[])
-{
+int cmd_sleep(int argc, char *argv[]) {
   int ms;
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: sleep <millis>\n");
     return -EINVAL;
   }
@@ -1451,12 +1290,10 @@ int cmd_sleep(int argc, char *argv[])
   return 0;
 }
 
-int cmd_sound(int argc, char *argv[])
-{
+int cmd_sound(int argc, char *argv[]) {
   int freq;
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: sound <freq> (0=silence)\n");
     return -EINVAL;
   }
@@ -1465,14 +1302,12 @@ int cmd_sound(int argc, char *argv[])
   return ioctl(1, IOCTL_SOUND, &freq, 4);
 }
 
-int cmd_shutdown(int argc, char *argv[])
-{
+int cmd_shutdown(int argc, char *argv[]) {
   exitos(EXITOS_POWEROFF);
   return 0;
 }
 
-int cmd_sysinfo(int argc, char *argv[])
-{
+int cmd_sysinfo(int argc, char *argv[]) {
   int rc;
   struct cpuinfo cpu;
   struct meminfo mem;
@@ -1501,22 +1336,18 @@ int cmd_sysinfo(int argc, char *argv[])
 
 #include <glob.h>
 
-int cmd_test(int argc, char *argv[])
-{
+int cmd_test(int argc, char *argv[]) {
   glob_t globbuf;
   int i;
   int rc;
 
-  if (argc > 1)
-  {
-    for (i = 1; i < argc; i++)
-    {
+  if (argc > 1) {
+    for (i = 1; i < argc; i++) {
       rc = glob(argv[i], i > 1 ? GLOB_APPEND : 0, NULL, &globbuf);
       if (rc < 0) printf("glob(%s) returned %d\n", argv[i], rc);
     }
 
-    for (i = 0; i < (int) globbuf.gl_pathc; i++)
-    {
+    for (i = 0; i < (int) globbuf.gl_pathc; i++) {
       printf("%s\n", globbuf.gl_pathv[i]);
     }
     globfree(&globbuf);
@@ -1525,12 +1356,10 @@ int cmd_test(int argc, char *argv[])
   return 0;
 }
 
-int cmd_uname(int argc, char *argv[])
-{
+int cmd_uname(int argc, char *argv[]) {
   struct utsname buf;
   
-  if (uname(&buf) < 0)
-  {
+  if (uname(&buf) < 0) {
     perror("uname");
     return -1;
   }
@@ -1539,21 +1368,18 @@ int cmd_uname(int argc, char *argv[])
   return 0;
 }
 
-int cmd_umount(int argc, char *argv[])
-{
+int cmd_umount(int argc, char *argv[]) {
   char *path;
   int rc;
 
-  if (argc != 2)
-  {
+  if (argc != 2) {
     printf("usage: umount <path>\n");
     return -EINVAL;
   }
   path = argv[1];
 
   rc = umount(path);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     printf("%s: %s\n", path, strerror(errno));
     return -1;
   }
@@ -1561,21 +1387,20 @@ int cmd_umount(int argc, char *argv[])
   return 0;
 }
 
-int cmd_whoami(int argc, char *argv[])
-{
+int cmd_whoami(int argc, char *argv[]) {
   struct passwd *pwd;
 
   pwd = getpwuid(getuid());
-  if (pwd)
+  if (pwd) {
     printf("%s\n", pwd->pw_name);
-  else
+  } else {
     printf("uid%d\n", getuid);
+  }
 
   return 0;
 }
 
-int cmd_write(int argc, char *argv[])
-{
+int cmd_write(int argc, char *argv[]) {
   char *filename;
   int size;
   int count;
@@ -1585,16 +1410,14 @@ int cmd_write(int argc, char *argv[])
   clock_t time;
   int bytes;
 
-  if (argc != 3)
-  {
+  if (argc != 3) {
     printf("usage: write <file> <size (in kb)>\n");
     return -EINVAL;
   }
   filename = argv[1];
   size = atoi(argv[2]) * 1024;
 
-  if ((fd = open(filename, O_CREAT | O_BINARY, S_IREAD | S_IWRITE)) < 0)
-  {
+  if ((fd = open(filename, O_CREAT | O_BINARY, S_IREAD | S_IWRITE)) < 0) {
     printf("%s: %s\n", filename, strerror(errno));
     return -1;
   }
@@ -1603,10 +1426,8 @@ int cmd_write(int argc, char *argv[])
 
   bytes = 0;
   start = clock();
-  while (bytes < size)
-  {
-    if ((count = write(fd, data, 64 * 1024)) <= 0)
-    {
+  while (bytes < size) {
+    if ((count = write(fd, data, 64 * 1024)) <= 0) {
       printf("%s: error writing file\n", filename);
       break;
     }
@@ -1624,8 +1445,7 @@ int cmd_write(int argc, char *argv[])
   return 0;
 }
 
-struct command cmdtab[] =
-{
+struct command cmdtab[] = {
   {"?",        cmd_help,     "This help"},
   {"beep",     cmd_beep,     "Play beep in speaker"},
   {"break",    cmd_break,    "Debug breakpoint"},
@@ -1694,37 +1514,33 @@ struct command cmdtab[] =
   {NULL, NULL, NULL}
 };
 
-static void exec_program(char *args)
-{
+static void exec_program(char *args) {
   int rc;
 
   rc = spawn(P_WAIT, NULL, args, NULL, NULL);
   if (rc < 0) perror("error");
 }
 
-static void launch_program(char *args)
-{
+static void launch_program(char *args) {
   int h;
 
   h = spawn(P_NOWAIT, NULL, args, NULL, NULL);
-  if (h < 0)
+  if (h < 0) {
     perror("error");
-  else
-  {
+  } else {
     printf("[process %d started]\n", h);
     close(h);
   }
 }
 
-static int exec_builtin(int argc, char *argv[], int *found)
-{
+static int exec_builtin(int argc, char *argv[], int *found) {
   struct command *command;
 
-  for (command = cmdtab; command->cmdname; command++)
+  for (command = cmdtab; command->cmdname; command++) {
     if (strcmp(argv[0], command->cmdname) == 0) break;
+  }
 
-  if (!command->cmdname)
-  {
+  if (!command->cmdname) {
     if (found) *found = 0;
     return -ENOENT;
   }
@@ -1734,8 +1550,7 @@ static int exec_builtin(int argc, char *argv[], int *found)
   return command->proc(argc, argv);
 }
 
-static int exec_command(char *cmdline)
-{
+static int exec_command(char *cmdline) {
   int argc;
   char **argv;
   int found;
@@ -1748,50 +1563,41 @@ static int exec_command(char *cmdline)
   parse_args(cmdline, argv);
 
   rc = exec_builtin(argc, argv, &found);
-  if (found) 
-  {
+  if (found) {
     free_args(argc, argv);
     return rc;
   }
   
-  if (strcmp(argv[0], "start") == 0)
-  {
+  if (strcmp(argv[0], "start") == 0) {
     char *args = cmdline;
     while (*args != 0 && *args != ' ') args++;
     while (*args == ' ') args++;
     launch_program(args);
-  }
-  else if (strcmp(argv[argc - 1], "&") == 0)
-  {
+  } else if (strcmp(argv[argc - 1], "&") == 0) {
     char *buf = strdup(cmdline);
     buf[strlen(buf) - 1] = 0;
     launch_program(buf);
     free(buf);
-  }
-  else
+  } else {
     exec_program(cmdline);
+  }
 
   free_args(argc, argv);
   return 0;
 }
 
-void shell()
-{
+void shell() {
   char curdir[MAXPATH];
   char cmdline[256];
   char *prompt = get_property(osconfig(), "shell", "prompt", "%s$ ");
   int rc;
 
-  while (1)
-  {
+  while (1) {
     printf(prompt, getcwd(curdir, sizeof curdir));
     rc = readline(cmdline, sizeof cmdline);
-    if (rc < 0)
-    {
+    if (rc < 0) {
       if (errno != EINTR) break;
-    }
-    else
-    {
+    } else {
       if (stricmp(cmdline, "exit") == 0) break;
       fflush(stdout);
       exec_command(cmdline);
@@ -1799,8 +1605,7 @@ void shell()
   }
 }
 
-int execute_script(char *cmdfile)
-{
+int execute_script(char *cmdfile) {
   FILE *f;
   char cmdline[256];
   int echo;
@@ -1808,14 +1613,12 @@ int execute_script(char *cmdfile)
   echo = get_numeric_property(osconfig(), "shell", "echo", 0);
 
   f = fopen(cmdfile, "r");
-  if (!f)
-  {
+  if (!f) {
     perror(cmdfile);
     return -errno;
   }
 
-  while (fgets(cmdline, sizeof cmdline, f))
-  {
+  while (fgets(cmdline, sizeof cmdline, f)) {
     if (*cmdline == ';' || *cmdline == '#') continue;
     if (echo) fwrite(cmdline, strlen(cmdline), 1, stdout);
 
@@ -1829,23 +1632,19 @@ int execute_script(char *cmdfile)
   return 0;
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   if (sizeof(struct tib) != PAGESIZE) printf("warning: tib is %d bytes (%d expected)\n", sizeof(struct tib), PAGESIZE);
   if (gettib()->proc->term->type == TERM_VT100) setvbuf(stdout, NULL, 0, 8192);
 
-  if (!gettib()->peb->rcdone)
-  {
+  if (!gettib()->peb->rcdone) {
     char *initcmds = get_property(osconfig(), "shell", "initcmds", NULL);
     if (initcmds) execute_script(initcmds);
     gettib()->peb->rcdone = 1;
   }
 
-  if (argc > 1)
-  {
+  if (argc > 1) {
     char *cmdline = gettib()->proc->cmdline;
-    while (*cmdline != ' ')
-    {
+    while (*cmdline != ' ') {
       if (!*cmdline) return 0;
       cmdline++;
     }
@@ -1853,8 +1652,9 @@ int main(int argc, char *argv[])
 
     return exec_command(cmdline);
   }
-  else
+  else {
     shell();
+  }
 
   setbuf(stdout, NULL);
 

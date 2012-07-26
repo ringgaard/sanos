@@ -42,15 +42,13 @@
 
 #define NAME_MAX   255
 
-struct dirent
-{
+struct dirent {
   ino_t d_ino;
   int d_namlen;
   char d_name[NAME_MAX + 1];
 };
 
-typedef struct 
-{
+typedef struct {
   int handle;
   char path[NAME_MAX + 1];
   struct dirent entry;

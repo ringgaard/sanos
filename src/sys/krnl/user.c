@@ -33,80 +33,75 @@
 
 #include <os/krnl.h>
 
-int getuid()
-{
+int getuid() {
   return self()->ruid;
 }
 
-int setuid(uid_t uid)
-{
+int setuid(uid_t uid) {
   struct thread *thread = self();
 
-  if (thread->euid == 0)
+  if (thread->euid == 0) {
     thread->ruid = thread->euid = uid;
-  else if (uid == thread->ruid)
+  } else if (uid == thread->ruid) {
     thread->euid = uid;
-  else
+  } else {
     return -EPERM;
+  }
 
   return 0;
 }
 
-int getgid()
-{
+int getgid() {
   return self()->rgid;
 }
 
-int setgid(gid_t gid)
-{
+int setgid(gid_t gid) {
   struct thread *thread = self();
 
-  if (thread->euid == 0)
+  if (thread->euid == 0) {
     thread->rgid = thread->egid = gid;
-  else if (gid == thread->rgid)
+  } else if (gid == thread->rgid) {
     thread->egid = gid;
-  else
+  } else {
     return -EPERM;
+  }
 
   return 0;
 }
 
-int geteuid()
-{
+int geteuid() {
   return self()->euid;
 }
 
-int seteuid(uid_t uid)
-{
+int seteuid(uid_t uid) {
   struct thread *thread = self();
 
-  if (thread->euid == 0 || uid == thread->ruid) 
+  if (thread->euid == 0 || uid == thread->ruid) {
     thread->euid = uid;
-  else
+  } else {
     return -EPERM;
+  }
 
   return 0;
 }
 
-int getegid()
-{
+int getegid() {
   return self()->egid;
 }
 
-int setegid(gid_t gid)
-{
+int setegid(gid_t gid) {
   struct thread *thread = self();
 
-  if (thread->euid == 0 || gid == thread->rgid) 
+  if (thread->euid == 0 || gid == thread->rgid) {
     thread->egid = gid;
-  else
+  } else {
     return -EPERM;
+  }
 
   return 0;
 }
 
-int getgroups(int size, gid_t *list)
-{
+int getgroups(int size, gid_t *list) {
   struct thread *thread = self();
 
   if (!list || size < thread->ngroups) return -EINVAL;
@@ -114,8 +109,7 @@ int getgroups(int size, gid_t *list)
   return thread->ngroups;
 }
 
-int setgroups(int size, gid_t *list)
-{
+int setgroups(int size, gid_t *list) {
   struct thread *thread = self();
 
   if (thread->euid != 0) return -EPERM;
@@ -126,14 +120,12 @@ int setgroups(int size, gid_t *list)
   return 0;
 }
 
-int check(int mode, uid_t uid, gid_t gid, int access)
-{
+int check(int mode, uid_t uid, gid_t gid, int access) {
   struct thread *thread = self();
 
   if (thread->euid == 0) return 0;
 
-  if (thread->euid != uid) 
-  {
+  if (thread->euid != uid) {
     access >>= 3;
     if (thread->egid != gid) access >>= 3;
   }

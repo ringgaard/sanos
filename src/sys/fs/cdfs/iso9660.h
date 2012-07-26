@@ -45,8 +45,7 @@
 
 #pragma pack(push, 1)
 
-struct iso_volume_descriptor 
-{
+struct iso_volume_descriptor {
   unsigned char type                    [ISODCL(  1,   1)]; // 711
   unsigned char id                      [ISODCL(  2,   6)];
   unsigned char version                 [ISODCL(  7,   7)]; // 711
@@ -82,8 +81,7 @@ struct iso_volume_descriptor
   unsigned char unused3                 [ISODCL(1396, 2048)];
 };
 
-struct iso_directory_record 
-{
+struct iso_directory_record {
   unsigned char length                  [ISODCL( 1,  1)]; // 711
   unsigned char ext_attr_length         [ISODCL( 2,  2)]; // 711
   unsigned char extent                  [ISODCL( 3, 10)]; // 733
@@ -97,8 +95,7 @@ struct iso_directory_record
   unsigned char name                    [0];
 };
 
-struct iso_extended_attributes
-{
+struct iso_extended_attributes {
   unsigned char owner                   [ISODCL(  1,   4)]; // 723
   unsigned char group                   [ISODCL(  5,   8)]; // 723
   unsigned char perm                    [ISODCL(  9,  10)]; // 9.5.3
@@ -117,8 +114,7 @@ struct iso_extended_attributes
   unsigned char len_au                  [ISODCL(247, 250)]; // 723
 };
 
-struct iso_pathtable_record
-{
+struct iso_pathtable_record {
   unsigned char length;
   unsigned char ext_attr_length;
   unsigned long extent;
@@ -128,43 +124,35 @@ struct iso_pathtable_record
 
 #pragma pack(pop)
 
-__inline int isonum_711(unsigned char *p)
-{
+__inline int isonum_711(unsigned char *p) {
   return p[0];
 }
 
-__inline int isonum_712(unsigned char *p)
-{
+__inline int isonum_712(unsigned char *p) {
   return (char) p[0];
 }
 
-__inline int isonum_721(unsigned char *p)
-{
+__inline int isonum_721(unsigned char *p) {
   return p[0] | ((char) p[1] << 8);
 }
 
-__inline int isonum_722(unsigned char *p)
-{
+__inline int isonum_722(unsigned char *p) {
   return ((char) p[0] << 8) | p[1];
 }
 
-__inline int isonum_723(unsigned char *p)
-{
+__inline int isonum_723(unsigned char *p) {
   return isonum_721(p);
 }
 
-__inline int isonum_731(unsigned char *p)
-{
+__inline int isonum_731(unsigned char *p) {
   return p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
 }
 
-__inline int isonum_732(unsigned char *p)
-{
+__inline int isonum_732(unsigned char *p) {
   return (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
 }
 
-__inline int isonum_733(unsigned char *p)
-{
+__inline int isonum_733(unsigned char *p) {
   return isonum_731(p);
 }
 

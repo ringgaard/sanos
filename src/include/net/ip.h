@@ -62,8 +62,7 @@ err_t ip_output_if(struct pbuf *p, struct ip_addr *src, struct ip_addr *dest, in
 
 #pragma pack(push, 1)
 
-struct ip_hdr 
-{
+struct ip_hdr {
   unsigned short _v_hl_tos;      // Version / header length / type of service
   unsigned short _len;           // Total length
   unsigned short _id;            // Identification

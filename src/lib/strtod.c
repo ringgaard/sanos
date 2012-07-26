@@ -37,8 +37,7 @@
 #include <float.h>
 #include <stdlib.h>
 
-double strtod(const char *str, char **endptr)
-{
+double strtod(const char *str, char **endptr) {
   double number;
   int exponent;
   int negative;
@@ -53,8 +52,7 @@ double strtod(const char *str, char **endptr)
 
   // Handle optional sign
   negative = 0;
-  switch (*p) 
-  {             
+  switch (*p) {
     case '-': negative = 1; // Fall through to increment position
     case '+': p++;
   }
@@ -65,20 +63,17 @@ double strtod(const char *str, char **endptr)
   num_decimals = 0;
 
   // Process string of digits
-  while (isdigit(*p))
-  {
+  while (isdigit(*p)) {
     number = number * 10. + (*p - '0');
     p++;
     num_digits++;
   }
 
   // Process decimal part
-  if (*p == '.') 
-  {
+  if (*p == '.') {
     p++;
 
-    while (isdigit(*p))
-    {
+    while (isdigit(*p)) {
       number = number * 10. + (*p - '0');
       p++;
       num_digits++;
@@ -88,8 +83,7 @@ double strtod(const char *str, char **endptr)
     exponent -= num_decimals;
   }
 
-  if (num_digits == 0)
-  {
+  if (num_digits == 0) {
     errno = ERANGE;
     return 0.0;
   }
@@ -98,32 +92,29 @@ double strtod(const char *str, char **endptr)
   if (negative) number = -number;
 
   // Process an exponent string
-  if (*p == 'e' || *p == 'E') 
-  {
+  if (*p == 'e' || *p == 'E') {
     // Handle optional sign
     negative = 0;
-    switch (*++p) 
-    {   
+    switch (*++p) {
       case '-': negative = 1;   // Fall through to increment pos
       case '+': p++;
     }
 
     // Process string of digits
     n = 0;
-    while (isdigit(*p)) 
-    {   
+    while (isdigit(*p)) {
       n = n * 10 + (*p - '0');
       p++;
     }
 
-    if (negative) 
+    if (negative) {
       exponent -= n;
-    else
+    } else {
       exponent += n;
+    }
   }
 
-  if (exponent < DBL_MIN_EXP  || exponent > DBL_MAX_EXP)
-  {
+  if (exponent < DBL_MIN_EXP  || exponent > DBL_MAX_EXP) {
     errno = ERANGE;
     return HUGE_VAL;
   }
@@ -132,14 +123,13 @@ double strtod(const char *str, char **endptr)
   p10 = 10.;
   n = exponent;
   if (n < 0) n = -n;
-  while (n) 
-  {
-    if (n & 1) 
-    {
-      if (exponent < 0)
+  while (n) {
+    if (n & 1) {
+      if (exponent < 0) {
         number /= p10;
-      else
+      } else {
         number *= p10;
+      }
     }
     n >>= 1;
     p10 *= p10;
@@ -151,18 +141,15 @@ double strtod(const char *str, char **endptr)
   return number;
 }
 
-float strtof(const char *str, char **endptr)
-{
+float strtof(const char *str, char **endptr) {
   return (float) strtod(str, endptr);
 }
 
 
-long double strtold(const char *str, char **endptr)
-{
+long double strtold(const char *str, char **endptr) {
   return strtod(str, endptr);
 }
 
-double atof(const char *str)
-{
+double atof(const char *str) {
   return strtod(str, NULL);
 }

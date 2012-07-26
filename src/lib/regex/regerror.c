@@ -37,8 +37,7 @@
 
 #include "regex2.h"
 
-static struct rerr 
-{
+static struct rerr {
   int code;
   char *name;
   char *explain;
@@ -68,42 +67,38 @@ static char *regatoi(const regex_t *preg, char *localbuf);
 //
 // regerror - the interface to error numbers
 //
-size_t regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_size)
-{
+size_t regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_size) {
   struct rerr *r;
   size_t len;
   int target = errcode & ~REG_ITOA;
   char *s;
   char convbuf[50];
 
-  if (errcode == REG_ATOI)
+  if (errcode == REG_ATOI) {
     s = regatoi(preg, convbuf);
-  else 
-  {
-    for (r = rerrs; r->code >= 0; r++)
-      if (r->code == target)
-        break;
+  } else {
+    for (r = rerrs; r->code >= 0; r++) {
+      if (r->code == target) break;
+    }
   
-    if (errcode & REG_ITOA) 
-    {
-      if (r->code >= 0)
+    if (errcode & REG_ITOA) {
+      if (r->code >= 0) {
         strcpy(convbuf, r->name);
-      else
+      } else {
         sprintf(convbuf, "REG_0x%x", target);
+      }
       assert(strlen(convbuf) < sizeof(convbuf));
       s = convbuf;
-    } 
-    else
+    } else {
       s = r->explain;
+    }
   }
 
   len = strlen(s) + 1;
-  if (errbuf_size > 0) 
-  {
-    if (errbuf_size > len)
+  if (errbuf_size > 0) {
+    if (errbuf_size > len) {
       strcpy(errbuf, s);
-    else 
-    {
+    } else {
       strncpy(errbuf, s, errbuf_size - 1);
       errbuf[errbuf_size-1] = '\0';
     }
@@ -115,13 +110,12 @@ size_t regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_si
 //
 // regatoi - internal routine to implement REG_ATOI
 //
-static char *regatoi(const regex_t *preg, char *localbuf)
-{
+static char *regatoi(const regex_t *preg, char *localbuf) {
   struct rerr *r;
 
-  for (r = rerrs; r->code >= 0; r++)
-    if (strcmp(r->name, preg->re_endp) == 0)
-      break;
+  for (r = rerrs; r->code >= 0; r++) {
+    if (strcmp(r->name, preg->re_endp) == 0) break;
+  }
   
   if (r->code < 0) return "0";
 

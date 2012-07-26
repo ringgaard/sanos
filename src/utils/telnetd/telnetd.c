@@ -117,15 +117,13 @@ int state = STOPPED;
 int off = 0;
 int on = 1;
 
-struct buffer
-{
+struct buffer {
   unsigned char data[4096];
   unsigned char *start;
   unsigned char *end;
 };
 
-struct termstate
-{
+struct termstate {
   int sock;
   int state;
   int code;
@@ -136,8 +134,7 @@ struct termstate
   struct buffer bo;
 };
 
-void sendopt(struct termstate *ts, int code, int option)
-{
+void sendopt(struct termstate *ts, int code, int option) {
   unsigned char buf[3];
 
   buf[0] = TELNET_IAC;
@@ -151,8 +148,7 @@ void parseopt(struct termstate *ts, int code, int option)
   //static char *codename[4] = {"WILL", "WONT", "DO", "DONT"};
   //syslog(LOG_DEBUG, "%s %d", codename[code - 251], option);
 
-  switch (option)
-  {
+  switch (option) {
     case TELOPT_ECHO:
     case TELOPT_SUPPRESS_GO_AHEAD:
     case TELOPT_NAWS:
@@ -164,22 +160,20 @@ void parseopt(struct termstate *ts, int code, int option)
       break;
 
     default:
-      if (code == TELNET_WILL || code == TELNET_WONT)
+      if (code == TELNET_WILL || code == TELNET_WONT) {
         sendopt(ts, TELNET_DONT, option);
-      else
+      } else {
         sendopt(ts, TELNET_WONT, option);
+      }
   }
 }
 
-void parseoptdat(struct termstate *ts, int option, unsigned char *data, int len)
-{
+void parseoptdat(struct termstate *ts, int option, unsigned char *data, int len) {
   //syslog(LOG_DEBUG, "OPTION %d data (%d bytes)", option, len);
 
-  switch (option)
-  {
+  switch (option) {
     case TELOPT_NAWS:
-      if (len == 4)
-      {
+      if (len == 4) {
         int cols = ntohs(*(unsigned short *) data);
         int lines = ntohs(*(unsigned short *) (data + 2));
         //syslog(LOG_DEBUG, "WINDOW %d cols %d lines", cols, lines);
@@ -198,27 +192,24 @@ void parseoptdat(struct termstate *ts, int option, unsigned char *data, int len)
   }
 }
 
-void parse(struct termstate *ts)
-{
+void parse(struct termstate *ts) {
   unsigned char *p = ts->bi.start;
   unsigned char *q = p;
 
-  while (p < ts->bi.end)
-  {
+  while (p < ts->bi.end) {
     int c = *p++;
 
-    switch (ts->state) 
-    {
+    switch (ts->state) {
       case STATE_NORMAL:
-        if (c == TELNET_IAC)
+        if (c == TELNET_IAC) {
           ts->state = STATE_IAC;
-        else
+        } else {
           *q++ = c;
+        }
         break;
 
       case STATE_IAC:
-        switch (c) 
-        {
+        switch (c) {
           case TELNET_IAC:
             *q++ = c;
             ts->state = STATE_NORMAL;
@@ -253,10 +244,11 @@ void parse(struct termstate *ts)
         break;
 
       case STATE_OPTDAT:
-        if (c == TELNET_IAC)
+        if (c == TELNET_IAC) {
           ts->state = STATE_SE;
-        else if (ts->optlen < sizeof(ts->optdata))
+        } else if (ts->optlen < sizeof(ts->optdata)) {
           ts->optdata[ts->optlen++] = c;
+        }
         break;
 
       case STATE_SE:
@@ -277,8 +269,7 @@ void parse(struct termstate *ts)
 //    +-----------+            +-----------+ pout[0]  pout[1]=out +-----------+
 //
 
-void __stdcall telnet_task(void *arg)
-{
+void __stdcall telnet_task(void *arg) {
   struct process *proc = gettib()->proc;
   int s = (int) arg;
   int pin[2];
@@ -291,8 +282,7 @@ void __stdcall telnet_task(void *arg)
   struct termstate ts;
 
   // Set process identifer
-  if (!proc->ident && !proc->cmdline)
-  {
+  if (!proc->ident && !proc->cmdline) {
     struct sockaddr_in sin;
     int sinlen = sizeof sin;
 
@@ -348,21 +338,18 @@ void __stdcall telnet_task(void *arg)
   sendopt(&ts, TELNET_DO, TELOPT_NAWS);
 
   last_was_cr = 0;
-  for (;;)
-  {
+  for (;;) {
     // Wait for application termination or multiplexer event
     int rc = waitany(events, 2, INFINITE);
 
-    switch (rc)
-    {
+    switch (rc) {
       case APPDON: 
         // Application terminated
         goto done;
 
       case USRATT:
         // Data arrived from user
-        if (ts.bi.start == ts.bi.end)
-        {
+        if (ts.bi.start == ts.bi.end) {
           int i;
 
           // Read data from user
@@ -387,25 +374,23 @@ void __stdcall telnet_task(void *arg)
 
       case APPRDY:
         // Application ready to receive
-        if (ts.bi.start != ts.bi.end)
-        {
+        if (ts.bi.start != ts.bi.end) {
           // Write data to application
           n = write(pin[1], ts.bi.start, ts.bi.end - ts.bi.start);
           if (n < 0) goto done;
           ts.bi.start += n;
         }
 
-        if (ts.bi.start == ts.bi.end)
+        if (ts.bi.start == ts.bi.end) {
           dispatch(mux, s, IOEVT_READ | IOEVT_ERROR | IOEVT_CLOSE, USRATT);
-        else
+        } else {
           dispatch(mux, pin[1], IOEVT_WRITE | IOEVT_ERROR | IOEVT_CLOSE, APPRDY);
-
+        }
         break;
 
       case APPATT:
         // Data arrived from application
-        if (ts.bo.start == ts.bo.end)
-        {
+        if (ts.bo.start == ts.bo.end) {
           // Read data from application
           n = read(pout[0], ts.bo.data, sizeof ts.bo.data);
           if (n < 0) goto done;
@@ -417,19 +402,18 @@ void __stdcall telnet_task(void *arg)
 
       case USRRDY:
         // User ready to receive
-        if (ts.bo.start != ts.bo.end)
-        {
+        if (ts.bo.start != ts.bo.end) {
           // Write data to user
           n = write(s, ts.bo.start, ts.bo.end - ts.bo.start);
           if (n < 0) goto done;
           ts.bo.start += n;
         }
 
-        if (ts.bo.start == ts.bo.end)
+        if (ts.bo.start == ts.bo.end) {
           dispatch(mux, pout[0], IOEVT_READ | IOEVT_ERROR | IOEVT_CLOSE, APPATT);
-        else
+        } else {
           dispatch(mux, s, IOEVT_WRITE | IOEVT_ERROR | IOEVT_CLOSE, USRRDY);
-
+        }
         break;
 
       default:
@@ -447,17 +431,14 @@ done:
   close(mux);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   int s;
   int rc;
   struct sockaddr_in sin;
   int hthread;
 
-  if (argc == 2)
-  {
-    if (strcmp(argv[1], "start") == 0)
-    {
+  if (argc == 2) {
+    if (strcmp(argv[1], "start") == 0) {
       char path[MAXPATH];
       
       getmodpath(NULL, path, MAXPATH);
@@ -465,9 +446,7 @@ int main(int argc, char *argv[])
       if (hthread < 0) syslog(LOG_ERR, "error %d (%s) in spawn", errno, strerror(errno));
       close(hthread);
       return 0;
-    }
-    else if (strcmp(argv[1], "stop") == 0)
-    {
+    } else if (strcmp(argv[1], "stop") == 0) {
       state = STOPPED;
       close(sock);
       return 0;
@@ -478,8 +457,7 @@ int main(int argc, char *argv[])
   pgm = get_property(osconfig(), "telnetd", "pgm", "login");
 
   sock = socket(AF_INET, SOCK_STREAM, 0);
-  if (sock < 0)
-  {
+  if (sock < 0) {
     syslog(LOG_ERR, "error %d (%s) in socket", errno, strerror(errno));
     return 1;
   }
@@ -488,29 +466,25 @@ int main(int argc, char *argv[])
   sin.sin_addr.s_addr = INADDR_ANY;
   sin.sin_port = htons(port);
   rc = bind(sock, (struct sockaddr *) &sin, sizeof sin);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     syslog(LOG_ERR, "error %d (%s) in bind", errno, strerror(errno));
     return 1;
   }
 
   rc = listen(sock, 5);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     syslog(LOG_ERR, "error %d (%s) in listen", errno, strerror(errno));
     return 1;
   }
 
   syslog(LOG_INFO, "telnetd started on port %d", port);
   state = RUNNING;
-  while (1)
-  {
+  while (1) {
     struct sockaddr_in sin;
 
     s = accept(sock, (struct sockaddr *) &sin, NULL);
     if (state == STOPPED) break;
-    if (s < 0)
-    {
+    if (s < 0) {
       syslog(LOG_ERR, "error %d (%s) in accept", errno, strerror(errno));
       return 1;
     }

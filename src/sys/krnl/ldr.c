@@ -36,19 +36,16 @@
 struct moddb kmods;
 struct mutex ldr_lock;
 
-static void *load_image(char *filename)
-{
+static void *load_image(char *filename) {
   return load_image_file(filename, 0);
 }
 
-static int unload_image(hmodule_t hmod, size_t size)
-{
+static int unload_image(hmodule_t hmod, size_t size) {
   free_module_mem(hmod, PAGES(size));
   return 0;
 }
 
-void *load_image_file(char *filename, int userspace)
-{
+void *load_image_file(char *filename, int userspace) {
   struct file *f;
   char *buffer;
   char *imgbase;
@@ -64,15 +61,13 @@ void *load_image_file(char *filename, int userspace)
   if (!buffer) return NULL;
 
   // Open file
-  if (open(filename, O_RDONLY | O_BINARY, 0, &f) < 0) 
-  {
+  if (open(filename, O_RDONLY | O_BINARY, 0, &f) < 0) {
     kfree(buffer);
     return NULL;
   }
 
   // Read headers
-  if ((bytes = read(f, buffer, PAGESIZE)) < 0)
-  {
+  if ((bytes = read(f, buffer, PAGESIZE)) < 0) {
     close(f);
     destroy(f);
     kfree(buffer);
@@ -88,25 +83,20 @@ void *load_image_file(char *filename, int userspace)
   //if (imghdr->optional.file_alignment != PAGESIZE || imghdr->optional.section_alignment != PAGESIZE) panic("image not page aligned");
 
   // Allocate memory for module
-  if (userspace)
-  {
+  if (userspace) {
     // User module
     imgbase = (char *) mmap((void *) (imghdr->optional.image_base), imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UMOD');
-    if (imgbase == NULL)
-    {
+    if (imgbase == NULL) {
       // Try to load image at any available address 
       imgbase = (char *) mmap(NULL, imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UMOD');
     }
-  }
-  else
-  {
+  } else {
     // Kernel module
     imgbase = (char *) alloc_module_mem(PAGES(imghdr->optional.size_of_image));
     if (imgbase) memset(imgbase, 0, PAGES(imghdr->optional.size_of_image) * PAGESIZE);
   }
 
-  if (imgbase == NULL)
-  {
+  if (imgbase == NULL) {
     close(f);
     destroy(f);
     kfree(buffer);
@@ -117,17 +107,15 @@ void *load_image_file(char *filename, int userspace)
   memcpy(imgbase, buffer, PAGESIZE);
 
   // Read sections
-  for (i = 0; i < imghdr->header.number_of_sections; i++)
-  {
-    if (imghdr->sections[i].pointer_to_raw_data != 0)
-    {
+  for (i = 0; i < imghdr->header.number_of_sections; i++) {
+    if (imghdr->sections[i].pointer_to_raw_data != 0) {
       lseek(f, imghdr->sections[i].pointer_to_raw_data, SEEK_SET);
-      if (read(f, RVA(imgbase, imghdr->sections[i].virtual_address), imghdr->sections[i].size_of_raw_data) < 0)
-      {
-        if (userspace)
+      if (read(f, RVA(imgbase, imghdr->sections[i].virtual_address), imghdr->sections[i].size_of_raw_data) < 0) {
+        if (userspace) {
           munmap(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
-        else
+        } else {
           free_module_mem(imgbase, imghdr->optional.size_of_image);
+        }
 
         close(f);
         destroy(f);
@@ -147,13 +135,11 @@ void *load_image_file(char *filename, int userspace)
   return imgbase;
 }
 
-static void logldr(char *msg)
-{
+static void logldr(char *msg) {
   kprintf(KERN_WARNING "ldr: %s\n", msg);
 }
 
-void *resolve(hmodule_t hmod, char *procname)
-{
+void *resolve(hmodule_t hmod, char *procname) {
   void *addr;
 
   wait_for_object(&ldr_lock, INFINITE);
@@ -162,8 +148,7 @@ void *resolve(hmodule_t hmod, char *procname)
   return addr;
 }
 
-hmodule_t getmodule(char *name)
-{
+hmodule_t getmodule(char *name) {
   hmodule_t hmod;
 
   wait_for_object(&ldr_lock, INFINITE);
@@ -172,8 +157,7 @@ hmodule_t getmodule(char *name)
   return hmod;
 }
 
-int getmodpath(hmodule_t hmod, char *buffer, int size)
-{
+int getmodpath(hmodule_t hmod, char *buffer, int size) {
   int rc;
 
   wait_for_object(&ldr_lock, INFINITE);
@@ -182,8 +166,7 @@ int getmodpath(hmodule_t hmod, char *buffer, int size)
   return rc;
 }
 
-hmodule_t load(char *name, int flags)
-{
+hmodule_t load(char *name, int flags) {
   hmodule_t hmod;
 
   wait_for_object(&ldr_lock, INFINITE);
@@ -192,8 +175,7 @@ hmodule_t load(char *name, int flags)
   return hmod;
 }
 
-int unload(hmodule_t hmod)
-{
+int unload(hmodule_t hmod) {
   int rc;
 
   wait_for_object(&ldr_lock, INFINITE);
@@ -202,20 +184,17 @@ int unload(hmodule_t hmod)
   return rc;
 }
 
-void *getentrypoint(hmodule_t hmod)
-{
+void *getentrypoint(hmodule_t hmod) {
   return get_entrypoint(hmod);
 }
 
-static int dump_mods(struct proc_file *pf, struct moddb *moddb)
-{
+static int dump_mods(struct proc_file *pf, struct moddb *moddb) {
   struct module *mod = moddb->modules;
 
   pprintf(pf, "handle   module           refs entry      size   text   data    bss\n");
   pprintf(pf, "-------- ---------------- ---- --------  -----  -----  -----  -----\n");
 
-  while (1)
-  {
+  while (1) {
     struct image_header *imghdr = get_image_header(mod->hmod);
 
     pprintf(pf, "%08X %-16s %4d %08X %5dK %5dK %5dK %5dK\n", 
@@ -234,21 +213,18 @@ static int dump_mods(struct proc_file *pf, struct moddb *moddb)
   return 0;
 }
 
-static int kmods_proc(struct proc_file *pf, void *arg)
-{
+static int kmods_proc(struct proc_file *pf, void *arg) {
   return dump_mods(pf, &kmods);
 }
 
-static int umods_proc(struct proc_file *pf, void *arg)
-{
+static int umods_proc(struct proc_file *pf, void *arg) {
   if (!page_mapped((void *) PEB_ADDRESS)) return -EFAULT;
   if (!((struct peb *) PEB_ADDRESS)->usermods) return -EFAULT;
 
   return dump_mods(pf, ((struct peb *) PEB_ADDRESS)->usermods);
 }
 
-void init_kernel_modules()
-{
+void init_kernel_modules() {
   struct module *krnlmod;
 
   init_mutex(&ldr_lock, 0);

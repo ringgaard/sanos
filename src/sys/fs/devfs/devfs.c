@@ -60,8 +60,7 @@ int devfs_chown(struct fs *fs, char *name, int owner, int group);
 int devfs_opendir(struct file *filp, char *name);
 int devfs_readdir(struct file *filp, struct direntry *dirp, int count);
 
-struct fsops devfsops =
-{
+struct fsops devfsops = {
   FSOP_OPEN | FSOP_CLOSE | FSOP_FSYNC | FSOP_READ | FSOP_WRITE | FSOP_IOCTL | 
   FSOP_TELL | FSOP_LSEEK | FSOP_STAT | FSOP_FSTAT | FSOP_OPENDIR | FSOP_READDIR,
 
@@ -111,14 +110,12 @@ struct fsops devfsops =
   devfs_readdir
 };
 
-void init_devfs()
-{
+void init_devfs() {
   register_filesystem("devfs", &devfsops);
   mounttime = get_time();
 }
 
-int devfs_open(struct file *filp, char *name)
-{
+int devfs_open(struct file *filp, char *name) {
   dev_t devno;
   struct dev *dev;
   struct devfile *df;
@@ -128,8 +125,7 @@ int devfs_open(struct file *filp, char *name)
   if (devno == NODEV) return -ENOENT;
 
   df = (struct devfile *) kmalloc(sizeof(struct devfile));
-  if (!df)
-  {
+  if (!df) {
     dev_close(devno);
     return -EMFILE;
   }
@@ -154,8 +150,7 @@ int devfs_open(struct file *filp, char *name)
   return 0;
 }
 
-int devfs_close(struct file *filp)
-{
+int devfs_close(struct file *filp) {
   struct devfile *df = (struct devfile *) filp->data;
 
   if (filp->data == DEVROOT) return 0;
@@ -171,13 +166,11 @@ int devfs_close(struct file *filp)
   return 0;
 }
 
-int devfs_fsync(struct file *filp)
-{
+int devfs_fsync(struct file *filp) {
   return 0;
 }
 
-int devfs_read(struct file *filp, void *data, size_t size, off64_t pos)
-{
+int devfs_read(struct file *filp, void *data, size_t size, off64_t pos) {
   struct devfile *df = (struct devfile *) filp->data;
   int read;
   int flags = 0;
@@ -189,8 +182,7 @@ int devfs_read(struct file *filp, void *data, size_t size, off64_t pos)
   return read;
 }
 
-int devfs_write(struct file *filp, void *data, size_t size, off64_t pos)
-{
+int devfs_write(struct file *filp, void *data, size_t size, off64_t pos) {
   struct devfile *df = (struct devfile *) filp->data;
   int written;
   int flags = 0;
@@ -202,8 +194,7 @@ int devfs_write(struct file *filp, void *data, size_t size, off64_t pos)
   return written;
 }
 
-int devfs_ioctl(struct file *filp, int cmd, void *data, size_t size)
-{
+int devfs_ioctl(struct file *filp, int cmd, void *data, size_t size) {
   struct devfile *df = (struct devfile *) filp->data;
   int rc;
 
@@ -213,21 +204,18 @@ int devfs_ioctl(struct file *filp, int cmd, void *data, size_t size)
   return rc;
 }
 
-off64_t devfs_tell(struct file *filp)
-{
+off64_t devfs_tell(struct file *filp) {
   return filp->pos;
 }
 
-off64_t devfs_lseek(struct file *filp, off64_t offset, int origin)
-{
+off64_t devfs_lseek(struct file *filp, off64_t offset, int origin) {
   struct devfile *df = (struct devfile *) filp->data;
   off64_t size;
 
   if (df == DEVROOT) return -EBADF;
   size = (off64_t) df->devsize * (off64_t) df->blksize;
 
-  switch (origin)
-  {
+  switch (origin) {
     case SEEK_END:
       offset += size;
       break;
@@ -242,8 +230,7 @@ off64_t devfs_lseek(struct file *filp, off64_t offset, int origin)
   return offset;
 }
 
-int devfs_fstat(struct file *filp, struct stat64 *buffer)
-{
+int devfs_fstat(struct file *filp, struct stat64 *buffer) {
   struct devfile *df = (struct devfile *) filp->data;
   off64_t size;
   struct dev *dev;
@@ -254,8 +241,7 @@ int devfs_fstat(struct file *filp, struct stat64 *buffer)
   if (!dev) return -ENOENT;
   size = (off64_t) df->devsize * (off64_t) df->blksize;
 
-  if (buffer)
-  {
+  if (buffer) {
     memset(buffer, 0, sizeof(struct stat64));
     buffer->st_mode = dev->mode;
     buffer->st_uid = dev->uid;
@@ -274,8 +260,7 @@ int devfs_fstat(struct file *filp, struct stat64 *buffer)
   return size > 0x7FFFFFFF ? 0x7FFFFFFF : (int) size;
 }
 
-int devfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
-{
+int devfs_stat(struct fs *fs, char *name, struct stat64 *buffer) {
   dev_t devno;
   int devsize;
   int blksize;
@@ -284,8 +269,7 @@ int devfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
 
   if (*name == PS1 || *name == PS2) name++;
 
-  if (!*name)
-  {
+  if (!*name) {
     memset(buffer, 0, sizeof(struct stat64));
     buffer->st_mode = S_IFDIR | S_IRUSR | S_IXUSR;
 
@@ -310,8 +294,7 @@ int devfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
   blksize = dev_ioctl(devno, IOCTL_GETBLKSIZE, NULL, 0);
   size = (__int64) devsize * (__int64) blksize;
 
-  if (buffer)
-  {
+  if (buffer) {
     memset(buffer, 0, sizeof(struct stat64));
     buffer->st_mode = dev->mode;
     buffer->st_uid = dev->uid;
@@ -331,8 +314,7 @@ int devfs_stat(struct fs *fs, char *name, struct stat64 *buffer)
   return size > 0x7FFFFFFF ? 0x7FFFFFFF : (int) size;
 }
 
-int devfs_access(struct fs *fs, char *name, int mode)
-{
+int devfs_access(struct fs *fs, char *name, int mode) {
   struct thread *thread = self();
   dev_t devno;
   struct dev *dev;
@@ -344,10 +326,8 @@ int devfs_access(struct fs *fs, char *name, int mode)
   dev = device(devno);
   if (!dev) return -ENOENT;
 
-  if (mode != 0 && thread->euid != 0) 
-  {
-    if (thread->euid != dev->uid) 
-    {
+  if (mode != 0 && thread->euid != 0) {
+    if (thread->euid != dev->uid) {
       mode >>= 3;
       if (thread->egid != dev->gid) mode >>= 3;
     }
@@ -359,8 +339,7 @@ int devfs_access(struct fs *fs, char *name, int mode)
   return rc;
 }
 
-int devfs_fchmod(struct file *filp, int mode)
-{
+int devfs_fchmod(struct file *filp, int mode) {
   struct thread *thread = self();
   struct devfile *df = (struct devfile *) filp->data;
   struct dev *dev;
@@ -375,8 +354,7 @@ int devfs_fchmod(struct file *filp, int mode)
   return 0;
 }
 
-int devfs_chmod(struct fs *fs, char *name, int mode)
-{
+int devfs_chmod(struct fs *fs, char *name, int mode) {
   struct thread *thread = self();
   dev_t devno;
   struct dev *dev;
@@ -388,17 +366,17 @@ int devfs_chmod(struct fs *fs, char *name, int mode)
   dev = device(devno);
   if (!dev) return -ENOENT;
 
-  if (thread->euid == 0 || thread->euid == dev->uid) 
+  if (thread->euid == 0 || thread->euid == dev->uid) {
     dev->mode = (dev->mode & ~S_IRWXUGO) | (mode & S_IRWXUGO);
-  else
+  } else {
     rc = -EPERM;
+  }
 
   dev_close(devno);
   return rc;
 }
 
-int devfs_fchown(struct file *filp, int owner, int group)
-{
+int devfs_fchown(struct file *filp, int owner, int group) {
   struct thread *thread = self();
   struct devfile *df = (struct devfile *) filp->data;
   struct dev *dev;
@@ -414,8 +392,7 @@ int devfs_fchown(struct file *filp, int owner, int group)
   return 0;
 }
 
-int devfs_chown(struct fs *fs, char *name, int owner, int group)
-{
+int devfs_chown(struct fs *fs, char *name, int owner, int group) {
   struct thread *thread = self();
   dev_t devno;
   struct dev *dev;
@@ -427,13 +404,12 @@ int devfs_chown(struct fs *fs, char *name, int owner, int group)
   dev = device(devno);
   if (!dev) return -ENOENT;
 
-  if (thread->euid == 0)
-  {
+  if (thread->euid == 0) {
     if (owner != -1) dev->uid = owner;
     if (group != -1) dev->gid = group;
-  }
-  else
+  } else {
     rc = -EPERM;
+  }
 
   dev_close(devno);
   return rc;
@@ -448,8 +424,7 @@ int devfs_opendir(struct file *filp, char *name)
   return 0;
 }
 
-int devfs_readdir(struct file *filp, struct direntry *dirp, int count)
-{
+int devfs_readdir(struct file *filp, struct direntry *dirp, int count) {
   dev_t devno;
   struct dev *dev;
 
@@ -470,23 +445,19 @@ int devfs_readdir(struct file *filp, struct direntry *dirp, int count)
   return 1;
 }
 
-void devfs_setevt(struct dev *dev, int events)
-{
+void devfs_setevt(struct dev *dev, int events) {
   struct devfile *df = dev->files;
 
-  while (df)
-  {
+  while (df) {
     set_io_event(&df->filp->iob, events);
     df = df->next;
   }
 }
 
-void devfs_clrevt(struct dev *dev, int events)
-{
+void devfs_clrevt(struct dev *dev, int events) {
   struct devfile *df = dev->files;
 
-  while (df)
-  {
+  while (df) {
     clear_io_event(&df->filp->iob, events);
     df = df->next;
   }

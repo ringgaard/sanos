@@ -152,37 +152,29 @@ static char *heap_ptr;          // Pointer to first free heap location
 // Input/output buffer management
 //
 
-static unsigned __inline char getbyte()
-{
+static unsigned __inline char getbyte() {
   if (inptr == inend) panic("unzip: input buffer underrun");
   return *inptr++;
 }
 
-static void __inline ungetbyte()
-{
+static void __inline ungetbyte() {
   inptr--;
 }
 
-static void __inline putbyte(unsigned char c)
-{
+static void __inline putbyte(unsigned char c) {
   if (outptr == outend) panic("unzip: output buffer overrun");
   *outptr++ = c;
 }
 
-static void __inline copybytes(unsigned dist, unsigned len)
-{
+static void __inline copybytes(unsigned dist, unsigned len) {
   if (outptr + len > outend) panic("unzip: output buffer overrun");
 
-  if (dist >= len)
-  {
+  if (dist >= len) {
     memcpy(outptr, outptr - dist, len);
     outptr += len;
-  }
-  else
-  {
+  } else {
     unsigned char *p = outptr - dist;
-    while (len > 0)
-    {
+    while (len > 0) {
       *outptr++ = *p++;
       len--;
     }
@@ -193,8 +185,7 @@ static void __inline copybytes(unsigned dist, unsigned len)
 // Heap management
 //
 
-static void *gzip_malloc(int size)
-{
+static void *gzip_malloc(int size) {
   void *p;
   
   heap_ptr = (char *) (((unsigned long) heap_ptr + 3) & ~3);    // Align
@@ -204,18 +195,15 @@ static void *gzip_malloc(int size)
   return p;
 }
 
-static void gzip_free(void *p)
-{
+static void gzip_free(void *p) {
   // Ignore
 }
 
-static void gzip_mark(void **ptr)
-{
+static void gzip_mark(void **ptr) {
   *ptr = (void *) heap_ptr;
 }
 
-static void gzip_release(void **ptr)
-{
+static void gzip_release(void **ptr) {
   heap_ptr = (char *) *ptr;
 }
 
@@ -228,12 +216,10 @@ static void gzip_release(void **ptr)
 // error in the data.
 //
 
-struct huft 
-{
+struct huft  {
   unsigned char e;      // Number of extra bits or operation
   unsigned char b;      // Number of bits in this code or subcode
-  union 
-  {
+  union {
     unsigned short n;   // Literal, length base, or distance base
     struct huft *t;     // Pointer to next level of table
   } v;
@@ -245,32 +231,28 @@ static int huft_free(struct huft *);
 
 // Order of the bit length code lengths
 
-static const unsigned border[] = 
-{
+static const unsigned border[] = {
   16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15
 };
 
 // Copy lengths for literal codes 257..285
 // note: see note #13 above about the 258 in this list.
 
-static const unsigned short cplens[] = 
-{
+static const unsigned short cplens[] = {
   3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31,
   35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 0, 0
 };
 
 // Extra bits for literal codes 257..285
 
-static const unsigned short cplext[] = 
-{
+static const unsigned short cplext[] = {
   0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
   3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0, 99, 99  // 99: invalid
 };
 
 // Copy offsets for distance codes 0..29
 
-static const unsigned short cpdist[] =
-{
+static const unsigned short cpdist[] = {
   1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193,
   257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145,
   8193, 12289, 16385, 24577
@@ -278,8 +260,7 @@ static const unsigned short cpdist[] =
 
 // Extra bits for distance codes
 
-static const unsigned short cpdext[] = 
-{
+static const unsigned short cpdext[] = {
   0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,
   7, 7, 8, 8, 9, 9, 10, 10, 11, 11,
   12, 12, 13, 13
@@ -319,8 +300,7 @@ static const unsigned short cpdext[] =
 static unsigned long bb;      // Bit buffer
 static unsigned bk;           // Bits in bit buffer
 
-static const unsigned short mask_bits[] = 
-{
+static const unsigned short mask_bits[] = {
   0x0000,
   0x0001, 0x0003, 0x0007, 0x000f, 0x001f, 0x003f, 0x007f, 0x00ff,
   0x01ff, 0x03ff, 0x07ff, 0x0fff, 0x1fff, 0x3fff, 0x7fff, 0xffff
@@ -386,8 +366,7 @@ static const int dbits = 6;   // Bits in base distance lookup table
 //   m    Maximum lookup bits, returns actual
 //
 
-static int huft_build(unsigned *b, unsigned n, unsigned s, const unsigned short *d, const unsigned short *e, struct huft **t, int *m)
-{
+static int huft_build(unsigned *b, unsigned n, unsigned s, const unsigned short *d, const unsigned short *e, struct huft **t, int *m) {
   unsigned a;                   // Counter for codes of length k
   unsigned c[BMAX + 1];         // Bit length count table
   unsigned f;                   // i repeats in table every f entries
@@ -411,13 +390,11 @@ static int huft_build(unsigned *b, unsigned n, unsigned s, const unsigned short 
   // Generate counts for each bit length
   memset(c, 0, sizeof(c));
   p = b;  i = n;
-  do 
-  {
+  do {
     c[*p]++;                    // Assume all entries <= BMAX
     p++;
   } while (--i);
-  if (c[0] == n)                // Null input -- all zero length codes
-  {
+  if (c[0] == n) {              // Null input -- all zero length codes
     *t = NULL;
     *m = 0;
     return 0;
@@ -425,26 +402,21 @@ static int huft_build(unsigned *b, unsigned n, unsigned s, const unsigned short 
 
   // Find minimum and maximum length, bound *m by those
   l = *m;
-  for (j = 1; j <= BMAX; j++)
-    if (c[j])
-      break;
+  for (j = 1; j <= BMAX; j++) if (c[j]) break;
 
   k = j;                        // Minimum code length
   if ((unsigned) l < j) l = j;
 
-  for (i = BMAX; i; i--)
-    if (c[i])
-      break;
+  for (i = BMAX; i; i--) if (c[i]) break;
 
   g = i;                        // Maximum code length
   if ((unsigned) l > i) l = i;
   *m = l;
 
   // Adjust last length count to fill out codes, if needed
-  for (y = 1 << j; j < i; j++, y <<= 1)
-    if ((y -= c[j]) < 0)
-      return 2;                 // Bad input: more codes than bits
-
+  for (y = 1 << j; j < i; j++, y <<= 1) {
+    if ((y -= c[j]) < 0) return 2;  // Bad input: more codes than bits
+  }
   if ((y -= c[i]) < 0) return 2;
   c[i] += y;
 
@@ -452,16 +424,15 @@ static int huft_build(unsigned *b, unsigned n, unsigned s, const unsigned short 
   x[1] = j = 0;
   p = c + 1;  
   xp = x + 2;
-  while (--i) 
-  {                 // Note that i == g from above
+  while (--i)  {
+    // Note that i == g from above
     *xp++ = (j += *p++);
   }
 
   // Make a table of values in order of bit lengths
   p = b;  
   i = 0;
-  do 
-  {
+  do {
     if ((j = *p++) != 0) v[x[j]++] = i;
   } while (++i < n);
 
@@ -475,36 +446,30 @@ static int huft_build(unsigned *b, unsigned n, unsigned s, const unsigned short 
   z = 0;                        // Ditto
 
   // Go through the bit lengths (k already is bits in shortest code)
-  for (; k <= g; k++)
-  {
+  for (; k <= g; k++) {
     a = c[k];
-    while (a--)
-    {
+    while (a--) {
       // Here i is the Huffman code of length k bits for value *p
       // make tables up to required level
-      while (k > w + l)
-      {
+      while (k > w + l) {
         h++;
         w += l;                 // Previous table always l bits
 
         // Compute minimum size table less than or equal to l bits
         z = (z = g - w) > (unsigned) l ? l : z;  // Upper limit on table size
-        if ((f = 1 << (j = k - w)) > a + 1)     // Try a k-w bit table
-        {                       // Too few codes for k-w bit table
+        if ((f = 1 << (j = k - w)) > a + 1) {     // Try a k-w bit table
+          // Too few codes for k-w bit table
           f -= a + 1;           // deduct codes from patterns left
           xp = c + k;
-          while (++j < z)       // Try smaller tables up to z bits
-          {
-            if ((f <<= 1) <= *++xp)
-              break;            // Enough codes to use up j bits
+          while (++j < z) {     // Try smaller tables up to z bits
+            if ((f <<= 1) <= *++xp) break;  // Enough codes to use up j bits
             f -= *xp;           // else deduct codes from patterns
           }
         }
         z = 1 << j;             // Table entries for j-bit table
 
         // Allocate and link in new table
-        if ((q = (struct huft *) gzip_malloc((z + 1) * sizeof(struct huft))) == NULL)
-        {
+        if ((q = (struct huft *) gzip_malloc((z + 1) * sizeof(struct huft))) == NULL) {
           if (h) huft_free(u[0]);
           return 3;             // Not enough memory
         }
@@ -514,8 +479,7 @@ static int huft_build(unsigned *b, unsigned n, unsigned s, const unsigned short 
         u[h] = ++q;             // Table starts after link
 
         // Connect to last table, if there is one
-        if (h)
-        {
+        if (h) {
           x[h] = i;                        // Save pattern for backing up
           r.b = (unsigned char) l;         // Bits to dump before this table
           r.e = (unsigned char) (16 + j);  // Bits in this table
@@ -527,16 +491,13 @@ static int huft_build(unsigned *b, unsigned n, unsigned s, const unsigned short 
 
       // Set up table entry in r
       r.b = (unsigned char) (k - w);
-      if (p >= v + n)
+      if (p >= v + n) {
         r.e = 99;               // Out of values -- invalid code
-      else if (*p < s)
-      {
+      } else if (*p < s) {
         r.e = (unsigned char) (*p < 256 ? 16 : 15); // 256 is end-of-block code
         r.v.n = (unsigned short) (*p);              // Simple code is just the value
         p++;
-      }
-      else
-      {
+      } else {
         r.e = (unsigned char) e[*p - s];   // Non-simple -- look up in lists
         r.v.n = d[*p++ - s];
       }
@@ -550,8 +511,7 @@ static int huft_build(unsigned *b, unsigned n, unsigned s, const unsigned short 
       i ^= j;
 
       // Backup over finished tables
-      while ((i & ((1 << w) - 1)) != x[h])
-      {
+      while ((i & ((1 << w) - 1)) != x[h]) {
         h--;                    // Don't need to update q
         w -= l;
       }
@@ -568,14 +528,12 @@ static int huft_build(unsigned *b, unsigned n, unsigned s, const unsigned short 
 // each table.
 //
 
-static int huft_free(struct huft *t)
-{
+static int huft_free(struct huft *t) {
   struct huft *p, *q;
 
   // Go through linked list, freeing from the malloced (t[-1]) address.
   p = t;
-  while (p != NULL)
-  {
+  while (p != NULL) {
     q = (--p)->v.t;
     gzip_free(p);
     p = q;
@@ -594,8 +552,7 @@ static int huft_free(struct huft *t)
 // bd       number of bits decoded by td[]
 //
 
-static int inflate_codes(struct huft *tl, struct huft *td, int bl, int bd)
-{
+static int inflate_codes(struct huft *tl, struct huft *td, int bl, int bd) {
   unsigned e;           // Table entry flag/number of extra bits
   unsigned n, d;        // Length and index for copy
   struct huft *t;       // Pointer to table entry
@@ -613,10 +570,8 @@ static int inflate_codes(struct huft *tl, struct huft *td, int bl, int bd)
   for (;;)                      // Do until end of block
   {
     NEEDBITS((unsigned)bl)
-    if ((e = (t = tl + ((unsigned) b & ml))->e) > 16)
-    {
-      do 
-      {
+    if ((e = (t = tl + ((unsigned) b & ml))->e) > 16) {
+      do {
         if (e == 99) return 1;
         DUMPBITS(t->b)
         e -= 16;
@@ -624,12 +579,10 @@ static int inflate_codes(struct huft *tl, struct huft *td, int bl, int bd)
       } while ((e = (t = t->v.t + ((unsigned) b & mask_bits[e]))->e) > 16);
     }
     DUMPBITS(t->b)
-    if (e == 16)                // Then it's a literal
-    {
+    if (e == 16) {             // Then it's a literal
       putbyte((unsigned char) t->v.n);
-    }
-    else                        // It's an EOB or a length
-    {
+    } else {
+      // It's an EOB or a length
       // Exit if end of block
       if (e == 15) break;
 
@@ -640,10 +593,8 @@ static int inflate_codes(struct huft *tl, struct huft *td, int bl, int bd)
 
       // Decode distance of block to copy
       NEEDBITS((unsigned) bd)
-      if ((e = (t = td + ((unsigned) b & md))->e) > 16)
-      {
-        do 
-        {
+      if ((e = (t = td + ((unsigned) b & md))->e) > 16) {
+        do  {
           if (e == 99) return 1;
           DUMPBITS(t->b)
           e -= 16;
@@ -672,8 +623,7 @@ static int inflate_codes(struct huft *tl, struct huft *td, int bl, int bd)
 // "Decompress" an inflated type 0 (stored) block.
 //
 
-static int inflate_stored()
-{
+static int inflate_stored() {
   unsigned n;           // Number of bytes in block
   unsigned long b;      // Bit buffer
   unsigned k;           // Number of bits in bit buffer
@@ -695,8 +645,7 @@ static int inflate_stored()
   DUMPBITS(16)
 
   // Read and output the compressed data
-  while (n--)
-  {
+  while (n--) {
     NEEDBITS(8)
     putbyte((unsigned char) b);
     DUMPBITS(8)
@@ -715,8 +664,7 @@ static int inflate_stored()
 // Huffman tables.
 //
 
-static int inflate_fixed()
-{
+static int inflate_fixed() {
   int i;                // Temporary variable
   struct huft *tl;      // Literal/length code table
   struct huft *td;      // Distance code table
@@ -736,8 +684,7 @@ static int inflate_fixed()
   // Set up distance table
   for (i = 0; i < 30; i++) l[i] = 5; // Make an incomplete code set
   bd = 5;
-  if ((i = huft_build(l, 30, 0, cpdist, cpdext, &td, &bd)) > 1)
-  {
+  if ((i = huft_build(l, 30, 0, cpdist, cpdext, &td, &bd)) > 1) {
     huft_free(tl);
     return i;
   }
@@ -756,8 +703,7 @@ static int inflate_fixed()
 // Decompress an inflated type 2 (dynamic Huffman codes) block.
 //
 
-static int inflate_dynamic()
-{
+static int inflate_dynamic() {
   int i;                // Temporary variables
   unsigned j;
   unsigned l;           // Last length
@@ -791,8 +737,7 @@ static int inflate_dynamic()
   if (nl > 286 || nd > 30) return 1;     // Bad lengths
 
   // Read in bit-length-code lengths
-  for (j = 0; j < nb; j++)
-  {
+  for (j = 0; j < nb; j++) {
     NEEDBITS(3)
     ll[border[j]] = (unsigned) b & 7;
     DUMPBITS(3)
@@ -801,8 +746,7 @@ static int inflate_dynamic()
 
   // Build decoding table for trees -- single level, 7 bit lookup
   bl = 7;
-  if ((i = huft_build(ll, 19, 19, NULL, NULL, &tl, &bl)) != 0)
-  {
+  if ((i = huft_build(ll, 19, 19, NULL, NULL, &tl, &bl)) != 0) {
     if (i == 1) huft_free(tl);
     return i;                   // Incomplete code set
   }
@@ -811,33 +755,27 @@ static int inflate_dynamic()
   n = nl + nd;
   m = mask_bits[bl];
   i = l = 0;
-  while ((unsigned) i < n)
-  {
+  while ((unsigned) i < n) {
     NEEDBITS((unsigned) bl)
     j = (td = tl + ((unsigned) b & m))->b;
     DUMPBITS(j)
     j = td->v.n;
-    if (j < 16)                 // Length of code in bits (0..15)
+    if (j < 16) {               // Length of code in bits (0..15)
       ll[i++] = l = j;          // Save last length in l
-    else if (j == 16)           // Repeat last length 3 to 6 times
-    {
+    } else if (j == 16) {       // Repeat last length 3 to 6 times
       NEEDBITS(2)
       j = 3 + ((unsigned) b & 3);
       DUMPBITS(2)
       if ((unsigned) i + j > n) return 1;
       while (j--) ll[i++] = l;
-    }
-    else if (j == 17)           // 3 to 10 zero length codes
-    {
+    } else if (j == 17) {       // 3 to 10 zero length codes
       NEEDBITS(3)
       j = 3 + ((unsigned) b & 7);
       DUMPBITS(3)
       if ((unsigned) i + j > n) return 1;
       while (j--) ll[i++] = 0;
       l = 0;
-    }
-    else                        // j == 18: 11 to 138 zero length codes
-    {
+    } else {                        // j == 18: 11 to 138 zero length codes
       NEEDBITS(7)
       j = 11 + ((unsigned) b & 0x7f);
       DUMPBITS(7)
@@ -856,20 +794,16 @@ static int inflate_dynamic()
 
   // Build the decoding tables for literal/length and distance codes
   bl = lbits;
-  if ((i = huft_build(ll, nl, 257, cplens, cplext, &tl, &bl)) != 0)
-  {
-    if (i == 1) 
-    {
+  if ((i = huft_build(ll, nl, 257, cplens, cplext, &tl, &bl)) != 0) {
+    if (i == 1) {
       // Incomplete literal tree
       huft_free(tl);
     }
     return i;                   // Incomplete code set
   }
   bd = dbits;
-  if ((i = huft_build(ll + nl, nd, 0, cpdist, cpdext, &td, &bd)) != 0)
-  {
-    if (i == 1) 
-    {
+  if ((i = huft_build(ll + nl, nd, 0, cpdist, cpdext, &td, &bd)) != 0) {
+    if (i == 1)  {
       // Incomplete distance tree
       huft_free(td);
     }
@@ -893,8 +827,7 @@ static int inflate_dynamic()
 // e      Last block flag
 //
 
-static int inflate_block(int *e)
-{
+static int inflate_block(int *e) {
   unsigned t;           // Block type
   unsigned long b;      // Bit buffer
   unsigned k;           // Number of bits in bit buffer
@@ -930,8 +863,7 @@ static int inflate_block(int *e)
 // Decompress an inflated entry
 //
 
-static int inflate()
-{
+static int inflate() {
   int e;                // Last block flag
   int r;                // Result code
   void *ptr;
@@ -941,11 +873,9 @@ static int inflate()
   bb = 0;
 
   // Decompress until the last block
-  do 
-  {
+  do  {
     gzip_mark(&ptr);
-    if ((r = inflate_block(&e)) != 0) 
-    {
+    if ((r = inflate_block(&e)) != 0) {
       gzip_release(&ptr);           
       return r;
     }
@@ -954,8 +884,7 @@ static int inflate()
 
   // Undo too much lookahead. The next read will be byte aligned so we
   // can discard unused bits in the last meaningful byte.
-  while (bk >= 8) 
-  {
+  while (bk >= 8) {
     bk -= 8;
     ungetbyte();
   }
@@ -971,8 +900,7 @@ static unsigned long crc_32_tab[256];
 // Compute the CRC-32 table
 //
 
-static void initcrctab()
-{
+static void initcrctab() {
   unsigned long c;      // crc shift register
   unsigned long e;      // polynomial exclusive-or pattern
   int i;                // counter for all possible eight bit values
@@ -987,11 +915,9 @@ static void initcrctab()
 
   crc_32_tab[0] = 0;
 
-  for (i = 1; i < 256; i++)
-  {
+  for (i = 1; i < 256; i++) {
     c = 0;
-    for (k = i | 256; k != 1; k >>= 1)
-    {
+    for (k = i | 256; k != 1; k >>= 1) {
       c = c & 1 ? (c >> 1) ^ e : c >> 1;
       if (k & 1) c ^= e;
     }
@@ -1003,14 +929,12 @@ static void initcrctab()
 // Compute CRC for data block
 //
 
-static unsigned long calccrc(char *data, int len)
-{
+static unsigned long calccrc(char *data, int len) {
   unsigned long crc = 0xffffffffL;
   unsigned ch;
   int n;
 
-  for (n = 0; n < len; n++) 
-  {
+  for (n = 0; n < len; n++) {
     ch = *data++;
     crc = crc_32_tab[(crc ^ ch) & 0xff] ^ (crc >> 8);
   }
@@ -1023,8 +947,7 @@ static unsigned long calccrc(char *data, int len)
 // A heap area must be supplied for memory management of the Huffman tables.
 //
 
-int unzip(void *src, unsigned long srclen, void *dst, unsigned long dstlen, char *heap, int heapsize)
-{
+int unzip(void *src, unsigned long srclen, void *dst, unsigned long dstlen, char *heap, int heapsize) {
   unsigned char flags;
   unsigned char magic[2];           // Magic header
   char method;
@@ -1045,8 +968,7 @@ int unzip(void *src, unsigned long srclen, void *dst, unsigned long dstlen, char
   heap_end = heap + heapsize;
 
   // Initialize CRC table
-  if (!crc_tab_initialized)
-  {
+  if (!crc_tab_initialized) {
     initcrctab();
     crc_tab_initialized = 1;
   }
@@ -1076,22 +998,19 @@ int unzip(void *src, unsigned long srclen, void *dst, unsigned long dstlen, char
   getbyte();  // Ignore OS type
 
   // Discard extra field
-  if ((flags & EXTRA_FIELD) != 0) 
-  {
+  if ((flags & EXTRA_FIELD) != 0) {
     unsigned len = (unsigned) getbyte();
     len |= ((unsigned) getbyte()) << 8;
     while (len--) getbyte();
   }
 
   // Discard original file name 
-  if ((flags & ORIG_NAME) != 0) 
-  {
+  if ((flags & ORIG_NAME) != 0) {
     while (getbyte() != 0);
   } 
 
   // Discard file comment if any
-  if ((flags & COMMENT) != 0) 
-  {
+  if ((flags & COMMENT) != 0) {
     while (getbyte() != 0);
   }
 

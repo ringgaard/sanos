@@ -48,14 +48,12 @@
 #ifndef _DIV_T_DEFINED
 #define _DIV_T_DEFINED
 
-typedef struct _div_t 
-{
+typedef struct _div_t {
   int quot;
   int rem;
 } div_t;
 
-typedef struct _ldiv_t 
-{
+typedef struct _ldiv_t {
   long quot;
   long rem;
 } ldiv_t;

@@ -31,13 +31,11 @@
 // Character-class table
 //
 
-static struct cclass 
-{
+static struct cclass {
   char *name;
   char *chars;
   char *multis;
-} cclasses[] = 
-{
+} cclasses[] = {
   {"alnum", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", ""},
   {"alpha", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", ""},
   {"blank", " \t", ""},

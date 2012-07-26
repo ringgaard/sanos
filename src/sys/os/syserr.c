@@ -33,8 +33,7 @@
 
 #include <os.h>
 
-char *sys_errlist[] =
-{
+char *sys_errlist[] = {
   /*  0                 */  "No error",
   /*  1 EPERM           */  "Operation not permitted",
   /*  2 ENOENT          */  "No such file or directory",
@@ -133,12 +132,12 @@ char *sys_errlist[] =
 
 int sys_nerr = sizeof(sys_errlist) / sizeof(sys_errlist[0]);
 
-char *strerror(int errnum)
-{
+char *strerror(int errnum) {
   if (errnum < 0) errnum = -errnum;
 
-  if (errnum >= sys_nerr)
+  if (errnum >= sys_nerr) {
     return "Unknown error";
-  else
+  } else {
     return sys_errlist[errnum];
+  }
 }

@@ -34,20 +34,17 @@
 #include <string.h>
 #include <stdlib.h>
 
-char *get_option(char *opts, char *name, char *buffer, int size, char *defval)
-{
+char *get_option(char *opts, char *name, char *buffer, int size, char *defval) {
   char *eq;
   char *p;
 
-  if (!opts) 
-  {
+  if (!opts) {
     if (!defval) return NULL;
     strncpy(buffer, defval, size);
     return buffer;
   }
 
-  while (*opts)
-  {
+  while (*opts) {
     while (*opts == ' ') opts++;
     p = opts;
     while (*p != 0 && *p != ',') p++;
@@ -55,27 +52,21 @@ char *get_option(char *opts, char *name, char *buffer, int size, char *defval)
     eq = opts;
     while (*eq != 0 && *eq != '=') eq++;
 
-    if (*eq == '=')
-    {
-      if (strncmp(name, opts, eq - opts) == 0)
-      {
+    if (*eq == '=') {
+      if (strncmp(name, opts, eq - opts) == 0) {
         if (!buffer) return eq + 1;
 
-        if (p - (eq + 1) > size)
+        if (p - (eq + 1) > size) {
           strncpy(buffer, eq + 1, size);
-        else
-        {
+        } else {
           memcpy(buffer, eq + 1, p - (eq + 1));
           buffer[p - (eq + 1)] = 0;
         }
 
         return buffer;
       }
-    }
-    else
-    {
-      if (strncmp(name, opts, p - opts) == 0)
-      {
+    } else {
+      if (strncmp(name, opts, p - opts) == 0) {
         if (!buffer) return "";
         *buffer = 0;
         return buffer;
@@ -91,8 +82,7 @@ char *get_option(char *opts, char *name, char *buffer, int size, char *defval)
   return buffer;
 }
 
-int get_num_option(char *opts, char *name, int defval)
-{
+int get_num_option(char *opts, char *name, int defval) {
   char buffer[32];
   char *p;
   int value;
@@ -102,20 +92,19 @@ int get_num_option(char *opts, char *name, int defval)
 
   while (*p == ' ') p++;
   
-  if (p[0] == '0' && p[1] == 'x')
-  {
+  if (p[0] == '0' && p[1] == 'x') {
     p += 2;
     value = 0;
-    while (*p)
-    {
-      if (*p >= '0' && *p <= '9')
+    while (*p) {
+      if (*p >= '0' && *p <= '9') {
         value = (value << 4) | (*p - '0');
-      else if (*p >= 'A' && *p <= 'F')
+      } else if (*p >= 'A' && *p <= 'F') {
         value = (value << 4) | (*p - 'A' + 10);
-      else if (*p >= 'a' && *p <= 'f')
+      } else if (*p >= 'a' && *p <= 'f') {
         value = (value << 4) | (*p - 'a' + 10);
-      else
+      } else {
         return defval;
+      }
 
       p++;
     }

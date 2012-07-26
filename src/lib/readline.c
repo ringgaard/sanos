@@ -59,78 +59,64 @@ static int history_len = 0;
 static char *history[MAX_HISTORY];
 int _break_on_escape = 0;
 
-void add_to_history(char *line)
-{
+void add_to_history(char *line) {
   int i;
 
   if (!line || !*line) return;
   if (history_len > 0 && strcmp(line, history[history_len - 1]) == 0) return;
 
-  if (history_len == MAX_HISTORY)
-  {
+  if (history_len == MAX_HISTORY) {
     free(history[0]);
     for (i = 0; i < history_len - 1; i++) history[i] = history[i + 1];
     history_len--;
   }
 
   history[history_len] = malloc(strlen(line) + 1);
-  if (history[history_len]) 
-  {
+  if (history[history_len]) {
     strcpy(history[history_len], line);
     history_len++;
   }
 }
 
-static int like(char *str, char *mask)
-{
+static int like(char *str, char *mask) {
   if (!str) str = "";
   if (!mask) mask = "";
 
-  while (*mask)
-  {
-    if (*mask == '*')
-    {
+  while (*mask) {
+    if (*mask == '*') {
       while (*mask == '*') mask++;
       if (*mask == 0) return 1;
-      while (*str)
-      {
+      while (*str) {
         if (like(str, mask)) return 1;
         str++;
       }
       return 0;
-    }
-    else if (*mask == *str || *mask == '?' && *str != 0)
-    {
+    } else if (*mask == *str || *mask == '?' && *str != 0) {
       str++;
       mask++;
-    }
-    else
+    } else {
       return 0;
+    }
   }
 
   return *str == 0;
 }
 
-static int delimchar(int ch)
-{
+static int delimchar(int ch) {
   if (ch == ' ' || ch == ',' || ch == ';') return 1;
   return 0;
 }
 
-static int find_dir(char *buf, int start, int end, int split, char *mask)
-{
+static int find_dir(char *buf, int start, int end, int split, char *mask) {
   char path[MAXPATH];
   int wildcards;
   int idx;
   int dir;
   
-  if (start == split)
-  {
+  if (start == split) {
     path[0] = '.';
     path[1] = 0;
-  }
-  else
-  {
+  } else {
     memcpy(path, buf + start, split - start);
     path[split - start] = 0;
   }
@@ -138,16 +124,12 @@ static int find_dir(char *buf, int start, int end, int split, char *mask)
   dir = _opendir(path);
   if (dir < 0) return dir;
 
-  if (split == end)
-  {
+  if (split == end) {
     *mask++ = '*';
-  }
-  else
-  {
+  } else {
     wildcards = 0;
     idx = split;
-    while (idx < end)
-    {
+    while (idx < end) {
       if (buf[idx] == '*' || buf[idx] == '?') wildcards = 1;
       *mask++ = buf[idx++];
     }
@@ -159,15 +141,13 @@ static int find_dir(char *buf, int start, int end, int split, char *mask)
   return dir;
 }
 
-static int getkey()
-{
+static int getkey() {
   int ch;
 
   ch = getchar();
   if (ch < 0) return ch;
 
-  switch (ch)
-  {
+  switch (ch) {
     case 0x08: return KEY_BACKSPACE;
     case 0x09: return KEY_TAB;
     case 0x0D: return gettib()->proc->term->type == TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
@@ -175,13 +155,11 @@ static int getkey()
 
     case 0x1B:
       ch = getchar();
-      switch (ch)
-      {
+      switch (ch) {
         case 0x1B: return KEY_ESC;
         case 0x5B:
           ch = getchar();
-          switch (ch)
-          {
+          switch (ch) {
             case 0x41: return KEY_UP;
             case 0x42: return KEY_DOWN;
             case 0x43: return KEY_RIGHT;
@@ -198,8 +176,7 @@ static int getkey()
     case 0x00:
     case 0xE0:
       ch = getchar();
-      switch (ch)
-      {
+      switch (ch) {
         case 0x47: return KEY_HOME;
         case 0x48: return KEY_UP;
         case 0x4B: return KEY_LEFT;
@@ -220,8 +197,7 @@ static int getkey()
   }
 }
 
-int readline(char *buf, int size)
-{
+int readline(char *buf, int size) {
   int idx;
   int len;
   int key;
@@ -230,8 +206,7 @@ int readline(char *buf, int size)
   int hist_idx;
   int dir;
 
-  if (size <= 0) 
-  {
+  if (size <= 0) {
     errno = EINVAL;
     return -1;
   }
@@ -240,14 +215,12 @@ int readline(char *buf, int size)
   len = 0;
   done = 0;
   hist_idx = history_len;
-  while (!done)
-  {
+  while (!done) {
     fflush(stdout);
     key = getkey();
     if (key < 0) return key;
 
-    if (key == KEY_TAB)
-    {
+    if (key == KEY_TAB) {
       int start;
       int end;
       int split;
@@ -257,34 +230,28 @@ int readline(char *buf, int size)
       start = idx;
       while (start > 0 && !delimchar(buf[start - 1])) start--;
       end = split = start;
-      while (end < len && !delimchar(buf[end]))
-      {
+      while (end < len && !delimchar(buf[end])) {
         if (buf[end] == PS1 || buf[end] == PS2) split = end + 1;
         end++;
       }
 
       dir = find_dir(buf, start, end, split, mask);
-      if (dir >= 0)
-      {
-        while (_readdir(dir, &dirent, 1) > 0)
-        {
+      if (dir >= 0) {
+        while (_readdir(dir, &dirent, 1) > 0) {
           int newlen = len - (end - split) + dirent.namelen;
           
-          if (like(dirent.name, mask) && newlen < size - 1)
-          {
+          if (like(dirent.name, mask) && newlen < size - 1) {
             memmove(buf + split + dirent.namelen, buf + end, len - end);
             memcpy(buf + split, dirent.name, dirent.namelen);
 
             while (idx < split) putchar(buf[idx++]);
-            while (idx > split) 
-            {
+            while (idx > split)  {
               putchar('\b');
               idx--;
             }
 
             for (i = split; i < newlen; i++) putchar(buf[i]);
-            if (newlen < len)
-            {
+            if (newlen < len) {
               for (i = newlen; i < len; i++) putchar(' ');
               for (i = newlen; i < len; i++) putchar('\b');
             }
@@ -306,69 +273,59 @@ int readline(char *buf, int size)
       }
     }
 
-    switch (key)
-    {
+    switch (key) {
       case KEY_LEFT:
-        if (idx > 0)
-        {
+        if (idx > 0) {
           putchar('\b');
           idx--;
         }
         break;
 
       case KEY_RIGHT:
-        if (idx < len)
-        {
+        if (idx < len) {
           putchar(buf[idx]);
           idx++;
         }
         break;
 
       case KEY_CTRL_LEFT:
-        if (idx > 0)
-        {
+        if (idx > 0) {
           putchar('\b');
           idx--;
         }
-        while (idx > 0 && buf[idx - 1] != ' ')
-        {
+        while (idx > 0 && buf[idx - 1] != ' ') {
           putchar('\b');
           idx--;
         }
         break;
 
       case KEY_CTRL_RIGHT:
-        while (idx < len && buf[idx] != ' ')
-        {
+        while (idx < len && buf[idx] != ' ') {
           putchar(buf[idx]);
           idx++;
         }
-        if (idx < len)
-        {
+        if (idx < len) {
           putchar(buf[idx]);
           idx++;
         }
         break;
 
       case KEY_HOME:
-        while (idx > 0)
-        {
+        while (idx > 0) {
           putchar('\b');
           idx--;
         }
         break;
 
       case KEY_END:
-        while (idx < len)
-        {
+        while (idx < len) {
           putchar(buf[idx]);
           idx++;
         }
         break;
 
       case KEY_DEL:
-        if (idx < len)
-        {
+        if (idx < len) {
           len--;
           memmove(buf + idx, buf + idx + 1, len - idx);
           for (i = idx; i < len; i++) putchar(buf[i]);
@@ -383,8 +340,7 @@ int readline(char *buf, int size)
         break;
 
       case KEY_BACKSPACE:
-        if (idx > 0)
-        {
+        if (idx > 0) {
           putchar('\b');
           idx--;
           len--;
@@ -397,13 +353,10 @@ int readline(char *buf, int size)
         break;
 
       case KEY_ESC:
-        if (_break_on_escape)
-        {
+        if (_break_on_escape) {
           buf[len] = 0;
           return -EINTR;
-        }
-        else
-        {
+        } else {
           for (i = 0; i < idx; i++) putchar('\b');
           for (i = 0; i < len; i++) putchar(' ');
           for (i = 0; i < len; i++) putchar('\b');
@@ -418,8 +371,7 @@ int readline(char *buf, int size)
         break;
 
       case KEY_UP:
-        if (hist_idx > 0)
-        {
+        if (hist_idx > 0) {
           hist_idx--;
           for (i = 0; i < idx; i++) putchar('\b');
           for (i = 0; i < len; i++) putchar(' ');
@@ -433,8 +385,7 @@ int readline(char *buf, int size)
         break;
 
       case KEY_DOWN:
-        if (hist_idx < history_len - 1)
-        {
+        if (hist_idx < history_len - 1) {
           hist_idx++;
           for (i = 0; i < idx; i++) putchar('\b');
           for (i = 0; i < len; i++) putchar(' ');
@@ -451,12 +402,9 @@ int readline(char *buf, int size)
         break;
 
       default:
-        if (key >= 0x20 && key <= 0xFF)
-        {
-          if (insmode)
-          {
-            if (len < size - 1)
-            {
+        if (key >= 0x20 && key <= 0xFF) {
+          if (insmode) {
+            if (len < size - 1) {
               if (idx < len) memmove(buf + idx + 1, buf + idx, len - idx);
               buf[idx] = key;
               len++;
@@ -464,11 +412,8 @@ int readline(char *buf, int size)
               idx++;
               for (i = idx; i < len; i++) putchar('\b');
             }
-          }
-          else
-          {
-            if (idx < size - 1)
-            {
+          } else {
+            if (idx < size - 1) {
               buf[idx] = key;
               putchar(buf[idx]);
               if (idx == len) len++;

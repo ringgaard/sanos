@@ -55,8 +55,7 @@
 #define PBUF_FLAG_RO    0x01    // Flags that pbuf data is read-only.
 #define PBUF_FLAG_POOL  0x02    // Flags that the pbuf comes from the pbuf pool.
 
-struct pbuf 
-{
+struct pbuf {
   struct pbuf *next;
   
   unsigned short flags;

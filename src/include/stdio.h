@@ -56,8 +56,7 @@ typedef long fpos_t;
 #define EOF            (-1)
 #define BUFSIZ         512
 
-struct _iobuf 
-{
+struct _iobuf {
   char *ptr;
   int cnt;
   char *base;

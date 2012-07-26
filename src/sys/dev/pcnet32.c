@@ -148,8 +148,7 @@
 
 // Rx and Tx ring descriptors
 
-struct pcnet32_rx_head
-{
+struct pcnet32_rx_head {
   unsigned long buffer;
   short length;
   unsigned short status;
@@ -157,8 +156,7 @@ struct pcnet32_rx_head
   unsigned long reserved;
 };
         
-struct pcnet32_tx_head
-{
+struct pcnet32_tx_head {
   unsigned long buffer;
   short length;
   unsigned short status;
@@ -168,8 +166,7 @@ struct pcnet32_tx_head
 
 // Initialization block
 
-struct pcnet32_init_block
-{
+struct pcnet32_init_block {
   unsigned short mode;
   unsigned short tlen_rlen;
   unsigned char phys_addr[6];
@@ -184,8 +181,7 @@ struct pcnet32_init_block
 
 // PCnet32 access functions
 
-struct pcnet32_access
-{
+struct pcnet32_access {
   unsigned short (*read_csr)(unsigned short, int);
   void (*write_csr)(unsigned short, int, unsigned short);
   unsigned short (*read_bcr)(unsigned short, int);
@@ -195,8 +191,7 @@ struct pcnet32_access
   void (*reset)(unsigned short);
 };
 
-struct pcnet32
-{
+struct pcnet32 {
   struct pcnet32_rx_head rx_ring[RX_RING_SIZE];
   struct pcnet32_tx_head tx_ring[TX_RING_SIZE];
   struct pcnet32_init_block init_block;
@@ -237,8 +232,7 @@ struct pcnet32
 
 struct netstats *netstats;
 
-static void dump_csr(unsigned short csr)
-{
+static void dump_csr(unsigned short csr) {
   kprintf("CRS: ");
   if (csr & CSR_ERR) kprintf(" ERR");
   if (csr & CSR_BABL) kprintf(" BABL");
@@ -259,53 +253,44 @@ static void dump_csr(unsigned short csr)
   kprintf("\n");
 }
 
-static unsigned short pcnet32_wio_read_csr(unsigned short addr, int index)
-{
+static unsigned short pcnet32_wio_read_csr(unsigned short addr, int index) {
   outpw((unsigned short) (addr + PCNET32_WIO_RAP), (unsigned short) index);
   return inpw((unsigned short) (addr + PCNET32_WIO_RDP));
 }
 
-static void pcnet32_wio_write_csr(unsigned short addr, int index, unsigned short val)
-{
+static void pcnet32_wio_write_csr(unsigned short addr, int index, unsigned short val) {
   outpw((unsigned short) (addr + PCNET32_WIO_RAP), (unsigned short) index);
   outpw((unsigned short) (addr + PCNET32_WIO_RDP), val);
 }
 
-static unsigned short pcnet32_wio_read_bcr(unsigned short addr, int index)
-{
+static unsigned short pcnet32_wio_read_bcr(unsigned short addr, int index) {
   outpw((unsigned short) (addr + PCNET32_WIO_RAP), (unsigned short) index);
   return inpw((unsigned short) (addr + PCNET32_WIO_BDP));
 }
 
-static void pcnet32_wio_write_bcr(unsigned short addr, int index, unsigned short val)
-{
+static void pcnet32_wio_write_bcr(unsigned short addr, int index, unsigned short val) {
   outpw((unsigned short) (addr + PCNET32_WIO_RAP), (unsigned short) index);
   outpw((unsigned short) (addr + PCNET32_WIO_BDP), val);
 }
 
-static unsigned short pcnet32_wio_read_rap(unsigned short addr)
-{
+static unsigned short pcnet32_wio_read_rap(unsigned short addr) {
   return inpw((unsigned short) (addr + PCNET32_WIO_RAP));
 }
 
-static void pcnet32_wio_write_rap(unsigned short addr, unsigned short val)
-{
+static void pcnet32_wio_write_rap(unsigned short addr, unsigned short val) {
   outpw((unsigned short) (addr + PCNET32_WIO_RAP), val);
 }
 
-static void pcnet32_wio_reset(unsigned short addr)
-{
+static void pcnet32_wio_reset(unsigned short addr) {
   inpw((unsigned short) (addr + PCNET32_WIO_RESET));
 }
 
-static int pcnet32_wio_check(unsigned short addr)
-{
+static int pcnet32_wio_check(unsigned short addr) {
   outpw((unsigned short) (addr + PCNET32_WIO_RAP), 88);
   return inpw((unsigned short) (addr + PCNET32_WIO_RAP)) == 88;
 }
 
-static struct pcnet32_access pcnet32_wio =
-{
+static struct pcnet32_access pcnet32_wio = {
   pcnet32_wio_read_csr,
   pcnet32_wio_write_csr,
   pcnet32_wio_read_bcr,
@@ -315,53 +300,44 @@ static struct pcnet32_access pcnet32_wio =
   pcnet32_wio_reset
 };
 
-static unsigned short pcnet32_dwio_read_csr(unsigned short addr, int index)
-{
+static unsigned short pcnet32_dwio_read_csr(unsigned short addr, int index) {
   outpd((unsigned short) (addr + PCNET32_DWIO_RAP), index);
   return (unsigned short) (inpd((unsigned short) (addr + PCNET32_DWIO_RDP)) & 0xffff);
 }
 
-static void pcnet32_dwio_write_csr (unsigned short addr, int index, unsigned short val)
-{
+static void pcnet32_dwio_write_csr (unsigned short addr, int index, unsigned short val) {
   outpd((unsigned short) (addr + PCNET32_DWIO_RAP), index);
   outpd((unsigned short) (addr + PCNET32_DWIO_RDP), val);
 }
 
-static unsigned short pcnet32_dwio_read_bcr(unsigned short addr, int index)
-{
+static unsigned short pcnet32_dwio_read_bcr(unsigned short addr, int index) {
   outpd((unsigned short) (addr + PCNET32_DWIO_RAP), index);
   return (unsigned short) inpd((unsigned short) (addr + PCNET32_DWIO_BDP)) & 0xffff;
 }
 
-static void pcnet32_dwio_write_bcr(unsigned short addr, int index, unsigned short val)
-{
+static void pcnet32_dwio_write_bcr(unsigned short addr, int index, unsigned short val) {
   outpd((unsigned short) (addr + PCNET32_DWIO_RAP), index);
   outpd((unsigned short) (addr + PCNET32_DWIO_BDP), val);
 }
 
-static unsigned short pcnet32_dwio_read_rap(unsigned short addr)
-{
+static unsigned short pcnet32_dwio_read_rap(unsigned short addr) {
   return (unsigned short) inpd((unsigned short) (addr + PCNET32_DWIO_RAP)) & 0xffff;
 }
 
-static void pcnet32_dwio_write_rap(unsigned short addr, unsigned short val)
-{
+static void pcnet32_dwio_write_rap(unsigned short addr, unsigned short val) {
   outpd((unsigned short) (addr + PCNET32_DWIO_RAP), val);
 }
 
-static void pcnet32_dwio_reset(unsigned short addr)
-{
+static void pcnet32_dwio_reset(unsigned short addr) {
   inpd((unsigned short) (addr + PCNET32_DWIO_RESET));
 }
 
-static int pcnet32_dwio_check(unsigned short addr)
-{
+static int pcnet32_dwio_check(unsigned short addr) {
   outpd((unsigned short) (addr + PCNET32_DWIO_RAP), 88);
   return inpd((unsigned short) (addr + PCNET32_DWIO_RAP)) == 88;
 }
 
-static struct pcnet32_access pcnet32_dwio =
-{
+static struct pcnet32_access pcnet32_dwio = {
   pcnet32_dwio_read_csr,
   pcnet32_dwio_write_csr,
   pcnet32_dwio_read_bcr,
@@ -371,8 +347,7 @@ static struct pcnet32_access pcnet32_dwio =
   pcnet32_dwio_reset
 };
 
-int pcnet32_transmit(struct dev *dev, struct pbuf *p)
-{
+int pcnet32_transmit(struct dev *dev, struct pbuf *p) {
   struct pcnet32 *pcnet32 = dev->privdata;
   int len;
   int left;
@@ -385,8 +360,7 @@ int pcnet32_transmit(struct dev *dev, struct pbuf *p)
   if (!p || p->len == 0) return -EINVAL;
 
 #ifdef WMWARE
-  if (wait_for_object(&pcnet32->sem_tx, TX_TIMEOUT) < 0)
-  {
+  if (wait_for_object(&pcnet32->sem_tx, TX_TIMEOUT) < 0) {
     kprintf("pcnet32: transmit timeout, drop packet\n");
     netstats->link.drop++;
     return -ETIMEOUT;
@@ -395,12 +369,9 @@ int pcnet32_transmit(struct dev *dev, struct pbuf *p)
   p = pbuf_linearize(PBUF_RAW, p);
 #else
   // Wait for free entries in transmit ring
-  for (q = p; q != NULL; q = q->next)
-  {
-    if (q->len > 0)
-    {
-      if (wait_for_object(&pcnet32->sem_tx, TX_TIMEOUT) < 0)
-      {
+  for (q = p; q != NULL; q = q->next) {
+    if (q->len > 0) {
+      if (wait_for_object(&pcnet32->sem_tx, TX_TIMEOUT) < 0) {
         kprintf("pcnet32: transmit timeout, drop packet\n");
         netstats->link.drop++;
         return -ETIMEOUT;
@@ -414,12 +385,10 @@ int pcnet32_transmit(struct dev *dev, struct pbuf *p)
 
   // Place each part of the packet in the transmit ring
   left = p->tot_len;
-  for (q = p; q != NULL; q = q->next) 
-  {
+  for (q = p; q != NULL; q = q->next) {
     len = q->len;
     left -= len;
-    if (len > 0)
-    {
+    if (len > 0) {
       //kprintf("pcnet32_transmit: sending %d (entry = %d)\n", len, entry);
 
       // Set End of Packet if this is the last part
@@ -446,27 +415,22 @@ int pcnet32_transmit(struct dev *dev, struct pbuf *p)
   return 0;
 }
 
-void pcnet32_receive(struct pcnet32 *pcnet32)
-{
+void pcnet32_receive(struct pcnet32 *pcnet32) {
   int entry = pcnet32->next_rx;
   struct pbuf *p;
 
   //kprintf("pcnet32: receive entry %d, 0x%04X\n", entry, pcnet32->rx_ring[entry].status);
 
-  while (!(pcnet32->rx_ring[entry].status & RMD_OWN))
-  {
+  while (!(pcnet32->rx_ring[entry].status & RMD_OWN)) {
     int status = pcnet32->rx_ring[entry].status >> 8;
 
     //kprintf("receive entry %d, %d\n", entry, status);
 
-    if (status != 0x03)
-    {
+    if (status != 0x03) {
       // Error
       kprintf("pcnet32: rx error\n");
       netstats->link.err++;
-    }
-    else
-    {
+    } else {
       short len = (short) (pcnet32->rx_ring[entry].msg_length & 0xfff) - 4;
       //kprintf("length %d\n", pkt_len);
       
@@ -475,21 +439,17 @@ void pcnet32_receive(struct pcnet32 *pcnet32)
 
       // Allocate new packet for receive ring
       pcnet32->rx_buffer[entry] = pbuf_alloc(PBUF_RAW, ETHER_FRAME_LEN, PBUF_RW);
-      if (pcnet32->rx_buffer[entry])
-      {
+      if (pcnet32->rx_buffer[entry]) {
         // Give ownership back to card
         pcnet32->rx_ring[entry].buffer = virt2phys(pcnet32->rx_buffer[entry]->payload);
         pcnet32->rx_ring[entry].length = -ETHER_FRAME_LEN; // Note 1
         pcnet32->rx_ring[entry].status |= RMD_OWN;
-      }
-      else
-      {
+      } else {
         kprintf(KERN_WARNING "pcnet32: unable to allocate packet for receive ring\n");
         netstats->link.memerr++;
       }
 
-      if (p)
-      {
+      if (p) {
         // Resize packet buffer
         pbuf_realloc(p, len);
 
@@ -504,15 +464,12 @@ void pcnet32_receive(struct pcnet32 *pcnet32)
   }
 }
 
-void pcnet32_transmitted(struct pcnet32 *pcnet32)
-{
+void pcnet32_transmitted(struct pcnet32 *pcnet32) {
   int entry = pcnet32->curr_tx;
   int freed = 0;
 
-  while (pcnet32->size_tx > 0 && (pcnet32->rx_ring[entry].status & TMD_OWN) != 0)
-  {
-    if (pcnet32->tx_buffer[entry])
-    {
+  while (pcnet32->size_tx > 0 && (pcnet32->rx_ring[entry].status & TMD_OWN) != 0) {
+    if (pcnet32->tx_buffer[entry]) {
       pbuf_free(pcnet32->tx_buffer[entry]);
       pcnet32->tx_buffer[entry] = NULL;
     }
@@ -529,14 +486,12 @@ void pcnet32_transmitted(struct pcnet32 *pcnet32)
   release_sem(&pcnet32->sem_tx, freed);
 }
 
-void pcnet32_dpc(void *arg)
-{
+void pcnet32_dpc(void *arg) {
   struct pcnet32 *pcnet32 = (struct pcnet32 *) arg;
   unsigned short iobase = pcnet32->iobase;
   unsigned short csr;
 
-  while ((csr = pcnet32->read_csr(iobase, CSR)) & (CSR_ERR | CSR_RINT | CSR_TINT))
-  {
+  while ((csr = pcnet32->read_csr(iobase, CSR)) & (CSR_ERR | CSR_RINT | CSR_TINT)) {
     // Acknowledge all of the current interrupt sources
     pcnet32->write_csr(iobase, CSR, (unsigned short) (csr & ~(CSR_IENA | CSR_TDMD | CSR_STOP | CSR_STRT | CSR_INIT)));
     //dump_csr(csr);
@@ -556,8 +511,7 @@ void pcnet32_dpc(void *arg)
   eoi(pcnet32->irq);
 }
 
-int pcnet32_handler(struct context *ctxt, void *arg)
-{
+int pcnet32_handler(struct context *ctxt, void *arg) {
   struct pcnet32 *pcnet32 = (struct pcnet32 *) arg;
 
   // Queue DPC to service interrupt
@@ -565,26 +519,22 @@ int pcnet32_handler(struct context *ctxt, void *arg)
   return 0;
 }
 
-int pcnet32_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
+int pcnet32_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
   return -ENOSYS;
 }
 
-int pcnet32_attach(struct dev *dev, struct eth_addr *hwaddr)
-{
+int pcnet32_attach(struct dev *dev, struct eth_addr *hwaddr) {
   struct pcnet32 *pcnet32 = dev->privdata;
   *hwaddr = pcnet32->hwaddr;
 
   return 0;
 }
 
-int pcnet32_detach(struct dev *dev)
-{
+int pcnet32_detach(struct dev *dev) {
   return 0;
 }
 
-struct driver pcnet32_driver =
-{
+struct driver pcnet32_driver = {
   "pcnet32",
   DEV_TYPE_PACKET,
   pcnet32_ioctl,
@@ -595,8 +545,7 @@ struct driver pcnet32_driver =
   pcnet32_transmit
 };
 
-int __declspec(dllexport) install(struct unit *unit)
-{
+int __declspec(dllexport) install(struct unit *unit) {
   struct pcnet32 *pcnet32;
   int version;
   int i;
@@ -626,8 +575,7 @@ int __declspec(dllexport) install(struct unit *unit)
   pcnet32_wio_reset(pcnet32->iobase);
 
   // Setup access functions
-  if (pcnet32_wio_read_csr(pcnet32->iobase, 0) == 4 && pcnet32_wio_check(pcnet32->iobase))
-  {
+  if (pcnet32_wio_read_csr(pcnet32->iobase, 0) == 4 && pcnet32_wio_check(pcnet32->iobase)) {
     pcnet32->read_csr = pcnet32_wio.read_csr;
     pcnet32->write_csr = pcnet32_wio.write_csr;
     pcnet32->read_bcr = pcnet32_wio.read_bcr;
@@ -635,11 +583,8 @@ int __declspec(dllexport) install(struct unit *unit)
     pcnet32->read_rap = pcnet32_wio.read_rap;
     pcnet32->write_rap = pcnet32_wio.write_rap;
     pcnet32->reset = pcnet32_wio.reset;
-  }
-  else
-  {
-    if (pcnet32_dwio_read_csr(pcnet32->iobase, 0) == 4 && pcnet32_dwio_check(pcnet32->iobase))
-    {
+  } else {
+    if (pcnet32_dwio_read_csr(pcnet32->iobase, 0) == 4 && pcnet32_dwio_check(pcnet32->iobase)) {
       pcnet32->read_csr = pcnet32_dwio.read_csr;
       pcnet32->write_csr = pcnet32_dwio.write_csr;
       pcnet32->read_bcr = pcnet32_dwio.read_bcr;
@@ -647,17 +592,16 @@ int __declspec(dllexport) install(struct unit *unit)
       pcnet32->read_rap = pcnet32_dwio.read_rap;
       pcnet32->write_rap = pcnet32_dwio.write_rap;
       pcnet32->reset = pcnet32_dwio.reset;
-    }
-    else
+    } else {
       return -EIO;
+    }
   }
 
   version = pcnet32->read_csr(pcnet32->iobase, CHIP_ID_LOWER) | (pcnet32_wio_read_csr(pcnet32->iobase, CHIP_ID_UPPER) << 16);
   //kprintf("PCnet chip version is %#x.\n", version);
   if ((version & 0xfff) != 0x003) return 0;
   version = (version >> 12) & 0xffff;
-  switch (version)
-  {
+  switch (version) {
     case 0x2420:
       unit->vendorname = "AMD";
       unit->productname = "AMD PCI 79C970";
@@ -731,8 +675,7 @@ int __declspec(dllexport) install(struct unit *unit)
   pcnet32->init_block.tx_ring = pcnet32->phys_addr + offsetof(struct pcnet32, tx_ring);
 
   // Allocate receive ring
-  for (i = 0; i < RX_RING_SIZE; i++)
-  {
+  for (i = 0; i < RX_RING_SIZE; i++) {
     pcnet32->rx_buffer[i] = pbuf_alloc(PBUF_RAW, ETHER_FRAME_LEN, PBUF_RW);
     pcnet32->rx_ring[i].buffer = virt2phys(pcnet32->rx_buffer[i]->payload);
     pcnet32->rx_ring[i].length = (short) -ETHER_FRAME_LEN;
@@ -741,8 +684,7 @@ int __declspec(dllexport) install(struct unit *unit)
   pcnet32->next_rx = 0;
 
   // Initialize transmit ring
-  for (i = 0; i < TX_RING_SIZE; i++)
-  {
+  for (i = 0; i < TX_RING_SIZE; i++) {
     pcnet32->tx_buffer[i] = NULL;
     pcnet32->tx_ring[i].buffer = 0;
     pcnet32->tx_ring[i].status = 0;
@@ -776,8 +718,7 @@ int __declspec(dllexport) install(struct unit *unit)
   pcnet32->write_csr(pcnet32->iobase, 0, CSR_INIT);
 
   i = 0;
-  while (i++ < 100)
-  {
+  while (i++ < 100) {
     if (pcnet32->read_csr(pcnet32->iobase, 0) & CSR_IDON) break;
   }
 
@@ -790,8 +731,7 @@ int __declspec(dllexport) install(struct unit *unit)
   return 0;
 }
 
-int __stdcall start(hmodule_t hmod, int reason, void *reserved2)
-{
+int __stdcall start(hmodule_t hmod, int reason, void *reserved2) {
   netstats = get_netstats();
   return 1;
 }

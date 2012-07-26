@@ -41,8 +41,7 @@ unsigned int irq_mask = 0xFFFB;
 // Set interrupt mask
 //
 
-static void set_intr_mask(unsigned long mask)
-{
+static void set_intr_mask(unsigned long mask) {
   outp(PIC_MSTR_MASK, (unsigned char) mask);
   outp(PIC_SLV_MASK, (unsigned char) (mask >> 8));
 }
@@ -51,8 +50,7 @@ static void set_intr_mask(unsigned long mask)
 // Initialize the 8259 Programmable Interrupt Controller
 //
 
-void init_pic()
-{
+void init_pic() {
   outp(PIC_MSTR_CTRL, PIC_MSTR_ICW1);
   outp(PIC_SLV_CTRL, PIC_SLV_ICW1);
   outp(PIC_MSTR_MASK, PIC_MSTR_ICW2);
@@ -69,8 +67,7 @@ void init_pic()
 // Enable IRQ
 //
 
-void enable_irq(unsigned int irq)
-{
+void enable_irq(unsigned int irq) {
   irq_mask &= ~(1 << irq);
   if (irq >= 8) irq_mask &= ~(1 << 2);
   set_intr_mask(irq_mask);
@@ -80,8 +77,7 @@ void enable_irq(unsigned int irq)
 // Disable IRQ
 //
 
-void disable_irq(unsigned int irq)
-{
+void disable_irq(unsigned int irq) {
   irq_mask |= (1 << irq);
   if ((irq_mask & 0xFF00) == 0xFF00) irq_mask |= (1 << 2);
   set_intr_mask(irq_mask);
@@ -91,12 +87,10 @@ void disable_irq(unsigned int irq)
 // Signal end of interrupt to PIC
 //
 
-void eoi(unsigned int irq)
-{
-  if (irq < 8)
+void eoi(unsigned int irq) {
+  if (irq < 8) {
     outp(PIC_MSTR_CTRL, irq + PIC_EOI_BASE);
-  else
-  {
+  } else {
     outp(PIC_SLV_CTRL, (irq - 8) + PIC_EOI_BASE);
     outp(PIC_MSTR_CTRL, PIC_EOI_CAS);
   }

@@ -43,8 +43,7 @@
 #ifndef _TIMEVAL_DEFINED
 #define _TIMEVAL_DEFINED
 
-struct timeval 
-{
+struct timeval {
   long tv_sec;                  // Seconds
   long tv_usec;                 // Microseconds
 };
@@ -53,8 +52,7 @@ struct timeval
 
 #define RUSAGE_SELF -1
 
-struct rusage
-{
+struct rusage {
   struct timeval ru_utime;      // User time used
   struct timeval ru_stime;      // System time used
 };

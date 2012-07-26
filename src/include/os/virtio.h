@@ -69,8 +69,7 @@
 // Ring descriptors for virtio
 //
 
-struct vring_desc 
-{
+struct vring_desc {
   unsigned __int64 addr;
   unsigned long len;
   unsigned short flags;
@@ -79,30 +78,26 @@ struct vring_desc
 
 #define VRING_AVAIL_F_NO_INTERRUPT 1
 
-struct vring_avail
-{
+struct vring_avail {
   unsigned short flags;
   unsigned short idx;
   unsigned short ring[0];
 };
 
-struct vring_used_elem 
-{
+struct vring_used_elem {
   unsigned long id;
   unsigned long len;
 };
 
 #define VRING_USED_F_NO_NOTIFY 1
 
-struct vring_used 
-{
+struct vring_used {
   unsigned short flags;
   unsigned short idx;
   struct vring_used_elem ring[0];
 };
 
-struct vring 
-{
+struct vring {
   unsigned int size;
   struct vring_desc *desc;
   struct vring_avail *avail;
@@ -117,8 +112,7 @@ struct virtio_device;
 
 typedef int (*virtio_callback_t)(struct virtio_queue *vq);
 
-struct virtio_queue
-{
+struct virtio_queue {
   struct vring vring;           // Ring for storing queue data
   unsigned int num_free;        // Number of free buffers
   unsigned int free_head;       // Head of free buffer list
@@ -136,8 +130,7 @@ struct virtio_queue
 // Virtual I/O device
 //
 
-struct virtio_device
-{
+struct virtio_device {
   struct unit *unit;
   int irq;
   int iobase;
@@ -151,8 +144,7 @@ struct virtio_device
 // Scatter-gather buffer list element
 //
 
-struct scatterlist 
-{
+struct scatterlist {
   void *data;
   int size;
 };

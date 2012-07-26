@@ -144,8 +144,7 @@
 #define VMI_RELOCATION_CALL_REL 1
 #define VMI_RELOCATION_JUMP_REL 2
 
-struct vmi_relocation_info 
-{
+struct vmi_relocation_info {
   unsigned long eip;
   unsigned char type;   
   unsigned char reserved[3];
@@ -202,13 +201,11 @@ struct vmi_relocation_info
 
 #define VROM_CALL_LEN 32
 
-struct vrom_call_slot 
-{
+struct vrom_call_slot {
   char f[VROM_CALL_LEN];
 };
 
-struct vrom_header 
-{
+struct vrom_header {
   unsigned short romSignature;    // option ROM signature
   unsigned char romLength;        // ROM length in 512 byte chunks
   unsigned char romEntry[4];      // 16-bit code entry point
@@ -229,8 +226,7 @@ struct vrom_header
 // State needed to start an application processor in an SMP system
 //
 
-struct vmi_ap_state
-{
+struct vmi_ap_state {
   unsigned long cr0;
   unsigned long cr2;
   unsigned long cr3;

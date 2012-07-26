@@ -39,8 +39,7 @@
 
 #pragma pack(push, 1)
 
-struct udp_hdr 
-{
+struct udp_hdr {
   unsigned short src;          // Source port number 
   unsigned short dest;         // Destination port number
   unsigned short len;          // Length
@@ -53,8 +52,7 @@ struct udp_hdr
 #define UDP_FLAGS_BROADCAST 0x02
 #define UDP_FLAGS_CONNECTED 0x04
 
-struct udp_pcb 
-{
+struct udp_pcb {
   struct udp_pcb *next;
 
   struct ip_addr local_ip, remote_ip;

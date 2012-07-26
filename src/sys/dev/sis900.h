@@ -27,8 +27,7 @@
 
 // Symbolic offsets to registers
 
-enum sis900_registers 
-{
+enum sis900_registers {
   cr     = 0x00,              // Command Register
   cfg    = 0x04,              // Configuration Register
   mear   = 0x08,              // EEPROM Access Register
@@ -51,8 +50,7 @@ enum sis900_registers
 
 // Symbolic names for bits in various registers
 
-enum sis900_command_register_bits 
-{
+enum sis900_command_register_bits {
   RELOAD     = 0x00000400, 
   ACCESSMODE = 0x00000200, // ET
   RESET      = 0x00000100, 
@@ -65,8 +63,7 @@ enum sis900_command_register_bits
   TxENA      = 0x00000001
 };
 
-enum sis900_configuration_register_bits 
-{
+enum sis900_configuration_register_bits {
   DESCRFMT      = 0x00000100 ,
   REQALG        = 0x00000080,
   SB            = 0x00000040, 
@@ -80,8 +77,7 @@ enum sis900_configuration_register_bits
   EDB_MASTER_EN = 0x00002000
 };
 
-enum sis900_eeprom_access_reigster_bits 
-{
+enum sis900_eeprom_access_reigster_bits {
   MDC   = 0x00000040, 
   MDDIR = 0x00000020, 
   MDIO  = 0x00000010,
@@ -91,8 +87,7 @@ enum sis900_eeprom_access_reigster_bits
   EEDI  = 0x00000001
 };
 
-enum sis900_interrupt_register_bits 
-{
+enum sis900_interrupt_register_bits {
   WKEVT      = 0x10000000, 
   TxPAUSEEND = 0x08000000, 
   TxPAUSE    = 0x04000000,
@@ -119,8 +114,7 @@ enum sis900_interrupt_register_bits
   RxOK       = 0x00000001
 };
 
-enum sis900_interrupt_enable_reigster_bits 
-{
+enum sis900_interrupt_enable_reigster_bits {
   IE = 0x00000001
 };
 
@@ -130,8 +124,7 @@ enum sis900_interrupt_enable_reigster_bits
 #define TxMXDMA_shift   20
 #define RxMXDMA_shift   20
 
-enum sis900_tx_rx_dma
-{
+enum sis900_tx_rx_dma {
   DMA_BURST_512 = 0,
   DMA_BURST_64  = 5
 };
@@ -144,8 +137,7 @@ enum sis900_tx_rx_dma
 #define TxDRNT_100       48     // 3/4 FIFO size
 #define TxDRNT_10        16     // 1/2 FIFO size
 
-enum sis900_transmit_config_register_bits 
-{
+enum sis900_transmit_config_register_bits {
   TxCSI   = 0x80000000, 
   TxHBI   = 0x40000000, 
   TxMLB   = 0x20000000,
@@ -161,8 +153,7 @@ enum sis900_transmit_config_register_bits
 #define RxDRNT_100      16      // 1/2 FIFO size
 #define RxDRNT_10       24      // 3/4 FIFO size
 
-enum sis900_reveive_config_register_bits 
-{
+enum sis900_reveive_config_register_bits {
   RxAEP  = 0x80000000, 
   RxARP  = 0x40000000, 
   RxATX  = 0x10000000,
@@ -173,8 +164,7 @@ enum sis900_reveive_config_register_bits
 #define RFAA_shift      28
 #define RFADDR_shift    16
 
-enum sis900_receive_filter_control_register_bits 
-{
+enum sis900_receive_filter_control_register_bits {
   RFEN  = 0x80000000, 
   RFAAB = 0x40000000, 
   RFAAM = 0x20000000,
@@ -182,14 +172,12 @@ enum sis900_receive_filter_control_register_bits
   RFPromiscuous = (RFAAB|RFAAM|RFAAP)
 };
 
-enum sis900_reveive_filter_data_mask 
-{
+enum sis900_reveive_filter_data_mask {
   RFDAT =  0x0000FFFF
 };
 
 // EEPROM Addresses
-enum sis900_eeprom_address 
-{
+enum sis900_eeprom_address {
   EEPROMSignature = 0x00, 
   EEPROMVendorID  = 0x02, 
   EEPROMDeviceID  = 0x03,
@@ -199,8 +187,7 @@ enum sis900_eeprom_address
 
 // The EEPROM commands include the alway-set leading bit. Refer to NM93Cxx datasheet
 
-enum sis900_eeprom_command 
-{
+enum sis900_eeprom_command {
   EEread         = 0x0180, 
   EEwrite        = 0x0140, 
   EEerase        = 0x01C0, 
@@ -214,8 +201,7 @@ enum sis900_eeprom_command
 
 // For SiS962 or SiS963, request the eeprom software access
 
-enum sis96x_eeprom_command 
-{
+enum sis96x_eeprom_command {
   EEREQ  = 0x00000400, 
   EEDONE = 0x00000200, 
   EEGNT  = 0x00000100
@@ -232,8 +218,7 @@ enum sis96x_eeprom_command
 
 // Buffer Descriptor Status
 
-enum sis900_buffer_status 
-{
+enum sis900_buffer_status {
   OWN    = 0x80000000, 
   MORE   = 0x40000000, 
   INTR   = 0x20000000,
@@ -245,8 +230,7 @@ enum sis900_buffer_status
 
 // Status for TX Buffers
 
-enum sis900_tx_buffer_status 
-{
+enum sis900_tx_buffer_status {
   ABORT     = 0x04000000, 
   UNDERRUN  = 0x02000000, 
   NOCARRIER = 0x01000000,
@@ -257,8 +241,7 @@ enum sis900_tx_buffer_status
   COLCNT    = 0x000F0000
 };
 
-enum sis900_rx_bufer_status 
-{
+enum sis900_rx_bufer_status {
   OVERRUN   = 0x02000000, 
   DEST      = 0x00800000,
   BCAST     = 0x01800000,
@@ -275,8 +258,7 @@ enum sis900_rx_bufer_status
 
 // MII register offsets
 
-enum mii_registers 
-{
+enum mii_registers {
   MII_CONTROL = 0x0000, 
   MII_STATUS  = 0x0001, 
   MII_PHY_ID0 = 0x0002,
@@ -288,8 +270,7 @@ enum mii_registers
 
 // MII registers specific to SiS 900
 
-enum sis_mii_registers 
-{
+enum sis_mii_registers {
   MII_CONFIG1 = 0x0010, 
   MII_CONFIG2 = 0x0011, 
   MII_STSOUT  = 0x0012,
@@ -299,8 +280,7 @@ enum sis_mii_registers
 
 // MII registers specific to ICS 1893
 
-enum ics_mii_registers 
-{
+enum ics_mii_registers {
   MII_EXTCTRL  = 0x0010, 
   MII_QPDSTS   = 0x0011, 
   MII_10BTOP   = 0x0012,
@@ -309,15 +289,13 @@ enum ics_mii_registers
 
 // MII registers specific to AMD 79C901
 
-enum amd_mii_registers 
-{
+enum amd_mii_registers {
   MII_STATUS_SUMMARY = 0x0018
 };
 
 // MII Control register bit definitions
 
-enum mii_control_register_bits 
-{
+enum mii_control_register_bits {
   MII_CNTL_FDX      = 0x0100, 
   MII_CNTL_RST_AUTO = 0x0200, 
   MII_CNTL_ISOLATE  = 0x0400, 
@@ -329,8 +307,7 @@ enum mii_control_register_bits
 };
 
 // MII Status register bit
-enum mii_status_register_bits 
-{
+enum mii_status_register_bits {
   MII_STAT_EXT        = 0x0001, 
   MII_STAT_JAB        = 0x0002, 
   MII_STAT_LINK       = 0x0004, 
@@ -352,8 +329,7 @@ enum mii_status_register_bits
 // valid for the ANAR (Auto-Negotiation Advertisement) and
 // ANLPAR (Auto-Negotiation Link Partner) registers
 
-enum mii_nway_register_bits 
-{
+enum mii_nway_register_bits {
   MII_NWAY_NODE_SEL = 0x001f, 
   MII_NWAY_CSMA_CD  = 0x0001,
   MII_NWAY_T        = 0x0020, 
@@ -367,30 +343,26 @@ enum mii_nway_register_bits
   MII_NWAY_NP       = 0x8000
 };
 
-enum mii_stsout_register_bits 
-{
+enum mii_stsout_register_bits {
   MII_STSOUT_LINK_FAIL = 0x4000,
   MII_STSOUT_SPD       = 0x0080, 
   MII_STSOUT_DPLX      = 0x0040
 };
 
-enum mii_stsics_register_bits 
-{
+enum mii_stsics_register_bits {
   MII_STSICS_SPD     = 0x8000, 
   MII_STSICS_DPLX    = 0x4000,
   MII_STSICS_LINKSTS = 0x0001
 };
 
-enum mii_stssum_register_bits 
-{
+enum mii_stssum_register_bits {
   MII_STSSUM_LINK = 0x0008, 
   MII_STSSUM_DPLX = 0x0004,
   MII_STSSUM_AUTO = 0x0002, 
   MII_STSSUM_SPD  = 0x0001
 };
 
-enum sis900_revision_id 
-{
+enum sis900_revision_id {
   SIS630A_900_REV   = 0x80,
   SIS630E_900_REV   = 0x81,
   SIS630S_900_REV   = 0x82,
@@ -401,8 +373,7 @@ enum sis900_revision_id
   SIS900B_900_REV   = 0x03
 };
 
-enum sis630_revision_id 
-{
+enum sis630_revision_id {
   SIS630A0    = 0x00, 
   SIS630A1    = 0x01,
   SIS630B0    = 0x10, 

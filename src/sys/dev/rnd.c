@@ -55,14 +55,12 @@
 // get the twisting happening as fast as possible.
 //
 
-struct poolinfo 
-{
+struct poolinfo  {
   int poolwords;
   int tap1, tap2, tap3, tap4, tap5;
 };
 
-static struct poolinfo poolinfo_table[] = 
-{
+static struct poolinfo poolinfo_table[] =  {
   // x^2048 + x^1638 + x^1231 + x^819 + x^411 + x + 1  -- 115
   {2048, 1638, 1231, 819,  411,  1},
 
@@ -95,13 +93,11 @@ static struct poolinfo poolinfo_table[] =
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))
 #endif
 
-__inline static unsigned long rotate_left(int i, unsigned long word)
-{
+__inline static unsigned long rotate_left(int i, unsigned long word) {
   return (word << i) | (word >> (32 - i));
 }
 
-__inline static unsigned long int_ln_12bits(unsigned long word)
-{
+__inline static unsigned long int_ln_12bits(unsigned long word) {
   // Smear msbit right to make an n-bit mask
   word |= word >> 8;
   word |= word >> 4;
@@ -124,15 +120,13 @@ __inline static unsigned long int_ln_12bits(unsigned long word)
 // storing entropy in an entropy pool.
 //
 
-struct rand_pool_info 
-{
+struct rand_pool_info  {
   int entropy_count;
   int buf_size;
   unsigned long buf[0];
 };
 
-struct entropy_store 
-{
+struct entropy_store  {
   unsigned add_ptr;
   int entropy_count;
   int input_rotate;
@@ -152,8 +146,7 @@ static struct event random_read_ready;
 // Returns an negative error if there is a problem.
 //
 
-static int create_entropy_store(int size, struct entropy_store **retval)
-{
+static int create_entropy_store(int size, struct entropy_store **retval) {
   struct  entropy_store *r;
   struct  poolinfo  *p;
   int poolwords;
@@ -163,8 +156,7 @@ static int create_entropy_store(int size, struct entropy_store **retval)
   // The pool size must be a multiple of 16 32-bit words
   poolwords = ((poolwords + 15) / 16) * 16; 
 
-  for (p = poolinfo_table; p->poolwords; p++) 
-  {
+  for (p = poolinfo_table; p->poolwords; p++) {
     if (poolwords == p->poolwords) break;
   }
   if (p->poolwords == 0) return -EINVAL;
@@ -176,8 +168,7 @@ static int create_entropy_store(int size, struct entropy_store **retval)
   r->poolinfo = *p;
 
   r->pool = kmalloc(poolwords * 4);
-  if (!r->pool) 
-  {
+  if (!r->pool) {
     kfree(r);
     return -ENOMEM;
   }
@@ -191,8 +182,7 @@ static int create_entropy_store(int size, struct entropy_store **retval)
 // Clear the entropy pool and associated counters.
 //
 
-static void clear_entropy_store(struct entropy_store *r)
-{
+static void clear_entropy_store(struct entropy_store *r) {
   r->add_ptr = 0;
   r->entropy_count = 0;
   r->input_rotate = 0;
@@ -200,8 +190,7 @@ static void clear_entropy_store(struct entropy_store *r)
   memset(r->pool, 0, r->poolinfo.poolwords * 4);
 }
 
-static void free_entropy_store(struct entropy_store *r)
-{
+static void free_entropy_store(struct entropy_store *r) {
   if (r->pool) kfree(r->pool);
   kfree(r);
 }
@@ -217,10 +206,8 @@ static void free_entropy_store(struct entropy_store *r)
 // the entropy is concentrated in the low-order bits.
 //
 
-static void add_entropy_words(struct entropy_store *r, const unsigned long *in, int num)
-{
-  static unsigned long const twist_table[8] = 
-  {
+static void add_entropy_words(struct entropy_store *r, const unsigned long *in, int num) {
+  static unsigned long const twist_table[8] = {
     0x00000000, 0x3b6e20c8, 0x76dc4190, 0x4db26158,
     0xedb88320, 0xd6d6a3e8, 0x9b64c2b0, 0xa00ae278 
   };
@@ -229,8 +216,7 @@ static void add_entropy_words(struct entropy_store *r, const unsigned long *in, 
   int new_rotate;
   unsigned long w;
 
-  while (num--) 
-  {
+  while (num--) {
     w = rotate_left(r->input_rotate, *in);
     i = r->add_ptr = (r->add_ptr - 1) & (r->poolinfo.poolwords - 1);
 
@@ -260,16 +246,16 @@ static void add_entropy_words(struct entropy_store *r, const unsigned long *in, 
 // Credit (or debit) the entropy store with n bits of entropy
 //
 
-static void credit_entropy_store(struct entropy_store *r, int num)
-{
+static void credit_entropy_store(struct entropy_store *r, int num) {
   int max_entropy = r->poolinfo.poolwords * 32;
 
-  if (r->entropy_count + num < 0)
+  if (r->entropy_count + num < 0) {
     r->entropy_count = 0;
-  else if (r->entropy_count + num > max_entropy)
+  } else if (r->entropy_count + num > max_entropy) {
     r->entropy_count = max_entropy;
-  else
+  } else {
     r->entropy_count = r->entropy_count + num;
+  }
 }
 
 //
@@ -288,15 +274,13 @@ static void batch_entropy_process(void *arg);
 
 // Note: the size must be a power of 2
 
-static int batch_entropy_init(int size)
-{
+static int batch_entropy_init(int size) {
   init_task(&batch_task);
 
   batch_entropy_pool = kmalloc(2 * size * sizeof(unsigned long));
   if (!batch_entropy_pool) return -ENOMEM;
   batch_entropy_credit = kmalloc(size * sizeof(int));
-  if (!batch_entropy_credit) 
-  {
+  if (!batch_entropy_credit) {
     kfree(batch_entropy_pool);
     return -ENOMEM;
   }
@@ -308,8 +292,7 @@ static int batch_entropy_init(int size)
   return 0;
 }
 
-void batch_entropy_store(unsigned long a, unsigned long b, int num)
-{
+void batch_entropy_store(unsigned long a, unsigned long b, int num) {
   int batch_new;
 
   if (!batch_max) return;
@@ -322,19 +305,15 @@ void batch_entropy_store(unsigned long a, unsigned long b, int num)
 
   batch_new = (batch_head + 1) & (batch_max - 1);
 
-  if (batch_new != batch_tail) 
-  {
+  if (batch_new != batch_tail) {
     //queue_task(NULL, &batch_task, batch_entropy_process, NULL);
     batch_head = batch_new;
-  } 
-  else 
-  {
+  } else {
     //kprintf("random: batch entropy buffer full\n");
   }
 }
 
-static void batch_entropy_process(void *arg)
-{
+static void batch_entropy_process(void *arg) {
   int num = 0;
   int max_entropy;
   struct entropy_store *r = random_state;
@@ -346,8 +325,7 @@ static void batch_entropy_process(void *arg)
   //kprintf("batch entropy task start\n");
 
   max_entropy = r->poolinfo.poolwords * 32;
-  while (batch_head != batch_tail)
-  {
+  while (batch_head != batch_tail) {
     if (!system_idle()) break;
     add_entropy_words(r, batch_entropy_pool + 2 * batch_tail, 2);
     p = r;
@@ -366,8 +344,7 @@ static void batch_entropy_process(void *arg)
 // Entropy input management
 //
 
-struct timer_rand_state 
-{
+struct timer_rand_state  {
   unsigned long last_time;
   long last_delta, last_delta2;
   int dont_count_entropy;
@@ -385,16 +362,16 @@ static struct timer_rand_state dpc_timer_state;
 // the type of event which just happened.
 //
 
-static void add_timer_randomness(struct timer_rand_state *state, unsigned long num)
-{
+static void add_timer_randomness(struct timer_rand_state *state, unsigned long num) {
   unsigned long time;
   long delta, delta2, delta3;
   int entropy = 0;
 
-  if (cpu.features & CPU_FEATURE_TSC)
+  if (cpu.features & CPU_FEATURE_TSC) {
     time = (unsigned long) rdtsc();
-  else 
+  } else {
     time = ticks;
+  }
 
   //
   // Calculate number of bits of randomness we probably added.
@@ -402,8 +379,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned long n
   // in order to make our estimate.
   //
 
-  if (!state->dont_count_entropy) 
-  {
+  if (!state->dont_count_entropy) {
     delta = time - state->last_time;
     state->last_time = time;
 
@@ -434,8 +410,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned long n
   batch_entropy_store(num, time, entropy);
 }
 
-void add_dpc_randomness(void *dpc)
-{
+void add_dpc_randomness(void *dpc) {
   add_timer_randomness(&dpc_timer_state, (unsigned long) dpc);
 }
 
@@ -469,8 +444,7 @@ void add_dpc_randomness(void *dpc)
 // the data and converts bytes into longwords for this routine.
 //
 
-static void MD5Transform(unsigned long buf[HASH_BUFFER_SIZE], unsigned long const in[16])
-{
+static void MD5Transform(unsigned long buf[HASH_BUFFER_SIZE], unsigned long const in[16]) {
   unsigned long a, b, c, d;
 
   a = buf[0];
@@ -578,19 +552,16 @@ static int extract_entropy(struct entropy_store *r, void *buf, size_t nbytes, in
 // at which point we do a "catastrophic reseeding".
 //
 
-static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
-{
+static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes) {
   unsigned long tmp[TMP_BUF_SIZE];
 
-  if (r->entropy_count < (int) nbytes * 8) 
-  {
+  if (r->entropy_count < (int) nbytes * 8) {
     extract_entropy(random_state, tmp, sizeof(tmp), 0);
     add_entropy_words(r, tmp, TMP_BUF_SIZE);
     credit_entropy_store(r, TMP_BUF_SIZE * 8);
   }
   
-  if (r->extract_count > 1024) 
-  {
+  if (r->extract_count > 1024) {
     extract_entropy(random_state, tmp, sizeof(tmp), 0);
     add_entropy_words(r, tmp, TMP_BUF_SIZE);
     r->extract_count = 0;
@@ -606,8 +577,7 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
 // Note: extract_entropy() assumes that POOLWORDS is a multiple of 16 words.
 //
 
-static int extract_entropy(struct entropy_store *r, void *buf, size_t nbytes, int flags)
-{
+static int extract_entropy(struct entropy_store *r, void *buf, size_t nbytes, int flags) {
   int ret, i;
   unsigned long tmp[TMP_BUF_SIZE];
   unsigned long x;
@@ -620,18 +590,17 @@ static int extract_entropy(struct entropy_store *r, void *buf, size_t nbytes, in
 
   if (flags & EXTRACT_ENTROPY_SECONDARY) xfer_secondary_pool(r, nbytes);
 
-  if (r->entropy_count / 8 >= (int) nbytes)
+  if (r->entropy_count / 8 >= (int) nbytes) {
     r->entropy_count -= nbytes * 8;
-  else
+  } else {
     r->entropy_count = 0;
-
+  }
   //if (r->entropy_count < 128) set_event(&random_write_ready);
 
   r->extract_count += nbytes;
   
   ret = 0;
-  while (nbytes) 
-  {
+  while (nbytes) {
     // Hash the pool to get the output
     tmp[0] = 0x67452301;
     tmp[1] = 0xefcdab89;
@@ -647,8 +616,7 @@ static int extract_entropy(struct entropy_store *r, void *buf, size_t nbytes, in
     // function can be inverted.
     //
 
-    for (i = 0, x = 0; i < r->poolinfo.poolwords; i += 16, x += 2) 
-    {
+    for (i = 0, x = 0; i < r->poolinfo.poolwords; i += 16, x += 2) {
       HASH_TRANSFORM(tmp, r->pool + i);
       add_entropy_words(r, &tmp[x % HASH_BUFFER_SIZE], 1);
     }
@@ -658,8 +626,9 @@ static int extract_entropy(struct entropy_store *r, void *buf, size_t nbytes, in
     // output pattern, we fold it in half.
     //
 
-    for (i = 0; i <  HASH_BUFFER_SIZE / 2; i++)
+    for (i = 0; i <  HASH_BUFFER_SIZE / 2; i++) {
       tmp[i] ^= tmp[i + (HASH_BUFFER_SIZE + 1) / 2];
+     }
 
 #if HASH_BUFFER_SIZE & 1  
     // There's a middle word to deal with
@@ -690,20 +659,18 @@ static int extract_entropy(struct entropy_store *r, void *buf, size_t nbytes, in
 // numbers, etc.
 //
 
-void get_random_bytes(void *buf, int nbytes)
-{
-  if (sec_random_state)  
+void get_random_bytes(void *buf, int nbytes) {
+  if (sec_random_state) {
     extract_entropy(sec_random_state, (char *) buf, nbytes, EXTRACT_ENTROPY_SECONDARY);
-  else if (random_state)
+  } else if (random_state) {
     extract_entropy(random_state, (char *) buf, nbytes, 0);
-  else
+  } else {
     kprintf("random: get_random_bytes() called before random driver initialization\n");
+  }
 }
 
-static int random_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
-  switch (cmd)
-  {
+static int random_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
+  switch (cmd) {
     case IOCTL_GETDEVSIZE:
       return 0;
 
@@ -714,13 +681,11 @@ static int random_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int random_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int random_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   int n;
   
   if (count == 0) return 0;
-  while (1)
-  {
+  while (1) {
     n = count;
     if (n > SEC_XFER_SIZE) n = SEC_XFER_SIZE;
     if (n > random_state->entropy_count / 8) n = random_state->entropy_count / 8;
@@ -734,13 +699,11 @@ static int random_read(struct dev *dev, void *buffer, size_t count, blkno_t blkn
   return extract_entropy(sec_random_state, buffer, n, EXTRACT_ENTROPY_USER | EXTRACT_ENTROPY_SECONDARY);
 }
 
-static int urandom_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int urandom_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   return extract_entropy(sec_random_state, buffer, count, EXTRACT_ENTROPY_USER | EXTRACT_ENTROPY_SECONDARY);
 }
 
-static int random_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int random_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   int words;
 
   words = count / sizeof(unsigned long);
@@ -748,8 +711,7 @@ static int random_write(struct dev *dev, void *buffer, size_t count, blkno_t blk
   return words * sizeof(unsigned long);
 }
 
-struct driver random_driver =
-{
+struct driver random_driver = {
   "random",
   DEV_TYPE_STREAM,
   random_ioctl,
@@ -757,8 +719,7 @@ struct driver random_driver =
   random_write
 };
 
-struct driver urandom_driver =
-{
+struct driver urandom_driver = {
   "urandom",
   DEV_TYPE_STREAM,
   random_ioctl,
@@ -766,8 +727,7 @@ struct driver urandom_driver =
   random_write
 };
 
-static void init_std_data(struct entropy_store *r)
-{
+static void init_std_data(struct entropy_store *r) {
   unsigned long words[2];
 
   words[0] = systemclock.tv_sec;
@@ -775,8 +735,7 @@ static void init_std_data(struct entropy_store *r)
   add_entropy_words(r, words, 2);
 }
 
-int __declspec(dllexport) random()
-{
+int __declspec(dllexport) random() {
   int rc;
 
   init_event(&random_read_ready, 1, 0);

@@ -45,8 +45,7 @@
 #ifndef _TM_DEFINED
 #define _TM_DEFINED
 
-struct tm
-{
+struct tm {
   int tm_sec;                   // Seconds after the minute [0, 59]
   int tm_min;                   // Minutes after the hour [0, 59]
   int tm_hour;                  // Hours since midnight [0, 23]
@@ -65,8 +64,7 @@ struct tm
 #ifndef _TIMEVAL_DEFINED
 #define _TIMEVAL_DEFINED
 
-struct timeval 
-{
+struct timeval {
   long tv_sec;                  // Seconds
   long tv_usec;                 // Microseconds
 };
@@ -76,8 +74,7 @@ struct timeval
 #ifndef _TIMEZONE_DEFINED
 #define _TIMEZONE_DEFINED
 
-struct timezone 
-{
+struct timezone {
   int tz_minuteswest;           // Minutes west of Greenwich
   int tz_dsttime;               // Type of daylight saving correction
 };

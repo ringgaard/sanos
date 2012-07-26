@@ -42,23 +42,19 @@ extern struct critsect env_lock;
 // of the form NAME=VALUE.
 //
 
-char ***_environ()
-{
+char ***_environ() {
   return &gettib()->proc->env;
 }
 
-static char *findenv(char **env, const char *name, int *offset)
-{
+static char *findenv(char **env, const char *name, int *offset) {
   int i;
   int len;
 
   if (!env || !name) return NULL;
 
   len = strlen(name);
-  for (i = 0; env[i]; i++)
-  {
-    if (strncmp(env[i], name, len) == 0 && env[i][len] == '=')
-    {
+  for (i = 0; env[i]; i++) {
+    if (strncmp(env[i], name, len) == 0 && env[i][len] == '=') {
       if (offset) *offset = i;
       return env[i] + len + 1;
     }
@@ -67,8 +63,7 @@ static char *findenv(char **env, const char *name, int *offset)
   return NULL;
 }
 
-char **copyenv(char **env)
-{
+char **copyenv(char **env) {
   int n;
   char **newenv;
 
@@ -77,8 +72,7 @@ char **copyenv(char **env)
   enter(&env_lock);
   for (n = 0; env[n]; n++);
   newenv = (char **) malloc((n + 1) * sizeof(char *));
-  if (newenv)
-  {
+  if (newenv) {
     newenv[n] = NULL;
     for (n = 0; env[n]; n++) newenv[n] = strdup(env[n]);
   }
@@ -87,8 +81,7 @@ char **copyenv(char **env)
   return newenv;
 }
 
-void freeenv(char **env)
-{
+void freeenv(char **env) {
   int n;
   
   if (!env) return;
@@ -98,8 +91,7 @@ void freeenv(char **env)
   leave(&env_lock);
 }
 
-char **initenv(struct section *sect)
-{
+char **initenv(struct section *sect) {
   int n;
   char **env;
   struct property *prop;
@@ -110,13 +102,11 @@ char **initenv(struct section *sect)
   if (!env) return NULL;
   env[n] = NULL;
 
-  for (n = 0, prop = sect->properties; prop; n++, prop = prop->next)
-  {
+  for (n = 0, prop = sect->properties; prop; n++, prop = prop->next) {
     int len = strlen(prop->name) + 1;
     if (prop->value) len += strlen(prop->value);
     env[n] = (char *) malloc(len + 1);
-    if (env[n])
-    {
+    if (env[n]) {
       strcpy(env[n], prop->name);
       strcat(env[n], "=");
       if (prop->value) strcat(env[n], prop->value);
@@ -126,8 +116,7 @@ char **initenv(struct section *sect)
   return env;
 }
 
-char *getenv(const char *name)
-{
+char *getenv(const char *name) {
   char *value;
 
   enter(&env_lock);
@@ -137,23 +126,20 @@ char *getenv(const char *name)
   return value;
 }
 
-int setenv(const char *name, const char *value, int rewrite)
-{
+int setenv(const char *name, const char *value, int rewrite) {
   char **env;
   char *p;
   char *buf;
   int offset;
   size_t len;
 
-  if (!name)
-  {
+  if (!name) {
     errno = EINVAL;
     return 0;
   }
 
   for (p = (char *) name; *p && *p != '='; p++);
-  if (*p == '=')
-  {
+  if (*p == '=') {
     errno = EINVAL;
     return 0;
   }
@@ -164,30 +150,24 @@ int setenv(const char *name, const char *value, int rewrite)
   env = environ;
 
   len = strlen(value);
-  if ((p = findenv(env, name, &offset)))
-  {
-    if (!rewrite)
-    {
+  if ((p = findenv(env, name, &offset))) {
+    if (!rewrite) {
       leave(&env_lock);
       return 0;
     }
 
-    if (strlen(p) >= len)
-    {                   
+    if (strlen(p) >= len) {
       // Old value is larger; copy over
       while ((*p++ = *value++) != 0);
       leave(&env_lock);
       return 0;
     }
-  }
-  else
-  {
+  } else {
     int n;
 
     for (n = 0; env && env[n]; n++);
     env = (char **) realloc(env, (n + 2) * sizeof(char *));
-    if (!env)
-    {
+    if (!env) {
       leave(&env_lock);
       return -1;
     }
@@ -197,8 +177,7 @@ int setenv(const char *name, const char *value, int rewrite)
   }
 
   buf = (char *) malloc(strlen(name) + len + 2);
-  if (!buf)
-  {
+  if (!buf) {
     leave(&env_lock);
     return -1;
   }
@@ -216,8 +195,7 @@ int setenv(const char *name, const char *value, int rewrite)
   return 0;
 }
 
-void unsetenv(const char *name)
-{
+void unsetenv(const char *name) {
   char **p;
   char **env;
   int offset;
@@ -225,31 +203,26 @@ void unsetenv(const char *name)
   enter(&env_lock);
   env = environ;
   
-  while (findenv(env, name, &offset))
-  {
-    for (p = &(env[offset]);; p++)
-      if (!(*p = *(p + 1)))
-        break;
+  while (findenv(env, name, &offset)) {
+    for (p = &(env[offset]);; p++) {
+      if (!(*p = *(p + 1))) break;
+    }
   }
 
   leave(&env_lock);
 }
 
-int putenv(const char *str)
-{
+int putenv(const char *str) {
   char *p, *equal;
   int rc;
 
   p = strdup(str);
   if (!p) return 1;
 
-  if ((equal = strchr(p, '=')))
-  {
+  if ((equal = strchr(p, '='))) {
     *equal = '\0';
     rc = setenv(p, equal + 1, 1);
-  }
-  else
-  {
+  } else {
     unsetenv(p);
     rc = 0;
   }

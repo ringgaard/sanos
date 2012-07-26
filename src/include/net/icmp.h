@@ -66,23 +66,20 @@ void icmp_time_exceeded(struct pbuf *p, int t);
 
 #pragma pack(push, 1)
 
-struct icmp_echo_hdr 
-{
+struct icmp_echo_hdr {
   unsigned short _type_code;
   unsigned short chksum;
   unsigned short id;
   unsigned short seqno;
 };
 
-struct icmp_dur_hdr 
-{
+struct icmp_dur_hdr {
   unsigned short _type_code;
   unsigned short chksum;
   unsigned long unused;
 };
 
-struct icmp_te_hdr 
-{
+struct icmp_te_hdr {
   unsigned short _type_code;
   unsigned short chksum;
   unsigned long unused;
@@ -97,4 +94,3 @@ struct icmp_te_hdr
 #define ICMPH_CODE_SET(hdr, code) ((hdr)->_type_code = HTONS((code) | (ICMPH_TYPE(hdr) << 8)))
 
 #endif
-          

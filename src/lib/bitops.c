@@ -33,14 +33,12 @@
 
 #include <bitops.h>
 
-int find_first_zero_bit(void *bitmap, int len)
-{
+int find_first_zero_bit(void *bitmap, int len) {
   int result;
 
   if (!len) return 0;
 
-  __asm
-  {
+  __asm {
     mov ebx, bitmap
     mov edi, ebx
     mov ecx, len
@@ -65,20 +63,17 @@ ffzb1:
   return result;
 }
 
-int find_next_zero_bit(void *bitmap, int len, int start)
-{
+int find_next_zero_bit(void *bitmap, int len, int start) {
   unsigned long *p = ((unsigned long *) bitmap) + (start >> 5);
   int set = 0;
   int bit = start & 31;
   int result;
 
   if (start >= len) return len;
-  if (bit) 
-  {
+  if (bit) {
     unsigned long mask = ~(*p >> bit);
 
-    __asm
-    {
+    __asm {
       mov eax, mask
       bsf edx, eax
       jne fnzb1

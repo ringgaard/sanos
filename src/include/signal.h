@@ -107,8 +107,7 @@ struct context;
 #ifndef _SIGINFO_T_DEFINED
 #define _SIGINFO_T_DEFINED
 
-struct siginfo 
-{
+struct siginfo {
   int si_signo;
   int si_code;
 
@@ -123,10 +122,8 @@ typedef struct siginfo siginfo_t;
 #ifndef _SIGACTION_DEFINED
 #define _SIGACTION_DEFINED
 
-struct sigaction 
-{
-  union
-  {
+struct sigaction {
+  union {
     void (*sa_handler)(int signum);
     void (*sa_sigaction)(int signum, siginfo_t *info, void *context);
   };

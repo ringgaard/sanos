@@ -71,8 +71,7 @@
 #ifndef _TM_DEFINED
 #define _TM_DEFINED
 
-struct tm
-{
+struct tm {
   int tm_sec;                   // Seconds after the minute [0, 59]
   int tm_min;                   // Minutes after the hour [0, 59]
   int tm_hour;                  // Hours since midnight [0, 23]
@@ -91,8 +90,7 @@ struct tm
 #ifndef _TIMEVAL_DEFINED
 #define _TIMEVAL_DEFINED
 
-struct timeval 
-{
+struct timeval {
   long tv_sec;                  // Seconds
   long tv_usec;                 // Microseconds
 };
@@ -529,8 +527,7 @@ struct section;
 #ifndef _CONTEXT_DEFINED
 #define _CONTEXT_DEFINED
 
-struct context
-{
+struct context {
   unsigned long es, ds;
   unsigned long edi, esi, ebp, ebx, edx, ecx, eax;
   unsigned long traptype;
@@ -559,8 +556,7 @@ typedef void (*sighandler_t)(int signum);
 #ifndef _SIGINFO_T_DEFINED
 #define _SIGINFO_T_DEFINED
 
-struct siginfo 
-{
+struct siginfo  {
   int si_signo;
   int si_code;
 
@@ -575,10 +571,8 @@ typedef struct siginfo siginfo_t;
 #ifndef _SIGACTION_DEFINED
 #define _SIGACTION_DEFINED
 
-struct sigaction 
-{
-  union
-  {
+struct sigaction  {
+  union {
     void (*sa_handler)(int signum);
     void (*sa_sigaction)(int signum, siginfo_t *info, void *context);
   };
@@ -620,8 +614,7 @@ struct sigaction
 // Critical sections
 //
 
-struct critsect
-{
+struct critsect {
   long count;
   long recursion;
   tid_t owner;
@@ -646,8 +639,7 @@ typedef struct critsect *critsect_t;
 #ifndef _STAT_DEFINED
 #define _STAT_DEFINED
 
-struct stat
-{
+struct stat {
   dev_t st_dev;
   ino_t st_ino;
   mode_t st_mode;
@@ -661,8 +653,7 @@ struct stat
   time_t st_ctime;
 };
 
-struct stat64
-{
+struct stat64 {
   dev_t st_dev;
   ino_t st_ino;
   mode_t st_mode;
@@ -678,8 +669,7 @@ struct stat64
 
 #endif
 
-struct statfs 
-{
+struct statfs  {
   unsigned int bsize;        // Fundamental file system block size
   unsigned int iosize;       // Optimal transfer block size
   unsigned int blocks;       // Total data blocks in file system
@@ -692,8 +682,7 @@ struct statfs
   char mntfrom[MAXPATH];     // Mounted file system
 };
 
-struct direntry
-{
+struct direntry {
   ino_t ino;
   unsigned int reclen;
   unsigned int namelen;
@@ -703,8 +692,7 @@ struct direntry
 #ifndef _UTIMBUF_DEFINED
 #define _UTIMBUF_DEFINED
 
-struct utimbuf 
-{
+struct utimbuf  {
   time_t modtime;
   time_t actime;
   time_t ctime;
@@ -715,8 +703,7 @@ struct utimbuf
 #ifndef _IOVEC_DEFINED
 #define _IOVEC_DEFINED
 
-struct iovec 
-{ 
+struct iovec { 
   size_t iov_len;
   void *iov_base;
 };
@@ -753,8 +740,7 @@ struct iovec
 #define MODEMSTAT_DSR              0x20
 #define MODEMSTAT_CTS              0x10
 
-struct serial_config
-{
+struct serial_config {
   int speed;                             // Baud rate
   int databits;                          // Number of data bits
   int parity;                            // Parity type
@@ -763,8 +749,7 @@ struct serial_config
   unsigned int tx_timeout;               // Transmit timeout
 };
 
-struct serial_status
-{
+struct serial_status {
   int linestatus;                        // Line status
   int modemstatus;                       // Modem status
   int rx_queue_size;                     // Number of bytes in receive queue
@@ -821,10 +806,8 @@ struct serial_status
 #ifndef _IN_ADDR_DEFINED
 #define _IN_ADDR_DEFINED
 
-struct in_addr 
-{
-  union 
-  {
+struct in_addr {
+  union {
     struct { unsigned char s_b1, s_b2, s_b3, s_b4; } s_un_b;
     struct { unsigned short s_w1, s_w2; } s_un_w;
     unsigned long s_addr;
@@ -836,8 +819,7 @@ struct in_addr
 #ifndef _SOCKADDR_IN_DEFINED
 #define _SOCKADDR_IN_DEFINED
 
-struct sockaddr_in
-{
+struct sockaddr_in {
   unsigned short sin_family;
   unsigned short sin_port;
   struct in_addr sin_addr;
@@ -849,8 +831,7 @@ struct sockaddr_in
 #ifndef _SOCKADDR_DEFINED
 #define _SOCKADDR_DEFINED
 
-struct sockaddr 
-{
+struct sockaddr {
   unsigned short sa_family;
   char sa_data[14];
 };
@@ -864,8 +845,7 @@ struct sockaddr
 
 #define NET_NAME_MAX 16
 
-struct ifcfg
-{
+struct ifcfg {
   char name[NET_NAME_MAX];
   int flags;
   char hwaddr[12];
@@ -878,8 +858,7 @@ struct ifcfg
 #ifndef _LINGER_DEFINED
 #define _LINGER_DEFINED
 
-struct linger
-{
+struct linger {
   unsigned short l_onoff;
   unsigned short l_linger;
 };
@@ -889,8 +868,7 @@ struct linger
 #ifndef _MSGHDR_DEFINED
 #define _MSGHDR_DEFINED
 
-struct msghdr
-{
+struct msghdr {
   struct sockaddr *msg_name;
   int msg_namelen;
   struct iovec *msg_iov;
@@ -902,8 +880,7 @@ struct msghdr
 #ifndef _HOSTENT_DEFINED
 #define _HOSTENT_DEFINED
 
-struct hostent 
-{
+struct hostent {
   char *h_name;        // Official name of host
   char **h_aliases;    // Alias list
   short h_addrtype;    // Host address type
@@ -918,8 +895,7 @@ struct hostent
 #ifndef _PROTOENT_DEFINED
 #define _PROTOENT_DEFINED
 
-struct protoent
-{
+struct protoent {
   char *p_name;
   char **p_aliases;
   short p_proto;
@@ -930,8 +906,7 @@ struct protoent
 #ifndef _SERVENT_DEFINED
 #define _SERVENT_DEFINED
 
-struct servent 
-{
+struct servent {
   char *s_name;
   char **s_aliases;
   short s_port;
@@ -980,23 +955,19 @@ struct servent
 #ifndef _XTONX_DEFINED
 #define _XTONX_DEFINED
 
-__inline unsigned short htons(unsigned short n)
-{
+__inline unsigned short htons(unsigned short n) {
   return ((n & 0xFF) << 8) | ((n & 0xFF00) >> 8);
 }
 
-__inline unsigned short ntohs(unsigned short n)
-{
+__inline unsigned short ntohs(unsigned short n) {
   return ((n & 0xFF) << 8) | ((n & 0xFF00) >> 8);
 }
 
-__inline unsigned long htonl(unsigned long n)
-{
+__inline unsigned long htonl(unsigned long n) {
   return ((n & 0xFF) << 24) | ((n & 0xFF00) << 8) | ((n & 0xFF0000) >> 8) | ((n & 0xFF000000) >> 24);
 }
 
-__inline unsigned long ntohl(unsigned long n)
-{
+__inline unsigned long ntohl(unsigned long n) {
   return ((n & 0xFF) << 24) | ((n & 0xFF00) << 8) | ((n & 0xFF0000) >> 8) | ((n & 0xFF000000) >> 24);
 }
 
@@ -1009,8 +980,7 @@ __inline unsigned long ntohl(unsigned long n)
 #ifndef _FD_SET_DEFINED
 #define _FD_SET_DEFINED
 
-typedef struct fd_set 
-{
+typedef struct fd_set {
   unsigned int count;
   int fd[FD_SETSIZE];
 } fd_set;
@@ -1025,34 +995,27 @@ typedef struct fd_set
 #ifndef _FD_FUNCS_DEFINED
 #define _FD_FUNCS_DEFINED
 
-__inline void _fd_zero(fd_set *set)
-{
+__inline void _fd_zero(fd_set *set) {
   set->count = 0;
 }
 
-__inline int _fd_isset(int fd, fd_set *set)
-{
+__inline int _fd_isset(int fd, fd_set *set) {
   unsigned int i;
 
   for (i = 0; i < set->count; i++) if (set->fd[i] == fd) return 1;
   return 0;
 }
 
-__inline void _fd_set(int fd, fd_set *set)
-{
+__inline void _fd_set(int fd, fd_set *set) {
   if (set->count < FD_SETSIZE) set->fd[set->count++] = fd;
 }
 
-__inline void _fd_clr(int fd, fd_set *set)
-{
+__inline void _fd_clr(int fd, fd_set *set) {
   unsigned int i;
 
-  for (i = 0; i < set->count ; i++) 
-  {
-    if (set->fd[i] == fd) 
-    {
-      while (i < set->count - 1)
-      {
+  for (i = 0; i < set->count ; i++) {
+    if (set->fd[i] == fd) {
+      while (i < set->count - 1) {
         set->fd[i] = set->fd[i + 1];
         i++;
       }
@@ -1071,8 +1034,7 @@ __inline void _fd_clr(int fd, fd_set *set)
 #ifndef _POLL_FD_DEFINED
 #define _POLL_FD_DEFINED
 
-struct pollfd
-{
+struct pollfd {
   int fd;                     // File descriptor
   short events;               // Requested events
   short revents;              // Returned events
@@ -1104,8 +1066,7 @@ struct pollfd
 
 #pragma pack(push, 1)
 
-struct verinfo 
-{ 
+struct verinfo {
   unsigned long signature;
   unsigned long format;
 
@@ -1139,8 +1100,7 @@ struct verinfo
 #ifndef _PASSWD_DEFINED
 #define _PASSWD_DEFINED
 
-struct passwd
-{
+struct passwd {
   char *pw_name;    // User name
   char *pw_passwd;  // User password
   uid_t pw_uid;     // User id
@@ -1155,8 +1115,7 @@ struct passwd
 #ifndef _GROUP_DEFINED
 #define _GROUP_DEFINED
 
-struct group
-{
+struct group {
   char *gr_name;    // Group name
   char *gr_passwd;  // Group password
   gid_t gr_gid;     // Group id
@@ -1174,8 +1133,7 @@ struct heap;
 
 #define PEB_ADDRESS 0x7FFDF000
 
-struct peb
-{
+struct peb {
   struct moddb *usermods;
   int fast_syscalls_supported;
 
@@ -1213,22 +1171,19 @@ struct peb
 
 #define CRTBASESIZE    (16 + 3 * 32 + 512 + 5 * 4 + 4)
 
-struct term
-{
+struct term {
   int type;
   int cols;
   int lines;
 };
 
-struct zombie
-{
+struct zombie {
   pid_t pid;
   int status;
   struct zombie *next;
 };
 
-struct process
-{
+struct process {
   int id;                           // Process id
   int threadcnt;                    // Number of threads in process
   struct process *parent;           // Parent process
@@ -1271,14 +1226,12 @@ struct process
 #define ASCBUFSIZE        (26 + 2)
 #define CRYPTBUFSIZE      14
 
-struct xcptrec
-{
+struct xcptrec {
   struct xcptrec *next;
   void (*handler)();
 };
 
-struct tib
-{
+struct tib {
   struct xcptrec *except;          // Exception handler list
   void *stacktop;                  // Topmost address of the threads stack
   void *stacklimit;                // Lowest committed page of the threads stack
@@ -1334,8 +1287,7 @@ struct tib
 // SVID2/XPG mallinfo structure
 //
 
-struct mallinfo
-{
+struct mallinfo {
   int arena;    // Non-mmapped space allocated from system
   int ordblks;  // Number of free chunks
   int smblks;   // Number of fastbin blocks
@@ -1356,8 +1308,7 @@ struct mallinfo
 #define SYSINFO_MEM  1
 #define SYSINFO_LOAD 2
 
-struct cpuinfo
-{
+struct cpuinfo {
   int cpu_vendor;
   int cpu_family;
   int cpu_model;
@@ -1367,8 +1318,7 @@ struct cpuinfo
   int pagesize;
 };
 
-struct meminfo
-{    
+struct meminfo {
   unsigned int physmem_total;
   unsigned int physmem_avail;
   unsigned int virtmem_total;
@@ -1376,8 +1326,7 @@ struct meminfo
   unsigned int pagesize;
 };
 
-struct loadinfo
-{
+struct loadinfo {
   long uptime;
   int load_user;
   int load_system;
@@ -1389,8 +1338,7 @@ struct loadinfo
 
 #ifndef _UTSNAME_DEFINED
 #define _UTSNAME_DEFINED
-struct utsname
-{
+struct utsname {
   char sysname[UTSNAMELEN];
   char nodename[UTSNAMELEN];
   char release[UTSNAMELEN];

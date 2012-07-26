@@ -48,29 +48,25 @@
 #include "node.h"
 #include "parser.h"
 
-struct arg
-{
+struct arg {
   struct arg *next;
   char *value;
 };
 
-struct args
-{
+struct args {
   struct arg *first;
   struct arg *last;
   int num;
 };
 
-struct var
-{
+struct var {
   struct var *next;
   int hash;
   char *name;
   char *value;
 };
 
-struct job
-{
+struct job {
   struct job *parent;
   struct mark *mark;
   struct var *vars;

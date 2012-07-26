@@ -42,8 +42,7 @@
 
 #ifndef _TIMESPEC_DEFINED
 #define _TIMESPEC_DEFINED
-struct timespec 
-{
+struct timespec {
   long tv_sec;
   long tv_nsec;
 };

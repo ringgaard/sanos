@@ -1,7 +1,6 @@
 #include "sh.h"
 
-int pushfile(struct inputfile **file, int fd)
-{
+int pushfile(struct inputfile **file, int fd) {
   struct inputfile *inp;
 
   if (fd == -1) return 0;
@@ -17,8 +16,7 @@ int pushfile(struct inputfile **file, int fd)
   return 0;
 }
 
-int pushstr(struct inputfile **file, char *str)
-{
+int pushstr(struct inputfile **file, char *str) {
   struct inputfile *inp;
   char *newstr;
 
@@ -39,8 +37,7 @@ int pushstr(struct inputfile **file, char *str)
   return 0;
 }
 
-int popfile(struct inputfile **file)
-{
+int popfile(struct inputfile **file) {
   struct inputfile *inp;
 
   inp = *file;
@@ -54,51 +51,40 @@ int popfile(struct inputfile **file)
   return 0;
 }
 
-void popallfiles(struct inputfile **file)
-{
+void popallfiles(struct inputfile **file) {
   while (*file) popfile(file);
 }
 
-int pgetc(struct inputfile **file, int peek)
-{
-  while (*file)
-  {
+int pgetc(struct inputfile **file, int peek) {
+  while (*file) {
     struct inputfile *inp = *file;
     
-    if (inp->ptr != inp->end)
-    {
-      if (peek) 
+    if (inp->ptr != inp->end) {
+      if (peek) {
         return *inp->ptr;
-      else
-      {
+      } else {
         int ch = *(inp->ptr)++;
         if (ch == '\n') inp->lineno++;
         return ch;
       }
     }
 
-    if (inp->fd != -1)
-    {
+    if (inp->fd != -1) {
       int rc;
 
       if (!inp->buf) inp->buf = inp->ptr = inp->end = malloc(FILEBUFSIZ);
       if (!inp->buf) return -1;
 
       rc = read(inp->fd, inp->buf, FILEBUFSIZ);
-      if (rc < 0) 
+      if (rc < 0) {
         return -1;
-      else if (rc == 0)
-      {
+      } else if (rc == 0){
         if (popfile(file) < 0) return -1;
-      }
-      else
-      {
+      } else {
         inp->ptr = inp->buf;
         inp->end = inp->buf + rc;
       }
-    }
-    else
-    {
+    } else {
       if (popfile(file) < 0) return -1;
     }
   }

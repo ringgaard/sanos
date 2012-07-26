@@ -35,13 +35,11 @@
 
 int notefreq[12] = {4186, 4434, 4698, 4978, 5274, 5587, 5919, 6271, 6644, 7040, 7458, 7902};
 
-int note2freq(int note)
-{
+int note2freq(int note) {
   return notefreq[note % 12] / (1 << (9 - (note / 12)));
 }
 
-void play(char *song)
-{
+void play(char *song) {
   char *p = song;
   int defdur = 4;
   int defscale = 6;
@@ -54,8 +52,7 @@ void play(char *song)
   p++;
 
   // Parse defaults
-  while (*p)
-  {
+  while (*p) {
     char param;
     int value;
 
@@ -70,8 +67,7 @@ void play(char *song)
     value = 0;
     while (*p >= '0' && *p <= '9') value = value * 10 + (*p++ - '0');
 
-    switch (param)
-    {
+    switch (param) {
       case 'd': defdur = 32 / value; break;
       case 'o': defscale = value; break;
       case 'b': bpm = value; break;
@@ -82,8 +78,7 @@ void play(char *song)
   }
   p++;
 
-  while (*p)
-  {
+  while (*p) {
     int note = -1;
     int scale = defscale;
     int dur = defdur;
@@ -95,8 +90,7 @@ void play(char *song)
     if (!*p) return;
 
     // Parse duration
-    if (*p >= '0' && *p <= '9')
-    {
+    if (*p >= '0' && *p <= '9') {
       int value = 0;
       while (*p >= '0' && *p <= '9') value = value * 10 + (*p++ - '0');
 
@@ -104,8 +98,7 @@ void play(char *song)
     }
 
     // Parse note
-    switch (*p)
-    {
+    switch (*p) {
       case 0: return;
       case 'C': case 'c': note = 0; break;
       case 'D': case 'd': note = 2; break;
@@ -118,20 +111,17 @@ void play(char *song)
       case 'P': case 'p': note = -1; break;
     }
     p++;
-    if (*p == '#')
-    {
+    if (*p == '#') {
       note++;
       p++;
     }
-    if (*p == 'b')
-    {
+    if (*p == 'b') {
       note--;
       p++;
     }
 
     // Parse special duration
-    if (*p == '.')
-    {
+    if (*p == '.') {
       dur += dur / 2;
       p++;
     }
@@ -140,8 +130,7 @@ void play(char *song)
     if (*p >= '0' && *p <= '9') scale = (*p++ - '0');
 
     // Parse special duration (again...)
-    if (*p == '.')
-    {
+    if (*p == '.') {
       dur += dur / 2;
       p++;
     }
@@ -152,19 +141,19 @@ void play(char *song)
 
     // Play note
     ms = dur * 60000 / (bpm * 8);
-    if (note == -1)
+    if (note == -1) {
       freq = 0;
-    else
+    } else {
       freq = note2freq((scale + 1) * 12 + note);
+    }
 
-    if (freq)
-    {
+    if (freq) {
       ioctl(1, IOCTL_SOUND, &freq, 4);
       msleep(ms * 7 / 8);
       ioctl(1, IOCTL_SOUND, &silence, 4);
       msleep(ms / 8);
-    }
-    else
+    } else {
       msleep(ms);
+    }
   }
 }

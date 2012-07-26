@@ -48,16 +48,13 @@ static const char *rangematch(const char *pattern, int test, int flags);
 // As specified in POSIX 1003.2-1992, section B.6.
 //
 
-int fnmatch(const char *pattern, const char *string, int flags)
-{
+int fnmatch(const char *pattern, const char *string, int flags) {
   const char *stringstart = string;
   char c;
   char test;
 
-  for (;;) 
-  {
-    switch (c = *pattern++) 
-    {
+  for (;;) {
+    switch (c = *pattern++) {
       case EOS:
         return *string == EOS ? 0 : FNM_NOMATCH;
 
@@ -67,8 +64,9 @@ int fnmatch(const char *pattern, const char *string, int flags)
 
         if (*string == '.' && 
             (flags & FNM_PERIOD) &&
-            (string == stringstart || ((flags & FNM_PATHNAME) && *(string - 1) == '/')))
+            (string == stringstart || ((flags & FNM_PATHNAME) && *(string - 1) == '/'))) {
           return FNM_NOMATCH;
+        }
 
         string++;
         break;
@@ -80,26 +78,24 @@ int fnmatch(const char *pattern, const char *string, int flags)
         
         if (*string == '.' && 
             (flags & FNM_PERIOD) && 
-            (string == stringstart || ((flags & FNM_PATHNAME) && *(string - 1) == '/')))
+            (string == stringstart || ((flags & FNM_PATHNAME) && *(string - 1) == '/'))) {
           return FNM_NOMATCH;
+        }
 
         // Optimize for pattern with * at end or before
-        if (c == EOS) 
-        {
-          if (flags & FNM_PATHNAME) 
+        if (c == EOS) {
+          if (flags & FNM_PATHNAME) {
             return strchr(string, '/') == NULL ? 0 : FNM_NOMATCH;
-          else 
-            return (0);
-        } 
-        else if (c == '/' && flags & FNM_PATHNAME) 
-        {
+          } else {
+            return 0;
+          }
+        } else if (c == '/' && flags & FNM_PATHNAME) {
           if ((string = strchr(string, '/')) == NULL) return FNM_NOMATCH;
           break;
         }
 
         // General case, use recursion
-        while ((test = *string) != EOS) 
-        {
+        while ((test = *string) != EOS) {
           if (!fnmatch(pattern, string, flags & ~FNM_PERIOD)) return 0;
           if (test == '/' && flags & FNM_PATHNAME) break;
           string++;
@@ -114,10 +110,8 @@ int fnmatch(const char *pattern, const char *string, int flags)
         break;
 
       case '\\':
-        if (!(flags & FNM_NOESCAPE)) 
-        {
-          if ((c = *pattern++) == EOS) 
-          {
+        if (!(flags & FNM_NOESCAPE)) {
+          if ((c = *pattern++) == EOS) {
             c = '\\';
             pattern--;
           }
@@ -131,8 +125,7 @@ int fnmatch(const char *pattern, const char *string, int flags)
   }
 }
 
-static const char *rangematch(const char *pattern, int test, int flags)
-{
+static const char *rangematch(const char *pattern, int test, int flags) {
   char c, c2;
   int negate, ok;
 
@@ -145,20 +138,18 @@ static const char *rangematch(const char *pattern, int test, int flags)
 
   if (negate = (*pattern == '!' || *pattern == '^')) pattern++;
   
-  for (ok = 0; (c = *pattern++) != ']';) 
-  {
+  for (ok = 0; (c = *pattern++) != ']';) {
     if (c == '\\' && !(flags & FNM_NOESCAPE)) c = *pattern++;
     if (c == EOS) return NULL;
 
-    if (*pattern == '-' && (c2 = *(pattern + 1)) != EOS && c2 != ']') 
-    {
+    if (*pattern == '-' && (c2 = *(pattern + 1)) != EOS && c2 != ']') {
       pattern += 2;
       if (c2 == '\\' && !(flags & FNM_NOESCAPE)) c2 = *pattern++;
       if (c2 == EOS) return NULL;
       if (c <= test && test <= c2) ok = 1;
-    } 
-    else if (c == test) 
+    } else if (c == test) {
       ok = 1;
+    }
   }
 
   return ok == negate ? NULL : pattern;

@@ -38,8 +38,7 @@
 
 #define SHELL "sh.exe"
 
-FILE *popen(const char *command, const char *mode)
-{
+FILE *popen(const char *command, const char *mode) {
   char cmdline[1024];
   int rc;
   int hndl[2];
@@ -48,14 +47,12 @@ FILE *popen(const char *command, const char *mode)
   struct process *proc;
   FILE *f;
 
-  if (!command)
-  {
+  if (!command) {
     errno = EINVAL;
     return NULL;
   }
 
-  if (strlen(command) + strlen(SHELL) + 1 >= sizeof(cmdline))
-  {
+  if (strlen(command) + strlen(SHELL) + 1 >= sizeof(cmdline)) {
     errno = E2BIG;
     return NULL;
   }
@@ -71,14 +68,11 @@ FILE *popen(const char *command, const char *mode)
   rc = pipe(hndl);
   if (rc < 0) return NULL;
 
-  if (*mode == 'w')
-  {
+  if (*mode == 'w') {
     if (proc->iob[0] != NOHANDLE) close(proc->iob[0]);
     proc->iob[0] = hndl[0];
     f = fdopen(hndl[1], mode);
-  }
-  else
-  {
+  } else {
     if (proc->iob[1] != NOHANDLE) close(proc->iob[1]);
     proc->iob[1] = hndl[1];
     f = fdopen(hndl[0], mode);
@@ -91,18 +85,14 @@ FILE *popen(const char *command, const char *mode)
   return f;
 }
 
-int pclose(FILE *stream)
-{
+int pclose(FILE *stream) {
   int rc;
 
-  if (stream->flag & _IORD)
-  {
+  if (stream->flag & _IORD) {
     waitone(stream->phndl, INFINITE);
     close(stream->phndl);
     rc = fclose(stream);
-  }
-  else
-  {
+  } else {
     int phndl = stream->phndl;
     rc = fclose(stream);
     waitone(phndl, INFINITE);
@@ -111,4 +101,3 @@ int pclose(FILE *stream)
 
   return rc;
 }
-

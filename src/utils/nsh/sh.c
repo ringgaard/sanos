@@ -35,53 +35,43 @@
 
 struct job top;
 
-void indent(FILE *out, int level)
-{
+void indent(FILE *out, int level) {
   while (level-- > 0) fprintf(out, "  ");
 }
 
 void print_node(union node *node, FILE *out, int level);
 
-void print_list(union node *node, FILE *out, int level)
-{
-  while (node)
-  {
+void print_list(union node *node, FILE *out, int level) {
+  while (node) {
     print_node(node, out, level);
     node = node->list.next;
   }
 }
 
-void print_redir(union node *rdir, FILE *out, int level)
-{
+void print_redir(union node *rdir, FILE *out, int level) {
   union node *n;
 
-  if (rdir)
-  {
+  if (rdir) {
     indent(out, level); fprintf(out, " redir:\n");
     for (n = rdir; n; n = n->list.next) print_node(n, out, level + 1);
   }
 }
 
-void print_node(union node *node, FILE *out, int level)
-{
+void print_node(union node *node, FILE *out, int level) {
   union node *n;
 
-  switch(node->type)
-  {
+  switch(node->type) {
     case N_SIMPLECMD:
       indent(out, level); fprintf(out, "CMD\n");
-      if (node->ncmd.vars)
-      {
+      if (node->ncmd.vars) {
         indent(out, level); fprintf(out, " vars:\n");
         for (n = node->ncmd.vars; n; n = n->list.next) print_node(n, out, level + 1);
       }
-      if (node->ncmd.args)
-      {
+      if (node->ncmd.args) {
         indent(out, level); fprintf(out, " args:\n");
         for (n = node->ncmd.args; n; n = n->list.next) print_node(n, out, level + 1);
       }
-      if (node->ncmd.rdir)
-      {
+      if (node->ncmd.rdir) {
         indent(out, level); fprintf(out, " rdir:\n");
         for (n = node->ncmd.rdir; n; n = n->list.next) print_node(n, out, level + 1);
       }
@@ -108,13 +98,11 @@ void print_node(union node *node, FILE *out, int level)
       indent(out, level); fprintf(out, "ARGPARAM\n");
       indent(out, level); fprintf(out, " flags: %x\n", node->nargparam.flags);
       indent(out, level); fprintf(out, " name: %s\n", node->nargparam.name);
-      if (node->nargparam.word)
-      {
+      if (node->nargparam.word) {
         indent(out, level); fprintf(out, " word:\n");
         print_node(node->nargparam.word, out, level + 1);
       }
-      if (node->nargparam.num != -1)
-      {
+      if (node->nargparam.num != -1) {
         indent(out, level); fprintf(out, " num: %d\n", node->nargparam.num);
       }
       break;
@@ -129,13 +117,11 @@ void print_node(union node *node, FILE *out, int level)
       indent(out, level); fprintf(out, "IF\n");
       indent(out, level); fprintf(out, " test:\n");
       print_list(node->nif.test, out, level + 1);
-      if (node->nif.cmd0)
-      {
+      if (node->nif.cmd0) {
         indent(out, level); fprintf(out, " then:\n");
         print_list(node->nif.cmd0, out, level + 1);
       }
-      if (node->nif.cmd1)
-      {
+      if (node->nif.cmd1) {
         indent(out, level); fprintf(out, " else:\n");
         print_list(node->nif.cmd1, out, level + 1);
       }
@@ -146,8 +132,7 @@ void print_node(union node *node, FILE *out, int level)
       indent(out, level); fprintf(out, "FOR\n");
       indent(out, level); fprintf(out, " varn: %s\n", node->nfor.varn);
 
-      if (node->nfor.args)
-      {
+      if (node->nfor.args) {
         indent(out, level); fprintf(out, " args:\n");
         print_list(node->nfor.args, out, level + 1);
       }
@@ -224,13 +209,11 @@ void print_node(union node *node, FILE *out, int level)
       indent(out, level); fprintf(out, "REDIR\n");
       indent(out, level); fprintf(out, " flags: %x\n", node->nredir.flags);
       indent(out, level); fprintf(out, " fd: %x\n", node->nredir.fd);
-      if (node->nredir.list)
-      {
+      if (node->nredir.list) {
         indent(out, level); fprintf(out, " list:\n");
         print_list(node->nredir.list, out, level + 1);
       }
-      if (node->nredir.data)
-      {
+      if (node->nredir.data) {
         indent(out, level); fprintf(out, " data:\n");
         print_list(node->nredir.data, out, level + 1);
       }
@@ -244,23 +227,20 @@ void print_node(union node *node, FILE *out, int level)
   }
 }
 
-int main0(int argc, char *argv[], char *envp[])
-{
+int main0(int argc, char *argv[], char *envp[]) {
   struct inputfile *source = NULL;
   struct stkmark mark;
   struct parser p;
   int fd;
   union node *node;
 
-  if (argc <= 1)
-  {
+  if (argc <= 1) {
     fprintf(stderr, "usage: sh <source>\n");
     exit(1);
   }
 
   fd = open(argv[1], 0);
-  if (fd < 0)
-  {
+  if (fd < 0) {
     perror(argv[1]);
     exit(1);
   }
@@ -269,17 +249,15 @@ int main0(int argc, char *argv[], char *envp[])
   pushstkmark(NULL, &mark);
   parse_init(&p, 0, source, &mark);
 
-  while (1)
-  {
+  while (1) {
     printf("line %d:\n", source->lineno);
     node = parse(&p);
 
-    if (node)
+    if (node) {
       print_node(node, stdout, 0);
-    else if (p.tok & T_EOF)
+    } else if (p.tok & T_EOF) {
       break;
-    else if (!(p.tok & (T_NL | T_SEMI | T_BGND)))
-    {
+    } else if (!(p.tok & (T_NL | T_SEMI | T_BGND))) {
       fprintf(stderr, "syntax error (line %d)\n", source->lineno);
       if (p.tree) print_node(p.tree, stdout, 0);
       break;
@@ -291,23 +269,19 @@ int main0(int argc, char *argv[], char *envp[])
   return 0;
 }
 
-int hash(char *str)
-{
+int hash(char *str) {
   int h = 0;
   while (*str) h = 5 * h + *str++;
   return h;
 }
 
-void set_var(struct var **vars, char *name, char *value)
-{
+void set_var(struct var **vars, char *name, char *value) {
   int h = hash(name);
   struct var **vptr = vars;
   struct var *v = *vptr;
   
-  while (v)
-  {
-    if (v->hash == h && strcmp(v->name, name) == 0)
-    {
+  while (v) {
+    if (v->hash == h && strcmp(v->name, name) == 0) {
       int len = strlen(value);
       v->value = (char *) realloc(v->value, len + 1);
       memcpy(v->value, value, len);
@@ -325,8 +299,7 @@ void set_var(struct var **vars, char *name, char *value)
   v->next = NULL;
 }
 
-struct arg *add_arg(struct stkmark *mark, struct args *args, char *value)
-{
+struct arg *add_arg(struct stkmark *mark, struct args *args, char *value) {
   struct arg *arg = (struct arg *) stalloc(mark, sizeof(struct arg));
   arg->value = value ? value : "";
   if (args->last) args->last->next = arg;
@@ -336,19 +309,16 @@ struct arg *add_arg(struct stkmark *mark, struct args *args, char *value)
   return arg;
 }
 
-static int expand_glob(struct stkmark *mark, struct args *args, char *pattern)
-{ 
+static int expand_glob(struct stkmark *mark, struct args *args, char *pattern) {
   glob_t globbuf;
   unsigned i;
 
-  if (glob(pattern, GLOB_NOCHECK | GLOB_NOESCAPE, NULL, &globbuf) < 0)
-  {
+  if (glob(pattern, GLOB_NOCHECK | GLOB_NOESCAPE, NULL, &globbuf) < 0) {
     fprintf(stderr, "errror expanding glob pattern %s\n", pattern);
     return -1;
   }
   
-  for (i = 0; i < globbuf.gl_pathc; ++i)
-  {
+  for (i = 0; i < globbuf.gl_pathc; ++i) {
     stputstr(mark, globbuf.gl_pathv[i]);
     add_arg(mark, args, ststr(mark));
   }
@@ -357,33 +327,27 @@ static int expand_glob(struct stkmark *mark, struct args *args, char *pattern)
   return 0;
 }
 
-static int expand_args(struct stkmark *mark, struct args *args, union node *node)
-{
+static int expand_args(struct stkmark *mark, struct args *args, union node *node) {
   union node *n;
   int before;
 
-  switch (node->type)
-  {
+  switch (node->type) {
     case N_SIMPLECMD:
       for (n = node->ncmd.args; n; n = n->list.next) expand_args(mark, args, n);
       break;
      
     case N_ARG:
       before = args->num;
-      for (n = node->narg.list; n; n = n->list.next) 
-      {
+      for (n = node->narg.list; n; n = n->list.next) {
         expand_args(mark, args, n);
       }
       if (args->num == before || ststrlen(mark) > 0) add_arg(mark, args, ststr(mark)); 
       break;
 
     case N_ARGSTR:
-      if (node->nargstr.flags & S_GLOB)
-      {
+      if (node->nargstr.flags & S_GLOB) {
         if (expand_glob(mark, args, node->nargstr.text) < 0) return -1;
-      }
-      else
-      {
+      } else {
         char *p = node->nargstr.text;
         while (*p) stputc(mark, *p++);
       }
@@ -398,8 +362,7 @@ static int expand_args(struct stkmark *mark, struct args *args, union node *node
 }
 
 
-static int exec_command(char *cmdline)
-{
+static int exec_command(char *cmdline) {
   struct inputfile *source = NULL;
   struct stkmark mark;
   struct parser p;
@@ -409,8 +372,7 @@ static int exec_command(char *cmdline)
   pushstkmark(NULL, &mark);
   parse_init(&p, 0, source, &mark);
 
-  while (!(p.tok & T_EOF))
-  {
+  while (!(p.tok & T_EOF)) {
     struct arg *arg;
     struct args *args;
     
@@ -430,23 +392,18 @@ static int exec_command(char *cmdline)
   return 0;
 }
 
-void shell()
-{
+void shell() {
   char curdir[MAXPATH];
   char cmdline[1024];
   char *prompt = get_property(osconfig, "shell", "prompt", "%s$ ");
   int rc;
 
-  while (1)
-  {
+  while (1) {
     printf(prompt, getcwd(curdir, sizeof curdir));
     rc = readline(cmdline, sizeof cmdline);
-    if (rc < 0)
-    {
+    if (rc < 0) {
       if (errno != EINTR) break;
-    }
-    else
-    {
+    } else {
       if (stricmp(cmdline, "exit") == 0) break;
       fflush(stdout);
       exec_command(cmdline);
@@ -454,29 +411,26 @@ void shell()
   }
 }
 
-void setup_top_job(char *env[])
-{
+void setup_top_job(char *env[]) {
   int i;
   char *name;
   char *value;
   
   memset(&top, 0, sizeof(struct job));
-  for (i = 0; env[i]; i++)
-  {
+  for (i = 0; env[i]; i++) {
     name = strdup(env[i]);
     value = strchr(name, '=');
-    if (*value == '=')
+    if (*value == '=') {
       *value++ = 0;
-    else
+    } else {
       value = "";
-      
+    }
     set_var(&top.vars, name, value);
     free(name);
   }
 }
 
-int main(int argc, char *argv[], char *envp[])
-{
+int main(int argc, char *argv[], char *envp[]) {
   if (gettib()->proc->term->type == TERM_VT100) setvbuf(stdout, NULL, 0, 8192);
   setup_top_job(envp);
 

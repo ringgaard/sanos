@@ -46,8 +46,7 @@
 
 #ifndef _TIMESPEC_DEFINED
 #define _TIMESPEC_DEFINED
-struct timespec 
-{
+struct timespec {
   long tv_sec;
   long tv_nsec;
 };
@@ -55,8 +54,7 @@ struct timespec
 
 #ifndef _SCHED_PARAM_DEFINED
 #define _SCHED_PARAM_DEFINED
-struct sched_param 
-{
+struct sched_param {
   int sched_priority;
 };
 #endif
@@ -114,8 +112,7 @@ typedef tls_t pthread_key_t;
 // Threads
 //
 
-struct pthread_attr
-{
+struct pthread_attr {
   void *stackaddr;
   size_t stacksize;
   int detachstate;
@@ -130,8 +127,7 @@ typedef struct pthread_attr pthread_attr_t;
 // Once key
 //
 
-struct pthread_once
-{
+struct pthread_once {
   volatile int done;        // Indicates if user function executed
   int started;              // First thread to increment this value 
                             // to zero executes the user function
@@ -150,16 +146,14 @@ typedef struct pthread_once pthread_once_t;
 #define PTHREAD_MUTEX_ERRORCHECK 2
 #define PTHREAD_MUTEX_DEFAULT    PTHREAD_MUTEX_NORMAL
 
-struct pthread_mutexattr
-{
+struct pthread_mutexattr {
   int pshared;
   int kind;
 };
 
 typedef struct pthread_mutexattr pthread_mutexattr_t;
 
-struct pthread_mutex
-{
+struct pthread_mutex {
   int lock;                 // Exclusive access to mutex state:
                             //  0: unlocked/free
                             //  1: locked - no other waiters
@@ -181,15 +175,13 @@ typedef struct pthread_mutex pthread_mutex_t;
 // Condition variables
 //
 
-struct pthread_condattr
-{
+struct pthread_condattr {
   int pshared;
 };
 
 typedef struct pthread_condattr pthread_condattr_t;
 
-struct pthread_cond
-{
+struct pthread_cond {
   int waiting;
   handle_t semaphore;
 };
@@ -204,8 +196,7 @@ typedef struct pthread_cond pthread_cond_t;
 
 #define PTHREAD_BARRIER_SERIAL_THREAD 1
 
-struct pthread_barrierattr
-{
+struct pthread_barrierattr {
   int pshared;
 };
 
@@ -225,15 +216,13 @@ typedef struct pthread_barrier pthread_barrier_t;
 // Read-write locks
 //
 
-struct pthread_rwlockattr
-{
+struct pthread_rwlockattr {
   int pshared;
 };
 
 typedef struct pthread_rwlockattr pthread_rwlockattr_t;
 
-struct pthread_rwlock
-{
+struct pthread_rwlock {
   pthread_mutex_t mutex;
   handle_t shared_waiters;
   handle_t exclusive_waiters;
@@ -255,8 +244,7 @@ typedef struct pthread_rwlock pthread_rwlock_t;
 #define SPINLOCK_LOCKED      2
 #define SPINLOCK_USEMUTEX    3
 
-struct pthread_spinlock
-{
+struct pthread_spinlock {
   int interlock;
   pthread_mutex_t mutex;
 };

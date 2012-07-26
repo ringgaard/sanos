@@ -52,8 +52,7 @@ static struct interrupt alignintr;
 
 static struct interrupt sigexitintr;
 
-char *trapnames[INTRS] = 
-{
+char *trapnames[INTRS] =  {
   "Divide error",
   "Debug exception",
   "Non-maskable interrupt",
@@ -130,10 +129,8 @@ char *trapnames[INTRS] =
 
 static void trap(unsigned long args);
 
-static void __declspec(naked) isr()
-{
-  __asm
-  {
+static void __declspec(naked) isr() {
+  __asm {
     cld
     push    eax                     // Save registers
     push    ecx
@@ -173,10 +170,8 @@ static void __declspec(naked) isr()
 
 int syscall(int syscallno, char *params, struct context *ctxt);
 
-static void __declspec(naked) systrap(void)
-{
-  __asm
-  {
+static void __declspec(naked) systrap(void) {
+  __asm {
     push    0                       // Push dummy errcode
     push    INTR_SYSCALL            // Push traptype
 
@@ -226,10 +221,8 @@ static void __declspec(naked) systrap(void)
 // Kernel entry point for sysenter syscall
 //
 
-static void __declspec(naked) sysentry(void)
-{
-  __asm
-  {
+static void __declspec(naked) sysentry(void) {
+  __asm {
     mov     esp, ss:[esp]           // Get kernel stack pointer from TSS
     STI                             // Sysenter disables interrupts, re-enable now
 
@@ -290,16 +283,14 @@ static void __declspec(naked) sysentry(void)
 //
 
 #define ISR(n)                                \
-static void __declspec(naked) isr##n(void)    \
-{                                             \
+static void __declspec(naked) isr##n(void) {  \
   __asm { push 0 }                            \
   __asm { push n }                            \
   __asm { jmp isr }                           \
 }
 
 #define ISRE(n)                               \
-static void __declspec(naked) isr##n(void)    \
-{                                             \
+static void __declspec(naked) isr##n(void) {  \
   __asm { push n }                            \
   __asm { jmp isr }                           \
 }
@@ -319,8 +310,7 @@ ISR(56) ISR(57) ISR(58)  ISR(59)  ISR(60)  ISR(61)  ISR(62)  ISR(63)
 // Tests if context is a user mode context
 //
 
-__inline static int usermode(struct context *ctxt)
-{
+__inline static int usermode(struct context *ctxt) {
   return USERSPACE(ctxt->eip);
 }
 
@@ -330,8 +320,7 @@ __inline static int usermode(struct context *ctxt)
 // Setup a call frame for invoking the global signal handler
 //
 
-static struct siginfo *setup_signal_frame(unsigned long *esp)
-{
+static struct siginfo *setup_signal_frame(unsigned long *esp) {
   struct context *ctxt;
   struct siginfo *info;
 
@@ -361,14 +350,12 @@ static struct siginfo *setup_signal_frame(unsigned long *esp)
 // Setup user stack to execute global signal handler
 //
 
-void send_signal(struct context *ctxt, int signum, void *addr)
-{
+void send_signal(struct context *ctxt, int signum, void *addr) {
   unsigned long esp;
   struct siginfo *info;
 
   // Check for global handler
-  if (!peb || !peb->globalhandler)
-  {
+  if (!peb || !peb->globalhandler) {
     //panic("no global signal handler");
     dbg_enter(ctxt, addr);
   }
@@ -423,8 +410,7 @@ void send_signal(struct context *ctxt, int signum, void *addr)
 //   Signals are never sent in this intermediate state.
 //
 
-int send_user_signal(struct thread *t, int signum)
-{
+int send_user_signal(struct thread *t, int signum) {
   // Signal can only be sent to user threads
   if (!t->tib) return -EPERM;
 
@@ -449,16 +435,13 @@ int send_user_signal(struct thread *t, int signum)
 // Examine and change blocked signals
 //
 
-int set_signal_mask(int how, sigset_t *set, sigset_t *oldset)
-{
+int set_signal_mask(int how, sigset_t *set, sigset_t *oldset) {
   struct thread *t = self();
 
   if (oldset) *oldset = t->blocked_signals;
 
-  if (set)
-  {
-    switch (how)
-    {
+  if (set) {
+    switch (how) {
       case SIG_BLOCK:
         t->blocked_signals |= *set;
         break;
@@ -487,8 +470,7 @@ int set_signal_mask(int how, sigset_t *set, sigset_t *oldset)
 // Examine pending signals
 //
 
-int get_pending_signals(sigset_t *set)
-{
+int get_pending_signals(sigset_t *set) {
   struct thread *t = self();
 
   if (!set) return -EINVAL;
@@ -503,8 +485,7 @@ int get_pending_signals(sigset_t *set)
 // Deliver unblocked pending signals for current thread
 //
 
-int deliver_pending_signals(int retcode)
-{
+int deliver_pending_signals(int retcode) {
   struct thread *t = self();
   struct context *ctxt;
   int sigmask;
@@ -548,15 +529,13 @@ int deliver_pending_signals(int retcode)
   info->si_addr = NULL;
 
   // Setup return code in eax of context
-  if (ctxt->traptype == INTR_SYSENTER || ctxt->traptype == INTR_SYSCALL)
-  {
-    if (retcode < 0)
-    {
+  if (ctxt->traptype == INTR_SYSENTER || ctxt->traptype == INTR_SYSCALL) {
+    if (retcode < 0) {
       info->si_ctxt->errcode = retcode;
       info->si_ctxt->eax = -1;
-    }
-    else
+    } else{
       info->si_ctxt->eax = retcode;
+    }
   }
 
   // Set new stack pointer in user context
@@ -574,8 +553,7 @@ int deliver_pending_signals(int retcode)
 // Signal exit handler
 //
 
-static int sigexit_handler(struct context *ctxt, void *arg)
-{
+static int sigexit_handler(struct context *ctxt, void *arg) {
   struct thread *t = self();
   struct siginfo *info;
   int debug;
@@ -592,8 +570,7 @@ static int sigexit_handler(struct context *ctxt, void *arg)
   t->ctxt->eflags |= EFLAG_IF;
 
   // Restore errno to errcode in context
-  if (ctxt->traptype == INTR_SYSENTER || ctxt->traptype == INTR_SYSCALL)
-  {
+  if (ctxt->traptype == INTR_SYSENTER || ctxt->traptype == INTR_SYSCALL) {
     struct tib *tib = t->tib;
     if (tib) tib->errnum = -((int) ctxt->errcode);
   }
@@ -607,12 +584,10 @@ static int sigexit_handler(struct context *ctxt, void *arg)
 // div_handler
 //
 
-static int div_handler(struct context *ctxt, void *arg)
-{
-  if (usermode(ctxt))
+static int div_handler(struct context *ctxt, void *arg) {
+  if (usermode(ctxt)) {
     send_signal(ctxt, SIGFPE, (void *) ctxt->eip);
-  else
-  {
+  } else {
     kprintf(KERN_CRIT "trap: division by zero in kernel mode\n");
     dbg_enter(ctxt, 0);
   }
@@ -624,12 +599,10 @@ static int div_handler(struct context *ctxt, void *arg)
 // brkpt_handler
 //
 
-static int breakpoint_handler(struct context *ctxt, void *arg)
-{
-  if (usermode(ctxt))
+static int breakpoint_handler(struct context *ctxt, void *arg) {
+  if (usermode(ctxt)) {
     send_signal(ctxt, SIGTRAP, (void *) ctxt->eip);
-  else
-  {
+  } else {
     kprintf(KERN_CRIT "trap: breakpoint in kernel mode\n");
     dbg_enter(ctxt, 0);
   }
@@ -641,12 +614,10 @@ static int breakpoint_handler(struct context *ctxt, void *arg)
 // overflow_handler
 //
 
-static int overflow_handler(struct context *ctxt, void *arg)
-{
-  if (usermode(ctxt))
+static int overflow_handler(struct context *ctxt, void *arg) {
+  if (usermode(ctxt)) {
     send_signal(ctxt, SIGSEGV, NULL);
-  else
-  {
+  } else {
     kprintf(KERN_CRIT "trap: overflow exception in kernel mode\n");
     dbg_enter(ctxt, 0);
   }
@@ -660,10 +631,9 @@ static int overflow_handler(struct context *ctxt, void *arg)
 
 static int bounds_handler(struct context *ctxt, void *arg)
 {
-  if (usermode(ctxt))
+  if (usermode(ctxt)) {
     send_signal(ctxt, SIGSEGV, NULL);
-  else
-  {
+  } else {
     kprintf(KERN_CRIT "trap: bounds exception in kernel mode\n");
     dbg_enter(ctxt, 0);
   }
@@ -675,12 +645,10 @@ static int bounds_handler(struct context *ctxt, void *arg)
 // illop_handler
 //
 
-static int illop_handler(struct context *ctxt, void *arg)
-{
-  if (usermode(ctxt))
+static int illop_handler(struct context *ctxt, void *arg) {
+  if (usermode(ctxt)) {
     send_signal(ctxt, SIGILL, (void *) ctxt->eip);
-  else
-  {
+  } else {
     kprintf(KERN_CRIT "trap: illegal instruction exception in kernel mode\n");
     dbg_enter(ctxt, 0);
   }
@@ -694,10 +662,9 @@ static int illop_handler(struct context *ctxt, void *arg)
 
 static int seg_handler(struct context *ctxt, void *arg)
 {
-  if (usermode(ctxt))
+  if (usermode(ctxt)) {
     send_signal(ctxt, SIGBUS, NULL);
-  else
-  {
+  } else {
     kprintf(KERN_CRIT "trap: sement not present exception in kernel mode\n");
     dbg_enter(ctxt, 0);
   }
@@ -709,12 +676,10 @@ static int seg_handler(struct context *ctxt, void *arg)
 // stack_handler
 //
 
-static int stack_handler(struct context *ctxt, void *arg)
-{
-  if (usermode(ctxt))
+static int stack_handler(struct context *ctxt, void *arg) {
+  if (usermode(ctxt)) {
     send_signal(ctxt, SIGBUS, NULL);
-  else
-  {
+  } else {
     kprintf(KERN_CRIT "trap: stack segment exception in kernel mode\n");
     dbg_enter(ctxt, 0);
   }
@@ -726,12 +691,10 @@ static int stack_handler(struct context *ctxt, void *arg)
 // genpro_handler
 //
 
-static int genpro_handler(struct context *ctxt, void *arg)
-{
-  if (usermode(ctxt))
+static int genpro_handler(struct context *ctxt, void *arg) {
+  if (usermode(ctxt)) {
     send_signal(ctxt, SIGSEGV, NULL);
-  else
-  {
+  } else {
     kprintf(KERN_CRIT "trap: general protection exception in kernel mode\n");
     dbg_enter(ctxt, 0);
   }
@@ -751,18 +714,14 @@ static int pagefault_handler(struct context *ctxt, void *arg)
   addr = (void *) get_cr2();
   pageaddr = (void *) PAGEADDR(addr);
 
-  if (usermode(ctxt))
-  {
-    if (page_guarded(pageaddr))
-    {
+  if (usermode(ctxt)) {
+    if (page_guarded(pageaddr)) {
       unguard_page(pageaddr);
       if (guard_page_handler(pageaddr) < 0) send_signal(ctxt, SIGSTKFLT, addr);
-    }
-    else
+    } else {
       send_signal(ctxt, SIGSEGV, addr);
-  }
-  else
-  {
+    }
+  } else {
     kprintf(KERN_CRIT "trap: page fault in kernel mode\n");
     dbg_enter(ctxt, addr);
   }
@@ -774,12 +733,10 @@ static int pagefault_handler(struct context *ctxt, void *arg)
 // alignment_handler
 //
 
-static int alignment_handler(struct context *ctxt, void *arg)
-{
-  if (usermode(ctxt))
+static int alignment_handler(struct context *ctxt, void *arg) {
+  if (usermode(ctxt)) {
     send_signal(ctxt, SIGBUS, (void *) get_cr2());
-  else
-  {
+  } else {
     kprintf(KERN_CRIT "trap: alignment exception in kernel mode\n");
     dbg_enter(ctxt, 0);
   }
@@ -793,17 +750,14 @@ static int alignment_handler(struct context *ctxt, void *arg)
 // Performance counters for traps
 //
 
-static int traps_proc(struct proc_file *pf, void *arg)
-{
+static int traps_proc(struct proc_file *pf, void *arg) {
   int i;
 
   pprintf(pf, "no trap                                  count\n");
   pprintf(pf, "-- -------------------------------- ----------\n");
 
-  for (i = 0; i < INTRS; i++) 
-  {
-    if (intrcount[i] != 0)
-    {
+  for (i = 0; i < INTRS; i++) {
+    if (intrcount[i] != 0) {
       pprintf(pf,"%2d %-32s %10d\n", i, trapnames[i], intrcount[i]);
     }
   }
@@ -817,13 +771,11 @@ static int traps_proc(struct proc_file *pf, void *arg)
 // Initialize traps and interrupts
 //
 
-void init_trap()
-{
+void init_trap() {
   int i;
 
   // Initialize interrupt dispatch table
-  for (i = 0; i < INTRS; i++) 
-  {
+  for (i = 0; i < INTRS; i++) {
     intrhndlr[i] = NULL;
     intrcount[i] = 0;
   }
@@ -908,8 +860,7 @@ void init_trap()
   register_interrupt(&sigexitintr, INTR_SIGEXIT, sigexit_handler, NULL);
 
   // Initialize fast syscall
-  if (cpu.features & CPU_FEATURE_SEP)
-  {
+  if (cpu.features & CPU_FEATURE_SEP) {
     wrmsr(MSR_SYSENTER_CS, SEL_KTEXT | mach.kring, 0);
     wrmsr(MSR_SYSENTER_ESP, TSS_ESP0, 0);
     wrmsr(MSR_SYSENTER_EIP, (unsigned long) sysentry, 0);
@@ -925,8 +876,7 @@ void init_trap()
 // Trap dispatcher
 //
 
-static void trap(unsigned long args)
-{
+static void trap(unsigned long args) {
   struct context *ctxt = (struct context *) &args;
   struct thread *t = self();
   struct context *prevctxt;
@@ -943,14 +893,10 @@ static void trap(unsigned long args)
 
   // Call interrupt handlers
   intr = intrhndlr[ctxt->traptype];
-  if (!intr)
-  {
+  if (!intr) {
     dbg_enter(ctxt, NULL);
-  }
-  else
-  {
-    while (intr)
-    {
+  } else {
+    while (intr) {
       rc = intr->handler(ctxt, intr->arg);
       if (rc > 0) break;
       intr = intr->next;
@@ -959,8 +905,7 @@ static void trap(unsigned long args)
 
   // If we interrupted a user mode context, dispatch DPCs,
   // check for quantum expiry, and deliver signals.
-  if (usermode(ctxt)) 
-  {
+  if (usermode(ctxt)) {
     check_dpc_queue();
     check_preempt();
     if (signals_ready(t)) deliver_pending_signals(0);
@@ -976,8 +921,7 @@ static void trap(unsigned long args)
 // Register interrupt handler for interrupt
 //
 
-void register_interrupt(struct interrupt *intr, int intrno, intrproc_t f, void *arg)
-{
+void register_interrupt(struct interrupt *intr, int intrno, intrproc_t f, void *arg) {
   intr->handler = f;
   intr->arg = arg;
   intr->flags = 0;
@@ -991,20 +935,14 @@ void register_interrupt(struct interrupt *intr, int intrno, intrproc_t f, void *
 // Remove interrupt handler for interrupt
 //
 
-void unregister_interrupt(struct interrupt *intr, int intrno)
-{
+void unregister_interrupt(struct interrupt *intr, int intrno) {
   struct interrupt *i;
 
-  if (intrhndlr[intrno] == intr)
-  {
+  if (intrhndlr[intrno] == intr) {
     intrhndlr[intrno] = intr->next;
-  }
-  else 
-  {
-    for (i = intrhndlr[intrno]; i != NULL; i = i->next)
-    {
-      if (i->next == intr)
-      {
+  } else {
+    for (i = intrhndlr[intrno]; i != NULL; i = i->next) {
+      if (i->next == intr) {
         i->next = intr->next;
         break;
       }
@@ -1019,8 +957,7 @@ void unregister_interrupt(struct interrupt *intr, int intrno)
 // Retrieves the processor context for a thread
 //
 
-int get_context(struct thread *t, struct context *ctxt)
-{
+int get_context(struct thread *t, struct context *ctxt) {
   memcpy(ctxt, t->ctxt, sizeof(struct context));
   return 0;
 }
@@ -1031,8 +968,7 @@ int get_context(struct thread *t, struct context *ctxt)
 // Sets the processor context for a thread
 //
 
-int set_context(struct thread *t, struct context *ctxt)
-{
+int set_context(struct thread *t, struct context *ctxt) {
   t->ctxt->esp = ctxt->esp;
   t->ctxt->eip = ctxt->eip;
   t->ctxt->eflags = ctxt->eflags;

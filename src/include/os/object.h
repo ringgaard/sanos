@@ -78,8 +78,7 @@ struct waitblock;
 
 typedef void *object_t;
 
-struct object
-{
+struct object {
   unsigned short type;
   short signaled;
 
@@ -90,8 +89,7 @@ struct object
   struct waitblock *waitlist_tail;
 };
 
-struct waitblock
-{
+struct waitblock {
   struct thread *thread;
   struct object *object;
 
@@ -106,8 +104,7 @@ struct waitblock
 
 struct iomux;
 
-struct ioobject
-{
+struct ioobject {
   struct object object;
 
   struct iomux *iomux;
@@ -120,8 +117,7 @@ struct ioobject
   unsigned short events_monitored;
 };
 
-struct iomux
-{
+struct iomux {
   struct object object;
   int flags;
 
@@ -132,33 +128,28 @@ struct iomux
   struct ioobject *waiting_tail;
 };
 
-struct event
-{
+struct event {
   struct object object;
   int manual_reset;
 };
 
-struct sem
-{
+struct sem {
   struct object object;
   unsigned int count;
 };
 
-struct mutex
-{
+struct mutex {
   struct object object;
   struct thread *owner;
   int recursion;
 };
 
-struct waitable_timer
-{
+struct waitable_timer {
   struct object object;
   struct timer timer;
 };
 
-struct thread
-{
+struct thread {
   struct object object;
 
   int state;

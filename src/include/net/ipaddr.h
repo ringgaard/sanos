@@ -38,8 +38,7 @@
 #define IP_ADDR_ANY       0
 #define IP_ADDR_BROADCAST (&ip_addr_broadcast)
 
-struct ip_addr 
-{
+struct ip_addr {
   unsigned long addr;
 };
 

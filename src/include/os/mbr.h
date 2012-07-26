@@ -40,8 +40,7 @@
 
 #pragma pack(push, 1)
 
-struct disk_partition 
-{
+struct disk_partition {
   unsigned char bootid;   // Bootable?  0=no, 128=yes
   unsigned char beghead;  // Beginning head number
   unsigned char begsect;  // Beginning sector number
@@ -54,15 +53,13 @@ struct disk_partition
   unsigned int numsect;   // Number of sectors in partition
 };
 
-struct master_boot_record 
-{
+struct master_boot_record  {
   char bootstrap[446];
   struct disk_partition parttab[4];
   unsigned short signature;
 };
 
-struct boot_sector
-{
+struct boot_sector {
   char prolog[4];
   char label[8];
   unsigned short ldrsize;

@@ -33,28 +33,23 @@
 
 #include <os/krnl.h>
 
-static void dump_iomux(struct iomux *iomux)
-{
+static void dump_iomux(struct iomux *iomux) {
   struct ioobject *iob;
 
   kprintf("iomux %c", iomux->object.signaled ? '+' : '-');
-  if (iomux->ready_head)
-  {
+  if (iomux->ready_head) {
     kprintf(" r:");
     iob = iomux->ready_head;
-    while (iob)
-    {
+    while (iob) {
       kprintf("%d(%x,%x) ", ((((unsigned long) iob) >> 2) & 0xFF), iob->events_monitored, iob->events_signaled);
       iob = iob->next;
     }
   }
 
-  if (iomux->waiting_head)
-  {
+  if (iomux->waiting_head) {
     kprintf(" w:");
     iob = iomux->waiting_head;
-    while (iob)
-    {
+    while (iob) {
       kprintf("%d(%x,%x) ", ((((unsigned long) iob) >> 2) & 0xFF), iob->events_monitored, iob->events_signaled);
       iob = iob->next;
     }
@@ -62,8 +57,7 @@ static void dump_iomux(struct iomux *iomux)
   kprintf("\n");
 }
 
-static void release_waiting_threads(struct iomux *iomux)
-{
+static void release_waiting_threads(struct iomux *iomux) {
   struct waitblock *wb;
   struct waitblock *wb_next;
   struct ioobject *iob;
@@ -71,12 +65,10 @@ static void release_waiting_threads(struct iomux *iomux)
   // Dispatch all ready I/O objects to all ready waiting threads
   wb = iomux->object.waitlist_head;
   iob = iomux->ready_head;
-  while (iob && wb)
-  {
+  while (iob && wb) {
     wb_next = wb->next_wait;
 
-    if (thread_ready_to_run(wb->thread))
-    {
+    if (thread_ready_to_run(wb->thread)) {
       // Overwrite waitkey for thread with context for object
       wb->thread->waitkey = iob->context;
 
@@ -93,23 +85,20 @@ static void release_waiting_threads(struct iomux *iomux)
   }
 }
 
-void init_iomux(struct iomux *iomux, int flags)
-{
+void init_iomux(struct iomux *iomux, int flags) {
   init_object(&iomux->object, OBJECT_IOMUX);
   iomux->flags = flags;
   iomux->ready_head = iomux->ready_tail = NULL;
   iomux->waiting_head = iomux->waiting_tail = NULL;
 }
 
-int close_iomux(struct iomux *iomux)
-{
+int close_iomux(struct iomux *iomux) {
   struct ioobject *iob;
   struct ioobject *next;
 
   // Remove all objects from ready queue
   iob = iomux->ready_head;
-  while (iob)
-  {
+  while (iob) {
     next = iob->next;
     iob->iomux = NULL;
     iob->next = NULL;
@@ -119,8 +108,7 @@ int close_iomux(struct iomux *iomux)
 
   // Remove all objects from waiting queue
   iob = iomux->waiting_head;
-  while (iob)
-  {
+  while (iob) {
     next = iob->next;
     iob->iomux = NULL;
     iob->next = NULL;
@@ -131,15 +119,13 @@ int close_iomux(struct iomux *iomux)
   return 0;
 }
 
-int queue_ioobject(struct iomux *iomux, object_t hobj, int events, int context)
-{
+int queue_ioobject(struct iomux *iomux, object_t hobj, int events, int context) {
   struct ioobject *iob = (struct ioobject *) hobj;
 
   if (!ISIOOBJECT(iob)) return -EBADF;
   if (!events) return -EINVAL;
 
-  if (iob->iomux) 
-  {
+  if (iob->iomux) {
     // Do not allow already attached object to attach to another iomux
     if (iob->iomux != iomux) return -EPERM;
 
@@ -155,8 +141,7 @@ int queue_ioobject(struct iomux *iomux, object_t hobj, int events, int context)
   iob->context = context;
   
   // If some signaled event is monitored insert in ready queue else in waiting queue
-  if (iob->events_monitored & iob->events_signaled)
-  {
+  if (iob->events_monitored & iob->events_signaled) {
     iob->next = NULL;
     iob->prev = iomux->ready_tail;
 
@@ -165,9 +150,7 @@ int queue_ioobject(struct iomux *iomux, object_t hobj, int events, int context)
     if (!iomux->ready_head) iomux->ready_head = iob;
 
     iomux->object.signaled = 1;
-  }
-  else
-  {
+  } else {
     iob->next = NULL;
     iob->prev = iomux->waiting_tail;
 
@@ -182,8 +165,7 @@ int queue_ioobject(struct iomux *iomux, object_t hobj, int events, int context)
   return 0;
 }
 
-void init_ioobject(struct ioobject *iob, int type)
-{
+void init_ioobject(struct ioobject *iob, int type) {
   init_object(&iob->object, type);
   iob->iomux = NULL;
   iob->context = 0;
@@ -191,24 +173,19 @@ void init_ioobject(struct ioobject *iob, int type)
   iob->events_signaled = iob->events_monitored = 0;
 }
 
-void detach_ioobject(struct ioobject *iob)
-{
-  if (iob->iomux)
-  {
+void detach_ioobject(struct ioobject *iob) {
+  if (iob->iomux) {
     if (iob->next) iob->next->prev = iob->prev;
     if (iob->prev) iob->prev->next = iob->next;
 
-    if (iob->events_monitored & iob->events_signaled)
-    {
+    if (iob->events_monitored & iob->events_signaled) {
       // Remove from ready queue
       if (iob->iomux->ready_head == iob) iob->iomux->ready_head = iob->next; 
       if (iob->iomux->ready_tail == iob) iob->iomux->ready_tail = iob->prev; 
 
       // If ready queue is empty the iomux is no longer signaled
       if (!iob->iomux->ready_head) iob->iomux->object.signaled = 0;
-    }
-    else
-    {
+    } else {
       // Remove object from waiting queue
       if (iob->iomux->waiting_head == iob) iob->iomux->waiting_head = iob->next; 
       if (iob->iomux->waiting_tail == iob) iob->iomux->waiting_tail = iob->prev; 
@@ -219,8 +196,7 @@ void detach_ioobject(struct ioobject *iob)
   }
 }
 
-void set_io_event(struct ioobject *iob, int events)
-{
+void set_io_event(struct ioobject *iob, int events) {
   struct iomux *iomux = iob->iomux;
 
   //
@@ -230,8 +206,7 @@ void set_io_event(struct ioobject *iob, int events)
   //  3) the new event(s) are being monitored.
   //
 
-  if (iomux && (iob->events_monitored & iob->events_signaled) == 0 && (iob->events_monitored & events) != 0)
-  {
+  if (iomux && (iob->events_monitored & iob->events_signaled) == 0 && (iob->events_monitored & events) != 0) {
     // Update signaled events
     iob->events_signaled |= events;
 
@@ -253,22 +228,18 @@ void set_io_event(struct ioobject *iob, int events)
 
     // Try to dispatch ready objects to waiting threads
     release_waiting_threads(iomux);
-  }
-  else
-  {
+  } else {
     // Just update the signaled event(s) for object
     iob->events_signaled |= events;
   }
 }
 
-void clear_io_event(struct ioobject *iob, int events)
-{
+void clear_io_event(struct ioobject *iob, int events) {
   // Clear events
   iob->events_signaled &= ~events;
 }
 
-int dequeue_event_from_iomux(struct iomux *iomux)
-{
+int dequeue_event_from_iomux(struct iomux *iomux) {
   struct ioobject *iob;
 
   // Get first ready object, return error if no objects are ready
@@ -282,8 +253,7 @@ int dequeue_event_from_iomux(struct iomux *iomux)
   return iob->context;
 }
 
-static int check_fds(fd_set *fds, int eventmask)
-{
+static int check_fds(fd_set *fds, int eventmask) {
   unsigned int n;
   int matches;
   struct ioobject *iob;
@@ -291,12 +261,10 @@ static int check_fds(fd_set *fds, int eventmask)
   if (!fds) return 0;
 
   matches = 0;
-  for (n = 0; n < fds->count; n++)
-  {
+  for (n = 0; n < fds->count; n++) {
     iob = (struct ioobject *) olock(fds->fd[n], OBJECT_ANY);
     if (!iob) return -EBADF;
-    if (!ISIOOBJECT(iob))
-    {
+    if (!ISIOOBJECT(iob)) {
       orel(iob);
       return -EBADF;
     }
@@ -308,20 +276,17 @@ static int check_fds(fd_set *fds, int eventmask)
   return matches;
 }
 
-static int add_fds_to_iomux(struct iomux *iomux, fd_set *fds, int eventmask)
-{
+static int add_fds_to_iomux(struct iomux *iomux, fd_set *fds, int eventmask) {
   unsigned int n;
   struct ioobject *iob;
   int rc;
 
   if (!fds) return 0;
 
-  for (n = 0; n < fds->count; n++)
-  {
+  for (n = 0; n < fds->count; n++) {
     iob = (struct ioobject *) olock(fds->fd[n], OBJECT_ANY);
     if (!iob) return -EBADF;
-    if (!ISIOOBJECT(iob))
-    {
+    if (!ISIOOBJECT(iob)) {
       orel(iob);
       return -EBADF;
     }
@@ -335,8 +300,7 @@ static int add_fds_to_iomux(struct iomux *iomux, fd_set *fds, int eventmask)
   return 0;
 }
 
-static int check_select(fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
-{
+static int check_select(fd_set *readfds, fd_set *writefds, fd_set *exceptfds) {
   int numread;
   int numwrite;
   int numexcept;
@@ -350,8 +314,7 @@ static int check_select(fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
   numexcept = check_fds(exceptfds, IOEVT_ERROR);
   if (numexcept < 0) return numexcept;
 
-  if (numread != 0 || numwrite != 0 || numexcept != 0)
-  {
+  if (numread != 0 || numwrite != 0 || numexcept != 0) {
     if (readfds) readfds->count = numread;
     if (writefds) writefds->count = numwrite;
     if (exceptfds) exceptfds->count = numexcept;
@@ -362,8 +325,7 @@ static int check_select(fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
   return 0;
 }
 
-int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
-{
+int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout) {
   unsigned int tmo;
   int rc;
   struct iomux iomux;
@@ -371,10 +333,11 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struc
   rc = check_select(readfds, writefds, exceptfds);
   if (rc != 0) return rc;
 
-  if (!timeout) 
+  if (!timeout) {
     tmo = INFINITE;
-  else
+  } else {
     tmo = timeout->tv_sec * 1000 + timeout->tv_usec / 1000;
+  }
 
   if (tmo == 0) return 0;
   if (timeout && !readfds && !writefds && !exceptfds) return msleep(tmo);
@@ -382,37 +345,32 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struc
   init_iomux(&iomux, 0);
 
   rc = add_fds_to_iomux(&iomux, readfds, IOEVT_READ | IOEVT_ACCEPT | IOEVT_CLOSE);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     close_iomux(&iomux);
     return rc;
   }
 
   rc = add_fds_to_iomux(&iomux, writefds, IOEVT_WRITE | IOEVT_CONNECT);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     close_iomux(&iomux);
     return rc;
   }
 
   rc = add_fds_to_iomux(&iomux, exceptfds, IOEVT_ERROR);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     close_iomux(&iomux);
     return rc;
   }
 
   rc = wait_for_object(&iomux, tmo);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     close_iomux(&iomux);
     if (rc == -ETIMEOUT) rc = 0;
     return rc;
   }
 
   rc = check_select(readfds, writefds, exceptfds);
-  if (rc == 0)
-  {
+  if (rc == 0) {
     if (readfds) readfds->count = 0;
     if (writefds) writefds->count = 0;
     if (exceptfds) exceptfds->count = 0;
@@ -422,8 +380,7 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struc
   return rc;
 }
 
-static int check_poll(struct pollfd fds[], unsigned int nfds)
-{
+static int check_poll(struct pollfd fds[], unsigned int nfds) {
   struct ioobject *iob;
   unsigned int n;
   int ready;
@@ -431,26 +388,20 @@ static int check_poll(struct pollfd fds[], unsigned int nfds)
   int mask;
 
   ready = 0;
-  for (n = 0; n < nfds; n++)
-  {
+  for (n = 0; n < nfds; n++) {
     revents = 0;
-    if (fds[n].fd >= 0)
-    {
+    if (fds[n].fd >= 0) {
       iob = (struct ioobject *) olock(fds[n].fd, OBJECT_ANY);
-      if (!iob || !ISIOOBJECT(iob))
-      {
+      if (!iob || !ISIOOBJECT(iob)) {
         revents = POLLNVAL;
         if (iob) orel(iob);
-      }
-      else
-      {
+      } else {
         mask = IOEVT_ERROR | IOEVT_CLOSE;
         if (fds[n].events & POLLIN) mask |= IOEVT_READ | IOEVT_ACCEPT;
         if (fds[n].events & POLLOUT) mask |= IOEVT_WRITE | IOEVT_CONNECT;
 
         mask &= iob->events_signaled;
-        if (mask != 0)
-        {
+        if (mask != 0) {
           if (mask & (IOEVT_READ | IOEVT_ACCEPT)) revents |= POLLIN;
           if (mask & (IOEVT_WRITE | IOEVT_CONNECT)) revents |= POLLOUT;
           if (mask & IOEVT_ERROR) revents |= POLLERR;
@@ -467,8 +418,7 @@ static int check_poll(struct pollfd fds[], unsigned int nfds)
   return ready;
 }
 
-static int add_fd_to_iomux(struct iomux *iomux, int fd, int events)
-{
+static int add_fd_to_iomux(struct iomux *iomux, int fd, int events) {
   struct ioobject *iob;
   int rc;
   int mask;
@@ -476,8 +426,7 @@ static int add_fd_to_iomux(struct iomux *iomux, int fd, int events)
   if (fd < 0) return 0;
   iob = (struct ioobject *) olock(fd, OBJECT_ANY);
   if (!iob) return -EBADF;
-  if (!ISIOOBJECT(iob))
-  {
+  if (!ISIOOBJECT(iob)) {
     orel(iob);
     return -EBADF;
   }
@@ -493,8 +442,7 @@ static int add_fd_to_iomux(struct iomux *iomux, int fd, int events)
   return 0;
 }
 
-int poll(struct pollfd fds[], unsigned int nfds, int timeout)
-{
+int poll(struct pollfd fds[], unsigned int nfds, int timeout) {
   struct iomux iomux;
   int rc;
   unsigned int n;
@@ -508,19 +456,16 @@ int poll(struct pollfd fds[], unsigned int nfds, int timeout)
 
   init_iomux(&iomux, 0);
 
-  for (n = 0; n < nfds; n++)
-  {
+  for (n = 0; n < nfds; n++) {
     rc = add_fd_to_iomux(&iomux, fds[n].fd, fds[n].events);
-    if (rc < 0)
-    {
+    if (rc < 0) {
       close_iomux(&iomux);
       return rc;
     }
   }
 
   rc = wait_for_object(&iomux, timeout);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     close_iomux(&iomux);
     if (rc == -ETIMEOUT) rc = 0;
     return rc;

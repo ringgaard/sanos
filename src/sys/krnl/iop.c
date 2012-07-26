@@ -35,10 +35,8 @@
 
 #ifndef VMACH
 
-unsigned char __declspec(naked) inb(port_t port)
-{
-  __asm
-  {
+unsigned char __declspec(naked) inb(port_t port) {
+  __asm {
     mov     dx,word ptr [esp + 4]
     xor     eax,eax
     in      al,dx
@@ -46,10 +44,8 @@ unsigned char __declspec(naked) inb(port_t port)
   }
 }
 
-unsigned short __declspec(naked) inw(port_t port)
-{
-  __asm
-  {
+unsigned short __declspec(naked) inw(port_t port) {
+  __asm {
     mov     dx,word ptr [esp + 4]
     xor     eax,eax
     in      ax,dx
@@ -57,20 +53,16 @@ unsigned short __declspec(naked) inw(port_t port)
   }
 }
 
-unsigned long __declspec(naked) ind(port_t port)
-{
-  __asm
-  {
+unsigned long __declspec(naked) ind(port_t port) {
+  __asm {
     mov     dx,word ptr [esp + 4]
     in      eax,dx
     ret
   }
 }
 
-void insw(port_t port, void *buf, int count)
-{
-  __asm
-  {
+void insw(port_t port, void *buf, int count) {
+  __asm {
     mov edx, port
     mov edi, buf
     mov ecx, count
@@ -78,10 +70,8 @@ void insw(port_t port, void *buf, int count)
   }
 }
 
-void insd(port_t port, void *buf, int count)
-{
-  __asm
-  {
+void insd(port_t port, void *buf, int count) {
+  __asm {
     mov edx, port
     mov edi, buf
     mov ecx, count
@@ -89,10 +79,8 @@ void insd(port_t port, void *buf, int count)
   }
 }
 
-unsigned char __declspec(naked) outb(port_t port, unsigned char val)
-{
-  __asm
-  {
+unsigned char __declspec(naked) outb(port_t port, unsigned char val) {
+  __asm {
     mov     dx,word ptr [esp + 4]
     mov     al,byte ptr [esp + 8]
     out     dx, al
@@ -100,10 +88,8 @@ unsigned char __declspec(naked) outb(port_t port, unsigned char val)
   }
 }
 
-unsigned short __declspec(naked) outw(port_t port, unsigned short val)
-{
-  __asm
-  {
+unsigned short __declspec(naked) outw(port_t port, unsigned short val) {
+  __asm {
     mov     dx,word ptr [esp + 4]
     mov     ax,word ptr [esp + 8]
     out     dx,ax
@@ -111,10 +97,8 @@ unsigned short __declspec(naked) outw(port_t port, unsigned short val)
   }
 }
 
-unsigned long __declspec(naked) outd(port_t port, unsigned long val)
-{
-  __asm
-  {
+unsigned long __declspec(naked) outd(port_t port, unsigned long val) {
+  __asm {
     mov     dx,word ptr [esp + 4]
     mov     eax,[esp + 8]
     out     dx,eax
@@ -122,10 +106,8 @@ unsigned long __declspec(naked) outd(port_t port, unsigned long val)
   }
 }
 
-void outsw(port_t port, void *buf, int count)
-{
-  __asm
-  {
+void outsw(port_t port, void *buf, int count) {
+  __asm {
     mov edx, port
     mov esi, buf
     mov ecx, count
@@ -133,10 +115,8 @@ void outsw(port_t port, void *buf, int count)
   }
 }
 
-void outsd(port_t port, void *buf, int count)
-{
-  __asm
-  {
+void outsd(port_t port, void *buf, int count) {
+  __asm {
     mov edx, port
     mov esi, buf
     mov ecx, count

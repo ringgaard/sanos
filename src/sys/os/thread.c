@@ -51,8 +51,7 @@ void freeenv(char **env);
 struct critsect proc_lock;
 int nextprocid = 1;
 
-void init_threads(hmodule_t hmod, struct term *initterm)
-{
+void init_threads(hmodule_t hmod, struct term *initterm) {
   struct tib *tib = gettib();
   struct peb *peb = getpeb();
   struct process *proc;
@@ -80,27 +79,21 @@ void init_threads(hmodule_t hmod, struct term *initterm)
   peb->firstproc = peb->lastproc = proc;
 }
 
-handle_t mkthread(void (__stdcall *startaddr)(struct tib *), unsigned long stacksize, struct tib **ptib)
-{
+handle_t mkthread(void (__stdcall *startaddr)(struct tib *), unsigned long stacksize, struct tib **ptib) {
   return syscall(SYSCALL_MKTHREAD, &startaddr);
 }
 
-void __stdcall threadstart(struct tib *tib)
-{
+void __stdcall threadstart(struct tib *tib) {
   // Call thread routine
-  if (tib->flags & CREATE_POSIX)
-  {
+  if (tib->flags & CREATE_POSIX) {
     endthread((int) ((void *(*)(void *)) (tib->startaddr))(tib->startarg));
-  }
-  else
-  {
+  } else {
     ((void (__stdcall *)(void *)) (tib->startaddr))(tib->startarg);
     endthread(0);
   }
 }
 
-static struct process *mkproc(struct process *parent, int hndl, int flags)
-{
+static struct process *mkproc(struct process *parent, int hndl, int flags) {
   struct peb *peb = getpeb();
   struct process *proc;
   int i;
@@ -109,12 +102,9 @@ static struct process *mkproc(struct process *parent, int hndl, int flags)
   if (!proc) return NULL;
   memset(proc, 0, sizeof(struct process));
 
-  if (flags & CREATE_DETACHED)
-  {
+  if (flags & CREATE_DETACHED) {
     for (i = 0; i < 3; i++) proc->iob[i] = NOHANDLE;
-  }
-  else
-  {
+  } else {
     for (i = 0; i < 3; i++) proc->iob[i] = dup(parent->iob[i]);
     proc->term = parent->term;
   }
@@ -135,8 +125,7 @@ static struct process *mkproc(struct process *parent, int hndl, int flags)
   return proc;
 }
 
-handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize, void *arg, int flags, struct tib **ptib)
-{
+handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize, void *arg, int flags, struct tib **ptib) {
   struct process *parent = gettib()->proc;
   struct tib *tib;
   struct process *proc;
@@ -149,17 +138,15 @@ handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize
   tib->startarg = arg;
   tib->flags = flags;
 
-  if (flags & CREATE_NEW_PROCESS)
-  {
+  if (flags & CREATE_NEW_PROCESS) {
     proc = mkproc(parent, h, flags);
-    if (!proc) 
-    {
+    if (!proc) {
       errno = ENOMEM;
       return -1;
     }
-  }
-  else
+  } else {
     proc = parent;
+  }
 
   atomic_add(&proc->threadcnt, 1);
   tib->proc = proc;
@@ -171,13 +158,11 @@ handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize
   return h;
 }
 
-handle_t self()
-{
+handle_t self() {
   return gettib()->hndl;
 }
 
-struct tib *getthreadblock(handle_t thread)
-{
+struct tib *getthreadblock(handle_t thread) {
   int rc;
 
   rc = syscall(SYSCALL_GETTHREADBLOCK, &thread);
@@ -185,18 +170,15 @@ struct tib *getthreadblock(handle_t thread)
   return (struct tib *) rc;
 }
 
-int suspend(handle_t thread)
-{
+int suspend(handle_t thread) {
   return syscall(SYSCALL_SUSPEND, &thread);
 }
 
-int resume(handle_t thread)
-{
+int resume(handle_t thread) {
   return syscall(SYSCALL_RESUME, &thread);
 }
 
-void endproc(struct process *proc, int status)
-{
+void endproc(struct process *proc, int status) {
   struct peb *peb = getpeb();
   struct process *parent;
   struct process *p;
@@ -209,11 +191,9 @@ void endproc(struct process *proc, int status)
 
   // Add zombie to parent process
   parent = proc->parent;
-  if (parent)
-  {
+  if (parent) {
     z = (struct zombie *) malloc(sizeof(struct zombie));
-    if (z)
-    {
+    if (z) {
       z->pid = proc->id;
       z->status = status;
       z->next = parent->zombies;
@@ -224,8 +204,7 @@ void endproc(struct process *proc, int status)
   }
 
   // Free zombies for process
-  while (proc->zombies)
-  {
+  while (proc->zombies) {
     z = proc->zombies->next;
     free(proc->zombies);
     proc->zombies = z;
@@ -260,8 +239,7 @@ void endproc(struct process *proc, int status)
   if (ppid != -1) kill(ppid, SIGCHLD);
 }
 
-void endthread(int status)
-{
+void endthread(int status) {
   struct process *proc;
 
   proc = gettib()->proc;
@@ -270,27 +248,23 @@ void endthread(int status)
   syscall(SYSCALL_ENDTHREAD, &status);
 }
 
-tid_t gettid()
-{
+tid_t gettid() {
   return gettib()->tid;
 }
 
-pid_t getpid()
-{
+pid_t getpid() {
   return gettib()->pid;
 }
 
-pid_t getppid()
-{
+pid_t getppid() {
   struct tib *tib = gettib();
   int id;
 
   enter(&proc_lock);
   
-  if (tib && tib->proc && tib->proc->parent)
+  if (tib && tib->proc && tib->proc->parent) {
     id = tib->proc->parent->id;
-  else
-  {
+  } else {
     id = -1;
     errno = ESRCH;
   }
@@ -300,8 +274,7 @@ pid_t getppid()
   return id;
 }
 
-int getchildstat(pid_t pid, int *status)
-{
+int getchildstat(pid_t pid, int *status) {
   struct process *proc = gettib()->proc;
   struct zombie *z;
   int rc;
@@ -309,21 +282,17 @@ int getchildstat(pid_t pid, int *status)
   enter(&proc_lock);
 
   z = proc->zombies;
-  if (pid == -1)
-  {
+  if (pid == -1) {
     if (z) proc->zombies = z->next;
-  }
-  else
-  {
+  } else {
     struct zombie *pz = NULL;
-    while (z)
-    {
-      if (z->pid == pid)
-      {      
-        if (pz)
+    while (z) {
+      if (z->pid == pid) {
+        if (pz) {
           pz->next = z->next;
-        else
+        } else {
           proc->zombies = z->next;
+        }
 
         break;
       }
@@ -332,22 +301,20 @@ int getchildstat(pid_t pid, int *status)
     }
   }
 
-  if (z)
-  {
+  if (z) {
     rc = z->pid;
     if (status) *status = z->status;
     free(z);
-  }
-  else
+  } else {
     rc = -1;
+  }
 
   leave(&proc_lock);
 
   return rc;
 }
 
-int setchildstat(pid_t pid, int status)
-{
+int setchildstat(pid_t pid, int status) {
   struct process *proc = gettib()->proc;
   struct zombie *z;
 
@@ -362,16 +329,13 @@ int setchildstat(pid_t pid, int status)
   return 0;
 }
 
-handle_t getprochandle(pid_t pid)
-{
+handle_t getprochandle(pid_t pid) {
   handle_t h = NOHANDLE;
   struct process *p;
 
   enter(&proc_lock);
-  for (p = getpeb()->firstproc; p; p = p->nextproc) 
-  {
-    if (p->id == pid)
-    {
+  for (p = getpeb()->firstproc; p; p = p->nextproc) {
+    if (p->id == pid) {
       h = dup(p->hndl);
       break;
     }
@@ -382,37 +346,30 @@ handle_t getprochandle(pid_t pid)
   return h;
 }
 
-int getcontext(handle_t thread, void *context)
-{
+int getcontext(handle_t thread, void *context) {
   return syscall(SYSCALL_GETCONTEXT, &thread);
 }
 
-int setcontext(handle_t thread, void *context)
-{
+int setcontext(handle_t thread, void *context) {
   return syscall(SYSCALL_SETCONTEXT, &thread);
 }
 
-int getprio(handle_t thread)
-{
+int getprio(handle_t thread) {
   return syscall(SYSCALL_GETPRIO, &thread);
 }
 
-int setprio(handle_t thread, int priority)
-{
+int setprio(handle_t thread, int priority) {
   return syscall(SYSCALL_SETPRIO, &thread);
 }
 
-int msleep(int millisecs)
-{
+int msleep(int millisecs) {
   return syscall(SYSCALL_MSLEEP, &millisecs);
 }
 
-struct tib *gettib()
-{
+struct tib *gettib() {
   struct tib *tib;
 
-  __asm
-  {
+  __asm {
     mov eax, fs:[TIB_SELF_OFFSET]
     mov [tib], eax
   }
@@ -420,16 +377,14 @@ struct tib *gettib()
   return tib;
 }
 
-void exit(int status)
-{
+void exit(int status) {
   struct process *proc = gettib()->proc;
 
   if (proc->atexit) proc->atexit(status);
   endthread(status);
 }
 
-static void __stdcall spawn_program(void *args)
-{
+static void __stdcall spawn_program(void *args) {
   struct process *proc = gettib()->proc;
   int rc;
 
@@ -437,15 +392,13 @@ static void __stdcall spawn_program(void *args)
   exit(rc);
 }
 
-static char *procname(const char *name)
-{
+static char *procname(const char *name) {
   char *procname;
   char *p = (char *) name;
   char *start = p;
   char *end = NULL;
 
-  while (*p)
-  {
+  while (*p) {
     if (*p == PS1 || *p == PS2) start = p + 1;
     if (*p == '.') end = p;
     p++;
@@ -460,8 +413,7 @@ static char *procname(const char *name)
   return procname;
 }
 
-int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib **tibptr)
-{
+int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib **tibptr) {
   hmodule_t hmod;
   handle_t hthread;
   struct tib *tib;
@@ -470,20 +422,17 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
   int rc;
   char pgmbuf[MAXPATH];
 
-  if (!pgm)
-  {
+  if (!pgm) {
     char *p = (char *) cmdline;
     char *q = pgmbuf;
     int dotseen = 0;
 
-    if (!cmdline)
-    {
+    if (!cmdline) {
       errno = EINVAL;
       return -1;
     }
 
-    while (*p != 0 && *p != ' ')
-    {
+    while (*p != 0 && *p != ' ') {
       if (*p == '.') dotseen = 1;
       if (*p == PS1 || *p == PS2) dotseen = 0;
       if (q - pgmbuf == MAXPATH - 1) break;
@@ -492,20 +441,16 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
     *q++ = 0;
     if (!dotseen && strlen(pgmbuf) + 5 < MAXPATH) strcat(pgmbuf, ".exe");
     pgm = pgmbuf;
-  }
-  else
-  {
+  } else {
     char *p = (char *) pgm;
     int dotseen = 0;
-    while (*p)
-    {
+    while (*p) {
       if (*p == '.') dotseen = 1;
       if (*p == PS1 || *p == PS2) dotseen = 0;
       p++;
     }
 
-    if (!dotseen && strlen(pgm) + 5 < MAXPATH)
-    {
+    if (!dotseen && strlen(pgm) + 5 < MAXPATH) {
       strcpy(pgmbuf, pgm);
       strcat(pgmbuf, ".exe");
       pgm = pgmbuf;
@@ -521,8 +466,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
   if (env) flags |= CREATE_NO_ENV;
 
   hthread = beginthread(spawn_program, 0, NULL, flags, &tib);
-  if (hthread < 0)
-  {
+  if (hthread < 0) {
     dlclose(hmod);
     return -1;
   }
@@ -533,19 +477,14 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
   proc->ident = procname(pgm);
   if (env) proc->env = copyenv(env);
 
-  if (mode & (P_NOWAIT | P_SUSPEND))
-  {
+  if (mode & (P_NOWAIT | P_SUSPEND)) {
     if (tibptr) *tibptr = tib;
     if ((mode & P_SUSPEND) == 0) resume(hthread);
     return hthread;
-  }
-  else
-  {
+  } else {
     rc = resume(hthread);
-    if (rc >= 0)
-    {
-      while (1)
-      {
+    if (rc >= 0) {
+      while (1) {
         rc = waitone(hthread, INFINITE);
         if (rc >= 0 || errno != EINTR) break;
       }

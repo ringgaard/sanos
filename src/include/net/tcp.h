@@ -98,8 +98,7 @@ err_t tcp_output(struct tcp_pcb *pcb);
 
 #pragma pack(push, 1)
 
-struct tcp_hdr 
-{
+struct tcp_hdr {
   unsigned short src, dest;
   unsigned long seqno, ackno;
   unsigned short _offset_flags;
@@ -119,8 +118,7 @@ struct tcp_hdr
 #define TCP_TCPLEN(seg) ((seg)->len + ((TCPH_FLAGS((seg)->tcphdr) & TCP_FIN || \
                                         TCPH_FLAGS((seg)->tcphdr) & TCP_SYN) ? 1 : 0))
 
-enum tcp_state 
-{
+enum tcp_state {
   CLOSED      = 0,
   LISTEN      = 1,
   SYN_SENT    = 2,
@@ -144,8 +142,7 @@ enum tcp_state
 #define TF_GOT_FIN   0x20   // Connection was closed by the remote end
 #define TF_IN_RECV   0x40   // Connection is processing received segment
 
-struct tcp_pcb 
-{
+struct tcp_pcb {
   struct tcp_pcb *next;   // For the linked list
 
   enum tcp_state state;   // TCP state
@@ -228,8 +225,7 @@ struct tcp_pcb
   struct tcp_seg *ooseq;    // Received out of sequence segments
 };
 
-struct tcp_pcb_listen 
-{
+struct tcp_pcb_listen {
   struct tcp_pcb_listen *next;   // For the linked list
   
   enum tcp_state state;          // TCP state
@@ -245,8 +241,7 @@ struct tcp_pcb_listen
 
 // TCP segments
 
-struct tcp_seg 
-{
+struct tcp_seg {
   struct tcp_seg *next;    // Used when putting segments on a queue
   struct pbuf *p;          // Buffer containing data + TCP header
   void *dataptr;           // Pointer to the TCP data in the pbuf
@@ -263,19 +258,16 @@ int tcp_segs_free(struct tcp_seg *seg);
 int tcp_seg_free(struct tcp_seg *seg);
 struct tcp_seg *tcp_seg_copy(struct tcp_seg *seg);
 
-__inline void tcp_ack(struct tcp_pcb *pcb)
-{
-  if (pcb->flags & TF_ACK_DELAY) 
-  {
+__inline void tcp_ack(struct tcp_pcb *pcb) {
+  if (pcb->flags & TF_ACK_DELAY) {
     pcb->flags |= TF_ACK_NOW;
     tcp_output(pcb);
-  }
-  else 
+  } else {
     pcb->flags |= TF_ACK_DELAY;
+  }
 }
 
-__inline void tcp_ack_now(struct tcp_pcb *pcb)
-{
+__inline void tcp_ack_now(struct tcp_pcb *pcb) {
   pcb->flags |= TF_ACK_NOW;
   tcp_output(pcb);
 }

@@ -34,8 +34,7 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-struct queue
-{
+struct queue {
   struct sem notempty;
   struct sem notfull;
   int size;

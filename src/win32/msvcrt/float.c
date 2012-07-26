@@ -38,8 +38,7 @@
 #define HIPTR(x) *(1+(int *) x)
 #define LOPTR(x) (*(int *) x)
 
-int _isnan(double x)
-{
+int _isnan(double x) {
   int hx, lx;
 
   hx = (HI(x) & 0x7fffffff);
@@ -49,21 +48,18 @@ int _isnan(double x)
   return ((unsigned) (hx)) >> 31;
 }
 
-double _copysign(double x, double y)
-{
+double _copysign(double x, double y) {
   HI(x) = (HI(x) & 0x7fffffff) | (HI(y) & 0x80000000);
   return x;
 }
 
-int _finite(double x)
-{
+int _finite(double x) {
   int hx; 
   hx = HI(x);
   return  (unsigned) ((hx & 0x7fffffff) - 0x7ff00000) >> 31;
 }
 
-unsigned int _control87(unsigned int new, unsigned int mask)
-{
+unsigned int _control87(unsigned int new, unsigned int mask) {
   // TODO: map between msvcrt fp flag definitions to i387 flags
 #if 0
   unsigned int fpcw;
@@ -77,8 +73,7 @@ unsigned int _control87(unsigned int new, unsigned int mask)
   return 0;
 }
 
-unsigned int _controlfp(unsigned int new, unsigned int mask)
-{
+unsigned int _controlfp(unsigned int new, unsigned int mask) {
   syslog(LOG_WARNING, "_controlcp not implemented, ignored");
   return 0;
 }

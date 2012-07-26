@@ -43,8 +43,7 @@
 #ifndef _IOVEC_DEFINED
 #define _IOVEC_DEFINED
 
-struct iovec 
-{ 
+struct iovec { 
   size_t iov_len;
   void *iov_base;
 };
@@ -54,8 +53,7 @@ struct iovec
 #ifndef _SOCKADDR_DEFINED
 #define _SOCKADDR_DEFINED
 
-struct sockaddr 
-{
+struct sockaddr {
   unsigned char sa_len;
   unsigned char sa_family;
   char sa_data[14];
@@ -66,8 +64,7 @@ struct sockaddr
 #ifndef _MSGHDR_DEFINED
 #define _MSGHDR_DEFINED
 
-struct msghdr
-{
+struct msghdr {
   struct sockaddr *msg_name;
   int msg_namelen;
   struct iovec *msg_iov;
@@ -79,8 +76,7 @@ struct msghdr
 #ifndef _LINGER_DEFINED
 #define _LINGER_DEFINED
 
-struct linger
-{
+struct linger {
   unsigned short l_onoff;
   unsigned short l_linger;
 };

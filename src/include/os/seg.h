@@ -76,8 +76,7 @@
 
 #pragma pack(push, 1)
 
-struct segment
-{
+struct segment {
   unsigned short limit_low;      // Limit 0..15
   unsigned short base_low;       // Base  0..15
   unsigned char base_med;        // Base  16..23
@@ -86,8 +85,7 @@ struct segment
   unsigned char base_high;       // Base 24..31
 };
 
-struct gate
-{
+struct gate {
   unsigned short offset_low;   // Offset 0..15
   unsigned short selector;     // Selector
   unsigned char notused;
@@ -95,33 +93,28 @@ struct gate
   unsigned short offset_high;  // Offset 16..31
 };
 
-struct desc
-{
+struct desc {
   unsigned long low;
   unsigned long high;
 };
 
-union dte
-{
+union dte {
   struct segment segment;
   struct gate gate;
   struct desc desc;
 };
 
-struct selector
-{ 
+struct selector {
   unsigned short limit;
   void *dt;
 };
 
-struct fullptr
-{
+struct fullptr {
   unsigned long offset;
   unsigned short segment;
 };
 
-void __inline seginit(struct segment *seg, unsigned long addr, unsigned long size, int access, int granularity)
-{
+void __inline seginit(struct segment *seg, unsigned long addr, unsigned long size, int access, int granularity) {
   seg->base_low = (unsigned short)(addr & 0xFFFF);
   seg->base_med = (unsigned char)((addr >> 16) & 0xFF);
   seg->base_high = (unsigned char)((addr >> 24) & 0xFF);

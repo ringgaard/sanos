@@ -42,14 +42,12 @@
 #define TIME_ADJUST_INTERVAL (8 * 60 * 60 * 1000)
 #define TIME_ADJUST_RETRY    (5 * 60 * 1000)
 
-struct ntp_server
-{
+struct ntp_server {
   struct sockaddr_in sa;
   char *hostname;
 };
 
-struct ntp_packet
-{
+struct ntp_packet {
   unsigned char mode : 3;
   unsigned char vn : 3;
   unsigned char li : 2;
@@ -72,8 +70,7 @@ struct ntp_packet
 static struct ntp_server ntp_servers[MAX_NTP_SERVERS];
 static int num_ntp_servers;
 
-int sntp_get(struct ntp_server *srv, struct timeval *tv)
-{
+int sntp_get(struct ntp_server *srv, struct timeval *tv) {
   struct ntp_packet pkt;
   int s;
   int rc;
@@ -85,8 +82,7 @@ int sntp_get(struct ntp_server *srv, struct timeval *tv)
   if (s < 0) return s;
 
   rc = connect(s, (struct sockaddr *) &srv->sa, sizeof(struct sockaddr_in));
-  if (rc < 0) 
-  {
+  if (rc < 0) {
     close(s);
     return rc;
   }
@@ -97,8 +93,7 @@ int sntp_get(struct ntp_server *srv, struct timeval *tv)
   pkt.originate_timestamp_secs = htonl(time(0) + NTP_EPOCH);
 
   rc = send(s, &pkt, sizeof pkt, 0);
-  if (rc != sizeof pkt)
-  {
+  if (rc != sizeof pkt) {
     close(s);
     return rc;
   }
@@ -107,8 +102,7 @@ int sntp_get(struct ntp_server *srv, struct timeval *tv)
   setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof(int)); 
 
   rc = recvfrom(s, &pkt, sizeof pkt, 0, NULL, NULL);
-  if (rc != sizeof pkt)
-  {
+  if (rc != sizeof pkt) {
     close(s);
     return rc;
   }
@@ -120,8 +114,7 @@ int sntp_get(struct ntp_server *srv, struct timeval *tv)
   return 0;
 }
 
-void __stdcall sntpd(void *arg)
-{
+void __stdcall sntpd(void *arg) {
   int i, j;
   struct ntp_server *srv;
   struct hostent *hp;
@@ -129,56 +122,44 @@ void __stdcall sntpd(void *arg)
   struct timeval tv;
 
   //syslog(LOG_AUX, "sntpd: started");
-  while (1)
-  {
+  while (1) {
     success = 0;
-    for (i = 0; i < num_ntp_servers; i++)
-    {
+    for (i = 0; i < num_ntp_servers; i++) {
       srv = &ntp_servers[i];
 
-      if (srv->hostname != NULL)
-      {
+      if (srv->hostname != NULL) {
         hp = gethostbyname(srv->hostname);
-        if (hp)
-        {
-          for (j = 0; hp->h_addr_list[j] != NULL; j++) 
-          {
+        if (hp) {
+          for (j = 0; hp->h_addr_list[j] != NULL; j++) {
             struct in_addr *addr = (struct in_addr *) (hp->h_addr_list[j]);
             memcpy(&srv->sa.sin_addr, addr, hp->h_length);
-            if (sntp_get(srv, &tv) >= 0)
-            {
+            if (sntp_get(srv, &tv) >= 0) {
               success = 1;
               break;
             }
           }
         }
-      }
-      else
-      {
+      } else {
         if (sntp_get(srv, &tv) >= 0) success = 1;
       }
 
       if (success) break;
     }
 
-    if (success)
-    {
+    if (success) {
       //struct timeval now;
       //gettimeofday(&now);
       settimeofday(&tv);
       //syslog(LOG_AUX, "sntpd: adjusting %d %d %a", tv.tv_sec - now.tv_sec, tv.tv_usec - now.tv_usec, &srv->sa.sin_addr);
       msleep(TIME_ADJUST_INTERVAL);
-    }
-    else
-    {
+    } else {
       syslog(LOG_AUX, "sntpd: error obtaining time from time server");
       msleep(TIME_ADJUST_RETRY);
     }
   }
 }
 
-void init_sntpd()
-{
+void init_sntpd() {
   int idx;
   struct section *sect;
   struct property *prop;
@@ -187,8 +168,7 @@ void init_sntpd()
   if (peb->ipaddr.s_addr == INADDR_ANY) return;
 
   idx = 0;
-  if (peb->ntp_server1.s_addr != INADDR_ANY)
-  {
+  if (peb->ntp_server1.s_addr != INADDR_ANY) {
     ntp_servers[idx].hostname = NULL;
     ntp_servers[idx].sa.sin_addr.s_addr = peb->ntp_server1.s_addr;
     ntp_servers[idx].sa.sin_family = AF_INET;
@@ -196,8 +176,7 @@ void init_sntpd()
     idx++;
   }
 
-  if (peb->ntp_server2.s_addr != INADDR_ANY)
-  {
+  if (peb->ntp_server2.s_addr != INADDR_ANY) {
     ntp_servers[idx].hostname = NULL;
     ntp_servers[idx].sa.sin_addr.s_addr = peb->ntp_server2.s_addr;
     ntp_servers[idx].sa.sin_family = AF_INET;
@@ -206,11 +185,9 @@ void init_sntpd()
   }
 
   sect = find_section(osconfig(), "ntp");
-  if (sect)
-  {
+  if (sect) {
     prop = sect->properties;
-    while (prop)
-    {
+    while (prop) {
       if (idx == MAX_NTP_SERVERS) break;
 
       ntp_servers[idx].hostname = prop->name;

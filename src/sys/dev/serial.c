@@ -161,16 +161,14 @@ static int serial_default_iobase[4] = {0x3F8, 0x2F8, 0x3E8, 0x2E8};
 
 int next_serial_portno = 1;
 
-struct fifo
-{
+struct fifo {
   unsigned char queue[QUEUE_SIZE];
   int count;
   int head;
   int tail;
 };
 
-struct serial_port 
-{
+struct serial_port {
   int iobase;                            // I/O base address
   int irq;                               // Interrupt number
   int type;                              // UART type
@@ -201,15 +199,13 @@ struct serial_port
 void serial_dpc(void *arg);
 static void drain_tx_queue(struct serial_port *sp);
 
-static void fifo_clear(struct fifo *f)
-{
+static void fifo_clear(struct fifo *f) {
   f->head = 0;
   f->tail = 0;
   f->count = 0;
 }
 
-__inline static int fifo_put(struct fifo *f, unsigned char c)
-{
+__inline static int fifo_put(struct fifo *f, unsigned char c) {
   if (f->count >= QUEUE_SIZE) return -ENOSPC;
   f->queue[f->head++] = c;
   f->count++;
@@ -218,8 +214,7 @@ __inline static int fifo_put(struct fifo *f, unsigned char c)
   return 0;
 }
 
-__inline static unsigned char fifo_get(struct fifo *f)
-{
+__inline static unsigned char fifo_get(struct fifo *f) {
   unsigned char c;
 
   if (f->count == 0) return 0;
@@ -230,18 +225,15 @@ __inline static unsigned char fifo_get(struct fifo *f)
   return c;
 }
 
-__inline static int fifo_empty(struct fifo *f)
-{
+__inline static int fifo_empty(struct fifo *f) {
   return f->count == 0;
 }
 
-__inline static int fifo_full(struct fifo *f)
-{
+__inline static int fifo_full(struct fifo *f) {
   return f->count == QUEUE_SIZE;
 }
 
-static void check_uart_type(struct serial_port *sp)
-{
+static void check_uart_type(struct serial_port *sp) {
   unsigned char b;
   unsigned char t1;
   unsigned char t2;
@@ -251,8 +243,7 @@ static void check_uart_type(struct serial_port *sp)
   outp(sp->iobase + UART_FCR, FCR_ENABLE);
   b = (inp((unsigned short) (sp->iobase + UART_IIR)) & IIR_FIFO_MASK) >> 6;
 
-  switch(b)
-  {
+  switch(b) {
     case 0:
       // No FIFO response is a 16450 or 8250.  The 8250
       // doesn't have a scratchpad register though.  We
@@ -285,16 +276,16 @@ static void check_uart_type(struct serial_port *sp)
   }
 }
 
-static void serial_config(struct serial_port *sp)
-{
+static void serial_config(struct serial_port *sp) {
   int divisor;
   unsigned char lcr;
 
   // Set baudrate
-  if (sp->cfg.speed == 0)
+  if (sp->cfg.speed == 0) {
     divisor = (1843200 / (16 * 9600));
-  else
+  } else {
     divisor = (1843200 / (16 * sp->cfg.speed));
+  }
 
   outp(sp->iobase + UART_LCR, LCR_DLAB);
   outp(sp->iobase + UART_DLH, (divisor >> 8) & 0xFF);
@@ -303,8 +294,7 @@ static void serial_config(struct serial_port *sp)
   // Set line control register
   lcr = 0;
 
-  switch (sp->cfg.parity)
-  {
+  switch (sp->cfg.parity) {
     case PARITY_NONE:  lcr |= 0; break;
     case PARITY_EVEN:  lcr |= LCR_PEVEN; break;
     case PARITY_ODD:   lcr |= LCR_PODD; break;
@@ -312,14 +302,12 @@ static void serial_config(struct serial_port *sp)
     case PARITY_SPACE: lcr |= LCR_PZERO; break;
   }
 
-  switch (sp->cfg.stopbits)
-  {
+  switch (sp->cfg.stopbits) {
     case 1: lcr |= 0; break;
     case 2: lcr |= LCR_STOPB; break;
   }
 
-  switch (sp->cfg.databits)
-  {
+  switch (sp->cfg.databits) {
     case 5: lcr |= LCR_5BITS; break;
     case 6: lcr |= LCR_6BITS; break;
     case 7: lcr |= LCR_7BITS; break;
@@ -329,13 +317,11 @@ static void serial_config(struct serial_port *sp)
   outp(sp->iobase + UART_LCR, lcr);
 }
 
-static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
+static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
   struct serial_port *sp = (struct serial_port *) dev->privdata;
   struct serial_status  *ss;
 
-  switch (cmd)
-  {
+  switch (cmd) {
     case IOCTL_GETDEVSIZE:
       return 0;
 
@@ -354,16 +340,13 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
       return 0;
 
     case IOCTL_SERIAL_WAITEVENT:
-      if (!args && size == 0)
-      {
+      if (!args && size == 0) {
         return wait_for_object(&sp->event, INFINITE);
-      }
-      else if (args && size == 4)
-      {
+      } else if (args && size == 4) {
         return wait_for_object(&sp->event, *(unsigned int *) args);
-      }
-      else
+      } else {
         return -EINVAL;
+      }
 
     case IOCTL_SERIAL_STAT:
       if (!args || size != sizeof(struct serial_status)) return -EINVAL;
@@ -378,10 +361,11 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
     case IOCTL_SERIAL_DTR:
       if (!args || size != 4) return -EINVAL;
       
-      if (*(int *) args)
+      if (*(int *) args) {
         sp->mcr |= MCR_DTR;
-      else
+      } else {
         sp->mcr &= ~MCR_DTR;
+      }
 
       outp(sp->iobase + UART_MCR, sp->mcr);
       return 0;
@@ -389,10 +373,11 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
     case IOCTL_SERIAL_RTS:
       if (!args || size != 4) return -EINVAL;
 
-      if (*(int *) args)
+      if (*(int *) args) {
         sp->mcr |= MCR_RTS;
-      else
+      } else {
         sp->mcr &= ~MCR_RTS;
+      }
 
       outp(sp->iobase + UART_MCR, sp->mcr);
       return 0;
@@ -419,8 +404,7 @@ static int serial_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int serial_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int serial_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   struct serial_port *sp = (struct serial_port *) dev->privdata;
   unsigned int n;
   unsigned char *bufp;
@@ -428,8 +412,7 @@ static int serial_read(struct dev *dev, void *buffer, size_t count, blkno_t blkn
   if (wait_for_object(&sp->rx_lock, sp->cfg.rx_timeout) < 0) return -ETIMEOUT;
 
   bufp = (unsigned char *) buffer;
-  for (n = 0; n < count; n++)
-  {
+  for (n = 0; n < count; n++) {
     // Wait until rx queue is not empty
     if (wait_for_object(&sp->rx_sem, n == 0 ? sp->cfg.rx_timeout : 0) < 0) break;
 
@@ -445,8 +428,7 @@ static int serial_read(struct dev *dev, void *buffer, size_t count, blkno_t blkn
   return n;
 }
 
-static int serial_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int serial_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   struct serial_port *sp = (struct serial_port *) dev->privdata;
   unsigned int n;
   unsigned char *bufp;
@@ -454,8 +436,7 @@ static int serial_write(struct dev *dev, void *buffer, size_t count, blkno_t blk
   if (wait_for_object(&sp->tx_lock, sp->cfg.tx_timeout) < 0) return -ETIMEOUT;
 
   bufp = (unsigned char *) buffer;
-  for (n = 0; n < count; n++)
-  {
+  for (n = 0; n < count; n++) {
     // Wait until tx queue is not full
     if (wait_for_object(&sp->tx_sem, sp->cfg.tx_timeout) < 0) break;
 
@@ -478,15 +459,13 @@ static int serial_write(struct dev *dev, void *buffer, size_t count, blkno_t blk
   return count;
 }
 
-static void drain_tx_queue(struct serial_port *sp)
-{
+static void drain_tx_queue(struct serial_port *sp) {
   unsigned char lsr;
   unsigned char b;
   int count;
 
   count = 0;
-  while (1)
-  {
+  while (1) {
     cli();
 
     // Is UART ready to transmit next byte
@@ -494,15 +473,13 @@ static void drain_tx_queue(struct serial_port *sp)
     sp->linestatus |= (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI));
     //kprintf("drain_tx_queue: lsr=%02X\n", lsr);
 
-    if (!(lsr & LSR_TXRDY)) 
-    {
+    if (!(lsr & LSR_TXRDY)) {
       sti();
       break;
     }
 
     // Is tx queue empty
-    if (fifo_empty(&sp->txq))
-    {
+    if (fifo_empty(&sp->txq)) {
       sti();
       break;
     }
@@ -522,8 +499,7 @@ static void drain_tx_queue(struct serial_port *sp)
   if (count > 0) release_sem(&sp->tx_sem, count);
 }
 
-static void serial_dpc(void *arg)
-{
+static void serial_dpc(void *arg) {
   int tqr;
   int rqr;
   int mlsc;
@@ -550,13 +526,11 @@ static void serial_dpc(void *arg)
   if (mlsc || rls) set_event(&sp->event);
 }
 
-static void serial_transmit(struct serial_port *sp)
-{
+static void serial_transmit(struct serial_port *sp) {
   unsigned char lsr;
   unsigned char b;
 
-  while (1)
-  {
+  while (1) {
     // Is UART ready to transmit next byte
     lsr = inp((unsigned short) (sp->iobase + UART_LSR));
     sp->linestatus |= (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI));
@@ -565,8 +539,7 @@ static void serial_transmit(struct serial_port *sp)
     if (!(lsr & LSR_TXRDY)) break;
 
     // Is tx queue empty
-    if (fifo_empty(&sp->txq)) 
-    {
+    if (fifo_empty(&sp->txq)) {
       sp->tx_busy = 0;
       break;
     }
@@ -581,13 +554,11 @@ static void serial_transmit(struct serial_port *sp)
   }
 }
 
-static void serial_receive(struct serial_port *sp)
-{
+static void serial_receive(struct serial_port *sp) {
   unsigned char lsr;
   unsigned char b;
 
-  while (1)
-  {
+  while (1) {
     // Is there any data ready in the UART
     lsr = inp((unsigned short) (sp->iobase + UART_LSR));
     sp->linestatus |= (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI));
@@ -597,25 +568,22 @@ static void serial_receive(struct serial_port *sp)
     // Get next byte from UART and insert in rx queue
     b = inp((unsigned short) (sp->iobase + UART_RX));
     //kprintf("serial: receive %02X\n", b);
-    if (fifo_put(&sp->rxq, b) < 0)
-    {
+    if (fifo_put(&sp->rxq, b) < 0) {
       kprintf("serial: rx queue overflow\n");
       sp->linestatus |= LINESTAT_OVERFLOW;
-    }
-    else
+    } else {
      sp->rx_queue_rel++;
+    }
   }
 }
 
-static int serial_handler(struct context *ctxt, void *arg)
-{
+static int serial_handler(struct context *ctxt, void *arg) {
   struct serial_port *sp = (struct serial_port *) arg;
   unsigned char iir;
   unsigned char lsr;
   int boguscnt = ISR_LIMIT;
 
-  while (1)
-  {
+  while (1) {
     lsr = inp((unsigned short) (sp->iobase + UART_LSR));
 
     // If receiver ready drain FIFO
@@ -630,8 +598,7 @@ static int serial_handler(struct context *ctxt, void *arg)
 
     if (iir & IIR_NOPEND) break;
 
-    switch (iir & IIR_IMASK)
-    {
+    switch (iir & IIR_IMASK) {
       case IIR_MLSC:
         // Modem status changed
         sp->msr = inp((unsigned short) (sp->iobase + UART_MSR));
@@ -645,8 +612,7 @@ static int serial_handler(struct context *ctxt, void *arg)
         break;
     }
 
-    if (--boguscnt < 0) 
-    {
+    if (--boguscnt < 0) {
       kprintf("serial: Too much work at interrupt, iir=0x%02x\n", iir);
       break;
     }
@@ -661,8 +627,7 @@ static int serial_handler(struct context *ctxt, void *arg)
   return 0;
 }
 
-struct driver serial_driver =
-{
+struct driver serial_driver = {
   "serial",
   DEV_TYPE_STREAM,
   serial_ioctl,
@@ -670,8 +635,7 @@ struct driver serial_driver =
   serial_write
 };
 
-static void init_serial_port(char *devname, int iobase, int irq, struct unit *unit)
-{
+static void init_serial_port(char *devname, int iobase, int irq, struct unit *unit) {
   struct serial_port *sp;
   dev_t devno;
 
@@ -709,8 +673,7 @@ static void init_serial_port(char *devname, int iobase, int irq, struct unit *un
   serial_config(sp);
 
   // Enable FIFO
-  if (sp->type == UART_16550A)
-  {
+  if (sp->type == UART_16550A) {
     outp(sp->iobase + UART_FCR, FCR_ENABLE | FCR_RCV_RST | FCR_XMT_RST | FCR_TRIGGER_14);
   }
 
@@ -729,8 +692,7 @@ static void init_serial_port(char *devname, int iobase, int irq, struct unit *un
   kprintf(KERN_INFO "%s: %s iobase 0x%x irq %d\n", device(devno)->name, uart_name[sp->type], sp->iobase, sp->irq);
 }
 
-int __declspec(dllexport) serial(struct unit *unit)
-{
+int __declspec(dllexport) serial(struct unit *unit) {
   int iobase;
   int irq;
   char devname[8];
@@ -747,22 +709,17 @@ int __declspec(dllexport) serial(struct unit *unit)
   return 0;
 }
 
-void init_serial()
-{
+void init_serial() {
   int port;
   int iobase;
 
   // Fallback to BIOS settings if PnP BIOS not present
-  if (next_serial_portno == 1)
-  {
-    for (port = 0; port < 4; port++)
-    {
+  if (next_serial_portno == 1) {
+    for (port = 0; port < 4; port++) {
       iobase = syspage->biosdata[port * 2] + (syspage->biosdata[port * 2 + 1] << 8);
 
-      if (iobase != 0)
-      {
-        switch (port)
-        {
+      if (iobase != 0) {
+        switch (port) {
           case 0: init_serial_port("com1", iobase, serial_default_irq[0], NULL); break;
           case 1: init_serial_port("com2", iobase, serial_default_irq[1], NULL); break;
           case 2: init_serial_port("com3", iobase, serial_default_irq[2], NULL); break;

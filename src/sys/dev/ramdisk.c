@@ -33,18 +33,15 @@
 
 #include <os/krnl.h>
 
-struct ramdisk
-{
+struct ramdisk {
   unsigned int blks;
   char *data;
 };
 
-static int ramdisk_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
+static int ramdisk_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
   struct ramdisk *rd = (struct ramdisk *) dev->privdata;
 
-  switch (cmd)
-  {
+  switch (cmd) {
     case IOCTL_GETDEVSIZE:
       return rd->blks;
 
@@ -55,8 +52,7 @@ static int ramdisk_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int ramdisk_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int ramdisk_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   struct ramdisk *rd = (struct ramdisk *) dev->privdata;
 
   if (count == 0) return 0;
@@ -65,8 +61,7 @@ static int ramdisk_read(struct dev *dev, void *buffer, size_t count, blkno_t blk
   return count;
 }
 
-static int ramdisk_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int ramdisk_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   struct ramdisk *rd = (struct ramdisk *) dev->privdata;
 
   if (count == 0) return 0;
@@ -75,8 +70,7 @@ static int ramdisk_write(struct dev *dev, void *buffer, size_t count, blkno_t bl
   return count;
 }
 
-struct driver ramdisk_driver =
-{
+struct driver ramdisk_driver = {
   "ramdisk",
   DEV_TYPE_BLOCK,
   ramdisk_ioctl,
@@ -84,8 +78,7 @@ struct driver ramdisk_driver =
   ramdisk_write
 };
 
-int __declspec(dllexport) ramdisk(struct unit *unit, char *opts)
-{
+int __declspec(dllexport) ramdisk(struct unit *unit, char *opts) {
   struct ramdisk *rd;
   char devname[DEVNAMELEN];
   int size;
@@ -110,8 +103,7 @@ int __declspec(dllexport) ramdisk(struct unit *unit, char *opts)
   return 0;
 }
 
-int create_initrd()
-{
+int create_initrd() {
   struct ramdisk *rd;
   dev_t devno;
   int size;

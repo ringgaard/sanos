@@ -34,8 +34,7 @@
 #define _CTYPE_DISABLE_MACROS
 #include <ctype.h>
 
-unsigned short _ctype[257] = 
-{
+unsigned short _ctype[257] = {
   0,                      // -1 EOF
   _CONTROL,               // 00 (NUL)
   _CONTROL,               // 01 (SOH)
@@ -170,86 +169,74 @@ unsigned short _ctype[257] =
 
 unsigned short *_pctype = _ctype + 1; // pointer to table for char's
 
-int _isctype(int c, int mask)
-{
-  if (((unsigned) (c + 1)) <= 256)
+int _isctype(int c, int mask) {
+  if (((unsigned) (c + 1)) <= 256) {
     return _pctype[c] & mask;
-  else
+  } else {
     return 0;
+  }
 }
 
-int isalpha(int c)
-{
+int isalpha(int c) {
   return _pctype[c] & (_UPPER | _LOWER);
 }
 
-int isupper(int c)
-{
+int isupper(int c) {
   return _pctype[c] & _UPPER;
 }
 
-int islower(int c)
-{
+int islower(int c) {
   return _pctype[c] & _LOWER;
 }
 
-int isdigit(int c)
-{
+int isdigit(int c) {
   return _pctype[c] & _DIGIT;
 }
 
-int isxdigit(int c)
-{
+int isxdigit(int c) {
   return _pctype[c] & _HEX;
 }
 
-int isspace(int c)
-{
+int isspace(int c) {
   return _pctype[c] & _SPACE;
 }
 
-int ispunct(int c)
-{
+int ispunct(int c) {
   return _pctype[c] & _PUNCT;
 }
 
-int isalnum(int c)
-{
+int isalnum(int c) {
   return _pctype[c] & (_UPPER | _LOWER | _DIGIT);
 }
 
-int isprint(int c)
-{
+int isprint(int c) {
   return _pctype[c] & (_BLANK | _PUNCT | _UPPER | _LOWER | _DIGIT);
 }
 
-int isgraph(int c)
-{
+int isgraph(int c) {
   return _pctype[c] & (_PUNCT | _UPPER | _LOWER | _DIGIT);
 }
 
-int iscntrl(int c)
-{
+int iscntrl(int c) {
   return _pctype[c] & _CONTROL;
 }
 
-int isleadbyte(int c)
-{
+int isleadbyte(int c) {
   return _pctype[c] & _LEADBYTE;
 }
 
-int toupper(int c)
-{
-  if (_pctype[c] & _LOWER)
+int toupper(int c) {
+  if (_pctype[c] & _LOWER) {
     return c - ('a' - 'A');
-  else
+  } else {
     return c;
+  }
 }
 
-int tolower(int c)
-{
-  if (_pctype[c] & _UPPER)
+int tolower(int c) {
+  if (_pctype[c] & _UPPER) {
     return c + ('a' - 'A');
-  else
+  } else {
     return c;
+  }
 }

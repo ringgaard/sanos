@@ -47,15 +47,13 @@
 #define MODULE_PROTECTED        0x0020
 #define MODULE_INITIALIZED      0x0040
 
-struct modalias
-{
+struct modalias {
   char *name;
   char *alias;
   struct modalias *next;
 };
 
-struct moddb
-{
+struct moddb {
   int flags;
   void *(*load_image)(char *name);
   int (*unload_image)(hmodule_t hmod, size_t size);
@@ -70,8 +68,7 @@ struct moddb
   struct modalias *aliases;
 };
 
-struct module
-{
+struct module {
   hmodule_t hmod;
   struct moddb *db;
   char *name;

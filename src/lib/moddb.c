@@ -45,13 +45,11 @@
 
 int vsprintf(char *buf, const char *fmt, va_list args);
 
-static void logmsg(struct moddb *db, const char *fmt, ...)
-{
+static void logmsg(struct moddb *db, const char *fmt, ...) {
   va_list args;
   char buffer[1024];
 
-  if (db->log)
-  {
+  if (db->log) {
     va_start(args, fmt);
     vsprintf(buffer, fmt, args);
     va_end(args);
@@ -59,14 +57,12 @@ static void logmsg(struct moddb *db, const char *fmt, ...)
   }
 }
 
-static char *get_basename(char *filename, char *buffer, int size)
-{
+static char *get_basename(char *filename, char *buffer, int size) {
   char *basename = filename;
   char *bufend = buffer + size - 1;
   char *p = filename;
 
-  while (*p && buffer < bufend)
-  {
+  while (*p && buffer < bufend) {
     *buffer = *p;
     if (*buffer == PS1 || *buffer == PS2) basename = buffer + 1;
     buffer++;
@@ -77,50 +73,43 @@ static char *get_basename(char *filename, char *buffer, int size)
   return basename;
 }
 
-static void insert_before(struct module *m, struct module *n)
-{
+static void insert_before(struct module *m, struct module *n) {
   n->next = m;
   n->prev = m->prev;
   m->prev->next = n;
   m->prev = n;
 }
 
-static void insert_after(struct module *m, struct module *n)
-{
+static void insert_after(struct module *m, struct module *n) {
   n->next = m->next;
   n->prev = m;
   m->next->prev = n;
   m->next = n;
 }
 
-static void remove(struct module *m)
-{
+static void remove(struct module *m) {
   m->next->prev = m->prev;
   m->prev->next = m->next;
 }
 
-struct image_header *get_image_header(hmodule_t hmod)
-{
+struct image_header *get_image_header(hmodule_t hmod) {
   struct dos_header *doshdr = (struct dos_header *) hmod;
 
   if (doshdr == NULL) return NULL;
   return (struct image_header *) RVA(hmod, doshdr->e_lfanew);
 }
 
-static void *get_image_directory(hmodule_t hmod, int dir)
-{
+static void *get_image_directory(hmodule_t hmod, int dir) {
   unsigned long addr = get_image_header(hmod)->optional.data_directory[dir].virtual_address;
   return (void *) addr ? RVA(hmod, addr) : 0;
 }
 
-struct module *get_module_for_handle(struct moddb *db, hmodule_t hmod)
-{
+struct module *get_module_for_handle(struct moddb *db, hmodule_t hmod) {
   struct module *m;
 
   // Try to find module in module list
   m = db->modules;
-  while (1)
-  {
+  while (1) {
     if (hmod == m->hmod) return m;
     m = m->next;
     if (m == db->modules) break;
@@ -129,8 +118,7 @@ struct module *get_module_for_handle(struct moddb *db, hmodule_t hmod)
   return NULL;
 }
 
-static char *find_in_modpaths(struct moddb *db, char *name, char *path)
-{
+static char *find_in_modpaths(struct moddb *db, char *name, char *path) {
   int i;
   char *p;
   char *s;
@@ -140,8 +128,7 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path)
   int len;
   struct modalias *ma;
 
-  for (i = 0; i < db->nmodpaths; i++)
-  {
+  for (i = 0; i < db->nmodpaths; i++) {
     // Build path name
     len = strlen(db->modpaths[i]);
     if (len > MAXPATH - 2) continue;
@@ -154,23 +141,20 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path)
     basename = p;
     dot = NULL;
     s = name;
-    while (*s && p < pathend)
-    {
-      if (*s == '.')
-      {
+    while (*s && p < pathend) {
+      if (*s == '.') {
         dot = s;
         *p++ = '.';
-      }
-      else if (*s >= 'A' && *s <= 'Z')
+      } else if (*s >= 'A' && *s <= 'Z') {
         *p++ = *s + ('a' - 'A');
-      else
+      } else {
         *p++ = *s;
+      }
 
       s++;
     }
 
-    if (!dot && p + 4 < pathend)
-    {
+    if (!dot && p + 4 < pathend) {
       memcpy(p, ".dll", 4);
       p += 4;
     }
@@ -179,10 +163,8 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path)
 
     // Check for alias
     ma = db->aliases;
-    while (ma)
-    {
-      if (strcmp(basename, ma->name) == 0 && basename + strlen(ma->name) < pathend)
-      {
+    while (ma) {
+      if (strcmp(basename, ma->name) == 0 && basename + strlen(ma->name) < pathend) {
         strcpy(basename, ma->alias);
         break;
       }
@@ -197,8 +179,7 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path)
   return NULL;
 }
 
-static char *get_module_name(struct moddb *db, char *name, char *path)
-{
+static char *get_module_name(struct moddb *db, char *name, char *path) {
   char *dot;
   char *basename;
   char *s;
@@ -207,35 +188,31 @@ static char *get_module_name(struct moddb *db, char *name, char *path)
   s = name;
   while (*s != 0 && *s != PS1 && *s != PS2) s++;
 
-  if (*s)
-  {
+  if (*s) {
     // Get full path name for module
     basename = get_basename(name, path, MAXPATH);
 
     // Convert base name to lower case
     dot = NULL;
     s = basename;
-    while (*s)
-    {
-      if (*s == '.')
+    while (*s) {
+      if (*s == '.') {
         dot = s;
-      else if (*s >= 'A' && *s <= 'Z')
+      } else if (*s >= 'A' && *s <= 'Z') {
         *s = *s + ('a' - 'A');
+      }
 
       s++;
     }
 
     // Add .dll to name if no extension
-    if (!dot)
-    {
+    if (!dot) {
       memcpy(s, ".dll", 4);
       s += 4;
     }
 
     *s = 0;
-  }
-  else
-  {
+  } else {
     // Search for file in library paths
     basename = find_in_modpaths(db, name, path);
   }
@@ -243,8 +220,7 @@ static char *get_module_name(struct moddb *db, char *name, char *path)
   return basename;
 }
 
-static struct module *get_module(struct moddb *db, char *name)
-{
+static struct module *get_module(struct moddb *db, char *name) {
   char buffer[MAXPATH];
   char *basename;
   char *dot;
@@ -255,8 +231,7 @@ static struct module *get_module(struct moddb *db, char *name)
 
   // Get canonical module name
   basename = name;
-  while (*name)
-  {
+  while (*name) {
     if (*name == PS1 || *name == PS2) basename = name + 1;
     name++;
   }
@@ -264,25 +239,22 @@ static struct module *get_module(struct moddb *db, char *name)
   p = buffer;
   s = basename;
   dot = NULL;
-  while (*s)
-  {
+  while (*s) {
     if (p - buffer == MAXPATH - 1) break;
 
-    if (*s == '.')
-    {
+    if (*s == '.') {
       dot = s;
       *p++ = '.';
-    }
-    else if (*s >= 'A' && *s <= 'Z')
+    } else if (*s >= 'A' && *s <= 'Z') {
       *p++ = *s + ('a' - 'A');
-    else
+    } else {
       *p++ = *s;
+    }
 
     s++;
   }
 
-  if (!dot && p - buffer < MAXPATH - 5)
-  {
+  if (!dot && p - buffer < MAXPATH - 5) {
     memcpy(p, ".dll", 4);
     p += 4;
   }
@@ -291,16 +263,14 @@ static struct module *get_module(struct moddb *db, char *name)
 
   // Check for alias
   ma = db->aliases;
-  while (ma)
-  {
+  while (ma) {
     if (strcmp(buffer, ma->name) == 0) return get_module(db, ma->alias);
     ma = ma->next;
   }
 
   // Try to find module in module list
   m = db->modules;
-  while (1)
-  {
+  while (1) {
     if (strcmp(buffer, m->name) == 0) return m;
     m = m->next;
     if (m == db->modules) break;
@@ -309,8 +279,7 @@ static struct module *get_module(struct moddb *db, char *name)
   return NULL;
 }
 
-static void *get_proc_by_name(hmodule_t hmod, int hint, char *procname)
-{
+static void *get_proc_by_name(hmodule_t hmod, int hint, char *procname) {
   struct image_export_directory *exp;
   unsigned int *names;
   unsigned int i;
@@ -320,19 +289,16 @@ static void *get_proc_by_name(hmodule_t hmod, int hint, char *procname)
 
   names = (unsigned int *) RVA(hmod, exp->address_of_names);
 
-  if (hint >= 0 && hint < (int) exp->number_of_names && strcmp(procname, RVA(hmod, names[hint])) == 0)
-  {
+  if (hint >= 0 && hint < (int) exp->number_of_names && strcmp(procname, RVA(hmod, names[hint])) == 0) {
     unsigned short idx;
 
     idx = *((unsigned short *) RVA(hmod, exp->address_of_name_ordinals) + hint);
     return RVA(hmod, *((unsigned long *) RVA(hmod, exp->address_of_functions) + idx));
   }
 
-  for (i = 0; i < exp->number_of_names; i++)
-  {
+  for (i = 0; i < exp->number_of_names; i++) {
     char *name = RVA(hmod,  *names);
-    if (strcmp(name, procname) == 0)
-    {
+    if (strcmp(name, procname) == 0) {
       unsigned short idx;
       
       idx = *((unsigned short *) RVA(hmod, exp->address_of_name_ordinals) + i);
@@ -345,8 +311,7 @@ static void *get_proc_by_name(hmodule_t hmod, int hint, char *procname)
   return NULL;
 }
 
-static void *get_proc_by_ordinal(hmodule_t hmod, unsigned int ordinal)
-{
+static void *get_proc_by_ordinal(hmodule_t hmod, unsigned int ordinal) {
   struct image_export_directory *exp;
 
   exp = (struct image_export_directory *) get_image_directory(hmod, IMAGE_DIRECTORY_ENTRY_EXPORT);
@@ -356,8 +321,7 @@ static void *get_proc_by_ordinal(hmodule_t hmod, unsigned int ordinal)
   return RVA(hmod, *((unsigned long *) RVA(hmod, exp->address_of_functions) + (ordinal - exp->base)));
 }
 
-static struct module *resolve_imports(struct module *mod)
-{
+static struct module *resolve_imports(struct module *mod) {
   struct image_import_descriptor *imp;
   struct module *modlist = mod;
   char path[MAXPATH];
@@ -367,25 +331,21 @@ static struct module *resolve_imports(struct module *mod)
   if (!imp) return mod;
 
   // Load each dependent module
-  while (imp->characteristics != 0)
-  {
+  while (imp->characteristics != 0) {
     char *name = RVA(mod->hmod, imp->name);
     struct module *newmod = get_module(mod->db, name);
 
-    if (newmod == NULL)
-    {
+    if (newmod == NULL) {
       char *imgbase;
 
       name = get_module_name(mod->db, name, path);
-      if (!name)
-      {
+      if (!name) {
         logmsg(mod->db, "module %s not found", RVA(mod->hmod, imp->name));
         return NULL;
       }
 
       imgbase = mod->db->load_image(path);
-      if (imgbase == NULL) 
-      {
+      if (imgbase == NULL) {
         logmsg(mod->db, "unable to load module %s", path);
         return NULL;
       }
@@ -411,8 +371,7 @@ static struct module *resolve_imports(struct module *mod)
   return modlist;
 }
 
-static int bind_imports(struct module *mod)
-{
+static int bind_imports(struct module *mod) {
   struct image_import_descriptor *imp;
   int errs = 0;
 
@@ -420,15 +379,13 @@ static int bind_imports(struct module *mod)
   imp = (struct image_import_descriptor *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_IMPORT);
   if (!imp) return 0;
   
-  if (imp->forwarder_chain != 0 && imp->forwarder_chain != 0xFFFFFFFF)
-  {
+  if (imp->forwarder_chain != 0 && imp->forwarder_chain != 0xFFFFFFFF) {
     logmsg(mod->db, "import forwarder chains not supported (%s)", mod->name);
     return -ENOSYS;
   }
 
   // Update Import Address Table (IAT)
-  while (imp->characteristics != 0)
-  {
+  while (imp->characteristics != 0) {
     unsigned long *thunks;
     unsigned long *origthunks;
     struct image_import_by_name *ibn;
@@ -438,34 +395,27 @@ static int bind_imports(struct module *mod)
     name = RVA(mod->hmod, imp->name);
     expmod = get_module(mod->db, name);
     
-    if (!expmod) 
-    {
+    if (!expmod) {
       logmsg(mod->db, "module %s no longer loaded", name);
       return -ENOEXEC;
     }
     
     thunks = (unsigned long *) RVA(mod->hmod, imp->first_thunk);
     origthunks = (unsigned long *) RVA(mod->hmod, imp->original_first_thunk);
-    while (*thunks)
-    {
-      if (*origthunks & IMAGE_ORDINAL_FLAG)
-      {
+    while (*thunks) {
+      if (*origthunks & IMAGE_ORDINAL_FLAG) {
         // Import by ordinal
         unsigned long ordinal = *origthunks & ~IMAGE_ORDINAL_FLAG;
         *thunks = (unsigned long) get_proc_by_ordinal(expmod->hmod, ordinal);
-        if (*thunks == 0) 
-        {
+        if (*thunks == 0) {
           logmsg(mod->db, "unable to resolve %s:#%d in %s", expmod->name, ordinal, mod->name);
           errs++;
         }
-      }
-      else
-      {
+      } else {
         // Import by name (and hint)
         ibn = (struct image_import_by_name *) RVA(mod->hmod, *origthunks);
         *thunks = (unsigned long) get_proc_by_name(expmod->hmod, ibn->hint, ibn->name);
-        if (*thunks == 0)
-        {
+        if (*thunks == 0) {
           logmsg(mod->db, "unable to resolve %s:%s in %s", expmod->name, ibn->name, mod->name);
           errs++;
         }
@@ -484,8 +434,7 @@ static int bind_imports(struct module *mod)
   return 0;
 }
 
-static int relocate_module(struct module *mod)
-{
+static int relocate_module(struct module *mod) {
   unsigned long offset;
   char *pagestart;
   unsigned short *fixup;
@@ -496,8 +445,7 @@ static int relocate_module(struct module *mod)
   offset = (unsigned long) mod->hmod - get_image_header(mod->hmod)->optional.image_base;
   if (offset == 0) return 0;
 
-  if (get_image_header(mod->hmod)->header.characteristics & IMAGE_FILE_RELOCS_STRIPPED) 
-  {
+  if (get_image_header(mod->hmod)->header.characteristics & IMAGE_FILE_RELOCS_STRIPPED) {
     logmsg(mod->db, "relocation info missing for %s", mod->name);
     return -ENOEXEC;
   }
@@ -505,20 +453,17 @@ static int relocate_module(struct module *mod)
   reloc = (struct image_base_relocation *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_BASERELOC);
   if (!reloc) return 0;
 
-  while (reloc->virtual_address != 0 || reloc->size_of_block != 0)
-  {
+  while (reloc->virtual_address != 0 || reloc->size_of_block != 0) {
     pagestart = RVA(mod->hmod, reloc->virtual_address);
     nrelocs = (reloc->size_of_block - sizeof(struct image_base_relocation)) / 2;
     fixup = (unsigned short *) (reloc + 1);
-    for (i = 0; i < nrelocs; i++, fixup++)
-    {
+    for (i = 0; i < nrelocs; i++, fixup++) {
       unsigned short type = *fixup >> 12;
       unsigned short pos = *fixup & 0xfff;
 
-      if (type == IMAGE_REL_BASED_HIGHLOW)
+      if (type == IMAGE_REL_BASED_HIGHLOW) {
         *(unsigned long *) (pagestart + pos) += offset;
-      else if (type != IMAGE_REL_BASED_ABSOLUTE)
-      {
+      } else if (type != IMAGE_REL_BASED_ABSOLUTE) {
         logmsg(mod->db, "unsupported relocation type %d in %s", type, mod->name);
         return -ENOEXEC;
       }
@@ -531,27 +476,26 @@ static int relocate_module(struct module *mod)
   return 0;
 }
 
-static int protect_module(struct module *mod)
-{
+static int protect_module(struct module *mod) {
   struct image_header *imghdr = get_image_header(mod->hmod);
   int i;
 
   if (!mod->db->protect_region) return 0;
 
   // Set page protect for each section
-  for (i = 0; i < imghdr->header.number_of_sections; i++)
-  {
+  for (i = 0; i < imghdr->header.number_of_sections; i++) {
     int protect;
     unsigned long scn = imghdr->sections[i].characteristics & (IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE);
 
-    if (scn == (IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ)) 
+    if (scn == (IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ)) {
       protect = PAGE_EXECUTE_READ;
-    else if (scn == (IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE)) 
+    } else if (scn == (IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE)) {
       protect = PAGE_READWRITE;
-    else if (scn == IMAGE_SCN_MEM_READ)
+    } else if (scn == IMAGE_SCN_MEM_READ) {
       protect = PAGE_READONLY;
-    else
+    } else {
       protect = PAGE_EXECUTE_READWRITE;
+    }
 
     mod->db->protect_region(RVA(mod->hmod, imghdr->sections[i].virtual_address), imghdr->sections[i].size_of_raw_data, protect);
   }
@@ -560,8 +504,7 @@ static int protect_module(struct module *mod)
   return 0;
 }
 
-static void update_refcount(struct module *mod)
-{
+static void update_refcount(struct module *mod) {
   struct image_import_descriptor *imp;
 
   // If imports already ref counted just skip
@@ -572,8 +515,7 @@ static void update_refcount(struct module *mod)
   if (!imp) return;
 
   // Get or load each dependent module
-  while (imp->characteristics != 0)
-  {
+  while (imp->characteristics != 0) {
     char *name = RVA(mod->hmod, imp->name);
     struct module *depmod = get_module(mod->db, name);
 
@@ -585,31 +527,25 @@ static void update_refcount(struct module *mod)
   mod->flags |= MODULE_IMPORTS_REFED;
 }
 
-static int remove_module(struct module *mod)
-{
+static int remove_module(struct module *mod) {
   struct image_header *imghdr;
   struct image_import_descriptor *imp;
 
   imghdr = get_image_header(mod->hmod);
 
-  if (mod->flags & MODULE_INITIALIZED)
-  {
+  if (mod->flags & MODULE_INITIALIZED) {
     // Notify DLL
-    if (imghdr->header.characteristics & IMAGE_FILE_DLL)
-    {
+    if (imghdr->header.characteristics & IMAGE_FILE_DLL) {
       ((int (__stdcall *)(hmodule_t, int, void *)) get_entrypoint(mod->hmod))(mod->hmod, DLL_PROCESS_DETACH, NULL);
     }
     mod->flags &= ~MODULE_INITIALIZED;
   }
 
-  if (mod->flags & MODULE_IMPORTS_REFED)
-  {
+  if (mod->flags & MODULE_IMPORTS_REFED) {
     // Decrement reference count on all dependent modules 
     imp = (struct image_import_descriptor *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_IMPORT);
-    if (imp)
-    {
-      while (imp->characteristics != 0)
-      {
+    if (imp) {
+      while (imp->characteristics != 0) {
         char *name = RVA(mod->hmod, imp->name);
         struct module *depmod = get_module(mod->db, name);
 
@@ -622,8 +558,7 @@ static int remove_module(struct module *mod)
   }
 
   // Release memory for module
-  if (mod->flags & MODULE_LOADED)
-  {
+  if (mod->flags & MODULE_LOADED) {
     mod->db->unload_image(mod->hmod, imghdr->optional.size_of_image);
     mod->flags &= ~MODULE_LOADED;
   }
@@ -640,33 +575,26 @@ static int remove_module(struct module *mod)
   return 0;
 }
 
-static void free_unused_modules(struct moddb *db)
-{
+static void free_unused_modules(struct moddb *db) {
   struct module *mod;
   
   mod = db->modules;
-  while (1)
-  {
-    if (mod->refcnt == 0)
-    {
+  while (1) {
+    if (mod->refcnt == 0) {
       remove_module(mod);
       mod = db->modules;
-    }
-    else
-    {
+    } else {
       mod = mod->next;
       if (mod == db->modules) break;
     }
   }
 }
 
-void *get_proc_address(hmodule_t hmod, char *procname)
-{
+void *get_proc_address(hmodule_t hmod, char *procname) {
   return get_proc_by_name(hmod, -1, procname);
 }
 
-hmodule_t get_module_handle(struct moddb *db, char *name)
-{
+hmodule_t get_module_handle(struct moddb *db, char *name) {
   struct module *mod;
   
   if (!name || strlen(name) > MAXPATH - 1) return NULL;
@@ -675,8 +603,7 @@ hmodule_t get_module_handle(struct moddb *db, char *name)
   return mod->hmod;
 }
 
-int get_module_filename(struct moddb *db, hmodule_t hmod, char *buffer, int size)
-{
+int get_module_filename(struct moddb *db, hmodule_t hmod, char *buffer, int size) {
   struct module *mod;
   
   mod = get_module_for_handle(db, hmod);
@@ -685,13 +612,11 @@ int get_module_filename(struct moddb *db, hmodule_t hmod, char *buffer, int size
   return strlen(mod->path);
 }
 
-void *get_entrypoint(hmodule_t hmod)
-{
+void *get_entrypoint(hmodule_t hmod) {
   return RVA(hmod, get_image_header(hmod)->optional.address_of_entry_point);
 }
 
-hmodule_t load_module(struct moddb *db, char *name, int flags)
-{
+hmodule_t load_module(struct moddb *db, char *name, int flags) {
   char buffer[MAXPATH];
   char *basename;
   char *imgbase;
@@ -700,12 +625,10 @@ hmodule_t load_module(struct moddb *db, char *name, int flags)
   struct module *m;
   int rc;
 
-  if ((flags & MODLOAD_NOSHARE) == 0)
-  {
+  if ((flags & MODLOAD_NOSHARE) == 0) {
     // Return existing handle if module already loaded
     mod = get_module(db, name);
-    if (mod != NULL)
-    {
+    if (mod != NULL) {
       mod->refcnt++;
       return mod->hmod;
     }
@@ -732,33 +655,28 @@ hmodule_t load_module(struct moddb *db, char *name, int flags)
 
   // Resolve module dependencies
   modlist = resolve_imports(mod);
-  if (modlist == NULL)
-  {
+  if (modlist == NULL) {
     free_unused_modules(db);
     return NULL;
   }
 
   // Relocate, bind imports and protect new modules
   m = modlist;
-  while (1)
-  {
+  while (1) {
     rc = relocate_module(m);
-    if (rc < 0)
-    {
+    if (rc < 0) {
       free_unused_modules(db);
       return NULL;
     }
 
     rc = bind_imports(m);
-    if (rc < 0)
-    {
+    if (rc < 0) {
       free_unused_modules(db);
       return NULL;
     }
 
     rc = protect_module(m);
-    if (rc < 0)
-    {
+    if (rc < 0) {
       free_unused_modules(db);
       return NULL;
     }
@@ -769,19 +687,15 @@ hmodule_t load_module(struct moddb *db, char *name, int flags)
 
   // Initialize and notify new modules
   m = modlist;
-  while (1)
-  {
-    if (get_image_header(m->hmod)->header.characteristics & IMAGE_FILE_DLL)
-    {
-      if ((flags & MODLOAD_NOINIT) == 0 || m != mod)
-      {
+  while (1) {
+    if (get_image_header(m->hmod)->header.characteristics & IMAGE_FILE_DLL) {
+      if ((flags & MODLOAD_NOINIT) == 0 || m != mod) {
         int ok;
 
         //logmsg(db, "initializing module %s", m->name);
         ok = ((int (__stdcall *)(hmodule_t, int, void *)) get_entrypoint(m->hmod))(m->hmod, DLL_PROCESS_ATTACH, NULL);
         //logmsg(db, "module %s initialized%s", m->name, ok ? "" : ", init failed");
-        if (!ok)
-        {
+        if (!ok) {
           free_unused_modules(db);
           return NULL;
         }
@@ -800,8 +714,7 @@ hmodule_t load_module(struct moddb *db, char *name, int flags)
   // Update ref counts on depend module
   mod->refcnt++;
   m = modlist;
-  while (1)
-  {
+  while (1) {
     update_refcount(m);
     if (m == mod) break;
     m = m->next;
@@ -810,8 +723,7 @@ hmodule_t load_module(struct moddb *db, char *name, int flags)
   return mod->hmod;
 }
 
-int unload_module(struct moddb *db, hmodule_t hmod)
-{
+int unload_module(struct moddb *db, hmodule_t hmod) {
   struct module *mod;
 
   // Find module
@@ -825,29 +737,23 @@ int unload_module(struct moddb *db, hmodule_t hmod)
   return remove_module(mod);
 }
 
-static struct image_resource_directory_entry *find_resource(char *resbase, struct image_resource_directory *dir, char *id)
-{
+static struct image_resource_directory_entry *find_resource(char *resbase, struct image_resource_directory *dir, char *id) {
   struct image_resource_directory_entry *direntry;
   struct image_resource_directory_string *entname;
   int i;
 
   direntry = (struct image_resource_directory_entry *) (dir + 1);
-  if ((unsigned long) id < 0x10000)
-  {
+  if ((unsigned long) id < 0x10000) {
     // Lookup by ID, first skip named entries
     direntry += dir->number_of_named_entries;
 
-    for (i = 0; i < dir->number_of_id_entries; i++)
-    {
+    for (i = 0; i < dir->number_of_id_entries; i++) {
       if (direntry->id == (unsigned long) id) return direntry;
       direntry++;
     }
-  }
-  else
-  {
+  } else {
     // Lookup by name
-    for (i = 0; i < dir->number_of_named_entries; i++)
-    {
+    for (i = 0; i < dir->number_of_named_entries; i++) {
       unsigned short *p1;
       unsigned char *p2;
       int left;
@@ -858,8 +764,7 @@ static struct image_resource_directory_entry *find_resource(char *resbase, struc
       p1 = (unsigned short *) entname->name_string;
       p2 = (unsigned char *) id;
       left = entname->length;
-      while (left > 0 && *p2 != 0)
-      {
+      while (left > 0 && *p2 != 0) {
         if (((ch1 = *p1++) >= 'a') && (ch1 <= 'z')) ch1 += 'A' - 'a';
         if (((ch2 = *p2++) >= 'a') && (ch2 <= 'z')) ch2 += 'A' - 'a';
 
@@ -876,8 +781,7 @@ static struct image_resource_directory_entry *find_resource(char *resbase, struc
   return NULL;
 }
 
-int get_resource_data(hmodule_t hmod, char *id1, char *id2, char *id3, void **data)
-{
+int get_resource_data(hmodule_t hmod, char *id1, char *id2, char *id3, void **data) {
   char *resbase;
   struct image_resource_directory *dir;
   struct image_resource_directory_entry *direntry;
@@ -910,8 +814,7 @@ int get_resource_data(hmodule_t hmod, char *id1, char *id2, char *id3, void **da
   return dataentry->size;
 }
 
-int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *libpath, struct section *aliassect, int flags)
-{
+int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *libpath, struct section *aliassect, int flags) {
   char *basename;
   char *p;
   struct property *prop;
@@ -920,8 +823,7 @@ int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *lib
   db->flags = flags;
 
   // Set library paths
-  if (libpath)
-  {
+  if (libpath) {
     int n;
     char *p;
     char *q;
@@ -929,8 +831,7 @@ int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *lib
 
     p = libpath;
     n = 1;
-    while (*p)
-    {
+    while (*p) {
       if (*p == ';') n++;
       p++;
     }
@@ -940,8 +841,7 @@ int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *lib
 
     p = libpath;
     n = 0;
-    while (*p)
-    {
+    while (*p) {
       q = p;
       while (*q && *q != ';') q++;
 
@@ -949,25 +849,22 @@ int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *lib
       memcpy(path, p, q - p);
       path[q - p] = 0;
       
-      if (*q)
+      if (*q) {
         p = q + 1;
-      else
+      } else {
         p = q;
+      }
     }
-  }
-  else
-  {
+  } else {
     db->modpaths = NULL;
     db->nmodpaths = 0;
   }
 
   // Setup module aliases
   db->aliases = NULL;
-  if (aliassect)
-  {
+  if (aliassect) {
     prop = aliassect->properties;
-    while (prop)
-    {
+    while (prop) {
       struct modalias *ma;
 
       ma = (struct modalias *) malloc(sizeof(struct modalias));
@@ -986,8 +883,7 @@ int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *lib
   // Setup module database with initial module
   basename = name;
   p = name;
-  while (*p)
-  {
+  while (*p) {
     if (*p == PS1 || *p == PS2) basename = p + 1;
     p++;
   }

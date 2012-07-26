@@ -104,8 +104,7 @@ typedef unsigned short wchar_t;
 typedef unsigned short wint_t;
 typedef unsigned short wctype_t;
 
-struct _exception 
-{
+struct _exception {
   int type;       // Exception type - see below
   char *name;     // Name of function where error occured
   double arg1;    // First argument to function
@@ -113,13 +112,11 @@ struct _exception
   double retval;  // Value to be returned by function
 };
 
-typedef struct
-{
+typedef struct {
   int newmode;
 } _startupinfo;
 
-struct _stat
-{
+struct _stat {
   unsigned int st_dev;
   unsigned short st_ino;
   unsigned short st_mode;
@@ -133,8 +130,7 @@ struct _stat
   time_t st_ctime;
 };
 
-struct _stati64 
-{
+struct _stati64 {
   unsigned int st_dev;
   unsigned short st_ino;
   unsigned short st_mode;
@@ -148,8 +144,7 @@ struct _stati64
   time_t st_ctime;
 };
 
-struct _iobuf 
-{
+struct _iobuf {
   char *ptr;
   int cnt;
   char *base;
@@ -162,8 +157,7 @@ struct _iobuf
 
 typedef struct _iobuf FILE;
 
-struct timeb
-{
+struct timeb {
   time_t time;
   unsigned short millitm;
   short timezone;

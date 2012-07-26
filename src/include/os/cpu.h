@@ -162,8 +162,7 @@
 // CPU information
 //
 
-struct cpu
-{
+struct cpu {
   int family;
   int vendor;
   int model;

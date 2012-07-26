@@ -40,8 +40,7 @@
 
 static const char hex[] = "0123456789abcdef";
 
-char *getstrconfig(struct section *cfg, char *name, char *defval)
-{
+char *getstrconfig(struct section *cfg, char *name, char *defval) {
   char *val;
 
   if (!cfg) return defval;
@@ -50,8 +49,7 @@ char *getstrconfig(struct section *cfg, char *name, char *defval)
   return val;
 }
 
-int getnumconfig(struct section *cfg, char *name, int defval)
-{
+int getnumconfig(struct section *cfg, char *name, int defval) {
   char *val;
 
   if (!cfg) return defval;
@@ -60,54 +58,44 @@ int getnumconfig(struct section *cfg, char *name, int defval)
   return atoi(val);
 }
 
-static int hexdigit(int x)
-{
+static int hexdigit(int x) {
   return (x <= '9') ? x - '0' : (x & 7) + 9;
 }
 
-int decode_url(char *from, char *to)
-{
+int decode_url(char *from, char *to) {
   char c, x1, x2;
 
-  while ((c = *from++) != 0) 
-  {
-    if (c == '%') 
-    {
+  while ((c = *from++) != 0) {
+    if (c == '%') {
       x1 = *from++;
-      if (!isxdigit(x1)) 
-      {
+      if (!isxdigit(x1)) {
         errno = EINVAL;
         return -1;
       }
       x2 = *from++;
-      if (!isxdigit(x2)) 
-      {
+      if (!isxdigit(x2)) {
         errno = EINVAL;
         return -1;
       }
-      if (x1 == 0 && x2 == 0) 
-      {
+      if (x1 == 0 && x2 == 0) {
         errno = EINVAL;
         return -1;
       }
       *to++ = (hexdigit(x1) << 4) + hexdigit(x2);
-    } 
-    else
+    } else {
       *to++ = c;
+    }
   }
 
   *to = 0;
   return 0;
 }
 
-void encode_url(const char *from, char *to)
-{
+void encode_url(const char *from, char *to) {
   char c;
 
-  while ((c = *from++) != 0) 
-  {
-    switch (c) 
-    {
+  while ((c = *from++) != 0) {
+    switch (c) {
       case '%':
       case ' ':
       case '?':
@@ -126,8 +114,7 @@ void encode_url(const char *from, char *to)
   *to = 0;
 }
 
-time_t timerfc(char *s)
-{
+time_t timerfc(char *s) {
   struct tm tm;
   char month[3];
   char c;
@@ -147,28 +134,22 @@ time_t timerfc(char *s)
   state = D_START;
   n = 0;
   flag = 1;
-  while (*s && state != D_END)
-  {
+  while (*s && state != D_END) {
     c = *s++;
-    switch (state) 
-    {
+    switch (state) {
       case D_START:
-        if (c == ' ') 
-        {
+        if (c == ' ') {
           state = D_MON;
           isctime = 1;
-        } 
-        else if (c == ',') 
+        } else if (c == ',') {
           state = D_DAY;
+        }
         break;
 
       case D_MON:
-        if (isalpha(c)) 
-        {
+        if (isalpha(c)) {
           if (n < 3) month[n++] = c;
-        } 
-        else 
-        {
+        } else {
           if (n < 3) return -1;
           n = 0;
           state = isctime ? D_DAY : D_YEAR;
@@ -176,16 +157,11 @@ time_t timerfc(char *s)
         break;
 
       case D_DAY:
-        if (c == ' ' && flag)
-        {
-        }
-        else if (isdigit(c)) 
-        {
+        if (c == ' ' && flag) {
+        } else if (isdigit(c)) {
           flag = 0;
           n = 10 * n + (c - '0');
-        } 
-        else 
-        {
+        } else {
           tm.tm_mday = n;
           n = 0;
           state = isctime ? D_HOUR : D_MON;
@@ -193,10 +169,9 @@ time_t timerfc(char *s)
         break;
 
       case D_YEAR:
-        if (isdigit(c))
+        if (isdigit(c)) {
           n = 10 * n + (c - '0');
-        else 
-        {
+        } else {
           tm.tm_year = n;
           n = 0;
           state = isctime ? D_END : D_HOUR;
@@ -204,10 +179,9 @@ time_t timerfc(char *s)
         break;
 
       case D_HOUR:
-        if (isdigit(c))
+        if (isdigit(c)) {
           n = 10 * n + (c - '0');
-        else 
-        {
+        } else {
           tm.tm_hour = n;
           n = 0;
           state = D_MIN;
@@ -215,10 +189,9 @@ time_t timerfc(char *s)
         break;
 
       case D_MIN:
-        if (isdigit(c))
+        if (isdigit(c)) {
           n = 10 * n + (c - '0');
-        else 
-        {
+        } else {
           tm.tm_min = n;
           n = 0;
           state = D_SEC;
@@ -226,10 +199,9 @@ time_t timerfc(char *s)
         break;
 
       case D_SEC:
-        if (isdigit(c))
+        if (isdigit(c)) {
           n = 10 * n + (c - '0');
-        else
-        {
+        } else {
           tm.tm_sec = n;
           n = 0;
           state = isctime ? D_YEAR : D_END;
@@ -238,8 +210,7 @@ time_t timerfc(char *s)
     }
   }
 
-  switch (month[0]) 
-  {
+  switch (month[0]) {
     case 'A': tm.tm_mon = (month[1] == 'p') ? 4 : 8; break;
     case 'D': tm.tm_mon = 12; break;
     case 'F': tm.tm_mon = 2; break;
@@ -259,8 +230,7 @@ time_t timerfc(char *s)
   return mktime(&tm);
 }
 
-char *rfctime(time_t t, char *buf)
-{
+char *rfctime(time_t t, char *buf) {
   struct tm *tm;
 
   tm = gmtime(&t);

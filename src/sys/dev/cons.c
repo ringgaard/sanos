@@ -42,8 +42,7 @@ static int cursoff = 0;
 static unsigned int kbd_timeout = INFINITE;
 int serial_console = 0;
 
-void sound(unsigned short freq) 
-{
+void sound(unsigned short freq)  {
   unsigned short freqdiv;
   unsigned char b;
 
@@ -63,8 +62,7 @@ void sound(unsigned short freq)
   if (b != (b | 3)) outp(0x61, b | 3);
 }
 
-void nosound() 
-{
+void nosound()  {
   unsigned char b;
 
    // KB controller port B
@@ -77,15 +75,13 @@ void nosound()
   outp(0x61, b);
 }
  
-void beep() 
-{
+void beep()  {
   sound(1000);
   msleep(250);
   nosound();
 }
 
-void init_serial_console()
-{
+void init_serial_console() {
   // Turn off interrupts
   outp(SERIAL_CONSOLE_PORT + 1, 0);
   
@@ -98,23 +94,19 @@ void init_serial_console()
   outp(SERIAL_CONSOLE_PORT + 4, 0x0B);
 }
 
-static void serial_console_write(void *buffer, int count)
-{
+static void serial_console_write(void *buffer, int count) {
   unsigned char *p = buffer;
 
-  while (count-- > 0)
-  {
+  while (count-- > 0) {
     while ((inp(SERIAL_CONSOLE_PORT + 5) & 0x20) == 0);
     outp(SERIAL_CONSOLE_PORT, *p++);
   }
 }
 
-static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
+static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
   int freq;
 
-  switch (cmd)
-  {
+  switch (cmd) {
     case IOCTL_GETDEVSIZE:
       return 0;
 
@@ -167,30 +159,25 @@ static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int console_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int console_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   char *p = (char *) buffer;
   int ch;
   int n;
 
-  for (n = 0; n < (int) count; n++)
-  {
-    if (cursoff)
-    {
+  for (n = 0; n < (int) count; n++) {
+    if (cursoff) {
       cursoff = 0;
       show_cursor();
     }
 
     ch = getch(n || (flags & DEVFLAG_NBIO) ? 0 : kbd_timeout);
-    if (ch < 0) 
-    {
+    if (ch < 0) {
       if (n) return n;
       if (ch == -ETIMEOUT && (flags & DEVFLAG_NBIO)) return -EAGAIN;
       return ch;
     }
     
-    if (ch < ' ')
-    {
+    if (ch < ' ') {
       if (ch == CTRL('C')) send_user_signal(self(), SIGINT);
       if (ch == CTRL('Z')) send_user_signal(self(), SIGTSTP);
       if (ch == CTRL('\\')) send_user_signal(self(), SIGABRT);
@@ -202,10 +189,8 @@ static int console_read(struct dev *dev, void *buffer, size_t count, blkno_t blk
   return count; 
 }
 
-static int console_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
-  if (!cursoff)
-  {
+static int console_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
+  if (!cursoff) {
     cursoff = 1;
     hide_cursor();
   }
@@ -215,8 +200,7 @@ static int console_write(struct dev *dev, void *buffer, size_t count, blkno_t bl
   return count;
 }
 
-struct driver console_driver =
-{
+struct driver console_driver = {
   "console",
   DEV_TYPE_STREAM,
   console_ioctl,
@@ -224,36 +208,33 @@ struct driver console_driver =
   console_write
 };
 
-int __declspec(dllexport) console(struct unit *unit, char *opts)
-{
+int __declspec(dllexport) console(struct unit *unit, char *opts) {
   init_keyboard(get_num_option(opts, "resetkbd", 0));
   dev_make("console", &console_driver, NULL, NULL);
 
-  if (serial_console)
-  {
+  if (serial_console) {
     init_serial();
     consdev = dev_open("com1");
-  }
-  else 
+  } else {
     consdev = dev_open("console");
-    
+  }
+
   register_proc_inode("screen", screen_proc, NULL);
 
   return 0;
 }
 
-void console_print(char *buffer, int size)
-{
-  if (consdev != NODEV)
+void console_print(char *buffer, int size) {
+  if (consdev != NODEV) {
     dev_write(consdev, buffer, size, 0, 0);
-  else if (serial_console)
+  } else if (serial_console) {
     serial_console_write(buffer, size);
-  else
+  } else {
     print_buffer(buffer, size);
+  }
 }
 
-void init_console(int serial)
-{
+void init_console(int serial) {
   init_video();
   if (serial_console) init_serial_console();
 }

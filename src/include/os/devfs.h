@@ -34,8 +34,7 @@
 #ifndef DEVFS_H
 #define DEVFS_H
 
-struct devfile
-{
+struct devfile {
   struct file *filp;
   dev_t devno;
   int blksize;

@@ -160,8 +160,7 @@ typedef VOID (__stdcall *LPHANDLER_FUNCTION)(DWORD fdwControl);
 
 #define SIZE_OF_80387_REGISTERS      80
 
-typedef struct _FLOATING_SAVE_AREA 
-{
+typedef struct _FLOATING_SAVE_AREA {
   DWORD   ControlWord;
   DWORD   StatusWord;
   DWORD   TagWord;
@@ -175,8 +174,7 @@ typedef struct _FLOATING_SAVE_AREA
 
 typedef FLOATING_SAVE_AREA *PFLOATING_SAVE_AREA;
 
-typedef struct _CONTEXT 
-{
+typedef struct _CONTEXT {
   DWORD ContextFlags;
 
   DWORD   Dr0;
@@ -243,8 +241,7 @@ typedef CONTEXT *LPCONTEXT;
 
 #define EXCEPTION_MAXIMUM_PARAMETERS 15
 
-typedef struct _EXCEPTION_RECORD 
-{
+typedef struct _EXCEPTION_RECORD {
   DWORD ExceptionCode;
   DWORD ExceptionFlags;
   struct _EXCEPTION_RECORD *ExceptionRecord;
@@ -253,8 +250,7 @@ typedef struct _EXCEPTION_RECORD
   ULONG *ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
 } EXCEPTION_RECORD, *PEXCEPTION_RECORD;
 
-typedef struct _EXCEPTION_POINTERS
-{
+typedef struct _EXCEPTION_POINTERS {
   PEXCEPTION_RECORD ExceptionRecord;
   PCONTEXT ContextRecord;
 } EXCEPTION_POINTERS, *PEXCEPTION_POINTERS;
@@ -262,8 +258,7 @@ typedef struct _EXCEPTION_POINTERS
 typedef LONG (__stdcall *PTOP_LEVEL_EXCEPTION_FILTER)(PEXCEPTION_POINTERS ExceptionInfo);
 typedef PTOP_LEVEL_EXCEPTION_FILTER LPTOP_LEVEL_EXCEPTION_FILTER;
 
-typedef enum _EXCEPTION_DISPOSITION 
-{
+typedef enum _EXCEPTION_DISPOSITION {
   ExceptionContinueExecution,
   ExceptionContinueSearch,
   ExceptionNestedException,
@@ -272,44 +267,36 @@ typedef enum _EXCEPTION_DISPOSITION
 
 struct _EXCEPTION_FRAME;
 
-typedef EXCEPTION_DISPOSITION (*PEXCEPTION_HANDLER)
-(
-  struct _EXCEPTION_RECORD *ExceptionRecord, 
-  struct _EXCEPTION_FRAME *EstablisherFrame,
-  struct _CONTEXT *ContextRecord,
-  struct _EXCEPTION_FRAME **DispatcherContext
-);
+typedef EXCEPTION_DISPOSITION (*PEXCEPTION_HANDLER)(
+    struct _EXCEPTION_RECORD *ExceptionRecord, 
+    struct _EXCEPTION_FRAME *EstablisherFrame,
+    struct _CONTEXT *ContextRecord,
+    struct _EXCEPTION_FRAME **DispatcherContext);
 
-typedef struct _EXCEPTION_FRAME
-{
+typedef struct _EXCEPTION_FRAME {
   struct _EXCEPTION_FRAME *prev;
   PEXCEPTION_HANDLER handler;
 } EXCEPTION_FRAME, *PEXCEPTION_FRAME;
 
-typedef struct _NESTED_FRAME
-{
+typedef struct _NESTED_FRAME {
   EXCEPTION_FRAME frame;
   EXCEPTION_FRAME *prev;
 } NESTED_FRAME;
 
-typedef union _LARGE_INTEGER 
-{ 
-  struct 
-  {
+typedef union _LARGE_INTEGER { 
+  struct {
     DWORD LowPart; 
     LONG  HighPart; 
   };
   LONGLONG QuadPart;
 } LARGE_INTEGER, *PLARGE_INTEGER; 
 
-typedef struct _FILETIME 
-{ 
+typedef struct _FILETIME {
   DWORD dwLowDateTime;
   DWORD dwHighDateTime;
 } FILETIME, *PFILETIME, *LPFILETIME; 
 
-typedef struct _SYSTEMTIME 
-{ 
+typedef struct _SYSTEMTIME {
   WORD wYear; 
   WORD wMonth; 
   WORD wDayOfWeek; 
@@ -320,13 +307,10 @@ typedef struct _SYSTEMTIME
   WORD wMilliseconds; 
 } SYSTEMTIME, *PSYSTEMTIME, *LPSYSTEMTIME;
 
-typedef struct _SYSTEM_INFO 
-{ 
-  union 
-  { 
+typedef struct _SYSTEM_INFO {
+  union {
     DWORD  dwOemId; 
-    struct 
-    { 
+    struct { 
       WORD wProcessorArchitecture; 
       WORD wReserved; 
     }; 
@@ -342,8 +326,7 @@ typedef struct _SYSTEM_INFO
   WORD wProcessorRevision; 
 } SYSTEM_INFO, *LPSYSTEM_INFO; 
 
-typedef struct _OSVERSIONINFO
-{ 
+typedef struct _OSVERSIONINFO {
   DWORD dwOSVersionInfoSize; 
   DWORD dwMajorVersion; 
   DWORD dwMinorVersion; 
@@ -352,8 +335,7 @@ typedef struct _OSVERSIONINFO
   TCHAR szCSDVersion[128];
 } OSVERSIONINFO, *LPOSVERSIONINFO; 
 
-typedef struct _MEMORY_BASIC_INFORMATION 
-{
+typedef struct _MEMORY_BASIC_INFORMATION {
   PVOID BaseAddress; 
   PVOID AllocationBase; 
   DWORD AllocationProtect; 
@@ -363,8 +345,7 @@ typedef struct _MEMORY_BASIC_INFORMATION
   DWORD Type; 
 } MEMORY_BASIC_INFORMATION, *PMEMORY_BASIC_INFORMATION; 
 
-typedef struct _MEMORYSTATUS
-{
+typedef struct _MEMORYSTATUS {
   DWORD dwLength; 
   DWORD dwMemoryLoad; 
   SIZE_T dwTotalPhys; 
@@ -378,8 +359,7 @@ typedef struct _MEMORYSTATUS
 #define FILE_ATTRIBUTE_DIRECTORY            0x00000010
 #define FILE_ATTRIBUTE_NORMAL               0x00000080
 
-typedef struct WIN32_FIND_DATA 
-{
+typedef struct WIN32_FIND_DATA {
   DWORD dwFileAttributes;
   FILETIME ftCreationTime;
   FILETIME ftLastAccessTime;
@@ -392,8 +372,7 @@ typedef struct WIN32_FIND_DATA
   CHAR cAlternateFileName[14];
 } WIN32_FIND_DATA, *PWIN32_FIND_DATA, *LPWIN32_FIND_DATA;
 
-typedef struct WIN32_FIND_DATAW 
-{
+typedef struct WIN32_FIND_DATAW {
   DWORD dwFileAttributes;
   FILETIME ftCreationTime;
   FILETIME ftLastAccessTime;
@@ -445,14 +424,12 @@ typedef struct WIN32_FIND_DATAW
 #define STD_OUTPUT_HANDLE                ((DWORD)-11)
 #define STD_ERROR_HANDLE                 ((DWORD)-12)
 
-typedef struct _KEY_EVENT_RECORD 
-{
+typedef struct _KEY_EVENT_RECORD {
   BOOL bKeyDown; 
   WORD wRepeatCount; 
   WORD wVirtualKeyCode; 
   WORD wVirtualScanCode; 
-  union 
-  { 
+  union {
     WCHAR UnicodeChar; 
     CHAR  AsciiChar; 
   } uChar; 

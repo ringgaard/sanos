@@ -80,6 +80,9 @@ sdk/src/cc/tcc.c: \
 $(TCC): sdk/src/cc/tcc.c
 	gcc -o $(TCC) sdk/src/cc/tcc.c -I sdk/src/cc -O2 -D SANOS
 
+newcc: sdk/src/cc/cc.c sdk/src/cc/symbol.c sdk/src/cc/asm.c sdk/src/cc/asm386.c sdk/src/cc/elf.c sdk/src/cc/pe.c sdk/src/cc/preproc.c sdk/src/cc/compiler.c sdk/src/cc/codegen.c sdk/src/cc/util.c
+	gcc -Wimplicit -o newcc sdk/src/cc/cc.c sdk/src/cc/symbol.c sdk/src/cc/asm.c sdk/src/cc/asm386.c sdk/src/cc/elf.c sdk/src/cc/pe.c sdk/src/cc/preproc.c sdk/src/cc/compiler.c sdk/src/cc/codegen.c sdk/src/cc/util.c -I sdk/src/cc -O2 -D SANOS
+
 AS_OUTDEFS=-DOF_ONLY -DOF_ELF32 -DOF_WIN32 -DOF_COFF -DOF_OBJ -DOF_BIN -DOF_DBG -DOF_DEFAULT=of_elf32
 AS_CFLAGS=-I. -DHAVE_SNPRINTF -DHAVE_VSNPRINTF $(AS_OUTDEFS)
 

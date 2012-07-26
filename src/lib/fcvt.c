@@ -39,8 +39,7 @@
 // from GNU libc-4.6.27
 //
 
-static char *cvt(double arg, int ndigits, int *decpt, int *sign, char *buf, int eflag)
-{
+static char *cvt(double arg, int ndigits, int *decpt, int *sign, char *buf, int eflag) {
   int r2;
   double fi, fj;
   char *p, *p1;
@@ -50,29 +49,23 @@ static char *cvt(double arg, int ndigits, int *decpt, int *sign, char *buf, int 
   r2 = 0;
   *sign = 0;
   p = &buf[0];
-  if (arg < 0)
-  {
+  if (arg < 0) {
     *sign = 1;
     arg = -arg;
   }
   arg = modf(arg, &fi);
   p1 = &buf[CVTBUFSIZE];
 
-  if (fi != 0) 
-  {
+  if (fi != 0) {
     p1 = &buf[CVTBUFSIZE];
-    while (fi != 0) 
-    {
+    while (fi != 0) {
       fj = modf(fi / 10, &fi);
       *--p1 = (int)((fj + .03) * 10) + '0';
       r2++;
     }
     while (p1 < &buf[CVTBUFSIZE]) *p++ = *p1++;
-  } 
-  else if (arg > 0)
-  {
-    while ((fj = arg * 10) < 1) 
-    {
+  } else if (arg > 0) {
+    while ((fj = arg * 10) < 1) {
       arg = fj;
       r2--;
     }
@@ -80,35 +73,29 @@ static char *cvt(double arg, int ndigits, int *decpt, int *sign, char *buf, int 
   p1 = &buf[ndigits];
   if (eflag == 0) p1 += r2;
   *decpt = r2;
-  if (p1 < &buf[0]) 
-  {
+  if (p1 < &buf[0]) {
     buf[0] = '\0';
     return buf;
   }
-  while (p <= p1 && p < &buf[CVTBUFSIZE])
-  {
+  while (p <= p1 && p < &buf[CVTBUFSIZE]) {
     arg *= 10;
     arg = modf(arg, &fj);
     *p++ = (int) fj + '0';
   }
-  if (p1 >= &buf[CVTBUFSIZE]) 
-  {
+  if (p1 >= &buf[CVTBUFSIZE]) {
     buf[CVTBUFSIZE - 1] = '\0';
     return buf;
   }
   p = p1;
   *p1 += 5;
-  while (*p1 > '9') 
-  {
+  while (*p1 > '9') {
     *p1 = '0';
-    if (p1 > buf)
+    if (p1 > buf) {
       ++*--p1;
-    else 
-    {
+    } else {
       *p1 = '1';
       (*decpt)++;
-      if (eflag == 0) 
-      {
+      if (eflag == 0) {
         if (p > buf) *p = '0';
         p++;
       }
@@ -118,22 +105,18 @@ static char *cvt(double arg, int ndigits, int *decpt, int *sign, char *buf, int 
   return buf;
 }
 
-char *ecvt(double arg, int ndigits, int *decpt, int *sign)
-{
+char *ecvt(double arg, int ndigits, int *decpt, int *sign) {
   return cvt(arg, ndigits, decpt, sign, gettib()->cvtbuf, 1);
 }
 
-char *ecvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf)
-{
+char *ecvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf) {
   return cvt(arg, ndigits, decpt, sign, buf, 1);
 }
 
-char *fcvt(double arg, int ndigits, int *decpt, int *sign)
-{
+char *fcvt(double arg, int ndigits, int *decpt, int *sign) {
   return cvt(arg, ndigits, decpt, sign, gettib()->cvtbuf, 0);
 }
 
-char *fcvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf)
-{
+char *fcvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf) {
   return cvt(arg, ndigits, decpt, sign, buf, 0);
 }

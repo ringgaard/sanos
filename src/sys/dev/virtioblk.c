@@ -51,8 +51,7 @@
 // Virtual disk configuration block
 //
 
-struct virtio_blk_config
-{
+struct virtio_blk_config {
   unsigned __int64 capacity;         // The capacity (in 512-byte sectors)
   unsigned long size_max;            // The maximum segment size
   unsigned long seg_max;             // The maximum number of segments
@@ -78,8 +77,7 @@ struct virtio_blk_config
 #define VIRTIO_BLK_T_FLUSH     4
 #define VIRTIO_BLK_T_GET_ID    8
 
-struct virtio_blk_outhdr 
-{
+struct virtio_blk_outhdr {
   unsigned long type;
   unsigned long ioprio;
   unsigned __int64 sector;
@@ -97,8 +95,7 @@ struct virtio_blk_outhdr
 // Virtual disk device data
 //
 
-struct virtioblk
-{
+struct virtioblk {
   struct virtio_device vd;
   struct virtio_blk_config config;
   struct virtio_queue vq;
@@ -110,16 +107,14 @@ struct virtioblk
 // Virtual block device request
 //
 
-struct virtioblk_request
-{
+struct virtioblk_request {
   struct virtio_blk_outhdr hdr;
   unsigned char status;
   struct thread *thread;
   unsigned int size;
 };
 
-static void virtioblk_setup_request(struct virtioblk_request *req, struct scatterlist *sg, void *buffer, int size)
-{
+static void virtioblk_setup_request(struct virtioblk_request *req, struct scatterlist *sg, void *buffer, int size) {
   req->status = 0;
   req->thread = self();
   sg[0].data = &req->hdr;
@@ -130,13 +125,11 @@ static void virtioblk_setup_request(struct virtioblk_request *req, struct scatte
   sg[2].size = sizeof(req->status);
 }
 
-static int virtioblk_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
+static int virtioblk_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
   struct virtioblk *vblk = (struct virtioblk *) dev->privdata;
   struct geometry *geom;
 
-  switch (cmd)
-  {
+  switch (cmd) {
     case IOCTL_GETDEVSIZE:
       return vblk->capacity;
 
@@ -158,8 +151,7 @@ static int virtioblk_ioctl(struct dev *dev, int cmd, void *args, size_t size)
   return -ENOSYS;
 }
 
-static int virtioblk_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int virtioblk_read(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   struct virtioblk *vblk = (struct virtioblk *) dev->privdata;
   struct virtioblk_request req;
   struct scatterlist sg[3];
@@ -180,8 +172,7 @@ static int virtioblk_read(struct dev *dev, void *buffer, size_t count, blkno_t b
   enter_wait(THREAD_WAIT_DEVIO);
 
   // Check status code
-  switch (req.status)
-  {
+  switch (req.status) {
     case VIRTIO_BLK_S_OK: rc = req.size - 1; break;
     case VIRTIO_BLK_S_UNSUPP: rc = -ENODEV; break;
     case VIRTIO_BLK_S_IOERR: rc = -EIO; break;
@@ -191,8 +182,7 @@ static int virtioblk_read(struct dev *dev, void *buffer, size_t count, blkno_t b
   return rc;
 }
 
-static int virtioblk_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags)
-{
+static int virtioblk_write(struct dev *dev, void *buffer, size_t count, blkno_t blkno, int flags) {
   struct virtioblk *vblk = (struct virtioblk *) dev->privdata;
   struct virtioblk_request req;
   struct scatterlist sg[3];
@@ -213,8 +203,7 @@ static int virtioblk_write(struct dev *dev, void *buffer, size_t count, blkno_t 
   enter_wait(THREAD_WAIT_DEVIO);
 
   // Check status code
-  switch (req.status)
-  {
+  switch (req.status) {
     case VIRTIO_BLK_S_OK: rc = req.size - 1; break;
     case VIRTIO_BLK_S_UNSUPP: rc = -ENODEV; break;
     case VIRTIO_BLK_S_IOERR: rc = -EIO; break;
@@ -224,13 +213,11 @@ static int virtioblk_write(struct dev *dev, void *buffer, size_t count, blkno_t 
   return rc;
 }
 
-static int virtioblk_callback(struct virtio_queue *vq)
-{
+static int virtioblk_callback(struct virtio_queue *vq) {
   struct virtioblk_request *req;
   unsigned int len;
 
-  while ((req = virtio_dequeue(vq, &len)) != NULL)
-  {
+  while ((req = virtio_dequeue(vq, &len)) != NULL) {
     req->size = len;
     mark_thread_ready(req->thread, 1, 2);
   }
@@ -238,8 +225,7 @@ static int virtioblk_callback(struct virtio_queue *vq)
   return 0;
 }
 
-struct driver virtioblk_driver =
-{
+struct driver virtioblk_driver = {
   "virtioblk",
   DEV_TYPE_BLOCK,
   virtioblk_ioctl,
@@ -247,8 +233,7 @@ struct driver virtioblk_driver =
   virtioblk_write
 };
 
-static int install_virtioblk(struct unit *unit)
-{
+static int install_virtioblk(struct unit *unit) {
   struct virtioblk *vblk;
   int rc;
 
@@ -268,11 +253,12 @@ static int install_virtioblk(struct unit *unit)
   
   // Get block device configuration
   virtio_get_config(&vblk->vd, &vblk->config, sizeof(vblk->config));
-  if ((vblk->config.capacity & ~0x7FFFFFFF))
+  if ((vblk->config.capacity & ~0x7FFFFFFF)) {
     vblk->capacity = 0x7FFFFFFF;
-  else
+  } else {
     vblk->capacity = (int) vblk->config.capacity;
-  
+  }
+
   // Initialize queue for disk requests
   rc = virtio_queue_init(&vblk->vq, &vblk->vd, 0, virtioblk_callback);
   if (rc < 0) return rc;
@@ -285,13 +271,11 @@ static int install_virtioblk(struct unit *unit)
   return 0;
 }
 
-int __declspec(dllexport) virtioblk(struct unit *unit, char *opts)
-{
+int __declspec(dllexport) virtioblk(struct unit *unit, char *opts) {
   return install_virtioblk(unit);
 }
 
-void init_vblk()
-{
+void init_vblk() {
   // Try to find a virtio block device for booting
   struct unit *unit = lookup_unit_by_subunit(NULL, 0x1AF40002, 0xFFFFFFFF);
   if (unit) install_virtioblk(unit);

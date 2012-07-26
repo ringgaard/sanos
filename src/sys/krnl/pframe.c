@@ -43,8 +43,7 @@ struct pageframe *freelist;   // List of free pages
 
 void panic(char *msg);
 
-unsigned long alloc_pageframe(unsigned long tag)
-{
+unsigned long alloc_pageframe(unsigned long tag) {
   struct pageframe *pf;
 
   if (freemem == 0) panic("out of memory");
@@ -59,8 +58,7 @@ unsigned long alloc_pageframe(unsigned long tag)
   return pf - pfdb;
 }
 
-unsigned long alloc_linear_pageframes(int pages, unsigned long tag)
-{
+unsigned long alloc_linear_pageframes(int pages, unsigned long tag) {
   struct pageframe *pf;
   struct pageframe *prevpf;
 
@@ -70,27 +68,23 @@ unsigned long alloc_linear_pageframes(int pages, unsigned long tag)
 
   prevpf = NULL;
   pf = freelist;
-  while (pf)
-  {
-    if (pf - pfdb + pages < (int) maxmem)
-    {
+  while (pf) {
+    if (pf - pfdb + pages < (int) maxmem) {
       int n;
 
-      for (n = 0; n < pages; n++)
-      {
+      for (n = 0; n < pages; n++) {
         if (pf[n].tag != 'FREE') break;
         if (n != 0 && pf[n - 1].next != &pf[n]) break;
       }
 
-      if (n == pages)
-      {
-        if (prevpf)
+      if (n == pages) {
+        if (prevpf) {
           prevpf->next = pf[pages - 1].next;
-        else
+        } else {
           freelist = pf[pages - 1].next;
+        }
 
-        for (n = 0; n < pages; n++)
-        {
+        for (n = 0; n < pages; n++) {
           pf[n].tag = tag;
           pf[n].next = NULL;
         }
@@ -108,8 +102,7 @@ unsigned long alloc_linear_pageframes(int pages, unsigned long tag)
   return 0xFFFFFFFF;
 }
 
-void free_pageframe(unsigned long pfn)
-{
+void free_pageframe(unsigned long pfn) {
   struct pageframe *pf;
 
   pf = pfdb + pfn;
@@ -119,30 +112,25 @@ void free_pageframe(unsigned long pfn)
   freemem++;
 }
 
-void set_pageframe_tag(void *addr, unsigned int len, unsigned long tag)
-{
+void set_pageframe_tag(void *addr, unsigned int len, unsigned long tag) {
   char *vaddr = (char *) addr;
   char *vend = vaddr + len;
 
-  while (vaddr < vend)
-  {
+  while (vaddr < vend) {
     unsigned long pfn = virt2phys(vaddr) >> PAGESHIFT;
     pfdb[pfn].tag = tag;
     vaddr += PAGESIZE;
   }
 }
 
-int memmap_proc(struct proc_file *pf, void *arg)
-{
+int memmap_proc(struct proc_file *pf, void *arg) {
   struct memmap *mm = &syspage->bootparams.memmap;
   int i;
 
-  for (i = 0; i < mm->count; i++)
-  {
+  for (i = 0; i < mm->count; i++) {
     char *type;
 
-    switch (mm->entry[i].type)
-    {
+    switch (mm->entry[i].type) {
       case MEMTYPE_RAM: type = "RAM "; break;
       case MEMTYPE_RESERVED: type = "RESV"; break;
       case MEMTYPE_ACPI: type = "ACPI"; break;
@@ -160,8 +148,7 @@ int memmap_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-void tag2str(unsigned long tag, char *str)
-{
+void tag2str(unsigned long tag, char *str) {
   if (tag & 0xFF000000) *str++ = (char) ((tag >> 24) & 0xFF);
   if (tag & 0x00FF0000) *str++ = (char) ((tag >> 16) & 0xFF);
   if (tag & 0x0000FF00) *str++ = (char) ((tag >> 8) & 0xFF);
@@ -169,33 +156,29 @@ void tag2str(unsigned long tag, char *str)
   *str++ = 0;
 }
 
-int memusage_proc(struct proc_file *pf, void *arg)
-{
+int memusage_proc(struct proc_file *pf, void *arg) {
   unsigned int num_memtypes = 0;
   struct { unsigned long tag; int pages; } memtype[MAX_MEMTAGS];
   unsigned long tag;
   unsigned int n;
   unsigned int m;
 
-  for (n = 0; n < maxmem; n++)
-  {
+  for (n = 0; n < maxmem; n++) {
     tag = pfdb[n].tag;
 
     m = 0;
     while (m < num_memtypes && tag != memtype[m].tag) m++;
 
-    if (m < num_memtypes)
+    if (m < num_memtypes) {
       memtype[m].pages++;
-    else if (m < MAX_MEMTAGS)
-    {
+    } else if (m < MAX_MEMTAGS) {
       memtype[m].tag = tag;
       memtype[m].pages = 1;
       num_memtypes++;
     }
   }
 
-  for (n = 0; n < num_memtypes; n++)
-  {
+  for (n = 0; n < num_memtypes; n++) {
     char tagname[5];
     tag2str(memtype[n].tag, tagname);
     pprintf(pf, "%-4s    %8d KB\n", tagname, memtype[n].pages * (PAGESIZE / 1024));
@@ -204,8 +187,7 @@ int memusage_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-int memstat_proc(struct proc_file *pf, void *arg)
-{
+int memstat_proc(struct proc_file *pf, void *arg) {
   pprintf(pf, "Memory %dMB total, %dKB used, %dKB free, %dKB reserved\n", 
           maxmem * PAGESIZE / (1024 * 1024), 
           (totalmem - freemem) * PAGESIZE / 1024, 
@@ -214,26 +196,22 @@ int memstat_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-int physmem_proc(struct proc_file *pf, void *arg)
-{
+int physmem_proc(struct proc_file *pf, void *arg) {
   unsigned int n;
 
-  for (n = 0; n < maxmem; n++)
-  {
-    if (n % 64 == 0)
-    {
+  for (n = 0; n < maxmem; n++) {
+    if (n % 64 == 0) {
       if (n > 0) pprintf(pf, "\n");
       pprintf(pf, "%08X ", PTOB(n));
     }
 
-    if (pfdb[n].tag == 'FREE')
+    if (pfdb[n].tag == 'FREE') {
       pprintf(pf, ".");
-    else if (pfdb[n].tag == 'RESV')
+    } else if (pfdb[n].tag == 'RESV') {
       pprintf(pf, "-");
-    else if (pfdb[n].tag == 0)
+    } else if (pfdb[n].tag == 0) {
       pprintf(pf, "?");
-    else
-    {
+    } else {
       char tagname[5];
       tag2str(pfdb[n].tag, tagname);
       pprintf(pf, "%c", *tagname);
@@ -244,8 +222,7 @@ int physmem_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-void init_pfdb()
-{
+void init_pfdb() {
   unsigned long heap;
   unsigned long pfdbpages;
   unsigned long i, j;
@@ -273,8 +250,7 @@ void init_pfdb()
   register_page_table(BTOP(pt) + 1);
 
   // Allocate and map pages for page frame database
-  for (i = 0; i < pfdbpages; i++)
-  {
+  for (i = 0; i < pfdbpages; i++) {
     set_page_table_entry(&pt[i], heap | PT_PRESENT | PT_WRITABLE);
     heap += PAGESIZE;
   }
@@ -290,21 +266,17 @@ void init_pfdb()
 
   // Add all memory from memory map to page frame database
   memmap = &syspage->bootparams.memmap;
-  for (i = 0; i < (unsigned long) memmap->count; i++)
-  {
+  for (i = 0; i < (unsigned long) memmap->count; i++) {
     unsigned long first = (unsigned long) memmap->entry[i].addr / PAGESIZE;
     unsigned long last = first + (unsigned long) memmap->entry[i].size / PAGESIZE;
 
     if (first >= maxmem) continue;
     if (last >= maxmem) last = maxmem;
 
-    if (memmap->entry[i].type == MEMTYPE_RAM)
-    {
+    if (memmap->entry[i].type == MEMTYPE_RAM) {
       for (j = first; j < last; j++) pfdb[j].tag = 'FREE';
       totalmem += (last - first);
-    }
-    else if (memmap->entry[i].type == MEMTYPE_RESERVED)
-    {
+    } else if (memmap->entry[i].type == MEMTYPE_RESERVED) {
       for (j = first; j < last; j++) pfdb[j].tag = 'RESV';
     }
   }
@@ -327,16 +299,13 @@ void init_pfdb()
 
   // Insert all free pages into free list
   pf = pfdb + maxmem;
-  do
-  {
+  do {
     pf--;
 
-    if (pf->tag == 'FREE')
-    {
+    if (pf->tag == 'FREE') {
       pf->next = freelist;
       freelist = pf;
       freemem++;
     }
-  } 
-  while (pf > pfdb);
+  } while (pf > pfdb);
 }

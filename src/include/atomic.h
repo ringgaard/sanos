@@ -47,10 +47,8 @@ extern "C" {
 
 #pragma warning(disable: 4035) // Disables warnings reporting missing return statement
 
-__inline int atomic_add(int *dest, int value)
-{
-  __asm 
-  {
+__inline int atomic_add(int *dest, int value) {
+  __asm {
     mov edx, dest;
     mov eax, value;
     mov ecx, eax;
@@ -59,10 +57,8 @@ __inline int atomic_add(int *dest, int value)
   }
 }
 
-__inline int atomic_increment(int *dest) 
-{
-  __asm 
-  {
+__inline int atomic_increment(int *dest) {
+  __asm {
     mov edx, dest;
     mov eax, 1;
     /*lock*/ xadd dword ptr [edx], eax;
@@ -70,10 +66,8 @@ __inline int atomic_increment(int *dest)
   }
 }
 
-__inline int atomic_decrement(int *dest)
-{
-  __asm 
-  {
+__inline int atomic_decrement(int *dest) {
+  __asm {
     mov edx, dest;
     mov eax, -1;
     /*lock*/ xadd dword ptr [edx], eax;
@@ -81,20 +75,16 @@ __inline int atomic_decrement(int *dest)
   }
 }
 
-__inline int atomic_exchange(int *dest, int value) 
-{
-  __asm 
-  {
+__inline int atomic_exchange(int *dest, int value) {
+  __asm {
     mov eax, value;
     mov ecx, dest;
     xchg eax, dword ptr [ecx];
   }
 }
 
-__inline int atomic_compare_and_exchange(int *dest, int exchange, int comperand) 
-{
-  __asm 
-  {
+__inline int atomic_compare_and_exchange(int *dest, int exchange, int comperand) {
+  __asm {
     mov edx, dest
     mov ecx, exchange
     mov eax, comperand

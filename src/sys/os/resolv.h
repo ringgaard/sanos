@@ -148,8 +148,7 @@
 
 #pragma pack(push, 1)
 
-struct dns_hdr
-{
+struct dns_hdr {
   unsigned short id;            // Query identification number
 
   // Fields in third byte
@@ -184,8 +183,7 @@ struct dns_hdr
 #define RES_TIMEOUT             5       // Min. seconds between retries
 #define RES_DFLRETRY            2       // Default #/tries
 
-struct res_state
-{
+struct res_state {
   unsigned long options;                  // Option flags - see below
   int retry;                              // Number of times to retransmit
   int retrans;                            // Retransmition time interval

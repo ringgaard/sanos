@@ -101,8 +101,7 @@ typedef int (*httpd_handler)(struct httpd_connection *conn);
 
 // HTTP buffer
 
-struct httpd_buffer
-{
+struct httpd_buffer {
   char *floor;
   char *ceil;
   char *start;
@@ -111,24 +110,21 @@ struct httpd_buffer
 
 // HTTP header
 
-struct httpd_header
-{
+struct httpd_header {
   char *name;
   char *value;
 };
 
 // HTTP socket address
 
-typedef union 
-{
+typedef union {
   struct sockaddr sa;
   struct sockaddr_in sa_in;
 } httpd_sockaddr;
 
 // HTTP server
 
-struct httpd_server
-{
+struct httpd_server {
   struct section *cfg;
   struct section *mimemap;
   int port;
@@ -160,8 +156,7 @@ struct httpd_server
 
 // HTTP context
 
-struct httpd_context
-{
+struct httpd_context {
   struct httpd_server *server;
   struct section *cfg;
   struct httpd_context *next;
@@ -176,8 +171,7 @@ struct httpd_context
 
 // HTTP request
 
-struct httpd_request
-{
+struct httpd_request {
   struct httpd_connection *conn;
   struct httpd_context *context;
 
@@ -211,8 +205,7 @@ struct httpd_request
 
 // HTTP response
 
-struct httpd_response
-{
+struct httpd_response {
   struct httpd_connection *conn;
 
   int status;
@@ -225,8 +218,7 @@ struct httpd_response
 
 // HTTP connection
 
-struct httpd_connection
-{
+struct httpd_connection {
   struct httpd_server *server;
   struct httpd_connection *next;
   struct httpd_connection *prev;

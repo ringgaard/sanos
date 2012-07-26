@@ -40,28 +40,24 @@
 
 #include <httpd.h>
 
-char *get_extension(char *path)
-{
+char *get_extension(char *path) {
   char *ext;
 
   ext = NULL;
-  while (*path)
-  {
-    if (*path == PS1 || *path == PS2)
+  while (*path) {
+    if (*path == PS1 || *path == PS2) {
       ext = NULL;
-    else if (*path == '.')
+    } else if (*path == '.') {
       ext = path + 1;
-
+    }
     path++;
   }
 
   return ext;
 }
 
-int httpd_return_file_error(struct httpd_connection *conn, int err)
-{
-  switch (err)
-  {
+int httpd_return_file_error(struct httpd_connection *conn, int err) {
+  switch (err) {
     case EACCES: 
       return httpd_send_error(conn->rsp, 403, "Forbidden", NULL);
 
@@ -73,8 +69,7 @@ int httpd_return_file_error(struct httpd_connection *conn, int err)
   }
 }
 
-int ls(struct httpd_connection *conn)
-{
+int ls(struct httpd_connection *conn) {
   int dir;
   int rc;
   int urllen;
@@ -93,10 +88,11 @@ int ls(struct httpd_connection *conn)
   httpd_send(conn->rsp, conn->req->decoded_url, urllen);
   httpd_send(conn->rsp, "</TITLE></HEAD>\r\n<BODY>\r\n<H1>Index of ", -1);
   
-  if (urllen == 0)
+  if (urllen == 0) {
     httpd_send(conn->rsp, "/", -1);
-  else
+  } else {
     httpd_send(conn->rsp, conn->req->decoded_url, urllen);
+  }
 
   httpd_send(conn->rsp, "</H1><PRE>\r\n", -1);
   httpd_send(conn->rsp, "   Name                              Last Modified           Size\r\n", -1);
@@ -104,8 +100,7 @@ int ls(struct httpd_connection *conn)
 
   if (urllen > 1) httpd_send(conn->rsp, "<IMG SRC=\"/icons/folder.gif\"> <A HREF=\"..\">..</A>\r\n", -1);
 
-  while (_readdir(dir, &dirp, 1) > 0)
-  {
+  while (_readdir(dir, &dirp, 1) > 0) {
     strcpy(path, conn->req->path_translated);
     strcat(path, "/");
     strcat(path, dirp.name);
@@ -116,10 +111,11 @@ int ls(struct httpd_connection *conn)
     tm = gmtime(&statbuf.st_mtime);
     if (!tm) return -1;
 
-    if ((statbuf.st_mode & S_IFMT) == S_IFDIR) 
+    if ((statbuf.st_mode & S_IFMT) == S_IFDIR) {
       httpd_send(conn->rsp, "<IMG SRC=\"/icons/folder.gif\"> ", -1);
-    else
+    } else {
       httpd_send(conn->rsp, "<IMG SRC=\"/icons/file.gif\"> ", -1);
+    }
 
     httpd_send(conn->rsp, "<A HREF=\"", -1);
     httpd_send(conn->rsp, dirp.name, dirp.namelen);
@@ -136,16 +132,16 @@ int ls(struct httpd_connection *conn)
     strftime(buf, 32, "%d-%b-%Y %H:%M:%S", tm);
     httpd_send(conn->rsp, buf, -1);
 
-    if ((statbuf.st_mode & S_IFMT) != S_IFDIR)
-    {
-      if (statbuf.st_size < 1024)
+    if ((statbuf.st_mode & S_IFMT) != S_IFDIR) {
+      if (statbuf.st_size < 1024) {
         sprintf(buf, "%8d B", (int) statbuf.st_size);
-      else if (statbuf.st_size < 1024 * 1024)
+      } else if (statbuf.st_size < 1024 * 1024) {
         sprintf(buf, "%8d KB", (int) (statbuf.st_size / 1024));
-      else if (statbuf.st_size < 1073741824i64)
+      } else if (statbuf.st_size < 1073741824i64) {
         sprintf(buf, "%8d MB", (int) (statbuf.st_size / (1024 * 1024)));
-      else
+      } else {
         sprintf(buf, "%8d GB", (int) (statbuf.st_size / 1073741824i64));
+      }
 
       httpd_send(conn->rsp, buf, -1);
     }
@@ -163,16 +159,14 @@ int ls(struct httpd_connection *conn)
   return 0;
 }
 
-int httpd_file_handler(struct httpd_connection *conn)
-{
+int httpd_file_handler(struct httpd_connection *conn) {
   int rc;
   int fd;
   struct stat64 statbuf;
   char *filename;
   char buf[MAXPATH];
 
-  if (strcmp(conn->req->method, "GET") != 0 && strcmp(conn->req->method, "HEAD") != 0)
-  {
+  if (strcmp(conn->req->method, "GET") != 0 && strcmp(conn->req->method, "HEAD") != 0) {
     return httpd_send_error(conn->rsp, 405, "Method Not Allowed", NULL);
   }
 
@@ -180,14 +174,12 @@ int httpd_file_handler(struct httpd_connection *conn)
   rc = stat64(filename, &statbuf);
   if (rc < 0) return httpd_return_file_error(conn, errno);
 
-  if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
-  {
+  if ((statbuf.st_mode & S_IFMT) == S_IFDIR) {
     int urllen = strlen(conn->req->decoded_url);
 
     if (urllen < 1 || urllen >= MAXPATH - 1) return 400;
 
-    if (conn->req->decoded_url[urllen - 1] != '/')
-    {
+    if (conn->req->decoded_url[urllen - 1] != '/') {
       strcpy(buf, conn->req->decoded_url);
       strcat(buf, "/");
 
@@ -197,42 +189,35 @@ int httpd_file_handler(struct httpd_connection *conn)
       return 0;
     }
 
-    if (conn->server->indexname && *conn->server->indexname)
-    {
+    if (conn->server->indexname && *conn->server->indexname) {
       if (strlen(conn->req->path_translated) + strlen(conn->server->indexname) + 2 > MAXPATH) return 400;
       strcpy(buf, conn->req->path_translated);
       strcat(buf, "/");
       strcat(buf, conn->server->indexname);
 
       rc = stat64(buf, &statbuf);
-      if (rc < 0) 
-      {
-        if (conn->server->allowdirbrowse) 
+      if (rc < 0) {
+        if (conn->server->allowdirbrowse) {
           return ls(conn);
-        else
+        } else {
           return httpd_send_error(conn->rsp, 403, "Forbidden", "Directory browsing now allowed");
-      }
-      else
-      {
+        }
+      } else {
         if ((statbuf.st_mode & S_IFMT) == S_IFDIR) return 500;
         filename = buf;
       }
     }
   }
 
-  if ((statbuf.st_mode & S_IFMT) == S_IFREG)
-  {
+  if ((statbuf.st_mode & S_IFMT) == S_IFREG) {
     conn->rsp->content_length = (int) statbuf.st_size;
     conn->rsp->last_modified = statbuf.st_mtime;
     conn->rsp->content_type = httpd_get_mimetype(conn->server, get_extension(filename));
 
-    if (conn->rsp->last_modified <= conn->req->if_modified_since)
-    {
+    if (conn->rsp->last_modified <= conn->req->if_modified_since) {
       return httpd_send_header(conn->rsp, 304, "Not Modified", NULL);
     }
-  }
-  else
-  {
+  } else {
     conn->rsp->content_type = "text/plain";
   }
 
@@ -248,20 +233,17 @@ int httpd_file_handler(struct httpd_connection *conn)
   return 0;
 }
 
-int httpd_resource_handler(struct httpd_connection *conn)
-{
+int httpd_resource_handler(struct httpd_connection *conn) {
   char *resdata;
   int reslen;
   int rc;
 
-  if (strcmp(conn->req->method, "GET") != 0 && strcmp(conn->req->method, "HEAD") != 0)
-  {
+  if (strcmp(conn->req->method, "GET") != 0 && strcmp(conn->req->method, "HEAD") != 0) {
     return httpd_send_error(conn->rsp, 405, "Method Not Allowed", NULL);
   }
 
   resdata = getresdata(conn->req->context->hmod, 10, conn->req->pathinfo, 0, &reslen);
-  if (!resdata)
-  {
+  if (!resdata) {
     return httpd_send_error(conn->rsp, 404, "Not Found", NULL);
   }
 
@@ -269,8 +251,7 @@ int httpd_resource_handler(struct httpd_connection *conn)
   conn->rsp->last_modified = conn->req->context->mtime;
   conn->rsp->content_type = httpd_get_mimetype(conn->server, get_extension(conn->req->pathinfo));
 
-  if (conn->rsp->last_modified <= conn->req->if_modified_since)
-  {
+  if (conn->rsp->last_modified <= conn->req->if_modified_since) {
     return httpd_send_header(conn->rsp, 304, "Not Modified", NULL);
   }
 

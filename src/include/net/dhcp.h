@@ -51,8 +51,7 @@
 
 #pragma pack(push, 1)
 
-struct dhcp_msg
-{
+struct dhcp_msg {
   unsigned char op;                       // Message opcode/type
   unsigned char htype;                    // Hardware addr type
   unsigned char hlen;                     // Hardware addr length
@@ -77,8 +76,7 @@ struct dhcp_msg
 // DHCP per interface state
 //
 
-struct dhcp_state
-{
+struct dhcp_state {
   struct dhcp_state *next;                // For linked list purposes
   int state;                              // Current DHCP state (of DHCP state machine)
   int tries;                              // Retries of current request

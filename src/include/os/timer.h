@@ -44,14 +44,12 @@ typedef void (*timerproc_t)(void *arg);
 
 struct timer;
 
-struct timer_link
-{
+struct timer_link {
   struct timer_link *next;
   struct timer_link *prev;
 };
 
-struct timer
-{
+struct timer {
   struct timer_link link;
   unsigned int expires;
   int active;

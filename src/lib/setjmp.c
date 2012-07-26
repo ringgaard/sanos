@@ -40,10 +40,8 @@
 #define OFS_ESP   16
 #define OFS_EIP   20
 
-__declspec(naked) int setjmp(jmp_buf env)
-{
-  __asm
-  {
+__declspec(naked) int setjmp(jmp_buf env) {
+  __asm {
     mov edx, 4[esp]          // Get jmp_buf pointer
     mov eax, [esp]           // Save EIP
     mov OFS_EIP[edx], eax
@@ -57,10 +55,8 @@ __declspec(naked) int setjmp(jmp_buf env)
   }
 }
 
-__declspec(naked) void longjmp(jmp_buf env, int value)
-{
-  __asm
-  {
+__declspec(naked) void longjmp(jmp_buf env, int value) {
+  __asm {
     mov edx, 4[esp]          // Get jmp_buf pointer
     mov eax, 8[esp]          // Get return value (eax)
 

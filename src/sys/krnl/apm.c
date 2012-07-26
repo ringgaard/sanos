@@ -114,10 +114,8 @@ static struct fullptr apm_entrypoint;
 
 static int apm_bios_call(unsigned long func, unsigned long ebx_in, unsigned long ecx_in,
                          unsigned long *eax_out, unsigned long *ebx_out, unsigned long *ecx_out, 
-                         unsigned long *edx_out, unsigned long *esi_out)
-{
-  __asm
-  {
+                         unsigned long *edx_out, unsigned long *esi_out) {
+  __asm {
     push edi
     push esi
 
@@ -173,10 +171,8 @@ static int apm_bios_call(unsigned long func, unsigned long ebx_in, unsigned long
 }
 
 static int apm_bios_call_simple(unsigned long func, unsigned long ebx_in, unsigned long ecx_in, 
-                                unsigned long *eax_out)
-{
-  __asm
-  {
+                                unsigned long *eax_out) {
+  __asm {
     push edi
     push esi
 
@@ -214,8 +210,7 @@ static int apm_bios_call_simple(unsigned long func, unsigned long ebx_in, unsign
   return *eax_out & 0xFF;
 }
 
-int apm_driver_version(unsigned long *ver)
-{
+int apm_driver_version(unsigned long *ver) {
   unsigned long eax;
   int rc;
 
@@ -225,8 +220,7 @@ int apm_driver_version(unsigned long *ver)
   return 0;
 }
 
-int apm_set_power_state(unsigned long device, unsigned long state)
-{
+int apm_set_power_state(unsigned long device, unsigned long state) {
   unsigned long eax;
   int rc;
 
@@ -235,13 +229,11 @@ int apm_set_power_state(unsigned long device, unsigned long state)
   return 0;
 }
 
-int apm_set_system_power_state(unsigned long state)
-{
+int apm_set_system_power_state(unsigned long state) {
   return apm_set_power_state(APM_DEVICE_ALL, state);
 }
 
-int apm_get_power_status(unsigned long *status, unsigned long *battery, unsigned long *life)
-{
+int apm_get_power_status(unsigned long *status, unsigned long *battery, unsigned long *life) {
   unsigned long eax;
   unsigned long ebx;
   unsigned long ecx;
@@ -258,8 +250,7 @@ int apm_get_power_status(unsigned long *status, unsigned long *battery, unsigned
   return 0;
 }
 
-int apm_enable_power_management(unsigned long enable)
-{
+int apm_enable_power_management(unsigned long enable) {
   unsigned long eax;
   int rc;
   
@@ -268,8 +259,7 @@ int apm_enable_power_management(unsigned long enable)
   return 0;
 }
 
-int apm_engage_power_management(unsigned long device, unsigned long enable)
-{
+int apm_engage_power_management(unsigned long device, unsigned long enable) {
   unsigned long eax;
   int rc;
 
@@ -278,30 +268,24 @@ int apm_engage_power_management(unsigned long device, unsigned long enable)
   return 0;
 }
 
-void apm_power_off()
-{
+void apm_power_off() {
   int rc;
 
-  if (apm_enabled) 
-  {
+  if (apm_enabled)  {
     rc = apm_set_system_power_state(APM_STATE_OFF);
-
-    if (rc != 0)
-    {
+    if (rc != 0) {
       // If shutdown fails, try to engage power management and try again.
       apm_engage_power_management(APM_DEVICE_ALL, 1);
       rc = apm_set_system_power_state(APM_STATE_OFF);
     }
 
-    if (rc != 0) 
-    {
+    if (rc != 0) {
       kprintf(KERN_ERR "apm: error %d in apm_set_system_power_state()\n", rc);
     }
   }
 }
 
-int apm_proc(struct proc_file *pf, void *arg)
-{
+int apm_proc(struct proc_file *pf, void *arg) {
   int rc;
   unsigned long status;
   unsigned long battery;
@@ -310,20 +294,17 @@ int apm_proc(struct proc_file *pf, void *arg)
   char *bat_stat;
 
   rc = apm_get_power_status(&status, &battery, &life);
-  if (rc != 0)
+  if (rc != 0) {
     pprintf(pf, "power status not available");
-  else
-  {
-    switch ((status >> 8) & 0xff) 
-    {
+  } else {
+    switch ((status >> 8) & 0xff)  {
       case 0: power_stat = "off line"; break;
       case 1: power_stat = "on line"; break;
       case 2: power_stat = "on backup power"; break;
       default: power_stat = "unknown";
     }
 
-    switch (status & 0xff) 
-    {
+    switch (status & 0xff) {
       case 0: bat_stat = "high"; break;
       case 1: bat_stat = "low"; break;
       case 2: bat_stat = "critical"; break;
@@ -332,10 +313,11 @@ int apm_proc(struct proc_file *pf, void *arg)
     }
 
     pprintf(pf, "AC %s, battery status %s, battery life ", power_stat, bat_stat);
-    if ((battery & 0xff) == 0xff)
+    if ((battery & 0xff) == 0xff) {
       pprintf(pf, "unknown");
-    else
+    } else {
       pprintf(pf, "%d%%", battery & 0xff);
+    }
 
     if ((life & 0xffff) != 0xffff) pprintf(pf, " %d %s\n", life & 0x7fff, (life & 0x8000) ? "minutes" : "seconds");
     pprintf(pf, "\n");
@@ -344,8 +326,7 @@ int apm_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-int __declspec(dllexport) apm(struct unit *unit, char *opts)
-{
+int __declspec(dllexport) apm(struct unit *unit, char *opts) {
   struct apmparams *apm = &syspage->bootparams.apm;
   int rc;
   unsigned long vaddr;
@@ -363,8 +344,7 @@ int __declspec(dllexport) apm(struct unit *unit, char *opts)
   cseg32len = apm->cseg32len;
   dseglen = apm->dseglen;
 
-  switch (apm->version)
-  {
+  switch (apm->version) {
     case 0x0100:
       cseg16len = 0x10000;
       cseg32len = 0x10000;
@@ -403,12 +383,10 @@ int __declspec(dllexport) apm(struct unit *unit, char *opts)
 
   // Initialize APM
   apm_conn_ver = apm->version;
-  if (apm_conn_ver > 0x0100)
-  {
+  if (apm_conn_ver > 0x0100) {
     if (apm_conn_ver > 0x0102) apm_conn_ver = 0x0102;
     rc = apm_driver_version(&apm_conn_ver);
-    if (rc != 0)
-    {
+    if (rc != 0) {
       //kprintf(KERN_DEBUG "apm: error %d in apm_driver_version()\n", rc);
       apm_conn_ver = 0x0100;
     }
@@ -416,21 +394,17 @@ int __declspec(dllexport) apm(struct unit *unit, char *opts)
 
   //kprintf(KERN_DEBUG "apm: connection version %04x\n", apm_conn_ver);
 
-  if (enable == 1 || enable == 2 && (apm->flags & APM_BIOS_DISABLED) != 0) 
-  {
+  if (enable == 1 || enable == 2 && (apm->flags & APM_BIOS_DISABLED) != 0) {
     rc = apm_enable_power_management(1);
-    if (rc != 0) 
-    {
+    if (rc != 0)  {
       kprintf(KERN_ERR "apm: error %d in apm_enable_power_management()\n", rc);
       return -EIO;
     }
   }
 
-  if (engage == 1 || engage == 2 && (apm->flags & APM_BIOS_DISENGAGED) != 0) 
-  {
+  if (engage == 1 || engage == 2 && (apm->flags & APM_BIOS_DISENGAGED) != 0) {
     rc = apm_engage_power_management(APM_DEVICE_ALL, 1);
-    if (rc != 0) 
-    {
+    if (rc != 0) {
       kprintf(KERN_ERR "apm: error %d in apm_engage_power_management()\n", rc);
       return -EIO;
     }

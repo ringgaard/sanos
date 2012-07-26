@@ -53,8 +53,7 @@ static char *_fmt(const char *format, const struct tm *t, char *pt, const char *
 static char *_conv(const int n, const char *format, char *pt, const char *ptlim);
 static char *_add(const char *str, char *pt, const char *ptlim);
 
-size_t strftime(char *s, size_t maxsize, const char *format, const struct tm *t)
-{
+size_t strftime(char *s, size_t maxsize, const char *format, const struct tm *t) {
   char *p;
 
   p = _fmt(((format == NULL) ? "%c" : format), t, s, s + maxsize);
@@ -63,19 +62,16 @@ size_t strftime(char *s, size_t maxsize, const char *format, const struct tm *t)
   return p - s;
 }
 
-static char *_fmt(const char *format, const struct tm *t, char *pt, const char *ptlim)
-{
-  for ( ; *format; ++format) 
-  {
-    if (*format == '%') 
-    {
-      if (*format == 'E') 
+static char *_fmt(const char *format, const struct tm *t, char *pt, const char *ptlim) {
+  for ( ; *format; ++format) {
+    if (*format == '%') {
+      if (*format == 'E') {
         format++; // Alternate Era
-      else if (*format == 'O')
+      } else if (*format == 'O') {
         format++; // Alternate numeric symbols
+      }
 
-      switch (*++format) 
-      {
+      switch (*++format) {
         case '\0':
           --format;
           break;
@@ -169,8 +165,7 @@ static char *_fmt(const char *format, const struct tm *t, char *pt, const char *
           pt = _conv(t->tm_sec, "%02d", pt, ptlim);
           continue;
 
-        case 's':
-        {
+        case 's': {
           struct tm  tm;
           char buf[32];
           time_t mkt;
@@ -198,10 +193,9 @@ static char *_fmt(const char *format, const struct tm *t, char *pt, const char *
           pt = _conv((t->tm_wday == 0) ? 7 : t->tm_wday, "%d", pt, ptlim);
           continue;
 
-        case 'V':  // ISO 8601 week number
-        case 'G':  // ISO 8601 year (four digits)
-        case 'g':  // ISO 8601 year (two digits)
-        {
+        case 'V':   // ISO 8601 week number
+        case 'G':   // ISO 8601 year (four digits)
+        case 'g': { // ISO 8601 year (two digits)
           int  year;
           int  yday;
           int  wday;
@@ -210,8 +204,7 @@ static char *_fmt(const char *format, const struct tm *t, char *pt, const char *
           year = t->tm_year + TM_YEAR_BASE;
           yday = t->tm_yday;
           wday = t->tm_wday;
-          while (1) 
-          {
+          while (1) {
             int  len;
             int  bot;
             int  top;
@@ -221,27 +214,25 @@ static char *_fmt(const char *format, const struct tm *t, char *pt, const char *
             top = bot - (len % DAYSPERWEEK);
             if (top < -3) top += DAYSPERWEEK;
             top += len;
-            if (yday >= top) 
-            {
+            if (yday >= top) {
               ++year;
               w = 1;
               break;
             }
-            if (yday >= bot) 
-            {
+            if (yday >= bot) {
               w = 1 + ((yday - bot) / DAYSPERWEEK);
               break;
             }
             --year;
             yday += LEAPYEAR(year) ? DAYSPERLYEAR : DAYSPERNYEAR;
           }
-          if (*format == 'V')
+          if (*format == 'V') {
             pt = _conv(w, "%02d", pt, ptlim);
-          else if (*format == 'g') 
+          } else if (*format == 'g') {
             pt = _conv(year % 100, "%02d", pt, ptlim);
-          else  
+          } else {
             pt = _conv(year, "%04d", pt, ptlim);
-
+          }
           continue;
         }
 
@@ -277,16 +268,12 @@ static char *_fmt(const char *format, const struct tm *t, char *pt, const char *
           pt = _add("?", pt, ptlim);
           continue;
 
-        case 'z':
-        {
+        case 'z': {
           long absoff;
-          if (_timezone >= 0) 
-          {
+          if (_timezone >= 0) {
             absoff = _timezone;
             pt = _add("+", pt, ptlim);
-          } 
-          else 
-          {
+          } else {
             absoff = _timezone;
             pt = _add("-", pt, ptlim);
           }
@@ -313,16 +300,14 @@ static char *_fmt(const char *format, const struct tm *t, char *pt, const char *
   return pt;
 }
 
-static char *_conv(const int n, const char *format, char *pt, const char *ptlim)
-{
+static char *_conv(const int n, const char *format, char *pt, const char *ptlim) {
   char  buf[32];
 
   sprintf(buf, format, n);
   return _add(buf, pt, ptlim);
 }
 
-static char *_add(const char *str, char *pt, const char *ptlim)
-{
+static char *_add(const char *str, char *pt, const char *ptlim) {
   while (pt < ptlim && (*pt = *str++) != '\0') ++pt;
   return pt;
 }

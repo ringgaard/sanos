@@ -38,8 +38,7 @@
 
 struct rmap *vmap;
 
-static int valid_range(void *addr, int size)
-{
+static int valid_range(void *addr, int size) {
   int pages = PAGES(size);
 
   if ((unsigned long) addr < VMEM_START) return 0;
@@ -48,10 +47,8 @@ static int valid_range(void *addr, int size)
   return 1;
 }
 
-static unsigned long pte_flags_from_protect(int protect)
-{
-  switch (protect)
-  {
+static unsigned long pte_flags_from_protect(int protect) {
+  switch (protect) {
     case PAGE_NOACCESS: 
       return 0;
 
@@ -77,15 +74,13 @@ static unsigned long pte_flags_from_protect(int protect)
   return 0xFFFFFFFF;
 }
 
-void init_vmm()
-{
+void init_vmm() {
   vmap = (struct rmap *) kmalloc(VMAP_ENTRIES * sizeof(struct rmap));
   rmap_init(vmap, VMAP_ENTRIES);
   rmap_free(vmap, BTOP(VMEM_START), BTOP(OSBASE - VMEM_START));
 }
 
-void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long tag)
-{
+void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long tag) {
   int pages = PAGES(size);
   unsigned long flags = pte_flags_from_protect(protect);
   int i;
@@ -98,43 +93,35 @@ void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long 
   if (!addr && (type & MEM_COMMIT) != 0) type |= MEM_RESERVE;
   if (!tag) tag = 'MMAP';
 
-  if (type & MEM_RESERVE)
-  {
-    if (addr == NULL)
-    {
-      if (type & MEM_ALIGN64K)
+  if (type & MEM_RESERVE) {
+    if (addr == NULL) {
+      if (type & MEM_ALIGN64K) {
         addr = (void *) PTOB(rmap_alloc_align(vmap, pages, 64 * 1024 / PAGESIZE));
-      else
+      } else {
         addr = (void *) PTOB(rmap_alloc(vmap, pages));
+      }
 
       if (addr == NULL) return NULL;
-    }
-    else
-    {
+    } else {
       if (rmap_reserve(vmap, BTOP(addr), pages)) return NULL;
     }
 
     //kprintf("vmem reserve (%p,%d,%x,%x)\n", addr, size, type, protect);
-  }
-  else
-  {
+  } else {
     if (!valid_range(addr, size)) return NULL;
   }
 
-  if (type & MEM_COMMIT)
-  {
+  if (type & MEM_COMMIT) {
     char *vaddr;
     unsigned long pfn;
 
     //if (!(protect & PAGE_GUARD)) kprintf("mmap: commit %dKB (%d KB free)\n", pages * (PAGESIZE / K), freemem * (PAGESIZE / K));
 
     vaddr = (char *) addr;
-    for (i = 0; i < pages; i++)
-    {
-      if (page_mapped(vaddr))
+    for (i = 0; i < pages; i++) {
+      if (page_mapped(vaddr)) {
         set_page_flags(vaddr, flags | PT_PRESENT);
-      else
-      {
+      } else {
         pfn = alloc_pageframe(tag);
         if (pfn == 0xFFFFFFFF) return NULL;
 
@@ -149,8 +136,7 @@ void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long 
   return addr;
 }
 
-int munmap(void *addr, unsigned long size, int type)
-{
+int munmap(void *addr, unsigned long size, int type) {
   int pages = PAGES(size);
   int i;
   char *vaddr;
@@ -159,13 +145,10 @@ int munmap(void *addr, unsigned long size, int type)
   addr = (void *) PAGEADDR(addr);
   if (!valid_range(addr, size)) return -EINVAL;
 
-  if (type & (MEM_DECOMMIT | MEM_RELEASE))
-  {
+  if (type & (MEM_DECOMMIT | MEM_RELEASE)) {
     vaddr = (char *) addr;
-    for (i = 0; i < pages; i++)
-    {
-      if (page_mapped(vaddr))
-      {
+    for (i = 0; i < pages; i++) {
+      if (page_mapped(vaddr)) {
         unsigned long pfn;
 
         pfn = BTOP(virt2phys(vaddr));
@@ -176,21 +159,18 @@ int munmap(void *addr, unsigned long size, int type)
     }
   }
   
-  if (type & MEM_RELEASE)
-  {
+  if (type & MEM_RELEASE) {
     rmap_free(vmap, BTOP(addr), pages);
   }
   
   return 0;
 }
 
-void *mremap(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect, unsigned long tag)
-{
+void *mremap(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect, unsigned long tag) {
   return NULL;
 }
 
-int mprotect(void *addr, unsigned long size, int protect)
-{
+int mprotect(void *addr, unsigned long size, int protect) {
   int pages = PAGES(size);
   int i;
   char *vaddr;
@@ -203,10 +183,8 @@ int mprotect(void *addr, unsigned long size, int protect)
   if (flags == 0xFFFFFFFF) return -EINVAL;
 
   vaddr = (char *) addr;
-  for (i = 0; i < pages; i++)
-  {
-    if (page_mapped(vaddr)) 
-    {
+  for (i = 0; i < pages; i++) {
+    if (page_mapped(vaddr)) {
       set_page_flags(vaddr, (get_page_flags(vaddr) & ~PT_PROTECTMASK) | flags);
     }
     vaddr += PAGESIZE;
@@ -216,18 +194,15 @@ int mprotect(void *addr, unsigned long size, int protect)
   return 0;
 }
 
-int mlock(void *addr, unsigned long size)
-{
+int mlock(void *addr, unsigned long size) {
   return -ENOSYS;
 }
 
-int munlock(void *addr, unsigned long size)
-{
+int munlock(void *addr, unsigned long size) {
   return -ENOSYS;
 }
 
-void *miomap(unsigned long addr, int size, int protect)
-{
+void *miomap(unsigned long addr, int size, int protect) {
   char *vaddr;
   int i;
   unsigned long flags = pte_flags_from_protect(protect);
@@ -236,16 +211,14 @@ void *miomap(unsigned long addr, int size, int protect)
   vaddr = (char *) PTOB(rmap_alloc(vmap, pages));
   if (vaddr == NULL) return NULL;
   
-  for (i = 0; i < pages; i++)
-  {
+  for (i = 0; i < pages; i++) {
     map_page(vaddr + PTOB(i), BTOP(addr) + i, flags | PT_PRESENT);
   }
 
   return vaddr;
 }
 
-void miounmap(void *addr, int size)
-{
+void miounmap(void *addr, int size) {
   int i;
   int pages = PAGES(size);
 
@@ -253,8 +226,7 @@ void miounmap(void *addr, int size)
   rmap_free(vmap, BTOP(addr), pages);
 }
 
-int guard_page_handler(void *addr)
-{
+int guard_page_handler(void *addr) {
   unsigned long pfn;
   struct thread *t = self();
 
@@ -273,13 +245,11 @@ int guard_page_handler(void *addr)
   return 0;
 }
 
-int vmem_proc(struct proc_file *pf, void *arg)
-{
+int vmem_proc(struct proc_file *pf, void *arg) {
   return list_memmap(pf, vmap, BTOP(VMEM_START));
 }
 
-int mem_sysinfo(struct meminfo *info)
-{
+int mem_sysinfo(struct meminfo *info) {
   struct rmap *r;
   struct rmap *rlim;
   unsigned int free = 0;

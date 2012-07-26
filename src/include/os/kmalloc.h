@@ -34,8 +34,7 @@
 #ifndef KMALLOC_H
 #define KMALLOC_H
 
-struct bucket 
-{
+struct bucket {
   void *mem;            // List of chunks of memory
   unsigned long elems;  // # chunks available in this bucket
   unsigned long pages;  // # pages used for this bucket size

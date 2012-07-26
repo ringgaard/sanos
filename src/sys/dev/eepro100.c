@@ -75,14 +75,12 @@ static int multicast_filter_limit = 64;
 
 // This table drives the PCI probe routines
 
-enum chip_capability_flags 
-{ 
+enum chip_capability_flags  { 
   ResetMII = 1, 
   HasChksum = 2
 };
 
-static struct board board_tbl[] = 
-{
+static struct board board_tbl[] =  {
   {"Intel", "Intel i82559 rev 8", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x1229), 0xffffffff, 0, 0, 8, 0xff, HasChksum},
   {"Intel", "Intel PCI EtherExpress Pro100", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x1229), 0xffffffff, 0, 0, 0, 0, 0},
   {"Intel", "Intel EtherExpress Pro/100+ i82559ER", BUSTYPE_PCI, PCI_UNITCODE(0x8086, 0x1209), 0xffffffff, 0, 0, 0, 0, ResetMII},
@@ -102,8 +100,7 @@ static struct board board_tbl[] =
 // Offsets to the various registers
 // All accesses need not be longword aligned
 
-enum speedo_offsets 
-{
+enum speedo_offsets {
   SCBStatus  = 0,             // Rx/Command Unit status
   SCBCmd     = 2,             // Rx/Command Unit command
   SCBPointer = 4,             // General purpose pointer
@@ -116,8 +113,7 @@ enum speedo_offsets
 
 // Commands that can be put in a command list entry
 
-enum commands 
-{
+enum commands {
   CmdNOp           = 0x00000000, 
   CmdIASetup       = 0x00010000, 
   CmdConfigure     = 0x00020000,
@@ -132,8 +128,7 @@ enum commands
   CmdSuspend       = 0x40000000,   // Suspend after completion
 };
 
-enum SCBCmdBits 
-{
+enum SCBCmdBits {
   SCBMaskCmdDone      = 0x8000, 
   SCBMaskRxDone       = 0x4000, 
   SCBMaskCmdIdle      = 0x2000,
@@ -159,8 +154,7 @@ enum SCBCmdBits
   RxResumeNoResources = 0x0007,
 };
 
-enum intr_status_bits 
-{
+enum intr_status_bits {
   IntrCmdDone   = 0x8000,  
   IntrRxDone    = 0x4000, 
   IntrCmdIdle   = 0x2000,
@@ -170,8 +164,7 @@ enum intr_status_bits
   IntrAllNormal = 0xfc00,
 };
 
-enum SCBPort_cmds 
-{
+enum SCBPort_cmds {
   PortReset        = 0, 
   PortSelfTest     = 1, 
   PortPartialReset = 2, 
@@ -182,8 +175,7 @@ enum SCBPort_cmds
 
 // A generic descriptor
 
-struct descriptor 
-{     
+struct descriptor {
   long cmd_status;            // All command and status fields
   unsigned long link;         // struct descriptor *
   unsigned char params[0];
@@ -193,8 +185,7 @@ struct descriptor
 
 // Receive frame descriptor
 
-struct RxFD 
-{         
+struct RxFD {
   long status;
   unsigned long link;         // struct RxFD *
   unsigned long rx_buf_addr;  // void *
@@ -203,8 +194,7 @@ struct RxFD
 
 // Selected elements of the Tx/RxFD.status word
 
-enum RxFD_bits 
-{
+enum RxFD_bits {
   RxComplete     = 0x8000,
   RxOK           = 0x2000,
   RxErrCRC       = 0x0800, 
@@ -220,8 +210,7 @@ enum RxFD_bits
 
 // Transmit frame descriptor set
 
-struct TxFD 
-{         
+struct TxFD {
   long status;
   unsigned long link;           // void *
   unsigned long tx_desc_addr;   // Always points to the tx_buf_addr element.
@@ -236,8 +225,7 @@ struct TxFD
 
 // Elements of the dump_statistics block. This block must be dword aligned.
 
-struct speedo_stats 
-{
+struct speedo_stats {
   unsigned long tx_good_frames;
   unsigned long tx_coll16_errs;
   unsigned long tx_late_colls;
@@ -260,8 +248,7 @@ struct speedo_stats
 // Do not change the position (alignment) of the first few elements!
 // The later elements are grouped for cache locality.
 
-struct nic
-{
+struct nic {
   struct TxFD tx_ring[TX_RING_SIZE];       // Commands (usually CmdTxPacket)
   struct RxFD *rx_ringp[RX_RING_SIZE];     // Rx descriptor, used as ring
   
@@ -316,16 +303,14 @@ struct nic
 // There are so many options that it would be difficult to document each bit.
 // We mostly use the default or recommended settings
 
-const unsigned char i82557_config_cmd[22] = 
-{
+const unsigned char i82557_config_cmd[22] = {
   22, 0x08, 0, 0,  0, 0, 0x32, 0x03,  1, // 1=Use MII  0=Use AUI
   0, 0x2E, 0,  0x60, 0,
   0xf2, 0x48,   0, 0x40, 0xf2, 0x80,    // 0x40=Force full-duplex
   0x3f, 0x05, 
 };
 
-const unsigned char i82558_config_cmd[22] = 
-{
+const unsigned char i82558_config_cmd[22] = {
   22, 0x08, 0, 1,  0, 0, 0x22, 0x03,  1, // 1=Use MII  0=Use AUI
   0, 0x2E, 0,  0x60, 0x08, 0x88,
   0x68, 0, 0x40, 0xf2, 0xBD,    // 0xBD->0xFD=Force full-duplex
@@ -334,16 +319,14 @@ const unsigned char i82558_config_cmd[22] =
 
 // PHY media interface chips
 
-static const char *phys[] = 
-{
+static const char *phys[] = {
   "None", "i82553-A/B", "i82553-C", "i82503",
   "DP83840", "80c240", "80c24", "i82555",
   "unknown-8", "unknown-9", "DP83840A", "unknown-11",
   "unknown-12", "unknown-13", "unknown-14", "unknown-15"
 };
 
-enum phy_chips 
-{ 
+enum phy_chips {
   NonSuchPhy=0, I82553AB, I82553C, I82503, DP83840, S80C240, S80C24, I82555, DP83840A=10
 };
 
@@ -356,20 +339,17 @@ static const char is_mii[] = { 0, 1, 1, 0, 1, 1, 0, 1 };
 // How to wait for the command unit to accept a command.
 // Typically this takes 0 ticks
 
-__inline static void wait_for_cmd_done(long cmd_ioaddr)
-{
+__inline static void wait_for_cmd_done(long cmd_ioaddr) {
   int wait = 0;
   int delayed_cmd;
   
-  while (++wait <= 100)
-  {
+  while (++wait <= 100) {
     if (inp(cmd_ioaddr) == 0) return;
   }
 
   delayed_cmd = inp(cmd_ioaddr);
   
-  while (++wait <= 10000)
-  {
+  while (++wait <= 10000) {
     if (inp(cmd_ioaddr) == 0) break;
   }
 
@@ -395,16 +375,14 @@ __inline static void wait_for_cmd_done(long cmd_ioaddr)
 
 #define eeprom_delay(ee_addr) inpw(ee_addr)
 
-static int do_eeprom_cmd(long ioaddr, int cmd, int cmd_len)
-{
+static int do_eeprom_cmd(long ioaddr, int cmd, int cmd_len) {
   unsigned retval = 0;
   long ee_addr = ioaddr + SCBeeprom;
 
   outpw(ee_addr, EE_ENB | EE_SHIFT_CLK);
 
   // Shift the command bits out
-  do 
-  {
+  do {
     short dataval = (cmd & (1 << cmd_len)) ? EE_WRITE_1 : EE_WRITE_0;
     outpw(ee_addr, dataval);
     eeprom_delay(ee_addr);
@@ -420,15 +398,12 @@ static int do_eeprom_cmd(long ioaddr, int cmd, int cmd_len)
   return retval;
 }
 
-static int mdio_read(long ioaddr, int phy_id, int location)
-{
+static int mdio_read(long ioaddr, int phy_id, int location) {
   int val, boguscnt = 64 * 10;    // <64 usec. to complete, typ 27 ticks
   outpd(ioaddr + SCBCtrlMDI, 0x08000000 | (location << 16) | (phy_id << 21));
-  do 
-  {
+  do {
     val = inpd(ioaddr + SCBCtrlMDI);
-    if (--boguscnt < 0) 
-    {
+    if (--boguscnt < 0) {
       kprintf(KERN_WARNING "eepro100: mdio_read() timed out with val = %8.8x\n", val);
       break;
     }
@@ -437,15 +412,12 @@ static int mdio_read(long ioaddr, int phy_id, int location)
   return val & 0xffff;
 }
 
-static int mdio_write(long ioaddr, int phy_id, int location, int value)
-{
+static int mdio_write(long ioaddr, int phy_id, int location, int value) {
   int val, boguscnt = 64 * 10;    // <64 usec. to complete, typ 27 ticks
   outpd(ioaddr + SCBCtrlMDI, 0x04000000 | (location << 16) | (phy_id << 21) | value);
-  do 
-  {
+  do {
     val = inpd(ioaddr + SCBCtrlMDI);
-    if (--boguscnt < 0)
-    {
+    if (--boguscnt < 0) {
       kprintf(KERN_WARNING "eepro100: mdio_write() timed out with val = %8.8x\n", val);
       break;
     }
@@ -457,31 +429,28 @@ static int mdio_write(long ioaddr, int phy_id, int location, int value)
 // Perform a SCB command known to be slow.
 // This function checks the status both before and after command execution.
 
-static void do_slow_command(struct dev *dev, int cmd)
-{
+static void do_slow_command(struct dev *dev, int cmd) {
   struct nic *sp = (struct nic *) dev->privdata;
   long cmd_ioaddr = sp->iobase + SCBCmd;
   int wait = 0;
 
-  while (++wait <= 200)
-  {
+  while (++wait <= 200) {
     if (inp(cmd_ioaddr) == 0) break;
   }
 
   if (wait > 100)  kprintf(KERN_WARNING "%s: Command %4.4x was never accepted (%d polls)!\n", dev->name, inp(cmd_ioaddr), wait);
   outp(cmd_ioaddr, cmd);
 
-  for (wait = 0; wait <= 100; wait++)
-  {
+  for (wait = 0; wait <= 100; wait++) {
     if (inp(cmd_ioaddr) == 0) return;
   }
 
-  for (; wait <= 20000; wait++)
-  {
-    if (inp(cmd_ioaddr) == 0) 
+  for (; wait <= 20000; wait++) {
+    if (inp(cmd_ioaddr) == 0) {
       return;
-    else 
+    } else {
       udelay(1);
+    }
   }
 
   kprintf(KERN_WARNING "%s: Command %4.4x was not accepted after %d polls!  Current status %8.8x\n", dev->name, cmd, wait, inpd(sp->iobase + SCBStatus));
@@ -493,8 +462,7 @@ static void speedo_timer(void *arg);
 static void speedo_interrupt(struct dev *dev);
 static void speedo_tx_timeout(struct dev *dev);
 
-static void speedo_show_state(struct dev *dev)
-{
+static void speedo_show_state(struct dev *dev) {
   struct nic *sp = (struct nic *) dev->privdata;
   long ioaddr = sp->iobase;
   int phy_num = sp->phy[0] & 0x1f;
@@ -502,8 +470,7 @@ static void speedo_show_state(struct dev *dev)
 
   // Print a few items for debugging
   kprintf("%s: Tx ring dump,  Tx queue %d / %d:\n", dev->name, sp->cur_tx, sp->dirty_tx);
-  for (i = 0; i < TX_RING_SIZE; i++)
-  {
+  for (i = 0; i < TX_RING_SIZE; i++) {
     kprintf("%s: %c%c%d %8.8x\n", dev->name,
           i == sp->dirty_tx % TX_RING_SIZE ? '*' : ' ',
           i == sp->cur_tx % TX_RING_SIZE ? '=' : ' ',
@@ -512,13 +479,11 @@ static void speedo_show_state(struct dev *dev)
 
   kprintf("%s: Rx ring dump (next to receive into %d)\n", dev->name, sp->cur_rx);
 
-  for (i = 0; i < RX_RING_SIZE; i++)
-  {
+  for (i = 0; i < RX_RING_SIZE; i++) {
     kprintf("  Rx ring entry %d  %8.8x\n",  i, sp->rx_ringp[i]->status);
   }
 
-  for (i = 0; i < 16; i++) 
-  {
+  for (i = 0; i < 16; i++) {
     if (i == 6) i = 21;
     kprintf("  PHY index %d register %d is %4.4x.\n", phy_num, i, mdio_read(ioaddr, phy_num, i));
   }
@@ -536,8 +501,7 @@ static void speedo_init_rx_ring(struct dev *dev)
 
   sp->cur_rx = 0;
 
-  for (i = 0; i < RX_RING_SIZE; i++) 
-  {
+  for (i = 0; i < RX_RING_SIZE; i++) {
     struct pbuf *p;
 
     p = pbuf_alloc(PBUF_RAW, PKT_BUF_SZ + sizeof(struct RxFD), PBUF_RW);
@@ -560,8 +524,7 @@ static void speedo_init_rx_ring(struct dev *dev)
   sp->last_rxf = last_rxf;
 }
 
-static int speedo_open(struct dev *dev)
-{
+static int speedo_open(struct dev *dev) {
   struct nic *sp = (struct nic *) dev->privdata;
   long ioaddr = sp->iobase;
 
@@ -574,15 +537,13 @@ static int speedo_open(struct dev *dev)
   sp->tx_full = 0;
   sp->polling = 0;
 
-  if ((sp->phy[0] & 0x8000) == 0)
-  {
+  if ((sp->phy[0] & 0x8000) == 0) {
     sp->advertising = mdio_read(ioaddr, sp->phy[0] & 0x1f, 4);
   }
 
   // With some transceivers we must retrigger negotiation to reset
   // power-up errors
-  if ((sp->flags & ResetMII) && (sp->phy[0] & 0x8000) == 0) 
-  {
+  if ((sp->flags & ResetMII) && (sp->phy[0] & 0x8000) == 0) {
     int phy_addr = sp->phy[0] & 0x1f ;
     
     // Use 0x3300 for restarting NWay, other values to force xcvr:
@@ -629,8 +590,7 @@ static int speedo_open(struct dev *dev)
   return 0;
 }
 
-static int speedo_close(struct dev *dev)
-{
+static int speedo_close(struct dev *dev) {
   struct nic *sp = (struct nic *) dev->privdata;
   long ioaddr = sp->iobase;
   int i;
@@ -646,22 +606,19 @@ static int speedo_close(struct dev *dev)
   disable_irq(sp->irq);
 
   // Free all the pbufs in the Rx and Tx queues
-  for (i = 0; i < RX_RING_SIZE; i++) 
-  {
+  for (i = 0; i < RX_RING_SIZE; i++) {
     struct pbuf *p = sp->rx_pbuf[i];
     sp->rx_pbuf[i] = NULL;
     if (p) pbuf_free(p);
   }
 
-  for (i = 0; i < TX_RING_SIZE; i++) 
-  {
+  for (i = 0; i < TX_RING_SIZE; i++) {
     struct pbuf *p = sp->tx_pbuf[i];
     sp->tx_pbuf[i] = NULL;
     if (p) pbuf_free(p);
   }
 
-  if (sp->mc_setup_frm) 
-  {
+  if (sp->mc_setup_frm) {
     kfree(sp->mc_setup_frm);
     sp->mc_setup_frm_len = 0;
   }
@@ -674,8 +631,7 @@ static int speedo_close(struct dev *dev)
 
 // Start the chip hardware after a full reset
 
-static void speedo_resume(struct dev *dev)
-{
+static void speedo_resume(struct dev *dev) {
   struct nic *sp = (struct nic *) dev->privdata;
   long ioaddr = sp->iobase;
 
@@ -686,8 +642,7 @@ static void speedo_resume(struct dev *dev)
 
   // Set the segment registers to '0'
   wait_for_cmd_done(ioaddr + SCBCmd);
-  if (inp(ioaddr + SCBCmd)) 
-  {
+  if (inp(ioaddr + SCBCmd)) {
     outpd(ioaddr + SCBPort, PortPartialReset);
     udelay(10);
   }
@@ -745,14 +700,12 @@ static void speedo_resume(struct dev *dev)
 // Oh, and incoming frames are dropped while executing dump-stats!
 //
 
-static struct stats_nic *speedo_get_stats(struct dev *dev)
-{
+static struct stats_nic *speedo_get_stats(struct dev *dev) {
   struct nic *sp = (struct nic *) dev->privdata;
   long ioaddr = sp->iobase;
 
   // Update only if the previous dump finished.
-  if (sp->lstats.done_marker == 0xA007) 
-  {
+  if (sp->lstats.done_marker == 0xA007) {
     sp->stats.tx_aborted_errors += sp->lstats.tx_coll16_errs;
     sp->stats.tx_window_errors += sp->lstats.tx_late_colls;
     sp->stats.tx_fifo_errors += sp->lstats.tx_underruns;
@@ -783,33 +736,26 @@ static struct stats_nic *speedo_get_stats(struct dev *dev)
 // loaded the link -- we convert the current command block, normally a Tx
 // command, into a no-op and link it to the new command.
 
-static int speedo_set_rx_mode(struct dev *dev)
-{
+static int speedo_set_rx_mode(struct dev *dev) {
   struct nic *sp = (struct nic *) dev->privdata;
   long ioaddr = sp->iobase;
   struct descriptor *last_cmd;
   char new_rx_mode;
   int entry, i;
 
-  if (!dev->netif)
-  {
+  if (!dev->netif) {
     // Network interface not attached yet -- accept all multicasts
     new_rx_mode = 1;
-  }
-  else if (dev->netif->flags & NETIF_PROMISC) 
-  {     
+  } else if (dev->netif->flags & NETIF_PROMISC) {     
     // Set promiscuous.
     new_rx_mode = 3;
-  }
-  else if ((dev->netif->flags & NETIF_ALLMULTI) || dev->netif->mccount > multicast_filter_limit) 
-  {
+  } else if ((dev->netif->flags & NETIF_ALLMULTI) || dev->netif->mccount > multicast_filter_limit) {
     new_rx_mode = 1;
-  } 
-  else
+  } else {
     new_rx_mode = 0;
+  }
 
-  if (sp->cur_tx - sp->dirty_tx >= TX_RING_SIZE - 1) 
-  {
+  if (sp->cur_tx - sp->dirty_tx >= TX_RING_SIZE - 1) {
     // The Tx ring is full -- don't add anything!  Presumably the new mode
     // is in config_cmd_data and will be added anyway, otherwise we wait
     // for a timer tick or the mode to change again.
@@ -817,8 +763,7 @@ static int speedo_set_rx_mode(struct dev *dev)
     return -EBUSY;
   }
 
-  if (new_rx_mode != sp->rx_mode) 
-  {
+  if (new_rx_mode != sp->rx_mode) {
     unsigned char *config_cmd_data;
 
     cli();
@@ -843,8 +788,7 @@ static int speedo_set_rx_mode(struct dev *dev)
     config_cmd_data[19] = sp->flow_ctrl ? 0xBD : 0x80;
     config_cmd_data[19] |= sp->full_duplex ? 0x40 : 0;
     config_cmd_data[21] = (new_rx_mode & 1) ? 0x0D : 0x05;
-    if (sp->phy[0] & 0x8000) 
-    {      
+    if (sp->phy[0] & 0x8000) {
       // Use the AUI port instead.
       config_cmd_data[15] |= 0x80;
       config_cmd_data[8] = 0;
@@ -857,8 +801,7 @@ static int speedo_set_rx_mode(struct dev *dev)
     sp->last_cmd_time = get_ticks();
   }
 
-  if (new_rx_mode == 0 && dev->netif->mccount < 4) 
-  {
+  if (new_rx_mode == 0 && dev->netif->mccount < 4) {
     // The simple case of 0-3 multicast list entries occurs often, and
     // fits within one tx_ring[] entry.
     struct mclist *mclist;
@@ -879,8 +822,7 @@ static int speedo_set_rx_mode(struct dev *dev)
     *setup_params++ = dev->netif->mccount * 6;
     
     // Fill in the multicast addresses.
-    for (i = 0, mclist = dev->netif->mclist; i < dev->netif->mccount; i++, mclist = mclist->next) 
-    {
+    for (i = 0, mclist = dev->netif->mclist; i < dev->netif->mccount; i++, mclist = mclist->next) {
       eaddrs = (unsigned short *) &mclist->hwaddr;
       *setup_params++ = *eaddrs++;
       *setup_params++ = *eaddrs++;
@@ -893,23 +835,19 @@ static int speedo_set_rx_mode(struct dev *dev)
     outp(ioaddr + SCBCmd, CUResume);
     sti();
     sp->last_cmd_time = get_ticks();
-  } 
-  else if (new_rx_mode == 0) 
-  {
+  } else if (new_rx_mode == 0) {
     struct mclist *mclist;
     unsigned short *setup_params, *eaddrs;
     struct descriptor *mc_setup_frm = sp->mc_setup_frm;
     int i;
 
-    if (sp->mc_setup_frm_len < 10 + dev->netif->mccount * 6 || sp->mc_setup_frm == NULL) 
-    {
+    if (sp->mc_setup_frm_len < 10 + dev->netif->mccount * 6 || sp->mc_setup_frm == NULL) {
       // Allocate a full setup frame, 10bytes + <max addrs>.
       if (sp->mc_setup_frm) kfree(sp->mc_setup_frm);
       sp->mc_setup_busy = 0;
       sp->mc_setup_frm_len = 10 + multicast_filter_limit*6;
       sp->mc_setup_frm = kmalloc(sp->mc_setup_frm_len);
-      if (sp->mc_setup_frm == NULL) 
-      {
+      if (sp->mc_setup_frm == NULL) {
         kprintf(KERN_WARNING "%s: Failed to allocate a setup frame\n", dev->name);
         sp->rx_mode = -1; // We failed, try again.
         return -ENOMEM;
@@ -918,8 +856,7 @@ static int speedo_set_rx_mode(struct dev *dev)
 
     // If we are busy, someone might be quickly adding to the MC list.
     // Try again later when the list updates stop.
-    if (sp->mc_setup_busy) 
-    {
+    if (sp->mc_setup_busy) {
       sp->rx_mode = -1;
       return -EBUSY;
     }
@@ -934,8 +871,7 @@ static int speedo_set_rx_mode(struct dev *dev)
     *setup_params++ = dev->netif->mccount * 6;
     
     // Fill in the multicast addresses
-    for (i = 0, mclist = dev->netif->mclist; i < dev->netif->mccount; i++, mclist = mclist->next) 
-    {
+    for (i = 0, mclist = dev->netif->mclist; i < dev->netif->mccount; i++, mclist = mclist->next) {
       eaddrs = (unsigned short *) &mclist->hwaddr;
       *setup_params++ = *eaddrs++;
       *setup_params++ = *eaddrs++;
@@ -975,8 +911,7 @@ static int speedo_set_rx_mode(struct dev *dev)
 
 // Media monitoring and control
 
-static void speedo_timer(void *arg)
-{
+static void speedo_timer(void *arg) {
   struct dev *dev = (struct dev *) arg;
   struct nic *sp = (struct nic *) dev->privdata;
   long ioaddr = sp->iobase;
@@ -989,34 +924,28 @@ static void speedo_timer(void *arg)
   // Normally we check every two seconds.
   expires = get_ticks() + 2*HZ;
 
-  if (sp->polling) 
-  {
+  if (sp->polling) {
     // Continue to be annoying.
-    if (status & 0xfc00) 
-    {
+    if (status & 0xfc00) {
       speedo_interrupt(dev);
-      if (get_ticks() - sp->last_reset > 10*HZ) 
-      {
+      if (get_ticks() - sp->last_reset > 10*HZ) {
         kprintf(KERN_WARNING "%s: IRQ %d is still blocked!\n", dev->name, sp->irq);
         sp->last_reset = get_ticks();
       }
-    } 
-    else if (get_ticks() - sp->last_reset > 10*HZ)
+    } else if (get_ticks() - sp->last_reset > 10*HZ) {
       sp->polling = 0;
+    }
     
     expires = get_ticks() + 2;
   }
 
   // We have MII and lost link beat
-  if ((sp->phy[0] & 0x8000) == 0) 
-  {
+  if ((sp->phy[0] & 0x8000) == 0) {
     int partner = mdio_read(ioaddr, phy_num, 5);
-    if (partner != sp->partner) 
-    {
+    if (partner != sp->partner) {
       int flow_ctrl = sp->advertising & partner & 0x0400 ? 1 : 0;
       sp->partner = partner;
-      if (flow_ctrl != sp->flow_ctrl) 
-      {
+      if (flow_ctrl != sp->flow_ctrl) {
         sp->flow_ctrl = flow_ctrl;
         sp->rx_mode = -1; // Trigger a reload
       }
@@ -1033,23 +962,16 @@ static void speedo_timer(void *arg)
   }
 
   // This no longer has a false-trigger window
-  if (sp->cur_tx - sp->dirty_tx > 1 && (get_ticks() - sp->trans_start) > TX_TIMEOUT  && (get_ticks() - sp->last_cmd_time) > TX_TIMEOUT) 
-  {
-    if (status == 0xffff) 
-    {
-      if (get_ticks() - sp->last_reset > 10*HZ) 
-      {
+  if (sp->cur_tx - sp->dirty_tx > 1 && (get_ticks() - sp->trans_start) > TX_TIMEOUT  && (get_ticks() - sp->last_cmd_time) > TX_TIMEOUT) {
+    if (status == 0xffff) {
+      if (get_ticks() - sp->last_reset > 10*HZ) {
         sp->last_reset = get_ticks();
         kprintf(KERN_WARNING "%s: The EEPro100 chip is missing!\n", dev->name);
       }
-    } 
-    else if (status & 0xfc00) 
-    {
+    } else if (status & 0xfc00) {
       // We have a blocked IRQ line.  This should never happen, but we recover as best we can
-      if (!sp->polling)
-      {
-        if (get_ticks() - sp->last_reset > 10*HZ) 
-        {
+      if (!sp->polling) {
+        if (get_ticks() - sp->last_reset > 10*HZ) {
           kprintf(KERN_WARNING "%s: IRQ %d is physically blocked! (%4.4x) Failing back to low-rate polling\n", dev->name, sp->irq, status);
           sp->last_reset = get_ticks();
         }
@@ -1058,16 +980,13 @@ static void speedo_timer(void *arg)
       }
       speedo_interrupt(dev);
       expires = get_ticks() + 2;  // Avoid 
-    } 
-    else 
-    {
+    } else {
       speedo_tx_timeout(dev);
       sp->last_reset = get_ticks();
     }
   }
 
-  if (sp->rx_mode < 0 || (sp->rx_bug && get_ticks() - sp->last_rx_time > 2*HZ)) 
-  {
+  if (sp->rx_mode < 0 || (sp->rx_bug && get_ticks() - sp->last_rx_time > 2*HZ)) {
     // We haven't received a packet in a Long Time.  We might have been
     // bitten by the receiver hang bug.  This can be cleared by sending
     // a set multicast list command.
@@ -1077,8 +996,7 @@ static void speedo_timer(void *arg)
   mod_timer(&sp->timer, expires);
 }
 
-static void speedo_tx_timeout(struct dev *dev)
-{
+static void speedo_tx_timeout(struct dev *dev) {
   struct nic *sp = (struct nic *) dev->privdata;
   long ioaddr = sp->iobase;
   int status = inpw(ioaddr + SCBStatus);
@@ -1104,8 +1022,7 @@ static void speedo_tx_timeout(struct dev *dev)
   speedo_resume(dev);
 
   // Reset the MII transceiver, suggested by Fred Young @ scalable.com
-  if ((sp->phy[0] & 0x8000) == 0) 
-  {
+  if ((sp->phy[0] & 0x8000) == 0) {
     int phy_addr = sp->phy[0] & 0x1f;
     int advertising = mdio_read(ioaddr, phy_addr, 4);
     int mii_bmcr = mdio_read(ioaddr, phy_addr, 0);
@@ -1124,18 +1041,15 @@ static void speedo_tx_timeout(struct dev *dev)
 
 // Handle the interrupt cases when something unexpected happens
 
-static void speedo_intr_error(struct dev *dev, int intr_status)
-{
+static void speedo_intr_error(struct dev *dev, int intr_status) {
   struct nic *sp = (struct nic *) dev->privdata;
   long ioaddr = sp->iobase;
 
-  if (intr_status & IntrRxSuspend)
-  {
+  if (intr_status & IntrRxSuspend) {
     if ((intr_status & 0x003c) == 0x0028)
       // No more Rx buffers
       outp(ioaddr + SCBCmd, RxResumeNoResources);
-    else if ((intr_status & 0x003c) == 0x0008) 
-    { 
+    else if ((intr_status & 0x003c) == 0x0008) {
       // No resources (why?!)
       kprintf(KERN_ERR "%s: Unknown receiver error, status=%#4.4x\n", dev->name, intr_status);
 
@@ -1148,8 +1062,7 @@ static void speedo_intr_error(struct dev *dev, int intr_status)
   }
 }
 
-static int speedo_rx(struct dev *dev)
-{
+static int speedo_rx(struct dev *dev) {
   struct nic *sp = (struct nic *) dev->privdata;
   int entry = sp->cur_rx % RX_RING_SIZE;
   int status;
@@ -1158,8 +1071,7 @@ static int speedo_rx(struct dev *dev)
   //kprintf("%s: In speedo_rx()\n", dev->name);
 
   // If we own the next entry, it's a new packet. Send it up.
-  while (sp->rx_ringp[entry] != NULL &&  (status = sp->rx_ringp[entry]->status) & RxComplete)
-  {
+  while (sp->rx_ringp[entry] != NULL &&  (status = sp->rx_ringp[entry]->status) & RxComplete) {
     int desc_count = sp->rx_ringp[entry]->count;
     int pkt_len = desc_count & 0x07ff;
 
@@ -1167,19 +1079,15 @@ static int speedo_rx(struct dev *dev)
 
     //kprintf("%s: speedo_rx() status %8.8x len %d\n", dev->name, status, pkt_len);
 
-    if ((status & (RxErrTooBig | RxOK | 0x0f90)) != RxOK)
-    {
-      if (status & RxErrTooBig)
+    if ((status & (RxErrTooBig | RxOK | 0x0f90)) != RxOK) {
+      if (status & RxErrTooBig) {
         kprintf("KERN_WARNING %s: Ethernet frame overran the Rx buffer, status %8.8x!\n", dev->name, status);
-      else if (!(status & RxOK)) 
-      {
+      } else if (!(status & RxOK)) {
         // There was a fatal error.  This *should* be impossible.
         sp->stats.rx_errors++;
         kprintf(KERN_WARNING "%s: Anomalous event in speedo_rx(), status %8.8x\n", dev->name, status);
       }
-    } 
-    else 
-    {
+    } else {
       struct pbuf *p;
 
       if (sp->flags & HasChksum) pkt_len -= 2;
@@ -1187,16 +1095,12 @@ static int speedo_rx(struct dev *dev)
       // Check if the packet is long enough to just accept without
       // copying to a properly sized packet buffer
 
-      if (pkt_len < rx_copybreak && (p = pbuf_alloc(PBUF_RAW, pkt_len, PBUF_RW)) != NULL) 
-      {
+      if (pkt_len < rx_copybreak && (p = pbuf_alloc(PBUF_RAW, pkt_len, PBUF_RW)) != NULL) {
         memcpy(p->payload, sp->rx_pbuf[entry]->payload, pkt_len);
-      } 
-      else 
-      {
+      } else {
         // Pass up the already-filled pbuf
         p = sp->rx_pbuf[entry];
-        if (p == NULL) 
-        {
+        if (p == NULL) {
           kprintf(KERN_WARNING "%s: Inconsistent Rx descriptor chain\n", dev->name);
           break;
         }
@@ -1218,20 +1122,17 @@ static int speedo_rx(struct dev *dev)
   }
 
   // Refill the Rx ring buffers
-  for (; sp->cur_rx - sp->dirty_rx > 0; sp->dirty_rx++) 
-  {
+  for (; sp->cur_rx - sp->dirty_rx > 0; sp->dirty_rx++) {
     struct RxFD *rxf;
     entry = sp->dirty_rx % RX_RING_SIZE;
     
-    if (sp->rx_pbuf[entry] == NULL) 
-    {
+    if (sp->rx_pbuf[entry] == NULL) {
       struct pbuf *p;
 
       // Get a fresh pbuf to replace the consumed one
       p = pbuf_alloc(PBUF_RAW, PKT_BUF_SZ + sizeof(struct RxFD), PBUF_RW);
       sp->rx_pbuf[entry] = p;
-      if (p == NULL) 
-      {
+      if (p == NULL) {
         sp->rx_ringp[entry] = NULL;
         sp->alloc_failures++;
         break;      // Better luck next time! 
@@ -1239,9 +1140,7 @@ static int speedo_rx(struct dev *dev)
       rxf = sp->rx_ringp[entry] = (struct RxFD *) p->payload;
       pbuf_header(p, - (int) sizeof(struct RxFD));
       rxf->rx_buf_addr = virt2phys(p->payload);
-    } 
-    else 
-    {
+    } else {
       rxf = sp->rx_ringp[entry];
     }
 
@@ -1260,15 +1159,13 @@ static int speedo_rx(struct dev *dev)
 // The interrupt handler does all of the Rx thread work and cleans up
 // after the Tx thread.
 
-static void speedo_interrupt(struct dev *dev)
-{
+static void speedo_interrupt(struct dev *dev) {
   struct nic *sp = (struct nic *) dev->privdata;
   long ioaddr = sp->iobase;
   long boguscnt = max_interrupt_work;
   unsigned short status;
 
-  while (1)
-  {
+  while (1) {
     status = inpw(ioaddr + SCBStatus);
 
     if ((status & IntrAllNormal) == 0  ||  status == 0xffff) break;
@@ -1278,54 +1175,47 @@ static void speedo_interrupt(struct dev *dev)
 
     //kprintf("%s: interrupt status=%#4.4x\n", dev->name, status);
 
-    if (status & (IntrRxDone | IntrRxSuspend))
-    {
+    if (status & (IntrRxDone | IntrRxSuspend)) {
       speedo_rx(dev);
     }
 
     // The command unit did something, scavenge finished Tx entries
-    if (status & (IntrCmdDone | IntrCmdIdle | IntrDrvrIntr)) 
-    {
+    if (status & (IntrCmdDone | IntrCmdIdle | IntrDrvrIntr)) {
       unsigned int dirty_tx;
       int entries_freed = 0;
 
       dirty_tx = sp->dirty_tx;
-      while (sp->cur_tx - dirty_tx > 0) 
-      {
+      while (sp->cur_tx - dirty_tx > 0) {
         int entry = dirty_tx % TX_RING_SIZE;
         int status = sp->tx_ring[entry].status;
 
         //kprintf("%s: scavenge candidate %d status %4.4x\n", dev->name, entry, status);
 
-        if ((status & StatusComplete) == 0) 
-        {
+        if ((status & StatusComplete) == 0) {
           // Special case error check: look for descriptor that the chip skipped(?)
-          if (sp->cur_tx - dirty_tx > 2  && (sp->tx_ring[(dirty_tx + 1) % TX_RING_SIZE].status & StatusComplete)) 
-          {
+          if (sp->cur_tx - dirty_tx > 2  && (sp->tx_ring[(dirty_tx + 1) % TX_RING_SIZE].status & StatusComplete)) {
             kprintf(KERN_ERR "%s: Command unit failed to mark command %8.8x as complete at %d\n", dev->name, status, dirty_tx);
-          } 
-          else
+          } else {
             // It still hasn't been processed
             break;
+          }
         }
 
-        if ((status & TxUnderrun) && (sp->tx_threshold < 0x01e08000)) 
-        {
+        if ((status & TxUnderrun) && (sp->tx_threshold < 0x01e08000)) {
           sp->tx_threshold += 0x00040000;
           kprintf("%s: Tx threshold increased, %#8.8x\n", dev->name, sp->tx_threshold);
         }
 
         // Free the original pbuf
-        if (sp->tx_pbuf[entry]) 
-        {
+        if (sp->tx_pbuf[entry]) {
           // Count only user packets
           sp->stats.tx_packets++; 
           sp->stats.tx_bytes += sp->tx_pbuf[entry]->len;
           pbuf_free(sp->tx_pbuf[entry]);
           sp->tx_pbuf[entry] = NULL;
-        } 
-        else if ((status & 0x70000) == CmdNOp)
+        } else if ((status & 0x70000) == CmdNOp) {
           sp->mc_setup_busy = 0;
+        }
         
         dirty_tx++;
         entries_freed++;
@@ -1335,13 +1225,11 @@ static void speedo_interrupt(struct dev *dev)
       release_sem(&sp->tx_sem, entries_freed);
     }
 
-    if (status & IntrRxSuspend)
-    {
+    if (status & IntrRxSuspend) {
       speedo_intr_error(dev, status);
     }
 
-    if (--boguscnt < 0) 
-    {
+    if (--boguscnt < 0) {
       kprintf("%s: Too much work at interrupt, status=0x%4.4x\n", dev->name, status);
 
       // Clear all interrupt sources.
@@ -1353,8 +1241,7 @@ static void speedo_interrupt(struct dev *dev)
   //kprintf("%s: exiting interrupt, status=%#4.4x\n", dev->name, inpw(ioaddr + SCBStatus));
 }
 
-static void speedo_dpc(void *arg)
-{
+static void speedo_dpc(void *arg) {
   struct dev *dev = (struct dev *) arg;
   struct nic *sp = (struct nic *) dev->privdata;
 
@@ -1362,8 +1249,7 @@ static void speedo_dpc(void *arg)
   eoi(sp->irq);
 }
 
-static int speedo_handler(struct context *ctxt, void *arg)
-{
+static int speedo_handler(struct context *ctxt, void *arg) {
   struct dev *dev = (struct dev *) arg;
   struct nic *sp = (struct nic *) dev->privdata;
 
@@ -1374,8 +1260,7 @@ static int speedo_handler(struct context *ctxt, void *arg)
   return 0;
 }
 
-static int speedo_transmit(struct dev *dev, struct pbuf *p)
-{
+static int speedo_transmit(struct dev *dev, struct pbuf *p) {
   struct nic *sp = (struct nic *) dev->privdata;
   long ioaddr = sp->iobase;
   int entry;
@@ -1384,8 +1269,7 @@ static int speedo_transmit(struct dev *dev, struct pbuf *p)
   if (!p) return -ENOMEM;
 
   // Wait for free entry in transmit ring
-  if (wait_for_object(&sp->tx_sem, TX_TIMEOUT) < 0)
-  {
+  if (wait_for_object(&sp->tx_sem, TX_TIMEOUT) < 0) {
     kprintf("%s: transmit timeout, drop packet\n", dev->name);
     sp->stats.tx_dropped++;
     return -ETIMEOUT;
@@ -1426,26 +1310,22 @@ static int speedo_transmit(struct dev *dev, struct pbuf *p)
   return 0;
 }
 
-static int speedo_ioctl(struct dev *dev, int cmd, void *args, size_t size)
-{
+static int speedo_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
   return -ENOSYS;
 }
 
-static int speedo_attach(struct dev *dev, struct eth_addr *hwaddr)
-{
+static int speedo_attach(struct dev *dev, struct eth_addr *hwaddr) {
   struct nic *np = dev->privdata;
   *hwaddr = np->hwaddr;
 
   return 0;
 }
 
-static int speedo_detach(struct dev *dev)
-{
+static int speedo_detach(struct dev *dev) {
   return 0;
 }
 
-struct driver speedo_driver =
-{
+struct driver speedo_driver = {
   "eepro100",
   DEV_TYPE_PACKET,
   speedo_ioctl,
@@ -1457,8 +1337,7 @@ struct driver speedo_driver =
   speedo_set_rx_mode,
 };
 
-int __declspec(dllexport) install(struct unit *unit, char *opts)
-{
+int __declspec(dllexport) install(struct unit *unit, char *opts) {
   int i;
   struct board *board;
   struct nic *sp;
@@ -1499,24 +1378,19 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
     int j;
     int read_cmd, ee_size;
 
-    if ((do_eeprom_cmd(ioaddr, EE_READ_CMD << 24, 27) & 0xffe0000) == 0xffe0000) 
-    {
+    if ((do_eeprom_cmd(ioaddr, EE_READ_CMD << 24, 27) & 0xffe0000) == 0xffe0000) {
       ee_size = 0x100;
       read_cmd = EE_READ_CMD << 24;
-    } 
-    else 
-    {
+    } else {
       ee_size = 0x40;
       read_cmd = EE_READ_CMD << 22;
     }
 
-    for (j = 0, i = 0; i < ee_size; i++) 
-    {
+    for (j = 0, i = 0; i < ee_size; i++) {
       unsigned short value = do_eeprom_cmd(ioaddr, read_cmd | (i << 16), 27);
       eeprom[i] = value;
       sum += value;
-      if (i < 3) 
-      {
+      if (i < 3) {
         sp->hwaddr.addr[j++] = (unsigned char) (value % 0xFF);
         sp->hwaddr.addr[j++] = (unsigned char) (value >> 8);
       }
@@ -1545,8 +1419,7 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   sp->flags = board->flags;
 
   // Set options
-  if (opts) 
-  {
+  if (opts) {
     sp->full_duplex = get_num_option(opts, "fullduplex", 0);
   }
 
@@ -1564,7 +1437,6 @@ int __declspec(dllexport) install(struct unit *unit, char *opts)
   return speedo_open(dev);
 }
 
-int __stdcall start(hmodule_t hmod, int reason, void *reserved2)
-{
+int __stdcall start(hmodule_t hmod, int reason, void *reserved2) {
   return 1;
 }

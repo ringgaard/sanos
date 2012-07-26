@@ -53,8 +53,7 @@
 #define FSOPT_PROGRESS             2
 #define FSOPT_FORMAT               4
 
-struct fsoptions
-{
+struct fsoptions {
   int cache;
   int blocksize;
   int inode_ratio;
@@ -63,8 +62,7 @@ struct fsoptions
   int reserved_blocks;
 };
 
-struct superblock
-{
+struct superblock {
   unsigned int signature;
   unsigned int version;
   unsigned int log_block_size;
@@ -84,8 +82,7 @@ struct superblock
   unsigned int compress_size;
 };
 
-struct groupdesc
-{
+struct groupdesc {
   unsigned int block_count;
   blkno_t block_bitmap_block;
   blkno_t inode_bitmap_block;
@@ -95,8 +92,7 @@ struct groupdesc
   char reserved[8];
 };
 
-struct inodedesc
-{
+struct inodedesc {
   mode_t mode;
   uid_t uid;
   gid_t gid;
@@ -112,31 +108,27 @@ struct inodedesc
   blkno_t blockdir[DFS_TOPBLOCKDIR_SIZE];
 };
 
-struct dentry
-{
+struct dentry {
   ino_t ino;
   unsigned int reclen;
   unsigned int namelen;
   char name[0];
 };
 
-struct blkgroup
-{
+struct blkgroup {
   struct groupdesc *desc;
   unsigned int first_free_block; // relative to group
   unsigned int first_free_inode; // relative to group
 };
 
-struct inode
-{
+struct inode {
   struct filsys *fs;
   ino_t ino;
   struct inodedesc *desc;
   struct buf *buf;
 };
 
-struct filsys
-{
+struct filsys {
   dev_t devno;
 
   unsigned int blocksize;
@@ -154,8 +146,7 @@ struct filsys
 };
 
 #ifdef KRNL_LIB
-__inline int checki(struct inode *inode, int access)
-{
+__inline int checki(struct inode *inode, int access) {
   return check(inode->desc->mode, inode->desc->uid, inode->desc->gid, access);
 }
 #endif

@@ -59,8 +59,7 @@
 #endif
 
 // Another structure passed up and down to avoid zillions of parameters
-struct match 
-{
+struct match  {
   struct re_guts *g;
   int eflags;
   regmatch_t *pmatch; // [nsub+1] (0 element unused)
@@ -112,8 +111,7 @@ static char *pchar(int ch);
 //
 // matcher - the actual matching engine
 //
-static int matcher(struct re_guts *g, char *string, size_t nmatch, regmatch_t pmatch[], int eflags)
-{
+static int matcher(struct re_guts *g, char *string, size_t nmatch, regmatch_t pmatch[], int eflags) {
   char *endp;
   int i;
   struct match mv;
@@ -126,24 +124,20 @@ static int matcher(struct re_guts *g, char *string, size_t nmatch, regmatch_t pm
 
   // Simplify the situation where possible
   if (g->cflags & REG_NOSUB) nmatch = 0;
-  if (eflags & REG_STARTEND) 
-  {
+  if (eflags & REG_STARTEND) {
     start = string + pmatch[0].rm_so;
     stop = string + pmatch[0].rm_eo;
-  } 
-  else 
-  {
+  } else {
     start = string;
     stop = start + strlen(start);
   }
   if (stop < start) return REG_INVARG;
 
   // Prescreening; this does wonders for this rather slow code
-  if (g->must != NULL) 
-  {
-    for (dp = start; dp < stop; dp++)
-      if (*dp == g->must[0] && stop - dp >= g->mlen && memcmp(dp, g->must, (size_t) g->mlen) == 0) 
-        break;
+  if (g->must != NULL) {
+    for (dp = start; dp < stop; dp++) {
+      if (*dp == g->must[0] && stop - dp >= g->mlen && memcmp(dp, g->must, (size_t) g->mlen) == 0) break;
+    }
     if (dp == stop) return REG_NOMATCH;  // we didn't find g->must
   }
 
@@ -163,11 +157,9 @@ static int matcher(struct re_guts *g, char *string, size_t nmatch, regmatch_t pm
   CLEAR(m->empty);
 
   // This loop does only one repetition except for backrefs
-  for (;;) 
-  {
+  for (;;) {
     endp = fast(m, start, stop, gf, gl);
-    if (endp == NULL) 
-    {
+    if (endp == NULL) {
       // a miss
       STATETEARDOWN(m);
       return REG_NOMATCH;
@@ -176,8 +168,7 @@ static int matcher(struct re_guts *g, char *string, size_t nmatch, regmatch_t pm
 
     // where?
     assert(m->coldp != NULL);
-    for (;;) 
-    {
+    for (;;) {
       NOTE("finding start");
       endp = slow(m, m->coldp, stop, gf, gl);
       if (endp != NULL) break;
@@ -187,32 +178,24 @@ static int matcher(struct re_guts *g, char *string, size_t nmatch, regmatch_t pm
     if (nmatch == 1 && !g->backrefs) break; // no further info needed
 
     // oh my, he wants the subexpressions...
-    if (m->pmatch == NULL)
-    {
+    if (m->pmatch == NULL) {
       m->pmatch = (regmatch_t *) malloc((m->g->nsub + 1) * sizeof(regmatch_t));
     }
-    if (m->pmatch == NULL) 
-    {
+    if (m->pmatch == NULL) {
       STATETEARDOWN(m);
       return REG_ESPACE;
     }
-    for (i = 1; i <= m->g->nsub; i++)
-    {
+    for (i = 1; i <= m->g->nsub; i++) {
       m->pmatch[i].rm_so = m->pmatch[i].rm_eo = -1;
     }
-    if (!g->backrefs && !(m->eflags & REG_BACKR)) 
-    {
+    if (!g->backrefs && !(m->eflags & REG_BACKR)) {
       NOTE("dissecting");
       dp = dissect(m, m->coldp, endp, gf, gl);
-    } 
-    else 
-    {
-      if (g->nplus > 0 && m->lastpos == NULL)
-      {
+    } else {
+      if (g->nplus > 0 && m->lastpos == NULL) {
         m->lastpos = (char **) malloc((g->nplus + 1) * sizeof(char *));
       }
-      if (g->nplus > 0 && m->lastpos == NULL) 
-      {
+      if (g->nplus > 0 && m->lastpos == NULL) {
         free(m->pmatch);
         STATETEARDOWN(m);
         return REG_ESPACE;
@@ -225,16 +208,14 @@ static int matcher(struct re_guts *g, char *string, size_t nmatch, regmatch_t pm
     // uh-oh... we couldn't find a subexpression-level match
     assert(g->backrefs);  // must be back references doing it
     assert(g->nplus == 0 || m->lastpos != NULL);
-    for (;;) 
-    {
+    for (;;) {
       if (dp != NULL || endp <= m->coldp) break;    // defeat
       NOTE("backoff");
       endp = slow(m, m->coldp, endp-1, gf, gl);
       if (endp == NULL) break;    // defeat
       // try it on a shorter possibility
 #ifndef NDEBUG
-      for (i = 1; i <= m->g->nsub; i++) 
-      {
+      for (i = 1; i <= m->g->nsub; i++) {
         assert(m->pmatch[i].rm_so == -1);
         assert(m->pmatch[i].rm_eo == -1);
       }
@@ -252,20 +233,16 @@ static int matcher(struct re_guts *g, char *string, size_t nmatch, regmatch_t pm
   }
 
   // Fill in the details if requested
-  if (nmatch > 0) 
-  {
+  if (nmatch > 0) {
     pmatch[0].rm_so = m->coldp - m->offp;
     pmatch[0].rm_eo = endp - m->offp;
   }
-  if (nmatch > 1) 
-  {
+  if (nmatch > 1) {
     assert(m->pmatch != NULL);
-    for (i = 1; i < nmatch; i++)
-    {
-      if (i <= m->g->nsub)
+    for (i = 1; i < nmatch; i++) {
+      if (i <= m->g->nsub) {
         pmatch[i] = m->pmatch[i];
-      else 
-      {
+      } else {
         pmatch[i].rm_so = -1;
         pmatch[i].rm_eo = -1;
       }
@@ -281,8 +258,7 @@ static int matcher(struct re_guts *g, char *string, size_t nmatch, regmatch_t pm
 //
 // dissect - figure out what matched what, no back references
 //
-static char *dissect(struct match *m, char *start, char *stop, sopno startst, sopno stopst)
-{
+static char *dissect(struct match *m, char *start, char *stop, sopno startst, sopno stopst) {
   int i;
   sopno ss;     // start sop of current subRE
   sopno es;     // end sop of current subRE
@@ -299,12 +275,10 @@ static char *dissect(struct match *m, char *start, char *stop, sopno startst, so
 
   AT("diss", start, stop, startst, stopst);
   sp = start;
-  for (ss = startst; ss < stopst; ss = es) 
-  {
+  for (ss = startst; ss < stopst; ss = es) {
     // Identify end of subRE
     es = ss;
-    switch (OP(m->g->strip[es])) 
-    {
+    switch (OP(m->g->strip[es])) {
       case OPLUS_:
       case OQUEST_:
         es += OPND(m->g->strip[es]);
@@ -317,8 +291,7 @@ static char *dissect(struct match *m, char *start, char *stop, sopno startst, so
     es++;
 
     // Figure out what it matched
-    switch (OP(m->g->strip[ss])) 
-    {
+    switch (OP(m->g->strip[ss])) {
       case OEND:
         assert(nope);
         break;
@@ -346,8 +319,7 @@ static char *dissect(struct match *m, char *start, char *stop, sopno startst, so
       // cases where length of match is hard to find
       case OQUEST_:
         stp = stop;
-        for (;;) 
-        {
+        for (;;) {
           // how long could this one be?
           rest = slow(m, sp, stp, ss, es);
           assert(rest != NULL); // it did match
@@ -361,19 +333,18 @@ static char *dissect(struct match *m, char *start, char *stop, sopno startst, so
         ssub = ss + 1;
         esub = es - 1;
         // did innards match?
-        if (slow(m, sp, rest, ssub, esub) != NULL) 
-        {
+        if (slow(m, sp, rest, ssub, esub) != NULL) {
           dp = dissect(m, sp, rest, ssub, esub);
           assert(dp == rest);
-        } else    // no
+        } else {   // no
           assert(sp == rest);
+        }
         sp = rest;
         break;
 
       case OPLUS_:
         stp = stop;
-        for (;;) 
-        {
+        for (;;) {
           // how long could this one be?
           rest = slow(m, sp, stp, ss, es);
           assert(rest != NULL); // it did match
@@ -388,16 +359,14 @@ static char *dissect(struct match *m, char *start, char *stop, sopno startst, so
         esub = es - 1;
         ssp = sp;
         oldssp = ssp;
-        for (;;) 
-        {  
+        for (;;) {  
           // find last match of innards
           sep = slow(m, ssp, rest, ssub, esub);
           if (sep == NULL || sep == ssp) break;  // failed or matched null
           oldssp = ssp; // on to next try
           ssp = sep;
         }
-        if (sep == NULL) 
-        {
+        if (sep == NULL) {
           // last successful match
           sep = ssp;
           ssp = oldssp;
@@ -411,8 +380,7 @@ static char *dissect(struct match *m, char *start, char *stop, sopno startst, so
 
       case OCH_:
         stp = stop;
-        for (;;) 
-        {
+        for (;;) {
           // how long could this one be?
           rest = slow(m, sp, stp, ss, es);
           assert(rest != NULL); // it did match
@@ -427,8 +395,7 @@ static char *dissect(struct match *m, char *start, char *stop, sopno startst, so
         ssub = ss + 1;
         esub = ss + OPND(m->g->strip[ss]) - 1;
         assert(OP(m->g->strip[esub]) == OOR1);
-        for (;;) 
-        {  
+        for (;;) {
           // find first matching branch
           if (slow(m, sp, rest, ssub, esub) == rest) break;  // it matched all of it
           // that one missed, try next one
@@ -437,10 +404,11 @@ static char *dissect(struct match *m, char *start, char *stop, sopno startst, so
           assert(OP(m->g->strip[esub]) == OOR2);
           ssub = esub + 1;
           esub += OPND(m->g->strip[esub]);
-          if (OP(m->g->strip[esub]) == OOR2)
+          if (OP(m->g->strip[esub]) == OOR2) {
             esub--;
-          else
+          } else {
             assert(OP(m->g->strip[esub]) == O_CH);
+          }
         }
         dp = dissect(m, sp, rest, ssub, esub);
         assert(dp == rest);
@@ -480,8 +448,7 @@ static char *dissect(struct match *m, char *start, char *stop, sopno startst, so
 //
 // backref - figure out what matched what, figuring in back references
 // 
-static char *backref(struct match *m, char *start, char *stop, sopno startst, sopno stopst, sopno lev)
-{
+static char *backref(struct match *m, char *start, char *stop, sopno startst, sopno stopst, sopno lev) {
   int i;
   sopno ss;     // start sop of current subRE
   char *sp;     // start of string matched by it
@@ -500,10 +467,8 @@ static char *backref(struct match *m, char *start, char *stop, sopno startst, so
 
   // Get as far as we can with easy stuff
   hard = 0;
-  for (ss = startst; !hard && ss < stopst; ss++)
-  {
-    switch (OP(s = m->g->strip[ss])) 
-    {
+  for (ss = startst; !hard && ss < stopst; ss++) {
+    switch (OP(s = m->g->strip[ss])) {
       case OCHAR:
         if (sp == stop || *sp++ != (char) OPND(s)) return NULL;
         break;
@@ -521,45 +486,41 @@ static char *backref(struct match *m, char *start, char *stop, sopno startst, so
       case OBOL:
         if ((sp == m->beginp && !(m->eflags & REG_NOTBOL)) ||
             (sp < m->endp && *(sp - 1) == '\n' &&
-              (m->g->cflags & REG_NEWLINE)))
-        { 
+              (m->g->cflags & REG_NEWLINE))) { 
           // yes 
-        }
-        else
+        } else {
           return NULL;
+        }
         break;
 
       case OEOL:
         if ((sp == m->endp && !(m->eflags & REG_NOTEOL)) ||
             (sp < m->endp && *sp == '\n' &&
-            (m->g->cflags & REG_NEWLINE)) )
-        { 
+            (m->g->cflags & REG_NEWLINE)) ) { 
           // yes 
-        }
-        else
+        } else {
           return NULL;
+        }
         break;
 
       case OBOW:
         if (((sp == m->beginp && !(m->eflags & REG_NOTBOL)) ||
             (sp < m->endp && *(sp-1) == '\n' && (m->g->cflags&REG_NEWLINE)) ||
-            (sp > m->beginp && !ISWORD(*(sp - 1)))) && (sp < m->endp && ISWORD(*sp)))
-        { 
-          // yes 
-        }
-        else
+            (sp > m->beginp && !ISWORD(*(sp - 1)))) && (sp < m->endp && ISWORD(*sp))) { 
+          // yes
+        } else {
           return NULL;
+        }
         break;
 
       case OEOW:
         if (((sp == m->endp && !(m->eflags & REG_NOTEOL)) ||
             (sp < m->endp && *sp == '\n' && (m->g->cflags & REG_NEWLINE)) ||
-            (sp < m->endp && !ISWORD(*sp)) ) && (sp > m->beginp && ISWORD(*(sp - 1))))
-        { 
+            (sp < m->endp && !ISWORD(*sp)) ) && (sp > m->beginp && ISWORD(*(sp - 1)))) { 
           // yes 
-        }
-        else
+        } else {
           return NULL;
+        }
         break;
 
       case O_QUEST:
@@ -580,8 +541,7 @@ static char *backref(struct match *m, char *start, char *stop, sopno startst, so
         break;
     }
   }
-  if (!hard) 
-  {    
+  if (!hard) {
     // That was it!
     if (sp != stop) return NULL;
     return sp;
@@ -591,8 +551,7 @@ static char *backref(struct match *m, char *start, char *stop, sopno startst, so
   // The hard stuff
   AT("hard", sp, stop, ss, stopst);
   s = m->g->strip[ss];
-  switch (OP(s)) 
-  {
+  switch (OP(s)) {
     case OBACK_:    // the vilest depths
       i = OPND(s);
       assert(0 < i && i <= m->g->nsub);
@@ -621,26 +580,25 @@ static char *backref(struct match *m, char *start, char *stop, sopno startst, so
       break;
 
     case O_PLUS:
-      if (sp == m->lastpos[lev])
-      {
+      if (sp == m->lastpos[lev]) {
         // last pass matched null
         return backref(m, sp, stop, ss + 1, stopst, lev - 1);
       }
       // try another pass
       m->lastpos[lev] = sp;
       dp = backref(m, sp, stop, ss - OPND(s) + 1, stopst, lev);
-      if (dp == NULL)
+      if (dp == NULL) {
         return backref(m, sp, stop, ss + 1, stopst, lev - 1);
-      else
+      } else {
         return dp;
+      }
       break;
 
     case OCH_:    // find the right one, if any
       ssub = ss + 1;
       esub = ss + OPND(s) - 1;
       assert(OP(m->g->strip[esub]) == OOR1);
-      for (;;) 
-      {  
+      for (;;) {  
         // find first matching branch
         dp = backref(m, sp, stop, ssub, esub, lev);
         if (dp != NULL) return dp;
@@ -650,10 +608,11 @@ static char *backref(struct match *m, char *start, char *stop, sopno startst, so
         assert(OP(m->g->strip[esub]) == OOR2);
         ssub = esub + 1;
         esub += OPND(m->g->strip[esub]);
-        if (OP(m->g->strip[esub]) == OOR2)
+        if (OP(m->g->strip[esub]) == OOR2) {
           esub--;
-        else
+        } else {
           assert(OP(m->g->strip[esub]) == O_CH);
+        }
       }
       break;
 
@@ -693,8 +652,7 @@ static char *backref(struct match *m, char *start, char *stop, sopno startst, so
 //
 // fast - step through the string at top speed
 //
-static char *fast(struct match *m, char *start, char *stop, sopno startst, sopno stopst)
-{
+static char *fast(struct match *m, char *start, char *stop, sopno startst, sopno stopst) {
   states st = m->st;
   states fresh = m->fresh;
   states tmp = m->tmp;
@@ -711,8 +669,7 @@ static char *fast(struct match *m, char *start, char *stop, sopno startst, sopno
   ASSIGN(fresh, st);
   SP("start", st, *p);
   coldp = NULL;
-  for (;;) 
-  {
+  for (;;) {
     // next character
     lastc = c;
     c = (p == m->endp) ? OUT : *p;
@@ -722,36 +679,30 @@ static char *fast(struct match *m, char *start, char *stop, sopno startst, sopno
     flagch = '\0';
     i = 0;
     if ((lastc == '\n' && m->g->cflags & REG_NEWLINE) ||
-        (lastc == OUT && !(m->eflags & REG_NOTBOL))) 
-    {
+        (lastc == OUT && !(m->eflags & REG_NOTBOL))) {
       flagch = BOL;
       i = m->g->nbol;
     }
     if ((c == '\n' && m->g->cflags&REG_NEWLINE) ||
-        (c == OUT && !(m->eflags&REG_NOTEOL))) 
-    {
+        (c == OUT && !(m->eflags&REG_NOTEOL))) {
       flagch = (flagch == BOL) ? BOLEOL : EOL;
       i += m->g->neol;
     }
-    if (i != 0) 
-    {
+    if (i != 0) {
       for (; i > 0; i--) st = step(m->g, startst, stopst, st, flagch, st);
       SP("boleol", st, c);
     }
 
     // how about a word boundary?
     if ((flagch == BOL || (lastc != OUT && !ISWORD(lastc))) &&
-        (c != OUT && ISWORD(c))) 
-    {
+        (c != OUT && ISWORD(c))) {
       flagch = BOW;
     }
     if ((lastc != OUT && ISWORD(lastc)) &&
-        (flagch == EOL || (c != OUT && !ISWORD(c)))) 
-    {
+        (flagch == EOL || (c != OUT && !ISWORD(c)))) {
       flagch = EOW;
     }
-    if (flagch == BOW || flagch == EOW) 
-    {
+    if (flagch == BOW || flagch == EOW) {
       st = step(m->g, startst, stopst, st, flagch, st);
       SP("boweow", st, c);
     }
@@ -771,17 +722,17 @@ static char *fast(struct match *m, char *start, char *stop, sopno startst, sopno
 
   assert(coldp != NULL);
   m->coldp = coldp;
-  if (ISSET(st, stopst)) 
+  if (ISSET(st, stopst)) {
     return p + 1;
-  else
+  } else {
     return NULL;
+  }
 }
 
 //
 // slow - step through the string more deliberately
 //
-static char *slow(struct match *m, char *start, char *stop, sopno startst, sopno stopst)
-{
+static char *slow(struct match *m, char *start, char *stop, sopno startst, sopno stopst) {
   states st = m->st;
   states empty = m->empty;
   states tmp = m->tmp;
@@ -798,8 +749,7 @@ static char *slow(struct match *m, char *start, char *stop, sopno startst, sopno
   SP("sstart", st, *p);
   st = step(m->g, startst, stopst, st, NOTHING, st);
   matchp = NULL;
-  for (;;) 
-  {
+  for (;;) {
     // next character
     lastc = c;
     c = (p == m->endp) ? OUT : *p;
@@ -808,36 +758,30 @@ static char *slow(struct match *m, char *start, char *stop, sopno startst, sopno
     flagch = '\0';
     i = 0;
     if ((lastc == '\n' && m->g->cflags & REG_NEWLINE) ||
-        (lastc == OUT && !(m->eflags&REG_NOTBOL))) 
-    {
+        (lastc == OUT && !(m->eflags&REG_NOTBOL))) {
       flagch = BOL;
       i = m->g->nbol;
     }
     if ((c == '\n' && m->g->cflags&REG_NEWLINE) ||
-        (c == OUT && !(m->eflags&REG_NOTEOL))) 
-    {
+        (c == OUT && !(m->eflags&REG_NOTEOL))) {
       flagch = (flagch == BOL) ? BOLEOL : EOL;
       i += m->g->neol;
     }
-    if (i != 0) 
-    {
+    if (i != 0) {
       for (; i > 0; i--) st = step(m->g, startst, stopst, st, flagch, st);
       SP("sboleol", st, c);
     }
 
     // how about a word boundary?
     if ((flagch == BOL || (lastc != OUT && !ISWORD(lastc))) &&
-        (c != OUT && ISWORD(c))) 
-    {
+        (c != OUT && ISWORD(c))) {
       flagch = BOW;
     }
     if ((lastc != OUT && ISWORD(lastc)) &&
-        (flagch == EOL || (c != OUT && !ISWORD(c)))) 
-    {
+        (flagch == EOL || (c != OUT && !ISWORD(c)))) {
       flagch = EOW;
     }
-    if (flagch == BOW || flagch == EOW) 
-    {
+    if (flagch == BOW || flagch == EOW) {
       st = step(m->g, startst, stopst, st, flagch, st);
       SP("sboweow", st, c);
     }
@@ -862,8 +806,7 @@ static char *slow(struct match *m, char *start, char *stop, sopno startst, sopno
 //
 // step - map set of states reachable before char to set reachable after
 //
-static states step(struct re_guts *g, sopno start, sopno stop, states bef, int ch, states aft)
-{
+static states step(struct re_guts *g, sopno start, sopno stop, states bef, int ch, states aft) {
   cset *cs;
   sop s;
   sopno pc;
@@ -871,11 +814,9 @@ static states step(struct re_guts *g, sopno start, sopno stop, states bef, int c
   sopno look;
   long i;
 
-  for (pc = start, INIT(here, pc); pc != stop; pc++, INC(here)) 
-  {
+  for (pc = start, INIT(here, pc); pc != stop; pc++, INC(here)) {
     s = g->strip[pc];
-    switch (OP(s)) 
-    {
+    switch (OP(s)) {
       case OEND:
         assert(pc == stop - 1);
         break;
@@ -924,8 +865,7 @@ static states step(struct re_guts *g, sopno start, sopno stop, states bef, int c
         FWD(aft, aft, 1);
         i = ISSETBACK(aft, OPND(s));
         BACK(aft, aft, OPND(s));
-        if (!i && ISSETBACK(aft, OPND(s))) 
-        {
+        if (!i && ISSETBACK(aft, OPND(s))) {
           // oho, must reconsider loop body
           pc -= OPND(s) + 1;
           INIT(here, pc);
@@ -953,8 +893,7 @@ static states step(struct re_guts *g, sopno start, sopno stop, states bef, int c
         break;
 
       case OOR1:    // done a branch, find the O_CH
-        if (ISSTATEIN(aft, here)) 
-        {
+        if (ISSTATEIN(aft, here)) {
           for (look = 1; OP(s = g->strip[pc+look]) != O_CH; look += OPND(s)) assert(OP(s) == OOR2);
           FWD(aft, aft, look);
         }
@@ -962,8 +901,7 @@ static states step(struct re_guts *g, sopno start, sopno stop, states bef, int c
 
       case OOR2:    // propagate OCH_'s marking
         FWD(aft, aft, 1);
-        if (OP(g->strip[pc+OPND(s)]) != O_CH) 
-        {
+        if (OP(g->strip[pc+OPND(s)]) != O_CH) {
           assert(OP(g->strip[pc+OPND(s)]) == OOR2);
           FWD(aft, aft, OPND(s));
         }
@@ -986,8 +924,7 @@ static states step(struct re_guts *g, sopno start, sopno stop, states bef, int c
 //
 // print - print a set of states
 //
-static void print(struct match *m, char *caption, states st, int ch, FILE *d)
-{
+static void print(struct match *m, char *caption, states st, int ch, FILE *d) {
   struct re_guts *g = m->g;
   int i;
   int first = 1;
@@ -996,10 +933,8 @@ static void print(struct match *m, char *caption, states st, int ch, FILE *d)
 
   fprintf(d, "%s", caption);
   if (ch != '\0') fprintf(d, " %s", pchar(ch));
-  for (i = 0; i < g->nstates; i++)
-  {
-    if (ISSET(st, i)) 
-    {
+  for (i = 0; i < g->nstates; i++) {
+    if (ISSET(st, i)) {
       fprintf(d, "%s%d", (first) ? "\t" : ", ", i);
       first = 0;
     }
@@ -1010,8 +945,7 @@ static void print(struct match *m, char *caption, states st, int ch, FILE *d)
 // 
 // at - print current situation
 // 
-static void at(struct match *m, char *title, char *start, char *stop, sopno startst, sopno stopst)
-{
+static void at(struct match *m, char *title, char *start, char *stop, sopno startst, sopno stopst) {
   if (!(m->eflags & REG_TRACE)) return;
 
   printf("%s %s-", title, pchar(*start));
@@ -1029,14 +963,14 @@ static void at(struct match *m, char *title, char *start, char *stop, sopno star
 // duplicate here avoids having a debugging-capable regexec.o tied to
 // a matching debug.o, and this is convenient.  It all disappears in
 // the non-debug compilation anyway, so it doesn't matter much.
-static char *pchar(int ch)
-{
+static char *pchar(int ch) {
   static char pbuf[10];
 
-  if (isprint(ch) || ch == ' ') 
+  if (isprint(ch) || ch == ' ') { 
     sprintf(pbuf, "%c", ch);
-  else
+  } else {
     sprintf(pbuf, "\\%o", ch);
+  }
   return pbuf;
 }
 #endif

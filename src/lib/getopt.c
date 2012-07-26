@@ -38,57 +38,47 @@
 
 #define ERR(s, c) { if (opt->err) fprintf(stderr, "%s%s%c\n", argv[0], s, c); }
 
-static struct opt *getoptvars()
-{
+static struct opt *getoptvars() {
   struct process *proc = gettib()->proc;
   struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
   return &crtbase->opt;
 }
 
-int *_opterr()
-{
+int *_opterr() {
   return &getoptvars()->err;
 }
 
-int *_optind()
-{
+int *_optind() {
   return &getoptvars()->ind;
 }
 
-int *_optopt()
-{
+int *_optopt() {
   return &getoptvars()->opt;
 }
 
-char **_optarg()
-{
+char **_optarg() {
   return &getoptvars()->arg;
 }
 
-int getopt(int argc, char **argv, char *opts)
-{
+int getopt(int argc, char **argv, char *opts) {
   int c;
   char *cp;
   struct opt *opt = getoptvars();
 
-  if (opt->sp == 1)
-  {
-    if (opt->ind >= argc || argv[opt->ind][0] != '-' || argv[opt->ind][1] == '\0')
+  if (opt->sp == 1) {
+    if (opt->ind >= argc || argv[opt->ind][0] != '-' || argv[opt->ind][1] == '\0') {
       return -1;
-    else if (strcmp(argv[opt->ind], "--") == 0)
-    {
+    } else if (strcmp(argv[opt->ind], "--") == 0) {
       opt->ind++;
       return -1;
     }
   }
 
   opt->opt = c = argv[opt->ind][opt->sp];
-  if (c == ':' || (cp = strchr(opts, c)) == NULL) 
-  {
+  if (c == ':' || (cp = strchr(opts, c)) == NULL) {
     ERR(": illegal option -- ", c);
-    if (argv[opt->ind][++(opt->sp)] == '\0') 
-    {
+    if (argv[opt->ind][++(opt->sp)] == '\0') {
       opt->ind++;
       opt->sp = 1;
     }
@@ -96,25 +86,20 @@ int getopt(int argc, char **argv, char *opts)
     return '?';
   }
 
-  if (*++cp == ':') 
-  {
-    if (argv[opt->ind][opt->sp + 1] != '\0')
+  if (*++cp == ':') {
+    if (argv[opt->ind][opt->sp + 1] != '\0') {
       opt->arg = &argv[opt->ind++][opt->sp + 1];
-    else if (++(opt->ind) >= argc) 
-    {
+    } else if (++(opt->ind) >= argc) {
       ERR(": option requires an argument -- ", c);
       opt->sp = 1;
       return '?';
-    } 
-    else
+    } else {
       opt->arg = argv[opt->ind++];
+    }
 
     opt->sp = 1;
-  } 
-  else 
-  {
-    if (argv[opt->ind][++(opt->sp)] == '\0') 
-    {
+  } else {
+    if (argv[opt->ind][++(opt->sp)] == '\0') {
       opt->sp = 1;
       opt->ind++;
     }

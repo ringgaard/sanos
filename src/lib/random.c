@@ -130,8 +130,7 @@ static long seps [MAX_TYPES] = { SEP_0, SEP_1, SEP_2, SEP_3, SEP_4 };
 //
 //  MAX_TYPES * (rptr - state) + TYPE_3 == TYPE_3.
 
-static long randtbl[DEG_3 + 1] = 
-{
+static long randtbl[DEG_3 + 1] = {
   TYPE_3,
   0x991539b1, 0x16a5bce3, 0x6774a4cd, 0x3e01511e, 0x4e508aaa, 0x61048c05,
   0xf5500617, 0x846b7115, 0x6a19892c, 0x896a97af, 0xdb48f936, 0x14898454,
@@ -187,8 +186,7 @@ long random();
 // October 1988, p. 1195.
 //
 
-__inline long good_rand(long x)
-{
+__inline long good_rand(long x) {
   long hi, lo;
 
   // Can't be initialized with 0, so use another value.
@@ -212,15 +210,13 @@ __inline long good_rand(long x)
 // introduced by the L.C.R.N.G.  Note that the initialization of randtbl[]
 // for default usage relies on values produced by this routine.
 
-void srandom(unsigned long x)
-{
+void srandom(unsigned long x) {
   long i, lim;
 
   state[0] = x;
-  if (rand_type == TYPE_0)
+  if (rand_type == TYPE_0) {
     lim = NSHUFF;
-  else 
-  {
+  } else {
     for (i = 1; i < rand_deg; i++) state[i] = good_rand(state[i - 1]);
     fptr = &state[rand_sep];
     rptr = &state[0];
@@ -241,26 +237,24 @@ void srandom(unsigned long x)
 // state buffer are no longer derived from the LC algorithm applied to
 // a fixed seed.
 
-void srandomdev()
-{
+void srandomdev() {
   int fd, done;
   size_t len;
 
-  if (rand_type == TYPE_0)
+  if (rand_type == TYPE_0) {
     len = sizeof state[0];
-  else
+  } else {
     len = rand_deg * sizeof state[0];
+  }
 
   done = 0;
   fd = open("/dev/urandom", O_RDONLY);
-  if (fd >= 0) 
-  {
+  if (fd >= 0) {
     if (read(fd, state, len) == len) done = 1;
     close(fd);
   }
 
-  if (!done) 
-  {
+  if (!done) {
     struct timeval tv;
 
     gettimeofday(&tv, NULL);
@@ -268,8 +262,7 @@ void srandomdev()
     return;
   }
 
-  if (rand_type != TYPE_0) 
-  {
+  if (rand_type != TYPE_0) {
     fptr = &state[rand_sep];
     rptr = &state[0];
   }
@@ -295,44 +288,35 @@ void srandomdev()
 // Returns a pointer to the old state.
 //
 
-char *initstate(unsigned long seed, char *arg_state, long n)
-{
+char *initstate(unsigned long seed, char *arg_state, long n) {
   char *ostate = (char *) (&state[-1]);
   long *long_arg_state = (long *) arg_state;
 
-  if (rand_type == TYPE_0)
+  if (rand_type == TYPE_0) {
     state[-1] = rand_type;
-  else
+  } else {
     state[-1] = MAX_TYPES * (rptr - state) + rand_type;
+  }
 
   if (n < BREAK_0) return NULL;
 
-  if (n < BREAK_1) 
-  {
+  if (n < BREAK_1) {
     rand_type = TYPE_0;
     rand_deg = DEG_0;
     rand_sep = SEP_0;
-  } 
-  else if (n < BREAK_2) 
-  {
+  } else if (n < BREAK_2) {
     rand_type = TYPE_1;
     rand_deg = DEG_1;
     rand_sep = SEP_1;
-  } 
-  else if (n < BREAK_3) 
-  {
+  } else if (n < BREAK_3) {
     rand_type = TYPE_2;
     rand_deg = DEG_2;
     rand_sep = SEP_2;
-  } 
-  else if (n < BREAK_4) 
-  {
+  } else if (n < BREAK_4) {
     rand_type = TYPE_3;
     rand_deg = DEG_3;
     rand_sep = SEP_3;
-  } 
-  else 
-  {
+  } else {
     rand_type = TYPE_4;
     rand_deg = DEG_4;
     rand_sep = SEP_4;
@@ -342,10 +326,11 @@ char *initstate(unsigned long seed, char *arg_state, long n)
   end_ptr = &state[rand_deg]; // Must set end_ptr before srandom
   srandom(seed);
 
-  if (rand_type == TYPE_0)
+  if (rand_type == TYPE_0) {
     long_arg_state[0] = rand_type;
-  else
+  } else {
     long_arg_state[0] = MAX_TYPES * (rptr - state) + rand_type;
+  }
 
   return ostate;
 }
@@ -366,20 +351,19 @@ char *initstate(unsigned long seed, char *arg_state, long n)
 // Returns a pointer to the old state information.
 //
 
-char *setstate(char *arg_state)
-{
+char *setstate(char *arg_state) {
   long *new_state = (long *) arg_state;
   long type = new_state[0] % MAX_TYPES;
   long rear = new_state[0] / MAX_TYPES;
   char *ostate = (char *) (&state[-1]);
 
-  if (rand_type == TYPE_0)
+  if (rand_type == TYPE_0) {
     state[-1] = rand_type;
-  else
+  } else {
     state[-1] = MAX_TYPES * (rptr - state) + rand_type;
+  }
 
-  switch(type) 
-  {
+  switch(type) {
     case TYPE_0:
     case TYPE_1:
     case TYPE_2:
@@ -392,8 +376,7 @@ char *setstate(char *arg_state)
   }
 
   state = (long *) (new_state + 1);
-  if (rand_type != TYPE_0) 
-  {
+  if (rand_type != TYPE_0) {
     rptr = &state[rear];
     fptr = &state[(rear + rand_sep) % rand_deg];
   }
@@ -420,28 +403,23 @@ char *setstate(char *arg_state)
 // Returns a 31-bit random number.
 //
 
-long random()
-{
+long random() {
   long i;
   long *f, *r;
 
-  if (rand_type == TYPE_0) 
-  {
+  if (rand_type == TYPE_0) {
     i = state[0];
     state[0] = i = (good_rand(i)) & 0x7fffffff;
-  } 
-  else 
-  {
+  } else {
     f = fptr; r = rptr;
     *f += *r;
     i = (*f >> 1) & 0x7fffffff; // Chucking least random bit
-    if (++f >= end_ptr) 
-    {
+    if (++f >= end_ptr) {
       f = state;
       ++r;
-    }
-    else if (++r >= end_ptr) 
+    } else if (++r >= end_ptr) {
       r = state;
+    }
 
     fptr = f; rptr = r;
   }

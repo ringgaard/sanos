@@ -47,8 +47,7 @@ hmodule_t hjvm;
 
 jint (JNICALL *CreateJavaVM)(JavaVM **pvm, void **env, void *args);
 
-jclass load_class(JNIEnv *env, char *name)
-{
+jclass load_class(JNIEnv *env, char *name) {
   jclass cls;
   char clsname[128];
   char *s;
@@ -56,8 +55,7 @@ jclass load_class(JNIEnv *env, char *name)
 
   s = name;
   t = clsname;
-  while (*s)
-  {
+  while (*s) {
     *t++ = *s == '.' ? '/' : *s;
     s++;
   }
@@ -68,8 +66,7 @@ jclass load_class(JNIEnv *env, char *name)
   return cls;
 }
 
-jstring new_string(JNIEnv *env, char *s)
-{
+jstring new_string(JNIEnv *env, char *s) {
   int len = strlen(s);
   jclass cls;
   jmethodID mid;
@@ -78,13 +75,11 @@ jstring new_string(JNIEnv *env, char *s)
   cls = (*env)->FindClass(env, "java/lang/String");
   mid = (*env)->GetMethodID(env, cls, "<init>", "([B)V");
   ary = (*env)->NewByteArray(env, len);
-  if (ary != 0) 
-  {
+  if (ary != 0) {
     jstring str = 0;
     (*env)->SetByteArrayRegion(env, ary, 0, len, (jbyte *) s);
     
-    if (!(*env)->ExceptionOccurred(env)) 
-    {
+    if (!(*env)->ExceptionOccurred(env)) {
       str = (*env)->NewObject(env, cls, mid, ary);
     }
 
@@ -96,16 +91,14 @@ jstring new_string(JNIEnv *env, char *s)
   return 0;
 }
 
-jobjectArray new_string_array(JNIEnv *env, int strc, char **strv)
-{
+jobjectArray new_string_array(JNIEnv *env, int strc, char **strv) {
   jarray cls;
   jarray ary;
   int i;
 
   cls = (*env)->FindClass(env, "java/lang/String");
   ary = (*env)->NewObjectArray(env, strc, cls, 0);
-  for (i = 0; i < strc; i++) 
-  {
+  for (i = 0; i < strc; i++) {
     jstring str = new_string(env, *strv++);
     (*env)->SetObjectArrayElement(env, ary, i, str);
     (*env)->DeleteLocalRef(env, str);
@@ -114,8 +107,7 @@ jobjectArray new_string_array(JNIEnv *env, int strc, char **strv)
   return ary;
 }
 
-void init_jvm_args()
-{
+void init_jvm_args() {
   JavaVMOption *options;
   struct section *optsect;
   struct section *propsect;
@@ -139,12 +131,10 @@ void init_jvm_args()
 
   n = 0;
 
-  if (cpsect)
-  {
+  if (cpsect) {
     len = strlen("-Djava.class.path=") + 1;
     prop = cpsect->properties;
-    while (prop)
-    {
+    while (prop) {
       if (prop->name) len += strlen(prop->name) + 1;
       if (prop->value) len += strlen(prop->value) + 1;
       prop = prop->next;
@@ -155,20 +145,17 @@ void init_jvm_args()
     p = buf + strlen(buf);
     first = 1;
     prop = cpsect->properties;
-    while (prop)
-    {
+    while (prop) {
       if (!first) *p++ = ';';
       first = 0;
 
-      if (prop->name)
-      {
+      if (prop->name) {
         len = strlen(prop->name);
         memcpy(p, prop->name, len + 1);
         p += len;
       }
 
-      if (prop->value)
-      {
+      if (prop->value) {
         *p++ = ':';
         len = strlen(prop->value);
         memcpy(p, prop->value, len + 1);
@@ -181,21 +168,16 @@ void init_jvm_args()
     options[n++].optionString = buf;
   }
 
-  if (optsect)
-  {
+  if (optsect) {
     prop = optsect->properties;
-    while (prop)
-    {
-      if (prop->value)
-      {
+    while (prop) {
+      if (prop->value) {
         len = strlen(prop->name) + 1 + strlen(prop->value);
         buf = (char *) malloc(len + 1);
         strcpy(buf, prop->name);
         strcpy(buf + strlen(buf), ":");
         strcpy(buf + strlen(buf), prop->value);
-      }
-      else
-      {
+      } else {
         len = strlen(prop->name);
         buf = (char *) malloc(len + 1);
         strcpy(buf, prop->name);
@@ -207,22 +189,20 @@ void init_jvm_args()
     }
   }
 
-  if (propsect)
-  {
+  if (propsect) {
     prop = propsect->properties;
-    while (prop)
-    {
-      if (prop->value)
+    while (prop) {
+      if (prop->value) {
         len = 2 + strlen(prop->name) + 1 + strlen(prop->value);
-      else
+      } else {
         len = 2 + strlen(prop->name);
+      }
 
       buf = (char *) malloc(len + 1);
       strcpy(buf, "-D");
       strcpy(buf + strlen(buf), prop->name);
 
-      if (prop->value)
-      {
+      if (prop->value) {
         strcpy(buf + strlen(buf), "=");
         strcpy(buf + strlen(buf), prop->value);
       }
@@ -240,51 +220,41 @@ void init_jvm_args()
   args.ignoreUnrecognized = JNI_FALSE;
 }
 
-int init_jvm()
-{
+int init_jvm() {
   jint rc;
 
   // Get JVM options from os.ini
   init_jvm_args();
 
   // Load VM
-  if (hjvm == NULL)
-  {
+  if (hjvm == NULL) {
     char *jvmname = get_property(cfg, cfgname, "jvm", "jvm.dll");
 
     hjvm = dlopen(jvmname, 0);
-    if (hjvm == NULL) 
-    {
+    if (hjvm == NULL) {
       syslog(LOG_ERR, "Error loading JVM %s", jvmname);
       return -1;
     }
   }
 
-  if (!CreateJavaVM)
-  {
+  if (!CreateJavaVM) {
     CreateJavaVM = (jint (JNICALL *)(JavaVM **pvm, void **env, void *args)) dlsym(hjvm, "JNI_CreateJavaVM");
-    if (!CreateJavaVM) 
-    {
+    if (!CreateJavaVM) {
       syslog(LOG_ERR, "Unable to find CreateJavaVM");
       return -1;
     }
   }
 
   // Create VM instance
-  if (!vm)
-  {
+  if (!vm) {
     rc = CreateJavaVM(&vm, (void **) &env, &args);
-    if (rc != JNI_OK) 
-    {
+    if (rc != JNI_OK) {
       syslog(LOG_ERR, "Error %d creating java vm", rc);
       return -1;
     }
-  }
-  else
-  {
+  } else {
     rc = (*vm)->AttachCurrentThread(vm, (void **) &env, &args);
-    if (rc != JNI_OK) 
-    {
+    if (rc != JNI_OK) {
       syslog(LOG_ERR, "Error %d attaching to vm", rc);
       return -1;
     }
@@ -293,8 +263,7 @@ int init_jvm()
   return 0;
 }
 
-int execute_main_method(char *mainclsname, char *mainclsargs)
-{
+int execute_main_method(char *mainclsname, char *mainclsargs) {
   int argc;
   char **argv;
   jclass mainclass;
@@ -303,41 +272,36 @@ int execute_main_method(char *mainclsname, char *mainclsargs)
 
   // Load main class
   mainclass = load_class(env, mainclsname);
-  if (mainclass == NULL) 
-  {
+  if (mainclass == NULL) {
     syslog(LOG_ERR, "Unable to find main class %s", mainclsname);
     return -1;
   }
 
   // Find main method
   mainid = (*env)->GetStaticMethodID(env, mainclass, "main", "([Ljava/lang/String;)V");
-  if (mainid == NULL) 
-  {
+  if (mainid == NULL) {
     syslog(LOG_ERR, "Class %s does not have a main method", mainclsname);
     return -1;
   }
 
   // Create argument array
   argc = parse_args(mainclsargs, NULL);
-  if (argc)
-  {
+  if (argc) {
     argv = (char **) malloc(argc * sizeof(char *));
     parse_args(mainclsargs, argv);
-  }
-  else
+  } else {
     argv = NULL;
+  }
 
   mainargs = new_string_array(env, argc, argv);
-  if (mainargs == NULL)
-  {
+  if (mainargs == NULL) {
     syslog(LOG_ERR, "Error creating command arguments");
     return -1;
   }
 
   // Invoke main method
   (*env)->CallStaticVoidMethod(env, mainclass, mainid, mainargs);
-  if ((*env)->ExceptionOccurred(env)) 
-  {
+  if ((*env)->ExceptionOccurred(env)) {
     (*env)->ExceptionDescribe(env);
     return -1;
   }
@@ -346,28 +310,26 @@ int execute_main_method(char *mainclsname, char *mainclsargs)
   return 0;
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   char *mainclsname;
   char *mainclsargs;
 
   // Determine configuration
-  if (argc > 1)
+  if (argc > 1) {
     cfgname = argv[1];
-  else
+  } else {
     cfgname = "java";
+  }
 
-  if (argc > 2)
-  {
+  if (argc > 2) {
     cfg = read_properties(argv[2]);
-    if (cfg == NULL)
-    {
+    if (cfg == NULL) {
       syslog(LOG_ERR, "Unable to read JVM configuration from %s", argv[2]);
       return 1;
     }
-  }
-  else
+  } else {
     cfg = osconfig();
+  }
 
   // Initialize Java VM
   if (init_jvm() != 0) return 1;
@@ -380,8 +342,7 @@ int main(int argc, char *argv[])
   execute_main_method(mainclsname, mainclsargs);
 
   // Detach main thread from jvm
-  if ((*vm)->DetachCurrentThread(vm) != 0) 
-  {
+  if ((*vm)->DetachCurrentThread(vm) != 0) {
     syslog(LOG_ERR, "Could not detach main thread");
     return 1;
   }

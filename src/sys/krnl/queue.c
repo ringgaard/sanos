@@ -33,14 +33,12 @@
 
 #include <os/krnl.h>
 
-struct queue *alloc_queue(int size)
-{
+struct queue *alloc_queue(int size) {
   struct queue *q = (struct queue *) kmalloc(sizeof(struct queue));
   if (!q) return q;
 
   q->elems = (void **) kmalloc(size * sizeof(void *));
-  if (!q->elems)
-  {
+  if (!q->elems) {
     kfree(q);
     return NULL;
   }
@@ -55,14 +53,12 @@ struct queue *alloc_queue(int size)
   return q;
 }
 
-void free_queue(struct queue *q)
-{
+void free_queue(struct queue *q) {
   kfree(q->elems);
   kfree(q);
 }
 
-int enqueue(struct queue *q, void *msg, unsigned int timeout)
-{
+int enqueue(struct queue *q, void *msg, unsigned int timeout) {
   if (wait_for_object(&q->notfull, timeout) < 0) return -ETIMEOUT;
   q->elems[q->in++] = msg;
   if (q->in == q->size) q->in = 0;
@@ -70,8 +66,7 @@ int enqueue(struct queue *q, void *msg, unsigned int timeout)
   return 0;
 }
 
-void *dequeue(struct queue *q, unsigned int timeout)
-{
+void *dequeue(struct queue *q, unsigned int timeout) {
   void *msg;
 
   if (wait_for_object(&q->notempty, timeout) < 0) return NULL;

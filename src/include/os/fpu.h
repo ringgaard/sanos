@@ -34,8 +34,7 @@
 #ifndef FPU_H
 #define FPU_H
 
-struct fpu 
-{
+struct fpu {
   unsigned long ocw;
   unsigned long osw;
   unsigned long otw;

@@ -36,8 +36,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static int gentmpfn(char *path, char *prefix, int unique, char *tempfn)
-{
+static int gentmpfn(char *path, char *prefix, int unique, char *tempfn) {
   const char *format = "%s%c%s%4.4x.tmp";
   int len;
 
@@ -47,8 +46,7 @@ static int gentmpfn(char *path, char *prefix, int unique, char *tempfn)
   if (unique == 0) unique = clock();
   
   sprintf(tempfn, format, path, PS1, prefix, unique);
-  while (access(tempfn, 0) == 0)
-  {
+  while (access(tempfn, 0) == 0) {
     unique++;
     sprintf(tempfn, format, path, PS1, prefix, unique);
   }
@@ -57,8 +55,7 @@ static int gentmpfn(char *path, char *prefix, int unique, char *tempfn)
   return unique;
 }
 
-FILE *tmpfile()
-{
+FILE *tmpfile() {
   static int unique = 0;
 
   FILE *stream;
@@ -69,8 +66,7 @@ FILE *tmpfile()
   path = getenv("tmp");
   if (!path) path = "/tmp";
 
-  while (1)
-  {
+  while (1) {
     rc = gentmpfn(path, "t", unique, tempfn);
     if (rc < 0) return NULL;
     unique = rc;
@@ -83,17 +79,17 @@ FILE *tmpfile()
   return stream;
 }
 
-char *tmpnam(char *string)
-{
+char *tmpnam(char *string) {
   static int unique = 0;
   char *path;
   char *tempfn;
   int rc;
 
-  if (string)
+  if (string) {
     tempfn = string;
-  else
+  } else {
     tempfn = gettib()->tmpnambuf;
+  }
   
   path = getenv("tmp");
   if (!path) path = "/tmp";
@@ -105,8 +101,7 @@ char *tmpnam(char *string)
   return tempfn;
 }
 
-char *tempnam(const char *dir, const char *prefix)
-{
+char *tempnam(const char *dir, const char *prefix) {
   static int unique = 0;
   char *path;
   char *tempfn;

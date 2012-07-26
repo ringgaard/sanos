@@ -37,8 +37,7 @@
 //
 // regfree - free everything
 //
-void regfree(regex_t *preg)
-{
+void regfree(regex_t *preg) {
   struct re_guts *g;
 
   if (preg->re_magic != MAGIC1) return; // oops

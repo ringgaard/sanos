@@ -52,23 +52,20 @@ static struct passwd defpasswd = {"root", "", 0, 0, "root", "/", "/bin/sh.exe"};
 static char *defgrpmem[] = {"root", NULL};
 static struct group defgroup = {"root", "", 0, defgrpmem};
 
-static char *skip(char *p, int c)
-{
+static char *skip(char *p, int c) {
   while (*p && *p != c) p++;
   if (*p) *p++ = 0;
   return p;
 }
 
-static char *nextline(char *p)
-{
+static char *nextline(char *p) {
   while (*p && *p != '\r' && *p != '\n') p++;
   if (*p == '\r') *p++ = 0;
   if (*p) *p++ = 0;
   return p;
 }
 
-static int linecount(char *data)
-{
+static int linecount(char *data) {
   int cnt = 0;
   char *p = data;
   while (*p) if (*p++ == '\n') cnt++;
@@ -76,8 +73,7 @@ static int linecount(char *data)
   return cnt;
 }
 
-static char *read_file(char *name, int *size)
-{
+static char *read_file(char *name, int *size) {
   int f;
   struct stat st;
   char *data;
@@ -93,14 +89,12 @@ static char *read_file(char *name, int *size)
 
   // Read file into memory
   f = open(name, 0);
-  if (f < 0) 
-  {
+  if (f < 0)  {
     munmap(data, len + 1, MEM_RELEASE);
     return NULL;
   }
 
-  if (read(f, data, len) != len) 
-  {
+  if (read(f, data, len) != len) {
     munmap(data, len + 1, MEM_RELEASE);
     return NULL;
   }
@@ -112,8 +106,7 @@ static char *read_file(char *name, int *size)
   return data;
 }
 
-static int read_passwd()
-{
+static int read_passwd() {
   char *p;
   int n;
   int passwdtab_len;
@@ -133,8 +126,7 @@ static int read_passwd()
   // Build password table entries
   p = passwd;
   n = 0;
-  while (*p)
-  {
+  while (*p) {
     char *next = nextline(p);
 
     passwdtab[n].pw_name = p;
@@ -163,8 +155,7 @@ static int read_passwd()
   return 0;
 }
 
-static int read_group()
-{
+static int read_group() {
   char *p;
   int n, m;
   int grouptab_len;
@@ -194,8 +185,7 @@ static int read_group()
   p = group;
   n = 0;
   m = 0;
-  while (*p)
-  {
+  while (*p) {
     char *next = nextline(p);
 
     grouptab[n].gr_name = p;
@@ -205,8 +195,7 @@ static int read_group()
     grouptab[n].gr_gid = atoi(p);
     p = skip(p, ':');
     grouptab[n].gr_mem = &grmem[m];
-    while (*p)
-    {
+    while (*p) {
       grmem[m++] = p;
       p = skip(p, ',');
     }
@@ -224,77 +213,64 @@ static int read_group()
   return 0;
 }
 
-void init_userdb()
-{
+void init_userdb() {
   read_passwd();
-  if (passwd_cnt == 0)
-  {
+  if (passwd_cnt == 0) {
     passwdtab = &defpasswd;
     passwd_cnt = 1;
   }
 
   read_group();
-  if (group_cnt == 0)
-  {
+  if (group_cnt == 0) {
     grouptab = &defgroup;
     group_cnt = 1;
   }
 }
 
-struct passwd *getpwnam(const char *name)
-{
+struct passwd *getpwnam(const char *name) {
   int i;
 
-  for (i = 0; i < passwd_cnt; i++)
-    if (strcmp(name, passwdtab[i].pw_name) == 0) 
-      return &passwdtab[i];
-
+  for (i = 0; i < passwd_cnt; i++) {
+    if (strcmp(name, passwdtab[i].pw_name) == 0)  return &passwdtab[i];
+  }
   return NULL;
 }
 
-struct passwd *getpwuid(uid_t uid)
-{
+struct passwd *getpwuid(uid_t uid) {
   int i;
 
-  for (i = 0; i < passwd_cnt; i++)
-    if (uid == passwdtab[i].pw_uid) 
-      return &passwdtab[i];
-
+  for (i = 0; i < passwd_cnt; i++) {
+    if (uid == passwdtab[i].pw_uid) return &passwdtab[i];
+  }
   return NULL;
 }
 
-struct group *getgrnam(const char *name)
-{
+struct group *getgrnam(const char *name) {
   int i;
 
-  for (i = 0; i < group_cnt; i++)
-    if (strcmp(name, grouptab[i].gr_name) == 0) 
-      return &grouptab[i];
-
+  for (i = 0; i < group_cnt; i++) {
+    if (strcmp(name, grouptab[i].gr_name) == 0)  return &grouptab[i];
+  }
   return NULL;
 }
 
-struct group *getgrgid(gid_t gid)
-{
+struct group *getgrgid(gid_t gid) {
   int i;
 
-  for (i = 0; i < group_cnt; i++)
-    if (gid == grouptab[i].gr_gid) 
-      return &grouptab[i];
-
+  for (i = 0; i < group_cnt; i++) {
+    if (gid == grouptab[i].gr_gid) return &grouptab[i];
+  }
   return NULL;
 }
 
-int initgroups(const char *user, gid_t basegid)
-{
+int initgroups(const char *user, gid_t basegid) {
   gid_t groups[NGROUPS_MAX];
   int ngroups = 0;
   int i;
   char **mem;
 
   groups[ngroups++] = basegid;
-  for (i = 0; i < group_cnt; i++)
-  {
+  for (i = 0; i < group_cnt; i++) {
     if (grouptab[i].gr_gid == basegid) continue;
     mem = grouptab[i].gr_mem;
     while (*mem && strcmp(*mem, user) != 0) mem++;

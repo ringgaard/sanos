@@ -43,8 +43,7 @@
 #ifndef _GROUP_DEFINED
 #define _GROUP_DEFINED
 
-struct group
-{
+struct group {
   char *gr_name;    // Group name
   char *gr_passwd;  // Group password
   gid_t gr_gid;     // Group id

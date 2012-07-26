@@ -41,8 +41,7 @@ char pathsep = '/';
 #define CR '\r'
 #define LF '\n'
 
-int canonicalize(char *path, char *buffer)
-{
+int canonicalize(char *path, char *buffer) {
   char *p;
   char *end;
   int len;
@@ -58,21 +57,18 @@ int canonicalize(char *path, char *buffer)
   end = buffer + MAXPATH;
 
   // Add current directory to filename if relative path
-  if (*path != PS1 && *path != PS2)
-  {
+  if (*path != PS1 && *path != PS2) {
     struct thread *t = self();
 
     // Do not add current directory if it is root directory
     len = strlen(t->curdir);
-    if (len > 1)
-    {
+    if (len > 1) {
       memcpy(p, t->curdir, len);
       p += len;
     }
   }
 
-  while (*path)
-  {
+  while (*path) {
     // Parse path separator
     if (*path == PS1 || *path == PS2) path++;
     if (p == end) return -ENAMETOOLONG;
@@ -80,8 +76,7 @@ int canonicalize(char *path, char *buffer)
 
     // Parse next name part in path
     len = 0;
-    while (*path && *path != PS1 && *path != PS2)
-    {
+    while (*path && *path != PS1 && *path != PS2) {
       // We do not allow control characters in filenames
       if (*path > 0 && *path < ' ') return -EINVAL;
       
@@ -91,12 +86,11 @@ int canonicalize(char *path, char *buffer)
     }
 
     // Handle empty name parts and '.' and '..'
-    if (len == 0)
+    if (len == 0) {
       p--;
-    if (len == 1 && path[-1] == '.')
+    } else if (len == 1 && path[-1] == '.') {
       p -= 2;
-    else if (len == 2 && path[-1] == '.' && path[-2] == '.')
-    {
+    } else if (len == 2 && path[-1] == '.' && path[-2] == '.') {
       p -= 4;
       if (p < buffer) return -EINVAL;
       while (*p != pathsep) p--;
@@ -113,15 +107,13 @@ int canonicalize(char *path, char *buffer)
   return p - buffer;
 }
 
-int fnmatch(char *fn1, int len1, char *fn2, int len2)
-{
+int fnmatch(char *fn1, int len1, char *fn2, int len2) {
   if (len1 != len2) return 0;
   while (len1--) if (*fn1++ != *fn2++) return 0;
   return 1;
 }
 
-int fslookup(char *name, int full, struct fs **mntfs, char **rest)
-{
+int fslookup(char *name, int full, struct fs **mntfs, char **rest) {
   struct fs *fs;
   char *p;
   char *q;
@@ -137,15 +129,12 @@ int fslookup(char *name, int full, struct fs **mntfs, char **rest)
 
   // Find matching filesystem in mount list
   fs = mountlist;
-  while (fs)
-  {
+  while (fs) {
     q = fs->mntto;
-    if (*q)
-    {
+    if (*q) {
       if (*q == PS1 || *q == PS2) q++;
 
-      if (!*q)
-      {
+      if (!*q) {
         rc = check(fs->mode, fs->uid, fs->gid, S_IEXEC);
         if (rc < 0) return rc;
 
@@ -156,8 +145,7 @@ int fslookup(char *name, int full, struct fs **mntfs, char **rest)
       }
 
       m = strlen(q);
-      if (n >= m && fnmatch(p, m, q, m) && (p[m] == PS1 || p[m] == PS2 || full && p[m] == 0))
-      {
+      if (n >= m && fnmatch(p, m, q, m) && (p[m] == PS1 || p[m] == PS2 || full && p[m] == 0)) {
         rc = check(fs->mode, fs->uid, fs->gid, S_IEXEC);
         if (rc < 0) return rc;
 
@@ -174,26 +162,25 @@ int fslookup(char *name, int full, struct fs **mntfs, char **rest)
   return -ENOENT;
 }
 
-int __inline lock_fs(struct fs *fs, int fsop)
-{
+int __inline lock_fs(struct fs *fs, int fsop) {
   if (fs->ops->reentrant & fsop) return 0;
-  if (fs->ops->lockfs)
+  if (fs->ops->lockfs) {
     return fs->ops->lockfs(fs);
-  else
+  } else {
     return wait_for_object(&fs->exclusive, VFS_LOCK_TIMEOUT);
+  }
 }
 
-void __inline unlock_fs(struct fs *fs, int fsop)
-{
+void __inline unlock_fs(struct fs *fs, int fsop) {
   if (fs->ops->reentrant & fsop) return;
-  if (fs->ops->unlockfs)
+  if (fs->ops->unlockfs) {
     fs->ops->unlockfs(fs);
-  else
+  } else {
     release_mutex(&fs->exclusive);
+  }
 }
 
-static int files_proc(struct proc_file *pf, void *arg)
-{
+static int files_proc(struct proc_file *pf, void *arg) {
   int h;
   struct object *o;
   struct file *filp;
@@ -201,8 +188,7 @@ static int files_proc(struct proc_file *pf, void *arg)
 
   pprintf(pf, "handle    flags mode       uid gid type     path\n");
   pprintf(pf, "------ -------- ---------- --- --- -------- ----------------------------------\n");
-  for (h = 0; h < htabsize; h++)
-  {
+  for (h = 0; h < htabsize; h++) {
     if (!HUSED(htab[h])) continue;
     o = HOBJ(htab[h]);
     if (o->type != OBJECT_FILE) continue;
@@ -210,8 +196,7 @@ static int files_proc(struct proc_file *pf, void *arg)
     filp = (struct file *) o;
 
     strcpy(perm, " ---------");
-    switch (filp->mode & S_IFMT) 
-    {
+    switch (filp->mode & S_IFMT) {
       case S_IFREG: perm[0] = '-'; break;
       case S_IFLNK: perm[0] = 'l'; break;
       case S_IFDIR: perm[0] = 'd'; break;
@@ -236,8 +221,7 @@ static int files_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-int init_vfs()
-{
+int init_vfs() {
   pathsep = PS1;
   self()->curdir[0] = PS1;
   self()->curdir[1] = 0;
@@ -248,8 +232,7 @@ int init_vfs()
   return 0;
 }
 
-struct filesystem *register_filesystem(char *name, struct fsops *ops)
-{
+struct filesystem *register_filesystem(char *name, struct fsops *ops) {
   struct filesystem *fsys;
 
   fsys = (struct filesystem *) kmalloc(sizeof(struct filesystem));
@@ -263,15 +246,13 @@ struct filesystem *register_filesystem(char *name, struct fsops *ops)
   return fsys;
 }
 
-struct file *newfile(struct fs *fs, char *path, int flags, int mode)
-{
+struct file *newfile(struct fs *fs, char *path, int flags, int mode) {
   struct thread *thread = self();
   struct file *filp;
   int umaskval = 0;
   int fmodeval = 0;
 
-  if (peb)
-  {
+  if (peb) {
     umaskval = peb->umaskval;
     fmodeval = peb->fmodeval;
   }
@@ -295,8 +276,7 @@ struct file *newfile(struct fs *fs, char *path, int flags, int mode)
   return filp;
 }
 
-int mkfs(char *devname, char *type, char *opts)
-{
+int mkfs(char *devname, char *type, char *opts) {
   struct filesystem *fsys;
   int rc;
 
@@ -305,8 +285,7 @@ int mkfs(char *devname, char *type, char *opts)
 
   // Find file system type
   fsys = fslist;
-  while (fsys)
-  {
+  while (fsys) {
     if (strcmp(type, fsys->name) == 0) break;
     fsys = fsys->next;
   }
@@ -318,8 +297,7 @@ int mkfs(char *devname, char *type, char *opts)
   return rc;
 }
 
-int mount(char *type, char *mntto, char *mntfrom, char *opts, struct fs **newfs)
-{
+int mount(char *type, char *mntto, char *mntfrom, char *opts, struct fs **newfs) {
   struct filesystem *fsys;
   struct fs *fs;
   struct fs *prevfs;
@@ -331,41 +309,35 @@ int mount(char *type, char *mntto, char *mntfrom, char *opts, struct fs **newfs)
   if (!type) return -EINVAL;
   if (!mntto) return -EINVAL;
 
-  if (*mntto)
-  {
+  if (*mntto) {
     rc = canonicalize(mntto, path);
     if (rc < 0) return rc;
-  }
-  else
+  } else {
     *path = 0;
+  }
 
   // Check for file system already mounted
   fs = mountlist;
   prevfs = NULL;
-  while (fs)
-  {
+  while (fs) {
     if (fnmatch(path, strlen(path), fs->mntto, strlen(fs->mntto))) return -EEXIST;
     if (strlen(path) < strlen(fs->mntto)) prevfs = fs;
     fs = fs->next;
   }
 
   // Check that mount point exists
-  if (path[0] == 0 || (path[0] == PS1 || path[0] == PS2) &&  path[1] == 0)
-  {
+  if (path[0] == 0 || (path[0] == PS1 || path[0] == PS2) &&  path[1] == 0) {
     st.st_uid = 0;
     st.st_gid = 0;
     st.st_mode = 0755;
-  }
-  else
-  {
+  } else {
     rc = stat(path, &st);
     if (rc < 0) return rc;
   }
 
   // Find file system type
   fsys = fslist;
-  while (fsys)
-  {
+  while (fsys) {
     if (strcmp(type, fsys->name) == 0) break;
     fsys = fsys->next;
   }
@@ -389,27 +361,22 @@ int mount(char *type, char *mntto, char *mntfrom, char *opts, struct fs **newfs)
   init_mutex(&fs->exclusive, 0);
 
   // Initialize filesystem on device
-  if (fs->ops->mount)
-  {
+  if (fs->ops->mount) {
     rc = fs->ops->mount(fs, opts);
-    if (rc != 0)
-    {
+    if (rc != 0) {
       kfree(fs);
       return rc;
     }
   }
 
   // Insert in mount list
-  if (prevfs)
-  {
+  if (prevfs) {
     fs->next = prevfs->next;
     fs->prev = prevfs;
 
     if (prevfs->next) prevfs->next->prev = fs;
     prevfs->next = fs;
-  }
-  else
-  {
+  } else {
     fs->prev = NULL;
     fs->next = mountlist;
     if (mountlist) mountlist->prev = fs;
@@ -420,8 +387,7 @@ int mount(char *type, char *mntto, char *mntfrom, char *opts, struct fs **newfs)
   return 0;
 }
 
-int umount(char *name)
-{
+int umount(char *name) {
   struct fs *fs;
   int rc;
   char path[MAXPATH];
@@ -434,8 +400,7 @@ int umount(char *name)
 
   // Find mounted filesystem
   fs = mountlist;
-  while (fs)
-  {
+  while (fs) {
     if (fnmatch(path, strlen(path), fs->mntto, strlen(fs->mntto))) break;
     fs = fs->next;
   }
@@ -445,8 +410,7 @@ int umount(char *name)
   if (fs->locks > 0) return -EBUSY;
 
   // Unmount filesystem from device
-  if (fs->ops->umount)
-  {
+  if (fs->ops->umount) {
     rc = fs->ops->umount(fs);
     if (rc != 0) return rc;
   }
@@ -460,14 +424,12 @@ int umount(char *name)
   return 0;
 }
 
-int umount_all()
-{
+int umount_all() {
   struct fs *fs;
   struct fs *nextfs;
 
   fs = mountlist;
-  while (fs)
-  {
+  while (fs) {
     if (fs->ops->umount) fs->ops->umount(fs);
     nextfs = fs->next;
     kfree(fs);
@@ -478,23 +440,19 @@ int umount_all()
   return 0;
 }
 
-static int get_fsstat(struct fs *fs, struct statfs *buf)
-{
+static int get_fsstat(struct fs *fs, struct statfs *buf) {
   int rc;
 
   strcpy(buf->fstype, fs->fsys->name);
   strcpy(buf->mntto, fs->mntto);
   strcpy(buf->mntfrom, fs->mntfrom);
 
-  if (fs->ops->statfs)
-  {
+  if (fs->ops->statfs) {
     if (lock_fs(fs, FSOP_STATFS) < 0) return -ETIMEOUT;
     rc = fs->ops->statfs(fs, buf);
     unlock_fs(fs, FSOP_STATFS);
     if (rc < 0) return rc;
-  }
-  else
-  {
+  } else {
     buf->bsize = -1;
     buf->iosize = -1;
     buf->blocks = -1;
@@ -506,18 +464,15 @@ static int get_fsstat(struct fs *fs, struct statfs *buf)
   return 0;
 }
 
-int getfsstat(struct statfs *buf, size_t size)
-{
+int getfsstat(struct statfs *buf, size_t size) {
   int count;
   struct fs *fs;
   int rc;
 
   count = 0;
   fs = mountlist;
-  while (fs)
-  {
-    if (buf)
-    {
+  while (fs) {
+    if (buf) {
       if (size < sizeof(struct statfs)) break;
       memset(buf, 0, sizeof(struct statfs));
       rc = get_fsstat(fs, buf);
@@ -534,16 +489,14 @@ int getfsstat(struct statfs *buf, size_t size)
   return count;
 }
 
-int fstatfs(struct file *filp, struct statfs *buf)
-{
+int fstatfs(struct file *filp, struct statfs *buf) {
   if (!filp) return -EINVAL;
   if (!buf) return -EINVAL;
 
   return get_fsstat(filp->fs, buf);
 }
 
-int statfs(char *name, struct statfs *buf)
-{
+int statfs(char *name, struct statfs *buf) {
   struct fs *fs;
   char *rest;
   int rc;
@@ -558,8 +511,7 @@ int statfs(char *name, struct statfs *buf)
   return get_fsstat(fs, buf);
 }
 
-int open(char *name, int flags, int mode, struct file **retval)
-{
+int open(char *name, int flags, int mode, struct file **retval) {
   struct fs *fs;
   struct file *filp;
   int rc;
@@ -575,11 +527,9 @@ int open(char *name, int flags, int mode, struct file **retval)
   filp = newfile(fs, path, flags, mode);
   if (!filp) return -EMFILE;
 
-  if (fs->ops->open)
-  {
+  if (fs->ops->open) {
     fs->locks++;
-    if (lock_fs(fs, FSOP_OPEN) < 0) 
-    {
+    if (lock_fs(fs, FSOP_OPEN) < 0)  {
       fs->locks--;
       kfree(filp->path);
       kfree(filp);
@@ -587,24 +537,23 @@ int open(char *name, int flags, int mode, struct file **retval)
     }
 
     rc = fs->ops->open(filp, rest);
-    if (rc == 0)
-    {
+    if (rc == 0) {
       int access;
 
-      if (filp->flags & O_RDWR)
+      if (filp->flags & O_RDWR) {
         access = S_IREAD | S_IWRITE;
-      else if (filp->flags & O_WRONLY)
+      } else if (filp->flags & O_WRONLY) {
         access = S_IWRITE;
-      else
+      } else {
         access = S_IREAD;
+      }
 
       rc = check(filp->mode, filp->owner, filp->group, access);
     }
 
     unlock_fs(fs, FSOP_OPEN);
 
-    if (rc != 0)
-    {
+    if (rc != 0) {
       fs->locks--;
       kfree(filp->path);
       kfree(filp);
@@ -616,20 +565,18 @@ int open(char *name, int flags, int mode, struct file **retval)
   return 0;
 }
 
-int close(struct file *filp)
-{
+int close(struct file *filp) {
   int rc;
 
   if (!filp) return -EINVAL;
   
-  if (filp->fs->ops->close)
-  {
+  if (filp->fs->ops->close) {
     if (lock_fs(filp->fs, FSOP_CLOSE) < 0) return -ETIMEOUT;
     rc = filp->fs->ops->close(filp);
     unlock_fs(filp->fs, FSOP_CLOSE);
-  }
-  else
+  } else {
     rc = 0;
+  }
 
   if (rc == 0) filp->fs->locks--;
   
@@ -641,25 +588,22 @@ int close(struct file *filp)
   return rc;
 }
 
-int destroy(struct file *filp)
-{
+int destroy(struct file *filp) {
   int rc;
 
   if (!filp) return -EINVAL;
 
-  if (filp->fs->ops->destroy)
-  {
+  if (filp->fs->ops->destroy) {
     rc = filp->fs->ops->destroy(filp);
-  }
-  else
+  } else {
     rc = 0;
+  }
 
   kfree(filp);
   return rc;
 }
 
-int fsync(struct file *filp)
-{
+int fsync(struct file *filp) {
   int rc;
 
   if (!filp) return -EINVAL;
@@ -673,8 +617,7 @@ int fsync(struct file *filp)
   return rc;
 }
 
-int setmode(struct file *filp, int mode)
-{
+int setmode(struct file *filp, int mode) {
   int oldmode;
 
   if (mode & ~(O_TEXT | O_BINARY | O_APPEND | O_NOINHERIT)) return -EINVAL;
@@ -683,8 +626,7 @@ int setmode(struct file *filp, int mode)
   return oldmode;
 }
 
-int read_translated(struct file *filp, void *data, size_t size)
-{
+int read_translated(struct file *filp, void *data, size_t size) {
   char *buf = (char *) data;
   char *p = buf;
   char *q = buf;
@@ -696,8 +638,7 @@ int read_translated(struct file *filp, void *data, size_t size)
   p = q = buf;
 
   // Read data including lookahead char if present
-  if (filp->chbuf != LF)
-  {
+  if (filp->chbuf != LF) {
     buf[0] = filp->chbuf;
     filp->chbuf = LF;
     if (size == 1) return 1;
@@ -706,9 +647,7 @@ int read_translated(struct file *filp, void *data, size_t size)
     if (rc > 0) filp->pos += rc;
     if (rc < 0) return rc;
     bytes = rc + 1;
-  }
-  else
-  {
+  } else {
     rc = filp->fs->ops->read(filp, buf, size, filp->pos);
     if (rc > 0) filp->pos += rc;
     if (rc < 0) return rc;
@@ -716,45 +655,35 @@ int read_translated(struct file *filp, void *data, size_t size)
   }
 
   // Translate CR/LF to LF in the buffer
-  while (p < buf + bytes) 
-  {
-    if (*p != CR)
+  while (p < buf + bytes)  {
+    if (*p != CR) {
       *q++ = *p++;
-    else 
-    {
+    } else {
       // *p is CR, so must check next char for LF
-      if (p < buf + bytes - 1) 
-      {
-        if (*(p + 1) == LF) 
-        {
+      if (p < buf + bytes - 1) {
+        if (*(p + 1) == LF) {
           // convert CR/LF to LF
           p += 2;
           *q++ = LF;
-        }
-        else
+        } else {
           *q++ = *p++;
-      }
-      else 
-      {
+        }
+      } else {
         // We found a CR at end of buffer. 
         // We must peek ahead to see if next char is an LF.
         p++;
 
         rc = filp->fs->ops->read(filp, &peekch, 1, filp->pos);
         if (rc > 0) filp->pos += rc;
-        if (rc <= 0) 
-        {
+        if (rc <= 0) {
           // Couldn't read ahead, store CR
           *q++ = CR;
-        }
-        else 
-        {
+        } else {
           // peekch now has the extra character. If char is LF store LF
           // else store CR and put char in lookahead buffer.
-          if (peekch == LF)
+          if (peekch == LF) {
             *q++ = LF;
-          else 
-          {
+          } else {
             *q++ = CR;
             filp->chbuf = peekch;
           }
@@ -767,8 +696,7 @@ int read_translated(struct file *filp, void *data, size_t size)
   return q - buf;
 }
 
-int read(struct file *filp, void *data, size_t size)
-{
+int read(struct file *filp, void *data, size_t size) {
   int rc;
 
   if (!filp) return -EINVAL;
@@ -777,10 +705,9 @@ int read(struct file *filp, void *data, size_t size)
   
   if (!filp->fs->ops->read) return -ENOSYS;
   if (lock_fs(filp->fs, FSOP_READ) < 0) return -ETIMEOUT;
-  if (filp->flags & O_TEXT)
+  if (filp->flags & O_TEXT) {
     rc = read_translated(filp, data, size);
-  else
-  {
+  } else {
     rc = filp->fs->ops->read(filp, data, size, filp->pos);
     if (rc > 0) filp->pos += rc;
   }
@@ -788,8 +715,7 @@ int read(struct file *filp, void *data, size_t size)
   return rc;
 }
 
-int pread(struct file *filp, void *data, size_t size, off64_t offset)
-{
+int pread(struct file *filp, void *data, size_t size, off64_t offset) {
   int rc;
 
   if (!filp) return -EINVAL;
@@ -804,8 +730,7 @@ int pread(struct file *filp, void *data, size_t size, off64_t offset)
   return rc;
 }
 
-static int write_translated(struct file *filp, void *data, size_t size)
-{
+static int write_translated(struct file *filp, void *data, size_t size) {
   char *buf;
   char *p, *q;
   int rc;
@@ -818,15 +743,12 @@ static int write_translated(struct file *filp, void *data, size_t size)
   p = buf;
   bytes = lfcnt = 0;
 
-  while ((unsigned) (p - buf) < size)
-  {
+  while ((unsigned) (p - buf) < size) {
     // Fill the buffer, except maybe last char
     q = lfbuf;
-    while ((unsigned) (q - lfbuf) < LFBUFSIZ - 1 && (unsigned) (p - buf) < size)
-    {
+    while ((unsigned) (q - lfbuf) < LFBUFSIZ - 1 && (unsigned) (p - buf) < size) {
       char ch = *p++;
-      if (ch == LF) 
-      {
+      if (ch == LF) {
         lfcnt++;
         *q++ = CR;
       }
@@ -844,8 +766,7 @@ static int write_translated(struct file *filp, void *data, size_t size)
   return bytes - lfcnt;
 }
 
-int write(struct file *filp, void *data, size_t size)
-{
+int write(struct file *filp, void *data, size_t size) {
   int rc;
 
   if (!filp) return -EINVAL;
@@ -854,10 +775,9 @@ int write(struct file *filp, void *data, size_t size)
 
   if (!filp->fs->ops->write) return -ENOSYS;
   if (lock_fs(filp->fs, FSOP_WRITE) < 0) return -ETIMEOUT;
-  if (filp->flags & O_TEXT)
+  if (filp->flags & O_TEXT) {
     rc = write_translated(filp, data, size);
-  else
-  {
+  } else {
     rc = filp->fs->ops->write(filp, data, size, filp->pos);
     if (rc > 0) filp->pos += rc;
   }
@@ -865,8 +785,7 @@ int write(struct file *filp, void *data, size_t size)
   return rc;
 }
 
-int pwrite(struct file *filp, void *data, size_t size, off64_t offset)
-{
+int pwrite(struct file *filp, void *data, size_t size, off64_t offset) {
   int rc;
 
   if (!filp) return -EINVAL;
@@ -881,20 +800,19 @@ int pwrite(struct file *filp, void *data, size_t size, off64_t offset)
   return rc;
 }
 
-int ioctl(struct file *filp, int cmd, void *data, size_t size)
-{
+int ioctl(struct file *filp, int cmd, void *data, size_t size) {
   int rc;
 
   if (!filp) return -EINVAL;
   if (!data && size > 0) return -EINVAL;
 
-  if (cmd == FIONBIO)
-  {
+  if (cmd == FIONBIO) {
     if (size != sizeof(int)) return -EINVAL;
-    if (*(int *) data)
+    if (*(int *) data) {
       filp->flags |= O_NONBLOCK;
-    else
+    } else {
       filp->flags &= ~O_NONBLOCK;
+    }
   }
 
   if (!filp->fs->ops->ioctl) return -ENOSYS;
@@ -904,14 +822,12 @@ int ioctl(struct file *filp, int cmd, void *data, size_t size)
   return rc;
 }
 
-int readv(struct file *filp, struct iovec *iov, int count)
-{
+int readv(struct file *filp, struct iovec *iov, int count) {
   int i;
   int rc;
   int total = 0;
 
-  for (i = 0; i < count; i++)
-  {
+  for (i = 0; i < count; i++) {
     rc = read(filp, iov[i].iov_base, iov[i].iov_len);
     if (rc < 0) return rc;
 
@@ -922,14 +838,12 @@ int readv(struct file *filp, struct iovec *iov, int count)
   return total;
 }
 
-int writev(struct file *filp, struct iovec *iov, int count)
-{
+int writev(struct file *filp, struct iovec *iov, int count) {
   int i;
   int rc;
   int total = 0;
 
-  for (i = 0; i < count; i++)
-  {
+  for (i = 0; i < count; i++) {
     rc = write(filp, iov[i].iov_base, iov[i].iov_len);
     if (rc < 0) return rc;
 
@@ -940,8 +854,7 @@ int writev(struct file *filp, struct iovec *iov, int count)
   return total;
 }
 
-off64_t tell(struct file *filp)
-{
+off64_t tell(struct file *filp) {
   off64_t rc;
 
   if (!filp) return -EINVAL;
@@ -953,8 +866,7 @@ off64_t tell(struct file *filp)
   return rc;
 }
 
-off64_t lseek(struct file *filp, off64_t offset, int origin)
-{
+off64_t lseek(struct file *filp, off64_t offset, int origin) {
   off64_t rc;
 
   if (!filp) return -EINVAL;
@@ -966,8 +878,7 @@ off64_t lseek(struct file *filp, off64_t offset, int origin)
   return rc;
 }
 
-int ftruncate(struct file *filp, off64_t size)
-{
+int ftruncate(struct file *filp, off64_t size) {
   int rc;
 
   if (!filp) return -EINVAL;
@@ -980,8 +891,7 @@ int ftruncate(struct file *filp, off64_t size)
   return rc;
 }
 
-int futime(struct file *filp, struct utimbuf *times)
-{
+int futime(struct file *filp, struct utimbuf *times) {
   int rc;
 
   if (!filp) return -EINVAL;
@@ -995,8 +905,7 @@ int futime(struct file *filp, struct utimbuf *times)
   return rc;
 }
 
-int utime(char *name, struct utimbuf *times)
-{
+int utime(char *name, struct utimbuf *times) {
   struct fs *fs;
   char *rest;
   int rc;
@@ -1012,8 +921,7 @@ int utime(char *name, struct utimbuf *times)
 
   if (!fs->ops->utime) return -ENOSYS;
   fs->locks++;
-  if (lock_fs(fs, FSOP_UTIME) < 0) 
-  {
+  if (lock_fs(fs, FSOP_UTIME) < 0) {
     fs->locks--;
     return -ETIMEOUT;
   }
@@ -1023,8 +931,7 @@ int utime(char *name, struct utimbuf *times)
   return rc;
 }
 
-int fstat(struct file *filp, struct stat64 *buffer)
-{
+int fstat(struct file *filp, struct stat64 *buffer) {
   int rc;
 
   if (!filp) return -EINVAL;
@@ -1036,8 +943,7 @@ int fstat(struct file *filp, struct stat64 *buffer)
   return rc;  
 }
 
-int stat(char *name, struct stat64 *buffer)
-{
+int stat(char *name, struct stat64 *buffer) {
   struct fs *fs;
   char *rest;
   int rc;
@@ -1048,11 +954,10 @@ int stat(char *name, struct stat64 *buffer)
 
   rc = fslookup(path, 0, &fs, &rest);
   if (rc < 0) return rc;
-  
+
   if (!fs->ops->stat) return -ENOSYS;
   fs->locks++;
-  if (lock_fs(fs, FSOP_STAT) < 0) 
-  {
+  if (lock_fs(fs, FSOP_STAT) < 0) {
     fs->locks--;
     return -ETIMEOUT;
   }
@@ -1062,8 +967,7 @@ int stat(char *name, struct stat64 *buffer)
   return rc;
 }
 
-int access(char *name, int mode)
-{
+int access(char *name, int mode) {
   struct fs *fs;
   char *rest;
   int rc;
@@ -1075,8 +979,7 @@ int access(char *name, int mode)
   rc = fslookup(path, 0, &fs, &rest);
   if (rc < 0) return rc;
 
-  if (!fs->ops->access) 
-  {
+  if (!fs->ops->access) {
     struct thread *thread = self();
     struct stat64 buf;
 
@@ -1086,18 +989,18 @@ int access(char *name, int mode)
 
     if (thread->euid == 0) return 0;
 
-    if (thread->euid == buf.st_uid)
+    if (thread->euid == buf.st_uid) {
       mode <<= 6;
-    else if (thread->egid == buf.st_gid)
+    } else if (thread->egid == buf.st_gid) {
       mode <<= 3;
+    }
 
     if ((mode && buf.st_mode) == 0) return -EACCES;
     return 0;
   }
 
   fs->locks++;
-  if (lock_fs(fs, FSOP_ACCESS) < 0) 
-  {
+  if (lock_fs(fs, FSOP_ACCESS) < 0) {
     fs->locks--;
     return -ETIMEOUT;
   }
@@ -1107,8 +1010,7 @@ int access(char *name, int mode)
   return rc;
 }
 
-int fchmod(struct file *filp, int mode)
-{
+int fchmod(struct file *filp, int mode) {
   int rc;
 
   if (!filp) return -EINVAL;
@@ -1121,8 +1023,7 @@ int fchmod(struct file *filp, int mode)
   return rc;
 }
 
-int chmod(char *name, int mode)
-{
+int chmod(char *name, int mode) {
   struct fs *fs;
   char *rest;
   int rc;
@@ -1136,8 +1037,7 @@ int chmod(char *name, int mode)
 
   if (!fs->ops->chmod) return -ENOSYS;
   fs->locks++;
-  if (lock_fs(fs, FSOP_CHMOD) < 0) 
-  {
+  if (lock_fs(fs, FSOP_CHMOD) < 0) {
     fs->locks--;
     return -ETIMEOUT;
   }
@@ -1147,13 +1047,12 @@ int chmod(char *name, int mode)
   return rc;
 }
 
-int fchown(struct file *filp, int owner, int group)
-{
+int fchown(struct file *filp, int owner, int group) {
   int rc;
 
   if (!filp) return -EINVAL;
   if (filp->flags & O_RDONLY) return -EACCES;
- 
+
   if (!filp->fs->ops->fchown) return -ENOSYS;
   if (lock_fs(filp->fs, FSOP_FCHOWN) < 0) return -ETIMEOUT;
   rc = filp->fs->ops->fchown(filp, owner, group);
@@ -1161,8 +1060,7 @@ int fchown(struct file *filp, int owner, int group)
   return rc;
 }
 
-int chown(char *name, int owner, int group)
-{
+int chown(char *name, int owner, int group) {
   struct fs *fs;
   char *rest;
   int rc;
@@ -1176,8 +1074,7 @@ int chown(char *name, int owner, int group)
 
   if (!fs->ops->chmod) return -ENOSYS;
   fs->locks++;
-  if (lock_fs(fs, FSOP_CHOWN) < 0) 
-  {
+  if (lock_fs(fs, FSOP_CHOWN) < 0) {
     fs->locks--;
     return -ETIMEOUT;
   }
@@ -1187,8 +1084,7 @@ int chown(char *name, int owner, int group)
   return rc;
 }
 
-int chdir(char *name)
-{
+int chdir(char *name) {
   struct fs *fs;
   char *rest;
   int rc;
@@ -1203,11 +1099,9 @@ int chdir(char *name)
   rc = fslookup(path, 0, &fs, &rest);
   if (rc < 0) return rc;
   
-  if (fs->ops->stat)
-  {
+  if (fs->ops->stat) {
     fs->locks++;
-    if (lock_fs(fs, FSOP_STAT) < 0) 
-    {
+    if (lock_fs(fs, FSOP_STAT) < 0) {
       fs->locks--;
       return -ETIMEOUT;
     }
@@ -1224,8 +1118,7 @@ int chdir(char *name)
   return 0;
 }
 
-int getcwd(char *buf, size_t size)
-{
+int getcwd(char *buf, size_t size) {
   if (!buf || size == 0) return -EINVAL;
   if (size <= strlen(self()->curdir)) return -ERANGE;
   strcpy(buf, self()->curdir);
@@ -1233,8 +1126,7 @@ int getcwd(char *buf, size_t size)
   return 0;
 }
 
-int mkdir(char *name, int mode)
-{
+int mkdir(char *name, int mode) {
   struct fs *fs;
   char *rest;
   int rc;
@@ -1248,8 +1140,7 @@ int mkdir(char *name, int mode)
 
   if (!fs->ops->mkdir) return -ENOSYS;
   fs->locks++;
-  if (lock_fs(fs, FSOP_MKDIR) < 0) 
-  {
+  if (lock_fs(fs, FSOP_MKDIR) < 0) {
     fs->locks--;
     return -ETIMEOUT;
   }
@@ -1259,8 +1150,7 @@ int mkdir(char *name, int mode)
   return rc;
 }
 
-int rmdir(char *name)
-{
+int rmdir(char *name) {
   struct fs *fs;
   char *rest;
   int rc;
@@ -1274,8 +1164,7 @@ int rmdir(char *name)
   
   if (!fs->ops->rmdir) return -ENOSYS;
   fs->locks++;
-  if (lock_fs(fs, FSOP_RMDIR) < 0) 
-  {
+  if (lock_fs(fs, FSOP_RMDIR) < 0) {
     fs->locks--;
     return -ETIMEOUT;
   }
@@ -1285,8 +1174,7 @@ int rmdir(char *name)
   return rc;
 }
 
-int rename(char *oldname, char *newname)
-{
+int rename(char *oldname, char *newname) {
   struct fs *oldfs;
   struct fs *newfs;
   char *oldrest;
@@ -1311,8 +1199,7 @@ int rename(char *oldname, char *newname)
 
   if (!oldfs->ops->rename) return -ENOSYS;
   oldfs->locks++;
-  if (lock_fs(oldfs, FSOP_RENAME) < 0) 
-  {
+  if (lock_fs(oldfs, FSOP_RENAME) < 0) {
     oldfs->locks--;
     return -ETIMEOUT;
   }
@@ -1322,8 +1209,7 @@ int rename(char *oldname, char *newname)
   return rc;
 }
 
-int link(char *oldname, char *newname)
-{
+int link(char *oldname, char *newname) {
   struct fs *oldfs;
   struct fs *newfs;
   char *oldrest;
@@ -1348,8 +1234,7 @@ int link(char *oldname, char *newname)
 
   if (!oldfs->ops->link) return -ENOSYS;
   oldfs->locks++;
-  if (lock_fs(oldfs, FSOP_LINK) < 0) 
-  {
+  if (lock_fs(oldfs, FSOP_LINK) < 0) {
     oldfs->locks--;
     return -ETIMEOUT;
   }
@@ -1359,8 +1244,7 @@ int link(char *oldname, char *newname)
   return rc;
 }
 
-int unlink(char *name)
-{
+int unlink(char *name) {
   struct fs *fs;
   char *rest;
   int rc;
@@ -1374,8 +1258,7 @@ int unlink(char *name)
 
   if (!fs->ops->unlink) return -ENOSYS;
   fs->locks++;
-  if (lock_fs(fs, FSOP_UNLINK) < 0) 
-  {
+  if (lock_fs(fs, FSOP_UNLINK) < 0) {
     fs->locks--;
     return -ETIMEOUT;
   }
@@ -1385,8 +1268,7 @@ int unlink(char *name)
   return rc;
 }
 
-int opendir(char *name, struct file **retval)
-{
+int opendir(char *name, struct file **retval) {
   struct fs *fs;
   struct file *filp;
   int rc;
@@ -1412,8 +1294,7 @@ int opendir(char *name, struct file **retval)
   filp->path = strdup(path);
 
   fs->locks++;
-  if (lock_fs(fs, FSOP_OPENDIR) < 0) 
-  {
+  if (lock_fs(fs, FSOP_OPENDIR) < 0) {
     fs->locks--;
     kfree(filp->path);
     kfree(filp);
@@ -1421,8 +1302,7 @@ int opendir(char *name, struct file **retval)
   }
   rc = fs->ops->opendir(filp, rest);
   unlock_fs(fs, FSOP_OPENDIR);
-  if (rc != 0)
-  {
+  if (rc != 0) {
     fs->locks--;
     kfree(filp->path);
     kfree(filp);
@@ -1433,8 +1313,7 @@ int opendir(char *name, struct file **retval)
   return 0;
 }
 
-int readdir(struct file *filp, struct direntry *dirp, int count)
-{
+int readdir(struct file *filp, struct direntry *dirp, int count) {
   int rc;
 
   if (!filp) return -EINVAL;

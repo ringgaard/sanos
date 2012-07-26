@@ -46,8 +46,7 @@ static union node *parse_list(struct parser *p);
 // Token table
 //
 
-static struct token tokens[] =
-{
+static struct token tokens[] = {
   // Control operators
   { 1, "EOF"    }, // T_EOF     - end of file
   { 0, "NL"     }, // T_NL      - newline
@@ -90,8 +89,7 @@ static struct token tokens[] =
 // Get next character from source
 //
 
-static int next(struct parser *p)
-{
+static int next(struct parser *p) {
   p->ch = pgetc(&p->source, 0);
   return p->ch;
 }
@@ -100,8 +98,7 @@ static int next(struct parser *p)
 // Peek next character from source
 //
 
-static int peek(struct parser *p)
-{
+static int peek(struct parser *p) {
   return pgetc(&p->source, 1);
 }
 
@@ -109,8 +106,7 @@ static int peek(struct parser *p)
 // Allocate new node
 //
 
-static union node *alloc_node(struct parser *p, int type)
-{
+static union node *alloc_node(struct parser *p, int type) {
   union node *node;
 
   node = stalloc(p->mark, sizeof(union node));
@@ -122,8 +118,7 @@ static union node *alloc_node(struct parser *p, int type)
 // Save parser state
 //
 
-static void push_parser(struct parser *p, struct parserstate *ps, int flags)
-{
+static void push_parser(struct parser *p, struct parserstate *ps, int flags) {
   ps->flags = p->flags;
   ps->pushback = p->pushback;
   ps->quot = p->quot;
@@ -143,8 +138,7 @@ static void push_parser(struct parser *p, struct parserstate *ps, int flags)
 // Restore parser state
 //
 
-static void pop_parser(struct parser *p, struct parserstate *ps)
-{
+static void pop_parser(struct parser *p, struct parserstate *ps) {
   p->flags = ps->flags;
   p->pushback = ps->pushback;
   p->quot = ps->quot;
@@ -157,8 +151,7 @@ static void pop_parser(struct parser *p, struct parserstate *ps)
 // Parser error message
 //
 
-static void parse_error(struct parser *p, char *msg)
-{
+static void parse_error(struct parser *p, char *msg) {
   fprintf(stderr, "syntax error: %s", msg);
   if (p->source) fprintf(stderr, ", line %d", p->source->lineno);
   fprintf(stderr, "\n");
@@ -169,25 +162,21 @@ static void parse_error(struct parser *p, char *msg)
 // Expect a token, print error msg and return 0 if it wasn't that token
 //
 
-static int parse_expect(struct parser *p, int tempflags, int toks)
-{
+static int parse_expect(struct parser *p, int tempflags, int toks) {
   int n, i, f;
   
   if (parse_gettok(p, tempflags) & toks) return p->tok;
 
-  if (p->tok)
-  {
+  if (p->tok) {
     for (i = 0, n = p->tok; n > 1; i++, n >>= 1);
     fprintf(stderr, "unexpected token '%s', expecting '", tokens[i].name);
-  }
-  else
+  } else {
     fprintf(stderr, "unexpected token, expecting '");
+  }
   
   f = 1;
-  for (i = 0, n = toks; n > 0; i++, n >>=1)
-  {
-    if (n & 1)
-    {
+  for (i = 0, n = toks; n > 0; i++, n >>=1) {
+    if (n & 1) {
       if (!f) fprintf(stderr, ",");
       fprintf(stderr, "%s", tokens[i].name);
       f = 0;
@@ -202,8 +191,7 @@ static int parse_expect(struct parser *p, int tempflags, int toks)
 // Make an argument node from the stuff parsed by parse_word
 //
 
-union node *parse_getarg(struct parser *p)
-{
+union node *parse_getarg(struct parser *p) {
   union node *n;
   
   n = alloc_node(p, N_ARG);
@@ -216,15 +204,12 @@ union node *parse_getarg(struct parser *p)
 // Skip any unquoted whitespace preceeding a word
 //
 
-static int parse_skipspace(struct parser *p)
-{
+static int parse_skipspace(struct parser *p) {
   // Skip whitespace
-  for (;;)
-  {
+  for (;;) {
     if (p->ch <= 0) return T_EOF;
 
-    if (p->ch == '\n')
-    {
+    if (p->ch == '\n') {
       next(p);
       
       // In a here-doc skip the newline after the delimiter
@@ -234,9 +219,9 @@ static int parse_skipspace(struct parser *p)
       if (!(p->flags & P_SKIPNL)) return T_NL;
       
       continue;
-    }
-    else if (!is_space(p->ch))
+    } else if (!is_space(p->ch)) {
       break;
+    }
 
     next(p);
   }
@@ -248,14 +233,11 @@ static int parse_skipspace(struct parser *p)
 // Parse simple tokens consisting of 1 or 2 chars
 //
 
-static int parse_simpletok(struct parser *p)
-{
+static int parse_simpletok(struct parser *p) {
   int nextch;
 
-  while (1)
-  {
-    switch (p->ch)
-    {
+  while (1) {
+    switch (p->ch) {
       // Check for end of file
       case -1:
         return T_EOF;
@@ -269,8 +251,7 @@ static int parse_simpletok(struct parser *p)
       // Skip comments
       case '#':
         next(p);
-        while (p->ch != '\n')
-        {
+        while (p->ch != '\n') {
           if (p->ch < 0) return T_EOF;
           next(p);
         }
@@ -279,14 +260,12 @@ static int parse_simpletok(struct parser *p)
       // Check for escaped newline (line continuation)
       case '\\':
         nextch = peek(p);
-        if (nextch == '\r')
-        {
+        if (nextch == '\r') {
           next(p);
           nextch = peek(p);
         }
         
-        if (nextch == '\n')
-        {
+        if (nextch == '\n') {
           next(p);
           next(p);
           continue;
@@ -305,33 +284,30 @@ static int parse_simpletok(struct parser *p)
 
       case '|':
         next(p);
-        if (p->ch == '|')
-        {
+        if (p->ch == '|') {
           next(p);
           return T_OR;
-        }
-        else
+        } else {
           return T_PIPE;
+        }
 
       case '&':
         next(p);
-        if (p->ch == '&')
-        {
+        if (p->ch == '&') {
           next(p);
           return T_AND;
-        }
-        else
+        } else {
           return T_BGND;
+        }
 
       case ';':
         next(p);
-        if (p->ch == ';')
-        {
+        if (p->ch == ';') {
           next(p);
           return T_ECASE;
-        }
-        else
+        } else {
           return T_SEMI;
+        }
 
       case '(':
         next(p);
@@ -342,8 +318,7 @@ static int parse_simpletok(struct parser *p)
         return T_RP;
 
       case '`':
-        if (p->flags & P_BQUOTE)
-        {
+        if (p->flags & P_BQUOTE) {
           next(p);
           return T_BQ;
         }
@@ -359,8 +334,7 @@ static int parse_simpletok(struct parser *p)
 // Parse a string part of a word and add it to the tree in parse node
 //
 
-static void parse_string(struct parser *p, int flags)
-{
+static void parse_string(struct parser *p, int flags) {
   char *text;
   union node *node;
 
@@ -373,10 +347,9 @@ static void parse_string(struct parser *p, int flags)
   node->nargstr.flags = p->quot | flags;
   node->nargstr.text = text;
 
-  if (p->node == NULL)
+  if (p->node == NULL) {
     p->tree = p->node = node;
-  else
-  {
+  } else {
     p->node->list.next = node;
     p->node = node;
   }
@@ -386,8 +359,7 @@ static void parse_string(struct parser *p, int flags)
 // Parse shell keywords
 //
 
-static int parse_keyword(struct parser *p)
-{
+static int parse_keyword(struct parser *p) {
   int len;
   char *str;
   int ti, si;
@@ -395,12 +367,10 @@ static int parse_keyword(struct parser *p)
   len = ststrlen(p->mark);
   str = ststrptr(p->mark);
 
-  if (p->tok != T_NAME)
-  {
+  if (p->tok != T_NAME) {
     if (len != 1) return 0;
     
-    switch (*str)
-    {
+    switch (*str) {
       case '{': p->tok = T_BEGIN; return 1;
       case '}': p->tok = T_END; return 1;
       case '!': p->tok = T_NOT; return 1;
@@ -412,24 +382,20 @@ static int parse_keyword(struct parser *p)
   // Longest keyword is until/while
   if (len > 5) return 0;
   
-  for (ti = TI_CASE; ti <= TI_WHILE; ti++)
-  {
+  for (ti = TI_CASE; ti <= TI_WHILE; ti++) {
     // Surely not found when char current is below token char
     if (str[0] < tokens[ti].name[0]) break;
 
-    for (si = 0; si <= len; si++)
-    {
+    for (si = 0; si <= len; si++) {
       // Keyword match
-      if (si == len)
-      {
-        if (tokens[ti].name[si] == '\0')
-        {
+      if (si == len) {
+        if (tokens[ti].name[si] == '\0') {
           p->tok = (1 << ti);
           return 1;
         }
-      }
-      else if (str[si] != tokens[ti].name[si])
+      } else if (str[si] != tokens[ti].name[si]) {
         break;
+      }
     }
   }
   
@@ -440,8 +406,7 @@ static int parse_keyword(struct parser *p)
 // Parses a here-doc body, ending at <delim>
 //
 
-static int parse_here(struct parser *p, char *delim, int nosubst)
-{
+static int parse_here(struct parser *p, char *delim, int nosubst) {
   int rc = 0;
   int dlen;
 
@@ -449,18 +414,15 @@ static int parse_here(struct parser *p, char *delim, int nosubst)
   p->node = NULL;
   dlen = strlen(delim);
 
-  for (;;)
-  {
+  for (;;) {
     // If nosubst is set we treat it like single-quoted otherwise
     // like double-quoted, allowing parameter and command expansions
-    if ((nosubst ? parse_squoted : parse_dquoted)(p))
-    {
+    if ((nosubst ? parse_squoted : parse_dquoted)(p)) {
       rc = -1;
       break;
     }
     
-    if (p->quot == Q_UNQUOTED)
-    {
+    if (p->quot == Q_UNQUOTED) {
       stputc(p->mark, (nosubst ? '\'' : '"'));
       continue;
     }
@@ -468,8 +430,7 @@ static int parse_here(struct parser *p, char *delim, int nosubst)
     // When the parser yields an argstr node 
     // we have to check for the delimiter
     parse_string(p, 0);
-    if (p->node->type == N_ARGSTR)
-    {
+    if (p->node->type == N_ARGSTR) {
       char *str;
       int slen;
 
@@ -493,8 +454,7 @@ static int parse_here(struct parser *p, char *delim, int nosubst)
 // Parse here-docs
 //
 
-static void parse_heredocs(struct parser *p)
-{
+static void parse_heredocs(struct parser *p) {
   struct parserstate ps;
   char *delim;
   union node *here;
@@ -503,8 +463,7 @@ static void parse_heredocs(struct parser *p)
   push_parser(p, &ps, P_HERE);
   here = p->herelist;
   p->herelist = NULL;
-  while (here)
-  {
+  while (here) {
     // Expand the delimiter
     // TODO do real expansion, for now just take first argument
     delim = here->nredir.list->nargstr.text;
@@ -533,8 +492,7 @@ static void parse_heredocs(struct parser *p)
 // output operators: >, >>, >|, >, <>
 // 
 
-static int parse_redir(struct parser *p, int rf, int fd)
-{
+static int parse_redir(struct parser *p, int rf, int fd) {
   // Initialize fd to 0 for input, 1 for output
   if (fd == -1) fd = rf;
 
@@ -542,18 +500,15 @@ static int parse_redir(struct parser *p, int rf, int fd)
   if (next(p) < 0) return T_EOF;
 
   // Parse input redirection operator (3.7.1)
-  if (rf & R_IN)
-  {
-    switch (p->ch)
-    {
+  if (rf & R_IN) {
+    switch (p->ch) {
       case '<':
         // << is here-doc (3.7.4)
         rf |= R_HERE;
         next(p);
 
         // <<- means strip leading tabs and trailing whitespace
-        if (p->ch == '-')
-        {
+        if (p->ch == '-') {
           rf |= R_STRIP;
           next(p);
         }
@@ -582,10 +537,8 @@ static int parse_redir(struct parser *p, int rf, int fd)
   }
 
   // Parse output redirection operator (3.7.2)
-  if (rf & R_OUT)
-  {
-    switch (p->ch)
-    {
+  if (rf & R_OUT) {
+    switch (p->ch) {
       case '&':
         // >& is dup2() (3.7.6)
         rf |= R_DUP;
@@ -610,8 +563,7 @@ static int parse_redir(struct parser *p, int rf, int fd)
     }
   }
   
-  if (parse_gettok(p, P_DEFAULT) & (T_NAME | T_WORD))
-  {
+  if (parse_gettok(p, P_DEFAULT) & (T_NAME | T_WORD)) {
     union node *node;
 
     node = alloc_node(p, N_REDIR);
@@ -620,8 +572,7 @@ static int parse_redir(struct parser *p, int rf, int fd)
     node->nredir.list = p->tree;
     p->tree = node;
 
-    if (node->nredir.flags & R_HERE)
-    {
+    if (node->nredir.flags & R_HERE) {
       union node **nptr;
 
       nptr = &p->herelist;
@@ -640,8 +591,7 @@ static int parse_redir(struct parser *p, int rf, int fd)
 // Parse arithmetic expressions
 //
 
-static int parse_arith(struct parser *p)
-{
+static int parse_arith(struct parser *p) {
   // TODO: implement
   return 0;
 }
@@ -650,14 +600,12 @@ static int parse_arith(struct parser *p)
 // Parse parameter substitutions 
 //
 
-static int parse_param(struct parser *p)
-{
+static int parse_param(struct parser *p) {
   int braces = 0;
   struct parserstate ps;
   union node *node;
   
-  if (p->ch == '{')
-  {
+  if (p->ch == '{') {
     braces++;
     next(p);
   }
@@ -669,10 +617,9 @@ static int parse_param(struct parser *p)
   node->nargparam.word = NULL;
   node->nargparam.num = -1;
 
-  if (p->node == NULL)
+  if (p->node == NULL) {
     p->tree = p->node = node;
-  else
-  {
+  } else {
     p->node->list.next = node;
     p->node = node;
   }
@@ -680,20 +627,17 @@ static int parse_param(struct parser *p)
   // If we have # as first char in substitution and we're inside a ${}
   // then check if the next char is a valid parameter char. If so then
   // it's a string length subst.
-  if (p->ch == '#' && braces)
-  {
+  if (p->ch == '#' && braces) {
     int ch = peek(p);
 
-    if (ch > 0 && is_param(ch))
-    {
+    if (ch > 0 && is_param(ch)) {
       node->nargparam.flags |= S_STRLEN;
       next(p);
     }
   }
 
   // Check for special arguments
-  switch (p->ch)
-  {
+  switch (p->ch) {
     case '#': node->nargparam.flags |= S_ARGC; break;
     case '*': node->nargparam.flags |= S_ARGV; break;
     case '@': node->nargparam.flags |= S_ARGVS; break;
@@ -707,30 +651,23 @@ static int parse_param(struct parser *p)
   stputc(p->mark, p->ch);
   next(p);
 
-  if (!(node->nargparam.flags & S_SPECIAL))
-  {
+  if (!(node->nargparam.flags & S_SPECIAL)) {
     // Check if it is numeric, if so assume S_ARG
-    if (is_digit(p->ch))
-    {
+    if (is_digit(p->ch)) {
       node->nargparam.flags |= S_ARG;
       stputc(p->mark, p->ch);
       next(p);
       
       // Now get the complete parameter number
-      if (braces)
-      {
-        while (p->ch > 0 && is_digit(p->ch))
-        {
+      if (braces) {
+        while (p->ch > 0 && is_digit(p->ch)) {
           stputc(p->mark, p->ch);
           next(p);
         }
       }
-    }
-    else
-    {
+    } else {
       // Now get the complete variable name
-      while (p->ch > 0 && is_name(p->ch))
-      {
+      while (p->ch > 0 && is_name(p->ch)) {
         stputc(p->mark, p->ch);
         next(p);
       }
@@ -748,46 +685,37 @@ static int parse_param(struct parser *p)
   while (p->ch > 0 && is_space(p->ch)) next(p);
 
   // Done parsing?
-  if (p->ch == '}')
-  {
+  if (p->ch == '}') {
     next(p);
     return 0;
   }
   
   // Check for remove prefix/suffix pattern
-  if (p->ch == '%')
-  {
+  if (p->ch == '%') {
     next(p);
-    if (p->ch == '%')
-    {
+    if (p->ch == '%') {
       node->nargparam.flags |= S_RLSFX;
       next(p);
-    }
-    else
+    } else {
       node->nargparam.flags |= S_RSSFX;
-  }
-  else if (p->ch == '#')
-  {
+    }
+  } else if (p->ch == '#') {
     next(p);
-    if (p->ch == '#')
-    {
+    if (p->ch == '#') {
       node->nargparam.flags |= S_RLPFX;
       next(p);
-    }
-    else
+    } else {
       node->nargparam.flags |= S_RSPFX;
-  }
-  else
+    }
+  } else {
   {
     // : before -, =, ?, + means take care of set but null and not only of unset
-    if (p->ch == ':')
-    {
+    if (p->ch == ':') {
       node->nargparam.flags |= S_NULL;
       next(p);
     }
     
-    switch (p->ch)
-    {
+    switch (p->ch) {
       case '-': node->nargparam.flags |= S_DEFAULT; next(p); break;
       case '=': node->nargparam.flags |= S_ASGNDEF; next(p); break;
       case '?': node->nargparam.flags |= S_ERRNULL; next(p); break;
@@ -808,12 +736,12 @@ static int parse_param(struct parser *p)
 // Parse substitution
 //
 
-static int parse_subst(struct parser *p)
-{  
-  if (p->ch == '(')
+static int parse_subst(struct parser *p) {
+  if (p->ch == '(') {
     return parse_bquoted(p);
-  else if (is_param(p->ch) || p->ch == '{')
+  } else if (is_param(p->ch) || p->ch == '{') {
     return parse_param(p);
+  }
   
   stputc(p->mark, '$');
   return 0;
@@ -823,8 +751,7 @@ static int parse_subst(struct parser *p)
 // Parse backquoted commands
 //
 
-static int parse_bquoted(struct parser *p)
-{
+static int parse_bquoted(struct parser *p) {
   union node *cmdlist;
   union node *node;
   struct parserstate ps;
@@ -832,14 +759,11 @@ static int parse_bquoted(struct parser *p)
 
   if (p->tok == T_NAME) p->tok = T_WORD;
   
-  if (p->ch == '(')
-  {
+  if (p->ch == '(') {
     if (p->ch == '(') return parse_arith(p);
     push_parser(p, &ps, P_DEFAULT);
     bq = 0;
-  }
-  else
-  {
+  } else {
     push_parser(p, &ps, P_BQUOTE);
     bq = 1;
   }
@@ -859,10 +783,9 @@ static int parse_bquoted(struct parser *p)
   node->nargcmd.flags = (bq ? S_BQUOTE : 0) | p->quot;
   node->nargcmd.list = cmdlist;
 
-  if (p->node == NULL)
+  if (p->node == NULL) {
     p->tree = p->node = node;
-  else
-  {
+  } else {
     p->node->list.next = node;
     p->node = node;
   }
@@ -874,17 +797,14 @@ static int parse_bquoted(struct parser *p)
 // Parse single-quoted text
 //
 
-static int parse_squoted(struct parser *p)
-{
+static int parse_squoted(struct parser *p) {
   if (p->tok == T_NAME) p->tok = T_WORD;
   p->quot = Q_SQUOTED;
   
-  for (;;) 
-  {
+  for (;;) {
     if (p->ch < 0) return -1;
   
-    if (p->ch == '\'')
-    {
+    if (p->ch == '\'') {
       parse_string(p, 0);
       next(p);
       p->quot = Q_UNQUOTED;
@@ -894,8 +814,7 @@ static int parse_squoted(struct parser *p)
     //if (is_esc(p->ch) && !(p->flags & P_HERE)) stputc(p->mark,  '\\');
     stputc(p->mark, p->ch);
     
-    if (p->ch == '\n')
-    {
+    if (p->ch == '\n') {
       next(p);
       break;
     }
@@ -911,45 +830,34 @@ static int parse_squoted(struct parser *p)
 // Parse double-quoted text
 //
 
-static int parse_dquoted(struct parser *p)
-{
+static int parse_dquoted(struct parser *p) {
   if (p->tok == T_NAME) p->tok = T_WORD;
   p->quot = Q_DQUOTED;
   
-  for (;;) 
-  {  
+  for (;;) {
     if (p->ch < 0) return -1;
 
     // Only ", $ and ` must be escaped
-    if (p->ch == '\\')
-    {
+    if (p->ch == '\\') {
       if (next(p) < 0) return -1;
       
-      if (is_desc(p->ch))
-      {
+      if (is_desc(p->ch)) {
         stputc(p->mark, p->ch);
         next(p);
-      }
-      else
+      } else {
         stputc(p->mark, '\\');
-
+      }
       continue;
-    }
-    else if (p->ch == '`')
-    {
+    } else if (p->ch == '`') {
       parse_string(p, 0);
       if (parse_bquoted(p)) break;
       continue;
-    }
-    else if (p->ch == '$')
-    {
+    } else if (p->ch == '$') {
       parse_string(p, 0);
       next(p);
       if (parse_subst(p)) break;
       continue;
-    }
-    else if (p->ch == '"')
-    {
+    } else if (p->ch == '"') {
       parse_string(p, 0);
       next(p);
       p->quot = Q_UNQUOTED;
@@ -960,8 +868,7 @@ static int parse_dquoted(struct parser *p)
     stputc(p->mark, p->ch);
     
     // Return on a newline for the here-doc delimiter check
-    if (p->ch == '\n')
-    {
+    if (p->ch == '\n') {
       next(p);
       break;
     }
@@ -977,42 +884,33 @@ static int parse_dquoted(struct parser *p)
 // Parse unqouted text
 //
 
-static int parse_unquoted(struct parser *p)
-{
+static int parse_unquoted(struct parser *p) {
   int flags = 0;
 
   // Set the quotation mode
   p->quot = Q_UNQUOTED;
   
-  for (;;) 
-  {  
-    if (p->ch == '\\')
-    {
+  for (;;) {
+    if (p->ch == '\\') {
       // Everything can be escaped, escape next char
       if (next(p) < 0) return -1;
       p->tok = T_WORD;
       
       // Remember when escaped for here-delimiter
       flags |= S_ESCAPED;
-    }
-    else if (p->ch == '"')
-    {
+    } else if (p->ch == '"') {
       // Enter double-quotation mode
       parse_string(p, 0);
       next(p);
       p->quot = Q_DQUOTED;
       break;
-    }
-    else if (p->ch == '\'')
-    {
+    } else if (p->ch == '\'') {
       // Enter single-quotation mode
       parse_string(p, 0);
       next(p);
       p->quot = Q_SQUOTED;
       break;
-    }
-    else if (p->ch == '`')
-    {
+    } else if (p->ch == '`') {
       // Enter command substitution mode
       parse_string(p, 0);
       
@@ -1024,44 +922,32 @@ static int parse_unquoted(struct parser *p)
       if (parse_bquoted(p)) break;
 
       continue;
-    }
-    else if (p->ch == '$')
-    {
+    } else if (p->ch == '$') {
       // Enter parameter substitution mode
       parse_string(p, 0);
       next(p);
       if (parse_subst(p)) break;
       continue;
-    }
-    else if (p->ch == '<' || p->ch == '>')
-    {
+    } else if (p->ch == '<' || p->ch == '>') {
       // Handle redirections
       int fd = (p->ch == '<' ? 0 : 1);
       if (ststrlen(p->mark) > 0) fd = atoi(ststr(p->mark));
       if (fd != -1) return parse_redir(p, (p->ch == '<' ? R_IN : R_OUT), fd);
-    }    
-    else if (p->flags & P_SUBSTW)
-    {
+    } else if (p->flags & P_SUBSTW) {
       // On a substition word in ${name:word} we parse until a right brace occurs
-      if (p->ch == '}')
-      {
+      if (p->ch == '}') {
         next(p);
         parse_string(p, flags);
         return 1;
       }
-    }
-    else if (is_ctrl(p->ch) || is_space(p->ch) || p->ch < 0)
-    {
+    } else if (is_ctrl(p->ch) || is_space(p->ch) || p->ch < 0) {
       // If we're looking for keywords, there is no word tree and 
       // there is a string in the parser we check for keywords
-      if ((p->flags & P_NOKEYWD) || p->tree || ststrlen(p->mark) < 0 || !parse_keyword(p))
-      {
+      if ((p->flags & P_NOKEYWD) || p->tree || ststrlen(p->mark) < 0 || !parse_keyword(p)) {
         parse_string(p, flags);
       }
       return 1;
-    }
-    else if (is_esc(p->ch))
-    {
+    } else if (is_esc(p->ch)) {
       // If it is a character subject to globbing then set S_GLOB flag
       if (p->tok != T_ASSIGN) flags |= S_GLOB;
     }
@@ -1082,20 +968,17 @@ static int parse_unquoted(struct parser *p)
 // Parse a word token
 //
 
-static int parse_word(struct parser *p)
-{
+static int parse_word(struct parser *p) {
   // Prepare for parsing word token
   p->tree = NULL;
   p->node = NULL;
   p->quot = Q_UNQUOTED;
   p->tok = T_NAME;
   
-  for (;;)
-  {
+  for (;;) {
     if (p->ch < 0) break;
     
-    switch (p->quot)
-    {
+    switch (p->quot) {
       case Q_DQUOTED: 
         if (!parse_dquoted(p)) continue; 
         break;
@@ -1120,13 +1003,11 @@ static int parse_word(struct parser *p)
 // Get a token
 //
 
-static int parse_gettok(struct parser *p, int tempflags)
-{
+static int parse_gettok(struct parser *p, int tempflags) {
   int oldflags = p->flags;
   p->flags |= tempflags;
   
-  if (!p->pushback || ((p->flags & P_SKIPNL) && p->tok == T_NL))
-  {
+  if (!p->pushback || ((p->flags & P_SKIPNL) && p->tok == T_NL)) {
     p->tok = -1;
     
     // Skip whitespace
@@ -1139,8 +1020,7 @@ static int parse_gettok(struct parser *p, int tempflags)
     if (p->tok == -1) p->tok = parse_word(p);
 
 #if 0
-    if (p->tok != -1)
-    {
+    if (p->tok != -1) {
       int i, n;
       for (i = 0, n = p->tok; n > 1; i++, n >>= 1);
       printf("[tok %s]", tokens[i].name);
@@ -1164,8 +1044,7 @@ static int parse_gettok(struct parser *p, int tempflags)
 // can be preceded or followed by an arbitrary number of <newline>s.
 //
 
-static union node *parse_compound_list(struct parser *p)
-{
+static union node *parse_compound_list(struct parser *p) {
   union node *list;
   union node **nptr;
 
@@ -1176,8 +1055,7 @@ static union node *parse_compound_list(struct parser *p)
   while (parse_gettok(p, P_DEFAULT) & T_NL);
   p->pushback++;
 
-  for (;;)
-  {
+  for (;;) {
     // Try to parse a list
     *nptr = parse_list(p);
 
@@ -1210,8 +1088,7 @@ static union node *parse_compound_list(struct parser *p)
 //                        environment.
 // 
 
-static union node *parse_grouping(struct parser *p)
-{
+static union node *parse_grouping(struct parser *p) {
   int tok;
   union node **rptr;
   union node *grouping;
@@ -1222,8 +1099,7 @@ static union node *parse_grouping(struct parser *p)
   if (!(tok = parse_expect(p, P_DEFAULT, T_BEGIN | T_LP))) return NULL;
   
   // Parse compound content and create a compound node if there are commands
-  if ((compound_list = parse_compound_list(p)))
-  {
+  if ((compound_list = parse_compound_list(p))) {
     grouping = alloc_node(p, tok == T_BEGIN ? N_CMDLIST : N_SUBSHELL);
     grouping->ngrp.cmds = compound_list;
   }
@@ -1231,13 +1107,11 @@ static union node *parse_grouping(struct parser *p)
   // Expect the appropriate ending token
   if  (!parse_expect(p, P_DEFAULT, tok == T_BEGIN ? T_END : T_RP)) return NULL;
 
-  if (grouping)
-  {
+  if (grouping) {
     rptr = &grouping->ngrp.rdir;
 
     // Now any redirections may follow
-    while (parse_gettok(p, P_DEFAULT) & T_REDIR)
-    {
+    while (parse_gettok(p, P_DEFAULT) & T_REDIR) {
       *rptr = p->tree;
       rptr = &p->tree->list.next;
     }
@@ -1252,8 +1126,7 @@ static union node *parse_grouping(struct parser *p)
 // Parse simple command (3.9.1)
 //
 
-union node *parse_simple_command(struct parser *p)
-{
+union node *parse_simple_command(struct parser *p) {
   union node **aptr, *args;
   union node **vptr, *vars;
   union node **rptr, *rdir;
@@ -1266,15 +1139,12 @@ union node *parse_simple_command(struct parser *p)
   rptr = &rdir;
 
   end = 0;
-  while (!end)
-  {
+  while (!end) {
     // Look for assignments only when we have no args yet
-    switch (parse_gettok(p, P_DEFAULT))
-    {
+    switch (parse_gettok(p, P_DEFAULT)) {
       case T_ASSIGN:
         // Handle variable assignments
-        if (!(p->flags & P_NOASSIGN))
-        {
+        if (!(p->flags & P_NOASSIGN)) {
           *vptr = parse_getarg(p);
           vptr = &(*vptr)->list.next;
           break;
@@ -1321,8 +1191,7 @@ union node *parse_simple_command(struct parser *p)
 // Parse if conditional (3.9.4.4)
 //
 
-static union node *parse_if(struct parser *p)
-{
+static union node *parse_if(struct parser *p) {
   union node *node;
   union node *list;
   union node **nptr;
@@ -1331,8 +1200,7 @@ static union node *parse_if(struct parser *p)
   nptr = &node;
 
   // Parse if and elif statements in a loop
-  do
-  {
+  do {
     // Create new N_IF node and parse the test expression
     *nptr = alloc_node(p, N_IF);
     if ((list = parse_compound_list(p)) == NULL) return NULL;
@@ -1351,13 +1219,12 @@ static union node *parse_if(struct parser *p)
   while (parse_gettok(p, P_DEFAULT) == T_ELIF);
 
   // Check if we have an else-block, parse it if so
-  if (p->tok == T_ELSE)
-  {
+  if (p->tok == T_ELSE) {
     if ((list = parse_compound_list(p)) == NULL) return NULL;
     *nptr = list;
-  }
-  else
+  } else {
     p->pushback++;
+  }
 
   // Next token must be a T_FI 
   if (!parse_expect(p, P_DEFAULT, T_FI)) return NULL;
@@ -1369,8 +1236,7 @@ static union node *parse_if(struct parser *p)
 // Parse while/until loops (3.9.4.5 and 3.9.4.6)
 //
 
-static union node *parse_loop(struct parser *p)
-{
+static union node *parse_loop(struct parser *p) {
   union node *node;
   union node *list;
 
@@ -1398,8 +1264,7 @@ static union node *parse_loop(struct parser *p)
 // Parse for loop (3.9.4.2)
 //
 
-union node *parse_for(struct parser *p)
-{
+union node *parse_for(struct parser *p) {
   union node *node = NULL;
   union node **nptr;
 
@@ -1413,11 +1278,9 @@ union node *parse_for(struct parser *p)
   nptr = &node->nfor.args;
 
   // Next token can be 'in'
-  if (parse_gettok(p, P_DEFAULT) & T_IN)
-  {
+  if (parse_gettok(p, P_DEFAULT) & T_IN) {
     // Now parse the arguments and build a list of them
-    while (parse_gettok(p, P_DEFAULT) & (T_WORD | T_NAME | T_ASSIGN))
-    {
+    while (parse_gettok(p, P_DEFAULT) & (T_WORD | T_NAME | T_ASSIGN)) {
       *nptr = parse_getarg(p);
       nptr = &(*nptr)->list.next;
     }
@@ -1453,8 +1316,7 @@ union node *parse_for(struct parser *p)
 //  The ;; is optional for the last compound-list.
 //
 
-static union node *parse_case(struct parser *p)
-{
+static union node *parse_case(struct parser *p) {
   union node *node;
   union node **cptr;
   union node **pptr;
@@ -1473,8 +1335,7 @@ static union node *parse_case(struct parser *p)
 
   // Parse the cases
   cptr = &node->ncase.list;
-  while (!(parse_gettok(p, P_SKIPNL) & T_ESAC))
-  {
+  while (!(parse_gettok(p, P_SKIPNL) & T_ESAC)) {
     // Patterns may be introduced with '('
     if (!(p->tok & T_LP)) p->pushback++;
 
@@ -1482,8 +1343,7 @@ static union node *parse_case(struct parser *p)
     pptr = &(*cptr)->ncasenode.pats;
 
     // Parse the pattern list
-    while (parse_gettok(p, P_SKIPNL) & (T_WORD | T_NAME | T_ASSIGN))
-    {
+    while (parse_gettok(p, P_SKIPNL) & (T_WORD | T_NAME | T_ASSIGN)) {
       *pptr = parse_getarg(p);
       pptr = &(*pptr)->list.next;
       if (!(parse_gettok(p, P_DEFAULT) & T_PIPE)) break;
@@ -1510,16 +1370,14 @@ static union node *parse_case(struct parser *p)
 // Parse a compound- or a simple-command
 //
 
-static union node *parse_command(struct parser *p, int tempflags)
-{
+static union node *parse_command(struct parser *p, int tempflags) {
   int tok;
   union node *command;
   union node **rptr;
  
   tok = parse_gettok(p, tempflags);
 
-  switch (tok)
-  {
+  switch (tok) {
     case T_FOR:
       // T_FOR begins a for-loop statement
       command = parse_for(p);
@@ -1563,8 +1421,7 @@ static union node *parse_command(struct parser *p, int tempflags)
       return NULL;
   }
       
-  if (command)
-  {
+  if (command) {
     // They all can have redirections, so parse these now
     rptr = &command->ncmd.rdir;
 
@@ -1575,8 +1432,7 @@ static union node *parse_command(struct parser *p, int tempflags)
     //
     while (*rptr) rptr = &(*rptr)->list.next;
 
-    while (parse_gettok(p, P_DEFAULT) & T_REDIR)
-    {
+    while (parse_gettok(p, P_DEFAULT) & T_REDIR) {
       *rptr = p->tree;
       rptr = &p->tree->list.next;
     }
@@ -1591,8 +1447,7 @@ static union node *parse_command(struct parser *p, int tempflags)
 // Parse a pipeline (3.9.2)
 //
 
-static union node *parse_pipeline(struct parser *p)
-{
+static union node *parse_pipeline(struct parser *p) {
   int negate = 0;
   union node *node;
   union node *pipeline;
@@ -1606,8 +1461,7 @@ static union node *parse_pipeline(struct parser *p)
   if ((node = parse_command(p, P_DEFAULT)) == NULL) return NULL;
 
   // On a T_PIPE, create a new pipeline
-  if ((tok = parse_gettok(p, P_DEFAULT)) == T_PIPE)
-  {
+  if ((tok = parse_gettok(p, P_DEFAULT)) == T_PIPE) {
     // Create new pipeline node
     pipeline = alloc_node(p, N_PIPELINE);
 
@@ -1617,17 +1471,14 @@ static union node *parse_pipeline(struct parser *p)
 
     // Parse commands and add them to the pipeline 
     // as long as there are pipe tokens
-    do
-    {
-      if ((node = parse_command(p, P_SKIPNL)) == NULL) 
-      {
+    do {
+      if ((node = parse_command(p, P_SKIPNL)) == NULL) {
         parse_error(p, "missing command in pipeline");
         return NULL;
       }
       *cmdptr = node;
       cmdptr = &node->ncmd.next;
-    }
-    while (parse_gettok(p, P_DEFAULT) == T_PIPE);
+    } while (parse_gettok(p, P_DEFAULT) == T_PIPE);
 
     // Set command to the pipeline
     node = pipeline;
@@ -1636,8 +1487,7 @@ static union node *parse_pipeline(struct parser *p)
   p->pushback++;
 
   // Link in a N_NOT node if requested
-  if (negate)
-  {
+  if (negate) {
     union node *neg;
     neg = alloc_node(p, N_NOT);
     neg->nandor.cmd0 = node;
@@ -1659,8 +1509,7 @@ static union node *parse_pipeline(struct parser *p)
 // Returns NULL if no commands
 //
 
-static union node *parse_and_or(struct parser *p)
-{
+static union node *parse_and_or(struct parser *p) {
   union node *n0;
   union node *n1;
   union node *n2;
@@ -1668,14 +1517,11 @@ static union node *parse_and_or(struct parser *p)
 
   // Parse a command or a pipeline first
   n0 = parse_pipeline(p);
-
-  while (n0)
-  {
+  while (n0) {
     tok = parse_gettok(p, P_DEFAULT);
 
     // Whether && nor ||, it's not a list, return the pipeline
-    if (!(tok & (T_AND | T_OR)))
-    {
+    if (!(tok & (T_AND | T_OR))) {
       p->pushback++;
       break;
     }
@@ -1686,8 +1532,7 @@ static union node *parse_and_or(struct parser *p)
     p->pushback++;
 
     // Try to parse another pipeline
-    if ((n1 = parse_pipeline(p)) == NULL)
-    {
+    if ((n1 = parse_pipeline(p)) == NULL) {
       p->pushback++;
       break;
     }
@@ -1716,8 +1561,7 @@ static union node *parse_and_or(struct parser *p)
 // 
 //
 
-static union node *parse_list(struct parser *p)
-{
+static union node *parse_list(struct parser *p) {
   union node *list;
   union node **nptr;
   union node *group;
@@ -1727,8 +1571,7 @@ static union node *parse_list(struct parser *p)
   list = NULL;
   nptr = &list;
 
-  while ((*nptr = parse_and_or(p)))
-  {
+  while ((*nptr = parse_and_or(p))) {
     tok = parse_gettok(p, P_DEFAULT);
 
     // <newline> terminates the list and eats the token
@@ -1736,8 +1579,7 @@ static union node *parse_list(struct parser *p)
   
     // There must be & or ; after the and-or list, 
     // otherwise the list will be terminated
-    if (!(tok & (T_SEMI | T_BGND)))
-    {
+    if (!(tok & (T_SEMI | T_BGND))) {
       p->pushback++;
       break;
     }
@@ -1761,16 +1603,13 @@ static union node *parse_list(struct parser *p)
 // Parse next complete command in source
 //
 
-union node *parse(struct parser *p)
-{
+union node *parse(struct parser *p) {
   union node *node; 
        
   if (p->tok & T_EOF) return NULL;
   node = parse_list(p);
-  if (!node)
-  {
-    if (!p->errors && !(p->tok & (T_EOF | T_NL | T_SEMI | T_BGND)))
-    {
+  if (!node) {
+    if (!p->errors && !(p->tok & (T_EOF | T_NL | T_SEMI | T_BGND))) {
       parse_error(p, "unexpected end");
     }
   }
@@ -1781,8 +1620,7 @@ union node *parse(struct parser *p)
 // Initialize parser
 //
 
-int parse_init(struct parser *p, int flags, struct inputfile *source, struct stkmark *mark)
-{
+int parse_init(struct parser *p, int flags, struct inputfile *source, struct stkmark *mark) {
   memset(p, 0, sizeof(struct parser));
   p->flags = flags;
   p->source = source;

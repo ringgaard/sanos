@@ -70,8 +70,7 @@ typedef unsigned long pte_t;
 #define GET_PDE(vaddr) (pdir[PDEIDX(vaddr)])
 #define GET_PTE(vaddr) (ptab[PTABIDX(vaddr)])
 
-struct pdirstat
-{
+struct pdirstat {
   int present;
   int user;
   int kernel;

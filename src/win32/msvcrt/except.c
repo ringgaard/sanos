@@ -36,15 +36,13 @@
 
 __declspec(dllimport) VOID __stdcall RtlUnwind(PEXCEPTION_FRAME endframe, LPVOID eip, PEXCEPTION_RECORD rec, DWORD retval);
 
-typedef struct _SCOPETABLE
-{
+typedef struct _SCOPETABLE {
   int previousTryLevel;
   int (*lpfnFilter)(PEXCEPTION_POINTERS);
   int (*lpfnHandler)(void);
 } SCOPETABLE, *PSCOPETABLE;
 
-typedef struct _MSVCRT_EXCEPTION_FRAME
-{
+typedef struct _MSVCRT_EXCEPTION_FRAME {
   EXCEPTION_FRAME *prev;
   void (*handler)(PEXCEPTION_RECORD, PEXCEPTION_FRAME, PCONTEXT, PEXCEPTION_RECORD);
   PSCOPETABLE scopetable;
@@ -55,16 +53,14 @@ typedef struct _MSVCRT_EXCEPTION_FRAME
 
 #define TRYLEVEL_END (-1) // End of trylevel list
 
-static __inline EXCEPTION_FRAME *push_frame(EXCEPTION_FRAME *frame)
-{
+static __inline EXCEPTION_FRAME *push_frame(EXCEPTION_FRAME *frame) {
   struct tib *tib = gettib();
   frame->prev = (EXCEPTION_FRAME *) tib->except;
   tib->except = (struct xcptrec *) frame;
   return frame->prev;
 }
 
-static __inline EXCEPTION_FRAME *pop_frame(EXCEPTION_FRAME *frame)
-{
+static __inline EXCEPTION_FRAME *pop_frame(EXCEPTION_FRAME *frame) {
   struct tib *tib = gettib();
   tib->except = (struct xcptrec *) frame->prev;
   return frame->prev;
@@ -72,22 +68,18 @@ static __inline EXCEPTION_FRAME *pop_frame(EXCEPTION_FRAME *frame)
 
 #pragma warning(disable: 4731) // C4731: frame pointer register 'ebp' modified by inline assembly code
 
-static void call_finally_block(void *code_block, void *base_ptr)
-{
- __asm
- {
+static void call_finally_block(void *code_block, void *base_ptr) {
+ __asm {
    mov eax, [code_block]
    mov ebp, [base_ptr]
    call eax
  }
 }
 
-static DWORD call_filter(void *func, void *arg, void *base_ptr)
-{
+static DWORD call_filter(void *func, void *arg, void *base_ptr) {
   DWORD rc;
 
-  __asm
-  {
+  __asm {
     push ebp
     push [arg]
     mov eax, [func]
@@ -101,20 +93,17 @@ static DWORD call_filter(void *func, void *arg, void *base_ptr)
   return rc;
 }
 
-static EXCEPTION_DISPOSITION msvcrt_nested_handler(EXCEPTION_RECORD *rec, EXCEPTION_FRAME *frame, CONTEXT *ctxt, EXCEPTION_FRAME **dispatcher)
-{
+static EXCEPTION_DISPOSITION msvcrt_nested_handler(EXCEPTION_RECORD *rec, EXCEPTION_FRAME *frame, CONTEXT *ctxt, EXCEPTION_FRAME **dispatcher) {
   if (rec->ExceptionFlags & (EH_UNWINDING | EH_EXIT_UNWIND)) return ExceptionContinueSearch;
   *dispatcher = frame;
   return ExceptionCollidedUnwind;
 }
 
-void _global_unwind2(PEXCEPTION_FRAME frame)
-{
+void _global_unwind2(PEXCEPTION_FRAME frame) {
   RtlUnwind(frame, 0, 0, 0);
 }
 
-void _local_unwind2(MSVCRT_EXCEPTION_FRAME* frame, int trylevel)
-{
+void _local_unwind2(MSVCRT_EXCEPTION_FRAME* frame, int trylevel) {
   MSVCRT_EXCEPTION_FRAME *curframe = frame;
   EXCEPTION_FRAME reg;
 
@@ -125,13 +114,11 @@ void _local_unwind2(MSVCRT_EXCEPTION_FRAME* frame, int trylevel)
   reg.prev = (PEXCEPTION_FRAME) gettib()->except;
   push_frame(&reg);
 
-  while (frame->trylevel != TRYLEVEL_END && frame->trylevel != trylevel)
-  {
+  while (frame->trylevel != TRYLEVEL_END && frame->trylevel != trylevel) {
     int curtrylevel = frame->scopetable[frame->trylevel].previousTryLevel;
     curframe = frame;
     curframe->trylevel = curtrylevel;
-    if (!frame->scopetable[curtrylevel].lpfnFilter)
-    {
+    if (!frame->scopetable[curtrylevel].lpfnFilter) {
       syslog(LOG_WARNING, "warning: __try block cleanup not implemented - expect crash!");
       // TODO: Remove current frame, set ebp, call frame->scopetable[curtrylevel].lpfnHandler()
     }
@@ -139,8 +126,7 @@ void _local_unwind2(MSVCRT_EXCEPTION_FRAME* frame, int trylevel)
   pop_frame(&reg);
 }
 
-int _except_handler3(PEXCEPTION_RECORD rec, MSVCRT_EXCEPTION_FRAME* frame, PCONTEXT context, void *dispatcher)
-{
+int _except_handler3(PEXCEPTION_RECORD rec, MSVCRT_EXCEPTION_FRAME* frame, PCONTEXT context, void *dispatcher) {
   long retval;
   int trylevel;
   EXCEPTION_POINTERS exceptPtrs;
@@ -152,14 +138,11 @@ int _except_handler3(PEXCEPTION_RECORD rec, MSVCRT_EXCEPTION_FRAME* frame, PCONT
 
   __asm cld;
 
-  if (rec->ExceptionFlags & (EH_UNWINDING | EH_EXIT_UNWIND))
-  {
+  if (rec->ExceptionFlags & (EH_UNWINDING | EH_EXIT_UNWIND)) {
     // Unwinding the current frame
      _local_unwind2(frame, TRYLEVEL_END);
     return ExceptionContinueSearch;
-  }
-  else
-  {
+  } else {
     // Hunting for handler
     exceptPtrs.ExceptionRecord = rec;
     exceptPtrs.ContextRecord = context;
@@ -167,10 +150,8 @@ int _except_handler3(PEXCEPTION_RECORD rec, MSVCRT_EXCEPTION_FRAME* frame, PCONT
     trylevel = frame->trylevel;
     pScopeTable = frame->scopetable;
 
-    while (trylevel != TRYLEVEL_END)
-    {
-      if (pScopeTable[trylevel].lpfnFilter)
-      {
+    while (trylevel != TRYLEVEL_END) {
+      if (pScopeTable[trylevel].lpfnFilter) {
         //syslog(LOG_DEBUG, "filter = %p", pScopeTable[trylevel].lpfnFilter);
 
         retval = call_filter(pScopeTable[trylevel].lpfnFilter, &exceptPtrs, &frame->_ebp);
@@ -181,8 +162,7 @@ int _except_handler3(PEXCEPTION_RECORD rec, MSVCRT_EXCEPTION_FRAME* frame, PCONT
 
         if (retval == EXCEPTION_CONTINUE_EXECUTION) return ExceptionContinueExecution;
 
-        if (retval == EXCEPTION_EXECUTE_HANDLER)
-        {
+        if (retval == EXCEPTION_EXECUTE_HANDLER) {
           // Unwind all higher frames, this one will handle the exception
           _global_unwind2((PEXCEPTION_FRAME) frame);
           _local_unwind2(frame, trylevel);

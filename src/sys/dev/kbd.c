@@ -154,14 +154,11 @@ int keyboard_buffer_out = 0;
 // Wait for keyboard ready
 //
 
-static void kbd_wait()
-{
+static void kbd_wait() {
   int tmo = KEYBOARD_TIMEOUT;
 
-  while (inp(KBD_STATUS) & KBD_STAT_IBF)
-  {
-    if (--tmo == 0)
-    {
+  while (inp(KBD_STATUS) & KBD_STAT_IBF) {
+    if (--tmo == 0) {
       kprintf("kbd: busy timeout\n");
       return;
     }
@@ -174,39 +171,35 @@ static void kbd_wait()
 // Read data from keyboard
 //
 
-static int kbd_read_data()
-{
+static int kbd_read_data() {
   unsigned char status;
 
   status = inp(KBD_STATUS);
-  if (status & KBD_STAT_OBF) 
-  {
+  if (status & KBD_STAT_OBF) {
     unsigned char data = inp(KBD_DATA);
 
-    if (status & (KBD_STAT_GTO | KBD_STAT_PERR)) 
+    if (status & (KBD_STAT_GTO | KBD_STAT_PERR)) {
       return -EIO;
-    else
+    } else {
       return data;
-  }
-  else
+    }
+  } else {
     return -EAGAIN;
+  }
 }
 
 //
 // Wait for data from keyboard
 //
 
-static int kbd_wait_for_data()
-{
+static int kbd_wait_for_data() {
   int tmo = KEYBOARD_TIMEOUT;
 
-  while (1)
-  {
+  while (1) {
     int rc = kbd_read_data();
     if (rc >= 0) return rc;
 
-    if (--tmo == 0)
-    {
+    if (--tmo == 0) {
       //kprintf("kbd: read timeout\n");
       return -ETIMEOUT;
     }
@@ -219,8 +212,7 @@ static int kbd_wait_for_data()
 // Write data to keyboard
 //
 
-static void kbd_write_data(unsigned char data)
-{
+static void kbd_write_data(unsigned char data) {
   outp(KBD_DATA, data);
 }
 
@@ -228,8 +220,7 @@ static void kbd_write_data(unsigned char data)
 // Write command to keyboard
 //
 
-static void kbd_write_command(unsigned char cmd)
-{
+static void kbd_write_command(unsigned char cmd) {
   outp(KBD_COMMAND, cmd);
 }
 
@@ -237,8 +228,7 @@ static void kbd_write_command(unsigned char cmd)
 // Reboot machine
 //
 
-void kbd_reboot()
-{
+void kbd_reboot() {
   kbd_wait();
   kbd_write_command(0xFE);
   cli();
@@ -249,8 +239,7 @@ void kbd_reboot()
 // Set keyboard LEDs
 //
 
-static void setleds()
-{
+static void setleds() {
   kbd_write_data(KBD_CMD_SET_LEDS);
   kbd_wait();
   kbd_write_data(led_status);
@@ -261,10 +250,8 @@ static void setleds()
 // Insert into keyboard buffer
 //
 
-static void insert_key(unsigned char ch)
-{
-  if (((keyboard_buffer_in + 1) & (KEYBOARD_BUFFER_SIZE - 1)) != keyboard_buffer_out)
-  {
+static void insert_key(unsigned char ch) {
+  if (((keyboard_buffer_in + 1) & (KEYBOARD_BUFFER_SIZE - 1)) != keyboard_buffer_out) {
     keyboard_buffer[keyboard_buffer_in] = ch;
     keyboard_buffer_in = (keyboard_buffer_in + 1) & (KEYBOARD_BUFFER_SIZE - 1);
     release_sem(&kbdsem, 1);
@@ -275,15 +262,13 @@ static void insert_key(unsigned char ch)
 // Process keyboard scancode
 //
 
-static void process_scancode(unsigned int scancode)
-{
+static void process_scancode(unsigned int scancode) {
   unsigned int keycode = 0;
   struct keytable *kt;
   int state;
 
   // In scancode mode just insert scancode
-  if (keymap == -1)
-  {
+  if (keymap == -1) {
     insert_key((unsigned char) scancode);
     return;
   }
@@ -293,8 +278,7 @@ static void process_scancode(unsigned int scancode)
   if (!kt) return;
 
   // Extended scancode
-  if (scancode == 0xE0)
-  {
+  if (scancode == 0xE0) {
     ext = 1;
     return;
   }
@@ -302,35 +286,30 @@ static void process_scancode(unsigned int scancode)
   //kprintf("scancode %02X %s%s\n", scancode & 0x7F, scancode & 0x80 ? "break" : "make", ext ? " ext" : "");
 
   // Ctrl-Alt-SysRq
-  if ((control_keys & (CK_LCTRL | CK_LALT)) && scancode == 0xD4) 
-  {
+  if ((control_keys & (CK_LCTRL | CK_LALT)) && scancode == 0xD4) {
     dbg_break();
     return;
   }
 
   // Ctrl-Alt-Del
-  if ((control_keys & (CK_LCTRL | CK_LALT)) && scancode == 0x53) 
-  {
+  if ((control_keys & (CK_LCTRL | CK_LALT)) && scancode == 0x53) {
     if (ctrl_alt_del_enabled) reboot();
   }
 
   // LED keys, i.e. scroll lock, num lock, and caps lock
-  if (scancode == 0x3A)
-  {
+  if (scancode == 0x3A) {
     // Caps lock
     led_status ^= LED_CAPS_LOCK;
     setleds();
   }
 
-  if (scancode == 0x45)
-  {
+  if (scancode == 0x45) {
     // Num lock
     led_status ^= LED_NUM_LOCK;
     setleds();
   }
 
-  if (scancode == 0x46)
-  {
+  if (scancode == 0x46) {
     // Scroll lock
     led_status ^= LED_SCROLL_LOCK;
     setleds();
@@ -358,42 +337,38 @@ static void process_scancode(unsigned int scancode)
   if (ext && scancode == 0x38) control_keys |= CK_RALT;
   if (ext && scancode == (0x38 | 0x80)) control_keys &= ~CK_RALT;
 
-  if (scancode < MAX_SCANCODES)
-  {
-    if ((control_keys & (CK_LSHIFT | CK_RSHIFT)) && (led_status & LED_CAPS_LOCK))
+  if (scancode < MAX_SCANCODES) {
+    if ((control_keys & (CK_LSHIFT | CK_RSHIFT)) && (led_status & LED_CAPS_LOCK)) {
       state = KBSTATE_SHIFTCAPS;
-    else if (control_keys & (CK_LSHIFT | CK_RSHIFT))
+    } else if (control_keys & (CK_LSHIFT | CK_RSHIFT)) {
       state = KBSTATE_SHIFT;
-    else if (control_keys & (CK_LCTRL | CK_RCTRL))
+    } else if (control_keys & (CK_LCTRL | CK_RCTRL)) {
       state = KBSTATE_CTRL;
-    else if (control_keys & CK_LALT) 
+    } else if (control_keys & CK_LALT) {
       state = KBSTATE_ALT;
-    else if (control_keys & CK_RALT)
+    } else if (control_keys & CK_RALT) {
       state = KBSTATE_ALTGR;
-    else if ((control_keys & (CK_LSHIFT | CK_RSHIFT)) && (led_status & LED_NUM_LOCK))
+    } else if ((control_keys & (CK_LSHIFT | CK_RSHIFT)) && (led_status & LED_NUM_LOCK)) {
       state = KBSTATE_SHIFTNUM;
-    else if (led_status & LED_CAPS_LOCK) 
+    } else if (led_status & LED_CAPS_LOCK) {
       state = KBSTATE_CAPSLOCK;
-    else if (led_status & LED_NUM_LOCK) 
+    } else if (led_status & LED_NUM_LOCK) {
       state = KBSTATE_NUMLOCK;
-    else if (control_keys == 0) 
+    } else if (control_keys == 0) {
       state = KBSTATE_NORMAL;
-
+    }
     //kprintf("(%d,%x)", state, control_keys);
 
-    if (ext)
+    if (ext) {
       keycode = kt->extended[scancode][state];
-    else
+    } else {
       keycode = kt->normal[scancode][state];
+    }
 
-    if (keycode != 0)
-    {
-      if (keycode <= 0xFF)
-      {
+    if (keycode != 0) {
+      if (keycode <= 0xFF) {
         insert_key((unsigned char) keycode);
-      }
-      else
-      {
+      } else {
         insert_key((unsigned char) (keycode & 0xFF));
         insert_key((unsigned char) (keycode >> 8));
       }
@@ -407,13 +382,11 @@ static void process_scancode(unsigned int scancode)
 // Keyboard DPC
 //
 
-static void keyb_dpc(void *arg)
-{
+static void keyb_dpc(void *arg) {
   unsigned int scancode;
   unsigned char status;
 
-  while ((status = inp(KBD_STATUS)) & KBD_STAT_OBF) 
-  {
+  while ((status = inp(KBD_STATUS)) & KBD_STAT_OBF) {
     // Get next scancode from keyboard
     scancode = inp(KBD_DATA) & 0xFF;
     //kprintf("key %d\n", scancode);
@@ -429,8 +402,7 @@ static void keyb_dpc(void *arg)
 // Keyboard interrupt handler
 //
 
-int keyboard_handler(struct context *ctxt, void *arg)
-{
+int keyboard_handler(struct context *ctxt, void *arg) {
   queue_irq_dpc(&kbddpc, keyb_dpc, NULL);
 
   return 0;
@@ -440,8 +412,7 @@ int keyboard_handler(struct context *ctxt, void *arg)
 // Get one character from keyboard
 //
 
-int getch(unsigned int timeout)
-{
+int getch(unsigned int timeout) {
   unsigned char ch;
   int rc;
 
@@ -459,8 +430,7 @@ int getch(unsigned int timeout)
 // Returns 0 if keyboard buffer is empty, else returns 1.
 //
 
-int kbhit()
-{
+int kbhit() {
   return keyboard_buffer_in != keyboard_buffer_out;
 }
 
@@ -468,15 +438,13 @@ int kbhit()
 // Reset keyboard hardware
 //
 
-int reset_keyboard()
-{
+int reset_keyboard() {
   int status;
 
   // Test the keyboard interface
   kbd_wait();
   kbd_write_command(KBD_CCMD_SELF_TEST);
-  if (kbd_wait_for_data() != 0x55)
-  {
+  if (kbd_wait_for_data() != 0x55) {
     kprintf(KERN_WARNING "kbd: Keyboard failed self test\n");
     return -EIO;
   }
@@ -485,8 +453,7 @@ int reset_keyboard()
   // to test the keyboard clock and data lines.
   kbd_wait();
   kbd_write_command(KBD_CCMD_KBD_TEST);
-  if (kbd_wait_for_data() != 0x00)
-  {
+  if (kbd_wait_for_data() != 0x00) {
     kprintf(KERN_WARNING "kbd: Keyboard interface failed self test\n");
     return -EIO;
   }
@@ -497,35 +464,30 @@ int reset_keyboard()
 
   // Reset keyboard. If the read times out then the assumption is that no keyboard is
   // plugged into the machine.
-  while (1)
-  {
+  while (1) {
     kbd_wait();
     kbd_write_data(KBD_CMD_RESET);
     status = kbd_wait_for_data();
     if (status == KBD_REPLY_ACK) break;
-    if (status != KBD_REPLY_RESEND)
-    {
+    if (status != KBD_REPLY_RESEND) {
       kprintf(KERN_ERR  "kbd: Keyboard reset failed, no ACK\n");
       return -EIO;
     }
   }
 
-  if ((status = kbd_wait_for_data()) != KBD_REPLY_POR)
-  {
+  if ((status = kbd_wait_for_data()) != KBD_REPLY_POR) {
     kprintf(KERN_ERR  "kbd: Keyboard reset failed, no POR (%d)\n", status);
     return -EIO;
   }
 
   // Set keyboard controller mode. During this, the keyboard should be
   // in the disabled state.
-  while (1)
-  {
+  while (1) {
     kbd_wait();
     kbd_write_data(KBD_CMD_DISABLE);
     status = kbd_wait_for_data();
     if (status == KBD_REPLY_ACK) break;
-    if (status != KBD_REPLY_RESEND)
-    {
+    if (status != KBD_REPLY_RESEND) {
       kprintf(KERN_ERR  "kbd: Disable keyboard: no ACK\n");
       return -EIO;
     }
@@ -539,8 +501,7 @@ int reset_keyboard()
 
   kbd_wait();
   kbd_write_data(KBD_CMD_ENABLE);
-  if (kbd_wait_for_data() != KBD_REPLY_ACK)
-  {
+  if (kbd_wait_for_data() != KBD_REPLY_ACK) {
     kprintf("kbd: Enable keyboard: no ACK\n");
     return -EIO;
   }
@@ -548,16 +509,14 @@ int reset_keyboard()
   // Set the typematic rate to maximum
   kbd_wait();
   kbd_write_data(KBD_CMD_SET_RATE);
-  if (kbd_wait_for_data() != KBD_REPLY_ACK)
-  {
+  if (kbd_wait_for_data() != KBD_REPLY_ACK) {
     kprintf(KERN_ERR "kbd: Set rate: no ACK\n");
     return -EIO;
   }
   
   kbd_wait();
   kbd_write_data(0x00);
-  if (kbd_wait_for_data() != KBD_REPLY_ACK)
-  {
+  if (kbd_wait_for_data() != KBD_REPLY_ACK) {
     kprintf(KERN_ERR "kbd: Set rate: no ACK\n");
     return -EIO;
   }
@@ -573,14 +532,11 @@ int reset_keyboard()
 // Change keyboard map
 //
 
-int change_keyboard_map(char *kbdname)
-{
+int change_keyboard_map(char *kbdname) {
   int i;
 
-  for (i = 0; i < MAX_KEYTABLES; i++)
-  {
-    if (keytables[i] && strcmp(keytables[i]->name, kbdname) == 0) 
-    {
+  for (i = 0; i < MAX_KEYTABLES; i++) {
+    if (keytables[i] && strcmp(keytables[i]->name, kbdname) == 0)  {
       keymap = i;
       return 0;
     }
@@ -590,8 +546,7 @@ int change_keyboard_map(char *kbdname)
   return -1;
 }
 
-int change_keyboard_map_id(int id)
-{
+int change_keyboard_map_id(int id) {
   if (id < -1 || id >= MAX_KEYTABLES || id != -1 && !keytables[id]) return -EINVAL;
   keymap = id;
   return 0;
@@ -601,8 +556,7 @@ int change_keyboard_map_id(int id)
 // Initialize keyboard
 //
 
-void init_keyboard(int reset)
-{
+void init_keyboard(int reset) {
   char *kbdname;
 
   // Initialize keyboard tables

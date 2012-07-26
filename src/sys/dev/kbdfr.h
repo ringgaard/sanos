@@ -32,8 +32,7 @@
 // SUCH DAMAGE.
 // 
 
-struct keytable frkeys = 
-{
+struct keytable frkeys = {
   "fr",
 
   // Normal scancodes

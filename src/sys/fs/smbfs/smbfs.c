@@ -34,25 +34,21 @@
 #include <os/krnl.h>
 #include "smb.h"
 
-int smb_lockfs(struct fs *fs)
-{
+int smb_lockfs(struct fs *fs) {
   struct smb_share *share = (struct smb_share *) fs->data;
   return wait_for_object(&share->server->lock, VFS_LOCK_TIMEOUT);
 }
 
-void smb_unlockfs(struct fs *fs)
-{
+void smb_unlockfs(struct fs *fs) {
   struct smb_share *share = (struct smb_share *) fs->data;
   release_mutex(&share->server->lock);
 }
 
-int smb_mkfs(char *devname, char *opts)
-{
+int smb_mkfs(char *devname, char *opts) {
   return -ENOSYS;
 }
 
-int smb_mount(struct fs *fs, char *opts)
-{
+int smb_mount(struct fs *fs, char *opts) {
   struct ip_addr ipaddr;
   char username[SMB_NAMELEN];
   char password[SMB_NAMELEN];
@@ -77,15 +73,13 @@ int smb_mount(struct fs *fs, char *opts)
       strlen(username) + 1 + 
       strlen(domain) + 1 +
       strlen(SMB_CLIENT_OS) + 1 +
-      strlen(SMB_CLIENT_LANMAN) + 1 > SMB_NAMELEN)
-  {
+      strlen(SMB_CLIENT_LANMAN) + 1 > SMB_NAMELEN) {
     return -EBUF;
   }
 
   if (strlen(password) + 1 + 
       strlen(fs->mntfrom) + 1 + 
-      strlen(SMB_SERVICE_DISK) + 1 > SMB_NAMELEN)
-  {
+      strlen(SMB_SERVICE_DISK) + 1 > SMB_NAMELEN) {
     return -EBUF;
   }
 
@@ -97,8 +91,7 @@ int smb_mount(struct fs *fs, char *opts)
 
   // Get connection to server
   rc = smb_get_connection(share, &ipaddr, port, domain, username, password);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     kfree(share);
     return rc;
   }
@@ -106,8 +99,7 @@ int smb_mount(struct fs *fs, char *opts)
   // Connect to share
   rc = smb_connect_tree(share);
   if (rc == -ECONN || rc == -ERST) rc = smb_reconnect(share);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     smb_release_connection(share);
     kfree(share);
     return rc;
@@ -118,8 +110,7 @@ int smb_mount(struct fs *fs, char *opts)
   return 0;
 }
 
-int smb_umount(struct fs *fs)
-{
+int smb_umount(struct fs *fs) {
   struct smb_share *share = (struct smb_share *) fs->data;
 
   // Disconnect from share
@@ -134,8 +125,7 @@ int smb_umount(struct fs *fs)
   return 0;
 }
 
-int smb_statfs(struct fs *fs, struct statfs *buf)
-{
+int smb_statfs(struct fs *fs, struct statfs *buf) {
   struct smb_share *share = (struct smb_share *) fs->data;
   struct smb_fsinfo_request req;
   struct smb_info_allocation rsp;
@@ -158,8 +148,7 @@ int smb_statfs(struct fs *fs, struct statfs *buf)
   return 0;
 }
 
-int smb_open(struct file *filp, char *name)
-{
+int smb_open(struct file *filp, char *name) {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb *smb;
   struct smb_file *file;
@@ -174,8 +163,7 @@ int smb_open(struct file *filp, char *name)
   if (rc < 0) return rc;
 
   // Determine open mode
-  switch (filp->flags & (O_CREAT | O_EXCL | O_TRUNC))
-  {
+  switch (filp->flags & (O_CREAT | O_EXCL | O_TRUNC)) {
     case 0:
     case O_EXCL:
       // Open existing file
@@ -210,18 +198,18 @@ int smb_open(struct file *filp, char *name)
   }
 
   // Determine file access
-  if (filp->flags & O_RDWR)
+  if (filp->flags & O_RDWR) {
     access = SMB_ACCESS_GENERIC_READ | SMB_ACCESS_GENERIC_WRITE;
-  else if (filp->flags & O_WRONLY)
+  } else if (filp->flags & O_WRONLY) {
     access = SMB_ACCESS_GENERIC_WRITE;
-  else if (filp->flags & (O_CREAT | O_TRUNC))
+  } else if (filp->flags & (O_CREAT | O_TRUNC)) {
     access = SMB_ACCESS_GENERIC_READ | SMB_ACCESS_GENERIC_WRITE;
-  else
+  } else {
     access = SMB_ACCESS_GENERIC_READ;
+  }
 
   // Determine sharing access
-  switch (SH_FLAGS(filp->flags))
-  {
+  switch (SH_FLAGS(filp->flags)) {
     case SH_DENYRW:
       sharing = 0;
       break;
@@ -244,13 +232,13 @@ int smb_open(struct file *filp, char *name)
   }
 
   // Determine file attributes
-  if ((filp->flags & O_CREAT) != 0 && (filp->mode & S_IWRITE) == 0) 
+  if ((filp->flags & O_CREAT) != 0 && (filp->mode & S_IWRITE) == 0) {
     attrs = SMB_FILE_ATTR_READONLY;
-  else
+  } else {
     attrs = SMB_FILE_ATTR_NORMAL;
+  }
 
-  if (filp->flags & O_TEMPORARY)
-  {
+  if (filp->flags & O_TEMPORARY) {
     attrs |= SMB_FILE_FLAG_DELETE_ON_CLOSE;
     access |= SMB_ACCESS_DELETE;
     sharing |= SMB_FILE_SHARE_DELETE;
@@ -258,10 +246,11 @@ int smb_open(struct file *filp, char *name)
 
   if (filp->flags & O_SHORT_LIVED) attrs |= SMB_FILE_ATTR_TEMPORARY;
 
-  if (filp->flags & O_SEQUENTIAL)
+  if (filp->flags & O_SEQUENTIAL) {
     attrs |= SMB_FILE_FLAG_SEQUENTIAL_SCAN;
-  else if (filp->flags & O_RANDOM)
+  } else if (filp->flags & O_RANDOM) {
     attrs |= SMB_FILE_FLAG_RANDOM_ACCESS;
+  }
 
   if (filp->flags & O_DIRECT) attrs |= SMB_FILE_FLAG_NO_BUFFERING | SMB_FILE_FLAG_WRITE_THROUGH;
 
@@ -281,8 +270,7 @@ int smb_open(struct file *filp, char *name)
   smb->params.req.create.impersonation_level = 0x02;
 
   rc = smb_request(share, smb, SMB_COM_NT_CREATE_ANDX, 24, name, strlen(name) + 1, 1);
-  if (rc < 0) 
-  {
+  if (rc < 0) {
     kfree(file);
     return rc;
   }
@@ -290,15 +278,17 @@ int smb_open(struct file *filp, char *name)
   file->fid = smb->params.rsp.create.fid;
   file->attrs = (unsigned short) smb->params.rsp.create.ext_file_attributes;
 
-  if (file->attrs & SMB_FILE_ATTR_DIRECTORY) 
+  if (file->attrs & SMB_FILE_ATTR_DIRECTORY) {
     file->statbuf.st_mode = S_IFDIR;
-  else
+  } else {
     file->statbuf.st_mode = S_IFREG;
+  }
 
-  if (file->attrs & SMB_FILE_ATTR_READONLY)
+  if (file->attrs & SMB_FILE_ATTR_READONLY) {
     file->statbuf.st_mode |= S_IREAD | S_IEXEC;
-  else
+  } else {
     file->statbuf.st_mode |= S_IREAD | S_IWRITE | S_IEXEC;
+  }
 
   file->statbuf.st_dev = NODEV;
   file->statbuf.st_ino = file->fid;
@@ -308,28 +298,26 @@ int smb_open(struct file *filp, char *name)
   file->statbuf.st_atime = ft2time(smb->params.rsp.create.last_access_time);
   file->statbuf.st_size = smb->params.rsp.create.end_of_file;
 
-  if (filp->flags & O_APPEND)
+  if (filp->flags & O_APPEND) {
     filp->pos = file->statbuf.st_size;
-  else
+  } else {
     filp->pos = 0;
+  }
 
   filp->data = file;
 
   return 0;
 }
 
-int smb_close(struct file *filp)
-{
+int smb_close(struct file *filp) {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb *smb;
   int rc;
 
-  if (filp->flags & F_DIR)
-  {
+  if (filp->flags & F_DIR) {
     struct smb_directory *dir = (struct smb_directory *) filp->data;
 
-    if (!dir->eos)
-    {
+    if (!dir->eos) {
       smb = smb_init(share, 0);
       smb->params.req.findclose.sid = dir->sid;
 
@@ -339,9 +327,7 @@ int smb_close(struct file *filp)
 
     kfree(dir);
     filp->data = NULL;
-  }
-  else
-  {
+  } else {
     struct smb_file *file = (struct smb_file *) filp->data;
 
     smb = smb_init(share, 0);
@@ -359,13 +345,11 @@ int smb_close(struct file *filp)
   return 0;
 }
 
-int smb_destroy(struct file *filp)
-{
+int smb_destroy(struct file *filp) {
   return 0;
 }
 
-int smb_fsync(struct file *filp)
-{
+int smb_fsync(struct file *filp) {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb_file *file = (struct smb_file *) filp->data;
   struct smb *smb;
@@ -382,8 +366,7 @@ int smb_fsync(struct file *filp)
   return 0;
 }
 
-static int smb_read_raw(struct smb_share *share, struct smb_file *file, void *data, size_t size, unsigned long pos)
-{
+static int smb_read_raw(struct smb_share *share, struct smb_file *file, void *data, size_t size, unsigned long pos) {
   struct smb *smb;
   unsigned char hdr[4];
   int len;
@@ -409,8 +392,7 @@ static int smb_read_raw(struct smb_share *share, struct smb_file *file, void *da
   return rc;
 }
 
-static int smb_read_normal(struct smb_share *share, struct smb_file *file, void *data, size_t size, off64_t pos)
-{
+static int smb_read_normal(struct smb_share *share, struct smb_file *file, void *data, size_t size, off64_t pos) {
   struct smb *smb;
   int len;
   int rc;
@@ -432,8 +414,7 @@ static int smb_read_normal(struct smb_share *share, struct smb_file *file, void 
   return len;
 }
 
-int smb_read(struct file *filp, void *data, size_t size, off64_t pos)
-{
+int smb_read(struct file *filp, void *data, size_t size, off64_t pos) {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb_file *file = (struct smb_file *) filp->data;
   char *p;
@@ -447,11 +428,9 @@ int smb_read(struct file *filp, void *data, size_t size, off64_t pos)
   left = size;
   p = (char *) data;
 
-  if (filp->pos < file->statbuf.st_size && pos < 0x80000000)
-  {
+  if (filp->pos < file->statbuf.st_size && pos < 0x80000000) {
     // Read data using raw mode
-    while (1)
-    {
+    while (1) {
       count = left;
       if (count > SMB_RAW_CHUNKSIZE) count = SMB_RAW_CHUNKSIZE;
 
@@ -468,8 +447,7 @@ int smb_read(struct file *filp, void *data, size_t size, off64_t pos)
   }
 
   // Read rest using normal mode
-  while (pos < file->statbuf.st_size && left > 0)
-  {
+  while (pos < file->statbuf.st_size && left > 0) {
     count = left;
     if (count > SMB_NORMAL_CHUNKSIZE) count = SMB_NORMAL_CHUNKSIZE;
 
@@ -485,8 +463,7 @@ int smb_read(struct file *filp, void *data, size_t size, off64_t pos)
   return size - left;
 }
 
-static int smb_write_normal(struct smb_share *share, struct smb_file *file, void *data, size_t size, off64_t pos)
-{
+static int smb_write_normal(struct smb_share *share, struct smb_file *file, void *data, size_t size, off64_t pos) {
   struct smb *smb;
   int rc;
 
@@ -505,8 +482,7 @@ static int smb_write_normal(struct smb_share *share, struct smb_file *file, void
   return smb->params.rsp.write.count;
 }
 
-int smb_write(struct file *filp, void *data, size_t size, off64_t pos)
-{
+int smb_write(struct file *filp, void *data, size_t size, off64_t pos) {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb_file *file = (struct smb_file *) filp->data;
   char *p;
@@ -522,8 +498,7 @@ int smb_write(struct file *filp, void *data, size_t size, off64_t pos)
   left = size;
   p = (char *) data;
 
-  while (left > 0)
-  {
+  while (left > 0) {
     count = left;
     if (count > SMB_NORMAL_CHUNKSIZE) count = SMB_NORMAL_CHUNKSIZE;
 
@@ -541,26 +516,22 @@ int smb_write(struct file *filp, void *data, size_t size, off64_t pos)
   return size;
 }
 
-int smb_ioctl(struct file *filp, int cmd, void *data, size_t size)
-{
+int smb_ioctl(struct file *filp, int cmd, void *data, size_t size) {
   return -ENOSYS;
 }
 
-off64_t smb_tell(struct file *filp)
-{
+off64_t smb_tell(struct file *filp) {
   if (filp->flags & F_DIR) return -EBADF;
 
   return filp->pos;
 }
 
-off64_t smb_lseek(struct file *filp, off64_t offset, int origin)
-{
+off64_t smb_lseek(struct file *filp, off64_t offset, int origin) {
   struct smb_file *file = (struct smb_file *) filp->data;
 
   if (filp->flags & F_DIR) return -EBADF;
 
-  switch (origin)
-  {
+  switch (origin) {
     case SEEK_END:
       offset += file->statbuf.st_size;
       break;
@@ -575,8 +546,7 @@ off64_t smb_lseek(struct file *filp, off64_t offset, int origin)
   return offset;
 }
 
-int smb_ftruncate(struct file *filp, off64_t size)
-{
+int smb_ftruncate(struct file *filp, off64_t size) {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb_file *file = (struct smb_file *) filp->data;
   struct smb_set_fileinfo_request req;
@@ -600,8 +570,7 @@ int smb_ftruncate(struct file *filp, off64_t size)
   return 0;
 }
 
-int smb_futime(struct file *filp, struct utimbuf *times)
-{
+int smb_futime(struct file *filp, struct utimbuf *times) {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb_file *file = (struct smb_file *) filp->data;
   struct smb_set_fileinfo_request req;
@@ -631,8 +600,7 @@ int smb_futime(struct file *filp, struct utimbuf *times)
   return 0;
 }
 
-int smb_utime(struct fs *fs, char *name, struct utimbuf *times)
-{
+int smb_utime(struct fs *fs, char *name, struct utimbuf *times) {
   struct file filp;
   int rc;
 
@@ -648,8 +616,7 @@ int smb_utime(struct fs *fs, char *name, struct utimbuf *times)
   return rc;
 }
 
-int smb_fstat(struct file *filp, struct stat64 *buffer)
-{
+int smb_fstat(struct file *filp, struct stat64 *buffer) {
   struct smb_file *file = (struct smb_file *) filp->data;
 
   if (filp->flags & F_DIR) return -EBADF;
@@ -659,8 +626,7 @@ int smb_fstat(struct file *filp, struct stat64 *buffer)
   return (int) file->statbuf.st_size;
 }
 
-int smb_stat(struct fs *fs, char *name, struct stat64 *buffer)
-{
+int smb_stat(struct fs *fs, char *name, struct stat64 *buffer) {
   struct smb_share *share = (struct smb_share *) fs->data;
   struct smb_pathinfo_request req;
   struct smb_file_basic_info rspb;
@@ -675,10 +641,8 @@ int smb_stat(struct fs *fs, char *name, struct stat64 *buffer)
   if (rc < 0) return rc;
 
   // Handle root mount point
-  if (!*name)
-  {
-    if (buffer)
-    {
+  if (!*name) {
+    if (buffer) {
       memset(buffer, 0, sizeof(struct stat64));
       buffer->st_atime = time(0);
       buffer->st_ctime = share->mounttime;
@@ -691,15 +655,13 @@ int smb_stat(struct fs *fs, char *name, struct stat64 *buffer)
 
   // Look in cache
   dentry = smb_find_in_cache(share, name);
-  if (dentry != NULL)
-  {
+  if (dentry != NULL) {
     if (buffer) memcpy(buffer, &dentry->statbuf, sizeof(struct stat64));
     return (int) dentry->statbuf.st_size;
   }
 
   // Query server for file information
-  if (buffer)
-  {
+  if (buffer) {
     req.infolevel = SMB_QUERY_FILE_BASIC_INFO;
     req.reserved = 0;
     strcpy(req.filename, name);
@@ -719,16 +681,16 @@ int smb_stat(struct fs *fs, char *name, struct stat64 *buffer)
   rc = smb_trans(share, TRANS2_QUERY_PATH_INFORMATION, &req, sizeof(req) - MAXPATH + strlen(name) + 1, NULL, 0, &dummy, &dummylen, &rsps, &rsplen);
   if (rc < 0) return rc;
 
-  if (buffer)
-  {
+  if (buffer) {
     memset(buffer, 0, sizeof(struct stat64));
 
-    if (rspb.attributes & SMB_FILE_ATTR_DIRECTORY) 
+    if (rspb.attributes & SMB_FILE_ATTR_DIRECTORY) {
       buffer->st_mode = S_IFDIR | S_IREAD | S_IWRITE;
-    else if (rspb.attributes & SMB_FILE_ATTR_READONLY)
+    } else if (rspb.attributes & SMB_FILE_ATTR_READONLY) {
       buffer->st_mode = S_IFREG | S_IREAD | S_IEXEC;
-    else
+    } else {
       buffer->st_mode = S_IFREG | S_IREAD | S_IWRITE | S_IEXEC;
+    }
 
     buffer->st_ino = 0;
     buffer->st_nlink = (short) rsps.number_of_links;
@@ -742,8 +704,7 @@ int smb_stat(struct fs *fs, char *name, struct stat64 *buffer)
   return (int) rsps.end_of_file;
 }
 
-int smb_mkdir(struct fs *fs, char *name, int mode)
-{
+int smb_mkdir(struct fs *fs, char *name, int mode) {
   struct smb_share *share = (struct smb_share *) fs->data;
   struct smb *smb;
   char namebuf[MAXPATH + 1 + 1];
@@ -766,8 +727,7 @@ int smb_mkdir(struct fs *fs, char *name, int mode)
   return 0;
 }
 
-int smb_rmdir(struct fs *fs, char *name)
-{
+int smb_rmdir(struct fs *fs, char *name) {
   struct smb_share *share = (struct smb_share *) fs->data;
   struct smb *smb;
   char namebuf[MAXPATH + 1 + 1];
@@ -790,8 +750,7 @@ int smb_rmdir(struct fs *fs, char *name)
   return 0;
 }
 
-int smb_rename(struct fs *fs, char *oldname, char *newname)
-{
+int smb_rename(struct fs *fs, char *oldname, char *newname) {
   struct smb_share *share = (struct smb_share *) fs->data;
   struct smb *smb;
   char namebuf[(MAXPATH + 1 + 1) * 2];
@@ -819,13 +778,11 @@ int smb_rename(struct fs *fs, char *oldname, char *newname)
   return 0;
 }
 
-int smb_link(struct fs *fs, char *oldname, char *newname)
-{
+int smb_link(struct fs *fs, char *oldname, char *newname) {
   return -ENOSYS;
 }
 
-int smb_unlink(struct fs *fs, char *name)
-{
+int smb_unlink(struct fs *fs, char *name) {
   struct smb_share *share = (struct smb_share *) fs->data;
   struct smb *smb;
   char namebuf[MAXPATH + 1 + 1];
@@ -848,8 +805,7 @@ int smb_unlink(struct fs *fs, char *name)
   return 0;
 }
 
-int smb_opendir(struct file *filp, char *name)
-{
+int smb_opendir(struct file *filp, char *name) {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb_findfirst_request req;
   struct smb_findfirst_response rsp;
@@ -875,8 +831,7 @@ int smb_opendir(struct file *filp, char *name)
   rsplen = sizeof(rsp);
   buflen = SMB_DIRBUF_SIZE;
   rc = smb_trans(share, TRANS2_FIND_FIRST2, &req, 12 + strlen(req.filename) + 1, NULL, 0, &rsp, &rsplen, dir->buffer, &buflen);
-  if (rc < 0) 
-  {
+  if (rc < 0) {
     kfree(dir);
     return rc;
   }
@@ -891,8 +846,7 @@ int smb_opendir(struct file *filp, char *name)
   return 0;
 }
 
-int smb_readdir(struct file *filp, struct direntry *dirp, int count)
-{
+int smb_readdir(struct file *filp, struct direntry *dirp, int count) {
   struct smb_share *share = (struct smb_share *) filp->fs->data;
   struct smb_directory *dir = (struct smb_directory *) filp->data;
   struct stat64 statbuf;
@@ -900,8 +854,7 @@ int smb_readdir(struct file *filp, struct direntry *dirp, int count)
   if (count != 1) return -EINVAL;
 
 again:
-  if (dir->entries_left == 0)
-  {
+  if (dir->entries_left == 0) {
     struct smb_findnext_request req;
     struct smb_findnext_response rsp;
     int rsplen;
@@ -928,8 +881,7 @@ again:
     if (dir->entries_left == 0) return 0;
   }
 
-  if (dir->fi->filename[0] == '.' && (dir->fi->filename[1] == 0 || (dir->fi->filename[1] == '.' && dir->fi->filename[2] == 0))) 
-  {
+  if (dir->fi->filename[0] == '.' && (dir->fi->filename[1] == 0 || (dir->fi->filename[1] == '.' && dir->fi->filename[2] == 0))) {
     dir->entries_left--;
     dir->fi = (struct smb_file_directory_info *) ((char *) dir->fi + dir->fi->next_entry_offset);
     goto again;
@@ -937,12 +889,13 @@ again:
 
   memset(&statbuf, 0, sizeof(struct stat64));
 
-  if (dir->fi->ext_file_attributes & SMB_FILE_ATTR_DIRECTORY) 
+  if (dir->fi->ext_file_attributes & SMB_FILE_ATTR_DIRECTORY) {
     statbuf.st_mode = S_IFDIR | S_IREAD;
-  else if (dir->fi->ext_file_attributes & SMB_FILE_ATTR_READONLY)
+  } else if (dir->fi->ext_file_attributes & SMB_FILE_ATTR_READONLY) {
     statbuf.st_mode = S_IFREG | S_IREAD | S_IEXEC;
-  else
+  } else {
     statbuf.st_mode = S_IFREG | S_IREAD | S_IWRITE | S_IEXEC;
+  }
 
   statbuf.st_nlink = 1;
   statbuf.st_ctime = ft2time(dir->fi->creation_time);
@@ -963,8 +916,7 @@ again:
   return 1;
 }
 
-struct fsops smbfsops =
-{
+struct fsops smbfsops = {
   0,
 
   smb_lockfs,
@@ -1013,7 +965,6 @@ struct fsops smbfsops =
   smb_readdir
 };
 
-void init_smbfs()
-{
+void init_smbfs() {
   register_filesystem("smbfs", &smbfsops);
 }

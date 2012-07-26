@@ -54,20 +54,16 @@ void qsort(void *base, unsigned num, unsigned width, int (*comp)(const void *, c
 recurse:
   size = (hi - lo) / width + 1;
 
-  if (size <= CUTOFF) 
-  {
+  if (size <= CUTOFF) {
     shortsort(lo, hi, width, comp);
-  }
-  else 
-  {
+  } else {
     mid = lo + (size / 2) * width;
     swap(mid, lo, width);
 
     l = lo;
     h = hi + width;
 
-    for (;;) 
-    {
+    for (;;) {
       do { l += width; } while (l <= hi && comp(l, lo) <= 0);
       do { h -= width; } while (h > lo && comp(h, lo) >= 0);
       if (h < l) break;
@@ -76,32 +72,25 @@ recurse:
 
     swap(lo, h, width);
 
-    if (h - 1 - lo >= hi - l) 
-    {
-      if (lo + width < h)
-      {
+    if (h - 1 - lo >= hi - l) {
+      if (lo + width < h) {
         lostk[stkptr] = lo;
         histk[stkptr] = h - width;
         ++stkptr;
       }
 
-      if (l < hi) 
-      {
+      if (l < hi) {
         lo = l;
         goto recurse;
       }
-    }
-    else
-    {
-      if (l < hi) 
-      {
+    } else {
+      if (l < hi) {
         lostk[stkptr] = l;
         histk[stkptr] = hi;
         ++stkptr;
       }
 
-      if (lo + width < h)
-      {
+      if (lo + width < h) {
         hi = h - width;
         goto recurse;
       }
@@ -109,22 +98,17 @@ recurse:
   }
 
   --stkptr;
-  if (stkptr >= 0) 
-  {
+  if (stkptr >= 0) {
     lo = lostk[stkptr];
     hi = histk[stkptr];
     goto recurse;
   }
-  else
-    return;
 }
 
-static void shortsort(char *lo, char *hi, unsigned width, int (*comp)(const void *, const void *))
-{
+static void shortsort(char *lo, char *hi, unsigned width, int (*comp)(const void *, const void *)) {
   char *p, *max;
 
-  while (hi > lo) 
-  {
+  while (hi > lo) {
     max = lo;
     for (p = lo + width; p <= hi; p += width) if (comp(p, max) > 0) max = p;
     swap(max, hi, width);
@@ -132,14 +116,11 @@ static void shortsort(char *lo, char *hi, unsigned width, int (*comp)(const void
   }
 }
 
-static void swap(char *a, char *b, unsigned width)
-{
+static void swap(char *a, char *b, unsigned width) {
   char tmp;
 
-  if (a != b)
-  {
-    while (width--) 
-    {
+  if (a != b) {
+    while (width--) {
       tmp = *a;
       *a++ = *b;
       *b++ = tmp;

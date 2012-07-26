@@ -53,8 +53,7 @@ typedef unsigned long in_addr_t;
 #ifndef _HOSTENT_DEFINED
 #define _HOSTENT_DEFINED
 
-struct hostent 
-{
+struct hostent {
   char *h_name;        // Official name of host
   char **h_aliases;    // Alias list
   short h_addrtype;    // Host address type
@@ -69,8 +68,7 @@ struct hostent
 #ifndef _PROTOENT_DEFINED
 #define _PROTOENT_DEFINED
 
-struct protoent
-{
+struct protoent {
   char *p_name;
   char **p_aliases;
   short p_proto;
@@ -81,8 +79,7 @@ struct protoent
 #ifndef _SERVENT_DEFINED
 #define _SERVENT_DEFINED
 
-struct servent 
-{
+struct servent {
   char *s_name;
   char **s_aliases;
   short s_port;

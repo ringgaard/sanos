@@ -41,13 +41,11 @@
 
 #define ETHER_ADDR_LEN 6
 
-struct eth_addr 
-{
+struct eth_addr {
   unsigned char addr[ETHER_ADDR_LEN];
 };
   
-struct eth_hdr 
-{
+struct eth_hdr {
   struct eth_addr dest;
   struct eth_addr src;
   unsigned short type;
@@ -55,8 +53,7 @@ struct eth_hdr
 
 #pragma pack(pop)
 
-__inline int eth_addr_isbroadcast(struct eth_addr *addr)
-{
+__inline int eth_addr_isbroadcast(struct eth_addr *addr) {
   int n;
   for (n = 0; n < ETHER_ADDR_LEN; n++) if (addr->addr[n] != 0xFF) return 0;
   return 1;

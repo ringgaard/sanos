@@ -41,17 +41,14 @@
 
 #define FORMAT_BLOCKSIZE        (64 * 1024)
 
-static void mark_group_desc_dirty(struct filsys *fs, int group)
-{
+static void mark_group_desc_dirty(struct filsys *fs, int group) {
   mark_buffer_updated(fs->cache, fs->groupdesc_buffers[group / fs->groupdescs_per_block]);
 }
 
-static int log2(int n)
-{
+static int log2(int n) {
   int l = 0;
   n >>= 1;
-  while (n) 
-  {
+  while (n) {
     l++;
     n >>= 1;
   }
@@ -59,20 +56,17 @@ static int log2(int n)
   return l;
 }
 
-static void dfs_sync(void *arg)
-{
+static void dfs_sync(void *arg) {
   struct filsys *fs = (struct filsys *) arg;
 
   // Write super block
-  if (fs->super_dirty) 
-  {
+  if (fs->super_dirty) {
     dev_write(fs->devno, fs->super, SECTORSIZE, 1, 0);
     fs->super_dirty = 0;
   }
 }
 
-static int parse_options(char *opts, struct fsoptions *fsopts)
-{
+static int parse_options(char *opts, struct fsoptions *fsopts) {
   fsopts->cache = get_num_option(opts, "cache", 0);
   fsopts->blocksize = get_num_option(opts, "blocksize", DEFAULT_BLOCKSIZE);
   fsopts->inode_ratio = get_num_option(opts, "inoderatio", DEFAULT_INODE_RATIO);
@@ -87,8 +81,7 @@ static int parse_options(char *opts, struct fsoptions *fsopts)
   return 0;
 }
 
-static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
-{
+static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts) {
   struct filsys *fs;
   dev_t devno;
   unsigned int sectcount;
@@ -133,20 +126,22 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
   fs->super->block_count =  sectcount / (fs->blocksize / SECTORSIZE);
 
   // Set cache size
-  if (fsopts->cache == 0)
+  if (fsopts->cache == 0) {
     fs->super->cache_buffers = DEFAULT_CACHE_BUFFERS;
-  else
+  } else {
     fs->super->cache_buffers = fsopts->cache;
+  }
   if (fs->super->cache_buffers > fs->super->block_count) fs->super->cache_buffers = fs->super->block_count;
 
   // The number of inodes in a group is computed as a ratio of the size of the group.
   // If the device has only one group the inode count is based on size of device.
   // The number of inodes per block is then rounded up to fit a whole number of blocks.
   fs->inodes_per_block = fs->blocksize / sizeof(struct inodedesc);
-  if (fs->super->blocks_per_group < fs->super->block_count)
+  if (fs->super->blocks_per_group < fs->super->block_count) {
     fs->super->inodes_per_group = fs->blocksize * fs->super->blocks_per_group / fsopts->inode_ratio;
-  else
+  } else {
     fs->super->inodes_per_group = fs->blocksize * fs->super->block_count / fsopts->inode_ratio;
+  }
   if (fs->super->inodes_per_group > fs->blocksize * 8) fs->super->inodes_per_group = fs->blocksize * 8;
   fs->super->inodes_per_group = (fs->super->inodes_per_group + fs->inodes_per_block - 1) / fs->inodes_per_block * fs->inodes_per_block;
   fs->inode_blocks_per_group = (fs->super->inodes_per_group * sizeof(struct inodedesc) + fs->blocksize - 1) / fs->blocksize;
@@ -170,8 +165,7 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
   // If the last group is too small to hold the bitmaps and inode table skip it
   blocks = fs->super->block_count % fs->super->blocks_per_group;
   if (blocks > 0 && blocks < fs->inode_blocks_per_group + 2) fs->super->group_count--;
-  if (fs->super->group_count == 0) 
-  {
+  if (fs->super->group_count == 0) {
     kprintf(KERN_ERR "dfs: filesystem too small\n");
     return NULL;
   }
@@ -182,8 +176,7 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
   fs->cache->nosync = 1;
 
   // Zero all blocks on disk
-  if ((fsopts->flags & FSOPT_QUICK) == 0)
-  {
+  if ((fsopts->flags & FSOPT_QUICK) == 0) {
     int percent;
     int prev_percent;
     int blocks_per_io;
@@ -193,24 +186,22 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
     memset(buffer, 0, FORMAT_BLOCKSIZE);
 
     prev_percent = -1;
-    for (i = fs->super->groupdesc_table_block + fs->groupdesc_blocks; i < fs->super->block_count; i += blocks_per_io)
-    {
+    for (i = fs->super->groupdesc_table_block + fs->groupdesc_blocks; i < fs->super->block_count; i += blocks_per_io) {
       int rc;
 
-      if (fsopts->flags & FSOPT_PROGRESS)
-      {
+      if (fsopts->flags & FSOPT_PROGRESS) {
         percent = (i / 100) * 100 / (fs->super->block_count / 100);
         if (percent != prev_percent) kprintf("%d%% complete\r", percent);
         prev_percent = percent;
       }
 
-      if (i + blocks_per_io > fs->super->block_count)
+      if (i + blocks_per_io > fs->super->block_count) {
         rc = dev_write(fs->devno, buffer, (fs->super->block_count - i) * fs->blocksize, i, 0);
-      else
+      } else {
         rc = dev_write(fs->devno, buffer, FORMAT_BLOCKSIZE, i, 0);
+      }
 
-      if (rc < 0)
-      {
+      if (rc < 0) {
         kprintf("dfs: error %d in format\n", rc);
         return NULL;
       }
@@ -224,14 +215,12 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
   fs->groupdesc_buffers = (struct buf **) kmalloc(sizeof(struct buf *) * fs->groupdesc_blocks);
   fs->groups = (struct blkgroup *) kmalloc(sizeof(struct group) * fs->super->group_count);
 
-  for (i = 0; i < fs->groupdesc_blocks; i++)
-  {
+  for (i = 0; i < fs->groupdesc_blocks; i++) {
     fs->groupdesc_buffers[i] = alloc_buffer(fs->cache, fs->super->groupdesc_table_block + i);
     if (!fs->groupdesc_buffers[i]) return NULL;
   }
 
-  for (i = 0; i < fs->super->group_count; i++)
-  {
+  for (i = 0; i < fs->super->group_count; i++) {
     gd = (struct groupdesc *) fs->groupdesc_buffers[i / fs->groupdescs_per_block]->data;
     gd += (i % fs->groupdescs_per_block);
 
@@ -251,8 +240,7 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
   fs->super->free_block_count = fs->super->block_count;
 
   // Initialize block bitmaps
-  for (i = 0; i < fs->super->group_count; i++)
-  {
+  for (i = 0; i < fs->super->group_count; i++) {
     gd = fs->groups[i].desc;
     blocks = 0;
     first_block = fs->super->blocks_per_group * i;
@@ -274,10 +262,11 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
     release_buffer(fs->cache, buf);
 
     // Determine the block count for the group. The last group may be truncated
-    if (fs->super->blocks_per_group * (i + 1) > fs->super->block_count)
+    if (fs->super->blocks_per_group * (i + 1) > fs->super->block_count) {
       gd->block_count = fs->super->block_count - fs->super->blocks_per_group * i;
-    else
+    } else {
       gd->block_count = fs->super->blocks_per_group;
+    }
 
     // Set the count of free blocks and inodes for group
     gd->free_inode_count = fs->super->inodes_per_group;
@@ -290,19 +279,16 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
   }
 
   // Zero out block and inode bitmaps and inode tables
-  if (fsopts->flags & FSOPT_QUICK)
-  {
+  if (fsopts->flags & FSOPT_QUICK) {
     buffer = (char *) kmalloc(fs->blocksize);
     memset(buffer, 0, fs->blocksize);
 
-    for (i = 0; i < fs->super->group_count; i++)
-    {
+    for (i = 0; i < fs->super->group_count; i++) {
       gd = fs->groups[i].desc;
 
       dev_write(fs->devno, buffer, fs->blocksize, gd->block_bitmap_block, 0);
       dev_write(fs->devno, buffer, fs->blocksize, gd->inode_bitmap_block, 0);
-      for (j = 0; j < fs->inode_blocks_per_group; j++)
-      {
+      for (j = 0; j < fs->inode_blocks_per_group; j++) {
         dev_write(fs->devno, buffer, fs->blocksize, gd->inode_table_block + j, 0);
       }
     }
@@ -311,11 +297,9 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
   }
 
   // Reserve inodes
-  for (i = 0; i < fs->super->reserved_inodes; i++)
-  {
+  for (i = 0; i < fs->super->reserved_inodes; i++) {
     ino = new_inode(fs, 0, 0);
-    if (ino != i) 
-    {
+    if (ino != i)  {
       kprintf(KERN_ERR "dfs: format expected inode %d, got %d\n", i, ino);
       return NULL;
     }
@@ -335,8 +319,7 @@ static struct filsys *create_filesystem(char *devname, struct fsoptions *fsopts)
   return fs;
 }
 
-static struct filsys *open_filesystem(char *devname, struct fsoptions *fsopts)
-{
+static struct filsys *open_filesystem(char *devname, struct fsoptions *fsopts) {
   struct filsys *fs;
   dev_t devno;
   struct groupdesc *gd;
@@ -355,8 +338,7 @@ static struct filsys *open_filesystem(char *devname, struct fsoptions *fsopts)
   // Allocate and read super block
   fs->super = (struct superblock *) kmalloc(SECTORSIZE);
   memset(fs->super, 0, SECTORSIZE);
-  if (dev_read(devno, fs->super, SECTORSIZE, 1, 0) != SECTORSIZE) 
-  {
+  if (dev_read(devno, fs->super, SECTORSIZE, 1, 0) != SECTORSIZE) {
     kprintf(KERN_ERR "dfs: unable to read superblock on device %s\n", device(devno)->name);
     free(fs->super);
     free(fs);
@@ -365,16 +347,14 @@ static struct filsys *open_filesystem(char *devname, struct fsoptions *fsopts)
   fs->super_dirty = 0;
 
   // Check signature and version
-  if (fs->super->signature != DFS_SIGNATURE)
-  {
+  if (fs->super->signature != DFS_SIGNATURE) {
     kprintf(KERN_ERR "dfs: invalid DFS signature on device %s\n", device(devno)->name);
     free(fs->super);
     free(fs);
     return NULL;
   }
 
-  if (fs->super->version != DFS_VERSION) 
-  {
+  if (fs->super->version != DFS_VERSION) {
     kprintf(KERN_ERR "dfs: invalid DFS version on device %s\n", device(devno)->name);
     free(fs->super);
     free(fs);
@@ -404,14 +384,12 @@ static struct filsys *open_filesystem(char *devname, struct fsoptions *fsopts)
   // Read group descriptors
   fs->groupdesc_buffers = (struct buf **) kmalloc(sizeof(struct buf *) * fs->groupdesc_blocks);
   fs->groups = (struct blkgroup *) kmalloc(sizeof(struct group) * fs->super->group_count);
-  for (i = 0; i < fs->groupdesc_blocks; i++)
-  {
+  for (i = 0; i < fs->groupdesc_blocks; i++) {
     fs->groupdesc_buffers[i] = get_buffer(fs->cache, fs->super->groupdesc_table_block + i);
     if (!fs->groupdesc_buffers[i]) return NULL;
   }
 
-  for (i = 0; i < fs->super->group_count; i++)
-  {
+  for (i = 0; i < fs->super->group_count; i++) {
     gd = (struct groupdesc *) fs->groupdesc_buffers[i / fs->groupdescs_per_block]->data;
     gd += (i % fs->groupdescs_per_block);
 
@@ -423,8 +401,7 @@ static struct filsys *open_filesystem(char *devname, struct fsoptions *fsopts)
   return fs;
 }
 
-static void close_filesystem(struct filsys *fs)
-{
+static void close_filesystem(struct filsys *fs) {
   unsigned int i;
 
   // Release all group descriptors
@@ -450,8 +427,7 @@ static void close_filesystem(struct filsys *fs)
   kfree(fs);
 }
 
-static void get_filesystem_status(struct filsys *fs, struct statfs *buf)
-{
+static void get_filesystem_status(struct filsys *fs, struct statfs *buf) {
   buf->bsize = fs->blocksize;
   buf->iosize = fs->blocksize;
   buf->blocks = fs->super->block_count;
@@ -461,8 +437,7 @@ static void get_filesystem_status(struct filsys *fs, struct statfs *buf)
   buf->cachesize = fs->cache->poolsize * fs->cache->bufsize;
 }
 
-int dfs_mkfs(char *devname, char *opts)
-{
+int dfs_mkfs(char *devname, char *opts) {
   struct fsoptions fsopts;
   struct filsys *fs;
 
@@ -473,28 +448,26 @@ int dfs_mkfs(char *devname, char *opts)
   return 0;
 }
 
-int dfs_mount(struct fs *fs, char *opts)
-{
+int dfs_mount(struct fs *fs, char *opts) {
   struct fsoptions fsopts;
 
   if (parse_options(opts, &fsopts) != 0) return -EINVAL;
-  if (fsopts.flags & FSOPT_FORMAT)
+  if (fsopts.flags & FSOPT_FORMAT) {
     fs->data = create_filesystem(fs->mntfrom, &fsopts);
-  else
+  } else {
     fs->data = open_filesystem(fs->mntfrom, &fsopts);
+  }
   if (!fs->data) return -EIO;
 
   return 0;
 }
 
-int dfs_umount(struct fs *fs)
-{
+int dfs_umount(struct fs *fs) {
   close_filesystem((struct filsys *) fs->data);
   return 0;
 }
 
-int dfs_statfs(struct fs *fs, struct statfs *buf)
-{
+int dfs_statfs(struct fs *fs, struct statfs *buf) {
   get_filesystem_status((struct filsys *) fs->data, buf);
   return 0;
 }

@@ -41,58 +41,53 @@
 #include <os/krnl.h>
 #endif
 
-static char *trimstr(char *s, char *end)
-{
+static char *trimstr(char *s, char *end) {
   char *str;
   char *t;
   int ch;
   int i;
   
-  while (end > s)
-  {
-    if (*(end - 1) == ' ' || *(end - 1) == '\t') 
+  while (end > s) {
+    if (*(end - 1) == ' ' || *(end - 1) == '\t') {
       end--;
-    else
+    } else {
       break;
+    }
   }
   if (end == s) return NULL;
 
   t = str = (char *) malloc(end - s + 1);
-  while (s < end)
-  {
-    if (*s == '^')
-    {
+  while (s < end) {
+    if (*s == '^') {
       s++;
       ch = 0;
-      for (i = 0; i < 2; i++)
-      {
+      for (i = 0; i < 2; i++) {
         if (s == end) break;
 
-        if (*s >= '0' && *s <= '9')
+        if (*s >= '0' && *s <= '9') {
           ch = (ch << 4) + *s - '0';
-        else if (*s >= 'A' && *s <= 'F')
+        } else if (*s >= 'A' && *s <= 'F') {
           ch = (ch << 4) + *s + 10 - 'A';
-        else if (*s >= 'a' && *s <= 'f')
+        } else if (*s >= 'a' && *s <= 'f') {
           ch = (ch << 4) + *s + 10 - 'a';
-        else
+        } else {
           break;
+        }
 
         s++;
       }
       *t++ = ch;
-    }
-    else
+    } else {
       *t++ = *s++;
+    }
   }
 
   *t = 0;
   return str;
 }
 
-struct section *find_section(struct section *sect, char *name)
-{
-  while (sect)
-  {
+struct section *find_section(struct section *sect, char *name) {
+  while (sect) {
     if (strcmp(sect->name, name) == 0) return sect;
     sect = sect->next;
   }
@@ -100,8 +95,7 @@ struct section *find_section(struct section *sect, char *name)
   return NULL;
 }
 
-int get_section_size(struct section *sect)
-{
+int get_section_size(struct section *sect) {
   struct property *prop;
   int n;
   
@@ -109,8 +103,7 @@ int get_section_size(struct section *sect)
   prop = sect->properties;
 
   n = 0;
-  while (prop)
-  {
+  while (prop) {
     n++;
     prop = prop->next;
   }
@@ -118,15 +111,13 @@ int get_section_size(struct section *sect)
   return n;
 }
 
-char *find_property(struct section *sect, char *name)
-{
+char *find_property(struct section *sect, char *name) {
   struct property *prop;
   
   if (!sect) return NULL;
   prop = sect->properties;
 
-  while (prop)
-  {
+  while (prop) {
     if (strcmp(prop->name, name) == 0) return prop->value ? prop->value : "";
     prop = prop->next;
   }
@@ -134,8 +125,7 @@ char *find_property(struct section *sect, char *name)
   return NULL;
 }
 
-char *get_property(struct section *sections, char *sectname, char *propname, char *defval)
-{
+char *get_property(struct section *sections, char *sectname, char *propname, char *defval) {
   struct section *sect;
   char *val;
 
@@ -146,27 +136,23 @@ char *get_property(struct section *sections, char *sectname, char *propname, cha
   return val ? val : defval;
 }
 
-int get_numeric_property(struct section *sections, char *sectname, char *propname, int defval)
-{
+int get_numeric_property(struct section *sections, char *sectname, char *propname, int defval) {
   char *val;
 
   val = get_property(sections, sectname, propname, NULL);
   return val ? atoi(val) : defval;
 }
 
-void free_properties(struct section *sect)
-{
+void free_properties(struct section *sect) {
   struct section *nextsect;
   struct property *prop;
   struct property *nextprop;
 
-  while (sect)
-  {
+  while (sect) {
     if (sect->name) free(sect->name);
     
     prop = sect->properties;
-    while (prop)
-    {
+    while (prop) {
       if (prop->name) free(prop->name);
       if (prop->value) free(prop->value);
       
@@ -181,8 +167,7 @@ void free_properties(struct section *sect)
   }
 }
 
-struct section *parse_properties(char *props)
-{
+struct section *parse_properties(char *props) {
   struct section *secthead = NULL;
   struct section *sect = NULL;
   struct property *prop = NULL;
@@ -191,14 +176,12 @@ struct section *parse_properties(char *props)
   char *split;
 
   p = props;
-  while (*p)
-  {
+  while (*p) {
     // Skip white at start of line
     while (*p == ' ' || *p == '\t') p++;
     
     // Skip comments
-    if (*p == '#' || *p == ';')
-    {
+    if (*p == '#' || *p == ';') {
       while (*p && *p != '\r' && *p != '\n') p++;
       if (*p == '\r') p++;
       if (*p == '\n') p++;
@@ -206,16 +189,14 @@ struct section *parse_properties(char *props)
     }
 
     // Skip blank lines
-    if (*p == 0 || *p == '\r' || *p == '\n')
-    {
+    if (*p == 0 || *p == '\r' || *p == '\n') {
       if (*p == '\r') p++;
       if (*p == '\n') p++;
       continue;
     }
 
     // Check for section or property
-    if (*p == '[')
-    {
+    if (*p == '[') {
       struct section *newsect;
 
       p++;
@@ -235,42 +216,36 @@ struct section *parse_properties(char *props)
 
       p = end;
       if (*p == ']') p++;
-    }
-    else
-    {
+    } else {
       struct property *newprop;
 
       end = p;
       split = NULL;
-      while (*end && *end != '\r' && *end != '\n') 
-      {
+      while (*end && *end != '\r' && *end != '\n') {
         if (!split && (*end == '=' || *end == ':')) split = end;
         end++;
       }
 
-      if (sect)
-      {
+      if (sect) {
         newprop = (struct property *) malloc(sizeof(struct property));
         if (!newprop) return NULL;
 
-        if (split)
-        {
+        if (split) {
           newprop->name = trimstr(p, split);
           split++;
           while (*split == ' ' || *split == '\t') split++;
           newprop->value = trimstr(split, end);
-        }
-        else
-        {
+        } else {
           newprop->name = trimstr(p, end);
           newprop->value = NULL;
         }
 
         newprop->next = NULL;
-        if (prop)
+        if (prop) {
           prop->next = newprop;
-        else
+        } else {
           sect->properties = newprop;
+        }
 
         prop = newprop;
       }
@@ -286,22 +261,18 @@ struct section *parse_properties(char *props)
 
 #ifndef KERNEL
 
-void list_properties(int f, struct section *sect)
-{
+void list_properties(int f, struct section *sect) {
   struct property *prop;
 
-  while (sect)
-  {
+  while (sect) {
     write(f, "[", 1);
     write(f, sect->name, strlen(sect->name));
     write(f, "]\r\n", 3);
 
     prop = sect->properties;
-    while (prop)
-    {
+    while (prop) {
       write(f, prop->name, strlen(prop->name));
-      if (prop->value)
-      {
+      if (prop->value) {
         write(f, "=", 1);
         write(f, prop->value, strlen(prop->value));
       }
@@ -314,8 +285,7 @@ void list_properties(int f, struct section *sect)
   }
 }
 
-struct section *read_properties(char *filename)
-{
+struct section *read_properties(char *filename) {
   int f;
   int size;
   struct stat64 buffer;
@@ -329,14 +299,12 @@ struct section *read_properties(char *filename)
   size = (int) buffer.st_size;
 
   props = (char *) malloc(size + 1);
-  if (!props)
-  {
+  if (!props) {
     close(f);
     return NULL;
   }
 
-  if (read(f, props, size) != size)
-  {
+  if (read(f, props, size) != size) {
     free(props);
     close(f);
     return NULL;

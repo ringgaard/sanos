@@ -76,8 +76,7 @@
 
 #ifndef NOVFORK
 
-struct _forkctx
-{
+struct _forkctx {
   struct _forkctx *prev;
   int pid;
   jmp_buf jmp;

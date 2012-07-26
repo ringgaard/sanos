@@ -36,8 +36,7 @@
 
 int _input(FILE *stream, const unsigned char *format, va_list arglist);
 
-int fscanf(FILE *stream, const char *fmt, ...)
-{
+int fscanf(FILE *stream, const char *fmt, ...) {
   int rc;
   va_list args;
 
@@ -48,8 +47,7 @@ int fscanf(FILE *stream, const char *fmt, ...)
   return rc;
 }
 
-int scanf(const char *fmt, ...)
-{
+int scanf(const char *fmt, ...) {
   int rc;
   va_list args;
 
@@ -60,8 +58,7 @@ int scanf(const char *fmt, ...)
   return rc;
 }
 
-int sscanf(const char *buffer, const char *fmt, ...)
-{
+int sscanf(const char *buffer, const char *fmt, ...) {
   int rc;
   va_list args;
   FILE str;

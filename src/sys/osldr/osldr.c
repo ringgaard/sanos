@@ -77,8 +77,7 @@ int bios_read_disk(int drive, int cyl, int head, int sect, int nsect, void *buff
 int unzip(void *src, unsigned long srclen, void *dst, unsigned long dstlen, char *heap, int heapsize);
 void load_kernel();
 
-void kprintf(const char *fmt,...)
-{
+void kprintf(const char *fmt,...) {
   va_list args;
   char buffer[1024];
 
@@ -89,29 +88,25 @@ void kprintf(const char *fmt,...)
   bios_print_string(buffer);
 }
 
-void panic(char *msg)
-{
+void panic(char *msg) {
   kprintf("panic: %s\n", msg);
   while (1);
 }
 
-void init_biosdisk()
-{
+void init_biosdisk() {
   int status;
   
   status = bios_get_drive_params(bootdrive, &bootdev_cyls, &bootdev_heads, &bootdev_sects);
   if (status != 0) panic("Unable to initialize boot device");
 }
 
-int biosdisk_read(void *buffer, size_t count, blkno_t blkno)
-{
+int biosdisk_read(void *buffer, size_t count, blkno_t blkno) {
   static char scratch[4096];
 
   char *buf = buffer;
   int sects = count / SECTORSIZE;
   int left = sects;
-  while (left > 0)
-  {
+  while (left > 0) {
     int nsect, status;
     
     // Compute CHS address
@@ -129,8 +124,7 @@ int biosdisk_read(void *buffer, size_t count, blkno_t blkno)
 
     // Read sectors from disk into temporary buffer in low memory.
     status = bios_read_disk(bootdrive, cyl, head, sect, nsect, scratch);
-    if (status != 0) 
-    {
+    if (status != 0) {
       kprintf("biosdisk: read error %d\n", status);
       return -EIO;
     }
@@ -147,29 +141,26 @@ int biosdisk_read(void *buffer, size_t count, blkno_t blkno)
   return count;
 }
 
-int bootrd_read(void *buffer, size_t count, blkno_t blkno)
-{
+int bootrd_read(void *buffer, size_t count, blkno_t blkno) {
   memcpy(buffer, initrd + blkno * SECTORSIZE, count);
   return count;
 }
 
-int boot_read(void *buffer, size_t count, blkno_t blkno)
-{
-  if ((bootdrive & 0xF0) == 0xF0)
+int boot_read(void *buffer, size_t count, blkno_t blkno) {
+  if ((bootdrive & 0xF0) == 0xF0) {
     return bootrd_read(buffer, count, blkno);
-  else
+  } else {
     return biosdisk_read(buffer, count, blkno);
+  }
 }
 
-char *check_heap(int numpages)
-{
+char *check_heap(int numpages) {
   // Check for out of memory
   if ((unsigned long) heap + numpages * PAGESIZE >= mem_end) panic("out of memory");
   return heap;
 }
 
-char *alloc_heap(int numpages)
-{
+char *alloc_heap(int numpages) {
   char *p = check_heap(numpages);
 
   // Zero allocated pages
@@ -181,8 +172,7 @@ char *alloc_heap(int numpages)
   return p;
 }
 
-unsigned long memsize()
-{
+unsigned long memsize() {
   volatile unsigned long *mem;
   unsigned long addr;
   unsigned long value;
@@ -205,8 +195,7 @@ unsigned long memsize()
   __asm { mov cr0, eax };
 
   // Probe for each megabyte
-  while (addr < 0xFFF00000)
-  {
+  while (addr < 0xFFF00000) {
     addr += 1024 * 1024;
     mem= (unsigned long *) addr;
 
@@ -229,24 +218,18 @@ unsigned long memsize()
 }
 
 
-void setup_memory(struct memmap *memmap)
-{
+void setup_memory(struct memmap *memmap) {
   int i;
 
-  if (memmap->count != 0)
-  {
+  if (memmap->count != 0) {
     // Determine largest available RAM address from BIOS memory map
     mem_end = 0;
-    for (i = 0; i < memmap->count; i++)
-    {
-      if (memmap->entry[i].type == MEMTYPE_RAM) 
-      {
+    for (i = 0; i < memmap->count; i++) {
+      if (memmap->entry[i].type == MEMTYPE_RAM) {
         mem_end = (unsigned long) (memmap->entry[i].addr + memmap->entry[i].size);
       }
     }
-  }
-  else
-  {
+  } else {
     // No BIOS memory map, probe memory and create a simple map with 640K:1M hole
     mem_end = memsize();
 
@@ -264,8 +247,7 @@ void setup_memory(struct memmap *memmap)
   }
 }
 
-void setup_descriptors()
-{
+void setup_descriptors() {
   struct syspage *syspage;
   struct tss *tss;
 
@@ -321,8 +303,7 @@ void setup_descriptors()
   __asm { ltr tssval };
 }
 
-void copy_ramdisk(char *bootimg)
-{
+void copy_ramdisk(char *bootimg) {
   struct superblock *super = (struct superblock *) (bootimg + SECTORSIZE);
   int i;
   int rdpages;
@@ -335,8 +316,7 @@ void copy_ramdisk(char *bootimg)
   rdpages = PAGES(initrd_size);
   initrd = alloc_heap(rdpages);
 
-  if (super->compress_size != 0)
-  {
+  if (super->compress_size != 0) {
     char *zheap;
     unsigned int zofs;
     unsigned int zsize;
@@ -351,23 +331,19 @@ void copy_ramdisk(char *bootimg)
     zofs = super->compress_offset;
     zsize = super->compress_size;
     unzip(bootimg + zofs, zsize, initrd + zofs, initrd_size - zofs, zheap, 64 * 1024);
-  }
-  else
-  {
+  } else {
     memcpy(initrd, bootimg, initrd_size);
   }
 
   // Map initial initial ram disk into syspages
-  for (i = 0; i < rdpages; i++)
-  {
+  for (i = 0; i < rdpages; i++) {
     syspagetable[PTEIDX(INITRD_ADDRESS) + i] = ((unsigned long) initrd + i * PAGESIZE) | PT_PRESENT | PT_WRITABLE;
   }
 
   //kprintf("%d KB boot image found\n", initrd_size / 1024);
 }
 
-void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
-{
+void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved) {
   pte_t *pt;
   int i;
   char *bootimg = bootparams->bootimg;
@@ -403,8 +379,7 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
   syspagetable[PTEIDX(VIDBASE_ADDRESS)] = VIDEO_BASE | PT_PRESENT | PT_WRITABLE;
 
   // Map initial TCB
-  for (i = 0; i < PAGES_PER_TCB; i++)
-  {
+  for (i = 0; i < PAGES_PER_TCB; i++) {
     syspagetable[PTEIDX(INITTCB_ADDRESS) + i] = ((unsigned long) inittcb + i * PAGESIZE) | PT_PRESENT | PT_WRITABLE;
   }
 
@@ -415,20 +390,16 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
 
   // Copy kernel from boot device
   bootdrive = bootparams->bootdrv;
-  if ((bootdrive & 0xF0) == 0xF0)
-  {
+  if ((bootdrive & 0xF0) == 0xF0) {
     copy_ramdisk(bootimg);
     load_kernel(bootdrive);
-  }
-  else
-  {
+  } else {
     init_biosdisk();
     load_kernel(bootdrive);
   }
 
   // Set page directory (CR3) and enable paging (PG bit in CR0)
-  __asm
-  {
+  __asm {
     mov eax, dword ptr [pdir]
     mov cr3, eax
     mov eax, cr0
@@ -453,8 +424,7 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
   krnlopts = syspage->bootparams.krnlopts;
 
   // Reload segment registers
-  __asm
-  {
+  __asm {
     mov ax, SEL_KDATA
     mov ds, ax
     mov es, ax
@@ -468,8 +438,7 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved)
   }
 
   // Switch to inital kernel stack and jump to kernel
-  __asm
-  {
+  __asm {
     mov esp, INITTCB_ADDRESS + TCBESP
     push 0
     push dword ptr [krnlopts]

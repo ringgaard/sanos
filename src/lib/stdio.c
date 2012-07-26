@@ -44,22 +44,19 @@
 #define anybuf(s) ((s)->flag & (_IOOWNBUF | _IOEXTBUF | _IOTMPBUF | _IONBF))
 #define inuse(s)  ((s)->flag & (_IORD |_IOWR |_IORW))
 
-static void exit_stdio(void)
-{
+static void exit_stdio(void) {
   // Flush stdout and stderr
   fflush(stdout);
   fflush(stderr);
 }
 
-static void init_stdio()
-{
+static void init_stdio() {
   struct process *proc = gettib()->proc;
   struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
   // Only initialize on first call.
   if (crtbase->stdio_initialized) return;
-  if (atomic_increment(&crtbase->stdio_init) == 1)
-  {
+  if (atomic_increment(&crtbase->stdio_init) == 1) {
     // Set up stdin, stdout, and stderr.
     crtbase->iob[0].file = proc->iob[0];
     crtbase->iob[0].base = crtbase->iob[0].ptr = crtbase->stdinbuf;
@@ -74,16 +71,13 @@ static void init_stdio()
 
     atexit(exit_stdio);
     crtbase->stdio_initialized = 1;
-  }
-  else
-  {
+  } else {
     // Wait until initialization done.
     while (!crtbase->stdio_initialized) msleep(0);
   }
 }
 
-FILE *__getstdfile(int n)
-{
+FILE *__getstdfile(int n) {
   struct process *proc = gettib()->proc;
   struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
@@ -91,17 +85,13 @@ FILE *__getstdfile(int n)
   return &crtbase->iob[n];
 }
 
-static void getbuf(FILE *stream)
-{
+static void getbuf(FILE *stream) {
   // Try to get a buffer
-  if (stream->base = malloc(BUFSIZ))
-  {
+  if (stream->base = malloc(BUFSIZ)) {
     // Got a buffer
     stream->flag |= _IOOWNBUF;
     stream->bufsiz = BUFSIZ;
-  }
-  else 
-  {
+  } else {
     // Did NOT get a buffer - use single char buffering.
     stream->flag |= _IONBF;
     stream->base = (char *) &stream->charbuf;
@@ -112,10 +102,8 @@ static void getbuf(FILE *stream)
   stream->cnt = 0;
 }
 
-static void freebuf(FILE *stream)
-{
-  if (stream->flag & _IOOWNBUF)
-  {
+static void freebuf(FILE *stream) {
+  if (stream->flag & _IOOWNBUF) {
     free(stream->base);
     stream->flag &= ~_IOOWNBUF;
     stream->base = stream->ptr = NULL;
@@ -123,8 +111,7 @@ static void freebuf(FILE *stream)
   }
 }
 
-int _stbuf(FILE *stream, char *buf, int bufsiz)
-{
+int _stbuf(FILE *stream, char *buf, int bufsiz) {
   // Setup temp buffering
   stream->base = stream->ptr = buf;
   stream->cnt = bufsiz;
@@ -133,10 +120,8 @@ int _stbuf(FILE *stream, char *buf, int bufsiz)
   return 0;
 }
 
-void _ftbuf(FILE *stream)
-{
-  if (stream->flag & _IOTMPBUF)
-  {
+void _ftbuf(FILE *stream) {
+  if (stream->flag & _IOTMPBUF) {
     // Flush the stream and tear down temp buffering
     fflush(stream);
     stream->flag &= ~(_IOEXTBUF | _IOTMPBUF);
@@ -145,19 +130,15 @@ void _ftbuf(FILE *stream)
   }
 }
 
-static int write_translated(int fh, char *buf, int len)
-{
+static int write_translated(int fh, char *buf, int len) {
   char *ptr = buf;
   char *end = buf + len;
   int written = 0;
   int rc;
 
-  while (ptr < end)
-  {
-    if (*ptr == '\n')
-    {
-      if (buf < ptr)
-      {
+  while (ptr < end) {
+    if (*ptr == '\n') {
+      if (buf < ptr) {
         rc = write(fh, buf, ptr - buf);
         if (rc < 0) return rc;
         written += rc;
@@ -171,8 +152,7 @@ static int write_translated(int fh, char *buf, int len)
     ptr++;
   }
 
-  if (buf < end)
-  {
+  if (buf < end) {
     rc = write(fh, buf, end - buf);
     if (rc < 0) return rc;
     written += rc;
@@ -181,12 +161,10 @@ static int write_translated(int fh, char *buf, int len)
   return written;
 }
 
-int filbuf(FILE *stream)
-{
+int filbuf(FILE *stream) {
   if (stream->flag & _IOSTR) return EOF;
 
-  if (stream->flag & _IOWR) 
-  {
+  if (stream->flag & _IOWR) {
     stream->flag |= _IOERR;
     return EOF;
   }
@@ -194,15 +172,14 @@ int filbuf(FILE *stream)
   stream->flag |= _IORD;
 
   // Get a buffer, if necessary.
-  if (!anybuf(stream))
+  if (!anybuf(stream)) {
     getbuf(stream);
-  else
+  } else {
     stream->ptr = stream->base;
-
+  }
   stream->cnt = read(fileno(stream), stream->base, stream->bufsiz);
 
-  if (stream->cnt <= 0)
-  {
+  if (stream->cnt <= 0) {
     stream->flag |= stream->cnt ? _IOERR : _IOEOF;
     stream->cnt = 0;
     return EOF;
@@ -213,8 +190,7 @@ int filbuf(FILE *stream)
   return *stream->ptr++ & 0xff;
 }
 
-int flsbuf(int ch, FILE *stream)
-{
+int flsbuf(int ch, FILE *stream) {
   int count;
   int written;
   int fh;
@@ -222,22 +198,17 @@ int flsbuf(int ch, FILE *stream)
 
   fh = fileno(stream);
 
-  if (!(stream->flag & (_IOWR | _IORW)) || (stream->flag & _IOSTR))
-  {
+  if (!(stream->flag & (_IOWR | _IORW)) || (stream->flag & _IOSTR)) {
     stream->flag |= _IOERR;
     return -1;
   }
 
-  if (stream->flag & _IORD) 
-  {
+  if (stream->flag & _IORD) {
     stream->cnt = 0;
-    if (stream->flag & _IOEOF) 
-    {
+    if (stream->flag & _IOEOF) {
       stream->ptr = stream->base;
       stream->flag &= ~_IORD;
-    }
-    else 
-    {
+    } else {
       stream->flag |= _IOERR;
       return -1;
     }
@@ -251,36 +222,33 @@ int flsbuf(int ch, FILE *stream)
   if (!anybuf(stream)) getbuf(stream);
 
   // If big buffer is assigned to stream
-  if (bigbuf(stream)) 
-  {
+  if (bigbuf(stream)) {
     count = stream->ptr - stream->base;
     stream->ptr = stream->base + 1;
     stream->cnt = stream->bufsiz - 1;
 
-    if (count > 0)
-    {
-      if (stream->flag & _IOCRLF)
+    if (count > 0) {
+      if (stream->flag & _IOCRLF) {
         written = write_translated(fh, stream->base, count);
-      else
+      } else {
         written = write(fh, stream->base, count);
+      }
     }
 
     *stream->base = (char) ch;
-  }
-  else 
-  {
+  } else {
     // Perform single character output (either _IONBF or no buffering)
     count = 1;
     chbuf = (char) ch;
-    if (stream->flag & _IOCRLF)
+    if (stream->flag & _IOCRLF) {
       written = write_translated(fh, &chbuf, count);
-    else
+    } else {
       written = write(fh, &chbuf, count);
+    }
   }
 
   // See if the write was successful.
-  if (written != count) 
-  {
+  if (written != count) {
     stream->flag |= _IOERR;
     return -1;
   }
@@ -288,14 +256,12 @@ int flsbuf(int ch, FILE *stream)
   return ch & 0xff;
 }
 
-static int open_file(FILE *stream, const char *filename, const char *mode)
-{
+static int open_file(FILE *stream, const char *filename, const char *mode) {
   int oflag;
   int streamflag;
   handle_t handle;
 
-  switch (*mode)
-  {
+  switch (*mode) {
     case 'r':
       oflag = O_RDONLY;
       streamflag = _IORD;
@@ -316,10 +282,8 @@ static int open_file(FILE *stream, const char *filename, const char *mode)
       return -1;
   }
 
-  while (*++mode)
-  {
-    switch (*mode)
-    {
+  while (*++mode) {
+    switch (*mode) {
       case '+':
         oflag |= O_RDWR;
         oflag &= ~(O_RDONLY | O_WRONLY);
@@ -379,12 +343,10 @@ static int open_file(FILE *stream, const char *filename, const char *mode)
   return 0;
 }
 
-static int close_file(FILE *stream)
-{
+static int close_file(FILE *stream) {
   int rc = EOF;
 
-  if (stream->flag & _IOSTR) 
-  {
+  if (stream->flag & _IOSTR) {
     stream->flag = 0;
     return EOF;
   }
@@ -397,13 +359,11 @@ static int close_file(FILE *stream)
   return rc;
 }
 
-FILE *fdopen(int fd, const char *mode)
-{
+FILE *fdopen(int fd, const char *mode) {
   FILE *stream; 
   int streamflag;
 
-  switch (*mode)
-  {
+  switch (*mode) {
     case 'r':
       streamflag = _IORD;
       break;
@@ -421,10 +381,8 @@ FILE *fdopen(int fd, const char *mode)
       return NULL;
   }
 
-  while (*++mode)
-  {
-    switch (*mode)
-    {
+  while (*++mode) {
+    switch (*mode) {
       case '+':
         streamflag |= _IORW;
         streamflag &= ~(_IORD | _IOWR);
@@ -433,8 +391,7 @@ FILE *fdopen(int fd, const char *mode)
   }
 
   stream = malloc(sizeof(FILE));
-  if (!stream)
-  {
+  if (!stream) {
     errno = ENFILE;
     return NULL;
   }
@@ -448,11 +405,9 @@ FILE *fdopen(int fd, const char *mode)
   return stream;
 }
 
-FILE *freopen(const char *filename, const char *mode, FILE *stream)
-{ 
+FILE *freopen(const char *filename, const char *mode, FILE *stream) { 
   if (inuse(stream)) close_file(stream);
-  if (open_file(stream, filename, mode) < 0)
-  {
+  if (open_file(stream, filename, mode) < 0) {
     free(stream);
     return NULL;
   }
@@ -460,19 +415,16 @@ FILE *freopen(const char *filename, const char *mode, FILE *stream)
   return stream;
 }
 
-FILE *fopen(const char *filename, const char *mode)
-{
+FILE *fopen(const char *filename, const char *mode) {
   FILE *stream;
 
   stream = malloc(sizeof(FILE));
-  if (!stream)
-  {
+  if (!stream) {
     errno = ENFILE;
     return NULL;
   }
 
-  if (open_file(stream, filename, mode) < 0)
-  {
+  if (open_file(stream, filename, mode) < 0) {
     free(stream);
     return NULL;
   }
@@ -480,14 +432,12 @@ FILE *fopen(const char *filename, const char *mode)
   return stream;
 }
 
-void clearerr(FILE *stream)
-{
+void clearerr(FILE *stream) {
   // Clear flags
   stream->flag &= ~(_IOERR | _IOEOF);
 }
 
-int fclose(FILE *stream)
-{
+int fclose(FILE *stream) {
   int rc;
 
   rc = close_file(stream);
@@ -495,28 +445,24 @@ int fclose(FILE *stream)
   return rc;
 }
 
-int fflush(FILE *stream)
-{
+int fflush(FILE *stream) {
   int rc = 0;
   int count;
   int written;
 
   if ((stream->flag & (_IORD | _IOWR)) == _IOWR && 
       bigbuf(stream) && 
-      (count = stream->ptr - stream->base) > 0)
-  {
-    if (stream->flag & _IOCRLF)
+      (count = stream->ptr - stream->base) > 0) {
+    if (stream->flag & _IOCRLF) {
       written = write_translated(fileno(stream), stream->base, count);
-    else
+    } else {
       written = write(fileno(stream), stream->base, count);
+    }
 
-    if (written == count) 
-    {
+    if (written == count)  {
       // If this is a read/write file, clear _IOWR so that next operation can be a read
       if (stream->flag & _IORW) stream->flag &= ~_IOWR;
-    }
-    else 
-    {
+    } else {
       stream->flag |= _IOERR;
       rc = EOF;
     }
@@ -528,27 +474,22 @@ int fflush(FILE *stream)
   return rc;
 }
 
-int fgetc(FILE *stream)
-{
+int fgetc(FILE *stream) {
   return getc(stream);
 }
 
-int fputc(int c, FILE *stream)
-{
+int fputc(int c, FILE *stream) {
   return putc(c, stream);
 }
 
-char *fgets(char *string, int n, FILE *stream)
-{
+char *fgets(char *string, int n, FILE *stream) {
   char *ptr = string;
   int ch;
 
   if (n <= 0) return NULL;
 
-  while (--n)
-  {
-    if ((ch = getc(stream)) == EOF)
-    {
+  while (--n) {
+    if ((ch = getc(stream)) == EOF) {
       if (ptr == string)  return NULL;
       break;
     }
@@ -560,23 +501,21 @@ char *fgets(char *string, int n, FILE *stream)
   return string;
 }
 
-int fputs(const char *string, FILE *stream)
-{
+int fputs(const char *string, FILE *stream) {
   int len;
   int written;
 
   len = strlen(string);
 
-  if (stream->flag & _IONBF)
-  {
+  if (stream->flag & _IONBF) {
     char buf[BUFSIZ];
 
     _stbuf(stream, buf, BUFSIZ);
     written = fwrite(string, 1, len, stream);
     _ftbuf(stream);
-  }
-  else
+  } else {
     written = fwrite(string, 1, len, stream);
+  }
 
   return written == len ? 0 : EOF;
 }
@@ -586,27 +525,21 @@ char *gets(char *buf)
   char *p = buf;
   int ch;
 
-  while (1)
-  {
+  while (1) {
     ch = getchar();
-    if (ch == EOF)
-    {
+    if (ch == EOF) {
       if (errno == ETIMEDOUT) continue;
       return NULL;
     }
 
-    if (ch == 8)
-    {
-      if (p > buf)
-      {
+    if (ch == 8) {
+      if (p > buf) {
         putchar('\b');
         putchar(' ');
         putchar('\b');
         p--;
       }
-    }
-    else if (ch == '\r' || ch =='\n' || ch >= ' ')
-    {
+    } else if (ch == '\r' || ch =='\n' || ch >= ' ') {
       putchar(ch);
       if (ch == '\r') putchar('\n');
       if (ch == '\n' || ch == '\r') break;
@@ -618,38 +551,30 @@ char *gets(char *buf)
   return buf;
 }
 
-int puts(const char *string)
-{
+int puts(const char *string) {
   FILE *stream = stdout;
 
-  if (stream->flag & _IONBF)
-  {
+  if (stream->flag & _IONBF) {
     char buf[BUFSIZ];
 
     _stbuf(stream, buf, BUFSIZ);
 
-    while (*string) 
-    {
-      if (putchar(*string) == EOF)
-      {
+    while (*string) {
+      if (putchar(*string) == EOF) {
         _ftbuf(stream);
         return EOF;
       }
       string++;
     }
   
-    if (putchar('\n') == EOF) 
-    {
+    if (putchar('\n') == EOF) {
       _ftbuf(stream);
       return EOF;
     }
 
     _ftbuf(stream);
-  }
-  else
-  {
-    while (*string) 
-    {
+  } else {
+    while (*string) {
       if (putchar(*string) == EOF) return EOF;
       string++;
     }
@@ -660,8 +585,7 @@ int puts(const char *string)
   return 0;
 }
 
-size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
-{
+size_t fread(void *buffer, size_t size, size_t num, FILE *stream) {
   char *data;                     // Point to where should be read next
   unsigned total;                 // Total bytes to read
   unsigned count;                 // Num bytes left to read
@@ -675,19 +599,18 @@ size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
 
   if ((count = total = size * num) == 0) return 0;
 
-  if (anybuf(stream))
+  if (anybuf(stream)) {
     // Already has buffer, use its size
     bufsize = stream->bufsiz;
-  else
+  } else {
     // Assume will get BUFSIZ buffer
     bufsize = BUFSIZ;
+  }
 
   // Here is the main loop -- we go through here until we're done
-  while (count != 0) 
-  {
+  while (count != 0) {
     // if the buffer exists and has characters, copy them to user buffer
-    if (anybuf(stream) && stream->cnt != 0) 
-    {
+    if (anybuf(stream) && stream->cnt != 0) {
       // How much do we want?
       nbytes = (count < (unsigned) stream->cnt) ? count : stream->cnt;
       memcpy(data, stream->ptr, nbytes);
@@ -697,9 +620,7 @@ size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
       stream->cnt -= nbytes;
       stream->ptr += nbytes;
       data += nbytes;
-    }
-    else if (count >= bufsize)
-    {
+    } else if (count >= bufsize) {
       // If we have more than bufsize chars to read, get data
       // by calling read with an integral number of bufsiz
       // blocks.
@@ -708,14 +629,11 @@ size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
       nbytes = bufsize ? count - count % bufsize : count;
 
       nread = read(fileno(stream), data, nbytes);
-      if (nread == 0) 
-      {
+      if (nread == 0) {
         // End of file -- out of here
         stream->flag |= _IOEOF;
         return (total - count) / size;
-      }
-      else if ((int) nread < 0)
-      {
+      } else if ((int) nread < 0) {
         // Error -- out of here
         stream->flag |= _IOERR;
         return (total - count) / size;
@@ -724,12 +642,9 @@ size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
       // Update count and data to reflect read
       count -= nread;
       data += nread;
-    }
-    else 
-    {
+    } else {
       // Less than bufsize chars to read, so call filbuf to fill buffer
-      if ((c = filbuf(stream)) == EOF) 
-      {
+      if ((c = filbuf(stream)) == EOF) {
         // Error or eof, stream flags set by filbuf
         return (total - count) / size;
       }
@@ -747,8 +662,7 @@ size_t fread(void *buffer, size_t size, size_t num, FILE *stream)
   return num;
 }
 
-size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
-{
+size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream) {
   const char *data;               // Point to where data comes from next
   unsigned total;                 // Total bytes to write
   unsigned count;                 // Num bytes left to write
@@ -762,19 +676,18 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
   count = total = size * num;
   if (count == 0) return 0;
 
-  if (anybuf(stream))
+  if (anybuf(stream)) {
     // Already has buffer, use its size
     bufsize = stream->bufsiz;
-  else
+  } else {
     // Assume will get BUFSIZ buffer
     bufsize = BUFSIZ;
+  }
 
   // Here is the main loop -- we go through here until we're done
-  while (count != 0) 
-  {
+  while (count != 0) {
     // If the buffer is big and has room, copy data to buffer
-    if (bigbuf(stream) && stream->cnt != 0) 
-    {
+    if (bigbuf(stream) && stream->cnt != 0) {
       // How much do we want?
       nbytes = (count < (unsigned) stream->cnt) ? count : stream->cnt;
       memcpy(stream->ptr, data, nbytes);
@@ -784,18 +697,14 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
       stream->cnt -= nbytes;
       stream->ptr += nbytes;
       data += nbytes;
-    }
-    else if (count >= bufsize) 
-    {
+    } else if (count >= bufsize) {
       // If we have more than bufsize chars to write, write
       // data by calling write with an integral number of
       // bufsiz blocks.  If we reach here and we have a big
       // buffer, it must be full so flush it.
 
-      if (bigbuf(stream)) 
-      {
-        if (fflush(stream)) 
-        {
+      if (bigbuf(stream)) {
+        if (fflush(stream)) {
           // Error, stream flags set -- we're out of here
           return (total - count) / size;
         }
@@ -804,13 +713,13 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
       // Calc chars to write -- (count / bufsize) * bufsize
       nbytes = bufsize ? (count - count % bufsize) : count;
 
-      if (stream->flag & _IOCRLF)
+      if (stream->flag & _IOCRLF) {
         nwritten = write_translated(fileno(stream), (char *) data, nbytes);
-      else
+      } else {
         nwritten = write(fileno(stream), data, nbytes);
+      }
 
-      if ((int) nwritten < 0) 
-      {
+      if ((int) nwritten < 0) {
         // Error -- out of here
         stream->flag |= _IOERR;
         return (total - count) / size;
@@ -820,19 +729,15 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
       count -= nwritten;
       data += nwritten;
 
-      if (nwritten < nbytes) 
-      {
+      if (nwritten < nbytes) {
         // Error -- out of here
         stream->flag |= _IOERR;
         return (total - count) / size;
       }
-    }
-    else 
-    {
+    } else {
       // Buffer full and not enough chars to do direct write, so do a flsbuf.
       c = *data;  
-      if (flsbuf(c, stream) == EOF) 
-      {
+      if (flsbuf(c, stream) == EOF) {
         // Error or eof, stream flags set by _flsbuf
         return (total - count) / size;
       }
@@ -850,10 +755,8 @@ size_t fwrite(const void *buffer, size_t size, size_t num, FILE *stream)
   return num;
 }
 
-int fseek(FILE *stream, long offset, int whence)
-{
-  if (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END)
-  {
+int fseek(FILE *stream, long offset, int whence) {
+  if (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END) {
     errno = EINVAL;
     return -1;
   }
@@ -872,35 +775,32 @@ int fseek(FILE *stream, long offset, int whence)
   return lseek(fileno(stream), offset, whence) < 0 ? -1 : 0;
 }
 
-long ftell(FILE *stream)
-{
+long ftell(FILE *stream) {
   long filepos;
 
   if (stream->cnt < 0) stream->cnt = 0;    
   if ((filepos = tell(fileno(stream))) < 0L) return -1L;
   if (!bigbuf(stream)) return filepos - stream->cnt;
 
-  if (stream->flag & _IORD)
+  if (stream->flag & _IORD) {
     filepos -= stream->cnt;
-  else if (stream->flag & _IOWR)
+  } else if (stream->flag & _IOWR) {
     filepos += (stream->ptr - stream->base);
+  }
 
   return filepos;
 }
 
-void rewind(FILE *stream)
-{
+void rewind(FILE *stream) {
   fseek(stream, 0L, SEEK_SET); 
   clearerr(stream);
 }
 
-int fsetpos(FILE *stream, const fpos_t *pos)
-{
+int fsetpos(FILE *stream, const fpos_t *pos) {
   return fseek(stream, *pos, SEEK_SET);
 }
 
-int fgetpos(FILE *stream, fpos_t *pos)
-{
+int fgetpos(FILE *stream, fpos_t *pos) {
   long n;
 
   n = ftell(stream);
@@ -909,42 +809,37 @@ int fgetpos(FILE *stream, fpos_t *pos)
   return 0;
 }
 
-void perror(const char *message)
-{
+void perror(const char *message) {
   fputs(message, stderr);
   fputs(": ", stderr);
   fputs(strerror(errno), stderr);
   fputs("\n", stderr);
 }
 
-void setbuf(FILE *stream, char *buffer)
-{
-  if (buffer == NULL)
+void setbuf(FILE *stream, char *buffer) {
+  if (buffer == NULL) {
     setvbuf(stream, NULL, _IONBF, 0);
-  else
+  } else {
     setvbuf(stream, buffer, _IOFBF, BUFSIZ);
+  }
 }
 
-int setvbuf(FILE *stream, char *buffer, int type, size_t size)
-{
+int setvbuf(FILE *stream, char *buffer, int type, size_t size) {
   fflush(stream);
   freebuf(stream);
 
   stream->flag &= ~(_IOOWNBUF | _IOEXTBUF | _IONBF);
 
-  if (type & _IONBF) 
-  {
+  if (type & _IONBF) {
     stream->flag |= _IONBF;
     buffer = (char *) &stream->charbuf;
     size = 1;
-  }
-  else if (buffer == NULL)
-  {
+  } else if (buffer == NULL) {
     if ((buffer = malloc(size)) == NULL ) return -1;
     stream->flag |= _IOOWNBUF;
-  }
-  else 
+  } else {
     stream->flag |= _IOEXTBUF;
+  }
 
   stream->bufsiz = size;
   stream->ptr = stream->base = buffer;
@@ -953,8 +848,7 @@ int setvbuf(FILE *stream, char *buffer, int type, size_t size)
   return 0;
 }
 
-int ungetc(int c, FILE *stream)
-{
+int ungetc(int c, FILE *stream) {
   // Stream must be open for read and can NOT be currently in write mode.
   // Also, ungetc() character cannot be EOF.
   if (c == EOF) return EOF;
@@ -965,23 +859,20 @@ int ungetc(int c, FILE *stream)
 
   // Now we know base != NULL; since file must be buffered
 
-  if (stream->ptr == stream->base) 
-  {
+  if (stream->ptr == stream->base) {
     if (stream->cnt) return EOF;
     stream->ptr++;
   }
 
-  if (stream->flag & _IOSTR) 
-  {
+  if (stream->flag & _IOSTR) {
     // If stream opened by sscanf do not modify buffer
-    if (*--stream->ptr != (char) c) 
-    {
+    if (*--stream->ptr != (char) c) {
       ++stream->ptr;
       return EOF;
     }
-  } 
-  else
+  } else {
     *--stream->ptr = (char) c;
+  }
 
   stream->cnt++;
   stream->flag &= ~_IOEOF;
@@ -990,7 +881,6 @@ int ungetc(int c, FILE *stream)
   return c & 0xff;
 }
 
-int remove(const char *filename)
-{
+int remove(const char *filename) {
   return unlink(filename);
 }
