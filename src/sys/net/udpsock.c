@@ -33,24 +33,20 @@
 
 #include <net/net.h>
 
-static err_t recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, unsigned short port)
-{
+static err_t recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, unsigned short port) {
   struct socket *s = arg;
   struct sockreq *req = s->waithead;
   struct sockaddr_in *sin;
   int rc;
 
-  if (req)
-  {
+  if (req) {
     rc = write_iovec(req->msg->msg_iov, req->msg->msg_iovlen, p->payload, p->len);
     if (rc < p->len) rc = -EMSGSIZE;
 
-    if (req->msg->msg_name)
-    {
-      if (req->msg->msg_namelen < sizeof(struct sockaddr_in))
+    if (req->msg->msg_name) {
+      if (req->msg->msg_namelen < sizeof(struct sockaddr_in)) {
         rc = -EFAULT;
-      else
-      {
+      } else {
         sin = (struct sockaddr_in *) req->msg->msg_name;
         sin->sin_family = AF_INET;
         sin->sin_port = htons(port);
@@ -62,22 +58,16 @@ static err_t recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
     pbuf_free(p);
 
     release_socket_request(req, rc);
-  }
-  else 
-  {
-    if (p->next) 
-    {
+  } else {
+    if (p->next) {
       kprintf("recv_udp: fragmented pbuf not supported\n");
       return -EINVAL;
     }
 
-    if (s->udp.recvtail)
-    {
+    if (s->udp.recvtail) {
       pbuf_chain(s->udp.recvtail, p);
       s->udp.recvtail = p;
-    }
-    else
-    {
+    } else {
       s->udp.recvhead = p;
       s->udp.recvtail = p;
     }
@@ -88,13 +78,11 @@ static err_t recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_
   return 0;
 }
 
-static int udpsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen, struct socket **retval)
-{
+static int udpsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen, struct socket **retval) {
   return -EINVAL;
 }
 
-static int udpsock_bind(struct socket *s, struct sockaddr *name, int namelen)
-{
+static int udpsock_bind(struct socket *s, struct sockaddr *name, int namelen) {
   int rc;
   struct sockaddr_in *sin;
 
@@ -103,8 +91,7 @@ static int udpsock_bind(struct socket *s, struct sockaddr *name, int namelen)
   sin = (struct sockaddr_in *) name;
   if (sin->sin_family != AF_INET && sin->sin_family != AF_UNSPEC) return -EAFNOSUPPORT;
 
-  if (!s->udp.pcb)
-  {
+  if (!s->udp.pcb) {
     s->udp.pcb = udp_new();
     if (!s->udp.pcb) return -ENOMEM;
     if (s->flags & SOCK_BCAST) s->udp.pcb->flags |= UDP_FLAGS_BROADCAST;
@@ -118,22 +105,19 @@ static int udpsock_bind(struct socket *s, struct sockaddr *name, int namelen)
   return 0;
 }
 
-static int udpsock_close(struct socket *s)
-{
+static int udpsock_close(struct socket *s) {
   struct sockreq *req;
   struct sockreq *next;
 
   s->state = SOCKSTATE_CLOSED;
   req = s->waithead;
-  while (req)
-  {
+  while (req) {
     next = req->next;
     release_socket_request(req, -EABORT);
     req = next;
   }
 
-  if (s->udp.pcb)
-  {
+  if (s->udp.pcb) {
     s->udp.pcb->recv_arg = NULL;
     udp_remove(s->udp.pcb);
   }
@@ -143,8 +127,7 @@ static int udpsock_close(struct socket *s)
   return 0;
 }
 
-static int udpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
-{
+static int udpsock_connect(struct socket *s, struct sockaddr *name, int namelen) {
   int rc;
   struct sockaddr_in *sin;
 
@@ -154,8 +137,7 @@ static int udpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
   if (sin->sin_family != AF_INET && sin->sin_family != AF_UNSPEC) return -EAFNOSUPPORT;
   if (s->state == SOCKSTATE_CLOSED) return -EINVAL;
 
-  if (!s->udp.pcb)
-  {
+  if (!s->udp.pcb) {
     s->udp.pcb = udp_new();
     if (!s->udp.pcb) return -ENOMEM;
     if (s->flags & SOCK_BCAST) s->udp.pcb->flags |= UDP_FLAGS_BROADCAST;
@@ -169,8 +151,7 @@ static int udpsock_connect(struct socket *s, struct sockaddr *name, int namelen)
   return 0;
 }
 
-static int udpsock_getpeername(struct socket *s, struct sockaddr *name, int *namelen)
-{
+static int udpsock_getpeername(struct socket *s, struct sockaddr *name, int *namelen) {
   struct sockaddr_in *sin;
 
   if (!namelen) return -EFAULT;
@@ -186,8 +167,7 @@ static int udpsock_getpeername(struct socket *s, struct sockaddr *name, int *nam
   return 0;
 }
 
-static int udpsock_getsockname(struct socket *s, struct sockaddr *name, int *namelen)
-{
+static int udpsock_getsockname(struct socket *s, struct sockaddr *name, int *namelen) {
   struct sockaddr_in *sin;
 
   if (!namelen) return -EFAULT;
@@ -203,21 +183,19 @@ static int udpsock_getsockname(struct socket *s, struct sockaddr *name, int *nam
   return 0;
 }
 
-static int udpsock_getsockopt(struct socket *s, int level, int optname, char *optval, int *optlen)
-{
+static int udpsock_getsockopt(struct socket *s, int level, int optname, char *optval, int *optlen) {
   return -ENOSYS;
 }
 
-static int udpsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
-{
-  switch (cmd)
-  {
+static int udpsock_ioctl(struct socket *s, int cmd, void *data, size_t size) {
+  switch (cmd) {
     case FIONBIO:
       if (!data || size != 4) return -EFAULT;
-      if (*(int *) data)
+      if (*(int *) data) {
         s->flags |= SOCK_NBIO;
-      else
+      } else {
         s->flags &= ~SOCK_NBIO;
+      }
       break;
 
     default:
@@ -227,13 +205,11 @@ static int udpsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
   return 0;
 }
 
-static int udpsock_listen(struct socket *s, int backlog)
-{
+static int udpsock_listen(struct socket *s, int backlog) {
   return -EINVAL;
 }
 
-static int udpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
-{
+static int udpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int flags) {
   struct pbuf *p;
   struct udp_hdr *udphdr;
   struct ip_hdr *iphdr;
@@ -247,8 +223,7 @@ static int udpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   if (!s->udp.pcb || s->udp.pcb->local_port == 0) return -EINVAL;
 
   p = s->udp.recvhead;
-  if (p)
-  {
+  if (p) {
     s->udp.recvhead = pbuf_dechain(p);
     if (!s->udp.recvhead) s->udp.recvtail = NULL; 
     if (!s->udp.recvhead) clear_io_event(&s->iob, IOEVT_READ);
@@ -266,8 +241,7 @@ static int udpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
     rc = write_iovec(msg->msg_iov, msg->msg_iovlen, buf, len);
     if (rc < len) rc = -EMSGSIZE;
 
-    if (msg->msg_name)
-    {
+    if (msg->msg_name) {
       sin = (struct sockaddr_in *) msg->msg_name;
       sin->sin_family = AF_INET;
       sin->sin_port = udphdr->src;
@@ -276,25 +250,23 @@ static int udpsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
     msg->msg_namelen = sizeof(struct sockaddr_in);
 
     pbuf_free(p);
-  }
-  else if (s->flags & SOCK_NBIO)
+  } else if (s->flags & SOCK_NBIO) {
     rc = -EAGAIN;
-  else
+  } else {
     rc = submit_socket_request(s, &req, SOCKREQ_RECV, msg, s->rcvtimeo);
+  }
 
   return rc;
 }
 
-static int udpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
-{
+static int udpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int flags) {
   struct pbuf *p;
   int size;
   int rc;
 
   if (msg->msg_name && msg->msg_namelen < sizeof(struct sockaddr_in)) return -EFAULT;
 
-  if (!s->udp.pcb || s->udp.pcb->local_port == 0)
-  {
+  if (!s->udp.pcb || s->udp.pcb->local_port == 0) {
     struct sockaddr_in sin;
 
     memset(&sin, 0, sizeof(sin));
@@ -311,13 +283,12 @@ static int udpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   rc = read_iovec(msg->msg_iov, msg->msg_iovlen, p->payload, size);
   if (rc < 0) return rc;
 
-  if (msg->msg_name)
-  {
+  if (msg->msg_name) {
     struct sockaddr_in *sin = (struct sockaddr_in *) msg->msg_name;
     rc = udp_send(s->udp.pcb, p, (struct ip_addr *) &sin->sin_addr, ntohs(sin->sin_port), NULL);
-  }
-  else
+  } else {
     rc = udp_send(s->udp.pcb, p, NULL, 0, NULL);
+  }
 
   if (rc < 0)
   {
@@ -328,21 +299,15 @@ static int udpsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   return size;
 }
 
-static int udpsock_setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen)
-{
-  if (level == SOL_SOCKET)
-  {
-    switch (optname)
-    {
+static int udpsock_setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen) {
+  if (level == SOL_SOCKET) {
+    switch (optname) {
       case SO_BROADCAST:
         if (optlen != 4) return -EINVAL;
-        if (*(int *) optval)
-        {
+        if (*(int *) optval) {
           s->flags |= SOCK_BCAST;
           if (s->udp.pcb) s->udp.pcb->flags |= UDP_FLAGS_BROADCAST;
-        }
-        else
-        {
+        } else {
           s->flags &= ~SOCK_BCAST;
           if (s->udp.pcb) s->udp.pcb->flags &= ~UDP_FLAGS_BROADCAST;
         }
@@ -361,27 +326,24 @@ static int udpsock_setsockopt(struct socket *s, int level, int optname, const ch
       default:
         return -ENOPROTOOPT;
     }
-  }
-  else
+  } else {
     return -ENOPROTOOPT;
+  }
 
   return 0;
 }
 
-static int udpsock_shutdown(struct socket *s, int how)
-{
+static int udpsock_shutdown(struct socket *s, int how) {
   return -ENOSYS;
 }
 
-static int udpsock_socket(struct socket *s, int domain, int type, int protocol)
-{
+static int udpsock_socket(struct socket *s, int domain, int type, int protocol) {
   set_io_event(&s->iob, IOEVT_WRITE);
 
   return 0;
 }
 
-struct sockops udpops =
-{
+struct sockops udpops = {
   udpsock_accept,
   udpsock_bind,
   udpsock_close,

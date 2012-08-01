@@ -53,8 +53,7 @@ static int pbuf_pool_free_lock, pbuf_pool_alloc_lock;
 // the pool.
 //
 
-void pbuf_init()
-{
+void pbuf_init() {
   struct pbuf *p, *q;
   int i;
 
@@ -65,8 +64,7 @@ void pbuf_init()
   // Set up next pointers to link the pbufs of the pool together
   p = pbuf_pool;
   
-  for (i = 0; i < PBUF_POOL_SIZE; i++)
-  {
+  for (i = 0; i < PBUF_POOL_SIZE; i++) {
     p->next = (struct pbuf *) ((char *) p + PBUF_POOL_BUFSIZE + sizeof(struct pbuf));
     p->len = p->tot_len = p->size = PBUF_POOL_BUFSIZE;
     p->payload = (void *) ((char *) p + sizeof(struct pbuf));
@@ -81,40 +79,33 @@ void pbuf_init()
   pbuf_pool_free_lock = 0;
 }
 
-static struct pbuf *pbuf_pool_alloc()
-{
+static struct pbuf *pbuf_pool_alloc() {
   struct pbuf *p = NULL;
 
   // First, see if there are pbufs in the cache
-  if (pbuf_pool_alloc_cache) 
-  {
+  if (pbuf_pool_alloc_cache) {
     p = pbuf_pool_alloc_cache;
     if (p) pbuf_pool_alloc_cache = p->next; 
-  } 
-  else 
-  {
+  } else {
     // Next, check the actual pbuf pool, but if the pool is locked, we
     // pretend to be out of buffers and return NULL
-    if (pbuf_pool_free_lock) 
-    {
+    if (pbuf_pool_free_lock) {
       stats.pbuf.alloc_locked++;
       return NULL;
     }
     
     pbuf_pool_alloc_lock++;
-    if (!pbuf_pool_free_lock)
-    {
+    if (!pbuf_pool_free_lock) {
       p = pbuf_pool;
       if(p) pbuf_pool = p->next; 
-    } 
-    else
+    } else {
       stats.pbuf.alloc_locked++;
+    }
 
     pbuf_pool_alloc_lock--;
   }
 
-  if (p != NULL) 
-  {
+  if (p != NULL) {
     stats.pbuf.used++;
     if (stats.pbuf.used > stats.pbuf.max) stats.pbuf.max = stats.pbuf.used;
   }
@@ -122,18 +113,14 @@ static struct pbuf *pbuf_pool_alloc()
   return p;   
 }
 
-static void pbuf_pool_free(struct pbuf *p)
-{
+static void pbuf_pool_free(struct pbuf *p) {
   struct pbuf *q;
 
   for (q = p; q != NULL; q = q->next) stats.pbuf.used--;
   
-  if (pbuf_pool_alloc_cache == NULL) 
-  {
+  if (pbuf_pool_alloc_cache == NULL) {
     pbuf_pool_alloc_cache = p;
-  }
-  else 
-  {
+  } else {
     for (q = pbuf_pool_alloc_cache; q->next != NULL; q = q->next);
     q->next = p;    
   }
@@ -158,8 +145,7 @@ static void pbuf_pool_free(struct pbuf *p)
 //               the pbuf pool that is allocated during pbuf_init.
 //
 
-struct pbuf *pbuf_alloc(int layer, int size, int flag)
-{
+struct pbuf *pbuf_alloc(int layer, int size, int flag) {
   struct pbuf *p, *q, *r;
   int offset;
   int rsize;
@@ -167,8 +153,7 @@ struct pbuf *pbuf_alloc(int layer, int size, int flag)
   //kprintf("pbuf_alloc: alloc %d bytes layer=%d flags=%d\n", size, layer, flag);
 
   offset = 0;
-  switch (layer)
-  {
+  switch (layer) {
     case PBUF_TRANSPORT:
       offset += PBUF_TRANSPORT_HLEN;
       // FALLTHROUGH
@@ -188,13 +173,11 @@ struct pbuf *pbuf_alloc(int layer, int size, int flag)
       panic("pbuf_alloc: bad pbuf layer");
   }
 
-  switch (flag) 
-  {
+  switch (flag) {
     case PBUF_POOL:
       // Allocate head of pbuf chain into p
       p = pbuf_pool_alloc();
-      if (p == NULL) 
-      {
+      if (p == NULL)  {
         stats.pbuf.err++;
         return NULL;
       }
@@ -214,11 +197,9 @@ struct pbuf *pbuf_alloc(int layer, int size, int flag)
       // Allocate the tail of the pbuf chain
       r = p;
       rsize = size - p->len;
-      while (rsize > 0) 
-      {
+      while (rsize > 0) {
         q = pbuf_pool_alloc();
-        if (q == NULL) 
-        {
+        if (q == NULL) {
           stats.pbuf.err++;
           pbuf_pool_free(p);
           return NULL;
@@ -276,29 +257,21 @@ struct pbuf *pbuf_alloc(int layer, int size, int flag)
 // list (if possible).
 //
 
-void pbuf_refresh()
-{
+void pbuf_refresh() {
   struct pbuf *p;
 
-  if (pbuf_pool_free_cache != NULL) 
-  {
+  if (pbuf_pool_free_cache != NULL) {
     pbuf_pool_free_lock++;
-    if (!pbuf_pool_alloc_lock) 
-    {
-      if (pbuf_pool == NULL)
-      {
+    if (!pbuf_pool_alloc_lock) {
+      if (pbuf_pool == NULL) {
         pbuf_pool = pbuf_pool_free_cache;       
-      } 
-      else 
-      {  
+      } else {  
         for (p = pbuf_pool; p->next != NULL; p = p->next);
         p->next = pbuf_pool_free_cache;
       }
 
       pbuf_pool_free_cache = NULL;
-    } 
-    else 
-    {
+    } else {
       stats.pbuf.refresh_locked++;
     }
     
@@ -318,21 +291,18 @@ void pbuf_refresh()
 // further pbufs on the chain are deallocated.
 //
 
-void pbuf_realloc(struct pbuf *p, int size)
-{
+void pbuf_realloc(struct pbuf *p, int size) {
   struct pbuf *q, *r;
   int rsize;
 
   if (p->tot_len <= size) return;
 
-  switch (p->flags) 
-  {
+  switch (p->flags) {
     case PBUF_FLAG_POOL:
       // First, step over any pbufs that should still be in the chain
       rsize = size;
       q = p;  
-      while (rsize > q->len)
-      {
+      while (rsize > q->len) {
         rsize -= q->len;
         q = q->next;
       }
@@ -344,8 +314,7 @@ void pbuf_realloc(struct pbuf *p, int size)
       r = q->next;
       q->next = NULL;
       q = r;
-      while (q != NULL) 
-      {
+      while (q != NULL) {
         r = q->next;
 
         q->next = pbuf_pool_free_cache;
@@ -364,14 +333,12 @@ void pbuf_realloc(struct pbuf *p, int size)
       // First, step over the pbufs that should still be in the chain.
       rsize = size;
       q = p;
-      while (rsize > q->len) 
-      {
+      while (rsize > q->len) {
         rsize -= q->len;
         q = q->next;
       }
 
-      if (q->flags == PBUF_FLAG_RW)
-      {
+      if (q->flags == PBUF_FLAG_RW) {
         // Reallocate and adjust the length of the pbuf that will be halved
         // TODO: we cannot reallocate the buffer without relinking it, we just leave it for now
         // mem_realloc(q, (u8_t *)q->payload - (u8_t *)q + rsize/sizeof(u8_t));
@@ -397,14 +364,12 @@ void pbuf_realloc(struct pbuf *p, int size)
 // the pbuf. Also, the tot_len and len fields are adjusted.
 //
 
-int pbuf_header(struct pbuf *p, int header_size)
-{
+int pbuf_header(struct pbuf *p, int header_size) {
   void *payload;
 
   payload = p->payload;
   p->payload = (char *) (p->payload) - header_size;
-  if ((char *) p->payload < (char *) p + sizeof(struct pbuf))
-  {
+  if ((char *) p->payload < (char *) p + sizeof(struct pbuf)) {
     p->payload = payload;
     return -EBUF;
   }
@@ -422,8 +387,7 @@ int pbuf_header(struct pbuf *p, int header_size)
 // chain are deallocated.
 //
 
-int pbuf_free(struct pbuf *p)
-{
+int pbuf_free(struct pbuf *p) {
   struct pbuf *q;
   int count = 0;
     
@@ -433,14 +397,11 @@ int pbuf_free(struct pbuf *p)
   p->ref--;
 
   // If reference count is zero, actually deallocate pbuf
-  if (p->ref == 0) 
-  {
+  if (p->ref == 0) {
     q = NULL;
-    while (p != NULL) 
-    {
+    while (p != NULL) {
       // Check if this is a pbuf from the pool
-      if (p->flags == PBUF_FLAG_POOL) 
-      {
+      if (p->flags == PBUF_FLAG_POOL) {
         p->len = p->tot_len = PBUF_POOL_BUFSIZE;
         p->payload = (void *)((char *) p + sizeof(struct pbuf));
         q = p->next;
@@ -449,14 +410,10 @@ int pbuf_free(struct pbuf *p)
         pbuf_pool_free_cache = p;
 
         stats.pbuf.used--;
-      } 
-      else if (p->flags == PBUF_FLAG_RO)
-      {
+      } else if (p->flags == PBUF_FLAG_RO) {
         q = p->next;
         kfree(p);
-      } 
-      else 
-      {
+      } else {
         q = p->next;
         stats.pbuf.rwbufs--;
         kfree(p);
@@ -478,8 +435,7 @@ int pbuf_free(struct pbuf *p)
 // Returns the length of the pbuf chain.
 //
 
-int pbuf_clen(struct pbuf *p)
-{
+int pbuf_clen(struct pbuf *p) {
   int len;
 
   if (!p) return 0;
@@ -495,8 +451,7 @@ int pbuf_clen(struct pbuf *p)
 // Returns the number of unused bytes after the payload in the pbuf.
 //
 
-int pbuf_spare(struct pbuf *p)
-{
+int pbuf_spare(struct pbuf *p) {
   return ((char *) (p + 1) + p->size) - ((char *) p->payload + p->len);
 }
 
@@ -506,8 +461,7 @@ int pbuf_spare(struct pbuf *p)
 // Increments the reference count of the pbuf
 //
 
-void pbuf_ref(struct pbuf *p)
-{
+void pbuf_ref(struct pbuf *p) {
   if (p == NULL) return;
   p->ref++;
 }
@@ -519,8 +473,7 @@ void pbuf_ref(struct pbuf *p)
 // first pbuf (h) is adjusted.
 //
 
-void pbuf_chain(struct pbuf *h, struct pbuf *t)
-{
+void pbuf_chain(struct pbuf *h, struct pbuf *t) {
   struct pbuf *p;
 
   if (t == NULL) return;
@@ -536,8 +489,7 @@ void pbuf_chain(struct pbuf *h, struct pbuf *t)
 // any) of the pbuf chain.
 //
 
-struct pbuf *pbuf_dechain(struct pbuf *p)
-{
+struct pbuf *pbuf_dechain(struct pbuf *p) {
   struct pbuf *q;
   
   q = p->next;
@@ -555,8 +507,7 @@ struct pbuf *pbuf_dechain(struct pbuf *p)
 // linear buffer.
 //
 
-struct pbuf *pbuf_dup(int layer, struct pbuf *p)
-{
+struct pbuf *pbuf_dup(int layer, struct pbuf *p) {
   struct pbuf *q;
   char *ptr;
   int size;
@@ -568,8 +519,7 @@ struct pbuf *pbuf_dup(int layer, struct pbuf *p)
 
   // Copy buffer contents
   ptr = q->payload;
-  while (p)
-  {
+  while (p) {
     memcpy(ptr, p->payload, p->len);
     ptr += p->len;
     p = p->next;
@@ -586,8 +536,7 @@ struct pbuf *pbuf_dup(int layer, struct pbuf *p)
 // p is freed.
 //
 
-struct pbuf *pbuf_linearize(int layer, struct pbuf *p)
-{
+struct pbuf *pbuf_linearize(int layer, struct pbuf *p) {
   struct pbuf *q;
 
   if (!p->next) return p;
@@ -607,8 +556,7 @@ struct pbuf *pbuf_linearize(int layer, struct pbuf *p)
 // allocated and the old pbuf is dereferenced.
 //
 
-struct pbuf *pbuf_cow(int layer, struct pbuf *p)
-{
+struct pbuf *pbuf_cow(int layer, struct pbuf *p) {
   struct pbuf *q;
 
   if (p->ref == 1) return p;

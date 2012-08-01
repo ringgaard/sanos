@@ -36,16 +36,14 @@
 
 struct netstats stats;
 
-static void protstat(struct proc_file *pf, char *prot, struct stats_proto *stat)
-{
+static void protstat(struct proc_file *pf, char *prot, struct stats_proto *stat) {
   pprintf(pf, "%-4s%7d%6d%7d%6d%6d%6d%6d%6d%6d%6d%6d%6d\n",
           prot, stat->xmit, stat->rexmit, stat->recv, stat->fw, stat->drop,
           stat->chkerr, stat->lenerr, stat->memerr, stat->rterr, stat->proterr,
           stat->opterr, stat->err);
 }
 
-static int netstat_proc(struct proc_file *pf, void *arg)
-{
+static int netstat_proc(struct proc_file *pf, void *arg) {
   pprintf(pf, "     -------------- packets -------- ----------------- errors ----------------\n");
   pprintf(pf, "       xmit rexmt   recv forwd  drop cksum   len   mem route proto   opt  misc\n");
   pprintf(pf, "---- ------ ----- ------ ----- ----- ----- ----- ----- ----- ----- ----- -----\n");
@@ -60,8 +58,7 @@ static int netstat_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-static int pbufs_proc(struct proc_file *pf, void *arg)
-{
+static int pbufs_proc(struct proc_file *pf, void *arg) {
   pprintf(pf, "Pool Available .. : %6d\n", stats.pbuf.avail);
   pprintf(pf, "Pool Used ....... : %6d\n", stats.pbuf.used);
   pprintf(pf, "Pool Max Used ... : %6d\n", stats.pbuf.max);
@@ -72,13 +69,11 @@ static int pbufs_proc(struct proc_file *pf, void *arg)
   return 0;
 }
 
-struct netstats *get_netstats()
-{
+struct netstats *get_netstats() {
   return &stats;
 }
 
-void stats_init()
-{
+void stats_init() {
   //memset(&stats, 0, sizeof(struct stats_all));
   
   register_proc_inode("pbufs", pbufs_proc, NULL);

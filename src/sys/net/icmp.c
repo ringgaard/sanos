@@ -37,8 +37,7 @@
 
 #include <net/net.h>
 
-err_t icmp_input(struct pbuf *p, struct netif *inp)
-{
+err_t icmp_input(struct pbuf *p, struct netif *inp) {
   unsigned char type;
   unsigned char code;
   struct icmp_echo_hdr *iecho;
@@ -52,8 +51,7 @@ err_t icmp_input(struct pbuf *p, struct netif *inp)
   iphdr = p->payload;
   hlen = IPH_HL(iphdr) * 4;
   
-  if (pbuf_header(p, -hlen) < 0 || p->tot_len < sizeof(unsigned short) * 2)
-  {
+  if (pbuf_header(p, -hlen) < 0 || p->tot_len < sizeof(unsigned short) * 2) {
     kprintf("icmp_input: short ICMP (%u bytes) received\n", p->tot_len);
     stats.icmp.lenerr++;
     return -EPROTO;
@@ -63,33 +61,28 @@ err_t icmp_input(struct pbuf *p, struct netif *inp)
 
   //kprintf("icmp: recv type %d\n", type);
 
-  switch (type) 
-  {
+  switch (type) {
     case ICMP_ECHO:
-      if (ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) || ip_addr_ismulticast(&iphdr->dest))
-      {
+      if (ip_addr_isbroadcast(&iphdr->dest, &inp->netmask) || ip_addr_ismulticast(&iphdr->dest)) {
         stats.icmp.err++;
         return -EPROTO;
       }
     
-      if (!ip_ownaddr(&iphdr->dest))
-      {
+      if (!ip_ownaddr(&iphdr->dest)) {
         stats.icmp.err++;
         return -EPROTO;
       }
 
       //kprintf("icmp_input: ping src %a dest %a\n", &iphdr->src, &iphdr->dest);
 
-      if (p->tot_len < sizeof(struct icmp_echo_hdr)) 
-      {
+      if (p->tot_len < sizeof(struct icmp_echo_hdr)) {
         kprintf("icmp_input: bad ICMP echo received\n");
         stats.icmp.lenerr++;
         return -EPROTO;
       }
 
       iecho = p->payload;
-      if (inet_chksum_pbuf(p) != 0) 
-      {
+      if (inet_chksum_pbuf(p) != 0) {
         kprintf("icmp_input: checksum failed for received ICMP echo\n");
         stats.icmp.chkerr++;
         return -ECHKSUM;
@@ -101,19 +94,18 @@ err_t icmp_input(struct pbuf *p, struct netif *inp)
       ICMPH_TYPE_SET(iecho, ICMP_ER);
       
       // Adjust the checksum
-      if (iecho->chksum >= htons(0xFFFF - (ICMP_ECHO << 8))) 
+      if (iecho->chksum >= htons(0xFFFF - (ICMP_ECHO << 8))) {
         iecho->chksum += htons(ICMP_ECHO << 8) + 1;
-      else
+      } else {
         iecho->chksum += htons(ICMP_ECHO << 8);
-
+      }
       stats.icmp.xmit++;
       
       pbuf_header(p, hlen);
       return ip_output_if(p, &iphdr->src, IP_HDRINCL, IPH_TTL(iphdr), IP_PROTO_ICMP, inp);
 
     case ICMP_DUR:
-      if (p->tot_len < ICMP_HLEN)
-      {
+      if (p->tot_len < ICMP_HLEN) {
         kprintf("icmp_input: ICMP message too short\n");
         stats.icmp.lenerr++;
         return -EPROTO;
@@ -135,8 +127,7 @@ err_t icmp_input(struct pbuf *p, struct netif *inp)
   return 0;
 }
 
-void icmp_dest_unreach(struct pbuf *p, int t)
-{
+void icmp_dest_unreach(struct pbuf *p, int t) {
   struct pbuf *q;
   struct ip_hdr *iphdr;
   struct icmp_dur_hdr *idur;
@@ -161,8 +152,7 @@ void icmp_dest_unreach(struct pbuf *p, int t)
   if (ip_output(q, NULL, &iphdr->src, ICMP_TTL, IP_PROTO_ICMP) < 0) pbuf_free(q);
 }
 
-void icmp_time_exceeded(struct pbuf *p, int t)
-{
+void icmp_time_exceeded(struct pbuf *p, int t) {
   struct pbuf *q;
   struct ip_hdr *iphdr;
   struct icmp_te_hdr *tehdr;

@@ -40,15 +40,13 @@ static struct raw_pcb *raw_pcbs = NULL;
 // rawstat_proc
 //
 
-static int rawstat_proc(struct proc_file *pf, void *arg)
-{
+static int rawstat_proc(struct proc_file *pf, void *arg) {
   struct raw_pcb *pcb;
 
   pprintf(pf, "protocol    local ip        remote ip\n");
   pprintf(pf, "----------- --------------- ---------------\n");
 
-  for (pcb = raw_pcbs; pcb != NULL; pcb = pcb->next) 
-  {
+  for (pcb = raw_pcbs; pcb != NULL; pcb = pcb->next) {
     pprintf(pf, "%8d    %-15a %-15a\n", pcb->protocol, &pcb->local_ip, &pcb->remote_ip);
   }
 
@@ -59,8 +57,7 @@ static int rawstat_proc(struct proc_file *pf, void *arg)
 // raw_init
 //
 
-void raw_init()
-{
+void raw_init() {
   raw_pcbs = NULL;
   register_proc_inode("rawstat", rawstat_proc, NULL);
 }
@@ -74,8 +71,7 @@ void raw_init()
 // callback function.
 //
 
-err_t raw_input(struct pbuf *p, struct netif *inp)
-{
+err_t raw_input(struct pbuf *p, struct netif *inp) {
   struct raw_pcb *pcb;
   struct ip_hdr *iphdr;
   int proto;
@@ -88,18 +84,15 @@ err_t raw_input(struct pbuf *p, struct netif *inp)
   // Loop through all raw pcbs until the packet is eaten by one
   // This allows multiple pcbs to match against the packet by design
   pcb = raw_pcbs;
-  while (!eaten && pcb != NULL) 
-  {
+  while (!eaten && pcb != NULL) {
     if (pcb->protocol == proto) 
     {
       // Receive callback function available?
-      if (pcb->recv != NULL) 
-      {
+      if (pcb->recv != NULL) {
         // The receive callback function did not eat the packet?
         rc = pcb->recv(pcb->recv_arg, pcb, p, &iphdr->src);
         if (rc < 0) return rc;
-        if (rc > 0)
-        {
+        if (rc > 0) {
           // Receive function ate the packet
           stats.raw.recv++;
           p = NULL;
@@ -117,8 +110,7 @@ err_t raw_input(struct pbuf *p, struct netif *inp)
 // Bind a RAW PCB.
 //
 
-err_t raw_bind(struct raw_pcb *pcb, struct ip_addr *ipaddr)
-{
+err_t raw_bind(struct raw_pcb *pcb, struct ip_addr *ipaddr) {
   ip_addr_set(&pcb->local_ip, ipaddr);
   return 0;
 }
@@ -127,8 +119,7 @@ err_t raw_bind(struct raw_pcb *pcb, struct ip_addr *ipaddr)
 // Connect an RAW PCB.  This will associate the RAW PCB with the remote address.
 //
 
-err_t raw_connect(struct raw_pcb *pcb, struct ip_addr *ipaddr)
-{
+err_t raw_connect(struct raw_pcb *pcb, struct ip_addr *ipaddr) {
   ip_addr_set(&pcb->remote_ip, ipaddr);
   return 0;
 }
@@ -144,8 +135,9 @@ err_t raw_connect(struct raw_pcb *pcb, struct ip_addr *ipaddr)
 //   against further PCBs and/or forwarded to another protocol layers.
 //
 
-err_t raw_recv(struct raw_pcb *pcb, int (*recv)(void *arg, struct raw_pcb *upcb, struct pbuf *p, struct ip_addr *addr), void *recv_arg)
-{
+err_t raw_recv(struct raw_pcb *pcb, 
+               int (*recv)(void *arg, struct raw_pcb *upcb, struct pbuf *p, struct ip_addr *addr), 
+               void *recv_arg) {
   // Remember recv() callback and user data
   pcb->recv = recv;
   pcb->recv_arg = recv_arg;
@@ -158,24 +150,19 @@ err_t raw_recv(struct raw_pcb *pcb, int (*recv)(void *arg, struct raw_pcb *upcb,
 // you actually get the IP headers), you can only specify the IP payload here.
 //
 
-err_t raw_sendto(struct raw_pcb *pcb, struct pbuf *p, struct ip_addr *ipaddr)
-{
+err_t raw_sendto(struct raw_pcb *pcb, struct pbuf *p, struct ip_addr *ipaddr) {
   struct netif *netif;
   struct ip_addr *src_ip;
 
-  if ((netif = ip_route(ipaddr)) == NULL) 
-  {
+  if ((netif = ip_route(ipaddr)) == NULL) {
     stats.raw.rterr++;
     return -EROUTE;
   }
 
-  if (ip_addr_isany(&pcb->local_ip))
-  {
+  if (ip_addr_isany(&pcb->local_ip)) {
     // Use outgoing network interface IP address as source address
     src_ip = &netif->ipaddr;
-  } 
-  else 
-  {
+  } else {
     // use RAW PCB local IP address as source address
     src_ip = &pcb->local_ip;
   }
@@ -188,8 +175,7 @@ err_t raw_sendto(struct raw_pcb *pcb, struct pbuf *p, struct ip_addr *ipaddr)
 // Send the raw IP packet to the address given by raw_connect()
 //
 
-err_t raw_send(struct raw_pcb *pcb, struct pbuf *p)
-{
+err_t raw_send(struct raw_pcb *pcb, struct pbuf *p) {
   return raw_sendto(pcb, p, &pcb->remote_ip);
 }
 
@@ -197,20 +183,14 @@ err_t raw_send(struct raw_pcb *pcb, struct pbuf *p)
 // Remove an RAW PCB.
 //
 
-void raw_remove(struct raw_pcb *pcb)
-{
+void raw_remove(struct raw_pcb *pcb) {
   struct raw_pcb *pcb2;
   
-  if (raw_pcbs == pcb) 
-  {
+  if (raw_pcbs == pcb) {
     raw_pcbs = raw_pcbs->next;
-  } 
-  else 
-  {
-    for (pcb2 = raw_pcbs; pcb2 != NULL; pcb2 = pcb2->next) 
-    {
-      if (pcb2->next != NULL && pcb2->next == pcb) 
-      {
+  } else {
+    for (pcb2 = raw_pcbs; pcb2 != NULL; pcb2 = pcb2->next) {
+      if (pcb2->next != NULL && pcb2->next == pcb) {
         pcb2->next = pcb->next;
       }
     }
@@ -223,8 +203,7 @@ void raw_remove(struct raw_pcb *pcb)
 // Create a RAW PCB.
 //
 
-struct raw_pcb *raw_new(unsigned short proto)
-{
+struct raw_pcb *raw_new(unsigned short proto) {
   struct raw_pcb *pcb;
 
   pcb = (struct raw_pcb *) kmalloc(sizeof(struct raw_pcb));

@@ -33,24 +33,20 @@
 
 #include <net/net.h>
 
-static err_t recv_raw(void *arg, struct raw_pcb *pcb, struct pbuf *p, struct ip_addr *addr)
-{
+static err_t recv_raw(void *arg, struct raw_pcb *pcb, struct pbuf *p, struct ip_addr *addr) {
   struct socket *s = arg;
   struct sockreq *req = s->waithead;
   struct sockaddr_in *sin;
   int rc;
 
-  if (req)
-  {
+  if (req) {
     rc = write_iovec(req->msg->msg_iov, req->msg->msg_iovlen, p->payload, p->len);
     if (rc < p->len) rc = -EMSGSIZE;
 
-    if (req->msg->msg_name)
-    {
-      if (req->msg->msg_namelen < sizeof(struct sockaddr_in))
+    if (req->msg->msg_name) {
+      if (req->msg->msg_namelen < sizeof(struct sockaddr_in)) {
         rc = -EFAULT;
-      else
-      {
+      } else {
         sin = (struct sockaddr_in *) req->msg->msg_name;
         sin->sin_family = AF_INET;
         sin->sin_port = 0;
@@ -62,22 +58,16 @@ static err_t recv_raw(void *arg, struct raw_pcb *pcb, struct pbuf *p, struct ip_
     pbuf_free(p);
 
     release_socket_request(req, rc);
-  }
-  else 
-  {
-    if (p->next) 
-    {
+  } else {
+    if (p->next) {
       kprintf("recv_raw: fragmented pbuf not supported\n");
       return -EINVAL;
     }
 
-    if (s->raw.recvtail)
-    {
+    if (s->raw.recvtail) {
       pbuf_chain(s->raw.recvtail, p);
       s->raw.recvtail = p;
-    }
-    else
-    {
+    } else {
       s->raw.recvhead = p;
       s->raw.recvtail = p;
     }
@@ -88,13 +78,11 @@ static err_t recv_raw(void *arg, struct raw_pcb *pcb, struct pbuf *p, struct ip_
   return 1;
 }
 
-static int rawsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen, struct socket **retval)
-{
+static int rawsock_accept(struct socket *s, struct sockaddr *addr, int *addrlen, struct socket **retval) {
   return -EINVAL;
 }
 
-static int rawsock_bind(struct socket *s, struct sockaddr *name, int namelen)
-{
+static int rawsock_bind(struct socket *s, struct sockaddr *name, int namelen) {
   int rc;
   struct sockaddr_in *sin;
 
@@ -110,22 +98,19 @@ static int rawsock_bind(struct socket *s, struct sockaddr *name, int namelen)
   return 0;
 }
 
-static int rawsock_close(struct socket *s)
-{
+static int rawsock_close(struct socket *s) {
   struct sockreq *req;
   struct sockreq *next;
 
   s->state = SOCKSTATE_CLOSED;
   req = s->waithead;
-  while (req)
-  {
+  while (req) {
     next = req->next;
     release_socket_request(req, -EABORT);
     req = next;
   }
 
-  if (s->raw.pcb)
-  {
+  if (s->raw.pcb) {
     s->raw.pcb->recv_arg = NULL;
     raw_remove(s->raw.pcb);
   }
@@ -135,8 +120,7 @@ static int rawsock_close(struct socket *s)
   return 0;
 }
 
-static int rawsock_connect(struct socket *s, struct sockaddr *name, int namelen)
-{
+static int rawsock_connect(struct socket *s, struct sockaddr *name, int namelen) {
   int rc;
   struct sockaddr_in *sin;
 
@@ -153,8 +137,7 @@ static int rawsock_connect(struct socket *s, struct sockaddr *name, int namelen)
   return 0;
 }
 
-static int rawsock_getpeername(struct socket *s, struct sockaddr *name, int *namelen)
-{
+static int rawsock_getpeername(struct socket *s, struct sockaddr *name, int *namelen) {
   struct sockaddr_in *sin;
 
   if (!namelen) return -EFAULT;
@@ -170,8 +153,7 @@ static int rawsock_getpeername(struct socket *s, struct sockaddr *name, int *nam
   return 0;
 }
 
-static int rawsock_getsockname(struct socket *s, struct sockaddr *name, int *namelen)
-{
+static int rawsock_getsockname(struct socket *s, struct sockaddr *name, int *namelen) {
   struct sockaddr_in *sin;
 
   if (!namelen) return -EFAULT;
@@ -187,21 +169,19 @@ static int rawsock_getsockname(struct socket *s, struct sockaddr *name, int *nam
   return 0;
 }
 
-static int rawsock_getsockopt(struct socket *s, int level, int optname, char *optval, int *optlen)
-{
+static int rawsock_getsockopt(struct socket *s, int level, int optname, char *optval, int *optlen) {
   return -ENOSYS;
 }
 
-static int rawsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
-{
-  switch (cmd)
-  {
+static int rawsock_ioctl(struct socket *s, int cmd, void *data, size_t size) {
+  switch (cmd) {
     case FIONBIO:
       if (!data || size != 4) return -EFAULT;
-      if (*(int *) data)
+      if (*(int *) data) {
         s->flags |= SOCK_NBIO;
-      else
+      } else {
         s->flags &= ~SOCK_NBIO;
+      }
       break;
 
     default:
@@ -211,13 +191,11 @@ static int rawsock_ioctl(struct socket *s, int cmd, void *data, size_t size)
   return 0;
 }
 
-static int rawsock_listen(struct socket *s, int backlog)
-{
+static int rawsock_listen(struct socket *s, int backlog) {
   return -EINVAL;
 }
 
-static int rawsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
-{
+static int rawsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int flags) {
   struct pbuf *p;
   struct ip_hdr *iphdr;
   int rc;
@@ -225,8 +203,7 @@ static int rawsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   struct sockreq req;
 
   p = s->raw.recvhead;
-  if (p)
-  {
+  if (p) {
     s->raw.recvhead = pbuf_dechain(p);
     if (!s->raw.recvhead) s->raw.recvtail = NULL; 
     if (!s->raw.recvhead) clear_io_event(&s->iob, IOEVT_READ);
@@ -236,8 +213,7 @@ static int rawsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
     rc = write_iovec(msg->msg_iov, msg->msg_iovlen, p->payload, p->len);
     if (rc < p->len) rc = -EMSGSIZE;
 
-    if (msg->msg_name)
-    {
+    if (msg->msg_name) {
       if (msg->msg_namelen < sizeof(struct sockaddr_in)) return -EFAULT;
       sin = (struct sockaddr_in *) msg->msg_name;
       sin->sin_family = AF_INET;
@@ -247,25 +223,23 @@ static int rawsock_recvmsg(struct socket *s, struct msghdr *msg, unsigned int fl
     msg->msg_namelen = sizeof(struct sockaddr_in);
 
     pbuf_free(p);
-  }
-  else if (s->flags & SOCK_NBIO)
+  } else if (s->flags & SOCK_NBIO) {
     rc = -EAGAIN;
-  else
+  } else {
     rc = submit_socket_request(s, &req, SOCKREQ_RECV, msg, s->rcvtimeo);
+  }
 
   return rc;
 }
 
-static int rawsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
-{
+static int rawsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int flags) {
   struct pbuf *p;
   int size;
   int rc;
 
   size = get_iovec_size(msg->msg_iov, msg->msg_iovlen);
 
-  if (msg->msg_name)
-  {
+  if (msg->msg_name) {
     rc = rawsock_connect(s, msg->msg_name, msg->msg_namelen);
     if (rc < 0) return rc;
   }
@@ -279,8 +253,7 @@ static int rawsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   if (rc < 0) return rc;
   
   rc = raw_send(s->raw.pcb, p);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     pbuf_free(p);
     return rc;
   }
@@ -288,12 +261,10 @@ static int rawsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   return size;
 }
 
-static int rawsock_setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen)
-{
+static int rawsock_setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen) {
   if (level == SOL_SOCKET)
   {
-    switch (optname)
-    {
+    switch (optname) {
       case SO_SNDTIMEO:
         if (optlen != 4) return -EINVAL;
         s->sndtimeo = *(unsigned int *) optval;
@@ -307,20 +278,18 @@ static int rawsock_setsockopt(struct socket *s, int level, int optname, const ch
       default:
         return -ENOPROTOOPT;
     }
-  }
-  else
+  } else {
     return -ENOPROTOOPT;
+  }
 
   return 0;
 }
 
-static int rawsock_shutdown(struct socket *s, int how)
-{
+static int rawsock_shutdown(struct socket *s, int how) {
   return -ENOSYS;
 }
 
-static int rawsock_socket(struct socket *s, int domain, int type, int protocol)
-{
+static int rawsock_socket(struct socket *s, int domain, int type, int protocol) {
   s->raw.pcb = raw_new(protocol);
   if (!s->raw.pcb) return -ENOMEM;
   raw_recv(s->raw.pcb, recv_raw, s);
@@ -329,8 +298,7 @@ static int rawsock_socket(struct socket *s, int domain, int type, int protocol)
   return 0;
 }
 
-struct sockops rawops =
-{
+struct sockops rawops = {
   rawsock_accept,
   rawsock_bind,
   rawsock_close,

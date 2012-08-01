@@ -37,8 +37,7 @@
 static const struct eth_addr ethbroadcast = {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}};
 struct queue *ether_queue;
 
-struct ether_msg
-{
+struct ether_msg {
   struct pbuf *p;
   struct netif *netif;
 };
@@ -47,8 +46,7 @@ struct ether_msg
 // ether_netif_add
 //
 
-struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr, struct ip_addr *netmask, struct ip_addr *gw)
-{
+struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr, struct ip_addr *netmask, struct ip_addr *gw) {
   struct netif *netif;
   struct dhcp_state *state;
   dev_t devno;
@@ -68,13 +66,10 @@ struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr,
   dev_attach(devno, netif, ether_input);
 
   // Obtain network parameters using DHCP
-  if (ip_addr_isany(ipaddr))
-  {
+  if (ip_addr_isany(ipaddr)) {
     state = dhcp_start(netif);
-    if (state) 
-    {
-      if (wait_for_object(&state->binding_complete, 30000)  < 0)
-      {
+    if (state) {
+      if (wait_for_object(&state->binding_complete, 30000)  < 0) {
         kprintf(KERN_WARNING "ether: timeout waiting for dhcp to complete on %s\n", name);
       }
     }
@@ -86,11 +81,10 @@ struct netif *ether_netif_add(char *name, char *devname, struct ip_addr *ipaddr,
 }
 
 //
-// register_ether_netifs()
+// register_ether_netifs
 //
 
-int register_ether_netifs()
-{
+int register_ether_netifs() {
   dev_t devno;
   struct dev *dev;
   int rc;
@@ -99,8 +93,7 @@ int register_ether_netifs()
 
   noaddr.addr = IP_ADDR_ANY;
 
-  for (devno = 0; devno < num_devs; devno++)
-  {
+  for (devno = 0; devno < num_devs; devno++) {
     dev = device(devno);
     if (!dev) continue;
     if (!dev->driver) continue;
@@ -125,8 +118,7 @@ int register_ether_netifs()
 // This function converts an ethernet address to string format.
 //
 
-char *ether2str(struct eth_addr *hwaddr, char *s)
-{
+char *ether2str(struct eth_addr *hwaddr, char *s) {
   sprintf(s, "%02x:%02x:%02x:%02x:%02x:%02x",  
           hwaddr->addr[0], hwaddr->addr[1], hwaddr->addr[2], 
           hwaddr->addr[3], hwaddr->addr[4], hwaddr->addr[5]);
@@ -139,16 +131,13 @@ char *ether2str(struct eth_addr *hwaddr, char *s)
 
 #define ETHERNET_POLYNOMIAL 0x04c11db7U
 
-unsigned long ether_crc(int length, unsigned char *data)
-{
+unsigned long ether_crc(int length, unsigned char *data) {
   int crc = -1;
 
-  while (--length >= 0) 
-  {
+  while (--length >= 0) {
     unsigned char current_octet = *data++;
     int bit;
-    for (bit = 0; bit < 8; bit++, current_octet >>= 1)
-    {
+    for (bit = 0; bit < 8; bit++, current_octet >>= 1) {
       crc = (crc << 1) ^ ((crc < 0) ^ (current_octet & 1) ? ETHERNET_POLYNOMIAL : 0);
     }
   }
@@ -163,8 +152,7 @@ unsigned long ether_crc(int length, unsigned char *data)
 // should be sent.
 //
 
-err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
-{
+err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr) {
   struct pbuf *q;
   struct eth_hdr *ethhdr;
   struct eth_addr *dest, mcastaddr;
@@ -177,8 +165,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
 
   if ((netif->flags & NETIF_UP) == 0) return -ENETDOWN;
 
-  if (pbuf_header(p, ETHER_HLEN))
-  {
+  if (pbuf_header(p, ETHER_HLEN)) {
     kprintf(KERN_ERR "ether_output: not enough room for Ethernet header in pbuf\n");
     stats.link.err++;
     return -EBUF;
@@ -190,10 +177,9 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   // ARP table.
 
   queryaddr = ipaddr;
-  if (ip_addr_isany(ipaddr) || ip_addr_isbroadcast(ipaddr, &netif->netmask)) 
+  if (ip_addr_isany(ipaddr) || ip_addr_isbroadcast(ipaddr, &netif->netmask)) {
     dest = (struct eth_addr *) &ethbroadcast;
-  else if (ip_addr_ismulticast(ipaddr)) 
-  {
+  } else if (ip_addr_ismulticast(ipaddr)) {
     // Hash IP multicast address to MAC address.
     mcastaddr.addr[0] = 0x01;
     mcastaddr.addr[1] = 0x0;
@@ -202,21 +188,14 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
     mcastaddr.addr[4] = ip4_addr3(ipaddr);
     mcastaddr.addr[5] = ip4_addr4(ipaddr);
     dest = &mcastaddr;
-  }
-  else if (ip_addr_cmp(ipaddr, &netif->ipaddr))
-  {
+  } else if (ip_addr_cmp(ipaddr, &netif->ipaddr)) {
     dest = &netif->hwaddr;
     loopback = 1;
-  }
-  else 
-  {
-    if (ip_addr_maskcmp(ipaddr, &netif->ipaddr, &netif->netmask))
-    {
+  } else {
+    if (ip_addr_maskcmp(ipaddr, &netif->ipaddr, &netif->netmask)) {
       // Use destination IP address if the destination is on the same subnet as we are.
       queryaddr = ipaddr;
-    }
-    else
-    {
+    } else {
       // Otherwise we use the default router as the address to send the Ethernet frame to.
       queryaddr = &netif->gw;
     }
@@ -225,14 +204,11 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
   }
 
   // If the arp_lookup() didn't find an address, we send out an ARP query for the IP address.
-  if (dest == NULL) 
-  {
+  if (dest == NULL) {
     q = arp_query(netif, &netif->hwaddr, queryaddr);
-    if (q != NULL) 
-    {
+    if (q != NULL) {
       err = dev_transmit((dev_t) netif->state, q);
-      if (err < 0)
-      {
+      if (err < 0) {
         kprintf(KERN_ERR "ether: error %d sending arp packet\n", err);
         pbuf_free(q);
         stats.link.drop++;
@@ -242,8 +218,7 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
 
     // Queue packet for transmission, when the ARP reply returns
     err = arp_queue(netif, p, queryaddr);
-    if (err < 0)
-    {
+    if (err < 0) {
       kprintf(KERN_ERR "ether: error %d queueing packet\n", err);
       stats.link.drop++;
       stats.link.memerr++;
@@ -255,32 +230,26 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
 
   ethhdr = p->payload;
 
-  for (i = 0; i < 6; i++)
-  {
+  for (i = 0; i < 6; i++) {
     ethhdr->dest.addr[i] = dest->addr[i];
     ethhdr->src.addr[i] = netif->hwaddr.addr[i];
   }
   ethhdr->type = htons(ETHTYPE_IP);
   
-  if (loopback)
-  {
+  if (loopback) {
     struct pbuf *q;
 
     q = pbuf_dup(PBUF_RAW, p);
     if (!q) return -ENOMEM;
 
     err = ether_input(netif, q);
-    if (err < 0)
-    {
+    if (err < 0) {
       pbuf_free(q);
       return err;
     }
-  }
-  else
-  {
+  } else {
     err = dev_transmit((dev_t) netif->state, p);
-    if (err < 0)
-    {
+    if (err < 0) {
       kprintf(KERN_ERR "ether: error %d sending packet\n", err);
       return err;
     }
@@ -296,14 +265,12 @@ err_t ether_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
 // from the interface. 
 //
 
-err_t ether_input(struct netif *netif, struct pbuf *p)
-{
+err_t ether_input(struct netif *netif, struct pbuf *p) {
   struct ether_msg *msg;
 
   if ((netif->flags & NETIF_UP) == 0) return -ENETDOWN;
 
-  if (p->len < ETHER_HLEN)
-  {
+  if (p->len < ETHER_HLEN) {
     kprintf("ether: Packet dropped due to too short packet %d %s\n", p->len, netif->name);
     stats.link.lenerr++;
     stats.link.drop++;
@@ -316,8 +283,7 @@ err_t ether_input(struct netif *netif, struct pbuf *p)
   msg->p = p;
   msg->netif = netif;
 
-  if (enqueue(ether_queue, msg, 0) < 0)
-  {
+  if (enqueue(ether_queue, msg, 0) < 0) {
     if (!debugging) kprintf("ether: drop (queue full)\n");
     kfree(msg);
     stats.link.memerr++;
@@ -335,15 +301,13 @@ err_t ether_input(struct netif *netif, struct pbuf *p)
 // to the TCP/IP stack. 
 //
 
-void ether_dispatcher(void *arg)
-{
+void ether_dispatcher(void *arg) {
   struct ether_msg *msg;
   struct pbuf *p;
   struct netif *netif;
   struct eth_hdr *ethhdr;
 
-  while (1)
-  {
+  while (1) {
     msg = dequeue(ether_queue, INFINITE);
     if (!msg) panic("error retrieving message from ethernet packet queue\n");
 
@@ -351,14 +315,12 @@ void ether_dispatcher(void *arg)
     netif = msg->netif;
     kfree(msg);
 
-    if (p != NULL) 
-    {
+    if (p != NULL) {
       ethhdr = p->payload;
 
       //if (!eth_addr_isbroadcast(&ethhdr->dest)) kprintf("ether: recv src=%la dst=%la type=%04X len=%d\n", &ethhdr->src, &ethhdr->dest, htons(ethhdr->type), p->len);
       
-      switch (htons(ethhdr->type))
-      {
+      switch (htons(ethhdr->type)) {
         case ETHTYPE_IP:
           arp_ip_input(netif, p);
           pbuf_header(p, -ETHER_HLEN);
@@ -367,8 +329,7 @@ void ether_dispatcher(void *arg)
 
         case ETHTYPE_ARP:
           p = arp_arp_input(netif, &netif->hwaddr, p);
-          if (p != NULL) 
-          {
+          if (p != NULL) {
             if (dev_transmit((dev_t) netif->state, p) < 0) pbuf_free(p);
           }
           break;
@@ -389,8 +350,7 @@ void ether_dispatcher(void *arg)
 // Initializes the ethernet packet dispatcher
 //
 
-void ether_init()
-{
+void ether_init() {
   struct thread *ethertask;
 
   ether_queue = alloc_queue(256);

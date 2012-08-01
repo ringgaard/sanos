@@ -39,41 +39,35 @@ extern struct sockops rawops;
 
 struct sockops *sockops[SOCKTYPE_NUM];
 
-void socket_init()
-{
+void socket_init() {
   sockops[SOCKTYPE_TCP] = &tcpops;
   sockops[SOCKTYPE_UDP] = &udpops;
   sockops[SOCKTYPE_RAW] = &rawops;
 }
 
-void cancel_socket_request(struct sockreq *req)
-{
+void cancel_socket_request(struct sockreq *req) {
   if (req->next) req->next->prev = req->prev;
   if (req->prev) req->prev->next = req->next;
-  if (req->socket)
-  {
+  if (req->socket) {
     if (req == req->socket->waithead) req->socket->waithead = req->next;
     if (req == req->socket->waittail) req->socket->waittail = req->prev;
   }
 }
 
-void release_socket_request(struct sockreq *req, int rc)
-{
+void release_socket_request(struct sockreq *req, int rc) {
   cancel_socket_request(req);
   req->rc = rc;
   mark_thread_ready(req->thread, 1, 2);
 }
 
-static void socket_timeout(void *arg)
-{
+static void socket_timeout(void *arg) {
   struct sockreq *req = arg;
 
   if (req->thread->state == THREAD_STATE_READY) return;
   release_socket_request(req, req->rc > 0 ? req->rc : -ETIMEOUT);
 }
 
-err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, struct msghdr *msg, unsigned int timeout)
-{
+err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, struct msghdr *msg, unsigned int timeout) {
   struct timer timer;
   int rc;
 
@@ -91,16 +85,14 @@ err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, str
   s->waittail = req;
   if (!s->waithead) s->waithead = req;
 
-  if (timeout != INFINITE)
-  {
+  if (timeout != INFINITE) {
     init_timer(&timer, socket_timeout, req);
     timer.expires = ticks + timeout / MSECS_PER_TICK;
     add_timer(&timer);
   }
 
   rc = enter_alertable_wait(THREAD_WAIT_SOCKET);
-  if (rc < 0)
-  {
+  if (rc < 0) {
     cancel_socket_request(req);
     req->rc = rc;
   }
@@ -110,18 +102,15 @@ err_t submit_socket_request(struct socket *s, struct sockreq *req, int type, str
   return req->rc;
 }
 
-int accept(struct socket *s, struct sockaddr *addr, int *addrlen, struct socket **retval)
-{
+int accept(struct socket *s, struct sockaddr *addr, int *addrlen, struct socket **retval) {
   return sockops[s->type]->accept(s, addr, addrlen, retval);
 }
 
-int bind(struct socket *s, struct sockaddr *name, int namelen)
-{
+int bind(struct socket *s, struct sockaddr *name, int namelen) {
   return sockops[s->type]->bind(s, name, namelen);
 }
 
-int closesocket(struct socket *s)
-{
+int closesocket(struct socket *s) {
   int rc;
 
   rc = sockops[s->type]->close(s);
@@ -129,43 +118,37 @@ int closesocket(struct socket *s)
   return rc;
 }
 
-int connect(struct socket *s, struct sockaddr *name, int namelen)
-{
+int connect(struct socket *s, struct sockaddr *name, int namelen) {
   return sockops[s->type]->connect(s, name, namelen);
 }
 
-int getpeername(struct socket *s, struct sockaddr *name, int *namelen)
-{
+int getpeername(struct socket *s, struct sockaddr *name, int *namelen) {
   return sockops[s->type]->getpeername(s, name, namelen);
 }
 
-int getsockname(struct socket *s, struct sockaddr *name, int *namelen)
-{
+int getsockname(struct socket *s, struct sockaddr *name, int *namelen) {
   return sockops[s->type]->getsockname(s, name, namelen);
 }
 
-int getsockopt(struct socket *s, int level, int optname, char *optval, int *optlen)
-{
+int getsockopt(struct socket *s, int level, int optname, char *optval, int *optlen) {
   return sockops[s->type]->getsockopt(s, level, optname, optval, optlen);
 }
 
-int ioctlsocket(struct socket *s, int cmd, void *data, size_t size)
-{
-  if (cmd == SIOIFLIST)
+int ioctlsocket(struct socket *s, int cmd, void *data, size_t size) {
+  if (cmd == SIOIFLIST) {
     return netif_ioctl_list(data, size);
-  else if (cmd == SIOIFCFG)
+  } else if (cmd == SIOIFCFG) {
     return netif_ioctl_cfg(data, size);
-  else
+  } else {
     return sockops[s->type]->ioctl(s, cmd, data, size);
+  }
 }
 
-int listen(struct socket *s, int backlog)
-{
+int listen(struct socket *s, int backlog) {
   return sockops[s->type]->listen(s, backlog);
 }
 
-int recv(struct socket *s, void *data, int size, unsigned int flags)
-{
+int recv(struct socket *s, void *data, int size, unsigned int flags) {
   struct msghdr msg;
   struct iovec iov;
   int rc;
@@ -185,8 +168,7 @@ int recv(struct socket *s, void *data, int size, unsigned int flags)
   return rc;
 }
 
-int recvmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
-{
+int recvmsg(struct socket *s, struct msghdr *msg, unsigned int flags) {
   struct msghdr m;
   int rc;
 
@@ -204,8 +186,7 @@ int recvmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
   return rc;
 }
 
-int recvv(struct socket *s, struct iovec *iov, int count)
-{
+int recvv(struct socket *s, struct iovec *iov, int count) {
   struct msghdr msg;
   int rc;
 
@@ -221,8 +202,7 @@ int recvv(struct socket *s, struct iovec *iov, int count)
   return rc;
 }
 
-int recvfrom(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen)
-{
+int recvfrom(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen) {
   struct msghdr msg;
   struct iovec iov;
   int rc;
@@ -243,8 +223,7 @@ int recvfrom(struct socket *s, void *data, int size, unsigned int flags, struct 
   return rc;
 }
 
-int send(struct socket *s, void *data, int size, unsigned int flags)
-{
+int send(struct socket *s, void *data, int size, unsigned int flags) {
   struct msghdr msg;
   struct iovec iov;
   int rc;
@@ -264,8 +243,7 @@ int send(struct socket *s, void *data, int size, unsigned int flags)
   return rc;
 }
 
-int sendmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
-{
+int sendmsg(struct socket *s, struct msghdr *msg, unsigned int flags) {
   struct msghdr m;
   int rc;
 
@@ -282,8 +260,7 @@ int sendmsg(struct socket *s, struct msghdr *msg, unsigned int flags)
   return rc;
 }
 
-int sendto(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *to, int tolen)
-{
+int sendto(struct socket *s, void *data, int size, unsigned int flags, struct sockaddr *to, int tolen) {
   struct msghdr msg;
   struct iovec iov;
   int rc;
@@ -303,8 +280,7 @@ int sendto(struct socket *s, void *data, int size, unsigned int flags, struct so
   return rc;
 }
 
-int sendv(struct socket *s, struct iovec *iov, int count)
-{
+int sendv(struct socket *s, struct iovec *iov, int count) {
   struct msghdr msg;
   int rc;
 
@@ -320,41 +296,39 @@ int sendv(struct socket *s, struct iovec *iov, int count)
   return rc;
 }
 
-int setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen)
-{
+int setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen) {
   return sockops[s->type]->setsockopt(s, level, optname, optval, optlen);
 }
 
-int shutdown(struct socket *s, int how)
-{
+int shutdown(struct socket *s, int how) {
   return sockops[s->type]->shutdown(s, how);
 }
 
-int socket(int domain, int type, int protocol, struct socket **retval)
-{
+int socket(int domain, int type, int protocol, struct socket **retval) {
   struct socket *s;
   int socktype;
   int rc;
 
   if (domain != AF_INET) return -EAFNOSUPPORT;
-  switch (type)
-  {
+  switch (type) {
     case SOCK_STREAM:
-      if (protocol == IPPROTO_IP)
+      if (protocol == IPPROTO_IP) {
         socktype = SOCKTYPE_TCP;
-      else if (protocol == IPPROTO_TCP)
+      } else if (protocol == IPPROTO_TCP) {
         socktype = SOCKTYPE_TCP;
-      else
+      } else {
         return -EPROTONOSUPPORT;
+      }
       break;
 
     case SOCK_DGRAM:
-      if (protocol == IPPROTO_IP)
+      if (protocol == IPPROTO_IP) {
         socktype = SOCKTYPE_UDP;
-      else if (protocol == IPPROTO_UDP)
+      } else if (protocol == IPPROTO_UDP) {
         socktype = SOCKTYPE_UDP;
-      else
+      } else {
         return -EPROTONOSUPPORT;
+      }
       break;
 
     case SOCK_RAW:

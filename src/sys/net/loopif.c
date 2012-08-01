@@ -37,8 +37,7 @@
 struct netif *loopback_netif;
 struct queue *loopback_queue;
 
-static err_t loopif_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
-{
+static err_t loopif_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr) {
   struct pbuf *q;
 
   if ((netif->flags & NETIF_UP) == 0) return -ENETDOWN;
@@ -46,8 +45,7 @@ static err_t loopif_output(struct netif *netif, struct pbuf *p, struct ip_addr *
   q = pbuf_dup(PBUF_RAW, p);
   if (!q) return -ENOMEM;
 
-  if (enqueue(loopback_queue, q, 0) < 0)
-  {
+  if (enqueue(loopback_queue, q, 0) < 0) {
     kprintf("loopif: drop (queue full)\n");
     stats.link.memerr++;
     stats.link.drop++;
@@ -60,14 +58,12 @@ static err_t loopif_output(struct netif *netif, struct pbuf *p, struct ip_addr *
   return 0;
 }
 
-void loopif_dispatcher(void *arg)
-{
+void loopif_dispatcher(void *arg) {
   struct netif *netif = arg;
   struct pbuf *p;
   int rc;
 
-  while (1)
-  {
+  while (1) {
     p = dequeue(loopback_queue, INFINITE);
     if (!p) panic("error retrieving message from loopback packet queue\n");
 
@@ -76,8 +72,7 @@ void loopif_dispatcher(void *arg)
   }
 }
 
-void loopif_init()
-{
+void loopif_init() {
   struct ip_addr loip;
   struct ip_addr logw;
   struct ip_addr lomask;
