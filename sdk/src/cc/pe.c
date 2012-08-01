@@ -1252,7 +1252,7 @@ static void pe_add_runtime_ex(TCCState *s1, struct pe_info *pe) {
 
   if (find_elf_sym(symtab_section, "_WinMain@16")) {
     pe_type = PE_GUI;
-  } else if (TCC_OUTPUT_DLL == s1->output_type) {
+  } else if (s1->output_type == TCC_OUTPUT_DLL) {
     pe_type = PE_DLL;
     // Need this for 'tccelf.c:relocate_section()'
     s1->output_type = TCC_OUTPUT_EXE;
@@ -1260,19 +1260,18 @@ static void pe_add_runtime_ex(TCCState *s1, struct pe_info *pe) {
 
   start_symbol = s1->start_symbol;
   if (!start_symbol) {
-    start_symbol = PE_DLL == pe_type ? "DllMain" : "mainCRTStartup";
+    start_symbol = pe_type == PE_DLL ? "DllMain" : "mainCRTStartup";
   }
-
-  // Grab the startup code from libtcc1
-  if (start_symbol)
-    add_elf_sym(symtab_section, 0, 0,
-                ELF32_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0,
-                SHN_UNDEF, start_symbol);
+  add_elf_sym(symtab_section, 0, 0,
+              ELF32_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0,
+              SHN_UNDEF, start_symbol);
 
   if (s1->nostdlib == 0) {
     tcc_add_library(s1, "c");
     tcc_add_library(s1, "os");
   }
+
+  addr = (unsigned long) tcc_get_symbol_err(s1, start_symbol);
 
   if (pe) {
     pe->type = pe_type;

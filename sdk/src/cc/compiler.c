@@ -582,9 +582,9 @@ void gaddrof(void) {
   }
 }
 
-// Store vtop a register belonging to class 'rc'. lvalues are
-// converted to values. Cannot be used if cannot be converted to
-// register value (such as structures).
+// Store vtop in a register belonging to class 'rc'. lvalues are
+// converted to values. Cannot be used if vtop cannot be converted 
+// to register value (such as structures).
 int gv(int rc) {
   int r, r2, rc2, bit_pos, bit_size, size, align, i;
   uint64_t ll;
@@ -766,7 +766,7 @@ void vrotb(int n) {
   SValue tmp;
 
   tmp = vtop[-n + 1];
-  for (i = -n + 1; i != 0; i++) vtop[i] = vtop[i+1];
+  for (i = -n + 1; i != 0; i++) vtop[i] = vtop[i + 1];
   vtop[0] = tmp;
 }
 
@@ -998,7 +998,6 @@ void gen_opl(int op) {
 
     default:
       // Compare operations
-      t = vtop->type.t;
       vswap();
       lexpand();
       vrotb(3);
@@ -1242,7 +1241,7 @@ void gen_op(int op) {
   t2 = vtop[0].type.t;
   bt1 = t1 & VT_BTYPE;
   bt2 = t2 & VT_BTYPE;
-    
+
   if (bt1 == VT_PTR || bt2 == VT_PTR) {
     // At least one operand is a pointer
     // For relational op both must be pointers
@@ -1333,6 +1332,7 @@ void gen_op(int op) {
         op = TOK_UGE;
       }
     }
+
     vswap();
     type1.t = t;
     gen_cast(&type1);
@@ -1340,6 +1340,7 @@ void gen_op(int op) {
 
     // Special case for shifts and long long: we keep the shift as an integer
     if (op == TOK_SHR || op == TOK_SAR || op == TOK_SHL) type1.t = VT_INT;
+    
     gen_cast(&type1);
     if (is_float(t)) {
       gen_opif(op);
@@ -1445,7 +1446,6 @@ void gen_cast(CType *type) {
 
   dbt = type->t & (VT_BTYPE | VT_UNSIGNED);
   sbt = vtop->type.t & (VT_BTYPE | VT_UNSIGNED);
-
   if (sbt != dbt && !nocode_wanted) {
     sf = is_float(sbt);
     df = is_float(dbt);
@@ -1456,17 +1456,17 @@ void gen_cast(CType *type) {
         // Constant case: we can do it now 
         // TODO: in ISOC, cannot do it if error in convert
         if (dbt == VT_FLOAT && sbt == VT_DOUBLE) {
-          vtop->c.f = (float)vtop->c.d;
+          vtop->c.f = (float) vtop->c.d;
         } else if (dbt == VT_FLOAT && sbt == VT_LDOUBLE) {
-          vtop->c.f = (float)vtop->c.ld;
+          vtop->c.f = (float) vtop->c.ld;
         } else if (dbt == VT_DOUBLE && sbt == VT_FLOAT) {
-          vtop->c.d = (double)vtop->c.f;
+          vtop->c.d = (double) vtop->c.f;
         } else if (dbt == VT_DOUBLE && sbt == VT_LDOUBLE) {
-          vtop->c.d = (double)vtop->c.ld;
+          vtop->c.d = (double) vtop->c.ld;
         } else if (dbt == VT_LDOUBLE && sbt == VT_FLOAT) {
-          vtop->c.ld = (long double)vtop->c.f;
+          vtop->c.ld = (long double) vtop->c.f;
         } else if (dbt == VT_LDOUBLE && sbt == VT_DOUBLE) {
-          vtop->c.ld = (long double)vtop->c.d;
+          vtop->c.ld = (long double) vtop->c.d;
         }
       } else {
         // Non-constant case: generate code
@@ -1482,9 +1482,9 @@ void gen_cast(CType *type) {
             goto do_itof;
           case VT_INT | VT_UNSIGNED:
             switch (dbt) {
-              case VT_FLOAT: vtop->c.f = (float)vtop->c.ui; break;
-              case VT_DOUBLE: vtop->c.d = (double)vtop->c.ui; break;
-              case VT_LDOUBLE: vtop->c.ld = (long double)vtop->c.ui; break;
+              case VT_FLOAT: vtop->c.f = (float) vtop->c.ui; break;
+              case VT_DOUBLE: vtop->c.d = (double) vtop->c.ui; break;
+              case VT_LDOUBLE: vtop->c.ld = (long double) vtop->c.ui; break;
             }
            break;
           default:
@@ -1514,17 +1514,17 @@ void gen_cast(CType *type) {
               goto do_ftoi;
             case VT_INT | VT_UNSIGNED:
               switch (sbt) {
-                case VT_FLOAT: vtop->c.ui = (unsigned int)vtop->c.d; break;
-                case VT_DOUBLE: vtop->c.ui = (unsigned int)vtop->c.d; break;
-                case VT_LDOUBLE: vtop->c.ui = (unsigned int)vtop->c.d; break;
+                case VT_FLOAT: vtop->c.ui = (unsigned int) vtop->c.d; break;
+                case VT_DOUBLE: vtop->c.ui = (unsigned int) vtop->c.d; break;
+                case VT_LDOUBLE: vtop->c.ui = (unsigned int) vtop->c.d; break;
               }
               break;
             default:
               // int case
               switch (sbt) {
-                case VT_FLOAT: vtop->c.i = (int)vtop->c.d; break;
-                case VT_DOUBLE: vtop->c.i = (int)vtop->c.d; break;
-                case VT_LDOUBLE: vtop->c.i = (int)vtop->c.d; break;
+                case VT_FLOAT: vtop->c.i = (int) vtop->c.d; break;
+                case VT_DOUBLE: vtop->c.i = (int) vtop->c.d; break;
+                case VT_LDOUBLE: vtop->c.i = (int) vtop->c.d; break;
               }
           }
         } else {
@@ -1691,7 +1691,7 @@ void vstore(void) {
   }
 
   if (sbt == VT_STRUCT) {
-    // If structure, only generate pointer structure assignment : generate memcpy
+    // If structure, only generate pointer structure assignment: generate memcpy
     // TODO: optimize if small size
     if (!nocode_wanted) {
       size = type_size(&vtop->type, &align);
@@ -1701,10 +1701,12 @@ void vstore(void) {
       vpushv(vtop - 2);
       vtop->type.t = VT_INT;
       gaddrof();
+
       // Source
       vpushv(vtop - 2);
       vtop->type.t = VT_INT;
       gaddrof();
+
       // Type size
       vpushi(size);
       gfunc_call(3);
@@ -4692,6 +4694,7 @@ void tcc_define_symbol(TCCState *s1, const char *sym, const char *value) {
 
   pstrcpy(bf->buffer, IO_BUF_SIZE, sym);
   pstrcat(bf->buffer, IO_BUF_SIZE, " ");
+
   // Default value
   if (!value) value = "1";
   pstrcat(bf->buffer, IO_BUF_SIZE, value);
@@ -4704,7 +4707,7 @@ void tcc_define_symbol(TCCState *s1, const char *sym, const char *value) {
   bf->filename[0] = '\0';
   bf->line_num = 1;
   file = bf;
-  
+
   s1->include_stack_ptr = s1->include_stack;
 
   // Parse with define parser
@@ -4772,7 +4775,6 @@ TCCState *tcc_new(void) {
   tcc_define_symbol(s, "__PTRDIFF_TYPE__", "int");
   tcc_define_symbol(s, "__WCHAR_TYPE__", "unsigned short");
   tcc_define_symbol(s, "_INTEGRAL_MAX_BITS", "64");
-
   tcc_define_symbol(s, "_TCC_PLATFORM", "\"" TCC_PLATFORM "\"");
   
   // No section zero

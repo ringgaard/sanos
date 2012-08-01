@@ -65,7 +65,7 @@ double eval_factor(char **expr) {
     if (**expr != ')') return error(expr, "')' missing");
     next(expr);
 
-    if (strncmp(func, "asin", n) == 0)
+    if (strncmp(func, "asin", n) == 0) {
       result = asin(arg1);
     } else if (strncmp(func, "acos", n) == 0) {
       result = acos(arg1);

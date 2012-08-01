@@ -12,7 +12,7 @@ OBJ=linux/obj
 LIB_KRNL=linux/install/usr/lib/krnl.def
 LIB_OS=linux/install/usr/lib/os.def
 
-TCCFLAGS=-I src/include -L linux/install/usr/lib
+TCCFLAGS=-B linux/install/usr -I src/include -L linux/install/usr/lib
 
 sanos: dirs build-tools boot osldr kernel drivers os libc utils sdk sdk-source
 
@@ -72,16 +72,27 @@ linux/.timestamp:
 
 build-tools: $(TCC) $(AS) $(AR) $(MKDFS)
 
-sdk/src/cc/tcc.c: \
-	sdk/src/cc/config.h sdk/src/cc/elf.h sdk/src/cc/i386-asm.c sdk/src/cc/i386-asm.h \
-	sdk/src/cc/i386-gen.c sdk/src/cc/libtcc.h sdk/src/cc/stab.def sdk/src/cc/stab.h \
-	sdk/src/cc/tccasm.c sdk/src/cc/tccelf.c sdk/src/cc/tccpe.c sdk/src/cc/tcctok.h
+TCC_SRCFILES=\
+  sdk/src/cc/asm386.c \
+  sdk/src/cc/asm.c \
+  sdk/src/cc/cc.c \
+  sdk/src/cc/codegen.c \
+  sdk/src/cc/compiler.c \
+  sdk/src/cc/elf.c \
+  sdk/src/cc/pe.c \
+  sdk/src/cc/preproc.c \
+  sdk/src/cc/symbol.c \
+  sdk/src/cc/util.c
 
-$(TCC): sdk/src/cc/tcc.c
-	gcc -o $(TCC) sdk/src/cc/tcc.c -I sdk/src/cc -O2 -D SANOS
+TCC_HDRFILES=\
+  sdk/src/cc/cc.h \
+  sdk/src/cc/config.h \
+  sdk/src/cc/elf.h \
+  sdk/src/cc/opcodes.h \
+  sdk/src/cc/tokens.h
 
-newcc: sdk/src/cc/cc.c sdk/src/cc/symbol.c sdk/src/cc/asm.c sdk/src/cc/asm386.c sdk/src/cc/elf.c sdk/src/cc/pe.c sdk/src/cc/preproc.c sdk/src/cc/compiler.c sdk/src/cc/codegen.c sdk/src/cc/util.c
-	gcc -Wimplicit -o newcc sdk/src/cc/cc.c sdk/src/cc/symbol.c sdk/src/cc/asm.c sdk/src/cc/asm386.c sdk/src/cc/elf.c sdk/src/cc/pe.c sdk/src/cc/preproc.c sdk/src/cc/compiler.c sdk/src/cc/codegen.c sdk/src/cc/util.c -I sdk/src/cc -O2 -D SANOS
+$(TCC): $(TCC_SRCFILES) $(TCC_HDRFILES)
+	gcc -o $(TCC) $(TCC_SRCFILES) -I sdk/src/cc -O2 -D SANOS
 
 AS_OUTDEFS=-DOF_ONLY -DOF_ELF32 -DOF_WIN32 -DOF_COFF -DOF_OBJ -DOF_BIN -DOF_DBG -DOF_DEFAULT=of_elf32
 AS_CFLAGS=-I. -DHAVE_SNPRINTF -DHAVE_VSNPRINTF $(AS_OUTDEFS)
@@ -705,11 +716,11 @@ linux/install/usr/bin/ctohtml.exe: src/utils/ctohtml/ctohtml.c
 
 sdk: linux/install/usr/bin/cc.exe linux/install/usr/bin/as.exe
 
-linux/install/usr/bin/cc.exe: sdk/src/cc/tcc.c
-	$(TCC) -o $@ $^ -I sdk/src/cc $(TCCFLAGS)
+linux/install/usr/bin/cc.exe: $(TCC_SRCFILES) $(TCC_HDRFILES)
+	$(TCC) -o $@ $(TCC_SRCFILES) -I sdk/src/cc $(TCCFLAGS) -DUSE_LOCAL_HEAP
 
 linux/install/usr/bin/as.exe: $(AS_SRCFILES)
-	$(TCC) -o $@ $^ -I sdk/src/as $(TCCFLAGS) $(AS_CFLAGS)
+	$(TCC) -o $@ $^ -I sdk/src/as $(TCCFLAGS) $(AS_CFLAGS) -DUSE_LOCAL_HEAP
 
 sdk-source:
 	mkdir -p img
@@ -719,7 +730,7 @@ sdk-source:
 	cp sdk/src/as/Makefile.sanos linux/install/usr/src/utils/as/Makefile
 	cp sdk/src/as/output/*.c sdk/src/as/output/*.h linux/install/usr/src/utils/as/output
 	mkdir -p linux/install/usr/src/utils/cc
-	cp sdk/src/cc/*.c sdk/src/cc/*.h sdk/src/cc/*.def linux/install/usr/src/utils/cc
+	cp sdk/src/cc/*.c sdk/src/cc/*.h linux/install/usr/src/utils/cc
 	cp sdk/src/cc/Makefile.sanos linux/install/usr/src/utils/cc/Makefile
 	mkdir -p linux/install/usr/src/utils/makedepend
 	cp sdk/src/makedepend/*.c sdk/src/makedepend/*.h linux/install/usr/src/utils/makedepend

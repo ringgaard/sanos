@@ -252,27 +252,27 @@ void help(void) {
       );
 }
 
-int parse_args(TCCState *s, int argc, char **argv) {
-  int optind;
+int parse_arguments(TCCState *s, int argc, char **argv) {
+  int oind;
   const TCCOption *popt;
-  const char *optarg, *p1, *r1;
+  const char *oarg, *p1, *r1;
   char *r;
 
-  optind = 0;
+  oind = 0;
   while (1) {
-    if (optind >= argc) {
+    if (oind >= argc) {
       if (nb_files == 0 && !print_search_dirs) {
         if (verbose) exit(0);
         goto show_help;
       }
       break;
     }
-    r = argv[optind++];
+    r = argv[oind++];
     if (r[0] != '-' || r[1] == '\0') {
       // Add a new file
       dynarray_add((void ***)&files, &nb_files, r);
       if (!multiple_files) {
-        optind--;
+        oind--;
         // argv[0] will be this file
         break;
       }
@@ -294,14 +294,14 @@ int parse_args(TCCState *s, int argc, char **argv) {
     option_found:
       if (popt->flags & TCC_OPTION_HAS_ARG) {
         if (*r1 != '\0' || (popt->flags & TCC_OPTION_NOSEP)) {
-          optarg = r1;
+          oarg = r1;
         } else {
-          if (optind >= argc) error("argument to '%s' is missing", r);
-          optarg = argv[optind++];
+          if (oind >= argc) error("argument to '%s' is missing", r);
+          oarg = argv[oind++];
         }
       } else {
         if (*r1 != '\0') goto show_help;
-        optarg = NULL;
+        oarg = NULL;
       }
 
       switch (popt->index) {
@@ -310,11 +310,11 @@ int parse_args(TCCState *s, int argc, char **argv) {
           help();
           exit(1);
         case TCC_OPTION_I:
-          if (tcc_add_include_path(s, optarg) < 0) error("too many include paths");
+          if (tcc_add_include_path(s, oarg) < 0) error("too many include paths");
           break;
         case TCC_OPTION_D: {
           char *sym, *value;
-          sym = (char *)optarg;
+          sym = (char *) oarg;
           value = strchr(sym, '=');
           if (value) {
             *value = '\0';
@@ -324,14 +324,14 @@ int parse_args(TCCState *s, int argc, char **argv) {
           break;
         }
         case TCC_OPTION_U:
-          tcc_undefine_symbol(s, optarg);
+          tcc_undefine_symbol(s, oarg);
           break;
         case TCC_OPTION_L:
-          tcc_add_library_path(s, optarg);
+          tcc_add_library_path(s, oarg);
           break;
         case TCC_OPTION_B:
           // Set tcc utilities path (mainly for tcc development)
-          tcc_lib_path = optarg;
+          tcc_lib_path = oarg;
           break;
         case TCC_OPTION_l:
           dynarray_add((void ***) &files, &nb_files, r);
@@ -341,7 +341,7 @@ int parse_args(TCCState *s, int argc, char **argv) {
           do_bench = 1;
           break;
         case TCC_OPTION_bt:
-          num_callers = atoi(optarg);
+          num_callers = atoi(oarg);
           break;
         case TCC_OPTION_g:
           do_debug = 1;
@@ -357,29 +357,29 @@ int parse_args(TCCState *s, int argc, char **argv) {
           output_type = TCC_OUTPUT_DLL;
           break;
         case TCC_OPTION_soname:
-          s->soname = optarg; 
+          s->soname = oarg; 
           break;
         case TCC_OPTION_entry:
-          s->start_symbol = optarg; 
+          s->start_symbol = oarg; 
           break;
         case TCC_OPTION_fixed:
-          s->imagebase = strtoul(optarg, NULL, 0);
+          s->imagebase = strtoul(oarg, NULL, 0);
           break;
         case TCC_OPTION_filealign:
-          s->filealign = strtoul(optarg, NULL, 0);
+          s->filealign = strtoul(oarg, NULL, 0);
           break;
         case TCC_OPTION_stub:
-          s->stub = optarg; 
+          s->stub = oarg; 
           break;
         case TCC_OPTION_def:
-          s->def_file = optarg; 
+          s->def_file = oarg; 
           break;
         case TCC_OPTION_o:
           multiple_files = 1;
-          outfile = optarg;
+          outfile = oarg;
           break;
         case TCC_OPTION_m:
-          s->mapfile = optarg;
+          s->mapfile = oarg;
           break;
         case TCC_OPTION_r:
           // Generate a .o merging several output files
@@ -398,13 +398,13 @@ int parse_args(TCCState *s, int argc, char **argv) {
         case TCC_OPTION_v:
           do {
             if (verbose++ == 0)  printf("tcc version %s\n", TCC_VERSION);
-          } while (*optarg++ == 'v');
+          } while (*oarg++ == 'v');
           break;
         case TCC_OPTION_f:
-          if (tcc_set_flag(s, optarg, 1) < 0 && s->warn_unsupported) goto unsupported_option;
+          if (tcc_set_flag(s, oarg, 1) < 0 && s->warn_unsupported) goto unsupported_option;
           break;
         case TCC_OPTION_W:
-          if (tcc_set_warning(s, optarg, 1) < 0 && s->warn_unsupported) goto unsupported_option;
+          if (tcc_set_warning(s, oarg, 1) < 0 && s->warn_unsupported) goto unsupported_option;
           break;
         case TCC_OPTION_w:
           s->warn_none = 1;
@@ -414,10 +414,10 @@ int parse_args(TCCState *s, int argc, char **argv) {
           break;
         case TCC_OPTION_Wl: {
           const char *p;
-          if (strstart(optarg, "-Ttext,", &p)) {
+          if (strstart(oarg, "-Ttext,", &p)) {
             s->text_addr = strtoul(p, NULL, 16);
             s->has_text_addr = 1;
-          } else if (strstart(optarg, "--oformat,", &p)) {
+          } else if (strstart(oarg, "--oformat,", &p)) {
             if (strstart(p, "elf32-", NULL)) {
               s->output_format = TCC_OUTPUT_FORMAT_ELF;
             } else if (!strcmp(p, "binary")) {
@@ -426,7 +426,7 @@ int parse_args(TCCState *s, int argc, char **argv) {
               error("target %s not found", p);
             }
           } else {
-            error("unsupported linker option '%s'", optarg);
+            error("unsupported linker option '%s'", oarg);
           }
           break;
         }
@@ -441,13 +441,13 @@ int parse_args(TCCState *s, int argc, char **argv) {
       }
     }
   }
-  return optind;
+  return oind;
 }
 
 int main(int argc, char **argv) {
   int i;
   TCCState *s;
-  int nb_objfiles, ret, optind;
+  int nb_objfiles, ret, oind;
   char objfilename[1024];
   int64_t start_time = 0;
 
@@ -463,7 +463,7 @@ int main(int argc, char **argv) {
   print_search_dirs = 0;
   ret = 0;
 
-  optind = parse_args(s, argc - 1, argv + 1) + 1;
+  oind = parse_arguments(s, argc - 1, argv + 1) + 1;
 
   if (print_search_dirs) {
     printf("install: %s/\n", tcc_lib_path);

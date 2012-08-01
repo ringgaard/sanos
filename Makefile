@@ -1234,7 +1234,6 @@ install-sdk: install-source sdk
     copy /Y $(SDKSRC)\as\Makefile.sanos $(INSTALL)\usr\src\utils\as\Makefile
     copy /Y $(SDKSRC)\cc\*.c         $(INSTALL)\usr\src\utils\cc
     copy /Y $(SDKSRC)\cc\*.h         $(INSTALL)\usr\src\utils\cc
-    copy /Y $(SDKSRC)\cc\*.def       $(INSTALL)\usr\src\utils\cc
     copy /Y $(SDKSRC)\cc\Makefile.sanos $(INSTALL)\usr\src\utils\cc\Makefile
     copy /Y $(SDKSRC)\makedepend\*.c $(INSTALL)\usr\src\utils\makedepend
     copy /Y $(SDKSRC)\makedepend\*.h $(INSTALL)\usr\src\utils\makedepend

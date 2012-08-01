@@ -84,7 +84,7 @@ struct Sym;
 #define TOK_EOF       (-1)         // End of file
 #define TOK_LINEFEED  10           // Line feed
 
-// All identificators and strings have token above that
+// All identifiers and strings have token above that
 #define TOK_IDENT 256
 
 // NB: The following compare tokens depend on i386 asm code
@@ -147,6 +147,8 @@ struct Sym;
 #define TOK_A_OR      0xfc
 #define TOK_A_SHL     0x81
 #define TOK_A_SAR     0x82
+
+#define TOK_ASM_int TOK_INT
 
 enum tcc_token {
   TOK_LAST = TOK_IDENT - 1,
@@ -221,7 +223,7 @@ typedef struct Sym {
 
 #define SYM_STRUCT     0x40000000 // struct/union/enum symbol space
 #define SYM_FIELD      0x20000000 // struct/union field symbol space
-#define SYM_FIRST_ANOM 0x10000000 // first anonymous sym
+#define SYM_FIRST_ANOM 0x10000000 // First anonymous sym
 
 // Stored in 'Sym.c' field
 #define FUNC_NEW       1          // ANSI function prototype
@@ -236,7 +238,7 @@ typedef struct Sym {
 #define FUNC_FASTCALL3 4          // First parameter in %eax, %edx, %ecx
 #define FUNC_FASTCALLW 5          // First parameter in %ecx, %edx
 
-// Field 'Sym.t' for macros
+// Field 'Sym.type.t' for macros
 #define MACRO_OBJ      0          // Object-like macro
 #define MACRO_FUNC     1          // Function-like macro
 
@@ -733,7 +735,7 @@ void tok_str_add_tok(TokenString *s);
 BufferedFile *tcc_open(TCCState *s1, const char *filename);
 void tcc_close(BufferedFile *bf);
 int handle_eob(void);
-void inp(void);
+void finp(void);
 void minp(void);
 uint8_t *parse_comment(uint8_t *p);
 void skip(int c);

@@ -143,7 +143,7 @@ int is_num(int c) {
 }
 
 int is_idnum(int c) {
-  return isidnum_table[c];
+  return c >= 0 && isidnum_table[c];
 }
 
 int is_oct(int c) {
@@ -367,6 +367,6 @@ void init_util(void) {
   int i;
 
   // Init isidnum table
-  for (i = 0;i < 256; i++) isidnum_table[i] = is_id(i) || is_num(i);
+  for (i = 0; i < 256; i++) isidnum_table[i] = is_id(i) || is_num(i);
 }
 

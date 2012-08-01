@@ -95,7 +95,7 @@ int oad(int c, int s) {
 // psym is used to put an instruction with a data field which is a
 // reference to a symbol.
 int psym(int c, int s) {
-  oad(c, s);
+  return oad(c, s);
 }
 
 // Output constant with relocation if 'r & VT_SYM' is true
@@ -203,6 +203,7 @@ void store(int r, SValue *v) {
   fc = v->c.ul;
   fr = v->r & VT_VALMASK;
   bt = ft & VT_BTYPE;
+
   // TODO: incorrect if float reg to reg
   if (bt == VT_FLOAT) {
     o(0xd9); // fsts
@@ -215,9 +216,8 @@ void store(int r, SValue *v) {
     o(0xdb); // fstpt
     r = 7;
   } else {
-    if (bt == VT_SHORT) {
-      o(0x66);
-    } else if (bt == VT_BYTE || bt == VT_BOOL) {
+    if (bt == VT_SHORT) o(0x66);
+    if (bt == VT_BYTE || bt == VT_BOOL) {
       o(0x88);
     } else {
       o(0x89);
@@ -231,7 +231,7 @@ void store(int r, SValue *v) {
 }
 
 void gadd_sp(int val) {
-  if (val == (char)val) {
+  if (val == (char) val) {
     o(0xc483);
     g(val);
   } else {
@@ -460,7 +460,7 @@ void gfunc_epilog(void) {
     Sym *sym = external_global_sym(TOK___chkstk, &func_old_type, 0);
     oad(0xb8, v); // mov stacksize, %eax
     oad(0xe8, -4); // call __chkstk, (does the stackframe too)
-    greloc(cur_text_section, sym, ind-4, R_386_PC32);
+    greloc(cur_text_section, sym, ind - 4, R_386_PC32);
   } else {
     o(0xe58955);  // push %ebp, mov %esp, %ebp
     o(0xec81);  // sub esp, stacksize

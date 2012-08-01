@@ -21,6 +21,9 @@
 
 #include "cc.h"
 
+//#define PARSE_DEBUG
+//#define PP_DEBUG
+
 BufferedFile *file;
 int ch;
 int tok;
@@ -180,6 +183,14 @@ char *get_tok_str(int v, CValue *cv) {
     case TOK_GT:
       v = '>';
       goto addv;
+    case TOK_ULT:
+      return strcpy(p, "<(u)");
+    case TOK_ULE:
+      return strcpy(p, "<=(u)");
+    case TOK_UGT:
+      return strcpy(p, ">(u)");
+    case TOK_UGE:
+      return strcpy(p, ">=(u)");
     case TOK_DOTS:
       return strcpy(p, "...");
     case TOK_A_SHL:
@@ -253,7 +264,8 @@ void tcc_close(BufferedFile *bf) {
 // Fill input buffer and peek next char
 int tcc_peekc_slow(BufferedFile *bf) {
   int len;
-  // only tries to read if really end of buffer
+  
+  // Only tries to read if really end of buffer
   if (bf->buf_ptr >= bf->buf_end) {
     if (bf->fd != -1) {
 #ifdef PARSE_DEBUG
@@ -271,6 +283,7 @@ int tcc_peekc_slow(BufferedFile *bf) {
     bf->buf_end = bf->buffer + len;
     *bf->buf_end = CH_EOB;
   }
+
   if (bf->buf_ptr < bf->buf_end) {
     return bf->buf_ptr[0];
   } else {
@@ -286,7 +299,7 @@ int handle_eob(void) {
 }
 
 // Read next char from current input file and handle end of input buffer
-void inp(void) {
+void finp(void) {
   ch = *(++(file->buf_ptr));
   // End of buffer/file handling
   if (ch == CH_EOB) ch = handle_eob();
@@ -295,15 +308,15 @@ void inp(void) {
 // Handle '\[\r]\n'
 int handle_stray_noerror(void) {
   while (ch == '\\') {
-    inp();
+    finp();
     if (ch == '\n') {
       file->line_num++;
-      inp();
+      finp();
     } else if (ch == '\r') {
-      inp();
+      finp();
       if (ch != '\n') goto fail;
       file->line_num++;
-      inp();
+      finp();
     } else {
     fail:
       return 1;
@@ -357,14 +370,14 @@ int handle_stray1(uint8_t *p) {
   if (c == '\\') { \
     c = handle_stray1(p); \
     p = file->buf_ptr; \
-  }\
+  } \
 }
 
 // Input with '\[\r]\n' handling. Note that this function cannot
 // handle other characters after '\', so you cannot call it inside
 // strings or comments
 void minp(void) {
-  inp();
+  finp();
   if (ch == '\\') handle_stray();
 }
 
@@ -785,7 +798,7 @@ void tok_str_add_tok(TokenString *s) {
 
 
 // Get a token from an integer array and increment pointer
-// accordingly. we code it as a macro to avoid pointer aliasing.
+// accordingly. We code it as a macro to avoid pointer aliasing.
 #define TOK_GET(t, p, cv)                              \
 {                                                      \
   t = *p++;                                            \
@@ -1146,7 +1159,7 @@ void preprocess(int is_bof) {
       } else if (ch == '\"') {
         c = ch;
       read_name:
-        inp();
+        finp();
         q = buf;
         while (ch != c && ch != '\n' && ch != CH_EOF) {
           if ((q - buf) < sizeof(buf) - 1)
@@ -1154,7 +1167,7 @@ void preprocess(int is_bof) {
           if (ch == '\\') {
             if (handle_stray_noerror() == 0) --q;
           } else {
-            inp();
+            finp();
           }
         }
         *q = '\0';
@@ -1342,7 +1355,7 @@ void preprocess(int is_bof) {
         if (ch == '\\') {
           if (handle_stray_noerror() == 0) --q;
         } else {
-          inp();
+          finp();
         }
       }
       *q = '\0';
@@ -1807,7 +1820,7 @@ void next_nomacro1(void) {
     case ' ': case '\t': case '\f': case '\v': case '\r':
       p++;
       goto redo_no_start;
-    
+
     case '\\':
       // First look if it is in fact an end of buffer
       if (p >= file->buf_end) {
@@ -1954,6 +1967,7 @@ void next_nomacro1(void) {
       }
       tok = ts->tok;
       break;
+
     case 'L':
       t = p[1];
       if (t != '\\' && t != '\'' && t != '\"') {
@@ -2025,7 +2039,7 @@ void next_nomacro1(void) {
       cstr_new(&str);
       p = parse_pp_string(p, sep, &str);
       cstr_ccat(&str, '\0');
-      
+
       // Evaluate the escape (should be done as TOK_PPNUM)
       cstr_reset(&tokcstr);
       parse_escape_string(&tokcstr, str.data, is_long);
@@ -2189,6 +2203,7 @@ void next_nomacro1(void) {
       tok = c;
       p++;
       break;
+
     default:
       error("unrecognized character \\x%02x", c);
   }
@@ -2334,11 +2349,9 @@ int macro_subst_tok(TokenString *tok_str, Sym **nested_list, Sym *s, struct macr
     time(&ti);
     tm = localtime(&ti);
     if (tok == TOK___DATE__) {
-      snprintf(buf, sizeof(buf), "%s %2d %d", 
-               ab_month_name[tm->tm_mon], tm->tm_mday, tm->tm_year + 1900);
+      snprintf(buf, sizeof(buf), "%s %2d %d", ab_month_name[tm->tm_mon], tm->tm_mday, tm->tm_year + 1900);
     } else {
-      snprintf(buf, sizeof(buf), "%02d:%02d:%02d", 
-               tm->tm_hour, tm->tm_min, tm->tm_sec);
+      snprintf(buf, sizeof(buf), "%02d:%02d:%02d", tm->tm_hour, tm->tm_min, tm->tm_sec);
     }
     cstrval = buf;
   add_cstr:
@@ -2363,8 +2376,7 @@ int macro_subst_tok(TokenString *tok_str, Sym **nested_list, Sym *s, struct macr
           // End of macro stream: we must look at the token after in the file
           struct macro_level *ml = *can_read_stream;
           macro_ptr = NULL;
-          if (ml)
-          {
+          if (ml) {
             macro_ptr = ml->p;
             ml->p = NULL;
             *can_read_stream = ml -> prev;
@@ -2378,7 +2390,7 @@ int macro_subst_tok(TokenString *tok_str, Sym **nested_list, Sym *s, struct macr
         t = ch;
       }
       if (t != '(') return -1; // No macro subst
-          
+              
       // Argument macro
       next_nomacro();
       next_nomacro();
@@ -2397,16 +2409,15 @@ int macro_subst_tok(TokenString *tok_str, Sym **nested_list, Sym *s, struct macr
             parlevel++;
           } else if (tok == ')') {
             parlevel--;
-          } else if (tok != TOK_LINEFEED) {
-            tok_str_add_ex(&str, tok, &tokc);
           }
+          if (tok != TOK_LINEFEED) tok_str_add_ex(&str, tok, &tokc);
           next_nomacro();
         }
         tok_str_add(&str, 0);
         sym_push2(&args, sa->v & ~SYM_FIELD, sa->type.t, (int)str.str);
         sa = sa->next;
         if (tok == ')') {
-          // Special case for gcc var args: add an empty var arg argument if it is omitted
+          // special case for gcc var args: add an empty var arg argument if it is omitted
           if (sa && sa->type.t) {
             continue;
           } else {
@@ -2433,6 +2444,7 @@ int macro_subst_tok(TokenString *tok_str, Sym **nested_list, Sym *s, struct macr
       }
       mstr_allocated = 1;
     }
+
     sym_push2(nested_list, s->v, 0, 0);
     macro_subst(tok_str, nested_list, mstr, can_read_stream);
 

@@ -567,8 +567,7 @@ static int inflate_codes(struct huft *tl, struct huft *td, int bl, int bd) {
   // inflate the coded data
   ml = mask_bits[bl];           // Precompute masks for speed
   md = mask_bits[bd];
-  for (;;)                      // Do until end of block
-  {
+  for (;;) {                    // Do until end of block
     NEEDBITS((unsigned)bl)
     if ((e = (t = tl + ((unsigned) b & ml))->e) > 16) {
       do {

@@ -31,7 +31,11 @@ clean:
 # C compiler
 #
 
-tcc.c: config.h elf.h i386-asm.c i386-asm.h i386-gen.c libtcc.h stab.def stab.h tccasm.c tccelf.c tccpe.c tcctok.h
+TCC_SRCFILES=asm386.c asm.c cc.c codegen.c compiler.c elf.c pe.c preproc.c symbol.c util.c
 
-cc.exe: tcc.c $(SANOS)/lib/os.lib $(SANOS)/lib/libc.lib
-    $(CC) $(CFLAGS) /Fe$@ $** /link /NODEFAULTLIB /FIXED:NO /HEAP:33554432,131072
+TCC_HDRFILES=cc.h config.h elf.h opcodes.h tokens.h
+
+TCC_LIBS=$(SANOS)/lib/os.lib $(SANOS)/lib/libc.lib
+
+cc.exe: $(TCC_SRCFILES) $(TCC_HDRFILES) $(TCC_LIBS)
+    $(CC) $(CFLAGS) /Fe$@ $(TCC_SRCFILES) $(TCC_LIBS) /link /NODEFAULTLIB /FIXED:NO /HEAP:33554432,131072

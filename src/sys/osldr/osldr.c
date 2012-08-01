@@ -217,7 +217,6 @@ unsigned long memsize() {
   return addr;
 }
 
-
 void setup_memory(struct memmap *memmap) {
   int i;
 

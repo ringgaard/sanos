@@ -4,11 +4,11 @@
 
 all: cc.exe
 
-tcc.c: config.h elf.h i386-asm.c i386-asm.h i386-gen.c libtcc.h stab.def \
-       stab.h tccasm.c tccelf.c tccpe.c tcctok.h
+TCC_SRCFILES=asm386.c asm.c cc.c codegen.c compiler.c elf.c pe.c preproc.c symbol.c util.c
+TCC_HDRFILES=cc.h config.h elf.h opcodes.h tokens.h
 
-cc.exe: tcc.c
-    $(CC) -o cc.exe tcc.c
+cc.exe: $(TCC_SRCFILES) $(TCC_HDRFILES)
+    $(CC) -o cc.exe $(TCC_SRCFILES) -DUSE_LOCAL_HEAP
 
 install: cc.exe
     sh cp cc.exe /usr/bin/cc.exe

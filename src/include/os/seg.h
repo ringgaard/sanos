@@ -115,9 +115,9 @@ struct fullptr {
 };
 
 void __inline seginit(struct segment *seg, unsigned long addr, unsigned long size, int access, int granularity) {
-  seg->base_low = (unsigned short)(addr & 0xFFFF);
-  seg->base_med = (unsigned char)((addr >> 16) & 0xFF);
-  seg->base_high = (unsigned char)((addr >> 24) & 0xFF);
+  seg->base_low = (unsigned short) (addr & 0xFFFF);
+  seg->base_med = (unsigned char) ((addr >> 16) & 0xFF);
+  seg->base_high = (unsigned char) ((addr >> 24) & 0xFF);
   seg->limit_low = (unsigned short) ((size - 1) & 0xFFFF);
   seg->limit_high = (unsigned char) ((((size - 1) >> 16) & 0xF) | (granularity << 4));
   seg->access = access;
