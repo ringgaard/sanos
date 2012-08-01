@@ -31,7 +31,7 @@ clean:
 # C compiler
 #
 
-TCC_SRCFILES=asm386.c asm.c cc.c codegen.c compiler.c elf.c pe.c preproc.c symbol.c util.c
+TCC_SRCFILES=asm386.c asm.c cc.c codegen386.c codegen.c compiler.c elf.c pe.c preproc.c symbol.c type.c util.c
 
 TCC_HDRFILES=cc.h config.h elf.h opcodes.h tokens.h
 

@@ -247,6 +247,8 @@ typedef struct Sym {
 #define LABEL_FORWARD  1          // Label is forward defined
 #define LABEL_DECLARED 2          // label is declared but never used
 
+extern CType char_pointer_type, func_old_type, int_type;
+
 // Header magic value for a.out archives
 #define ARMAG  "!<arch>\012"
 
@@ -725,6 +727,21 @@ Sym *external_global_sym(int v, CType *type, int r);
 Sym *get_sym_ref(CType *type, Section *sec, unsigned long offset, unsigned long size);
 Sym *external_sym(int v, CType *type, int r);
 
+// type.c
+int is_float(int t);
+int type_size(CType *type, int *a);
+void test_lvalue(void);
+int lvalue_type(int t);
+int are_compatible_types(CType *type1, CType *type2);
+int are_compatible_parameter_types(CType *type1, CType *type2);
+void check_comparison_pointer_types(SValue *p1, SValue *p2, int op);
+int pointed_size(CType *type);
+int is_null_pointer(SValue *p);
+int is_integer_btype(int bt);
+CType *pointed_type(CType *type);
+void mk_pointer(CType *type);
+void type_to_str(char *buf, int buf_size, CType *type, const char *varstr);
+
 // preproc.c
 TokenSym *tok_alloc(const char *str, int len);
 char *get_tok_str(int v, CValue *cv);
@@ -755,25 +772,6 @@ void save_parse_state(ParseState *s);
 void restore_parse_state(ParseState *s);
 
 // compiler.c
-int type_size(CType *type, int *a);
-void test_lvalue(void);
-int lvalue_type(int t);
-int are_compatible_types(CType *type1, CType *type2);
-int are_compatible_parameter_types(CType *type1, CType *type2);
-int is_float(int t);
-void vpushi(int v);
-void vstore(void);
-void save_reg(int r);
-void save_regs(int n);
-void vset(CType *type, int r, int v);
-void vswap(void);
-int get_reg(int rc);
-int get_reg_ex(int rc,int rc2);
-int gv(int rc);
-void gv2(int rc1, int rc2);
-void vpop(void);
-void gen_cast(CType *type);
-void gen_op(int op);
 void type_decl(CType *type, AttributeDef *ad, int *v, int td);
 int expr_const(void);
 void expr_eq(void);
@@ -809,6 +807,32 @@ int tcc_add_symbol(TCCState *s, const char *name, unsigned long val);
 int tcc_set_output_type(TCCState *s, int output_type);
 
 // codegen.c
+void vstore(void);
+void save_reg(int r);
+void save_regs(int n);
+void move_reg(int r, int s);
+void vpushi(int v);
+void vpush_tokc(int t);
+void vpush_ref(CType *type, Section *sec, unsigned long offset, unsigned long size);
+void vpush_global_sym(CType *type, int v);
+void vdup(void);
+void vsetc(CType *type, int r, CValue *vc);
+void vset(CType *type, int r, int v);
+void vseti(int r, int v);
+void vswap(void);
+int get_reg(int rc);
+int get_reg_ex(int rc,int rc2);
+int gv(int rc);
+void gv2(int rc1, int rc2);
+void vpop(void);
+void gv_dup(void);
+void gen_cast(CType *type);
+void gen_op(int op);
+void gen_assign_cast(CType *dt);
+void gaddrof(void);
+void inc(int post, int c);
+
+// codegen386.c
 void g(int c);
 void o(unsigned int c);
 void gen_le16(int c);
@@ -881,6 +905,7 @@ int tcc_load_object_file(TCCState *s1, int fd, unsigned long file_offset);
 int tcc_load_archive(TCCState *s1, int fd);
 int tcc_load_dll(TCCState *s1, int fd, const char *filename, int level);
 int tcc_load_ldscript(TCCState *s1);
+void *tcc_get_symbol_err(TCCState *s, const char *name);
 
 // pe.c
 int pe_output_file(TCCState * s1, const char *filename);
