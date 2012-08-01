@@ -376,7 +376,7 @@ struct thread *create_kernel_thread(threadproc_t startaddr, void *arg, int prior
   // Create new thread object
   t = create_thread(kernel_thread_start, arg, priority);
   if (!t) return NULL;
-  t->name = name;
+  if (name) strncpy(t->name, name, THREAD_NAME_LEN - 1);
   t->entrypoint = startaddr;
 
   // Mark thread as ready to run
@@ -388,7 +388,7 @@ struct thread *create_kernel_thread(threadproc_t startaddr, void *arg, int prior
   return t;
 }
 
-int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread **retval) {
+int create_user_thread(void *entrypoint, unsigned long stacksize, char *name, struct thread **retval) {
   struct thread *creator = self();
   struct thread *t;
   int rc;
@@ -403,7 +403,7 @@ int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread 
   // Create and initialize new TCB and suspend thread
   t = create_thread(user_thread_start, NULL, PRIORITY_NORMAL);
   if (!t) return -ENOMEM;
-  t->name = "user";
+  if (name) strncpy(t->name, name, THREAD_NAME_LEN - 1);
   t->suspend_count++;
 
   // Inherit effective user and group from creator thread
@@ -931,7 +931,7 @@ static int threads_proc(struct proc_file *pf, void *arg) {
             t->suspend_count, t->object.handle_count, 
             t->utime, t->stime, t->context_switches,
             stksiz / 1024,
-            t->name ? t->name : "");
+            t->name);
 
     t = t->next;
     if (t == threadlist) break;
@@ -976,7 +976,7 @@ void init_sched() {
   idle_thread->state = THREAD_STATE_RUNNING;
   idle_thread->next = idle_thread;
   idle_thread->prev = idle_thread;
-  idle_thread->name = "idle";
+  strcpy(idle_thread->name, "idle");
   thread_ready_summary = (1 << PRIORITY_SYSIDLE);
 
   // Initialize system task queue

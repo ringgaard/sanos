@@ -79,7 +79,7 @@ void init_threads(hmodule_t hmod, struct term *initterm) {
   peb->firstproc = peb->lastproc = proc;
 }
 
-handle_t mkthread(void (__stdcall *startaddr)(struct tib *), unsigned long stacksize, struct tib **ptib) {
+handle_t mkthread(void (__stdcall *startaddr)(struct tib *), unsigned long stacksize, char *name, struct tib **ptib) {
   return syscall(SYSCALL_MKTHREAD, &startaddr);
 }
 
@@ -131,7 +131,7 @@ handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize
   struct process *proc;
   handle_t h;
 
-  h = mkthread(threadstart, stacksize, &tib);
+  h = mkthread(threadstart, stacksize, "user", &tib);
   if (h < 0) return h;
 
   tib->startaddr = (void *) startaddr;

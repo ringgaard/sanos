@@ -140,7 +140,7 @@ krnlapi int interrupt_thread(struct thread *t);
 
 krnlapi struct thread *create_kernel_thread(threadproc_t startaddr, void *arg, int priority, char *name);
 
-int create_user_thread(void *entrypoint, unsigned long stacksize, struct thread **retval);
+int create_user_thread(void *entrypoint, unsigned long stacksize, char *name, struct thread **retval);
 int init_user_thread(struct thread *t, void *entrypoint);
 int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned long stack_commit);
 int destroy_thread(struct thread *t);

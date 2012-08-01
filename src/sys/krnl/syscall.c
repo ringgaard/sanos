@@ -1049,6 +1049,7 @@ static int sys_dup2(char *params) {
 static int sys_mkthread(char *params) {
   void *entrypoint;
   unsigned long stacksize;
+  char *name;
   struct tib **ptib;
   struct thread *t;
   handle_t h;
@@ -1056,15 +1057,23 @@ static int sys_mkthread(char *params) {
 
   entrypoint = *(void **) params;
   stacksize = *(unsigned long *) (params + 4);
-  ptib = *(struct tib ***) (params + 8);
+  name = *(char **) (params + 8);
+  ptib = *(struct tib ***) (params + 12);
 
-  rc = create_user_thread(entrypoint, stacksize, &t);
+  if (lock_string(name) < 0) return -EFAULT;
+
+  rc = create_user_thread(entrypoint, stacksize, name, &t);
   if (rc < 0) return rc;
 
   h = halloc(&t->object);
-  if (h < 0) return h;
+  if (h < 0) {
+    unlock_string(name);
+    return h;
+  }
 
   if (ptib) *ptib = t->tib;
+
+  unlock_string(name);
 
   return h;
 }
@@ -2523,7 +2532,7 @@ struct syscall_entry syscalltab[] = {
   {"clock", 0, "", sys_clock},
   {"mksem", 4, "%d", sys_mksem},
   {"semrel", 8, "%p,%d", sys_semrel},
-  {"ioctl", 16, "%d,%d,%p,%d", sys_ioctl},
+  {"ioctl", 16, "%d,%x,%p,%d", sys_ioctl},
   {"getfsstat", 8, "%p,%d", sys_getfsstat},
   {"fstatfs", 8, "%d,%p", sys_fstatfs},
   {"statfs", 8, "'%s',%p", sys_statfs},

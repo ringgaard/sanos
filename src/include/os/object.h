@@ -73,6 +73,8 @@
 
 #define ISIOOBJECT(o) ((o)->object.type == OBJECT_SOCKET || (o)->object.type == OBJECT_FILE)
 
+#define THREAD_NAME_LEN          16
+
 struct thread;
 struct waitblock;
 
@@ -164,7 +166,7 @@ struct thread {
   int suspend_count;
   void *entrypoint;
   int exitcode;
-  char *name;
+  char name[THREAD_NAME_LEN];
 
   uid_t ruid;
   uid_t rgid;

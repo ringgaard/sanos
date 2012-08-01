@@ -84,7 +84,7 @@ struct netif *netif_add(char *name, struct ip_addr *ipaddr, struct ip_addr *netm
 struct netif *netif_find(char *name)
 {
   struct netif *netif;
-  
+
   if (!name) return NULL;
 
   for (netif = netif_list; netif != NULL; netif = netif->next) 
