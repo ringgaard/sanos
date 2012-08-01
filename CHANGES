@@ -4,6 +4,10 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added support for setting thread name for user-mode threads.
+
+    * Changed C style.
+
     * Added makefile for building Sanos under Linux using GCC. GCC is used
       for compiling the Sanos build tools (cc, as, ar, mkdfs) for Linux and 
       using these to build Sanos. This means that you can build Sanos under 

@@ -493,7 +493,7 @@ int main(int argc, char *argv[]) {
 
     setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (char *) &off, sizeof(off));
 
-    hthread = beginthread(telnet_task, 0, (void *) s, CREATE_NEW_PROCESS | CREATE_DETACHED, NULL);
+    hthread = beginthread(telnet_task, 0, (void *) s, CREATE_NEW_PROCESS | CREATE_DETACHED, "telnet", NULL);
     close(hthread);
   }
 

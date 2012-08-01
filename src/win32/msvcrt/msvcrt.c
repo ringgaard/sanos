@@ -293,7 +293,7 @@ unsigned long _beginthreadex(void *security, unsigned stack_size, unsigned (__st
   handle_t hthread;
 
   TRACE("_beginthreadex");
-  hthread = beginthread((void (__stdcall *)(void *)) start_address, stack_size, arglist, initflag, &tib);
+  hthread = beginthread((void (__stdcall *)(void *)) start_address, stack_size, arglist, initflag, NULL, &tib);
   if (hthread >= 0 && thrdaddr && tib) *thrdaddr = tib->tid;
   return hthread;
 }

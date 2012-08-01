@@ -175,7 +175,7 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)
     priority = attr->param.sched_priority;
   }
 
-  hthread = beginthread((void (__stdcall *)(void *)) start, stacksize, arg, CREATE_POSIX | CREATE_SUSPENDED, &tib);
+  hthread = beginthread((void (__stdcall *)(void *)) start, stacksize, arg, CREATE_POSIX | CREATE_SUSPENDED, NULL, &tib);
   if (hthread < 0) return errno;
 
   if (priority != PRIORITY_NORMAL) setprio(hthread, priority);

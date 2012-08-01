@@ -1487,7 +1487,7 @@ osapi int setegid(gid_t gid);
 osapi int getgroups(int size, gid_t list[]);
 osapi int setgroups(int size, const gid_t list[]);
 
-osapi handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize, void *arg, int flags, struct tib **ptib);
+osapi handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize, void *arg, int flags, char *name, struct tib **ptib);
 osapi int suspend(handle_t thread);
 osapi int resume(handle_t thread);
 osapi struct tib *getthreadblock(handle_t thread);

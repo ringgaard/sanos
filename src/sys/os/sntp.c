@@ -201,5 +201,5 @@ void init_sntpd() {
   }
 
   num_ntp_servers = idx;
-  if (idx > 0) beginthread(sntpd, 0, NULL, 0, NULL);
+  if (idx > 0) beginthread(sntpd, 0, NULL, 0, "sntpd", NULL);
 }

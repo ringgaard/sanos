@@ -253,7 +253,7 @@ void start_syslog() {
     }
   }
 
-  close(beginthread(klogd, 0, NULL, 0, NULL));
+  close(beginthread(klogd, 0, NULL, 0, "syslogd", NULL));
 }
 
 void stop_syslog() {

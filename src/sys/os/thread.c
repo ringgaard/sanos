@@ -125,13 +125,13 @@ static struct process *mkproc(struct process *parent, int hndl, int flags) {
   return proc;
 }
 
-handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize, void *arg, int flags, struct tib **ptib) {
+handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned int stacksize, void *arg, int flags, char *name, struct tib **ptib) {
   struct process *parent = gettib()->proc;
   struct tib *tib;
   struct process *proc;
   handle_t h;
 
-  h = mkthread(threadstart, stacksize, "user", &tib);
+  h = mkthread(threadstart, stacksize, name, &tib);
   if (h < 0) return h;
 
   tib->startaddr = (void *) startaddr;
@@ -421,6 +421,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
   int flags;
   int rc;
   char pgmbuf[MAXPATH];
+  char *name;
 
   if (!pgm) {
     char *p = (char *) cmdline;
@@ -464,9 +465,12 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
   if (mode & P_DETACH) flags |= CREATE_DETACHED;
   if (mode & P_CHILD) flags |= CREATE_CHILD;
   if (env) flags |= CREATE_NO_ENV;
+  
+  name = procname(pgm);
 
-  hthread = beginthread(spawn_program, 0, NULL, flags, &tib);
+  hthread = beginthread(spawn_program, 0, NULL, flags, name, &tib);
   if (hthread < 0) {
+    free(name);
     dlclose(hmod);
     return -1;
   }
@@ -474,7 +478,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
   proc = tib->proc;
   proc->hmod = hmod;
   proc->cmdline = strdup(cmdline);
-  proc->ident = procname(pgm);
+  proc->ident = name;
   if (env) proc->env = copyenv(env);
 
   if (mode & (P_NOWAIT | P_SUSPEND)) {

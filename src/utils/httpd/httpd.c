@@ -1200,7 +1200,7 @@ int httpd_start(struct httpd_server *server) {
   dispatch(server->iomux, server->sock, IOEVT_ACCEPT, 0);
 
   for (i = 0; i < server->num_workers; i++) {
-    hthread = beginthread(httpd_worker, 0, server, 0, NULL);
+    hthread = beginthread(httpd_worker, 0, server, 0, "http", NULL);
     close(hthread);
   }
 

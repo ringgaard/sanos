@@ -1246,7 +1246,7 @@ int main(int argc, char *argv[]) {
 
     syslog(LOG_INFO, "FTP client connected from %a", &sin.sin_addr);
 
-    hthread = beginthread(ftp_task, 0, (void *) s, CREATE_NEW_PROCESS | CREATE_DETACHED, NULL);
+    hthread = beginthread(ftp_task, 0, (void *) s, CREATE_NEW_PROCESS | CREATE_DETACHED, "ftp", NULL);
     close(hthread);
   }
 
