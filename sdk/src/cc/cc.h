@@ -77,8 +77,6 @@ typedef unsigned short nwchar_t;
 #define TOK_MAX_SIZE                 4  // Token max size in int unit when stored in string
 #define IO_BUF_SIZE               8192
 
-struct Sym;
-
 // Token values
 
 #define TOK_EOF       (-1)         // End of file
@@ -159,6 +157,9 @@ enum tcc_token {
 
 #define TOK_UIDENT TOK_DEFINE
 
+// Header magic value for a.out archives
+#define ARMAG  "!<arch>\012"
+
 // Dynamic string buffer
 typedef struct CString {
   int size;                       // Size in bytes
@@ -166,6 +167,80 @@ typedef struct CString {
   int size_allocated;
   void *data_allocated;           // If non NULL, data has been malloced
 } CString;
+
+struct Sym;
+
+// Type definition
+typedef struct CType {
+  int t;
+  struct Sym *ref;
+} CType;
+
+// Symbol definition
+typedef struct Sym {
+  int v;                          // Symbol token
+  int r;                          // Associated register
+  int c;                          // Associated number
+  CType type;                     // Associated type
+  struct Sym *next;               // Next related symbol
+  struct Sym *prev;               // Prev symbol in stack
+  struct Sym *prev_tok;           // Previous symbol for this token
+} Sym;
+
+// Section definition
+typedef struct Section {
+  unsigned long data_offset;      // Current data offset
+  unsigned char *data;            // Section data
+  unsigned long data_allocated;   // Used for realloc() handling
+  int sh_name;                    // ELF section name (only used during output)
+  int sh_num;                     // ELF section number
+  int sh_type;                    // ELF section type
+  int sh_flags;                   // ELF section flags
+  int sh_info;                    // ELF section info
+  int sh_addralign;               // ELF section alignment
+  int sh_entsize;                 // ELF entry size
+  unsigned long sh_size;          // Section size (only used during output)
+  unsigned long sh_addr;          // Address at which the section is relocated
+  unsigned long sh_offset;        // File offset
+  int nb_hashed_syms;             // Used to resize the hash table
+  struct Section *link;           // Link to another section
+  struct Section *reloc;          // Corresponding section for relocation, if any
+  struct Section *hash;           // Hash table for symbols
+  struct Section *next;
+  char name[1];                   // Section name
+} Section;
+
+// GNU stab debug codes
+
+typedef struct {
+  unsigned long n_strx;           // Index into string table of name
+  unsigned char n_type;           // Type of symbol
+  unsigned char n_other;          // Misc info (usually empty)
+  unsigned short n_desc;          // description field
+  unsigned long n_value;          // value of symbol
+} Stab_Sym;
+
+#define STAB(name, code, str) name=code,
+
+enum stab_debug_code {
+  STAB(N_SO, 0x64, "SO")          // Name of main source file
+  STAB(N_BINCL, 0x82, "BINCL")    // Beginning of an include file
+  STAB(N_EINCL, 0xa2, "EINCL")    // End of an include file
+  STAB(N_SLINE, 0x44, "SLINE")    // Line number in text segment
+  STAB(N_FUN, 0x24, "FUN")        // Function name or text-segment variable for C
+};
+
+#undef STAB
+
+// Special flag to indicate that the section should not be linked to the other ones
+#define SHF_PRIVATE 0x80000000
+
+#define SECTION_ABS ((void *) 1)
+
+typedef struct DLLReference {
+  int level;
+  char name[1];
+} DLLReference;
 
 // Token symbol
 typedef struct TokenSym {
@@ -178,12 +253,6 @@ typedef struct TokenSym {
   int len;
   char str[1];
 } TokenSym;
-
-// Type definition
-typedef struct CType {
-  int t;
-  struct Sym *ref;
-} CType;
 
 // Constant value
 typedef union CValue {
@@ -201,7 +270,7 @@ typedef union CValue {
   int tab[1];
 } CValue;
 
-// Value on stack
+// Stack value
 typedef struct SValue {
   CType type;                     // Type
   unsigned short r;               // Register + flags
@@ -209,17 +278,6 @@ typedef struct SValue {
   CValue c;                       // constant, if VT_CONST
   struct Sym *sym;                // Symbol, if (VT_SYM | VT_CONST)
 } SValue;
-
-// Symbol management
-typedef struct Sym {
-  int v;                          // Symbol token
-  int r;                          // Associated register
-  int c;                          // Associated number
-  CType type;                     // Associated type
-  struct Sym *next;               // Next related symbol
-  struct Sym *prev;               // Prev symbol in stack
-  struct Sym *prev_tok;           // Previous symbol for this token
-} Sym;
 
 #define SYM_STRUCT     0x40000000 // struct/union/enum symbol space
 #define SYM_FIELD      0x20000000 // struct/union field symbol space
@@ -246,44 +304,6 @@ typedef struct Sym {
 #define LABEL_DEFINED  0          // Label is defined
 #define LABEL_FORWARD  1          // Label is forward defined
 #define LABEL_DECLARED 2          // label is declared but never used
-
-extern CType char_pointer_type, func_old_type, int_type;
-
-// Header magic value for a.out archives
-#define ARMAG  "!<arch>\012"
-
-// Section definition
-typedef struct Section {
-  unsigned long data_offset;      // Current data offset
-  unsigned char *data;            // Section data
-  unsigned long data_allocated;   // Used for realloc() handling
-  int sh_name;                    // ELF section name (only used during output)
-  int sh_num;                     // ELF section number
-  int sh_type;                    // ELF section type
-  int sh_flags;                   // ELF section flags
-  int sh_info;                    // ELF section info
-  int sh_addralign;               // ELF section alignment
-  int sh_entsize;                 // ELF entry size
-  unsigned long sh_size;          // Section size (only used during output)
-  unsigned long sh_addr;          // Address at which the section is relocated
-  unsigned long sh_offset;        // File offset
-  int nb_hashed_syms;             // Used to resize the hash table
-  struct Section *link;           // Link to another section
-  struct Section *reloc;          // Corresponding section for relocation, if any
-  struct Section *hash;           // Hash table for symbols
-  struct Section *next;
-  char name[1];                   // Section name
-} Section;
-
-// Special flag to indicate that the section should not be linked to the other ones
-#define SHF_PRIVATE 0x80000000
-
-#define SECTION_ABS ((void *) 1)
-
-typedef struct DLLReference {
-  int level;
-  char name[1];
-} DLLReference;
 
 #define VT_VALMASK       0x00ff
 #define VT_CONST         0x00f0   // constant in vc (must be first non register value)
@@ -619,32 +639,10 @@ typedef struct TCCState {
 #define PARSE_FLAG_MASM         0x0010 // Use masm syntax for inline assembler
 
 //
-// GNU stab debug codes
-//
-
-typedef struct {
-  unsigned long n_strx;           // Index into string table of name
-  unsigned char n_type;           // Type of symbol
-  unsigned char n_other;          // Misc info (usually empty)
-  unsigned short n_desc;          // description field
-  unsigned long n_value;          // value of symbol
-} Stab_Sym;
-
-#define STAB(name, code, str) name=code,
-
-enum stab_debug_code {
-  STAB(N_SO, 0x64, "SO")          // Name of main source file
-  STAB(N_BINCL, 0x82, "BINCL")    // Beginning of an include file
-  STAB(N_EINCL, 0xa2, "EINCL")    // End of an include file
-  STAB(N_SLINE, 0x44, "SLINE")    // Line number in text segment
-  STAB(N_FUN, 0x24, "FUN")        // Function name or text-segment variable for C
-};
-
-#undef STAB
-
-//
 // Globals
 //
+
+extern CType char_pointer_type, func_old_type, int_type;
 
 extern int rsym;                  // return symbol
 extern int anon_sym;              // anonymous symbol index

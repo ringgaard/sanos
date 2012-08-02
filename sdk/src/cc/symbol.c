@@ -114,12 +114,12 @@ void section_realloc(Section *sec, unsigned long new_size) {
 
 // Reserve at least 'size' bytes in section 'sec' from sec->data_offset
 void *section_ptr_add(Section *sec, unsigned long size) {
-  unsigned long offset, offset1;
+  unsigned long offset, new_offset;
 
   offset = sec->data_offset;
-  offset1 = offset + size;
-  if (offset1 > sec->data_allocated) section_realloc(sec, offset1);
-  sec->data_offset = offset1;
+  new_offset = offset + size;
+  if (new_offset > sec->data_allocated) section_realloc(sec, new_offset);
+  sec->data_offset = new_offset;
   return sec->data + offset;
 }
 
@@ -127,6 +127,7 @@ void *section_ptr_add(Section *sec, unsigned long size) {
 Section *find_section(TCCState *s1, const char *name) {
   Section *sec;
   int i;
+  
   for (i = 1; i < s1->nb_sections; i++) {
     sec = s1->sections[i];
     if (!strcmp(name, sec->name)) return sec;

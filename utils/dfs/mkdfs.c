@@ -70,6 +70,7 @@ int part_offset = 0;
 int ldrsize;
 char *krnlopts = "";
 int altfile = 0;
+int verbose = 0;
 
 void panic(char *reason)
 {
@@ -272,7 +273,7 @@ void transfer_file(char *dstfn, char *srcfn)
 
   file = vfs_open(dstfn, VFS_O_CREAT, executable ? 0755 : 0644);
 
-  printf("%s -> %s (%d bytes)\n", srcfn, dstfn, size);
+  if (verbose) printf("%s -> %s (%d bytes)\n", srcfn, dstfn, size);
 
   count = read(fd, buf, 4096);
   while (count > 0)
@@ -429,6 +430,7 @@ void usage()
   fprintf(stderr, "  -k <kernel image>\n");
   fprintf(stderr, "  -l <loader image>\n");
   fprintf(stderr, "  -t <device type> (raw or vmdk)\n");
+  fprintf(stderr, "  -v (verbose output)\n");
   fprintf(stderr, "  -w (wipe out device, i.e. zero all sectors first)\n");
   fprintf(stderr, "  -p <partition>\n");
   fprintf(stderr, "  -P <partition start sector>\n");
@@ -466,7 +468,7 @@ int main(int argc, char **argv)
   int c;
 
   // Parse command line options
-  while ((c = getopt(argc, argv, "ad:b:c:ifk:l:t:wp:qB:C:F:I:K:P:S:T:?")) != EOF)
+  while ((c = getopt(argc, argv, "ad:b:c:ifk:l:t:vwp:qB:C:F:I:K:P:S:T:?")) != EOF)
   {
     switch (c)
     {
@@ -504,6 +506,10 @@ int main(int argc, char **argv)
 
       case 'l':
         ldrfile = optarg;
+        break;
+
+      case 'v':
+        verbose++;
         break;
 
       case 'w':

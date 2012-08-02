@@ -215,7 +215,7 @@ int add_elf_sym(Section *s, unsigned long value, unsigned long size,
         // No idea if this is the correct solution ...
         goto do_patch;
       } else if (s == tcc_state->dynsymtab_section) {
-        // we accept that two DLL define the same symbol
+        // We accept that two DLLs define the same symbol
       } else {
         printf("new_bind=%x new_shndx=%x new_vis=%x old_bind=%x old_shndx=%x old_vis=%x\n",
                sym_bind, sh_num, new_vis, esym_bind, esym->st_shndx, esym_vis);
@@ -354,8 +354,8 @@ void relocate_common_syms(void) {
   Elf32_Sym *sym, *sym_end;
   unsigned long offset, align;
   
-  sym_end = (Elf32_Sym *)(symtab_section->data + symtab_section->data_offset);
-  for (sym = (Elf32_Sym *)symtab_section->data + 1; sym < sym_end; sym++) {
+  sym_end = (Elf32_Sym *) (symtab_section->data + symtab_section->data_offset);
+  for (sym = (Elf32_Sym *) symtab_section->data + 1; sym < sym_end; sym++) {
     if (sym->st_shndx == SHN_COMMON) {
       // Align symbol
       align = sym->st_value;

@@ -58,7 +58,7 @@ void parse_attribute(AttributeDef *ad) {
         case TOK_SECTION2:
           skip('(');
           if (tok != TOK_STR) expect("section name");
-          ad->section = find_section(tcc_state, (char *)tokc.cstr->data);
+          ad->section = find_section(tcc_state, (char *) tokc.cstr->data);
           next();
           skip(')');
           break;

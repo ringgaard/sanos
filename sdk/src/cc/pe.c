@@ -324,7 +324,8 @@ static DWORD pe_sec_flags[] = {
 };
 
 struct section_info {
-  int cls, ord;
+  int cls;
+  int ord;
   char name[32];
   DWORD sh_addr;
   DWORD sh_size;
@@ -427,7 +428,7 @@ static DWORD pe_virtual_align(DWORD n) {
 }
 
 static void pe_align_section(Section *s, int a) {
-  int i = s->data_offset & (a-1);
+  int i = s->data_offset & (a - 1);
   if (i) section_ptr_add(s, a - i);
 }
 
@@ -491,7 +492,7 @@ static int pe_write(struct pe_info *pe) {
   pe_fpad(op, file_offset);
 
   if (verbose == 2) {
-    printf("-------------------------------\n  virt   file   size  section" "\n");
+    printf("------------------------------------\n  virt   file   size  ord section" "\n");
   }
 
   for (i = 0; i < pe->sec_count; ++i) {
@@ -502,7 +503,7 @@ static int pe_write(struct pe_info *pe) {
     IMAGE_SECTION_HEADER *psh = &si->ish;
 
     if (verbose == 2) {
-      printf("%6lx %6lx %6lx  %s\n", addr, file_offset, size, sh_name);
+      printf("%6lx %6lx %6lx %4d %s\n", addr, file_offset, size, si->ord, sh_name);
     }
 
     switch (si->cls) {
@@ -570,7 +571,7 @@ static int pe_write(struct pe_info *pe) {
     pe_opthdr.Subsystem = 3;
   }
 
-  // Include relocation info in sanos executables unless it has fixed base
+  // Include relocation info in Sanos executables unless it has fixed base
   if (pe->reloc) {
     pe_filehdr.Characteristics &= ~1;
   }
@@ -586,7 +587,7 @@ static int pe_write(struct pe_info *pe) {
   fclose(op);
 
   if (verbose == 2) {
-    printf("-------------------------------\n");
+    printf("------------------------------------\n");
   }
   if (verbose) {
     printf("<- %s (%lu bytes)\n", pe->filename, file_offset);
@@ -602,24 +603,24 @@ static struct import_symbol *pe_add_import(struct pe_info *pe, int sym_index) {
   struct pe_import_info *p;
   struct import_symbol *s;
 
-  dll_index = ((Elf32_Sym *)pe->s1->dynsymtab_section->data + sym_index)->st_value;
+  dll_index = ((Elf32_Sym *) pe->s1->dynsymtab_section->data + sym_index)->st_value;
   if (dll_index == 0) return NULL;
 
-  i = dynarray_assoc ((void**)pe->imp_info, pe->imp_count, dll_index);
+  i = dynarray_assoc((void **) pe->imp_info, pe->imp_count, dll_index);
   if (i != -1) {
     p = pe->imp_info[i];
     goto found_dll;
   }
   p = tcc_mallocz(sizeof *p);
   p->dll_index = dll_index;
-  dynarray_add((void***)&pe->imp_info, &pe->imp_count, p);
+  dynarray_add((void ***) &pe->imp_info, &pe->imp_count, p);
 
 found_dll:
-  i = dynarray_assoc((void**)p->symbols, p->sym_count, sym_index);
+  i = dynarray_assoc((void **) p->symbols, p->sym_count, sym_index);
   if (i != -1) return p->symbols[i];
 
   s = tcc_mallocz(sizeof *s);
-  dynarray_add((void***)&p->symbols, &p->sym_count, s);
+  dynarray_add((void ***) &p->symbols, &p->sym_count, s);
   s->sym_index = sym_index;
   return s;
 }
@@ -640,7 +641,7 @@ static void pe_build_imports(struct pe_info *pe) {
   pe->imp_size = (ndlls + 1) * sizeof(struct pe_import_header);
   pe->iat_offs = dll_ptr + pe->imp_size;
   pe->iat_size = (sym_cnt + ndlls) * sizeof(DWORD);
-  section_ptr_add(pe->thunk, pe->imp_size + 2*pe->iat_size);
+  section_ptr_add(pe->thunk, pe->imp_size + 2 * pe->iat_size);
 
   thk_ptr = pe->iat_offs;
   ent_ptr = pe->iat_offs + pe->iat_size;
@@ -649,12 +650,12 @@ static void pe_build_imports(struct pe_info *pe) {
     struct pe_import_header *hdr;
     int k, n, v;
     struct pe_import_info *p = pe->imp_info[i];
-    const char *name = pe->s1->loaded_dlls[p->dll_index-1]->name;
+    const char *name = pe->s1->loaded_dlls[p->dll_index - 1]->name;
 
     // Put the DLL name into the import header
     v = put_elf_str(pe->thunk, name);
 
-    hdr = (struct pe_import_header *)(pe->thunk->data + dll_ptr);
+    hdr = (struct pe_import_header *) (pe->thunk->data + dll_ptr);
     hdr->first_thunk = thk_ptr + rva_base;
     hdr->first_entry = ent_ptr + rva_base;
     hdr->lib_name_offset = v + rva_base;
@@ -663,8 +664,8 @@ static void pe_build_imports(struct pe_info *pe) {
       if (k < n) {
         DWORD iat_index = p->symbols[k]->iat_index;
         int sym_index = p->symbols[k]->sym_index;
-        Elf32_Sym *imp_sym = (Elf32_Sym *)pe->s1->dynsymtab_section->data + sym_index;
-        Elf32_Sym *org_sym = (Elf32_Sym *)symtab_section->data + iat_index;
+        Elf32_Sym *imp_sym = (Elf32_Sym *) pe->s1->dynsymtab_section->data + sym_index;
+        Elf32_Sym *org_sym = (Elf32_Sym *) symtab_section->data + iat_index;
         const char *name = pe->s1->dynsymtab_section->link->data + imp_sym->st_name;
 
         org_sym->st_value = thk_ptr;
@@ -696,7 +697,7 @@ static void pe_build_imports(struct pe_info *pe) {
 //
 //  needs to be translated to:
 //
-//    *(int*)something
+//    *(int *) something
 //
 
 static int sym_cmp(const void *va, const void *vb) {
@@ -738,14 +739,14 @@ static void pe_build_exports(struct pe_info *pe) {
   if (sym_count == 0) return;
   sym_count /= 2;
 
-  qsort(sorted, sym_count, 2 * sizeof sorted[0], sym_cmp);
+  qsort(sorted, sym_count, 2 * sizeof(sorted[0]), sym_cmp);
   pe_align_section(pe->thunk, 16);
   dllname = tcc_basename(pe->filename);
 
   pe->exp_offs = pe->thunk->data_offset;
   func_o = pe->exp_offs + sizeof(struct pe_export_header);
-  name_o = func_o + sym_count * sizeof (DWORD);
-  ord_o = name_o + sym_count * sizeof (DWORD);
+  name_o = func_o + sym_count * sizeof(DWORD);
+  ord_o = name_o + sym_count * sizeof(DWORD);
   str_o = ord_o + sym_count * sizeof(WORD);
 
   hdr = section_ptr_add(pe->thunk, str_o - pe->exp_offs);
@@ -813,7 +814,7 @@ static void pe_build_reloc(struct pe_info *pe) {
         section_ptr_add(pe->reloc, sizeof(struct pe_reloc_header));
         offset = addr & 0xFFFFFFFF << 12;
       }
-      if ((addr -= offset)  < (1 << 12)) { 
+      if ((addr -= offset) < (1 << 12)) { 
         // One block spans 4k addresses
         WORD *wp = section_ptr_add(pe->reloc, sizeof(WORD));
         *wp = addr | IMAGE_REL_BASED_HIGHLOW << 12;
@@ -824,8 +825,8 @@ static void pe_build_reloc(struct pe_info *pe) {
     } else if (i < pe->sec_count) {
       sr = (s = pe->s1->sections[pe->sec_info[i++].ord])->reloc;
       if (sr) {
-        rel = (Elf32_Rel *)sr->data;
-        rel_end = (Elf32_Rel *)(sr->data + sr->data_offset);
+        rel = (Elf32_Rel *) sr->data;
+        rel_end = (Elf32_Rel *) (sr->data + sr->data_offset);
       }
       continue;
     }
@@ -839,7 +840,7 @@ static void pe_build_reloc(struct pe_info *pe) {
         section_ptr_add(pe->reloc, sizeof(WORD));
         count++;
       }
-      hdr = (struct pe_reloc_header *)(pe->reloc->data + block_ptr);
+      hdr = (struct pe_reloc_header *) (pe->reloc->data + block_ptr);
       hdr->offset = offset - pe->imagebase;
       hdr->size = count * sizeof(WORD) + sizeof(struct pe_reloc_header);
       count = 0;
@@ -894,8 +895,7 @@ static int pe_assign_addresses(struct pe_info *pe) {
   pe->sec_info = tcc_mallocz(o * sizeof (struct section_info));
   addr = pe->imagebase + 1;
 
-  for (i = 0; i < o; ++i)
-  {
+  for (i = 0; i < o; ++i) {
     k = section_order[i];
     s = pe->s1->sections[k];
     c = pe_section_class(s);
@@ -917,7 +917,7 @@ static int pe_assign_addresses(struct pe_info *pe) {
     si->sh_addr = s->sh_addr = addr = pe_virtual_align(addr);
     si->sh_flags = s->sh_flags;
 
-    if (c == sec_data && NULL == pe->thunk) {
+    if (c == sec_data && pe->thunk == NULL) {
       pe->thunk = s;
     }
 
@@ -927,11 +927,10 @@ static int pe_assign_addresses(struct pe_info *pe) {
     }
 
     if (c == sec_reloc) {
-      pe_build_reloc (pe);
+      pe_build_reloc(pe);
     }
 
-    if (s->data_offset)
-    {
+    if (s->data_offset) {
       if (s->sh_type != SHT_NOBITS) {
         si->data = s->data;
         si->data_size = s->data_offset;
@@ -1141,8 +1140,8 @@ static void pe_print_sections(TCCState *s1, const char *fname) {
 }
 #endif
 
-//  This is for compiled windows resources in 'coff' format
-//  as generated by 'windres.exe -O coff ...'.
+// This is for compiled windows resources in 'coff' format
+// as generated by 'windres.exe -O coff ...'.
 int pe_test_res_file(void *v, int size) {
   struct pe_rsrc_header *p = (struct pe_rsrc_header *) v;
   return size >= IMAGE_SIZEOF_FILE_HEADER + IMAGE_SIZEOF_SHORT_NAME && 
@@ -1256,6 +1255,8 @@ static void pe_add_runtime_ex(TCCState *s1, struct pe_info *pe) {
     pe_type = PE_DLL;
     // Need this for 'tccelf.c:relocate_section()'
     s1->output_type = TCC_OUTPUT_EXE;
+  } else {
+    pe_type = PE_EXE;
   }
 
   start_symbol = s1->start_symbol;
@@ -1301,7 +1302,7 @@ int pe_output_file(TCCState * s1, const char *filename) {
 
   ret = pe_check_symbols(&pe);
   if (ret == 0) {
-    // Generate relocation information by default for SANOS
+    // Generate relocation information by default for Sanos.
     if (s1->imagebase == 0xFFFFFFFF) {
       pe.reloc = new_section(pe.s1, ".reloc", SHT_PROGBITS, 0);
       pe.imagebase = PE_DLL == pe.type ? 0x10000000 : 0x00400000;
