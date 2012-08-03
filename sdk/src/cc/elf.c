@@ -114,8 +114,8 @@ int put_elf_sym(Section *s,
       // Add another hashing entry
       nbuckets = base[0];
       h = elf_hash(name) % nbuckets;
-      *ptr = base[2 + h];
-      base[2 + h] = sym_index;
+      *ptr = base[h + 2];
+      base[h + 2] = sym_index;
       base[1]++;
       // Resize the hash table
       hs->nb_hashed_syms++;
@@ -135,18 +135,18 @@ int find_elf_sym(Section *s, const char *name) {
   Elf32_Sym *sym;
   Section *hs;
   int nbuckets, sym_index, h;
-  const char *name1;
+  const char *n;
   
   hs = s->hash;
   if (!hs) return 0;
   nbuckets = ((int *) hs->data)[0];
   h = elf_hash(name) % nbuckets;
-  sym_index = ((int *)hs->data)[2 + h];
+  sym_index = ((int *) hs->data)[h + 2];
   while (sym_index != 0) {
-    sym = &((Elf32_Sym *)s->data)[sym_index];
-    name1 = s->link->data + sym->st_name;
-    if (!strcmp(name, name1)) return sym_index;
-    sym_index = ((int *) hs->data)[2 + nbuckets + sym_index];
+    sym = &((Elf32_Sym *) s->data)[sym_index];
+    n = s->link->data + sym->st_name;
+    if (!strcmp(name, n)) return sym_index;
+    sym_index = ((int *) hs->data)[nbuckets + sym_index + 2];
   }
   return 0;
 }
@@ -377,8 +377,8 @@ void relocate_syms(TCCState *s1, int do_resolve) {
   const char *name;
   unsigned long addr;
 
-  sym_end = (Elf32_Sym *)(symtab_section->data + symtab_section->data_offset);
-  for (sym = (Elf32_Sym *)symtab_section->data + 1; sym < sym_end; sym++) {
+  sym_end = (Elf32_Sym *) (symtab_section->data + symtab_section->data_offset);
+  for (sym = (Elf32_Sym *) symtab_section->data + 1; sym < sym_end; sym++) {
     sh_num = sym->st_shndx;
     if (sh_num == SHN_UNDEF) {
       name = strtab_section->data + sym->st_name;
@@ -424,7 +424,7 @@ void relocate_section(TCCState *s1, Section *s) {
   int esym_index;
 
   sr = s->reloc;
-  rel_end = (Elf32_Rel *)(sr->data + sr->data_offset);
+  rel_end = (Elf32_Rel *) (sr->data + sr->data_offset);
   qrel = (Elf32_Rel *) sr->data;
   for (rel = qrel; rel < rel_end; rel++) {
     ptr = s->data + rel->r_offset;
@@ -1261,7 +1261,7 @@ int tcc_output_file(TCCState *s1, const char *filename) {
 
     // Get entry point address
     if (file_type == TCC_OUTPUT_EXE) {
-      ehdr.e_entry = (unsigned long)tcc_get_symbol_err(s1, "_start");
+      ehdr.e_entry = (unsigned long) tcc_get_symbol_err(s1, "_start");
     } else {
       ehdr.e_entry = text_section->sh_addr; // TODO: is it correct?
     }
@@ -1341,7 +1341,7 @@ int tcc_output_file(TCCState *s1, const char *filename) {
       offset++;
     }
   
-    for (i = 0;i < s1->nb_sections; i++) {
+    for (i = 0; i < s1->nb_sections; i++) {
       sh = &shdr;
       memset(sh, 0, sizeof(Elf32_Shdr));
       s = s1->sections[i];
@@ -1563,8 +1563,8 @@ int tcc_load_object_file(TCCState *s1, int fd, unsigned long file_offset) {
       case SHT_REL:
         // Take relocation offset information
         offseti = sm_table[sh->sh_info].offset;
-        rel_end = (Elf32_Rel *)(s->data + s->data_offset);
-        for (rel = (Elf32_Rel *)(s->data + offset); rel < rel_end; rel++) {
+        rel_end = (Elf32_Rel *) (s->data + s->data_offset);
+        for (rel = (Elf32_Rel *) (s->data + offset); rel < rel_end; rel++) {
           int type;
           unsigned sym_index;
           // Convert symbol index
@@ -1633,8 +1633,8 @@ int tcc_load_alacarte(TCCState *s1, int fd, int size) {
     for (p = ar_names, i = 0; i < nsyms; i++, p += strlen(p) + 1) {
       sym_index = find_elf_sym(symtab_section, p);
       if (sym_index) {
-        sym = &((Elf32_Sym *)symtab_section->data)[sym_index];
-        if(sym->st_shndx == SHN_UNDEF) {
+        sym = &((Elf32_Sym *) symtab_section->data)[sym_index];
+        if (sym->st_shndx == SHN_UNDEF) {
           off = get_be32(ar_index + i * 4) + sizeof(ArchiveHeader);
           ++bound;
           lseek(fd, off, SEEK_SET);
@@ -1685,7 +1685,7 @@ int tcc_load_archive(TCCState *s1, int fd) {
     size = (size + 1) & ~1;
     if (!strcmp(ar_name, "/")) {
       // COFF symbol table
-      if(s1->alacarte_link) return tcc_load_alacarte(s1, fd, size);
+      if (s1->alacarte_link) return tcc_load_alacarte(s1, fd, size);
     } else if (!strcmp(ar_name, "//") ||
                !strcmp(ar_name, "__.SYMDEF") ||
                !strcmp(ar_name, "__.SYMDEF/") ||

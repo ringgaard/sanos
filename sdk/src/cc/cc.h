@@ -206,7 +206,8 @@ typedef struct Section {
   struct Section *link;           // Link to another section
   struct Section *reloc;          // Corresponding section for relocation, if any
   struct Section *hash;           // Hash table for symbols
-  struct Section *next;
+  struct Section *next;           // Used for linking merged sections
+  int unused;                     // Used for unused section elimination
   char name[1];                   // Section name
 } Section;
 
@@ -532,6 +533,9 @@ typedef struct TCCState {
   // Exported dynamic symbol section
   Section *dynsym;
 
+  // If true, disable funtion-level linking
+  int nofll;
+
   // If true, no standard headers are added
   int nostdinc;
 
@@ -776,6 +780,7 @@ void expr_eq(void);
 void gexpr(void);
 int parse_btype(CType *type, AttributeDef *ad);
 void parse_expr_type(CType *type);
+void inc(int post, int c);
 void expr_type(CType *type);
 void unary_type(CType *type);
 void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int is_expr);
@@ -822,13 +827,13 @@ int get_reg(int rc);
 int get_reg_ex(int rc,int rc2);
 int gv(int rc);
 void gv2(int rc1, int rc2);
+void vrotb(int n);
 void vpop(void);
 void gv_dup(void);
 void gen_cast(CType *type);
 void gen_op(int op);
 void gen_assign_cast(CType *dt);
 void gaddrof(void);
-void inc(int post, int c);
 
 // codegen386.c
 void g(int c);
@@ -854,7 +859,6 @@ void gen_cvt_ftof(int t);
 void ggoto(void);
 
 // asm.c
-
 int tcc_assemble(TCCState *s1, int do_preprocess);
 void asm_instr(void);
 void masm_instr(TCCState *s1);

@@ -1651,8 +1651,7 @@ int main(int argc, char *argv[]) {
     while (*cmdline == ' ') cmdline++;
 
     return exec_command(cmdline);
-  }
-  else {
+  } else {
     shell();
   }
 

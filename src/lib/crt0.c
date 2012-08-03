@@ -39,7 +39,7 @@
 typedef void (__cdecl *proc_t)(void);
 typedef int (__cdecl *func_t)(void);
 
-int __instcount;
+int __instcount = 0;
 
 #if !defined(__GNUC__) && !defined(__TINYC__)
 

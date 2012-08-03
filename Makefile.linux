@@ -12,7 +12,7 @@ OBJ=linux/obj
 LIB_KRNL=linux/install/usr/lib/krnl.def
 LIB_OS=linux/install/usr/lib/os.def
 
-TCCFLAGS=-B linux/install/usr -I src/include -L linux/install/usr/lib
+TCCFLAGS=-B linux/install/usr
 
 sanos: dirs build-tools boot osldr kernel drivers os libc utils sdk sdk-source
 

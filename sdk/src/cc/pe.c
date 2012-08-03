@@ -1,5 +1,5 @@
 //
-//  opcodes.h - Tiny C Compiler for Sanos
+//  pe.c - Tiny C Compiler for Sanos
 // 
 //  Copyright (c) 2005-2007 grischka
 //  Copyright (c) 2011-2012 Michael Ringgaard
@@ -330,8 +330,8 @@ struct section_info {
   DWORD sh_addr;
   DWORD sh_size;
   DWORD sh_flags;
-  unsigned char *data;
-  DWORD data_size;
+  Section *first;
+  Section *last;
   IMAGE_SECTION_HEADER ish;
 };
 
@@ -356,9 +356,9 @@ struct pe_info {
   const char *def;
   DWORD filealign;
   int type;
+  int start_sym_index;
   DWORD sizeofheaders;
   DWORD imagebase;
-  DWORD start_addr;
   DWORD imp_offs;
   DWORD imp_size;
   DWORD iat_offs;
@@ -414,17 +414,21 @@ static DWORD umax(DWORD a, DWORD b) {
   return a < b ? b : a;
 }
 
-static void pe_fpad(FILE *fp, DWORD new_pos) {
+static void pe_fpad(FILE *fp, DWORD new_pos, char fill) {
   DWORD pos = ftell(fp);
-  while (++pos <= new_pos) fputc(0, fp);
+  while (++pos <= new_pos) fputc(fill, fp);
+}
+
+static DWORD align(DWORD n, DWORD a) {
+  return (n + (a - 1)) & ~(a - 1);
 }
 
 static DWORD pe_file_align(struct pe_info *pe, DWORD n) {
-  return (n + (pe->filealign - 1)) & ~(pe->filealign - 1);
+  return align(n, pe->filealign);
 }
 
 static DWORD pe_virtual_align(DWORD n) {
-  return (n + (0x1000 - 1)) & ~(0x1000 - 1);
+  return align(n, 0x1000);
 }
 
 static void pe_align_section(Section *s, int a) {
@@ -437,14 +441,38 @@ static void pe_set_datadir(int dir, DWORD addr, DWORD size) {
   pe_opthdr.DataDirectory[dir].Size = size;
 }
 
+static int pe_section_class(Section *s) {
+  int type, flags;
+  const char *name;
+
+  type = s->sh_type;
+  flags = s->sh_flags;
+  name = s->name;
+  if (flags & SHF_ALLOC) {
+    if (type == SHT_PROGBITS) {
+      if (flags & SHF_EXECINSTR) return sec_text;
+      if (flags & SHF_WRITE) return sec_data;
+      if (strcmp(name, ".rsrc") == 0) return sec_rsrc;
+      if (strcmp(name, ".iedat") == 0) return sec_idata;
+    } else if (type == SHT_NOBITS) {
+      if (flags & SHF_WRITE) return sec_bss;
+    }
+  } else {
+    if (strcmp(name, ".reloc") == 0) return sec_reloc;
+    if (strncmp(name, ".stab", 5) == 0) return sec_stab; // .stab and .stabstr
+  }
+  return -1;
+}
+
 static int pe_write(struct pe_info *pe) {
-  int i;
+  int i, j;
   int fd;
   FILE *op;
   FILE *stubfile;
   char *stub;
   int stub_size;
   DWORD file_offset, r;
+  Section *s;
 
   if (pe->stub) {
     stubfile = fopen(pe->stub, "rb");
@@ -489,7 +517,7 @@ static int pe_write(struct pe_info *pe) {
       pe->sec_count * sizeof (IMAGE_SECTION_HEADER));
 
   file_offset = pe->sizeofheaders;
-  pe_fpad(op, file_offset);
+  pe_fpad(op, file_offset, 0);
 
   if (verbose == 2) {
     printf("------------------------------------\n  virt   file   size  ord section" "\n");
@@ -510,7 +538,7 @@ static int pe_write(struct pe_info *pe) {
       case sec_text:
         pe_opthdr.BaseOfCode = addr;
         pe_opthdr.SizeOfCode += size;
-        pe_opthdr.AddressOfEntryPoint = addr + pe->start_addr;
+        pe_opthdr.AddressOfEntryPoint = ((Elf32_Sym *) symtab_section->data)[pe->start_sym_index].st_value - pe->imagebase;
         break;
 
       case sec_data:
@@ -545,18 +573,24 @@ static int pe_write(struct pe_info *pe) {
     }
 
     strcpy((char *) psh->Name, sh_name);
-
     psh->Characteristics = pe_sec_flags[si->cls];
     psh->VirtualAddress = addr;
     psh->Misc.VirtualSize = size;
     pe_opthdr.SizeOfImage = umax(pe_virtual_align(size + addr), pe_opthdr.SizeOfImage); 
 
-    if (si->data_size) {
+    if (si->sh_size) {
       psh->PointerToRawData = r = file_offset;
-      fwrite(si->data, 1, si->data_size, op);
-      file_offset = pe_file_align(pe, file_offset + si->data_size);
+      for (s = si->first; s; s = s->next) {
+        if (s->sh_type != SHT_NOBITS) {
+          file_offset = align(file_offset, s->sh_addralign);
+          pe_fpad(op, file_offset, si->cls == sec_text ? 0x90 : 0x00);
+          fwrite(s->data, 1, s->data_offset, op);
+          file_offset += s->data_offset;
+        }
+      }
+      file_offset = pe_file_align(pe, file_offset);
       psh->SizeOfRawData = file_offset - r;
-      pe_fpad(op, file_offset);
+      pe_fpad(op, file_offset, 0);
     }
   }
 
@@ -570,11 +604,7 @@ static int pe_write(struct pe_info *pe) {
   } else if (pe->type != PE_GUI) {
     pe_opthdr.Subsystem = 3;
   }
-
-  // Include relocation info in Sanos executables unless it has fixed base
-  if (pe->reloc) {
-    pe_filehdr.Characteristics &= ~1;
-  }
+  if (pe->reloc) pe_filehdr.Characteristics &= ~1;
 
   fseek(op, 0, SEEK_SET);
   fwrite(stub,  1, stub_size, op);
@@ -726,7 +756,7 @@ static void pe_build_exports(struct pe_info *pe) {
 
   sym_end = symtab_section->data_offset / sizeof(Elf32_Sym);
   for (sym_index = 1; sym_index < sym_end; ++sym_index) {
-    sym = (Elf32_Sym*)symtab_section->data + sym_index;
+    sym = (Elf32_Sym *) symtab_section->data + sym_index;
     name = symtab_section->link->data + sym->st_name;
     // Only export symbols from actually written sections
     if ((sym->st_other & 1) && pe->s1->sections[sym->st_shndx]->sh_addr) {
@@ -808,13 +838,13 @@ static void pe_build_reloc(struct pe_info *pe) {
       addr = rel->r_offset + s->sh_addr;
       rel++;
       if (type != R_386_32) continue;
-      if (count == 0) { 
+      if (count == 0) {
         // New block
         block_ptr = pe->reloc->data_offset;
         section_ptr_add(pe->reloc, sizeof(struct pe_reloc_header));
         offset = addr & 0xFFFFFFFF << 12;
       }
-      if ((addr -= offset) < (1 << 12)) { 
+      if ((addr -= offset) < (1 << 12)) {
         // One block spans 4k addresses
         WORD *wp = section_ptr_add(pe->reloc, sizeof(WORD));
         *wp = addr | IMAGE_REL_BASED_HIGHLOW << 12;
@@ -822,13 +852,17 @@ static void pe_build_reloc(struct pe_info *pe) {
         continue;
       }
       rel--;
-    } else if (i < pe->sec_count) {
-      sr = (s = pe->s1->sections[pe->sec_info[i++].ord])->reloc;
-      if (sr) {
-        rel = (Elf32_Rel *) sr->data;
-        rel_end = (Elf32_Rel *) (sr->data + sr->data_offset);
+    } else {
+      if (s) s = s->next;
+      if (!s && i < pe->sec_count) s = pe->sec_info[i++].first;
+      if (s) {
+        sr = s->reloc;
+        if (sr) {
+          rel = (Elf32_Rel *) sr->data;
+          rel_end = (Elf32_Rel *) (sr->data + sr->data_offset);
+        }
+        continue;
       }
-      continue;
     }
 
     if (count) {
@@ -850,34 +884,13 @@ static void pe_build_reloc(struct pe_info *pe) {
   }
 }
 
-static int pe_section_class(Section *s) {
-  int type, flags;
-  const char *name;
-
-  type = s->sh_type;
-  flags = s->sh_flags;
-  name = s->name;
-  if (flags & SHF_ALLOC) {
-    if (type == SHT_PROGBITS) {
-      if (flags & SHF_EXECINSTR) return sec_text;
-      if (flags & SHF_WRITE) return sec_data;
-      if (strcmp(name, ".rsrc") == 0) return sec_rsrc;
-      if (strcmp(name, ".iedat") == 0) return sec_idata;
-    } else if (type == SHT_NOBITS) {
-      if (flags & SHF_WRITE) return sec_bss;
-    }
-  } else {
-    if (strcmp(name, ".reloc") == 0) return sec_reloc;
-    if (strncmp(name, ".stab", 5) == 0) return sec_stab; // .stab and .stabstr
-  }
-  return -1;
-}
-
 static int pe_assign_addresses(struct pe_info *pe) {
   int i, k, o, c;
   DWORD addr;
   int *section_order;
   struct section_info *si;
+  struct section_info *merged_text;
+  struct section_info *merged_data;
   Section *s;
 
   // pe->thunk = new_section(pe->s1, ".iedat", SHT_PROGBITS, SHF_ALLOC);
@@ -895,6 +908,8 @@ static int pe_assign_addresses(struct pe_info *pe) {
   pe->sec_info = tcc_mallocz(o * sizeof (struct section_info));
   addr = pe->imagebase + 1;
 
+  merged_text = NULL;
+  merged_data = NULL;
   for (i = 0; i < o; ++i) {
     k = section_order[i];
     s = pe->s1->sections[k];
@@ -902,20 +917,41 @@ static int pe_assign_addresses(struct pe_info *pe) {
     si = &pe->sec_info[pe->sec_count];
 
 #ifdef PE_MERGE_DATA
-    if (c == sec_bss && pe->sec_count && si[-1].cls == sec_data) {
+    if (c == sec_data && merged_data == NULL) {
+      merged_data = si;
+    }
+    if (c == sec_bss && merged_data != NULL) {
       // Append .bss to .data
       s->sh_addr = addr = ((addr - 1) | 15) + 1;
       addr += s->data_offset;
-      si[-1].sh_size = addr - si[-1].sh_addr;
+      merged_data->sh_size = addr - merged_data->sh_addr;
+      merged_data->last->next = s;
+      merged_data->last = s;
       continue;
     }
 #endif
+
+    if (c == sec_text) {
+      if (s->unused) continue;
+      if (merged_text) {
+        merged_text->sh_size = align(merged_text->sh_size, s->sh_addralign);
+        s->sh_addr = merged_text->sh_addr + merged_text->sh_size;
+        merged_text->sh_size += s->data_offset;
+        addr = merged_text->sh_addr + merged_text->sh_size;
+        merged_text->last->next = s;
+        merged_text->last = s;
+        continue;
+      } else {
+        merged_text = si;
+      }
+    }
 
     strcpy(si->name, s->name);
     si->cls = c;
     si->ord = k;
     si->sh_addr = s->sh_addr = addr = pe_virtual_align(addr);
     si->sh_flags = s->sh_flags;
+    si->first = si->last = s;
 
     if (c == sec_data && pe->thunk == NULL) {
       pe->thunk = s;
@@ -931,14 +967,9 @@ static int pe_assign_addresses(struct pe_info *pe) {
     }
 
     if (s->data_offset) {
-      if (s->sh_type != SHT_NOBITS) {
-        si->data = s->data;
-        si->data_size = s->data_offset;
-      }
-
-      addr += s->data_offset;
       si->sh_size = s->data_offset;
-      ++pe->sec_count;
+      addr += s->data_offset;
+      pe->sec_count++;
     }
   }
 
@@ -949,8 +980,8 @@ static int pe_assign_addresses(struct pe_info *pe) {
 static void pe_relocate_rva(struct pe_info *pe, Section *s) {
   Section *sr = s->reloc;
   Elf32_Rel *rel, *rel_end;
-  rel_end = (Elf32_Rel *)(sr->data + sr->data_offset);
-  for (rel = (Elf32_Rel *)sr->data; rel < rel_end; rel++) {
+  rel_end = (Elf32_Rel *) (sr->data + sr->data_offset);
+  for (rel = (Elf32_Rel *) sr->data; rel < rel_end; rel++) {
     if (ELF32_R_TYPE(rel->r_info) == R_386_RELATIVE) {
       int sym_index = ELF32_R_SYM(rel->r_info);
       DWORD addr = s->sh_addr;
@@ -1033,6 +1064,71 @@ static int pe_check_symbols(struct pe_info *pe) {
   return ret;
 }
 
+static void pe_eliminate_unused_sections(struct pe_info *pe) {
+  Section *s, *sr;
+  Elf32_Sym *sym;
+  Elf32_Rel *rel, *rel_end;
+  int i, again, sym_index, sym_end;
+
+  // First mark all text sections as unused.
+  for (i = 1; i < pe->s1->nb_sections; ++i) {
+    s = pe->s1->sections[i];
+    if (s->sh_type == SHT_PROGBITS && (s->sh_flags & SHF_EXECINSTR)) s->unused = 1;
+  }
+  
+  // Mark section for entry point as used.
+  sym = &((Elf32_Sym *) symtab_section->data)[pe->start_sym_index];
+  s = pe->s1->sections[sym->st_shndx];
+  s->unused = 0;
+  if (verbose == 3) printf("entry section %s used\n", s->name);
+
+  // Mark sections for exported function as used
+  sym_end = symtab_section->data_offset / sizeof(Elf32_Sym);
+  for (sym_index = 1; sym_index < sym_end; ++sym_index) {
+    sym = (Elf32_Sym *) symtab_section->data + sym_index;
+    if (sym->st_other & 1) {
+      s = pe->s1->sections[sym->st_shndx];
+      s->unused = 0;
+      if (verbose == 3) printf("export section %s used\n", s->name);
+    }
+  }
+
+  // Keep marking sections until no more can be added.
+  do {
+    again = 0;
+    for (i = 1; i < pe->s1->nb_sections; ++i) {
+      s = pe->s1->sections[i];
+      if (s->unused) continue;
+
+      sr = s->reloc;
+      if (!sr) continue;
+
+      rel = (Elf32_Rel *) sr->data;
+      rel_end = (Elf32_Rel *) (sr->data + sr->data_offset);
+      while (rel < rel_end) {
+        sym_index = ELF32_R_SYM(rel->r_info);
+        sym = &((Elf32_Sym *) symtab_section->data)[sym_index];
+        if (sym->st_shndx != SHN_UNDEF) {
+          s = pe->s1->sections[sym->st_shndx];
+          if (s->unused) {
+            s->unused = 0;
+            again = 1;
+            if (verbose == 3) printf("section %s used\n", s->name);
+          }
+        }
+        rel++;
+      }
+    }
+  } while (again);
+
+  if (verbose == 3) {
+    for (i = 1; i < pe->s1->nb_sections; ++i) {
+      s = pe->s1->sections[i];
+      if (s->unused) printf("%s unused\n", s->name);
+    }
+  }
+}
+
 #ifdef PE_PRINT_SECTIONS
 static void pe_print_section(FILE * f, Section * s) {
   BYTE *p, *e, b;
@@ -1064,17 +1160,19 @@ static void pe_print_section(FILE * f, Section * s) {
   n = 56;
 
   if (s->sh_type == SHT_SYMTAB || s->sh_type == SHT_REL) {
-    static const char *fields1[] = { "name", "value", "size", "bind", "type", "other", "shndx", NULL };
-    static const char *fields2[] = { "offs", "type", "symb", NULL };
+    static const char *fields1[] = { "  name", "     value", "  size", "  bind", "  type", " other", " shndx", NULL };
+    static const char *fields2[] = { "  offs", "  type", "  symb", NULL };
     const char **p;
 
     if (s->sh_type == SHT_SYMTAB) {
-      p = fields1, n = 106;
+      p = fields1;
+      n = 110;
     } else {
-      p = fields2, n = 58;
+      p = fields2;
+      n = 58;
     }
     
-    for (i = 0; p[i]; ++i) fprintf(f, "%6s", p[i]);
+    for (i = 0; p[i]; ++i) fprintf(f, "%s", p[i]);
     fprintf(f, "  symbol");
   }
 
@@ -1095,7 +1193,7 @@ static void pe_print_section(FILE * f, Section * s) {
     if (s->sh_type == SHT_SYMTAB) {
       Elf32_Sym *sym = (Elf32_Sym *) (p + i);
       const char *name = s->link->data + sym->st_name;
-      fprintf(f, "  %04X  %04X  %04X   %02X    %02X    %02X   %04X  \"%s\"",
+      fprintf(f, "  %04X  %08X  %04X   %02X    %02X    %02X   %04X  \"%s\"",
               sym->st_name,
               sym->st_value,
               sym->st_size,
@@ -1248,6 +1346,7 @@ static void pe_add_runtime_ex(TCCState *s1, struct pe_info *pe) {
   const char *start_symbol;
   unsigned long addr = 0;
   int pe_type = 0;
+  int start_sym_index;
 
   if (find_elf_sym(symtab_section, "_WinMain@16")) {
     pe_type = PE_GUI;
@@ -1263,20 +1362,19 @@ static void pe_add_runtime_ex(TCCState *s1, struct pe_info *pe) {
   if (!start_symbol) {
     start_symbol = pe_type == PE_DLL ? "DllMain" : "mainCRTStartup";
   }
-  add_elf_sym(symtab_section, 0, 0,
-              ELF32_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0,
-              SHN_UNDEF, start_symbol);
+  start_sym_index = add_elf_sym(symtab_section, 0, 0,
+                                ELF32_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0,
+                                SHN_UNDEF, start_symbol);
+  tcc_get_symbol_err(s1, start_symbol);
 
   if (s1->nostdlib == 0) {
     tcc_add_library(s1, "c");
     tcc_add_library(s1, "os");
   }
 
-  addr = (unsigned long) tcc_get_symbol_err(s1, start_symbol);
-
   if (pe) {
     pe->type = pe_type;
-    pe->start_addr = addr;
+    pe->start_sym_index = start_sym_index;
     pe->stub = s1->stub;
     pe->def = s1->def_file;
     pe->filealign = s1->filealign;
@@ -1301,35 +1399,39 @@ int pe_output_file(TCCState * s1, const char *filename) {
   tcc_add_linker_symbols(s1);
 
   ret = pe_check_symbols(&pe);
-  if (ret == 0) {
-    // Generate relocation information by default for Sanos.
-    if (s1->imagebase == 0xFFFFFFFF) {
-      pe.reloc = new_section(pe.s1, ".reloc", SHT_PROGBITS, 0);
-      pe.imagebase = PE_DLL == pe.type ? 0x10000000 : 0x00400000;
-    } else {
-      pe.imagebase = s1->imagebase;
-    }
+  if (ret != 0) return ret;
+  
+  // Generate relocation information by default for Sanos.
+  if (s1->imagebase == 0xFFFFFFFF) {
+    pe.reloc = new_section(pe.s1, ".reloc", SHT_PROGBITS, 0);
+    pe.imagebase = PE_DLL == pe.type ? 0x10000000 : 0x00400000;
+  } else {
+    pe.imagebase = s1->imagebase;
+  }
 
-    pe_assign_addresses(&pe);
-    relocate_syms(s1, 0);
-    for (i = 1; i < s1->nb_sections; ++i) {
-      Section *s = s1->sections[i];
-      if (s->reloc) {
-        relocate_section(s1, s);
-        pe_relocate_rva(&pe, s);
-      }
+  if (!s1->nofll) pe_eliminate_unused_sections(&pe);
+  pe_assign_addresses(&pe);
+  relocate_syms(s1, 0);
+
+  for (i = 1; i < s1->nb_sections; ++i) {
+    Section *s = s1->sections[i];
+    if (s->reloc) {
+      relocate_section(s1, s);
+      pe_relocate_rva(&pe, s);
     }
-    if (s1->nb_errors) {
-      ret = 1;
-    } else {
-      ret = pe_write(&pe);
-    }
-    tcc_free(pe.sec_info);
+  }
+
+  if (s1->nb_errors) {
+    ret = 1;
+  } else {
+    ret = pe_write(&pe);
   }
 
 #ifdef PE_PRINT_SECTIONS
   if (s1->mapfile) pe_print_sections(s1, s1->mapfile);
 #endif
+
+  tcc_free(pe.sec_info);
   return ret;
 }
 

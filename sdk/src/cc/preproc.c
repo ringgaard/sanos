@@ -166,12 +166,12 @@ char *get_tok_str(int v, CValue *cv) {
       if (v == TOK_STR) {
         len = cstr->size - 1;
         for (i = 0; i < len; i++) {
-          add_char(&cstr_buf, ((unsigned char *)cstr->data)[i]);
+          add_char(&cstr_buf, ((unsigned char *) cstr->data)[i]);
         }
       } else {
         len = (cstr->size / sizeof(nwchar_t)) - 1;
         for (i = 0;i < len; i++) {
-          add_char(&cstr_buf, ((nwchar_t *)cstr->data)[i]);
+          add_char(&cstr_buf, ((nwchar_t *) cstr->data)[i]);
         }
       }
       cstr_ccat(&cstr_buf, '\"');

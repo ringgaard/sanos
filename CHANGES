@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Function-level linking in C compiler.
+
     * Added support for setting thread name for user-mode threads.
 
     * Changed C style.

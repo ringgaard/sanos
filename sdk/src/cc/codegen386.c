@@ -243,7 +243,7 @@ void gadd_sp(int val) {
 void gcall_or_jmp(int is_jmp) {
   int r;
   if ((vtop->r & (VT_VALMASK | VT_LVAL)) == VT_CONST) {
-    // Constant case 
+    // Constant case
     if (vtop->r & VT_SYM) {
       // Relocation case
       greloc(cur_text_section, vtop->sym, ind + 1, R_386_PC32);

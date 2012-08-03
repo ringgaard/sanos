@@ -221,7 +221,7 @@ void parse_modifiers(AttributeDef *ad) {
 // Structure lookup
 Sym *struct_find(int v) {
   v -= TOK_IDENT;
-  if ((unsigned)v >= (unsigned)(tok_ident - TOK_IDENT)) return NULL;
+  if ((unsigned) v >= (unsigned) (tok_ident - TOK_IDENT)) return NULL;
   return table_ident[v]->sym_struct;
 }
 
@@ -825,6 +825,22 @@ void parse_type(CType *type) {
     expect("type");
   }
   type_decl(type, &ad, &n, TYPE_ABSTRACT);
+}
+
+// Post defines POST/PRE add. c is the token ++ or --
+void inc(int post, int c) {
+  test_lvalue();
+  vdup(); // Save lvalue
+  if (post) {
+    gv_dup(); // Duplicate value
+    vrotb(3);
+    vrotb(3);
+  }
+  // Add constant
+  vpushi(c - TOK_MID);
+  gen_op('+');
+  vstore(); // Store value
+  if (post) vpop(); // If post op, return saved value
 }
 
 void unary(void) {
@@ -2441,13 +2457,13 @@ void decl_initializer_alloc(CType *type, AttributeDef *ad, int r, int has_init, 
         // Put a common area
         put_extern_sym(sym, NULL, align, size);
         // TODO: find a nicer way
-        esym = &((Elf32_Sym *)symtab_section->data)[sym->c];
+        esym = &((Elf32_Sym *) symtab_section->data)[sym->c];
         esym->st_shndx = SHN_COMMON;
       }
     } else {
       CValue cval;
 
-      // Psh global reference
+      // Push global reference
       sym = get_sym_ref(type, sec, addr, size);
       cval.ul = 0;
       vsetc(type, VT_CONST | VT_SYM, &cval);
@@ -2732,7 +2748,19 @@ void decl(int l) {
         } else {
           // Compute text section
           cur_text_section = ad.section;
-          if (!cur_text_section) cur_text_section = text_section;
+          if (!cur_text_section) {
+            if (!tcc_state->nofll) {
+              // Create new text section for function
+              CString section_name;
+              cstr_new(&section_name);
+              cstr_cat(&section_name, ".text_");
+              cstr_cat(&section_name, get_tok_str(sym->v, NULL));
+              cstr_ccat(&section_name, 0);
+              cur_text_section = find_section(tcc_state, section_name.data);
+            } else {
+              cur_text_section = text_section;
+            }
+          }
           cur_text_section->sh_flags |= SHF_EXECINSTR;
           sym->r = VT_SYM | VT_CONST;
           gen_function(sym);

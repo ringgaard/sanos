@@ -1468,18 +1468,3 @@ void vstore(void) {
   }
 }
 
-// Post defines POST/PRE add. c is the token ++ or --
-void inc(int post, int c) {
-  test_lvalue();
-  vdup(); // Save lvalue
-  if (post) {
-    gv_dup(); // Duplicate value
-    vrotb(3);
-    vrotb(3);
-  }
-  // Add constant
-  vpushi(c - TOK_MID); 
-  gen_op('+');
-  vstore(); // Store value
-  if (post) vpop(); // If post op, return saved value
-}

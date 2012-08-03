@@ -269,11 +269,11 @@ int add_symbols(struct archive  *ar, struct entry *e) {
         
         //printf("symbol %s type=%d bind=%d section=%d\n", name, type, bind, sym->st_shndx);
         
+        // Only keep defined symbols.
+        if (sym->st_shndx == 0) continue;
+
         // Only keep global symbols.
         if (bind != 1) continue;
-        
-        // Only keep symbols for section 1 and 2.
-        if (sym->st_shndx != 1 && sym->st_shndx != 2) continue;
         
         add_new_symbol(ar, e, name);
       }

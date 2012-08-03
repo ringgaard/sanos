@@ -39,9 +39,6 @@ const char *tcc_lib_path = CONFIG_TCCDIR;
 // Display benchmark infos
 static int do_bench = 0;
 
-// Max number of callers shown if error
-static int num_callers = 6;
-
 #define WD_ALL            0x0001  // Warning is activated when using -Wall
 #define FD_INVERT         0x0002  // Invert value before storing
 
@@ -83,8 +80,6 @@ enum {
   TCC_OPTION_B,
   TCC_OPTION_l,
   TCC_OPTION_bench,
-  TCC_OPTION_bt,
-  TCC_OPTION_b,
   TCC_OPTION_g,
   TCC_OPTION_c,
   TCC_OPTION_static,
@@ -99,16 +94,15 @@ enum {
   TCC_OPTION_r,
   TCC_OPTION_Wl,
   TCC_OPTION_W,
-  TCC_OPTION_O,
   TCC_OPTION_m,
   TCC_OPTION_f,
+  TCC_OPTION_nofll,
   TCC_OPTION_nostdinc,
   TCC_OPTION_nostdlib,
   TCC_OPTION_print_search_dirs,
   TCC_OPTION_rdynamic,
   TCC_OPTION_v,
   TCC_OPTION_w,
-  TCC_OPTION_pipe,
   TCC_OPTION_E,
 };
 
@@ -122,7 +116,6 @@ static const TCCOption tcc_options[] = {
   { "B", TCC_OPTION_B, TCC_OPTION_HAS_ARG },
   { "l", TCC_OPTION_l, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
   { "bench", TCC_OPTION_bench, 0 },
-  { "bt", TCC_OPTION_bt, TCC_OPTION_HAS_ARG },
   { "g", TCC_OPTION_g, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
   { "c", TCC_OPTION_c, 0 },
   { "static", TCC_OPTION_static, 0 },
@@ -138,15 +131,14 @@ static const TCCOption tcc_options[] = {
   { "r", TCC_OPTION_r, 0 },
   { "Wl,", TCC_OPTION_Wl, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
   { "W", TCC_OPTION_W, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
-  { "O", TCC_OPTION_O, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
   { "m", TCC_OPTION_m, TCC_OPTION_HAS_ARG },
   { "f", TCC_OPTION_f, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
+  { "nofll", TCC_OPTION_nofll, 0 },
   { "nostdinc", TCC_OPTION_nostdinc, 0 },
   { "nostdlib", TCC_OPTION_nostdlib, 0 },
   { "print-search-dirs", TCC_OPTION_print_search_dirs, 0 }, 
   { "v", TCC_OPTION_v, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
   { "w", TCC_OPTION_w, 0 },
-  { "pipe", TCC_OPTION_pipe, 0},
   { "E", TCC_OPTION_E, 0},
   { NULL },
 };
@@ -214,9 +206,9 @@ static int64_t getclock_us(void) {
 
 void help(void) {
   printf("tcc version " TCC_VERSION " - Tiny C Compiler - Copyright (C) 2001-2006 Fabrice Bellard\n"
-      "usage: tcc [-v] [-c] [-o outfile] [-Bdir] [-bench] [-Idir] [-Dsym[=val]] [-Usym]\n"
-      "           [-Wwarn] [-g] [-b] [-bt N] [-Ldir] [-llib] [-shared] [-soname name]\n"
-      "           [-static] [infile1 infile2...]\n"
+      "usage: cc [-v] [-c] [-o outfile] [-Bdir] [-bench] [-Idir] [-Dsym[=val]] [-Usym]\n"
+      "          [-Wwarn] [-g] [-Ldir] [-llib] [-shared] [-soname name]\n"
+      "          [-static] [infile1 infile2...]\n"
       "\n"
       "General options:\n"
       "  -v           display current version, increase verbosity\n"
@@ -227,6 +219,7 @@ void help(void) {
       "  -fflag       set or reset (with 'no-' prefix) 'flag' (see man page)\n"
       "  -Wwarning    set or reset (with 'no-' prefix) 'warning' (see man page)\n"
       "  -w           disable all warnings\n"
+      "  -g           generate runtime debug info\n"
       "Preprocessor options:\n"
       "  -E           preprocess only\n"
       "  -Idir        add include path 'dir'\n"
@@ -246,9 +239,6 @@ void help(void) {
       "  -rdynamic    export all global symbols to dynamic linker\n"
       "  -r           generate (relocatable) object file\n"
       "  -m mapfile   generate linker map file\n"
-      "Debugger options:\n"
-      "  -g           generate runtime debug info\n"
-      "  -bt N        show N callers in stack traces\n"
       );
 }
 
@@ -340,15 +330,15 @@ int parse_arguments(TCCState *s, int argc, char **argv) {
         case TCC_OPTION_bench:
           do_bench = 1;
           break;
-        case TCC_OPTION_bt:
-          num_callers = atoi(oarg);
-          break;
         case TCC_OPTION_g:
           do_debug = 1;
           break;
         case TCC_OPTION_c:
           multiple_files = 1;
           output_type = TCC_OUTPUT_OBJ;
+          break;
+        case TCC_OPTION_nofll:
+          s->nofll = 1;
           break;
         case TCC_OPTION_static:
           s->static_link = 1;
