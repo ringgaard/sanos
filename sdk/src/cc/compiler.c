@@ -767,7 +767,7 @@ void type_decl(CType *type, AttributeDef *ad, int *v, int td) {
   *type = type1;
 }
 
-// Indirection with full error checking and bound check
+// Indirection with full error checking
 void indir(void) {
   if ((vtop->type.t & VT_BTYPE) != VT_PTR) {
     if ((vtop->type.t & VT_BTYPE) == VT_FUNC) return;
@@ -789,7 +789,7 @@ static void gfunc_param_typed(Sym *func, Sym *arg) {
 
   func_type = func->c;
   if (func_type == FUNC_OLD || (func_type == FUNC_ELLIPSIS && arg == NULL)) {
-    // Default casting : only need to convert float to double
+    // Default casting: only need to convert float to double
     if ((vtop->type.t & VT_BTYPE) == VT_FLOAT) {
       type.t = VT_DOUBLE;
       gen_cast(&type);
@@ -1672,7 +1672,7 @@ void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int 
     gsym_addr(b, d);
   } else if (tok == '{') {
     Sym *llabel;
-    
+
     next();
     // Record local declaration stack position
     s = local_stack;

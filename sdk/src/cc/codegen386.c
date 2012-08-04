@@ -178,10 +178,12 @@ void load(int r, SValue *sv) {
       o(0x8d); // lea xxx(%ebp), r
       gen_modrm(r, VT_LOCAL, sv->sym, fc);
     } else if (v == VT_CMP) {
-      oad(0xb8 + r, 0); /// mov $0, r
-      o(0x0f); // setxx %br
+      o(0x0f); // setxx br
       o(fc);
       o(0xc0 + r);
+      o(0x0f); // movzx r,br
+      o(0xb6);
+      o(0xc0 + r + r * 8);
     } else if (v == VT_JMP || v == VT_JMPI) {
       t = v & 1;
       oad(0xb8 + r, t); // mov $1, r
@@ -491,12 +493,12 @@ void gjmp_addr(int a) {
 
 // Generate a test. set 'inv' to invert test. Stack entry is popped.
 int gtst(int inv, int t) {
-  int v, *p;
+  int v, r, *p;
 
   v = vtop->r & VT_VALMASK;
   if (v == VT_CMP) {
-    // Fast case : can jump directly since flags are set
-    g(0x0f);
+    // Fast case: can jump directly since flags are set
+    g(0x0f); // jcc t
     t = psym((vtop->c.i - 16) ^ inv, t);
   } else if (v == VT_JMP || v == VT_JMPI) {
     // && or || optimization
@@ -504,7 +506,7 @@ int gtst(int inv, int t) {
       // Insert vtop->c jump list in t
       p = &vtop->c.i;
       while (*p != 0) {
-        p = (int *)(cur_text_section->data + *p);
+        p = (int *) (cur_text_section->data + *p);
       }
       *p = t;
       t = vtop->c.i;
@@ -521,10 +523,10 @@ int gtst(int inv, int t) {
       // Constant jmp optimization
       if ((vtop->c.i != 0) != inv) t = gjmp(t);
     } else {
-      v = gv(RC_INT);
-      o(0x85);
-      o(0xc0 + v * 9);
-      g(0x0f);
+      r = gv(RC_INT);
+      o(0x85);  // test r,r
+      o(0xc0 + r * 9);
+      g(0x0f);  // jz/jnz t
       t = psym(0x85 ^ inv, t);
     }
   }
