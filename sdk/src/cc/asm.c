@@ -54,7 +54,7 @@ void asm_expr_unary(TCCState *s1, ExprValue *pe) {
           if (!sym || sym->r) {
             // If the last label is defined, then define a new one
             sym = label_push(&s1->asm_labels, label, 0);
-            sym->type.t = VT_STATIC | VT_VOID;
+            sym->type.t = VT_STATIC | VT_LABEL;
           }
         }
         pe->v = 0;
@@ -120,7 +120,7 @@ void asm_expr_unary(TCCState *s1, ExprValue *pe) {
         if (!sym) {
           sym = label_push(&s1->asm_labels, tok, 0);
           // NOTE: by default, the symbol is global
-          sym->type.t = VT_VOID;
+          sym->type.t = VT_LABEL;
         }
         if (sym->r == SHN_ABS) {
           // If absolute symbol, no need to put a symbol value
@@ -224,7 +224,7 @@ void asm_expr_sum(TCCState *s1, ExprValue *pe) {
     } else {
       pe->v -= e2.v;
       // NOTE: we are less powerful than gas in that case
-      //because we store only one symbol in the expression
+      // because we store only one symbol in the expression
       if (!pe->sym && !e2.sym) {
         // OK
       } else if (pe->sym && !e2.sym) {
@@ -233,7 +233,7 @@ void asm_expr_sum(TCCState *s1, ExprValue *pe) {
         if (pe->sym == e2.sym) { 
           // OK
         } else if (pe->sym->r == e2.sym->r && pe->sym->r != 0) {
-          // We also accept defined symbols in the same section
+          // We also accept defined symbols in the same section (FIXME)
           pe->v += (long) pe->sym->next - (long) e2.sym->next;
         } else {
           goto cannot_relocate;
@@ -260,65 +260,88 @@ int asm_int_expr(TCCState *s1) {
 
 // NOTE: the same name space as C labels is used to avoid using too
 // much memory when storing labels in TokenStrings
-void asm_new_label1(TCCState *s1, int label, int is_local, int sh_num, int value) {
+
+void asm_new_abs_label(TCCState *s1, int label, int value) {
   Sym *sym;
 
   sym = label_find(label);
   if (sym) {
     if (sym->r) {
       // The label is already defined
-      if (!is_local) {
-        error("assembler label '%s' already defined", get_tok_str(label, NULL));
-      } else {
-        // Redefinition of local labels is possible
-        goto new_label;
-      }
+      error("assembler label '%s' already defined", get_tok_str(label, NULL));
     }
   } else {
-  new_label:
     sym = label_push(&s1->asm_labels, label, 0);
-    sym->type.t = VT_STATIC | VT_VOID;
+    sym->type.t = VT_STATIC;
   }
-  sym->r = sh_num;
-  sym->next = (void *)value;
+  sym->r = SHN_ABS;
+  sym->next = (void *) value;
 }
 
 void asm_new_label(TCCState *s1, int label, int is_local) {
-  asm_new_label1(s1, label, is_local, cur_text_section->sh_num, ind);
+  Sym *sym;
+
+  sym = label_find(label);
+  if (sym) {
+    if (sym->r) {
+      // The label is already defined
+      error("assembler label '%s' already defined", get_tok_str(label, NULL));
+    } else {
+      // Patch existing references to the label
+      sym->r = cur_text_section->sh_num;
+      sym->next = (void *) gsym((long) sym->next);
+    }
+  } else {
+    sym = label_push(&s1->asm_labels, label, 0);
+    sym->type.t = VT_LABEL;
+    if (is_local) sym->type.t = VT_STATIC;
+    sym->r = cur_text_section->sh_num;
+    sym->next = (void *) glabel();
+  }
 }
 
 void asm_free_labels(TCCState *st) {
   Sym *s, *s1;
   Section *sec;
+  int defer;
   
   for (s = st->asm_labels; s != NULL; s = s1) {
     s1 = s->prev;
+
     // Define symbol value in object file
+    defer = 0;
     if (s->r) {
       if (s->r == SHN_ABS) {
         sec = SECTION_ABS;
       } else {
         sec = st->sections[s->r];
+        if (sec == cur_text_section) {
+          assign_label_symbol((long) s->next, s);
+          defer = 1;
+        }
       }
-      put_extern_sym_ex(s, sec, (long)s->next, 0, 0);
+      if (!defer) put_extern_sym_ex(s, sec, s->c, 0, 0);
     }
+
     // Remove label
     table_ident[s->v - TOK_IDENT]->sym_label = NULL;
-    sym_free(s);
+    if (!defer) sym_free(s);
   }
   st->asm_labels = NULL;
 }
 
-void use_section1(TCCState *s1, Section *sec) {
-  cur_text_section->data_offset = ind;
+void use_section_ex(TCCState *s1, Section *sec) {
+  gend();
+  gcode();
+  clear_code_buf();
   cur_text_section = sec;
-  ind = cur_text_section->data_offset;
+  gstart();
 }
 
 void use_section(TCCState *s1, const char *name) {
   Section *sec;
   sec = find_section(s1, name);
-  use_section1(s1, sec);
+  use_section_ex(s1, sec);
 }
 
 void asm_parse_directive(TCCState *s1) {
@@ -331,34 +354,44 @@ void asm_parse_directive(TCCState *s1) {
   sec = cur_text_section;
   switch (tok) {
     case TOK_ASM_align:
-    case TOK_ASM_skip:
-    case TOK_ASM_space:
-      tok1 = tok;
       next();
       n = asm_int_expr(s1);
-      if (tok1 == TOK_ASM_align) {
-        if (n < 0 || (n & (n - 1)) != 0) {
-          error("alignment must be a positive power of two");
-        }
-        offset = (ind + n - 1) & -n;
-        size = offset - ind;
-        // The section must have a compatible alignment
-        if (sec->sh_addralign < n) sec->sh_addralign = n;
-      } else {
-        size = n;
+      if (n < 0 || (n & (n - 1)) != 0) {
+        error("alignment must be a positive power of two");
       }
+
+      // The section must have a compatible alignment
+      if (sec->sh_addralign < n) sec->sh_addralign = n;
+
       v = 0;
       if (tok == ',') {
         next();
         v = asm_int_expr(s1);
       }
-    zero_pad:
-      if (sec->sh_type != SHT_NOBITS) {
-        sec->data_offset = ind;
-        ptr = section_ptr_add(sec, size);
-        memset(ptr, v, size);
+
+      if (sec->sh_type == SHT_NOBITS) {
+        sec->data_offset = (sec->data_offset + n - 1) & -n;
+      } else {
+        galign(n, v);
       }
-      ind += size;
+      break;
+
+    case TOK_ASM_skip:
+    case TOK_ASM_space:
+      next();
+      size = asm_int_expr(s1);
+      v = 0;
+      if (tok == ',') {
+        next();
+        v = asm_int_expr(s1);
+      }
+      if (sec->sh_type == SHT_NOBITS) {
+        sec->data_offset += size;
+      } else if (sec == cur_text_section) {
+        for (n = 0; n < size; ++n) g(v);
+      } else {
+        memset(section_ptr_add(sec, size), v, size);
+      }
       break;
 
     case TOK_ASM_quad:
@@ -380,7 +413,7 @@ void asm_parse_directive(TCCState *s1) {
           gen_le32(vl);
           gen_le32(vl >> 32);
         } else {
-          ind += 8;
+          sec->data_offset += 8;
         }
         if (tok != ',') break;
         next();
@@ -416,7 +449,7 @@ void asm_parse_directive(TCCState *s1) {
             }
           }
         } else {
-          ind += size;
+          sec->data_offset += size;
         }
         if (tok != ',') break;
         next();
@@ -464,17 +497,6 @@ void asm_parse_directive(TCCState *s1) {
       break;
     }
 
-    case TOK_ASM_org: {
-      unsigned long n;
-      next();
-      // TODO: handle section symbols too
-      n = asm_int_expr(s1);
-      if (n < ind) error("attempt to .org backwards");
-      v = 0;
-      size = n - ind;
-      goto zero_pad;
-    }
-
     case TOK_ASM_globl:
     case TOK_ASM_global: {
       Sym *sym;
@@ -483,7 +505,7 @@ void asm_parse_directive(TCCState *s1) {
       sym = label_find(tok);
       if (!sym) {
         sym = label_push(&s1->asm_labels, tok, 0);
-        sym->type.t = VT_VOID;
+        sym->type.t = VT_LABEL;
       }
       sym->type.t &= ~VT_STATIC;
       next();
@@ -560,7 +582,7 @@ void asm_parse_directive(TCCState *s1) {
       next();
       if (!last_text_section) error("no previous section referenced");
       sec = cur_text_section;
-      use_section1(s1, last_text_section);
+      use_section_ex(s1, last_text_section);
       last_text_section = sec;
       break;
     }
@@ -596,7 +618,7 @@ int tcc_assemble_internal(TCCState *s1, int do_preprocess) {
       const char *p;
       int n;
       p = tokc.cstr->data;
-      n = strtoul(p, (char **)&p, 10);
+      n = strtoul(p, (char **) &p, 10);
       if (*p != '\0') expect("':'");
       // New local label
       asm_new_label(s1, asm_get_local_label_name(s1, n), 1);
@@ -616,7 +638,7 @@ int tcc_assemble_internal(TCCState *s1, int do_preprocess) {
         int n;
         next();
         n = asm_int_expr(s1);
-        asm_new_label1(s1, opcode, 0, SHN_ABS, n);
+        asm_new_abs_label(s1, opcode, n);
         goto redo;
       } else {
         asm_opcode(s1, opcode);
@@ -645,15 +667,17 @@ int tcc_assemble(TCCState *s1, int do_preprocess) {
 
   // Default section is text
   cur_text_section = text_section;
-  ind = cur_text_section->data_offset;
+  func_naked = 1;
+  reset_code_buf();
+  gstart();
 
   define_start = define_stack;
-
   ret = tcc_assemble_internal(s1, do_preprocess);
-
-  cur_text_section->data_offset = ind;
-
   free_defines(define_start); 
+
+  gend();
+  gcode();
+  clear_code_buf();
 
   return ret;
 }
@@ -928,7 +952,7 @@ void parse_masm_instr(TCCState *s1) {
     p = tokc.cstr->data;
     n = strtoul(p, (char **) &p, 10);
     if (*p != '\0') expect("':'");
-    /* new local label */
+    // New local label
     asm_new_label(s1, asm_get_local_label_name(s1, n), 1);
     next();
     skip(':');
@@ -997,12 +1021,16 @@ void asm_global_instr(void) {
 #endif
 
   cur_text_section = text_section;
-  ind = cur_text_section->data_offset;
+  func_naked = 1;
+  reset_code_buf();
+  gstart();
 
   // Assemble the string with tcc internal assembler
   tcc_assemble_inline(tcc_state, astr.data, astr.size - 1);
-  
-  cur_text_section->data_offset = ind;
+
+  gend();
+  gcode();
+  clear_code_buf();
 
   // Restore the current C token
   next();

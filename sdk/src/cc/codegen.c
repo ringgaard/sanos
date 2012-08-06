@@ -615,8 +615,8 @@ void gen_opl(int op) {
         vrotb(3);
         // Stack: L H shift
         c = (int) vtop->c.i;
-        // constant: simpler
-        // NOTE: all comments are for SHL. the other cases are done by swaping words
+        // Constant: simpler
+        // NOTE: All comments are for SHL. The other cases are done by swaping words
         vpop();
         if (op != TOK_SHL) vswap();
         if (c >= 32) {
@@ -706,11 +706,10 @@ void gen_opl(int op) {
       }
       if (op != TOK_EQ) {
         // Generate non equal test
-        // TODO: not portable yet
         if (a == 0) {
           b = gtst(0, 0);
         } else {
-          b = psym(0x850f, 0);
+          b = gjmp(0, TOK_NE);
         }
       }
       // Compare low. Always unsigned

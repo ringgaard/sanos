@@ -32,7 +32,7 @@ int global_expr;
 
 CType func_vt;
 int func_vc;
-char *funcname;
+char *func_name;
 
 // Keywords
 static const char tcc_keywords[] = 
@@ -898,7 +898,7 @@ void unary(void) {
       int len;
       
       // Special function name identifier
-      len = strlen(funcname) + 1;
+      len = strlen(func_name) + 1;
 
       // Generate char[len] type
       type.t = VT_BYTE;
@@ -907,7 +907,7 @@ void unary(void) {
       type.ref->c = len;
       vpush_ref(&type, data_section, data_section->data_offset, len);
       ptr = section_ptr_add(data_section, len);
-      memcpy(ptr, funcname, len);
+      memcpy(ptr, func_name, len);
       next();
       break;
     }
@@ -1473,7 +1473,7 @@ void expr_eq(void) {
       sv = *vtop; // Save value to handle it later
       vtop--; // No vpop so that FP stack is not flushed
       skip(':');
-      u = gjmp(0);
+      u = gjmp(0, 0);
       gsym(tt);
       expr_eq();
       type2 = vtop->type;
@@ -1535,7 +1535,7 @@ void expr_eq(void) {
       
       r2 = gv(rc);
       // This is horrible, but we must also convert first operand
-      tt = gjmp(0);
+      tt = gjmp(0, 0);
       gsym(u);
       // Put again first value and cast it
       *vtop = sv;
@@ -1629,7 +1629,7 @@ void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int 
 
   // Generate line number info
   if (do_debug && (last_line_num != file->line_num || last_ind != ind)) {
-    put_stabn(N_SLINE, 0, file->line_num, ind - func_ind);
+    put_stabn(N_SLINE, 0, file->line_num, ind); // FIXME
     last_ind = ind;
     last_line_num = file->line_num;
   }
@@ -1651,7 +1651,7 @@ void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int 
     c = tok;
     if (c == TOK_ELSE) {
       next();
-      d = gjmp(0);
+      d = gjmp(0, 0);
       gsym(a);
       block(bsym, csym, case_sym, def_sym, case_reg, 0);
       gsym(d); // Patch else jmp
@@ -1660,16 +1660,16 @@ void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int 
     }
   } else if (tok == TOK_WHILE) {
     next();
-    d = ind;
+    d = glabel();
     skip('(');
     gexpr();
     skip(')');
     a = gtst(1, 0);
     b = 0;
     block(&a, &b, case_sym, def_sym, case_reg, 0);
-    gjmp_addr(d);
+    gjmp(d, 0);
     gsym(a);
-    gsym_addr(b, d);
+    gsym_at(b, d);
   } else if (tok == '{') {
     Sym *llabel;
 
@@ -1729,17 +1729,17 @@ void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int 
       vtop--; // NOT vpop() because on x86 it would flush the fp stack
     }
     skip(';');
-    rsym = gjmp(rsym); // jmp
+    rsym = gjmp(rsym, 0); // jmp
   } else if (tok == TOK_BREAK) {
     // Compute jump
     if (!bsym) error("cannot break");
-    *bsym = gjmp(*bsym);
+    *bsym = gjmp(*bsym, 0);
     next();
     skip(';');
   } else if (tok == TOK_CONTINUE) {
     // Compute jump
     if (!csym) error("cannot continue");
-    *csym = gjmp(*csym);
+    *csym = gjmp(*csym, 0);
     next();
     skip(';');
   } else if (tok == TOK_FOR) {
@@ -1751,8 +1751,8 @@ void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int 
       vpop();
     }
     skip(';');
-    d = ind;
-    c = ind;
+    d = glabel();
+    c = glabel();
     a = 0;
     b = 0;
     if (tok != ';') {
@@ -1761,30 +1761,30 @@ void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int 
     }
     skip(';');
     if (tok != ')') {
-      e = gjmp(0);
-      c = ind;
+      e = gjmp(0, 0);
+      c = glabel();
       gexpr();
       vpop();
-      gjmp_addr(d);
+      gjmp(d, 0);
       gsym(e);
     }
     skip(')');
     block(&a, &b, case_sym, def_sym, case_reg, 0);
-    gjmp_addr(c);
+    gjmp(c, 0);
     gsym(a);
-    gsym_addr(b, c);
+    gsym_at(b, c);
   } else if (tok == TOK_DO) {
     next();
     a = 0;
     b = 0;
-    d = ind;
+    d = glabel();
     block(&a, &b, case_sym, def_sym, case_reg, 0);
     skip(TOK_WHILE);
     skip('(');
     gsym(b);
     gexpr();
     c = gtst(0, 0);
-    gsym_addr(c, d);
+    gsym_at(c, d);
     skip(')');
     gsym(a);
     skip(';');
@@ -1797,13 +1797,13 @@ void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int 
     vpop();
     skip(')');
     a = 0;
-    b = gjmp(0); // Jump to first case
+    b = gjmp(0, 0); // Jump to first case
     c = 0;
     block(&a, csym, &b, &c, case_reg, 0);
     // If no default, jmp after switch
-    if (c == 0) c = ind;
+    if (c == 0) c = glabel();
     // Default label
-    gsym_addr(b, c);
+    gsym_at(b, c);
     // Break label
     gsym(a);
   } else if (tok == TOK_CASE) {
@@ -1819,7 +1819,7 @@ void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int 
     }
     
     // Since a case is like a label, we must skip it with a jmp
-    b = gjmp(0);
+    b = gjmp(0, 0);
     gsym(*case_sym);
     vseti(case_reg, 0);
     vpushi(v1);
@@ -1843,7 +1843,7 @@ void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int 
     skip(':');
     if (!def_sym) expect("switch");
     if (*def_sym) error("too many 'default'");
-    *def_sym = ind;
+    *def_sym = glabel();
     is_expr = 0;
     goto block_after_label;
   } else if (tok == TOK_GOTO) {
@@ -1865,9 +1865,9 @@ void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int 
 
       // Label already defined
       if (s->r & LABEL_FORWARD) {
-        s->next = (void *) gjmp((long) s->next);
+        s->next = (void *) gjmp((long) s->next, 0);
       } else {
-        gjmp_addr((long)s->next);
+        gjmp((long) s->next, 0);
       }
       next();
     } else {
@@ -1889,12 +1889,12 @@ void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int 
         if (s->r == LABEL_DEFINED) {
           error("duplicate label '%s'", get_tok_str(s->v, NULL));
         }
-        gsym((long)s->next);
+        gsym((long) s->next);
         s->r = LABEL_DEFINED;
       } else {
         s = label_push(&global_label_stack, b, LABEL_DEFINED);
       }
-      s->next = (void *) ind;
+      s->next = (void *) glabel();
       // We accept this, but it is a mistake
     block_after_label:
       if (tok == '}') {
@@ -2103,7 +2103,7 @@ void init_putv(CType *type, Section *sec, unsigned long c, int v, int expr_type)
         break;
       default:
         if (vtop->r & VT_SYM) {
-          greloc(sec, vtop->sym, c, R_386_32);
+          put_reloc(sec, vtop->sym, c, R_386_32);
         }
         *(int *)ptr |= (vtop->c.i & bit_mask) << bit_pos;
         break;
@@ -2487,7 +2487,7 @@ void put_func_debug(Sym *sym) {
 
   // Stabs info
   // TODO: we put here a dummy type
-  snprintf(buf, sizeof(buf), "%s:%c1", funcname, sym->type.t & VT_STATIC ? 'f' : 'F');
+  snprintf(buf, sizeof(buf), "%s:%c1", func_name, sym->type.t & VT_STATIC ? 'f' : 'F');
   put_stabs_r(buf, N_FUN, 0, file->line_num, 0, cur_text_section, sym->c);
   last_ind = 0;
   last_line_num = 0;
@@ -2542,13 +2542,14 @@ void func_decl_list(Sym *func_sym) {
 
 // Parse a function defined by symbol 'sym' and generate its code in 'cur_text_section'
 void gen_function(Sym *sym) {
+  int func_start, func_size;
   int saved_nocode_wanted = nocode_wanted;
   nocode_wanted = 0;
-  ind = cur_text_section->data_offset;
-  // NOTE: we patch the symbol size later
-  put_extern_sym(sym, cur_text_section, ind, 0);
-  funcname = get_tok_str(sym->v, NULL);
-  func_ind = ind;
+
+  // Define function symbol. The function size is patched later.
+  func_start = cur_text_section->data_offset;
+  func_name = get_tok_str(sym->v, NULL);
+  put_extern_sym(sym, cur_text_section, func_start, 0);
 
   // Put debug symbol
   if (do_debug) put_func_debug(sym);
@@ -2560,19 +2561,17 @@ void gen_function(Sym *sym) {
   block(NULL, NULL, NULL, NULL, 0, 0);
   gsym(rsym);
   gfunc_epilog();
-  cur_text_section->data_offset = ind;
+  func_size = cur_text_section->data_offset - func_start;
   label_pop(&global_label_stack, NULL);
   sym_pop(&local_stack, NULL); // Reset local stack
 
-  // End of function
   // Patch symbol size
-  ((Elf32_Sym *)symtab_section->data)[sym->c].st_size = ind - func_ind;
+  ((Elf32_Sym *) symtab_section->data)[sym->c].st_size = func_size;
   if (do_debug) {
-    put_stabn(N_FUN, 0, 0, ind - func_ind);
+    put_stabn(N_FUN, 0, 0, ind); // FIXME
   }
-  funcname = ""; // For safety
+  func_name = ""; // For safety
   func_vt.t = VT_VOID; // For safety
-  ind = 0; // For safety
   nocode_wanted = saved_nocode_wanted;
 }
 
@@ -2833,7 +2832,7 @@ int tcc_compile(TCCState *s1) {
 #endif
   preprocess_init(s1);
 
-  funcname = "";
+  func_name = "";
   anon_sym = SYM_FIRST_ANOM; 
 
   // File info: full path + filename

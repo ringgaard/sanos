@@ -32,7 +32,7 @@ CString tokcstr;
 int tok_flags;
 int parse_flags;
 
-int last_line_num, last_ind, func_ind;
+int last_line_num, last_ind;
 TokenSym **table_ident;
 TokenSym *hash_ident[TOK_HASH_SIZE];
 char token_buf[STRING_MAX_SIZE + 1];
@@ -877,51 +877,6 @@ void free_defines(Sym *b) {
     top = top1;
   }
   define_stack = b;
-}
-
-// Label lookup
-Sym *label_find(int v) {
-  v -= TOK_IDENT;
-  if ((unsigned)v >= (unsigned)(tok_ident - TOK_IDENT)) return NULL;
-  return table_ident[v]->sym_label;
-}
-
-Sym *label_push(Sym **ptop, int v, int flags) {
-  Sym *s, **ps;
-  s = sym_push2(ptop, v, 0, 0);
-  s->r = flags;
-  ps = &table_ident[v - TOK_IDENT]->sym_label;
-  if (ptop == &global_label_stack) {
-    // Modify the top most local identifier, so that
-    // sym_identifier will point to 's' when popped
-    while (*ps != NULL) ps = &(*ps)->prev_tok;
-  }
-  s->prev_tok = *ps;
-  *ps = s;
-  return s;
-}
-
-// Pop labels until element last is reached. Look if any labels are
-// undefined. Define symbols if '&&label' was used.
-void label_pop(Sym **ptop, Sym *slast) {
-  Sym *s, *s1;
-  for (s = *ptop; s != slast; s = s1) {
-    s1 = s->prev;
-    if (s->r == LABEL_DECLARED) {
-      warning("label '%s' declared but not used", get_tok_str(s->v, NULL));
-    } else if (s->r == LABEL_FORWARD) {
-      error("label '%s' used but not defined", get_tok_str(s->v, NULL));
-    } else {
-      if (s->c) {
-        // Define corresponding symbol. A size of 1 is put.
-        put_extern_sym(s, cur_text_section, (long)s->next, 1);
-      }
-    }
-    // Remove label
-    table_ident[s->v - TOK_IDENT]->sym_label = s->prev_tok;
-    sym_free(s);
-  }
-  *ptop = slast;
 }
 
 // Evaluate an #if/#elif expression

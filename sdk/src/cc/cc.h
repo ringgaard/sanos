@@ -338,6 +338,7 @@ typedef struct SValue {
 #define VT_BOOL      11           // ISOC99 boolean type
 #define VT_LLONG     12           // 64 bit integer
 #define VT_LONG      13           // long integer (NEVER USED as type, only during parsing)
+#define VT_LABEL     14           // asm label
 
 #define VT_BTYPE      0x000f      // mask for basic type
 #define VT_UNSIGNED   0x0010      // unsigned type
@@ -652,6 +653,7 @@ extern int rsym;                  // return symbol
 extern int anon_sym;              // anonymous symbol index
 extern int ind;                   // output code index
 extern int loc;                   // local variable index
+extern int func_naked;            // no generation of function prolog
 
 // Expression generation modifiers
 extern int const_wanted;          // true if constant wanted
@@ -664,7 +666,7 @@ extern int last_line_num, last_ind, func_ind; // debug last line number and pc
 extern TokenSym **table_ident;
 extern TokenSym *hash_ident[TOK_HASH_SIZE];
 extern char token_buf[STRING_MAX_SIZE + 1];
-extern char *funcname;
+extern char *func_name;
 extern CType func_old_type;
 extern Sym *global_stack, *local_stack;
 extern Sym *define_stack;
@@ -718,7 +720,7 @@ void *section_ptr_add(Section *sec, unsigned long size);
 Section *find_section(TCCState *s1, const char *name);
 void put_extern_sym_ex(Sym *sym, Section *section, unsigned long value, unsigned long size, int add_underscore);
 void put_extern_sym(Sym *sym, Section *section, unsigned long value, unsigned long size);
-void greloc(Section *s, Sym *sym, unsigned long addr, int type);
+void put_reloc(Section *s, Sym *sym, unsigned long addr, int type);
 Sym *sym_push2(Sym **ps, int v, int t, int c);
 Sym *sym_find2(Sym *s, int v);
 Sym *sym_push(int v, CType *type, int r, int c);
@@ -728,6 +730,9 @@ Sym *global_identifier_push(int v, int t, int c);
 Sym *external_global_sym(int v, CType *type, int r);
 Sym *get_sym_ref(CType *type, Section *sec, unsigned long offset, unsigned long size);
 Sym *external_sym(int v, CType *type, int r);
+void label_pop(Sym **ptop, Sym *slast);
+Sym *label_push(Sym **ptop, int v, int flags);
+Sym *label_find(int v);
 
 // type.c
 int is_float(int t);
@@ -766,9 +771,6 @@ void free_defines(Sym *b);
 Sym *define_find(int v);
 void define_push(int v, int macro_type, int *str, Sym *first_arg);
 void define_undef(Sym *s);
-void label_pop(Sym **ptop, Sym *slast);
-Sym *label_push(Sym **ptop, int v, int flags);
-Sym *label_find(int v);
 void unget_tok(int last_tok);
 void save_parse_state(ParseState *s);
 void restore_parse_state(ParseState *s);
@@ -836,15 +838,25 @@ void gen_assign_cast(CType *dt);
 void gaddrof(void);
 
 // codegen386.c
+void reset_code_buf(void);
+void clear_code_buf(void);
+void gcode(void);
+void gstart(void);
+void gend(void);
+
 void g(int c);
 void o(unsigned int c);
 void gen_le16(int c);
 void gen_le32(int c);
-void gsym(int t);
-void gsym_addr(int t, int a);
-int psym(int c, int s);
-int gjmp(int t);
+void gsym_at(int b, int l);
+int gsym(int b);
+void assign_label_symbol(int l, Sym *sym);
+int gjmp(int l, int c);
 void gjmp_addr(int a);
+int glabel(void);
+void galign(int n, int v);
+void greloc(Sym *sym, int c, int rel);
+
 void store(int r, SValue *v);
 void load(int r, SValue *sv);
 int gtst(int inv, int t);

@@ -21,6 +21,8 @@
 
 #include "cc.h"
 
+//#define DEBUG_BRANCH
+
 int reg_classes[NB_REGS] = {
   RC_INT | RC_EAX,   // eax
   RC_INT | RC_ECX,   // ecx
@@ -28,19 +30,55 @@ int reg_classes[NB_REGS] = {
   RC_FLOAT | RC_ST0, // st0
 };
 
-static unsigned long func_sub_sp_offset;
-static unsigned long func_bound_offset;
+enum {
+  CodeStart,
+  CodeLabel,
+  CodeJump,
+  CodeReloc,
+  CodeAlign,
+  CodeEnd,
+};
+
+typedef struct {
+  int type;
+  int param;
+  int ind;
+  int addr;
+  int target;
+  Sym *sym;
+} Branch;
+
+static unsigned char *code;
+static int code_size;
+static Branch *branch;
+static int branch_size;
+static int br;
+
 static int func_ret_sub;
-static int func_naked;
+int func_naked;
+
+void reset_code_buf(void) {
+  code = NULL;
+  code_size = 0;
+  branch = NULL;
+  branch_size = 0;
+  ind = 0;
+  br = 0;
+}
+
+void clear_code_buf(void) {
+  tcc_free(code);
+  tcc_free(branch);
+  reset_code_buf();
+}
 
 void g(int c) {
-  int ind1;
-  ind1 = ind + 1;
-  if (ind1 > cur_text_section->data_allocated) {
-    section_realloc(cur_text_section, ind1);
+  if (ind == code_size) {
+    code_size *= 2;
+    if (code_size == 0) code_size = 1024;
+    code = tcc_realloc(code, code_size);
   }
-  cur_text_section->data[ind] = c;
-  ind = ind1;
+  code[ind++] = c;
 }
 
 void o(unsigned int c) {
@@ -62,46 +100,248 @@ void gen_le32(int c) {
   g(c >> 24);
 }
 
-// Output a symbol and patch all calls to it
-void gsym_addr(int t, int a) {
-  int n, *ptr;
-  while (t) {
-    ptr = (int *)(cur_text_section->data + t);
-    n = *ptr; // Next value
-    *ptr = a - t - 4;
-    t = n;
-  }
-}
-
-void gsym(int t) {
-  gsym_addr(t, ind);
-}
-
-// Instruction + 4 bytes data. Return the address of the data
-int oad(int c, int s) {
-  int ind1;
+// Instruction + 4 bytes data
+void oad(int c, int s) {
+  int a;
 
   o(c);
-  ind1 = ind + 4;
-  if (ind1 > cur_text_section->data_allocated) {
-    section_realloc(cur_text_section, ind1);
-  }
-  *(int *)(cur_text_section->data + ind) = s;
-  s = ind;
-  ind = ind1;
-  return s;
+  gen_le32(s);
 }
 
-// psym is used to put an instruction with a data field which is a
-// reference to a symbol.
-int psym(int c, int s) {
-  return oad(c, s);
+int gbranch(int type) {
+  Branch *b;
+  
+  if (br == branch_size) {
+    branch_size *= 2;
+    if (branch_size == 0) branch_size = 128;
+    branch = tcc_realloc(branch, branch_size * sizeof(Branch));
+  }
+
+  b = branch + br;
+  b->type = type;
+  b->param = 0;
+  b->ind = ind;
+  b->addr = 0;
+  b->target = 0;
+  b->sym = NULL;
+
+  return br++;
+}
+
+void gstart(void) {
+  gbranch(CodeStart);
+}
+
+void gend(void) {
+  gbranch(CodeEnd);
+}
+
+int glabel(void) {
+  return gbranch(CodeLabel);
+}
+
+int gjmp(int l, int c) {
+  int b;
+  
+  b = gbranch(CodeJump);
+  branch[b].target = l;
+  branch[b].param = c;
+  return b;
+}
+
+void galign(int n, int v) {
+  int b;
+  
+  b = gbranch(CodeAlign);
+  branch[b].param = n;
+  branch[b].target = v;
+}
+
+// Output a label and patch all calls to it
+void gsym_at(int b, int l) {
+  int n;
+  while (b) {
+    n = branch[b].target;
+    branch[b].target = l;
+    b = n;
+  }
+}
+
+// Output label at current location
+int gsym(int b) {
+  int l;
+  
+  l = glabel();
+  gsym_at(b, l);
+  return l;
+}
+
+// Assign symbol to label
+void assign_label_symbol(int l, Sym *sym) {
+  if (branch[l].sym) error("internal error: symbol already assigned to label");
+  branch[l].sym = sym;
+}
+
+// Output relocation
+void greloc(Sym *sym, int c, int rel) {
+  int b;
+  
+  if (sym && !sym->c) put_extern_sym(sym, NULL, 0, 0);
+
+  b = gbranch(CodeReloc);
+  if (sym) branch[b].target = sym->c;
+  branch[b].param = rel;
+  gen_le32(c);
 }
 
 // Output constant with relocation if 'r & VT_SYM' is true
 void gen_addr32(int r, Sym *sym, int c) {
-  if (r & VT_SYM) greloc(cur_text_section, sym, ind, R_386_32);
-  gen_le32(c);
+  if (r & VT_SYM) {
+    greloc(sym, c, 0);
+  } else {
+    gen_le32(c);
+  }
+}
+
+void gen(int c) {
+  *(char *) section_ptr_add(cur_text_section, 1) = c;
+}
+
+void genword(int w) {
+  *(int *) section_ptr_add(cur_text_section, 4) = w;
+}
+
+void genblk(unsigned char *data, int size) {
+  memcpy(section_ptr_add(cur_text_section, size), data, size);
+}
+
+void gcode(void) {
+  int i, stacksize, addr, size, pc, rel, errs;
+  Branch *b;
+
+  if (!func_naked) {
+    // Align local size to word
+    stacksize = (-loc + 3) & -4;
+
+    // Generate function prolog
+    if (stacksize >= 4096) {
+      // Generate stack guard since parameters can cross page boundary
+      Sym *sym = external_global_sym(TOK___chkstk, &func_old_type, 0);
+      gen(0xb8); // mov stacksize, %eax
+      genword(stacksize);
+      gen(0xe8);  // call __chkstk, (does the stackframe too)
+      put_reloc(cur_text_section, sym, cur_text_section->data_offset, R_386_PC32);
+      genword(-4);
+    } else {
+      gen(0x55); // push %ebp
+      gen(0x89); // mov %esp, %ebp
+      gen(0xe5);
+      if (stacksize > 0) {
+        if (stacksize == (char) stacksize) {
+          gen(0x83);  // sub esp, stacksize
+          gen(0xec);
+          gen(stacksize);
+        } else {
+          gen(0x81);  // sub esp, stacksize
+          gen(0xec);
+          genword(stacksize);
+        }
+      }
+    }
+  }
+
+  // Assign addresses to branch points
+  addr = cur_text_section->data_offset;
+  pc = 0;
+  for (i = 0; i < br; ++i) {
+    b = branch + i;
+    addr += b->ind - pc;
+    b->addr = addr;
+    switch (b->type) {
+      case CodeJump:
+        addr += 5;
+        if (b->param != 0) addr++;
+        break;
+        
+      case CodeAlign:
+        addr = (addr + b->param - 1) & -b->param;
+        break;
+    }
+    pc = b->ind;
+  }
+  
+  // Generate code blocks
+  pc = 0;
+  errs = 0;
+  for (i = 0; i < br; ++i) {
+    b = branch + i;
+    
+    // Output code block before branch point
+    if (b->ind != pc) {
+      genblk(code + pc, b->ind - pc);
+      pc = b->ind;
+    }
+
+    switch (b->type) {
+      case CodeLabel:
+        // Export label if symbol defined
+        if (b->sym) {
+          put_extern_sym_ex(b->sym, cur_text_section, b->addr, 0, 0);
+          sym_free(b->sym);
+        }
+        break;
+
+      case CodeJump:
+        // Generate jump instruction
+        if (branch[b->target].type != CodeLabel) {
+          printf("jump %d to non-label %d\n", i, b->target);
+          errs++;
+        }
+        if (b->param == 0) {
+          gen(0xe9);
+          genword(branch[b->target].addr - (b->addr + 5));
+        } else {
+          gen(0x0f);
+          gen(b->param - 0x10);
+          genword(branch[b->target].addr - (b->addr + 6));
+        }
+        break;
+
+      case CodeReloc:
+        if (b->param) {
+          rel = R_386_PC32;
+        } else {
+          rel = R_386_32;
+        }
+        put_elf_reloc(symtab_section, cur_text_section, b->addr, rel, b->target);
+        break;
+
+      case CodeAlign:
+        i = addr;
+        while (i & (b->param - 1)) {
+          gen(b->target);
+          i++;
+        }
+        break;
+    }
+  }
+
+#ifdef DEBUG_BRANCH
+  printf("\nbranch table for %s\n", func_name);
+  printf(" #   t targ parm    ind      addr\n");
+  printf("---- - ---- ----- -------- --------\n");
+  for (i = 0; i < br; ++i) {
+    b = branch + i;
+    printf("%04d %c %04d %04x %08x %08x", i, "SLJRAE"[b->type], b->target, b->param, b->ind, b->addr);
+    if (branch[i].sym) {
+      printf(" sym=%s", get_tok_str(b->sym->v, NULL));
+    }
+    printf("\n");
+  }
+  printf("\n");
+#endif
+
+  if (errs) error("internal error: code generation");
 }
 
 // Generate a modrm reference. 'op_reg' contains the additional 3
@@ -128,7 +368,7 @@ void gen_modrm(int op_reg, int r, Sym *sym, int c) {
 
 // Load 'r' from value 'sv'
 void load(int r, SValue *sv) {
-  int v, t, ft, fc, fr;
+  int v, t, ft, fc, fr, a;
   SValue v1;
 
   fr = sv->r;
@@ -187,9 +427,10 @@ void load(int r, SValue *sv) {
     } else if (v == VT_JMP || v == VT_JMPI) {
       t = v & 1;
       oad(0xb8 + r, t); // mov $1, r
-      o(0x05eb); // jmp after
+      a = gjmp(0, 0); // jmp after
       gsym(fc);
       oad(0xb8 + r, t ^ 1); // mov $0, r
+      gsym(a);
     } else if (v != r) {
       o(0x89);
       o(0xc0 + r + v * 8); // mov v, r
@@ -244,16 +485,14 @@ void gadd_sp(int val) {
 // 'is_jmp' is '1' if it is a jump
 void gcall_or_jmp(int is_jmp) {
   int r;
+  Sym *sym;
+
   if ((vtop->r & (VT_VALMASK | VT_LVAL)) == VT_CONST) {
     // Constant case
-    if (vtop->r & VT_SYM) {
-      // Relocation case
-      greloc(cur_text_section, vtop->sym, ind + 1, R_386_PC32);
-    } else {
-      // Put an empty PC32 relocation
-      put_elf_reloc(symtab_section, cur_text_section, ind + 1, R_386_PC32, 0);
-    }
-    oad(0xe8 + is_jmp, vtop->c.ul - 4); // call/jmp im
+    o(0xe8 + is_jmp); // call/jmp im
+    sym = NULL;
+    if (vtop->r & VT_SYM) sym = vtop->sym;
+    greloc(sym, vtop->c.ul - 4, 1);
   } else {
     // Otherwise, indirect call
     r = gv(RC_INT);
@@ -373,19 +612,22 @@ void gfunc_call(int nb_args) {
   vtop--;
 }
 
-#define FUNC_PROLOG_SIZE 10
-
 // Generate function prolog of type 't'
 void gfunc_prolog(CType *func_type) {
-  int addr, align, size, func_call, fastcall_nb_regs;
+  int addr, align, size, func_call, fastcall_nb_regs, i;
   int param_index, param_addr;
   uint8_t *fastcall_regs_ptr;
   Sym *sym;
   CType *type;
 
+#ifdef DEBUG_BRANCH
+  printf("compile %s\n", func_name);
+#endif
+  reset_code_buf();
+  gbranch(CodeStart);
+
   sym = func_type->ref;
   func_naked = FUNC_NAKED(sym->r);
-  if (func_naked) return;
   func_call = FUNC_CALL(sym->r);
   addr = 8;
   loc = 0;
@@ -400,9 +642,6 @@ void gfunc_prolog(CType *func_type) {
     fastcall_regs_ptr = NULL;
   }
   param_index = 0;
-
-  ind += FUNC_PROLOG_SIZE;
-  func_sub_sp_offset = ind;
 
   // If the function returns a structure, then add an implicit pointer parameter
   func_vt = sym->type;
@@ -420,10 +659,12 @@ void gfunc_prolog(CType *func_type) {
     size = (size + 3) & ~3;
     if (param_index < fastcall_nb_regs) {
       // Save FASTCALL register
-      loc -= 4;
-      o(0x89);     // movl
-      gen_modrm(fastcall_regs_ptr[param_index], VT_LOCAL, NULL, loc);
-      param_addr = loc;
+      if (!func_naked) {
+        loc -= 4;
+        o(0x89);     // movl
+        gen_modrm(fastcall_regs_ptr[param_index], VT_LOCAL, NULL, loc);
+        param_addr = loc;
+      }
     } else {
       param_addr = addr;
       addr += size;
@@ -431,64 +672,34 @@ void gfunc_prolog(CType *func_type) {
     sym_push(sym->v & ~SYM_FIELD, type, VT_LOCAL | VT_LVAL, param_addr);
     param_index++;
   }
-  func_ret_sub = 0;
 
   // pascal type call?
+  func_ret_sub = 0;
   if (func_call == FUNC_STDCALL) func_ret_sub = addr - 8;
 }
 
 // Generate function epilog
 void gfunc_epilog(void) {
-  int v, saved_ind;
-
-  if (func_naked) return;
-
-  o(0xc9); // leave
-  if (func_ret_sub == 0) {
-    o(0xc3); // ret
-  } else {
-    o(0xc2); // ret n
-    g(func_ret_sub);
-    g(func_ret_sub >> 8);
+  // Generate return
+  if (!func_naked) {
+    o(0xc9); // leave
+    if (func_ret_sub == 0) {
+      o(0xc3); // ret
+    } else {
+      o(0xc2); // ret n
+      g(func_ret_sub);
+      g(func_ret_sub >> 8);
+    }
   }
 
-  // Align local size to word & save local variables
-  v = (-loc + 3) & -4; 
-  saved_ind = ind;
-  ind = func_sub_sp_offset - FUNC_PROLOG_SIZE;
+  // Mark end of code
+  gbranch(CodeEnd);
+  
+  // Output code for function
+  gcode();
 
-  // Generate stack guard if parameters can cross page boundary
-  if (v >= 4096) {
-    Sym *sym = external_global_sym(TOK___chkstk, &func_old_type, 0);
-    oad(0xb8, v); // mov stacksize, %eax
-    oad(0xe8, -4); // call __chkstk, (does the stackframe too)
-    greloc(cur_text_section, sym, ind - 4, R_386_PC32);
-  } else {
-    o(0xe58955);  // push %ebp, mov %esp, %ebp
-    o(0xec81);  // sub esp, stacksize
-    gen_le32(v);
-#if FUNC_PROLOG_SIZE == 10
-    o(0x90);  // Adjust to FUNC_PROLOG_SIZE
-#endif
-  }
-  ind = saved_ind;
-}
-
-// Generate a jump to a label
-int gjmp(int t) {
-  return psym(0xe9, t);
-}
-
-// Generate a jump to a fixed address
-void gjmp_addr(int a) {
-  int r;
-  r = a - ind - 2;
-  if (r == (char) r) {
-    g(0xeb);
-    g(r);
-  } else {
-    oad(0xe9, a - ind - 5);
-  }
+  // Clear code buffer
+  clear_code_buf();
 }
 
 // Generate a test. set 'inv' to invert test. Stack entry is popped.
@@ -498,20 +709,19 @@ int gtst(int inv, int t) {
   v = vtop->r & VT_VALMASK;
   if (v == VT_CMP) {
     // Fast case: can jump directly since flags are set
-    g(0x0f); // jcc t
-    t = psym((vtop->c.i - 16) ^ inv, t);
+    t = gjmp(t, vtop->c.i ^ inv); // jcc t
   } else if (v == VT_JMP || v == VT_JMPI) {
     // && or || optimization
     if ((v & 1) == inv) {
       // Insert vtop->c jump list in t
       p = &vtop->c.i;
       while (*p != 0) {
-        p = (int *) (cur_text_section->data + *p);
+        p = &branch[*p].target;
       }
       *p = t;
       t = vtop->c.i;
     } else {
-      t = gjmp(t);
+      t = gjmp(t, 0);
       gsym(vtop->c.i);
     }
   } else {
@@ -521,13 +731,12 @@ int gtst(int inv, int t) {
     }
     if ((vtop->r & (VT_VALMASK | VT_LVAL | VT_SYM)) == VT_CONST) {
       // Constant jmp optimization
-      if ((vtop->c.i != 0) != inv) t = gjmp(t);
+      if ((vtop->c.i != 0) != inv) t = gjmp(t, 0);
     } else {
       r = gv(RC_INT);
       o(0x85);  // test r,r
       o(0xc0 + r * 9);
-      g(0x0f);  // jz/jnz t
-      t = psym(0x85 ^ inv, t);
+      t = gjmp(t, TOK_NE ^ inv); // jz/jnz t
     }
   }
   vtop--;
@@ -825,9 +1034,7 @@ void gen_cvt_ftoi(int t) {
   }
 
   o(0x2dd9); // ldcw xxx
-  sym = external_global_sym(TOK___tcc_int_fpu_control, &ushort_type, VT_LVAL);
-  greloc(cur_text_section, sym, ind, R_386_32);
-  gen_le32(0);
+  greloc(external_global_sym(TOK___tcc_int_fpu_control, &ushort_type, VT_LVAL), 0, 0);
   
   oad(0xec81, size); // sub $xxx, %esp
   if (size == 4)  {
@@ -837,9 +1044,7 @@ void gen_cvt_ftoi(int t) {
   }
   o(0x24);
   o(0x2dd9); // ldcw xxx
-  sym = external_global_sym(TOK___tcc_fpu_control, &ushort_type, VT_LVAL);
-  greloc(cur_text_section, sym, ind, R_386_32);
-  gen_le32(0);
+  greloc(external_global_sym(TOK___tcc_fpu_control, &ushort_type, VT_LVAL), 0, 0);
 
   r = get_reg(RC_INT);
   o(0x58 + r); // pop r

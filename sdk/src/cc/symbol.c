@@ -199,7 +199,7 @@ void put_extern_sym(Sym *sym, Section *section, unsigned long value, unsigned lo
 }
 
 // Add a new relocation entry to symbol 'sym' in section 's'
-void greloc(Section *s, Sym *sym, unsigned long offset, int type) {
+void put_reloc(Section *s, Sym *sym, unsigned long offset, int type) {
   if (!sym->c) put_extern_sym(sym, NULL, 0, 0);
   // Now we can add ELF relocation info
   put_elf_reloc(symtab_section, s, offset, type, sym->c);
@@ -346,5 +346,50 @@ Sym *external_sym(int v, CType *type, int r) {
     }
   }
   return s;
+}
+
+// Label lookup
+Sym *label_find(int v) {
+  v -= TOK_IDENT;
+  if ((unsigned) v >= (unsigned) (tok_ident - TOK_IDENT)) return NULL;
+  return table_ident[v]->sym_label;
+}
+
+Sym *label_push(Sym **ptop, int v, int flags) {
+  Sym *s, **ps;
+  s = sym_push2(ptop, v, 0, 0);
+  s->r = flags;
+  ps = &table_ident[v - TOK_IDENT]->sym_label;
+  if (ptop == &global_label_stack) {
+    // Modify the top most local identifier, so that
+    // sym_identifier will point to 's' when popped
+    while (*ps != NULL) ps = &(*ps)->prev_tok;
+  }
+  s->prev_tok = *ps;
+  *ps = s;
+  return s;
+}
+
+// Pop labels until element last is reached. Look if any labels are
+// undefined. Define symbols if '&&label' was used.
+void label_pop(Sym **ptop, Sym *slast) {
+  Sym *s, *s1;
+  for (s = *ptop; s != slast; s = s1) {
+    s1 = s->prev;
+    if (s->r == LABEL_DECLARED) {
+      warning("label '%s' declared but not used", get_tok_str(s->v, NULL));
+    } else if (s->r == LABEL_FORWARD) {
+      error("label '%s' used but not defined", get_tok_str(s->v, NULL));
+    } else {
+      if (s->c) {
+        // Define corresponding symbol. A size of 1 is put.
+        put_extern_sym(s, cur_text_section, (long)s->next, 1);
+      }
+    }
+    // Remove label
+    table_ident[s->v - TOK_IDENT]->sym_label = s->prev_tok;
+    sym_free(s);
+  }
+  *ptop = slast;
 }
 

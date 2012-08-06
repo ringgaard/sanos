@@ -1055,7 +1055,6 @@ static int pe_check_symbols(struct pe_info *pe) {
     not_found:
       error_noabort("undefined symbol '%s'", name);
       ret = 1;
-
     } else if (pe->s1->rdynamic && ELF32_ST_BIND(sym->st_info) != STB_LOCAL) {
       // If -rdynamic option, then export all non local symbols
       sym->st_other |= 1;

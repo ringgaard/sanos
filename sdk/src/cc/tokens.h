@@ -252,7 +252,6 @@ DEF_ASM(data)
 DEF_ASM(bss)
 DEF_ASM(previous)
 DEF_ASM(fill)
-DEF_ASM(org)
 DEF_ASM(quad)
 
 DEF_ASM(_emit)

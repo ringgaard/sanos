@@ -49,17 +49,17 @@ void *tcc_mallocz(unsigned long size) {
 }
 
 void *tcc_realloc(void *ptr, unsigned long size) {
-  void *ptr1;
+  void *newptr;
 #ifdef MEM_DEBUG
   mem_cur_size -= malloc_usable_size(ptr);
 #endif
-  ptr1 = realloc(ptr, size);
+  newptr = realloc(ptr, size);
 #ifdef MEM_DEBUG
   // NOTE: count not correct if alloc error, but not critical
-  mem_cur_size += malloc_usable_size(ptr1);
-  if (mem_cur_size > mem_max_size)cmem_max_size = mem_cur_size;
+  mem_cur_size += malloc_usable_size(newptr);
+  if (mem_cur_size > mem_max_size) cmem_max_size = mem_cur_size;
 #endif
-  return ptr1;
+  return newptr;
 }
 
 char *tcc_strdup(const char *str) {

@@ -774,7 +774,7 @@ static void parse_eeprom(struct dev *dev) {
 
   tp->mtable = 0;
   
-  // Detect an old-style (SA only) EEPROM layout: memcmp(eedata, eedata+16, 8)
+  // Detect an old-style (SA only) EEPROM layout: memcmp(eedata, eedata + 16, 8)
   for (i = 0; i < 8; i ++) {
     if (ee_data[i] != ee_data[16 + i]) break;
   }
@@ -817,7 +817,7 @@ static void parse_eeprom(struct dev *dev) {
     struct dev *prev_dev;
     struct tulip_private *otp;
 
-    // This is a multiport board.  The probe order may be "backwards", so we patch up already found devices.
+    // This is a multiport board. The probe order may be "backwards", so we patch up already found devices.
     last_ee_data = ee_data;
     for (prev_dev = tp->next_module; prev_dev; prev_dev = otp->next_module) {
       otp = (struct tulip_private *) prev_dev->privdata;

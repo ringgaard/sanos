@@ -155,7 +155,7 @@ static const uint8_t test_bits[NB_TEST_OPCODES] = {
  0x0d, // ge
  0x0e, // le
  0x0e, // ng
- 0x0f, // nle */
+ 0x0f, // nle
  0x0f, // g
 };
 
@@ -416,7 +416,7 @@ static void masm_expr(TCCState *s1, Operand *op) {
         if (op->e.sym == op2.e.sym) { 
           // OK
         } else if (op->e.sym->r == op2.e.sym->r && op->e.sym->r != 0) {
-          // We also accept defined symbols in the same section
+          // We also accept defined symbols in the same section (FIXME)
           op->e.v += (long) op->e.sym->next - (long) op2.e.sym->next;
         } else {
           goto cannot_relocate;
@@ -503,12 +503,12 @@ static void parse_masm_operand(TCCState *s1, Operand *op) {
     }
     masm_expr(s1, op);
     if (op->sizehint == 3 && op->e.sym) {
-     int align;
-     switch (type_size(&op->e.sym->type, &align)) {
-      case 1: op->sizehint = 0; break;
-      case 2: op->sizehint = 1; break;
-      case 4: op->sizehint = 2; break;
-     }
+      int align;
+      switch (type_size(&op->e.sym->type, &align)) {
+        case 1: op->sizehint = 0; break;
+        case 2: op->sizehint = 1; break;
+        case 4: op->sizehint = 2; break;
+      }
     }
     if (offset) {
       if (op->reg != -1 && op->reg2 != -1) error("register not allowed in offset");
@@ -535,31 +535,23 @@ static void parse_masm_operand(TCCState *s1, Operand *op) {
   }
 }
 
-// TODO: unify with C code output?
 void gen_expr32(ExprValue *pe) {
-  if (pe->sym) greloc(cur_text_section, pe->sym, ind, R_386_32);
-  gen_le32(pe->v);
+  if (pe->sym) {
+    greloc(pe->sym, pe->v, 0);
+  } else {
+    gen_le32(pe->v);
+  }
 }
 
-// TODO: unify with C code output?
 void gen_disp32(ExprValue *pe) {
   Sym *sym;
+
   sym = pe->sym;
   if (sym) {
-    if (sym->r == cur_text_section->sh_num) {
-      // Same section: we can output an absolute value. Note
-      // that the TCC compiler behaves differently here because
-      // it always outputs a relocation to ease (future) code
-      // elimination in the linker
-      gen_le32(pe->v + (long) sym->next - ind - 4);
-    } else {
-      greloc(cur_text_section, sym, ind, R_386_PC32);
-      gen_le32(pe->v - 4);
-    }
+    greloc(sym, pe->v - 4, 1);
   } else {
-    // put an empty PC32 relocation
-    put_elf_reloc(symtab_section, cur_text_section, ind, R_386_PC32, 0);
-    gen_le32(pe->v - 4);
+    // put an empty relocation
+    greloc(NULL, pe->v - 4, 1);
   }
 }
 
@@ -609,7 +601,7 @@ void asm_modrm(int reg, Operand *op) {
 
 void asm_opcode(TCCState *s1, int opcode) {
   const ASMInstr *pa;
-  int i, modrm_index, reg, v, op1, is_short_jmp, seg_prefix;
+  int i, modrm_index, reg, v, op1, seg_prefix;
   int nb_ops, s, ss;
   Operand ops[MAX_OPERANDS], *pop;
   int op_type[3]; // Decoded op type
@@ -683,7 +675,6 @@ void asm_opcode(TCCState *s1, int opcode) {
     }
   }
 
-  is_short_jmp = 0;
   s = 0;
   
   // Optimize matching by using a lookup table (no hashing is needed!)
@@ -819,8 +810,40 @@ void asm_opcode(TCCState *s1, int opcode) {
   }
   
   if (pa->instr_type & OPC_B) v += s;
-  if (pa->instr_type & OPC_TEST) v += test_bits[opcode - pa->sym]; 
+  if (pa->instr_type & OPC_TEST) v += test_bits[opcode - pa->sym];
 
+  if ((pa->instr_type & OPC_SHORTJMP) && (pa->instr_type & OPC_JMP)) {
+    Sym *sym;
+
+    sym = ops[0].e.sym;
+    if (sym && sym->type.t == VT_LABEL) {
+      // Jump to label
+      if (pa->instr_type & OPC_TEST) {
+        v += 0x20;
+      } else {
+        v = 0;
+      }
+   
+      if (sym->r) {
+        // Label defined
+        gjmp((long) sym->next, v);
+      } else {
+        // Label undefined
+        sym->next = (void *) gjmp((long) sym->next, v);
+      }
+      return;
+    } else {
+      // Jumps to external symbols are always long jumps.
+      if (v == 0xeb) {
+        v = 0xe9;
+      } else {
+        v += 0x0f10;
+      }
+    }
+  }
+
+#if 0
+  // TODO: Handle branch points for loopxx and jecxz
   if (pa->instr_type & OPC_SHORTJMP) {
     Sym *sym;
     int jmp_disp;
@@ -829,8 +852,8 @@ void asm_opcode(TCCState *s1, int opcode) {
     sym = ops[0].e.sym;
     if (!sym) goto no_short_jump;
     if (sym->r != cur_text_section->sh_num) goto no_short_jump;
-    jmp_disp = ops[0].e.v + (long)sym->next - ind - 2;
-    if (jmp_disp == (int8_t)jmp_disp) {
+    jmp_disp = ops[0].e.v + sym->c - ind - 2; // FIXME
+    if (jmp_disp == (int8_t) jmp_disp) {
       // OK to generate jump
       is_short_jmp = 1;
       ops[0].e.v = jmp_disp;
@@ -848,7 +871,8 @@ void asm_opcode(TCCState *s1, int opcode) {
       }
     }
   }
-  
+#endif
+
   op1 = v >> 8;
   if (op1) g(op1);
   g(v);
@@ -903,7 +927,7 @@ printf("v=%x instr_type=%x\n", v, pa->instr_type);
     if (ops[0].e.sym) error("cannot relocate");
     gen_le16(ops[0].e.v);
   } else {
-    for (i = 0;i < nb_ops; i++) {
+    for (i = 0; i < nb_ops; i++) {
       v = op_type[i];
       if (v & (OP_IM8 | OP_IM16 | OP_IM32 | OP_IM8S | OP_ADDR)) {
         // If multiple sizes are given it means we must look at the op size
@@ -927,11 +951,7 @@ printf("v=%x instr_type=%x\n", v, pa->instr_type);
           gen_le16(ops[i].e.v);
         } else {
           if (pa->instr_type & (OPC_JMP | OPC_SHORTJMP)) {
-            if (is_short_jmp) {
-              g(ops[i].e.v);
-            } else {
-              gen_disp32(&ops[i].e);
-            }
+            gen_disp32(&ops[i].e);
           } else {
             gen_expr32(&ops[i].e);
           }
