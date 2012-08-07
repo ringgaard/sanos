@@ -34,8 +34,10 @@ enum {
   CodeStart,
   CodeLabel,
   CodeJump,
+  CodeShortJump,
   CodeReloc,
   CodeAlign,
+  CodeNop,
   CodeEnd,
 };
 
@@ -215,9 +217,17 @@ void genblk(unsigned char *data, int size) {
   memcpy(section_ptr_add(cur_text_section, size), data, size);
 }
 
+int skip_nops(int b) {
+  int org;
+
+  org = branch[b].ind;
+  while (branch[b + 1].ind == org && (branch[b].type == CodeNop || branch[b].type == CodeLabel)) b++;
+  return b;
+}
+
 void gcode(void) {
-  int i, stacksize, addr, size, pc, rel, errs;
-  Branch *b;
+  int i, n, t, stacksize, addr, size, pc, disp, rel, errs, more;
+  Branch *b, *bn;
 
   if (!func_naked) {
     // Align local size to word
@@ -250,7 +260,71 @@ void gcode(void) {
     }
   }
 
-  // Assign addresses to branch points
+  // Optimize jumps
+  more = 1;
+  while (more) {
+    more = 0;
+
+    for (i = 0; i < br; ++i) {
+      b = branch + i;
+      if (b->type == CodeLabel) b->target = 0;
+      if (b->type != CodeJump) continue;
+
+      t = skip_nops(b->target);
+      if (branch[t].type == CodeJump && !branch[t].param && b->target != branch[t].target) {
+        // Eliminate jump to jump
+        b->target = branch[t].target;
+        more = 1;
+        continue;
+      }
+
+      // Find next non-nop
+      n = i + 1;
+      while (branch[n].type == CodeNop) n++;
+      bn = branch + n;
+      if (b->ind != bn->ind) continue;
+
+      if (!b->param && bn->type == CodeJump) {
+        // Eliminate dead jump instruction
+        bn->type = CodeNop;
+        more = 1;
+        continue;
+      }
+
+      if (b->target > i && b->target <= n) {
+        // Eliminate jump to next instruction
+        b->type = CodeNop;
+        more = 1;
+        continue;
+      }
+      
+      t = skip_nops(n + 1);
+      if (bn->type == CodeJump && !bn->param && b->target == t && bn->ind == branch[t].ind) {
+        // Optimize inverted jump
+        if (b->param) b->param ^= 1;
+        b->target = bn->target;
+        bn->type = CodeNop;
+        more = 1;
+        continue;
+      }
+    }
+
+    // Eliminate unused labels
+    for (i = 0; i < br; ++i) {
+      b = branch + i;
+      if (b->type == CodeJump) branch[b->target].target++;
+    }
+    for (i = 0; i < br; ++i) {
+      b = branch + i;
+      if (b->type == CodeLabel && !b->target && !b->sym) {
+        // Remove label with no references
+        b->type = CodeNop;
+        more = 1;
+      }
+    }
+  }
+
+  // Assign addresses to branch points, assuming only long jumps
   addr = cur_text_section->data_offset;
   pc = 0;
   for (i = 0; i < br; ++i) {
@@ -264,12 +338,47 @@ void gcode(void) {
         break;
         
       case CodeAlign:
-        addr = (addr + b->param - 1) & -b->param;
+        // Use convervative estimate for short/long jump estimation
+        addr += b->param - 1;
         break;
     }
     pc = b->ind;
   }
   
+  // Find jumps which can be encoded as short jumps
+  for (i = 0; i < br; ++i) {
+    b = branch + i;
+    if (b->type == CodeJump) {
+      disp = branch[b->target].addr - b->addr - 2;
+      if (b->param) disp--;
+      if (disp == (char) disp) b->type = CodeShortJump;
+    }
+  }
+
+  // Assign final addresses to branch points
+  addr = cur_text_section->data_offset;
+  pc = 0;
+  for (i = 0; i < br; ++i) {
+    b = branch + i;
+    addr += b->ind - pc;
+    b->addr = addr;
+    switch (b->type) {
+      case CodeJump:
+        addr += 5;
+        if (b->param) addr++;
+        break;
+
+      case CodeShortJump:
+        addr += 2;
+        break;
+      
+      case CodeAlign:
+        addr = (addr + b->param - 1) & -b->param;
+        break;
+    }
+    pc = b->ind;
+  }
+
   // Generate code blocks
   pc = 0;
   errs = 0;
@@ -292,9 +401,9 @@ void gcode(void) {
         break;
 
       case CodeJump:
-        // Generate jump instruction
+        // Generate long jump instruction
         if (branch[b->target].type != CodeLabel) {
-          printf("jump %d to non-label %d\n", i, b->target);
+          printf("internal error: jump %d to non-label %d\n", i, b->target);
           errs++;
         }
         if (b->param == 0) {
@@ -307,6 +416,20 @@ void gcode(void) {
         }
         break;
 
+      case CodeShortJump:
+        // Generate short jump instruction
+        if (branch[b->target].type != CodeLabel) {
+          printf("internal error: jump %d to non-label %d\n", i, b->target);
+          errs++;
+        }
+        if (b->param == 0) {
+          gen(0xeb);
+        } else {
+          gen(b->param - 0x20);
+        }
+        gen(branch[b->target].addr - (b->addr + 2));
+        break;
+
       case CodeReloc:
         if (b->param) {
           rel = R_386_PC32;
@@ -315,7 +438,7 @@ void gcode(void) {
         }
         put_elf_reloc(symtab_section, cur_text_section, b->addr, rel, b->target);
         break;
-
+        
       case CodeAlign:
         i = addr;
         while (i & (b->param - 1)) {
@@ -332,7 +455,7 @@ void gcode(void) {
   printf("---- - ---- ----- -------- --------\n");
   for (i = 0; i < br; ++i) {
     b = branch + i;
-    printf("%04d %c %04d %04x %08x %08x", i, "SLJRAE"[b->type], b->target, b->param, b->ind, b->addr);
+    printf("%04d %c %04d %04x %08x %08x", i, "SLJjRANE"[b->type], b->target, b->param, b->ind, b->addr);
     if (branch[i].sym) {
       printf(" sym=%s", get_tok_str(b->sym->v, NULL));
     }
