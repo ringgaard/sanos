@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Jump optimization in C compiler.
+
     * Function-level linking in C compiler.
 
     * Added support for setting thread name for user-mode threads.
