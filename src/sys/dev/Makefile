@@ -42,5 +42,5 @@ install: $(DRIVERS)
     sh cp virtionet.sys /boot/virtionet.sys
 
 clean:
-    sh rm $(DRIVERS) $(DRIVERS:.sys=.def)
+    sh rm $(DRIVERS)
 
