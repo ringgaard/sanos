@@ -1562,7 +1562,7 @@ void dbgbreak()
   notimpl("dbgbreak");
 }
 
-handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, void *arg, int flags, struct tib **ptib)
+handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, void *arg, int flags, char *name, struct tib **ptib)
 {
   DWORD tid;
 
