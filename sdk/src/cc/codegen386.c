@@ -406,6 +406,7 @@ void gcode(void) {
           printf("internal error: jump %d to non-label %d\n", i, b->target);
           errs++;
         }
+        if (b->param > 0xff) error("invalid displacement");
         if (b->param == 0) {
           gen(0xe9);
           genword(branch[b->target].addr - (b->addr + 5));

@@ -818,12 +818,12 @@ void asm_opcode(TCCState *s1, int opcode) {
     sym = ops[0].e.sym;
     if (sym && sym->type.t == VT_LABEL) {
       // Jump to label
-      if (pa->instr_type & OPC_TEST) {
-        v += 0x20;
-      } else {
+      if (v == 0xeb) {
         v = 0;
+      } else {
+        v += 0x20;
       }
-   
+
       if (sym->r) {
         // Label defined
         gjmp((long) sym->next, v);
@@ -841,37 +841,6 @@ void asm_opcode(TCCState *s1, int opcode) {
       }
     }
   }
-
-#if 0
-  // TODO: Handle branch points for loopxx and jecxz
-  if (pa->instr_type & OPC_SHORTJMP) {
-    Sym *sym;
-    int jmp_disp;
-
-    // See if we can really generate the jump with a byte offset
-    sym = ops[0].e.sym;
-    if (!sym) goto no_short_jump;
-    if (sym->r != cur_text_section->sh_num) goto no_short_jump;
-    jmp_disp = ops[0].e.v + sym->c - ind - 2; // FIXME
-    if (jmp_disp == (int8_t) jmp_disp) {
-      // OK to generate jump
-      is_short_jmp = 1;
-      ops[0].e.v = jmp_disp;
-    } else {
-    no_short_jump:
-      if (pa->instr_type & OPC_JMP) {
-        // Long jump will be allowed. Need to modify the opcode slightly.
-        if (v == 0xeb) {
-          v = 0xe9;
-        } else {
-          v += 0x0f10;
-        }
-      } else {
-        error("invalid displacement");
-      }
-    }
-  }
-#endif
 
   op1 = v >> 8;
   if (op1) g(op1);
