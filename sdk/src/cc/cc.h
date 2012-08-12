@@ -843,6 +843,7 @@ void clear_code_buf(void);
 void gcode(void);
 void gstart(void);
 void gend(void);
+void gline(int linenum);
 
 void g(int c);
 void o(unsigned int c);

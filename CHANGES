@@ -4,6 +4,10 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Stack trace dump on abnormal termination.
+
+    * Implemented frame pointer omission in C compiler.
+
     * Jump optimization in C compiler.
 
     * Function-level linking in C compiler.
@@ -590,7 +594,6 @@ Version 1.3.0
 
     * The user time for /proc/loadavg was counted as dpc time. This problem has 
       been fixed.
-
 
     * sysinfo() implemented. GetSystemInfo() and GlobalMemoryStatus() in 
       kernel32 now returns correct values.

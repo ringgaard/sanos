@@ -38,6 +38,7 @@ enum {
   CodeReloc,
   CodeAlign,
   CodeNop,
+  CodeLine,
   CodeEnd,
 };
 
@@ -57,6 +58,7 @@ static int branch_size;
 static int br;
 
 static int func_ret_sub;
+static int func_noargs;
 int func_naked;
 
 void reset_code_buf(void) {
@@ -136,6 +138,13 @@ void gstart(void) {
 
 void gend(void) {
   gbranch(CodeEnd);
+}
+
+void gline(int linenum) {
+  int b;
+  
+  b = gbranch(CodeLine);
+  branch[b].target = linenum;
 }
 
 int glabel(void) {
@@ -221,14 +230,18 @@ int skip_nops(int b) {
   int org;
 
   org = branch[b].ind;
-  while (branch[b + 1].ind == org && (branch[b].type == CodeNop || branch[b].type == CodeLabel)) b++;
+  while (branch[b + 1].ind == org && 
+         (branch[b].type == CodeNop || branch[b].type == CodeLabel || branch[b].type == CodeLine)) {
+    b++;
+  }
   return b;
 }
 
 void gcode(void) {
-  int i, n, t, stacksize, addr, size, pc, disp, rel, errs, more;
+  int i, n, t, stacksize, addr, size, pc, disp, rel, errs, more, func_start;
   Branch *b, *bn;
 
+  func_start = cur_text_section->data_offset;
   if (!func_naked) {
     // Align local size to word
     stacksize = (-loc + 3) & -4;
@@ -243,9 +256,11 @@ void gcode(void) {
       put_reloc(cur_text_section, sym, cur_text_section->data_offset, R_386_PC32);
       genword(-4);
     } else {
-      gen(0x55); // push %ebp
-      gen(0x89); // mov %esp, %ebp
-      gen(0xe5);
+      if (do_debug || loc || !func_noargs) {
+        gen(0x55); // push %ebp
+        gen(0x89); // mov %esp, %ebp
+        gen(0xe5);
+      }
       if (stacksize > 0) {
         if (stacksize == (char) stacksize) {
           gen(0x83);  // sub esp, stacksize
@@ -446,6 +461,10 @@ void gcode(void) {
           gen(b->target);
           i++;
         }
+        break;
+
+      case CodeLine:
+        put_stabn(N_SLINE, 0, b->target, b->addr - func_start);
         break;
     }
   }
@@ -698,7 +717,7 @@ void gfunc_call(int nb_args) {
         r = gv(RC_INT);
         if ((vtop->type.t & VT_BTYPE) == VT_LLONG) {
           size = 8;
-          o(0x50 + vtop->r2); // push r
+          o(0x50 + vtop->r2); // push r2
         } else {
           size = 4;
         }
@@ -800,13 +819,15 @@ void gfunc_prolog(CType *func_type) {
   // pascal type call?
   func_ret_sub = 0;
   if (func_call == FUNC_STDCALL) func_ret_sub = addr - 8;
+  
+  func_noargs = (addr == 8);
 }
 
 // Generate function epilog
 void gfunc_epilog(void) {
   // Generate return
   if (!func_naked) {
-    o(0xc9); // leave
+    if (do_debug || loc || !func_noargs) o(0xc9); // leave
     if (func_ret_sub == 0) {
       o(0xc3); // ret
     } else {

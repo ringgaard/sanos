@@ -1629,7 +1629,7 @@ void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int 
 
   // Generate line number info
   if (do_debug && (last_line_num != file->line_num || last_ind != ind)) {
-    put_stabn(N_SLINE, 0, file->line_num, ind); // FIXME
+    gline(file->line_num);
     last_ind = ind;
     last_line_num = file->line_num;
   }
@@ -2486,7 +2486,7 @@ void put_func_debug(Sym *sym) {
   char buf[512];
 
   // Stabs info
-  // TODO: we put here a dummy type
+  // TODO: we put a dummy type here
   snprintf(buf, sizeof(buf), "%s:%c1", func_name, sym->type.t & VT_STATIC ? 'f' : 'F');
   put_stabs_r(buf, N_FUN, 0, file->line_num, 0, cur_text_section, sym->c);
   last_ind = 0;
@@ -2567,9 +2567,7 @@ void gen_function(Sym *sym) {
 
   // Patch symbol size
   ((Elf32_Sym *) symtab_section->data)[sym->c].st_size = func_size;
-  if (do_debug) {
-    put_stabn(N_FUN, 0, 0, ind); // FIXME
-  }
+  if (do_debug) put_stabn(N_FUN, 0, 0, cur_text_section->data_offset - func_start);
   func_name = ""; // For safety
   func_vt.t = VT_VOID; // For safety
   nocode_wanted = saved_nocode_wanted;

@@ -45,6 +45,20 @@
 
 int vsprintf(char *buf, const char *fmt, va_list args);
 
+struct stab {
+  unsigned long n_strx;           // Index into string table of name
+  unsigned char n_type;           // Type of symbol
+  unsigned char n_other;          // Misc info (usually empty)
+  unsigned short n_desc;          // Description field
+  unsigned long n_value;          // Value of symbol
+};
+
+#define N_SO    0x64              // Name of main source file
+#define N_BINCL 0x82              // Beginning of an include file
+#define N_EINCL 0xa2              // End of an include file
+#define N_SLINE 0x44              // Line number in text segment
+#define N_FUN   0x24              // Function name or text-segment variable for C
+
 static void logmsg(struct moddb *db, const char *fmt, ...) {
   va_list args;
   char buffer[1024];
@@ -114,7 +128,36 @@ struct module *get_module_for_handle(struct moddb *db, hmodule_t hmod) {
     m = m->next;
     if (m == db->modules) break;
   }
+ 
+  return NULL;
+}
 
+static struct module *get_module_for_address(struct moddb *db, void *addr) {
+  struct module *m;
+
+  m = db->modules;
+  while (1) {
+    struct image_header *imghdr = get_image_header(m->hmod);
+    if (imghdr) {
+      void *end = (char *) m->hmod + imghdr->optional.size_of_image;
+      if (addr >= m->hmod && addr < end) return m;
+    }
+    m = m->next;
+    if (m == db->modules) break;
+  }
+
+  return NULL;
+}
+
+static char *get_module_section(struct module *mod, const char *name, int *size) {
+  int i;
+  struct image_header *imghdr = get_image_header(mod->hmod);
+  for (i = 0; i < imghdr->header.number_of_sections; i++) {
+    if (strncmp(name, imghdr->sections[i].name, IMAGE_SIZEOF_SHORT_NAME) == 0) {
+      if (size) *size = imghdr->sections[i].size_of_raw_data;
+      return RVA(mod->hmod, imghdr->sections[i].virtual_address);
+    }
+  }
   return NULL;
 }
 
@@ -812,6 +855,77 @@ int get_resource_data(hmodule_t hmod, char *id1, char *id2, char *id3, void **da
   dataentry = (struct image_resource_data_entry *) RVA(resbase, direntry->offset_to_data);
   *data = RVA(hmod, dataentry->offset_to_data);
   return dataentry->size;
+}
+
+int get_stack_trace(struct moddb *db, struct context *ctxt,
+                    void *stktop, void *stklimit, 
+                    struct stackframe *frames, int depth) {
+  struct module *mod;
+  struct stab *stab, *stab_end;
+  int stab_size;
+  char *stabstr;
+  void *eip = (void *) ctxt->eip;
+  void *ebp = (void *) ctxt->ebp;
+  int i = 0;
+  memset(frames, 0, sizeof(struct stackframe) * depth);
+  while (i < depth && ebp > stklimit && ebp < stktop) {
+    frames[i].eip = eip;
+    frames[i].ebp = ebp;
+    frames[i].line = -1;
+    
+    mod = get_module_for_address(db, eip);
+    if (mod) {
+      frames[i].hmod = mod->hmod;
+      frames[i].modname = mod->name;
+      stab = (struct stab *) get_module_section(mod, ".stab", &stab_size);
+      stabstr = get_module_section(mod, ".stabstr", NULL);
+      if (stab && stabstr) {
+        int found = 0;
+        struct stab *source = NULL;
+        struct stab *func = NULL;
+        struct stab *line = NULL;
+        stab_end = (struct stab *) ((char *) stab + stab_size);
+        while (!found && stab < stab_end) {
+          switch (stab->n_type) {
+            case N_SLINE:
+              if (func && eip > (void *) (func->n_value + stab->n_value)) line = stab;
+              break;
+              
+            case N_FUN:
+              if (func) {
+                if (stab->n_strx == 0 && eip < (void *) (func->n_value + stab->n_value)) {
+                  found = 1;
+                } else {
+                  func = NULL;
+                }
+              } else if (eip > (void *) stab->n_value) {
+                func = stab;
+              }
+              break;
+
+            case N_SO:
+              source = stab;
+              break;
+          }
+          stab++;
+        }
+        if (found) {
+          if (func) {
+            frames[i].func = stabstr + func->n_strx;
+            frames[i].offset = (unsigned long) eip - func->n_value;
+            if (line) frames[i].line = line->n_desc;
+          }
+          if (source) frames[i].file = stabstr + source->n_strx;
+        }
+      }
+    }
+
+    eip = *((void **) ebp + 1);
+    ebp = *(void **) ebp;
+    i++;
+  }
+
+  return i;
 }
 
 int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *libpath, struct section *aliassect, int flags) {

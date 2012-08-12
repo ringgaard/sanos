@@ -581,6 +581,59 @@ int getvervalue(hmodule_t hmod, char *name, char *buf, int size) {
   return rc;
 }
 
+#define MAX_FRAMES 10
+
+static void error_output(const char *s) {
+  write(fderr, s, strlen(s));
+}
+
+void dump_stack(struct context *ctxt) {
+  struct tib *tib = gettib();
+  struct stackframe frames[MAX_FRAMES];
+  struct stackframe *f;
+  int n, i;
+  char buf[128];
+
+  n = get_stack_trace(&usermods, ctxt, tib->stacktop, tib->stacklimit, frames, MAX_FRAMES);
+  if (n > 0) error_output("Stack trace:\n");
+  for (i = 0; i < n; ++i) {
+    f = &frames[i];
+    sprintf(buf, "%p", f->eip);
+    error_output(buf);
+
+    if (f->func) {
+      char *func = f->func;
+      char *fend = func;
+      while (*fend && *fend != ':') fend++;
+      error_output(" ");
+      write(fderr, func, fend - func);
+    }
+    
+    if (f->file) {
+      error_output(" (");
+      error_output(f->file);
+
+      if (f->line != -1) {
+        sprintf(buf, " line %d", f->line);
+        error_output(buf);
+      }
+      error_output(")");
+    }
+
+    if (f->modname) {
+      error_output(" [");
+      error_output(f->modname);
+      if (!f->func) {
+        sprintf(buf, "+%x", f->eip - (unsigned long) f->hmod);
+        error_output(buf);
+      }
+      error_output("]");
+    }
+
+    error_output("\n");
+  }
+}
+
 //
 // Misc. routines
 //

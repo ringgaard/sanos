@@ -37,6 +37,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <glob.h>
 #include <os/version.h>
 #include <inifile.h>
 
@@ -1334,9 +1335,12 @@ int cmd_sysinfo(int argc, char *argv[]) {
   return 0;
 }
 
-#include <glob.h>
-
 int cmd_test(int argc, char *argv[]) {
+  char *p = NULL;
+  *p = 1;
+}
+
+int cmd_glob(int argc, char *argv[]) {
   glob_t globbuf;
   int i;
   int rc;
@@ -1467,6 +1471,7 @@ struct command cmdtab[] = {
   {"dump",     cmd_dump,     "Display file in hex format"},
   {"exec",     cmd_exec,     "Execute shell script"},
   {"exit",     NULL,         "Exit shell"},
+  {"glob",     cmd_glob,     "Expand filename arguments"},
   {"grabcon",  cmd_grabcon,  "Grab the main console file descriptors"},
   {"id",       cmd_id,       "Display real and effective user and group ids"},
   {"ifconfig", cmd_ifconfig, "Display network interface configuration"},

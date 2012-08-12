@@ -35,6 +35,8 @@
 #include <string.h>
 #include <os/syscall.h>
 
+void dump_stack(struct context *ctxt);
+
 struct sigentry {
   char *label;
   char *name;
@@ -251,11 +253,13 @@ void globalhandler(struct siginfo *info) {
     switch (sigtab[signum].defaction) {
       case SIGACT_TERM:
         syslog(LOG_ERR, "terminating with signal %d (%s)", signum, strsignal(signum));
+        dump_stack(info->si_ctxt);
         exit((signum << 8) | 0x10000);
 
       case SIGACT_ABORT:
         if (getpeb()->debug) sigexit(info, 1);
         syslog(LOG_ERR, "aborting with signal %d (%s)", signum, strsignal(signum));
+        dump_stack(info->si_ctxt);
         exit((signum << 8) | 0x10000);
 
       case SIGACT_IGN:

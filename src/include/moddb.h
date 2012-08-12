@@ -79,6 +79,17 @@ struct module {
   int flags;
 };
 
+struct stackframe {
+  void *eip;
+  void *ebp;
+  hmodule_t hmod;
+  char *modname;
+  char *file;
+  char *func;
+  int offset;
+  int line;
+};
+
 #ifdef  __cplusplus
 extern "C" {
 #endif
@@ -92,7 +103,7 @@ void *get_entrypoint(hmodule_t hmod);
 hmodule_t load_module(struct moddb *db, char *name, int flags);
 int unload_module(struct moddb *db, hmodule_t hmod);
 int get_resource_data(hmodule_t hmod, char *id1, char *id2, char *id3, void **data);
-
+int get_stack_trace(struct moddb *db, struct context *ctxt, void *stktop, void *stklimit, struct stackframe *frames, int depth);
 int init_module_database(struct moddb *db, char *name, hmodule_t hmod, char *libpath, struct section *aliassect, int flags);
 
 #ifdef  __cplusplus

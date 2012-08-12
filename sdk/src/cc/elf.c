@@ -1381,7 +1381,6 @@ typedef struct SectionMergeInfo {
 } SectionMergeInfo;
 
 // Load an object file and merge it with current files
-// TODO: handle correctly stab (debug) info
 int tcc_load_object_file(TCCState *s1, int fd, unsigned long file_offset) {
   Elf32_Ehdr ehdr;
   Elf32_Shdr *shdr, *sh;
@@ -1390,6 +1389,7 @@ int tcc_load_object_file(TCCState *s1, int fd, unsigned long file_offset) {
   int *old_to_new_syms;
   char *sh_name, *name;
   SectionMergeInfo *sm_table, *sm;
+  SectionMergeInfo *stab, *stabstr;
   Elf32_Sym *sym, *symtab;
   Elf32_Rel *rel, *rel_end;
   Section *s;
@@ -1406,7 +1406,7 @@ int tcc_load_object_file(TCCState *s1, int fd, unsigned long file_offset) {
   if (ehdr.e_type != ET_REL) goto fail1;
 
   // Test CPU specific stuff
-  if (ehdr.e_ident[5] != ELFDATA2LSB ||ehdr.e_machine != EM_386) {
+  if (ehdr.e_ident[5] != ELFDATA2LSB || ehdr.e_machine != EM_386) {
   fail1:
     error_noabort("invalid object file");
     return -1;
@@ -1446,14 +1446,21 @@ int tcc_load_object_file(TCCState *s1, int fd, unsigned long file_offset) {
     
   // Now examine each section and try to merge its content with the
   // ones in memory
+  stab = NULL;
+  stabstr = NULL;
   for (i = 1; i < ehdr.e_shnum; i++) {
     // No need to examine section name strtab
     if (i == ehdr.e_shstrndx) continue;
     sh = &shdr[i];
     sh_name = strsec + sh->sh_name;
 
-    // Ignore sections types we do not handle
-    if (sh->sh_type != SHT_PROGBITS && sh->sh_type != SHT_REL && sh->sh_type != SHT_NOBITS) continue;
+    if (strcmp(sh_name, ".stabstr") == 0 || strcmp(sh_name, ".stabstr") == 0) {
+      // Only include stabs if we generate debug info
+      if (!do_debug) continue;
+    } else {
+      // Ignore sections types we do not handle
+      if (sh->sh_type != SHT_PROGBITS && sh->sh_type != SHT_REL && sh->sh_type != SHT_NOBITS) continue;
+    }
     if (sh->sh_addralign < 1) sh->sh_addralign = 1;
 
     // Find corresponding section, if any
@@ -1504,6 +1511,10 @@ int tcc_load_object_file(TCCState *s1, int fd, unsigned long file_offset) {
     } else {
       s->data_offset += size;
     }
+    
+    // We need to fixup string indices for stabs later
+    if (s == stab_section) stab = &sm_table[i];
+    if (s == stabstr_section) stabstr = &sm_table[i];
   next: ;
   }
 
@@ -1588,7 +1599,17 @@ int tcc_load_object_file(TCCState *s1, int fd, unsigned long file_offset) {
         break;
     }
   }
-  
+
+  // Fixup string indices for stabs
+  if (stab && stabstr) {
+    Stab_Sym *ssym = (Stab_Sym *) (stab->s->data + stab->offset);
+    Stab_Sym *ssym_end = (Stab_Sym *) (stab->s->data + stab->s->data_offset);
+    while (ssym < ssym_end) {
+      if (ssym->n_strx) ssym->n_strx += stabstr->offset;
+      ssym++;
+    }
+  }
+
   ret = 0;
  cleanup:
   tcc_free(symtab);
