@@ -434,7 +434,8 @@ LIBC_MATHOBJ = \
   $(OBJ)/tan.o \
   $(OBJ)/tanh.o
 
-TCCLIBFLAGS=-I src/include
+TCCLIBFLAGS=-I src/include -g
+ASLIBFLAGS=
 
 $(OBJ)/tcccrt.o: src/lib/tcccrt.c
 	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
@@ -581,79 +582,79 @@ $(OBJ)/chkstk.o: src/lib/chkstk.s
 	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
 
 $(OBJ)/acos.o: src/lib/math/acos.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/asin.o: src/lib/math/asin.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/atan.o: src/lib/math/atan.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/atan2.o: src/lib/math/atan2.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/ceil.o: src/lib/math/ceil.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/cos.o: src/lib/math/cos.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/cosh.o: src/lib/math/cosh.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/exp.o: src/lib/math/exp.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/fabs.o: src/lib/math/fabs.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/floor.o: src/lib/math/floor.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/fmod.o: src/lib/math/fmod.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/fpconst.o: src/lib/math/fpconst.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/fpreset.o: src/lib/math/fpreset.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/frexp.o: src/lib/math/frexp.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/ftol.o: src/lib/math/ftol.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/ldexp.o: src/lib/math/ldexp.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/log.o: src/lib/math/log.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/log10.o: src/lib/math/log10.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/modf.o: src/lib/math/modf.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/pow.o: src/lib/math/pow.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/sin.o: src/lib/math/sin.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/sinh.o: src/lib/math/sinh.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/sqrt.o: src/lib/math/sqrt.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/tan.o: src/lib/math/tan.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 $(OBJ)/tanh.o: src/lib/math/tanh.asm
-	$(AS) $^ -o $@
+	$(AS) $^ -o $@ $(ASLIBFLAGS)
 
 linux/install/usr/lib/libc.a: $(LIBC_OBJ) $(LIBC_MATHOBJ)
 	$(AR) -s -m $@ $^

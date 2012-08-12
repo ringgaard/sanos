@@ -624,7 +624,7 @@ void dump_stack(struct context *ctxt) {
       error_output(" [");
       error_output(f->modname);
       if (!f->func) {
-        sprintf(buf, "+%x", f->eip - (unsigned long) f->hmod);
+        sprintf(buf, "+%x", (unsigned long) f->eip - (unsigned long) f->hmod);
         error_output(buf);
       }
       error_output("]");

@@ -21,145 +21,145 @@ libc.a: $(OBJ) $(MATHOBJ)
     ar -s -m $@ $^
 
 tcccrt.o: tcccrt.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 assert.o: assert.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 bsearch.o: bsearch.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 conio.o: conio.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 crt0.o: crt0.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 ctype.o: ctype.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 dirent.o: dirent.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 fcvt.o: fcvt.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 fork.o: fork.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 getopt.o: getopt.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 glob.o: glob.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 hash.o: hash.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 inifile.o: inifile.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 input.o: input.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 math.o: math.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 opts.o: opts.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 output.o: output.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 qsort.o: qsort.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 random.o: random.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 readline.o: readline.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 rmap.o: rmap.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 rtttl.o: rtttl.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 sched.o: sched.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 semaphore.o: semaphore.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 stdio.o: stdio.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 printf.o: printf.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 scanf.o: scanf.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 tmpfile.o: tmpfile.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 popen.o: popen.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 setjmp.o: setjmp.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 stdlib.o: stdlib.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 strftime.o: strftime.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 string.o: string.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 strtod.o: strtod.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 strtol.o: strtol.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 time.o: time.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 xtoa.o: xtoa.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 regcomp.o: regex/regcomp.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 regexec.o: regex/regexec.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 regerror.o: regex/regerror.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 regfree.o: regex/regfree.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 barrier.o: pthread/barrier.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 condvar.o: pthread/condvar.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 mutex.o: pthread/mutex.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 pthread.o: pthread/pthread.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 rwlock.o: pthread/rwlock.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 spinlock.o: pthread/spinlock.c
-    $(CC) -c $<
+    $(CC) -c $< -g
 
 chkstk.o: chkstk.s
     $(CC) -c $<

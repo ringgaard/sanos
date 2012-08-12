@@ -1454,7 +1454,7 @@ int tcc_load_object_file(TCCState *s1, int fd, unsigned long file_offset) {
     sh = &shdr[i];
     sh_name = strsec + sh->sh_name;
 
-    if (strcmp(sh_name, ".stabstr") == 0 || strcmp(sh_name, ".stabstr") == 0) {
+    if (strcmp(sh_name, ".stab") == 0 || strcmp(sh_name, ".stabstr") == 0 || strcmp(sh_name, ".rel.stab") == 0) {
       // Only include stabs if we generate debug info
       if (!do_debug) continue;
     } else {
