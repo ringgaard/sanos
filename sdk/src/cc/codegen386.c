@@ -30,27 +30,6 @@ int reg_classes[NB_REGS] = {
   RC_FLOAT | RC_ST0, // st0
 };
 
-enum {
-  CodeStart,
-  CodeLabel,
-  CodeJump,
-  CodeShortJump,
-  CodeReloc,
-  CodeAlign,
-  CodeNop,
-  CodeLine,
-  CodeEnd,
-};
-
-typedef struct {
-  int type;
-  int param;
-  int ind;
-  int addr;
-  int target;
-  Sym *sym;
-} Branch;
-
 static unsigned char *code;
 static int code_size;
 static Branch *branch;
@@ -214,6 +193,49 @@ void gen_addr32(int r, Sym *sym, int c) {
   }
 }
 
+void mark_code_buffer(CodeBuffer *cb) {
+  cb->code = NULL;
+  cb->ind = ind;
+  cb->branch = NULL;
+  cb->br = br;
+}
+
+void cut_code_buffer(CodeBuffer *cb) {
+  int i;
+  int code_buffer_size = ind - cb->ind;
+  int branch_buffer_size = br - cb->br;
+  cb->code = (unsigned char *) tcc_malloc(code_buffer_size);
+  memcpy(cb->code, code + cb->ind, code_buffer_size);
+  cb->branch = (Branch *) tcc_malloc(branch_buffer_size * sizeof(Branch));
+  memcpy(cb->branch, branch + cb->br, branch_buffer_size * sizeof(Branch));
+  for (i = 0; i < branch_buffer_size; ++i) {
+    Branch *b = cb->branch + i;
+    b->ind -= cb->ind;
+    if (b->type == CodeJump) b->target -= cb->br;
+  }
+  ind = cb->ind;
+  br = cb->br;
+  cb->ind = code_buffer_size;
+  cb->br = branch_buffer_size;
+}
+
+void paste_code_buffer(CodeBuffer *cb) {
+  int i;
+  int ind_ofs = ind;
+  int br_ofs = br;
+  
+  for (i = 0; i < cb->ind; ++i) g(cb->code[i]);
+  for (i = 0; i < cb->br; ++i) {
+    Branch *b = branch + gbranch(cb->branch[i].type);
+    *b = cb->branch[i];
+    b->ind += ind_ofs;
+    if (b->type == CodeJump) b->target += br_ofs;
+  }
+
+  free(cb->code);
+  free(cb->branch);
+}
+
 void gen(int c) {
   *(char *) section_ptr_add(cur_text_section, 1) = c;
 }
@@ -226,12 +248,22 @@ void genblk(unsigned char *data, int size) {
   memcpy(section_ptr_add(cur_text_section, size), data, size);
 }
 
-int skip_nops(int b) {
+int skip_nops(int b, int skip_labels) {
   int org;
 
   org = branch[b].ind;
-  while (branch[b + 1].ind == org && 
-         (branch[b].type == CodeNop || branch[b].type == CodeLabel || branch[b].type == CodeLine)) {
+  while (branch[b + 1].ind == org) {
+    switch (branch[b].type) {
+      case CodeNop:
+      case CodeLine:
+        break;
+      
+      case CodeLabel:
+        if (skip_labels) break;
+        
+      default:
+        return b;
+    }
     b++;
   }
   return b;
@@ -285,7 +317,7 @@ void gcode(void) {
       if (b->type == CodeLabel) b->target = 0;
       if (b->type != CodeJump) continue;
 
-      t = skip_nops(b->target);
+      t = skip_nops(b->target, 1);
       if (branch[t].type == CodeJump && !branch[t].param && b->target != branch[t].target) {
         // Eliminate jump to jump
         b->target = branch[t].target;
@@ -295,7 +327,7 @@ void gcode(void) {
 
       // Find next non-nop
       n = i + 1;
-      while (branch[n].type == CodeNop) n++;
+      while (branch[n].type == CodeNop || branch[n].type == CodeLine) n++;
       bn = branch + n;
       if (b->ind != bn->ind) continue;
 
@@ -313,7 +345,7 @@ void gcode(void) {
         continue;
       }
       
-      t = skip_nops(n + 1);
+      t = skip_nops(n + 1, 0);
       if (bn->type == CodeJump && !bn->param && b->target == t && bn->ind == branch[t].ind) {
         // Optimize inverted jump
         if (b->param) b->param ^= 1;
@@ -475,7 +507,7 @@ void gcode(void) {
   printf("---- - ---- ----- -------- --------\n");
   for (i = 0; i < br; ++i) {
     b = branch + i;
-    printf("%04d %c %04d %04x %08x %08x", i, "SLJjRANE"[b->type], b->target, b->param, b->ind, b->addr);
+    printf("%04d %c %04d %04x %08x %08x", i, "SLJjRANlE"[b->type], b->target, b->param, b->ind, b->addr);
     if (branch[i].sym) {
       printf(" sym=%s", get_tok_str(b->sym->v, NULL));
     }

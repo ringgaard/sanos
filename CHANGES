@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Improved code generation for for-loops.
+
     * Stack trace dump on abnormal termination.
 
     * Implemented frame pointer omission in C compiler.

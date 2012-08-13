@@ -420,6 +420,35 @@ enum {
 
 extern int reg_classes[NB_REGS];
 
+// Code generation buffer
+enum {
+  CodeStart,
+  CodeLabel,
+  CodeJump,
+  CodeShortJump,
+  CodeReloc,
+  CodeAlign,
+  CodeNop,
+  CodeLine,
+  CodeEnd,
+};
+
+typedef struct {
+  int type;
+  int param;
+  int ind;
+  int addr;
+  int target;
+  Sym *sym;
+} Branch;
+
+typedef struct {
+  unsigned char *code;
+  int ind;
+  Branch *branch;
+  int br;
+} CodeBuffer;
+
 // Parsing state (used to save parser state to reparse part of the source several times)
 typedef struct ParseState {
   int *macro_ptr;
@@ -844,6 +873,10 @@ void gcode(void);
 void gstart(void);
 void gend(void);
 void gline(int linenum);
+
+void mark_code_buffer(CodeBuffer *cb);
+void cut_code_buffer(CodeBuffer *cb);
+void paste_code_buffer(CodeBuffer *cb);
 
 void g(int c);
 void o(unsigned int c);

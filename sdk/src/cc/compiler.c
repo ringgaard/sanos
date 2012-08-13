@@ -1743,7 +1743,7 @@ void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int 
     next();
     skip(';');
   } else if (tok == TOK_FOR) {
-    int e;
+    CodeBuffer cb;
     next();
     skip('(');
     if (tok != ';') {
@@ -1751,28 +1751,29 @@ void block(int *bsym, int *csym, int *case_sym, int *def_sym, int case_reg, int 
       vpop();
     }
     skip(';');
-    d = glabel();
-    c = glabel();
-    a = 0;
+    a = glabel();
     b = 0;
+    c = 0;
     if (tok != ';') {
       gexpr();
-      a = gtst(1, 0);
+      b = gtst(1, 0);
     }
     skip(';');
+    save_regs(0);
+    mark_code_buffer(&cb);
     if (tok != ')') {
-      e = gjmp(0, 0);
-      c = glabel();
       gexpr();
       vpop();
-      gjmp(d, 0);
-      gsym(e);
     }
+    save_regs(0);
+    cut_code_buffer(&cb);
     skip(')');
-    block(&a, &b, case_sym, def_sym, case_reg, 0);
-    gjmp(c, 0);
-    gsym(a);
-    gsym_at(b, c);
+    block(&b, &c, case_sym, def_sym, case_reg, 0);
+    gsym(c);
+    save_regs(0);
+    paste_code_buffer(&cb);
+    gjmp(a, 0);
+    gsym(b);
   } else if (tok == TOK_DO) {
     next();
     a = 0;
