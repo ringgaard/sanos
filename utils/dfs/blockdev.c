@@ -10,6 +10,10 @@
 #include <windows.h>
 #endif
 
+#ifdef __linux__
+#include <unistd.h>
+#endif
+
 #include "blockdev.h"
 
 extern struct blockdriver bdrv_vmdk;

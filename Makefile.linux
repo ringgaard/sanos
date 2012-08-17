@@ -72,6 +72,8 @@ linux/.timestamp:
 
 build-tools: $(TCC) $(AS) $(AR) $(MKDFS)
 
+GCC_FLAGS=-O2 -m32 -Wimplicit
+
 TCC_SRCFILES=\
   sdk/src/cc/asm386.c \
   sdk/src/cc/asm.c \
@@ -94,7 +96,7 @@ TCC_HDRFILES=\
   sdk/src/cc/tokens.h
 
 $(TCC): $(TCC_SRCFILES) $(TCC_HDRFILES)
-	gcc -Wimplicit -o $(TCC) $(TCC_SRCFILES) -I sdk/src/cc -O2 -D SANOS
+	gcc $(GCC_FLAGS) -o $(TCC) $(TCC_SRCFILES) -I sdk/src/cc
 
 AS_OUTDEFS=-DOF_ONLY -DOF_ELF32 -DOF_WIN32 -DOF_COFF -DOF_OBJ -DOF_BIN -DOF_DBG -DOF_DEFAULT=of_elf32
 AS_CFLAGS=-I. -DHAVE_SNPRINTF -DHAVE_VSNPRINTF $(AS_OUTDEFS)
@@ -111,10 +113,10 @@ AS_SRCFILES= \
 	sdk/src/as/output/outobj.c sdk/src/as/output/outdbg.c
 
 $(AS): $(AS_SRCFILES)
-	gcc -o $(AS) $(AS_SRCFILES) $(AS_OUTDEFS) -I sdk/src/as -O2
+	gcc $(GCC_FLAGS) -o $(AS) $(AS_SRCFILES) $(AS_OUTDEFS) -I sdk/src/as
 
 $(AR): src/utils/ar/ar.c
-	gcc -o $(AR) src/utils/ar/ar.c -DO_BINARY=0 -I linux/include -O2
+	gcc $(GCC_FLAGS) -o $(AR) src/utils/ar/ar.c -DO_BINARY=0 -I linux/include
 
 MKDFS_SRCFILES= \
 	utils/dfs/blockdev.c utils/dfs/vmdk.c utils/dfs/bitops.c utils/dfs/buf.c utils/dfs/dfs.c \
@@ -122,7 +124,7 @@ MKDFS_SRCFILES= \
 	utils/dfs/mkdfs.c utils/dfs/super.c utils/dfs/vfs.c
 
 $(MKDFS): $(MKDFS_SRCFILES)
-	gcc -o $(MKDFS) $(MKDFS_SRCFILES) -DO_BINARY=0 -I linux/include -O2
+	gcc $(GCC_FLAGS) -o $(MKDFS) $(MKDFS_SRCFILES) -DO_BINARY=0 -I linux/include
 
 #
 # boot
@@ -720,7 +722,7 @@ linux/install/usr/bin/ctohtml.exe: src/utils/ctohtml/ctohtml.c
 sdk: linux/install/usr/bin/cc.exe linux/install/usr/bin/as.exe
 
 linux/install/usr/bin/cc.exe: $(TCC_SRCFILES) $(TCC_HDRFILES)
-	$(TCC) -o $@ $(TCC_SRCFILES) -I sdk/src/cc $(TCCFLAGS) -DUSE_LOCAL_HEAP
+	$(TCC) -o $@ $(TCC_SRCFILES) -I sdk/src/cc $(TCCFLAGS) -DUSE_LOCAL_HEAP -g
 
 linux/install/usr/bin/as.exe: $(AS_SRCFILES)
 	$(TCC) -o $@ $^ -I sdk/src/as $(TCCFLAGS) $(AS_CFLAGS) -DUSE_LOCAL_HEAP

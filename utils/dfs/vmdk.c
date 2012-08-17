@@ -38,6 +38,10 @@
 #include <windows.h>
 #endif
 
+#ifdef __linux__
+#include <unistd.h>
+#endif
+
 #define VMDK3_MAGIC (('D' << 24) | ('W' << 16) | ('O' << 8) | 'C')
 #define VMDK4_MAGIC (('V' << 24) | ('M' << 16) | ('D' << 8) | 'K')
 

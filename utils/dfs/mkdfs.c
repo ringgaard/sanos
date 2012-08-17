@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <ctype.h>
 
 #ifdef WIN32
 #include <direct.h>
@@ -14,9 +15,13 @@
 
 #ifdef __linux__
 #include <dirent.h>
+#include <unistd.h>
 #endif
 
+#ifndef __linux__
 #include "getopt.h"
+#endif
+
 #include "blockdev.h"
 
 #include "types.h"
