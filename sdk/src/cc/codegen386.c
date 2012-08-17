@@ -23,11 +23,19 @@
 
 //#define DEBUG_BRANCH
 
-int reg_classes[NB_REGS] = {
-  RC_INT | RC_EAX,   // eax
-  RC_INT | RC_ECX,   // ecx
-  RC_INT | RC_EDX,   // edx 
-  RC_FLOAT | RC_ST0, // st0
+int reg_classes[8] = {
+  RC_INT | RC_EAX,            // eax
+  RC_INT | RC_ECX,            // ecx
+  RC_INT | RC_EDX,            // edx
+#ifdef USE_EBX
+  RC_INT | RC_SAVE | RC_PTR,  // ebx
+#else
+  0,
+#endif
+  RC_FLOAT | RC_ST0,          // st0
+  0,
+  RC_INT | RC_SAVE | RC_PTR,  // esi
+  RC_INT | RC_SAVE | RC_PTR,  // edi
 };
 
 static unsigned char *code;
@@ -36,6 +44,7 @@ static Branch *branch;
 static int branch_size;
 static int br;
 
+static int regs_used;
 static int func_ret_sub;
 static int func_noargs;
 int func_naked;
@@ -270,15 +279,15 @@ int skip_nops(int b, int skip_labels) {
 }
 
 void gcode(void) {
-  int i, n, t, stacksize, addr, size, pc, disp, rel, errs, more, func_start;
+  int i, n, t, r, stacksize, addr, size, pc, disp, rel, errs, more, func_start;
   Branch *b, *bn;
 
+  // Generate function prolog
   func_start = cur_text_section->data_offset;
   if (!func_naked) {
     // Align local size to word
     stacksize = (-loc + 3) & -4;
 
-    // Generate function prolog
     if (stacksize >= 4096) {
       // Generate stack guard since parameters can cross page boundary
       Sym *sym = external_global_sym(TOK___chkstk, &func_old_type, 0);
@@ -303,6 +312,13 @@ void gcode(void) {
           gen(0xec);
           genword(stacksize);
         }
+      }
+    }
+    
+    // Save callee-saved registers used by function.
+    for (r = 0; r < NB_REGS; ++r) {
+      if ((reg_classes[r] & RC_SAVE) && (regs_used & (1 << r))) {
+        gen(0x50 + r); // push r
       }
     }
   }
@@ -501,6 +517,27 @@ void gcode(void) {
     }
   }
 
+  // Generate function epilog
+  if (!func_naked) {
+    // Restore callee-saved registers used by function.
+    for (r = NB_REGS; r >= 0; --r) {
+      if ((reg_classes[r] & RC_SAVE) && (regs_used & (1 << r))) {
+        gen(0x58 + r); // pop r
+      }
+    }
+
+    if (do_debug || loc || !func_noargs) gen(0xc9); // leave
+
+    // Generate return
+    if (func_ret_sub == 0) {
+      gen(0xc3); // ret
+    } else {
+      gen(0xc2); // ret n
+      gen(func_ret_sub);
+      gen(func_ret_sub >> 8);
+    }
+  }
+
 #ifdef DEBUG_BRANCH
   printf("\nbranch table for %s\n", func_name);
   printf(" #   t targ parm    ind      addr\n");
@@ -549,6 +586,7 @@ void load(int r, SValue *sv) {
   fr = sv->r;
   ft = sv->type.t;
   fc = sv->c.ul;
+  regs_used |= 1 << r;
 
   v = fr & VT_VALMASK;
   if (fr & VT_LVAL) {
@@ -621,6 +659,7 @@ void store(int r, SValue *v) {
   fc = v->c.ul;
   fr = v->r & VT_VALMASK;
   bt = ft & VT_BTYPE;
+  regs_used |= 1 << r;
 
   // TODO: incorrect if float reg to reg
   if (bt == VT_FLOAT) {
@@ -806,6 +845,7 @@ void gfunc_prolog(CType *func_type) {
   func_call = FUNC_CALL(sym->r);
   addr = 8;
   loc = 0;
+  regs_used = 0;
   if (func_call >= FUNC_FASTCALL1 && func_call <= FUNC_FASTCALL3) {
     fastcall_nb_regs = func_call - FUNC_FASTCALL1 + 1;
     fastcall_regs_ptr = fastcall_regs;
@@ -857,18 +897,6 @@ void gfunc_prolog(CType *func_type) {
 
 // Generate function epilog
 void gfunc_epilog(void) {
-  // Generate return
-  if (!func_naked) {
-    if (do_debug || loc || !func_noargs) o(0xc9); // leave
-    if (func_ret_sub == 0) {
-      o(0xc3); // ret
-    } else {
-      o(0xc2); // ret n
-      g(func_ret_sub);
-      g(func_ret_sub >> 8);
-    }
-  }
-
   // Mark end of code
   gbranch(CodeEnd);
   
@@ -1119,7 +1147,7 @@ void gen_opf(int op) {
       load(TREG_ST0, vtop);
       swapped = !swapped;
     }
-    
+
     switch (op) {
       case '+':
         a = 0;

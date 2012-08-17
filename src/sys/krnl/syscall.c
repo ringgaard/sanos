@@ -2493,7 +2493,7 @@ struct syscall_entry syscalltab[] = {
   {"read", 12, "%d,%p,%d", sys_read},
   {"write", 12, "%d,%p,%d", sys_write},
   {"tell", 8, "%d,%p", sys_tell},
-  {"lseek", 10, "%d,%d,%d-%d,%p", sys_lseek},
+  {"lseek", 10, "%d,%d-%d,%d,%p", sys_lseek},
   {"ftruncate", 12, "%d,%d-%d", sys_ftruncate},
   {"fstat", 8, "%d,%p", sys_fstat},
   {"stat", 8, "'%s',%p", sys_stat},

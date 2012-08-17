@@ -388,9 +388,10 @@ typedef struct AttributeDef {
 #define TYPE_DIRECT    2          // Type with variable
 
 // Number of available registers
-#define NB_REGS        4
+#define NB_REGS        5          // Number of register used (between 5 and 8)
 #define NB_SAVED_REGS  3
 #define NB_ASM_REGS    8
+//#define USE_EBX                   // Use ebx register for pointers
 
 // A register can belong to several classes. The classes must be
 // sorted from more general to more precise (see gv2() code which does
@@ -401,6 +402,8 @@ typedef struct AttributeDef {
 #define RC_ST0     0x0008 
 #define RC_ECX     0x0010
 #define RC_EDX     0x0020
+#define RC_SAVE    0x0040         // Register is callee-saved
+#define RC_PTR     0x0080         // Prefered register for pointers
 #define RC_IRET    RC_EAX         // Function return: integer register
 #define RC_LRET    RC_EDX         // Function return: second integer register
 #define RC_FRET    RC_ST0         // Function return: float register
@@ -410,6 +413,7 @@ enum {
   TREG_EAX = 0,
   TREG_ECX,
   TREG_EDX,
+  TREG_EBX,
   TREG_ST0,
 };
 
@@ -418,7 +422,7 @@ enum {
 #define REG_LRET TREG_EDX // Second word return register (for long long)
 #define REG_FRET TREG_ST0 // Float return register
 
-extern int reg_classes[NB_REGS];
+extern int reg_classes[];
 
 // Code generation buffer
 enum {
@@ -855,7 +859,6 @@ void vset(CType *type, int r, int v);
 void vseti(int r, int v);
 void vswap(void);
 int get_reg(int rc);
-int get_reg_ex(int rc,int rc2);
 int gv(int rc);
 void gv2(int rc1, int rc2);
 void vrotb(int n);

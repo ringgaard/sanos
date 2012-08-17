@@ -173,31 +173,14 @@ void save_reg(int r) {
   }
 }
 
-// Find a register of class 'rc2' with at most one reference on stack. If none, call get_reg(rc)
-int get_reg_ex(int rc, int rc2)  {
-  int r;
-  SValue *p;
-  
-  for (r = 0; r < NB_REGS; r++) {
-    if (reg_classes[r] & rc2) {
-      int n;
-      n = 0;
-      for (p = vstack; p <= vtop; p++) {
-        if ((p->r & VT_VALMASK) == r || (p->r2 & VT_VALMASK) == r) n++;
-      }
-      if (n <= 1) return r;
-    }
-  }
-  return get_reg(rc);
-}
-
 // Find a free register of class 'rc'. If none, save one register
 int get_reg(int rc) {
+static int regspills = 0;
   int r;
   SValue *p;
 
   // Find a free register
-  for (r = 0; r< NB_REGS; r++) {
+  for (r = 0; r < NB_REGS; r++) {
     if (reg_classes[r] & rc) {
       for (p = vstack; p <= vtop; p++) {
         if ((p->r & VT_VALMASK) == r || (p->r2 & VT_VALMASK) == r) goto notfound;
@@ -206,7 +189,7 @@ int get_reg(int rc) {
     }
   notfound: ;
   }
-  
+
   // No register left: free the first one on the stack (VERY
   // IMPORTANT to start from the bottom to ensure that we don't
   // spill registers used in gen_opi())
@@ -226,12 +209,32 @@ int get_reg(int rc) {
   return -1;
 }
 
+// Find a free pointer-type register
+int get_ptr_reg() {
+  int r;
+  SValue *p;
+
+  // Find a free pointer register
+  for (r = 0; r < NB_REGS; r++) {
+    if (reg_classes[r] & RC_PTR) {
+      for (p = vstack; p <= vtop; p++) {
+        if ((p->r & VT_VALMASK) == r || (p->r2 & VT_VALMASK) == r) goto notfound;
+      }
+      return r;
+    }
+  notfound: ;
+  }
+
+  // No pointer register found
+  return get_reg(RC_INT);
+}
+
 // Save registers up to (vtop - n) stack entry
 void save_regs(int n) {
   int r;
   SValue *p, *p1;
   p1 = vtop - n;
-  for (p = vstack;p <= p1; p++) {
+  for (p = vstack; p <= p1; p++) {
     r = p->r & VT_VALMASK;
     if (r < VT_CONST) {
       save_reg(r);
@@ -286,7 +289,7 @@ int gv(int rc) {
       Sym *sym;
       int *ptr;
       unsigned long offset;
-      
+
       // TODO: unify with initializers handling?
       // CPUs usually cannot use float constants, so we store them
       // generically in data segment
@@ -315,7 +318,11 @@ int gv(int rc) {
       !(reg_classes[r] & rc) ||
       ((vtop->type.t & VT_BTYPE) == VT_LLONG && 
        !(reg_classes[vtop->r2] & rc))) {
-      r = get_reg(rc);
+      if (rc == RC_INT && (vtop->type.t & VT_BTYPE) == VT_PTR) {
+        r = get_ptr_reg();
+      } else {
+        r = get_reg(rc);
+      }
       if ((vtop->type.t & VT_BTYPE) == VT_LLONG) {
         // Two register type load: expand to two words temporarily
         if ((vtop->r & (VT_VALMASK | VT_LVAL)) == VT_CONST) {
