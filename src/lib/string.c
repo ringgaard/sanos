@@ -414,17 +414,48 @@ int memcmp(const void *dst, const void *src, size_t n) {
   return *((unsigned char *) dst) - *((unsigned char *) src);
 }
 
+#if 0
 void *memcpy(void *dst, const void *src, size_t n) {
-  void *ret = dst;
-
-  while (n--) {
-    *(char *)dst = *(char *)src;
-    dst = (char *) dst + 1;
-    src = (char *) src + 1;
+  char *s = (char *) src;
+  char *end = s + n;
+  char *d = (char *) dst;
+  if ((((unsigned int) s) | ((unsigned int) d) | n) && sizeof(unsigned int) - 1) {
+    while (s != end) *d++ = *s++;
+  } else {
+    while (s != end) *((unsigned int *) d)++ = *((unsigned int *) s)++;
   }
 
-  return ret;
+  return dst;
 }
+#else
+void *memcpy(void *dst, const void *src, size_t n) {
+  __asm {
+    push  esi
+    push  edi
+    mov    esi,src
+    mov    edi,dst
+    mov    ecx,n
+    
+    mov    eax,esi
+    or     eax,edi
+    or     eax,n
+    and    eax, 3
+    jz     fast_copy
+
+    rep    movsb
+    jmp    copy_done
+
+fast_copy:
+    shr    ecx,2
+    rep    movsd
+    
+copy_done:
+    mov    eax,dst
+    pop    edi
+    pop    esi
+  }
+}
+#endif
 
 void *memccpy(void *dst, const void *src, int c, size_t n) {
   while (n && (*((char *) (dst = (char *) dst + 1) - 1) =

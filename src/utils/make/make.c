@@ -380,8 +380,10 @@ int parse_makefile(struct project *prj, FILE *f) {
   while (!feof(f)) {
     int ch;
     char *p;
+    int skipws;
     
     buffer_clear(line);
+    skipws = 0;
     while ((ch = getc(f)) != EOF)  {
       if (ch == '\r') continue;
       if (ch == '\n') {
@@ -391,9 +393,19 @@ int parse_makefile(struct project *prj, FILE *f) {
         // Check for line continuation.
         if (line->end > line->start && *(line->end - 1) == '\\') {
           line->end--;
+          skipws = 1;
           continue;
         } else {
           break;
+        }
+      }
+      if (skipws) {
+        if (isspace(ch)) {
+          skipws = 2;
+          continue;
+        } else {
+          if (skipws == 2) buffer_add(line, ' ');
+          skipws = 0;
         }
       }
       buffer_add(line, ch);

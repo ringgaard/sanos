@@ -3038,7 +3038,7 @@ TCCState *tcc_new(void) {
   tcc_define_symbol(s, "__WCHAR_TYPE__", "unsigned short");
   tcc_define_symbol(s, "_INTEGRAL_MAX_BITS", "64");
   tcc_define_symbol(s, "_TCC_PLATFORM", "\"" TCC_PLATFORM "\"");
-  
+
   // No section zero
   dynarray_add((void ***)&s->sections, &s->nb_sections, NULL);
 
