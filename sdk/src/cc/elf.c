@@ -217,8 +217,6 @@ int add_elf_sym(Section *s, unsigned long value, unsigned long size,
       } else if (s == tcc_state->dynsymtab_section) {
         // We accept that two DLLs define the same symbol
       } else {
-        printf("new_bind=%x new_shndx=%x new_vis=%x old_bind=%x old_shndx=%x old_vis=%x\n",
-               sym_bind, sh_num, new_vis, esym_bind, esym->st_shndx, esym_vis);
         error_noabort("'%s' defined twice", name);
       }
     } else {

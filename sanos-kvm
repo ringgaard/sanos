@@ -1,0 +1,3 @@
+#!/bin/sh
+kvm -drive file=img/sanos.vmdk,if=virtio,boot=on -net user -net nic -redir tcp:2323::23 -redir tcp:8080::80
+

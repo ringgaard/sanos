@@ -175,7 +175,6 @@ void save_reg(int r) {
 
 // Find a free register of class 'rc'. If none, save one register
 int get_reg(int rc) {
-static int regspills = 0;
   int r;
   SValue *p;
 
@@ -205,7 +204,7 @@ static int regspills = 0;
       return r;
     }
   }
-  // Should never comes here
+  // Should never come here
   return -1;
 }
 
