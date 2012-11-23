@@ -148,6 +148,8 @@ osapi int __getstdhndl(int n);
 #define STDERR_FILENO __getstdhndl(2)
 
 #ifndef NOGETOPT
+#ifndef _GETOPT_DEFINED
+#define _GETOPT_DEFINED
 
 int *_opterr();
 int *_optind();
@@ -160,7 +162,7 @@ char **_optarg();
 #define optarg (*_optarg())
 
 int getopt(int argc, char **argv, char *opts);
-
+#endif
 #endif
 
 #ifndef NOVFORK

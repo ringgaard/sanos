@@ -1,9 +1,9 @@
 //
-// crtbase.h
+// getopt.h
 //
-// Internal definitions for C runtime library
+// Command line option parsing
 //
-// Copyright (C) 2002 Michael Ringgaard. All rights reserved.
+// Copyright (C) 2012 Michael Ringgaard. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -35,31 +35,44 @@
 #pragma once
 #endif
 
-#ifndef CRTBASE_H
-#define CRTBASE_H
+#ifndef GETOPT_H
+#define GETOPT_H
 
-#include <stdio.h>
-#include <setjmp.h>
+#ifndef _GETOPT_DEFINED
+#define _GETOPT_DEFINED
 
-struct opt {
-  int err;
-  int ind;
-  int opt;
-  char *arg;
-  int sp;
-  int reset;
-  char *place;
+int *_opterr();
+int *_optind();
+int *_optopt();
+char **_optarg();
+
+#define opterr (*_opterr())
+#define optind (*_optind())
+#define optopt (*_optopt())
+#define optarg (*_optarg())
+
+#endif
+
+struct option {
+  const char *name;
+  int has_arg;
+  int *flag;
+  int val;
 };
 
-struct crtbase {
-  int argc;
-  char **argv;
-  int stdio_init;
-  int stdio_initialized;
-  FILE iob[3];
-  char stdinbuf[BUFSIZ];
-  struct opt opt;
-  void (*fork_exit)(int);
-};
+#define	no_argument       0
+#define required_argument 1
+#define optional_argument 2
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
+int getopt(int argc, char **argv, char *opts);
+int getopt_long(int argc, char **argv, const char *opts, const struct option *longopts, int *index);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

@@ -1169,7 +1169,7 @@ struct peb {
 #define TERM_CONSOLE   1
 #define TERM_VT100     2
 
-#define CRTBASESIZE    (16 + 3 * 32 + 512 + 5 * 4 + 4)
+#define CRTBASESIZE    (16 + 3 * 32 + 512 + 7 * 4 + 4)
 
 struct term {
   int type;

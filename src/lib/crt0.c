@@ -182,6 +182,7 @@ int mainCRTStartup() {
   crtbase->opt.err = 1;
   crtbase->opt.ind = 1;
   crtbase->opt.sp = 1;
+  crtbase->opt.place = "";
 
   rc = initcrt();
   if (rc == 0) {
