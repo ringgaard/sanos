@@ -177,9 +177,10 @@ static int console_read(struct dev *dev, void *buffer, size_t count, blkno_t blk
     }
     
     if (ch < ' ') {
-      if (ch == CTRL('C')) send_user_signal(self(), SIGINT);
-      if (ch == CTRL('Z')) send_user_signal(self(), SIGTSTP);
-      if (ch == CTRL('\\')) send_user_signal(self(), SIGABRT);
+      struct thread *t = self();
+      if (ch == CTRL('C') && (t->blocked_signals & (1 << SIGINT)) == 0) send_user_signal(t, SIGINT);
+      if (ch == CTRL('Z') && (t->blocked_signals & (1 << SIGTSTP)) == 0) send_user_signal(t, SIGTSTP);
+      if (ch == CTRL('\\') && (t->blocked_signals & (1 << SIGABRT)) == 0) send_user_signal(t, SIGABRT);
     }
     
     *p++ = ch;

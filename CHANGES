@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added clipboard commands to text editor.
+
     * Added getopt_long(), usleep(), and nanosleep().
 
     * Optimized memcpy() routine.
