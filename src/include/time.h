@@ -71,6 +71,14 @@ struct timeval {
 
 #endif
 
+#ifndef _TIMESPEC_DEFINED
+#define _TIMESPEC_DEFINED
+struct timespec {
+  long tv_sec;
+  long tv_nsec;
+};
+#endif
+
 #ifndef _TIMEZONE_DEFINED
 #define _TIMEZONE_DEFINED
 
@@ -114,6 +122,8 @@ char *ctime(const time_t *timer);
 char *_strdate(char *s);
 char *_strtime(char *s);
 void _tzset();
+
+int nanosleep(const struct timespec *req, struct timespec *rem);
 
 #ifdef  __cplusplus
 }

@@ -136,11 +136,11 @@ static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
       freq = *(int *) args;
       if (freq < 0 || freq > 0xFFFF) return -EINVAL;
 
-      if (freq == 0)
+      if (freq == 0) {
         nosound();
-      else
+      } else {
         sound((unsigned short) freq);
-
+      }
       return 0;
 
     case IOCTL_REBOOT:
@@ -148,8 +148,7 @@ static int console_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
       return 0;
 
     case IOCTL_KBHIT:
-      if (cursoff)
-      {
+      if (cursoff) {
         cursoff = 0;
         show_cursor();
       }

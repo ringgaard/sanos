@@ -86,6 +86,8 @@ struct _forkctx {
 
 #endif
 
+typedef unsigned int useconds_t;
+
 #ifdef  __cplusplus
 extern "C" {
 #endif
@@ -126,6 +128,7 @@ osapi int isatty(handle_t f);
 osapi int gethostname(char *name, int namelen);
 
 osapi unsigned sleep(unsigned seconds);
+int usleep(useconds_t usec);
 osapi unsigned alarm(unsigned seconds);
 osapi char *crypt(const char *key, const char *salt);
 

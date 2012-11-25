@@ -340,8 +340,9 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struc
   }
 
   if (tmo == 0) return 0;
-  if (timeout && !readfds && !writefds && !exceptfds) return msleep(tmo);
-
+  if (timeout && !readfds && !writefds && !exceptfds) {
+    return msleep(tmo) > 0 ? -EINTR : 0;
+  }
   init_iomux(&iomux, 0);
 
   rc = add_fds_to_iomux(&iomux, readfds, IOEVT_READ | IOEVT_ACCEPT | IOEVT_CLOSE);
@@ -447,7 +448,7 @@ int poll(struct pollfd fds[], unsigned int nfds, int timeout) {
   int rc;
   unsigned int n;
 
-  if (nfds == 0) return msleep(timeout);
+  if (nfds == 0) return msleep(timeout) > 0 ? -EINTR : 0;
   if (!fds) return -EINVAL;
 
   rc = check_poll(fds, nfds);

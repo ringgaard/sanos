@@ -33,6 +33,7 @@
 
 #ifndef KERNEL
 #include <os.h>
+#include <unistd.h>
 #endif
 
 #include <time.h>
@@ -273,6 +274,29 @@ char *_strtime(char *s) {
 }
 
 void _tzset() {
+}
+
+int usleep(useconds_t usec) {
+  if (msleep(usec / 1000) > 0) {
+    errno = EINTR;
+    return -1;
+  }
+  return 0;
+}
+
+int nanosleep(const struct timespec *req, struct timespec *rem) {
+  int rc;
+  
+  rc = msleep(req->tv_sec * 1000 + req->tv_nsec / 1000000);
+  if (rc > 0) {
+    if (rem) {
+      rem->tv_sec = rc / 1000;
+      rem->tv_nsec = (rc % 1000) * 1000000;
+    }
+    errno = EINTR;
+    return -1;
+  }
+  return rc;
 }
 
 clock_t times(struct tms *tms) {

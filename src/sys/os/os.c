@@ -685,7 +685,10 @@ int uname(struct utsname *buf) {
 }
 
 unsigned sleep(unsigned seconds) {
-  msleep(seconds * 1000);
+  int rc;
+  
+  rc = msleep(seconds * 1000);
+  if (rc > 0) return rc / 1000;
   return 0;
 }
 

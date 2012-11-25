@@ -63,9 +63,12 @@ unsigned long schedmapidx;
 
 static void tmr_alarm(void *arg);
 
-struct thread *self() {
-  unsigned long stkvar;
-  return (struct thread *) (((unsigned long) &stkvar) & TCBMASK);
+__declspec(naked) struct thread *self() {
+  __asm {
+    mov eax, esp
+    and eax, TCBMASK
+    ret
+  }
 }
 
 __declspec(naked) void switch_context(struct thread *t) {

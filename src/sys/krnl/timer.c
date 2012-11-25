@@ -283,6 +283,10 @@ int msleep(unsigned int millisecs) {
     timer.expires = ticks + millisecs / MSECS_PER_TICK;
     add_timer(&timer);
     rc = enter_alertable_wait(THREAD_WAIT_SLEEP);
+    if (rc == -EINTR) {
+      rc = (timer.expires - ticks) * MSECS_PER_TICK;
+      if (rc < 0) rc = 0;
+    }
     del_timer(&timer);
   }
 

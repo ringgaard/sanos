@@ -291,7 +291,8 @@ int wait_for_all_objects(struct object **objs, int count, unsigned int timeout, 
 
   if (count == 0) {
     if (timeout == INFINITE) return -EINVAL;
-    return msleep(timeout);
+    if (msleep(timeout) > 0) return -EINTR;
+    return 0;
   }
 
   if (count > MAX_WAIT_OBJECTS) return -EINVAL;
@@ -397,7 +398,8 @@ int wait_for_any_object(struct object **objs, int count, unsigned int timeout, i
 
   if (count == 0) {
     if (timeout == INFINITE) return -EINVAL;
-    return msleep(timeout);
+    if (msleep(timeout) > 0) return -EINTR;
+    return 0;
   }
 
   if (count > MAX_WAIT_OBJECTS) return -EINVAL;

@@ -4,11 +4,11 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
-    * Added getopt_long()
+    * Added getopt_long(), usleep(), and nanosleep().
 
-    * Optimized memcpy() routine
+    * Optimized memcpy() routine.
 
-    * Code generation using callee-saved registers (ebx, edi, and esi)
+    * Code generation using callee-saved registers (ebx, edi, and esi).
 
     * Improved code generation for for-loops.
 
