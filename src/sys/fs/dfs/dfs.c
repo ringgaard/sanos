@@ -231,17 +231,19 @@ int dfs_rmdir(struct fs *fs, char *name) {
     return -ENOTDIR;
   }
 
-  if (dir->desc->size > 0) {
-    release_inode(dir);
-    release_inode(parent);
-    return -ENOTEMPTY;
-  }
+  if (dir->desc->linkcount == 1) {
+    if (dir->desc->size > 0) {
+      release_inode(dir);
+      release_inode(parent);
+      return -ENOTEMPTY;
+    }
 
-  rc = delete_dir_entry(parent, name, len); 
-  if (rc < 0) {
-    release_inode(dir);
-    release_inode(parent);
-    return rc;
+    rc = delete_dir_entry(parent, name, len); 
+    if (rc < 0) {
+      release_inode(dir);
+      release_inode(parent);
+      return rc;
+    }
   }
 
   rc = unlink_inode(dir);

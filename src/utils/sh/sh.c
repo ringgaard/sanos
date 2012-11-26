@@ -339,6 +339,25 @@ int cmd_cp(int argc, char *argv[]) {
   return 0;
 }
 
+int cmd_ln(int argc, char *argv[]) {
+  char *target;
+  char *linkname;
+
+  if (argc != 3) {
+    printf("usage: ln <target> <link name>\n");
+    return -EINVAL;
+  }
+  target = argv[1];
+  linkname = argv[2];
+
+  if (link(target, linkname) < 0) {
+    perror(target);
+    return -1;
+  }
+
+  return 0;
+}
+
 int cmd_crypt(int argc, char *argv[]) {
   char *pw;
   char *salt;
@@ -1488,6 +1507,7 @@ struct command cmdtab[] = {
   {"load",     cmd_load,     "Load module"},
   {"loglevel", cmd_loglevel, "Set syslog tracing mask and level"},
   {"lookup",   cmd_nslookup, "Lookup hostname or IP address using DNS"},
+  {"ln",       cmd_ln,       "Create link to file or directory"},
   {"ls",       cmd_ls,       "List directory"},
   {"md",       cmd_mkdir,    "Make new directory"},
   {"mkdir",    cmd_mkdir,    "Make new directory"},
