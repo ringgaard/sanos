@@ -51,6 +51,7 @@
 
 #define MINEXTEND      32768
 #define LINEBUF_EXTRA  32
+#define TABSIZE        8
 
 //
 // Key codes
@@ -224,10 +225,15 @@ int text_length(struct editor *ed) {
   return (ed->gap - ed->start) + (ed->end - ed->rest);
 }
 
-void move_gap(struct editor *ed, int pos, int minsize) {
-  int gapsize = ed->rest - ed->gap;
+unsigned char *text_ptr(struct editor *ed, int pos) {
   unsigned char *p = ed->start + pos;
   if (p >= ed->gap) p += (ed->rest - ed->gap);
+  return p;
+}
+
+void move_gap(struct editor *ed, int pos, int minsize) {
+  int gapsize = ed->rest - ed->gap;
+  unsigned char *p = text_ptr(ed, pos);
   if (minsize < 0) minsize = 0;
 
   if (minsize <= gapsize) {
@@ -328,9 +334,8 @@ void erase(struct editor *ed, int pos, int len) {
   replace(ed, pos, len, NULL, 0);
 }
 
-__inline int get(struct editor *ed, int pos) {
-  unsigned char *p = ed->start + pos;
-  if (p >= ed->gap) p += (ed->rest - ed->gap);
+int get(struct editor *ed, int pos) {
+  unsigned char *p = text_ptr(ed, pos);
   if (p >= ed->end) return -1;
   return *p;
 }
@@ -383,6 +388,23 @@ int prev_line(struct editor *ed, int pos) {
   }
 
   return 0;
+}
+
+int column(struct editor *ed, int linepos, int col) {
+  unsigned char *p = text_ptr(ed, linepos);
+  int c = 0;
+  while (col > 0) {
+    if (p == ed->end) break;
+    if (*p == '\t') {
+      int spaces = TABSIZE - c % TABSIZE;
+      c += spaces;
+    } else {
+      c++;
+    }
+    col--;
+    if (++p == ed->gap) p = ed->rest;
+  }
+  return c;
 }
 
 void moveto(struct editor *ed, int pos, int center) {
@@ -691,63 +713,79 @@ void display_message(struct editor *ed, char *msg) {
 }
 
 void draw_full_statusline(struct editor *ed) {
-  int namewidth = ed->cols - 36;
+  int namewidth = ed->cols - 40;
   gotoxy(0, ed->lines);
   if (ed->minihelp) {
     sprintf(ed->linebuf, "\033[1m%*.*s Ctrl-S=Save Ctrl-Q=Quit F1=Help %s\033[K\033[0m", -namewidth, namewidth, ed->filename, ed->newfile ? "(NEW)" : "");
     ed->minihelp = 0;
   } else {
-    sprintf(ed->linebuf, "\033[1m%*.*s%c Ln %-6d Col %-4d Pos %-10d\033[K\033[0m", -namewidth, namewidth, ed->filename, ed->dirty ? '*' : ' ', ed->line + 1, ed->col + 1, ed->linepos + ed->col + 1);
+    sprintf(ed->linebuf, "\033[1m%*.*s%c Ln %-6d Col %-4d Pos %-10d\033[K\033[0m", -namewidth, namewidth, ed->filename, ed->dirty ? '*' : ' ', ed->line + 1, column(ed, ed->linepos, ed->col) + 1, ed->linepos + ed->col + 1);
   }
   outstr(ed->linebuf);
 }
 
 void draw_statusline(struct editor *ed) {
-  gotoxy(ed->cols - 36, ed->lines);
-  sprintf(ed->linebuf, "\033[1m%c Ln %-6d Col %-4d Pos %-10d\033[K\033[0m", ed->dirty ? '*' : ' ', ed->line + 1, ed->col + 1, ed->linepos + ed->col + 1);
+  gotoxy(ed->cols - 40, ed->lines);
+  sprintf(ed->linebuf, "\033[1m%c Ln %-6d Col %-4d Pos %-10d\033[K\033[0m", ed->dirty ? '*' : ' ', ed->line + 1, column(ed, ed->linepos, ed->col) + 1, ed->linepos + ed->col + 1);
   outstr(ed->linebuf);
 }
 
-void display_line(struct editor *ed, int pos, int margin, int len, int fullline) {
+void display_line(struct editor *ed, int pos, int fullline) {
   int hilite = 0;
-  int selstart, selend;
+  int col = 0;
+  int margin = ed->margin;
+  int maxcol = ed->cols + margin;
   unsigned char *bufptr = ed->linebuf;
-  unsigned char *p = ed->start + pos;
-  if (p >= ed->gap) p += (ed->rest - ed->gap);
+  unsigned char *p = text_ptr(ed, pos);
+  int selstart, selend, ch;
 
   get_selection(ed, &selstart, &selend);
-  if (pos >= selstart && pos < selend) {
-    memcpy(bufptr, "\033[7m", 4);
-    bufptr += 4;
-    hilite = 1;
-  }
-
-  while (len > 0) {
-    if (!hilite && pos == selstart) {
-      memcpy(bufptr, "\033[7m", 4);
-      bufptr += 4;
-      hilite = 1;
-    } else if (hilite && pos == selend) {
-      memcpy(bufptr, "\033[0m", 4);
-      bufptr += 4;
-      hilite = 0;
+  while (col < maxcol) {
+    if (margin == 0) {
+      if (!hilite && pos >= selstart && pos < selend) {
+        memcpy(bufptr, "\033[7m", 4);
+        bufptr += 4;
+        hilite = 1;
+      } else if (hilite && pos >= selend) {
+        memcpy(bufptr, "\033[0m", 4);
+        bufptr += 4;
+        hilite = 0;
+      }
     }
     
     if (p == ed->end) break;
-    if (*p == '\r' || *p == '\n') break;
+    ch = *p;
+    if (ch == '\r' || ch == '\n') break;
 
-    if (margin > 0) {
-      margin--;
+    if (ch == '\t') {
+      int spaces = TABSIZE - col % TABSIZE;
+      while (spaces > 0 && col < maxcol) {
+        if (margin > 0) {
+          margin--;
+        } else {
+          *bufptr++ = ' ';
+        }
+        col++;
+        spaces--;
+      }
     } else {
-      *bufptr++ = *p;
-      len--;
+      if (margin > 0) {
+        margin--;
+      } else {
+        *bufptr++ = ch;
+      }
+      col++;
     }
 
     if (++p == ed->gap) p = ed->rest;
     pos++;
   }
 
-  if (len > 0) {
+#ifdef __linux__
+  if (col == margin) *bufptr++ = ' ';
+#endif
+
+  if (col < maxcol) {
     memcpy(bufptr, "\033[K", 3);
     bufptr += 3;
     if (fullline) {
@@ -764,9 +802,9 @@ void display_line(struct editor *ed, int pos, int margin, int len, int fullline)
   outbuf(ed->linebuf, bufptr - ed->linebuf);
 }
 
-void update_line(struct editor *ed, int col) {
-  gotoxy(col, ed->line - ed->topline);
-  display_line(ed, ed->linepos, ed->margin + col, ed->cols - col, 0);
+void update_line(struct editor *ed) {
+  gotoxy(0, ed->line - ed->topline);
+  display_line(ed, ed->linepos, 0);
 }
 
 void draw_screen(struct editor *ed) {
@@ -779,14 +817,15 @@ void draw_screen(struct editor *ed) {
     if (pos < 0) {
       outstr("\033[K\r\n");
     } else {
-      display_line(ed, pos, ed->margin, ed->cols, 1);
+      display_line(ed, pos, 1);
       pos = next_line(ed, pos);
     }
   }
 }
 
 void position_cursor(struct editor *ed) {
-  gotoxy(ed->col - ed->margin, ed->line - ed->topline);
+  int col = column(ed, ed->linepos, ed->col);
+  gotoxy(col - ed->margin, ed->line - ed->topline);
 }
 
 //
@@ -794,17 +833,19 @@ void position_cursor(struct editor *ed) {
 //
 
 void adjust(struct editor *ed) {
+  int col;
   int ll = line_length(ed, ed->linepos);
   ed->col = ed->lastcol;
   if (ed->col > ll) ed->col = ll;
 
-  while (ed->col < ed->margin) {
+  col = column(ed, ed->linepos, ed->col);
+  while (col < ed->margin) {
     ed->margin -= 4;
     if (ed->margin < 0) ed->margin = 0;
     ed->refresh = 1;
   }
 
-  while (ed->col - ed->margin >= ed->cols) {
+  while (col - ed->margin >= ed->cols) {
     ed->margin += 4;
     ed->refresh = 1;
   }
@@ -980,16 +1021,30 @@ void insert_char(struct editor *ed, unsigned char ch) {
   ed->col++;
   ed->lastcol = ed->col;
   adjust(ed);
-  if (!ed->refresh) update_line(ed, ed->col - ed->margin - 1);
+  if (!ed->refresh) ed->lineupdate = 1;
 }
 
 void newline(struct editor *ed) {
+  int p;
+  unsigned char ch;
+
   erase_selection(ed);
   insert(ed, ed->linepos + ed->col, "\r\n", 2);
   ed->col = ed->lastcol = 0;
   ed->line++;
+  p = ed->linepos;
   ed->linepos = next_line(ed, ed->linepos);
+  for (;;) {
+    ch = get(ed, p++);
+    if (ch == ' ' || ch == '\t') {
+      insert(ed, ed->linepos + ed->col, &ch, 1);
+      ed->col++;
+    } else {
+      break;
+    }
+  }
   ed->lastcol = ed->col;
+  
   ed->refresh = 1;
 
   if (ed->line >= ed->topline + ed->lines) {
@@ -1134,40 +1189,6 @@ int quit(struct editor *ed) {
   return 0;
 }
 
-void detab(struct editor *ed) {
-  int pos, linepos, tabs, dirty;
-  unsigned char *p;
-  
-  tabs = 0;
-  p = ed->start;
-  while (p < ed->end) {
-    if (p == ed->gap) {
-      p = ed->rest;
-      continue;
-    }
-    if (*p == '\t') {
-      tabs = 1;
-      break;
-    }
-    if (++p == ed->gap) p = ed->rest;
-  }
-  if (!tabs) return;
-
-  dirty = ed->dirty;
-  linepos = 0;
-  pos = 0;
-  for (;;) {
-    int ch = get(ed, pos);
-    if (ch < 0) break;
-    if (ch == '\t') {
-      int spaces = 8 - linepos % 8;
-      replace(ed, pos, 1, "        ", spaces);
-    }
-    pos++;
-  }
-  ed->dirty = dirty;
-}
-
 void redraw_screen(struct editor *ed) {
   get_console_size(ed);
   draw_screen(ed);
@@ -1215,7 +1236,7 @@ void edit(struct editor *ed) {
       ed->refresh = 0;
       ed->lineupdate = 0;
     } else if (ed->lineupdate) {
-      update_line(ed, 0);
+      update_line(ed);
       ed->lineupdate = 0;
       draw_statusline(ed);
     } else {
@@ -1250,10 +1271,10 @@ void edit(struct editor *ed) {
         case KEY_ENTER: newline(ed); break;
         case KEY_BACKSPACE: backspace(ed); break;
         case KEY_DEL: del(ed); break;
+        case KEY_TAB: insert_char(ed, '\t'); break;
         case ctrl('a'): select_all(ed); break;
         case ctrl('c'): copy_selection(ed); break;
         case ctrl('f'): find(ed, 0); break;
-        case ctrl('g'): find(ed, 0); break;
         case ctrl('n'): find(ed, 1); break;
         case ctrl('x'): cut_selection(ed); break;
         case ctrl('v'): paste_selection(ed); break;
@@ -1290,7 +1311,6 @@ int main(int argc, char *argv[]) {
     perror(argv[1]);
     return 0;
   }
-  detab(ed);
 
   setvbuf(stdout, NULL, 0, 8192);
 

@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added support for tabs in text editor.
+
     * Updated text editor to build under Linux.
 
     * Implement find command for text editor.
