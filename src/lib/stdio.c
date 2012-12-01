@@ -450,6 +450,7 @@ int fflush(FILE *stream) {
   int count;
   int written;
 
+  if (!stream) stream = stdout;
   if ((stream->flag & (_IORD | _IOWR)) == _IOWR && 
       bigbuf(stream) && 
       (count = stream->ptr - stream->base) > 0) {

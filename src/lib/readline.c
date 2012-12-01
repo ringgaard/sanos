@@ -51,6 +51,7 @@
 #define KEY_END         0x10C
 #define KEY_ENTER       0x10D
 #define KEY_TAB         0x10E
+#define KEY_EOF         0x10F
 
 #define KEY_UNKNOWN     0xFFF
 
@@ -152,6 +153,7 @@ static int getkey() {
     case 0x09: return KEY_TAB;
     case 0x0D: return gettib()->proc->term->type == TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
     case 0x0A: return gettib()->proc->term->type != TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
+    case 0x04: return KEY_EOF;
 
     case 0x1B:
       ch = getchar();
@@ -355,13 +357,18 @@ int readline(char *buf, int size) {
       case KEY_ESC:
         if (_break_on_escape) {
           buf[len] = 0;
-          return -EINTR;
+          errno = EINTR;
+          return -1;
         } else {
           for (i = 0; i < idx; i++) putchar('\b');
           for (i = 0; i < len; i++) putchar(' ');
           for (i = 0; i < len; i++) putchar('\b');
           idx = len = 0;
         }
+        break;
+
+      case KEY_EOF:
+        if (len == 0) return -1;
         break;
 
       case KEY_ENTER:

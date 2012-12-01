@@ -253,7 +253,7 @@ static IMAGE_FILE_HEADER pe_filehdr = {
   0x00000000, // DWORD   PointerToSymbolTable;
   0x00000000, // DWORD   NumberOfSymbols;
   0x00E0,     // WORD    SizeOfOptionalHeader;
-  0x030F      // WORD    Characteristics;
+  0x030E      // WORD    Characteristics;
 };
 
 static IMAGE_OPTIONAL_HEADER pe_opthdr = {
@@ -595,15 +595,16 @@ static int pe_write(struct pe_info *pe) {
 
   pe_filehdr.TimeDateStamp = time(NULL);
   pe_filehdr.NumberOfSections = pe->sec_count;
+  pe_filehdr.Characteristics = do_debug ? 0x0102 : 0x030E;
   pe_opthdr.SizeOfHeaders = pe->sizeofheaders;
   pe_opthdr.ImageBase = pe->imagebase;
   pe_opthdr.FileAlignment = pe->filealign;
   if (pe->type == PE_DLL) {
-    pe_filehdr.Characteristics = 0x230E;
+    pe_filehdr.Characteristics = do_debug ? 0x2102 : 0x230E;
   } else if (pe->type != PE_GUI) {
     pe_opthdr.Subsystem = 3;
   }
-  if (pe->reloc) pe_filehdr.Characteristics &= ~1;
+  if (!pe->reloc) pe_filehdr.Characteristics |= 1;
 
   fseek(op, 0, SEEK_SET);
   fwrite(stub,  1, stub_size, op);
@@ -1145,19 +1146,26 @@ static void pe_eliminate_unused_sections(struct pe_info *pe) {
   for (sym_index = 1; sym_index < sym_end; sym_index++) {
     sym = (Elf32_Sym *) symtab_section->data + sym_index;
     if (sym->st_other & 2) {
-        sym->st_value = 0;
-        sym->st_shndx = SHN_ABS;
-        sym->st_other &= ~2;
-        if (verbose == 3) {
-          printf("unused import %s\n", symtab_section->link->data + sym->st_name);
-        }
+      sym->st_value = 0;
+      sym->st_shndx = SHN_ABS;
+      sym->st_other &= ~2;
+      if (verbose == 3) {
+        printf("unused import %s\n", symtab_section->link->data + sym->st_name);
+      }
     }
   }
 
   if (verbose == 3) {
+    int unused_bytes = 0;
     for (i = 1; i < pe->s1->nb_sections; ++i) {
       s = pe->s1->sections[i];
-      if (s->unused) printf("%s unused\n", s->name);
+      if (s->unused) {
+        printf("%s unused\n", s->name);
+        unused_bytes += s->data_offset;
+      }
+    }
+    if (unused_bytes > 0) {
+      printf("%d bytes of unused code discarded\n", unused_bytes);
     }
   }
 }
@@ -1391,7 +1399,7 @@ static void pe_add_runtime_ex(TCCState *s1, struct pe_info *pe) {
 
   start_symbol = s1->start_symbol;
   if (!start_symbol) {
-    start_symbol = pe_type == PE_DLL ? "DllMain" : "mainCRTStartup";
+    start_symbol = pe_type == PE_DLL ? "_DllMain@12" : "mainCRTStartup";
   }
   start_sym_index = add_elf_sym(symtab_section, 0, 0,
                                 ELF32_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0,

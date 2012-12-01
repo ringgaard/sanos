@@ -47,6 +47,9 @@ typedef struct {
   unsigned long eip;
 } jmp_buf[1];
 
+#define _setjmp setjmp
+#define _longjmp longjmp
+
 #ifdef  __cplusplus
 extern "C" {
 #endif

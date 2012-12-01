@@ -239,7 +239,7 @@ BufferedFile *tcc_open(TCCState *s1, const char *filename) {
     fd = open(filename, O_RDONLY | O_BINARY);
   }
   if ((verbose == 2 && fd >= 0) || verbose == 3) {
-    printf("%s %*s%s\n", fd < 0 ? "nf":"->",
+    printf("%s %*s%s\n", fd < 0 ? "nf" : "->",
            (s1->include_stack_ptr - s1->include_stack), "", filename);
   }
   if (fd < 0) return NULL;

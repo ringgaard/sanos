@@ -157,19 +157,12 @@ static void termcrt(int status) {
   free_args(crtbase->argc, crtbase->argv);
 }
 
-#ifdef __GNUC__
-
-// Dummy __main and __alloca and routine for GCC
-// TODO: implement proper constructor handling
-
-void __main() {
+// Default entry point for DLLs
+int __stdcall DllMain(hmodule_t hmod, int reason, void *reserved) {
+  return TRUE;
 }
 
-void _alloca() {
-}
-
-#endif
-
+// Default entry point for EXEs
 int mainCRTStartup() {
   int rc;
   struct tib *tib = gettib();
@@ -177,8 +170,9 @@ int mainCRTStartup() {
   struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
   crtbase->argc = parse_args(proc->cmdline, NULL);
-  crtbase->argv = (char **) malloc(crtbase->argc * sizeof(char *));
+  crtbase->argv = (char **) malloc((crtbase->argc + 1) * sizeof(char *));
   parse_args(proc->cmdline, crtbase->argv);
+  crtbase->argv[crtbase->argc] = NULL;
   crtbase->opt.err = 1;
   crtbase->opt.ind = 1;
   crtbase->opt.sp = 1;
