@@ -813,6 +813,18 @@ int ioctl(struct file *filp, int cmd, void *data, size_t size) {
     } else {
       filp->flags &= ~O_NONBLOCK;
     }
+  } else if (cmd == IOCTL_SET_TTY) {
+    if (size != sizeof(int)) return -EINVAL;
+    if (*(int *) data) {
+      filp->flags |= F_TTY;
+    } else {
+      filp->flags &= ~F_TTY;
+    }
+    return 0;
+  } else if (cmd == IOCTL_GET_TTY) {
+    if (size != sizeof(int)) return -EINVAL;
+    *(int *) data = filp->flags & F_TTY ? 1 : 0;
+    return 0;
   }
 
   if (!filp->fs->ops->ioctl) return -ENOSYS;

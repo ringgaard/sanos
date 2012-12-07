@@ -271,6 +271,7 @@ void parse(struct termstate *ts) {
 
 void __stdcall telnet_task(void *arg) {
   struct process *proc = gettib()->proc;
+  struct tib *apptib;
   int s = (int) arg;
   int pin[2];
   int pout[2];
@@ -312,20 +313,21 @@ void __stdcall telnet_task(void *arg) {
   if (mux < 0) return;
   dispatch(mux, s, IOEVT_READ | IOEVT_ERROR | IOEVT_CLOSE, USRATT);
   dispatch(mux, pout[0], IOEVT_READ | IOEVT_ERROR | IOEVT_CLOSE, APPATT);
-
-  // Redirect standard input, output, and error
-  proc->iob[0] = pin[0];
-  proc->iob[1] = proc->iob[2] = pout[1];
-  proc->term = &ts.term;
   
   // Spawn initial telnet application
-  app = spawn(P_NOWAIT, NULL, pgm, NULL, NULL);
+  app = spawn(P_NOWAIT | P_SUSPEND | P_DETACH, NULL, pgm, NULL, &apptib);
   if (app < 0) return;
-  
-  // The spawned application has duped the handles, now close our copy
-  close(pin[0]);
-  close(pout[1]);
-  proc->iob[0] = proc->iob[1] = proc->iob[2] = NOHANDLE;
+
+  // Setup standard input, output, and error
+  apptib->proc->iob[0] = pin[0];
+  apptib->proc->iob[1] = pout[1];
+  apptib->proc->iob[2] = dup(pout[1]);
+  apptib->proc->term = &ts.term;
+  ts.term.ttyin = pin[0];
+  ts.term.ttyout = pout[1];
+  ioctl(pin[0], IOCTL_SET_TTY, &on, sizeof(on));
+  ioctl(pout[1], IOCTL_SET_TTY, &on, sizeof(on));
+  resume(app);
 
   // Initialize event handle array
   events[0] = app;

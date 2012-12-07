@@ -61,7 +61,7 @@ struct section *config;
 struct peb *global;
 struct moddb usermods;
 
-struct term console = {TERM_CONSOLE, 80, 25};
+struct term console = {TERM_CONSOLE, 80, 25, 0, 1};
 
 //
 // Forward declarations
@@ -167,9 +167,16 @@ off64_t filelength64(handle_t f) {
 }
 
 int isatty(handle_t f)  {
-  // For now we regard all file handles as non-interactive.
-  errno = ENOTTY;
-  return 0;
+  int rc, tty;
+  
+  rc = ioctl(f, IOCTL_GET_TTY, &tty, sizeof(tty));
+  if (rc < 0) return rc;
+  if (tty) {
+    return 1;
+  } else {
+    errno = ENOTTY;
+    return 0;
+  }
 }
 
 int canonicalize(const char *filename, char *buffer, int size) {
@@ -888,7 +895,6 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2) {
 
   // Load configuration file
   config = read_properties("/etc/os.ini");
-  //if (!config) syslog(LOG_INFO, "Unable to read /etc/os.ini");
   getpeb()->debug = get_numeric_property(config, "os", "debug", getpeb()->debug);
 
   // Initialize initial process

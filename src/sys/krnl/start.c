@@ -456,6 +456,7 @@ void main(void *arg) {
   console = get_property(krnlcfg, "kernel", "console", serial_console ? "/dev/com1" : "/dev/console");
   rc = open(console, O_RDWR, S_IREAD | S_IWRITE, &cons);
   if (rc < 0) panic("no console");
+  cons->flags |= F_TTY;
   if (halloc(&cons->iob.object) != 0) panic("unexpected stdin handle");
   if (halloc(&cons->iob.object) != 1) panic("unexpected stdout handle");
   if (halloc(&cons->iob.object) != 2) panic("unexpected stderr handle");

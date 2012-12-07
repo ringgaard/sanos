@@ -770,6 +770,8 @@ struct serial_status {
 
 #define IOCTL_KPRINT_ENABLED     1031
 #define IOCTL_KLOG_WAIT          1032
+#define IOCTL_SET_TTY            1033
+#define IOCTL_GET_TTY            1034
 
 //
 // I/O control codes
@@ -1175,6 +1177,8 @@ struct term {
   int type;
   int cols;
   int lines;
+  int ttyin;
+  int ttyout;
 };
 
 struct zombie {

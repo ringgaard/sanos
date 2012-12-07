@@ -40,7 +40,7 @@ struct keytable frkeys = {
   // normal  shift   ctrl    alt     num     caps    scaps   snum    altgr     //    n s g                       
                                                                                
     {0,      0,      0,      0,      0,      0,      0,      0,      0},       // 00
-    {0x1B,   0x1B,   0x1B,   0x0100, 0x1B,   0x1B,   0x1B,   0x1B,   0},       // 01 esc
+    {0x1B1B, 0x1B1B, 0x1B1B, 0x0100, 0x1B1B, 0x1B1B, 0x1B1B, 0x1B1B, 0},       // 01 esc
     {0x26,   0x31,   0,      0x7800, 0x31,   0x31,   0x26,   0x31,   0},       // 02 & 1
     {0x82,   0x32,   0,      0x7900, 0x32,   0x32,   0x82,   0x32,   0x7E},    // 03 é 2 ~
     {0x22,   0x33,   0,      0x7A00, 0x33,   0x33,   0x22,   0x33,   0x23},    // 04 " 3 #

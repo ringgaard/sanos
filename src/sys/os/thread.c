@@ -424,7 +424,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
   char *name;
 
   if (!pgm) {
-    char *p = (char *) cmdline;
+    const char *p = cmdline;
     char *q = pgmbuf;
     int dotseen = 0;
 
@@ -443,7 +443,7 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
     if (!dotseen && strlen(pgmbuf) + 5 < MAXPATH) strcat(pgmbuf, ".exe");
     pgm = pgmbuf;
   } else {
-    char *p = (char *) pgm;
+    const char *p = pgm;
     int dotseen = 0;
     while (*p) {
       if (*p == '.') dotseen = 1;

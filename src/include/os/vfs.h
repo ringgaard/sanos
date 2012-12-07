@@ -39,6 +39,7 @@
 #define F_MODIFIED              0x100000  // File has been modified since it was opened
 #define F_DIR                   0x200000  // File is a directory
 #define F_CLOSED                0x400000  // File is closed
+#define F_TTY                   0x800000  // File is a tty
 
 #define FSOP_MKFS       0x00000001
 #define FSOP_MOUNT      0x00000002
