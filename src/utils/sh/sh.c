@@ -1503,7 +1503,6 @@ struct command cmdtab[] = {
   {"kbd",      cmd_kbd,      "Keyboard test"},
   {"kill",     cmd_kill,     "Send signal"},
   {"klog",     cmd_klog,     "Enable/disable kernel log messages"},
-  {"less",     cmd_more,     "Display file paginated"},
   {"load",     cmd_load,     "Load module"},
   {"loglevel", cmd_loglevel, "Set syslog tracing mask and level"},
   {"lookup",   cmd_nslookup, "Lookup hostname or IP address using DNS"},

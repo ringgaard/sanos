@@ -1178,6 +1178,31 @@ void find(struct editor *ed, int next) {
   ed->refresh = 1;
 }
 
+void goto_line(struct editor *ed) {
+  int lineno, l, pos;
+
+  ed->anchor = -1;
+  if (prompt(ed, "Goto line: ")) {
+    lineno = atoi(ed->linebuf);
+    if (lineno > 0) {
+      pos = 0;
+      for (l = 0; l < lineno - 1; l++) {
+        pos = next_line(ed, pos);
+        if (pos < 0) break;
+      }
+    } else {
+      pos = -1;
+    }
+
+    if (pos >= 0) {
+      moveto(ed, pos, 1);
+    } else {
+      outch('\007');
+    }
+  }
+  ed->refresh = 1;
+}
+
 int quit(struct editor *ed) {
   int ch;
 
@@ -1208,7 +1233,7 @@ void help(struct editor *ed) {
   outstr("<end>       Move to end of line          Ctrl+V  Paste selection from clipboard\r\n");
   outstr("Ctrl+<home> Move to start of file        Ctrl+F  Find text\r\n");
   outstr("Ctrl+<end>  Move to end of file          Ctrl+N  Find next\r\n");
-  outstr("<backspace> Delete previous character\r\n");
+  outstr("<backspace> Delete previous character    Ctrl+G  Goto line\r\n");
   outstr("<delete>    Delete current character\r\n");
   outstr("\r\n(*) Extends selection if combined with Shift\r\n");
   outstr("\r\nPress any key to continue...");
@@ -1247,8 +1272,10 @@ void edit(struct editor *ed) {
     fflush(stdout);
     key = getkey();
 
-    if (key >= ' ' && key <= 0xFF) {
+    if (key >= ' ' && key <= 0x7F) {
+#ifndef LESS
       insert_char(ed, (unsigned char) key);
+#endif
     } else {
       switch (key) {
         case KEY_F1: help(ed); break;
@@ -1268,19 +1295,24 @@ void edit(struct editor *ed) {
         case KEY_PGDN: pagedown(ed, 0); break;
         case KEY_SHIFT_PGUP: pageup(ed, 1); break;
         case KEY_SHIFT_PGDN: pagedown(ed, 1); break;
+        case ctrl('a'): select_all(ed); break;
+        case ctrl('c'): copy_selection(ed); break;
+        case ctrl('f'): find(ed, 0); break;
+        case ctrl('g'): goto_line(ed); break;
+        case ctrl('n'): find(ed, 1); break;
+        case ctrl('q'): if (quit(ed)) done = 1; break;
+        case ctrl('l'): redraw_screen(ed); break;
+#ifdef LESS
+        case KEY_ESC: done = 1; break;
+#else
         case KEY_ENTER: newline(ed); break;
         case KEY_BACKSPACE: backspace(ed); break;
         case KEY_DEL: del(ed); break;
         case KEY_TAB: insert_char(ed, '\t'); break;
-        case ctrl('a'): select_all(ed); break;
-        case ctrl('c'): copy_selection(ed); break;
-        case ctrl('f'): find(ed, 0); break;
-        case ctrl('n'): find(ed, 1); break;
         case ctrl('x'): cut_selection(ed); break;
         case ctrl('v'): paste_selection(ed); break;
         case ctrl('s'): save(ed); break;
-        case ctrl('q'): if (quit(ed)) done = 1; break;
-        case ctrl('l'): redraw_screen(ed); break;
+#endif
       }
     }
   }
@@ -1299,6 +1331,9 @@ int main(int argc, char *argv[]) {
   struct termios tio;
   struct termios orig_tio;
 #endif
+#ifdef SANOS
+  struct term *term;
+#endif
 
   if (argc != 2) {
     printf("usage: edit <filename>\n");
@@ -1311,6 +1346,12 @@ int main(int argc, char *argv[]) {
     perror(argv[1]);
     return 0;
   }
+
+#ifdef SANOS
+  term = gettib()->proc->term;
+  if (fdin != term->ttyin) dup2(term->ttyin, fdin);
+  if (fdout != term->ttyout) dup2(term->ttyout, fdout);
+#endif
 
   setvbuf(stdout, NULL, 0, 8192);
 
