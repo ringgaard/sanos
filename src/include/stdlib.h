@@ -140,7 +140,7 @@ char *initstate(unsigned long seed, char *arg_state, long n);
 char *setstate(char *arg_state);
 long random();
 
-char *realpath(const char *path, char *buffer);
+char *realpath(const char *path, char *resolved);
 
 osapi char *getenv(const char *name);
 osapi int setenv(const char *name, const char *value, int rewrite);

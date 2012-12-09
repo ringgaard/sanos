@@ -75,13 +75,17 @@ FILE *popen(const char *command, const char *mode) {
   } else {
     if (proc->iob[1] != NOHANDLE) close(proc->iob[1]);
     proc->iob[1] = hndl[1];
+    if (mode[1] == '2') dup2(hndl[1], proc->iob[2]);
     f = fdopen(hndl[0], mode);
   }
 
-  if (f == NULL) return NULL;
+  if (f == NULL) {
+    close(phndl);
+    return NULL;
+  }
+
   f->phndl = phndl;
   resume(phndl);
-
   return f;
 }
 

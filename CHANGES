@@ -4,17 +4,22 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
-    * Added support for tabs in text editor.
-
-    * Updated text editor to build under Linux.
-
-    * Implement find command for text editor.
-
+    * Text editor improvements:
+        - Undo/redo
+        - Multi-file support
+        - Open/New/Close editor
+        - Next/previous word navigation
+        - Support for files with tabs
+        - Text editor can now be build as Linux binary
+        - Text search and goto line
+        - Clipboard with cut/copy/paste
+        - Pipe command into editor buffer
+        - Read from stdin
+        - Read-only mode
+        
     * Add ln command to shell.
 
     * Fixed bug in dfs rmdir so directories with multiple links can be removed.
-
-    * Added clipboard commands to text editor.
 
     * Added getopt_long(), usleep(), and nanosleep().
 

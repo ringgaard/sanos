@@ -208,12 +208,17 @@ int system(const char *command) {
   return spawn(P_WAIT, NULL, command, NULL, NULL);
 }
 
-char *realpath(const char *path, char *buffer) {
+char *realpath(const char *path, char *resolved) {
   int rc;
+  char *buffer = NULL;
 
-  rc = canonicalize(path, buffer, MAXPATH);
-  if (rc < 0) return NULL;
-  return buffer;
+  if (!resolved) resolved = buffer = malloc(MAXPATH);
+  rc = canonicalize(path, resolved, MAXPATH);
+  if (rc < 0) {
+    resolved = NULL;
+    if (buffer) free(buffer);
+  }
+  return resolved;
 }
 
 int getrusage(int who, struct rusage *usage) {

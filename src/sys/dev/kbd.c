@@ -340,6 +340,8 @@ static void process_scancode(unsigned int scancode) {
   if (scancode < MAX_SCANCODES) {
     if ((control_keys & (CK_LSHIFT | CK_RSHIFT)) && (led_status & LED_CAPS_LOCK)) {
       state = KBSTATE_SHIFTCAPS;
+    } else if ((control_keys & CK_LSHIFT) && (control_keys & CK_LCTRL)) {
+      state = KBSTATE_ALTGR;
     } else if (control_keys & (CK_LSHIFT | CK_RSHIFT)) {
       state = KBSTATE_SHIFT;
     } else if (control_keys & (CK_LCTRL | CK_RCTRL)) {
