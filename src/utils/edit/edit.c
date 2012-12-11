@@ -52,7 +52,6 @@
 #endif
 
 #define MINEXTEND      32768
-#define MAXUNDO        16
 #define LINEBUF_EXTRA  32
 #define TABSIZE        8
 
@@ -179,7 +178,6 @@ struct env {
   int cols;                 // Console columns
   int lines;                // Console lines
  
-  int minihelp;             // Flag to control mini help in status line
   int untitled;             // Counter for untitled files
 };
 
@@ -308,7 +306,10 @@ int load_file(struct editor *ed, char *filename) {
 
 err:
   close(f);
-  if (ed->start) free(ed->start);
+  if (ed->start) {
+    free(ed->start);
+    ed->start = NULL;
+  }
   return -1;
 }
 
@@ -468,19 +469,18 @@ void replace(struct editor *ed, int pos, int len, unsigned char *buf, int bufsiz
     }
   }
 
-  // Handle deletions at the edges of the gap
   if (bufsize == 0 && p <= ed->gap && p + len >= ed->gap) {
+    // Handle deletions at the edges of the gap
     ed->rest += len - (ed->gap - p);
     ed->gap = p;
-    return;
+  } else {
+    // Move the gap
+    move_gap(ed, pos + len, bufsize - len);
+
+    // Replace contents
+    memcpy(ed->start + pos, buf, bufsize);
+    ed->gap = ed->start + pos + bufsize;
   }
-
-  // Move the gap
-  move_gap(ed, pos + len, bufsize - len);
-
-  // Replace contents
-  memcpy(ed->start + pos, buf, bufsize);
-  ed->gap = ed->start + pos + bufsize;
 
   // Mark buffer as dirty
   ed->dirty = 1;
@@ -928,20 +928,15 @@ void display_message(struct editor *ed, char *fmt, ...) {
 
 void draw_full_statusline(struct editor *ed) {
   struct env *env = ed->env;
-  int namewidth = env->cols - 40;
+  int namewidth = env->cols - 20;
   gotoxy(0, env->lines);
-  if (env->minihelp) {
-    sprintf(env->linebuf, "\033[1m%*.*s Ctrl-S=Save Ctrl-Q=Quit F1=Help %s\033[K\033[0m", -namewidth, namewidth, ed->filename, ed->newfile ? "(NEW)" : "");
-    env->minihelp = 0;
-  } else {
-    sprintf(env->linebuf, "\033[1m%*.*s%c Ln %-6d Col %-4d Pos %-10d\033[K\033[0m", -namewidth, namewidth, ed->filename, ed->dirty ? '*' : ' ', ed->line + 1, column(ed, ed->linepos, ed->col) + 1, ed->linepos + ed->col + 1);
-  }
+  sprintf(env->linebuf, "\033[1m%*.*s%c Ln %-6dCol %-4d\033[K\033[0m", -namewidth, namewidth, ed->filename, ed->dirty ? '*' : ' ', ed->line + 1, column(ed, ed->linepos, ed->col) + 1);
   outstr(env->linebuf);
 }
 
 void draw_statusline(struct editor *ed) {
-  gotoxy(ed->env->cols - 40, ed->env->lines);
-  sprintf(ed->env->linebuf, "\033[1m%c Ln %-6d Col %-4d Pos %-10d\033[K\033[0m", ed->dirty ? '*' : ' ', ed->line + 1, column(ed, ed->linepos, ed->col) + 1, ed->linepos + ed->col + 1);
+  gotoxy(ed->env->cols - 20, ed->env->lines);
+  sprintf(ed->env->linebuf, "\033[1m%c Ln %-6dCol %-4d\033[K\033[0m", ed->dirty ? '*' : ' ', ed->line + 1, column(ed, ed->linepos, ed->col) + 1);
   outstr(ed->env->linebuf);
 }
 
@@ -1475,7 +1470,6 @@ void open_editor(struct editor *ed) {
 void new_editor(struct editor *ed) {
   ed = create_editor(ed->env);
   new_file(ed, "");
-  ed->env->minihelp = 1;
   ed->refresh = 1;
 }
 
@@ -1502,7 +1496,7 @@ void save_editor(struct editor *ed) {
       ed->refresh = 1;
       return;
     }
-    
+
     if (access(ed->env->linebuf, F_OK) == 0) {
       display_message(ed, "Overwrite %s (y/n)? ", ed->env->linebuf);
       if (!ask()) {
@@ -1527,7 +1521,7 @@ void close_editor(struct editor *ed) {
   struct env *env = ed->env;
   
   if (ed->dirty) {
-    display_message(ed, "%s: Close without saving changes (y/n)? ", ed->filename);
+    display_message(ed, "Close %s without saving changes (y/n)? ", ed->filename);
     if (!ask()) {
       ed->refresh = 1;
       return;
@@ -1713,7 +1707,7 @@ int quit(struct env *env) {
 
   do {
     if (ed->dirty) {
-      display_message(ed, "%s: Quit without saving changes (y/n)? ", ed->filename);
+      display_message(ed, "Close %s without saving changes (y/n)? ", ed->filename);
       if (!ask()) return 0;
     }
     ed = ed->next;
@@ -1917,7 +1911,6 @@ int main(int argc, char *argv[]) {
   sigaddset(&blocked_sigmask, SIGABRT);
   sigprocmask(SIG_BLOCK, &blocked_sigmask, &orig_sigmask);
 
-  env.minihelp = 1;
   for (;;) {
     if (!env.current) break;
     edit(env.current);
@@ -1940,4 +1933,3 @@ int main(int argc, char *argv[]) {
   sigprocmask(SIG_SETMASK, &orig_sigmask, NULL);
   return 0;
 }
-
