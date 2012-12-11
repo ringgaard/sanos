@@ -126,6 +126,8 @@ struct section;
 #define RTLD_GLOBAL   0x0100
 #define RTLD_LOCAL    0x0000
 #define RTLD_NOSHARE  0x1000
+#define RTLD_EXE      0x2000
+#define RTLD_SCRIPT   0x4000
 
 #define RTLD_DEFAULT ((void *) 0)
 
@@ -292,6 +294,19 @@ struct section;
 #define SEEK_SET                0       // Seek relative to begining of file
 #define SEEK_CUR                1       // Seek relative to current file position
 #define SEEK_END                2       // Seek relative to end of file
+
+#endif
+
+//
+// Values for the second argument to access
+//
+
+#ifndef R_OK
+
+#define R_OK    4               // Test for read permission
+#define W_OK    2               // Test for write permission
+#define X_OK    1               // Test for execute permission
+#define F_OK    0               // Test for existence
 
 #endif
 

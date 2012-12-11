@@ -368,6 +368,26 @@ void _lfree(void *p) {
 // Module routines
 //
 
+static int read_magic(char *filename, char *buffer, int size) {
+  handle_t f;
+  unsigned int bytes;
+
+  // Open file
+  f = open(filename, O_RDONLY | O_BINARY);
+  if (f < 0) return -1;
+
+  // Read headers
+  if ((bytes = read(f, buffer, size)) < 0) {
+    close(f);
+    return -1;
+  }
+
+  // Close file
+  close(f);
+
+  return bytes;
+}
+
 static void *load_image(char *filename) {
   handle_t f;
   char *buffer;
@@ -502,6 +522,8 @@ hmodule_t dlopen(const char *name, int mode) {
   int flags = 0;
 
   if (mode & RTLD_NOSHARE) flags |= MODLOAD_NOSHARE;
+  if (mode & RTLD_EXE) flags |= MODLOAD_EXE;
+  if (mode & RTLD_SCRIPT) flags |= MODLOAD_SCRIPT;
 
   enter(&mod_lock);
   errno = 0;
@@ -914,6 +936,7 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2) {
 
   // Initialize user module database
   getpeb()->usermods = &usermods;
+  usermods.read_magic = read_magic;
   usermods.load_image = load_image;
   usermods.unload_image = unload_image;
   usermods.protect_region = protect_region;

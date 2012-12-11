@@ -38,6 +38,12 @@
 
 #define MODLOAD_NOINIT          1
 #define MODLOAD_NOSHARE         2
+#define MODLOAD_EXE             4
+#define MODLOAD_SCRIPT          8
+
+#define MODTYPE_DLL             1
+#define MODTYPE_EXE             2
+#define MODTYPE_SCRIPT          4
 
 #define MODULE_LOADED           0x0001
 #define MODULE_IMPORTS_REFED    0x0002
@@ -55,6 +61,7 @@ struct modalias {
 
 struct moddb {
   int flags;
+  int (*read_magic)(char *name, char *buffer, int size);
   void *(*load_image)(char *name);
   int (*unload_image)(hmodule_t hmod, size_t size);
   int (*protect_region)(void *mem, size_t size, int protect);

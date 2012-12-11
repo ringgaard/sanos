@@ -229,6 +229,7 @@ void init_kernel_modules() {
 
   init_mutex(&ldr_lock, 0);
 
+  kmods.read_magic = NULL;
   kmods.load_image = load_image;
   kmods.unload_image = unload_image;
   kmods.protect_region = NULL;

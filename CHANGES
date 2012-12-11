@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added support for script hashbangs in module loader
+
     * Text editor improvements:
         - Undo/redo
         - Multi-file support

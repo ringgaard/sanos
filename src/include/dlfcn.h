@@ -47,6 +47,8 @@
 #define RTLD_GLOBAL   0x0100
 #define RTLD_LOCAL    0x0000
 #define RTLD_NOSHARE  0x1000
+#define RTLD_EXE      0x2000
+#define RTLD_SCRIPT   0x4000
 
 #define RTLD_DEFAULT ((void *) 0)
 

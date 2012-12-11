@@ -426,7 +426,6 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
   if (!pgm) {
     const char *p = cmdline;
     char *q = pgmbuf;
-    int dotseen = 0;
 
     if (!cmdline) {
       errno = EINVAL;
@@ -434,31 +433,14 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
     }
 
     while (*p != 0 && *p != ' ') {
-      if (*p == '.') dotseen = 1;
-      if (*p == PS1 || *p == PS2) dotseen = 0;
       if (q - pgmbuf == MAXPATH - 1) break;
       *q++ = *p++;
     }
     *q++ = 0;
-    if (!dotseen && strlen(pgmbuf) + 5 < MAXPATH) strcat(pgmbuf, ".exe");
     pgm = pgmbuf;
-  } else {
-    const char *p = pgm;
-    int dotseen = 0;
-    while (*p) {
-      if (*p == '.') dotseen = 1;
-      if (*p == PS1 || *p == PS2) dotseen = 0;
-      p++;
-    }
-
-    if (!dotseen && strlen(pgm) + 5 < MAXPATH) {
-      strcpy(pgmbuf, pgm);
-      strcat(pgmbuf, ".exe");
-      pgm = pgmbuf;
-    }
   }
 
-  hmod = dlopen(pgm, 0 /*RTLD_NOSHARE*/);
+  hmod = dlopen(pgm, RTLD_EXE | RTLD_SCRIPT);
   if (!hmod) return -1;
 
   flags = CREATE_SUSPENDED | CREATE_NEW_PROCESS;

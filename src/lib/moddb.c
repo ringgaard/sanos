@@ -87,6 +87,26 @@ static char *get_basename(char *filename, char *buffer, int size) {
   return basename;
 }
 
+static char *get_extension(char *filename) {
+  char *p = filename;
+  char *ext = NULL;
+  while (*p) {
+    if (*p == PS1 || *p == PS2) {
+      ext = NULL;
+    } else if (*p == '.') {
+      ext = p;
+    }
+    p++;
+  }
+
+  return ext;
+}
+
+static int is_pe_filename(char *filename) {
+  char *ext = get_extension(filename);
+  return ext && (stricmp(ext, ".dll") == 0 || stricmp(ext, ".exe") == 0);
+}
+
 static void insert_before(struct module *m, struct module *n) {
   n->next = m;
   n->prev = m->prev;
@@ -161,7 +181,7 @@ static char *get_module_section(struct module *mod, const char *name, int *size)
   return NULL;
 }
 
-static char *find_in_modpaths(struct moddb *db, char *name, char *path) {
+static char *find_in_modpaths(struct moddb *db, char *name, char *path, int type) {
   int i;
   char *p;
   char *s;
@@ -197,8 +217,8 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path) {
       s++;
     }
 
-    if (!dot && p + 4 < pathend) {
-      memcpy(p, ".dll", 4);
+    if (!dot && (type & (MODTYPE_EXE | MODTYPE_DLL)) && p + 4 < pathend) {
+      memcpy(p, type & MODTYPE_EXE ? ".exe" : ".dll", 4);
       p += 4;
     }
 
@@ -216,13 +236,13 @@ static char *find_in_modpaths(struct moddb *db, char *name, char *path) {
     }
 
     // Return path if file exists
-    if (stat(path, NULL) >= 0) return basename;
+    if (access(path, X_OK) >= 0) return basename;
   }
 
   return NULL;
 }
 
-static char *get_module_name(struct moddb *db, char *name, char *path) {
+static char *get_module_name(struct moddb *db, char *name, char *path, int type) {
   char *dot;
   char *basename;
   char *s;
@@ -249,21 +269,24 @@ static char *get_module_name(struct moddb *db, char *name, char *path) {
     }
 
     // Add .dll to name if no extension
-    if (!dot) {
-      memcpy(s, ".dll", 4);
+    if (!dot && (type & (MODTYPE_EXE | MODTYPE_DLL))) {
+      memcpy(s, type & MODTYPE_EXE ? ".exe" : ".dll", 4);
       s += 4;
     }
 
     *s = 0;
+    
+    // Check that file exists and is executable.
+    if (access(path, X_OK) < 0) return NULL;
   } else {
     // Search for file in library paths
-    basename = find_in_modpaths(db, name, path);
+    basename = find_in_modpaths(db, name, path, type);
   }
 
   return basename;
 }
 
-static struct module *get_module(struct moddb *db, char *name) {
+static struct module *get_module(struct moddb *db, char *name, int type) {
   char buffer[MAXPATH];
   char *basename;
   char *dot;
@@ -297,8 +320,8 @@ static struct module *get_module(struct moddb *db, char *name) {
     s++;
   }
 
-  if (!dot && p - buffer < MAXPATH - 5) {
-    memcpy(p, ".dll", 4);
+  if (!dot && (type & (MODTYPE_EXE | MODTYPE_DLL)) & p - buffer < MAXPATH - 5) {
+    memcpy(p, type &  MODTYPE_EXE ? ".exe" : ".dll", 4);
     p += 4;
   }
 
@@ -307,7 +330,7 @@ static struct module *get_module(struct moddb *db, char *name) {
   // Check for alias
   ma = db->aliases;
   while (ma) {
-    if (strcmp(buffer, ma->name) == 0) return get_module(db, ma->alias);
+    if (strcmp(buffer, ma->name) == 0) return get_module(db, ma->alias, type);
     ma = ma->next;
   }
 
@@ -376,12 +399,12 @@ static struct module *resolve_imports(struct module *mod) {
   // Load each dependent module
   while (imp->characteristics != 0) {
     char *name = RVA(mod->hmod, imp->name);
-    struct module *newmod = get_module(mod->db, name);
+    struct module *newmod = get_module(mod->db, name, MODTYPE_DLL);
 
     if (newmod == NULL) {
       char *imgbase;
 
-      name = get_module_name(mod->db, name, path);
+      name = get_module_name(mod->db, name, path, MODTYPE_DLL);
       if (!name) {
         logmsg(mod->db, "module %s not found", RVA(mod->hmod, imp->name));
         return NULL;
@@ -436,7 +459,7 @@ static int bind_imports(struct module *mod) {
     struct module *expmod;
 
     name = RVA(mod->hmod, imp->name);
-    expmod = get_module(mod->db, name);
+    expmod = get_module(mod->db, name, MODTYPE_DLL);
     
     if (!expmod) {
       logmsg(mod->db, "module %s no longer loaded", name);
@@ -560,7 +583,7 @@ static void update_refcount(struct module *mod) {
   // Get or load each dependent module
   while (imp->characteristics != 0) {
     char *name = RVA(mod->hmod, imp->name);
-    struct module *depmod = get_module(mod->db, name);
+    struct module *depmod = get_module(mod->db, name, MODTYPE_DLL);
 
     if (depmod != NULL) depmod->refcnt++;
     
@@ -590,7 +613,7 @@ static int remove_module(struct module *mod) {
     if (imp) {
       while (imp->characteristics != 0) {
         char *name = RVA(mod->hmod, imp->name);
-        struct module *depmod = get_module(mod->db, name);
+        struct module *depmod = get_module(mod->db, name, MODTYPE_DLL);
 
         if (depmod && --depmod->refcnt == 0) remove_module(depmod); 
         imp++;
@@ -641,7 +664,8 @@ hmodule_t get_module_handle(struct moddb *db, char *name) {
   struct module *mod;
   
   if (!name || strlen(name) > MAXPATH - 1) return NULL;
-  mod = get_module(db, name);
+  mod = get_module(db, name, MODTYPE_DLL);
+  if (mod == NULL) mod = get_module(db, name, MODTYPE_EXE);
   if (mod == NULL) return NULL;
   return mod->hmod;
 }
@@ -668,19 +692,47 @@ hmodule_t load_module(struct moddb *db, char *name, int flags) {
   struct module *m;
   int rc;
 
+  // Check module name
+  if (!name || strlen(name) > MAXPATH - 1) return NULL;
+  
+  // Check if module is already loaded
   if ((flags & MODLOAD_NOSHARE) == 0) {
-    // Return existing handle if module already loaded
-    mod = get_module(db, name);
+    mod = get_module(db, name, MODTYPE_DLL);
+    if (mod == NULL) mod = get_module(db, name, MODTYPE_EXE);
     if (mod != NULL) {
       mod->refcnt++;
       return mod->hmod;
     }
   }
 
-  // Get canonical name
-  if (!name || strlen(name) > MAXPATH - 1) return NULL;
-  basename = get_module_name(db, name, buffer);
-  if (!basename) return NULL;
+  // Try to read hashbang from script
+  basename = NULL;
+  if ((flags & MODLOAD_SCRIPT) && db->read_magic && !is_pe_filename(name)) {
+    basename = get_module_name(db, name, buffer, MODTYPE_SCRIPT);
+    if (basename != NULL) {
+      char interp[MAXPATH];
+      int len = db->read_magic(buffer, interp, MAXPATH - 1);
+      if (len > 2 && interp[0] == '#' && interp[1] == '!') {
+        // Get interpreter name.
+        int end = 2;
+        while (end < len) {
+          int ch = interp[end];
+          if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n') break;
+          end++;
+        }
+        interp[end] = 0;
+
+        // Get module name for interpreter
+        basename = get_module_name(db, interp + 2, buffer, MODTYPE_EXE);
+      }
+    }
+  }
+
+  // Get module name
+  if (!basename) {
+    basename = get_module_name(db, name, buffer, flags & MODLOAD_EXE ? MODTYPE_EXE : MODTYPE_DLL);
+    if (!basename) return NULL;
+  }
 
   // Load image into memory
   imgbase = db->load_image(buffer);
@@ -754,7 +806,7 @@ hmodule_t load_module(struct moddb *db, char *name, int flags) {
     m = m->next;
   }
 
-  // Update ref counts on depend module
+  // Update ref counts on module dependencies
   mod->refcnt++;
   m = modlist;
   while (1) {
