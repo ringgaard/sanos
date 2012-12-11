@@ -147,13 +147,16 @@ int dfs_access(struct fs *fs, char *name, int mode) {
   rc = namei((struct filsys *) fs->data, name, &inode);
   if (rc < 0) return rc;
 
-  if (mode != 0 && thread->euid != 0) {
-    if (thread->euid != inode->desc->uid) {
-      mode >>= 3;
-      if (thread->egid != inode->desc->gid) mode >>= 3;
+  if (mode != 0) {
+    if (thread->euid == 0) {
+      rc = mode != 1 || inode->desc->mode & 0111 ? 0 : -EACCES;
+    } else {
+      if (thread->euid != inode->desc->uid) {
+        mode >>= 3;
+        if (thread->egid != inode->desc->gid) mode >>= 3;
+      }
+      if ((mode & inode->desc->mode) == 0) rc = -EACCES;
     }
-
-    if ((mode & inode->desc->mode) == 0) rc = -EACCES;
   }
 
   release_inode(inode);

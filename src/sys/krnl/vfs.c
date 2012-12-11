@@ -999,7 +999,13 @@ int access(char *name, int mode) {
     if (rc < 0) return rc;
     if (mode == 0) return 0;
 
-    if (thread->euid == 0) return 0;
+    if (thread->euid == 0) {
+      if (mode == X_OK) {
+        return buf.st_uid & 0111 ? 0 : -EACCES;
+      } else {
+        return 0;
+      }
+    }
 
     if (thread->euid == buf.st_uid) {
       mode <<= 6;
