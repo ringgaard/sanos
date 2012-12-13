@@ -55,6 +55,8 @@ unsigned char video_attr = ATTR_NORMAL;
 int video_state = 0;
 int saved_cursor_pos = 0;
 
+static int color_map[8] = {0, 4, 2, 6, 1, 5, 3, 7};
+
 void init_video() {
   // Set video base address (use mapped video base)
   vidmem = (unsigned char *) VIDBASE_ADDRESS;
@@ -228,17 +230,23 @@ static void handle_sequence(int x, int y, char ch) {
     
     case 'm': // Set character enhancements
       // Modified for ANSI color attributes 3/15/07 - C Girdosky
-      if (x >= 30 && x <= 37) { // Foreground color
-        video_attr = (x - 30) + (video_attr & 0xF8);
-      } else if (x >= 40 && x <= 47) { // Background color
-        video_attr = ((x - 40) << 4) + (video_attr & 0x8F);
-      } else if (x == 1) { // High intensity foreground
+      if (x >= 30 && x <= 37) {
+        // Foreground color
+        video_attr = color_map[x - 30] + (video_attr & 0xF8);
+      } else if (x >= 40 && x <= 47) {
+        // Background color
+        video_attr = (color_map[x - 40] << 4) + (video_attr & 0x8F);
+      } else if (x == 1) {
+        // High intensity foreground
         video_attr = video_attr | 8;
-      } else if (x == 5) { // High intensity background
+      } else if (x == 5) {
+        // High intensity background
         video_attr = video_attr | 128;
-      } else if (x == 8) { // Invisible make forground match background
+      } else if (x == 8) {
+        // Invisible make forground match background
         video_attr = ((video_attr & 0xF0) >> 4) + (video_attr & 0xF0);
-      } else if (x == 7) { // Reverse
+      } else if (x == 7) {
+        // Reverse
         video_attr = ((video_attr & 0xF0) >> 4) + ((video_attr & 0x0F) << 4); 
       } else {
         video_attr = ATTR_NORMAL;

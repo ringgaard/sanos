@@ -55,6 +55,21 @@
 #define LINEBUF_EXTRA  32
 #define TABSIZE        8
 
+#define CLRSCR           "\033[0J"
+#define CLREOL           "\033[K"
+#define GOTOXY           "\033[%d;%dH"
+#define RESET_COLOR      "\033[0m"
+
+#ifdef COLOR
+#define TEXT_COLOR       "\033[44m\033[37m\033[1m"
+#define SELECT_COLOR     "\033[47m\033[37m\033[1m"
+#define STATUS_COLOR     "\033[0m\033[47m\033[30m"
+#else
+#define TEXT_COLOR       "\033[0m"
+#define SELECT_COLOR     "\033[7m\033[1m"
+#define STATUS_COLOR     "\033[1m\033[7m"
+#endif
+
 //
 // Key codes
 //
@@ -202,6 +217,7 @@ void reset_undo(struct editor *ed) {
     struct undo *undo = ed->undotail;
     if (!undo) {
       ed->undohead = NULL;
+      ed->undotail = NULL;
       break;
     }
     ed->undotail = undo->prev;
@@ -429,9 +445,9 @@ void replace(struct editor *ed, int pos, int len, unsigned char *buf, int bufsiz
     reset_undo(ed);
     undo = ed->undotail;
     if (undo && len == 0 && bufsize == 1 && undo->erased == 0 && pos == undo->pos + undo->inserted) {
-      // Insert character at end of current undo buffer
+      // Insert character at end of current redo buffer
       undo->redobuf = realloc(undo->redobuf, undo->inserted + 1);
-      undo->redobuf[undo->inserted] = get(ed, pos);
+      undo->redobuf[undo->inserted] = *buf;
       undo->inserted++;
     } else if (undo && len == 1 && bufsize == 0 && undo->inserted == 0 && pos == undo->pos) {
       // Erase character at end of current undo buffer
@@ -582,8 +598,10 @@ void moveto(struct editor *ed, int pos, int center) {
       }
     } else if (pos > cur) {
       int next = next_line(ed, ed->linepos);
-      if (next == -1) pos = text_length(ed);
-      if (pos < next) {
+      if (next == -1) {
+        ed->col = text_length(ed) - ed->linepos;
+        break;
+      } else if (pos < next) {
         ed->col = pos - ed->linepos;
       } else {
         ed->col = 0;
@@ -713,13 +731,13 @@ void outstr(char *str) {
 }
 
 void clear_screen() {
-  outstr("\033[0J");
+  outstr(CLRSCR);
 }
 
 void gotoxy(int col, int line) {
   char buf[32];
 
-  sprintf(buf, "\033[%d;%dH", line + 1, col + 1);
+  sprintf(buf, GOTOXY, line + 1, col + 1);
   outstr(buf);
 }
 
@@ -876,10 +894,10 @@ int prompt(struct editor *ed, char *msg) {
   char *buf = ed->env->linebuf;
 
   gotoxy(0, ed->env->lines);
-  outstr("\033[1m");
+  outstr(STATUS_COLOR);
   outstr(msg);
-  outstr("\033[K\033[0m");
-  
+  outstr(CLREOL);
+
   len = 0;
   maxlen = ed->env->cols - strlen(msg) - 1;
   len = get_selected_text(ed, buf, maxlen);
@@ -919,9 +937,9 @@ void display_message(struct editor *ed, char *fmt, ...) {
 
   va_start(args, fmt);
   gotoxy(0, ed->env->lines);
-  outstr("\033[1m");
+  outstr(STATUS_COLOR);
   vprintf(fmt, args);
-  outstr("\033[K\033[0m");
+  outstr(CLREOL TEXT_COLOR);
   fflush(stdout);
   va_end(args);
 }
@@ -930,13 +948,13 @@ void draw_full_statusline(struct editor *ed) {
   struct env *env = ed->env;
   int namewidth = env->cols - 20;
   gotoxy(0, env->lines);
-  sprintf(env->linebuf, "\033[1m%*.*s%c Ln %-6dCol %-4d\033[K\033[0m", -namewidth, namewidth, ed->filename, ed->dirty ? '*' : ' ', ed->line + 1, column(ed, ed->linepos, ed->col) + 1);
+  sprintf(env->linebuf, STATUS_COLOR "%*.*s%c Ln %-6dCol %-4d" CLREOL TEXT_COLOR, -namewidth, namewidth, ed->filename, ed->dirty ? '*' : ' ', ed->line + 1, column(ed, ed->linepos, ed->col) + 1);
   outstr(env->linebuf);
 }
 
 void draw_statusline(struct editor *ed) {
   gotoxy(ed->env->cols - 20, ed->env->lines);
-  sprintf(ed->env->linebuf, "\033[1m%c Ln %-6dCol %-4d\033[K\033[0m", ed->dirty ? '*' : ' ', ed->line + 1, column(ed, ed->linepos, ed->col) + 1);
+  sprintf(ed->env->linebuf, STATUS_COLOR "%c Ln %-6dCol %-4d" CLREOL TEXT_COLOR, ed->dirty ? '*' : ' ', ed->line + 1, column(ed, ed->linepos, ed->col) + 1);
   outstr(ed->env->linebuf);
 }
 
@@ -948,17 +966,16 @@ void display_line(struct editor *ed, int pos, int fullline) {
   unsigned char *bufptr = ed->env->linebuf;
   unsigned char *p = text_ptr(ed, pos);
   int selstart, selend, ch;
+  char *s;
 
   get_selection(ed, &selstart, &selend);
   while (col < maxcol) {
     if (margin == 0) {
       if (!hilite && pos >= selstart && pos < selend) {
-        memcpy(bufptr, "\033[7m", 4);
-        bufptr += 4;
+        for (s = SELECT_COLOR; *s; s++) *bufptr++ = *s;
         hilite = 1;
       } else if (hilite && pos >= selend) {
-        memcpy(bufptr, "\033[0m", 4);
-        bufptr += 4;
+        for (s = TEXT_COLOR; *s; s++) *bufptr++ = *s;
         hilite = 0;
       }
     }
@@ -992,12 +1009,18 @@ void display_line(struct editor *ed, int pos, int fullline) {
   }
 
 #ifdef __linux__
-  if (col == margin) *bufptr++ = ' ';
+  if (hilite) {
+    while (col < maxcol) {
+      *bufptr++ = ' ';
+      col++;
+    }
+  } else {
+    if (col == margin) *bufptr++ = ' ';
+  }
 #endif
 
   if (col < maxcol) {
-    memcpy(bufptr, "\033[K", 3);
-    bufptr += 3;
+    for (s = CLREOL; *s; s++) *bufptr++ = *s;
     if (fullline) {
       memcpy(bufptr, "\r\n", 2);
       bufptr += 2;
@@ -1005,8 +1028,7 @@ void display_line(struct editor *ed, int pos, int fullline) {
   }
 
   if (hilite) {
-    memcpy(bufptr, "\033[0m", 4);
-    bufptr += 4;
+    for (s = TEXT_COLOR; *s; s++) *bufptr++ = *s;
   }
 
   outbuf(ed->env->linebuf, bufptr - ed->env->linebuf);
@@ -1022,10 +1044,11 @@ void draw_screen(struct editor *ed) {
   int i;
 
   gotoxy(0, 0);
+  outstr(TEXT_COLOR);
   pos = ed->toppos;
   for (i = 0; i < ed->env->lines; i++) {
     if (pos < 0) {
-      outstr("\033[K\r\n");
+      outstr(CLREOL "\r\n");
     } else {
       display_line(ed, pos, 1);
       pos = next_line(ed, pos);
@@ -1405,8 +1428,8 @@ void redo(struct editor *ed) {
     ed->undo = ed->undohead;
   }
   
-  moveto(ed, ed->undo->pos, 0);
   replace(ed, ed->undo->pos, ed->undo->erased, ed->undo->redobuf, ed->undo->inserted, 0);
+  moveto(ed, ed->undo->pos, 0);
   ed->dirty = 1;
   ed->refresh = 1;
 }
@@ -1788,6 +1811,8 @@ void edit(struct editor *ed) {
 #ifdef __linux__
         case ctrl('u'): jump_to_editor(ed); ed = ed->env->current; break;
         case ctrl('y'): help(ed); break;
+        case ctrl('t'): top(ed, 0); break;
+        case ctrl('b'): bottom(ed, 0); break;
 #endif
 
         case KEY_UP: up(ed, 0); break;
@@ -1890,7 +1915,7 @@ int main(int argc, char *argv[]) {
   if (fdin != term->ttyin) dup2(term->ttyin, fdin);
   if (fdout != term->ttyout) dup2(term->ttyout, fdout);
 #else
-  if (!isatty(fileno(stdin))) freopen("/dev/tty", "r", stdin);
+  if (!isatty(fileno(stdin))) (void *) freopen("/dev/tty", "r", stdin);
 #endif
 
   setvbuf(stdout, NULL, 0, 8192);
@@ -1918,7 +1943,7 @@ int main(int argc, char *argv[]) {
   }
 
   gotoxy(0, env.lines + 1);
-  outstr("\033[K");
+  outstr(RESET_COLOR CLREOL);
 #ifdef __linux__
   tcsetattr(0, TCSANOW, &orig_tio);   
 #endif
