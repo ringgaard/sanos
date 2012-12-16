@@ -495,7 +495,16 @@ static int run_external_command(struct job *job) {
   return job->exitcode;
 }
 
-static void exit_builtin(int status) {
+static main_t lookup_internal(char *name) {
+  char procname[MAX_COMMAND_LEN + 5];
+  
+  if (strlen(name) > MAX_COMMAND_LEN) return NULL;
+  strcpy(procname, "cmd_");
+  strcat(procname, name);
+  return (main_t) dlsym(getmodule(NULL), procname);
+}
+
+static void exit_internal(int status) {
   struct process *proc = gettib()->proc;
   struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
@@ -506,7 +515,7 @@ static void exit_builtin(int status) {
   free_args(crtbase->argc, crtbase->argv);
 }
 
-static void __stdcall enter_builtin(void *args) {
+static void __stdcall enter_internal(void *args) {
   struct process *proc = gettib()->proc;
   struct job *job = (struct job *) args;
   struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
@@ -521,16 +530,16 @@ static void __stdcall enter_builtin(void *args) {
   crtbase->opt.sp = 1;
   crtbase->opt.place = "";
 
-  // Run builtin command.
-  gettib()->proc->atexit = exit_builtin;
-  return job->builtin(crtbase->argc, crtbase->argv);
+  // Run internal command.
+  gettib()->proc->atexit = exit_internal;
+  return job->main(crtbase->argc, crtbase->argv);
 }
 
-static int run_builtin_command(struct job *job) {
-  // Create process for builtin command
+static int run_internal_command(struct job *job) {
+  // Create process for internal command
   char *name = job->args.first->value;
   struct tib *tib;
-  job->handle = beginthread(enter_builtin, 0, job, CREATE_SUSPENDED | CREATE_NEW_PROCESS, name, &tib);
+  job->handle = beginthread(enter_internal, 0, job, CREATE_SUSPENDED | CREATE_NEW_PROCESS, name, &tib);
   if (job->handle < 0) return -1;
   tib->proc->cmdline = get_command_line(&job->args);
   tib->proc->ident = strdup(name);
@@ -578,10 +587,10 @@ static int execute_simple_command(struct job *parent, union node *node) {
   if (job->args.num == 0) goto done;
 
   // Run program
-  job->builtin = (builtin_t) dlsym(getmodule(NULL), job->args.first->value);
-  if (job->builtin != NULL) {
-    // Run builtin command
-    run_builtin_command(job);
+  job->main = lookup_internal(job->args.first->value);
+  if (job->main != NULL) {
+    // Run internal command
+    run_internal_command(job);
   } else {
     // Run external program
     run_external_command(job);

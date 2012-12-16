@@ -50,9 +50,17 @@
 #include "node.h"
 #include "parser.h"
 
-#define shellcmd(name) __declspec(dllexport) int name(int argc, char *argv[])
+#define SHELL
 
-typedef int (*builtin_t)(int argc, char *argv[]);
+#define MAX_COMMAND_LEN 8
+
+#ifdef SHELL
+#define shellcmd(name) __declspec(dllexport) int cmd_##name(int argc, char *argv[])
+#else
+#define shellcmd(name) int main(int argc, char *argv[])
+#endif
+
+typedef int (*main_t)(int argc, char *argv[]);
 
 struct arg {
   struct arg *next;
@@ -81,7 +89,7 @@ struct job {
   int exitcode;
   int handle;
   int pid;
-  builtin_t builtin;
+  main_t main;
   struct job *next;
 };
 
