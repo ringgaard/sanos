@@ -599,7 +599,7 @@ void moveto(struct editor *ed, int pos, int center) {
     } else if (pos > cur) {
       int next = next_line(ed, ed->linepos);
       if (next == -1) {
-        ed->col = text_length(ed) - ed->linepos;
+        ed->col = line_length(ed, ed->linepos);
         break;
       } else if (pos < next) {
         ed->col = pos - ed->linepos;
@@ -1506,6 +1506,7 @@ void read_from_stdin(struct editor *ed) {
     pos += n;
   }
   strcpy(ed->filename, "<stdin>");  
+  ed->newfile = 1;
   ed->dirty = 0;
 }
 
