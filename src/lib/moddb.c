@@ -320,7 +320,7 @@ static struct module *get_module(struct moddb *db, char *name, int type) {
     s++;
   }
 
-  if (!dot && (type & (MODTYPE_EXE | MODTYPE_DLL)) & p - buffer < MAXPATH - 5) {
+  if (!dot && (type & (MODTYPE_EXE | MODTYPE_DLL)) && p - buffer < MAXPATH - 5) {
     memcpy(p, type &  MODTYPE_EXE ? ".exe" : ".dll", 4);
     p += 4;
   }
