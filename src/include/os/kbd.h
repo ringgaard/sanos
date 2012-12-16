@@ -43,15 +43,16 @@
 #define KBSTATE_SHIFTCAPS       6
 #define KBSTATE_SHIFTNUM        7
 #define KBSTATE_ALTGR           8
+#define KBSTATE_SHIFTCTRL       9
 
-#define MAX_KBSTATES            9
+#define MAX_KBSTATES            10
+
 #define MAX_SCANCODES           0x80
 #define MAX_KEYTABLES           16
 
 struct keytable {
   char *name;
-  unsigned short normal[MAX_SCANCODES][MAX_KBSTATES];
-  unsigned short extended[MAX_SCANCODES][MAX_KBSTATES];
+  unsigned short keys[MAX_SCANCODES][MAX_KBSTATES];
 };
 
 extern int ctrl_alt_del_enabled;

@@ -127,6 +127,7 @@ struct keytable *keytables[MAX_KEYTABLES];
 
 // Keyboard tables
 
+#include "kbdext.h"
 #include "kbdus.h"
 #include "kbddk.h"
 #include "kbduk.h"
@@ -138,7 +139,7 @@ unsigned char led_status = 0;
 unsigned char control_keys = 0;
 int ctrl_alt_del_enabled = 1;
 int keymap = 0;
-int ext;
+int ext = 0;
 
 struct interrupt kbdintr;
 struct dpc kbddpc;
@@ -341,7 +342,7 @@ static void process_scancode(unsigned int scancode) {
     if ((control_keys & (CK_LSHIFT | CK_RSHIFT)) && (led_status & LED_CAPS_LOCK)) {
       state = KBSTATE_SHIFTCAPS;
     } else if ((control_keys & CK_LSHIFT) && (control_keys & CK_LCTRL)) {
-      state = KBSTATE_ALTGR;
+      state = KBSTATE_SHIFTCTRL;
     } else if (control_keys & (CK_LSHIFT | CK_RSHIFT)) {
       state = KBSTATE_SHIFT;
     } else if (control_keys & (CK_LCTRL | CK_RCTRL)) {
@@ -362,9 +363,9 @@ static void process_scancode(unsigned int scancode) {
     //kprintf("(%d,%x)", state, control_keys);
 
     if (ext) {
-      keycode = kt->extended[scancode][state];
+      keycode = extkeys[scancode][state];
     } else {
-      keycode = kt->normal[scancode][state];
+      keycode = kt->keys[scancode][state];
     }
 
     if (keycode != 0) {
