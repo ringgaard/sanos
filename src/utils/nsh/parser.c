@@ -647,11 +647,10 @@ static int parse_param(struct parser *p) {
     case '$': node->nargparam.flags |= S_PID; break;
   }
   
-  // Add the first char to variable name
-  stputc(p->mark, p->ch);
-  next(p);
-
-  if (!(node->nargparam.flags & S_SPECIAL)) {
+  if (node->nargparam.flags & S_SPECIAL) {
+    stputc(p->mark, p->ch);
+    next(p);
+  } else {
     // Check if it is numeric, if so assume S_ARG
     if (is_digit(p->ch)) {
       node->nargparam.flags |= S_ARG;
@@ -708,7 +707,6 @@ static int parse_param(struct parser *p) {
       node->nargparam.flags |= S_RSPFX;
     }
   } else {
-  {
     // : before -, =, ?, + means take care of set but null and not only of unset
     if (p->ch == ':') {
       node->nargparam.flags |= S_NULL;

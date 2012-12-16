@@ -35,6 +35,8 @@
 #define SH_H
 
 #include <os.h>
+#include <crtbase.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,6 +49,10 @@
 #include "chartype.h"
 #include "node.h"
 #include "parser.h"
+
+#define shellcmd(name) __declspec(dllexport) int name(int argc, char *argv[])
+
+typedef int (*builtin_t)(int argc, char *argv[]);
 
 struct arg {
   struct arg *next;
@@ -67,10 +73,21 @@ struct var {
 };
 
 struct job {
+  struct shell *shell;
   struct job *parent;
-  struct mark *mark;
   struct var *vars;
   struct args args;
+  int fd[3];
+  int exitcode;
+  int handle;
+  int pid;
+  builtin_t builtin;
+  struct job *next;
+};
+
+struct shell {
+  struct job *top;
+  struct job *jobs;
 };
 
 #endif

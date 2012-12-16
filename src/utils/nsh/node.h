@@ -46,6 +46,7 @@
 
 #define IFS_DEFAULT " \t\n"
 
+// Parameter quoting
 #define S_TABLE      0x0003
 #define S_UNQUOTED (0 << 0)
 #define S_DQUOTED  (1 << 0)

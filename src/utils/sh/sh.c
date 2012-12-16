@@ -1355,8 +1355,23 @@ int cmd_sysinfo(int argc, char *argv[]) {
 }
 
 int cmd_test(int argc, char *argv[]) {
-  char *p = NULL;
-  *p = 1;
+  int rc;
+  
+  errno = 0;
+
+  rc = access(argv[1], F_OK);
+  printf("access(%s,F_OK)=%d %d %s\n", argv[1], rc, errno, strerror(errno));
+
+  rc = access(argv[1], R_OK);
+  printf("access(%s,R_OK)=%d %d %s\n", argv[1], rc, errno, strerror(errno));
+
+  rc = access(argv[1], W_OK);
+  printf("access(%s,W_OK)=%d %d %s\n", argv[1], rc, errno, strerror(errno));
+
+  rc = access(argv[1], X_OK);
+  printf("access(%s,X_OK)=%d %d %s\n", argv[1], rc, errno, strerror(errno));
+
+  return 0;
 }
 
 int cmd_glob(int argc, char *argv[]) {

@@ -33,22 +33,20 @@
 
 #include "sh.h"
 
-struct job top;
-
-void indent(FILE *out, int level) {
+static void indent(FILE *out, int level) {
   while (level-- > 0) fprintf(out, "  ");
 }
 
-void print_node(union node *node, FILE *out, int level);
+static void print_node(union node *node, FILE *out, int level);
 
-void print_list(union node *node, FILE *out, int level) {
+static void print_list(union node *node, FILE *out, int level) {
   while (node) {
     print_node(node, out, level);
     node = node->list.next;
   }
 }
 
-void print_redir(union node *rdir, FILE *out, int level) {
+static void print_redir(union node *rdir, FILE *out, int level) {
   union node *n;
 
   if (rdir) {
@@ -57,7 +55,7 @@ void print_redir(union node *rdir, FILE *out, int level) {
   }
 }
 
-void print_node(union node *node, FILE *out, int level) {
+static void print_node(union node *node, FILE *out, int level) {
   union node *n;
 
   switch(node->type) {
@@ -222,60 +220,19 @@ void print_node(union node *node, FILE *out, int level) {
     case N_FUNCTION:
     case N_ARGARITH:
       // TODO:  IMPLEMENT  !!!
+
     default:
       indent(out, level); fprintf(out, "UNKNOWN %d\n", node->type);
   }
 }
 
-int main0(int argc, char *argv[], char *envp[]) {
-  struct inputfile *source = NULL;
-  struct stkmark mark;
-  struct parser p;
-  int fd;
-  union node *node;
-
-  if (argc <= 1) {
-    fprintf(stderr, "usage: sh <source>\n");
-    exit(1);
-  }
-
-  fd = open(argv[1], 0);
-  if (fd < 0) {
-    perror(argv[1]);
-    exit(1);
-  }
-
-  pushfile(&source, fd);
-  pushstkmark(NULL, &mark);
-  parse_init(&p, 0, source, &mark);
-
-  while (1) {
-    printf("line %d:\n", source->lineno);
-    node = parse(&p);
-
-    if (node) {
-      print_node(node, stdout, 0);
-    } else if (p.tok & T_EOF) {
-      break;
-    } else if (!(p.tok & (T_NL | T_SEMI | T_BGND))) {
-      fprintf(stderr, "syntax error (line %d)\n", source->lineno);
-      if (p.tree) print_node(p.tree, stdout, 0);
-      break;
-    }
-
-    if (p.tok & (T_NL | T_SEMI | T_BGND)) p.pushback = 0;
-  }
-
-  return 0;
-}
-
-int hash(char *str) {
+static int hash(char *str) {
   int h = 0;
   while (*str) h = 5 * h + *str++;
   return h;
 }
 
-void set_var(struct var **vars, char *name, char *value) {
+static void set_var(struct var **vars, char *name, char *value) {
   int h = hash(name);
   struct var **vptr = vars;
   struct var *v = *vptr;
@@ -299,14 +256,133 @@ void set_var(struct var **vars, char *name, char *value) {
   v->next = NULL;
 }
 
-struct arg *add_arg(struct stkmark *mark, struct args *args, char *value) {
-  struct arg *arg = (struct arg *) stalloc(mark, sizeof(struct arg));
-  arg->value = value ? value : "";
+static struct arg *add_arg(struct args *args, char *value) {
+  struct arg *arg = (struct arg *) malloc(sizeof(struct arg));
+  arg->value = strdup(value ? value : "");
+  arg->next = NULL;
   if (args->last) args->last->next = arg;
   if (!args->first) args->first = arg;
   args->last = arg;
   args->num++;
   return arg;
+}
+
+static struct job *create_job(struct job *parent) {
+  struct job *job;
+  struct var *pv;
+  struct var *last;
+
+  // Allocate job
+  job = (struct job *) malloc(sizeof(struct job));
+  memset(job, 0, sizeof(struct job));
+  job->parent = parent;
+  job->shell = parent->shell;
+
+  // Insert job in job list for shell
+  if (job->shell->jobs) {
+    struct job *prev = job->shell->jobs;
+    while (prev->next != NULL) prev = prev->next;
+    prev->next = job;
+  } else {
+    job->shell->jobs = job;
+  }
+
+  // Copy variables from parent
+  pv = parent->vars;
+  last = NULL;
+  while (pv) {
+    struct var *v = (struct var *) malloc(sizeof(struct var));
+    v->name = strdup(pv->name);
+    v->value = strdup(pv->value);
+    v->hash = pv->hash;
+    v->next = NULL;
+    if (last != NULL) last->next = v;
+    last = v;
+    pv = pv->next;
+  }
+
+  // Copy file handles from parent
+  job->fd[0] = parent->fd[0];
+  job->fd[1] = parent->fd[1];
+  job->fd[2] = parent->fd[2];
+
+  return job;
+}
+
+static void remove_job(struct job *job) {
+  struct arg *a;
+  struct var *v;
+
+  // Free arguments
+  a = job->args.first;
+  while (a) {
+    struct arg *next = a->next;
+    free(a->value);
+    free(a);
+    a = next;
+  }
+
+  // Free variables
+  v = job->vars;
+  while (v) {
+    struct var *next = v->next;
+    free(v->name);
+    free(v->value);
+    free(v);
+    v = next;
+  }
+  
+  // Remove job from joblist
+  if (job->shell->jobs == job) {
+    job->shell->jobs = job->next;
+  } else {
+    struct job *j = job->shell->jobs;
+    struct job *prev = NULL;
+    while (j != job) {
+      prev = j;
+      j = j->next;
+    }
+    if (j == job) prev->next = j->next;
+  }
+
+  // Deallocate job
+  free(job);
+}
+
+static void init_shell(struct shell *shell, int argc, char *argv[], char *env[]) {
+  int i;
+  char *name;
+  char *value;
+  struct job *top;
+  
+  // Create top job.
+  top = (struct job *) malloc(sizeof(struct job));
+  memset(top, 0, sizeof(struct job));
+  top->shell = shell;
+  shell->top = shell->jobs = top;
+
+  // Setup command line parameters.
+  for (i = 0; i < argc; i++) {
+    add_arg(&top->args, argv[i]);
+  }
+
+  // Copy environment variables.
+  for (i = 0; env[i]; i++) {
+    name = strdup(env[i]);
+    value = strchr(name, '=');
+    if (*value == '=') {
+      *value++ = 0;
+    } else {
+      value = "";
+    }
+    set_var(&top->vars, name, value);
+    free(name);
+  }
+
+  // Copy file handles.
+  top->fd[0] = fdin;
+  top->fd[1] = fdout;
+  top->fd[2] = fderr;
 }
 
 static int expand_glob(struct stkmark *mark, struct args *args, char *pattern) {
@@ -320,49 +396,216 @@ static int expand_glob(struct stkmark *mark, struct args *args, char *pattern) {
   
   for (i = 0; i < globbuf.gl_pathc; ++i) {
     stputstr(mark, globbuf.gl_pathv[i]);
-    add_arg(mark, args, ststr(mark));
+    add_arg(args, ststr(mark));
   }
   
   globfree(&globbuf);
   return 0;
 }
 
-static int expand_args(struct stkmark *mark, struct args *args, union node *node) {
+static int expand_args(struct stkmark *mark, struct job *job, union node *node) {
   union node *n;
   int before;
 
   switch (node->type) {
     case N_SIMPLECMD:
-      for (n = node->ncmd.args; n; n = n->list.next) expand_args(mark, args, n);
+      for (n = node->ncmd.args; n; n = n->list.next) expand_args(mark, job, n);
       break;
      
     case N_ARG:
-      before = args->num;
-      for (n = node->narg.list; n; n = n->list.next) {
-        expand_args(mark, args, n);
-      }
-      if (args->num == before || ststrlen(mark) > 0) add_arg(mark, args, ststr(mark)); 
+      before = job->args.num;
+      for (n = node->narg.list; n; n = n->list.next) expand_args(mark, job, n);
+      if (job->args.num == before || ststrlen(mark) > 0) add_arg(&job->args, ststr(mark));
       break;
 
     case N_ARGSTR:
       if (node->nargstr.flags & S_GLOB) {
-        if (expand_glob(mark, args, node->nargstr.text) < 0) return -1;
+        if (expand_glob(mark, &job->args, node->nargstr.text) < 0) return -1;
       } else {
-        char *p = node->nargstr.text;
-        while (*p) stputc(mark, *p++);
+        stputstr(mark, node->nargstr.text);
       }
       break;
      
-     default:
-       fprintf(stderr, "Unknown argument type: %d\n", node->type);
-       return -1;
+    default:
+      fprintf(stderr, "Unsupported argument type: %d\n", node->type);
+      return -1;
   }
   
   return 0;
 }
 
+static char *get_command_line(struct args *args) {
+  struct arg *arg;
+  char *cmdline;
+  int cmdlen;
 
-static int exec_command(char *cmdline) {
+  // Compute command line size.
+  arg = args->first;
+  cmdlen = args->num;
+  while (arg) {
+    int escape = 0;
+    char *p = arg->value;
+    while (*p) {
+      if (*p == ' ') escape = 1;
+      p++;
+    }
+    if (escape) cmdlen += 2;
+    cmdlen += strlen(arg->value);
+
+    arg = arg->next;
+  }
+
+  // Build command line.
+  char *cmdline = malloc(cmdlen);
+  char *cmd = cmdline;
+  arg = args->first;
+  while (arg) {
+    int arglen;
+    int escape = 0;
+    char *p = arg->value;
+    while (*p) {
+      if (*p == ' ') escape = 1;
+      p++;
+    }
+    if (arg != args->first) *cmd++ = ' ';
+    if (escape) *cmd++ = '"';
+    arglen = strlen(arg->value);
+    memcpy(cmd, arg->value, arglen);
+    cmd += arglen;
+    if (escape) *cmd++ = '"';
+
+    arg = arg->next;
+  }
+  *cmd = 0;
+
+  return cmdline;
+}
+
+static int run_external_command(struct job *job) {
+  char *cmdline;
+
+  // Build command line
+  cmdline = get_command_line(&job->args);
+
+  // Run command
+  job->exitcode = spawn(P_WAIT, NULL, cmdline, NULL, NULL);
+  if (job->exitcode < 0) perror("error");
+  free(cmdline);
+
+  return job->exitcode;
+}
+
+static void exit_builtin(int status) {
+  struct process *proc = gettib()->proc;
+  struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
+
+  // Execute atexit handlers
+  run_atexit_handlers();
+
+  // Deallocate arguments
+  free_args(crtbase->argc, crtbase->argv);
+}
+
+static void __stdcall enter_builtin(void *args) {
+  struct process *proc = gettib()->proc;
+  struct job *job = (struct job *) args;
+  struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
+
+  // Initialize arguments
+  crtbase->argc = parse_args(proc->cmdline, NULL);
+  crtbase->argv = (char **) malloc((crtbase->argc + 1) * sizeof(char *));
+  parse_args(proc->cmdline, crtbase->argv);
+  crtbase->argv[crtbase->argc] = NULL;
+  crtbase->opt.err = 1;
+  crtbase->opt.ind = 1;
+  crtbase->opt.sp = 1;
+  crtbase->opt.place = "";
+
+  // Run builtin command.
+  gettib()->proc->atexit = exit_builtin;
+  return job->builtin(crtbase->argc, crtbase->argv);
+}
+
+static int run_builtin_command(struct job *job) {
+  // Create process for builtin command
+  char *name = job->args.first->value;
+  struct tib *tib;
+  job->handle = beginthread(enter_builtin, 0, job, CREATE_SUSPENDED | CREATE_NEW_PROCESS, name, &tib);
+  if (job->handle < 0) return -1;
+  tib->proc->cmdline = get_command_line(&job->args);
+  tib->proc->ident = strdup(name);
+
+  // Run command and wait for termination
+  job->exitcode = resume(job->handle);
+  if (job->exitcode >= 0) {
+    while (1) {
+      job->exitcode = waitone(job->handle, INFINITE);
+      if (job->exitcode >= 0 || errno != EINTR) break;
+    }
+    close(job->handle);
+  }
+  
+  return job->exitcode;
+}
+
+shellcmd(echo) {
+  int i;
+
+  for (i = 1; i < argc; i++) {
+    if (i > 1) fputc(' ', stdout);
+    fputs(argv[i], stdout);
+  }
+  fputs("\n", stdout);
+
+  return 0;
+}
+
+static int execute_simple_command(struct job *parent, union node *node) {
+  int rc = 0;
+  struct stkmark mark;
+  struct job *job;
+
+  // Create new job
+  job = create_job(parent);
+
+  // Expand command arguments
+  pushstkmark(NULL, &mark);
+  rc = expand_args(&mark, job, node);
+  popstkmark(&mark);
+  if (rc < 0) goto done;
+
+  // Ignore empty commands
+  if (job->args.num == 0) goto done;
+
+  // Run program
+  job->builtin = (builtin_t) dlsym(getmodule(NULL), job->args.first->value);
+  if (job->builtin != NULL) {
+    // Run builtin command
+    run_builtin_command(job);
+  } else {
+    // Run external program
+    run_external_command(job);
+  }
+
+  //struct arg *arg;
+  //for (arg = job->args.first; arg; arg = arg->next) printf("arg: %s\n", arg->value);
+  
+done:
+  remove_job(job);
+  
+  return rc;
+}
+
+static int execute(struct job *parent, union node *node) {
+  switch (node->type) {
+    case N_SIMPLECMD: return execute_simple_command(parent, node);
+     default:
+       fprintf(stderr, "Error: not supported (node type %d)\n", node->type);
+       return -1;
+  }
+}
+
+static int exec_command(struct job *parent, char *cmdline) {
   struct inputfile *source = NULL;
   struct stkmark mark;
   struct parser p;
@@ -373,70 +616,49 @@ static int exec_command(char *cmdline) {
   parse_init(&p, 0, source, &mark);
 
   while (!(p.tok & T_EOF)) {
-    struct arg *arg;
-    struct args *args;
-    
-    printf("line %d: tok=%d\n", source->lineno, p.tok);
+    //printf("line %d: tok=%d\n", source->lineno, p.tok);
     node = parse(&p);
     if (!node) break;
-    printf("analyze\n");
-
-    print_node(node, stdout, 0);
-    args = (struct args *) stalloc(&mark, sizeof(struct args));
-      
-    if (expand_args(&mark, args, node) < 0) break;
-    for (arg = args->first; arg; arg = arg->next) printf("arg: %s\n", arg->value);
+    //print_node(node, stdout, 0);
+    execute(parent, node);
   }
   
   popstkmark(&mark);
+
   return 0;
 }
 
-void shell() {
+static int run_shell(struct shell *shell) {
   char curdir[MAXPATH];
   char cmdline[1024];
-  char *prompt = get_property(osconfig, "shell", "prompt", "%s$ ");
+  char *prompt = get_property(osconfig(), "shell", "prompt", "nsh %s$ ");
   int rc;
 
   while (1) {
     printf(prompt, getcwd(curdir, sizeof curdir));
+    fflush(stdout);
     rc = readline(cmdline, sizeof cmdline);
     if (rc < 0) {
       if (errno != EINTR) break;
     } else {
       if (stricmp(cmdline, "exit") == 0) break;
       fflush(stdout);
-      exec_command(cmdline);
+      exec_command(shell->top, cmdline);
     }
   }
-}
-
-void setup_top_job(char *env[]) {
-  int i;
-  char *name;
-  char *value;
-  
-  memset(&top, 0, sizeof(struct job));
-  for (i = 0; env[i]; i++) {
-    name = strdup(env[i]);
-    value = strchr(name, '=');
-    if (*value == '=') {
-      *value++ = 0;
-    } else {
-      value = "";
-    }
-    set_var(&top.vars, name, value);
-    free(name);
-  }
+  return 0;
 }
 
 int main(int argc, char *argv[], char *envp[]) {
-  if (gettib()->proc->term->type == TERM_VT100) setvbuf(stdout, NULL, 0, 8192);
-  setup_top_job(envp);
+  struct shell shell;
 
-  shell();
+  if (gettib()->proc->term->type == TERM_VT100) setvbuf(stdout, NULL, 0, 8192);
+  init_shell(&shell, argc, argv, envp);
+
+  int rc = run_shell(&shell);
 
   setbuf(stdout, NULL);
+  //clear_job(&top);
 
-  return 0;
+  return rc;
 }
