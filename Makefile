@@ -103,6 +103,7 @@ dirs:
     -@if not exist $(OBJ)\ctohtml mkdir $(OBJ)\ctohtml
     -@if not exist $(OBJ)\impdef mkdir $(OBJ)\impdef
     -@if not exist $(OBJ)\mkboot mkdir $(OBJ)\mkboot
+    -@if not exist $(OBJ)\ping mkdir $(OBJ)\ping
     -@if not exist $(OBJ)\httpd mkdir $(OBJ)\httpd
     -@if not exist $(OBJ)\jinit mkdir $(OBJ)\jinit
     -@if not exist $(OBJ)\kernel32 mkdir $(OBJ)\kernel32
@@ -941,11 +942,10 @@ $(BIN)/msvcrt.dll: \
 # utils
 #
 
-utils: dirs $(BIN)/sh.exe $(BIN)/nsh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/ctohtml.exe $(BIN)/mkboot.exe $(BIN)/httpd.dll
+utils: dirs $(BIN)/sh.exe $(BIN)/nsh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/ctohtml.exe $(BIN)/mkboot.exe $(BIN)/ping.exe $(BIN)/httpd.dll
 
 $(BIN)/sh.exe: \
   $(SRC)/utils/sh/sh.c \
-  $(SRC)/utils/sh/ping.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/sh/ $** /link /NODEFAULTLIB /FIXED:NO
@@ -1036,6 +1036,12 @@ $(BIN)/mkboot.exe: \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/mkboot/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(BIN)/ping.exe: \
+  $(SRC)/cmds/ping.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/ping/ $** /link /NODEFAULTLIB /FIXED:NO
 
 $(OBJ)/httpd/httpd.res: $(SRC)/utils/httpd/httpd.rc
   $(RC) /d "NDEBUG" /l 0x406 /fo$@ $**
@@ -1177,6 +1183,7 @@ install: sanos
     copy /Y $(BIN)\telnetd.exe   $(INSTALL)\bin\telnetd.exe
     copy /Y $(BIN)\ftpd.exe      $(INSTALL)\bin\ftpd.exe
     copy /Y $(BIN)\login.exe     $(INSTALL)\bin\login.exe
+    copy /Y $(BIN)\ping.exe      $(INSTALL)\bin\ping.exe
     copy /Y $(BIN)\msvcrt.dll    $(INSTALL)\bin\msvcrt.dll
     copy /Y $(BIN)\kernel32.dll  $(INSTALL)\bin\kernel32.dll
     copy /Y $(BIN)\user32.dll    $(INSTALL)\bin\user32.dll
@@ -1208,11 +1215,13 @@ install-source: dirs
     -@if not exist $(INSTALL)\usr\src\lib mkdir $(INSTALL)\usr\src\lib
     -@if not exist $(INSTALL)\usr\src\sys mkdir $(INSTALL)\usr\src\sys
     -@if not exist $(INSTALL)\usr\src\utils mkdir $(INSTALL)\usr\src\utils
+    -@if not exist $(INSTALL)\usr\src\cmds mkdir $(INSTALL)\usr\src\cmds
     -@if not exist $(INSTALL)\usr\src\win32 mkdir $(INSTALL)\usr\src\win32
     xcopy /S /I /Y $(SRC)\include $(INSTALL)\usr\include
     xcopy /S /I /Y $(SRC)\lib $(INSTALL)\usr\src\lib
     xcopy /S /I /Y $(SRC)\sys $(INSTALL)\usr\src\sys
     xcopy /S /I /Y $(SRC)\utils $(INSTALL)\usr\src\utils
+    xcopy /S /I /Y $(SRC)\cmds $(INSTALL)\usr\src\cmds
     xcopy /S /I /Y $(SRC)\win32 $(INSTALL)\usr\src\win32
     copy /Y $(SRC)\Makefile $(INSTALL)\usr\src
 

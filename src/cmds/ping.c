@@ -35,6 +35,7 @@
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <string.h> 
+#include <shell.h>
 
 #define ICMP_ECHO 8 
 #define ICMP_ECHOREPLY 0 
@@ -88,13 +89,12 @@ struct pingstat {
 #define DEF_PACKET_SIZE 32 
 #define MAX_PACKET 1024 
 #define PKTSIZ (sizeof(struct icmphdr) + MAX_PACKET)
- 
 
-void fill_icmp_data(char *icmp_data, int datasize);
-unsigned short checksum(unsigned short *buffer, int size); 
-void decode_resp(char *buf, int bytes, struct sockaddr_in *from, struct pingstat *stat);
+static void fill_icmp_data(char *icmp_data, int datasize);
+static unsigned short checksum(unsigned short *buffer, int size); 
+static void decode_resp(char *buf, int bytes, struct sockaddr_in *from, struct pingstat *stat);
 
-int cmd_ping(int argc, char *argv[]) {
+shellcmd(ping) {
   int sockraw; 
   struct sockaddr_in dest, from; 
   struct hostent *hp; 
@@ -249,7 +249,7 @@ int cmd_ping(int argc, char *argv[]) {
   return 0; 
 } 
 
-void decode_resp(char *buf, int bytes, struct sockaddr_in *from, struct pingstat *stat) {
+static void decode_resp(char *buf, int bytes, struct sockaddr_in *from, struct pingstat *stat) {
   struct iphdr *iphdr; 
   struct icmphdr *icmphdr; 
   unsigned short iphdrlen; 
@@ -289,7 +289,7 @@ void decode_resp(char *buf, int bytes, struct sockaddr_in *from, struct pingstat
   printf("\n"); 
 } 
  
-unsigned short checksum(unsigned short *buffer, int size) {
+static unsigned short checksum(unsigned short *buffer, int size) {
   unsigned long cksum = 0; 
  
   while (size > 1) {
@@ -304,7 +304,7 @@ unsigned short checksum(unsigned short *buffer, int size) {
   return (unsigned short) (~cksum); 
 }
 
-void fill_icmp_data(char *icmp_data, int datasize) {
+static void fill_icmp_data(char *icmp_data, int datasize) {
   struct icmphdr *icmp_hdr; 
   char *datapart; 
  

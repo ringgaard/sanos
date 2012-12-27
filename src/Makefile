@@ -27,6 +27,9 @@ utils:
     make -C utils/sh
     make -C utils/telnetd
 
+cmds:
+    make -C cmds
+
 install-sdk:
     make -C lib install
     make -C utils/as install
@@ -50,7 +53,10 @@ install-utils:
     make -C utils/sh install
     make -C utils/telnetd install
 
-install: install-sdk install-sys install-utils
+install-cmds:
+    make -C cmds install
+
+install: install-sdk install-sys install-utils install-cmds
 
 clean-sdk:
     make -C lib clean
@@ -73,7 +79,10 @@ clean-utils:
     make -C utils/sh clean
     make -C utils/telnetd clean
 
-clean: clean-sdk clean-sys clean-utils
+clean-cmds:
+    make -C cmds clean
 
-.PHONY: utils sys
+clean: clean-sdk clean-sys clean-utils clean-cmds
+
+.PHONY: utils sys cmds
 

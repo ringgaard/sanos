@@ -46,8 +46,6 @@
 
 #define BUFSIZE 4096
 
-int cmd_ping(int argc, char *argv[]);
-
 int execute_script(char *cmdfile);
 
 typedef int (*cmdproc_t)(int argc, char *argv[]);
@@ -1531,7 +1529,6 @@ struct command cmdtab[] = {
   {"move",     cmd_mv,       "Move file"},
   {"mv",       cmd_mv,       "Move file"},
   {"nslookup", cmd_nslookup, "Lookup hostname or IP address using DNS"},
-  {"ping",     cmd_ping,     "Send ICMP echo request to network host"},
   {"play",     cmd_play,     "Play RTTTL file in speaker"},
   {"ps",       cmd_ps,       "Display process list"},
   {"read",     cmd_read,     "Read file from disk"},

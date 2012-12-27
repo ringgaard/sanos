@@ -4,8 +4,8 @@
 
 all: sh.exe
 
-sh.exe: sh.c ping.c
-    $(CC) sh.c ping.c
+sh.exe: sh.c
+    $(CC) sh.c
 
 install: sh.exe
     sh cp sh.exe /bin/sh.exe

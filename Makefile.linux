@@ -14,7 +14,7 @@ LIB_OS=linux/install/usr/lib/os.def
 
 TCCFLAGS=-B linux/install/usr
 
-sanos: dirs build-tools boot osldr kernel drivers os libc utils sdk sdk-source
+sanos: dirs build-tools boot osldr kernel drivers os libc utils cmds sdk sdk-source
 
 #
 # dirs
@@ -48,6 +48,7 @@ linux/.timestamp:
 	[ -d linux/install/usr/include ]           || ln -s ../../../src/include linux/install/usr/include
 	[ -d linux/install/usr/src/lib ]           || ln -s ../../../../src/lib linux/install/usr/src/lib
 	[ -d linux/install/usr/src/sys ]           || ln -s ../../../../src/sys linux/install/usr/src/sys
+	[ -d linux/install/usr/src/cmds ]          || ln -s ../../../../src/cmds linux/install/usr/src/cmds
 	[ -d linux/install/usr/src/utils/ar ]      || ln -s ../../../../../src/utils/ar linux/install/usr/src/utils/ar
 	[ -d linux/install/usr/src/utils/ctohtml ] || ln -s ../../../../../src/utils/ctohtml linux/install/usr/src/utils/ctohtml
 	[ -d linux/install/usr/src/utils/edit ]    || ln -s ../../../../../src/utils/edit linux/install/usr/src/utils/edit
@@ -682,14 +683,15 @@ utils: \
   linux/install/usr/bin/impdef.exe \
   linux/install/usr/bin/ctohtml.exe
 
-linux/install/bin/sh.exe: src/utils/sh/sh.c src/utils/sh/ping.c
+linux/install/bin/sh.exe: src/utils/sh/sh.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
 
 SH_SRCS=src/utils/nsh/sh.c src/utils/nsh/node.c src/utils/nsh/job.c src/utils/nsh/interp.c src/utils/nsh/parser.c src/utils/nsh/stmalloc.c src/utils/nsh/input.c src/utils/nsh/chartype.c src/utils/nsh/cmds.c src/utils/nsh/builtins.c
 SH_HDRS=src/utils/nsh/sh.h src/utils/nsh/node.h src/utils/nsh/job.h src/utils/nsh/interp.h src/utils/nsh/parser.h src/utils/nsh/stmalloc.h src/utils/nsh/input.h src/utils/nsh/chartype.h
+SH_CMDS=src/cmds/ping.c
 
 linux/install/bin/nsh.exe: $(SH_SRCS) $(SH_HDRS)
-	$(TCC) -o $@ $(SH_SRCS) $(TCCFLAGS) -D SHELL
+	$(TCC) -o $@ $(SH_SRCS) $(SH_CMDS) $(TCCFLAGS) -D SHELL
 
 linux/install/bin/edit.exe: src/utils/edit/edit.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
@@ -722,6 +724,16 @@ linux/install/usr/bin/impdef.exe: src/utils/impdef/impdef.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
 
 linux/install/usr/bin/ctohtml.exe: src/utils/ctohtml/ctohtml.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+#
+# cmds
+#
+
+cmds: \
+  linux/install/bin/ping.exe
+
+linux/install/bin/ping.exe: src/cmds/ping.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
 
 #
