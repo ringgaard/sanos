@@ -1,9 +1,9 @@
 //
-// sh.h
+// pwd.h
 //
-// Shell
+// User database
 //
-// Copyright (C) 2011 Michael Ringgaard. All rights reserved.
+// Copyright (C) 2002 Michael Ringgaard. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -31,45 +31,19 @@
 // SUCH DAMAGE.
 // 
 
-#ifndef SH_H
-#define SH_H
+#if _MSC_VER > 1000
+#pragma once
+#endif
 
-#include <os.h>
-#include <crtbase.h>
+#ifndef SHELL_H
+#define SHELL_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <io.h>
-#include <inifile.h>
-#include <glob.h>
-#include <shell.h>
+typedef int (*main_t)(int argc, char *argv[]);
 
-#include "stmalloc.h"
-#include "input.h"
-#include "chartype.h"
-#include "node.h"
-#include "parser.h"
-#include "job.h"
-#include "interp.h"
-
-#define MAX_COMMAND_LEN 8
-
-typedef int (*builtin_t)(struct job *job);
-
-#define builtin(name) __declspec(dllexport) int builtin_##name(struct job *job)
-
-//
-// Shell
-//
-
-struct shell {
-  struct job *top;
-  struct job *jobs;
-  int fd[STD_HANDLES];
-  int done;
-  int debug;
-  struct term *term;
-};
+#ifdef SHELL
+#define shellcmd(name) __declspec(dllexport) int cmd_##name(int argc, char *argv[])
+#else
+#define shellcmd(name) int main(int argc, char *argv[])
+#endif
 
 #endif

@@ -1,9 +1,9 @@
 //
-// sh.h
+// builtins.c
 //
-// Shell
+// Built-in shell commands
 //
-// Copyright (C) 2011 Michael Ringgaard. All rights reserved.
+// Copyright (C) 2012 Michael Ringgaard. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -31,45 +31,58 @@
 // SUCH DAMAGE.
 // 
 
-#ifndef SH_H
-#define SH_H
+#include "sh.h"
 
-#include <os.h>
-#include <crtbase.h>
+builtin(debug) {
+  job->shell->debug = 1;
+  return 0;
+}
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <io.h>
-#include <inifile.h>
-#include <glob.h>
-#include <shell.h>
+builtin(exit) {
+  if (job->args.num > 1) {
+    job->exitcode = atoi(job->args.first->next->value);
+  } else {
+    job->exitcode = 0;
+  }
+  job->shell->done = 1;
+  return 0;
+}
 
-#include "stmalloc.h"
-#include "input.h"
-#include "chartype.h"
-#include "node.h"
-#include "parser.h"
-#include "job.h"
-#include "interp.h"
+builtin(chdir) {
+  char *path;
 
-#define MAX_COMMAND_LEN 8
+  if (job->args.num > 1) {
+    path = job->args.first->next->value;
+  } else {
+    path = "/";
+  }
 
-typedef int (*builtin_t)(struct job *job);
+  if (chdir(path) < 0) {
+    fprintf(stderr, "%s: %s\n", path, strerror(errno));
+    return 1;
+  }
 
-#define builtin(name) __declspec(dllexport) int builtin_##name(struct job *job)
+  return 0;
+}
 
-//
-// Shell
-//
+builtin(cd) {
+  return builtin_chdir(job);
+}
 
-struct shell {
-  struct job *top;
-  struct job *jobs;
-  int fd[STD_HANDLES];
-  int done;
-  int debug;
-  struct term *term;
-};
+builtin(set) {
+  struct var *var;
 
-#endif
+  // Find scope for variables
+  struct job *scope = job;
+  while (scope->vars.inherit && scope->parent != NULL) scope = scope->parent;
+
+  // Print variables
+  var = scope->vars.list;
+  while (var) {
+    printf("%s=%s\n", var->name, var->value);
+    var = var->next;
+  }
+
+  return 0;
+}
+

@@ -70,7 +70,7 @@ void *stalloc(struct stkmark *mark, int size) {
     blksize = size;
     if (blksize < STKBLKMIN) blksize = STKBLKMIN;
 
-printf("==== malloc new block (%d bytes)\n", size);
+    //printf("==== malloc new block (%d bytes)\n", size);
     blk = (struct stkblk *) malloc(sizeof(struct stkblk) - STKBLKMIN + blksize);
     if (!blk) return NULL;
 

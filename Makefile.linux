@@ -58,6 +58,7 @@ linux/.timestamp:
 	[ -d linux/install/usr/src/utils/login ]   || ln -s ../../../../../src/utils/login linux/install/usr/src/utils/login
 	[ -d linux/install/usr/src/utils/make ]    || ln -s ../../../../../src/utils/make linux/install/usr/src/utils/make
 	[ -d linux/install/usr/src/utils/mkboot ]  || ln -s ../../../../../src/utils/mkboot linux/install/usr/src/utils/mkboot
+	[ -d linux/install/usr/src/utils/nsh ]     || ln -s ../../../../../src/utils/nsh linux/install/usr/src/utils/nsh
 	[ -d linux/install/usr/src/utils/samples ] || ln -s ../../../../../src/utils/samples linux/install/usr/src/utils/samples
 	[ -d linux/install/usr/src/utils/setup ]   || ln -s ../../../../../src/utils/setup linux/install/usr/src/utils/setup
 	[ -d linux/install/usr/src/utils/sh ]      || ln -s ../../../../../src/utils/sh linux/install/usr/src/utils/sh
@@ -667,6 +668,7 @@ linux/install/usr/lib/libc.a: $(LIBC_OBJ) $(LIBC_MATHOBJ)
 
 utils: \
   linux/install/bin/sh.exe \
+  linux/install/bin/nsh.exe \
   linux/install/bin/edit.exe \
   linux/install/bin/fdisk.exe \
   linux/install/bin/setup.exe \
@@ -681,6 +683,12 @@ utils: \
 
 linux/install/bin/sh.exe: src/utils/sh/sh.c src/utils/sh/ping.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+SH_SRCS=src/utils/nsh/sh.c src/utils/nsh/node.c src/utils/nsh/job.c src/utils/nsh/interp.c src/utils/nsh/parser.c src/utils/nsh/stmalloc.c src/utils/nsh/input.c src/utils/nsh/chartype.c src/utils/nsh/cmds.c src/utils/nsh/builtins.c
+SH_HDRS=src/utils/nsh/sh.h src/utils/nsh/node.h src/utils/nsh/job.h src/utils/nsh/interp.h src/utils/nsh/parser.h src/utils/nsh/stmalloc.h src/utils/nsh/input.h src/utils/nsh/chartype.h
+
+linux/install/bin/nsh.exe: $(SH_SRCS) $(SH_HDRS)
+	$(TCC) -o $@ $(SH_SRCS) $(TCCFLAGS) -D SHELL
 
 linux/install/bin/edit.exe: src/utils/edit/edit.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)

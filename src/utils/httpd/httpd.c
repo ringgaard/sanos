@@ -1207,3 +1207,9 @@ int httpd_start(struct httpd_server *server) {
   return 0;
 }
 
+#ifdef _MSC_VER
+int __stdcall DllMain(hmodule_t hmod, int reason, void *reserved) {
+  return TRUE;
+}
+#endif
+

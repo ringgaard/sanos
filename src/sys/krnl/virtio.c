@@ -53,7 +53,7 @@ int virtio_handler(struct context *ctxt, void *arg) {
   isr = inp(vd->iobase + VIRTIO_PCI_ISR);
   if (!isr) return 0;
 
-  // Queue DPC to read the queues for the device.
+  // Queue DPC to read the queues for the device
   queue_irq_dpc(&vd->dpc, virtio_dpc, vd);
   eoi(vd->irq);
   return 1;
@@ -67,7 +67,7 @@ void virtio_get_config(struct virtio_device *vd, void *buf, int len) {
 }
 
 int virtio_device_init(struct virtio_device *vd, struct unit *unit, int features) {
-  // Get device resources.
+  // Get device resources
   vd->unit = unit;
   vd->irq = get_unit_irq(unit);
   vd->iobase = get_unit_iobase(unit);
@@ -113,14 +113,14 @@ static int init_queue(struct virtio_queue *vq, int index, int size) {
   char *buffer;
   int i;
   
-  // Initialize vring structure.
+  // Initialize vring structure
   len = vring_size(size);
   buffer = kmalloc(len);
   if (!buffer) return -ENOMEM;
   memset(buffer, 0, len);
   vring_init(&vq->vring, size, buffer);
   
-  // Setup queue.
+  // Setup queue
   vq->index = index;
   vq->last_used_idx = 0;
   vq->num_added = 0;
@@ -174,7 +174,7 @@ int virtio_queue_size(struct virtio_queue *vq) {
 
 int virtio_enqueue(struct virtio_queue *vq, struct scatterlist sg[], unsigned int out, unsigned int in, void *data) {
   int i, avail;
-  int head, prev;
+  int head, tail;
 
   // Wait for available buffers
   while (vq->num_free < out + in) {
@@ -188,19 +188,19 @@ int virtio_enqueue(struct virtio_queue *vq, struct scatterlist sg[], unsigned in
     vq->vring.desc[i].flags = VRING_DESC_F_NEXT;
     vq->vring.desc[i].addr = virt2phys(sg->data);
     vq->vring.desc[i].len = sg->size;
-    prev = i;
+    tail = i;
     sg++;
   }
   for (; in; i = vq->vring.desc[i].next, in--) {
     vq->vring.desc[i].flags = VRING_DESC_F_NEXT | VRING_DESC_F_WRITE;
     vq->vring.desc[i].addr = virt2phys(sg->data);
     vq->vring.desc[i].len = sg->size;
-    prev = i;
+    tail = i;
     sg++;
   }
   
   // No continue on last buffer
-  vq->vring.desc[prev].flags &= ~VRING_DESC_F_NEXT;
+  vq->vring.desc[tail].flags &= ~VRING_DESC_F_NEXT;
 
   // Update free pointer
   vq->free_head = i;

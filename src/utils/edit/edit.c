@@ -230,8 +230,6 @@ void reset_undo(struct editor *ed) {
 }
 
 struct editor *create_editor(struct env *env) {
-  int i;
-
   struct editor *ed = (struct editor *) malloc(sizeof(struct editor));
   memset(ed, 0, sizeof(struct editor));
   if (env->current) {
@@ -298,9 +296,10 @@ int new_file(struct editor *ed, char *filename) {
 int load_file(struct editor *ed, char *filename) {
   struct stat statbuf;
   int length;
+  int f;
 
   if (!realpath(filename, ed->filename)) return -1;
-  int f = open(ed->filename, O_RDONLY | O_BINARY);
+  f = open(ed->filename, O_RDONLY | O_BINARY);
   if (f < 0) return -1;
 
   if (fstat(f, &statbuf) < 0) goto err;
@@ -704,16 +703,16 @@ void select_all(struct editor *ed) {
 //
 
 void get_console_size(struct env *env) {
-#ifdef SANOS
-  struct term *term = gettib()->proc->term;
-  env->cols = term->cols;
-  env->lines = term->lines - 1;
-#else
+#ifdef __linux__
   struct winsize ws;
 
   ioctl(0, TIOCGWINSZ, &ws);
   env->cols = ws.ws_col;
   env->lines = ws.ws_row - 1;
+#else
+  struct term *term = gettib()->proc->term;
+  env->cols = term->cols;
+  env->lines = term->lines - 1;
 #endif
   env->linebuf = realloc(env->linebuf, env->cols + LINEBUF_EXTRA);
 }
@@ -890,7 +889,7 @@ int getkey() {
 }
 
 int prompt(struct editor *ed, char *msg) {
-  int maxlen, len, ch, selstart, selend;
+  int maxlen, len, ch;
   char *buf = ed->env->linebuf;
 
   gotoxy(0, ed->env->lines);

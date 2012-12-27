@@ -1,9 +1,9 @@
 //
-// sh.h
+// interp.h
 //
-// Shell
+// Shell command interpreter
 //
-// Copyright (C) 2011 Michael Ringgaard. All rights reserved.
+// Copyright (C) 2012 Michael Ringgaard. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -31,45 +31,10 @@
 // SUCH DAMAGE.
 // 
 
-#ifndef SH_H
-#define SH_H
+#ifndef INTERP_H
+#define INTERP_H
 
-#include <os.h>
-#include <crtbase.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <io.h>
-#include <inifile.h>
-#include <glob.h>
-#include <shell.h>
-
-#include "stmalloc.h"
-#include "input.h"
-#include "chartype.h"
-#include "node.h"
-#include "parser.h"
-#include "job.h"
-#include "interp.h"
-
-#define MAX_COMMAND_LEN 8
-
-typedef int (*builtin_t)(struct job *job);
-
-#define builtin(name) __declspec(dllexport) int builtin_##name(struct job *job)
-
-//
-// Shell
-//
-
-struct shell {
-  struct job *top;
-  struct job *jobs;
-  int fd[STD_HANDLES];
-  int done;
-  int debug;
-  struct term *term;
-};
+int interp(struct job *parent, union node *node);
 
 #endif
+

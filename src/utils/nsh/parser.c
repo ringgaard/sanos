@@ -1016,14 +1016,6 @@ static int parse_gettok(struct parser *p, int tempflags) {
 
     // ...and finally for words
     if (p->tok == -1) p->tok = parse_word(p);
-
-#if 0
-    if (p->tok != -1) {
-      int i, n;
-      for (i = 0, n = p->tok; n > 1; i++, n >>= 1);
-      printf("[tok %s]", tokens[i].name);
-    }
-#endif
   }
   
   p->flags = oldflags;
@@ -1372,7 +1364,7 @@ static union node *parse_command(struct parser *p, int tempflags) {
   int tok;
   union node *command;
   union node **rptr;
- 
+
   tok = parse_gettok(p, tempflags);
 
   switch (tok) {
@@ -1412,7 +1404,7 @@ static union node *parse_command(struct parser *p, int tempflags) {
       p->pushback++;
       command = parse_simple_command(p);
       break;
-    
+
     default:
       // It wasn't a compound command, return now
       p->pushback++;

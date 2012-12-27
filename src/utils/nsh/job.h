@@ -1,7 +1,7 @@
 //
-// sh.h
+// job.h
 //
-// Shell
+// Shell jobs
 //
 // Copyright (C) 2011 Michael Ringgaard. All rights reserved.
 //
@@ -31,45 +31,79 @@
 // SUCH DAMAGE.
 // 
 
-#ifndef SH_H
-#define SH_H
+#ifndef JOB_H
+#define JOB_H
 
-#include <os.h>
-#include <crtbase.h>
+#include "sh.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <io.h>
-#include <inifile.h>
-#include <glob.h>
-#include <shell.h>
-
-#include "stmalloc.h"
-#include "input.h"
-#include "chartype.h"
-#include "node.h"
-#include "parser.h"
-#include "job.h"
-#include "interp.h"
-
-#define MAX_COMMAND_LEN 8
-
-typedef int (*builtin_t)(struct job *job);
-
-#define builtin(name) __declspec(dllexport) int builtin_##name(struct job *job)
+#define STD_HANDLES  3
 
 //
-// Shell
+// Arguments
 //
 
-struct shell {
-  struct job *top;
-  struct job *jobs;
-  int fd[STD_HANDLES];
-  int done;
-  int debug;
-  struct term *term;
+struct arg {
+  struct arg *next;
+  char *value;
 };
+
+struct args {
+  struct arg *first;
+  struct arg *last;
+  int num;
+};
+
+//
+// Variables
+//
+
+struct var {
+  struct var *next;
+  int hash;
+  char *name;
+  char *value;
+};
+
+struct vars {
+  struct var *list;
+  int inherit;
+};
+
+//
+// Job
+//
+
+struct job {
+  struct shell *shell;
+  struct job *parent;
+  struct vars vars;
+  struct args args;
+  int fd[STD_HANDLES];
+  int exitcode;
+  int handle;
+  int pid;
+  main_t main;
+  struct job *next;
+};
+
+void init_shell(struct shell *shell, int argc, char *argv[], char *env[]);
+void clear_shell(struct shell *shell);
+
+struct job *create_job(struct job *parent);
+void remove_job(struct job *job);
+int execute_job(struct job *job);
+void detach_job(struct job *job);
+int wait_for_job(struct job *job);
+
+void init_args(struct args *args);
+void delete_args(struct args *args);
+struct arg *add_arg(struct args *args, char *value);
+char *get_command_line(struct args *args);
+
+void set_var(struct job *job, char *name, char *value);
+char *get_var(struct job *job, char *name);
+
+void set_fd(struct job *job, int h, int fd);
+int get_fd(struct job *job, int h, int own);
 
 #endif
