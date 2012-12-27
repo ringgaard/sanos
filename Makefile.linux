@@ -216,7 +216,8 @@ DEV_SRCS=\
   src/sys/dev/serial.c \
   src/sys/dev/smbios.c \
   src/sys/dev/video.c \
-  src/sys/dev/virtioblk.c
+  src/sys/dev/virtioblk.c \
+  src/sys/dev/virtiocon.c
 
 NET_SRCS=\
   src/sys/net/arp.c \
@@ -748,6 +749,13 @@ sdk-source:
 	mkdir -p linux/install/usr/src/utils/makedepend
 	cp sdk/src/makedepend/*.c sdk/src/makedepend/*.h linux/install/usr/src/utils/makedepend
 	cp sdk/src/makedepend/Makefile.sanos linux/install/usr/src/utils/makedepend/Makefile
+
+lua-source:
+	mkdir -p linux/install/usr/src/utils/lua
+	cp sdk/src/lua/Makefile.sanos linux/install/usr/src/utils/lua/Makefile
+	cp sdk/src/lua/*.c sdk/src/lua/*.h linux/install/usr/src/utils/lua
+	mkdir -p linux/install/usr/lua
+	cp sdk/src/lua/stdlib/*.lua linux/install/usr/lua
 
 #
 # vmdk

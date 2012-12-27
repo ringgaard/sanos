@@ -49,7 +49,8 @@ DEV_SRCS=\
   ../dev/serial.c \
   ../dev/smbios.c \
   ../dev/video.c \
-  ../dev/virtioblk.c
+  ../dev/virtioblk.c \
+  ../dev/virtiocon.c
 
 NET_SRCS=\
   ../net/arp.c \
