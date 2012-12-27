@@ -2,7 +2,7 @@
 # Main makefile for Sanos
 #
 
-all: sdk sys utils
+all: sdk sys utils cmds
 
 sdk:
     make -C lib
@@ -30,6 +30,8 @@ utils:
 cmds:
     make -C cmds
 
+install: install-sdk install-sys install-utils install-cmds
+
 install-sdk:
     make -C lib install
     make -C utils/as install
@@ -56,7 +58,7 @@ install-utils:
 install-cmds:
     make -C cmds install
 
-install: install-sdk install-sys install-utils install-cmds
+clean: clean-sdk clean-sys clean-utils clean-cmds
 
 clean-sdk:
     make -C lib clean
@@ -81,8 +83,6 @@ clean-utils:
 
 clean-cmds:
     make -C cmds clean
-
-clean: clean-sdk clean-sys clean-utils clean-cmds
 
 .PHONY: utils sys cmds
 

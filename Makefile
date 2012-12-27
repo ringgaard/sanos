@@ -118,7 +118,7 @@ dirs:
     -@if not exist $(OBJ)\virtionet mkdir $(OBJ)\virtionet
     -@if not exist $(OBJ)\setup mkdir $(OBJ)\setup
     -@if not exist $(OBJ)\sh mkdir $(OBJ)\sh
-    -@if not exist $(OBJ)\nsh mkdir $(OBJ)\nsh
+    -@if not exist $(OBJ)\msh mkdir $(OBJ)\msh
     -@if not exist $(OBJ)\sis900 mkdir $(OBJ)\sis900
     -@if not exist $(OBJ)\tulip mkdir $(OBJ)\tulip
     -@if not exist $(OBJ)\edit mkdir $(OBJ)\edit
@@ -942,28 +942,28 @@ $(BIN)/msvcrt.dll: \
 # utils
 #
 
-utils: dirs $(BIN)/sh.exe $(BIN)/nsh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/ctohtml.exe $(BIN)/mkboot.exe $(BIN)/ping.exe $(BIN)/httpd.dll
+utils: dirs $(BIN)/sh.exe $(BIN)/msh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/ctohtml.exe $(BIN)/mkboot.exe $(BIN)/ping.exe $(BIN)/httpd.dll
 
 $(BIN)/sh.exe: \
   $(SRC)/utils/sh/sh.c \
+  $(SRC)/utils/sh/input.c \
+  $(SRC)/utils/sh/parser.c \
+  $(SRC)/utils/sh/stmalloc.c \
+  $(SRC)/utils/sh/node.c \
+  $(SRC)/utils/sh/chartype.c \
+  $(SRC)/utils/sh/job.c \
+  $(SRC)/utils/sh/interp.c \
+  $(SRC)/utils/sh/cmds.c \
+  $(SRC)/utils/sh/builtins.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
-    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/sh/ $** /link /NODEFAULTLIB /FIXED:NO
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/sh/ $** /D SHELL /link /NODEFAULTLIB /FIXED:NO
 
-$(BIN)/nsh.exe: \
-  $(SRC)/utils/nsh/sh.c \
-  $(SRC)/utils/nsh/input.c \
-  $(SRC)/utils/nsh/parser.c \
-  $(SRC)/utils/nsh/stmalloc.c \
-  $(SRC)/utils/nsh/node.c \
-  $(SRC)/utils/nsh/chartype.c \
-  $(SRC)/utils/nsh/job.c \
-  $(SRC)/utils/nsh/interp.c \
-  $(SRC)/utils/nsh/cmds.c \
-  $(SRC)/utils/nsh/builtins.c \
+$(BIN)/msh.exe: \
+  $(SRC)/utils/msh/msh.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
-    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/nsh/ $** /D SHELL /link /NODEFAULTLIB /FIXED:NO
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/msh/ $** /link /NODEFAULTLIB /FIXED:NO
 
 $(BIN)/edit.exe: \
   $(SRC)/utils/edit/edit.c \
@@ -1138,10 +1138,6 @@ $(SDKBIN)/ctohtml.exe: $(BIN)/ctohtml.exe
     if not exist $(SDKBIN) mkdir $(SDKBIN)
     copy /Y $(BIN)\ctohtml.exe $(SDKBIN)\ctohtml.exe
 
-$(SDKBIN)/nsh.exe: $(BIN)/nsh.exe
-    if not exist $(SDKBIN) mkdir $(SDKBIN)
-    copy /Y $(BIN)\nsh.exe $(SDKBIN)\nsh.exe
-
 sdk: $(SDKBIN)/os.dll $(SDKBIN)/make.exe $(SDKBIN)/ar.exe $(SDKBIN)/impdef.exe $(SDKBIN)/ctohtml.exe
     cd $(SDKSRC)\as && nmake install
     cd $(SDKSRC)\cc && nmake install
@@ -1172,7 +1168,7 @@ install: sanos
     if not exist $(INSTALL)\usr mkdir $(INSTALL)\usr
     if not exist $(INSTALL)\var mkdir $(INSTALL)\var
     copy /Y $(BIN)\sh.exe        $(INSTALL)\bin\sh.exe
-    copy /Y $(BIN)\nsh.exe       $(INSTALL)\bin\nsh.exe
+    copy /Y $(BIN)\msh.exe       $(INSTALL)\bin\msh.exe
     copy /Y $(BIN)\httpd.dll     $(INSTALL)\bin\httpd.dll
     copy /Y $(BIN)\setup.exe     $(INSTALL)\bin\setup.exe
     copy /Y $(BIN)\ctohtml.exe   $(INSTALL)\bin\ctohtml.exe

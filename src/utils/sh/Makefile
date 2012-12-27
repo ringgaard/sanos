@@ -4,11 +4,16 @@
 
 all: sh.exe
 
-sh.exe: sh.c
-    $(CC) sh.c
+SH_SRCFILES=node.c stmalloc.c input.c chartype.c parser.c job.c interp.c sh.c builtins.c cmds.c
+SH_HDRFILES=node.h stmalloc.h input.h chartype.h parser.h job.h interp.h sh.h
+CMDS=../../cmds/ping.c
 
-install: sh.exe
+sh.exe: $(SH_SRCFILES) $(SH_HDRFILES)
+    $(CC) -o sh.exe $(SH_SRCFILES) $(CMDS) -D SHELL
+
+install:
     sh cp sh.exe /bin/sh.exe
 
 clean:
     sh rm sh.exe
+
