@@ -39,13 +39,10 @@ builtin(debug) {
 }
 
 builtin(exit) {
-  if (job->args.num > 1) {
-    job->exitcode = atoi(job->args.first->next->value);
-  } else {
-    job->exitcode = 0;
-  }
+  int rc = 0;
+  if (job->args.num > 1) rc = atoi(job->args.first->next->value);
   job->shell->done = 1;
-  return 0;
+  return rc;
 }
 
 builtin(chdir) {
@@ -71,16 +68,31 @@ builtin(cd) {
 
 builtin(set) {
   struct var *var;
+  struct arg *arg;
 
-  // Find scope for variables
-  struct job *scope = job;
-  while (scope->vars.inherit && scope->parent != NULL) scope = scope->parent;
-
-  // Print variables
-  var = scope->vars.list;
-  while (var) {
-    printf("%s=%s\n", var->name, var->value);
-    var = var->next;
+  if (job->args.num > 1) {
+    // Set shell arguments
+    struct job *scope = get_arg_scope(job);
+    struct args *args = &scope->args;
+    char *argv0 = strdup(args->first->value); 
+    args->first->value = NULL;
+    delete_args(args);
+    args->inherit = 1;
+    add_arg(args, argv0);
+    free(argv0);
+    arg = job->args.first->next;
+    while (arg) {
+      add_arg(args, arg->value);
+      arg = arg->next;
+    }
+  } else {
+    // Print variables
+    struct job *scope = get_var_scope(job);
+    var = scope->vars.list;
+    while (var) {
+      printf("%s=%s\n", var->name, var->value);
+      var = var->next;
+    }
   }
 
   return 0;

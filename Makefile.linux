@@ -371,6 +371,7 @@ LIBC_OBJ = \
   $(OBJ)/ctype.o \
   $(OBJ)/dirent.o \
   $(OBJ)/fcvt.o \
+  $(OBJ)/fnmatch.o \
   $(OBJ)/fork.o \
   $(OBJ)/getopt.o \
   $(OBJ)/glob.o \
@@ -464,6 +465,9 @@ $(OBJ)/dirent.o: src/lib/dirent.c
 	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
 
 $(OBJ)/fcvt.o: src/lib/fcvt.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/fnmatch.o: src/lib/fnmatch.c
 	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
 
 $(OBJ)/fork.o: src/lib/fork.c

@@ -101,14 +101,14 @@
 #define S_PID      (8 << 3)  // $$
 
 #define S_VAR        0x0f00
-#define S_DEFAULT  (0 << 8)  // ${parameter:-word}
-#define S_ASGNDEF  (1 << 8)  // ${parameter:=word}
-#define S_ERRNULL  (2 << 8)  // ${parameter:?[word]}
-#define S_ALTERNAT (3 << 8)  // ${parameter:+word}
-#define S_RSSFX    (4 << 8)  // ${parameter%word}
-#define S_RLSFX    (5 << 8)  // ${parameter%%word}
-#define S_RSPFX    (6 << 8)  // ${parameter#word}
-#define S_RLPFX    (7 << 8)  // ${parameter##word}
+#define S_DEFAULT  (1 << 8)  // ${parameter:-word}
+#define S_ASGNDEF  (2 << 8)  // ${parameter:=word}
+#define S_ERRNULL  (3 << 8)  // ${parameter:?[word]}
+#define S_ALTERNAT (4 << 8)  // ${parameter:+word}
+#define S_RSSFX    (5 << 8)  // ${parameter%word}
+#define S_RLSFX    (6 << 8)  // ${parameter%%word}
+#define S_RSPFX    (7 << 8)  // ${parameter#word}
+#define S_RLPFX    (8 << 8)  // ${parameter##word}
 
 #define S_STRLEN    0x01000
 #define S_NULL      0x02000  // Treat set but null as unset (:)

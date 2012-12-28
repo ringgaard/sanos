@@ -51,6 +51,7 @@ struct args {
   struct arg *first;
   struct arg *last;
   int num;
+  int inherit;
 };
 
 //
@@ -102,6 +103,9 @@ char *get_command_line(struct args *args);
 
 void set_var(struct job *job, char *name, char *value);
 char *get_var(struct job *job, char *name);
+
+struct job *get_arg_scope(struct job *job);
+struct job *get_var_scope(struct job *job);
 
 void set_fd(struct job *job, int h, int fd);
 int get_fd(struct job *job, int h, int own);

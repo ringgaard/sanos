@@ -4,7 +4,11 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
-    * Added support for script hashbangs in module loader
+    * Switched to using new shell as default shell.
+
+    * Implemented support for redirection and pipelines in new shell.
+    
+    * Added support for script hashbangs in module loader.
 
     * Text editor improvements:
         - Undo/redo

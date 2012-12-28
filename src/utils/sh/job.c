@@ -46,8 +46,7 @@ static void copy_vars(struct job *job) {
   struct var *var;
 
   // Find scope for variables
-  struct job *scope = job;
-  while (scope->vars.inherit && scope->parent != NULL) scope = scope->parent;
+  struct job *scope = get_var_scope(job);
 
   // Initialize variables from parent scope
   vptr = &job->vars.list;
@@ -120,13 +119,22 @@ void set_var(struct job *job, char *name, char *value) {
   }
 }
 
+struct job *get_var_scope(struct job *job) {
+  while (job->parent && job->vars.inherit) job = job->parent;
+  return job;
+}
+
+struct job *get_arg_scope(struct job *job) {
+  while (job->parent && job->args.inherit) job = job->parent;
+  return job;
+}
+
 char *get_var(struct job *job, char *name) {
   int h;
   struct var *var;
 
   // Find scope for variables
-  struct job *scope = job;
-  while (scope->vars.inherit && scope->parent != NULL) scope = scope->parent;
+  struct job *scope = get_var_scope(job);
   
   // Find variable in scope
   h = hash(name);
@@ -153,6 +161,7 @@ static void delete_vars(struct vars *vars) {
 void init_args(struct args *args) {
   args->first = args->last = NULL;
   args->num = 0;
+  args->inherit = 0;
 }
 
 void delete_args(struct args *args) {
@@ -236,6 +245,7 @@ struct job *create_job(struct job *parent) {
   job->parent = parent;
   job->shell = parent->shell;
   job->handle = -1;
+  job->args.inherit = 1;
 
   // Insert job in job list for shell
   if (job->shell->jobs) {
@@ -438,6 +448,7 @@ int wait_for_job(struct job *job) {
       job->exitcode = waitone(job->handle, INFINITE);
       if (job->exitcode >= 0 || errno != EINTR) break;
     }
+    job->shell->lastrc = job->exitcode;
   }
   return 0;
 }
@@ -464,6 +475,7 @@ static int run_external_command(struct job *job) {
     return 1;
   }
   tib->proc->term = job->shell->term;
+  job->shell->lastpid = tib->pid;
 
   // Setup standard I/O for program
   proc = tib->proc;
@@ -527,13 +539,14 @@ static int run_internal_command(struct job *job) {
   proc->ident = strdup(name);
   proc->term = job->shell->term;
   for (i = 0; i < 3; i++) proc->iob[i] = get_fd(job, i, 1);
+  job->shell->lastpid = tib->pid;
 
   return 0;
 }
 
 static builtin_t lookup_builtin(char *name) {
   char procname[MAX_COMMAND_LEN + 9];
-  
+
   if (strlen(name) > MAX_COMMAND_LEN) return NULL;
   strcpy(procname, "builtin_");
   strcat(procname, name);

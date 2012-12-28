@@ -43,6 +43,7 @@
 #include <io.h>
 #include <inifile.h>
 #include <glob.h>
+#include <fnmatch.h>
 #include <shell.h>
 
 #include "stmalloc.h"
@@ -67,6 +68,8 @@ struct shell {
   struct job *top;
   struct job *jobs;
   int fd[STD_HANDLES];
+  int lastpid;
+  int lastrc;
   int done;
   int debug;
   struct term *term;

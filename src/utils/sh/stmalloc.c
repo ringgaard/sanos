@@ -130,12 +130,15 @@ static int streserve(struct stkmark *mark, int size) {
   return 0;
 }
 
-int stputstr(struct stkmark *mark, char *str) {
-  int len = strlen(str);
+int stputbuf(struct stkmark *mark, char *data, int len) {
   if (streserve(mark, len) < 0) return -1;
-  memcpy(mark->txt, str, len);
+  memcpy(mark->txt, data, len);
   mark->txt += len;
   return 0;
+}
+
+int stputstr(struct stkmark *mark, char *str) {
+  return stputbuf(mark, str, strlen(str));
 }
 
 int stputc(struct stkmark *mark, int ch) {

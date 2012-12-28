@@ -2,7 +2,7 @@
 # Makefile for C runtime library
 #
 
-OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o \
+OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fnmatch.o \
     fork.o getopt.o glob.o hash.o inifile.o input.o math.o opts.o output.o \
     qsort.o random.o readline.o rmap.o rtttl.o sched.o semaphore.o \
     stdio.o scanf.o printf.o tmpfile.o popen.o stdlib.o strftime.o \
@@ -42,6 +42,9 @@ dirent.o: dirent.c
     $(CC) -c $< -g
 
 fcvt.o: fcvt.c
+    $(CC) -c $< -g
+
+fnmatch.o: fnmatch.c
     $(CC) -c $< -g
 
 fork.o: fork.c

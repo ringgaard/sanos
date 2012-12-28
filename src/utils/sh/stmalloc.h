@@ -53,6 +53,7 @@ void pushstkmark(struct stkmark *oldmark, struct stkmark *newmark);
 void popstkmark(struct stkmark *mark);
 
 void *stalloc(struct stkmark *mark, int size);
+int stputbuf(struct stkmark *mark, char *data, int len);
 int stputc(struct stkmark *mark, int ch);
 int stputstr(struct stkmark *mark, char *str);
 char *ststr(struct stkmark *mark);

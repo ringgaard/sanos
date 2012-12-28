@@ -58,6 +58,241 @@ static int expand_glob(struct stkmark *mark, struct args *args, char *pattern) {
   return 0;
 }
 
+static void expand_field(struct stkmark *mark, char *str, int quoted, struct args *args) {
+  if (!str) return;
+  if (quoted || !args) {
+    stputstr(mark, str);
+  } else {
+    while (*str) {
+      char *start = str;
+      while (*str && is_space(*str)) str++;
+      if (!*str) break;
+
+      if (str != start && ststrlen(mark) > 0) add_arg(args, ststr(mark));
+      start = str;
+      while (*str && !is_space(*str)) str++;
+      stputbuf(mark, start, str - start);
+    }
+  }
+}
+
+static char *expand_word(struct job *job, union node *node) {
+  struct stkmark mark;
+  int rc;
+  char *word = NULL;
+  
+  pushstkmark(NULL, &mark);
+  rc = expand_args(&mark, job, NULL, node);
+  if (rc == 0) word = strdup(ststr(&mark));
+  popstkmark(&mark);
+  return word;
+}
+
+static char *remove_shortest_suffix(char *str, char *pattern) {
+  char *s;
+
+  if (!str || !pattern) return NULL;
+  s = str + strlen(str);
+  while (s >= str) {
+    if (fnmatch(pattern, s, 0) == 0) {
+      int len = s - str;
+      char *buffer = malloc(len +1);
+      memcpy(buffer, str, len);
+      buffer[len] = 0;
+      return buffer;
+    }
+    s--;
+  }
+  return NULL;
+}
+
+static char *remove_longest_suffix(char *str, char *pattern) {
+  char *s;
+
+  if (!str || !pattern) return NULL;
+  s = str;
+  while (*s) {
+    if (fnmatch(pattern, s, 0) == 0) {
+      int len = s - str;
+      char *buffer = malloc(len +1);
+      memcpy(buffer, str, len);
+      buffer[len] = 0;
+      return buffer;
+    }
+    s++;
+  }
+  return NULL;
+}
+
+static char *remove_shortest_prefix(char *str, char *pattern) {
+  char *s;
+
+  if (!str || !pattern) return str;
+  s = str;
+  while (*s) {
+    char c = *s;
+    *s = 0;
+    if (fnmatch(pattern, str, 0) == 0) {
+      *s = c;
+      return s;
+    }
+    *s++ = c;
+  }
+  if (fnmatch(pattern, str, 0) == 0) return s;
+  return str;
+}
+
+static char *remove_longest_prefix(char *str, char *pattern) {
+  char *s;
+
+  if (!str || !pattern) return str;
+  s = str + strlen(str);
+  while (s >= str) {
+    char c = *s;
+    *s = 0;
+    if (fnmatch(pattern, str, 0) == 0) {
+      *s = c;
+      return s;
+    }
+    *s-- = c;
+  }
+  return str;
+}
+
+static int expand_param(struct stkmark *mark, struct job *job, struct args *args, struct nargparam *param) {
+  char buffer[12];
+  struct job *scope;
+  char *value = NULL;
+  int n;
+  int special;
+  int quoted;
+  int varmod;
+  struct arg *arg;
+
+  // Expand special parameters
+  quoted = (param->flags & S_TABLE) == S_DQUOTED;
+  special = param->flags & S_SPECIAL;
+  if (special) {
+    switch (special) {
+      case S_ARGC: // $#
+        scope = get_arg_scope(job);
+        value = itoa(scope->args.num - 1, buffer, 10);
+        expand_field(mark, value, quoted, args);
+        return 0;
+      
+      case S_ARGV: // $*
+      case S_ARGVS: // $@
+        scope = get_arg_scope(job);
+        arg = scope->args.first;
+        if (arg) arg = arg->next;
+        while (arg) {
+          if (args) {
+            stputstr(mark, arg->value);
+            add_arg(args, ststr(mark));
+          } else {
+            expand_field(mark, arg->value, quoted, args);
+          }
+          arg = arg->next;
+        }
+        return 0;
+
+      case S_EXITCODE: // $?
+        value = itoa(job->shell->lastrc, buffer, 10);
+        expand_field(mark, value, quoted, args);
+        return 0;
+
+      case S_ARG: // $[0-9]
+        scope = get_arg_scope(job);
+        arg = scope->args.first;
+        n = param->num;
+        while (arg && n > 0) {
+          n--;
+          arg = arg->next;
+        }
+        if (param->flags & S_STRLEN) {
+          value = itoa(arg ? strlen(arg->value) : 0, buffer, 10);
+          expand_field(mark, value, quoted, args);
+        } else {
+          if (arg) expand_field(mark, arg->value, quoted, args);
+        }
+        return 0;
+
+      case S_PID: // $$
+        value = itoa(job->shell->lastpid, buffer, 10);
+        expand_field(mark, value, quoted, args);
+        return 0;
+
+      case S_FLAGS: // $-
+      case S_BGEXCODE:  // $!
+        // Not implemented
+        return 0;
+    }
+  }
+
+  // Expand variable
+  value = get_var(job, param->name);
+  varmod = param->flags & S_VAR;
+  if (!varmod) {
+    if (value) expand_field(mark, value, quoted, args);
+  } else {
+    // Expand word
+    char *word = expand_word(job, param->word);
+    char *buf = NULL;
+    int rc = 0;
+    switch (varmod) {
+      case S_DEFAULT: // ${parameter:-word}
+        if (!value) value = word;
+        break;
+
+      case S_ASGNDEF: // ${parameter:=word}
+        if (!value) {
+          value = word;
+          set_var(job, param->name, value);
+        }
+        break;
+
+      case S_ERRNULL: // ${parameter:?[word]}
+        if (!value) {
+          if (word && *word) {
+            fprintf(stderr, "%s: %s\n", param->name, word);
+          } else {
+            fprintf(stderr, "%s: variable not set\n", param->name);
+          }
+          rc = 1;
+        }
+        break;
+
+      case S_ALTERNAT: // ${parameter:+word}
+        if (value || *value) value = word;
+        break;
+
+      case S_RSSFX: // ${parameter%word}
+        buf = remove_shortest_suffix(value, word);
+        if (buf) value = buf;
+        break;
+
+      case S_RLSFX: // ${parameter%%word}
+        buf = remove_longest_suffix(value, word);
+        if (buf) value = buf;
+        break;
+
+      case S_RSPFX: // ${parameter#word}
+        value = remove_shortest_prefix(value, word);
+        break;
+
+      case S_RLPFX: // ${parameter##word}
+        value = remove_longest_prefix(value, word);
+        break;
+    }
+    if (rc == 0 && value) expand_field(mark, value, quoted, args);
+    free(word);
+    free(buf);
+    return rc;
+  }
+
+  return 0;
+}
+
 static int expand_args(struct stkmark *mark, struct job *job, struct args *args, union node *node) {
   union node *n;
   int before;
@@ -97,8 +332,8 @@ static int expand_args(struct stkmark *mark, struct job *job, struct args *args,
       break;
 
     case N_ARGPARAM:
-      value = get_var(job, node->nargparam.name);
-      if (value) stputstr(mark, value);
+      rc = expand_param(mark, job, args, &node->nargparam);
+      if (rc != 0) return rc;
       break;
 
     default:
