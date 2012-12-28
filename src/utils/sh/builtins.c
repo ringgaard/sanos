@@ -33,18 +33,6 @@
 
 #include "sh.h"
 
-builtin(debug) {
-  job->shell->debug = 1;
-  return 0;
-}
-
-builtin(exit) {
-  int rc = 0;
-  if (job->args.num > 1) rc = atoi(job->args.first->next->value);
-  job->shell->done = 1;
-  return rc;
-}
-
 builtin(chdir) {
   char *path;
 
@@ -64,6 +52,22 @@ builtin(chdir) {
 
 builtin(cd) {
   return builtin_chdir(job);
+}
+
+builtin(debug) {
+  job->shell->debug = 1;
+  return 0;
+}
+
+builtin(exit) {
+  int rc = 0;
+  if (job->args.num > 1) rc = atoi(job->args.first->next->value);
+  job->shell->done = 1;
+  return rc;
+}
+
+builtin(false) {
+  return 1;
 }
 
 builtin(set) {
@@ -98,3 +102,26 @@ builtin(set) {
   return 0;
 }
 
+builtin(shift) {
+  int n = 1;
+  struct job *scope = get_arg_scope(job);
+  struct arg *arg = scope->args.first;
+
+  if (job->args.num > 1) n = atoi(job->args.first->next->value);
+  if (n < 0) return 1;
+  if (!arg) return 0;
+  while (n > 0 && arg->next) {
+    struct arg *a = arg->next;
+    arg->next = a->next;
+    free(a->value);
+    free(a);
+    scope->args.num--;
+    n--;
+  }
+
+  return 0;
+}
+
+builtin(true) {
+  return 0;
+}

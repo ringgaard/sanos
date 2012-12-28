@@ -562,7 +562,12 @@ int execute_job(struct job *job) {
 
   // Run builtin command
   cmd = lookup_builtin(job->args.first->value);
-  if (cmd != NULL) return cmd(job);
+  if (cmd != NULL) {
+    rc = cmd(job);
+    job->exitcode = rc;
+    job->shell->lastrc = rc;
+    return rc;
+  }
 
   // Launch program
   job->main = lookup_internal(job->args.first->value);

@@ -758,15 +758,18 @@ static int parse_bquoted(struct parser *p) {
   if (p->tok == T_NAME) p->tok = T_WORD;
   
   if (p->ch == '(') {
-    if (p->ch == '(') return parse_arith(p);
+    next(p);
+    if (p->ch == '(') {
+      next(p);
+      return parse_arith(p);
+    }
     push_parser(p, &ps, P_DEFAULT);
     bq = 0;
   } else {
     push_parser(p, &ps, P_BQUOTE);
     bq = 1;
+    next(p);
   }
-
-  next(p);
 
   if ((cmdlist = parse_compound_list(p)) == NULL) return -1;
 

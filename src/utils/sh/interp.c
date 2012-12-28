@@ -248,6 +248,7 @@ static int expand_param(struct stkmark *mark, struct job *job, struct args *args
         if (!value) {
           value = word;
           set_var(job, param->name, value);
+          if (job->parent) set_var(job->parent, param->name, value);
         }
         break;
 
@@ -290,6 +291,44 @@ static int expand_param(struct stkmark *mark, struct job *job, struct args *args
     return rc;
   }
 
+  return 0;
+}
+
+static int expand_command(struct stkmark *mark, struct job *parent, struct args *args, union node *node) {
+  struct job *job;
+  FILE *f;
+  union node *n;
+  char buf[512];
+  int len;
+
+  // Create job for command expansion
+  job = create_job(parent);
+  
+  // Redirect output to temporary file
+  f = tmpfile();
+  if (!f) {
+    remove_job(job);
+    return 1;
+  }
+  set_fd(job, 1, fileno(f));
+  
+  // Interpret command
+  for (n = node->nargcmd.list; n; n = n->list.next) {
+    if (interp(job, n) != 0) {
+      fclose(f);
+      remove_job(job);
+      return 1;
+    }
+  }
+  
+  // Add output from command to expansion
+  fseek(f, 0, SEEK_SET);
+  while (fgets(buf, sizeof(buf), f)) {
+    expand_field(mark, buf, (node->nargcmd.flags & S_TABLE) == S_DQUOTED, args);
+  }
+
+  fclose(f);
+  remove_job(job);
   return 0;
 }
 
@@ -336,6 +375,11 @@ static int expand_args(struct stkmark *mark, struct job *job, struct args *args,
       if (rc != 0) return rc;
       break;
 
+    case N_ARGCMD:
+      rc = expand_command(mark, job, args, node);
+      if (rc != 0) return rc;
+      break;
+
     default:
       fprintf(stderr, "Unsupported argument type: %d\n", node->type);
       return 1;
@@ -365,7 +409,7 @@ static int interp_vars(struct stkmark *mark, struct job *job, union node *node) 
   while (arg) {
     char *name = arg->value;
     char *value = strchr(arg->value, '=');
-    if (*value == '=') *value++ = 0;
+    if (value) *value++ = 0;
     set_var(job, name, value);
     arg = arg->next;
   }

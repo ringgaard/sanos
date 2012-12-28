@@ -86,13 +86,13 @@ void print_node(union node *node, FILE *out, int level) {
       indent(out, level); fprintf(out, "%s\n", node->type == N_ASSIGN ? "ASSIGN" : "ARG");
       for (n = node->narg.list; n; n = n->list.next) print_node(n, out, level + 1);
       break;
-    
+
     case N_ARGSTR:
       indent(out, level); fprintf(out, "ARGSTR\n");
       indent(out, level); fprintf(out, " flags: %x\n", node->nargstr.flags);
       indent(out, level); fprintf(out, " text: [%s]\n", node->nargstr.text);
       break;
-    
+
     case N_ARGPARAM:
       indent(out, level); fprintf(out, "ARGPARAM\n");
       indent(out, level); fprintf(out, " flags: %x\n", node->nargparam.flags);
@@ -105,13 +105,13 @@ void print_node(union node *node, FILE *out, int level) {
         indent(out, level); fprintf(out, " num: %d\n", node->nargparam.num);
       }
       break;
-    
+
     case N_ARGCMD:
       indent(out, level); fprintf(out, "ARGCMD\n");
       indent(out, level); fprintf(out, " flags: %x\n", node->nargcmd.flags);
       if (node->nargcmd.list) print_list(node->nargcmd.list, out, level + 1);
       break;
-    
+
     case N_IF:
       indent(out, level); fprintf(out, "IF\n");
       indent(out, level); fprintf(out, " test:\n");
@@ -126,7 +126,7 @@ void print_node(union node *node, FILE *out, int level) {
       }
       print_redir(node->nif.rdir, out, level);
       break;
-    
+
     case N_FOR:
       indent(out, level); fprintf(out, "FOR\n");
       indent(out, level); fprintf(out, " varn: %s\n", node->nfor.varn);
@@ -140,7 +140,7 @@ void print_node(union node *node, FILE *out, int level) {
       print_list(node->nfor.cmds, out, level + 1);
       print_redir(node->nfor.rdir, out, level);
       break;
-    
+
     case N_WHILE:
     case N_UNTIL:
       indent(out, level); fprintf(out, "%s\n", node->type == N_WHILE ? "WHILE" : "UNTIL");
@@ -150,7 +150,7 @@ void print_node(union node *node, FILE *out, int level) {
       print_list(node->nloop.cmds, out, level + 1);
       print_redir(node->nfor.rdir, out, level);
       break;
-    
+
     case N_CASE:
       indent(out, level); fprintf(out, "CASE\n");
       indent(out, level); fprintf(out, " word:\n");
@@ -159,7 +159,7 @@ void print_node(union node *node, FILE *out, int level) {
       print_list(node->ncase.list, out, level + 1);
       print_redir(node->ncase.rdir, out, level);
       break;
-    
+
     case N_CASENODE:
       indent(out, level); fprintf(out, "CASENODE\n");
       indent(out, level); fprintf(out, " pats:\n");
@@ -167,7 +167,7 @@ void print_node(union node *node, FILE *out, int level) {
       indent(out, level); fprintf(out, " cmds:\n");
       print_list(node->ncasenode.cmds, out, level + 1);
       break;
-    
+
     case N_NOT:
       indent(out, level); fprintf(out, "NOT\n");
       indent(out, level); fprintf(out, " cmd0:\n");
@@ -189,7 +189,7 @@ void print_node(union node *node, FILE *out, int level) {
       indent(out, level); fprintf(out, " cmd1:\n");
       print_list(node->nandor.cmd1, out, level + 1);
       break;
-    
+
     case N_SUBSHELL:
       indent(out, level); fprintf(out, "SUBSHELL\n");
       indent(out, level); fprintf(out, " cmds:\n");
@@ -203,7 +203,7 @@ void print_node(union node *node, FILE *out, int level) {
       print_list(node->ngrp.cmds, out, level + 1);
       print_redir(node->ngrp.rdir, out, level);
       break;
-    
+
     case N_REDIR:
       indent(out, level); fprintf(out, "REDIR\n");
       indent(out, level); fprintf(out, " flags: %x\n", node->nredir.flags);
@@ -217,7 +217,7 @@ void print_node(union node *node, FILE *out, int level) {
         print_list(node->nredir.data, out, level + 1);
       }
       break;
-    
+
     case N_FUNCTION:
     case N_ARGARITH:
       // TODO:  IMPLEMENT  !!!

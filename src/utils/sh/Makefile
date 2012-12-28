@@ -11,7 +11,7 @@ CMDS=../../cmds/ping.c
 sh.exe: $(SH_SRCFILES) $(SH_HDRFILES)
     $(CC) -o sh.exe $(SH_SRCFILES) $(CMDS) -D SHELL
 
-install:
+install: sh.exe
     sh cp sh.exe /bin/sh.exe
 
 clean:
