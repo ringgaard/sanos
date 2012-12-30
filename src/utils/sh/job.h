@@ -38,6 +38,10 @@
 
 #define STD_HANDLES  3
 
+#define J_VAR_SCOPE     0x0001
+#define J_ARG_SCOPE     0x0002
+#define J_DEFERRED_VARS 0x0004
+
 //
 // Arguments
 //
@@ -51,7 +55,6 @@ struct args {
   struct arg *first;
   struct arg *last;
   int num;
-  int inherit;
 };
 
 //
@@ -65,19 +68,15 @@ struct var {
   char *value;
 };
 
-struct vars {
-  struct var *list;
-  int inherit;
-};
-
 //
 // Job
 //
 
 struct job {
+  int flags;
   struct shell *shell;
   struct job *parent;
-  struct vars vars;
+  struct var *vars;
   struct args args;
   int fd[STD_HANDLES];
   int exitcode;
@@ -90,7 +89,7 @@ struct job {
 void init_shell(struct shell *shell, int argc, char *argv[], char *env[]);
 void clear_shell(struct shell *shell);
 
-struct job *create_job(struct job *parent);
+struct job *create_job(struct job *parent, int flags);
 void remove_job(struct job *job);
 int execute_job(struct job *job);
 void detach_job(struct job *job);
@@ -105,7 +104,7 @@ void set_var(struct job *job, char *name, char *value);
 char *get_var(struct job *job, char *name);
 
 struct job *get_arg_scope(struct job *job);
-struct job *get_var_scope(struct job *job);
+struct job *get_var_scope(struct job *job, int defer);
 
 void set_fd(struct job *job, int h, int fd);
 int get_fd(struct job *job, int h, int own);

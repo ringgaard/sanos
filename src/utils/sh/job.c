@@ -33,6 +33,12 @@
 
 #include "sh.h"
 
+static char *aliases[] = {
+  "[", "test",
+  "cd", "chdir",
+  NULL, NULL,
+}
+
 void run_atexit_handlers();
 
 static int hash(char *str) {
@@ -45,12 +51,12 @@ static void copy_vars(struct job *job) {
   struct var **vptr;
   struct var *var;
 
-  // Find scope for variables
-  struct job *scope = get_var_scope(job);
+  // Find parent scope for deferred variables
+  struct job *scope = get_var_scope(job, 1);
 
   // Initialize variables from parent scope
-  vptr = &job->vars.list;
-  var = scope->vars.list;
+  vptr = &job->vars;
+  var = scope->vars;
   while (var) {
     struct var *v = (struct var *) malloc(sizeof(struct var));
     v->name = strdup(var->name);
@@ -61,7 +67,7 @@ static void copy_vars(struct job *job) {
     vptr = &v->next;
     var = var->next;
   }
-  job->vars.inherit = 0;
+  job->flags &= ~J_DEFERRED_VARS;
 }
 
 static void assign_var(struct var **vars, char *name, char *value) {
@@ -106,27 +112,33 @@ static void remove_var(struct var **vars, char *name) {
   }
 }
 
-void set_var(struct job *job, char *name, char *value) {
-  // Performed defered initialization of variables
-  if (job->vars.inherit) copy_vars(job);
-
-  if (value) {
-    // Assign new value to variable.
-    assign_var(&job->vars.list, name, value);
-  } else {
-    // Remove variable
-    remove_var(&job->vars.list, name);
+struct job *get_var_scope(struct job *job, int defer) {
+  while (job && !(job->flags & J_VAR_SCOPE)) job = job->parent;
+  if (defer) {
+    while (job && (job->flags & J_DEFERRED_VARS)) job = job->parent;
   }
-}
-
-struct job *get_var_scope(struct job *job) {
-  while (job->parent && job->vars.inherit) job = job->parent;
   return job;
 }
 
 struct job *get_arg_scope(struct job *job) {
-  while (job->parent && job->args.inherit) job = job->parent;
+  while (job && !(job->flags & J_ARG_SCOPE)) job = job->parent;
   return job;
+}
+
+void set_var(struct job *job, char *name, char *value) {
+  // Get variable scope
+  struct job *scope = get_var_scope(job, 0);
+
+  // Performed defered initialization of variables
+  if (scope->flags & J_DEFERRED_VARS) copy_vars(scope);
+
+  if (value) {
+    // Assign new value to variable.
+    assign_var(&scope->vars, name, value);
+  } else {
+    // Remove variable
+    remove_var(&scope->vars, name);
+  }
 }
 
 char *get_var(struct job *job, char *name) {
@@ -134,11 +146,11 @@ char *get_var(struct job *job, char *name) {
   struct var *var;
 
   // Find scope for variables
-  struct job *scope = get_var_scope(job);
+  struct job *scope = get_var_scope(job, 1);
   
   // Find variable in scope
   h = hash(name);
-  var = scope->vars.list;
+  var = scope->vars;
   while (var) {
     if (var->hash == h && strcmp(var->name, name) == 0) return var->value;
     var = var->next;
@@ -146,8 +158,8 @@ char *get_var(struct job *job, char *name) {
   return NULL;
 }
 
-static void delete_vars(struct vars *vars) {
-  struct var *var = vars->list;
+static void delete_vars(struct job *job) {
+  struct var *var = job->vars;
   while (var) {
     struct var *next = var->next;
     free(var->name);
@@ -155,13 +167,12 @@ static void delete_vars(struct vars *vars) {
     free(var);
     var = next;
   }
-  vars->list = NULL;
+  job->vars = NULL;
 }
 
 void init_args(struct args *args) {
   args->first = args->last = NULL;
   args->num = 0;
-  args->inherit = 0;
 }
 
 void delete_args(struct args *args) {
@@ -199,9 +210,13 @@ char *get_command_line(struct args *args) {
   while (arg) {
     int escape = 0;
     char *p = arg->value;
-    while (*p) {
-      if (*p == ' ') escape = 1;
-      p++;
+    if (!*p) {
+      escape = 1;
+    } else {
+      while (*p) {
+        if (*p == ' ') escape = 1;
+        p++;
+      }
     }
     if (escape) cmdlen += 2;
     cmdlen += strlen(arg->value);
@@ -217,9 +232,13 @@ char *get_command_line(struct args *args) {
     int arglen;
     int escape = 0;
     char *p = arg->value;
-    while (*p) {
-      if (*p == ' ') escape = 1;
-      p++;
+    if (!*p) {
+      escape = 1;
+    } else {
+      while (*p) {
+        if (*p == ' ') escape = 1;
+        p++;
+      }
     }
     if (arg != args->first) *cmd++ = ' ';
     if (escape) *cmd++ = '"';
@@ -235,17 +254,17 @@ char *get_command_line(struct args *args) {
   return cmdline;
 }
 
-struct job *create_job(struct job *parent) {
+struct job *create_job(struct job *parent, int flags) {
   struct job *job;
   int i;
 
   // Allocate job
   job = (struct job *) malloc(sizeof(struct job));
   memset(job, 0, sizeof(struct job));
+  job->flags = flags | J_DEFERRED_VARS;
   job->parent = parent;
   job->shell = parent->shell;
   job->handle = -1;
-  job->args.inherit = 1;
 
   // Insert job in job list for shell
   if (job->shell->jobs) {
@@ -255,9 +274,6 @@ struct job *create_job(struct job *parent) {
   } else {
     job->shell->jobs = job;
   }
-
-  // Defer initialization of variables
-  job->vars.inherit = 1;
 
   // Defer initialization of I/O handles.
   for (i = 0; i < STD_HANDLES; i++) job->fd[i] = -1;
@@ -272,7 +288,10 @@ void detach_job(struct job *job) {
   if (!job->parent) return;
 
   // Detach variables
-  if (job->vars.inherit) copy_vars(job);
+  if ((job->flags & J_VAR_SCOPE) && (job->flags & J_DEFERRED_VARS)) {
+    copy_vars(job);
+  }
+  job->flags &= ~J_DEFERRED_VARS;
 
   // Detach I/O handles
   for (i = 0; i < STD_HANDLES; i++) {
@@ -293,7 +312,7 @@ void remove_job(struct job *job) {
   delete_args(&job->args);
 
   // Delete variables
-  delete_vars(&job->vars);
+  delete_vars(job);
 
   // Close I/O handles
   for (i = 0; i < STD_HANDLES; i++) {
@@ -329,9 +348,12 @@ void init_shell(struct shell *shell, int argc, char *argv[], char *env[]) {
   // Create top job
   top = (struct job *) malloc(sizeof(struct job));
   memset(top, 0, sizeof(struct job));
+  top->flags = J_VAR_SCOPE | J_ARG_SCOPE;
   top->shell = shell;
   top->handle = -1;
   for (i = 0; i < STD_HANDLES; i++) top->fd[i] = -1;
+
+  // Initialize shell
   shell->top = shell->jobs = top;
   shell->done = 0;
   shell->debug = 0;
@@ -351,7 +373,7 @@ void init_shell(struct shell *shell, int argc, char *argv[], char *env[]) {
     } else {
       value = "";
     }
-    assign_var(&top->vars.list, name, value);
+    assign_var(&top->vars, name, value);
     free(name);
   }
 
@@ -410,16 +432,15 @@ static char **get_env(struct job *job) {
   int n;
 
   // Find scope for variables
-  struct job *scope = job;
-  while (scope->vars.inherit && scope->parent != NULL) scope = scope->parent;
+  struct job *scope = get_var_scope(job, 1);
 
   // Build environment string for scope
-  if (!scope->vars.list) return NULL;
-  for (n = 0, v = scope->vars.list; v; n++, v = v->next);
+  if (!scope->vars) return NULL;
+  for (n = 0, v = scope->vars; v; n++, v = v->next);
   env = (char **) malloc((n + 1) * sizeof(char *));
   if (!env) return NULL;
   env[n] = NULL;
-  for (n = 0, v = scope->vars.list; v; n++, v = v->next) {
+  for (n = 0, v = scope->vars; v; n++, v = v->next) {
     int nlen = strlen(v->name);
     int vlen = strlen(v->value);
     int len = nlen + vlen + 1;
@@ -553,31 +574,44 @@ static builtin_t lookup_builtin(char *name) {
   return (builtin_t) dlsym(getmodule(NULL), procname);
 }
 
+static char *lookup_alias(char *name) {
+  char **a = aliases;
+  while (*a) {
+    char *cmd = *a++;
+    char *alias = *a++;
+    if (strcmp(cmd, name) == 0) return alias;
+  }
+  return name;
+}
+
 int execute_job(struct job *job) {
+  char *argv0;
   builtin_t cmd;
   int rc;
 
   // Ignore empty commands
   if (job->args.num == 0) return 0;
 
+  // Get command name
+  argv0 = lookup_alias(job->args.first->value);
+
   // Run builtin command
-  cmd = lookup_builtin(job->args.first->value);
+  cmd = lookup_builtin(argv0);
   if (cmd != NULL) {
     rc = cmd(job);
     job->exitcode = rc;
     job->shell->lastrc = rc;
-    return rc;
+    return 0;
   }
 
   // Launch program
-  job->main = lookup_internal(job->args.first->value);
+  job->main = lookup_internal(argv0);
   if (job->main != NULL) {
     rc = run_internal_command(job);
   } else {
     rc = run_external_command(job);
   }
-  if (rc != 0) return rc;
   
-  return 0;
+  return rc;
 }
 

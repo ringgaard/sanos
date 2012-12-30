@@ -50,10 +50,6 @@ builtin(chdir) {
   return 0;
 }
 
-builtin(cd) {
-  return builtin_chdir(job);
-}
-
 builtin(debug) {
   job->shell->debug = 1;
   return 0;
@@ -81,7 +77,6 @@ builtin(set) {
     char *argv0 = strdup(args->first->value); 
     args->first->value = NULL;
     delete_args(args);
-    args->inherit = 1;
     add_arg(args, argv0);
     free(argv0);
     arg = job->args.first->next;
@@ -91,8 +86,8 @@ builtin(set) {
     }
   } else {
     // Print variables
-    struct job *scope = get_var_scope(job);
-    var = scope->vars.list;
+    struct job *scope = get_var_scope(job, 1);
+    var = scope->vars;
     while (var) {
       printf("%s=%s\n", var->name, var->value);
       var = var->next;

@@ -302,7 +302,7 @@ static int expand_command(struct stkmark *mark, struct job *parent, struct args 
   int len;
 
   // Create job for command expansion
-  job = create_job(parent);
+  job = create_job(parent, 0);
   
   // Redirect output to temporary file
   f = tmpfile();
@@ -341,6 +341,13 @@ static int expand_args(struct stkmark *mark, struct job *job, struct args *args,
   switch (node->type) {
     case N_SIMPLECMD:
       for (n = node->ncmd.args; n; n = n->list.next) {
+        rc = expand_args(mark, job, args, n);
+        if (rc != 0) return rc;
+      }
+      break;
+
+    case N_FOR:
+      for (n = node->nfor.args; n; n = n->list.next) {
         rc = expand_args(mark, job, args, n);
         if (rc != 0) return rc;
       }
@@ -468,7 +475,7 @@ static struct job *setup_command(struct job *parent, union node *node) {
   struct job *job;
 
   // Create new job
-  job = create_job(parent);
+  job = create_job(parent, J_VAR_SCOPE);
 
   // Assign variables
   pushstkmark(NULL, &mark);
@@ -551,7 +558,7 @@ static int interp_pipeline(struct job *parent, union node *node) {
   int out;
 
   // Create job for pipeline and get stdin and stdout for whole pipeline
-  job = create_job(parent);
+  job = create_job(parent, 0);
   out = get_fd(job, 1, 1);
   pipefd[0] = pipefd[1] = -1;
 
@@ -590,13 +597,216 @@ static int interp_pipeline(struct job *parent, union node *node) {
   return 0;
 }
 
+static int interp_cmdlist(struct job *parent, union node *node, int subshell) {
+  struct stkmark mark;
+  struct job *job;
+  union node *n;
+
+  // Create new job
+  job = create_job(parent, subshell ? J_VAR_SCOPE : 0);
+
+  // Perform I/O redirection
+  if (node->ncmd.rdir) {
+    int rc;
+    struct stkmark mark;
+    
+    pushstkmark(NULL, &mark);
+    rc = interp_redir(&mark, job, node->ngrp.rdir);
+    popstkmark(&mark);
+    if (rc != 0) {
+      remove_job(job);
+      return rc;
+    }
+  }
+  
+  // Interpret each command in the list
+  for (n = node->ngrp.cmds; n; n = n->list.next) {
+    if (interp(job, n) != 0) {
+      remove_job(job);
+      return 1;
+    }
+  }
+
+  remove_job(job);
+  return 0;
+}
+
+static int interp_and(struct job *parent, union node *node) {
+  // Execute first command
+  if (interp(parent, node->nandor.cmd0) != 0) return 1;
+  
+  // Execute second command if the exit code if the first command was zero
+  if (parent->shell->lastrc == 0) {
+    if (interp(parent, node->nandor.cmd1) != 0) return 1;
+  }
+
+  return 0;
+}
+
+static int interp_or(struct job *parent, union node *node) {
+  // Execute first command
+  if (interp(parent, node->nandor.cmd0) != 0) return 1;
+  
+  // Execute second command if the exit code if the first command was non-zero
+  if (parent->shell->lastrc != 0) {
+    if (interp(parent, node->nandor.cmd1) != 0) return 1;
+  }
+
+  return 0;
+}
+
+static int interp_not(struct job *parent, union node *node) {
+  // Execute command
+  if (interp(parent, node->nandor.cmd0) != 0) return 1;
+  
+  // Negate exit code
+  parent->shell->lastrc = !parent->shell->lastrc;
+
+  return 0;
+}
+
+static int interp_if(struct job *parent, union node *node) {
+  struct job *job;
+  union node *body;
+  union node *n;
+  int rc;
+
+  // Create new job
+  job = create_job(parent, 0);
+
+  // Perform I/O redirection
+  if (node->ncmd.rdir) {
+    struct stkmark mark;
+    
+    pushstkmark(NULL, &mark);
+    rc = interp_redir(&mark, job, node->nif.rdir);
+    popstkmark(&mark);
+    if (rc != 0) {
+      remove_job(job);
+      return rc;
+    }
+  }
+  
+  // Interpret test condition
+  if (interp(job, node->nif.test) != 0) {
+    remove_job(job);
+    return 1;
+  }
+
+  // Interpret if or else command
+  body = job->shell->lastrc == 0 ? node->nif.cmd0 : node->nif.cmd1;
+  for (n = body; n; n = n->list.next) {
+    rc = interp(job, n);
+    if (rc != 0) break;
+  }
+
+  remove_job(job);
+  return rc;
+}
+
+static int interp_for(struct job *parent, union node *node) {
+  struct job *job;
+  struct arg *arg;
+  union node *n;
+  int rc;
+
+  // Create new job
+  job = create_job(parent, 0);
+
+  // Perform I/O redirection
+  struct stkmark mark;  
+  pushstkmark(NULL, &mark);
+  if (node->ncmd.rdir) {
+    rc = interp_redir(&mark, job, node->nfor.rdir);
+    if (rc != 0) {
+      popstkmark(&mark);
+      remove_job(job);
+      return rc;
+    }
+  }
+
+  // Expand argument list
+  if (expand_args(&mark, job, &job->args, node) != 0) {
+    popstkmark(&mark);
+    remove_job(job);
+    return 1;
+  }
+  popstkmark(&mark);
+
+  // Iterate over the arguments
+  rc = 0;
+  for (arg = job->args.first; arg; arg = arg->next) {
+    // Set iterator variable
+    set_var(job, node->nfor.varn, arg->value);
+
+    // Interpret body
+    for (n = node->nfor.cmds; n; n = n->list.next) {
+      rc = interp(job, n);
+      if (rc != 0) break;
+    }
+  }
+
+  remove_job(job);
+  return rc;
+}
+
+static int interp_loop(struct job *parent, union node *node, int until) {
+  struct job *job;
+  union node *n;
+  int rc;
+
+  // Create new job
+  job = create_job(parent, 0);
+
+  // Perform I/O redirection
+  if (node->ncmd.rdir) {
+    struct stkmark mark;
+    
+    pushstkmark(NULL, &mark);
+    rc = interp_redir(&mark, job, node->nloop.rdir);
+    popstkmark(&mark);
+    if (rc != 0) {
+      remove_job(job);
+      return rc;
+    }
+  }
+
+  rc = 0;
+  for (;;) {
+    // Interpret test condition
+    rc = interp(job, node->nloop.test);
+    if (rc != 0) break;
+
+    // Test for break
+    if ((job->shell->lastrc == 0) == until) break;
+
+    // Interpret body
+    for (n = node->nloop.cmds; n; n = n->list.next) {
+      rc = interp(job, n);
+      if (rc != 0) break;
+    }
+  }
+
+  remove_job(job);
+  return rc;
+}
+
 int interp(struct job *parent, union node *node) {
   switch (node->type) {
     case N_SIMPLECMD: return interp_simple_command(parent, node);
     case N_PIPELINE: return interp_pipeline(parent, node);
-     default:
-       fprintf(stderr, "Error: not supported (node type %d)\n", node->type);
-       return 1;
+    case N_CMDLIST: return interp_cmdlist(parent, node, 0);
+    case N_SUBSHELL: return interp_cmdlist(parent, node, 1);
+    case N_AND: return interp_and(parent, node);
+    case N_OR: return interp_or(parent, node);
+    case N_NOT: return interp_not(parent, node);
+    case N_IF: return interp_if(parent, node);
+    case N_FOR: return interp_for(parent, node);
+    case N_WHILE: return interp_loop(parent, node, 0);
+    case N_UNTIL: return interp_loop(parent, node, 1);
+    default:
+      fprintf(stderr, "Error: not supported (node type %d)\n", node->type);
+      return 1;
   }
 }
 

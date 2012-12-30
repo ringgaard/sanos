@@ -80,7 +80,7 @@ static int run_command(struct job *parent, int argc, char *argv[]) {
   int i;
   int rc;
 
-  job = create_job(parent);
+  job = create_job(parent, J_ARG_SCOPE);
   for (i = 0; i < argc; i++) {
     add_arg(&job->args, argv[i]);
   }
@@ -101,9 +101,9 @@ static int run_shell(struct shell *shell) {
 
   while (!shell->done) {
     check_terminations(shell);
-    printf(prompt, getcwd(curdir, sizeof curdir));
+    printf(prompt, getcwd(curdir, sizeof(curdir)));
     fflush(stdout);
-    rc = readline(cmdline, sizeof cmdline);
+    rc = readline(cmdline, sizeof(cmdline));
     if (rc < 0) {
       if (errno != EINTR) break;
     } else {
@@ -114,13 +114,57 @@ static int run_shell(struct shell *shell) {
   return 0;
 }
 
+int run_script(struct shell *shell) {
+  char *scriptname = shell->top->args.first->value;
+  int fin;
+  struct inputfile *source = NULL;
+  struct stkmark mark;
+  struct parser parser;
+  union node *node;
+
+  fin = open(scriptname, 0);
+  if (fin < 0) {
+    perror(scriptname);
+    return 1;
+  }
+
+  pushfile(&source, fin);
+  pushstkmark(NULL, &mark);
+  parse_init(&parser, 0, source, &mark);
+
+  while (!shell->done && !(parser.tok & T_EOF)) {
+    node = parse(&parser);
+    if (parser.errors) break;
+    if (!node) continue;
+    if (shell->debug) print_node(node, stdout, 0);
+    interp(shell->top, node);
+  }
+
+  popstkmark(&mark);
+  popallfiles(&parser.source);
+
+  return 0;
+}
+
+int script_invoke(char *argv0) {
+  char *cmd = argv0;
+  char *p = argv0;
+  while (*p) {
+    if (*p == PS1 || *p == PS2) cmd = p + 1;
+    p++;
+  }
+  return strcmp(cmd, "sh") != 0 && strcmp(cmd, "sh.exe") != 0;
+}
+
 int main(int argc, char *argv[], char *envp[]) {
   struct shell shell;
   int rc;
 
   init_shell(&shell, argc, argv, envp);
 
-  if (argc > 1) {
+  if (script_invoke(argv[0])) {
+    rc = run_script(&shell);
+  } else if (argc > 1) {
     rc = run_command(shell.top, argc - 1, argv + 1);
   } else {
     rc = run_shell(&shell);

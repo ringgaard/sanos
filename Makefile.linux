@@ -689,9 +689,9 @@ utils: \
 
 SH_SRCS=src/utils/sh/sh.c src/utils/sh/node.c src/utils/sh/job.c src/utils/sh/interp.c src/utils/sh/parser.c src/utils/sh/stmalloc.c src/utils/sh/input.c src/utils/sh/chartype.c src/utils/sh/cmds.c src/utils/sh/builtins.c
 SH_HDRS=src/utils/sh/sh.h src/utils/sh/node.h src/utils/sh/job.h src/utils/sh/interp.h src/utils/sh/parser.h src/utils/sh/stmalloc.h src/utils/sh/input.h src/utils/sh/chartype.h
-SH_CMDS=src/cmds/ping.c
+SH_CMDS=src/cmds/ping.c src/cmds/test.c
 
-linux/install/bin/sh.exe: $(SH_SRCS) $(SH_HDRS)
+linux/install/bin/sh.exe: $(SH_SRCS) $(SH_HDRS) $(SH_CMDS)
 	$(TCC) -o $@ $(SH_SRCS) $(SH_CMDS) $(TCCFLAGS) -D SHELL
 
 linux/install/bin/msh.exe: src/utils/msh/msh.c
@@ -735,9 +735,13 @@ linux/install/usr/bin/ctohtml.exe: src/utils/ctohtml/ctohtml.c
 #
 
 cmds: \
-  linux/install/bin/ping.exe
+  linux/install/bin/ping.exe \
+  linux/install/bin/test.exe
 
 linux/install/bin/ping.exe: src/cmds/ping.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+linux/install/bin/test.exe: src/cmds/test.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
 
 #
@@ -747,7 +751,7 @@ linux/install/bin/ping.exe: src/cmds/ping.c
 sdk: linux/install/usr/bin/cc.exe linux/install/usr/bin/as.exe
 
 linux/install/usr/bin/cc.exe: $(TCC_SRCFILES) $(TCC_HDRFILES)
-	$(TCC) -o $@ $(TCC_SRCFILES) -I sdk/src/cc $(TCCFLAGS) -DUSE_LOCAL_HEAP -g
+	$(TCC) -o $@ $(TCC_SRCFILES) -I sdk/src/cc $(TCCFLAGS) -DUSE_LOCAL_HEAP
 
 linux/install/usr/bin/as.exe: $(AS_SRCFILES)
 	$(TCC) -o $@ $^ -I sdk/src/as $(TCCFLAGS) $(AS_CFLAGS) -DUSE_LOCAL_HEAP

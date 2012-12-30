@@ -274,7 +274,12 @@ void transfer_file(char *dstfn, char *srcfn)
 
   ext = dstfn + strlen(dstfn) - 1;
   while (ext > dstfn && *ext != '.' && *ext != PS1 && *ext != PS2) ext--;
-  if (strcmp(ext, ".dll") == 0 || strcmp(ext, ".exe") == 0 || strcmp(ext, ".sys") == 0) executable = 1;
+  if (strcmp(ext, ".dll") == 0 || 
+      strcmp(ext, ".exe") == 0 || 
+      strcmp(ext, ".sys") == 0 ||
+      strcmp(ext, ".sh") == 0) {
+    executable = 1;
+  }
 
   file = vfs_open(dstfn, VFS_O_CREAT, executable ? 0755 : 0644);
 

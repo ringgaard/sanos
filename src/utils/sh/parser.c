@@ -5,6 +5,9 @@
 //
 // Copyright (C) 2011 Michael Ringgaard. All rights reserved.
 //
+// This code is derived from software contributed to Berkeley by
+// Kenneth Almquist.
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -255,6 +258,7 @@ static int parse_simpletok(struct parser *p) {
           if (p->ch < 0) return T_EOF;
           next(p);
         }
+        next(p);
         continue;
 
       // Check for escaped newline (line continuation)
@@ -1007,10 +1011,8 @@ static int parse_word(struct parser *p) {
 static int parse_gettok(struct parser *p, int tempflags) {
   int oldflags = p->flags;
   p->flags |= tempflags;
-  
+
   if (!p->pushback || ((p->flags & P_SKIPNL) && p->tok == T_NL)) {
-    p->tok = -1;
-    
     // Skip whitespace
     p->tok = parse_skipspace(p);
 
@@ -1045,7 +1047,7 @@ static union node *parse_compound_list(struct parser *p) {
   nptr = &list;
 
   // Skip arbitrary newlines
-  while (parse_gettok(p, P_DEFAULT) & T_NL);
+  while (parse_gettok(p, P_SKIPNL) & T_NL);
   p->pushback++;
 
   for (;;) {
@@ -1053,7 +1055,7 @@ static union node *parse_compound_list(struct parser *p) {
     *nptr = parse_list(p);
 
     // Skip arbitrary newlines
-    while (p->tok & T_NL) parse_gettok(p, P_DEFAULT);
+    while (p->tok & T_NL) parse_gettok(p, P_SKIPNL);
     p->pushback++;
 
     // No more lists
@@ -1369,7 +1371,6 @@ static union node *parse_command(struct parser *p, int tempflags) {
   union node **rptr;
 
   tok = parse_gettok(p, tempflags);
-
   switch (tok) {
     case T_FOR:
       // T_FOR begins a for-loop statement
@@ -1432,7 +1433,6 @@ static union node *parse_command(struct parser *p, int tempflags) {
   }
   
   p->pushback++;
-
   return command;
 }
 
@@ -1568,22 +1568,21 @@ static union node *parse_list(struct parser *p) {
     tok = parse_gettok(p, P_DEFAULT);
 
     // <newline> terminates the list and eats the token
-    if (tok & T_NL) return list;
-  
+    if (tok & T_NL) break;
+
     // There must be & or ; after the and-or list, 
     // otherwise the list will be terminated
     if (!(tok & (T_SEMI | T_BGND))) {
       p->pushback++;
       break;
     }
-    
+
     // & causes async exec of preceding and-or list
     if (tok & T_BGND) (*nptr)->list.flags |= S_BGND;
 
     // now check for another and-or list
     nptr = &(*nptr)->list.next;
   }
-
 
   // Add a command list node if there are multiple elements
   if (!list || !list->list.next) return list;
@@ -1597,16 +1596,18 @@ static union node *parse_list(struct parser *p) {
 //
 
 union node *parse(struct parser *p) {
-  union node *node; 
-       
-  if (p->tok & T_EOF) return NULL;
-  node = parse_list(p);
-  if (!node) {
-    if (!p->errors && !(p->tok & (T_EOF | T_NL | T_SEMI | T_BGND))) {
+  // Parse next command
+  while (!(p->tok & T_EOF)) {
+    union node *node = parse_list(p);
+    if (node) return node;
+    if (p->errors) return NULL;
+    if (!(p->tok & (T_EOF | T_NL | T_SEMI | T_BGND))) {
       parse_error(p, "unexpected end");
+      return NULL;
     }
+    p->pushback = 0;
   }
-  return node;
+  return NULL;
 }
 
 //

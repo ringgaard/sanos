@@ -5,6 +5,9 @@
 //
 // Copyright (C) 2011 Michael Ringgaard. All rights reserved.
 //
+// This code is derived from software contributed to Berkeley by
+// Kenneth Almquist.
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -51,7 +54,7 @@ extern struct token tokens[];
 
 #define TI_EOF     0 // End of file
 #define TI_NL      1 // Newline
-#define TI_SEMI    2 // Semicolon */
+#define TI_SEMI    2 // Semicolon
 #define TI_ECASE   3 // End of case (double-semicolon)
 #define TI_BGND    4 // Background operator (&)
 #define TI_AND     5 // Boolean AND (&&)
