@@ -263,6 +263,46 @@ int init_jvm() {
   return 0;
 }
 
+int parse_args(char *args, char **argv) {
+  char *p;
+  int argc;
+  char *start;
+  char *end;
+  char *buf;
+  int delim;
+
+  p = args;
+  argc = 0;
+  while (*p) {
+    while (*p == ' ') p++;
+    if (!*p) break;
+
+    if (*p == '"' || *p == '\'') {
+      delim = *p++;
+      start = p;
+      while (*p && *p != delim) p++;
+      end = p;
+      if (*p == delim) p++;
+    } else {
+      start = p;
+      while (*p && *p != ' ') p++;
+      end = p;
+    }
+
+    if (argv) {
+      buf = (char *) malloc(end - start + 1);
+      if (!buf) break;
+      memcpy(buf, start, end - start);
+      buf[end - start] = 0;
+      argv[argc] = buf;
+    }
+    
+    argc++;
+  }
+
+  return argc;
+}
+
 int execute_main_method(char *mainclsname, char *mainclsargs) {
   int argc;
   char **argv;

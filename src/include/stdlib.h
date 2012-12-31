@@ -114,18 +114,6 @@ osapi void free(void *p);
 
 osapi int malloc_usable_size(void *p);
 
-#ifdef USE_LOCAL_HEAP
-
-int _lparse_args(char *args, char **argv);
-void _lfree_args(int argc, char **argv);
-#define parse_args(argc, argv) _lparse_args((argc), (argv))
-#define free_args(argc, argv) _lfree_args((argc), (argv))
-
-#else
-int parse_args(char *args, char **argv);
-void free_args(int argc, char **argv);
-#endif
-
 char *get_option(char *opts, char *name, char *buffer, int size, char *defval);
 int get_num_option(char *opts, char *name, int defval);
 

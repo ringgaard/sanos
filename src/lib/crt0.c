@@ -97,6 +97,109 @@ int main(int argc, char *argv[], char *envp[]);
 
 void run_atexit_handlers();
 
+static char *next_arg(char *p, char *arg, int *size) {
+  int n = 0;
+  
+  // Skip whitespace
+  while (*p == ' ') p++;
+  if (!*p) return NULL;
+
+  if (*p == '"') {
+    // Escaped argument
+    p++;
+    while (*p) {
+      if (*p == '"') {
+        p++;
+        if (*p != '"') break;
+      }
+      if (arg) *arg++ = *p;
+      n++;
+      p++;
+    }
+  } else {
+    // Regular argument
+    while (*p && *p != ' ') {
+      if (arg) *arg++ = *p;
+      n++;
+      p++;
+    }
+  }
+  if (size) *size = n;
+  if (arg) *arg = 0;
+  return p;
+}
+
+static char **parse_cmdline(char *cmdline, int *argc) {
+  char *p;
+  int size;
+  int argsize;
+  int n;
+  char *arg;
+  char **argv;
+
+  // Compute number of arguments and size of argument buffer
+  p = cmdline;
+  n = 0;
+  size = sizeof(int) + sizeof(char *);
+  for (;;) {
+    p = next_arg(p, NULL, &argsize);
+    if (!p) break;
+    size += sizeof(char *) + argsize + 1;
+    n++;
+  }
+  *argc = n;
+
+  // Allocate argument buffer
+  arg = mmap(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'ARGV');
+  if (!arg) return NULL;
+
+  // Store buffer size in first word
+  *((int *) arg) = size;
+  arg += sizeof(int);
+
+  // Include null termination of argument vector
+  argv = (char **) arg;
+  argv[n] = NULL;
+  arg += (n + 1) * sizeof(char *);
+
+  // Build argument vector
+  p = cmdline;
+  n = 0;
+  size = sizeof(int) + sizeof(char *);
+  for (;;) {
+    p = next_arg(p, arg, &argsize);
+    if (!p) break;
+    argv[n++] = arg;
+    arg += argsize + 1;
+  }
+
+  return argv;
+}
+
+struct crtbase *init_crtbase() {
+  struct process *proc = gettib()->proc;
+  struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
+
+  crtbase->argv = parse_cmdline(proc->cmdline, &crtbase->argc);
+  crtbase->opt.err = 1;
+  crtbase->opt.ind = 1;
+  crtbase->opt.sp = 1;
+  crtbase->opt.place = "";
+  
+  return crtbase;
+}
+
+void term_crtbase(struct crtbase *crtbase) {
+  int *argbuf;
+  
+  argbuf = (int *) crtbase->argv;
+  if (argbuf) {
+    argbuf--;
+    int size = *argbuf;
+    munmap(argbuf, size, MEM_RELEASE);    
+  }
+}
+
 static void initterm(proc_t *begin, proc_t *end) {
   while (begin < end) {
     if (*begin != NULL) (**begin)();
@@ -153,8 +256,8 @@ static void termcrt(int status) {
 #endif
   }
 
-  // Deallocate arguments
-  free_args(crtbase->argc, crtbase->argv);
+  // Clean runtime library
+  term_crtbase(crtbase);
 }
 
 // Default entry point for DLLs
@@ -164,21 +267,8 @@ int __stdcall DllMain(hmodule_t hmod, int reason, void *reserved) {
 
 // Default entry point for EXEs
 int mainCRTStartup() {
-  int rc;
-  struct tib *tib = gettib();
-  struct process *proc = tib->proc;
-  struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
-
-  crtbase->argc = parse_args(proc->cmdline, NULL);
-  crtbase->argv = (char **) malloc((crtbase->argc + 1) * sizeof(char *));
-  parse_args(proc->cmdline, crtbase->argv);
-  crtbase->argv[crtbase->argc] = NULL;
-  crtbase->opt.err = 1;
-  crtbase->opt.ind = 1;
-  crtbase->opt.sp = 1;
-  crtbase->opt.place = "";
-
-  rc = initcrt();
+  struct crtbase *crtbase = init_crtbase();
+  int rc = initcrt();
   if (rc == 0) {
     gettib()->proc->atexit = termcrt;
     rc = main(crtbase->argc, crtbase->argv, environ ? environ : (char **) &environ);

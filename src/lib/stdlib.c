@@ -50,89 +50,6 @@ static proc_t *atexit_last = NULL;
 #pragma function(abs)
 #pragma function(labs)
 
-static int __parse_args(char *args, char **argv, int local) {
-  char *p;
-  int argc;
-  char *start;
-  char *end;
-  char *buf;
-  int delim;
-  int escapes;
-
-  p = args;
-  argc = 0;
-  while (*p) {
-    while (*p == ' ') p++;
-    if (!*p) break;
-
-    escapes = 0;
-    if (*p == '"' || *p == '\'') {
-      delim = *p++;
-      start = p;
-      while (*p && *p != delim) {
-        if (*p == '\\' && *(p + 1)) escapes++;
-        p++;
-      }
-      end = p;
-      if (*p == delim) p++;
-    } else {
-      start = p;
-      while (*p && *p != ' ') p++;
-      end = p;
-    }
-
-    if (argv) {
-      if (local) {
-        buf = (char *) _lmalloc(end - start - escapes + 1);
-      } else {
-        buf = (char *) malloc(end - start - escapes + 1);
-      }
-      if (!buf) break;
-
-      if (escapes) {
-        char *s = start;
-        char *t = buf;
-        while (s < end) {
-          if (*s == '\\' && *(s + 1)) s++;
-          *t++ = *s++;
-        }
-        *t = 0;
-      } else {
-        memcpy(buf, start, end - start);
-        buf[end - start] = 0;
-      }
-        
-      argv[argc] = buf;
-    }
-    
-    argc++;
-  }
-
-  return argc;
-}
-
-int parse_args(char *args, char **argv) {
-  return __parse_args(args, argv, 0);
-}
-
-int _lparse_args(char *args, char **argv) {
-  return __parse_args(args, argv, 1);
-}
-
-void free_args(int argc, char **argv) {
-  int i;
-
-  for (i = 0; i < argc; i++) free(argv[i]);
-  if (argv) free(argv);
-}
-
-void _lfree_args(int argc, char **argv) {
-  int i;
-
-  for (i = 0; i < argc; i++) _lfree(argv[i]);
-  if (argv) _lfree(argv);
-}
-
 int atexit(proc_t exitfunc) {
   if (atexit_end == atexit_last) {
     int size = atexit_end - atexit_begin;
@@ -213,14 +130,14 @@ int system(const char *command) {
 
   if (!command) {
     errno = EINVAL;
-    return NULL;
+    return -1;
   }
 
   cmdlen = strlen(SHELL) + 1 + strlen(command);
   cmdline = malloc(cmdlen + 1);
   if (!cmdline) {
     errno = ENOMEM;
-    return NULL;
+    return -1;
   }
 
   strcpy(cmdline, SHELL);
@@ -250,3 +167,14 @@ int getrusage(int who, struct rusage *usage) {
   errno = ENOSYS;
   return -1;
 }
+
+char *setlocale(int category, const char *locale) {
+  // TODO implement
+  return NULL;
+}
+
+struct lconv *localeconv(void) {
+  //  TODO implement
+  return NULL;
+}
+

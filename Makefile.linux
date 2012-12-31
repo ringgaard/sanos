@@ -770,12 +770,16 @@ sdk-source:
 	cp sdk/src/makedepend/*.c sdk/src/makedepend/*.h linux/install/usr/src/utils/makedepend
 	cp sdk/src/makedepend/Makefile.sanos linux/install/usr/src/utils/makedepend/Makefile
 
-lua-source:
+extra-source:
 	mkdir -p linux/install/usr/src/utils/lua
 	cp sdk/src/lua/Makefile.sanos linux/install/usr/src/utils/lua/Makefile
 	cp sdk/src/lua/*.c sdk/src/lua/*.h linux/install/usr/src/utils/lua
 	mkdir -p linux/install/usr/lua
 	cp sdk/src/lua/stdlib/*.lua linux/install/usr/lua
+
+	mkdir -p linux/install/usr/src/utils/awk
+	cp sdk/src/awk/Makefile.sanos linux/install/usr/src/utils/awk/Makefile
+	cp sdk/src/awk/*.c sdk/src/awk/*.h sdk/src/awk/*.y linux/install/usr/src/utils/awk
 
 #
 # vmdk

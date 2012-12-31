@@ -40,6 +40,8 @@ static char *aliases[] = {
 }
 
 void run_atexit_handlers();
+struct crtbase *init_crtbase();
+void term_crtbase();
 
 static int hash(char *str) {
   int h = 0;
@@ -204,7 +206,7 @@ char *get_command_line(struct args *args) {
   char *cmd;
   int cmdlen;
 
-  // Compute command line size.
+  // Compute command line size
   arg = args->first;
   cmdlen = args->num;
   while (arg) {
@@ -214,13 +216,16 @@ char *get_command_line(struct args *args) {
       escape = 1;
     } else {
       while (*p) {
+        cmdlen++;
         if (*p == ' ') escape = 1;
+        if (*p == '"') {
+          cmdlen++;
+          escape = 1;
+        }
         p++;
       }
     }
     if (escape) cmdlen += 2;
-    cmdlen += strlen(arg->value);
-
     arg = arg->next;
   }
 
@@ -236,15 +241,17 @@ char *get_command_line(struct args *args) {
       escape = 1;
     } else {
       while (*p) {
-        if (*p == ' ') escape = 1;
+        if (*p == ' ' || *p == '"') escape = 1;
         p++;
       }
     }
     if (arg != args->first) *cmd++ = ' ';
     if (escape) *cmd++ = '"';
-    arglen = strlen(arg->value);
-    memcpy(cmd, arg->value, arglen);
-    cmd += arglen;
+    p = arg->value;
+    while (*p) {
+      if (*p == '"') *cmd++ = '"';
+      *cmd++ = *p++;
+    }
     if (escape) *cmd++ = '"';
 
     arg = arg->next;
@@ -518,29 +525,14 @@ static void exit_internal(int status) {
   struct process *proc = gettib()->proc;
   struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
-  // Execute atexit handlers
   run_atexit_handlers();
-
-  // Deallocate arguments
-  free_args(crtbase->argc, crtbase->argv);
+  term_crtbase(crtbase);
 }
 
 static void __stdcall enter_internal(void *args) {
-  struct process *proc = gettib()->proc;
+  // Run internal command
   struct job *job = (struct job *) args;
-  struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
-
-  // Initialize arguments
-  crtbase->argc = parse_args(proc->cmdline, NULL);
-  crtbase->argv = (char **) malloc((crtbase->argc + 1) * sizeof(char *));
-  parse_args(proc->cmdline, crtbase->argv);
-  crtbase->argv[crtbase->argc] = NULL;
-  crtbase->opt.err = 1;
-  crtbase->opt.ind = 1;
-  crtbase->opt.sp = 1;
-  crtbase->opt.place = "";
-
-  // Run internal command.
+  struct crtbase *crtbase = init_crtbase();
   gettib()->proc->atexit = exit_internal;
   exit(job->main(crtbase->argc, crtbase->argv));
 }
