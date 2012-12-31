@@ -1,0 +1,70 @@
+#
+# Makefile for zlib
+#
+
+all: libz.a gunzip.exe
+
+OBJSZ=adler32.o crc32.o deflate.o infback.o inffast.o inflate.o inftrees.o trees.o zutil.o
+OBJSG=compress.o uncompr.o gzclose.o gzlib.o gzread.o gzwrite.o
+OBJS=$(OBJSZ) $(OBJSG)
+
+libz.a: $(OBJS)
+	$(AR) -s -m $@ $^
+
+gunzip.exe: gun.c libz.a
+	$(CC) -o gunzip.exe gun.c libz.a $(CCFLAGS)
+
+adler32.o: adler32.c
+	$(CC) -c $^ $(CCFLAGS)
+
+crc32.o: crc32.c
+	$(CC) -c $^ $(CCFLAGS)
+
+deflate.o: deflate.c
+	$(CC) -c $^ $(CCFLAGS)
+
+infback.o: infback.c
+	$(CC) -c $^ $(CCFLAGS)
+
+inffast.o: inffast.c
+	$(CC) -c $^ $(CCFLAGS)
+
+inflate.o: inflate.c
+	$(CC) -c $^ $(CCFLAGS)
+
+inftrees.o: inftrees.c
+	$(CC) -c $^ $(CCFLAGS)
+
+trees.o: trees.c
+	$(CC) -c $^ $(CCFLAGS)
+
+zutil.o: zutil.c
+	$(CC) -c $^ $(CCFLAGS)
+
+compress.o: compress.c
+	$(CC) -c $^ $(CCFLAGS)
+
+uncompr.o: uncompr.c
+	$(CC) -c $^ $(CCFLAGS)
+
+gzclose.o: gzclose.c
+	$(CC) -c $^ $(CCFLAGS)
+
+gzlib.o: gzlib.c
+	$(CC) -c $^ $(CCFLAGS)
+
+gzread.o: gzread.c
+	$(CC) -c $^ $(CCFLAGS)
+
+gzwrite.o: gzwrite.c
+	$(CC) -c $^ $(CCFLAGS)
+
+install: libz.a gunzip.exe
+	cp libz.a /usr/lib/libz.a
+	cp zlib.h /usr/include/zlib.h
+	cp zconf.h /usr/include/zconf.h
+	cp gunzip.exe /bin/gunzip.exe
+
+clean:
+	rm libz.a gunzip.exe $(OBJS)
+

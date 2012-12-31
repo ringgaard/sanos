@@ -781,6 +781,10 @@ extra-source:
 	cp sdk/src/awk/Makefile.sanos linux/install/usr/src/utils/awk/Makefile
 	cp sdk/src/awk/*.c sdk/src/awk/*.h sdk/src/awk/*.y linux/install/usr/src/utils/awk
 
+	mkdir -p linux/install/usr/src/utils/zlib
+	cp sdk/src/zlib/Makefile.sanos linux/install/usr/src/utils/zlib/Makefile
+	cp sdk/src/zlib/*.c sdk/src/zlib/*.h linux/install/usr/src/utils/zlib
+
 #
 # vmdk
 #

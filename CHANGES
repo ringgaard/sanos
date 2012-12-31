@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added zlib, awk, and lua to SDK.
+
     * Handle escaping of double quotes in command argument parsing.
 
     * Switched to using new shell as default shell.
