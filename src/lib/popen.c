@@ -39,7 +39,8 @@
 #define SHELL "sh.exe"
 
 FILE *popen(const char *command, const char *mode) {
-  char cmdline[1024];
+  char *cmdline;
+  int cmdlen;
   int rc;
   int hndl[2];
   int phndl;
@@ -52,16 +53,18 @@ FILE *popen(const char *command, const char *mode) {
     return NULL;
   }
 
-  if (strlen(command) + strlen(SHELL) + 1 >= sizeof(cmdline)) {
-    errno = E2BIG;
+  cmdlen = strlen(SHELL) + 1 + strlen(command);
+  cmdline = malloc(cmdlen + 1);
+  if (!cmdline) {
+    errno = ENOMEM;
     return NULL;
   }
-
   strcpy(cmdline, SHELL);
   strcat(cmdline, " ");
   strcat(cmdline, command);
 
   phndl = spawn(P_SUSPEND, SHELL, cmdline, NULL, &tib);
+  free(cmdline);
   if (phndl < 0) return NULL;
   proc = tib->proc;
 

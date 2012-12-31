@@ -32,15 +32,15 @@ virtionet.sys: virtionet.c /usr/src/lib/string.c
     $(CC) -shared -entry _start@12 -nostdlib -lkrnl -o $@ -D KERNEL $**
 
 install: $(DRIVERS)
-    sh cp 3c905c.sys /boot/3c905c.sys
-    sh cp eepro100.sys /boot/eepro100.sys
-    sh cp ne2000.sys /boot/ne2000.sys
-    sh cp pcnet32.sys /boot/pcnet32.sys 
-    sh cp rtl8139.sys /boot/rtl8139.sys 
-    sh cp sis900.sys /boot/sis900.sys
-    sh cp tulip.sys /boot/tulip.sys
-    sh cp virtionet.sys /boot/virtionet.sys
+    cp 3c905c.sys /boot/3c905c.sys
+    cp eepro100.sys /boot/eepro100.sys
+    cp ne2000.sys /boot/ne2000.sys
+    cp pcnet32.sys /boot/pcnet32.sys 
+    cp rtl8139.sys /boot/rtl8139.sys 
+    cp sis900.sys /boot/sis900.sys
+    cp tulip.sys /boot/tulip.sys
+    cp virtionet.sys /boot/virtionet.sys
 
 clean:
-    sh rm $(DRIVERS)
+    rm $(DRIVERS)
 

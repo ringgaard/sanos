@@ -8,7 +8,7 @@ telnetd.exe: telnetd.c
     $(CC) telnetd.c
 
 install: telnetd.exe
-    sh cp telnetd.exe /bin/telnetd.exe
+    cp telnetd.exe /bin/telnetd.exe
 
 clean:
-    sh rm telnetd.exe
+    rm telnetd.exe

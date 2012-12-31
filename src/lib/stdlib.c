@@ -37,6 +37,8 @@
 #include <stdlib.h>
 #include <inifile.h>
 
+#define SHELL "sh.exe"
+
 static long holdrand = 1L;
 
 typedef void (__cdecl *proc_t)(void);
@@ -205,7 +207,29 @@ int rand() {
 }
 
 int system(const char *command) {
-  return spawn(P_WAIT, NULL, command, NULL, NULL);
+  char *cmdline;
+  int cmdlen;
+  int rc;
+
+  if (!command) {
+    errno = EINVAL;
+    return NULL;
+  }
+
+  cmdlen = strlen(SHELL) + 1 + strlen(command);
+  cmdline = malloc(cmdlen + 1);
+  if (!cmdline) {
+    errno = ENOMEM;
+    return NULL;
+  }
+
+  strcpy(cmdline, SHELL);
+  strcat(cmdline, " ");
+  strcat(cmdline, command);
+
+  rc = spawn(P_WAIT, SHELL, cmdline, NULL, NULL);
+  free(cmdline);
+  return rc;
 }
 
 char *realpath(const char *path, char *resolved) {

@@ -21,4 +21,4 @@ calc.exe: calc.c
     $(CC) calc.c
 
 clean:
-    sh rm hello.exe hellos.exe calc.exe webserver.exe
+    rm hello.exe hellos.exe calc.exe webserver.exe

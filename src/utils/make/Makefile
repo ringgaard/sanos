@@ -8,7 +8,7 @@ make.exe: make.c
     $(CC) make.c
 
 install: make.exe
-    sh cp make.exe /usr/bin/make.exe
+    cp make.exe /usr/bin/make.exe
 
 clean:
-    sh rm make.exe
+    rm make.exe

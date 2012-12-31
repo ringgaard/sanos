@@ -11,9 +11,9 @@ test.exe: test.c
     $(CC) test.c
 
 install: ping.exe test.exe
-    sh cp ping.exe /bin/ping.exe
-    sh cp test.exe /bin/test.exe
+    cp ping.exe /bin/ping.exe
+    cp test.exe /bin/test.exe
 
 clean:
-    sh rm ping.exe test.exe
+    rm ping.exe test.exe
 

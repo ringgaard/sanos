@@ -18,9 +18,9 @@ ldrinit.exe: ldrinit.asm
     $(AS) -f bin $** -o $@
 
 install: osldr.dll
-    sh cp osldr.dll /boot/osldr.dll
+    cp osldr.dll /boot/osldr.dll
     mkboot -l /boot/osldr.dll
 
 clean:
-    sh rm $(OBJS) osldr.dll ldrinit.exe
+    rm $(OBJS) osldr.dll ldrinit.exe
 

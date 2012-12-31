@@ -112,9 +112,9 @@ krnl.dll: $(SRCS)
     $(CC) -shared -entry _start@12 -fixed 0x80000000 -filealign 4096 -nostdlib -o krnl.dll -def krnl.def -D KERNEL -D KRNL_LIB $(SRCS)
 
 install: krnl.dll
-    sh cp krnl.def /usr/lib/krnl.def
+    cp krnl.def /usr/lib/krnl.def
     mkboot -k krnl.dll
 
 clean:
-    sh rm krnl.dll krnl.def
+    rm krnl.dll krnl.def
 

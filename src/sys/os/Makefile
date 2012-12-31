@@ -45,9 +45,9 @@ modf.o: /usr/src/lib/math/modf.asm
     $(AS) $** -o $@
 
 install: os.dll
-    sh cp os.dll /boot/os.dll
-    sh cp os.def /usr/lib/os.def
+    cp os.dll /boot/os.dll
+    cp os.def /usr/lib/os.def
 
 clean:
-    sh rm $(LIB_OBJS) os.dll os.def
+    rm $(LIB_OBJS) os.dll os.def
 

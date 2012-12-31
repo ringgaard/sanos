@@ -18,7 +18,7 @@ as.exe: $(SRCFILES)
     $(CC) $(CFLAGS) -o as.exe $(SRCFILES)
 
 install: as.exe
-    sh cp as.exe /usr/bin/as.exe
+    cp as.exe /usr/bin/as.exe
 
 clean:
-    sh rm as.exe
+    rm as.exe

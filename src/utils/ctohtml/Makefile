@@ -8,7 +8,7 @@ ctohtml.exe: ctohtml.c
     $(CC) ctohtml.c
 
 install: ctohtml.exe
-    sh cp ctohtml.exe /bin/ctohtml.exe
+    cp ctohtml.exe /bin/ctohtml.exe
 
 clean:
-    sh rm ctohtml.exe
+    rm ctohtml.exe

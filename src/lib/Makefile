@@ -246,8 +246,8 @@ os.def: /boot/os.dll
     impdef $^ $@
 
 install: libc.a os.def
-    sh cp libc.a /usr/lib/libc.a
-    sh cp os.def /usr/lib/os.def
+    cp libc.a /usr/lib/libc.a
+    cp os.def /usr/lib/os.def
 
 clean:
-    sh rm libc.a os.def $(OBJ) $(MATHOBJ)
+    rm libc.a os.def $(OBJ) $(MATHOBJ)
