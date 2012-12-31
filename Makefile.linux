@@ -785,6 +785,10 @@ extra-source:
 	cp sdk/src/zlib/Makefile.sanos linux/install/usr/src/utils/zlib/Makefile
 	cp sdk/src/zlib/*.c sdk/src/zlib/*.h linux/install/usr/src/utils/zlib
 
+	mkdir -p linux/install/usr/src/utils/tar
+	cp sdk/src/tar/Makefile.sanos linux/install/usr/src/utils/tar/Makefile
+	cp sdk/src/tar/*.c sdk/src/tar/*.h linux/install/usr/src/utils/tar
+
 #
 # vmdk
 #

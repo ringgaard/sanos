@@ -172,6 +172,7 @@ int dfs_mkdir(struct fs *fs, char *name, int mode) {
   int rc;
 
   len = strlen(name);
+  if (len == 0) return -EEXIST;
   rc = diri((struct filsys *) fs->data, &name, &len, &parent);
   if (rc < 0) return rc;
 

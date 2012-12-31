@@ -42,9 +42,11 @@
 
 #ifndef O_RDONLY
 
+#define O_ACCMODE               0x0003  // Access mode
 #define O_RDONLY                0x0000  // Open for reading only
 #define O_WRONLY                0x0001  // Open for writing only
 #define O_RDWR                  0x0002  // Open for reading and writing
+
 #define O_SPECIAL               0x0004  // Open for special access
 #define O_APPEND                0x0008  // Writes done at EOF
 

@@ -1,0 +1,75 @@
+#
+# Makefile for tar
+#
+
+CCFLAGS=-I . -D HAVE_LIBZ
+
+all: libtar.a tar.exe
+
+OBJS=append.o block.o decode.o encode.o extract.o handle.o output.o util.o wrapper.o \
+     libtar_hash.o libtar_list.o \
+     basename.o dirname.o strlcpy.o strmode.o strsep.o
+
+libtar.a: $(OBJS)
+	$(AR) -s -m $@ $^
+
+tar.exe: tar.c libtar.a
+	$(CC) tar.c libtar.a -lz $(CCFLAGS)
+
+append.o: append.c
+	$(CC) -c $^ $(CCFLAGS)
+
+block.o: block.c
+	$(CC) -c $^ $(CCFLAGS)
+
+decode.o: decode.c
+	$(CC) -c $^ $(CCFLAGS)
+
+encode.o: encode.c
+	$(CC) -c $^ $(CCFLAGS)
+
+extract.o: extract.c
+	$(CC) -c $^ $(CCFLAGS)
+
+handle.o: handle.c
+	$(CC) -c $^ $(CCFLAGS)
+
+output.o: output.c
+	$(CC) -c $^ $(CCFLAGS)
+
+util.o: util.c
+	$(CC) -c $^ $(CCFLAGS)
+
+wrapper.o: wrapper.c
+	$(CC) -c $^ $(CCFLAGS)
+
+libtar_hash.o: libtar_hash.c
+	$(CC) -c $^ $(CCFLAGS)
+
+libtar_list.o: libtar_list.c
+	$(CC) -c $^ $(CCFLAGS)
+
+basename.o: basename.c
+	$(CC) -c $^ $(CCFLAGS)
+
+dirname.o: dirname.c
+	$(CC) -c $^ $(CCFLAGS)
+
+strlcpy.o: strlcpy.c
+	$(CC) -c $^ $(CCFLAGS)
+
+strmode.o: strmode.c
+	$(CC) -c $^ $(CCFLAGS)
+
+strsep.o: strsep.c
+	$(CC) -c $^ $(CCFLAGS)
+
+install: libtar.c tar.exe
+	cp libtar.h /usr/include/libtar.h
+	cp libtar_listhash.h /usr/include/libtar_listhash.h
+	cp libtar.a /usr/lib/libtar.a
+	cp tar.exe /bin/tar.exe
+
+clean:
+	rm $(OBJS) tar.exe libtar.a
+

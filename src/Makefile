@@ -30,6 +30,11 @@ utils:
 cmds:
     make -C cmds
 
+extra:
+    make -C utils/zlib
+    make -C utils/tar
+    make -C utils/lua
+
 install: install-sdk install-sys install-utils install-cmds
 
 install-sdk:
@@ -58,6 +63,11 @@ install-utils:
 install-cmds:
     make -C cmds install
 
+install-extra:
+    make -C utils/zlib install
+    make -C utils/tar install
+    make -C utils/lua install
+
 clean: clean-sdk clean-sys clean-utils clean-cmds
 
 clean-sdk:
@@ -83,6 +93,11 @@ clean-utils:
 
 clean-cmds:
     make -C cmds clean
+
+clean-extra:
+    make -C utils/zlib clean
+    make -C utils/tar clean
+    make -C utils/lua clean
 
 .PHONY: utils sys cmds
 
