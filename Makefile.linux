@@ -769,6 +769,9 @@ sdk-source:
 	mkdir -p linux/install/usr/src/utils/makedepend
 	cp sdk/src/makedepend/*.c sdk/src/makedepend/*.h linux/install/usr/src/utils/makedepend
 	cp sdk/src/makedepend/Makefile.sanos linux/install/usr/src/utils/makedepend/Makefile
+	mkdir -p linux/install/usr/src/utils/yacc
+	cp sdk/src/yacc/*.c sdk/src/yacc/*.h linux/install/usr/src/utils/yacc
+	cp sdk/src/yacc/Makefile.sanos linux/install/usr/src/utils/yacc/Makefile
 
 extra-source:
 	mkdir -p linux/install/usr/src/utils/lua
@@ -780,6 +783,7 @@ extra-source:
 	mkdir -p linux/install/usr/src/utils/awk
 	cp sdk/src/awk/Makefile.sanos linux/install/usr/src/utils/awk/Makefile
 	cp sdk/src/awk/*.c sdk/src/awk/*.h sdk/src/awk/*.y linux/install/usr/src/utils/awk
+	rm linux/install/usr/src/utils/awk/ytab.* linux/install/usr/src/utils/awk/proctab.c
 
 	mkdir -p linux/install/usr/src/utils/zlib
 	cp sdk/src/zlib/Makefile.sanos linux/install/usr/src/utils/zlib/Makefile

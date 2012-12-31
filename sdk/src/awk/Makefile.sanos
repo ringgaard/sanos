@@ -7,13 +7,26 @@ CCFLAGS=-D FOPEN_MAX=40 -I . -D USE_LOCAL_HEAP
 all: awk.exe 
 
 SRCS=b.c main.c parse.c proctab.c tran.c lib.c run.c lex.c ytab.c
+HDRS=awk.h ytab.h
 
-awk.exe: $(SRCS)
+awk.exe: $(SRCS) $(HDRS)
 	$(CC) -o awk.exe $(SRCS) $(CCFLAGS)
+
+proctab.c: maketab.exe ytab.h
+	maketab > proctab.c
+
+maketab.exe: maketab.c ytab.h
+	$(CC) maketab.c
+
+ytab.h: ytab.c
+
+ytab.c: awkgram.y
+	yacc -d awkgram.y
+	mv y.tab.c ytab.c
+	mv y.tab.h ytab.h
 
 install: awk.exe
   cp awk.exe /usr/bin/awk.exe
 
 clean:
-  rm awk.exe
-
+  rm awk.exe maketab.exe ytab.h ytab.c proctab.c

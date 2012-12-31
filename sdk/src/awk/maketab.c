@@ -131,6 +131,7 @@ int main(int argc, char *argv[])
 	printf("static char *printname[%d] = {\n", SIZE);
 	i = 0;
 	while (fgets(buf, sizeof buf, fp) != NULL) {
+		if (strncmp(buf, "#define", 7) != 0) continue;
 		n = sscanf(buf, "%1c %s %s %d", &c, def, name, &tok);
 		if (c != '#' || (n != 4 && strcmp(def,"define") != 0))	/* not a valid #define */
 			continue;

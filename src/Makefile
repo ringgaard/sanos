@@ -12,6 +12,7 @@ sdk:
     make -C utils/make
     make -C utils/impdef
     make -C utils/makedepend
+    make -C utils/yacc
 
 sys:
     make -C sys
@@ -34,6 +35,7 @@ extra:
     make -C utils/zlib
     make -C utils/tar
     make -C utils/lua
+    make -C utils/awk
 
 install: install-sdk install-sys install-utils install-cmds
 
@@ -45,6 +47,7 @@ install-sdk:
     make -C utils/make install
     make -C utils/impdef install
     make -C utils/makedepend install
+    make -C utils/yacc install
 
 install-sys:
     make -C sys install
@@ -67,6 +70,7 @@ install-extra:
     make -C utils/zlib install
     make -C utils/tar install
     make -C utils/lua install
+    make -C utils/awk install
 
 clean: clean-sdk clean-sys clean-utils clean-cmds
 
@@ -78,6 +82,7 @@ clean-sdk:
     make -C utils/make clean
     make -C utils/impdef clean
     make -C utils/makedepend clean
+    make -C utils/yacc clean
 
 clean-sys:
     make -C sys clean
@@ -98,6 +103,7 @@ clean-extra:
     make -C utils/zlib clean
     make -C utils/tar clean
     make -C utils/lua clean
+    make -C utils/awk clean
 
 .PHONY: utils sys cmds
 

@@ -3,7 +3,6 @@
 #
 
 CC=../../../linux/tools/cc
-AR=../../../linux/tools/ar
 CCFLAGS=-B ../../../linux/install/usr -D FOPEN_MAX=40 -I . -D USE_LOCAL_HEAP
 
 all: awk.exe 

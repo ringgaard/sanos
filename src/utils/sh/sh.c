@@ -75,24 +75,6 @@ static void check_terminations(struct shell *shell) {
   }
 }
 
-static int run_command(struct job *parent, int argc, char *argv[]) {
-  struct job *job;
-  int i;
-  int rc;
-
-  job = create_job(parent, J_ARG_SCOPE);
-  for (i = 0; i < argc; i++) {
-    add_arg(&job->args, argv[i]);
-  }
-  rc = execute_job(job);
-  if (rc == 0) {
-    if (job->handle != -1) resume(job->handle);
-    rc = wait_for_job(job);
-  }
-  remove_job(job);
-  return rc;
-}
-
 static int run_shell(struct shell *shell) {
   char curdir[MAXPATH];
   char cmdline[1024];
@@ -165,7 +147,9 @@ int main(int argc, char *argv[], char *envp[]) {
   if (script_invoke(argv[0])) {
     rc = run_script(&shell);
   } else if (argc > 1) {
-    rc = run_command(shell.top, argc - 1, argv + 1);
+    char *cmdline = gettib()->proc->cmdline;
+    while (*cmdline && *cmdline != ' ') cmdline++;
+    rc = exec_command(shell.top, cmdline);
   } else {
     rc = run_shell(&shell);
   }
