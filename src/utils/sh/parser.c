@@ -954,7 +954,7 @@ static int parse_unquoted(struct parser *p) {
       return 1;
     } else if (is_esc(p->ch)) {
       // If it is a character subject to globbing then set S_GLOB flag
-      if (p->tok != T_ASSIGN) flags |= S_GLOB;
+      if (p->tok != T_ASSIGN && !(p->flags & P_NOGLOB)) flags |= S_GLOB;
     }
 
     if (p->ch < 0) return 0;
@@ -1330,7 +1330,7 @@ static union node *parse_case(struct parser *p) {
 
   // Parse the cases
   cptr = &node->ncase.list;
-  while (!(parse_gettok(p, P_SKIPNL) & T_ESAC)) {
+  while (!(parse_gettok(p, P_SKIPNL | P_NOGLOB) & T_ESAC)) {
     // Patterns may be introduced with '('
     if (!(p->tok & T_LP)) p->pushback++;
 
@@ -1338,7 +1338,7 @@ static union node *parse_case(struct parser *p) {
     pptr = &(*cptr)->ncasenode.pats;
 
     // Parse the pattern list
-    while (parse_gettok(p, P_SKIPNL) & (T_WORD | T_NAME | T_ASSIGN)) {
+    while (parse_gettok(p, P_SKIPNL | P_NOGLOB) & (T_WORD | T_NAME | T_ASSIGN)) {
       *pptr = parse_getarg(p);
       pptr = &(*pptr)->list.next;
       if (!(parse_gettok(p, P_DEFAULT) & T_PIPE)) break;

@@ -143,6 +143,7 @@ extern struct token tokens[];
 #define P_BQUOTE   0x0800 // Backquoted mode, delimit words on unesc'd bquotes
 #define P_NOSUBST  0x1000 // Do not create substitution nodes
 #define P_HERE     0x2000 // Parse here-doc
+#define P_NOGLOB   0x4000 // No glob pattern expansion
 
 //
 // Parser context

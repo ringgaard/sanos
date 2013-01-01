@@ -430,7 +430,6 @@ static int interp_redir(struct stkmark *mark, struct job *job, union node *node)
   char *arg;
 
   // Open files for redirection
-  rc = 0;
   for (n = node; n; n = n->nredir.next) {
     fd = n->nredir.fd;
     flags = n->nredir.flags;
@@ -438,36 +437,46 @@ static int interp_redir(struct stkmark *mark, struct job *job, union node *node)
     act = flags & R_ACT;
 
     rc = expand_args(mark, job, NULL, n->nredir.list);
-    if (rc != 0) break;
+    if (rc != 0) return rc;
     arg = ststr(mark);
-    if (!arg || fd < 0 || fd >= STD_HANDLES || act != R_OPEN) {
-      rc = 1;
-      break;
-    }
+    if (!arg || fd < 0 || fd >= STD_HANDLES) return 1;
 
-    oflags = 0;
-    if (dir == R_IN) {
-      oflags |= O_RDONLY;
-    } else if (dir == R_OUT) {
-      oflags |= O_WRONLY;
-    } else if (dir == (R_IN | R_OUT)) {
-      oflags |= O_RDWR;
-    }
+    switch (act) {
+      case  R_OPEN:
+        oflags = 0;
+        if (dir == R_IN) {
+          oflags |= O_RDONLY;
+        } else if (dir == R_OUT) {
+          oflags |= O_WRONLY;
+        } else if (dir == (R_IN | R_OUT)) {
+          oflags |= O_RDWR;
+        }
 
-    if (dir & R_OUT) {
-      oflags |= (flags & R_APPEND) ? O_APPEND : O_TRUNC;
-      oflags |= (flags & R_CLOBBER) ? (O_CREAT | O_EXCL) : O_CREAT;
-    }
+        if (dir & R_OUT) {
+          oflags |= (flags & R_APPEND) ? O_APPEND : O_TRUNC;
+          oflags |= (flags & R_CLOBBER) ? (O_CREAT | O_EXCL) : O_CREAT;
+        }
 
-    f = open(arg, oflags, 0666);
-    if (f < 0) {
-      perror(arg);
-      rc = 1;
-      break;
+        f = open(arg, oflags, 0666);
+        if (f < 0) {
+          perror(arg);
+          return 1;
+        }
+        set_fd(job, fd, f);
+        break;
+
+      case R_DUP:
+        f = atoi(arg);
+        if (f < 0 || f >= STD_HANDLES) return 1;
+        set_fd(job, fd, dup(get_fd(job, f, 0)));
+        break;
+
+      case R_HERE:
+        // Not yet implemented
+        break;
     }
-    set_fd(job, fd, f);
   }
-  return rc;
+  return 0;
 }
 
 static struct job *setup_command(struct job *parent, union node *node) {
@@ -677,7 +686,7 @@ static int interp_if(struct job *parent, union node *node) {
   // Perform I/O redirection
   if (node->ncmd.rdir) {
     struct stkmark mark;
-    
+ 
     pushstkmark(NULL, &mark);
     rc = interp_redir(&mark, job, node->nif.rdir);
     popstkmark(&mark);
@@ -791,6 +800,80 @@ static int interp_loop(struct job *parent, union node *node, int until) {
   return rc;
 }
 
+static int interp_case(struct job *parent, union node *node) {
+  struct stkmark mark;
+  struct job *job;
+  union node *n;
+  char *word;
+  int rc;
+
+  // Create new job
+  job = create_job(parent, 0);
+  pushstkmark(NULL, &mark);
+
+  // Perform I/O redirection
+  if (node->ncmd.rdir) {
+    rc = interp_redir(&mark, job, node->ncase.rdir);
+    if (rc != 0) {
+      popstkmark(&mark);
+      remove_job(job);
+      return rc;
+    }
+  }
+  
+  // Interpret case word
+  rc = expand_args(&mark, job, NULL, node->ncase.word);
+  if (rc != 0) {
+    popstkmark(&mark);
+    remove_job(job);
+    return rc;
+  }
+  word = ststr(&mark);
+
+  // Match case patterns
+  for (n = node->ncase.list; n; n = n->list.next) {
+    // Expand case node patterns
+    struct args args;
+    struct arg *arg;
+    int match;
+
+    init_args(&args);
+    rc = expand_args(&mark, job, &args, n->ncasenode.pats);
+    if (rc != 0) {
+      delete_args(&args);
+      popstkmark(&mark);
+      remove_job(job);
+      return rc;
+    }
+    
+    // Check for matching pattern
+    match = 0;
+    arg = args.first;
+    while (arg) {
+      if (fnmatch(arg->value, word, 0) == 0) {
+        match = 1;
+        break;
+      }
+      arg = arg->next;
+    }
+    delete_args(&args);
+
+    if (match) {
+      // Interpret case node
+      if (interp(job, n->ncasenode.cmds) != 0) {
+        popstkmark(&mark);
+        remove_job(job);
+        return 1;
+      }
+      break;
+    }
+  }
+
+  popstkmark(&mark);
+  remove_job(job);
+  return 0;
+}
+
 int interp(struct job *parent, union node *node) {
   switch (node->type) {
     case N_SIMPLECMD: return interp_simple_command(parent, node);
@@ -804,6 +887,7 @@ int interp(struct job *parent, union node *node) {
     case N_FOR: return interp_for(parent, node);
     case N_WHILE: return interp_loop(parent, node, 0);
     case N_UNTIL: return interp_loop(parent, node, 1);
+    case N_CASE: return interp_case(parent, node);
     default:
       fprintf(stderr, "Error: not supported (node type %d)\n", node->type);
       return 1;

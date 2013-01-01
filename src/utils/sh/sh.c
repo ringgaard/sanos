@@ -115,6 +115,7 @@ int run_script(struct shell *shell) {
   parse_init(&parser, 0, source, &mark);
 
   while (!shell->done && !(parser.tok & T_EOF)) {
+    check_terminations(shell);
     node = parse(&parser);
     if (parser.errors) break;
     if (!node) continue;

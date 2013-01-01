@@ -403,12 +403,8 @@ int get_fd(struct job *job, int h, int own) {
   struct shell *shell = job->shell;
   int fd = job->fd[h];
   if (fd != -1) {
-    if (own) {
-      job->fd[h] = -1;
-      return fd;
-    } else {
-      return dup(fd);
-    }
+    if (own) job->fd[h] = -1;
+    return fd;
   }
 
   // Try to get I/O handle from ancestors  
@@ -421,7 +417,7 @@ int get_fd(struct job *job, int h, int own) {
     }
     job = job->parent;
   }
-  
+
   // Return shell-level I/O handle
   fd = shell->fd[h];
   if (own) fd = dup(fd);
