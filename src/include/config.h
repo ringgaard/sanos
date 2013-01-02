@@ -1,7 +1,7 @@
 //
-// shell.h
+// config.h
 //
-// Shell command definitions
+// System configuation
 //
 // Copyright (C) 2012 Michael Ringgaard. All rights reserved.
 //
@@ -35,15 +35,31 @@
 #pragma once
 #endif
 
-#ifndef SHELL_H
-#define SHELL_H
+#ifndef CONFIG_H
+#define CONFIG_H
 
-typedef int (*main_t)(int argc, char *argv[]);
+// Header files
+#define HAVE_DIRENT_H
+#define HAVE_FCNTL_H 1
+#define HAVE_IO_H 1
+#define HAVE_STDLIB_H 1
+#define HAVE_TIME_H 1
+#define HAVE_UNISTD_H 1
+#define HAVE_SYS_STAT_H 1
+#define HAVE_SYS_TIMES_H
+#define HAVE_SYS_TYPES_H 1
 
-#ifdef SHELL
-#define shellcmd(name) __declspec(dllexport) int cmd_##name(int argc, char *argv[])
-#else
-#define shellcmd(name) int main(int argc, char *argv[])
-#endif
+// Functions
+#define HAVE_CLOCK 1
+#define HAVE_FTRUNCATE 1
+#define HAVE_FGETPOS 1
+#define HAVE_OPENDIR 1
+#define HAVE_STRERROR 1
+#define HAVE_STRICMP 1
+#define HAVE_STRNICMP 1
+#define HAVE_STRSTR 1
+#define HAVE_TEMPNAM 1
+#define HAVE_REGEX 1
+#define HAVE_REGCOMP 1
 
 #endif

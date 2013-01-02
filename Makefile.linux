@@ -816,6 +816,10 @@ extra-source:
 	cp sdk/src/tar/Makefile.sanos linux/install/usr/src/utils/tar/Makefile
 	cp sdk/src/tar/*.c sdk/src/tar/*.h linux/install/usr/src/utils/tar
 
+	mkdir -p linux/install/usr/src/utils/ctags
+	cp sdk/src/ctags/Makefile.sanos linux/install/usr/src/utils/ctags/Makefile
+	cp sdk/src/ctags/*.c sdk/src/ctags/*.h linux/install/usr/src/utils/ctags
+
 #
 # vmdk
 #

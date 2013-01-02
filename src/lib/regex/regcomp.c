@@ -753,8 +753,8 @@ static void p_b_term(struct parse *p, cset *cs) {
         finish = start;
       }
       // xxx what about signed chars here...
-      REQUIRE(start <= finish, REG_ERANGE);
-      for (i = start; i <= finish; i++) CHadd(cs, i);
+      REQUIRE((uch) start <= (uch) finish, REG_ERANGE);
+      for (i = (uch) start; i <= (uch) finish; i++) CHadd(cs, i);
       break;
   }
 }
