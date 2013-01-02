@@ -6,6 +6,7 @@ copy CHANGES %1
 
 copy img\sanos.vmdk %1
 copy tools\qemu\runsanos.cmd %1
+copy sanos-kvm %1
 
 copy tools\qemu\bios.bin %1
 copy tools\qemu\qemu.exe %1

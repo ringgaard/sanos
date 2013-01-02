@@ -943,7 +943,7 @@ $(BIN)/msvcrt.dll: \
 # utils
 #
 
-utils: dirs $(BIN)/sh.exe $(BIN)/msh.exe $(BIN)/edit.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/ctohtml.exe $(BIN)/mkboot.exe $(BIN)/ping.exe $(BIN)/httpd.dll
+utils: dirs $(BIN)/sh.exe $(BIN)/msh.exe $(BIN)/edit.exe $(BIN)/less.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/ctohtml.exe $(BIN)/mkboot.exe $(BIN)/ping.exe $(BIN)/httpd.dll
 
 $(BIN)/sh.exe: \
   $(SRC)/utils/sh/sh.c \
