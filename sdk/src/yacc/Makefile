@@ -31,5 +31,5 @@ YACC_SRCFILES=closure.c error.c graph.c lalr.c lr0.c main.c mkpar.c output.c rea
 YACC_HDRFILES=defs.h
 YACC_LIBS=$(SANOS)/lib/os.lib $(SANOS)/lib/libc.lib
 
-cc.exe: $(YACC_SRCFILES) $(YACC_HDRFILES) $(YACC_LIBS)
+yacc.exe: $(YACC_SRCFILES) $(YACC_HDRFILES) $(YACC_LIBS)
     $(CC) $(CFLAGS) /Fe$@ $(TCC_SRCFILES) $(TCC_LIBS) /link /NODEFAULTLIB /FIXED:NO
