@@ -63,7 +63,4 @@
 ; Configuration files
 
 /etc/os.ini        build\os.ini
-/etc/rc            build\rc
-/etc/passwd        build\passwd
-/etc/group         build\group
 /etc/setup.ini     build\setup.ini

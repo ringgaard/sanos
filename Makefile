@@ -1158,7 +1158,7 @@ sdk-clean:
     cd $(SDKSRC)\libc && nmake clean
     cd $(SDKSRC)\yacc && nmake clean
 
-sdkdisk: sanos sdk install install-source install-sdk boothd
+sdkdisk: sanos sdk install install-source install-sdk install-extra boothd
 
 #
 # install
@@ -1257,4 +1257,30 @@ install-sdk: install-source sdk
     copy /Y $(SDKSRC)\yacc\*.c            $(INSTALL)\usr\src\utils\yacc
     copy /Y $(SDKSRC)\yacc\*.h            $(INSTALL)\usr\src\utils\yacc
     copy /Y $(SDKSRC)\yacc\Makefile.sanos $(INSTALL)\usr\src\utils\yacc\Makefile
+
+install-extra:
+    -@if not exist $(INSTALL)\usr\src\utils\awk mkdir $(INSTALL)\usr\src\utils\awk
+    -@if not exist $(INSTALL)\usr\src\utils\lua mkdir $(INSTALL)\usr\src\utils\lua
+    -@if not exist $(INSTALL)\usr\src\utils\lua\stdlib mkdir $(INSTALL)\usr\src\utils\lua\stdlib
+    -@if not exist $(INSTALL)\usr\src\utils\tar mkdir $(INSTALL)\usr\src\utils\tar
+    -@if not exist $(INSTALL)\usr\src\utils\zlib mkdir $(INSTALL)\usr\src\utils\zlib
+    -@if not exist $(INSTALL)\usr\src\utils\makedepend mkdir $(INSTALL)\usr\src\utils\makedepend
+    copy /Y $(SDKSRC)\awk\*.c             $(INSTALL)\usr\src\utils\awk
+    copy /Y $(SDKSRC)\awk\*.h             $(INSTALL)\usr\src\utils\awk
+    copy /Y $(SDKSRC)\awk\*.y             $(INSTALL)\usr\src\utils\awk
+    copy /Y $(SDKSRC)\awk\Makefile.sanos  $(INSTALL)\usr\src\utils\awk\Makefile
+    del $(INSTALL)\usr\src\utils\awk\ytab.* $(INSTALL)\usr\src\utils\awk\proctab.c
+    copy /Y $(SDKSRC)\lua\*.c             $(INSTALL)\usr\src\utils\lua
+    copy /Y $(SDKSRC)\lua\*.h             $(INSTALL)\usr\src\utils\lua
+    copy /Y $(SDKSRC)\lua\Makefile.sanos  $(INSTALL)\usr\src\utils\lua\Makefile
+    copy /Y $(SDKSRC)\lua\stdlib\*        $(INSTALL)\usr\src\utils\lua\stdlib
+    copy /Y $(SDKSRC)\tar\*.c             $(INSTALL)\usr\src\utils\tar
+    copy /Y $(SDKSRC)\tar\*.h             $(INSTALL)\usr\src\utils\tar
+    copy /Y $(SDKSRC)\tar\Makefile.sanos  $(INSTALL)\usr\src\utils\tar\Makefile
+    copy /Y $(SDKSRC)\zlib\*.c            $(INSTALL)\usr\src\utils\zlib
+    copy /Y $(SDKSRC)\zlib\*.h            $(INSTALL)\usr\src\utils\zlib
+    copy /Y $(SDKSRC)\zlib\Makefile.sanos $(INSTALL)\usr\src\utils\zlib\Makefile
+    copy /Y $(SDKSRC)\makedepend\*.c      $(INSTALL)\usr\src\utils\makedepend
+    copy /Y $(SDKSRC)\makedepend\*.h      $(INSTALL)\usr\src\utils\makedepend
+    copy /Y $(SDKSRC)\makedepend\Makefile.sanos $(INSTALL)\usr\src\utils\makedepend\Makefile
 

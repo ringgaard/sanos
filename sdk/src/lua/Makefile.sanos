@@ -31,7 +31,7 @@ lfs.dll: lfs.c lfs.h liblua.def
 clean:
 	rm liblua.dll liblua.def lua.exe luac.exe lfs.dll
 
-install: liblua.a lua.exe luac.exe lfs.dll
+install: liblua.dll liblua.def lua.exe luac.exe lfs.dll
 	cp liblua.dll /usr/bin/liblua.dll
 	cp lua.exe /usr/bin/lua.exe
 	cp luac.exe /usr/bin/luac.exe
@@ -40,4 +40,4 @@ install: liblua.a lua.exe luac.exe lfs.dll
 	cp luaconf.h /usr/include/luaconf.h
 	cp lualib.h /usr/include/lualib.h
 	cp lauxlib.h /usr/include/lauxlib.h
-
+	cp liblua.def /usr/lib/liblua.def
