@@ -5,8 +5,7 @@ copy COPYING %1
 copy CHANGES %1
 
 copy img\sanos.vmdk %1
-copy tools\qemu\runsanos.cmd %1
-copy sanos-kvm %1
+echo qemu -hda sanos.vmdk -boot c -redir tcp:2323::23 -redir tcp:8080::80 -L . -no-kqemu > runsanos.cmd
 
 copy tools\qemu\bios.bin %1
 copy tools\qemu\qemu.exe %1
