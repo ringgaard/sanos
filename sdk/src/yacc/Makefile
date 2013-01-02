@@ -32,4 +32,4 @@ YACC_HDRFILES=defs.h
 YACC_LIBS=$(SANOS)/lib/os.lib $(SANOS)/lib/libc.lib
 
 yacc.exe: $(YACC_SRCFILES) $(YACC_HDRFILES) $(YACC_LIBS)
-    $(CC) $(CFLAGS) /Fe$@ $(TCC_SRCFILES) $(TCC_LIBS) /link /NODEFAULTLIB /FIXED:NO
+    $(CC) $(CFLAGS) /Fe$@ $(YACC_SRCFILES) $(YACC_LIBS) /link /NODEFAULTLIB /FIXED:NO
