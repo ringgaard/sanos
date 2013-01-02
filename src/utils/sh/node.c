@@ -53,6 +53,24 @@ static void print_redir(union node *rdir, FILE *out, int level) {
   }
 }
 
+void print_expr(struct expr *expr, FILE *out, int level) {
+  if (expr) {
+    int op = expr->op & ~A_ASSIGN;
+    indent(out, level);
+    if (op > 0xFF) {
+      fprintf(out, "expr <%x>%s", op, expr->op & A_ASSIGN ? "=" : "");
+    } else {
+      fprintf(out, "expr %c%s", op, expr->op & A_ASSIGN ? "=" : "");
+    }
+
+    if (expr->num != 0) fprintf(out, " num=%d", expr->num);
+    if (expr->var) fprintf(out, " var=%s", expr->var);
+    fprintf(out, "\n");
+    if (expr->left) print_expr(expr->left, out, level + 1);
+    if (expr->right) print_expr(expr->right, out, level + 1);
+  }
+}
+
 void print_node(union node *node, FILE *out, int level) {
   union node *n;
 
@@ -81,9 +99,8 @@ void print_node(union node *node, FILE *out, int level) {
       for (n = node->npipe.cmds; n; n = n->list.next) print_node(n, out, level + 1);
       break;
 
-    case N_ASSIGN:
     case N_ARG:
-      indent(out, level); fprintf(out, "%s\n", node->type == N_ASSIGN ? "ASSIGN" : "ARG");
+      indent(out, level); fprintf(out, "%s\n", "ARG");
       for (n = node->narg.list; n; n = n->list.next) print_node(n, out, level + 1);
       break;
 
@@ -219,8 +236,18 @@ void print_node(union node *node, FILE *out, int level) {
       break;
 
     case N_FUNCTION:
+      indent(out, level); fprintf(out, "FUNCTION\n");
+      indent(out, level); fprintf(out, " name: %s\n", node->nfunc.name);
+      if (node->nfunc.cmds) {
+        indent(out, level); fprintf(out, " cmds:\n");
+        print_list(node->nfunc.cmds, out, level + 1);
+      }
+      break;
+
     case N_ARGARITH:
-      // TODO:  IMPLEMENT  !!!
+      indent(out, level); fprintf(out, "ARGARITH\n");
+      print_expr(node->nargarith.expr, out, level + 1);
+      break;
 
     default:
       indent(out, level); fprintf(out, "UNKNOWN %d\n", node->type);
@@ -233,6 +260,126 @@ int list_size(union node *node) {
     n++;
     node = node->list.next;
   }
+  return n;
+}
+
+static union node *copy_list(struct stkmark *mark, union node *node) {
+  union node *list = NULL;
+  union node **nptr = &list;
+  while (node) {
+    union node *n = copy_node(mark, node);
+    *nptr = n;
+    nptr = &n->list.next;
+    node = node->list.next;
+  }
+  return list;
+}
+
+static struct expr *copy_expr(struct stkmark *mark, struct expr *expr) {
+  struct expr *e;
+  
+  if (!expr) return NULL;
+  e = stalloc(mark, sizeof(struct expr));
+  e->op = expr->op;
+  e->var = ststrdup(mark, expr->var);
+  e->left = copy_expr(mark, expr->left);
+  e->right = copy_expr(mark, expr->right);
+  return e;
+}
+
+union node *copy_node(struct stkmark *mark, union node *node) {
+  union node *n = stalloc(mark, sizeof(union node));
+  memcpy(n, node, sizeof(union node));
+
+  switch (node->type) {
+    case N_SIMPLECMD:
+      n->ncmd.rdir = copy_list(mark, node->ncmd.rdir);
+      n->ncmd.args = copy_list(mark, node->ncmd.args);
+      n->ncmd.vars = copy_list(mark, node->ncmd.vars);
+      break;
+
+    case N_PIPELINE:
+      n->npipe.cmds = copy_list(mark, node->npipe.cmds);
+      break;
+
+    case N_AND:
+    case N_OR:
+    case N_NOT:
+      n->nandor.cmd0 = copy_node(mark, node->nandor.cmd0);
+      n->nandor.cmd1 = copy_node(mark, node->nandor.cmd1);
+      break;
+
+    case N_SUBSHELL:
+    case N_CMDLIST:
+      n->ngrp.rdir = copy_list(mark, node->ngrp.rdir);
+      n->ngrp.cmds = copy_list(mark, node->ngrp.cmds);
+      break;
+
+    case N_FOR:
+      n->nfor.rdir = copy_list(mark, node->nfor.rdir);
+      n->nfor.cmds = copy_list(mark, node->nfor.cmds);
+      n->nfor.args = copy_list(mark, node->nfor.args);
+      n->nfor.varn = ststrdup(mark, node->nfor.varn);
+      break;
+
+    case N_CASE:
+      n->ncase.rdir = copy_list(mark, node->ncase.rdir);
+      n->ncase.list = copy_list(mark, node->ncase.list);
+      n->ncase.word = copy_list(mark, node->ncase.word);
+      break;
+
+    case N_CASENODE:
+      n->ncasenode.pats = copy_list(mark, node->ncasenode.pats);
+      n->ncasenode.cmds = copy_list(mark, node->ncasenode.cmds);
+      break;
+
+    case N_IF:
+      n->nif.rdir = copy_list(mark, node->nif.rdir);
+      n->nif.cmd0 = copy_list(mark, node->nif.cmd0);
+      n->nif.cmd1 = copy_list(mark, node->nif.cmd1);
+      n->nif.test = copy_list(mark, node->nif.test);
+      break;
+
+    case N_WHILE:
+    case N_UNTIL:
+      n->nloop.rdir = copy_list(mark, node->nloop.rdir);
+      n->nloop.cmds = copy_list(mark, node->nloop.cmds);
+      n->nloop.test = copy_list(mark, node->nloop.test);
+      break;
+
+    case N_FUNCTION:
+      n->nfunc.cmds = copy_list(mark, node->nfunc.cmds);
+      n->nfunc.name = ststrdup(mark, node->nfunc.name);
+      break;
+
+    case N_ARG:
+      n->narg.list = copy_list(mark, node->narg.list);
+      n->narg.text = ststrdup(mark, node->narg.text);
+      break;
+
+    case N_REDIR:
+      n->nredir.list = copy_list(mark, node->nredir.list);
+      n->nredir.data = copy_list(mark, node->nredir.data);
+      break;
+
+    case N_ARGSTR:
+      n->nargstr.text = ststrdup(mark, node->nargstr.text);
+      break;
+
+    case N_ARGCMD:
+      n->nargcmd.list = copy_list(mark, node->nargcmd.list);
+      break;
+
+    case N_ARGPARAM:
+      n->nargparam.name = ststrdup(mark, node->nargparam.name);
+      n->nargparam.word = copy_list(mark, node->nargparam.word);
+      break;
+
+    case N_ARGARITH:
+      n->nargarith.expr = copy_expr(mark, node->nargarith.expr);
+      break;
+  }
+
   return n;
 }
 

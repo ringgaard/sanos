@@ -163,6 +163,7 @@ struct parser {
   int pushback;
   int quot;
   int tok;
+  int atok;
   union node *node;
   union node *tree;
   union node *herelist;

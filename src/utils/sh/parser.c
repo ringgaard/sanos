@@ -36,6 +36,7 @@
 
 #include "sh.h"
 
+static struct expr *parse_arith_expr(struct parser *p);
 static void parse_heredocs(struct parser *p);
 static int parse_bquoted(struct parser *p);
 static int parse_squoted(struct parser *p);
@@ -382,7 +383,7 @@ static int parse_keyword(struct parser *p) {
     
     return 0;
   }
-  
+
   // Longest keyword is until/while
   if (len > 5) return 0;
   
@@ -595,8 +596,359 @@ static int parse_redir(struct parser *p, int rf, int fd) {
 // Parse arithmetic expressions
 //
 
+static int get_arith_token(struct parser *p) {
+  int op;
+
+  while (1) {
+    switch (p->ch) {
+      // Check for end of file
+      case -1:
+        return 0;
+
+      // Skip whitespace
+      case ' ': 
+      case '\t':
+        next(p);
+        continue;
+
+      case '(':
+      case ')':
+      case ',':
+      case '?':
+      case ':':
+      case '~':
+        op = p->ch;
+        next(p);
+        return op;
+
+      case '+':
+      case '-':
+      case '*':
+      case '/':
+      case '%':
+      case '^':
+        op = p->ch;
+        next(p);
+        if (p->ch == '=') {
+          next(p);
+          return op | A_ASSIGN;
+        } else {
+          return op;
+        }
+
+      case '!':
+        next(p);
+        if (p->ch == '=') {
+          next(p);
+          return A_NE;
+        } else {
+          return '!';
+        }
+
+      case '<':
+        next(p);
+        if (p->ch == '<') {
+          next(p);
+          if (p->ch == '=') {
+            next(p);
+            return A_SHL | A_ASSIGN;
+          } else {
+            return A_SHL;
+          }
+        } else if (p->ch == '=') {
+          next(p);
+          return A_LE;
+        } else {
+          return '<';
+        }
+
+      case '>':
+        next(p);
+        if (p->ch == '>') {
+          next(p);
+          if (p->ch == '=') {
+            next(p);
+            return A_SHR | A_ASSIGN;
+          } else {
+            return A_SHR;
+          }
+        } else if (p->ch == '=') {
+          next(p);
+          return A_GE;
+        } else {
+          return '>';
+        }
+
+      case '=':
+        next(p);
+        if (p->ch == '=') {
+          next(p);
+          return '=' | A_ASSIGN;
+        } else {
+          return '=';
+        }
+        
+      case '&':
+        next(p);
+        if (p->ch == '&') {
+          next(p);
+          if (p->ch == '=') {
+            next(p);
+            return A_AND | A_ASSIGN;
+          } else {
+            return A_AND;
+          }
+        } else if (p->ch == '=') {
+          next(p);
+          return '&' | A_ASSIGN;
+        } else {
+          return '&';
+        }
+
+      case '|':
+        next(p);
+        if (p->ch == '|') {
+          next(p);
+          if (p->ch == '=') {
+            next(p);
+            return A_OR | A_ASSIGN;
+          } else {
+            return A_OR;
+          }
+        } else if (p->ch == '=') {
+          next(p);
+          return '|' | A_ASSIGN;
+        } else {
+          return '|';
+        }
+
+      default:
+        if (is_digit(p->ch)) return A_NUM;
+        return A_VAR;
+    }
+  }
+}
+
+static void nexta(struct parser *p) {
+  p->atok = get_arith_token(p);
+}
+
+static struct expr *alloc_arith(struct parser *p, int op, struct expr *left, struct expr *right) {
+  struct expr *expr;
+
+  expr = stalloc(p->mark, sizeof(struct expr));
+  expr->op = op;
+  expr->left = left;
+  expr->right = right;
+  return expr;
+}
+
+static struct expr *parse_binary(struct parser *p, int *ops, struct expr *(*term)(struct parser *p)) {
+  struct expr *l;
+  struct expr *r;
+
+  l = term(p);
+  if (!l) return NULL;
+  for (;;) {
+    int *op = ops;
+    while (*op && p->atok != *op) op++;
+    if (!*op) break;
+    nexta(p);
+    r = term(p);
+    if (!r) return NULL;
+    l = alloc_arith(p, *op, l, r);
+  }
+  return l;
+}
+
+static struct expr *parse_arith_term(struct parser *p) {
+  struct expr *e;
+  int op;
+
+  switch (p->atok) {
+    case '(':
+      // Expression in parentheses
+      nexta(p);
+      e = parse_arith_expr(p);
+      if (!e) return NULL;
+      if (p->atok != ')') {
+        parse_error(p, "unbalanced parentheses in arithmetic expression");
+        return NULL;
+      }
+      nexta(p);
+      return e;
+
+    case '+':
+      // Unary plus
+      nexta(p);
+      return parse_arith_expr(p);
+      
+    case '-':
+    case '!':
+    case '~':
+      // Unary numeric/logical/bitwise negation
+      op = p->atok;
+      nexta(p);
+      e = parse_arith_expr(p);
+      if (!e) return NULL;
+      return alloc_arith(p, op, NULL, e);
+      
+    case A_NUM:
+      // Numeric constant
+      e = alloc_arith(p, A_NUM, NULL, NULL);
+      e->num = 0;
+      while (p->ch != -1 && is_digit(p->ch)) {
+        e->num = e->num * 10 + (p->ch - '0');
+        next(p);
+      }
+      nexta(p);
+      return e;
+
+    case A_VAR:
+      // Variable identifier
+      e = alloc_arith(p, A_VAR, NULL, NULL);
+      if (p->ch == '$') next(p);
+      while (p->ch != -1 && is_name(p->ch)) {
+        stputc(p->mark, p->ch);
+        next(p);
+      }
+      e->var = ststr(p->mark);
+      if (!e->var) {
+        parse_error(p, "illegal variable name in arithmetic expression");
+        return NULL;
+      }
+      nexta(p);
+      return e;
+  }
+
+  parse_error(p, "syntax error in arithmetic expression");
+  return NULL;
+}
+
+static struct expr *parse_arith_mul(struct parser *p) {
+  static int ops[] = {'*', '/', '%', 0};
+  return parse_binary(p, ops, parse_arith_term);
+}
+
+static struct expr *parse_arith_add(struct parser *p) {
+  static int ops[] = {'+', '-', 0};
+  return parse_binary(p, ops, parse_arith_mul);
+}
+
+static struct expr *parse_arith_shift(struct parser *p) {
+  static int ops[] = {A_SHL, A_SHR, 0};
+  return parse_binary(p, ops, parse_arith_add);
+}
+
+static struct expr *parse_arith_compare(struct parser *p) {
+  static int ops[] = {'>', '<', A_GE, A_LE, 0};
+  return parse_binary(p, ops, parse_arith_shift);
+}
+
+static struct expr *parse_arith_equal(struct parser *p) {
+  static int ops[] = {A_EQ, A_NE, 0};
+  return parse_binary(p, ops, parse_arith_compare);
+}
+
+static struct expr *parse_arith_and(struct parser *p) {
+  static int ops[] = {'&', 0};
+  return parse_binary(p, ops, parse_arith_equal);
+}
+
+static struct expr *parse_arith_xor(struct parser *p) {
+  static int ops[] = {'^', 0};
+  return parse_binary(p, ops, parse_arith_and);
+}
+
+static struct expr *parse_arith_or(struct parser *p) {
+  static int ops[] = {'|', 0};
+  return parse_binary(p, ops, parse_arith_xor);
+}
+
+static struct expr *parse_arith_land(struct parser *p) {
+  static int ops[] = {A_AND, 0};
+  return parse_binary(p, ops, parse_arith_or);
+}
+
+static struct expr *parse_arith_lor(struct parser *p) {
+  static int ops[] = {A_OR, 0};
+  return parse_binary(p, ops, parse_arith_land);
+}
+
+static struct expr *parse_arith_condexpr(struct parser *p) {
+  struct expr *c;
+  struct expr *t;
+  struct expr *f;
+  
+  c = parse_arith_lor(p);
+  if (!c) return NULL;
+  if (p->atok != '?') return c;
+  nexta(p);
+
+  t = parse_arith_lor(p);
+  if (p->atok != ':') {
+    parse_error(p, "syntax error in arithmetic expression");
+    return NULL;
+  }
+  nexta(p);
+  
+  f = parse_arith_lor(p);
+  if (!f) return NULL;
+
+  return alloc_arith(p, '?', c, alloc_arith(p, ':', t, f)); 
+}
+
+static struct expr *parse_arith_assign(struct parser *p) {
+  struct expr *l;
+  struct expr *r;
+  
+  l = parse_arith_condexpr(p);
+  if (!l) return NULL;
+  if (p->atok == '=' || (p->atok & A_ASSIGN)) {
+    int op = p->atok;
+    nexta(p);
+    r = parse_arith_assign(p);
+    if (!r) return NULL;
+    if (!l->var) {
+      parse_error(p, "illegal lvalue in arithmetic expression");
+      return NULL;
+    }
+    l = alloc_arith(p, op, l, r);
+  }
+  return l;
+}
+
+static struct expr *parse_arith_expr(struct parser *p) {
+  static int ops[] = {',', 0};
+  return parse_binary(p, ops, parse_arith_assign);
+}
+
 static int parse_arith(struct parser *p) {
-  // TODO: implement
+  union node *node;
+  struct expr *expr;
+
+  // Parse expression
+  nexta(p);
+  expr = parse_arith_expr(p);
+  if (!expr) return -1;
+  
+  // Expression must be terminated with ))
+  if (p->atok != ')' || get_arith_token(p) != ')') {
+    parse_error(p, "unexpected end of arithmetic expression");
+    return -1;
+  }
+
+  // Add a new arithmetics node
+  node = alloc_node(p, N_ARGARITH);
+  node->nargarith.expr = expr;
+
+  if (p->node == NULL) {
+    p->tree = p->node = node;
+  } else {
+    p->node->list.next = node;
+    p->node = node;
+  }
+
   return 0;
 }
 
@@ -984,15 +1336,15 @@ static int parse_word(struct parser *p) {
     if (p->ch < 0) break;
     
     switch (p->quot) {
-      case Q_DQUOTED: 
+      case Q_DQUOTED:
         if (!parse_dquoted(p)) continue; 
         break;
 
-      case Q_SQUOTED: 
+      case Q_SQUOTED:
         if (!parse_squoted(p)) continue; 
         break;
 
-      default: 
+      default:
         if (!parse_unquoted(p)) continue; 
         break;
     }
@@ -1090,9 +1442,9 @@ static union node *parse_grouping(struct parser *p) {
   union node *compound_list;
 
   // Return NULL on empty compound
-  grouping = NULL;  
+  grouping = NULL;
   if (!(tok = parse_expect(p, P_DEFAULT, T_BEGIN | T_LP))) return NULL;
-  
+ 
   // Parse compound content and create a compound node if there are commands
   if ((compound_list = parse_compound_list(p))) {
     grouping = alloc_node(p, tok == T_BEGIN ? N_CMDLIST : N_SUBSHELL);
@@ -1118,6 +1470,26 @@ static union node *parse_grouping(struct parser *p) {
 }
 
 //
+// Parse function definition (3.9.5)
+//
+
+union node *parse_function(struct parser *p, char *name) {
+  union node *node;
+
+  // Create function node
+  node = alloc_node(p, N_FUNCTION);
+  node->nfunc.name = name;
+
+  // Next tokens must be )
+  if (!parse_expect(p, P_DEFAULT, T_RP)) return NULL;
+
+  // Parse the function body
+  if ((node->nfunc.cmds = parse_grouping(p)) == NULL) return NULL;
+
+  return node;
+}
+
+//
 // Parse simple command (3.9.1)
 //
 
@@ -1126,6 +1498,7 @@ union node *parse_simple_command(struct parser *p) {
   union node **vptr, *vars;
   union node **rptr, *rdir;
   union node *cmd;
+  char *funcname;
   int end;
 
   args = vars  = rdir = NULL;
@@ -1134,6 +1507,7 @@ union node *parse_simple_command(struct parser *p) {
   rptr = &rdir;
 
   end = 0;
+  funcname = NULL;
   while (!end) {
     // Look for assignments only when we have no args yet
     switch (parse_gettok(p, P_DEFAULT)) {
@@ -1146,12 +1520,22 @@ union node *parse_simple_command(struct parser *p) {
         }
 
       case T_NAME:
+        // Remember name for first argument for function definition
+        if (!(p->flags & P_NOKEYWD) && p->node && p->node->type == N_ARGSTR) {
+          funcname = p->node->nargstr.text;
+        }
+
       case T_WORD:
         // Handle arguments
         *aptr = parse_getarg(p);
         aptr = &(*aptr)->list.next;
         p->flags |= P_NOASSIGN;
         break;
+
+      case T_LP:
+        // Handle function defintion
+        p->flags &= ~(P_NOKEYWD | P_NOASSIGN);
+        if (funcname) return parse_function(p, funcname);
 
       case T_REDIR:
         // Handle redirections
@@ -1414,8 +1798,8 @@ static union node *parse_command(struct parser *p, int tempflags) {
       p->pushback++;
       return NULL;
   }
-      
-  if (command) {
+
+  if (command && command->type != N_FUNCTION) {
     // They all can have redirections, so parse these now
     rptr = &command->ncmd.rdir;
 
@@ -1430,9 +1814,9 @@ static union node *parse_command(struct parser *p, int tempflags) {
       *rptr = p->tree;
       rptr = &p->tree->list.next;
     }
+    p->pushback++;
   }
   
-  p->pushback++;
   return command;
 }
 

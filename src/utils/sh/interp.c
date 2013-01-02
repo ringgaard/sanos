@@ -33,6 +33,8 @@
 
 #include "sh.h"
 
+static int expand_args(struct stkmark *mark, struct job *job, struct args *args, union node *node);
+
 static int expand_glob(struct stkmark *mark, struct args *args, char *pattern) {
   glob_t globbuf;
   unsigned i;
@@ -96,7 +98,7 @@ static char *remove_shortest_suffix(char *str, char *pattern) {
   while (s >= str) {
     if (fnmatch(pattern, s, 0) == 0) {
       int len = s - str;
-      char *buffer = malloc(len +1);
+      char *buffer = malloc(len + 1);
       memcpy(buffer, str, len);
       buffer[len] = 0;
       return buffer;
@@ -114,7 +116,7 @@ static char *remove_longest_suffix(char *str, char *pattern) {
   while (*s) {
     if (fnmatch(pattern, s, 0) == 0) {
       int len = s - str;
-      char *buffer = malloc(len +1);
+      char *buffer = malloc(len + 1);
       memcpy(buffer, str, len);
       buffer[len] = 0;
       return buffer;
@@ -160,7 +162,7 @@ static char *remove_longest_prefix(char *str, char *pattern) {
 }
 
 static int expand_param(struct stkmark *mark, struct job *job, struct args *args, struct nargparam *param) {
-  char buffer[12];
+  char buffer[MAX_INTSTR];
   struct job *scope;
   char *value = NULL;
   int n;
@@ -299,7 +301,6 @@ static int expand_command(struct stkmark *mark, struct job *parent, struct args 
   FILE *f;
   union node *n;
   char buf[512];
-  int len;
 
   // Create job for command expansion
   job = create_job(parent, 0);
@@ -332,11 +333,81 @@ static int expand_command(struct stkmark *mark, struct job *parent, struct args 
   return 0;
 }
 
+static int eval_expr(struct job *job, struct expr *expr) {
+  int l, r, n;
+  char buffer[MAX_INTSTR];
+
+  if (!expr) return 0;
+  
+  l = (expr->op == '=') ? 0 : eval_expr(job, expr->left);
+  r = eval_expr(job, expr->right);
+
+  switch (expr->op & ~A_ASSIGN) {
+    case '=': 
+      set_var(job, expr->left->var, itoa(r, buffer, 10)); 
+      n = r; 
+      break;
+
+    case A_NUM: 
+      n = expr->num; 
+      break;
+
+    case A_VAR: 
+      n = atoi(get_var(job, expr->var)); 
+      break;
+
+    case '+': n = l + r; break;
+    case '-': n = l - r; break;
+    case '*': n = l * r; break;
+    case '/': n = (r == 0) ? 0 : l / r; break;
+    case '%': n = (r == 0) ? 0 : l % r; break;
+    case '&': n = l & r; break;
+    case '|': n = l | r; break;
+    case '^': n = l ^ r; break;
+    case A_SHL: n = l << r; break;
+    case A_SHR: n = l >> r; break;
+    case '~': n = ~r; break;
+    case '!': n = !r; break;
+    case A_AND: n = l && r; break;
+    case A_OR: n = l || r; break;
+    case A_EQ: n = (l == r); break;
+    case '>': n = (l > r); break;
+    case '<': n = (l > r); break;
+    case A_NE: n = (l != r); break;
+    case A_GE: n = (l >= r); break;
+    case A_LE: n = (l <= r); break;
+    case ',': n = r; break;
+
+    case ':': n = 0; break;
+    case '?':
+      n = l ? eval_expr(job, expr->right->left) : eval_expr(job, expr->right->right); 
+      break;
+
+    default:
+      fprintf(stderr, "unknown arithmetic operator (%x)\n", expr->op & ~A_ASSIGN);
+      return 0;
+  }
+
+  if (expr->op & A_ASSIGN) {
+    set_var(job, expr->left->var, itoa(n, buffer, 10));
+  }
+
+  return n;
+}
+
+static int expand_expr(struct stkmark *mark, struct job *parent, struct args *args, union node *node) {
+  char buffer[MAX_INTSTR];
+  int n;
+
+  n = eval_expr(parent, node->nargarith.expr);
+  expand_field(mark, itoa(n, buffer, 10), 0, args);
+  return 0;
+}
+
 static int expand_args(struct stkmark *mark, struct job *job, struct args *args, union node *node) {
   union node *n;
   int before;
   int rc;
-  char *value;
 
   switch (node->type) {
     case N_SIMPLECMD:
@@ -384,6 +455,11 @@ static int expand_args(struct stkmark *mark, struct job *job, struct args *args,
 
     case N_ARGCMD:
       rc = expand_command(mark, job, args, node);
+      if (rc != 0) return rc;
+      break;
+
+    case N_ARGARITH:
+      rc = expand_expr(mark, job, args, node);
       if (rc != 0) return rc;
       break;
 
@@ -607,7 +683,6 @@ static int interp_pipeline(struct job *parent, union node *node) {
 }
 
 static int interp_cmdlist(struct job *parent, union node *node, int subshell) {
-  struct stkmark mark;
   struct job *job;
   union node *n;
 
@@ -634,6 +709,7 @@ static int interp_cmdlist(struct job *parent, union node *node, int subshell) {
       remove_job(job);
       return 1;
     }
+    if (job->flags & J_BREAK) break;
   }
 
   remove_job(job);
@@ -714,16 +790,16 @@ static int interp_if(struct job *parent, union node *node) {
 }
 
 static int interp_for(struct job *parent, union node *node) {
+  struct stkmark mark;  
   struct job *job;
   struct arg *arg;
   union node *n;
   int rc;
 
   // Create new job
-  job = create_job(parent, 0);
+  job = create_job(parent, J_LOOP);
 
   // Perform I/O redirection
-  struct stkmark mark;  
   pushstkmark(NULL, &mark);
   if (node->ncmd.rdir) {
     rc = interp_redir(&mark, job, node->nfor.rdir);
@@ -752,7 +828,10 @@ static int interp_for(struct job *parent, union node *node) {
     for (n = node->nfor.cmds; n; n = n->list.next) {
       rc = interp(job, n);
       if (rc != 0) break;
+      if (job->flags & (J_BREAK | J_CONTINUE)) break;
     }
+    if (job->flags & J_BREAK) break;
+    job->flags &= ~J_CONTINUE;
   }
 
   remove_job(job);
@@ -765,7 +844,7 @@ static int interp_loop(struct job *parent, union node *node, int until) {
   int rc;
 
   // Create new job
-  job = create_job(parent, 0);
+  job = create_job(parent, J_LOOP);
 
   // Perform I/O redirection
   if (node->ncmd.rdir) {
@@ -785,15 +864,16 @@ static int interp_loop(struct job *parent, union node *node, int until) {
     // Interpret test condition
     rc = interp(job, node->nloop.test);
     if (rc != 0) break;
-
-    // Test for break
     if ((job->shell->lastrc == 0) == until) break;
 
     // Interpret body
     for (n = node->nloop.cmds; n; n = n->list.next) {
       rc = interp(job, n);
       if (rc != 0) break;
+      if (job->flags & (J_BREAK | J_CONTINUE)) break;
     }
+    if (job->flags & J_BREAK) break;
+    job->flags &= ~J_CONTINUE;
   }
 
   remove_job(job);
@@ -874,6 +954,16 @@ static int interp_case(struct job *parent, union node *node) {
   return 0;
 }
 
+static int interp_function(struct job *parent, union node *node) {
+  // Add function definition to shell
+  struct function *func = (struct function *) malloc(sizeof(struct function));
+  pushstkmark(NULL, &func->mark);
+  func->def = copy_node(&func->mark, node);
+  func->next = parent->shell->funcs;
+  parent->shell->funcs = func;
+  return 0;
+}
+
 int interp(struct job *parent, union node *node) {
   switch (node->type) {
     case N_SIMPLECMD: return interp_simple_command(parent, node);
@@ -888,6 +978,7 @@ int interp(struct job *parent, union node *node) {
     case N_WHILE: return interp_loop(parent, node, 0);
     case N_UNTIL: return interp_loop(parent, node, 1);
     case N_CASE: return interp_case(parent, node);
+    case N_FUNCTION: return interp_function(parent, node);
     default:
       fprintf(stderr, "Error: not supported (node type %d)\n", node->type);
       return 1;

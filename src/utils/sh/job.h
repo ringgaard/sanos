@@ -41,6 +41,10 @@
 #define J_VAR_SCOPE     0x0001
 #define J_ARG_SCOPE     0x0002
 #define J_DEFERRED_VARS 0x0004
+#define J_LOOP          0x0008
+#define J_BREAK         0x0010
+#define J_CONTINUE      0x0020
+#define J_FUNCTION      0x0040
 
 //
 // Arguments

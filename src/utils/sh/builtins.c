@@ -33,6 +33,24 @@
 
 #include "sh.h"
 
+builtin(break) {
+  struct job *j;
+  int levels = 1;
+  if (job->args.num > 1) {
+    levels = atoi(job->args.first->next->value);
+    if (levels < 1) levels = 1;
+  }
+  
+  for (j = job; j; j = j->parent) {
+    j->flags |= J_BREAK;
+    if (j->flags & J_LOOP) {
+      if (--levels == 0) break;
+    }
+  }
+
+  return job->shell->lastrc;
+}
+
 builtin(chdir) {
   char *path;
 
@@ -50,6 +68,27 @@ builtin(chdir) {
   return 0;
 }
 
+builtin(continue) {
+  struct job *j;
+  int levels = 1;
+  if (job->args.num > 1) {
+    levels = atoi(job->args.first->next->value);
+    if (levels < 1) levels = 1;
+  }
+
+  for (j = job; j; j = j->parent) {
+    if (j->flags & J_LOOP) {
+      if (--levels == 0) {
+        j->flags |= J_CONTINUE;
+        break;
+      }
+    }
+    j->flags |= J_BREAK;
+  }
+
+  return job->shell->lastrc;
+}
+
 builtin(debug) {
   job->shell->debug = 1;
   return 0;
@@ -64,6 +103,19 @@ builtin(exit) {
 
 builtin(false) {
   return 1;
+}
+
+builtin(return) {
+  struct job *j;
+  int rc = 0;
+  if (job->args.num > 1) rc = atoi(job->args.first->next->value);
+  
+  for (j = job; j; j = j->parent) {
+    j->flags |= J_BREAK;
+    if (j->flags & J_FUNCTION) break;
+  }
+
+  return rc;
 }
 
 builtin(set) {

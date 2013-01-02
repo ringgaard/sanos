@@ -191,11 +191,12 @@ struct crtbase *init_crtbase() {
 
 void term_crtbase(struct crtbase *crtbase) {
   int *argbuf;
-  
+  int size;
+
   argbuf = (int *) crtbase->argv;
   if (argbuf) {
     argbuf--;
-    int size = *argbuf;
+    size = *argbuf;
     munmap(argbuf, size, MEM_RELEASE);    
   }
 }

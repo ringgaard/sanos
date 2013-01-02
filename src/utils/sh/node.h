@@ -56,12 +56,11 @@
 #define N_UNTIL      12
 #define N_FUNCTION   13
 #define N_ARG        14
-#define N_ASSIGN     15
-#define N_REDIR      16
-#define N_ARGSTR     17
-#define N_ARGCMD     18
-#define N_ARGPARAM   19
-#define N_ARGARITH   20
+#define N_REDIR      15
+#define N_ARGSTR     16
+#define N_ARGCMD     17
+#define N_ARGPARAM   18
+#define N_ARGARITH   19
 
 //
 // Redirection types
@@ -120,6 +119,32 @@
 #define S_GLOB      0x10000
 #define S_DELIM     0x20000  // Delimiter for here-dodument should be ignored
 #define S_BGND      0x40000  // Background execution
+
+//
+// Arithmetic expressions
+//
+
+#define A_VAR       0x101  // Variable identifier
+#define A_NUM       0x102  // Number
+#define A_SHL       0x103  // Shift left (<<)
+#define A_SHR       0x104  // Shift right (>>)
+#define A_GE        0x105  // Greater than or equal (>=)
+#define A_LE        0x106  // Less than or equal (<=)
+#define A_EQ        0x107  // Equal (==)
+#define A_NE        0x108  // Not equal (!=)
+#define A_AND       0x109  // And (&&)
+#define A_OR        0x10A  // Or (||)
+
+#define A_ASSIGN    0x200  // Assignment operator flag
+#define A_NONE      0x400  // Invalid operator
+
+struct expr {
+  int op;
+  char *var;
+  int num;
+  struct expr *left;
+  struct expr *right;
+};
 
 //
 // All node types starts with type, flags, and a next pointer for building lists
@@ -272,7 +297,6 @@ struct nfunc {
   char *name;
 };
 
-
 //
 // Subsets of T_WORD
 //
@@ -297,14 +321,6 @@ struct nredir {
   union node *list; // can be file, fd, delim, here-doc-data
   union node *data; // next here-doc or expansion
   int fd;
-};
-
-struct nassign {
-  int type;
-  int flags;
-  union node *next;
-  union node *list;
-  char *text;
 };
 
 //
@@ -338,7 +354,7 @@ struct nargarith {
   int type;
   int flags;
   union node *next;
-  union node *list;
+  struct expr *expr;
 };
 
 //
@@ -361,7 +377,6 @@ union node {
   struct nfunc nfunc;
   struct narg narg;
   struct nredir nredir;
-  struct nassign nassign;
   struct nargstr nargstr;
   struct nargcmd nargcmd;
   struct nargarith nargarith;
@@ -370,5 +385,6 @@ union node {
 
 void print_node(union node *node, FILE *out, int level);
 int list_size(union node *node);
+union node *copy_node(struct stkmark *mark, union node *node);
 
 #endif

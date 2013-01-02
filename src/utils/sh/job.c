@@ -37,7 +37,7 @@ static char *aliases[] = {
   "[", "test",
   "cd", "chdir",
   NULL, NULL,
-}
+};
 
 void run_atexit_handlers();
 struct crtbase *init_crtbase();
@@ -234,7 +234,6 @@ char *get_command_line(struct args *args) {
   cmd = cmdline;
   arg = args->first;
   while (arg) {
-    int arglen;
     int escape = 0;
     char *p = arg->value;
     if (!*p) {
@@ -362,6 +361,7 @@ void init_shell(struct shell *shell, int argc, char *argv[], char *env[]) {
 
   // Initialize shell
   shell->top = shell->jobs = top;
+  shell->funcs = NULL;
   shell->done = 0;
   shell->debug = 0;
   shell->term = gettib()->proc->term;
@@ -393,6 +393,14 @@ void init_shell(struct shell *shell, int argc, char *argv[], char *env[]) {
 void clear_shell(struct shell *shell) {
   // Remove all jobs
   while (shell->jobs) remove_job(shell->jobs);
+  
+  // Delete function definitions
+  while (shell->funcs) {
+    struct function *f = shell->funcs;
+    shell->funcs = f->next;
+    popstkmark(&f->mark);
+    free(f);
+  }
   
   // Clear job list.
   shell->jobs = shell->top = NULL;
@@ -572,9 +580,19 @@ static char *lookup_alias(char *name) {
   return name;
 }
 
+struct function *lookup_func(struct shell *shell, char *name) {
+  struct function *func = shell->funcs;
+  while (func) {
+    if (strcmp(func->def->nfunc.name, name) == 0) return func;
+    func = func->next;
+  }
+  return NULL;
+}
+
 int execute_job(struct job *job) {
   char *argv0;
   builtin_t cmd;
+  struct function *func;
   int rc;
 
   // Ignore empty commands
@@ -587,6 +605,16 @@ int execute_job(struct job *job) {
   cmd = lookup_builtin(argv0);
   if (cmd != NULL) {
     rc = cmd(job);
+    job->exitcode = rc;
+    job->shell->lastrc = rc;
+    return 0;
+  }
+  
+  // Run script function
+  func = lookup_func(job->shell, argv0);
+  if (func != NULL) {
+    job->flags |= J_FUNCTION | J_ARG_SCOPE;
+    rc = interp(job, func->def->nfunc.cmds);
     job->exitcode = rc;
     job->shell->lastrc = rc;
     return 0;

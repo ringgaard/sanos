@@ -56,6 +56,7 @@ void *stalloc(struct stkmark *mark, int size);
 int stputbuf(struct stkmark *mark, char *data, int len);
 int stputc(struct stkmark *mark, int ch);
 int stputstr(struct stkmark *mark, char *str);
+char *ststrdup(struct stkmark *mark, char *str);
 char *ststr(struct stkmark *mark);
 char *ststrptr(struct stkmark *mark);
 int ststrlen(struct stkmark *mark);

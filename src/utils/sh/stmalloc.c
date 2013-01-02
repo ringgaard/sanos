@@ -147,6 +147,17 @@ int stputc(struct stkmark *mark, int ch) {
   return 0;
 }
 
+char *ststrdup(struct stkmark *mark, char *str) {
+  int len;
+  char *s;
+  
+  if (!str) return NULL;
+  len = strlen(str);
+  s = stalloc(mark, len + 1);
+  memcpy(s, str, len + 1);
+  return s;
+}
+
 char *ststr(struct stkmark *mark) {
   char *str;
 

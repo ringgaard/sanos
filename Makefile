@@ -122,6 +122,7 @@ dirs:
     -@if not exist $(OBJ)\sis900 mkdir $(OBJ)\sis900
     -@if not exist $(OBJ)\tulip mkdir $(OBJ)\tulip
     -@if not exist $(OBJ)\edit mkdir $(OBJ)\edit
+    -@if not exist $(OBJ)\less mkdir $(OBJ)\less
     -@if not exist $(OBJ)\telnetd mkdir $(OBJ)\telnetd
     -@if not exist $(OBJ)\ftpd mkdir $(OBJ)\ftpd
     -@if not exist $(OBJ)\login mkdir $(OBJ)\login
@@ -971,6 +972,12 @@ $(BIN)/edit.exe: \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/edit/ $** /D SANOS /link /NODEFAULTLIB /FIXED:NO
 
+$(BIN)/less.exe: \
+  $(SRC)/utils/edit/edit.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/edit/ $** /D SANOS /D LESS /link /NODEFAULTLIB /FIXED:NO
+
 $(BIN)/fdisk.exe: \
   $(SRC)/utils/fdisk/fdisk.c \
   $(LIBS)/os.lib \
@@ -1142,14 +1149,14 @@ sdk: $(SDKBIN)/os.dll $(SDKBIN)/make.exe $(SDKBIN)/ar.exe $(SDKBIN)/impdef.exe $
     cd $(SDKSRC)\as && nmake install
     cd $(SDKSRC)\cc && nmake install
     cd $(SDKSRC)\libc && nmake install
-    cd $(SDKSRC)\makedepend && nmake install
+    cd $(SDKSRC)\yacc && nmake install
 
 sdk-clean:
     del /Q $(SDKBIN)
     cd $(SDKSRC)\as && nmake clean
     cd $(SDKSRC)\cc && nmake clean
     cd $(SDKSRC)\libc && nmake clean
-    cd $(SDKSRC)\makedepend && nmake clean
+    cd $(SDKSRC)\yacc && nmake clean
 
 sdkdisk: sanos sdk install install-source install-sdk boothd
 
@@ -1174,6 +1181,7 @@ install: sanos
     copy /Y $(BIN)\ctohtml.exe   $(INSTALL)\bin\ctohtml.exe
     copy /Y $(BIN)\mkboot.exe    $(INSTALL)\bin\mkboot.exe
     copy /Y $(BIN)\edit.exe      $(INSTALL)\bin\edit.exe
+    copy /Y $(BIN)\less.exe      $(INSTALL)\bin\less.exe
     copy /Y $(BIN)\fdisk.exe     $(INSTALL)\bin\fdisk.exe
     copy /Y $(BIN)\jinit.exe     $(INSTALL)\bin\jinit.exe
     copy /Y $(BIN)\telnetd.exe   $(INSTALL)\bin\telnetd.exe
@@ -1228,25 +1236,25 @@ install-sdk: install-source sdk
     -@if not exist $(INSTALL)\usr\src\utils\as\output mkdir $(INSTALL)\usr\src\utils\as\output
     -@if not exist $(INSTALL)\usr\src\utils\cc mkdir $(INSTALL)\usr\src\utils\cc
     -@if not exist $(INSTALL)\usr\src\utils\ar mkdir $(INSTALL)\usr\src\utils\ar
-    -@if not exist $(INSTALL)\usr\src\utils\makedepend mkdir $(INSTALL)\usr\src\utils\makedepend
-    copy /Y $(SDKBIN)\as.exe         $(INSTALL)\usr\bin
-    copy /Y $(SDKBIN)\cc.exe         $(INSTALL)\usr\bin
-    copy /Y $(SDKBIN)\make.exe       $(INSTALL)\usr\bin
-    copy /Y $(SDKBIN)\ar.exe         $(INSTALL)\usr\bin
-    copy /Y $(SDKBIN)\impdef.exe     $(INSTALL)\usr\bin
-    copy /Y $(SDKBIN)\makedepend.exe $(INSTALL)\usr\bin
-    copy /Y $(SDKLIB)\libc.a         $(INSTALL)\usr\lib
-    copy /Y $(SDKLIB)\os.def         $(INSTALL)\usr\lib\os.def
-    copy /Y $(SDKLIB)\krnl.def       $(INSTALL)\usr\lib\krnl.def
-    copy /Y $(SDKSRC)\as\*.c         $(INSTALL)\usr\src\utils\as
-    copy /Y $(SDKSRC)\as\*.h         $(INSTALL)\usr\src\utils\as
-    copy /Y $(SDKSRC)\as\output\*.h  $(INSTALL)\usr\src\utils\as\output
-    copy /Y $(SDKSRC)\as\output\*.c  $(INSTALL)\usr\src\utils\as\output
-    copy /Y $(SDKSRC)\as\Makefile.sanos $(INSTALL)\usr\src\utils\as\Makefile
-    copy /Y $(SDKSRC)\cc\*.c         $(INSTALL)\usr\src\utils\cc
-    copy /Y $(SDKSRC)\cc\*.h         $(INSTALL)\usr\src\utils\cc
-    copy /Y $(SDKSRC)\cc\Makefile.sanos $(INSTALL)\usr\src\utils\cc\Makefile
-    copy /Y $(SDKSRC)\makedepend\*.c $(INSTALL)\usr\src\utils\makedepend
-    copy /Y $(SDKSRC)\makedepend\*.h $(INSTALL)\usr\src\utils\makedepend
-    copy /Y $(SDKSRC)\makedepend\Makefile.sanos $(INSTALL)\usr\src\utils\makedepend\Makefile
+    -@if not exist $(INSTALL)\usr\src\utils\yacc mkdir $(INSTALL)\usr\src\utils\yacc
+    copy /Y $(SDKBIN)\as.exe              $(INSTALL)\usr\bin
+    copy /Y $(SDKBIN)\cc.exe              $(INSTALL)\usr\bin
+    copy /Y $(SDKBIN)\make.exe            $(INSTALL)\usr\bin
+    copy /Y $(SDKBIN)\ar.exe              $(INSTALL)\usr\bin
+    copy /Y $(SDKBIN)\impdef.exe          $(INSTALL)\usr\bin
+    copy /Y $(SDKBIN)\yacc.exe            $(INSTALL)\usr\bin
+    copy /Y $(SDKLIB)\libc.a              $(INSTALL)\usr\lib
+    copy /Y $(SDKLIB)\os.def              $(INSTALL)\usr\lib\os.def
+    copy /Y $(SDKLIB)\krnl.def            $(INSTALL)\usr\lib\krnl.def
+    copy /Y $(SDKSRC)\as\*.c              $(INSTALL)\usr\src\utils\as
+    copy /Y $(SDKSRC)\as\*.h              $(INSTALL)\usr\src\utils\as
+    copy /Y $(SDKSRC)\as\output\*.h       $(INSTALL)\usr\src\utils\as\output
+    copy /Y $(SDKSRC)\as\output\*.c       $(INSTALL)\usr\src\utils\as\output
+    copy /Y $(SDKSRC)\as\Makefile.sanos   $(INSTALL)\usr\src\utils\as\Makefile
+    copy /Y $(SDKSRC)\cc\*.c              $(INSTALL)\usr\src\utils\cc
+    copy /Y $(SDKSRC)\cc\*.h              $(INSTALL)\usr\src\utils\cc
+    copy /Y $(SDKSRC)\cc\Makefile.sanos   $(INSTALL)\usr\src\utils\cc\Makefile
+    copy /Y $(SDKSRC)\yacc\*.c            $(INSTALL)\usr\src\utils\yacc
+    copy /Y $(SDKSRC)\yacc\*.h            $(INSTALL)\usr\src\utils\yacc
+    copy /Y $(SDKSRC)\yacc\Makefile.sanos $(INSTALL)\usr\src\utils\yacc\Makefile
 

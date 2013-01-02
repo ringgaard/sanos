@@ -1,5 +1,5 @@
 #
-# Makefile for Sanos Tiny C Compiler
+# Makefile for Sanos C Compiler
 #
 
 SANOS=..\..\..

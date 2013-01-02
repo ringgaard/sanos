@@ -55,10 +55,21 @@
 #include "interp.h"
 
 #define MAX_COMMAND_LEN 8
+#define MAX_INTSTR      12
 
 typedef int (*builtin_t)(struct job *job);
 
 #define builtin(name) __declspec(dllexport) int builtin_##name(struct job *job)
+
+//
+// Function definition
+//
+
+struct function {
+  union node *def;
+  struct stkmark mark;
+  struct function *next;
+};
 
 //
 // Shell
@@ -67,6 +78,7 @@ typedef int (*builtin_t)(struct job *job);
 struct shell {
   struct job *top;
   struct job *jobs;
+  struct function *funcs;
   int fd[STD_HANDLES];
   int lastpid;
   int lastrc;

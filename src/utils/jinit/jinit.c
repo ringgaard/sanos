@@ -303,6 +303,13 @@ int parse_args(char *args, char **argv) {
   return argc;
 }
 
+static void free_args(int argc, char **argv) {
+  int i;
+
+  for (i = 0; i < argc; i++) free(argv[i]);
+  if (argv) free(argv);
+}
+
 int execute_main_method(char *mainclsname, char *mainclsargs) {
   int argc;
   char **argv;
