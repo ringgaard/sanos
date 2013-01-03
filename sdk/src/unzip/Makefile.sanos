@@ -1,0 +1,36 @@
+#
+# Makefile for unzip
+#
+
+CCFLAGS=-D USE_LOCAL_HEAP -D UNIX
+
+all: unzip.exe
+
+SRCS= \
+	unzip.c \
+	crc32.c \
+	crypt.c \
+	envargs.c \
+	explode.c \
+	extract.c \
+	fileio.c \
+	globals.c \
+	inflate.c \
+	list.c \
+	match.c \
+	process.c \
+	ttyio.c \
+	ubz2err.c \
+	unreduce.c \
+	unshrink.c \
+	zipinfo.c \
+	unix.c
+
+unzip.exe: $(SRCS) $(HDRS)
+	$(CC) -o unzip.exe $(SRCS) $(CCFLAGS)
+
+install: unzip.exe
+  cp unzip.exe /bin/unzip.exe
+
+clean:
+  rm unzip.exe

@@ -51,15 +51,16 @@
 
 // Functions
 #define HAVE_CLOCK 1
-#define HAVE_FTRUNCATE 1
 #define HAVE_FGETPOS 1
+#define HAVE_FTRUNCATE 1
 #define HAVE_OPENDIR 1
+#define HAVE_REGCOMP 1
+#define HAVE_REGEX 1
 #define HAVE_STRERROR 1
 #define HAVE_STRICMP 1
 #define HAVE_STRNICMP 1
 #define HAVE_STRSTR 1
 #define HAVE_TEMPNAM 1
-#define HAVE_REGEX 1
-#define HAVE_REGCOMP 1
+#define HAVE_UNLINK 1
 
 #endif

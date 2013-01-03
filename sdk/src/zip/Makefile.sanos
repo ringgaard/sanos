@@ -1,0 +1,30 @@
+#
+# Makefile for zip
+#
+
+CCFLAGS=-D USE_LOCAL_HEAP -D UNIX -D NOGETOPTION
+
+all: zip.exe
+
+SRCS= \
+	zip.c \
+	zipfile.c \
+	zipup.c \
+	fileio.c \
+	util.c \
+	crc32.c \
+	globals.c \
+	deflate.c \
+	trees.c \
+	crypt.c \
+	ttyio.c \
+	unix.c
+
+zip.exe: $(SRCS) $(HDRS)
+	$(CC) -o zip.exe $(SRCS) $(CCFLAGS)
+
+install: zip.exe
+  cp zip.exe /bin/zip.exe
+
+clean:
+  rm zip.exe

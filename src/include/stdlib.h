@@ -114,8 +114,10 @@ osapi void free(void *p);
 
 osapi int malloc_usable_size(void *p);
 
+#ifndef NOGETOPTION
 char *get_option(char *opts, char *name, char *buffer, int size, char *defval);
 int get_num_option(char *opts, char *name, int defval);
+#endif
 
 #ifndef NOREADLINE
 void add_to_history(char *line);
@@ -129,6 +131,8 @@ char *setstate(char *arg_state);
 long random();
 
 char *realpath(const char *path, char *resolved);
+char *mktemp(char *template);
+int mkstemp(char *template);
 
 osapi char *getenv(const char *name);
 osapi int setenv(const char *name, const char *value, int rewrite);

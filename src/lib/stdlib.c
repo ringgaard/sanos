@@ -40,6 +40,7 @@
 #define SHELL "sh.exe"
 
 static long holdrand = 1L;
+static int serial = -1;
 
 typedef void (__cdecl *proc_t)(void);
 
@@ -160,6 +161,89 @@ char *realpath(const char *path, char *resolved) {
     if (buffer) free(buffer);
   }
   return resolved;
+}
+
+char *mktemp(char *template)
+{
+  char *begin;
+  char *end;
+
+  // Initialize serial number to pid
+  if (serial == -1) serial = getpid();
+
+  // Find range of Xs in template
+  begin = NULL;
+  for (end = template; *end; end++) {
+    if (*end == 'X') {
+      if (!begin) begin = end;
+    } else {
+      begin = NULL;
+    }
+  }
+  if (!begin) {
+    errno = EINVAL;
+    *template = 0;
+  } else {
+    // Keep trying new serial numbers
+    for (;;) {
+      // Insert serial number in template
+      int id = serial++;
+      char *p = end;
+      while (p > begin) {
+        *--p = (id % 10) + '0';
+        id /= 10;
+      }
+
+      // Test if file exists
+      if (access(template, 0) < 0 && errno == ENOENT) break;
+      if (errno != EEXIST) {
+        *template = 0;
+        break;
+      }
+    }
+  }
+  return template;
+}
+
+int mkstemp(char *template)
+{
+  char *begin;
+  char *end;
+  int fd;
+
+  // Initialize serial number to pid
+  if (serial == -1) serial = getpid();
+
+  // Find range of Xs in template
+  begin = NULL;
+  for (end = template; *end; end++) {
+    if (*end == 'X') {
+      if (!begin) begin = end;
+    } else {
+      begin = NULL;
+    }
+  }
+  if (!begin) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  // Keep trying new serial numbers
+  for (;;) {
+    // Insert serial number in template
+    int id = serial++;
+    char *p = end;
+    while (p > begin) {
+      *--p = (id % 10) + '0';
+      id /= 10;
+    }
+
+    // Test if file exists
+    fd = open(template, O_CREAT | O_EXCL | O_RDWR, 0600);
+    if (fd >= 0) return fd;
+    if (errno != EEXIST) return -1;
+  }
+  return -1;
 }
 
 int getrusage(int who, struct rusage *usage) {
