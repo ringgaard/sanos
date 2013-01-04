@@ -2,7 +2,10 @@
 # Makefile for shell commands
 #
 
-all: ping.exe test.exe
+all: cp.exe ping.exe test.exe
+
+cp.exe: cp.c
+    $(CC) cp.c
 
 ping.exe: ping.c
     $(CC) ping.c
@@ -10,7 +13,8 @@ ping.exe: ping.c
 test.exe: test.c
     $(CC) test.c
 
-install: ping.exe test.exe
+install: cp.exe ping.exe test.exe
+    cp cp.exe /bin/cp.exe
     cp ping.exe /bin/ping.exe
     cp test.exe /bin/test.exe
 

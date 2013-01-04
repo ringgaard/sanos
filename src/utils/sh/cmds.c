@@ -252,55 +252,6 @@ shellcmd(cls) {
   return 0;
 }
 
-shellcmd(cp) {
-  char *data;
-  int count;
-  int fd1;
-  int fd2;
-  char *srcfn;
-  char *dstfn;
-  struct stat st;
-
-  if (argc != 3) {
-    printf("usage: cp <source file> <dest file>\n");
-    return -EINVAL;
-  }
-  srcfn = argv[1];
-  dstfn = argv[2];
-
-  if ((fd1 = open(srcfn, O_BINARY)) < 0) {
-    printf("%s: %s\n", srcfn, strerror(errno));
-    return -1;
-  }
-  fstat(fd1, &st);
-
-  if ((fd2 = open(dstfn, O_CREAT | O_TRUNC | O_BINARY, st.st_mode)) < 0) {
-    close(fd1);
-    printf("%s: %s\n", dstfn, strerror(errno));
-    return -1;
-  }
-
-  data = malloc(64 * 1024);
-  while ((count = read(fd1, data, 64 * 1024)) > 0) {
-    if (write(fd2, data, count) != count) {
-      printf("%s: error writing data (%s)\n", dstfn, strerror(errno));
-      break;
-    }
-  }
-  free(data);
-
-  if (count < 0) {
-    printf("%s: %s\n", srcfn, strerror(errno));
-    close(fd1);
-    close(fd2);
-    return -1;
-  }
-  
-  close(fd1);
-  close(fd2);
-  return 0;
-}
-
 shellcmd(glob) {
   glob_t globbuf;
   int i;

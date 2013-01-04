@@ -705,7 +705,7 @@ utils: \
 
 SH_SRCS=src/utils/sh/sh.c src/utils/sh/node.c src/utils/sh/job.c src/utils/sh/interp.c src/utils/sh/parser.c src/utils/sh/stmalloc.c src/utils/sh/input.c src/utils/sh/chartype.c src/utils/sh/cmds.c src/utils/sh/builtins.c
 SH_HDRS=src/utils/sh/sh.h src/utils/sh/node.h src/utils/sh/job.h src/utils/sh/interp.h src/utils/sh/parser.h src/utils/sh/stmalloc.h src/utils/sh/input.h src/utils/sh/chartype.h
-SH_CMDS=src/cmds/ping.c src/cmds/test.c
+SH_CMDS=src/cmds/cp.c src/cmds/ping.c src/cmds/test.c
 
 linux/install/bin/sh.exe: $(SH_SRCS) $(SH_HDRS) $(SH_CMDS)
 	$(TCC) -o $@ $(SH_SRCS) $(SH_CMDS) $(TCCFLAGS) -D SHELL
