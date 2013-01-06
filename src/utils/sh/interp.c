@@ -70,7 +70,7 @@ static void expand_field(struct stkmark *mark, char *str, int quoted, struct arg
       while (*str && is_space(*str)) str++;
       if (!*str) break;
 
-      if (str != start && ststrlen(mark) > 0) add_arg(args, ststr(mark));
+      if (str != start || ststrlen(mark) > 0) add_arg(args, ststr(mark));
       start = str;
       while (*str && !is_space(*str)) str++;
       stputbuf(mark, start, str - start);

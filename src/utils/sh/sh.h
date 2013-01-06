@@ -44,7 +44,7 @@
 #include <inifile.h>
 #include <glob.h>
 #include <fnmatch.h>
-#include <shell.h>
+#include <shlib.h>
 
 #include "stmalloc.h"
 #include "input.h"

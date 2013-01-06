@@ -633,6 +633,7 @@ int main(int argc, char *argv[]) {
   int i;
   int rc;
   char *makefile = "Makefile";
+  char *dir = NULL;
   FILE *mf;
   struct project prj;
 
@@ -648,7 +649,7 @@ int main(int argc, char *argv[]) {
         break;
 
       case 'C':
-        chdir(optarg);
+        dir = optarg;
         break;
 
       case 'd':
@@ -686,6 +687,15 @@ int main(int argc, char *argv[]) {
     } else {
       // Add target.
       list_append(&prj.targets, strdup(argv[i]));
+    }
+  }
+
+  // Change directory if requested
+  if (dir) {
+    if (chdir(dir) < 0) {
+      perror(dir);
+      project_free(&prj);
+      return 1;
     }
   }
 

@@ -37,7 +37,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <stdlib.h>
-#include <shell.h>
+#include <shlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -51,20 +51,6 @@ struct options {
 };
 
 static int copy_file(char *src, char *dest, struct options *opts);
-
-static char *join_path(char *dir, char *name) {
-  int dirlen;
-  char *path;
-
-  dirlen = strlen(dir);
-  if (dirlen > 0 && dir[dirlen - 1] == '/') dirlen--;
-  path = malloc(dirlen + strlen(name) + 2);
-  if (!path) return NULL;
-  memcpy(path, dir, dirlen);
-  path[dirlen] = '/';
-  strcpy(path + dirlen + 1, name);
-  return path;
-}
 
 static int copy_directory(char *src, char *dest, struct options *opts) {
   struct dirent *dp;
@@ -96,6 +82,7 @@ static int copy_directory(char *src, char *dest, struct options *opts) {
       return 1;
     }
   }
+  closedir(dirp);
 
   return 0;
 }
@@ -177,12 +164,12 @@ static int copy_file_to_dir(char *src, char *path, struct options *opts) {
 }
 
 static void usage() {
-  fprintf(stderr, "usage: cp [ options ] SRC DEST\n");
-  fprintf(stderr, "       cp [ options ] SRC... DIR\n\n");
-  fprintf(stderr, "  -r, -R        Copy directories recursively\n");
-  fprintf(stderr, "  -f            Force overwriting of destination files\n");
-  fprintf(stderr, "  -v            Print files being copied\n");
-  fprintf(stderr, "  -n            Do not overwrite existing files\n");
+  fprintf(stderr, "usage: cp [OPTIONS] SRC DEST\n");
+  fprintf(stderr, "       cp [OPTIONS] SRC... DIR\n\n");
+  fprintf(stderr, "  -r, -R  Copy directories recursively\n");
+  fprintf(stderr, "  -f      Force overwriting of destination files\n");
+  fprintf(stderr, "  -v      Print files being copied\n");
+  fprintf(stderr, "  -n      Do not overwrite existing files\n");
   exit(1);
 }
 

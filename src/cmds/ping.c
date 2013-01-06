@@ -35,7 +35,7 @@
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <string.h> 
-#include <shell.h>
+#include <shlib.h>
 
 #define ICMP_ECHO 8 
 #define ICMP_ECHOREPLY 0 
@@ -111,7 +111,7 @@ shellcmd(ping) {
   struct pingstat stat;
 
   if (argc < 2) {
-    fprintf(stderr, "usage: %s <host> [data_size]\n", argv[0]); 
+    fprintf(stderr, "usage: ping HOST [SIZE]\n"); 
     return 0;
   }
   hostname = argv[1];

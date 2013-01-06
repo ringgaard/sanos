@@ -4,6 +4,9 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added new shell commands: chgrp, chmod, chown, cp, ls, mkdir,
+      mv, rm, test, wc.
+
     * Added zlib, awk, tar, yacc, ctags, zip, unzip and lua to SDK.
 
     * Handle escaping of double quotes in command argument parsing.

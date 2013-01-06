@@ -32,7 +32,9 @@
 // 
 
 #include <stdio.h>
-#include <shell.h>
+#include <string.h>
+#include <stdlib.h>
+#include <shlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
 

@@ -1162,7 +1162,7 @@ int mkdir(char *name, int mode) {
     fs->locks--;
     return -ETIMEOUT;
   }
-  rc = fs->ops->mkdir(fs, rest, mode);
+  rc = fs->ops->mkdir(fs, rest, mode & ~(peb ? peb->umaskval : 0));
   unlock_fs(fs, FSOP_MKDIR);
   fs->locks--;
   return rc;

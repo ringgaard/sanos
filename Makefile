@@ -621,6 +621,9 @@ $(OBJ)/libc/stdlib.obj: $(SRC)/lib/stdlib.c
 $(OBJ)/libc/stdio.obj: $(SRC)/lib/stdio.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
+$(OBJ)/libc/shlib.obj: $(SRC)/lib/shlib.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
 $(OBJ)/libc/scanf.obj: $(SRC)/lib/scanf.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
@@ -759,6 +762,7 @@ $(LIBS)/libc.lib: \
   $(OBJ)/libc/strftime.obj \
   $(OBJ)/libc/stdlib.obj \
   $(OBJ)/libc/stdio.obj \
+  $(OBJ)/libc/shlib.obj \
   $(OBJ)/libc/scanf.obj \
   $(OBJ)/libc/printf.obj \
   $(OBJ)/libc/tmpfile.obj \

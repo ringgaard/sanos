@@ -404,6 +404,7 @@ LIBC_OBJ = \
   $(OBJ)/sched.o \
   $(OBJ)/semaphore.o \
   $(OBJ)/stdio.o \
+  $(OBJ)/shlib.o \
   $(OBJ)/scanf.o \
   $(OBJ)/printf.o \
   $(OBJ)/tmpfile.o \
@@ -534,6 +535,9 @@ $(OBJ)/semaphore.o: src/lib/semaphore.c
 	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
 
 $(OBJ)/stdio.o: src/lib/stdio.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/shlib.o: src/lib/shlib.c
 	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
 
 $(OBJ)/printf.o: src/lib/printf.c
@@ -705,7 +709,18 @@ utils: \
 
 SH_SRCS=src/utils/sh/sh.c src/utils/sh/node.c src/utils/sh/job.c src/utils/sh/interp.c src/utils/sh/parser.c src/utils/sh/stmalloc.c src/utils/sh/input.c src/utils/sh/chartype.c src/utils/sh/cmds.c src/utils/sh/builtins.c
 SH_HDRS=src/utils/sh/sh.h src/utils/sh/node.h src/utils/sh/job.h src/utils/sh/interp.h src/utils/sh/parser.h src/utils/sh/stmalloc.h src/utils/sh/input.h src/utils/sh/chartype.h
-SH_CMDS=src/cmds/cp.c src/cmds/ping.c src/cmds/test.c
+SH_CMDS= \
+  src/cmds/chgrp.c \
+  src/cmds/chmod.c \
+  src/cmds/chown.c \
+  src/cmds/cp.c \
+  src/cmds/ls.c \
+  src/cmds/mkdir.c \
+  src/cmds/mv.c \
+  src/cmds/ping.c \
+  src/cmds/rm.c \
+  src/cmds/test.c \
+  src/cmds/wc.c
 
 linux/install/bin/sh.exe: $(SH_SRCS) $(SH_HDRS) $(SH_CMDS)
 	$(TCC) -o $@ $(SH_SRCS) $(SH_CMDS) $(TCCFLAGS) -D SHELL

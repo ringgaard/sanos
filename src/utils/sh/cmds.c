@@ -184,69 +184,6 @@ shellcmd(cat) {
   return 0;
 }
 
-shellcmd(chmod) {
-  int mode;
-  char *path;
-  char *p;
-
-  if (argc != 3) {
-    printf("usage: chmod <mode> <path>\n");
-    return -EINVAL;
-  }
-
-  path = argv[2];
-
-  mode = 0;
-  p = argv[1];
-  while (*p) {
-    if (*p < '0' || *p > '7') {
-      printf("Illegal mode\n");
-      return -EINVAL;
-    }
-    mode = (mode << 3) + (*p++ - '0');
-  }
-
-  if (chmod(path, mode) < 0) perror(path);
-
-  return 0;
-}
-
-shellcmd(chown) {
-  struct passwd *pwd = NULL;
-  struct group *grp = NULL;
-  char *path;
-  char *p;
-
-  if (argc != 3) {
-    printf("usage: chown <owner>:<group> <path>\n");
-    return -EINVAL;
-  }
-
-  path = argv[2];
-
-  p = strchr(argv[1], ':');
-  if (p) {
-    *p++ = 0;
-    pwd = getpwnam(argv[1]);
-    grp = getgrnam(p);
-
-    if (!pwd && !grp) {
-      printf("Unknown user/group\n");
-      return -EINVAL;
-    }
-  } else {
-    pwd = getpwnam(argv[1]);
-    if (!pwd) {
-      printf("Unknown user\n");
-      return -EINVAL;
-    }
-  }
-
-  if (chown(path, pwd ? pwd->pw_uid : -1, grp ? grp->gr_gid : -1) < 0) perror(path);
-
-  return 0;
-}
-
 shellcmd(cls) {
   printf("\f");
   return 0;
@@ -745,134 +682,6 @@ shellcmd(loglevel) {
   return 0;
 }
 
-shellcmd(ls) {
-  char *dirname;
-  int verbose;
-  int i;
-  int dir;
-  struct direntry dirp;
-  struct stat buf;
-  struct tm tm;
-  char path[MAXPATH];
-  char *arg;
-  int col;
-  char perm[11];
-  struct passwd *pwd;
-  struct group *grp;
-
-  verbose = 0;
-  dirname = ".";
-  for (i = 1; i < argc; i++) {
-    arg = argv[i];
-
-    if (*arg == '-') {
-      while (*++arg) {
-        if (*arg == 'l') verbose = 1;
-        if (*arg == 'w') verbose = 2;
-      }
-    } else {
-      dirname = arg;
-    }
-  }
-
-  if ((dir = _opendir(dirname)) < 0) {
-    printf("%s: %s\n", dirname, strerror(errno));
-    return dir;
-  }
-
-  col = 0;
-  while (_readdir(dir, &dirp, 1) > 0) {
-    strcpy(path, dirname);
-    strcat(path, "/");
-    strcat(path, dirp.name);
-
-    if (stat(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat));
-
-    if (verbose == 2) {
-      if (col == 4) col = 0;
-      if ((buf.st_mode & S_IFMT) == S_IFDIR) strcat(dirp.name, "/");
-      printf("%-20s", dirp.name);
-      col++;
-    } else {
-      strcpy(path, dirname);
-      strcat(path, "/");
-      strcat(path, dirp.name);
-
-      if (stat(path, &buf) < 0) memset(&buf, 0, sizeof(struct stat));
-
-      if (verbose) {
-        printf("%8d %4d %1d %2d ", (int) buf.st_size, buf.st_ino, buf.st_nlink, buf.st_dev);
-
-        gmtime_r(&buf.st_ctime, &tm);
-        printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
-      } else {
-        strcpy(perm, " ---------");
-        switch (buf.st_mode & S_IFMT) {
-          case S_IFREG: perm[0] = '-'; break;
-          case S_IFLNK: perm[0] = 'l'; break;
-          case S_IFDIR: perm[0] = 'd'; break;
-          case S_IFBLK: perm[0] = 'b'; break;
-          case S_IFCHR: perm[0] = 'c'; break;
-          case S_IFPKT: perm[0] = 'p'; break;
-        }
-
-        if (buf.st_mode & 0400) perm[1] = 'r';
-        if (buf.st_mode & 0200) perm[2] = 'w';
-        if (buf.st_mode & 0100) perm[3] = 'x';
-        if (buf.st_mode & 0040) perm[4] = 'r';
-        if (buf.st_mode & 0020) perm[5] = 'w';
-        if (buf.st_mode & 0010) perm[6] = 'x';
-        if (buf.st_mode & 0004) perm[7] = 'r';
-        if (buf.st_mode & 0002) perm[8] = 'w';
-        if (buf.st_mode & 0001) perm[9] = 'x';
-        printf("%s ", perm);
-
-        pwd = getpwuid(buf.st_uid);
-        grp = getgrgid(buf.st_gid);
-        printf("%-8s %-8s", pwd ? pwd->pw_name : "?", grp ? grp->gr_name : "?");
-
-        if ((buf.st_mode & S_IFMT) == S_IFDIR) {
-          printf("           ");
-        } else {
-          printf("%10d ", buf.st_size);
-        }
-      }
-
-      gmtime_r(&buf.st_mtime, &tm);
-      printf("%02d/%02d/%04d %02d:%02d:%02d ", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
-
-      printf("%s", dirp.name);
-      if ((buf.st_mode & S_IFMT) == S_IFDIR) printf("/", dirp.name);
-
-      printf("\n");
-    }
-  }
-
-  if (verbose == 2) printf("\n");
-
-  close(dir);
-  return 0;
-}
-
-shellcmd(mkdir) {
-  char *path;
-  int rc;
-
-  if (argc != 2) {
-    printf("usage: mkdir <path>\n");
-    return -EINVAL;
-  }
-  path = argv[1];
-
-  rc = mkdir(path, 0755); 
-  if (rc < 0) {
-    printf("%s: %s\n", path, strerror(errno));
-    return -1;
-  }
-
-  return 0;
-}
-
 shellcmd(mkfs) {
   char *devname;
   char *type = "dfs";
@@ -963,27 +772,6 @@ shellcmd(mount) {
   rc = mount(type, path, devname, opts); 
   if (rc < 0) {
     printf("%s: %s\n", devname, strerror(errno));
-    return -1;
-  }
-
-  return 0;
-}
-
-shellcmd(mv) {
-  char *oldname;
-  char *newname;
-  int rc;
-
-  if (argc != 3) {
-    printf("usage: mv <old name> <new name>\n");
-    return -EINVAL;
-  }
-  oldname = argv[1];
-  newname = argv[2];
-
-  rc = rename(oldname, newname);
-  if (rc < 0) {
-    printf("%s: %s\n", oldname, strerror(errno));
     return -1;
   }
 
@@ -1098,28 +886,6 @@ shellcmd(read) {
 
 shellcmd(reboot) {
   exitos(EXITOS_REBOOT);
-  return 0;
-}
-
-shellcmd(rm) {
-  char *filename;
-  int rc;
-  int i;
-
-  if (argc < 2) {
-    printf("usage: rm <file(s)>\n");
-    return -EINVAL;
-  }
-
-  for (i = 1; i < argc; i++) {
-    filename = argv[i];
-    rc = unlink(filename); 
-    if (rc < 0) {
-      printf("%s: %s\n", filename, strerror(errno));
-      return -1;
-    }
-  }
-
   return 0;
 }
 
