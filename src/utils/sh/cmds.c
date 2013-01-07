@@ -829,6 +829,16 @@ shellcmd(nslookup) {
   return 0;
 }
 
+shellcmd(pwd) {
+  char cwd[FILENAME_MAX];
+  if (getcwd(cwd, FILENAME_MAX) == NULL) {
+    perror("cwd");
+    return 1;
+  }
+  printf("%s\n", cwd);
+  return 0;
+}
+
 shellcmd(ps) {
   struct peb *peb = gettib()->peb;
   struct process *proc = peb->firstproc;

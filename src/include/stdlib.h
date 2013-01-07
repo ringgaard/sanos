@@ -131,8 +131,8 @@ char *setstate(char *arg_state);
 long random();
 
 char *realpath(const char *path, char *resolved);
-char *mktemp(char *template);
-int mkstemp(char *template);
+char *mktemp(char *tmpl);
+int mkstemp(char *tmpl);
 
 osapi char *getenv(const char *name);
 osapi int setenv(const char *name, const char *value, int rewrite);

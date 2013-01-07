@@ -587,7 +587,7 @@ typedef struct siginfo siginfo_t;
 #ifndef _SIGACTION_DEFINED
 #define _SIGACTION_DEFINED
 
-struct sigaction  {
+struct sigaction {
   union {
     void (*sa_handler)(int signum);
     void (*sa_sigaction)(int signum, siginfo_t *info, void *context);

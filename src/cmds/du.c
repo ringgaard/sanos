@@ -1,7 +1,7 @@
 //
-// chgrp.c
+// du.c
 //
-// Change file group ownership
+// Estimate file space usage
 //
 // Copyright (C) 2012 Michael Ringgaard. All rights reserved.
 //
@@ -32,101 +32,95 @@
 // 
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <shlib.h>
-#include <unistd.h>
 #include <dirent.h>
-#include <grp.h>
+#include <unistd.h>
 #include <sys/stat.h>
 
 struct options {
-  int recurse;
-  int verbose;
-  char *group;
-  int gid;
+  int blksize;
+  int all;
 };
 
-static int change_group_owner(char *path, struct options *opts) {
+static int display_file_size(char *path, struct options *opts) {
   struct stat st;
-  int mode;
+  int total = 0;
 
-  // Get existing ownership for file
-  if (stat(path, &st) < 0) {
+  // Stat file
+  if (stat(path ? path : ".", &st) < 0) {
     perror(path);
-    return 1;
+    return -1;
   }
 
-  // Change ownership
-  if (opts->verbose) {
-    if (opts->gid != st.st_gid) {
-      printf("group owner of '%s' changed to %s\n", path, opts->group);
-    } else {
-      printf("group ownership of '%s' retained as %s\n", path, opts->group);
-    }
-  }
-
-  if (chown(path, -1, opts->gid) < 0) {
-    perror(path);
-    return 1;
-  }
-
-  // Recurse into sub-directories if requested
-  if (opts->recurse && S_ISDIR(st.st_mode)) {
+  if (S_ISDIR(st.st_mode)) {
     struct dirent *dp;
     DIR *dirp;
     char *fn;
-    int rc;
+    int size;
 
     dirp = opendir(path);
     if (!dirp) {
       perror(path);
-      return 1;
+      return -1;
     }
     while ((dp = readdir(dirp))) {
       fn = join_path(path, dp->d_name);
       if (!fn) {
         fprintf(stderr, "error: out of memory\n");
         closedir(dirp);
-        return 1;
+        return -1;
       }
-      rc = change_group_owner(fn, opts);
+      size = display_file_size(fn, opts);
       free(fn);
-      if (rc != 0) {
+      if (size == -1) {
         closedir(dirp);
-        return 1;
+        return -1;
       }
+      total += size;
     }
     closedir(dirp);
+  } else {
+    total = st.st_size;
   }
 
-  return 0;
+  if (opts->all || S_ISDIR(st.st_mode)) {
+    printf("%d\t%s\n", (total + opts->blksize - 1) / opts->blksize, path);
+  }
+
+  return total;
 }
 
 static void usage() {
-  fprintf(stderr, "usage: chgrp [OPTIONS] GROUP FILE...\n\n");
-  fprintf(stderr, "  -R      Recursively change file group ownership\n");
-  fprintf(stderr, "  -v      Print out changed file group ownership\n");
+  fprintf(stderr, "usage: du [OPTIONS] FILE...\n\n");
+  fprintf(stderr, "  -a      Output both file and directories\n");
+  fprintf(stderr, "  -b      Write files size in units of 512-byte blocks\n");
+  fprintf(stderr, "  -k      Write files size in units of 1024-byte blocks\n");
   exit(1);
 }
 
-shellcmd(chgrp) {
+shellcmd(du) {
   struct options opts;
   int c;
-  int i;
   int rc;
-  struct group *grp;
+  int i;
+  int total;
 
   // Parse command line options
   memset(&opts, 0, sizeof(struct options));
-  while ((c = getopt(argc, argv, "Rv?")) != EOF) {
+  opts.blksize = 1024;
+  while ((c = getopt(argc, argv, "abk?")) != EOF) {
     switch (c) {
-      case 'R':
-        opts.recurse++;
+      case 'a':
+        opts.all++;
         break;
 
-      case 'v':
-        opts.verbose++;
+      case 'b':
+        opts.blksize = 512;
+        break;
+
+      case 'k':
+        opts.blksize = 1024;
         break;
 
       case '?':
@@ -135,22 +129,15 @@ shellcmd(chgrp) {
     }
   }
 
-  // Get group
-  if (optind == argc) usage();
-  opts.group = argv[optind++];
-  grp = getgrnam(opts.group);
-  if (!grp) {
-    fprintf(stderr, "%s: unknown group\n", opts.group);
-    return 1;
-  }
-  opts.gid = grp->gr_gid;
-
-  // Change file group ownership
-  for (i = optind; i < argc; i++) {
-    rc = change_group_owner(argv[i], &opts);
-    if (rc != 0) return 1;
+  if (optind == argc) {
+    rc = display_file_size(".", &opts);
+  } else {
+    for (i = optind; i < argc; i++) {
+      rc = display_file_size(argv[i], &opts);
+      if (rc < 0) break;
+    }
   }
 
-  return 0;
+  return rc < 0;
 }
 

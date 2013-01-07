@@ -491,7 +491,7 @@ char *fgets(char *string, int n, FILE *stream) {
 
   while (--n) {
     if ((ch = getc(stream)) == EOF) {
-      if (ptr == string)  return NULL;
+      if (ptr == string) return NULL;
       break;
     }
 

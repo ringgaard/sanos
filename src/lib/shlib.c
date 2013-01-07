@@ -39,6 +39,7 @@ char *join_path(char *dir, char *name) {
   int dirlen;
   char *path;
 
+  if (!dir) return strdup(name);
   dirlen = strlen(dir);
   while (dirlen > 0 && dir[dirlen - 1] == '/') dirlen--;
   path = malloc(dirlen + strlen(name) + 2);

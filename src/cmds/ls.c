@@ -114,7 +114,7 @@ void collect_directory(struct filelist *list, char *dir, struct options *opts) {
   DIR *dirp;
   char *fn;
 
-  dirp = opendir(dir);
+  dirp = opendir(dir ? dir : ".");
   if (!dirp) {
     perror(dir);
     return;
@@ -138,7 +138,7 @@ void collect_files(struct filelist *list, char *path, struct options *opts) {
   struct stat st;
   
   // Stat file
-  if (stat(path, &st) < 0) {
+  if (stat(path ? path : ".", &st) < 0) {
     perror(path);
     return 1;
   }

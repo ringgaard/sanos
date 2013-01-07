@@ -2,7 +2,7 @@
 # Makefile for shell commands
 #
 
-CMDS=chgrp.exe chmod.exe chown.exe cp.exe ls.exe mkdir.exe mv.exe ping.exe rm.exe test.exe wc.exe
+CMDS=chgrp.exe chmod.exe chown.exe cp.exe du.exe grep.exe ls.exe mkdir.exe mv.exe ping.exe rm.exe test.exe wc.exe
 
 all: $(CMDS)
 
@@ -16,6 +16,12 @@ chown.exe: chown.c
     $(CC) -o $@ $^
 
 cp.exe: cp.c
+    $(CC) -o $@ $^
+
+du.exe: du.c
+    $(CC) -o $@ $^
+
+grep.exe: grep.c
     $(CC) -o $@ $^
 
 ls.exe: ls.c

@@ -714,6 +714,8 @@ SH_CMDS= \
   src/cmds/chmod.c \
   src/cmds/chown.c \
   src/cmds/cp.c \
+  src/cmds/du.c \
+  src/cmds/grep.c \
   src/cmds/ls.c \
   src/cmds/mkdir.c \
   src/cmds/mv.c \
