@@ -440,7 +440,15 @@ void main(void *arg) {
   get_version_value((hmodule_t) OSBASE, "ProductName", peb->osname, sizeof peb->osname);
   peb->ostimestamp = get_image_header((hmodule_t) OSBASE)->header.timestamp;
   ver = get_version_info((hmodule_t) OSBASE);
-  if (ver) memcpy(&peb->osversion, ver, sizeof(struct verinfo));
+  if (ver) {
+    memcpy(&peb->osversion, ver, sizeof(struct verinfo));
+  } else {
+    strcpy(peb->osname, OS_NAME);
+    peb->osversion.file_major_version = OS_MAJ_VERS;
+    peb->osversion.file_minor_version = OS_MIN_VERS;
+    peb->osversion.file_release_number = OS_RELEASE;
+    peb->osversion.file_build_number = OS_BUILD;
+  }
 
   // Install device drivers
   install_drivers();
