@@ -117,16 +117,16 @@ shellcmd(rm) {
   while ((c = getopt(argc, argv, "fRrv?")) != EOF) {
     switch (c) {
       case 'f':
-        opts.force++;
+        opts.force = 1;
         break;
 
       case 'R':
       case 'r':
-        opts.recurse++;
+        opts.recurse = 1;
         break;
 
       case 'v':
-        opts.verbose++;
+        opts.verbose = 1;
         break;
 
       case '?':

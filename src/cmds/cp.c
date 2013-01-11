@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <shlib.h>
 #include <unistd.h>
+#include <utime.h>
 #include <sys/stat.h>
 
 #define BLKSIZE 4096
@@ -48,6 +49,7 @@ struct options {
   int recurse;
   int verbose;
   int noclobber;
+  int preserve;
 };
 
 static int copy_file(char *src, char *dest, struct options *opts);
@@ -94,6 +96,12 @@ static int copy_file(char *src, char *dest, struct options *opts) {
   char *buffer;
   int n;
 
+  // Refuse to copy file unto itself
+  if (!opts->force && strcmp(src, dest) == 0) {
+    fprintf(stderr, "%s: cannot copy file unto itself\n");
+    return 1;
+  }
+
   // Open source file
   fin = open(src, O_RDONLY | O_BINARY);
   if (fin < 0  || fstat(fin, &st) < 0) {
@@ -116,7 +124,7 @@ static int copy_file(char *src, char *dest, struct options *opts) {
   // Copy source file to destination
   if (opts->verbose) printf("%s -> %s\n", src, dest);
   if (opts->force) unlink(dest);
-  fout = open(dest, O_WRONLY | O_CREAT | (opts->noclobber ? O_EXCL : 0) | O_BINARY, 0666);
+  fout = open(dest, O_WRONLY | O_CREAT | (opts->noclobber ? O_EXCL : O_TRUNC) | O_BINARY, 0666);
   buffer = malloc(BLKSIZE);
   if (fout < 0 || !buffer) {
     perror(dest);
@@ -132,6 +140,16 @@ static int copy_file(char *src, char *dest, struct options *opts) {
       perror(dest);
       break;
     }
+  }
+  fchmod(fout, st.st_mode);
+
+  if (opts->preserve) {
+    struct utimbuf times;
+    times.modtime = st.st_mtime;
+    times.actime = st.st_atime;
+    times.ctime = -1;
+    futime(fout, &times);
+    fchown(fout, st.st_uid, st.st_gid);
   }
 
   free(buffer);
@@ -168,6 +186,7 @@ static void usage() {
   fprintf(stderr, "       cp [OPTIONS] SRC... DIR\n\n");
   fprintf(stderr, "  -r, -R  Copy directories recursively\n");
   fprintf(stderr, "  -f      Force overwriting of destination files\n");
+  fprintf(stderr, "  -p      Preserve modification time and owner\n");
   fprintf(stderr, "  -v      Print files being copied\n");
   fprintf(stderr, "  -n      Do not overwrite existing files\n");
   exit(1);
@@ -184,23 +203,27 @@ shellcmd(cp) {
 
   // Parse command line options
   memset(&opts, 0, sizeof(struct options));
-  while ((c = getopt(argc, argv, "frRvn?")) != EOF) {
+  while ((c = getopt(argc, argv, "frRvnp?")) != EOF) {
     switch (c) {
       case 'f':
-        opts.force++;
+        opts.force = 1;
         break;
 
       case 'r':
       case 'R':
-        opts.recurse++;
+        opts.recurse = 1;
         break;
 
       case 'v':
-        opts.verbose++;
+        opts.verbose = 1;
         break;
 
       case 'n':
-        opts.noclobber++;
+        opts.noclobber = 1;
+        break;
+
+      case 'p':
+        opts.preserve = 1;
         break;
 
       case '?':

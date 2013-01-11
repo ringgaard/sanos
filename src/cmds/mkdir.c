@@ -99,7 +99,7 @@ shellcmd(mkdir) {
   while ((c = getopt(argc, argv, "pm:?")) != EOF) {
     switch (c) {
       case 'p':
-        opts.makepath++;
+        opts.makepath = 1;
         break;
 
       case 'm':

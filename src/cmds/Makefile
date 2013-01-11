@@ -2,9 +2,11 @@
 # Makefile for shell commands
 #
 
-CMDS=chgrp.exe chmod.exe chown.exe cp.exe du.exe grep.exe ls.exe mkdir.exe mv.exe ping.exe rm.exe test.exe wc.exe
+CMDS=grep.exe ping.exe
+ALLCMDS=chgrp.exe chmod.exe chown.exe cp.exe du.exe ls.exe mkdir.exe mv.exe rm.exe test.exe wc.exe $(CMDS)
 
-all: $(CMDS)
+cmds: $(CMDS) 
+all: $(ALLCMDS)
 
 chgrp.exe: chgrp.c
     $(CC) -o $@ $^
@@ -48,6 +50,9 @@ wc.exe: wc.c
 install: $(CMDS)
     cp $(CMDS) /bin
 
+install-all: $(ALLCMDS)
+    cp $(ALLCMDS) /bin
+
 clean:
-    rm $(CMDS)
+    rm *.exe
 

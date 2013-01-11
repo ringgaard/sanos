@@ -112,7 +112,7 @@ shellcmd(du) {
   while ((c = getopt(argc, argv, "abk?")) != EOF) {
     switch (c) {
       case 'a':
-        opts.all++;
+        opts.all = 1;
         break;
 
       case 'b':

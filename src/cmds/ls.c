@@ -251,9 +251,10 @@ void print_columns(struct file *files[], int numfiles, struct options *opts) {
   for (i = 0; i < numfiles; i++) {
     struct file *file = files[i];
     l = strlen(file->name);
+    if (S_ISDIR(file->stat.st_mode)) l++;
     if (l > colwidth) colwidth = l;
   }
-  colwidth += 1;
+  colwidth += 2;
   cols = opts->width / colwidth;
   if (cols < 1) cols = 1;
   rows = (numfiles + cols - 1) / cols;
@@ -261,13 +262,18 @@ void print_columns(struct file *files[], int numfiles, struct options *opts) {
   // Output rows and columns
   for (r = 0; r < rows; r++) {
     for (c = 0; c < cols; c++) {
-      int n = r * cols + c;
+      int n = c * rows + r;
       if (n < numfiles) {
         struct file *file = files[n];
+        l = strlen(file->name);
+        printf("%s", file->name);
+        if (S_ISDIR(file->stat.st_mode)) {
+          printf("/");
+          l++;
+        }
         if (c < cols - 1) {
-          printf("%*.*s", -colwidth, colwidth, file->name);
-        } else {
-          printf("%s", file->name);
+          l = colwidth - l;
+          while (l-- > 0) putchar(' ');
         }
       } else {
         break;
@@ -346,19 +352,19 @@ shellcmd(ls) {
   while ((c = getopt(argc, argv, "dl1R?")) != EOF) {
     switch (c) {
       case 'd':
-        opts.nodir++;
+        opts.nodir = 1;
         break;
 
       case 'l':
-        opts.detail++;
+        opts.detail = 1;
         break;
 
       case '1':
-        opts.onecol++;
+        opts.onecol = 1;
         break;
 
       case 'R':
-        opts.recurse++;
+        opts.recurse = 1;
         break;
 
       case '?':

@@ -176,32 +176,32 @@ shellcmd(grep) {
   while ((c = getopt(argc, argv, "RrEcilnv?")) != EOF) {
     switch (c) {
       case 'E':
-        opts.extended++;
+        opts.extended = 1;
         break;
 
       case 'R':
       case 'r':
-        opts.recurse++;
+        opts.recurse = 1;
         break;
 
       case 'c':
-        opts.matchcount++;
+        opts.matchcount = 1;
         break;
 
       case 'i':
-        opts.nocase++;
+        opts.nocase = 1;
         break;
 
       case 'l':
-        opts.nolines++;
+        opts.nolines = 1;
         break;
 
       case 'n':
-        opts.output_linenum++;
+        opts.output_linenum = 1;
         break;
 
       case 'v':
-        opts.invert++;
+        opts.invert = 1;
         break;
 
       case '?':
@@ -209,7 +209,7 @@ shellcmd(grep) {
         usage();
     }
   }
-  
+
   // Get pattern
   if (optind == argc) usage();
   pattern = argv[optind++];

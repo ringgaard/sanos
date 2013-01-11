@@ -26,7 +26,6 @@ linux/.timestamp:
 	mkdir -p linux
 	mkdir -p linux/tools
 	mkdir -p linux/obj
-	mkdir -p linux/include
 	mkdir -p linux/install
 	mkdir -p linux/install/bin
 	mkdir -p linux/install/boot
@@ -41,7 +40,6 @@ linux/.timestamp:
 	mkdir -p linux/install/usr/src
 	mkdir -p linux/install/usr/src/utils
 	mkdir -p linux/install/var
-	[ -d linux/include/os ] || ln -s ../../src/include/os linux/include/os
 	[ -d linux/install/boot/krnl.ini ]         || ln -s ../../../build/krnl.ini linux/install/boot/krnl.ini
 	[ -d linux/install/etc/os.ini ]            || ln -s ../../../build/os.ini linux/install/etc/os.ini
 	[ -d linux/install/etc/setup.ini ]         || ln -s ../../../build/setup.ini linux/install/etc/setup.ini
@@ -118,7 +116,7 @@ $(AS): $(AS_SRCFILES)
 	gcc $(GCC_FLAGS) -o $(AS) $(AS_SRCFILES) $(AS_OUTDEFS) -I sdk/src/as
 
 $(AR): src/utils/ar/ar.c
-	gcc $(GCC_FLAGS) -o $(AR) src/utils/ar/ar.c -DO_BINARY=0 -I linux/include
+	gcc $(GCC_FLAGS) -o $(AR) src/utils/ar/ar.c -DO_BINARY=0
 
 MKDFS_SRCFILES= \
 	utils/dfs/blockdev.c utils/dfs/vmdk.c utils/dfs/bitops.c utils/dfs/buf.c utils/dfs/dfs.c \
@@ -126,7 +124,7 @@ MKDFS_SRCFILES= \
 	utils/dfs/mkdfs.c utils/dfs/super.c utils/dfs/vfs.c
 
 $(MKDFS): $(MKDFS_SRCFILES)
-	gcc $(GCC_FLAGS) -o $(MKDFS) $(MKDFS_SRCFILES) -DO_BINARY=0 -I linux/include
+	gcc $(GCC_FLAGS) -o $(MKDFS) $(MKDFS_SRCFILES) -DO_BINARY=0
 
 YACC_SRCFILES= \
   sdk/src/yacc/closure.c \
@@ -715,7 +713,6 @@ SH_CMDS= \
   src/cmds/chown.c \
   src/cmds/cp.c \
   src/cmds/du.c \
-  src/cmds/grep.c \
   src/cmds/ls.c \
   src/cmds/mkdir.c \
   src/cmds/mv.c \
@@ -771,13 +768,13 @@ linux/install/usr/bin/ctohtml.exe: src/utils/ctohtml/ctohtml.c
 #
 
 cmds: \
-  linux/install/bin/ping.exe \
-  linux/install/bin/test.exe
+  linux/install/bin/grep.exe \
+  linux/install/bin/ping.exe
 
 linux/install/bin/ping.exe: src/cmds/ping.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
 
-linux/install/bin/test.exe: src/cmds/test.c
+linux/install/bin/grep.exe: src/cmds/grep.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
 
 #

@@ -66,11 +66,11 @@ shellcmd(mv) {
   while ((c = getopt(argc, argv, "fv?")) != EOF) {
     switch (c) {
       case 'f':
-        opts.force++;
+        opts.force = 1;
         break;
 
       case 'v':
-        opts.verbose++;
+        opts.verbose = 1;
         break;
 
       case '?':

@@ -133,11 +133,11 @@ shellcmd(chown) {
   while ((c = getopt(argc, argv, "Rv?")) != EOF) {
     switch (c) {
       case 'R':
-        opts.recurse++;
+        opts.recurse = 1;
         break;
 
       case 'v':
-        opts.verbose++;
+        opts.verbose = 1;
         break;
 
       case '?':

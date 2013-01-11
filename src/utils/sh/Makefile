@@ -12,7 +12,6 @@ CMDS= \
   ../../cmds/chown.c \
   ../../cmds/cp.c \
   ../../cmds/du.c \
-  ../../cmds/grep.c \
   ../../cmds/ls.c \
   ../../cmds/mkdir.c \
   ../../cmds/mv.c \

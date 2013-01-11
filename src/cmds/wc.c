@@ -106,15 +106,15 @@ shellcmd(wc) {
   while ((c = getopt(argc, argv, "clw?")) != EOF) {
     switch (c) {
       case 'c':
-        opts.charcount++;
+        opts.charcount = 1;
         break;
 
       case 'l':
-        opts.linecount++;
+        opts.linecount = 1;
         break;
 
       case 'w':
-        opts.wordcount++;
+        opts.wordcount = 1;
         break;
 
       case '?':
