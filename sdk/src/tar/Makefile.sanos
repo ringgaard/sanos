@@ -8,7 +8,7 @@ all: libtar.a tar.exe
 
 OBJS=append.o block.o decode.o encode.o extract.o handle.o output.o util.o wrapper.o \
      libtar_hash.o libtar_list.o \
-     basename.o dirname.o strlcpy.o strmode.o strsep.o
+     basename.o dirname.o strlcpy.o strmode.o
 
 libtar.a: $(OBJS)
 	$(AR) -s -m $@ $^
@@ -59,9 +59,6 @@ strlcpy.o: strlcpy.c
 	$(CC) -c $^ $(CCFLAGS)
 
 strmode.o: strmode.c
-	$(CC) -c $^ $(CCFLAGS)
-
-strsep.o: strsep.c
 	$(CC) -c $^ $(CCFLAGS)
 
 install: libtar.c tar.exe

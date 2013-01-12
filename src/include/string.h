@@ -76,6 +76,7 @@ char *strset(char *s, int c);
 char *strrev(char *s);
 char *strtok(char *string, const char *control);
 char *strtok_r(char *string, const char *control, char **lasts);
+char *strsep(char **stringp, const char *delim);
 
 osapi char *strerror(int errnum);
 osapi char *strsignal(int signum);

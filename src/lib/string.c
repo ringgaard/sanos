@@ -381,6 +381,28 @@ char *strtok(char *string, const char *control) {
 
 #endif
 
+char *strsep(char **stringp, const char *delim) {
+  char *s;
+  const char *d;
+  char *start;
+  int c;
+
+  start = *stringp;
+  if (!start) return NULL;
+  s = start;
+  while (c = *s++) {
+    for (d = delim; *d; d++) {
+      if (c == *d) {
+        s[-1] = 0;
+        *stringp = s;
+        return start;
+      }
+    }
+  }
+  *stringp = NULL;
+  return start;
+}
+
 /////////////////////////////////////////////////////////////////////
 //
 // intrinsic functions
