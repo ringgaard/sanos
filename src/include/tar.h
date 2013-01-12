@@ -78,4 +78,33 @@
 #define TOWRITE    00002    // Write by other
 #define TOEXEC     00001    // Execute/search by other
 
+#define TAR_BLKSIZ     512  // Standard tar block size
+#define TAR_NAMELEN    100  // Name length
+#define TAR_PREFIXLEN  155  // Prefix length
+#define TAR_MAXPATHLEN (TAR_NAMELEN + TAR_PREFIXLEN)
+
+//
+// Tar header
+//
+
+struct tarhdr {
+  char name[100];
+  char mode[8];
+  char uid[8];
+  char gid[8];
+  char size[12];
+  char mtime[12];
+  char chksum[8];
+  char typeflag;
+  char linkname[100];
+  char magic[6];
+  char version[2];
+  char uname[32];
+  char gname[32];
+  char devmajor[8];
+  char devminor[8];
+  char prefix[155];
+  char padding[12];
+};
+
 #endif

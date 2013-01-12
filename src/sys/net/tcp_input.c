@@ -236,8 +236,7 @@ err_t tcp_input(struct pbuf *p, struct netif *inp) {
     if (seg.p) pbuf_free(seg.p);
   } else {
     // If no matching PCB was found, send a TCP RST (reset) to the sender
-    kprintf("tcp_input: no PCB match found, resetting.\n");
-
+    //kprintf("tcp_input: no PCB match found, resetting.\n");
     if (!(TCPH_FLAGS(tcphdr) & TCP_RST)) {
       stats.tcp.proterr++;
       stats.tcp.drop++;

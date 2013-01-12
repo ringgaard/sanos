@@ -39,6 +39,7 @@ linux/.timestamp:
 	mkdir -p linux/install/usr/lib
 	mkdir -p linux/install/usr/src
 	mkdir -p linux/install/usr/src/utils
+	mkdir -p linux/install/usr/share
 	mkdir -p linux/install/var
 	[ -d linux/install/boot/krnl.ini ]         || ln -s ../../../build/krnl.ini linux/install/boot/krnl.ini
 	[ -d linux/install/etc/os.ini ]            || ln -s ../../../build/os.ini linux/install/etc/os.ini
@@ -58,6 +59,7 @@ linux/.timestamp:
 	[ -d linux/install/usr/src/utils/make ]    || ln -s ../../../../../src/utils/make linux/install/usr/src/utils/make
 	[ -d linux/install/usr/src/utils/mkboot ]  || ln -s ../../../../../src/utils/mkboot linux/install/usr/src/utils/mkboot
 	[ -d linux/install/usr/src/utils/msh ]     || ln -s ../../../../../src/utils/msh linux/install/usr/src/utils/msh
+	[ -d linux/install/usr/src/utils/pkg ]     || ln -s ../../../../../src/utils/pkg linux/install/usr/src/utils/pkg
 	[ -d linux/install/usr/src/utils/samples ] || ln -s ../../../../../src/utils/samples linux/install/usr/src/utils/samples
 	[ -d linux/install/usr/src/utils/setup ]   || ln -s ../../../../../src/utils/setup linux/install/usr/src/utils/setup
 	[ -d linux/install/usr/src/utils/sh ]      || ln -s ../../../../../src/utils/sh linux/install/usr/src/utils/sh
@@ -700,6 +702,7 @@ utils: \
   linux/install/bin/ftpd.exe \
   linux/install/bin/telnetd.exe \
   linux/install/bin/login.exe \
+  linux/install/bin/pkg.exe \
   linux/install/usr/bin/make.exe \
   linux/install/usr/bin/ar.exe \
   linux/install/usr/bin/impdef.exe \
@@ -749,6 +752,9 @@ linux/install/bin/telnetd.exe: src/utils/telnetd/telnetd.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
 
 linux/install/bin/login.exe: src/utils/login/login.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+linux/install/bin/pkg.exe: src/utils/pkg/pkg.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
 
 linux/install/usr/bin/make.exe: src/utils/make/make.c
