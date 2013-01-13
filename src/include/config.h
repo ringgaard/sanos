@@ -62,5 +62,7 @@
 #define HAVE_STRSTR 1
 #define HAVE_TEMPNAM 1
 #define HAVE_UNLINK 1
+#define HAVE_VSNPRINTF 1
+#define HAVE_VSSCANF 1
 
 #endif

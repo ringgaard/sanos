@@ -157,6 +157,10 @@ int fscanf(FILE *stream, const char *fmt, ...);
 int scanf(const char *fmt, ...);
 int sscanf(const char *buffer, const char *fmt, ...);
 
+int vfscanf(FILE *stream, const char *fmt, va_list args);
+int vscanf(const char *fmt, va_list args);
+int vsscanf(const char *buffer, const char *fmt, va_list args);
+
 FILE *__getstdfile(int n);
 
 #ifdef  __cplusplus
