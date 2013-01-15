@@ -151,6 +151,7 @@ int main(int argc, char *argv[], char *envp[]) {
     char *cmdline = gettib()->proc->cmdline;
     while (*cmdline && *cmdline != ' ') cmdline++;
     rc = exec_command(shell.top, cmdline);
+    if (rc == 0) shell.top->exitcode = shell.lastrc;
   } else {
     rc = run_shell(&shell);
   }

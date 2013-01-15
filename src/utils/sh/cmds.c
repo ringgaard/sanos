@@ -185,7 +185,7 @@ shellcmd(cat) {
 }
 
 shellcmd(cls) {
-  printf("\f");
+  printf("\033c\f");
   return 0;
 }
 

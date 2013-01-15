@@ -65,6 +65,9 @@ struct pkgdb {
   char *repo;
   int dirty;
   int verbose;
+  int update;
+  int onlyfetch;
+  int onlybuild;
 };
 
 static int parse_url(char *url, char **host, int *port, char **path) {
@@ -458,10 +461,16 @@ static int install_package(char *pkgname, struct pkgdb *db, int file, int depend
   struct pkg *pkg;
 
   // Check if package is already installed
-  if (!file && find_package(db, pkgname)) {
-    if (dependency) return 0;
-    fprintf(stderr, "%s: is already installed\n", pkgname);
-    return 1;
+  if (!file) {
+    if (find_package(db, pkgname)) {
+      if (dependency) return 0;
+      if (db->update) {
+        if (db->verbose) printf("updating package %s\n", pkgname);
+      } else {
+        fprintf(stderr, "%s: is already installed\n", pkgname);
+        return 1;
+      }
+    }
   }
 
   // Open package file
@@ -505,15 +514,22 @@ static int install_package(char *pkgname, struct pkgdb *db, int file, int depend
       if (rc != 0) return rc;
     }
   }
+  if (db->onlyfetch && !dependency) return 0;
 
-  // Run package installation commands
-  build = find_section(manifest, "install");
-  if (build) {
-    struct property *p;
-    printf("Installing %s\n", pkgname);
-    for (p = build->properties; p; p = p->next) {
-      if (db->verbose) printf("%s\n", p->name);
-      if (system(p->name) < 0) return 1;
+  // Run package build/installation commands
+  if (!db->onlyfetch || dependency) {
+    build = find_section(manifest, db->onlybuild && !dependency ? "build" : "install");
+    if (build) {
+      struct property *p;
+      printf(db->onlybuild && !dependency ? "Building %s\n" : "Installing %s\n", pkgname);
+      for (p = build->properties; p; p = p->next) {
+        if (db->verbose) printf("%s\n", p->name);
+        rc = system(p->name);
+        if (rc != 0) {
+          fprintf(stderr, "%s: build failed\n", pkgname);
+          return rc;
+        }
+      }
     }
   }
 
@@ -634,6 +650,9 @@ static void usage() {
   fprintf(stderr, "usage: pkg [OPTIONS] PACKAGE... \n\n");
   fprintf(stderr, "  -f      Install from package file\n");
   fprintf(stderr, "  -R URL  Package repository URL (default: %s)\n", DEFAULT_PKG_REPO);
+  fprintf(stderr, "  -B      Build but do not install packages\n");
+  fprintf(stderr, "  -F      Fetch but do not build packages\n");
+  fprintf(stderr, "  -u      Update packages\n");
   fprintf(stderr, "  -d      Delete package\n");
   fprintf(stderr, "  -l      List installed packages\n");
   fprintf(stderr, "  -q      Query packages in repository\n");
@@ -653,18 +672,14 @@ int main(int argc, char *argv[]) {
   // Parse command line options
   memset(&db, 0, sizeof(struct pkgdb));
   db.repo = DEFAULT_PKG_REPO;
-  while ((c = getopt(argc, argv, "fR:dlqv?")) != EOF) {
+  while ((c = getopt(argc, argv, "dflquvBFR:?")) != EOF) {
     switch (c) {
-      case 'R':
-        db.repo = optarg;
+      case 'd':
+        remove = 1;
         break;
 
       case 'f':
         file = 1;
-        break;
-
-      case 'd':
-        remove = 1;
         break;
 
       case 'l':
@@ -675,8 +690,24 @@ int main(int argc, char *argv[]) {
         query = 1;
         break;
 
+      case 'u':
+        db.update = 1;
+        break;
+
       case 'v':
         db.verbose = 1;
+        break;
+
+      case 'B':
+        db.onlybuild = 1;
+        break;
+
+      case 'F':
+        db.onlyfetch = 1;
+        break;
+
+      case 'R':
+        db.repo = optarg;
         break;
 
       case '?':
