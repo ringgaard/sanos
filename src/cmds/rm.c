@@ -96,6 +96,8 @@ static int remove_file(char *path, struct options *opts) {
       return 1;
     }
   }
+  
+  return 0;
 }
 
 static void usage() {

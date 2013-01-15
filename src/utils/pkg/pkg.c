@@ -272,7 +272,6 @@ static int extract_files(char *url, FILE *f, char *manifest, int verbose) {
   unsigned char fn[FILENAME_MAX];
   struct tarhdr *hdr;
   unsigned int checksum;
-  unsigned int sum;
   int n, size, left, mode, first, zeroblks;
   struct utimbuf times;
   char *slash;
@@ -448,6 +447,7 @@ static int delete_pkgdb(struct pkgdb *db) {
     pkg = next;
   }
   db->head = db->tail = NULL;
+  return 0;
 }
 
 static int install_package(char *pkgname, struct pkgdb *db, int file, int dependency) {
@@ -549,7 +549,6 @@ static void remove_path(char *path, int verbose) {
     struct dirent *dp;
     DIR *dirp;
     char *fn;
-    int rc;
 
     // Remove files in directory recursively
     dirp = opendir(path);

@@ -140,7 +140,7 @@ void collect_files(struct filelist *list, char *path, struct options *opts) {
   // Stat file
   if (stat(path ? path : ".", &st) < 0) {
     perror(path);
-    return 1;
+    return;
   }
 
   if (!S_ISDIR(st.st_mode) || opts->nodir) {
@@ -342,9 +342,7 @@ shellcmd(ls) {
   struct options opts;
   int c;
   int i;
-  int rc;
   struct filelist list;
-  struct file **f;
 
   // Parse command line options
   memset(&opts, 0, sizeof(struct options));

@@ -74,8 +74,6 @@ static void process_file(int fd, struct stats *s) {
     }
     s->chars += n;
   }
-
-  return 0;
 }
 
 static void print_stats(struct stats *s, char *name, struct options *opts) {

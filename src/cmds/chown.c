@@ -52,7 +52,6 @@ struct options {
 
 static int change_owner(char *path, struct options *opts) {
   struct stat st;
-  int mode;
 
   // Get existing ownership for file
   if (stat(path, &st) < 0) {

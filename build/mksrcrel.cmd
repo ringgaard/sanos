@@ -6,13 +6,6 @@ if not exist %1\sdk\src mkdir %1\sdk\src
 if not exist %1\sdk\src\as\output mkdir %1\sdk\src\as\output
 if not exist %1\sdk\src\cc mkdir %1\sdk\src\cc
 if not exist %1\sdk\src\libc mkdir %1\sdk\src\libc
-if not exist %1\sdk\src\awk mkdir %1\sdk\src\awk
-if not exist %1\sdk\src\yacc mkdir %1\sdk\src\yacc
-if not exist %1\sdk\src\zlib mkdir %1\sdk\src\zlib
-if not exist %1\sdk\src\tar mkdir %1\sdk\src\tar
-if not exist %1\sdk\src\lua mkdir %1\sdk\src\lua
-if not exist %1\sdk\src\lua\stdlib mkdir %1\sdk\src\lua\stdlib
-if not exist %1\sdk\src\makedepend mkdir %1\sdk\src\makedepend
 if not exist %1\vcwizard mkdir %1\vcwizard
 if not exist %1\tools mkdir %1\tools
 if not exist %1\utils mkdir %1\utils
@@ -44,14 +37,7 @@ xcopy src %1\src /s /exclude:build\exclrel.lst
 copy sdk\src\as\* %1\sdk\src\as
 copy sdk\src\as\output\* %1\sdk\src\as\output
 copy sdk\src\cc\* %1\sdk\src\cc
-copy sdk\src\libc\* %1\sdk\src\libc
-copy sdk\src\awk\* %1\sdk\src\awk
-copy sdk\src\yacc\* %1\sdk\src\yacc
-copy sdk\src\zlib\* %1\sdk\src\zlib
-copy sdk\src\tar\* %1\sdk\src\tar
-copy sdk\src\lua\* %1\sdk\src\lua
-copy sdk\src\lua\stdlib\* %1\sdk\src\lua\stdlib
-copy sdk\src\makedepend\* %1\sdk\src\makedepend
+copy sdk\src\libc\Makefile %1\sdk\src\libc
 
 xcopy vcwizard %1\vcwizard /s /exclude:build\exclrel.lst
 

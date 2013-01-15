@@ -719,7 +719,6 @@ SH_CMDS= \
   src/cmds/ls.c \
   src/cmds/mkdir.c \
   src/cmds/mv.c \
-  src/cmds/ping.c \
   src/cmds/rm.c \
   src/cmds/test.c \
   src/cmds/wc.c
@@ -787,16 +786,13 @@ linux/install/bin/grep.exe: src/cmds/grep.c
 # sdk
 #
 
-sdk: linux/install/usr/bin/cc.exe linux/install/usr/bin/as.exe linux/install/usr/bin/yacc.exe
+sdk: linux/install/usr/bin/cc.exe linux/install/usr/bin/as.exe
 
 linux/install/usr/bin/cc.exe: $(TCC_SRCFILES) $(TCC_HDRFILES)
 	$(TCC) -o $@ $(TCC_SRCFILES) -I sdk/src/cc $(TCCFLAGS) -DUSE_LOCAL_HEAP
 
 linux/install/usr/bin/as.exe: $(AS_SRCFILES)
 	$(TCC) -o $@ $^ -I sdk/src/as $(TCCFLAGS) $(AS_CFLAGS) -DUSE_LOCAL_HEAP
-
-linux/install/usr/bin/yacc.exe: $(YACC_SRCFILES)
-	$(TCC) -o $@ $^ $(TCCFLAGS) $(TCCFLAGS) -DUSE_LOCAL_HEAP
 
 sdk-source:
 	mkdir -p img
@@ -808,45 +804,6 @@ sdk-source:
 	mkdir -p linux/install/usr/src/utils/cc
 	cp sdk/src/cc/*.c sdk/src/cc/*.h linux/install/usr/src/utils/cc
 	cp sdk/src/cc/Makefile.sanos linux/install/usr/src/utils/cc/Makefile
-	mkdir -p linux/install/usr/src/utils/yacc
-	cp sdk/src/yacc/*.c sdk/src/yacc/*.h linux/install/usr/src/utils/yacc
-	cp sdk/src/yacc/Makefile.sanos linux/install/usr/src/utils/yacc/Makefile
-
-extra-source:
-	mkdir -p linux/install/usr/src/utils/makedepend
-	cp sdk/src/makedepend/*.c sdk/src/makedepend/*.h linux/install/usr/src/utils/makedepend
-	cp sdk/src/makedepend/Makefile.sanos linux/install/usr/src/utils/makedepend/Makefile
-
-	mkdir -p linux/install/usr/src/utils/lua
-	cp sdk/src/lua/Makefile.sanos linux/install/usr/src/utils/lua/Makefile
-	cp sdk/src/lua/*.c sdk/src/lua/*.h linux/install/usr/src/utils/lua
-	mkdir -p linux/install/usr/lua
-	cp sdk/src/lua/stdlib/*.lua linux/install/usr/lua
-
-	mkdir -p linux/install/usr/src/utils/awk
-	cp sdk/src/awk/Makefile.sanos linux/install/usr/src/utils/awk/Makefile
-	cp sdk/src/awk/*.c sdk/src/awk/*.h sdk/src/awk/*.y linux/install/usr/src/utils/awk
-	rm linux/install/usr/src/utils/awk/ytab.* linux/install/usr/src/utils/awk/proctab.c
-
-	mkdir -p linux/install/usr/src/utils/zlib
-	cp sdk/src/zlib/Makefile.sanos linux/install/usr/src/utils/zlib/Makefile
-	cp sdk/src/zlib/*.c sdk/src/zlib/*.h linux/install/usr/src/utils/zlib
-
-	mkdir -p linux/install/usr/src/utils/tar
-	cp sdk/src/tar/Makefile.sanos linux/install/usr/src/utils/tar/Makefile
-	cp sdk/src/tar/*.c sdk/src/tar/*.h linux/install/usr/src/utils/tar
-
-	mkdir -p linux/install/usr/src/utils/ctags
-	cp sdk/src/ctags/Makefile.sanos linux/install/usr/src/utils/ctags/Makefile
-	cp sdk/src/ctags/*.c sdk/src/ctags/*.h linux/install/usr/src/utils/ctags
-
-	mkdir -p linux/install/usr/src/utils/unzip
-	cp sdk/src/unzip/Makefile.sanos linux/install/usr/src/utils/unzip/Makefile
-	cp sdk/src/unzip/*.c sdk/src/unzip/*.h linux/install/usr/src/utils/unzip
-
-	mkdir -p linux/install/usr/src/utils/zip
-	cp sdk/src/zip/Makefile.sanos linux/install/usr/src/utils/zip/Makefile
-	cp sdk/src/zip/*.c sdk/src/zip/*.h linux/install/usr/src/utils/zip
 
 #
 # vmdk

@@ -98,7 +98,7 @@ semaphore.o: semaphore.c
 stdio.o: stdio.c
     $(CC) -c $< -g
 
-shlib.o: stdio.c
+shlib.o: shlib.c
     $(CC) -c $< -g
 
 printf.o: printf.c

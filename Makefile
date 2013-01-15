@@ -103,6 +103,8 @@ dirs:
     -@if not exist $(OBJ)\ctohtml mkdir $(OBJ)\ctohtml
     -@if not exist $(OBJ)\impdef mkdir $(OBJ)\impdef
     -@if not exist $(OBJ)\mkboot mkdir $(OBJ)\mkboot
+    -@if not exist $(OBJ)\pkg mkdir $(OBJ)\pkg
+    -@if not exist $(OBJ)\grep mkdir $(OBJ)\grep
     -@if not exist $(OBJ)\ping mkdir $(OBJ)\ping
     -@if not exist $(OBJ)\httpd mkdir $(OBJ)\httpd
     -@if not exist $(OBJ)\jinit mkdir $(OBJ)\jinit
@@ -947,7 +949,7 @@ $(BIN)/msvcrt.dll: \
 # utils
 #
 
-utils: dirs $(BIN)/sh.exe $(BIN)/msh.exe $(BIN)/edit.exe $(BIN)/less.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/ctohtml.exe $(BIN)/mkboot.exe $(BIN)/ping.exe $(BIN)/httpd.dll
+utils: dirs $(BIN)/sh.exe $(BIN)/msh.exe $(BIN)/edit.exe $(BIN)/less.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/ctohtml.exe $(BIN)/mkboot.exe $(BIN)/ping.exe $(BIN)/grep.exe $(BIN)/pkg.exe $(BIN)/httpd.dll
 
 $(BIN)/sh.exe: \
   $(SRC)/utils/sh/sh.c \
@@ -960,6 +962,17 @@ $(BIN)/sh.exe: \
   $(SRC)/utils/sh/interp.c \
   $(SRC)/utils/sh/cmds.c \
   $(SRC)/utils/sh/builtins.c \
+  $(SRC)/cmds/chgrp.c \
+  $(SRC)/cmds/chmod.c \
+  $(SRC)/cmds/chown.c \
+  $(SRC)/cmds/cp.c \
+  $(SRC)/cmds/du.c \
+  $(SRC)/cmds/ls.c \
+  $(SRC)/cmds/mkdir.c \
+  $(SRC)/cmds/mv.c \
+  $(SRC)/cmds/rm.c \
+  $(SRC)/cmds/test.c \
+  $(SRC)/cmds/wc.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/sh/ $** /D SHELL /link /NODEFAULTLIB /FIXED:NO
@@ -1047,6 +1060,18 @@ $(BIN)/mkboot.exe: \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/mkboot/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(BIN)/pkg.exe: \
+  $(SRC)/utils/pkg/pkg.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/pkg/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(BIN)/grep.exe: \
+  $(SRC)/cmds/grep.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/grep/ $** /link /NODEFAULTLIB /FIXED:NO
 
 $(BIN)/ping.exe: \
   $(SRC)/cmds/ping.c \
@@ -1153,16 +1178,14 @@ sdk: $(SDKBIN)/os.dll $(SDKBIN)/make.exe $(SDKBIN)/ar.exe $(SDKBIN)/impdef.exe $
     cd $(SDKSRC)\as && nmake install
     cd $(SDKSRC)\cc && nmake install
     cd $(SDKSRC)\libc && nmake install
-    cd $(SDKSRC)\yacc && nmake install
 
 sdk-clean:
     del /Q $(SDKBIN)
     cd $(SDKSRC)\as && nmake clean
     cd $(SDKSRC)\cc && nmake clean
     cd $(SDKSRC)\libc && nmake clean
-    cd $(SDKSRC)\yacc && nmake clean
 
-sdkdisk: sanos sdk install install-source install-sdk install-extra boothd
+sdkdisk: sanos sdk install install-source install-sdk boothd
 
 #
 # install
@@ -1187,11 +1210,13 @@ install: sanos
     copy /Y $(BIN)\edit.exe      $(INSTALL)\bin\edit.exe
     copy /Y $(BIN)\less.exe      $(INSTALL)\bin\less.exe
     copy /Y $(BIN)\fdisk.exe     $(INSTALL)\bin\fdisk.exe
+    copy /Y $(BIN)\pkg.exe       $(INSTALL)\bin\pkg.exe
     copy /Y $(BIN)\jinit.exe     $(INSTALL)\bin\jinit.exe
     copy /Y $(BIN)\telnetd.exe   $(INSTALL)\bin\telnetd.exe
     copy /Y $(BIN)\ftpd.exe      $(INSTALL)\bin\ftpd.exe
     copy /Y $(BIN)\login.exe     $(INSTALL)\bin\login.exe
     copy /Y $(BIN)\ping.exe      $(INSTALL)\bin\ping.exe
+    copy /Y $(BIN)\grep.exe      $(INSTALL)\bin\grep.exe
     copy /Y $(BIN)\msvcrt.dll    $(INSTALL)\bin\msvcrt.dll
     copy /Y $(BIN)\kernel32.dll  $(INSTALL)\bin\kernel32.dll
     copy /Y $(BIN)\user32.dll    $(INSTALL)\bin\user32.dll
@@ -1240,13 +1265,11 @@ install-sdk: install-source sdk
     -@if not exist $(INSTALL)\usr\src\utils\as\output mkdir $(INSTALL)\usr\src\utils\as\output
     -@if not exist $(INSTALL)\usr\src\utils\cc mkdir $(INSTALL)\usr\src\utils\cc
     -@if not exist $(INSTALL)\usr\src\utils\ar mkdir $(INSTALL)\usr\src\utils\ar
-    -@if not exist $(INSTALL)\usr\src\utils\yacc mkdir $(INSTALL)\usr\src\utils\yacc
     copy /Y $(SDKBIN)\as.exe              $(INSTALL)\usr\bin
     copy /Y $(SDKBIN)\cc.exe              $(INSTALL)\usr\bin
     copy /Y $(SDKBIN)\make.exe            $(INSTALL)\usr\bin
     copy /Y $(SDKBIN)\ar.exe              $(INSTALL)\usr\bin
     copy /Y $(SDKBIN)\impdef.exe          $(INSTALL)\usr\bin
-    copy /Y $(SDKBIN)\yacc.exe            $(INSTALL)\usr\bin
     copy /Y $(SDKLIB)\libc.a              $(INSTALL)\usr\lib
     copy /Y $(SDKLIB)\os.def              $(INSTALL)\usr\lib\os.def
     copy /Y $(SDKLIB)\krnl.def            $(INSTALL)\usr\lib\krnl.def
@@ -1258,38 +1281,4 @@ install-sdk: install-source sdk
     copy /Y $(SDKSRC)\cc\*.c              $(INSTALL)\usr\src\utils\cc
     copy /Y $(SDKSRC)\cc\*.h              $(INSTALL)\usr\src\utils\cc
     copy /Y $(SDKSRC)\cc\Makefile.sanos   $(INSTALL)\usr\src\utils\cc\Makefile
-    copy /Y $(SDKSRC)\yacc\*.c            $(INSTALL)\usr\src\utils\yacc
-    copy /Y $(SDKSRC)\yacc\*.h            $(INSTALL)\usr\src\utils\yacc
-    copy /Y $(SDKSRC)\yacc\Makefile.sanos $(INSTALL)\usr\src\utils\yacc\Makefile
-
-install-extra:
-    -@if not exist $(INSTALL)\usr\src\utils\awk mkdir $(INSTALL)\usr\src\utils\awk
-    -@if not exist $(INSTALL)\usr\src\utils\lua mkdir $(INSTALL)\usr\src\utils\lua
-    -@if not exist $(INSTALL)\usr\src\utils\lua\stdlib mkdir $(INSTALL)\usr\src\utils\lua\stdlib
-    -@if not exist $(INSTALL)\usr\src\utils\tar mkdir $(INSTALL)\usr\src\utils\tar
-    -@if not exist $(INSTALL)\usr\src\utils\zlib mkdir $(INSTALL)\usr\src\utils\zlib
-    -@if not exist $(INSTALL)\usr\src\utils\makedepend mkdir $(INSTALL)\usr\src\utils\makedepend
-
-    copy /Y $(SDKSRC)\awk\*.c             $(INSTALL)\usr\src\utils\awk
-    copy /Y $(SDKSRC)\awk\*.h             $(INSTALL)\usr\src\utils\awk
-    copy /Y $(SDKSRC)\awk\*.y             $(INSTALL)\usr\src\utils\awk
-    copy /Y $(SDKSRC)\awk\Makefile.sanos  $(INSTALL)\usr\src\utils\awk\Makefile
-    del $(INSTALL)\usr\src\utils\awk\ytab.* $(INSTALL)\usr\src\utils\awk\proctab.c
-
-    copy /Y $(SDKSRC)\lua\*.c             $(INSTALL)\usr\src\utils\lua
-    copy /Y $(SDKSRC)\lua\*.h             $(INSTALL)\usr\src\utils\lua
-    copy /Y $(SDKSRC)\lua\Makefile.sanos  $(INSTALL)\usr\src\utils\lua\Makefile
-    copy /Y $(SDKSRC)\lua\stdlib\*        $(INSTALL)\usr\src\utils\lua\stdlib
-
-    copy /Y $(SDKSRC)\tar\*.c             $(INSTALL)\usr\src\utils\tar
-    copy /Y $(SDKSRC)\tar\*.h             $(INSTALL)\usr\src\utils\tar
-    copy /Y $(SDKSRC)\tar\Makefile.sanos  $(INSTALL)\usr\src\utils\tar\Makefile
-
-    copy /Y $(SDKSRC)\zlib\*.c            $(INSTALL)\usr\src\utils\zlib
-    copy /Y $(SDKSRC)\zlib\*.h            $(INSTALL)\usr\src\utils\zlib
-    copy /Y $(SDKSRC)\zlib\Makefile.sanos $(INSTALL)\usr\src\utils\zlib\Makefile
-
-    copy /Y $(SDKSRC)\makedepend\*.c      $(INSTALL)\usr\src\utils\makedepend
-    copy /Y $(SDKSRC)\makedepend\*.h      $(INSTALL)\usr\src\utils\makedepend
-    copy /Y $(SDKSRC)\makedepend\Makefile.sanos $(INSTALL)\usr\src\utils\makedepend\Makefile
 

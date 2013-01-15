@@ -32,6 +32,7 @@
 // 
 
 #include <shlib.h>
+#include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 

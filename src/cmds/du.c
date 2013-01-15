@@ -33,6 +33,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <shlib.h>
 #include <dirent.h>
 #include <unistd.h>
@@ -104,7 +105,6 @@ shellcmd(du) {
   int c;
   int rc;
   int i;
-  int total;
 
   // Parse command line options
   memset(&opts, 0, sizeof(struct options));

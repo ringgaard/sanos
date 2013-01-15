@@ -45,9 +45,7 @@ struct options {
 };
 
 static int make_directory(char *path, struct options *opts) {
-  int rc;
   char *p;
-  char *slash;
   int mode;
 
   if (opts->mode) {

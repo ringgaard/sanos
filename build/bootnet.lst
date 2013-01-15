@@ -16,7 +16,7 @@
 ; System files
 
 /boot/os.dll      bin\os.dll
-/bin/sh.exe       bin\sh.exe
+/bin/sh.exe       bin\msh.exe
 
 ; Drivers
 
