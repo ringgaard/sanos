@@ -252,8 +252,8 @@ int pipefs_read(struct file *filp, void *data, size_t size, off64_t pos) {
     struct pipereq req;
     int rc;
 
-    if (filp->flags & O_NONBLOCK) return -EAGAIN;
     set_io_event(&pipe->peer->filp->iob, IOEVT_WRITE);
+    if (filp->flags & O_NONBLOCK) return -EAGAIN;
 
     req.pipe = pipe;
     req.thread = self();
@@ -288,7 +288,6 @@ int pipefs_write(struct file *filp, void *data, size_t size, off64_t pos) {
   char *p;
   size_t left;
 
-
   if (size == 0) return 0;
   if (!pipe->peer) return -EPIPE;
 
@@ -317,8 +316,8 @@ int pipefs_write(struct file *filp, void *data, size_t size, off64_t pos) {
     struct pipereq req;
     int rc;
 
-    if (filp->flags & O_NONBLOCK) return size - left;
     set_io_event(&pipe->peer->filp->iob, IOEVT_READ);
+    if (filp->flags & O_NONBLOCK) return size - left;
 
     req.pipe = pipe;
     req.thread = self();

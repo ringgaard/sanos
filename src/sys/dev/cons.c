@@ -209,8 +209,8 @@ struct driver console_driver = {
 };
 
 int __declspec(dllexport) console(struct unit *unit, char *opts) {
-  init_keyboard(get_num_option(opts, "resetkbd", 0));
-  dev_make("console", &console_driver, NULL, NULL);
+  dev_t devno = dev_make("console", &console_driver, NULL, NULL);
+  init_keyboard(devno, get_num_option(opts, "resetkbd", 0));
 
   if (serial_console) {
     init_serial();

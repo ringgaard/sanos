@@ -780,7 +780,7 @@ long ftell(FILE *stream) {
   long filepos;
 
   if (stream->cnt < 0) stream->cnt = 0;    
-  if ((filepos = tell(fileno(stream))) < 0L) return -1L;
+  if ((filepos = tell(fileno(stream))) < 0L) return -1;
   if (!bigbuf(stream)) return filepos - stream->cnt;
 
   if (stream->flag & _IORD) {
@@ -793,7 +793,7 @@ long ftell(FILE *stream) {
 }
 
 void rewind(FILE *stream) {
-  fseek(stream, 0L, SEEK_SET); 
+  fseek(stream, 0, SEEK_SET);
   clearerr(stream);
 }
 
@@ -885,3 +885,23 @@ int ungetc(int c, FILE *stream) {
 int remove(const char *filename) {
   return unlink(filename);
 }
+
+int fready(FILE *stream) {
+  struct pollfd pfd;
+
+  // Ready for read if there is anything in the buffer
+  if (stream->cnt > 0) return 1;
+
+  // String streams have all data in the buffer
+  if (stream->flag & _IOSTR) return 0;
+
+  // Must be in read mode
+  if (stream->flag & _IOWR) return 0;
+
+  // Poll input file for available data
+  pfd.fd = fileno(stream);
+  pfd.events = POLLIN;
+  pfd.revents = 0;
+  return poll(&pfd, 1, 0) > 0 && (pfd.revents & POLLIN);
+}
+

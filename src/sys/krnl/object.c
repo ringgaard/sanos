@@ -133,6 +133,27 @@ void release_thread(struct thread *t) {
 }
 
 //
+// release_waiters
+//
+// Release all threads waiting for object
+//
+
+void release_waiters(struct object *o, int waitkey) {
+  struct waitblock *wb;
+  struct waitblock *next;
+
+  wb = o->waitlist_head;
+  while (wb) {
+    next = wb->next_wait;
+    if (thread_ready_to_run(wb->thread))  {
+      wb->thread->waitkey = waitkey;
+      release_thread(wb->thread);
+    }
+    wb = next;
+  }
+}
+
+//
 // enter_object
 //
 // Called when an object waits on a signaled object.
@@ -580,22 +601,11 @@ void init_thread(struct thread *t, int priority) {
 //
 
 void exit_thread(struct thread *t) {
-  struct waitblock *wb;
-  struct waitblock *wb_next;
-
   // Set signaled state
   t->object.signaled = 1;
 
   // Release all waiting threads
-  wb = t->object.waitlist_head;
-  while (wb) {
-    wb_next = wb->next_wait;
-    if (thread_ready_to_run(wb->thread))  {
-      wb->thread->waitkey = t->exitcode;
-      release_thread(wb->thread);
-    }
-    wb = wb_next;
-  }
+  release_waiters(&t->object, t->exitcode);
 }
 
 //
@@ -851,19 +861,12 @@ int release_mutex(struct mutex *m) {
 
 static void expire_waitable_timer(void *arg) {
   struct waitable_timer *t = arg;
-  struct waitblock *wb;
-  struct waitblock *wb_next;
 
   // Set signaled state
   t->object.signaled = 1;
 
   // Release all waiting threads
-  wb = t->object.waitlist_head;
-  while (wb) {
-    wb_next = wb->next_wait;
-    if (thread_ready_to_run(wb->thread)) release_thread(wb->thread);
-    wb = wb_next;
-  }
+  release_waiters(&t->object, 0);
 }
 
 //

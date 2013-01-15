@@ -221,6 +221,7 @@ int destroy_object(struct object *o);
 
 int thread_ready_to_run(struct thread *t);
 void release_thread(struct thread *t);
+void release_waiters(struct object *o, int waitkey);
 
 void init_thread(struct thread *t, int priority);
 void exit_thread(struct thread *t);

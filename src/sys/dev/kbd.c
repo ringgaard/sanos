@@ -144,6 +144,7 @@ int ext = 0;
 struct interrupt kbdintr;
 struct dpc kbddpc;
 struct sem kbdsem;
+dev_t kbddev = -1;
 
 // Circular keyboard buffer
 
@@ -256,6 +257,7 @@ static void insert_key(unsigned char ch) {
     keyboard_buffer[keyboard_buffer_in] = ch;
     keyboard_buffer_in = (keyboard_buffer_in + 1) & (KEYBOARD_BUFFER_SIZE - 1);
     release_sem(&kbdsem, 1);
+    dev_setevt(kbddev, IOEVT_READ);
   }
 }
 
@@ -425,6 +427,10 @@ int getch(unsigned int timeout) {
   ch = keyboard_buffer[keyboard_buffer_out];
   keyboard_buffer_out = (keyboard_buffer_out + 1) & (KEYBOARD_BUFFER_SIZE - 1);
 
+  if (keyboard_buffer_in == keyboard_buffer_out) {
+    dev_clrevt(kbddev, IOEVT_READ);
+  }
+
   return ch;
 }
 
@@ -559,8 +565,11 @@ int change_keyboard_map_id(int id) {
 // Initialize keyboard
 //
 
-void init_keyboard(int reset) {
+void init_keyboard(dev_t devno, int reset) {
   char *kbdname;
+
+  // Save keyboard device number
+  kbddev = devno;
 
   // Initialize keyboard tables
   keytables[0] = &uskeys;

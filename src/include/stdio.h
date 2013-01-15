@@ -134,6 +134,8 @@ int setvbuf(FILE *stream, char *buffer, int type, size_t size);
 
 int ungetc(int c, FILE *stream);
 
+int fready(FILE *stream);
+
 int remove(const char *filename);
 osapi int rename(const char *oldname, const char *newname);
 

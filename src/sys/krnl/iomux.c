@@ -198,45 +198,51 @@ void detach_ioobject(struct ioobject *iob) {
 
 void set_io_event(struct ioobject *iob, int events) {
   struct iomux *iomux = iob->iomux;
+  if (iomux) {
+    // Object is attached to an iomux. If the object is on the waiting queue
+    // and new event(s) are being monitored, we must move the object to the 
+    // ready queue and signal it.
+    if ((iob->events_monitored & iob->events_signaled) == 0 && (iob->events_monitored & events) != 0) {
+      // Update signaled events
+      iob->events_signaled |= events;
 
-  //
-  // If the following is true we must move the object to the ready queue and signal it:
-  //  1) object is attached to an iomux
-  //  2) object is on the waiting queue
-  //  3) the new event(s) are being monitored.
-  //
+      // Remove object from waiting queue
+      if (iob->next) iob->next->prev = iob->prev;
+      if (iob->prev) iob->prev->next = iob->next;
+      if (iomux->waiting_head == iob) iomux->waiting_head = iob->next; 
+      if (iomux->waiting_tail == iob) iomux->waiting_tail = iob->prev; 
 
-  if (iomux && (iob->events_monitored & iob->events_signaled) == 0 && (iob->events_monitored & events) != 0) {
-    // Update signaled events
-    iob->events_signaled |= events;
+      // Insert object in the ready queue
+      iob->next = NULL;
+      iob->prev = iomux->ready_tail;
+      if (iomux->ready_tail) iomux->ready_tail->next = iob;
+      iomux->ready_tail = iob;
+      if (!iomux->ready_head) iomux->ready_head = iob;
 
-    // Remove object from waiting queue
-    if (iob->next) iob->next->prev = iob->prev;
-    if (iob->prev) iob->prev->next = iob->next;
-    if (iomux->waiting_head == iob) iomux->waiting_head = iob->next; 
-    if (iomux->waiting_tail == iob) iomux->waiting_tail = iob->prev; 
+      // Signal iomux
+      iomux->object.signaled = 1;
 
-    // Insert object in the ready queue
-    iob->next = NULL;
-    iob->prev = iomux->ready_tail;
-    if (iomux->ready_tail) iomux->ready_tail->next = iob;
-    iomux->ready_tail = iob;
-    if (!iomux->ready_head) iomux->ready_head = iob;
-
-    // Signal iomux
-    iomux->object.signaled = 1;
-
-    // Try to dispatch ready objects to waiting threads
-    release_waiting_threads(iomux);
+      // Try to dispatch ready objects to waiting threads
+      release_waiting_threads(iomux);
+    } else {
+      // Just update the signaled event(s) for object
+      iob->events_signaled |= events;
+    }
   } else {
-    // Just update the signaled event(s) for object
+    // Object is not attached to an iomux. Update the signaled events and signal
+    // object if data is available.
     iob->events_signaled |= events;
+    if (iob->events_signaled & IOEVT_READ) {
+      iob->object.signaled = 1;
+      release_waiters(&iob->object, 0);
+    }
   }
 }
 
 void clear_io_event(struct ioobject *iob, int events) {
   // Clear events
   iob->events_signaled &= ~events;
+  if (!(iob->events_signaled & IOEVT_READ)) iob->object.signaled = 0;
 }
 
 int dequeue_event_from_iomux(struct iomux *iomux) {
