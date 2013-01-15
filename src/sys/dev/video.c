@@ -54,6 +54,7 @@ int cursor_pos;
 unsigned char video_attr = ATTR_NORMAL;
 int video_state = 0;
 int saved_cursor_pos = 0;
+int linewrap = 1;
 
 static int color_map[8] = {0, 4, 2, 6, 1, 5, 3, 7};
 
@@ -120,6 +121,75 @@ static void scroll_down() {
 
 static void handle_sequence(int x, int y, char ch) {
   switch (ch) {
+    case 'H': { // Position
+      int line = x;
+      int col = y;
+
+      if (line < 1) line = 1;
+      if (line > LINES) line = LINES;
+      if (col < 1) col = 1;
+      if (col > COLS) col = COLS;
+      set_cursor(col - 1, line - 1);
+      break;
+    }
+    
+    case 'J': // Clear screen/eos
+      if (x == 1) {
+        unsigned char *p = vidmem + cursor_pos;
+        while (p < vidmem + SCREENSIZE) {
+          *p++ = ' ';
+          *p++ = video_attr;
+        }
+      } else {
+        unsigned char *p = vidmem;
+        while (p < vidmem + SCREENSIZE) {
+          *p++ = ' ';
+          *p++ = video_attr;
+        }
+        cursor_pos = 0;
+      }
+      break;
+    
+    case 'K': { // Clear to end of line
+      int pos = cursor_pos;
+      do {
+        vidmem[pos++] = ' ';
+        vidmem[pos++] = video_attr;
+      } while ((pos) % LINESIZE != 0);
+      break;
+    }
+    
+    case 'm': // Set character enhancements
+      // Modified for ANSI color attributes 3/15/07 - C Girdosky
+      if (x >= 30 && x <= 37) {
+        // Foreground color
+        video_attr = color_map[x - 30] + (video_attr & 0xF8);
+      } else if (x >= 40 && x <= 47) {
+        // Background color
+        video_attr = (color_map[x - 40] << 4) + (video_attr & 0x8F);
+      } else if (x == 1) {
+        // High intensity foreground
+        video_attr = video_attr | 8;
+      } else if (x == 2) {
+        // Low intensity foreground
+        video_attr = video_attr & ~8;
+      } else if (x == 5) {
+        // High intensity background
+        video_attr = video_attr | 128;
+      } else if (x == 6) {
+        // Low intensity background
+        video_attr = video_attr & ~128;
+      } else if (x == 7) {
+        // Reverse
+        video_attr = ((video_attr & 0xF0) >> 4) + ((video_attr & 0x0F) << 4); 
+      } else if (x == 8) {
+        // Invisible make forground match background
+        video_attr = ((video_attr & 0xF0) >> 4) + (video_attr & 0xF0);
+      } else {
+        video_attr = ATTR_NORMAL;
+      }
+      break;
+
     case 'A':  // Cursor up
       while (x-- > 0) {
         cursor_pos -= LINESIZE;
@@ -190,67 +260,12 @@ static void handle_sequence(int x, int y, char ch) {
       cursor_pos = saved_cursor_pos;
       break;
 
-    case 'J': // Clear screen/eos
-      if (x == 1) {
-        unsigned char *p = vidmem + cursor_pos;
-        while (p < vidmem + SCREENSIZE) {
-          *p++ = ' ';
-          *p++ = video_attr;
-        }
-      } else {
-        unsigned char *p = vidmem;
-        while (p < vidmem + SCREENSIZE) {
-          *p++ = ' ';
-          *p++ = video_attr;
-        }
-        cursor_pos = 0;
-      }
+    case 'h': // Enable line wrapping
+      if (x == 7) linewrap = 1;
       break;
-    
-    case 'H': { // Position
-      int line = x;
-      int col = y;
 
-      if (line < 1) line = 1;
-      if (line > LINES) line = LINES;
-      if (col < 1) col = 1;
-      if (col > COLS) col = COLS;
-      set_cursor(col - 1, line - 1);
-      break;
-    }
-    
-    case 'K': { // Clear to end of line
-      int pos = cursor_pos;
-      do {
-        vidmem[pos++] = ' ';
-        vidmem[pos++] = video_attr;
-      } while ((pos) % LINESIZE != 0);
-      break;
-    }
-    
-    case 'm': // Set character enhancements
-      // Modified for ANSI color attributes 3/15/07 - C Girdosky
-      if (x >= 30 && x <= 37) {
-        // Foreground color
-        video_attr = color_map[x - 30] + (video_attr & 0xF8);
-      } else if (x >= 40 && x <= 47) {
-        // Background color
-        video_attr = (color_map[x - 40] << 4) + (video_attr & 0x8F);
-      } else if (x == 1) {
-        // High intensity foreground
-        video_attr = video_attr | 8;
-      } else if (x == 5) {
-        // High intensity background
-        video_attr = video_attr | 128;
-      } else if (x == 8) {
-        // Invisible make forground match background
-        video_attr = ((video_attr & 0xF0) >> 4) + (video_attr & 0xF0);
-      } else if (x == 7) {
-        // Reverse
-        video_attr = ((video_attr & 0xF0) >> 4) + ((video_attr & 0x0F) << 4); 
-      } else {
-        video_attr = ATTR_NORMAL;
-      }
+    case 'l': // Disable line wrapping
+      if (x == 7) linewrap = 0;
       break;
   }
 }
@@ -261,6 +276,9 @@ static int handle_multichar(int state, char ch) {
   switch (state) {
     case 1: // Escape has arrived
       switch (ch) {
+        case '[': // Extended sequence
+          return 2;
+
         case 'P': // Cursor down a line
           cursor_pos += LINESIZE;
           if (cursor_pos >= SCREENSIZE) cursor_pos -= LINESIZE;
@@ -287,11 +305,14 @@ static int handle_multichar(int state, char ch) {
           cursor_pos = 0;
           return 0;
 
-        case '[': // Extended sequence
-          return 2;
-
         case '(': // Extended char set
           return 5;
+
+        case 'c': // Reset
+          cursor_pos = 0;
+          video_attr = ATTR_NORMAL;
+          linewrap = 1;
+          return 0;
 
         default:
           return 0;
@@ -362,49 +383,57 @@ void print_buffer(const char *str, int len) {
       continue;
     }
 
-    switch (ch) {
-      case 0:
-        break;
+    if (ch >= ' ') {
+      vidmem[cursor_pos++] = ch;
+      vidmem[cursor_pos++] = attr;
+    } else {
+      switch (ch) {
+        case 0:
+          break;
 
-      case '\n': // Newline
-        cursor_pos = (cursor_pos / LINESIZE + 1) * LINESIZE;
-        break;
+        case '\n': // Newline
+          cursor_pos = (cursor_pos / LINESIZE + 1) * LINESIZE;
+          break;
 
-      case '\r': // Carriage return
-        cursor_pos = (cursor_pos / LINESIZE) * LINESIZE;
-        break;
+        case '\r': // Carriage return
+          cursor_pos = (cursor_pos / LINESIZE) * LINESIZE;
+          break;
 
-      case '\t':
-        cursor_pos = (cursor_pos / (TABSTOP * CELLSIZE) + 1) * (TABSTOP * CELLSIZE);
-        break;
-       
-      case 8: // Backspace
-        if (cursor_pos > 0) cursor_pos -= CELLSIZE;
-        break;
+        case '\t':
+          cursor_pos = (cursor_pos / (TABSTOP * CELLSIZE) + 1) * (TABSTOP * CELLSIZE);
+          break;
 
-      case 12: // Formfeed
-        p = (unsigned char *) vidmem;
-        for (i = 0; i < COLS * LINES; i++) {
-          *p++ = ' ';
-          *p++ = attr;
-        }
-        cursor_pos = 0;
-        break;
+        case 8: // Backspace
+          if (cursor_pos > 0) cursor_pos -= CELLSIZE;
+          break;
 
-      case 27: // Escape
-        video_state = 1;
-        break;
+        case 12: // Formfeed
+          p = (unsigned char *) vidmem;
+          for (i = 0; i < COLS * LINES; i++) {
+            *p++ = ' ';
+            *p++ = attr;
+          }
+          cursor_pos = 0;
+          break;
 
-      default: // Normal character
-        vidmem[cursor_pos++] = ch;
-        vidmem[cursor_pos++] = attr;
-        break;
+        case 27: // Escape
+          video_state = 1;
+          break;
+
+        default: // Normal character
+          vidmem[cursor_pos++] = ch;
+          vidmem[cursor_pos++] = attr;
+      }
     }
 
     // Scroll if position is off-screen
     if (cursor_pos >= SCREENSIZE) {
-      scroll_up();
-      cursor_pos -= LINESIZE;
+      if (linewrap) {
+        scroll_up();
+        cursor_pos -= LINESIZE;
+      } else {
+        cursor_pos = SCREENSIZE - CELLSIZE;
+      }
     }
   }
 }
