@@ -262,3 +262,26 @@ struct lconv *localeconv(void) {
   return NULL;
 }
 
+int symlink(const char *oldpath, const char *newpath) {
+  // TODO implement
+  errno = ENOSYS;
+  return -1;
+}
+
+int chroot(const char *path) {
+  // TODO implement
+  errno = ENOSYS;
+  return -1;
+}
+
+int flock(handle_t f, int operation) {
+  // TODO implement
+  errno = ENOSYS;
+  return -1;
+}
+
+int lockf(handle_t f, int func, off_t size) {
+  // TODO implement
+  errno = ENOSYS;
+  return -1;
+}

@@ -64,11 +64,20 @@
 
 #ifndef SEEK_SET
 
-#define SEEK_SET                0       // Seek relative to begining of file
-#define SEEK_CUR                1       // Seek relative to current file position
-#define SEEK_END                2       // Seek relative to end of file
+#define SEEK_SET       0       // Seek relative to begining of file
+#define SEEK_CUR       1       // Seek relative to current file position
+#define SEEK_END       2       // Seek relative to end of file
 
 #endif
+
+//
+// Locking functions
+//
+
+#define F_ULOCK        1       // Unlock locked sections
+#define F_LOCK         2       // Lock a section for exclusive use
+#define F_TLOCK        3       // Test and lock a section for exclusive use
+#define F_TEST         4       // Test a section for locks by other processes
 
 //
 // Context for vfork()
@@ -124,6 +133,10 @@ osapi int rmdir(const char *name);
 osapi int chown(const char *name, int owner, int group);
 osapi int fchown(handle_t f, int owner, int group);
 osapi int isatty(handle_t f);
+
+int symlink(const char *oldpath, const char *newpath);
+int chroot(const char *path);
+int lockf(handle_t f, int func, off_t size);
 
 osapi int gethostname(char *name, int namelen);
 
