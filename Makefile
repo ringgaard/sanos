@@ -397,8 +397,8 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
   $(SRC)/lib/fcvt.c \
   $(SRC)/lib/ctype.c \
   $(SRC)/lib/bitops.c \
-  $(SRC)\lib\verinfo.c \
-  $(SRC)\lib\crypt.c \
+  $(SRC)/lib/verinfo.c \
+  $(SRC)/lib/crypt.c \
   $(OBJ)/libc/llmul.obj \
   $(OBJ)/libc/lldvrm.obj \
   $(OBJ)/os/modf.obj \

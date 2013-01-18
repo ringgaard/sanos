@@ -436,20 +436,7 @@ int memcmp(const void *dst, const void *src, size_t n) {
   return *((unsigned char *) dst) - *((unsigned char *) src);
 }
 
-#if 0
-void *memcpy(void *dst, const void *src, size_t n) {
-  char *s = (char *) src;
-  char *end = s + n;
-  char *d = (char *) dst;
-  if ((((unsigned int) s) | ((unsigned int) d) | n) && sizeof(unsigned int) - 1) {
-    while (s != end) *d++ = *s++;
-  } else {
-    while (s != end) *((unsigned int *) d)++ = *((unsigned int *) s)++;
-  }
-
-  return dst;
-}
-#else
+#ifdef __i386__
 void *memcpy(void *dst, const void *src, size_t n) {
   __asm {
     push  esi
@@ -476,6 +463,19 @@ copy_done:
     pop    edi
     pop    esi
   }
+}
+#else
+void *memcpy(void *dst, const void *src, size_t n) {
+  char *s = (char *) src;
+  char *end = s + n;
+  char *d = (char *) dst;
+  if ((((unsigned int) s) | ((unsigned int) d) | n) && sizeof(unsigned int) - 1) {
+    while (s != end) *d++ = *s++;
+  } else {
+    while (s != end) *((unsigned int *) d)++ = *((unsigned int *) s)++;
+  }
+
+  return dst;
 }
 #endif
 

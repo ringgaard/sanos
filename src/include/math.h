@@ -112,6 +112,7 @@ int isless(double x, double y);
 int isgreater(double x, double y);
 
 double round(double x);
+double hypot(double x, double y);
 
 #ifdef  __cplusplus
 }
