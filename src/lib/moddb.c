@@ -138,6 +138,10 @@ static void *get_image_directory(hmodule_t hmod, int dir) {
   return (void *) addr ? RVA(hmod, addr) : 0;
 }
 
+static unsigned long get_image_directory_size(hmodule_t hmod, int dir) {
+  return get_image_header(hmod)->optional.data_directory[dir].size;
+}
+
 struct module *get_module_for_handle(struct moddb *db, hmodule_t hmod) {
   struct module *m;
 
@@ -506,6 +510,7 @@ static int relocate_module(struct module *mod) {
   unsigned short *fixup;
   int i;
   struct image_base_relocation *reloc;
+  struct image_base_relocation *end;
   int nrelocs;
 
   offset = (unsigned long) mod->hmod - get_image_header(mod->hmod)->optional.image_base;
@@ -518,8 +523,9 @@ static int relocate_module(struct module *mod) {
 
   reloc = (struct image_base_relocation *) get_image_directory(mod->hmod, IMAGE_DIRECTORY_ENTRY_BASERELOC);
   if (!reloc) return 0;
+  end = (struct image_base_relocation *) ((char *) reloc + get_image_directory_size(mod->hmod, IMAGE_DIRECTORY_ENTRY_BASERELOC));
 
-  while (reloc->virtual_address != 0 || reloc->size_of_block != 0) {
+  while (reloc < end && (reloc->virtual_address != 0 || reloc->size_of_block != 0)) {
     pagestart = RVA(mod->hmod, reloc->virtual_address);
     nrelocs = (reloc->size_of_block - sizeof(struct image_base_relocation)) / 2;
     fixup = (unsigned short *) (reloc + 1);
