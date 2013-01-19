@@ -1,0 +1,25 @@
+[package]
+name=telnetd
+description=Telnet server
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/utils/telnetd/
+
+[files]
+/usr/src/utils/telnetd/
+/bin/telnetd.exe
+
+[dependencies]
+sdk
+
+[build]
+make -C /usr/src/utils/telnetd
+
+[install]
+make -C /usr/src/utils/telnetd install
+
+[license]
+Sanos BSD license. See COPYING file.
+

@@ -1,0 +1,25 @@
+[package]
+name=fdisk
+description=Disk partitioning utility
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/utils/fdisk/
+
+[files]
+/usr/src/utils/fdisk/
+/bin/fdisk.exe
+
+[dependencies]
+sdk
+
+[build]
+make -C /usr/src/utils/fdisk
+
+[install]
+make -C /usr/src/utils/fdisk install
+
+[license]
+Sanos BSD license. See COPYING file.
+

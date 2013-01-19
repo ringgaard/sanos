@@ -1,0 +1,21 @@
+[package]
+name=clib
+description=C runtime library
+author=Michael Ringgaard et al.
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/lib/
+/usr/include/
+/usr/lib/libc.a
+/usr/lib/os.def
+
+[files]
+/usr/src/lib/
+/usr/include/
+/usr/lib/libc.a
+/usr/lib/os.def
+
+[license]
+See Sanos COPYING file.
+

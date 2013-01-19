@@ -1,0 +1,25 @@
+[package]
+name=sh
+description=Convert C source files to HTML
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/utils/ctohtml/
+
+[files]
+/usr/src/utils/ctohtml/
+/usr/bin/ctohtml.exe
+
+[dependencies]
+sdk
+
+[build]
+make -C /usr/src/utils/ctohtml
+
+[install]
+make -C /usr/src/utils/ctohtml install
+
+[license]
+Sanos BSD license. See COPYING file.
+

@@ -1,0 +1,40 @@
+[package]
+name=sys
+description=Sanos operating system
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/sys/
+
+[files]
+/usr/src/sys/
+/boot/boot
+/boot/cdboot
+/boot/cdemboot
+/boot/netboot
+/boot/osldr.dll
+/boot/krnl.dll
+/boot/os.dll
+/boot/3c905c.sys
+/boot/eepro100.sys
+/boot/ne2000.sys
+/boot/pcnet32.sys
+/boot/rtl8139.sys
+/boot/sis900.sys
+/boot/tulip.sys
+/boot/virtionet.sys
+
+[dependencies]
+sdk
+mkboot
+
+[build]
+make -C /usr/src/sys
+
+[install]
+make -C /usr/src/sys install
+
+[license]
+Sanos BSD license. See COPYING file.
+

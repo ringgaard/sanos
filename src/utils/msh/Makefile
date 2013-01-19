@@ -4,7 +4,7 @@
 
 all: msh.exe
 
-sh.exe: msh.c
+msh.exe: msh.c
     $(CC) msh.c
 
 install: msh.exe

@@ -1,0 +1,25 @@
+[package]
+name=msh
+description=Mini shell
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/utils/msh/
+
+[files]
+/usr/src/utils/msh/
+/bin/msh.exe
+
+[dependencies]
+sdk
+
+[build]
+make -C /usr/src/utils/msh
+
+[install]
+make -C /usr/src/utils/msh install
+
+[license]
+Sanos BSD license. See COPYING file.
+

@@ -1,0 +1,25 @@
+[package]
+name=setup
+description=Setup program
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/utils/setup/
+
+[files]
+/usr/src/utils/setup/
+/bin/setup.exe
+
+[dependencies]
+sdk
+
+[build]
+make -C /usr/src/utils/setup
+
+[install]
+make -C /usr/src/utils/setup install
+
+[license]
+Sanos BSD license. See COPYING file.
+

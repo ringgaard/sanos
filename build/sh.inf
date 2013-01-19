@@ -1,0 +1,26 @@
+[package]
+name=sh
+description=Shell
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/utils/sh/
+
+[files]
+/usr/src/utils/sh/
+/bin/sh.exe
+
+[dependencies]
+sdk
+cmds
+
+[build]
+make -C /usr/src/utils/sh
+
+[install]
+make -C /usr/src/utils/sh install
+
+[license]
+Sanos BSD license. See COPYING file.
+

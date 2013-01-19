@@ -1,0 +1,27 @@
+[package]
+name=ar
+description=Library archive utility
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/utils/ar/
+
+[files]
+/usr/src/utils/ar/
+/usr/bin/ar.exe
+
+[dependencies]
+cc
+clib
+make
+
+[build]
+make -C /usr/src/utils/ar
+
+[install]
+make -C /usr/src/utils/ar install
+
+[license]
+Sanos BSD license. See COPYING file.
+

@@ -1,0 +1,27 @@
+[package]
+name=impdef
+description=Generate import definitions for DLLs
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/utils/impdef/
+
+[files]
+/usr/src/utils/impdef/
+/usr/bin/impdef.exe
+
+[dependencies]
+cc
+clib
+make
+
+[build]
+make -C /usr/src/utils/impdef
+
+[install]
+make -C /usr/src/utils/impdef install
+
+[license]
+Sanos BSD license. See COPYING file.
+

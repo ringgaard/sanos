@@ -1,0 +1,32 @@
+[package]
+name=cc
+version=0.9.24
+description=C compiler
+author=Fabrice Bellard
+original=tcc-0.9.24.tar.gz
+homepage=http://bellard.org/tcc/
+
+[source]
+/usr/src/utils/cc/
+/usr/bin/cc.exe
+
+[files]
+/usr/src/utils/cc/
+/usr/bin/cc.exe
+
+[build]
+make -C /usr/src/utils/cc
+
+[readme]
+The Tiny C Compiler (aka TCC, tCc, or TinyCC) is an x86 C compiler created by
+Fabrice Bellard. It is designed to work for slow computers with little disk
+space (e.g. on rescue disks).
+
+TCC implements all of ANSI C (C89/C90), much of the new ISO C99 standard, and 
+many GNU C extensions including inline assembly.
+
+The Sanos version of TCC also includes many MSVC extensions.
+
+[license]
+TCC is distributed under the GNU Lesser General Public License (see
+COPYING file).

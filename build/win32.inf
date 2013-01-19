@@ -1,0 +1,31 @@
+[package]
+name=win32
+description=Win32 thunking layer
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/win32/
+
+[files]
+/usr/src/win32/
+/bin/
+
+[dependencies]
+sdk
+
+[build]
+make -C /usr/src/win32/advapi32
+make -C /usr/src/win32/kernel32
+make -C /usr/src/win32/user32
+make -C /usr/src/win32/winmm
+
+[install]
+make -C /usr/src/win32/advapi32 install
+make -C /usr/src/win32/kernel32 install
+make -C /usr/src/win32/user32 install
+make -C /usr/src/win32/winmm install
+
+[license]
+Sanos BSD license. See COPYING file.
+

@@ -1,0 +1,25 @@
+[package]
+name=login
+description=User login
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/utils/login/
+
+[files]
+/usr/src/utils/login/
+/bin/login.exe
+
+[dependencies]
+sdk
+
+[build]
+make -C /usr/src/utils/login
+
+[install]
+make -C /usr/src/utils/login install
+
+[license]
+Sanos BSD license. See COPYING file.
+

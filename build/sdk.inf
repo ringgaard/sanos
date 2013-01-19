@@ -1,0 +1,16 @@
+[package]
+name=sdk
+description=Sanos Development Kit
+homepage=http://www.jbox.dk/sanos/sdk.htm
+
+[dependencies]
+cc
+as
+clib
+make
+impdef
+ar
+
+[readme]
+This is a meta-package with the basic packages needed for building applications
+and libraries in C under Sanos.

@@ -1,0 +1,26 @@
+[package]
+name=make
+description=Make utility to maintain groups of programs
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/utils/make/
+
+[files]
+/usr/src/utils/make/
+/usr/bin/make.exe
+
+[dependencies]
+cc
+clib
+
+[build]
+cd /usr/src/utils/make ; cc make.c
+
+[install]
+cd /usr/src/utils/make ; cc make.c ; cp make.exe /usr/bin/
+
+[license]
+Sanos BSD license. See COPYING file.
+

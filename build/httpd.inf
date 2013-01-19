@@ -1,0 +1,25 @@
+[package]
+name=httpd
+description=HTTP server library
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/utils/httpd/
+
+[files]
+/usr/src/utils/httpd/
+/bin/httpd.dll
+
+[dependencies]
+sdk
+
+[build]
+make -C /usr/src/utils/httpd
+
+[install]
+make -C /usr/src/utils/httpd install
+
+[license]
+Sanos BSD license. See COPYING file.
+

@@ -1,0 +1,25 @@
+[package]
+name=mkboot
+description=Kernel install utility
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/utils/mkboot/
+
+[files]
+/usr/src/utils/mkboot/
+/bin/mkboot.exe
+
+[dependencies]
+sdk
+
+[build]
+make -C /usr/src/utils/mkboot
+
+[install]
+make -C /usr/src/utils/mkboot install
+
+[license]
+Sanos BSD license. See COPYING file.
+

@@ -1,0 +1,26 @@
+[package]
+name=edit
+description=Text editor
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/utils/edit/
+
+[files]
+/usr/src/utils/edit/
+/bin/edit.exe
+/bin/less.exe
+
+[dependencies]
+sdk
+
+[build]
+make -C /usr/src/utils/edit
+
+[install]
+make -C /usr/src/utils/edit install
+
+[license]
+Sanos BSD license. See COPYING file.
+

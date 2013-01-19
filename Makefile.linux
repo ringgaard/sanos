@@ -6,6 +6,7 @@ TCC=linux/tools/cc
 AR=linux/tools/ar
 AS=linux/tools/as
 MKDFS=linux/tools/mkdfs
+MKPKG=linux/tools/mkpkg
 
 OBJ=linux/obj
 
@@ -14,7 +15,10 @@ LIB_OS=linux/install/usr/lib/os.def
 
 TCCFLAGS=-B linux/install/usr
 
-sanos: dirs build-tools boot osldr kernel drivers os libc utils cmds sdk sdk-source
+PKGREPO=/mnt/www/pkg
+PKGDIR=linux/install/usr/share/pkg
+
+sanos: dirs build-tools boot sys libc utils cmds sdk sdk-source
 
 #
 # dirs
@@ -40,6 +44,7 @@ linux/.timestamp:
 	mkdir -p linux/install/usr/src
 	mkdir -p linux/install/usr/src/utils
 	mkdir -p linux/install/usr/share
+	mkdir -p linux/install/usr/share/pkg
 	mkdir -p linux/install/var
 	[ -d linux/install/boot/krnl.ini ]         || ln -s ../../../build/krnl.ini linux/install/boot/krnl.ini
 	[ -d linux/install/etc/os.ini ]            || ln -s ../../../build/os.ini linux/install/etc/os.ini
@@ -72,7 +77,7 @@ linux/.timestamp:
 # build-tools
 #
 
-build-tools: $(TCC) $(AS) $(AR) $(MKDFS)
+build-tools: $(TCC) $(AS) $(AR) $(MKDFS) $(MKPKG)
 
 GCC_FLAGS=-O2 -m32 -Wimplicit
 
@@ -128,20 +133,15 @@ MKDFS_SRCFILES= \
 $(MKDFS): $(MKDFS_SRCFILES)
 	gcc $(GCC_FLAGS) -o $(MKDFS) $(MKDFS_SRCFILES) -DO_BINARY=0
 
-YACC_SRCFILES= \
-  sdk/src/yacc/closure.c \
-  sdk/src/yacc/error.c \
-  sdk/src/yacc/graph.c \
-  sdk/src/yacc/lalr.c \
-  sdk/src/yacc/lr0.c \
-  sdk/src/yacc/main.c \
-  sdk/src/yacc/mkpar.c \
-  sdk/src/yacc/output.c \
-  sdk/src/yacc/reader.c \
-  sdk/src/yacc/skeleton.c \
-  sdk/src/yacc/symtab.c \
-  sdk/src/yacc/verbose.c \
-  sdk/src/yacc/warshall.c
+$(MKPKG): utils/mkpkg/mkpkg.c utils/mkpkg/inifile.c
+	gcc $(GCC_FLAGS) -o $(MKPKG) utils/mkpkg/mkpkg.c utils/mkpkg/inifile.c
+
+#
+# sys
+#
+
+sys: osldr kernel drivers os
+	cp build/sys.inf $(PKGDIR)
 
 #
 # boot
@@ -376,6 +376,7 @@ linux/install/boot/os.dll $(LIB_OS): $(OS_SRCS) $(OS_LIB_SRCS) $(OBJ)/modf.o
 #
 
 libc: linux/install/usr/lib/libc.a
+	cp build/clib.inf $(PKGDIR)
 
 LIBC_OBJ = \
   $(OBJ)/tcccrt.o \
@@ -725,48 +726,62 @@ SH_CMDS= \
 
 linux/install/bin/sh.exe: $(SH_SRCS) $(SH_HDRS) $(SH_CMDS)
 	$(TCC) -o $@ $(SH_SRCS) $(SH_CMDS) $(TCCFLAGS) -D SHELL
+	cp build/sh.inf $(PKGDIR)
 
 linux/install/bin/msh.exe: src/utils/msh/msh.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
+	cp build/msh.inf $(PKGDIR)
 
 linux/install/bin/edit.exe: src/utils/edit/edit.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
+	cp build/edit.inf $(PKGDIR)
 
 linux/install/bin/less.exe: src/utils/edit/edit.c
 	$(TCC) -o $@ $^ $(TCCFLAGS) -DLESS
 
 linux/install/bin/fdisk.exe: src/utils/fdisk/fdisk.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
+	cp build/fdisk.inf $(PKGDIR)
 
 linux/install/bin/setup.exe: src/utils/setup/setup.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
+	cp build/setup.inf $(PKGDIR)
 
 linux/install/bin/mkboot.exe: src/utils/mkboot/mkboot.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
+	cp build/mkboot.inf $(PKGDIR)
 
 linux/install/bin/ftpd.exe: src/utils/ftpd/ftpd.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
+	cp build/ftpd.inf $(PKGDIR)
 
 linux/install/bin/telnetd.exe: src/utils/telnetd/telnetd.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
+	cp build/telnetd.inf $(PKGDIR)
 
 linux/install/bin/login.exe: src/utils/login/login.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
+	cp build/login.inf $(PKGDIR)
 
 linux/install/bin/pkg.exe: src/utils/pkg/pkg.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
+	cp build/pkg.inf $(PKGDIR)
 
 linux/install/usr/bin/make.exe: src/utils/make/make.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
+	cp build/make.inf $(PKGDIR)
 
 linux/install/usr/bin/ar.exe: src/utils/ar/ar.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
+	cp build/ar.inf $(PKGDIR)
 
 linux/install/usr/bin/impdef.exe: src/utils/impdef/impdef.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
+	cp build/impdef.inf $(PKGDIR)
 
 linux/install/usr/bin/ctohtml.exe: src/utils/ctohtml/ctohtml.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
+	cp build/ctohtml.inf $(PKGDIR)
 
 #
 # cmds
@@ -775,6 +790,7 @@ linux/install/usr/bin/ctohtml.exe: src/utils/ctohtml/ctohtml.c
 cmds: \
   linux/install/bin/grep.exe \
   linux/install/bin/ping.exe
+	cp build/cmds.inf $(PKGDIR)
 
 linux/install/bin/ping.exe: src/cmds/ping.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
@@ -790,9 +806,11 @@ sdk: linux/install/usr/bin/cc.exe linux/install/usr/bin/as.exe
 
 linux/install/usr/bin/cc.exe: $(TCC_SRCFILES) $(TCC_HDRFILES)
 	$(TCC) -o $@ $(TCC_SRCFILES) -I sdk/src/cc $(TCCFLAGS) -DUSE_LOCAL_HEAP
+	cp build/cc.inf $(PKGDIR)
 
 linux/install/usr/bin/as.exe: $(AS_SRCFILES)
 	$(TCC) -o $@ $^ -I sdk/src/as $(TCCFLAGS) $(AS_CFLAGS) -DUSE_LOCAL_HEAP
+	cp build/as.inf $(PKGDIR)
 
 sdk-source:
 	mkdir -p img
@@ -804,6 +822,7 @@ sdk-source:
 	mkdir -p linux/install/usr/src/utils/cc
 	cp sdk/src/cc/*.c sdk/src/cc/*.h linux/install/usr/src/utils/cc
 	cp sdk/src/cc/Makefile.sanos linux/install/usr/src/utils/cc/Makefile
+	cp build/sdk.inf $(PKGDIR)
 
 #
 # vmdk
@@ -813,9 +832,18 @@ vmdk: img/sanos.vmdk
 
 img/sanos.vmdk: sanos
 	echo "/ linux/install" > linux/disk.lst
+	$(MKPKG) linux/install - $(PKGDIR)/*.inf
+	mv db $(PKGDIR)
 	$(MKDFS) -d img/sanos.vmdk -t vmdk -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 100M -i -f -S linux/image -F linux/disk.lst
 
 clean:
 	rm -rf linux
 	rm -rf img
+
+#
+# pkgs
+#
+
+pkgs: build/*.inf
+	$(MKPKG) linux/install $(PKGREPO) build/*.inf
 

@@ -1,0 +1,25 @@
+[package]
+name=ftpd
+description=FTP server
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[source]
+/usr/src/utils/ftpd/
+
+[files]
+/usr/src/utils/ftpd/
+/bin/ftpd.exe
+
+[dependencies]
+sdk
+
+[build]
+make -C /usr/src/utils/ftpd
+
+[install]
+make -C /usr/src/utils/ftpd install
+
+[license]
+Sanos BSD license. See COPYING file.
+

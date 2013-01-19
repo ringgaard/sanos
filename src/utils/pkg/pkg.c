@@ -54,6 +54,7 @@
 struct pkg {
   char *name;
   char *inffile;
+  char *description;
   struct section *manifest;
   int removed;
   struct pkg *next;
@@ -333,7 +334,7 @@ static int extract_files(char *url, FILE *f, char *manifest, int verbose) {
         }
         *slash = '/';
       }
-      
+
       // Extract file
       fd = open(fn, O_CREAT | O_TRUNC, mode);
       if (fd < 0) {
@@ -374,9 +375,10 @@ static int extract_files(char *url, FILE *f, char *manifest, int verbose) {
   return 0;
 }
 
-static struct pkg *add_package(struct pkgdb *db, char *name) {
+static struct pkg *add_package(struct pkgdb *db, char *name, char *description) {
   struct pkg *pkg = calloc(1, sizeof(struct pkg));
   pkg->name = strdup(name);
+  pkg->description = strdup(description ? description : "");
   if (!db->head) db->head = pkg;
   if (db->tail) db->tail->next = pkg;
   db->tail = pkg;
@@ -393,26 +395,34 @@ static struct pkg *find_package(struct pkgdb *db, char *name) {
   return NULL;
 }
 
-static int read_pkgdb(struct pkgdb *db) {
-  FILE *f;
+static int read_pkgdb_from_file(FILE *f, struct pkgdb *db) {
   char line[STRLEN];
-
-  f = fopen(PKGDB_FILE, "r");
-  if (!f) return 0;
   while (fgets(line, STRLEN, f)) {
     char *p = line;
     char *name = NULL;
     char *inffile = NULL;
+    char *description = NULL;
     name = strsep(&p, "\t\n");
     inffile = strsep(&p, "\t\n");
+    description = strsep(&p, "\t\n");
 
     if (name) {
-      struct pkg *pkg = add_package(db, name);
+      struct pkg *pkg = add_package(db, name, description);
       if (inffile) pkg->inffile = strdup(inffile);
     }
   }
-  fclose(f);
   db->dirty = 0;
+  return 0;
+}
+
+static int read_pkgdb(struct pkgdb *db) {
+  FILE *f;
+
+  f = fopen(PKGDB_FILE, "r");
+  if (f) {
+   read_pkgdb_from_file(f, db);
+    fclose(f);
+  }
   return 0;
 }
 
@@ -427,7 +437,7 @@ static int write_pkgdb(struct pkgdb *db) {
   }
   for (pkg = db->head; pkg; pkg = pkg->next) {
     if (!pkg->removed) {
-      fprintf(f, "%s\t%s\n", pkg->name, pkg->inffile);
+      fprintf(f, "%s\t%s\t%s\n", pkg->name, pkg->inffile ? pkg->inffile : "", pkg->description);
     }
   }
   fclose(f);
@@ -442,6 +452,7 @@ static int delete_pkgdb(struct pkgdb *db) {
     struct pkg *next = pkg->next;
     free(pkg->name);
     free(pkg->inffile);
+    free(pkg->description);
     free_properties(pkg->manifest);
     free(pkg);
     pkg = next;
@@ -459,6 +470,7 @@ static int install_package(char *pkgname, struct pkgdb *db, int file, int depend
   struct section *dep;
   struct section *build;
   struct pkg *pkg;
+  char *description;
 
   // Check if package is already installed
   if (!file) {
@@ -498,9 +510,22 @@ static int install_package(char *pkgname, struct pkgdb *db, int file, int depend
   }
 
   // Add package to package database
-  if (db->verbose) printf("adding package %s to database\n", pkgname);
   pkgname = get_property(manifest, "package", "name", pkgname);
-  pkg = add_package(db, pkgname);
+  description = get_property(manifest, "package", "description", NULL);
+  pkg = find_package(db, pkgname);
+  if (pkg) {
+    if (db->verbose) printf("updating package %s in database\n", pkgname);
+    if (description) {
+      free(pkg->description);
+      pkg->description = strdup(description);
+      db->dirty = 1;
+    }
+    if (pkg->manifest) free_properties(pkg->manifest);
+    free(pkg->inffile);
+  } else {
+    if (db->verbose) printf("adding package %s to database\n", pkgname);
+    pkg = add_package(db, pkgname, description);
+  }
   pkg->inffile = strdup(inffile);
   pkg->manifest = manifest;
 
@@ -616,31 +641,35 @@ static int remove_package(char *pkgname, struct pkgdb *db) {
   return 0;
 }
 
-static int query_repository(char **keywords, struct pkgdb *db) {
+static int query_repository(char **keywords, char *repo) {
   char url[STRLEN];
-  char line[STRLEN];
   FILE *f;
+  struct pkgdb db;
+  struct pkg *pkg;
 
-  snprintf(url, sizeof(url), "%s/packages.lst", db->repo);
+  snprintf(url, sizeof(url), "%s/db", repo);
   f = open_url(url);
   if (!f) return 1;
 
-  while (fgets(line, sizeof(line), f)) {
+  memset(&db, 0, sizeof(struct pkgdb));
+  read_pkgdb_from_file(f, &db);
+
+  for (pkg = db.head; pkg; pkg = pkg->next) {
     int match = 0;
     if (*keywords) {
       char **k = keywords;
       while (*k) {
-        if (strstr(line, *k++)) {
-          match = 1;
-          break;
-        }
+        match = strstr(pkg->name, *k) != NULL || strstr(pkg->description, *k) != NULL;
+        if (match) break;
+        k++;
       }
     } else {
       match = 1;
     }
-    if (match) fputs(line, stdout);
+    if (match) printf("%-15s %s\n", pkg->name, pkg->description);
   }
   fclose(f);
+  delete_pkgdb(&db);
 
   return 0;
 }
@@ -656,6 +685,7 @@ static void usage() {
   fprintf(stderr, "  -l      List installed packages\n");
   fprintf(stderr, "  -q      Query packages in repository\n");
   fprintf(stderr, "  -v      Output verbose installation information\n");
+  exit(1);
 }
 
 int main(int argc, char *argv[]) {
@@ -722,11 +752,17 @@ int main(int argc, char *argv[]) {
   if (list) {
     // List installed packages
     struct pkg *pkg;
-    for (pkg = db.head; pkg; pkg = pkg->next) puts(pkg->name);
+    for (pkg = db.head; pkg; pkg = pkg->next) {
+      if (db.verbose) {
+        printf("%-15s %s\n", pkg->name, pkg->description ? pkg->description : "");
+      } else {
+        puts(pkg->name);
+      }
+    }
     rc = 0;
   } else if (query) {
     // Query package repository
-    rc = query_repository(argv + optind, &db);
+    rc = query_repository(argv + optind, db.repo);
   } else {
     // Install/remove packages
     for (i = optind; i < argc; i++) {
