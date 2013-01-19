@@ -840,6 +840,19 @@ img/sanos.vmdk: sanos
 	mv db $(PKGDIR)
 	$(MKDFS) -d img/sanos.vmdk -t vmdk -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 100M -i -f -S linux/image -F linux/disk.lst
 
+#
+# hdmin
+#
+
+hdmin: img/hd.vmdk
+
+img/hd.vmdk: sanos
+	$(MKDFS) -d img/hd.vmdk -t vmdk -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 100M -i -f -S linux/image -F build/hdmin.lst
+
+#
+# clean
+#
+
 clean:
 	rm -rf linux
 	rm -rf img

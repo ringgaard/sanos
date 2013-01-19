@@ -1,0 +1,43 @@
+;
+; File list for bootstrap sanos hard disk image
+;
+
+; Directories
+
+/bin
+/boot
+/etc
+/dev
+/mnt
+/proc
+/usr
+/tmp
+/var
+
+; Boot files
+
+/boot/boot          linux/install/boot/boot
+/boot/osldr.dll     linux/install/boot/osldr.dll
+/boot/os.dll        linux/install/boot/os.dll
+
+; System files
+
+/bin/sh.exe         linux/install/bin/sh.exe
+/bin/pkg.exe        linux/install/bin/pkg.exe
+/bin/edit.exe       linux/install/bin/edit.exe
+
+; Drivers
+
+/boot/pcnet32.sys   linux/install/boot/pcnet32.sys
+/boot/ne2000.sys    linux/install/boot/ne2000.sys
+/boot/3c905c.sys    linux/install/boot/3c905c.sys
+/boot/rtl8139.sys   linux/install/boot/rtl8139.sys
+/boot/eepro100.sys  linux/install/boot/eepro100.sys
+/boot/sis900.sys    linux/install/boot/sis900.sys
+/boot/tulip.sys     linux/install/boot/tulip.sys
+/boot/virtionet.sys linux/install/boot/virtionet.sys
+
+; Configuration files
+
+/boot/krnl.ini      linux/install/boot/krnl.ini
+/etc/os.ini         linux/install/etc/os.ini
