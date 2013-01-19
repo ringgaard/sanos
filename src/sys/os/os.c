@@ -430,7 +430,7 @@ static void *load_image(char *filename) {
   //if (imghdr->optional.file_alignment != PAGESIZE || imghdr->optional.section_alignment != PAGESIZE) panic("image not page aligned");
 
   // Allocate memory for module
-  imgbase = (char *) mmap(NULL, imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UMOD');
+  imgbase = (char *) vmalloc(NULL, imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UMOD');
   if (imgbase == NULL) {
     close(f);
     free(buffer);
@@ -444,14 +444,14 @@ static void *load_image(char *filename) {
   for (i = 0; i < imghdr->header.number_of_sections; i++) {
     if (imghdr->sections[i].pointer_to_raw_data != 0) {
       if (lseek(f, imghdr->sections[i].pointer_to_raw_data, SEEK_SET) != imghdr->sections[i].pointer_to_raw_data) {
-        munmap(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
+        vmfree(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
         close(f);
         free(buffer);
         return NULL;
       }
 
       if (read(f, RVA(imgbase, imghdr->sections[i].virtual_address), imghdr->sections[i].size_of_raw_data) != (int) imghdr->sections[i].size_of_raw_data) {
-        munmap(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
+        vmfree(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
         close(f);
         free(buffer);
         return NULL;
@@ -469,11 +469,11 @@ static void *load_image(char *filename) {
 }
 
 static int unload_image(hmodule_t hmod, size_t size) {
-  return munmap(hmod, size, MEM_RELEASE);
+  return vmfree(hmod, size, MEM_RELEASE);
 }
 
 static int protect_region(void *mem, size_t size, int protect) {
-  return mprotect(mem, size, protect);
+  return vmprotect(mem, size, protect);
 }
 
 static void logldr(char *msg) {

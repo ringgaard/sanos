@@ -444,7 +444,7 @@ int init_user_thread(struct thread *t, void *entrypoint) {
   struct tib *tib;
 
   // Allocate and initialize thread information block for thread
-  tib = mmap(NULL, sizeof(struct tib), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'TIB');
+  tib = vmalloc(NULL, sizeof(struct tib), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'TIB');
   if (!tib) return -ENOMEM;
 
   t->entrypoint = entrypoint;
@@ -463,7 +463,7 @@ int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned 
   char *stack;
   struct tib *tib;
 
-  stack = mmap(NULL, stack_reserve, MEM_RESERVE, PAGE_READWRITE, 'STK');
+  stack = vmalloc(NULL, stack_reserve, MEM_RESERVE, PAGE_READWRITE, 'STK');
   if (!stack) return -ENOMEM;
 
   tib = t->tib;
@@ -471,8 +471,8 @@ int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned 
   tib->stacktop = stack + stack_reserve;
   tib->stacklimit = stack + (stack_reserve - stack_commit);
 
-  if (!mmap(tib->stacklimit, stack_commit, MEM_COMMIT, PAGE_READWRITE, 'STK')) return -ENOMEM;
-  if (mprotect(tib->stacklimit, PAGESIZE, PAGE_READWRITE | PAGE_GUARD) < 0) return -ENOMEM;
+  if (!vmalloc(tib->stacklimit, stack_commit, MEM_COMMIT, PAGE_READWRITE, 'STK')) return -ENOMEM;
+  if (vmprotect(tib->stacklimit, PAGESIZE, PAGE_READWRITE | PAGE_GUARD) < 0) return -ENOMEM;
 
   return 0;
 }
@@ -498,12 +498,12 @@ int destroy_thread(struct thread *t) {
   if (t->tib) {
     // Deallocate user stack
     if (t->tib->stackbase) {
-      munmap(t->tib->stackbase, (char *) (t->tib->stacktop) - (char *) (t->tib->stackbase), MEM_RELEASE);
+      vmfree(t->tib->stackbase, (char *) (t->tib->stacktop) - (char *) (t->tib->stackbase), MEM_RELEASE);
       t->tib->stackbase = NULL;
     }
 
     // Deallocate TIB
-    munmap(t->tib, sizeof(struct tib), MEM_RELEASE);
+    vmfree(t->tib, sizeof(struct tib), MEM_RELEASE);
     t->tib = NULL;
   }
 

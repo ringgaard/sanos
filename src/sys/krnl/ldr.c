@@ -85,10 +85,10 @@ void *load_image_file(char *filename, int userspace) {
   // Allocate memory for module
   if (userspace) {
     // User module
-    imgbase = (char *) mmap((void *) (imghdr->optional.image_base), imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UMOD');
+    imgbase = (char *) vmalloc((void *) (imghdr->optional.image_base), imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UMOD');
     if (imgbase == NULL) {
       // Try to load image at any available address 
-      imgbase = (char *) mmap(NULL, imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UMOD');
+      imgbase = (char *) vmalloc(NULL, imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UMOD');
     }
   } else {
     // Kernel module
@@ -112,7 +112,7 @@ void *load_image_file(char *filename, int userspace) {
       lseek(f, imghdr->sections[i].pointer_to_raw_data, SEEK_SET);
       if (read(f, RVA(imgbase, imghdr->sections[i].virtual_address), imghdr->sections[i].size_of_raw_data) < 0) {
         if (userspace) {
-          munmap(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
+          vmfree(imgbase, imghdr->optional.size_of_image, MEM_RELEASE);
         } else {
           free_module_mem(imgbase, imghdr->optional.size_of_image);
         }

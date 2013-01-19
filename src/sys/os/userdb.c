@@ -84,18 +84,18 @@ static char *read_file(char *name, int *size) {
   len = (int) st.st_size;
 
   // Allocate memory for file image
-  data = mmap(NULL, len + 1, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UDB');
+  data = vmalloc(NULL, len + 1, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UDB');
   if (!data) return NULL;
 
   // Read file into memory
   f = open(name, 0);
   if (f < 0)  {
-    munmap(data, len + 1, MEM_RELEASE);
+    vmfree(data, len + 1, MEM_RELEASE);
     return NULL;
   }
 
   if (read(f, data, len) != len) {
-    munmap(data, len + 1, MEM_RELEASE);
+    vmfree(data, len + 1, MEM_RELEASE);
     return NULL;
   }
 
@@ -120,7 +120,7 @@ static int read_passwd() {
 
   // Allocate memory for password table
   passwdtab_len = n * sizeof(struct passwd);
-  passwdtab = mmap(NULL, passwdtab_len, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UDB');
+  passwdtab = vmalloc(NULL, passwdtab_len, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UDB');
   if (!passwdtab) return -1;
 
   // Build password table entries
@@ -148,8 +148,8 @@ static int read_passwd() {
   }
 
   // Protect password memory
-  if (mprotect(passwd, passwd_len, PAGE_READONLY) < 0) return -1;
-  if (mprotect(passwdtab, passwdtab_len, PAGE_READONLY) < 0) return -1;
+  if (vmprotect(passwd, passwd_len, PAGE_READONLY) < 0) return -1;
+  if (vmprotect(passwdtab, passwdtab_len, PAGE_READONLY) < 0) return -1;
   passwd_cnt = n;
 
   return 0;
@@ -177,7 +177,7 @@ static int read_group() {
 
   // Allocate memory for user group table
   grouptab_len = n * sizeof(struct group) + (commas + n * 2) * sizeof(char *);
-  grouptab = mmap(NULL, grouptab_len, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UDB');
+  grouptab = vmalloc(NULL, grouptab_len, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UDB');
   if (!grouptab) return -1;
   grmem = (char **) (grouptab + n * sizeof(struct group));
 
@@ -206,8 +206,8 @@ static int read_group() {
   }
 
   // Protect group memory
-  if (mprotect(group, passwd_len, PAGE_READONLY) < 0) return -1;
-  if (mprotect(grouptab, grouptab_len, PAGE_READONLY) < 0) return -1;
+  if (vmprotect(group, passwd_len, PAGE_READONLY) < 0) return -1;
+  if (vmprotect(grouptab, grouptab_len, PAGE_READONLY) < 0) return -1;
   group_cnt = n;
 
   return 0;

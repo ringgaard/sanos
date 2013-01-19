@@ -702,7 +702,7 @@ static void *sysalloc(size_t nb, struct heap *av) {
 
     size = (nb + sizeof(size_t) + ALIGNMASK + PAGESIZE - 1) & ~(PAGESIZE - 1);
 
-    mem = (char *) mmap(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'MALL');
+    mem = (char *) vmalloc(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'MALL');
     if (mem != NULL) {
       p = (mchunkptr) mem;
       set_head(p, size | IS_MMAPPED);
@@ -720,7 +720,7 @@ static void *sysalloc(size_t nb, struct heap *av) {
 
   // Allocate memory from the system
   if (av->region == NULL) {
-    av->region = (char *) mmap(NULL, av->region_size, MEM_RESERVE, 0, 'MALL');
+    av->region = (char *) vmalloc(NULL, av->region_size, MEM_RESERVE, 0, 'MALL');
     if (!av->region) panic("unable to reserve heap region");
     //syslog(LOG_HEAP | LOG_DEBUG, "Reserve heap %p", region);
     av->wilderness = av->region;
@@ -735,7 +735,7 @@ static void *sysalloc(size_t nb, struct heap *av) {
   //syslog(LOG_HEAP | LOG_DEBUG, "Expand heap: request = %d, remaining = %d, expansion = %d", nb, size, expand);
   if (av->wilderness + expand > av->heapend) panic("out of memory");
 
-  if (mmap(av->wilderness, expand, MEM_COMMIT, PAGE_READWRITE, 'MALL') == 0) panic("unable to expand heap");
+  if (vmalloc(av->wilderness, expand, MEM_COMMIT, PAGE_READWRITE, 'MALL') == 0) panic("unable to expand heap");
   av->wilderness += expand;
 
   if (size == 0) {
@@ -1191,8 +1191,8 @@ void heap_free(struct heap *av, void *mem) {
       av->mmapped_mem -= (size + offset);
 
       //syslog(LOG_DEBUG | LOG_HEAP, "Free big chunk %dK (%d)", size / 1024, offset);
-      ret = munmap(p - offset, size + offset, MEM_RELEASE);
-      // munmap returns non-zero on failure
+      ret = vmfree(p - offset, size + offset, MEM_RELEASE);
+      // vmfree returns non-zero on failure
       assert(ret == 0);
     }
   }
@@ -1438,7 +1438,7 @@ int heap_malloc_usable_size(void *mem) {
 struct heap *heap_create(size_t region_size, size_t group_size) {
   struct heap *av;
 
-  av = (struct heap *) mmap(NULL, sizeof(struct heap), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'HBLK');
+  av = (struct heap *) vmalloc(NULL, sizeof(struct heap), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'HBLK');
   if (!av) return NULL;
 
   av->region_size = region_size;
@@ -1453,8 +1453,8 @@ struct heap *heap_create(size_t region_size, size_t group_size) {
 
 int heap_destroy(struct heap *av)
 {
-  if (av->region) munmap(av->region, av->heapend - av->region, MEM_RELEASE);
+  if (av->region) vmfree(av->region, av->heapend - av->region, MEM_RELEASE);
   // TODO release big chunks allocated directly from system
-  munmap(av, sizeof(struct heap), MEM_RELEASE);
+  vmfree(av, sizeof(struct heap), MEM_RELEASE);
   return 0;
 }

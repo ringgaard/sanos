@@ -395,7 +395,7 @@ void main(void *arg) {
   char *console;
 
   // Allocate and initialize PEB
-  peb = mmap((void *) PEB_ADDRESS, PAGESIZE, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'PEB');
+  peb = vmalloc((void *) PEB_ADDRESS, PAGESIZE, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'PEB');
   if (!peb) panic("unable to allocate PEB");
   memset(peb, 0, PAGESIZE);
   peb->fast_syscalls_supported = (cpu.features & CPU_FEATURE_SEP) != 0;

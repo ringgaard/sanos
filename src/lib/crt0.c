@@ -150,7 +150,7 @@ static char **parse_cmdline(char *cmdline, int *argc) {
   *argc = n;
 
   // Allocate argument buffer
-  arg = mmap(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'ARGV');
+  arg = vmalloc(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'ARGV');
   if (!arg) return NULL;
 
   // Store buffer size in first word
@@ -197,7 +197,7 @@ void term_crtbase(struct crtbase *crtbase) {
   if (argbuf) {
     argbuf--;
     size = *argbuf;
-    munmap(argbuf, size, MEM_RELEASE);    
+    vmfree(argbuf, size, MEM_RELEASE);    
   }
 }
 

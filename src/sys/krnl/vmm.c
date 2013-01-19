@@ -80,12 +80,10 @@ void init_vmm() {
   rmap_free(vmap, BTOP(VMEM_START), BTOP(OSBASE - VMEM_START));
 }
 
-void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long tag) {
+void *vmalloc(void *addr, unsigned long size, int type, int protect, unsigned long tag) {
   int pages = PAGES(size);
   unsigned long flags = pte_flags_from_protect(protect);
   int i;
-
-  //kprintf("mmap(%p,%d,%x,%x)\n", addr, size, type, protect);
 
   if (size == 0) return NULL;
   if ((type & MEM_COMMIT) != 0 && flags == 0xFFFFFFFF) return NULL;
@@ -105,8 +103,6 @@ void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long 
     } else {
       if (rmap_reserve(vmap, BTOP(addr), pages)) return NULL;
     }
-
-    //kprintf("vmem reserve (%p,%d,%x,%x)\n", addr, size, type, protect);
   } else {
     if (!valid_range(addr, size)) return NULL;
   }
@@ -114,8 +110,6 @@ void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long 
   if (type & MEM_COMMIT) {
     char *vaddr;
     unsigned long pfn;
-
-    //if (!(protect & PAGE_GUARD)) kprintf("mmap: commit %dKB (%d KB free)\n", pages * (PAGESIZE / K), freemem * (PAGESIZE / K));
 
     vaddr = (char *) addr;
     for (i = 0; i < pages; i++) {
@@ -132,11 +126,10 @@ void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long 
     }
   }
 
-  //kprintf("mmap returned %p\n", addr);
   return addr;
 }
 
-int munmap(void *addr, unsigned long size, int type) {
+int vmfree(void *addr, unsigned long size, int type) {
   int pages = PAGES(size);
   int i;
   char *vaddr;
@@ -166,11 +159,11 @@ int munmap(void *addr, unsigned long size, int type) {
   return 0;
 }
 
-void *mremap(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect, unsigned long tag) {
+void *vmrealloc(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect, unsigned long tag) {
   return NULL;
 }
 
-int mprotect(void *addr, unsigned long size, int protect) {
+int vmprotect(void *addr, unsigned long size, int protect) {
   int pages = PAGES(size);
   int i;
   char *vaddr;
@@ -189,16 +182,15 @@ int mprotect(void *addr, unsigned long size, int protect) {
     }
     vaddr += PAGESIZE;
   }
-  //flushtlb();
 
   return 0;
 }
 
-int mlock(void *addr, unsigned long size) {
+int vmlock(void *addr, unsigned long size) {
   return -ENOSYS;
 }
 
-int munlock(void *addr, unsigned long size) {
+int vmunlock(void *addr, unsigned long size) {
   return -ENOSYS;
 }
 

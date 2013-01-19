@@ -342,28 +342,28 @@ int _readdir(handle_t f, struct direntry *dirp, int count) {
   return syscall(SYSCALL_READDIR, &f);
 }
 
-void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long tag) {
-  return (void *) syscall(SYSCALL_MMAP, &addr);
+void *vmalloc(void *addr, unsigned long size, int type, int protect, unsigned long tag) {
+  return (void *) syscall(SYSCALL_VMALLOC, &addr);
 }
 
-int munmap(void *addr, unsigned long size, int type) {
-  return syscall(SYSCALL_MUNMAP, &addr);
+int vmfree(void *addr, unsigned long size, int type) {
+  return syscall(SYSCALL_VMFREE, &addr);
 }
 
-void *mremap(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect, unsigned long tag) {
-  return (void *) syscall(SYSCALL_MREMAP, &addr);
+void *vmrealloc(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect, unsigned long tag) {
+  return (void *) syscall(SYSCALL_VMREALLOC, &addr);
 }
 
-int mprotect(void *addr, unsigned long size, int protect) {
-  return syscall(SYSCALL_MPROTECT, &addr);
+int vmprotect(void *addr, unsigned long size, int protect) {
+  return syscall(SYSCALL_VMPROTECT, &addr);
 }
 
-int mlock(void *addr, unsigned long size) {
-  return syscall(SYSCALL_MLOCK, &addr);
+int vmlock(void *addr, unsigned long size) {
+  return syscall(SYSCALL_VMLOCK, &addr);
 }
 
-int munlock(void *addr, unsigned long size) {
-  return syscall(SYSCALL_MUNLOCK, &addr);
+int vmunlock(void *addr, unsigned long size) {
+  return syscall(SYSCALL_VMUNLOCK, &addr);
 }
 
 int waitone(handle_t h, int timeout) {

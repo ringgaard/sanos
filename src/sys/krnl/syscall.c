@@ -735,7 +735,7 @@ static int sys_readdir(char *params) {
   return rc;
 }
 
-static int sys_mmap(char *params) {
+static int sys_vmalloc(char *params) {
   char *addr;
   unsigned long size;
   int type;
@@ -749,12 +749,12 @@ static int sys_mmap(char *params) {
   protect = *(int *) (params + 12);
   tag = *(unsigned long *) (params + 16);
 
-  retval = mmap(addr, size, type, protect, tag);
+  retval = vmalloc(addr, size, type, protect, tag);
 
   return (int) retval;
 }
 
-static int sys_munmap(char *params) {
+static int sys_vmfree(char *params) {
   char *addr;
   unsigned long size;
   int type;
@@ -764,12 +764,12 @@ static int sys_munmap(char *params) {
   size = *(unsigned long *) (params + 4);
   type = *(int *) (params + 8);
 
-  rc = munmap(addr, size, type);
+  rc = vmfree(addr, size, type);
 
   return rc;
 }
 
-static int sys_mremap(char *params) {
+static int sys_vmrealloc(char *params) {
   char *addr;
   unsigned long oldsize;
   unsigned long newsize;
@@ -785,12 +785,12 @@ static int sys_mremap(char *params) {
   protect = *(int *) (params + 16);
   tag = *(unsigned long *) (params + 20);
 
-  retval = mremap(addr, oldsize, newsize, type, protect, tag);
+  retval = vmrealloc(addr, oldsize, newsize, type, protect, tag);
 
   return (int) retval;
 }
 
-static int sys_mprotect(char *params) {
+static int sys_vmprotect(char *params) {
   char *addr;
   unsigned long size;
   int protect;
@@ -800,12 +800,12 @@ static int sys_mprotect(char *params) {
   size = *(unsigned long *) (params + 4);
   protect = *(int *) (params + 8);
 
-  rc = mprotect(addr, size, protect);
+  rc = vmprotect(addr, size, protect);
 
   return rc;
 }
 
-static int sys_mlock(char *params) {
+static int sys_vmlock(char *params) {
   char *addr;
   unsigned long size;
   int rc;
@@ -813,12 +813,12 @@ static int sys_mlock(char *params) {
   addr = *(void **) params;
   size = *(unsigned long *) (params + 4);
 
-  rc = mlock(addr, size);
+  rc = vmlock(addr, size);
 
   return rc;
 }
 
-static int sys_munlock(char *params) {
+static int sys_vmunlock(char *params) {
   char *addr;
   unsigned long size;
   int rc;
@@ -826,7 +826,7 @@ static int sys_munlock(char *params) {
   addr = *(void **) params;
   size = *(unsigned long *) (params + 4);
 
-  rc = munlock(addr, size);
+  rc = vmunlock(addr, size);
 
   return rc;
 }
@@ -2504,12 +2504,12 @@ struct syscall_entry syscalltab[] = {
   {"unlink", 4, "'%s'", sys_unlink},
   {"opendir", 4, "'%s'", sys_opendir},
   {"readdir", 12, "%d,%p,%d", sys_readdir},
-  {"mmap", 16, "%p,%d,%x,%x", sys_mmap},
-  {"munmap", 12, "%p,%d,%x", sys_munmap},
-  {"mremap", 20, "%p,%d,%d,%x,%x", sys_mremap},
-  {"mprotect", 12, "%p,%d,%x", sys_mprotect},
-  {"mlock", 8, "%p,%d", sys_mlock},
-  {"munlock", 8, "%p,%d", sys_munlock},
+  {"vmalloc", 16, "%p,%d,%x,%x", sys_vmalloc},
+  {"vmfree", 12, "%p,%d,%x", sys_vmfree},
+  {"vmrealloc", 20, "%p,%d,%d,%x,%x", sys_vmrealloc},
+  {"vmprotect", 12, "%p,%d,%x", sys_vmprotect},
+  {"vmlock", 8, "%p,%d", sys_vmlock},
+  {"vmunlock", 8, "%p,%d", sys_vmunlock},
   {"waitone", 8, "%d,%d", sys_waitone},
   {"mkevent", 8, "%d,%d", sys_mkevent},
   {"epulse", 4, "%d", sys_epulse},

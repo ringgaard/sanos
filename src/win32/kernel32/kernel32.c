@@ -2135,7 +2135,7 @@ LPVOID WINAPI VirtualAlloc(
   // Do not allow JVM to mess with the stack (this is a hack!)
   //if (lpAddress >= tib->stackbase && lpAddress < tib->stacktop) return lpAddress;
 
-  addr = mmap(lpAddress, dwSize, flAllocationType | MEM_ALIGN64K, flProtect, 'VALO');
+  addr = vmalloc(lpAddress, dwSize, flAllocationType | MEM_ALIGN64K, flProtect, 'VALO');
 
   //syslog(LOG_DEBUG, "VirtualAlloc %p %dKB (%p,%p) -> %p", lpAddress, dwSize / K, flAllocationType, flProtect, addr);
 
@@ -2170,7 +2170,7 @@ BOOL WINAPI VirtualFree(
     }
   }
 
-  rc = munmap(lpAddress, dwSize, dwFreeType);
+  rc = vmfree(lpAddress, dwSize, dwFreeType);
 
   //syslog(LOG_DEBUG, "VirtualFree %p %d bytes (%p) -> %d", lpAddress, dwSize, dwFreeType, rc);
 
@@ -2190,7 +2190,7 @@ BOOL WINAPI VirtualProtect(
   // Do not allow JVM to mess with the stack (this is a hack!)
   //if (lpAddress >= tib->stackbase && lpAddress < tib->stacktop) return TRUE;
 
-  rc = mprotect(lpAddress, dwSize, flNewProtect);
+  rc = vmprotect(lpAddress, dwSize, flNewProtect);
   //syslog(LOG_DEBUG, "VirtualProtect %p %dKB %d %d", lpAddress, dwSize / K, flNewProtect, rc);
   if (rc < 0) return FALSE;
 

@@ -1453,12 +1453,12 @@ osapi int _readdir(handle_t f, struct direntry *dirp, int count);
 
 osapi int pipe(handle_t fildes[2]);
 
-osapi void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long tag);
-osapi int munmap(void *addr, unsigned long size, int type);
-osapi void *mremap(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect, unsigned long tag);
-osapi int mprotect(void *addr, unsigned long size, int protect);
-osapi int mlock(void *addr, unsigned long size);
-osapi int munlock(void *addr, unsigned long size);
+osapi void *vmalloc(void *addr, unsigned long size, int type, int protect, unsigned long tag);
+osapi int vmfree(void *addr, unsigned long size, int type);
+osapi void *vmrealloc(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect, unsigned long tag);
+osapi int vmprotect(void *addr, unsigned long size, int protect);
+osapi int vmlock(void *addr, unsigned long size);
+osapi int vmunlock(void *addr, unsigned long size);
 
 osapi int waitone(handle_t h, int timeout);
 osapi int waitall(handle_t *h, int count, int timeout);
