@@ -13,7 +13,7 @@ TCC=$(SDK)\bin\cc.exe
 NASM=$(SDK)\bin\as.exe
 
 OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fork.o getopt.o glob.o hash.o \
-    inifile.o input.o math.o opts.o output.o qsort.o random.o readline.o rmap.o rtttl.o sched.o \
+    inifile.o input.o mman.o math.o opts.o output.o qsort.o random.o readline.o rmap.o rtttl.o sched.o \
     semaphore.o stdio.o shlib.o scanf.o printf.o tmpfile.o popen.o stdlib.o strftime.o string.o strtod.o \
     strtol.o time.o xtoa.o \
     regcomp.o regexec.o regerror.o regfree.o \
@@ -97,6 +97,9 @@ input.o: $(LIBSRC)/input.c
     $(TCC) -c $** -o $@ -I$(INCLUDE) -g
 
 math.o: $(LIBSRC)/math.c
+    $(TCC) -c $** -o $@ -I$(INCLUDE) -g
+
+mman.o: $(LIBSRC)/mman.c
     $(TCC) -c $** -o $@ -I$(INCLUDE) -g
 
 opts.o: $(LIBSRC)/opts.c

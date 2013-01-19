@@ -294,7 +294,7 @@ int main(int argc, char *argv[]) {
   read_pkgdb(dbfile, &db);
   
   for (i = 3; i < argc; i++) {
-    printf("Generating package %s\n", argv[i]);
+    //printf("Generating package %s\n", argv[i]);
     if (make_package(&db, argv[i]) != 0) return 1;
   }
   write_pkgdb(dbfile, &db);

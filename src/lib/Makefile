@@ -3,7 +3,7 @@
 #
 
 OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fnmatch.o \
-    fork.o getopt.o glob.o hash.o inifile.o input.o math.o opts.o output.o \
+    fork.o getopt.o glob.o hash.o inifile.o input.o mman.o math.o opts.o output.o \
     qsort.o random.o readline.o rmap.o rtttl.o sched.o semaphore.o \
     stdio.o scanf.o shlib.o printf.o tmpfile.o popen.o stdlib.o strftime.o \
     string.o strtod.o strtol.o time.o xtoa.o \
@@ -66,6 +66,9 @@ input.o: input.c
     $(CC) -c $< -g
 
 math.o: math.c
+    $(CC) -c $< -g
+
+mman.o: mman.c
     $(CC) -c $< -g
 
 opts.o: opts.c

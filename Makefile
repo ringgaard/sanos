@@ -737,6 +737,9 @@ $(OBJ)/libc/glob.obj: $(SRC)/lib/glob.c
 $(OBJ)/libc/fnmatch.obj: $(SRC)/lib/fnmatch.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
+$(OBJ)/libc/mman.obj: $(SRC)/lib/mman.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
 $(OBJ)/libc/regcomp.obj: $(SRC)/lib/regex/regcomp.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
@@ -831,6 +834,7 @@ $(LIBS)/libc.lib: \
   $(OBJ)/libc/getopt.obj \
   $(OBJ)/libc/glob.obj \
   $(OBJ)/libc/fnmatch.obj \
+  $(OBJ)/libc/mman.obj \
   $(OBJ)/libc/fork.obj \
   $(OBJ)/libc/regcomp.obj \
   $(OBJ)/libc/regexec.obj \

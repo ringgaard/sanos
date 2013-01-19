@@ -395,6 +395,7 @@ LIBC_OBJ = \
   $(OBJ)/inifile.o \
   $(OBJ)/input.o \
   $(OBJ)/math.o \
+  $(OBJ)/mman.o \
   $(OBJ)/opts.o \
   $(OBJ)/output.o \
   $(OBJ)/qsort.o \
@@ -506,6 +507,9 @@ $(OBJ)/input.o: src/lib/input.c
 	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
 
 $(OBJ)/math.o: src/lib/math.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/mman.o: src/lib/mman.c
 	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
 
 $(OBJ)/opts.o: src/lib/opts.c
