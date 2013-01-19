@@ -385,7 +385,8 @@ static const char *get_alt_symbol(char *buffer, const char *symbol) {
     strcpy(buffer, symbol + 1)[p - symbol - 1] = 0;
   } else if (symbol[0] != '_') { 
     // Try non-ansi function
-    buffer[0] = '_', strcpy(buffer + 1, symbol);
+    buffer[0] = '_';
+    strcpy(buffer + 1, symbol);
   } else if (memcmp(symbol, "__imp__", 7) == 0) {
     // mingw 2.0
     strcpy(buffer, symbol + 6);
@@ -1088,14 +1089,14 @@ static void pe_eliminate_unused_sections(struct pe_info *pe) {
       s->unused = 0;
       if (verbose == 3) printf("export section %s used\n", s->name);
     }
-    if (sym->st_shndx == SHN_UNDEF) sym->st_other |= 2;
+    if (sym->st_shndx == SHN_UNDEF) sym->st_other |= 4;
   }
 
   // Mark section for entry point as used.
   sym = &((Elf32_Sym *) symtab_section->data)[pe->start_sym_index];
   s = pe->s1->sections[sym->st_shndx];
   s->unused = 0;
-  sym->st_other &= ~2;
+  sym->st_other &= ~4;
   if (verbose == 3) printf("entry section %s used\n", s->name);
 
   // Keep marking sections until no more can be added.
@@ -1136,7 +1137,7 @@ static void pe_eliminate_unused_sections(struct pe_info *pe) {
     while (rel < rel_end) {
       sym_index = ELF32_R_SYM(rel->r_info);
       sym = &((Elf32_Sym *) symtab_section->data)[sym_index];
-      sym->st_other &= ~2;
+      sym->st_other &= ~4;
       rel++;
     }
   }
@@ -1145,7 +1146,7 @@ static void pe_eliminate_unused_sections(struct pe_info *pe) {
   sym_end = symtab_section->data_offset / sizeof(Elf32_Sym);
   for (sym_index = 1; sym_index < sym_end; sym_index++) {
     sym = (Elf32_Sym *) symtab_section->data + sym_index;
-    if (sym->st_other & 2) {
+    if (sym->st_other & 4) {
       sym->st_value = 0;
       sym->st_shndx = SHN_ABS;
       sym->st_other &= ~2;
