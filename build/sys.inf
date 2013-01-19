@@ -24,6 +24,7 @@ homepage=http://www.jbox.dk/sanos/
 /boot/sis900.sys
 /boot/tulip.sys
 /boot/virtionet.sys
+/usr/lib/krnl.def
 
 [dependencies]
 sdk

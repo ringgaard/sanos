@@ -13,7 +13,7 @@ osldr:
 krnl:
     make -C krnl
 
-dev:
+dev: krnl
     make -C dev
 
 os:

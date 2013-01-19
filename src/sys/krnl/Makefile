@@ -107,6 +107,7 @@ LIB_SRCS=\
 SRCS=$(KRNL_SRCS) $(DEV_SRCS) $(NET_SRCS) $(FS_SRCS) $(LIB_SRCS) 
 
 all: krnl.dll
+    cp krnl.def /usr/lib/krnl.def
 
 krnl.dll: $(SRCS)
     $(CC) -shared -entry _start@12 -fixed 0x80000000 -filealign 4096 -nostdlib -o krnl.dll -def krnl.def -D KERNEL -D KRNL_LIB $(SRCS)
