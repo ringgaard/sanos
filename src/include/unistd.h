@@ -192,6 +192,11 @@ int execl(const char *path, char *arg0, ...);
 
 #endif
 
+#ifndef environ
+osapi char ***_environ();
+#define environ (*_environ())
+#endif
+
 #ifdef  __cplusplus
 }
 #endif

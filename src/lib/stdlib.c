@@ -285,3 +285,10 @@ int lockf(handle_t f, int func, off_t size) {
   errno = ENOSYS;
   return -1;
 }
+
+int fcntl(handle_t f, int cmd, ...) {
+  // TODO implement
+  errno = ENOSYS;
+  return -1;
+}
+

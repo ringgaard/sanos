@@ -602,6 +602,9 @@ $(OBJ)/libc/acos.obj: $(SRC)/lib/math/acos.asm
 $(OBJ)/libc/xtoa.obj: $(SRC)/lib/xtoa.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
+$(OBJ)/libc/termios.obj: $(SRC)/lib/termios.c
+    $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
+
 $(OBJ)/libc/time.obj: $(SRC)/lib/time.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
 
@@ -760,6 +763,7 @@ $(LIBS)/libc.lib: \
   $(OBJ)/libc/condvar.obj \
   $(OBJ)/libc/barrier.obj \
   $(OBJ)/libc/xtoa.obj \
+  $(OBJ)/libc/termios.obj \
   $(OBJ)/libc/time.obj \
   $(OBJ)/libc/strtol.obj \
   $(OBJ)/libc/strtod.obj \

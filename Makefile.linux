@@ -416,6 +416,7 @@ LIBC_OBJ = \
   $(OBJ)/string.o \
   $(OBJ)/strtod.o \
   $(OBJ)/strtol.o \
+  $(OBJ)/termios.o \
   $(OBJ)/time.o \
   $(OBJ)/xtoa.o \
   $(OBJ)/regcomp.o \
@@ -573,6 +574,9 @@ $(OBJ)/strtod.o: src/lib/strtod.c
 	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
 
 $(OBJ)/strtol.o: src/lib/strtol.c
+	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
+
+$(OBJ)/termios.o: src/lib/termios.c
 	$(TCC) -o $@ -c $^ $(TCCLIBFLAGS)
 
 $(OBJ)/time.o: src/lib/time.c

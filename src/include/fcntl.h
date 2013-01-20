@@ -40,6 +40,10 @@
 
 #include <sys/types.h>
 
+//
+// File open modes
+//
+
 #ifndef O_RDONLY
 
 #define O_ACCMODE               0x0003  // Access mode
@@ -84,12 +88,43 @@
 
 #endif
 
+//
+// File control commands
+//
+
+#define F_DUPFD   1       // Duplicate file handle
+#define F_GETFD   2       // Get the file descriptor flags
+#define F_SETFD   3       // Set the file descriptor flags
+#define F_GETFL   4       // Get the file status flags and file access modes
+#define F_SETFL   5       // Set the file status flags
+
+#define F_GETLK   6       // Get the first lock
+#define F_SETLK   7       // Set or clear a file segment lock
+#define F_SETLKW  8       // Wait and set or clear a file segment lock
+
+//
+// File lock
+//
+
+#define F_RDLCK   1        // Shared or read lock
+#define F_WRLCK   2        // Exclusive or write lock
+#define F_UNLCK   3        // Unlock
+
+struct flock {
+  short l_type;            // Type of lock
+  short l_whence;          // Flag for starting offset
+  off_t l_start;           // Relative offset in bytes
+  off_t l_len;             // Size; if 0 then until EOF
+  pid_t l_pid;             // Process ID of the process holding the lock
+};
+
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
 osapi handle_t open(const char *name, int flags, ...);
 osapi handle_t creat(const char *name, int mode);
+int fcntl(handle_t f, int cmd, ...);
 
 #ifdef  __cplusplus
 }

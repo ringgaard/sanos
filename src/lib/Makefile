@@ -6,7 +6,7 @@ OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fnmatch.o
     fork.o getopt.o glob.o hash.o inifile.o input.o mman.o math.o opts.o output.o \
     qsort.o random.o readline.o rmap.o rtttl.o sched.o semaphore.o \
     stdio.o scanf.o shlib.o printf.o tmpfile.o popen.o stdlib.o strftime.o \
-    string.o strtod.o strtol.o time.o xtoa.o \
+    string.o strtod.o strtol.o termios.o time.o xtoa.o \
     regcomp.o regexec.o regerror.o regfree.o \
     barrier.o condvar.o mutex.o pthread.o rwlock.o spinlock.o \
     setjmp.o chkstk.o
@@ -132,6 +132,9 @@ strtod.o: strtod.c
     $(CC) -c $< -g
 
 strtol.o: strtol.c
+    $(CC) -c $< -g
+
+termios.o: termios.c
     $(CC) -c $< -g
 
 time.o: time.c

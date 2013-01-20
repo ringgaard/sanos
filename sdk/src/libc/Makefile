@@ -15,7 +15,7 @@ NASM=$(SDK)\bin\as.exe
 OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fork.o getopt.o glob.o hash.o \
     inifile.o input.o mman.o math.o opts.o output.o qsort.o random.o readline.o rmap.o rtttl.o sched.o \
     semaphore.o stdio.o shlib.o scanf.o printf.o tmpfile.o popen.o stdlib.o strftime.o string.o strtod.o \
-    strtol.o time.o xtoa.o \
+    strtol.o termios.o time.o xtoa.o \
     regcomp.o regexec.o regerror.o regfree.o \
     barrier.o condvar.o mutex.o pthread.o rwlock.o spinlock.o \
     setjmp.o chkstk.o
@@ -163,6 +163,9 @@ strtod.o: $(LIBSRC)/strtod.c
     $(TCC) -c $** -o $@ -I$(INCLUDE) -g
 
 strtol.o: $(LIBSRC)/strtol.c
+    $(TCC) -c $** -o $@ -I$(INCLUDE) -g
+
+termios.o: $(LIBSRC)/termios.c
     $(TCC) -c $** -o $@ -I$(INCLUDE) -g
 
 time.o: $(LIBSRC)/time.c
