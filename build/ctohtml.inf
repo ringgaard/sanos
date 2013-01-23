@@ -1,5 +1,5 @@
 [package]
-name=sh
+name=ctohtml
 description=Convert C source files to HTML
 author=Michael Ringgaard
 homepage=http://www.jbox.dk/sanos/

@@ -315,7 +315,7 @@ static int extract_files(char *url, FILE *f, char *manifest, int verbose) {
     times.modtime = parse_octal(hdr->mtime, 11);
     times.actime = -1;
     times.ctime = -1;
-    if (verbose) printf("extracting  '%s' size: %d mode: %o\n", fn, size, mode);
+    if (verbose) printf("extracting '%s' size: %d mode: %o\n", fn, size, mode);
 
     if (hdr->typeflag == DIRTYPE) {
       // Create directory
@@ -574,21 +574,31 @@ static void remove_path(char *path, int verbose) {
     struct dirent *dp;
     DIR *dirp;
     char *fn;
+    int more;
 
     // Remove files in directory recursively
+    if (verbose) printf("deleting all files in %s\n", path);
     dirp = opendir(path);
     if (!dirp) {
       perror(path);
       return;
     }
-    while ((dp = readdir(dirp))) {
-      fn = join_path(path, dp->d_name);
-      if (!fn) {
-        fprintf(stderr, "error: out of memory\n");
-        closedir(dirp);
-        return;
+    
+    // Keep scanning directory until it is empty
+    more = 1;
+    while (more) {
+      more = 0;
+      while ((dp = readdir(dirp))) {
+        more = 1;
+        fn = join_path(path, dp->d_name);
+        if (!fn) {
+          fprintf(stderr, "error: out of memory\n");
+          closedir(dirp);
+          return;
+        }
+        remove_path(fn, verbose);
       }
-      remove_path(fn, verbose);
+      if (more) rewinddir(dirp);
     }
     closedir(dirp);
 

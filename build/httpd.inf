@@ -10,6 +10,7 @@ homepage=http://www.jbox.dk/sanos/
 [files]
 /usr/src/utils/httpd/
 /bin/httpd.dll
+/usr/lib/httpd.def
 
 [dependencies]
 sdk

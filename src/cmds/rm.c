@@ -60,25 +60,34 @@ static int remove_file(char *path, struct options *opts) {
     DIR *dirp;
     char *fn;
     int rc;
+    int more;
 
     dirp = opendir(path);
     if (!dirp) {
       perror(path);
       return 1;
     }
-    while ((dp = readdir(dirp))) {
-      fn = join_path(path, dp->d_name);
-      if (!fn) {
-        fprintf(stderr, "error: out of memory\n");
-        closedir(dirp);
-        return 1;
+
+    // Keep scanning directory until it is empty
+    more = 1;
+    while (more) {
+      more = 0;
+      while ((dp = readdir(dirp))) {
+        more = 1;
+        fn = join_path(path, dp->d_name);
+        if (!fn) {
+          fprintf(stderr, "error: out of memory\n");
+          closedir(dirp);
+          return 1;
+        }
+        rc = remove_file(fn, opts);
+        free(fn);
+        if (rc != 0) {
+          closedir(dirp);
+          return 1;
+        }
       }
-      rc = remove_file(fn, opts);
-      free(fn);
-      if (rc != 0) {
-        closedir(dirp);
-        return 1;
-      }
+      if (more) rewinddir(dirp);
     }
     closedir(dirp);
     
