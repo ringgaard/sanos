@@ -47,6 +47,11 @@ typedef struct {
   unsigned long eip;
 } jmp_buf[1];
 
+typedef struct {
+  jmp_buf env;
+  sigset_t sigmask;
+} sigjmp_buf[1];
+
 #define _setjmp setjmp
 #define _longjmp longjmp
 
@@ -56,6 +61,9 @@ extern "C" {
 
 int setjmp(jmp_buf env);
 void longjmp(jmp_buf env, int value);
+
+int sigsetjmp(sigjmp_buf env, int savesigs);
+void siglongjmp(sigjmp_buf env, int value);
 
 #ifdef  __cplusplus
 }

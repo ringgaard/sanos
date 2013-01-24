@@ -31,6 +31,7 @@
 // SUCH DAMAGE.
 // 
 
+#include <signal.h>
 #include <setjmp.h>
 
 #define OFS_EBP   0
@@ -71,5 +72,21 @@ __declspec(naked) void longjmp(jmp_buf env, int value) {
 
     ret
   }
+}
+
+int sigsetjmp(sigjmp_buf env, int savesigs) {
+  if (savesigs) {
+    sigprocmask(SIG_BLOCK, NULL, &env->sigmask);
+  } else {
+    env->sigmask = -1;
+  }
+  return setjmp(env->env);
+}
+
+void siglongjmp(sigjmp_buf env, int value) {
+  if (env->sigmask != -1) {
+    sigprocmask(SIG_SETMASK, &env->sigmask, NULL);
+  }
+  longjmp(env->env, value);
 }
 
