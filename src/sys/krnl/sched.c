@@ -56,11 +56,6 @@ struct task *idle_tasks_tail;
 
 struct task_queue sys_task_queue;
 
-#ifdef SCHEDMAP
-char schedmap[SCHEDMAPSIZE];
-unsigned long schedmapidx;
-#endif
-
 static void tmr_alarm(void *arg);
 
 __declspec(naked) struct thread *self() {
@@ -641,7 +636,6 @@ static void task_queue_task(void *tqarg) {
     // Wait until tasks arrive on the task queue
     while (tq->head == NULL) {
       enter_wait(THREAD_WAIT_TASK);
-      if (tq->head == NULL) SCHEDEVT('#');
     }
 
     // Get next task from task queue
@@ -831,8 +825,6 @@ void dispatch() {
     return;
   }
 
-  SCHEDEVT(t->id + '0');
-
   // Save fpu state if fpu has been used
   if (curthread->flags & THREAD_FPU_ENABLED) {
     fpu_disable(&curthread->fpustate);
@@ -951,17 +943,6 @@ static int dpcs_proc(struct proc_file *pf, void *arg) {
   return 0;
 }
 
-#ifdef SCHEDMAP
-static int schedmap_proc(struct proc_file *pf, void *arg) {
-  unsigned long idx = schedmapidx % SCHEDMAPSIZE;
-
-  proc_write(pf, schedmap + idx, SCHEDMAPSIZE - idx);
-  proc_write(pf, schedmap, idx);
-
-  return 0;
-}
-#endif
-
 void init_sched() {
   // Initialize scheduler
   dpc_queue_head = dpc_queue_tail = NULL;
@@ -988,7 +969,4 @@ void init_sched() {
   // Register /proc/threads and /proc/dpcs
   register_proc_inode("threads", threads_proc, NULL);
   register_proc_inode("dpcs", dpcs_proc, NULL);
-#ifdef SCHEDMAP
-  register_proc_inode("schedmap", schedmap_proc, NULL);
-#endif
 }

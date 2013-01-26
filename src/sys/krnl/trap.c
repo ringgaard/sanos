@@ -889,7 +889,6 @@ static void trap(unsigned long args) {
 
   // Statistics
   intrcount[ctxt->traptype]++;
-  SCHEDEVT(ctxt->traptype + (ctxt->traptype < 32 ? 'a' : 'A' - 32));
 
   // Call interrupt handlers
   intr = intrhndlr[ctxt->traptype];

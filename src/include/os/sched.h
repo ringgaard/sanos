@@ -39,7 +39,6 @@ typedef void (*dpcproc_t)(void *arg);
 typedef void (*taskproc_t)(void *arg);
 
 //#define NOPREEMPTION
-//#define SCHEDMAP
 
 #define DEFAULT_QUANTUM          36
 #define QUANTUM_UNITS_PER_TICK   3
@@ -188,20 +187,5 @@ __inline void check_preempt() {
 __inline int signals_ready(struct thread *t) {
   return t->pending_signals & ~t->blocked_signals;
 }
-
-#ifdef SCHEDMAP
-
-#define SCHEDMAPSIZE 2048
-
-extern char schedmap[SCHEDMAPSIZE];
-extern unsigned long schedmapidx;
-
-#define SCHEDEVT(e) schedmap[schedmapidx++ % SCHEDMAPSIZE] = (unsigned char) (e)
-
-#else
-
-#define SCHEDEVT(e)
-
-#endif
 
 #endif

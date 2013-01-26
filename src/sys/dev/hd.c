@@ -1150,7 +1150,7 @@ static int cd_ioctl(struct dev *dev, int cmd, void *args, size_t size) {
   switch (cmd) {
     case IOCTL_GETDEVSIZE:
       if (hd->blks <= 0) hd->blks = atapi_read_capacity(hd);
-      return hd->blks;
+      return hd->blks < 0 ? 0 : hd->blks;
 
     case IOCTL_GETBLKSIZE:
       return CDSECTORSIZE;
