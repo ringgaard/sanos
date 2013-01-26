@@ -31,6 +31,7 @@
 // SUCH DAMAGE.
 // 
 
+#include <os.h>
 #include <time.h>
 
 #include "sh.h"
@@ -715,19 +716,22 @@ shellcmd(more) {
   char *end;
   char ch;
   char buffer[BUFSIZE];
+  struct term *term;
 
-  if (argc != 2)
-  {
+  if (argc == 1) {
+    fd = dup(fdin);
+  } else if (argc == 2) {
+    filename = argv[1];
+    if ((fd = open(filename, O_BINARY)) < 0) {
+      printf("%s: %s\n", filename, strerror(errno));
+      return fd;
+    }
+  } else {
     printf("usage: more <file>\n");
     return -EINVAL;
   }
-  filename = argv[1];
 
-  if ((fd = open(filename, O_BINARY)) < 0) {
-    printf("%s: %s\n", filename, strerror(errno));
-    return fd;
-  }
-
+  term = gettib()->proc->term;
   line = 0;
   while ((count = read(fd, buffer, sizeof buffer)) > 0) {
     start = end = buffer;
@@ -735,8 +739,8 @@ shellcmd(more) {
       if (line == 24) {
         display_buffer(stdout, start, end - start);
         fflush(stdout);
-        ch = getchar();
-        if (ch == 'x') {
+        if (read(term->ttyin, &ch, 1) < 0) break;
+        if (ch == 'q') {
           close(fd);
           return 0;
         }

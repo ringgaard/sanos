@@ -219,7 +219,7 @@ static void dbg_connect(struct dbg_hdr *hdr, union dbg_body *body) {
 }
 
 static void dbg_read_memory(struct dbg_hdr *hdr, union dbg_body *body) {
-  if (!mem_mapped(body->mem.addr, body->mem.size)) {
+  if (!mem_access(body->mem.addr, body->mem.size, PT_PRESENT)) {
     dbg_send_error(DBGERR_INVALIDADDR, hdr->id);
   } else {
     dbg_send_packet(hdr->cmd | DBGCMD_REPLY, hdr->id, body->mem.addr, body->mem.size);
@@ -227,7 +227,7 @@ static void dbg_read_memory(struct dbg_hdr *hdr, union dbg_body *body) {
 }
 
 static void dbg_write_memory(struct dbg_hdr *hdr, union dbg_body *body) {
-  if (!mem_mapped(body->mem.addr, body->mem.size)) {
+  if (!mem_access(body->mem.addr, body->mem.size, PT_PRESENT | PT_WRITABLE)) {
     dbg_send_error(DBGERR_INVALIDADDR, hdr->id);
   } else {
     memcpy(body->mem.addr, body->mem.data, body->mem.size);

@@ -48,6 +48,9 @@ typedef unsigned long pte_t;
 
 #define PT_GUARD     0x200
 
+#define PT_USER_READ    (PT_PRESENT | PT_USER)
+#define PT_USER_WRITE   (PT_PRESENT | PT_USER | PT_WRITABLE)
+
 #define PT_FLAGMASK     (PT_PRESENT | PT_WRITABLE | PT_USER | PT_ACCESSED | PT_DIRTY | PT_GUARD)
 #define PT_PROTECTMASK  (PT_WRITABLE | PT_USER | PT_GUARD)
 
@@ -94,8 +97,9 @@ krnlapi void set_page_flags(void *vaddr, unsigned long flags);
 krnlapi int page_guarded(void *vaddr);
 krnlapi int page_mapped(void *vaddr);
 krnlapi void unguard_page(void *vaddr);
-krnlapi int mem_mapped(void *vaddr, int size);
-krnlapi int str_mapped(char *s);
+
+krnlapi int mem_access(void *vaddr, int size, pte_t access);
+krnlapi int str_access(char *s, pte_t access);
 
 void init_pdir();
 int pdir_proc(struct proc_file *pf, void *arg);

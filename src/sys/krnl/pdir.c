@@ -95,33 +95,28 @@ void unguard_page(void *vaddr) {
   invlpage(vaddr);
 }
 
-int mem_mapped(void *vaddr, int size) {
-  int len;
+int mem_access(void *vaddr, int size, pte_t access) {
   unsigned long addr;
   unsigned long next;
-
+  
   addr = (unsigned long) vaddr;
   next = (addr & ~PAGESIZE) + PAGESIZE;
   while (1) {
     if ((GET_PDE(addr) & PT_PRESENT) == 0) return 0;
-    if ((GET_PTE(addr) & PT_PRESENT) == 0) return 0;
-    len = next - addr;
-    if (size > len) {
-      size -= len;
-      addr = next;
-      next += PAGESIZE;
-    } else {
-      break;
-    }
+    if ((GET_PTE(addr) & access) != access) return 0;
+    size -= next - addr;
+    if (size <= 0) break;
+    addr = next;
+    next += PAGESIZE;
   }
 
   return 1;
 }
 
-int str_mapped(char *s) {
+int str_access(char *s, pte_t access) {
   while (1) {
     if ((GET_PDE(s) & PT_PRESENT) == 0) return 0;
-    if ((GET_PTE(s) & PT_PRESENT) == 0) return 0;
+    if ((GET_PTE(s) & access) != access) return 0;
 
     while (1) {
       if (!*s) return 1;

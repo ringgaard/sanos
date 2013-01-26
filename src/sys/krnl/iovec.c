@@ -33,16 +33,14 @@
 
 #include <os/krnl.h>
 
-int check_iovec(struct iovec *iov, int iovlen) {
+int check_iovec(struct iovec *iov, int iovlen, int modify) {
   if (iov) {
     if (iovlen < 0) return -EINVAL;
-    if (KERNELSPACE(iov)) return -EFAULT;
-    if (!mem_mapped(iov, iovlen * sizeof(struct iovec))) return -EFAULT;
+    if (!mem_access(iov, iovlen * sizeof(struct iovec), PT_USER_READ)) return -EFAULT;
     while (iovlen > 0) {
       if (iov->iov_len < 0) return -EINVAL;
       if (iov->iov_base) {
-        if (KERNELSPACE(iov->iov_base)) return -EFAULT;
-        if (!mem_mapped(iov->iov_base, iov->iov_len)) return -EFAULT;
+        if (!mem_access(iov->iov_base, iov->iov_len, modify ? PT_USER_WRITE : PT_USER_READ)) return -EFAULT;
       } else if (iov->iov_len != 0) {
         return -EFAULT;
       }
