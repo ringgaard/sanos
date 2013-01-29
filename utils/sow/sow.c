@@ -1393,12 +1393,12 @@ char *crypt(const char *key, const char *salt)
   return NULL;
 }
 
-void *mmap(void *addr, unsigned long size, int type, int protect, unsigned long tag)
+void *vmalloc(void *addr, unsigned long size, int type, int protect, unsigned long tag)
 {
   return VirtualAlloc(addr, size, type, protect);
 }
 
-int munmap(void *addr, unsigned long size, int type)
+int vmfree(void *addr, unsigned long size, int type)
 {
   if (type == MEM_DECOMMIT)
     return VirtualFree(addr, size, MEM_DECOMMIT) ? 0 : -EFAULT;
@@ -1408,25 +1408,25 @@ int munmap(void *addr, unsigned long size, int type)
     return -EINVAL;
 }
 
-void *mremap(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect, unsigned long tag)
+void *vmrealloc(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect, unsigned long tag)
 {
   notimpl("mremap");
   return NULL;
 }
 
-int mprotect(void *addr, unsigned long size, int protect)
+int vmprotect(void *addr, unsigned long size, int protect)
 {
   DWORD oldprotect;
 
   return VirtualProtect(addr, size, protect, &oldprotect) ? 0 : -EFAULT;
 }
 
-int mlock(void *addr, unsigned long size)
+int vmlock(void *addr, unsigned long size)
 {
   return notimpl("mlock");
 }
 
-int munlock(void *addr, unsigned long size)
+int vmunlock(void *addr, unsigned long size)
 {
   return notimpl("mnlock");
 }

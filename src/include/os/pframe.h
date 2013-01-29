@@ -42,6 +42,7 @@ struct pageframe {
   union {
     unsigned long locks;        // Number of locks
     unsigned long size;         // Size/buckets for kernel pages
+    handle_t owner;             // Reference to owner for file maps
     struct pageframe *next;     // Next free page frame for free pages
   };
 };

@@ -49,6 +49,9 @@
 #define OBJECT_FILE       5
 #define OBJECT_SOCKET     6
 #define OBJECT_IOMUX      7
+#define OBJECT_FILEMAP    8
+
+#define OBJECT_TYPES      9
 
 #define THREAD_STATE_INITIALIZED 0
 #define THREAD_STATE_READY       1
@@ -201,6 +204,20 @@ struct thread {
   struct fpu fpustate;
 };
 
+struct filemap {
+  struct object object;
+
+  handle_t file;
+  __int64 offset;
+
+  char *addr;
+  unsigned long size;
+  unsigned long protect;
+  int pages;
+
+  handle_t self;
+};
+
 #ifdef KERNEL
 
 #define HPROTECT  1
@@ -238,6 +255,8 @@ krnlapi unsigned int set_sem(struct sem *s, unsigned int count);
 krnlapi void init_mutex(struct mutex *m, int owned);
 krnlapi int release_mutex(struct mutex *m);
 
+int unlock_filemap(struct filemap *m);
+
 krnlapi void init_waitable_timer(struct waitable_timer *t, unsigned int expires);
 krnlapi void modify_waitable_timer(struct waitable_timer *t, unsigned int expires);
 krnlapi void cancel_waitable_timer(struct waitable_timer *t);
@@ -264,6 +283,7 @@ int poll(struct pollfd fds[], unsigned int nfds, int timeout);
 
 void init_handles();
 
+krnlapi struct object *hlookup(handle_t h);
 krnlapi handle_t halloc(struct object *o);
 krnlapi int hassign(struct object *o, handle_t h);
 krnlapi int hfree(handle_t h);

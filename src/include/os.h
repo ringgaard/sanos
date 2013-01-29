@@ -1459,6 +1459,8 @@ osapi void *vmrealloc(void *addr, unsigned long oldsize, unsigned long newsize, 
 osapi int vmprotect(void *addr, unsigned long size, int protect);
 osapi int vmlock(void *addr, unsigned long size);
 osapi int vmunlock(void *addr, unsigned long size);
+osapi void *vmmap(void *addr, unsigned long size, int protect, handle_t h, off64_t offset);
+osapi int vmsync(void *addr, unsigned long size);
 
 osapi int waitone(handle_t h, int timeout);
 osapi int waitall(handle_t *h, int count, int timeout);

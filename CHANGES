@@ -4,17 +4,33 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Implemented support for memory mapped files.
+
+    * Renamed mmap syscall to vmalloc.
+
+    * Check memory permissions on system calls.
+
+    * Fixed recursive delete problem.
+
+    * Added sigsetjmp() and siglongjmp() to C runtime library.
+
+    * Added hypot() function to math library.
+
+    * New package management tool for installing programs.
+
+    * Added stub functions for file locking and termios.
+
+    * Added strsep(), vfscanf(), vfscanf(), and vfscanf() functions.
+
+    * Added zlib, awk, tar, yacc, ctags, zip, unzip and lua packages.
+
     * Added new shell commands: chgrp, chmod, chown, cp, du, grep,
       ls, mkdir, mv, rm, test, wc.
 
-    * Added zlib, awk, tar, yacc, ctags, zip, unzip and lua to SDK.
-
     * Handle escaping of double quotes in command argument parsing.
 
-    * Switched to using new shell as default shell.
+    * New POSIX-compliant shell with script support.
 
-    * Implemented support for redirection and pipelines in new shell.
-    
     * Added support for script hashbangs in module loader.
 
     * Text editor improvements:

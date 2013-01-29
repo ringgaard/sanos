@@ -78,16 +78,14 @@ void set_page_flags(void *vaddr, unsigned long flags) {
   invlpage(vaddr);
 }
 
-int page_guarded(void *vaddr) {
-  if ((GET_PDE(vaddr) & PT_PRESENT) == 0) return 0;
-  if ((GET_PTE(vaddr) & PT_GUARD) == 0) return 0;
-  return 1;
-}
-
 int page_mapped(void *vaddr) {
   if ((GET_PDE(vaddr) & PT_PRESENT) == 0) return 0;
   if ((GET_PTE(vaddr) & PT_PRESENT) == 0) return 0;
   return 1;
+}
+
+int page_directory_mapped(void *vaddr) {
+  return (GET_PDE(vaddr) & PT_PRESENT) != 0;
 }
 
 void unguard_page(void *vaddr) {
@@ -95,15 +93,30 @@ void unguard_page(void *vaddr) {
   invlpage(vaddr);
 }
 
+void clear_dirty(void *vaddr) {
+  SET_PTE(vaddr, GET_PTE(vaddr) & ~PT_DIRTY);
+  invlpage(vaddr);
+}
+
 int mem_access(void *vaddr, int size, pte_t access) {
   unsigned long addr;
   unsigned long next;
+  pte_t pte;
   
   addr = (unsigned long) vaddr;
   next = (addr & ~PAGESIZE) + PAGESIZE;
   while (1) {
     if ((GET_PDE(addr) & PT_PRESENT) == 0) return 0;
-    if ((GET_PTE(addr) & access) != access) return 0;
+    pte = GET_PTE(addr);
+    if ((pte & access) != access) {
+      if (pte & PT_FILE) {
+        if (fetch_page((void *) PAGEADDR(addr)) < 0) return 0;
+        if ((GET_PTE(addr) & access) != access) return 0;
+      } else {
+        return 0;
+      }
+    }
+
     size -= next - addr;
     if (size <= 0) break;
     addr = next;
@@ -114,9 +127,19 @@ int mem_access(void *vaddr, int size, pte_t access) {
 }
 
 int str_access(char *s, pte_t access) {
+  pte_t pte;
+
   while (1) {
     if ((GET_PDE(s) & PT_PRESENT) == 0) return 0;
-    if ((GET_PTE(s) & access) != access) return 0;
+    pte = GET_PTE(s);
+    if ((pte & access) != access) {
+      if (pte & PT_FILE) {
+        if (fetch_page((void *) PAGEADDR(s)) < 0) return 0;
+        if ((GET_PTE(s) & access) != access) return 0;
+      } else {
+        return 0;
+      }
+    }
 
     while (1) {
       if (!*s) return 1;
@@ -145,9 +168,11 @@ int pdir_proc(struct proc_file *pf, void *arg) {
   int rw = 0;
   int ac = 0;
   int dt = 0;
+  int gd = 0;
+  int fi = 0;
 
   pprintf(pf, "virtaddr physaddr flags\n");
-  pprintf(pf, "-------- -------- ----- \n");
+  pprintf(pf, "-------- -------- ------\n");
 
   vaddr = NULL;
   while (1) {
@@ -172,13 +197,17 @@ int pdir_proc(struct proc_file *pf, void *arg) {
 
         if (pte & PT_ACCESSED) ac++;
         if (pte & PT_DIRTY) dt++;
+        if (pte & PT_GUARD) gd++;
+        if (pte & PT_FILE) fi++;
 
-        pprintf(pf, "%08x %08x %c%c%c%c\n", 
+        pprintf(pf, "%08x %08x %c%c%c%c%c%c\n", 
                 vaddr, PAGEADDR(pte), 
                 (pte & PT_WRITABLE) ? 'w' : 'r',
                 (pte & PT_USER) ? 'u' : 's',
                 (pte & PT_ACCESSED) ? 'a' : ' ',
-                (pte & PT_DIRTY) ? 'd' : ' ');
+                (pte & PT_DIRTY) ? 'd' : ' ',
+                (pte & PT_GUARD) ? 'g' : ' ',
+                (pte & PT_FILE) ? 'f' : ' ');
       }
 
       vaddr += PAGESIZE;
@@ -187,7 +216,7 @@ int pdir_proc(struct proc_file *pf, void *arg) {
     if (!vaddr) break;
   }
 
-  pprintf(pf, "\ntotal: %d user: %d sys: %d r/w: %d r/o: %d accessed: %d dirty: %d\n", ma, us, su, rw, ro, ac, dt);
+  pprintf(pf, "\ntotal:%d usr:%d sys:%d rw: %d ro: %d acc: %d dirty: %d guard:%d file:%d\n", ma, us, su, rw, ro, ac, dt, gd, fi);
   return 0;
 }
 

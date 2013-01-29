@@ -1,7 +1,7 @@
 //
 // mman.c
 //
-// Memory-mapped files emulation
+// Memory-mapped files
 //
 // Copyright (C) 2013 Michael Ringgaard. All rights reserved.
 //
@@ -64,13 +64,8 @@ void *mmap(void *addr, size_t size, int prot, int flags, handle_t f, off_t offse
   if (flags & MAP_ANONYMOUS) {
     addr = vmalloc(addr, size, MEM_RESERVE | MEM_COMMIT, map_protect(prot), 'MMAP');
   } else {
-    addr = vmalloc(addr, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'MMFD');
+    addr = vmmap(addr, size, map_protect(prot), f, offset);
     if (!addr) return MAP_FAILED;
-    
-    if (read(f, addr, size) < 0 || vmprotect(addr, size, map_protect(prot)) < 0) {
-      vmfree(addr, size, MEM_DECOMMIT | MEM_RELEASE);
-      return MAP_FAILED;
-    }
   }
 
   return addr;
@@ -81,8 +76,7 @@ int munmap(void *addr, size_t size) {
 }
 
 int msync(void *addr, size_t size, int flags) {
-  errno = ENOSYS;
-  return -1;
+  return vmsync(addr, size);
 }
 
 int mprotect(void *addr, size_t size, int prot) {
@@ -90,11 +84,11 @@ int mprotect(void *addr, size_t size, int prot) {
 }
 
 int mlock(const void *addr, size_t size) {
-  return vmlock(addr, size);
+  return vmlock((void *) addr, size);
 }
 
 int munlock(const void *addr, size_t size) {
-  return vmunlock(addr, size);
+  return vmunlock((void *) addr, size);
 }
 
 int mlockall(int flags) {

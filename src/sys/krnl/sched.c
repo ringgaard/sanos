@@ -439,7 +439,7 @@ int init_user_thread(struct thread *t, void *entrypoint) {
   struct tib *tib;
 
   // Allocate and initialize thread information block for thread
-  tib = vmalloc(NULL, sizeof(struct tib), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'TIB');
+  tib = vmalloc(NULL, sizeof(struct tib), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, 'TIB', NULL);
   if (!tib) return -ENOMEM;
 
   t->entrypoint = entrypoint;
@@ -458,7 +458,7 @@ int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned 
   char *stack;
   struct tib *tib;
 
-  stack = vmalloc(NULL, stack_reserve, MEM_RESERVE, PAGE_READWRITE, 'STK');
+  stack = vmalloc(NULL, stack_reserve, MEM_RESERVE, PAGE_READWRITE, 'STK', NULL);
   if (!stack) return -ENOMEM;
 
   tib = t->tib;
@@ -466,7 +466,7 @@ int allocate_user_stack(struct thread *t, unsigned long stack_reserve, unsigned 
   tib->stacktop = stack + stack_reserve;
   tib->stacklimit = stack + (stack_reserve - stack_commit);
 
-  if (!vmalloc(tib->stacklimit, stack_commit, MEM_COMMIT, PAGE_READWRITE, 'STK')) return -ENOMEM;
+  if (!vmalloc(tib->stacklimit, stack_commit, MEM_COMMIT, PAGE_READWRITE, 'STK', NULL)) return -ENOMEM;
   if (vmprotect(tib->stacklimit, PAGESIZE, PAGE_READWRITE | PAGE_GUARD) < 0) return -ENOMEM;
 
   return 0;

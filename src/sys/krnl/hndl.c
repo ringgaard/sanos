@@ -74,7 +74,13 @@ static int remove_from_freelist(handle_t h) {
   }
 }
 
-static struct object *hlookup(handle_t h) {
+//
+// hlookup
+//
+// Lookup object in handle table
+//
+
+struct object *hlookup(handle_t h) {
   if (h < 0 || h >= htabsize) return NULL;
   if (!HUSED(htab[h])) return NULL;
   return HOBJ(htab[h]);
@@ -233,22 +239,22 @@ int orel(object_t hobj) {
 #define FRAQ 2310
 
 static int handles_proc(struct proc_file *pf, void *arg) {
-  static char *objtype[] = {"THREAD", "EVENT", "TIMER", "MUTEX", "SEM", "FILE", "SOCKET", "IOMUX"};
+  static char *objtype[OBJECT_TYPES] = {"THREAD", "EVENT", "TIMER", "MUTEX", "SEM", "FILE", "SOCKET", "IOMUX", "FILEMAP"};
 
   int h;
   int i;
   struct object *o;
-  int objcount[8];
+  int objcount[OBJECT_TYPES];
 
-  for (i = 0; i < 8; i++) objcount[i] = 0;
+  for (i = 0; i < OBJECT_TYPES; i++) objcount[i] = 0;
 
-  pprintf(pf, "handle addr     s p type   count locks\n");
-  pprintf(pf, "------ -------- - - ------ ----- -----\n");
+  pprintf(pf, "handle addr     s p type    count locks\n");
+  pprintf(pf, "------ -------- - - ------- ----- -----\n");
   for (h = 0; h < htabsize; h++) {
     if (!HUSED(htab[h])) continue;
     o = HOBJ(htab[h]);
     
-    pprintf(pf, "%6d %8X %d %d %-6s %5d %5d\n", 
+    pprintf(pf, "%6d %8X %d %d %-7s %5d %5d\n", 
       h, o, o->signaled,  HPROT(htab[h]), objtype[o->type], 
       o->handle_count, o->lock_count);
 
@@ -256,7 +262,11 @@ static int handles_proc(struct proc_file *pf, void *arg) {
   }
 
   pprintf(pf, "\n");
-  for (i = 0; i < 8; i++) pprintf(pf, "%s:%d ", objtype[i], objcount[i] / FRAQ);
+  for (i = 0; i < OBJECT_TYPES; i++) {
+    if (objcount[i] > 0) {
+      pprintf(pf, "%s:%d ", objtype[i], objcount[i] / FRAQ);
+    }
+  }
   pprintf(pf, "\n");
 
   return 0;

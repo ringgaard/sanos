@@ -47,11 +47,12 @@ typedef unsigned long pte_t;
 #define PT_DIRTY     0x040
 
 #define PT_GUARD     0x200
+#define PT_FILE      0x400
 
 #define PT_USER_READ    (PT_PRESENT | PT_USER)
 #define PT_USER_WRITE   (PT_PRESENT | PT_USER | PT_WRITABLE)
 
-#define PT_FLAGMASK     (PT_PRESENT | PT_WRITABLE | PT_USER | PT_ACCESSED | PT_DIRTY | PT_GUARD)
+#define PT_FLAGMASK     (PT_PRESENT | PT_WRITABLE | PT_USER | PT_ACCESSED | PT_DIRTY | PT_GUARD | PT_FILE)
 #define PT_PROTECTMASK  (PT_WRITABLE | PT_USER | PT_GUARD)
 
 #define PT_PFNMASK   0xFFFFF000
@@ -94,9 +95,10 @@ krnlapi unsigned long virt2phys(void *vaddr);
 krnlapi unsigned long virt2pfn(void *vaddr);
 krnlapi pte_t get_page_flags(void *vaddr);
 krnlapi void set_page_flags(void *vaddr, unsigned long flags);
-krnlapi int page_guarded(void *vaddr);
 krnlapi int page_mapped(void *vaddr);
+krnlapi int page_directory_mapped(void *vaddr);
 krnlapi void unguard_page(void *vaddr);
+krnlapi void clear_dirty(void *vaddr);
 
 krnlapi int mem_access(void *vaddr, int size, pte_t access);
 krnlapi int str_access(char *s, pte_t access);

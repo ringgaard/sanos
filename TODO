@@ -1,13 +1,6 @@
 TODO for sanos
 --------------
 
-- Use the BIOS memory map from osldr to initialize memory subsystem.
-
-- Move signal handler table to job object to make signal handlers job specific. 
-    - Add job number to kill. 
-    - Implement int kill(int pid, int signum)
-    - Return job number in getpid()
-
 - Change control87() to use the MSVCRT definitions of FPU control flags.
 
 - Implement 48-bit LBA support in IDE driver

@@ -1,7 +1,7 @@
 //
 // mman.h
 //
-// Memory-mapped files emulation
+// Memory-mapped files
 //
 // Copyright (C) 2013 Michael Ringgaard. All rights reserved.
 //

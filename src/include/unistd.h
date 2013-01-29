@@ -139,6 +139,7 @@ int chroot(const char *path);
 int lockf(handle_t f, int func, off_t size);
 
 osapi int gethostname(char *name, int namelen);
+osapi int getpagesize();
 
 osapi unsigned sleep(unsigned seconds);
 int usleep(useconds_t usec);

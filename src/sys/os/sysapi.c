@@ -366,6 +366,14 @@ int vmunlock(void *addr, unsigned long size) {
   return syscall(SYSCALL_VMUNLOCK, &addr);
 }
 
+void *vmmap(void *addr, unsigned long size, int protect, handle_t h, off64_t offset) {
+  return (void *) syscall(SYSCALL_VMMAP, &addr);
+}
+
+int vmsync(void *addr, unsigned long size) {
+  return syscall(SYSCALL_VMSYNC, &addr);
+}
+
 int waitone(handle_t h, int timeout) {
   return syscall(SYSCALL_WAITONE, &h);
 }

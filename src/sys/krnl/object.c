@@ -200,6 +200,10 @@ int enter_object(struct object *obj) {
     case OBJECT_IOMUX:
       rc = dequeue_event_from_iomux((struct iomux *) obj);
       break;
+
+    case OBJECT_FILEMAP:
+      obj->signaled = 0;
+      break;
   }
 
   return rc;
@@ -508,7 +512,7 @@ void init_object(struct object *o, int type) {
 //
 // close_object
 //
-// Close object after all handles has been released
+// Close object after all handles have been released
 //
 
 int close_object(struct object *o) {
@@ -520,19 +524,14 @@ int close_object(struct object *o) {
 
   switch (o->type) {
     case OBJECT_THREAD:
-      return 0;
-
     case OBJECT_EVENT:
+    case OBJECT_MUTEX:
+    case OBJECT_SEMAPHORE:
+    case OBJECT_FILEMAP:
       return 0;
 
     case OBJECT_TIMER:
       cancel_waitable_timer((struct waitable_timer *) o);
-      return 0;
-
-    case OBJECT_MUTEX:
-      return 0;
-
-    case OBJECT_SEMAPHORE:
       return 0;
     
     case OBJECT_FILE:
@@ -551,8 +550,8 @@ int close_object(struct object *o) {
 //
 // destroy_object
 //
-// Destroy object after all handles has been closed and
-// all locks has been released
+// Destroy object after all handles have been closed and
+// all locks have been released
 //
 
 int destroy_object(struct object *o) {
@@ -565,15 +564,13 @@ int destroy_object(struct object *o) {
     case OBJECT_MUTEX:
     case OBJECT_SEMAPHORE:
     case OBJECT_IOMUX:
+    case OBJECT_SOCKET:
+    case OBJECT_FILEMAP:
       kfree(o);
       return 0;
 
     case OBJECT_FILE:
       return destroy((struct file *) o);
-
-    case OBJECT_SOCKET:
-      kfree(o);
-      return 0;
   }
 
   return -EBADF;
@@ -844,6 +841,36 @@ int release_mutex(struct mutex *m) {
     // Set mutex to nonsignal state
     m->owner = wb->thread;
     m->recursion = 1;
+    m->object.signaled = 0;
+
+    // Release waiting thread
+    release_thread(wb->thread);
+  }
+
+  return 0;
+}
+
+//
+// unlock_filemap
+//
+// Unlock filemap
+//
+
+int unlock_filemap(struct filemap *m)  {
+  struct waitblock *wb;
+
+  // Set the filemap to the signaled state
+  m->object.signaled = 1;
+
+  // Release first waiting thread
+  wb = m->object.waitlist_head;
+  while (wb) {
+    if (thread_ready_to_run(wb->thread)) break;
+    wb = wb->next_wait;
+  }
+
+  if (wb != NULL) {
+    // Set filemap to nonsignal state
     m->object.signaled = 0;
 
     // Release waiting thread

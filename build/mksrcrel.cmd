@@ -14,6 +14,7 @@ if not exist %1\utils\dbggw mkdir %1\utils\dbggw
 if not exist %1\utils\mkpart mkdir %1\utils\mkpart
 if not exist %1\utils\mkfloppy mkdir %1\utils\mkfloppy
 if not exist %1\utils\sow mkdir %1\utils\sow
+if not exist %1\utils\mkpkg mkdir %1\utils\mkpkg
 
 copy README %1
 copy COPYING %1
@@ -22,6 +23,7 @@ copy Makefile %1
 copy Makefile.linux %1
 
 copy build\*.vcproj %1\build
+copy build\*.inf %1\build
 copy build\sanos*.sln %1\build
 copy build\mkbootdisk.cmd %1\build
 copy build\bootdisk.lst %1\build
@@ -51,3 +53,5 @@ xcopy utils\dbggw %1\utils\dbggw /exclude:build\exclrel.lst
 xcopy utils\mkpart %1\utils\mkpart /exclude:build\exclrel.lst
 xcopy utils\mkfloppy %1\utils\mkfloppy /exclude:build\exclrel.lst
 xcopy utils\sow %1\utils\sow /exclude:build\exclrel.lst
+xcopy utils\mkpkg %1\utils\mkpkg /exclude:build\exclrel.lst
+

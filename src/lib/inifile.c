@@ -33,12 +33,14 @@
 
 #ifdef KERNEL
 #include <os/krnl.h>
+#include <stdlib.h>
 #else
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <inifile.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #endif
 

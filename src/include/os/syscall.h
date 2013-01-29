@@ -143,7 +143,9 @@
 #define SYSCALL_SIGPROCMASK   106
 #define SYSCALL_SIGPENDING    107
 #define SYSCALL_ALARM         108
+#define SYSCALL_VMMAP         109
+#define SYSCALL_VMSYNC        110
 
-#define SYSCALL_MAX           108
+#define SYSCALL_MAX           110
 
 #endif

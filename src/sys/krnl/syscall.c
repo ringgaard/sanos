@@ -739,6 +739,7 @@ static int sys_vmalloc(char *params) {
   int protect;
   unsigned long tag;
   void *retval;
+  int rc;
 
   addr = *(void **) params;
   size = *(unsigned long *) (params + 4);
@@ -746,7 +747,11 @@ static int sys_vmalloc(char *params) {
   protect = *(int *) (params + 12);
   tag = *(unsigned long *) (params + 16);
 
-  retval = vmalloc(addr, size, type, protect, tag);
+  retval = vmalloc(addr, size, type, protect, tag, &rc);
+  if (!retval) {
+    struct tib *tib = self()->tib;
+    if (tib) tib->errnum = -rc;
+  }
 
   return (int) retval;
 }
@@ -824,6 +829,49 @@ static int sys_vmunlock(char *params) {
   size = *(unsigned long *) (params + 4);
 
   rc = vmunlock(addr, size);
+
+  return rc;
+}
+
+static int sys_vmmap(char *params) {
+  char *addr;
+  unsigned long size;
+  int protect;
+  handle_t h;
+  off64_t offset;
+  struct file *f;
+  void *retval;
+  int rc;
+
+  addr = *(void **) params;
+  size = *(unsigned long *) (params + 4);
+  protect = *(int *) (params + 8);
+  h = *(handle_t *) (params + 12);
+  offset = *(off64_t *) (params + 16);
+
+  f = (struct file *) olock(h, OBJECT_FILE);
+  if (!f) return -EBADF;
+
+  retval = vmmap(addr, size, protect, f, offset, &rc);
+  if (!retval) {
+    struct tib *tib = self()->tib;
+    if (tib) tib->errnum = -rc;
+  }
+
+  orel(f);
+
+  return (int) retval;
+}
+
+static int sys_vmsync(char *params) {
+  char *addr;
+  unsigned long size;
+  int rc;
+
+  addr = *(void **) params;
+  size = *(unsigned long *) (params + 4);
+
+  rc = vmsync(addr, size);
 
   return rc;
 }
@@ -2590,6 +2638,8 @@ struct syscall_entry syscalltab[] = {
   {"sigprocmask", 12, "%d,%p,%p", sys_sigprocmask},
   {"sigpending", 4, "%p", sys_sigpending},
   {"alarm", 4, "%d", sys_alarm},
+  {"vmmap", 24, "%p,%d,%x,%d,%d-%d", sys_vmmap},
+  {"vmsync", 8, "%p,%d", sys_vmsync},
 };
 
 int syscall(int syscallno, char *params, struct context *ctxt) {

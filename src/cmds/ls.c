@@ -97,11 +97,12 @@ static void delete_file_list(struct filelist *list) {
   }
 }
 
-static compare_filename(const void *d1, const void *d2) {
+static int compare_filename(const void *d1, const void *d2) {
   struct file *f1 = *(struct file **) d1;
   struct file *f2 = *(struct file **) d2;
   int cmp = strcmp(f1->dir, f2->dir);
   if (!cmp) cmp = strcmp(f1->name, f2->name);
+  return cmp;
 }
 
 static void sort_list(struct filelist *list) {

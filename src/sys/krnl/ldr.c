@@ -85,10 +85,10 @@ void *load_image_file(char *filename, int userspace) {
   // Allocate memory for module
   if (userspace) {
     // User module
-    imgbase = (char *) vmalloc((void *) (imghdr->optional.image_base), imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UMOD');
+    imgbase = (char *) vmalloc((void *) (imghdr->optional.image_base), imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UMOD', NULL);
     if (imgbase == NULL) {
       // Try to load image at any available address 
-      imgbase = (char *) vmalloc(NULL, imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UMOD');
+      imgbase = (char *) vmalloc(NULL, imghdr->optional.size_of_image, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE, 'UMOD', NULL);
     }
   } else {
     // Kernel module

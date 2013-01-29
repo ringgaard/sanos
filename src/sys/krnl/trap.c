@@ -706,8 +706,7 @@ static int genpro_handler(struct context *ctxt, void *arg) {
 // pagefault_handler
 //
 
-static int pagefault_handler(struct context *ctxt, void *arg)
-{
+static int pagefault_handler(struct context *ctxt, void *arg) {
   void *addr;
   void *pageaddr;
 
@@ -715,12 +714,21 @@ static int pagefault_handler(struct context *ctxt, void *arg)
   pageaddr = (void *) PAGEADDR(addr);
 
   if (usermode(ctxt)) {
-    if (page_guarded(pageaddr)) {
-      unguard_page(pageaddr);
-      if (guard_page_handler(pageaddr) < 0) send_signal(ctxt, SIGSTKFLT, addr);
-    } else {
-      send_signal(ctxt, SIGSEGV, addr);
+    int signal = SIGSEGV;
+    if (page_directory_mapped(pageaddr)) {
+      pte_t flags = get_page_flags(pageaddr);
+      if (flags & PT_GUARD) {
+        unguard_page(pageaddr);
+        signal = SIGSTKFLT;
+        if (guard_page_handler(pageaddr) == 0) signal = 0;
+      } else if (flags & PT_FILE) {
+        if ((flags & PT_PRESENT) == 0) {
+          sti();
+          if (fetch_page(pageaddr) == 0) signal = 0;
+        }
+      }
     }
+    if (signal != 0) send_signal(ctxt, signal, addr);
   } else {
     kprintf(KERN_CRIT "trap: page fault in kernel mode\n");
     dbg_enter(ctxt, addr);

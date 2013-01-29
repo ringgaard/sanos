@@ -246,6 +246,10 @@ int mkstemp(char *template)
   return -1;
 }
 
+int getpagesize() {
+  return PAGESIZE;
+}
+
 int getrusage(int who, struct rusage *usage) {
   // TODO implement
   errno = ENOSYS;
