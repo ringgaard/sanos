@@ -8,6 +8,8 @@ homepage=http://www.nasm.us/
 
 [source]
 /usr/src/utils/as/
+
+[prebuilt]
 /usr/bin/as.exe
 
 [files]

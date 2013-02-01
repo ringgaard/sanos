@@ -141,7 +141,7 @@ $(MKPKG): utils/mkpkg/mkpkg.c utils/mkpkg/inifile.c
 #
 
 sys: osldr kernel drivers os
-	cp build/sys.inf $(PKGDIR)
+	cp -p build/sys.inf $(PKGDIR)
 
 #
 # boot
@@ -376,7 +376,7 @@ linux/install/boot/os.dll $(LIB_OS): $(OS_SRCS) $(OS_LIB_SRCS) $(OBJ)/modf.o
 #
 
 libc: linux/install/usr/lib/libc.a
-	cp build/clib.inf $(PKGDIR)
+	cp -p build/clib.inf $(PKGDIR)
 
 LIBC_OBJ = \
   $(OBJ)/tcccrt.o \
@@ -734,62 +734,62 @@ SH_CMDS= \
 
 linux/install/bin/sh.exe: $(SH_SRCS) $(SH_HDRS) $(SH_CMDS)
 	$(TCC) -o $@ $(SH_SRCS) $(SH_CMDS) $(TCCFLAGS) -D SHELL
-	cp build/sh.inf $(PKGDIR)
+	cp -p build/sh.inf $(PKGDIR)
 
 linux/install/bin/msh.exe: src/utils/msh/msh.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
-	cp build/msh.inf $(PKGDIR)
+	cp -p build/msh.inf $(PKGDIR)
 
 linux/install/bin/edit.exe: src/utils/edit/edit.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
-	cp build/edit.inf $(PKGDIR)
+	cp -p build/edit.inf $(PKGDIR)
 
 linux/install/bin/less.exe: src/utils/edit/edit.c
 	$(TCC) -o $@ $^ $(TCCFLAGS) -DLESS
 
 linux/install/bin/fdisk.exe: src/utils/fdisk/fdisk.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
-	cp build/fdisk.inf $(PKGDIR)
+	cp -p build/fdisk.inf $(PKGDIR)
 
 linux/install/bin/setup.exe: src/utils/setup/setup.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
-	cp build/setup.inf $(PKGDIR)
+	cp -p build/setup.inf $(PKGDIR)
 
 linux/install/bin/mkboot.exe: src/utils/mkboot/mkboot.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
-	cp build/mkboot.inf $(PKGDIR)
+	cp -p build/mkboot.inf $(PKGDIR)
 
 linux/install/bin/ftpd.exe: src/utils/ftpd/ftpd.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
-	cp build/ftpd.inf $(PKGDIR)
+	cp -p build/ftpd.inf $(PKGDIR)
 
 linux/install/bin/telnetd.exe: src/utils/telnetd/telnetd.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
-	cp build/telnetd.inf $(PKGDIR)
+	cp -p build/telnetd.inf $(PKGDIR)
 
 linux/install/bin/login.exe: src/utils/login/login.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
-	cp build/login.inf $(PKGDIR)
+	cp -p build/login.inf $(PKGDIR)
 
 linux/install/bin/pkg.exe: src/utils/pkg/pkg.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
-	cp build/pkg.inf $(PKGDIR)
+	cp -p build/pkg.inf $(PKGDIR)
 
 linux/install/usr/bin/make.exe: src/utils/make/make.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
-	cp build/make.inf $(PKGDIR)
+	cp -p build/make.inf $(PKGDIR)
 
 linux/install/usr/bin/ar.exe: src/utils/ar/ar.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
-	cp build/ar.inf $(PKGDIR)
+	cp -p build/ar.inf $(PKGDIR)
 
 linux/install/usr/bin/impdef.exe: src/utils/impdef/impdef.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
-	cp build/impdef.inf $(PKGDIR)
+	cp -p build/impdef.inf $(PKGDIR)
 
 linux/install/usr/bin/ctohtml.exe: src/utils/ctohtml/ctohtml.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
-	cp build/ctohtml.inf $(PKGDIR)
+	cp -p build/ctohtml.inf $(PKGDIR)
 
 #
 # cmds
@@ -798,7 +798,7 @@ linux/install/usr/bin/ctohtml.exe: src/utils/ctohtml/ctohtml.c
 cmds: \
   linux/install/bin/grep.exe \
   linux/install/bin/ping.exe
-	cp build/cmds.inf $(PKGDIR)
+	cp -p build/cmds.inf $(PKGDIR)
 
 linux/install/bin/ping.exe: src/cmds/ping.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
@@ -814,23 +814,23 @@ sdk: linux/install/usr/bin/cc.exe linux/install/usr/bin/as.exe
 
 linux/install/usr/bin/cc.exe: $(TCC_SRCFILES) $(TCC_HDRFILES)
 	$(TCC) -o $@ $(TCC_SRCFILES) -I sdk/src/cc $(TCCFLAGS) -DUSE_LOCAL_HEAP
-	cp build/cc.inf $(PKGDIR)
+	cp -p build/cc.inf $(PKGDIR)
 
 linux/install/usr/bin/as.exe: $(AS_SRCFILES)
 	$(TCC) -o $@ $^ -I sdk/src/as $(TCCFLAGS) $(AS_CFLAGS) -DUSE_LOCAL_HEAP
-	cp build/as.inf $(PKGDIR)
+	cp -p build/as.inf $(PKGDIR)
 
 sdk-source:
 	mkdir -p img
 	mkdir -p linux/install/usr/src/utils/as
 	mkdir -p linux/install/usr/src/utils/as/output
-	cp sdk/src/as/*.c sdk/src/as/*.h linux/install/usr/src/utils/as
-	cp sdk/src/as/Makefile.sanos linux/install/usr/src/utils/as/Makefile
-	cp sdk/src/as/output/*.c sdk/src/as/output/*.h linux/install/usr/src/utils/as/output
+	cp -p sdk/src/as/*.c sdk/src/as/*.h linux/install/usr/src/utils/as
+	cp -p sdk/src/as/Makefile.sanos linux/install/usr/src/utils/as/Makefile
+	cp -p sdk/src/as/output/*.c sdk/src/as/output/*.h linux/install/usr/src/utils/as/output
 	mkdir -p linux/install/usr/src/utils/cc
-	cp sdk/src/cc/*.c sdk/src/cc/*.h linux/install/usr/src/utils/cc
-	cp sdk/src/cc/Makefile.sanos linux/install/usr/src/utils/cc/Makefile
-	cp build/sdk.inf $(PKGDIR)
+	cp -p sdk/src/cc/*.c sdk/src/cc/*.h linux/install/usr/src/utils/cc
+	cp -p sdk/src/cc/Makefile.sanos linux/install/usr/src/utils/cc/Makefile
+	cp -p build/sdk.inf $(PKGDIR)
 
 #
 # vmdk
@@ -852,6 +852,15 @@ hdmin: img/hd.vmdk
 
 img/hd.vmdk: sanos
 	$(MKDFS) -d img/hd.vmdk -t vmdk -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 100M -i -f -S linux/image -F build/hdmin.lst
+
+#
+# floppy
+#
+
+floppy: img/sanos.flp
+
+img/sanos.flp: sanos
+	$(MKDFS) -d img/sanos.flp -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 1440 -i -f -S . -F build/floppy.lst
 
 #
 # clean

@@ -8,6 +8,8 @@ homepage=http://bellard.org/tcc/
 
 [source]
 /usr/src/utils/cc/
+
+[prebuilt]
 /usr/bin/cc.exe
 
 [files]

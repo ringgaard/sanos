@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <utime.h>
 #include <sys/stat.h>
 #include "inifile.h"
 
@@ -35,6 +36,7 @@ struct pkg {
   char *inffile;
   struct section *manifest;
   int removed;
+  int time;
   struct pkg *next;
 };
 
@@ -78,14 +80,17 @@ static int read_pkgdb(char *dbfile, struct pkgdb *db) {
     char *name = NULL;
     char *inffile = NULL;
     char *description = NULL;
+    char *time = NULL;
     name = strsep(&p, "\t\n");
     inffile = strsep(&p, "\t\n");
     description = strsep(&p, "\t\n");
+    time = strsep(&p, "\t\n");
 
     if (name) {
       struct pkg *pkg = add_package(db, name);
       if (inffile) pkg->inffile = strdup(inffile);
       if (description) pkg->description = strdup(description);
+      if (time) pkg->time = atoi(time);
     }
   }
   fclose(f);
@@ -104,7 +109,11 @@ static int write_pkgdb(char *dbfile, struct pkgdb *db) {
   }
   for (pkg = db->head; pkg; pkg = pkg->next) {
     if (!pkg->removed) {
-      fprintf(f, "%s\t%s\t%s\n", pkg->name, pkg->inffile ? pkg->inffile : "", pkg->description ? pkg->description : "");
+      fprintf(f, "%s\t%s\t%s\t%d\n", 
+        pkg->name, 
+        pkg->inffile ? pkg->inffile : "", 
+        pkg->description ? pkg->description : "", 
+        pkg->time);
     }
   }
   fclose(f);
@@ -123,7 +132,7 @@ char *joinpath(char *dir, char *filename, char *path) {
   return path;
 }
 
-int add_file(FILE *archive, char *srcfn, char *dstfn) {
+int add_file(FILE *archive, char *srcfn, char *dstfn, int *time) {
   struct stat st;
 
   //printf(" Adding %s from %s\n", dstfn, srcfn);
@@ -149,7 +158,7 @@ int add_file(FILE *archive, char *srcfn, char *dstfn) {
       if (strcmp(dp->d_name, "..") == 0) continue;
       joinpath(srcfn, dp->d_name, subsrcfn);
       joinpath(dstfn, dp->d_name, subdstfn);
-      rc = add_file(archive, subsrcfn, subdstfn);
+      rc = add_file(archive, subsrcfn, subdstfn, time);
       if (rc != 0) {
         closedir(dirp);
         return 1;
@@ -199,6 +208,7 @@ int add_file(FILE *archive, char *srcfn, char *dstfn) {
       }
     }
     fclose(f);
+    if (*time == 0 || st.st_mtime > *time) *time = st.st_mtime;
   }
 
   return 0;
@@ -207,6 +217,7 @@ int add_file(FILE *archive, char *srcfn, char *dstfn) {
 int make_package(struct pkgdb *db, char *inffn) {
   struct section *manifest;
   struct section *source;
+  struct section *prebuilt;
   struct pkg *pkg;
   char *pkgname;
   char *description;
@@ -214,6 +225,7 @@ int make_package(struct pkgdb *db, char *inffn) {
   char dstpkgfn[STRLEN];
   char srcfn[STRLEN];
   unsigned char zero[TAR_BLKSIZ];
+  struct utimbuf times;
   FILE *archive;
   int rc;
 
@@ -237,14 +249,15 @@ int make_package(struct pkgdb *db, char *inffn) {
   pkg->description = description ? strdup(description) : NULL;
   pkg->manifest = manifest;
   pkg->inffile = strdup(dstinffn);
-  
+  db->dirty = 1;
+
   if (strcmp(dstdir, "-") == 0) return 0;
 
   joinpath(dstdir, pkgname, dstpkgfn);
   strcat(dstpkgfn, ".pkg");
 
   archive = fopen(dstpkgfn, "w");
-  if (add_file(archive, inffn, pkg->inffile) != 0) {
+  if (add_file(archive, inffn, pkg->inffile, &pkg->time) != 0) {
     fclose(archive);
     unlink(dstpkgfn);
     return 1;
@@ -255,7 +268,21 @@ int make_package(struct pkgdb *db, char *inffn) {
     struct property *p;
     for (p = source->properties; p; p = p->next) {
       joinpath(srcdir, p->name, srcfn);
-      rc = add_file(archive, srcfn, p->name);
+      rc = add_file(archive, srcfn, p->name, &pkg->time);
+      if (rc != 0) {
+        fclose(archive);
+        unlink(dstpkgfn);
+        return 1;
+      }
+    }
+  }
+
+  prebuilt = find_section(pkg->manifest, "prebuilt");
+  if (prebuilt) {
+    struct property *p;
+    for (p = prebuilt->properties; p; p = p->next) {
+      joinpath(srcdir, p->name, srcfn);
+      rc = add_file(archive, srcfn, p->name, &pkg->time);
       if (rc != 0) {
         fclose(archive);
         unlink(dstpkgfn);
@@ -268,6 +295,9 @@ int make_package(struct pkgdb *db, char *inffn) {
   fwrite(zero, 1, TAR_BLKSIZ, archive);
   fwrite(zero, 1, TAR_BLKSIZ, archive);
   fclose(archive);
+  
+  times.actime = times.modtime = pkg->time;
+  utime(dstpkgfn, &times);
 
   return 0;
 }

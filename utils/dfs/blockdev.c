@@ -56,7 +56,6 @@ static int raw_open(struct blockdevice *bs, const char *filename)
 
   bs->total_sectors = size / 512;
   s->fd = fd;
-printf("fd=%d\n", fd);
 
   return 0;
 }
@@ -117,20 +116,19 @@ static int raw_create(const char *filename, int64_t total_size, int flags)
 static int raw_create(const char *filename, int64_t total_size, int flags)
 {
   int fd;
-  int64_t size;
+  off_t size;
   int rc;
 
   if (flags) return -1;
 
-  fd = open(filename, O_BINARY | O_CREAT, S_IREAD | S_IWRITE);
+  fd = creat(filename, S_IWUSR);
   if (fd == -1) {
     perror(filename);
     return -1;
   }
 
   size = total_size * 512;
-  lseek(fd, size - 1, SEEK_SET);
-  rc = write(fd, "", 1);
+  if (ftruncate(fd, size) < 0) perror(filename);
   close(fd);
 
   return 0;

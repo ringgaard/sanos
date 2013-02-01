@@ -51,11 +51,21 @@
 #define DEFAULT_PKG_REPO "http://www.jbox.dk/pkg"
 #define PKGDB_FILE       "/usr/share/pkg/db"
 
+#define FROM_FILE   0x01
+#define ONLY_FETCH  0x02
+#define ONLY_BUILD  0x04
+#define DEPENDENCY  0x08
+#define UPDATE      0x10
+#define UPGRADE     0x20
+#define VERBOSE     0x40
+
 struct pkg {
   char *name;
   char *inffile;
   char *description;
   struct section *manifest;
+  time_t time;
+  time_t avail;
   int removed;
   struct pkg *next;
 };
@@ -65,10 +75,6 @@ struct pkgdb {
   struct pkg *tail;
   char *repo;
   int dirty;
-  int verbose;
-  int update;
-  int onlyfetch;
-  int onlybuild;
 };
 
 static int parse_url(char *url, char **host, int *port, char **path) {
@@ -268,7 +274,7 @@ int make_directory(char *path, int mode) {
   return 0;
 }
 
-static int extract_files(char *url, FILE *f, char *manifest, int verbose) {
+static int extract_files(char *url, FILE *f, char *manifest, int verbose, int *time) {
   unsigned char buffer[TAR_BLKSIZ];
   unsigned char fn[FILENAME_MAX];
   struct tarhdr *hdr;
@@ -316,6 +322,7 @@ static int extract_files(char *url, FILE *f, char *manifest, int verbose) {
     times.actime = -1;
     times.ctime = -1;
     if (verbose) printf("extracting '%s' size: %d mode: %o\n", fn, size, mode);
+    if (times.modtime > *time) *time = times.modtime;
 
     if (hdr->typeflag == DIRTYPE) {
       // Create directory
@@ -402,13 +409,16 @@ static int read_pkgdb_from_file(FILE *f, struct pkgdb *db) {
     char *name = NULL;
     char *inffile = NULL;
     char *description = NULL;
+    char *time = NULL;
     name = strsep(&p, "\t\n");
     inffile = strsep(&p, "\t\n");
     description = strsep(&p, "\t\n");
+    time = strsep(&p, "\t\n");
 
     if (name) {
       struct pkg *pkg = add_package(db, name, description);
       if (inffile) pkg->inffile = strdup(inffile);
+      if (time) pkg->time = atoi(time);
     }
   }
   db->dirty = 0;
@@ -437,7 +447,7 @@ static int write_pkgdb(struct pkgdb *db) {
   }
   for (pkg = db->head; pkg; pkg = pkg->next) {
     if (!pkg->removed) {
-      fprintf(f, "%s\t%s\t%s\n", pkg->name, pkg->inffile ? pkg->inffile : "", pkg->description);
+      fprintf(f, "%s\t%s\t%s\t%d\n", pkg->name, pkg->inffile ? pkg->inffile : "", pkg->description, pkg->time);
     }
   }
   fclose(f);
@@ -461,7 +471,7 @@ static int delete_pkgdb(struct pkgdb *db) {
   return 0;
 }
 
-static int install_package(char *pkgname, struct pkgdb *db, int file, int dependency) {
+static int install_package(char *pkgname, struct pkgdb *db, int options) {
   char url[STRLEN];
   FILE *f;
   int rc;
@@ -471,38 +481,44 @@ static int install_package(char *pkgname, struct pkgdb *db, int file, int depend
   struct section *build;
   struct pkg *pkg;
   char *description;
+  int time;
 
   // Check if package is already installed
-  if (!file) {
-    if (find_package(db, pkgname)) {
-      if (dependency) return 0;
-      if (db->update) {
-        if (db->verbose) printf("updating package %s\n", pkgname);
+  if (!(options & FROM_FILE)) {
+    pkg = find_package(db, pkgname);
+    if (pkg) {
+      if (options & UPGRADE) {
+        if (pkg->time == pkg->avail) return 0;
+      } else if (options & DEPENDENCY) {
+        return 0;
+      } else if (options & UPDATE) {
+        if (options & VERBOSE) printf("updating package %s\n", pkgname);
       } else {
-        fprintf(stderr, "%s: is already installed\n", pkgname);
-        return 1;
+        printf("package %s is already installed\n", pkgname);
+        return 0;
       }
     }
   }
 
   // Open package file
   printf("Fetching %s\n", pkgname);
-  if (file) {
+  if (options & FROM_FILE) {
     snprintf(url, sizeof(url), "file:///%s", pkgname);
   } else {
     snprintf(url, sizeof(url), "%s/%s.pkg", db->repo, pkgname);
   }
-  if (db->verbose) printf("fetching package %s from %s\n", pkgname, url);
+  if (options & VERBOSE) printf("fetching package %s from %s\n", pkgname, url);
   f = open_url(url);
   if (!f) return 1;
 
   // Extract file from package file
-  rc = extract_files(url, f, inffile, db->verbose);
+  time = 0;
+  rc = extract_files(url, f, inffile, options & VERBOSE, &time);
   fclose(f);
   if (rc != 0) return rc;
 
   // Read manifest
-  if (db->verbose) printf("reading manifest from %s\n", inffile);
+  if (options & VERBOSE) printf("reading manifest from %s\n", inffile);
   manifest = read_properties(inffile);
   if (!manifest) {
     fprintf(stderr, "%s: unable to read manifest\n", inffile);
@@ -514,7 +530,7 @@ static int install_package(char *pkgname, struct pkgdb *db, int file, int depend
   description = get_property(manifest, "package", "description", NULL);
   pkg = find_package(db, pkgname);
   if (pkg) {
-    if (db->verbose) printf("updating package %s in database\n", pkgname);
+    if (options & VERBOSE) printf("updating package %s in database\n", pkgname);
     if (description) {
       free(pkg->description);
       pkg->description = strdup(description);
@@ -523,32 +539,36 @@ static int install_package(char *pkgname, struct pkgdb *db, int file, int depend
     if (pkg->manifest) free_properties(pkg->manifest);
     free(pkg->inffile);
   } else {
-    if (db->verbose) printf("adding package %s to database\n", pkgname);
+    if (options & VERBOSE) printf("adding package %s to database\n", pkgname);
     pkg = add_package(db, pkgname, description);
   }
   pkg->inffile = strdup(inffile);
   pkg->manifest = manifest;
+  if (time != pkg->time) {
+    pkg->time = time;
+    db->dirty = 1;
+  }
 
   // Install package dependencies
   dep = find_section(manifest, "dependencies");
   if (dep) {
     struct property *p;
     for (p = dep->properties; p; p = p->next) {
-      if (db->verbose) printf("package %s depends on %s\n", pkgname, p->name);
-      rc = install_package(p->name, db, 0, 1);
+      if (options & VERBOSE) printf("package %s depends on %s\n", pkgname, p->name);
+      rc = install_package(p->name, db, options | DEPENDENCY);
       if (rc != 0) return rc;
     }
   }
-  if (db->onlyfetch && !dependency) return 0;
+  if ((options & ONLY_FETCH) && !(options & DEPENDENCY)) return 0;
 
   // Run package build/installation commands
-  if (!db->onlyfetch || dependency) {
-    build = find_section(manifest, db->onlybuild && !dependency ? "build" : "install");
+  if (!(options & ONLY_FETCH) || (options & DEPENDENCY)) {
+    build = find_section(manifest, (options & ONLY_BUILD) && !(options & DEPENDENCY) ? "build" : "install");
     if (build) {
       struct property *p;
-      printf(db->onlybuild && !dependency ? "Building %s\n" : "Installing %s\n", pkgname);
+      printf((options & ONLY_BUILD) && !(options & DEPENDENCY) ? "Building %s\n" : "Installing %s\n", pkgname);
       for (p = build->properties; p; p = p->next) {
-        if (db->verbose) printf("%s\n", p->name);
+        if (options & VERBOSE) printf("%s\n", p->name);
         rc = system(p->name);
         if (rc != 0) {
           fprintf(stderr, "%s: build failed\n", pkgname);
@@ -561,7 +581,7 @@ static int install_package(char *pkgname, struct pkgdb *db, int file, int depend
   return 0;
 }
 
-static void remove_path(char *path, int verbose) {
+static void remove_path(char *path, int options) {
   struct stat st;
 
   // Stat file
@@ -577,7 +597,7 @@ static void remove_path(char *path, int verbose) {
     int more;
 
     // Remove files in directory recursively
-    if (verbose) printf("deleting all files in %s\n", path);
+    if (options & VERBOSE) printf("deleting all files in %s\n", path);
     dirp = opendir(path);
     if (!dirp) {
       perror(path);
@@ -596,23 +616,23 @@ static void remove_path(char *path, int verbose) {
           closedir(dirp);
           return;
         }
-        remove_path(fn, verbose);
+        remove_path(fn, options);
       }
       if (more) rewinddir(dirp);
     }
     closedir(dirp);
 
     // Remove directory
-    if (verbose) printf("removing directory %s\n", path);
+    if (options & VERBOSE) printf("removing directory %s\n", path);
     if (rmdir(path) < 0) perror(path);
   } else {
     // Remove file
-    if (verbose) printf("removing file %s\n", path);
+    if (options & VERBOSE) printf("removing file %s\n", path);
     if (unlink(path) < 0) perror(path);
   }
 }
 
-static int remove_package(char *pkgname, struct pkgdb *db) {
+static int remove_package(char *pkgname, struct pkgdb *db, int options) {
   struct pkg *pkg;
   struct section *files;
   
@@ -624,7 +644,7 @@ static int remove_package(char *pkgname, struct pkgdb *db) {
   }
   if (pkg->removed) return 0;
   if (!pkg->manifest) {
-    if (db->verbose) printf("reading manifest from %s\n", pkg->inffile);
+    if (options & VERBOSE) printf("reading manifest from %s\n", pkg->inffile);
     pkg->manifest = read_properties(pkg->inffile);
     if (!pkg->manifest) {
       fprintf(stderr, "%s: unable to read manifest\n", pkg->inffile);
@@ -637,7 +657,7 @@ static int remove_package(char *pkgname, struct pkgdb *db) {
   if (files) {
     struct property *p;
     for (p = files->properties; p; p = p->next) {
-      remove_path(p->name, db->verbose);
+      remove_path(p->name, options);
     }
   }
 
@@ -648,6 +668,29 @@ static int remove_package(char *pkgname, struct pkgdb *db) {
   pkg->removed = 1;
   db->dirty = 1;
 
+  return 0;
+}
+
+static int retrieve_package_timestamps(struct pkgdb *db, char *repo) {
+  char url[STRLEN];
+  FILE *f;
+  struct pkgdb rdb;
+  struct pkg *pkg;
+  struct pkg *rpkg;
+
+  snprintf(url, sizeof(url), "%s/db", repo);
+  f = open_url(url);
+  if (!f) return 1;
+
+  memset(&rdb, 0, sizeof(struct pkgdb));
+  read_pkgdb_from_file(f, &rdb);
+  fclose(f);
+
+  for (pkg = db->head; pkg; pkg = pkg->next) {
+    rpkg = find_package(&rdb, pkg->name);
+    if (rpkg) pkg->avail = rpkg->time;
+  }
+  delete_pkgdb(&rdb);
   return 0;
 }
 
@@ -663,6 +706,7 @@ static int query_repository(char **keywords, char *repo) {
 
   memset(&db, 0, sizeof(struct pkgdb));
   read_pkgdb_from_file(f, &db);
+  fclose(f);
 
   for (pkg = db.head; pkg; pkg = pkg->next) {
     int match = 0;
@@ -678,7 +722,6 @@ static int query_repository(char **keywords, char *repo) {
     }
     if (match) printf("%-15s %s\n", pkg->name, pkg->description);
   }
-  fclose(f);
   delete_pkgdb(&db);
 
   return 0;
@@ -690,7 +733,8 @@ static void usage() {
   fprintf(stderr, "  -R URL  Package repository URL (default: %s)\n", DEFAULT_PKG_REPO);
   fprintf(stderr, "  -B      Build but do not install packages\n");
   fprintf(stderr, "  -F      Fetch but do not build packages\n");
-  fprintf(stderr, "  -u      Update packages\n");
+  fprintf(stderr, "  -u      Upgrade packages if newer versions are available\n");
+  fprintf(stderr, "  -U      Force update of packages\n");
   fprintf(stderr, "  -d      Delete package\n");
   fprintf(stderr, "  -l      List installed packages\n");
   fprintf(stderr, "  -q      Query packages in repository\n");
@@ -703,22 +747,22 @@ int main(int argc, char *argv[]) {
   int c;
   int i;
   int rc;
-  int file = 0;
   int remove = 0;
   int list = 0;
   int query = 0;
+  int options = 0;
 
   // Parse command line options
   memset(&db, 0, sizeof(struct pkgdb));
   db.repo = DEFAULT_PKG_REPO;
-  while ((c = getopt(argc, argv, "dflquvBFR:?")) != EOF) {
+  while ((c = getopt(argc, argv, "dflquvBFR:U?")) != EOF) {
     switch (c) {
       case 'd':
         remove = 1;
         break;
 
       case 'f':
-        file = 1;
+        options |= FROM_FILE;
         break;
 
       case 'l':
@@ -730,23 +774,27 @@ int main(int argc, char *argv[]) {
         break;
 
       case 'u':
-        db.update = 1;
+        options |= UPGRADE;
         break;
 
       case 'v':
-        db.verbose = 1;
+        options |= VERBOSE;
         break;
 
       case 'B':
-        db.onlybuild = 1;
+        options |= ONLY_BUILD;
         break;
 
       case 'F':
-        db.onlyfetch = 1;
+        options |= ONLY_FETCH;
         break;
 
       case 'R':
         db.repo = optarg;
+        break;
+
+      case 'U':
+        options |= UPDATE;
         break;
 
       case '?':
@@ -754,18 +802,23 @@ int main(int argc, char *argv[]) {
         usage();
     }
   }
-  if (optind == argc && !list && !query) usage();
+  if (optind == argc && !list && !query && !(options & UPGRADE)) usage();
 
   // Read package database
   read_pkgdb(&db);
+
+  // Get package timestamps from repository
+  if (options & UPGRADE) {
+    if (retrieve_package_timestamps(&db, db.repo) != 0) return 1;
+  }
 
   if (list) {
     // List installed packages
     struct pkg *pkg;
     for (pkg = db.head; pkg; pkg = pkg->next) {
-      if (db.verbose) {
+      if (options & VERBOSE) {
         printf("%-15s %s\n", pkg->name, pkg->description ? pkg->description : "");
-      } else {
+      } else if (!(options & UPGRADE) || pkg->avail > pkg->time) {
         puts(pkg->name);
       }
     }
@@ -773,13 +826,20 @@ int main(int argc, char *argv[]) {
   } else if (query) {
     // Query package repository
     rc = query_repository(argv + optind, db.repo);
+  } else if ((options & UPGRADE) && optind == argc) {
+    // Upgrade all packages
+    struct pkg *pkg;
+    for (pkg = db.head; pkg; pkg = pkg->next) {
+      rc = install_package(pkg->name, &db, options);
+      if (rc != 0) break;
+    }
   } else {
     // Install/remove packages
     for (i = optind; i < argc; i++) {
       if (remove) {
-        rc = remove_package(argv[i], &db);
+        rc = remove_package(argv[i], &db, options);
       } else {
-        rc = install_package(argv[i], &db, file, 0);
+        rc = install_package(argv[i], &db, options);
       }
       if (rc != 0) break;
     }
