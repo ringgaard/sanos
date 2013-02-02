@@ -132,7 +132,7 @@ char *joinpath(char *dir, char *filename, char *path) {
   return path;
 }
 
-int add_file(FILE *archive, char *srcfn, char *dstfn, int *time) {
+int add_file(FILE *archive, char *srcfn, char *dstfn, int *time, int prebuilt) {
   struct stat st;
 
   //printf(" Adding %s from %s\n", dstfn, srcfn);
@@ -158,7 +158,7 @@ int add_file(FILE *archive, char *srcfn, char *dstfn, int *time) {
       if (strcmp(dp->d_name, "..") == 0) continue;
       joinpath(srcfn, dp->d_name, subsrcfn);
       joinpath(dstfn, dp->d_name, subdstfn);
-      rc = add_file(archive, subsrcfn, subdstfn, time);
+      rc = add_file(archive, subsrcfn, subdstfn, time, prebuilt);
       if (rc != 0) {
         closedir(dirp);
         return 1;
@@ -179,7 +179,7 @@ int add_file(FILE *archive, char *srcfn, char *dstfn, int *time) {
     sprintf(hdr->uid, "%07o", 0);
     sprintf(hdr->gid, "%07o", 0);
     sprintf(hdr->size, "%011o", st.st_size);
-    sprintf(hdr->mtime, "%011o", st.st_mtime);
+    sprintf(hdr->mtime, "%011o", prebuilt ? *time : st.st_mtime);
     memcpy(hdr->chksum, "        ", 8);
     hdr->typeflag = '0';
     strcpy(hdr->magic, "ustar  ");
@@ -208,7 +208,9 @@ int add_file(FILE *archive, char *srcfn, char *dstfn, int *time) {
       }
     }
     fclose(f);
-    if (*time == 0 || st.st_mtime > *time) *time = st.st_mtime;
+    if (!prebuilt) {
+      if (*time == 0 || st.st_mtime > *time) *time = st.st_mtime;
+    }
   }
 
   return 0;
@@ -249,6 +251,7 @@ int make_package(struct pkgdb *db, char *inffn) {
   pkg->description = description ? strdup(description) : NULL;
   pkg->manifest = manifest;
   pkg->inffile = strdup(dstinffn);
+  pkg->time = 0;
   db->dirty = 1;
 
   if (strcmp(dstdir, "-") == 0) return 0;
@@ -257,7 +260,7 @@ int make_package(struct pkgdb *db, char *inffn) {
   strcat(dstpkgfn, ".pkg");
 
   archive = fopen(dstpkgfn, "w");
-  if (add_file(archive, inffn, pkg->inffile, &pkg->time) != 0) {
+  if (add_file(archive, inffn, pkg->inffile, &pkg->time, 0) != 0) {
     fclose(archive);
     unlink(dstpkgfn);
     return 1;
@@ -268,7 +271,7 @@ int make_package(struct pkgdb *db, char *inffn) {
     struct property *p;
     for (p = source->properties; p; p = p->next) {
       joinpath(srcdir, p->name, srcfn);
-      rc = add_file(archive, srcfn, p->name, &pkg->time);
+      rc = add_file(archive, srcfn, p->name, &pkg->time, 0);
       if (rc != 0) {
         fclose(archive);
         unlink(dstpkgfn);
@@ -282,7 +285,7 @@ int make_package(struct pkgdb *db, char *inffn) {
     struct property *p;
     for (p = prebuilt->properties; p; p = p->next) {
       joinpath(srcdir, p->name, srcfn);
-      rc = add_file(archive, srcfn, p->name, &pkg->time);
+      rc = add_file(archive, srcfn, p->name, &pkg->time, 1);
       if (rc != 0) {
         fclose(archive);
         unlink(dstpkgfn);
