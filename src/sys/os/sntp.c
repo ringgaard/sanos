@@ -48,9 +48,7 @@ struct ntp_server {
 };
 
 struct ntp_packet {
-  unsigned char mode : 3;
-  unsigned char vn : 3;
-  unsigned char li : 2;
+  unsigned char mode_vn_li;
   unsigned char stratum;
   char poll;
   char precision;
@@ -88,8 +86,7 @@ int sntp_get(struct ntp_server *srv, struct timeval *tv) {
   }
 
   memset(&pkt, 0, sizeof pkt);
-  pkt.vn = 4;
-  pkt.mode = 3;
+  pkt.mode_vn_li = (4 << 3) | 3;
   pkt.originate_timestamp_secs = htonl(time(0) + NTP_EPOCH);
 
   rc = send(s, &pkt, sizeof pkt, 0);
