@@ -1865,10 +1865,10 @@ void edit(struct editor *ed) {
         case ctrl('v'): paste_selection(ed); break;
         case ctrl('o'): open_editor(ed); ed = ed->env->current; break;
         case ctrl('n'): new_editor(ed); ed = ed->env->current; break;
-        case ctrl('w'): close_editor(ed); ed = ed->env->current; break;
         case ctrl('s'): save_editor(ed); break;
         case ctrl('p'): pipe_command(ed); break;
 #endif
+        case ctrl('w'): close_editor(ed); ed = ed->env->current; break;
       }
     }
   }

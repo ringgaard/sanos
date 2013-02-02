@@ -953,6 +953,18 @@ int __stdcall start(hmodule_t hmod, void *reserved, void *reserved2) {
   // Initialize log
   start_syslog();
 
+  // Run init commands
+  if (!getpeb()->rcdone) {
+    char *rcscript = get_property(config, "os", "rc", NULL);
+    if (rcscript) {
+      rc = spawn(P_WAIT, NULL, rcscript, NULL, NULL);
+      if (rc != 0) {
+        syslog(LOG_ERR, "%s: returned error code %d", rcscript, rc);
+      }
+    }
+    getpeb()->rcdone = 1;
+  }
+
   // Load and execute init program
   init = get_property(config, "os", "init", "/bin/sh");
   while (1) {
