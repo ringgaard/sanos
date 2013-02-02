@@ -66,7 +66,8 @@ int search_file(FILE *f, char *filename, struct options *opts) {
     int matches = 0;
     while (fgets(line, sizeof(line), f) != NULL) {
       n = strlen(line);
-      if (n > 0 && line[n - 1] == '\n') line[n - 1] = 0;
+      if (n > 0 && line[n - 1] == '\n') line[--n] = 0;
+      if (n > 0 && line[n - 1] == '\r') line[--n] = 0;
 
       match = regexec(&opts->re, line, 0, NULL, 0) != REG_NOMATCH;
       if (opts->invert) match = !match;
@@ -90,7 +91,8 @@ int search_file(FILE *f, char *filename, struct options *opts) {
   linenum = 1;
   while (fgets(line, sizeof(line), f) != NULL) {
     n = strlen(line);
-    if (n > 0 && line[n - 1] == '\n') line[n - 1] = 0;
+      if (n > 0 && line[n - 1] == '\n') line[--n] = 0;
+      if (n > 0 && line[n - 1] == '\r') line[--n] = 0;
 
     match = regexec(&opts->re, line, 0, NULL, 0) != REG_NOMATCH;
     if (opts->invert) match = !match;
