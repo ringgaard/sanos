@@ -3,7 +3,7 @@
 #
 
 CMDS=grep.exe ping.exe
-ALLCMDS=chgrp.exe chmod.exe chown.exe cp.exe du.exe ls.exe mkdir.exe mv.exe rm.exe test.exe wc.exe $(CMDS)
+ALLCMDS=chgrp.exe chmod.exe chown.exe cp.exe du.exe ls.exe mkdir.exe mv.exe rm.exe test.exe touch.exe wc.exe $(CMDS)
 
 cmds: $(CMDS) 
 all: $(ALLCMDS)
@@ -42,6 +42,9 @@ rm.exe: rm.c
     $(CC) -o $@ $^
 
 test.exe: test.c
+    $(CC) -o $@ $^
+
+touch.exe: touch.c
     $(CC) -o $@ $^
 
 wc.exe: wc.c

@@ -730,6 +730,7 @@ SH_CMDS= \
   src/cmds/mv.c \
   src/cmds/rm.c \
   src/cmds/test.c \
+  src/cmds/touch.c \
   src/cmds/wc.c
 
 linux/install/bin/sh.exe: $(SH_SRCS) $(SH_HDRS) $(SH_CMDS)

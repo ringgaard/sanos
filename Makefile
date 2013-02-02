@@ -980,6 +980,7 @@ $(BIN)/sh.exe: \
   $(SRC)/cmds/mv.c \
   $(SRC)/cmds/rm.c \
   $(SRC)/cmds/test.c \
+  $(SRC)/cmds/touch.c \
   $(SRC)/cmds/wc.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib

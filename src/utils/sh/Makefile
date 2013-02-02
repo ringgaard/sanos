@@ -18,6 +18,7 @@ CMDS= \
   ../../cmds/ping.c \
   ../../cmds/rm.c \
   ../../cmds/test.c \
+  ../../cmds/touch.c \
   ../../cmds/wc.c
 
 sh.exe: $(SH_SRCFILES) $(SH_HDRFILES) $(CMDS)
