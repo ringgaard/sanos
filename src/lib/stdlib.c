@@ -247,7 +247,14 @@ int mkstemp(char *template)
 }
 
 int getpagesize() {
-  return PAGESIZE;
+  static int pagesize = 0;
+  if (pagesize == 0) {
+    struct meminfo mem;
+    if (sysinfo(SYSINFO_MEM, &mem, sizeof(mem)) < 0) return PAGESIZE;
+    pagesize = mem.pagesize;
+  }
+
+  return pagesize;
 }
 
 int getrusage(int who, struct rusage *usage) {

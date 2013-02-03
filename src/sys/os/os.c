@@ -669,7 +669,7 @@ void dump_stack(struct context *ctxt) {
 
 int uname(struct utsname *buf) {
   struct cpuinfo cpu;
-  char machine[8];
+  char machine[UTSNAMELEN];
   struct verinfo *ver;
   int osflags;
   char *build;
@@ -680,12 +680,17 @@ int uname(struct utsname *buf) {
     return -1;
   }
 
+  memset(&cpu, 0, sizeof(struct cpuinfo));
   if (sysinfo(SYSINFO_CPU, &cpu, sizeof(struct cpuinfo)) < 0) return -1;
-  machine[0] = 'i';
-  machine[1] = '0' + cpu.cpu_family;
-  machine[2] = '8';
-  machine[3] = '6';
-  machine[4] = 0;
+  if (*cpu.modelid) {
+    strncpy(machine, cpu.modelid, UTSNAMELEN);
+  } else {
+    machine[0] = 'i';
+    machine[1] = '0' + cpu.cpu_family;
+    machine[2] = '8';
+    machine[3] = '6';
+    machine[4] = 0;
+  }
 
   osflags = getpeb()->osversion.file_flags;
   if (osflags & VER_FLAG_PRERELEASE) {

@@ -81,6 +81,7 @@ static int read_line(int f, char *buf) {
 static int httpget(char *server, char *path, char *filename) {
   struct hostent *hp;
   struct sockaddr_in sin;
+  struct utsname sys;
   int s;
   int rc;
   int n;
@@ -88,6 +89,9 @@ static int httpget(char *server, char *path, char *filename) {
   int f;
   char *buf;
 
+  memset(&sys, 0, sizeof(struct utsname));
+  uname(&sys);
+  
   hp = gethostbyname(server);
   if (!hp) return -errno;
 
@@ -108,7 +112,8 @@ static int httpget(char *server, char *path, char *filename) {
   buf = malloc(8 * 1024);
   if (!buf) return -ENOMEM;
 
-  sprintf(buf, "GET %s HTTP/1.0\r\nHost: %s\r\n\r\n", path, server);
+  sprintf(buf, "GET %s HTTP/1.0\r\nHost: %s\r\nUser-Agent: httpget/1.0 %s/%s (Build %s; CPU %s)\r\n\r\n", 
+          path, server, sys.sysname, sys.release, sys.version, sys.machine);
   rc = send(s, buf, strlen(buf), 0);
   if (rc < 0) {
     close(s);
@@ -967,8 +972,9 @@ shellcmd(sysinfo) {
   rc = sysinfo(SYSINFO_LOAD, &load, sizeof(load));
   if (rc < 0) return rc;
 
-  printf("cpu vendor: %d family: %d model: %d stepping: %d mhz: %d feat: %08X pagesize: %d\n", 
-         cpu.cpu_vendor, cpu.cpu_family, cpu.cpu_model, cpu.cpu_stepping, cpu.cpu_mhz, cpu.cpu_features, cpu.pagesize);
+  printf("cpu vendor: %d family: %d model: %d stepping: %d mhz: %d feat: %08X pagesize: %d vendorid: %s modelid: %s\n", 
+         cpu.cpu_vendor, cpu.cpu_family, cpu.cpu_model, cpu.cpu_stepping, cpu.cpu_mhz, cpu.cpu_features, 
+         cpu.pagesize, cpu.vendorid, cpu.modelid);
 
   printf("mem phys total: %d K avail: %d K virt total: %d K avail: %d K pagesize: %d\n", 
          mem.physmem_total / 1024, mem.physmem_avail / 1024, mem.virtmem_total / 1024, mem.virtmem_avail / 1024, mem.pagesize);

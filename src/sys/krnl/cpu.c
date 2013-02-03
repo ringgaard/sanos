@@ -226,6 +226,8 @@ int cpu_sysinfo(struct cpuinfo *info) {
   info->cpu_mhz = cpu.mhz;
   info->cpu_features = cpu.features;
   info->pagesize = PAGESIZE;
+  strcpy(info->vendorid, cpu.vendorid);
+  strcpy(info->modelid, cpu.modelid);
 
   return 0;
 }

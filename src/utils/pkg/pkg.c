@@ -39,12 +39,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <utime.h>
-#include <netdb.h>
 #include <inifile.h>
 #include <shlib.h>
 #include <dirent.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
 
 #define STRLEN 1024
@@ -76,161 +73,6 @@ struct pkgdb {
   char *repo;
   int dirty;
 };
-
-static int parse_url(char *url, char **host, int *port, char **path) {
-  *host = NULL;
-  *port = 80;
-  *path = NULL;
-
-  // Parse protocol
-  if (strncmp(url, "file:", 5) == 0) {
-    *port = -1;
-    url += 5;
-  } else if (strncmp(url, "http:", 5) == 0) {
-    url += 5;
-  } else if (strncmp(url, "https:", 6) == 0 || strncmp(url, "ftp:", 4)) {
-    return -1;
-  }
-
-  // Parse server and port
-  if (strncmp(url, "//", 2) == 0) {
-    char *start;
-    int len;
-
-    url += 2;
-    start = url;
-    while (*url && *url != '/' && *url != ':') url++;
-    len = url - start;
-    *host = malloc(len + 1);
-    memcpy(*host, start, len);
-    (*host)[len] = 0;
-
-    if (*url == ':') {
-      *port = 0;
-      url++;
-      while (*url && *url != '/') {
-        if (*url < '0' || *url > '9') return -1;
-        *port = *port * 10 + (*url++ - '0');
-      }
-    }
-  }
-
-  // The remaining URL is the path
-  *path = strdup(*url ? url : "/");
-
-  return 0;
-}
-
-static FILE *open_url(char *url) {
-  char *host;
-  int port;
-  char *path;
-  struct hostent *hp;
-  struct sockaddr_in sin;
-  int s;
-  int rc;
-  FILE *f;
-  int status;
-  char header[STRLEN];
-
-  // Parse URL  
-  if (parse_url(url, &host, &port, &path) < 0) {
-    fprintf(stderr, "%s: invalid url\n", url);
-    free(host);
-    free(path);
-    return NULL;
-  }
-
-  // Check for file-based URL
-  if (port == -1) {
-    f = fopen(path, "r");
-    if (!f) perror(path);
-    free(host);
-    free(path);
-    return f;
-  }
-
-  // Lookup host
-  hp = gethostbyname(host);
-  if (!hp) {
-    perror(host);
-    free(host);
-    free(path);
-    return NULL;
-  }
-  memset(&sin, 0, sizeof(sin));
-  sin.sin_family = AF_INET;
-  memcpy(&sin.sin_addr, hp->h_addr_list[0], hp->h_length);
-  sin.sin_port = htons(port);
-
-  // Connect to host
-  s = socket(AF_INET, SOCK_STREAM, 0);
-  if (s < 0) {
-    perror(host);
-    free(host);
-    free(path);
-    return NULL;
-  }
-
-  rc = connect(s, (struct sockaddr *) &sin, sizeof(sin));
-  if (rc  < 0) {
-    perror(host);
-    free(path);
-    close(s);
-    return NULL;
-  }
-
-  // Open file for socket
-  f = fdopen(s, "a+");
-  if (!f) {
-    perror(host);
-    free(host);
-    free(path);
-    close(s);
-    return NULL;
-  }
-
-  // Send request to host
-  fprintf(f, "GET %s HTTP/1.0\r\nHost: %s\r\n\r\n", path, host);
-  fseek(f, 0, SEEK_CUR);
-
-  // Read headers
-  status = -1;
-  while (fgets(header, sizeof(header), f)) {
-    // Remove trailing cr/nl
-    char *p = header;
-    while (*p && *p != '\r' && *p != '\n') p++;
-    *p = 0;
-
-    // Check status code
-    if (status == -1) {
-      p = header;
-      if (strncmp(p, "HTTP/1.0 ", 9) == 0 || strncmp(p, "HTTP/1.1 ", 9) == 0) p += 9;
-      status = atoi(p);
-      if (status != 200) fprintf(stderr, "%s: %s\n", url, p);
-    }
-    
-    // Check for end of header
-    if (!*header) break;
-    //printf("hdr: %s\n", header);
-  }
-
-  // Check status code
-  if (status != 200) {
-    if (status == -1) {
-      fprintf(stderr, "%s: invalid response from server\n", url);
-    }
-    free(host);
-    free(path);
-    fclose(f);
-    return NULL;
-  }
-
-  // Return file
-  free(host);
-  free(path);
-  return f;
-}
 
 static unsigned int parse_octal(char *str, int len) {
   unsigned int n = 0;
@@ -508,7 +350,7 @@ static int install_package(char *pkgname, struct pkgdb *db, int options) {
     snprintf(url, sizeof(url), "%s/%s.pkg", db->repo, pkgname);
   }
   if (options & VERBOSE) printf("fetching package %s from %s\n", pkgname, url);
-  f = open_url(url);
+  f = open_url(url, "pkg");
   if (!f) return 1;
 
   // Extract file from package file
@@ -679,7 +521,7 @@ static int retrieve_package_timestamps(struct pkgdb *db, char *repo) {
   struct pkg *rpkg;
 
   snprintf(url, sizeof(url), "%s/db", repo);
-  f = open_url(url);
+  f = open_url(url, "pkg");
   if (!f) return 1;
 
   memset(&rdb, 0, sizeof(struct pkgdb));
@@ -701,7 +543,7 @@ static int query_repository(char **keywords, char *repo) {
   struct pkg *pkg;
 
   snprintf(url, sizeof(url), "%s/db", repo);
-  f = open_url(url);
+  f = open_url(url, "pkg");
   if (!f) return 1;
 
   memset(&db, 0, sizeof(struct pkgdb));

@@ -1336,6 +1336,8 @@ struct cpuinfo {
   int cpu_mhz;
   unsigned long cpu_features;
   int pagesize;
+  char vendorid[16];
+  char modelid[64];
 };
 
 struct meminfo {
