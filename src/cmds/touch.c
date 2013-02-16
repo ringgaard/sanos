@@ -35,6 +35,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <shlib.h>
+#include <fcntl.h>
 #include <time.h>
 #include <utime.h>
 #include <unistd.h>
@@ -54,7 +55,6 @@ static char *parse_num(char *str, int len, int *result) {
 static int parse_time(char *str, time_t *result) {
   time_t now;
   struct tm *tm;
-  char *fmt;
   char *dot;
   int len;
 
@@ -63,7 +63,7 @@ static int parse_time(char *str, time_t *result) {
   tm->tm_sec = 0;
 
   dot = strchr(str, '.');
-  int len = dot ? dot - str : strlen(str);
+  len = dot ? dot - str : strlen(str);
 
   // Parse year
   if (len == 12) {
@@ -116,7 +116,6 @@ static void usage() {
 
 shellcmd(touch) {
   int c;
-  int rc;
   int i;
   int atime = 0;
   int mtime = 1;
