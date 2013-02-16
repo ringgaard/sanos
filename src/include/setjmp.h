@@ -38,6 +38,8 @@
 #ifndef SETJMP_H
 #define SETJMP_H
 
+#include <sys/types.h>
+
 typedef struct {
   unsigned long ebp;
   unsigned long ebx;
