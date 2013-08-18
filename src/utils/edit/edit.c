@@ -945,9 +945,9 @@ void display_message(struct editor *ed, char *fmt, ...) {
 
 void draw_full_statusline(struct editor *ed) {
   struct env *env = ed->env;
-  int namewidth = env->cols - 20;
+  int namewidth = env->cols - 28;
   gotoxy(0, env->lines);
-  sprintf(env->linebuf, STATUS_COLOR "%*.*s%c Ln %-6dCol %-4d" CLREOL TEXT_COLOR, -namewidth, namewidth, ed->filename, ed->dirty ? '*' : ' ', ed->line + 1, column(ed, ed->linepos, ed->col) + 1);
+  sprintf(env->linebuf, STATUS_COLOR "%*.*sF1=Help %c Ln %-6dCol %-4d" CLREOL TEXT_COLOR, -namewidth, namewidth, ed->filename, ed->dirty ? '*' : ' ', ed->line + 1, column(ed, ed->linepos, ed->col) + 1);
   outstr(env->linebuf);
 }
 
@@ -1334,7 +1334,11 @@ void newline(struct editor *ed) {
   unsigned char ch;
 
   erase_selection(ed);
+#ifdef __linux__
+  insert(ed, ed->linepos + ed->col, "\n", 1);
+#else
   insert(ed, ed->linepos + ed->col, "\r\n", 2);
+#endif
   ed->col = ed->lastcol = 0;
   ed->line++;
   p = ed->linepos;
