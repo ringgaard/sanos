@@ -1001,7 +1001,7 @@ int access(char *name, int mode) {
 
     if (thread->euid == 0) {
       if (mode == X_OK) {
-        return buf.st_uid & 0111 ? 0 : -EACCES;
+        return buf.st_mode & 0111 ? 0 : -EACCES;
       } else {
         return 0;
       }
