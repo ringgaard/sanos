@@ -49,6 +49,7 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 #define O_BINARY 0
+int linux_console = 0;
 #endif
 
 #define MINEXTEND      32768
@@ -744,6 +745,19 @@ void gotoxy(int col, int line) {
 // Keyboard functions
 //
 
+void get_modifier_keys(int *shift, int *ctrl) {
+  *shift = *ctrl = 0;
+#ifdef __linux__
+  if (linux_console) {
+    char modifiers = 6;
+    if (ioctl(0, TIOCLINUX, &modifiers) >= 0) {
+      if (modifiers & 1) *shift = 1;
+      if (modifiers & 4) *ctrl = 1;
+    }
+  }
+#endif
+}
+
 int getkey() {
   int ch, shift, ctrl;
 
@@ -752,7 +766,11 @@ int getkey() {
 
   switch (ch) {
     case 0x08: return KEY_BACKSPACE;
-    case 0x09: return KEY_TAB;
+    case 0x09:
+      get_modifier_keys(&shift, &ctrl);
+      if (shift) return KEY_SHIFT_TAB;
+      if (ctrl) return KEY_CTRL_TAB;
+      return KEY_TAB;
 #ifdef SANOS
     case 0x0D: return gettib()->proc->term->type == TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
     case 0x0A: return gettib()->proc->term->type != TERM_CONSOLE ? KEY_ENTER : KEY_UNKNOWN;
@@ -777,7 +795,7 @@ int getkey() {
           break;
           
         case 0x5B:
-          shift = ctrl = 0;
+          get_modifier_keys(&shift, &ctrl);
           ch = getchar();
           if (ch == 0x31) {
             ch = getchar();
@@ -829,6 +847,14 @@ int getkey() {
               return KEY_HOME;
             case 0x5A: 
               return KEY_SHIFT_TAB;
+            case 0x5B:
+              ch = getchar();
+              switch (ch) {
+                case 0x41: return KEY_F1;
+                case 0x43: return KEY_F3;
+                case 0x45: return KEY_F5;
+              }
+              return KEY_UNKNOWN;
 
             default: return KEY_UNKNOWN;
           }
@@ -1928,8 +1954,12 @@ int main(int argc, char *argv[]) {
   tcgetattr(0, &orig_tio);
   cfmakeraw(&tio);  
   tcsetattr(0, TCSANOW, &tio);
-  outstr("\033[3 q");  // xterm
-  outstr("\033]50;CursorShape=2\a");  // KDE
+  if (getenv("TERM") && strcmp(getenv("TERM"), "linux") == 0) {
+    linux_console = 1;
+  } else {
+    outstr("\033[3 q");  // xterm
+    outstr("\033]50;CursorShape=2\a");  // KDE
+  }
 #endif
 
   get_console_size(&env);
