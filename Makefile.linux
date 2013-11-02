@@ -864,6 +864,17 @@ img/sanos.flp: sanos
 	$(MKDFS) -d img/sanos.flp -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 1440 -i -f -S . -F build/floppy.lst
 
 #
+# cdrom
+#
+
+cdrom: img/sanos.iso
+
+img/sanos.iso: sanos
+	$(MKDFS) -d linux/install/BOOTIMG.BIN -b linux/install/boot/cdemboot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 512 -C 1440 -I 8192 -i -f -K rootdev=cd0,rootfs=cdfs
+	genisoimage -J -f -c BOOTCAT.BIN -b BOOTIMG.BIN -o img/sanos.iso linux/install
+	rm linux/install/BOOTIMG.BIN
+
+#
 # clean
 #
 

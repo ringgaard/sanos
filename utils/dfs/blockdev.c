@@ -121,7 +121,7 @@ static int raw_create(const char *filename, int64_t total_size, int flags)
 
   if (flags) return -1;
 
-  fd = creat(filename, S_IWUSR);
+  fd = creat(filename, 0644);
   if (fd == -1) {
     perror(filename);
     return -1;
