@@ -133,6 +133,7 @@ long random();
 char *realpath(const char *path, char *resolved);
 char *mktemp(char *tmpl);
 int mkstemp(char *tmpl);
+int mkstemps(char *tmpl, int suffixlen);
 
 osapi char *getenv(const char *name);
 osapi int setenv(const char *name, const char *value, int rewrite);

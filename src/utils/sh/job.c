@@ -525,11 +525,11 @@ static main_t lookup_internal(char *name) {
   return (main_t) dlsym(getmodule(NULL), procname);
 }
 
-static void exit_internal(int status) {
+static void exit_internal(int status, int fast) {
   struct process *proc = gettib()->proc;
   struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
-  run_atexit_handlers();
+  if (!fast) run_atexit_handlers();
   term_crtbase(crtbase);
 }
 

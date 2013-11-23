@@ -380,7 +380,14 @@ struct tib *gettib() {
 void exit(int status) {
   struct process *proc = gettib()->proc;
 
-  if (proc->atexit) proc->atexit(status);
+  if (proc->atexit) proc->atexit(status, 0);
+  endthread(status);
+}
+
+void _exit(int status) {
+  struct process *proc = gettib()->proc;
+
+  if (proc->atexit) proc->atexit(status, 1);
   endthread(status);
 }
 

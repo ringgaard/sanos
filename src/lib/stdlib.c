@@ -163,8 +163,7 @@ char *realpath(const char *path, char *resolved) {
   return resolved;
 }
 
-char *mktemp(char *template)
-{
+char *mktemp(char *template) {
   char *begin;
   char *end;
 
@@ -205,18 +204,23 @@ char *mktemp(char *template)
   return template;
 }
 
-int mkstemp(char *template)
-{
+int mkstemps(char *template, int suffixlen) {
   char *begin;
   char *end;
+  char *suffix;
   int fd;
 
   // Initialize serial number to pid
   if (serial == -1) serial = getpid();
 
+  // Find suffix start
+  suffix = template;
+  while (*suffix) suffix++;
+  suffix -= suffixlen;
+
   // Find range of Xs in template
   begin = NULL;
-  for (end = template; *end; end++) {
+  for (end = template; end < suffix; end++) {
     if (*end == 'X') {
       if (!begin) begin = end;
     } else {
@@ -244,6 +248,10 @@ int mkstemp(char *template)
     if (errno != EEXIST) return -1;
   }
   return -1;
+}
+
+int mkstemp(char *template) {
+  return mkstemps(template, 0);
 }
 
 int getpagesize() {

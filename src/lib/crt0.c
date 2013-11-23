@@ -236,7 +236,7 @@ static int initcrt() {
   return 0;
 }
 
-static void termcrt(int status) {
+static void termcrt(int status, int fast) {
   struct process *proc = gettib()->proc;
   struct crtbase *crtbase = (struct crtbase *) proc->crtbase;
 
@@ -246,7 +246,7 @@ static void termcrt(int status) {
   // Call termination handlers when last instance exits
   if (atomic_decrement(&__instcount) == 0) {
     // Execute atexit handlers
-    run_atexit_handlers();
+    if (!fast) run_atexit_handlers();
 
 #if !defined(__GNUC__) && !defined(__TINYC__)
     // Execute C pre-terminators

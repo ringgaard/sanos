@@ -1214,7 +1214,7 @@ struct process {
   char **env;                       // Environment variables
 
   handle_t hndl;                    // Handle for main thread in process
-  void (*atexit)(int);              // Exit handler (used by libc)
+  void (*atexit)(int, int);         // Exit handler (used by libc)
 
   handle_t iob[3];                  // Standard input, output, and error handle
   struct term *term;                // Terminal type
@@ -1531,6 +1531,7 @@ osapi unsigned sleep(unsigned seconds);
 osapi struct tib *gettib();
 osapi int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib **tibptr);
 osapi void exit(int status);
+osapi void _exit(int status);
 
 osapi sighandler_t signal(int signum, sighandler_t handler);
 osapi int raise(int signum);
