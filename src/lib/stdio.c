@@ -764,7 +764,10 @@ int fseek(FILE *stream, long offset, int whence) {
 
   // Clear EOF flag
   stream->flag &= ~_IOEOF;
-
+  
+  // Adjust for prefetched data on relative seek.
+  if (whence == SEEK_CUR && (stream->flag & _IORD)) offset -= stream->cnt;
+  
   // Flush buffer as necessary
   fflush(stream);
 
