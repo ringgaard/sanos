@@ -389,7 +389,7 @@ void init()
 
 void term()
 {
-  if (mainproc && mainproc->atexit) mainproc->atexit(0);
+  if (mainproc && mainproc->atexit) mainproc->atexit(0, 0);
 }
 
 //
