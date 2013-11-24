@@ -54,6 +54,7 @@ char *strstr(const char *s1, const char *s2);
 size_t strspn(const char *string, const char *control);
 size_t strcspn(const char *string, const char *control);
 char *strpbrk(const char *string, const char *control);
+char *stpcpy(char *dst, const char *src);
 
 int strcasecmp(const char *s1, const char *s2);
 int strncasecmp(const char *s1, const char *s2, size_t n);

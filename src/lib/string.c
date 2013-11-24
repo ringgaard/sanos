@@ -403,6 +403,11 @@ char *strsep(char **stringp, const char *delim) {
   return start;
 }
 
+char *stpcpy(char *dst, const char *src) {
+  while (*dst = *src) ++dst, ++src;
+  return dst;
+}
+
 /////////////////////////////////////////////////////////////////////
 //
 // intrinsic functions
