@@ -4,6 +4,12 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added binutils package.
+
+    * Fixed bug in fseek for relative seeks.
+
+    * Added _exit(), stpcpy(), and mkstemps() functions.
+
     * Implemented support for memory mapped files.
 
     * Renamed mmap syscall to vmalloc.

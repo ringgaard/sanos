@@ -886,6 +886,6 @@ clean:
 # pkgs
 #
 
-pkgs: build/*.inf
+pkgs: build/*.inf $(MKPKG)
 	$(MKPKG) linux/install $(PKGREPO) build/*.inf
 
