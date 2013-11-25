@@ -152,12 +152,3 @@ Bug fixes and uk key binding by Thierry Supplisson
 
 The shell parser has been derived from software contributed to Berkeley by Kenneth Almquist
 
-Utilities:
-
-awk by Brian Kernighan
-ctags by Darren Hiebert (Exuberant Ctags)
-lua by Roberto Ierusalimschy, Waldemar Celes, and Luiz Henrique de Figueiredo (PUC-Rio)
-tar by Mark D. Roth (libtar)
-yacc by Thomas E. Dickey, Sylvain Schmitz, and Robert Corbett (Berkeley Yacc)
-zlib  by Jean-loup Gailly and Mark Adler
-

@@ -6,7 +6,6 @@ if not exist %1\sdk\src mkdir %1\sdk\src
 if not exist %1\sdk\src\as\output mkdir %1\sdk\src\as\output
 if not exist %1\sdk\src\cc mkdir %1\sdk\src\cc
 if not exist %1\sdk\src\libc mkdir %1\sdk\src\libc
-if not exist %1\vcwizard mkdir %1\vcwizard
 if not exist %1\tools mkdir %1\tools
 if not exist %1\utils mkdir %1\utils
 if not exist %1\utils\dfs mkdir %1\utils\dfs
@@ -40,8 +39,6 @@ copy sdk\src\as\* %1\sdk\src\as
 copy sdk\src\as\output\* %1\sdk\src\as\output
 copy sdk\src\cc\* %1\sdk\src\cc
 copy sdk\src\libc\Makefile %1\sdk\src\libc
-
-xcopy vcwizard %1\vcwizard /s /exclude:build\exclrel.lst
 
 copy tools\mkdfs.exe %1\tools
 copy tools\dbggw.exe %1\tools
