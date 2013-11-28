@@ -662,6 +662,11 @@ static void free_unused_modules(struct moddb *db) {
   }
 }
 
+static int sharable_module(struct module *mod) {
+  struct image_header *imghdr = get_image_header(mod->hmod);
+  return (imghdr->header.characteristics & IMAGE_FILE_UP_SYSTEM_ONLY) == 0;
+}
+
 void *get_proc_address(hmodule_t hmod, char *procname) {
   return get_proc_by_name(hmod, -1, procname);
 }
@@ -705,7 +710,7 @@ hmodule_t load_module(struct moddb *db, char *name, int flags) {
   if ((flags & MODLOAD_NOSHARE) == 0) {
     mod = get_module(db, name, MODTYPE_DLL);
     if (mod == NULL) mod = get_module(db, name, MODTYPE_EXE);
-    if (mod != NULL) {
+    if (mod != NULL && sharable_module(mod)) {
       mod->refcnt++;
       return mod->hmod;
     }

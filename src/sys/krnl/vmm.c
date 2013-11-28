@@ -306,9 +306,8 @@ int vmsync(void *addr, unsigned long size) {
         rc = save_file_page(fm, vaddr);
         if (rc < 0) return rc;
       }
-
-      vaddr += PAGESIZE;
     }
+    vaddr += PAGESIZE;
   }
 
   if (fm) {

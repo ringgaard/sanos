@@ -97,6 +97,7 @@ enum {
   TCC_OPTION_m,
   TCC_OPTION_f,
   TCC_OPTION_nofll,
+  TCC_OPTION_noshare,
   TCC_OPTION_nostdinc,
   TCC_OPTION_nostdlib,
   TCC_OPTION_print_search_dirs,
@@ -134,6 +135,7 @@ static const TCCOption tcc_options[] = {
   { "m", TCC_OPTION_m, TCC_OPTION_HAS_ARG },
   { "f", TCC_OPTION_f, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
   { "nofll", TCC_OPTION_nofll, 0 },
+  { "noshare", TCC_OPTION_noshare, 0 },
   { "nostdinc", TCC_OPTION_nostdinc, 0 },
   { "nostdlib", TCC_OPTION_nostdlib, 0 },
   { "print-search-dirs", TCC_OPTION_print_search_dirs, 0 }, 
@@ -375,6 +377,9 @@ int parse_arguments(TCCState *s, int argc, char **argv) {
           // Generate a .o merging several output files
           reloc_output = 1;
           output_type = TCC_OUTPUT_OBJ;
+          break;
+        case TCC_OPTION_noshare:
+          s->noshare = 1;
           break;
         case TCC_OPTION_nostdinc:
           s->nostdinc = 1;

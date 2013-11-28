@@ -606,6 +606,7 @@ static int pe_write(struct pe_info *pe) {
     pe_opthdr.Subsystem = 3;
   }
   if (!pe->reloc) pe_filehdr.Characteristics |= 1;
+  if (pe->s1->noshare) pe_filehdr.Characteristics |= 0x4000;
 
   fseek(op, 0, SEEK_SET);
   fwrite(stub,  1, stub_size, op);

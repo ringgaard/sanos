@@ -8,7 +8,7 @@ TCC_SRCFILES=asm386.c asm.c cc.c codegen386.c codegen.c compiler.c elf.c pe.c pr
 TCC_HDRFILES=cc.h config.h elf.h opcodes.h tokens.h
 
 cc.exe: $(TCC_SRCFILES) $(TCC_HDRFILES)
-    $(CC) -o cc.exe $(TCC_SRCFILES) -DUSE_LOCAL_HEAP
+    $(CC) -o cc.exe $(TCC_SRCFILES) -DUSE_LOCAL_HEAP -noshare
 
 install: cc.exe
     cp cc.exe /usr/bin/cc.exe

@@ -570,6 +570,9 @@ typedef struct TCCState {
   // If true, disable funtion-level linking
   int nofll;
 
+  // If true, disable shared module loading
+  int noshare;
+
   // If true, no standard headers are added
   int nostdinc;
 

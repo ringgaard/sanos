@@ -814,11 +814,11 @@ linux/install/bin/grep.exe: src/cmds/grep.c
 sdk: linux/install/usr/bin/cc.exe linux/install/usr/bin/as.exe
 
 linux/install/usr/bin/cc.exe: $(TCC_SRCFILES) $(TCC_HDRFILES)
-	$(TCC) -o $@ $(TCC_SRCFILES) -I sdk/src/cc $(TCCFLAGS) -DUSE_LOCAL_HEAP
+	$(TCC) -o $@ $(TCC_SRCFILES) -I sdk/src/cc $(TCCFLAGS) -DUSE_LOCAL_HEAP -noshare
 	cp -p build/cc.inf $(PKGDIR)
 
 linux/install/usr/bin/as.exe: $(AS_SRCFILES)
-	$(TCC) -o $@ $^ -I sdk/src/as $(TCCFLAGS) $(AS_CFLAGS) -DUSE_LOCAL_HEAP
+	$(TCC) -o $@ $^ -I sdk/src/as $(TCCFLAGS) $(AS_CFLAGS) -DUSE_LOCAL_HEAP -noshare
 	cp -p build/as.inf $(PKGDIR)
 
 sdk-source:
