@@ -420,7 +420,7 @@ static char *procname(const char *name) {
   return procname;
 }
 
-int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib **tibptr) {
+int spawn(int mode, const char *pgm, const char *cmdline, char *env[], struct tib **tibptr) {
   hmodule_t hmod;
   handle_t hthread;
   struct tib *tib;
@@ -487,3 +487,72 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
     return rc;
   }
 }
+
+int spawnve(int mode, const char *pgm, char *argv[], char *env[], struct tib **tibptr) {
+  char *cmdline;
+  char *cmd;
+  int cmdlen;
+  char **args;
+  int rc;
+
+  // Compute command line size
+  cmdlen = 0;
+  for (args = argv; *args; args++) {
+    int escape = 0;
+    char *p = *args;
+    if (!*p) {
+      escape = 1;
+    } else {
+      while (*p) {
+        cmdlen++;
+        if (*p == ' ') escape = 1;
+        if (*p == '"') {
+          cmdlen++;
+          escape = 1;
+        }
+        p++;
+      }
+      cmdlen++;
+    }
+    if (escape) cmdlen += 2;
+  }
+
+  // Build command line
+  cmd = cmdline = malloc(cmdlen);
+  for (args = argv; *args; args++) {
+    int escape = 0;
+    char *p = *args;
+    if (!*p) {
+      escape = 1;
+    } else {
+      while (*p) {
+        if (*p == ' ' || *p == '"') escape = 1;
+        p++;
+      }
+    }
+    if (*args != argv[0]) *cmd++ = ' ';
+    if (escape) *cmd++ = '"';
+    p = *args;
+    while (*p) {
+      if (*p == '"') *cmd++ = '"';
+      *cmd++ = *p++;
+    }
+    if (escape) *cmd++ = '"';
+  }
+  *cmd = 0;
+
+  // Spawn program
+  rc = spawn(mode, pgm, cmdline, env, tibptr);
+  free(cmdline);
+  
+  return rc;
+}
+
+int spawnv(int mode, const char *pgm, char *argv[]) {
+  return spawnve(mode, pgm, argv, NULL, NULL);
+}
+
+int spawnl(int mode, const char *pgm, char *arg0, ...) {
+  return spawnve(mode, pgm, &arg0, NULL, NULL);
+}
+

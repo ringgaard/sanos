@@ -4,6 +4,12 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added find utility
+
+    * Added spawnve(), spawnv(), and spawnl() functions.
+
+    * Support for non-shared executable modules
+
     * Added binutils package.
 
     * Fixed bug in fseek for relative seeks.

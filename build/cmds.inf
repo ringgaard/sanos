@@ -9,6 +9,7 @@ homepage=http://www.jbox.dk/sanos/
 
 [files]
 /usr/src/cmds/
+/bin/find.exe
 /bin/grep.exe
 /bin/ping.exe
 

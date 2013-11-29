@@ -2,7 +2,7 @@
 # Makefile for shell commands
 #
 
-CMDS=grep.exe ping.exe
+CMDS=find.exe grep.exe ping.exe
 ALLCMDS=chgrp.exe chmod.exe chown.exe cp.exe du.exe ls.exe mkdir.exe mv.exe rm.exe test.exe touch.exe wc.exe $(CMDS)
 
 cmds: $(CMDS) 
@@ -22,6 +22,9 @@ cp.exe: cp.c
 
 du.exe: du.c
     $(CC) -o $@ $^
+
+find.exe: find.c
+    $(CC) -o $@ $^ -DUSE_LOCAL_HEAP -noshare
 
 grep.exe: grep.c
     $(CC) -o $@ $^

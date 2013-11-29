@@ -547,7 +547,7 @@ char *dlerror() {
   return strerror(errno);
 }
 
-int exec(hmodule_t hmod, const char *args, char **env) {
+int exec(hmodule_t hmod, const char *args, char *env[]) {
   int rc;
 
   if (get_image_header(hmod)->header.characteristics & IMAGE_FILE_DLL) return -ENOEXEC;

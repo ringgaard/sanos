@@ -105,6 +105,7 @@ dirs:
     -@if not exist $(OBJ)\mkboot mkdir $(OBJ)\mkboot
     -@if not exist $(OBJ)\pkg mkdir $(OBJ)\pkg
     -@if not exist $(OBJ)\grep mkdir $(OBJ)\grep
+    -@if not exist $(OBJ)\find mkdir $(OBJ)\find
     -@if not exist $(OBJ)\ping mkdir $(OBJ)\ping
     -@if not exist $(OBJ)\httpd mkdir $(OBJ)\httpd
     -@if not exist $(OBJ)\jinit mkdir $(OBJ)\jinit
@@ -957,7 +958,11 @@ $(BIN)/msvcrt.dll: \
 # utils
 #
 
-utils: dirs $(BIN)/sh.exe $(BIN)/msh.exe $(BIN)/edit.exe $(BIN)/less.exe $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe $(BIN)/login.exe $(BIN)/ctohtml.exe $(BIN)/mkboot.exe $(BIN)/ping.exe $(BIN)/grep.exe $(BIN)/pkg.exe $(BIN)/httpd.dll
+utils: dirs $(BIN)/sh.exe $(BIN)/msh.exe $(BIN)/edit.exe $(BIN)/less.exe \
+       $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe \
+       $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe \
+       $(BIN)/login.exe $(BIN)/ctohtml.exe $(BIN)/mkboot.exe $(BIN)/ping.exe \
+       $(BIN)/grep.exe $(BIN)/find.exe $(BIN)/pkg.exe $(BIN)/httpd.dll
 
 $(BIN)/sh.exe: \
   $(SRC)/utils/sh/sh.c \
@@ -1081,6 +1086,12 @@ $(BIN)/grep.exe: \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/grep/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(BIN)/find.exe: \
+  $(SRC)/cmds/find.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/find/ $** /link /NODEFAULTLIB /FIXED:NO
 
 $(BIN)/ping.exe: \
   $(SRC)/cmds/ping.c \
@@ -1226,6 +1237,7 @@ install: sanos
     copy /Y $(BIN)\login.exe     $(INSTALL)\bin\login.exe
     copy /Y $(BIN)\ping.exe      $(INSTALL)\bin\ping.exe
     copy /Y $(BIN)\grep.exe      $(INSTALL)\bin\grep.exe
+    copy /Y $(BIN)\find.exe      $(INSTALL)\bin\find.exe
     copy /Y $(BIN)\msvcrt.dll    $(INSTALL)\bin\msvcrt.dll
     copy /Y $(BIN)\kernel32.dll  $(INSTALL)\bin\kernel32.dll
     copy /Y $(BIN)\user32.dll    $(INSTALL)\bin\user32.dll

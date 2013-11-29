@@ -182,9 +182,7 @@ pid_t waitpid(pid_t pid, int *stat_loc, int options) {
 int execve(const char *path, char *argv[], char *env[]) {
   struct tib *tib = gettib();
   struct process *proc = tib->proc;
-  char *cmdline;
-  char *p, *q;
-  int i, len, pid;
+  int pid;
   handle_t child;
   struct tib *ctib;
 
@@ -195,34 +193,8 @@ int execve(const char *path, char *argv[], char *env[]) {
     return -1;
   }
 
-  // Build command line from arguments
-  len = 0;
-  for (i = 0; argv[i]; i++) {
-    // Add two extra chars for quoting args with spaces
-    len += strlen(argv[i]) + 1;
-    if (strchr(argv[i], ' ')) len += 2;
-  }
-
-  cmdline = q = malloc(len);
-  if (!cmdline) {
-    errno = ENOMEM;
-    return -1;
-  }
-
-  for (i = 0; argv[i]; i++) {
-    int sp = strchr(argv[i], ' ') != NULL;
-
-    if (i > 0) *q++ = ' ';
-    if (sp) *q++ = '"';
-    p = argv[i];
-    while (*p) *q++ = *p++;
-    if (sp) *q++ = '"';
-  }
-  *q = 0;
-
   // Spawn new child process
-  child = spawn(P_SUSPEND | P_CHILD, path, cmdline, env, &ctib);
-  free(cmdline);
+  child = spawnve(P_SUSPEND | P_CHILD, path, argv, env, &ctib);
   if (child < 0) return -1;
   pid = ctib->proc->id;
   resume(child);

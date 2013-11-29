@@ -797,14 +797,18 @@ linux/install/usr/bin/ctohtml.exe: src/utils/ctohtml/ctohtml.c
 #
 
 cmds: \
+  linux/install/bin/find.exe \
   linux/install/bin/grep.exe \
   linux/install/bin/ping.exe
 	cp -p build/cmds.inf $(PKGDIR)
 
-linux/install/bin/ping.exe: src/cmds/ping.c
-	$(TCC) -o $@ $^ $(TCCFLAGS)
+linux/install/bin/find.exe: src/cmds/find.c
+	$(TCC) -o $@ $^ $(TCCFLAGS) -DUSE_LOCAL_HEAP -noshare
 
 linux/install/bin/grep.exe: src/cmds/grep.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+
+linux/install/bin/ping.exe: src/cmds/ping.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
 
 #
