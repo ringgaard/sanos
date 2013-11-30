@@ -101,6 +101,18 @@ struct section;
 
 #define INFINITE  0xFFFFFFFF
 
+#ifndef _TMS_DEFINED
+#define _TMS_DEFINED
+
+struct tms {
+  clock_t tms_utime;  // User CPU time
+  clock_t tms_stime;  // System CPU time
+  clock_t tms_cutime; // User CPU time of terminated child threads
+  clock_t tms_cstime; // System CPU time of terminated child threads
+};
+
+#endif
+
 #define INTRES(x) ((char *)((unsigned long)((unsigned short)(x))))
 
 //#define TRACEAPI
@@ -1526,6 +1538,8 @@ osapi int setcontext(handle_t thread, void *context);
 osapi int getcontext(handle_t thread, void *context);
 osapi int getprio(handle_t thread);
 osapi int setprio(handle_t thread, int priority);
+osapi clock_t threadtimes(handle_t thread, struct tms *tms);
+osapi clock_t times(struct tms *tms);
 osapi int msleep(int millisecs);
 osapi unsigned sleep(unsigned seconds);
 osapi struct tib *gettib();

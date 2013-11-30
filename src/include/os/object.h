@@ -183,13 +183,17 @@ struct thread {
   sigset_t pending_signals;
   struct timer alarm;
 
-  unsigned long utime;
-  unsigned long stime;
+  struct tms tms;
   unsigned long context_switches;
   unsigned long preempts;
 
   struct thread *next;
   struct thread *prev;
+
+  struct thread *parent;
+  struct thread *children;
+  struct thread *next_sibling;
+  struct thread *prev_sibling;
 
   struct thread *next_ready;
   struct thread *prev_ready;

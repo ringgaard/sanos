@@ -362,6 +362,14 @@ int setprio(handle_t thread, int priority) {
   return syscall(SYSCALL_SETPRIO, &thread);
 }
 
+clock_t threadtimes(handle_t thread, struct tms *tms) {
+  return syscall(SYSCALL_THREADTIMES, (void *) &thread);
+}
+
+clock_t times(struct tms *tms) {
+  return threadtimes(self(), tms);
+}
+
 int msleep(int millisecs) {
   return syscall(SYSCALL_MSLEEP, &millisecs);
 }

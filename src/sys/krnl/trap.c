@@ -965,6 +965,7 @@ void unregister_interrupt(struct interrupt *intr, int intrno) {
 //
 
 int get_context(struct thread *t, struct context *ctxt) {
+  if (!ctxt) return -EINVAL;
   memcpy(ctxt, t->ctxt, sizeof(struct context));
   return 0;
 }
@@ -976,6 +977,8 @@ int get_context(struct thread *t, struct context *ctxt) {
 //
 
 int set_context(struct thread *t, struct context *ctxt) {
+  if (!ctxt) return -EINVAL;
+
   t->ctxt->esp = ctxt->esp;
   t->ctxt->eip = ctxt->eip;
   t->ctxt->eflags = ctxt->eflags;

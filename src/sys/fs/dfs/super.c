@@ -442,6 +442,8 @@ int dfs_mkfs(char *devname, char *opts) {
   struct filsys *fs;
 
   if (parse_options(opts, &fsopts) != 0) return -EINVAL;
+  if (!devname) return -EINVAL;
+
   fs = create_filesystem(devname, &fsopts);
   if (!fs) return -EIO;
   close_filesystem(fs);

@@ -909,7 +909,7 @@ int futime(struct file *filp, struct utimbuf *times) {
   if (!filp) return -EINVAL;
   if (!times) return -EINVAL;
   if (filp->flags & O_RDONLY) return -EACCES;
- 
+
   if (!filp->fs->ops->futime) return -ENOSYS;
   if (lock_fs(filp->fs, FSOP_FUTIME) < 0) return -ETIMEOUT;
   rc = filp->fs->ops->futime(filp, times);

@@ -446,6 +446,31 @@ static int sys_tell(char *params) {
   return rc < 0 ? (int) rc : (int) (rc & 0x7FFFFFFF);
 }
 
+static int sys_threadtimes(char *params) {
+  handle_t h;
+  struct thread *t;
+  struct tms *tms;
+  int rc;
+
+  h = *(handle_t *) params;
+  tms = *(struct tms **) (params + 4);
+
+  t = (struct thread *) olock(h, OBJECT_THREAD);
+  if (!t) return -EBADF;
+
+  if (lock_buffer(tms, sizeof(struct tms), 1) < 0) {
+    orel(t);
+    return -EFAULT;
+  }
+
+  rc = get_thread_times(t, tms);
+
+  unlock_buffer(tms, sizeof(struct tms));
+  orel(t);
+
+  return rc;
+}
+
 static int sys_lseek(char *params) {
   struct file *f;
   handle_t h;
@@ -2640,6 +2665,7 @@ struct syscall_entry syscalltab[] = {
   {"alarm", 4, "%d", sys_alarm},
   {"vmmap", 24, "%p,%d,%x,%d,%d-%d", sys_vmmap},
   {"vmsync", 8, "%p,%d", sys_vmsync},
+  {"threadtimes", 8, "%d,%p", sys_threadtimes},
 };
 
 int syscall(int syscallno, char *params, struct context *ctxt) {

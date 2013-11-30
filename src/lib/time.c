@@ -299,12 +299,6 @@ int nanosleep(const struct timespec *req, struct timespec *rem) {
   return rc;
 }
 
-clock_t times(struct tms *tms) {
-  // TODO implement
-  tms->tms_cstime = tms->tms_cutime = tms->tms_stime = tms->tms_utime = 1;
-  return clock();
-}
-
 int getitimer(int which, struct itimerval *value) {
   // TODO implement
   return -1;

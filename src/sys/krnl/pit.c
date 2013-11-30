@@ -115,14 +115,14 @@ int timer_handler(struct context *ctxt, void *arg) {
   // Update thread times and load average
   t = self();
   if (in_dpc) {
-    dpc_time++;
+    dpc_time += CLOCKS_PER_TICK;
     *loadptr = LOADTYPE_DPC;
   } else {
     if (USERSPACE(ctxt->eip)) {
-      t->utime++;
+      t->tms.tms_utime += CLOCKS_PER_TICK;
       *loadptr = LOADTYPE_USER;
     } else {
-      t->stime++;
+      t->tms.tms_stime += CLOCKS_PER_TICK;
       if (t->base_priority == PRIORITY_SYSIDLE) {
         *loadptr = LOADTYPE_IDLE;
       } else {

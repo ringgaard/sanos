@@ -355,6 +355,14 @@ static struct thread *create_thread(threadproc_t startaddr, void *arg, int prior
   if (!t) return NULL;
   memset(t, 0, PAGES_PER_TCB * PAGESIZE);
   init_thread(t, priority);
+  
+  // Add thread as child of parent
+  t->parent = self();
+  if (t->parent->children) {
+    t->next_sibling = t->parent->children;
+    t->parent->children->prev_sibling = t;
+  }
+  t->parent->children = t;
 
   // Initialize the thread kernel stack to start executing the task function
   init_thread_stack(t, (void *) startaddr, arg);
@@ -363,7 +371,7 @@ static struct thread *create_thread(threadproc_t startaddr, void *arg, int prior
   insert_before(threadlist, t);
 
   // Signal preemption if new ready thread has priority over the running thread
-  if (t->priority > self()->priority) preempt = 1;
+  if (t->priority > t->parent->priority) preempt = 1;
 
   return t;
 }
@@ -507,6 +515,29 @@ int destroy_thread(struct thread *t) {
 
   // Remove thread from thread list
   remove(t);
+  
+  // Update the accumulated child thread times
+  t->parent->tms.tms_cutime += t->tms.tms_utime + t->tms.tms_cutime;
+  t->parent->tms.tms_cstime += t->tms.tms_stime + t->tms.tms_cstime;
+
+  // Remove thread from parent
+  if (t->next_sibling) t->next_sibling->prev_sibling = t->prev_sibling;
+  if (t->prev_sibling) t->prev_sibling->next_sibling = t->next_sibling;
+  if (t->parent->children == t) t->parent->children = t->next_sibling;
+
+  // Move all child threads to parent
+  if (t->children) {
+    struct thread *child = t->children;
+    while (child->next_sibling) {
+      child->parent = t->parent;
+      child = child->next_sibling;
+    }
+    if (t->parent->children) {
+      t->parent->children->prev_sibling = child;
+      child->next_sibling = t->parent->children;
+    }
+    t->parent->children = t->children;
+  }
 
   // Add task to delete the TCB
   task = (struct task *) (t + 1);
@@ -624,6 +655,11 @@ int set_thread_priority(struct thread *t, int priority) {
   }
 
   return 0;
+}
+
+int get_thread_times(struct thread *t, struct tms *tms) {
+  if (tms) memcpy(tms, &t->tms, sizeof(struct tms));
+  return clocks;
 }
 
 static void task_queue_task(void *tqarg) {
@@ -906,8 +942,8 @@ static int threads_proc(struct proc_file *pf, void *arg) {
   char *state;
   unsigned long stksiz;
 
-  pprintf(pf, "tid tcb      hndl state  prio s #h   user kernel ctxtsw stksiz name\n");
-  pprintf(pf, "--- -------- ---- ------ ---- - -- ------ ------ ------ ------ --------------\n");
+  pprintf(pf, " tid tcb      hndl state  prio s #h   user kernel ctxtsw stksiz name\n");
+  pprintf(pf, "---- -------- ---- ------ ---- - -- ------ ------ ------ ------ --------------\n");
   while (1) {
     if (t->state == THREAD_STATE_WAITING) {
       state = waitreasonname[t->wait_reason];
@@ -921,10 +957,10 @@ static int threads_proc(struct proc_file *pf, void *arg) {
       stksiz = 0;
     }
 
-    pprintf(pf,"%3d %p %4d %-6s %2d%+2d %1d %2d%7d%7d%7d%6dK %s\n",
+    pprintf(pf,"%4d %p %4d %-6s %2d%+2d %1d %2d%7d%7d%7d%6dK %s\n",
             t->id, t, t->hndl, state, t->base_priority, t->priority - t->base_priority, 
             t->suspend_count, t->object.handle_count, 
-            t->utime, t->stime, t->context_switches,
+            t->tms.tms_utime, t->tms.tms_stime, t->context_switches,
             stksiz / 1024,
             t->name);
 

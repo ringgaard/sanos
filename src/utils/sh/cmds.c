@@ -985,6 +985,39 @@ shellcmd(sysinfo) {
   return 0;
 }
 
+shellcmd(time) {
+  clock_t start, end;
+  struct tms tms;
+  handle_t h;
+  int rc;
+  
+  // Spawn program
+  h = spawnve(P_NOWAIT | P_SUSPEND, NULL, argv + 1, NULL, NULL);
+  if (h < 0) return -1;
+
+  // Start program and wait for termination
+  memset(&tms, 0, sizeof(struct tms));
+  start = clock();
+  rc = resume(h);
+  if (rc >= 0) {
+    while (1) {
+      rc = waitone(h, INFINITE);
+      if (rc >= 0 || errno != EINTR) break;
+    }
+    threadtimes(h, &tms);
+    close(h);
+  }
+  end = clock();
+
+  // Print CPU usage
+  fprintf(stderr, "real %f\nuser %f\nsys %f\n",
+          (end - start) / 1000.0,
+          (tms.tms_utime + tms.tms_cutime) / 1000.0,
+          (tms.tms_stime + tms.tms_cstime) / 1000.0);
+
+  return rc;
+}
+
 shellcmd(uname) {
   struct utsname buf;
   

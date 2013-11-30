@@ -175,24 +175,24 @@ int prune_here = 0;             // prune state
 int umask_val;                  // current umask()
 int need_print = 1;             // implicit -print needed?
 
-struct node *expr(int t);
+static struct node *expr(int t);
 
-void nonfatal(char *s1, char *s2) {
+static void nonfatal(char *s1, char *s2) {
   fprintf(stderr, "%s: %s%s\n", prog, s1, s2);
 }
 
-void fatal(char *s1, char *s2) {
+static void fatal(char *s1, char *s2) {
   fprintf(stderr, "%s: %s%s\n", prog, s1, s2);
   exit(1);
 }
 
-struct node *newnode(int t) {
+static struct node *newnode(int t) {
   struct node *n = (struct node *) malloc(sizeof(struct node));
   n->type = t;
   return n;
 }
 
-int lex(char *str) {
+static int lex(char *str) {
   if (!str) return EOI;
 
   if (*str == '-') {
@@ -215,13 +215,13 @@ int lex(char *str) {
   return NONE;
 }
 
-int isnumber(char *str, int base, int sign) {
+static int isnumber(char *str, int base, int sign) {
   if (sign && (*str == '-' || (base == 8 && *str == '+'))) str++;
   while (*str >= '0' && *str < '0' + base) str++;
   return *str == '\0';
 }
 
-void number(char *str, int base, int *pn, int *ps) {
+static void number(char *str, int base, int *pn, int *ps) {
   int up = '0' + base - 1;
   int val = 0;
 
@@ -231,7 +231,7 @@ void number(char *str, int base, int *pn, int *ps) {
   *pn = val;
 }
 
-void domode(int op, int *mode, int bits) {
+static void domode(int op, int *mode, int bits) {
   switch (op) {
     case '-':
       // Clear bits
@@ -248,7 +248,7 @@ void domode(int op, int *mode, int bits) {
   }
 }
 
-void filemode(char *str, int *pl, int *ps) {
+static void filemode(char *str, int *pl, int *ps) {
   int m = 0, w, op;
   char *p = str;
 
@@ -313,11 +313,11 @@ void filemode(char *str, int *pl, int *ps) {
   *pl = m;
 }
 
-void checkarg(char *arg) {
+static void checkarg(char *arg) {
   if (!arg) fatal("syntax error, argument expected", "");
 }
 
-struct node *simple(int t) {
+static struct node *simple(int t) {
   struct node *p = newnode(t);
   struct exec *e;
   struct stat est;
@@ -462,7 +462,7 @@ struct node *simple(int t) {
   return p;
 }
 
-struct node *secondary(int t) {
+static struct node *secondary(int t) {
   struct node *n, *p;
 
   if (t == LPAR) {
@@ -479,7 +479,7 @@ struct node *secondary(int t) {
   return simple(t);
 }
 
-struct node *primary(int t) {
+static struct node *primary(int t) {
   struct node *nd, *p, *nd2;
 
   nd = secondary(t);
@@ -494,7 +494,7 @@ struct node *primary(int t) {
   return p;
 }
 
-struct node *expr(int t) {
+static struct node *expr(int t) {
   struct node *nd, *p, *nd2;
 
   nd = primary(t);
@@ -509,10 +509,9 @@ struct node *expr(int t) {
   return nd;
 }
 
-int execute(int op, struct exec *e, char *path) {
+static int execute(int op, struct exec *e, char *path) {
   char *argv[MAXARG];
   char **p, **q;
-  int rc;
 
   // Replace {}s with path
   for (p = e->argv, q = argv; *p;) {
@@ -536,14 +535,10 @@ int execute(int op, struct exec *e, char *path) {
   }
 
   // Execute command
-  rc = spawnv(0, NULL, &argv[1]);
-  if (rc < 0 && errno == ENOENT) {
-    rc = spawnv(0, NULL, &argv[0]);
-  }
-  return rc;
+  return spawnv(0, NULL, argv);
 }
 
-int ichk(int val, struct node *n) {
+static int ichk(int val, struct node *n) {
   switch (n->num.sign) {
     case  0: return val == n->num.val;
     case  1: return val > n->num.val;
@@ -553,7 +548,7 @@ int ichk(int val, struct node *n) {
   return 0;
 }
 
-int check(char *path, struct stat *st, struct node *n, char *last) {
+static int check(char *path, struct stat *st, struct node *n, char *last) {
   if (!n) return 1;
 
   switch (n->type) {
@@ -594,7 +589,7 @@ int check(char *path, struct stat *st, struct node *n, char *last) {
       return st->st_gid == n->num.val;
 
     case OP_SIZE:
-      return ichk((st->st_size == 0) ? 0L : ((st->st_size - 1) / BSIZE + 1), n);
+      return ichk(st->st_size == 0 ? 0 : ((st->st_size - 1) / BSIZE + 1), n);
 
     case OP_SIZEC:
       return ichk(st->st_size, n);
@@ -644,7 +639,7 @@ int check(char *path, struct stat *st, struct node *n, char *last) {
   return 0;
 }
 
-void find(char *path, struct node *pred, char *last) {
+static void find(char *path, struct node *pred, char *last) {
   char spath[PATH_MAX];
   char *send = spath;
   struct stat st;

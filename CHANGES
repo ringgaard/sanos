@@ -4,6 +4,12 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Implemented support for tracking CPU time usage by threads. The times()
+      function now returns the system and user time as well as the accumulated
+      time used by terminated child threads. The threadtimes() function can
+      be used for getting CPU time information for any thread. The shell now 
+      also implements the time command.
+
     * Added find utility
 
     * Added spawnve(), spawnv(), and spawnl() functions.

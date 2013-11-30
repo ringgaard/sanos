@@ -145,7 +145,8 @@
 #define SYSCALL_ALARM         108
 #define SYSCALL_VMMAP         109
 #define SYSCALL_VMSYNC        110
+#define SYSCALL_THREADTIMES   111
 
-#define SYSCALL_MAX           110
+#define SYSCALL_MAX           111
 
 #endif
