@@ -49,6 +49,7 @@ struct options {
   int detail;
   int onecol;
   int recurse;
+  int all;
   
   int width;
   int nodir;
@@ -122,6 +123,7 @@ void collect_directory(struct filelist *list, char *dir, struct options *opts) {
   }
 
   while ((dp = readdir(dirp))) {
+    if (!opts->all && dp->d_name[0] == '.') continue;
     fn = join_path(dir, dp->d_name);
     if (!fn) break;
     if (stat(fn, &st) >= 0) {
@@ -336,6 +338,8 @@ static void usage() {
   fprintf(stderr, "  -1      List files in one column\n");
   fprintf(stderr, "  -d      List directory entries instead of contents\n");
   fprintf(stderr, "  -R      Recursively list subdirectories\n");
+  fprintf(stderr, "  -A      List all files starting with .\n");
+  
   exit(1);
 }
 
@@ -348,8 +352,13 @@ shellcmd(ls) {
   // Parse command line options
   memset(&opts, 0, sizeof(struct options));
   opts.width = 80;
-  while ((c = getopt(argc, argv, "dl1R?")) != EOF) {
+  while ((c = getopt(argc, argv, "aAdl1R?")) != EOF) {
     switch (c) {
+      case 'A':
+      case 'a':
+        opts.all = 1;
+        break;
+
       case 'd':
         opts.nodir = 1;
         break;
