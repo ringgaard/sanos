@@ -55,6 +55,17 @@
 #define SMB_SERVICE_DISK   "A:"
 
 //
+// SMB NetBIOS Packet Types
+//
+
+#define SMB_SESSION_MESSAGE           0x00
+#define SMB_SESSION_REQUEST           0x81
+#define SMB_POSITIVE_SESSION_RESPONSE 0x82
+#define SMB_NEGATIVE_SESSION_RESPONSE 0x83
+#define SMB_RETARGET_SESSION_RESPONSE 0x84
+#define SMB_SESSION_KEEP_ALIVE        0x85
+
+//
 // SMB Command Codes
 //
 
@@ -683,7 +694,8 @@ struct smb_trans_response {
 //
 
 struct smb {
-  unsigned char len[4];                // Length field
+  unsigned char type;                  // Packet type
+  unsigned char len[3];                // Length field
   unsigned char protocol[4];           // Always 0xFF,'SMB'
   unsigned char cmd;                   // Command
   unsigned char error_class;           // Error Class

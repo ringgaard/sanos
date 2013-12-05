@@ -56,10 +56,10 @@ int smb_send(struct smb_share *share, struct smb *smb, unsigned char cmd, int pa
 
   len = SMB_HEADER_LEN + params * 2 + 2 + datasize;
 
-  smb->len[0] = (len & 0xFF000000) >> 24;
-  smb->len[1] = (len & 0xFF0000) >> 16;
-  smb->len[2] = (len & 0xFF00) >> 8;
-  smb->len[3] = (len & 0xFF);
+  smb->type = SMB_SESSION_MESSAGE;
+  smb->len[0] = (len & 0xFF0000) >> 16;
+  smb->len[1] = (len & 0xFF00) >> 8;
+  smb->len[2] = (len & 0xFF);
     
   smb->protocol[0] = 0xFF;
   smb->protocol[1] = 'S';
@@ -88,13 +88,21 @@ int smb_recv(struct smb_share *share, struct smb *smb) {
   int len;
   int rc;
 
-  rc = recv_fully(share->server->sock, (char *) smb, 4, 0);
-  if (rc < 0) return rc;
-  if (rc != 4) return -EIO;
+  while (1) {
+    rc = recv_fully(share->server->sock, (char *) smb, 4, 0);
+    if (rc < 0) return rc;
+    if (rc != 4) return -EIO;
 
-  len = smb->len[3] | (smb->len[2] << 8) | (smb->len[1] << 16) | (smb->len[0] << 24);
+    if (smb->type == SMB_SESSION_MESSAGE) {
+      break;
+    } else if (smb->type != SMB_SESSION_KEEP_ALIVE) {
+      return -EIO;
+    }
+  }
+
+  len = smb->len[2] | (smb->len[1] << 8) | (smb->len[0] << 16);
   if (len < 4 || len > SMB_MAX_BUFFER) return -EMSGSIZE;
-
+    
   rc = recv_fully(share->server->sock, (char *) &smb->protocol, len, 0);
   if (rc < 0) return rc;
   if (rc != len) return -EIO;
@@ -148,11 +156,11 @@ int smb_trans_send(struct smb_share *share, unsigned short cmd,
   smb = (struct smb *) share->server->buffer;
   memset(smb, 0, sizeof(struct smb));
 
-  smb->len[0] = (len > 0xFF000000) >> 24;
-  smb->len[1] = (len > 0xFF0000) >> 16;
-  smb->len[2] = (len & 0xFF00) >> 8;
-  smb->len[3] = (len & 0xFF);
-    
+  smb->type = SMB_SESSION_MESSAGE;
+  smb->len[0] = (len > 0xFF0000) >> 16;
+  smb->len[1] = (len & 0xFF00) >> 8;
+  smb->len[2] = (len & 0xFF);
+
   smb->protocol[0] = 0xFF;
   smb->protocol[1] = 'S';
   smb->protocol[2] = 'M';
