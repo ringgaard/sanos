@@ -272,7 +272,7 @@ static int read_pkgdb(struct pkgdb *db) {
 
   f = fopen(PKGDB_FILE, "r");
   if (f) {
-   read_pkgdb_from_file(f, db);
+    read_pkgdb_from_file(f, db);
     fclose(f);
   }
   return 0;

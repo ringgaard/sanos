@@ -576,11 +576,11 @@ int parse_btype(CType *type, AttributeDef *ad) {
   }
 
 done:
-  if ((t & (VT_SIGNED|VT_UNSIGNED)) == (VT_SIGNED|VT_UNSIGNED)) {
+  if ((t & (VT_SIGNED | VT_UNSIGNED)) == (VT_SIGNED | VT_UNSIGNED)) {
     error("signed and unsigned modifier");
   }
   if (tcc_state->char_is_unsigned) {
-    if ((t & (VT_SIGNED|VT_UNSIGNED|VT_BTYPE)) == VT_BYTE) t |= VT_UNSIGNED;
+    if ((t & (VT_SIGNED | VT_UNSIGNED | VT_BTYPE)) == VT_BYTE) t |= VT_UNSIGNED;
   }
   t &= ~VT_SIGNED;
 
@@ -2111,7 +2111,7 @@ void init_putv(CType *type, Section *sec, unsigned long c, int v, int expr_type)
     }
     vtop--;
   } else {
-    vset(&dtype, VT_LOCAL|VT_LVAL, c);
+    vset(&dtype, VT_LOCAL | VT_LVAL, c);
     vswap();
     vstore();
     vpop();
@@ -2368,8 +2368,7 @@ void decl_initializer_alloc(CType *type, AttributeDef *ad, int r, int has_init, 
 
   // Take into account specified alignment if bigger
   if (ad->aligned) {
-    if (ad->aligned > align)
-      align = ad->aligned;
+    if (ad->aligned > align) align = ad->aligned;
   } else if (ad->packed) {
     align = 1;
   }

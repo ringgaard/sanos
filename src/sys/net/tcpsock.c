@@ -281,11 +281,6 @@ static err_t recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
   return 0;
 }
 
-static err_t poll_tcp(void *arg, struct tcp_pcb *pcb) {
-  struct socket *s = arg;
-  return 0;
-}
-
 static err_t sent_tcp(void *arg, struct tcp_pcb *pcb, unsigned short len) {
   struct socket *s = arg;
   struct sockreq *req;

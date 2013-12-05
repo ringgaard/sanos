@@ -1,6 +1,8 @@
 TODO for sanos
 --------------
 
+- More unix utilities: xargs, cut, sort, uniq
+
 - Change control87() to use the MSVCRT definitions of FPU control flags.
 
 - Implement 48-bit LBA support in IDE driver

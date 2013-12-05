@@ -173,7 +173,6 @@ struct fd {
 struct fdgeometry geom144 = {"3 1/2\" 1.44M", 2, 80, 18, 0x1B};
 
 int fd_init;
-struct thread *fdmotor_task;
 struct fdc fdc;
 struct fd fddrives[NUMDRIVES];
 

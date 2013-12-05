@@ -12,7 +12,7 @@ IMPDEF=$(SDK)\bin\impdef.exe
 TCC=$(SDK)\bin\cc.exe
 NASM=$(SDK)\bin\as.exe
 
-OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fork.o getopt.o glob.o hash.o \
+OBJ=tcccrt.o assert.o bsearch.o conio.o crt0.o ctype.o dirent.o fcvt.o fnmatch.o fork.o getopt.o glob.o hash.o \
     inifile.o input.o mman.o math.o opts.o output.o qsort.o random.o readline.o rmap.o rtttl.o sched.o \
     semaphore.o stdio.o shlib.o scanf.o printf.o tmpfile.o popen.o stdlib.o strftime.o string.o strtod.o \
     strtol.o termios.o time.o xtoa.o \
@@ -76,6 +76,9 @@ dirent.o: $(LIBSRC)/dirent.c
     $(TCC) -c $** -o $@ -I$(INCLUDE) -g
 
 fcvt.o: $(LIBSRC)/fcvt.c
+    $(TCC) -c $** -o $@ -I$(INCLUDE) -g
+
+fnmatch.o: $(LIBSRC)/fnmatch.c
     $(TCC) -c $** -o $@ -I$(INCLUDE) -g
 
 fork.o: $(LIBSRC)/fork.c

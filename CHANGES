@@ -4,6 +4,10 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Implemented support for hidden files in ls.
+ 
+    * Fixed handling of NetBIOS keep-alive packets in smbfs.
+
     * Implemented support for tracking CPU time usage by threads. The times()
       function now returns the system and user time as well as the accumulated
       time used by terminated child threads. The threadtimes() function can
@@ -14,7 +18,7 @@ Changes since last release
 
     * Added spawnve(), spawnv(), and spawnl() functions.
 
-    * Support for non-shared executable modules
+    * Support for non-shared executable modules.
 
     * Added binutils package.
 
@@ -63,7 +67,7 @@ Changes since last release
         - Pipe command into editor buffer
         - Read from stdin
         - Read-only mode
-        
+
     * Add ln command to shell.
 
     * Fixed bug in dfs rmdir so directories with multiple links can be removed.
