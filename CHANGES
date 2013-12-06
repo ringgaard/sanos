@@ -4,6 +4,9 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added basename and dirname shell commands as well as the basename()
+      and dirname() functions in libgen.h.
+
     * Implemented support for hidden files in ls.
  
     * Fixed handling of NetBIOS keep-alive packets in smbfs.

@@ -163,6 +163,31 @@ char *realpath(const char *path, char *resolved) {
   return resolved;
 }
 
+char *basename(char *path) {
+  char *p;
+
+  if (!path || !*path) return ".";
+  p = path + strlen(path) - 1;
+  while (p > path && (*p == PS1 || *p == PS2)) *p-- = '\0';
+  if (p != path) {
+    while (p > path && p[-1] != PS1 && p[-1] != PS2) p--;
+  }
+  return p;
+}
+
+char *dirname(char *path) {
+  char *p;
+  
+  if (!path || !*path) return ".";
+  p = path + strlen(path) - 1;
+  while (p > path && (*p == PS1 || *p == PS2)) p--;
+  while (p > path && *p != PS1 && *p != PS2) p--;
+  while (p > path && (*p == PS1 || *p == PS2)) p--;
+  if (p == path && *p != PS1 && *p != PS2) return ".";
+  p[1] = '\0';
+  return path;
+}
+
 char *mktemp(char *template) {
   char *begin;
   char *end;

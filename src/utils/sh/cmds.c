@@ -154,6 +154,14 @@ static int httpget(char *server, char *path, char *filename) {
   return count;
 }
 
+shellcmd(basename) {
+  if (argc != 2) {
+    printf("usage: basename FILE\n");
+    return -EINVAL;
+  }
+  printf("%s\n", basename(argv[1]));
+}
+
 shellcmd(beep) {
   return ioctl(1, IOCTL_BEEP, NULL, 0);
 }
@@ -193,6 +201,14 @@ shellcmd(cat) {
 shellcmd(cls) {
   printf("\033c\f");
   return 0;
+}
+
+shellcmd(dirname) {
+  if (argc != 2) {
+    printf("usage: dirname FILE\n");
+    return -EINVAL;
+  }
+  printf("%s\n", dirname(argv[1]));
 }
 
 shellcmd(glob) {
