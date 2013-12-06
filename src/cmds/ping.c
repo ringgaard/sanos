@@ -158,14 +158,14 @@ shellcmd(ping) {
     return 1; 
   } 
 
-  rc = setsockopt(sockraw, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof(timeout)); 
+  rc = setsockopt(sockraw, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)); 
   if (rc < 0) {
     perror("ping: recv timeout");
     return 1; 
   } 
 
   timeout = 1000; 
-  rc = setsockopt(sockraw, SOL_SOCKET, SO_SNDTIMEO, (char *) &timeout, sizeof(timeout)); 
+  rc = setsockopt(sockraw, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)); 
   if (rc < 0) { 
     perror("ping: send timeout");
     return 1; 

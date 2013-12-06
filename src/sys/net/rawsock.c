@@ -169,7 +169,7 @@ static int rawsock_getsockname(struct socket *s, struct sockaddr *name, int *nam
   return 0;
 }
 
-static int rawsock_getsockopt(struct socket *s, int level, int optname, char *optval, int *optlen) {
+static int rawsock_getsockopt(struct socket *s, int level, int optname, void *optval, int *optlen) {
   return -ENOSYS;
 }
 
@@ -261,7 +261,7 @@ static int rawsock_sendmsg(struct socket *s, struct msghdr *msg, unsigned int fl
   return size;
 }
 
-static int rawsock_setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen) {
+static int rawsock_setsockopt(struct socket *s, int level, int optname, const void *optval, int optlen) {
   if (level == SOL_SOCKET)
   {
     switch (optname) {

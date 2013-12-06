@@ -96,7 +96,7 @@ int sntp_get(struct ntp_server *srv, struct timeval *tv) {
   }
 
   timeout = NTP_REPLY_TIMEOUT;
-  setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof(int)); 
+  setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(int)); 
 
   rc = recvfrom(s, &pkt, sizeof pkt, 0, NULL, NULL);
   if (rc != sizeof pkt) {

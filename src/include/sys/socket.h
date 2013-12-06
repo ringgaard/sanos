@@ -117,7 +117,7 @@ osapi int bind(int s, const struct sockaddr *name, int namelen);
 osapi int connect(int s, const struct sockaddr *name, int namelen);
 osapi int getpeername(int s, struct sockaddr *name, int *namelen);
 osapi int getsockname(int s, struct sockaddr *name, int *namelen);
-osapi int getsockopt(int s, int level, int optname, char *optval, int *optlen);
+osapi int getsockopt(int s, int level, int optname, void *optval, int *optlen);
 osapi int listen(int s, int backlog);
 osapi int recv(int s, void *data, int size, unsigned int flags);
 osapi int recvfrom(int s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen);
@@ -125,7 +125,7 @@ osapi int recvmsg(int s, struct msghdr *hdr, unsigned int flags);
 osapi int send(int s, const void *data, int size, unsigned int flags);
 osapi int sendto(int s, const void *data, int size, unsigned int flags, const struct sockaddr *to, int tolen);
 osapi int sendmsg(int s, struct msghdr *hdr, unsigned int flags);
-osapi int setsockopt(int s, int level, int optname, const char *optval, int optlen);
+osapi int setsockopt(int s, int level, int optname, const void *optval, int optlen);
 osapi int shutdown(int s, int how);
 osapi int socket(int domain, int type, int protocol);
 

@@ -1555,14 +1555,14 @@ static int sys_getsockopt(char *params) {
   int rc;
   int level;
   int optname;
-  char *optval;
+  void *optval;
   int *optlen;
   int inoptlen;
 
   h = *(handle_t *) params;
   level = *(int *) (params + 4);
   optname = *(int *) (params + 8);
-  optval = *(char **) (params + 12);
+  optval = *(void **) (params + 12);
   optlen = *(int **) (params + 16);
 
   s = (struct socket *) olock(h, OBJECT_SOCKET);
@@ -1760,13 +1760,13 @@ static int sys_setsockopt(char *params) {
   int rc;
   int level;
   int optname;
-  char *optval;
+  void *optval;
   int optlen;
 
   h = *(handle_t *) params;
   level = *(int *) (params + 4);
   optname = *(int *) (params + 8);
-  optval = *(char **) (params + 12);
+  optval = *(void **) (params + 12);
   optlen = *(int *) (params + 16);
 
   s = (struct socket *) olock(h, OBJECT_SOCKET);

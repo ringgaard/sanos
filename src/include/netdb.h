@@ -106,6 +106,9 @@ osapi struct protoent *getprotobynumber(int proto);
 osapi struct servent *getservbyname(const char *name, const char *proto);
 osapi struct servent *getservbyport(int port, const char *proto);
 
+#define hstrerror strerror
+#define h_errno errno
+
 #ifdef  __cplusplus
 }
 #endif

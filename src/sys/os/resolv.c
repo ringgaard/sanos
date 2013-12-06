@@ -722,7 +722,7 @@ static int send_dg(struct res_state *statp,
   if (ns > 0) timeout /= statp->nscount;
   if (timeout <= 0) timeout = 1;
   timeout = timeout * 1000;
-  setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof(int)); 
+  setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(int)); 
 
 wait:
   fromlen = sizeof(struct sockaddr_in);

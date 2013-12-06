@@ -454,7 +454,7 @@ int getsockname(int s, struct sockaddr *name, int *namelen) {
   return syscall(SYSCALL_GETSOCKNAME, &s);
 }
 
-int getsockopt(int s, int level, int optname, char *optval, int *optlen) {
+int getsockopt(int s, int level, int optname, void *optval, int *optlen) {
   return syscall(SYSCALL_GETSOCKOPT, &s);
 }
 
@@ -478,7 +478,7 @@ int sendto(int s, const void *data, int size, unsigned int flags, const struct s
   return syscall(SYSCALL_SENDTO, &s);
 }
 
-int setsockopt(int s, int level, int optname, const char *optval, int optlen) {
+int setsockopt(int s, int level, int optname, const void *optval, int optlen) {
   return syscall(SYSCALL_SETSOCKOPT, &s);
 }
 

@@ -1088,8 +1088,8 @@ int docmd(struct ftpstate *fs) {
             if (i > 7200) i = 7200;
             if (i < 10) i = 10;
             fs->idletime = i * 1000;
-            setsockopt(fs->ctrlsock, SOL_SOCKET, SO_RCVTIMEO, (char *) &fs->idletime, 4);
-            setsockopt(fs->ctrlsock, SOL_SOCKET, SO_SNDTIMEO, (char *) &fs->idletime, 4);
+            setsockopt(fs->ctrlsock, SOL_SOCKET, SO_RCVTIMEO, &fs->idletime, 4);
+            setsockopt(fs->ctrlsock, SOL_SOCKET, SO_SNDTIMEO, &fs->idletime, 4);
 
             addreply(fs, 200, "Idle time set to %u seconds", fs->idletime / 1000);
           }
@@ -1155,8 +1155,8 @@ void __stdcall ftp_task(void *arg) {
   }
 
   // Set idle timeout for connection
-  setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof(timeout));
-  setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (char *) &timeout, sizeof(timeout));
+  setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+  setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
   fs->idletime = timeout;
 
   // Open data input and out file descriptors

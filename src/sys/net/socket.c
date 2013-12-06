@@ -130,7 +130,7 @@ int getsockname(struct socket *s, struct sockaddr *name, int *namelen) {
   return sockops[s->type]->getsockname(s, name, namelen);
 }
 
-int getsockopt(struct socket *s, int level, int optname, char *optval, int *optlen) {
+int getsockopt(struct socket *s, int level, int optname, void *optval, int *optlen) {
   return sockops[s->type]->getsockopt(s, level, optname, optval, optlen);
 }
 
@@ -296,7 +296,7 @@ int sendv(struct socket *s, struct iovec *iov, int count) {
   return rc;
 }
 
-int setsockopt(struct socket *s, int level, int optname, const char *optval, int optlen) {
+int setsockopt(struct socket *s, int level, int optname, const void *optval, int optlen) {
   return sockops[s->type]->setsockopt(s, level, optname, optval, optlen);
 }
 
