@@ -94,4 +94,8 @@ typedef unsigned __int64 uintmax_t;
 #define UINT32_MAX   (0xffffffffui32)
 #define UINT64_MAX   (0xffffffffffffffffui64)
 
+#define INTMAX_MIN   INT64_MIN
+#define INTMAX_MAX   INT64_MAX
+#define UINTMAX_MAX  UINT64_MAX
+
 #endif
