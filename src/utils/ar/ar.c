@@ -515,7 +515,7 @@ int main(int argc, char *argv[]) {
     char *input_file = argv[optind++];
     fd = open(input_file, O_RDONLY | O_BINARY);
     if (fd < 0) {
-      perror(archive_filename);
+      perror(input_file);
       free_archive(&ar);
       return 1;
     }

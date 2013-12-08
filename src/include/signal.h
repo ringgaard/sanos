@@ -161,6 +161,8 @@ struct sigaction {
 
 #endif
 
+typedef int sig_atomic_t;
+
 #ifdef  __cplusplus
 extern "C" {
 #endif

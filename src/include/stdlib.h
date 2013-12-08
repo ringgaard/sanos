@@ -86,6 +86,7 @@ long double strtold(const char *str, char **endptr);
 long strtol(const char *nptr, char **endptr, int ibase);
 __int64 strtoll(const char *nptr, char **endptr, int ibase);
 unsigned long strtoul(const char *nptr, char **endptr, int ibase);
+unsigned __int64 strtoull(const char *nptr, char **endptr, int ibase);
 int system(const char *command);
 char *ultoa(unsigned long val, char *buf, int radix);
 
@@ -132,6 +133,7 @@ long random();
 
 char *realpath(const char *path, char *resolved);
 char *mktemp(char *tmpl);
+char *mkdtemp(char *tmpl);
 int mkstemp(char *tmpl);
 int mkstemps(char *tmpl, int suffixlen);
 

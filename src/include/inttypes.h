@@ -281,4 +281,15 @@ typedef struct {
 #define INTMAX_C(x)   x##i64 
 #define UINTMAX_C(x)  x##ui64 
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
+intmax_t strtoimax(const char *nptr, char **endptr, int ibase);
+uintmax_t strtoumax(const char *nptr, char **endptr, int ibase);
+
+#ifdef  __cplusplus
+}
+#endif
+
 #endif

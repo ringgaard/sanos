@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added strcasestr, strtoull, strtoimax, strtoumax, mkdtemp functions.
+
     * Added basename and dirname shell commands as well as the basename()
       and dirname() functions in libgen.h.
 

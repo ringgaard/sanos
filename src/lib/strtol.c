@@ -33,7 +33,7 @@
 
 #include <os.h>
 #include <ctype.h>
-#include <limits.h>
+#include <stdint.h>
 
 #define FL_UNSIGNED   1
 #define FL_NEG        2
@@ -80,7 +80,7 @@ static unsigned long strtoxl(const char *nptr, char **endptr, int ibase, int fla
     }
   }
 
-  maxval = ULONG_MAX / ibase;
+  maxval = UINT32_MAX / ibase;
 
   for (;;) {
     if (isdigit(c)) {
@@ -95,7 +95,7 @@ static unsigned long strtoxl(const char *nptr, char **endptr, int ibase, int fla
 
     flags |= FL_READDIGIT;
 
-    if (number < maxval || (number == maxval && (unsigned long) digval <= ULONG_MAX % ibase)) {
+    if (number < maxval || (number == maxval && (unsigned long) digval <= UINT32_MAX % ibase)) {
       number = number * ibase + digval;
     } else {
       flags |= FL_OVERFLOW;
@@ -109,17 +109,17 @@ static unsigned long strtoxl(const char *nptr, char **endptr, int ibase, int fla
   if (!(flags & FL_READDIGIT)) {
     if (endptr) p = nptr;
     number = 0;
-  } else if ((flags & FL_OVERFLOW) || (!(flags & FL_UNSIGNED) && (((flags & FL_NEG) && (number < LONG_MIN)) || (!(flags & FL_NEG) && (number > LONG_MAX))))) {
+  } else if ((flags & FL_OVERFLOW) || (!(flags & FL_UNSIGNED) && (((flags & FL_NEG) && (number < INT32_MIN)) || (!(flags & FL_NEG) && (number > INT32_MAX))))) {
 #ifndef KERNEL
     errno = ERANGE;
 #endif
 
     if (flags & FL_UNSIGNED) {
-      number = ULONG_MAX;
+      number = UINT32_MAX;
     } else if (flags & FL_NEG) {
-      number = LONG_MIN;
+      number = INT32_MIN;
     } else {
-      number = LONG_MAX;
+      number = INT32_MAX;
     }
   }
 
@@ -168,7 +168,7 @@ int atoi(const char *nptr) {
 }
 
 #ifndef KERNEL
-__int64 strtoll(const char *nptr, char **endptr, int ibase) {
+static unsigned __int64 strtoxll(const char *nptr, char **endptr, int ibase, int flags) {
   const unsigned char *p = (const unsigned char *) nptr;
   int flags = 0;
   __int64 number = 0;
@@ -206,7 +206,7 @@ __int64 strtoll(const char *nptr, char **endptr, int ibase) {
     }
   }
 
-  maxval = _I64_MAX / ibase;
+  maxval = INT64_MAX / ibase;
 
   for (;;) {
     if (isdigit(c)) {
@@ -221,7 +221,7 @@ __int64 strtoll(const char *nptr, char **endptr, int ibase) {
 
     flags |= FL_READDIGIT;
 
-    if (number < maxval || (number == maxval && digval <= _I64_MAX % ibase)) {
+    if (number < maxval || (number == maxval && digval <= INT64_MAX % ibase)) {
       number = number * ibase + digval;
     } else {
       flags |= FL_OVERFLOW;
@@ -235,13 +235,15 @@ __int64 strtoll(const char *nptr, char **endptr, int ibase) {
   if (!(flags & FL_READDIGIT)) {
     if (endptr) p = nptr;
     number = 0;
-  } else if (flags & FL_OVERFLOW) {
+  } else if ((flags & FL_OVERFLOW) || (!(flags & FL_UNSIGNED) && (((flags & FL_NEG) && (number < INT64_MIN)) || (!(flags & FL_NEG) && (number > INT64_MAX))))) {
     errno = ERANGE;
 
-    if (flags & FL_NEG) {
-      number = _I64_MIN;
+    if (flags & FL_UNSIGNED) {
+      number = UINT64_MAX;
+    } else if (flags & FL_NEG) {
+      number = INT64_MIN;
     } else {
-      number = _I64_MAX;
+      number = INT64_MAX;
     }
   }
 
@@ -249,6 +251,22 @@ __int64 strtoll(const char *nptr, char **endptr, int ibase) {
   if (flags & FL_NEG) number = -number;
 
   return number;
+}
+
+__int64 strtoll(const char *nptr, char **endptr, int ibase) {
+  return (__int64) strtoxll(nptr, endptr, ibase, 0);
+}
+
+unsigned __int64 strtoull(const char *nptr, char **endptr, int ibase) {
+  return strtoxll(nptr, endptr, ibase, FL_UNSIGNED);
+}
+
+intmax_t strtoimax(const char *nptr, char **endptr, int ibase) {
+  return (intmax_t) strtoxll(nptr, endptr, ibase, 0);
+}
+
+uintmax_t strtoumax(const char *nptr, char **endptr, int ibase) {
+  return strtoxll(nptr, endptr, ibase, FL_UNSIGNED);
 }
 
 #endif

@@ -134,6 +134,7 @@ osapi int chown(const char *name, int owner, int group);
 osapi int fchown(handle_t f, int owner, int group);
 osapi int isatty(handle_t f);
 
+int readlink(const char *name, char *buf, size_t size);
 int symlink(const char *oldpath, const char *newpath);
 int chroot(const char *path);
 int lockf(handle_t f, int func, off_t size);

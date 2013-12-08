@@ -206,7 +206,7 @@ char *mktemp(char *template) {
   }
   if (!begin) {
     errno = EINVAL;
-    *template = 0;
+    return NULL;
   } else {
     // Keep trying new serial numbers
     for (;;) {
@@ -221,7 +221,48 @@ char *mktemp(char *template) {
       // Test if file exists
       if (access(template, 0) < 0 && errno == ENOENT) break;
       if (errno != EEXIST) {
-        *template = 0;
+        return NULL;
+        break;
+      }
+    }
+  }
+  return template;
+}
+
+char *mkdtemp(char *template) {
+  char *begin;
+  char *end;
+
+  // Initialize serial number to pid
+  if (serial == -1) serial = getpid();
+
+  // Find range of Xs in template
+  begin = NULL;
+  for (end = template; *end; end++) {
+    if (*end == 'X') {
+      if (!begin) begin = end;
+    } else {
+      begin = NULL;
+    }
+  }
+  if (!begin) {
+    errno = EINVAL;
+    return NULL;
+  } else {
+    // Keep trying new serial numbers
+    for (;;) {
+      // Insert serial number in template
+      int id = serial++;
+      char *p = end;
+      while (p > begin) {
+        *--p = (id % 10) + '0';
+        id /= 10;
+      }
+
+      // Test if directory exists
+      if (mkdir(template, 0700) == 0) break;
+      if (errno != EEXIST) {
+        return NULL;
         break;
       }
     }
@@ -307,6 +348,12 @@ struct lconv *localeconv(void) {
 }
 
 int symlink(const char *oldpath, const char *newpath) {
+  // TODO implement
+  errno = ENOSYS;
+  return -1;
+}
+
+int readlink(const char *name, char *buf, size_t size) {
   // TODO implement
   errno = ENOSYS;
   return -1;
