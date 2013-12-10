@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * The C compiler now generates PE import hints for DLL imports.
+
     * Added strcasestr, strtoull, strtoimax, strtoumax, mkdtemp functions.
 
     * Added basename and dirname shell commands as well as the basename()

@@ -289,8 +289,8 @@ void *malloc(size_t size) {
   p = heap_alloc(getpeb()->heap, size);
   leave(&heap_lock);
 
-  if (size && !p) panic("malloc: out of memory");
-  //if (size && !p) errno = ENOMEM;
+  if (!p && size) panic("malloc: out of memory");
+  //if (!p && size) errno = ENOMEM;
   //syslog(LOG_MODULE | LOG_DEBUG, "malloced %d bytes at %p", size, p);
 
   return p;
@@ -303,8 +303,8 @@ void *realloc(void *mem, size_t size) {
   p = heap_realloc(getpeb()->heap, mem, size);
   leave(&heap_lock);
 
-  if (size && !p) panic("realloc: out of memory");
-  //if (size && !p) errno = ENOMEM;
+  if (!p && size) panic("realloc: out of memory");
+  //if (!p && size) errno = ENOMEM;
 
   return p;
 }
@@ -316,8 +316,8 @@ void *calloc(size_t num, size_t size) {
   p = heap_calloc(getpeb()->heap, num, size);
   leave(&heap_lock);
 
-  if (size * num != 0 && !p) panic("calloc: out of memory");
-  //if (size * num != 0 && !p) errno = ENOMEM;
+  if (!p && size * num != 0) panic("calloc: out of memory");
+  //if (!p && size * num != 0) errno = ENOMEM;
 
   return p;
 }

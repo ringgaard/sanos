@@ -66,6 +66,7 @@ int main(int argc, char *argv[]) {
   struct image_header *imghdr;
   struct image_export_directory *expdir;
   unsigned long *names;
+  unsigned short *ordinals;
   char *module_name;
   FILE *output;
 
@@ -122,9 +123,10 @@ int main(int argc, char *argv[]) {
   module_name = get_rva(dll, imghdr, expdir->name);
   fprintf(output, "LIBRARY %s\r\n\r\nEXPORTS\r\n", module_name);
   names = get_rva(dll, imghdr, expdir->address_of_names);
+  ordinals = get_rva(dll, imghdr, expdir->address_of_name_ordinals);
   for (i = 0; i < expdir->number_of_names; i++) {
     char *name = get_rva(dll, imghdr,  names[i]);
-    fprintf(output, "%s\r\n", name);
+    fprintf(output, "%s@%d\r\n", name, ordinals[i]);
   }
 
   if (def_filename) fclose(output);

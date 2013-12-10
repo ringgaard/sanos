@@ -703,9 +703,8 @@ static void pe_build_imports(struct pe_info *pe) {
         org_sym->st_value = thk_ptr;
         org_sym->st_shndx = pe->thunk->sh_num;
         v = pe->thunk->data_offset + rva_base;
-        section_ptr_add(pe->thunk, sizeof(WORD)); // Hint, not used
+        *(WORD *) section_ptr_add(pe->thunk, sizeof(WORD)) = imp_sym->st_other; // Hint
         put_elf_str(pe->thunk, name);
-
       } else {
         v = 0; // Last entry is zero
       }
@@ -818,7 +817,7 @@ static void pe_build_exports(struct pe_info *pe) {
     name_o += sizeof(DWORD);
     ord_o += sizeof(WORD);
 
-    if (op) fprintf(op, "%s\n", name);
+    if (op) fprintf(op, "%s@%d\n", name, ord);
   }
   pe->exp_size = pe->thunk->data_offset - pe->exp_offs;
   tcc_free(sorted);
@@ -1340,8 +1339,8 @@ static char *get_line(char *line, int size, FILE *fp) {
 
 int pe_load_def_file(TCCState *s1, int fd) {
   DLLReference *dllref;
-  int state = 0, ret = -1;
-  char line[400], dllname[80], *p;
+  int state = 0, ret = -1, hint;
+  char line[400], dllname[80], *p, *ordinal;
   FILE *fp = fdopen(dup(fd), "rb");
   if (fp == NULL) goto quit;
 
@@ -1369,8 +1368,16 @@ int pe_load_def_file(TCCState *s1, int fd) {
         ++state;
 
       default:
+        hint = 0;
+        ordinal = strchr(p, '@');
+        if (ordinal) {
+          *ordinal = 0;
+          trimback(p, ordinal);
+          ordinal++;
+          hint = atoi(ordinal);
+        }
         add_elf_sym(s1->dynsymtab_section, s1->nb_loaded_dlls, 0, 
-                    ELF32_ST_INFO(STB_GLOBAL, STT_FUNC), 0, 
+                    ELF32_ST_INFO(STB_GLOBAL, STT_FUNC), hint, 
                     text_section->sh_num, p);
         continue;
     }
