@@ -48,7 +48,7 @@ FILE *popen(const char *command, const char *mode) {
   struct process *proc;
   FILE *f;
 
-  if (!command) {
+  if (!command || *mode != 'r' && *mode != 'w') {
     errno = EINVAL;
     return NULL;
   }

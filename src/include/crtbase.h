@@ -39,7 +39,6 @@
 #define CRTBASE_H
 
 #include <stdio.h>
-#include <setjmp.h>
 
 struct opt {
   int err;
