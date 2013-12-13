@@ -170,10 +170,9 @@ int atoi(const char *nptr) {
 #ifndef KERNEL
 static unsigned __int64 strtoxll(const char *nptr, char **endptr, int ibase, int flags) {
   const unsigned char *p = (const unsigned char *) nptr;
-  int flags = 0;
-  __int64 number = 0;
-  __int64 digval;
-  __int64 maxval;
+  unsigned __int64 number = 0;
+  unsigned __int64 digval;
+  unsigned __int64 maxval;
   int c;
 
   c = *p++;
@@ -217,11 +216,11 @@ static unsigned __int64 strtoxll(const char *nptr, char **endptr, int ibase, int
       break;
     }
 
-    if (digval >= (__int64) ibase) break;
+    if (digval >= (unsigned __int64) ibase) break;
 
     flags |= FL_READDIGIT;
 
-    if (number < maxval || (number == maxval && digval <= INT64_MAX % ibase)) {
+    if (number < maxval || (number == maxval && digval <= (unsigned __int64) (INT64_MAX % ibase))) {
       number = number * ibase + digval;
     } else {
       flags |= FL_OVERFLOW;
@@ -248,7 +247,7 @@ static unsigned __int64 strtoxll(const char *nptr, char **endptr, int ibase, int
   }
 
   if (endptr) *endptr = (char *) p;
-  if (flags & FL_NEG) number = -number;
+  if (flags & FL_NEG) number = (unsigned __int64) (-(__int64) number);
 
   return number;
 }

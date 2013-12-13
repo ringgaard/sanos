@@ -160,6 +160,7 @@ shellcmd(basename) {
     return -EINVAL;
   }
   printf("%s\n", basename(argv[1]));
+  return 0;
 }
 
 shellcmd(beep) {
@@ -209,6 +210,7 @@ shellcmd(dirname) {
     return -EINVAL;
   }
   printf("%s\n", dirname(argv[1]));
+  return 0;
 }
 
 shellcmd(glob) {
