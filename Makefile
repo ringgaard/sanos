@@ -103,6 +103,7 @@ dirs:
     -@if not exist $(OBJ)\ctohtml mkdir $(OBJ)\ctohtml
     -@if not exist $(OBJ)\impdef mkdir $(OBJ)\impdef
     -@if not exist $(OBJ)\mkboot mkdir $(OBJ)\mkboot
+    -@if not exist $(OBJ)\genvmdk mkdir $(OBJ)\genvmdk
     -@if not exist $(OBJ)\pkg mkdir $(OBJ)\pkg
     -@if not exist $(OBJ)\grep mkdir $(OBJ)\grep
     -@if not exist $(OBJ)\find mkdir $(OBJ)\find
@@ -962,7 +963,8 @@ utils: dirs $(BIN)/sh.exe $(BIN)/msh.exe $(BIN)/edit.exe $(BIN)/less.exe \
        $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe \
        $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe \
        $(BIN)/login.exe $(BIN)/ctohtml.exe $(BIN)/mkboot.exe $(BIN)/ping.exe \
-       $(BIN)/grep.exe $(BIN)/find.exe $(BIN)/pkg.exe $(BIN)/httpd.dll
+       $(BIN)/grep.exe $(BIN)/find.exe $(BIN)/pkg.exe $(BIN)/genvmdk.exe \
+       $(BIN)/httpd.dll
 
 $(BIN)/sh.exe: \
   $(SRC)/utils/sh/sh.c \
@@ -1074,6 +1076,12 @@ $(BIN)/mkboot.exe: \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/mkboot/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(BIN)/genvmdk.exe: \
+  $(SRC)/utils/genvmdk/genvmdk.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/genvmdk/ $** /link /NODEFAULTLIB /FIXED:NO
 
 $(BIN)/pkg.exe: \
   $(SRC)/utils/pkg/pkg.c \
@@ -1227,6 +1235,7 @@ install: sanos
     copy /Y $(BIN)\setup.exe     $(INSTALL)\bin\setup.exe
     copy /Y $(BIN)\ctohtml.exe   $(INSTALL)\bin\ctohtml.exe
     copy /Y $(BIN)\mkboot.exe    $(INSTALL)\bin\mkboot.exe
+    copy /Y $(BIN)\genvmdk.exe   $(INSTALL)\bin\genvmdk.exe
     copy /Y $(BIN)\edit.exe      $(INSTALL)\bin\edit.exe
     copy /Y $(BIN)\less.exe      $(INSTALL)\bin\less.exe
     copy /Y $(BIN)\fdisk.exe     $(INSTALL)\bin\fdisk.exe

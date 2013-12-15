@@ -97,7 +97,7 @@ EXPORTS
   bsearch
   calloc=_calloc
   clearerr
-  exit=_exit
+  exit=__exit
   fclose
   fflush
   fgetc

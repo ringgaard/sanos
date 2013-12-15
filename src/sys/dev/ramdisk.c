@@ -56,7 +56,9 @@ static int ramdisk_read(struct dev *dev, void *buffer, size_t count, blkno_t blk
   struct ramdisk *rd = (struct ramdisk *) dev->privdata;
 
   if (count == 0) return 0;
-  if (blkno + count / SECTORSIZE > rd->blks) return -EFAULT;
+  if (blkno + count / SECTORSIZE > rd->blks) {
+    count = (rd->blks - blkno) * SECTORSIZE;
+  }
   memcpy(buffer, rd->data + blkno * SECTORSIZE, count);
   return count;
 }

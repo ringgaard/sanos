@@ -437,7 +437,7 @@ int dfs_write(struct file *filp, void *data, size_t size, off64_t pos) {
     size -= count;
 
     if (pos > inode->desc->size) {
-      inode->desc->size = (loff_t) pos;
+      inode->desc->size = pos;
       mark_inode_dirty(inode);
     }
   }
@@ -491,7 +491,7 @@ int dfs_ftruncate(struct file *filp, off64_t size) {
   blocks = ((size_t) size + inode->fs->blocksize - 1) / inode->fs->blocksize;
 
   if (size > inode->desc->size) {
-    while (blocks < inode->desc->blocks) {
+    while (inode->desc->blocks < blocks) {
       blk = expand_inode(inode);
       if (blk == NOBLOCK) return -ENOSPC;
 
@@ -504,12 +504,11 @@ int dfs_ftruncate(struct file *filp, off64_t size) {
       release_buffer(inode->fs->cache, buf);
     }
   } else {
-    blocks = ((size_t) size + inode->fs->blocksize - 1) / inode->fs->blocksize;
     rc = truncate_inode(inode, blocks);
     if (rc < 0) return rc;
   }
 
-  inode->desc->size = (loff_t) size;
+  inode->desc->size = size;
   mark_inode_dirty(inode);
 
   filp->flags |= F_MODIFIED;

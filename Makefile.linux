@@ -58,6 +58,7 @@ linux/.timestamp:
 	[ -d linux/install/usr/src/utils/edit ]    || ln -s ../../../../../src/utils/edit linux/install/usr/src/utils/edit
 	[ -d linux/install/usr/src/utils/fdisk ]   || ln -s ../../../../../src/utils/fdisk linux/install/usr/src/utils/fdisk
 	[ -d linux/install/usr/src/utils/ftpd ]    || ln -s ../../../../../src/utils/ftpd linux/install/usr/src/utils/ftpd
+	[ -d linux/install/usr/src/utils/genvmdk ] || ln -s ../../../../../src/utils/genvmdk linux/install/usr/src/utils/genvmdk
 	[ -d linux/install/usr/src/utils/httpd ]   || ln -s ../../../../../src/utils/httpd linux/install/usr/src/utils/httpd
 	[ -d linux/install/usr/src/utils/impdef ]  || ln -s ../../../../../src/utils/impdef linux/install/usr/src/utils/impdef
 	[ -d linux/install/usr/src/utils/login ]   || ln -s ../../../../../src/utils/login linux/install/usr/src/utils/login
@@ -708,6 +709,7 @@ utils: \
   linux/install/bin/fdisk.exe \
   linux/install/bin/setup.exe \
   linux/install/bin/mkboot.exe \
+  linux/install/bin/genvmdk.exe \
   linux/install/bin/ftpd.exe \
   linux/install/bin/telnetd.exe \
   linux/install/bin/login.exe \
@@ -759,6 +761,10 @@ linux/install/bin/setup.exe: src/utils/setup/setup.c
 linux/install/bin/mkboot.exe: src/utils/mkboot/mkboot.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
 	cp -p build/mkboot.inf $(PKGDIR)
+
+linux/install/bin/genvmdk.exe: src/utils/genvmdk/genvmdk.c
+	$(TCC) -o $@ $^ $(TCCFLAGS)
+	cp -p build/genvmdk.inf $(PKGDIR)
 
 linux/install/bin/ftpd.exe: src/utils/ftpd/ftpd.c
 	$(TCC) -o $@ $^ $(TCCFLAGS)
@@ -847,7 +853,7 @@ img/sanos.vmdk: sanos
 	echo "/ linux/install" > linux/disk.lst
 	$(MKPKG) linux/install - $(PKGDIR)/*.inf
 	mv db $(PKGDIR)
-	$(MKDFS) -d img/sanos.vmdk -t vmdk -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 100M -i -f -S linux/image -F linux/disk.lst
+	$(MKDFS) -d img/sanos.vmdk -t vmdk -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 200M -i -f -S linux/image -F linux/disk.lst
 
 #
 # hdmin

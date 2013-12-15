@@ -308,7 +308,7 @@ void abort() {
   raise(SIGABRT);
 }
 
-void _exit(int status) {
+void __exit(int status) {
   TRACE("_exit");
   exit(status);
 }
