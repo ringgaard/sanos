@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * The printf routines now support %lld format for 64-bit ints.
+
     * Added genvmdk utility for generating VMDK disk image files.
 
     * The C compiler now generates PE import hints for DLL imports.

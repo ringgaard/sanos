@@ -240,12 +240,48 @@ int _output(FILE *stream, const char *format, va_list args) {
     }
     
     // Get the conversion qualifier
-    if (*fmt == 'h' || *fmt == 'l' || *fmt == 'L') {
-      qualifier = *fmt;
-      fmt++;
-    } else if (*fmt == 'I' && *(fmt + 1) == '6' && *(fmt + 2) == '4') {
-      qualifier = 'I';
-      fmt += 3;
+    switch (*fmt) {
+      case 'h':
+        // Half-word, i.e. 16-bit int
+        qualifier = 'h';
+        fmt++;
+        break;
+
+      case 'L':
+        // Long-word, i.e. 32-bit int
+        qualifier = 'l';
+        fmt++;
+        break;
+
+      case 'q':
+        // Quad-word, i.e. 64-bit int (BSD)
+        qualifier = 'q';
+        fmt++;
+        break;
+
+      case 'l':
+        // Long-word (l) or quad-word (ll), i.e. 32/64-bit int
+        qualifier = 'l';
+        fmt++;
+        if (*fmt == 'l') {
+          qualifier = 'q';
+          fmt++;
+        }
+        break;
+
+      case 'I':
+        qualifier = 'l';
+        fmt++;
+        if (fmt[1] == '6' && fmt[2] == '4') {
+          // Quad-word (I64), i.e. 64-bit int (MSVC)
+          qualifier = 'q';
+          fmt += 2;
+        } else if (fmt[1] == '3' && fmt[2] == '2') {
+          // Long-word (I32), i.e. 32-bit int (MSVC)
+          qualifier = 'l';
+          fmt += 2;
+        }
+        break;
     }
 
     // Format output according to type specifier    
@@ -304,7 +340,7 @@ int _output(FILE *stream, const char *format, va_list args) {
       case 'x': // Unsigned lower hex integer
          hexadd = 'a' - '9' - 1; // Set hexadd for lowercase hex
          // Drop through to hex formatting
-         
+
       case_hex:
          radix = 16;
          if (flags & FL_ALTERNATE) {
@@ -329,7 +365,7 @@ int _output(FILE *stream, const char *format, va_list args) {
         int digit;                 // ASCII value of digit
 
         // Read argument and check for negative
-        if (qualifier == 'I') {
+        if (qualifier == 'q') {
           if (flags & FL_SIGNED) {
             __int64 n = va_arg(args, __int64);
             if (n < 0) {
@@ -341,7 +377,7 @@ int _output(FILE *stream, const char *format, va_list args) {
           } else {
             number64 = va_arg(args, unsigned __int64);
           }
-        } else if (qualifier == 'l' || qualifier == 'L') {
+        } else if (qualifier == 'l') {
           if (flags & FL_SIGNED) {
             long n = va_arg(args, long);
             if (n < 0) {
@@ -386,7 +422,7 @@ int _output(FILE *stream, const char *format, va_list args) {
 
         // Convert data to ASCII -- note if precision is zero and number is zero, we get no digits at all
         text = &buffer[MAXBUFFER - 1]; // Last digit at end of buffer
-        if (qualifier == 'I') {
+        if (qualifier == 'q') {
           // Check if data is 0; if so, turn off hex prefix
           if (number64 == 0) prefixlen = 0;
 
