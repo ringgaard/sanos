@@ -1,2 +1,4 @@
+#!/bin/sh
+[ -x /dev/eth0 ] && pkg -c
 # telnetd &
 # ftpd &

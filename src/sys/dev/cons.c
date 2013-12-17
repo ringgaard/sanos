@@ -65,7 +65,7 @@ void sound(unsigned short freq)  {
 void nosound()  {
   unsigned char b;
 
-   // KB controller port B
+  // KB controller port B
   b = inp(0x61);
 
   // Disable speaker + clock 2 gate

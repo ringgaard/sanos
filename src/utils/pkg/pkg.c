@@ -575,6 +575,7 @@ static void usage() {
   fprintf(stderr, "  -R URL  Package repository URL (default: %s)\n", DEFAULT_PKG_REPO);
   fprintf(stderr, "  -B      Build but do not install packages\n");
   fprintf(stderr, "  -F      Fetch but do not build packages\n");
+  fprintf(stderr, "  -c      Check for new updates in repository\n");
   fprintf(stderr, "  -u      Upgrade packages if newer versions are available\n");
   fprintf(stderr, "  -U      Force update of packages\n");
   fprintf(stderr, "  -d      Delete package\n");
@@ -593,12 +594,17 @@ int main(int argc, char *argv[]) {
   int list = 0;
   int query = 0;
   int options = 0;
+  int check = 0;
 
   // Parse command line options
   memset(&db, 0, sizeof(struct pkgdb));
   db.repo = DEFAULT_PKG_REPO;
-  while ((c = getopt(argc, argv, "dflquvBFR:U?")) != EOF) {
+  while ((c = getopt(argc, argv, "cdflquvBFR:U?")) != EOF) {
     switch (c) {
+      case 'c':
+        check = 1;
+        break;
+
       case 'd':
         remove = 1;
         break;
@@ -644,17 +650,35 @@ int main(int argc, char *argv[]) {
         usage();
     }
   }
-  if (optind == argc && !list && !query && !(options & UPGRADE)) usage();
+  if (optind == argc && !check && !list && !query && !(options & UPGRADE)) usage();
 
   // Read package database
   read_pkgdb(&db);
 
   // Get package timestamps from repository
-  if (options & UPGRADE) {
+  if ((options & UPGRADE) || check) {
     if (retrieve_package_timestamps(&db, db.repo) != 0) return 1;
   }
 
-  if (list) {
+  if (check) {
+    // Check for updates
+    struct pkg *pkg;
+    int num_updates = 0;
+    for (pkg = db.head; pkg; pkg = pkg->next) {    
+      if (pkg->avail > pkg->time) {
+        num_updates++;
+        if (options & VERBOSE) {
+          printf("pkg: new version of %s available\n", pkg->name);
+        }
+      }
+    }
+    if (num_updates > 0) {
+      printf("pkg: updates for %d packages available, use 'pkg -u' to update.\n", num_updates);
+      rc = 1;
+    } else {
+      rc = 0;
+    }
+  } else if (list) {
     // List installed packages
     struct pkg *pkg;
     for (pkg = db.head; pkg; pkg = pkg->next) {
