@@ -54,7 +54,14 @@ int linux_console = 0;
 
 #define MINEXTEND      32768
 #define LINEBUF_EXTRA  32
+
+#ifndef TABSIZE
 #define TABSIZE        8
+#endif
+
+#ifndef INDENT
+#define INDENT "  "
+#endif
 
 #define CLRSCR           "\033[0J"
 #define CLREOL           "\033[K"
@@ -173,9 +180,10 @@ struct editor {
   int dirty;                 // Dirty flag is set when the editor buffer has been changed
 
   int newfile;               // File is a new file
+  int permissions;           // File permissions
 
-  struct env *env;           // Reference global editor environment
-  struct editor *next;       // Next editor.
+  struct env *env;           // Reference to global editor environment
+  struct editor *next;       // Next editor
   struct editor *prev;       // Previous editor
 
   char filename[FILENAME_MAX];
@@ -187,9 +195,8 @@ struct env {
   unsigned char *clipboard; // Clipboard
   int clipsize;             // Clipboard size
 
-  unsigned char *search;    // Search text.
-
-  unsigned char *linebuf;   // Scratch buffer.
+  unsigned char *search;    // Search text
+  unsigned char *linebuf;   // Scratch buffer
 
   int cols;                 // Console columns
   int lines;                // Console lines
@@ -280,6 +287,7 @@ int new_file(struct editor *ed, char *filename) {
     sprintf(ed->filename, "Untitled-%d", ++ed->env->untitled);
     ed->newfile = 1;
   }
+  ed->permissions = 0644;
 
   ed->start = (unsigned char *) malloc(MINEXTEND);
   if (!ed->start) return -1;
@@ -305,6 +313,7 @@ int load_file(struct editor *ed, char *filename) {
 
   if (fstat(f, &statbuf) < 0) goto err;
   length = statbuf.st_size;
+  ed->permissions = statbuf.st_mode & 0777;
 
   ed->start = (unsigned char *) malloc(length + MINEXTEND);
   if (!ed->start) goto err;
@@ -332,7 +341,7 @@ err:
 int save_file(struct editor *ed) {
   int f;
 
-  f = open(ed->filename, O_CREAT | O_TRUNC | O_WRONLY, 0644);
+  f = open(ed->filename, O_CREAT | O_TRUNC | O_WRONLY, ed->permissions);
   if (f < 0) return -1;
 
   if (write(f, ed->start, ed->gap - ed->start) != ed->gap - ed->start) goto err;
@@ -421,6 +430,21 @@ int get(struct editor *ed, int pos) {
   return *p;
 }
 
+int compare(struct editor *ed, unsigned char *buf, int pos, int len) {
+  unsigned char *bufptr = buf;
+  unsigned char *p = ed->start + pos;
+  if (p >= ed->gap) p += (ed->rest - ed->gap);
+
+  while (len > 0) {
+    if (p == ed->end) return 0;
+    if (*bufptr++ != *p) return 0;
+    len--;
+    if (++p == ed->gap) p = ed->rest;
+  }
+
+  return 1;
+}
+
 int copy(struct editor *ed, unsigned char *buf, int pos, int len) {
   unsigned char *bufptr = buf;
   unsigned char *p = ed->start + pos;
@@ -437,7 +461,7 @@ int copy(struct editor *ed, unsigned char *buf, int pos, int len) {
 }
 
 void replace(struct editor *ed, int pos, int len, unsigned char *buf, int bufsize, int doundo) {
-  unsigned char *p = ed->start + pos;
+  unsigned char *p;
   struct undo *undo;
 
   // Store undo information
@@ -485,6 +509,7 @@ void replace(struct editor *ed, int pos, int len, unsigned char *buf, int bufsiz
     }
   }
 
+  p = ed->start + pos;
   if (bufsize == 0 && p <= ed->gap && p + len >= ed->gap) {
     // Handle deletions at the edges of the gap
     ed->rest += len - (ed->gap - p);
@@ -793,28 +818,55 @@ int getkey() {
             default: return KEY_UNKNOWN;
           }
           break;
-          
+
         case 0x5B:
           get_modifier_keys(&shift, &ctrl);
           ch = getchar();
           if (ch == 0x31) {
             ch = getchar();
-            if (ch != 0x3B) return KEY_UNKNOWN;
-            ch = getchar();
-            if (ch == 0x32) shift = 1;
-            if (ch == 0x35) ctrl = 1;
-            if (ch == 0x36) shift = ctrl = 1;
-            ch = getchar();
+            switch (ch) {
+              case 0x3B:
+                ch = getchar();
+                if (ch == 0x32) shift = 1;
+                if (ch == 0x35) ctrl = 1;
+                if (ch == 0x36) shift = ctrl = 1;
+                ch = getchar();
+                break;
+              case 0x35: 
+                return getchar() == 0x7E ? KEY_F5 : KEY_UNKNOWN;
+              case 0x7E:
+                if (shift && ctrl) return KEY_SHIFT_CTRL_HOME;
+                if (shift) return KEY_SHIFT_HOME;
+                if (ctrl) return KEY_CTRL_HOME;
+                return KEY_HOME;
+              default:
+                return KEY_UNKNOWN;
+            }
           }
 
           switch (ch) {
-            case 0x31: return getchar() == 0x7E ? KEY_HOME : KEY_UNKNOWN;
+            case 0x31: 
+              if (getchar() != 0x7E) return KEY_UNKNOWN;
+              if (shift && ctrl) return KEY_SHIFT_CTRL_HOME;
+              if (shift) return KEY_SHIFT_HOME;
+              if (ctrl) return KEY_CTRL_HOME;
+              return KEY_HOME;
             case 0x32: return getchar() == 0x7E ? KEY_INS : KEY_UNKNOWN;
             case 0x33: return getchar() == 0x7E ? KEY_DEL : KEY_UNKNOWN;
-            case 0x34: return getchar() == 0x7E ? KEY_END : KEY_UNKNOWN;
-            case 0x35: return getchar() == 0x7E ? KEY_PGUP : KEY_UNKNOWN;
-            case 0x36: return getchar() == 0x7E ? KEY_PGDN : KEY_UNKNOWN;
-
+            case 0x34:
+              if (getchar() != 0x7E) return KEY_UNKNOWN;
+              if (shift && ctrl) return KEY_SHIFT_CTRL_END;
+              if (shift) return KEY_SHIFT_END;
+              if (ctrl) return KEY_CTRL_END;
+              return KEY_END;
+            case 0x35:
+              if (getchar() != 0x7E) return KEY_UNKNOWN;
+              if (shift) return KEY_SHIFT_PGUP;
+              return KEY_PGUP;
+            case 0x36:
+              if (getchar() != 0x7E) return KEY_UNKNOWN;
+              if (shift) return KEY_SHIFT_PGDN;
+              return KEY_PGDN;
             case 0x41: 
               if (shift && ctrl) return KEY_SHIFT_CTRL_UP;
               if (shift) return KEY_SHIFT_UP;
@@ -914,7 +966,7 @@ int getkey() {
   }
 }
 
-int prompt(struct editor *ed, char *msg) {
+int prompt(struct editor *ed, char *msg, int selection) {
   int maxlen, len, ch;
   char *buf = ed->env->linebuf;
 
@@ -925,9 +977,11 @@ int prompt(struct editor *ed, char *msg) {
 
   len = 0;
   maxlen = ed->env->cols - strlen(msg) - 1;
-  len = get_selected_text(ed, buf, maxlen);
-  outbuf(buf, len);
-  
+  if (selection) {
+    len = get_selected_text(ed, buf, maxlen);
+    outbuf(buf, len);
+  }
+
   for (;;) {
     fflush(stdout);
     ch = getkey();
@@ -1004,7 +1058,7 @@ void display_line(struct editor *ed, int pos, int fullline) {
         hilite = 0;
       }
     }
-    
+
     if (p == ed->end) break;
     ch = *p;
     if (ch == '\r' || ch == '\n') break;
@@ -1110,10 +1164,12 @@ void adjust(struct editor *ed) {
 }
 
 void up(struct editor *ed, int select) {
-  int newpos = prev_line(ed, ed->linepos);
-  if (newpos < 0) return;
-
+  int newpos;
+  
   update_selection(ed, select);
+
+  newpos = prev_line(ed, ed->linepos);
+  if (newpos < 0) return;
 
   ed->linepos = newpos;
   ed->line--;
@@ -1126,12 +1182,13 @@ void up(struct editor *ed, int select) {
   adjust(ed);
 }
 
-void down(struct editor *ed, int select)
-{
-  int newpos = next_line(ed, ed->linepos);
-  if (newpos < 0) return;
-
+void down(struct editor *ed, int select) {
+  int newpos;
+  
   update_selection(ed, select);
+
+  newpos = next_line(ed, ed->linepos);
+  if (newpos < 0) return;
 
   ed->linepos = newpos;
   ed->line++;
@@ -1439,12 +1496,124 @@ void del(struct editor *ed) {
   }
 }
 
+void indent(struct editor *ed, unsigned char *indentation) {
+  int start, end, i, lines, toplines, newline, ch;
+  unsigned char *buffer, *p;
+  int buflen;
+  int width = strlen(indentation);
+  int pos = ed->linepos + ed->col;
+
+  if (!get_selection(ed, &start, &end)) {
+    insert_char(ed, '\t');
+    return;
+  }
+
+  lines = 0;
+  toplines = 0;
+  newline = 1;
+  for (i = start; i < end; i++) {
+    if (i == ed->toppos) toplines = lines;
+    if (newline) {
+      lines++;
+      newline = 0;
+    }
+    if (get(ed, i) == '\n') newline = 1;
+  }
+  buflen = end - start + lines * width;
+  buffer = malloc(buflen);
+  if (!buffer) return;
+
+  newline = 1;
+  p = buffer;
+  for (i = start; i < end; i++) {
+    if (newline) {
+      memcpy(p, indentation, width);
+      p += width;
+      newline = 0;
+    }
+    ch = get(ed, i);
+    *p++ = ch;
+    if (ch == '\n') newline = 1;
+  }
+
+  replace(ed, start, end - start, buffer, buflen, 1);
+  free(buffer);  
+
+  if (ed->anchor < pos) {
+    pos += width * lines;
+  } else {
+    ed->anchor += width * lines;
+  }
+
+  ed->toppos += width * toplines;
+  ed->linepos = line_start(ed, pos);
+  ed->col = ed->lastcol = pos - ed->linepos;
+
+  adjust(ed);
+  ed->refresh = 1;
+}
+
+void unindent(struct editor *ed, unsigned char *indentation) {
+  int start, end, i, newline, ch, shrinkage, topofs;
+  unsigned char *buffer, *p;
+  int width = strlen(indentation);
+  int pos = ed->linepos + ed->col;
+
+  if (!get_selection(ed, &start, &end)) return;
+
+  buffer = malloc(end - start);
+  if (!buffer) return;
+
+  newline = 1;
+  p = buffer;
+  i = start;
+  shrinkage = 0;
+  topofs = 0;
+  while (i < end) {
+    if (newline) {
+      newline = 0;
+      if (compare(ed, indentation, i, width)) {
+        i += width;
+        shrinkage += width;
+        if (i < ed->toppos) topofs -= width;
+        continue;
+      }
+    }
+    ch = get(ed, i++);
+    *p++ = ch;
+    if (ch == '\n') newline = 1;
+  }
+
+  if (!shrinkage) {
+    free(buffer);
+    return;
+  }
+
+  replace(ed, start, end - start, buffer, p - buffer, 1);
+  free(buffer);
+
+  if (ed->anchor < pos) {
+    pos -= shrinkage;
+  } else {
+    ed->anchor -= shrinkage;
+  }
+
+  ed->toppos += topofs;
+  ed->linepos = line_start(ed, pos);
+  ed->col = ed->lastcol = pos - ed->linepos;
+
+  ed->refresh = 1;
+  adjust(ed);
+}
+
 void undo(struct editor *ed) {
   if (!ed->undo) return;
   moveto(ed, ed->undo->pos, 0);
   replace(ed, ed->undo->pos, ed->undo->inserted, ed->undo->undobuf, ed->undo->erased, 0);
   ed->undo = ed->undo->prev;
   if (!ed->undo) ed->dirty = 0;
+  ed->anchor = -1;
+  ed->lastcol = ed->col;
   ed->refresh = 1;
 }
 
@@ -1456,10 +1625,11 @@ void redo(struct editor *ed) {
     if (!ed->undohead) return;
     ed->undo = ed->undohead;
   }
-  
   replace(ed, ed->undo->pos, ed->undo->erased, ed->undo->redobuf, ed->undo->inserted, 0);
   moveto(ed, ed->undo->pos, 0);
   ed->dirty = 1;
+  ed->anchor = -1;
+  ed->lastcol = ed->col;
   ed->refresh = 1;
 }
 
@@ -1473,6 +1643,7 @@ void copy_selection(struct editor *ed) {
   if (!get_selection(ed, &selstart, &selend)) return;
   ed->env->clipsize = selend - selstart;
   ed->env->clipboard = (unsigned char *) realloc(ed->env->clipboard, ed->env->clipsize);
+  if (!ed->env->clipboard) return;
   copy(ed, ed->env->clipboard, selstart, ed->env->clipsize);
 }
 
@@ -1497,7 +1668,7 @@ void open_editor(struct editor *ed) {
   char *filename;
   struct env *env = ed->env;
 
-  if (!prompt(ed, "Open file: ")) {
+  if (!prompt(ed, "Open file: ", 1)) {
     ed->refresh = 1;
     return;
   }
@@ -1545,7 +1716,7 @@ void save_editor(struct editor *ed) {
   if (!ed->dirty && !ed->newfile) return;
   
   if (ed->newfile) {
-    if (!prompt(ed, "Save as: ")) {
+    if (!prompt(ed, "Save as: ", 1)) {
       ed->refresh = 1;
       return;
     }
@@ -1597,7 +1768,7 @@ void pipe_command(struct editor *ed) {
   int n;
   int pos;
 
-  if (!prompt(ed, "Command: ")) {
+  if (!prompt(ed, "Command: ", 1)) {
     ed->refresh = 1;
     return;
   }
@@ -1627,7 +1798,7 @@ void find_text(struct editor *ed, int next) {
   int slen;
 
   if (!next) {
-    if (!prompt(ed, "Find: ")) {
+    if (!prompt(ed, "Find: ", 1)) {
       ed->refresh = 1;
       return;
     }    
@@ -1657,7 +1828,7 @@ void goto_line(struct editor *ed) {
   int lineno, l, pos;
 
   ed->anchor = -1;
-  if (prompt(ed, "Goto line: ")) {
+  if (prompt(ed, "Goto line: ", 1)) {
     lineno = atoi(ed->env->linebuf);
     if (lineno > 0) {
       pos = 0;
@@ -1680,12 +1851,6 @@ void goto_line(struct editor *ed) {
 
 struct editor *next_file(struct editor *ed) {
   ed = ed->env->current = ed->next;
-  ed->refresh = 1;
-  return ed;
-}
-
-struct editor *prev_file(struct editor *ed) {
-  ed = ed->env->current = ed->prev;
   ed->refresh = 1;
   return ed;
 }
@@ -1788,11 +1953,11 @@ void help(struct editor *ed) {
   outstr("Ctrl+<end>   Move to end of file (*)      Ctrl+R  Redo\r\n");
   outstr("<backspace>  Delete previous character    Ctrl+F  Find text\r\n");
   outstr("<delete>     Delete current character     Ctrl+G  Find next\r\n"); 
-  outstr("Shift+<tab>  Next editor                  Ctrl+L  Goto line\r\n");
-  outstr("Ctrl+<tab>   Previous editor              F1      Help\r\n");
-  outstr("                                          F3      Navigate to file\r\n");
-  outstr("(*) Extends selection if combined         F5      Redraw screen\r\n");
-  outstr("    with Shift\r\n");
+  outstr("Ctrl+<tab>   Next editor                  Ctrl+L  Goto line\r\n");
+  outstr("<tab>        Indent selection             F1      Help\r\n");
+  outstr("Shift+<tab>  Unindent selection           F3      Navigate to file\r\n");
+  outstr("                                          F5      Redraw screen\r\n");
+  outstr("\r\n(*) Extends selection if combined with Shift");
   outstr("\r\nPress any key to continue...");
   fflush(stdout);
 
@@ -1829,7 +1994,12 @@ void edit(struct editor *ed) {
     key = getkey();
 
     if (key >= ' ' && key <= 0x7F) {
-#ifndef LESS
+#ifdef LESS
+      switch (key) {
+        case 'q': done = 1; break;
+        case '/': find_text(ed, 0); break;
+      }
+#else
       insert_char(ed, (unsigned char) key);
 #endif
     } else {
@@ -1839,7 +2009,6 @@ void edit(struct editor *ed) {
         case KEY_F5: redraw_screen(ed); break;
 
 #ifdef __linux__
-        case ctrl('u'): jump_to_editor(ed); ed = ed->env->current; break;
         case ctrl('y'): help(ed); break;
         case ctrl('t'): top(ed, 0); break;
         case ctrl('b'): bottom(ed, 0); break;
@@ -1873,8 +2042,7 @@ void edit(struct editor *ed) {
         case KEY_SHIFT_CTRL_HOME: top(ed, 1); break;
         case KEY_SHIFT_CTRL_END: bottom(ed, 1); break;
 
-        case KEY_SHIFT_TAB: ed = next_file(ed); break;
-        case KEY_CTRL_TAB: ed = prev_file(ed); break;
+        case KEY_CTRL_TAB: ed = next_file(ed); break;
 
         case ctrl('a'): select_all(ed); break;
         case ctrl('c'): copy_selection(ed); break;
@@ -1885,10 +2053,12 @@ void edit(struct editor *ed) {
 #ifdef LESS
         case KEY_ESC: done = 1; break;
 #else
+        case KEY_TAB: indent(ed, INDENT); break;
+        case KEY_SHIFT_TAB: unindent(ed, INDENT); break;
+
         case KEY_ENTER: newline(ed); break;
         case KEY_BACKSPACE: backspace(ed); break;
         case KEY_DEL: del(ed); break;
-        case KEY_TAB: insert_char(ed, '\t'); break;
         case ctrl('x'): cut_selection(ed); break;
         case ctrl('z'): undo(ed); break;
         case ctrl('r'): redo(ed); break;
@@ -1939,6 +2109,7 @@ int main(int argc, char *argv[]) {
       read_from_stdin(ed);
     }    
   }
+  env.current = env.current->next;
 
 #ifdef SANOS
   term = gettib()->proc->term;
