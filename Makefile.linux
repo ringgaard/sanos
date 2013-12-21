@@ -842,10 +842,9 @@ linux/install/usr/bin/as.exe: $(AS_SRCFILES)
 vmdk: linux/img/sanos.vmdk
 
 linux/img/sanos.vmdk: sanos
-	echo "/ linux/install" > linux/disk.lst
 	$(MKPKG) linux/install - $(PKGDIR)/*.inf
 	mv db $(PKGDIR)
-	$(MKDFS) -d linux/img/sanos.vmdk -t vmdk -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 200M -i -f -S linux/image -F linux/disk.lst
+	$(MKDFS) -d linux/img/sanos.vmdk -t vmdk -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 200M -i -f -S linux/install -T /
 
 #
 # hdmin
@@ -854,7 +853,7 @@ linux/img/sanos.vmdk: sanos
 hdmin: linux/img/hd.vmdk
 
 linux/img/hd.vmdk: sanos
-	$(MKDFS) -d linux/img/hd.vmdk -t vmdk -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 100M -i -f -S linux/image -F build/hdmin.lst
+	$(MKDFS) -d linux/img/hd.vmdk -t vmdk -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 100M -i -f -S linux/install -F build/hdmin.lst
 
 #
 # floppy
@@ -863,7 +862,7 @@ linux/img/hd.vmdk: sanos
 floppy: linux/img/sanos.flp
 
 linux/img/sanos.flp: sanos
-	$(MKDFS) -d linux/img/sanos.flp -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 1440 -i -f -S . -F build/floppy.lst
+	$(MKDFS) -d linux/img/sanos.flp -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 1440 -i -f -S linux/install -F build/floppy.lst
 
 #
 # cdrom

@@ -1,2 +1,2 @@
-if not exist ..\img mkdir ..\img
-..\tools\mkdfs -d ..\img\sanos.flp -b ..\bin\boot -l ..\bin\osldr.dll -k ..\bin\krnl.dll -c 1440 -i -f -S .. -F bootdisk.lst
+if not exist win\img mkdir win\img
+win\tools\mkdfs -d win\img\sanos.flp -b win\install\boot\boot -l win\install\boot\osldr.dll -k win\install\boot\krnl.dll -c 1440 -i -f -S win\install -T .

@@ -1169,7 +1169,7 @@ $(INSTALL)/usr/bin/ctohtml.exe: \
 # config
 #
 
-config: $(INSTALL)/etc/os.ini $(INSTALL)/boot/krnl.ini
+config: $(INSTALL)/etc/os.ini $(INSTALL)/boot/krnl.ini $(INSTALL)/etc/setup.ini
 
 $(INSTALL)/etc/os.ini: $(BUILD)/os.ini
     copy /Y $(BUILD)/os.ini $(INSTALL)/etc/os.ini
@@ -1177,6 +1177,8 @@ $(INSTALL)/etc/os.ini: $(BUILD)/os.ini
 $(INSTALL)/boot/krnl.ini: $(BUILD)/krnl.ini
     copy /Y $(BUILD)/krnl.ini $(INSTALL)/boot/krnl.ini
 
+$(INSTALL)/etc/setup.ini: $(BUILD)/setup.ini
+    copy /Y $(BUILD)/setup.ini $(INSTALL)/etc/setup.ini
 
 #
 # bootdisk
@@ -1184,8 +1186,8 @@ $(INSTALL)/boot/krnl.ini: $(BUILD)/krnl.ini
 
 bootdisk: $(IMG)/sanos.flp
 
-$(IMG)/sanos.flp: dirs sanos $(MKDFS) $(BUILD)/bootdisk.lst
-    $(MKDFS) -d $(IMG)/sanos.flp -b $(INSTALL)\boot\boot -l $(INSTALL)\boot\osldr.dll -k $(INSTALL)\boot\krnl.dll -c 1440 -i -f -S $(TOPDIR) -F $(BUILD)\bootdisk.lst
+$(IMG)/sanos.flp: dirs sanos config $(MKDFS) $(BUILD)/bootdisk.lst
+    $(MKDFS) -d $(IMG)/sanos.flp -b $(INSTALL)\boot\boot -l $(INSTALL)\boot\osldr.dll -k $(INSTALL)\boot\krnl.dll -c 1440 -i -f -S $(INSTALL) -F $(BUILD)\bootdisk.lst
 
 #
 # boothd
@@ -1193,8 +1195,8 @@ $(IMG)/sanos.flp: dirs sanos $(MKDFS) $(BUILD)/bootdisk.lst
 
 boothd: $(IMG)/sanos.vmdk
 
-$(IMG)/sanos.vmdk: dirs sanos config $(MKDFS) $(BUILD)/boothd.lst
-    $(MKDFS) -d $(IMG)/sanos.vmdk -t vmdk -b $(INSTALL)\boot\boot -l $(INSTALL)\boot\osldr.dll -k $(INSTALL)\boot\krnl.dll -c 100M -i -f -S $(TOPDIR) -F $(BUILD)\boothd.lst
+$(IMG)/sanos.vmdk: dirs sanos config $(MKDFS)
+    $(MKDFS) -d $(IMG)/sanos.vmdk -t vmdk -b $(INSTALL)\boot\boot -l $(INSTALL)\boot\osldr.dll -k $(INSTALL)\boot\krnl.dll -c 100M -i -f -S $(INSTALL) -T /
 
 #
 # netbootimg
@@ -1224,7 +1226,7 @@ $(IMG)/sanos.iso: dirs sanos tools
 minimal: $(IMG)/minimal.flp
 
 $(IMG)/minimal.flp: dirs sanos $(MKDFS) $(BUILD)/minbootdisk.lst
-    $(MKDFS) -d $(IMG)/minimal.flp -b $(INSTALL)\boot\boot -l $(INSTALL)\boot\osldr.dll -k $(INSTALL)\boot\krnl.dll -c 1440 -i -f -S . -F $(BUILD)\minbootdisk.lst
+    $(MKDFS) -d $(IMG)/minimal.flp -b $(INSTALL)\boot\boot -l $(INSTALL)\boot\osldr.dll -k $(INSTALL)\boot\krnl.dll -c 1440 -i -f -S linux/install -F $(BUILD)\minbootdisk.lst
 
 #
 # sdk
