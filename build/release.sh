@@ -134,6 +134,9 @@ if [ "${DEPLOY}" = "1" ] ; then
   cp release/${SDKNAME}.zip ${TARGET}/downloads
   cp release/sanos-qemu.zip ${TARGET}/downloads
   cp -r release/htmlsrc/* ${TARGET}/sanos/source/
+  cp CHANGES ${TARGET}/downloads
+  cp win/img/sanos.flp ${TARGET}/sanos
+  cp COPYING ${TARGET}/sanos/copying.txt
 fi
 
 echo ==== Done
