@@ -16,49 +16,48 @@
 
 ; Boot files
 
-/boot/boot         bin\boot           dbg\bin\boot
-/boot/cdboot       bin\cdboot         dbg\bin\cdboot
-/boot/cdemboot     bin\cdemboot       dbg\bin\cdemboot
-/boot/netboot      bin\netboot        dbg\bin\netboot
-/boot/osldr.dll    bin\osldr.dll      dbg\bin\osldr.dll
+/boot/boot         win\install\boot\boot
+/boot/cdboot       win\install\boot\cdboot
+/boot/cdemboot     win\install\boot\cdemboot
+/boot/netboot      win\install\boot\netboot
+/boot/osldr.dll    win\install\boot\osldr.dll
+/boot/os.dll       win\install\boot\os.dll
 /boot/krnl.ini     build\krnl.ini
-/boot/os.dll       bin\os.dll         dbg\bin\os.dll
 
 ; System files
 
-/bin/sh.exe        bin\sh.exe         dbg\bin\sh.exe
-;/bin/httpd.dll     bin\httpd.dll      dbg\bin\httpd.dll
-/bin/telnetd.exe   bin\telnetd.exe    dbg\bin\telnetd.exe
-/bin/ftpd.exe      bin\ftpd.exe       dbg\bin\ftpd.exe
-/bin/setup.exe     bin\setup.exe      dbg\bin\setup.exe
-/bin/fdisk.exe     bin\fdisk.exe      dbg\bin\fdisk.exe
-/bin/mkboot.exe    bin\mkboot.exe     dbg\bin\mkboot.exe
-/bin/edit.exe      bin\edit.exe       dbg\bin\edit.exe
-/bin/login.exe     bin\login.exe      dbg\bin\login.exe
+/bin/sh.exe        win\install\bin\sh.exe
+/bin/telnetd.exe   win\install\bin\telnetd.exe
+/bin/ftpd.exe      win\install\bin\ftpd.exe
+/bin/setup.exe     win\install\bin\setup.exe
+/bin/fdisk.exe     win\install\bin\fdisk.exe
+/bin/mkboot.exe    win\install\bin\mkboot.exe
+/bin/edit.exe      win\install\bin\edit.exe
+/bin/login.exe     win\install\bin\login.exe
 
 ; Drivers
 
-/boot/pcnet32.sys   bin\pcnet32.sys    dbg\bin\pcnet32.sys
-/boot/ne2000.sys    bin\ne2000.sys     dbg\bin\ne2000.sys
-/boot/3c905c.sys    bin\3c905c.sys     dbg\bin\3c905c.sys
-/boot/rtl8139.sys   bin\rtl8139.sys    dbg\bin\rtl8139.sys
-/boot/eepro100.sys  bin\eepro100.sys   dbg\bin\eepro100.sys
-/boot/sis900.sys    bin\sis900.sys     dbg\bin\sis900.sys
-/boot/tulip.sys     bin\tulip.sys      dbg\bin\tulip.sys
-/boot/virtionet.sys bin\virtionet.sys  dbg\bin\virtionet.sys
+/boot/pcnet32.sys   win\install\boot\pcnet32.sys
+/boot/ne2000.sys    win\install\boot\ne2000.sys
+/boot/3c905c.sys    win\install\boot\3c905c.sys
+/boot/rtl8139.sys   win\install\boot\rtl8139.sys
+/boot/eepro100.sys  win\install\boot\eepro100.sys
+/boot/sis900.sys    win\install\boot\sis900.sys
+/boot/tulip.sys     win\install\boot\tulip.sys
+/boot/virtionet.sys win\install\boot\virtionet.sys
 
 ; Win32 wrapper DLLs
 
-/bin/msvcrt.dll    bin\msvcrt.dll     dbg\bin\msvcrt.dll
-/bin/kernel32.dll  bin\kernel32.dll   dbg\bin\kernel32.dll
-/bin/user32.dll    bin\user32.dll     dbg\bin\user32.dll
-/bin/advapi32.dll  bin\advapi32.dll   dbg\bin\advapi32.dll
-/bin/winmm.dll     bin\winmm.dll      dbg\bin\winmm.dll
-/bin/wsock32.dll   bin\wsock32.dll    dbg\bin\wsock32.dll
+/bin/msvcrt.dll    win\install\bin\msvcrt.dll
+/bin/kernel32.dll  win\install\bin\kernel32.dll
+/bin/user32.dll    win\install\bin\user32.dll
+/bin/advapi32.dll  win\install\bin\advapi32.dll
+/bin/winmm.dll     win\install\bin\winmm.dll
+/bin/wsock32.dll   win\install\bin\wsock32.dll
 
 ; Java launcher
 
-/bin/jinit.exe     bin\jinit.exe      dbg\bin\jinit.exe
+/bin/jinit.exe     win\install\bin\jinit.exe
 
 ; Configuration files
 

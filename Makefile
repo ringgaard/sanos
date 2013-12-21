@@ -1,32 +1,42 @@
 #
-# Makefile for sanos
+# Makefile for building Sanos under Windows
 #
 
 !IFNDEF TOPDIR
 TOPDIR=.
 !ENDIF
 
-BIN=$(TOPDIR)\bin
+OUTPUT=$(TOPDIR)\win
+
+!IFNDEF INSTALL
+INSTALL=$(OUTPUT)\install
+!ENDIF
+
 BUILD=$(TOPDIR)\build
-IMG=$(TOPDIR)\img
-LIBS=$(TOPDIR)\lib
-OBJ=$(TOPDIR)\obj
 SRC=$(TOPDIR)\src
 TOOLS=$(TOPDIR)\tools
 TOOLSRC=$(TOPDIR)\utils
-!IFNDEF INSTALL
-INSTALL=$(TOPDIR)\install
-!ENDIF
 
-NASM=$(TOOLS)\nasm.exe
+IMG=$(OUTPUT)\img
+TOOLBIN=$(OUTPUT)\tools
+LIBS=$(OUTPUT)\lib
+OBJ=$(OUTPUT)\obj
+TOOLOBJ=$(OUTPUT)\obj
+
+ASM=$(TOOLS)\nasm.exe
 MKISOFS=$(TOOLS)\mkisofs.exe
 
-MKDFS=$(TOOLS)\mkdfs.exe
-MKFLOPPY=$(TOOLS)\mkfloppy.exe
-MKPART=$(TOOLS)\mkpart.exe
-SOW=$(TOOLS)\os.dll
-DBGGW=$(TOOLS)\dbggw.exe
-AR=lib
+MKDFS=$(TOOLBIN)\mkdfs.exe
+MKFLOPPY=$(TOOLBIN)\mkfloppy.exe
+MKPART=$(TOOLBIN)\mkpart.exe
+TCC=$(TOOLBIN)\cc.exe
+NASM=$(TOOLBIN)\as.exe
+AR=$(TOOLBIN)\ar.exe
+IMPDEF=$(TOOLBIN)\impdef.exe
+CTOHTML=$(TOOLBIN)\ctohtml.exe
+SOW=$(TOOLBIN)\os.dll
+DBGGW=$(TOOLBIN)\dbggw.exe
+LIBRARIAN=lib
 
 !IFDEF PRERELEASEBUILD
 DEFS=/D PRERELEASE
@@ -87,12 +97,20 @@ sanos: dirs kernel drivers libc win32 utils
 # dirs
 #
 
-dirs:
-    -@if not exist $(BIN) mkdir $(BIN)
-    -@if not exist $(OBJ) mkdir $(OBJ)
-    -@if not exist $(IMG) mkdir $(IMG)
+dirs: $(OUTPUT)/ok
+
+$(OUTPUT)/ok:
+    -@if not exist $(OUTPUT) mkdir $(OUTPUT)
+    -@if not exist $(TOOLBIN) mkdir $(TOOLBIN)
+    -@if not exist $(TOOLOBJ) mkdir $(TOOLOBJ)
+    -@if not exist $(TOOLOBJ)\mkfloppy mkdir $(TOOLOBJ)\mkfloppy
+    -@if not exist $(TOOLOBJ)\mkpart mkdir $(TOOLOBJ)\mkpart
+    -@if not exist $(TOOLOBJ)\dbggw mkdir $(TOOLOBJ)\dbggw
+    -@if not exist $(TOOLOBJ)\sow mkdir $(TOOLOBJ)\sow
+    -@if not exist $(TOOLOBJ)\dfs mkdir $(TOOLOBJ)\dfs
     -@if not exist $(LIBS) mkdir $(LIBS)
-    -@if not exist $(INSTALL) mkdir $(INSTALL)
+    -@if not exist $(IMG) mkdir $(IMG)
+    -@if not exist $(OBJ) mkdir $(OBJ)
     -@if not exist $(OBJ)\3c905c mkdir $(OBJ)\3c905c
     -@if not exist $(OBJ)\advapi32 mkdir $(OBJ)\advapi32
     -@if not exist $(OBJ)\eepro100 mkdir $(OBJ)\eepro100
@@ -133,32 +151,27 @@ dirs:
     -@if not exist $(OBJ)\user32 mkdir $(OBJ)\user32
     -@if not exist $(OBJ)\winmm mkdir $(OBJ)\winmm
     -@if not exist $(OBJ)\wsock32 mkdir $(OBJ)\wsock32
-    -@if not exist $(TOOLS) mkdir $(TOOLS)
-    -@if not exist $(TOOLSRC)\mkfloppy\release mkdir $(TOOLSRC)\mkfloppy\release
-    -@if not exist $(TOOLSRC)\mkpart\release mkdir $(TOOLSRC)\mkpart\release
-    -@if not exist $(TOOLSRC)\dbggw\release mkdir $(TOOLSRC)\dbggw\release
-    -@if not exist $(TOOLSRC)\sow\release mkdir $(TOOLSRC)\sow\release
-    -@if not exist $(TOOLSRC)\dfs\release mkdir $(TOOLSRC)\dfs\release
+    -@if not exist $(OBJ)\cc mkdir $(OBJ)\cc
+    -@if not exist $(OBJ)\as mkdir $(OBJ)\as
+    -@if not exist $(OBJ)\crt mkdir $(OBJ)\crt
+    -@if not exist $(INSTALL) mkdir $(INSTALL)
+    -@if not exist $(INSTALL)\bin mkdir $(INSTALL)\bin
+    -@if not exist $(INSTALL)\boot mkdir $(INSTALL)\boot
+    -@if not exist $(INSTALL)\dev mkdir $(INSTALL)\dev
+    -@if not exist $(INSTALL)\proc mkdir $(INSTALL)\proc
+    -@if not exist $(INSTALL)\etc mkdir $(INSTALL)\etc
+    -@if not exist $(INSTALL)\var mkdir $(INSTALL)\var
+    -@if not exist $(INSTALL)\usr mkdir $(INSTALL)\usr
+    -@if not exist $(INSTALL)\usr\bin mkdir $(INSTALL)\usr\bin
+    -@if not exist $(INSTALL)\usr\lib mkdir $(INSTALL)\usr\lib
+    -@echo OK > $(OUTPUT)\ok
 
 #
 # clean
 #
 
 clean:
-    -del /Q $(BIN)
-    -del /Q /S $(OBJ)
-    -del /Q /S $(INSTALL)
-    -del /Q $(MKDFS)
-    -del /Q $(MKFLOPPY)
-    -del /Q $(MKPART)
-    -del /Q $(DBGGW)
-    -del /Q $(SOW)
-    -del /Q $(TOOLSRC)\mkfloppy\release
-    -del /Q $(TOOLSRC)\mkpart\release
-    -del /Q $(TOOLSRC)\dbggw\release
-    -del /Q $(TOOLSRC)\sow\release
-    -del /Q $(TOOLSRC)\dfs\release
-    -del /Q /S $(IMG)
+    #-del /Q $(OUTPUT)
 
 #
 # tools
@@ -191,16 +204,16 @@ WIN32CFLAGS=/nologo /O2 /Ob1 /Oy /GF /ML /Gy /W3 /TC /D WIN32 /D NDEBUG /D _CONS
 tools: $(MKDFS) $(MKFLOPPY) $(MKPART) $(DBGGW) $(SOW)
 
 $(MKFLOPPY): $(TOOLSRC)/mkfloppy/mkfloppy.c
-    $(CC) $(WIN32CFLAGS) /Fe$@ /Fo$(TOOLSRC)/mkfloppy/release/ $**
+    $(CC) $(WIN32CFLAGS) /Fe$@ /Fo$(TOOLOBJ)/mkfloppy/ $**
 
 $(MKPART): $(TOOLSRC)/mkpart/mkpart.c
-    $(CC) $(WIN32CFLAGS) /Fe$@ /Fo$(TOOLSRC)/mkpart/release/ $**
+    $(CC) $(WIN32CFLAGS) /Fe$@ /Fo$(TOOLOBJ)/mkpart/ $**
 
 $(DBGGW): $(TOOLSRC)/dbggw/dbggw.c $(TOOLSRC)/dbggw/rdp.c
-    $(CC) $(WIN32CFLAGS) /I$(SRC)/include/os /Fe$@ /Fo$(TOOLSRC)/dbggw/release/ $** /link wsock32.lib
+    $(CC) $(WIN32CFLAGS) /I$(SRC)/include/os /Fe$@ /Fo$(TOOLOBJ)/dbggw/ $** /link wsock32.lib
 
 $(SOW): $(TOOLSRC)/sow/sow.c $(SRC)/lib/vsprintf.c
-    $(CC) $(WIN32CFLAGS) /I$(SRC)/include/os /Fe$@ /Fo$(TOOLSRC)/sow/release/ $** /D NOFLOAT /link /ENTRY:dllmain /DLL /NODEFAULTLIB kernel32.lib
+    $(CC) $(WIN32CFLAGS) /I$(SRC)/include/os /Fe$@ /Fo$(TOOLOBJ)/sow/ $** /D NOFLOAT /link /ENTRY:dllmain /DLL /NODEFAULTLIB kernel32.lib /IMPLIB:$(LIBS)/sow.lib
 
 $(MKDFS): \
   $(TOOLSRC)/dfs/blockdev.c \
@@ -216,37 +229,37 @@ $(MKDFS): \
   $(TOOLSRC)/dfs/mkdfs.c \
   $(TOOLSRC)/dfs/super.c \
   $(TOOLSRC)/dfs/vfs.c
-    $(CC) $(WIN32CFLAGS) /Fe$@ /Fo$(TOOLSRC)/dfs/release/ $**
+    $(CC) $(WIN32CFLAGS) /Fe$@ /Fo$(TOOLOBJ)/dfs/ $**
 
 #
 # kernel
 #
 
-kernel: dirs boot $(BIN)/krnl.dll $(BIN)/os.dll
+kernel: dirs boot $(INSTALL)/boot/krnl.dll $(INSTALL)/boot/os.dll
 
-boot: dirs $(BIN)/boot $(BIN)/cdboot $(BIN)/cdemboot $(BIN)/netboot $(BIN)/osldr.dll
+boot: dirs $(INSTALL)/boot/boot $(INSTALL)/boot/cdboot $(INSTALL)/boot/cdemboot $(INSTALL)/boot/netboot $(INSTALL)/boot/osldr.dll
 
-$(BIN)/boot: $(SRC)/sys/boot/boot.asm
-    $(NASM) -f bin $** -o $@
+$(INSTALL)/boot/boot: $(SRC)/sys/boot/boot.asm
+    $(ASM) -f bin $** -o $@
 
-$(BIN)/cdboot: $(SRC)/sys/boot/cdboot.asm
-    $(NASM) -f bin $** -o $@
+$(INSTALL)/boot/cdboot: $(SRC)/sys/boot/cdboot.asm
+    $(ASM) -f bin $** -o $@
 
-$(BIN)/cdemboot: $(SRC)/sys/boot/cdemboot.asm
-    $(NASM) -f bin $** -o $@
+$(INSTALL)/boot/cdemboot: $(SRC)/sys/boot/cdemboot.asm
+    $(ASM) -f bin $** -o $@
 
-$(BIN)/netboot: $(SRC)/sys/boot/netboot.asm
-    $(NASM) -f bin $** -o $@
+$(INSTALL)/boot/netboot: $(SRC)/sys/boot/netboot.asm
+    $(ASM) -f bin $** -o $@
 
 $(OBJ)/osldr/ldrinit.exe: $(SRC)/sys/osldr/ldrinit.asm
-    $(NASM) -f bin $** -o $@ -l $(OBJ)/osldr/ldrinit.lst
+    $(ASM) -f bin $** -o $@ -l $(OBJ)/osldr/ldrinit.lst
 
 $(OBJ)/osldr/bioscall.obj: $(SRC)/sys/osldr/bioscall.asm
-    $(NASM) -f win32 $** -o $@ -l $(OBJ)/osldr/bioscall.lst
+    $(ASM) -f win32 $** -o $@ -l $(OBJ)/osldr/bioscall.lst
 
 OSLDRSRC=$(SRC)\sys\osldr\osldr.c $(SRC)\sys\osldr\loadkrnl.c $(SRC)\sys\osldr\unzip.c $(SRC)\lib\vsprintf.c $(SRC)\lib\string.c 
 
-$(BIN)/osldr.dll: $(OSLDRSRC) $(OBJ)\osldr\ldrinit.exe $(OBJ)/osldr/bioscall.obj
+$(INSTALL)/boot/osldr.dll: $(OSLDRSRC) $(OBJ)\osldr\ldrinit.exe $(OBJ)/osldr/bioscall.obj
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/osldr/ $(OSLDRSRC) $(OBJ)/osldr/bioscall.obj /D KERNEL /D OSLDR /link /DLL /NODEFAULTLIB /ENTRY:start /BASE:0x00090000 /FIXED /STUB:$(OBJ)\osldr\ldrinit.exe $(RAWIMGFLAGS)
 
 $(OBJ)/krnl/lldiv.obj: $(SRC)/lib/lldiv.asm
@@ -264,7 +277,7 @@ $(OBJ)/krnl/llrem.obj: $(SRC)/lib/llrem.asm
 $(OBJ)/krnl/krnl.res: $(SRC)/sys/krnl/krnl.rc
   $(RC) /d "NDEBUG" /l 0x406 /I $(SRC)/include $(DEFS) /fo$@ $**
 
-$(LIBS)/krnl.lib $(BIN)/krnl.dll: \
+$(LIBS)/krnl.lib $(INSTALL)/boot/krnl.dll: \
   $(SRC)\sys\krnl\vmm.c \
   $(SRC)\sys\krnl\vfs.c \
   $(SRC)\sys\krnl\trap.c \
@@ -360,20 +373,20 @@ $(LIBS)/krnl.lib $(BIN)/krnl.dll: \
   $(OBJ)/krnl/llrem.obj \
   $(OBJ)/krnl/lldvrm.obj \
   $(OBJ)/krnl/krnl.res
-    $(CC) $(CFLAGS) /Fe$(BIN)/krnl.dll /Fo$(OBJ)/krnl/ $** /D KERNEL /D KRNL_LIB \
+    $(CC) $(CFLAGS) /Fe$(INSTALL)/boot/krnl.dll /Fo$(OBJ)/krnl/ $** /D KERNEL /D KRNL_LIB \
       /link /DLL /LARGEADDRESSAWARE /NODEFAULTLIB $(RAWIMGFLAGS) /ENTRY:start \
       /BASE:0x80000000 /FIXED /IMPLIB:$(LIBS)/krnl.lib
 
 $(OBJ)/os/modf.obj: $(SRC)/lib/math/modf.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/os/ftol.obj: $(SRC)/lib/math/ftol.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/os/fpconst.obj: $(SRC)/lib/math/fpconst.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
-$(LIBS)/os.lib $(BIN)/os.dll: \
+$(LIBS)/os.lib $(INSTALL)/boot/os.dll: \
   $(SRC)/sys/os/tls.c \
   $(SRC)/sys/os/thread.c \
   $(SRC)/sys/os/sysapi.c \
@@ -406,23 +419,31 @@ $(LIBS)/os.lib $(BIN)/os.dll: \
   $(OBJ)/os/modf.obj \
   $(OBJ)/os/ftol.obj \
   $(OBJ)/os/fpconst.obj
-    $(CC) $(CFLAGS) /Fe$(BIN)/os.dll /Fo$(OBJ)/os/ $** /D OS_LIB \
+    $(CC) $(CFLAGS) /Fe$(INSTALL)/boot/os.dll /Fo$(OBJ)/os/ $** /D OS_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:start /BASE:0x7FF00000 /HEAP:33554432,131072 /FIXED /IMPLIB:$(LIBS)/os.lib
 
 #
 # drivers
 #
 
-drivers: dirs $(BIN)/3c905c.sys $(BIN)/eepro100.sys $(BIN)/ne2000.sys $(BIN)/pcnet32.sys $(BIN)/rtl8139.sys $(BIN)/sis900.sys $(BIN)/tulip.sys $(BIN)/virtionet.sys
+drivers: dirs \
+  $(INSTALL)/boot/3c905c.sys \
+  $(INSTALL)/boot/eepro100.sys \
+  $(INSTALL)/boot/ne2000.sys \
+  $(INSTALL)/boot/pcnet32.sys \
+  $(INSTALL)/boot/rtl8139.sys \
+  $(INSTALL)/boot/sis900.sys \
+  $(INSTALL)/boot/tulip.sys \
+  $(INSTALL)/boot/virtionet.sys
 
-$(BIN)/3c905c.sys: \
+$(INSTALL)/boot/3c905c.sys: \
   $(SRC)/sys/dev/3c905c.c \
   $(SRC)/lib/string.c \
   $(LIBS)/krnl.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/3c905c/ $** /D KERNEL /D 3C905C_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:start /IMPLIB:$(LIBS)/3c905c.lib
 
-$(BIN)/eepro100.sys: \
+$(INSTALL)/boot/eepro100.sys: \
   $(SRC)/sys/dev/eepro100.c \
   $(SRC)/lib/opts.c \
   $(SRC)/lib/string.c \
@@ -432,7 +453,7 @@ $(BIN)/eepro100.sys: \
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/eepro100/ $** /D KERNEL /D EEPRO100_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:start /IMPLIB:$(LIBS)/eepro100.lib
 
-$(BIN)/ne2000.sys: \
+$(INSTALL)/boot/ne2000.sys: \
   $(SRC)/sys/dev/ne2000.c \
   $(SRC)/lib/opts.c \
   $(SRC)/lib/string.c \
@@ -442,7 +463,7 @@ $(BIN)/ne2000.sys: \
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/ne2000/ $** /D KERNEL /D NE2000_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:start /IMPLIB:$(LIBS)/ne2000.lib
 
-$(BIN)/pcnet32.sys: \
+$(INSTALL)/boot/pcnet32.sys: \
   $(SRC)/sys/dev/pcnet32.c \
   $(SRC)/lib/string.c \
   $(SRC)/lib/ctype.c \
@@ -450,7 +471,7 @@ $(BIN)/pcnet32.sys: \
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/pcnet32/ $** /D KERNEL /D PCNET32_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:start /IMPLIB:$(LIBS)/pcnet32.lib
 
-$(BIN)/rtl8139.sys: \
+$(INSTALL)/boot/rtl8139.sys: \
   $(SRC)/sys/dev/rtl8139.c \
   $(SRC)/lib/opts.c \
   $(SRC)/lib/strtol.c \
@@ -460,7 +481,7 @@ $(BIN)/rtl8139.sys: \
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/rtl8139/ $** /D KERNEL /D RTL8139_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:start /IMPLIB:$(LIBS)/rtl8139.lib
 
-$(BIN)/sis900.sys: \
+$(INSTALL)/boot/sis900.sys: \
   $(SRC)/sys/dev/sis900.c \
   $(SRC)/lib/opts.c \
   $(SRC)/lib/strtol.c \
@@ -470,7 +491,7 @@ $(BIN)/sis900.sys: \
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/sis900/ $** /D KERNEL /D SIS900_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:start /IMPLIB:$(LIBS)/sis900.lib
 
-$(BIN)/tulip.sys: \
+$(INSTALL)/boot/tulip.sys: \
   $(SRC)/sys/dev/tulip.c \
   $(SRC)/lib/opts.c \
   $(SRC)/lib/strtol.c \
@@ -480,7 +501,7 @@ $(BIN)/tulip.sys: \
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/tulip/ $** /D KERNEL /D TULIP_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:start /IMPLIB:$(LIBS)/tulip.lib
 
-$(BIN)/virtionet.sys: \
+$(INSTALL)/boot/virtionet.sys: \
   $(SRC)/sys/dev/virtionet.c \
   $(SRC)/lib/string.c \
   $(LIBS)/krnl.lib
@@ -527,79 +548,79 @@ $(OBJ)/libc/chkstk.obj: $(SRC)/lib/chkstk.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
 
 $(OBJ)/libc/tanh.obj: $(SRC)/lib/math/tanh.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/tan.obj: $(SRC)/lib/math/tan.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/sqrt.obj: $(SRC)/lib/math/sqrt.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/sinh.obj: $(SRC)/lib/math/sinh.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/sin.obj: $(SRC)/lib/math/sin.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/pow.obj: $(SRC)/lib/math/pow.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/modf.obj: $(SRC)/lib/math/modf.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/log10.obj: $(SRC)/lib/math/log10.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/log.obj: $(SRC)/lib/math/log.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/ldexp.obj: $(SRC)/lib/math/ldexp.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/ftol.obj: $(SRC)/lib/math/ftol.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/frexp.obj: $(SRC)/lib/math/frexp.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/fpreset.obj: $(SRC)/lib/math/fpreset.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/fpconst.obj: $(SRC)/lib/math/fpconst.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/fmod.obj: $(SRC)/lib/math/fmod.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/floor.obj: $(SRC)/lib/math/floor.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/fabs.obj: $(SRC)/lib/math/fabs.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/exp.obj: $(SRC)/lib/math/exp.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/cosh.obj: $(SRC)/lib/math/cosh.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/cos.obj: $(SRC)/lib/math/cos.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/ceil.obj: $(SRC)/lib/math/ceil.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/atan2.obj: $(SRC)/lib/math/atan2.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/atan.obj: $(SRC)/lib/math/atan.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/asin.obj: $(SRC)/lib/math/asin.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/acos.obj: $(SRC)/lib/math/acos.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/libc/xtoa.obj: $(SRC)/lib/xtoa.c
     $(CC) $(CFLAGS) /Fo$(OBJ)/libc/ /D LIBC /c $**
@@ -846,23 +867,29 @@ $(LIBS)/libc.lib: \
   $(OBJ)/libc/regexec.obj \
   $(OBJ)/libc/regerror.obj \
   $(OBJ)/libc/regfree.obj
-    $(AR) /NOLOGO /NODEFAULTLIB /OUT:$(LIBS)/libc.lib $**
+    $(LIBRARIAN) /NOLOGO /NODEFAULTLIB /OUT:$(LIBS)/libc.lib $**
 
 #
 # win32
 #
 
-win32: dirs $(BIN)/kernel32.dll $(BIN)/user32.dll $(BIN)/advapi32.dll $(BIN)/wsock32.dll $(BIN)/winmm.dll $(BIN)/msvcrt.dll
+win32: dirs \
+  $(INSTALL)/bin/kernel32.dll \
+  $(INSTALL)/bin/user32.dll \
+  $(INSTALL)/bin/advapi32.dll \
+  $(INSTALL)/bin/wsock32.dll \
+  $(INSTALL)/bin/winmm.dll \
+  $(INSTALL)/bin/msvcrt.dll
 
-$(LIBS)/kernel32.lib $(BIN)/kernel32.dll: \
+$(LIBS)/kernel32.lib $(INSTALL)/bin/kernel32.dll: \
   $(SRC)/win32/kernel32/kernel32.c \
   $(SRC)/win32/kernel32/kernel32.def \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
-    $(CC) $(CFLAGS) /Fe$(BIN)/kernel32.dll /Fo$(OBJ)/kernel32/ $** /D KERNEL32_LIB \
+    $(CC) $(CFLAGS) /Fe$(INSTALL)/bin/kernel32.dll /Fo$(OBJ)/kernel32/ $** /D KERNEL32_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:DllMain /IMPLIB:$(LIBS)/kernel32.lib
 
-$(BIN)/user32.dll: \
+$(INSTALL)/bin/user32.dll: \
   $(SRC)/win32/user32/user32.c \
   $(SRC)/win32/user32/user32.def \
   $(LIBS)/os.lib \
@@ -870,7 +897,7 @@ $(BIN)/user32.dll: \
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/user32/ $** /D USER32_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:DllMain /IMPLIB:$(LIBS)/user32.lib
 
-$(BIN)/advapi32.dll: \
+$(INSTALL)/bin/advapi32.dll: \
   $(SRC)/win32/advapi32/advapi32.c \
   $(SRC)/win32/advapi32/advapi32.def \
   $(LIBS)/os.lib \
@@ -878,7 +905,7 @@ $(BIN)/advapi32.dll: \
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/advapi32/ $** /D ADVAPI32_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:DllMain /IMPLIB:$(LIBS)/advapi32.lib
 
-$(BIN)/wsock32.dll: \
+$(INSTALL)/bin/wsock32.dll: \
   $(SRC)/win32/wsock32/wsock32.c \
   $(SRC)/win32/wsock32/wsock32.def \
   $(LIBS)/os.lib \
@@ -886,7 +913,7 @@ $(BIN)/wsock32.dll: \
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/wsock32/ $** /D WSOCK32_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:DllMain /IMPLIB:$(LIBS)/wsock32.lib
 
-$(BIN)/winmm.dll: \
+$(INSTALL)/bin/winmm.dll: \
   $(SRC)/win32/winmm/winmm.c \
   $(SRC)/win32/winmm/winmm.def \
   $(LIBS)/os.lib \
@@ -895,25 +922,25 @@ $(BIN)/winmm.dll: \
       /link /DLL /NODEFAULTLIB /ENTRY:DllMain /IMPLIB:$(LIBS)/winmm.lib
 
 $(OBJ)/msvcrt/fpconst.obj: $(SRC)/lib/math/fpconst.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/msvcrt/floor.obj: $(SRC)/lib/math/floor.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/msvcrt/fmod.obj: $(SRC)/lib/math/fmod.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/msvcrt/frexp.obj: $(SRC)/lib/math/frexp.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/msvcrt/ftol.obj: $(SRC)/lib/math/ftol.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/msvcrt/ldexp.obj: $(SRC)/lib/math/ldexp.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/msvcrt/modf.obj: $(SRC)/lib/math/modf.asm
-    $(NASM) -f win32 $** -o $@
+    $(ASM) -f win32 $** -o $@
 
 $(OBJ)/msvcrt/llmul.obj: $(SRC)/lib/llmul.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
@@ -921,7 +948,7 @@ $(OBJ)/msvcrt/llmul.obj: $(SRC)/lib/llmul.asm
 $(OBJ)/msvcrt/lldvrm.obj: $(SRC)/lib/lldvrm.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
 
-$(BIN)/msvcrt.dll: \
+$(INSTALL)/bin/msvcrt.dll: \
   $(SRC)/win32/msvcrt/msvcrt.def \
   $(SRC)/win32/msvcrt/msvcrt.c \
   $(SRC)/win32/msvcrt/malloc.c \
@@ -959,14 +986,30 @@ $(BIN)/msvcrt.dll: \
 # utils
 #
 
-utils: dirs $(BIN)/sh.exe $(BIN)/msh.exe $(BIN)/edit.exe $(BIN)/less.exe \
-       $(BIN)/fdisk.exe $(BIN)/setup.exe $(BIN)/make.exe $(BIN)/ar.exe \
-       $(BIN)/impdef.exe $(BIN)/jinit.exe $(BIN)/ftpd.exe $(BIN)/telnetd.exe \
-       $(BIN)/login.exe $(BIN)/ctohtml.exe $(BIN)/mkboot.exe $(BIN)/ping.exe \
-       $(BIN)/grep.exe $(BIN)/find.exe $(BIN)/pkg.exe $(BIN)/genvmdk.exe \
-       $(BIN)/httpd.dll
+utils: dirs \
+  $(INSTALL)/bin/sh.exe \
+  $(INSTALL)/bin/msh.exe \
+  $(INSTALL)/bin/edit.exe \
+  $(INSTALL)/bin/less.exe \
+  $(INSTALL)/bin/fdisk.exe \
+  $(INSTALL)/bin/setup.exe \
+  $(INSTALL)/bin/jinit.exe \
+  $(INSTALL)/bin/ftpd.exe \
+  $(INSTALL)/bin/telnetd.exe \
+  $(INSTALL)/bin/login.exe \
+  $(INSTALL)/bin/mkboot.exe \
+  $(INSTALL)/bin/ping.exe \
+  $(INSTALL)/bin/grep.exe \
+  $(INSTALL)/bin/find.exe \
+  $(INSTALL)/bin/pkg.exe \
+  $(INSTALL)/bin/genvmdk.exe \
+  $(INSTALL)/bin/httpd.dll \
+  $(INSTALL)/usr/bin/make.exe \
+  $(INSTALL)/usr/bin/ar.exe \
+  $(INSTALL)/usr/bin/ctohtml.exe \
+  $(INSTALL)/usr/bin/impdef.exe
 
-$(BIN)/sh.exe: \
+$(INSTALL)/bin/sh.exe: \
   $(SRC)/utils/sh/sh.c \
   $(SRC)/utils/sh/input.c \
   $(SRC)/utils/sh/parser.c \
@@ -991,117 +1034,93 @@ $(BIN)/sh.exe: \
   $(SRC)/cmds/wc.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
-    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/sh/ $** /D SHELL /link /NODEFAULTLIB /FIXED:NO
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/sh/ $** /D SHELL /link /NODEFAULTLIB /FIXED:NO /IMPLIB:$(LIBS)/sh.lib
 
-$(BIN)/msh.exe: \
+$(INSTALL)/bin/msh.exe: \
   $(SRC)/utils/msh/msh.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/msh/ $** /link /NODEFAULTLIB /FIXED:NO
 
-$(BIN)/edit.exe: \
+$(INSTALL)/bin/edit.exe: \
   $(SRC)/utils/edit/edit.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/edit/ $** /D SANOS /link /NODEFAULTLIB /FIXED:NO
 
-$(BIN)/less.exe: \
+$(INSTALL)/bin/less.exe: \
   $(SRC)/utils/edit/edit.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/edit/ $** /D SANOS /D LESS /link /NODEFAULTLIB /FIXED:NO
 
-$(BIN)/fdisk.exe: \
+$(INSTALL)/bin/fdisk.exe: \
   $(SRC)/utils/fdisk/fdisk.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/fdisk/ $** /link /NODEFAULTLIB /FIXED:NO
 
-$(BIN)/setup.exe: \
+$(INSTALL)/bin/setup.exe: \
   $(SRC)/utils/setup/setup.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/setup/ $** /link /NODEFAULTLIB /FIXED:NO
 
-$(BIN)/make.exe: \
-  $(SRC)/utils/make/make.c \
-  $(LIBS)/os.lib \
-  $(LIBS)/libc.lib
-    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/make/ $** /link /NODEFAULTLIB /FIXED:NO
-
-$(BIN)/ar.exe: \
-  $(SRC)/utils/ar/ar.c \
-  $(LIBS)/os.lib \
-  $(LIBS)/libc.lib
-    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/ar/ $** /link /NODEFAULTLIB /FIXED:NO
-
-$(BIN)/impdef.exe: \
-  $(SRC)/utils/impdef/impdef.c \
-  $(LIBS)/os.lib \
-  $(LIBS)/libc.lib
-    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/impdef/ $** /link /NODEFAULTLIB /FIXED:NO
-
-$(BIN)/jinit.exe: \
+$(INSTALL)/bin/jinit.exe: \
   $(SRC)/utils/jinit/jinit.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/jinit/ $** /link /NODEFAULTLIB /FIXED:NO
 
-$(BIN)/ftpd.exe: \
+$(INSTALL)/bin/ftpd.exe: \
   $(SRC)/utils/ftpd/ftpd.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/ftpd/ $** /link /NODEFAULTLIB /FIXED:NO
 
-$(BIN)/telnetd.exe: \
+$(INSTALL)/bin/telnetd.exe: \
   $(SRC)/utils/telnetd/telnetd.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/telnetd/ $** /link /NODEFAULTLIB /FIXED:NO
 
-$(BIN)/login.exe: \
+$(INSTALL)/bin/login.exe: \
   $(SRC)/utils/login/login.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/login/ $** /link /NODEFAULTLIB /FIXED:NO
 
-$(BIN)/ctohtml.exe: \
-  $(SRC)/utils/ctohtml/ctohtml.c \
-  $(LIBS)/os.lib \
-  $(LIBS)/libc.lib
-    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/ctohtml/ $** /link /NODEFAULTLIB /FIXED:NO
-
-$(BIN)/mkboot.exe: \
+$(INSTALL)/bin/mkboot.exe: \
   $(SRC)/utils/mkboot/mkboot.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/mkboot/ $** /link /NODEFAULTLIB /FIXED:NO
 
-$(BIN)/genvmdk.exe: \
+$(INSTALL)/bin/genvmdk.exe: \
   $(SRC)/utils/genvmdk/genvmdk.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/genvmdk/ $** /link /NODEFAULTLIB /FIXED:NO
 
-$(BIN)/pkg.exe: \
+$(INSTALL)/bin/pkg.exe: \
   $(SRC)/utils/pkg/pkg.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/pkg/ $** /link /NODEFAULTLIB /FIXED:NO
 
-$(BIN)/grep.exe: \
+$(INSTALL)/bin/grep.exe: \
   $(SRC)/cmds/grep.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/grep/ $** /link /NODEFAULTLIB /FIXED:NO
 
-$(BIN)/find.exe: \
+$(INSTALL)/bin/find.exe: \
   $(SRC)/cmds/find.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/find/ $** /link /NODEFAULTLIB /FIXED:NO
 
-$(BIN)/ping.exe: \
+$(INSTALL)/bin/ping.exe: \
   $(SRC)/cmds/ping.c \
   $(LIBS)/os.lib \
   $(LIBS)/libc.lib
@@ -1110,7 +1129,7 @@ $(BIN)/ping.exe: \
 $(OBJ)/httpd/httpd.res: $(SRC)/utils/httpd/httpd.rc
   $(RC) /d "NDEBUG" /l 0x406 /fo$@ $**
 
-$(BIN)/httpd.dll: \
+$(INSTALL)/bin/httpd.dll: \
   $(SRC)/utils/httpd/httpd.c \
   $(SRC)/utils/httpd/hbuf.c \
   $(SRC)/utils/httpd/hfile.c \
@@ -1122,6 +1141,43 @@ $(BIN)/httpd.dll: \
     $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/httpd/ $** /D HTTPD_LIB \
       /link /DLL /NODEFAULTLIB /ENTRY:DllMain /IMPLIB:$(LIBS)/httpd.lib
 
+$(INSTALL)/usr/bin/make.exe: \
+  $(SRC)/utils/make/make.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/make/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(INSTALL)/usr/bin/ar.exe: \
+  $(SRC)/utils/ar/ar.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/ar/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(INSTALL)/usr/bin/impdef.exe: \
+  $(SRC)/utils/impdef/impdef.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/impdef/ $** /link /NODEFAULTLIB /FIXED:NO
+
+$(INSTALL)/usr/bin/ctohtml.exe: \
+  $(SRC)/utils/ctohtml/ctohtml.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /Fe$@ /Fo$(OBJ)/ctohtml/ $** /link /NODEFAULTLIB /FIXED:NO
+
+#
+# config
+#
+
+config: $(INSTALL)/etc/os.ini $(INSTALL)/boot/krnl.ini
+
+$(INSTALL)/etc/os.ini: $(BUILD)/os.ini
+    copy /Y $(BUILD)/os.ini $(INSTALL)/etc/os.ini
+
+$(INSTALL)/boot/krnl.ini: $(BUILD)/krnl.ini
+    copy /Y $(BUILD)/krnl.ini $(INSTALL)/boot/krnl.ini
+
+
 #
 # bootdisk
 #
@@ -1129,7 +1185,7 @@ $(BIN)/httpd.dll: \
 bootdisk: $(IMG)/sanos.flp
 
 $(IMG)/sanos.flp: dirs sanos $(MKDFS) $(BUILD)/bootdisk.lst
-    $(MKDFS) -d $(IMG)/sanos.flp -b $(BIN)\boot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 1440 -i -f -S $(TOPDIR) -F $(BUILD)\bootdisk.lst
+    $(MKDFS) -d $(IMG)/sanos.flp -b $(INSTALL)\boot\boot -l $(INSTALL)\boot\osldr.dll -k $(INSTALL)\boot\krnl.dll -c 1440 -i -f -S $(TOPDIR) -F $(BUILD)\bootdisk.lst
 
 #
 # boothd
@@ -1137,8 +1193,8 @@ $(IMG)/sanos.flp: dirs sanos $(MKDFS) $(BUILD)/bootdisk.lst
 
 boothd: $(IMG)/sanos.vmdk
 
-$(IMG)/sanos.vmdk: dirs sanos $(MKDFS) $(BUILD)/boothd.lst
-    $(MKDFS) -d $(IMG)/sanos.vmdk -t vmdk -b $(BIN)\boot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 100M -i -f -S $(TOPDIR) -F $(BUILD)\boothd.lst
+$(IMG)/sanos.vmdk: dirs sanos config $(MKDFS) $(BUILD)/boothd.lst
+    $(MKDFS) -d $(IMG)/sanos.vmdk -t vmdk -b $(INSTALL)\boot\boot -l $(INSTALL)\boot\osldr.dll -k $(INSTALL)\boot\krnl.dll -c 100M -i -f -S $(TOPDIR) -F $(BUILD)\boothd.lst
 
 #
 # netbootimg
@@ -1147,21 +1203,18 @@ $(IMG)/sanos.vmdk: dirs sanos $(MKDFS) $(BUILD)/boothd.lst
 netbootimg: $(IMG)/sanos.0
 
 $(IMG)/sanos.0: dirs sanos $(MKDFS) $(BUILD)/bootnet.lst
-    $(MKDFS) -d $(IMG)/sanos.0 -b $(BIN)\netboot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 512 -I 8192 -i -f -S $(TOPDIR) -F $(BUILD)\bootnet.lst
+    $(MKDFS) -d $(IMG)/sanos.0 -b $(INSTALL)\boot\netboot -l $(INSTALL)\boot\osldr.dll -k $(INSTALL)\boot\krnl.dll -c 512 -I 8192 -i -f -S $(TOPDIR) -F $(BUILD)\bootnet.lst
 
 #
 # bootcd
 #
 
-bootcd: install $(IMG)/sanos.iso
+bootcd: $(IMG)/sanos.iso
 
 $(IMG)/sanos.iso: dirs sanos tools
-    if not exist $(IMG) mkdir $(IMG)
     if exist $(IMG)\sanos.iso del $(IMG)\sanos.iso
-    $(MKDFS) -d $(INSTALL)\BOOTIMG.BIN -b $(BIN)\cdemboot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 512 -C 1440 -I 8192 -i -f -K rootdev=cd0,rootfs=cdfs
+    $(MKDFS) -d $(INSTALL)\BOOTIMG.BIN -b $(INSTALL)\boot\cdemboot -l $(INSTALL)\boot\osldr.dll -k $(INSTALL)\boot\krnl.dll -c 512 -C 1440 -I 8192 -i -f -K rootdev=cd0,rootfs=cdfs
     $(MKISOFS) -J -c BOOTCAT.BIN -b BOOTIMG.BIN -o $(IMG)\sanos.iso $(INSTALL)
-#    $(MKDFS) -d $(INSTALL)\BOOTIMG.BIN -b $(BIN)\cdboot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 512 -I 8192 -i -f -K rootdev=cd0,rootfs=cdfs
-#    $(MKISOFS) -no-emul-boot -J -c BOOTCAT.BIN -b BOOTIMG.BIN -o $(IMG)\sanos.iso $(INSTALL)
     del $(INSTALL)\BOOTIMG.BIN
 
 #
@@ -1171,107 +1224,426 @@ $(IMG)/sanos.iso: dirs sanos tools
 minimal: $(IMG)/minimal.flp
 
 $(IMG)/minimal.flp: dirs sanos $(MKDFS) $(BUILD)/minbootdisk.lst
-    $(MKDFS) -d $(IMG)/minimal.flp -b $(BIN)\boot -l $(BIN)\osldr.dll -k $(BIN)\krnl.dll -c 1440 -i -f -S . -F $(BUILD)\minbootdisk.lst
+    $(MKDFS) -d $(IMG)/minimal.flp -b $(INSTALL)\boot\boot -l $(INSTALL)\boot\osldr.dll -k $(INSTALL)\boot\krnl.dll -c 1440 -i -f -S . -F $(BUILD)\minbootdisk.lst
 
 #
 # sdk
 #
 
+sdk: $(TCC) $(NASM) $(AR) $(IMPDEF) $(CTOHTML)
+
 SDK=$(TOPDIR)\sdk
-SDKBIN=$(SDK)\bin
-SDKLIB=$(SDK)\lib
 SDKSRC=$(SDK)\src
 
-$(SDKBIN)/os.dll: $(SOW)
-    if not exist $(SDKBIN) mkdir $(SDKBIN)
-    copy /Y $(SOW) $(SDKBIN)\os.dll
+$(AR): $(INSTALL)/usr/bin/ar.exe $(SOW)
+    copy /Y $(INSTALL)/usr/bin/ar.exe $(AR)
 
-$(SDKBIN)/make.exe: $(BIN)/make.exe
-    if not exist $(SDKBIN) mkdir $(SDKBIN)
-    copy /Y $(BIN)\make.exe $(SDKBIN)\make.exe
+$(IMPDEF): $(INSTALL)/usr/bin/impdef.exe $(SOW)
+    copy /Y $(INSTALL)/usr/bin/impdef.exe $(IMPDEF)
 
-$(SDKBIN)/ar.exe: $(BIN)/ar.exe
-    if not exist $(SDKBIN) mkdir $(SDKBIN)
-    copy /Y $(BIN)\ar.exe $(SDKBIN)\ar.exe
+$(CTOHTML): $(INSTALL)/usr/bin/ctohtml.exe $(SOW)
+    copy /Y $(INSTALL)/usr/bin/ctohtml.exe $(CTOHTML)
 
-$(SDKBIN)/impdef.exe: $(BIN)/impdef.exe
-    if not exist $(SDKBIN) mkdir $(SDKBIN)
-    copy /Y $(BIN)\impdef.exe $(SDKBIN)\impdef.exe
+$(TCC): $(INSTALL)/usr/bin/cc.exe $(SOW)
+    copy /Y $(INSTALL)/usr/bin/cc.exe $(TCC)
 
-$(SDKBIN)/ctohtml.exe: $(BIN)/ctohtml.exe
-    if not exist $(SDKBIN) mkdir $(SDKBIN)
-    copy /Y $(BIN)\ctohtml.exe $(SDKBIN)\ctohtml.exe
+$(NASM): $(INSTALL)/usr/bin/as.exe $(SOW)
+    copy /Y $(INSTALL)/usr/bin/as.exe $(NASM)
 
-sdk: $(SDKBIN)/os.dll $(SDKBIN)/make.exe $(SDKBIN)/ar.exe $(SDKBIN)/impdef.exe $(SDKBIN)/ctohtml.exe
-    cd $(SDKSRC)\as && nmake install
-    cd $(SDKSRC)\cc && nmake install
-    cd $(SDKSRC)\libc && nmake install
+$(INSTALL)/usr/bin/cc.exe: \
+  $(SDKSRC)/cc/asm386.c \
+  $(SDKSRC)/cc/asm.c \
+  $(SDKSRC)/cc/cc.c \
+  $(SDKSRC)/cc/codegen386.c \
+  $(SDKSRC)/cc/codegen.c \
+  $(SDKSRC)/cc/compiler.c \
+  $(SDKSRC)/cc/elf.c \
+  $(SDKSRC)/cc/pe.c \
+  $(SDKSRC)/cc/preproc.c \
+  $(SDKSRC)/cc/symbol.c \
+  $(SDKSRC)/cc/type.c \
+  $(SDKSRC)/cc/util.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) /W1 /Fe$@ /Fo$(OBJ)/cc/ $** /D USE_LOCAL_HEAP /link /NODEFAULTLIB /FIXED:NO /HEAP:33554432,131072
 
-sdk-clean:
-    del /Q $(SDKBIN)
-    cd $(SDKSRC)\as && nmake clean
-    cd $(SDKSRC)\cc && nmake clean
-    cd $(SDKSRC)\libc && nmake clean
+NASMFLAGS=/W1 /I $(SDKSRC)\as /D HAVE_SNPRINTF /D HAVE_VSNPRINTF /D SANOS /D USE_LOCAL_HEAP \
+          /D OF_ONLY /D OF_ELF32 /D OF_WIN32 /D OF_COFF /D OF_OBJ /D OF_BIN /D OF_DBG /D OF_DEFAULT=of_elf32
 
-sdkdisk: sanos sdk install install-source install-sdk boothd
+$(INSTALL)/usr/bin/as.exe: \
+  $(SDKSRC)/as/nasm.c \
+  $(SDKSRC)/as/nasmlib.c \
+  $(SDKSRC)/as/ver.c \
+  $(SDKSRC)/as/raa.c \
+  $(SDKSRC)/as/saa.c \
+  $(SDKSRC)/as/rbtree.c \
+  $(SDKSRC)/as/float.c \
+  $(SDKSRC)/as/insnsa.c \
+  $(SDKSRC)/as/insnsb.c \
+  $(SDKSRC)/as/directiv.c \
+  $(SDKSRC)/as/assemble.c \
+  $(SDKSRC)/as/labels.c \
+  $(SDKSRC)/as/hashtbl.c \
+  $(SDKSRC)/as/crc64.c \
+  $(SDKSRC)/as/parser.c \
+  $(SDKSRC)/as/preproc.c \
+  $(SDKSRC)/as/quote.c \
+  $(SDKSRC)/as/pptok.c \
+  $(SDKSRC)/as/macros.c \
+  $(SDKSRC)/as/listing.c \
+  $(SDKSRC)/as/eval.c \
+  $(SDKSRC)/as/exprlib.c \
+  $(SDKSRC)/as/stdscan.c \
+  $(SDKSRC)/as/strfunc.c \
+  $(SDKSRC)/as/tokhash.c \
+  $(SDKSRC)/as/regvals.c \
+  $(SDKSRC)/as/regflags.c \
+  $(SDKSRC)/as/ilog2.c \
+  $(SDKSRC)/as/strlcpy.c \
+  $(SDKSRC)/as/output/outform.c \
+  $(SDKSRC)/as/output/outlib.c \
+  $(SDKSRC)/as/output/nulldbg.c \
+  $(SDKSRC)/as/output/nullout.c \
+  $(SDKSRC)/as/output/outbin.c  \
+  $(SDKSRC)/as/output/outcoff.c \
+  $(SDKSRC)/as/output/outelf.c \
+  $(SDKSRC)/as/output/outelf32.c \
+  $(SDKSRC)/as/output/outobj.c \
+  $(SDKSRC)/as/output/outdbg.c \
+  $(LIBS)/os.lib \
+  $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) $(NASMFLAGS) /Fe$@ /Fo$(OBJ)/as/ $** /link /NODEFAULTLIB /FIXED:NO /HEAP:33554432,131072
 
 #
-# install
+# crt
 #
 
-install: sanos
-    if not exist $(INSTALL)\bin mkdir $(INSTALL)\bin
-    if not exist $(INSTALL)\boot mkdir $(INSTALL)\boot
-    if not exist $(INSTALL)\dev mkdir $(INSTALL)\dev
-    if not exist $(INSTALL)\etc mkdir $(INSTALL)\etc
-    if not exist $(INSTALL)\mnt mkdir $(INSTALL)\mnt
-    if not exist $(INSTALL)\proc mkdir $(INSTALL)\proc
-    if not exist $(INSTALL)\tmp mkdir $(INSTALL)\tmp
-    if not exist $(INSTALL)\usr mkdir $(INSTALL)\usr
-    if not exist $(INSTALL)\var mkdir $(INSTALL)\var
-    copy /Y $(BIN)\sh.exe        $(INSTALL)\bin\sh.exe
-    copy /Y $(BIN)\msh.exe       $(INSTALL)\bin\msh.exe
-    copy /Y $(BIN)\httpd.dll     $(INSTALL)\bin\httpd.dll
-    copy /Y $(BIN)\setup.exe     $(INSTALL)\bin\setup.exe
-    copy /Y $(BIN)\ctohtml.exe   $(INSTALL)\bin\ctohtml.exe
-    copy /Y $(BIN)\mkboot.exe    $(INSTALL)\bin\mkboot.exe
-    copy /Y $(BIN)\genvmdk.exe   $(INSTALL)\bin\genvmdk.exe
-    copy /Y $(BIN)\edit.exe      $(INSTALL)\bin\edit.exe
-    copy /Y $(BIN)\less.exe      $(INSTALL)\bin\less.exe
-    copy /Y $(BIN)\fdisk.exe     $(INSTALL)\bin\fdisk.exe
-    copy /Y $(BIN)\pkg.exe       $(INSTALL)\bin\pkg.exe
-    copy /Y $(BIN)\jinit.exe     $(INSTALL)\bin\jinit.exe
-    copy /Y $(BIN)\telnetd.exe   $(INSTALL)\bin\telnetd.exe
-    copy /Y $(BIN)\ftpd.exe      $(INSTALL)\bin\ftpd.exe
-    copy /Y $(BIN)\login.exe     $(INSTALL)\bin\login.exe
-    copy /Y $(BIN)\ping.exe      $(INSTALL)\bin\ping.exe
-    copy /Y $(BIN)\grep.exe      $(INSTALL)\bin\grep.exe
-    copy /Y $(BIN)\find.exe      $(INSTALL)\bin\find.exe
-    copy /Y $(BIN)\msvcrt.dll    $(INSTALL)\bin\msvcrt.dll
-    copy /Y $(BIN)\kernel32.dll  $(INSTALL)\bin\kernel32.dll
-    copy /Y $(BIN)\user32.dll    $(INSTALL)\bin\user32.dll
-    copy /Y $(BIN)\advapi32.dll  $(INSTALL)\bin\advapi32.dll
-    copy /Y $(BIN)\winmm.dll     $(INSTALL)\bin\winmm.dll
-    copy /Y $(BIN)\wsock32.dll   $(INSTALL)\bin\wsock32.dll
-    copy /Y $(BUILD)\os.ini      $(INSTALL)\etc\os.ini
-    copy /Y $(BUILD)\setup.ini   $(INSTALL)\etc\setup.ini
-    copy /Y $(BUILD)\krnl.ini    $(INSTALL)\boot\krnl.ini
-    copy /Y $(BIN)\boot          $(INSTALL)\boot\boot
-    copy /Y $(BIN)\cdboot        $(INSTALL)\boot\cdboot
-    copy /Y $(BIN)\cdemboot      $(INSTALL)\boot\cdemboot
-    copy /Y $(BIN)\netboot       $(INSTALL)\boot\netboot
-    copy /Y $(BIN)\osldr.dll     $(INSTALL)\boot\osldr.dll
-    copy /Y $(BIN)\os.dll        $(INSTALL)\boot\os.dll
-    copy /Y $(BIN)\3c905c.sys    $(INSTALL)\boot\3c905c.sys
-    copy /Y $(BIN)\eepro100.sys  $(INSTALL)\boot\eepro100.sys
-    copy /Y $(BIN)\ne2000.sys    $(INSTALL)\boot\ne2000.sys
-    copy /Y $(BIN)\pcnet32.sys   $(INSTALL)\boot\pcnet32.sys
-    copy /Y $(BIN)\rtl8139.sys   $(INSTALL)\boot\rtl8139.sys
-    copy /Y $(BIN)\sis900.sys    $(INSTALL)\boot\sis900.sys
-    copy /Y $(BIN)\tulip.sys     $(INSTALL)\boot\tulip.sys
-    copy /Y $(BIN)\virtionet.sys $(INSTALL)\boot\virtionet.sys
+crt: $(INSTALL)/usr/lib/libc.a $(INSTALL)/usr/lib/os.def $(INSTALL)/usr/lib/krnl.def
 
-install-source: dirs
+$(INSTALL)/usr/lib/os.def: $(INSTALL)/boot/os.dll $(IMPDEF)
+    $(IMPDEF) $(INSTALL)/boot/os.dll $(INSTALL)/usr/lib/os.def
+
+$(INSTALL)/usr/lib/krnl.def: $(INSTALL)/boot/krnl.dll $(IMPDEF)
+    $(IMPDEF) $(INSTALL)/boot/krnl.dll $(INSTALL)/usr/lib/krnl.def
+
+$(INSTALL)/usr/lib/libc.a: \
+  $(OBJ)/crt/tcccrt.o \
+  $(OBJ)/crt/assert.o \
+  $(OBJ)/crt/bsearch.o \
+  $(OBJ)/crt/conio.o \
+  $(OBJ)/crt/crt0.o \
+  $(OBJ)/crt/ctype.o \
+  $(OBJ)/crt/dirent.o \
+  $(OBJ)/crt/fcvt.o \
+  $(OBJ)/crt/fnmatch.o \
+  $(OBJ)/crt/fork.o \
+  $(OBJ)/crt/getopt.o \
+  $(OBJ)/crt/glob.o \
+  $(OBJ)/crt/hash.o \
+  $(OBJ)/crt/inifile.o \
+  $(OBJ)/crt/input.o \
+  $(OBJ)/crt/mman.o \
+  $(OBJ)/crt/math.o \
+  $(OBJ)/crt/opts.o \
+  $(OBJ)/crt/output.o \
+  $(OBJ)/crt/qsort.o \
+  $(OBJ)/crt/random.o \
+  $(OBJ)/crt/readline.o \
+  $(OBJ)/crt/rmap.o \
+  $(OBJ)/crt/rtttl.o \
+  $(OBJ)/crt/sched.o \
+  $(OBJ)/crt/semaphore.o \
+  $(OBJ)/crt/stdio.o \
+  $(OBJ)/crt/shlib.o \
+  $(OBJ)/crt/scanf.o \
+  $(OBJ)/crt/printf.o \
+  $(OBJ)/crt/tmpfile.o \
+  $(OBJ)/crt/popen.o \
+  $(OBJ)/crt/stdlib.o \
+  $(OBJ)/crt/strftime.o \
+  $(OBJ)/crt/string.o \
+  $(OBJ)/crt/strtod.o \
+  $(OBJ)/crt/strtol.o \
+  $(OBJ)/crt/termios.o \
+  $(OBJ)/crt/time.o \
+  $(OBJ)/crt/xtoa.o \
+  $(OBJ)/crt/regcomp.o \
+  $(OBJ)/crt/regexec.o \
+  $(OBJ)/crt/regerror.o \
+  $(OBJ)/crt/regfree.o \
+  $(OBJ)/crt/barrier.o \
+  $(OBJ)/crt/condvar.o \
+  $(OBJ)/crt/mutex.o \
+  $(OBJ)/crt/pthread.o \
+  $(OBJ)/crt/rwlock.o \
+  $(OBJ)/crt/spinlock.o \
+  $(OBJ)/crt/setjmp.o \
+  $(OBJ)/crt/chkstk.o \
+  $(OBJ)/crt/acos.o \
+  $(OBJ)/crt/asin.o \
+  $(OBJ)/crt/atan.o \
+  $(OBJ)/crt/atan2.o \
+  $(OBJ)/crt/ceil.o \
+  $(OBJ)/crt/cos.o \
+  $(OBJ)/crt/cosh.o \
+  $(OBJ)/crt/exp.o \
+  $(OBJ)/crt/fabs.o \
+  $(OBJ)/crt/floor.o \
+  $(OBJ)/crt/fmod.o \
+  $(OBJ)/crt/fpconst.o \
+  $(OBJ)/crt/fpreset.o \
+  $(OBJ)/crt/frexp.o \
+  $(OBJ)/crt/ftol.o \
+  $(OBJ)/crt/ldexp.o \
+  $(OBJ)/crt/log.o \
+  $(OBJ)/crt/log10.o \
+  $(OBJ)/crt/modf.o \
+  $(OBJ)/crt/pow.o \
+  $(OBJ)/crt/sin.o \
+  $(OBJ)/crt/sinh.o \
+  $(OBJ)/crt/sqrt.o \
+  $(OBJ)/crt/tan.o \
+  $(OBJ)/crt/tanh.o
+    $(AR) -s $@ $**
+
+$(OBJ)/crt/tcccrt.o: $(SRC)/lib/tcccrt.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/assert.o: $(SRC)/lib/assert.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/bsearch.o: $(SRC)/lib/bsearch.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/conio.o: $(SRC)/lib/conio.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/crt0.o: $(SRC)/lib/crt0.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/ctype.o: $(SRC)/lib/ctype.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/dirent.o: $(SRC)/lib/dirent.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/fcvt.o: $(SRC)/lib/fcvt.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/fnmatch.o: $(SRC)/lib/fnmatch.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/fork.o: $(SRC)/lib/fork.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/getopt.o: $(SRC)/lib/getopt.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/glob.o: $(SRC)/lib/glob.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/hash.o: $(SRC)/lib/hash.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/inifile.o: $(SRC)/lib/inifile.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/input.o: $(SRC)/lib/input.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/math.o: $(SRC)/lib/math.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/mman.o: $(SRC)/lib/mman.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/opts.o: $(SRC)/lib/opts.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/output.o: $(SRC)/lib/output.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/qsort.o: $(SRC)/lib/qsort.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/random.o: $(SRC)/lib/random.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/readline.o: $(SRC)/lib/readline.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/rmap.o: $(SRC)/lib/rmap.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/rtttl.o: $(SRC)/lib/rtttl.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/sched.o: $(SRC)/lib/sched.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/semaphore.o: $(SRC)/lib/semaphore.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/stdio.o: $(SRC)/lib/stdio.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/shlib.o: $(SRC)/lib/shlib.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/scanf.o: $(SRC)/lib/scanf.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/printf.o: $(SRC)/lib/printf.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/tmpfile.o: $(SRC)/lib/tmpfile.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/popen.o: $(SRC)/lib/popen.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/setjmp.o: $(SRC)/lib/setjmp.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/stdlib.o: $(SRC)/lib/stdlib.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/strftime.o: $(SRC)/lib/strftime.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/string.o: $(SRC)/lib/string.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/strtod.o: $(SRC)/lib/strtod.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/strtol.o: $(SRC)/lib/strtol.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/termios.o: $(SRC)/lib/termios.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/time.o: $(SRC)/lib/time.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/xtoa.o: $(SRC)/lib/xtoa.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/regcomp.o: $(SRC)/lib/regex/regcomp.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/regexec.o: $(SRC)/lib/regex/regexec.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/regerror.o: $(SRC)/lib/regex/regerror.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/regfree.o: $(SRC)/lib/regex/regfree.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/barrier.o: $(SRC)/lib/pthread/barrier.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/condvar.o: $(SRC)/lib/pthread/condvar.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/mutex.o: $(SRC)/lib/pthread/mutex.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/pthread.o: $(SRC)/lib/pthread/pthread.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/rwlock.o: $(SRC)/lib/pthread/rwlock.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/spinlock.o: $(SRC)/lib/pthread/spinlock.c
+    $(TCC) -c $** -o $@ -I$(SRC)/include -g
+
+$(OBJ)/crt/chkstk.o: $(SRC)/lib/chkstk.s
+    $(TCC) -c $** -o $@ -I$(SRC)/include
+
+$(OBJ)/crt/acos.o: $(SRC)/lib/math/acos.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/asin.o: $(SRC)/lib/math/asin.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/atan.o: $(SRC)/lib/math/atan.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/atan2.o: $(SRC)/lib/math/atan2.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/ceil.o: $(SRC)/lib/math/ceil.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/cos.o: $(SRC)/lib/math/cos.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/cosh.o: $(SRC)/lib/math/cosh.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/exp.o: $(SRC)/lib/math/exp.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/fabs.o: $(SRC)/lib/math/fabs.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/floor.o: $(SRC)/lib/math/floor.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/fmod.o: $(SRC)/lib/math/fmod.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/fpconst.o: $(SRC)/lib/math/fpconst.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/fpreset.o: $(SRC)/lib/math/fpreset.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/frexp.o: $(SRC)/lib/math/frexp.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/ftol.o: $(SRC)/lib/math/ftol.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/ldexp.o: $(SRC)/lib/math/ldexp.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/log.o: $(SRC)/lib/math/log.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/log10.o: $(SRC)/lib/math/log10.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/modf.o: $(SRC)/lib/math/modf.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/pow.o: $(SRC)/lib/math/pow.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/sin.o: $(SRC)/lib/math/sin.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/sinh.o: $(SRC)/lib/math/sinh.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/sqrt.o: $(SRC)/lib/math/sqrt.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/tan.o: $(SRC)/lib/math/tan.asm
+    $(NASM) -f elf $** -o $@
+
+$(OBJ)/crt/tanh.o: $(SRC)/lib/math/tanh.asm
+    $(NASM) -f elf $** -o $@
+
+sdkdisk: sanos sdk source boothd
+
+#
+# source
+#
+
+source: dirs
     -@if not exist $(INSTALL)\usr mkdir $(INSTALL)\usr
     -@if not exist $(INSTALL)\usr\include mkdir $(INSTALL)\usr\include
     -@if not exist $(INSTALL)\usr\src mkdir $(INSTALL)\usr\src
@@ -1280,35 +1652,13 @@ install-source: dirs
     -@if not exist $(INSTALL)\usr\src\utils mkdir $(INSTALL)\usr\src\utils
     -@if not exist $(INSTALL)\usr\src\cmds mkdir $(INSTALL)\usr\src\cmds
     -@if not exist $(INSTALL)\usr\src\win32 mkdir $(INSTALL)\usr\src\win32
-    xcopy /S /I /Y $(SRC)\include $(INSTALL)\usr\include
-    xcopy /S /I /Y $(SRC)\lib $(INSTALL)\usr\src\lib
-    xcopy /S /I /Y $(SRC)\sys $(INSTALL)\usr\src\sys
-    xcopy /S /I /Y $(SRC)\utils $(INSTALL)\usr\src\utils
-    xcopy /S /I /Y $(SRC)\cmds $(INSTALL)\usr\src\cmds
-    xcopy /S /I /Y $(SRC)\win32 $(INSTALL)\usr\src\win32
     copy /Y $(SRC)\Makefile $(INSTALL)\usr\src
-
-install-sdk: install-source sdk
-    -@if not exist $(INSTALL)\usr\bin mkdir $(INSTALL)\usr\bin
-    -@if not exist $(INSTALL)\usr\lib mkdir $(INSTALL)\usr\lib
-    -@if not exist $(INSTALL)\usr\src\utils\as mkdir $(INSTALL)\usr\src\utils\as
-    -@if not exist $(INSTALL)\usr\src\utils\as\output mkdir $(INSTALL)\usr\src\utils\as\output
-    -@if not exist $(INSTALL)\usr\src\utils\cc mkdir $(INSTALL)\usr\src\utils\cc
-    -@if not exist $(INSTALL)\usr\src\utils\ar mkdir $(INSTALL)\usr\src\utils\ar
-    copy /Y $(SDKBIN)\as.exe              $(INSTALL)\usr\bin
-    copy /Y $(SDKBIN)\cc.exe              $(INSTALL)\usr\bin
-    copy /Y $(SDKBIN)\make.exe            $(INSTALL)\usr\bin
-    copy /Y $(SDKBIN)\ar.exe              $(INSTALL)\usr\bin
-    copy /Y $(SDKBIN)\impdef.exe          $(INSTALL)\usr\bin
-    copy /Y $(SDKLIB)\libc.a              $(INSTALL)\usr\lib
-    copy /Y $(SDKLIB)\os.def              $(INSTALL)\usr\lib\os.def
-    copy /Y $(SDKLIB)\krnl.def            $(INSTALL)\usr\lib\krnl.def
-    copy /Y $(SDKSRC)\as\*.c              $(INSTALL)\usr\src\utils\as
-    copy /Y $(SDKSRC)\as\*.h              $(INSTALL)\usr\src\utils\as
-    copy /Y $(SDKSRC)\as\output\*.h       $(INSTALL)\usr\src\utils\as\output
-    copy /Y $(SDKSRC)\as\output\*.c       $(INSTALL)\usr\src\utils\as\output
-    copy /Y $(SDKSRC)\as\Makefile.sanos   $(INSTALL)\usr\src\utils\as\Makefile
-    copy /Y $(SDKSRC)\cc\*.c              $(INSTALL)\usr\src\utils\cc
-    copy /Y $(SDKSRC)\cc\*.h              $(INSTALL)\usr\src\utils\cc
-    copy /Y $(SDKSRC)\cc\Makefile.sanos   $(INSTALL)\usr\src\utils\cc\Makefile
+    xcopy /S /I /Y /Q $(SRC)\include $(INSTALL)\usr\include
+    xcopy /S /I /Y /Q $(SRC)\lib $(INSTALL)\usr\src\lib
+    xcopy /S /I /Y /Q $(SRC)\sys $(INSTALL)\usr\src\sys
+    xcopy /S /I /Y /Q $(SRC)\utils $(INSTALL)\usr\src\utils
+    xcopy /S /I /Y /Q $(SRC)\cmds $(INSTALL)\usr\src\cmds
+    xcopy /S /I /Y /Q $(SRC)\win32 $(INSTALL)\usr\src\win32
+    xcopy /S /I /Y /Q $(SDKSRC)\cc $(INSTALL)\usr\src\utils\cc
+    xcopy /S /I /Y /Q $(SDKSRC)\as $(INSTALL)\usr\src\utils\as
 

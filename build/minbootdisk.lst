@@ -11,5 +11,5 @@
 
 ; System files
 
-/boot/os.dll       bin\os.dll         dbg\bin\os.dll
-/bin/sh.exe        bin\sh.exe         dbg\bin\sh.exe
+/boot/os.dll       win\install\boot\os.dll
+/bin/sh.exe        win\install\bin\sh.exe

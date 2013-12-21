@@ -1675,6 +1675,10 @@ int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
   return notimpl("sigaction");
 }
 
+int sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
+{
+  return notimpl("sigprocmask");
+}
 
 int raise(int signum)
 {
@@ -2206,6 +2210,11 @@ char ***_environ()
 int *_fmode()
 {
   return &peb->fmodeval;
+}
+
+struct section *osconfig() 
+{
+  return NULL;
 }
 
 int __stdcall dllmain(hmodule_t hmodule, unsigned long reason, void *reserved)

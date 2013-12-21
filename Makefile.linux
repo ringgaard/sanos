@@ -18,7 +18,7 @@ TCCFLAGS=-B linux/install/usr
 PKGREPO=/mnt/www/pkg
 PKGDIR=linux/install/usr/share/pkg
 
-sanos: dirs build-tools boot sys libc utils cmds sdk sdk-source
+sanos: dirs build-tools boot sys libc utils cmds sdk
 
 #
 # dirs
@@ -30,6 +30,7 @@ linux/.timestamp:
 	mkdir -p linux
 	mkdir -p linux/tools
 	mkdir -p linux/obj
+	mkdir -p linux/img
 	mkdir -p linux/install
 	mkdir -p linux/install/bin
 	mkdir -p linux/install/boot
@@ -70,6 +71,8 @@ linux/.timestamp:
 	[ -d linux/install/usr/src/utils/setup ]   || ln -s ../../../../../src/utils/setup linux/install/usr/src/utils/setup
 	[ -d linux/install/usr/src/utils/sh ]      || ln -s ../../../../../src/utils/sh linux/install/usr/src/utils/sh
 	[ -d linux/install/usr/src/utils/telnetd ] || ln -s ../../../../../src/utils/telnetd linux/install/usr/src/utils/telnetd
+	[ -d linux/install/usr/src/utils/cc ]      || ln -s ../../../../../sdk/src/cc linux/install/usr/src/utils/cc
+	[ -d linux/install/usr/src/utils/as ]      || ln -s ../../../../../sdk/src/as linux/install/usr/src/utils/as
 	[ -d linux/install/usr/src/win32 ]         || ln -s ../../../../src/win32 linux/install/usr/src/win32
 	[ -d linux/install/usr/src/Makefile ]      || ln -s ../../../../src/Makefile linux/install/usr/src/Makefile
 	touch linux/.timestamp
@@ -822,6 +825,7 @@ linux/install/bin/ping.exe: src/cmds/ping.c
 #
 
 sdk: linux/install/usr/bin/cc.exe linux/install/usr/bin/as.exe
+	cp -p build/sdk.inf $(PKGDIR)
 
 linux/install/usr/bin/cc.exe: $(TCC_SRCFILES) $(TCC_HDRFILES)
 	$(TCC) -o $@ $(TCC_SRCFILES) -I sdk/src/cc $(TCCFLAGS) -DUSE_LOCAL_HEAP -noshare
@@ -831,57 +835,45 @@ linux/install/usr/bin/as.exe: $(AS_SRCFILES)
 	$(TCC) -o $@ $^ -I sdk/src/as $(TCCFLAGS) $(AS_CFLAGS) -DUSE_LOCAL_HEAP -noshare
 	cp -p build/as.inf $(PKGDIR)
 
-sdk-source:
-	mkdir -p img
-	mkdir -p linux/install/usr/src/utils/as
-	mkdir -p linux/install/usr/src/utils/as/output
-	cp -p sdk/src/as/*.c sdk/src/as/*.h linux/install/usr/src/utils/as
-	cp -p sdk/src/as/Makefile.sanos linux/install/usr/src/utils/as/Makefile
-	cp -p sdk/src/as/output/*.c sdk/src/as/output/*.h linux/install/usr/src/utils/as/output
-	mkdir -p linux/install/usr/src/utils/cc
-	cp -p sdk/src/cc/*.c sdk/src/cc/*.h linux/install/usr/src/utils/cc
-	cp -p sdk/src/cc/Makefile.sanos linux/install/usr/src/utils/cc/Makefile
-	cp -p build/sdk.inf $(PKGDIR)
-
 #
 # vmdk
 #
 
-vmdk: img/sanos.vmdk
+vmdk: linux/img/sanos.vmdk
 
-img/sanos.vmdk: sanos
+linux/img/sanos.vmdk: sanos
 	echo "/ linux/install" > linux/disk.lst
 	$(MKPKG) linux/install - $(PKGDIR)/*.inf
 	mv db $(PKGDIR)
-	$(MKDFS) -d img/sanos.vmdk -t vmdk -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 200M -i -f -S linux/image -F linux/disk.lst
+	$(MKDFS) -d linux/img/sanos.vmdk -t vmdk -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 200M -i -f -S linux/image -F linux/disk.lst
 
 #
 # hdmin
 #
 
-hdmin: img/hd.vmdk
+hdmin: linux/img/hd.vmdk
 
-img/hd.vmdk: sanos
-	$(MKDFS) -d img/hd.vmdk -t vmdk -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 100M -i -f -S linux/image -F build/hdmin.lst
+linux/img/hd.vmdk: sanos
+	$(MKDFS) -d linux/img/hd.vmdk -t vmdk -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 100M -i -f -S linux/image -F build/hdmin.lst
 
 #
 # floppy
 #
 
-floppy: img/sanos.flp
+floppy: linux/img/sanos.flp
 
-img/sanos.flp: sanos
-	$(MKDFS) -d img/sanos.flp -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 1440 -i -f -S . -F build/floppy.lst
+linux/img/sanos.flp: sanos
+	$(MKDFS) -d linux/img/sanos.flp -b linux/install/boot/boot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 1440 -i -f -S . -F build/floppy.lst
 
 #
 # cdrom
 #
 
-cdrom: img/sanos.iso
+cdrom: linux/img/sanos.iso
 
-img/sanos.iso: sanos
+linux/img/sanos.iso: sanos
 	$(MKDFS) -d linux/install/BOOTIMG.BIN -b linux/install/boot/cdemboot -l linux/install/boot/osldr.dll -k linux/install/boot/krnl.dll -c 512 -C 1440 -I 8192 -i -f -K rootdev=cd0,rootfs=cdfs
-	genisoimage -J -f -c BOOTCAT.BIN -b BOOTIMG.BIN -o img/sanos.iso linux/install
+	genisoimage -J -f -c BOOTCAT.BIN -b BOOTIMG.BIN -o linux/img/sanos.iso linux/install
 	rm linux/install/BOOTIMG.BIN
 
 #
@@ -890,7 +882,6 @@ img/sanos.iso: sanos
 
 clean:
 	rm -rf linux
-	rm -rf img
 
 #
 # pkgs
