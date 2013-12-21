@@ -128,7 +128,7 @@ cd ..
 # Deploy release
 if [ "${DEPLOY}" = "1" ] ; then
   echo ==== Deploy release
-  TARGET=/mnt/www/test
+  TARGET=/mnt/www
   cp release/${SRCNAME}.zip ${TARGET}/downloads
   cp release/${BINNAME}.zip ${TARGET}/downloads
   cp release/${SDKNAME}.zip ${TARGET}/downloads

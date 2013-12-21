@@ -4,6 +4,10 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * New Makefile for building under Windows and new deployment script.
+
+    * Indent and unindent commands for editor.
+
     * The printf routines now support %lld format for 64-bit ints.
 
     * Added genvmdk utility for generating VMDK disk image files.
