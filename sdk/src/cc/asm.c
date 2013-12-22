@@ -345,9 +345,8 @@ void use_section(TCCState *s1, const char *name) {
 }
 
 void asm_parse_directive(TCCState *s1) {
-  int n, offset, v, size, tok1;
+  int n, v, size, tok1;
   Section *sec;
-  uint8_t *ptr;
 
   // Assembler directive
   next();
@@ -727,7 +726,7 @@ int find_constraint(ASMOperand *operands, int nb_operands, const char *name, con
       index = (index * 10) + (*name) - '0';
       name++;
     }
-    if ((unsigned) index >= nb_operands) index = -1;
+    if (index < 0 || index >= nb_operands) index = -1;
   } else if (*name == '[') {
     name++;
     p = strchr(name, ']');
@@ -978,7 +977,6 @@ void parse_masm_instr(TCCState *s1) {
 }
 
 void masm_instr(TCCState *s1) {
-  int opcode;
   int saved_parse_flags = parse_flags;
 
   parse_flags = PARSE_FLAG_MASM | PARSE_FLAG_PREPROCESS;

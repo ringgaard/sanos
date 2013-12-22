@@ -465,7 +465,7 @@ static int pe_section_class(Section *s) {
 }
 
 static int pe_write(struct pe_info *pe) {
-  int i, j;
+  int i;
   int fd;
   FILE *op;
   FILE *stubfile;

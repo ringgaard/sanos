@@ -156,7 +156,7 @@ void parse_attribute(AttributeDef *ad) {
 
 // Parse MSVC __declspec extension
 void parse_declspec(AttributeDef *ad) {
-  int t, n;
+  int t;
   
   while (tok == TOK_DECLSPEC) {
     next();
@@ -1101,7 +1101,6 @@ void unary(void) {
       break;
 
     default:
-    tok_identifier:
       t = tok;
       next();
       if (t < TOK_UIDENT) expect("identifier");
@@ -2434,7 +2433,7 @@ void decl_initializer_alloc(CType *type, AttributeDef *ad, int r, int has_init, 
       data_offset += size;
       sec->data_offset = data_offset;
       // Allocate section space to put the data
-      if (sec->sh_type != SHT_NOBITS && data_offset > sec->data_allocated) {
+      if (sec->sh_type != SHT_NOBITS && data_offset > (int) sec->data_allocated) {
         section_realloc(sec, data_offset);
       }
       // Align section if needed
@@ -2992,7 +2991,7 @@ TCCState *tcc_new(void) {
   const char *p, *r;
   TCCState *s;
   TokenSym *ts;
-  int i, c;
+  int c;
 
   s = tcc_mallocz(sizeof(TCCState));
   if (!s) return NULL;

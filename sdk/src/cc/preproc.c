@@ -1424,7 +1424,6 @@ void parse_escape_string(CString *outstr, const uint8_t *buf, int is_long) {
         case '?':
           break;
         default:
-        invalid_escape:
           if (c >= '!' && c <= '~') {
             warning("unknown escape sequence: \'\\%c\'", c);
           } else {
@@ -1743,7 +1742,7 @@ void parse_number(const char *p) {
       }
     }
     if (tok == TOK_CINT || tok == TOK_CUINT) {
-      tokc.ui = n;
+      tokc.ui = (unsigned int) n;
     } else {
       tokc.ull = n;
     }

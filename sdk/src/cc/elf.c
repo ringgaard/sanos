@@ -809,7 +809,7 @@ void tcc_output_binary(TCCState *s1, FILE *f, const int *section_order) {
   int i, offset, size;
 
   offset = 0;
-  for (i = 1; i< s1->nb_sections; i++) {
+  for (i = 1; i < s1->nb_sections; i++) {
     s = s1->sections[section_order[i]];
     if (s->sh_type != SHT_NOBITS && (s->sh_flags & SHF_ALLOC)) {
       while (offset < s->sh_offset) {
@@ -1494,7 +1494,7 @@ int tcc_load_object_file(TCCState *s1, int fd, unsigned long file_offset) {
     offset = s->data_offset;
     size = sh->sh_addralign - 1;
     offset = (offset + size) & ~size;
-    if (sh->sh_addralign > s->sh_addralign) s->sh_addralign = sh->sh_addralign;
+    if (sh->sh_addralign > (Elf32_Word) s->sh_addralign) s->sh_addralign = sh->sh_addralign;
     s->data_offset = offset;
     sm_table[i].offset = offset;
     sm_table[i].s = s;
@@ -1580,7 +1580,7 @@ int tcc_load_object_file(TCCState *s1, int fd, unsigned long file_offset) {
           type = ELF32_R_TYPE(rel->r_info);
           sym_index = ELF32_R_SYM(rel->r_info);
           // NOTE: only one symtab assumed
-          if (sym_index >= nb_syms) goto invalid_reloc;
+          if (sym_index >= (unsigned) nb_syms) goto invalid_reloc;
           sym_index = old_to_new_syms[sym_index];
           // Ignore link_once in rel section
           if (!sym_index && !sm->link_once) {

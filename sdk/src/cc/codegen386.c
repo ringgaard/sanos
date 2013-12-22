@@ -94,8 +94,6 @@ void gen_le32(int c) {
 
 // Instruction + 4 bytes data
 void oad(int c, int s) {
-  int a;
-
   o(c);
   gen_le32(s);
 }
@@ -279,7 +277,7 @@ int skip_nops(int b, int skip_labels) {
 }
 
 void gcode(void) {
-  int i, n, t, r, stacksize, addr, size, pc, disp, rel, errs, more, func_start;
+  int i, n, t, r, stacksize, addr, pc, disp, rel, errs, more, func_start;
   Branch *b, *bn;
 
   // Generate function prolog
@@ -828,7 +826,7 @@ void gfunc_call(int nb_args) {
 
 // Generate function prolog of type 't'
 void gfunc_prolog(CType *func_type) {
-  int addr, align, size, func_call, fastcall_nb_regs, i;
+  int addr, align, size, func_call, fastcall_nb_regs;
   int param_index, param_addr;
   uint8_t *fastcall_regs_ptr;
   Sym *sym;
@@ -1226,7 +1224,6 @@ void gen_cvt_itof(int t) {
 // TODO: handle long long case
 void gen_cvt_ftoi(int t) {
   int r, r2, size;
-  Sym *sym;
   CType ushort_type;
 
   ushort_type.t = VT_SHORT | VT_UNSIGNED;

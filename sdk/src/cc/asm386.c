@@ -435,7 +435,6 @@ static void masm_expr(TCCState *s1, Operand *op) {
 }
 
 static void parse_masm_operand(TCCState *s1, Operand *op) {
-  ExprValue e;
   int reg;
   const char *p;
 
@@ -1019,7 +1018,7 @@ void asm_compute_constraints(ASMOperand *operands,
     if (is_num(*str) || *str == '[') {
       // This is a reference to another constraint
       k = find_constraint(operands, nb_operands, str, NULL);
-      if ((unsigned)k >= i || i < nb_outputs) {
+      if (k < 0 || k >= i || i < nb_outputs) {
         error("invalid reference in constraint %d ('%s')", i, str);
       }
       op->ref_index = k;
