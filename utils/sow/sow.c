@@ -48,21 +48,18 @@
 #define HANDLE_SOCKET  0x1007
 #define HANDLE_ANY     0x1FFF
 
-struct handle
-{
+struct handle {
   int type;
   void *data;
 };
 
-struct finddata
-{
+struct finddata {
   HANDLE fhandle;
   BOOL first;
   WIN32_FIND_DATA fdata;
 };
 
-typedef struct
-{
+typedef struct {
   unsigned long signature;
   IMAGE_FILE_HEADER header;
   IMAGE_OPTIONAL_HEADER optional;
@@ -77,8 +74,7 @@ typedef void *SOCKET;
 typedef struct iovec WSABUF;
 typedef struct iovec *LPWSABUF;
 
-typedef struct WSAData 
-{
+typedef struct WSAData {
   WORD wVersion;
   WORD wHighVersion;
   char szDescription[WSADESCRIPTION_LEN + 1];
@@ -144,8 +140,6 @@ static struct group defgroup = {"root", "", 0, defgrpmem};
 // Intrinsic functions
 //
 
-//#ifdef _DEBUG
-
 #pragma function(memset)
 #pragma function(memcmp)
 #pragma function(memcpy)
@@ -156,90 +150,68 @@ static struct group defgroup = {"root", "", 0, defgrpmem};
 #pragma function(strcmp)
 #pragma function(strset)
 
-void *memset(void *p, int c, size_t n)
-{
+void *memset(void *p, int c, size_t n) {
   char *pb = (char *) p;
   char *pbend = pb + n;
   while (pb != pbend) *pb++ = c;
   return p;
 }
 
-int memcmp(const void *dst, const void *src, size_t n)
-{
+int memcmp(const void *dst, const void *src, size_t n) {
   if (!n) return 0;
-
-  while (--n && *(char *) dst == *(char *) src)
-  {
+  while (--n && *(char *) dst == *(char *) src) {
     dst = (char *) dst + 1;
     src = (char *) src + 1;
   }
-
   return *((unsigned char *) dst) - *((unsigned char *) src);
 }
 
-void *memcpy(void *dst, const void *src, size_t n)
-{
+void *memcpy(void *dst, const void *src, size_t n) {
   void *ret = dst;
-
-  while (n--)
-  {
+  while (n--) {
     *(char *)dst = *(char *)src;
     dst = (char *) dst + 1;
     src = (char *) src + 1;
   }
-
   return ret;
 }
 
-size_t strlen(const char *s)
-{
+size_t strlen(const char *s) {
   const char *eos = s;
-
   while (*eos++);
-
   return (int) (eos - s - 1);
 }
 
-char *strcpy(char *dst, const char *src)
-{
+char *strcpy(char *dst, const char *src) {
   char *cp = dst;
   while (*cp++ = *src++);
   return dst;
 }
 
-int strcmp(const char * src, const char * dst)
-{
+int strcmp(const char * src, const char * dst) {
   int ret = 0;
-
   while (!(ret = *(unsigned char *) src - *(unsigned char *) dst) && *dst) ++src, ++dst;
 
-  if (ret < 0)
+  if (ret < 0) {
     ret = -1;
-  else if (ret > 0)
+  } else if (ret > 0) {
     ret = 1;
+  }
 
   return ret;
 }
 
-int strncmp(const char *s1, const char *s2, size_t count)
-{
+int strncmp(const char *s1, const char *s2, size_t count) {
   if (!count) return 0;
-
-  while (--count && *s1 && *s1 == *s2)
-  {
+  while (--count && *s1 && *s1 == *s2) {
     s1++;
     s2++;
   }
-
   return *(unsigned char *) s1 - *(unsigned char *) s2;
 }
 
-//#endif
-
-static __declspec(naked) unsigned __int64 div64x32(unsigned __int64 dividend, unsigned int divisor)
-{
-  __asm
-  {
+static __declspec(naked) unsigned __int64 div64x32(unsigned __int64 dividend, unsigned int divisor) {
+  __asm {
       push    ebx
       mov     ecx,[esp+16]    ; load divisor
       mov     eax,[esp+12]    ; load high word of dividend
@@ -258,8 +230,7 @@ static __declspec(naked) unsigned __int64 div64x32(unsigned __int64 dividend, un
 // Initialization/termination
 //
 
-void initsock()
-{
+void initsock() {
   WSADATA wsa_data;
   HMODULE dll;
   
@@ -299,23 +270,20 @@ void initsock()
   if (_WSAStartup(0x0202, &wsa_data) == -1) return;
 }
 
-void setup_env()
-{
+void setup_env() {
   char *env;
   int i;
         
   env = GetEnvironmentStrings();
   i = 0;
-  while (i < MAXENVVARS - 1 && *env)
-  {
+  while (i < MAXENVVARS - 1 && *env) {
     envtab[i++] = env;
     env += strlen(env) + 1;
   }
   envtab[i] = NULL;
 }
 
-void init()
-{
+void init() {
   struct tib *tib;
   struct process *proc;
   int i;
@@ -324,8 +292,7 @@ void init()
   initsock();
 
   // Clear handle table
-  for (i = 0; i < MAXHANDLES; i++)
-  {
+  for (i = 0; i < MAXHANDLES; i++) {
     htab[i].type = HANDLE_FREE;
     htab[i].data = NULL;
   }
@@ -387,8 +354,7 @@ void init()
   TlsSetValue(tibtls, tib);
 }
 
-void term()
-{
+void term() {
   if (mainproc && mainproc->atexit) mainproc->atexit(0, 0);
 }
 
@@ -396,21 +362,17 @@ void term()
 // Utility routines
 //
 
-static int notimpl(char *func)
-{
+static int notimpl(char *func) {
   syslog(LOG_DEBUG, "Function %s not implemented", func);
-
   errno = ENOSYS;
   return -1;
 }
 
-static int winerr()
-{
+static int winerr() {
   int err;
   int rc = GetLastError();
 
-  switch (rc)
-  {
+  switch (rc) {
     case ERROR_INVALID_FUNCTION: err = ENOSYS; break;
     case ERROR_FILE_NOT_FOUND: err = ENOENT; break;
     case ERROR_PATH_NOT_FOUND: err = ENOENT; break;
@@ -459,14 +421,13 @@ static int winerr()
     case ERROR_SHARING_VIOLATION: err = EACCES; break;
 
     default:
-      if (rc >= WSAERRBASE && rc < WSAERRBASE + 35)
+      if (rc >= WSAERRBASE && rc < WSAERRBASE + 35) {
         err = rc - WSAERRBASE;
-      else if (rc >= WSAERRBASE + 35 && rc < WSAERRBASE + 72)
+      } else if (rc >= WSAERRBASE + 35 && rc < WSAERRBASE + 72) {
         err = rc - WSAERRBASE + 10;
-      else if (rc >= WSAERRBASE + 1000 && rc < WSAERRBASE + 1005)
+      } else if (rc >= WSAERRBASE + 1000 && rc < WSAERRBASE + 1005) {
         err = rc - WSAERRBASE + 81;
-      else
-      {
+      } else {
         syslog(LOG_DEBUG, "Unknown win32 error %d", rc);
         err = (rc & 0xFFFF) << 16;
       }
@@ -476,24 +437,21 @@ static int winerr()
   return -1;
 }
 
-int sockcall(int rc)
-{
-  if (rc != -1) 
+int sockcall(int rc) {
+  if (rc != -1) {
     return rc;
-  else
+  } else {
     return winerr();
+  }
 }
 
-handle_t halloc(int type, void *data)
-{
+handle_t halloc(int type, void *data) {
   int h;
 
   if (data == INVALID_HANDLE_VALUE) return winerr();
 
-  for (h = 0; h < MAXHANDLES; h++)
-  {
-    if (htab[h].type == HANDLE_FREE) 
-    {
+  for (h = 0; h < MAXHANDLES; h++) {
+    if (htab[h].type == HANDLE_FREE) {
       htab[h].type = type;
       htab[h].data = data;
       return h;
@@ -504,21 +462,17 @@ handle_t halloc(int type, void *data)
   return -1;
 }
 
-void hfree(handle_t h)
-{
+void hfree(handle_t h) {
   htab[h].type = HANDLE_FREE;
 }
 
-void *hget(handle_t h, int type)
-{
-  if (h < 0 || h >= MAXHANDLES || htab[h].type == HANDLE_FREE) 
-  {
+void *hget(handle_t h, int type) {
+  if (h < 0 || h >= MAXHANDLES || htab[h].type == HANDLE_FREE) {
     errno = EBADF;
     return INVALID_HANDLE_VALUE;
   }
 
-  if (type != HANDLE_ANY && type != htab[h].type)
-  {
+  if (type != HANDLE_ANY && type != htab[h].type) {
     errno = EBADF;
     return INVALID_HANDLE_VALUE;
   }
@@ -526,25 +480,22 @@ void *hget(handle_t h, int type)
   return htab[h].data;
 }
 
-void make_external_filename(const char *name, char *fn)
-{
+void make_external_filename(const char *name, char *fn) {
   char *s = fn;
 
   if (name[0] && name[1] == ':') name += 2;
-  while (*name)
-  {
-    if (*name == PS1 || *name == PS2)
+  while (*name) {
+    if (*name == PS1 || *name == PS2) {
       *s++ = '\\';
-    else
+    } else {
       *s++ = *name;
-
+    }
     name++;
   }
   *s = 0;
 }
 
-static time_t ft2time(FILETIME *ft)
-{
+static time_t ft2time(FILETIME *ft) {
   return (time_t) (div64x32(*(unsigned __int64 *) ft, SECTIMESCALE) - SECEPOC);
 }
 
@@ -552,43 +503,35 @@ static time_t ft2time(FILETIME *ft)
 // OS API
 //
 
-int syscall(int syscallno, void *params)
-{
+int syscall(int syscallno, void *params) {
   return notimpl("syscall");
 }
 
-int mkfs(const char *devname, const char *type, const char *opts)
-{
+int mkfs(const char *devname, const char *type, const char *opts) {
   return notimpl("mkfs");
 }
 
-int mount(const char *type, const char *path, const char *devname, const char *opts)
-{
+int mount(const char *type, const char *path, const char *devname, const char *opts) {
   return notimpl("mount");
 }
 
-int umount(const char *path)
-{
+int umount(const char *path) {
   return notimpl("umount");
 }
 
-int getfsstat(struct statfs *buf, size_t size)
-{
+int getfsstat(struct statfs *buf, size_t size) {
   return notimpl("getfsstat");
 }
 
-int fstatfs(handle_t f, struct statfs *buf)
-{
+int fstatfs(handle_t f, struct statfs *buf) {
   return notimpl("fstatfs");
 }
 
-int statfs(const char *name, struct statfs *buf)
-{
+int statfs(const char *name, struct statfs *buf) {
   return notimpl("statfs");
 }
 
-handle_t open(const char *name, int flags, ...)
-{
+handle_t open(const char *name, int flags, ...) {
   HANDLE hfile;
   DWORD access;
   DWORD disp;
@@ -600,16 +543,14 @@ handle_t open(const char *name, int flags, ...)
 
   make_external_filename(name, fn);
 
-  if (flags & O_CREAT)
-  {
+  if (flags & O_CREAT) {
     va_start(args, flags);
     mode = va_arg(args, int);
     va_end(args);
   }
 
   // Determine open mode
-  switch (flags & (O_CREAT | O_EXCL | O_TRUNC))
-  {
+  switch (flags & (O_CREAT | O_EXCL | O_TRUNC)) {
     case 0:
     case O_EXCL:
       disp = OPEN_EXISTING;
@@ -639,16 +580,16 @@ handle_t open(const char *name, int flags, ...)
   }
 
   // Determine file access
-  if (flags & O_RDONLY)
+  if (flags & O_RDONLY) {
     access = GENERIC_READ;
-  else if (flags & O_WRONLY)
+  } else if (flags & O_WRONLY) {
     access = GENERIC_WRITE;
-  else
+  } else {
     access = GENERIC_READ | GENERIC_WRITE;
+  }
 
   // Determine sharing access
-  switch (SH_FLAGS(flags))
-  {
+  switch (SH_FLAGS(flags)) {
     case SH_DENYRW:
       sharing = 0;
       break;
@@ -672,13 +613,13 @@ handle_t open(const char *name, int flags, ...)
   }
 
   // Determine file attributes
-  if ((flags & O_CREAT) != 0 && (mode & S_IWRITE) == 0) 
+  if ((flags & O_CREAT) != 0 && (mode & S_IWRITE) == 0) {
     attrs = FILE_ATTRIBUTE_READONLY;
-  else
+  } else {
     attrs = FILE_ATTRIBUTE_NORMAL;
+  }
 
-  if (flags & O_TEMPORARY)
-  {
+  if (flags & O_TEMPORARY) {
     attrs |= FILE_FLAG_DELETE_ON_CLOSE;
     access |= DELETE;
     sharing |= FILE_SHARE_DELETE;
@@ -686,10 +627,11 @@ handle_t open(const char *name, int flags, ...)
 
   if (flags & O_SHORT_LIVED) attrs |= FILE_ATTRIBUTE_TEMPORARY;
 
-  if (flags & O_SEQUENTIAL)
+  if (flags & O_SEQUENTIAL) {
     attrs |= FILE_FLAG_SEQUENTIAL_SCAN;
-  else if (flags & O_RANDOM)
+  } else if (flags & O_RANDOM) {
     attrs |= FILE_FLAG_RANDOM_ACCESS;
+  }
 
   if (flags & O_DIRECT) attrs |= FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH;
 
@@ -699,13 +641,11 @@ handle_t open(const char *name, int flags, ...)
   return halloc(HANDLE_FILE, hfile);
 }
 
-handle_t sopen(const char *name, int flags, int shflags, ...)
-{
+handle_t sopen(const char *name, int flags, int shflags, ...) {
   va_list args;
   int mode = 0;
 
-  if (flags & O_CREAT)
-  {
+  if (flags & O_CREAT) {
     va_start(args, shflags);
     mode = va_arg(args, int);
     va_end(args);
@@ -714,18 +654,15 @@ handle_t sopen(const char *name, int flags, int shflags, ...)
   return open(name, FILE_FLAGS(flags, shflags), mode);
 }
 
-handle_t creat(const char *name, int mode)
-{
+handle_t creat(const char *name, int mode) {
   return open(name, O_CREAT | O_TRUNC | O_WRONLY, mode);
 }
 
-int close(handle_t h)
-{
+int close(handle_t h) {
   void *data = hget(h, HANDLE_ANY);
   if (data == INVALID_HANDLE_VALUE) return -1;
 
-  switch (htab[h].type)
-  {
+  switch (htab[h].type) {
     case HANDLE_DEV:
     case HANDLE_THREAD:
     case HANDLE_SEM:
@@ -755,13 +692,11 @@ int close(handle_t h)
   return -1;
 }
 
-int fsync(handle_t f)
-{
+int fsync(handle_t f) {
   void *data = hget(f, HANDLE_ANY);
   if (data == INVALID_HANDLE_VALUE) return -1; 
 
-  if (htab[f].type == HANDLE_FILE || htab[f].type == HANDLE_DEV)
-  {
+  if (htab[f].type == HANDLE_FILE || htab[f].type == HANDLE_DEV) {
     errno = EBADF;
     return -1;
   }
@@ -770,12 +705,10 @@ int fsync(handle_t f)
   return 0;
 }
 
-handle_t dup(handle_t h)
-{
+handle_t dup(handle_t h) {
   HANDLE newh;
 
-  switch (htab[h].type)
-  {
+  switch (htab[h].type) {
     case HANDLE_DEV:
     case HANDLE_THREAD:
     case HANDLE_SEM:
@@ -794,73 +727,57 @@ handle_t dup(handle_t h)
   return halloc(htab[h].type, newh);
 }
 
-handle_t dup2(handle_t h1, handle_t h2)
-{
+handle_t dup2(handle_t h1, handle_t h2) {
   return notimpl("dup2");
 }
 
-int read(handle_t f, void *data, size_t size)
-{
+int read(handle_t f, void *data, size_t size) {
   DWORD bytes;
 
-  if (htab[f].type == HANDLE_SOCKET)
-  {
+  if (htab[f].type == HANDLE_SOCKET) {
     return sockcall(_recv((SOCKET) htab[f].data, data, size, 0));
-  }
-  else
-  {
+  } else {
     if (!ReadFile((HANDLE) htab[f].data, data, size, &bytes, NULL)) return winerr();
     return bytes;
   }
 }
 
-int write(handle_t f, const void *data, size_t size)
-{
+int write(handle_t f, const void *data, size_t size) {
   DWORD bytes;
 
-  if (htab[f].type == HANDLE_SOCKET)
-  {
+  if (htab[f].type == HANDLE_SOCKET) {
     return sockcall(_send((SOCKET) htab[f].data, data, size, 0));
-  }
-  else
-  {
+  } else {
     if (!WriteFile((HANDLE) htab[f].data, data, size, &bytes, NULL)) return winerr();
     return bytes;
   }
 }
 
-int pread(handle_t f, void *data, size_t size, off64_t offset)
-{
+int pread(handle_t f, void *data, size_t size, off64_t offset) {
   return notimpl("pread");
 }
 
-int pwrite(handle_t f, const void *data, size_t size, off64_t offset)
-{
+int pwrite(handle_t f, const void *data, size_t size, off64_t offset) {
   return notimpl("pwrite");
 }
 
-int ioctl(handle_t f, int cmd, const void *data, size_t size)
-{
+int ioctl(handle_t f, int cmd, const void *data, size_t size) {
   return notimpl("ioctl");
 }
 
-int readv(handle_t f, const struct iovec *iov, int count)
-{
+int readv(handle_t f, const struct iovec *iov, int count) {
   return notimpl("readv");
 }
 
-int writev(handle_t f, const struct iovec *iov, int count)
-{
+int writev(handle_t f, const struct iovec *iov, int count) {
   return notimpl("writev");
 }
 
-loff_t tell(handle_t f)
-{
+loff_t tell(handle_t f) {
   return SetFilePointer((HANDLE) htab[f].data, 0, NULL, FILE_CURRENT);
 }
 
-off64_t tell64(handle_t f)
-{
+off64_t tell64(handle_t f) {
   LARGE_INTEGER zero;
   LARGE_INTEGER pos;
 
@@ -870,12 +787,10 @@ off64_t tell64(handle_t f)
   return pos.QuadPart;
 }
 
-loff_t lseek(handle_t f, loff_t offset, int origin)
-{
+loff_t lseek(handle_t f, loff_t offset, int origin) {
   int method;
 
-  switch (origin)
-  {
+  switch (origin) {
     case SEEK_SET:
       method = FILE_BEGIN;
       break;
@@ -896,14 +811,12 @@ loff_t lseek(handle_t f, loff_t offset, int origin)
   return SetFilePointer((HANDLE) htab[f].data, offset, NULL, method);
 }
 
-off64_t lseek64(handle_t f, off64_t offset, int origin)
-{
+off64_t lseek64(handle_t f, off64_t offset, int origin) {
   LARGE_INTEGER off;
   LARGE_INTEGER pos;
   int method;
 
-  switch (origin)
-  {
+  switch (origin) {
     case SEEK_SET:
       method = FILE_BEGIN;
       break;
@@ -926,8 +839,7 @@ off64_t lseek64(handle_t f, off64_t offset, int origin)
   return pos.QuadPart;
 }
 
-int ftruncate(handle_t f, loff_t size)
-{
+int ftruncate(handle_t f, loff_t size) {
   int rc = 0;
   loff_t curpos;
 
@@ -938,8 +850,7 @@ int ftruncate(handle_t f, loff_t size)
   return rc;
 }
 
-int ftruncate64(handle_t f, off64_t size)
-{
+int ftruncate64(handle_t f, off64_t size) {
   LARGE_INTEGER pos;
   LARGE_INTEGER curpos;
   int rc = 0;
@@ -952,36 +863,30 @@ int ftruncate64(handle_t f, off64_t size)
   return rc;
 }
 
-int futime(handle_t f, struct utimbuf *times)
-{
+int futime(handle_t f, struct utimbuf *times) {
   return notimpl("futime");
 }
 
-int utime(const char *name, struct utimbuf *times)
-{
+int utime(const char *name, struct utimbuf *times) {
   return notimpl("utime");
 }
 
-int fstat(handle_t f, struct stat *buffer)
-{
+int fstat(handle_t f, struct stat *buffer) {
   BY_HANDLE_FILE_INFORMATION fi;
 
-  if (f == NOHANDLE) 
-  {
+  if (f == NOHANDLE) {
     errno = EINVAL;
     return -1;
   }
 
-  if (htab[f].type != HANDLE_FILE) 
-  {
+  if (htab[f].type != HANDLE_FILE) {
     errno = EBADF;
     return -1;
   }
 
   if (!GetFileInformationByHandle(htab[f].data, &fi)) return -EBADF;
 
-  if (buffer)
-  {
+  if (buffer) {
     buffer->st_ino = 0;
     buffer->st_nlink = 1;
     buffer->st_dev = -1;
@@ -996,8 +901,7 @@ int fstat(handle_t f, struct stat *buffer)
   return buffer ? 0 : fi.nFileSizeLow;
 }
 
-int fstat64(handle_t f, struct stat64 *buffer)
-{
+int fstat64(handle_t f, struct stat64 *buffer) {
   BY_HANDLE_FILE_INFORMATION fi;
 
   if (f == NOHANDLE) return -EINVAL;
@@ -1005,8 +909,7 @@ int fstat64(handle_t f, struct stat64 *buffer)
 
   if (!GetFileInformationByHandle(htab[f].data, &fi)) return -EBADF;
 
-  if (buffer)
-  {
+  if (buffer) {
     buffer->st_ino = 0;
     buffer->st_nlink = 1;
     buffer->st_dev = -1;
@@ -1021,8 +924,7 @@ int fstat64(handle_t f, struct stat64 *buffer)
   return buffer ? 0 : fi.nFileSizeLow;
 }
 
-int stat(const char *name, struct stat *buffer)
-{
+int stat(const char *name, struct stat *buffer) {
   WIN32_FILE_ATTRIBUTE_DATA fdata;
   char fn[MAXPATH];
 
@@ -1030,8 +932,7 @@ int stat(const char *name, struct stat *buffer)
 
   if (!GetFileAttributesEx(fn, GetFileExInfoStandard, &fdata)) return -ENOENT;
 
-  if (buffer)
-  {
+  if (buffer) {
     buffer->st_ino = 0;
     buffer->st_nlink = 1;
     buffer->st_dev = -1;
@@ -1041,17 +942,17 @@ int stat(const char *name, struct stat *buffer)
     buffer->st_size = fdata.nFileSizeLow;
     buffer->st_mode = 0644;
 
-    if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) 
+    if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
       buffer->st_mode |= 0040000;
-    else
+    } else {
       buffer->st_mode |= 0100000;
+    }
   }
 
   return buffer ? 0 : fdata.nFileSizeLow;
 }
 
-int stat64(const char *name, struct stat64 *buffer)
-{
+int stat64(const char *name, struct stat64 *buffer) {
   WIN32_FILE_ATTRIBUTE_DATA fdata;
   char fn[MAXPATH];
 
@@ -1059,8 +960,7 @@ int stat64(const char *name, struct stat64 *buffer)
 
   if (!GetFileAttributesEx(fn, GetFileExInfoStandard, &fdata)) return -ENOENT;
 
-  if (buffer)
-  {
+  if (buffer) {
     buffer->st_ino = 0;
     buffer->st_nlink = 1;
     buffer->st_dev = -1;
@@ -1076,31 +976,26 @@ int stat64(const char *name, struct stat64 *buffer)
   return buffer ? 0 : fdata.nFileSizeLow;
 }
 
-int lstat(const char *name, struct stat *buffer)
-{
+int lstat(const char *name, struct stat *buffer) {
   return stat(name, buffer);
 }
 
-loff_t filelength(handle_t f)
-{
+loff_t filelength(handle_t f) {
   return fstat(f, NULL);
 }
 
-off64_t filelength64(handle_t f)
-{
+off64_t filelength64(handle_t f) {
   return fstat64(f, NULL);
 }
 
-int access(const char *name, int mode)
-{
+int access(const char *name, int mode) {
   int rc;
   struct stat64 buf;
 
   rc = stat64(name, &buf);
   if (rc < 0) return rc;
 
-  switch (mode)
-  {
+  switch (mode) {
     case 0:
       // Existence
       rc = 0; 
@@ -1108,10 +1003,9 @@ int access(const char *name, int mode)
 
     case 2:
       // Write permission
-      if (buf.st_mode & S_IWRITE)
+      if (buf.st_mode & S_IWRITE) {
         rc = 0;
-      else
-      {
+      } else {
         errno = EACCES;
         rc = -1;
       }
@@ -1119,10 +1013,9 @@ int access(const char *name, int mode)
 
     case 4: 
       // Read permission
-      if (buf.st_mode & S_IREAD)
+      if (buf.st_mode & S_IREAD) {
         rc = 0;
-      else
-      {
+      } else {
         errno = EACCES;
         rc = -1;
       }
@@ -1130,10 +1023,9 @@ int access(const char *name, int mode)
 
     case 6:
       // Read and write permission
-      if ((buf.st_mode & (S_IREAD | S_IWRITE)) ==  (S_IREAD | S_IWRITE))
+      if ((buf.st_mode & (S_IREAD | S_IWRITE)) ==  (S_IREAD | S_IWRITE)) {
         rc = 0;
-      else
-      {
+      } else {
         errno = EACCES;
         rc = -1;
       }
@@ -1147,13 +1039,11 @@ int access(const char *name, int mode)
   return rc;
 }
 
-int eof(handle_t f)
-{
+int eof(handle_t f) {
   return tell64(f) == fstat64(f, NULL);
 }
 
-int umask(int mask)
-{
+int umask(int mask) {
   int oldmask;
 
   mask &= 0777;
@@ -1162,34 +1052,28 @@ int umask(int mask)
   return oldmask;
 }
 
-int isatty(handle_t f)
-{
+int isatty(handle_t f) {
   errno = ENOTTY;
   return -1;
 }
 
-int setmode(handle_t f, int mode)
-{
+int setmode(handle_t f, int mode) {
   return notimpl("setmode");
 }
 
-int chmod(const char *name, int mode)
-{
+int chmod(const char *name, int mode) {
   return notimpl("chmod");
 }
 
-int fchmod(handle_t f, int mode)
-{
+int fchmod(handle_t f, int mode) {
   return notimpl("fchmod");
 }
 
-int chown(const char *name, int owner, int group)
-{
+int chown(const char *name, int owner, int group) {
   return notimpl("chown");
 }
 
-int chdir(const char *name)
-{
+int chdir(const char *name) {
   char fn[MAXPATH];
 
   make_external_filename(name, fn);
@@ -1197,8 +1081,7 @@ int chdir(const char *name)
   return 0;
 }
 
-char *getcwd(char *buf, size_t size)
-{
+char *getcwd(char *buf, size_t size) {
   char dirbuf[MAXPATH];
   char *curdir;
   char *p;
@@ -1208,34 +1091,27 @@ char *getcwd(char *buf, size_t size)
   curdir = dirbuf;
   if (curdir[0] && curdir[1] == ':') curdir += 2;
   p = curdir;
-  while (*p)
-  {
+  while (*p) {
     if (*p == PS2) *p = PS1;
     p++;
   }
   len = p - curdir;
 
-  if (buf)
-  {
-    if (len >= size)
-    {
+  if (buf) {
+    if (len >= size) {
       errno = ERANGE;
       return NULL;
     }
-  }
-  else
-  {
-    if (size == 0)
+  } else {
+    if (size == 0) {
       size = len + 1;
-    else if (len >= size)
-    {
+    } else if (len >= size) {
       errno = ERANGE;
       return NULL;
     }
 
     buf = malloc(size);
-    if (!buf) 
-    {
+    if (!buf) {
       errno = ENOMEM;
       return NULL;
     }
@@ -1245,8 +1121,7 @@ char *getcwd(char *buf, size_t size)
   return buf;
 }
 
-int mkdir(const char *name, int mode)
-{
+int mkdir(const char *name, int mode) {
   char fn[MAXPATH];
 
   make_external_filename(name, fn);
@@ -1254,8 +1129,7 @@ int mkdir(const char *name, int mode)
   return 0;
 }
 
-int rmdir(const char *name)
-{
+int rmdir(const char *name) {
   char fn[MAXPATH];
 
   make_external_filename(name, fn);
@@ -1263,8 +1137,7 @@ int rmdir(const char *name)
   return 0;
 }
 
-int rename(const char *oldname, const char *newname)
-{
+int rename(const char *oldname, const char *newname) {
   char oldfn[MAXPATH];
   char newfn[MAXPATH];
 
@@ -1275,8 +1148,7 @@ int rename(const char *oldname, const char *newname)
   return 0;
 }
 
-int link(const char *oldname, const char *newname)
-{
+int link(const char *oldname, const char *newname) {
   char oldfn[MAXPATH];
   char newfn[MAXPATH];
 
@@ -1288,8 +1160,7 @@ int link(const char *oldname, const char *newname)
   return 0;
 }
 
-int unlink(const char *name)
-{
+int unlink(const char *name) {
   char fn[MAXPATH];
 
   make_external_filename(name, fn);
@@ -1299,8 +1170,7 @@ int unlink(const char *name)
   return 0;
 }
 
-handle_t _opendir(const char *name)
-{
+handle_t _opendir(const char *name) {
   char fn[MAXPATH];
   struct finddata *finddata;
   char *mask;
@@ -1319,16 +1189,14 @@ handle_t _opendir(const char *name)
   return halloc(HANDLE_DIR, finddata);
 }
 
-int _readdir(handle_t f, struct direntry *dirp, int count)
-{
+int _readdir(handle_t f, struct direntry *dirp, int count) {
   struct finddata *finddata;
 
   void *data = hget(f, HANDLE_DIR);
   if (data == INVALID_HANDLE_VALUE) return -1;
   finddata = (struct finddata *) data;
 
-  if (!finddata->first)
-  {
+  if (!finddata->first) {
     if (!FindNextFile(finddata->fhandle, &finddata->fdata)) return 0;
   }
 
@@ -1340,72 +1208,61 @@ int _readdir(handle_t f, struct direntry *dirp, int count)
   return 1;
 }
 
-int pipe(handle_t fildes[2])
-{
+int pipe(handle_t fildes[2]) {
   return notimpl("pipe");
 }
 
-int __getstdhndl(int n)
-{
+int __getstdhndl(int n) {
   return n;
 }
 
-struct passwd *getpwnam(const char *name)
-{
+struct passwd *getpwnam(const char *name) {
   return &defpasswd;
 }
 
-struct passwd *getpwuid(uid_t uid)
-{
+struct passwd *getpwuid(uid_t uid) {
   return &defpasswd;
 }
 
-struct group *getgrnam(const char *name)
-{
+struct group *getgrnam(const char *name) {
   return &defgroup;
 }
 
-struct group *getgrgid(uid_t uid)
-{
+struct group *getgrgid(uid_t uid) {
   return &defgroup;
 }
 
-int getgroups(int size, gid_t list[])
-{
+int getgroups(int size, gid_t list[]) {
   if (size < 1) return -EINVAL;
   list[0] = 0;
   return 1;
 }
 
-int getgid()
-{
+int getgid() {
   return 0;
 }
 
-int getuid()
-{
+int getuid() {
   return 0;
 }
 
-char *crypt(const char *key, const char *salt)
-{
+char *crypt(const char *key, const char *salt) {
   notimpl("crypt");
   return NULL;
 }
 
-void *vmalloc(void *addr, unsigned long size, int type, int protect, unsigned long tag)
-{
+void *vmalloc(void *addr, unsigned long size, int type, int protect, unsigned long tag) {
   return VirtualAlloc(addr, size, type, protect);
 }
 
-int vmfree(void *addr, unsigned long size, int type)
-{
-  if (type == MEM_DECOMMIT)
+int vmfree(void *addr, unsigned long size, int type) {
+  if (type == MEM_DECOMMIT) {
     return VirtualFree(addr, size, MEM_DECOMMIT) ? 0 : -EFAULT;
-  else if (type == MEM_RELEASE)
+  } else if (type == MEM_RELEASE) {
     return VirtualFree(addr, 0, MEM_RELEASE) ? 0 : -EFAULT;
-  else
+  } else {
     return -EINVAL;
+  }
 }
 
 void *vmrealloc(void *addr, unsigned long oldsize, unsigned long newsize, int type, int protect, unsigned long tag)
@@ -1414,28 +1271,23 @@ void *vmrealloc(void *addr, unsigned long oldsize, unsigned long newsize, int ty
   return NULL;
 }
 
-int vmprotect(void *addr, unsigned long size, int protect)
-{
+int vmprotect(void *addr, unsigned long size, int protect) {
   DWORD oldprotect;
 
   return VirtualProtect(addr, size, protect, &oldprotect) ? 0 : -EFAULT;
 }
 
-int vmlock(void *addr, unsigned long size)
-{
+int vmlock(void *addr, unsigned long size) {
   return notimpl("mlock");
 }
 
-int vmunlock(void *addr, unsigned long size)
-{
+int vmunlock(void *addr, unsigned long size) {
   return notimpl("mnlock");
 }
 
-int waitone(handle_t h, int timeout)
-{
+int waitone(handle_t h, int timeout) {
   DWORD rc = WaitForSingleObject(hget(h, HANDLE_ANY), timeout);
-  if (rc == WAIT_TIMEOUT)
-  {
+  if (rc == WAIT_TIMEOUT) {
     errno = ETIMEDOUT;
     return -1;
   }
@@ -1443,79 +1295,65 @@ int waitone(handle_t h, int timeout)
   return 0;
 }
 
-int waitall(handle_t *h, int count, int timeout)
-{
+int waitall(handle_t *h, int count, int timeout) {
   return notimpl("waitall");
 }
 
-int waitany(handle_t *h, int count, int timeout)
-{
+int waitany(handle_t *h, int count, int timeout) {
   return notimpl("waitany");
 }
 
-handle_t mkevent(int manual_reset, int initial_state)
-{
+handle_t mkevent(int manual_reset, int initial_state) {
   return halloc(HANDLE_EVENT, CreateEvent(NULL, manual_reset, initial_state, NULL));
 }
 
-int epulse(handle_t h)
-{
+int epulse(handle_t h) {
   PulseEvent((HANDLE) htab[h].data);
   return 0;
 }
 
-int eset(handle_t h)
-{
+int eset(handle_t h) {
   SetEvent((HANDLE) htab[h].data);
   return 0;
 }
 
-int ereset(handle_t h)
-{
+int ereset(handle_t h) {
   ResetEvent((HANDLE) htab[h].data);
   return 0;
 }
 
-handle_t mksem(int initial_count)
-{
+handle_t mksem(int initial_count) {
   return halloc(HANDLE_SEM, CreateSemaphore(NULL, initial_count, 0x7FFFFFFF, NULL));
 }
 
-int semrel(handle_t h, int count)
-{
+int semrel(handle_t h, int count) {
   unsigned int prevcount;
 
   ReleaseSemaphore(htab[h].data, count, &prevcount);
   return prevcount;
 }
 
-handle_t mkmutex(int owned)
-{
+handle_t mkmutex(int owned) {
   return notimpl("mkmutex");
 }
 
-int mutexrel(handle_t h)
-{
+int mutexrel(handle_t h) {
   return notimpl("mutexrel");
 }
 
-handle_t mkiomux(int flags)
-{
+handle_t mkiomux(int flags) {
   return notimpl("mkiomux");
 }
 
-int dispatch(handle_t iomux, handle_t h, int events, int context)
-{
+int dispatch(handle_t iomux, handle_t h, int events, int context) {
   return notimpl("dispatch");
 }
 
-int sysinfo(int cmd, void *data, size_t size)
-{
+int sysinfo(int cmd, void *data, size_t size) {
   return notimpl("sysinfo");
 }
 
-int uname(struct utsname *buf)
-{
+int uname(struct utsname *buf) {
   SYSTEM_INFO sysinfo;
   OSVERSIONINFO verinfo;
 
@@ -1532,98 +1370,80 @@ int uname(struct utsname *buf)
   return 0;  
 }
 
-handle_t self()
-{
+handle_t self() {
   return gettib()->hndl;
 }
 
-handle_t getjobhandle(pid_t pid)
-{
+handle_t getjobhandle(pid_t pid) {
   return notimpl("getjobhandle");
 }
 
-int getchildstat(pid_t pid, int *status)
-{
+int getchildstat(pid_t pid, int *status) {
   return notimpl("getchildstat");
 }
 
-int setchildstat(pid_t pid, int status)
-{
+int setchildstat(pid_t pid, int status) {
   return notimpl("setchildstat");
 }
 
-void exitos(int mode)
-{
+void exitos(int mode) {
   ExitProcess(0);
 }
 
-void dbgbreak()
-{
+void dbgbreak() {
   notimpl("dbgbreak");
 }
 
-handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, void *arg, int flags, char *name, struct tib **ptib)
-{
+handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, void *arg, int flags, char *name, struct tib **ptib) {
   DWORD tid;
 
   return halloc(HANDLE_THREAD, CreateThread(NULL, stacksize, (unsigned long (__stdcall *)(void *)) startaddr, arg, (flags & CREATE_SUSPENDED) ? CREATE_SUSPENDED : 0, (DWORD *) &tid));
 }
 
-int suspend(handle_t thread)
-{
+int suspend(handle_t thread) {
   return SuspendThread(htab[thread].data);
 }
 
-int resume(handle_t thread)
-{
+int resume(handle_t thread) {
   return ResumeThread(htab[thread].data);
 }
 
-struct tib *getthreadblock(handle_t thread)
-{
+struct tib *getthreadblock(handle_t thread) {
   notimpl("getthreadblock");
   return NULL;
 }
 
-void endthread(int retval)
-{
+void endthread(int retval) {
   ExitThread(retval);
 }
 
-tid_t gettid()
-{
+tid_t gettid() {
   return GetCurrentThreadId();
 }
 
-int setcontext(handle_t thread, void *context)
-{
+int setcontext(handle_t thread, void *context) {
   return notimpl("setcontext");
 }
 
-int getcontext(handle_t thread, void *context)
-{
+int getcontext(handle_t thread, void *context) {
   if (!GetThreadContext(htab[thread].data, context)) return -EINVAL;
   return 0;
 }
 
-int getprio(handle_t thread)
-{
+int getprio(handle_t thread) {
   return GetThreadPriority(htab[thread].data);
 }
 
-int setprio(handle_t thread, int priority)
-{
+int setprio(handle_t thread, int priority) {
   if (!SetThreadPriority(htab[thread].data, priority)) return -EINVAL;
   return 0;
 }
 
-handle_t getprochandle(pid_t pid) 
-{
+handle_t getprochandle(pid_t pid) {
   return notimpl("getprochandle");
 }
 
-int msleep(int millisecs)
-{
+int msleep(int millisecs) {
   Sleep(millisecs);
   return 0;
 }
@@ -1633,118 +1453,95 @@ unsigned sleep(unsigned seconds) {
   return 0;
 }
 
-struct tib *gettib()
-{
+struct tib *gettib() {
   return (struct tib *) TlsGetValue(tibtls);
 }
 
-int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib **tibptr)
-{
+int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib **tibptr) {
   return notimpl("spawn");
 }
 
-void exit(int status)
-{
+void exit(int status) {
   ExitProcess(status);
 }
 
-sighandler_t signal(int signum, sighandler_t handler)
-{
+sighandler_t signal(int signum, sighandler_t handler) {
   return (sighandler_t) notimpl("signal");
 }
 
-int sigsuspend(const sigset_t *mask) 
-{
+int sigsuspend(const sigset_t *mask) {
   return notimpl("sigsuspend");
 }
 
-int sigemptyset(sigset_t *set)
-{
+int sigemptyset(sigset_t *set) {
   *set = 0;
   return 0;
 }
 
-int sigaddset(sigset_t *set, int signum)
-{
+int sigaddset(sigset_t *set, int signum) {
   *set |= (1 << signum);
   return 0;
 }
 
-int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
-{
+int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
   return notimpl("sigaction");
 }
 
-int sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
-{
+int sigprocmask(int how, const sigset_t *set, sigset_t *oldset) {
   return notimpl("sigprocmask");
 }
 
-int raise(int signum)
-{
+int raise(int signum) {
   return notimpl("raise");
 }
 
-int kill(pid_t pid, int signum)
-{
+int kill(pid_t pid, int signum) {
   return notimpl("kill");
 }
 
-int getpid()
-{
+int getpid() {
   return 0;
 }
 
-int sendsig(handle_t thread, int signum)
-{
+int sendsig(handle_t thread, int signum) {
   return notimpl("sendsig");
 }
 
-void sigexit(struct siginfo *info, int action)
-{
+void sigexit(struct siginfo *info, int action) {
   notimpl("sigexit");
 }
 
-unsigned alarm(unsigned seconds)
-{
+unsigned alarm(unsigned seconds) {
   notimpl("alarm");
   return -1;
 }
 
-
-char *getenv(const char *name)
-{
+char *getenv(const char *name) {
   int i;
   int len;
 
   if (!name) return NULL;
   len = strlen(name);
-  for (i = 0; envtab[i]; i++)
-  {
+  for (i = 0; envtab[i]; i++) {
     if (strncmp(envtab[i], name, len) == 0 && envtab[i][len] == '=') return envtab[i] + len + 1;
   }
 
   return NULL;
-
 }
 
-int setenv(const char *name, const char *value, int rewrite)
-{
-  if (rewrite || getenv(name) == NULL) 
-  {
+int setenv(const char *name, const char *value, int rewrite) {
+  if (rewrite || getenv(name) == NULL) {
     SetEnvironmentVariable(name, value);
     setup_env();
   }
   return 0;
 }
 
-int putenv(const char *str)
-{
+int putenv(const char *str) {
   return notimpl("putenv");
 }
 
-time_t time(time_t *timeptr)
-{
+time_t time(time_t *timeptr) {
   FILETIME ft;
   time_t t;
 
@@ -1754,8 +1551,7 @@ time_t time(time_t *timeptr)
   return t;
 }
 
-int gettimeofday(struct timeval *tv, void *tzp)
-{
+int gettimeofday(struct timeval *tv, void *tzp) {
   FILETIME ft;
 
   GetSystemTimeAsFileTime(&ft);
@@ -1764,41 +1560,34 @@ int gettimeofday(struct timeval *tv, void *tzp)
   return tv->tv_usec;
 }
 
-int settimeofday(struct timeval *tv)
-{
+int settimeofday(struct timeval *tv) {
   return notimpl("settimeofday");
 }
 
-clock_t clock()
-{
+clock_t clock() {
   return GetTickCount();
 }
 
-void openlog(char *ident, int option, int facility)
-{
+void openlog(char *ident, int option, int facility) {
   notimpl("openlog");
 }
 
-void closelog()
-{
+void closelog() {
   notimpl("closelog");
 }
 
-int setlogmask(int mask)
-{
+int setlogmask(int mask) {
   return notimpl("setlogmask");
 }
 
-void syslog(int pri, const char *fmt, ...)
-{
+void syslog(int pri, const char *fmt, ...) {
   va_list args;
 
   va_start(args, fmt);
   vsyslog(pri, fmt, args);
 }
 
-void vsyslog(int pri, const char *fmt, va_list args)
-{
+void vsyslog(int pri, const char *fmt, va_list args) {
   char buffer[1024];
   DWORD written;
 
@@ -1807,8 +1596,7 @@ void vsyslog(int pri, const char *fmt, va_list args)
   WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), "\n", 1, &written, NULL);
 }
 
-void panic(const char *msg)
-{
+void panic(const char *msg) {
   DWORD written;
   WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), "panic: ", 7, &written, NULL);
   WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), msg, strlen(msg), &written, NULL);
@@ -1816,19 +1604,16 @@ void panic(const char *msg)
   ExitProcess(1);
 }
 
-char *strerror(int errnum)
-{
+char *strerror(int errnum) {
   return "Error";
 }
 
-int canonicalize(const char *filename, char *buffer, int size)
-{
+int canonicalize(const char *filename, char *buffer, int size) {
   // TODO change
   char *basename = (char *) filename;
   char *p = (char *) filename;
 
-  while (*p)
-  {
+  while (*p) {
     *buffer = *p;
     if (*buffer == PS1 || *buffer == PS2) basename = buffer + 1;
     buffer++;
@@ -1838,60 +1623,47 @@ int canonicalize(const char *filename, char *buffer, int size)
   return 0;
 }
 
-void mkcs(critsect_t cs)
-{
+void mkcs(critsect_t cs) {
   cs->count = -1;
   cs->recursion = 0;
   cs->owner = NOHANDLE;
   cs->event = mkevent(0, 0);
 }
 
-void csfree(critsect_t cs)
-{
+void csfree(critsect_t cs) {
   close(cs->event);
 }
 
-void enter(critsect_t cs)
-{
+void enter(critsect_t cs) {
   tid_t tid = GetCurrentThreadId();
 
-  if (cs->owner == tid)
-  {
+  if (cs->owner == tid) {
     cs->recursion++;
-  }
-  else 
-  {    
+  } else {   
     if (atomic_add(&cs->count, 1) > 0) waitone(cs->event, INFINITE);
     cs->owner = tid;
   }
 }
 
-void leave(critsect_t cs)
-{
+void leave(critsect_t cs) {
   if (cs->owner != GetCurrentThreadId()) return;
-  if (cs->recursion > 0)
-  {
+  if (cs->recursion > 0) {
     cs->recursion--;
-  }
-  else
-  {
+  } else {
     cs->owner = NOHANDLE;
     if (atomic_add(&cs->count, -1) >= 0) eset(cs->event);
   }
 }
 
-void *malloc(size_t size)
-{
+void *malloc(size_t size) {
   return HeapAlloc(GetProcessHeap(), 0, size);
 }
 
-void *realloc(void *mem, size_t size)
-{
+void *realloc(void *mem, size_t size) {
   return mem ? HeapReAlloc(GetProcessHeap(), 0, mem, size) : HeapAlloc(GetProcessHeap(), 0, size);
 }
 
-void *calloc(size_t num, size_t size)
-{
+void *calloc(size_t num, size_t size) {
   char *p;
 
   p = HeapAlloc(GetProcessHeap(), 0, size * num);
@@ -1899,80 +1671,67 @@ void *calloc(size_t num, size_t size)
   return p;
 }
 
-void free(void *p)
-{
+void free(void *p) {
   HeapFree(GetProcessHeap(), 0, p);
 }
 
-struct mallinfo mallinfo()
-{
+struct mallinfo mallinfo() {
   struct mallinfo mallinfo;
   memset(&mallinfo, 0, sizeof mallinfo);
   notimpl("mallinfo");
   return mallinfo;
 }
 
-void *_lmalloc(size_t size)
-{
+void *_lmalloc(size_t size) {
   return malloc(size);
 }
 
-void *_lrealloc(void *mem, size_t size)
-{
+void *_lrealloc(void *mem, size_t size) {
   return realloc(mem, size);
 }
 
-void *_lcalloc(size_t num, size_t size)
-{
+void *_lcalloc(size_t num, size_t size) {
   return calloc(num, size);
 }
 
-void _lfree(void *p)
-{
+void _lfree(void *p) {
   free(p);
 }
 
-hmodule_t dlopen(const char *name, int mode)
-{
+hmodule_t dlopen(const char *name, int mode) {
   char fn[MAXPATH];
 
   make_external_filename(name, fn);
   return LoadLibrary(fn);
 }
 
-int dlclose(hmodule_t hmod)
-{
+int dlclose(hmodule_t hmod) {
   return FreeLibrary(hmod) ? 0 : -EINVAL;
 }
 
-void *dlsym(hmodule_t hmod, const char *procname)
-{
+void *dlsym(hmodule_t hmod, const char *procname) {
   return GetProcAddress(hmod, procname);
 }
 
-char *dlerror()
-{
+char *dlerror() {
   notimpl("dlerror");
   return NULL;
 }
 
-hmodule_t getmodule(const char *name)
-{
+hmodule_t getmodule(const char *name) {
   char fn[MAXPATH];
 
   make_external_filename(name, fn);
   return GetModuleHandle(fn);
 }
 
-int getmodpath(hmodule_t hmod, char *buffer, int size)
-{
+int getmodpath(hmodule_t hmod, char *buffer, int size) {
   // TODO: convert filename to internal filename
   GetModuleFileName(hmod, buffer, size);
   return 0;
 }
 
-int exec(hmodule_t hmod, const char *args, char **env)
-{
+int exec(hmodule_t hmod, const char *args, char **env) {
   IMAGE_DOS_HEADER *doshdr;
   IMAGE_HEADER *imghdr;
   void *entrypoint;
@@ -1984,115 +1743,93 @@ int exec(hmodule_t hmod, const char *args, char **env)
   return ((int (*)(hmodule_t, char *, char **)) entrypoint)(hmod, (char *) args, env);
 }
 
-void *getresdata(hmodule_t hmod, int type, char *name, int lang, int *len)
-{
+void *getresdata(hmodule_t hmod, int type, char *name, int lang, int *len) {
   notimpl("getresdata");
   return NULL;
 }
 
-int getreslen(hmodule_t hmod, int type, char *name, int lang)
-{
+int getreslen(hmodule_t hmod, int type, char *name, int lang) {
   return notimpl("getreslen");
 }
 
-tls_t tlsalloc()
-{
+tls_t tlsalloc() {
   return TlsAlloc();
 }
 
-void tlsfree(tls_t index)
-{
+void tlsfree(tls_t index) {
   TlsFree(index);
 }
 
-void *tlsget(tls_t index)
-{
+void *tlsget(tls_t index) {
   return TlsGetValue(index);
 }
 
-int tlsset(tls_t index, void *value)
-{
+int tlsset(tls_t index, void *value) {
   TlsSetValue(index, value);
   return 0;
 }
 
-int accept(int s, struct sockaddr *addr, int *addrlen)
-{
+int accept(int s, struct sockaddr *addr, int *addrlen) {
   return sockcall(_accept(hget(s, HANDLE_SOCKET), addr, addrlen));
 }
 
-int bind(int s, const struct sockaddr *name, int namelen)
-{
+int bind(int s, const struct sockaddr *name, int namelen) {
   return sockcall(_bind(hget(s, HANDLE_SOCKET), name, namelen));
 }
 
-int connect(int s, const struct sockaddr *name, int namelen)
-{
+int connect(int s, const struct sockaddr *name, int namelen) {
   return sockcall(_connect(hget(s, HANDLE_SOCKET), name, namelen));
 }
 
-int getpeername(int s, struct sockaddr *name, int *namelen)
-{
+int getpeername(int s, struct sockaddr *name, int *namelen) {
   return sockcall(_getpeername(hget(s, HANDLE_SOCKET), name, namelen));
 }
 
-int getsockname(int s, struct sockaddr *name, int *namelen)
-{
+int getsockname(int s, struct sockaddr *name, int *namelen) {
   return sockcall(_getsockname(hget(s, HANDLE_SOCKET), name, namelen));
 }
 
-int getsockopt(int s, int level, int optname, char *optval, int *optlen)
-{
+int getsockopt(int s, int level, int optname, char *optval, int *optlen) {
   return sockcall(_getsockopt(hget(s, HANDLE_SOCKET), level, optname, optval, optlen));
 }
 
-int listen(int s, int backlog)
-{
+int listen(int s, int backlog) {
   return sockcall(_listen(hget(s, HANDLE_SOCKET), backlog));
 }
 
-int recv(int s, void *data, int size, unsigned int flags)
-{
+int recv(int s, void *data, int size, unsigned int flags) {
   return sockcall(_recv(hget(s, HANDLE_SOCKET), data, size, flags));
 }
 
-int recvfrom(int s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen)
-{
+int recvfrom(int s, void *data, int size, unsigned int flags, struct sockaddr *from, int *fromlen) {
   return sockcall(_recvfrom(hget(s, HANDLE_SOCKET), data, size, flags, from, fromlen));
 }
 
-int recvmsg(int s, struct msghdr *hdr, unsigned int flags)
-{
+int recvmsg(int s, struct msghdr *hdr, unsigned int flags) {
   return notimpl("recvmsg");
 }
 
-int send(int s, const void *data, int size, unsigned int flags)
-{
+int send(int s, const void *data, int size, unsigned int flags) {
   return sockcall(_send(hget(s, HANDLE_SOCKET), data, size, flags));
 }
 
-int sendto(int s, const void *data, int size, unsigned int flags, const struct sockaddr *to, int tolen)
-{
+int sendto(int s, const void *data, int size, unsigned int flags, const struct sockaddr *to, int tolen) {
   return sockcall(_sendto(hget(s, HANDLE_SOCKET), data, size, flags, to, tolen));
 }
 
-int sendmsg(int s, struct msghdr *hdr, unsigned int flags)
-{
+int sendmsg(int s, struct msghdr *hdr, unsigned int flags) {
   return notimpl("sendmsg");
 }
 
-int setsockopt(int s, int level, int optname, const char *optval, int optlen)
-{
+int setsockopt(int s, int level, int optname, const char *optval, int optlen) {
   return sockcall(_setsockopt(hget(s, HANDLE_SOCKET), level, optname, optval, optlen));
 }
 
-int shutdown(int s, int how)
-{
+int shutdown(int s, int how) {
   return sockcall(_shutdown(hget(s, HANDLE_SOCKET), how));
 }
 
-int socket(int domain, int type, int protocol)
-{
+int socket(int domain, int type, int protocol) {
   SOCKET sock;
 
   sock = _socket(domain, type, protocol);
@@ -2100,127 +1837,104 @@ int socket(int domain, int type, int protocol)
   return halloc(HANDLE_SOCKET, sock);
 }
 
-int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timeval *timeout)
-{
+int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timeval *timeout) {
   return notimpl("select");
 }
 
-int res_send(const char *buf, int buflen, char *answer, int anslen)
-{
+int res_send(const char *buf, int buflen, char *answer, int anslen) {
   return notimpl("res_send");
 }
 
-int res_query(const char *dname, int cls, int type, unsigned char *answer, int anslen)
-{
+int res_query(const char *dname, int cls, int type, unsigned char *answer, int anslen) {
   return notimpl("res_query");
 }
 
-int res_search(const char *name, int cls, int type, unsigned char *answer, int anslen)
-{
+int res_search(const char *name, int cls, int type, unsigned char *answer, int anslen) {
   return notimpl("res_search");
 }
 
-int res_querydomain(const char *name, const char *domain, int cls, int type, unsigned char *answer, int anslen)
-{
+int res_querydomain(const char *name, const char *domain, int cls, int type, unsigned char *answer, int anslen) {
   return notimpl("res_querydomain");
 }
 
-int res_mkquery(int op, const char *dname, int cls, int type, char *data, int datalen, unsigned char *newrr, char *buf, int buflen)
-{
+int res_mkquery(int op, const char *dname, int cls, int type, char *data, int datalen, unsigned char *newrr, char *buf, int buflen) {
   return notimpl("res_mkquery");
 }
 
-int dn_comp(const char *src, unsigned char *dst, int dstsiz, unsigned char **dnptrs, unsigned char **lastdnptr)
-{
+int dn_comp(const char *src, unsigned char *dst, int dstsiz, unsigned char **dnptrs, unsigned char **lastdnptr) {
   return notimpl("dn_comp");
 }
 
-int dn_expand(const unsigned char *msg, const unsigned char *eom, const unsigned char *src,  char *dst, int dstsiz)
-{
+int dn_expand(const unsigned char *msg, const unsigned char *eom, const unsigned char *src,  char *dst, int dstsiz) {
   return notimpl("dn_expand");
 }
 
-struct hostent *gethostbyname(const char *name)
-{
+struct hostent *gethostbyname(const char *name) {
   struct hostent *ret = _gethostbyname(name);
   if (!ret) winerr();
   return ret;
 }
 
-struct hostent *gethostbyaddr(const char *addr, int len, int type)
-{
+struct hostent *gethostbyaddr(const char *addr, int len, int type) {
   struct hostent *ret = _gethostbyaddr(addr, len, type);
   if (!ret) winerr();
   return ret;
 }
 
-char *inet_ntoa(struct in_addr in)
-{
+char *inet_ntoa(struct in_addr in) {
   return _inet_ntoa(in);
 }
 
-unsigned long inet_addr(const char *cp)
-{
+unsigned long inet_addr(const char *cp) {
   return _inet_addr(cp);
 }
 
-int gethostname(char *name, int namelen)
-{
+int gethostname(char *name, int namelen) {
   return sockcall(_gethostname(name, namelen));
 }
 
-struct protoent *getprotobyname(const char *name)
-{
+struct protoent *getprotobyname(const char *name) {
   struct protoent *ret = _getprotobyname(name);
   if (!ret) winerr();
   return ret;
 }
 
-struct protoent *getprotobynumber(int proto)
-{
+struct protoent *getprotobynumber(int proto) {
   struct protoent *ret = _getprotobynumber(proto);
   if (!ret) winerr();
   return ret;
 }
 
-struct servent *getservbyname(const char *name, const char *proto)
-{
+struct servent *getservbyname(const char *name, const char *proto) {
   struct servent *ret = _getservbyname(name, proto);
   if (!ret) winerr();
   return ret;
 }
 
-struct servent *getservbyport(int port, const char *proto)
-{
+struct servent *getservbyport(int port, const char *proto) {
   struct servent *ret = _getservbyport(port, proto);
   if (!ret) winerr();
   return ret;
 }
 
-int *_errno()
-{
+int *_errno() {
   return &(gettib()->errnum);
 }
 
-char ***_environ()
-{
+char ***_environ() {
   return &mainproc->env;
 }
 
-int *_fmode()
-{
+int *_fmode() {
   return &peb->fmodeval;
 }
 
-struct section *osconfig() 
-{
+struct section *osconfig() {
   return NULL;
 }
 
-int __stdcall dllmain(hmodule_t hmodule, unsigned long reason, void *reserved)
-{
-  switch (reason)
-  {
+int __stdcall dllmain(hmodule_t hmodule, unsigned long reason, void *reserved) {
+  switch (reason) {
     case DLL_PROCESS_ATTACH:
       init();
       break;

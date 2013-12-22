@@ -1195,7 +1195,7 @@ $(IMG)/sanos.flp: dirs sanos config $(MKDFS) $(BUILD)/bootdisk.lst
 
 boothd: $(IMG)/sanos.vmdk
 
-$(IMG)/sanos.vmdk: dirs sanos config $(MKDFS)
+$(IMG)/sanos.vmdk: dirs sanos config sdk $(MKDFS)
     $(MKDFS) -d $(IMG)/sanos.vmdk -t vmdk -b $(INSTALL)\boot\boot -l $(INSTALL)\boot\osldr.dll -k $(INSTALL)\boot\krnl.dll -c 100M -i -f -S $(INSTALL) -T /
 
 #
@@ -1232,7 +1232,7 @@ $(IMG)/minimal.flp: dirs sanos $(MKDFS) $(BUILD)/minbootdisk.lst
 # sdk
 #
 
-sdk: $(TCC) $(NASM) $(AR) $(IMPDEF) $(CTOHTML)
+sdk: $(TCC) $(NASM) $(AR) $(IMPDEF) $(CTOHTML) crt
 
 SDK=$(TOPDIR)\sdk
 SDKSRC=$(SDK)\src
