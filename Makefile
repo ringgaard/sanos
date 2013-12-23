@@ -23,9 +23,9 @@ LIBS=$(OUTPUT)\lib
 OBJ=$(OUTPUT)\obj
 TOOLOBJ=$(OUTPUT)\obj
 
-ASM=$(TOOLS)\nasm.exe
 MKISOFS=$(TOOLS)\mkisofs.exe
 
+ASM=$(TOOLBIN)\nasm.exe
 MKDFS=$(TOOLBIN)\mkdfs.exe
 MKFLOPPY=$(TOOLBIN)\mkfloppy.exe
 MKPART=$(TOOLBIN)\mkpart.exe
@@ -37,6 +37,9 @@ CTOHTML=$(TOOLBIN)\ctohtml.exe
 SOW=$(TOOLBIN)\os.dll
 DBGGW=$(TOOLBIN)\dbggw.exe
 LIBRARIAN=lib
+
+SDK=$(TOPDIR)\sdk
+SDKSRC=$(SDK)\src
 
 !IFDEF PRERELEASEBUILD
 DEFS=/D PRERELEASE
@@ -103,6 +106,7 @@ $(OUTPUT)/ok:
     -@if not exist $(OUTPUT) mkdir $(OUTPUT)
     -@if not exist $(TOOLBIN) mkdir $(TOOLBIN)
     -@if not exist $(TOOLOBJ) mkdir $(TOOLOBJ)
+    -@if not exist $(TOOLOBJ)\nasm mkdir $(TOOLOBJ)\nasm
     -@if not exist $(TOOLOBJ)\mkfloppy mkdir $(TOOLOBJ)\mkfloppy
     -@if not exist $(TOOLOBJ)\mkpart mkdir $(TOOLOBJ)\mkpart
     -@if not exist $(TOOLOBJ)\dbggw mkdir $(TOOLOBJ)\dbggw
@@ -201,7 +205,58 @@ WIN32CFLAGS=/nologo /O2 /Ob1 /Oy /Oi /GF /GS- /GR- /MT /Gy /W3 /TC /D WIN32 /D N
 WIN32CFLAGS=/nologo /O2 /Ob1 /Oy /GF /ML /Gy /W3 /TC /D WIN32 /D NDEBUG /D _CONSOLE /D _MBCS
 !ENDIF
 
-tools: $(MKDFS) $(MKFLOPPY) $(MKPART) $(DBGGW) $(SOW)
+tools: $(ASM) $(MKDFS) $(MKFLOPPY) $(MKPART) $(DBGGW) $(SOW)
+
+NASMFLAGS=/W1 /I $(SDKSRC)\as \
+          /D OF_ONLY /D OF_ELF32 /D OF_WIN32 /D OF_COFF /D OF_OBJ /D OF_BIN /D OF_DBG /D OF_DEFAULT=of_elf32
+
+NASMSRC=\
+  $(SDKSRC)/as/nasm.c \
+  $(SDKSRC)/as/nasmlib.c \
+  $(SDKSRC)/as/ver.c \
+  $(SDKSRC)/as/raa.c \
+  $(SDKSRC)/as/saa.c \
+  $(SDKSRC)/as/rbtree.c \
+  $(SDKSRC)/as/float.c \
+  $(SDKSRC)/as/insnsa.c \
+  $(SDKSRC)/as/insnsb.c \
+  $(SDKSRC)/as/directiv.c \
+  $(SDKSRC)/as/assemble.c \
+  $(SDKSRC)/as/labels.c \
+  $(SDKSRC)/as/hashtbl.c \
+  $(SDKSRC)/as/crc64.c \
+  $(SDKSRC)/as/parser.c \
+  $(SDKSRC)/as/preproc.c \
+  $(SDKSRC)/as/quote.c \
+  $(SDKSRC)/as/pptok.c \
+  $(SDKSRC)/as/macros.c \
+  $(SDKSRC)/as/listing.c \
+  $(SDKSRC)/as/eval.c \
+  $(SDKSRC)/as/exprlib.c \
+  $(SDKSRC)/as/stdscan.c \
+  $(SDKSRC)/as/strfunc.c \
+  $(SDKSRC)/as/tokhash.c \
+  $(SDKSRC)/as/regvals.c \
+  $(SDKSRC)/as/regflags.c \
+  $(SDKSRC)/as/ilog2.c \
+  $(SDKSRC)/as/strlcpy.c \
+  $(SDKSRC)/as/output/outform.c \
+  $(SDKSRC)/as/output/outlib.c \
+  $(SDKSRC)/as/output/nulldbg.c \
+  $(SDKSRC)/as/output/nullout.c \
+  $(SDKSRC)/as/output/outbin.c  \
+  $(SDKSRC)/as/output/outcoff.c \
+  $(SDKSRC)/as/output/outelf.c \
+  $(SDKSRC)/as/output/outelf32.c \
+  $(SDKSRC)/as/output/outobj.c \
+  $(SDKSRC)/as/output/outdbg.c
+
+NASMWINSRC=\
+  $(SDKSRC)/as/snprintf.c \
+  $(SDKSRC)/as/vsnprintf.c \
+
+$(ASM): $(NASMSRC) $(NASMWINSRC)
+    $(CC) $(WIN32CFLAGS) $(NASMFLAGS) /Fe$@ /Fo$(TOOLOBJ)/nasm/ $**
 
 $(MKFLOPPY): $(TOOLSRC)/mkfloppy/mkfloppy.c
     $(CC) $(WIN32CFLAGS) /Fe$@ /Fo$(TOOLOBJ)/mkfloppy/ $**
@@ -235,9 +290,9 @@ $(MKDFS): \
 # kernel
 #
 
-kernel: dirs boot $(INSTALL)/boot/krnl.dll $(INSTALL)/boot/os.dll
+kernel: dirs tools boot $(INSTALL)/boot/krnl.dll $(INSTALL)/boot/os.dll
 
-boot: dirs $(INSTALL)/boot/boot $(INSTALL)/boot/cdboot $(INSTALL)/boot/cdemboot $(INSTALL)/boot/netboot $(INSTALL)/boot/osldr.dll
+boot: dirs tools $(INSTALL)/boot/boot $(INSTALL)/boot/cdboot $(INSTALL)/boot/cdemboot $(INSTALL)/boot/netboot $(INSTALL)/boot/osldr.dll
 
 $(INSTALL)/boot/boot: $(SRC)/sys/boot/boot.asm
     $(ASM) -f bin $** -o $@
@@ -512,7 +567,7 @@ $(INSTALL)/boot/virtionet.sys: \
 # libc
 #
 
-libc: dirs $(LIBS)/libc.lib
+libc: dirs tools $(LIBS)/libc.lib
 
 $(OBJ)/libc/ullshr.obj: $(SRC)/lib/ullshr.asm
     $(AS) $(AFLAGS) /c /Fo$@ $**
@@ -873,7 +928,7 @@ $(LIBS)/libc.lib: \
 # win32
 #
 
-win32: dirs \
+win32: dirs tools \
   $(INSTALL)/bin/kernel32.dll \
   $(INSTALL)/bin/user32.dll \
   $(INSTALL)/bin/advapi32.dll \
@@ -1234,9 +1289,6 @@ $(IMG)/minimal.flp: dirs sanos $(MKDFS) $(BUILD)/minbootdisk.lst
 
 sdk: $(TCC) $(NASM) $(AR) $(IMPDEF) $(CTOHTML) crt
 
-SDK=$(TOPDIR)\sdk
-SDKSRC=$(SDK)\src
-
 $(AR): $(INSTALL)/usr/bin/ar.exe $(SOW)
     copy /Y $(INSTALL)/usr/bin/ar.exe $(AR)
 
@@ -1269,52 +1321,8 @@ $(INSTALL)/usr/bin/cc.exe: \
   $(LIBS)/libc.lib
     $(CC) $(CFLAGS) /W1 /Fe$@ /Fo$(OBJ)/cc/ $** /D USE_LOCAL_HEAP /link /NODEFAULTLIB /FIXED:NO /HEAP:33554432,131072
 
-NASMFLAGS=/W1 /I $(SDKSRC)\as /D HAVE_SNPRINTF /D HAVE_VSNPRINTF /D SANOS /D USE_LOCAL_HEAP \
-          /D OF_ONLY /D OF_ELF32 /D OF_WIN32 /D OF_COFF /D OF_OBJ /D OF_BIN /D OF_DBG /D OF_DEFAULT=of_elf32
-
-$(INSTALL)/usr/bin/as.exe: \
-  $(SDKSRC)/as/nasm.c \
-  $(SDKSRC)/as/nasmlib.c \
-  $(SDKSRC)/as/ver.c \
-  $(SDKSRC)/as/raa.c \
-  $(SDKSRC)/as/saa.c \
-  $(SDKSRC)/as/rbtree.c \
-  $(SDKSRC)/as/float.c \
-  $(SDKSRC)/as/insnsa.c \
-  $(SDKSRC)/as/insnsb.c \
-  $(SDKSRC)/as/directiv.c \
-  $(SDKSRC)/as/assemble.c \
-  $(SDKSRC)/as/labels.c \
-  $(SDKSRC)/as/hashtbl.c \
-  $(SDKSRC)/as/crc64.c \
-  $(SDKSRC)/as/parser.c \
-  $(SDKSRC)/as/preproc.c \
-  $(SDKSRC)/as/quote.c \
-  $(SDKSRC)/as/pptok.c \
-  $(SDKSRC)/as/macros.c \
-  $(SDKSRC)/as/listing.c \
-  $(SDKSRC)/as/eval.c \
-  $(SDKSRC)/as/exprlib.c \
-  $(SDKSRC)/as/stdscan.c \
-  $(SDKSRC)/as/strfunc.c \
-  $(SDKSRC)/as/tokhash.c \
-  $(SDKSRC)/as/regvals.c \
-  $(SDKSRC)/as/regflags.c \
-  $(SDKSRC)/as/ilog2.c \
-  $(SDKSRC)/as/strlcpy.c \
-  $(SDKSRC)/as/output/outform.c \
-  $(SDKSRC)/as/output/outlib.c \
-  $(SDKSRC)/as/output/nulldbg.c \
-  $(SDKSRC)/as/output/nullout.c \
-  $(SDKSRC)/as/output/outbin.c  \
-  $(SDKSRC)/as/output/outcoff.c \
-  $(SDKSRC)/as/output/outelf.c \
-  $(SDKSRC)/as/output/outelf32.c \
-  $(SDKSRC)/as/output/outobj.c \
-  $(SDKSRC)/as/output/outdbg.c \
-  $(LIBS)/os.lib \
-  $(LIBS)/libc.lib
-    $(CC) $(CFLAGS) $(NASMFLAGS) /Fe$@ /Fo$(OBJ)/as/ $** /link /NODEFAULTLIB /FIXED:NO /HEAP:33554432,131072
+$(INSTALL)/usr/bin/as.exe: $(NASMSRC) $(LIBS)/os.lib $(LIBS)/libc.lib
+    $(CC) $(CFLAGS) $(NASMFLAGS) /D HAVE_SNPRINTF /D HAVE_VSNPRINTF /D SANOS /D USE_LOCAL_HEAP /Fe$@ /Fo$(OBJ)/as/ $** /link /NODEFAULTLIB /FIXED:NO /HEAP:33554432,131072
 
 #
 # crt
