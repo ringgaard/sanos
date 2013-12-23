@@ -23,7 +23,7 @@ fi
 #
 
 mksrcrel() {
-  mkdir -p $1 $1/build $1/src $1/sdk $1/sdk/src $1/tools $1/utils
+  mkdir -p $1 $1/build $1/src $1/sdk $1/sdk/src $1/utils
 
   cp README COPYING CHANGES Makefile Makefile.linux $1
   cp build/sanos.vcproj build/sanos*.sln $1/build
@@ -34,8 +34,6 @@ mksrcrel() {
   cp -R src $1
   cp -R sdk/src/as $1/sdk/src
   cp -R sdk/src/cc $1/sdk/src
-
-  cp tools/nasm.exe $1/tools
 
   cp -R utils/dfs $1/utils
   cp -R utils/dbggw $1/utils
