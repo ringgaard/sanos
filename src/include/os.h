@@ -1664,8 +1664,8 @@ osapi struct servent *getservbyname(const char *name, const char *proto);
 osapi struct servent *getservbyport(int port, const char *proto);
 
 osapi char *getenv(const char *name);
-osapi int setenv(const char *name, const char *value, int rewrite);
-osapi void unsetenv(const char *name);
+osapi int setenv(const char *name, const char *value, int overwrite);
+osapi int unsetenv(const char *name);
 osapi int putenv(const char *str);
 
 osapi struct section *osconfig();

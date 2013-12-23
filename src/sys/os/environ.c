@@ -126,14 +126,14 @@ char *getenv(const char *name) {
   return value;
 }
 
-int setenv(const char *name, const char *value, int rewrite) {
+int setenv(const char *name, const char *value, int overwrite) {
   char **env;
   char *p;
   char *buf;
   int offset;
   size_t len;
 
-  if (!name) {
+  if (!name || !*name) {
     errno = EINVAL;
     return 0;
   }
@@ -151,7 +151,7 @@ int setenv(const char *name, const char *value, int rewrite) {
 
   len = strlen(value);
   if ((p = findenv(env, name, &offset))) {
-    if (!rewrite) {
+    if (!overwrite) {
       leave(&env_lock);
       return 0;
     }
@@ -195,7 +195,7 @@ int setenv(const char *name, const char *value, int rewrite) {
   return 0;
 }
 
-void unsetenv(const char *name) {
+int unsetenv(const char *name) {
   char **p;
   char **env;
   int offset;
@@ -210,23 +210,35 @@ void unsetenv(const char *name) {
   }
 
   leave(&env_lock);
+  return 0;
 }
 
 int putenv(const char *str) {
-  char *p, *equal;
+  const char *p;
+  char *name;
+  int namelen;
   int rc;
 
-  p = strdup(str);
-  if (!p) return 1;
-
-  if ((equal = strchr(p, '='))) {
-    *equal = '\0';
-    rc = setenv(p, equal + 1, 1);
-  } else {
-    unsetenv(p);
-    rc = 0;
+  if (!str || !*str) {
+    errno = EINVAL;
+    return -1;
   }
+  
+  p = str;
+  while (*p && *p != '=') p++;
+  if (!*p) return unsetenv(str);
+  
+  namelen = p - str;
+  name = malloc(namelen + 1);
+  if (!name) {
+    errno = ENOMEM;
+    return -1;
+  }
+  memcpy(name, str, namelen);
+  name[namelen] = 0;
 
-  free(p);
+  rc = setenv(name, p + 1, 1);
+  free(name);
   return rc;
 }
+

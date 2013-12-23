@@ -32,8 +32,8 @@
 #include "../../src/include/inifile.h"
 #include "../../src/include/atomic.h"
 
-#define MAXHANDLES 1024
-#define MAXENVVARS 1024
+#define MAXHANDLES 4096
+#define MAXENVVARS 4096
 
 #define SECTIMESCALE    10000000               // 1 sec resolution
 #define SECEPOC         11644473600            // 00:00:00 GMT on January 1, 1970 (in secs) 
@@ -46,6 +46,7 @@
 #define HANDLE_FILE    0x1005
 #define HANDLE_DIR     0x1006
 #define HANDLE_SOCKET  0x1007
+#define HANDLE_PROCESS 0x1008
 #define HANDLE_ANY     0x1FFF
 
 struct handle {
@@ -57,6 +58,15 @@ struct finddata {
   HANDLE fhandle;
   BOOL first;
   WIN32_FIND_DATA fdata;
+};
+
+struct procdata {
+  struct tib tib;
+  struct process proc;
+  char *pgm;
+  char *cmdline;
+  char *env;
+  HANDLE handle;
 };
 
 typedef struct {
@@ -119,6 +129,9 @@ handle_t halloc(int type, void *data);
 int vsprintf(char *buf, const char *fmt, va_list args);
 int sprintf(char *buf, const char *fmt, ...);
 
+static int startproc(struct procdata *pd);
+static int closeproc(struct procdata *pd);
+
 //
 // Globals
 //
@@ -127,6 +140,8 @@ struct handle htab[MAXHANDLES];
 struct process *mainproc;
 DWORD tibtls;
 char *envtab[MAXENVVARS];
+struct critsect proc_lock;
+int nextprocid;
 
 struct term console;
 struct peb *peb;
@@ -210,6 +225,17 @@ int strncmp(const char *s1, const char *s2, size_t count) {
   return *(unsigned char *) s1 - *(unsigned char *) s2;
 }
 
+char *strdup(const char *s) {
+  char *t;
+  int len;
+
+  if (!s) return NULL;
+  len = strlen(s);
+  t = (char *) malloc(len + 1);
+  memcpy(t, s, len + 1);
+  return t;
+}
+
 static __declspec(naked) unsigned __int64 div64x32(unsigned __int64 dividend, unsigned int divisor) {
   __asm {
       push    ebx
@@ -271,10 +297,12 @@ void initsock() {
 }
 
 void setup_env() {
+  static char *envblk = NULL;
   char *env;
   int i;
-        
-  env = GetEnvironmentStrings();
+
+  if (envblk) FreeEnvironmentStrings(envblk);
+  env = envblk = GetEnvironmentStrings();
   i = 0;
   while (i < MAXENVVARS - 1 && *env) {
     envtab[i++] = env;
@@ -320,13 +348,15 @@ void init() {
   // Allocate initial job
   console.cols = 80;
   console.lines = 25;
-  console.type = TERM_CONSOLE;
+  console.type = TERM_VT100;
 
   proc = malloc(sizeof(struct process));
   memset(proc, 0, sizeof(struct process));
+  mkcs(&proc_lock);
+  nextprocid = 0;
 
   proc->threadcnt = 1;
-  proc->id = 1;
+  proc->id = nextprocid++;
   proc->iob[0] = 0;
   proc->iob[1] = 1;
   proc->iob[2] = 2;
@@ -477,7 +507,7 @@ void *hget(handle_t h, int type) {
     return INVALID_HANDLE_VALUE;
   }
 
-  return htab[h].data;
+  return  htab[h].data;
 }
 
 void make_external_filename(const char *name, char *fn) {
@@ -667,23 +697,24 @@ int close(handle_t h) {
     case HANDLE_THREAD:
     case HANDLE_SEM:
     case HANDLE_EVENT:
-      if (!CloseHandle((HANDLE) htab[h].data)) return winerr();
-      hfree(h);
-      return 0;
-
     case HANDLE_FILE:
-      if (!CloseHandle((HANDLE) htab[h].data)) return winerr();
+      if (!CloseHandle((HANDLE) data)) return winerr();
       hfree(h);
       return 0;
 
     case HANDLE_DIR:
-      if (!FindClose(((struct finddata *) htab[h].data)->fhandle)) return winerr();
+      if (!FindClose(((struct finddata *) data)->fhandle)) return winerr();
       free(htab[h].data);
       hfree(h);
       return 0;
 
     case HANDLE_SOCKET:
-      if (_closesocket((HANDLE) htab[h].data) == -1) return winerr();
+      if (_closesocket((HANDLE) data) == -1) return winerr();
+      hfree(h);
+      return 0;
+
+    case HANDLE_PROCESS:
+      closeproc((struct procdata *) data);
       hfree(h);
       return 0;
   }
@@ -708,6 +739,8 @@ int fsync(handle_t f) {
 handle_t dup(handle_t h) {
   HANDLE newh;
 
+  if (h == NOHANDLE) return NOHANDLE;
+
   switch (htab[h].type) {
     case HANDLE_DEV:
     case HANDLE_THREAD:
@@ -718,6 +751,7 @@ handle_t dup(handle_t h) {
       break;
 
     case HANDLE_DIR:
+    case HANDLE_PROCESS:
     case HANDLE_FREE:
     default:
       errno = EBADF;
@@ -1209,7 +1243,12 @@ int _readdir(handle_t f, struct direntry *dirp, int count) {
 }
 
 int pipe(handle_t fildes[2]) {
-  return notimpl("pipe");
+  HANDLE in, out;
+
+  if (!CreatePipe(&in, &out, NULL, 0)) return winerr();
+  fildes[0] = halloc(HANDLE_FILE, in);
+  fildes[1] = halloc(HANDLE_FILE, out);
+  return 0;
 }
 
 int __getstdhndl(int n) {
@@ -1286,13 +1325,26 @@ int vmunlock(void *addr, unsigned long size) {
 }
 
 int waitone(handle_t h, int timeout) {
-  DWORD rc = WaitForSingleObject(hget(h, HANDLE_ANY), timeout);
-  if (rc == WAIT_TIMEOUT) {
-    errno = ETIMEDOUT;
-    return -1;
+  if (htab[h].type == HANDLE_PROCESS) {
+    struct procdata *pd = htab[h].data;
+    DWORD rc = WaitForSingleObject(pd->handle, timeout);
+    if (rc == WAIT_TIMEOUT) {
+      errno = ETIMEDOUT;
+      return -1;
+    }
+    if (!GetExitCodeProcess(pd->handle, &rc)) {
+      errno = EBUSY;
+      return -1;
+    }
+    return rc;
+  } else {
+    DWORD rc = WaitForSingleObject(hget(h, HANDLE_ANY), timeout);
+    if (rc == WAIT_TIMEOUT) {
+      errno = ETIMEDOUT;
+      return -1;
+    }
+    return 0;
   }
-
-  return 0;
 }
 
 int waitall(handle_t *h, int count, int timeout) {
@@ -1394,27 +1446,246 @@ void dbgbreak() {
   notimpl("dbgbreak");
 }
 
+static void endproc(struct process *proc, int status) {
+  int i;
+
+  // Remove process from process list
+  enter(&proc_lock);
+  if (proc->nextproc) proc->nextproc->prevproc = proc->prevproc;
+  if (proc->prevproc) proc->prevproc->nextproc = proc->nextproc;
+  if (proc == peb->firstproc) peb->firstproc = proc->nextproc;
+  if (proc == peb->lastproc) peb->lastproc = proc->prevproc;
+  leave(&proc_lock);
+
+  // Close standard handles
+  for (i = 0; i < 3; i++) if (proc->iob[i] >= 0) close(proc->iob[i]);
+
+  // Cleanup process resources
+  if (proc->hmod) dlclose(proc->hmod);
+  if (proc->cmdline) free(proc->cmdline);
+  if (proc->ident) free(proc->ident);
+  //if (proc->env) freeenv(proc->env);
+
+  close(proc->hndl);
+  free(proc);
+}
+
+void endthread(int status) {
+  struct process *proc;
+
+  proc = gettib()->proc;
+  if (atomic_add(&proc->threadcnt, -1) == 0) endproc(proc, status);
+  ExitThread(status);
+}
+
+void __stdcall threadstart(struct tib *tib) {
+  // Set TLS for tib
+  TlsSetValue(tibtls, tib);
+  
+  // Call thread routine
+  if (tib->flags & CREATE_POSIX) {
+    endthread((int) ((void *(*)(void *)) (tib->startaddr))(tib->startarg));
+  } else {
+    ((void (__stdcall *)(void *)) (tib->startaddr))(tib->startarg);
+    endthread(0);
+  }
+}
+
+static struct process *mkproc(struct process *parent, int hndl, int flags) {
+  struct process *proc;
+  int i;
+
+  if (!(flags & CREATE_DETACHED)) return NULL;
+  if (!(flags & CREATE_NO_ENV)) return NULL;
+  if (flags & CREATE_CHILD) return NULL;
+
+  proc = malloc(sizeof(struct process));
+  if (!proc) return NULL;
+  memset(proc, 0, sizeof(struct process));
+  for (i = 0; i < 3; i++) proc->iob[i] = NOHANDLE;
+
+  proc->hndl = dup(hndl);
+  proc->facility = LOG_USER;
+
+  enter(&proc_lock);
+  proc->id = nextprocid++;
+  proc->prevproc = peb->lastproc;
+  if (!peb->firstproc) peb->firstproc = proc;
+  if (peb->lastproc) peb->lastproc->nextproc = proc;
+  peb->lastproc = proc;
+  leave(&proc_lock);
+
+  return proc;
+}
+
 handle_t beginthread(void (__stdcall *startaddr)(void *), unsigned stacksize, void *arg, int flags, char *name, struct tib **ptib) {
+  struct process *parent = gettib()->proc;
+  struct tib *tib;
+  struct process *proc;
+  handle_t h;
+  HANDLE hthread;
   DWORD tid;
 
-  return halloc(HANDLE_THREAD, CreateThread(NULL, stacksize, (unsigned long (__stdcall *)(void *)) startaddr, arg, (flags & CREATE_SUSPENDED) ? CREATE_SUSPENDED : 0, (DWORD *) &tid));
+  // Allocate tib for initial thread
+  tib = malloc(4096);
+  memset(tib, 0, 4096);
+
+  // Create native thread
+  hthread = CreateThread(NULL, stacksize, (LPTHREAD_START_ROUTINE) threadstart, tib, CREATE_SUSPENDED, &tid);
+  if (!hthread) {
+    free(tib);
+    return winerr();
+  }
+  h = halloc(HANDLE_THREAD, hthread);
+
+  // Set up tib
+  tib->startaddr = (void *) startaddr;
+  tib->startarg = arg;
+  tib->flags = flags;
+  tib->self = tib;
+  tib->tlsbase = &tib->tls;
+  tib->tid = tid;
+  tib->hndl = h;
+  tib->peb = peb;
+  tib->except = (struct xcptrec *) 0xFFFFFFFF;
+  
+  // Create process if requested
+  if (flags & CREATE_NEW_PROCESS) {
+    proc = mkproc(parent, h, flags);
+    if (!proc) {
+      errno = ENOMEM;
+      return -1;
+    }
+  } else {
+    proc = parent;
+  }
+
+  atomic_add(&proc->threadcnt, 1);
+  tib->proc = proc;
+  tib->pid = proc->id;
+
+  if (!(flags & CREATE_SUSPENDED)) resume(h);
+
+  if (ptib) *ptib = tib;
+  return h;
+}
+
+static int startproc(struct procdata *pd) {
+  STARTUPINFO si;
+  PROCESS_INFORMATION pi;
+  int i;
+
+  memset(&si, 0, sizeof(si));
+  si.cb = sizeof(si);
+  si.dwFlags = STARTF_USESTDHANDLES;
+  si.hStdInput = hget(pd->proc.iob[0], HANDLE_ANY);
+  si.hStdOutput = hget(pd->proc.iob[1], HANDLE_ANY);
+  si.hStdError = hget(pd->proc.iob[2], HANDLE_ANY);
+
+  if (!CreateProcess(/*pd->pgm*/ NULL, pd->cmdline, NULL, NULL, FALSE, 0, pd->env, NULL, &si, &pi)) return winerr();
+  pd->handle = pi.hProcess;
+  CloseHandle(pi.hThread);
+  for (i = 0; i < 3; i++) {
+    close(pd->proc.iob[i]);
+    pd->proc.iob[i] = NOHANDLE;
+  }
+  return 0;
+}
+
+static int closeproc(struct procdata *pd) {
+  int i;
+
+  CloseHandle(pd->handle);
+  for (i = 0; i < 3; i++) close(pd->proc.iob[i]);
+  if (pd->pgm) free(pd->pgm);
+  if (pd->cmdline) free(pd->cmdline);
+  if (pd->env) free(pd->env);
+  free(pd);
+  return 0;
+}
+
+int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib **tibptr) {
+  struct procdata *pd;
+  int n, envsize, i;
+  char *p;
+  handle_t h;
+
+  pd = malloc(sizeof(struct procdata));
+  if (!pd) {
+    errno = ENOMEM;
+    return -1;
+  }
+  memset(pd, 0, sizeof(struct procdata));
+  h = halloc(HANDLE_PROCESS, pd);
+  pd->tib.proc = &pd->proc;
+
+  if (pgm) pd->pgm = strdup(pgm);
+  if (cmdline) pd->cmdline = strdup(cmdline);
+  if (env) {
+    envsize = 1;
+    for (n = 0; env[n]; n++) {
+      envsize += strlen(env[n]) + 1;
+    }
+    p = pd->env = malloc(envsize);
+    for (n = 0; env[n]; n++) {
+      int size = strlen(env[n]) + 1;
+      memcpy(p, env[n], size);
+      p += size;
+    }
+    *p = 0;
+  }
+  
+  for (i = 0; i < 3; i++) {
+    if (mode & P_DETACH) {
+      pd->proc.iob[i] = NOHANDLE;
+    } else {
+      pd->proc.iob[i] = dup(mainproc->iob[i]);
+    }
+  }
+
+  if (mode & (P_NOWAIT | P_SUSPEND)) {
+    if ((mode & P_SUSPEND) == 0) {
+      if (startproc(pd) < 0) {
+        close(h);
+        return -1;
+      }
+    }
+    if (tibptr) *tibptr = &pd->tib;
+    return h;
+  } else {
+    DWORD exitcode;
+
+    if (startproc(pd) < 0) {
+      close(h);
+      return -1;
+    }
+
+    WaitForSingleObject(pd->handle, INFINITE);
+    if (!GetExitCodeProcess(pd->handle, &exitcode)) {
+      close(h);
+      errno = EBUSY;
+      return -1;
+    }
+    close(h);
+    return exitcode;
+  }
 }
 
 int suspend(handle_t thread) {
   return SuspendThread(htab[thread].data);
 }
 
-int resume(handle_t thread) {
-  return ResumeThread(htab[thread].data);
+int resume(handle_t h) {
+  if (htab[h].type == HANDLE_PROCESS) {
+    return startproc((struct procdata  *) htab[h].data);
+  } else {
+    return ResumeThread(htab[h].data);
+  }
 }
 
 struct tib *getthreadblock(handle_t thread) {
   notimpl("getthreadblock");
   return NULL;
-}
-
-void endthread(int retval) {
-  ExitThread(retval);
 }
 
 tid_t gettid() {
@@ -1457,12 +1728,13 @@ struct tib *gettib() {
   return (struct tib *) TlsGetValue(tibtls);
 }
 
-int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib **tibptr) {
-  return notimpl("spawn");
-}
-
 void exit(int status) {
-  ExitProcess(status);
+  struct process *proc = gettib()->proc;
+  if (proc == mainproc) {
+    ExitProcess(status);
+  } else {
+    endthread(status);
+  }
 }
 
 sighandler_t signal(int signum, sighandler_t handler) {
@@ -1518,27 +1790,60 @@ unsigned alarm(unsigned seconds) {
 
 char *getenv(const char *name) {
   int i;
-  int len;
+  int namelen;
 
   if (!name) return NULL;
-  len = strlen(name);
+  namelen = strlen(name);
   for (i = 0; envtab[i]; i++) {
-    if (strncmp(envtab[i], name, len) == 0 && envtab[i][len] == '=') return envtab[i] + len + 1;
+    if (strncmp(envtab[i], name, namelen) == 0 && envtab[i][namelen] == '=') {
+      return envtab[i] + namelen + 1;
+    }
   }
 
   return NULL;
 }
 
-int setenv(const char *name, const char *value, int rewrite) {
-  if (rewrite || getenv(name) == NULL) {
+int setenv(const char *name, const char *value, int overwrite) {
+  if (overwrite || !getenv(name)) {
     SetEnvironmentVariable(name, value);
     setup_env();
   }
   return 0;
 }
 
+int unsetenv(const char *name) {
+  SetEnvironmentVariable(name, NULL);
+  setup_env();
+  return 0;
+}
+
 int putenv(const char *str) {
-  return notimpl("putenv");
+  const char *p;
+  char *name;
+  int namelen;
+  int rc;
+
+  if (!str || !*str) {
+    errno = EINVAL;
+    return -1;
+  }
+  
+  p = str;
+  while (*p && *p != '=') p++;
+  if (!*p) return unsetenv(str);
+  
+  namelen = p - str;
+  name = malloc(namelen + 1);
+  if (!name) {
+    errno = ENOMEM;
+    return -1;
+  }
+  memcpy(name, str, namelen);
+  name[namelen] = 0;
+
+  rc = setenv(name, p + 1, 1);
+  free(name);
+  return rc;
 }
 
 time_t time(time_t *timeptr) {
@@ -1592,15 +1897,28 @@ void vsyslog(int pri, const char *fmt, va_list args) {
   DWORD written;
 
   vsprintf(buffer, fmt, args);
+#ifdef SYSLOG_TO_CONSOLE
   WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), buffer, lstrlen(buffer), &written, NULL);
   WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), "\n", 1, &written, NULL);
+#else
+  WriteFile(GetStdHandle(STD_ERROR_HANDLE), buffer, lstrlen(buffer), &written, NULL);
+  WriteFile(GetStdHandle(STD_ERROR_HANDLE), "\n", 1, &written, NULL);
+#endif
 }
 
 void panic(const char *msg) {
   DWORD written;
+
+#ifdef SYSLOG_TO_CONSOLE
   WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), "panic: ", 7, &written, NULL);
   WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), msg, strlen(msg), &written, NULL);
   WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), "\n", 1, &written, NULL);
+#else
+  WriteFile(GetStdHandle(STD_ERROR_HANDLE), "panic: ", 7, &written, NULL);
+  WriteFile(GetStdHandle(STD_ERROR_HANDLE), msg, strlen(msg), &written, NULL);
+  WriteFile(GetStdHandle(STD_ERROR_HANDLE), "\n", 1, &written, NULL);
+#endif
+
   ExitProcess(1);
 }
 
@@ -1721,6 +2039,7 @@ char *dlerror() {
 hmodule_t getmodule(const char *name) {
   char fn[MAXPATH];
 
+  if (!name) return GetModuleHandle(NULL);
   make_external_filename(name, fn);
   return GetModuleHandle(fn);
 }

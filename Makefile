@@ -16,6 +16,7 @@ BUILD=$(TOPDIR)\build
 SRC=$(TOPDIR)\src
 TOOLS=$(TOPDIR)\tools
 TOOLSRC=$(TOPDIR)\utils
+BIN=$(TOPDIR)\bin
 
 IMG=$(OUTPUT)\img
 TOOLBIN=$(OUTPUT)\tools
@@ -168,6 +169,7 @@ $(OUTPUT)/ok:
     -@if not exist $(INSTALL)\usr mkdir $(INSTALL)\usr
     -@if not exist $(INSTALL)\usr\bin mkdir $(INSTALL)\usr\bin
     -@if not exist $(INSTALL)\usr\lib mkdir $(INSTALL)\usr\lib
+    -@if not exist $(BIN) mkdir $(BIN)
     -@echo OK > $(OUTPUT)\ok
 
 #
@@ -1671,4 +1673,34 @@ source: dirs
     xcopy /S /I /Y /Q $(SRC)\win32 $(INSTALL)\usr\src\win32
     xcopy /S /I /Y /Q $(SDKSRC)\cc $(INSTALL)\usr\src\utils\cc
     xcopy /S /I /Y /Q $(SDKSRC)\as $(INSTALL)\usr\src\utils\as
+
+#
+# crosstools
+#
+
+crosstools: $(BIN)/as.exe $(BIN)/cc.exe $(BIN)/sh.exe $(BIN)/make.exe $(BIN)/impdef.exe $(BIN)/ar.exe $(BIN)/os.dll $(BIN)/mkdfs.exe
+
+$(BIN)/as.exe: $(INSTALL)/usr/bin/as.exe
+    copy /Y $** $@
+
+$(BIN)/cc.exe: $(INSTALL)/usr/bin/cc.exe
+    copy /Y $** $@
+
+$(BIN)/sh.exe: $(INSTALL)/bin/sh.exe
+    copy /Y $** $@
+
+$(BIN)/make.exe: $(INSTALL)/usr/bin/make.exe
+    copy /Y $** $@
+
+$(BIN)/impdef.exe: $(INSTALL)/usr/bin/impdef.exe
+    copy /Y $** $@
+
+$(BIN)/ar.exe: $(INSTALL)/usr/bin/ar.exe
+    copy /Y $** $@
+
+$(BIN)/os.dll: $(SOW)
+    copy /Y $** $@
+
+$(BIN)/mkdfs.exe: $(MKDFS)
+    copy /Y $** $@
 
