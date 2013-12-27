@@ -15,7 +15,7 @@ MATHOBJ=acos.o asin.o atan.o atan2.o ceil.o cos.o cosh.o exp.o fabs.o floor.o \
         fmod.o fpconst.o fpreset.o frexp.o ftol.o ldexp.o log.o log10.o \
         modf.o pow.o sin.o sinh.o sqrt.o tan.o tanh.o
 
-all: libc.a os.def
+all: libc.a
 
 libc.a: $(OBJ) $(MATHOBJ)
     ar -s -m $@ $^
@@ -251,12 +251,10 @@ tan.o: math/tan.asm
 tanh.o: math/tanh.asm
     $(AS) $** -o $@
 
-os.def: /boot/os.dll
-    impdef $^ $@
+install: libc.a
+    cp libc.a $(ROOT)/usr/lib/libc.a
 
-install: libc.a os.def
-    cp libc.a /usr/lib/libc.a
-    cp os.def /usr/lib/os.def
+cross: install
 
 clean:
-    rm libc.a os.def $(OBJ) $(MATHOBJ)
+    rm libc.a $(OBJ) $(MATHOBJ)

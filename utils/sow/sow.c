@@ -666,7 +666,13 @@ handle_t open(const char *name, int flags, ...) {
   if (flags & O_DIRECT) attrs |= FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH;
 
   hfile = CreateFile(fn, access, sharing, NULL, disp, attrs, NULL);
-  if (hfile == INVALID_HANDLE_VALUE) return winerr();
+  if (hfile == INVALID_HANDLE_VALUE) {
+    if (GetLastError() == ERROR_ACCESS_DENIED) {
+      // Try with FILE_FLAG_BACKUP_SEMANTICS to open directory.
+      hfile = CreateFile(fn, access, sharing, NULL, disp, attrs | FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    }
+    if (hfile == INVALID_HANDLE_VALUE) return winerr();
+  }
 
   return halloc(HANDLE_FILE, hfile);
 }
@@ -930,6 +936,7 @@ int fstat(handle_t f, struct stat *buffer) {
   
     buffer->st_size = fi.nFileSizeLow;
     buffer->st_mode = 0644;
+    if (fi.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) buffer->st_mode |= S_IFDIR;
   }
 
   return buffer ? 0 : fi.nFileSizeLow;
@@ -953,6 +960,7 @@ int fstat64(handle_t f, struct stat64 *buffer) {
   
     buffer->st_size = ((__int64) fi.nFileSizeHigh << 32) | fi.nFileSizeLow;
     buffer->st_mode = 0644;
+    if (fi.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) buffer->st_mode |= S_IFDIR;
   }
 
   return buffer ? 0 : fi.nFileSizeLow;
@@ -1100,7 +1108,8 @@ int chmod(const char *name, int mode) {
 }
 
 int fchmod(handle_t f, int mode) {
-  return notimpl("fchmod");
+  //return notimpl("fchmod");
+  return 0;
 }
 
 int chown(const char *name, int owner, int group) {
@@ -1159,7 +1168,7 @@ int mkdir(const char *name, int mode) {
   char fn[MAXPATH];
 
   make_external_filename(name, fn);
-  if (!CreateDirectory(fn, NULL)) return -ENOENT;
+  if (!CreateDirectory(fn, NULL)) return winerr();
   return 0;
 }
 
@@ -1223,6 +1232,10 @@ handle_t _opendir(const char *name) {
   return halloc(HANDLE_DIR, finddata);
 }
 
+static int pseudo_dir_entry(char *name) {
+  return name[0] == '.' && (name[1] == 0 || (name[1] == '.' && name[2] == 0));
+}
+
 int _readdir(handle_t f, struct direntry *dirp, int count) {
   struct finddata *finddata;
 
@@ -1230,11 +1243,15 @@ int _readdir(handle_t f, struct direntry *dirp, int count) {
   if (data == INVALID_HANDLE_VALUE) return -1;
   finddata = (struct finddata *) data;
 
-  if (!finddata->first) {
-    if (!FindNextFile(finddata->fhandle, &finddata->fdata)) return 0;
+  for (;;) {
+    if (finddata->first) {
+      finddata->first = FALSE;
+    } else {
+      if (!FindNextFile(finddata->fhandle, &finddata->fdata)) return 0;
+    }
+    if (!pseudo_dir_entry(finddata->fdata.cFileName)) break;
   }
 
-  finddata->first = FALSE;
   dirp->ino = -1;
   dirp->namelen = strlen(finddata->fdata.cFileName);
   dirp->reclen = sizeof(struct direntry) + dirp->namelen;
@@ -1920,10 +1937,6 @@ void panic(const char *msg) {
 #endif
 
   ExitProcess(1);
-}
-
-char *strerror(int errnum) {
-  return "Error";
 }
 
 int canonicalize(const char *filename, char *buffer, int size) {

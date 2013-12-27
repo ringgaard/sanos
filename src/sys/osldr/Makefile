@@ -4,7 +4,7 @@
 
 SRCS=osldr.c loadkrnl.c unzip.c
 OBJS=bioscall.o 
-LIBSRCS=/usr/src/lib/vsprintf.c /usr/src/lib/string.c
+LIBSRCS=$(ROOT)/usr/src/lib/vsprintf.c $(ROOT)/usr/src/lib/string.c
 
 all: osldr.dll
 
@@ -20,6 +20,9 @@ ldrinit.exe: ldrinit.asm
 install: osldr.dll
     cp osldr.dll /boot/osldr.dll
     mkboot -l /boot/osldr.dll
+
+cross: osldr.dll
+    cp osldr.dll $(ROOT)/boot/osldr.dll
 
 clean:
     rm $(OBJS) osldr.dll ldrinit.exe

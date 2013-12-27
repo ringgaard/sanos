@@ -58,6 +58,26 @@ install-utils:
 install-cmds:
     make -C cmds install
 
+cross:
+    make -C sys cross
+    make -C lib cross
+    make -C utils/as cross
+    make -C utils/cc cross
+    make -C utils/ar cross
+    make -C utils/make cross
+    make -C utils/impdef cross
+    make -C utils/ctohtml cross
+    make -C utils/edit cross
+    make -C utils/fdisk cross
+    make -C utils/ftpd cross
+    make -C utils/login cross
+    make -C utils/mkboot cross
+    make -C utils/genvmdk cross
+    make -C utils/setup cross
+    make -C utils/sh cross
+    make -C utils/telnetd cross
+    make -C cmds cross
+
 clean: clean-sdk clean-sys clean-utils clean-cmds
 
 clean-sdk:

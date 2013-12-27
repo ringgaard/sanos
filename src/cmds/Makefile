@@ -54,10 +54,12 @@ wc.exe: wc.c
     $(CC) -o $@ $^
 
 install: $(CMDS)
-    cp $(CMDS) /bin
+    cp $(CMDS) $(ROOT)/bin
 
 install-all: $(ALLCMDS)
     cp $(ALLCMDS) /bin
+
+cross: install
 
 clean:
     rm *.exe

@@ -1,0 +1,41 @@
+#
+# Makefile for cross-compiling Sanos under Windows
+#
+
+SRC=src
+SDKSRC=sdk/src
+OUTPUT=cross
+INSTALL=$(OUTPUT)/install
+IMG=$(OUTPUT)/img
+
+ROOT=$(CURDIR)/cross/install
+CCPREFIX=$(ROOT)/usr
+
+all: sdkdisk
+
+source:
+    mkdir -p $(OUTPUT) $(INSTALL) $(IMG) \
+             $(INSTALL)/bin $(INSTALL)/boot $(INSTALL)/dev $(INSTALL)/etc \
+             $(INSTALL)/mnt $(INSTALL)/proc $(INSTALL)/tmp $(INSTALL)/usr $(INSTALL)/var \
+             $(INSTALL)/usr/bin $(INSTALL)/usr/lib $(INSTALL)/usr/src
+    cp build/os.ini $(INSTALL)/etc/
+    cp build/krnl.ini $(INSTALL)/boot/
+    cp $(SRC)/Makefile $(INSTALL)/usr/src/
+    cp -r $(SRC)/include $(INSTALL)/usr/
+    cp -r $(SRC)/lib $(INSTALL)/usr/src/
+    cp -r $(SRC)/sys $(INSTALL)/usr/src/
+    cp -r $(SRC)/utils $(INSTALL)/usr/src/
+    cp -r $(SRC)/cmds $(INSTALL)/usr/src/
+    cp -r $(SRC)/win32 $(INSTALL)/usr/src/
+    cp -r $(SDKSRC)/cc $(INSTALL)/usr/src/utils/
+    cp -r $(SDKSRC)/as $(INSTALL)/usr/src/utils/
+
+sanos:
+    make -C $(ROOT)/usr/src cross
+    make -C $(ROOT)/usr/src clean
+
+sdkdisk: $(IMG)/sanos.vmdk
+
+$(IMG)/sanos.vmdk: source sanos
+    mkdfs -d $(IMG)/sanos.vmdk -t vmdk -b $(INSTALL)/boot/boot -l $(INSTALL)/boot/osldr.dll -k $(INSTALL)/boot/krnl.dll -c 100M -i -f -S $(INSTALL) -T /
+

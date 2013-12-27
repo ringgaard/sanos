@@ -445,6 +445,7 @@ int main(int argc, char **argv) {
   int nb_objfiles, ret, oind;
   char objfilename[1024];
   int64_t start_time = 0;
+  char *alt_lib_path;
 
   init_util();
   s = tcc_new();
@@ -460,6 +461,8 @@ int main(int argc, char **argv) {
 
   oind = parse_arguments(s, argc - 1, argv + 1) + 1;
 
+  alt_lib_path = getenv("CCPREFIX");
+  if (alt_lib_path) tcc_lib_path = alt_lib_path;
   if (print_search_dirs) {
     printf("install: %s/\n", tcc_lib_path);
     return 0;

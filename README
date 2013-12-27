@@ -65,9 +65,9 @@ Installing sanos
 
 In order to install sanos you first need to make a boot disk. Either 
 download the sanos-bin-x.x.x.zip file from www.jbox.dk or build the
-source code from sanos-src.x.x.x.zip (see below). Unzip the files into 
-a directory (e.g. c:\sanos) and go to the build directory and execute 
-the mkbootdisk batch script:
+source code from sanos-src.x.x.x.zip. Unzip the files into a directory
+(e.g. c:\sanos) and go to the build directory and execute the mkbootdisk
+batch script:
 
   c:\sanos> mkbootdisk
 

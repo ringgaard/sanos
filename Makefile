@@ -269,8 +269,8 @@ $(MKPART): $(TOOLSRC)/mkpart/mkpart.c
 $(DBGGW): $(TOOLSRC)/dbggw/dbggw.c $(TOOLSRC)/dbggw/rdp.c
     $(CC) $(WIN32CFLAGS) /I$(SRC)/include/os /Fe$@ /Fo$(TOOLOBJ)/dbggw/ $** /link wsock32.lib
 
-$(SOW): $(TOOLSRC)/sow/sow.c $(SRC)/lib/vsprintf.c
-    $(CC) $(WIN32CFLAGS) /I$(SRC)/include/os /Fe$@ /Fo$(TOOLOBJ)/sow/ $** /D NOFLOAT /link /ENTRY:dllmain /DLL /NODEFAULTLIB kernel32.lib /IMPLIB:$(LIBS)/sow.lib
+$(SOW): $(TOOLSRC)/sow/sow.c $(SRC)/lib/vsprintf.c $(SRC)/sys/os/syserr.c
+    $(CC) $(WIN32CFLAGS) /I$(SRC)/include/os /Fe$@ /Fo$(TOOLOBJ)/sow/ $** /D NOFLOAT /D SOW /link /ENTRY:dllmain /DLL /NODEFAULTLIB kernel32.lib /IMPLIB:$(LIBS)/sow.lib
 
 $(MKDFS): \
   $(TOOLSRC)/dfs/blockdev.c \
@@ -1690,9 +1690,6 @@ $(BIN)/sh.exe: $(INSTALL)/bin/sh.exe
     copy /Y $** $@
 
 $(BIN)/make.exe: $(INSTALL)/usr/bin/make.exe
-    copy /Y $** $@
-
-$(BIN)/impdef.exe: $(INSTALL)/usr/bin/impdef.exe
     copy /Y $** $@
 
 $(BIN)/ar.exe: $(INSTALL)/usr/bin/ar.exe

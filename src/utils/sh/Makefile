@@ -25,7 +25,9 @@ sh.exe: $(SH_SRCFILES) $(SH_HDRFILES) $(CMDS)
     $(CC) -o sh.exe $(SH_SRCFILES) $(CMDS) -D SHELL
 
 install: sh.exe
-    cp sh.exe /bin/sh.exe
+    cp sh.exe $(ROOT)/bin/sh.exe
+
+cross: install
 
 clean:
     rm sh.exe

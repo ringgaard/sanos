@@ -18,7 +18,9 @@ as.exe: $(SRCFILES)
     $(CC) $(CFLAGS) -o as.exe $(SRCFILES) -noshare
 
 install: as.exe
-    cp as.exe /usr/bin/as.exe
+    cp as.exe $(ROOT)/usr/bin/as.exe
 
+cross: install
+    
 clean:
     rm as.exe

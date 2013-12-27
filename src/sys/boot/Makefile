@@ -17,11 +17,11 @@ netboot: netboot.asm
     $(AS) -f bin $< -o $@
 
 install: boot cdboot cdemboot netboot
-    cp boot /boot/boot
-    cp cdboot /boot/cdboot
-    cp cdemboot /boot/cdemboot
-    cp netboot /boot/netboot
+    cp boot cdboot cdemboot netboot /boot
     mkboot -b /boot/boot
+
+cross: boot cdboot cdemboot netboot
+    cp boot cdboot cdemboot netboot $(ROOT)/boot
 
 clean:
     rm boot cdboot cdemboot netboot

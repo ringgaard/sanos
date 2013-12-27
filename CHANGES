@@ -4,6 +4,10 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Added support for cross-compiling under Windows.
+
+    * The NASM assembler is now built from source when buling under Windows.
+
     * New Makefile for building under Windows and new deployment script.
 
     * Indent and unindent commands for editor.

@@ -11,7 +11,9 @@ cc.exe: $(TCC_SRCFILES) $(TCC_HDRFILES)
     $(CC) -o cc.exe $(TCC_SRCFILES) -DUSE_LOCAL_HEAP -noshare
 
 install: cc.exe
-    cp cc.exe /usr/bin/cc.exe
+    cp cc.exe $(ROOT)/usr/bin/cc.exe
+
+cross: install
 
 clean:
     rm cc.exe

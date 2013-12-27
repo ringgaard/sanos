@@ -2,6 +2,8 @@
 # Makefile for Sanos kernel
 #
 
+LIB=$(ROOT)/usr/src/lib
+
 KRNL_SRCS=\
   apm.c \
   buf.c \
@@ -91,18 +93,18 @@ FS_SRCS=\
   ../fs/smbfs/smbutil.c
 
 LIB_SRCS=\
-  /usr/src/lib/bitops.c \
-  /usr/src/lib/ctype.c \
-  /usr/src/lib/inifile.c \
-  /usr/src/lib/moddb.c \
-  /usr/src/lib/opts.c \
-  /usr/src/lib/rmap.c \
-  /usr/src/lib/string.c \
-  /usr/src/lib/strtol.c \
-  /usr/src/lib/tcccrt.c \
-  /usr/src/lib/time.c \
-  /usr/src/lib/verinfo.c \
-  /usr/src/lib/vsprintf.c
+  $(LIB)/bitops.c \
+  $(LIB)/ctype.c \
+  $(LIB)/inifile.c \
+  $(LIB)/moddb.c \
+  $(LIB)/opts.c \
+  $(LIB)/rmap.c \
+  $(LIB)/string.c \
+  $(LIB)/strtol.c \
+  $(LIB)/tcccrt.c \
+  $(LIB)/time.c \
+  $(LIB)/verinfo.c \
+  $(LIB)/vsprintf.c
 
 SRCS=$(KRNL_SRCS) $(DEV_SRCS) $(NET_SRCS) $(FS_SRCS) $(LIB_SRCS) 
 
@@ -115,6 +117,10 @@ krnl.dll: $(SRCS)
 install: krnl.dll
     cp krnl.def /usr/lib/krnl.def
     mkboot -k krnl.dll
+
+cross: krnl.dll
+    cp krnl.def $(ROOT)/usr/lib/krnl.def
+    cp krnl.dll $(ROOT)/boot
 
 clean:
     rm krnl.dll krnl.def

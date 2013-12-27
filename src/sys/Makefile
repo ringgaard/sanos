@@ -33,5 +33,12 @@ install: boot osldr krnl dev os
     make -C dev install
     make -C os install
 
+cross:
+    make -C boot cross
+    make -C osldr cross
+    make -C krnl cross
+    make -C dev cross
+    make -C os cross
+
 .PHONY: boot osldr krnl dev os
 

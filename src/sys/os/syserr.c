@@ -31,7 +31,11 @@
 // SUCH DAMAGE.
 // 
 
+#ifdef SOW
+__declspec(dllexport) char *strerror(int errnum);
+#else
 #include <os.h>
+#endif
 
 char *sys_errlist[] = {
   /*  0                 */  "No error",

@@ -622,7 +622,7 @@ void usage() {
   fprintf(stderr, "  -B            Unconditionally build all targets.\n");
   fprintf(stderr, "  -C <dir>      Change current directory to <dir> before building.\n");
   fprintf(stderr, "  -d            Output debug messages.\n");
-  fprintf(stderr, "  -f <file>     Read <file> as makefle.\n");
+  fprintf(stderr, "  -f <file>     Read <file> as makefile.\n");
   fprintf(stderr, "  -h            Print this message.\n");
   fprintf(stderr, "  -n            Display commands but do not build.\n");
   fprintf(stderr, "  -s            Do not print commands as they are executed.\n");
@@ -636,6 +636,7 @@ int main(int argc, char *argv[]) {
   char *dir = NULL;
   FILE *mf;
   struct project prj;
+  char curdir[FILENAME_MAX];
 
   // Initialize project
   setup_predefined_variables(&prj);
@@ -699,6 +700,9 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  // Set current directory variable.
+  setenv("CURDIR", getcwd(curdir, FILENAME_MAX), 0);
+
   // Read and parse makefile.
   mf = fopen(makefile, "r");
   if (mf) {
@@ -709,7 +713,7 @@ int main(int argc, char *argv[]) {
       return 1;
     }
   }
-  
+
   // Use the first rule if no targets were specified on the command line
   if (!prj.targets.head && prj.rules_head) {
     list_append(&prj.targets, strdup(prj.rules_head->target));
@@ -721,7 +725,7 @@ int main(int argc, char *argv[]) {
     project_free(&prj);
     return 1;
   }
-  
+
   // Build targets
   rc = build_targets(&prj);
   if (rc < 0) {

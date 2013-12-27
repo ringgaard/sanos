@@ -11,8 +11,10 @@ less.exe: edit.c
     $(CC) -o less.exe edit.c -DLESS
 
 install: edit.exe less.exe
-    cp edit.exe /bin/edit.exe
-    cp less.exe /bin/less.exe
+    cp edit.exe $(ROOT)/bin/edit.exe
+    cp less.exe $(ROOT)/bin/less.exe
+
+cross: install
 
 clean:
     rm edit.exe less.exe

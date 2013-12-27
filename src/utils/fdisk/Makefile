@@ -8,7 +8,9 @@ fdisk.exe: fdisk.c
     $(CC) fdisk.c
 
 install: fdisk.exe
-    cp fdisk.exe /bin/fdisk.exe
+    cp fdisk.exe $(ROOT)/bin/fdisk.exe
+
+cross: install
 
 clean:
     rm fdisk.exe
