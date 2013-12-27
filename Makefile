@@ -1229,13 +1229,13 @@ $(INSTALL)/usr/bin/ctohtml.exe: \
 config: $(INSTALL)/etc/os.ini $(INSTALL)/boot/krnl.ini $(INSTALL)/etc/setup.ini
 
 $(INSTALL)/etc/os.ini: $(BUILD)/os.ini
-    copy /Y $(BUILD)/os.ini $(INSTALL)/etc/os.ini
+    copy /Y $(BUILD)\os.ini $(INSTALL)\etc\os.ini
 
 $(INSTALL)/boot/krnl.ini: $(BUILD)/krnl.ini
-    copy /Y $(BUILD)/krnl.ini $(INSTALL)/boot/krnl.ini
+    copy /Y $(BUILD)\krnl.ini $(INSTALL)\boot\krnl.ini
 
 $(INSTALL)/etc/setup.ini: $(BUILD)/setup.ini
-    copy /Y $(BUILD)/setup.ini $(INSTALL)/etc/setup.ini
+    copy /Y $(BUILD)\setup.ini $(INSTALL)\etc\setup.ini
 
 #
 # bootdisk
@@ -1292,19 +1292,19 @@ $(IMG)/minimal.flp: dirs sanos $(MKDFS) $(BUILD)/minbootdisk.lst
 sdk: $(TCC) $(NASM) $(AR) $(IMPDEF) $(CTOHTML) crt
 
 $(AR): $(INSTALL)/usr/bin/ar.exe $(SOW)
-    copy /Y $(INSTALL)/usr/bin/ar.exe $(AR)
+    copy /Y $(INSTALL)\usr\bin\ar.exe $(AR)
 
 $(IMPDEF): $(INSTALL)/usr/bin/impdef.exe $(SOW)
-    copy /Y $(INSTALL)/usr/bin/impdef.exe $(IMPDEF)
+    copy /Y $(INSTALL)\usr\bin\impdef.exe $(IMPDEF)
 
 $(CTOHTML): $(INSTALL)/usr/bin/ctohtml.exe $(SOW)
-    copy /Y $(INSTALL)/usr/bin/ctohtml.exe $(CTOHTML)
+    copy /Y $(INSTALL)\usr\bin\ctohtml.exe $(CTOHTML)
 
 $(TCC): $(INSTALL)/usr/bin/cc.exe $(SOW)
-    copy /Y $(INSTALL)/usr/bin/cc.exe $(TCC)
+    copy /Y $(INSTALL)\usr\bin\cc.exe $(TCC)
 
 $(NASM): $(INSTALL)/usr/bin/as.exe $(SOW)
-    copy /Y $(INSTALL)/usr/bin/as.exe $(NASM)
+    copy /Y $(INSTALL)\usr\bin\as.exe $(NASM)
 
 $(INSTALL)/usr/bin/cc.exe: \
   $(SDKSRC)/cc/asm386.c \
@@ -1678,26 +1678,25 @@ source: dirs
 # crosstools
 #
 
-crosstools: $(BIN)/as.exe $(BIN)/cc.exe $(BIN)/sh.exe $(BIN)/make.exe $(BIN)/impdef.exe $(BIN)/ar.exe $(BIN)/os.dll $(BIN)/mkdfs.exe
+crosstools: $(BIN)/as.exe $(BIN)/cc.exe $(BIN)/sh.exe $(BIN)/make.exe $(BIN)/ar.exe $(BIN)/os.dll $(BIN)/mkdfs.exe
 
 $(BIN)/as.exe: $(INSTALL)/usr/bin/as.exe
-    copy /Y $** $@
+    copy /Y $(INSTALL)\usr\bin\as.exe $(BIN)\as.exe
 
 $(BIN)/cc.exe: $(INSTALL)/usr/bin/cc.exe
-    copy /Y $** $@
+    copy /Y $(INSTALL)\usr\bin\cc.exe $(BIN)\cc.exe
 
 $(BIN)/sh.exe: $(INSTALL)/bin/sh.exe
-    copy /Y $** $@
+    copy /Y $(INSTALL)\bin\sh.exe $(BIN)\sh.exe
 
 $(BIN)/make.exe: $(INSTALL)/usr/bin/make.exe
-    copy /Y $** $@
+    copy /Y $(INSTALL)\usr\bin\make.exe $(BIN)\make.exe
 
 $(BIN)/ar.exe: $(INSTALL)/usr/bin/ar.exe
-    copy /Y $** $@
+    copy /Y $(INSTALL)\usr\bin\ar.exe $(BIN)\ar.exe
 
 $(BIN)/os.dll: $(SOW)
-    copy /Y $** $@
+    copy /Y $(SOW) $(BIN)\os.dll
 
 $(BIN)/mkdfs.exe: $(MKDFS)
-    copy /Y $** $@
-
+    copy /Y $(MKDFS) $(BIN)\mkdfs.exe

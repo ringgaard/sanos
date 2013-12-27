@@ -393,7 +393,7 @@ static int vmdk_create(const char *filename, int64_t total_size, int flags)
   char desc[1024];
   const char *real_filename, *temp_str;
 
-  fd = open(filename, O_CREAT | O_RDWR | O_BINARY, S_IREAD | S_IWRITE);
+  fd = open(filename, O_CREAT | O_TRUNC | O_RDWR | O_BINARY, S_IREAD | S_IWRITE);
   if (fd == -1) return -1;
   magic = VMDK4_MAGIC;
   memset(&header, 0, sizeof(header));

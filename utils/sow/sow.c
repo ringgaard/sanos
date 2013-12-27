@@ -1116,6 +1116,10 @@ int chown(const char *name, int owner, int group) {
   return notimpl("chown");
 }
 
+int fchown(handle_t f, int owner, int group) {
+  return notimpl("fchown");
+}
+
 int chdir(const char *name) {
   char fn[MAXPATH];
 
@@ -1594,7 +1598,7 @@ static int startproc(struct procdata *pd) {
 
   memset(&si, 0, sizeof(si));
   si.cb = sizeof(si);
-  si.dwFlags = STARTF_USESTDHANDLES;
+  //si.dwFlags = STARTF_USESTDHANDLES;
   si.hStdInput = hget(pd->proc.iob[0], HANDLE_ANY);
   si.hStdOutput = hget(pd->proc.iob[1], HANDLE_ANY);
   si.hStdError = hget(pd->proc.iob[2], HANDLE_ANY);
@@ -1688,6 +1692,10 @@ int spawn(int mode, const char *pgm, const char *cmdline, char **env, struct tib
   }
 }
 
+int spawnve(int mode, const char *pgm, char *argv[], char *env[], struct tib **tibptr) {
+  return notimpl("spawnve");
+}
+
 int suspend(handle_t thread) {
   return SuspendThread(htab[thread].data);
 }
@@ -1729,6 +1737,10 @@ int setprio(handle_t thread, int priority) {
 
 handle_t getprochandle(pid_t pid) {
   return notimpl("getprochandle");
+}
+
+clock_t threadtimes(handle_t thread, struct tms *tms) {
+  return notimpl("threadtimes");
 }
 
 int msleep(int millisecs) {
