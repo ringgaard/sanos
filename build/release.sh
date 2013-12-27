@@ -23,13 +23,13 @@ fi
 #
 
 mksrcrel() {
-  mkdir -p $1 $1/build $1/src $1/sdk $1/sdk/src $1/utils
+  mkdir -p $1 $1/bin $1/build $1/src $1/sdk $1/sdk/src $1/utils
 
-  cp README COPYING CHANGES Makefile Makefile.linux $1
-  cp build/sanos.vcproj build/sanos*.sln $1/build
+  cp README COPYING CHANGES Makefile Makefile.linux Makefile.cross $1
   cp build/*.inf $1/build
   cp build/bootdisk.lst build/minbootdisk.lst $1/build
   cp build/krnl.ini build/os.ini build/setup.ini build/sanos.dep $1/build
+  cp bin/* $1/bin
 
   cp -R src $1
   cp -R sdk/src/as $1/sdk/src
@@ -94,7 +94,7 @@ mkzip() {
 
 # Build Sanos using Wine and MSVC
 echo ==== Build Sanos
-wine cmd /C "build\winebuild.cmd" ${BUILDTYPE} dirs tools sanos sdk sdkdisk bootdisk
+wine cmd /C "build\winebuild.cmd" ${BUILDTYPE} dirs tools sanos sdk sdkdisk bootdisk crosstools
 
 # Build release directories
 mkdir -p release
