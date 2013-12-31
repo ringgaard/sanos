@@ -19,6 +19,7 @@ PKGREPO=/mnt/www/pkg
 PKGDIR=linux/install/usr/share/pkg
 
 sanos: dirs build-tools boot sys libc utils cmds sdk
+	cp -p build/sanos.inf $(PKGDIR)
 
 #
 # dirs

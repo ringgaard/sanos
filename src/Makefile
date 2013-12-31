@@ -23,6 +23,7 @@ utils:
     make -C utils/login
     make -C utils/mkboot
     make -C utils/genvmdk
+    make -C utils/pkg
     make -C utils/setup
     make -C utils/sh
     make -C utils/telnetd
@@ -51,6 +52,7 @@ install-utils:
     make -C utils/login install
     make -C utils/mkboot install
     make -C utils/genvmdk install
+    make -C utils/pkg install
     make -C utils/setup install
     make -C utils/sh install
     make -C utils/telnetd install
@@ -73,6 +75,7 @@ cross:
     make -C utils/login cross
     make -C utils/mkboot cross
     make -C utils/genvmdk cross
+    make -C utils/pkg cross
     make -C utils/setup cross
     make -C utils/sh cross
     make -C utils/telnetd cross
@@ -99,6 +102,7 @@ clean-utils:
     make -C utils/login clean
     make -C utils/mkboot clean
     make -C utils/genvmdk clean
+    make -C utils/pkg clean
     make -C utils/setup clean
     make -C utils/sh clean
     make -C utils/telnetd clean

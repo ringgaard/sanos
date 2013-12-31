@@ -1,6 +1,6 @@
 [package]
 name=sys
-description=Sanos operating system
+description=Sanos kernel
 author=Michael Ringgaard
 homepage=http://www.jbox.dk/sanos/
 
@@ -25,6 +25,7 @@ homepage=http://www.jbox.dk/sanos/
 /boot/tulip.sys
 /boot/virtionet.sys
 /usr/lib/krnl.def
+/usr/lib/os.def
 
 [dependencies]
 sdk

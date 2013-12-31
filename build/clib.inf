@@ -16,7 +16,6 @@ homepage=http://www.jbox.dk/sanos/
 /usr/src/lib/
 /usr/include/
 /usr/lib/libc.a
-/usr/lib/os.def
 
 [license]
 See Sanos COPYING file.
