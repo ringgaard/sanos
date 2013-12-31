@@ -1,0 +1,32 @@
+[package]
+name=sanos
+description=Sanos operating system
+author=Michael Ringgaard
+homepage=http://www.jbox.dk/sanos/
+
+[dependencies]
+ar
+as
+cc
+clib
+cmds
+ctohtml
+edit
+fdisk
+ftpd
+genvmdk
+impdef
+login
+make
+mkboot
+msh
+pkg
+sdk
+setup
+sh
+sys
+telnetd
+
+[license]
+Sanos BSD license. See COPYING file.
+
