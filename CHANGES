@@ -4,6 +4,8 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * Fix potential buffer overflow in vsprintf.
+
     * Remove Visual Studio project files.
 
     * Added support for cross-compiling under Windows.

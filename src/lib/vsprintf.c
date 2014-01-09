@@ -39,6 +39,10 @@
 #define NOFLOAT
 #endif
 
+#ifndef NOFLOAT
+#include <os.h>
+#endif
+
 #define ZEROPAD 1               // Pad with zero
 #define SIGN    2               // Unsigned/signed long
 #define PLUS    4               // Show plus
@@ -191,7 +195,7 @@ char *fcvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf);
 static void cfltcvt(double value, char *buffer, char fmt, int precision) {
   int decpt, sign, exp, pos;
   char *digits = NULL;
-  char cvtbuf[80];
+  char cvtbuf[CVTBUFSIZE];
   int capexp = 0;
   int magnitude;
 
@@ -308,7 +312,7 @@ static void cropzeros(char *buffer) {
 }
 
 static char *flt(char *str, double num, int size, int precision, char fmt, int flags) {
-  char tmp[80];
+  char cvtbuf[CVTBUFSIZE];
   char c, sign;
   int n, i;
 
@@ -340,22 +344,22 @@ static char *flt(char *str, double num, int size, int precision, char fmt, int f
   }
 
   // Convert floating point number to text
-  cfltcvt(num, tmp, fmt, precision);
+  cfltcvt(num, cvtbuf, fmt, precision);
 
   // '#' and precision == 0 means force a decimal point
-  if ((flags & SPECIAL) && precision == 0) forcdecpt(tmp);
+  if ((flags & SPECIAL) && precision == 0) forcdecpt(cvtbuf);
 
   // 'g' format means crop zero unless '#' given
-  if (fmt == 'g' && !(flags & SPECIAL)) cropzeros(tmp);
+  if (fmt == 'g' && !(flags & SPECIAL)) cropzeros(cvtbuf);
 
-  n = strlen(tmp);
+  n = strlen(cvtbuf);
 
   // Output number with alignment and padding
   size -= n;
   if (!(flags & (ZEROPAD | LEFT))) while (size-- > 0) *str++ = ' ';
   if (sign) *str++ = sign;
   if (!(flags & LEFT)) while (size-- > 0) *str++ = c;
-  for (i = 0; i < n; i++) *str++ = tmp[i];
+  for (i = 0; i < n; i++) *str++ = cvtbuf[i];
   while (size-- > 0) *str++ = ' ';
 
   return str;

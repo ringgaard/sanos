@@ -4,6 +4,12 @@ description=Sanos operating system
 author=Michael Ringgaard
 homepage=http://www.jbox.dk/sanos/
 
+[source]
+/usr/src/Makefile
+
+[files]
+/usr/src/Makefile
+
 [dependencies]
 ar
 as
