@@ -2116,7 +2116,9 @@ int main(int argc, char *argv[]) {
   if (fdin != term->ttyin) dup2(term->ttyin, fdin);
   if (fdout != term->ttyout) dup2(term->ttyout, fdout);
 #else
-  if (!isatty(fileno(stdin))) (void *) freopen("/dev/tty", "r", stdin);
+  if (!isatty(fileno(stdin))) {
+    if (!freopen("/dev/tty", "r", stdin)) perror("/dev/tty");
+  }
 #endif
 
   setvbuf(stdout, NULL, 0, 8192);
