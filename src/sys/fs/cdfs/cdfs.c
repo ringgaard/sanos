@@ -302,7 +302,7 @@ int cdfs_mount(struct fs *fs, char *opts)
 
   // Check device
   devno = dev_open(fs->mntfrom);
-  if (devno == NODEV) return -NODEV;
+  if (devno == NODEV) return -ENODEV;
   if (device(devno)->driver->type != DEV_TYPE_BLOCK) return -ENOTBLK;
 
   // Revalidate device and check block size
