@@ -2,6 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void step(int n) {
+  printf(" %d", n);
+  fflush(stdout);
+  msleep(100);
+}
+
 int copy_file(char *srcfn, char *dstfn) {
   static char block[64 * 1024];
   int fin;
@@ -9,24 +15,24 @@ int copy_file(char *srcfn, char *dstfn) {
   int bytes;
   int rc;
 
-  printf(" 4");
+  step(4);
   fin = open(srcfn, O_BINARY);
   if (fin < 0) return fin;
 
-  printf(" 5");
+  step(5);
   fout = open(dstfn,  O_CREAT | O_EXCL | O_BINARY, S_IREAD | S_IWRITE);
   if (fout < 0) return fout;
 
-  printf(" 6");
+  step(6);
   while ((bytes = read(fin , block, sizeof block)) > 0) {
     rc = write(fout, block, bytes);
     if (rc < 0) return rc;
   }
 
-  printf(" 7");
+  step(7);
   if (bytes < 0) return bytes;
 
-  printf(" 8");
+  step(8);
   close(fin);
   close(fout);
 
@@ -42,15 +48,15 @@ int main(int argc, char *argv[]) {
          "  STEP");
 
   // Create DFS file system on ramdisk
-  printf(" 1");
+  step(1);
   mkfs("rd0", "dfs", "quick");
 
   // Mount ramdisk on /var
-  printf(" 2");
+  step(2);
   mount("dfs", "/var", "rd0", NULL);
 
   // Copy UNIX disk image to ramdisk
-  printf(" 3");
+  step(3);
   copy_file("/unix/unix_v7_rl.dsk", "/var/unix_v7_rl.dsk");
   printf(" 9\n");
 
@@ -65,37 +71,49 @@ int main(int argc, char *argv[]) {
     printf("\nType ? for HELP\n");
     printf("Enter one of [Boot, Diagnose, Help, List, Map]:");
     cmd = getchar();
+    printf("%c\n", cmd);
+
     switch (cmd) {
       case 'b':
       case 'B':
         // Start PDP-11 simulator
-        printf("\nTRYING UNIT DL0\n");
+        printf("TRYING UNIT DL0\n");
         msleep(1000);
         printf("\nBOOTING FROM DL0\n");        
-        system("pdp11 /unix/unixv7");
+        spawnl(P_WAIT, "pdp11.exe", "pdp11", "/unix/unixv7", NULL);
         break;
 
       case 'd':
       case 'D':
         // Start simulator witout Unix
-        printf("\n");
-        system("pdp11");
+        printf("");
+        spawnl(P_WAIT, "pdp11.exe", "pdp11", NULL);
         break;
 
       case 'x':
        printf("\033c\f");
        return 0;
 
+      case 'l':
+      case 'L':
+        // List boot devices
+        printf("\n");
+        printf("Bootable devices\n");
+        printf("Device           Max\n");
+        printf("Name Type       Units\n");
+        printf("\n");
+        printf(" DL  RL01/02     4\n");
+        break;
+
       case 'h':
       case 'H':
       case '?':
         // Display help message
-        printf("\n\nWelcome to PDP-11 7th Edition UNIX\n\n");
+        printf("\nWelcome to PDP-11 7th Edition UNIX\n\n");
         printf("  1) Select Boot from menu by typing b\n");
         printf("  2) At the @ prompt type: boot<enter>\n");
         printf("  3) At the : prompt type: rl(0,0)rl2unix<enter>\n");
         printf("  4) At the # prompt type <ctrl-d> and login as root with password root\n");
-        printf("\n");
         break;
     }
   }
