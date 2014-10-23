@@ -54,6 +54,7 @@ DEFS=
 # MSVC=8  for Microsoft Visual Visual Studio 2005
 # MSVC=9  for Microsoft Visual Visual Studio 2008
 # MSVC=10 for Microsoft Visual Visual Studio 2010
+# MSVC=11 for Microsoft Visual Visual Studio 2012
 
 !IFNDEF MSVC
 MSVC=7
@@ -61,13 +62,15 @@ MSVC=7
 
 AFLAGS=/nologo
 
-!IF $(MSVC) == 8 || $(MSVC) == 9 || $(MSVC) == 10
+!IF $(MSVC) == 11
+CFLAGS=/nologo /O2 /Ob1 /Oi /Ot /Oy /GS- /GR- /X /GF /Gy /W3 /arch:IA32 /I $(SRC)/include $(DEFS)
+!ELSEIF $(MSVC) == 8 || $(MSVC) == 9 || $(MSVC) == 10
 CFLAGS=/nologo /O2 /Ob1 /Oi /Ot /Oy /GS- /GR- /X /GF /Gy /W3 /I $(SRC)/include $(DEFS)
 !ELSE
 CFLAGS=/nologo /O2 /Og /Ob1 /Oi /Ot /Oy /X /GF /Gy /W3 /I $(SRC)/include $(DEFS)
 !ENDIF
 
-!IF $(MSVC) == 9 || $(MSVC) == 10
+!IF $(MSVC) > 8
 RAWIMGFLAGS=/FILEALIGN:4096
 !ELSE
 RAWIMGFLAGS=/OPT:WIN98
@@ -89,6 +92,7 @@ RAWIMGFLAGS=/OPT:WIN98
 #
 # /GS-                  Disable security checks
 # /GR-                  Disable runtime typeinfo
+# /arch:IA32            Generate code for x87
 #
 
 all: dirs tools sanos bootdisk boothd netbootimg bootcd
