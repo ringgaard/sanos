@@ -89,7 +89,7 @@ struct project {
   struct buffer value;
 };
 
-char *strndup(char *str, int size) {
+char *stralloc(char *str, int size) {
   char *buffer = (char *) malloc(size + 1);
   memcpy(buffer, str, size);
   buffer[size] = 0;
@@ -152,7 +152,7 @@ void buffer_set(struct buffer *b, char *data, int size) {
 }
 
 char *buffer_dup(struct buffer *b) {
-  return strndup(b->start, b->end - b->start);
+  return stralloc(b->start, b->end - b->start);
 }
 
 void list_init(struct list *l) {
@@ -309,7 +309,7 @@ int expand_macros(char *p, struct project *prj, struct rule *rule, struct buffer
         if (*p != ')') return -1;
         end = p++;
       } else {
-        while (isalnum(*p) || *p == '_') *p++;
+        while (isalnum(*p) || *p == '_') p++;
         end = p;
       }
 
@@ -317,7 +317,7 @@ int expand_macros(char *p, struct project *prj, struct rule *rule, struct buffer
         // Substitute variable.
         char *pattern = NULL;
         char *replace = NULL;
-        char *name = strndup(start, end - start);
+        char *name = stralloc(start, end - start);
         char *value;
 
         // Check for $(VAR:pattern=replace)
@@ -366,7 +366,7 @@ void parse_list(char *p, struct list *list) {
     // Parse name
     start = p;
     while (*p && !isspace(*p)) p++;
-    list_append(list, strndup(start, p - start));
+    list_append(list, stralloc(start, p - start));
   }
 }
 
@@ -639,7 +639,7 @@ int main(int argc, char *argv[]) {
   char curdir[FILENAME_MAX];
 
   // Initialize project
-  setup_predefined_variables(&prj);
+  setup_predefined_variables();
   project_init(&prj);
     
   // Parse command line options
