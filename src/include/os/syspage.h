@@ -79,6 +79,8 @@
 #define KRNLOPTS_POSOFS      0x1A   // Offset in os loader for kernel option address
 #define KRNLOPTS_LEN         128    // Maximum length of kernel options
 
+#define VGA_MODE_SIZE        512    // Size of VESA mode information buffer
+
 // APM install check flags
 
 #define APM_16_BIT_SUPPORT      0x0001
@@ -154,12 +156,13 @@ struct ldrparams {
 // System page
 
 struct syspage {
-  struct tss tss;               // Task State Segment
-  struct segment gdt[MAXGDT];   // Global Descriptor Table
-  struct gate idt[MAXIDT];      // Interrupt Descriptor Table
-  struct bootparams bootparams; // Boot parameter block
-  struct ldrparams ldrparams;   // Loader parameter block
-  unsigned char biosdata[256];  // Copy of BIOS data area
+  struct tss tss;                       // Task State Segment
+  struct segment gdt[MAXGDT];           // Global Descriptor Table
+  struct gate idt[MAXIDT];              // Interrupt Descriptor Table
+  struct bootparams bootparams;         // Boot parameter block
+  struct ldrparams ldrparams;           // Loader parameter block
+  unsigned char biosdata[256];          // Copy of BIOS data area
+  unsigned char vgainfo[VGA_MODE_SIZE]; // VESA VBE video mode information
 };
 
 #ifdef KERNEL

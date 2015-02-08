@@ -46,6 +46,7 @@
 #include <os/sched.h>
 #include <os/dfs.h>
 #include <os/dev.h>
+#include <os/vga.h>
 
 #define VIDEO_BASE           0xB8000
 #define HEAP_START           (1024 * 1024)
@@ -69,11 +70,16 @@ int initrd_size;                // Initial RAM disk size (in bytes)
 int bootdev_cyls;               // Boot device cylinders
 int bootdev_heads;              // Boot device heads
 int bootdev_sects;              // Boot device sector per track
+int xres, yres, bpp;            // Video resolution
+char scratch[4096];             // Scratch buffer
 
 int vsprintf(char *buf, const char *fmt, va_list args);
 void bios_print_string(char *str);
 int bios_get_drive_params(int drive, int *cyls, int *heads, int *sects);
 int bios_read_disk(int drive, int cyl, int head, int sect, int nsect, void *buffer);
+int vesa_get_info(struct vesa_info *info);
+int vesa_get_mode_info(int mode, struct vesa_mode_info *info);
+int vesa_set_mode(int mode);
 int unzip(void *src, unsigned long srclen, void *dst, unsigned long dstlen, char *heap, int heapsize);
 void load_kernel();
 
@@ -101,8 +107,6 @@ void init_biosdisk() {
 }
 
 int biosdisk_read(void *buffer, size_t count, blkno_t blkno) {
-  static char scratch[4096];
-
   char *buf = buffer;
   int sects = count / SECTORSIZE;
   int left = sects;
@@ -231,6 +235,7 @@ void setup_memory(struct memmap *memmap) {
   } else {
     // No BIOS memory map, probe memory and create a simple map with 640K:1M hole
     mem_end = memsize();
+    memmap->count = 3;
 
     memmap->entry[0].addr = 0;
     memmap->entry[0].size = 0xA0000;
@@ -242,8 +247,44 @@ void setup_memory(struct memmap *memmap) {
 
     memmap->entry[2].addr = 0x100000;
     memmap->entry[2].size = mem_end - 0x100000;
-    memmap->entry[2].type = MEMTYPE_RESERVED;
+    memmap->entry[2].type = MEMTYPE_RAM;
   }
+}
+
+void setup_page_tables() {
+  pte_t *pt;
+  int i;
+
+  // Allocate page for page directory
+  pdir = (pte_t *) alloc_heap(1);
+
+  // Make recursive entry for access to page tables
+  pdir[PDEIDX(PTBASE)] = (unsigned long) pdir | PT_PRESENT | PT_WRITABLE;
+
+  // Allocate system page
+  syspage = (struct syspage *) alloc_heap(1);
+
+  // Allocate initial thread control block
+  inittcb = (struct tcb *) alloc_heap(PAGES_PER_TCB);
+
+  // Allocate system page directory page
+  syspagetable = (pte_t *) alloc_heap(1);
+
+  // Map system page, page directory and and video buffer
+  pdir[PDEIDX(SYSBASE)] = (unsigned long) syspagetable | PT_PRESENT | PT_WRITABLE;
+  syspagetable[PTEIDX(SYSPAGE_ADDRESS)] = (unsigned long) syspage | PT_PRESENT | PT_WRITABLE;
+  syspagetable[PTEIDX(PAGEDIR_ADDRESS)] = (unsigned long) pdir | PT_PRESENT | PT_WRITABLE;
+  syspagetable[PTEIDX(VIDBASE_ADDRESS)] = VIDEO_BASE | PT_PRESENT | PT_WRITABLE;
+
+  // Map initial TCB
+  for (i = 0; i < PAGES_PER_TCB; i++) {
+    syspagetable[PTEIDX(INITTCB_ADDRESS) + i] = ((unsigned long) inittcb + i * PAGESIZE) | PT_PRESENT | PT_WRITABLE;
+  }
+
+  // Map first 4MB to physical memory
+  pt = (pte_t *) alloc_heap(1);
+  pdir[0] = (unsigned long) pt | PT_PRESENT | PT_WRITABLE | PT_USER;
+  for (i = 0; i < PTES_PER_PAGE; i++) pt[i] = (i * PAGESIZE) | PT_PRESENT | PT_WRITABLE;
 }
 
 void setup_descriptors() {
@@ -342,9 +383,67 @@ void copy_ramdisk(char *bootimg) {
   //kprintf("%d KB boot image found\n", initrd_size / 1024);
 }
 
-void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved) {
-  pte_t *pt;
+int get_video_config(char *opts) {
+  int param[3];
   int i;
+
+  if (!opts || strncmp(opts, "video=", 6) != 0) return 0;
+  opts += 6;
+  for (i = 0; i < 3; ++i) {
+    int num = 0;
+    while (*opts >= '0' && *opts <= '9') {
+      num = num * 10 + (*opts++ - '0');
+    }
+    if (num == 0) return 0;
+    param[i] = num;
+    if (*opts == 'x') opts++;
+  }
+  xres = param[0];
+  yres = param[1];
+  bpp = param[2];
+  return 1;
+}
+
+void setup_video_mode() {
+  static struct vesa_info info; 
+  int rc;
+  unsigned short *modes;
+  unsigned short mode;
+
+  // Get requested video resolution from kernel options.
+  if (!get_video_config(syspage->bootparams.krnlopts)) return;
+
+  // Get VESA information
+  memcpy(info.vesa_signature, "VBE2", 4);
+  rc = vesa_get_info(&info);
+  if (rc !=  0x004F) return;
+
+  // Find matching VESA mode.
+  modes = (unsigned short *) VESA_ADDR(info.video_mode_ptr);
+  while ((mode = *modes++) != 0xFFFF) {
+    struct vesa_mode_info *mi = (struct vesa_mode_info *) scratch;
+    rc = vesa_get_mode_info(mode, mi);
+    if (rc !=  0x004F) continue;
+
+    // Check if this is a graphics mode with linear frame buffer support
+    if ((mi->attributes & 0x90) != 0x90) continue;
+
+    // Check if this is a packed pixel or direct color mode
+    if (mi->memory_model != 4 && mi->memory_model != 6) continue;
+
+    // Check if resoution matches
+    if (mi->x_resolution == xres && mi->y_resolution == yres && mi->bits_per_pixel == bpp) {
+      // Copy video mode information to syspage.
+      memcpy(syspage->vgainfo, mi, sizeof(struct vesa_mode_info));
+      
+      // Switch to graphics mode.
+      //kprintf("Mode %d: %dx%dx%d\n", mode, mi->x_resolution, mi->y_resolution, mi->bits_per_pixel);
+      vesa_set_mode(mode);
+    }
+  }
+}
+
+void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved) {
   char *bootimg = bootparams->bootimg;
 
   kprintf(", osldr");
@@ -356,36 +455,8 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved) {
   // Page allocation starts at 1MB
   heap = (char *) HEAP_START;
 
-  // Allocate page for page directory
-  pdir = (pte_t *) alloc_heap(1);
-
-  // Make recursive entry for access to page tables
-  pdir[PDEIDX(PTBASE)] = (unsigned long) pdir | PT_PRESENT | PT_WRITABLE;
-
-  // Allocate system page
-  syspage = (struct syspage *) alloc_heap(1);
-
-  // Allocate initial thread control block
-  inittcb = (struct tcb *) alloc_heap(PAGES_PER_TCB);
-
-  // Allocate system page directory page
-  syspagetable = (pte_t *) alloc_heap(1);
-
-  // Map system page, page directory and and video buffer
-  pdir[PDEIDX(SYSBASE)] = (unsigned long) syspagetable | PT_PRESENT | PT_WRITABLE;
-  syspagetable[PTEIDX(SYSPAGE_ADDRESS)] = (unsigned long) syspage | PT_PRESENT | PT_WRITABLE;
-  syspagetable[PTEIDX(PAGEDIR_ADDRESS)] = (unsigned long) pdir | PT_PRESENT | PT_WRITABLE;
-  syspagetable[PTEIDX(VIDBASE_ADDRESS)] = VIDEO_BASE | PT_PRESENT | PT_WRITABLE;
-
-  // Map initial TCB
-  for (i = 0; i < PAGES_PER_TCB; i++) {
-    syspagetable[PTEIDX(INITTCB_ADDRESS) + i] = ((unsigned long) inittcb + i * PAGESIZE) | PT_PRESENT | PT_WRITABLE;
-  }
-
-  // Map first 4MB to physical memory
-  pt = (pte_t *) alloc_heap(1);
-  pdir[0] = (unsigned long) pt | PT_PRESENT | PT_WRITABLE | PT_USER;
-  for (i = 0; i < PTES_PER_PAGE; i++) pt[i] = (i * PAGESIZE) | PT_PRESENT | PT_WRITABLE;
+  // Setup page tables
+  setup_page_tables();
 
   // Copy kernel from boot device
   bootdrive = bootparams->bootdrv;
@@ -396,6 +467,22 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved) {
     init_biosdisk();
     load_kernel(bootdrive);
   }
+
+  // Setup boot parameters
+  memcpy(&syspage->bootparams, bootparams, sizeof(struct bootparams));
+  syspage->ldrparams.heapstart = HEAP_START;
+  syspage->ldrparams.heapend = (unsigned long) heap;
+  syspage->ldrparams.memend = mem_end;
+  syspage->ldrparams.bootdrv = bootdrive;
+  syspage->ldrparams.bootpart = bootpart;
+  syspage->ldrparams.initrd_size = initrd_size;
+  memcpy(syspage->biosdata, (void *) 0x0400, 256);
+
+  // Set up video mode.
+  setup_video_mode();
+
+  // Kernel options are located in the boot parameter block
+  krnlopts = syspage->bootparams.krnlopts;
 
   // Set page directory (CR3) and enable paging (PG bit in CR0)
   __asm {
@@ -408,19 +495,6 @@ void __stdcall start(void *hmod, struct bootparams *bootparams, int reserved) {
 
   // Setup new descriptors in syspage
   setup_descriptors();
-
-  // Setup boot parameters
-  memcpy(&syspage->bootparams, bootparams, sizeof(struct bootparams));
-  syspage->ldrparams.heapstart = HEAP_START;
-  syspage->ldrparams.heapend = (unsigned long) heap;
-  syspage->ldrparams.memend = mem_end;
-  syspage->ldrparams.bootdrv = bootdrive;
-  syspage->ldrparams.bootpart = bootpart;
-  syspage->ldrparams.initrd_size = initrd_size;
-  memcpy(syspage->biosdata, (void *) 0x0400, 256);
-
-  // Kernel options are located in the boot parameter block
-  krnlopts = syspage->bootparams.krnlopts;
 
   // Reload segment registers
   __asm {

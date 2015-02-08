@@ -43,6 +43,12 @@
         global  _bios_get_drive_params
         global  bios_read_disk
         global  _bios_read_disk
+        global vesa_get_info
+        global _vesa_get_info
+        global vesa_get_mode_info
+        global _vesa_get_mode_info
+        global vesa_set_mode
+        global _vesa_set_mode
 
 ; OS Loader base address
 OSLDRSEG    equ 0x9000
@@ -76,7 +82,7 @@ _prot2real:
         mov     eax, ebp
         mov     [prot_ebp], eax
         
-        ; Save descritors
+        ; Save interrupt descriptors
         sidt    [prot_idt]
         sgdt    [prot_gdt]
 
@@ -356,6 +362,151 @@ _bios_read_disk:
         ; Return status
         xor     eax, eax
         mov     al, bl
+
+        ; Restore registers
+        pop     edi
+        pop     esi
+        pop     ebx
+
+        ; Return
+        pop    ebp
+
+        ret
+
+;
+; Get VESA information
+;
+; int vesa_get_info(struct vesa_info *info);
+;
+
+vesa_get_info:
+_vesa_get_info:
+        push ebp
+        mov  ebp, esp
+
+        ; Save register
+        push    ebx
+        push    esi
+        push    edi
+
+        ; Get info buffer address
+        mov     edi, [ebp + 8]
+        sub     edi, OSLDRBASE
+
+        ; Enter real mode
+        call    _prot2real
+        BITS     16
+
+        ; Call VESA
+        mov     ax, OSLDRSEG
+        mov     es, ax
+        mov     ax, 0x4f00
+        int     0x10
+        mov     bx, ax
+
+        ; Return to protected mode
+        call    _real2prot
+        BITS    32
+
+        ; Return status
+        xor     eax, eax
+        mov     ax, bx
+
+        ; Restore registers
+        pop     edi
+        pop     esi
+        pop     ebx
+
+        ; Return
+        pop    ebp
+
+        ret
+
+;
+; Get VESA mode information
+;
+; int vesa_get_mode_info(int mode, struct vesa_mode_info *info);
+;
+
+vesa_get_mode_info:
+_vesa_get_mode_info:
+        push ebp
+        mov  ebp, esp
+
+        ; Save register
+        push    ebx
+        push    esi
+        push    edi
+
+        ; Get mode and info buffer address
+        mov     ecx, [ebp + 8]
+        mov     edi, [ebp + 12]
+        sub     edi, OSLDRBASE
+
+        ; Enter real mode
+        call    _prot2real
+        BITS     16
+
+        ; Call VESA
+        mov     ax, OSLDRSEG
+        mov     es, ax
+        mov     ax, 0x4f01
+        int     0x10
+        mov     bx, ax
+
+        ; Return to protected mode
+        call    _real2prot
+        BITS    32
+
+        ; Return status
+        xor     eax, eax
+        mov     ax, bx
+
+        ; Restore registers
+        pop     edi
+        pop     esi
+        pop     ebx
+
+        ; Return
+        pop    ebp
+
+        ret
+
+;
+; Set VESA graphics mode
+;
+; int vesa_set_mode(int mode);
+;
+
+vesa_set_mode:
+_vesa_set_mode:
+        push ebp
+        mov  ebp, esp
+
+        ; Save register
+        push    ebx
+        push    esi
+        push    edi
+
+        ; Get mode
+        mov     ebx, [ebp + 8]
+
+        ; Enter real mode
+        call    _prot2real
+        BITS     16
+
+        ; Call VESA
+        mov     ax, 0x4f02
+        int     0x10
+        mov     bx, ax
+
+        ; Return to protected mode
+        call    _real2prot
+        BITS    32
+
+        ; Return status
+        xor     eax, eax
+        mov     ax, bx
 
         ; Restore registers
         pop     edi

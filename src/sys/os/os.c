@@ -624,7 +624,7 @@ void dump_stack(struct context *ctxt) {
   char buf[128];
 
   n = get_stack_trace(&usermods, ctxt, tib->stacktop, tib->stacklimit, frames, MAX_FRAMES);
-  if (n > 0) error_output("Stack trace:\n");
+  if (n > 0) error_output("Stack trace:\r\n");
   for (i = 0; i < n; ++i) {
     f = &frames[i];
     sprintf(buf, "%p", f->eip);
@@ -659,7 +659,7 @@ void dump_stack(struct context *ctxt) {
       error_output("]");
     }
 
-    error_output("\n");
+    error_output("\r\n");
   }
 }
 

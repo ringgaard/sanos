@@ -236,6 +236,7 @@ DEV_SRCS=\
   src/sys/dev/rnd.c \
   src/sys/dev/serial.c \
   src/sys/dev/smbios.c \
+  src/sys/dev/vga.c \
   src/sys/dev/video.c \
   src/sys/dev/virtioblk.c \
   src/sys/dev/virtiocon.c

@@ -232,7 +232,7 @@ struct pbuf *arp_arp_input(struct netif *netif, struct eth_addr *ethaddr, struct
 
   hdr = p->payload;
   
-  switch(htons(hdr->opcode)) {
+  switch (htons(hdr->opcode)) {
     case ARP_REQUEST:
       // ARP request. If it asked for our address, we send out a reply
       if (ip_addr_cmp(&hdr->dipaddr, &netif->ipaddr)) {
