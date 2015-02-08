@@ -37,7 +37,7 @@
 struct vga {
   struct vesa_mode_info *mode;  // Graphics mode
   unsigned char *fb;            // Frame buffer
-  int fbsize;                   // Frame buffer size
+  unsigned int fbsize;          // Frame buffer size
 };
 
 static int vga_ioctl(struct dev *dev, int cmd, void *args, size_t size) {

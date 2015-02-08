@@ -382,6 +382,7 @@ $(LIBS)/krnl.lib $(INSTALL)/boot/krnl.dll: \
   $(SRC)\sys\dev\kbd.c \
   $(SRC)\sys\dev\hd.c \
   $(SRC)\sys\dev\fd.c \
+  $(SRC)\sys\dev\vga.c \
   $(SRC)\sys\dev\virtioblk.c \
   $(SRC)\sys\dev\cons.c \
   $(SRC)\sys\net\udpsock.c \

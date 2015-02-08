@@ -50,6 +50,7 @@ DEV_SRCS=\
   ../dev/rnd.c \
   ../dev/serial.c \
   ../dev/smbios.c \
+  ../dev/vga.c \
   ../dev/video.c \
   ../dev/virtioblk.c \
   ../dev/virtiocon.c

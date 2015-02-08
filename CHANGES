@@ -4,6 +4,10 @@ CHANGE LOG FOR SANOS
 Changes since last release
 --------------------------
 
+    * VGA support.
+
+    * Add support for compiling with MSVC 11.
+
     * Fix potential buffer overflow in vsprintf.
 
     * Remove Visual Studio project files.
