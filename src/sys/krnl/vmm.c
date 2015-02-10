@@ -413,27 +413,35 @@ int vmunlock(void *addr, unsigned long size) {
   return -ENOSYS;
 }
 
-void *miomap(unsigned long addr, int size, int protect) {
+void *miomap(unsigned long physaddr, int size, int protect) {
+  void *addr;
   char *vaddr;
   int i;
   unsigned long flags = pte_flags_from_protect(protect);
+  unsigned long pfn = BTOP(physaddr);
   int pages = PAGES(size);
 
-  vaddr = (char *) PTOB(rmap_alloc(vmap, pages));
-  if (vaddr == NULL) return NULL;
-  
+  addr = (void *) PTOB(rmap_alloc(vmap, pages));
+  if (addr == NULL) return NULL;
+
+  vaddr = (char *) addr;
   for (i = 0; i < pages; i++) {
-    map_page(vaddr + PTOB(i), BTOP(addr) + i, flags | PT_PRESENT);
+    map_page(vaddr, pfn + i, flags | PT_PRESENT);
+    vaddr += PAGESIZE;
   }
 
-  return vaddr;
+  return addr;
 }
 
 void miounmap(void *addr, int size) {
   int i;
   int pages = PAGES(size);
+  char *vaddr = (char *) addr;
 
-  for (i = 0; i < pages; i++) unmap_page((char *) addr + PTOB(i));
+  for (i = 0; i < pages; i++) {
+    unmap_page(vaddr);
+    vaddr += PAGESIZE;
+  }
   rmap_free(vmap, BTOP(addr), pages);
 }
 

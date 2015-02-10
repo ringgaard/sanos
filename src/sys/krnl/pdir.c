@@ -40,20 +40,20 @@ void map_page(void *vaddr, unsigned long pfn, unsigned long flags) {
   // Allocate page table if not already done
   if ((GET_PDE(vaddr) & PT_PRESENT) == 0) {
     unsigned long pdfn;
+    pte_t *pt;
 
     pdfn = alloc_pageframe('PTAB');
-    if (USERSPACE(vaddr)) {
-      SET_PDE(vaddr, PTOB(pdfn) | PT_PRESENT | PT_WRITABLE | PT_USER);
-    } else {
-      SET_PDE(vaddr, PTOB(pdfn) | PT_PRESENT | PT_WRITABLE);
-    }
-
-    memset(ptab + PDEIDX(vaddr) * PTES_PER_PAGE, 0, PAGESIZE);
+    if (pfn == 0xFFFFFFFF) panic("no memory for page table");
+    SET_PDE(vaddr, PTOB(pdfn) | PT_PRESENT | PT_WRITABLE | PT_USER);
+    pt = ptab + PDEIDX(vaddr) * PTES_PER_PAGE;
+    invlpage(pt);
+    memset(pt, 0, PAGESIZE);
     register_page_table(pdfn);
   }
 
   // Map page frame into address space
   SET_PTE(vaddr, PTOB(pfn) | flags);
+  invlpage(vaddr);
 }
 
 void unmap_page(void *vaddr) {
@@ -248,7 +248,8 @@ int virtmem_proc(struct proc_file *pf, void *arg) {
       vaddr += PTES_PER_PAGE * PAGESIZE;
     } else {
       pte_t pte = GET_PTE(vaddr);
-      unsigned long tag = pfdb[pte >> PT_PFNSHIFT].tag;
+      unsigned long pfn = pte >> PT_PFNSHIFT;
+      unsigned long tag = pfn < maxmem ? pfdb[pfn].tag : 'MMIO';
 
       if (pte & PT_PRESENT) {
         if (start == NULL)  {

@@ -47,7 +47,7 @@ krnlapi int vmprotect(void *addr, unsigned long size, int protect);
 krnlapi int vmlock(void *addr, unsigned long size);
 krnlapi int vmunlock(void *addr, unsigned long size);
 
-krnlapi void *miomap(unsigned long addr, int size, int protect);
+krnlapi void *miomap(unsigned long physaddr, int size, int protect);
 krnlapi void miounmap(void *addr, int size);
 
 int guard_page_handler(void *addr);

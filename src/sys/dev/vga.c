@@ -136,6 +136,7 @@ struct driver vga_driver = {
 int __declspec(dllexport) vga(struct unit *unit) {
   struct vga *vga;
   struct vesa_mode_info *mode = (struct vesa_mode_info *) syspage->vgainfo;
+  dev_t devno;
 
   // Check if graphics mode is enabled
   if (!mode->phys_base_ptr) return 0;
@@ -151,7 +152,11 @@ int __declspec(dllexport) vga(struct unit *unit) {
   vga->fb = miomap(mode->phys_base_ptr, vga->fbsize, PAGE_READWRITE);
   if (!vga->fb) return -ENOMEM;
 
-  dev_make("fb#", &vga_driver, unit, vga);
+  devno = dev_make("fb#", &vga_driver, unit, vga);
+  kprintf(KERN_INFO "%s: VGA %dx%dx%d, frame buffer %x (%d)\n", 
+          device(devno)->name, 
+          mode->x_resolution, mode->y_resolution, mode->bits_per_pixel,
+          mode->phys_base_ptr, vga->fbsize);
 
   // VGA information
   register_proc_inode("vgainfo", vgainfo_proc, vga);

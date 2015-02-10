@@ -437,7 +437,7 @@ void setup_video_mode() {
       memcpy(syspage->vgainfo, mi, sizeof(struct vesa_mode_info));
       
       // Switch to graphics mode.
-      //kprintf("Mode %d: %dx%dx%d\n", mode, mi->x_resolution, mi->y_resolution, mi->bits_per_pixel);
+      //kprintf(" (vga mode %d: %dx%dx%d)", mode, mi->x_resolution, mi->y_resolution, mi->bits_per_pixel);
       vesa_set_mode(mode);
     }
   }
