@@ -1659,6 +1659,25 @@ void paste_selection(struct editor *ed) {
   ed->refresh = 1;
 }
 
+void duplicate_selection(struct editor *ed) {
+  int selstart, selend, sellen;
+  char* buf;
+  
+  if (!get_selection(ed, &selstart, &selend)) return;
+
+  sellen = selend - selstart;
+
+  buf = malloc(sellen);
+  if (!buf) return;
+  
+  copy(ed, buf, selstart, sellen);
+
+  insert(ed, ed->linepos + ed->col, buf, sellen);
+  ed->refresh = 1;
+
+  free(buf);
+}
+
 //
 // Editor Commands
 //
@@ -2046,6 +2065,7 @@ void edit(struct editor *ed) {
 
         case ctrl('a'): select_all(ed); break;
         case ctrl('c'): copy_selection(ed); break;
+        case ctrl('d'): duplicate_selection(ed); break;
         case ctrl('f'): find_text(ed, 0); break;
         case ctrl('l'): goto_line(ed); break;
         case ctrl('g'): find_text(ed, 1); break;
