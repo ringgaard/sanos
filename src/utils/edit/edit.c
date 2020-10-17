@@ -2125,6 +2125,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef __linux__
   tcgetattr(0, &orig_tio);
+  tio = orig_tio;
   cfmakeraw(&tio);  
   tcsetattr(0, TCSANOW, &tio);
   if (getenv("TERM") && strcmp(getenv("TERM"), "linux") == 0) {
