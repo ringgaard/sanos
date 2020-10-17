@@ -84,7 +84,7 @@ linux/.timestamp:
 
 build-tools: $(TCC) $(AS) $(AR) $(MKDFS) $(MKPKG)
 
-GCC_FLAGS=-O2 -m32 -Wimplicit
+GCC_FLAGS=-O2 -m32 -w
 
 TCC_SRCFILES=\
   sdk/src/cc/asm386.c \
